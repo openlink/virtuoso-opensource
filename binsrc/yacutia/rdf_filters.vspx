@@ -56,11 +56,12 @@
 		  <col/>
 	      </colgroup>
 	      <tr class="listing_header_row">
+		  <th>Seq#</th>
 		  <th colspan="2">Description</th>
 		  <th>Pattern</th>
 		  <th>Action</th>
 	      </tr>
-	      <v:data-set name="maps" sql="select RM_PATTERN, RM_TYPE, RM_DESCRIPTION, RM_ID, RM_HOOK, RM_KEY
+	      <v:data-set name="maps" sql="select RM_PATTERN, RM_TYPE, RM_DESCRIPTION, RM_ID, RM_HOOK, RM_KEY, RM_ENABLED
 		  from DB.DBA.SYS_RDF_MAPPERS order by 4"
 		  scrollable="1" editable="1" nrows="1000">
 		  <v:before-data-bind>
@@ -69,6 +70,15 @@ if (not e.ve_is_post and self.del_item is not null)
   delete from DB.DBA.SYS_RDF_MAPPERS where RM_ID = self.del_item;
 }
 		  </v:before-data-bind>
+		  <v:after-data-bind>
+if (self.vc_event.ve_button is not null and self.vc_event.ve_button.vc_name = 'maps')
+{
+  declare cb vspx_field;
+  cb := self.vc_event.ve_initiator;
+  update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = case when RM_ENABLED = 1 then 0 else 1 end where RM_ID = cb.ufl_value;
+  cb.ufl_selected := (select RM_ENABLED from DB.DBA.SYS_RDF_MAPPERS where RM_ID = cb.ufl_value);
+}
+		  </v:after-data-bind>
 
 		  <v:template name="maps_rep" type="repeat">
 		      <v:template name="maps_brows" type="browse">
@@ -98,6 +108,10 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 	                  </v:after-data-bind>
 			  <tr class="<?V case when self.edit_item = control.te_rowset[3] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
 			      <td>
+				  <v:check-box name="cb1" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[6]" auto-submit="1"/>
+				  <v:label name="la3" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" />
+			      </td>
+			      <td>
 				  <v:url name="ur1"
 				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[2])'
 				      format="%s"
@@ -121,6 +135,66 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 				      xhtml_title="Delete"
 				      xhtml_alt="Delete"
 				      />
+				  &#160;
+				<v:button name="earul1" value="Up" action="simple" style="url">
+				    <v:on-post><![CDATA[
+					declare to_move, to_swap, mv_ord, sw_ord int;
+					if (not self.vc_is_valid)
+					  return;
+					to_swap := null;
+					to_move := (control.vc_parent as vspx_row_template).te_rowset[3];
+					for select RM_ID from DB.DBA.SYS_RDF_MAPPERS order by RM_ID do
+					  {
+					    if (RM_ID = to_move)
+					      {
+					        mv_ord := RM_ID;
+					        goto swapit;
+					      }
+					    to_swap := RM_ID;
+					    sw_ord := RM_ID;
+					  }
+					swapit:
+					if (to_swap is not null)
+					  {
+					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = -1 where RM_ID = to_swap;
+					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = sw_ord where RM_ID = to_move;
+					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = mv_ord where RM_ID = -1;
+					  }
+					self.vc_data_bind (e);
+				]]></v:on-post>
+				</v:button>
+				  &#160;
+				<v:button name="earul2" value="Down" action="simple" style="url">
+				    <v:on-post><![CDATA[
+					declare to_move, to_swap, mv_ord, sw_ord int;
+					if (not self.vc_is_valid)
+					  return;
+					to_swap := null;
+					to_move := (control.vc_parent as vspx_row_template).te_rowset[3];
+					mv_ord := null;
+					for select RM_ID from DB.DBA.SYS_RDF_MAPPERS order by RM_ID do
+					  {
+					    if (RM_ID = to_move)
+					      {
+					        mv_ord := RM_ID;
+					      }
+					    else if (mv_ord is not null)
+					      {
+					        to_swap := RM_ID;
+						sw_ord := RM_ID;
+						goto swapit;
+					      }
+					  }
+					swapit:
+					if (to_swap is not null)
+					  {
+					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = -1 where RM_ID = to_swap;
+					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = sw_ord where RM_ID = to_move;
+					    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = mv_ord where RM_ID = -1;
+					  }
+					self.vc_data_bind (e);
+				]]></v:on-post>
+				</v:button>
 
 			      </td>
 			  </tr>
@@ -129,7 +203,7 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 
 		  <v:template name="maps_footer" type="simple">
 		      <tr>
-			  <td colspan="4" class="listing_col_action">
+			  <td colspan="5" class="listing_col_action">
 			      <vm:ds-navigation data-set="maps" type="set" />
 			  </td>
 		      </tr>
@@ -149,6 +223,7 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 		  <v:select-list name="typ1" value="" xhtml_id="typ1" error-glyph="*">
 		      <v:item name="Content Type" value="MIME"/>
 		      <v:item name="URL" value="URL"/>
+		      <v:item name="HTTP protocol" value="HTTP"/>
 		  </v:select-list><br />
 
 		  <label for="pl1">PL Function name</label>

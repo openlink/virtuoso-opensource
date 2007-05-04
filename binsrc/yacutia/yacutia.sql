@@ -367,6 +367,7 @@ create procedure adm_menu_tree ()
       <node name="Edit Host" url="http_host_edit.vspx" id="170" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Clone Host" url="http_host_clone.vspx" id="175" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Delete Path" url="http_del_path.vspx" id="156" place="1" allowed="yacutia_http_server_management_page"/>
+      <node name="URL rewrite" url="http_url_rewrite.vspx" id="193" place="1" allowed="yacutia_http_server_management_page"/>
    </node>
  </node>
  <node name="XML" url="xml_sql.vspx"  id="106" tip="XML Services permit manipulation of XML data from stored and SQL sources" allowed="yacutia_xml">
@@ -4622,15 +4623,27 @@ create procedure www_tree (in path any)
 
        http (sprintf ('<node host="%s" port="%s" lhost="%s" edit="%d" chost="%s" clhost="%s" control="%d">\n', vhost, port, intf, HP_NO_EDIT, HOST, LHOST, HP_NO_CTRL), ss);
        i := 0;
-       for select HP_LPATH, HP_PPATH, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_SECURITY from DB.DBA.HTTP_PATH where HP_HOST = HOST and HP_LISTEN_HOST = LHOST do
+       for select HP_LPATH, HP_PPATH, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_SECURITY, HP_OPTIONS
+	 from DB.DBA.HTTP_PATH where HP_HOST = HOST and HP_LISTEN_HOST = LHOST do
    {
       declare tp, usr any;
+      declare hp_opts, url_rew any;
+
+      hp_opts := deserialize (HP_OPTIONS);
+      dbg_obj_print (hp_opts);
+      if (not isarray (hp_opts))
+	hp_opts := vector ();
+
+      url_rew := get_keyword ('url_rewrite', hp_opts, '');
+
       if (HP_PPATH like '/DAV/%')
         tp := 'DAV';
       else if (HP_PPATH like '/SOAP/%' or HP_PPATH = '/SOAP')
         tp := 'SOAP';
       else if (HP_PPATH like '/INLINEFILE/%')
         tp := 'INL';
+      else if (HP_PPATH like 'http%://%')
+        tp := 'PROXY';
       else
         tp := 'FS';
 
@@ -4643,7 +4656,8 @@ create procedure www_tree (in path any)
 
       if (path = '*ALL*' or path = tp)
         {
-                http (sprintf ('\t<node lpath="%s" type="%s" user="%s" sec="%s"/>\n', HP_LPATH, tp, usr, HP_SECURITY), ss);
+	  http (sprintf ('\t<node lpath="%s" type="%s" user="%s" sec="%s" url_rew="%s"/>\n',
+		HP_LPATH, tp, usr, coalesce (HP_SECURITY, ''), url_rew), ss);
     i := i + 1;
         }
    }
@@ -5183,4 +5197,82 @@ create procedure yac_syncml_detect (in _name any)
    return 0;
 }
 ;
+
+
+create procedure y_sprintf_to_reg (in fmt varchar, in in_list any, in o_list any)
+{
+  declare pc, cp_fmt varchar;
+  declare inx, pos, _from, _to, res, _left, _right, par any;
+
+  cp_fmt := fmt;
+  pc := regexp_match ('%[sd]', fmt, 1);
+  inx := 0;
+  while (pc is not null)
+    {
+      _from := strstr (cp_fmt, pc);
+      _to := _from + length (pc);
+
+      _left := substring (cp_fmt, 1, _from);
+      _right := substring (cp_fmt, _to+1, length (cp_fmt));
+
+      pos := position (o_list[inx], in_list);
+      par := sprintf ('\x24%d', pos);
+
+      cp_fmt := _left || par || _right;
+
+      pc := regexp_match ('%[sd]', fmt, 1);
+      inx := inx + 1;
+    }
+  return cp_fmt;
+};
+
+
+create procedure y_reg_to_sprintf (in fmt varchar, out in_list any, out o_list any)
+{
+  declare pc, cp_fmt varchar;
+  declare inx, pos, _from, _to, res, _left, _right, par any;
+
+  cp_fmt := fmt;
+  pc := regexp_match ('\\x24[0-9]+', fmt, 1);
+  inx := 0;
+
+  in_list := vector ();
+  o_list := vector ();
+
+  while (pc is not null)
+    {
+      _from := strstr (cp_fmt, pc);
+      _to := _from + length (pc);
+
+      _left := substring (cp_fmt, 1, _from);
+      _right := substring (cp_fmt, _to+1, length (cp_fmt));
+
+      pos := atoi (ltrim (pc, '\x24'));
+
+      o_list := vector_concat (o_list, vector (sprintf ('par_%d', pos)));
+
+      if (length (in_list) < pos)
+	{
+	  declare to_add int;
+	  to_add := pos - length (in_list);
+	  in_list := vector_concat (in_list, make_array (to_add, 'any'));
+	  in_list [pos - 1] := sprintf ('par_%d', pos);
+	}
+      else
+	in_list [pos - 1] := sprintf ('par_%d', pos);
+
+      cp_fmt := _left || '%s'  || _right;
+
+      pc := regexp_match ('\\x24[0-9]+', fmt, 1);
+      inx := inx + 1;
+    }
+  for (inx := 0; inx < length (in_list); inx := inx + 1)
+    {
+      if (in_list[inx] = 0)
+	in_list[inx] := sprintf ('par_%d', inx + 1);
+    }
+  return cp_fmt;
+};
+
+
 

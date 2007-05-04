@@ -314,17 +314,14 @@ echo "  <ddls>" >> $STICKER
 echo "    <sql purpose=\"pre-install\">if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) { result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater'); signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater'); } </sql>" >> $STICKER
 echo "    <sql purpose=\"post-install\">" >> $STICKER
 echo "      registry_set('__no_vspx_temp', '1');" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/vspx/browser/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/vspx/vdir_helper.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/vdir_helper.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/yacutia.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      vhost_remove (lpath=>'/conductor');" >> $STICKER
 echo "      vhost_remove (lpath=>'/vspx');" >> $STICKER
 echo "      vhost_remove (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor');" >> $STICKER
-echo "      vhost_remove (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/vspx');" >> $STICKER
 echo "      vhost_define (lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>1, def_page=>'main_tabs.vspx');" >> $STICKER
-echo "      vhost_define (lpath=>'/vspx',ppath=>'$BASE_PATH/vspx/', is_dav=>$ISDAV, vsp_user=>'dba',is_brws=>1, def_page=>'');" >> $STICKER
 echo "      vhost_define (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>1, def_page=>'main_tabs.vspx');" >> $STICKER
-echo "      vhost_define (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/vspx',ppath=>'$BASE_PATH/vspx/', is_dav=>$ISDAV, vsp_user=>'dba',is_brws=>1, def_page=>'');" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/xddl.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/$XDDLSQL', 1, 'report', $ISDAV);" >> $STICKER
 echo "    </sql>" >> $STICKER
@@ -402,12 +399,10 @@ mkdir vad/vsp/conductor/ie7
 mkdir vad/vsp/conductor/ie7/src
 mkdir vad/vsp/conductor/images
 mkdir vad/vsp/conductor/images/dav_browser
-#mkdir vad/vsp/conductor/images/buttons
 mkdir vad/vsp/conductor/images/icons
 mkdir vad/vsp/conductor/syntax
 mkdir vad/vsp/conductor/toolkit
-#mkdir vad/vsp/conductor/toolkit/images
-#mkdir vad/vsp/conductor/toolkit/docs
+mkdir vad/vsp/conductor/toolkit/images
 cp -f $HOME/binsrc/xddl/xddl.xsd .
 cp -f $HOME/binsrc/xddl/xddl_diff.xsl .
 cp -f $HOME/binsrc/xddl/xddl_exec.xsl .
@@ -419,19 +414,16 @@ cp -f $HOME/binsrc/xddl/xddl_dav.sql vad/vsp/conductor
 cp -f $HOME/binsrc/xddl/xddl_filesystem.sql vad/vsp/conductor
 cp -f images/* vad/vsp/conductor/images
 cp -f images/dav_browser/* vad/vsp/conductor/images/dav_browser
-#cp -f images/buttons/* vad/vsp/conductor/images/buttons
 cp -f images/icons/* vad/vsp/conductor/images/icons
 cp -f ie7/* vad/vsp/conductor/ie7
 cp -f ie7/src/* vad/vsp/conductor/ie7/src
 cp -f * vad/vsp/conductor
 cp -f syntax/* vad/vsp/conductor/syntax
 cp -f $HOME/binsrc/oat/toolkit/*.js vad/vsp/conductor/toolkit/.
-cp -f toolkit/images/* vad/vsp/conductor/toolkit/images
-cp -f toolkit/docs/* vad/vsp/conductor/toolkit/docs
+cp -f $HOME/binsrc/oat/toolkit/images/* vad/vsp/conductor/toolkit/images
 cp -f yacutia.sql vad/vsp/conductor
-cp -f $HOME/binsrc/vspx/* vad/vsp/vspx
-cp -f $HOME/binsrc/vspx/browser/* vad/vsp/vspx/browser
-cp -f $HOME/binsrc/vspx/browser/images/16x16/* vad/vsp/vspx/browser/images/16x16
+cp -f $HOME/binsrc/vspx/browser/admin_dav_browser.sql vad/vsp/conductor
+cp -f $HOME/binsrc/vspx/vdir_helper.sql vad/vsp/conductor
 cp -f help/*.xml vad/vsp/conductor/help
 
 VERSION_INIT

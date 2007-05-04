@@ -455,6 +455,40 @@
 			  _host1, _httphost1, _path);
 		  ]]></v:after-data-bind>
 		  </v:button>
+		    <v:button action="simple" style="image" name="url_rewrite_path" url="http_url_rewrite.vspx"
+		      value="images/icons/add_script_16.png"
+		      xhtml_alt="URL-rewrite"
+		      xhtml_title="URL-rewrite"
+		      text="&#160;URL-rewrite"
+		      >
+		    <v:after-data-bind><![CDATA[
+		      declare xt, pxt, tp, urw any;
+		      declare _host, _port, _httphost, _path, _host1, _httphost1, tmp any;
+
+		      _host := _port := _httphost := _path := '';
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      pxt := (control.vc_parent.vc_parent as vspx_tree_node).tn_element;
+
+		      _path := cast (xpath_eval ('@lpath',xt) as varchar);
+
+		      _host1 := cast (xpath_eval ('@clhost',pxt) as varchar);
+		      _httphost1 := cast (xpath_eval ('@chost',pxt) as varchar);
+		      urw := cast (xpath_eval ('@url_rew',xt) as varchar);
+
+		        control.bt_url := sprintf (
+		          'http_url_rewrite.vspx?lhost=%s&vhost=%s&lpath=%s&rule_list=%s',
+			  _host1, _httphost1, _path, urw);
+		  ]]></v:after-data-bind>
+		  </v:button>
+		  <?vsp
+		  {
+		    declare xt, urw any;
+		    xt := control.tn_element;
+		    urw := cast (xpath_eval ('@url_rew',xt) as varchar);
+		    if (length (urw))
+		      http_value ('*', 'b');
+		  }
+		  ?>
 		</td>
 	      </tr>
             </v:leaf-template>

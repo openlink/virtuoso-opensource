@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="sparql_create_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_sparql_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+ <vm:pagetitle>URL rewriting rules</vm:pagetitle>
+ <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="del_item" default="null" type="varchar" param-name="del"/>
+      <v:variable name="edit_item" default="null" type="varchar" param-name="edit"/>
+      <v:variable name="rulelist" default="null" type="varchar" persist="0" param-name="rule_list"/>
+
+      <v:variable name="vhost" default="null" type="varchar" persist="0" param-name="vhost"/>
+      <v:variable name="lhost" default="null" type="varchar" persist="0" param-name="lhost"/>
+      <v:variable name="lpath" default="null" type="varchar" persist="0" param-name="lpath"/>
+    </vm:variables>
+  <vm:menu>
+   <vm:menuitem value="URL rewriting rules"/>
+  </vm:menu>
+  <vm:rawheader>
+      <h1 class="page_title">
+	  URL rewriting rules for <?V self.lpath ?>
+      </h1>
+  </vm:rawheader>
+  <vm:pagebody>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+		  <td>
+	  <table class="listing" rules="groups">
+	      <colgroup>
+		  <col/>
+		  <col/>
+		  <col/>
+		  <col/>
+	      </colgroup>
+	      <tr class="listing_header_row">
+		  <th>Source pattern</th>
+		  <th>Destination</th>
+		  <th>Action</th>
+	      </tr>
+	      <v:data-set name="maps" sql="select
+		  URR_RULE,
+		  URR_RULE_TYPE,
+		  URR_NICE_FORMAT,
+		  y_sprintf_to_reg (URR_TARGET_FORMAT, deserialize (URR_NICE_PARAMS), deserialize (URR_TARGET_PARAMS)) as nice_fmt,
+		  URR_NICE_MIN_PARAMS,
+		  URR_TARGET_FORMAT,
+		  URR_TARGET_EXPR
+		  from DB.DBA.URL_REWRITE_RULE, DB.DBA.URL_REWRITE_RULE_LIST where URR_RULE = URRL_MEMBER
+		  and URRL_LIST = :self.rulelist
+		  order by URRL_INX "
+		  scrollable="1" editable="1" nrows="1000">
+		  <v:before-data-bind><![CDATA[
+
+if (not e.ve_is_post and self.del_item is not null)
+{
+  declare rules, cnt any;
+
+  cnt := (select count (*) from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = self.rulelist and URRL_MEMBER <> self.del_item);
+
+  DB.DBA.URLREWRITE_DROP_RULE (self.del_item, 1);
+  if (cnt = 0)
+    {
+      declare h_opts any;
+      h_opts := (select deserialize (HP_OPTIONS) from DB.DBA.HTTP_PATH where HP_LPATH = self.lpath and HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost);
+      if (isarray (h_opts) and position ('url_rewrite', h_opts))
+        {
+	  declare new_opt, i any;
+          new_opt := vector ();
+	  for (i := 0; i < length (h_opts); i := i + 2)
+	     {
+               if (h_opts[i] <> 'url_rewrite')
+	         {
+		   new_opt := vector_concat (new_opt, vector (h_opts[i], h_opts[i+1]));
+		 }
+	     }
+	  h_opts := new_opt;
+	  update DB.DBA.HTTP_PATH set HP_OPTIONS = serialize (h_opts) where HP_LPATH = self.lpath and HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost;
+	  DB.DBA.VHOST_MAP_RELOAD (self.vhost, self.lhost, self.lpath);
+        }
+
+    }
+  else
+    {
+      rules := (select vector_agg (URR_RULE) from DB.DBA.URL_REWRITE_RULE, DB.DBA.URL_REWRITE_RULE_LIST where URR_RULE = URRL_MEMBER and URRL_LIST = self.rulelist);
+      DB.DBA.URLREWRITE_CREATE_RULELIST (self.rulelist, 1, rules);
+    }
+
+}
+]]></v:before-data-bind>
+
+		  <v:template name="maps_rep" type="repeat">
+		      <v:template name="template7" type="if-not-exists">
+			  <tr>
+			      <td colspan="3">
+				  No URL rewriting rules available
+			      </td>
+			  </tr>
+		      </v:template>
+		      <v:template name="maps_brows" type="browse">
+			  <v:after-data-bind>
+if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
+{
+  self.spat1.ufl_value := control.te_rowset[2];
+  self.dest1.ufl_value := control.te_rowset[3];
+  self.pl1.ufl_value := coalesce (control.te_rowset[6], '');
+  self.typ1.ufl_value := cast (control.te_rowset[1] as varchar);
+}
+	                  </v:after-data-bind>
+			  <tr class="<?V case when self.edit_item = control.te_rowset[0] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+			      <td>
+				  <v:url name="ur1"
+				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[2])'
+				      format="%s"
+				      url="--sprintf ('http_url_rewrite.vspx?edit=%s&amp;rule_list=%U&amp;lhost=%U&amp;vhost=%U&amp;lpath=%U',
+				             (control.vc_parent as vspx_row_template).te_rowset[0], self.rulelist, self.lhost, self.vhost, self.lpath)"
+				      xhtml_title="Edit"
+				      xhtml_alt="Edit"
+				      />
+			      </td>
+			      <td>
+				  <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" />
+			      </td>
+			      <td>
+				  &#160;
+				  <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+				      format="%s"
+				      url="--sprintf ('http_url_rewrite.vspx?del=%s&amp;rule_list=%U&amp;lhost=%U&amp;vhost=%U&amp;lpath=%U',
+				      	(control.vc_parent as vspx_row_template).te_rowset[0], self.rulelist, self.lhost, self.vhost, self.lpath)"
+				      xhtml_title="Delete"
+				      xhtml_alt="Delete"
+				      />
+
+			      </td>
+			  </tr>
+		      </v:template>
+		  </v:template>
+
+		  <v:template name="maps_footer" type="simple">
+		      <tr>
+			  <td colspan="4" class="listing_col_action">
+			      <vm:ds-navigation data-set="maps" type="set" />
+			  </td>
+		      </tr>
+		  </v:template>
+	      </v:data-set>
+	  </table>
+	  <v:form name="fm1" type="simple" method="POST">
+	  <div class="fm">
+	      <fieldset>
+		  <label for="typ1">Pattern Type</label>
+		  <v:select-list name="typ1" value="" xhtml_id="typ1" error-glyph="*">
+		      <v:item name="REGEX" value="1"/>
+		      <v:item name="sprintf" value="0"/>
+		  </v:select-list><br />
+		  <label for="spat1">Source pattern</label>
+		  <v:text name="spat1" value="" xhtml_id="spat1" error-glyph="*" xhtml_size="110" default_value="--concat (self.lpath,'/(.*)$')">
+		  </v:text><br/>
+
+		  <label for="dest1">Destination</label>
+		  <v:text name="dest1" xhtml_id="dest1" error-glyph="*" value="" xhtml_size="110" default_value="--concat (self.lpath, '/$1')"/>
+		  <br />
+
+
+		  <label for="pl1">PL Function</label>
+		  <v:text name="pl1" value="" xhtml_size="110" xhtml_id="pl1" error-glyph="*">
+		  </v:text><br />
+
+	      <span class="fm_ctl_btn">
+		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_item),0)">
+		      <v:on-post>
+self.spat1.ufl_value := '';
+self.dest1.ufl_value := '';
+self.edit_item := null;
+self.save1.vc_data_bind (e);
+control.vc_enabled := 0;
+		      </v:on-post>
+		  </v:button>
+		  <v:button name="save1" value="--case when self.edit_item is null then 'Add' else 'Update' end" action="simple">
+		      <v:on-post>
+declare rule_name, tgt varchar;
+declare i_par, o_par, rules any;
+declare typ, upd_vd int;
+declare h_opts any;
+
+if (not self.vc_is_valid)
+  return;
+
+
+declare exit handler for sqlstate '23000'
+{
+  rollback work;
+  self.vc_is_valid := 0;
+  self.vc_error_message := 'The values entered conflict with other URL rewriter. Please supply correct values.';
+  return;
+};
+
+self.spat1.ufl_value := trim (self.spat1.ufl_value);
+self.dest1.ufl_value := trim (self.dest1.ufl_value);
+self.pl1.ufl_value   := trim (self.pl1.ufl_value);
+typ := atoi (self.typ1.ufl_value);
+
+if (not length (self.pl1.ufl_value))
+  self.pl1.ufl_value := null;
+
+
+if (not length (self.spat1.ufl_value) or not length (self.dest1.ufl_value))
+  {
+    declare what any;
+    what := case when length (self.spat1.ufl_value) = 0 then 'Source pattern' when length (self.dest1.ufl_value) = 0 then 'Destination'
+    else 'field' end;
+
+    rollback work;
+    self.vc_is_valid := 0;
+    self.vc_error_message := sprintf ('The %s value cannot be empty.', what);
+    return;
+  }
+
+rules := (select vector_agg (URR_RULE) from DB.DBA.URL_REWRITE_RULE, DB.DBA.URL_REWRITE_RULE_LIST where URR_RULE = URRL_MEMBER and URRL_LIST = self.rulelist);
+if (self.edit_item is null)
+{
+  declare nrule int;
+
+  nrule := (select count(*) from URL_REWRITE_RULE where URR_RULE like 'http_rule_%');
+  nrule := nrule + 1;
+
+  rule_name := sprintf ('http_rule_%d', nrule);
+  rules := vector_concat (rules, vector (rule_name));
+}
+else
+{
+  rule_name := self.edit_item;
+}
+
+if (0 = length (self.rulelist))
+  {
+    declare nrule int;
+    nrule := (select count(distinct (URRL_LIST)) from URL_REWRITE_RULE_LIST where URRL_LIST like 'http_rule_list_%');
+    self.rulelist := sprintf ('http_rule_list_%d', nrule+1);
+  }
+
+tgt := y_reg_to_sprintf (self.dest1.ufl_value, i_par, o_par);
+
+if (typ = 1)
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (rule_name, 1, self.spat1.ufl_value, i_par, length (i_par), tgt, o_par, self.pl1.ufl_value);
+else
+  DB.DBA.URLREWRITE_CREATE_SPRINTF_RULE (rule_name, 1, self.spat1.ufl_value, i_par, length (i_par), tgt, o_par, self.pl1.ufl_value);
+
+
+DB.DBA.URLREWRITE_CREATE_RULELIST (self.rulelist, 1, rules);
+
+h_opts := (select deserialize (HP_OPTIONS) from DB.DBA.HTTP_PATH where HP_LPATH = self.lpath and HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost);
+upd_vd := 0;
+if (not isarray (h_opts))
+  {
+    h_opts := vector ('url_rewrite', self.rulelist);
+    upd_vd := 1;
+  }
+else if (not position ('url_rewrite', h_opts))
+  {
+    h_opts := vector_concat (h_opts, vector ('url_rewrite', self.rulelist));
+    upd_vd := 1;
+  }
+
+if (upd_vd = 1)
+  {
+    update DB.DBA.HTTP_PATH set HP_OPTIONS = serialize (h_opts) where HP_LPATH = self.lpath and HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost;
+    DB.DBA.VHOST_MAP_RELOAD (self.vhost, self.lhost, self.lpath);
+  }
+
+self.spat1.ufl_value := '';
+self.dest1.ufl_value := '';
+self.pl1.ufl_value := '';
+self.edit_item := null;
+control.vc_data_bind (e);
+self.maps.vc_data_bind (e);
+		      </v:on-post>
+		  </v:button>
+	      </span>
+	  </fieldset>
+      </div>
+      <div>
+	  <span class="fm_ctl_btn">
+	      <v:button name="ret_btn1" value="Back" action="simple">
+		  <v:on-post>
+		      self.vc_redirect ('http_serv_mgmt.vspx');
+		  </v:on-post>
+	      </v:button>
+	  </span>
+      </div>
+  </v:form>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+   <table style="display:none">
+    <tr>
+     <td>$Id$</td>
+    </tr>
+   </table>
+  </vm:pagebody>
+ </vm:pagewrapper>
+</v:page>
