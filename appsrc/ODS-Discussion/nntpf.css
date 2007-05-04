@@ -24,17 +24,15 @@
 
 body
 {
-  font-size: 0.7em;
-  color: #202020;
-  background-color: #99B3C5;
-  font-family: Verdana, Arial, Helvetica, sans-serif;
-  border: 0;
-  margin: 0;
+  font-family: arial, helvetica, sans-serif;
+  font-size: 9pt;
+  color: #233;
   padding: 0;
+  margin: 0}
 }
 
 #HD { float: left; clear: left; width: 100%}
-#MD { float: left; clear: left; width: 100%}
+#MD { float: left; clear: left; width: 100%;background-color: #e3eff5}
 
 div.page_head {
   width: 100%;
@@ -57,7 +55,7 @@ h1
 #PC
 { 
   margin-left: 3px;
-  margin-top: 19px;
+  margin-top: 15px;
 }
 
 #LT
@@ -77,11 +75,9 @@ h1
 
 .nav_top 
 {
-  background-color: #798F9E;
+  background-color: #85B9D2;
   padding: 5px;
   color: #FFFFFF;
-  background-image: url(images/nav_grysteel1.gif);
-  background-repeat: repeat-x;
   border-top-width: 1px;
   border-top-style: solid;
   border-top-color: #798F9E;
@@ -108,13 +104,13 @@ table.page_content
 
 div.calendar
 {
-  background-color: #DAE2E5;
+  background-color: #FFFFFF;
   padding: 2px 5px;
-  border: 2px solid #FFFFFF;
+  border: 1px solid #67A3BD;
   margin-top: 4px;
   margin-bottom: 5px;
   margin-right: 5px;
-  background-image: url(images/nav_grysteel2.gif);
+  background-image: url(images/default_widget.png);
   background-repeat: repeat-x;
 }
 
@@ -129,7 +125,7 @@ color:red;
 }
 td.calendar_special
 {
-background-color: #798F9E;
+background-color: #85B9D2;
 }
 
 div.login
@@ -153,7 +149,6 @@ tr.head
 }
 .artheaders
 {
-    BACKGROUND-COLOR: #f0f0d0
 }
 .header
 {
@@ -161,7 +156,9 @@ tr.head
 }
 .artbody
 {
-	WIDTH: auto; BACKGROUND-COLOR: #c0c0c0; min-width: 50%
+	 background-color: #FFFFFF;
+	 min-width: 50%;
+	 border: 1px solid #67A3BD;
 }
 
 #calendar {
@@ -225,13 +222,11 @@ h2 {
 .listing_row_odd {
 	padding: 2px;
 	margin: 10px;
-	background-color: #FFFFFF;
 	border-bottom-width: 1px;
 	border-bottom-style: solid;
 	border-bottom-color: #006699;
 }
 .listing_row_even {
-	background-color: #EFEFEF;
 	border-top-width: 1px;
 	border-bottom-width: 1px;
 	border-top-style: solid;
@@ -262,9 +257,7 @@ table.menubar
   width: 100%;
   height: 33px;
   padding: 3px;
-  background-image: url(images/nav_grysteel1.gif);
-  background-repeat: repeat-x;
-  background-color: #798F9E;
+  background-color: #85B9D2;
   color: #FFFFFF;
   border-top-width: 1px;
   border-top-style: solid;
@@ -278,7 +271,6 @@ table.menubar a
 
 table.menubar a:hover
 {
-  color: yellow;
 }
 table.menubar .menuitem
 {
@@ -287,11 +279,11 @@ width: 75px;
 
 .nntp_groups_listing 
 {
-  border: 2px solid #FFFFFF;
+  border: 1px solid #67A3BD;
   padding: 4px;
   margin: 4px;
-  background-color: #DAE2E5;
-  background-image: url(images/nav_grysteel2.gif);
+  background-color: #FFFFFF;
+  background-image: url(images/default_widget.png);
   background-repeat: repeat-x;
 }
 
@@ -301,11 +293,11 @@ width: 75px;
 }
 
 .news_summary_encapsul {
-  border: 2px solid #FFFFFF;
+  border: 1px solid #67A3BD;
   padding: 4px;
   margin: 4px;
-  background-color: #DAE2E5;
-  background-image: url(images/nav_grysteel2.gif);
+  background-color: #FFFFFF;
+  background-image: url(images/default_widget.png);
   background-repeat: repeat-x;
 }
 .news_view_number {
@@ -334,43 +326,34 @@ width: 75px;
 
 #content 
 {
-  font: 11px Verdana, Arial, Helvetica, sans-serif;
-  background-color: #efefef;
-  border: 1px solid #999999;
 }
 
 
 #content td 
 {
-    border-style: solid;
-    border-width: 0px 0px 1px 1px;
-    border-color: #FFFFFF;
-    padding: 2px;
+    padding: 10px 0px 0px 10px;
 }
 
 #content th
 {
-    background-color: #BBBBBB;
-    border-color: #FFFFFF;
-    border-style: solid;
-    border-width: 0px 0px 0px 1px;
+    background-color: #FFFFFF;
     text-align: center;
     padding: 2px;
 }
 
 div.copyright
 {
-  padding-left: 4px;
-  padding-right: 4px;
-  padding-top: 3px;
-  padding-bottom: 3px;
-  margin-top: 3px;
-  font-size: 7pt;
+  width: 100%;
+  position: relative;
+  bottom: 0px;
+  font-size: 8pt;
+  float: left;
+  clear: both;
   text-align: right;
-  clear: left;
-  color: #fff;
-  background-color: #798F9E;
-  border-bottom: 1px solid #ddd;
+  border-top: 2px solid #fff;
+  margin-right: 10px;
+  background-color: #fff;
+  background-image: url(images/ods_main_footer.png);}
 }
 
 table.user_id
@@ -394,7 +377,7 @@ td.last_cell
 
 tr.article_listing_current
 {
-  background-color: #555;
+  background-color: #E3EFF5;
   color: #fff;
   font-weight: bold;
 }
@@ -461,7 +444,7 @@ a.nntp_group
 
 a.nntp_group:hover
 {
-  color: green;
+  color: #67A3BD;
   text-decoration: underline;
 }
 
@@ -514,7 +497,7 @@ span.thr_list_from
 
 span.thr_msg_sel
 {
-  background-color: green;
+  background-color: #E3EFF5;
 }
 
 .ng_subs
@@ -525,4 +508,31 @@ span.thr_msg_sel
 .ng_subs_thread
 {
     margin-left: 10px;
+}
+
+#FT_L { float: left;
+  clear: left;
+  margin-top: 10px;
+  margin-left: 8px;
+  border: 1px solid #788}
+
+#FT_R { float: right;
+  clear: right;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-right: 5px;
+  color: #788}
+
+#FT_R a {
+  text-decoration: none;
+  color: inherit
+}
+#tags_div
+{
+width:200px;
+heigth:100%;
+position:absolute;
+padding:5px;
+background: #FFFFFF;
+border: 1px solid #67A3BD;
 }

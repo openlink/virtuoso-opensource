@@ -38,16 +38,26 @@
            
            function calendarInit()
            {
+           
+
            nntpCal = new OAT.Calendar();
            
+           if(typeof($('show_tagsblock'))!='undefined' && $('show_tagsblock').value==1) return;
+           
+           showCalendar();
+
+           }
+
+           function showCalendar()
+           {
            var anchorTopLeft=OAT.Dom.position('cal_anchor');
 
+             
            if (OAT.Dom.isIE() == false)
               nntpCal.show(anchorTopLeft[0]+10, anchorTopLeft[1]+12, clickCal);
            else
               nntpCal.show(anchorTopLeft[0]+10, anchorTopLeft[1]+2, clickCal);
-
-           }
+          };
 
            function clickCal(_date)
            {

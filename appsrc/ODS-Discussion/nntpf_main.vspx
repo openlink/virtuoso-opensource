@@ -74,11 +74,13 @@
                   <vm:docs-link/>
                 </vm:info-dialog>
               </v:template>
+                      
             </div> <!-- LT -->
             <div id="RT">
-              <div class="calctr">
+              <div class="calctr" id="calctr">
                   <vm:nntp-cal />
                 </div>
+                  <vm:tags-block />
               </div>
           </div> <!-- PC -->
         </v:form>

@@ -74,6 +74,7 @@
 	      </div>
 	      <div>
 	      <div class="error"><v:error-summary /></div>
+	      <br/>
 	      <table width="100%"
 		  class="news_summary_encapsul"
 		  cellspacing="0"
@@ -116,10 +117,8 @@
             </div> <!-- LT -->
             <div id="RT">
               <div class="calctr">
-                <div class="calendar">
                   <vm:nntp-cal />
                 </div>
-              </div>
             </div> <!-- RT -->
           </div> <!-- PC -->
         </v:form>

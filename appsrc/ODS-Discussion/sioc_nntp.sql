@@ -57,10 +57,11 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
       DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
       DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('scope_of'), riri);
       for select NM_KEY_ID from DB.DBA.NEWS_MULTI_MSG, DB.DBA.NEWS_MSG
-	where NM_GROUP = NG_GROUP and NM_KEY_ID > _msg do
+	where NM_GROUP = NG_GROUP and NM_KEY_ID > _msg order by NM_KEY_ID do
 	  {
 	    declare par_iri, par_id, links_to any;
             declare _NM_ID, _NM_REC_DATE, _NM_HEAD, _NM_BODY any;
+	    declare t_cnt int;
 
 	    whenever not found goto nxt;
 	    select NM_ID, NM_REC_DATE, NM_HEAD, NM_BODY
@@ -84,6 +85,17 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
 	    links_to := DB.DBA.nntpf_get_links (_NM_BODY);
 --	    dbg_obj_print (iri, links_to);
 	    ods_sioc_post (graph_iri, iri, firi, null, title, _NM_REC_DATE, _NM_REC_DATE, link, _NM_BODY, null, links_to, maker_iri);
+	    t_cnt := 0;
+	    for select NNPT_TAGS, NNPT_UID from DB.DBA.NNTPF_NGROUP_POST_TAGS
+	      where NNPT_NGROUP_ID = NG_GROUP and NNPT_POST_ID = NM_KEY_ID do
+	      {
+		ods_sioc_tags (graph_iri, iri,
+		    	sprintf ('"^UID%d",', NNPT_UID)||
+			NNPT_TAGS);
+		t_cnt := t_cnt + 1;
+	      }
+	    if (not t_cnt)
+	      ods_sioc_tags (graph_iri, iri, null);
 
 	    par_id := (select FTHR_REFER from DB.DBA.NNFE_THR where FTHR_MESS_ID = _NM_ID and FTHR_GROUP = NG_GROUP);
 	    if (par_id is not null)
@@ -197,6 +209,69 @@ create trigger NNFE_THR_REPLY_I after insert on DB.DBA.NNFE_THR referencing new 
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('reply_of'), par_iri);
 };
 
+create trigger NNTPF_NGROUP_POST_TAGS_I after insert on DB.DBA.NNTPF_NGROUP_POST_TAGS referencing new as N
+{
+  declare iri, graph_iri varchar;
+  declare g_name any;
+  declare oobj any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  declare exit handler for not found;
+  select NG_NAME into g_name from DB.DBA.NEWS_GROUPS where NG_GROUP = N.NNPT_NGROUP_ID;
+  iri := nntp_post_iri (g_name, N.NNPT_POST_ID);
+  oobj := DB.DBA.RDF_OBJ_OF_SQLVAL ('~none~');
+  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (graph_iri) and O = oobj and S = DB.DBA.RDF_IID_OF_QNAME (iri);
+  ods_sioc_tags (graph_iri, iri,
+      sprintf ('"^UID%d",', N.NNPT_UID) ||
+      N.NNPT_TAGS);
+}
+;
+
+create trigger NNTPF_NGROUP_POST_TAGS_U after update on DB.DBA.NNTPF_NGROUP_POST_TAGS referencing old as O, new as N
+{
+  declare iri, graph_iri varchar;
+  declare g_name any;
+  declare oobj any;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  declare exit handler for not found;
+  select NG_NAME into g_name from DB.DBA.NEWS_GROUPS where NG_GROUP = N.NNPT_NGROUP_ID;
+  iri := nntp_post_iri (g_name, N.NNPT_POST_ID);
+
+  oobj := DB.DBA.RDF_OBJ_OF_SQLVAL (sprintf ('"^UID%d",', O.NNPT_UID)||O.NNPT_TAGS);
+  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (graph_iri) and O = oobj and S = DB.DBA.RDF_IID_OF_QNAME (iri);
+  ods_sioc_tags (graph_iri, iri,
+      sprintf ('"^UID%d",', N.NNPT_UID) ||
+      N.NNPT_TAGS);
+  return;
+}
+;
+
+
+create trigger NNTPF_NGROUP_POST_TAGS_D after delete on DB.DBA.NNTPF_NGROUP_POST_TAGS referencing old as O
+{
+  declare iri, graph_iri varchar;
+  declare g_name any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+  graph_iri := get_graph ();
+  declare exit handler for not found;
+  select NG_NAME into g_name from DB.DBA.NEWS_GROUPS where NG_GROUP = O.NNPT_NGROUP_ID;
+  iri := nntp_post_iri (g_name, O.NNPT_POST_ID);
+  ods_sioc_tags (graph_iri, iri, null);
+  return;
+}
+;
+
 create trigger NEWS_MULTI_MSG_SIOC_I after insert on DB.DBA.NEWS_MULTI_MSG referencing new as N
 {
   declare iri, graph_iri, firi, arr, title, link, maker, maker_iri varchar;
@@ -230,6 +305,7 @@ create trigger NEWS_MULTI_MSG_SIOC_I after insert on DB.DBA.NEWS_MULTI_MSG refer
   link := sprintf ('http://%s/nntpf/nntpf_disp_article.vspx?id=%U', DB.DBA.WA_CNAME (), encode_base64 (m_id));
   links_to := DB.DBA.nntpf_get_links (m_body);
   ods_sioc_post (graph_iri, iri, firi, null, title, m_date, m_date, link, m_body, null, links_to, maker_iri);
+  ods_sioc_tags (graph_iri, iri, null);
   return;
 };
 

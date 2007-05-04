@@ -67,6 +67,12 @@ function dd(txt){
         {
           OAT.Loader.loadFeatures(["calendar"], function(){calendarInit()});
         };
+
+	      if (typeof(window.showTagsDiv) == "function")
+        {
+          OAT.Loader.loadFeatures(["ws"], function(){tagsInit()});
+        };
+
       return;
 
 	   }
@@ -305,6 +311,9 @@ function dd(txt){
     <xsl:template match="vm:nntpf-copyright">
       <div class="copyright">
 
+        <div id="FT_L"><a href="http://www.openlinksw.com/virtuoso"><img border="0" src="images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso Universal Server"/></a></div>
+        <div id="FT_R">
+
         <xsl:text disable-output-escaping="yes">
            &lt;?vsp
                 declare _copyright varchar;
@@ -314,9 +323,7 @@ function dd(txt){
                 http (coalesce (wa_utf8_to_wide (_copyright),''));
            ?&gt;
         </xsl:text>
-<!--
-         Application <vm:opl-copyright-str from="2004"/>
--->
+        </div>
       </div>
     </xsl:template>
     <xsl:template match="vm:geo-link">

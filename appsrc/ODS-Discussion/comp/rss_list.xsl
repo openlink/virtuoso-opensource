@@ -29,7 +29,7 @@
                 version="1.0">
   <xsl:template match="vm:nntpf-rss-list">
     <v:variable name="r_count" type="integer" default="0"/>
-    <table width="100%" class="news_avail_encapsul" cellspacing="0" cellpadding="0">
+    <table width="99%" class="nntp_groups_listing">
       <v:data-set name="ds" 
                   sql="select FEURF_DESCR, FEURF_ID, FEURF_URL 
                          from NNTPFE_USERRSSFEEDS, SYS_USERS 
@@ -39,9 +39,9 @@
                   cursor-type="keyset" 
                   edit="1" 
                   width="80">
-        <h4>
-          <BR />My RSS feeds:
-        </h4>
+        <tr class="listing_header_row">
+        <th colspan="3" align="left">My RSS feeds:</th>
+        </tr>
         <v:template name="template1" type="simple" name-to-remove="table" set-to-remove="bottom">
           <tr>
             <td align="left">

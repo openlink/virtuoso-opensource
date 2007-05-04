@@ -44,9 +44,15 @@
   <xsl:include href="comp/attach.xsl"/>
   <xsl:include href="comp/rss_list.xsl"/>
   <xsl:include href="comp/rss_del.xsl"/>
+  <xsl:include href="comp/nntpf_tags.xsl"/>
 <!-- FS include
+
   <xsl:include href="../samples/wa/comp/ods_bar.xsl"/>
 -->    
+<!--
+-->
   <xsl:include href="../wa/comp/ods_bar.xsl"/>
+
+  
 
 </xsl:stylesheet>

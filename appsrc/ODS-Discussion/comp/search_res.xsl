@@ -323,11 +323,14 @@
 
                 select U_ID into _user from sys_users where U_NAME = connection_get ('vspx_user');
 		_desc  := get_keyword ('rss_search_desc', params, '');
-		_sch_text := get_keyword ('search', params, '');
+    _sch_text := get_keyword ('s_text', params, '');
 		_id := uuid ();
-		_url := nntpf_generate_rss_url (_id, lines);
+--    _url := nntpf_generate_rss_url (_id, lines);
+    _url := '/nntpf/rss.vsp?rss=' ||_id;
+    
 		_parameters := vector ('sch_text', _sch_text);
 
+    
 		insert into NNTPFE_USERRSSFEEDS (FEURF_ID, FEURF_USERID, FEURF_DESCR, FEURF_URL, FEURF_PARAM)
 				values (_id, _user, _desc, _url, serialize (_parameters));
 		http_request_status ('HTTP/1.1 302 Found');

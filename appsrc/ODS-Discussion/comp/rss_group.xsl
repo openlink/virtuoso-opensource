@@ -59,7 +59,8 @@
                 _group := get_keyword ('sel_group', params, '');
                 _desc  := get_keyword ('rss_desc', params, '');
                 _id := uuid ();
-                _url := nntpf_generate_rss_url (_id, lines);
+--                _url := nntpf_generate_rss_url (_id, lines);
+                _url := '/nntpf/rss.vsp?rss=' ||_id;
                 _parameters := vector ('group', atoi (_group));
 
                 if (not self.vc_is_valid) return;

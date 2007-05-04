@@ -95,6 +95,9 @@
               <th >
                 <v:label value="'Action'" format="%s" width="80"/>
               </th>
+              <th >
+                <v:label value="'Tags'" format="%s" width="80"/>
+              </th>
             </tr>
 
           </v:template>
@@ -150,6 +153,15 @@
                                       cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))"
                        enabled="--self.vc_authenticated"
                        xhtml_class="nntp_group_rss"/>
+                </td>
+                <td align="left">
+                  <v:url value="--sprintf('tags (%d)', discussions_tagscount(cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),'',case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end) )"
+                       url="--'javascript:void(0)'"
+                       xhtml_class="nntp_group_rss"
+                       xhtml_onClick="--concat ('showTagsDiv(\'',
+                                                cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),
+                                                '\',\'\',this)')"
+                       />
                 </td>
 
 <?vsp

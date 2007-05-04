@@ -49,12 +49,14 @@
               <div class="login">
                 <vm:login/>
               </div>
+              <br/>
               <vm:thread-view/>
             </div> <!-- LT -->
             <div id="RT">
               <div class="calctr">
                   <vm:nntp-cal />
                 </div>
+               <vm:tags-block />
             </div> <!-- RT -->
           </div> <!-- PC -->
         </v:form>

@@ -57,6 +57,8 @@
               <div class="calctr">
                   <vm:nntp-cal />
                 </div>
+                  <vm:tags-block />
+
             </div> <!-- RT -->
           </div> <!-- PC -->
         </v:form>

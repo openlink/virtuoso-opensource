@@ -21,6 +21,7 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
+VERSION="1.03"
 LOGDIR=`pwd`
 LOGFILE="${LOGDIR}/make_nntpf_vad.log"
 STICKER="make_nntpf_vad.xml"
@@ -74,17 +75,28 @@ else
   myrm=rm
 fi
 
+
+VERSION_INIT() 
+{
+  rm -f version.tmp
+  for i in `find . -name 'Entries' | grep -v "vad/"`; do
+        cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
+  done
+  VERSION=`cat version.tmp | awk ' BEGIN { cnt=9 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+  rm -f version.tmp
+}
+
 virtuoso_start() {
   ddate=`date`
   starth=`date | cut -f 2 -d :`
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ] 
+  if [ "x$HOST_OS" != "x" ]
 	then
-      "$SERVER" +foreground &
+          $BUILD/../bin/virtuoso-odbc-t +foreground &
   else
-      "$SERVER" +wait
+          virtuoso +wait
   fi
   stat="true"
   while true
@@ -210,7 +222,7 @@ sticker_init() {
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
-  echo "  <version package=\"1.03\">" >> $STICKER
+  echo "  <version package=\"$VERSION\">" >> $STICKER
   echo "    <prop name=\"Release Date\" value=\""`date +"%Y-%m-%d %H:%M"`"\"/>" >> $STICKER
   echo "    <prop name=\"Build\" value=\"Release, optimized\"/>" >> $STICKER
   echo "  </version>" >> $STICKER
@@ -247,6 +259,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/setup.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/mail_notify.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/DET_nntp.sql', 1, 'report', 1);" >> $STICKER  
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/nntpf_tags.sql', 1, 'report', 1);" >> $STICKER  
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/sioc_nntp.sql', 1, 'report', 1);" >> $STICKER  
   echo "      vhost_remove (lpath=>'/nntpf');" >> $STICKER
   echo "      vhost_define (lpath=>'/nntpf',ppath=>'/DAV/VAD/nntpf/', is_dav=>1, vsp_user=>'dba', def_page=>'nntpf_main.vspx');" >> $STICKER
@@ -372,11 +385,12 @@ vad_create() {
 
 STOP_SERVER
 directory_clean
+VERSION_INIT
 directory_init
 virtuoso_init
 sticker_init
 vad_create
 virtuoso_shutdown
 chmod 644 ods_discussion_dav.vad
-#directory_clean
+directory_clean
 

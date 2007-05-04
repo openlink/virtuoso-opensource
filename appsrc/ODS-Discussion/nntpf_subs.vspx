@@ -51,6 +51,7 @@
 	      </div>
 	      <div>
 	      <div class="error"><v:error-summary /></div>
+	      <br/>
 	      <table width="100%"
 		  class="news_summary_encapsul"
 		  cellspacing="0"

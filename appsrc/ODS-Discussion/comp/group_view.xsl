@@ -231,11 +231,15 @@
 	  <v:url value="Subscribe" format="%s" url="--sprintf ('nntpf_subs_group.vspx?group=%s', self.grp_sel_no_thr)" />
           <br/>
         </p>
-        <h3>Summary</h3>
         <table width="100%" class="news_summary_encapsul" cellspacing="0" cellpadding="0">
           <input type="hidden" id="order_by" name="order_by" value="<?Vself.order_by_str?>"/>
           <input type="hidden" id="order_way" name="order_way" value="<?Vself.order_way_str?>"/>
           <input type="hidden" id="prev_order_way" name="prev_order_way" value="<?Vself.prev_order_way_str?>"/>
+          <tr>
+            <th align="left">
+                <h3>Summary</h3>
+            </th>
+          </tr>
           <tr>
             <th align="left" style="width:150px;">
             <a href="javascript:void(0)" onClick="setOrderParams('date','<?V(case when self.order_by_str='date' AND self.order_way_str='asc' then 'desc'
@@ -254,6 +258,7 @@
                                                                                      else 'asc' end)?>','<?Vself.prev_order_way_str?>')">Subject</a>
             </th>
             <th align="left">Action</th>
+            <th align="left">Tags</th>
 	  </tr>
         </table>
       </v:template>
@@ -304,6 +309,15 @@
     }
             ?>
             </td>
+           <td align="left">
+               <v:url value="--sprintf('tags (%d)', discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%U', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end) )"
+                    url="--'javascript:void(0)'"
+                    xhtml_class="nntp_group_rss"
+                    xhtml_onClick="--concat ('showTagsDiv(\'',cast (self.grp_sel_no_thr as varchar),'\'',
+                                                         ',\'',sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),'\',this)')"
+               />
+           </td>
+
           <?vsp
   http('</tr>');
   self.r_count := self.r_count + 1;

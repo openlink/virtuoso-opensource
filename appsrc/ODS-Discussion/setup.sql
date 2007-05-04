@@ -270,7 +270,8 @@ nntpf_print_message_href (in _subj varchar,
                           in _cur_art varchar)
 {
    declare ret, cancel_text any;
-   declare cancel_text_tmp varchar;
+   declare cancel_text_tmp,curr_a_id varchar;
+   curr_a_id:='';
 
    cancel_text_tmp := ' | <a class=&#34;thr_list_cmd&#34; href=&#34;#&#34;' ||
                             ' onclick=&#34;javascript: doPostValueN (''nnv'', ''cancel_artic'', ''%s''); ' ||
@@ -283,6 +284,7 @@ nntpf_print_message_href (in _subj varchar,
    if (_cur_art = encode_base64(_id))
      {
        ret := '<span class=&#34;thr_msg_sel&#34;>';
+       curr_a_id:=' id=&#34;curr_a&#34; ';    
      }
    else
      {
@@ -310,6 +312,20 @@ nntpf_print_message_href (in _subj varchar,
           ' by <span class=&#34;thr_list_from&#34;><span class=&#34;dc-creator&#34;>' ||
           replace (_from, '"', '&#34;') ||
           '</span></span>';
+
+   declare _curr_uid integer;
+   declare exit handler for not found{_curr_uid:=0;};
+   select U_ID into _curr_uid from DB.DBA.SYS_USERS where U_NAME=coalesce(connection_get('vspx_user'),'');
+   
+   ret := ret ||
+          ' <span ><a '||curr_a_id||' href=&#34;javascript:void(0)&#34; ' ||
+          ' onclick=&#34; document.getElementById(''show_tagsblock'').value=1;'||
+          ' doPostValueN (''nnv'', ''disp_artic'', '''||encode_base64 (_id)||''');'||
+--          'showTagsDiv(''' ||cast (_group as varchar)||''','''||encode_base64 (_id)||''',this);'||
+          ' return false&#34;>' ||
+          sprintf('tags (%d)', discussions_tagscount(_group,encode_base64 (_id),coalesce(_curr_uid,0) )) ||
+          '</a></span>';
+
 
    if (nntpf_show_cancel_link (_id))
       ret := ret || cancel_text || '</span>';
@@ -1054,7 +1070,7 @@ nntpf_display_article_multi_part (in parsed_message any,
 	       }
 
 	     http (sprintf ('Download attachment : <a href="http://%s/INLINEFILE/%s?VSP=/nntpf/attachment.vsp&id=%U&part=%i&m=1"> %s </a><br/>', nntpf_get_host (vector()), fname, encode_base64 (id), x, fname));
-	     http ('<br/><br/><br/>');
+	     http ('<br/>');
 	  }
 	else
 	  nntpf_display_message_text (substring (in_body, body[0] + 1,  body[1] - body[0]),
@@ -1116,13 +1132,14 @@ nntpf_display_article (in id varchar,
    http (sprintf ('<span class="header">Subject:</span><span class="dc-subject">%s</span><br/>', _subj));
    http (sprintf ('<span class="header">Newsgroups:</span>%s<br/>', _grps));
    http (sprintf ('<span class="header">Date:</span><span class="dc-date">%s</span><br/>', _date));
-   http ('</div><br/>');
+   http ('</div>');
 
 
    if (parsed_message[2] <> 0)
      return nntpf_display_article_multi_part (parsed_message, _body, id, sid);
 
    nntpf_display_message_reply (sid, id, _grps);
+   http ('<br/>');
 
     _print_body := subseq (_body, parsed_message[1][0], parsed_message[1][1]);
     if (length (_print_body) > 3)
@@ -1156,7 +1173,7 @@ nntpf_display_article (in id varchar,
                    encode_base64 (id),
                    idx,
                    d_name));
-	     http ('<br/><br/><br/>');
+	     http ('<br/>');
 	  }
 
 	idx := idx + 1;
@@ -2065,6 +2082,7 @@ nntpf_top_messages (in parameters any)
    declare fordate datetime;
    declare cur_art any;
 
+    
    _sel := parameters[0];
    _beg := parameters[1];
    _len := parameters[2];
@@ -2328,7 +2346,7 @@ NNTPF_GET_GROUP_CONTS (in _group integer, in _from integer, in _to integer)
 		T_POST, T_NUM_COMMENTS, T_COMMENTS_URL);
 
 
-   declare cr cursor for select NM_BODY, NM_HEAD, FTHR_MESS_ID, FTHR_SUBJ, date_rfc1123 (FTHR_DATE)
+   declare cr cursor for select NM_BODY, NM_HEAD, FTHR_MESS_ID, FTHR_SUBJ, FTHR_DATE
 		from NNFE_THR, DB.DBA.NEWS_MSG where FTHR_GROUP = _group and FTHR_TOP = 1
 			and FTHR_MESS_ID = NM_ID order by FTHR_DATE;
 
@@ -2341,6 +2359,7 @@ NNTPF_GET_GROUP_CONTS (in _group integer, in _from integer, in _to integer)
     {
        fetch cr into _body, _head, _id, _subj, _date;
 
+       
        select count (*) into comments_dept from NNFE_THR where FTHR_REFER = _id;
 
        temp := mime_tree (blob_to_string (_body));
@@ -2352,7 +2371,7 @@ NNTPF_GET_GROUP_CONTS (in _group integer, in _from integer, in _to integer)
 
        comments_url := sprintf ('http://%V/nntpf/rsscomments.vsp?id=%U',  HTTP_GET_HOST(), _id);
        _post_adr := sprintf ('http://%V/nntpf/nntpf_post.vspx?article=%V',  HTTP_GET_HOST(), _id);
-       result (0, '', _body, 'http://' || HTTP_GET_HOST() || '/nntpf/nntpf_disp_article.vspx?id=' || encode_base64 (_id), 2, nntpf_get_postdate (_date), _subj, _post_adr, comments_dept, comments_url);
+       result (0, '', _body, 'http://' || HTTP_GET_HOST() || '/nntpf/nntpf_disp_article.vspx?id=' || encode_base64 (_id), 2, nntpf_get_postdate (date_rfc1123 (_date)), _subj, _post_adr, comments_dept, comments_url);
        _ii := _ii + 1;
     }
 
@@ -2411,7 +2430,7 @@ create procedure NNTPF_GR_LIST_RSS_2_XML (in params any, in lines any)
 {
   declare sel_text, where_text varchar;
   declare _group, _from, _to, _stext integer;
-  declare _parameters, _desc, _host, _id varchar;
+  declare _parameters, _desc, _host, _id, group_list_url,_admin_mail,_self_url,_domain,_port varchar;
 
   declare ses any;
 
@@ -2431,7 +2450,11 @@ create procedure NNTPF_GR_LIST_RSS_2_XML (in params any, in lines any)
     }
 
   _stext := get_keyword ('sch_text', _parameters, NULL);
+  _domain := split_and_decode (nntpf_get_host (lines), 0, '\0\0:')[0];
+  _port   := split_and_decode (nntpf_get_host (lines), 0, '\0\0:')[1];
   _host := 'http://' || nntpf_get_host (lines) || '/nntpf/';
+  _admin_mail:=(select U_E_MAIL from DB.DBA.SYS_USERS where U_NAME='dav');
+  _self_url:=_host||'rss.vsp?rss='||_id;
 
   if (_stext is NULL)
     {
@@ -2442,9 +2465,13 @@ create procedure NNTPF_GR_LIST_RSS_2_XML (in params any, in lines any)
 
        sel_text := 'NNTPF_GET_GROUP_CONTS (p1, p2, p3)';
        where_text := sprintf ('where p1 = %i and p2 = %i and p3 = %i', _group, _from, _to);
+
+       group_list_url:=_host||'nntpf_nthread_view.vspx?group='||cast(_group as varchar);
     }
   else
     {
+
+       group_list_url:=_host||'nntpf_addtorss.vspx?search='||_stext;
        _stext:=encode_base64 (serialize(vector(_stext)));
        sel_text := 'NNTPF_GET_GROUP_RSS_SEARCH (p1)';
        where_text := sprintf ('where p1 = ''%s''', _stext);
@@ -2464,28 +2491,34 @@ http (' null as [channel!2!managingEditor!element],\n', ses);
 http (' null as [channel!2!pubDate!element],\n', ses);
 http (' null as [channel!2!generator!element],\n', ses);
 http (' null as [channel!2!webMaster!element],\n', ses);
-http (' null as [image!3!title!element],\n', ses);
-http (' null as [image!3!url!element],\n', ses);
-http (' null as [image!3!link!element],\n', ses);
-http (' null as [image!3!description!element],\n', ses);
-http (' null as [image!3!width!element],\n', ses);
-http (' null as [image!3!height!element],\n', ses);
-http (' null as [cloud!4!domain],\n', ses);
-http (' null as [cloud!4!port],\n', ses);
-http (' null as [cloud!4!path],\n', ses);
-http (' null as [cloud!4!registerProcedure],\n', ses);
-http (' null as [cloud!4!protocol],\n', ses);
-http (' null as [item!5!title!element],\n', ses);
-http (' null as [item!5!guid!element],\n', ses);
-http (' null as [item!5!link!element],\n', ses);
-http (' null as [item!5!comments!element],\n', ses);
-http (' null as [item!5!slash:comments!element],\n', ses);
-http (' null as [item!5!wfw:comment!element],\n', ses);
-http (' null as [item!5!wfw:commentRss!element],\n', ses);
-http (' null as [item!5!pubDate!element],\n', ses);
-http (' null as [item!5!description!element],\n', ses);
-http (' null as [item!5!"dc:subject"!element],', ses);
-http (' null as [item!5!ts!hide]\n', ses);
+http (' null as [channel!2!language!element],\n', ses);
+http (' null as [n0:link!3!xmlns:n0],\n', ses);
+http (' null as [n0:link!3!"http"],\n', ses);
+http (' null as [n0:link!3!"rel"],\n', ses);
+http (' null as [n0:link!3!"type"],\n', ses);
+http (' null as [n0:link!3!"title"],\n', ses);
+http (' null as [image!4!title!element],\n', ses);
+http (' null as [image!4!url!element],\n', ses);
+http (' null as [image!4!link!element],\n', ses);
+http (' null as [image!4!description!element],\n', ses);
+http (' null as [image!4!width!element],\n', ses);
+http (' null as [image!4!height!element],\n', ses);
+http (' null as [cloud!5!domain],\n', ses);
+http (' null as [cloud!5!port],\n', ses);
+http (' null as [cloud!5!path],\n', ses);
+http (' null as [cloud!5!registerProcedure],\n', ses);
+http (' null as [cloud!5!protocol],\n', ses);
+http (' null as [item!6!title!element],\n', ses);
+http (' null as [item!6!guid!element],\n', ses);
+http (' null as [item!6!link!element],\n', ses);
+http (' null as [item!6!comments!element],\n', ses);
+http (' null as [item!6!slash:comments!element],\n', ses);
+http (' null as [item!6!wfw:comment!element],\n', ses);
+http (' null as [item!6!wfw:commentRss!element],\n', ses);
+http (' null as [item!6!pubDate!element],\n', ses);
+http (' null as [item!6!description!element],\n', ses);
+http (' null as [item!6!"dc:subject"!element],', ses);
+http (' null as [item!6!ts!hide]\n', ses);
 http ('  from SYS_KEYS\n', ses);
 http ('\n', ses);
 http ('union all\n', ses);
@@ -2495,12 +2528,18 @@ http (' 2,\n', ses);
 http (' 1,\n', ses);
 http (' null, null, null, null,\n', ses);
 http (sprintf (' \'%V\',\n', _desc), ses);
-http (sprintf (' \'%V\',\n', _host), ses);
+http (sprintf (' \'%V\',\n', group_list_url), ses);
 http (' \'\',\n', ses);
-http (' \'\',\n', ses);
+http (sprintf (' \'%V\',\n',_admin_mail), ses);
 http (' date_rfc1123(now()),\n', ses);
 http (' \'Virtuoso Universal Server \' || sys_stat(\'st_dbms_ver\'),\n', ses);
-http (' \'\',\n', ses);
+http (sprintf (' \'%V\',\n',_admin_mail), ses);
+http (' \'en-us\',\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
 http (' null,\n', ses);
 http (' null,\n', ses);
 http (' null,\n', ses);
@@ -2540,6 +2579,59 @@ http (' null,\n', ses);
 http (' null,\n', ses);
 http (' null,\n', ses);
 http (' null,\n', ses);
+http (' null,\n', ses);
+http (' \'http://www.w3.org/2005/Atom\',\n', ses);
+http (sprintf (' \'%V\',\n', _self_url), ses);
+http (' \'self\',\n', ses);
+http (' \'application/rss+xml\',\n', ses);
+http (sprintf (' \'%V\',\n', _desc), ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null\n', ses);
+http ('   from SYS_KEYS\n', ses);
+
+http ('\n', ses);
+
+http (' union all\n', ses);
+http (' select top 1\n', ses);
+http (' 4,\n', ses);
+http (' 2,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
 http (sprintf (' \'%V\',\n', 'ODS Discussion'), ses);
 http (' \'http://\' || HTTP_GET_HOST () || \'/images/vbloglogo.gif\',\n', ses);
 http (sprintf (' \'%V\',\n', _host), ses);
@@ -2563,12 +2655,66 @@ http (' null,\n', ses);
 http (' null,\n', ses);
 http (' null\n', ses);
 http ('   from SYS_KEYS\n', ses);
+
+http ('\n', ses);
+
+--http (' union all\n', ses);
+--http (' select top 1\n', ses);
+--http (' 5,\n', ses);
+--http (' 2,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (sprintf (' \'%V\',\n', _domain), ses);
+--http (sprintf (' \'%V\',\n', _port), ses);
+--http (' \'/RPC2\',\n', ses);
+--http (' null,\n', ses);
+--http (' \'xml-rpc\',\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null,\n', ses);
+--http (' null\n', ses);
+--http ('   from SYS_KEYS\n', ses);
+
 http ('\n', ses);
 http ('union all\n', ses);
 http ('\n', ses);
 http ('select\n', ses);
-http (' 5,\n', ses);
+http (' 6,\n', ses);
 http (' 2,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
+http (' null,\n', ses);
 http (' null,\n', ses);
 http (' null,\n', ses);
 http (' null,\n', ses);

@@ -83,10 +83,11 @@
           <br/>
         </td>
       </tr>
-      <input type="hidden" name="group" value="<?= get_keyword ('group', self.vc_page.vc_event.ve_params) ?>"/>
+      <input type="hidden" name="group" id="group" value="<?= get_keyword ('group', self.vc_page.vc_event.ve_params) ?>"/>
       <input type="hidden" name="_list_len" value="<?= cast (self.list_len as varchar) ?>"/>
-      <input type="hidden" name="disp_artic" value="-"/>
+      <input type="hidden" name="disp_artic" id="disp_artic" value="-"/>
       <input type="hidden" name="thr" value="1"/>
+      <input type="hidden" name="show_tagsblock" id="show_tagsblock" value="<?= get_keyword ('show_tagsblock', self.vc_page.vc_event.ve_params,0) ?>" />
 
 <!-- DATA SET TO CONTROL LIST -->
       <v:data-source nrows="--self.list_len"
@@ -187,7 +188,7 @@
   if (id <> '-')
     {
       ?>
-      <br/><br/>
+      <br/>
       <table>
 	  <tr>
 	      <td>
