@@ -9698,7 +9698,11 @@ So it is possible to wait for an icc mutex without the danger of deadlock. */
       {
         icc_lock_t *hash_lock = icc_lock_from_hashtable (cli_lock->iccl_name);
         cli_lock->iccl_waits_for_commit = 0;
+	      IO_SECT(qst)
+		{
         semaphore_enter (cli_lock->iccl_sem);
+		}
+	      END_IO_SECT(err_ret);
         hash_lock->iccl_cli = qi->qi_client;
         hash_lock->iccl_qi = cli_lock->iccl_qi;
       }
@@ -11268,6 +11272,23 @@ bif_atomic (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
+bif_trx_disk_log_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  long mode = bif_long_arg (qst, args, 0, "__trx_disk_log_length");
+  lock_trx_t *lt = qi->qi_trx;
+  switch (mode)
+    {
+    case 0: return box_num (lt->lt_log->dks_bytes_sent);
+    case 1:
+      if (txn_after_image_limit > 0)
+        return box_num ((txn_after_image_limit - 10000L) - lt->lt_log->dks_bytes_sent);
+      return box_num (2000000000);
+    default: sqlr_new_error ("22023", "SR562", "Supported values of argument 1 of __trx_disk_log_length() are 0 and 1 but not %ld", mode);
+    }
+}
+
+caddr_t
 bif_client_trace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   long fl;
@@ -12708,6 +12729,7 @@ sql_bif_init (void)
   bif_define ("__assert_found", bif_assert_found);
   bif_define ("__atomic", bif_atomic);
   bif_define ("__reset_temp", bif_clear_temp);
+  bif_define ("__trx_disk_log_length", bif_trx_disk_log_length);
   bif_define ("checkpoint_interval", bif_checkpoint_interval);
   bif_define ("sql_lex_analyze", bif_sql_lex_analyze);
   bif_define ("sql_split_text", bif_sql_split_text);
