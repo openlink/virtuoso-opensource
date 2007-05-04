@@ -1236,6 +1236,8 @@ bp_make_buffer_list (int n)
   bp->bp_sort_tmp = (buffer_desc_t **) dk_alloc (sizeof (caddr_t) * n);
 
   buffers_space = (unsigned char *) malloc (PAGE_SZ * (n + 1));
+  if (!buffers_space)
+    GPF_T1 ("Cannot allocate memory for Database buffers, try to decrease NumberOfBuffers INI setting");
   buffers_space = (db_buf_t) ALIGN_8K (buffers_space);
   memset (buffers_space, 0, ALIGN_VOIDP (PAGE_SZ) * n);
   buf_ptr = buffers_space;
