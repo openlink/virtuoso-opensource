@@ -1611,6 +1611,11 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 		    strses_write_out (ws->ws_strses, ws->ws_session);
 		}
 	    }
+	  else if (ws->ws_method != WM_HEAD) /* not HEAD and have Content-Length, hence not chunked */
+	    {
+	      SES_PRINT (ws->ws_session, "\r\n");
+	      strses_write_out (ws->ws_strses, ws->ws_session);
+	    }
 	}
       else if (ws->ws_method != WM_HEAD)
 	{
@@ -5818,7 +5823,7 @@ static caddr_t
 bif_ses_read_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char buff[1024], *ptr;
-  int readed = 0, *pos_r, line_mode = 0;
+  volatile int readed = 0, *pos_r, line_mode = 0;
   char binary_mode = 0;
   dk_session_t * volatile ses;
   dk_session_t * out = NULL;
@@ -8858,6 +8863,7 @@ http_init_part_two ()
   /* Do not override user defined default procedure */
   if (!sch_proc_def (wi_inst.wi_schema, ws_def_2_name))
     ddl_std_proc (ws_def_2, 1);
+  ini_http_threads = http_threads;
 
   if (!local_interfaces)
     local_interfaces = box_tpcip_get_interfaces ();
