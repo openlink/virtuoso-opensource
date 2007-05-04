@@ -653,6 +653,10 @@ void subq_node_free (subq_source_t * sqs);
 void breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state);
 void breakup_node_free (breakup_node_t * brk);
 
+void in_iter_input (in_iter_node_t * brk, caddr_t * inst, caddr_t * state);
+void in_iter_free (in_iter_node_t * brk);
+
+
 void pl_source_input (pl_source_t * pls, caddr_t * inst,
 		    caddr_t * state);
 void pl_source_free (pl_source_t * pls);

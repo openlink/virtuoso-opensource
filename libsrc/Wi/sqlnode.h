@@ -485,6 +485,17 @@ typedef struct table_source_s
   } table_source_t;
 
 
+typedef struct  in_iter_node_s
+{
+  data_source_t	src_gen;
+  state_slot_t **	ii_values;
+  state_slot_t *	ii_output;
+  state_slot_t *	ii_values_array;
+  state_slot_t *	ii_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */ 
+  int		ii_nth_value;
+} in_iter_node_t;
+
+
 typedef struct hash_source_s
 {
   data_source_t		src_gen;

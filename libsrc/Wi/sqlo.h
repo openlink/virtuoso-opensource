@@ -387,6 +387,7 @@ struct sqlo_s
 #ifndef NDEBUG
   char		so_dfe_unplace_pass; /* not generate errors in sqlo_dfe_unplace if dfe != sqlo_df ()*/
 #endif
+  dk_set_t	so_in_list_nodes;
 };
 
 
@@ -622,6 +623,10 @@ void sinv_sqlo_check_col_val (ST **pcol, ST **pval, dk_set_t *acol, dk_set_t *av
 sinv_map_t * sinv_call_map (ST * tree, client_connection_t * cli);
 int sqlo_is_contains_vdb_tb (sqlo_t *so, op_table_t *ot, char ctype, ST **args);
 int sel_n_breakup (ST* sel);
+df_elt_t ** sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name);
+dbe_column_t *  cp_left_col (df_elt_t * cp);
+df_elt_t ** sqlo_pred_body (sqlo_t * so, locus_t * loc, df_elt_t * tb_dfe, df_elt_t * pred);
+void qn_ins_before (sql_comp_t * sc, data_source_t ** head, data_source_t * ins_before, data_source_t * new_qn);
 
 
 /* cost model constants */

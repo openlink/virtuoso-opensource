@@ -101,6 +101,10 @@ setp_mem_insert (setp_node_t * setp, caddr_t * qst, int pos, caddr_t ** arr, int
 {
   int n_keys = BOX_ELEMENTS (setp->setp_keys_box), inx;
   int top = BOX_ELEMENTS (arr);
+#ifdef DEBUG
+  if ((pos < 0) || (pos >= top))
+    GPF_T1 ("bad pos in setp_mem_insert");
+#endif
   if (fill == top)
     dk_free_tree ((caddr_t) arr[fill - 1]);
   else
@@ -158,8 +162,12 @@ setp_mem_sort (setp_node_t * setp, caddr_t * qst)
       rc = setp_comp_array (setp, qst, arr[guess], setp->setp_keys_box);
       if (below - guess <= 1)
 	{
-	  if (DVC_MATCH == rc || DVC_LESS == rc)
+	  if (DVC_MATCH == rc || DVC_LESS == rc || (guess < 0) /* safety */)
+            {
+              if ((guess >= (top + skip - 1)) || (guess >= fill)) /* safety check if comparisons are not transitive: */
+                return;
 	    guess++;
+            }
 	  setp_mem_insert (setp, qst, (int) guess, arr, (int) fill);
 	  return;
 	}
@@ -480,13 +488,13 @@ breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state)
 	  if (n_total > n_per_set)
 	    SRC_IN_STATE ((data_source_t *) brk, inst) = inst;
 	  if (qst_get (inst, brk->brk_all_output[n_per_set - 1]))
-	    qn_send_output (brk, inst);
+	    qn_send_output ((data_source_t *) brk, inst);
 	  state = NULL;
 	  continue;
 	}
       current = (ptrlong) inst[brk->brk_current_slot];
       current += n_per_set;
-      inst[brk->brk_current_slot] = current;
+      inst[brk->brk_current_slot] = (caddr_t) current;
       if (current == n_total - n_per_set)
 	SRC_IN_STATE ((data_source_t*) brk, inst) = NULL;
       if (current == n_total)
@@ -508,5 +516,67 @@ breakup_node_free (breakup_node_t * brk)
 {
   dk_free_box ((caddr_t) brk->brk_all_output);
   dk_free_box ((caddr_t) brk->brk_output);
+}
+
+
+
+void 
+in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
+{
+  ptrlong current, n_total;
+  int inx;
+  for (;;)
+    {
+      caddr_t * arr = NULL;
+      if (state)
+	{
+	  dk_set_t members = NULL;
+	  int inx;
+	  inst[ii->ii_nth_value] = (caddr_t) 0;
+	  DO_BOX (state_slot_t *, ssl, inx, ii->ii_values)
+	    {
+	      caddr_t val = qst_get (inst, ssl);
+	      DO_SET (caddr_t, member, &members)
+		{
+		  if (DVC_MATCH == cmp_boxes (val, member, ii->ii_output->ssl_sqt.sqt_collation, ii->ii_output->ssl_sqt.sqt_collation))
+		    goto next;
+		}
+	      END_DO_SET();
+	      dk_set_push (&members, (void*) box_copy_tree (val));
+	    next: ;
+	    }
+	  END_DO_BOX;
+	  arr = (caddr_t*)list_to_array (dk_set_nreverse (members));
+	  qst_set (inst, ii->ii_values_array, (caddr_t)arr);
+	  n_total = BOX_ELEMENTS (arr);
+	  if (n_total > 1)
+	    SRC_IN_STATE ((data_source_t *) ii, inst) = inst;
+	  qst_set (inst, ii->ii_output, box_copy_tree (arr[0]));
+	  qn_send_output ((data_source_t*) ii, inst);
+	  state = NULL;
+	  continue;
+	}
+      current = (ptrlong) inst[ii->ii_nth_value];
+      current ++;
+      inst[ii->ii_nth_value] = (caddr_t) current;
+      arr = (caddr_t *) QST_GET (inst, ii->ii_values_array);
+      if (current >= BOX_ELEMENTS (arr))
+	{
+	  SRC_IN_STATE ((data_source_t *) ii, inst) = NULL;
+	  return;
+	}
+      if (current == BOX_ELEMENTS (arr) - 1)
+	SRC_IN_STATE ((data_source_t *) ii, inst) = NULL;
+      qst_set (inst, ii->ii_output, box_copy_tree (arr[current]));
+      qn_send_output ((data_source_t*) ii, inst);
+      if (current == BOX_ELEMENTS (arr) - 1)
+	return;
+    }
+}
+
+void 
+in_iter_free (in_iter_node_t * ii)
+{
+  dk_free_box ((caddr_t) ii->ii_values);
 }
 

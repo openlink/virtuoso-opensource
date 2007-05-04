@@ -169,53 +169,27 @@ sqlo_enum_col_arity (df_elt_t * pred, dbe_column_t * left_col, float * a1)
 
 
 void
-sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
+sqlo_eq_cost (dbe_column_t * left_col, df_elt_t * right, df_elt_t * lower, float * a1)
 {
-  *u1 = (float) COL_PRED_COST;
-  if (upper == lower)
-    upper = NULL;
-  if (BOP_EQ == lower->_.bin.op)
-    {
-    *a1 = (float) 0.03;
-      if (lower->_.bin.left == lower->_.bin.right)
-	{
-	*a1 = 1; /* recognize the dummy 1=1 */
-	  return;
-	}
-    }
-  else if (!upper)
-    *a1 = 0.3;
-  else
-    *a1 = 0.3 * 0.3;
-
-  if (lower->dfe_type != DFE_TEXT_PRED &&
-      lower->_.bin.left->dfe_type == DFE_COLUMN &&
-      lower->_.bin.left->_.col.col &&
-      lower->_.bin.left->_.col.col->col_count != DBE_NO_STAT_DATA)
-    {
-      dbe_column_t *left_col = lower->_.bin.left->_.col.col;
       if (lower && sqlo_enum_col_arity (lower, left_col, a1))
 	return;
-      if (lower->_.bin.op == BOP_EQ)
-	{
-
-	  if (DFE_IS_CONST (lower->_.bin.right) &&
+  if (DFE_IS_CONST (right) &&
 	      left_col->col_min && left_col->col_max &&
 	      DV_TYPE_OF (left_col->col_min) != DV_DB_NULL && DV_TYPE_OF (left_col->col_max) != DV_DB_NULL &&
-	      (DVC_LESS == cmp_boxes ((caddr_t) lower->_.bin.right->dfe_tree, left_col->col_min,
+      (DVC_LESS == cmp_boxes ((caddr_t) right->dfe_tree, left_col->col_min,
 		 left_col->col_collation, left_col->col_collation) ||
-	       DVC_GREATER == cmp_boxes ((caddr_t) lower->_.bin.right->dfe_tree, left_col->col_max,
+       DVC_GREATER == cmp_boxes ((caddr_t) right->dfe_tree, left_col->col_max,
 		 left_col->col_collation, left_col->col_collation)))
 	    { /* the boundary is constant and its outside min/max */
 	      *a1 = 0.1 / left_col->col_n_distinct; /* out of range.  Because unsure, do not make  it exact 0 */
 	    }
-	  else if (DFE_IS_CONST (lower->_.bin.right) && left_col->col_hist)
+  else if (DFE_IS_CONST (right) && left_col->col_hist)
 	    { /* the boundary is constant and there is a column histogram */
 	      int inx, n_level_buckets = 0;
 
 	      DO_BOX (caddr_t *, bucket, inx, ((caddr_t **)left_col->col_hist))
 		{
-		  if (DVC_MATCH == cmp_boxes ((caddr_t) lower->_.bin.right->dfe_tree, bucket[1],
+	  if (DVC_MATCH == cmp_boxes ((caddr_t) right->dfe_tree, bucket[1],
 			left_col->col_collation, left_col->col_collation))
 		    {
 		      n_level_buckets ++;
@@ -248,6 +222,71 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 		  *a1 = 0.1;
 		}
 	    }
+}
+
+
+#define TA_NTH_IN_ITEM 5001
+#define TA_N_IN_ITEMS 5002
+
+
+
+
+
+int
+sqlo_in_list_unit (df_elt_t * pred, float * u1, float * a1)
+{
+  du_thread_t * thr;
+  int n_items, nth;
+  df_elt_t ** in_list = sqlo_in_list (pred, NULL, NULL);
+  if (!in_list)
+    return 0;
+  thr = THREAD_CURRENT_THREAD;
+  nth = (ptrlong) THR_ATTR (thr, TA_NTH_IN_ITEM);
+  n_items = (ptrlong) THR_ATTR (thr, TA_N_IN_ITEMS);
+  if (-1 == n_items)
+    {
+      SET_THR_ATTR (thr, TA_N_IN_ITEMS, (caddr_t)(ptrlong) BOX_ELEMENTS (in_list) - 1);
+      nth = 0;
+    }
+  else if (nth >= BOX_ELEMENTS (in_list) - 1)
+    nth = 0;
+  sqlo_eq_cost (in_list[0]->_.col.col, in_list[nth + 1], NULL, a1);
+  return 1;
+}
+
+
+void
+sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
+{
+  *u1 = (float) COL_PRED_COST;
+  if (sqlo_in_list_unit (lower, u1, a1))
+    return;
+  if (upper == lower)
+    upper = NULL;
+  if (BOP_EQ == lower->_.bin.op)
+    {
+      *a1 = (float) 0.03;
+      if (lower->_.bin.left == lower->_.bin.right)
+	{
+	  *a1 = 1; /* recognize the dummy 1=1 */
+	  return;
+	}
+    }
+  else if (!upper)
+    *a1 = 0.3;
+  else
+    *a1 = 0.3 * 0.3;
+
+  if (lower->dfe_type != DFE_TEXT_PRED &&
+      lower->_.bin.left->dfe_type == DFE_COLUMN &&
+      lower->_.bin.left->_.col.col &&
+      lower->_.bin.left->_.col.col->col_count != DBE_NO_STAT_DATA)
+    {
+      dbe_column_t *left_col = lower->_.bin.left->_.col.col;
+      if (lower->_.bin.op == BOP_EQ)
+	{
+      	  sqlo_eq_cost (left_col, lower->_.bin.right, lower, &a1);
+	  return;
 	}
       else if (lower->_.bin.op == BOP_GT || lower->_.bin.op == BOP_GTE)
 	{
@@ -729,11 +768,20 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 int
 dfe_const_rhs (search_spec_t * sp, df_elt_t * pred, it_cursor_t * itc, int * v_fill)
 {
-  if (DFE_CONST == pred->_.bin.right->dfe_type
-      || sqlo_iri_constant_name (pred->_.bin.right->dfe_tree)
-      || sqlo_rdf_obj_const_value (pred->_.bin.right->dfe_tree, NULL, NULL))
+  df_elt_t ** in_list = sqlo_in_list (pred, NULL, NULL);
+  df_elt_t * right;
+  if (in_list)
     {
-      int res = sample_search_param_cast (itc, sp, (caddr_t) pred->_.bin.right->dfe_tree);
+      int nth = (ptrlong) THR_ATTR (THREAD_CURRENT_THREAD, TA_NTH_IN_ITEM);
+      right = in_list[nth + 1 >= BOX_ELEMENTS(in_list) ? 0 : nth + 1];
+    }
+  else
+    right = pred->_.bin.right;
+  if (DFE_CONST == right->dfe_type
+      || sqlo_iri_constant_name (right->dfe_tree)
+      || sqlo_rdf_obj_const_value (right->dfe_tree, NULL, NULL))
+    {
+      int res = sample_search_param_cast (itc, sp, (caddr_t) right->dfe_tree);
       *v_fill = itc->itc_search_par_fill;
       return res;
     }
@@ -745,15 +793,21 @@ dfe_const_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key,
 		   search_spec_t *sp, it_cursor_t * itc, int * v_fill)
 {
   int res = 0;
-  if (lower->_.bin.left->_.col.col == (dbe_column_t *) CI_ROW)
+  df_elt_t ** in_list = sqlo_in_list (lower, NULL, NULL);
+  dbe_column_t * left_col;
+  if (in_list)
+    left_col = in_list[0]->_.col.col;
+  else 
+    left_col = lower->_.bin.left->_.col.col;
+  if (left_col == (dbe_column_t *) CI_ROW)
     SQL_GPF_T(NULL);
-  sp->sp_cl = *key_find_cl (key, lower->_.bin.left->_.col.col->col_id);
-  sp->sp_col = lower->_.bin.left->_.col.col;
+  sp->sp_cl = *key_find_cl (key, left_col->col_id);
+  sp->sp_col = left_col;
   sp->sp_collation = sp->sp_col->col_sqt.sqt_collation;
 
   if (!upper || lower == upper)
     {
-      int op = bop_to_dvc (lower->_.bin.op);
+      int op = in_list ? CMP_EQ : bop_to_dvc (lower->_.bin.op);
 
       if (op == CMP_LT || op == CMP_LTE)
 	{
@@ -963,7 +1017,17 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
 int
 pred_const_rhs (df_elt_t * pred)
 {
-  df_elt_t * r = pred->_.bin.right;
+  df_elt_t * r;
+  df_elt_t ** in_list = sqlo_in_list (pred, NULL, NULL);
+  if (in_list)
+    {
+      int nth_in = (ptrlong) THR_ATTR (THREAD_CURRENT_THREAD, TA_NTH_IN_ITEM);
+      if (nth_in < 0)
+	nth_in = 0;
+      r = in_list[nth_in + 1 >= BOX_ELEMENTS (in_list) ? 0 : nth_in + 1];
+    }
+  else 
+    r = pred->_.bin.right;
   if (!r)
     return 0;
   if (DFE_CONST == r->dfe_type )
@@ -979,7 +1043,7 @@ pred_const_rhs (df_elt_t * pred)
 }
 
 void
-dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, int inx_only)
+dfe_table_cost_1 (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, int inx_only)
 {
   int nth_part = 0;
   dbe_key_t * key = dfe->_.table.key;
@@ -1066,9 +1130,11 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
 	is_indexed = 0;
       DO_SET (df_elt_t *, pred, &dfe->_.table.col_preds)
 	{
+	  df_elt_t ** in_list = sqlo_in_list (pred, NULL, NULL);
+	  df_elt_t * left_col = in_list ? in_list[0]->_.col.col : pred->_.bin.left->_.col.col;
 	  if (DFE_TEXT_PRED == pred->dfe_type)
 	    continue;
-	  if (DFE_BOP_PRED == pred->dfe_type && part == pred->_.bin.left->_.col.col && pred != lower && pred != upper)
+	  if (DFE_BOP_PRED == pred->dfe_type && part == left_col && pred != lower && pred != upper)
 	    {
 	      sqlo_pred_unit (pred, NULL, &p_cost, &p_arity);
 	      col_arity *= p_arity;
@@ -1131,9 +1197,12 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
 	    dbe_key_row_cost (tb->tb_primary_key, NULL));
       DO_SET (df_elt_t *, pred, &dfe->_.table.col_preds)
 	{
+	  dbe_column_t * left_col;
+	  df_elt_t ** in_list = sqlo_in_list (pred, NULL, NULL);
 	  if (DFE_TEXT_PRED == pred->dfe_type)
 	    continue;
-	  if (DFE_BOP_PRED == pred->dfe_type && !dk_set_member (key->key_parts, (void*) pred->_.bin.left->_.col.col))
+	  left_col = in_list ? in_list[0]->_.col.col : pred->_.bin.left->_.col.col;
+	  if (DFE_BOP_PRED == pred->dfe_type && !dk_set_member (key->key_parts, (void*) left_col))
 	    {
 	      sqlo_pred_unit (pred, NULL, &p_cost, &p_arity);
 	      total_arity *= p_arity;
@@ -1187,6 +1256,30 @@ dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, in
   /* the right of left outer has never cardinality < 1.  But the join tests etc are costed at cardinality that can be < 1. So adjust this as last.*/
       dfe->dfe_arity = *a1 = total_arity;
       dfe->dfe_unit = *u1 = total_cost;
+}
+
+
+void
+dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, int inx_only)
+{
+  int n_in, inx;
+  du_thread_t * thr = THREAD_CURRENT_THREAD;
+  SET_THR_ATTR  (thr, TA_N_IN_ITEMS, (caddr_t) -1);
+  SET_THR_ATTR (thr, TA_NTH_IN_ITEM, 0);
+  dfe_table_cost_1 (dfe, u1, a1, overhead_ret, inx_only);
+  n_in = (ptrlong) THR_ATTR (thr, TA_N_IN_ITEMS);
+  if (-1 == n_in)
+    return;
+  for (inx = 1; inx < n_in; inx++)
+    {
+      float ov_dum, in_u1, in_a1;
+      SET_THR_ATTR (thr, TA_NTH_IN_ITEM, (caddr_t) (ptrlong) inx);
+      dfe_table_cost_1 (dfe, &in_u1, &in_a1, &ov_dum, inx_only);
+      (*u1) += in_u1;
+      (*a1) += in_a1;
+    }
+  dfe->dfe_unit = *u1;
+  dfe->dfe_arity = *a1;
 }
 
 

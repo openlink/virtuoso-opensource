@@ -274,6 +274,10 @@ sqlo_is_key_in_order (sqlo_t * so, df_elt_t * dfe, dbe_key_t * key)
       oby_col = ((df_elt_t *) oby_cols->data)->_.col.col;
       DO_SET (df_elt_t *, pred, &dfe->_.table.col_preds)
 	{
+	  df_elt_t ** in_list;
+	  if ((in_list = sqlo_in_list (pred, NULL, NULL))
+	      && col == in_list[0]->_.col.col)
+	    return 0;
 	  if (BOP_EQ == pred->_.bin.op
 	      && col == pred->_.bin.left->_.col.col)
 	    {

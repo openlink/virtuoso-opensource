@@ -2116,21 +2116,77 @@ sqlo_merge_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set
 #define dfe_is_upper(dfe) (dfe->_.bin.op == BOP_LT || dfe->_.bin.op == BOP_LTE)
 
 
+df_elt_t **
+sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
+{
+  if (DFE_BOP_PRED == pred->dfe_type && BOP_LT == pred->_.bin.op && DFE_CONST == pred->_.bin.left->dfe_type && !pred->_.bin.left->dfe_tree && DFE_CALL == pred->_.bin.right->dfe_type 
+      && pred->_.bin.right->_.call.func_name && 0 == stricmp (pred->_.bin.right->_.call.func_name, "one_of_these"))
+    {
+      df_elt_t ** args = pred->_.bin.right->_.call.args;
+      if (args[0] && DFE_COLUMN == args[0]->dfe_type  
+	  && (!tb_dfe || 0 == stricmp (args[0]->dfe_tree->_.col_ref.prefix, tb_dfe->_.table.ot->ot_new_prefix))
+	  && (!name || 0 == stricmp (args[0]->dfe_tree->_.col_ref.name, name)))
+	{
+	  int inx;
+	  if (tb_dfe)
+	    {
+	      for (inx = 1; inx < BOX_ELEMENTS (args); inx++)
+		{
+		  if (dk_set_member (args[inx]->dfe_tables, (void*)tb_dfe->_.table.ot))
+		    return NULL;
+		}
+	    }
+	  return args;
+	}
+    }
+  return NULL;
+}
+
+
+dbe_column_t * 
+cp_left_col (df_elt_t * cp)
+{
+  df_elt_t ** in_list;
+  if (DFE_BOP_PRED != cp->dfe_type
+      && DFE_BOP != cp->dfe_type)
+    return NULL;
+  if (cp->_.bin.op != BOP_LT)
+    return cp->_.bin.left->_.col.col;
+  in_list = sqlo_in_list (cp, NULL, NULL);
+  if (in_list)
+    return in_list[0]->_.col.col;
+  return cp->_.bin.left->_.col.col;
+}
+
+
 df_elt_t *
 sqlo_key_part_best (dbe_column_t * col, dk_set_t col_preds, int upper_only)
 {
-  /* equal is best, lower bound second, upper bound third others rejected. */
+  /* equal is best, in next, lower bound second, upper bound third others rejected. */
 
   df_elt_t *best = NULL;
-
+  int best_score = 0;
   DO_SET (df_elt_t *, cp, &col_preds)
   {
+    df_elt_t ** in_list =  sqlo_in_list (cp, NULL, col->col_name);
+    if (in_list && in_list[0]->_.col.col != col)
+      continue;
+    if (in_list && upper_only)
+      continue;
     if (cp->dfe_type == DFE_TEXT_PRED)
       {
 	if (cp->_.text.col == col && cp->dfe_is_placed < DFE_GEN && !upper_only)
 	  return cp;
       }
-    else if (cp->_.bin.left->_.col.col == col)
+    else if (!upper_only && in_list)
+      {
+	if (cp->dfe_is_placed < DFE_GEN)
+	  {
+	    best = cp;
+	    best_score = 5;
+	  }
+      }
+    else if (!sqlo_in_list (cp, NULL, NULL) && cp->_.bin.left->_.col.col == col)
       {
 	if (cp->dfe_is_placed < DFE_GEN
 	    && (!upper_only || dfe_is_upper (cp)))
@@ -2141,7 +2197,8 @@ sqlo_key_part_best (dbe_column_t * col, dk_set_t col_preds, int upper_only)
 	      {
 		if (best)
 		  {
-		    if (dfe_is_upper (best) && dfe_is_lower (cp))
+		    if (dfe_is_upper (best) && dfe_is_lower (cp)
+			&& !best_score)
 		      best = cp;
 		  }
 		else
@@ -2312,14 +2369,17 @@ sqlo_tb_order (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds)
   /* pick the oby index and the index based on conditions */
   op_table_t *ot = dfe_ot (tb_dfe);
 
+#if 0
   DO_SET (df_elt_t *, pred, &col_preds)
     {
       /* all col preds that will resolve with cols on the inx, incl ones implicit from pk */
-      dbe_column_t * col = pred->_.bin.left->_.col.col;
+      dbe_column_t * col;
+      col = pred->_.bin.left->_.col.col;
       if (dk_set_member (tb_dfe->_.table.key->key_parts, (void*) col))
 	t_set_push (&tb_dfe->_.table.inx_preds, (void*) pred);
     }
   END_DO_SET();
+#endif
   tb_dfe->_.table.col_preds = col_preds;
   tb_dfe->_.table.inx_preds = dk_set_nreverse (tb_dfe->_.table.inx_preds);
   if (ot->ot_text)
@@ -2511,6 +2571,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
   dk_set_t after_preds = NULL;
   dk_set_t to_place = NULL;
   df_elt_t *text_pred = NULL;
+  df_elt_t ** in_list;
   int old_cond;
   DO_SET (df_elt_t *, pred, &preds)
     {
@@ -2549,6 +2610,11 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
 	  pred->_.text.after_test = sqlo_and_list_body (so, tb_dfe->dfe_locus, tb_dfe, text_after_preds);
 	  pred->_.text.after_preds = text_after_preds;
 	  text_pred = pred;
+	}
+      else if ((in_list = sqlo_in_list (pred, tb_dfe, NULL)))
+	{
+	  t_set_push (&col_preds, pred);
+
 	}
       else if (DFE_BOP_PRED == pred->dfe_type)
 	{
@@ -2598,6 +2664,15 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
   DO_SET (df_elt_t *, col_pred, &col_preds)
     {
       col_pred->dfe_locus = tb_dfe->dfe_locus;
+      if ((in_list = sqlo_in_list (col_pred, NULL, NULL)))
+	{
+	  int inx;
+	  for (inx = 1; inx < BOX_ELEMENTS (in_list); inx++)
+	    {
+	      sqlo_place_exp (so, tb_dfe, in_list[inx]);
+	    }
+	}
+      else
       sqlo_place_exp (so, tb_dfe, col_pred->_.bin.right);
     }
   END_DO_SET();
