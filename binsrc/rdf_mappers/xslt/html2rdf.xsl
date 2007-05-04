@@ -54,9 +54,9 @@
   <xsl:template match="comment()" mode="rdf-in-comment">
       <!-- first we parse in 'safe' mode -->
       <xsl:variable name="tmp" select="document-literal (., '', 2)"/>
-      <xsl:if test="$tmp/rdf:rdf/rdf:*">
-	  <xsl:variable name="doc" select="document-literal (.)"/>
-	  <xsl:copy-of select="$doc/rdf:RDF/rdf:*"/>
+      <xsl:if test="$tmp/rdf:rdf/*">
+	  <xsl:variable name="doc" select="document-literal (replace (., '&quot;xmlns', '&quot; xmlns'))"/>
+	  <xsl:copy-of select="$doc/rdf:RDF/*"/>
       </xsl:if>
   </xsl:template>
   <xsl:template match="title">

@@ -28,9 +28,10 @@
 
     <xsl:output method="xml" indent="yes" />
 
+    <xsl:param name="baseUri"/>
+
     <xsl:variable name="resourceURL">
-	<xsl:text>http://www.amazon.com/exec/obidos/ASIN/</xsl:text>
-	<xsl:value-of select="//Asin"/>
+	<xsl:value-of select="$baseUri"/>
     </xsl:variable>
 
     <xsl:variable name="ns">urn:ebay:apis:eBLBaseComponents</xsl:variable>

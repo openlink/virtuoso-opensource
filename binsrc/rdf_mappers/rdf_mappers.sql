@@ -27,6 +27,9 @@
 -- install the handlers for supported metadata, keep in sync with xslt/html2rdf.xsl rules
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)' and RM_TYPE = 'MIME';
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
+    values ('.*', 'HTTP', 'DB.DBA.RDF_LOAD_HTTP_SESSION', null, 'HTTP in RDF', 0);
+
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)|(application/rdf.xml)',
             'MIME', 'DB.DBA.RDF_LOAD_HTML_RESPONSE', null, 'xHTML and feeds');
@@ -36,7 +39,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_FLICKR_IMG', null, 'Flickr Images');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(http://www.amazon.com/gp/product/.*)|(http://www.amazon.[^/]/o/ASIN/.*)',
+    values ('(http://www.amazon.com/gp/product/.*)|(http://www.amazon.[^/]+/o/ASIN/.*)',
             'URL', 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE', null, 'Amazon articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -44,7 +47,12 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_EBAY_ARTICLE', null, 'eBay articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('.+\.odt\$', 'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT', null, 'OO Documents');
+    values ('.+\.od[ts]\$', 'URL', 'DB.DBA.RDF_LOAD_OO_DOCUMENT', null, 'OO Documents');
+
+-- we do default http & html handler first of all
+update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
+update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
+update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 
 -- the GRDDL filters
 EXEC_STMT(
@@ -141,12 +149,178 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:split-and-decode', 'DB.
 --;
 
 --RDF_LOAD_AMAZON_ARTICLE_INIT ();
+
+
+create procedure RDF_APERTURE_INIT ()
+{
+  if (__proc_exists ('java_vm_attach', 2) is null)
+    {
+      delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_BIN_DOCUMENT';
+      return;
+    }
+  set_qualifier ('APERTURE');
+  if (not udt_is_available ('APERTURE.DBA.MetaExtractor'))
+  {
+    declare exit handler for sqlstate '*'
+    {
+       set_qualifier ('DB');
+       return;
+    };
+    DB.DBA.import_jar (NULL, 'MetaExtractor', 1);
+  }
+  exec (
+'create procedure DB.DBA.RDF_LOAD_BIN_DOCUMENT (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any)
+{
+  declare xd, tmp, fn any;
+--  if (graph_iri like \'%.odt\' or graph_iri like \'%.ods\')
+--    return 0;
+  tmp := null;
+  declare exit handler for sqlstate \'*\'
+    {
+      if (length (tmp))
+        file_delete (tmp, 1);
+      return 0;
+    };
+  tmp := tmp_file_name (\'rdfm\', \'bin\');
+  fn := tmp;
+  string_to_file (tmp, _ret_body, -2);
+  xd := APERTURE.DBA."MetaExtractor"().getMetaFromFile (fn, 5);
+  xd := charset_recode(xd, \'_WIDE_\', \'UTF-8\');
+  file_delete (tmp, 1);
+--  dbg_printf (\'%s\', xd);
+  if (xd is null)
+    return 0;
+  xd := replace (xd, \'file:\'||tmp, new_origin_uri);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}');
+
+  insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(application/octet-stream)|(application/pdf)', 'MIME', 'DB.DBA.RDF_LOAD_BIN_DOCUMENT', null, 'Binary Files');
+  update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1000 where RM_HOOK = 'DB.DBA.RDF_LOAD_BIN_DOCUMENT';
+  set_qualifier ('DB');
+}
+;
+
+RDF_APERTURE_INIT ()
+;
+
+create procedure DB.DBA.RDF_LOAD_HTTP_SESSION (
+    in graph_iri varchar,
+    in new_origin_uri varchar,
+    in dest varchar,
+    inout ret_body any,
+    inout aq any, inout ps any,
+    inout headers any)
+{
+  declare req, resp any;
+  declare ses, tmp any;
+
+  declare meth, host, url, proto_ver, stat, resp_ver any;
+
+  ses := string_output ();
+  req := headers[0];
+  resp := headers[1];
+
+  host := http_request_header (req, 'Host');
+
+  tmp := split_and_decode (req[0], 0, '\0\0 ');
+  meth := tmp[0];
+  meth := lower (meth);
+  meth[0] := meth[0] - 32;
+
+  url := tmp[1];
+  proto_ver := substring (tmp[2], 6, 8);
+
+  tmp := rtrim (resp[0], '\r\n');
+  tmp := split_and_decode (resp[0], 0, '\0\0 ');
+  stat := tmp[1];
+  resp_ver := substring (tmp[0], 6, 8);
+
+  http ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:http="http://www.w3.org/2006/http#">\n', ses);
+
+  http ('<http:Connection rdf:ID="conn">\n', ses);
+  http ('  <http:connectionAuthority>'|| host ||'</http:connectionAuthority>\n', ses);
+  http ('    <http:request rdf:parseType="Collection">\n', ses);
+  http ('    <http:Request rdf:about="#req0"/>\n', ses);
+  http ('  </http:request>\n', ses);
+  http ('</http:Connection>\n', ses);
+
+  http ('<http:'|| meth ||'Request rdf:ID="req0">\n', ses);
+  http ('  <http:abs_path>'|| url ||'</http:abs_path>\n', ses);
+  http ('  <http:version>'|| proto_ver ||'</http:version>\n', ses);
+  http ('  <http:header rdf:parseType="Collection">\n', ses);
+  -- loop over req from 1 - len
+  tmp := '';
+  for (declare i int, i := 1; i < length (req); i := i + 1)
+    {
+      tmp := tmp || trim (req[i], '\r\n') || '\r\n' ;
+    }
+  tmp := mime_tree (tmp);
+  tmp := tmp[0];
+  for (declare i int, i := 0; i < length (tmp); i := i + 2)
+    {
+      http ('<http:MessageHeader>\n', ses);
+      http ('  <http:fieldName rdf:resource="http://www.w3.org/2006/http-header#'||lower (tmp[i])||'"/>\n', ses);
+      http ('  <http:fieldValue>\n', ses);
+      http ('    <http:HeaderElement>\n', ses);
+      http ('     <http:elementName>'||tmp[i+1]||'</http:elementName>\n', ses);
+      http ('    </http:HeaderElement>\n', ses);
+      http ('  </http:fieldValue>\n', ses);
+      http ('</http:MessageHeader>\n', ses);
+    }
+
+
+  http ('  </http:header>\n', ses);
+  http ('  <http:response rdf:resource="#resp0"/>\n', ses);
+  http ('</http:'|| meth ||'Request>\n', ses);
+
+  http ('<http:Response rdf:ID="resp0">\n', ses);
+  http ('<http:responseCode rdf:resource="http://www.w3.org/2006/http#'||stat||'"/>\n', ses);
+  http ('  <http:version>'||resp_ver||'</http:version>\n', ses);
+  http ('  <http:header rdf:parseType="Collection">\n', ses);
+  -- loop over resp from 1 - len
+
+  tmp := '';
+  for (declare i int, i := 1; i < length (resp); i := i + 1)
+    {
+      tmp := tmp || trim (resp[i], '\r\n') || '\r\n' ;
+    }
+  tmp := mime_tree (tmp);
+  tmp := tmp[0];
+  for (declare i int, i := 0; i < length (tmp); i := i + 2)
+    {
+      http ('<http:MessageHeader>\n', ses);
+      http ('  <http:fieldName rdf:resource="http://www.w3.org/2006/http-header#'||lower (tmp[i])||'"/>\n', ses);
+      http ('  <http:fieldValue>\n', ses);
+      http ('    <http:HeaderElement>\n', ses);
+      http ('     <http:elementName>'||tmp[i+1]||'</http:elementName>\n', ses);
+      http ('    </http:HeaderElement>\n', ses);
+      http ('  </http:fieldValue>\n', ses);
+      http ('</http:MessageHeader>\n', ses);
+    }
+
+  http ('  </http:header>\n', ses);
+  http ('</http:Response>\n', ses);
+  http ('</rdf:RDF>\n', ses);
+
+  tmp := string_output_string (ses);
+
+  DB.DBA.RDF_LOAD_RDFXML (tmp, new_origin_uri, coalesce (dest, graph_iri));
+
+  -- never stop the rest of handlers
+  return 0;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_OO_DOCUMENT (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any)
 {
   declare meta, tmp varchar;
   declare xt, xd any;
 
+--  dbg_obj_print ('DB.DBA.RDF_LOAD_OO_DOCUMENT');
   if (__proc_exists ('UNZIP_UnzipFileFromArchive', 2) is null)
     return 0;
   tmp := tmp_file_name ('rdfm', 'odt');
@@ -196,9 +370,6 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
   xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/amazon2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
-  -- don't delete here, done in html part already
-  --if (dest is null)
-  --  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
@@ -238,8 +409,6 @@ create procedure DB.DBA.RDF_LOAD_FLICKR_IMG (in graph_iri varchar, in new_origin
   }
 
   xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/flickr2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'exif', exif));
-  if (dest is null)
-    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
@@ -376,7 +545,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
     inout ret_body any, inout aq any, inout ps any, inout _key any)
 {
   -- check to microformats
-  declare xt_sav, xt, xd, profile, mdta, xslt_style, profs, profs_done, feed_url any;
+  declare xt_sav, xt, xd, profile, mdta, xslt_style, profs, profs_done, feed_url, xt_xml any;
   declare xmlnss, i, l, nss, rdf_url_arr, content, hdr, rdf_in_html, old_etag, old_last_modified any;
   declare ret_flag, is_grddl, download_size, load_msec int;
 
@@ -384,15 +553,19 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
   mdta := 0;
   ret_flag := 1;
   hdr := null;
+  xt_xml := null;
   declare exit handler for sqlstate '*'
     {
       goto no_microformats;
     };
 
-  if (dest is null)
-    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
-
   xt_sav := xt := xtree_doc (ret_body, 2);
+
+  {
+    declare exit handler for sqlstate '*' { xt_xml := null; goto no_xml_cont; };
+    xt_xml := xtree_doc (ret_body);
+    no_xml_cont:;
+  }
 
   -- this maybe is not need to be here, as it's a kind of content negotiation
   rdf_url_arr  := xpath_eval ('//head/link[ @rel="meta" and @type="application/rdf+xml" ]/@href', xt, 0);
@@ -420,10 +593,10 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
     }
 
   -- sometimes RDF is inside the xhtml
-  if (xpath_eval ('/html//rdf', xt) is not null)
+  if (xpath_eval ('/html//rdf', xt) is not null and xt_xml is not null)
     {
       declare exit handler for sqlstate '*' { goto try_grddl; };
-      rdf_in_html := xpath_eval ('/html//RDF', xtree_doc (ret_body), 0);
+      rdf_in_html := xpath_eval ('/html//RDF', xt_xml, 0);
       foreach (any x in rdf_in_html) do
 	{
 	    xd := serialize_to_UTF8_xml (x);
@@ -443,16 +616,18 @@ try_grddl:
   is_grddl := 0;
   if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
     {
-      if (xpath_eval ('/rdf', xt) is not null)
+      if (xpath_eval ('/rdf', xt) is not null and xt_xml is not null)
 	{
 	  declare exit handler for sqlstate '*' { goto not_rdf; };
-          xd :=  xslt (registry_get ('_rdf_mappers_path_') || 'xslt/rdf_wo_grddl.xsl', xtree_doc (ret_body));
+          xd :=  xslt (registry_get ('_rdf_mappers_path_') || 'xslt/rdf_wo_grddl.xsl', xt_xml);
 	  xd := serialize_to_UTF8_xml (xd);
 	  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	  mdta := mdta + 1;
 	}
       not_rdf:;
       is_grddl := 1;
+      if (xt_xml is not null)
+	xt := xt_xml;
     }
   profs := null;
   profs_done := vector ();
@@ -486,13 +661,25 @@ try_grddl:
       xsl_arr := xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] '||
 	'/html/head/link[@rel="transformation"]/@href|//a[@rel="transformation"]/@href|/*[1]/@dv:transformation',
          xt, 0);
-      foreach (any xslt_uri in xsl_arr) do
+      foreach (any _xslt_uri in xsl_arr) do
 	{
-	  declare cnt, xsl_xd any;
+	  declare cnt, xsl_xd, new_xsl_arr any;
+
+          new_xsl_arr := split_and_decode (cast (_xslt_uri as varchar), 0, '\0\0 ');
+          foreach (any xslt_uri in new_xsl_arr) do
+	{
 	  declare exit handler for sqlstate '*' { goto try_next; };
 	  xslt_uri := WS.WS.EXPAND_URL (new_origin_uri, cast (xslt_uri as varchar));
 	  {
-	    declare exit handler for sqlstate '*' { goto try_w3c; };
+	    declare exit handler for sqlstate '*'
+	    {
+	      if (registry_get ('__sparql_sponge_use_w3c_xslt') = 'on')
+	        goto try_w3c;
+	      else
+                goto try_next;
+	    };
+	    -- DELME:
+	    xslt_stale (xslt_uri);
 	    xd := xslt (xslt_uri, xt);
 	    if (xpath_eval ('count(/RDF/*)', xd) > 0)
 	      {
@@ -519,6 +706,7 @@ try_grddl:
 	  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
           try_next:;
 	}
+    }
     }
   try_rdfa:;
 
@@ -584,7 +772,7 @@ do_detect:;
 
 	-- the document itself is a feed
 	if (xt is null and xpath_eval ('/rdf|/rss|/feed', xt_sav) is not null)
-	  xt := xtree_doc (ret_body);
+	  xt := xt_xml;
 
 	if (xt is null)
 	  goto no_feed;
@@ -631,15 +819,19 @@ ret:
   if (mdta > 0 and aq is not null)
     aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
 
-  -- special cases, which needs to call something else
-  if (regexp_match ('(http://www.amazon.com/gp/product/[^/]*)|(http://www.amazon.[^/]*/o/ASIN/[^/]*)', new_origin_uri) is not null)
+  declare ord any;
+  ord := (select RM_ID from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE');
+  for select RM_PATTERN from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE = 'URL' and RM_ENABLED = 1 order by RM_ID do
+    {
+      if (regexp_match (RM_PATTERN, new_origin_uri) is not null)
     mdta := 0;
-
-  if (regexp_match ('(http://cgi.sandbox.ebay.com/.*&item=[A-Z0-9]*&.*)|(http://cgi.ebay.com/.*QQitemZ[A-Z0-9]*QQ.*)', new_origin_uri) is not null)
-    mdta := 0;
+    }
 
   return (mdta * ret_flag);
   no_microformats:;
   return 0;
 }
+;
+
+registry_set ('__sparql_sponge_use_w3c_xslt', 'on')
 ;
