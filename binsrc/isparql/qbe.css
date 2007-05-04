@@ -87,7 +87,7 @@
 }
 
 #qbe_query_div {
-  margin-right:300px;
+  margin-right:285px;
 }
 
 #qbe_resizer_area {
@@ -145,7 +145,7 @@ ul#schemas_tree {
   cursor: pointer}
 
 #schema {
-  width: 215px;
+  width: 210px;
 }
 
 #qbe_orders
@@ -161,6 +161,10 @@ ul#schemas_tree {
   border: 1px outset #fff;
 	padding: 2px 3px;
 	padding-right: 15px;
+}
+
+#qbe_props {
+  padding: 2px;
 }
 
 #qbe_props_node,
@@ -188,7 +192,7 @@ ul#schemas_tree {
 }
 
 #schemas button {
- width:114px;
+ width:110px;
  height:26px;
 }
 

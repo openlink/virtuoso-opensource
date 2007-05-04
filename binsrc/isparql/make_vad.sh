@@ -57,16 +57,6 @@ then
     VOS=1
 fi
 
-if [ "z$SERVER" = "z" ]  
-then
-    if [ "x$HOST_OS" != "x" ]
-    then
-	SERVER=virtuoso-odbc-t.exe
-    else
-	SERVER=virtuoso
-    fi
-fi
-
 . $HOME/binsrc/tests/suite/test_fn.sh
 
 if [ -f /usr/xpg4/bin/rm ]
@@ -107,11 +97,11 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ] 
+  if [ "x$HOST_OS" != "x" ]
     then
-      "$SERVER" +foreground &
+      $BUILD/../bin/virtuoso-odbc-t +foreground &
   else
-      "$SERVER" +wait
+    virtuoso +wait
   fi
   stat="true"
   while true
@@ -144,7 +134,7 @@ do_command_safe () {
   shift
   shift
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if [ "x$HOST_OS" != "x" -a "z$BUILD" != "z" ]
+  if [ "x$HOST_OS" != "x" ]
   then
     $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
   else
@@ -300,7 +290,12 @@ sticker_init() {
   for file in `find vad -type f | grep -v '/CVS'`
   do
     name=`echo "$file" | cut -b18-`
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"iSPARQL/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+    if [ $name = 'index.html' ]; then
+      perm=111101000NN
+    else
+      perm=111101101NN
+    fi
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"iSPARQL/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perm\" makepath=\"yes\"/>" >> $STICKER
   done
   IFS="$oldIFS"
   echo "</resources>" >> $STICKER

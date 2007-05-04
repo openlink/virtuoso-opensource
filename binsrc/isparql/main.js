@@ -30,6 +30,8 @@ goptions.login_put_type = 'dav';
 goptions.service = '/sparql';
 goptions.proxy = true;
 goptions.should_sponge = 'soft';
+goptions.initial_screen = true;
+goptions.last_path = '';
 var isVirtuoso = false;
 
 var qbe = {};
@@ -38,6 +40,14 @@ var tab = {};
 var page_w = 800;
 var page_h = 800;
 var l = new OAT.Layers(100);
+
+if (default_dgu == undefined) var default_dgu = '';
+if (default_qry == undefined) var default_qry = 'SELECT * WHERE {?s ?p ?o}';
+if (default_spng == undefined) var default_spng = 'soft';
+if (do_auth_verify == undefined) var do_auth_verify = '';
+if (fixed_sponge == undefined) var fixed_sponge = '';
+if (toolkitImagesPath == undefined) var toolkitImagesPath = "toolkit/images";
+if (get_initial_credentials == undefined) var get_initial_credentials = "";
 
 function init()
 {
@@ -63,7 +73,7 @@ function init()
       $('about_date').innerHTML = tmp[1];
     }
     
-  },{async:true});
+  },{async:false});
 
   OAT.Preferences.showAjax = 1;
 
@@ -187,12 +197,8 @@ function init()
 	dialogs.about.cancel = dialogs.about.hide;
 	/* file name for saving */
 	var fileRef = function() {
-	  var path = '/DAV';
-	  if (goptions.username)
-	    path += "/home/"+goptions.username;
-	  var pathDefault = path;
-	  if (goptions.username == 'dav')
-	    pathDefault = '/DAV';
+	  var path = iSPARQL.Common.getFilePath();
+	  var pathDefault = iSPARQL.Common.getDefaultPath();
 	    
 	  var ext = $v('savetype');
 
@@ -220,11 +226,16 @@ function init()
 			default: $('should-sponge-none').checked = true; break;
 		}
 	}
-	dialogs.goptions = new OAT.Dialog("Options","goptions",{width:450,modal:1,resize:0,zIndex:1001,onshow:dialogs_goptions_onshow,onhide:function(){OAT.Keyboard.disable('goptions');}});
+	dialogs.goptions = new OAT.Dialog("Options","goptions",{width:450,modal:1,resize:0,close:0,zIndex:1001,onshow:dialogs_goptions_onshow,onhide:function(){OAT.Keyboard.disable('goptions');}});
 	dialogs.goptions.cancel = function(){
+	  if (!do_auth_verify || !goptions.initial_screen)
 	  dialogs.goptions.hide();
 	}
 	dialogs.goptions.ok = function(){
+	  var auth = iSPARQL.Common.checkAuth($v('username'),$v('password'));
+
+    if (auth == true)
+    {
     goptions.username = $v('username');
     goptions.password = $v('password');
     goptions.login_put_type = $v('login_put_type');
@@ -241,7 +252,14 @@ function init()
       $('adv_sponge').value = sel_sponge;
     }
     goptions.should_sponge = sel_sponge;
+    	goptions.initial_screen = false;
 	  dialogs.goptions.hide();
+  	} else {
+  	  if (auth == false)
+  	    alert('Unauthorized');
+  	  else 
+  	    alert(auth);
+  	}
 	}
   OAT.Keyboard.add('esc',function(){dialogs.goptions.cancel();},null,'goptions');
   OAT.Keyboard.add('return',function(){dialogs.goptions.ok();},null,'goptions');
@@ -254,10 +272,7 @@ function init()
   if (page_params['query']) default_qry = page_params['query'];
   if (page_params['should-sponge']) default_spng = page_params['should-sponge'];
   
-  if (default_dgu == undefined) default_dgu = '';
   $('default-graph-uri').value = default_dgu;
-
-  if (default_qry == undefined) default_qry = 'SELECT * WHERE {?s ?p ?o}';
   $('query').value = default_qry;
   if (!fixed_sponge) fixed_sponge = '';
   else {
@@ -266,7 +281,6 @@ function init()
     else
       default_spng = fixed_sponge;
   }
-  if (default_spng == undefined) default_spng = 'soft';
   $('qbe_sponge').value = default_spng;
   $('adv_sponge').value = default_spng;
   goptions.should_sponge = default_spng;
@@ -303,7 +317,9 @@ function init()
     else 
       OAT.Dom.hide("return_btn");
 
-    if (window.__inherited.run)
+	  if (!iSPARQL.Common.checkAuth(goptions.username,goptions.password) == true)
+      dialogs.goptions.show();
+    else if (window.__inherited.run)
       qbe.func_run();  
   } else {
     OAT.Dom.hide("return_btn");
@@ -320,7 +336,30 @@ function init()
       $('qbe_sponge').disabled = true;
       $('adv_sponge').disabled = true;
   	}
+  	
+  	var show_initial_screen = true;
+  	if(get_initial_credentials)
+  	{
+      OAT.AJAX.GET(get_initial_credentials, '', function(data,headers){ 
+        if (data != '')
+        {
+          var tmp = OAT.Crypto.base64d(data).split(':');
+          if (tmp.length > 0)
+          {
+            goptions.username = tmp[0];
+            goptions.password = tmp[1];
+          }
+          show_initial_screen = false;
+        }
+      },{async:false,onerror:function(xhr){alert(xhr.getResponseText());}});
+  	  if (!iSPARQL.Common.checkAuth(goptions.username,goptions.password) == true)
+  	    show_initial_screen = true;
+  	}
+
+  	if (show_initial_screen)
     dialogs.goptions.show();
+    else
+    	goptions.initial_screen = true;
   }
 
   if (OAT.Dom.isIE())
@@ -333,6 +372,9 @@ iSPARQL.Advanced = function ()
 {
 	var self = this;
 
+	this.nav_stack = [];
+	this.nav_index = 0;
+	
 	var icon_reset, icon_load, icon_save, icon_saveas, icon_run, icon_load_to_qbe, icon_get_from_qbe;
 	var icon_back, icon_forward, icon_start, icon_finish;
 	
@@ -348,15 +390,9 @@ iSPARQL.Advanced = function ()
 	
 	this.func_load = function() {
 	  if (tab.selectedIndex != tab.keys.find($('tab_query'))) return;
-	  var path = '/DAV';
-	  if (goptions.username)
-	    path += "/home/"+goptions.username;
-	  var pathDefault = path;
-	  if (goptions.username == 'dav')
-	    pathDefault = '/DAV';
-
-    if (goptions.last_path)
-      path = goptions.last_path.substring(0,goptions.last_path.lastIndexOf("/"));
+	  var path = iSPARQL.Common.getFilePath();
+	  var file = iSPARQL.Common.getFile();
+	  //var pathDefault = iSPARQL.Common.getDefaultPath();
 	    
 	  var loadProcess = function(data){
   	  if (data.match(/<[\w:_ ]+>/))
@@ -396,32 +432,37 @@ iSPARQL.Advanced = function ()
 	    $('query').value = data;
 	  }
 
-  	if (goptions.login_put_type == 'http')
-  	{
-      var fname = "";
-      if (goptions.last_path)
-        fname = goptions.last_path.substring(goptions.last_path.lastIndexOf("/") + 1);
-			var name = OAT.Dav.getFile(path,fname);
-			if (!name) { return; }
-      goptions.last_path = name;
-			OAT.AJAX.GET(name,'',loadProcess,{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC});
-  	} else {
+  	//if (goptions.login_put_type == 'http')
+  	//{
+    //  var fname = "";
+    //  if (goptions.last_path)
+    //    fname = goptions.last_path.substring(goptions.last_path.lastIndexOf("/") + 1);
+		//	var name = OAT.Dav.getFile(path,fname);
+		//	if (!name) { return; }
+    //  goptions.last_path = name;
+		//	OAT.AJAX.GET(name,'',loadProcess,{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC});
+  	//} else {
     	var options = {
-    		mode:'open_dialog',
     		user:goptions.username,
     		pass:goptions.password,
-        pathDefault:pathDefault + '/',
     		path:path + '/',
-    		filetypes:[{ext:'rq',label:'SPARQL Definitions'},{ext:'isparql',label:'Dynamic Data Web Page'},{ext:'xml',label:'XML Server Page'},{ext:'*',label:'All files'}],
-        onConfirmClick:function(path,fname,data){
+    		file:file,
+    		extension:get_file_type(goptions.last_path),
+    		isDav:((goptions.login_put_type == 'http')?false:true),
+    		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
+    		                  ['isparql','isparql','Dynamic Data Web Page',get_mime_type('isparql')],
+    		                  ['xml','xml','XML Server Page',get_mime_type('xml')],
+    		                  ['','*','All files','']
+    		                 ],
+        callback:function(path,fname,data){
           goptions.last_path = path + fname;
           loadProcess(data);
-          OAT.WebDav.close();
-        }
+          //OAT.WebDav.close();
       }
-    	OAT.WebDav.open(options);
-    	if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
     }
+    	OAT.WebDav.openDialog(options);
+    //	if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
+    //}
 	}
 	
 	this.func_save = function() {
@@ -435,44 +476,42 @@ iSPARQL.Advanced = function ()
 	
 	this.func_saveas = function() {
 	  if (tab.selectedIndex != tab.keys.find($('tab_query'))) return;
-	  if (goptions.login_put_type == 'http')
-	  {
-      if (goptions.last_path)
-      {
-        $("save_name").value = goptions.last_path;
-        $("savetype").value = get_file_type(goptions.last_path);
-      }
-	    dialogs.save.show();
-	  } else {
-  	  var path = '/DAV';
-  	  if (goptions.username)
-  	    path += "/home/"+goptions.username;
-  	  var pathDefault = path;
-  	  if (goptions.username == 'dav')
-  	    pathDefault = '/DAV';
-
-      if (goptions.last_path)
-        path = goptions.last_path.substring(0,goptions.last_path.lastIndexOf("/"));
+	  //if (goptions.login_put_type == 'http')
+	  //{
+    //  if (goptions.last_path)
+    //  {
+    //    $("save_name").value = goptions.last_path;
+    //    $("savetype").value = get_file_type(goptions.last_path);
+    //  }
+	  //  dialogs.save.show();
+	  //} else {
+  	  var path = iSPARQL.Common.getFilePath();
+  	  var file = iSPARQL.Common.getFile();
+  	  //var pathDefault = iSPARQL.Common.getDefaultPath();
 
 			var options = {
-				mode:'save_dialog',
-				onConfirmClick:function(ext){
-				  OAT.Dav.SaveContentType = get_mime_type(ext);
-      		return self.getSaveData(ext);
-				},
-				afterSave:function(path,fname){
+    		user:goptions.username,
+    		pass:goptions.password,
+    		path:path + '/',
+    		file:file,
+    		extension:get_file_type(goptions.last_path),
+    		isDav:((goptions.login_put_type == 'http')?false:true),
+    		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
+    		                  ['isparql','isparql','Dynamic Data Web Page',get_mime_type('isparql')],
+    		                  ['xml','xml','XML Server Page',get_mime_type('xml')]
+    		                 ],
+				callback:function(path,fname){
           goptions.last_path = path + fname;
           set_dav_props(goptions.last_path);
 				},
-    		user:goptions.username,
-    		pass:goptions.password,
-        pathDefault:pathDefault + '/',
-    		path:path + '/',
-    		filetypes:[{ext:'rq',label:'SPARQL Definitions'},{ext:'isparql',label:'Dynamic Data Web Page'},{ext:'xml',label:'XML Server Page'}]
-			};
-			OAT.WebDav.open(options);
-    	if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
+    		dataCallback:function(fname,ext){
+				  //OAT.Dav.SaveContentType = get_mime_type(ext);
+      		return self.getSaveData(ext);
 		}
+			};
+			OAT.WebDav.saveDialog(options);
+    	//if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
+		//}
 	}
 	
 	this.func_run = function() {
@@ -490,6 +529,8 @@ iSPARQL.Advanced = function ()
     	  OAT.Dom.show(self.results_win.div);
         $('query').value = query;
         $('default-graph-uri').value = params.default_graph_uri;
+        self.nav_stack = params.nav_stack;
+        self.nav_index = params.nav_index;
       },
       browseStart:icon_start,
       browseBack:icon_back,
@@ -527,6 +568,26 @@ iSPARQL.Advanced = function ()
 
 	  OAT.Dom.show(self.results_win.div);
 	  window.scrollTo(0,OAT.Dom.getWH(self.results_win.div)[0] - 40);
+
+	  if (self.nav_stack.length == 0)
+	  {
+	    self.nav_stack = [{ query:params.query,
+	                        default_graph_uri:params.default_graph_uri,
+	                        format:params.format}];
+	    self.nav_index = 0;
+	  } else {
+	    if (params.query != self.nav_stack[self.nav_index].query ||
+	        params.default_graph_uri != self.nav_stack[self.nav_index].default_graph_uri/* ||
+	        params.format != self.nav_stack[self.nav_index].format - this is questianable*/)
+	    self.nav_index++;
+  	  self.nav_stack.splice(self.nav_index,self.nav_stack.length);
+    	self.nav_stack.push({ query:params.query,
+    	                      default_graph_uri:params.default_graph_uri,
+    	                      format:params.format});
+  	}
+  	params.nav_index = self.nav_index;
+  	params.nav_stack = self.nav_stack;
+
     iSPARQL.QueryExec(params);
 	}
 	
@@ -673,6 +734,56 @@ iSPARQL.Advanced = function ()
   self.service.img.height = "16";
   $("adv_service_div").appendChild(self.service.div);
 	
+	OAT.Dom.attach("query","blur",format_select);
+	OAT.Dom.attach("query","change",format_select);
+	OAT.Dom.attach("query","keyup",format_select);
+	OAT.Dom.attach("query","keypress",format_select);
+}
+
+iSPARQL.Common = {
+	getFilePath:function() {
+	  var path = '/DAV';
+	  if (goptions.username)
+	    path += "/home/"+goptions.username;
+
+    if (goptions.last_path)
+      path = goptions.last_path.substring(0,goptions.last_path.lastIndexOf("/"));
+    
+    return path;
+	},
+
+	getFile:function() {
+	  var file = '';
+
+    if (goptions.last_path)
+      file = goptions.last_path.substring(goptions.last_path.lastIndexOf("/") + 1,goptions.last_path.length);
+    
+    return file;
+	},
+
+	getDefaultPath:function() {
+	  var path = '/DAV';
+	  if (goptions.username)
+	    path += "/home/"+goptions.username;
+	  var pathDefault = path;
+	  if (goptions.username == 'dav')
+	    pathDefault = '/DAV';
+
+    return pathDefault;
+	},
+	
+	checkAuth:function(username,password) {
+	  var auth = false;
+	  if (!do_auth_verify) return true;
+    OAT.AJAX.GET(do_auth_verify, 'username='+username+'&pass='+password, function(data,headers){ 
+      if (data == 'OK')
+        auth = true;
+      else
+        auth = data;
+    },{async:false,onerror:function(xhr){alert(xhr.getResponseText());}});
+    return auth;
+	}
+
 }
 
 function get_file_type(file_name)
@@ -684,9 +795,10 @@ function get_file_type(file_name)
 }
 
 function set_dav_props(res){
-  if (isVirtuoso && (!res.match(/isparql\.xml$/i)) && res.substring(res.lastIndexOf('.') + 1).toLowerCase() == 'xml')
+  var ext = res.substring(res.lastIndexOf('.') + 1).toLowerCase();
+  if (isVirtuoso && (ext == 'xml' || ext == 'isparql' || ext == 'rq'))
   {
-	  OAT.AJAX.GET('./set_dav_props.vsp?res='+encodeURIComponent(res),'',function(){return '';},{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC});
+	  OAT.AJAX.GET('./set_dav_props.vsp?res='+encodeURIComponent(res),'',function(){return '';},{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC,onerror:function(xhr){alert(xhr.getResponseText());}});
 	}
 }
 
@@ -706,9 +818,9 @@ function get_mime_type(res){
 
 var last_format = 1;
 
-function format_select(query_obg)
+function format_select()
 {
-  if (query_obg == undefined) query_obg = $('query');
+  var query_obg = $('query');
   var query = query_obg.value;
   var format = $('format');
     

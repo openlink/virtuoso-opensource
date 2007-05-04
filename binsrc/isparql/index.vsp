@@ -50,6 +50,12 @@
   var default_qry = '<?vsp http(replace(def_qry,'\'','\\\'')); ?>';
   var fixed_sponge = '<?vsp http(replace(fixed_sponge,'\'','\\\'')); ?>';
   var default_spng = 'soft';
-	var toolkitImagesPath = "toolkit/images";
+  var do_auth_verify = './auth.vsp';
+<?vsp 
+  if (isstring(registry_get('iSPARQL_GET_INITIAL_AUTH')))
+    http('  var get_initial_credentials = ''' || registry_get('iSPARQL_GET_INITIAL_AUTH') || ''';\n');
+  if (isstring(registry_get('iSPARQL_AUTH_ENDPOINT')))
+    http('  var do_auth_verify = ''' || registry_get('iSPARQL_AUTH_ENDPOINT') || '''');
+?>
 </script>
 <?include index.html ?>

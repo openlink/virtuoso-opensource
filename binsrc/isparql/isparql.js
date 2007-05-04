@@ -73,6 +73,7 @@ window.iSPARQL = {
     	}
     	
     	params.should_sponge = '';
+  	  if (click_type)
     	params.default_graph_uri = '';
   	  if (click_type == 1)
   	  {
@@ -110,7 +111,9 @@ window.iSPARQL = {
     	params.query = new_query;
     	params.nav_index++;
     	params.nav_stack.splice(params.nav_index,params.nav_stack.length);
-    	params.nav_stack.push(new_query);
+    	params.nav_stack.push({ query:new_query,
+    	                        default_graph_uri:params.default_graph_uri,
+    	                        format:params.format});
       iSPARQL.QueryExec(params);
       params.browseCallback(new_query,params);
     }
@@ -123,10 +126,10 @@ window.iSPARQL = {
   		a1.innerHTML = "Explore";
   		a1.href = "javascript:void(0)";
   
-  		var li4 = OAT.Dom.create("li");
-  		var a4 = OAT.Dom.create("a");
-  		a4.innerHTML = "Get Classes";
-  		a4.href = "javascript:void(0)";
+  		//var li4 = OAT.Dom.create("li");
+  		//var a4 = OAT.Dom.create("a");
+  		//a4.innerHTML = "Get Classes";
+  		//a4.href = "javascript:void(0)";
   		
   		var hr1 = OAT.Dom.create("hr");
   		
@@ -148,16 +151,16 @@ window.iSPARQL = {
   		a5.target = "_blank";
   		a5.href = anchor.uri;
 
-  		OAT.Dom.append([ul,li1,li4,hr1,li2,li3,hr2,li5],[li1,a1],[li4,a4],[li2,a2],[li3,a3],[li5,a5]);
+  		OAT.Dom.append([ul,li1,/*li4,*/hr1,li2,li3,hr2,li5],[li1,a1],/*[li4,a4],*/[li2,a2],[li3,a3],[li5,a5]);
   
   		OAT.Dom.attach(a1,"click",function() {
   			OAT.AnchorData.window.close();
   			URIClick(anchor);
   		});
-  		OAT.Dom.attach(a4,"click",function() {
-  			OAT.AnchorData.window.close();
-  			URIClick(anchor,2);
-  		});
+  		//OAT.Dom.attach(a4,"click",function() {
+  		//	OAT.AnchorData.window.close();
+  		//	URIClick(anchor,2);
+  		//});
   		OAT.Dom.attach(a2,"click",function() {
   			OAT.AnchorData.window.close();
   			URIClick(anchor,1);
@@ -266,18 +269,18 @@ window.iSPARQL = {
     }
 
   	var params = {
-  		service:goptions.service,
-  		default_graph_uri:'',
-  		query:'',
-  		res_div:$('res_area'),
-  		format:'text/html',
-  		should_sponge:goptions.should_sponge,
-  		maxrows:0,
-  		proxy:goptions.proxy,
-  		named_graphs:[],
-  		prefixes:[], // {"label":'rdf', "uri":'http://www.w3.org/1999/02/22-rdf-syntax-ns#'}
+  		service:goptions.service,               // The sparql endpoint to send the query to
+  		default_graph_uri:'',                   // Default graph
+  		query:'',                               // The query itself
+  		res_div:$('res_area'),                  // DIV where to put the results
+  		format:'text/html',                     // Sets format to the request and process the results accordinglly.
+  		should_sponge:goptions.should_sponge,   // should-sponge param - as described in Virtuoso Docs.
+  		maxrows:0,                              // sets maxrows params to the endpoint, 0 for nolimit /limit left to server/
+  		proxy:goptions.proxy,                   // If the endpoint is http: ... and this is set, the request would be send to './remote.vsp'
+  		named_graphs:[],                        // Array of named graphs to send to the endpoint
+  		prefixes:[], // {"label":'rdf', "uri":'http://www.w3.org/1999/02/22-rdf-syntax-ns#'} // those are used when showing results
   		imagePath:'images/',
-  		errorHandler:function(xhr)
+  		errorHandler:function(xhr)              // function called when the endpoint returns error
       {
         var status = xhr.getStatus();
         var response = xhr.getResponseText();
@@ -297,16 +300,16 @@ window.iSPARQL = {
         }
         params.callback('<pre>' + data + '</pre>',headers,'er');
       },
-  		browseCallback:function(query,params){},
-  		browseStart:false,
-  		browseBack:false,
-  		browseForward:false,
-  		browseFinish:false,
-  		hideRequest:false,
-  		hideResponce:false,
-  		showQuery:false,
+  		browseCallback:function(query,params){},// 
+  		browseStart:false, // sets blur to this object
+  		browseBack:false,  // sets blur to this object
+  		browseForward:false, // sets blur to this object
+  		browseFinish:false,  // sets blur to this object
+  		hideRequest:false,  // if true hides the request tab in the generated responce
+  		hideResponce:false, // if true hides the responce tab in the generated responce
+  		showQuery:false,    // if true shows the query tab in the generated responce
       //RESULT PROCESSING
-      callback:function(data,headers,param) 
+      callback:function(data,headers,param)  // function called on result
       {
         // Clear the tabls
         OAT.Dom.clear(params.res_div);
@@ -430,7 +433,8 @@ window.iSPARQL = {
       		}
           putTextInPre(request_content,'Content-Length: ' + body_str.length + '\r\n');
           putTextInPre(request_content,'\r\n');
-          putTextInPre(request_content,body_str.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+          //putTextInPre(request_content,body_str.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+          putTextInPre(request_content,body_str);
   
           OAT.Dom.append([params.res_div,request]);
         }
@@ -444,7 +448,8 @@ window.iSPARQL = {
         
           putTextInPre(responce_content,headers);
           putTextInPre(responce_content,'\r\n');
-          putTextInPre(responce_content,data.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+          //putTextInPre(responce_content,data.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+          putTextInPre(responce_content,data);
           OAT.Dom.append([params.res_div,response]);
         }
 
@@ -456,7 +461,8 @@ window.iSPARQL = {
           OAT.Dom.append([query_div,query_div_content]);
         
           //query_div_content.innerHTML = params.query.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-          putTextInPre(query_div_content,params.query.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+          //putTextInPre(query_div_content,params.query.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+          putTextInPre(query_div_content,params.query);
           OAT.Dom.append([params.res_div,query_div]);
         }
         
@@ -488,10 +494,9 @@ window.iSPARQL = {
 	      } else {
 	        var startClick = function() {
         	  params.nav_index = 0;
-        	  var new_query = params.nav_stack[params.nav_index];
-        	  params.query = new_query;
+        	  params.nav_restore();
             iSPARQL.QueryExec(params);
-            params.browseCallback(new_query,params);
+            params.browseCallback(params.query,params);
     	    }
         	OAT.Dom.attach(tabres_start,"click",startClick);
 	        if (params.browseStart)
@@ -521,10 +526,9 @@ window.iSPARQL = {
 	      } else {
 	        var backClick = function() {
         	  params.nav_index--;
-        	  var new_query = params.nav_stack[params.nav_index];
-        	  params.query = new_query;
+        	  params.nav_restore();
             iSPARQL.QueryExec(params);
-            params.browseCallback(new_query,params);
+            params.browseCallback(params.query,params);
     	    }
         	OAT.Dom.attach(tabres_back,"click",backClick);
 	        if (params.browseBack)
@@ -554,10 +558,9 @@ window.iSPARQL = {
 	      } else {
 	        var forwardClick = function() {
         	  params.nav_index++;
-        	  var new_query = params.nav_stack[params.nav_index];
-        	  params.query = new_query;
+        	  params.nav_restore();
             iSPARQL.QueryExec(params);
-            params.browseCallback(new_query,params);
+            params.browseCallback(params.query,params);
     	    }
         	OAT.Dom.attach(tabres_forward,"click",forwardClick);
 	        if (params.browseForward)
@@ -587,10 +590,9 @@ window.iSPARQL = {
 	      } else {
 	        var finishClick = function() {
         	  params.nav_index = params.nav_stack.length - 1;
-        	  var new_query = params.nav_stack[params.nav_index];
-        	  params.query = new_query;
+        	  params.nav_restore();
             iSPARQL.QueryExec(params);
-            params.browseCallback(new_query,params);
+            params.browseCallback(params.query,params);
     	    }
         	OAT.Dom.attach(tabres_finish,"click",finishClick);
 	        if (params.browseFinish)
@@ -650,8 +652,15 @@ window.iSPARQL = {
           }
         }
       },
-  		nav_stack:[paramsObj.query],
-  		nav_index:0
+  		nav_stack:[{query:paramsObj.query,
+  		            default_graph_uri:paramsObj.default_graph_uri,
+  		            format:paramsObj.format}],
+  		nav_index:0,
+  		nav_restore:function(){
+    	  this.query = this.nav_stack[this.nav_index].query;
+    	  this.default_graph_uri = this.nav_stack[this.nav_index].default_graph_uri;
+    	  this.format = this.nav_stack[this.nav_index].format;
+  		}
   	};
   	
   	for (var p in paramsObj) { params[p] = paramsObj[p]; }

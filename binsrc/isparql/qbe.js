@@ -99,6 +99,9 @@ iSPARQL.QBE = function ()
 {
 	var self = this;
 	
+	this.nav_stack = [];
+	this.nav_index = 0;
+	
 	this.group_color_seq = new iSPARQL.GroupColorSeq();
 
 	this.clear = function(){
@@ -312,7 +315,7 @@ iSPARQL.QBE = function ()
 	var win_width = 260;
 	var win_x = -20;
 
-	this.schema_win = new OAT.Window({title:"Schemas", close:0, min:0, max:0, width:win_width, height:300, x:win_x,y:230});
+	this.schema_win = new OAT.Window({title:"Schemas", close:0, min:0, max:0, width:win_width, height:340, x:win_x,y:200});
 	this.schema_win.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
 		return l < 0 || t < 0;
 	}
@@ -321,7 +324,7 @@ iSPARQL.QBE = function ()
 	this.schema_win.content.appendChild($("schemas"));
 	OAT.Resize.create(this.schema_win.resize, "schemas_tree_container", OAT.Resize.TYPE_XY);
 
-	this.props_win = new OAT.Window({title:"", close:0, min:0, max:0, width:win_width, height:86, x:win_x,y:100});
+	this.props_win = new OAT.Window({title:"", close:0, min:0, max:0, width:win_width, height:120, x:win_x,y:60});
 	this.props_win.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
 		return l < 0 || t < 0;
 	}
@@ -366,10 +369,10 @@ iSPARQL.QBE = function ()
   self.schematree.unbound.collapse();
   this.schematree.bound = self.schematree.tree.createChild('bound',1);
   self.schematree.bound.collapse();
-  var ref_img = OAT.Dom.create('img');
+  var ref_img = OAT.Dom.create('img',{width:'16px',height: '16px', verticalAlign: 'middle', marginLeft: '3px', cursor: 'pointer'});
   ref_img.src = 'images/reload.png';
 	OAT.Dom.attach(ref_img,"click",function(){self.schematree.bound.expand();self.SchemaTreeRefresh()});
-	self.schematree.bound.gdElm.appendChild(ref_img);
+	self.schematree.bound._gdElm.appendChild(ref_img);
   
 	this.save = function(save_name,save_type) {
 	  var data = self.getSaveData(save_type)
@@ -615,10 +618,10 @@ iSPARQL.QBE = function ()
                 leaf.li.uritype = nodetype;
                 leaf.li.schema = node.li.uri;
                 leaf.li.bound = node.li.bound;
-                leaf.label.OATTreeObj = leaf;
+                leaf._label.OATTreeObj = leaf;
                 
-        			  self.svgsparql.ghostdrag.addSource(leaf.label,self.SchemaNodeDragProcess,self.SchemaNodeDragDrop);
-              	OAT.Dom.attach(leaf.label,"dblclick",self.SchemaNodeDblClick);
+        			  self.svgsparql.ghostdrag.addSource(leaf._label,self.SchemaNodeDragProcess,self.SchemaNodeDragDrop);
+              	OAT.Dom.attach(leaf._label,"dblclick",self.SchemaNodeDblClick);
 
       	        if (nodetype == 'class')
       	          leaf.setImage('/../../../images/concept-icon-16');
@@ -627,7 +630,7 @@ iSPARQL.QBE = function ()
                 else
                   leaf.setImage('/../../../images/relation-icon-16');
 
-            	  //OAT.Dom.attach(leaf.label,"click",SchemaWalkClick);
+            	  //OAT.Dom.attach(leaf._label,"click",SchemaWalkClick);
               }
             }
             processed.push(objs[i].uri.value);
@@ -771,7 +774,7 @@ iSPARQL.QBE = function ()
     	          { 
     	            Domains = node.createChild('in-domain-of',1,0); 
     	            Domains.collapse();
-    	            //OAT.Dom.attach(Domains.label,"click",function(){ Domains.toggleState()});
+    	            //OAT.Dom.attach(Domains._label,"click",function(){ Domains.toggleState()});
     	          }
     	          var pnode = Domains;
     	        } else {
@@ -779,7 +782,7 @@ iSPARQL.QBE = function ()
     	          { 
     	            Ranges = node.createChild('in-range-of',1); 
     	            Ranges.collapse();
-    	            //OAT.Dom.attach(Ranges.label,"click",function(){ Ranges.toggleState()});
+    	            //OAT.Dom.attach(Ranges._label,"click",function(){ Ranges.toggleState()});
     	          }
     	          var pnode = Ranges;
     	        }
@@ -800,10 +803,10 @@ iSPARQL.QBE = function ()
               leaf.li.uritype = nodetype;
               leaf.li.schema = node.li.schema;
               leaf.li.bound = node.li.bound;
-              leaf.label.OATTreeObj = leaf;
+              leaf._label.OATTreeObj = leaf;
               
-      			  self.svgsparql.ghostdrag.addSource(leaf.label,self.SchemaNodeDragProcess,self.SchemaNodeDragDrop);
-            	OAT.Dom.attach(leaf.label,"dblclick",self.SchemaNodeDblClick);
+      			  self.svgsparql.ghostdrag.addSource(leaf._label,self.SchemaNodeDragProcess,self.SchemaNodeDragDrop);
+            	OAT.Dom.attach(leaf._label,"dblclick",self.SchemaNodeDblClick);
   
     	        if (nodetype == 'class')
     	          leaf.setImage('/../../../images/concept-icon-16');
@@ -812,7 +815,7 @@ iSPARQL.QBE = function ()
               else
                 leaf.setImage('/../../../images/relation-icon-16');
   
-          	  //OAT.Dom.attach(leaf.label,"click",SchemaWalkClick);
+          	  //OAT.Dom.attach(leaf._label,"click",SchemaWalkClick);
             }
           	processed.push(objs[i].uri.value)
           }
@@ -926,8 +929,8 @@ iSPARQL.QBE = function ()
     node.li.uri = schema;
     node.li.uritype = 'schema';
     node.li.bound = false;
-    node.label.OATTreeObj = node;
-  	//OAT.Dom.attach(node.label,"click",function() {
+    node._label.OATTreeObj = node;
+  	//OAT.Dom.attach(node._label,"click",function() {
   	//  self.SchemaUpdate(this);
     //});
   }
@@ -997,42 +1000,39 @@ iSPARQL.QBE = function ()
 	
 	this.func_load = function() {
 	  if (tab.selectedIndex != tab.keys.find($('tab_qbe'))) return;
-	  var path = '/DAV';
-	  if (goptions.username)
-	    path += "/home/"+goptions.username;
-	  var pathDefault = path;
-	  if (goptions.username == 'dav')
-	    pathDefault = '/DAV';
+	  var path = iSPARQL.Common.getFilePath();
+	  var file = iSPARQL.Common.getFile();
+	  //var pathDefault = iSPARQL.Common.getDefaultPath();
 	    
-    if (goptions.last_path)
-      path = goptions.last_path.substring(0,goptions.last_path.lastIndexOf("/"));
-	    
-  	if (goptions.login_put_type == 'http')
-  	{
-      var fname = "";
-      if (goptions.last_path)
-        fname = goptions.last_path.substring(goptions.last_path.lastIndexOf("/") + 1);
-			var name = OAT.Dav.getFile(path,fname);
-			if (!name) { return; }
-      goptions.last_path = name;
-			OAT.AJAX.GET(name,'',self.loadFromString,{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC});
-  	} else {
+  	//if (goptions.login_put_type == 'http')
+  	//{
+    //  var fname = "";
+    //  if (goptions.last_path)
+    //    fname = goptions.last_path.substring(goptions.last_path.lastIndexOf("/") + 1);
+		//	var name = OAT.Dav.getFile(path,fname);
+		//	if (!name) { return; }
+    //  goptions.last_path = name;
+		//	OAT.AJAX.GET(name,'',self.loadFromString,{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC});
+  	//} else {
     	var options = {
-    		mode:'open_dialog',
     		user:goptions.username,
     		pass:goptions.password,
-        pathDefault:pathDefault + '/',
     		path:path + '/',
-    		filetypes:[{ext:'rq',label:'SPARQL Definitions'},{ext:'isparql',label:'Dynamic Data Web Page'},{ext:'xml',label:'XML Server Page'},{ext:'*',label:'All files'}],
-        onConfirmClick:function(path,fname,data){
+    		file:file,
+    		extension:get_file_type(goptions.last_path),
+    		isDav:((goptions.login_put_type == 'http')?false:true),
+    		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
+    		                  ['isparql','isparql','Dynamic Data Web Page',get_mime_type('isparql')],
+    		                  ['xml','xml','XML Server Page',get_mime_type('xml')],
+    		                  ['','*','All files','']
+    		                 ],
+        callback:function(path,fname,data){
           goptions.last_path = path + fname;
           self.loadFromString(data);
-          OAT.WebDav.close();
         }
       };
-    	OAT.WebDav.open(options);
-    	if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
-    }
+    	OAT.WebDav.openDialog(options);
+    //}
 	}
 	
 	this.func_save = function() {
@@ -1046,44 +1046,42 @@ iSPARQL.QBE = function ()
 	
 	this.func_saveas = function() {
 	  if (tab.selectedIndex != tab.keys.find($('tab_qbe'))) return;
-	  if (goptions.login_put_type == 'http')
-	  {
-      if (goptions.last_path)
-      {
-        $("qbe_save_name").value = goptions.last_path;
-        $("qbe_savetype").value = get_file_type(goptions.last_path);
-      }
-	    dialogs.qbe_save.show();
-	  } else {
-  	  var path = '/DAV';
-  	  if (goptions.username)
-  	    path += "/home/"+goptions.username;
-  	  var pathDefault = path;
-  	  if (goptions.username == 'dav')
-  	    pathDefault = '/DAV';
-
-      if (goptions.last_path)
-        path = goptions.last_path.substring(0,goptions.last_path.lastIndexOf("/"));
+	  //if (goptions.login_put_type == 'http')
+	  //{
+    //  if (goptions.last_path)
+    //  {
+    //    $("qbe_save_name").value = goptions.last_path;
+    //    $("qbe_savetype").value = get_file_type(goptions.last_path);
+    //  }
+	  //  dialogs.qbe_save.show();
+	  //} else {
+  	  var path = iSPARQL.Common.getFilePath();
+  	  var file = iSPARQL.Common.getFile();
+  	  //var pathDefault = iSPARQL.Common.getDefaultPath();
 
 			var options = {
-				mode:'save_dialog',
-				onConfirmClick:function(ext){
-				  OAT.Dav.SaveContentType = get_mime_type(ext);
-      		return qbe.getSaveData(ext);
-				},
-				afterSave:function(path,fname){
+    		user:goptions.username,
+    		pass:goptions.password,
+    		path:path + '/',
+    		file:file,
+    		extension:get_file_type(goptions.last_path),
+    		isDav:((goptions.login_put_type == 'http')?false:true),
+    		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
+    		                  ['isparql','isparql','Dynamic Data Web Page',get_mime_type('isparql')],
+    		                  ['xml','xml','XML Server Page',get_mime_type('xml')]
+    		                 ],
+				callback:function(path,fname){
           goptions.last_path = path + fname;
           set_dav_props(goptions.last_path);
 				},
-    		user:goptions.username,
-    		pass:goptions.password,
-        pathDefault:pathDefault + '/',
-    		path:path + '/',
-    		filetypes:[{ext:'rq',label:'SPARQL Definitions'},{ext:'isparql',label:'Dynamic Data Web Page'},{ext:'xml',label:'XML Server Page'}]
-			};
-			OAT.WebDav.open(options);
-    	if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
+    		dataCallback:function(fname,ext){
+				  //OAT.Dav.SaveContentType = get_mime_type(ext);
+      		return self.getSaveData(ext);
 	  }
+			};
+			OAT.WebDav.saveDialog(options);
+    	//if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
+	  //}
 	}
 
 	/* create toolbar and bind its buttons to various SVGSparql modes */
@@ -1395,7 +1393,7 @@ iSPARQL.QBE = function ()
           node.li.uri = objs[i].g.value;
           node.li.uritype = 'schema';
           node.li.bound = true;
-          node.label.OATTreeObj = node;
+          node._label.OATTreeObj = node;
         }
       }
     }
@@ -1597,12 +1595,8 @@ iSPARQL.QBE = function ()
 
 	/* file name for saving */
 	var fileRef = function() {
-	  var path = '/DAV';
-	  if (goptions.username)
-	    path += "/home/"+goptions.username;
-	  var pathDefault = path;
-	  if (goptions.username == 'dav')
-	    pathDefault = '/DAV';
+	  var path = iSPARQL.Common.getFilePath();
+	  var pathDefault = iSPARQL.Common.getDefaultPath();
 	    
 	  var ext = $v('qbe_savetype');
 
@@ -1625,6 +1619,7 @@ iSPARQL.QBE = function ()
 	    service:self.service.input.value,
 	    query:self.QueryGenerate(),
 	    //default_graph_uri:$v('qbe_graph'),
+	    default_graph_uri:'',
 	    //maxrows:$v('qbe_maxrows'),
 	    should_sponge:$v('qbe_sponge'),
 	    format:$v('qbe_format'),
@@ -1634,6 +1629,8 @@ iSPARQL.QBE = function ()
     	  l.raise(self.results_win.div);
         self.loadFromString(query);
         //$('qbe_graph').value = params.default_graph_uri;
+        self.nav_stack = params.nav_stack;
+        self.nav_index = params.nav_index;
       },
       browseStart:icon_start,
       browseBack:icon_back,
@@ -1644,6 +1641,26 @@ iSPARQL.QBE = function ()
 	  OAT.Dom.show(self.results_win.div);
 	  l.raise(self.results_win.div);
 	  window.scrollTo(0,OAT.Dom.getWH(self.results_win.div)[0] - 40);
+
+	  if (self.nav_stack.length == 0)
+	  {
+	    self.nav_stack = [{ query:params.query,
+	                        default_graph_uri:params.default_graph_uri,
+	                        format:params.format}];
+	    self.nav_index = 0;
+	  } else {
+	    if (params.query != self.nav_stack[self.nav_index].query ||
+	        params.default_graph_uri != self.nav_stack[self.nav_index].default_graph_uri/* ||
+	        params.format != self.nav_stack[self.nav_index].format - this is questianable*/)
+	    self.nav_index++;
+  	  self.nav_stack.splice(self.nav_index,self.nav_stack.length);
+    	self.nav_stack.push({ query:params.query,
+    	                      default_graph_uri:params.default_graph_uri,
+    	                      format:params.format});
+  	}
+  	params.nav_index = self.nav_index;
+  	params.nav_stack = self.nav_stack;
+
     iSPARQL.QueryExec(params);
 	}
 	
