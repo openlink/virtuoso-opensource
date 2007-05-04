@@ -1491,7 +1491,7 @@ im_version = {
   "IM",        /*!< Title of unit, filled by unit */
   IM_VERSION,      /*!< Version number, filled by unit */
   "OpenLink Software",      /*!< Plugin's developer, filled by unit */
-  "Support functions for Image Magick", /*!< Any additional info, filled by unit */
+  "Support functions for Image Magick " MagickLibVersionText, /*!< Any additional info, filled by unit */
   0,          /*!< Error message, filled by unit loader */
   0,          /*!< Name of file with unit's code, filled by unit loader */
   im_connect,      /*!< Pointer to connection function, cannot be 0 */

@@ -134,7 +134,7 @@ wbxml2_version = {
   "WBXML2",        /*!< Title of unit, filled by unit */
   WBMXL2_VERSION,      /*!< Version number, filled by unit */
   "OpenLink Software",      /*!< Plugin's developer, filled by unit */
-  "Support functions for WBXML2 Library", /*!< Any additional info, filled by unit */
+  "Support functions for WBXML2 " WBXML_LIB_VERSION " Library", /*!< Any additional info, filled by unit */
   0,          /*!< Error message, filled by unit loader */
   0,          /*!< Name of file with unit's code, filled by unit loader */
   wbmxl2_connect,      /*!< Pointer to connection function, cannot be 0 */
