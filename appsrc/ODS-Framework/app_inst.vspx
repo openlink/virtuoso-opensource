@@ -142,6 +142,20 @@
       <?vsp
           }
       ?>
+      <?vsp
+      if(self.app_type='nntpf')
+       {
+      ?>
+       <tr>
+         <td>
+          <a href="<?Vrtrim(self.odsbar_ods_gpath,'/ods/')||wa_expand_url ('/nntpf/', self.login_pars)?>"><img src="images/icons/go_16.png" border="0"/> Discussions </a>
+        </td>
+       </tr>
+
+      <?vsp
+          }
+      ?>
+
      </table>
     </td>
     <td width="<?Vcast((100-firstcolumn_wide) as varchar)||'%'?>">
@@ -198,6 +212,18 @@
               {
             ?>
             <vm:dash-addressbook-summary/>
+            <?vsp
+              }
+            else if (self.app_type = 'Calendar')
+              {
+            ?>
+            <vm:dash-calendar-summary/>
+            <?vsp
+              }
+            else if (self.app_type = 'nntpf')
+              {
+            ?>
+            <vm:dash-discussions-summary/>
             <?vsp
               }
          ?>
