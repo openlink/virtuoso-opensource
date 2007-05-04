@@ -120,11 +120,16 @@
           {
           declare i int;
 
+          declare _foruser_id integer;
+          _foruser_id:=self.user_id;
+          if(self.comm_access=1) 
+            _foruser_id := self.owner_id;
+   
           for select top 10 inst_name, title, ts, author, url, uname, email
               from   WA_USER_DASHBOARD_SP (uid, inst_type)
                      (inst_name varchar, title nvarchar, ts datetime, author nvarchar, url nvarchar, uname varchar, email varchar)
                      WA_USER_DASHBOARD
-              where uid = self.user_id and inst_type = '<xsl:value-of select="$app"/>' order by ts desc
+              where uid = _foruser_id and inst_type = '<xsl:value-of select="$app"/>' order by ts desc
        do
        {
          declare aurl, mboxid, clk any;
@@ -196,13 +201,17 @@
        declare q_str varchar;
 
        if(self.user_id>0){
+       declare _foruser_id integer;
+       _foruser_id:=self.user_id;
+       if(self.comm_access=1) 
+         _foruser_id := self.owner_id;
 
        q_str := 'select top 10 inst_name, title, ts, author, url, uname, email from '||
                 '  WA_USER_DASHBOARD_SP '||
                 '     (uid, inst_type) '||
                 '     (inst_name varchar, title nvarchar, ts datetime, author nvarchar, url nvarchar, uname varchar, email varchar) '||
                 '  WA_USER_DASHBOARD '||
-                'where uid = '||cast(self.user_id as varchar)||' and inst_type = \'<xsl:value-of select="$app"/>\' '||
+                'where uid = '||cast(_foruser_id as varchar)||' and inst_type = \'<xsl:value-of select="$app"/>\' '||
                 'order by '||order_by_str||' '||order_way_str;
        }else{
        
@@ -385,12 +394,18 @@
 
        if(self.user_id>0){
 
+       if(self.user_id>0){
+       declare _foruser_id integer;
+       _foruser_id:=self.user_id;
+       if(self.comm_access=1) 
+         _foruser_id := self.owner_id;
+
        q_str := 'select top 10 inst_name, title, ts, author, url, uname, email from '||
                 '  ODS.COMMUNITY.COMM_USER_DASHBOARD_SP '||
                 '     (uid, inst_type, inst_parent_name) '||
                 '     (inst_name varchar, title nvarchar, ts datetime, author nvarchar, url nvarchar, uname varchar, email varchar) '||
                 '  WA_USER_DASHBOARD '||
-                'where uid = '||cast(self.user_id as varchar)||' and inst_type = \'<xsl:value-of select="$app"/>\' and inst_parent_name = \''||replace(self.comm_wainame,'\'','\'\'')||'\' '||
+                'where uid = '||cast(_foruser_id as varchar)||' and inst_type = \'<xsl:value-of select="$app"/>\' and inst_parent_name = \''||replace(self.comm_wainame,'\'','\'\'')||'\' '||
                 'order by '||order_by_str||' '||order_way_str;
        }else{
        
@@ -926,5 +941,202 @@
     </div> <!-- widget -->
   </xsl:template>
 
+  <xsl:template match="vm:dash-bookmark-summary">
+    <div class="widget w_app_summary w_bookmark_summary">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="<?VWA_LINK(1, '/ods/')?>images/icons/ods_bookmarks_16.png"
+               alt="ODS-Bookmark icon" />
+          <span class="w_title_text"><?V WA_GET_APP_NAME ('Bookmark') ?> summary</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+        </div>
+      </div> <!-- w_title_bar -->
+      <div class="w_pane content_pane">
+        <table class="app_summary_listing">
+          <tr>
+            <th>
+              <v:url name="bmk_orderby_instance"
+                     value="Instance"
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                            '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                     when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                     else 'asc' end) ||
+                            '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="bmk_orderby_link"
+                     value="Bookmark"
+                     url="-- http_path()||'?order_by=link&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                             '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                      when get_keyword('order_by', self.vc_event.ve_params,'')='link' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                             '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="bmk_orderby_creator"
+                     value="Creator"
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                             '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                      when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                      else 'asc' end) ||
+                             '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="bmk_orderby_date"
+                     value="Date"
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                             '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                      when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                      else 'asc' end) ||
+                             '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">Bookmark</xsl:with-param>
+          </xsl:call-template>
+        </table>
+      </div> <!-- content_pane -->
+    </div>
+  </xsl:template> <!-- dash_bookmark_summary -->
+  <xsl:template match="vm:dash-polls-summary">
+    <div class="widget w_app_summary w_polls_summary">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="<?VWA_LINK(1, '/ods/')?>images/icons/ods_poll_16.png"
+               alt="ODS-Polls icon" />
+            <span class="w_title_text"><?V WA_GET_APP_NAME ('Polls') ?> Summary</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+        </div>
+      </div>
+      <div class="w_pane content_pane">
+        <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
+          <tr>
+            <th>
+              <v:url name="polls_orderby_instance"
+                     value="Instance"
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                            '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+                             />
+            </th>
+            <th>
+              <v:url name="polls_orderby_subject"
+                     value="Poll"
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="polls_orderby_creator"
+                     value="Creator"
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="polls_orderby_date"
+                     value="Date"
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">Polls</xsl:with-param>
+          </xsl:call-template>
+        </table>
+      </div> <!-- w_pane -->
+    </div> <!-- widget -->
+  </xsl:template>
+
+  <xsl:template match="vm:dash-addressbook-summary">
+    <div class="widget w_app_summary w_addressbook_summary">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="<?VWA_LINK(1, '/ods/')?>images/icons/ods_ab_16.png"
+               alt="ODS-AddressBook icon" />
+            <span class="w_title_text"><?V WA_GET_APP_NAME ('AddressBook') ?> Summary</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+        </div>
+      </div>
+      <div class="w_pane content_pane">
+        <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
+          <tr>
+            <th>
+              <v:url name="addressbook_orderby_instance"
+                     value="Instance"
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                            '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+                             />
+            </th>
+            <th>
+              <v:url name="addressbook_orderby_subject"
+                     value="Contact"
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="addressbook_orderby_creator"
+                     value="Creator"
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="addressbook_orderby_date"
+                     value="Date"
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">AddressBook</xsl:with-param>
+          </xsl:call-template>
+        </table>
+      </div> <!-- w_pane -->
+    </div> <!-- widget -->
+  </xsl:template>
 
 </xsl:stylesheet>

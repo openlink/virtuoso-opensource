@@ -170,7 +170,7 @@
         name="ownedapp_list"
         sql="select wa_utf8_to_wide(WAI_NAME) as KEYVAL,wa_utf8_to_wide(WAI_NAME) as NAME FROM DB.DBA.WA_INSTANCE,DB.DBA.WA_MEMBER
              WHERE
-                 WAM_USER=self.user_id
+                 WAM_USER=self.owner_id
              AND WAM_MEMBER_TYPE=1
              AND WAM_INST=WAI_NAME
              AND WAI_NAME <> self.comm_wainame

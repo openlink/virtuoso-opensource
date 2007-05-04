@@ -35,7 +35,11 @@
                      vector ('eNews2', 'enews2'),
                      vector ('oWiki', 'wiki'),
                      vector ('oGallery', 'oGallery'),
-                     vector ('Community', 'Community')
+                     vector ('Community', 'Community'),
+                     vector ('Bookmark', 'bookmark'),
+                     vector ('Polls','Polls'),
+                     vector ('AddressBook','AddressBook')
+
                     );
 
       foreach (any app in arr) do

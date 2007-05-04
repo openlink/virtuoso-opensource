@@ -85,8 +85,20 @@
                      </td></tr>
 	                   <?vsp
 	                     declare i int;
+	                     declare _foruser_name varchar;
+	                     declare _foruser_id integer;
+	                     
+	                     _foruser_name:=self.user_name;
+	                     _foruser_id:=self.user_id;
+
+	                     if(self.comm_access=1)
+	                     {
+	                       _foruser_name := self.owner_name;
+	                       _foruser_id   := self.owner_id;
+	                     }
+	                     
 	                     for select * from WA_USER_APP_INSTANCES sub where
-	                       user_id = self.user_id and app_type = self.app_type and fname = self.user_name do
+	                       user_id = _foruser_id and app_type = self.app_type and fname = _foruser_name do
 	                     {
 	                   ?>
 	                   <tr>
@@ -180,7 +192,24 @@
                       <vm:dash-ogallery-summary/>
                   <?vsp
                       }
-                    
+                  else if (self.app_type = 'Bookmark')
+                    {
+                  ?>
+                  <vm:dash-bookmark-summary/>
+                  <?vsp
+                    }
+                 else if (self.app_type = 'Polls')
+                   {
+                 ?>
+                 <vm:dash-polls-summary/>
+                 <?vsp
+                   }
+                 else if (self.app_type = 'AddressBook')
+                   {
+                 ?>
+                 <vm:dash-addressbook-summary/>
+                 <?vsp
+                   }
                   ?>
                   </div>
               </td>

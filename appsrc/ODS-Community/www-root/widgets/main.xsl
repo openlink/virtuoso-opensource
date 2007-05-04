@@ -1667,7 +1667,7 @@ c.length);
                         LEFT JOIN WS.WS.SYS_DAV_COL D on D.COL_ID=C.COL_PARENT
                         LEFT JOIN PHOTO.WA.comments CM on CM.RES_ID=A.RES_ID
                         LEFT JOIN DB.DBA.SYS_USERS U on U.U_ID=A.RES_OWNER
-                      where C.COL_NAME=''gallery'' and D.COL_NAME='''||self.owner_name||'''
+                      where C.COL_NAME=coalesce (PHOTO.WA.get_gallery_folder_name (), ''Gallery'') and D.COL_NAME='''||self.owner_name||'''
                       order by RES_MOD_TIME desc,CM.CREATE_DATE desc';
               
               rc := exec (q_str, null, null, vector (), 0, null, null, h);
@@ -1875,7 +1875,7 @@ c.length);
         declare mapkey any;
         
         mapkey:=DB.DBA.WA_MAPS_GET_KEY();
-        if(self.user_name is not null and self.is_inst_member and isstring (mapkey) and length (mapkey) > 0)
+        if(self.user_name is not null and (self.is_inst_member or self.comm_access=1) and isstring (mapkey) and length (mapkey) > 0)
         {
           if (is_empty_or_null (self.ufname))
           {
@@ -1887,7 +1887,6 @@ c.length);
 
         ?>
         
-       
         <div class="info_container" style="margin:0px;height: 340px;">
           <table cellspacing="0" cellpadding="0" border="0">
             <tr>
@@ -2219,12 +2218,7 @@ c.length);
 </xsl:template>
   <xsl:template match="vm:signup-block">
       <?vsp
-        if(self.user_name is null or self.is_inst_member<>1)
-        {
-      ?>
-      <div class="info_container"  style="margin:0px">
-             <?vsp
-                   if( self.app_membr_mode=0 or self.app_membr_mode=3){
+       if( (self.app_membr_mode=0 or self.app_membr_mode=3) and self.user_name is null){
                    ?>
                     <a href="<?V sprintf('%s/join.vspx?wai_id=%d&sid=%s&realm=%s',self.wa_home,self.comm_id,coalesce(self.sid,''),coalesce(self.realm,'wa')) ?>"> 
                       <img alt="Join today" border="0">
@@ -2244,280 +2238,13 @@ c.length);
                    <?vsp
                 };
              ?>
-
-        <v:login name="login1" realm="wa" mode="url" user-password-check="web_user_password_check">
-         <v:template type="if-no-login">
-              <?vsp         
-              
-              if (self.is_public=0){
-                  http_request_status ('HTTP/1.1 302 Found');
-                  http_header(sprintf('Location: %s\r\n\r\n', self.wa_home));
-                
-              }        
-              ?>
-              <h4><img src="/community/public/images/user_16.gif" width="16" height="16" /> Already a member? Sign in below</h4>
-         </v:template>
-         <v:login-form name="loginf"
-                       required="1"
-                       title="Login"
-                       user-title="Account ID"
-                       password-title="Password"
-                       submit-title="Sign in">
-               <table width="200" border="0" cellpadding="0" cellspacing="0" class="loginarea">
-                 <tr>
-                   <td nowrap="nowrap">Account ID </td>
-                   <td><v:text xhtml_id="username" name="username" value=""/></td>
-                 </tr>
-                 <tr>
-                   <td nowrap="nowrap">Password</td>
-                   <td><v:text xhtml_id="password" name="password" value="" type="password"/></td>
-                 </tr>
-                 <tr>
-                   <td nowrap="nowrap">&nbsp;</td>
-                   <td><v:button action="simple"
-                                 name="login"
-                                 value="Sign in"
-                        	 	     xhtml_id="login_btn" />
-                   </td>
-                 </tr>
-                 <tr>
-                   <td nowrap="nowrap">&nbsp;</td>
-                   <td><v:check-box name="cb_remember_me" xhtml_id="cb_remember_me" value="1"/>Remember Me </td>
-                 </tr>
-               </table>
-         </v:login-form>
-
-         <v:template type="if-login">
-           <?vsp
-           if (self.is_inst_member=0 and self.is_public=0)
-           {
-              http_request_status ('HTTP/1.1 302 Found');
-              http_header(sprintf('Location: %s\r\n\r\n', self.wa_home||'/?sid='||self.sid||'&realm='||self.realm));
-           }
-           
-           ?>
-           <P>You are not member of this community.</P>
-           <v:button name="logoutb" action="logout" value="Logout"/>
-         </v:template>
-
-         <v:on-post>
-             <![CDATA[
-             declare cook_str, expire varchar;
-	           if (self.vc_authenticated and length (self.sid) and
-	     	         get_keyword('cb_remember_me', self.vc_event.ve_params) is not null)
-             {
-                    expire := date_rfc1123 (dateadd ('hour', 1, now()));
-                    cook_str := sprintf ('Set-Cookie: sid=%s; expires=%s;\r\n', self.sid, expire);
-	                  if (strstr ('Set-Cookie: sid=', http_header_get ()) is null)
-	                  {
-       	     	       cook_str := concat (http_header_get (), cook_str);
-       	     	       http_header (cook_str);
-       	     	       --dbg_obj_print ('cook_str=',cook_str,'\n');
-	                  }
-
-             }
-             ]]>
-           </v:on-post>
-
-<v:after-data-bind><![CDATA[
-    if (length (self.sid)){
-
-        declare tmpl any;
-        if (control.vl_authenticated)
-        {
-           if (isnull(strstr(registry_get('_community_path_'), '/DAV'))) self.isDav := 0;
-           
-           self.pubres_url:=sprintf('%s/public/',http_map_get('domain'));
-           
-           
-           set http_charset='utf-8';
-           -- fill in mandatory variables
-           self.comm_wainame := get_keyword('comm_wainame', params);
-           self.comm_home := get_keyword('comm_home', params);
-           
-           select WAI_ID into self.comm_id from DB.DBA.WA_INSTANCE WHERE WAI_NAME=self.comm_wainame;
-                     
-           declare _cookie_vec any;
-           _cookie_vec := vsp_ua_get_cookie_vec(lines);
-           if (isnull(self.oldsid) or self.oldsid = '')
-               self.oldsid := coalesce(get_keyword('oldsid', self.vc_event.ve_params), self.oldsid);
---           self.sid := coalesce(get_keyword('sid', params), get_keyword('sid', _cookie_vec));
-           self.realm :=control.vl_realm;
-           self.domain := http_map_get('vhost');
-           self.page := get_keyword('page', params, 'index');
---           self.page := 'summary';
-           
-           
-           
-           self.host := http_request_header (lines, 'Host');
-           
-           self.current_domain := self.host;
-           if (strstr (self.host, ':'))
-           {
-              declare h any;
-              h := split_and_decode (self.host, 0, '\0\0:');
-              self.current_domain := h[0];
-           }
-           
-           self.mail_domain := (select top 1 WS_DEFAULT_MAIL_DOMAIN from WA_SETTINGS);
-           if (not length (self.mail_domain)) self.mail_domain := self.current_domain;
-           
-            self.base := get_keyword('comm_home', params);
-            self.ur := 'http://' || self.host || self.home;
-            http_header(concat(http_header_get (), 'Content-Type: text/html; charset=utf-8\r\n'));
-            -- check current user access rights
-            declare _minutes any;
-            _minutes := 30;
-           
-            self.comm_access :=ODS..COMM_GET_ACCESS(self.comm_home, self.sid, self.realm, _minutes);
-           
-           
-            self._new_sid := self.sid;
-            -- update sid value in 'params'
-            declare _idx_params, _len_params any;
-            _idx_params := 0;
-            _len_params := length(params);
-           
-           
-            while(_idx_params < _len_params)
-            {
-              if(params[_idx_params] = 'sid')
-              {
-                params[_idx_params + 1] := self.sid;
-                goto _ready;
-              }
-              _idx_params := _idx_params + 2;
-            }
-           
-           
-            _ready:
-            -- update sid value in browser's 'cookie' if it necessary
-            declare _opts any;
-            _opts := (select
-                deserialize(VS_STATE)
-              from
-                VSPX_SESSION
-              where
-                VS_SID = self.sid and
-                VS_REALM = self.realm);
-           
-           
-            if(_opts)
-            {
-              declare _cookie_use any;
-              _cookie_use := get_keyword('cookie_use', _opts, 0);
-              if (_cookie_use)
-              {
-                declare _exp_string, _exp_date, _header, _header_line any;
-                _exp_date := dateadd('month', 3, now());
-                _exp_string := sprintf('%s, %02d-%s-%04d 00:00:01 GMT', dayname(_exp_date), dayofmonth(_exp_date), monthname(_exp_date), year(_exp_date));
-                _header_line := sprintf('Set-Cookie: sid=%s; expires=%s\r\n', self.sid, _exp_string);
-                _header := http_header_get();
-                if(_header is null) {
-                  http_header(_header_line);
-                }
-                http_header(sprintf('%s%s', _header, _header_line));
-              }
-            }
-           
-            if (self.page not in ('errors', 'login'))
-            {
-              if (self.comm_access = 0)
-              {
-                -- redirect to 'Login'
-                declare login_page,curr_page varchar;
-               
-                if (registry_get ('wa_home_link') = 0){
-                    login_page :=self.wa_home||'/login.vspx';
-                }else{
-                    login_page := registry_get ('wa_home_link');
-                }
-           
-                curr_page:=concat(self.comm_home,self.page,'.vspx');
-                http_request_status ('HTTP/1.1 302 Found');
-                http_header(sprintf('Location: %s?URL=%s\r\n\r\n', login_page,curr_page));
-           
-              }
-            }
-            -- get current user
-            self.user_name := ODS..COMM_GET_USER_BY_SESSION(self.sid, self.realm, _minutes);
-            self.phome := '/DAV/home/' || self.user_name || self.comm_home;
-           
-           
-            self.user_id:=-1;
-            if(self.user_name is not null){
-               self.user_id := (select U_ID from SYS_USERS where U_NAME = self.user_name);
-            };
-            -- fill in common community's variables
-            {
-              whenever not found goto not_found_2;
-              select
-                CI_TITLE,
-                CI_HOME,
-                CI_TEMPLATE,
-                CI_CSS,
-                U_FULL_NAME,
-                U_NAME,
-                U_ID
-              into
-                self.title,
-                self.current_home,
-                self.current_template,
-                self.current_css,
-                self.owner,
-                self.owner_name,
-                self.owner_id
-
-              from
-                ODS.COMMUNITY.SYS_COMMUNITY_INFO,
-                SYS_USERS
-              where
-                CI_HOME = self.comm_home and
-                CI_OWNER = U_ID with (prefetch 1);
-           
-              not_found_2:;
-                 if(self.user_id is null) self.user_id:=-1;
-           
-              if (not (length (self.current_template)))  self.current_template := '/DAV/VAD/community/www-root/templates/openlink';
-            }
-           
-            self.authors := self.owner;
-           
-            if(self.user_name and length(self.user_name) > 0)
-            {
-              declare quota int;
-              quota := coalesce(DB.DBA.USER_GET_OPTION(self.user_name, 'DAVQuota'), 5242880);
-              connection_set('DAVQuota', quota);
-              connection_set('DAVUserID', self.user_id);
-            }
-            
-            self.login_pars := sprintf ('&sid=%s&realm=%s', self.sid, self.realm);
-
-            self.app_membr_mode := get_keyword('app_membr_mode', params);
-            self.is_public := get_keyword('is_public', params);
-            if(exists(select 1 from DB.DBA.WA_MEMBER where WAM_INST = self.comm_wainame and WAM_USER=self.user_id  and WAM_STATUS<3)){
-               self.is_inst_member:=1;
-            };
-
-
-            
-        }
-    }
-]]>
-</v:after-data-bind>
-        </v:login>
-
-         </div>
-      <?vsp
-        };
-      ?>
   </xsl:template>
 
 <xsl:template match="vm:search-commusers-link">
       <v:url name="search_users" url="--''">
               <xsl:attribute name="value">Search community users</xsl:attribute>
         <v:before-render><![CDATA[
-          if (self.is_inst_member=0){
+          if (self.is_inst_member=0 and self.comm_access<>1){
               control.vc_enabled := 0;
           }else{
             control.vu_url := self.wa_home||'/search.vspx?user_search=Search&page=2&us_within_members='||cast(self.comm_id as varchar);
@@ -2657,6 +2384,21 @@ c.length);
     </a>
     
     </vm:if>
+    <div>
+	<?vsp
+	{
+	 declare sne_id int;
+	 sne_id := (select sne_id from sn_person where sne_name = self.owner_name);
+	?>
+	  <a href="<?V sprintf ('%sdataspace/%U/about.rdf', WA_LINK(1, '/'), self.owner_name)?>"  class="{local-name()}">
+        <img border="0" src="<?Vself.stock_img_loc?>foaf.png" alt="FOAF" title="FOAF"/>
+
+    </a>
+  <?vsp
+  }
+  ?>
+
+  </div>
 </td>
  </tr>
 </table>

@@ -334,6 +334,12 @@ create procedure COMMUNITY.COMM_GET_USER_ACCESS(in comm_home varchar, in usr var
   if(_is_public is null) _is_public := 0;
   if(usr is not null)
   {
+    --checks if the user is administrator
+    if(exists(select 1 from DB.DBA.SYS_USERS where U_NAME = usr and U_GROUP in (0,3)))
+    {
+       return 1;
+    }
+    
     if(exists(select 1 from DB.DBA.SYS_USERS where U_NAME = usr and U_DAV_ENABLE = 1 and U_IS_ROLE = 0)) {
       declare _user_id any;
       _user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = usr);
