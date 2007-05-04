@@ -1413,7 +1413,7 @@
                         self.vc_is_valid := 0;
                         return;
                       }
-	                      S := BMK.WA.dav_content (self.v_sourceParam_1);
+	                      S := BMK.WA.dav_content (BMK.WA.host_url () || self.v_sourceParam_1);
                       if (isnull(S)) {
                         self.vc_error_message := 'Bad import source!';
                         self.vc_is_valid := 0;

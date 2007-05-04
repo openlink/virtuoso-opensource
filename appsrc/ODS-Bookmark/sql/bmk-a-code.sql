@@ -2251,10 +2251,13 @@ create procedure BMK.WA.geo_url (
 create procedure BMK.WA.dav_content (
   inout uri varchar)
 {
-  declare cont varchar;
+  declare content varchar;
   declare hp any;
 
-  declare exit handler for sqlstate '*' { return null;};
+  declare exit handler for sqlstate '*' {
+    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    return null;
+  };
 
   declare N integer;
   declare oldUri, newUri, reqHdr, resHdr varchar;
@@ -2269,7 +2272,7 @@ _again:
   N := N + 1;
   oldUri := newUri;
   commit work;
-  cont := http_get (newUri, resHdr, 'GET', reqHdr);
+  content := http_get (newUri, resHdr, 'GET', reqHdr);
   if (resHdr[0] like 'HTTP/1._ 30_ %') {
     newUri := http_request_header (resHdr, 'Location');
     newUri := WS.WS.EXPAND_URL (oldUri, newUri);
@@ -2281,7 +2284,7 @@ _again:
   if (resHdr[0] like 'HTTP/1._ 4__ %' or resHdr[0] like 'HTTP/1._ 5__ %')
     return null;
 
-  return (cont);
+  return (content);
 }
 ;
 
