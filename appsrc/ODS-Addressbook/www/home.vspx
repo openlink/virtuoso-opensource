@@ -26,7 +26,8 @@
 
   <v:method name="mode_test" arglist="">
     <![CDATA[
-      declare params any;
+      declare pos integer;
+      declare params, names any;
 
       params := self.vc_page.vc_event.ve_params;
       if (self.abTag <> lcase(get_keyword ('tag', params, '')))
@@ -35,9 +36,28 @@
       self.abContact := get_keyword ('contact', params, '');
       if (self.abContact <> '') {
         self.v_id := cast (self.abContact as integer);
+        if (self.v_id = -1) {
+          if (self.account_role not in ('public', 'guest')) {
+            self.abAction := 'create';
+            self.v_name := trim (get_keyword ('name', params, ''));
+            self.v_mail := trim (get_keyword ('mail', params, ''));
+            if ((self.v_name = '') and (self.v_mail <> '')) {
+              pos := strchr (self.v_mail, '@');
+              if (pos is not null)
+                self.v_name := left (self.v_mail, pos);
+            }
+            self.v_fullName := self.v_name;
+            names := split_and_decode (self.v_fullName, 0, '\0\0 ');
+            if (length (names) >= 1)
+              self.v_fName := names [0];
+            if (length (names) > 1)
+              self.v_lName := names [length (names) - 1];
+          }
+        } else {
         self.abAction := 'edit';
         if (self.account_role in ('public', 'guest'))
           self.abAction := 'view';
+      }
       }
     ]]>
   </v:method>
@@ -62,58 +82,74 @@
     ]]>
   </v:method>
 
+  <v:method name="init_options" arglist="">
+    <![CDATA[
+      self.i_Options := vector (
+        'P_NAME',           'Name',
+        'P_TITLE',          'Title',
+        'P_FIRST_NAME',     'First Name',
+        'P_LAST_NAME',      'Last Name',
+        'P_FULL_NAME',      'Full Name',
+        'P_GENDER',         'Gender',
+        'P_BIRTHDAY',       'Birthday',
+        'P_MAIL',           'Contact - Mail',
+        'P_WEB',            'Contact - Web address',
+        'P_ICQ',            'Contact - Icq',
+        'P_SKYPE',          'Contact - Skype ID',
+        'P_AIM',            'Contact - AIM Name',
+        'P_YAHOO',          'Contact - Yahoo! ID',
+        'P_MSN',            'Contact - MSN Messenger',
+        'P_H_COUNTRY',      'Home - Country',
+        'P_H_CITY',         'Home - City',
+        'P_H_STATE',        'Home - State/Province',
+        'P_H_CODE',         'Home - Zip/Postal Code',
+        'P_H_ADDRESS1',     'Home - Address1',
+        'P_H_ADDRESS2',     'Home - Address2',
+        'P_H_TZONE',        'Home - Time Zone',
+        'P_H_LAT',          'Home - Latitude',
+        'P_H_LNG',          'Home - Longitude',
+        'P_H_PHONE',        'Home - Phone',
+        'P_H_MOBILE',       'Home - Mobile',
+        'P_H_MAIL',         'Home - Mail',
+        'P_H_WEB',          'Home - Web address',
+        'P_B_COUNTRY',      'Business - Country',
+        'P_B_CITY',         'Business - City',
+        'P_B_STATE',        'Business - State/Province',
+        'P_B_CODE',         'Business - Zip/Postal Code',
+        'P_B_ADDRESS1',     'Business - Address1',
+        'P_B_ADDRESS2',     'Business - Address2',
+        'P_B_TZONE',        'Business - Time Zone',
+        'P_B_LAT',          'Business - Latitude',
+        'P_B_LNG',          'Business - Longitude',
+        'P_B_PHONE',        'Business - Phone',
+        'P_B_MOBILE',       'Business - Mobile',
+        'P_B_INDUSTRY',     'Business - Industry',
+        'P_B_ORGANIZATION', 'Business - Organization',
+        'P_B_JOB',          'Business - Job Title',
+        'P_B_MAIL',         'Business - Mail',
+        'P_B_WEB',          'Business - Web address');
+    ]]>
+  </v:method>
+
   <v:method name="render_select" arglist="inout name any">
     <![CDATA[
-  	  declare s1, s2, s3, s4 varchar;
+      declare N any;
+      declare S, T any;
 
-  	  s1 := either (equ (name, 'uid'), 'selected', '');
-  	  s2 := either (equ (name, 'cn'), 'selected', '');
-  	  s3 := either (equ (name, 'mail'), 'selected', '');
+      T := '';
+      if (not isnull (self.i_lMaps))
+        for (N := 0; N < length (self.i_lMaps); N := N + 2)
+          if (self.i_lMaps[N] = name)
+            T := self.i_lMaps[N+1];
 
   	  http (sprintf ('<select name="sel_%s">', name));
   	  http ('<option value="skip">--</option>');
-  	  http (sprintf ('<option value="P_NAME" %s>Name</option>', s1));
-  	  http (sprintf ('<option value="P_TITLE" %s>Title</option>', ''));
-  	  http (sprintf ('<option value="P_FIRST_NAME" %s>First Name</option>', ''));
-  	  http (sprintf ('<option value="P_LAST_NAME" %s>Last Name</option>', ''));
-  	  http (sprintf ('<option value="P_FULL_NAME" %s>Full Name</option>', s2));
-  	  http (sprintf ('<option value="P_GENDER" %s>Gender</option>', ''));
-  	  http (sprintf ('<option value="P_MAIL" %s>Contact - Mail</option>', s3));
-  	  http (sprintf ('<option value="P_WEB" %s>Contact - Web address</option>', ''));
-  	  http (sprintf ('<option value="P_ICQ" %s>Contact - Icq</option>', ''));
-  	  http (sprintf ('<option value="P_SKYPE" %s>Contact - Skype ID</option>', ''));
-  	  http (sprintf ('<option value="P_AIM" %s>Contact - AIM Name</option>', ''));
-  	  http (sprintf ('<option value="P_YAHOO" %s>Contact - Yahoo! ID</option>', ''));
-  	  http (sprintf ('<option value="P_MSN" %s>Contact - MSN Messenger</option>', ''));
-  	  http (sprintf ('<option value="P_H_COUNTRY" %s>Home - Country</option>', ''));
-  	  http (sprintf ('<option value="P_H_CITY" %s>Home - City</option>', ''));
-  	  http (sprintf ('<option value="P_H_STATE" %s>Home - State/Province</option>', ''));
-  	  http (sprintf ('<option value="P_H_CODE" %s>Home - Zip/Postal Code</option>', ''));
-  	  http (sprintf ('<option value="P_H_ADDRESS1" %s>Home - Address1</option>', ''));
-  	  http (sprintf ('<option value="P_H_ADDRESS2" %s>Home - Address2</option>', ''));
-  	  http (sprintf ('<option value="P_H_TZONE" %s>Home - Time Zone</option>', ''));
-  	  http (sprintf ('<option value="P_H_LAT" %s>Home - Latitude</option>', ''));
-  	  http (sprintf ('<option value="P_H_LNG" %s>Home - Longitude</option>', ''));
-  	  http (sprintf ('<option value="P_H_PHONE" %s>Home - Phone</option>', ''));
-  	  http (sprintf ('<option value="P_H_MOBILE" %s>Home - Mobile</option>', ''));
-  	  http (sprintf ('<option value="P_H_MAIL" %s>Home - Mail</option>', ''));
-  	  http (sprintf ('<option value="P_H_WEB" %s>Home - Web address</option>', ''));
-  	  http (sprintf ('<option value="P_B_COUNTRY" %s>Home - Country</option>', ''));
-  	  http (sprintf ('<option value="P_B_CITY" %s>Business - City</option>', ''));
-  	  http (sprintf ('<option value="P_B_STATE" %s>Business - State/Province</option>', ''));
-  	  http (sprintf ('<option value="P_B_CODE" %s>Business - Zip/Postal Code</option>', ''));
-  	  http (sprintf ('<option value="P_B_ADDRESS1" %s>Business - Address1</option>', ''));
-  	  http (sprintf ('<option value="P_B_ADDRESS2" %s>Business - Address2</option>', ''));
-  	  http (sprintf ('<option value="P_B_TZONE" %s>Business - Time Zone</option>', ''));
-  	  http (sprintf ('<option value="P_B_LAT" %s>Business - Latitude</option>', ''));
-  	  http (sprintf ('<option value="P_B_LNG" %s>Business - Longitude</option>', ''));
-  	  http (sprintf ('<option value="P_B_PHONE" %s>Business - Phone</option>', ''));
-  	  http (sprintf ('<option value="P_B_MOBILE" %s>Business - Mobile</option>', ''));
-  	  http (sprintf ('<option value="P_B_INDUSTRY" %s>Business - Industry</option>', ''));
-  	  http (sprintf ('<option value="P_B_ORGANIZATION" %s>Business - Organization</option>', ''));
-  	  http (sprintf ('<option value="P_B_JOB" %s>Business - Job Title</option>', ''));
-  	  http (sprintf ('<option value="P_B_MAIL" %s>Business - Mail</option>', ''));
-  	  http (sprintf ('<option value="P_B_WEB" %s>Business - Web address</option>', ''));
+      for (N := 0; N < length (self.i_Options); N := N + 2) {
+        S := '';
+        if (self.i_Options[N] = T)
+          S := ' selected="selected"';
+        http (sprintf ('<option value="%s"%s>%s</option>', self.i_Options[N], S, self.i_Options[N+1]));
+      }
   	  http ('</select>');
 	  ]]>
 	</v:method>
@@ -260,6 +296,17 @@
     ]]>
   </v:method>
 
+  <v:method name="contactUpdate" arglist="inout person_id integer, inout pFields any, inout pValues any">
+    <![CDATA[
+     if (self.v_tags <> '') {
+       pFields := vector_concat (pFields, vector ('P_TAGS'));
+       pValues := vector_concat (pValues, vector (self.v_tags));
+     }
+     if (length (pFields))
+       AB.WA.contact_update3 ( person_id, self.domain_id, pFields, pValues);
+    ]]>
+  </v:method>
+
   <vm:pagetitle>AddressBook</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -348,9 +395,9 @@
       <v:variable name="i_lPassword" type="varchar" default="''"/>
       <v:variable name="i_lSearch" type="varchar" default="'(cn=*)'"/>
       <v:variable name="i_lMaps" type="any" default="null"/>
+      <v:variable persist="temp" name="i_Options" type="any" default="null" />
 
       <v:variable name="i_data" type="varchar" default="null"/>
-
     </vm:variables>
     <vm:pagebody>
       <v:before-data-bind>
@@ -918,7 +965,7 @@
                       declare _done integer;
 
                       _done := 0;
-                      for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_TAG <> '' order by T_TAG) do {
+                      for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
                         http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'t_tag\');"><i>%s</i></a> ', T_TAG, T_TAG));
                         _done := 1;
                       }
@@ -1382,7 +1429,7 @@
                           declare _done integer;
 
                           _done := 0;
-                          for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_TAG <> '' order by T_TAG) do {
+                            for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
                               http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'ab_tags\');">%s</a> ', T_TAG, T_TAG));
                             _done := 1;
                           }
@@ -2298,8 +2345,8 @@
 		                  </th>
 		                  <td>
 	                      <v:text name="f_dav" value="--''" xhtml_size="40"/>
-	                      <v:browse-button value="Browse..." selector="popup_browser.vspx" child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"  browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=i_dav', AB.WA.dav_home(self.account_id))">
-	                        <v:field name="i_dav"/>
+                        <v:browse-button value="Browse..." selector="popup_browser.vspx" child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"  browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=f_dav', AB.WA.dav_home(self.account_id))">
+                          <v:field name="f_dav" />
 	                      </v:browse-button>
 		                  </td>
 		                </tr>
@@ -2467,7 +2514,7 @@
 	                        self.vc_is_valid := 0;
 	                        return;
 	                      }
-	                      self.i_data := AB.WA.dav_content (self.f_dav.ufl_value);
+                        self.i_data := AB.WA.dav_content (AB.WA.host_url () || self.f_dav.ufl_value);
 	                      if (isnull(self.i_data)) {
 	                        self.vc_error_message := 'Bad import source!';
 	                        self.vc_is_valid := 0;
@@ -2542,6 +2589,7 @@
                     declare N, M integer;
                     declare data any;
 
+                      self.init_options ();
                     for (N := 0; N < 1; N := N + 2) {
                       data := split_and_decode (self.i_data [N], 0, '\0\0,');
               	      for (M := 0; M < length (data); M := M + 1) {
@@ -2577,6 +2625,7 @@
                     declare N, M integer;
                     declare data any;
 
+                      self.init_options ();
                     for (N := 0; N < length (self.i_data); N := N + 2) {
               	      if (self.i_data [N] = 'entry') {
               	        data := self.i_data [N+1];
@@ -2605,6 +2654,71 @@
                 </table>
               </vm:if>
 	            </div>
+              <div class="new-form-mapping2">
+                <v:button action="simple" value="Default" xhtml_class="form-button" xhtml_style="margin: 5px 0px 0px 0px;">
+                  <v:on-post>
+                    <![CDATA[
+                      if (self.i_type = 2) {
+                        declare N, M integer;
+                        declare tmp, data any;
+
+                        tmp := vector (
+                          'Title',                'P_TITLE',
+                          'First Name',           'P_FIRST_NAME',
+                          'Last Name',            'P_LAST_NAME',
+                          'Gender',               'P_GENDER',
+                          'Birthday',             'P_BIRTHDAY',
+                          'Company',              'P_B_ORGANIZATION',
+                          'Job Title',            'P_B_JOB',
+                          'Business Street',      'P_B_ADDRESS1',
+                          'Business Street 2',    'P_B_ADDRESS2',
+                          'Business City',        'P_B_CITY',
+                          'Business State',       'P_B_STATE',
+                          'Business Postal Code', 'P_B_CODE',
+                          'Business Country',     'P_B_COUNTRY',
+                          'Home Street',          'P_H_ADDRESS1',
+                          'Home Street 2',        'P_H_ADDRESS2',
+                          'Home City',            'P_H_CITY',
+                          'Home State',           'P_H_STATE',
+                          'Home Postal Code',     'P_H_CODE',
+                          'Home Country',         'P_H_COUNTRY',
+                          'E-mail Address',       'P_MAIL',
+                          'E-mail 2 Address',     'P_H_MAIL',
+                          'E-mail 3 Address',     'P_B_MAIL');
+
+                        if (length (self.i_data)) {
+                          self.i_lMaps := vector ();
+                          data := split_and_decode (self.i_data [N], 0, '\0\0,');
+                          for (N := 0; N < length (data); N := N + 1) {
+                            for (M := 0; M < length (tmp); M := M + 2)
+                              if (trim (data[N], '"') = tmp[M]) {
+                                self.i_lMaps := vector_concat (self.i_lMaps, vector (cast (N as varchar), tmp[M+1]));
+                                goto _next;
+                              }
+                          _next:;
+                          }
+                        }
+                      }
+
+                      if (self.i_type = 3)
+                        self.i_lMaps := vector (
+                          'uid',  'P_NAME',
+                          'cn',   'P_FULL_NAME',
+                          'mail', 'P_MAIL');
+
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Reset" xhtml_class="form-button" xhtml_style="margin: 5px 5px 0px 0px;">
+                  <v:on-post>
+                    <![CDATA[
+                      self.i_lMaps := null;
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
 	            <div class="new-form-footer">
 	              <v:button action="simple" value="Back" xhtml_class="form-button">
 	                <v:on-post>
@@ -2658,10 +2772,10 @@
 	              <table id="progressHide" cellspacing="0">
 	                <tr>
 	                  <th>
-	                    <v:label for="i_tag" value="Comma Delimited Tags"/>
+                      <v:label for="i_tags" value="Comma Delimited Tags" />
 	                  </th>
 	                  <td>
-	                    <v:text name="i_tag" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60"/>
+                      <v:text name="i_tags" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60" />
 	                  </td>
 	                </tr>
                   <tr>
@@ -2673,8 +2787,8 @@
                         declare _done integer;
 
                         _done := 0;
-                        for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_TAG <> '' order by T_TAG) do {
-                          http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'i_tag\');"><i>%s</i></a> ', T_TAG, T_TAG));
+                        for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
+                          http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'i_tags\');"><i>%s</i></a> ', T_TAG, T_TAG));
                           _done := 1;
                         }
                         if (not _done)
@@ -2690,7 +2804,7 @@
 	                <v:on-post>
 	                  <![CDATA[
                       self.abStep := '3';
-	                    if (self.i_source = 2)
+                      if ((self.i_source = 2) or (self.i_type = 2))
                         self.abStep := '4';
                       self.vc_data_bind(e);
 	                  ]]>
@@ -2700,8 +2814,24 @@
 			            <v:on-post>
 			              <![CDATA[
                       declare N, M, nLength, mLength, id integer;
-			                declare tmp, t_iri, S, name, fullName any;
+                      declare tmp, tmp2, t_iri, S, name, fullName any;
                       declare data, maps, pFields, pValues any;
+
+                      declare exit handler for SQLSTATE '*' {
+                        if (__SQL_STATE = 'TEST') {
+                          self.vc_error_message := AB.WA.test_clear (__SQL_MESSAGE);
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        resignal;
+                      };
+
+                      -- test tags value
+                      self.v_tags := trim (self.i_tags.ufl_value);
+                      AB.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
+                      tmp := AB.WA.tags2vector (self.v_tags);
+                      tmp := AB.WA.vector_unique (tmp);
+                      self.v_tags := AB.WA.vector2tags (tmp);
 
 			                -- vCard
 			                if (self.i_type = 0) {
@@ -2742,6 +2872,8 @@
                               );
                           }
                           id := -1;
+                          pFields := vector ();
+                          pValues := vector ();
                           for (N := 0; N < length (Meta); N := N + 2) {
                             tmp := xquery_eval (Meta [N+1], xmlItem, 0);
                             foreach (any T in tmp) do {
@@ -2750,11 +2882,13 @@
                                 if (Meta[N] = 'P_NAME') {
                                   id := AB.WA.contact_update2 (id, self.domain_id, Meta[N], T);
                                 } else {
-                                  AB.WA.contact_update2 (id, self.domain_id, Meta[N], T);
+                                  pFields := vector_concat (pFields, vector (Meta[M]));
+                                  pValues := vector_concat (pValues, vector (T));
                                 }
                               }
                             }
                           }
+                          self.contactUpdate ( id, pFields, pValues);
                         }
 			                }
 
@@ -2826,8 +2960,7 @@
                                 }
                               }
                             }
-                            if (length (pFields))
-                              AB.WA.contact_update3 ( id, self.domain_id, pFields, pValues);
+                            self.contactUpdate ( id, pFields, pValues);
                           }
   			                }
   			              _delete:;
@@ -2881,19 +3014,30 @@
                 	          if (M <> nameIdx) {
                 	            if (M = fullNameIdx) {
                                   if (fullName <> '') {
-                                     pFields := vector_concat (pFields, vector ('P_FUL_NAME'));
+                                     pFields := vector_concat (pFields, vector ('P_FULL_NAME'));
                                      pValues := vector_concat (pValues, vector (fullName));
                                    }
                    	          } else {
-                                   if (get_keyword (cast (M as varchar), maps, '') <> '') {
-                                     pFields := vector_concat (pFields, vector (get_keyword (cast (M as varchar), maps)));
-                                     pValues := vector_concat (pValues, vector (trim (data[M], '"')));
+                                   tmp := get_keyword (cast (M as varchar), maps, '');
+                                   if (tmp <> '') {
+                                     tmp2 := trim (data[M], '"');
+                                     if (tmp = 'P_BIRTHDAY') {
+                                       {
+                                         declare continue handler for sqlstate '*' {
+                                           tmp := '';
+                                         };
+                                         tmp2 := AB.WA.dt_reformat (tmp2);
                               }
                             }
+                                     if (tmp <> '') {
+                                       pFields := vector_concat (pFields, vector (tmp));
+                                       pValues := vector_concat (pValues, vector (tmp2));
         			            }
         			          }
-                            if (length (pFields))
-                              AB.WA.contact_update3 ( id, self.domain_id, pFields, pValues);
+                                 }
+                               }
+                            }
+                            self.contactUpdate ( id, pFields, pValues);
                           }
                         }
 			                }
@@ -2918,8 +3062,7 @@
                                   pValues := vector_concat (pValues, vector (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end));
                                 }
                       		    }
-                              if (length (pFields))
-                                AB.WA.contact_update3 ( id, self.domain_id, pFields, pValues);
+                              self.contactUpdate ( id, pFields, pValues);
                     	      }
                           }
       			            }

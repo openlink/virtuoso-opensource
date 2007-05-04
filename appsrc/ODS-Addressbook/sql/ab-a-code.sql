@@ -1078,7 +1078,10 @@ create procedure AB.WA.dav_content (
   declare cont varchar;
   declare hp any;
 
-  declare exit handler for sqlstate '*' { return null;};
+  declare exit handler for sqlstate '*' {
+    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    return null;
+  };
 
   declare N integer;
   declare oldUri, newUri, reqHdr, resHdr varchar;
@@ -1777,11 +1780,8 @@ create procedure AB.WA.dt_format(
   in pDate datetime,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    N integer;
-  declare
-    ch,
-    S varchar;
+  declare N integer;
+  declare ch, S varchar;
 
   S := '';
   N := 1;
@@ -1871,15 +1871,9 @@ create procedure AB.WA.dt_deformat(
   in pString varchar,
   in pFormat varchar := 'd.m.Y')
 {
-  declare
-    y,
-    m,
-    d integer;
-  declare
-    N,
-    I integer;
-  declare
-    ch varchar;
+  declare y, m, d integer;
+  declare N, I integer;
+  declare ch varchar;
 
   N := 1;
   I := 0;

@@ -64,6 +64,7 @@ create procedure fill_ods_addressbook_sioc (in graph_iri varchar, in site_iri va
                     P_LAST_NAME,
                     P_GENDER,
                     P_BIRTHDAY,
+                      P_MAIL,
                     P_ICQ,
                     P_SKYPE,
                     P_AIM,
@@ -101,6 +102,7 @@ create procedure contact_insert (
   inout lastName varchar,
   inout gender varchar,
   inout birthday datetime,
+  inout mail varchar,
   inout icq varchar,
   inout skype varchar,
   inout aim varchar,
@@ -174,12 +176,14 @@ create procedure contact_insert (
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, bio_iri ('event'), event_iri);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, event_iri, dc_iri ('date'), substring (datestring (birthday), 1, 10));
     }
-    if (not DB.DBA.is_empty_or_null (hPhone))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || hPhone);
+    if (not DB.DBA.is_empty_or_null (mail))
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), mail);
     if (not DB.DBA.is_empty_or_null (hMail))
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), hMail);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), hMail);
     if (not DB.DBA.is_empty_or_null (hWeb))
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), hWeb);
+    if (not DB.DBA.is_empty_or_null (hPhone))
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || hPhone);
     if (not DB.DBA.is_empty_or_null (hLat) and not DB.DBA.is_empty_or_null (hLng)) {
       DB.DBA.RDF_QUAD_URI (graph_iri, geo_iri, rdf_iri ('type'), geo_iri ('Point'));
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), geo_iri);
@@ -241,6 +245,7 @@ create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
                   N.P_LAST_NAME,
                   N.P_GENDER,
                   N.P_BIRTHDAY,
+                  N.P_MAIL,
                   N.P_ICQ,
                   N.P_SKYPE,
                   N.P_AIM,
@@ -280,6 +285,7 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
                   N.P_LAST_NAME,
                   N.P_GENDER,
                   N.P_BIRTHDAY,
+                  N.P_MAIL,
                   N.P_ICQ,
                   N.P_SKYPE,
                   N.P_AIM,
