@@ -430,6 +430,18 @@ input.button
   background: #99b3c5;
 }
 
+.button2 {
+  text-decoration: none;
+  font-size: .8em;
+  font-family: verdana, sans-serif;
+  color: #ffffff;
+  font-weight: bold;
+  padding: 0.1em 1em 0.1em 1em ;
+  border: solid 1px;
+  border-color: #7f94a5;
+  background: #99b3c5;
+}
+
 #buttons
 {
   font: bold 11px verdana, arial, sans-serif;

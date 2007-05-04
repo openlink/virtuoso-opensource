@@ -86,8 +86,19 @@
         <th>To</th>
         <td>
           <xsl:apply-templates select="address/addres_list/to"/>
+          <xsl:if test="addContact != ''">
+            <xsl:call-template name="nbsp" />
+            <xsl:call-template name="make_href">
+              <xsl:with-param name="url"><xsl:value-of select="addContact" /></xsl:with-param>
+              <xsl:with-param name="label">Add contact</xsl:with-param>
+              <xsl:with-param name="title">Add contact</xsl:with-param>
+              <xsl:with-param name="params">contact=-1&amp;name=<xsl:value-of select="address/addres_list/to/name" />&amp;mail=<xsl:value-of select="address/addres_list/to/email" /></xsl:with-param>
+              <xsl:with-param name="class">button2</xsl:with-param>
+            </xsl:call-template>
+          </xsl:if>
         </td>
       </tr>
+      <!-- CC -->
       <xsl:if test="address/addres_list/cc">
         <tr>
           <th>CC</th>
@@ -96,6 +107,7 @@
           </td>
         </tr>
       </xsl:if>
+      <!-- BCC -->
       <xsl:if test="address/addres_list/bcc">
         <tr>
           <th>BCC</th>

@@ -164,6 +164,21 @@ function getObject(id)
 }
 
 // ---------------------------------------------------------------------------
+function getParent (obj, tag)
+{
+  var obj = obj.parentNode;
+  if (obj.tagName.toLowerCase() == tag)
+    return obj;
+  return getParent(obj, tag);
+}
+
+// ---------------------------------------------------------------------------
+function selectCheck (obj, prefix)
+{
+  coloriseRow(getParent(obj, 'tr'), obj.checked);
+}
+
+// ---------------------------------------------------------------------------
 function toggleCell(cell)
 {
   var c = getObject('row_'+cell);
@@ -324,7 +339,6 @@ function createHidden(aDocument, name, value) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function submitEnter(myForm, myButton, e) {
   var keycode;
   if (window.event)
@@ -340,7 +354,6 @@ function submitEnter(myForm, myButton, e) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function boxSubmit(value) {
   createHidden (document, 'bp', value);
   createHidden (document, 'sort.x', '1');
@@ -348,14 +361,12 @@ function boxSubmit(value) {
 }
 
 // ---------------------------------------------------------------------------
-//
 function attachSubmit(value) {
   createHidden (document, 'fa_attach.x', '1');
   document.f1.submit ();
 }
 
 // ---------------------------------------------------------------------------
-//
 function formSubmit(myField, myValue)
 {
   createHidden (document, myField, myValue);
@@ -371,7 +382,27 @@ function confirmAction (confirmMsq, form, txt, selectionMsq)
 }
 
 // ---------------------------------------------------------------------------
-//
+function selectAllCheckboxes (obj, prefix) {
+  var objForm = obj.form;
+  for (var i = 0; i < objForm.elements.length; i++) {
+    var o = objForm.elements[i];
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1) {
+      if (obj.value == 'Select All')
+        o.checked = true;
+      else
+        o.checked = false;
+      coloriseRow(getParent(o, 'tr'), o.checked);
+    }
+  }
+  if (obj.value == 'Select All')
+    obj.value = 'Unselect All';
+  else
+    obj.value = 'Select All';
+  selectCheck (obj, prefix);
+  obj.focus();
+}
+
+// ---------------------------------------------------------------------------
 function anySelected (form, txt, selectionMsq)
 {
   if ((form != null) && (txt != null)) {
@@ -388,7 +419,39 @@ function anySelected (form, txt, selectionMsq)
 }
 
 // ---------------------------------------------------------------------------
-//
+function coloriseRow(obj, checked) {
+  obj.className = (obj.className).replace('tr_select', '');
+  if (checked)
+    obj.className = obj.className + ' ' + 'tr_select';
+}
+
+// ---------------------------------------------------------------------------
+function trim(sString, sChar) {
+  if (sChar == null)
+    sChar = ' ';
+
+  while (sString.substring(0,1) == sChar)
+    sString = sString.substring(1, sString.length);
+
+  while (sString.substring(sString.length-1, sString.length) == sChar)
+    sString = sString.substring(0,sString.length-1);
+
+  return sString;
+}
+
+// ---------------------------------------------------------------------------
+function windowShow(sPage, width, height)
+{
+  if (width == null)
+    width = 500;
+  if (height == null)
+    height = 420;
+  sPage = sPage + '&return=F1&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
+  win = window.open(sPage, null, "width="+width+",height="+height+", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
+  win.window.focus();
+}
+
+// ---------------------------------------------------------------------------
 function showTab2(tab, tabs)
 {
   for (var i = 1; i <= tabs; i++) {
@@ -432,3 +495,35 @@ function saveCheckbox(obj)
 {
   createHidden(document, 'ch_'+obj.name, obj.checked ? '1': '');
 }
+
+// ---------------------------------------------------------------------------
+function addChecked (objForm, objName, selectionMsq)
+{
+  if (!anySelected (objForm, objName, selectionMsq, 'confirm'))
+    return;
+
+  if (window.opener.document.f1.elements[objForm.elements["set"].value]) {
+    var destField = window.opener.document.f1.elements[objForm.elements["set"].value];
+
+    destField.value = (destField.value).replace(';', ',');
+    destField.value = trim(destField.value);
+    destField.value = trim(destField.value, ',');
+    destField.value = trim(destField.value);
+    destField.value = destField.value + ',';
+    for (var i = 0; i < objForm.elements.length; i = i + 1) {
+      var obj = objForm.elements[i];
+      if (obj != null && obj.type == "checkbox" && obj.name == objName) {
+        if (obj.checked) {
+          if (destField.value.indexOf(obj.value+',') == -1)
+            destField.value = destField.value + obj.value+',';
+        } else {
+          destField.value = (destField.value).replace(obj.value+',', '');
+        }
+      }
+    }
+    destField.value = trim(destField.value, ',');
+  }
+
+  window.close();
+}
+

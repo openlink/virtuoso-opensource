@@ -177,6 +177,8 @@
           <input type="text" name="to" size="66" OnFocus="ClearFld(this,'~no address~');" id="addr_to">
             <xsl:attribute name="value"><xsl:apply-templates select="message/address/addres_list/to"/></xsl:attribute>
           </input>
+          <xsl:call-template name="nbsp"/>
+          <input type="button" value="Select" onclick="javascript: windowShow('mails.vsp?set=to')" class="button" />
         </td>
       </tr>
       <tr id="row_cc" style="display: none;">
@@ -187,6 +189,8 @@
           <input type="text" name="cc" size="66" id="addr_cc">
             <xsl:attribute name="value"><xsl:apply-templates select="message/address/addres_list/cc"/></xsl:attribute>
           </input>
+          <xsl:call-template name="nbsp"/>
+          <input type="button" value="Select" onclick="javascript: windowShow('mails.vsp?set=cc')" class="button" />
         </td>
       </tr>
       <tr id="row_bcc" style="display: none;">
@@ -197,6 +201,8 @@
           <input type="text" name="bcc" size="66" id="addr_bcc">
             <xsl:attribute name="value"><xsl:apply-templates select="message/address/addres_list/bcc"/></xsl:attribute>
           </input>
+          <xsl:call-template name="nbsp"/>
+          <input type="button" value="Select" onclick="javascript: windowShow('mails.vsp?set=bcc')" class="button" />
         </td>
       </tr>
       <xsl:if test="//conversation = 1">

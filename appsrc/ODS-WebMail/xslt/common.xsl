@@ -134,13 +134,17 @@
         <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
         <script language="JavaScript" src="/oMail/i/js/script.js"/>
       </head>
-      <body topmargin="10" leftmargin="6" marginwidth="6" marginheight="0">
+      <body style="margin: 5px; font-size: 9pt;">
         <div style="padding: 0 0 0.5em 0;">
           <img src="/oMail/i/close_16.png" border="0" onClick="javascript: if (opener != null) opener.focus(); window.close();" alt="Close" title="Close" /><a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"  alt="Close" title="Close">&nbsp;Close</a>
           <hr/>
         </div>
         <xsl:apply-templates/>
-        <xsl:call-template name="copyright"/>
+        <div id="FT">
+          <div id="FT_R">
+            <div><xsl:call-template name="copyright"/></div>
+          </div>
+        </div>
       </body>
     </html>
   </xsl:template>

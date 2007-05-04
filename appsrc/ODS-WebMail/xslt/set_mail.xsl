@@ -66,12 +66,13 @@
     <xsl:apply-templates select="msg_result"/>
     <xsl:apply-templates select="usr_sig_inc"/>
     <xsl:apply-templates select="atom_version"/>
+    <xsl:apply-templates select="spam"/>
     <xsl:apply-templates select="conversation"/>
   </xsl:template>
   <!-- ====================================================================================== -->
   <xsl:template match="msg_name">
     <tr>
-      <th rowspan="2">Name</th>
+      <th rowspan="2" valign="top">Name</th>
       <td>
         <label>
           <input type="radio" name="msg_name" value="0">
@@ -173,9 +174,24 @@
     </tr>
   </xsl:template>
   <!-- ====================================================================================== -->
+  <xsl:template match="spam">
+    <tr>
+      <th>Spam Filter</th>
+      <td>
+        <xsl:call-template name="make_checkbox">
+          <xsl:with-param name="name">spam</xsl:with-param>
+          <xsl:with-param name="id">spam</xsl:with-param>
+          <xsl:with-param name="value">1</xsl:with-param>
+          <xsl:with-param name="checked"><xsl:if test=". = 1">1</xsl:if></xsl:with-param>
+        </xsl:call-template>
+        <label for="conversation">Enable mails from my contacts only</label>
+      </td>
+    </tr>
+  </xsl:template>
+  <!-- ====================================================================================== -->
   <xsl:template match="conversation">
     <tr>
-      <th></th>
+      <th>Conversation</th>
       <td>
         <xsl:call-template name="make_checkbox">
           <xsl:with-param name="name">conversation</xsl:with-param>
