@@ -3377,12 +3377,15 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dtp_t arg_dtp;
   caddr_t res = NULL;
   long desc_idx;
+  int flags = 0;
   xqf_str_parser_desc_t *desc;
   desc_idx = ecm_find_name (p_name, xqf_str_parser_descs,
     xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t) );
   if (ECM_MEM_NOT_FOUND == desc_idx)
     sqlr_new_error ("22023", "SR486", "Function xqf_str_parse() does not support XQuery library function '%.300s'", p_name);
   desc = xqf_str_parser_descs + desc_idx;
+  if (3 >= BOX_ELEMENTS (args))
+    flags = bif_long_arg (qst, args, 2, "xqf_str_parse");
   if ((desc->p_can_default) && (1 == BOX_ELEMENTS (args)))
     arg = NULL;
   else
@@ -3395,11 +3398,27 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         {
           if (desc->p_dest_dtp == arg_dtp)
             return box_copy_tree (arg);
+          if (flags & 1)
+            return NEW_DB_NULL;
           sqlr_new_error ("22023", "SR487",
             "Function xqf_str_parse() can not use XQuery library function '%.300s' to process an arg of type %s (%d)",
             p_name, dv_type_title (arg_dtp), arg_dtp);
         }
     }
+  if (flags & 1)
+    {
+      QR_RESET_CTX
+        {
+          desc->p_proc (&res, arg, desc->p_opcode);
+        }
+      QR_RESET_CODE
+        {
+          POP_QR_RESET;
+          return NEW_DB_NULL;
+        }
+      END_QR_RESET
+    }
+  else
   desc->p_proc (&res, arg, desc->p_opcode);
   return res;
 }
