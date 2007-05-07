@@ -34,8 +34,8 @@
     </vm:header>
     <v:on-init>
       <![CDATA[
-        select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION
-          into self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.wa_type, self.idesc
+        select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION, WAI_LICENSE
+          into self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.wa_type, self.idesc, self.ilic
           from WA_INSTANCE
          where WAI_ID = self.iid;
         if (self.instance_descr is null)
@@ -89,6 +89,7 @@
       <vm:variable name="iid" type="int" default="null" persist="0" param-name="wai_id"/>
       <vm:variable name="iname" type="varchar" default="null" persist="0"/>
       <vm:variable name="idesc" type="varchar" default="null" persist="0"/>
+      <vm:variable name="ilic" type="varchar" default="null" persist="0"/>
       <vm:variable name="ihome" type="varchar" default="null" persist="0"/>
       <vm:variable name="instance_descr" type="varchar" default="null" persist="0" />
       <vm:variable name="wa_domain" type="varchar" default="null" persist="0"/>
@@ -171,7 +172,8 @@
                          WAI_MEMBERS_VISIBLE = self.is_visible,
                          WAI_INST = inst,
                          WAI_NAME = inst.wa_name,
-                         WAI_DESCRIPTION = self.idesc1.ufl_value
+			 WAI_DESCRIPTION = self.idesc1.ufl_value,
+			 WAI_LICENSE = self.ilic1.ufl_value
                   where WAI_ID = self.iid;
                   commit work;
                   err:;

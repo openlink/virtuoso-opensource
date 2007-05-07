@@ -319,6 +319,7 @@ wa_exec_no_error(
     WAI_MODIFIED timestamp,
     WAI_IS_FROZEN int,
     WAI_FREEZE_REDIRECT varchar,
+    WAI_LICENSE	long varchar,
     primary key (WAI_NAME)
     )'
 )
@@ -331,6 +332,9 @@ wa_add_col('DB.DBA.WA_INSTANCE', 'WAI_FREEZE_REDIRECT', 'varchar')
 ;
 
 wa_add_col('DB.DBA.WA_INSTANCE', 'WAI_MODIFIED', 'timestamp')
+;
+
+wa_add_col('DB.DBA.WA_INSTANCE', 'WAI_LICENSE', 'long varchar')
 ;
 
 --wa_exec_no_error(
@@ -1344,7 +1348,7 @@ create procedure wa_vad_check (in pname varchar)
   nam := get_keyword (pname, vector ('blog2','Weblog','oDrive','Briefcase','enews2','Feed Manager',
   				      'oMail','Mail','bookmark','Bookmarks','oGallery','Gallery' ,
 				     'wiki','Wiki', 'wa', 'Framework','nntpf','Discussion',
-				     'polls','Polls', 'addressbook','AddressBook'), null);
+				     'polls','Polls', 'addressbook','AddressBook', 'calendar','Calendar'), null);
   if (nam is null)
     return vad_check_version (pname);
   else
@@ -4927,6 +4931,8 @@ create procedure WA_GET_APP_NAME (in app varchar)
     return 'Polls';
   else if (app = 'addressbook')
     return 'AddressBook';
+  else if (app = 'calendar')
+    return 'Calendar';
   else
     return app;
 };
@@ -4961,6 +4967,8 @@ create procedure WA_GET_MFORM_APP_NAME (in app varchar)
     return 'Polls';
   else if (app = 'addressbook')
     return 'AddressBook';
+  else if (app = 'calendar')
+    return 'Calendar';
   else
     return app;
 };

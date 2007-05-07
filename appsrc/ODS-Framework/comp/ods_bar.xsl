@@ -523,6 +523,9 @@ function getUrlOnEnter(e)
         if(locate('/app_instance_limits.vspx',_http_path))
             curr_location:=curr_location||site_settings_url||'Application Instances Limit > ';
 
+        if(locate('/uhome.vspx',_http_path) and length(self.odsbar_u_name)=0)
+              curr_location:=curr_location||' '||self.odsbar_fname||' > ';
+
 
          http(rtrim(curr_location,' > '));
        ?>
@@ -803,7 +806,8 @@ odsbarSafeInit();
                      vector ('Bookmark', 'bookmark'),
                      vector ('nntpf','Discussion'),
                      vector ('Polls','Polls'),
-                     vector ('AddressBook','AddressBook')
+                     vector ('AddressBook','AddressBook'),
+                     vector ('Calendar','Calendar')
                     );
       arr_notlogged := vector (
                                vector ('Community', 'Community'),
@@ -816,11 +820,12 @@ odsbarSafeInit();
                                vector ('Bookmark', 'bookmark'),
                                vector ('nntpf','Discussion'),
                                vector ('Polls','Polls'),
-                               vector ('AddressBook','AddressBook')
+                               vector ('AddressBook','AddressBook'),
+                               vector ('Calendar','Calendar')
                               );
 
       declare arr_url any;
-      arr_url := vector ('nntpf',rtrim(self.odsbar_ods_gpath,'/ods/')||'/nntpf/'
+      arr_url := vector ('_nntpf',rtrim (self.odsbar_ods_gpath,'/ods/') || '/nntpf/'
                           --packagename, fullurl - uses iven url of type key1,key1value,
                           --                                             key2,key2value
                          );
@@ -963,6 +968,17 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
             if(self.odsbar_app_type is NULL and get_keyword('app_type',self.odsbar_inout_arr) is not NULL) self.odsbar_app_type:=get_keyword('app_type',self.odsbar_inout_arr);
 
 ?>
+       <vm:if test=" self.odsbar_app_type='nntpf' ">
+       <li>
+       <v:url name="gotodiscussion" url="--rtrim (self.odsbar_ods_gpath,'/ods/') || '/nntpf/'"
+          value="--WA_GET_MFORM_APP_NAME(self.odsbar_app_type)"
+          render-only="1"
+          is-local="1"
+       />
+       </li>
+       </vm:if>
+
+
        <vm:if test=" (length(self.sid) > 0) AND self.odsbar_app_type<>'oMail' AND self.odsbar_app_type<>'nntpf' ">
        <li>
        <v:url name="slice_all" url="--sprintf ('%sapp_inst.vspx?app=%s&ufname=%V',self.odsbar_ods_gpath, self.odsbar_app_type, coalesce(self.odsbar_fname,''))"
@@ -1023,7 +1039,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
           INST_NAME:=coalesce(rows[i][0],'');
 
 ?>
-      <li><a href="<?V rtrim(self.odsbar_ods_gpath,'/ods/')||wa_expand_url (INST_URL, self.odsbar_loginparams) ?>"><?V wa_utf8_to_wide (INST_NAME) ?></a></li>
+      <li><a href="<?V (case when locate('http://',INST_URL) then '' else rtrim(self.odsbar_ods_gpath,'/ods/') end)||wa_expand_url (INST_URL, self.odsbar_loginparams) ?>"><?V wa_utf8_to_wide (INST_NAME) ?></a></li>
 <?vsp
           i := i + 1;
 

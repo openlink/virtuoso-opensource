@@ -86,6 +86,7 @@
       <vm:variable name="redir" type="varchar" default="null" persist="0" param-name="redir"/>
       <vm:variable name="iname" type="varchar" default="null" persist="0"/>
       <vm:variable name="idesc" type="varchar" default="null" persist="0"/>
+      <vm:variable name="ilic" type="varchar" default="null" persist="0"/>
       <vm:variable name="ihome" type="varchar" default="null" persist="0"/>
       <vm:variable name="switch_adv" type="int" default="0" persist="0"/>
       <vm:variable name="page_type" type="varchar" default="'del'" persist="0"/>

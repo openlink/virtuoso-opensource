@@ -357,9 +357,11 @@
                 </td>
               </tr>
               <tr>
-                <th><label for="e_foaf">External FOAF file URL</label></th>
+		  <th><label for="e_foaf">External identity URLs</label>
+		      <span class="explain">(one URL per line)</span>
+		  </th>
                 <td class="listing_col" nowrap="1">
-                  <v:text name="e_foaf" value="--self.efoaf" xhtml_size="80" xhtml_tabindex="9"/>
+                  <v:textarea name="e_foaf" value="--self.efoaf" xhtml_cols="80" xhtml_rows="5" xhtml_tabindex="9"/>
 		  <vm:u-prop-select name="sel_8" value="self.sav8" />
                 </td>
               </tr>

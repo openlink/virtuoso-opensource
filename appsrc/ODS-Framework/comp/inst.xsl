@@ -511,6 +511,27 @@
                 }
               ?>
             </tr>
+            <tr>
+              <th><label for="ilic1">CC License</label></th>
+	      <td id="if_opt">
+		  <v:data-list name="ilic1" xhtml_id="ilic1" value="--coalesce (self.ilic, '')"
+		      list-document="--sioc.DBA.gen_cc_xml ()"
+		      list-match="'declare namespace cc=&quot;http://web.resource.org/cc/&quot;; //cc:License'"
+		      list-value-path="'declare namespace rdf=&quot;http://www.w3.org/1999/02/22-rdf-syntax-ns#&quot;; @rdf:about'"
+		      list-key-path="'declare namespace rdfs=&quot;http://www.w3.org/2000/01/rdf-schema#&quot;; rdfs:label/text()'"		      >
+		      <v:after-data-bind>
+			  declare itm, itmv any;
+                          itm := control.vsl_items;
+			  itmv := control.vsl_item_values;
+			  itm := vector_concat (vector ('N/A'), itm);
+			  itmv := vector_concat (vector (''), itmv);
+			  control.vsl_items := itm;
+			  control.vsl_item_values := itmv;
+			  control.vs_set_selected ();
+		      </v:after-data-bind>
+		  </v:data-list>
+              </td>
+            </tr>
           </v:template>
         </xsl:when>
         <xsl:otherwise>

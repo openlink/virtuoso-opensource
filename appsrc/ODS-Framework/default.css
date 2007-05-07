@@ -82,6 +82,7 @@ td { text-align: left}
 h1.page_hd {
   clear: both;
   margin: 0;
+  margin-right: 5px;
   height: 60px;
   color: #888;
   background-repeat: no-repeat;
@@ -668,17 +669,24 @@ a.tab {}
 
 /* Profile page (uhome.vspx) */
 
+#user_details { margin: 5px }
+
 a.profile_tab { 
   padding-right: 8px;
   color: #888;
-  text-decoration: none;
-}
+  text-decoration: none}
 
 /* Contacts */
 
-div.contacts_ctr {}
+div.contacts_ctr {
+  margin: 5px;}
 
 div.contacts_ctr h2 { font-size: 12pt}
+div.contacts_ctr ul {
+  list-style-type: none;
+  padding: 0;}
+
+ul.button_bar { margin: 5px; padding: 3px;}
 
 /* ODS Applications */
 

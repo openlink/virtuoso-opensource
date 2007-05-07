@@ -75,6 +75,9 @@
                      value='<img src="images/icons/apps_16.png" border="0" /> Manage Applications' />
             </li>
           </vm:if>
+        </ul>
+      <vm:if test="self.app_type<>'nntpf'">
+        <ul class="sb app_cmds_sb">
 	<?vsp
           
           declare usr_instnum,apptype_instnum int;
@@ -147,6 +150,12 @@
 	    }
 	?>
         </ul>
+      </vm:if>
+      <vm:if test="self.app_type='nntpf'">
+      <div>
+          <ul class="sb app_cmds_sb"><li><a href="<?Vrtrim(self.odsbar_ods_gpath,'/ods/')||wa_expand_url ('/nntpf/', self.login_pars)?>"><img src="images/icons/go_16.png" border="0"/> Discussions </a></li></ul>
+      </div>
+      </vm:if>
       </div> <!-- LT_SB -->
       <div id="RT">
       <?vsp
@@ -204,6 +213,18 @@
       {
 ?>
         <vm:dash-addressbook-summary/>
+<?vsp
+      }
+      else if (self.app_type = 'Calendar')
+      {
+?>
+        <vm:dash-calendar-summary/>
+<?vsp
+      }
+      else if (self.app_type = 'nntpf')
+      {
+?>
+        <vm:dash-discussions-summary/>
 <?vsp
       }
 	}

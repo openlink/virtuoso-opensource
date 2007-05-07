@@ -38,7 +38,6 @@
     <vm:condition test="not-owner">
       <title>User Profile for <vm:friends-name/></title>
     </vm:condition>
-    <vm:user-home-map />
     <vm:disco-ods-sioc-link />
     <vm:disco-ods-foaf-link />
     <vm:erdf-data />
@@ -48,6 +47,7 @@
   <vm:body>
     <div id="HD">
       <vm:ods-bar/>
+      <vm:user-home-map />
       <vm:page-hd>
 			      <vm:condition test="owner">
           Your Profile
@@ -63,8 +63,7 @@
         <vm:user-details />
         <vm:user-friends />
 			  <vm:condition test="exists-map-key">
-				<div id="user_map" class="user_map">
-				</div>
+          <div id="user_map" class="user_map"/>
 			  </vm:condition>
       </div> <!-- LT -->
       <div id="RT">

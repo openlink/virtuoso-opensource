@@ -166,8 +166,8 @@ create procedure ODS_RDF_VIEW_INIT (in fl int := 0)
 create procedure ODS_RDF_VIEW_INIT_1 (in fl int := 0)
 {
 
-    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (JSO_SYS_GRAPH());
-    DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
+--    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (JSO_SYS_GRAPH());
+--    DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
 
     sioc..ods_sioc_result ('Dropping old graph.');
 ODS_SPARQL_QM_RUN ('

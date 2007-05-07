@@ -48,15 +48,15 @@
 	     http_rewrite ();
 	     http_header ('Content-Type: text/x-vcard\r\n');
 	     --http_header ('Content-Type: text/plain\r\n');
-	     http ('begin:vcard\r\n');
-	     http ('version:2.1\r\n');
-	     http (sprintf ('fn:%s\r\n', fn));
-	     http (sprintf ('email;pref;internet:%s\r\n', mail));
-	     http (sprintf ('n:%s;%s\r\n', get_keyword ('FIRST_NAME',opts), get_keyword ('LAST_NAME', opts)));
-	     http (sprintf ('nickname:%s\r\n', uid));
+	     http ('BEGIN:VCARD\r\n');
+	     http ('VERSION:2.1\r\n');
+	     http (sprintf ('FN:%s\r\n', fn));
+	     http (sprintf ('EMAIL;PREF;INTERNET:%s\r\n', mail));
+	     http (sprintf ('N:%s;%s\r\n', get_keyword ('FIRST_NAME',opts), get_keyword ('LAST_NAME', opts)));
+	     http (sprintf ('NICKNAME:%s\r\n', uid));
 	     tmp := get_keyword ('BIRTHDAY', opts);
 	     if (tmp is not null and __tag (tmp) = 211)
-	       http (sprintf ('bday:%s\r\n', date_iso8601 (tmp)));
+	       http (sprintf ('BDAY:%s\r\n', date_iso8601 (tmp)));
 
 	     str := ';';
 	     tmp := get_keyword ('ADDR1', opts, '');
@@ -73,11 +73,11 @@
 	       str := str || ';' || tmp;
 
 
-	     http (sprintf ('adr;type=home:%s\r\n', str));
+	     http (sprintf ('ADR;TYPE=HOME:%s\r\n', str));
 
 	     tmp := get_keyword ('PHONE', opts);
 	     if (isstring(tmp))
-	     http (sprintf ('tel;type=home;voice:%s\r\n', tmp));
+	     http (sprintf ('TEL;TYPE=HOME;VOICE:%s\r\n', tmp));
 
 	     str := ';;';
 	     tmp := get_keyword ('BADDR1', opts, '');
@@ -94,28 +94,28 @@
 	       str := str || ';' || tmp;
 
 
-	     http (sprintf ('adr;type=work:%s\r\n', str));
+	     http (sprintf ('ADR;TYPE=WORK:%s\r\n', str));
 
 	     tmp := get_keyword ('BPHONE', opts);
 	     if (isstring(tmp))
-	     http (sprintf ('tel;type=work;voice:%s\r\n', tmp));
+	     http (sprintf ('TEL;TYPE=WORK;VOICE:%s\r\n', tmp));
 
 	     tmp := get_keyword ('MPHONE', opts);
 	     if (isstring(tmp))
-	     http (sprintf ('tel;type=cell;voice:%s\r\n', tmp));
+	     http (sprintf ('TEL;TYPE=CELL;VOICE:%s\r\n', tmp));
 
 	     tmp := get_keyword ('TIMEZONE',opts);
 	     if (tmp is not null)
-	     http (sprintf ('tz:%s\r\n', tmp));
+	     http (sprintf ('TZ:%s\r\n', tmp));
 
 	     tmp := get_keyword ('URL',opts);
 	     if (tmp is not null)
-	       http (sprintf ('url:%s\r\n', tmp));
+	       http (sprintf ('URL:%s\r\n', tmp));
 
 	     tmp := get_keyword ('ORGANIZATION', opts);
 	     if (tmp is not null)
-	       http (sprintf ('org:%s\r\n', tmp));
-	     http ('end:vcard\r\n');
+	       http (sprintf ('ORG:%s\r\n', tmp));
+	     http ('END:VCARD\r\n');
 	     return;
 	  ?>
 </v:page>

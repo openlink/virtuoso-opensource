@@ -50,6 +50,9 @@
  </v:after-data-bind>
  <vm:header>
   <vm:title>Users map</vm:title>
+  </vm:header>
+ <vm:pagewrapper>
+  <vm:body>
     <vm:oatmap-control
     sql="sprintf ('select _LAT,_LNG,_KEY_VAL,EXCERPT from ( \n ' ||
                   'select \n' ||
@@ -70,9 +73,6 @@
         div_id="google_map"
     zoom="0"
         base_url="self.base_url" />
- </vm:header>
- <vm:pagewrapper>
-  <vm:body>
    <vm:login redirect="wa_maps.vspx"/>
     <h1 class="page_title">Map of the users with public home addresses</h1>
     <table>

@@ -230,7 +230,8 @@ create procedure wa_app_to_type (in app varchar)
 	'bookmark','bookmark',
 	'discussion','nntpf',
 	'polls','Polls',
-	'addressbook', 'AddressBook'
+	'addressbook', 'AddressBook',
+	'calendar', 'Calendar'
 	), app);
 };
 
@@ -247,7 +248,8 @@ create procedure wa_type_to_app (in app varchar)
 	'Bookmark','bookmark',
 	'nntpf',    'discussion',
 	'Polls',       'polls',
-	'AddressBook', 'addressbook'
+	'AddressBook', 'addressbook',
+	'Calendar',    'calendar'
 	), app);
 };
 
@@ -263,7 +265,8 @@ create procedure wa_type_to_appg (in app varchar)
 	'Community','Communities',
 	'Bookmark','Bookmarks',
 	'nntpf',   'Discussions',
-	'addressbook', 'AddressBooks'
+	'addressbook', 'AddressBooks',
+	'calendar', 'Calendar'
 	), app);
 };
 
@@ -774,7 +777,7 @@ create procedure ODS.ODS.gdata
       aarr := split_and_decode (app, 0, '\0\0,');
       foreach (any ap in aarr) do
 	{
-	  if (length (ap) and ap not in ('people','feeds','weblog','wiki','dav','mail','apps', 'users', 'bookmark'))
+	  if (length (ap) and ap not in ('people','feeds','weblog','wiki','dav','mail','apps', 'users', 'bookmark', 'discussion'))
 	    {
 	      http_header ('Content-Type: text/html\r\n');
               signal ('22023', 'Invalid application domain');
@@ -873,6 +876,8 @@ create procedure ODS.ODS.gdata
 			{
 			  if (tmp[0] = ascii ('-'))
 			    tmp := ' NOT ' || substring (tmp, 2, length (tmp)) || '';
+			  if (strchr (tmp, '.') is not null)
+			     tmp := '"'||tmp||'"';
 			  cat := cat || ' AND ' || tmp;
 			}
 		    }

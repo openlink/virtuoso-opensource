@@ -128,6 +128,16 @@ create procedure vcard_iri (in s varchar)
   return concat ('http://www.w3.org/2001/vcard-rdf/3.0#', s);
 };
 
+create procedure owl_iri (in s varchar)
+{
+  return concat ('http://www.w3.org/2002/07/owl#', s);
+};
+
+create procedure cc_iri (in s varchar)
+{
+  return concat ('http://web.resource.org/cc/', s);
+};
+
 create procedure make_href (in u varchar)
 {
   return WS.WS.EXPAND_URL (sprintf ('http://%s/', get_cname ()), u);
@@ -332,7 +342,8 @@ create procedure ods_sioc_forum_ext_type (in app varchar)
 	'Bookmark',      ext_iri ('BookmarkFolder'),
 	'nntpf',         ext_iri ('MessageBoard'),
 	'Polls',         ext_iri ('SurveyCollection'),
-	'AddressBook', ext_iri ('AddressBook')
+	'AddressBook',   ext_iri ('AddressBook'),
+	'Calendar',      ext_iri ('Calendar')
 	), app);
 };
 
@@ -351,7 +362,8 @@ create procedure ods_sioc_forum_type (in app varchar)
 	'Bookmark',      'Container',
 	'nntpf',         'Forum',
 	'Polls',         'Container',
-	'AddressBook', 'Container'
+	'AddressBook',   'Container',
+	'Calendar',      'Container'
 	), app);
   return sioc_iri (pclazz);
 };
@@ -494,7 +506,8 @@ create procedure sioc_user_info (
     in interests any := null,
     in hcity varchar := null,
     in hstate varchar := null,
-    in hcountry varchar := null
+    in hcountry varchar := null,
+    in ext_urls any := null
     )
 {
   declare org_iri any;
@@ -537,6 +550,7 @@ create procedure sioc_user_info (
   delete_quad_sp (graph_iri, iri, foaf_iri ('interest'));
   delete_quad_sp (graph_iri, iri, foaf_iri ('workplaceHomepage'));
   delete_quad_sp (graph_iri, iri, bio_iri ('olb'));
+  delete_quad_sp (graph_iri, iri, owl_iri ('sameAs'));
   delete_quad_s_or_o (graph_iri, ev_iri, ev_iri);
   delete_quad_s_or_o (graph_iri, org_iri, org_iri);
   delete_quad_s_or_o (graph_iri, addr_iri, addr_iri);
@@ -611,6 +625,21 @@ create procedure sioc_user_info (
 
   if (wa_pub_info (webpage, flags, 7))
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), webpage);
+
+  if (length (ext_urls) and wa_pub_info (webpage, flags, 8))
+    {
+      declare arr any;
+      ext_urls := replace (ext_urls, '\r', '\n');
+      ext_urls := replace (ext_urls, '\n\n', '\n');
+      arr := split_and_decode (ext_urls, 0, '\0\0\n');
+      foreach (any u in arr) do
+	{
+	  if (length (trim (u)))
+	    {
+	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, owl_iri ('sameAs'), u);
+	    }
+	}
+    }
 
 };
 
@@ -696,6 +725,36 @@ create procedure sioc_forum (
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
   DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, atom_iri ('title'), wai_name);
     }
+};
+
+create procedure cc_gen_rdf (in iri varchar, in lic_iri varchar)
+{
+  declare xt, xd, ses any;
+  if (not length (lic_iri))
+    return null;
+  xd := gen_cc_xml ();
+  xt := xpath_eval (sprintf ('//License[@about = "%s"]', lic_iri), xd);
+  if (xt is null)
+    return null;
+  xd := serialize_to_UTF8_xml (xt);
+  ses := string_output ();
+  http ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:cc="http://web.resource.org/cc/">\n', ses);
+  http (sprintf ('<cc:Work rdf:about="%s">\n', iri), ses);
+  http ('<cc:license>\n', ses);
+  http (xd, ses);
+  http ('</cc:license>\n', ses);
+  http ('</cc:Work>\n', ses);
+  http ('</rdf:RDF>', ses);
+  ses := string_output_string (ses);
+  return ses;
+};
+
+create procedure cc_work_lic (in graph_iri varchar, in iri varchar, in lic_iri varchar)
+{
+  declare ses any;
+  ses := cc_gen_rdf (iri, lic_iri);
+  if (ses is not null)
+    DB.DBA.RDF_LOAD_RDFXML (ses, iri, graph_iri);
 };
 
 create procedure sioc_date (in d any)
@@ -812,12 +871,12 @@ create procedure ods_sioc_post (
       if (title is not null)
         DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), title);
       if (ts is not null)
-        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), sioc_date(ts));
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), (ts));
       if (modf is not null)
 	{
-          DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('modified'), sioc_date(modf));
+          DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('modified'), (modf));
 	  if (ts is null)
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), sioc_date(modf));
+	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), (modf));
 	}
 
       if (link is not null)
@@ -895,7 +954,7 @@ create procedure ods_sioc_post (
 	  if (creator is not null)
 	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('creator'), creator);
           if (ts is not null)
-	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, ann_iri ('created'), sioc_date (ts));
+	    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, ann_iri ('created'), (ts));
           if (link is not null)
 	    DB.DBA.RDF_QUAD_URI (graph_iri, iri, bm_iri ('recalls'), link);
 	}
@@ -1023,13 +1082,20 @@ create procedure ods_sioc_tags (in graph_iri any, in post_iri any, in _tags any)
 
   base := sprintf ('%s/%s/concept#', graph_iri, arr[0]);
 
+  -- must be done in the trigger
+  -- delete_quad_sp (graph_iri, post_iri, dc_iri ('subject'));
+  if (length (_tags))
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, post_iri, dc_iri ('subject'), _tags);
+  else
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, post_iri, dc_iri ('subject'), '~none~');
+
   tags := split_and_decode (_tags, 0, '\0\0,');
 
   foreach (any tag in tags) do
     {
       tag := trim (tag);
       tag := replace (tag, ' ', '_');
-      if (length (tag))
+      if (length (tag) and tag not like '"^%"')
 	{
 	  tag_iri := base || tag;
 	  ods_sioc_result (tag_iri);
@@ -1162,7 +1228,8 @@ create procedure fill_ods_sioc (in doall int := 0)
 		WAUI_GENDER, WAUI_ICQ, WAUI_MSN, WAUI_AIM, WAUI_YAHOO, WAUI_BIRTHDAY,
 		    WAUI_BORG, WAUI_HPHONE, WAUI_HMOBILE, WAUI_BPHONE, WAUI_LAT,
 		    WAUI_LNG, WAUI_WEBPAGE, WAUI_SITE_NAME,
-		    WAUI_PHOTO_URL, WAUI_BORG_HOMEPAGE, WAUI_RESUME, WAUI_INTERESTS, WAUI_HCITY, WAUI_HSTATE, WAUI_HCOUNTRY
+		    WAUI_PHOTO_URL, WAUI_BORG_HOMEPAGE, WAUI_RESUME, WAUI_INTERESTS, WAUI_HCITY, WAUI_HSTATE, WAUI_HCOUNTRY,
+		    WAUI_FOAF
 		from DB.DBA.WA_USER_INFO where WAUI_U_ID = u_id do
 		{
                   declare kwd any;
@@ -1183,7 +1250,8 @@ create procedure fill_ods_sioc (in doall int := 0)
 			WAUI_INTERESTS,
 			WAUI_HCITY,
 			WAUI_HSTATE,
-			WAUI_HCOUNTRY
+			WAUI_HCOUNTRY,
+			WAUI_FOAF
 			);
 		  kwd := DB.DBA.WA_USER_TAG_GET (U_NAME);
 		  if (length (kwd))
@@ -1306,13 +1374,14 @@ create procedure fill_ods_sioc (in doall int := 0)
     l4:
 
   -- sioc:Forum
-  for select WAI_TYPE_NAME, WAI_ID, WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE
+  for select WAI_TYPE_NAME, WAI_ID, WAI_NAME, WAI_DESCRIPTION, WAI_LICENSE from DB.DBA.WA_INSTANCE
     where WAI_NAME > _wai_name and WAI_IS_PUBLIC = 1 or WAI_TYPE_NAME = 'oDrive' do
     {
       iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
       if (iri is not null)
 	{
 	  sioc_forum (graph_iri, site_iri, iri, WAI_NAME, WAI_TYPE_NAME, WAI_DESCRIPTION);
+	  cc_work_lic (graph_iri, iri, WAI_LICENSE);
 
 	  --for select WAM_USER from DB.DBA.WA_MEMBER where WAM_INST = WAI_NAME do
 	  --  {
@@ -1406,8 +1475,8 @@ create procedure fill_ods_dav_sioc (in graph_iri varchar, in site_iri varchar)
 
 	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), RES_NAME);
 	      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), sioc_date (RES_CR_TIME));
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('modified') , sioc_date (RES_MOD_TIME));
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), (RES_CR_TIME));
+	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('modified') , (RES_MOD_TIME));
 	    }
       }
 };
@@ -1456,6 +1525,7 @@ create procedure all_predicates ()
      ext_iri ('MailingList'),
      ext_iri ('MessageBoard'),
      ext_iri ('AddressBook'),
+     ext_iri ('Calendar'),
      ext_iri ('SubscriptionList'),
      ext_iri ('SurveyCollection'),
      ext_iri ('Weblog'),
@@ -1582,13 +1652,16 @@ create procedure delete_quad_s_or_o (in _g any, in _s any, in _o any)
   if (_g is null or _s is null or _o is null)
     return;
   delete from DB.DBA.RDF_QUAD where G = _g and S = _s;
-  preds := all_predicates ();
-  foreach (any pred in preds) do
-    {
-      pred := DB.DBA.RDF_IID_OF_QNAME (pred);
-      if (pred is not null)
-        delete from DB.DBA.RDF_QUAD where P = pred and G = _g and O = _o;
-    }
+  delete from DB.DBA.RDF_QUAD where G = _g and O = _o;
+
+  -- not valid if index is OGPS
+  --preds := all_predicates ();
+  --foreach (any pred in preds) do
+  --  {
+  --    pred := DB.DBA.RDF_IID_OF_QNAME (pred);
+  --    if (pred is not null)
+  --      delete from DB.DBA.RDF_QUAD where P = pred and G = _g and O = _o;
+  --  }
 };
 
 create procedure update_quad_s_o (in _g any, in _o any, in _n any)
@@ -1773,7 +1846,8 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
 			N.WAUI_INTERESTS,
 			N.WAUI_HCITY,
 			N.WAUI_HSTATE,
-			N.WAUI_HCOUNTRY
+			N.WAUI_HCOUNTRY,
+			N.WAUI_FOAF
 			);
   return;
 };
@@ -1891,6 +1965,7 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
       declare p_name varchar;
       site_iri  := get_graph ();
       sioc_forum (graph_iri, site_iri, iri, N.WAI_NAME, N.WAI_TYPE_NAME, N.WAI_DESCRIPTION);
+      cc_work_lic (graph_iri, iri, N.WAI_LICENSE);
       p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
       -- dbg_obj_print (p_name, __proc_exists (p_name));
       if (__proc_exists (p_name))
@@ -1901,6 +1976,8 @@ create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencin
       delete_quad_sp (graph_iri, oiri, sioc_iri ('id'));
   delete_quad_sp (graph_iri, oiri, sioc_iri ('link'));
   update_quad_s_o (graph_iri, oiri, iri);
+      delete_quad_sp (graph_iri, oiri, cc_iri ('license'));
+      cc_work_lic (graph_iri, iri, N.WAI_LICENSE);
 
       for select distinct WAM_MEMBER_TYPE as tp from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and ((WAM_IS_PUBLIC = 1) or (WAM_APP_TYPE = 'oDrive')) do
 {
@@ -2062,6 +2139,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
          ' prefix dct: <http://purl.org/dc/terms/> '||
          ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> \n' ||
          ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> \n' ||
+	 ' prefix owl: <http://www.w3.org/2002/07/owl#> ' ||
          ' prefix bio: <http://purl.org/vocab/bio/0.1/> \n' ;
       if (kind = 0)
 	{
@@ -2125,20 +2203,23 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	    ?person bio:event ?event .
 	    ?event rdf:type bio:Birth .
 	    ?event dc:date ?bdate .
-            ?person foaf:interest ?interest .
+	    #?person foaf:interest ?interest .
 	    #?person bio:keywords ?keywords .
+	    #?person owl:sameAs ?same_as .
 	  }
 	  WHERE
 	  {
 	    graph <%s>
 	    {
+	      {
 	      ?person foaf:nick "%s" ;
 	      foaf:holdsAccount ?sioc_user .
 	      ?sioc_user rdfs:seeAlso ?see_also .
 	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
 	      optional {
-		?sioc_user sioc:has_function ?function .
-	      	?function sioc:has_scope ?forum .
+		  #?sioc_user sioc:has_function ?function .
+		  #?function sioc:has_scope ?forum .
+		  ?sioc_user sioc:owner_of ?forum .
 	      	?forum rdfs:seeAlso ?forum_see_also .
 	        optional { ?forum_see_also rdf:type ?f_see_also_type } .
 	      	} .
@@ -2158,13 +2239,16 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	      optional { ?org foaf:homepage ?wphome . ?org a foaf:Organization ; dc:title ?orgtit . } .
 	      optional { ?person foaf:depiction ?depiction } .
 	      optional { ?person foaf:homepage ?homepage } .
-	      optional { ?person vcard:ADR ?adr . ?adr vcard:Country ?country .
-		optional { ?adr vcard:Locality ?city } .
-		optional { ?adr vcard:Region ?state } . }
 	      optional { ?person bio:olb ?bio } .
               optional { ?person bio:event ?event . ?event a bio:Birth ; dc:date ?bdate } .
-	      optional { ?person foaf:interest ?interest }.
+	      optional { ?person vcard:ADR ?adr . ?adr vcard:Country ?country .
+	        	optional { ?adr vcard:Locality ?city } .
+			optional { ?adr vcard:Region ?state } .
+	      	       } .
+	      #optional { ?person foaf:interest ?interest } .
 	      #optional { ?person bio:keywords ?keywords } .
+	      #optional { ?person owl:sameAs ?same_as } .
+	      }
 	    }
 	  }',
 	  u_name,
@@ -2501,6 +2585,8 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
   set_user_id ('dba');
   exec (qry, state, msg, vector(), maxrows, metas, rset);
 --  dbg_obj_print (msg);
+  if (state <> '00000')
+    signal (state, msg);
   DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
 
 ret:
@@ -2531,6 +2617,107 @@ create procedure ods_rdf_describe (in path varchar, in fmt varchar, in is_foaf i
   else
     signal (stat, msg);
   return ses;
+}
+;
+
+create procedure gen_cc_xml ()
+{
+  declare ses any;
+  ses := string_output ();
+  http ('<?xml version="1.0"?>\n', ses);
+  http ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:cc="http://web.resource.org/cc/" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">\n', ses);
+  http ('  <cc:License rdf:about="http://creativecommons.org/licenses/by-nd/1.0/">\n', ses);
+  http ('    <rdfs:label>Attribution-NoDerivs 1.0</rdfs:label>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Notice"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Attribution"/>\n', ses);
+  http ('  </cc:License>\n', ses);
+  http ('  <cc:License rdf:about="http://creativecommons.org/licenses/by/1.0/">\n', ses);
+  http ('    <rdfs:label>Attribution 1.0</rdfs:label>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Attribution"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Notice"/>\n', ses);
+  http ('  </cc:License>\n', ses);
+  http ('  <cc:License rdf:about="http://creativecommons.org/licenses/by-nd-nc/1.0/">\n', ses);
+  http ('    <rdfs:label>Attribution-NoDerivs-NonCommercial 1.0</rdfs:label>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Notice"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Attribution"/>\n', ses);
+  http ('    <cc:prohibits rdf:resource="http://web.resource.org/cc/CommercialUse"/>\n', ses);
+  http ('  </cc:License>\n', ses);
+  http ('  <cc:License rdf:about="http://creativecommons.org/licenses/by-nc/1.0/">\n', ses);
+  http ('    <rdfs:label>Attribution-NonCommercial 1.0</rdfs:label>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Notice"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Attribution"/>\n', ses);
+  http ('    <cc:prohibits rdf:resource="http://web.resource.org/cc/CommercialUse"/>\n', ses);
+  http ('  </cc:License>\n', ses);
+  http ('  <cc:License rdf:about="http://creativecommons.org/licenses/by-nc-sa/1.0/">\n', ses);
+  http ('    <rdfs:label>Attribution-NonCommercial-ShareAlike 1.0</rdfs:label>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Notice"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Attribution"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/ShareAlike"/>\n', ses);
+  http ('    <cc:prohibits rdf:resource="http://web.resource.org/cc/CommercialUse"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/ShareAlike"/>\n', ses);
+  http ('  </cc:License>\n', ses);
+  http ('  <cc:License rdf:about="http://creativecommons.org/licenses/by-sa/1.0/">\n', ses);
+  http ('    <rdfs:label>Attribution-ShareAlike 1.0</rdfs:label>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Notice"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Attribution"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/ShareAlike"/>\n', ses);
+  http ('  </cc:License>\n', ses);
+  http ('  <cc:License rdf:about="http://creativecommons.org/licenses/nd/1.0/">\n', ses);
+  http ('    <rdfs:label>NoDerivs 1.0</rdfs:label>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Notice"/>\n', ses);
+  http ('  </cc:License>\n', ses);
+  http ('  <cc:License rdf:about="http://creativecommons.org/licenses/nd-nc/1.0/">\n', ses);
+  http ('    <rdfs:label>NoDerivs-NonCommercial 1.0</rdfs:label>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>\n', ses);
+  http ('    <cc:prohibits rdf:resource="http://web.resource.org/cc/CommercialUse"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Notice"/>\n', ses);
+  http ('  </cc:License>\n', ses);
+  http ('  <cc:License rdf:about="http://creativecommons.org/licenses/nc/1.0/">\n', ses);
+  http ('    <rdfs:label>NonCommercial 1.0</rdfs:label>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Notice"/>\n', ses);
+  http ('    <cc:prohibits rdf:resource="http://web.resource.org/cc/CommercialUse"/>\n', ses);
+  http ('  </cc:License>\n', ses);
+  http ('  <cc:License rdf:about="http://creativecommons.org/licenses/nc-sa/1.0/">\n', ses);
+  http ('    <rdfs:label>NonCommercial-ShareAlike 1.0</rdfs:label>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Notice"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/ShareAlike"/>\n', ses);
+  http ('    <cc:prohibits rdf:resource="http://web.resource.org/cc/CommercialUse"/>\n', ses);
+  http ('  </cc:License>\n', ses);
+  http ('  <cc:License rdf:about="http://creativecommons.org/licenses/sa/1.0/">\n', ses);
+  http ('    <rdfs:label>ShareAlike 1.0</rdfs:label>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Reproduction"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/Distribution"/>\n', ses);
+  http ('    <cc:permits rdf:resource="http://web.resource.org/cc/DerivativeWorks"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/Notice"/>\n', ses);
+  http ('    <cc:requires rdf:resource="http://web.resource.org/cc/ShareAlike"/>\n', ses);
+  http ('  </cc:License>\n', ses);
+  http ('</rdf:RDF>\n', ses);
+  return xtree_doc (string_output_string (ses));
 }
 ;
 

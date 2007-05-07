@@ -475,6 +475,21 @@
                 'order by '||order_by_str||' '||order_way_str;
        }       
 
+       declare isDiscussions integer;
+       isDiscussions:=0;
+       
+       if('<xsl:value-of select="$app"/>'='Discussions'){
+          isDiscussions:=1;
+          q_str := 'select distinct top 10 '||
+                   '  NG_NAME as inst_name, FTHR_SUBJ as title, FTHR_DATE as ts, FTHR_FROM as author,'||
+                   '  concat(\'/nntpf/nntpf_nthread_view.vspx?group=\',cast(FTHR_GROUP as varchar),\'&amp;disp_artic=\',sprintf (\'%U\', FTHR_MESS_ID)) as url, '||
+                   ' null as uname,  FTHR_FROM as email, FTHR_GROUP '||
+                   'from NNFE_THR, NEWS_GROUPS '||
+                   'where FTHR_GROUP=NG_GROUP '||
+                   'order by '||order_by_str||' '||order_way_str ;
+
+       }
+
        
        declare state, msg, descs, rows any;
        state := '00000';
@@ -558,8 +573,12 @@
          inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
          inst_url_local := (case when locate('http://',inst_url_local)=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||inst_url_local;
          
+         if(isDiscussions) inst_url_local := rtrim(self.odsbar_ods_gpath,'/ods/')||'/nntpf/nntpf_nthread_view.vspx?group='||cast(rows[i][7] as varchar);
+
+
          url:=(case when locate('http://',sprintf('%s',url))=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||url;
 
+         
          declare insttype_from_xsl varchar;
          insttype_from_xsl:='';
          insttype_from_xsl:='<xsl:value-of select="$app"/>';
@@ -568,7 +587,7 @@
 		  </xsl:processing-instruction>
         <tr align="left">
        <?vsp
-            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark' or insttype_from_xsl='oGallery' or insttype_from_xsl='Polls' or insttype_from_xsl='AddressBook')
+            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark' or insttype_from_xsl='oGallery' or insttype_from_xsl='Polls' or insttype_from_xsl='AddressBook' or insttype_from_xsl='Calendar' or insttype_from_xsl='Discussions')
             {
        ?>       
 
@@ -1153,6 +1172,138 @@
           </tr>
           <xsl:call-template name="user-dashboard-item-extended">
             <xsl:with-param name="app">AddressBook</xsl:with-param>
+          </xsl:call-template>
+        </table>
+      </div> <!-- w_pane -->
+    </div> <!-- widget -->
+  </xsl:template>
+
+  <xsl:template match="vm:dash-calendar-summary">
+    <div class="widget w_app_summary w_calendar_summary">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="images/icons/ods_calendar_16.png"
+               alt="ODS-Calendar icon" />
+            <span class="w_title_text"><?V WA_GET_APP_NAME ('Calendar') ?> Summary</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+        </div>
+      </div>
+      <div class="w_pane content_pane">
+        <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
+          <tr>
+            <th>
+              <v:url name="calendar_orderby_instance"
+                     value="Instance"
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                            '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+                             />
+            </th>
+            <th>
+              <v:url name="calendar_orderby_subject"
+                     value="Contact"
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="calendar_orderby_creator"
+                     value="Creator"
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="calendar_orderby_date"
+                     value="Date"
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">Calendar</xsl:with-param>
+          </xsl:call-template>
+        </table>
+      </div> <!-- w_pane -->
+    </div> <!-- widget -->
+  </xsl:template>
+
+  <xsl:template match="vm:dash-discussions-summary">
+    <div class="widget w_app_summary w_news_activity">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="images/icons/ods_discussion_16.png"
+               alt="ODS-Discussion icon" />
+            <span class="w_title_text"><?V WA_GET_APP_NAME ('nntpf') ?> Summary</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+        </div>
+      </div>
+      <div class="w_pane content_pane">
+        <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
+          <tr>
+            <th>
+              <v:url name="discussions_orderby_instance"
+                     value="Newsgroup"
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                            '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+                             />
+            </th>
+            <th>
+              <v:url name="discussion_orderby_subject"
+                     value="Subject"
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="discussions_orderby_creator"
+                     value="Creator"
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="discussions_orderby_date"
+                     value="Date"
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">Discussions</xsl:with-param>
           </xsl:call-template>
         </table>
       </div> <!-- w_pane -->

@@ -440,6 +440,75 @@ create function WA_SEARCH_USER (in max_rows integer, in current_user_id integer,
 }
 ;
 
+create function WA_SEARCH_NNTP_GET_EXCERPT_HTML (in url varchar, in title varchar, in content varchar, in _from varchar, in words any) returns varchar
+{
+  declare res varchar;
+  declare tree any;
+
+  _from := substring (_from, 8, length (_from));
+  _from := replace (_from, '@', '{at}');
+
+  res := sprintf ('<span><img src="%s" /> <a href="%s" target="_blank">%s</a> by <b>%s</b> ',
+  WA_SEARCH_ADD_APATH ('images/icons/web_16.png'), url, title, _from);
+  res := res || '<br />' ||
+  left (
+      search_excerpt (
+	words,
+	subseq (coalesce (content, ''), 0, 200000)
+	),
+      900) || '</span>';
+  return res;
+}
+;
+
+create function WA_SEARCH_NNTP (in max_rows integer, in current_user_id integer,
+   in str varchar, in tags_str varchar, in _words_vector varchar) returns varchar
+{
+  declare ret varchar;
+
+    {
+      ret := sprintf (
+	'select link as _URL, title as _TITLE, content as _CONTENT, maker as _FROM, ts as _DATE, (0+0) as _SCORE, wai_id as _ID from '||
+	'(sparql '||
+	'prefix foaf: <http://xmlns.com/foaf/0.1/> '||
+	'prefix dc: <http://purl.org/dc/elements/1.1/> '||
+	'prefix dct: <http://purl.org/dc/terms/> prefix '||
+	'sioc: <http://rdfs.org/sioc/ns#> '||
+	'prefix sioct: <http://rdfs.org/sioc/types#>
+	select distinct ?link, ?title, ?content, ?maker, ?ts, ?wai_id from <http://%S/dataspace> '||
+	'where { '||
+	  ' ?s a sioct:MessageBoard ; sioc:id ?wai_id ;'||
+	  ' sioc:container_of ?post .'||
+	  ' ?post dc:title ?title ;'||
+	  ' sioc:link ?link ;'||
+	  ' dct:modified ?ts ;'||
+	  ' dc:subject ?tags ;'||
+	  ' sioc:content ?content ;'||
+	  ' foaf:maker ?maker .', DB.DBA.wa_cname ());
+
+	if (length (str))
+	  ret := ret || sprintf (' filter bif:contains ( ?content, ''%S'' ) ', str);
+
+	if (length (tags_str))
+	  ret := ret || sprintf (' filter bif:contains ( ?tags, ''("^UID%d" OR "^UID%d") and %S'') ',
+	  	http_dav_uid (), current_user_id, tags_str);
+
+        ret := ret || sprintf (' } limit %d ) sub', max_rows);
+    }
+
+  ret := sprintf (
+         'select top %d \n' ||
+         '  WA_SEARCH_NNTP_GET_EXCERPT_HTML (_URL, _TITLE, _CONTENT, _FROM, %s) AS EXCERPT, \n' ||
+         '  encode_base64 (serialize (vector (''NNTP'', vector (_URL, _ID)))) as TAG_TABLE_FK, \n' ||
+         '  _SCORE, \n' ||
+         '  _DATE \n' ||
+         ' from \n(\n%s\n) qry',
+    max_rows, _words_vector, ret);
+
+  return ret;
+}
+;
+
 -- creates a search excerpt for a blog.
 -- see http://wiki.usnet.private:8791/twiki/bin/view/Main/VirtWASpecsRevisions#Advanced_Search for description
 -- params : words : an array of search words (as returned by the FTI_MAKE_SEARCH_STRING_INNER
@@ -1195,6 +1264,7 @@ create function WA_SEARCH_BMK (in max_rows integer, in current_user_id integer,
 create procedure WA_SEARCH_CONSTRUCT_QUERY (in current_user_id integer, in qry nvarchar, in q_tags nvarchar,
 	in search_people integer, in search_news integer, in search_blogs integer, in search_wikis integer,
         in search_dav integer, in search_apps integer, in search_omail integer, in search_bmk int,
+	in search_nntp int,
 	in sort_by_score integer,
         in max_rows integer, in tag_is_qry int, out tags_vector any)
 returns varchar
@@ -1262,6 +1332,11 @@ returns varchar
         ret := ret || '\n\nUNION ALL\n\n';
       ret := ret || WA_SEARCH_BMK (max_rows, current_user_id, str, tags_str, _words_vector);
     }
+  if (search_nntp)
+    {
+      if (ret <> '') ret := ret || '\n\nUNION ALL\n\n';
+      ret := ret || WA_SEARCH_NNTP (max_rows, current_user_id, str, tags_str, _words_vector);
+    }
   if (ret <> '')
     ret := sprintf ('select top %d EXCERPT, TAG_TABLE_FK, _SCORE, _DATE from \n(\n%s ORDER BY %s desc\n) q',
        max_rows, ret, case when sort_by_score <> 0 then  '_SCORE' else '_DATE' end);
@@ -1290,6 +1365,8 @@ create procedure WA_SEARCH_ADD_TAG (
     WA_SEARCH_ADD_ENEWS_TAG (current_user_id, pk_array, new_tag_expr);
   else if (upd_type = 'BMK')
     WA_SEARCH_ADD_BMK_TAG (current_user_id, pk_array, new_tag_expr);
+  else if (upd_type = 'NNTP')
+    WA_SEARCH_ADD_NNTP_TAG (current_user_id, pk_array, new_tag_expr);
   else
     signal ('22023', sprintf ('Unknown type tag %s in WA_SEARCH_ADD_TAG', upd_type));
 }
@@ -1318,6 +1395,23 @@ create procedure WA_SEARCH_ADD_USER_TAG (
   WA_USER_TAG_SET (current_user_id, _tag_id, _tags);
 }
 ;
+
+create procedure WA_SEARCH_ADD_NNTP_TAG (
+	in current_user_id integer,
+	inout pk_array any,
+	in new_tag_expr nvarchar)
+{
+  declare grp, msg_id_enc, arr, _tags any;
+  whenever not found goto nf;
+  select NG_GROUP into grp from DB.DBA.NEWS_GROUPS where NG_NAME = pk_array[1];
+  arr := sprintf_inverse (pk_array[0], 'http://%s/nntpf/nntpf_disp_article.vspx?id=%s', 0);
+  msg_id_enc := split_and_decode (arr[1], 0, '%');
+  _tags := charset_recode (new_tag_expr, '_WIDE_', 'UTF-8');
+  if (length (_tags))
+    discussions_dotag_int (grp, msg_id_enc, _tags, 'add', current_user_id);
+  nf:
+  return;
+};
 
 wa_exec_no_error('
 create procedure WA_SEARCH_ADD_BLOG_TAG (

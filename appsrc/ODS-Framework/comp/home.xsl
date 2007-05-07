@@ -297,12 +297,29 @@
 			    if (length (self.arr[8])) {
 			    ?>
                             <tr>
-                              <th><v:label name="1foaf" value="External FOAF file URL:" /></th>
+                              <th><v:label name="1foaf" value="External identity URLs:" /></th>
 			      <td>
-				  <v:url name="lfoaf1" value="--coalesce(self.arr[8],'')"
-				      url="--self.arr[8]"
-				      xhtml_target="_blank"
-				      />
+				  <?vsp
+				    {
+                                      declare urls any;
+				      urls := coalesce(self.arr[8],'');
+				      if (length (urls))
+				        {
+					  declare arr any;
+                                          urls := replace (urls, '\r', '\n');
+                                          urls := replace (urls, '\n\n', '\n');
+
+					  arr := split_and_decode (urls, 0, '\0\0\n');
+					  foreach (any u in arr) do {
+					   if (length (trim (u))) {
+					  ?>
+					  <a href="<?V u ?>" target="_blank"><?V u ?></a>
+					  <?vsp
+					   }
+					  }
+					}
+				    }
+				  ?>
 			      </td>
                             </tr>
 			    <?vsp } ?>

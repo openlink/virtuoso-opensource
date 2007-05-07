@@ -126,10 +126,12 @@
 
   declare hndl, row any;
    
-  http('var markersArr = [];var user_dshtml;\r\n',rendered_javascript);
+  http('var markersArr = [];var user_dshtml='''';\r\n',rendered_javascript);
   
 
   exec (_sql, NULL, NULL, vector (), 0, NULL, NULL, hndl);
+  declare _idx integer;
+  _idx:=0;
   while (0 = exec_next (hndl, NULL, NULL, row))
   {
       declare _baloon_col varchar;
@@ -152,13 +154,16 @@
       http (sprintf('user_dshtml=''%s'';',replace(_baloon_col,'''','`')),rendered_javascript);
       http (sprintf('commonMapObj.addMarker(%d,%s,%s,''%s'',%s,%s,ref(commonMapObj,user_dshtml));',group_inx,_lat,_lng,markericon_path,markericon_width,markericon_height),rendered_javascript);
       http (sprintf('markersArr.push([%s,%s]);\r\n',_lat,_lng),rendered_javascript);
+      
+      _idx:=_idx+1;
   }
   exec_close (hndl);
 
   if(_zoom=0){
+      if(_idx>0)
       http ('commonMapObj.optimalPosition(markersArr);\r\n',rendered_javascript);
+
   }else{
-      dbg_obj_print('custom_zoom',_zoom);
       http (sprintf('commonMapObj.centerAndZoom(%s,%s,%d);\r\n',center_lat,center_lng,_zoom),rendered_javascript);
   }
   
@@ -206,9 +211,10 @@ function mapInit(){
      };
       
      
-     var containerDiv=document.getElementById(']]><xsl:value-of select="@div_id" /><![CDATA[');
+//     var containerDiv=document.getElementById(']]><xsl:value-of select="@div_id" /><![CDATA[');
+     var containerDiv=$(']]><xsl:value-of select="@div_id" /><![CDATA[');
      
-     if(typeof(containerDiv)!='undefined')
+     if(containerDiv)
      {
       
       var mapOptObj = {
@@ -223,7 +229,7 @@ function mapInit(){
        commonMapObj.setMapType(OAT.MapData.MAP_HYB);
        <?vsp http(string_output_string(rendered_javascript)); ?>
      }else{
-        alert('Please define a div container for the map control.');
+//        alert('Please define a div container for the map control.');
         return;
      };
   
