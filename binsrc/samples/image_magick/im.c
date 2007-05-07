@@ -1195,7 +1195,7 @@ caddr_t bif_im_ThumbnailImageBlob (caddr_t * qst, caddr_t * err, state_slot_t **
   return res;
 }
 
-#ifdef HasTTF
+#if defined(HasTTF) || defined(HasFREETYPE)
 caddr_t 
 bif_im_AnnotateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
@@ -1479,7 +1479,7 @@ void im_connect (void *appdata)
   bif_define ("IM ResampleImageBlob", bif_im_ResampleImageBlob);
   bif_define ("IM RotateImageBlob", bif_im_RotateImageBlob);
   bif_define ("IM CropImageBlob", bif_im_CropImageBlob);
-#ifdef HasTTF
+#if defined(HasTTF) || defined(HasFREETYPE)
   bif_define ("IM AnnotateImageBlob", bif_im_AnnotateImageBlob);
 #endif
   bif_define ("IM CreateImageBlob", bif_im_CreateImageBlob);
