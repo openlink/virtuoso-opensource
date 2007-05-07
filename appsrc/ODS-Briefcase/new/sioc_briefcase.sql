@@ -55,6 +55,16 @@ create procedure briefcase_person_iri (
 
 -------------------------------------------------------------------------------
 --
+create procedure briefcase_event_iri (
+  inout c_iri any,
+  inout eventUID any)
+{
+  return c_iri || '/event#' || replace (sprintf ('%U', eventUID), '+', '%2B');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure briefcase_sparql (
   in sql varchar)
 {
@@ -223,20 +233,26 @@ create procedure briefcase_sioc_insert_ex (
   in r_ownerName varchar,
   inout r_content any)
 {
-  declare K, L, M, N, is_xml, sn_id integer;
-  declare appType, g_iri, c_iri, w_iri, also_iri, creator_iri, p_iri, a_iri, r_iri any;
+  declare continue handler for SQLSTATE '*' {
+    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE )
+    ;
+  };
+
+  declare K, L, M, N, is_xml, instance_id integer;
+  declare appType, g_iri, c_iri, w_iri, also_iri, creator_iri, p_iri, a_iri, r_iri, e_iri any;
   declare personName any;
   declare data, xmlData, xmlItems, ldapServer, ldapData, ldapMaps any;
   declare ldapName, ldapValue, snName, foafName any;
+  declare Meta any;
 
   -- is FOAF file?
   --
   if ((r_type = 'application/foaf+xml') or (r_type = 'application/rdf+xml')) {
     appType := 'AddressBook';
-    sn_id := ODRIVE.WA.check_app (appType, r_owner);
-    if (not sn_id)
-      sn_id := DB.DBA.ODS_CREATE_NEW_APP_INST (appType, r_ownerName || '''s ' || appType, r_ownerName);
-    c_iri := addressbook_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = sn_id));
+    instance_id := ODRIVE.WA.check_app (appType, r_owner);
+    if (not instance_id)
+      instance_id := DB.DBA.ODS_CREATE_NEW_APP_INST (appType, r_ownerName || '''s ' || appType, r_ownerName);
+    c_iri := addressbook_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = instance_id));
 
     w_iri := dav_res_iri (r_full_path || '.tmp');
     also_iri := dav_res_iri (r_full_path);
@@ -248,10 +264,6 @@ create procedure briefcase_sioc_insert_ex (
       xtree_doc (r_content, 0);
     }
     if (is_xml) {
-      declare continue handler for SQLSTATE '*' {
-        --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE )
-        ;
-  };
       declare persons any;
 
       g_iri := get_graph ();
@@ -265,13 +277,16 @@ create procedure briefcase_sioc_insert_ex (
                                        ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
                                        ' SELECT ?x ' ||
                                        '   FROM <%s> ' ||
-                                       '  WHERE {?x rdf:type foaf:Person} ', w_iri));
+                                            '  WHERE {?x rdf:type foaf:Person} ',
+                                            w_iri
+                                           )
+                                  );
       if (length (persons)) {
         ldapServer := LDAP..ldap_default (r_owner);
         if (not isnull (ldapServer))
           ldapMaps := LDAP..ldap_maps (r_owner, ldapServer);
         DB.DBA.RDF_LOAD_RDFXML (r_content, '', g_iri);
-        r_iri := role_iri (sn_id, r_owner, 'contact');
+        r_iri := role_iri (instance_id, r_owner, 'contact');
         foreach (any pers_iri in persons) do {
    		    DB.DBA.RDF_QUAD_URI (g_iri, c_iri, sioc_iri ('scope_of'), r_iri);
    		    DB.DBA.RDF_QUAD_URI (g_iri, r_iri, sioc_iri ('function_of'), pers_iri[0]);
@@ -312,33 +327,19 @@ create procedure briefcase_sioc_insert_ex (
     }
   }
 
-  -- is vCard file?
+  -- is vCard or vCalendar file?
   --
-  if (r_type = 'text/directory') {
-    declare continue handler for SQLSTATE '*' {
-      --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE )
-      ;
-    };
-    declare itemName varchar;
-    declare Meta any;
-
+  if ((r_type = 'text/directory') or (r_type = 'text/calendar')) {
+    -- main iri-s
+  --
     g_iri := get_graph ();
     creator_iri := user_iri (r_owner);
 
-    appType := 'AddressBook';
-    sn_id := ODRIVE.WA.check_app (appType, r_owner);
-    if (not sn_id)
-      sn_id := DB.DBA.ODS_CREATE_NEW_APP_INST (appType, r_ownerName || '''s ' || appType, r_ownerName);
-    c_iri := addressbook_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = sn_id));
     also_iri := dav_res_iri (r_full_path);
     ODRIVE.WA.DAV_PROP_SET (r_full_path, 'virt:graphIri', also_iri);
 
-    -- ldap data
-    ldapServer := LDAP..ldap_default (r_owner);
-    if (not isnull (ldapServer))
-      ldapMaps := LDAP..ldap_maps (r_owner, ldapServer);
-
     -- using DAV parser
+    --
     if (not isstring (r_content)) {
       xmlData := DB.DBA.IMC_TO_XML (cast (r_content as varchar));
     } else {
@@ -347,9 +348,22 @@ create procedure briefcase_sioc_insert_ex (
     xmlData := xml_tree_doc (xmlData);
     xmlItems := xpath_eval ('/*', xmlData, 0);
     foreach (any xmlItem in xmlItems) do  {
+      declare itemName varchar;
 
       itemName := xpath_eval ('name(.)', xmlItem);
       if (itemName = 'IMC-VCARD') {
+        -- ldap data source
+        ldapServer := LDAP..ldap_default (r_owner);
+        if (not isnull (ldapServer))
+          ldapMaps := LDAP..ldap_maps (r_owner, ldapServer);
+
+        -- instance iri
+        appType := 'AddressBook';
+        instance_id := ODRIVE.WA.check_app (appType, r_owner);
+        if (not instance_id)
+          instance_id := DB.DBA.ODS_CREATE_NEW_APP_INST (appType, r_ownerName || '''s ' || appType, r_ownerName);
+        c_iri := addressbook_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = instance_id));
+
         Meta := vector
           (
             -- basic props
@@ -363,11 +377,9 @@ create procedure briefcase_sioc_insert_ex (
             vcard_iri ('Region'), 'ADR/fld[5]',
             vcard_iri ('Country'), 'ADR/fld[7]'
           );
-      } else {
-        Meta := vector ();
-      }
+
       p_iri := null;
-      r_iri := role_iri (sn_id, r_owner, 'contact');
+        r_iri := role_iri (instance_id, r_owner, 'contact');
       for (L := 0; L < length (Meta); L := L + 2) {
         declare V varchar;
 
@@ -407,7 +419,6 @@ create procedure briefcase_sioc_insert_ex (
                   }
                 }
               }
-              --dbg_obj_print ( Meta[L], T);
               if (not isnull (p_iri)) {
                 if (Meta[L] like vcard_iri ('%')) {
                   if (K <= 1) {
@@ -422,6 +433,58 @@ create procedure briefcase_sioc_insert_ex (
             }
             K := K + 1;
           }
+      }
+      } else if (itemName = 'IMC-VCALENDAR') {
+        -- instance iri
+        appType := 'Calendar';
+        instance_id := ODRIVE.WA.check_app (appType, r_owner);
+        if (not instance_id)
+          instance_id := DB.DBA.ODS_CREATE_NEW_APP_INST (appType, r_ownerName || '''s ' || appType, r_ownerName);
+        c_iri := calendar_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = instance_id));
+        M := xpath_eval('count (IMC-VEVENT)', xmlItem);
+        for (N := 1; N <= M; N := N + 1) {
+          declare eUID, eLink, eSummary, eDescription, eCreated, eProperty any;
+
+          eUID := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/UID/val', N), xmlItem, 1) as varchar);
+          if (not isnull (eUID)) {
+            e_iri := briefcase_event_iri (c_iri, eUID);
+            eLink := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/URL/val', N), xmlItem, 1) as varchar);
+            eSummary := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/SUMMARY/val', N), xmlItem, 1) as varchar);
+            eDescription := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar);
+            { declare continue handler for sqlstate '*' {
+                eCreated := null;
+              };
+              eCreated := stringdate (cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DTSTAMP/val', N), xmlItem, 1) as varchar));
+            }
+
+            ods_sioc_post (g_iri, e_iri, c_iri, creator_iri, eSummary, eCreated, eCreated, eLink, eDescription);
+
+            DB.DBA.RDF_QUAD_URI   (g_iri, e_iri, rdf_iri ('type'), vcal_iri ('vevent'));
+            DB.DBA.RDF_QUAD_URI   (g_iri, e_iri, rdfs_iri ('seeAlso'), also_iri);
+            if (not isnull (eUID))
+              DB.DBA.RDF_QUAD_URI_L (g_iri, e_iri, vcal_iri ('uid'), eUID);
+            if (not isnull (eLink))
+              DB.DBA.RDF_QUAD_URI_L (g_iri, e_iri, vcal_iri ('url'), eLink);
+            if (not isnull (eSummary))
+              DB.DBA.RDF_QUAD_URI_L (g_iri, e_iri, vcal_iri ('summary'), eSummary);
+            if (not isnull (eDescription))
+              DB.DBA.RDF_QUAD_URI_L (g_iri, e_iri, vcal_iri ('description'), eDescription);
+
+            meta := vector ('LOCATION', 'location',
+                            'ORGANIZER', 'organizer',
+                            'CATEGORIES', 'categories',
+                            'ATTENDEE', 'attendee',
+                            'DTSTART', 'dtstart',
+                            'DTEND', 'dtend'
+                           );
+
+            for (K := 0; K < length (meta); K := K + 2) {
+              eProperty := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/%s/val', N, meta[K]), xmlItem, 1) as varchar);
+              if (not isnull (eProperty))
+                DB.DBA.RDF_QUAD_URI_L (g_iri, e_iri, vcal_iri (meta [K+1]), eProperty);
+            }
+          }
+        }
       }
     }
   }
@@ -442,9 +505,7 @@ create procedure briefcase_sioc_delete (
 
   graph_iri := get_graph ();
   path := split_and_decode (r_full_path, 0, '\0\0/');
-
-  if (length (path) > 5 and path [4] = 'Public')
-    {
+  if (length (path) > 5 and path [4] = 'Public') {
       declare forum_iri any;
       for (select WAI_NAME
 	     from DB.DBA.WA_INSTANCE,
@@ -456,8 +517,7 @@ create procedure briefcase_sioc_delete (
 	      and WAM_IS_PUBLIC = 1
 	      and U_NAME = path[3]
 	      and U_ACCOUNT_DISABLED = 0
-	      and U_DAV_ENABLE = 1) do
-      {
+    	      and U_DAV_ENABLE = 1) do {
 	forum_iri := briefcase_iri (WAI_NAME);
 	iri := post_iri_ex (forum_iri, r_id);
   delete_quad_s_or_o (graph_iri, iri, iri);
