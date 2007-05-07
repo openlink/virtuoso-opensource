@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+  -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
+  <head profile="http://internetalchemy.org/2003/02/profile">
+    <?vsp
+      http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', CAL.WA.host_url (), CAL.WA.account ()));
+    ?>
+    <?vsp
+      if (CAL.WA.domain_is_public (self.domain_id))
+        http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', CAL.WA.sioc_url (self.domain_id)));
+    ?>
+    <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
+    <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
+    <link rel="alternate" type="application/rss+xml" title="Virtuoso Product Blog (RSS 2.0)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
+    <link rel="alternate" type="application/atom+xml" title="Virtuoso Product Blog (Atom)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
+    <link rel="alternate" type="application/rss+xml" title="ODBC for Mac OS X Screencast Demos"  href="http://support.openlinksw.com/viewlets/mac_uda_viewlets_rss.vsp" />
+    <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
+    <link rel="alternate" type="application/rss+xml" title="Benchmark & Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
+    <?vsp
+      declare url varchar;
+      declare N integer;
+      url := concat('http://', http_request_header (lines, 'Host'));
+      for (N := 0; N < length(path)-1; N := N + 1)
+        url := concat (url, '/', path[N]);
+      http (sprintf ('<link rel="subscriptions" type="text/x-opml" title="Subscriptions" href="%s/export.vspx?output=OPML&aid=%d&did=%d" />', url, self.account_id, self.domain_id));
+
+      http (CAL.WA.geo_url (self.domain_id, self.account_id));
+    ?>
+    <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <meta name="dc.description" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
+    <meta name="dc.title" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <script type="text/javascript" src="js/calendar.js" />
+    <?vsp http('</script>'); ?>
+    <script type="text/javascript" src="js/CalendarPopup.js" />
+    <?vsp http('</script>'); ?>
+    <script type="text/javascript">
+      <![CDATA[
+        // CalendarPopup
+        var cPopup = new CalendarPopup('cDiv');
+
+        // OAT
+        var toolkitPath="/ods/oat";
+        var featureList=["ajax2"];
+      ]]>
+    </script>
+    <script type="text/javascript" src="/ods/oat/loader.js" />
+    <?vsp http('</script>'); ?>
+  	<script type="text/javascript">
+      <![CDATA[
+    		function getWindowHeight() {
+    			var windowHeight = 0;
+    			if (typeof(window.innerHeight) == 'number') {
+    				windowHeight = window.innerHeight;
+    			}
+    			else {
+    				if (document.documentElement && document.documentElement.clientHeight) {
+    					windowHeight = document.documentElement.clientHeight;
+    				}
+    				else {
+    					if (document.body && document.body.clientHeight) {
+    						windowHeight = document.body.clientHeight;
+    					}
+    				}
+    			}
+    			return windowHeight;
+    		}
+    		function setFooter() {
+    			if (document.getElementById) {
+    				var windowHeight = getWindowHeight();
+    				if (windowHeight > 0) {
+    					var footerElement = document.getElementById('FT');
+    					var footerHeight  = footerElement.offsetHeight;
+    					if (document.getElementById('content'))
+                document.getElementById('content').style.height = (windowHeight - footerHeight - 200) + 'px';
+    				}
+    			}
+    		}
+    		window.onload = function() {
+    			setFooter();
+    		}
+    		window.onresize = function() {
+    			setFooter();
+    		}
+      ]]>
+  	</script>
+    <title></title>
+  </head>
+  <body>
+    <v:page xmlns:v="http://www.openlinksw.com/vspx/">
+      <vm:variables>
+        <v:variable persist="0" name="domain_id" type="integer" default="-1" />
+        <v:variable persist="0" name="account_id" type="integer" default="-1" />
+        <v:variable persist="0" name="account_role" type="varchar" default="'public'" />
+        <v:variable persist="0" name="accountName" type="varchar" default="'Public User'" />
+        <v:variable persist="0" name="settings" type="any" />
+      </vm:variables>
+      <v:on-init>
+        <![CDATA[
+          set ISOLATION = 'Committed';
+          set http_charset = 'utf-8';
+
+          -- Initialize variables
+          declare aRequest, aSessInfo any;
+
+          aRequest := CAL.WA.validate_request(lines,0);
+
+          aSessInfo := CAL.WA.session_restore(aRequest, params, lines);
+          self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
+          self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
+          self.account_role := get_keyword('user_role', aSessInfo, '');
+          self.accountName := get_keyword('user_name', aSessInfo, '');
+          self.settings := CAL.WA.settings (self.account_id);
+        ]]>
+      </v:on-init>
+
+      <v:after-data-bind>
+        <![CDATA[
+          if (CAL.WA.frozen_check(self.domain_id)) {
+            declare freeze_page varchar;
+            freeze_page := CAL.WA.frozen_page(self.domain_id);
+            if (freeze_page is null or freeze_page = '' or freeze_page = 'default') {
+              http_rewrite ();
+              http_request_status ('HTTP/1.1 404 Not found');
+              http (sprintf('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><head><TITLE>404 Not Found</TITLE></HEAD><body><H1>Not Found</H1>Resource %s not found.</BODY></HTML>', http_path (CAL.WA.page_name())));
+              http_flush();
+              return;
+            }
+            http_rewrite ();
+            http_request_status ('HTTP/1.1 302 Found');
+            http_header(sprintf('Location: %s\r\n\r\n', freeze_page));
+            http_flush();
+            return;
+          }
+        ]]>
+      </v:after-data-bind>
+
+      <v:placeholder />
+    </v:page>
+  </body>
+</html>

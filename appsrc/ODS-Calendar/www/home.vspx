@@ -1,0 +1,1710 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+  -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="sn" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+
+  <v:method name="initData" arglist="">
+    <![CDATA[
+      declare N, M, wStart, wCount, mStart, mLastday, dStart integer;
+      declare cDays any;
+
+      self.cWeekStarts := CAL.WA.settings_weekStarts (self.settings);
+      self.cTimeZone := CAL.WA.settings_timeZone (self.settings);
+      self.cTimeFormat := CAL.WA.settings_timeFormat (self.settings);
+      self.cDateFormat := CAL.WA.settings_dateFormat (self.settings);
+      if (isnull (self.cScope))
+        self.cScope := CAL.WA.settings_defaultView (self.settings);
+      if (isnull (self.cDay))
+        self.cDay := CAL.WA.dt_curdate (self.cTimeZone);
+      if (isnull (self.cMonth))
+        self.cMonth := CAL.WA.dt_BeginOfMonth (self.cDay);
+      if (self.cScope = 'day') {
+        self.cStart := self.cDay;
+        self.cEnd := self.cDay;
+      }
+      if (self.cScope = 'week') {
+        self.cStart := cast (CAL.WA.dt_BeginOfWeek (self.cDay, self.cWeekStarts) as date);
+        self.cEnd := cast (CAL.WA.dt_EndOfWeek (self.cDay, self.cWeekStarts) as date);
+      }
+      if (self.cScope = 'month') {
+        self.cStart := cast (CAL.WA.dt_BeginOfWeek (CAL.WA.dt_BeginOfMonth (self.cDay), self.cWeekStarts) as date);
+        self.cEnd := cast (CAL.WA.dt_EndOfWeek (CAL.WA.dt_EndOfMonth (self.cDay), self.cWeekStarts) as date);
+      }
+      wStart := CAL.WA.dt_WeekDay (self.cMonth, self.cWeekStarts);
+      mLastday := CAL.WA.dt_LastdayOfMonth (self.cMonth);
+      wCount := 4;
+      if (wStart <> 1)
+        wCount := wCount + 1;
+      if (mLastday - 28 - (7 - wStart) > 0)
+        wCount := wCount + 1;
+      mStart := 1;
+      if (wCount = 6 )
+        mStart := 0;
+      dStart := mStart * 7 + wStart - 1;
+
+      cDays := make_array (49, 'any');
+      M := CAL.WA.dt_LastdayOfMonth (dateadd ('day', -1, self.cMonth));
+      for (N := dStart - 1; N >= 0 ; N := N - 1) {
+        cDays[N] := -M;
+        M := M - 1;
+      }
+      M := 1;
+      for (N := dStart; N < dStart + mLastday; N := N + 1) {
+        cDays[N] := M;
+        M := M + 1;
+      }
+      M := 1;
+      for (N := dStart + mLastday; N < 49; N := N + 1) {
+        cDays[N] := -M;
+        M := M + 1;
+      }
+      self.cDays := cDays;
+    ]]>
+  </v:method>
+
+  <v:method name="viewTimeZone" arglist="inout fValue any">
+    <![CDATA[
+      if (is_empty_or_null (fValue))
+         return '';
+      return sprintf ('GMT %s%02d:00', case when cast (fValue as integer) < 0 then '-' else '+' end,  abs(cast (fValue as integer)));
+    ]]>
+  </v:method>
+
+  <v:method name="calcDate" arglist="in N integer">
+    <![CDATA[
+      if (self.cDays [N] > 0)
+        return cast (dateadd ('day', self.cDays [N] - 1, self.cMonth) as date);
+      if ((self.cDays [N] < 0) and (N < 24))
+        return cast (dateadd ('day', abs (self.cDays [N]) - 1, dateadd ('month', -1, self.cMonth)) as date);
+      if ((self.cDays [N] < 0) and (N > 24))
+        return cast (dateadd ('day', abs (self.cDays [N]) - 1, dateadd ('month', 1, self.cMonth)) as date);
+    ]]>
+  </v:method>
+
+  <v:method name="repeatParam" arglist="in eRepeat varchar, in cRepeat varchar, in cRepeatParam integer, in cRepeatIndex integer">
+    <![CDATA[
+      if (eRepeat = cRepeat) {
+        if (eRepeat = 'D1') {
+          if (cRepeatParam = 1)
+            return self.v_repeatParam1;
+        }
+        if (eRepeat = 'W1') {
+          if (cRepeatParam = 1)
+            return self.v_repeatParam1;
+          if (cRepeatParam = 2)
+            return bit_and (cast (self.v_repeatParam2 as integer), power (2, cRepeatIndex));
+        }
+        if (eRepeat = 'M1') {
+          if (cRepeatParam = 1)
+            return self.v_repeatParam1;
+          if (cRepeatParam = 2)
+            return self.v_repeatParam2;
+        }
+        if (eRepeat = 'M2') {
+          if (cRepeatParam = 1)
+            return self.v_repeatParam1;
+          if (cRepeatParam = 2)
+            return self.v_repeatParam2;
+          if (cRepeatParam = 3)
+            return self.v_repeatParam3;
+        }
+        if (eRepeat = 'Y1') {
+          if (cRepeatParam = 1)
+            return self.v_repeatParam1;
+          if (cRepeatParam = 2)
+            return self.v_repeatParam2;
+        }
+        if (eRepeat = 'Y2') {
+          if (cRepeatParam = 1)
+            return self.v_repeatParam1;
+          if (cRepeatParam = 2)
+            return self.v_repeatParam2;
+          if (cRepeatParam = 3)
+            return self.v_repeatParam3;
+        }
+      }
+      return '';
+    ]]>
+  </v:method>
+
+  <v:method name="repeatableImage" arglist="in eRepeat varchar">
+    <![CDATA[
+      if (eRepeat = '')
+        return '';
+      return '<img border="0" width="11" height="11" title="Repeatable" alt="Repeatable" src="image/repeatable.gif"/> ';
+    ]]>
+  </v:method>
+
+
+  <vm:pagetitle>Calendar</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header>
+      Calendar
+    </vm:header>
+    <vm:variables>
+      <v:variable persist="0" name="cAction" type="varchar" default="'browse'" />
+      <v:variable persist="0" name="cScope" type="varchar" default="null" />
+      <v:variable persist="0" name="cDay" type="date" default="null" />
+      <v:variable persist="0" name="cMonth" type="date" default="null" />
+      <v:variable persist="0" name="cStart" type="date" default="null" />
+      <v:variable persist="0" name="cEnd" type="date" default="null" />
+      <v:variable persist="0" name="cDays" type="any" default="null" />
+
+      <v:variable name="cLabels" type="integer" default="1" />
+      <v:variable name="cChars" type="integer" default="60" />
+      <v:variable name="cWeekStarts" type="varchar" default="'m'" />
+      <v:variable name="cTimeZone" type="integer" default="0" />
+      <v:variable name="cTimeFormat" type="varchar" default="'e'" />
+      <v:variable name="cDateFormat" type="varchar" default="'dd.MM.yyyy'" />
+
+      <v:variable name="v_id" type="any" default="-1" />
+      <v:variable name="v_subject" type="varchar" default="''"/>
+      <v:variable name="v_description" type="varchar" default="''"/>
+      <v:variable name="v_location" type="varchar" default="''"/>
+      <v:variable name="v_event" type="integer" default="0"/>
+      <v:variable name="v_eventStart" type="datetime" default="null"/>
+      <v:variable name="v_eventStart_date" type="date" default="null"/>
+      <v:variable name="v_eventStart_time" type="time" default="null"/>
+      <v:variable name="v_eventEnd" type="datetime" default="null"/>
+      <v:variable name="v_eventEnd_date" type="date" default="null"/>
+      <v:variable name="v_eventEnd_time" type="time" default="null"/>
+      <v:variable name="v_tags" type="varchar" default="''"/>
+      <v:variable name="v_repeat" type="varchar" default="''"/>
+      <v:variable name="v_repeatParam1" type="integer" default="0"/>
+      <v:variable name="v_repeatParam2" type="integer" default="0"/>
+      <v:variable name="v_repeatParam3" type="integer" default="0"/>
+      <v:variable name="v_repeatUntil" type="date" default="null"/>
+      <v:variable name="v_reminder" type="integer" default="600"/>
+
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+    </vm:variables>
+    <vm:pagebody>
+      <v:before-data-bind>
+        <![CDATA[
+          self.initData ();
+        ]]>
+      </v:before-data-bind>
+      <?vsp
+        if (0)
+        {
+      ?>
+          <v:button name="command" action="simple" value="Submit">
+            <v:on-post>
+              <![CDATA[
+                declare N, cCommand, cParams any;
+
+                cCommand := get_keyword ('select', e.ve_params, '');
+                if (cCommand <> '') {
+                  if (cCommand = 'create') {
+                    self.cAction := 'create';
+                  } else {
+                    cParams := split_and_decode(cCommand, 0,'\0\0_');
+                    if (length (cParams) > 2) {
+                      if (cParams[1] = 'month') {
+                        if (atoi (cParams[2]) = -1)
+                          self.cMonth := dateadd ('month', -1, self.cMonth);
+                        if (atoi (cParams[2]) = 1)
+                          self.cMonth := dateadd ('month', 1, self.cMonth);
+                        if (atoi (cParams[2]) = 0) {
+                          if ((self.cDay < self.cMonth) or (self.cDay > CAL.WA.dt_EndOfMonth (self.cMonth)))
+                            if (dayofmonth (self.cDay) > CAL.WA.dt_LastDayOfMonth (dateadd ('month', 1, self.cMonth))) {
+                              self.cDay := CAL.WA.dt_LastDayOfMonth (dateadd ('month', 1, self.cMonth));
+                            } else {
+                              self.cDay := dateadd ('month', 1, self.cDay);
+                            }
+                          self.cScope := 'month';
+                        }
+                      }
+                      if (cParams[1] = 'day') {
+                        N := atoi (cParams[2]) * 7 + atoi (cParams[3]);
+                        self.cDay := self.calcDate (N);
+                        self.cMonth := null;
+                        if ((cParams[0] = 'd') or ((self.cDay >= self.cStart) and (self.cDay <= self.cEnd)) or (self.cScope := 'list'))
+                          self.cScope := 'day';
+                      }
+                      self.cAction := 'browse';
+                      self.initData ();
+                    }
+                  }
+                }
+                cCommand := get_keyword ('edit', e.ve_params, '');
+                if (cCommand <> '') {
+                  cParams := split_and_decode(cCommand, 0,'\0\0_');
+                  if (length (cParams) > 1) {
+                    self.v_id := cast (cParams [1] as integer);
+                    self.cAction := 'edit';
+                  }
+                }
+
+                cCommand := get_keyword ('delete', e.ve_params, '');
+                if (cCommand <> '') {
+                  cParams := split_and_decode(cCommand, 0,'\0\0_');
+                  if (length (cParams) > 1)
+                    CAL.WA.event_delete (cast (cParams [1] as integer), self.domain_id);
+                }
+
+                self.vc_data_bind(e);
+               ]]>
+             </v:on-post>
+          </v:button>
+      <?vsp
+        }
+      ?>
+
+      <v:template type="simple" enabled="--case when (self.cAction = 'browse') then 1 else 0 end">
+        <table cellspacing="0" style="width: 100%;">
+          <tr style="height: 18px;">
+            <td>
+              <v:button action="simple" style="url" value="Day" xhtml_class="-- case when (self.cScope = 'day') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Day">
+                <v:on-post>
+                  <![CDATA[
+                    self.cScope := 'day';
+                    self.cMonth := CAL.WA.dt_BeginOfMonth (self.cDay);
+                    self.initData ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" style="url" value="Week" xhtml_class="-- case when (self.cScope = 'week') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Week">
+                <v:on-post>
+                  <![CDATA[
+                    self.cScope := 'week';
+                    self.cMonth := CAL.WA.dt_BeginOfMonth (self.cDay);
+                    self.initData ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" style="url" value="Month" xhtml_class="-- case when (self.cScope = 'month') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Month">
+                <v:on-post>
+                  <![CDATA[
+                    self.cScope := 'month';
+                    self.cMonth := CAL.WA.dt_BeginOfMonth (self.cDay);
+                    self.initData ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" style="url" value="List" xhtml_class="-- case when (self.cScope = 'list') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="List">
+                <v:on-post>
+                  <![CDATA[
+                    self.cScope := 'list';
+                    self.initData ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </td>
+            <td align="right">
+              <span class="CE_name">
+                <?vsp
+                  if (self.cScope = 'day')
+                    http (sprintf ('%s %d, %d', monthname (self.cDay), dayofmonth (self.cDay), year (self.cDay)));
+
+                  if (self.cScope = 'week') {
+                    if (year (self.cStart) <> year (self.cEnd)) {
+                      http (sprintf ('%s %d, %d - %s %d, %d', monthname (self.cStart), dayofmonth (self.cStart), year (self.cStart), monthname (self.cEnd), dayofmonth (self.cEnd), year (self.cEnd)));
+                    } else {
+                      if (month (self.cStart) <> month (self.cEnd)) {
+                        http (sprintf ('%s %d - %s %d, %d', monthname (self.cStart), dayofmonth (self.cStart), monthname (self.cEnd), dayofmonth (self.cEnd), year (self.cEnd)));
+                      } else {
+                        http (sprintf ('%s %d - %d, %d', monthname (self.cStart), dayofmonth (self.cStart), dayofmonth (self.cEnd), year (self.cEnd)));
+                      }
+                    }
+                  }
+
+                  if (self.cScope = 'month')
+                    http (sprintf ('%s %d', monthname (self.cMonth), year (self.cMonth)));
+
+                ?>
+              </span>
+              <v:button action="simple" style="url" value="<" xhtml_class="calendar_button" xhtml_alt="Previous">
+                <v:on-post>
+                  <![CDATA[
+                    if (self.cScope = 'day')
+                      self.cDay := dateadd ('day', -1, self.cDay);
+                    if (self.cScope = 'week')
+                      self.cDay := dateadd ('day', -7, self.cDay);
+                    if (self.cScope = 'month')
+                      self.cDay := dateadd ('month', -1, self.cDay);
+                    self.cMonth := CAL.WA.dt_BeginOfMonth (self.cDay);
+                    self.initData ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" style="url" value=">" xhtml_class="calendar_button" xhtml_alt="Next">
+                <v:on-post>
+                  <![CDATA[
+                    if (self.cScope = 'day')
+                      self.cDay := dateadd ('day', 1, self.cDay);
+                    if (self.cScope = 'week')
+                      self.cDay := dateadd ('day', 7, self.cDay);
+                    if (self.cScope = 'month')
+                      if (dayofmonth (self.cDay) > CAL.WA.dt_LastDayOfMonth (dateadd ('month', 1, self.cMonth))) {
+                        self.cDay := CAL.WA.dt_LastDayOfMonth (dateadd ('month', 1, self.cMonth));
+                      } else {
+                        self.cDay := dateadd ('month', 1, self.cDay);
+                      }
+                    self.cMonth := CAL.WA.dt_BeginOfMonth (self.cDay);
+                    self.cMonth := CAL.WA.dt_BeginOfMonth (self.cDay);
+                    self.initData ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" style="url" value="Today" xhtml_class="calendar_button" xhtml_alt="Today">
+                <v:on-post>
+                  <![CDATA[
+                    self.cScope := 'day';
+                    self.cDay := CAL.WA.dt_curdate (self.cTimeZone);
+                    self.cMonth := CAL.WA.dt_BeginOfMonth (self.cDay);
+                    self.initData ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
+        <div class="CE_container">
+          <div id="content" class="CE_main">
+            <vm:if test="self.cScope <> 'list'">
+              <table class="CE_table" cellspacing="0">
+                <?vsp
+                  declare N, D, W, hasEvents integer;
+                  declare dt date;
+                  declare S varchar;
+
+                  if (self.cScope = 'day') {
+                    declare cr static cursor for
+                      select distinct rs.*
+                        from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_event_start datetime, e_event_end datetime, e_repeat varchar) rs
+                       where rs0 = self.domain_id
+                         and rs1 = self.cDay
+                         and rs2 = self.cDay
+                         and rs3 = self.cTimeZone
+                       order by e_event DESC, e_event_start;
+
+                    declare isEof, isFetched, hasEvents integer;
+                    declare pHour, pMinute integer;
+                    declare e_time, e_id, e_event, e_start, e_end, e_subject, e_repeat any;
+
+                    pHour := 25;
+                    isEof := 0;
+                    isFetched := 0;
+                    hasEvents := 0;
+                    e_event := 1;
+                    declare continue handler for not found {
+                      pHour := 25;
+                      isEof := 1;
+                    };
+                    open cr;
+
+                    while ((not isEof) and (e_event = 1)) {
+                      fetch cr next into e_id, e_event, e_subject, e_start, e_end, e_repeat;
+                      if (isEof)
+                         goto _skip;
+                      CAL.WA.dt_timeDecode (e_start, pHour, pMinute);
+                      isFetched := 1;
+                      if (e_event = 0)
+                         goto _skip;
+                      if (hasEvents = 0) {
+                        http ('<tr class="CE_row">');
+                        http ('<th class="CE_cell CE_cell_time">&nbsp;</th>');
+                        http ('<td class="CE_cell">');
+                        hasEvents := 1;
+                      }
+                      http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <span id="e_%d" unselectable="on" onclick="eEdit(this)">%s<span class="EV_subject">%s</span></span></div>', E_ID, E_ID, self.repeatableImage (E_REPEAT), CAL.WA.show_subject (E_SUBJECT)));
+                    }
+                  _skip:;
+                    if (hasEvents = 1) {
+                      http ('</td>');
+                      http ('</tr>');
+                    }
+
+                    for (N := 0; N < 48; N := N + 1) {
+                      if ((not isEof) and (not isFetched)) {
+                        fetch cr next into e_id, e_event, e_subject, e_start, e_end, e_repeat;
+                        if (isEof)
+                          goto _skip2;
+                        CAL.WA.dt_timeDecode (e_start, pHour, pMinute);
+                        isFetched := 1;
+                      }
+                    _skip2:;
+                      http ('<tr class="CE_row">');
+                        if (mod (N, 2) = 0)
+                          http (sprintf ('<th class="CE_cell CE_cell_time %s" rowspan="2">%s</th>', case when (N = 46) then 'CE_cell_bottom' else '' end, CAL.WA.dt_timestring (CAL.WA.dt_timeEncode (N/2, 0), self.cTimeFormat)));
+                        http (sprintf ('<td class="CE_cell %s">', 'CE_cell_odd'));
+                        hasEvents := 0;
+                      _event:;
+                        if ((pHour = N/2) and (pMinute = mod (N, 2)*30)) {
+                          hasEvents := 1;
+                          isFetched := 0;
+                          http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <span id="e_%d" unselectable="on" onclick="eEdit(this)">%s<span class="EV_time">%s-%s</span><span class="EV_subject">%s</span></span></div>', e_id, e_id, self.repeatableImage (e_repeat), CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), CAL.WA.show_subject (e_subject)));
+                          if ((not isEof) and (not isFetched)) {
+                            fetch cr next into e_id, e_event, e_subject, e_start, e_end, e_repeat;
+                            if (isEof)
+                              goto _skip3;
+                            CAL.WA.dt_timeDecode (e_start, pHour, pMinute);
+                            isFetched := 1;
+                            goto _event;
+                          }
+                        }
+                      _skip3:;
+                        if (not hasEvents)
+                          http ('&nbsp;');
+                        http ('</td>');
+                      http ('</tr>');
+                    }
+                    close cr;
+                  }
+
+                  if (self.cScope = 'week') {
+                    for (N := 0; N < length (self.cDays); N := N + 1) {
+                      W := floor (N / 7);
+                      D := mod (N, 7);
+                      dt := self.calcDate (N);
+                      if ((dt >= self.cStart) and (dt <= self.cEnd)) {
+                        http ('<tr class="CE_row_week">');
+                          http (sprintf ('<td class="CE_cell CE_cell_week CE_cell_middle %s">', case when (mod (N, 7) = 6) then 'CE_cell_bottom' else '' end));
+                          http (sprintf ('<div unselectable="on" onclick="cSelect(this)" id="d_day_%d_%d" class="CE_cell_week_header">%s %d</div>', W, D, CAL.WA.dt_WeekName (dt, self.cWeekStarts, 0), abs (self.cDays [N])));
+                          http ('&nbsp;');
+                          http ('</td>');
+                          http ('<td class="CE_cell">');
+                          hasEvents := 0;
+                          for (select distinct rs.*
+                                 from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_event_start datetime, e_event_end datetime, e_repeat varchar) rs
+                                where rs0 = self.domain_id
+                                  and rs1 = dt
+                                  and rs2 = dt
+                                  and rs3 = self.cTimeZone
+                                order by e_event DESC, e_event_start) do
+                          {
+                            hasEvents := 1;
+                            if (e_event = 1) {
+                              http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <span id="e_%d" unselectable="on" onclick="eEdit(this)">%s<span class="EV_subject">%s</span></span></div>', e_id, e_id, self.repeatableImage (e_repeat), CAL.WA.show_subject (e_subject)));
+                            } else {
+                              http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <span id="e_%d" unselectable="on" onclick="eEdit(this)"><span class="EV_time">%s-%s</span>%s<span class="EV_subject">%s</span></span></div>', e_id, e_id, CAL.WA.dt_timestring (e_event_start), CAL.WA.dt_timestring (e_event_end), self.repeatableImage (e_repeat), CAL.WA.show_subject (e_subject)));
+                            }
+                          }
+                          if (not hasEvents)
+                            http ('&nbsp;');
+                          http ('</td>');
+                        http ('</tr>');
+                      }
+                    }
+                  }
+
+                  if (self.cScope = 'month') {
+                    W := 0;
+                    for (N := 0; N < length (self.cDays); N := N + 1) {
+                      W := floor (N / 7);
+                      D := mod (N, 7);
+                      dt := self.calcDate (N);
+                      if ((dt >= self.cStart) and (dt <= self.cEnd)) {
+                        if (D = 0)
+                          http (sprintf ('<tr id="ce_row_%d" class="CE_row_month">', W));
+                        http (sprintf ('<td width="%s" class="CE_cell %s">', '14.2857%', case when (D < 6) then 'CE_cell_middle' else '' end));
+                        http (sprintf ('<div unselectable="on" onclick="cSelect(this)" id="d_day_%d_%d" class="CE_cell_month_header">%d</div>', W, D, abs (self.cDays [N])));
+                        for (select distinct rs.*
+                               from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_event_start datetime, e_event_end datetime, e_repeat varchar) rs
+                              where rs0 = self.domain_id
+                                and rs1 = dt
+                                and rs2 = dt
+                                and rs3 = self.cTimeZone
+                              order by e_event DESC, e_event_start) do
+                        {
+                          if (e_event = 1) {
+                            http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <spanid="e_%d" unselectable="on" onclick="eEdit(this)">%s<span class="EV_subject">%s</span></span></div>', e_id, e_id, self.repeatableImage (e_repeat), CAL.WA.show_subject (e_subject)));
+                          } else {
+                            http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <span id="e_%d" unselectable="on" onclick="eEdit(this)"><span class="EV_time">%s-%s</span>%s<span class="EV_subject">%s</span></span></div>', e_id, e_id, CAL.WA.dt_timestring (e_event_start), CAL.WA.dt_timestring (e_event_end), self.repeatableImage (e_repeat), CAL.WA.show_subject (e_subject)));
+                          }
+                        }
+                        http ('</td>');
+                        if (D = 6)
+                          http ('</tr>');
+                      }
+                    }
+                  }
+                ?>
+              </table>
+            </vm:if>
+            <vm:if test="self.cScope = 'list'">
+              <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ds_parameters := null;
+                    control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d order by E_EVENT_START', self.domain_id);
+                  ]]>
+                </v:before-data-bind>
+              </v:data-source>
+
+              <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
+
+                <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table id="events" style="width: 100%;" cellspacing="0">
+                    <thead class="sortHeader">
+                      <tr>
+                        <th>
+                          Duration
+                        </th>
+                        <th width="80%">
+                          Subject
+                        </th>
+                      </tr>
+                    </thead>
+                  </table>
+                </v:template>
+
+                <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+                  <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                    <table>
+                      <tr>
+                        <td nowrap="nowrap" align="center">
+                          <?vsp
+                            declare x, y, z any;
+
+                            z := (control as vspx_row_template).te_column_value('E_EVENT');
+                            x := CAL.WA.event_gmt2user ((control as vspx_row_template).te_column_value('E_EVENT_START'), z, self.cTimezone);
+                            y := CAL.WA.event_gmt2user ((control as vspx_row_template).te_column_value('E_EVENT_END'), z, self.cTimezone);
+                            if (z = 1) {
+                              http (sprintf ('%s - %s', CAL.WA.dt_datestring (x, self.cDateFormat), CAL.WA.dt_datestring (y, self.cDateFormat)));
+                            } else {
+                              http (sprintf ('%s %s - %s %s', CAL.WA.dt_datestring (x, self.cDateFormat), CAL.WA.dt_timestring (x, self.cTimeFormat), CAL.WA.dt_timestring (y, self.cTimeFormat), CAL.WA.dt_datestring (y, self.cDateFormat)));
+                            }
+                          ?>
+                        </td>
+                        <td>
+                          <v:label value="--CAL.WA.show_subject((control.vc_parent as vspx_row_template).te_column_value('E_SUBJECT'))" />
+                        </td>
+                      </tr>
+                    </table>
+                  </v:template>
+
+                </v:template>
+
+                <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                  <table>
+                  </table>
+                </v:template>
+
+              </v:data-set>
+              <script type="text/javascript">
+                <![CDATA[
+                  coloriseTable('events');
+                ]]>
+              </script>
+            </vm:if>
+          </div>
+        </div>
+      </v:template>
+
+      <v:template type="simple" enabled="--case when ((self.cAction = 'create') or (self.cAction = 'edit')) then 1 else 0 end">
+        <v:text name="timeZone" xhtml_id="timeZone" type="hidden" value="--self.cTimeZone" />
+        <v:text name="timeFormat" xhtml_id="timeFormat" type="hidden" value="--self.cTimeFormat" />
+        <v:text name="dateFormat" xhtml_id="dateFormat" type="hidden" value="--self.cDateFormat" />
+        <v:before-data-bind>
+          <![CDATA[
+            declare params any;
+            params := self.vc_page.vc_event.ve_params;
+
+            declare exit handler for not found goto _end;
+
+            if (isnull (get_keyword ('e_subject', params))) {
+              if (self.cAction = 'edit') {
+                declare tmp any;
+
+                select E_SUBJECT,
+                       E_DESCRIPTION,
+                       E_LOCATION,
+                       E_TAGS,
+                       E_EVENT,
+                       CAL.WA.event_gmt2user (E_EVENT_START, E_EVENT, self.cTimezone),
+                       CAL.WA.event_gmt2user (E_EVENT_END, E_EVENT, self.cTimezone),
+                       E_REPEAT,
+                       E_REPEAT_PARAM1,
+                       E_REPEAT_PARAM2,
+                       E_REPEAT_PARAM3,
+                       E_REPEAT_UNTIL,
+                       E_REMINDER
+                  into self.v_subject,
+                       self.v_description,
+                       self.v_location,
+                       self.v_tags,
+                       self.v_event,
+                       self.v_eventStart,
+                       self.v_eventEnd,
+                       self.v_repeat,
+                       self.v_repeatParam1,
+                       self.v_repeatParam2,
+                       self.v_repeatParam3,
+                       self.v_repeatUntil,
+                       self.v_reminder
+                  from CAL.WA.EVENTS
+                 where E_ID = self.v_id;
+              } else {
+                declare pYear, pMonth, pDay, pHour, pMinute integer;
+
+                self.v_id := -1;
+                self.v_subject := '';
+                self.v_description := '';
+                self.v_location := '';
+                self.v_tags := '';
+                self.v_event := 0;
+                CAL.WA.dt_dateDecode (self.cDay, pYear, pMonth, pDay);
+                CAL.WA.dt_timeDecode (CAL.WA.dt_curtime (self.cTimeZone), pHour, pMinute);
+                self.v_eventStart := CAL.WA.dt_encode (pYear, pMonth, pDay, pHour, pMinute);
+                self.v_eventEnd := dateadd ('hour', 1, self.v_eventStart);
+                self.v_repeat := '';
+                self.v_repeatParam1 := 0;
+                self.v_repeatParam2 := 0;
+                self.v_repeatParam3 := 0;
+                self.v_repeatUntil := null;
+                self.v_reminder := 600;
+              }
+            }
+          _end:;
+          ]]>
+        </v:before-data-bind>
+        <div class="new-form-header">
+          <v:label format="%s" value="--case when (self.cAction = 'create') then 'Create event' else 'Update event' end"/>
+        </div>
+        <div class="new-form-body">
+          <table cellspacing="0">
+            <tr>
+              <th width="30%">
+                <v:label for="e_subject" value="Subject"/>
+              </th>
+              <td>
+                <v:text name="e_subject" null-value="''" value="--CAL.WA.utf2wide (self.v_subject)" xhtml_class="textbox" xhtml_size="60"/>
+              </td>
+            </tr>
+            <tr>
+              <th valign="top">
+                <v:label for="e_eventEndDate" value="Duration"/>
+              </th>
+              <td>
+                <table>
+                  <tr>
+                    <td width="1%">
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_event = 1)
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="e_event" id="e_event_0" value="1" %s />', S));
+                      ?>
+                    </td>
+                    <td nowrap="nowrap" width="1%" colspan="2">
+                      <xsl:call-template name="nbsp"/><vm:label for="e_event_0" value="--'All day event'" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_event = 0)
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="e_event" id="e_event_1" value="0" %s />', S));
+                      ?>
+                    </td>
+                    <td  width="1%" align="right">
+                      <vm:label for="e_event_1" value="--'From'" />
+                    </td>
+                    <td>
+                      <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
+                      <a href="#" name="e_eventStartDate_select" id="e_eventStartDate_select" onclick="cPopup.select(document.forms['F1'].e_eventStartDate, 'e_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;">
+                        <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
+                      </a>
+                      <v:select-list name="e_eventStartTime">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x any;
+
+                            x := make_array (48, 'any');
+                            for (N := 0; N < 24; N := N + 1) {
+                              x[2*N]   := CAL.WA.dt_timestring (CAL.WA.dt_timeEncode (N, 0), self.cTimeFormat);
+                              x[2*N+1] := CAL.WA.dt_timestring (CAL.WA.dt_timeEncode (N, 30), self.cTimeFormat);
+                            }
+                            control.vsl_item_values := x;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := CAL.WA.dt_timestring (CAL.WA.dt_timeCeiling (self.v_eventStart, 30), self.cTimeFormat);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td />
+                    <td  width="1%" align="right">
+                      <vm:label for="e_event_1" value="--'To'" />
+                    </td>
+                    <td>
+                      <v:text name="e_eventEndDate" xhtml_id="e_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
+                      <a href="#" name="e_eventEndDate_select" id="e_eventEndDate_select" onclick="cPopup.select(document.forms['F1'].e_eventEndDate, 'e_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;">
+                        <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
+                      </a>
+                      <v:select-list name="e_eventEndTime">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x any;
+
+                            x := make_array (48, 'any');
+                            for (N := 0; N < 24; N := N + 1) {
+                              x[2*N]   := CAL.WA.dt_timestring (CAL.WA.dt_timeEncode (N, 0), self.cTimeFormat);
+                              x[2*N+1] := CAL.WA.dt_timestring (CAL.WA.dt_timeEncode (N, 30), self.cTimeFormat);
+                            }
+                            control.vsl_item_values := x;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := CAL.WA.dt_timestring (CAL.WA.dt_timeCeiling (self.v_eventEnd, 30), self.cTimeFormat);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="e_description" value="Description"/>
+              </th>
+              <td>
+                <v:textarea name="e_description" null-value="--''" value="--CAL.WA.utf2wide (self.v_description)" fmt-function="BMK.WA.utf2wide" xhtml_cols="45" xhtml_rows="6"/>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <v:label for="e_location" value="Location"/>
+              </th>
+              <td>
+                <v:text name="e_location" null-value="''" value="--CAL.WA.utf2wide (self.v_location)" xhtml_class="textbox" xhtml_size="60"/>
+              </td>
+            </tr>
+            <tr>
+              <th valign="top">
+                <v:label for="e_repeat" value="Repeats"/>
+              </th>
+              <td>
+                <table>
+                  <tr>
+                    <td />
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_repeat = '')
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_0" value="" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp"/>
+                      <vm:label for="e_repeat_0" value="--'No repeat'" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td width="1%" rowspan="2" valign="top">
+                      Dayly
+                    </td>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_repeat = 'D1')
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_1" value="D1" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp"/>
+                      <vm:label for="e_repeat_1" value="--'Every'" />
+                      <v:text name="e_repeat_param1_D1" null-value="''" value="--self.repeatParam (self.v_repeat, 'D1', 1, null);" xhtml_class="textbox" xhtml_size="1"/> day(s)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_repeat = 'D2')
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_2" value="D2" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp"/>
+                      <vm:label for="e_repeat_2" value="--'Every weekday (Monday-Friday)'" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      Weekly
+                    </td>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_repeat = 'W1')
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_3" value="W1" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp"/>
+                      <vm:label for="e_repeat_3" value="--'Every'" />
+                      <v:text name="e_repeat_param1_W1" null-value="''" value="--self.repeatParam (self.v_repeat, 'W1', 1, null);" xhtml_class="textbox" xhtml_size="1"/> week(s) on
+                      <?vsp
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_0"/> M', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 0)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_1"/> T', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 1)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_2"/> W', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 2)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_3"/> T', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 3)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_4"/> F', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 4)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_5"/> S', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 5)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_6"/> S', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 6)) then '' else 'checked="checked"' end));
+                      ?>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td rowspan="2" valign="top">
+                      Monthly
+                    </td>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_repeat = 'M1')
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_4" value="M1" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp"/>
+                      <vm:label for="e_repeat_4" value="--'Every'" />
+                      <v:select-list name="e_repeat_param1_M1">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x any;
+
+                            x := make_array (31, 'any');
+                            for (N := 0; N < 31; N := N + 1)
+                              x[N] := cast ((N+1) as varchar);
+                            control.vsl_item_values := x;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'M1', 1, null);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                      day of every
+                      <v:select-list name="e_repeat_param2_M1">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x any;
+
+                            x := make_array (12, 'any');
+                            for (N := 0; N < 12; N := N + 1)
+                              x[N] := cast ((N+1) as varchar);
+                            control.vsl_item_values := x;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'M1', 2, null);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                      month(s)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_repeat = 'M2')
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_5" value="M2" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp"/>
+                      <vm:label for="e_repeat_5" value="--'The'" />
+                      <v:select-list name="e_repeat_param1_M2">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x, y any;
+
+                            x := make_array (5, 'any');
+                            x[0] := 'first';
+                            x[1] := 'second';
+                            x[2] := 'third';
+                            x[3] := 'fourth';
+                            x[4] := 'last';
+                            y := make_array (5, 'any');
+                            for (N := 0; N < 5; N := N + 1)
+                              y[N] := cast ((N+1) as varchar);
+                            control.vsl_item_values := y;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'M2', 1, null);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                      <v:select-list name="e_repeat_param2_M2">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x, y any;
+
+                            x := make_array (10, 'any');
+                            x[0] := 'Day';
+                            x[1] := 'Weekday';
+                            x[2] := 'Weekend';
+                            x[3] := 'Monday';
+                            x[4] := 'Tuesday';
+                            x[5] := 'Wednesday';
+                            x[6] := 'Thursday';
+                            x[7] := 'Friday';
+                            x[8] := 'Saturday.';
+                            x[9] := 'Sunday.';
+                            y:= make_array (10, 'any');
+                            y[0] := '10';
+                            y[1] := '11';
+                            y[2] := '12';
+                            y[3] := '1';
+                            y[4] := '2';
+                            y[5] := '3';
+                            y[6] := '4';
+                            y[7] := '5';
+                            y[8] := '6';
+                            y[9] := '7';
+                            control.vsl_item_values := y;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'M2', 2, null);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                      of every
+                      <v:select-list name="e_repeat_param3_M2">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x any;
+
+                            x := make_array (12, 'any');
+                            for (N := 0; N < 12; N := N + 1)
+                              x[N] := cast ((N+1) as varchar);
+                            control.vsl_item_values := x;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'M2', 3, null);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                      month(s)
+                   </td>
+                  </tr>
+                  <tr>
+                    <td rowspan="2" valign="top">
+                      Yearly
+                    </td>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_repeat = 'Y1')
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_6" value="Y1" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp"/>
+                      <vm:label for="e_repeat_6" value="--'Every'" />
+                      <v:select-list name="e_repeat_param1_Y1">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x, y any;
+
+                            x := make_array (12, 'any');
+                            x[0] := 'January';
+                            x[1] := 'February';
+                            x[2] := 'March';
+                            x[3] := 'April';
+                            x[4] := 'May';
+                            x[5] := 'June';
+                            x[6] := 'July';
+                            x[7] := 'August';
+                            x[8] := 'September';
+                            x[9] := 'October';
+                            x[10]:= 'November';
+                            x[11]:= 'December';
+                            y:= make_array (12, 'any');
+                            for (N := 0; N < 12; N := N + 1)
+                              y[N] := cast ((N+1) as varchar);
+                            control.vsl_item_values := y;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'Y1', 1, null);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                      <v:select-list name="e_repeat_param2_Y1">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x any;
+
+                            x := make_array (31, 'any');
+                            for (N := 0; N < 31; N := N + 1)
+                              x[N] := cast ((N+1) as varchar);
+                            control.vsl_item_values := x;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'Y1', 2, null);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_repeat = 'Y2')
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_7" value="Y2" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp"/>
+                      <vm:label for="e_repeat_7" value="--'The'" />
+                      <v:select-list name="e_repeat_param1_Y2">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x, y any;
+
+                            x := make_array (5, 'any');
+                            x[0] := 'first';
+                            x[1] := 'second';
+                            x[2] := 'third';
+                            x[3] := 'fourth';
+                            x[4] := 'last';
+                            y := make_array (5, 'any');
+                            for (N := 0; N < 5; N := N + 1)
+                              y[N] := cast ((N+1) as varchar);
+                            control.vsl_item_values := y;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'Y2', 1, null);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                      <v:select-list name="e_repeat_param2_Y2">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x, y any;
+
+                            x := make_array (10, 'any');
+                            x[0] := 'Day';
+                            x[1] := 'Weekday';
+                            x[2] := 'Weekend';
+                            x[3] := 'Monday';
+                            x[4] := 'Tuesday';
+                            x[5] := 'Wednesday';
+                            x[6] := 'Thursday';
+                            x[7] := 'Friday';
+                            x[8] := 'Saturday';
+                            x[9] := 'Sunday';
+                            y:= make_array (10, 'any');
+                            y[0] := '10';
+                            y[1] := '11';
+                            y[2] := '12';
+                            y[3] := '1';
+                            y[4] := '2';
+                            y[5] := '3';
+                            y[6] := '4';
+                            y[7] := '5';
+                            y[8] := '6';
+                            y[9] := '7';
+                            control.vsl_item_values := y;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'Y2', 2, null);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                      of
+                      <v:select-list name="e_repeat_param3_Y2">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x, y any;
+
+                            x := make_array (12, 'any');
+                            x[0] := 'January';
+                            x[1] := 'February';
+                            x[2] := 'March';
+                            x[3] := 'April';
+                            x[4] := 'May';
+                            x[5] := 'June';
+                            x[6] := 'July';
+                            x[7] := 'August';
+                            x[8] := 'September';
+                            x[9] := 'October';
+                            x[10]:= 'November';
+                            x[11]:= 'December';
+                            y:= make_array (12, 'any');
+                            for (N := 0; N < 12; N := N + 1)
+                              y[N] := cast ((N+1) as varchar);
+                            control.vsl_item_values := y;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'Y2', 3, null);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <th valign="top" rowspan="2">
+                <v:label for="e_repeat_range" value="Repeats range"/>
+              </th>
+              <td>
+                <?vsp
+                  declare S varchar;
+
+                  S := '';
+                  if (isnull (self.v_repeatUntil))
+                    S := 'checked="checked"';
+                  http(sprintf('<input type="radio" name="e_repeatUntilKind" id="e_repeatUntilKind_0" value="0" %s />', S));
+                ?>
+                <xsl:call-template name="nbsp"/>
+                <vm:label for="e_repeatUntilKind_0" value="--'No end date'" />
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <?vsp
+                  declare S varchar;
+
+                  S := '';
+                  if (not isnull (self.v_repeatUntil))
+                    S := 'checked="checked"';
+                  http(sprintf('<input type="radio" name="e_repeatUntilKind" id="e_repeatUntilKind_1" value="1" %s />', S));
+                ?>
+                <xsl:call-template name="nbsp"/>
+                <vm:label for="e_repeatUntilKind_1" value="--'Until'" />
+                <xsl:call-template name="nbsp"/>
+                <v:text name="e_repeatUntil" xhtml_id="e_repeatUntil" null-value="--''" value="--CAL.WA.dt_datestring (self.v_repeatUntil, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
+                <a href="#" name="e_repeatUntil_select" id="e_repeatUntil_select" onclick="cPopup.select(document.forms['F1'].e_repeatUntil, 'e_repeatUntil_select', '<?V self.cDateFormat ?>'); return false;">
+                  <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <vm:label for="e_reminder" value="--'Reminder'" />
+              </th>
+              <td>
+                <v:select-list name="e_reminder">
+                  <v:on-init>
+                    <![CDATA[
+                      declare N integer;
+                      declare x, y any;
+
+                      x := make_array (14, 'any');
+                      x[0] := 'No remainder';
+                      x[1] := '5 minutes';
+                      x[2] := '10 minutes';
+                      x[3] := '15 minutes';
+                      x[4] := '20 minutes';
+                      x[5] := '25 minutes';
+                      x[6] := '30 minutes';
+                      x[7] := '45 minutes';
+                      x[8] := '1 hour';
+                      x[9] := '2 hours';
+                      x[10]:= '3 hours';
+                      x[11]:= '1 day';
+                      x[12]:= '2 days';
+                      x[13]:= '1 week';
+                      y:= make_array (14, 'any');
+                      y[0] := '-1';
+                      y[1] := '300';
+                      y[2] := '600';
+                      y[3] := '900';
+                      y[4] := '1200';
+                      y[5] := '1500';
+                      y[6] := '1800';
+                      y[7] := '2700';
+                      y[8] := '3600';
+                      y[9] := '7200';
+                      y[10]:= '10800';
+                      y[11]:= '86400';
+                      y[12]:= '172800';
+                      y[13]:= '604800';
+                      control.vsl_item_values := y;
+                      control.vsl_items := x;
+                      control.ufl_value := '';
+                    ]]>
+                  </v:on-init>
+                  <v:before-data-bind>
+                    <![CDATA[
+                      control.ufl_value := self.v_reminder;
+                    ]]>
+                  </v:before-data-bind>
+                </v:select-list>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div class="new-form-footer">
+          <v:button action="simple" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                declare N any;
+                declare params, sd, ed any;
+
+                declare exit handler for SQLSTATE '*' {
+                  if (__SQL_STATE = 'TEST') {
+                    self.vc_error_message := BMK.WA.test_clear(__SQL_MESSAGE);
+                    self.vc_is_valid := 0;
+                    return;
+                  }
+                  resignal;
+                };
+
+                params := self.vc_page.vc_event.ve_params;
+
+                self.v_subject := trim (self.e_subject.ufl_value);
+                self.v_location := trim (self.e_location.ufl_value);
+                self.v_description := trim (self.e_description.ufl_value);
+
+                CAL.WA.test (self.v_subject, vector('name', 'Subject', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
+                CAL.WA.test (self.v_location, vector('name', 'Location', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
+                CAL.WA.test (self.v_description, vector('name', 'Location', 'class', 'varchar', 'minLength', 0, 'maxLength', 1024));
+
+                -- event
+                declare pDate date;
+                declare pTime time;
+
+                self.v_event := cast (get_keyword ('e_event', params, '0') as integer);
+                pDate := CAL.WA.test (trim (self.e_eventStartDate.ufl_value), vector('name', 'Event start date', 'class', 'date-'||self.cDateFormat));
+                if (self.v_event = 0) {
+                  pTime := CAL.WA.dt_stringtime (self.e_eventStartTime.ufl_value);
+                } else {
+                  pTime := CAL.WA.dt_timeEncode (12, 0);
+                }
+                self.v_eventStart := CAL.WA.dt_join (pDate, pTime);
+                pDate := CAL.WA.test (trim (self.e_eventEndDate.ufl_value), vector('name', 'Event end date', 'class', 'date-'||self.cDateFormat));
+                if (self.v_event = 0) {
+                  pTime := CAL.WA.dt_stringtime (self.e_eventEndTime.ufl_value);
+                } else {
+                  pTime := CAL.WA.dt_timeEncode (12, 0);
+                }
+                self.v_eventEnd := CAL.WA.dt_join (pDate, pTime);
+                if (self.v_eventEnd < self.v_eventStart)
+                  signal ('TEST', '''End date'' value should be greater then ''Start date'' value!<>');
+
+                -- repeat
+                self.v_repeat := trim (get_keyword ('e_repeat', params, ''));
+                self.v_repeatParam1 := 0;
+                self.v_repeatParam2 := 0;
+                self.v_repeatParam3 := 0;
+                if (self.v_repeat = 'D1') {
+                  self.v_repeatParam1 := self.e_repeat_param1_D1.ufl_value;
+                }
+                if (self.v_repeat = 'W1') {
+                  self.v_repeatParam1 := self.e_repeat_param1_W1.ufl_value;
+                  self.v_repeatParam2 := 0;
+                  for (N := 0; N < 7; N := N + 1)
+                    if (cast (get_keyword ('e_repeat_param2_W1_' || cast (N as varchar), params, '0') as integer))
+                      self.v_repeatParam2 := bit_or (self.v_repeatParam2, power (2, N));
+                }
+                if (self.v_repeat = 'M1') {
+                  self.v_repeatParam1 := self.e_repeat_param1_M1.ufl_value;
+                  self.v_repeatParam2 := self.e_repeat_param2_M1.ufl_value;
+                }
+                if (self.v_repeat = 'M2') {
+                  self.v_repeatParam1 := self.e_repeat_param1_M2.ufl_value;
+                  self.v_repeatParam2 := self.e_repeat_param2_M2.ufl_value;
+                  self.v_repeatParam3 := self.e_repeat_param3_M2.ufl_value;
+                }
+                if (self.v_repeat = 'Y1') {
+                  self.v_repeatParam1 := self.e_repeat_param1_Y1.ufl_value;
+                  self.v_repeatParam2 := self.e_repeat_param2_Y1.ufl_value;
+                }
+                if (self.v_repeat = 'Y2') {
+                  self.v_repeatParam1 := self.e_repeat_param1_Y2.ufl_value;
+                  self.v_repeatParam2 := self.e_repeat_param2_Y2.ufl_value;
+                  self.v_repeatParam3 := self.e_repeat_param3_Y2.ufl_value;
+                }
+
+                -- range
+                if (self.v_repeat = '') {
+                  self.v_repeatUntil := null;
+                } else {
+                  if (cast (get_keyword ('e_repeatUntilKind', params, '0') as integer) = 1) {
+                    self.v_repeatUntil := CAL.WA.test (trim (self.e_repeatUntil.ufl_value), vector('name', 'Range until date', 'class', 'date-'||self.cDateFormat));
+                  } else {
+                    self.v_repeatUntil := null;
+                  }
+                }
+
+                -- reminder
+                self.v_reminder := trim (self.e_reminder.ufl_value);
+
+                CAL.WA.event_update (
+                  self.v_id,
+                  self.domain_id,
+                  self.v_subject,
+                  self.v_description,
+                  self.v_location,
+                  self.v_tags,
+                  self.v_event,
+                  CAL.WA.event_user2gmt (self.v_eventStart, self.v_event, self.cTimezone),
+                  CAL.WA.event_user2gmt (self.v_eventEnd, self.v_event, self.cTimezone),
+                  self.v_repeat,
+                  self.v_repeatParam1,
+                  self.v_repeatParam2,
+                  self.v_repeatParam3,
+                  self.v_repeatUntil,
+                  self.v_reminder
+                );
+
+                self.cAction := 'browse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.cAction := 'browse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+      </v:template>
+
+      <v:template type="simple" enabled="--case when (self.cAction = 'settings') then 1 else 0 end">
+        <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo" />
+        <div class="new-form-header">
+          Preferences
+        </div>
+        <div id="c1">
+          <div class="tabs">
+            <vm:tabCaption tab="1" tabs="2" caption="General"/>&nbsp;
+            <vm:tabCaption tab="2" tabs="2" caption="Calendar"/>&nbsp;
+          </div>
+          <div class="contents">
+            <div id="1" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <th width="30%">
+                    <v:label for="s_chars" value="Contact name display"/>
+                  </th>
+                  <td>
+                    <?vsp
+                      declare S varchar;
+
+                      S := '';
+                      if (CAL.WA.settings_chars (self.settings) = 0)
+                        S := 'checked="checked"';
+                      http(sprintf('<input type="radio" name="s_chars" id="s_chars_0" value="0" %s />', S));
+                    ?>
+                    <xsl:call-template name="nbsp"/><vm:label for="s_chars_0" value="--'show everything'" />
+                  </td>
+                </tr>
+                <tr>
+                  <th />
+                  <td>
+                    <?vsp
+                      declare S varchar;
+
+                      S := '';
+                      if (CAL.WA.settings_chars (self.settings) <> 0)
+                        S := 'checked="checked"';
+                      http(sprintf('<input type="radio" name="s_chars" id="s_chars_1" value="1" %s />', S));
+                    ?>
+                    <xsl:call-template name="nbsp"/><vm:label for="s_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
+                    <v:text name="s_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3"/>
+                    <xsl:call-template name="nbsp"/><vm:label for="s_chars_1" value="--'characters'" /><xsl:call-template name="nbsp"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="s_rows" value="Rows per page"/>
+                  </th>
+                  <td>
+                    <v:text name="s_rows" value="--CAL.WA.settings_rows (self.settings)" xhtml_size="3"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    Atom File Version
+                  </th>
+                  <td>
+                    <v:select-list name="s_atomVersion">
+                      <v:item value="0.3" name="0.3"/>
+                      <v:item value="1.0" name="1.0"/>
+                      <v:before-data-bind>
+                        <![CDATA[
+                          control.ufl_value := CAL.WA.settings_atomVersion (self.settings);
+                        ]]>
+                      </v:before-data-bind>
+                    </v:select-list>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div id="2" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <th width="30%">
+                    Default view
+                  </th>
+                  <td>
+                    <v:select-list name="s_defaultView">
+                      <v:item value="day" name="Day"/>
+                      <v:item value="week" name="Week"/>
+                      <v:item value="month" name="Month"/>
+                      <v:before-data-bind>
+                        <![CDATA[
+                          control.ufl_value := CAL.WA.settings_defaultView (self.settings);
+                        ]]>
+                      </v:before-data-bind>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    Week starts on
+                  </th>
+                  <td>
+                    <v:select-list name="s_weekStarts">
+                      <v:item value="m" name="Monday"/>
+                      <v:item value="s" name="Sunday"/>
+                      <v:before-data-bind>
+                        <![CDATA[
+                          control.ufl_value := CAL.WA.settings_weekStarts (self.settings);
+                        ]]>
+                      </v:before-data-bind>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    Time format
+                  </th>
+                  <td>
+                    <v:select-list name="s_timeFormat">
+                      <v:item value="e" name="13:00"/>
+                      <v:item value="u" name="01:00 pm"/>
+                      <v:before-data-bind>
+                        <![CDATA[
+                          control.ufl_value := CAL.WA.settings_timeFormat (self.settings);
+                        ]]>
+                      </v:before-data-bind>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    Date format
+                  </th>
+                  <td>
+                    <v:select-list name="s_dateFormat">
+                      <v:item value="dd.MM.yyyy" name="31.12.2007"/>
+                      <v:item value="MM/dd/yyyy" name="12/31/2007"/>
+                      <v:item value="yyyy/MM/dd" name="2007/12/31"/>
+                      <v:before-data-bind>
+                        <![CDATA[
+                          control.ufl_value := CAL.WA.settings_dateFormat (self.settings);
+                        ]]>
+                      </v:before-data-bind>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    Current timezone
+                  </th>
+                  <td>
+                    <v:select-list name="s_timeZone">
+                      <v:on-init>
+                        <![CDATA[
+                          declare i, j integer;
+                          declare x, y any;
+
+                          x := make_array (25, 'any');
+                          y := make_array (25, 'any');
+                          i := -12;
+                          j := 0;
+                          while (i <= 12) {
+                            x[j] := cast (i*60 as varchar);
+                            y[j] := self.viewTimeZone (i);
+                            i := i + 1;
+                            j := j + 1;
+                          }
+                          control.vsl_item_values := x;
+                          control.vsl_items := y;
+                          control.ufl_value := '0';
+                        ]]>
+                      </v:on-init>
+                      <v:before-data-bind>
+                        <![CDATA[
+                          control.ufl_value := CAL.WA.settings_timeZone (self.settings);
+                        ]]>
+                      </v:before-data-bind>
+                    </v:select-list>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="new-form-footer">
+          <v:button action="simple" value="Save" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                declare rows, chars any;
+
+                declare exit handler for SQLSTATE '*' {
+                  if (__SQL_STATE = 'TEST') {
+                    self.vc_error_message := BMK.WA.test_clear(__SQL_MESSAGE);
+                    self.vc_is_valid := 0;
+                    return;
+                  }
+                  resignal;
+                };
+
+                rows := trim(self.s_rows.ufl_value);
+                chars := trim(self.s_chars.ufl_value);
+                if (get_keyword ('s_chars', self.vc_page.vc_event.ve_params, '-1') = '0')
+                  chars := '0';
+
+                CAL.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
+                CAL.WA.test(chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 255));
+
+                self.settings := CAL.WA.set_keyword ('chars', self.settings, cast(cast(chars as integer) as varchar));
+                self.settings := CAL.WA.set_keyword ('rows', self.settings, cast(cast(rows as integer) as varchar));
+                self.settings := CAL.WA.set_keyword ('atomVersion', self.settings, self.s_atomVersion.ufl_value);
+                self.settings := CAL.WA.set_keyword ('defaultView', self.settings, self.s_defaultView.ufl_value);
+                self.settings := CAL.WA.set_keyword ('weekStarts', self.settings, self.s_weekStarts.ufl_value);
+                self.settings := CAL.WA.set_keyword ('timeFormat', self.settings, self.s_timeFormat.ufl_value);
+                self.settings := CAL.WA.set_keyword ('dateFormat', self.settings, self.s_dateFormat.ufl_value);
+                self.settings := CAL.WA.set_keyword ('timeZone', self.settings, self.s_timeZone.ufl_value);
+
+                insert replacing CAL.WA.SETTINGS (S_ACCOUNT_ID, S_DATA)
+                  values(self.account_id, serialize (self.settings));
+                commit work;
+
+                CAL.WA.domain_gems_create (self.domain_id, self.account_id);
+
+                self.initData ();
+                self.cAction := 'browse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.cAction := 'browse';
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+        <script>
+          <![CDATA[
+            initTab(2, 1);
+          ]]>
+        </script>
+      </v:template>
+      <div id="cDiv" style="position:absolute; visibility:hidden; background-color:white; layer-background-color:white; z-index: 10;"></div>
+
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

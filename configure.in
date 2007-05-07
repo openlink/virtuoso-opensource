@@ -2226,6 +2226,7 @@ AC_CONFIG_FILES([
 	appsrc/ODS-Blog/Makefile
 	appsrc/ODS-Bookmark/Makefile
 	appsrc/ODS-Briefcase/Makefile
+	appsrc/ODS-Calendar/Makefile
 	appsrc/ODS-Community/Makefile
 	appsrc/ODS-Discussion/Makefile
 	appsrc/ODS-FeedManager/Makefile

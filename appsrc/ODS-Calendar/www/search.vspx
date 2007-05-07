@@ -1,0 +1,512 @@
+<?xml version="1.0"?>
+<!--
+ -
+  -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="search" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <v:method name="update_params" arglist="">
+    <![CDATA[
+      declare tmp any;
+
+      self.v_keywords := trim (self.v_keywords);
+      self.v_expression := trim (self.v_expression);
+      self.v_tags := trim (self.v_tags);
+
+      tmp := CAL.WA.tags2vector (self.v_tags);
+      tmp := CAL.WA.vector_unique (tmp);
+      self.v_tags := CAL.WA.vector2tags (tmp);
+
+      if (not (self.account_role in ('public', 'guest')))
+        self.v_own := self.f_own.ufl_selected;
+      self.v_public := self.f_public.ufl_selected;
+    ]]>
+  </v:method>
+
+  <v:method name="do_search" arglist="inout e vspx_event">
+    <![CDATA[
+      declare tmp any;
+
+      declare exit handler for SQLSTATE '*' {
+        if (__SQL_STATE = 'TEST') {
+          self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
+           self.vc_is_valid := 0;
+          return;
+        }
+        resignal;
+      };
+
+      self.update_params();
+
+      CAL.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
+      if (self.v_mode <> 'simple') {
+        CAL.WA.test(self.v_expression, vector('name', 'Expression', 'class', 'free-text-expression'));
+        CAL.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
+        CAL.WA.test(self.v_max, vector('name', 'Max Records', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 1000));
+      }
+
+      declare data varchar;
+
+      CAL.WA.xml_set('keywords', data, self.v_keywords);
+      if (self.v_mode <> 'simple') {
+        CAL.WA.xml_set('expression', data, self.v_expression);
+        CAL.WA.xml_set('tags', data, self.v_tags);
+        if (self.v_own = 1)
+          CAL.WA.xml_set('MyPolls', data, 1);
+        if (self.v_public = 1)
+          CAL.WA.xml_set('PublicPolls', data, 1);
+      }
+
+      self.ds_data := vector ();
+      self.ds_meta := vector ();
+      self.ds_tags := vector ();
+      if (length(xpath_eval('//entry', data, 0)) = 0) {
+        if (e.ve_is_post or (self.v_mode = 'simple')) {
+          self.vc_error_message := 'Empty search criteria.';
+          self.vc_is_valid := 0;
+        }
+        return;
+      }
+
+      declare sql, sqlParams, state, msg, meta, result, maxRows any;
+
+      state := '00000';
+      sqlParams := vector();
+      sql := CAL.WA.search_sql (self.domain_id, self.account_id, data);
+      exec(sql, state, msg, sqlParams, 0, meta, result);
+      if (state = '00000') {
+        self.ds_data := result;
+        self.ds_meta := meta;
+
+        if (self.f_cloud.ufl_selected = 1) {
+          declare N, minCnt, maxCnt integer;
+          declare tag_object, tags, tags_dict any;
+
+          tags_dict := dict_new();
+          for (N := 0; N < length(self.ds_data); N := N + 1) {
+            tags := split_and_decode (self.ds_data[N][3], 0, '\0\0,');
+            foreach (any tag in tags) do {
+              tag_object := dict_get(tags_dict, lcase(tag), vector(lcase(tag), 0));
+              tag_object[1] := tag_object[1] + 1;
+              dict_put(tags_dict, lcase(tag), tag_object);
+            }
+          }
+
+          maxCnt := 1;
+          minCnt := 1000000;
+          for (select p.* from CAL.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do {
+            self.ds_tags := vector_concat(self.ds_tags, vector(vector(tag, cnt)));
+            if (cnt > maxCnt)
+              maxCnt := cnt;
+            if (cnt < minCnt)
+              minCnt := cnt;
+          }
+          self.ds_tags := vector_concat(vector(vector('__max', maxCnt)), self.ds_tags);
+          self.ds_tags := vector_concat(vector(vector('__min', minCnt)), self.ds_tags);
+        }
+      }
+
+      self.ds.vc_data_bind (e);
+    ]]>
+  </v:method>
+  <v:method name="do_url" arglist="in mode varchar, in prefix varchar">
+    <![CDATA[
+      declare tmp varchar;
+
+      tmp := '';
+      if (not is_empty_or_null(self.v_keywords))
+        tmp := concat(tmp, sprintf('&%skeywords=%U', prefix, self.v_keywords));
+      if (not is_empty_or_null(self.v_expression))
+        tmp := concat(tmp, sprintf('&%sexpression=%U', prefix, self.v_expression));
+      if (not is_empty_or_null(self.v_tags))
+        tmp := concat(tmp, sprintf('&%stags=%U', prefix, self.v_tags));
+      if (mode = 'export') {
+        if (cast(self.v_own as integer) <> 1)
+          tmp := concat(tmp, sprintf('&%sown=%s', prefix, cast(self.v_own as varchar)));
+        if (cast(self.v_public as integer) <> 1)
+          tmp := concat(tmp, sprintf('&%spublic=%s', prefix, cast(self.v_public as varchar)));
+        if (not is_empty_or_null(self.v_max) and self.v_max <> '100')
+          tmp := concat(tmp, sprintf('&%smax=%U', prefix, self.v_max));
+        if (not is_empty_or_null(self.v_order) and self.v_order <> '_NAME')
+          tmp := concat(tmp, sprintf('&%sorder=%U', prefix, self.v_order));
+        if (not is_empty_or_null(self.v_direction) and self.v_direction <> 'asc')
+          tmp := concat(tmp, sprintf('&%sdirection=%U', prefix, self.v_direction));
+      }
+
+      return tmp;
+    ]]>
+  </v:method>
+
+  <v:on-init>
+    <![CDATA[
+      if (self.ds_data is null) {
+        self.ds_data := vector ();
+        self.ds_meta := vector ();
+        self.ds_tags := vector ();
+      }
+    ]]>
+  </v:on-init>
+  <v:after-data-bind>
+    <![CDATA[
+      if (not e.ve_is_post or (self.v_mode = 'simple') or (get_keyword ('tag', e.ve_params, '') <> ''))
+        self.do_search (e);
+    ]]>
+  </v:after-data-bind>
+  <vm:pagetitle>Search results</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:header>
+      Search results
+    </vm:header>
+    <vm:menu/>
+    <vm:variables>
+      <v:variable name="pChars" type="integer" default="60" />
+
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+      <v:variable name="v_mode" type="varchar" default="'simple'"/>
+      <v:variable name="v_step" param-name="step" type="integer" default="0"/>
+
+      <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
+      <v:variable name="v_expression" type="varchar" default="''"/>
+      <v:variable name="v_tags" type="varchar" default="''"/>
+      <v:variable name="v_own" type="integer" default="1"/>
+      <v:variable name="v_public" type="integer" default="1"/>
+
+      <v:variable name="v_output" type="varchar" default="'html'"/>
+      <v:variable name="v_max" type="varchar" default="'100'"/>
+      <v:variable name="v_order" type="varchar" default="'_NAME'" />
+      <v:variable name="v_direction" type="varchar" default="'asc'" />
+      <v:variable name="v_cloud" type="integer" default="0" />
+
+      <v:variable name="ds_data" type="any" default="null"/>
+      <v:variable name="ds_meta" type="any" default="null"/>
+      <v:variable name="ds_tags" type="any" default="null"/>
+    </vm:variables>
+    <vm:pagebody>
+      <v:before-data-bind>
+        <![CDATA[
+          declare settings any;
+
+          self.pChars := cast(get_keyword ('chars', self.settings, '60') as integer);
+
+          self.v_mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.v_mode);
+
+          -- main
+          self.v_keywords := trim (get_keyword ('a_keywords', self.vc_page.vc_event.ve_params, get_keyword ('s_keywords', self.vc_page.vc_event.ve_params, get_keyword ('keywords', self.vc_page.vc_event.ve_params, ''))));
+          self.v_expression := trim (get_keyword ('f_expression', self.vc_page.vc_event.ve_params, get_keyword ('type', self.vc_page.vc_event.ve_params, self.v_expression)));
+          self.v_tags := trim (get_keyword ('f_tags', self.vc_page.vc_event.ve_params, get_keyword ('tags', self.vc_page.vc_event.ve_params, self.v_tags)));
+          if (get_keyword ('tag', self.vc_page.vc_event.ve_params, '') <> '') {
+            if (is_empty_or_null(self.v_tags))
+              self.v_tags := '';
+            self.v_tags := concat(self.v_tags, ', ', get_keyword ('tag', self.vc_page.vc_event.ve_params));
+            self.v_tags := CAL.WA.tags2vector(self.v_tags);
+            self.v_tags := CAL.WA.tags2unique(self.v_tags);
+            self.v_tags := CAL.WA.vector2tags(self.v_tags);
+          }
+          -- options
+          if (not (self.account_role in ('public', 'guest')))
+            self.v_own := self.f_own.ufl_selected;
+          self.v_public := self.f_public.ufl_selected;
+
+          self.v_max := trim (get_keyword ('f_max', self.vc_page.vc_event.ve_params, self.v_max));
+          self.v_order := trim (get_keyword ('f_order', self.vc_page.vc_event.ve_params, self.v_order));
+          self.v_direction := trim (get_keyword ('f_direction', self.vc_page.vc_event.ve_params, self.v_direction));
+          self.v_cloud := self.f_cloud.ufl_selected;
+        ]]>
+      </v:before-data-bind>
+      <v:on-post>
+        <![CDATA[
+          if (e.ve_button = control) {
+            self.a_keywords.ufl_value := '';
+            self.f_expression.ufl_value := '';
+            self.ds_data := vector ();
+            self.ds_tags := vector ();
+            self.vc_data_bind (e);
+          }
+        ]]>
+      </v:on-post>
+      <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
+      <v:text name="step" xhtml_id="step" type="hidden" value="1"/>
+      <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;">
+        <div class="new-form-header" style="margin-top: 6px;">
+          <i><?V initcap(self.v_mode) ?> search found <?V length (self.ds_data) ?> poll(s) in last search</i>
+        </div>
+      </v:template>
+      <v:template type="simple">
+        <v:before-render>
+          <![CDATA[
+            control.vc_enabled := case when (length (self.ds_data) and self.vc_is_valid = 1) then 1 else 0 end;
+          ]]>
+        </v:before-render>
+        <div style="padding-bottom: 5px;">
+          <?vsp
+            http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+            if (CAL.WA.settings_atomVersion(self.account_id) = '1.0') {
+              http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+            } else {
+              http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom03%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+            }
+            http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rdf%s"><img src="image/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0"/> RDF</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
+          ?>
+        </div>
+      </v:template>
+      <table cellspacing="0" cellpadding="0" width="100%" >
+        <tr>
+          <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;" >
+            <td valign="top" style="border: solid #935000; border-width: 1px 1px 1px 1px;">
+              <v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="0" scrollable="1">
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ds_nrows := CAL.WA.settings_rows (self.settings);
+                  ]]>
+                </v:before-data-bind>
+
+                <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table id="search" class="grid" style="border: solid #935000;  border-width: 0px 0px 0px 0px;" cellspacing="0">
+                    <thead class="sortHeader">
+                      <tr>
+                        <th>
+                          Name
+                        </th>
+                      </tr>
+                    </thead>
+                  </table>
+                </v:template>
+
+                <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+                  <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                    <table>
+                      <tr align="center">
+                        <td colspan="1">No matches found in Calendar DataSpace</td>
+                      </tr>
+                    </table>
+                  </v:template>
+
+                  <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                    <table>
+                      <tr>
+                        <td valign="top">
+                        </td>
+                      </tr>
+                    </table>
+                  </v:template>
+
+                </v:template>
+
+                <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                  <table>
+                    <tr>
+                      <td align="center" colspan="1">
+                        <vm:ds-navigation data-set="ds"/>
+                      </td>
+                    </tr>
+                  </table>
+                </v:template>
+
+              </v:data-set>
+              <script type="text/javascript">
+                <![CDATA[
+                  coloriseTable('search');
+                ]]>
+              </script>
+            </td>
+          </v:template>
+          <v:template type="simple" enabled="-- case when (self.v_cloud and self.v_step and self.vc_is_valid) then 1 else 0 end;">
+            <td width="20%" valign="top" style="border: solid #935000;  border-width: 1px 1px 1px 0px;">
+              <div style="margin-left:3px; margin-top:3px;">
+                <?vsp
+                  declare N, tLength, tMax, tMin integer;
+                  declare tStyle varchar;
+
+                  tLength := length(self.ds_tags);
+                  if (tLength > 2) {
+                    tMin := self.ds_tags[0][1];
+                    tMax := self.ds_tags[1][1];
+                    for (N := 2; N < tLength; N := N + 1) {
+                      tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
+                      http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], tStyle, self.ds_tags[N][0]));
+                    }
+                  } else {
+                    http ('no tags');
+                  }
+                ?>
+              </div>
+            </td>
+          </v:template>
+        </tr>
+      </table>
+      <br />
+      <v:template type="simple" enabled="--either(equ(self.v_mode, 'simple'), 0, 1)">
+         <div id="c1">
+          <div class="tabs">
+            &nbsp;
+            <vm:tabCaption tab="1" tabs="2" caption="Criteria"/>&nbsp;
+            <vm:tabCaption tab="2" tabs="2" caption="Options"/>&nbsp;
+          </div>
+          <div class="contents">
+            <div id="1" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <th>
+                    <v:label for="" value="Space delimited keyword list" />
+                  </th>
+                  <td>
+                    <v:text name="a_keywords" value="--self.v_keywords" xhtml_class="textbox" xhtml_size="60"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_expression" value="--'or expression'" />
+                  </th>
+                  <td>
+                    <v:textarea name="f_expression" value="--self.v_expression" xhtml_rows="2" xhtml_cols="50"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <vm:label for="f_tags" value="Comma delimited tags" />
+                  </th>
+                  <td>
+                    <v:text name="f_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
+                  </td>
+                </tr>
+                <vm:if test="(self.account_role <> 'public') and (self.account_role <> 'shared')">
+                  <tr>
+                    <th/>
+                    <td>
+                      <v:check-box name="f_own" initial-checked="self.v_own" xhtml_id="f_own" value="1" />
+                      <b><vm:label for="f_own" value="Search in my contacts"/></b>
+                    </td>
+                  </tr>
+                </vm:if>
+                <tr>
+                  <th/>
+                  <td>
+                    <v:check-box name="f_public" initial-checked="self.v_public" xhtml_id="f_public" value="1" />
+                    <b><vm:label for="f_public" value="Search in public contacts"/></b>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div id="2" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <th>
+                    <v:label for="f_max" value="Max Results" />
+                  </th>
+                  <td>
+                    <v:text name="f_max" default_value="100" xhtml_size="5"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_order" value="Order by" />
+                  </th>
+                  <td>
+                    <v:select-list name="f_order" value="--self.v_order">
+                      <v:item name="Name" value="_NAME"/>
+                      <v:item name="Link" value="_URI"/>
+                      <v:item name="Folder" value="_FOLDER_NAME"/>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <v:label for="f_direction" value="Direction" />
+                  </th>
+                  <td>
+                    <v:select-list name="f_direction" value="--self.v_direction">
+                      <v:item name="Asc" value="asc"/>
+                      <v:item name="Desc" value="desc"/>
+                    </v:select-list>
+                  </td>
+                </tr>
+                <tr>
+                  <th/>
+                  <td>
+                    <v:check-box name="f_cloud" xhtml_id="f_cloud" value="1"/>
+                    <b><vm:label for="f_cloud" value="Show tag cloud"/></b>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="form-footer">
+          <v:button action="simple" value="Search" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.do_search (e);
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.vc_redirect('calendar.vspx');
+              ]]>
+            </v:on-post>
+          </v:button>
+        </div>
+        <script type="text/javascript">
+          <![CDATA[
+            initTab(2, 1);
+          ]]>
+        </script>
+      </v:template>
+      <v:template type="simple" enabled="--either(neq(self.v_mode, 'simple'), 0, 1)">
+        <div class="new-form-body">
+          <table cellspacing="0">
+            <tr>
+              <td align="center">
+                <b><v:label for="" value="Search" /></b>
+                <v:text name="s_keywords" value="--self.v_keywords" xhtml_onkeypress="return submitEnter(\'F1\', \'\', event)" xhtml_class="textbox" xhtml_size="60"/>
+                |
+                <v:button action="simple" style="url" value="Advanced" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.vc_is_valid := 1;
+                      self.v_step := 0;
+                      self.v_mode := 'advanced';
+                      self.ds_data := vector();
+                      self.ds_meta := vector();
+                      self.ds_tags := vector();
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                |
+                <v:button action="simple" style="url" value="Cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.vc_redirect('calendar.vspx');
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </v:template>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
