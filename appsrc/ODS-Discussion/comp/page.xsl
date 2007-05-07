@@ -536,8 +536,6 @@ function dd(txt){
 
 
   <xsl:template match="vm:ds-navigation-new">
-      <v:variable name="nav_next" type="integer" default="1" persist="1" />
-      <v:variable name="nav_prev"  type="integer" default="1" persist="1" />
     &lt;?vsp
      {
      
@@ -573,6 +571,9 @@ function dd(txt){
     <xsl:if test="not(@type) or @type = 'set'">
       <v:text name="{@data-set}_offs" type="hidden" value="0" />
       <?vsp
+       declare _nav_next,_nav_prev integer;
+       _nav_next:=1;
+       _nav_prev:=1;
 
       if (index_arr)
       {
@@ -632,8 +633,8 @@ function dd(txt){
          i := 0;
          n := ds.ds_nrows;
          t := 0;
-         self.nav_next:=1;
-         self.nav_prev:=1;
+
+
          if (dss is not null)
          {
              t := dss.ds_total_rows;
@@ -664,23 +665,19 @@ function dd(txt){
            }
         }
          
---         dbg_obj_print('c+1=ceiling (t/n)',c,ceiling (t/n));
-
          if(c=0)     
-            self.nav_prev:=0;
+            _nav_prev:=0;
 
          if(c=ceiling (t/n))     
-            self.nav_next:=0;
-
+            _nav_next:=0;
 
          http('&#160;');
    
-   
-         if(self.nav_prev)
+         if(_nav_prev)
         {
         ?>
 
-         <v:button name="{@data-set}_prev" action="simple" style="url" value="&amp;lt;&amp;lt;"
+         <v:button name="{@data-set}_prev" action="simple" style="url" value="&amp;lt;"
            xhtml_alt="Previous" xhtml_title="Previous" text="&nbsp;Previous">
          </v:button>
            <![CDATA[&nbsp;]]>
@@ -699,22 +696,22 @@ function dd(txt){
          if (i > 0)
             http (' | ');
       }
+
       ?>
-    </xsl:if>
       <![CDATA[&nbsp;]]>
       <![CDATA[&nbsp;]]>
     <?vsp
-
-      if(self.nav_next)
+      if(_nav_next)
       {
     ?>
-    <v:button name="{@data-set}_next" action="simple" style="url" value="&amp;gt;&amp;gt;"
+    <v:button name="{@data-set}_next" action="simple" style="url" value="&amp;gt;"
       xhtml_title="Next" text="&nbsp;Next">
     </v:button>
     <?vsp
       }
     }
     ?>
+    </xsl:if>
   </xsl:template>
 
 

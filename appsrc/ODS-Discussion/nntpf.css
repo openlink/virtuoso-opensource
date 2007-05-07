@@ -536,3 +536,37 @@ padding:5px;
 background: #FFFFFF;
 border: 1px solid #67A3BD;
 }
+
+table.tab_deck {
+  margin: 0;
+  padding: 0;
+  border: 1px solid #444;}
+
+td.tab_deck {
+  margin:0;padding:0;}
+
+table.navtab_tabs_ctr {
+  margin: 0;
+  padding: 0}
+
+tr.navtab_row {
+  background-color: #DDDDDD;
+}
+tr.navtab_row td {
+  margin:0px;
+  padding:3px 10px 3px 10px;
+  border-right: 1px solid #FFFFFF;}
+tr.navtab_row td a { 
+  display: block;
+  margin: 0;
+  padding: 4px;
+  text-decoration: none;
+  color: #333;}
+td.navtab_sel {
+  margin: 0px;
+  padding: 0px;
+  background-color: #FFFFFF}
+td.navtab_sel a {}
+td.navtab:hover {
+  background-color: #adf}
+

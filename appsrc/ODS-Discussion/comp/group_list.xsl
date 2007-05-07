@@ -573,5 +573,202 @@
       </table>
   </xsl:template>
 
+  <xsl:template match="vm:allgroups-list">
+
+    <v:variable name="_svc_id" type="integer" default="12"/>
+    <v:variable name="allg_r_count" type="integer" default="0"/>
+    <v:variable name="allg_dta" type="any"/>
+    <v:variable name="allg_mtd" type="any"/>
+      <v:before-data-bind>
+        <![CDATA[
+        declare _act varchar;
+        
+        select SH_ID into self._svc_id from ODS.DBA.SVC_HOST where SH_NAME='The Semantic Web.com';
+        
+        _act:=get_keyword ('allgroups_unsubscribe', self.vc_event.ve_params,get_keyword ('allgroups_subscribe', self.vc_event.ve_params,''));
+        
+        declare i integer;
+        i:=2; --0 and 1 are allways vspx page identity 
+        while(i<length(self.vc_event.ve_params)-1)
+        {
+          
+          if(locate('nbcheckbox_',self.vc_event.ve_params[i]))
+          {
+             if(_act='Enable')
+             {
+                insert soft  DB.DBA.NNTPF_PING_REG(NPR_HOST_ID,NPR_NG_GROUP) values(self._svc_id ,self.vc_event.ve_params[i+1]);
+
+             }
+             else if(_act='Disable')
+             {
+                if( exists (select 1 from  DB.DBA.NNTPF_PING_REG where NPR_HOST_ID=self._svc_id and NPR_NG_GROUP=self.vc_event.ve_params[i+1]))
+                 delete from  DB.DBA.NNTPF_PING_REG where NPR_HOST_ID=self._svc_id and NPR_NG_GROUP=self.vc_event.ve_params[i+1];
+
+             }
+          }
+          i:=i+2;
+        }
+        
+
+          declare allg_mtd, allg_dta any;
+             
+          exec ('select NG_GROUP, NG_NAME, NG_DESC from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1 ', null, null, vector (), 0, allg_mtd, allg_dta );
+
+          self.allg_dta:=allg_dta;
+          self.allg_mtd:=allg_mtd[0];
+
+        ]]>
+      </v:before-data-bind>
+  <script type="text/javascript">
+    <![CDATA[
+      function selectAllCheckboxes (form, btn)
+      {
+        for (var i = 0; i < form.elements.length; i = i + 1) {
+          var contr = form.elements[i];
+          if (contr != null && contr.type == "checkbox") {
+            contr.focus();
+            if (btn.value == 'Select All')
+              contr.checked = true;
+            else
+              contr.checked = false;
+          }
+        }
+        if (btn.value == 'Select All')
+          btn.value = 'Unselect All';
+        else
+          btn.value = 'Select All';
+        btn.focus();
+      }
+    ]]>
+  </script>
+
+
+      <table width="100%"
+             class="nntp_groups_listing"
+             cellspacing="0"
+             cellpadding="0">
+
+        <v:data-set name="ds_allgroups_list"
+                    scrollable="1"
+                    data="--self.allg_dta"
+                    meta="--self.allg_mtd"
+                    nrows="10"
+                    width="80"
+                   >
+                   
+          <v:template name="allg_t1" type="simple">
+            <tr class="listing_header_row">
+              <th colspan="4">
+                <v:label value="'Available newsgroups for servce notification:'" format="%s" width="80"/>
+              </th>
+            </tr>
+
+            <tr class="listing_header_row">
+              <th >
+              <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this.form, this); "/>
+              </th>
+              <th>
+                <v:label value="'Name'" format="%s" width="80"/>
+              </th>
+              <th >
+                <v:label value="'Description'" format="%s" width="80"/>
+              </th>
+              <th >
+                <v:label value="'&nbsp;Notification'" format="%s" width="80"/>
+              </th>
+            </tr>
+          </v:template>
+          <v:template name="allg_t2" type="repeat">
+            <v:template name="allg_t7" type="if-not-exists">
+              <tr>
+                <td align="center" colspan="5">
+                  No group defined on this server.
+                </td>
+              </tr>
+            </v:template>
+
+            <v:template name="allg_t4" type="browse">
+              <?vsp
+                self.allg_r_count := self.allg_r_count + 1;
+                 http (sprintf ('<tr class="%s">',
+                       case
+                         when mod (self.allg_r_count, 2)
+                         then 'listing_row_odd'
+                         else '' end));
+              ?>
+                <td align="left">
+                  <v:check-box name="ods_allgroups_state"
+                               group-name="--'nbcheckbox_'||cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                               value="--cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                               initial-checked="0"  />
+                </td>
+                <td>
+                  <v:url name="ods_allgroups"
+                         format="%s"
+                         value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
+                         url="--'nntpf_nthread_view.vspx?group=' ||
+                                cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                         xhtml_class="nntp_group"/>
+                </td>
+                <td>
+                  <v:url name="ods_allgroups1"
+                         format="%s"
+                         value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
+                         url="--'nntpf_nthread_view.vspx?group=' ||
+                                cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar)"
+                         xhtml_class="nntp_group"/>
+                </td>
+                <td>
+                  <v:button name="ods_allgroups_enable"
+                          action="simple"
+                          style="url"
+                          value="--'&nbsp;enable'"
+                          enabled="--(case when (not exists (select 1 from  DB.DBA.NNTPF_PING_REG where NPR_HOST_ID=self._svc_id and NPR_NG_GROUP=(control.vc_parent as vspx_row_template).te_rowset[0])) then 1 else 0 end)"
+                  >
+                   <v:on-post>
+                       insert into  DB.DBA.NNTPF_PING_REG(NPR_HOST_ID,NPR_NG_GROUP) values(self._svc_id ,(control.vc_parent as vspx_row_template).te_rowset[0]);
+                       self.vc_data_bind(e);
+                   </v:on-post>
+                  </v:button>
+
+                  <v:button name="nntp_allgroups_disable"
+                          action="simple"
+                          style="url"
+                          value="--'&nbsp;disable'"
+                          enabled="--(case when (exists (select 1 from  DB.DBA.NNTPF_PING_REG where NPR_HOST_ID=self._svc_id and NPR_NG_GROUP=(control.vc_parent as vspx_row_template).te_rowset[0])) then 1 else 0 end)"
+                  >
+                   <v:on-post>
+                    if( exists (select 1 from  DB.DBA.NNTPF_PING_REG where NPR_HOST_ID=self._svc_id and NPR_NG_GROUP=(control.vc_parent as vspx_row_template).te_rowset[0]))
+                    {
+                       delete from  DB.DBA.NNTPF_PING_REG where NPR_HOST_ID=self._svc_id and NPR_NG_GROUP=(control.vc_parent as vspx_row_template).te_rowset[0];
+                       self.vc_data_bind(e);
+                    }
+                   </v:on-post>
+                  </v:button>
+                </td>
+<?vsp
+        http('</tr>');
+?>
+            </v:template>
+          </v:template>
+
+          <v:template name="allg_t3" type="simple" name-to-remove="table" set-to-remove="top">
+          <tr><td colspan="4" align="center">
+            <vm:ds-navigation-new data-set="ds_allgroups_list"/>
+          </td></tr>
+          <tr><td colspan="4" align="left">
+            <v:button name="allgroups_subscribe" action="simple" style='submit' value="Enable"/>
+            <![CDATA[&nbsp;]]>
+            <v:button name="allgroups_unsubscribe" action="simple" style='submit' value="Disable"/>
+          </td></tr>
+          </v:template>
+
+        </v:data-set>
+      </table>
+      <input type="hidden" name="realm" value="wa" />
+      <input type="hidden" name="group" value="" />
+
+  </xsl:template>
+
 </xsl:stylesheet>
 

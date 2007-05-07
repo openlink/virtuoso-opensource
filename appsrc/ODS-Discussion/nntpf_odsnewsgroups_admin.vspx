@@ -37,7 +37,10 @@
       <title>ODS Discussion</title>
     </head>
     <body>
+
       <vm:page>
+       <vm:variable name="page" type="int" default="1" param-name="page"/>
+
         <v:form name="nntpf" type="simple">
 	  <v:before-data-bind>
 	   <![CDATA[
@@ -56,7 +59,7 @@
             <vm:menu-bar/>
           </div>
           <div id="PC">
-            <div id="LT">
+            <div id="LT" style="border 1px solid black;width:100%">
               <div class="login">
                 <vm:login/>
               </div>
@@ -71,8 +74,25 @@
                 </div>
               </v:template>
               <v:template type="simple" condition="nntpf_groups_defined_p() and  nntpf_check_is_dav_admin (self.u_name, self.u_full_name)">
-                <div class="group_list">
+                <div class="group_list" width="100%" border="1">
+<!--
 		  <vm:geo-link><img src="http://i.geourl.org/geourl.png" border="0"/></vm:geo-link>
+-->                  
+                   <table width="100%" cellspacing="0" cellpadding="0" border="0" >
+                   <tr class="navtab_row">
+                    <td class="<?V case when self.page = 1 then 'navtab_sel' else 'navtab' end ?>" align="center" nowrap="1">
+                           <v:url name="b_tab1" value="Newsgroups" format="%s" url="--sprintf('nntpf_odsnewsgroups_admin.vspx?page=1')"/>
+
+                    </td>
+                     <td class="<?V case when self.page = 2 then 'navtab_sel' else 'navtab' end ?>" align="center" nowrap="1">
+                        <v:url name="b_tab2" value="Notification" format="%s" url="--sprintf('nntpf_odsnewsgroups_admin.vspx?page=2')"/>
+                      </td>
+                    <td width="100%" class="page_tab_empty"></td>
+                   </tr>
+                   <tr>
+                    <td colspan="3" style="border: 1px solid #FFFFFF;">
+
+                    <v:template type="simple" condition="self.page=1"> 
                   <table border="0" cellspacing="0" cellpadding="2" width="98%">
                    <tr>
                     <td valign="top">
@@ -85,6 +105,14 @@
                  </v:template>
                     </td>
                    </tr>
+                  </table>
+                     </v:template>
+                    <v:template type="simple" condition="self.page=2"> 
+                         <vm:allgroups-list/>
+                    </v:template>
+
+                   </td>
+                  </tr>
                   </table>
                 </div>
 
