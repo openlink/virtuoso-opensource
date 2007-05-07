@@ -595,7 +595,7 @@ key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int * var_len, collation_t * 
 {
   int inx2;
   long len;
-  if (col_dtp == DV_ANY)
+  if (col_dtp == DV_ANY && dtp != DV_DB_NULL)
     { /* if it goes to column of type ANY the length to be written is the serialized length */
       caddr_t err = NULL;
       caddr_t any_ser;
