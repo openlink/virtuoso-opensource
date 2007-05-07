@@ -128,6 +128,11 @@ create procedure vcard_iri (in s varchar)
   return concat ('http://www.w3.org/2001/vcard-rdf/3.0#', s);
 };
 
+create procedure vcal_iri (in s varchar)
+{
+  return concat ('http://www.w3.org/2002/12/cal#', s);
+};
+
 create procedure owl_iri (in s varchar)
 {
   return concat ('http://www.w3.org/2002/07/owl#', s);
@@ -697,12 +702,13 @@ create procedure sioc_forum (
   clazz := ods_sioc_forum_type (wai_type_name);
 
   -- we keep this until we verify subclassing work
-  if (wai_type_name <> 'Community')
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), clazz);
-  if (clazz <> sioc_iri ('Container') and wai_type_name <> 'Community')
-    DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Container'));
+  --if (wai_type_name <> 'Community')
+  --  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), clazz);
+  --if (clazz <> sioc_iri ('Container') and wai_type_name <> 'Community')
+  --  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Container'));
   -- A given forum is a subclass of the sioc:Forum, based on sioc types module
-  if (sub <> clazz or wai_type_name = 'Community')
+  --if (sub <> clazz or wai_type_name = 'Community')
+
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sub);
 
   DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), wai_name);
@@ -717,7 +723,7 @@ create procedure sioc_forum (
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
 
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
-  DB.DBA.RDF_QUAD_URI (graph_iri, concat (iri, '/sioc.rdf'), rdf_iri ('type'), sub);
+--  DB.DBA.RDF_QUAD_URI (graph_iri, concat (iri, '/sioc.rdf'), rdf_iri ('type'), sub);
 
   -- ATOM
   if (clazz = ods_sioc_forum_type ('WEBLOG2'))
@@ -791,7 +797,7 @@ create procedure ods_sioc_post (
 
       ods_sioc_result (iri);
 
-      DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Item'));
+      --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Item'));
 
       --if (maker is null)
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
@@ -831,30 +837,34 @@ create procedure ods_sioc_post (
 	      else
 	        do_atom := 1;
 	    }
+	  else if (forum_iri like graph_iri || '/discussion/%')
+	    {
+	      app := 'discussion';
+	    }
 	  else
 	    do_atom := 1;
         }
 
       -- this is a subclassing of the different types of Item, former Post
 
-      if (maker is not null) -- means comment
+      if (maker is not null and app <> 'discussion') -- means comment
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('Comment'));
 	}
       else if (app = 'weblog')
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('BlogPost'));
 	}
       else if (app = 'discussion')
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('BoardPost'));
 	}
       else if (app = 'mail')
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('MailMessage'));
 	}
       --else if (app = 'bookmark') handled bellow
@@ -863,9 +873,11 @@ create procedure ods_sioc_post (
 	DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Document'));
       else if (app = 'wiki')
 	{
-	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
+	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), wikiont_iri ('Article'));
 	}
+      else if (not do_exif and not do_ann)
+        DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Item'));
 
       -- literal data
       if (title is not null)
@@ -1124,6 +1136,8 @@ create procedure ods_sioc_init ()
       resignal;
     };
   __atomic (1);
+  DB.DBA.TTLP (sioct_n3 (), '', sioc_iri (''));
+  DB.DBA.RDFS_RULE_SET (get_graph (), sioc_iri (''));
   fill_ods_sioc (1);
   registry_set ('__ods_sioc_init', registry_get ('__ods_sioc_version'));
   __atomic (0);
@@ -1148,7 +1162,10 @@ create procedure fill_ods_sioc_online (in doall int := 0, in iri_result int := 1
   if (iri_result = 1)
     result_names (res_iri);
   connection_set ('iri_result', iri_result);
+  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (sioc_iri (''));
+  DB.DBA.TTLP (sioct_n3 (), '', sioc_iri (''));
   fill_ods_sioc (doall);
+  DB.DBA.RDFS_RULE_SET (get_graph (), sioc_iri (''));
   DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
   registry_set ('__ods_sioc_version', ods_current_ver ());
   exec ('checkpoint');
@@ -1607,7 +1624,17 @@ create procedure all_predicates ()
      vcard_iri ('Region'),
      vcard_iri ('Pcode'),
      vcard_iri ('Street'),
-     vcard_iri ('Extadd')
+     vcard_iri ('Extadd'),
+     vcal_iri ('uid'),
+     vcal_iri ('url'),
+     vcal_iri ('summary'),
+     vcal_iri ('description'),
+     vcal_iri ('location'),
+     vcal_iri ('organizer'),
+     vcal_iri ('categories'),
+     vcal_iri ('attendee'),
+     vcal_iri ('dtstart'),
+     vcal_iri ('dtend')
  );
 }
 ;
@@ -2718,6 +2745,66 @@ create procedure gen_cc_xml ()
   http ('  </cc:License>\n', ses);
   http ('</rdf:RDF>\n', ses);
   return xtree_doc (string_output_string (ses));
+}
+;
+
+create procedure sioct_n3 ()
+{
+  declare ses any;
+  ses := string_output ();
+  http (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
+  http ('<http://atomowl.org/ontologies/atomrdf#Feed> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://captsolo.net/semweb/resume/cv.rdfs#Resume> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://purl.org/dc/dcmitype/MovingImage> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://purl.org/dc/dcmitype/Sound> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://purl.org/ibis#Idea> rdfs:subClassOf <http://rdfs.org/sioc/ns#Post> .\n', ses);
+  http ('<http://rdfs.org/sioc/ns#Community> rdfs:subClassOf <http://www.w3.org/2000/01/rdf-schema#Resource> .\n', ses);
+  http ('<http://rdfs.org/sioc/ns#Container> rdfs:subClassOf <http://rdfs.org/sioc/ns#Space> .\n', ses);
+  http ('<http://rdfs.org/sioc/ns#Forum> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/ns#Item> rdfs:subClassOf <http://www.w3.org/2000/01/rdf-schema#Resource> .\n', ses);
+  http ('<http://rdfs.org/sioc/ns#Post> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://rdfs.org/sioc/ns#Role> rdfs:subClassOf <http://www.w3.org/2000/01/rdf-schema#Resource> .\n', ses);
+  http ('<http://rdfs.org/sioc/ns#Service> rdfs:subClassOf <http://www.w3.org/2000/01/rdf-schema#Resource> .\n', ses);
+  http ('<http://rdfs.org/sioc/ns#Site> rdfs:subClassOf <http://rdfs.org/sioc/ns#Space> .\n', ses);
+  http ('<http://rdfs.org/sioc/ns#Space> rdfs:subClassOf <http://www.w3.org/2000/01/rdf-schema#Resource> .\n', ses);
+  http ('<http://rdfs.org/sioc/ns#User> rdfs:subClassOf <http://www.w3.org/2000/01/rdf-schema#Resource> .\n', ses);
+  http ('<http://rdfs.org/sioc/ns#Usergroup> rdfs:subClassOf <http://www.w3.org/2000/01/rdf-schema#Resource> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#AddressBook> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#AnnotationSet> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#ArgumentativeDiscussion> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#AudioChannel> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#BlogPost> rdfs:subClassOf <http://rdfs.org/sioc/ns#Post> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#BoardPost> rdfs:subClassOf <http://rdfs.org/sioc/ns#Post> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#BookmarkFolder> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#Briefcase> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#ChatChannel> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#Comment> rdfs:subClassOf <http://rdfs.org/sioc/ns#Post> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#EventCalendar> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#ImageGallery> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#InstantMessage> rdfs:subClassOf <http://rdfs.org/sioc/ns#Post> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#MailMessage> rdfs:subClassOf <http://rdfs.org/sioc/ns#Post> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#MailingList> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#MessageBoard> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#Poll> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#ProjectDirectory> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#ResumeBank> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#ReviewArea> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#SubscriptionList> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#SurveyCollection> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#Thread> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#VideoChannel> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#Weblog> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .\n', ses);
+  http ('<http://rdfs.org/sioc/types#Wiki> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .\n', ses);
+  http ('<http://sw.deri.org/2005/04/wikipedia/wikiont.owl#Article> rdfs:subClassOf <http://rdfs.org/sioc/ns#Post> .\n', ses);
+  http ('<http://usefulinc.com/ns/doap#Project> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://www.isi.edu/webscripter/communityreview/abstract-review-o#Review> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://www.w3.org/2000/10/annotation-ns#Annotation> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://www.w3.org/2002/01/bookmark#Bookmark> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://www.w3.org/2002/12/cal/icaltzd#VEVENT> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://www.w3.org/2003/12/exif/ns/IFD> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://xmlns.com/foaf/0.1/Agent> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  http ('<http://xmlns.com/foaf/0.1/Document> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
+  return string_output_string (ses);
 }
 ;
 
