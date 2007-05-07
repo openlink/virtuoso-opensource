@@ -197,7 +197,8 @@ create procedure RDF_APERTURE_INIT ()
 }');
 
   insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(application/octet-stream)|(application/pdf)', 'MIME', 'DB.DBA.RDF_LOAD_BIN_DOCUMENT', null, 'Binary Files');
+    values ('(application/octet-stream)|(application/pdf)|(application/mspowerpoint)',
+	'MIME', 'DB.DBA.RDF_LOAD_BIN_DOCUMENT', null, 'Binary Files');
   update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1000 where RM_HOOK = 'DB.DBA.RDF_LOAD_BIN_DOCUMENT';
   set_qualifier ('DB');
 }
@@ -799,6 +800,7 @@ do_detect:;
 	xd := serialize_to_UTF8_xml (xd);
 ins_rdf:
 	DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+        DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
 	RDF_MAPPER_CACHE_REGISTER (feed_url, new_origin_uri, hdr, old_last_modified, download_size, load_msec);
 	ret_flag := -1;
 no_feed:;
@@ -830,6 +832,23 @@ ret:
   return (mdta * ret_flag);
   no_microformats:;
   return 0;
+}
+;
+
+-- /* convert the feed in rss 1.0 format to sioc */
+create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in graph_iri varchar)
+{
+  declare xt, xd any;
+  declare exit handler for sqlstate '*'
+    {
+      goto no_sioc;
+    };
+  xt := xtree_doc (content);
+  xd := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/feed2sioc.xsl', xt, vector ('base', graph_iri));
+  xd := serialize_to_UTF8_xml (xd);
+  DB.DBA.RDF_LOAD_RDFXML (xd, iri, graph_iri);
+  no_sioc:
+  return;
 }
 ;
 
