@@ -1371,7 +1371,22 @@ create function WV.WIKI.EXPANDMACRO (
   _funname := fix_identifier_case ('WV.Wiki.' || 'MACRO_' || replace (_name, ':', '_'));
   if (exists (select 1 from DB.DBA.SYS_PROCEDURES where P_NAME= _funname))
     _res := call (_funname) (_data, _context, _env);
-  else _res := sprintf ('((The macro extension "%s" is not available on this server))', _name);
+  else
+    _res := sprintf ('((The macro extension "%s" is not available on this server))', _name);
+  if (not isentity (_res))
+  {
+    --dbg_obj_princ ('TEST!!!!!!! ', _res);
+    declare _xml_doc any;
+    declare _cluster_name, _lexer, _lexer_name varchar;
+    _cluster_name := get_keyword ('ti_cluster_name', _env, 'Main');
+    WV..LEXER (get_keyword ('ti_cluster_name', _env, 'Main'), _lexer, _lexer_name);
+    _xml_doc :=  xtree_doc(call (_lexer) (_res || '\r\n',
+            _cluster_name,
+            get_keyword ('ti_local_name', _env, WV.WIKI.CLUSTERPARAM (_cluster_name, 'index-page', 'WelcomeVisitors')),
+            get_keyword ('ti_curuser_wikiname', _env, 'WikiGuest'),
+            null), 2);
+    _res := _xml_doc;
+  }
   if (not isentity (_res))
     _res := XMLELEMENT (cast (_funname as varchar), _res);
   return _res;
