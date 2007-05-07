@@ -36,7 +36,7 @@ AB.WA.exec_no_error('drop view SN..TAGS_VIEW');
 -- Registry
 registry_remove ('ab_path');
 registry_remove ('ab_version');
-registry_remove ('ab_build_');
+registry_remove ('ab_build');
 registry_remove ('ab_index_version');
 registry_remove ('__ods_addressbook_sioc_init');
 
