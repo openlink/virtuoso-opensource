@@ -53,7 +53,7 @@ STICKER_FS="doc_vad_filesystem.xml"
 VAD_NAME="doc"
 VAD_NAME_DEVEL="$VAD_NAME"_filesystem.vad
 VAD_NAME_RELEASE="$VAD_NAME"_dav.vad
-VERSION="1.1.12"
+VERSION="1.1.13"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
 
 HOST_OS=`uname -s | grep WIN`
@@ -424,14 +424,14 @@ sticker_init() {
   then
 
     echo "  DELETE FROM DB.DBA.RDF_QUAD WHERE G = DB.DBA.RDF_MAKE_IID_OF_QNAME ('$FEEDS_ADDRESS');" >> $STICKER
-    for file in `find vad -type f -name "*.sioc.rdf" -print | LC_ALL=C sort`
+    for file in `find vad -type f -name "*siocrdf.vsp" -print | LC_ALL=C sort`
     do
       name=`echo "$file" | cut -b10-`
       if [ "$TYPE" = "dav" ]
       then
-        echo "  DB.DBA.RDF_LOAD_RDFXML(DB.DBA.xml_uri_get('http://local.virt$BASE_PATH/$name',''),'$FEEDS_ADDRESS','$FEEDS_ADDRESS');" >> $STICKER
+        echo " SIOC_REMOVE_CHARS_MAIN('http://local.virt$BASE_PATH/$name','$FEEDS_ADDRESS');" >> $STICKER
       else
-        echo "  DB.DBA.RDF_LOAD_RDFXML(DB.DBA.xml_uri_get('file:/$BASE_PATH/$name',''),'$FEEDS_ADDRESS','$FEEDS_ADDRESS');" >> $STICKER
+        echo " SIOC_REMOVE_CHARS_MAIN('file:/$BASE_PATH/$name','$FEEDS_ADDRESS');" >> $STICKER
       fi
     done
 

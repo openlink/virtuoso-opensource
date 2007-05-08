@@ -20,6 +20,24 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
+
+
+drop procedure SIOC_REMOVE_CHARS;
+create procedure SIOC_REMOVE_CHARS ( in _str any )
+{
+  declare s,e integer;
+
+  s := strstr(_str,'<?vsp');
+  e := strstr(_str,'<rdf:RDF');
+
+  if (s is not null)
+    _str := substring(_str,1,s) || subseq(_str,e);
+
+  return _str;
+}
+;
+
+
 drop function MKDOC_GET_VIRTDOC;
 create function MKDOC_GET_VIRTDOC (in docsrc varchar, in _solid integer) returns any
 {
@@ -193,12 +211,24 @@ create procedure MKDOC_DO_GROUP_FEED (
       _name := cast (_id as varchar);
       _fname := concat(_target, '/', _name, _ext);
       _strg := string_output_string(_ses);
+      if  (_ext = 'siocrdf.vsp') -- generated .ttl files
+      {
+        _strg := replace(_strg,'rdfs:rdfs=""','');
+        _strg := replace(_strg,'dc:dc=""','');
+        _strg := replace(_strg,'dcterms:dcterms=""','');
+        _strg := replace(_strg,'foaf:foaf=""','');
+        _strg := replace(_strg,'rdf:rdf=""','');
+        _strg := replace(_strg,'content:content=""','');
+        _strg := replace(_strg,'sioc:sioc=""','');
+      };
       string_to_file (_fname, _strg, -2);
 
 
-      if  (_ext = '.sioc.rdf') -- generated .ttl files
+      if  (_ext = 'siocrdf.vsp') -- generated .ttl files
       {
-          dict := DB.DBA.RDF_RDFXML_TO_DICT (_strg,'','tmp/');
+          declare ss1 any;
+          ss1 := SIOC_REMOVE_CHARS(_strg);
+          dict := DB.DBA.RDF_RDFXML_TO_DICT (ss1,'','tmp/');
           ttl := string_output();
           DB.DBA.RDF_TRIPLES_TO_TTL (dict_list_keys (dict, 1), ttl);
           _fname := concat(_target, '/', _name, '.ttl');
@@ -292,7 +322,7 @@ create procedure MKDOC_DO_FEEDS (in _docsrc varchar, in _target varchar, in _opt
     _books,
     'file://docsrc/stylesheets/sections/sioc_book.xsl',
     vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options), 
-    'chap', 'Book SIOC', '.sioc.rdf' );
+    'chap', 'Book SIOC', 'siocrdf.vsp' );
 
   _chapters := xpath_eval ('/book/chapter/@id', _docfull, 0);
   result ('Building list of plain chapters', 'done');
@@ -307,7 +337,7 @@ create procedure MKDOC_DO_FEEDS (in _docsrc varchar, in _target varchar, in _opt
     _chapters,
     'file://docsrc/stylesheets/sections/sioc_chap.xsl',
     vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options),
-    'chap', 'Chap SIOC', '.sioc.rdf' );
+    'chap', 'Chap SIOC', 'siocrdf.vsp' );
 
   _sect1s := xpath_eval ('/book/chapter/sect1/@id', _docfull, 0);
   result ('Building list of sect1s', 'done');
@@ -316,7 +346,7 @@ create procedure MKDOC_DO_FEEDS (in _docsrc varchar, in _target varchar, in _opt
     _sect1s,
     'file://docsrc/stylesheets/sections/sioc_sect1.xsl',
     vector_concat(vector('thedate', soap_print_box(now(), '', 1)), _options), 
-    'chap', 'Sect1 SIOC', '.sioc.rdf' );
+    'chap', 'Sect1 SIOC', 'siocrdf.vsp' );
 
 }
 ;

@@ -141,6 +141,34 @@ create procedure make_search_entry (in res_id integer, in res_content varchar)
 }
 ;
 
+create procedure SIOC_REMOVE_CHARS_MAIN (in path varchar, in graph varchar)
+{
+  declare data varchar;
+  declare s,e integer;
+
+  if (graph is null)
+    return;
+
+  data := xml_uri_get(path,'');
+
+  if (data is null)
+    return;
+
+  data := blob_to_string(data);
+
+  s := strstr(data,'<?vsp');
+  e := strstr(data,'<rdf:RDF');
+
+  if (s is not null)
+    data := substring(data,1,s) || subseq(data,e);
+
+  DB.DBA.RDF_LOAD_RDFXML(data,graph,graph);
+
+}
+;
+
+
+
 
 fill_search_table('/DAV/VAD/doc/html/');
 --fill_search_table('/DAV/doc/html/');
