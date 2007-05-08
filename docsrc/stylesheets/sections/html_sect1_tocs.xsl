@@ -375,11 +375,11 @@ changes in the documentation.  This could also help keep you informed of new
 features and fixes to the product."><img src="/doc/opml.gif" alt="OPML" /></a><xsl:text> </xsl:text>
 <xsl:choose>
   <xsl:when test="not($chapnodenav)">
-    <a class="feedlnk" href="{/book/@id}.sioc.rdf" title="SIOC(RDF/XML)"><img hspace="3" src="/doc/rdf_flyer-16.gif" alt="SIOC(RDF/XML)" title="SIOC(RDF/XML)"/></a>
+    <a class="feedlnk" href="{/book/@id}siocrdf.vsp" title="SIOC(RDF/XML)"><img hspace="3" src="/doc/rdf_flyer-16.gif" alt="SIOC(RDF/XML)" title="SIOC(RDF/XML)"/></a>
     <a class="feedlnk" href="{/book/@id}.ttl" title="SIOC(N3/Turtle)"><img  hspace="3" src="/doc/rdf_flyer-16.gif" alt="SIOC(N3/Turtle)" title="SIOC(N3/Turtle)"/></a>
   </xsl:when>
   <xsl:otherwise>
-    <a class="feedlnk" href="{parent::chapter/@id|self::chapter/@id}.sioc.rdf" title="SIOC(RDF/XML)"><img hspace="3" src="/doc/rdf_flyer-16.gif" alt="SIOC(RDF/XML)" title="SIOC(RDF/XML)"/></a>
+    <a class="feedlnk" href="{parent::chapter/@id|self::chapter/@id}siocrdf.vsp" title="SIOC(RDF/XML)"><img hspace="3" src="/doc/rdf_flyer-16.gif" alt="SIOC(RDF/XML)" title="SIOC(RDF/XML)"/></a>
     <a class="feedlnk" href="{parent::chapter/@id|self::chapter/@id}.ttl" title="SIOC(N3/Turtle)"><img hspace="3" src="/doc/rdf_flyer-16.gif" alt="SIOC(N3/Turtle)" title="SIOC(N3/Turtle)"/></a>
   </xsl:otherwise>
 </xsl:choose>
