@@ -11,27 +11,21 @@
 	font: menu;
 	background-color: #aaa;
 	list-style-type: none;
-	height: 23px;
+	height: 24px;
 	border-bottom: 1px solid #000;
 	z-index: 900;
 	position: absolute;
 	left: 0px;
 	top: 0px;
 	width: 100%;
-	display:block;
-}
-
-#menu a {
-	text-decoration:none;
-  color: #335;
 }
 
 #menu li {
 	cursor: pointer;
-	behavior: url("hover.htc");
-	display: inline;
+	behavior: url("../styles/hover.htc");
+	display: block;
+	float: left;
 	position: relative;
-	top: 5px;
 	padding: 5px 8px;
 }
 
@@ -43,7 +37,8 @@
 	position: absolute;
 	background-color: #aaa;
 	left: 0px;
-	top: 23px;
+	top: 24px;
+	_top: 22px;
 	border: 1px solid #000;
 	width: 100px;
 	padding: 2px;
@@ -54,6 +49,7 @@
 	display: block;
 	padding: 4px 6px;
 	top: 0px;
+	float: none;
 }
 
 #menu .hr {
