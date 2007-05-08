@@ -10,6 +10,7 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dct "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 ]>
 
@@ -44,6 +45,7 @@
   xmlns:sioc="&sioc;"
   xmlns:r="&rss;"
   xmlns:foaf="&foaf;"
+  xmlns:atom="&atomowl;"
   version="1.0">
 
 <xsl:output indent="yes" />
@@ -55,17 +57,40 @@
       <xsl:apply-templates/>
       <xsl:variable name="users" select="distinct (//dc:creator)"/>
       <xsl:apply-templates select="$users" mode="user"/>
+      <xsl:apply-templates mode="atom"/>
   </rdf:RDF>
 </xsl:template>
 
 <xsl:template match="r:channel">
-    <sioc:Forum rdf:about="">
+    <sioc:Forum rdf:about="{@rdf:about}">
        <xsl:apply-templates />
     </sioc:Forum>
+</xsl:template>
+<xsl:template match="r:channel" mode="atom">
+    <atom:Feed rdf:about="{@rdf:about}">
+	<xsl:apply-templates mode="atom"/>
+    </atom:Feed>
 </xsl:template>
 
 <xsl:template match="rdf:li">
     <sioc:container_of rdf:resource="{@rdf:resource}" />
+</xsl:template>
+
+<xsl:template match="rdf:li" mode="atom">
+    <atom:contains rdf:resource="{@rdf:resource}" />
+</xsl:template>
+
+<xsl:template match="r:title" mode="atom">
+    <atom:title><xsl:apply-templates/></atom:title>
+</xsl:template>
+
+<xsl:template match="r:description" mode="atom"/>
+<xsl:template match="r:link" mode="atom">
+    <atom:link rdf:parseType="Resource">
+	<rdf:type rdf:resource="&atomowl;Link" />
+	<atom:LinkHref><xsl:value-of select="."/></atom:LinkHref>
+	<atom:linkRel>alternate</atom:linkRel>
+    </atom:link>
 </xsl:template>
 
 <xsl:template match="r:item">
@@ -73,6 +98,13 @@
 	<sioc:has_container rdf:resource="{$base}"/>
 	<xsl:apply-templates />
     </sioc:Post>
+</xsl:template>
+
+<xsl:template match="r:item" mode="atom">
+    <atom:Entry rdf:about="{@rdf:about}">
+	<atom:source rdf:resource="{$base}"/>
+	<xsl:apply-templates mode="atom"/>
+    </atom:Entry>
 </xsl:template>
 
 <xsl:template match="r:title">
@@ -89,6 +121,10 @@
 
 <xsl:template match="dc:date">
     <dct:created rdf:datatype="&xsd;dateTime"><xsl:apply-templates/></dct:created>
+</xsl:template>
+
+<xsl:template match="dc:date" mode="atom">
+    <atom:published rdf:datatype="&xsd;dateTime"><xsl:apply-templates/></atom:published>
 </xsl:template>
 
 <xsl:template match="dc:description">
@@ -122,12 +158,25 @@
     <xsl:apply-templates />
 </xsl:template>
 
+<xsl:template match="r:*|rdf:*" mode="atom">
+    <xsl:apply-templates mode="atom"/>
+</xsl:template>
+
 <xsl:template match="text()">
     <xsl:variable name="txt" select="normalize-space (.)"/>
     <xsl:if test="$txt != ''">
 	<xsl:value-of select="$txt" />
     </xsl:if>
 </xsl:template>
+
+<xsl:template match="text()" mode="atom">
+    <xsl:variable name="txt" select="normalize-space (.)"/>
+    <xsl:if test="$txt != ''">
+	<xsl:value-of select="$txt" />
+    </xsl:if>
+</xsl:template>
+
+<xsl:template match="*" mode="atom"/>
 
 <xsl:template match="*" />
 
