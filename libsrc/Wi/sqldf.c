@@ -2136,6 +2136,9 @@ sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
 		    return NULL;
 		}
 	    }
+	  /* it found something that look like as a col but it's not a column */
+	  if (NULL == args[0]->_.col.col)
+	    return NULL;
 	  return args;
 	}
     }
