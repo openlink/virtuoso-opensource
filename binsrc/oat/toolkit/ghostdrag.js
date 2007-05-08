@@ -45,8 +45,10 @@ OAT.GhostDragData = {
 		if (ok) { 
 			/* mouseup at correct place - remove element */
 			OAT.Dom.unlink(elm);
+			OAT.MSG.send(obj,OAT.MSG.GD_END,elm);
 		} else {
 			/* mouseup at wrong place - let's animate it back */
+			OAT.MSG.send(obj,OAT.MSG.GD_ABORT,elm);
 			obj.onFail();
 			var coords = OAT.Dom.position(obj.originalElement);
 			var x = coords[0];
@@ -64,6 +66,7 @@ OAT.GhostDragData = {
 		var elm = OAT.GhostDragData.lock;
 		var obj = elm.object;
 		if (obj.pending) {
+			OAT.MSG.send(obj,OAT.MSG.GD_START,elm);
 			/* create the duplicate */
 			document.body.appendChild(elm);
 			elm.style.zIndex = 2000;

@@ -143,6 +143,10 @@ OAT.Calendar = function() {
 	},
 	
 	this.show = function(x,y,callback,date) {
+		if (!self.drawn) {
+			self.draw();
+			self.drawn = true;
+		}
 		document.body.appendChild(self.div);
 		self.div.style.left = x+"px";
 		self.div.style.top = y+"px";
@@ -220,6 +224,7 @@ OAT.Calendar = function() {
 		OAT.Drag.create(divYear,self.div);
 		OAT.Drag.create(divMonth,self.div);
 	}
-	self.draw();
+	
+	this.drawn = false;
 }
 OAT.Loader.featureLoaded("calendar");

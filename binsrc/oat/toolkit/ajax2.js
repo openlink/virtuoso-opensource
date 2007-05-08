@@ -15,7 +15,8 @@
 		user:"",
 		password:"",
 		type:OAT.AJAX.TYPE_TEXT,
-		async:true
+		async:true,
+		noSecurityCookie:false
 	}
 	
 	OAT.AJAX.startRef = function..
@@ -53,12 +54,13 @@ OAT.AJAX = {
 		var xhr = OAT.AJAX.init(url,callback,options);
 		var url_ = url;
 		/* create security cookie */
-		var secure = OAT.AJAX.createCookie(); /* array of name & value */
-
 		url_ += (url.match(/\?/) ? "&" : "?");
-		if (data) { url_ += data+"&"; }
+		if (data) { url_ += data; }
+		if (!options.noSecurityCookie) {
+			url_ += "&";
+			var secure = OAT.AJAX.createCookie(); /* array of name & value */
 		url_ += secure[0]+"="+secure[1];
-		
+		}
 		xhr.open("GET",url_,options.async);
 		OAT.AJAX.send(xhr,null);
 	},
@@ -113,6 +115,7 @@ OAT.AJAX = {
 			user:"",
 			password:"",
 			type:OAT.AJAX.TYPE_TEXT,
+			noSecurityCookie:false,
 			async:true,
 			onerror:false
 		};
@@ -133,7 +136,7 @@ OAT.AJAX = {
 		function go() {
 		xhr.send(data);
 		try{
-				if (OAT.Dom.isGecko() && !xhr.options.async && xhr.obj.onreadystatechange == null) {
+				if (OAT.Browser.isGecko && !xhr.options.async && xhr.obj.onreadystatechange == null) {
   		  OAT.AJAX.response(xhr);
 		}
 		}catch (e){}
@@ -165,7 +168,7 @@ OAT.AJAX = {
 				if (xhr.options.type == OAT.AJAX.TYPE_TEXT) {
 					xhr.callback(xhr.getResponseText(),headers);
 				} else {
-					if (OAT.Dom.isIE() || OAT.Dom.isWebKit()) {
+					if (OAT.Browser.isIE || OAT.Browser.isWebKit) {
 						xmlStr = xhr.getResponseText(); 
 						var xmlDoc = OAT.Xml.createXmlDoc(xmlStr);
 					} else { 

@@ -48,8 +48,9 @@ OAT.TreeNode = function(li,ul,parent,root) {
 	this._label = OAT.Dom.create("span"); /* label */
 	this._gdElm = OAT.Dom.create("span"); /* icon+label */
 	if (ul) { ul.style.listStyleType = "none"; }
-	self._gdElm.obj = self; 
+	self._div.obj = self; 
 	this.hasEvents = false;
+	this.gdMode = 0;
 	
 	/* create structure:
 		<li>
@@ -182,12 +183,6 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		self.updateStyle();
 	}
 	
-	this.checkGD = function(x,y) {
-		var pos = OAT.Dom.position(self._gdElm);
-		var dims = OAT.Dom.getWH(self._gdElm);
-		return (y >= pos[1] && y <= pos[1]+dims[1]);
-	}
-
 	this.removeEvents = function() {
 		if (!self.li) { return; }
 		if (!self.hasEvents) { return; } /* nothing to remove */
@@ -283,10 +278,10 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		
 		var procRef = function(elm) {}
 		var backRef = function(target,x,y) { /* ghostdrag ended; some re-structuring? */
-			var t = target.obj;
+			var node = target.obj;
 			/* ignore self2self drag, ancestor cannot be dragged to its children */
 			var ancestTest = true;
-			var curr = t;
+			var curr = node
 			while (curr) {
 				if (curr == self) { ancestTest = false; }
 				curr = curr.parent;
@@ -294,22 +289,27 @@ OAT.TreeNode = function(li,ul,parent,root) {
 			if (!ancestTest) { return; }
 
 			/* analyze X coordinate: when above icon, then append, else reposition */
-			var pos = OAT.Dom.position(t._icon);
-			var dims = OAT.Dom.getWH(t._icon);
-			if (x < pos[0] || x > pos[0]+dims[0] || !t.ul) {
-				/* reposition */
-				var index = t.parent.children.find(t);
-				var myindex = self.parent.children.find(self);
-				if (t.parent == self.parent && myindex+1 == index) { index++; } /* when moving last-1 to last */
-				t.parent.appendChild(self,index);
+			var mode = node.gdMode;
+
+			function isLast(n) {
+				return (n.parent.children.find(n) == n.parent.children.length-1);
+			}
+			
+			if (mode == 1) {
+				/* check appending after last node */
+				while (node.parent && node.parent.parent && isLast(node)) { node = node.parent; }
+			
+				/* reposition after target */
+				var index = node.parent.children.find(node)+1;
+				node.parent.appendChild(self,index);
 			} else {
 				/* append */
-				t.appendChild(self);
-				t.expand();
+				node.appendChild(self);
+				node.expand();
 			}
 		}
 		if (self.options.allowDrag) {
-			self.root.gd.addTarget(self._gdElm,self.checkGD);
+			self.root.gd.addTarget(self._div);
 			self.root.gd.addSource(self._gdElm,procRef,backRef);
 		}
 	}
@@ -470,7 +470,7 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		var o = self.options;
 		var path = o.imagePath + "Tree_" + (o.imagePrefix=="" ? "" : o.imagePrefix+"_") + name + "." + o.ext;
 		var pathB = o.imagePath + "Blank.gif";
-		if (OAT.Dom.isIE() && o.ext.toLowerCase() == "png") {
+		if (OAT.Browser.isIE && o.ext.toLowerCase() == "png") {
 			img.src = pathB;
 			img.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+path+"', sizingMethod='crop')";
 		} else {
@@ -508,11 +508,6 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		
 		/* remaining bits */
 		self.root.walk("sync");
-		/*
-		oldNode.sync(self.depth+1);
-		if (!ignoreOldParent) { oldParent.sync(oldParent.depth); }
-		self.sync(self.depth);
-		*/
 	}
 	
 	this.deleteChild = function(oldNode) {
@@ -538,6 +533,51 @@ OAT.TreeNode = function(li,ul,parent,root) {
 	this.setLabel = function(newLabel) { self._label.innerHTML = newLabel; }
 	this.getLabel = function() { return self._label.innerHTML; }
 
+	this.removeSignal = function() {
+		self.gdMode = 0;
+		self._label.style.fontWeight = "normal";
+		self._div.style.borderBottom = "none";
+	}
+	
+	this.checkSignal = function() {
+		var e = self.root.gdEvent;
+		var pos = OAT.Dom.position(self._div);
+		var dims = OAT.Dom.getWH(self._div);
+		var epos = OAT.Dom.eventPos(e);
+		
+		var hit = 0;
+		
+		if (epos[0] > pos[0] && epos[0] < pos[0]+dims[0] &&
+			epos[1] > pos[1] && epos[1] < pos[1]+dims[1]) {
+			hit = 1;
+		}
+		
+		if (!hit) {
+			if (self.gdMode) { self.removeSignal(); }
+			return;
+		}
+
+		/* check for gdElm over */
+		var pos = OAT.Dom.position(self._gdElm);
+		var dims = OAT.Dom.getWH(self._gdElm);
+		if (epos[0] > pos[0] && epos[0] < pos[0]+dims[0] &&
+			epos[1] > pos[1] && epos[1] < pos[1]+dims[1]) {
+			hit = 2;
+		}
+		
+		
+		if (hit == 2 && self.ul) {
+			self._label.style.fontWeight = "bold";
+			self._div.style.borderBottom = "none";
+			self.gdMode = 2;
+		} else {
+			self._label.style.fontWeight = "normal";
+			self._div.style.borderBottom = "1px dotted #888";
+			self.gdMode = 1;
+		}
+		
+	}
+	
 	return self;
 }
 
@@ -570,6 +610,23 @@ OAT.Tree = function(optObj) {
 	
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
+	this.dragging = false;
+	
+	this.gdStart = function() {
+		self.dragging = true;
+	}
+	
+	this.gdEnd = function() {
+		self.dragging = false;
+		self.walk("removeSignal");
+	}
+	
+	this.gdMove = function(event) {
+		if (!self.dragging) { return; }
+		self.gdEvent = event;
+		self.walk("checkSignal")
+	}
+	
 	this.walk = function(methodName) { 
 		for (var i=0;i<self.tree.children.length;i++) { 
 			self.tree.children[i].walk(methodName,1); 
@@ -579,6 +636,13 @@ OAT.Tree = function(optObj) {
 	this.assign = function(listElm,collapse) {
 		var ul = $(listElm);
 		ul.style.listStyleType = "none";
+		
+		if (self.options.allowDrag) { 
+			OAT.MSG.attach(self.gd,OAT.MSG.GD_START,self.gdStart);
+			OAT.MSG.attach(self.gd,OAT.MSG.GD_END,self.gdEnd);
+			OAT.MSG.attach(self.gd,OAT.MSG.GD_ABORT,self.gdEnd);
+			OAT.Dom.attach(document,"mousemove",self.gdMove);
+		}
 		
 		/* get a mirror of existing structure */
 		self.tree = new OAT.TreeNode(false,ul,false,self);

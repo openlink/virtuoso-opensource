@@ -122,9 +122,7 @@ OAT.Drag = {
 		var elm = $(clicker);
 		var win = $(mover);
 		var ref = function(event) {
-			OAT.Drag.elm = elm;
-			OAT.Drag.mouse_x = event.clientX;
-			OAT.Drag.mouse_y = event.clientY;
+			OAT.Drag.initiate(event,elm);
 		}
 		if (!elm._Drag_movers) { 
 			OAT.Dom.attach(elm,"mousedown",ref);		
@@ -133,6 +131,12 @@ OAT.Drag = {
 		}
 		if (options.cursor) { elm.style.cursor = "move"; }
 		elm._Drag_movers.push([win,options]);
+	},
+	
+	initiate:function(event,elm) {
+		OAT.Drag.elm = elm;
+		OAT.Drag.mouse_x = event.clientX;
+		OAT.Drag.mouse_y = event.clientY;
 	},
 	
 	remove:function(clicker,mover) {

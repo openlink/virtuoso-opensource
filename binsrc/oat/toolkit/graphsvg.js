@@ -458,7 +458,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 	}
 	
 	this.init = function() { /* only when object is instantiated */
-		if (OAT.Dom.isIE()) {
+		if (OAT.Browser.isIE) {
 			self.div.innerHTML = "Internet Explorer doesn't support SVG. To view this, use a better browser (Firefox, Opera).";
 			return;
 		}
@@ -719,7 +719,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 	}
 	
 	this.draw = function() { /* complete redraw when selectbox changed */
-		if (OAT.Dom.isIE()) { return; }
+		if (OAT.Browser.isIE) { return; }
 		if (self.selects.placement) { self.selects.placement.disabled = (self.options.type == 1); }
 		if (self.selects.distance) { self.selects.distance.disabled = (self.options.type == 0); }
 		if (self.selects.projection) { self.selects.projection.disabled = (self.options.type == 0); }

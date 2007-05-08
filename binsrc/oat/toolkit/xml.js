@@ -46,7 +46,7 @@ OAT.Xml = {
 	},
 	
 	localName:function(elem) {
-		if (OAT.Dom.isIE()) {
+		if (OAT.Browser.isIE) {
 			return elem.baseName;
 		} else {
 			return elem.localName;

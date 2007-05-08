@@ -74,11 +74,14 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 	this.drawItem = function(item) { /* one item */
 		var div = OAT.Dom.create("div",{},"rdf_item");
 		var h = OAT.Dom.create("h3");
-		h.innerHTML = item[0];
-		div.appendChild(h);
+		var s = OAT.Dom.create("span");
+		s.innerHTML = item[0];
+		OAT.Dom.append([div,h],[h,s]);
 		if (item[0].match(/^http/i)) {
-			self.parent.createAnchor(h,item[0]);
-			h.style.cursor = "pointer";
+			self.parent.createAnchor(s,item[0]);
+			var imglist = self.parent.generateImageActions(item[0]);
+			OAT.Dom.append([h,imglist]);
+			s.style.cursor = "pointer";
 		}
 
 		var preds = item[1];
@@ -101,16 +104,7 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 			/* decide output format */
 			var data = preds[i][1];
 			var content = self.parent.getContent(data);
-
-			/* create dereference a++ lookups for all anchors */
-			var nodes = [];
-			var anchors = content.getElementsByTagName("a");
-			for (var j=0;j<anchors.length;j++) {
-				var a = anchors[j];
-				if (a.href.match(/^http/)) { self.parent.createAnchor(a,a.href); }
-			}
 			OAT.Dom.append([d,strong,content],[div,d]);
-			
 		} /* for all predicates */
 		
 		return div;
@@ -288,8 +282,9 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		var v = self.grid.rows[self.grid.rows.length-1].cells[column].value;
 		a.innerHTML = v.innerHTML;
 		self.parent.createAnchor(a,a.innerHTML);
+		var imglist = self.parent.generateImageActions(a.innerHTML);
 		OAT.Dom.clear(v);
-		v.appendChild(a);
+		OAT.Dom.append([v,a,imglist]);;
 	}
 	
 	this.redraw = function() {
@@ -488,7 +483,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
 		function tryList() {
 			if (!self.pointListLock) { 
-				if (!self.pointList.length) { alert("Nothing displayable was found :("); }
+				if (!self.pointList.length) { alert("Nothing displayable was found."); }
 				self.map.optimalPosition(self.pointList); 
 			} else {
 				setTimeout(tryList,500);
@@ -571,5 +566,36 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 	}
 }
 OAT.RDFTabs.timeline.prototype = new OAT.RDFTabs.parent();
+
+
+OAT.RDFTabs.images = function(parent,optObj) {
+	var self = this;
+	this.options = {
+	}
+	for (var p in optObj) { self.options[p] = optObj[p]; }
+
+	this.parent = parent;
+	this.initialized = false;
+	
+	this.redraw = function() {
+		OAT.Dom.clear(self.elm);
+		for (var i=0;i<self.parent.data.length;i++) {
+			var item = self.parent.data[i];
+			for (var j=0;j<item[1].length;j++) {
+				var pair = item[1][j];
+				var p = pair[0];
+				var o = pair[1];
+				if (o.match(/^http.*(jpe?g|png|gif)$/i)) {
+					var img = OAT.Dom.create("img",{},"rdf_image")
+					img.src = o;
+					img.title = self.parent.getTitle(item);
+					self.elm.appendChild(img);
+					self.parent.createAnchor(img,o);
+				} /* if image */
+			} /* for all properties */
+		} /* for all items */
+	} /* redraw */
+}
+OAT.RDFTabs.images.prototype = new OAT.RDFTabs.parent();
 
 OAT.Loader.featureLoaded("rdftabs");

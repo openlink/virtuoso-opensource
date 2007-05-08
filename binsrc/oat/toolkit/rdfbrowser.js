@@ -54,6 +54,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		imagePath:OAT.Preferences.imagePath,
 		indicator:false,
 		defaultURL:"",
+		appActivation:"click",
 		endpoint:"/sparql?query="
 	}
 	for (var p in optObj) { this.options[p] = optObj[p]; }
@@ -130,8 +131,8 @@ OAT.RDFBrowser = function(div,optObj) {
 			var result = "";
 			for (var i=0;i<self.bookmarks.items.length;i++) {
 				var item = self.bookmarks.items[i];
-				result += "bmURI[]="+encodeURIComponent(item.uri)+"&";
-				result += "bmLabel[]="+encodeURIComponent(item.label)+"&";
+				result += encodeURIComponent("bmURI[]")+"="+encodeURIComponent(item.uri)+"&";
+				result += encodeURIComponent("bmLabel[]")+"="+encodeURIComponent(item.label)+"&";
 			}
 			return result;
 		}
@@ -172,7 +173,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				var perm = OAT.Dom.create("a");
 				perm.innerHTML = "permalink";
 				perm.href = base+"?uri="+encodeURIComponent(item.href);
-				th += "uri[]="+encodeURIComponent(item.href)+"&";
+				th += encodeURIComponent("uri[]")+"="+encodeURIComponent(item.href)+"&";
 				
 				OAT.Dom.append([d,remove,OAT.Dom.text(" - "),perm]);
 				self.store.div.appendChild(d);
@@ -291,6 +292,9 @@ OAT.RDFBrowser = function(div,optObj) {
 			var h = OAT.Dom.create("h3");
 			h.innerHTML = "Data Source URI";
 			OAT.Dom.append([self.cacheDiv,h,url,btn1,btn2,self.store.div]);
+			OAT.Dom.attach(url,"keypress",function(event) {
+				if (event.keyCode == 13) { self.store.loadFromInput(); }
+			});
 			OAT.Dom.attach(btn1,"click",self.store.loadFromInput);
 			OAT.Dom.attach(btn2,"click",function() {
 				var options = {
@@ -319,12 +323,10 @@ OAT.RDFBrowser = function(div,optObj) {
 			if (!("uri" in obj)) { return; }
 			if (typeof(obj.uri) == "object") { /* array of uris */
 				for (var i=0;i<obj.uri.length;i++) {
-					url.value = obj.uri[i];
-					self.store.loadFromInput();
+					self.store.addURL(obj.uri[i]);
 				}
 			} else {
-				url.value = obj.uri;
-				self.store.loadFromInput();
+				self.store.addURL(obj.uri);
 			}
 		}
 		
@@ -358,13 +360,14 @@ OAT.RDFBrowser = function(div,optObj) {
 			
 		var obj = {
 			title:"URL",
-			activation:"click",
 			content:genRef,
 			width:300,
 			height:200,
-			result_control:false
+			result_control:false,
+			activation:self.options.appActivation
 		};
 		OAT.Anchor.assign(element,obj);
+		
 	}
 	
 	this.generateURIActions = function(uri,forbid) {
@@ -430,10 +433,33 @@ OAT.RDFBrowser = function(div,optObj) {
 		return list;
 	},
 	
+	this.generateImageActions = function(uri) {
+		var list = [];
+		var img1 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
+		img1.title = "Get Data Set (Dereference)";
+		img1.src = self.options.imagePath + "RDF_rdf.png";
+		OAT.Dom.attach(img1,"click",function() {
+			/* dereference link - add */
+			OAT.AnchorData.window.close();
+			self.store.addURL(uri);
+		});
+		list.push(img1);
+
+		var a = OAT.Dom.create("a",{paddingLeft:"3px"});
+		var img2 = OAT.Dom.create("img",{border:"none"});
+		img2.src = self.options.imagePath + "RDF_xhtml.gif";
+		a.title = "(X)HTML Page Open";
+		a.appendChild(img2);
+		a.target = "_blank";
+		a.href = uri;
+		list.push(a);
+		
+		return list;
+	}
+	
 	this.reset = function() { /* triples were changed */
-		self.redraw(); /* redraw global elements */
 		for (var i=0;i<self.tabs.length;i++) { self.tabs[i].reset(); }
-		if (self.tab.selectedIndex != -1) { self.tabs[self.tab.selectedIndex].redraw(); }
+		self.redraw(); /* redraw global elements */
 	}
 
 	this.drawCategories = function() { /* category tree */
@@ -610,6 +636,12 @@ OAT.RDFBrowser = function(div,optObj) {
 		if (self.options.indicator) { OAT.Dom.show(self.options.indicator); }
 		self.drawCategories();
 		self.drawFilters();
+		self.store.redraw();
+		self.bookmarks.redraw();
+		for (var i=0;i<self.tabs.length;i++) {
+			var tab = self.tab.tabs[i];
+			if (i == self.tab.selectedIndex || tab.window) { self.tabs[i].redraw(); }
+		}
 		if (self.options.indicator) { OAT.Dom.hide(self.options.indicator); }
 	}
 	
@@ -727,10 +759,13 @@ OAT.RDFBrowser = function(div,optObj) {
 			content.src = data;
 			self.createAnchor(content,data,forbid);
 		} else if (data.match(/^http/i)) { /* link */
-			content = OAT.Dom.create("a");
-			content.innerHTML = data;
-			content.href = data;
-			self.createAnchor(content,data,forbid);
+			content = OAT.Dom.create("span");
+			var a = OAT.Dom.create("a");
+			a.innerHTML = data;
+			a.href = data;
+			self.createAnchor(a,data,forbid);
+			var imglist = self.generateImageActions(data);
+			OAT.Dom.append([content,a,imglist]);
 		} else if (data.match(/^[^@]+@[^@]+$/i)) { /* mail address */
 			content = OAT.Dom.create("a");
 			var r = data.match(/^(mailto:)?(.*)/);
@@ -739,6 +774,19 @@ OAT.RDFBrowser = function(div,optObj) {
 		} else { /* default - text */
 			content = OAT.Dom.create("span");
 			content.innerHTML = data;
+			/* create dereference a++ lookups for all anchors */
+			var anchors = content.getElementsByTagName("a");
+			for (var j=0;j<anchors.length;j++) {
+				var a = anchors[j];
+				if (a.href.match(/^http/)) {
+					self.createAnchor(a,a.href); 
+					var imglist = self.generateImageActions(a.href);
+					var next = a.nextSibling;
+					for (var k=0;k<imglist.length;k++) {
+						a.parentNode.insertBefore(imglist[k],next);
+					}
+				}
+			}
 		}
 		return content;
 	}
@@ -808,11 +856,17 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.bookmarkDiv = OAT.Dom.create("div",{},"rdf_bookmarks");
 		OAT.Dom.append([self.sideDiv,self.categoryDiv,self.bookmarkDiv]);
 		
-		self.tab = new OAT.Tab(self.tabDiv);
-		self.tab.goCallback = function(oldIndex,newIndex) {
-			if (OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
-			self.tabs[newIndex].redraw(true);
+		self.tab = new OAT.Tab(self.tabDiv,{dockMode:true,dockElement:"rdf_tabs"});
+		var actTab = function(index) {
+			self.tabs[index].redraw();
 		}
+		self.tab.options.onDock = actTab;
+		self.tab.options.onUnDock = actTab;
+		self.tab.options.goCallback = function(oldIndex,newIndex) {
+			if (OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
+			self.tabs[newIndex].redraw();
+		}
+		
 		self.redraw();
 		self.store.init();
 		self.bookmarks.init();

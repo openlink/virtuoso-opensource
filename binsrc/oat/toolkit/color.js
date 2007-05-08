@@ -17,7 +17,7 @@ OAT.Color = function() {
 	this.callback = function(){};
 	
 	this.div = OAT.Dom.create("div",{position:"absolute",backgroundColor:"#fff",border:"2px solid #000",padding:"2px",width:"168px",zIndex:200});
-	this.div.style.width = (OAT.Dom.isIE() ? "170px" : "162px");
+	this.div.style.width = (OAT.Browser.isIE ? "170px" : "162px");
 	OAT.Drag.create(this.div,this.div);
 	var close = OAT.Dom.create("div",{cssFloat:"right",styleFloat:"right",fontWeight:"bold",cursor:"pointer"});
 	var help = OAT.Dom.create("div",{borderBottom:"1px solid #000"});

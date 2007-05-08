@@ -75,7 +75,7 @@ OAT.WebDav = {
 		var callback = function() {
 			if (treeOnly) { return; }
 			OAT.WebDav.options.path = dir;
-			OAT.WebDav.redraw(treeOnly);
+			OAT.WebDav.redraw();
 		}
 		if (dir in this.cache) {
 			callback();
@@ -196,7 +196,7 @@ OAT.WebDav = {
 
 	init:function(optObj) { /* to be called once. draw window etc */
 		this.applyOptions(optObj);
-		if (OAT.Preferences.windowTypeOverride == 2 || OAT.Dom.isMac()) {
+		if (OAT.Preferences.windowTypeOverride == 2 || OAT.Browser.isMac) {
 			this.options.width += 16;
 		}
 		/* create window */
@@ -282,7 +282,7 @@ OAT.WebDav = {
 		OAT.Resize.create(this.window.resize,main_right,OAT.Resize.TYPE_X);
 		OAT.Resize.create(this.window.resize,main_content,OAT.Resize.TYPE_X);
 		
-		if (OAT.Dom.isIE() && document.compatMode == "BackCompat") {
+		if (OAT.Browser.isIE && document.compatMode == "BackCompat") {
 			main_right.style.height = h1;
 			OAT.Resize.create(this.window.resize,main_right,OAT.Resize.TYPE_Y);
 		}
@@ -317,7 +317,7 @@ OAT.WebDav = {
 		
 		/* tree */
 		this.tree = new OAT.Tree({onClick:false,ascendSelection:false});
-		var ul = OAT.Dom.create("ul",{width:"200px"});
+		var ul = OAT.Dom.create("ul",{whiteSpace:"nowrap"});
 		main_tree.appendChild(ul);
 		this.tree.assign(ul,true);
 		this.treeSyncDir("/DAV/","/DAV");
@@ -369,6 +369,12 @@ OAT.WebDav = {
 		var ref = function(data) {
 			OAT.WebDav.parse(directory,data); /* add to cache */
 			OAT.WebDav.treeSyncDir(directory); /* sync with tree */
+			if (OAT.Browser.isIE) {
+				var x = $("dav_bottom");
+				var p = x.parentNode;
+				OAT.Dom.unlink(x);
+				p.appendChild(x);
+			}
 			callback();
 		}
 		OAT.AJAX.PROPFIND(escape(directory),data,ref,o);	
@@ -433,7 +439,6 @@ OAT.WebDav = {
 			g.imagePath = this.options.imagePath;
 			var header = ["Name",{value:"Size",align:OAT.GridData.ALIGN_RIGHT},"Modified","Type","Owner","Group","Perms"];
 			g.createHeader(header);
-			g.html.style.width = "100%";
 			var numRows = -1;
 			var mask = "rwxrwxrwx";
 			
@@ -450,7 +455,7 @@ OAT.WebDav = {
 				var row = [
 					ico,
 					{value:item.length,align:OAT.GridData.ALIGN_RIGHT},
-					date.format("j.n.Y H:i"),
+					date.format("Y-m-d H:i"),
 					item.type,
 					item.uid,
 					item.gid,
@@ -472,7 +477,7 @@ OAT.WebDav = {
 				var ico_type = (item.dir ? 'folder' : 'file');
 				var ico = OAT.Dom.create("img",{width:"32px",height:"32px"});
 				ico.src = this.options.imagePath+"Dav_"+ico_type+"."+this.options.imageExt;
-				if (OAT.Dom.isIE() && this.options.imageExt.toLowerCase() == "png") {
+				if (OAT.Browser.isIE && this.options.imageExt.toLowerCase() == "png") {
 					ico.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+ico.src+"', sizingMethod='crop')";
 					ico.src = this.options.imagePath+"Blank.gif";
 				}
@@ -538,9 +543,9 @@ OAT.WebDav = {
 			if (index == -1) { /* if not yet in tree -> append */
 				var label = parts[ptr];
 				var newNode = node.createChild(parts[ptr],true);
+				index = node.children.length-1;
 				newNode.path = currentPath;
 				newNode.collapse();
-				index = node.children.length-1;
 				attach(newNode,currentPath);
 			}
 			ptr++; 
@@ -668,7 +673,12 @@ OAT.WebDav = {
 
 	commonDialog:function(optObj) { /* common phase for both dialog types */
 		this.applyOptions(optObj);
-		if (!this.options.extensionFilters.length) { /* add *.* filter */
+		var allContained = false;
+		for (var i=0;i<this.options.extensionFilters.length;i++) {
+			var filter = this.options.extensionFilters[i];
+			if (filter[1] == "*") { allContained = true; }
+		}
+		if (!allContained) { /* add *.* filter */
 			var f = ["*","*","All files"];
 			this.options.extensionFilters.unshift(f);
 		}
@@ -719,12 +729,13 @@ OAT.WebDav = {
 			delete this.cache[this.options.path];
 		}
 		this.openDirectory(this.options.path);
+		
 	},
 
 	imagePathHtml:function(name) { /* get html code for image */
 		var style = "width:16px;height:16px;";
 		var path = this.options.imagePath+"Tree_"+name+"."+this.options.imageExt;
-		if (OAT.Dom.isIE() && this.options.imageExt.toLowerCase() == "png") {
+		if (OAT.Browser.isIE && this.options.imageExt.toLowerCase() == "png") {
 			style += "filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+path+"', sizingMethod='crop')";
 			path = this.options.imagePath+"Blank.gif";
 		}

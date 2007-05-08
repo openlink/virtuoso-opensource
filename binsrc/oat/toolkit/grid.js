@@ -120,14 +120,7 @@ OAT.GridData = {
 	move:function(event) {
 		if (OAT.GridData.resizing) {
 			/* selection removal... */
-			var selObj = false;
-			if (document.getSelection && !OAT.Dom.isGecko()) { selObj = document.getSelection(); }
-			if (window.getSelection) { selObj = window.getSelection(); }
-			if (document.selection) { selObj = document.selection; }
-			if (selObj) {
-				if (selObj.empty) { selObj.empty(); }
-				if (selObj.removeAllRanges) { selObj.removeAllRanges(); }
-			}
+			OAT.Dom.removeSelection();
 			/* lec gou */
 			var obj = OAT.GridData.resizing;
 			var elm = obj.tmp_resize; /* vertical line */
@@ -142,14 +135,7 @@ OAT.GridData = {
 		
 		if (OAT.GridData.dragging) {
 			/* selection removal... */
-			var selObj = false;
-			if (document.getSelection && !OAT.Dom.isGecko()) { selObj = document.getSelection(); }
-			if (window.getSelection) { selObj = window.getSelection(); }
-			if (document.selection) { selObj = document.selection; }
-			if (selObj) {
-				if (selObj.empty) { selObj.empty(); }
-				if (selObj.removeAllRanges) { selObj.removeAllRanges(); }
-			}
+			OAT.Dom.removeSelection();
 			/* lec gou */
 			var obj = OAT.GridData.dragging;
 			if (!obj.tmp_drag) { /* just moved - create ghost */
@@ -173,7 +159,7 @@ OAT.GridData = {
 				var w = cell.container.offsetWidth;
 				var x = coords[0];
 				/* IE7 has a *wrong* value of offsetLeft, so we have to do a small hack here */
-				if (OAT.Dom.isIE7()) { x -= OAT.Dom.position(cell.container.offsetParent)[0]; }
+				if (OAT.Browser.isIE7) { x -= OAT.Dom.position(cell.container.offsetParent)[0]; }
 				if (event.clientX >= x && event.clientX <= x+w) { /* inside this header */
 					if (cell.signal) { return; } /* not interesting */
 					for (var i=0;i<obj.header.cells.length;i++) { if (obj.header.cells[i].signal) obj.header.cells[i].signalEnd(); }

@@ -18,7 +18,7 @@ OAT.AnchorData = {
 
 OAT.Anchor = {
 	imagePath:'/DAV/JS/images/',
-	zIndex:2,
+	zIndex:200,
 	
 	appendContent:function(options) {
 		if (options.content) {

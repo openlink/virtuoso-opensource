@@ -180,8 +180,8 @@ OAT.AnimationOpacity = function(element, optionsObject) {
 
 	o.startFunction = function(a) { /* prepare step */
 		a.opacity = 1;
-		if (OAT.Dom.isGecko()) { a.opacity = parseFloat(OAT.Dom.style(a.elm,"opacity")); }
-		if (OAT.Dom.isIE()) { 
+		if (OAT.Browser.isGecko) { a.opacity = parseFloat(OAT.Dom.style(a.elm,"opacity")); }
+		if (OAT.Browser.isIE) { 
 			var filter = OAT.Dom.style(a.elm,"filter"); 
 			var num = filter.match(/alpha\(opacity=([^\)]+)\)/);
 			if (num) { a.opacity = parseFloat(num[1])/100; }

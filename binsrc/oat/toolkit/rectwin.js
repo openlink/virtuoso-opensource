@@ -71,7 +71,7 @@ OAT.RectWin = function(optObj) {
 		if (top) { self.link.style.top = "-35px"; self.link.style.bottom = "";}
 		if (!top) { 
 			self.link.style.bottom = "-35px"; self.link.style.top = "";
-			if (OAT.Dom.isIE()) { self.link.style.bottom = "-35px"; }
+			if (OAT.Browser.isIE) { self.link.style.bottom = "-35px"; }
 		}
 		if (left && top) {
 			var path = self.options.imagePath + "RectWin_lt.png";
@@ -88,7 +88,7 @@ OAT.RectWin = function(optObj) {
 		self.link.style.width = "30px";
 		self.link.style.height = "35px";
 		self.link.src = path;
-		if (OAT.Dom.isIE6()) {
+		if (OAT.Browser.isIE6) {
 			self.link.src = self.options.imagePath + "Blank.gif";
 		}
 		self.link.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+path+"', sizingMethod='crop')";

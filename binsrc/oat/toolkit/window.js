@@ -21,7 +21,7 @@ OAT.WindowData = {
 
 OAT.WindowType = function(type) {
 	var t = false;
-	var autotype = (OAT.Dom.isMac() ? OAT.WindowData.TYPE_MAC : OAT.WindowData.TYPE_WIN); /* automatic */
+	var autotype = (OAT.Browser.isMac ? OAT.WindowData.TYPE_MAC : OAT.WindowData.TYPE_WIN); /* automatic */
 	if (type && type != OAT.WindowData.TYPE_AUTO) { t = type; } else { t = autotype; } /* if specified, get specified */
 	if (OAT.Preferences.windowTypeOverride) { t = OAT.Preferences.windowTypeOverride; } /* if override, get overriding type */
 	if (t == OAT.WindowData.TYPE_AUTO) { t = autotype; }
@@ -165,7 +165,7 @@ OAT.WindowParent = function(obj,options) { /* abstract parent for all window imp
 
 	obj.resizeTo = function(w,h) {
 		var movew = w;
-		if (OAT.Dom.isIE() && document.compatMode == "BackCompat") { movew += 2; } /* wtf omg lol :/ */
+		if (OAT.Browser.isIE && document.compatMode == "BackCompat") { movew += 2; } /* wtf omg lol :/ */
 		if (w) {
 			obj.move.style.width = movew + "px";
 			obj.div.style.width = w + "px";
@@ -195,9 +195,11 @@ OAT.WindowParent = function(obj,options) { /* abstract parent for all window imp
 			var ml = parseInt(OAT.Dom.style(node,"marginLeft"));
 			var mr = parseInt(OAT.Dom.style(node,"marginRight"));
 			x = Math.max(x,dims[0]+ml+mr);
+//			alert([dims[1],mt,mb]);
 			y += dims[1]+mt+mb;
 		}
 		// obj.resizeTo(x + 4,y + 6 + obj.options.moveHeight + obj.options.statusHeight);
+//		alert(y);
 		obj.resizeTo(false,y + 6 + obj.options.moveHeight + obj.options.statusHeight);
 	}
 }

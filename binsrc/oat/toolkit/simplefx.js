@@ -211,7 +211,7 @@ OAT.SimpleFX = {
 		b.style.right = (-options.offsetX)+"px";
 		b.style.height = options.bottomSize+"px";
 		b.style.bottom = (-options.bottomSize-options.offsetY)+"px";
-		if (OAT.Dom.isIE()) {
+		if (OAT.Browser.isIE) {
 			b.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+options.imagePath+options.bottomImage+"', sizingMethod='crop')";
 		} else {
 			b.style.backgroundImage="url("+options.imagePath+options.bottomImage+")";
@@ -222,7 +222,7 @@ OAT.SimpleFX = {
 		r.style.width = options.rightSize+"px";
 		r.style.right = (-options.rightSize-options.offsetX)+"px";
 		r.style.height = "100%";
-		if (OAT.Dom.isIE()) {
+		if (OAT.Browser.isIE) {
 			r.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+options.imagePath+options.rightImage+"', sizingMethod='crop')";
 		} else {
 			r.style.backgroundImage="url("+options.imagePath+options.rightImage+")";
@@ -233,7 +233,7 @@ OAT.SimpleFX = {
 		c.style.right = (-options.rightSize-options.offsetX)+"px";
 		c.style.width = options.rightSize+"px";
 		c.style.height = options.bottomSize+"px";
-		if (OAT.Dom.isIE()) {
+		if (OAT.Browser.isIE) {
 			c.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+options.imagePath+options.cornerImage+"', sizingMethod='crop')";
 		} else {
 			c.style.backgroundImage="url("+options.imagePath+options.cornerImage+")";

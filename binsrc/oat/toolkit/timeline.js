@@ -98,7 +98,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 	this.content = $(contentElm);
 	OAT.Dom.makePosition(self.content);
 	
-	this.port = OAT.Dom.create("div",{cursor:"w-resize",width:"100%",position:"relative"},"timeline_port");
+	this.port = OAT.Dom.create("div",{cursor:"w-resize",position:"relative"},"timeline_port");
 	this.port.style.overflow = "hidden"; /* opera sux */
 	this.port.style.overflowX = "hidden";
 	this.port.style.overflowY = "auto";
@@ -127,6 +127,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		self.bands = {};
 		self.dateLabels = [];
 		OAT.Dom.clear(self.elm);
+		OAT.Dom.clear(self.port);
 	}
 	
 	this.fixDate = function(str) {
@@ -395,10 +396,10 @@ OAT.Timeline = function(contentElm,paramsObj) {
 			/* band */
 			var elm = OAT.Dom.create("div",{zIndex:1,position:"absolute",left:"0px",width:"100%"},"timeline_band");
 			if (self.bands[p].color) { elm.style.backgroundColor = self.bands[p].color; }
-			elm.style.borderBottom = "1px solid #000";
+//			elm.style.borderBottom = "1px solid #000";
 			elm.style.top = (total + headerHeights[p]) + "px";
 			elm.style.height = bh + "px";
-			if (OAT.Dom.isGecko()) { elm.style.height = (bh-1) + "px"; }
+			if (OAT.Browser.isGecko) { elm.style.height = (bh-1) + "px"; }
 			self.elm.appendChild(elm);
 			total += bh + headerHeights[p];
 		}

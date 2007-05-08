@@ -28,7 +28,7 @@ OAT.RoundWin = function(optObj) {
 	var tmp = OAT.SimpleFX.roundDiv(this.div,{antialias:0,size:15});
 	OAT.Dom.unlink(this.div);
 
-	if (OAT.Dom.isIE() && document.compatMode == "BackCompat") {
+	if (OAT.Browser.isIE && document.compatMode == "BackCompat") {
 		OAT.Resize.create(self.resize,tmp[0],OAT.Resize.TYPE_X);
 		OAT.Resize.create(self.resize,tmp[1],OAT.Resize.TYPE_X);
 		this.resizeTo = function(w,h) {

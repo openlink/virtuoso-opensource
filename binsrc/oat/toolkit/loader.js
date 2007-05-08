@@ -14,8 +14,8 @@
 	
 	Contains: 
 	* OAT
-	* OAT.Events
 	* OAT.Dom
+	* OAT.Browser
 	* OAT.Loader
 	* OAT.Files
 	* OAT.Dependencies
@@ -26,7 +26,6 @@
 
 /* global namespace */
 window.OAT = {};
-window.OAT.Events = [];
 
 /* several helpful prototypes */
 Array.prototype.copy = function() {
@@ -114,10 +113,6 @@ Date.prototype.toHumanString = function() {
 	OAT.Dom.unlink(elm)
 	OAT.Dom.center(elm,x,y)
 	OAT.Dom.isChild(child,parent)
-	OAT.Dom.isIE()
-	OAT.Dom.isGecko()
-	OAT.Dom.isOpera()
-	OAT.Dom.isWebKit()
 	OAT.Dom.hex2dec(hex_str)
 	OAT.Dom.dec2hex(dec_num)
 	OAT.Dom.color(str)
@@ -146,6 +141,15 @@ Date.prototype.toHumanString = function() {
 	OAT.Dom.changeHref(elm,newHref)
 	OAT.Dom.makePosition(elm)
 	OAT.Dom.prevent(event)
+
+	OAT.Browser.isIE
+	OAT.Browser.isGecko
+	OAT.Browser.isOpera
+	OAT.Browser.isWebKit
+	OAT.Browser.isIE6
+	OAT.Browser.isIE7
+	OAT.Browser.isKonqueror
+	OAT.Browser.isMac
 */
 
 function $(something) {
@@ -209,7 +213,7 @@ OAT.Dom = {
 	},
 	
 	radio:function(name) {
-		if (OAT.Dom.isIE()) {
+		if (OAT.Browser.isIE) {
 			var elm = document.createElement('<input type="radio" name="'+name+'" />');
 			return elm;
 		} else {
@@ -227,7 +231,12 @@ OAT.Dom = {
 			if (arr.length < 2) { continue; }
 			var parent = $(arr[0]);
 			for (var j=1;j<arr.length;j++) {
-				parent.appendChild($(arr[j]));
+				var children = arr[j];
+				if (!(children instanceof Array)) { children = [children]; }
+				for (var k=0;k<children.length;k++) {
+					var child = children[k];
+					parent.appendChild($(child));
+				}
 			}
 		}
 	},
@@ -310,6 +319,7 @@ OAT.Dom = {
 		var elm = $(element);
 		var p = elm.offsetParent;
 		if (reference) { p = reference; }
+		if (!p) { return; }
 		var par_dims = (p == document.body || p.tagName.toLowerCase() == "html" ? OAT.Dom.getViewport() : OAT.Dom.getWH(p));
 		var dims = OAT.Dom.getWH(elm);
 		var new_x = Math.round(par_dims[0]/2 - dims[0]/2);
@@ -336,7 +346,7 @@ OAT.Dom = {
 	},
 	
 	isKonqueror:function() {
-		return (navigator.userAgent.match(/konqueror/i));
+		return (navigator.userAgent.match(/konqueror/i) ? true : false);
 	},
 	
 	isIE:function() {
@@ -344,7 +354,7 @@ OAT.Dom = {
 	},
 	
 	isIE7:function() {
-		return (navigator.userAgent.match(/msie 7/i));
+		return (navigator.userAgent.match(/msie 7/i) ? true : false);
 	},
 	
 	isIE6:function() {
@@ -356,15 +366,15 @@ OAT.Dom = {
 	},
 	
 	isOpera:function() {
-		return (navigator.userAgent.match(/Opera/));
+		return (navigator.userAgent.match(/Opera/) ? true : false);
 	},
 	
 	isWebKit:function() {
-		return (navigator.userAgent.match(/AppleWebKit/));
+		return (navigator.userAgent.match(/AppleWebKit/) ? true : false);
 	},
 	
 	isMac:function() {
-		return (navigator.platform.toString().match(/mac/i));
+		return (navigator.platform.toString().match(/mac/i) ? true : false);
 	},
 	
 	hex2dec:function(hex_str) {
@@ -443,7 +453,8 @@ OAT.Dom = {
 		return !(bad_x || bad_y);
 	},
 	
-	_attach:function(element,event,callback) {
+	attach:function(elm,event,callback) {
+		var element = $(elm);
 		if (element.addEventListener) {
 			/* gecko */
 			element.addEventListener(event,callback,false);
@@ -456,7 +467,8 @@ OAT.Dom = {
 		}
 	},
 	
-	_detach:function(element,event,callback) {
+	detach:function(elm,event,callback) {
+		var element = $(elm);
 		if (element.removeEventListener) {
 			/* gecko */
 			element.removeEventListener(event,callback,false);
@@ -469,36 +481,21 @@ OAT.Dom = {
 		}
 	},
 	
-	attach:function(elm,event,callback) {
-		var element = $(elm);
-		OAT.Dom._attach(element,event,callback);
-	},
-	
-	detach:function(elm,event,callback) {
-		var element = $(elm);
-		OAT.Dom._detach(element,event,callback);
-	},
-
 	source:function(event) {
 		return (event.target ? event.target : event.srcElement);
 	},
 	
 	eventPos:function(event) {
-
-		if (0 && OAT.Dom.isWebKit()) { /* temporarily disabled; it looks like new webkits correctly report coords relative to viewport */
-			return [event.clientX,event.clientY];
-		} else {
 			var sl = document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft;
 			var st = document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop;
 			return [event.clientX+sl,event.clientY+st];
-		}
 	},
 	
 	getViewport:function() {
-		if (OAT.Dom.isWebKit()) {
+		if (OAT.Browser.isWebKit) {
 			return [window.innerWidth,window.innerHeight];
 		} 
-		if (OAT.Dom.isOpera() || document.compatMode == "BackCompat") {
+		if (OAT.Browser.isOpera || document.compatMode == "BackCompat") {
 			return [document.body.clientWidth,document.body.clientHeight];
 		} else {
 			return [document.documentElement.clientWidth,document.documentElement.clientHeight];
@@ -532,12 +529,12 @@ OAT.Dom = {
 		*/
 		var x = c[0];
 		var y = c[1];
-		if (elm.tagName.toLowerCase() != "input" || !OAT.Dom.isOpera()) {
+		if (elm.tagName.toLowerCase() != "input" || !OAT.Browser.isOpera) {
 			x -= elm.scrollLeft;
 			y -= elm.scrollTop;
 		}
 		
-		if (OAT.Dom.isWebKit() && parent == document.body && OAT.Dom.style(elm,"position") == "absolute") { return [x,y]; }
+		if (OAT.Browser.isWebKit && parent == document.body && OAT.Dom.style(elm,"position") == "absolute") { return [x,y]; }
 		
 		x += parent_coords[0];
 		y += parent_coords[1];
@@ -560,7 +557,6 @@ OAT.Dom = {
 		return [curr_x,curr_y];
 	},
 		
-	
 	getWH:function(something) {
 		/*
 			This is tricky: we need to measure current element's width & height.
@@ -588,7 +584,7 @@ OAT.Dom = {
 		}
 		/* one more bonus - if we are getting height of document.body, take window size */
 		if (elm == document.body) { 
-			curr_h = (OAT.Dom.isIE() ? document.body.clientHeight : window.innerHeight); 
+			curr_h = (OAT.Browser.isIE ? document.body.clientHeight : window.innerHeight); 
 		}
 		return [curr_w,curr_h];
 	},
@@ -661,7 +657,7 @@ OAT.Dom = {
 	
 	removeSelection:function() {
 		var selObj = false;
-		if (document.getSelection && !OAT.Dom.isGecko()) { selObj = document.getSelection(); }
+		if (document.getSelection && !OAT.Browser.isGecko) { selObj = document.getSelection(); }
 		if (window.getSelection) { selObj = window.getSelection(); }
 		if (document.selection) { selObj = document.selection; }
 		if (selObj) {
@@ -671,7 +667,7 @@ OAT.Dom = {
 	},
 	
 	getScroll:function() {
-		if (OAT.Dom.isWebKit() || (OAT.Dom.isIE() && document.compatMode == "BackCompat")) {
+		if (OAT.Browser.isWebKit || (OAT.Browser.isIE && document.compatMode == "BackCompat")) {
 			var l = document.body.scrollLeft;
 			var t = document.body.scrollTop;
 		} else {
@@ -713,10 +709,11 @@ OAT.Dom = {
 			var part = parts[i];
 			if (!part) { continue; }
 			var index = part.indexOf("=");
-			if (index == -1) { result[part] = ""; continue; } /* not a pair */
+			if (index == -1) { result[decodeURIComponent(part)] = ""; continue; } /* not a pair */
 			
 			var key = part.substring(0,index);
 			var val = part.substring(index+1);
+			key = decodeURIComponent(key);
 			val = decodeURIComponent(val);
 			
 			var r = false;
@@ -766,6 +763,18 @@ OAT.Dom = {
 		event.returnValue = false;
 	}
 }
+
+OAT.Browser = {
+	isIE:OAT.Dom.isIE(),
+	isIE6:OAT.Dom.isIE6(),
+	isIE7:OAT.Dom.isIE7(),
+	isGecko:OAT.Dom.isGecko(),
+	isOpera:OAT.Dom.isOpera(),
+	isKonqueror:OAT.Dom.isKonqueror(),
+	isWebKit:OAT.Dom.isWebKit(),
+	isMac:OAT.Dom.isMac()
+}
+
 OAT.Files = { /* only those whose names differ */
 	gmaps:"customGoogleLoader.js",
 	ymaps:"customYahooLoader.js",
@@ -945,6 +954,9 @@ OAT.MSG = {
 	DS_PAGE_ADVANCE:8,
 	AJAX_START:9,
 	AJAX_ERROR:10,
+	GD_START:11,
+	GD_ABORT:12,
+	GD_END:13,
 	
 	registry:[],
 	attach:function(sender,msg,callback) {
@@ -1012,6 +1024,7 @@ OAT.Dependencies = {
 	grid:"instant",
 	combolist:"instant",
 	formobject:["drag","resize","datasource","tab"],
+	tab:"layers",
 	color:"drag",
 	combobutton:"instant",
 	pivot:["ghostdrag","statistics","instant","barchart"],
@@ -1045,7 +1058,7 @@ OAT.Dependencies = {
 	tree:"ghostdrag",
 	rdfbrowser:["rdf","tree","dereference","anchor","rdftabs","tab","dav"],
 	graphsidebar:"tree",
-	form:["ajax2","dialog","datasource","formobject"],
+	form:["ajax2","dialog","datasource","formobject","crypto"],
 	rssreader:"xml"
 }
 
