@@ -246,7 +246,7 @@ create procedure TUT_generate_files(
 	  _stream := string_output_string(_stream);
 	  if (xml_output <> '') {
 	    _stream := replace(_stream,'dc:dc=""','');
-            _stream := replace(_stream,'dt:dt=""','');
+            _stream := replace(_stream,'dcterms:dcterms=""','');
             _stream := replace(_stream,'foaf:foaf=""','');
 	    _stream := replace(_stream,'ocs:ocs=""','');
 	    _stream := replace(_stream,'rdf:rdf=""','');

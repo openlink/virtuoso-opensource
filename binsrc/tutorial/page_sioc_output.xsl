@@ -23,19 +23,17 @@
  -  
  -
 -->
-<xsl:stylesheet 
-  xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   xmlns:dc="http://purl.org/dc/elements/1.1/"
-  xmlns:dt="http://purl.org/dc/terms/"
+  xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:foaf="http://xmlns.com/foaf/0.1/"
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns:sioc="http://rdfs.org/sioc/ns#"
-  version="1.0">
+  version='1.0'>
   <xsl:output method="xml" indent="yes"/>
-	<xsl:include href="page_common.xsl"/>
-  <xsl:include href="page_html_common.xsl"/>
-	
+<!--<xsl:include href="page_common.xsl"/>
+<xsl:include href="page_html_common.xsl"/>-->
   <xsl:template match="tutorial">
     <?vsp
       declare _path,_domain varchar;
@@ -51,11 +49,10 @@
 		<rdf:RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 		  <xsl:attribute name="rdf" namespace="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>
 		  <xsl:attribute name="dc" namespace="http://purl.org/dc/elements/1.1/"/>
-                  <xsl:attribute name="dt" namespace="http://purl.org/dc/terms/"/>
-		  <xsl:attribute name="content" namespace="http://purl.org/rss/1.0/modules/content/"/>
+  <xsl:attribute name="dcterms" namespace="http://purl.org/dc/terms/"/>
+  <!--<xsl:attribute name="content" namespace="http://purl.org/rss/1.0/modules/content/"/>-->
                   <xsl:attribute name="foaf" namespace="http://xmlns.com/foaf/0.1/"/>
 		  <xsl:attribute name="sioc" namespace="http://rdfs.org/sioc/ns#"/>
-
       <xsl:text disable-output-escaping="yes"><![CDATA[
 <sioc:Space rdf:about="<?V _path ?>">]]></xsl:text>
       	<sioc:name>OpenLink Virtuoso Features Demonstrations and Tutorials</sioc:name>
@@ -109,7 +106,7 @@
  <xsl:value-of select="ancestor::subsection/@wwwpath"/>
  <xsl:text disable-output-escaping="yes"><![CDATA["/>]]></xsl:text>
 	    <dc:title><xsl:value-of select="refentry/refnamediv/refname"/></dc:title>
-	    <dt:created_at><xsl:value-of select="@date"/></dt:created_at>
+  <dcterms:created_at><xsl:value-of select="@date"/></dcterms:created_at>
 	    <sioc:description><xsl:value-of select="refentry/refnamediv/refpurpose"/></sioc:description>
       <sioc:content>
         <xsl:for-each select="refentry/refsect1">
