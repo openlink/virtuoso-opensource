@@ -191,10 +191,28 @@ function dd(txt){
       href="<?V replace (sprintf ('http://%s/dataspace/%U/about.rdf', DB.DBA.WA_GET_HOST(), 'dba'), '+', '%2B')?>" />
       
 
-	    <?vsp } ?>
+	    <?vsp }
+	    
+	    declare _grp_name varchar;
+	    _grp_name:=nntpf_get_group_name (get_keyword ('group', params,''));
+
+	    if(length(_grp_name)>0)
+	    {
+	      ?>
+      <link rel="meta" type="application/rdf+xml" title="SIOC" 
+      href="<?V replace (sprintf ('%s/dataspace/discussion/%s/sioc.rdf', 'http://'||DB.DBA.WA_GET_HOST(),_grp_name), '+', '%2B') ?>"/>
+
+	    <?vsp
+	    }
+	    else
+	    {
+	    ?>
       <link rel="meta" type="application/rdf+xml" title="SIOC" 
       href="<?V replace (sprintf ('%s/dataspace/discussion/sioc.rdf', 'http://'||DB.DBA.WA_GET_HOST()), '+', '%2B') ?>"/>
 	    
+	    <?vsp
+	    }
+	    ?>
 	</head>
     </xsl:template>
 

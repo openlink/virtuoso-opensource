@@ -29,9 +29,10 @@ create procedure NNTPF_PING
   in svc_name varchar := null
   )
 {
+
   if (svc_name is null)
     {
-      for select NPR_HOST_ID, NG_GROUP from NNTPF_PING_REG, DB.DBA.NEWS_GROUPS where NG_NAME = _ng_group do
+      for select NPR_HOST_ID, NG_GROUP from NNTPF_PING_REG, DB.DBA.NEWS_GROUPS where NG_GROUP = _ng_group do
   {
     if (not exists (select 1 from NNTPF_PING_LOG where NPL_NG_GROUP = NG_GROUP and NPL_HOST_ID = NPR_HOST_ID and NPL_STAT = 0))
       insert into NNTPF_PING_LOG (NPL_NG_GROUP, NPL_HOST_ID, NPL_STAT, NPL_P_TITLE, NPL_P_URL)
@@ -46,7 +47,7 @@ create procedure NNTPF_PING
       if (s_id is not null and _ng_group is not null and
           not exists (select 1 from NNTPF_PING_LOG where NPL_NG_GROUP = _ng_group and NPL_HOST_ID = s_id and NPL_STAT = 0)
          )
-           insert into NNTPF_PING_LOG (NPL_NG_GROUP, NPL_HOST_ID, NPL_STAT, NPL_P_TITLE, nPL_P_URL)
+           insert into NNTPF_PING_LOG (NPL_NG_GROUP, NPL_HOST_ID, NPL_STAT, NPL_P_TITLE, NPL_P_URL)
                   values (_ng_group, s_id, 0, _post_title, _post_url);
 
     }
@@ -56,7 +57,7 @@ create procedure NNTPF_SVC_PROCESS_PINGS ()
   declare _host_id, _ng_group, dedl, seq int;
   declare nam, use_pings, _url, _title,_ng_url varchar;
 
-  declare cr cursor for select NPL_HOST_ID, NPL_NG_GROUP, NG_DESC,  concat('/nntpf/nntpf_nthread_view.vspx?group=',NG_GROUP),NPL_P_TITLE, NPL_P_URL, NPL_SEQ from
+  declare cr cursor for select NPL_HOST_ID, NPL_NG_GROUP, NG_DESC,  concat('/nntpf/nntpf_nthread_view.vspx?group=',cast(NG_GROUP as varchar)),NPL_P_TITLE, NPL_P_URL, NPL_SEQ from
       NNTPF_PING_LOG, DB.DBA.NEWS_GROUPS where NG_GROUP = NPL_NG_GROUP and NPL_STAT = 0;
 
   dedl := 0;
@@ -73,11 +74,16 @@ create procedure NNTPF_SVC_PROCESS_PINGS ()
 again:
   whenever not found goto ret;
   open cr (prefetch 1);
+
   while (1)
   {
+
+      
       fetch cr into _host_id, _ng_group, nam, _ng_url, _title, _url, seq;
+
       commit work;
       
+
       for select SH_URL, SH_PROTO, SH_METHOD from ODS.DBA.SVC_HOST where SH_ID = _host_id do
       {
 
@@ -86,11 +92,15 @@ again:
          declare url, rc varchar;
          rc := null;
 
+         if (length (_url) = 0)
+          url := DB.DBA.WA_LINK (1, _ng_url);
+         else
          url := DB.DBA.WA_LINK (1, _url);
 
         if (length (_title))
           nam := _title;
         
+
         {
           declare exit handler for sqlstate '*' {
             rollback work;
@@ -102,6 +112,7 @@ again:
         
           commit work;
 --          dbg_printf ('[%s] [%s] [%s] [%s] [%s]', SH_PROTO, SH_URL, SH_METHOD, url, nam);
+
           if (SH_PROTO = 'soap')
             {
               rc := DB.DBA.SOAP_CLIENT (url=>SH_URL,
@@ -118,6 +129,7 @@ again:
           }
               else
           {
+              
             rc := DB.DBA.XMLRPC_CALL (SH_URL, 'weblogUpdates.extendedPing',
             vector (nam, url, url, url || 'gems/rss.xml'));
           }
@@ -127,6 +139,8 @@ again:
               declare hf, ping_url any;
               ping_url := sprintf ('%s%U', SH_URL, url);
               http_get (ping_url, hf);
+
+
               if (isarray (hf) and length (hf) and hf[0] not like 'HTTP/1._ 200 %')
           {
             rc := xml_tree (sprintf ('<response><flerror>1</flerror><message>%V</message></response>', hf[0]));
@@ -151,8 +165,7 @@ again:
         }
         }
       }
-      
-      update NNTPF_PING_LOG set NPL_STAT = 1, NPL_SENT = now () where NPL_NG_GROUP = _ng_group and NPL_HOST_ID = _host_id and NPL_STAT = 0 and NPL_SEQ = seq;
+      update NNTPF_PING_LOG set NPL_STAT = 1, NPL_SENT = now () , NPL_ERROR=null where NPL_NG_GROUP = _ng_group and NPL_HOST_ID = _host_id and NPL_STAT = 0 and NPL_SEQ = seq;
       commit work;
       next:;
   }
@@ -161,6 +174,24 @@ again:
   return;
 };
 
+
+ 
+create trigger WEBSVC_PING_I_NNFE_THR after insert on DB.DBA.NNFE_THR referencing new as N
+{
+
+declare _ng_name varchar;
+
+declare exit handler for not found {_ng_name:='';};
+select NG_NAME into _ng_name from DB.DBA.NEWS_GROUPS where NG_GROUP=N.FTHR_GROUP;
+
+NNTPF_PING(
+           N.FTHR_GROUP,
+           concat('Newsgroup ',cast(_ng_name as varchar),' changed on ',left(datestring(N.FTHR_DATE),19)),
+           DB.DBA.WA_LINK (1,concat('/nntpf/nntpf_nthread_view.vspx?group=',cast(N.FTHR_GROUP as varchar)))
+          );
+
+
+};
 
 insert soft "DB"."DBA"."SYS_SCHEDULED_EVENT" (SE_INTERVAL, SE_LAST_COMPLETED, SE_NAME, SE_SQL, SE_START)
   values (10, NULL, 'NNTPF NOTIFICATIONS', 'DB.DBA.NNTPF_SVC_PROCESS_PINGS()', now());
