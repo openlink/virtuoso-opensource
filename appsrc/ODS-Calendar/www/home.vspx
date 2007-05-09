@@ -24,6 +24,23 @@
 -->
 <v:page name="sn" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
 
+  <v:method name="actionTest" arglist="">
+    <![CDATA[
+      declare tmp, params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      tmp := get_keyword ('event', params, '');
+      if (tmp <> '') {
+        self.v_id := cast (tmp as integer);
+        if (self.v_id <> -1) {
+          self.cAction := 'edit';
+          if (self.account_role in ('public', 'guest'))
+            self.cAction := 'view';
+        }
+      }
+    ]]>
+  </v:method>
+
   <v:method name="initData" arglist="">
     <![CDATA[
       declare N, M, wStart, wCount, mStart, mLastday, dStart integer;
@@ -83,11 +100,70 @@
     ]]>
   </v:method>
 
-  <v:method name="viewTimeZone" arglist="inout fValue any">
+  <v:method name="showTimeZone" arglist="inout fValue any">
     <![CDATA[
       if (is_empty_or_null (fValue))
          return '';
       return sprintf ('GMT %s%02d:00', case when cast (fValue as integer) < 0 then '-' else '+' end,  abs(cast (fValue as integer)));
+    ]]>
+  </v:method>
+
+  <v:method name="showEvent" arglist="in e_id integer, in e_event integer, in e_subject varchar, in e_start datetime, in e_end datetime, in e_repeat varchar, in e_reminder varchar">
+    <![CDATA[
+      declare showDelete varchar;
+
+      showDelete := '';
+      if (self.account_role not in ('public', 'guest'))
+        showDelete :=  sprintf ('[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] ', e_id);
+      if (e_event = 1) {
+        http (sprintf ('<div class="EV">%s<span id="e_%d" unselectable="on" onclick="eEdit(this)">%s%s<span class="EV_subject">%s</span></span></div>', showDelete, e_id, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject)));
+      } else {
+        http (sprintf ('<div class="EV">%s<span id="e_%d" unselectable="on" onclick="eEdit(this)"><span class="EV_time">%s-%s</span>%s%s<span class="EV_subject">%s</span></span></div>', showDelete, e_id, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject)));
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="showEventStart" arglist="in e_event integer, in e_time datetime">
+    <![CDATA[
+      e_time := CAL.WA.event_gmt2user (e_time, e_event, self.cTimezone);
+      if (e_event = 1) {
+        http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s</span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_datestring (e_time, self.cDateFormat)));
+      } else {
+        http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_datestring (e_time, self.cDateFormat), CAL.WA.dt_timestring (e_time, self.cTimeFormat)));
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="showEventEnd" arglist="in e_event integer, in e_time datetime">
+    <![CDATA[
+      e_time := CAL.WA.event_gmt2user (e_time, e_event, self.cTimezone);
+      if (e_event = 1) {
+        http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s</span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_datestring (e_time, self.cDateFormat)));
+      } else {
+        http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration"><span class="EVL_time">%s</span> %s</span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_timestring (e_time, self.cTimeFormat), CAL.WA.dt_datestring (e_time, self.cDateFormat)));
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="showEventSubject" arglist="in e_id integer, in e_event integer, in e_subject varchar, in e_repeat varchar, in e_reminder varchar">
+    <![CDATA[
+      http (sprintf ('<span id="e_%d" unselectable="on" onclick="eEdit(this)" class="EVL EVL_subject">%s%s%s</span>', e_id, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject)));
+    ]]>
+  </v:method>
+
+  <v:method name="repeatableImage" arglist="in eRepeat any">
+    <![CDATA[
+      if (eRepeat = '')
+        return '';
+      return '<img border="0" width="11" height="11" title="Repeatable" alt="Repeatable" src="image/repeatable.gif"/> ';
+    ]]>
+  </v:method>
+
+  <v:method name="reminderImage" arglist="in eReminder any">
+    <![CDATA[
+      if (eReminder = '')
+        return '';
+      return '<img border="0" width="11" height="11" title="Reminder" alt="Reminder" src="image/reminder.gif"/> ';
     ]]>
   </v:method>
 
@@ -148,15 +224,6 @@
     ]]>
   </v:method>
 
-  <v:method name="repeatableImage" arglist="in eRepeat varchar">
-    <![CDATA[
-      if (eRepeat = '')
-        return '';
-      return '<img border="0" width="11" height="11" title="Repeatable" alt="Repeatable" src="image/repeatable.gif"/> ';
-    ]]>
-  </v:method>
-
-
   <vm:pagetitle>Calendar</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -202,6 +269,7 @@
     <vm:pagebody>
       <v:before-data-bind>
         <![CDATA[
+          self.actionTest ();
           self.initData ();
         ]]>
       </v:before-data-bind>
@@ -240,7 +308,7 @@
                         N := atoi (cParams[2]) * 7 + atoi (cParams[3]);
                         self.cDay := self.calcDate (N);
                         self.cMonth := null;
-                        if ((cParams[0] = 'd') or ((self.cDay >= self.cStart) and (self.cDay <= self.cEnd)) or (self.cScope := 'list'))
+                        if ((cParams[0] = 'd') or ((self.cDay >= self.cStart) and (self.cDay <= self.cEnd)) or (self.cScope := 'events'))
                           self.cScope := 'day';
                       }
                       self.cAction := 'browse';
@@ -248,12 +316,25 @@
                     }
                   }
                 }
+                cCommand := get_keyword ('date', e.ve_params, '');
+                if (cCommand <> '') {
+                  cParams := split_and_decode(cCommand, 0,'\0\0_');
+                  if (length (cParams) > 1) {
+                    self.cDay := stringdate (cParams [1]);
+                    self.cMonth := null;
+                    self.cAction := 'browse';
+                    self.cScope := 'day';
+                  }
+                }
+
                 cCommand := get_keyword ('edit', e.ve_params, '');
                 if (cCommand <> '') {
                   cParams := split_and_decode(cCommand, 0,'\0\0_');
                   if (length (cParams) > 1) {
                     self.v_id := cast (cParams [1] as integer);
                     self.cAction := 'edit';
+                    if (self.account_role in ('public', 'guest'))
+                      self.cAction := 'view';
                   }
                 }
 
@@ -306,10 +387,28 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" style="url" value="List" xhtml_class="-- case when (self.cScope = 'list') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="List">
+              <v:button action="simple" style="url" value="Events" xhtml_class="-- case when (self.cScope = 'events') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Event List">
                 <v:on-post>
                   <![CDATA[
-                    self.cScope := 'list';
+                    self.cScope := 'events';
+                    self.initData ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" style="url" value="Tasks" xhtml_class="-- case when (self.cScope = 'tasks') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Task List">
+                <v:on-post>
+                  <![CDATA[
+                    self.cScope := 'tasks';
+                    self.initData ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" style="url" value="Todos" xhtml_class="-- case when (self.cScope = 'todos') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="ToDo List">
+                <v:on-post>
+                  <![CDATA[
+                    self.cScope := 'todos';
                     self.initData ();
                     self.vc_data_bind (e);
                   ]]>
@@ -390,7 +489,7 @@
         </table>
         <div class="CE_container">
           <div id="content" class="CE_main">
-            <vm:if test="self.cScope <> 'list'">
+            <vm:if test="self.cScope in ('day', 'week', 'month')">
               <table class="CE_table" cellspacing="0">
                 <?vsp
                   declare N, D, W, hasEvents integer;
@@ -400,16 +499,16 @@
                   if (self.cScope = 'day') {
                     declare cr static cursor for
                       select distinct rs.*
-                        from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_event_start datetime, e_event_end datetime, e_repeat varchar) rs
+                        from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_reminder integer) rs
                        where rs0 = self.domain_id
                          and rs1 = self.cDay
                          and rs2 = self.cDay
                          and rs3 = self.cTimeZone
-                       order by e_event DESC, e_event_start;
+                       order by e_event DESC, e_start;
 
                     declare isEof, isFetched, hasEvents integer;
                     declare pHour, pMinute integer;
-                    declare e_time, e_id, e_event, e_start, e_end, e_subject, e_repeat any;
+                    declare e_time, e_id, e_event, e_start, e_end, e_subject, e_repeat, e_reminder any;
 
                     pHour := 25;
                     isEof := 0;
@@ -423,7 +522,7 @@
                     open cr;
 
                     while ((not isEof) and (e_event = 1)) {
-                      fetch cr next into e_id, e_event, e_subject, e_start, e_end, e_repeat;
+                      fetch cr next into e_id, e_event, e_subject, e_start, e_end, e_repeat, e_reminder;
                       if (isEof)
                          goto _skip;
                       CAL.WA.dt_timeDecode (e_start, pHour, pMinute);
@@ -436,7 +535,7 @@
                         http ('<td class="CE_cell">');
                         hasEvents := 1;
                       }
-                      http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <span id="e_%d" unselectable="on" onclick="eEdit(this)">%s<span class="EV_subject">%s</span></span></div>', E_ID, E_ID, self.repeatableImage (E_REPEAT), CAL.WA.show_subject (E_SUBJECT)));
+                      self.showEvent (e_id, e_event, e_subject, e_start, e_end, e_repeat, e_reminder);
                     }
                   _skip:;
                     if (hasEvents = 1) {
@@ -446,7 +545,7 @@
 
                     for (N := 0; N < 48; N := N + 1) {
                       if ((not isEof) and (not isFetched)) {
-                        fetch cr next into e_id, e_event, e_subject, e_start, e_end, e_repeat;
+                        fetch cr next into e_id, e_event, e_subject, e_start, e_end, e_repeat, e_reminder;
                         if (isEof)
                           goto _skip2;
                         CAL.WA.dt_timeDecode (e_start, pHour, pMinute);
@@ -462,9 +561,9 @@
                         if ((pHour = N/2) and (pMinute = mod (N, 2)*30)) {
                           hasEvents := 1;
                           isFetched := 0;
-                          http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <span id="e_%d" unselectable="on" onclick="eEdit(this)">%s<span class="EV_time">%s-%s</span><span class="EV_subject">%s</span></span></div>', e_id, e_id, self.repeatableImage (e_repeat), CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), CAL.WA.show_subject (e_subject)));
+                          self.showEvent (e_id, e_event, e_subject, e_start, e_end, e_repeat, e_reminder);
                           if ((not isEof) and (not isFetched)) {
-                            fetch cr next into e_id, e_event, e_subject, e_start, e_end, e_repeat;
+                            fetch cr next into e_id, e_event, e_subject, e_start, e_end, e_repeat, e_reminder;
                             if (isEof)
                               goto _skip3;
                             CAL.WA.dt_timeDecode (e_start, pHour, pMinute);
@@ -495,19 +594,15 @@
                           http ('<td class="CE_cell">');
                           hasEvents := 0;
                           for (select distinct rs.*
-                                 from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_event_start datetime, e_event_end datetime, e_repeat varchar) rs
+                                 from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_reminder integer) rs
                                 where rs0 = self.domain_id
                                   and rs1 = dt
                                   and rs2 = dt
                                   and rs3 = self.cTimeZone
-                                order by e_event DESC, e_event_start) do
+                                order by e_event DESC, e_start) do
                           {
                             hasEvents := 1;
-                            if (e_event = 1) {
-                              http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <span id="e_%d" unselectable="on" onclick="eEdit(this)">%s<span class="EV_subject">%s</span></span></div>', e_id, e_id, self.repeatableImage (e_repeat), CAL.WA.show_subject (e_subject)));
-                            } else {
-                              http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <span id="e_%d" unselectable="on" onclick="eEdit(this)"><span class="EV_time">%s-%s</span>%s<span class="EV_subject">%s</span></span></div>', e_id, e_id, CAL.WA.dt_timestring (e_event_start), CAL.WA.dt_timestring (e_event_end), self.repeatableImage (e_repeat), CAL.WA.show_subject (e_subject)));
-                            }
+                            self.showEvent (e_id, e_event, e_subject, e_start, e_end, e_repeat, e_reminder);
                           }
                           if (not hasEvents)
                             http ('&nbsp;');
@@ -529,18 +624,14 @@
                         http (sprintf ('<td width="%s" class="CE_cell %s">', '14.2857%', case when (D < 6) then 'CE_cell_middle' else '' end));
                         http (sprintf ('<div unselectable="on" onclick="cSelect(this)" id="d_day_%d_%d" class="CE_cell_month_header">%d</div>', W, D, abs (self.cDays [N])));
                         for (select distinct rs.*
-                               from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_event_start datetime, e_event_end datetime, e_repeat varchar) rs
+                               from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_reminder integer) rs
                               where rs0 = self.domain_id
                                 and rs1 = dt
                                 and rs2 = dt
                                 and rs3 = self.cTimeZone
-                              order by e_event DESC, e_event_start) do
+                              order by e_event DESC, e_start) do
                         {
-                          if (e_event = 1) {
-                            http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <spanid="e_%d" unselectable="on" onclick="eEdit(this)">%s<span class="EV_subject">%s</span></span></div>', e_id, e_id, self.repeatableImage (e_repeat), CAL.WA.show_subject (e_subject)));
-                          } else {
-                            http (sprintf ('<div class="EV">[<span id="d_%d" class="EV_delete unselectable="on" onclick="eDelete(this)">X</span>] <span id="e_%d" unselectable="on" onclick="eEdit(this)"><span class="EV_time">%s-%s</span>%s<span class="EV_subject">%s</span></span></div>', e_id, e_id, CAL.WA.dt_timestring (e_event_start), CAL.WA.dt_timestring (e_event_end), self.repeatableImage (e_repeat), CAL.WA.show_subject (e_subject)));
-                          }
+                          self.showEvent (e_id, e_event, e_subject, e_start, e_end, e_repeat, e_reminder);
                         }
                         http ('</td>');
                         if (D = 6)
@@ -551,7 +642,7 @@
                 ?>
               </table>
             </vm:if>
-            <vm:if test="self.cScope = 'list'">
+            <vm:if test="self.cScope = 'events'">
               <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
                 <v:before-data-bind>
                   <![CDATA[
@@ -564,14 +655,17 @@
               <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
 
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="events" style="width: 100%;" cellspacing="0">
+                  <table id="events" style="width: 100%; backgrownd-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
-                        <th>
+                        <th width="4%" colspan="4">
                           Duration
                         </th>
-                        <th width="80%">
+                        <th>
                           Subject
+                        </th>
+                        <th width="3%">
+                          Action
                         </th>
                       </tr>
                     </thead>
@@ -583,22 +677,42 @@
                   <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
-                        <td nowrap="nowrap" align="center">
+                        <td nowrap="nowrap">
                           <?vsp
-                            declare x, y, z any;
-
-                            z := (control as vspx_row_template).te_column_value('E_EVENT');
-                            x := CAL.WA.event_gmt2user ((control as vspx_row_template).te_column_value('E_EVENT_START'), z, self.cTimezone);
-                            y := CAL.WA.event_gmt2user ((control as vspx_row_template).te_column_value('E_EVENT_END'), z, self.cTimezone);
-                            if (z = 1) {
-                              http (sprintf ('%s - %s', CAL.WA.dt_datestring (x, self.cDateFormat), CAL.WA.dt_datestring (y, self.cDateFormat)));
-                            } else {
-                              http (sprintf ('%s %s - %s %s', CAL.WA.dt_datestring (x, self.cDateFormat), CAL.WA.dt_timestring (x, self.cTimeFormat), CAL.WA.dt_timestring (y, self.cTimeFormat), CAL.WA.dt_datestring (y, self.cDateFormat)));
-                            }
+                            self.showEventStart ((control as vspx_row_template).te_column_value('E_EVENT'),
+                                                 (control as vspx_row_template).te_column_value('E_EVENT_START'));
+                          ?>
+                        </td>
+                        <td nowrap="nowrap" style="padding-left: 5px;">
+                        -
+                        </td>
+                        <td nowrap="nowrap" align="right">
+                          <?vsp
+                            self.showEventEnd ((control as vspx_row_template).te_column_value('E_EVENT'),
+                                               (control as vspx_row_template).te_column_value('E_EVENT_END'));
                           ?>
                         </td>
                         <td>
-                          <v:label value="--CAL.WA.show_subject((control.vc_parent as vspx_row_template).te_column_value('E_SUBJECT'))" />
+                          &nbsp;
+                        </td>
+                        <td style="padding-left: 5px;">
+                          <?vsp
+                            self.showEventSubject ((control as vspx_row_template).te_column_value('E_ID'),
+                                                   (control as vspx_row_template).te_column_value('E_EVENT'),
+                                                   (control as vspx_row_template).te_column_value('E_SUBJECT'),
+                                                   (control as vspx_row_template).te_column_value('E_REPEAT'),
+                                                   (control as vspx_row_template).te_column_value('E_REMINDER'));
+                          ?>
+                        </td>
+                        <td>
+                          <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this event?\');" xhtml_class="button" xhtml_alt="Delete Event">
+                            <v:on-post>
+                              <![CDATA[
+                                CAL.WA.event_delete(cast((control.vc_parent as vspx_row_template).te_column_value('ESFO_ID') as integer), self.domain_id);
+                        		    self.vc_data_bind(e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
                         </td>
                       </tr>
                     </table>
@@ -618,11 +732,15 @@
                 ]]>
               </script>
             </vm:if>
+            <vm:if test="self.cScope = 'tasks'">
+            </vm:if>
+            <vm:if test="self.cScope = 'todos'">
+            </vm:if>
           </div>
         </div>
       </v:template>
 
-      <v:template type="simple" enabled="--case when ((self.cAction = 'create') or (self.cAction = 'edit')) then 1 else 0 end">
+      <v:template type="simple" enabled="--case when ((self.cAction = 'create') or (self.cAction = 'edit') or (self.cAction = 'view')) then 1 else 0 end">
         <v:text name="timeZone" xhtml_id="timeZone" type="hidden" value="--self.cTimeZone" />
         <v:text name="timeFormat" xhtml_id="timeFormat" type="hidden" value="--self.cTimeFormat" />
         <v:text name="dateFormat" xhtml_id="dateFormat" type="hidden" value="--self.cDateFormat" />
@@ -690,7 +808,7 @@
           ]]>
         </v:before-data-bind>
         <div class="new-form-header">
-          <v:label format="%s" value="--case when (self.cAction = 'create') then 'Create event' else 'Update event' end"/>
+          <v:label format="%s" value="--initcap (self.cAction) || ' event'"/>
         </div>
         <div class="new-form-body">
           <table cellspacing="0">
@@ -808,7 +926,7 @@
                 <v:label for="e_description" value="Description"/>
               </th>
               <td>
-                <v:textarea name="e_description" null-value="--''" value="--CAL.WA.utf2wide (self.v_description)" fmt-function="BMK.WA.utf2wide" xhtml_cols="45" xhtml_rows="6"/>
+                <v:textarea name="e_description" null-value="--''" value="--CAL.WA.utf2wide (self.v_description)" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6"/>
               </td>
             </tr>
             <tr>
@@ -1346,7 +1464,7 @@
 
                 declare exit handler for SQLSTATE '*' {
                   if (__SQL_STATE = 'TEST') {
-                    self.vc_error_message := BMK.WA.test_clear(__SQL_MESSAGE);
+                    self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
                     self.vc_is_valid := 0;
                     return;
                   }
@@ -1623,7 +1741,7 @@
                           j := 0;
                           while (i <= 12) {
                             x[j] := cast (i*60 as varchar);
-                            y[j] := self.viewTimeZone (i);
+                            y[j] := self.showTimeZone (i);
                             i := i + 1;
                             j := j + 1;
                           }
@@ -1652,7 +1770,7 @@
 
                 declare exit handler for SQLSTATE '*' {
                   if (__SQL_STATE = 'TEST') {
-                    self.vc_error_message := BMK.WA.test_clear(__SQL_MESSAGE);
+                    self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
                     self.vc_is_valid := 0;
                     return;
                   }

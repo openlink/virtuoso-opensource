@@ -198,8 +198,10 @@
         <tr>
           <!-- Navigation left column -->
           <td id="LC">
-            <vm:if test="CAL.WA.page_name () = 'home.vspx'">
+            <vm:if test="((CAL.WA.page_name () = 'home.vspx') and (self.account_role not in ('public', 'guest')))">
               <xsl:call-template name="vm:event"/>
+            </vm:if>
+            <vm:if test="CAL.WA.page_name () = 'home.vspx'">
               <xsl:call-template name="vm:calendar"/>
             </vm:if>
             <xsl:call-template name="vm:formats"/>

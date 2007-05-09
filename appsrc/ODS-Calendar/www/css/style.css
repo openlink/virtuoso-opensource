@@ -1184,6 +1184,27 @@ a.calendar_button {
   font-weight: bold;
 }
 
+.EVL
+{
+  cursor: pointer;
+}
+
+.EVL_duration
+{
+  font-size: 90%;
+}
+
+.EVL_time
+{
+  font-style: italic;
+  font-size: 90%;
+}
+
+.EVL_subject
+{
+  font-weight: bold;
+}
+
 .chip .chipbody
 {
   width: 100%;

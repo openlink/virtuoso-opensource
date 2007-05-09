@@ -448,6 +448,28 @@ create procedure CAL.WA.export_rss_sqlx_int (
   http ('from DB.DBA.SYS_USERS where U_ID = <USER_ID> \n', retValue);
   http (']]></sql:sqlx>\n', retValue);
 
+  http ('<sql:sqlx xmlns:sql=\'urn:schemas-openlink-com:xml-sql\'><![CDATA[\n', retValue);
+  http ('select \n', retValue);
+  http ('  XMLAGG(XMLELEMENT(\'item\', \n', retValue);
+  http ('    XMLELEMENT(\'title\', CAL.WA.utf2wide (E_SUBJECT)), \n', retValue);
+  http ('    XMLELEMENT(\'description\', CAL.WA.utf2wide (E_DESCRIPTION)), \n', retValue);
+  http ('    XMLELEMENT(\'guid\', E_ID), \n', retValue);
+  http ('    XMLELEMENT(\'link\', CAL.WA.event_url (<DOMAIN_ID>, E_ID)), \n', retValue);
+  http ('    XMLELEMENT(\'pubDate\', CAL.WA.dt_rfc1123 (E_UPDATED)), \n', retValue);
+  http ('    (select XMLAGG (XMLELEMENT (\'category\', TV_TAG)) from CAL..TAGS_VIEW where tags = E_TAGS), \n', retValue);
+  http ('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', CAL.WA.dt_iso8601 (E_UPDATED)))) \n', retValue);
+  http ('from (select top 15  \n', retValue);
+  http ('        E_SUBJECT, \n', retValue);
+  http ('        E_DESCRIPTION, \n', retValue);
+  http ('        E_UPDATED, \n', retValue);
+  http ('        E_TAGS, \n', retValue);
+  http ('        E_ID \n', retValue);
+  http ('      from \n', retValue);
+  http ('        CAL.WA.EVENTS \n', retValue);
+  http ('      where E_DOMAIN_ID = <DOMAIN_ID> \n', retValue);
+  http ('      order by E_UPDATED desc) x \n', retValue);
+  http (']]></sql:sqlx>\n', retValue);
+
   http ('</channel>\n', retValue);
   http ('</rss>\n', retValue);
 
@@ -2816,10 +2838,10 @@ create procedure CAL.WA.events_forPeriod (
   declare pStartHour, pStartMinute, pEndHour, pEndMinute integer;
   declare dt date;
 
-  declare c0, c1 integer;
+  declare c0, c1, c6 integer;
   declare c2, c5 varchar;
   declare c3, c4 datetime;
-  result_names (c0, c1, c2, c3, c4, c5);
+  result_names (c0, c1, c2, c3, c4, c5, c6);
 
   -- regular events
   for (select E_ID,
@@ -2827,7 +2849,8 @@ create procedure CAL.WA.events_forPeriod (
               E_SUBJECT,
               E_EVENT_START,
               E_EVENT_END,
-              E_REPEAT
+              E_REPEAT,
+              E_REMINDER
          from CAL.WA.EVENTS
         where E_DOMAIN_ID = domain_id
           and E_EVENT_START >= CAL.WA.event_user2gmt (pDateStart, 0, pTimezone)
@@ -2838,7 +2861,8 @@ create procedure CAL.WA.events_forPeriod (
             E_SUBJECT,
             CAL.WA.event_gmt2user (E_EVENT_START, E_EVENT, pTimezone),
             CAL.WA.event_gmt2user (E_EVENT_END, E_EVENT, pTimezone),
-            E_REPEAT);
+            E_REPEAT,
+            E_REMINDER);
   }
 
   -- repetable events
@@ -2851,7 +2875,8 @@ create procedure CAL.WA.events_forPeriod (
               E_REPEAT_PARAM1,
               E_REPEAT_PARAM2,
               E_REPEAT_PARAM3,
-              E_REPEAT_UNTIL
+              E_REPEAT_UNTIL,
+              E_REMINDER
          from CAL.WA.EVENTS
         where E_DOMAIN_ID = domain_id
           and E_REPEAT <> ''
@@ -2876,7 +2901,8 @@ create procedure CAL.WA.events_forPeriod (
                 E_SUBJECT,
                 CAL.WA.event_gmt2user (CAL.WA.dt_join (dt, CAL.WA.dt_timeEncode (pStartHour, pStartMinute)), E_EVENT, pTimezone),
                 CAL.WA.event_gmt2user (CAL.WA.dt_join (dt, CAL.WA.dt_timeEncode (pEndHour, pEndMinute)), E_EVENT, pTimezone),
-                E_REPEAT);
+                E_REPEAT,
+                E_REMINDER);
       }
       dt := dateadd ('day', 1, dt);
     }
@@ -2894,4 +2920,23 @@ create procedure CAL.WA.events_forDate (
 {
   return CAL.WA.events_forPeriod (domain_id, pDate, pDate, pTimezone, pWeekStarts);
 }
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure CAL.WA.version_update ()
+{
+  for (select WAI_ID, WAM_USER
+         from DB.DBA.WA_MEMBER
+                join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST
+        where WAI_TYPE_NAME = 'Calendar'
+          and WAM_MEMBER_TYPE = 1) do {
+    CAL.WA.domain_update (WAI_ID, WAM_USER);
+  }
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+CAL.WA.version_update ()
 ;

@@ -45,6 +45,27 @@ CAL.WA.exec_no_error ('
 -------------------------------------------------------------------------------
 --
 CAL.WA.exec_no_error ('
+  create table CAL.WA.GRANTS (
+    G_ID integer identity,
+    G_GRANTER_ID integer not null,
+    G_GRANTEE_ID integer not null,
+    G_EVENT_ID integer not null,
+
+    PRIMARY KEY (G_ID)
+  )
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_GRANTS_01 on CAL.WA.GRANTS (G_GRANTER_ID, G_EVENT_ID)
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_GRANTS_02 on CAL.WA.GRANTS (G_GRANTEE_ID, G_EVENT_ID)
+');
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
   create table CAL.WA.EVENTS (
     E_ID integer not null,
     E_DOMAIN_ID integer not null,
@@ -52,13 +73,14 @@ CAL.WA.exec_no_error ('
     E_DESCRIPTION varchar,
     E_LOCATION varchar,
     E_KIND integer default 0,
+    E_CLASS integer default 0,
     E_EVENT integer default 0,
     E_EVENT_START datetime not null,
     E_EVENT_END datetime not null,
     E_REPEAT char (2) default \'\',       -- \'\' - no repeat,
                                           -- D1 - every day,
                                           -- D2 - every weekday ,
-                                          -- W  - every [] week on (day),
+                                          -- W1 - every [] week on (day),
                                           -- M1 - day [] of every [] month(s),
                                           -- M2 - the (f|s|t|f|l) (day) of every [] month(s),
                                           -- Y1 - every (month) (date),
@@ -67,7 +89,11 @@ CAL.WA.exec_no_error ('
     E_REPEAT_PARAM2 integer,
     E_REPEAT_PARAM3 integer,
     E_REPEAT_UNTIL date,                  -- repeat until this date or null (infinite)
-    E_REMINDER integer default 600,       -- 10 minutes remainder
+    E_REPEAT_EXCEPTIONS long varchar,     -- mark the dates on which the event is hidden /set on deletion of the repeated event/ format is: yyyymmdd
+    E_REMINDER integer default 600,       -- default is 10 minutes remainder
+    E_REMINDER_DATE datetime,             -- keep when to remind the user.
+                                          -- calculated through insert/update.
+                                          -- reminder procedure set this to NULL when user is reminded, in case of recursive event is set to next remind date
     E_TAGS varchar,
     E_CREATED datetime,
     E_UPDATED datetime,
@@ -93,7 +119,7 @@ CAL.WA.exec_no_error ('
 CAL.WA.exec_no_error ('
   create trigger EVENTS_AD after delete on CAL.WA.EVENTS referencing old as O {
     CAL.WA.tags_update (O.E_DOMAIN_ID, O.E_TAGS, \'\');
-    delete from CAL.WA.GRANTS where G_PERSON_ID = O.E_ID;
+    delete from CAL.WA.GRANTS where G_EVENT_ID = O.E_ID;
   }
 ');
 
@@ -202,22 +228,19 @@ CAL.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
-CAL.WA.exec_no_error ('
-  create table CAL.WA.GRANTS (
-    G_ID integer identity,
-    G_GRANTER_ID integer not null,
-    G_GRANTEE_ID integer not null,
-    G_EVENT_ID integer not null,
+create procedure CAL.WA.tags_procedure (
+  in tags any)
+{
+  declare tag varchar;
 
-    PRIMARY KEY (G_ID)
-  )
-');
-
-CAL.WA.exec_no_error ('
-  create index SK_GRANTS_01 on CAL.WA.GRANTS (G_GRANTER_ID, G_PERSON_ID)
-');
+  result_names (tag);
+  tags := split_and_decode (tags, 0, '\0\0,');
+  foreach (any tag in tags) do
+    result (trim (tag));
+}
+;
 
 CAL.WA.exec_no_error ('
-  create index SK_GRANTS_02 on CAL.WA.GRANTS (G_GRANTEE_ID, G_EVENT_ID)
-');
-
+  create procedure view CAL..TAGS_VIEW as CAL.WA.tags_procedure (tags) (TV_TAG varchar)
+')
+;

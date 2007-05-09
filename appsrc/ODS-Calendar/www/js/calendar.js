@@ -672,6 +672,15 @@ function eEdit(obj)
 }
 
 // ---------------------------------------------------------------------------
+function eDate(obj)
+{
+  var objID = obj.id;
+
+  createHidden('F1', 'date', objID);
+  doPost ('F1', 'command');
+}
+
+// ---------------------------------------------------------------------------
 function eDelete(obj)
 {
   if (confirmAction('Are you sure that you want to delete selected item?')) {
