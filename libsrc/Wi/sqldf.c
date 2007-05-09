@@ -2119,6 +2119,7 @@ sqlo_merge_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set
 df_elt_t **
 sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
 {
+#if 0  
   if (DFE_BOP_PRED == pred->dfe_type && BOP_LT == pred->_.bin.op && DFE_CONST == pred->_.bin.left->dfe_type && !pred->_.bin.left->dfe_tree && DFE_CALL == pred->_.bin.right->dfe_type 
       && pred->_.bin.right->_.call.func_name && 0 == stricmp (pred->_.bin.right->_.call.func_name, "one_of_these"))
     {
@@ -2142,6 +2143,7 @@ sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
 	  return args;
 	}
     }
+#endif
   return NULL;
 }
 
@@ -2614,7 +2616,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
 	  pred->_.text.after_preds = text_after_preds;
 	  text_pred = pred;
 	}
-      else if ((in_list = sqlo_in_list (pred, tb_dfe, NULL)))
+      else if (0 && (in_list = sqlo_in_list (pred, tb_dfe, NULL)))
 	{
 	  t_set_push (&col_preds, pred);
 

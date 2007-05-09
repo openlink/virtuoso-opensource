@@ -7596,7 +7596,8 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
         exists (select top 1 1 from DB.DBA.RDF_QUAD
           where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri) ) and
         not exists (select top 1 1 from DB.DBA.SYS_HTTP_SPONGE
-          where HS_LOCAL_IRI = local_iri and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE' ) )
+          where HS_LOCAL_IRI = local_iri and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE' and
+	  HS_EXPIRATION is not null))
         {
           -- dbg_obj_princ ('Exists and get:soft=soft, leaving');
           return local_iri;
