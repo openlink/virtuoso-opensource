@@ -42,10 +42,12 @@ ul, li {
 	padding: 0px;
 }
 
-#right {
-	position: absolute;
-  top: 23px; 
+#content {
+	/*position: absolute;
+  top: 23px; */
+  border-top:2px solid #000000;
   width: 100%;
+  background: #e8f3f6;
 }
 
 /*
@@ -68,7 +70,7 @@ ul, li {
 }
 
 .main_col_page { 
-  margin: 10px;
+  margin: 0px;
 }
 
 #foot { 
@@ -123,6 +125,37 @@ ul#nav_bar {
   border-bottom: 1px solid #E8F3F6;
 }
 
+/* tabs */
+
+#tabs {
+	margin-top: 30px;
+	list-style-type: none;
+	text-align: center;
+	padding-bottom: 2px;
+}
+
+#tabs li {
+	display: inline;
+	border: 2px solid #000;
+	padding: 2px 3px;
+	margin-left: 0.5em;
+	cursor: pointer;
+}
+
+#tabs li.tab_selected {
+	background-color: #f00;
+}
+
+#tabs li.tab:hover {
+	background-color: #ccc;
+}
+
+#tabs.tab_signal {
+  background-color: #999;
+}
+
+/* /tabs */
+
 img.corner {
   width: 15px;
   height: 15px;
@@ -150,11 +183,47 @@ div.pager a {
   padding-left: 10px;
 }
 
-label { font-size: 10pt; font-weight: bold;}
+label { 
+  font-size: 10pt; 
+  font-weight: normal;
+}
 #load,
 label.load { font-size: 8pt; font-weight: normal;}
 
+.toolbar {
+  height: 30px;
+  background-color: #ddd;
+  border: 1px solid #888;
+}
+
+.toolbar_icon {
+  text-align: center;
+  vertical-align: middle;
+  height: 24px;
+  float: left;
+  margin: 2px;
+  cursor: pointer;
+  padding: 0px;
+  width: 24px;
+  height: 24px;
+}
+
+.toolbar_separator {
+  float: left;
+  width: 1px;
+  border-left: 1px solid #555;
+  height: 24px;
+  margin-top: 2px;
+  margin-left: 6px;
+  margin-right: 6px;
+}
+
+#page_results{
+  padding:10px 0px 0px 0px;
+}
+
 #query_div {
+  padding:0px 10px 10px 10px;
 }
 
 #page_query {

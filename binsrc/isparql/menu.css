@@ -22,7 +22,7 @@
 
 #menu li {
 	cursor: pointer;
-	behavior: url("../styles/hover.htc");
+	behavior: url("hover.htc");
 	display: block;
 	float: left;
 	position: relative;

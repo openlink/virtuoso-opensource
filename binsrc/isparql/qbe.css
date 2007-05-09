@@ -21,38 +21,6 @@
  *  
  */
 
-#page .toolbar {
-  height: 30px;
-  background-color: #ddd;
-  border: 1px solid #888;
-}
-
-#page .toolbar_icon {
-  text-align: center;
-  vertical-align: middle;
-  height: 24px;
-  float: left;
-  margin: 2px;
-  cursor: pointer;
-  padding: 0px;
-  width: 24px;
-  height: 24px;
-}
-
-#page .toolbar_separator {
-  float: left;
-  width: 1px;
-  border-left: 1px solid #555;
-  height: 24px;
-  margin-top: 2px;
-  margin-left: 6px;
-  margin-right: 6px;
-}
-
-#page label {
-  font-weight: normal;
-}
-
 #qbe_toolbar label {
   float: right;
   margin: 6px;
@@ -60,6 +28,7 @@
   font-size: 10pt;
   font-weight: normal;
 } 
+
 #qbe_datasource_cnt {
   float: right;
   margin-top:16px;
@@ -88,6 +57,7 @@
 
 #qbe_query_div {
   margin-right:285px;
+  padding:10px;
 }
 
 #qbe_resizer_area {

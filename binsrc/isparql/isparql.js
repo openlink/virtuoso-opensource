@@ -263,7 +263,7 @@ window.iSPARQL = {
   {
     // We use this to fix IE visualization problems with pre content
     var putTextInPre = function(elm,txt){
-      if (OAT.Dom.isIE()) 
+      if (OAT.Browser.isIE) 
         txt = txt.replace(/\r\n/g,'\r').replace(/\n/g,'\r');
       OAT.Dom.append([elm,OAT.Dom.text(txt)]);
     }
@@ -298,7 +298,7 @@ window.iSPARQL = {
         {
           data = response.replace(/&/g,'&amp;').replace(/</g,'&lt;');
         }
-        params.callback('<pre>' + data + '</pre>',headers,'er');
+        params.callback(data,headers,'er');
       },
   		browseCallback:function(query,params){},// 
   		browseStart:false, // sets blur to this object
@@ -634,7 +634,7 @@ window.iSPARQL = {
           // it is either and error or compile
           if (param)
           {
-            result.innerHTML = data;
+            result.innerHTML = '<pre>' + data + '</pre>';
           // result too big to post process, just show it
           } else if (data.length > 10 * 1024) {
             

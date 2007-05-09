@@ -51,7 +51,7 @@
       </div>
       <div id="page_content" style="display:none;">
       <ul id="menu">
-        <li id="menu_qbe"><span id="tab_qbe" title="SPARQL Query By Example">QBE</span>
+        <li id="menu_qbe">QBE
           <ul id="menu_qbe_down" class="menu_qbe" style="display:none;">
             <li id="menu_qbe_clear">Clear Pane</li>
             <li id="menu_qbe_load">Open</li>
@@ -66,7 +66,7 @@
             <li id="menu_qbe_arrange">Auto Arrange</li>
           </ul>
         </li>
-        <li id="menu_query"><span id="tab_query" title="SPARQL Query By Typing">Advanced</span>
+        <li id="menu_query">Advanced
           <ul id="menu_query_down" class="menu_query" style="display:none;">
             <li id="menu_reset">Reset</li>
             <li id="menu_load">Open</li>
@@ -90,8 +90,13 @@
         </li>
 				<li id="menu_about">About</li>
       </ul> <!-- menu -->
-      <div id="right">
-        <div id="r_hack"><div class="r"><div class="r"><div class="r">
+      <ul id="tabs">
+        <li id="tab_qbe" title="SPARQL Query By Example">QBE</li>
+        <li id="tab_query" title="SPARQL Query By Typing">Advanced</li>
+        <li id="tab_results" title="Results">Results</li>
+      </ul>
+      <div id="content">  
+        <!-- div id="r_hack"><div class="r"><div class="r"><div class="r" -->
           <div id="main_col"></div> <!-- this is where the main_col_pages appear. It's magick (tm)! -->
           <div class="main_col_page" id="page_qbe" style="display:none;">
         	  <div id="qbe_toolbar">
@@ -353,7 +358,10 @@ WHERE
             </div> <!-- query_div -->
             <div id="res_area"></div>
           </div> <!-- page_query -->
-        </div></div></div></div> <!-- r_hack -->
+          <div class="main_col_page" id="page_results" style="display:none;">
+            You have not executed a query yet.
+          </div>
+        <!-- /div></div></div></div-- > <!-- r_hack -->
         <div id="foot">Copyright &copy; 2007 OpenLink Software, Inc</div>
       </div> <!-- #right -->
       </div><!-- #page_content -->
