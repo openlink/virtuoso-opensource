@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="sparql_demo_vad"
-	ProjectGUID="{CDFD5FAC-FD70-11DB-B29C-A18F012B09DC}"
-	RootNamespace="sparql_demo_vad"
+	Name="ods_calendar_vad"
+	ProjectGUID="{351A8882-FD57-11DB-B29C-A18F012B09DC}"
+	RootNamespace="ods_calendar_vad"
 	Keyword="MakeFileProj">
 	<Platforms>
 		<Platform
@@ -13,8 +13,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(ConfigurationName)\sparql_demo_vad"
-			IntermediateDirectory="$(ConfigurationName)\sparql_demo_vad"
+			OutputDirectory="$(ConfigurationName)\ods_calendar_vad"
+			IntermediateDirectory="$(ConfigurationName)\ods_calendar_vad"
 			ConfigurationType="1">
 			<Tool
 				Name="VCCLCompilerTool"/>
@@ -45,8 +45,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(ConfigurationName)\sparql_demo_vad"
-			IntermediateDirectory="$(ConfigurationName)\sparql_demo_vad"
+			OutputDirectory="$(ConfigurationName)\ods_calendar_vad"
+			IntermediateDirectory="$(ConfigurationName)\ods_calendar_vad"
 			ConfigurationType="1">
 			<Tool
 				Name="VCCLCompilerTool"/>
@@ -81,13 +81,13 @@
 	</References>
 	<Files>
 		<File
-			RelativePath="..\binsrc\samples\sparql_demo\make_vad.sh">
+			RelativePath="..\appsrc\ODS-Calendar\make_vad.sh">
 			<FileConfiguration
 				Name="Debug|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					CommandLine="cd $(InputDir)
-set PATH=$(InputDir);$(TargetDir)\..;%PATH%
+set PATH=$(TargetDir)\..;%PATH%
 set HOME=$(ProjectDir)\..\
 set PORT=5555
 set ISQL=isql.exe
@@ -95,15 +95,15 @@ set SERVER=virtuoso-t.exe
 bash make_vad.sh
 cd $(ProjectDir)
 "
-					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-t.exe"
-					Outputs="$(InputDir)\sparql_demo_dav.vad"/>
+					AdditionalDependencies="$(TargetDir)\..\isql.exe;$(TargetDir)\..\virtuoso-t.exe"
+					Outputs="$(InputDir)\ods_calendar_dav.vad;$(InputDir)\ods_calendar_filesystem.vad"/>
 			</FileConfiguration>
 			<FileConfiguration
 				Name="Release|Win32">
 				<Tool
 					Name="VCCustomBuildTool"
 					CommandLine="cd $(InputDir)
-set PATH=$(InputDir);$(TargetDir)\..;%PATH%
+set PATH=$(TargetDir)\..;%PATH%
 set HOME=$(ProjectDir)\..\
 set PORT=5555
 set ISQL=isql.exe
@@ -111,8 +111,8 @@ set SERVER=virtuoso-t.exe
 bash make_vad.sh
 cd $(ProjectDir)
 "
-					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-t.exe"
-					Outputs="$(InputDir)\sparql_demo_dav.vad"/>
+					AdditionalDependencies="$(TargetDir)\..\isql.exe;$(TargetDir)\..\virtuoso-t.exe"
+					Outputs="$(InputDir)\ods_calendar_dav.vad;$(InputDir)\ods_calendar_filesystem.vad"/>
 			</FileConfiguration>
 		</File>
 	</Files>

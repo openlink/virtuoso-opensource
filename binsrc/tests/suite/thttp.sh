@@ -799,6 +799,11 @@ case $1 in
      BLOG_TEST=0  
      LOG "ODS & Blog2 VAD packages are not built"
    fi
+   if [ ! -f rdf_mappers_dav.vad -a -f ../../../../autogen.sh -a "x$HOST_OS" != "x" ]
+   then
+     (cd ../../../rdf_mappers; sh make_vad.sh)
+     cp ../../../rdf_mappers/rdf_mappers_dav.vad ./
+   fi
    START_SERVER $DSN 1000
    sleep 4
    if [ $BLOG_TEST -eq 1 ]

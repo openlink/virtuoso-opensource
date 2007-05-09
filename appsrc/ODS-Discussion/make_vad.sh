@@ -92,11 +92,11 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "x$HOST_OS" != "x" ]
+  if [ "z$HOST_OS" != "z" ] 
 	then
-          $BUILD/../bin/virtuoso-odbc-t +foreground &
+      "$SERVER" +foreground &
   else
-          virtuoso +wait
+      "$SERVER" +wait
   fi
   stat="true"
   while true
