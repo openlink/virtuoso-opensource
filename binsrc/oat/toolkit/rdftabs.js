@@ -52,10 +52,13 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 			/* find values of this predicate */
 			var a_ = false;
 			var b_ = false;
-			var ap = a[1];
-			var bp = b[1];
-			for (var i=0;i<ap.length;i++) { if (ap[i][0] == predicate) { a_ = ap[i][1]; }}
-			for (var i=0;i<bp.length;i++) { if (bp[i][0] == predicate) { b_ = bp[i][1]; }}
+			var ap = a.preds;
+			var bp = b.preds;
+			for (var i=0;i<ap.length;i++) { if (ap[i].name == predicate) { a_ = ap[i].values[0]; }}
+			for (var i=0;i<bp.length;i++) { if (bp[i].name == predicate) { b_ = bp[i].values[0]; }}
+			if (typeof(a_) == "object") { a_ = a_.uri; }
+			if (typeof(b_) == "object") { b_ = b_.uri; }
+			
 			if (a_ == b_) { return 0; }
 			if (a_ === false) { return 1; }
 			if (b_ === false) { return -1; }
@@ -66,7 +69,7 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 			}
 			return result;
 		}
-		self.parent.data.sort(sf);
+		self.parent.data.structured.sort(sf);
 		self.redraw();
 	}
 	
@@ -75,36 +78,40 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		var div = OAT.Dom.create("div",{},"rdf_item");
 		var h = OAT.Dom.create("h3");
 		var s = OAT.Dom.create("span");
-		s.innerHTML = item[0];
+		var uri = item.uri;
+		s.innerHTML = uri;
 		OAT.Dom.append([div,h],[h,s]);
-		if (item[0].match(/^http/i)) {
-			self.parent.createAnchor(s,item[0]);
-			var imglist = self.parent.generateImageActions(item[0]);
+		if (uri.match(/^http/i)) {
+			self.parent.createAnchor(s,uri);
+			var imglist = self.parent.generateImageActions(uri);
 			OAT.Dom.append([h,imglist]);
 			s.style.cursor = "pointer";
 		}
 
-		var preds = item[1];
+		var preds = item.preds;
 		for (var i=0;i<preds.length;i++) {
 			/* check if predicate is not in filters */
-			var predicate = preds[i];
+			var pred = preds[i];
 			var ok = true;
 			
 			for (var j=0;j<self.parent.filtersProperty.length;j++) {
 				var f = self.parent.filtersProperty[j];
-				if (predicate[0] == f[0] && f[1] != "") { ok = false; }
+				if (pred.name == f[0] && f[1] != "") { ok = false; }
 			}
 			if (!ok) { continue; } /* don't draw this property */
 			
 			var d = OAT.Dom.create("div");
 			var strong = OAT.Dom.create("strong");
-			strong.innerHTML = predicate[0]+": ";
-			var content = false;
+			strong.innerHTML = pred.name+": ";
+			OAT.Dom.append([d,strong],[div,d]);
 			
 			/* decide output format */
-			var data = preds[i][1];
-			var content = self.parent.getContent(data);
-			OAT.Dom.append([d,strong,content],[div,d]);
+			for (var k=0;k<pred.values.length;k++) {
+				var value = pred.values[k];
+				var content = self.parent.getContent(value);
+				if (k) { d.appendChild(OAT.Dom.text(", ")); }
+				d.appendChild(content);
+			}
 		} /* for all predicates */
 		
 		return div;
@@ -140,14 +147,18 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		var groupValue = false;
 		var findGV = function(record) {
 			var result = false;
-			var preds = record[1];
-			for (var i=0;i<preds.length;i++) { if (preds[i][0] == self.sortTerm) { result = preds[i][1]; } }
+			var preds = record.preds;
+			for (var i=0;i<preds.length;i++) { 
+				if (preds[i].name == self.sortTerm) { result = preds[i].values[0]; } /* take first */
+			}
+			if (typeof(result) == "object") { result = result.uri; }
 			return result;
 		}
 		
-		for (var i=0;i<self.parent.data.length;i++) {
+		var data = self.parent.data.structured;
+		for (var i=0;i<data.length;i++) {
 			var index = i+1;
-			var item = self.parent.data[i];
+			var item = data[i];
 			if (self.groupMode) { /* grouping */
 				var gv = findGV(item);
 				if (gv != groupValue || i == 0) {
@@ -167,8 +178,15 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		var cnt = OAT.Dom.create("div");
 		var div = OAT.Dom.create("div");
 		var gd = OAT.Dom.create("div");
-		var count = self.parent.data.length;
-		cnt.innerHTML = "There are "+count+" records to match selected filters. ";
+		var count = self.parent.data.structured.length;
+		var tcount = self.parent.data.triples.length;
+		var pcount = 0;
+		for (var i=0;i<self.parent.data.structured.length;i++) {
+			var item = self.parent.data.structured[i];
+			pcount += item.preds.length;
+		}
+		
+		cnt.innerHTML = "There are "+count+" records ("+tcount+" triples, "+pcount+" predicates) to match selected filters. ";
 		if (count == 0) { cnt.innerHTML += "Perhaps your filters are too restrictive?"; }
 		OAT.Dom.append([self.pageDiv,cnt,gd,div]);
 		
@@ -220,15 +238,17 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		
 		var list = [];
 		/* analyze sortable predicates */
-		for (var i=0;i<self.parent.data.length;i++) {
-			var preds = self.parent.data[i][1];
+		var data = self.parent.data.structured;
+		for (var i=0;i<data.length;i++) {
+			var item = data[i];
+			var preds = item.preds;
 			for (var j=0;j<preds.length;j++) {
-				var pair = preds[j];
-				var pred = pair[0];
-				var index1 = list.find(pred);
+				var pred = preds[j];
+				var name = pred.name;
+				var index1 = list.find(name);
 				var index2 = -1;
-				for (var k=0;k<self.parent.filtersProperty.length;k++) { if (self.parent.filtersProperty[k][0] == pred) { index2 = j; } }
-				if (index1 == -1 && index2 == -1) { list.push(pred); }
+				for (var k=0;k<self.parent.filtersProperty.length;k++) { if (self.parent.filtersProperty[k][0] == name) { index2 = j; } }
+				if (index1 == -1 && index2 == -1) { list.push(name); }
 			} /* for all predicates */
 		} /* for all data */
 		
@@ -254,7 +274,7 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		}
 	}
 	
-	this.redraw = function(complete) {
+	this.redraw = function() {
 		if (!self.initialized) {
 			self.initialized = true;
 			OAT.Dom.append([self.elm,self.sortDiv,self.dataDiv]);
@@ -296,20 +316,20 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		self.grid.clearData();
 		
 		var total = 0;
-		for (var i=0;i<self.parent.data.length;i++) {
-			var item = self.parent.data[i];
-			for (var j=0;j<item[1].length;j++) {
-				self.grid.createRow([item[0],item[1][j][0],item[1][j][1]]);
-				if (item[0].match(/^http/i)) { self.patchAnchor(1); }
-				if (item[1][j][1].match(/^http/i)) { self.patchAnchor(3); }
-				total++;
-				if (total == self.options.limit) { 
-					j = item[1].length;
-					i = self.parent.data.length;
+		var triples = self.parent.data.triples;
+
+		var cnt = triples.length;
+		if (cnt > self.options.limit) { 
 					alert("There are more than "+self.options.limit+" triples. Such amount would greatly slow down your computer, "+
 							"so I am going to display only first "+self.options.limit+".");
+			cnt = self.options.limit
 				}
-			}
+
+		for (var i=0;i<cnt;i++) {
+			var triple = triples[i];
+			self.grid.createRow(triple);
+			if (triple[0].match(/^http/i)) { self.patchAnchor(1); }
+			if (triple[2].match(/^http/i)) { self.patchAnchor(3); }
 		}
 	}
 }
@@ -328,21 +348,19 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 	this.elm.style.top = "24px";
 	
 	this.redraw = function() {
+		/* create better triples */
 		var triples = [];
-		/* create raw triples */
-		for (var i=0;i<self.parent.data.length;i++) {
-			var item = self.parent.data[i];
-			for (var j=0;j<item[1].length;j++) {
-				var t = [item[0],item[1][j][0],item[1][j][1]];
-				t.push( item[1][j][1].match(/^http/i) ? 1 : 0);
-				triples.push(t);
-				if (triples.length == self.options.limit) { 
-					j = item[1].length;
-					i = self.parent.data.length;
+		var cnt = self.parent.data.triples.length;
+		if (cnt > self.options.limit) { 
 					alert("There are more than "+self.options.limit+" triples. Such amount would greatly slow down your computer, "+
 							"so I am going to display only first "+self.options.limit+".");
+			cnt = self.options.limit;
 				}
-			}
+		
+		for (var i=0;i<cnt;i++) {
+			var t = self.parent.data.triples[i];
+			var triple = [t[0],t[1],t[2],(t[2].match(/^http/i) ? 1 : 0)];
+			triples.push(triple);
 		}
 		var x = OAT.GraphSVGData.fromTriples(triples);
 		self.graphsvg = new OAT.GraphSVG(self.elm,x[0],x[1],{vertexSize:[4,8]});
@@ -391,13 +409,14 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	}
 	
 	this.tryItem = function(item) {
-		var preds = item[1];
+		var preds = item.preds;
 		var pointResource = false;
 		var locValue = false;
 		for (var i=0;i<preds.length;i++) {
-			var p = preds[i];
-			if (self.keyProperties.find(p[0]) != -1) { pointResource = p[1]; } /* this is resource containig geo coordinates */
-			if (self.locProperties.find(p[0]) != -1) { locValue = p[1]; } /* this is resource containig geo coordinates */
+			var pred = preds[i];
+			var name = pred.name;
+			if (self.keyProperties.find(name) != -1) { pointResource = pred.values[0]; } /* this is resource containig geo coordinates */
+			if (self.locProperties.find(name) != -1) { locValue = pred.values[0]; } /* this is resource containig geo coordinates */
 		}
 		if (!pointResource && !locValue) { return false; }
 		
@@ -405,27 +424,25 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			self.geoCode(locValue,item);
 			return;
 		}
+		if (typeof(pointResource) != "object") { return; } /* not a reference */
 		/* normal marker add */
-		for (var i=0;i<self.parent.data.length;i++) {
-			var it = self.parent.data[i];
-			if (it[0] == pointResource) {
-				/* find coords */
+		var it = pointResource;
 				var coords = [0,0];
-				for (var j=0;j<it[1].length;j++) {
-					if (self.latProperties.find(it[1][j][0]) != -1) { coords[0] = it[1][j][1]; }
-					if (self.lonProperties.find(it[1][j][0]) != -1) { coords[1] = it[1][j][1]; }
+		var preds = it.preds;
+		for (var j=0;j<preds.length;j++) {
+			var pred = preds[j];
+			var name = pred.name;
+			if (self.latProperties.find(name) != -1) { coords[0] = pred.values[0]; }
+			if (self.lonProperties.find(name) != -1) { coords[1] = pred.values[0]; }
 				} /* for all geo properties */
 				if (coords[0] == 0 || coords[1] == 0) { return; }
 				self.pointList.push(coords);
 				self.attachMarker(coords,item);
-				return;
-			} /* geo resource */
-		} /* for all resources */
 	} /* tryItem */
 	
 	this.attachMarker = function(coords,item) {
 		var m = false;
-		var callback = function() {
+		var callback = function() { /* draw item contents */
 			if (OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
 			var div = OAT.Dom.create("div",{overflow:"auto",width:"450px",height:"250px"});
 			var s = OAT.Dom.create("div",{fontWeight:"bold"});
@@ -436,25 +453,26 @@ OAT.RDFTabs.map = function(parent,optObj) {
 				s.style.cursor = "pointer";
 			}
 			div.appendChild(s);
-			var preds = item[1];
+			var preds = item.preds;
 			for (var i=0;i<preds.length;i++) {
-				var p = preds[i][0];
-				var o = preds[i][1];
-				if (o.match(/^http/i) || self.lookupProperties.find(p) != -1) {
+				var pred = preds[i];
+				var name = pred.name;
+				var values = pred.values;
+				if (values.length == 1 || self.lookupProperties.find(name) != -1) {
 				var s = OAT.Dom.create("div");
-					s.innerHTML = p+": ";
-					var content = self.parent.getContent(o,"replace");
+					s.innerHTML = name+": ";
+					var content = self.parent.getContent(values[0],"replace");
 					OAT.Dom.append([s,content],[div,s]);
 				} /* only interesting data */
 			} /* for all predicates */
 			self.map.openWindow(m,div);
 		}
-		var uri = item[2];
-		if (!(uri in self.markerMapping)) {
-			self.markerMapping[uri] = self.markerFiles[self.markerIndex % self.markerFiles.length];
+		var ouri = item.ouri;
+		if (!(ouri in self.markerMapping)) {
+			self.markerMapping[ouri] = self.markerFiles[self.markerIndex % self.markerFiles.length];
 			self.markerIndex++;
 		}
-		var file = self.markerMapping[uri];
+		var file = self.markerMapping[ouri];
 		m = self.map.addMarker(1,coords[0],coords[1],file,18,41,callback);
 	}
 	
@@ -474,8 +492,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		self.map.addMapControl();
 		self.pointList = [];
 		self.pointListLock = 0;
-		for (var i=0;i<self.parent.data.length;i++) {
-			var item = self.parent.data[i];
+		for (var i=0;i<self.parent.data.structured.length;i++) {
+			var item = self.parent.data.structured[i];
 			var data = self.tryItem(item);
 		}
 		
@@ -509,18 +527,41 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 	this.elm.style.margin = "1em";
 	this.elm.style.top = "20px";
 	
+	this.bothProperties = ["date"]; /* containing coordinates */
+	this.startProperties = ["dtstart"]; /* containing location */
+	this.endProperties = ["dtend"];
+	this.subProperties = ["dateTime"];
+	
+	
+	this.tryDeepItem = function(value) {
+		if (typeof(value) != "object") { return value; }
+		for (var i=0;i<value.preds.length;i++) {
+			var pred = value.preds[i];
+			if (self.subProperties.find(pred.name) != -1) { return pred.values[0]; }
+		}
+		return false;
+	}
+	
 	this.tryItem = function(item) {
-		var preds = item[1];
+		var preds = item.preds;
 		var start = false;
 		var end = false;
 		for (var i=0;i<preds.length;i++) {
-			var p = preds[i];
-			if (p[0] == "date") { 
-				start = p[1];
-				end = p[1];
+			var pred = preds[i];
+			var name = pred.name;
+			if (self.bothProperties.find(name) != -1) {
+				var value = pred.values[0];
+				start = self.tryDeepItem(value);
+				end = self.tryDeepItem(value);
 			}
-			if (p[0] == "dtstart") { start = p[1]; }
-			if (p[0] == "dtend") { end = p[1]; }
+			if (self.startProperties.find(name) != -1) {
+				var value = pred.values[0];
+				start = self.tryDeepItem(value);
+			}
+			if (self.endProperties.find(name) != -1) {
+				var value = pred.values[0];
+				end = self.tryDeepItem(value);
+			}
 		}
 		if (!start || !end) { return false; }
 		return [start,end];
@@ -535,11 +576,11 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 		self.tl.clear();
 		var colors = ["#cf6","#887fff","#66ffe6","#fb9","#7fff66","#ff997f","#96f"]; /* pastel */
 		
-		for (var i=0;i<self.parent.data.length;i++) {
-			var item = self.parent.data[i];
+		for (var i=0;i<self.parent.data.structured.length;i++) {
+			var item = self.parent.data.structured[i];
 			var date = self.tryItem(item);
 			if (!date) { continue; }
-			var ouri = item[2];
+			var ouri = item.ouri;
 			if (uris.find(ouri) == -1) {
 				self.tl.addBand(ouri,colors[uris.length % colors.length]);
 				uris.push(ouri);
@@ -579,20 +620,24 @@ OAT.RDFTabs.images = function(parent,optObj) {
 	
 	this.redraw = function() {
 		OAT.Dom.clear(self.elm);
-		for (var i=0;i<self.parent.data.length;i++) {
-			var item = self.parent.data[i];
-			for (var j=0;j<item[1].length;j++) {
-				var pair = item[1][j];
-				var p = pair[0];
-				var o = pair[1];
-				if (o.match(/^http.*(jpe?g|png|gif)$/i)) {
+		var data = self.parent.data.structured;
+		for (var i=0;i<data.length;i++) {
+			var item = data[i];
+			var preds = item.preds;
+			for (var j=0;j<preds.length;j++) {
+				var pred = preds[j];
+				for (var k=0;k<pred.values.length;k++) {
+					var value = pred.values[k];
+					if (typeof(value) == "object") { continue; }
+					if (value.match(/^http.*(jpe?g|png|gif)$/i)) {
 					var img = OAT.Dom.create("img",{},"rdf_image")
-					img.src = o;
+						img.src = value;
 					img.title = self.parent.getTitle(item);
 					self.elm.appendChild(img);
-					self.parent.createAnchor(img,o);
+						self.parent.createAnchor(img,value);
 				} /* if image */
-			} /* for all properties */
+				} /* for all values */
+			} /* for all predicates */
 		} /* for all items */
 	} /* redraw */
 }
