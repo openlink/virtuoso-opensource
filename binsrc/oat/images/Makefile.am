@@ -19,6 +19,6 @@
 #
 
 EXTRA_DIST = \
-	*.gif \
-	*.png \
-	markers/*.png
+	$(srcdir)/*.gif \
+	$(srcdir)/*.png \
+	$(srcdir)/markers/*.png
