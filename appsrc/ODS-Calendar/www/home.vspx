@@ -38,6 +38,10 @@
             self.cAction := 'view';
         }
       }
+      tmp := get_keyword ('action', params, '');
+      if (tmp <> '') {
+        self.cAction := tmp;
+      }
     ]]>
   </v:method>
 
@@ -145,9 +149,29 @@
     ]]>
   </v:method>
 
+  <v:method name="showEventDuration" arglist="in e_event integer, in e_start datetime, in e_end datetime">
+    <![CDATA[
+      e_start := CAL.WA.event_gmt2user (e_start, e_event, self.cTimezone);
+      e_end := CAL.WA.event_gmt2user (e_end, e_end, self.cTimezone);
+      if (CAL.WA.dt_compare (e_start, e_end)) {
+        if (e_event = 1) {
+          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s</span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat)));
+        } else {
+          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span> - <span class="EVL_time">%s</span></span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
+        }
+      } else {
+        if (e_event = 1) {
+          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cDateFormat)));
+        } else {
+          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datetring (e_end, self.cTimeFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
+        }
+      }
+    ]]>
+  </v:method>
+
   <v:method name="showEventSubject" arglist="in e_id integer, in e_event integer, in e_subject varchar, in e_repeat varchar, in e_reminder varchar">
     <![CDATA[
-      http (sprintf ('<span id="e_%d" unselectable="on" onclick="eEdit(this)" class="EVL EVL_subject">%s%s%s</span>', e_id, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject)));
+      http (sprintf ('<span id="e_%d" unselectable="on" onclick="eEdit(this)" class="EVL EVL_subject">%s %s%s</span>', e_id, CAL.WA.show_subject (e_subject), self.repeatableImage (e_repeat), self.reminderImage (e_reminder)));
     ]]>
   </v:method>
 
@@ -223,6 +247,20 @@
       return '';
     ]]>
   </v:method>
+
+  <v:method name="singleObjectName" arglist="in objectsName any">
+    <![CDATA[
+      if (objectsName = 'events')
+        return 'Event';
+      if (objectsName = 'tasks')
+        return 'Task';
+      if (objectsName = 'todos')
+        return 'ToDo';
+      return '';
+    ]]>
+  </v:method>
+
+self.objectName (self.cScope)
 
   <vm:pagetitle>Calendar</vm:pagetitle>
   <vm:pagewrapper>
@@ -405,7 +443,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" style="url" value="Todos" xhtml_class="-- case when (self.cScope = 'todos') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="ToDo List">
+              <v:button action="simple" style="url" value="ToDos" xhtml_class="-- case when (self.cScope = 'todos') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="ToDo List">
                 <v:on-post>
                   <![CDATA[
                     self.cScope := 'todos';
@@ -415,6 +453,7 @@
                 </v:on-post>
               </v:button>
             </td>
+            <vm:if test="self.cScope not in ('events', 'tasks', 'todos')">
             <td align="right">
               <span class="CE_name">
                 <?vsp
@@ -485,9 +524,33 @@
                 </v:on-post>
               </v:button>
             </td>
+             </vm:if>
           </tr>
         </table>
         <div class="CE_container">
+          <vm:if test="(self.cScope not in ('day', 'week', 'month')) and (self.account_role not in ('public', 'guest'))">
+            <v:button value="--'New ' || self.singleObjectName (self.cScope)" action="simple" xhtml_class="button" xhtml_style="margin-bottom: 5px;">
+              <v:on-post>
+                <![CDATA[
+                  self.cAction := 'create';
+          		    self.vc_data_bind(e);
+                ]]>
+              </v:on-post>
+            </v:button>
+            <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete selected items?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button" xhtml_style="margin-bottom: 5px;">
+              <v:on-post>
+                <![CDATA[
+                  declare N integer;
+
+                  for (N := 0; N < length(e.ve_params); N := N + 4)
+                    if (e.ve_params[N] = 'cb_item')
+                      CAL.WA.event_delete(cast (e.ve_params[N+1] as integer), self.domain_id);
+
+          		    self.vc_data_bind(e);
+                ]]>
+              </v:on-post>
+            </v:button>
+          </vm:if>
           <div id="content" class="CE_main">
             <vm:if test="self.cScope in ('day', 'week', 'month')">
               <table class="CE_table" cellspacing="0">
@@ -647,7 +710,7 @@
                 <v:before-data-bind>
                   <![CDATA[
                     control.ds_parameters := null;
-                    control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d order by E_EVENT_START', self.domain_id);
+                    control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 0 order by E_EVENT_START', self.domain_id);
                   ]]>
                 </v:before-data-bind>
               </v:data-source>
@@ -658,14 +721,16 @@
                   <table id="events" style="width: 100%; backgrownd-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
-                        <th width="4%" colspan="4">
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <th class="checkbox" width="1%">
+                            <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
+                          </th>
+                        </vm:if>
+                        <th width="10%">
                           Duration
                         </th>
                         <th>
                           Subject
-                        </th>
-                        <th width="3%">
-                          Action
                         </th>
                       </tr>
                     </thead>
@@ -677,25 +742,19 @@
                   <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <td align="center" valign="top">
+                            <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('E_ID') ?>" onclick="selectCheck(this, 'cb_item')"/>
+                          </td>
+                        </vm:if>
                         <td nowrap="nowrap">
                           <?vsp
-                            self.showEventStart ((control as vspx_row_template).te_column_value('E_EVENT'),
-                                                 (control as vspx_row_template).te_column_value('E_EVENT_START'));
-                          ?>
-                        </td>
-                        <td nowrap="nowrap" style="padding-left: 5px;">
-                        -
-                        </td>
-                        <td nowrap="nowrap" align="right">
-                          <?vsp
-                            self.showEventEnd ((control as vspx_row_template).te_column_value('E_EVENT'),
-                                               (control as vspx_row_template).te_column_value('E_EVENT_END'));
+                            self.showEventDuration ((control as vspx_row_template).te_column_value('E_EVENT'),
+                                                    (control as vspx_row_template).te_column_value('E_EVENT_START'),
+                                                    (control as vspx_row_template).te_column_value('E_EVENT_END'));
                           ?>
                         </td>
                         <td>
-                          &nbsp;
-                        </td>
-                        <td style="padding-left: 5px;">
                           <?vsp
                             self.showEventSubject ((control as vspx_row_template).te_column_value('E_ID'),
                                                    (control as vspx_row_template).te_column_value('E_EVENT'),
@@ -703,16 +762,6 @@
                                                    (control as vspx_row_template).te_column_value('E_REPEAT'),
                                                    (control as vspx_row_template).te_column_value('E_REMINDER'));
                           ?>
-                        </td>
-                        <td>
-                          <v:button value="delete" action="simple" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this event?\');" xhtml_class="button" xhtml_alt="Delete Event">
-                            <v:on-post>
-                              <![CDATA[
-                                CAL.WA.event_delete(cast((control.vc_parent as vspx_row_template).te_column_value('ESFO_ID') as integer), self.domain_id);
-                        		    self.vc_data_bind(e);
-                              ]]>
-                            </v:on-post>
-                          </v:button>
                         </td>
                       </tr>
                     </table>
@@ -726,16 +775,149 @@
                 </v:template>
 
               </v:data-set>
+            </vm:if>
+
+            <vm:if test="self.cScope = 'tasks'">
+              <v:data-source name="dsrc1" expression-type="sql" nrows="0" initial-offset="0">
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ds_parameters := null;
+                    control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 1 order by E_EVENT_START', self.domain_id);
+                  ]]>
+                </v:before-data-bind>
+              </v:data-source>
+
+              <v:data-set name="ds1" data-source="self.dsrc1" scrollable="1">
+
+                <v:template name="ds1_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table id="events" style="width: 100%; backgrownd-color: #FFF;" cellspacing="0">
+                    <thead class="sortHeader">
+                      <tr>
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <th class="checkbox" width="1%">
+                            <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
+                          </th>
+                        </vm:if>
+                        <th width="10%">
+                          Duration
+                        </th>
+                        <th>
+                          Subject
+                        </th>
+                        <th width="3%">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                  </table>
+                </v:template>
+
+                <v:template name="ds1_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+                  <v:template name="ds1_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                    <table>
+                      <tr>
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <th class="checkbox" width="1%">
+                            <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
+                          </th>
+                        </vm:if>
+                        <td nowrap="nowrap">
+                          <?vsp
+                            self.showEventDuration ((control as vspx_row_template).te_column_value('E_EVENT'),
+                                                    (control as vspx_row_template).te_column_value('E_EVENT_START'),
+                                               (control as vspx_row_template).te_column_value('E_EVENT_END'));
+                          ?>
+                        </td>
+                        <td>
+                          <?vsp
+                            self.showEventSubject ((control as vspx_row_template).te_column_value('E_ID'),
+                                                   (control as vspx_row_template).te_column_value('E_EVENT'),
+                                                   (control as vspx_row_template).te_column_value('E_SUBJECT'),
+                                                   (control as vspx_row_template).te_column_value('E_REPEAT'),
+                                                   (control as vspx_row_template).te_column_value('E_REMINDER'));
+                          ?>
+                        </td>
+                      </tr>
+                    </table>
+                  </v:template>
+
+                </v:template>
+
+                <v:template name="ds1_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                  <table>
+                  </table>
+                </v:template>
+
+              </v:data-set>
+            </vm:if>
+
+            <vm:if test="self.cScope = 'todos'">
+              <v:data-source name="dsrc2" expression-type="sql" nrows="0" initial-offset="0">
+                <v:before-data-bind>
+                              <![CDATA[
+                    control.ds_parameters := null;
+                    control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 2 order by E_EVENT_START', self.domain_id);
+                              ]]>
+                </v:before-data-bind>
+              </v:data-source>
+
+              <v:data-set name="ds2" data-source="self.dsrc2" scrollable="1">
+
+                <v:template name="ds2_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table id="events" style="width: 100%; backgrownd-color: #FFF;" cellspacing="0">
+                    <thead class="sortHeader">
+                      <tr>
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <th class="checkbox" width="1%">
+                            <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
+                          </th>
+                        </vm:if>
+                        <th>
+                          Description
+                        </th>
+                      </tr>
+                    </thead>
+                  </table>
+                </v:template>
+
+                <v:template name="ds2_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+                  <v:template name="ds2_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                    <table>
+                      <tr>
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <th class="checkbox" width="1%">
+                            <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
+                          </th>
+                        </vm:if>
+                        <td style="padding-left: 5px;">
+                          <?vsp
+                            self.showEventSubject ((control as vspx_row_template).te_column_value('E_ID'),
+                                                   (control as vspx_row_template).te_column_value('E_EVENT'),
+                                                   (control as vspx_row_template).te_column_value('E_SUBJECT'),
+                                                   (control as vspx_row_template).te_column_value('E_REPEAT'),
+                                                   (control as vspx_row_template).te_column_value('E_REMINDER'));
+                          ?>
+                        </td>
+                      </tr>
+                    </table>
+                  </v:template>
+
+                </v:template>
+
+                <v:template name="ds2_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                  <table>
+                  </table>
+                </v:template>
+
+              </v:data-set>
+            </vm:if>
               <script type="text/javascript">
                 <![CDATA[
                   coloriseTable('events');
                 ]]>
               </script>
-            </vm:if>
-            <vm:if test="self.cScope = 'tasks'">
-            </vm:if>
-            <vm:if test="self.cScope = 'todos'">
-            </vm:if>
           </div>
         </div>
       </v:template>

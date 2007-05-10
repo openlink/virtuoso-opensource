@@ -1064,6 +1064,7 @@ a.calendar_button {
   min-height: 320px;
   height: 560px;
   position: relative;
+  background-color: #FFF;
   overflow-x: hidden;
   overflow-y: scroll;
 }

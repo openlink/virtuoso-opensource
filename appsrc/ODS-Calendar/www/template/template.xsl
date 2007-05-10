@@ -238,7 +238,7 @@
 
   <!--=========================================================================-->
   <xsl:template name="vm:event">
-    <div class="lc" style="-moz-user-select: none; cursor: pointer;" onclick="javascript: cNewEvent(); ">
+    <div class="lc" style="-moz-user-select: none; cursor: pointer; text-align: center;" onclick="javascript: cNewEvent();">
       <b>New Event</b>
     </div>
   </xsl:template>
@@ -344,7 +344,7 @@
 
   <!--=========================================================================-->
   <xsl:template name="vm:formats">
-    <div class="lc" style="-moz-user-select: none; cursor: pointer;" onclick="shCell('gems')">
+    <div class="lc" style="-moz-user-select: none; cursor: pointer; text-align: center;" onclick="shCell('gems')">
       <b>Calendar Gems</b>
     </div>
     <div id="gems" class="lc lc_closer lc_noborder" style="display: none;">
