@@ -29,7 +29,7 @@
   xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
   xmlns:atom="http://purl.org/atom/ns#"
   xmlns="http://purl.org/atom/ns#"
-  xmlns:vi="http://www.openlinksw.com/weblog/"
+  xmlns:ods="http://www.openlinksw.com/ods/"
   xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   version="1.0">
@@ -84,6 +84,10 @@
 
 <xsl:template match="channel/category"/>
 
+<xsl:template match="item/category">
+    <dc:subject><xsl:value-of select="."/></dc:subject>
+</xsl:template>
+
 <xsl:template match="channel/generator"/>
 
 <xsl:template match="channel/image" />
@@ -107,7 +111,7 @@
     <issued><xsl:call-template name="date"/></issued>
 </xsl:template>
 
-<xsl:template match="item/vi:modified">
+<xsl:template match="item/ods:modified">
     <modified><xsl:apply-templates /></modified>
 </xsl:template>
 

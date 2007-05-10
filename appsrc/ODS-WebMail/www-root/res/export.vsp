@@ -45,7 +45,7 @@
 
     http_rewrite ();
     http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
-    http ('<rss version="2.0" xmlns:vi="http://www.openlinksw.com/weblog/">\n');
+    http ('<rss version="2.0">\n');
     http ('<channel>\n');
     for (select U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = _user_id) do {
       http ('<title>');
@@ -81,9 +81,9 @@
         http ('<pubDate>');
           http_value (OMAIL.WA.dt_rfc1123 (row[7]));
         http ('</pubDate>\n');
-        http ('<vi:modified>');
+        http ('<ods:modified xmlns:ods:="http://www.openlinksw.com/ods/">');
           http_value (OMAIL.WA.dt_iso8601 (row[7]));
-        http ('</vi:modified>\n');
+        http ('</ods:modified>\n');
       http ('</item>\n');
     }
     http ('</channel>\n');

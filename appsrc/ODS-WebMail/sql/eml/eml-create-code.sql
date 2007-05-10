@@ -5061,9 +5061,9 @@ create procedure OMAIL.WA.omail_export(
           http_value (OMAIL.WA.dt_rfc1123 (row[7]));
         http ('</pubDate>\n');
         if (_output <> 'rss') {
-          http ('<vi:modified xmlns:vi="http://www.openlinksw.com/weblog/">');
+          http ('<ods:modified xmlns:ods:="http://www.openlinksw.com/ods/">');
             http_value (OMAIL.WA.dt_iso8601 (row[7]));
-          http ('</vi:modified>\n');
+          http ('</ods:modified>\n');
         }
         http ('<description><![CDATA[');
           http_value (OMAIL.WA.utf2wide(OMAIL.WA.omail_message_body(_domain_id, _user_id, row[4])));

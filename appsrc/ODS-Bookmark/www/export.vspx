@@ -138,9 +138,9 @@
                   http ('</category>\n');
                 }
                 if (self.v_output <> 'rss') {
-                  http ('<vi:modified xmlns:vi="http://www.openlinksw.com/weblog/">');
+                  http ('<ods:modified xmlns:ods:="http://www.openlinksw.com/ods/">');
                     http_value (BMK.WA.dt_iso8601 (row[5]));
-                  http ('</vi:modified>\n');
+                  http ('</ods:modified>\n');
                 }
               http ('</item>\n');
             }
