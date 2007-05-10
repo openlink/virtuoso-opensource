@@ -266,6 +266,13 @@ create iri class sioc:blog_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U
 	    (in uname varchar not null, in inst_name varchar not null, in topic_id varchar not null) .
     create iri class sioc:wiki_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/wiki/%U"
 	    ( in uname varchar not null, in forum_name varchar not null) .
+    #Calendar
+    create iri class sioc:calendar_event_iri "http://^{URIQADefaultHost}^/dataspace/%U/calendar/%U/%d"
+	    (in uname varchar not null, in inst_name varchar not null, in calendar_id integer not null) .
+    create iri class sioc:calendar_event_text_iri "http://^{URIQADefaultHost}^/dataspace/%U/calendar/%U/%d/text"
+	    (in uname varchar not null, in inst_name varchar not null, in calendar_id integer not null) .
+    create iri class sioc:calendar_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/calendar/%U"
+	    ( in uname varchar not null, in forum_name varchar not null) .
     # NNTPF
     create iri class sioc:nntp_forum_iri "http://^{URIQADefaultHost}^/dataspace/discussion/%U"
 	    ( in forum_name varchar not null) .
@@ -294,6 +301,7 @@ prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
     prefix exif: <http://www.w3.org/2003/12/exif/ns/>
     prefix ann: <http://www.w3.org/2000/10/annotation-ns#>
     prefix wikiont: <http://sw.deri.org/2005/04/wikipedia/wikiont.owl#>
+    prefix calendar: <http://www.w3.org/2002/12/cal#>
     alter quad storage virtrdf:DefaultQuadStorage
     #  alter quad storage virtrdf:ODS
   {
@@ -328,6 +336,10 @@ prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
 		    a sioct:BookmarkFolder
 	            where (^{alias}^.WAM_APP_TYPE = ''Bookmark'') option (EXCLUSIVE) .
+
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioct:Calendar
+	            where (^{alias}^.WAM_APP_TYPE = ''Calendar'') option (EXCLUSIVE) .
 
 	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
 		    a sioc:Community

@@ -462,7 +462,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
     }
 
   if (length (app) and app not in
-      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed', 'sparql', 'polls', 'addressbook'))
+      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed', 'sparql', 'polls', 'addressbook', 'calendar'))
    {
      if (has_accept)
        {
