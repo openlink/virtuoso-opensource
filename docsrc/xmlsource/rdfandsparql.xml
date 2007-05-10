@@ -2625,6 +2625,26 @@ Can be found at 'http://example.com:8080/sparql_demo/' depending on the local Vi
 	    The piggybank-generated-name is Virtuoso DAV user.
     </para>
 </sect2>
-
+<sect2 id="rdfproxyservice"><title>RDF proxy service</title>
+    <para>
+	In certain cases like for Ajax applications, it's prohibited to issue HTTP requests to another server that origin server.
+	In other cases it is needed to transform the content of target to an RDF format. To this purpose the Virtuoso Server provide a RDF proxy service. This service takes as argument target URL and may return content as-is or will try to transform with SPARQL sponger and return RDF data representing the target.  In case of transformation to RDF the serialization of the output can be forced by a URL parameter of by content negotiation.
+    </para>
+    <para>
+	Virtuoso reserves the path '/proxy/' for RDF proxy service. In the current implementation, Virtuoso defines virtual directories for HTTP requests that come to the port specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso configuration file and refer to the above path string. So if the Virtuoso installation on host example.com listens for HTTP requests on port 8080 then client applications should use the 'service endpoint' string equal to 'http://example.com:8080/proxy/'.
+    </para>
+    <para>
+	The RDF proxy service takes following URL parameters:
+    </para>
+    <itemizedlist mark="bullet" spacing="compact">
+	<listitem><emphasis>url</emphasis> the URL of the target</listitem>
+	<listitem><emphasis>force</emphasis> if 'rdf' is specified will try to extract RDF data from target and return it</listitem>
+	<listitem><emphasis>header</emphasis> HTTP headers to be sent to the target</listitem>
+	<listitem><emphasis>output-format</emphasis> if 'force=rdf' is given, designate the output MIME type of the RDF data, the default is 'rdf+xml', can be also 'n3' or 'turtle' or 'ttl'.</listitem>
+    </itemizedlist>
+    <para>
+	When no 'output-format' is given and RDF data is asked, the result will be serialized with MIME type depending of 'Accept' header i.e. the proxy service will do content negotiation. 
+    </para>
+</sect2>
 </sect1>
 </chapter>
