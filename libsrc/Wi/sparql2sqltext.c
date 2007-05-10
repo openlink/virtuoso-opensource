@@ -3157,15 +3157,20 @@ ssg_print_fld_lit_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
   col_count = BOX_ELEMENTS (field->qmvColumns);
   for (col_ctr = 0; col_ctr < col_count; col_ctr++)
     {
+	  qm_format_t *qmf = field->qmvFormat;
       const char *eq_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + col_ctr));
       ssg_print_where_or_and (ssg, ((0 != col_ctr) ? NULL : "field equal to literal, quick test"));
-      ssg_print_tr_field_expn (ssg, field, tabid, field->qmvFormat, eq_asname);
+          ssg_print_tr_field_expn (ssg, field, tabid, qmf, eq_asname);
       ssg_puts (" =");
   if ((DV_STRING == DV_TYPE_OF (litvalue)) &&
     ((NULL != littype) || (NULL != litlang)) )
-        ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfShortOfTypedsqlvalTmpl, tabid, field, fld_tree, eq_asname);
+            ssg_print_tmpl (ssg, field->qmvFormat, qmf->qmfShortOfTypedsqlvalTmpl, tabid, field, fld_tree, eq_asname);
+          else if ((0 != qmf->qmfDtpOfNiceSqlval) &&
+	    (qmf->qmfDtpOfNiceSqlval == DV_TYPE_OF (litvalue)) &&
+	    (NULL != qmf->qmfShortOfNiceSqlvalTmpl) )
+            ssg_print_tmpl (ssg, field->qmvFormat, qmf->qmfShortOfNiceSqlvalTmpl, tabid, field, (SPART *)litvalue, eq_asname);
   else
-        ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfShortOfSqlvalTmpl, tabid, field, (SPART *)litvalue, eq_asname);
+            ssg_print_tmpl (ssg, field->qmvFormat, qmf->qmfShortOfSqlvalTmpl, tabid, field, (SPART *)litvalue, eq_asname);
     }
     }
   else

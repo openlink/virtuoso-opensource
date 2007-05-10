@@ -62,6 +62,8 @@ JSO_SCALAR qmfShortOfTypedsqlvalTmpl STRING REQUIRED	--!< ... makes short by SQL
 JSO_SCALAR qmfShortOfSqlvalTmpl STRING REQUIRED		--!< ... makes short by sqlvalue with no language and a datatype specified by SQL type
 JSO_SCALAR qmfShortOfLongTmpl STRING REQUIRED		--!< ... makes short by long
 JSO_SCALAR qmfShortOfUriTmpl STRING REQUIRED		--!< ... makes short by uri
+JSO_SCALAR qmfShortOfNiceSqlvalTmpl STRING OPTIONAL	--!< ... works like qmfShortOfSqlvalTmpl for values of one selected data type, not suitable for other types
+JSO_SCALAR qmfDtpOfNiceSqlval INTEGER OPTIONAL          --!< The 'nice' DTP that is an acceptable type of qmfShortOfNiceSqlvalTmpl, zero or unset if no nice type
 -- Misc
 JSO_SCALAR qmfIsBijection BOOLEAN REQUIRED		--!< Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
 JSO_SCALAR qmfIsStable BOOLEAN REQUIRED			--!< Nonzero if sql values are in order IFF of short values are in order
