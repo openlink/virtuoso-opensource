@@ -248,12 +248,14 @@ create procedure briefcase_sioc_insert_ex (
   -- is FOAF file?
   --
   if ((r_type = 'application/foaf+xml') or (r_type = 'application/rdf+xml')) {
+    -- instance ID
     appType := 'AddressBook';
     instance_id := ODRIVE.WA.check_app (appType, r_owner);
     if (not instance_id)
       instance_id := DB.DBA.ODS_CREATE_NEW_APP_INST (appType, r_ownerName || '''s ' || appType, r_ownerName);
     c_iri := addressbook_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = instance_id));
 
+    -- main IRI-s
     w_iri := dav_res_iri (r_full_path || '.tmp');
     also_iri := dav_res_iri (r_full_path);
     {
@@ -330,8 +332,7 @@ create procedure briefcase_sioc_insert_ex (
   -- is vCard or vCalendar file?
   --
   if ((r_type = 'text/directory') or (r_type = 'text/calendar')) {
-    -- main iri-s
-  --
+    -- main IRI-s
     g_iri := get_graph ();
     creator_iri := user_iri (r_owner);
 
@@ -352,6 +353,13 @@ create procedure briefcase_sioc_insert_ex (
 
       itemName := xpath_eval ('name(.)', xmlItem);
       if (itemName = 'IMC-VCARD') {
+        -- instance ID
+        appType := 'AddressBook';
+        instance_id := ODRIVE.WA.check_app (appType, r_owner);
+        if (not instance_id)
+          instance_id := DB.DBA.ODS_CREATE_NEW_APP_INST (appType, r_ownerName || '''s ' || appType, r_ownerName);
+        c_iri := addressbook_iri ((select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID = instance_id));
+
         -- ldap data source
         ldapServer := LDAP..ldap_default (r_owner);
         if (not isnull (ldapServer))
