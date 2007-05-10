@@ -794,7 +794,7 @@ virt_proxy_init ()
 ;
 
 
-create procedure ext_http_proxy (in url varchar, in header varchar := null, in force varchar := null) __SOAP_HTTP 'text/html'
+create procedure ext_http_proxy (in url varchar, in header varchar := null, in force varchar := null, in "output-format" varchar := null) __SOAP_HTTP 'text/html'
 {
   declare hdr, content, req_hdr any;
   declare ct any;
@@ -810,6 +810,13 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
           accept := '';
 	  if (header is not null and length (header))
 	    accept := http_request_header (split_and_decode (header, 0, '\0\0\r\n'), 'Accept', null, null);
+	  if ("output-format" is not null)
+	    {
+	      if ("output-format" = 'rdf' or "output-format" = 'rdf+xml')
+		accept := 'application/rdf+xml';
+	      else if ("output-format" = 'ttl' or "output-format" = 'turtle' or "output-format" = 'n3')
+		accept := 'text/rdf+n3';
+	    }
           stat := '00000';
 	  set_user_id ('SPARQL');
           exec (sprintf ('sparql define get:soft "soft" CONSTRUCT { ?s ?p ?o } FROM <%s> WHERE { ?s ?p ?o }', url),
