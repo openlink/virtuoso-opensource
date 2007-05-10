@@ -334,6 +334,6 @@ create procedure ods_addressbook_sioc_init ()
 }
 ;
 
-AB.WA.exec_no_error('ods_addressbook_sioc_init ()');
+--AB.WA.exec_no_error('ods_addressbook_sioc_init ()');
 
 use DB;

@@ -31,7 +31,7 @@
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns:r="http://backend.userland.com/rss2" xmlns="http://purl.org/rss/1.0/"
   xmlns:rss="http://purl.org/rss/1.0/"
-  xmlns:vi="http://www.openlinksw.com/weblog/"
+  xmlns:ods="http://www.openlinksw.com/ods/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:atom10="http://www.w3.org/2005/Atom" version="1.0">
 
@@ -65,7 +65,7 @@
 		<!--<xsl:copy><xsl:value-of select="." /></xsl:copy>-->
 	</xsl:template>
 
-	<xsl:template match="vi:*" />
+	<xsl:template match="ods:*" />
 	<xsl:template match="channel/itunes:*" />
 	<xsl:template match="item/itunes:*" />
 	<xsl:template match="atom10:*" />

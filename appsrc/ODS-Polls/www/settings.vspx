@@ -26,11 +26,7 @@
   <vm:pagetitle>Preferences</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header/>
-    <vm:variables>
-      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
-    </vm:variables>
     <vm:pagebody>
-      <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <div class="new-form-header" style="margin-top: 6px;">
         Preferences
       </div>
@@ -69,7 +65,7 @@
             </td>
           </tr>
           <tr>
-            <th width="30%"/>
+            <th/>
             <td>
               <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.settings, '1') as integer)" />
               <vm:label for="f_tbLabels" value="Show toolbar labels"/>
@@ -155,11 +151,6 @@
           </v:on-post>
         </v:button>
       </div>
-      <script>
-        <![CDATA[
-          initTab(3, 1);
-        ]]>
-      </script>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
