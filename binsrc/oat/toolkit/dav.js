@@ -475,13 +475,9 @@ OAT.WebDav = {
 				var item = list[i];
 				if (!item.dir && !this.checkExtension(item.name)) { continue; }
 				var ico_type = (item.dir ? 'folder' : 'file');
-				var ico = OAT.Dom.create("img",{width:"32px",height:"32px"});
-				ico.src = this.options.imagePath+"Dav_"+ico_type+"."+this.options.imageExt;
-				if (OAT.Browser.isIE && this.options.imageExt.toLowerCase() == "png") {
-					ico.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+ico.src+"', sizingMethod='crop')";
-					ico.src = this.options.imagePath+"Blank.gif";
-				}
-
+				var src = this.options.imagePath+"Dav_"+ico_type+"."+this.options.imageExt;
+				var srcB = this.options.imagePath+"Blank.gif";
+				var ico = OAT.Dom.image(src,srcB,32,32);
 				var cube = OAT.Dom.create('div',{},"dav_item");
 				OAT.Dom.append([cube,ico,OAT.Dom.create("br"),OAT.Dom.text(item.name)],[content,cube]);
 				content.appendChild(cube);

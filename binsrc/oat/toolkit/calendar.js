@@ -19,8 +19,14 @@
 	CSS: .calendar, .calendar_selected, .calendar_special, .calendar_year, .calendar_month
 */
 
-OAT.Calendar = function() {
+OAT.Calendar = function(optObj) {
 	var self = this;
+	
+	this.options = {
+		popup:false
+	}
+	for (var p in optObj) { self.options[p] = optObj[p]; }
+	
 	this.dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 	this.monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 	this.specialDays = [0,0,0,0,0,1,1];
@@ -73,6 +79,7 @@ OAT.Calendar = function() {
 			self.oldDate[1] = self.date[1];
 			self.oldDate[2] = self.date[2];
 			OAT.Dom.hide(self.div);
+			self.visible = false;
 			self.callback(self.date);
 			self.createDays();
 		}
@@ -151,7 +158,9 @@ OAT.Calendar = function() {
 		self.div.style.left = x+"px";
 		self.div.style.top = y+"px";
 		self.callback = callback;
-		self.div.style.display = "block";
+		OAT.Dom.show(self.div);
+		self.visible = false;
+		setTimeout(function(){self.visible = true;},500);
 		if (date) {
 			self.date = date;
 			self.oldDate[0] = date[0];
@@ -164,7 +173,8 @@ OAT.Calendar = function() {
 	}
 	
 	this.draw = function() {
-		self.div = OAT.Dom.create("div",{display:"none",position:"absolute"});
+		self.div = OAT.Dom.create("div",{position:"absolute"});
+		OAT.Dom.hide(self.div);
 		self.div.className = "calendar";
 		var t = OAT.Dom.create("table");
 		self.body = OAT.Dom.create("tbody");
@@ -226,5 +236,16 @@ OAT.Calendar = function() {
 	}
 	
 	this.drawn = false;
+	this.visible = false;
+	if (self.options.popup) {
+		var clickRef = function(event) {
+			if (!self.visible) { return; }
+			var target = OAT.Dom.source(event);
+			if (OAT.Dom.isChild(target,self.div)) { return; }
+			self.visible = false;
+			OAT.Dom.hide(self.div);
+		}
+		OAT.Dom.attach(document,"click",clickRef);
+	}
 }
 OAT.Loader.featureLoaded("calendar");

@@ -87,11 +87,7 @@ OAT.RectWin = function(optObj) {
 		}
 		self.link.style.width = "30px";
 		self.link.style.height = "35px";
-		self.link.src = path;
-		if (OAT.Browser.isIE6) {
-			self.link.src = self.options.imagePath + "Blank.gif";
-		}
-		self.link.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+path+"', sizingMethod='crop')";
+		OAT.Dom.imageSrc(self.link,path,self.options.imagePath + "Blank.gif");
 	}
 	
 	this.anchorTo = function(x_,y_) { /* where should we put the window? */

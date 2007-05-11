@@ -178,8 +178,7 @@ OAT.GhostDrag = function() {
 		var coords = OAT.Dom.position(elm);
 		obj.style.left = coords[0]+"px";
 		obj.style.top = coords[1]+"px";
-		obj.style.opacity = 0.5;
-		obj.style.filter = "alpha(opacity=50)";
+		OAT.Style.opacity(obj,0.5);
 		obj.appendChild(elm.cloneNode(true));
 		obj.mouse_x = x;
 		obj.mouse_y = y;

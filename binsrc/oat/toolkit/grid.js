@@ -140,7 +140,8 @@ OAT.GridData = {
 			var obj = OAT.GridData.dragging;
 			if (!obj.tmp_drag) { /* just moved - create ghost */
 				var container = obj.header.cells[OAT.GridData.index].container;
-				obj.tmp_drag = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",backgroundColor:"#888",opacity:"0.5",filter:"alpha(opacity=50)"});
+				obj.tmp_drag = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",backgroundColor:"#888"});
+				OAT.Style.opacity(obj.tmp_drag,0.5);
 				obj.tmp_drag.appendChild(container.cloneNode(true));
 				obj.tmp_drag.firstChild.style.width = obj.header.cells[OAT.GridData.index].html.offsetWidth+"px";
 				container.appendChild(obj.tmp_drag);

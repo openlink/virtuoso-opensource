@@ -47,6 +47,7 @@ OAT.TabData = {
 		var o = OAT.TabData.obj;
 		OAT.TabData.obj = false;
 		OAT.Dom.unlink(o.ghost);
+		OAT.Dom.removeClass(o.parent.options.dockElement,"tab_signal");
 	},
 	
 	x:0,
@@ -108,7 +109,8 @@ OAT.TabPart = function(clicker, mover, parent) {
 	this.startDrag = function(event) { /* create ghost */
 		if (self.dragStatus != 1) { return; }
 		self.dragStatus = 0;
-		self.ghost = OAT.Dom.create("div",{position:"absolute",opacity:"0.5",filter:"alpha(opacity=50)"});
+		self.ghost = OAT.Dom.create("div",{position:"absolute"});
+		OAT.Style.opacity(self.ghost,0.5);
 		self.ghost.appendChild(self.key.cloneNode(true));
 		/* create right position */
 		var pos = OAT.Dom.position(self.key);
@@ -162,8 +164,8 @@ OAT.TabPart = function(clicker, mover, parent) {
 		
 		/* create window */
 		var pos = OAT.Dom.eventPos(event);
-		var w = 700;
-		var h = 400;
+		var w = self.parent.options.dockWindowWidth;
+		var h = self.parent.options.dockWindowHeight;
 		var x = Math.max(0,pos[0]-w/2);
 		var y = Math.max(0,pos[1]-10);
 		self.window = new OAT.Window({close:0,title:self.key.innerHTML,width:w,height:h,x:Math.round(x),y:Math.round(y)});
@@ -208,7 +210,9 @@ OAT.Tab = function(elm,optObj) {
 		onDock:function(index){},
 		onUnDock:function(index){},
 		dockMode:false,
-		dockElement:false
+		dockElement:false,
+		dockWindowWidth:700,
+		dockWindowHeight:400
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	self.options.dockElement = $(self.options.dockElement);

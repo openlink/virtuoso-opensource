@@ -192,8 +192,7 @@ OAT.AnimationOpacity = function(element, optionsObject) {
 		a.step_ = a.sign * self.options.speed;
 	}
 	o.stopFunction = function(a) {
-		a.elm.style.opacity = self.options.opacity;
-		a.elm.style.filter = "alpha(opacity="+Math.round(100*self.options.opacity)+")";
+		OAT.Style.opacity(a.elm,self.options.opacity);
 	}
 	o.conditionFunction = function(a) {
 		var ok = (a.sign > 0 ? a.opacity >= self.options.opacity : a.opacity <= self.options.opacity);
@@ -201,8 +200,7 @@ OAT.AnimationOpacity = function(element, optionsObject) {
 	}
 	o.stepFunction = function(a) {
 		a.opacity += a.step_;
-		a.elm.style.opacity = a.opacity;
-		a.elm.style.filter = "alpha(opacity="+Math.round(100*a.opacity)+")";
+		OAT.Style.opacity(a.elm,a.opacity);
 	}
 	this.animation = new OAT.Animation(element,o);
 	

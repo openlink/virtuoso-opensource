@@ -15,17 +15,46 @@
 	Contains: 
 	* OAT
 	* OAT.Dom
+	* OAT.Event
+	* OAT.Style
 	* OAT.Browser
 	* OAT.Loader
 	* OAT.Files
 	* OAT.Dependencies
 	* OAT.MSG
 	* OAT.Debug
-	
 */
 
 /* global namespace */
 window.OAT = {};
+
+function $(something) {
+	if (typeof(something) == "string") {
+		var elm = document.getElementById(something);
+	} else {
+		var elm = something;
+	}
+	if (something instanceof Array) {
+		var elm = [];
+		for (var i=0;i<something.length;i++) { elm.push($(something[i])); }
+	}
+	if (!elm) return false;
+	return elm;
+}
+
+function $$(something) {
+	var e = $(something);
+	if (!e) return false;
+	if (!("value" in e)) return false;
+	return e.value;
+}
+
+function $v(something) {
+	var e = $(something);
+	if (!e) return false;
+	if (!("value" in e)) return false;
+	return e.value;
+}
 
 /* several helpful prototypes */
 Array.prototype.copy = function() {
@@ -90,7 +119,6 @@ Date.prototype.format = function(formatStr) {
 	result = result.replace(/U/,this.getTime());
 	result = result.replace(/w/,this.getDay());
 	result = result.replace(/Y/,this.getFullYear());
-	
 	return result;
 }
 
@@ -98,89 +126,7 @@ Date.prototype.toHumanString = function() {
 	return this.format("j.n.Y H:i:s");
 }
 
-/* DOM common object */
-/*
-	$(something)
-	$v(something)
-	
-	OAT.Dom.create(tagName,styleObj,className)
-	OAT.Dom.text(text)
-	OAT.Dom.append([parent1,child1,child2],[parent2,child3,child4],...)
-	OAT.Dom.option(name,value,parent)
-	OAT.Dom.hide(elm)
-	OAT.Dom.show(elm)
-	OAT.Dom.clear(elm)
-	OAT.Dom.unlink(elm)
-	OAT.Dom.center(elm,x,y)
-	OAT.Dom.isChild(child,parent)
-	OAT.Dom.hex2dec(hex_str)
-	OAT.Dom.dec2hex(dec_num)
-	OAT.Dom.color(str)
-	OAT.Dom.applyStyle(elm,obj)
-	OAT.Dom.isClass(something,className)
-	OAT.Dom.addClass(something,className)
-	OAT.Dom.removeClass(something,className)
-	OAT.Dom.collide(something1,something2)
-	OAT.Dom.(at|de)tach(element,event,callback)
-	OAT.Dom.source(event)
-	OAT.Dom.eventPos(event)
-	OAT.Dom.style(element,property)
-	OAT.Dom.position(something)	
-	OAT.Dom.getLT(something)
-	OAT.Dom.getWH(something)
-	OAT.Dom.moveBy(element,dx,dy)
-	OAT.Dom.resizeBy(element,dx,dy)
-	OAT.Dom.removeSelection()
-	OAT.Dom.getScroll()
-	OAT.Dom.getViewport()
-	OAT.Dom.getFreeSpace()
-	OAT.Dom.decodeImage(data)
-	OAT.Dom.toSafeXML(str)
-	OAT.Dom.fromSafeXML(str)
-	OAT.Dom.uriParams()
-	OAT.Dom.changeHref(elm,newHref)
-	OAT.Dom.makePosition(elm)
-	OAT.Dom.prevent(event)
-
-	OAT.Browser.isIE
-	OAT.Browser.isGecko
-	OAT.Browser.isOpera
-	OAT.Browser.isWebKit
-	OAT.Browser.isIE6
-	OAT.Browser.isIE7
-	OAT.Browser.isKonqueror
-	OAT.Browser.isMac
-*/
-
-function $(something) {
-	if (typeof(something) == "string") {
-		var elm = document.getElementById(something);
-	} else {
-		var elm = something;
-	}
-	if (something instanceof Array) {
-		var elm = [];
-		for (var i=0;i<something.length;i++) { elm.push($(something[i])); }
-	}
-	if (!elm) return false;
-	return elm;
-}
-
-function $$(something) {
-	var e = $(something);
-	if (!e) return false;
-	if (!("value" in e)) return false;
-	return e.value;
-}
-
-function $v(something) {
-	var e = $(something);
-	if (!e) return false;
-	if (!("value" in e)) return false;
-	return e.value;
-}
-
-OAT.Dom = {
+OAT.Dom = { /* DOM common object */
 	create:function(tagName,styleObj,className) {	
 		var elm = document.createElement(tagName);
 		if (styleObj) {
@@ -224,6 +170,31 @@ OAT.Dom = {
 		}
 	},
 	
+	image:function(src,srcBlank,w,h) {
+		var elm = OAT.Dom.create("img",{width:w+"px",height:h+"px"});
+		OAT.Dom.imageSrc(elm,src,srcBlank);
+		return elm;
+	},
+	
+	imageSrc:function(element,src,srcBlank) {
+		var elm = $(element);
+		var png = !!src.toLowerCase().match(/png$/);
+		if (png && OAT.Browser.isIE) {
+			elm.src = srcBlank;
+			elm.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+src+"', sizingMethod='crop')";
+		} else {
+			elm.src = src;
+		}
+	},
+	
+	option:function(name,value,parent) {
+		var opt = OAT.Dom.create("option");
+		opt.innerHTML = name;
+		opt.value = value;
+		if (parent) { $(parent).appendChild(opt); }
+		return opt;
+	},
+
 	append:function() {
 		for (var i=0;i<arguments.length;i++) {
 			var arr = arguments[i];
@@ -239,14 +210,6 @@ OAT.Dom = {
 				}
 			}
 		}
-	},
-	
-	option:function(name,value,parent) {
-		var opt = OAT.Dom.create("option");
-		opt.innerHTML = name;
-		opt.value = value;
-		if (parent) { $(parent).appendChild(opt); }
-		return opt;
 	},
 	
 	hide:function(element) {
@@ -377,15 +340,8 @@ OAT.Dom = {
 		return (navigator.platform.toString().match(/mac/i) ? true : false);
 	},
 	
-	hex2dec:function(hex_str) {
-		return parseInt(hex_str,16);
-	},
-	
-	dec2hex:function(num) {
-		return num.toString(16);
-	},
-	
 	color:function(str) {
+		var hex2dec = function(hex) {	return parseInt(hex,16); }
 		/* returns [col1,col2,col3] in decimal */
 		if (str.match(/#/)) {
 			/* hex */
@@ -395,18 +351,12 @@ OAT.Dom = {
 				var tmpstr = str;
 			}
 			var tmp = tmpstr.match(/#(..)(..)(..)/);
-			return [OAT.Dom.hex2dec(tmp[1]),OAT.Dom.hex2dec(tmp[2]),OAT.Dom.hex2dec(tmp[3])];
+			return [hex2dec(tmp[1]),hex2dec(tmp[2]),hex2dec(tmp[3])];
 		} else {
 			/* decimal */
 			var tmp = str.match(/\(([^,]*),([^,]*),([^\)]*)/);
 			return [parseInt(tmp[1]),parseInt(tmp[2]),parseInt(tmp[3])];
 		}
-	},
-	
-	applyStyle:function(something,obj) {
-		var elm = $(something);
-		if (!elm) {return;}
-		for (var p in obj) { elm.style[p] = obj[p]; }
 	},
 	
 	isClass:function(something,className) {
@@ -453,44 +403,6 @@ OAT.Dom = {
 		return !(bad_x || bad_y);
 	},
 	
-	attach:function(elm,event,callback) {
-		var element = $(elm);
-		if (element.addEventListener) {
-			/* gecko */
-			element.addEventListener(event,callback,false);
-		} else if (element.attachEvent) {
-			/* ie */
-			element.attachEvent("on"+event,callback);
-		} else {
-			/* ??? */
-			element["on"+event] = callback;
-		}
-	},
-	
-	detach:function(elm,event,callback) {
-		var element = $(elm);
-		if (element.removeEventListener) {
-			/* gecko */
-			element.removeEventListener(event,callback,false);
-		} else if (element.detachEvent) {
-			/* ie */
-			element.detachEvent("on"+event,callback);
-		} else {
-			/* ??? */
-			element["on"+event] = false;
-		}
-	},
-	
-	source:function(event) {
-		return (event.target ? event.target : event.srcElement);
-	},
-	
-	eventPos:function(event) {
-			var sl = document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft;
-			var st = document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop;
-			return [event.clientX+sl,event.clientY+st];
-	},
-	
 	getViewport:function() {
 		if (OAT.Browser.isWebKit) {
 			return [window.innerWidth,window.innerHeight];
@@ -500,17 +412,6 @@ OAT.Dom = {
 		} else {
 			return [document.documentElement.clientWidth,document.documentElement.clientHeight];
 		}
-	},
-	
-	style:function(elm,property) {
-		var element = $(elm);
-		if (document.defaultView && document.defaultView.getComputedStyle) {
-			var cs = document.defaultView.getComputedStyle(element,'');
-			if (!cs) { return true; }
-			return cs[property];
-		} else {
-			return element.currentStyle[property];
-		} 
 	},
 	
 	position:function(something) {
@@ -756,15 +657,50 @@ OAT.Dom = {
 		if (OAT.Dom.style(e,"position") != "absolute") {
 			e.style.position = "relative";
 		}
-	},
-	
-	prevent:function(event) {
-		if (event.preventDefault) { event.preventDefault(); }
-		event.returnValue = false;
 	}
 }
 
-OAT.Browser = {
+OAT.Style = { /* Style helper */
+	get:function(elm,property) {
+		var element = $(elm);
+		if (document.defaultView && document.defaultView.getComputedStyle) {
+			var cs = document.defaultView.getComputedStyle(element,'');
+			if (!cs) { return true; }
+			return cs[property];
+		} else {
+			return element.currentStyle[property];
+		} 
+	},
+	
+	background:function(element,src) {
+		var elm = $(element);
+		var png = !!src.toLowerCase().match(/png$/);
+		if (png && OAT.Browser.isIE) {
+			elm.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+src+"', sizingMethod='crop')";
+		} else {
+			elm.style.backgroundImage="url("+src+")";
+		}
+	},
+
+	apply:function(something,obj) {
+		var elm = $(something);
+		if (!elm) {return;}
+		for (var p in obj) { elm.style[p] = obj[p]; }
+	},
+	
+	opacity:function(element,opacity) {
+		var elm = $(element);
+		if (OAT.Browser.isIE) {
+			elm.style.filter = "alpha(opacity="+Math.round(opacity*100)+")";
+		} else {
+			elm.style.opacity = opacity;
+		}
+	}
+}
+OAT.Dom.style = OAT.Style.get; /* backward compatibility */
+OAT.Dom.applyStyle = OAT.Style.apply; /* backward compatibility */
+
+OAT.Browser = { /* Browser helper */
 	isIE:OAT.Dom.isIE(),
 	isIE6:OAT.Dom.isIE6(),
 	isIE7:OAT.Dom.isIE7(),
@@ -775,6 +711,52 @@ OAT.Browser = {
 	isMac:OAT.Dom.isMac()
 }
 
+
+OAT.Event = { /* Event helper */
+	attach:function(elm,event,callback) {
+		var element = $(elm);
+		if (element.addEventListener) {
+			/* gecko */
+			element.addEventListener(event,callback,false);
+		} else if (element.attachEvent) {
+			/* ie */
+			element.attachEvent("on"+event,callback);
+		} else {
+			/* ??? */
+			element["on"+event] = callback;
+		}
+	},
+	detach:function(elm,event,callback) {
+		var element = $(elm);
+		if (element.removeEventListener) {
+			/* gecko */
+			element.removeEventListener(event,callback,false);
+		} else if (element.detachEvent) {
+			/* ie */
+			element.detachEvent("on"+event,callback);
+		} else {
+			/* ??? */
+			element["on"+event] = false;
+		}
+	},
+	source:function(event) {
+		return (event.target ? event.target : event.srcElement);
+	},
+	position:function(event) {
+		var scroll = OAT.Dom.getScroll();
+		return [event.clientX+scroll[0],event.clientY+scroll[1]];
+	},
+	prevent:function(event) {
+		if (event.preventDefault) { event.preventDefault(); }
+		event.returnValue = false;
+	}
+}
+OAT.Dom.attach = OAT.Event.attach;
+OAT.Dom.detach = OAT.Event.detach;
+OAT.Dom.source = OAT.Event.source;
+OAT.Dom.eventPos = OAT.Event.position;
+OAT.Dom.prevent = OAT.Event.prevent;
+
 OAT.Files = { /* only those whose names differ */
 	gmaps:"customGoogleLoader.js",
 	ymaps:"customYahooLoader.js",
@@ -782,7 +764,7 @@ OAT.Files = { /* only those whose names differ */
 	gapi:"gmapapi.js"
 }
 
-OAT.Loader = {
+OAT.Loader = { /* bootstrap */
 	toolkitPath:false,
 	openAjax:false,
 	dimmer:false,
@@ -940,8 +922,7 @@ OAT.Loader = {
 	}
 }
 
-/* messages */
-OAT.MSG = {
+OAT.MSG = { /* messages */
 	DEBUG:0,
 	OAT_DEBUG:0,
 	OAT_LOAD:1,
@@ -1006,11 +987,9 @@ OAT.Debug = {
 		OAT.Debug.data.push([sender,name,event]);
 	}
 }
-//OAT.Debug.attach("*","*");
 OAT.Debug.attach("*",OAT.MSG.OAT_DEBUG);
 
-/* dependency tree */
-OAT.Dependencies = {
+OAT.Dependencies = { /* dependency tree */
 	ajax:"crypto",
 	ajax2:"xml",
 	soap:"ajax2",

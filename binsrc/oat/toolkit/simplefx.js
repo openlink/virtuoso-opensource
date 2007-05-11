@@ -211,33 +211,21 @@ OAT.SimpleFX = {
 		b.style.right = (-options.offsetX)+"px";
 		b.style.height = options.bottomSize+"px";
 		b.style.bottom = (-options.bottomSize-options.offsetY)+"px";
-		if (OAT.Browser.isIE) {
-			b.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+options.imagePath+options.bottomImage+"', sizingMethod='crop')";
-		} else {
-			b.style.backgroundImage="url("+options.imagePath+options.bottomImage+")";
-		}
+		OAT.Style.background(r,options.imagePath+options.bottomImage);
 		
 		var r = OAT.Dom.create("div",{position:"absolute",fontSize:"1px"});
 		r.style.bottom = (-options.offsetY)+"px";
 		r.style.width = options.rightSize+"px";
 		r.style.right = (-options.rightSize-options.offsetX)+"px";
 		r.style.height = "100%";
-		if (OAT.Browser.isIE) {
-			r.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+options.imagePath+options.rightImage+"', sizingMethod='crop')";
-		} else {
-			r.style.backgroundImage="url("+options.imagePath+options.rightImage+")";
-		}
+		OAT.Style.background(r,options.imagePath+options.rightImage);
 		
 		var c = OAT.Dom.create("div",{position:"absolute",fontSize:"1px"});
 		c.style.bottom = (-options.bottomSize-options.offsetY)+"px";
 		c.style.right = (-options.rightSize-options.offsetX)+"px";
 		c.style.width = options.rightSize+"px";
 		c.style.height = options.bottomSize+"px";
-		if (OAT.Browser.isIE) {
-			c.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+options.imagePath+options.cornerImage+"', sizingMethod='crop')";
-		} else {
-			c.style.backgroundImage="url("+options.imagePath+options.cornerImage+")";
-		}
+		OAT.Style.background(r,options.imagePath+options.cornerImage);
 
 		elm.appendChild(b);
 		elm.appendChild(r);

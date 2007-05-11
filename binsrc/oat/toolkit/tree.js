@@ -470,12 +470,7 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		var o = self.options;
 		var path = o.imagePath + "Tree_" + (o.imagePrefix=="" ? "" : o.imagePrefix+"_") + name + "." + o.ext;
 		var pathB = o.imagePath + "Blank.gif";
-		if (OAT.Browser.isIE && o.ext.toLowerCase() == "png") {
-			img.src = pathB;
-			img.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+path+"', sizingMethod='crop')";
-		} else {
-			img.src = path;
-		}
+		OAT.Dom.imageSrc(img,path,pathB);
 	}
 	
 	this.appendChild = function(oldNode,index,ignoreOldParent) {

@@ -27,10 +27,7 @@ OAT.Panelbar = function(div,delay) {
 		for (var i=0;i<obj.panels.length;i++) {
 			obj.panels[i][0].className = "panelbar_option "+(i <= index ? "panelbar_option_upper" : "panelbar_option_lower");
 			OAT.Dom.hide(obj.panels[i][1]);
-			if (obj.delay) {
-				obj.panels[i][1].style.opacity = 0;
-				obj.panels[i][1].style.filter = "alpha(opacity=0)";
-			}
+			if (obj.delay) { OAT.Style.opacity(obj.panels[i][1],0); }
 		}
 		obj.panels[index][0].className += " panelbar_option_selected";
 		OAT.Dom.show(obj.panels[index][1]);

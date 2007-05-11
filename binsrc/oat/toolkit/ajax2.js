@@ -194,35 +194,23 @@ OAT.AJAX = {
 			OAT.AJAX.startRef(); 
 			return; 
 		}
-		if (OAT.Loader.loadedLibs.find("dialog") != -1) {
 			if (!OAT.AJAX.dialog) {
 				/* create an AJAX window */
 				var imagePath = OAT.AJAX.imagePath;
 				if (imagePath.charAt(imagePath.length - 1) == "/") imagePath = imagePath.substring(0,imagePath.length - 1);
-				var div = OAT.Dom.create("div");
-				div.innerHTML = "Ajax call in progress...";
-				var dimg = OAT.Dom.create("div");
-				var img = OAT.Dom.create("img",{width:"246px",height:"16px"});
-				img.setAttribute("src",OAT.AJAX.imagePath+"/progress.gif");
-				dimg.appendChild(img);
-				div.appendChild(dimg);
-				OAT.AJAX.dialog = new OAT.Dialog("Please wait",div,{width:280,height:0,modal:0,zIndex:1001,resize:0,imagePath:OAT.AJAX.imagePath + "/"});
-				OAT.AJAX.dialog.ok = OAT.AJAX.dialog.hide;
-				OAT.AJAX.dialog.cancel = function() {
-					OAT.AJAX.dialog.hide();
-					OAT.AJAX.cancelAll();
-				}	
-			}
-			OAT.AJAX.dialog.show();
-
+			var div = OAT.Dom.create("div",{position:"fixed",right:"0px",top:"0px",zIndex:"2000"});
+			var img = OAT.Dom.create("img",{width:"32px",height:"32px"});
+			img.src = OAT.AJAX.imagePath + "/throbber.gif";
+			div.appendChild(img);
+			document.body.appendChild(div);
+			OAT.AJAX.dialog = div;
 		}
+		OAT.Dom.show(OAT.AJAX.dialog);
 	},
 	
 	endNotify:function() {
 		if (OAT.AJAX.endRef) { OAT.AJAX.endRef(); return; }
-		if (OAT.Loader.loadedLibs.find("dialog") != -1 && OAT.AJAX.dialog) {
-			OAT.AJAX.dialog.hide();
-		}
+		if (OAT.AJAX.dialog) { OAT.Dom.hide(OAT.AJAX.dialog); }
 	},
 
 	createCookie:function() {

@@ -58,8 +58,8 @@ OAT.TimelineEvent = function(bandIndex,startTime,endTime,content,color,options) 
 	this.interval = !(this.startTime.getTime() == this.endTime.getTime());
 	if (this.interval) {
 		if (!options.noIntervals) {
-		this.intervalElm = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",height:"100%",backgroundColor:color,opacity:"0.5"});
-		this.intervalElm.style.filter = "alpha(opacity=50)";
+			this.intervalElm = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",height:"100%",backgroundColor:color});
+			OAT.Style.opacity(this.intervalElm,0.5);
 		this.elm.appendChild(this.intervalElm);
 		}
 		var t = (options.timeTitleOverride ? options.timeTitleOverride(endTime) : endTime.toHumanString());

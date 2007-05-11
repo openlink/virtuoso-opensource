@@ -55,8 +55,8 @@ OAT.RDFBrowser = function(div,optObj) {
 	
 	this.parent = $(div);
 	this.tabs = [];
-	this.allData = []; /* structured */
 	this.data = {
+		all:[],
 		triples:[],
 		structured:[] 
 		/*
@@ -64,7 +64,8 @@ OAT.RDFBrowser = function(div,optObj) {
 				{
 					uri:"uri",
 					ouri:"originating uri",
-					preds:[{name:"a",values:[0,1]},...]
+					preds:{a:[0,1],...},
+					back:[] - list of backreferences
 				}
 				, ...
 			]
@@ -249,35 +250,29 @@ OAT.RDFBrowser = function(div,optObj) {
 				var s = triple[0];
 				var p = triple[1];
 				var o = triple[2];
-				var cnt = self.allData.length;
+				var cnt = self.data.all.length;
 				
 				if (s in conversionTable) { /* we already have this; add new property */
 					var obj = conversionTable[s];
 					var preds = obj.preds;
-					var done = false;
-					for (var i=0;i<preds.length;i++) {
-						var pred = preds[i];
-						if (pred.name == p) { /* add new value to this predicate */
-							done = true;
-							pred.values.push(o);
-						}
-					}
-					if (!done) { preds.push({name:p,values:[o]}); }
+					if (p in preds) { preds[p].push(o); } else { preds[p] = [o]; }
 				} else { /* new resource */
 					var obj = {
-						preds:[{name:p,values:[o]}],
+						preds:{},
 						ouri:originatingURI,
-						uri:s
+						uri:s,
+						back:[]
 					}
+					obj.preds[p] = [o];
 					conversionTable[s] = obj;
-					self.allData.push(obj);
+					self.data.all.push(obj);
 			}
 			} /* add one triple to the structure */
 
 			/* 1. add all needed triples into structure */
 			var todo = [];
 			if (complete) {
-				self.allData = [];
+				self.data.all = [];
 				for (var i=0;i<self.store.items.length;i++) {
 					var item = self.store.items[i];
 					todo.push([item.triples,item.label]);
@@ -293,21 +288,25 @@ OAT.RDFBrowser = function(div,optObj) {
 			}
 				
 			/* 2. create reference links based on conversionTable */
-			for (var i=0;i<self.allData.length;i++) {
-				var item = self.allData[i];
+			for (var i=0;i<self.data.all.length;i++) {
+				var item = self.data.all[i];
 				var preds = item.preds;
-				for (var j=0;j<preds.length;j++) {
+				for (var j in preds) {
 					var pred = preds[j];
-					for (var k=0;k<pred.values.length;k++) {
-						var value = pred.values[k];
-						if (value in conversionTable) { pred.values[k] = conversionTable[value]; }
-					}
+					for (var k=0;k<pred.length;k++) {
+						var value = pred[k];
+						if (value in conversionTable) { 
+							var target = conversionTable[value];
+							pred[k] = target; 
+							if (target.back.find(item) == -1) { target.back.push(item); }
 				}
 			}
+				} /* predicates */
+			} /* items */
 			
 			/* 3. apply filters: create self.data.structured + 4. convert filtered data back to triples */
 			conversionTable = {}; /* clean up */
-			self.applyFilters(OAT.RDFBrowserData.FILTER_ALL); /* all filters */
+			self.applyFilters(OAT.RDFBrowserData.FILTER_ALL,true); /* all filters, hard reset */
 		},
 		
 		loadFromInput:function() {
@@ -507,21 +506,19 @@ OAT.RDFBrowser = function(div,optObj) {
 		for (var i=0;i<self.data.structured.length;i++) {
 			var item = self.data.structured[i];
 			var preds = item.preds;
-			for (var j=0;j<preds.length;j++) {
-				var pred = preds[j];
-				var name = pred.name;
-				for (var k=0;k<pred.values.length;k++) {
-					var value = pred.values[k];
+			for (var p in preds) {
+				var pred = preds[p];
+				for (var j=0;j<pred.length;j++) {
+					var value = pred[j];
 					if (typeof(value) == "object") { continue; }
 
-					if (!(name in cats)) { cats[name] = {}; }
-					var obj = cats[name];
+					if (!(p in cats)) { cats[p] = {}; }
+					var obj = cats[p];
 					if (!(value in obj)) { obj[value] = 0; }
 					obj[value]++;
 				}
 			}
 		}
-		
 		/* 
 			filter out some categories:
 			* if there is only 1 element with such property
@@ -685,7 +682,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		if (self.options.indicator) { OAT.Dom.hide(self.options.indicator); }
 	}
 	
-	this.applyFilters = function(type) {
+	this.applyFilters = function(type,hardReset) {
 		if (self.options.indicator) { OAT.Dom.show(self.options.indicator); }
 		function filterObj(t,arr,filter) { /* apply one filter */
 			var newData = [];
@@ -698,10 +695,10 @@ OAT.RDFBrowser = function(div,optObj) {
 						newData.push(item);
 						ok = true;
 					}
-					if (!ok) for (var j=0;j<preds.length;j++) {
-						var pred = preds[j];
-						for (var k=0;k<pred.values.length;k++) {
-							var value = pred.values[k];
+					if (!ok) for (var p in preds) {
+						var pred = preds[p];
+						for (var j=0;j<pred.length;j++) {
+							var value = pred[j];
 							if (typeof(value) == "object" && value.uri == filter && !ok) { 
 								newData.push(item); 
 								ok = true;
@@ -711,14 +708,14 @@ OAT.RDFBrowser = function(div,optObj) {
 				} /* uri filter */
 				
 				if (t == OAT.RDFBrowserData.FILTER_PROPERTY) {
-					for (var j=0;j<preds.length;j++) {
-						var pred = preds[j];
-						if (pred.name == filter[0]) {
+					for (var p in preds) {
+						var pred = preds[p];
+						if (p == filter[0]) {
 							if (filter[1] == "") {
 								ok = true;
 								newData.push(item);
-							} else for (var k=0;k<pred.values.length;k++) {
-								var value = pred.values[k];
+							} else for (var j=0;j<pred.length;j++) {
+								var value = pred[j];
 								if (value == filter[1]) {
 									ok = true;
 									newData.push(item);
@@ -734,7 +731,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		
 		switch (type) {
 			case OAT.RDFBrowserData.FILTER_ALL: /* all filters */
-				self.data.structured = self.allData;
+				self.data.structured = self.data.all;
 				for (var i=0;i<self.filtersProperty.length;i++) {
 					var f = self.filtersProperty[i];
 					self.data.structured = filterObj(OAT.RDFBrowserData.FILTER_PROPERTY,self.data.structured,f);
@@ -759,18 +756,18 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.data.triples = [];
 		for (var i=0;i<self.data.structured.length;i++) {
 			var item = self.data.structured[i];
-			for (var j=0;j<item.preds.length;j++) {
-				var pred = item.preds[j];
-				for (var k=0;k<pred.values.length;k++) {
-					var v = pred.values[k];
-					var triple = [item.uri,pred.name,(typeof(v) == "object" ? v.uri : v)];
+			for (var p in item.preds) {
+				var pred = item.preds[p];
+				for (var j=0;j<pred.length;j++) {
+					var v = pred[j];
+					var triple = [item.uri,p,(typeof(v) == "object" ? v.uri : v)];
 					self.data.triples.push(triple);
 				}
 			}
 		}
 		
 		if (self.options.indicator) { OAT.Dom.hide(self.options.indicator); }
-		self.reset();
+		self.reset(hardReset);
 	}
 	
 	this.addFilter = function(type, predicate, object) {
@@ -817,16 +814,33 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.applyFilters(OAT.RDFBrowserData.FILTER_ALL);
 	}
 	
+	this.getContentType = function(str) {
+		/* 0 - generic, 1 - link, 2 - mail, 3 - image */
+		if (str.match(/^http.*(jpe?g|png|gif)$/i)) { return 3; }
+		if (str.match(/^http/i)) { return 1; }
+		if (str.match(/^[^@]+@[^@]+$/i)) { return 2; }
+		return 0;
+	}
+	
 	this.getContent = function(data_,forbid) {
 		var content = false;
 		var data = (typeof(data_) == "object" ? data_.uri : data_);
+		var type = self.getContentType(data);
 		
-		if (data.match(/^http.*(jpe?g|png|gif)$/i)) { /* image */
+		switch (type) {
+			case 3:
 			content = OAT.Dom.create("img");
 			content.title = data;
 			content.src = data;
 			self.createAnchor(content,data,forbid);
-		} else if (data.match(/^http/i)) { /* link */
+			break;
+			case 2:
+				content = OAT.Dom.create("a");
+				var r = data.match(/^(mailto:)?(.*)/);
+				content.innerHTML = r[2];
+				content.href = 'mailto:'+r[2];
+			break;
+			case 1:
 			content = OAT.Dom.create("span");
 			var a = OAT.Dom.create("a");
 			a.innerHTML = data;
@@ -834,12 +848,8 @@ OAT.RDFBrowser = function(div,optObj) {
 			self.createAnchor(a,data,forbid);
 			var imglist = self.generateImageActions(data);
 			OAT.Dom.append([content,a,imglist]);
-		} else if (data.match(/^[^@]+@[^@]+$/i)) { /* mail address */
-			content = OAT.Dom.create("a");
-			var r = data.match(/^(mailto:)?(.*)/);
-			content.innerHTML = r[2];
-			content.href = 'mailto:'+r[2];
-		} else { /* default - text */
+			break;
+			default:
 			content = OAT.Dom.create("span");
 			content.innerHTML = data;
 			/* create dereference a++ lookups for all anchors */
@@ -855,7 +865,8 @@ OAT.RDFBrowser = function(div,optObj) {
 					}
 				}
 			}
-		}
+			break;
+		} /* switch */
 		return content;
 	}
 	
@@ -863,9 +874,8 @@ OAT.RDFBrowser = function(div,optObj) {
 		var result = item.uri;
 		var props = ["name","label","title","summary"];
 		var preds = item.preds;
-		for (var i=0;i<preds.length;i++) {
-			var name = preds[i].name;
-			if (props.find(name) != -1) { return preds[i].values[0]; }
+		for (var p in preds) {
+			if (props.find(p) != -1) { return preds[p][0]; }
 		}
 		return result;
 	}
@@ -874,10 +884,8 @@ OAT.RDFBrowser = function(div,optObj) {
 		if (item.uri.match(/^http/i)) { return item.uri; }
 		var props = ["uri","url"];
 		var preds = item.preds;
-		for (var i=0;i<preds.length;i++) {
-			var pred = preds[i];
-			var name = pred.name;
-			if (props.find(name) != -1) { return pred.values[0]; }
+		for (var p in preds) {
+			if (props.find(p) != -1) { return preds[p][0]; }
 		}
 		return false;
 	}
