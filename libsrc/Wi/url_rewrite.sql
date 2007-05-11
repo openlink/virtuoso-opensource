@@ -251,9 +251,9 @@ returns varchar
         cur := subseq (format, pos1, pos3);
       pos2 := pos3;
       j := 0;
-      dbg_obj_princ('cur: ', cur, params[i+1]);
+--      dbg_obj_princ('cur: ', cur, params[i+1]);
       long_path := concat (long_path, sprintf (cur, coalesce( params[i+1], 0)));
-      dbg_obj_princ('long_path: ', long_path);
+--      dbg_obj_princ('long_path: ', long_path);
       if (pos3 > 0)
         i := i + 2;
     }
@@ -360,6 +360,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
                 {
                     -- dbg_obj_princ('parts11: ', nice_lpath, URR_NICE_FORMAT);
                   _result := regexp_parse (URR_NICE_FORMAT, nice_lpath, 0);
+--		  dbg_obj_print (regexp_match (URR_NICE_FORMAT, nice_lpath));
                   -- dbg_obj_princ('parts22: ', _result);
                   if (_result is null)
                     return 0;
@@ -375,6 +376,9 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
                       for (k := start_index; k < parse_len; k := k + 2)
                         {
                             -- dbg_obj_princ('cur: ', _result[k], _result[k+1], subseq (nice_lpath, _result[k], _result[k + 1]));
+			  if (_result[k] < 0 or _result[k + 1] < 0)
+			    parts := vector_concat (parts, vector (null));
+			  else
                           parts := vector_concat (parts, vector (subseq (nice_lpath, _result[k], _result[k + 1])));
                         }
                     }
@@ -390,6 +394,8 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
 		params := vector_concat (post_params, nice_params);
               -- dbg_obj_princ('parts6: ', deserialize(URR_NICE_PARAMS), parts, deserialize(URR_TARGET_PARAMS), URR_TARGET_FORMAT);
               long_url := DB.DBA.URLREWRITE_SPRINTF_RESULTS (deserialize(URR_NICE_PARAMS), parts, deserialize(URR_TARGET_PARAMS), URR_TARGET_FORMAT, URR_TARGET_EXPR);
+	      if (registry_get ('__debug_url_rewrite') = '1')
+	        dbg_printf ('rule=[%s] URL=[%s]', cur_iri, long_url);
               rule_iri := cur_iri;
             }
         }
@@ -508,7 +514,7 @@ create procedure DB.DBA.URLREWRITE_TRY_INVERSE (
     {
       declare parts, full_list_params, long_get_params any;
       declare _result, var_name, var_value varchar;
-      dbg_obj_princ('\r\nBegin3: ', rule_iri, URR_RULE_TYPE, URR_NICE_FORMAT, NICE_PARAMS_VEC, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, TARGET_PARAMS_VEC, URR_TARGET_EXPR);
+--      dbg_obj_princ('\r\nBegin3: ', rule_iri, URR_RULE_TYPE, URR_NICE_FORMAT, NICE_PARAMS_VEC, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, TARGET_PARAMS_VEC, URR_TARGET_EXPR);
       if (URR_RULE_TYPE = 0)
         {
           parts := sprintf_inverse (_lpath, URR_TARGET_FORMAT, 2);
@@ -654,7 +660,7 @@ create procedure DB.DBA.URLREWRITE_TRY_INVERSE (
 				error_report := 'The rule ' || rule_iri || ' is not for this URL';
 				return;
 			}
-          dbg_obj_princ('VSPRINTF: ', URR_NICE_FORMAT, nice_params, number_of_values);
+--          dbg_obj_princ('VSPRINTF: ', URR_NICE_FORMAT, nice_params, number_of_values);
           nice_path := DB.DBA.URLREWRITE_VPRINTF (URR_NICE_FORMAT, nice_params, number_of_values);
           if (number_of_values > 0)
             {
