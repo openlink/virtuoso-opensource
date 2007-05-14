@@ -5093,6 +5093,8 @@ sparp_rewrite_grab (sparp_t *sparp)
   END_DO_SET()
   if (NULL != rgc->rgc_destination)
     t_set_push (&sa_graphs, rgc->rgc_destination);
+  if (NULL != rgc->rgc_group_destination)
+    t_set_push (&sa_graphs, rgc->rgc_group_destination);
   t_set_pop (&(env->spare_selids));
   grab_retvals = (SPART **)t_revlist_to_array (new_vars);
 /* Making subqueries: seed */
@@ -5143,7 +5145,7 @@ sparp_rewrite_grab (sparp_t *sparp)
     }
   if (rgc->rgc_intermediate)
     rgc_flags |= 0x0001;
-  sparp->sparp_expr = spartlist (sparp, 19, SPAR_CODEGEN, /* #0 */
+  sparp->sparp_expr = spartlist (sparp, 20, SPAR_CODEGEN, /* #0 */
     t_box_num ((ptrlong)(ssg_grabber_codegen)),
     sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, NULL),	/* #2 */
     t_box_dv_short_string ("sql:RDF_GRAB"),	/* #3 */
@@ -5156,10 +5158,11 @@ sparp_rewrite_grab (sparp_t *sparp)
     ((NULL == rgc->rgc_sa_preds) ? NULL :
       spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (rgc->rgc_sa_preds))) ), /* #10 */
     t_box_copy (rgc->rgc_depth), t_box_copy (rgc->rgc_limit), /* #11-#12 */
-    t_box_copy (rgc->rgc_base), t_box_copy (rgc->rgc_destination),	/* #13-#14 */
-    t_box_copy (rgc->rgc_resolver_name), t_box_copy (rgc->rgc_loader_name),	/* #15-#16 */
-    use_plain_return,	/* #17 */
-    t_box_num (rgc_flags) );	/* #18 */
+    t_box_copy (rgc->rgc_base),	/* #13 */
+    t_box_copy (rgc->rgc_destination), t_box_copy (rgc->rgc_group_destination),	/* #14-#15 */
+    t_box_copy (rgc->rgc_resolver_name), t_box_copy (rgc->rgc_loader_name),	/* #16-#17 */
+    use_plain_return,	/* #18 */
+    t_box_num (rgc_flags) );	/* #19 */
 }
 
 void
@@ -5180,6 +5183,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   caddr_t grab_limit		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #12 */
   caddr_t base			= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #13 */
   caddr_t destination		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #14 */
+  caddr_t group_destination	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #14 */
   caddr_t resolver_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #15 */
   caddr_t loader_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #16 */
   int use_plain_return		= (ptrlong)(spart->_.codegen.args [argctr++]);	/* #17 */
@@ -5202,6 +5206,8 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
     base = t_NEW_DB_NULL;
   if (NULL == destination)
     destination = t_NEW_DB_NULL;
+  if (NULL == group_destination)
+    group_destination = t_NEW_DB_NULL;
   if (NULL == resolver_name)
     resolver_name = t_box_dv_short_string ("DB.DBA.RDF_GRAB_RESOLVER_DEFAULT");
   if (NULL == loader_name)
@@ -5236,7 +5242,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   ssg_newline (0);
   ssg_puts ("FROM ");
   ssg_prin_function_name (ssg, procedure_name);
-      ssg_puts (" (_grabber_params, _grabber_seed, _grabber_iter, _grabber_final, _grabber_ret_limit, _grabber_consts, _grabber_sa_graphs, _grabber_sa_preds, _grabber_depth, _grabber_doc_limit, _grabber_base, _grabber_destination, _grabber_resolver, _grabber_loader, _plain_ret, _grabber_flags) (rset any) ");
+      ssg_puts (" (_grabber_params, _grabber_seed, _grabber_iter, _grabber_final, _grabber_ret_limit, _grabber_consts, _grabber_sa_graphs, _grabber_sa_preds, _grabber_depth, _grabber_doc_limit, _grabber_base, _grabber_destination, _grabber_group_destination, _grabber_resolver, _grabber_loader, _plain_ret, _grabber_flags) (rset any) ");
   ssg_prin_id (ssg, call_alias);
       ssg_newline (0);
       ssg_puts ("WHERE _grabber_params = ");
@@ -5279,6 +5285,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   PROC_PARAM_EQ_SPART ("_grabber_doc_limit", grab_limit);
   PROC_PARAM_EQ_SPART ("_grabber_base", base);
   PROC_PARAM_EQ_SPART ("_grabber_destination", destination);
+  PROC_PARAM_EQ_SPART ("_grabber_group_destination", group_destination);
   PROC_PARAM_EQ_SPART ("_grabber_resolver", resolver_name);
   PROC_PARAM_EQ_SPART ("_grabber_loader", loader_name);
   PROC_PARAM_EQ_SPART ("_plain_ret", use_plain_return);

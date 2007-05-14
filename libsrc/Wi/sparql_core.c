@@ -589,6 +589,8 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
               rgc->rgc_base = t_box_dv_uname_string (value); return; }
           if (!strcmp (param, "input:grab-destination")) {
               rgc->rgc_destination = t_box_dv_uname_string (value); return; }
+          if (!strcmp (param, "input:grab-group-destination")) {
+              rgc->rgc_group_destination = t_box_dv_uname_string (value); return; }
           if (!strcmp (param, "input:grab-resolver")) {
               rgc->rgc_resolver_name = t_box_dv_uname_string (value); return; }
           if (!strcmp (param, "input:grab-loader")) {

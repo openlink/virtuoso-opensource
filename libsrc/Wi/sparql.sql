@@ -2542,7 +2542,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar) retur
   declare grab_params any;
   declare grabbed any;
   grabbed := dict_new();
-  grab_params := vector ('base_iri', resource, 'destination', graph_iri,
+  grab_params := vector ('base_iri', resource, 'get:destination', graph_iri,
     'resolver', 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT', 'loader', 'DB.DBA.RDF_SPONGE_UP',
     'get:soft', 'replacing',
     'get:refresh', -1,
@@ -4979,6 +4979,8 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         return 0;
       val := DB.DBA.RDF_QNAME_OF_IID (val);
     }
+  if (217 = __tag (val))
+    val := cast (val as varchar);
   call (get_keyword ('resolver', env)) (get_keyword ('base_iri', env), val, url, dest, get_method);
   if (url is not null and not dict_get (grabbed, url, 0))
     {
@@ -4986,7 +4988,9 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:soft', get_keyword_ucase ('get:soft', env, 'soft'),
         'get:refresh', get_keyword_ucase ('get:refresh', env),
         'get:method', get_method,
-        'get:destination', get_keyword ('destination', env, dest) );
+        'get:destination', get_keyword ('get:destination', env, dest),
+        'get:group-destination', get_keyword ('get:group-destination', env, dest)
+	 );
       dict_put (grabbed, url, 1);
       call (get_keyword ('loader', env))(url, opts);
       dict_put (grabbed, url, now ());
@@ -5062,15 +5066,17 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
 
 
 create procedure
-DB.DBA.RDF_GRAB (in app_params any, in seed varchar, in iter varchar, in final varchar, in ret_limit integer, in const_iris any, in sa_graphs any, in sa_preds any, in depth integer, in doc_limit integer, in base_iri varchar, in destination varchar, in resolver varchar, in loader varchar, in plain_ret integer, in flags integer)
+DB.DBA.RDF_GRAB (in app_params any, in seed varchar, in iter varchar, in final varchar, in ret_limit integer, in const_iris any, in sa_graphs any, in sa_preds any, in depth integer, in doc_limit integer, in base_iri varchar, in destination varchar, in group_destination varchar, in resolver varchar, in loader varchar, in plain_ret integer, in flags integer)
 {
   declare rctr, rcount, colcount, iter_ctr, doc_ctr integer;
   declare stat, msg varchar;
   declare grab_params, all_params any;
   declare grabbed, metas, rset any;
-  -- dbg_obj_princ ('DB.DBA.RDF_GRAB (..., ', ret_limit, const_iris, depth, doc_limit, base_iri, destination, resolver, loader, plain_ret, ')');
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAB (..., ', ret_limit, const_iris, depth, doc_limit, base_iri, destination, group_destination, resolver, loader, plain_ret, ')');
   grab_params := vector ('sa_graphs', sa_graphs, 'sa_preds', sa_preds,
-    'doc_limit', doc_limit, 'base_iri', base_iri, 'destination', destination,
+    'doc_limit', doc_limit, 'base_iri', base_iri,
+    'get:destination', destination,
+    'get:group-destination', group_destination,
     'resolver', resolver, 'loader', loader, 'flags', flags, 'grabbed', dict_new() );
   all_params := vector_concat (vector (grab_params), app_params);
   grabbed := dict_new ();
@@ -5137,7 +5143,11 @@ create function DB.DBA.RDF_GRAB_RESOLVER_DEFAULT (in base varchar, in rel_uri va
 {
   declare rel_lattice_pos, base_lattice_pos integer;
   declare lattice_tail varchar;
-  rel_lattice_pos := strrchr (cast (rel_uri as varchar), '#');
+  if (217 = __tag (rel_uri))
+    rel_uri := cast (rel_uri as varchar);
+  if (217 = __tag (base))
+    base := cast (base as varchar);
+  rel_lattice_pos := strrchr (rel_uri, '#');
   lattice_tail := '';
   if (rel_lattice_pos is not null)
     {
@@ -7459,7 +7469,7 @@ create procedure DB.DBA.RDF_SW_PING (in endp varchar, in url varchar)
 -- /* Load the document in tripple store. returns 1 if the document is an RDF , otherwise if it has links etc. it returns 0 */
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any, inout req_hdr_arr any)
 {
-  declare dest varchar;
+  declare dest, groupdest varchar;
   declare rc any;
   declare aq, ps any;
   declare xd, xt any;
@@ -7474,6 +7484,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   ret_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (new_origin_uri, ret_content_type, ret_body);
   -- dbg_obj_princ ('ret_content_type is ', ret_content_type);
   dest := get_keyword_ucase ('get:destination', options);
+  groupdest := get_keyword_ucase ('get:group-destination', options);
   if (strstr (ret_content_type, 'application/sparql-results+xml') is not null)
     signal ('RDFXX', sprintf ('Unable to load RDF graph <%.500s> from <%.500s>: the sparql-results XML answer does not contain triples', graph_iri, new_origin_uri));
   if (strstr (ret_content_type, 'application/rdf+xml') is not null)
@@ -7486,10 +7497,10 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
       if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
 	goto load_grddl;
       DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, coalesce (dest, graph_iri));
-
+      if (groupdest is not null)
+        DB.DBA.RDF_LOAD_RDFXML (ret_body, new_origin_uri, groupdest);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
-
       return 1;
     }
   else if (
@@ -7502,6 +7513,8 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
         delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
       -- delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (dest);
       DB.DBA.TTLP (ret_body, new_origin_uri, coalesce (dest, graph_iri));
+      if (groupdest is not null)
+        DB.DBA.TTLP (ret_body, new_origin_uri, groupdest);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
       return 1;
@@ -7530,6 +7543,7 @@ load_grddl:;
 	    {
 	      goto try_next_mapper;
 	    };
+	    --!!!TBD: Carefully check what happens when dest is NULL vs dest is nonNULL, then add support for groupdest.
 	  if (RM_TYPE <> 'HTTP')
 	  rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, RM_KEY);
           else
@@ -7548,8 +7562,11 @@ load_grddl:;
     {
       -- delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (dest);
       DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      if (groupdest is not null)
+        DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, groupdest);
       return 1;
     }
+  if (dest is null)
   delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
   if (strstr (ret_content_type, 'text/plain') is not null)
     {
@@ -7627,7 +7644,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
 	}
     }
   if (lower (local_iri) like 'file:%')
-    return DB.DBA.SYS_FILE_SPONGE_UP (local_iri, graph_iri, null, null, options);
+    return DB.DBA.SYS_FILE_SPONGE_UP (local_iri, graph_iri, null, 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
   else
   return DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, graph_iri, 'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
 }
