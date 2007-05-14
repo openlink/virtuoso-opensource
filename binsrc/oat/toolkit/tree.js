@@ -41,8 +41,7 @@ OAT.TreeNode = function(li,ul,parent,root) {
 	this.state = 1; /* 0 - collapsed, 1 - expanded */
 	this.selected = 0;
 	this.customImage = false;
-	this._div = OAT.Dom.create("div",{height:self.options.size+"px"}); /* our content */
-	this._indent = OAT.Dom.create("span"); /* padding block */
+	this._div = OAT.Dom.create("div"); /* our content */
 	this._sign = false; /* +- image */
 	this._icon = false; /* icon/checkbox */
 	this._label = OAT.Dom.create("span"); /* label */
@@ -68,17 +67,25 @@ OAT.TreeNode = function(li,ul,parent,root) {
 	if (self.li) {
 		self.li.style.margin = "0px";
 		self.li.style.padding = "0px";
-		if (self.li.firstChild && self.li.firstChild != self.ul) {
-			self._label.appendChild(self.li.firstChild);
+		self.li.style.paddingLeft = "32px";
+		self.li.style.textIndent = "-32px";
+		var n = self.li.firstChild;
+		while (n && n != self.ul) {
+			var nn = n.nextSibling;
+			self._label.appendChild(n);
+			n = nn;
 		}
 		OAT.Dom.clear(self.li);
-		OAT.Dom.append([self._gdElm,self._label],[self._div,self._indent,self._gdElm],[self.li,self._div]);
-		if (self.ul) { self.li.appendChild(self.ul); }
+		OAT.Dom.append([self._gdElm,self._label],[self._div,self._gdElm],[self.li,self._div]);
+		if (self.ul) { 
+			self.li.appendChild(self.ul); 
+		}
 		}
 	
 	if (self.ul) { /* margin & padding */
 		self.ul.style.margin = "0px";
 		self.ul.style.padding = "0px";
+		if (self.parent) { self.ul.style.marginLeft = "-16px"; }
 	}
 	
 	if (self.options.checkboxMode && self.li) { /* checkboxes */
@@ -332,12 +339,8 @@ OAT.TreeNode = function(li,ul,parent,root) {
 	this.addDecorations = function() {
 		if (!self.li) { return; }
 		
-		/* add blank indents */
-		OAT.Dom.clear(self._indent);
-		for (var i=0;i<self.depth-1;i++) {
-			var ind = OAT.Dom.create("img",{width:self.options.size+"px",height:self.options.size+"px",verticalAlign:"middle"});
-			self._indent.appendChild(ind);
-		}
+		OAT.Dom.addClass(self.li,"tree_li_"+self.depth);
+		OAT.Dom.addClass(self.li.parentNode,"tree_ul_"+self.depth);
 		
 		if (self.options.poorMode) { return; }
 		
@@ -436,17 +439,15 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		self.applyImage(self._icon,iconName);
 		self.applyImage(self._sign,signName);
 		if (self.options.useDots && self.li) { 
-			var dots = (self.parent.children[self.parent.children.length-1] == self ? "dots-l" : "dots-t");
-			self.applyBackground(self._sign,dots); 
-		}
-		
-		var n = self;
-		for (var i=self._indent.childNodes.length-1;i>=0;i--) {
-			self.applyImage(self._indent.childNodes[i],"blank");
-			n = n.parent;
-			if (self.options.useDots && n.parent && n.parent.children[n.parent.children.length-1] != n) {
-				self.applyBackground(self._indent.childNodes[i],"dots-i"); 
+			if (self.parent.children[self.parent.children.length-1] == self) {
+				var dots = "dots-l";
+				self.li.style.backgroundImage = "none";
+			} else {
+				var dots = "dots-t";
+				self.applyBackground(self.li,"dots-i");
 			}
+			self.li.style.backgroundRepeat = "repeat-y";
+			self.applyBackground(self._sign,dots); 
 		}
 		
 	}

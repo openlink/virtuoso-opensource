@@ -168,8 +168,9 @@ OAT.TabPart = function(clicker, mover, parent) {
 		var h = self.parent.options.dockWindowHeight;
 		var x = Math.max(0,pos[0]-w/2);
 		var y = Math.max(0,pos[1]-10);
-		self.window = new OAT.Window({close:0,title:self.key.innerHTML,width:w,height:h,x:Math.round(x),y:Math.round(y)});
+		self.window = new OAT.Window({close:1,title:self.key.innerHTML,width:w,height:h,x:Math.round(x),y:Math.round(y)});
 		self.window.content.appendChild(self.value)
+		self.window.onclose = self.dock;
 		OAT.Dom.show(self.value);
 		document.body.appendChild(self.window.div);
 		OAT.Dom.attach(self.window.move,"mousedown",function() { OAT.TabData.win = self; });

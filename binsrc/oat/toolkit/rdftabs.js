@@ -160,7 +160,6 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		
 		var data = self.parent.data.structured;
 		for (var i=0;i<data.length;i++) {
-			var index = i+1;
 			var item = data[i];
 			if (self.groupMode) { /* grouping */
 				var gv = findGV(item);
@@ -170,7 +169,7 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 					createGroup(gv);
 				}
 				groupDiv.appendChild(self.drawItem(item));
-			} else if (index >= self.currentPage * self.options.pageSize && index < (self.currentPage + 1) * self.options.pageSize) {
+			} else if (i >= self.currentPage * self.options.pageSize && i < (self.currentPage + 1) * self.options.pageSize) {
 				self.dataDiv.appendChild(self.drawItem(item));
 			} /* if in current page */
 			
@@ -482,17 +481,19 @@ OAT.RDFTabs.navigator.prototype = new OAT.RDFTabs.parent();
 OAT.RDFTabs.triples = function(parent,optObj) {
 	var self = this;
 	this.options = {
-		limit:200
+		pageSize:100
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 
 	this.parent = parent;
 	this.initialized = false;
 	this.grid = false;
+	this.currentPage = 0;
+	this.pageDiv = OAT.Dom.create("div");
 	this.gridDiv = OAT.Dom.create("div");
 	this.descDiv = OAT.Dom.create("div");
-	this.descDiv.innerHTML = "This module displays all filtered triples. For performance reasons, their count is limited to "+self.options.limit+".";
-	OAT.Dom.append([self.elm,self.descDiv,self.gridDiv]);
+	this.descDiv.innerHTML = "This module displays all filtered triples.";
+	OAT.Dom.append([self.elm,self.descDiv,self.pageDiv,self.gridDiv]);
 	
 	this.patchAnchor = function(column) {
 		var a = OAT.Dom.create("a");
@@ -504,6 +505,42 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		OAT.Dom.append([v,a,imglist]);;
 	}
 	
+	this.reset = function() {
+		self.currentPage = 0;
+	}
+	
+	this.drawPager = function() {
+		var cnt = OAT.Dom.create("div");
+		var div = OAT.Dom.create("div");
+		var count = self.parent.data.triples.length;
+
+		cnt.innerHTML = "There are "+count+" triples available.";
+		OAT.Dom.clear(self.pageDiv);
+		OAT.Dom.append([self.pageDiv,cnt,div]);
+		
+		function assign(a,page) {
+			a.setAttribute("title","Jump to page "+(page+1));
+			a.setAttribute("href","#");
+			OAT.Dom.attach(a,"click",function() {
+				self.currentPage = page;
+				self.redraw();
+			});
+		}
+		
+		if (count > self.options.pageSize) { /* create pager */
+			div.innerHTML = "Page: ";
+			var pagecount = Math.ceil(count/self.options.pageSize);
+			for (var i=0;i<pagecount;i++) {
+				var a = OAT.Dom.create("a");
+				if (i != self.currentPage) { assign(a,i); }
+				div.appendChild(OAT.Dom.text(" "));
+				div.appendChild(a);
+				a.innerHTML = i+1;
+				div.appendChild(OAT.Dom.text(" "));
+			}
+		}
+	}
+	
 	this.redraw = function() {
 		if (!self.initialized) {
 			self.initialized = true;
@@ -511,23 +548,20 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		}
 		self.grid.createHeader(["Subject","Predicate","Object"]);
 		self.grid.clearData();
+		self.grid.rowOffset = self.options.pageSize * self.currentPage;
 		
 		var total = 0;
 		var triples = self.parent.data.triples;
 
-		var cnt = triples.length;
-		if (cnt > self.options.limit) { 
-					alert("There are more than "+self.options.limit+" triples. Such amount would greatly slow down your computer, "+
-							"so I am going to display only first "+self.options.limit+".");
-			cnt = self.options.limit
-				}
-
-		for (var i=0;i<cnt;i++) {
+		for (var i=0;i<triples.length;i++) {
+			if (i >= self.currentPage * self.options.pageSize && i < (self.currentPage + 1) * self.options.pageSize) {
 			var triple = triples[i];
 			self.grid.createRow(triple);
 			if (triple[0].match(/^http/i)) { self.patchAnchor(1); }
 			if (triple[2].match(/^http/i)) { self.patchAnchor(3); }
-		}
+			} /* if in current page */
+		} /* for all triples */
+		self.drawPager();
 	}
 }
 OAT.RDFTabs.triples.prototype = new OAT.RDFTabs.parent();

@@ -369,17 +369,6 @@ OAT.Dom = { /* DOM common object */
 		elm.className = arr.join(" ");
 	},
 	
-	collide:function(something1,something2) {
-		/* true if they have something common */
-		var coords_1 = OAT.Dom.position(something1);
-		var coords_2 = OAT.Dom.position(something2);
-		var dims_1 = OAT.Dom.getWH(something1);
-		var dims_2 = OAT.Dom.getWH(something2);
-		var bad_x = ( (coords_1[0] < coords_2[0] && coords_1[0]+dims_1[0] < coords_2[0]) || (coords_1[0] > coords_2[0] + dims_2[0]) );
-		var bad_y = ( (coords_1[1] < coords_2[1] && coords_1[1]+dims_1[1] < coords_2[1]) || (coords_1[1] > coords_2[1] + dims_2[1]) );
-		return !(bad_x || bad_y);
-	},
-	
 	getViewport:function() {
 		if (OAT.Browser.isWebKit) {
 			return [window.innerWidth,window.innerHeight];
@@ -407,8 +396,7 @@ OAT.Dom = { /* DOM common object */
 		*/
 		var x = c[0];
 		var y = c[1];
-		var arr = ["input","li"];
-		if (arr.find(elm.tagName.toLowerCase()) == -1 || !OAT.Browser.isOpera) {
+		if (!OAT.Browser.isOpera || elm.scrollTop != elm.offsetTop || elm.scrollLeft != elm.offsetLeft) {
 			x -= elm.scrollLeft;
 			y -= elm.scrollTop;
 		}
@@ -729,112 +717,13 @@ OAT.Dom.source = OAT.Event.source;
 OAT.Dom.eventPos = OAT.Event.position;
 OAT.Dom.prevent = OAT.Event.prevent;
 
-OAT.Files = { /* only those whose names differ */
-	gmaps:"customGoogleLoader.js",
-	ymaps:"customYahooLoader.js",
-	openlayers:"OpenLayers.js",
-	gapi:"gmapapi.js"
-}
-
-OAT.Loader = { /* bootstrap */
+OAT.Loader = { /* first part of loader object */
 	toolkitPath:false,
-	openAjax:false,
-	dimmer:false,
-	loadedLibs:[], /* libraries ready to be used */
-	loadingLibs:[], /* libraries marked for inclusion */
 	loadOccurred:0, /* was window.onload fired? */
-	loadCallbacks:[], /* features & callbacks to be executed */
-	
-	loadFeatures:function(features,callback) { /* load all these features and execute callback */
-		var allNames = OAT.Loader.makeDep(features); /* dependencies */
-		/* distinct values */
-		var distinct = {};
-		for (var i=0;i<allNames.length;i++) if (!(allNames[i] in distinct)) { distinct[allNames[i]] = 1; }
-		var loadList = []; /* list of libraries needed to include */
-		for (var name in distinct) { 
-			var index = OAT.Loader.loadedLibs.find(name); /* detect whether lib was already included */
-			if (index == -1) { loadList.push(name);	}
-		}
-		if (loadList.length && OAT.Dimmer && !OAT.Loader.dimmer && document.body) {
-			OAT.Loader.dimmer = 1;
-			document.body.appendChild(OAT.Loader.dimmerElm);
-			OAT.Dimmer.show(OAT.Loader.dimmerElm);
-			OAT.Dom.center(OAT.Loader.dimmerElm,1,1);
-		}
-		
-		OAT.Loader.loadCallbacks.push([loadList,callback]); /* all needed, not yet loaded, libs */
-		var cpy = [];
-		for (var i=0;i<loadList.length;i++) { cpy.push(loadList[i]); }
-		for (var i=0;i<cpy.length;i++) { 
-			var name = cpy[i];
-			var index = OAT.Loader.loadingLibs.find(name);
-			if (index == -1) { 
-				var fileName = name+".js";
-				if (name in OAT.Files) { fileName = OAT.Files[name]; }
-				OAT.Loader.include(fileName); 
-			} /* include only if not in loadingLibs list */
-		}
-		OAT.Loader.checkLoading();
-	},
-	
-	featureLoaded:function(name) { /* called by libraries when they are loaded */
-		OAT.Loader.loadedLibs.push(name); /* add to list of loaded */
-		var index = OAT.Loader.loadingLibs.find(name); 
-		OAT.Loader.loadingLibs.splice(index,1); /* remove from list of being loaded */
-		for (var i=0;i<OAT.Loader.loadCallbacks.length;i++) {
-			var list = OAT.Loader.loadCallbacks[i][0];
-			var index = list.find(name);
-			if (index != -1) { list.splice(index,1); }
-		}
-		OAT.Loader.checkLoading();
-	},
-	
-	checkLoading:function() { /* check list of loaded libs against TODO list with callbacks */
-		var done = []; /* indexes */
-		var toExecute = [];
-		for (var i=0;i<OAT.Loader.loadCallbacks.length;i++) { /* check all lists for completion */
-			var list = OAT.Loader.loadCallbacks[i][0];
-			if (!list.length) { /* nothing to be loaded -> execute and mark for removal */
-				toExecute.push(OAT.Loader.loadCallbacks[i][1]);
-				done.push(i);
-			}
-		}
-		/* remove all executed */
-		for (var i=done.length-1;i>=0;i--) {
-			var index = done[i];
-			OAT.Loader.loadCallbacks.splice(index,1);
-		}
-		if (!OAT.Loader.loadCallbacks.length && OAT.Loader.dimmer) { 
-			OAT.Loader.dimmer = 0; 
-			if (OAT.Loader.dimmerElm == OAT.Dimmer.elm) { OAT.Dimmer.hide(); }
-		}
-		for (var i=0;i<toExecute.length;i++) { toExecute[i](); }
-	},
-	
-	startInit:function() {
-		/* to be called when all initial libs are loaded. waits until 'onload' occurs and then continues */
-		var ref = function() {
-			if (OAT.Loader.loadOccurred) { 
-				if (typeof(window._init) == "function" && typeof(document.body.getAttribute("onload")) == "object") { window._init(); } /* if _init is specified, execute */
-				if (OAT.Declarative) { OAT.Declarative.execute(); } /* declarative markup */
-				OAT.MSG.send(OAT,OAT.MSG.OAT_LOAD,{});
-				if (typeof(window.init) == "function" && typeof(document.body.getAttribute("onload")) == "object") { window.init(); } /* pass control to userspace */
-			} else { setTimeout(ref,200); }
-		}
-		if (OAT.Loader.loadedLibs.find("window") != -1) { /* include default window */
-			var obj = {
-				1:"mswin",
-				2:"macwin",
-				3:"roundwin",
-				4:"rectwin"
-			}
-			var name = obj[OAT.WindowType()];
-			OAT.Loader.loadFeatures(name,ref);
-		} else { ref(); } /* no window needed, let's wait for onload */
-	},
+	openAjax:false, /* OpenAjax.js included? */
 
 	include:function(file) {
-		var path = OAT.Loader.toolkitPath;
+		var path = OAT.Loader.toolkitPath || "";
 		var value = (typeof(file) == "object" ? file : [file]);
 		for (var i=0;i<value.length;i++) {
 			var name = path+value[i];
@@ -845,24 +734,6 @@ OAT.Loader = { /* bootstrap */
 		}
 	},
 
-	makeDep:function(features) {
-		/* create list of needed libs for this featureset */
-		var arr = (typeof(features) == "object" ? features : [features]);
-		var result = [];
-		for (var i=0;i<arr.length;i++) {
-			var f = arr[i];
-			if (f != "dom") { result.push(f); } /* historical remains */
-			if (f in OAT.Dependencies) { /* if has dependencies */
-				var value = OAT.Dependencies[f];
-				var v = (typeof(value) == "object" ? value : [value]);
-				for (var j=0;j<v.length;j++) {
-					result.append(OAT.Loader.makeDep(v[j]));
-				}
-			}
-		}
-		return result;
-	},
-	
 	findPath:function() { /* scan for loader.js and OpenAjax.js */
 		var head = document.getElementsByTagName("head")[0];
 		var children = head.childNodes;
@@ -879,18 +750,6 @@ OAT.Loader = { /* bootstrap */
 		OpenAjax.registerLibrary("oat", "http://www.openlinksw.com/oat", "1.0");
 		OpenAjax.registerGlobals("oat", ["OAT","featureList"]);
 		OpenAjax.addOnLoad(function(){OAT.Loader.loadOccurred = 1;}, null, "library");
-	},
-	
-	start:function() {
-		OAT.Loader.findPath();
-		OAT.Loader.dimmerElm = OAT.Dom.create("div",{border:"2px solid #000",padding:"1em",position:"absolute",backgroundColor:"#fff"});
-		OAT.Loader.dimmerElm.innerHTML = "OAT Components loading...";
-		if (OAT.Loader.openAjax) { OAT.Loader.startOpenAjax(); } else {
-			OAT.Event.attach(window,"load",function(){OAT.Loader.loadOccurred = 1;});
-		}
-		var fl = (window.featureList ? window.featureList : []);
-		fl.push("preferences");
-		OAT.Loader.loadFeatures(fl,OAT.Loader.startInit);
 	}
 }
 
@@ -962,67 +821,22 @@ OAT.Debug = {
 }
 OAT.Debug.attach("*",OAT.MSG.OAT_DEBUG);
 
-OAT.Dependencies = { /* dependency tree */
-	ajax:"crypto",
-	ajax2:"xml",
-	soap:"ajax2",
-	xmla:["soap","xml","connection"],
-	roundwin:["drag","resize","simplefx"],
-	rectwin:["drag","resize"],
-	mswin:["drag","resize"],
-	macwin:["drag","resize","simplefx"],
-	ghostdrag:"animation",
-	quickedit:"instant",
-	grid:"instant",
-	combolist:"instant",
-	formobject:["drag","resize","datasource","tab"],
-	tab:"layers",
-	color:"drag",
-	combobutton:"instant",
-	pivot:["ghostdrag","statistics","instant","barchart"],
-	combobox:"instant",
-	menu:"animation",
-	panelbar:"animation",
-	dock:["animation","ghostdrag"],
-	calendar:"drag",
-	graph:"canvas",
-	dav:["grid","tree","toolbar","ajax2","xml","window"],
-	dialog:["window","dimmer"],
-	datasource:["jsobj","json","xml","connection","dstransport","ajax2"],
-	gmaps:["gapi","map"],
-	ymaps:"map",
-	simplefx:"animation",
-	msapi:["map","layers"],
-	ws:["xml","soap","ajax2","schema","connection"],
-	schema:["xml"],
-	timeline:["slider","tlscale","resize"],
-	piechart:"svg",
-	graphsvg:["svg","graphsidebar","rdf","dereference"],
-	rdf:"xml",
-	anchor:["window","rectwin"],
-	map:["window","rectwin"],
-	openlayers:["map","layers","roundwin"],
-	svgsparql:["svg","ghostdrag","geometry"],
-	linechart:"svg",
-	sparkline:"linechart",
-	webclip:"webclipbinding",
-	declarative:"json",
-	tree:"ghostdrag",
-	rdfbrowser:["rdf","tree","dereference","anchor","rdftabs","tab","dav"],
-	graphsidebar:"tree",
-	form:["ajax2","dialog","datasource","formobject","crypto"],
-	rssreader:"xml"
-}
-
 /* 
-	global loading works like this: 
-	- monitor onload, just to make sure we don't initialize too early
-	- load initial set of libraries
-	- wait until: 1.all scripts are loaded, 2.onload occurred
-	- then: 1. DOM structure is accessible
-			2. event leak eliminator is attached
-			3. all delayed init methods are called
-			4. (if present) declarative scanner is executed
-			5. userspace init() is called (if present)
+	OAT Load:
+	1) check path
+	2) listen for window.onload (or ask OpenAjax to do this)
+	3) include bootstrap
+	--
+	4) prepare set of files to be included
+	5) wait until all are loaded
+	(5.5) if window is loaded, load proper window type
+	6) everything is loaded and window.onload occured:
+		6a) execute window._init, if present
+		6b) start declarative scanner, if present
+		6c) execute window.init, if present
 */
-OAT.Loader.start();
+OAT.Loader.findPath();
+if (OAT.Loader.openAjax) { OAT.Loader.startOpenAjax(); } else {
+	OAT.Event.attach(window,"load",function(){OAT.Loader.loadOccurred = 1;});
+}
+OAT.Loader.include("bootstrap.js");
