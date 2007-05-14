@@ -185,6 +185,12 @@ ul.docs_list li:hover {
   clear: both;
   font-weight: normal;}
 
+#dawg_tree     li.lvl2 div,
+#virt_ext_tree li.lvl2 div,
+#samples_tree  li.lvl2 div{
+  width: 170px;
+}
+
 #dawg_tree    li.lvl2:hover,
 #virt_ext_tree li.lvl2:hover,
 #samples_tree li.lvl2:hover {

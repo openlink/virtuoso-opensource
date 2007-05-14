@@ -141,7 +141,7 @@ there_is_passed_test:
                         <!--<div style="padding-left:34px;">-->
                           <a href="#" onclick="load_dawg('<?V manifests[ctr] ?>','<?vsp http_url(_name); ?>','<?V grp ?>')">
 <?vsp 
-  http(replace (_descr,'-','-<wbr></wbr>')); 
+  http(replace (_descr,'-','&shy;-<wbr></wbr>')); 
 ?>    
                           </a>
                         <!--</div>-->
