@@ -772,7 +772,7 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 	
 	this.redraw = function() {
 		if (!self.initialized) {
-			self.tl = new OAT.Timeline(self.elm,self.options);
+			self.tl = new OAT.Timeline(self.tlDiv,self.options);
 			self.initialized = true;
 		}	
 		var uris = [];

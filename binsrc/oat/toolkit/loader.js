@@ -308,37 +308,14 @@ OAT.Dom = { /* DOM common object */
 		return false;
 	},
 	
-	isKonqueror:function() {
-		return (navigator.userAgent.match(/konqueror/i) ? true : false);
-	},
-	
-	isIE:function() {
-		return (document.attachEvent && !document.addEventListener ? true : false);
-	},
-	
-	isIE7:function() {
-		return (navigator.userAgent.match(/msie 7/i) ? true : false);
-	},
-	
-	isIE6:function() {
-		return (OAT.Dom.isIE() && !OAT.Dom.isIE7());
-	},
-
-	isGecko:function() {
-		return (document.addEventListener ? true : false);
-	},
-	
-	isOpera:function() {
-		return (navigator.userAgent.match(/Opera/) ? true : false);
-	},
-	
-	isWebKit:function() {
-		return (navigator.userAgent.match(/AppleWebKit/) ? true : false);
-	},
-	
-	isMac:function() {
-		return (navigator.platform.toString().match(/mac/i) ? true : false);
-	},
+	isKonqueror:function() { return (navigator.userAgent.match(/konqueror/i) ? true : false); },
+	isIE:function() { return (document.attachEvent && !document.addEventListener ? true : false); },
+	isIE7:function() { return (navigator.userAgent.match(/msie 7/i) ? true : false); },
+	isIE6:function() { return (OAT.Dom.isIE() && !OAT.Dom.isIE7()); },
+	isGecko:function() { return (document.addEventListener ? true : false);	},
+	isOpera:function() { return (navigator.userAgent.match(/Opera/) ? true : false); },
+	isWebKit:function() { return (navigator.userAgent.match(/AppleWebKit/) ? true : false); },
+	isMac:function() { return (navigator.platform.toString().match(/mac/i) ? true : false);	},
 	
 	color:function(str) {
 		var hex2dec = function(hex) {	return parseInt(hex,16); }
@@ -430,7 +407,8 @@ OAT.Dom = { /* DOM common object */
 		*/
 		var x = c[0];
 		var y = c[1];
-		if (elm.tagName.toLowerCase() != "input" || !OAT.Browser.isOpera) {
+		var arr = ["input","li"];
+		if (arr.find(elm.tagName.toLowerCase()) == -1 || !OAT.Browser.isOpera) {
 			x -= elm.scrollLeft;
 			y -= elm.scrollTop;
 		}
@@ -715,27 +693,21 @@ OAT.Browser = { /* Browser helper */
 OAT.Event = { /* Event helper */
 	attach:function(elm,event,callback) {
 		var element = $(elm);
-		if (element.addEventListener) {
-			/* gecko */
+		if (element.addEventListener) {	/* gecko */
 			element.addEventListener(event,callback,false);
-		} else if (element.attachEvent) {
-			/* ie */
+		} else if (element.attachEvent) { /* ie */
 			element.attachEvent("on"+event,callback);
-		} else {
-			/* ??? */
+		} else { /* ??? */
 			element["on"+event] = callback;
 		}
 	},
 	detach:function(elm,event,callback) {
 		var element = $(elm);
-		if (element.removeEventListener) {
-			/* gecko */
+		if (element.removeEventListener) { /* gecko */
 			element.removeEventListener(event,callback,false);
-		} else if (element.detachEvent) {
-			/* ie */
+		} else if (element.detachEvent) { /* ie */
 			element.detachEvent("on"+event,callback);
-		} else {
-			/* ??? */
+		} else { /* ??? */
 			element["on"+event] = false;
 		}
 	},
@@ -914,7 +886,7 @@ OAT.Loader = { /* bootstrap */
 		OAT.Loader.dimmerElm = OAT.Dom.create("div",{border:"2px solid #000",padding:"1em",position:"absolute",backgroundColor:"#fff"});
 		OAT.Loader.dimmerElm.innerHTML = "OAT Components loading...";
 		if (OAT.Loader.openAjax) { OAT.Loader.startOpenAjax(); } else {
-			OAT.Dom.attach(window,"load",function(){OAT.Loader.loadOccurred = 1;});
+			OAT.Event.attach(window,"load",function(){OAT.Loader.loadOccurred = 1;});
 		}
 		var fl = (window.featureList ? window.featureList : []);
 		fl.push("preferences");
@@ -938,6 +910,7 @@ OAT.MSG = { /* messages */
 	GD_START:11,
 	GD_ABORT:12,
 	GD_END:13,
+	DOCK_DRAG:14,
 	
 	registry:[],
 	attach:function(sender,msg,callback) {

@@ -116,6 +116,17 @@ OAT.Dock = function(div,numColumns) {
 	this.move = function(mover,target) { /* finally moving the panel 'mover' to place 'target' */
 		if (mover == target) { return; }
 		
+		/* coords */
+		var oldX = self.columns.find(mover.parentNode);
+		var newX = self.columns.find(target.parentNode);
+		var oldY = -1;
+		var newY = -1;
+		var oldList = self.columns[oldX].childNodes;
+		var newList = self.columns[newX].childNodes;
+		for (var i=0;i<oldList.length;i++) { if (oldList[i] == mover) { oldY = i; } }
+		for (var i=0;i<newList.length;i++) { if (newList[i] == target) { newY = i; } }
+
+
 		/* blank place to disappear */
 		var dims = OAT.Dom.getWH(mover);
 		var blank = OAT.Dom.create("div");
@@ -127,8 +138,17 @@ OAT.Dock = function(div,numColumns) {
 		OAT.MSG.attach(a.animation,OAT.MSG.ANIMATION_STOP,sf);
 		a.start();
 
+
 		/* put mover to right place */
 		target.parentNode.insertBefore(mover,target);
+		
+		var o = {
+			oldX:oldX,
+			oldY:oldY,
+			newX:newX,
+			newY:newY
+		}
+		OAT.MSG.send(self,OAT.MSG.DOCK_DRAG,o);
 	}
 	
 	this.getOverElm = function(event) {

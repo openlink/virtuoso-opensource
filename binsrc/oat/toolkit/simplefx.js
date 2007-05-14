@@ -211,7 +211,7 @@ OAT.SimpleFX = {
 		b.style.right = (-options.offsetX)+"px";
 		b.style.height = options.bottomSize+"px";
 		b.style.bottom = (-options.bottomSize-options.offsetY)+"px";
-		OAT.Style.background(r,options.imagePath+options.bottomImage);
+		OAT.Style.background(b,options.imagePath+options.bottomImage);
 		
 		var r = OAT.Dom.create("div",{position:"absolute",fontSize:"1px"});
 		r.style.bottom = (-options.offsetY)+"px";
@@ -225,7 +225,7 @@ OAT.SimpleFX = {
 		c.style.right = (-options.rightSize-options.offsetX)+"px";
 		c.style.width = options.rightSize+"px";
 		c.style.height = options.bottomSize+"px";
-		OAT.Style.background(r,options.imagePath+options.cornerImage);
+		OAT.Style.background(c,options.imagePath+options.cornerImage);
 
 		elm.appendChild(b);
 		elm.appendChild(r);
