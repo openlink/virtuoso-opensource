@@ -24,8 +24,8 @@
 var dialogs = {};
 
 var goptions = {};
-goptions.username = 'demo';
-goptions.password = 'demo';
+goptions.username = '';
+goptions.password = '';
 goptions.login_put_type = 'dav';
 goptions.service = '/sparql';
 goptions.proxy = true;
@@ -46,13 +46,15 @@ var page_w = 800;
 var page_h = 800;
 var l = new OAT.Layers(100);
 
-if (default_dgu == undefined) var default_dgu = '';
-if (default_qry == undefined) var default_qry = 'SELECT * WHERE {?s ?p ?o}';
-if (default_spng == undefined) var default_spng = 'soft';
-if (do_auth_verify == undefined) var do_auth_verify = '';
-if (fixed_sponge == undefined) var fixed_sponge = '';
-if (toolkitImagesPath == undefined) var toolkitImagesPath = "toolkit/images";
-if (get_initial_credentials == undefined) var get_initial_credentials = "";
+if (typeof(default_dgu) == 'undefined') var default_dgu = '';
+if (typeof(default_qry) == 'undefined') var default_qry = 'SELECT * WHERE {?s ?p ?o}';
+if (typeof(default_spng) == 'undefined') var default_spng = 'soft';
+if (typeof(do_auth_verify) == 'undefined') var do_auth_verify = '';
+if (typeof(fixed_sponge) == 'undefined') var fixed_sponge = '';
+if (typeof(toolkitImagesPath) == 'undefined') var toolkitImagesPath = "toolkit/images";
+if (typeof(get_initial_credentials) == 'undefined') var get_initial_credentials = "";
+if (typeof(default_user) != 'undefined') goptions.username = default_user;
+if (typeof(default_pass) != 'undefined') goptions.password = default_pass;
 
 function init()
 {

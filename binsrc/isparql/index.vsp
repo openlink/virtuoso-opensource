@@ -44,6 +44,17 @@
   declare fixed_sponge varchar;
   fixed_sponge := cfg_item_value (virtuoso_ini_path(), 'SPARQL', 'EndpointFixedSponge');
   if (fixed_sponge is null) fixed_sponge := '';
+
+  declare default_user, default_pass varchar;
+  if (exists(select 1 from DB.DBA.SYS_USERS where U_NAME = 'demo'))
+  {
+    default_user := 'demo';
+    default_pass := 'demo';
+  } else {
+    default_user := '';
+    default_pass := '';
+  }
+
 ?>
 <script type="text/javascript">
   var default_dgu = '<?vsp http(replace(default_dgu,'\'','\\\'')); ?>';
@@ -51,6 +62,8 @@
   var fixed_sponge = '<?vsp http(replace(fixed_sponge,'\'','\\\'')); ?>';
   var default_spng = 'soft';
   var do_auth_verify = './auth.vsp';
+  var default_user = '<?vsp http(replace(default_user,'\'','\\\'')); ?>';
+  var default_pass = '<?vsp http(replace(default_pass,'\'','\\\'')); ?>';
 <?vsp 
   if (isstring(registry_get('iSPARQL_GET_INITIAL_AUTH')))
     http('  var get_initial_credentials = ''' || registry_get('iSPARQL_GET_INITIAL_AUTH') || ''';\n');
