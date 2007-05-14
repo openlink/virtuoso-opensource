@@ -358,10 +358,10 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
                 }
               else if (URR_RULE_TYPE = 1)
                 {
-                    -- dbg_obj_princ('parts11: ', nice_lpath, URR_NICE_FORMAT);
+--                  dbg_obj_princ('parts11: ', nice_lpath, URR_NICE_FORMAT);
                   _result := regexp_parse (URR_NICE_FORMAT, nice_lpath, 0);
 --		  dbg_obj_print (regexp_match (URR_NICE_FORMAT, nice_lpath));
-                  -- dbg_obj_princ('parts22: ', _result);
+--                  dbg_obj_princ('parts22: ', _result);
                   if (_result is null)
                     return 0;
                   else
@@ -375,11 +375,11 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
                         start_index := 2;
                       for (k := start_index; k < parse_len; k := k + 2)
                         {
-                            -- dbg_obj_princ('cur: ', _result[k], _result[k+1], subseq (nice_lpath, _result[k], _result[k + 1]));
+                          --  dbg_obj_princ('cur: ', _result[k], _result[k+1], subseq (nice_lpath, _result[k], _result[k + 1]));
 			  if (_result[k] < 0 or _result[k + 1] < 0)
 			    parts := vector_concat (parts, vector (null));
 			  else
-                          parts := vector_concat (parts, vector (subseq (nice_lpath, _result[k], _result[k + 1])));
+                            parts := vector_concat (parts, vector (subseq (nice_lpath, _result[k], _result[k + 1])));
                         }
                     }
                 }
