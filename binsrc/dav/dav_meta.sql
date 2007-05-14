@@ -216,8 +216,10 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
         return 'application/rss+xml';
       if (xpath_eval ('[xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"]exists (/wsdl:definitions)', html_start))
         return 'application/wsdl+xml';
-      if (xpath_eval ('[xmlns:gd="http://schemas.google.com/g/2005"] exists (/entry)', html_start))
-        return 'application/google-kinds+xml';
+--      if (xpath_eval ('[xmlns:gd="http://schemas.google.com/g/2005"] exists (/entry)', html_start))
+--        return 'application/google-kinds+xml';
+      if (xpath_eval ('[xmlns="http://www.w3.org/2005/Atom" xmlns:gm="http://base.google.com/ns-metadata/1.0"] exists (/entry)', html_start))
+        return 'application/google-base+xml';
       if (xpath_eval ('[xmlns:bpel="http://schemas.xmlsoap.org/ws/2003/03/business-process/"]exists (/bpel:process)', html_start))
         return 'application/bpel+xml';
       if (xpath_eval ('[xmlns:v="http://www.openlinksw.com/vspx/"]exists (/v:*|//v:page)', html_start))
@@ -1180,6 +1182,197 @@ create function "DAV_EXTRACT_RDF_application/google-kinds+xml" (in orig_res_name
         'http://www.openlinksw.com/schemas/google-kinds#published', '/entry/published', NULL,
         'http://www.openlinksw.com/schemas/google-kinds#updated', '/entry/updated', NULL,
         'http://www.openlinksw.com/schemas/google-kinds#author', '/entry/author/name', 'Unknown author'
+        );
+  extras := null;
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/wsdl+xml" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas, extras any;
+  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/wsdl+xml (', orig_res_name, content, html_start, ')');
+  whenever sqlstate '*' goto errexit;
+  doc := xtree_doc (content, 0);
+  metas := vector (
+        'http://www.openlinksw.com/schemas/WSDL#processName', 'declare namespace wsdl="http://schemas.xmlsoap.org/wsdl/"; /wsdl:definitions/@name', 'Unidentified',
+        'http://www.openlinksw.com/schemas/WSDL#targetNamespace', 'declare namespace wsdl="http://schemas.xmlsoap.org/wsdl/"; /wsdl:definitions/@targetNamespace', NULL
+        );
+  extras := vector (
+        'http://www.openlinksw.com/schemas/WSDL#type', 'WSDL' );
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
+
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/google-base+xml" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas, extras any;
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_application/google-base+xml (', orig_res_name, content, html_start, ')');
+  whenever sqlstate '*' goto errexit;
+  doc := xtree_doc (content, 0);
+  metas := vector (
+    'http://www.openlinksw.com/schemas/google-base#actor', '/*:entry/*:actor', '',
+    'http://www.openlinksw.com/schemas/google-base#adult', 'null', NULL,
+    'http://www.openlinksw.com/schemas/google-base#age', '/*:entry/*:age', NULL,
+    'http://www.openlinksw.com/schemas/google-base#age_range', '/*:entry/*:age_range', NULL,
+    'http://www.openlinksw.com/schemas/google-base#agent', '/*:entry/*:agent', NULL,
+    'http://www.openlinksw.com/schemas/google-base#album', '/*:entry/*:album', NULL,
+    'http://www.openlinksw.com/schemas/google-base#apparel_type', '/*:entry/*:apparel_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#area', '/*:entry/*:area', NULL,
+    'http://www.openlinksw.com/schemas/google-base#artist', '/*:entry/*:artist', NULL,
+    'http://www.openlinksw.com/schemas/google-base#aspect_ratio', '/*:entry/*:aspect_ratio', NULL,
+    'http://www.openlinksw.com/schemas/google-base#author', '/*:entry/*:author', NULL,
+    'http://www.openlinksw.com/schemas/google-base#bathrooms', '/*:entry/*:bathrooms', NULL,
+    'http://www.openlinksw.com/schemas/google-base#battery_life', '/*:entry/*:battery_life', NULL,
+    'http://www.openlinksw.com/schemas/google-base#bedrooms', '/*:entry/*:bedrooms', NULL,
+    'http://www.openlinksw.com/schemas/google-base#binding', '/*:entry/*:binding', NULL,
+    'http://www.openlinksw.com/schemas/google-base#brand', '/*:entry/*:brand', NULL,
+    'http://www.openlinksw.com/schemas/google-base#broker', '/*:entry/*:broker', NULL,
+    'http://www.openlinksw.com/schemas/google-base#calories', '/*:entry/*:calories', NULL,
+    'http://www.openlinksw.com/schemas/google-base#capacity', '/*:entry/*:capacity', NULL,
+    'http://www.openlinksw.com/schemas/google-base#category', '/*:entry/*:category', NULL,
+    'http://www.openlinksw.com/schemas/google-base#cholesterol', '/*:entry/*:cholesterol', NULL,
+    'http://www.openlinksw.com/schemas/google-base#color', '/*:entry/*:color', NULL,
+    'http://www.openlinksw.com/schemas/google-base#color_output', '/*:entry/*:color_output', NULL,
+    'http://www.openlinksw.com/schemas/google-base#condition', '/*:entry/*:condition', NULL,
+    'http://www.openlinksw.com/schemas/google-base#cooking_time', '/*:entry/*:cooking_time', NULL,
+    'http://www.openlinksw.com/schemas/google-base#countries', '/*:entry/*:countries', NULL,
+    'http://www.openlinksw.com/schemas/google-base#course', '/*:entry/*:course', NULL,
+    'http://www.openlinksw.com/schemas/google-base#cuisine', '/*:entry/*:cuisine', NULL,
+    'http://www.openlinksw.com/schemas/google-base#delivery', '/*:entry/*:delivery', NULL,
+    'http://www.openlinksw.com/schemas/google-base#delivery_notes', '/*:entry/*:delivery_notes', NULL,
+    'http://www.openlinksw.com/schemas/google-base#delivery_radius', '/*:entry/*:delivery_radius', NULL,
+    'http://www.openlinksw.com/schemas/google-base#department', '/*:entry/*:department', NULL,
+    'http://www.openlinksw.com/schemas/google-base#devices', '/*:entry/*:devices', NULL,
+    'http://www.openlinksw.com/schemas/google-base#director', '/*:entry/*:director', NULL,
+    'http://www.openlinksw.com/schemas/google-base#display_type', '/*:entry/*:display_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#edition', '/*:entry/*:edition', NULL,
+    'http://www.openlinksw.com/schemas/google-base#education', '/*:entry/*:education', NULL,
+    'http://www.openlinksw.com/schemas/google-base#employer', '/*:entry/*:employer', NULL,
+    'http://www.openlinksw.com/schemas/google-base#ethnicity', '/*:entry/*:ethnicity', NULL,
+    'http://www.openlinksw.com/schemas/google-base#event_date_range', '/*:entry/*:event_date_range', NULL,
+    'http://www.openlinksw.com/schemas/google-base#event_parking', '/*:entry/*:event_parking', NULL,
+    'http://www.openlinksw.com/schemas/google-base#event_performer', '/*:entry/*:event_performer', NULL,
+    'http://www.openlinksw.com/schemas/google-base#event_type', '/*:entry/*:event_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#expiration_date', '/*:entry/*:expiration_date', NULL,
+    'http://www.openlinksw.com/schemas/google-base#expiration_date', '/*:entry/*:expiration_date', NULL,
+    'http://www.openlinksw.com/schemas/google-base#feature', '/*:entry/*:feature', NULL,
+    'http://www.openlinksw.com/schemas/google-base#fiber', '/*:entry/*:fiber', NULL,
+    'http://www.openlinksw.com/schemas/google-base#file_type', '/*:entry/*:file_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#film_type', '/*:entry/*:film_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#focus_type', '/*:entry/*:focus_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#format', '/*:entry/*:format', NULL,
+    'http://www.openlinksw.com/schemas/google-base#from_location', '/*:entry/*:from_location', NULL,
+    'http://www.openlinksw.com/schemas/google-base#functions', '/*:entry/*:functions', NULL,
+    'http://www.openlinksw.com/schemas/google-base#gender', '/*:entry/*:gender', NULL,
+    'http://www.openlinksw.com/schemas/google-base#genre', '/*:entry/*:genre', NULL,
+    'http://www.openlinksw.com/schemas/google-base#heel_height', '/*:entry/*:heel_height', NULL,
+    'http://www.openlinksw.com/schemas/google-base#height', '/*:entry/*:height', NULL,
+    'http://www.openlinksw.com/schemas/google-base#hoa_dues', '/*:entry/*:hoa_dues', NULL,
+    'http://www.openlinksw.com/schemas/google-base#immigration_status', '/*:entry/*:immigration_status', NULL,
+    'http://www.openlinksw.com/schemas/google-base#installation', '/*:entry/*:installation', NULL,
+    'http://www.openlinksw.com/schemas/google-base#interested_in', '/*:entry/*:interested_in', NULL,
+    'http://www.openlinksw.com/schemas/google-base#isbn', '/*:entry/*:isbn', NULL,
+    'http://www.openlinksw.com/schemas/google-base#job_function', '/*:entry/*:job_function', NULL,
+    'http://www.openlinksw.com/schemas/google-base#job_industry', '/*:entry/*:job_industry', NULL,
+    'http://www.openlinksw.com/schemas/google-base#job_type', '/*:entry/*:job_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#languages', '/*:entry/*:languages', NULL,
+    'http://www.openlinksw.com/schemas/google-base#length', '/*:entry/*:length', NULL,
+    'http://www.openlinksw.com/schemas/google-base#listing_status', '/*:entry/*:listing_status', NULL,
+    'http://www.openlinksw.com/schemas/google-base#listing_type', '/*:entry/*:listing_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#load_type', '/*:entry/*:load_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#location', '/*:entry/*:location', NULL,
+    'http://www.openlinksw.com/schemas/google-base#lot_size', '/*:entry/*:lot_size', NULL,
+    'http://www.openlinksw.com/schemas/google-base#made_in', '/*:entry/*:made_in', NULL,
+    'http://www.openlinksw.com/schemas/google-base#main_ingredient', '/*:entry/*:main_ingredient', NULL,
+    'http://www.openlinksw.com/schemas/google-base#make', '/*:entry/*:make', NULL,
+    'http://www.openlinksw.com/schemas/google-base#marital_status', '/*:entry/*:marital_status', NULL,
+    'http://www.openlinksw.com/schemas/google-base#material', '/*:entry/*:material', NULL,
+    'http://www.openlinksw.com/schemas/google-base#meal_type', '/*:entry/*:meal_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#megapixels', '/*:entry/*:megapixels', NULL,
+    'http://www.openlinksw.com/schemas/google-base#memory_card_slot', '/*:entry/*:memory_card_slot', NULL,
+    'http://www.openlinksw.com/schemas/google-base#mileage', '/*:entry/*:mileage', NULL,
+    'http://www.openlinksw.com/schemas/google-base#mls_listing_id', '/*:entry/*:mls_listing_id', NULL,
+    'http://www.openlinksw.com/schemas/google-base#mls_name', '/*:entry/*:mls_name', NULL,
+    'http://www.openlinksw.com/schemas/google-base#mobile_url', '/*:entry/*:mobile_url', NULL,
+    'http://www.openlinksw.com/schemas/google-base#model', '/*:entry/*:model', NULL,
+    'http://www.openlinksw.com/schemas/google-base#model_number', '/*:entry/*:model_number', NULL,
+    'http://www.openlinksw.com/schemas/google-base#name_of_item_reviewed', '/*:entry/*:name_of_item_reviewed', NULL,
+    'http://www.openlinksw.com/schemas/google-base#news_source', '/*:entry/*:news_source', NULL,
+    'http://www.openlinksw.com/schemas/google-base#occasion', '/*:entry/*:occasion', NULL,
+    'http://www.openlinksw.com/schemas/google-base#occupation', '/*:entry/*:occupation', NULL,
+    'http://www.openlinksw.com/schemas/google-base#open_house_date_range', '/*:entry/*:open_house_date_range', NULL,
+    'http://www.openlinksw.com/schemas/google-base#operating_system', '/*:entry/*:operating_system', NULL,
+    'http://www.openlinksw.com/schemas/google-base#optical_drive', '/*:entry/*:optical_drive', NULL,
+    'http://www.openlinksw.com/schemas/google-base#pages', '/*:entry/*:pages', NULL,
+    'http://www.openlinksw.com/schemas/google-base#payment', '/*:entry/*:payment', NULL,
+    'http://www.openlinksw.com/schemas/google-base#payment_notes', '/*:entry/*:payment_notes', NULL,
+    'http://www.openlinksw.com/schemas/google-base#pickup', '/*:entry/*:pickup', NULL,
+    'http://www.openlinksw.com/schemas/google-base#platform', '/*:entry/*:platform', NULL,
+    'http://www.openlinksw.com/schemas/google-base#preparation_method', '/*:entry/*:preparation_method', NULL,
+    'http://www.openlinksw.com/schemas/google-base#preparation_time', '/*:entry/*:preparation_time', NULL,
+    'http://www.openlinksw.com/schemas/google-base#price', '/*:entry/*:price', NULL,
+    'http://www.openlinksw.com/schemas/google-base#price_type', '/*:entry/*:price_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#price_units', '/*:entry/*:price_units', NULL,
+    'http://www.openlinksw.com/schemas/google-base#processor_speed', '/*:entry/*:processor_speed', NULL,
+    'http://www.openlinksw.com/schemas/google-base#product_type', '/*:entry/*:product_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#property_taxes', '/*:entry/*:property_taxes', NULL,
+    'http://www.openlinksw.com/schemas/google-base#property_type', '/*:entry/*:property_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#protein', '/*:entry/*:protein', NULL,
+    'http://www.openlinksw.com/schemas/google-base#provider_class', '/*:entry/*:provider_class', NULL,
+    'http://www.openlinksw.com/schemas/google-base#provider_rank', '/*:entry/*:provider_rank', NULL,
+    'http://www.openlinksw.com/schemas/google-base#publication_name', '/*:entry/*:publication_name', NULL,
+    'http://www.openlinksw.com/schemas/google-base#publication_volume', '/*:entry/*:publication_volume', NULL,
+    'http://www.openlinksw.com/schemas/google-base#publish_date', '/*:entry/*:publish_date', NULL,
+    'http://www.openlinksw.com/schemas/google-base#publish_date', '/*:entry/*:publish_date', NULL,
+    'http://www.openlinksw.com/schemas/google-base#publish_year', '/*:entry/*:publish_year', NULL,
+    'http://www.openlinksw.com/schemas/google-base#publisher', '/*:entry/*:publisher', NULL,
+    'http://www.openlinksw.com/schemas/google-base#publisher_url', '/*:entry/*:publisher_url', NULL,
+    'http://www.openlinksw.com/schemas/google-base#quantity', '/*:entry/*:quantity', NULL,
+    'http://www.openlinksw.com/schemas/google-base#rating', '/*:entry/*:rating', NULL,
+    'http://www.openlinksw.com/schemas/google-base#recommended_usage', '/*:entry/*:recommended_usage', NULL,
+    'http://www.openlinksw.com/schemas/google-base#resolution', '/*:entry/*:resolution', NULL,
+    'http://www.openlinksw.com/schemas/google-base#review_type', '/*:entry/*:review_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#reviewer_type', '/*:entry/*:reviewer_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#salary', '/*:entry/*:salary', NULL,
+    'http://www.openlinksw.com/schemas/google-base#salary_type', '/*:entry/*:salary_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#saturated_fat', '/*:entry/*:saturated_fat', NULL,
+    'http://www.openlinksw.com/schemas/google-base#school', '/*:entry/*:school', NULL,
+    'http://www.openlinksw.com/schemas/google-base#school_district', '/*:entry/*:school_district', NULL,
+    'http://www.openlinksw.com/schemas/google-base#screen_size', '/*:entry/*:screen_size', NULL,
+    'http://www.openlinksw.com/schemas/google-base#season_or_occasion', '/*:entry/*:season_or_occasion', NULL,
+    'http://www.openlinksw.com/schemas/google-base#service_type', '/*:entry/*:service_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#servings', '/*:entry/*:servings', NULL,
+    'http://www.openlinksw.com/schemas/google-base#sexual_orientation', '/*:entry/*:sexual_orientation', NULL,
+    'http://www.openlinksw.com/schemas/google-base#shipping', '/*:entry/*:shipping', NULL,
+    'http://www.openlinksw.com/schemas/google-base#shoe_width', '/*:entry/*:shoe_width', NULL,
+    'http://www.openlinksw.com/schemas/google-base#size', '/*:entry/*:size', NULL,
+    'http://www.openlinksw.com/schemas/google-base#sodium', '/*:entry/*:sodium', NULL,
+    'http://www.openlinksw.com/schemas/google-base#style', '/*:entry/*:style', NULL,
+    'http://www.openlinksw.com/schemas/google-base#tax_percent', '/*:entry/*:tax_percent', NULL,
+    'http://www.openlinksw.com/schemas/google-base#tax_region', '/*:entry/*:tax_region', NULL,
+    'http://www.openlinksw.com/schemas/google-base#tech_spec_link', '/*:entry/*:tech_spec_link', NULL,
+    'http://www.openlinksw.com/schemas/google-base#to_location', '/*:entry/*:to_location', NULL,
+    'http://www.openlinksw.com/schemas/google-base#tone_type', '/*:entry/*:tone_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#total_carbs', '/*:entry/*:total_carbs', NULL,
+    'http://www.openlinksw.com/schemas/google-base#total_fat', '/*:entry/*:total_fat', NULL,
+    'http://www.openlinksw.com/schemas/google-base#travel_date_range', '/*:entry/*:travel_date_range', NULL,
+    'http://www.openlinksw.com/schemas/google-base#upc', '/*:entry/*:upc', NULL,
+    'http://www.openlinksw.com/schemas/google-base#url_of_item_reviewed', '/*:entry/*:url_of_item_reviewed', NULL,
+    'http://www.openlinksw.com/schemas/google-base#vehicle_type', '/*:entry/*:vehicle_type', NULL,
+    'http://www.openlinksw.com/schemas/google-base#vin', '/*:entry/*:vin', NULL,
+    'http://www.openlinksw.com/schemas/google-base#web_url', '/*:entry/*:web_url', NULL,
+    'http://www.openlinksw.com/schemas/google-base#weight', '/*:entry/*:weight', NULL,
+    'http://www.openlinksw.com/schemas/google-base#width', '/*:entry/*:width', NULL,
+    'http://www.openlinksw.com/schemas/google-base#wireless_interface', '/*:entry/*:wireless_interface', NULL,
+    'http://www.openlinksw.com/schemas/google-base#year', '/*:entry/*:year', NULL,
+    'http://www.openlinksw.com/schemas/google-base#zoning', '/*:entry/*:zoning', NULL,
+    'http://www.openlinksw.com/schemas/google-base#zoom', '/*:entry/*:zoom', NULL
         );
   extras := null;
   return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);

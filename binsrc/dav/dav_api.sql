@@ -5717,8 +5717,10 @@ create procedure DAV_GET_RES_TYPE_URI_BY_MIME_TYPE(in mime_type varchar) returns
 		return 'http://www.openlinksw.com/schemas/doap#';
 	if (mime_type = 'application/foaf+xml')
 		return 'http://xmlns.com/foaf/0.1/';
-	if (mime_type = 'application/google-kinds+xml')
-		return 'http://www.openlinksw.com/schemas/google-kinds#';
+        --if (mime_type = 'application/google-kinds+xml')
+        --        return 'http://www.openlinksw.com/schemas/google-kinds#';
+        if (mime_type = 'application/google-base+xml')
+                return 'http://www.openlinksw.com/schemas/google-base#';
 	if (mime_type = 'application/license')
 		return 'http://www.openlinksw.com/schemas/OplLic#';
 	if (mime_type = 'application/mods+xml')
