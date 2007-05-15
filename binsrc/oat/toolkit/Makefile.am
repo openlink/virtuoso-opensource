@@ -18,7 +18,7 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-SUBDIRS	= docs
+#SUBDIRS	= docs
 
 EXTRA_DIST = \
 	$(srcdir)/*.js
