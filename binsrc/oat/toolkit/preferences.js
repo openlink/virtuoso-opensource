@@ -13,7 +13,7 @@ OAT.Preferences = {
 	windowTypeOverride:0, /* do not guess window type */
 	xsltPath:"/DAV/JS/xslt/",
 	imagePath:"/DAV/JS/images/",
-	version:"14.5.2007",
+	version:"15.5.2007",
 	httpError:1, /* show http errors */
 	allowDefaultResize:1,
 	allowDefaultDrag:1

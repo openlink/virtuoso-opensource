@@ -439,15 +439,10 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		self.applyImage(self._icon,iconName);
 		self.applyImage(self._sign,signName);
 		if (self.options.useDots && self.li) { 
-			if (self.parent.children[self.parent.children.length-1] == self) {
-				var dots = "dots-l";
-				self.li.style.backgroundImage = "none";
-			} else {
-				var dots = "dots-t";
-				self.applyBackground(self.li,"dots-i");
-			}
-			self.li.style.backgroundRepeat = "repeat-y";
-			self.applyBackground(self._sign,dots); 
+			var dots = (self.parent.children[self.parent.children.length-1] == self ? "dots-part" : "dots-full");
+			self.applyBackground(self.li,dots);
+			self.li.style.backgroundRepeat = (dots == "dots-full" ? "repeat-y" : "no-repeat");
+			self.applyBackground(self._sign,"dots-horiz"); 
 		}
 		
 	}
