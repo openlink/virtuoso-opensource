@@ -23,7 +23,7 @@
 
   declare id, domain_id, account_id integer;
   declare sid, realm, action, subAction any;
-  declare aRequest, aSession any;
+  declare aSession any;
 
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, '');
@@ -32,8 +32,7 @@
   action := get_keyword ('a', params, '');
   subAction := get_keyword ('sa', params, '');
 
-  aRequest   := ENEWS.WA.validate_request(lines,0);
-  aSession   := ENEWS.WA.session_restore(aRequest, params);
+  aSession   := ENEWS.WA.session_restore (params);
   domain_id  := cast(get_keyword('domain_id', aSession, '0') as integer);
   account_id := cast(get_keyword('user_id', aSession, '0') as integer);
 

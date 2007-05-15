@@ -21,7 +21,9 @@
 --
 use sioc;
 
-create procedure bmk_post_iri (in domain_id int, in bmk_id int)
+create procedure bmk_post_iri (
+  in domain_id int,
+  in bookmark_id int)
 {
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
@@ -30,7 +32,7 @@ create procedure bmk_post_iri (in domain_id int, in bmk_id int)
     from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
       where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
 
-  return sprintf ('http://%s%s/%U/bookmark/%U/%d', get_cname(), get_base_path (), _member, _inst, bmk_id);
+  return sprintf ('http://%s%s/%U/bookmark/%U/%d', get_cname(), get_base_path (), _member, _inst, bookmark_id);
 }
 ;
 
@@ -53,17 +55,17 @@ create procedure bmk_links_to (inout content any)
 }
 ;
 
-create procedure fill_ods_bookmark_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
+create procedure fill_ods_bookmark_sioc (
+  in graph_iri varchar,
+  in site_iri varchar,
+  in _wai_name varchar := null)
 {
-  declare bookmark_id integer;
-  declare iri, c_iri, creator_iri, t_iri varchar;
-  declare tags, linksTo any;
+  declare id, deadl, cnt integer;
+  declare domain_id, bookmark_id integer;
+  declare c_iri, creator_iri, iri varchar;
 
  {
-    declare deadl, cnt any;
-    declare _domain, _b_id any;
-
-    _domain := _b_id := -1;
+    id := -1;
     deadl := 3;
     cnt := 0;
     declare exit handler for sqlstate '40001' {
@@ -75,39 +77,51 @@ create procedure fill_ods_bookmark_sioc (in graph_iri varchar, in site_iri varch
     };
     l0:
 
-  for (select B_ID, WAI_NAME, BD_DOMAIN_ID, BD_BOOKMARK_ID as _BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, BD_CREATED, B_URI, WAM_USER
+    for (select WAI_NAME,
+                WAM_USER,
+                BD_DOMAIN_ID,
+                BD_ID,
+                BD_BOOKMARK_ID,
+                BD_NAME,
+                BD_DESCRIPTION,
+                BD_LAST_UPDATE,
+                BD_CREATED
         from DB.DBA.WA_INSTANCE,
              BMK..BOOKMARK_DOMAIN,
-             BMK..BOOKMARK,
              DB.DBA.WA_MEMBER
-        where
-          B_ID > _b_id and BD_DOMAIN_ID > _domain
+          where BD_ID > id
 	  and BD_DOMAIN_ID = WAI_ID
-         and BD_BOOKMARK_ID = B_ID
          and WAM_INST = WAI_NAME
-          and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)) do
+            and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+          order by BD_ID) do
       {
       c_iri := bmk_iri (WAI_NAME);
-    iri := bmk_post_iri (BD_DOMAIN_ID, _BD_BOOKMARK_ID);
       creator_iri := user_iri (WAM_USER);
 
-    -- maker
-    for (select coalesce(U_FULL_NAME, U_NAME) full_name, U_E_MAIL e_mail from DB.DBA.SYS_USERS where U_ID = WAM_USER) do
-      foaf_maker (graph_iri, person_iri (creator_iri), full_name, e_mail);
+      bookmark_domain_insert (graph_iri,
+                              c_iri,
+                              creator_iri,
+                              BD_DOMAIN_ID,
+                              BD_ID,
+                              BD_BOOKMARK_ID,
+                              BD_NAME,
+                              BD_DESCRIPTION,
+                              BD_CREATED,
+                              BD_LAST_UPDATE);
 
-      linksTo := bmk_links_to (BD_DESCRIPTION);
-      ods_sioc_post (graph_iri, iri, c_iri, creator_iri, BD_NAME, BD_CREATED, BD_LAST_UPDATE, B_URI, BD_DESCRIPTION, null, linksTo);
-
-      -- tags
-    bookmark_id := _BD_BOOKMARK_ID;
-    for (select BD_TAGS from BMK.WA.BOOKMARK_DATA where BD_OBJECT_ID = BD_DOMAIN_ID and BD_MODE = 0 and BD_BOOKMARK_ID = bookmark_id and not DB.DBA.is_empty_or_null (BD_TAGS)) do
+      domain_id := BD_DOMAIN_ID;
+      bookmark_id := BD_BOOKMARK_ID;
+      for (select BD_TAGS
+             from BMK.WA.BOOKMARK_DATA
+            where BD_MODE = 0 and BD_OBJECT_ID = domain_id and BD_BOOKMARK_ID = bookmark_id and not DB.DBA.is_empty_or_null (BD_TAGS)) do {
+        iri := bmk_post_iri (domain_id, bookmark_id);
 	  ods_sioc_tags (graph_iri, iri, BD_TAGS);
+      }
+
     cnt := cnt + 1;
-    if (mod (cnt, 500) = 0)
-      {
+      if (mod (cnt, 500) = 0) {
 	commit work;
-	_b_id := B_ID;
-	_domain := BD_DOMAIN_ID;
+  	    id := BD_ID;
       }
   }
   commit work;
@@ -117,39 +131,50 @@ create procedure fill_ods_bookmark_sioc (in graph_iri varchar, in site_iri varch
 ;
 
 create procedure bookmark_domain_insert (
+  in graph_iri varchar,
+  in c_iri varchar,
+  in creator_iri varchar,
   inout domain_id integer,
+  inout bd_id integer,
   inout bookmark_id integer,
   inout name varchar,
+  inout description varchar,
   inout created datetime,
-  inout updated datetime,
-  inout description varchar)
+  inout updated datetime)
 {
-  declare graph_iri, iri, c_iri, creator_iri varchar;
-  declare linksTo any;
+  declare bookmark_uri, iri, linksTo any;
+
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
 };
-  graph_iri := get_graph ();
-  iri := bmk_post_iri (domain_id, bookmark_id);
-  for (select B_URI, WAM_USER, WAI_NAME
+
+  if (isnull (graph_iri))
+    for (select WAM_USER,
+                WAI_NAME,
+                coalesce(U_FULL_NAME, U_NAME) U_FULL_NAME,
+                U_E_MAIL
          from DB.DBA.WA_INSTANCE,
-              BMK..BOOKMARK,
-              DB.DBA.WA_MEMBER
+                DB.DBA.WA_MEMBER,
+                DB.DBA.SYS_USERS
         where WAI_ID = domain_id
-          and B_ID = bookmark_id
           and WAM_INST = WAI_NAME
-          and WAI_IS_PUBLIC = 1) do
+            and WAI_IS_PUBLIC = 1
+            and U_ID = WAM_USER) do
   {
+      graph_iri := get_graph ();
     c_iri := bmk_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
 
     -- maker
-    for (select coalesce(U_FULL_NAME, U_NAME) full_name, U_E_MAIL e_mail from DB.DBA.SYS_USERS where U_ID = WAM_USER) do
-      foaf_maker (graph_iri, person_iri (creator_iri), full_name, e_mail);
+      foaf_maker (graph_iri, person_iri (creator_iri), U_FULL_NAME, U_E_MAIL);
+    }
 
+  if (not isnull (graph_iri)) {
+    bookmark_uri := (select B_URI from BMK.WA.BOOKMARK where B_ID = bookmark_id);
+    iri := bmk_post_iri (domain_id, bookmark_id);
     linksTo := bmk_links_to (description);
-    ods_sioc_post (graph_iri, iri, c_iri, creator_iri, name, created, updated, B_URI, description, null, linksTo);
+    ods_sioc_post (graph_iri, iri, c_iri, creator_iri, name, created, updated, bookmark_uri, description, null, linksTo);
   }
   return;
 }
@@ -174,20 +199,40 @@ create procedure bookmark_domain_delete (
 
 create trigger BOOKMARK_DOMAIN_SIOC_I after insert on BMK.WA.BOOKMARK_DOMAIN referencing new as N
 {
-  bookmark_domain_insert (N.BD_DOMAIN_ID, N.BD_BOOKMARK_ID, N.BD_NAME, N.BD_CREATED, N.BD_LAST_UPDATE, N.BD_DESCRIPTION);
+  bookmark_domain_insert (null,
+                          null,
+                          null,
+                          N.BD_DOMAIN_ID,
+                          N.BD_ID,
+                          N.BD_BOOKMARK_ID,
+                          N.BD_NAME,
+                          N.BD_DESCRIPTION,
+                          N.BD_CREATED,
+                          N.BD_LAST_UPDATE);
 }
 ;
 
 create trigger BOOKMARK_DOMAIN_SIOC_U after update on BMK.WA.BOOKMARK_DOMAIN referencing old as O, new as N
 {
-  bookmark_domain_delete (O.BD_DOMAIN_ID, O.BD_BOOKMARK_ID);
-  bookmark_domain_insert (N.BD_DOMAIN_ID, N.BD_BOOKMARK_ID, N.BD_NAME, N.BD_CREATED, N.BD_LAST_UPDATE, N.BD_DESCRIPTION);
+  bookmark_domain_delete (O.BD_DOMAIN_ID,
+                          O.BD_BOOKMARK_ID);
+  bookmark_domain_insert (null,
+                          null,
+                          null,
+                          N.BD_DOMAIN_ID,
+                          N.BD_ID,
+                          N.BD_BOOKMARK_ID,
+                          N.BD_NAME,
+                          N.BD_DESCRIPTION,
+                          N.BD_CREATED,
+                          N.BD_LAST_UPDATE);
 }
 ;
 
 create trigger BOOKMARK_DOMAIN_SIOC_D before delete on BMK.WA.BOOKMARK_DOMAIN referencing old as O
     {
-  bookmark_domain_delete (O.BD_DOMAIN_ID, O.BD_BOOKMARK_ID);
+  bookmark_domain_delete (O.BD_DOMAIN_ID,
+                          O.BD_BOOKMARK_ID);
     }
 ;
 
@@ -314,9 +359,9 @@ create procedure ODS_BMK_TAGS ()
 {
   declare inst, uname, item_id, tag any;
   result_names (inst, uname, item_id, tag);
-  for select WAM_INST, U_NAME, BD_TAGS, BD_BOOKMARK_ID from
-    BMK.WA.BOOKMARK_DATA, WA_MEMBER, WA_INSTANCE, SYS_USERS where
-    WAM_INST = WAI_NAME and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID and BD_OBJECT_ID = WAI_ID and BD_MODE = 0
+  for select WAM_INST, U_NAME, BD_TAGS, BD_BOOKMARK_ID
+        from BMK.WA.BOOKMARK_DATA, WA_MEMBER, WA_INSTANCE, SYS_USERS
+       where WAM_INST = WAI_NAME and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID and BD_OBJECT_ID = WAI_ID and BD_MODE = 0
    do
      {
        if (length (BD_TAGS))
@@ -333,7 +378,8 @@ create procedure ODS_BMK_TAGS ()
 	    }
 	 }
      }
-};
+}
+;
 
 wa_exec_no_error ('drop view ODS_BMK_TAGS');
 create procedure view ODS_BMK_TAGS as ODS_BMK_TAGS () (WAM_INST varchar, U_NAME varchar, ITEM_ID int, BD_TAG varchar);

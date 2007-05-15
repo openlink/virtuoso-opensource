@@ -353,11 +353,11 @@
                             User
                           </th>
                        </v:template>
-                        <th class="last">
+                        <th>
                           <?vsp self.sortColumn('Folder', '_FOLDER_NAME'); ?>
                         </th>
-                        <th>
-                          Location
+                        <th class="last">
+                          Action
                         </th>
                       </tr>
                     </thead>
@@ -419,10 +419,22 @@
                                  xhtml_title="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[9], (control.vc_parent as vspx_row_template).te_rowset[10])"/>
                         </td>
                         <td valign="top">
-                          <v:url value="--BMK.WA.folder_path3 ((control.vc_parent as vspx_row_template).te_rowset[8], (control.vc_parent as vspx_row_template).te_rowset[10])"
-                                 url="--sprintf('bookmarks.vspx?location=%d&folder=%d&grant=%d', (control.vc_parent as vspx_row_template).te_rowset[1], coalesce((control.vc_parent as vspx_row_template).te_rowset[8], -1), coalesce((control.vc_parent as vspx_row_template).te_rowset[10], -1))"
-                                 format="%s"
-                                 xhtml_title="--BMK.WA.folder_path3 ((control.vc_parent as vspx_row_template).te_rowset[8], (control.vc_parent as vspx_row_template).te_rowset[10])"/>
+                          <?vsp
+                            declare S varchar;
+
+                            S := 'edit';
+                            if (coalesce((control as vspx_row_template).te_rowset[10], -1) <> -1)
+                              S := 'view';
+                            http (sprintf ('<a href="bookmarks.vspx?sid=%s&realm=%s&bd=%d&folder=%d&grant=%d" title="%s %s">%s</a>',
+                                           self.sid,
+                                           self.realm,
+                                           (control as vspx_row_template).te_rowset[1],
+                                           coalesce((control as vspx_row_template).te_rowset[8], -1),
+                                           coalesce((control as vspx_row_template).te_rowset[10], -1),
+                                           initcap (S),
+                                           BMK.WA.utf2wide ((control as vspx_row_template).te_rowset[3]),
+                                           S));
+                          ?>
                         </td>
                       </tr>
                     </table>
