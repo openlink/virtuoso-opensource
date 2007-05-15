@@ -39,7 +39,8 @@
         {
           if(document.getElementById('searchkeywords').value.trim()!='')
     {
-            document.location.href='nntpf_addtorss.vspx?sid=<?Vself.sid?>&realm=<?Vself.realm?>&search='+document.getElementById('searchkeywords').value;
+//            document.location.href='nntpf_addtorss.vspx?sid=<?Vself.sid?>&realm=<?Vself.realm?>&search='+document.getElementById('searchkeywords').value;
+            document.location.href='<?V sprintf ('%ssearch.vspx', self.odsbar_ods_gpath) ?>?q='+$('searchkeywords').value+'&ontype=discussion&sid=<?Vself.sid?>&realm=<?Vself.realm?>';
           }
           return false;
         }
@@ -50,7 +51,12 @@
     ]]></script>
 
     <v:form type="simple" method="POST" name="search">
-       <v:button style="url" name="nntpf_search_adv" action="submit" value="Search">
+
+      <a href="<?V self.odsbar_ods_gpath ?>search.vspx?ontype=discussion&sid=<?Vself.sid?>&realm=<?Vself.realm?>">
+        <img src="<?V self.odsbar_ods_gpath ?>images/search.png" style="border:none;  vertical-align: middle;"/>
+      </a>
+
+       <v:button style="url" name="nntpf_search_adv" action="submit" value="Search" xhtml_style="display:none;">
          <v:on-post>
            <![CDATA[
              http_request_status ('HTTP/1.1 302 Found');
@@ -66,7 +72,7 @@
 
 
       <v:text xhtml_size="10" name="searchkeywords" value="" xhtml_id="searchkeywords" xhtml_class="textbox" xhtml_onkeypress="return submitenter_local(this,event)"/>
-      <v:button xhtml_id="search_button" action="simple" value="images/go_16.png" style="image" name="GO" xhtml_title="Search" xhtml_alt="Search"/>
+      <v:button xhtml_id="search_button" action="simple" value="images/go_16.png" style="image" name="GO" xhtml_title="Search" xhtml_alt="Search" xhtml_style="display:none"/>
       <v:on-post>
         <![CDATA[
           if(e.ve_button.vc_name <> 'GO' or length (trim(self.searchkeywords.ufl_value)) = 0) {

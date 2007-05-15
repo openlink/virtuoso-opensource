@@ -67,12 +67,15 @@
             var loginParams=(sid.length?'sid='+sid:'')+(realm.length?'&realm='+realm:'');
             var searchStr;
             
-            searchStr  = '?'+(loginParams.length ? loginParams+'&' : '') +
-                         'date_d_after='+_date[2]+'&date_m_after='+_date[1]+'&date_y_after='+_date[0] +
-                         '&date_d_before='+_date[2]+'&date_m_before='+_date[1]+'&date_y_before='+_date[0] +
-                         '&go_adv_search=true';
+            var next_day = new Date(_date[0],_date[1]-1,_date[2]+1);
 
-            document.location='nntpf_addtorss.vspx'+searchStr;
+//            '?'+(loginParams.length ? loginParams+'&' : '') +
+            searchStr  = '?'+loginParams +
+                         '&ontype=nntpf' +
+                         '&date_d_after='+_date[2]+'&date_m_after='+_date[1]+'&date_y_after='+_date[0] +
+                         '&date_d_before='+next_day.getDate()+'&date_m_before='+(next_day.getMonth()+1)+'&date_y_before='+next_day.getFullYear();
+
+            document.location='<?V sprintf ('%ssearch.vspx', self.odsbar_ods_gpath) ?>'+searchStr;
    
             nntpCal.show(nntpCal.div.style.left, nntpCal.div.style.top, clickCal);
            }

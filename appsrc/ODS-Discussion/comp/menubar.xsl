@@ -55,7 +55,9 @@
             </td>
           </v:template>
         <td class="last_cell">
+            <v:template type="simple" condition="not self.vc_authenticated">
           <vm:nntpf-search/>
+            </v:template>
         </td>
       </tr>
     </table>

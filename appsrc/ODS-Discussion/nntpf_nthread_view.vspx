@@ -32,6 +32,7 @@
 	doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <html>
     <head>
+      <base href="<?V 'http://' || WA_GET_HOST () || http_path () ?>" />
       <v:include url="virtuoso_app_links.xhtml"/>
       <link rel="stylesheet" type="text/css" href="nntpf.css"/>
       <title>ODS Discussion</title>
