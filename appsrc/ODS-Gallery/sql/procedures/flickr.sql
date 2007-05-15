@@ -327,7 +327,7 @@ create procedure PHOTO.WA.flickr_save_photos(
 
       res := split_and_decode(cast(ids[i] as varchar),0,'\0\0_');
       data := PHOTO.WA.flickr_method_photos_getInfo(res[0],res[1]);
-      originalformat :=  cast(xpath_eval('@originalformat',data) as varchar);
+      originalformat :=  coalesce (cast(xpath_eval('@originalformat',data) as varchar), 'jpg');
       server := cast(xpath_eval('@server',data) as varchar);
       title :=  cast(xpath_eval('title',data) as varchar);
       description :=  cast(xpath_eval('description',data) as varchar);
