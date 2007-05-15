@@ -24,6 +24,9 @@
 
 ECHO BOTH "Starting URL-Rewriter tests. In case of errors this may result a wait for timeout\n";
 
+delete from DB.DBA.URL_REWRITE_RULE;
+delete from DB.DBA.URL_REWRITE_RULE_LIST;
+
 DB.DBA.URLREWRITE_CREATE_SPRINTF_RULE('rule1', 1, '/%s/%s/%d', vector('app_name', 'user_name', 'post_id'), 3, '/app_name=%s&post_id=%d&user_name=%s', vector('app_name', 'post_id', 'user_name'), NULL);
 select URLREWRITE_ENUMERATE_RULES('%rul%')[0];
 ECHO BOTH $IF $EQU $LAST[1] rule1  "PASSED" "***FAILED";
