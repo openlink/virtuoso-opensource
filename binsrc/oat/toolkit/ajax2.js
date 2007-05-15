@@ -199,14 +199,11 @@ OAT.AJAX = {
 				/* create an AJAX window */
 				var imagePath = OAT.AJAX.imagePath;
 				if (imagePath.charAt(imagePath.length - 1) == "/") imagePath = imagePath.substring(0,imagePath.length - 1);
-				var div = OAT.Dom.create("div");
-				div.innerHTML = "Ajax call in progress...";
-				var dimg = OAT.Dom.create("div");
-				var img = OAT.Dom.create("img",{width:"246px",height:"16px"});
-				img.setAttribute("src",OAT.AJAX.imagePath+"/progress.gif");
-				dimg.appendChild(img);
-				div.appendChild(dimg);
-				OAT.AJAX.dialog = new OAT.Dialog("Please wait",div,{width:280,height:0,modal:0,zIndex:1001,resize:0,imagePath:OAT.AJAX.imagePath + "/"});
+				var div = OAT.Dom.create("div",{textAlign:"center"});
+				var img = OAT.Dom.create("img");
+				img.src = OAT.AJAX.imagePath+"/Ajax_throbber.gif";
+				OAT.Dom.append([div,img,OAT.Dom.create("br"),OAT.Dom.text("Ajax call in progress...")]);
+				OAT.AJAX.dialog = new OAT.Dialog("Please wait",div,{width:240,height:0,modal:0,zIndex:1001,resize:0,imagePath:OAT.AJAX.imagePath + "/"});
 				OAT.AJAX.dialog.ok = OAT.AJAX.dialog.hide;
 				OAT.AJAX.dialog.cancel = function() {
 					OAT.AJAX.dialog.hide();
