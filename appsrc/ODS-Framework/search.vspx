@@ -44,6 +44,7 @@
  <vm:variable name="author" type="varchar" default="null" param-name="author"/>
  <vm:variable name="sparql_rq" type="int" default="null" param-name="rq"/>
  <vm:variable name="sparql_rq_res_name" type="varchar" default="null" param-name="rq_res_name"/>
+ <vm:variable name="on_type" type="varchar" default="null" param-name="ontype"/>
  <v:on-init>
   <![CDATA[
   declare pars any;
@@ -59,6 +60,7 @@
     }
   pars := vector ();
 
+ 
   if (self.ds_data is null)
     {
       self.ds_data := vector ();
@@ -88,6 +90,56 @@
  </v:on-init>
  <v:after-data-bind>
   <![CDATA[
+  if(self.on_type is not null)
+  {
+        if(self.on_type='Community') goto _skip;
+
+        self.srch_people.ufl_selected   := 0;
+        self.srch_blogs.ufl_selected    := 0;
+        self.srch_wikis.ufl_selected    := 0;
+        self.srch_dav.ufl_selected      := 0;
+        self.srch_omail.ufl_selected    := 0;
+        self.srch_news.ufl_selected     := 0;
+        self.srch_bookmark.ufl_selected := 0;
+        self.srch_apps.ufl_selected     := 0;
+        self.srch_nntp.ufl_selected     := 0;
+        
+
+       if (self.on_type = 'oDrive')
+           self.srch_dav.ufl_selected := 1;
+       if (self.on_type = 'WEBLOG2')
+           self.srch_blogs.ufl_selected := 1;
+       if (self.on_type = 'oGallery')
+           self.srch_dav.ufl_selected := 1;
+       if (self.on_type = 'eNews2')
+           self.srch_news.ufl_selected := 1;
+       if (self.on_type = 'oWiki')
+           self.srch_wikis.ufl_selected := 1;
+       if (self.on_type = 'oMail')
+           self.srch_omail.ufl_selected := 1;
+       if (self.on_type = 'Bookmark')
+           self.srch_bookmark.ufl_selected := 1;
+       if (self.on_type = 'discussion' or self.on_type='nntpf')
+       {
+           self.srch_nntp.ufl_selected := 1;
+           if (get_keyword ('date_d_after', e.ve_params, null) is not null)
+              self.date_d_after.ufl_value:=get_keyword ('date_d_after', e.ve_params);
+           if (get_keyword ('date_m_after', e.ve_params, null) is not null)
+              self.date_m_after.ufl_value:=get_keyword ('date_m_after', e.ve_params);
+           if (get_keyword ('date_y_after', e.ve_params, null) is not null)
+              self.date_y_after.ufl_value:=get_keyword ('date_y_after', e.ve_params);
+           if (get_keyword ('date_d_before', e.ve_params, null) is not null)
+              self.date_d_before.ufl_value:=get_keyword ('date_d_before', e.ve_params);
+           if (get_keyword ('date_m_before', e.ve_params, null) is not null)
+              self.date_m_before.ufl_value:=get_keyword ('date_m_before', e.ve_params);
+           if (get_keyword ('date_y_before', e.ve_params, null) is not null)
+              self.date_y_before.ufl_value:=get_keyword ('date_y_before', e.ve_params);
+       }
+
+     _skip:;
+  }
+  
+  
   self.max_rows.ufl_value := cast (case self.qry_max_rows when 0 then 100 else self.qry_max_rows end as varchar);
   self.max_rows.vc_data_bind (e);
 
@@ -110,6 +162,7 @@
 	  self.vc_error_message := 'Invalid keyword string entered';
 	  return;
 	}
+    
       self.expr.ufl_value := self.qry;
       self.expr.vc_data_bind (e);
 
@@ -124,6 +177,7 @@
     }
   else if (length (self.newest) > 0 and (self.newest in ('users','blogs','wiki','news','bookmarks')))
     {
+      
       self.page := -1;
       self.expr.ufl_value := self.qry;
       self.q_tags_expr.ufl_value := self.qry_tags;
@@ -134,6 +188,19 @@
       if (not e.ve_is_post)
         self.do_search (e);
     }
+  else if (self.on_type is not null and
+           (
+             length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value)>0 OR
+             length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value)>0
+           )
+          )
+  {
+      if (not e.ve_is_post)
+        self.do_search (e);
+    
+  }
+
+
 
   ]]>
  </v:after-data-bind>
@@ -257,6 +324,18 @@
          or self.srch_nntp.ufl_selected
 	 )
 	{
+
+      declare _d_after,_d_before varchar;
+      if(length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value))
+        _d_before:=self.date_y_before.ufl_value||'-'||self.date_m_before.ufl_value||'-'||self.date_d_before.ufl_value;
+      else
+        _d_before:='';
+
+      if(length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value))
+        _d_after:=self.date_y_after.ufl_value||'-'||self.date_m_after.ufl_value||'-'||self.date_d_after.ufl_value;
+      else
+        _d_after:='';
+        
 	  query := WA_SEARCH_CONSTRUCT_QUERY (
 		self.u_id,
 		charset_recode (self.expr.ufl_value, http_current_charset(), '_WIDE_'),
@@ -273,6 +352,8 @@
 		self.sort_by_score.ufl_selected,
 		_max_rows,
 		self.s_tag_is_qry,
+            _d_before,
+            _d_after,
 		tags_vector
 		);
       
@@ -717,6 +798,46 @@
             </v:text>
            </td>
 	  </tr>
+<?vsp
+if(self.on_type = 'discussion' or self.on_type='nntpf')
+{
+?>    <tr>
+      <td class="ctl_title">Date after</td>
+      <td align="left">
+         <v:text name="date_d_after" xhtml_size="--2" value="" >
+<!--
+              <v:validator name="date_validator" test="sql" message="Invalid value for date after">
+                   <![CDATA[
+                       declare date_to_check varchar;
+                       date_to_check := self.date_y_after.ufl_value||'-'||self.date_m_after.ufl_value||'-'||self.date_d_after.ufl_value;
+                       
+                       dbg_obj_print('date_to_check',date_to_check,now());
+                       if(length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value))
+                       {
+                         declare exit handler for sqlstate '*' { return 1; };
+                         stringdate(date_to_check);
+                       }
+                     return 0;
+                   ]]>
+                 </v:validator>
+-->
+
+         </v:text> -
+         <v:text name="date_m_after" xhtml_size="--2" value="" /> -
+         <v:text name="date_y_after" xhtml_size="--4" value="" /> (DD-MM-YYYY)
+      </td>
+    </tr>
+    <tr>
+      <td class="ctl_title">Date before</td>
+      <td align="left">
+         <v:text name="date_d_before" xhtml_size="--2" value="" /> -
+         <v:text name="date_m_before" xhtml_size="--2" value="" /> -
+         <v:text name="date_y_before" xhtml_size="--4" value="" /> (DD-MM-YYYY)
+      </td>
+    </tr>
+<?vsp
+}
+?>
 	  <tr>
 	    <td class="ctl_title">Tags</td>
 	   <td align="left">
@@ -798,9 +919,41 @@
 	     <v:button name="keyword_search" value="Search" action="simple">
 	      <v:on-post>
 	       <![CDATA[
+         declare _date_before,_date_after varchar;
+         _date_before:='';
+         _date_after:='';
+         
+         
+         _date_before := self.date_y_before.ufl_value||'-'||self.date_m_before.ufl_value||'-'||self.date_d_before.ufl_value;
+         _date_after := self.date_y_after.ufl_value||'-'||self.date_m_after.ufl_value||'-'||self.date_d_after.ufl_value;
+         
+         
+         if(length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value))
+         {
+         declare exit handler for sqlstate '*' { _date_after:='';
+                                                 self.vc_is_valid := 0;
+                                                 self.vc_error_message := 'Invalid value for Date after';
+                                               };
+          stringdate(_date_after);
+         }
+
+         if(length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value))
+         {
+         declare exit handler for sqlstate '*' { _date_before:='';
+                                                 self.vc_is_valid := 0;
+                                                 self.vc_error_message := 'Invalid value for Date before';
+                                               };
+          stringdate(_date_before);
+         }
+         
+
+
 	       if ((not self.vc_is_valid) or
                    ((self.expr.ufl_value is null or trim (self.expr.ufl_value) = '') and
-		   (self.q_tags_expr.ufl_value is null or trim (self.q_tags_expr.ufl_value) = ''))
+               (self.q_tags_expr.ufl_value is null or trim (self.q_tags_expr.ufl_value) = '') and
+               (length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value)=0 and
+                length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value)=0 )
+              )
                   )
 		 {
 		   self.ds_data := vector ();

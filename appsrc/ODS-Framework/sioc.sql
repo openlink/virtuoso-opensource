@@ -631,7 +631,7 @@ create procedure sioc_user_info (
   if (wa_pub_info (webpage, flags, 7))
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), webpage);
 
-  if (length (ext_urls) and wa_pub_info (webpage, flags, 8))
+  if (length (ext_urls) and wa_pub_info (ext_urls, flags, 8))
     {
       declare arr any;
       ext_urls := replace (ext_urls, '\r', '\n');

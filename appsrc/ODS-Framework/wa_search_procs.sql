@@ -462,7 +462,7 @@ create function WA_SEARCH_NNTP_GET_EXCERPT_HTML (in url varchar, in title varcha
 ;
 
 create function WA_SEARCH_NNTP (in max_rows integer, in current_user_id integer,
-   in str varchar, in tags_str varchar, in _words_vector varchar) returns varchar
+   in str varchar, in tags_str varchar, in _words_vector varchar,in date_before varchar := '',in date_after varchar := '') returns varchar
 {
   declare ret varchar;
 
@@ -488,6 +488,12 @@ create function WA_SEARCH_NNTP (in max_rows integer, in current_user_id integer,
 
 	if (length (str))
 	  ret := ret || sprintf (' filter bif:contains ( ?content, ''%S'' ) ', str);
+
+	if (length (date_before))
+	  ret := ret || sprintf (' filter ( ?ts < "%S"^^xsd:date ) ', date_before);
+
+	if (length (date_after))
+	  ret := ret || sprintf (' filter ( ?ts > "%S"^^xsd:date ) ', date_after);
 
 	if (length (tags_str))
 	  ret := ret || sprintf (' filter bif:contains ( ?tags, ''("^UID%d" OR "^UID%d") and %S'') ',
@@ -1266,7 +1272,11 @@ create procedure WA_SEARCH_CONSTRUCT_QUERY (in current_user_id integer, in qry n
         in search_dav integer, in search_apps integer, in search_omail integer, in search_bmk int,
 	in search_nntp int,
 	in sort_by_score integer,
-        in max_rows integer, in tag_is_qry int, out tags_vector any)
+        in max_rows integer,
+        in tag_is_qry int,
+        in date_before varchar,
+        in date_after varchar,
+        out tags_vector any)
 returns varchar
 {
   declare ret varchar;
@@ -1335,7 +1345,7 @@ returns varchar
   if (search_nntp)
     {
       if (ret <> '') ret := ret || '\n\nUNION ALL\n\n';
-      ret := ret || WA_SEARCH_NNTP (max_rows, current_user_id, str, tags_str, _words_vector);
+      ret := ret || WA_SEARCH_NNTP (max_rows, current_user_id, str, tags_str, _words_vector,date_before,date_after);
     }
   if (ret <> '')
     ret := sprintf ('select top %d EXCERPT, TAG_TABLE_FK, _SCORE, _DATE from \n(\n%s ORDER BY %s desc\n) q',

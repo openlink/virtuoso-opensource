@@ -70,8 +70,13 @@ create procedure ODS_INIT_VHOST ()
       inet := ext_inet;
     }
 
+  if (1)
+    {
 DB.DBA.VHOST_REMOVE (lpath=>'/dataspace');
-DB.DBA.VHOST_DEFINE (lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
+--      DB.DBA.VHOST_DEFINE (lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
+      DB.DBA.VHOST_DEFINE (lpath=>'/dataspace', ppath=>'/DAV/VAD/wa/', vsp_user=>'dba', is_dav=>1, def_page=>'sfront.vspx',
+	  is_brws=>0, opts=>vector ('url_rewrite', 'ods_rule_list1'));
+    }
 
 DB.DBA.VHOST_REMOVE (lpath=>'/dataspace/GData');
 DB.DBA.VHOST_DEFINE (lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
@@ -82,14 +87,20 @@ DB.DBA.VHOST_DEFINE (lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_
   if (cname is not null and default_port <> http_port and cnt_inet < 2)
     {
 --      dbg_obj_print (default_port, http_port, vhost, inet);
-      DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/ods');
+      if (1)
+	{
       DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace');
+	  --DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
+	  DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet,
+	      lpath=>'/dataspace', ppath=>'/DAV/VAD/wa/', vsp_user=>'dba', is_dav=>1, def_page=>'sfront.vspx',
+	      is_brws=>0, opts=>vector ('url_rewrite', 'ods_rule_list1'));
+        }
+      DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/ods');
       DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace/GData');
       DB.DBA.VHOST_REMOVE (vhost=>vhost, lhost=>inet, lpath=>'/openid');
 
       DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/ods',ppath=>'/DAV/VAD/wa/', is_dav=>1,
 	  vsp_user=>'dba', def_page=>'sfront.vspx');
-      DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace', ppath=>'/SOAP/Http/redirect', soap_user=>'GDATA_ODS');
       DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
       DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>inet, lpath=>'/openid', ppath=>'/SOAP/Http/server', soap_user=>'OpenID');
       insert replacing WA_DOMAINS (WD_DOMAIN,WD_HOST,WD_LISTEN_HOST,WD_LPATH,WD_MODEL)
@@ -226,8 +237,8 @@ create procedure wa_app_to_type (in app varchar)
 	'briefcase','oDrive',
 	'mail','oMail',
 	'photos','oGallery',
-	'community','community',
-	'bookmark','bookmark',
+	'community','Community',
+	'bookmark','Bookmark',
 	'discussion','nntpf',
 	'polls','Polls',
 	'addressbook', 'AddressBook',

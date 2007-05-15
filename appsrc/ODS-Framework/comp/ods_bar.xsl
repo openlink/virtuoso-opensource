@@ -274,7 +274,11 @@ function getUrlOnEnter(e)
 
 //        alert('<?V sprintf('%ssearch.vspx',self.odsbar_ods_gpath) ?>?q='+$('odsbar_search_text').value);
           document.location.href =
-            '<?V sprintf ('%ssearch.vspx', self.odsbar_ods_gpath) ?>?q='+$('odsbar_search_text').value;
+            '<?V sprintf ('%ssearch.vspx', self.odsbar_ods_gpath) ?>?q='+$('odsbar_search_text').value+
+            '<?vsp http(case when self.sid is not null then '&sid='||self.sid||'&realm='||coalesce(self.realm,'wa') else '' end);?>'+
+            '<?vsp http(case when coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) is not null then '&ontype='||coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) else '' end);?>'
+            ;
+
       return false;
     }
   else
@@ -772,7 +776,20 @@ odsbarSafeInit();
          <vm:odsbar_applications_menu/>
          <vm:odsbar_links_menu/>
          <li class="<?V case when locate('search.vspx',http_path ()) then 'sel' else '' end ?>">
-      <a href="<?V self.odsbar_ods_gpath ?>search.vspx">
+<?vsp
+declare _search_link varchar;
+_search_link:=self.odsbar_ods_gpath||'search.vspx';
+
+if(self.sid is not null)
+  _search_link:=_search_link||'?sid='||self.sid||'&realm='||coalesce(self.realm,'wa');
+if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) is not null)
+   if (self.sid is not null)
+   _search_link:=_search_link||'&ontype='||coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr));
+   else
+   _search_link:=_search_link||'?ontype='||coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr));
+
+?>
+      <a href="<?V_search_link?>">
         <img class="tab_img" src="<?V self.odsbar_ods_gpath ?>images/search.png"/>
       </a>
          </li>
