@@ -78,11 +78,11 @@
 
 
 #dav_tree .tree_li_selected  {
-	background-color: #ddf;
+	font-weight: bold;
 }
 
 #dav_tree .tree_ul_selected {
-	background-color: #fff !important;
+	font-weight: normal !important;
 }
 
 
@@ -112,7 +112,7 @@
 #dav_right {
 	left: 207px;
 	top: 0px; 
-	width: 545px;
+	width: 542px; 
 	overflow:auto;
 	position:relative; 
 	background-color: #fff;
@@ -120,7 +120,7 @@
 
 #dav_right_content {
 	position: relative;
-	width: 525px;
+	width: 522px;
 	height: 100%;
 }
 
@@ -129,3 +129,12 @@
 	margin-top: 3px;
 	margin-right: 5px;
 }
+
+#dav_permissions {
+	border-collapse: collapse;
+}
+
+#dav_permissions td {
+	text-align: center;
+}
+
