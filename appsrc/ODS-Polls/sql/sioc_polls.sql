@@ -36,65 +36,108 @@ create procedure poll_post_iri (in domain_id varchar, in poll_id int)
 
 create procedure fill_ods_polls_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
-  declare polls_id integer;
-  declare iri, c_iri, creator_iri, t_iri varchar;
-  declare tags any;
+  declare id, deadl, cnt integer;
+  declare c_iri, creator_iri varchar;
 
-  for (select WAI_NAME, WAM_USER, P_DOMAIN_ID, P_ID, P_NAME, P_DESCRIPTION, P_UPDATED, P_CREATED, P_TAGS, POLLS.WA.poll_url (P_DOMAIN_ID, P_ID) P_URI
+  {
+    id := -1;
+    deadl := 3;
+    cnt := 0;
+    declare exit handler for sqlstate '40001' {
+      if (deadl <= 0)
+	      resignal;
+      rollback work;
+      deadl := deadl - 1;
+      goto l0;
+    };
+  l0:
+
+    for (select WAI_NAME,
+                WAM_USER,
+                P_DOMAIN_ID,
+                P_ID,
+                P_NAME,
+                P_DESCRIPTION,
+                P_UPDATED,
+                P_CREATED,
+                P_TAGS
          from DB.DBA.WA_INSTANCE,
               POLLS.WA.POLL,
               DB.DBA.WA_MEMBER
         where P_DOMAIN_ID = WAI_ID
           and WAM_INST = WAI_NAME
-          and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)) do
+            and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+          order by P_ID) do
   {
     c_iri := polls_iri (WAI_NAME);
-    iri := poll_post_iri (P_DOMAIN_ID, P_ID);
     creator_iri := user_iri (WAM_USER);
 
-    -- maker
-    for (select coalesce(U_FULL_NAME, U_NAME) full_name, U_E_MAIL e_mail from DB.DBA.SYS_USERS where U_ID = WAM_USER) do
-      foaf_maker (graph_iri, person_iri (creator_iri), full_name, e_mail);
+      polls_insert (graph_iri,
+                    c_iri,
+                    creator_iri,
+                    P_ID,
+                    P_DOMAIN_ID,
+                    P_NAME,
+                    P_DESCRIPTION,
+                    P_TAGS,
+                    P_CREATED,
+                    P_UPDATED);
 
-    ods_sioc_post (graph_iri, iri, c_iri, creator_iri, P_NAME, P_CREATED, P_UPDATED, P_URI, P_DESCRIPTION);
-    ods_sioc_tags (graph_iri, iri, P_TAGS);
+      cnt := cnt + 1;
+      if (mod (cnt, 500) = 0) {
+  	    commit work;
+  	    id := P_ID;
+      }
+    }
+    commit work;
   }
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure polls_insert (
+  in graph_iri varchar,
+  in c_iri varchar,
+  in creator_iri varchar,
   inout poll_id integer,
   inout domain_id integer,
   inout name varchar,
-  inout created datetime,
-  inout updated datetime,
   inout description varchar,
-  inout tags varchar)
+  inout tags varchar,
+  inout created datetime,
+  inout updated datetime)
 {
-  declare graph_iri, iri, c_iri, creator_iri varchar;
-  declare linksTo any;
+  declare iri any;
 
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
-  graph_iri := get_graph ();
-  iri := poll_post_iri (domain_id, poll_id);
-  for (select WAM_USER, WAI_NAME
+  if (isnull (graph_iri))
+    for (select WAM_USER,
+                WAI_NAME,
+                coalesce(U_FULL_NAME, U_NAME) U_FULL_NAME,
+                U_E_MAIL
          from DB.DBA.WA_INSTANCE,
-              DB.DBA.WA_MEMBER
+                DB.DBA.WA_MEMBER,
+                DB.DBA.SYS_USERS
         where WAI_ID = domain_id
           and WAM_INST = WAI_NAME
-          and WAI_IS_PUBLIC = 1) do
+            and WAI_IS_PUBLIC = 1
+            and U_ID = WAM_USER) do
   {
-    c_iri := polls_iri (WAI_NAME);
+      graph_iri := get_graph ();
+      c_iri := bmk_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
 
     -- maker
-    for (select coalesce(U_FULL_NAME, U_NAME) full_name, U_E_MAIL e_mail from DB.DBA.SYS_USERS where U_ID = WAM_USER) do
-      foaf_maker (graph_iri, person_iri (creator_iri), full_name, e_mail);
+      foaf_maker (graph_iri, person_iri (creator_iri), U_FULL_NAME, U_E_MAIL);
+    }
 
+  if (not isnull (graph_iri)) {
+    iri := poll_post_iri (domain_id, poll_id);
     ods_sioc_post (graph_iri, iri, c_iri, creator_iri, name, created, updated, POLLS.WA.poll_url (domain_id, poll_id), description);
     ods_sioc_tags (graph_iri, iri, tags);
   }
@@ -102,6 +145,8 @@ create procedure polls_insert (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure polls_delete (
   inout poll_id integer,
   inout domain_id integer)
@@ -119,25 +164,53 @@ create procedure polls_delete (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger POLLS_SIOC_I after insert on POLLS.WA.POLL referencing new as N
 {
-  polls_insert (N.P_ID, N.P_DOMAIN_ID, N.P_NAME, N.P_CREATED, N.P_UPDATED, N.P_DESCRIPTION, N.P_TAGS);
+  polls_insert (null,
+                null,
+                null,
+                N.P_ID,
+                N.P_DOMAIN_ID,
+                N.P_NAME,
+                N.P_DESCRIPTION,
+                N.P_TAGS,
+                N.P_CREATED,
+                N.P_UPDATED);
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger POLLS_SIOC_U after update on POLLS.WA.POLL referencing old as O, new as N
 {
-  polls_delete (O.P_ID, O.P_DOMAIN_ID);
-  polls_insert (N.P_ID, N.P_DOMAIN_ID, N.P_NAME, N.P_CREATED, N.P_UPDATED, N.P_DESCRIPTION, N.P_TAGS);
+  polls_delete (O.P_ID,
+                O.P_DOMAIN_ID);
+  polls_insert (null,
+                null,
+                null,
+                N.P_ID,
+                N.P_DOMAIN_ID,
+                N.P_NAME,
+                N.P_DESCRIPTION,
+                N.P_TAGS,
+                N.P_CREATED,
+                N.P_UPDATED);
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger POLLS_SIOC_D before delete on POLLS.WA.POLL referencing old as O
 {
-  polls_delete (O.P_ID, O.P_DOMAIN_ID);
+  polls_delete (O.P_ID,
+                O.P_DOMAIN_ID);
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure ods_polls_sioc_init ()
 {
   declare sioc_version any;

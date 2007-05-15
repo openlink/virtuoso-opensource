@@ -21,142 +21,13 @@
 --
 -------------------------------------------------------------------------------
 --
--- Request Functions
---
--------------------------------------------------------------------------------
-create procedure POLLS.WA.validate_request(
-  inout pLines any,
-  in pMinVersion integer,
-  in pType varchar := 'WWW')
-{
-  declare aResult   any;
-  declare S,P,B     varchar;
-  declare V         any;
-  declare i,j,k,l   integer;
-
-  -- Initialize variables
-  i := strstr(pLines[0],' ');              -- Method/URI dividing space
-  if (isnull(i)) POLLS.WA.http_response(400);       -- Bad Request (can't happen!)
-  l := length(pLines[0]) - 2;              -- total length.one for zero-based and one for ending LF!;
-  k := strrchr(pLines[0],' ');             -- URI/Version dividing space ( k <- end of URL)
-  if (isnull(k) or (k = i)) k := l;        -- if no version tag is presented k equals l
-  j := strstr(pLines[0],'?');              -- search for parameters in URI and ignore them!
-  if (isnull(j)) j := k;                   -- if no parameters j equals k (end of URI)
-  B := subseq(pLines[0],i+1,j);            -- Buffer for resource path
-  -- Initialize result structure;
-  aResult := vector(subseq(pLines[0],0,i),vector('',''),vector(1,0),vector(),vector('pollss','vspx'), -2);
-  -- Determine host
-  S := http_request_header(pLines,'Host',null,'');
-  if (S <> '') {
-    i := strstr(S,':');
-    if (isnull(i))
-      aset(aResult,1,vector(S,''));
-    else
-      aset(aResult,1,vector(subseq(S,0,i),subseq(S,i+1)));
-  }
-  -- Determine request version
-  if (k + 1 < l) {
-    -- Check for version format
-    S := subseq(pLines[0],k+1,l);
-    i := strstr(S,'HTTP/');
-    if (isnull(i) or (i > 0)) POLLS.WA.http_response(400);                 -- Bad Request
-    i := strstr(S,'.'); if (isnull(i)) POLLS.WA.http_response(400);        -- Bad Request
-    aset(aResult,2,vector(atoi(subseq(S,5,i)),atoi(subseq(S,i+1))));
-  }
-  if (aResult[2][0] <> 1) POLLS.WA.http_response(505);                     -- HTTP Version Not Supported
-  if (aResult[2][1] < pMinVersion) POLLS.WA.http_response(505);            -- HTTP Version Not Supported
-  if ((pMinVersion > 0) and aResult[1] = '') POLLS.WA.http_response(400);  -- Host field required for HTTP/1.1
-
-  --check "File or Directory";
-  P := POLLS.WA.mount_point();
-  S := either(equ(P,''),B,subseq(B,length(P)));                   -- Remove mount point from path
-  i := length(S) - 1;                                             -- S is now like 'path/file.ext
-  if (i < 0)
-    http_redirect2(concat(P,'/'),vector());                       -- S = ''. Redirect to '{Mount Point}/'
-  if (chr(S[i]) = '/')
-  {
-    j := i - 1;
-    while ((j >= 0) and (chr(S[j]) <> '/'))
-    {
-      if (chr(S[j]) = '.')
-        POLLS.WA.http_response(404);
-      j := j - 1;
-    }
-    S := concat(S,'pollss.vspx');
-  }
-  else
-  {
-    j := i;
-    while ((j >= 0) and (chr(S[j]) <> '.'))
-    {
-      if (chr(S[j]) = '/')
-        http_redirect2(concat(P,S,'/'),vector());
-      j := j - 1;
-    }
-  }
-
-  -- Verify domain (only digits)
-  V := split_and_decode(ltrim(P,'/'),0,'\0\0/');
-  if (length(V) > 1) {
-    P := aref(V,length(V)-1);
-    regexp_match('^[0-9]+',P,1);
-    if (P = '')
-      aset(aResult,5,cast(aref(V,length(V)-1) as integer));
-  };
-
-  -- Verify path
-  P := S;
-  regexp_match('^[a-z_0-9/\.-]+',P,1);
-  if (P <> '')
-    POLLS.WA.http_response(404);
-  -- Put path and file into result structure
-  V := split_and_decode(ltrim(S,'/'),0,'\0\0/');
-  aset(aResult,4,split_and_decode(V[length(V)-1],0,'\0\0.'));
-  if (length(V) > 1)
-    aset(aResult,3,subseq(V,i,Length(V) - 1));
-  else
-    aset(aResult,3,vector(''));
-  -- Return verified request information
-  return aResult;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure POLLS.WA.mount_point(
-  in pURL varchar := null)
-{
-  declare
-    sMPoint varchar;
-
-  sMPoint := http_map_get('domain');
-  if (sMPoint = '/')
-    sMPoint := '';
-  if (not isnull(pURL))
-    sMPoint := concat(sMPoint,'/',pURL);
-  return sMPoint;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure POLLS.WA.http_response(in pError integer,in pParams varchar := '')
-{
-  signal ('90001', sprintf('<Response Status="%d" MountPoint="%s">%s</Response>', pError, POLLS.WA.mount_point(), pParams));
-}
-;
-
--------------------------------------------------------------------------------
---
 -- Session Functions
 --
 -------------------------------------------------------------------------------
 create procedure POLLS.WA.session_restore(
-  inout request any,
-  inout params any,
-  inout lines any)
+  inout params any)
 {
-  declare domain_id, user_id, user_name, user_role, sid, realm, options any;
+  declare aPath, domain_id, user_id, user_name, user_role, sid, realm, options any;
 
   declare exit handler for sqlstate '*' {
     domain_id := -2;
@@ -169,8 +40,10 @@ create procedure POLLS.WA.session_restore(
   options := http_map_get('options');
   if (not is_empty_or_null(options))
     domain_id := get_keyword('domain', options);
-  if (is_empty_or_null(domain_id))
-    domain_id := cast(request[5] as integer);
+  if (is_empty_or_null (domain_id)) {
+    aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
+    domain_id := cast(aPath[1] as integer);
+  }
   if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and domain_id <> -2))
     domain_id := -1;
 
@@ -690,6 +563,15 @@ create procedure POLLS.WA.domain_delete (
 
 -------------------------------------------------------------------------------
 --
+create procedure POLLS.WA.domain_id (
+  in domain_name varchar)
+{
+  return (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = domain_name);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure POLLS.WA.domain_name (
   in domain_id integer)
 {
@@ -1076,7 +958,7 @@ create procedure POLLS.WA.polls_url (
 create procedure POLLS.WA.sioc_url (
   in domain_id integer)
 {
-  return sprintf('%s/dataspace/%U/polls/%U/sioc.rdf', POLLS.WA.host_url (), POLLS.WA.account (), replace (POLLS.WA.domain_name (domain_id), '+', '%2B'));
+  return sprintf('%s/dataspace/%U/polls/%U/sioc.rdf', POLLS.WA.host_url (), POLLS.WA.domain_owner_name (domain_id), replace (POLLS.WA.domain_name (domain_id), '+', '%2B'));
 }
 ;
 
@@ -1095,7 +977,7 @@ create procedure POLLS.WA.poll_url (
   in domain_id integer,
   in poll_id integer)
 {
-  return concat(POLLS.WA.polls_url (domain_id), 'polls.vspx?poll=', cast(poll_id as varchar));
+  return concat(POLLS.WA.polls_url (domain_id), 'polls.vspx?id=', cast(poll_id as varchar));
 }
 ;
 

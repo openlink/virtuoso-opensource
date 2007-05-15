@@ -32,7 +32,7 @@
       if (self.pTag <> lcase(get_keyword ('tag', params, '')))
         self.ds.vc_reset();
       self.pTag := lcase(get_keyword ('tag', params, ''));
-      self.pPoll := get_keyword ('poll', params, '');
+      self.pPoll := get_keyword ('id', params, '');
       if (self.pPoll <> '') {
         self.v_id := cast (self.pPoll as integer);
         if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, self.v_id)) {
