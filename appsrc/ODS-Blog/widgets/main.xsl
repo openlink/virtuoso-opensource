@@ -824,7 +824,7 @@ else if (length (self.catid))
         http(sprintf('<link rel=\"shortcut icon\" href=\"%s\"/>', icon));
       ?>
       <xsl:text>&#10;</xsl:text>
-      <!-- this kills the js buttons base href="<?V self.ur ?>" /-->
+      <base href="<?V 'http://' || self.host || http_path () ?>" />
       <xsl:text>&#10;</xsl:text>
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
       <xsl:text>&#10;</xsl:text>
