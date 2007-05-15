@@ -42,26 +42,13 @@
       </vm:variables>
       <v:on-init>
         <![CDATA[
-          declare aRequest, aSessInfo any;
-          declare sCharset, sBrwCharset varchar;
-
-          SET ISOLATION = 'Commited';
+          set ISOLATION = 'Committed';
+          set http_charset = 'utf-8';
 
           -- Initialize variables
-          aRequest := AB.WA.validate_request(lines,0);
+          declare aSessInfo any;
 
-          -- Charset
-          sBrwCharset := http_request_header(lines, 'Accept-Charset', null);
-          if (sBrwCharset)
-            sCharset := regexp_match('[^,;$]*',sBrwCharset);
-          else
-            sCharset := 'UTF-8';
-          if (not position(upper(sCharset), charsets_list(0)))
-            sCharset := 'UTF-8';
-          exec(sprintf('SET CHARSET = ''%s''',sCharset));
-          exec(sprintf('SET HTTP_CHARSET = ''%s''',sCharset));
-
-          aSessInfo := AB.WA.session_restore(aRequest, params, lines);
+          aSessInfo := AB.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
           self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword('user_role', aSessInfo, '');

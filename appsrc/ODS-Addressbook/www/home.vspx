@@ -33,7 +33,7 @@
       if (self.abTag <> lcase(get_keyword ('tag', params, '')))
         self.ds.vc_reset();
       self.abTag := lcase(get_keyword ('tag', params, ''));
-      self.abContact := get_keyword ('contact', params, '');
+      self.abContact := get_keyword ('id', params, '');
       if (self.abContact <> '') {
         self.v_id := cast (self.abContact as integer);
         if (self.v_id = -1) {

@@ -23,7 +23,9 @@ use sioc;
 
 -------------------------------------------------------------------------------
 --
-create procedure addressbook_contact_iri (in domain_id varchar, in contact_id int)
+create procedure addressbook_contact_iri (
+  in domain_id varchar,
+  in contact_id int)
 {
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
@@ -38,21 +40,69 @@ create procedure addressbook_contact_iri (in domain_id varchar, in contact_id in
 
 -------------------------------------------------------------------------------
 --
-create procedure fill_ods_addressbook_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
+create procedure fill_ods_addressbook_sioc (
+  in graph_iri varchar,
+  in site_iri varchar,
+  in _wai_name varchar := null)
 {
+  declare id, deadl, cnt integer;
   declare c_iri, creator_iri, r_iri varchar;
 
-  for (select WAI_ID, WAI_NAME, WAM_USER
-         from DB.DBA.WA_INSTANCE i,
-              DB.DBA.WA_MEMBER m
-        where m.WAM_INST = i.WAI_NAME
-          and ((m.WAM_IS_PUBLIC = 1 and _wai_name is null) or i.WAI_NAME = _wai_name)) do
+  {
+    id := -1;
+    deadl := 3;
+    cnt := 0;
+    declare exit handler for sqlstate '40001' {
+      if (deadl <= 0)
+	      resignal;
+      rollback work;
+      deadl := deadl - 1;
+      goto l0;
+    };
+  l0:
+
+    for (select WAI_ID,
+                WAI_NAME,
+                WAM_USER,
+                P_ID,
+                P_DOMAIN_ID,
+                P_NAME,
+                P_FIRST_NAME,
+                P_LAST_NAME,
+                P_GENDER,
+                P_BIRTHDAY,
+                P_MAIL,
+                P_ICQ,
+                P_SKYPE,
+                P_AIM,
+                P_YAHOO,
+                P_MSN,
+                P_H_COUNTRY,
+                P_H_STATE,
+                P_H_CITY,
+                P_H_CODE,
+                P_H_ADDRESS1,
+                P_H_ADDRESS1,
+                P_H_LAT,
+                P_H_LNG,
+                P_H_PHONE,
+                P_H_MAIL,
+                P_H_WEB,
+                P_CREATED,
+                P_UPDATED,
+                P_TAGS
+           from DB.DBA.WA_INSTANCE,
+                DB.DBA.WA_MEMBER,
+                AB.WA.PERSONS
+          where WAM_INST = WAI_NAME
+            and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+            and P_DOMAIN_ID = WAI_ID
+          order by P_ID) do
   {
     c_iri := polls_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
     r_iri := role_iri (WAI_ID, WAM_USER, 'contact');
 
-    for (select * from AB.WA.PERSONS where P_DOMAIN_ID = WAI_ID) do
       contact_insert (graph_iri,
                       c_iri,
                       creator_iri,
@@ -84,6 +134,14 @@ create procedure fill_ods_addressbook_sioc (in graph_iri varchar, in site_iri va
                     P_CREATED,
                     P_UPDATED,
                     P_TAGS);
+
+      cnt := cnt + 1;
+      if (mod (cnt, 500) = 0) {
+  	    commit work;
+  	    id := P_ID;
+      }
+    }
+    commit work;
   }
 }
 ;
