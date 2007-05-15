@@ -69,14 +69,21 @@ CAL.WA.exec_no_error ('
   create table CAL.WA.EVENTS (
     E_ID integer not null,
     E_DOMAIN_ID integer not null,
+    E_KIND integer default 0,             -- 0 - Event
+                                          -- 1 - Task
+                                          -- 2 - Notes
+    E_CLASS integer default 0,            -- 0 - PUBLIC
+                                          -- 1 - PRIVATE
+                                          -- 2 - CONFIDENTIAL
     E_SUBJECT varchar,
     E_DESCRIPTION varchar,
     E_LOCATION varchar,
-    E_KIND integer default 0,
-    E_CLASS integer default 0,
+    E_TAGS varchar,
+
+    -- Event fields
     E_EVENT integer default 0,
-    E_EVENT_START datetime not null,
-    E_EVENT_END datetime not null,
+    E_EVENT_START datetime,
+    E_EVENT_END datetime,
     E_REPEAT char (2) default \'\',       -- \'\' - no repeat,
                                           -- D1 - every day,
                                           -- D2 - every weekday ,
@@ -94,7 +101,22 @@ CAL.WA.exec_no_error ('
     E_REMINDER_DATE datetime,             -- keep when to remind the user.
                                           -- calculated through insert/update.
                                           -- reminder procedure set this to NULL when user is reminded, in case of recursive event is set to next remind date
-    E_TAGS varchar,
+    -- Task fields
+    E_PRIORITY integer,                   -- 1 - highest,
+                                          -- 2 - high
+                                          -- 3 - normal,
+                                          -- 4 - low
+                                          -- 5 - lowest
+    E_COMPLETE integer,                   -- 0,
+                                          -- 25,
+                                          -- 50,
+                                          -- 75,
+                                          -- 100
+    E_STATUS varchar,                     -- Not Started
+                                          -- In Progress;
+                                          -- Completed,
+                                          -- Waiting,
+                                          -- Deferred
     E_CREATED datetime,
     E_UPDATED datetime,
 
@@ -168,7 +190,11 @@ create procedure CAL.WA.EVENTS_E_SUBJECT_int (inout vtb any, inout d_id any, in 
 
     vt_batch_feed (vtb, coalesce(E_SUBJECT, ''), mode);
 
-    if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = E_DOMAIN_ID and WAI_TYPE_NAME = 'AddressBook' and WAI_IS_PUBLIC = 1))
+    vt_batch_feed (vtb, coalesce (E_DESCRIPTION, ''), mode);
+
+    vt_batch_feed (vtb, coalesce (E_LOCATION, ''), mode);
+
+    if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = E_DOMAIN_ID and WAI_TYPE_NAME = 'Calendar' and WAI_IS_PUBLIC = 1))
       vt_batch_feed (vtb, '^public', mode);
 
     tags := split_and_decode (E_TAGS, 0, '\0\0,');

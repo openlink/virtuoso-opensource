@@ -347,7 +347,7 @@
   	      suffix := '<xsl:value-of select="@format"/>';
         </xsl:processing-instruction>
       </xsl:if>
-  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/feeds/%U/sioc.%s', ENEWS.WA.host_url (), ENEWS.WA.account(), ENEWS.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
+  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/feeds/%U/sioc.%s', ENEWS.WA.host_url (), ENEWS.WA.domain_owner_name (self.domain_id), ENEWS.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
     	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
       </a>
       <?vsp

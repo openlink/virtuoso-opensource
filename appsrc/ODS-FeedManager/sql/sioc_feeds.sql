@@ -157,12 +157,11 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
 {
   declare iri, m_iri, f_iri, t_iri, u_iri, c_iri varchar;
   declare tags, linksTo any;
+  declare id, deadl, cnt any;
 
  {
-    declare deadl, cnt any;
-    declare _domain any;
 
-    _domain := -1;
+    id := -1;
     deadl := 3;
     cnt := 0;
     declare exit handler for sqlstate '40001' {
@@ -178,10 +177,11 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
         from ENEWS..FEED_DOMAIN,
              ENEWS..FEED,
              DB.DBA.WA_INSTANCE
-         where EFD_ID > _domain
+         where EFD_ID > id
          and EFD_FEED_ID = EF_ID
          and EFD_DOMAIN_ID = WAI_ID
-         and ((WAI_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name) do
+           and ((WAI_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+         order by EFD_ID do
   {
       iri := feed_iri (EF_ID);
       m_iri := feed_mgr_iri (EFD_DOMAIN_ID);
@@ -191,16 +191,13 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
     cnt := cnt + 1;
       if (mod (cnt, 500) = 0) {
 	commit work;
-	_domain := EFD_ID;
+	      id := EFD_ID;
       }
   }
   commit work;
     }
  {
-    declare deadl, cnt any;
-    declare _id any;
-
-    _id := -1;
+    id := -1;
     deadl := 3;
     cnt := 0;
     declare exit handler for sqlstate '40001' {
@@ -212,12 +209,20 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
     };
     l1:
 
-    for select EFI_FEED_ID, EFI_ID, EFI_TITLE, EFI_DESCRIPTION, EFI_LINK, EFI_AUTHOR, EFI_PUBLISH_DATE, EFI_DATA
-          from ENEWS.WA.FEED_ITEM, ENEWS.WA.FEED
-         where EFI_FEED_ID = EF_ID and EFI_ID > _id
+    for select EFI_FEED_ID,
+               EFI_ID,
+               EFI_TITLE,
+               EFI_DESCRIPTION,
+               EFI_LINK,
+               EFI_AUTHOR,
+               EFI_PUBLISH_DATE,
+               EFI_DATA
+          from ENEWS.WA.FEED_ITEM,
+               ENEWS.WA.FEED
+         where EFI_FEED_ID = EF_ID
+           and EFI_ID > id
 	 order by 2 option (order, loop)
-    do
-  {
+    do {
       f_iri := feed_iri (EFI_FEED_ID);
       iri := feed_item_iri (EFI_FEED_ID, EFI_ID);
       u_iri := feeds_foaf_maker (graph_iri, EFI_FEED_ID, EFI_AUTHOR, EFI_DATA);
@@ -240,10 +245,9 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
     }
     }
     cnt := cnt + 1;
-    if (mod (cnt, 500) = 0)
-      {
+      if (mod (cnt, 500) = 0) {
 	commit work;
-	_id := EFI_ID;
+	      id := EFI_ID;
       }
   }
   commit work;

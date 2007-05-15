@@ -68,7 +68,7 @@ ODRIVE.WA.rdf_upload('Wiki.rdf');
 ODRIVE.WA.rdf_upload('XBRL.rdf');
 ODRIVE.WA.rdf_upload('DOAP.rdf');
 ODRIVE.WA.rdf_upload('opl-lic.rdf');
-ODRIVE.WA.rdf_upload('google-kinds.rdf');
+--ODRIVE.WA.rdf_upload('google-kinds.rdf');
 ODRIVE.WA.rdf_upload('google-base.rdf');
 ODRIVE.WA.rdf_upload('archive.rdf');
 ODRIVE.WA.rdf_upload('OpenDocument.rdf');
@@ -98,7 +98,7 @@ DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/Wiki#',null,'http://l
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/xbrl#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/XBRL.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/doap#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/DOAP.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/OplLic#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/opl-lic.rdf','replacing');
-DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/google-kinds#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/google-kinds.rdf','replacing');
+--DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/google-kinds#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/google-kinds.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/google-base#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/google-base.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('urn:oasis:names:tc:opendocument:xmlns:meta:1.0',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/OpenDocument.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/opendocument#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/OpenDocument.rdf','replacing');
@@ -149,7 +149,7 @@ DAV_REGISTER_MIME_TYPE ('text/rdf+ttl', 'RDF Data (RDF-XML, N3, Turtle)', 'ttl',
 DAV_REGISTER_MIME_TYPE ('text/rdf+n3', 'RDF Data (RDF-XML, N3, Turtle)', 'n3', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/doap+rdf', 'DOAP Projects', 'doap', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/license', 'OpenLink License', 'lic', null, 'replacing');
-DAV_REGISTER_MIME_TYPE ('application/google-kinds+xml', 'Google Kinds documents', 'xml', null, 'replacing');
+--DAV_REGISTER_MIME_TYPE ('application/google-kinds+xml', 'Google Kinds documents', 'xml', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/google-base+xml', 'Google Base documents', 'xml', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('image/png', 'PNG Image', 'png', null, 'replacing');
 
@@ -197,7 +197,7 @@ DAV_REGISTER_MIME_RDF('text/wiki', 'http://www.openlinksw.com/schemas/Wiki#');
 DAV_REGISTER_MIME_RDF('application/xbrl+xml', 'http://www.openlinksw.com/schemas/xbrl#');
 DAV_REGISTER_MIME_RDF('application/doap+rdf', 'http://www.openlinksw.com/schemas/doap#');
 DAV_REGISTER_MIME_RDF('application/license', 'http://www.openlinksw.com/schemas/OplLic#');
-DAV_REGISTER_MIME_RDF('application/google-kinds+xml', 'http://www.openlinksw.com/schemas/google-kinds#');
+--DAV_REGISTER_MIME_RDF('application/google-kinds+xml', 'http://www.openlinksw.com/schemas/google-kinds#');
 DAV_REGISTER_MIME_RDF('application/google-base+xml', 'http://www.openlinksw.com/schemas/google-base#');
 DAV_REGISTER_MIME_RDF('image/bmp', 'http://www.openlinksw.com/schemas/Photo#');
 DAV_REGISTER_MIME_RDF('image/gif', 'http://www.openlinksw.com/schemas/Photo#');

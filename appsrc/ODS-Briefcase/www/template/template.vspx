@@ -24,13 +24,14 @@
 -->
 <html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
   <head profile="http://internetalchemy.org/2003/02/profile">
+    <base href="<?V ODRIVE.WA.host_url () || http_path () ?>" />
     <?vsp
-      http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', ODRIVE.WA.odrive_host_url (), ODRIVE.WA.account()));
+      http (sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', ODRIVE.WA.host_url (), ODRIVE.WA.domain_owner_name (self.domain_id)));
     ?>
     <?vsp
       if (ODRIVE.WA.domain_is_public (self.domain_id)) {
         http (sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC (RDF/XML)" href="%s" />', ODRIVE.WA.sioc_url (self.domain_id)));
-        http (sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC (N3/Turtle)" href="%s" />', replace(sprintf('%s/dataspace/%U/briefcase/%U/sioc.ttl', ODRIVE.WA.odrive_host_url (), ODRIVE.WA.account (), ODRIVE.WA.domain_name (self.domain_id)), '+', '%2B')));
+        http (sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC (N3/Turtle)" href="%s" />', replace(sprintf('%s/dataspace/%U/briefcase/%U/sioc.ttl', ODRIVE.WA.host_url (), ODRIVE.WA.account (), ODRIVE.WA.domain_name (self.domain_id)), '+', '%2B')));
       }
     ?>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
@@ -67,11 +68,9 @@
           set http_charset = 'utf-8';
 
           -- Initialize variables
-          declare aRequest, aSessInfo any;
+          declare aSessInfo any;
 
-          aRequest := ODRIVE.WA.validate_request (lines, 0);
-
-          aSessInfo := ODRIVE.WA.session_restore (aRequest, params);
+          aSessInfo := ODRIVE.WA.session_restore (params);
           self.domain_id := cast (get_keyword ('domain_id', aSessInfo, '-1') as integer);
           self.account_id := cast (get_keyword ('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword ('user_role', aSessInfo, '');

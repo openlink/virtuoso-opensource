@@ -48,11 +48,9 @@
           set http_charset = 'utf-8';
 
           -- Initialize variables
-          declare aRequest, aSessInfo any;
+          declare aSessInfo any;
 
-          aRequest := ENEWS.WA.validate_request(lines,0);
-
-          aSessInfo := ENEWS.WA.session_restore(aRequest, params);
+          aSessInfo := ENEWS.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
           self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword('user_role', aSessInfo, '');

@@ -97,7 +97,7 @@
               http_value (ODRIVE.WA.utf2wide(RES_FULL_PATH));
             http ('</description>\n');
             http ('<link>');
-              http_value (concat(ODRIVE.WA.odrive_host_url(), ODRIVE.WA.utf2wide(RES_FULL_PATH)));
+              http_value (concat(ODRIVE.WA.host_url(), ODRIVE.WA.utf2wide(RES_FULL_PATH)));
             http ('</link>\n');
             http ('<pubDate>');
               http_value (ODRIVE.WA.dt_rfc1123 (RES_MOD_TIME));
@@ -200,7 +200,7 @@
               http_value (ODRIVE.WA.utf2wide(row[0]));
             http ('</description>\n');
             http ('<link>');
-              http_value (concat(ODRIVE.WA.odrive_host_url(), ODRIVE.WA.utf2wide(row[0])));
+              http_value (concat(ODRIVE.WA.host_url (), ODRIVE.WA.utf2wide(row[0])));
             http ('</link>\n');
             http ('<pubDate>');
               http_value (ODRIVE.WA.dt_rfc1123 (stringdate(row[3])));

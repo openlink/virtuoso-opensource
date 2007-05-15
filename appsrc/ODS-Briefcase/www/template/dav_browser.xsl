@@ -1067,7 +1067,7 @@
                     </th>
                     <td>
                     <v:text name="dav_name" xhtml_id="dav_name" value="--get_keyword('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.utf2wide(ODRIVE.WA.DAV_GET(self.dav_item, 'name')))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
-                    <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.odrive_host_url() || WS.WS.FIXPATH(ODRIVE.WA.odrive_real_path(self.dir_path)))" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
+                    <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword('dav_name', self.vc_page.vc_event.ve_params, ODRIVE.WA.host_url() || WS.WS.FIXPATH(ODRIVE.WA.odrive_real_path(self.dir_path)))" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
                     </td>
                   </tr>
                   <v:template type="simple" enabled="-- equ(self.dav_type, 'R')">

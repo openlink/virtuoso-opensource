@@ -32,20 +32,21 @@
 
 _start:
   declare N, domain_id, account_id integer;
-  declare sid, realm varchar;
-  declare settings, requests, aRequest, aSession any;
+  declare sid, S varchar;
+  declare settings, requests, aSession any;
 
   sid := get_keyword('sid', params, '');
-  realm := get_keyword('realm', params, '');
 
-  aRequest := ENEWS.WA.validate_request(lines,0);
-  aSession := ENEWS.WA.session_restore(aRequest, params);
+  aSession := ENEWS.WA.session_restore (params);
   domain_id := cast(get_keyword('domain_id', aSession, '0') as integer);
   account_id := cast(get_keyword('user_id', aSession, '0') as integer);
 
+  S := http_request_get ('QUERY_STRING');
+  if (S <> '')
+    S := '?' || S;
 	http_rewrite ();
 	http_request_status ('HTTP/1.1 302 Found');
-	http_header (sprintf('Location: news.vspx?sid=%s&realm=%s\r\n', sid, realm));
+  http_header (sprintf('Location: %s%s\r\n', WS.WS.EXPAND_URL (http_path (), 'news.vspx'), S));
 	http_flush ();
 
 	commit work;

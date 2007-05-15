@@ -107,7 +107,7 @@ create procedure DBA.SOAPODRIVE.Browse (
       tags2 := '';
     http (sprintf('<row number="%d">\n', N+1), sStream);
       http ('<uri>', sStream);
-        http_value (sprintf('%s/%s', ODRIVE.WA.odrive_host_url (), ODRIVE.WA.utf2wide(rows[N][0])), null, sStream);
+        http_value (sprintf('%s/%s', ODRIVE.WA.host_url (), ODRIVE.WA.utf2wide(rows[N][0])), null, sStream);
       http ('</uri>\n', sStream);
       http ('<path>', sStream);
         http_value (ODRIVE.WA.utf2wide(rows[N][0]), null, sStream);

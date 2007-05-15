@@ -38,20 +38,52 @@ create procedure calendar_event_iri (in domain_id varchar, in event_id int)
 
 -------------------------------------------------------------------------------
 --
-create procedure fill_ods_calendar_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
+create procedure fill_ods_calendar_sioc (
+  in graph_iri varchar,
+  in site_iri varchar,
+  in _wai_name varchar := null)
 {
+  declare id, deadl, cnt integer;
   declare c_iri, creator_iri varchar;
 
-  for (select WAI_ID, WAI_NAME, WAM_USER
-         from DB.DBA.WA_INSTANCE i,
-              DB.DBA.WA_MEMBER m
-        where m.WAM_INST = i.WAI_NAME
-          and ((m.WAM_IS_PUBLIC = 1 and _wai_name is null) or i.WAI_NAME = _wai_name)) do
+  {
+    id := -1;
+    deadl := 3;
+    cnt := 0;
+    declare exit handler for sqlstate '40001' {
+      if (deadl <= 0)
+	      resignal;
+      rollback work;
+      deadl := deadl - 1;
+      goto l0;
+    };
+  l0:
+
+    for (select WAI_ID,
+                WAI_NAME,
+                WAM_USER,
+                E_ID,
+                E_DOMAIN_ID,
+                E_SUBJECT,
+                E_DESCRIPTION,
+                E_LOCATION,
+                E_EVENT,
+                E_EVENT_START,
+                E_EVENT_END,
+                E_CREATED,
+                E_UPDATED,
+                E_TAGS
+           from DB.DBA.WA_INSTANCE,
+                DB.DBA.WA_MEMBER,
+                CAL.WA.EVENTS
+          where WAM_INST = WAI_NAME
+            and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+            and E_DOMAIN_ID = WAI_ID
+          order by E_ID) do
   {
     c_iri := polls_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
 
-    for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = WAI_ID) do
       event_insert (graph_iri,
                     c_iri,
                     creator_iri,
@@ -66,6 +98,14 @@ create procedure fill_ods_calendar_sioc (in graph_iri varchar, in site_iri varch
                     E_CREATED,
                     E_UPDATED,
                     E_TAGS);
+
+      cnt := cnt + 1;
+      if (mod (cnt, 500) = 0) {
+  	    commit work;
+  	    id := E_ID;
+      }
+    }
+    commit work;
   }
 }
 ;

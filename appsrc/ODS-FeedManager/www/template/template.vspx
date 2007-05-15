@@ -25,8 +25,9 @@
 
 <html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
   <head profile="http://internetalchemy.org/2003/02/profile">
+    <base href="<?V ENEWS.WA.host_url () || http_path () ?>" />
     <?vsp
-      http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', ENEWS.WA.host_url (), ENEWS.WA.account()));
+      http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', ENEWS.WA.host_url (), ENEWS.WA.domain_owner_name (self.domain_id)));
     ?>
     <?vsp
       if (ENEWS.WA.domain_is_public(self.domain_id))
@@ -72,11 +73,9 @@
           set http_charset = 'utf-8';
 
           -- Initialize variables
-          declare aRequest, aSessInfo any;
+          declare aSessInfo any;
 
-          aRequest := ENEWS.WA.validate_request(lines,0);
-
-          aSessInfo := ENEWS.WA.session_restore(aRequest, params);
+          aSessInfo := ENEWS.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
           self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword('user_role', aSessInfo, '');

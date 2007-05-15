@@ -23,14 +23,13 @@
 
   declare domain_id, account_id integer;
   declare sid, realm any;
-  declare aRequest, aSession any;
+  declare aSession any;
   declare progressID, progressIndex any;
 
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, '');
 
-  aRequest := ENEWS.WA.validate_request(lines,0);
-  aSession   := ENEWS.WA.session_restore(aRequest, params);
+  aSession   := ENEWS.WA.session_restore (params);
   domain_id := cast(get_keyword('domain_id', aSession, '0') as integer);
   account_id := cast(get_keyword('user_id', aSession, '0') as integer);
   progressID := cast(get_keyword('id', params, msec_time()) as varchar);

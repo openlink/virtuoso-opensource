@@ -29,7 +29,7 @@
       declare tmp, params any;
 
       params := self.vc_page.vc_event.ve_params;
-      tmp := get_keyword ('event', params, '');
+      tmp := get_keyword ('id', params, '');
       if (tmp <> '') {
         self.v_id := cast (tmp as integer);
         if (self.v_id <> -1) {
@@ -163,7 +163,7 @@
         if (e_event = 1) {
           http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cDateFormat)));
         } else {
-          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datetring (e_end, self.cTimeFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
+          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cTimeFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
         }
       }
     ]]>
@@ -254,8 +254,8 @@
         return 'Event';
       if (objectsName = 'tasks')
         return 'Task';
-      if (objectsName = 'todos')
-        return 'ToDo';
+      if (objectsName = 'notes')
+        return 'Note';
       return '';
     ]]>
   </v:method>
@@ -443,17 +443,17 @@ self.objectName (self.cScope)
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" style="url" value="ToDos" xhtml_class="-- case when (self.cScope = 'todos') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="ToDo List">
+              <v:button action="simple" style="url" value="Notes" xhtml_class="-- case when (self.cScope = 'notes') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Note List">
                 <v:on-post>
                   <![CDATA[
-                    self.cScope := 'todos';
+                    self.cScope := 'notes';
                     self.initData ();
                     self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
               </v:button>
             </td>
-            <vm:if test="self.cScope not in ('events', 'tasks', 'todos')">
+            <vm:if test="self.cScope not in ('events', 'tasks', 'notes')">
             <td align="right">
               <span class="CE_name">
                 <?vsp
@@ -852,7 +852,7 @@ self.objectName (self.cScope)
               </v:data-set>
             </vm:if>
 
-            <vm:if test="self.cScope = 'todos'">
+            <vm:if test="self.cScope = 'notes'">
               <v:data-source name="dsrc2" expression-type="sql" nrows="0" initial-offset="0">
                 <v:before-data-bind>
                               <![CDATA[
@@ -931,10 +931,10 @@ self.objectName (self.cScope)
             declare params any;
             params := self.vc_page.vc_event.ve_params;
 
+            if (isnull (get_keyword ('e_subject', params))) {
             declare exit handler for not found goto _end;
 
-            if (isnull (get_keyword ('e_subject', params))) {
-              if (self.cAction = 'edit') {
+              if (self.cAction in ('edit', 'view')) {
                 declare tmp any;
 
                 select E_SUBJECT,
@@ -965,7 +965,11 @@ self.objectName (self.cScope)
                        self.v_reminder
                   from CAL.WA.EVENTS
                  where E_ID = self.v_id;
-              } else {
+
+                 return;
+              }
+            _end:;
+
                 declare pYear, pMonth, pDay, pHour, pMinute integer;
 
                 self.v_id := -1;
@@ -985,8 +989,6 @@ self.objectName (self.cScope)
                 self.v_repeatUntil := null;
                 self.v_reminder := 600;
               }
-            }
-          _end:;
           ]]>
         </v:before-data-bind>
         <div class="new-form-header">
