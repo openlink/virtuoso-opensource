@@ -336,6 +336,36 @@
       else
         _d_after:='';
         
+      declare newsgroups_vector,_tmp_params any;
+
+      newsgroups_vector := vector();
+
+      newsgroups_vector:=vector_concat(newsgroups_vector,self.availble_ngroups.ufl_value);
+
+--      if(get_keyword ('availble_groups', params, NULL) is not null)
+--      {
+--        declare _again integer;
+--        _again:=1;
+--        
+--        _tmp_params:=coalesce(params,vector());
+--      
+--        while(_again)
+--        {
+--          declare tmp_val varchar;
+--          tmp_val:=get_keyword ('availble_groups', _tmp_params, null);
+--          if(tmp_val is not null)
+--          {
+--           
+--           newsgroups_vector:=vector_concat(newsgroups_vector,vector(tmp_val));
+--           _tmp_params:=vector_concat(subseq( _tmp_params,0,position ( 'availble_groups', _tmp_params)-1),subseq( _tmp_params,position ( 'availble_groups', _tmp_params)+1));
+--      
+--           
+--          }else
+--           _again:=0;
+--        }
+--      }
+
+
 	  query := WA_SEARCH_CONSTRUCT_QUERY (
 		self.u_id,
 		charset_recode (self.expr.ufl_value, http_current_charset(), '_WIDE_'),
@@ -354,6 +384,7 @@
 		self.s_tag_is_qry,
             _d_before,
             _d_after,
+            newsgroups_vector,
 		tags_vector
 		);
       
@@ -835,6 +866,34 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
          <v:text name="date_y_before" xhtml_size="--4" value="" /> (DD-MM-YYYY)
       </td>
     </tr>
+    <tr>
+      <td class="ctl_title">Newsgroups</td>
+      <td align="left">
+          <v:select-list name="availble_ngroups"
+                         xhtml_size="--5"
+                         multiple="1"
+                         value=""
+                         >
+            <v:before-data-bind>
+            <v:script><![CDATA[
+                  declare grp_list any;
+                  grp_list:= vector();
+                  
+                  for (select NG_GROUP,NG_NAME from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1 and (NG_STAT<>-1 or NG_STAT is null)) do
+                        grp_list := vector_concat (grp_list, vector (NG_NAME));
+                  
+                  if (length(grp_list))
+                  {
+                     control.vsl_items := grp_list;
+                     control.vsl_item_values := grp_list;
+                  }
+                  else
+                    control.enabled:=0;
+            ]]></v:script>
+            </v:before-data-bind>
+          </v:select-list>
+      </td>
+    </tr>
 <?vsp
 }
 ?>
@@ -952,7 +1011,8 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
                    ((self.expr.ufl_value is null or trim (self.expr.ufl_value) = '') and
                (self.q_tags_expr.ufl_value is null or trim (self.q_tags_expr.ufl_value) = '') and
                (length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value)=0 and
-                length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value)=0 )
+                length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value)=0 ) and
+               (length(self.availble_ngroups.ufl_value)=0)
               )
                   )
 		 {
