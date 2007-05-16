@@ -870,11 +870,13 @@ TABLECOL    ({TABLETD})
 <INITIAL,TABLELINE>^{WS}*"===="		{ BEGIN(INITIAL); wlex_headerlevel (4); }
 <INITIAL,TABLELINE>^{WS}*"==="		{ BEGIN(INITIAL); wlex_headerlevel (3); }
 <INITIAL,TABLELINE>^{WS}*"=="		{ BEGIN(INITIAL); wlex_headerlevel (2); } 
+<INITIAL,TABLELINE>^{WS}*"="		{ BEGIN(INITIAL); wlex_headerlevel (1); } 
 
 <INITIAL,TABLELINE>"====="	{ wlex_reset (~0); }
 <INITIAL,TABLELINE>"===="	{ wlex_reset (~0); }
 <INITIAL,TABLELINE>"==="	{ wlex_reset (~0); }
 <INITIAL,TABLELINE>"=="		{ wlex_reset (~0); }
+<INITIAL,TABLELINE>"="		{ wlex_reset (~0); }
 
 <INITIAL,TABLELINE>"!!"		{ if (STATE(wlex_headerlevel)) PRINT("<NOTOC />"); else PRINT(yytext); }
 
