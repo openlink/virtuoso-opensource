@@ -242,7 +242,6 @@
       <xsl:call-template name="vm:atom-link" />
       <xsl:call-template name="vm:rss-link" />
       <xsl:call-template name="vm:rdf-link" />
-      <xsl:call-template name="vm:podcast-link" />
       <xsl:call-template name="vm:ocs-link" />
       <xsl:call-template name="vm:opml-link" />
       <xsl:call-template name="vm:foaf-link" />
@@ -274,7 +273,7 @@
   <xsl:template name="vm:atom-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sOFM.atom" target="_blank" title="ATOM export" alt="ATOM export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> Atom</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
+        http(sprintf('<a href="%sOFM.atom" target="_blank" title="ATOM export" alt="ATOM export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> Atom</a>', ENEWS.WA.dav_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -283,7 +282,7 @@
   <xsl:template name="vm:rss-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sOFM.rss" target="_blank" title="RSS export" alt="RSS export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> RSS</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
+        http(sprintf('<a href="%sOFM.rss" target="_blank" title="RSS export" alt="RSS export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> RSS</a>', ENEWS.WA.dav_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -292,7 +291,7 @@
   <xsl:template name="vm:rdf-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sOFM.rdf" target="_blank" title="RDF export" alt="RDF export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> RDF</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
+        http(sprintf('<a href="%sOFM.rdf" target="_blank" title="RDF export" alt="RDF export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> RDF</a>', ENEWS.WA.dav_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -301,7 +300,7 @@
   <xsl:template name="vm:ocs-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sOFM.ocs" target="_blank" title="OCS export" alt="OCS export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OCS</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
+        http(sprintf('<a href="%sOFM.ocs" target="_blank" title="OCS export" alt="OCS export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OCS</a>', ENEWS.WA.dav_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -310,7 +309,7 @@
   <xsl:template name="vm:opml-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sOFM.opml" target="_blank" title="OPML export" alt="OPML export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OPML</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
+        http(sprintf('<a href="%sOFM.opml" target="_blank" title="OPML export" alt="OPML export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OPML</a>', ENEWS.WA.dav_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -328,7 +327,7 @@
   <xsl:template name="vm:podcast-link">
     <div>
     <?vsp
-      http(sprintf('<a href="%sOFM.podcast" target="_blank" title="PODCAST export" alt="PODCAST export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> Podcast</a>', ENEWS.WA.dav_url(self.domain_id, self.account_id)));
+        http(sprintf('<a href="%sOFM.podcast" target="_blank" title="PODCAST export" alt="PODCAST export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> Podcast</a>', ENEWS.WA.dav_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -347,7 +346,7 @@
   	      suffix := '<xsl:value-of select="@format"/>';
         </xsl:processing-instruction>
       </xsl:if>
-  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/feeds/%U/sioc.%s', ENEWS.WA.host_url (), ENEWS.WA.domain_owner_name (self.domain_id), ENEWS.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
+  	  <a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/feeds/%U/sioc.%s', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (self.domain_id), ENEWS.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
     	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
       </a>
       <?vsp

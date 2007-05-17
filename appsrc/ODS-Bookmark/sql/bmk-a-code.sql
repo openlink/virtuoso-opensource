@@ -2077,7 +2077,7 @@ create procedure BMK.WA.dav_url (
   home := BMK.WA.dav_home (BMK.WA.domain_owner_id (domain_id));
   if (isnull(home))
     return '';
-  return concat(BMK.WA.host_url(), home, 'BM/', BMK.WA.domain_gems_name(domain_id), '/');
+  return concat ('http://', DB.DBA.wa_cname (), home, 'BM/', BMK.WA.domain_gems_name(domain_id), '/');
 }
 ;
 
@@ -2101,7 +2101,7 @@ create procedure BMK.WA.dav_url2 (
 create procedure BMK.WA.sioc_url (
   in domain_id integer)
 {
-  return sprintf('%s/dataspace/%U/bookmark/%U/sioc.rdf', BMK.WA.host_url (), BMK.WA.domain_owner_name (domain_id), replace (BMK.WA.domain_name (domain_id), '+', '%2B'));
+  return sprintf('http://%s/dataspace/%U/bookmark/%U/sioc.rdf', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (domain_id), replace (BMK.WA.domain_name (domain_id), '+', '%2B'));
 }
 ;
 
@@ -2110,7 +2110,7 @@ create procedure BMK.WA.sioc_url (
 create procedure BMK.WA.foaf_url (
   in domain_id integer)
 {
-  return sprintf('%s/dataspace/%s/about.rdf', BMK.WA.host_url (), BMK.WA.domain_owner_name (domain_id));
+  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (domain_id));
 }
 ;
 

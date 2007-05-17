@@ -958,7 +958,7 @@ create procedure POLLS.WA.polls_url (
 create procedure POLLS.WA.sioc_url (
   in domain_id integer)
 {
-  return sprintf('%s/dataspace/%U/polls/%U/sioc.rdf', POLLS.WA.host_url (), POLLS.WA.domain_owner_name (domain_id), replace (POLLS.WA.domain_name (domain_id), '+', '%2B'));
+  return sprintf('http://%s/dataspace/%U/polls/%U/sioc.rdf', DB.DBA.wa_cname (), POLLS.WA.domain_owner_name (domain_id), replace (POLLS.WA.domain_name (domain_id), '+', '%2B'));
 }
 ;
 
@@ -967,7 +967,7 @@ create procedure POLLS.WA.sioc_url (
 create procedure POLLS.WA.foaf_url (
   in domain_id integer)
 {
-  return sprintf('%s/dataspace/%s/about.rdf', POLLS.WA.host_url (), POLLS.WA.domain_owner_name (domain_id));
+  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), POLLS.WA.domain_owner_name (domain_id));
 }
 ;
 
@@ -991,7 +991,7 @@ create procedure POLLS.WA.dav_url (
   home := POLLS.WA.dav_home (POLLS.WA.domain_owner_id (domain_id));
   if (isnull(home))
     return '';
-  return concat(POLLS.WA.host_url(), home, 'Polls/', POLLS.WA.domain_gems_name(domain_id), '/');
+  return concat ('http://', DB.DBA.wa_cname (), home, 'Polls/', POLLS.WA.domain_gems_name (domain_id), '/');
 }
 ;
 

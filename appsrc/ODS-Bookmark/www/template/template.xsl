@@ -308,7 +308,7 @@
   	      suffix := '<xsl:value-of select="@format"/>';
         </xsl:processing-instruction>
       </xsl:if>
-  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/bookmark/%U/sioc.%s', BMK.WA.host_url (), BMK.WA.domain_owner_name (self.domain_id), BMK.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
+  	  <a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/bookmark/%U/sioc.%s', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (self.domain_id), BMK.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
     	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
       </a>
       <?vsp

@@ -1935,7 +1935,7 @@ create procedure ENEWS.WA.channel_image(
   in defaultUri varchar)
 {
   if (not isnull (iconUri))
-    defaultUri := ENEWS.WA.host_url () || iconUri;
+    defaultUri := 'http://' || DB.DBA.wa_cname () || iconUri;
   if (is_empty_or_null (imageUri))
     return defaultUri;
   if (ENEWS.WA.settings_icons(settings))
@@ -1954,7 +1954,7 @@ create procedure ENEWS.WA.channel_icon (
 
   iconUri := (select EF_ICON_URI from ENEWS.WA.FEED, ENEWS.WA.FEED_DOMAIN where EFD_ID = id and EFD_FEED_ID = EF_ID);
   if (not isnull (iconUri))
-    defaultUri := ENEWS.WA.host_url () || iconUri;
+    defaultUri := 'http://' || DB.DBA.wa_cname () || iconUri;
   return defaultUri;
 }
 ;
@@ -3948,7 +3948,7 @@ create procedure ENEWS.WA.enews_url (
 create procedure ENEWS.WA.sioc_url (
   in domain_id integer)
 {
-  return sprintf('%s/dataspace/%U/feeds/%U/sioc.rdf', ENEWS.WA.host_url (), ENEWS.WA.domain_owner_name (domain_id), replace (ENEWS.WA.domain_name (domain_id), '+', '%2B'));
+  return sprintf('http://%s/dataspace/%U/feeds/%U/sioc.rdf', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (domain_id), replace (ENEWS.WA.domain_name (domain_id), '+', '%2B'));
 }
 ;
 
@@ -3957,24 +3957,21 @@ create procedure ENEWS.WA.sioc_url (
 create procedure ENEWS.WA.foaf_url (
   in account_id integer)
 {
-  return sprintf('%s/dataspace/%s/about.rdf', ENEWS.WA.host_url (), ENEWS.WA.account_name (account_id));
+  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), ENEWS.WA.account_name (account_id));
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.dav_url (
-  in domain_id integer,
-  in account_id integer)
+  in domain_id integer)
 {
   declare home varchar;
 
-  if (account_id < 0)
-    account_id := ENEWS.WA.domain_owner_id (domain_id);
-  home := ENEWS.WA.dav_home(account_id);
+  home := CAL.WA.dav_home (CAL.WA.domain_owner_id (domain_id));
   if (isnull(home))
     return '';
-  return concat(ENEWS.WA.host_url(), home, ENEWS.WA.domain_gems_folder(), '/', ENEWS.WA.domain_gems_name(domain_id), '/');
+  return concat('http://', DB.DBA.wa_cname (), home, ENEWS.WA.domain_gems_folder(), '/', ENEWS.WA.domain_gems_name(domain_id), '/');
 }
 ;
 
@@ -4382,7 +4379,7 @@ create procedure ENEWS.WA.export_foaf_sqlx(
   http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:mbox\', \n', retValue);
   http ('XMLATTRIBUTES(\'mailto:\'||U_E_MAIL as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')), \n', retValue);
   http ('XMLELEMENT(\'http://xmlns.com/foaf/0.1/:seeAlso\', \n', retValue);
-  http ('  XMLATTRIBUTES(ENEWS.WA.dav_url(<DOMAIN_ID>, <USER_ID>) || \'OFM.rdf\' as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')) \n', retValue);
+  http ('  XMLATTRIBUTES(ENEWS.WA.dav_url (<DOMAIN_ID>) || \'OFM.rdf\' as \'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource\')) \n', retValue);
   http ('from DB.DBA.SYS_USERS \n', retValue);
   http ('where U_ID = <USER_ID> \n', retValue);
   http (']]></sql:sqlx>\n', retValue);

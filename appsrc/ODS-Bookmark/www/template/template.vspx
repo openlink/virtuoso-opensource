@@ -27,7 +27,7 @@
   <head profile="http://internetalchemy.org/2003/02/profile">
     <base href="<?V BMK.WA.host_url () || http_path () ?>" />
     <?vsp
-      http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', BMK.WA.host_url (), BMK.WA.domain_owner_name (self.domain_id)));
+      http (sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s" />', BMK.WA.foaf_url (self.account_id)));
     ?>
     <?vsp
       if (BMK.WA.domain_is_public(self.domain_id))
