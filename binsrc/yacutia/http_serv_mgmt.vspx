@@ -498,7 +498,7 @@
 	      <v:script><![CDATA[
 		if (not self.vc_is_valid )
 		  return;
-		declare host, port, httphost varchar;
+		declare host, port, port_no, httphost varchar;
 		declare st, msg, inihost varchar;
 
 		declare exit handler for sqlstate '*'
@@ -509,16 +509,18 @@
 		  return;
 		};
 
-		httphost := trim(self.t_httphost.ufl_value);
+		--httphost := trim(self.t_httphost.ufl_value);
+		httphost := trim(get_keyword ('t_httphost', e.ve_params, ''));
 		host := trim(get_keyword ('t_host', e.ve_params, ''));
 		port := trim(self.t_port.ufl_value);
-		if (length (httphost) and regexp_match('^[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\$', cast(host as varchar)) is null)
+		if (length (host) and regexp_match('^[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\$', cast(host as varchar)) is null)
 		  {
 		    self.vc_error_message := concat(self.err_msg, 'You should provide a valid IP address.\n');
 		    self.vc_is_valid := 0;
 		    return;
 		  }
-		if (regexp_match('^[0-9]+\$', cast(port as varchar)) is null)
+		port_no := atoi (cast(port as varchar));
+		if (regexp_match('^[0-9]+\$', cast(port as varchar)) is null or port_no <=0 or port_no > 65535)
 		  {
 		    self.vc_error_message := concat(self.err_msg, 'You should provide a valid TCP port.\n');
 		    self.vc_is_valid := 0;
@@ -549,7 +551,7 @@
 		    return;
 		  }
 		  self.t1.vc_data_bind(e);
-		  self.t_httphost.ufl_value := '';
+		  --self.t_httphost.ufl_value := '';
 		  --self.t_host.ufl_value := '';
 		  self.t_port.ufl_value := '';
 		}
@@ -562,15 +564,25 @@
 		  <script type="text/javascript">
 	           window.onload = function () {
 		      var sr_cl = new OAT.Combolist([],"0.0.0.0");
+		      var sr_cl1 = new OAT.Combolist([], "");
+
 		      sr_cl.input.name = "t_host";
 		      sr_cl.input.id = "t_host";
 		      $("if_opt").appendChild(sr_cl.div);
+
+		      sr_cl1.input.name = "t_httphost";
+		      sr_cl1.input.id = "t_httphost";
+		      $("inet_opt").appendChild(sr_cl1.div);
+
 		      sr_cl.addOption("0.0.0.0");
 		      <?vsp
 		        declare arr any;
 			arr := tcpip_local_interfaces ();
 			foreach (any elm in arr) do
+			  {
 			  http (sprintf ('sr_cl.addOption("%s");', elm));
+			    http (sprintf ('sr_cl1.addOption("%s");', tcpip_gethostbyaddr (cast(elm as varchar))));
+			  }
 	  	      ?>
 		    }
 		  </script>
@@ -584,10 +596,10 @@
 		  <v:validator name="v_port" test="regexp" regexp="^[0-9]+$" message="You should provide a valid TCP port."/>
 		</v:text>
 	      </td>
-	      <td nowrap="nowrap">
-		<v:text name="t_httphost" error-glyph="*">
+	      <td nowrap="nowrap" id="inet_opt">
+		<!--v:text name="t_httphost" error-glyph="*">
 		  <v:validator name="v_httphost" empty-allowed="1" test="regexp" regexp="^[\.0-9A-Za-z_-]+$" message="You should provide a valid host name."/>
-		</v:text>
+		</v:text-->
 	      </td>
 	      <td nowrap="nowrap">
 		<v:button name="_add_button" action="simple" value="Add" style="button">
