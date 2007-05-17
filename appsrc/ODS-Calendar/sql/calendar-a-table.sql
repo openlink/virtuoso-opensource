@@ -81,7 +81,7 @@ CAL.WA.exec_no_error ('
     E_TAGS varchar,
 
     -- Event fields
-    E_EVENT integer default 0,
+    E_EVENT integer default 1,
     E_EVENT_START datetime,
     E_EVENT_END datetime,
     E_REPEAT char (2) default \'\',       -- \'\' - no repeat,
@@ -97,7 +97,7 @@ CAL.WA.exec_no_error ('
     E_REPEAT_PARAM3 integer,
     E_REPEAT_UNTIL date,                  -- repeat until this date or null (infinite)
     E_REPEAT_EXCEPTIONS long varchar,     -- mark the dates on which the event is hidden /set on deletion of the repeated event/ format is: yyyymmdd
-    E_REMINDER integer default 600,       -- default is 10 minutes remainder
+    E_REMINDER integer default 0,         -- default is no remainder
     E_REMINDER_DATE datetime,             -- keep when to remind the user.
                                           -- calculated through insert/update.
                                           -- reminder procedure set this to NULL when user is reminded, in case of recursive event is set to next remind date

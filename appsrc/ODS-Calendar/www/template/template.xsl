@@ -162,17 +162,40 @@
         </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
-            <v:text name="keywords" value="" xhtml_onkeypress="return submitEnter(\'F1\', \'GO\', event)"/>
+            <v:text name="keywords" value="--case when (self.cScope = 'search') and (CAL.WA.xml_get ('mode', self.cSearch) <> 'advanced') then CAL.WA.xml_get ('keywords', self.cSearch, '') else '' end" xhtml_onkeypress="return submitEnter(\'F1\', \'GO\', event)"/>
             <xsl:call-template name="nbsp"/>
             <v:button name="GO" action="simple" style="url" value="Search" xhtml_alt="Simple Search">
               <v:on-post>
-                self.vc_redirect(sprintf('search.vspx?keywords=%s&amp;mode=simple&amp;step=1', self.keywords.ufl_value));
+                <![CDATA[
+                  if ((trim (self.keywords.ufl_value) <> '') or (self.cScope = 'search')) {
+                    if (CAL.WA.page_name () <> 'home.vspx') {
+                      self.vc_redirect (sprintf ('home.vspx?search=%s', self.keywords.ufl_value));
+                      return;
+                    }
+                    self.cScope := 'search';
+                    self.cAction := 'browse';
+                    self.cSearch := null;
+                    CAL.WA.xml_set('keywords', self.cSearch, self.keywords.ufl_value);
+                    self.vc_data_bind (e);
+                  }
+                ]]>
               </v:on-post>
             </v:button>
             |
             <v:button action="simple" style="url" value="Advanced" xhtml_alt="Advanced Search">
               <v:on-post>
-                self.vc_redirect(sprintf('search.vspx?keywords=%s&amp;mode=advanced', self.keywords.ufl_value));
+                <![CDATA[
+                  if (CAL.WA.page_name () <> 'home.vspx') {
+                    self.vc_redirect (sprintf ('home.vspx?search=%s&mode=advanced', self.keywords.ufl_value));
+                    return;
+                  }
+                  self.cScope := 'search';
+                  self.cAction := 'advanced';
+                  self.cSearch := null;
+                  CAL.WA.xml_set('keywords', self.cSearch, self.keywords.ufl_value);
+                  CAL.WA.xml_set('mode', self.cSearch, 'advanced');
+                  self.vc_data_bind (e);
+                ]]>
               </v:on-post>
             </v:button>
           </div>
@@ -198,13 +221,13 @@
         <tr>
           <!-- Navigation left column -->
           <td id="LC">
-            <vm:if test="((CAL.WA.page_name () = 'home.vspx') and (self.account_role not in ('public', 'guest')))">
+            <vm:if test="CAL.WA.page_name () = 'home.vspx'">
+              <vm:if test="self.account_role not in ('public', 'guest')">
               <xsl:call-template name="vm:event"/>
             </vm:if>
-            <vm:if test="CAL.WA.page_name () = 'home.vspx'">
               <xsl:call-template name="vm:calendar"/>
-            </vm:if>
             <xsl:call-template name="vm:formats"/>
+            </vm:if>
           </td>
           <!-- Navigation right column -->
           <td id="RC">
@@ -253,7 +276,7 @@
             <td class="C_cur" unselectable="on" colspan="5">
               <span id="c_month_0" onmousedown="cSelect(this)">
               <?vsp
-                http (sprintf ('%s %d', monthname (self.cMonth), year (self.cMonth)));
+                http (sprintf ('%s %d', monthname (self.cnMonth), year (self.cnMonth)));
               ?>
               </span>
             </td>
@@ -279,14 +302,14 @@
             for (select rs.*
                    from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_event_start datetime, e_event_end datetime, e_repeat varchar) rs
                   where rs0 = self.domain_id
-                    and rs1 = self.calcDate (0)
-                    and rs2 = self.calcDate (length (self.cDays)-1)
+                    and rs1 = self.nCalcDate (0)
+                    and rs2 = self.nCalcDate (length (self.cnDays)-1)
                     and rs3 = self.cTimeZone) do
             {
               eventDays := vector_concat (eventDays, vector (CAL.WA.dt_dateClear (e_event_start)));
             }
             names := CAL.WA.dt_WeekNames (self.cWeekStarts, 1);
-            for (N := 0; N < length (self.cDays); N := N + 1) {
+            for (N := 0; N < length (self.cnDays); N := N + 1) {
               W := floor (N / 7);
               D := mod (N, 7);
               if ((D = 0) and (W <> 0))
@@ -300,11 +323,11 @@
                 C := C || ' C_day_left';
               if (D = 6)
                 C := C || ' C_day_right';
-              if (self.cDays[N] > 0)
+              if (self.cnDays[N] > 0)
                 C := C || ' C_onmonth';
-              if (self.cDays[N] < 0)
+              if (self.cnDays[N] < 0)
                 C := C || ' C_offmonth';
-              dt := self.calcDate (N);
+              dt := self.nCalcDate (N);
               if ((dt >= self.cStart) and (dt <= self.cEnd)) {
                 if (D < 5)
                   C := C || ' C_weekday_selected';
@@ -316,7 +339,7 @@
                 if (D >= 5)
                   C := C || ' C_weekend';
               }
-              if (CAL.WA.dt_compare (self.cMonth, CAL.WA.dt_BeginOfMonth (curdate ())))
+              if (CAL.WA.dt_compare (self.cnMonth, CAL.WA.dt_BeginOfMonth (curdate ())))
                 if (CAL.WA.dt_compare (dt, curdate ()))
                   if ((dt >= self.cStart) and (dt <= self.cEnd)) {
                     C := C || ' C_today_selected';
@@ -333,7 +356,7 @@
                 }
               }
             _exit:;
-              http (sprintf ('<td unselectable="on" onclick="cSelect(this)" class="%s" %s id="c_day_%d_%d">%d</td>', C, S, W, D, abs (self.cDays[N])));
+              http (sprintf ('<td unselectable="on" onclick="cSelect(this)" class="%s" %s id="c_day_%d_%d">%d</td>', C, S, W, D, abs (self.cnDays[N])));
             }
             http ('</tr>');
           ?>
@@ -426,7 +449,7 @@
   	      suffix := '<xsl:value-of select="@format"/>';
         </xsl:processing-instruction>
       </xsl:if>
-  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/calendar/%U/sioc.%s', CAL.WA.host_url (), CAL.WA.domain_owner_name (self.domain_id), CAL.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
+  	  <a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/calendar/%U/sioc.%s', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (self.domain_id), CAL.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
     	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
       </a>
       <?vsp

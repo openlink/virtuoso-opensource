@@ -867,7 +867,16 @@ create procedure CAL.WA.calendar_url (
 create procedure CAL.WA.sioc_url (
   in domain_id integer)
 {
-  return sprintf ('%s/dataspace/%U/calendar/%U/sioc.rdf', CAL.WA.host_url (), CAL.WA.domain_owner_name (domain_id), replace (CAL.WA.domain_name (domain_id), '+', '%2B'));
+  return sprintf ('http://%s/dataspace/%U/calendar/%U/sioc.rdf', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (domain_id), replace (CAL.WA.domain_name (domain_id), '+', '%2B'));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.foaf_url (
+  in domain_id integer)
+{
+  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (domain_id));
 }
 ;
 
@@ -891,7 +900,7 @@ create procedure CAL.WA.dav_url (
   home := CAL.WA.dav_home (CAL.WA.domain_owner_id (domain_id));
   if (isnull (home))
     return '';
-  return concat(CAL.WA.host_url(), home, 'Calendar/', CAL.WA.domain_gems_name (domain_id), '/');
+  return concat('http://', DB.DBA.wa_cname (), home, 'Calendar/', CAL.WA.domain_gems_name (domain_id), '/');
 }
 ;
 
@@ -2440,6 +2449,24 @@ create procedure CAL.WA.settings_timeFormat (
 -- Events
 --
 -----------------------------------------------------------------------------------------
+create procedure CAL.WA.event_kind (
+  in id integer)
+{
+  declare tmp integer;
+
+  tmp := (select E_KIND from CAL.WA.EVENTS where E_ID = id);
+  if (tmp = 0)
+    return 'event';
+  if (tmp = 1)
+    return 'task';
+  if (tmp = 2)
+    return 'note';
+  return null;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
 create procedure CAL.WA.event_update (
   in id integer,
   in domain_id integer,
@@ -2801,6 +2828,181 @@ create procedure CAL.WA.events_forDate (
   in pWeekStarts varchar := 'm')
 {
   return CAL.WA.events_forPeriod (domain_id, pDate, pDate, pTimezone, pWeekStarts);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+-- Tasks
+--
+-----------------------------------------------------------------------------------------
+create procedure CAL.WA.task_update (
+  in id integer,
+  in domain_id integer,
+  in subject varchar,
+  in description varchar,
+  in tags varchar,
+  in eventStart datetime,
+  in eventEnd datetime,
+  in priority integer,
+  in status varchar,
+  in complete integer)
+{
+  if (id = -1) {
+    id := sequence_next ('CAL.WA.event_id');
+    insert into CAL.WA.EVENTS
+      (
+        E_ID,
+        E_DOMAIN_ID,
+        E_KIND,
+        E_SUBJECT,
+        E_DESCRIPTION,
+        E_TAGS,
+        E_EVENT_START,
+        E_EVENT_END,
+        E_PRIORITY,
+        E_STATUS,
+        E_COMPLETE,
+        E_CREATED,
+        E_UPDATED
+      )
+      values
+      (
+        id,
+        domain_id,
+        1,
+        subject,
+        description,
+        tags,
+        eventStart,
+        eventEnd,
+        priority,
+        status,
+        complete,
+        now (),
+        now ()
+      );
+  } else {
+    update CAL.WA.EVENTS
+       set E_SUBJECT = subject,
+           E_DESCRIPTION = description,
+           E_TAGS = tags,
+           E_EVENT_START = eventStart,
+           E_EVENT_END = eventEnd,
+           E_PRIORITY = priority,
+           E_STATUS = status,
+           E_COMPLETE = complete,
+           E_UPDATED = now ()
+     where E_ID = id and
+           E_DOMAIN_ID = domain_id;
+  }
+  return id;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+-- Notes
+--
+-----------------------------------------------------------------------------------------
+create procedure CAL.WA.note_update (
+  in id integer,
+  in domain_id integer,
+  in subject varchar,
+  in description varchar,
+  in tags varchar)
+{
+  if (id = -1) {
+    id := sequence_next ('CAL.WA.event_id');
+    insert into CAL.WA.EVENTS
+      (
+        E_ID,
+        E_DOMAIN_ID,
+        E_KIND,
+        E_SUBJECT,
+        E_DESCRIPTION,
+        E_TAGS,
+        E_CREATED,
+        E_UPDATED
+      )
+      values
+      (
+        id,
+        domain_id,
+        2,
+        subject,
+        description,
+        tags,
+        now (),
+        now ()
+      );
+  } else {
+    update CAL.WA.EVENTS
+       set E_SUBJECT = subject,
+           E_DESCRIPTION = description,
+           E_TAGS = tags,
+           E_UPDATED = now ()
+     where E_ID = id and
+           E_DOMAIN_ID = domain_id;
+  }
+  return id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+-- Searches
+--
+-------------------------------------------------------------------------------
+create procedure CAL.WA.search_sql (
+  inout domain_id integer,
+  inout account_id integer,
+  inout data varchar)
+{
+  declare S, tmp, where2, delimiter2 varchar;
+
+  where2 := ' \n ';
+  delimiter2 := '\n and ';
+
+  S := ' select          \n' ||
+       ' E_ID,           \n' ||
+       ' E_DOMAIN_ID,    \n' ||
+       ' E_KIND,         \n' ||
+       ' E_SUBJECT,      \n' ||
+       ' E_EVENT,        \n' ||
+       ' E_EVENT_START,  \n' ||
+       ' E_EVENT_END,    \n' ||
+       ' E_REPEAT,       \n' ||
+       ' E_REMINDER,     \n' ||
+       ' E_CREATED,      \n' ||
+       ' E_UPDATED       \n' ||
+       ' from            \n' ||
+       '   CAL.WA.EVENTS \n' ||
+       ' where E_DOMAIN_ID = <DOMAIN_ID> <TEXT> <TAGS> <WHERE> \n';
+
+  tmp := CAL.WA.xml_get ('keywords', data);
+  if (not is_empty_or_null (tmp)) {
+    S := replace (S, '<TEXT>', sprintf('and contains (E_SUBJECT, \'[__lang "x-ViDoc"] %s\') \n', FTI_MAKE_SEARCH_STRING (tmp)));
+  } else {
+    tmp := CAL.WA.xml_get ('expression', data);
+    if (not is_empty_or_null(tmp))
+      S := replace (S, '<TEXT>', sprintf('and contains (E_SUBJECT, \'[__lang "x-ViDoc"] %s\') \n', tmp));
+  }
+
+  tmp := CAL.WA.xml_get ('tags', data);
+  if (not is_empty_or_null (tmp)) {
+    tmp := CAL.WA.tags2search (tmp);
+    S := replace (S, '<TAGS>', sprintf ('and contains (E_SUBJECT, \'[__lang "x-ViDoc"] %s\') \n', tmp));
+  }
+
+  S := replace (S, '<DOMAIN_ID>', cast (domain_id as varchar));
+  S := replace (S, '<ACCOUNT_ID>', cast (account_id as varchar));
+  S := replace (S, '<TAGS>', '');
+  S := replace (S, '<TEXT>', '');
+  S := replace (S, '<WHERE>', where2);
+
+  --dbg_obj_print(S);
+  return S;
 }
 ;
 

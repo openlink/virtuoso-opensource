@@ -23,6 +23,19 @@
  -
 -->
 <v:page name="error_page" decor="template/template.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+
+  <v:method name="calcDate" arglist="in N integer">
+    <![CDATA[
+      return now ();
+    ]]>
+  </v:method>
+
+  <v:method name="nCalcDate" arglist="in N integer">
+    <![CDATA[
+      return now ();
+    ]]>
+  </v:method>
+
   <vm:pagetitle>Error</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header caption="Error"/>

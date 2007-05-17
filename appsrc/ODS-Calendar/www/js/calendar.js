@@ -693,8 +693,12 @@ function eDelete(obj)
 }
 
 // ---------------------------------------------------------------------------
-function cNewEvent (obj)
+function cNewEvent (startDate, startTime)
 {
+  if (startDate != null)
+    createHidden('F1', 'startDate', startDate);
+  if (startTime != null)
+    createHidden('F1', 'startTime', startTime);
   createHidden('F1', 'select', 'create');
   doPost ('F1', 'command');
 }
