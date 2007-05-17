@@ -545,10 +545,12 @@ namespace OpenLink.Data.Virtuoso
 		{
 			if (isExecuted)
             {
-			  if (keepResults && commandType == CommandType.StoredProcedure)
+			  if (keepResults && commandType == CommandType.StoredProcedure &&
+innerCommand != null)
 				  innerCommand.GetParameters ();
             }
-			innerCommand.CloseCursor (isExecuted);
+            if (innerCommand != null)
+			  innerCommand.CloseCursor (isExecuted);
 
 			isExecuted = false;
 		}
