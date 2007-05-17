@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<?vsp
+  declare ses any;
+  set http_charset='utf-8';
+  ses := sioc..compose_foaf ({?'uname'}, {?'fmt'});
+  http (ses);
+?>

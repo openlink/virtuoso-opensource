@@ -28,7 +28,7 @@ create procedure  DB.DBA.URL_REW_ODS_SPQ (in graph varchar, in iri varchar, in a
   iri := replace (iri, '''', '%27');
   iri := replace (iri, '<', '%3C');
   iri := replace (iri, '>', '%3E');
-  q := sprintf ('DESCRIBE <%s> FROM <%s>', iri, graph);
+  q := sprintf ('define input:inference <%s> DESCRIBE <%s> FROM <%s>', graph, iri, graph);
   ret := sprintf ('/sparql?query=%U&format=%U', q, acc);
   return ret;
 };
@@ -44,6 +44,12 @@ create procedure DB.DBA.URL_REW_ODS_USER (in par varchar, in fmt varchar, in val
     {
       graph := sioc..get_graph ();
       iri := sprintf ('%s/%U', graph, val);
+      if (val like 'person/%')
+	{
+	  val := substring (val, 8, length (val));
+	  ret := sprintf ('/ods/foaf.vsp?uname=%U&fmt=%U', val, acc);
+	}
+      else
       ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
     }
   else
@@ -81,10 +87,15 @@ create procedure DB.DBA.URL_REW_ODS_USER_GEM (in par varchar, in fmt varchar, in
       is_person := matches_like (path, '%/about.%');
       graph := sioc..get_graph ();
       if (is_person)
-        iri := sprintf ('%s/person/%U', graph, val);
+	{
+          --iri := sprintf ('%s/person/%U', graph, val);
+	  ret := sprintf ('/ods/foaf.vsp?uname=%U&fmt=%U', val, acc);
+	}
       else
+	{
         iri := sprintf ('%s/%U', graph, val);
       ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
+    }
     }
   else
     {

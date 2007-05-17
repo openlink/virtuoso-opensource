@@ -2098,9 +2098,11 @@ create trigger sn_related_SIOC_D before delete on DB.DBA.sn_related referencing 
   return;
 };
 
+
+
 create procedure rdf_head (inout ses any)
 {
-  http ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">', ses);
+  http ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">', ses);
 };
 
 create procedure rdf_tail (inout ses any)
@@ -2805,6 +2807,203 @@ create procedure sioct_n3 ()
   http ('<http://xmlns.com/foaf/0.1/Agent> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
   http ('<http://xmlns.com/foaf/0.1/Document> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
   return string_output_string (ses);
+}
+;
+
+create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3')
+{
+  declare state, decl, qry, qrs, msg, maxrows, metas, rset, graph, iri, accept, part any;
+  declare ses any;
+
+  -- dbg_obj_print (u_name,wai_name,inst_type,postid);
+  graph := get_graph ();
+  ses := string_output ();
+
+  if (fmt not in ('n3', 'ttl', 'rdf'))
+    fmt := 'rdf';
+
+  if (fmt = 'n3' or fmt = 'ttl')
+    accept := 'text/rdf+n3';
+  else
+    accept := 'application/rdf+xml';
+
+  http_header (sprintf ('Content-Type: %s; charset=UTF-8\r\n', accept));
+
+  if (fmt = 'rdf')
+    rdf_head (ses);
+
+  qrs := make_array (3, 'any');
+  iri := user_obj_iri (u_name);
+
+  decl := 'sparql ' ||
+         ' define input:inference <' || graph || '>' ||
+         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+         ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '||
+         ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
+         ' prefix dc: <http://purl.org/dc/elements/1.1/> '||
+         ' prefix dct: <http://purl.org/dc/terms/> '||
+         ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> \n' ||
+         ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> \n' ||
+	 ' prefix owl: <http://www.w3.org/2002/07/owl#> ' ||
+         ' prefix bio: <http://purl.org/vocab/bio/0.1/> \n' ;
+
+  part := sprintf (
+	  ' CONSTRUCT {
+	    ?person a foaf:Person .
+	    ?person foaf:nick "%s" .
+	    ?person foaf:mbox ?mbox .
+	    ?person foaf:mbox_sha1sum ?sha1 .
+	    ?person foaf:name ?full_name .
+	    ?person foaf:holdsAccount ?sioc_user .
+	    ?sioc_user rdfs:seeAlso ?see_also .
+	    ?sioc_user a sioc:User .
+	    ?person foaf:firstName ?fn .
+	    ?person foaf:family_name ?ln .
+	    ?person foaf:gender ?gender .
+	    ?person foaf:icqChatID ?icq .
+	    ?person foaf:msnChatID ?msn .
+	    ?person foaf:aimChatID ?aim .
+	    ?person foaf:yahooChatID ?yahoo .
+	    ?person foaf:birthday ?birthday .
+	    ?person foaf:phone ?phone .
+	    ?person foaf:based_near ?geo .
+	    ?geo ?geo_pred ?geo_subj .
+	    ?person foaf:knows ?friend .
+	    ?friend rdfs:seeAlso ?f_see_also .
+	    ?friend foaf:nick ?f_nick .
+	    <%s#me> a foaf:PersonalProfileDocument .
+	    <%s#me> foaf:primaryTopic ?person .
+	    <%s#me> foaf:maker ?person .
+	    ?person foaf:workplaceHomepage ?wphome .
+	    ?org foaf:homepage ?wphome .
+	    ?org rdf:type foaf:Organization .
+	    ?org dc:title ?orgtit .
+	    ?person foaf:depiction ?depiction .
+	    ?person foaf:homepage ?homepage .
+	  }
+	  WHERE
+	  {
+	    graph <%s>
+	    {
+	      {
+	      ?person foaf:nick "%s" ;
+	      foaf:holdsAccount ?sioc_user .
+	      ?sioc_user rdfs:seeAlso ?see_also .
+	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
+	      optional { ?person foaf:knows ?friend . ?friend rdfs:seeAlso ?f_see_also . ?friend foaf:nick ?f_nick . } .
+	      optional { ?person foaf:name ?full_name } .
+	      optional { ?person foaf:firstName ?fn } .
+	      optional { ?person foaf:family_name ?ln } .
+	      optional { ?person foaf:gender ?gender } .
+	      optional { ?person foaf:icqChatID ?icq } .
+	      optional { ?person foaf:msnChatID ?msn } .
+	      optional { ?person foaf:aimChatID ?aim } .
+	      optional { ?person foaf:yahooChatID ?yahoo } .
+	      optional { ?person foaf:birthday ?birthday } .
+	      optional { ?person foaf:phone ?phone } .
+	      optional { ?person foaf:based_near ?geo . ?geo ?geo_pred ?geo_subj } .
+	      optional { ?person foaf:workplaceHomepage ?wphome } .
+	      optional { ?org foaf:homepage ?wphome . ?org a foaf:Organization ; dc:title ?orgtit . } .
+	      optional { ?person foaf:depiction ?depiction } .
+	      optional { ?person foaf:homepage ?homepage } .
+	      }
+	    }
+	  }',
+	  u_name, iri, iri, iri, graph, u_name);
+
+  qry := decl || part;
+  qrs [0] := qry;
+
+  part := sprintf (
+	  ' CONSTRUCT {
+	    ?person vcard:ADR ?adr .
+	    ?adr vcard:Country ?country .
+            ?adr vcard:Locality ?city .
+	    ?adr vcard:Region ?state .
+	    ?person bio:olb ?bio .
+	    ?person bio:event ?event .
+	    ?event rdf:type bio:Birth .
+	    ?event dc:date ?bdate .
+	    ?person foaf:interest ?interest .
+	    ?person bio:keywords ?keywords .
+	    ?person owl:sameAs ?same_as .
+	  }
+	  WHERE
+	  {
+	    graph <%s>
+	    {
+	      {
+	      ?person foaf:nick "%s" .
+	      optional { ?person bio:olb ?bio  } .
+              optional { ?person bio:event ?event . ?event a bio:Birth ; dc:date ?bdate } .
+	      optional { ?person vcard:ADR ?adr . ?adr vcard:Country ?country .
+	        	optional { ?adr vcard:Locality ?city } .
+			optional { ?adr vcard:Region ?state } .
+	      	       } .
+	      optional { ?person foaf:interest ?interest } .
+              optional { ?person bio:keywords ?keywords } .
+	      optional { ?person owl:sameAs ?same_as } .
+	      }
+	    }
+	  }', graph, u_name);
+
+  qry := decl || part;
+  qrs [1] := qry;
+
+  part := sprintf (
+	  ' CONSTRUCT {
+	    ?sioc_user sioc:has_function ?function .
+	    ?function sioc:has_scope ?forum .
+	    ?forum a ?forum_type
+	  }
+	  WHERE
+	  {
+	    graph <%s>
+	    {
+	      {
+	       ?person foaf:nick "%s" ;
+	       foaf:holdsAccount ?sioc_user .
+               optional {
+	 	 ?sioc_user sioc:has_function ?function .
+		 ?function sioc:has_scope ?forum .
+		 ?forum a ?forum_type
+	        } .
+	      }
+	    }
+	  }', graph, u_name);
+
+  qry := decl || part;
+  qrs [2] := qry;
+
+  foreach (any q in qrs) do
+    {
+      maxrows := 0;
+      state := '00000';
+    --  dbg_printf ('%s', q);
+      set_user_id ('dba');
+      exec (q, state, msg, vector(), maxrows, metas, rset);
+    --  dbg_obj_print (msg);
+      if (state <> '00000')
+	signal (state, msg);
+      if (fmt = 'rdf')
+	{
+	  if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])))
+	    {
+	      declare triples any;
+	      triples := dict_list_keys (rset[0][0], 1);
+	      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+	    }
+	}
+      else
+	{
+	  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 0);
+        }
+    }
+
+  if (fmt = 'rdf')
+    rdf_tail (ses);
+  return ses;
 }
 ;
 
