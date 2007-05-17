@@ -11,7 +11,7 @@
 	font: menu;
 	background-color: #aaa;
 	list-style-type: none;
-	height: 24px;
+	height: 20px;
 	border-bottom: 1px solid #000;
 	z-index: 900;
 	position: absolute;
@@ -26,7 +26,7 @@
 	display: block;
 	float: left;
 	position: relative;
-	padding: 5px 8px;
+	padding: 3px 8px;
 }
 
 #menu li:hover, #menu li.hover {
@@ -37,7 +37,7 @@
 	position: absolute;
 	background-color: #aaa;
 	left: 0px;
-	top: 24px;
+	top: 20px;
 	_top: 22px;
 	border: 1px solid #000;
 	width: 100px;

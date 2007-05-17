@@ -45,7 +45,7 @@ ul, li {
 #content {
 	/*position: absolute;
   top: 23px; */
-  border-top:2px solid #000000;
+  border-top:1px solid #000000;
   width: 100%;
   background: #e8f3f6;
 }
@@ -128,16 +128,16 @@ ul#nav_bar {
 /* tabs */
 
 #tabs {
-	margin-top: 30px;
+	margin-top: 24px;
 	list-style-type: none;
 	text-align: center;
-	padding-bottom: 2px;
+	padding-bottom: 1px;
 }
 
 #tabs li {
 	display: inline;
-	border: 2px solid #000;
-	padding: 2px 3px;
+	border: 1px solid #000;
+	padding: 1px 3px;
 	margin-left: 0.5em;
 	cursor: pointer;
 }

@@ -1092,7 +1092,7 @@ iSPARQL.QBE = function ()
 	var icon_drag, icon_add, icon_draw, icon_remove, icon_clear, icon_group;
 	var icon_load, icon_save, icon_saveas, icon_run, icon_generate, icon_get_from_adv, icon_arrange;
 	//var icon_back, icon_forward, icon_start, icon_finish;
-	var icon_datasets;
+	var icon_datasets, icon_graph_add;
 	
 	var t = new OAT.Toolbar("qbe_toolbar");
 	
@@ -1285,6 +1285,48 @@ iSPARQL.QBE = function ()
 
 	t.addSeparator();
 
+	icon_datasets = t.addIcon(0,"images/folder_html.png","Dataset",function(){
+	  if (self.dataset_win.div.style.display == 'none')
+	    OAT.Dom.show(self.dataset_win.div);
+	  else
+	    OAT.Dom.hide(self.dataset_win.div);
+	  l.raise(self.dataset_win.div);
+	}); 
+	//icon_datasets.style.cssFloat = 'right';
+
+  var ds_graph_add = function(){
+    self.addDataSource($v('qbe_graph').trim());
+    $('qbe_graph').value = '';
+    //return;    
+    self.SchemaTreeRefresh();
+  };
+  
+  var qbe_graph_input = OAT.Dom.create("input");
+  qbe_graph_input.id = "qbe_graph";
+  qbe_graph_input.name = "qbe_graph";
+
+  var calc_width = function(){
+    var w = OAT.Dom.getViewport()[0];
+    qbe_graph_input.style.width = w - 620 + 'px';
+  }
+  calc_width();
+	OAT.Dom.attach(window,"resize",calc_width);
+
+  var qbe_graph_label = OAT.Dom.create("label");
+  qbe_graph_label["htmlFor"] = "qbe_graph";
+  
+  qbe_graph_label.innerHTML = 'Data Source URI';
+
+  var qbe_datasource_cnt = OAT.Dom.create("sub");
+  qbe_datasource_cnt.id = "qbe_datasource_cnt";
+  qbe_datasource_cnt.innerHTML = '0';
+  
+  OAT.Dom.append([t.div,qbe_datasource_cnt,qbe_graph_label,qbe_graph_input]);
+	
+	icon_graph_add = t.addIcon(0,"images/edit_add.png","add",ds_graph_add)
+	//OAT.Dom.attach("qbe_datasource_graph_add","click",ds_graph_add);
+	icon_graph_add.style.marginTop = '6px';
+
 	this.dataset_win = new OAT.Window({title:"Dataset", close:1, min:0, max:0, width:page_w - 400, height:200, x:200,y:160});
 	$("page_qbe").appendChild(this.dataset_win.div);
 	l.addLayer(this.dataset_win.div);
@@ -1438,27 +1480,10 @@ iSPARQL.QBE = function ()
     iSPARQL.QueryExec(params);
   }
     
-  var ds_graph_add = function(){
-    self.addDataSource($v('qbe_graph').trim());
-    $('qbe_graph').value = '';
-    //return;    
-    self.SchemaTreeRefresh();
-  };
-
-	OAT.Dom.attach("qbe_datasource_graph_add","click",ds_graph_add);
   OAT.Keyboard.add('return',self.func_run,null,null,null,$('qbe_graph'));
 	OAT.Dom.attach($('qbe_graph'),"change",function(){
     self.SchemaTreeRefresh();
 	});
-
-	icon_datasets = t.addIcon(0,"images/folder_html.png","Dataset",function(){
-	  if (self.dataset_win.div.style.display == 'none')
-	    OAT.Dom.show(self.dataset_win.div);
-	  else
-	    OAT.Dom.hide(self.dataset_win.div);
-	  l.raise(self.dataset_win.div);
-	}); 
-	icon_datasets.style.cssFloat = 'right';
 
 	icon_drag.toggleState(1);
 	

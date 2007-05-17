@@ -22,27 +22,26 @@
  */
 
 #qbe_toolbar label {
-  float: right;
+  float: left;
   margin: 6px;
   color: #444;
   font-size: 10pt;
   font-weight: normal;
 } 
-
 #qbe_datasource_cnt {
-  float: right;
+  float: left;
   margin-top:16px;
 }
 
 #qbe_datasource_graph_add {
-  float: right;
+  float: left;
   margin: 6px;
   cursor:pointer;
 }
  
 #qbe_graph {
-  float: right;
-  width: 250px;
+  float: left;
+  /*width: 250px;*/
   margin: 4px;
 }
 
@@ -58,6 +57,7 @@
 #qbe_query_div {
   margin-right:285px;
   padding:10px;
+  padding-top:0px;
 }
 
 #qbe_resizer_area {
