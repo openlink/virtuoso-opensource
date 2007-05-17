@@ -894,7 +894,16 @@ create procedure AB.WA.ab_url (
 create procedure AB.WA.sioc_url (
   in domain_id integer)
 {
-  return sprintf ('%s/dataspace/%U/addressbook/%U/sioc.rdf', AB.WA.host_url (), AB.WA.domain_owner_name (domain_id), replace (AB.WA.domain_name (domain_id), '+', '%2B'));
+  return sprintf ('http://%s/dataspace/%U/addressbook/%U/sioc.rdf', DB.DBA.wa_cname (), AB.WA.domain_owner_name (domain_id), replace (AB.WA.domain_name (domain_id), '+', '%2B'));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.foaf_url (
+  in domain_id integer)
+{
+  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), AB.WA.domain_owner_name (domain_id));
 }
 ;
 
@@ -918,7 +927,7 @@ create procedure AB.WA.dav_url (
   home := AB.WA.dav_home (AB.WA.domain_owner_id (domain_id));
   if (isnull (home))
     return '';
-  return concat(AB.WA.host_url(), home, 'AddressBook/', AB.WA.domain_gems_name(domain_id), '/');
+  return concat('http://', DB.DBA.wa_cname (), home, 'AddressBook/', AB.WA.domain_gems_name (domain_id), '/');
 }
 ;
 

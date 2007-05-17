@@ -287,7 +287,7 @@
   <xsl:template name="vm:foaf-link">
     <div>
       <?vsp
-        http (sprintf('<a href="%sAddressBook.foaf" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.gif" border="0"/></a>', AB.WA.dav_url(self.domain_id)));
+        http (sprintf('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', AB.WA.foaf_url (self.domain_id)));
       ?>
     </div>
   </xsl:template>
@@ -306,7 +306,7 @@
   	      suffix := '<xsl:value-of select="@format"/>';
         </xsl:processing-instruction>
       </xsl:if>
-  	  <a href="&lt;?vsp http (sprintf ('%s/dataspace/%U/addressbook/%U/sioc.%s', AB.WA.host_url (), AB.WA.domain_owner_name (self.domain_id), AB.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
+  	  <a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/addressbook/%U/sioc.%s', DB.DBA.wa_cname (), AB.WA.domain_owner_name (self.domain_id), AB.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
     	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
       </a>
       <?vsp
