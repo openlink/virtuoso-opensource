@@ -56,7 +56,7 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
       riri := nntp_role_iri (NG_NAME);
       DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
       DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('scope_of'), riri);
-      for select NM_KEY_ID from DB.DBA.NEWS_MULTI_MSG, DB.DBA.NEWS_MSG
+      for select NM_KEY_ID from DB.DBA.NEWS_MULTI_MSG
 	where NM_GROUP = NG_GROUP and NM_KEY_ID > _msg order by NM_KEY_ID do
 	  {
 	    declare par_iri, par_id, links_to any;
