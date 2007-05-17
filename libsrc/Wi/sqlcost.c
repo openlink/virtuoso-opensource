@@ -285,8 +285,7 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
       dbe_column_t *left_col = lower->_.bin.left->_.col.col;
       if (lower->_.bin.op == BOP_EQ)
 	{
-      	  sqlo_eq_cost (left_col, lower->_.bin.right, lower, &a1);
-	  return;
+      	  sqlo_eq_cost (left_col, lower->_.bin.right, lower, a1);
 	}
       else if (lower->_.bin.op == BOP_GT || lower->_.bin.op == BOP_GTE)
 	{

@@ -2616,7 +2616,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
 	  pred->_.text.after_preds = text_after_preds;
 	  text_pred = pred;
 	}
-      else if (0 && (in_list = sqlo_in_list (pred, tb_dfe, NULL)))
+      else if ((in_list = sqlo_in_list (pred, tb_dfe, NULL)))
 	{
 	  t_set_push (&col_preds, pred);
 
