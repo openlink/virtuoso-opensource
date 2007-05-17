@@ -46,7 +46,7 @@ OAT.AJAX = {
 	cancelAll:function() {
 		for (var i=0;i<OAT.AJAX.requests.length;i++) { OAT.AJAX.requests[i].canceled = true; }
 		OAT.AJAX.requests = [];
-		if (OAT.AJAX.endRef || OAT.Preferences.showAjax) { OAT.AJAX.endNotify(); }
+		OAT.AJAX.checkEnd();
 	},
 
 	GET:function(url,data,callback,optObj) {
@@ -161,9 +161,7 @@ OAT.AJAX = {
 			var headers = xhr.getAllResponseHeaders();
 			var index = OAT.AJAX.requests.find(xhr);
 			if (index != -1) { OAT.AJAX.requests.splice(index,1); } /* remove from request registry */
-
-			if ((OAT.AJAX.endRef || OAT.Preferences.showAjax) && OAT.AJAX.requests.length == 0) { OAT.AJAX.endNotify(); }
-			
+			OAT.AJAX.checkEnd();
 			if (xhr.getStatus().toString().charAt(0) == "2" || xhr.getStatus() == 0) { /* success */
 				if (xhr.options.type == OAT.AJAX.TYPE_TEXT) {
 					xhr.callback(xhr.getResponseText(),headers);
@@ -189,6 +187,10 @@ OAT.AJAX = {
 		} /* readystate == 4 */
 	}, /* OAT.AJAX.response */
 
+	checkEnd:function() {
+		if ((OAT.AJAX.endRef || OAT.Preferences.showAjax) && OAT.AJAX.requests.length == 0) { OAT.AJAX.endNotify(); }
+	},
+	
 	startNotify:function() {
 		if (OAT.AJAX.startRef) { 
 			OAT.AJAX.startRef(); 
@@ -237,8 +239,18 @@ OAT.AJAX = {
 		this.callback = callback;
 		this.options = options;
 		this.canceled = false;
-		this.open = function(method, target, async) { self.obj.open(method, target, async);	}
-		this.send = function(data) { self.obj.send(data); }
+		this.open = function(method, target, async) { 
+			try {
+				self.obj.open(method, target, async);
+			} catch(e) {
+				self.canceled = true;
+				var index = OAT.AJAX.requests.find(self);
+				OAT.AJAX.requests.splice(index,1);
+				OAT.AJAX.checkEnd();
+				alert(e);
+			}
+		}
+		this.send = function(data) { if (!self.canceled) { self.obj.send(data); } } 
 		this.setResponse = function(callback) { self.obj.onreadystatechange = callback; }
 		this.getResponseText = function() { return self.obj.responseText; }
 		this.getResponseXML = function() { return self.obj.responseXML;	}
