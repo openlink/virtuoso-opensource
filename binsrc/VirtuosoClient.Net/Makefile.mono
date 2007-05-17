@@ -39,16 +39,10 @@ SOURCES	= \
 	ManagedErrors.cs \
 	Marshaler.cs \
 	MD5.cs \
-	MemoryHandle.cs \
-	OdbcCommand.cs \
-	OdbcConnection.cs \
-	OdbcErrors.cs \
-	ParameterData.cs \
 	Platform.cs \
 	RPC.cs \
 	Service.cs \
 	SqlXml.cs \
-	StatementList.cs \
 	TcpConnection.cs \
 	TcpSession.cs \
 	Unix.cs \
@@ -70,6 +64,14 @@ SOURCES	= \
 	VirtuosoWarning.cs \
 	Win32.cs
 
+ODBC_SOURCES = \
+	MemoryHandle.cs \
+	ParameterData.cs \
+	StatementList.cs \
+	OdbcCommand.cs \
+	OdbcConnection.cs \
+	OdbcErrors.cs \
+
 REFERENCES	= /r:System.Data /r:System.EnterpriseServices
 
 RESOURCES=
@@ -77,16 +79,16 @@ RESOURCES=
 # /resource:OpenLink.Data.VirtuosoClient.VirtuosoCommand.bmp\
 # /resource:OpenLink.Data.VirtuosoClient.VirtuosoDataAdapter.bmp
 
-all: OpenLink.Data.Virtuoso.dll OpenLink.Data.VirtuosoClient.dll OpenLink.Data.VirtuosoOdbcClient.dll
+all: OpenLink.Data.Virtuoso.dll #OpenLink.Data.VirtuosoClient.dll OpenLink.Data.VirtuosoOdbcClient.dll
 
-OpenLink.Data.Virtuoso.dll: $(SOURCES) 
+OpenLink.Data.Virtuoso.dll: $(SOURCES)
 	$(CSC) /unsafe /target:library /out:$@ $(CSFLAGS) $(SOURCES) $(REFERENCES) $(RESOURCES)
 
-OpenLink.Data.VirtuosoClient.dll: $(SOURCES) 
-	$(CSC) /unsafe /target:library /out:$@ /define:CLIENT $(CSFLAGS) $(SOURCES) $(REFERENCES) $(RESOURCES)
+OpenLink.Data.VirtuosoClient.dll: $(SOURCES) $(ODBC_SOURCES)
+	$(CSC) /unsafe /target:library /out:$@ /define:CLIENT /define:UNMANAGED_ODBC $(CSFLAGS) $(SOURCES) $(ODBC_SOURCES) $(REFERENCES) $(RESOURCES)
 
 OpenLink.Data.VirtuosoOdbcClient.dll: $(SOURCES) 
-	$(CSC) /unsafe /target:library /out:$@ /define:ODBC_CLIENT $(CSFLAGS) $(SOURCES) $(REFERENCES) $(RESOURCES)
+	$(CSC) /unsafe /target:library /out:$@ /define:ODBC_CLIENT /define:UNMANAGED_ODBC $(CSFLAGS) $(SOURCES) $(ODBC_SOURCES) $(REFERENCES) $(RESOURCES)
 
 
 clean:
