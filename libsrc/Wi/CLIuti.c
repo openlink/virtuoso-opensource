@@ -34,7 +34,7 @@
 #include "widd.h"
 
 
-#ifdef UNIX_ODBC
+#if 0 /*def UNIX_ODBC*/
 /*
  *  Program information (keep libutil happy)
  */
