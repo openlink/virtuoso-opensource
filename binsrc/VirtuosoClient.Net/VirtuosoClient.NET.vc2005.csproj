@@ -219,21 +219,6 @@
     <Compile Include="MD5.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="MemoryHandle.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="OdbcCommand.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="OdbcConnection.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="OdbcErrors.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="ParameterData.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Platform.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -244,9 +229,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="SqlXml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="StatementList.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="TcpConnection.cs">

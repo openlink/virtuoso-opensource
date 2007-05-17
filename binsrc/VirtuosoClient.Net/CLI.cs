@@ -38,10 +38,12 @@ namespace OpenLink.Data.Virtuoso
 	{
 		private CLI() {}
 
+#if UNMANAGED_ODBC
 #if !USE_DRIVER_MANAGER
 		private const string ODBC_DLL = "virtodbc45.dll";
 #else
 		private const string ODBC_DLL = "odbc32.dll";
+#endif
 #endif
 
 		internal enum ReturnCode
@@ -55,6 +57,204 @@ namespace OpenLink.Data.Virtuoso
 			SQL_INVALID_HANDLE = -2
 		};
 
+        internal enum IdentCase 
+
+        {
+            SQL_IC_UPPER = 1,
+            SQL_IC_LOWER = 2,
+            SQL_IC_SENSITIVE = 3,
+            SQL_IC_MIXED = 4,
+        }
+
+		internal enum IsolationLevel
+		{
+			SQL_TXN_READ_UNCOMMITTED = 1,
+			SQL_TXN_READ_COMMITED = 2,
+			SQL_TXN_REPEATABLE_READ = 4,
+			SQL_TXN_SERIALIZABLE = 8,
+			SQL_TXN_VERSIONING = 16
+		};
+
+		private const int SQL_SIGNED_OFFSET = -20;
+		private const int SQL_UNSIGNED_OFFSET = -22;
+
+		internal enum SqlCType
+		{
+			SQL_C_DEFAULT = 99,
+			SQL_C_CHAR = SqlType.SQL_CHAR,
+			SQL_C_LONG = SqlType.SQL_INTEGER,
+			SQL_C_SHORT = SqlType.SQL_SMALLINT,
+			SQL_C_FLOAT = SqlType.SQL_REAL,
+			SQL_C_DOUBLE = SqlType.SQL_DOUBLE,
+			SQL_C_NUMERIC = SqlType.SQL_NUMERIC,
+			SQL_C_DATE = SqlType.SQL_DATE,
+			SQL_C_TIME = SqlType.SQL_TIME,
+			SQL_C_TIMESTAMP = SqlType.SQL_TIMESTAMP,
+			SQL_C_TYPE_DATE = SqlType.SQL_TYPE_DATE,
+			SQL_C_TYPE_TIME = SqlType.SQL_TYPE_TIME,
+			SQL_C_TYPE_TIMESTAMP = SqlType.SQL_TYPE_TIMESTAMP,
+			SQL_C_BINARY = SqlType.SQL_BINARY,
+			SQL_C_TINYINT = SqlType.SQL_TINYINT,
+			SQL_C_BIT = SqlType.SQL_BIT,
+			SQL_C_WCHAR = SqlType.SQL_WCHAR,
+			SQL_C_GUID = SqlType.SQL_GUID,
+			SQL_C_SBIGINT = SqlType.SQL_BIGINT + SQL_SIGNED_OFFSET,
+			SQL_C_UBIGINT = SqlType.SQL_BIGINT + SQL_UNSIGNED_OFFSET,
+			SQL_C_SLONG = SQL_C_LONG + SQL_SIGNED_OFFSET,
+			SQL_C_ULONG = SQL_C_LONG + SQL_UNSIGNED_OFFSET,
+			SQL_C_SSHORT = SQL_C_SHORT + SQL_SIGNED_OFFSET,
+			SQL_C_USHORT = SQL_C_SHORT + SQL_UNSIGNED_OFFSET,
+			SQL_C_STINYINT = SqlType.SQL_TINYINT + SQL_SIGNED_OFFSET,
+			SQL_C_UTINYINT = SqlType.SQL_TINYINT + SQL_UNSIGNED_OFFSET,
+			SQL_C_BOOKMARK = SQL_C_ULONG,
+			SQL_C_VARBOOKMARK = SQL_C_BINARY,
+		};
+
+		internal enum SqlType
+		{
+			SQL_UNKNOWN_TYPE = -1,
+			SQL_ALL_TYPES = 0,
+			SQL_CHAR = 1,
+			SQL_NUMERIC = 2,
+			SQL_DECIMAL = 3,
+			SQL_INTEGER = 4,
+			SQL_SMALLINT = 5,
+			SQL_FLOAT = 6,
+			SQL_REAL = 7,
+			SQL_DOUBLE = 8,
+			//SQL_DATETIME = 9,
+			SQL_DATE = 9,
+			//SQL_INTERVAL = 10,
+			SQL_TIME = 10,
+			SQL_TIMESTAMP = 11,
+			SQL_VARCHAR = 12,
+			SQL_TYPE_DATE = 91,
+			SQL_TYPE_TIME = 92,
+			SQL_TYPE_TIMESTAMP = 93,
+			SQL_LONGVARCHAR = -1,
+			SQL_BINARY = -2,
+			SQL_VARBINARY = -3,
+			SQL_LONGVARBINARY = -4,
+			SQL_BIGINT = -5,
+			SQL_TINYINT = -6,
+			SQL_BIT = -7,
+			SQL_WCHAR = -8,
+			SQL_WVARCHAR = -9,
+			SQL_WLONGVARCHAR = -10,
+			SQL_GUID = -11,
+		};
+
+        internal enum GroupBy
+        {
+            SQL_GB_NOT_SUPPORTED = 0,
+            SQL_GB_GROUP_BY_EQUALS_SELECT = 1,
+            SQL_GB_GROUP_BY_CONTAINS_SELECT = 2,
+            SQL_GB_NO_RELATION = 3,
+            SQL_GB_COLLATE = 4
+        };
+
+        [Flags]
+        internal enum OuterJoin
+        {
+            SQL_OJ_LEFT =               0x00000001,
+            SQL_OJ_RIGHT =              0x00000002,
+            SQL_OJ_FULL =               0x00000004,
+            SQL_OJ_NESTED =             0x00000008,
+            SQL_OJ_NOT_ORDERED =        0x00000010,
+            SQL_OJ_INNER =              0x00000020,
+            SQL_OJ_ALL_COMPARISON_OPS = 0x00000040
+        };
+
+		internal enum Nullable
+		{
+			SQL_NO_NULLS = 0,
+			SQL_NULLABLE = 1,
+			SQL_NULLABLE_UNKNOWN = 2
+		};
+
+        internal enum ProcedureType
+        {
+            SQL_PT_UNKNOWN = 0,
+            SQL_PT_PROCEDURE = 1,
+            SQL_PT_FUNCTION = 2
+        };
+
+        internal enum IdentifierType
+        {
+            SQL_BEST_ROWID = 1,
+            SQL_ROWVER = 2
+        };
+
+        internal enum Scope
+        {
+            SQL_SCOPE_CURROW = 0,
+            SQL_SCOPE_TRANSACTION = 1,
+            SQL_SCOPE_SESSION = 2
+        };
+
+		internal enum CompletionType
+		{
+			SQL_COMMIT = 0,
+			SQL_ROLLBACK = 1
+		};
+
+		internal enum InOutType
+		{
+			SQL_PARAM_TYPE_UNKNOWN = 0,
+			SQL_PARAM_INPUT = 1,
+			SQL_PARAM_INPUT_OUTPUT = 2,
+			SQL_RESULT_COL = 3,
+			SQL_PARAM_OUTPUT = 4,
+			SQL_PARAM_RETURN_VALUE = 5
+		};
+
+        internal enum IndexType
+        {
+            SQL_INDEX_UNIQUE = 0,
+            SQL_INDEX_ALL = 1
+        };
+
+		internal enum Concurrency
+		{
+			SQL_CONCUR_READ_ONLY = 1,
+			SQL_CONCUR_LOCK = 2,
+			SQL_CONCUR_ROWVER = 3,
+			SQL_CONCUR_VALUES = 4,
+		};
+
+		internal enum CursorType
+		{
+			SQL_CURSOR_FORWARD_ONLY = 0,
+			SQL_CURSOR_KEYSET_DRIVEN = 1,
+			SQL_CURSOR_DYNAMIC = 2,
+			SQL_CURSOR_STATIC = 3,
+		};
+
+		internal enum AutoCommit
+		{
+			SQL_AUTOCOMMIT_OFF = 0,
+			SQL_AUTOCOMMIT_ON = 1
+		};
+
+		internal enum Updatable
+		{
+			SQL_ATTR_READONLY = 0,
+			SQL_ATTR_WRITE = 1,
+			SQL_ATTR_WRITE_UNKNOWN = 2,
+		}
+
+		internal enum FreeStmtOption
+		{
+			SQL_CLOSE = 0,
+			SQL_DROP = 1,
+			SQL_UNBIND = 2,
+			SQL_RESET_PARAMS = 3
+		};
+
+
+
+
+#if UNMANAGED_ODBC
 		internal enum HandleType
 		{
 			SQL_HANDLE_ENV = 1,
@@ -237,44 +437,6 @@ namespace OpenLink.Data.Virtuoso
 			SQL_MODE_READ_ONLY = 1,
 		};
 
-		internal enum AutoCommit
-		{
-			SQL_AUTOCOMMIT_OFF = 0,
-			SQL_AUTOCOMMIT_ON = 1
-		};
-
-		internal enum Concurrency
-		{
-			SQL_CONCUR_READ_ONLY = 1,
-			SQL_CONCUR_LOCK = 2,
-			SQL_CONCUR_ROWVER = 3,
-			SQL_CONCUR_VALUES = 4,
-		};
-
-		internal enum CursorType
-		{
-			SQL_CURSOR_FORWARD_ONLY = 0,
-			SQL_CURSOR_KEYSET_DRIVEN = 1,
-			SQL_CURSOR_DYNAMIC = 2,
-			SQL_CURSOR_STATIC = 3,
-		};
-
-		internal enum IsolationLevel
-		{
-			SQL_TXN_READ_UNCOMMITTED = 1,
-			SQL_TXN_READ_COMMITED = 2,
-			SQL_TXN_REPEATABLE_READ = 4,
-			SQL_TXN_SERIALIZABLE = 8,
-			SQL_TXN_VERSIONING = 16
-		};
-
-		internal enum Updatable
-		{
-			SQL_ATTR_READONLY = 0,
-			SQL_ATTR_WRITE = 1,
-			SQL_ATTR_WRITE_UNKNOWN = 2,
-		}
-
 		internal enum LengthCode
 		{
 			SQL_NULL_DATA = -1,
@@ -291,119 +453,6 @@ namespace OpenLink.Data.Virtuoso
 			SQL_IS_USMALLINT = -7,
 			SQL_IS_SMALLINT = -8,
 		};
-
-		internal enum CompletionType
-		{
-			SQL_COMMIT = 0,
-			SQL_ROLLBACK = 1
-		};
-
-		internal enum FreeStmtOption
-		{
-			SQL_CLOSE = 0,
-			SQL_DROP = 1,
-			SQL_UNBIND = 2,
-			SQL_RESET_PARAMS = 3
-		};
-
-		internal enum SqlType
-		{
-			SQL_UNKNOWN_TYPE = -1,
-			SQL_ALL_TYPES = 0,
-			SQL_CHAR = 1,
-			SQL_NUMERIC = 2,
-			SQL_DECIMAL = 3,
-			SQL_INTEGER = 4,
-			SQL_SMALLINT = 5,
-			SQL_FLOAT = 6,
-			SQL_REAL = 7,
-			SQL_DOUBLE = 8,
-			//SQL_DATETIME = 9,
-			SQL_DATE = 9,
-			//SQL_INTERVAL = 10,
-			SQL_TIME = 10,
-			SQL_TIMESTAMP = 11,
-			SQL_VARCHAR = 12,
-			SQL_TYPE_DATE = 91,
-			SQL_TYPE_TIME = 92,
-			SQL_TYPE_TIMESTAMP = 93,
-			SQL_LONGVARCHAR = -1,
-			SQL_BINARY = -2,
-			SQL_VARBINARY = -3,
-			SQL_LONGVARBINARY = -4,
-			SQL_BIGINT = -5,
-			SQL_TINYINT = -6,
-			SQL_BIT = -7,
-			SQL_WCHAR = -8,
-			SQL_WVARCHAR = -9,
-			SQL_WLONGVARCHAR = -10,
-			SQL_GUID = -11,
-		};
-
-		private const int SQL_SIGNED_OFFSET = -20;
-		private const int SQL_UNSIGNED_OFFSET = -22;
-
-		internal enum SqlCType
-		{
-			SQL_C_DEFAULT = 99,
-			SQL_C_CHAR = SqlType.SQL_CHAR,
-			SQL_C_LONG = SqlType.SQL_INTEGER,
-			SQL_C_SHORT = SqlType.SQL_SMALLINT,
-			SQL_C_FLOAT = SqlType.SQL_REAL,
-			SQL_C_DOUBLE = SqlType.SQL_DOUBLE,
-			SQL_C_NUMERIC = SqlType.SQL_NUMERIC,
-			SQL_C_DATE = SqlType.SQL_DATE,
-			SQL_C_TIME = SqlType.SQL_TIME,
-			SQL_C_TIMESTAMP = SqlType.SQL_TIMESTAMP,
-			SQL_C_TYPE_DATE = SqlType.SQL_TYPE_DATE,
-			SQL_C_TYPE_TIME = SqlType.SQL_TYPE_TIME,
-			SQL_C_TYPE_TIMESTAMP = SqlType.SQL_TYPE_TIMESTAMP,
-			SQL_C_BINARY = SqlType.SQL_BINARY,
-			SQL_C_TINYINT = SqlType.SQL_TINYINT,
-			SQL_C_BIT = SqlType.SQL_BIT,
-			SQL_C_WCHAR = SqlType.SQL_WCHAR,
-			SQL_C_GUID = SqlType.SQL_GUID,
-			SQL_C_SBIGINT = SqlType.SQL_BIGINT + SQL_SIGNED_OFFSET,
-			SQL_C_UBIGINT = SqlType.SQL_BIGINT + SQL_UNSIGNED_OFFSET,
-			SQL_C_SLONG = SQL_C_LONG + SQL_SIGNED_OFFSET,
-			SQL_C_ULONG = SQL_C_LONG + SQL_UNSIGNED_OFFSET,
-			SQL_C_SSHORT = SQL_C_SHORT + SQL_SIGNED_OFFSET,
-			SQL_C_USHORT = SQL_C_SHORT + SQL_UNSIGNED_OFFSET,
-			SQL_C_STINYINT = SqlType.SQL_TINYINT + SQL_SIGNED_OFFSET,
-			SQL_C_UTINYINT = SqlType.SQL_TINYINT + SQL_UNSIGNED_OFFSET,
-			SQL_C_BOOKMARK = SQL_C_ULONG,
-			SQL_C_VARBOOKMARK = SQL_C_BINARY,
-		};
-
-		internal enum InOutType
-		{
-			SQL_PARAM_TYPE_UNKNOWN = 0,
-			SQL_PARAM_INPUT = 1,
-			SQL_PARAM_INPUT_OUTPUT = 2,
-			SQL_RESULT_COL = 3,
-			SQL_PARAM_OUTPUT = 4,
-			SQL_PARAM_RETURN_VALUE = 5
-		};
-
-		internal enum Nullable
-		{
-			SQL_NO_NULLS = 0,
-			SQL_NULLABLE = 1,
-			SQL_NULLABLE_UNKNOWN = 2
-		};
-
-        internal enum ProcedureType
-        {
-            SQL_PT_UNKNOWN = 0,
-            SQL_PT_PROCEDURE = 1,
-            SQL_PT_FUNCTION = 2
-        };
-
-        internal enum IndexType
-        {
-            SQL_INDEX_UNIQUE = 0,
-            SQL_INDEX_ALL = 1
-        };
 
 		internal enum SetPosOp
 		{
@@ -437,48 +486,6 @@ namespace OpenLink.Data.Virtuoso
             SQL_PRED_BASIC = 2,
             SQL_PRED_SEARCHABLE = 3
         };
-
-        internal enum GroupBy
-        {
-            SQL_GB_NOT_SUPPORTED = 0,
-            SQL_GB_GROUP_BY_EQUALS_SELECT = 1,
-            SQL_GB_GROUP_BY_CONTAINS_SELECT = 2,
-            SQL_GB_NO_RELATION = 3,
-            SQL_GB_COLLATE = 4
-        };
-
-        [Flags]
-        internal enum OuterJoin
-        {
-            SQL_OJ_LEFT =               0x00000001,
-            SQL_OJ_RIGHT =              0x00000002,
-            SQL_OJ_FULL =               0x00000004,
-            SQL_OJ_NESTED =             0x00000008,
-            SQL_OJ_NOT_ORDERED =        0x00000010,
-            SQL_OJ_INNER =              0x00000020,
-            SQL_OJ_ALL_COMPARISON_OPS = 0x00000040
-        };
-
-        internal enum IdentifierType
-        {
-            SQL_BEST_ROWID = 1,
-            SQL_ROWVER = 2
-        };
-
-        internal enum Scope
-        {
-            SQL_SCOPE_CURROW = 0,
-            SQL_SCOPE_TRANSACTION = 1,
-            SQL_SCOPE_SESSION = 2
-        };
-
-        internal enum IdentCase 
-        {
-            SQL_IC_UPPER = 1,
-            SQL_IC_LOWER = 2,
-            SQL_IC_SENSITIVE = 3,
-            SQL_IC_MIXED = 4,
-        }
 
 		internal static readonly IntPtr SQL_NULL_HANDLE = new IntPtr(0);
 
@@ -671,6 +678,7 @@ namespace OpenLink.Data.Virtuoso
 		internal static extern short SQLSetStmtAttr(IntPtr statementHandle,
 			int attribute, IntPtr ValuePtr, int stringLength);
 
+#endif
 #region Trace switches
 		internal static BooleanSwitch FnTrace = new BooleanSwitch("VirtuosoClient.FnTrace", "Function trace");
 #endregion

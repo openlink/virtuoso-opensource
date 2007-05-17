@@ -93,6 +93,7 @@ namespace OpenLink.Data.Virtuoso
 		}
 
 		// deprecated
+#if false
 		internal static void HandleResult (
 			CLI.ReturnCode returnCode,
 			CLI.HandleType handleType,
@@ -128,5 +129,6 @@ namespace OpenLink.Data.Virtuoso
 			VirtuosoInfoMessageEventArgs args = new VirtuosoInfoMessageEventArgs (OdbcErrors.CreateErrors (handleType, handle));
 			connection.OnInfoMessage (args);
 		}
+#endif
 	}
 }

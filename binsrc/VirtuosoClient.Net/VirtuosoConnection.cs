@@ -598,9 +598,11 @@ namespace OpenLink.Data.Virtuoso
             Debug.WriteLineIf (CLI.FnTrace.Enabled, "VirtuosoConnection.CreateInnerConnection()");
 
             IInnerConnection conn;
+#if UNMANAGED_ODBC
             if (options.UseOdbc)
                 conn = new OdbcConnection ();
             else
+#endif
                 conn = new TcpConnection ();
 
             conn.OuterConnectionWeakRef = new WeakReference (this);
