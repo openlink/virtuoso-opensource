@@ -222,7 +222,7 @@ create procedure WV.WIKI.TOGGLE_CONVERSATION (in _cluster_name varchar, in enabl
            insert replacing DB.DBA.NEWS_GROUPS (
 	      NG_NEXT_NUM, NG_NAME, NG_DESC, NG_SERVER, NG_POST, NG_UP_TIME, NG_CREAT, NG_UP_INT,
 	      NG_PASS, NG_UP_MESS, NG_NUM, NG_FIRST, NG_LAST, NG_LAST_OUT, NG_CLEAR_INT, NG_TYPE)
-        	values (0, _news_id, 'wiki cluster ' || _cluster_name, null, _number_of_topics, now(), now(), 30, 0, 0, 0, 0, 0, 0, 120, 'oWiki');
+        	values (0, _news_id, 'wiki cluster ' || _cluster_name, null, 1, now(), now(), 30, 0, 0, 0, 0, 0, 0, 120, 'oWiki');
 	       for select TopicId from WV..TOPIC natural join WV..CLUSTERS
 		where ClusterName = _cluster_name  
 		and (not T_PUBLISHED) do	
@@ -316,7 +316,7 @@ create trigger WV_WIKI_COMMENT_NEWS_I after insert on COMMENT referencing new as
 
     update COMMENT set 
 	C_PUBLISHED = _enabled,
-	C_RFC_ID = _rfc_id,
+	C_RFC_ID = coalesce(C_RFC_ID,_rfc_id),
 	C_OWNER_ID = _res_owner,
 	C_CREATE_TIME = now(),
 	C_NEWS_ID = _news_id,
@@ -487,40 +487,313 @@ select
 ')
 ;
 
-create procedure DB.DBA.oWiki_NEWS_MSG_I  (
-	inout _id varchar,
-	inout _ALL_REFS		varchar,		-- References
-	inout _read		integer,		-- How many times this message is read
-	inout _own 		varchar,		-- Local poster (if poster is non local should be null)
-	inout _rec_date	datetime,		-- Received date
-	inout _stat		integer,		-- Post from user to group
-	inout _try_post	integer,		-- Times to try post out
-	inout _deleted	integer,		-- Is deleted (flag)
-	inout _head		long varchar,		-- Message header (original)
-	inout _body		long varchar)		-- Message content
+create procedure WV.DBA.SPLIT_MAIL_ADDR (in author any, out person any, out email any)
 {
-   declare tree any;
-   tree := deserialize (_HEAD);
-   if (_ALL_REFS is not null) -- comment
-     {
-	   declare _ref varchar;
-	   _ref := aref (split_and_decode (_ALL_REFS, 0, '\0\0 '), 0);
-       --dbg_obj_print (tree);
-       declare _subject, _from, _author, _email, _text varchar;
-       _subject := get_keyword ('Subject', tree[0]);
-       _from := get_keyword ('From', tree[0]);
-	   WV..PARSE_FROM_FIELD (_from, _author, _email);
-       declare _topic_id int;
-       select TopicId into _topic_id from WV.WIKI.TOPIC where T_RFC_ID = _ref;  
- 
-       _text := subseq (_body, tree[1][0], tree[1][1]);
-
-       insert into WV.WIKI.COMMENT (C_TOPIC_ID, C_AUTHOR, C_EMAIL, C_TEXT, C_DATE, C_SUBJECT, C_REFS)
-		values (_topic_id, _author, _email, _text, now(), _subject, _ALL_REFS);
-     }
-
+  declare pos int;
+  person := '';
+  pos := strchr (author, '<');
+  if (pos is not NULL)
+    {
+      person := "LEFT" (author, pos);
+      email := subseq (author, pos, length (author));
+      email := replace (email, '<', '');
+      email := replace (email, '>', '');
+      person := trim (replace (person, '"', ''));
+      --email := replace (email, '{at}', '@');
+    }
+  else
+    {
+      pos := strchr (author, '(');
+      if (pos is not NULL)
+	{
+	  email := trim ("LEFT" (author, pos));
+	  person :=  subseq (author, pos, length (author));
+	  person := replace (person, '(', '');
+	  person := replace (person, ')', '');
+	}
+    }
 }
 ;
+
+create procedure WV.DBA.DECODE_NNTP_SUBJ (inout str varchar)
+{
+  declare match varchar;
+  declare inx int;
+
+  inx := 50;
+
+  str := replace (str, '\t', '');
+
+  match := regexp_match ('=\\?[^\\?]+\\?[A-Z]\\?[^\\?]+\\?=', str);
+  while (match is not null and inx > 0)
+    {
+      declare enc, ty, dat, tmp, cp, dec any;
+
+      cp := match;
+      tmp := regexp_match ('^=\\?[^\\?]+\\?[A-Z]\\?', match);
+
+      match := substring (match, length (tmp)+1, length (match) - length (tmp) - 2);
+
+      enc := regexp_match ('=\\?[^\\?]+\\?', tmp);
+ 
+      tmp := replace (tmp, enc, '');
+
+      enc := trim (enc, '?=');
+      ty := trim (tmp, '?');
+
+      if (ty = 'B')
+  {
+    dec := decode_base64 (match);
+  }
+      else if (ty = 'Q')
+  {
+    dec := uudecode (match, 12);
+     }
+      else
+  {
+    dec := '';
+  }
+      declare exit handler for sqlstate '2C000'
+  {
+    return;
+  };
+      dec := charset_recode (dec, enc, 'UTF-8');
+
+      str := replace (str, cp, dec);
+
+      --dbg_printf ('encoded=[%s] enc=[%s] type=[%s] decoded=[%s]', match, enc, ty, dec);
+      match := regexp_match ('=\\?[^\\?]+\\?[A-Z]\\?[^\\?]+\\?=', str);
+      inx := inx - 1;
+    }
+};
+
+
+create procedure WV.DBA.NNTP_PROCESS_PARTS (in parts any, inout body varchar, inout amime any, out result any, in any_part int) {
+  declare name1, mime1, name, mime, enc, content, charset varchar;
+  declare i, l, i1, l1, is_allowed int;
+  declare part any;
+
+  if (not isarray (result))
+    result := vector ();
+
+  if (not isarray (parts) or not isarray (parts[0]))
+    return 0;
+  -- test if there is an moblog compliant image
+  part := parts[0];
+--  dbg_obj_print ('part=', part);
+
+  name1 := get_keyword_ucase ('filename', part, '');
+  if (name1 = '')
+    name1 := get_keyword_ucase ('name', part, '');
+
+  mime1 := get_keyword_ucase ('Content-Type', part, '');
+  charset := get_keyword_ucase ('charset', part, '');
+
+  if (mime1 = 'application/octet-stream' and name1 <> '') {
+    mime1 := http_mime_type (name1);
+  }
+
+  is_allowed := 0;
+  i1 := 0;
+  l1 := length (amime);
+  while (i1 < l1) {
+    declare elm any;
+    elm := trim(amime[i1]);
+    if (mime1 like elm) {
+      is_allowed := 1;
+      i1 := l1;
+    }
+    i1 := i1 + 1;
+  }
+
+  declare _cnt_disp any;
+  _cnt_disp := get_keyword_ucase('Content-Disposition', part, '');
+
+  if(is_allowed and (any_part or (name1 <> '' and _cnt_disp in ('attachment', 'inline')))) {
+    name := name1;
+    mime := mime1;
+    enc := get_keyword_ucase ('Content-Transfer-Encoding', part, '');
+    content := subseq (body, parts[1][0], parts[1][1]);
+    if(enc = 'base64') content := decode_base64 (content);
+    result := vector_concat (result, vector (vector (name, mime, content, _cnt_disp, enc, charset)));
+    return 1;
+  }
+  -- process the parts
+  if(not isarray (parts[2]))
+    return 0;
+  i := 0;
+  l := length (parts[2]);
+  while (i < l) {
+    BLOG2_MOBLOG_PROCESS_PARTS (parts[2][i], body, amime, result, any_part);
+    i := i + 1;
+  }
+  return 0;
+}
+;
+
+
+create procedure DB.DBA.oWiki_NEWS_MSG_I
+    (
+    inout N_NM_ID any,
+    inout N_NM_REF any,
+    inout N_NM_READ any,
+    inout N_NM_OWN any,
+    inout N_NM_REC_DATE any,
+    inout N_NM_STAT any,
+    inout N_NM_TRY_POST any,
+    inout N_NM_DELETED any,
+    inout N_NM_HEAD any,
+    inout N_NM_BODY any
+    )
+{
+  declare bid, id, uid any;
+  declare author, name, mail, addr, tree, head, ctype, content, rfc_header, subject, subject1, cset any;
+
+  uid := connection_get ('nntp_uid');
+
+--  dbg_obj_print ('N_NM_REF', N_NM_REF);
+
+  if (N_NM_REF is null and uid is null)
+    signal ('CONVA', 'The post cannot be done via news client, this requires authentication.');
+
+
+  tree := deserialize (N_NM_HEAD);
+  head := tree [0];
+  ctype := get_keyword_ucase ('Content-Type', head, 'text/plain');
+  cset  := upper (get_keyword_ucase ('charset', head));
+  author :=  get_keyword_ucase ('From', head, 'nobody@unknown');
+  subject :=  get_keyword_ucase ('Subject', head);
+
+  WV..SPLIT_MAIL_ADDR (author, name, mail);
+
+  if (subject is not null)
+     WV..DECODE_NNTP_SUBJ (subject);
+
+  --dbg_obj_print (N_NM_BODY);
+
+  if (ctype like 'text/%')
+    {
+      declare st, en int;
+      declare last any;
+
+      st := tree[1][0];
+      en := tree[1][1];
+
+      if (en > st + 5)
+  {
+    last := subseq (N_NM_BODY, en - 4, en);
+    --dbg_printf ('[%0x %0x %0x %0x]', last[0], last[1], last[2], last[3]);
+    if (last = '\r\n.\r')
+      en := en - 4;
+  }
+      content := subseq (N_NM_BODY, st, en);
+      if (cset is not null and cset <> 'UTF-8')
+      {
+       declare exit handler for sqlstate '2C000'
+       {
+         goto next1;
+       };
+       content := charset_recode (content, cset, 'UTF-8');
+      }
+      
+      next1:;
+      if (ctype = 'text/plain')
+          content := '<pre>' || content || '</pre>';
+     }
+     else if (ctype like 'multipart/%')
+     {
+      declare res, best_cnt any;
+      --dbg_obj_print ('start parse');
+      declare exit handler for sqlstate '*'
+      {
+        signal ('CONVX', __SQL_MESSAGE);
+      };
+      BLOG2_MOBLOG_PROCESS_PARTS(tree, N_NM_BODY, vector ('text/%'), res, 1);
+
+      best_cnt := null;
+      content := null;
+      foreach (any elm in res) do
+      {
+        if (elm[1] = 'text/html' and (content is null or best_cnt = 'text/plain'))
+        {
+              --dbg_obj_print (elm[3], elm[4], elm[5]);
+              best_cnt := 'text/html';
+              content := elm[2];
+          if (elm[4] = 'quoted-printable')
+          {
+            content := uudecode (content, 12);
+          }
+          else if (elm[4] = 'base64')
+          {
+            content := decode_base64 (content);
+          }
+              cset := elm[5];
+        }
+        else if (best_cnt is null and elm[1] = 'text/plain')
+        {
+            content := elm[2];
+            best_cnt := 'text/plain';
+            cset := elm[5];
+        }
+        --dbg_obj_print (elm[1]);
+--        if (elm[1] not like 'text/%')
+--          signal ('CONVX', sprintf ('The post contains parts of type [%s] which is prohibited.', elm[1]));
+      }
+  
+      if (length (cset) and cset <> 'UTF-8')
+      {
+       declare exit handler for sqlstate '2C000'
+       {
+         goto next2;
+       };
+       content := charset_recode (content, cset, 'UTF-8');
+      }
+      next2:;
+      --dbg_obj_print ('end parse', content);
+   }
+    else
+       signal ('CONVX', sprintf ('The content type [%s] is not supported', ctype));
+
+
+  -- !!! check subject !!!
+
+  if (N_NM_REF is not null) -- comments
+  {
+      declare refs  any;
+      refs := split_and_decode (N_NM_REF, 0, '\0\0 ');
+
+      if (length (refs))
+          N_NM_REF := refs[0];
+
+      if (subject is null)
+          subject := 'Re: ';
+
+
+
+     declare _topic_id int;
+
+     {
+       declare exit handler for not found
+       {
+         signal ('CONV1', 'No such article.');
+       };
+       select TopicId into _topic_id from WV.WIKI.TOPIC where T_RFC_ID = N_NM_REF;  
+     }
+
+      
+       declare exit handler for sqlstate '*'
+       {
+         signal ('CONV1', __SQL_MESSAGE);
+       };
+      insert into WV.WIKI.COMMENT (C_TOPIC_ID, C_AUTHOR, C_EMAIL, C_TEXT, C_DATE, C_RFC_ID,C_SUBJECT, C_REFS)
+                                   values (_topic_id, name, mail, content, now(), N_NM_ID,subject, N_NM_REF);
+
+  }
+  else -- post,  user is authorized
+    {
+     signal ('CONV1', 'The authenticated user have no permissions to create content in this group.');
+    }
+};
 
 create procedure DB.DBA.oWiki_NEWS_MSG_U  
    (
