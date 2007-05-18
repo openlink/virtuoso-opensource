@@ -92,7 +92,6 @@
    <td width="<?Vcast(firstcolumn_wide as varchar)||'%'?>" valign="top">
       <table border="0" width="100%" height="100%" class="settings">
       <?vsp
-        
         declare i int;
         declare q_str, rc, dta, h any;
 

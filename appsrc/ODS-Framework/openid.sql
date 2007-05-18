@@ -219,7 +219,7 @@ create procedure checkid_immediate
         gender := null;
 
       if (length (country))
-        country := (select WC_CODE from DB.DBA.WA_COUNTRY where WC_NAME = country);
+        country := (select WC_ISO_CODE from DB.DBA.WA_COUNTRY where WC_NAME = country);
 
       svec := vector (
       			'nickname', nickname,
@@ -393,7 +393,7 @@ create procedure check_authentication
     gender := null;
 
   if (length (country))
-    country := (select WC_CODE from DB.DBA.WA_COUNTRY where WC_NAME = country);
+    country := (select WC_ISO_CODE from DB.DBA.WA_COUNTRY where WC_NAME = country);
 
   svec := vector (
 		    'sreg.nickname', nickname,

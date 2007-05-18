@@ -2,6 +2,8 @@ create procedure DB.DBA.URL_REW_ODS_ACCEPT ()
 {
   declare accept, ret any;
   accept := http_request_header (http_request_header (), 'Accept');
+  if (not isstring (accept))
+    return null;
   ret := null;
   if (regexp_match ('(application|text)/rdf.(xml|n3|turtle|ttl)', accept) is not null)
     {

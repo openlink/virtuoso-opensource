@@ -39,11 +39,24 @@
       <v:variable name="reg_number" type="varchar" default="null" persist="0" />
       <v:variable name="reg_number_img" type="varchar" default="null" persist="temp" />
       <v:variable name="reg_number_txt" type="varchar" default="null" persist="0" />
+
+      <v:variable name="oid_assoc_handle" type="varchar" default="null" param-name="openid.assoc_handle" />
+      <v:variable name="oid_identity" type="varchar" default="''" param-name="openid.identity" />
+      <v:variable name="oid_mode" type="varchar" default="null" param-name="openid.mode" />
+      <v:variable name="oid_sig" type="varchar" default="null" param-name="openid.sig" />
+      <v:variable name="oid_email" type="varchar" default="''" param-name="openid.sreg.email" />
+      <v:variable name="oid_fullname" type="varchar" default="''" param-name="openid.sreg.fullname" />
+      <v:variable name="oid_nickname" type="varchar" default="''" param-name="openid.sreg.nickname" />
+      <v:variable name="oid_dob" type="varchar" default="''" param-name="openid.sreg.dob" />
+      <v:variable name="oid_gender" type="varchar" default="''" param-name="openid.sreg.gender" />
+      <v:variable name="oid_postcode" type="varchar" default="''" param-name="openid.sreg.postcode" />
+      <v:variable name="oid_country" type="varchar" default="''" param-name="openid.sreg.country" />
+      <v:variable name="oid_tz" type="varchar" default="''" param-name="openid.sreg.timezone" />
     <div>
       <v:label name="regl1" value="--''" />
     </div>
     <v:form name="regf1" method="POST" type="simple">
-	<v:on-init>
+	<v:on-init><![CDATA[
 
 	 self.reg_tip := coalesce ((select top 1 WS_VERIFY_TIP from WA_SETTINGS), 0);
          if (__proc_exists ('IM AnnotateImageBlob', 2) is not null)
@@ -83,7 +96,30 @@
 		  self.reg_number := cast (res as varchar);
 	      }
 	  }
-	</v:on-init>
+
+	  -- OpenID
+	  if (self.oid_mode is not null and self.oid_sig is null)
+	    {
+	      self.vc_is_valid := 0;
+	      self.vc_error_message := 'Verification failed.';
+	    }
+          if (self.oid_mode = 'id_res' and self.oid_sig is not null)
+	    {
+	      declare cnt, pref, ix int;
+	      ix := 1;
+	      pref := self.oid_nickname;
+try_next:
+
+	      cnt := (select count(*) from DB.DBA.SYS_USERS where U_NAME = self.oid_nickname);
+	      if (cnt > 0)
+                {
+		  self.oid_nickname := pref || cast (ix as varchar);
+		  ix := ix + 1;
+		  goto try_next;
+	        }
+	    }
+
+	  ]]></v:on-init>
     <v:template name="registration_na"  type="simple" enabled="--(1-coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0))">
      <div style="padding: 20px 20px 20px 35px;">
       This service is currently not accepting new registrations without invitation.
@@ -121,9 +157,64 @@
           ]]>
         </script>
         <tr>
+	    <th><label for="reguid">Register using OpenID</label></th>
+	    <td>
+		<img src="images/login-bg.gif" alt="openID"/>
+		<v:form method="POST" name="openid_frm" type="simple">
+		    <v:text  xhtml_id="openid_url" name="openid_url" value="" xhtml_size="70"
+			default_value="--self.oid_identity"/>
+		    <v:button action="simple" name="openid_bt" value="Authenticate">
+			<v:on-post><![CDATA[
+declare hdr, xt any;
+declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate varchar;
+
+host := http_request_header (e.ve_lines, 'Host');
+
+this_page := 'http://' || host || http_path ();
+trust_root := 'http://' || host;
+
+
+url := self.openid_url.ufl_value;
+oi_ident := url;
+again:
+hdr := null;
+cnt := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>hdr);
+if (hdr [0] like 'HTTP/1._ 30_ %')
+  {
+    declare loc any;
+    loc := http_request_header (hdr, 'Location', null, null);
+    url := WS.WS.EXPAND_URL (url, loc);
+    oi_ident := url;
+    goto again;
+  }
+xt := xtree_doc (cnt, 2);
+oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
+oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+
+if (oi_srv is null)
+  signal ('22023', 'Cannot locate OpenID server');
+
+if (oi_delegate is not null)
+  oi_ident := oi_delegate;
+
+check_immediate :=
+sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U',
+        oi_srv, oi_ident, this_page, trust_root);
+check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U',
+	'email,fullname,nickname,dob,gender,postcode,country,timezone');
+
+self.vc_redirect (check_immediate);
+			    ]]></v:on-post>
+		    </v:button><!--br/>
+		    <v:check-box name="use_oid" xhtml_id="use_oid" value="1" /><label for="use_oid">I want to use my OpenID URL to login</label-->
+		</v:form>
+	    </td>
+	</tr>
+        <tr>
           <th><label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-	    <v:text error-glyph="?" xhtml_tabindex="1" xhtml_id="reguid" name="reguid" value="--get_keyword('reguid', params)">
+	      <v:text error-glyph="?" xhtml_tabindex="1" xhtml_id="reguid" name="reguid" value="--get_keyword('reguid', params)"
+		  default_value="--self.oid_nickname">
 	      <v:validator test="length" min="1" max="20" message="Login name cannot be empty or longer then 20 chars" name="vv_reguid1"/>
 	      <v:validator test="sql" expression="length(trim(self.reguid.ufl_value)) < 1 or length(trim(self.reguid.ufl_value)) > 20" name="vv_reguid2"
 		message="Login name cannot be empty or longer then 20 chars" />
@@ -149,7 +240,8 @@
         <tr>
           <th><label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" name="regmail" value="--get_keyword ('regmail', params)">
+	      <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" name="regmail" value="--get_keyword ('regmail', params)"
+		    default_value="--self.oid_email">
               <v:validator name="vv_regmail1" test="length" min="1" max="40" message="E-mail address cannot be empty or longer then 40 chars"/>
               <v:validator name="vv_regmail2" test="regexp" regexp="[^@ ]+@([^\. ]+\.)+[^\. ]+" message="Invalid E-mail address" />
             </v:text>
@@ -300,6 +392,22 @@
 	 WA_USER_TEXT_SET(uid, u_name1||' '||self.regmail.ufl_value);
 	 wa_reg_register (uid, u_name1);
 
+	 if (self.oid_sig is not null)
+	   {
+              if (length (self.oid_dob))
+	        WA_USER_EDIT (u_name1, 'WAUI_BIRTHDAY', self.oid_dob);
+              if (length (self.oid_fullname))
+	        WA_USER_EDIT (u_name1, 'WAUI_FULL_NAME', self.oid_fullname);
+	      if (length (self.oid_gender))
+	        WA_USER_EDIT (u_name1, 'WAUI_GENDER', case self.oid_gender when 'M' then 'male' when 'F' then 'female' else NULL end);
+              if (length (self.oid_postcode))
+	        WA_USER_EDIT (u_name1, 'WAUI_HCODE', self.oid_postcode);
+              if (length (self.oid_country))
+	        WA_USER_EDIT (u_name1, 'WAUI_HCOUNTRY', (select WC_NAME from WA_COUNTRY where WC_ISO_CODE = upper (self.oid_country)));
+              if (length (self.oid_tz))
+	        WA_USER_EDIT (u_name1, 'WAUI_HTZONE', self.oid_tz);
+	   }
+	 else
 	 {
 	   declare coords any;
 	   declare exit handler for sqlstate '*';
