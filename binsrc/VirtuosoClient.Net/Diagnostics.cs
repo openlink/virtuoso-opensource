@@ -92,8 +92,8 @@ namespace OpenLink.Data.Virtuoso
 			return errors;
 		}
 
+#if UNMANAGED_ODBC
 		// deprecated
-#if false
 		internal static void HandleResult (
 			CLI.ReturnCode returnCode,
 			CLI.HandleType handleType,

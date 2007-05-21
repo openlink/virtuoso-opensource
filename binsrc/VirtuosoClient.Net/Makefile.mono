@@ -2,15 +2,10 @@
 # $Id$
 #
 
-CSC=mcs
+ADONETVERSION=ADONET2
+#ADONETVERSION=ADONET1
 
-#CSFLAGS=-debug+ /d:MONO /d:DEBUG /d:DEBUG_IO
-CSFLAGS=/optimize+ /d:MONO
-
-# Set this if using MONO 1.2.3.1
-#CSFLAGS += /d:MONO1231
-
-SOURCES	= \
+SOURCES1= \
 	ArrayOfLongPacked.cs \
 	AssemblyInfo.cs \
 	BlobHandle.cs \
@@ -39,6 +34,7 @@ SOURCES	= \
 	ManagedErrors.cs \
 	Marshaler.cs \
 	MD5.cs \
+	MemoryHandle.cs \
 	Platform.cs \
 	RPC.cs \
 	Service.cs \
@@ -64,31 +60,64 @@ SOURCES	= \
 	VirtuosoWarning.cs \
 	Win32.cs
 
+SOURCES2= \
+	VirtuosoClientFactory.cs \
+	VirtuosoCodeAccessPermission.cs \
+	VirtuosoConnectionStringBuilder.cs
+
 ODBC_SOURCES = \
-	MemoryHandle.cs \
-	ParameterData.cs \
 	StatementList.cs \
 	OdbcCommand.cs \
 	OdbcConnection.cs \
 	OdbcErrors.cs \
+	ParameterData.cs
 
+RESOURCES= \
+	/resource:OpenLink.Data.VirtuosoClient.VirtuosoConnection.bmp \
+	/resource:OpenLink.Data.VirtuosoClient.VirtuosoCommand.bmp \
+	/resource:OpenLink.Data.VirtuosoClient.VirtuosoDataAdapter.bmp
+
+
+
+ifeq  (ADONET2, $(ADONETVERSION))
+
+CSC		= gmcs
+
+#CSFLAGS	= -debug+ /d:MONO /d:DEBUG /d:DEBUG_IO /d:ADONET2
+CSFLAGS		= /optimize+ /d:MONO /d:ADONET2
+
+# Set this if using MONO 1.2.3.1
+CSFLAGS 	+= /d:MONO1231
+
+
+
+SOURCES		= $(SOURCES1) $(SOURCES2)
+REFERENCES	= /r:System.Data /r:System.EnterpriseServices /r:System.Drawing
+
+else
+
+CSC		= mcs
+
+#CSFLAGS	= -debug+ /d:MONO /d:DEBUG /d:DEBUG_IO
+CSFLAGS		= /optimize+ /d:MONO
+
+SOURCES		= $(SOURCES1)
 REFERENCES	= /r:System.Data /r:System.EnterpriseServices
 
-RESOURCES=
-# /resource:OpenLink.Data.VirtuosoClient.VirtuosoConnection.bmp\
-# /resource:OpenLink.Data.VirtuosoClient.VirtuosoCommand.bmp\
-# /resource:OpenLink.Data.VirtuosoClient.VirtuosoDataAdapter.bmp
+endif
 
-all: OpenLink.Data.Virtuoso.dll #OpenLink.Data.VirtuosoClient.dll OpenLink.Data.VirtuosoOdbcClient.dll
 
-OpenLink.Data.Virtuoso.dll: $(SOURCES)
+
+all: OpenLink.Data.Virtuoso.dll OpenLink.Data.VirtuosoClient.dll OpenLink.Data.VirtuosoOdbcClient.dll
+
+OpenLink.Data.Virtuoso.dll: $(SOURCES) 
 	$(CSC) /unsafe /target:library /out:$@ $(CSFLAGS) $(SOURCES) $(REFERENCES) $(RESOURCES)
 
 OpenLink.Data.VirtuosoClient.dll: $(SOURCES) $(ODBC_SOURCES)
-	$(CSC) /unsafe /target:library /out:$@ /define:CLIENT /define:UNMANAGED_ODBC $(CSFLAGS) $(SOURCES) $(ODBC_SOURCES) $(REFERENCES) $(RESOURCES)
+	$(CSC) /unsafe /target:library /out:$@ /d:CLIENT /d:UNMANAGED_ODBC $(CSFLAGS) $(SOURCES) $(ODBC_SOURCES) $(REFERENCES) $(RESOURCES)
 
-OpenLink.Data.VirtuosoOdbcClient.dll: $(SOURCES) 
-	$(CSC) /unsafe /target:library /out:$@ /define:ODBC_CLIENT /define:UNMANAGED_ODBC $(CSFLAGS) $(SOURCES) $(ODBC_SOURCES) $(REFERENCES) $(RESOURCES)
+OpenLink.Data.VirtuosoOdbcClient.dll: $(SOURCES) $(ODBC_SOURCES)
+	$(CSC) /unsafe /target:library /out:$@ /d:ODBC_CLIENT /d:UNMANAGED_ODBC $(CSFLAGS) $(SOURCES) $(ODBC_SOURCES) $(REFERENCES) $(RESOURCES)
 
 
 clean:
