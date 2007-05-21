@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *  Copyright (C) 2005-2007 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -13,7 +13,7 @@ OAT.Preferences = {
 	windowTypeOverride:0, /* do not guess window type */
 	xsltPath:"/DAV/JS/xslt/",
 	imagePath:"/DAV/JS/images/",
-	version:"15.5.2007",
+	version:"18.5.2007",
 	httpError:1, /* show http errors */
 	allowDefaultResize:1,
 	allowDefaultDrag:1

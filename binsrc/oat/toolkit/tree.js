@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *  Copyright (C) 2005-2007 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -181,6 +181,13 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		self.updateStyle();
 	}
 	
+	this.firstSync = function(depth) {
+		self.depth = depth;
+		self.addDecorations();
+		self.addEvents();
+		self.updateStyle();
+	}
+	
 	this.sync = function(depth) {
 		self.removeEvents();
 		self.removeDecorations();
@@ -345,14 +352,14 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		if (self.options.poorMode) { return; }
 		
 		var sign = OAT.Dom.create("img",{width:self.options.size+"px",height:self.options.size+"px",verticalAlign:"middle"});
-		var icon = OAT.Dom.create("img",{width:self.options.size+"px",height:self.options.size+"px",verticalAlign:"middle"});
-		icon.style.marginRight = "2px";
 
 		self._div.insertBefore(sign,self._gdElm);
 		
 		if (self.options.checkboxMode) {
-			icon = false;
+			var icon = false;
 		} else {	
+			var icon = OAT.Dom.create("img",{width:self.options.size+"px",height:self.options.size+"px",verticalAlign:"middle"});
+			icon.style.marginRight = "2px";
 			self._gdElm.insertBefore(icon,self._label);
 		}
 		self._sign = sign;
@@ -644,8 +651,7 @@ OAT.Tree = function(optObj) {
 				self.tree.children.push(child); 
 			}
 		}
-		
-		self.walk("sync");
+		self.walk("firstSync");
 		if (collapse) { self.walk("collapse"); }
 	}
 	
@@ -669,6 +675,5 @@ OAT.Tree = function(optObj) {
 		}
 		return obj;
 	}
-	
 }
 OAT.Loader.featureLoaded("tree");

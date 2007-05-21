@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *  Copyright (C) 2005-2007 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -149,10 +149,10 @@ OAT.LoaderTMP = { /* second part of loader */
 				return;
 			}	
 			
-			if (typeof(window._init) == "function" && typeof(document.body.getAttribute("onload")) == "object") { window._init(); } /* if _init is specified, execute */
+			if (typeof(window._init) == "function") { window._init(); } /* if _init is specified, execute */
 			if (OAT.Declarative) { OAT.Declarative.execute(); } /* declarative markup */
 			OAT.MSG.send(OAT,OAT.MSG.OAT_LOAD,{});
-			if (typeof(window.init) == "function" && typeof(document.body.getAttribute("onload")) == "object") { window.init(); } /* pass control to userspace */
+			if (typeof(window.init) == "function") { window.init(); } /* pass control to userspace */
 		}
 		if (OAT.Loader.loadedLibs.find("window") != -1) { /* include default window */
 			var obj = {

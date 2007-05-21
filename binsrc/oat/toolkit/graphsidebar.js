@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *  Copyright (C) 2005-2007 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -272,8 +272,8 @@ OAT.GraphSidebar = function(graph) {
 	}
 	
 	this.createResources = function() { /* create Resources & Classes filtertrees */
-		var topul_r = OAT.Dom.create("ul",{width:"1000px"});
-		var topul_c = OAT.Dom.create("ul",{width:"1000px"});
+		var topul_r = OAT.Dom.create("ul");
+		var topul_c = OAT.Dom.create("ul");
 		var topli_r = OAT.Dom.create("li");
 		var topli_c = OAT.Dom.create("li");
 		var vertexheader_r = OAT.Dom.create("strong");
@@ -346,9 +346,8 @@ OAT.GraphSidebar = function(graph) {
 		t.assign(topul_c,true);
 	}
 	
-
 	this.createPredicates = function() { /* create Predicates filtertree */
-		var topul = OAT.Dom.create("ul",{width:"1000px"});
+		var topul = OAT.Dom.create("ul");
 		var topli = OAT.Dom.create("li");
 		topul.appendChild(topli);
 		var edgeheader = OAT.Dom.create("strong");
@@ -377,7 +376,9 @@ OAT.GraphSidebar = function(graph) {
 	}
 
 	this.create = function(button) {
-		self.div = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",height:"100%",overflow:"auto"},"rdf_sidebar");
+		self.div = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"2px",width:"300px",height:"100%",overflow:"auto"},"rdf_sidebar");
+		self.div.style.backgroundColor = "#fff";
+		OAT.Style.opacity(self.div,0.8);
 		self.button = button;
 		self.createResources();
 		self.createPredicates();

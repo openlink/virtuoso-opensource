@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software AJAX Toolkit (OAT) project.
  *
- *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *  Copyright (C) 2005-2007 OpenLink Software
  *
  *  See LICENSE file for details.
  */

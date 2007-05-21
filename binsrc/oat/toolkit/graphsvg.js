@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *  Copyright (C) 2005-2007 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -41,6 +41,7 @@ OAT.GraphSVGData = {
 		function apply(n,recurse) {
 			n.x += dx;
 			n.y += dy;
+			n.needsRedraw = true;
 			if (recurse && n.children && n.children.length) {
 				for (var i=0;i<n.children.length;i++) { apply(n.children[i],true); }
 			}
@@ -49,12 +50,18 @@ OAT.GraphSVGData = {
 			var r = event.ctrlKey;
 			apply(OAT.GraphSVGData.node,r); 
 		} else {
-			for (var i=0;i<g.data.length;i++) {
+			if (g.options.projection) {
+				for (var i=0;i<g.data.length;i++) { /* shift all nodes */
 				var node = g.data[i];
 				apply(node,false);
 			}
+			} else { /* shift canvas */
+				g.transform.x += dx;
+				g.transform.y += dy;
+				g.applyTransform();
 		}
-		g.drawUpdate();
+		}
+		g.drawUpdate(false); /* only changed nodes */
 		OAT.GraphSVGData.mouse_x = event.clientX;
 		OAT.GraphSVGData.mouse_y = event.clientY;
 	},
@@ -112,17 +119,25 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		labels:0, /* 0 - only element, 1-4 - distance */
 		show:0, /* 0 - all, 1-4 - distance */
 		disabledSelects:[],
-		sidebarShown:false
+		sidebarShown:false,
+		sidebar:true
 	};
 	this.svgLabels = [];
 	this.selectedNode = false;
-	this.infoWindow = OAT.Dom.create("div",{position:"absolute",border:"1px solid #000",display:"none",backgroundColor:"#ff3",padding:"2px"});
-	document.body.appendChild(this.infoWindow);
 	
 	for (var p in optObj) { this.options[p] = optObj[p]; }
 	this.vertices = vertices;
 	this.edges = edges;
-	this.sidebar = new OAT.GraphSidebar(this);
+	if (self.options.sidebar) { this.sidebar = new OAT.GraphSidebar(this); }
+	this.transform = {
+		x:0,
+		y:0,
+		scale:1
+	}
+	this.applyTransform = function() {
+		var s = 'translate('+self.transform.x+','+self.transform.y+') scale('+self.transform.scale+')';
+		self.svg.setAttribute('transform', s);
+	}
 	
 	this.computeVisibility = function() { /* find out which objects are hidden */
 		/* compute node.visible.box property */
@@ -134,6 +149,15 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		var R = r * Math.PI / 2;
 		var cx = w/2;
 		var cy = h/2;
+		var x1 = p - self.transform.x;
+		var y1 = p - self.transform.y;
+		var x2 = x1 + w;
+		var y2 = y1 + h;
+		x1 /= self.transform.scale;
+		y1 /= self.transform.scale;
+		x2 /= self.transform.scale;
+		y2 /= self.transform.scale;
+		
 		var v = self.options.show;
 		var len = self.data.length;
 		for (var i=0;i<len;i++) { 
@@ -142,7 +166,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			node.visible.box = 0; 
 			switch (self.options.projection) {
 				case 0: /* planar */
-					if (node.x >= p && node.x <= w-p && node.y >= p && node.y <= h-p) { node.visible.box = 1; }
+					if (node.x >= x1 && node.x <= x2 && node.y >= y1 && node.y <= y2) { node.visible.box = 1; }
 					node.draw_x = node.x;
 					node.draw_y = node.y;
 				break;
@@ -159,7 +183,9 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 					node.draw_y = cy + dy * coef;
 				break;
 			} /* switch */
-			node.visible.total = node.visible.box && node.visible.user && node.visible.sidebar1 && node.visible.sidebar2 && node.visible.sidebar3;
+			var total = node.visible.box && node.visible.user && node.visible.sidebar1 && node.visible.sidebar2 && node.visible.sidebar3;
+			if (total != node.visible.total) { node.needsRedraw = true; }
+			node.visible.total = total;
 		} /* for all nodes */
 	}
 	
@@ -284,7 +310,6 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		} /* mode */
 	} /* compute vertices */
 	
-	/* compute own structure */
 	this.compute = function() { /* convert user data to our own megastructure */
 		self.data = [];
 		for (var i=0;i<self.vertices.length;i++) {
@@ -297,10 +322,11 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 				outEdges:[],
 				inCount:0,
 				outCount:0,
+				needsRedraw:false,
 				x:0,
 				y:0,
 				type:v.type, /* reference */
-				visible:{box:0,user:0,sidebar1:1,sidebar2:1,sidebar3:1},
+				visible:{box:0,user:0,sidebar1:1,sidebar2:1,sidebar3:1,total:1},
 				svg:false, /* element */
 				radius:self.options.vertexSize
 			}
@@ -320,7 +346,14 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			if (!o1 || !o2) { alert('Inconsistent input data!'); }
 			o1.outCount++;
 			o2.inCount++;
-			var edge = {name:e.name,vertex1:o1,vertex2:o2,svg:false,distance:-1,visible:{sidebar1:1,sidebar2:1,sidebar3:1}};
+			var edge = {
+				name:e.name,
+				vertex1:o1,
+				vertex2:o2,
+				svg:false,
+				distance:-1,
+				visible:{sidebar1:1,sidebar2:1,sidebar3:1,total:1}
+			};
 			o1.outEdges.push(edge);
 			o2.inEdges.push(edge);
 		}
@@ -345,7 +378,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		} /* if computed radii */
 	} /* compute */
 	
-	this.computeDistance = function(centerNode) { /* compute node.distance property */
+	this.computeDistance = function(centerNode) { /* compute node.distance (from centerNode) property */
 		/* reset */
 		for (var i=0;i<self.data.length;i++) {
 			var n = self.data[i];
@@ -384,7 +417,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		self.drawUpdate();
 	}
 	
-	this.createSVG = function() {
+	this.createSVG = function() { /* create elements */
 		/* mousedown handler */
 		function assign(node,index) {
 			OAT.Dom.attach(node.svg,"mousedown",function(event){
@@ -415,7 +448,10 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			node.svg = c;
 			var label = OAT.SVG.element("text",{"text-anchor":"middle"});
 			label.textContent = node.name;
-			node.label = label;
+			node.label = {
+				svg:label,
+				visible:0
+			}
 			assign(node,i);
 			self.assignLabelEvents(node,0);
 		}
@@ -437,19 +473,42 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 				e.svg = l;
 				var label = OAT.SVG.element("text",{"text-anchor":"middle"});
 				label.textContent = e.name;
-				e.label = label;
+				e.label = {
+					svg:label,
+					visible:0
+				}
 				self.assignLabelEvents(e,1);
 			} /* all outEdges */
 		} /* all nodes */
 	} /* createSVG */
 	
-	this.selectChange = function(whatToDo) {
+	this.selectChange = function(whatToDo) { /* one of selectboxes changed */
 		if (self.selects.type) { self.options.type = parseInt(self.selects.type.value); }
 		if (self.selects.placement) { self.options.placement = parseInt(self.selects.placement.value); }
 		if (self.selects.distance) { self.options.distance = parseInt(self.selects.distance.value); }
 		if (self.selects.projection) { self.options.projection = parseInt(self.selects.projection.value); }
-		if (self.selects.labels) { self.options.labels = parseInt(self.selects.labels.value); }
 		if (self.selects.show) { self.options.show = parseInt(self.selects.show.value); }
+		if (self.selects.labels) { 
+			var nv = parseInt(self.selects.labels.value);
+			var ov = self.options.labels;
+			if (nv == -1 && ov != -1) { /* show all */
+				for (var i=0;i<self.data.length;i++) { 
+					var n = self.data[i];
+					n.label.visible = true;
+					for (var j=0;j<n.outEdges.length;j++) { n.outEdges[j].label.visible = true; }
+				}
+				self.drawLabels(true);
+			}
+			if (ov == -1 && nv != -1) { /* hide all */
+				for (var i=0;i<self.data.length;i++) { 
+					var n = self.data[i];
+					n.label.visible = false;
+					for (var j=0;j<n.outEdges.length;j++) { n.outEdges[j].label.visible = false; }
+				}
+				self.drawLabels(true);
+			}
+			self.options.labels = nv; 
+		}
 		switch (whatToDo) {
 			case 0: return;
 			case 1: self.drawUpdate(); return;
@@ -469,6 +528,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		self.control = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"-20px"});
 		self.div.appendChild(self.control);
 		
+		if (self.options.sidebar) {
 		var st = OAT.Dom.create("input");
 		st.type = "button";
 		self.control.appendChild(st);
@@ -476,6 +536,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		self.options.sidebarShown = !self.options.sidebarShown;
 		self.sidebar.create(st);
 		self.sidebar.toggle();
+		}
 		
 		var ds = self.options.disabledSelects;
 		for (var i=0;i<ds.length;i++) {
@@ -535,7 +596,8 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			OAT.Dom.option("Up to distance 2","2",s);
 			OAT.Dom.option("Up to distance 3","3",s);
 			OAT.Dom.option("Up to distance 4","4",s);
-			OAT.Dom.attach(s,"change",function(){self.selectChange(0)});
+			OAT.Dom.option("Labels on all elements","-1",s);
+			OAT.Dom.attach(s,"change",function(){self.selectChange(1)});
 			self.control.appendChild(s);
 			s.selectedIndex = self.options.labels;
 		}
@@ -554,21 +616,23 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		}
 		/* create SVG elements */
 		self.createSVG();
-		self.div.appendChild(self.sidebar.div);
+		if (self.options.sidebar) { self.div.appendChild(self.sidebar.div); }
 	}
 
-	this.callMouseover = function(obj,type) {
+	this.callMouseover = function(obj,type) { /* called when mouse hover over node/edge */
+		if (self.options.labels == -1) { return; }
 		/* remove all displayed labels */
-		for (var i=0;i<self.svgLabels.length;i++) {
-			OAT.Dom.unlink(self.svgLabels[i]);
+		for (var i=0;i<self.data.length;i++) {
+			var n = self.data[i];
+			n.label.visible = false;
+			for (var j=0;j<n.outEdges.length;j++) {
+				var e = n.outEdges[j];
+				e.label.visible = false;
+			}
 		}
-		self.svgLabels = [];
 		/* recursively show labels */
 		function process(obj,t,depth){ 
-			if (!obj.label.parentNode && obj.visible.sidebar1 && obj.visible.sidebar2 && obj.visible.sidebar3) {
-				self.svg.appendChild(obj.label);
-				self.svgLabels.push(obj.label);
-			} /* only if not yet present */
+			obj.label.visible = true;
 			if (depth < self.options.labels) {
 				/* recurse */
 				var next = [];
@@ -586,7 +650,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			} /* if recurse */
 		} /* recursive function */
 		process(obj,type,0);
-		self.drawLabels();
+		self.drawLabels(true);
 	} /* mouseover */
 	
 	this.assignLabelEvents = function(obj,type) { /* hook events for displaying of labels */
@@ -595,10 +659,12 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		});
 	}
 	
-	this.drawVertices = function() { /* DRAW VERTICES phase */
+	this.drawVertices = function(total) { /* DRAW VERTICES phase */
 		var len = self.data.length;
-		for (var i=0;i<len;i++) if (self.data[i].visible.total) {
+		for (var i=0;i<len;i++) {
 			var node = self.data[i];
+			if (!total && !node.needsRedraw) { continue; }
+			if (self.data[i].visible.total) {
 			if (!node.svg.parentNode) { self.svg.appendChild(node.svg); }
 			switch (node.type) {
 				case 0:
@@ -621,17 +687,13 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		/* if not visible and still present, unlink svg element */
 		} else if (self.data[i].svg.parentNode) { OAT.Dom.unlink(self.data[i].svg);	}
 	}
+	}
 
-	this.drawEdges = function(startNode) { /* DRAW EDGES phase */
-		var len1 = self.data.length;
-		for (var i=0;i<len1;i++) {
-			var node1 = self.data[i];
-			var len2 = node1.outEdges.length;
-			for (var j=0;j<len2;j++) {
-				var e = node1.outEdges[j];
+	this.drawEdges = function(total) { /* DRAW EDGES phase */
+		function drawEdge(e,n1,n2) { /* sub - draw one edge */
+			e.visible.total = (node1.visible.total || node2.visible.total) && e.visible.sidebar1 && e.visible.sidebar2 && e.visible.sidebar3;
+			if (e.visible.total) {
 				if (!e.svg.parentNode) { self.svg.appendChild(e.svg); }
-				var node2 = node1.outEdges[j].vertex2;
-				if ((node1.visible.total || node2.visible.total) && e.visible.sidebar1 && e.visible.sidebar2 && e.visible.sidebar3) {
 					var dx = node2.draw_x - node1.draw_x;
 					var dy = node2.draw_y - node1.draw_y;
 					var a = Math.atan2(dy,dx);
@@ -641,8 +703,6 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 					var y1 = node1.draw_y + p1 * Math.sin(a);
 					var x2 = node2.draw_x - p2 * Math.cos(a);
 					var y2 = node2.draw_y - p2 * Math.sin(a);
-					
-					if (x1 == e.x1 && x2 == e.x2 && y1 == e.y1 && y2 == e.y2 && e.n1vis == node1.visible.total && e.n2vis == node2.visible.total) { continue; }
 					e.x1 = x1;
 					e.x2 = x2;
 					e.y1 = y1;
@@ -665,11 +725,21 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 					}
 				/* if not visible and still present, unlink svg element */
 				} else if (e.svg.parentNode) { OAT.Dom.unlink(e.svg); }
+		}
+	
+		var len1 = self.data.length;
+		for (var i=0;i<len1;i++) {
+			var node1 = self.data[i];
+			var len2 = node1.outEdges.length;
+			for (var j=0;j<len2;j++) {
+				var e = node1.outEdges[j];
+				var node2 = node1.outEdges[j].vertex2;
+				if (node1.needsRedraw || node2.needsRedraw || total) { drawEdge(e,node1,node2); }
 			} /* all out edges */
 		} /* all nodes */
 	} /* drawEdges */
 	
-	this.drawLabels = function() {
+	this.drawLabels = function(total) { /* DRAW LABELS phase */
 		function drawSub(obj,type) {
 			var x,y;
 			switch (type) {
@@ -682,20 +752,32 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 					y = (obj.y2+obj.y1)/2;
 				break;
 			} /* switch */
-			obj.label.setAttribute("x",x);
-			obj.label.setAttribute("y",y);
+			var s = obj.label.svg;
+			s.setAttribute("x",x);
+			s.setAttribute("y",y);
+			if (!s.parentNode) { self.svg.appendChild(s); }
+		}
+		function removeSub(obj) {
+			var s = obj.label.svg;
+			if (s.parentNode) { OAT.Dom.unlink(s) ;}
 		}
 		var len = self.data.length;
 		for (var i=0;i<len;i++) {
 			var n = self.data[i];
-			if (n.label.parentNode) { drawSub(n,0); }
+			if (total || n.needsRedraw) {
+				if (n.label.visible && n.visible.total) { drawSub(n,0); } else { removeSub(n); }
+			}
 			var len2 = n.outEdges.length;
-			for (var j=0;j<len2;j++) if (n.outEdges[j].label.parentNode) { drawSub(n.outEdges[j],1); }
+			for (var j=0;j<len2;j++) {
+				var e = n.outEdges[j];
+				if (total || e.vertex1.needsRedraw || e.vertex2.needsRedraw) {
+					if (e.label.visible && e.visible.total) { drawSub(e,1); } else { removeSub(e); }
 		}
 	}
+		} /* for all data */
+	}
 	
-	
-	this.drawUpdate = function() { /* redraw during dragging */
+	this.drawUpdate = function(total) { /* redraw during dragging */
 		self.computeVisibility();
 		self.svgc.suspendRedraw(0);
 		
@@ -710,16 +792,22 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		}
 		
 		/* draw appropriate edges */
-		self.drawEdges();
+		self.drawEdges(total);
 		/* draw appropriate vertices */
-		self.drawVertices();
+		self.drawVertices(total);
 		/* draw appropriate labels */
-		self.drawLabels();
+		self.drawLabels(total);
 		self.svgc.unsuspendRedraw(0);
+		
+		for (var i=0;i<self.data.length;i++) {
+			self.data[i].needsRedraw = false;
+		}
 	}
 	
 	this.draw = function() { /* complete redraw when selectbox changed */
 		if (OAT.Browser.isIE) { return; }
+		self.transform.x = 0;
+		self.transform.y = 0;
 		if (self.selects.placement) { self.selects.placement.disabled = (self.options.type == 1); }
 		if (self.selects.distance) { self.selects.distance.disabled = (self.options.type == 0); }
 		if (self.selects.projection) { self.selects.projection.disabled = (self.options.type == 0); }
@@ -781,7 +869,7 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		
 		/* based on current settings, find some coordinates for vertices */
 		self.computeVerticesPosition();
-		self.drawUpdate();
+		self.drawUpdate(true);
 		if (self.selectedNode) { self.selectNode(self.selectedNode); }
 	} /* draw */
 	

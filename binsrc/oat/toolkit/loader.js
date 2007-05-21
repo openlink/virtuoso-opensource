@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *  Copyright (C) 2005-2007 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -701,6 +701,10 @@ OAT.Event = { /* Event helper */
 	},
 	source:function(event) {
 		return (event.target ? event.target : event.srcElement);
+	},
+	cancel:function(event) {
+		event.cancelBubble = true;
+		if (event.stopPropagation) { event.stopPropagation(); }
 	},
 	position:function(event) {
 		var scroll = OAT.Dom.getScroll();

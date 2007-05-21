@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2006 Ondrej Zara and OpenLink Software
+ *  Copyright (C) 2005-2007 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -598,7 +598,7 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 			triples.push(triple);
 		}
 		var x = OAT.GraphSVGData.fromTriples(triples);
-		self.graphsvg = new OAT.GraphSVG(self.svgDiv,x[0],x[1],{vertexSize:[4,8]});
+		self.graphsvg = new OAT.GraphSVG(self.svgDiv,x[0],x[1],{vertexSize:[4,8],sidebar:false});
 		
 		for (var i=0;i<self.graphsvg.data.length;i++) {
 			var node = self.graphsvg.data[i];
