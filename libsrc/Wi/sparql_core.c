@@ -1074,7 +1074,7 @@ static ptrlong usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT] = {
   SPART_VARR_NOT_NULL };					/* object	*/
 
 void
-spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **options)
+spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
   SPART *triple;
@@ -1084,6 +1084,25 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
     predicate = (SPART *)t_box_copy_tree (env->spare_context_predicates->data);
   if (NULL == object)
     object = (SPART *)t_box_copy_tree (env->spare_context_objects->data);
+  for (;;)
+    {
+      SPART *ctx_qm;
+      if (NULL != qm_iri)
+        break;
+      if (NULL == env->spare_context_qms)
+        {
+          qm_iri = (caddr_t)(_STAR);
+          break;
+        }
+      ctx_qm = env->spare_context_qms->data;
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (ctx_qm))
+        {
+          qm_iri = ctx_qm->_.lit.val;
+          break;
+        }
+      ctx_qm = (caddr_t)qm_iri;
+      break;
+    }
   if (SPAR_QNAME == SPART_TYPE (predicate))
     {
       caddr_t *spec_pred_names = jso_triple_get_objs (
@@ -1138,12 +1157,12 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
     }
   if (SPAR_IS_BLANK_OR_VAR (graph))
     graph->_.var.selid = env->spare_selids->data;
-  triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, options);
+  triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, qm_iri, options);
   spar_gp_add_member (sparp, triple);
 }
 
 SPART *
-spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **options)
+spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
   caddr_t key;
@@ -1151,8 +1170,8 @@ spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
   SPART *triple;
   key = t_box_sprintf (0x100, "%s-t%d", env->spare_selids->data, sparp->sparp_key_gen);
   sparp->sparp_key_gen += 1;
-  triple = spartlist (sparp, 14, SPAR_TRIPLE,
-    graph, subject, predicate, object,
+  triple = spartlist (sparp, 15, SPAR_TRIPLE,
+    graph, subject, predicate, object, qm_iri,
     env->spare_selids->data, key, NULL,
     NULL, NULL, NULL, NULL,
     options, 0L );

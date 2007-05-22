@@ -9732,6 +9732,7 @@ caddr_t uname_swap_reify_ns_uri;
 caddr_t uname_swap_reify_ns_uri_statement;
 caddr_t uname_virtrdf_ns_uri;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
+caddr_t uname_virtrdf_ns_uri_QuadMap;
 caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
 caddr_t uname_virtrdf_ns_uri_QuadStorage;
 caddr_t uname_virtrdf_ns_uri_array_of_any;
@@ -9816,6 +9817,7 @@ xml_tree_init (void)
   UNAME_IT(uname_swap_reify_ns_uri_statement	, SWAP_REIFY_NS_URI "#statement"	);
   UNAME_IT(uname_virtrdf_ns_uri			, VIRTRDF_NS_URI		);
   UNAME_IT(uname_virtrdf_ns_uri_DefaultQuadStorage	, VIRTRDF_NS_URI "DefaultQuadStorage"	);
+  UNAME_IT(uname_virtrdf_ns_uri_QuadMap		, VIRTRDF_NS_URI "QuadMap"	);
   UNAME_IT(uname_virtrdf_ns_uri_QuadMapFormat	, VIRTRDF_NS_URI "QuadMapFormat"	);
   UNAME_IT(uname_virtrdf_ns_uri_QuadStorage	, VIRTRDF_NS_URI "QuadStorage"	);
   UNAME_IT(uname_virtrdf_ns_uri_array_of_any	, VIRTRDF_NS_URI "array-of-any"	);

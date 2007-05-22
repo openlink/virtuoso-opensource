@@ -168,6 +168,7 @@ typedef struct sparp_env_s
     dk_set_t		spare_common_sql_table_options;	/*!< SQL 'TABLE OPTION' strings that are added to every table */
     dk_set_t		spare_groupings;		/*!< Variabes that should be placed in GROUP BY list */
     dk_set_t		spare_sql_select_options;	/*!< SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
+    dk_set_t		spare_context_qms;		/*!< IRIs of allowed quad maps (IRI if quad map is restricted, DEFAULT_L if default qm only, _STAR if not restricted) */
     dk_set_t		spare_context_graphs;		/*!< Expressions that are default values for graph field */
     dk_set_t		spare_context_subjects;		/*!< Expressions that are default values for subject field */
     dk_set_t		spare_context_predicates;	/*!< Expressions that are default values for predicate field */
@@ -371,6 +372,7 @@ typedef struct spar_tree_s
       } req_top;
     struct {
       SPART *tr_fields[SPART_TRIPLE_FIELDS_COUNT];
+        caddr_t qm_iri;
       caddr_t selid;
       caddr_t tabid;
         triple_case_t **tc_list;
@@ -495,7 +497,7 @@ extern caddr_t spar_selid_pop (sparp_t *sparp);
 extern void spar_gp_init (sparp_t *sparp, ptrlong subtype);
 extern SPART *spar_gp_finalize (sparp_t *sparp);
 extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
-extern void spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **options);
+extern void spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
 extern int spar_filter_is_freetext (SPART *filt);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
 extern void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t precodes, int suppress_filters_for_good_names);
@@ -507,7 +509,7 @@ extern SPART **spar_retvals_of_modify (sparp_t *sparp, SPART *graph_to_patch, SP
 extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **order, caddr_t limit, caddr_t offset);
-extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **options);
+extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed);
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);

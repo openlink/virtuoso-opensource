@@ -135,6 +135,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token COUNT_LPAR		/*:: PUNCT("COUNT ("), SPAR, LAST1("COUNT ()"), LAST1("COUNT\r\n()"), LAST1("COUNT #qq\r\n()"), ERR("COUNT"), ERR("COUNT bad") ::*/
 %token COUNT_DISTINCT_L		/*:: PUNCT("COUNT DISTINCT"), SPAR, LAST("COUNT DISTINCT"), LAST("COUNT\r\nDISTINCT"), LAST("COUNT #qq\r\nDISTINCT"), ERR("COUNT"), ERR("COUNT bad") ::*/
 %token DATATYPE_L	/*:: PUNCT_SPAR_LAST("DATATYPE") ::*/
+%token DEFAULT_L	/*:: PUNCT_SPAR_LAST("DEFAULT") ::*/
 %token DEFINE_L		/*:: PUNCT_SPAR_LAST("DEFINE") ::*/
 %token DELETE_L		/*:: PUNCT_SPAR_LAST("DELETE") ::*/
 %token DESC_L		/*:: PUNCT_SPAR_LAST("DESC") ::*/
@@ -267,6 +268,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <nothing> spar_gp_not_triples
 %type <tree> spar_optional_gp
 %type <tree> spar_graph_gp
+%type <tree> spar_quad_map_gp
 %type <tree> spar_group_or_union_gp
 %type <tree> spar_constraint
 %type <tree> spar_ctor_template
@@ -309,6 +311,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_rdf_literal
 %type <tree> spar_boolean_literal
 %type <tree> spar_iriref
+%type <tree> spar_iriref_or_star_or_default
 %type <tree> spar_qname
 %type <tree> spar_blank_node
 /* nonterminals from part 1a: */
@@ -625,16 +628,25 @@ spar_gp			/* [20]  	GraphPattern	  ::=  	Triples? ( GraphPatternNotTriples '.'? 
 	| spar_triples_opt spar_gp_not_triples _DOT spar_gp { }
 	;
 
-spar_gp_not_triples	/* [21]  	GraphPatternNotTriples	  ::=  	OptionalGraphPattern | GroupOrUnionGraphPattern | GraphGraphPattern | Constraint	*/
-	: spar_optional_gp { spar_gp_add_member (sparp_arg, $1); }
-	| spar_group_or_union_gp { spar_gp_add_member (sparp_arg, $1); }
-	| spar_graph_gp { spar_gp_add_member (sparp_arg, $1); }
-	| spar_constraint { spar_gp_add_filter (sparp_arg, $1); }
+spar_gp_not_triples	/* [21]*	GraphPatternNotTriples	 ::=  */
+	: spar_quad_map_gp { spar_gp_add_member (sparp_arg, $1); }	/*... QuadMapGraphPattern	*/
+	| spar_optional_gp { spar_gp_add_member (sparp_arg, $1); }	/*... | OptionalGraphPattern	*/
+	| spar_group_or_union_gp { spar_gp_add_member (sparp_arg, $1); }	/*... | GroupOrUnionGraphPattern	*/
+	| spar_graph_gp { spar_gp_add_member (sparp_arg, $1); }	/*... | GraphGraphPattern	*/
+	| spar_constraint { spar_gp_add_filter (sparp_arg, $1); }	/*... | Constraint	*/
 	;
 
 spar_optional_gp	/* [22]  	OptionalGraphPattern	  ::=  	'OPTIONAL' GroupGraphPattern	*/
 	: OPTIONAL_L _LBRA { spar_gp_init (sparp_arg, OPTIONAL_L); } spar_group_gp { $$ = $4; }
 	| OPTIONAL_L error { sparyyerror ("Missing '{' after OPTIONAL keyword"); }
+	;
+
+spar_quad_map_gp		/* [Virt]	QuadMapGraphPattern	 ::=  'QUAD' 'MAP' ( IRIref | '*' ) GroupGraphPattern	*/
+	: QUAD_L MAP_L
+	    spar_iriref_or_star_or_default { t_set_push (&(sparp_env()->spare_context_qms), $3); }
+	    _LBRA {
+		spar_gp_init (sparp_arg, 0); }
+	    spar_group_gp { t_set_pop (&(sparp_env()->spare_context_qms)); $$ = $7; }
 	;
 
 spar_graph_gp		/* [23]  	GraphGraphPattern	  ::=  	'GRAPH' VarOrBlankNodeOrIRIref GroupGraphPattern	*/
@@ -722,7 +734,7 @@ spar_objects		/* [32]*	ObjectList	 ::=  ObjGraphNode ( ',' ObjectList )?	*/
 
 spar_ograph_node	/* [Virt]	ObjGraphNode	 ::=  GraphNode TripleOptions?	*/
 	: spar_graph_node spar_triple_optionlist_opt {
-		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL, NULL, $1, $2); }
+		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL, NULL, $1, NULL, $2); }
 	;
 
 spar_triple_optionlist_opt	/* [Virt]	TripleOptions	 ::=  'OPTION' '(' TripleOption ( ',' TripleOption )? ')'	*/
@@ -767,7 +779,7 @@ spar_triples_node	/* [34]  	TriplesNode	  ::=  	Collection | BlankNodePropertyLi
 		    NULL, NULL,
 		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
 		  spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_nil),
-		  NULL );
+		  NULL, NULL );
 		t_set_pop (&(sparp_env()->spare_context_subjects));
 		$$ = t_set_pop (&(sparp_env()->spare_context_subjects)); }
 	;
@@ -781,17 +793,17 @@ spar_cons_collection	/* [32]  	ObjectList	  ::=  	GraphNode ( ',' ObjectList )?	
 	: spar_graph_node {
 		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL,
 		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
-		  $1, NULL ); }
+		  $1, NULL, NULL ); }
 	| spar_cons_collection spar_graph_node {
 		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:cons"), 1); 
 		spar_gp_add_triple_or_special_filter (sparp_arg,
 		    NULL, NULL,
 		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_rest),
-		  bn, NULL );
+		  bn, NULL, NULL );
 		sparp_env()->spare_context_subjects->data = bn;
 		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL,
 		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
-		  $2, NULL ); }
+		  $2, NULL, NULL ); }
 	;
 
 spar_graph_node		/* [37]  	GraphNode	  ::=  	VarOrTerm | TriplesNode	*/
@@ -1018,6 +1030,12 @@ spar_rdf_literal	/* [60]  	RDFLiteral	  ::=  	String ( LANGTAG | ( '^^' IRIref )
 spar_boolean_literal	/* [61]  	BooleanLiteral	  ::=  	'true' | 'false'	*/
 	: true_L		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, 1, uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	| false_L		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, 0, uname_xmlschema_ns_uri_hash_boolean, NULL); }
+	;
+
+spar_iriref_or_star_or_default
+	: spar_iriref		{ $$ = $1; }
+	| _STAR			{ $$ = _STAR; }
+	| DEFAULT_L		{ $$ = DEFAULT_L; }
 	;
 
 spar_iriref		/* [63]  	IRIref	  ::=  	Q_IRI_REF | QName	*/

@@ -240,15 +240,20 @@ extern SPART *sparp_find_gp_by_eq_idx (sparp_t *sparp, ptrlong eq_idx);
 /*! This searches for storage by its name. NULL arg means default (or no storage if there's no default loaded), empty UNAME means no storage */
 extern quad_storage_t *sparp_find_storage_by_name (ccaddr_t name);
 
+/*! This searches for quad map by its name. */
+extern quad_map_t *sparp_find_quad_map_by_name (ccaddr_t name);
+
 typedef struct tc_context_s {
   SPART *tcc_triple;		/*!< Triple pattern in question */
   SPART **tcc_sources;		/*!< Source graphs that can be used */
   int tcc_required_source_type;	/*!< NAMED_L or FROM_L, to indicate that the search is among named or unnamed sources */
   quad_storage_t *tcc_qs;	/*!< Quad storage in question */
+  quad_map_t *tcc_top_allowed_qm;	/*!< Top qm that is allowed, if it is specified in the triple */
   void *tcc_last_qmvs [SPART_TRIPLE_FIELDS_COUNT];	/*!< Pointers to recently checked QMVs or constants. QMVs tend to repeat in sequences. */
   int tcc_last_qmv_results [SPART_TRIPLE_FIELDS_COUNT];	/*!< Results of recent comparisons. */
   dk_set_t tcc_cuts [SPART_TRIPLE_FIELDS_COUNT];	/*!< Accumulated red cuts for possible values of fields */
   dk_set_t tcc_found_cases;		/*!< Accumulated triple cases */
+  int tcc_nonfiltered_cases_found;	/*!< Count of triples cases that passed tests, including cases rejected due to QUAD MAP xx { } restriction of triple */
 } tc_context_t;
 
 /*! This checks if the given \c qm may contain data that matches \c triple by itself,
@@ -257,7 +262,7 @@ extern int sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_
 
 /*! The function fills in the \c tc_set_ret[0] with triple cases of all matching quad mappings (\c qm, submaps of \c qm and al subsubmaps recursively
 that match and not empty and not after the first (empty or nonempty) full match. */
-extern int sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm);
+extern int sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, int inside_allowed_qm);
 
 /*! This returns a mempool-allocated vector of quad maps
 that describe an union of all elementary datasources that can store triples that match a pattern.

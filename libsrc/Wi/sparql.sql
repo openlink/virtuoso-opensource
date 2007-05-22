@@ -6332,6 +6332,8 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   maxrows := 1024*1024; -- More than enough for web-interface.
   http_meth := http_request_get ('REQUEST_METHOD');
   ini_dflt_graph := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultGraph');
+  timeout := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxQueryExecutionTime');
+  if (timeout is null)
   timeout := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'ExecutionTimeout');
   def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
   if (def_qry is null)
@@ -6702,6 +6704,8 @@ host_found:
 
   declare sc_max int;
   declare sc decimal;
+  sc_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxQueryCostEstimationTime'), '-1'));
+  if (sc_max < 0)
   sc_max := atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxExecutionTime'), '-1'));
   if (sc_max > 0)
     {

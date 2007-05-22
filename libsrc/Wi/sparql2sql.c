@@ -2821,6 +2821,20 @@ sparp_find_storage_by_name (ccaddr_t name)
   return NULL;
 }
 
+quad_map_t *
+sparp_find_quad_map_by_name (ccaddr_t name)
+{
+  jso_class_descr_t *quad_map_cd;
+  jso_rtti_t *ds_rtti;
+  jso_get_cd_and_rtti (
+    uname_virtrdf_ns_uri_QuadMap,
+    name,
+    &quad_map_cd, &ds_rtti, 1 );
+  if ((NULL != ds_rtti) && (JSO_STATUS_LOADED == ds_rtti->jrtti_status))
+    return (quad_map_t *)(ds_rtti->jrtti_self);
+  return NULL;
+}
+
 ptrdiff_t qm_field_map_offsets[4] = {
   JSO_FIELD_OFFSET(quad_map_t,qmGraphMap),
   JSO_FIELD_OFFSET(quad_map_t,qmSubjectMap),
@@ -3157,16 +3171,18 @@ sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
 }
 
 int
-sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
+sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, int inside_allowed_qm)
 {
   int ctr, fld_ctr, single_fixed_fld = -1;
   int qm_is_a_good_case = 0;
   int common_status = sparp_check_triple_case (sparp, tcc, qm);
   if (SSG_QM_NO_MATCH == common_status)
     return SSG_QM_NO_MATCH;
+  if ((NULL == tcc->tcc_top_allowed_qm) || (qm == tcc->tcc_top_allowed_qm))
+    inside_allowed_qm = 1;
   DO_BOX_FAST (quad_map_t *, sub_qm, ctr, qm->qmUserSubMaps)
     {
-      int status = sparp_qm_find_triple_cases (sparp, tcc, sub_qm);
+      int status = sparp_qm_find_triple_cases (sparp, tcc, sub_qm, inside_allowed_qm);
       if (SSG_QM_FULL_EXCLUSIVE_MATCH == status)
         return SSG_QM_FULL_EXCLUSIVE_MATCH;
     }
@@ -3198,6 +3214,8 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
           else
             tc->tc_red_cuts [fld_ctr] = NULL;
         }
+      tcc->tcc_nonfiltered_cases_found += 1;
+      if (inside_allowed_qm)
       dk_set_push (&(tcc->tcc_found_cases), tc);
     }
   if (SPART_QM_EXCLUSIVE & qm->qmMatchingFlags)
@@ -3250,6 +3268,21 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
   tmp_tcc.tcc_sources = sources;
   tmp_tcc.tcc_required_source_type = required_source_type;
   tmp_tcc.tcc_qs = sparp->sparp_storage;
+  if (((caddr_t)DEFAULT_L) == triple->_.triple.qm_iri)
+    {
+      if (NULL == sparp->sparp_storage->qsDefaultMap)
+        spar_internal_error (sparp, "QUAD MAP DEFAULT group pattern is used in RDF storage that has no default quad map");
+      tmp_tcc.tcc_top_allowed_qm = sparp->sparp_storage->qsDefaultMap;
+    }
+  else if (((caddr_t)_STAR) == triple->_.triple.qm_iri)
+    tmp_tcc.tcc_top_allowed_qm = NULL;
+  else
+    {
+      quad_map_t *top_qm = sparp_find_quad_map_by_name (triple->_.triple.qm_iri);
+      if (NULL == top_qm)
+        spar_internal_error (sparp, "QUAD MAP '%.200s' group pattern refers to undefined quad map");
+      tmp_tcc.tcc_top_allowed_qm = top_qm;
+    }
   DO_BOX_FAST (quad_map_t *, qm, ctr, sparp->sparp_storage->qsMjvMaps)
     {
       int status;
@@ -3257,20 +3290,20 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
         spar_internal_error (sparp, "RDF quad mapping metadata are corrupted: MJV has submaps; the quad storage used in the query should be configured again");
       if (SPART_QM_EMPTY & qm->qmMatchingFlags)
         spar_internal_error (sparp, "RDF quad mapping metadata are corrupted: MJV is declared as empty; the quad storage used in the query should be configured again");
-      status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm);
+      status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm, 0);
       if (SSG_QM_FULL_EXCLUSIVE_MATCH == status)
         goto full_exclusive_match_detected;
     }
   END_DO_BOX_FAST;
   DO_BOX_FAST (quad_map_t *, qm, ctr, sparp->sparp_storage->qsUserMaps)
     {
-      int status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm);
+      int status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm, 0);
       if (SSG_QM_FULL_EXCLUSIVE_MATCH == status)
         goto full_exclusive_match_detected;
     }
   END_DO_BOX_FAST;
   if (NULL != sparp->sparp_storage->qsDefaultMap)
-    sparp_qm_find_triple_cases (sparp, &tmp_tcc, sparp->sparp_storage->qsDefaultMap);
+    sparp_qm_find_triple_cases (sparp, &tmp_tcc, sparp->sparp_storage->qsDefaultMap, 0);
 
 full_exclusive_match_detected:
 #if 0
