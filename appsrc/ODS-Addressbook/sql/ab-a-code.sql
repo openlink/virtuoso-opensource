@@ -858,25 +858,33 @@ _error:
 --
 create procedure AB.WA.host_url ()
 {
-  declare ret varchar;
+  declare host varchar;
 
-  --return '';
+  declare exit handler for sqlstate '*' { goto _default; };
+
   if (is_http_ctx ()) {
-    ret := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
-    if (isstring (ret) and strchr (ret , ':') is null) {
+    host := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
+    if (isstring (host) and strchr (host , ':') is null) {
       declare hp varchar;
       declare hpa any;
 
       hp := sys_connected_server_address ();
       hpa := split_and_decode ( hp , 0 , '\0\0:');
-      ret := ret || ':' || hpa [1];
+      host := host || ':' || hpa [1];
     }
-  } else {
-    ret := sys_connected_server_address ();
-    if (ret is null)
-      ret := sys_stat ('st_host_name') || ':' || server_http_port ();
+    goto _exit;
   }
-  return 'http://' || ret ;
+
+_default:;
+  host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (host is not null)
+    return host;
+  host := sys_stat ('st_host_name');
+  if (server_http_port () <> '80')
+    host := host || ':' || server_http_port ();
+
+_exit:;
+  return 'http://' || host ;
 }
 ;
 
@@ -2580,12 +2588,17 @@ create procedure AB.WA.contact_update3 (
   in id integer,
   in domain_id integer,
   in pFields any,
-  in pValues any)
+  in pValues any,
+  in tags varchar)
 {
   declare N varchar;
   declare S varchar;
   declare st, msg, meta, rows any;
 
+  if (tags <> '') {
+    pFields := vector_concat (pFields, vector ('P_TAGS'));
+    pValues := vector_concat (pValues, vector (tags));
+  }
   S := '';
   for (N := 0; N < length (pFields); N := N + 1)
     S := S || ', ' || pFields[N] || ' = ?';
@@ -2730,6 +2743,302 @@ create procedure AB.WA.contact_tags_update (
          P_UPDATED = now()
    where P_ID = id and
          P_DOMAIN_ID = domain_id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_vcard (
+  in domain_id integer,
+  in content any,
+  in tags any)
+{
+  declare N, M, nLength, mLength, id integer;
+  declare tmp, data, pFields, pValues any;
+  declare xmlData, xmlItems, itemName, Meta any;
+
+  Meta := vector
+    (
+      'P_NAME',           'NICKNAME/val',
+      'P_TITLE',          'N/fld[4]',
+      'P_FIRST_NAME',     'N/fld[2]',
+      'P_LAST_NAME',      'N/fld[1]|N/val',
+      'P_FULL_NAME',      'FN/val',
+      'P_MAIL',           'for \044v in EMAIL/val return \044v',
+      'P_WEB',            'URL/val',
+      'P_H_ADDRESS1',     'ADR/fld[3]',
+      'P_H_ADDRESS2',     'ADR/fld[2]',
+      'P_H_CITY',         'ADR/fld[4]',
+      'P_H_CODE',         'ADR/fld[6]',
+      'P_H_STATE',        'ADR/fld[5]',
+      'P_H_COUNTRY',      'ADR/fld[7]',
+      'P_B_ORGANIZATION', 'ORG/val',
+      'P_B_JOB',          'TITLE/val'
+    );
+  mLength := length (Meta);
+
+  -- using DAV parser
+  if (not isstring (content)) {
+    xmlData := DB.DBA.IMC_TO_XML (cast (content as varchar));
+  } else {
+    xmlData := DB.DBA.IMC_TO_XML (content);
+  }
+  xmlData := xml_tree_doc (xmlData);
+  xmlItems := xpath_eval ('/*', xmlData, 0);
+  foreach (any xmlItem in xmlItems) do  {
+    itemName := xpath_eval ('name(.)', xmlItem);
+    if (itemName = 'IMC-VCARD') {
+      id := -1;
+      pFields := vector ();
+      pValues := vector ();
+      for (N := 0; N < mLength; N := N + 2) {
+        tmp := xquery_eval (Meta [N+1], xmlItem, 0);
+        foreach (any T in tmp) do {
+          T := cast (T as varchar);
+          if (not is_empty_or_null (T)) {
+            if (Meta[N] = 'P_NAME') {
+              id := AB.WA.contact_update2 (id, domain_id, Meta[N], T);
+            } else {
+              pFields := vector_concat (pFields, vector (Meta[N]));
+              pValues := vector_concat (pValues, vector (T));
+            }
+          }
+        }
+      }
+      AB.WA.contact_update3 (id, domain_id, pFields, pValues, tags);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_foaf (
+  in domain_id integer,
+  in content any,
+  in tags any)
+{
+  declare N, M, nLength, mLength, id integer;
+  declare tmp, tmp2, data, pFields, pValues any;
+  declare Meta, Items, Item any;
+  declare S, tmp_iri, name, fullName varchar;
+
+  declare continue handler for SQLSTATE '*' { goto _delete; };
+
+  Meta := vector
+    (
+      'P_NAME',
+      'P_FULL_NAME',
+      'P_FIRST_NAME',
+      'P_LAST_NAME',
+      'P_BIRTHDAY',
+      'P_MAIL',
+      'P_WEB',
+      'P_ICQ',
+      'P_MSN',
+      'P_AIM',
+      'P_YAHOO'
+    );
+  mLength := length (Meta);
+
+  tmp_iri := 'http://local.virt/' || cast (rnd (1000) as varchar);
+  DB.DBA.RDF_LOAD_RDFXML (content, '', tmp_iri);
+  Items := AB.WA.ab_sparql (sprintf (' SPARQL ' ||
+                                     ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
+                                     ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
+                                     ' SELECT ?x ' ||
+                                     '   FROM <%s> ' ||
+                                     '  WHERE { ?x rdf:type foaf:Person . ' ||
+                                     '          OPTIONAL{ ?knows foaf:knows ?x} . ' ||
+                                     '          FILTER( !bound(?knows)) . ' ||
+                                     '        }', tmp_iri));
+  nLength := length (Items);
+  for (N := 0; N < nLength; N := N + 1) {
+    S := ' SPARQL ' ||
+         ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
+         ' PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
+         ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
+         ' SELECT ?P_NAME, ?P_FULL_NAME, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO ' ||
+         ' FROM <%s> ' ||
+         ' WHERE { ' ||
+         '         FILTER(?person = <%s>) .' ||
+         '         ?person a foaf:Person . ' ||
+         '         OPTIONAL{ ?person  foaf:nick ?P_NAME} . ' ||
+         '         OPTIONAL{ ?person  foaf:name ?P_FULL_NAME} . ' ||
+         '         OPTIONAL{ ?person  foaf:firstNname ?P_FIRST_NAME} . ' ||
+         '         OPTIONAL{ ?person  foaf:family_name ?P_LAST_NAME} . ' ||
+         '         OPTIONAL{ ?person  foaf:dateOfBirth ?P_BIRTHDAY} . ' ||
+         '         OPTIONAL{ ?person  foaf:mbox ?P_MAIL} . ' ||
+         '         OPTIONAL{ ?person  foaf:homepage ?P_WEB} . ' ||
+         '         OPTIONAL{ ?person  foaf:icqChatID ?P_ICQ } .' ||
+         '         OPTIONAL{ ?person  foaf:msnChatID ?P_MSN } .' ||
+         '         OPTIONAL{ ?person  foaf:aimChatID ?P_AIM } .' ||
+         '         OPTIONAL{ ?person  foaf:yahooChatID ?P_YAHOO } .' ||
+         '       }';
+
+    Item := AB.WA.ab_sparql (sprintf (S, tmp_iri, Items [N][0]));
+    if (length (Item)) {
+      fullName := null;
+      if (not isnull (Item[0][1])) {
+        fullName := Item[0][1];
+      } else {
+        if (not isnull (Item[0][2]) or not isnull (Item[0][3]))
+          fullName := trim (Item[0][2] || ' ' || Item[0][3]);
+      }
+      if (not is_empty_or_null (coalesce (Item[0][0], fullName))) {
+        id := AB.WA.contact_update2 (-1, domain_id, 'P_NAME', coalesce (Item[0][0], fullName));
+        pFields := vector ();
+        pValues := vector ();
+        for (M := 1; M < mLength; M := M + 1) {
+          if (Meta[M] = 'P_FULL_NAME') {
+            if (not isnull (fullName)) {
+              pFields := vector_concat (pFields, vector (Meta[M]));
+              pValues := vector_concat (pValues, vector (fullName));
+            }
+          } else {
+            tmp := Meta[M];
+            tmp2 := Item[0][M];
+            if (tmp = 'P_BIRTHDAY') {
+              {
+                declare continue handler for sqlstate '*' {
+                  tmp := '';
+                };
+                tmp2 := AB.WA.dt_reformat (tmp2, 'Y-M-D');
+              }
+            }
+            if (tmp <> '') {
+              pFields := vector_concat (pFields, vector (tmp));
+              pValues := vector_concat (pValues, vector (tmp2));
+            }
+          }
+        }
+        AB.WA.contact_update3 (id, domain_id, pFields, pValues, tags);
+      }
+    }
+  }
+_delete:;
+  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (tmp_iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_csv (
+  in domain_id integer,
+  in content any,
+  in tags any,
+  in maps any)
+{
+  declare N, M, nLength, mLength, id integer;
+  declare tmp, tmp2, data, pFields, pValues any;
+  declare nameIdx, firstNameIdx, lastNameIdx, fullNameIdx integer;
+  declare name, fullName varchar;
+
+  nameIdx := -1;
+  firstNameIdx := -1;
+  lastNameIdx := -1;
+  fullNameIdx := -1;
+  for (N := 0; N < length (maps); N := N + 2) {
+    if (maps[N+1] = 'P_NAME')
+      nameIdx := cast (maps[N] as integer);
+    if (maps[N+1] = 'P_FIRST_NAME')
+      firstNameIdx := cast (maps[N] as integer);
+    if (maps[N+1] = 'P_LAST_NAME')
+      lastNameIdx := cast (maps[N] as integer);
+    if (maps[N+1] = 'P_FULL_NAME')
+      fullNameIdx := cast (maps[N] as integer);
+  }
+  nLength := length (content);
+  for (N := 1; N < nLength; N := N + 1) {
+    data := split_and_decode (content [N], 0, '\0\0,');
+    name := '';
+    fullName := '';
+    if ((nameIdx <> -1) and (nameIdx < length (data)))
+      name := trim (trim (data[nameIdx], '"'));
+    if ((fullNameIdx <> -1) and (fullNameIdx < length (data)))
+      fullName := trim (trim (data[fullNameIdx], '"'));
+    if (fullName = '') {
+      if ((firstNameIdx <> -1) and (firstNameIdx < length (data)))
+         fullName := trim (trim (data[firstNameIdx], '"'));
+      if ((lastNameIdx <> -1) and (lastNameIdx < length (data)))
+         fullName := fullName || ' ' || trim (trim (data[lastNameIdx], '"'));
+       fullName := trim (fullName);
+    }
+    if (name = '')
+      name := fullName;
+    id := -1;
+    if (name <> '') {
+      id := AB.WA.contact_update2 (id, domain_id, 'P_NAME', name);
+      pFields := vector ();
+      pValues := vector ();
+      mLength := length (data);
+      for (M := 0; M < mLength; M := M + 1) {
+        if (M <> nameIdx) {
+          if (M = fullNameIdx) {
+            if (fullName <> '') {
+               pFields := vector_concat (pFields, vector ('P_FULL_NAME'));
+               pValues := vector_concat (pValues, vector (fullName));
+             }
+           } else {
+             tmp := get_keyword (cast (M as varchar), maps, '');
+             if (tmp <> '') {
+               tmp2 := trim (data[M], '"');
+               if (tmp = 'P_BIRTHDAY') {
+                 {
+                   declare continue handler for sqlstate '*' {
+                     tmp := '';
+                   };
+                   tmp2 := AB.WA.dt_reformat (tmp2);
+                 }
+               }
+               if (tmp <> '') {
+                 pFields := vector_concat (pFields, vector (tmp));
+                 pValues := vector_concat (pValues, vector (tmp2));
+               }
+             }
+           }
+         }
+      }
+      AB.WA.contact_update3 (id, domain_id, pFields, pValues, tags);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_ldap (
+  in domain_id integer,
+  in content any,
+  in tags any,
+  in maps any)
+{
+  declare N, M, nLength, mLength, id integer;
+  declare data, pFields, pValues any;
+
+  nLength := length (content);
+  for (N := 0; N < nLength; N := N + 2) {
+    if (content [N] = 'entry') {
+      data := content [N+1];
+      mLength := length (data);
+      id := -1;
+      for (M := 0; M < mLength; M := M + 2) {
+        if (get_keyword (data[M], maps) = 'P_NAME')
+          id := AB.WA.contact_update2 (id, domain_id, 'P_NAME', case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end);
+      }
+      if (id <> -1) {
+        pFields := vector ();
+        pValues := vector ();
+        for (M := 0; M < mLength; M := M + 2) {
+          if (get_keyword (data[M], maps, '') <> '') {
+            pFields := vector_concat (pFields, vector (get_keyword (data[M], maps)));
+            pValues := vector_concat (pValues, vector (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end));
+          }
+        }
+        AB.WA.contact_update3 (id, domain_id, pFields, pValues, tags);
+      }
+    }
+  }
 }
 ;
 
