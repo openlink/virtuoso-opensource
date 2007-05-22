@@ -831,25 +831,33 @@ _error:
 --
 create procedure CAL.WA.host_url ()
 {
-  declare ret varchar;
+  declare host varchar;
 
-  --return '';
+  declare exit handler for sqlstate '*' { goto _default; };
+
   if (is_http_ctx ()) {
-    ret := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
-    if (isstring (ret) and strchr (ret , ':') is null) {
+    host := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
+    if (isstring (host) and strchr (host , ':') is null) {
       declare hp varchar;
       declare hpa any;
 
       hp := sys_connected_server_address ();
       hpa := split_and_decode ( hp , 0 , '\0\0:');
-      ret := ret || ':' || hpa [1];
+      host := host || ':' || hpa [1];
     }
-  } else {
-    ret := sys_connected_server_address ();
-    if (ret is null)
-      ret := sys_stat ('st_host_name') || ':' || server_http_port ();
+    goto _exit;
   }
-  return 'http://' || ret ;
+
+_default:;
+  host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (host is not null)
+    return host;
+  host := sys_stat ('st_host_name');
+  if (server_http_port () <> '80')
+    host := host || ':' || server_http_port ();
+
+_exit:;
+  return 'http://' || host ;
 }
 ;
 
@@ -2553,9 +2561,22 @@ create procedure CAL.WA.event_update (
 --
 create procedure CAL.WA.event_delete (
   in id integer,
-  in domain_id integer)
+  in domain_id integer,
+  in onOffset varchar := null)
 {
+  if (isnull (onOffset)) {
   delete from CAL.WA.EVENTS where E_ID = id and E_DOMAIN_ID = domain_id;
+  } else {
+    declare eExceptions any;
+
+    onOffset := '<' || cast (onOffset as varchar) || '>';
+    eExceptions := (select E_REPEAT_EXCEPTIONS from CAL.WA.EVENTS where E_ID = id and E_DOMAIN_ID = domain_id);
+    if (isnull (strstr (eExceptions, onOffset)))
+      update CAL.WA.EVENTS
+         set E_REPEAT_EXCEPTIONS = eExceptions || ' ' || onOffset
+       where E_ID = id and
+             E_DOMAIN_ID = domain_id;
+  }
 }
 ;
 
@@ -2563,7 +2584,6 @@ create procedure CAL.WA.event_delete (
 --
 create procedure CAL.WA.event_gmt2user (
   in pDate datetime,
-  in pKind integer := 0,
   in pTimezone integer := 0)
 
 {
@@ -2577,7 +2597,6 @@ create procedure CAL.WA.event_gmt2user (
 --
 create procedure CAL.WA.event_user2gmt (
   in pDate datetime,
-  in pKind integer := 0,
   in pTimezone integer := 0)
 {
   if (isnull (pDate))
@@ -2590,23 +2609,31 @@ create procedure CAL.WA.event_user2gmt (
 --
 create procedure CAL.WA.event_occurAtDate (
   in pDate datetime,
+  in event integer,
   in eventStart datetime,
-  in eventEnd datetime,
   in eventRepeat varchar,
   in eventRepeatParam1 integer,
   in eventRepeatParam2 integer,
   in eventRepeatParam3 integer,
   in eventRepeatUntil datetime,
+  in eventRepeatExceptions varchar,
   in weekStarts varchar := 'm')
 {
   declare tmp any;
 
   -- before start date
-  if (pDate <= eventStart)
+  if (event = 1)
+    eventStart := dateadd ('hour', -12, eventStart);
+
+  if (pDate < eventStart)
     return 0;
 
   -- after until date
   if ((not isnull (eventRepeatUntil)) and (pDate > eventRepeatUntil))
+    return 0;
+
+  -- deleted occurence
+  if (not isnull (strstr (eventRepeatExceptions, '<' || cast (datediff ('day', eventStart, pDate) as varchar) || '>')))
     return 0;
 
   -- Every N-th day(s)
@@ -2744,13 +2771,16 @@ create procedure CAL.WA.events_forPeriod (
   in pTimezone integer,
   in pWeekStarts varchar := 'm')
 {
-  declare pStartHour, pStartMinute, pEndHour, pEndMinute integer;
   declare dt date;
+  declare dt_offset integer;
 
-  declare c0, c1, c6 integer;
+  declare c0, c1, c6, c7 integer;
   declare c2, c5 varchar;
   declare c3, c4 datetime;
-  result_names (c0, c1, c2, c3, c4, c5, c6);
+  result_names (c0, c1, c2, c3, c4, c5, c6, c7);
+
+  pDateStart := CAL.WA.event_user2gmt (CAL.WA.dt_dateClear (pDateStart), pTimezone);
+  pDateEnd := CAL.WA.event_user2gmt (dateadd ('day', 1, CAL.WA.dt_dateClear (pDateEnd)), pTimezone);
 
   -- regular events
   for (select E_ID,
@@ -2762,15 +2792,17 @@ create procedure CAL.WA.events_forPeriod (
               E_REMINDER
          from CAL.WA.EVENTS
         where E_DOMAIN_ID = domain_id
-          and E_EVENT_START >= CAL.WA.event_user2gmt (pDateStart, 0, pTimezone)
-          and E_EVENT_START <  dateadd ('day', 1, CAL.WA.event_user2gmt (pDateEnd, 0, pTimezone))) do
+          and E_REPEAT = ''
+          and E_EVENT_START >= pDateStart
+          and E_EVENT_START <  pDateEnd) do
   {
     result (E_ID,
             E_EVENT,
             E_SUBJECT,
-            CAL.WA.event_gmt2user (E_EVENT_START, E_EVENT, pTimezone),
-            CAL.WA.event_gmt2user (E_EVENT_END, E_EVENT, pTimezone),
+            CAL.WA.event_gmt2user (E_EVENT_START, pTimezone),
+            CAL.WA.event_gmt2user (E_EVENT_END, pTimezone),
             E_REPEAT,
+            null,
             E_REMINDER);
   }
 
@@ -2785,32 +2817,38 @@ create procedure CAL.WA.events_forPeriod (
               E_REPEAT_PARAM2,
               E_REPEAT_PARAM3,
               E_REPEAT_UNTIL,
+              E_REPEAT_EXCEPTIONS,
               E_REMINDER
          from CAL.WA.EVENTS
         where E_DOMAIN_ID = domain_id
           and E_REPEAT <> ''
-          and E_EVENT_START < CAL.WA.event_user2gmt (pDateEnd, 0, pTimezone)
-          and ((E_REPEAT_UNTIL is null) or (E_REPEAT_UNTIL <  dateadd ('day', 1, CAL.WA.event_user2gmt (pDateEnd, 0, pTimezone))))) do
+          and E_EVENT_START <  pDateEnd
+          and ((E_REPEAT_UNTIL is null) or (E_REPEAT_UNTIL <  pDateEnd))) do
   {
-    CAL.WA.dt_timeDecode (E_EVENT_START, pStartHour, pStartMinute);
-    CAL.WA.dt_timeDecode (E_EVENT_END, pEndHour, pEndMinute);
     dt := pDateStart;
-    while (dt <= pDateEnd) {
+    while (dt < pDateEnd) {
       if (CAL.WA.event_occurAtDate (dt,
-                                    CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_EVENT_START, E_EVENT, pTimezone)),
-                                    CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_EVENT_END, E_EVENT, pTimezone)),
+                                    E_EVENT,
+                                    E_EVENT_START,
                                     E_REPEAT,
                                     E_REPEAT_PARAM1,
                                     E_REPEAT_PARAM2,
                                     E_REPEAT_PARAM3,
-                                    CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_REPEAT_UNTIL, E_EVENT, pTimezone)),
+                                    E_REPEAT_UNTIL,
+                                    E_REPEAT_EXCEPTIONS,
                                     pWeekStarts)) {
+        if (E_EVENT = 1) {
+          dt_offset := datediff ('day', dateadd ('hour', -12, E_EVENT_START), dt);
+        } else {
+          dt_offset := datediff ('day', E_EVENT_START, dt);
+        }
         result (E_ID,
                 E_EVENT,
                 E_SUBJECT,
-                CAL.WA.event_gmt2user (CAL.WA.dt_join (dt, CAL.WA.dt_timeEncode (pStartHour, pStartMinute)), E_EVENT, pTimezone),
-                CAL.WA.event_gmt2user (CAL.WA.dt_join (dt, CAL.WA.dt_timeEncode (pEndHour, pEndMinute)), E_EVENT, pTimezone),
+                CAL.WA.event_gmt2user (dateadd ('day', dt_offset, E_EVENT_START), pTimezone),
+                CAL.WA.event_gmt2user (dateadd ('day', dt_offset, E_EVENT_END), pTimezone),
                 E_REPEAT,
+                dt_offset,
                 E_REMINDER);
       }
       dt := dateadd ('day', 1, dt);

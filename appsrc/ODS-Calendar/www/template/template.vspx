@@ -65,7 +65,7 @@
 
         // OAT
         var toolkitPath="/ods/oat";
-        var featureList=["ajax2"];
+        var featureList=["dialog"];
       ]]>
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js" />

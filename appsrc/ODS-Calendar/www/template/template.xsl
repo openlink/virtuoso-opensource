@@ -226,6 +226,7 @@
               <xsl:call-template name="vm:event"/>
             </vm:if>
               <xsl:call-template name="vm:calendar"/>
+              <xsl:call-template name="vm:exchange"/>
             <xsl:call-template name="vm:formats"/>
             </vm:if>
           </td>
@@ -300,13 +301,13 @@
 
             eventDays := vector ();
             for (select rs.*
-                   from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_event_start datetime, e_event_end datetime, e_repeat varchar) rs
+                   from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_repeat_offset integer, e_reminder integer) rs
                   where rs0 = self.domain_id
                     and rs1 = self.nCalcDate (0)
                     and rs2 = self.nCalcDate (length (self.cnDays)-1)
                     and rs3 = self.cTimeZone) do
             {
-              eventDays := vector_concat (eventDays, vector (CAL.WA.dt_dateClear (e_event_start)));
+              eventDays := vector_concat (eventDays, vector (CAL.WA.dt_dateClear (e_start)));
             }
             names := CAL.WA.dt_WeekNames (self.cWeekStarts, 1);
             for (N := 0; N < length (self.cnDays); N := N + 1) {
@@ -362,6 +363,21 @@
           ?>
         </tbody>
       </table>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template name="vm:exchange">
+    <div class="lc" style="-moz-user-select: none; cursor: pointer; text-align: center;" onclick="shCell('exchange')">
+      <b>Exchange</b>
+    </div>
+    <div id="exchange" class="lc lc_closer lc_noborder" style="display: none;">
+      <div>
+        <a href="#" onclick="cExchange('import')" title="Calendar Import" alt="Calendar Import" class="gems"><img src="image/upld_16.png" border="0"/> Import</a>
+      </div>
+      <div>
+        <a href="#" onclick="cExchange('export')" title="Calendar Export" alt="Calendar Export" class="gems"><img src="image/dwnld_16.png" border="0"/> Export</a>
+      </div>
     </div>
   </xsl:template>
 

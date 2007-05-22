@@ -681,24 +681,47 @@ function eDate(obj)
 }
 
 // ---------------------------------------------------------------------------
-function eDelete(obj)
+function eDelete(event, obj, onOffset)
 {
-  if (confirmAction('Are you sure that you want to delete selected item?')) {
-    var objID = obj.id;
+  event.cancelBubble = true;
 
-    createHidden('F1', 'delete', objID);
+	// delete dialog
+  if (onOffset != null) {
+  	deleteDialog2.ok = function() {
+  		deleteDialog2.hide();
+      if ($('e_delete_0').checked)
+        createHidden('F1', 'onOffset', onOffset);
+      createHidden('F1', 'delete', obj.id);
     doPost ('F1', 'command');
+  }
+  	deleteDialog2.cancel = deleteDialog2.hide;
+  	deleteDialog2.show ();
+  } else {
+  	deleteDialog.ok = function() {
+      createHidden('F1', 'delete', obj.id);
+      doPost ('F1', 'command');
+  		deleteDialog.hide();
+   	}
+   	deleteDialog.cancel = deleteDialog.hide;
+  	deleteDialog.show ();
   }
   return false;
 }
 
 // ---------------------------------------------------------------------------
-function cNewEvent (startDate, startTime)
+function cNewEvent (onDate, onTime)
 {
-  if (startDate != null)
-    createHidden('F1', 'startDate', startDate);
-  if (startTime != null)
-    createHidden('F1', 'startTime', startTime);
+  if (onDate != null)
+    createHidden('F1', 'onDate', onDate);
+  if (onTime != null)
+    createHidden('F1', 'onTime', onTime);
   createHidden('F1', 'select', 'create');
+  doPost ('F1', 'command');
+}
+
+// ---------------------------------------------------------------------------
+function cExchange (command)
+{
+  createHidden('F1', 'exchange', command);
   doPost ('F1', 'command');
 }
