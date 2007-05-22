@@ -45,7 +45,7 @@
             <vm:menu-bar/>
           </div>
           <div class="login">
-	      <vm:post-login/>
+           <vm:login/>
           </div>
           <!--<div class="calsearch">
           </div>-->

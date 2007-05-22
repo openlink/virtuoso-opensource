@@ -322,9 +322,6 @@ function dd(txt){
       <xsl:call-template name="search"/>
     </xsl:template>
 
-    <xsl:template match="vm:post-login">
-      <xsl:call-template name="vm:post_login"/>
-    </xsl:template>
 
     <xsl:template match="vm:nntpf-copyright">
       <div class="copyright">

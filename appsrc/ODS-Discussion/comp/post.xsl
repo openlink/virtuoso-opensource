@@ -35,6 +35,10 @@
   <v:variable name="vc_post_ready" type="integer" default="0"/>
   <v:variable name="vc_disl_warnning" type="integer" default="0"/>
   <v:variable name="vc_invalid_email_addr" type="integer" default="0"/>
+  <v:variable name="grplist_succ" type="varchar"/>
+  <v:variable name="grplist_err" type="varchar"/>
+  <v:variable name="postprepare_err" type="varchar"/>
+
   <script type="text/javascript">
     <![CDATA[
     var _davBrowser=new Object;
@@ -115,14 +119,49 @@
   </script>
     <v:before-data-bind>
 	<![CDATA[
+
+declare _isreply integer;
+
+_isreply:=cast(get_keyword ('is_reply', params, 0) as integer);
+
+self.postprepare_err:='';
+
+--if (self.grp_list is NULL)
+--    self.postprepare_err:= 'There are no available group(s) for posting.';
+
+
+declare _selected_groups_arr,_tmp_params any;
+_selected_groups_arr:=vector();
+
+
+if(get_keyword ('availble_groups', params, NULL) is not null)
+{
+  declare one_more_time integer;
+  one_more_time:=1;
+  
+  _tmp_params:=coalesce(params,vector());
+
+  while(one_more_time)
+  {
+    declare tmp_val varchar;
+    tmp_val:=get_keyword ('availble_groups', _tmp_params, null);
+    if(tmp_val is not null)
+    {
+     
+     _selected_groups_arr:=vector_concat(_selected_groups_arr,vector(tmp_val));
+     _tmp_params:=vector_concat(subseq( _tmp_params,0,position ( 'availble_groups', _tmp_params)-1),subseq( _tmp_params,position ( 'availble_groups', _tmp_params)+1));
+
+     
+    }else
+     one_more_time:=0;
+  }
+}
 	     declare _id varchar;
 	     self.grp_sel_no_thr := get_keyword ('group', params);
 	     self.article_list_lenght := get_keyword ('view', params);
+
 	     declare sid any;
---	     dbg_obj_print ('params = ', params);
---	     dbg_obj_print ('grp_sel_thr = ', self.grp_sel_thr);
---	     dbg_obj_print ('grp_sel_no_thr = ', self.grp_sel_no_thr);
---	     dbg_obj_print ('self.article_list_lenght = ', self.article_list_lenght);
+
 	     _id := get_keyword ('article', params, '');
 
 	     if (_id <> '')
@@ -131,15 +170,20 @@
 		  mess_parts := nntpf_post_get_message_parts (_id);
 		  self.post_subj := mess_parts[0];
 		  nntpf_decode_subj (self.post_subj);
-		  self.post_body := mess_parts[1];
+          self.post_subj := charset_recode (self.post_subj, 'UTF-8' , '_WIDE_');
+          self.post_body := charset_recode (mess_parts[1], 'UTF-8' , '_WIDE_');
 		  self.post_old_hdr := mess_parts[2];
-		  self.grp_list_enabled := 0;
+          self.grp_list_enabled := 1;
+         
 	       
+          if(self.grp_sel_thr=0)
+             select NG_GROUP into self.grp_sel_thr from NEWS_GROUPS, NNFE_THR where FTHR_MESS_ID=_id and FTHR_GROUP=NG_GROUP;
 
 	       if(not exists (select 1 from NEWS_GROUPS
 		                  where NG_POST = 1 and ns_rest (NG_GROUP, 1) = 1 and NG_STAT<>-1 and NG_GROUP=self.grp_sel_thr))
 		        {
-		          signal ('NNTPP', 'Selected group(s) is not available for posting.');
+
+              self.postprepare_err:='Selected group is not available for posting.';
 		        
 		        }
 	       
@@ -148,12 +192,26 @@
 	     if (self.u_name is not NULL)
 	       {
                  if (not nntpf_compose_post_from (self.u_name, self.post_from))
-                   {
                      self.vc_invalid_email_addr := 1;
                    }
-               }
 	     else
+       {                                       
+        declare _mailaddress varchar;
+        _mailaddress:=get_keyword('post_from_n',params,'');
+         
+         if(length(_mailaddress))
+         {
+          if (not nntpf_email_addr_looks_valid(_mailaddress))
+          {
 	       self.post_from := '';
+            self.postprepare_err:='Please enter a valid email address.';
+          }else
+            self.post_from :=_mailaddress;
+          
+         }else
+            self.postprepare_err:='Please enter e-mail address.';
+         
+       };
 
 	     if (get_keyword ('make_attachments', params, '') <> '')
 	       self.vc_attach := 1;
@@ -164,32 +222,189 @@
 		  if ((get_keyword_ucase ('availble_groups', params, NULL) is NULL) and
 		       (get_keyword_ucase ('post_old_hdr', params, '') = ''))
 		    {
-		      http_request_status ('HTTP/1.1 302 Found');
-  		      http_header ('Location: nntpf_warning.vsp?id=1\r\n');
+--                signal ('NNTPF', 'Please supply a list of newsgroups to post to.');
+             self.postprepare_err:='Please supply a list of newsgroups to post to.';
+
 		    }
 		  
-		  nntpf_post_message (params);
+
+          declare auth_uname varchar;
+          auth_uname:=coalesce(self.u_name,'');
+
+          if(length(self.postprepare_err)=0)
+          {
+            if( _isreply=0)
+            {
+
+              
+              declare _ngrp_err,_checked_ngroups any;
+              _ngrp_err:=vector();
+              _checked_ngroups:=vector();
+              
+              declare i integer;
+              for(i:=0;i<length(_selected_groups_arr); i:=i+1)
+              {
+                declare _ng_type varchar;
+              
+              
+                {
+                declare exit handler for not found {
+--                                                    dbg_obj_print('-'||_selected_groups_arr[i]||'-');
+                                                    _ngrp_err:=vector_concat(_ngrp_err,vector('Group '||_selected_groups_arr[i]||' does not exist'));
+                                                   };
+                select NG_TYPE into _ng_type from NEWS_GROUPS where NG_NAME=_selected_groups_arr[i];
+                }
+
+
+
+                
+                if (_ng_type<>'NNTP')
+                {
+                    if(self.u_name is NULL)
+                       _ngrp_err:=vector_concat(_ngrp_err,vector('Group '||_selected_groups_arr[i]||' is ODS Newsgroup. You can not post new posts to ODS Newsgroups when not logged in.'));
+                    else
+                    {
+
+                     declare isAuthor,zeroPostNA intger;
+                     isAuthor:=0;
+                     zeroPostNA:=0;
+                     
+                     declare _wai_name varchar;
+
+                     declare exit handler for not found {
+                                                         isAuthor:=0;
+                                                         goto _skip;
+                                                        };
+
+                     if(_ng_type='BLOG')
+                     {
+                        select BI_WAI_NAME into _wai_name from BLOG.DBA.SYS_BLOG_INFO where BI_BLOG_ID=_selected_groups_arr[i];
+                     }
+                     else if(_ng_type='oWiki')
+                     {
+                          zeroPostNA:=1;
+                          goto _skip;
+--                        select ClusterName into _wai_name from WV.Wiki.CLUSTERS,NEWS_GROUPS where C_NEWS_ID=NG_NAME and NG_NAME=_selected_groups_arr[i];
+                     }
+                     else if(_ng_type='OFM')
+                     {
+                          zeroPostNA:=1;
+                          goto _skip;
+
+--                        select WAI_NAME into  _wai_name from WA_INSTANCE,NEWS_GROUPS where ENEWS.WA.domain_nntp_name (WAI_ID)=NG_NAME and NG_NAME= _selected_groups_arr[i];
+                     }
+                     else if(_ng_type='MAIL')
+                     {
+                        zeroPostNA:=1;
+                        goto _skip;
+--                        select WAI_NAME into  _wai_name from WA_INSTANCE,NEWS_GROUPS where OMAIL.WA.domain_nntp_name (WAI_ID)=NG_NAME and NG_NAME= _selected_groups_arr[i];
+                     }
+             
+                            
+                     declare _ugroup,_membertype integer;
+                     _ugroup:=-1;
+                     _membertype:=-1;
+                     
+
+                     declare exit handler for not found {
+--                                                    dbg_obj_print('_wai_name2',_wai_name);
+--                                                    dbg_obj_print('self.u_name',self.u_name);
+                                                    isAuthor:=0;
+                                                    goto _skip;
+                                                   };
+                      {
+                     select U_GROUP,WAM_MEMBER_TYPE into _ugroup,_membertype from WA_MEMBER,SYS_USERS where  WAM_USER=U_ID and WAM_INST= _wai_name and U_NAME=self.u_name;
+                     
+                     if(_ugroup=0)
+                        isAuthor:=1;
+                     else if(_membertype in (1,2))   
+                        isAuthor:=1;
+                     }
+                    
+                     _skip:
+                                         
+                     if (zeroPostNA)
+                        _ngrp_err:=vector_concat(_ngrp_err,vector('ODS Discussion does not allow sending posts of 0 level for newsgroup <b>'||
+                                                                   _selected_groups_arr[i]||'</b> with type '||
+                                                                   (case when _ng_type='OFM' then 'FeedManager' when _ng_type='oWiki' then 'Wiki' else _ng_type end)||
+                                                                   '.'
+                                                                 )
+                                                );
+                     else if (isAuthor=0)
+                        _ngrp_err:=vector_concat(_ngrp_err,vector('You are not author for <b>'||_selected_groups_arr[i]||'</b>. You can not create new post.'));
+                     else
+                        _checked_ngroups:=vector_concat(_checked_ngroups,vector(_selected_groups_arr[i]));
+
+                    }
+                 
+                }else
+                {
+                 
+                 _checked_ngroups:=vector_concat(_checked_ngroups,vector(_selected_groups_arr[i]));
+                }
+                
+              }
+              
+              
+              if(length(_checked_ngroups)>0)
+              {
+                self.grplist_succ:='<b>'||nntpf_implode(_checked_ngroups,'</b>, <b>')||'</b>';
+                for(i:=0; i<length(_checked_ngroups); i := i+1)
+                   _tmp_params:=vector_concat(_tmp_params,vector('availble_groups', _checked_ngroups[i]));
+              }
+              
+              if(length(_ngrp_err)>0)
+              {
+
+               self.grplist_err:=(nntpf_implode(_ngrp_err,'<br/>'));
+              }
+
+           }else
+           {
+            _tmp_params:=coalesce(params,vector());
+            auth_uname:=coalesce(self.u_name,'');
+            self.grplist_succ:='<b>'||get_keyword ('availble_groups', params, '')||'</b>';
+            
+           }
+
+            
+           if(length(self.grplist_succ))
+           {
+            nntpf_post_message (_tmp_params,auth_uname);
+           }
 		  self.vc_post_ready := 1;
 	       }
 
+       }
+
 	     if (get_keyword ('Post_done', params, '') <> '')
 	       {
+         --it is better go get it back to where it came.
+        
 		  http_request_status ('HTTP/1.1 302 Found');
   		  http_header (sprintf ('Location: nntpf_main.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
 	       }
 
+       self.vc_disl_warnning := nntpf_is_display_warning (self.grp_selected);
+
+
 	     if (self.grp_sel_thr <> 0)
 	       {
 		  self.grp_selected := vector ((select NG_NAME from NEWS_GROUPS where NG_GROUP = self.grp_sel_thr));
-		  self.grp_list_size := 3;
---	          dbg_obj_print ('self.grp_selected = ', self.grp_selected);
-	       }
+        self.grp_list_size := 1;
+       }else if(length(_selected_groups_arr))
+                self.grp_selected :=_selected_groups_arr;
 
+       self.grp_list:=vector();
 	     for (select NG_NAME, NG_POST, NG_GROUP from NEWS_GROUPS
 		where NG_POST = 1 and ns_rest (NG_GROUP, 1) = 1 and NG_STAT<>-1) do
 	           self.grp_list := vector_concat (self.grp_list, vector (NG_NAME));
 
-	     self.vc_disl_warnning := nntpf_is_display_warning (self.grp_selected);
+      if(self.grp_list is null)
+      {
+        self.vc_post_ready:=1;
+        self.postprepare_err:= 'There are no available group(s) for posting.';
+      }
 
 	]]>
     </v:before-data-bind>
@@ -197,8 +412,13 @@
   </xsl:template>
 
 <xsl:template name="vm:post_fills">
-  <vm:template enabled="--abs (self.vc_post_ready - 1)">
     <br/>
+  <vm:template enabled="--length(self.postprepare_err)">
+     <div style="padding:10px">
+       <?vsp http(self.postprepare_err); ?>
+     </div>
+  </vm:template>
+  <vm:template name="post_interface" enabled="--abs (self.vc_post_ready - 1)">
     <table width="100%" id="content" cellspacing="0" cellpadding="0">
       <tr>
         <th colspan="2">Post article</th>
@@ -215,14 +435,21 @@
                          xhtml_style="width:216"
                          multiple="1"
                          enabled="--self.grp_list_enabled"
-                         value="--self.grp_selected">
-          <v:before-data-bind><v:script><![CDATA[
-                      control.vsl_items := self.grp_list;
+                         value="--self.grp_selected"
+                         >
+            <v:before-data-bind>
+            <v:script><![CDATA[
 		      if (self.grp_list is not NULL)
+                  {
+                     control.vsl_items := self.grp_list;
                       control.vsl_item_values := self.grp_list;
-		      else
-                        signal ('NNTPP', 'There no available group(s) for posting.');
-           ]]></v:script></v:before-data-bind>
+                  }
+--                  else
+--                  {
+--                   signal ('NNTPP', 'There are no available group(s) for posting.');
+--                  }
+            ]]></v:script>
+            </v:before-data-bind>
           </v:select-list>
           <font color="rgb(0,64,123)">
 	   <v:label enabled="--self.vc_disl_warnning"
@@ -237,7 +464,7 @@
         </td>
         <td>
           <v:label value="--coalesce(self.post_from,'')" format="%V" width="80" enabled="--self.vc_authenticated" />
-          <v:text name="post_from_n" value="--''" format="%s" xhtml:size="50" type="--''" enabled="--abs (self.vc_authenticated - 1)" />
+          <v:text name="post_from_n" value="--coalesce(self.post_from,'')" format="%s" xhtml:size="50" enabled="--abs (self.vc_authenticated - 1)" />
           <font color="rgb(0,64,123)">
             <v:label value="--' Please enter a valid email address.'" format="%s" enabled="--abs (self.vc_authenticated - 1)" />
           </font>
@@ -270,14 +497,15 @@
         </td>
       </tr>
       <tr>
-        <td>&nbsp;</td>
+        <td><![CDATA[&nbsp;]]></td>
         <td>
           <input type="submit" name="Post" value="Post article" />
           <input type="button" name="Cancel" value="Cancel" onClick="javascript:history.back(1)"/>
           <input type="hidden" name="post_group" value="<?= get_keyword ('group', self.vc_page.vc_event.ve_params) ?>"/>
           <input type="hidden" name="post_old_hdr" value="<?= self.post_old_hdr ?>"/>
+          <input type="hidden" name="is_reply" value="<?V(case when (get_keyword ('article', self.vc_event.ve_params, null)) is not null then 1 else 0 end)?>"/>
           <?vsp
-            if (self.grp_selected is not null and self.grp_selected <> '') -- Can be more than 1 grp
+            if (1=0 and self.grp_selected is not null and self.grp_selected <> '') -- Can be more than 1 grp
               {
                 http ('&nbsp;to group(s):&nbsp;');
                 nntpf_dump_string_vec (self.grp_selected, '%s, ', '%s');
@@ -287,16 +515,25 @@
       </tr>
     </table>
   </vm:template>
+
+
   <vm:template enabled="--self.vc_post_ready">
+   <div style="padding:10px">
+    <vm:template enabled="--length(self.grplist_err)">
      <p>
-	The article is posted.
-	<input type="submit" name="Post_done" value="Ok" />
+          Post error log:<br/>
+          <?vsp http(self.grplist_err); ?>
      </p>
   </vm:template>
-</xsl:template>
-<xsl:template name="vm:post_login">
-  <vm:template enabled="--self.vc_authenticated">
-    <vm:login/>
+    <vm:template enabled="--length(self.grplist_succ)">
+       <p>
+          The article is posted for <?vsp http(self.grplist_succ);?>.<br/><br/>
+       </p>
   </vm:template>
+
+        <input type="submit" name="Post_done" value="Ok" />
+   </div>
+  </vm:template>
+
  </xsl:template>
 </xsl:stylesheet>

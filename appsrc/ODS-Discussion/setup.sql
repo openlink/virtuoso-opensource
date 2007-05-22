@@ -428,9 +428,10 @@ registry_set ('__nntpf_ver', 'ODS Discussion ' || sys_stat ('st_dbms_ver'))
 ;
 
 create procedure
-nntpf_post_message (in params any)
+nntpf_post_message (in params any, in auth_uname varchar :='')
 {
    
+
    declare new_body, old_hdr, new_subj, nfrom, new_ref, new_attachments any;
    declare _old_ref, _groups, _old_id any;
    declare new_mess any;
@@ -461,6 +462,7 @@ nntpf_post_message (in params any)
 	_groups := '';
 	while (idx < length (params))
 	  {
+--	    dbg_obj_print(idx,params[idx]);
 	    if (params[idx] = 'availble_groups')
 	      {
 		 if (_groups = '')
@@ -502,10 +504,13 @@ nntpf_post_message (in params any)
   new_mess := new_mess || new_body || new_attachments || '\r\n.\r\n';
 
 
---connection_set ('nntp_uid', 'imeto_e_tuka');
+  connection_set ('nntp_uid', auth_uname);
+
 
   ns_post (new_mess);
-  http_rewrite ();
+
+
+
 }
 ;
 
@@ -1770,6 +1775,8 @@ nntpf_thr_get_mess_details (in _nm_id varchar, in do_links int := 0)
    declare _u_id integer;
 
    ret := make_array (6, 'any');
+   
+   
    select deserialize (NM_HEAD)[0], NM_BODY into temp, m_body from DB.DBA.NEWS_MSG where NM_ID = _nm_id;
 
    -- This may be is better to be moved inside the nntp
@@ -2246,7 +2253,8 @@ nntpf_print_date_in_thread (in _date datetime)
 create procedure
 nntpf_post_get_message_parts (in _id any)
 {
-   declare ret, temp, body, subj, is_re any;
+   declare ret, temp, body, subj, is_re, ctype, cset any;
+
 
    ret := make_array (3, 'any');
 
@@ -2255,6 +2263,10 @@ nntpf_post_get_message_parts (in _id any)
 
    subj := get_keyword ('Subject', temp[0], '');
 
+  ctype := get_keyword_ucase ('Content-Type', temp[0], 'text/plain');
+  cset  := upper (get_keyword_ucase ('charset', temp[0]));
+
+   
    is_re := strstr (upper (subj), 'RE:');
 
    if (is_re is NULL or is_re > 3 )

@@ -83,7 +83,8 @@
                  self.mesg:='<b>' || self.mesg || '</b>';
             }
             else
-             self.mesg:='<b>Incomplete article not posted</b>';
+              self.mesg:='<b>' || self.mesg || '</b>';
+--             self.mesg:='<b>Incomplete article not posted</b>';
            
            }        
         </v:before-data-bind>
