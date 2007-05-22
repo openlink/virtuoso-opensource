@@ -303,7 +303,7 @@ OMAIL.WA.exec_no_error (
      OMAIL.WA.dsize_update(N.DOMAIN_ID, N.USER_ID, N.MSG_ID);
      if ((N.DOMAIN_ID <> 1) and (N.PART_ID = 1)) {
        declare id integer;
-       declare rfc_id, rfc_header, rfc_references, subject, address varchar;
+       declare rfc_id, rfc_header, rfc_references, subject, address, addresses varchar;
        declare ts datetime;
        declare nInstance any;
 
@@ -319,9 +319,7 @@ OMAIL.WA.exec_no_error (
          rfc_id := OMAIL.WA.make_rfc_id (N.MSG_ID);
 
        if (isnull(rfc_references)) {
-         declare addresses any;
-
-         addresses := split_and_decode(OMAIL.WA.omail_address2str(\'to\',  ADDRESS, 2), 0, \'\0\0,\');
+         addresses := OMAIL.WA.str2vector (OMAIL.WA.omail_address2str (''to'', address, 2));
          foreach (any address in addresses) do {
            rfc_references := (select C_RFC_ID from OMAIL.WA.CONVERSATION where C_ADDRESS = trim(address));
            if (not isnull(rfc_references))

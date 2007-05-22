@@ -53,8 +53,6 @@ exec_start:;
 
   waID := null;
   path := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
-  dbg_obj_print ('1',  path);
-  dbg_obj_print ('2',  OMAIL.WA.utl_parse_url(lines[0]));
   vOptions := http_map_get('options');
   if (not isnull(vOptions))
     waID := get_keyword('domain', vOptions);

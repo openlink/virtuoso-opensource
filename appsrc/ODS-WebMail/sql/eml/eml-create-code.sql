@@ -737,12 +737,12 @@ create procedure OMAIL.WA.omail_ch_pop3_acc(
   declare _messages any;
   declare N integer;
 
-  DECLARE EXIT HANDLER FOR SQLSTATE '2E000' {
+  declare exit handler for SQLSTATE '2E000' {
     -- err_bad_server:
     OMAIL.WA.omail_ch_pop3_acc_update(_domain_id, _user_id, _acc_id, 1);
     return 1811;
   };
-  DECLARE EXIT HANDLER FOR SQLSTATE '08006'{
+  declare exit handler for SQLSTATE '08006'{
     --err_bad_user:
     OMAIL.WA.omail_ch_pop3_acc_update(_domain_id, _user_id, _acc_id, 2);
     return 1812;
@@ -2991,7 +2991,6 @@ create procedure OMAIL.WA.omail_email_search_str(
       }
     }
   }
-  --dbg_obj_print(rs);
   return rs;
 }
 ;
@@ -3302,9 +3301,11 @@ create procedure OMAIL.WA.omail_open_message(
       _displayName := coalesce((select U_FULL_NAME from DB.DBA.SYS_USERS where U_ID = _user_id), '');
 
     _addContact := '';
+    if (_domain_id = 1) {
     _ab_id := OMAIL.WA.check_app (_user_id, 'AddressBook');
     if (_ab_id <> 0)
       _addContact := AB.WA.ab_url (_ab_id);
+    }
 
     _rs := sprintf ('%s<msg_id>%d</msg_id>\n', _rs, get_keyword ('msg_id', _fields));
     _rs := sprintf ('%s<ref_id>%s</ref_id>\n', _rs, get_keyword ('ref_id', _fields));
@@ -3852,7 +3853,7 @@ create procedure OMAIL.WA.omail_save_msg(
   _mstatus    := 5;
   _attached   := 0;
   _pdefault   := 1;
-  _msg_source := 0; -- ( '-1' ->from SMTP; '0' ->inside; '>0' - from POP3 account)
+  _msg_source := 0; -- '-1' ->from SMTP; '0' ->inside; '>0' - from POP3 account
 
   _from := trim(get_keyword('from',_params, ''));
   if (_from = '')
@@ -4430,8 +4431,14 @@ create procedure OMAIL.WA.omail_send_msg(
 {
   declare _sql_result1,_sql_result2,_xslt_url,_xslt_url2,_rs,_boundary,_body any;
 
-  WHENEVER SQLSTATE '2E000' GOTO _BAD_SMTP;
-  WHENEVER SQLSTATE '08006' GOTO _BAD_RECEPIENT;
+  declare exit handler for SQLSTATE '2E000' {
+    _error := 1901;
+    return;
+  };
+  declare exit handler for SQLSTATE '08006'{
+    _error := 1902;
+    return;
+  };
 
   _error     := 0;
   _xslt_url  := OMAIL.WA.omail_xslt_full('construct_mail.xsl');
@@ -4483,17 +4490,6 @@ create procedure OMAIL.WA.omail_send_msg(
       OMAIL.WA.omail_del_message(_domain_id, _user_id, _msg_id);
     }
   }
-  return;
-
-  -- Exception 1 ---------------------------------------------------------------
-_BAD_SMTP:
-  _error := 1901;
-  return;
-
-  -- Exception 2 ---------------------------------------------------------------
-_BAD_RECEPIENT:
-  _error := 1902;
-  return;
 }
 ;
 
@@ -5486,7 +5482,6 @@ create procedure OMAIL.WA.omail_write(
   _rs := sprintf('%s%s\n',_rs,_sql_result2);
   _rs := sprintf('%s%s\n',_rs,OMAIL.WA.omail_accounts_list(_user_id));
 
-  --dbg_obj_print(_rs);
   return _rs;
 }
 ;
@@ -6679,6 +6674,16 @@ create procedure OMAIL.WA.tags2unique(
 }
 ;
 
+---------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.str2vector (
+  in S varchar,
+  in delimiter varchar := ',')
+{
+  return split_and_decode(trim (S, delimiter), 0, '\0\0'||delimiter);
+}
+;
+
 -------------------------------------------------------------------------------
 --
 -- Date / Time functions
@@ -7298,8 +7303,6 @@ create procedure OMAIL.WA.nntp_process_parts (
 
 -----------------------------------------------------------------------------------------
 --
-DB.DBA.NNTP_NEWS_MSG_DEL ('MAIL')
-;
 DB.DBA.NNTP_NEWS_MSG_ADD (
 'MAIL',
 'select
@@ -7307,7 +7310,7 @@ DB.DBA.NNTP_NEWS_MSG_ADD (
    C_RFC_ID,
    C_RFC_REFERENCES,
    0,    -- NM_READ
-   null,
+   C_USER_ID,
    C_TS,
    0,    -- NM_STAT
    null, -- NM_TRY_POST
@@ -7324,7 +7327,7 @@ DB.DBA.NNTP_NEWS_MSG_ADD (
    a.M_RFC_ID,
    a.M_RFC_REFERENCES,
    0,    -- NM_READ
-   null,
+   a.USER_ID,
    a.RCV_DATE,
    0,    -- NM_STAT
    null, -- NM_TRY_POST
@@ -7353,24 +7356,22 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
   inout N_NM_HEAD any,
   inout N_NM_BODY any)
 {
-  declare _domain_id, _user_id, _from, _to, _address, _addresses, _description, _msg_id, _params, _error any;
-  declare _content, _request, _respond any;
-  declare author, name, mail, tree, head, contentType, content, subject, title, cset any;
-  declare rfc_id, rfc_header, rfc_references, refs any;
+  declare _domain_id, _user_id, _address, _addresses, _msg_id, _params, _error any;
+  declare tree, head, contentType, cset, content, subject, refs any;
+  declare _request, _respond any;
 
-  if (isnull(N_NM_REF) and isnull(connection_get ('nntp_uid')))
+  if (isnull (N_NM_REF) and isnull (connection_get ('vspx_user')))
     signal ('CONVA', 'The post cannot be done via news client, this requires authentication.');
 
   tree        := deserialize (N_NM_HEAD);
   head        := tree [0];
-  contentType := get_keyword_ucase ('Content-Type', head, 'text/plain');
-  cset        := upper (get_keyword_ucase ('charset', head));
-  subject     := get_keyword_ucase ('Subject', head);
-  _from       := get_keyword_ucase ('From', head, 'nobody@unknown');
 
+  subject := get_keyword_ucase ('Subject', head);
   if (not isnull(subject))
     OMAIL.WA.nntp_decode_subject (subject);
 
+  contentType := get_keyword_ucase ('Content-Type', head, 'text/plain');
+  cset        := upper (get_keyword_ucase ('charset', head));
   if (contentType like 'text/%') {
     declare st, en int;
     declare last any;
@@ -7424,31 +7425,33 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
   } else
     signal ('CONVX', sprintf ('The content type [%s] is not supported', contentType));
 
-  rfc_references := N_NM_REF;
-  if (not isnull(rfc_references)) {
-    --declare exit handler for not found { signal ('CONV1', 'No such article.');};
+  if (not isnull (N_NM_REF)) {
     --declare exit handler for sqlstate '*' { return dbg_obj_print(__SQL_MESSAGE);};
 
-    refs := split_and_decode (rfc_references, 0, '\0\0 ');
+    refs := split_and_decode (N_NM_REF, 0, '\0\0 ');
     if (length (refs)) {
-	    rfc_id := refs[0];
-
-      select C_DOMAIN_ID, C_USER_ID, C_ADDRESS, C_ADDRESSES, C_DESCRIPTION
-        into _domain_id, _user_id, _address, _addresses, _description
+      select C_DOMAIN_ID,
+             C_USER_ID,
+             C_ADDRESS,
+             C_ADDRESSES
+        into _domain_id,
+             _user_id,
+             _address,
+             _addresses
         from OMAIL.WA.CONVERSATION
-       where C_RFC_ID = rfc_id;
+       where C_RFC_ID = refs[0];
 
-      _to := OMAIL.WA.omail_address2str('to', _addresses, 3);
       _params := vector('folder_id', 100,
                         'from',      _address,
-                        'to',        _to,
+                         'to',             OMAIL.WA.omail_address2str ('to', _addresses, 3),
                         'subject',   subject,
                         'message',   content,
                         'rfc_id',    N_NM_ID,
-                        'rfc_references', rfc_references);
-      _msg_id := OMAIL.WA.omail_save_msg(_domain_id, _user_id, _params, 0, _error);
+                         'rfc_references', N_NM_REF);
+      _msg_id := 0;
+      _msg_id := OMAIL.WA.omail_save_msg (_domain_id, _user_id, _params, _msg_id, _error);
       _request := sprintf('http://' || DB.DBA.http_get_host () || '/oMail/res/flush.vsp?did=%s&uid=%s&mid=%s&addr=%U', cast(_domain_id as varchar), cast(_user_id as varchar), cast(_msg_id as varchar), _address);
-      _content := http_get(_request, _respond);
+      http_get (_request, _respond);
     }
   }
 }
