@@ -2846,7 +2846,7 @@ wa_exec_no_error_log(
     WAUI_SITE_NAME long varchar,
     WAUI_INTERESTS long varchar,  -- 48
     WAUI_BORG_HOMEPAGE long varchar,  -- 20 same as BORG
-
+    WAUI_OPENID_URL varchar,
     primary key (WAUI_U_ID)
   )'
 )
@@ -2878,6 +2878,10 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BORG_HOMEPAGE', 'LONG VARCHAR');
 
 wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO DROP WAUI_FOAF');
 wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO ADD WAUI_FOAF LONG VARCHAR');
+
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_URL', 'VARCHAR');
+
+wa_exec_no_error('create index WA_USER_INFO_OID on DB.DBA.WA_USER_INFO (WAUI_OPENID_URL)');
 
 
 create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N {

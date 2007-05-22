@@ -52,6 +52,7 @@
       <v:variable name="oid_postcode" type="varchar" default="''" param-name="openid.sreg.postcode" />
       <v:variable name="oid_country" type="varchar" default="''" param-name="openid.sreg.country" />
       <v:variable name="oid_tz" type="varchar" default="''" param-name="openid.sreg.timezone" />
+      <v:variable name="use_oid_url" type="int" default="0" param-name="uoid" />
     <div>
       <v:label name="regl1" value="--''" />
     </div>
@@ -117,6 +118,21 @@ try_next:
 		  ix := ix + 1;
 		  goto try_next;
 	        }
+	      if (self.use_oid_url)
+                {
+                  self.reguid.ufl_value := self.oid_nickname;
+		  self.regmail.ufl_value := self.oid_email;
+		  self.regpwd.ufl_value := uuid ();
+		  self.regpwd1.ufl_value := self.regpwd.ufl_value;
+		  self.is_agreed.ufl_selected := 1;
+
+		  self.registration.vc_focus := 1;
+		  self.vc_event.ve_is_post := 1;
+		  self.registration.vc_user_post (self.vc_event);
+		  control.vc_enabled := 0;
+		  self.registration.vc_focus := 0;
+		  self.vc_event.ve_is_post := 0;
+                }
 	    }
 
 	  ]]></v:on-init>
@@ -127,7 +143,6 @@ try_next:
      
     </v:template>
     <v:template name="registration"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
-      <table>
         <script type="text/javascript">
           <![CDATA[
             <!--
@@ -153,9 +168,18 @@ try_next:
                   document.forms['page_form'].regname.value = N + ' ' + L;
               }
             }
+	    function showhideLogin (cb)
+	    {
+	      var tb = document.getElementById ('login_info');
+              if (cb.checked)
+	        tb.style.visibility = "hidden";
+	      else
+                tb.style.visibility = "visible";
+	    }
             // -->
           ]]>
         </script>
+      <table>
         <tr>
 	    <th><label for="reguid">Register using OpenID</label></th>
 	    <td>
@@ -165,14 +189,30 @@ try_next:
 			default_value="--self.oid_identity"/>
 		    <v:button action="simple" name="openid_bt" value="Authenticate">
 			<v:on-post><![CDATA[
-declare hdr, xt any;
+declare hdr, xt, uoid, is_agreed any;
 declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate varchar;
 
 host := http_request_header (e.ve_lines, 'Host');
 
-this_page := 'http://' || host || http_path ();
+uoid := atoi(get_keyword ('use_oid', e.ve_params, '0'));
+is_agreed := atoi(get_keyword ('is_agreed', e.ve_params, '0'));
+
+if (uoid and not is_agreed)
+  {
+    self.regf1.vc_error_message := 'You have not agreed to the Terms of Service.';
+    self.vc_is_valid := 0;
+    return;
+  }
+
+this_page := 'http://' || host || http_path () || sprintf ('?uoid=%d', uoid);
 trust_root := 'http://' || host;
 
+declare exit handler for sqlstate '*'
+{
+  self.vc_is_valid := 0;
+  self.vc_error_message := 'Invalid OpenID URL';
+  return;
+};
 
 url := self.openid_url.ufl_value;
 oi_ident := url;
@@ -205,11 +245,16 @@ check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U',
 
 self.vc_redirect (check_immediate);
 			    ]]></v:on-post>
-		    </v:button><!--br/>
-		    <v:check-box name="use_oid" xhtml_id="use_oid" value="1" /><label for="use_oid">I want to use my OpenID URL to login</label-->
+		    </v:button><br/>
+		    <v:check-box name="use_oid" xhtml_id="use_oid" value="1" xhtml_onclick="javascript:showhideLogin(this)"
+			initial-checked="--self.use_oid_url"/>
+		    <label for="use_oid">Do not create password, I want to use my OpenID URL to login</label>
 		</v:form>
 	    </td>
 	</tr>
+    </table>
+    <div id="login_info">
+      <table>
         <tr>
           <th><label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
@@ -294,6 +339,9 @@ self.vc_redirect (check_immediate);
 	  <td></td>
         </tr>
         <?vsp } ?>
+      </table>
+  </div>
+      <table>
         <tr>
           <td></td>
           <td><v:check-box name="is_agreed" value="1" initial-checked="0" xhtml_id="is_agreed"/>
@@ -406,6 +454,7 @@ self.vc_redirect (check_immediate);
 	        WA_USER_EDIT (u_name1, 'WAUI_HCOUNTRY', (select WC_NAME from WA_COUNTRY where WC_ISO_CODE = upper (self.oid_country)));
               if (length (self.oid_tz))
 	        WA_USER_EDIT (u_name1, 'WAUI_HTZONE', self.oid_tz);
+	      update WA_USER_INFO set WAUI_OPENID_URL = self.oid_identity where WAUI_U_ID = uid;
 	   }
 	 else
 	 {

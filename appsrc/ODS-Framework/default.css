@@ -599,6 +599,11 @@ div.error_dialog div.dialog_buttons {
   width: 170px;
   float: left;
   margin-bottom: 10px}
+#open_id_url {  
+  display: block;
+  width: 170px;
+  float: left;
+  margin-bottom: 10px}
 #login_frm_cb_remember_me {
   display: block;
   float: left;

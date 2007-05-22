@@ -192,7 +192,7 @@ create procedure checkid_immediate
       else
         delim := '?';
       login := sprintf ('%s?return_to=%U&identity=%U&assoc_handle=%U&trust_root=%U&sreg_required=%U&sreg_optional=%U&policy_url=%U',
-	    DB.DBA.wa_link(1, 'login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
+	    DB.DBA.wa_link(1, 'oid_login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
 	    coalesce (sreg_required, ''), coalesce (sreg_optional, ''), coalesce (policy_url, ''));
       --dbg_obj_print (sprintf ('Location: %s?openid.mode=id_res&openid.user_setup_url=%U\r\n', return_to, login));
       http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=id_res&openid.user_setup_url=%U\r\n', return_to, delim, login));
@@ -340,7 +340,7 @@ create procedure checkid_setup
       http_request_status ('HTTP/1.1 302 Found');
 
       login := sprintf ('%s?return_to=%U&identity=%U&assoc_handle=%U&trust_root=%U&sreg_required=%U&sreg_optional=%U&policy_url=%U',
-	    DB.DBA.wa_link(1, 'login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
+	    DB.DBA.wa_link(1, 'oid_login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
 	    coalesce (sreg_required, ''), coalesce (sreg_optional, ''), coalesce (policy_url, ''));
       http_header (http_header_get () || sprintf ('Location: %s\r\n', login));
       --http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=cancel\r\n', return_to, delim));

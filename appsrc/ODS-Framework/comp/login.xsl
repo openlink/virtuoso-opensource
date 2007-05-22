@@ -33,6 +33,11 @@
   <v:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
   <v:variable name="is_cookie_session" type="int" default="0" persist="0" param-name="noparams"/>
   <!-- OpenID signin -->
+  <v:variable name="oid_sig" type="varchar" default="null" param-name="openid.sig" />
+  <v:variable name="oid_identity" type="varchar" default="''" param-name="openid.identity" />
+  <v:variable name="oid_assoc_handle" type="varchar" default="''" param-name="openid.assoc_handle" />
+  <v:variable name="oid_signed" type="varchar" default="''" param-name="openid.signed" />
+  <v:variable name="oid_srv" type="varchar" default="''" param-name="oid-srv" />
   <v:variable name="_return_to" type="varchar" default="null" persist="0" param-name="return_to" />
   <v:variable name="_identity" type="varchar" default="null" persist="0" param-name="identity" />
   <v:variable name="_assoc_handle" type="varchar" default="null" persist="0" param-name="assoc_handle" />
@@ -75,11 +80,16 @@
               <v:text xhtml_id="login_frm_username" name="username" value=""/><br/>
               <label for="password">Password</label>
               <v:text xhtml_id="login_frm_password" name="password" value="" type="password"/><br/>
+	      <xsl:if test="not (@mode = 'oid')">
+		  <b>or</b><br/>
+		  <label for="open_id_url">OpenID URL</label>
+		  <img src="images/login-bg.gif" alt="openID"/>
+		  <v:text name="open_id_url" xhtml_id="open_id_url"/><br />
+	      </xsl:if>
               <v:check-box name="cb_remember_me" xhtml_id="login_frm_cb_remember_me" value="1" xhtml_checked="1"/>
               <label for="login_frm_cb_remember_me">Remember me</label><br/>
               <v:button action="simple" name="login" value="Login" xhtml_id="login_frm_b_login">
                     <v:on-post>
-                      <v:script>
                         <![CDATA[
                           declare _blocked_until any;
                           _blocked_until := (select
@@ -105,7 +115,6 @@
                             dateadd('hour', 1, now()));
                           }
                         ]]>
-                      </v:script>
                     </v:on-post>
                     <v:before-render>
                       <![CDATA[
@@ -174,21 +183,37 @@
                 {
                   self.url := 'new_inst.vspx';
                   pars := sprintf('%s&wa_name=%s', pars, self.wa_name);
+
    	            if(self.topmenu_level='1')
+
    	              pars := sprintf('%s&wa_name=%s&l=1', pars, self.wa_name);
                 };
+
 		if (length (self.promo))
 		  pars := pars || '&fr=' || self.promo;
+
                 url := vspx_uri_add_parameters (self.url, pars);
+
 		--dbg_obj_print ('login_if_login ', url);
+    declare oid_code int;
+    oid_code := 0;
+?>
+<xsl:if test="@mode = 'oid'">
+<xsl:processing-instruction name="vsp"><![CDATA[
 		if (self._return_to is not null)
 		  {
                     --dbg_obj_print ('----------------------------------------------');
 		    --dbg_obj_print (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid);
+
 		    OPENID..checkid_immediate (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid, 0,
 		    self._sreg_required, self._sreg_optional, self._policy_url);
+	 oid_code := 1;
 		  }
-		else
+]]></xsl:processing-instruction>
+</xsl:if>
+<?vsp
+    -- should be else, but cant stick with XSL-T if
+    if (not oid_code)
 		  {
                 http_request_status ('HTTP/1.1 302 Found');
                 http_header (concat (http_header_get (), sprintf ('Location: %s\r\n', url)));
@@ -290,7 +315,107 @@
 	else if (length (self.sid) and self.login_ip is null)
 	  self.login_ip := http_client_ip ();
 
-        declare tmpl any;
+  declare tmpl, open_id_url any;
+
+  ]]>
+<xsl:if test="not (@mode = 'oid') and not (@redirect)">
+<![CDATA[
+open_id_url := get_keyword ('open_id_url', e.ve_params, null);
+if (not control.vl_authenticated and length(self.oid_sig))
+{
+  declare uname, url, pars, sig varchar;
+
+  url := sprintf ('%s?openid.mode=check_authentication&openid.assoc_handle=%U&openid.sig=%U&openid.signed=%U',
+  self.oid_srv, self.oid_assoc_handle, self.oid_sig, self.oid_signed);
+
+  pars := e.ve_params;
+
+  sig := split_and_decode (self.oid_signed, 0, '\0\0,');
+  foreach (any el in sig) do
+    {
+      el := trim (el);
+      if (el not in ('mode', 'signed', 'assoc_handle'))
+        {
+          declare val any;
+	  val := get_keyword ('openid.'||el, pars, '');
+	  if (val <> '')
+	    url := url || sprintf ('&openid.'||el||'=%U', val);
+	}
+    }
+  {
+     declare resp any;
+     declare exit handler for sqlstate '*' {
+     goto auth_failed1;
+    };
+    resp := HTTP_CLIENT (url);
+    dbg_obj_print (resp);
+    if (resp not like '%is_valid:%true\n%')
+      goto auth_failed1;
+  }
+
+  control.vl_authenticated := 1;
+  select U_NAME into uname from WA_USER_INFO, SYS_USERS where WAUI_U_ID = U_ID and WAUI_OPENID_URL = self.oid_identity;
+  connection_set ('vspx_user', uname);
+  self.sid := vspx_sid_generate ();
+  self.realm := 'wa';
+  insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (self.sid, self.realm, uname, now ());
+}
+
+if (not control.vl_authenticated and length (open_id_url) and e.ve_is_post)
+{
+declare hdr, xt, uoid, is_agreed any;
+declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate varchar;
+
+host := http_request_header (e.ve_lines, 'Host');
+
+this_page := 'http://' || host || http_path ();
+trust_root := 'http://' || host;
+
+declare exit handler for sqlstate '*'
+{
+  self.vc_is_valid := 0;
+  self.vc_error_message := 'Invalid OpenID URL';
+  return;
+};
+
+url := open_id_url;
+oi_ident := url;
+again:
+hdr := null;
+cnt := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>hdr);
+if (hdr [0] like 'HTTP/1._ 30_ %')
+  {
+    declare loc any;
+    loc := http_request_header (hdr, 'Location', null, null);
+    url := WS.WS.EXPAND_URL (url, loc);
+    oi_ident := url;
+    goto again;
+  }
+xt := xtree_doc (cnt, 2);
+oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
+oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+
+if (oi_srv is null)
+  signal ('22023', 'Cannot locate OpenID server');
+
+if (oi_delegate is not null)
+  oi_ident := oi_delegate;
+
+this_page := this_page || sprintf ('?oid-srv=%U', oi_srv);
+
+check_immediate :=
+sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U',
+        oi_srv, oi_ident, this_page, trust_root);
+
+self.vc_redirect (check_immediate);
+
+return;
+
+}
+auth_failed1:;
+    ]]>
+</xsl:if>
+<![CDATA[
         if (control.vl_authenticated)
         {
            set isolation = 'committed';
