@@ -85,7 +85,7 @@ function callSparql (graph_id, qry_id, res_id)
 	       xslt := xpath_eval ('[ xmlns:sql="urn:schemas-openlink-com:xml-sql" ]//*/@sql:xsl', xt);
 
 	       self.default_graph.ufl_value := default_graph;
-	       self.default_graph.vs_set_selected ();
+	       --self.default_graph.vs_set_selected ();
 	       self.root_element.ufl_value := root;
 	       self.style_path_control.ufl_value := xslt;
 	       if (length (xslt))
@@ -137,11 +137,13 @@ function callSparql (graph_id, qry_id, res_id)
 			    <tr>
 			      <td>Default Graph IRI</td>
 			      <td>
-				<v:data-list name="default_graph"
+				<!--v:data-list name="default_graph"
 				  sql="select DB.DBA.RDF_QNAME_OF_IID(G) as graph_uri from (select distinct G from RDF_QUAD) quad"
 				  key-column="graph_uri" value-column="graph_uri"
-				  xhtml_id="default_graph" xhtml_style="width: 320px;" />
-				<!--v:text name="default_graph" value="" xhtml_size="70" xhtml_id="default_graph" ></v:text-->
+				  xhtml_id="default_graph" xhtml_style="width: 320px;" /-->
+				  <v:text name="default_graph" value="" xhtml_size="70" xhtml_id="default_graph"
+				      default_value="--coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultGraph'), '')"
+				      ></v:text>
 			      </td>
 			    </tr>
 			    <tr>

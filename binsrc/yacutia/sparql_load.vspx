@@ -141,7 +141,13 @@
 					     if (rlen = 0)
 					       goto nextxt;
 
+					     {
+					       declare exit handler for sqlstate '*'
+					       {
+					         goto nextxt;
+					       };
 					     xt := xtree_doc (RES_CONTENT);
+					     }
 
 					     if (xpath_eval ('[ xmlns:sql="urn:schemas-openlink-com:xml-sql" ]//sql:sparql', xt)
 					     		is null)
