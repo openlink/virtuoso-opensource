@@ -124,8 +124,18 @@ create procedure DB.DBA.URL_REW_ODS_GEM (in par varchar, in fmt varchar, in val 
   graph := sioc..get_graph ();
   pos := strrchr (path, '/');
   path := subseq (path, 0, pos);
+
+  if (val = 'person')
+    {
+      pos := strrchr (path, '/');
+      val := subseq (path, pos+1, length (path));
+      ret := sprintf ('/ods/foaf.vsp?uname=%U&fmt=%U', val, acc);
+    }
+  else
+    {
   iri := sprintf ('http://%s%s', sioc..get_cname (), path);
   ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
+    }
   return ret;
 };
 

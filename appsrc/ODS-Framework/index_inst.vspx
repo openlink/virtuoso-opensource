@@ -36,7 +36,7 @@
       <vm:body>
         <table>
         <tr><td><vm:login inst="yes"/></td></tr>
-        <tr><td><vm:register-form/></td></tr>
+        <!--tr><td><vm:register-form/></td></tr-->
         </table>
       </vm:body>
     </vm:pagewrapper>

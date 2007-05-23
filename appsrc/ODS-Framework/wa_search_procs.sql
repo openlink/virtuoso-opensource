@@ -475,7 +475,7 @@ create function WA_SEARCH_NNTP (in max_rows integer, in current_user_id integer,
 	'prefix dct: <http://purl.org/dc/terms/> prefix '||
 	'sioc: <http://rdfs.org/sioc/ns#> '||
 	'prefix sioct: <http://rdfs.org/sioc/types#>
-	select distinct ?link, ?title, ?content, ?maker, ?ts, ?wai_id from <http://%S/dataspace> '||
+	select distinct ?link, ?title, (bif:left(?content_short,1000)) as ?content, ?maker, ?ts, ?wai_id from <http://%S/dataspace> '||
 	'where { '||
 	  ' ?s a sioct:MessageBoard ; sioc:id ?wai_id ;'||
 	  ' sioc:container_of ?post .'||
@@ -484,6 +484,7 @@ create function WA_SEARCH_NNTP (in max_rows integer, in current_user_id integer,
 	  ' dct:modified ?ts ;'||
 	  ' dc:subject ?tags ;'||
 	  ' sioc:content ?content ;'||
+	  ' sioc:content ?content_short ;'||
 	  ' foaf:maker ?maker .', DB.DBA.wa_cname ());
 
 	if (length (str))

@@ -133,6 +133,12 @@ function getFileName(form, from, to)
                                  url="--sprintf('uiedit.vspx?page=6')" 
                                  xhtml_class="tab"/>
                         </td>
+			<td class="<?V case when pg = 8 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                          <v:url value="Import"
+                                 format="%s"
+                                 url="--sprintf('uiedit.vspx?page=8')"
+                                 xhtml_class="tab"/>
+                        </td>
 			<td class="<?V case when pg = 7 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url value="LDAP Servers"
                                  format="%s"
@@ -185,6 +191,11 @@ function getFileName(form, from, to)
                                      type="simple" 
                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '6')">
                           <v:include url="uiedit_svc.vspx"/>
+                        </v:template>
+                        <v:template name="template8"
+                                     type="simple"
+                                     enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '8')">
+                          <v:include url="uiedit_import.vspx"/>
                         </v:template>
                         <v:template name="template7"
                                      type="simple"
