@@ -70,6 +70,9 @@ create procedure fill_ods_calendar_sioc (
                 E_EVENT,
                 E_EVENT_START,
                 E_EVENT_END,
+                E_PRIORITY,
+                E_STATUS,
+                E_COMPLETE,
                 E_CREATED,
                 E_UPDATED,
                 E_TAGS
@@ -95,6 +98,9 @@ create procedure fill_ods_calendar_sioc (
                     E_EVENT,
                     E_EVENT_START,
                     E_EVENT_END,
+                    E_PRIORITY,
+                    E_STATUS,
+                    E_COMPLETE,
                     E_CREATED,
                     E_UPDATED,
                     E_TAGS);
@@ -124,6 +130,9 @@ create procedure event_insert (
   inout event varchar,
   inout eventStart datetime,
   inout eventEnd datetime,
+  inout priority integer,
+  inout status varchar,
+  inout complete integer,
   inout created datetime,
   inout updated datetime,
   inout tags varchar)
@@ -160,6 +169,16 @@ create procedure event_insert (
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('summary'), subject);
     if (not isnull (description))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('description'), description);
+    if (not isnull (location))
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('location'), location);
+    if (not isnull (eventStart))
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstart'), CAL.WA.dt_iso8601 (eventStart));
+    if (not isnull (eventEnd))
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtend'), CAL.WA.dt_iso8601 (eventEnd));
+    if (not isnull (priority))
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('priority'), priority);
+    if (not isnull (status))
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('status'), status);
   }
   return;
 }
@@ -199,6 +218,9 @@ create trigger EVENTS_SIOC_I after insert on CAL.WA.EVENTS referencing new as N
                 N.E_EVENT,
                 N.E_EVENT_START,
                 N.E_EVENT_END,
+                N.E_PRIORITY,
+                N.E_STATUS,
+                N.E_COMPLETE,
                 N.E_CREATED,
                 N.E_UPDATED,
                 N.E_TAGS);
@@ -222,6 +244,9 @@ create trigger EVENTS_SIOC_U after update on CAL.WA.EVENTS referencing old as O,
                 N.E_EVENT,
                 N.E_EVENT_START,
                 N.E_EVENT_END,
+                N.E_PRIORITY,
+                N.E_STATUS,
+                N.E_COMPLETE,
                 N.E_CREATED,
                 N.E_UPDATED,
                 N.E_TAGS);

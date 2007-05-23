@@ -40,6 +40,7 @@
   <vm:pagewrapper>
     <vm:header caption="Error"/>
     <vm:variables>
+      <v:variable name="cScope" type="varchar" default="''" />
       <v:variable name="page_name" type="varchar" default="''" param-name="__PAGE" persist="0"/>
       <v:variable name="code" type="varchar" default="''" param-name="__SQL_STATE" persist="temp"/>
       <v:variable name="msg" type="varchar" default="''" param-name="__SQL_MESSAGE" persist="0"/>

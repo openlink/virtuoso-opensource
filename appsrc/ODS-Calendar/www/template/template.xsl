@@ -372,11 +372,11 @@
       <b>Exchange</b>
     </div>
     <div id="exchange" class="lc lc_closer lc_noborder" style="display: none;">
-      <div>
-        <a href="#" onclick="cExchange('import')" title="Calendar Import" alt="Calendar Import" class="gems"><img src="image/upld_16.png" border="0"/> Import</a>
+      <div style="-moz-user-select: none; cursor: pointer;" onclick="javascript: cExchange('import');">
+        <img src="image/upld_16.png" border="0"/> Import
       </div>
-      <div>
-        <a href="#" onclick="cExchange('export')" title="Calendar Export" alt="Calendar Export" class="gems"><img src="image/dwnld_16.png" border="0"/> Export</a>
+      <div style="-moz-user-select: none; cursor: pointer;" onclick="javascript: cExchange('export');">
+        <img src="image/dwnld_16.png" border="0"/> Export
       </div>
     </div>
   </xsl:template>

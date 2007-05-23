@@ -207,7 +207,7 @@
         if (e_event = 1) {
           http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cDateFormat)));
         } else {
-          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cTimeFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
+          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cDateFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
         }
       }
     ]]>
@@ -341,6 +341,10 @@
       <v:variable name="cTimeFormat" type="varchar" default="'e'" />
       <v:variable name="cDateFormat" type="varchar" default="'dd.MM.yyyy'" />
 
+      <v:variable name="icStep" type="varchar" default="''" />
+      <v:variable name="icSource" type="any" default="-1" />
+      <v:variable name="icType" type="any" default="-1" />
+
       <v:variable persist="temp" name="on_date" type="integer" default="null" />
       <v:variable persist="temp" name="on_time" type="integer" default="null" />
       <v:variable name="v_id" type="any" default="-1" />
@@ -461,7 +465,21 @@
 
                 cCommand := get_keyword ('exchange', e.ve_params, '');
                 if (cCommand <> '') {
+                  if (cCommand = 'import') {
                   self.cAction := cCommand;
+                    self.icStep := '1';
+                    self.icSource := -1;
+                    self.icType := 0;
+                    self.v_tags := '';
+                  }
+                  if (cCommand = 'export') {
+                    http_rewrite ();
+                    http_request_status ('HTTP/1.1 200 OK');
+                    http_header ('Content-Type: application/x-download\r\n');
+                    http_header ('Content-Disposition: inline; filename="calendar.ics"\r\n');
+                    http (CAL.WA.export_vcal (self.domain_id, self.cTimeZone));
+                    http_flush ();
+                  }
                 }
 
                 self.vc_data_bind(e);
@@ -2407,22 +2425,74 @@
       </v:template>
 
       <v:template type="simple" enabled="--case when (self.cAction = 'import') then 1 else 0 end">
+        <v:template type="simple" enabled="-- case when (self.icStep = '1') then 1 else 0 end">
         <div class="new-form-header">
-          Import
+            <v:label format="%s" value="Import: Select source type" />
         </div>
+
         <div class="new-form-body">
           <table cellspacing="0">
             <tr>
-              <th width="30%">
-                <v:label for="i_subject" value="Import"/>
+                <th rowspan="3" valign="middle" width="45%">
+                  <v:label for="i_file" value="Source type" />
               </th>
-              <td>
-                <v:text name="i_subject" null-value="''" value="--''" xhtml_class="textbox" xhtml_size="60"/>
+                <td nowrap="nowarap">
+                  <v:radio-button name="icSource_0" xhtml_id="icSource_0" group-name="icSource" value="0">
+                    <v:before-render>
+                      <![CDATA[
+                        control.ufl_selected := either(lte(self.icSource, 0), 1, 0);
+                      ]]>
+                    </v:before-render>
+                  </v:radio-button>
+                  <xsl:call-template name="nbsp" />
+                  <b><vm:label for="icSource_0" value="--'File'" /></b>
+                </td>
+              </tr>
+              <tr>
+                <td nowrap="nowarap">
+                  <v:radio-button name="icSource_1" xhtml_id="icSource_1" group-name="icSource" value="1">
+                    <v:before-render>
+                      <![CDATA[
+                        control.ufl_selected := either(equ(self.icSource, 1), 1, 0);
+                      ]]>
+                    </v:before-render>
+                  </v:radio-button>
+                  <xsl:call-template name="nbsp" />
+                  <b><vm:label for="icSource_1" value="--'WebDAV'" /></b>
+                </td>
+              </tr>
+              <tr>
+                <td nowrap="nowarap">
+                  <v:radio-button name="icSource_2" xhtml_id="icSource_2" group-name="icSource" value="2">
+                    <v:before-render>
+                      <![CDATA[
+                        control.ufl_selected := either(equ(self.icSource, 2), 1, 0);
+                      ]]>
+                    </v:before-render>
+                  </v:radio-button>
+                  <xsl:call-template name="nbsp" />
+                  <b><vm:label for="icSource_2" value="--'URI'" /></b>
               </td>
             </tr>
           </table>
         </div>
+
         <div class="new-form-footer">
+            <v:button action="simple" value="Next" xhtml_class="form-button">
+              <v:on-post>
+                <![CDATA[
+                  self.icStep := '2';
+                  if (self.icSource_0.ufl_selected) {
+                    self.icSource := 0;
+                  } else if (self.icSource_1.ufl_selected) {
+                    self.icSource := 1;
+                  } else if (self.icSource_2.ufl_selected) {
+                    self.icSource := 2;
+                  }
+                  self.vc_data_bind(e);
+                ]]>
+              </v:on-post>
+            </v:button>
           <v:button action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -2434,23 +2504,150 @@
         </div>
       </v:template>
 
-      <v:template type="simple" enabled="--case when (self.cAction = 'export') then 1 else 0 end">
+        <v:template type="simple" enabled="-- case when (self.icStep = '2') then 1 else 0 end">
         <div class="new-form-header">
-          Export
+            <v:label format="%s" value="Import: Select content type" />
         </div>
         <div class="new-form-body">
           <table cellspacing="0">
+              <vm:if test="self.icSource = 0">
+                <tr>
+                  <th width="30%">
+                    Select file
+                  </th>
+                  <td>
+                    <input type="file" name="f_file" size="40" />
+                  </td>
+                </tr>
+              </vm:if>
+              <vm:if test="self.icSource = 1">
+                <tr>
+                  <th width="30%">
+                    Select WebDAV file
+                  </th>
+                  <td>
+                    <v:text name="f_dav" value="--''" xhtml_size="40" />
+                    <v:browse-button value="Browse..." selector="popup_browser.vspx" child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"  browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=f_dav', AB.WA.dav_home(self.account_id))">
+                      <v:field name="f_dav" />
+                    </v:browse-button>
+                  </td>
+                </tr>
+              </vm:if>
+              <vm:if test="self.icSource = 2">
             <tr>
               <th width="30%">
-                <v:label for="x_subject" value="Export"/>
+                    Select URI
+                  </th>
+                  <td>
+                    <v:text name="f_uri" value="--''" xhtml_size="40" />
+                  </td>
+                </tr>
+              </vm:if>
+              <tr>
+                <th>
+                  <v:label for="i_tags" value="Comma Delimited Tags" />
+                </th>
+                <td>
+                  <v:text name="i_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
+                </td>
+              </tr>
+              <tr>
+                <th>
+                  My Tags
               </th>
               <td>
-                <v:text name="x_subject" null-value="''" value="--''" xhtml_class="textbox" xhtml_size="60"/>
+                  <?vsp
+                    declare _done integer;
+
+                    _done := 0;
+                    for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
+                      http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'i_tags\');"><i>%s</i></a> ', T_TAG, T_TAG));
+                      _done := 1;
+                    }
+                    if (not _done)
+                      http ('no tags');
+                  ?>
               </td>
             </tr>
           </table>
         </div>
+
         <div class="new-form-footer">
+            <v:button action="simple" value="Back" xhtml_class="form-button">
+              <v:on-post>
+                <![CDATA[
+                  self.icStep := '1';
+                  self.vc_data_bind(e);
+                ]]>
+              </v:on-post>
+            </v:button>
+            <v:button action="simple" value="Import" xhtml_class="form-button">
+              <v:on-post>
+                <![CDATA[
+                  declare tmp, content any;
+
+                  declare exit handler for SQLSTATE '*' {
+                    if (__SQL_STATE = 'TEST') {
+                      self.vc_error_message := AB.WA.test_clear (__SQL_MESSAGE);
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    resignal;
+                  };
+
+                  if (self.icSource = 0) {
+                    content := trim(get_keyword ('f_file', self.vc_page.vc_event.ve_params, ''));
+                    if (is_empty_or_null (content)) {
+                      self.vc_error_message := 'Please select file from your local file system!';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+
+                  } else if (self.icSource = 1) {
+                    self.f_dav.ufl_value := trim(self.f_dav.ufl_value);
+                    if (self.f_dav.ufl_value not like (AB.WA.dav_home (self.account_id) || '%')) {
+                      self.vc_error_message := sprintf('Please select file from your WebDAV home directory ''%s''!', AB.WA.dav_home (self.account_id));
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    content := AB.WA.dav_content (AB.WA.host_url () || self.f_dav.ufl_value);
+                    if (isnull(content)) {
+                      self.vc_error_message := 'Bad import source!';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+
+                  } else if (self.icSource = 2) {
+                    self.f_uri.ufl_value := trim(self.f_uri.ufl_value);
+                    if (is_empty_or_null (self.f_uri.ufl_value)) {
+                      self.vc_error_message := 'Please select correct URI address!';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    content := AB.WA.dav_content (self.f_uri.ufl_value);
+                    if (isnull(content)) {
+                      self.vc_error_message := 'Bad URI source!';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                  }
+
+                  -- test tags value
+                  self.v_tags := trim (self.i_tags.ufl_value);
+                  AB.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
+                  tmp := AB.WA.tags2vector (self.v_tags);
+                  tmp := AB.WA.vector_unique (tmp);
+                  self.v_tags := AB.WA.vector2tags (tmp);
+
+                  -- vCard
+                  if (self.icType = 0)
+                    CAL.WA.import_vcal (self.domain_id, content, self.v_tags);
+
+                  self.cAction := 'browse';
+                  self.vc_data_bind(e);
+                 ]]>
+               </v:on-post>
+            </v:button>
           <v:button action="simple" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
@@ -2460,6 +2657,7 @@
             </v:on-post>
           </v:button>
         </div>
+      </v:template>
       </v:template>
 
       <v:template type="simple" enabled="--case when (self.cAction = 'settings') then 1 else 0 end">
