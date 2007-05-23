@@ -246,18 +246,14 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
               {
                 declare _ng_type varchar;
               
-              
                 {
                 declare exit handler for not found {
---                                                    dbg_obj_print('-'||_selected_groups_arr[i]||'-');
                                                     _ngrp_err:=vector_concat(_ngrp_err,vector('Group '||_selected_groups_arr[i]||' does not exist'));
                                                    };
                 select NG_TYPE into _ng_type from NEWS_GROUPS where NG_NAME=_selected_groups_arr[i];
                 }
 
 
-
-                
                 if (_ng_type<>'NNTP')
                 {
                     if(self.u_name is NULL)
@@ -295,7 +291,7 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
                      }
                      else if(_ng_type='MAIL')
                      {
-                        zeroPostNA:=1;
+                        isAuthor:=1;
                         goto _skip;
 --                        select WAI_NAME into  _wai_name from WA_INSTANCE,NEWS_GROUPS where OMAIL.WA.domain_nntp_name (WAI_ID)=NG_NAME and NG_NAME= _selected_groups_arr[i];
                      }
@@ -323,6 +319,7 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
                     
                      _skip:
                                          
+                  
                      if (zeroPostNA)
                         _ngrp_err:=vector_concat(_ngrp_err,vector('ODS Discussion does not allow sending posts of 0 level for newsgroup <b>'||
                                                                    _selected_groups_arr[i]||'</b> with type '||
