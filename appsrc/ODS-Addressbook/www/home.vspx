@@ -2952,7 +2952,7 @@
 
                     http_rewrite ();
                     http_request_status ('HTTP/1.1 200 OK');
-                    http_header ('Content-Type: application/octet-stream\r\n');
+                    http_header ('Content-Type: application/x-download\r\n');
                     http_header (sprintf ('Content-Disposition: inline; filename="%s"\r\n', self.e_file.ufl_value));
 
                     if (get_keyword ('e_format', params) = 'vCard') {

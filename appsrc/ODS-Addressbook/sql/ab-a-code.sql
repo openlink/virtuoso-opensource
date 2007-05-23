@@ -2816,7 +2816,8 @@ create procedure AB.WA.import_vcard (
 create procedure AB.WA.import_foaf (
   in domain_id integer,
   in content any,
-  in tags any)
+  in tags any,
+  in deep integer := 0 )
 {
   declare N, M, nLength, mLength, id integer;
   declare tmp, tmp2, data, pFields, pValues any;
@@ -2850,8 +2851,8 @@ create procedure AB.WA.import_foaf (
                                      '   FROM <%s> ' ||
                                      '  WHERE { ?x rdf:type foaf:Person . ' ||
                                      '          OPTIONAL{ ?knows foaf:knows ?x} . ' ||
-                                     '          FILTER( !bound(?knows)) . ' ||
-                                     '        }', tmp_iri));
+                                     '          %s ' ||
+                                     '        }', case when (deep = 0) then 'FILTER( !bound(?knows)) .' else '' end, tmp_iri));
   nLength := length (Items);
   for (N := 0; N < nLength; N := N + 1) {
     S := ' SPARQL ' ||
