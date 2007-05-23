@@ -7448,12 +7448,61 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
                         'message',   content,
                         'rfc_id',    N_NM_ID,
                          'rfc_references', N_NM_REF);
+    }
+  }else
+  {
+      declare  _to,_use_ngroup varchar;
+      declare _ngroups any;
+      declare i int;
+
+      _use_ngroup:='';
+
+
+      _ngroups := split_and_decode (get_keyword_ucase ('Newsgroups', head, ''), 0, '\0\0,');
+      for (i:=0;i<length(_ngroups);i:=i+1)
+      {
+        if(locate('ods.mail',_ngroups[i]))
+        {
+           _use_ngroup:=_ngroups[i];
+           goto exit_loop;
+        }
+      }
+      
+      exit_loop:
+      
+      if(length(_use_ngroup)=0)
+            signal ('CONVX', 'There is no ODS mail newsgroup to post.');
+      
+
+      {
+      declare exit handler for not found{
+                                         signal ('CONVX', 'Newsgroup does not corespond to mail instance.');
+                                        };
+      
+      select  WAI_ID,WAI_NAME,WAM_USER into _domain_id,_to,_user_id from WA_INSTANCE,WA_MEMBER,NEWS_GROUPS
+              where OMAIL.WA.domain_nntp_name (WAI_ID)=NG_NAME and
+                    WAI_NAME=WAM_INST and
+                    WAM_MEMBER_TYPE =1 and
+                    NG_NAME=_use_ngroup;
+      }             
+      
+
+      _address :=  get_keyword_ucase ('From', head, 'nobody@unknown');
+      _params := vector ('folder_id',      100,
+                         'from',           _address,
+                         'to',             _to,
+                         'dcc',            _to,
+                         'subject',        subject,
+                         'message',        content,
+                         'rfc_id',         N_NM_ID  
+                        );
+    
+  }
       _msg_id := 0;
       _msg_id := OMAIL.WA.omail_save_msg (_domain_id, _user_id, _params, _msg_id, _error);
       _request := sprintf('http://' || DB.DBA.http_get_host () || '/oMail/res/flush.vsp?did=%s&uid=%s&mid=%s&addr=%U', cast(_domain_id as varchar), cast(_user_id as varchar), cast(_msg_id as varchar), _address);
       http_get (_request, _respond);
-    }
-  }
+    
 }
 ;
 
