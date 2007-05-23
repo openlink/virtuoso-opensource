@@ -59,7 +59,7 @@ create table DB.DBA.RDF_OBJ (
   RO_LONG long varchar,
   RO_DIGEST any
 )
-create index RO_VAL on DB.DBA.RDF_OBJ (RO_VAL)
+create index RO_VAL on DB.DBA.RDF_OBJ (RO_VAL, RO_DIGEST)
 ;
 
 alter table DB.DBA.RDF_OBJ add RO_DIGEST any
@@ -130,7 +130,7 @@ create procedure DB.DBA.RDF_OBJ_RO_DIGEST_INDEX_HOOK (inout vtb any, inout d_id 
       if (230 = rdf_box_data_tag (RO_DIGEST))
         vt_batch_feed (vtb, xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 0);
       else
-        vt_batch_feed (vtb, coalesce (RO_LONG, RO_VAL, RO_DIGEST), 0);
+        vt_batch_feed (vtb, coalesce (RO_LONG, RO_VAL), 0);
     }
   return 1;
 }
@@ -144,7 +144,7 @@ create procedure DB.DBA.RDF_OBJ_RO_DIGEST_UNINDEX_HOOK (inout vtb any, inout d_i
       if (230 = rdf_box_data_tag (RO_DIGEST))
         vt_batch_feed (vtb, xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 1);
       else
-        vt_batch_feed (vtb, coalesce (RO_LONG, RO_VAL, RO_DIGEST), 1);
+        vt_batch_feed (vtb, coalesce (RO_LONG, RO_VAL), 1);
     }
   return 1;
 }
@@ -569,7 +569,7 @@ create function DB.DBA.RDF_MAKE_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
       whenever not found goto serializable_xtree;
       set isolation='committed';
       select RO_ID, RO_DIGEST into id, old_digest
-      from DB.DBA.RDF_OBJ
+      from DB.DBA.RDF_OBJ table option (index RO_VAL)
       where RO_VAL = sum64
       and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
       and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
@@ -581,7 +581,7 @@ serializable_xtree:
       whenever not found goto new_xtree;
       set isolation='serializable';
       declare id_cr cursor for
-        select RO_ID, RO_DIGEST from DB.DBA.RDF_OBJ where RO_VAL = sum64
+        select RO_ID, RO_DIGEST from DB.DBA.RDF_OBJ table option (index RO_VAL) where RO_VAL = sum64
         and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
         and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
       and rdf_box_data_tag (RO_DIGEST) = 230;
@@ -607,15 +607,15 @@ new_xtree:
       whenever not found goto serializable_veryshort;
       set isolation='committed';
       select RO_ID into id
-      from DB.DBA.RDF_OBJ
-      where RO_DIGEST = v and isnull (RO_VAL);
+      from DB.DBA.RDF_OBJ table option (index RO_VAL)
+      where RO_VAL = v and RO_DIGEST = v;
       goto found_veryshort;
 serializable_veryshort:
       whenever not found goto new_veryshort;
       set isolation='serializable';
       declare id_cr cursor for select RO_ID
-      from DB.DBA.RDF_OBJ
-      where RO_DIGEST = v and isnull (RO_VAL);
+      from DB.DBA.RDF_OBJ table option (index RO_VAL)
+      where RO_VAL = v and RO_DIGEST = v;
       open id_cr (exclusive);
       fetch id_cr into id;
 found_veryshort:      
@@ -624,7 +624,7 @@ found_veryshort:
       -- goto recheck;
 new_veryshort:
       id := sequence_next ('RDF_RO_ID');
-      insert into DB.DBA.RDF_OBJ (RO_ID, RO_DIGEST) values (id, v);
+      insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_DIGEST) values (id, v, v);
       return v;
       -- digest := v;
       -- old_digest := null;
@@ -638,7 +638,7 @@ new_veryshort:
       whenever not found goto serializable_long;
       set isolation='committed';
       select RO_ID, RO_DIGEST into id, old_digest
-      from DB.DBA.RDF_OBJ
+      from DB.DBA.RDF_OBJ table option (index RO_VAL)
       where RO_VAL = tridgell
       and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
       and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
@@ -648,7 +648,7 @@ serializable_long:
       whenever not found goto new_long;
           set isolation='serializable';
       declare id_cr cursor for
-        select RO_ID, RO_DIGEST from DB.DBA.RDF_OBJ where RO_VAL = tridgell
+        select RO_ID, RO_DIGEST from DB.DBA.RDF_OBJ table option (index RO_VAL) where RO_VAL = tridgell
         and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
         and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
         and blob_to_string (RO_LONG) = v;
@@ -684,7 +684,7 @@ new_long:
       whenever not found goto serializable_short;
       set isolation='committed';
       select RO_ID, RO_DIGEST into id, old_digest
-      from DB.DBA.RDF_OBJ
+      from DB.DBA.RDF_OBJ table option (index RO_VAL)
       where RO_VAL = v
       and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
       and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end);
@@ -693,7 +693,7 @@ serializable_short:
       whenever not found goto new_short;
           set isolation='serializable';
       declare id_cr cursor for select RO_ID, RO_DIGEST
-      from DB.DBA.RDF_OBJ
+      from DB.DBA.RDF_OBJ table option (index RO_VAL)
       where RO_VAL = v
       and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
       and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end);
@@ -726,41 +726,42 @@ new_short:
     }
 recheck:
   -- dbg_obj_princ ('recheck: id=', id, ', old_digest=', old_digest, ', need_digest=', need_digest, ', digest=', digest);
-  if (not need_digest and old_digest is null)
-    return digest;
-  if (not exists (select top 1 1
-    from DB.DBA.RDF_OBJ as a table option (index RDF_OBJ)
-    where (a.RO_ID = id) option (LOOP) ))
-    signal ('RDFXX', sprintf ('Lost RO_ID index entry (lookup): RO_ID=%d (digest=%U)', id, serialize (digest)));
-  if (not exists (select top 1 1
-    from DB.DBA.RDF_OBJ as a table option (index RO_DIGEST)
-    where (a.RO_DIGEST = digest) option (LOOP) ))
-    signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (lookup): RO_DIGEST=%U (id=%d)', serialize (digest), id));
-  if (not exists (select top 1 1
-    from DB.DBA.RDF_OBJ as a table option (index RDF_OBJ)
-    join DB.DBA.RDF_OBJ as b table option (index RO_DIGEST)
-    on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
-    where (a.RO_ID = id) option (LOOP) ))
-    signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (LOOP join): RO_ID=%d (digest=%U)', id, serialize (digest)));
-  if (not exists (select top 1 1
-    from DB.DBA.RDF_OBJ as a table option (index RO_DIGEST)
-    join DB.DBA.RDF_OBJ as b table option (index RDF_OBJ)
-    on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
-    where (a.RO_DIGEST = digest) option (LOOP) ))
-    signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (LOOP join): RO_DIGEST=%U (id=%d)', serialize (digest), id));
-  if (not exists (select top 1 1
-    from DB.DBA.RDF_OBJ as a table option (index RDF_OBJ)
-    join DB.DBA.RDF_OBJ as b table option (index RO_DIGEST)
-    on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
-    where (a.RO_ID = id) option (HASH) ))
-    signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (HASH join): RO_ID=%d (digest=%U)', id, serialize (digest)));
-  if (not exists (select top 1 1
-    from DB.DBA.RDF_OBJ as a table option (index RO_DIGEST)
-    join DB.DBA.RDF_OBJ as b table option (index RDF_OBJ)
-    on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
-    where (a.RO_DIGEST = digest) option (HASH) ))
-    signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (HASH join): RO_DIGEST=%U (id=%d)', serialize (digest), id));
-  return digest;
+  signal ('FUNNY', 'Debug code of DB.DBA.RDF_MAKE_RO_DIGEST() is reached. This can not happen (I believe). Please report this error.');
+  --if (not need_digest and old_digest is null)
+  --  return digest;
+  --if (not exists (select top 1 1
+  --  from DB.DBA.RDF_OBJ as a table option (index RDF_OBJ)
+  --  where (a.RO_ID = id) option (LOOP) ))
+  --  signal ('RDFXX', sprintf ('Lost RO_ID index entry (lookup): RO_ID=%d (digest=%U)', id, serialize (digest)));
+  --if (not exists (select top 1 1
+  --  from DB.DBA.RDF_OBJ as a table option (index RO_DIGEST)
+  --  where (a.RO_DIGEST = digest) option (LOOP) ))
+  --  signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (lookup): RO_DIGEST=%U (id=%d)', serialize (digest), id));
+  --if (not exists (select top 1 1
+  --  from DB.DBA.RDF_OBJ as a table option (index RDF_OBJ)
+  --  join DB.DBA.RDF_OBJ as b table option (index RO_DIGEST)
+  --  on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
+  --  where (a.RO_ID = id) option (LOOP) ))
+  --  signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (LOOP join): RO_ID=%d (digest=%U)', id, serialize (digest)));
+  --if (not exists (select top 1 1
+  --  from DB.DBA.RDF_OBJ as a table option (index RO_DIGEST)
+  --  join DB.DBA.RDF_OBJ as b table option (index RDF_OBJ)
+  --  on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
+  --  where (a.RO_DIGEST = digest) option (LOOP) ))
+  --  signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (LOOP join): RO_DIGEST=%U (id=%d)', serialize (digest), id));
+  --if (not exists (select top 1 1
+  --  from DB.DBA.RDF_OBJ as a table option (index RDF_OBJ)
+  --  join DB.DBA.RDF_OBJ as b table option (index RO_DIGEST)
+  --  on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
+  --  where (a.RO_ID = id) option (HASH) ))
+  --  signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (HASH join): RO_ID=%d (digest=%U)', id, serialize (digest)));
+  --if (not exists (select top 1 1
+  --  from DB.DBA.RDF_OBJ as a table option (index RO_DIGEST)
+  --  join DB.DBA.RDF_OBJ as b table option (index RDF_OBJ)
+  --  on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
+  --  where (a.RO_DIGEST = digest) option (HASH) ))
+  --  signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (HASH join): RO_DIGEST=%U (id=%d)', serialize (digest), id));
+  --return digest;
 }
 ;
 
@@ -776,7 +777,7 @@ create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
       if (230 <> __tag (v))
         return v;
       sum64 := xtree_sum64 (v);
-      return (select RO_DIGEST from DB.DBA.RDF_OBJ
+      return (select RO_DIGEST from DB.DBA.RDF_OBJ table option (index RO_VAL)
         where RO_VAL = sum64
         and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
         and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
@@ -792,7 +793,7 @@ create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
       tridgell := tridgell32 (v, 1);
       return (select
         coalesce (RO_DIGEST, rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1))
-        from DB.DBA.RDF_OBJ
+        from DB.DBA.RDF_OBJ table option (index RO_VAL)
         where RO_VAL = tridgell
         and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
         and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
@@ -802,7 +803,7 @@ create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
     {
       return (select 
         coalesce (RO_DIGEST, rdf_box (v, dt_twobyte, lang_twobyte, RO_ID, 1))
-        from DB.DBA.RDF_OBJ
+        from DB.DBA.RDF_OBJ table option (index RO_VAL)
         where RO_VAL = v
         and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
         and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end) );
@@ -8090,7 +8091,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
       exec ('revoke "SPARQL_UPDATE" from "SPARQL"', stat, msg);
       return;
     }
-  if (not isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE-tridgell32')))
+  if (not isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE-tridgell32-2')))
     {
       __atomic (1);
       {
@@ -8114,7 +8115,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
             update DB.DBA.RDF_OBJ set RO_VAL = new_rv where current of rolong_cur;
           }
 rolong_cur_end: ;          
-        registry_set ('DB.DBA.RDF_QUAD_FT_UPGRADE-tridgell32', '1');
+        registry_set ('DB.DBA.RDF_QUAD_FT_UPGRADE-tridgell32-2', '1');
       }
       __atomic (0);
       exec ('checkpoint');

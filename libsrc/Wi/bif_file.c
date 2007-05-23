@@ -2415,7 +2415,7 @@ bif_tridgell32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   size_t len = box_length (data) - 1;
   unsigned lo = 0, hi = 0, res;
   unsigned char *tail, *end = data + len - 1;
-  for (tail = data; tail < data; tail++)
+  for (tail = data; tail < end; tail++)
    {
      lo += tail[0];
      hi += lo;

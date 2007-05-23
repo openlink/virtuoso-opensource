@@ -379,6 +379,7 @@ typedef struct spar_tree_s
         struct qm_format_s *native_formats[SPART_TRIPLE_FIELDS_COUNT];
         SPART **options;
         ptrlong ft_type;
+        ptrlong src_serial;	/*!< Assigned once at parser and preserved in all clone operations */
       } triple;
     struct { /* Note that all first members of \c retval case should match to \c var case */
       caddr_t vname;
