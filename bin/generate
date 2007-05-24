@@ -29,7 +29,8 @@
 #  Fix issues with LOCALE
 # ----------------------------------------------------------------------
 LANG=C
-export LANG
+LC_ALL=POSIX
+export LANG LC_ALL
 
 # ----------------------------------------------------------------------
 #  Color settings
