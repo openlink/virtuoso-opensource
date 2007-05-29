@@ -189,7 +189,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &sql_write_private_profile_string; &sql_get_private_profile_string;
 &sql_config_data_sources; &sql_get_installed_drivers;
 &sql_remove_dsn_from_ini; &sql_transact; &sql_write_file_dsn; &sql_driver_connect;
-&sqrt; &status; &strcasestr; &strchr; &stringdate; &stringtime; &string_output;
+&sqrt; &status; &key_estimate; &strcasestr; &strchr; &stringdate; &stringtime; &string_output;
 &string_output_flush; &string_output_gz_compress; &string_output_string;
 &string_to_file; &strrchr; &strstr; &subseq; &substring; &sub_schedule;
 &system; &sys_db_stat; &sys_lockdown; &sys_stat; &sys_stat_analyze; &sys_stat_histogram;

@@ -432,6 +432,7 @@
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sql_write_private_profile_string"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="sqrt"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="status"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="key_estimate"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="stddev_pop"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="stddev_samp"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="stddev"/>

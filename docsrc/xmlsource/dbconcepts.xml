@@ -862,6 +862,42 @@ will have repeatable read semantics, otherwise it guarantees no repeatable read 
                                 <para>To make this the default mode, set DefaultIsolation in the Parameters section of virtuoso.ini to 2.
 </para>
 			</sect4>
+			<sect4 id="RowbyRowAutoCommit">
+                                <title>Row-by-Row Autocommit</title>
+                                <para>This transaction mode causes all DML statements to commit after
+every modified row. This is useful for single user situations where one does large batch updates on tables.
+For example, an update of every row of a multigigabyte table would be likely to run out of rollback space
+before completing. In practice, one can end up in a thrashing situation where a large transaction is in
+progress, is interrupted by a checkpoint which must temporarily roll back the changed pages, then again
+resume the transaction etc., leading to serious server unavailability. Note that normally the ini parameter
+TransactionAfterImageLimit places a cap on transaction size, catching situations of this type before they
+lead to thrashing.
+                                </para>
+                                <para>The row by row autocommit mode prevents this from happening by
+committing each updated, inserted or deleted row as soon as all the indices of the row are updated.
+This mode will still maintain basic row integrity, i.e. if the row's data is in one index, it will be
+in all indices.
+                                </para>
+                                <para>This mode is good for any batch operations where concurrent
+updates are not expected or are not an issue. Examples include bulk loading of data, materialization of
+RDF inferred data etc.
+                                </para>
+                                <para>This mode is enabled with the log_enable function. If the bit
+of 2's is set in the argument, row-by-row autocommit is enabled and the setting will persist until
+modified with log_enable or the calling connection is disconnected or the calling web request
+terminates. Thus, an argument of 2 enables row-by-row autocommit and disables logging. An argument
+of 3 enables row-by-row autocommit and enables logging. This will cause every updated row to be
+logged in the transaction log after it is updated, which is not very efficient.
+                                </para>
+                                <para>Since transaction-by-transaction recovery is generally not an
+issue in batch updates, a value of 2 is usually better. If the server is killed during the batch
+operation, it may simply be restarted and the operation redone. Losing the first half through no
+logging will not be an issue since the operation will anyway have to be redone.
+                                </para>
+                                <para>There is a slight penalty to row-by-row autocommit in comparison with
+making updates in larger batches but this is under 10%.
+                                </para>
+			</sect4>
 			<sect4 id="RepeatableRead">
 				<title>Repeatable Read</title>
 				<para>The transaction will wait for access to exclusively locked rows

@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>log_enable</refname>
-    <refpurpose>controls transaction logging</refpurpose>
+    <refpurpose>controls transaction logging and in-statement autocommit</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_log_enable">
@@ -50,6 +50,9 @@
     the form of a procedure call instead of logging the effects of the procedure on
     a row by row basis.  This is similar in concept to replicating procedure
     calls but applies to roll forward instead.</para>
+<para>A flag value of 2 disables logging and enables row-by-row autocommit.  A value of 3 enables row-by-row autocommit and enables logging.
+While log on and off setting alone is reset at the end of the transaction so that one does not end up with logging disabled by acciudent, the row-by-row autocommit mode causes the setting to be permanent inside the calling connection or web request.  That is,  for a SQL client the setting stays ineffect until changed or disconnected and for a web request it stays in effect until the request is completed.
+</para>
   </refsect1>
   <refsect1 id="seealso_log_enable"><title>See Also</title>
     <para><link linkend="fn_log_text"><function>log_text</function></link></para>

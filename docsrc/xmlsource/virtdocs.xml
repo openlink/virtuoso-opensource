@@ -413,6 +413,7 @@
 <!ENTITY sql_driver_connect				SYSTEM	"funcref/sql_driver_connect.xml">
 <!ENTITY sqrt					SYSTEM	"funcref/sqrt.xml">
 <!ENTITY status				SYSTEM	"funcref/status.xml">
+<!ENTITY key_estimate				SYSTEM	"funcref/key_estimate.xml">
 <!ENTITY strcasestr				SYSTEM	"funcref/strcasestr.xml">
 <!ENTITY strchr					SYSTEM	"funcref/strchr.xml">
 <!ENTITY stringdate				SYSTEM	"funcref/stringdate.xml">

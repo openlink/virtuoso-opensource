@@ -1325,15 +1325,15 @@ Section <link linkend="rdfandsparql">RDF Database and SPARQL</link> contains det
 	<para>IRI of the default graph to be used if no "default-graph-uri" parameter is specified.</para>
     </formalpara>
 </listitem>
-<listitem id="ini_SPARQL_MaxExecutionTime">
+<listitem id="ini_SPARQL_MaxQueryCostEstimationTime">
     <formalpara>
-	<title>MaxExecutionTime = seconds</title>
+	<title>MaxQueryCostEstimationTime = seconds</title>
 	<para>This setting is used to limit the estimate time cost of the query to certain number of seconds, the default is no limit.</para>
     </formalpara>
 </listitem>
-<listitem id="ini_SPARQL_ExecutionTimeout">
+<listitem id="ini_SPARQL_MaxQueryExecutionTime">
     <formalpara>
-	<title>ExecutionTimeout = seconds</title>
+	<title>MaxQueryExecutionTime = seconds</title>
 	<para>
 	    This setting is used to set the transaction execution timeout to certain limit in number of seconds, the default is no limit.
 	</para>
