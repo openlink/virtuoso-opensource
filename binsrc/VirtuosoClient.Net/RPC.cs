@@ -205,7 +205,7 @@ namespace OpenLink.Data.Virtuoso
 		/// <summary>
 		/// The version string.
 		/// </summary>
-		internal const string VERSION = "03.50.2728";
+		internal const string VERSION = "05.50.3015";
 
 		internal const string DEFAULT_HOST = "localhost";
 		internal const int DEFAULT_PORT = 1111;
