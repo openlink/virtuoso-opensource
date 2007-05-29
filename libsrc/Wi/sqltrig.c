@@ -302,6 +302,7 @@ trig_wrapper (caddr_t * qst, state_slot_t ** args, dbe_table_t * tb,
       || qi->qi_client->cli_no_triggers)
     {
       qn_run (qn, qst, qst);
+      ROW_AUTOCOMMIT (qi);
       return;
     }
 
@@ -319,8 +320,10 @@ trig_wrapper (caddr_t * qst, state_slot_t ** args, dbe_table_t * tb,
       }
 
   if (!instead)
+    {
     qn_run (qn, qst, qst);
-
+      ROW_AUTOCOMMIT (qi);
+    }
   for (inx = 0; inx < fill; inx++)
     if (trigs[inx]->qr_trig_time == TRIG_AFTER)
       trig_call (trigs[inx], qst, args, tb);

@@ -52,6 +52,7 @@ aq_thread_func (aq_thread_t * aqt)
       if (IS_BOX_POINTER (aqt->aqt_cli->cli_trx->lt_replicate))
 	dk_free_tree (aqt->aqt_cli->cli_trx->lt_replicate);
       aqt->aqt_cli->cli_trx->lt_replicate = REPL_LOG;
+      aqt->aqt_cli->cli_row_autocommit = 0;
       if (AQR_QUEUED != aqr->aqr_state)
 	GPF_T1 ("aqr_state is supposed to be AQR_QUEUEED here");
       mutex_enter (aq->aq_mtx);

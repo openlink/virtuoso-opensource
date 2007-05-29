@@ -9354,7 +9354,8 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (srv_have_global_lock (THREAD_CURRENT_THREAD))
     return box_num (1);
 
-
+  qi->qi_client->cli_row_autocommit = flag &  2 ? 1 : 0;
+  flag &= 1;
   if (!flag && qi->qi_client != bootstrap_cli &&
       qi->qi_trx->lt_replicate == REPL_NO_LOG)
     {

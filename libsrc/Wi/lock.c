@@ -333,7 +333,7 @@ lt_restart (lock_trx_t * lt, int leave_flag)
   const char *	lt_last_increase_file[2];
   int		lt_last_increase_line[2];
 #endif
-  caddr_t repl = excl ? box_copy_tree ((box_t) lt->lt_replicate) : NULL; /* we we'll save the state of replication flag
+  caddr_t repl = (excl || cli->cli_row_autocommit) ? box_copy_tree ((box_t) lt->lt_replicate) : NULL; /* we we'll save the state of replication flag
 								    when  we're in atomic mode */
 #ifdef VIRTTP
   caddr_t validness = lt->lt_2pc._2pc_prepared;
@@ -349,7 +349,7 @@ lt_restart (lock_trx_t * lt, int leave_flag)
   lt->lt_is_excl = excl;
   lt->lt_started = approx_msec_real_time ();
 
-  if (excl) /* therefore we'll set the saved one */
+  if (excl || cli->cli_row_autocommit) /* therefore we'll set the saved one */
     lt->lt_replicate = (caddr_t*) repl;
   else
     lt->lt_replicate = (caddr_t*) box_copy_tree ((caddr_t) cli->cli_replicate);

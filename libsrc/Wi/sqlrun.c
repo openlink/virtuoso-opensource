@@ -1449,7 +1449,10 @@ insert_node_input (insert_node_t * ins, caddr_t * inst, caddr_t * state)
     trig_wrapper (inst, ins->ins_trigger_args, ins->ins_table, TRIG_INSERT,
 	(data_source_t *) ins, (qn_input_fn) insert_node_run);
   else
+    {
     insert_node_run (ins, inst, state);
+      ROW_AUTOCOMMIT (inst);
+    }
 
   qn_send_output ((data_source_t *) ins, state);
 }
@@ -1737,7 +1740,10 @@ delete_node_input (delete_node_t * del, caddr_t * inst, caddr_t * state)
     trig_call (del->del_policy_qr, inst, del->del_trigger_args, del->del_table);
 
   if (!del->del_trigger_args)
+    {
     delete_node_run (del, inst, state);
+      ROW_AUTOCOMMIT (inst);
+    }
   else
     trig_wrapper (inst, del->del_trigger_args, del->del_table,
 	TRIG_DELETE, (data_source_t *) del, (qn_input_fn) delete_node_run);

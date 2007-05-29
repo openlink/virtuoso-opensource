@@ -2343,6 +2343,7 @@ ws_post_process (ws_connection_t * ws)
     }
   else
     rc = lt_commit (cli->cli_trx, TRX_CONT);
+  CLI_NEXT_USER (cli);
   lt_threads_set_inner (cli->cli_trx, 0);
   LEAVE_TXN;
 err_ret:
@@ -2486,6 +2487,7 @@ ws_url_rewrite (ws_connection_t *ws)
     lt_rollback (cli->cli_trx, TRX_CONT);
   else
     rc = lt_commit (cli->cli_trx, TRX_CONT);
+  CLI_NEXT_USER (cli);
   lt_threads_set_inner (cli->cli_trx, 0);
   LEAVE_TXN;
 

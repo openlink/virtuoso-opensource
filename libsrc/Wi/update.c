@@ -801,7 +801,10 @@ update_node_input (update_node_t * upd, caddr_t * inst, caddr_t * state)
     trig_call (upd->upd_policy_qr, inst, upd->upd_trigger_args, upd->upd_table);
 
   if (!upd->upd_trigger_args)
+    {
     update_node_run (upd, inst, state);
+      ROW_AUTOCOMMIT (inst);
+    }
   else
     {
       trig_wrapper (inst, upd->upd_trigger_args, upd->upd_table,

@@ -484,6 +484,7 @@ typedef struct table_source_s
     hash_area_t *	ts_proc_ha; /* ha for temp of prov view res.  Keep here to free later */
   } table_source_t;
 
+typedef struct rdf_inf_node_s rdf_inf_pre_node_t;
 
 typedef struct  in_iter_node_s
 {
@@ -1014,6 +1015,7 @@ typedef struct client_connection_s
     int			cli_autocommit;
     caddr_t *		cli_replicate;
     int			cli_is_log;
+    char		cli_row_autocommit;
 
     int			cli_repl_pending;
     dbe_schema_t *	cli_temp_schema;
@@ -1071,6 +1073,19 @@ typedef struct client_connection_s
     long		cli_start_time;
     caddr_t *		cli_info;
   } client_connection_t;
+
+#define CLI_NEXT_USER(cli) \
+  cli->cli_row_autocommit = 0
+
+#define ROW_AUTOCOMMIT(qi) \
+  if (((query_instance_t *)qi)->qi_client->cli_row_autocommit)	\
+    { \
+      caddr_t err = NULL; \
+      bif_commit ((caddr_t*) qi, &err, NULL); \
+      if (err) \
+	sqlr_resignal (err); \
+    }
+
 
 #ifdef INPROCESS_CLIENT
 #define IS_INPROCESS_CLIENT(cli) (NULL != (cli) && (cli)->cli_inprocess)
