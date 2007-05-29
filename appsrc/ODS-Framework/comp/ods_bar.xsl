@@ -293,13 +293,13 @@ function getUrlOnEnter(e)
   <div id="ods_bar_odslogin" style="display:none;text-align:right">
     <v:url name="odsbar_odslogin_button"
            value="Sign In"
-           url="--self.odsbar_ods_gpath||'login.vspx?URL='||http_path() "
+           url="--self.odsbar_ods_gpath||'login.vspx?URL='||http_path()||(case when length(http_request_get ('QUERY_STRING'))>0 then '?'||http_request_get ('QUERY_STRING') else '' end ) "
            is-local="1"/>
       |
     <v:template name="odsbar_barregister"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
     <v:url name="odsbar_odsregister_button"
            value="Sign Up"
-           url="--self.odsbar_ods_gpath||'register.vspx?URL='||http_path() "
+           url="--self.odsbar_ods_gpath||'register.vspx?URL='||http_path()||(case when length(http_request_get ('QUERY_STRING'))>0 then '?'||http_request_get ('QUERY_STRING') else '' end )  "
            is-local="1"
            />
     </v:template>

@@ -888,7 +888,7 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
                      control.vsl_item_values := grp_list;
                   }
                   else
-                    control.enabled:=0;
+                    control.vc_enabled:=0;
             ]]></v:script>
             </v:before-data-bind>
           </v:select-list>
