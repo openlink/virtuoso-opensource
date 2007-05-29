@@ -5307,13 +5307,13 @@ virtodbc__SQLGetData (
 		  cbValueMax / (is_blob_to_char ? 2 : 1),
 		  bh->bh_position,
 		  bh->bh_key_id,
-		  bh->bh_frag_no, bh->bh_dir_page, bh->bh_pages, (DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), bh->bh_timestamp
+						  bh->bh_frag_no, bh->bh_dir_page, bh->bh_pages, (ptrlong)(DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), (ptrlong)bh->bh_timestamp
 #else
 		  bh->bh_current_page,
 		  cbValueMax,
 		  bh->bh_position,
 		  bh->bh_key_id,
-		  bh->bh_frag_no, bh->bh_dir_page, bh->bh_pages, (DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), bh->bh_timestamp
+						  bh->bh_frag_no, bh->bh_dir_page, bh->bh_pages, (ptrlong)(DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), (ptrlong)bh->bh_timestamp
 #endif
 	      ));
 	}
