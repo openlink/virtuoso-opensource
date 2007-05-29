@@ -91,7 +91,7 @@ function init()
 	m.noCloseFilter = "noclose";
 	m.createFromUL("menu");
   
-  var menuOn = function(index)
+  /*var menuOn = function(index)
   {
     var menu_on = menus[index];
     if (OAT.Browser.isIE)
@@ -123,44 +123,17 @@ function init()
         menu_off.childNodes[i].style.cursor = 'default';
       }
     }
-  }
+  }*/
   
   var menus = [$('menu_qbe_down'),$('menu_query_down')];
     
   var tab_goCallback = function(oldIndex,newIndex)
   {
-    //if (newIndex < menus.length)
-      for (var i=0;i < menus.length;i++)
-        if (newIndex == i)
-          menuOn(i);
-        else
-          menuOff(i);
-    /*
-    if (oldIndex == newIndex)
-    {
-	    if (m.root.items[newIndex].state) m.root.items[newIndex].close();
-	    else m.root.items[newIndex].open();
-    }
-
-    var menu_on,menu_off;
-    
-    //if (newIndex == tab.keys.find($('tab_qbe')))
-    if (newIndex == 0)
-    {
-       menu_on = $('menu_qbe_down');
-       menu_off = $('menu_query_down');
-    }
-    //if (newIndex == tab.keys.find($('tab_query')))
-    if (newIndex == 1)
-    {
-       menu_on = $('menu_query_down');
-       menu_off = $('menu_qbe_down');
-    }
-      
-    if (menu_on) menuOn(menu_on);
-    if (menu_off) menuOff(menu_off);
-    */
-    
+    //for (var i=0;i < menus.length;i++)
+    //  if (newIndex == i)
+    //    menuOn(i);
+    //  else
+    //    menuOff(i);
 
     if (OAT.Browser.isIE && dialogs.qbe_unsupp && newIndex == 0)
         {
@@ -179,7 +152,7 @@ function init()
       qbe.props_win.moveTo(x,42);
       qbe.schema_win.moveTo(x,182);
       }
-    menuOn(newIndex);
+    //menuOn(newIndex);
     }
     
   var onDock = function(newIndex)
@@ -189,7 +162,7 @@ function init()
       qbe.props_win.moveTo(page_w - 260,92);
       qbe.schema_win.moveTo(page_w - 260,232);
     }
-    menuOn(newIndex);
+    //menuOn(newIndex);
   }
   
   tab = new OAT.Tab ("main_col",{dockMode:true,dockElement:"tabs",goCallback:tab_goCallback,onDock:onDock,onUnDock:onUnDock,dockWindowWidth:1000,dockWindowHeight:600});
@@ -426,8 +399,7 @@ iSPARQL.Advanced = function ()
 	var icon_back, icon_forward, icon_start, icon_finish;
 	
 	this.func_reset = function() {
-	  //if (tab.selectedIndex != tab.keys.find($('tab_query'))) return;
-	  if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
 		if(confirm('Are you sure you want to reset the query?'))
 		{
 		  $("query_form").reset();
@@ -437,8 +409,7 @@ iSPARQL.Advanced = function ()
 	}
 	
 	this.func_load = function() {
-	  //if (tab.selectedIndex != tab.keys.find($('tab_query'))) return;
-	  if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
 	  var path = iSPARQL.Common.getFilePath();
 	  var file = iSPARQL.Common.getFile();
 	  //var pathDefault = iSPARQL.Common.getDefaultPath();
@@ -515,8 +486,7 @@ iSPARQL.Advanced = function ()
 	}
 	
 	this.func_save = function() {
-	  //if (tab.selectedIndex != tab.keys.find($('tab_query'))) return;
-	  if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
     if (goptions.last_path)
     {
       self.save(goptions.last_path,get_file_type(goptions.last_path)); 
@@ -525,8 +495,7 @@ iSPARQL.Advanced = function ()
 	}
 	
 	this.func_saveas = function() {
-	  //if (tab.selectedIndex != tab.keys.find($('tab_query'))) return;
-	  if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
 	  //if (goptions.login_put_type == 'http')
 	  //{
     //  if (goptions.last_path)
@@ -566,8 +535,7 @@ iSPARQL.Advanced = function ()
 	}
 	
 	this.func_run = function() {
-	  //if (tab.selectedIndex != tab.keys.find($('tab_query'))) return;
-	  if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
     var params = {
 	    service:self.service.input.value,
       query:$v('query'),
@@ -625,9 +593,7 @@ iSPARQL.Advanced = function ()
 
 	  if (/*self.*/nav_stack.length == 0)
 	  {
-	    /*self.*/nav_stack = [{ query:params.query,
-	                        default_graph_uri:params.default_graph_uri,
-	                        format:params.format}];
+	    /*self.*/nav_stack = [params];
 	    /*self.*/nav_index = 0;
 	  } else {
 	    if (params.query != /*self.*/nav_stack[/*self.*/nav_index].query ||
@@ -635,9 +601,7 @@ iSPARQL.Advanced = function ()
 	        params.format != self.nav_stack[self.nav_index].format - this is questianable*/)
 	    /*self.*/nav_index++;
   	  /*self.*/nav_stack.splice(/*self.*/nav_index,/*self.*/nav_stack.length);
-    	/*self.*/nav_stack.push({ query:params.query,
-    	                      default_graph_uri:params.default_graph_uri,
-    	                      format:params.format});
+    	/*self.*/nav_stack.push(params);
   	}
   	params.nav_index = /*self.*/nav_index;
   	params.nav_stack = /*self.*/nav_stack;
@@ -649,8 +613,7 @@ iSPARQL.Advanced = function ()
 	this.func_load_to_qbe = function() {
 	  if (OAT.Browser.isIE) return;
 	  
-	  //if (tab.selectedIndex != tab.keys.find($('tab_query'))) return;
-	  if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
 	  tab.go(0);
 	  qbe.loadFromString($('query').value);
 	  if ($v('qbe_graph') == '')
@@ -661,8 +624,7 @@ iSPARQL.Advanced = function ()
 	this.func_get_from_qbe = function() {
 	  if (OAT.Browser.isIE) return;
 
-	  //if (tab.selectedIndex != tab.keys.find($('tab_query'))) return;
-	  if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
     $('adv_sponge').value = $v('qbe_sponge');
     $('query').value = qbe.QueryGenerate();
 	}

@@ -28,8 +28,7 @@ body {
   font-family: arial, helvetica, sans-serif;
   font-size: 9pt;
   color: #335;
-  margin:0px;
-}
+  margin:0px}
 
 img { border: 0;} 
 
@@ -39,16 +38,13 @@ h3 { font-weight: normal}
 
 ul, li {
 	margin: 0px;
-	padding: 0px;
-}
+	padding: 0px}
 
 #content {
 	/*position: absolute;
   top: 23px; */
-  border-top:1px solid #000000;
   width: 100%;
-  background: #e8f3f6;
-}
+  background: #e8f3f6}
 
 /*
 #r_hack {
@@ -122,7 +118,6 @@ ul#nav_bar {
 
 #nav_bar li.tab_selected:hover {
   background-color: #E8F3F6;
-  border-bottom: 1px solid #E8F3F6;
 }
 
 /* tabs */
@@ -130,24 +125,25 @@ ul#nav_bar {
 #tabs {
 	margin-top: 24px;
 	list-style-type: none;
-	text-align: center;
 	padding-bottom: 1px;
 }
 
 #tabs li {
 	display: inline;
-	border: 1px solid #000;
 	padding: 1px 3px;
 	margin-left: 0.5em;
 	cursor: pointer;
+        border-top: 1px solid #aaa;
+        border-left: 1px solid #aaa;
+        border-right: 1px solid #aaa;
 }
 
 #tabs li.tab_selected {
-	background-color: #f00;
+	background-color: #ddd;
 }
 
 #tabs li.tab:hover {
-	background-color: #ccc;
+	background-color: #ddd;
 }
 
 #tabs.tab_signal {
@@ -185,16 +181,14 @@ div.pager a {
 
 label { 
   font-size: 10pt; 
-  font-weight: normal;
-}
+  font-weight: normal}
+
 #load,
-label.load { font-size: 8pt; font-weight: normal;}
+label.load { font-size: 8pt; font-weight: normal}
 
 .toolbar {
   height: 30px;
-  background-color: #ddd;
-  border: 1px solid #888;
-}
+  background-color: #ddd}
 
 .toolbar_icon {
   text-align: center;

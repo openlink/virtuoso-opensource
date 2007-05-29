@@ -3,22 +3,21 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2007 Ondrej Zara and OpenLink Software
+ *  Copyright (C) 2007 OpenLink Software
  *
  *  See LICENSE file for details.
  */
 #menu {
 	font: menu;
-	background-color: #aaa;
+	background-color: #fff;
 	list-style-type: none;
 	height: 20px;
-	border-bottom: 1px solid #000;
+	border-bottom: 1px solid #aaa;
 	z-index: 900;
 	position: absolute;
 	left: 0px;
 	top: 0px;
-	width: 100%;
-}
+	width: 100%}
 
 #menu li {
 	cursor: pointer;
@@ -26,31 +25,28 @@
 	display: block;
 	float: left;
 	position: relative;
-	padding: 3px 8px;
-}
+	padding: 3px 8px}
 
 #menu li:hover, #menu li.hover {
-	background-color: #ccc;
-}
+        color: #fff;
+	background-color: blue}
 
 #menu ul {
 	position: absolute;
-	background-color: #aaa;
+	background-color: #eee;
 	left: 0px;
 	top: 20px;
 	_top: 22px;
-	border: 1px solid #000;
 	width: 100px;
 	padding: 2px;
-	z-index: 999;
-}
+	z-index: 999}
 
 #menu ul li {
 	display: block;
 	padding: 4px 6px;
 	top: 0px;
 	float: none;
-}
+        color: #000}
 
 #menu .hr {
 	margin: 0px;
