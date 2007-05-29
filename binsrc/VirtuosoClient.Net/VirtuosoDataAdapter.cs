@@ -42,7 +42,7 @@ namespace OpenLink.Data.Virtuoso
 {
     public sealed class VirtuosoConstants
     {
-        public const string AssemblyVersion = "3.5.2728.1";
+        public const string AssemblyVersion = "5.5.3015.1";
         public const string VirtuosoDesignSN = 
             VirtuosoDesignNSPrefix 
             + ", Version=" + AssemblyVersion
