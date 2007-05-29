@@ -268,7 +268,11 @@ DB.DBA.VHOST_REMOVE(lpath=>'/DAV/wikiview')
 registry_remove('wiki default uri')
 ;
 
-
-
-
-
+-- NNTP
+DROP procedure DB.DBA.oWiki_NEWS_MSG_I
+;
+DROP procedure DB.DBA.oWiki_NEWS_MSG_U
+;
+DROP procedure DB.DBA.oWiki_NEWS_MSG_D
+;
+DB.DBA.NNTP_NEWS_MSG_DEL ('oWiki');
