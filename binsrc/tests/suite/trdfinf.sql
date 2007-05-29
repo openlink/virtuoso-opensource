@@ -12,6 +12,14 @@ ttlp ('
 <ic1> <cl2> <c2> .
 ', '', 'inft');
 
+ttlp ('
+<ic1> <icpe> 1 .
+<ic2> <icpe> 2 .
+<ic3> <icpe> 3 .
+<ic4> <icpe> 4 .
+', '', 'extra');
+
+
 ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 <c2> rdfs:subClassOf <c1> .
   <c3> rdfs:subClassOf <c2> .
@@ -140,4 +148,45 @@ echo both ": fs fp go join fs fp go with  sparql inf none\n";
 sparql  select * from <inft> where { ?s ?p <c1> option (inference 'inft') . ?s ?p1 <ic2p1> . };
 echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
 echo both ": fs fp go join fs fp go with  sparql inf inft\n";
+
+sparql define input:inference 'inft' select count (*) from <inft> where {?s ?p ?o};
+
+sparql define input:inference 'inft' select ?p count (?o) from <inft> where {?s ?p ?o};
+
+sparql define input:inference 'inft' select count (?p) count (?o) count (distinct ?o)  from <inft> where {?s ?p ?o};
+
+select count distinct ?s ?p ?o from <g> where {?s ?p ?o}
+
+
+sparql define input:inference 'inft' select ?s ?p count  (?o) from <inft> from <extra> where {?s ?p ?o};
+
+sparql define input:inference 'inft' 
+select ?icpe ?cl from <inft> from <extra> where { ?icpe <icpe> ?v . optional { ?icpe a ?cl } };
+echo both $if $equ $rowcnt 7 "PASSED" "***FAILED";
+echo both ": 2 graph oj \n";
+
+
+ttlp (
+'<syn1-c1> <http://www.w3.org/2002/07/owl#same-as> <ic1> .
+<ic1> <http://www.w3.org/2002/07/owl#same-as> <syn2-ic1> .
+<syn2-ic1> <http://www.w3.org/2002/07/owl#same-as> <syn3-ic1> .
+<syn4-ic1> <http://www.w3.org/2002/07/owl#same-as> <syn3-ic1> .
+<syn4-ic1> <http://www.w3.org/2002/07/owl#same-as> <ic1> .
+<syn2-ic1> <psyn2> 2 .
+', '', 'sas', 0);
+
+
+sparql define input:inference 'inft'
+select ?cl from <inft> from <sas> where { <syn3-ic1> a ?cl };
+--echo both $if $equ $last[1] c1 "PASSED" "***FAILED";
+--echo both ": same-as with class\n";
+
+sparql define input:inference 'inft'
+select ?p ?o  from <inft> from <sas> where { <syn3-ic1> ?p ?o };
+--echo both $if $equ $rowcnt 10 "PASSED" "***FAILED";
+--echo both ": properties following same-as\n";
+
+
+sparql define input:inference 'inft'
+select ?s from <inft> from <sas> where { ?s <p1> <ic1p1> };
 
