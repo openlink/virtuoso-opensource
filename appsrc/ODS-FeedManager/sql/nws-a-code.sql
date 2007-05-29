@@ -3968,7 +3968,7 @@ create procedure ENEWS.WA.dav_url (
 {
   declare home varchar;
 
-  home := CAL.WA.dav_home (CAL.WA.domain_owner_id (domain_id));
+  home := ENEWS.WA.dav_home (ENEWS.WA.domain_owner_id (domain_id));
   if (isnull(home))
     return '';
   return concat('http://', DB.DBA.wa_cname (), home, ENEWS.WA.domain_gems_folder(), '/', ENEWS.WA.domain_gems_name(domain_id), '/');
