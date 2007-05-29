@@ -725,3 +725,26 @@ function cExchange (command)
   createHidden('F1', 'exchange', command);
   doPost ('F1', 'command');
 }
+
+// ---------------------------------------------------------------------------
+function exchangeHTML ()
+{
+  var S, T;
+
+  T = 'ds_navigation';
+  S = $(T).innerHTML;
+  if (S == null || S == '') {
+    T = 'ds1_navigation';
+    S = $(T).innerHTML;
+  }
+  if (S == null || S == '') {
+    T = 'ds2_navigation';
+    S = $(T).innerHTML;
+  }
+  if (S == null || S == '') {
+    T = 'ds3_navigation';
+    S = $(T).innerHTML;
+  }
+  $('navigation').innerHTML = S;
+  $(T).innerHTML = '';
+}

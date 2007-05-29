@@ -315,6 +315,21 @@
     ]]>
   </v:method>
 
+  <v:method name="viewField" arglist="inout fValue any">
+    <![CDATA[
+       if (self.cAction = 'view')
+         if (is_empty_or_null (fValue)) {
+           http ('-');
+         } else {
+           if (internal_type (fValue) = 211) {
+             http (CAL.WA.dt_datestring (fValue, self.cDateFormat));
+           } else {
+             http (CAL.WA.utf2wide (cast (fValue as varchar)));
+           }
+         }
+    ]]>
+  </v:method>
+
   <vm:pagetitle>Calendar</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -502,6 +517,14 @@
                   <v:text name="s_keywords" value="--CAL.WA.xml_get ('keywords', self.cSearch)" xhtml_class="textbox" xhtml_size="60"/>
                 </td>
               </tr>
+              <tr>
+                <th>
+                  <vm:label for="s_tags" value="Comma delimited tags" />
+                </th>
+                <td>
+                  <v:text name="s_tags" value="--CAL.WA.xml_get ('tags', self.cSearch)" xhtml_class="textbox" xhtml_size="60"/>
+                </td>
+              </tr>
             </table>
           </div>
           <div class="new-form-footer" style="margin: 0;   border-top: 0;">
@@ -510,6 +533,7 @@
                 <![CDATA[
                   self.cSearch := null;
                   CAL.WA.xml_set ('keywords', self.cSearch, self.s_keywords.ufl_value);
+                  CAL.WA.xml_set ('tags', self.cSearch, self.s_tags.ufl_value);
                   self.vc_data_bind(e);
                 ]]>
               </v:on-post>
@@ -679,6 +703,9 @@
         </table>
         <div class="CE_container">
           <vm:if test="(self.cScope not in ('day', 'week', 'month')) and (self.account_role not in ('public', 'guest'))">
+            <table width="100%" cellspacing="0">
+              <tr>
+                <td>
             <vm:if test="(self.cScope <> 'search')">
             <v:button value="--'New ' || self.singleObjectName (self.cScope)" action="simple" xhtml_class="button" xhtml_style="margin-bottom: 5px;">
               <v:on-post>
@@ -702,6 +729,12 @@
                 ]]>
               </v:on-post>
             </v:button>
+                </td>
+                <td align="right">
+                  <span id="navigation"></span>
+                </td>
+              </tr>
+            </table>
           </vm:if>
           <div id="content" class="CE_main">
             <vm:if test="self.cScope in ('day', 'week', 'month')">
@@ -743,11 +776,11 @@
                     while ((not isEof) and (e_event = 1)) {
                       fetch cr next into e_id, e_event, e_subject, e_start, e_end, e_repeat, e_repeat_offset, e_reminder;
                       if (isEof)
-                         goto _skip;
+                         goto _skip1;
                       CAL.WA.dt_timeDecode (e_start, pHour, pMinute);
                       isFetched := 1;
                       if (e_event = 0)
-                         goto _skip;
+                         goto _skip1;
                       if (hasEvents = 0) {
                         http ('<tr class="CE_row">');
                         http ('<th class="CE_cell CE_cell_time">&nbsp;</th>');
@@ -756,7 +789,7 @@
                       }
                       self.showEvent (e_id, e_event, e_subject, e_start, e_end, e_repeat, e_repeat_offset, e_reminder);
                     }
-                  _skip:;
+                  _skip1:;
                     if (hasEvents = 1) {
                       http ('</td>');
                       http ('</tr>');
@@ -900,6 +933,7 @@
               <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
                 <v:before-data-bind>
                   <![CDATA[
+                    control.ds_nrows := CAL.WA.settings_rows (self.settings);
                     control.ds_parameters := null;
                     control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 0 order by E_EVENT_START', self.domain_id);
                   ]]>
@@ -965,21 +999,25 @@
                   </table>
                 </v:template>
 
+                <span id="ds_navigation">
+                  <vm:ds-navigation data-set="ds" />
+                </span>
+
               </v:data-set>
             </vm:if>
 
             <vm:if test="self.cScope = 'tasks'">
-              <v:data-source name="ds1rc" expression-type="sql" nrows="0" initial-offset="0">
+              <v:data-source name="ds1rc" expression-type="sql" nrows="0" scrollable="1" initial-offset="0">
                 <v:before-data-bind>
                   <![CDATA[
+                    control.ds_nrows := CAL.WA.settings_rows (self.settings);
                     control.ds_parameters := null;
                     control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 1 order by E_EVENT_START', self.domain_id);
                   ]]>
                 </v:before-data-bind>
               </v:data-source>
 
-              <v:data-set name="ds1" data-source="self.ds1rc" scrollable="1">
-
+              <v:data-set name="ds1" data-source="self.ds1rc" nrows="5" scrollable="1">
                 <v:template name="ds1_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                   <table id="events" style="width: 100%; backgrownd-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
@@ -1057,6 +1095,9 @@
                   </table>
                 </v:template>
 
+                <span id="ds1_navigation">
+                  <vm:ds-navigation data-set="ds1" />
+                </span>
               </v:data-set>
             </vm:if>
 
@@ -1064,6 +1105,7 @@
               <v:data-source name="ds2rc" expression-type="sql" nrows="0" initial-offset="0">
                 <v:before-data-bind>
                               <![CDATA[
+                    control.ds_nrows := CAL.WA.settings_rows (self.settings);
                     control.ds_parameters := null;
                     control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 2 order by E_EVENT_START', self.domain_id);
                               ]]>
@@ -1125,6 +1167,10 @@
                   </table>
                 </v:template>
 
+                <span id="ds2_navigation">
+                  <vm:ds-navigation data-set="ds2" />
+                </span>
+
               </v:data-set>
             </vm:if>
 
@@ -1132,8 +1178,13 @@
               <v:data-source name="ds3rc" expression-type="sql" nrows="0" initial-offset="0">
                 <v:before-data-bind>
                   <![CDATA[
+                    control.ds_nrows := CAL.WA.settings_rows (self.settings);
                     control.ds_parameters := null;
+                    if (isnull (self.cSearch)) {
+                      control.ds_sql := 'select * from CAL.WA.EVENTS where 1 = 0';
+                    } else {
                     control.ds_sql := CAL.WA.search_sql (self.domain_id, self.account_id, self.cSearch);
+                    }
                   ]]>
                 </v:before-data-bind>
               </v:data-source>
@@ -1214,11 +1265,17 @@
                   </table>
                 </v:template>
 
+                <span id="ds3_navigation">
+                  <vm:ds-navigation data-set="ds3" />
+                </span>
+
               </v:data-set>
             </vm:if>
+
               <script type="text/javascript">
                 <![CDATA[
                   coloriseTable('events');
+                exchangeHTML();
                 ]]>
               </script>
           </div>
@@ -1543,8 +1600,8 @@
                             declare N integer;
                             declare x any;
 
-                            x := make_array (31, 'any');
-                            for (N := 0; N < 31; N := N + 1)
+                            x := make_array (12, 'any');
+                            for (N := 0; N < 12; N := N + 1)
                               x[N] := cast ((N+1) as varchar);
                             control.vsl_item_values := x;
                             control.vsl_items := x;
@@ -1557,8 +1614,43 @@
                           ]]>
                         </v:before-data-bind>
                       </v:select-list>
-                      day of every
+                      month(s) on
                       <v:select-list name="e_repeat_param2_M1">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x any;
+
+                            x := make_array (31, 'any');
+                            for (N := 0; N < 31; N := N + 1)
+                              x[N] := cast ((N+1) as varchar);
+                            control.vsl_item_values := x;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'M1', 2, null);
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                      day
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (self.v_repeat = 'M2')
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_5" value="M2" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp"/>
+                      <vm:label for="e_repeat_5" value="--'Every'" />
+                      <v:select-list name="e_repeat_param1_M2">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1574,26 +1666,12 @@
                         </v:on-init>
                         <v:before-data-bind>
                           <![CDATA[
-                            control.ufl_value := self.repeatParam (self.v_repeat, 'M1', 2, null);
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'M2', 1, null);
                           ]]>
                         </v:before-data-bind>
                       </v:select-list>
-                      month(s)
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_repeat = 'M2')
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_5" value="M2" %s />', S));
-                      ?>
-                      <xsl:call-template name="nbsp"/>
-                      <vm:label for="e_repeat_5" value="--'The'" />
-                      <v:select-list name="e_repeat_param1_M2">
+                      month(s) on the
+                      <v:select-list name="e_repeat_param2_M2">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1615,11 +1693,11 @@
                         </v:on-init>
                         <v:before-data-bind>
                           <![CDATA[
-                            control.ufl_value := self.repeatParam (self.v_repeat, 'M2', 1, null);
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'M2', 2, null);
                           ]]>
                         </v:before-data-bind>
                       </v:select-list>
-                      <v:select-list name="e_repeat_param2_M2">
+                      <v:select-list name="e_repeat_param3_M2">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1654,32 +1732,10 @@
                         </v:on-init>
                         <v:before-data-bind>
                           <![CDATA[
-                            control.ufl_value := self.repeatParam (self.v_repeat, 'M2', 2, null);
-                          ]]>
-                        </v:before-data-bind>
-                      </v:select-list>
-                      of every
-                      <v:select-list name="e_repeat_param3_M2">
-                        <v:on-init>
-                          <![CDATA[
-                            declare N integer;
-                            declare x any;
-
-                            x := make_array (12, 'any');
-                            for (N := 0; N < 12; N := N + 1)
-                              x[N] := cast ((N+1) as varchar);
-                            control.vsl_item_values := x;
-                            control.vsl_items := x;
-                            control.ufl_value := '';
-                          ]]>
-                        </v:on-init>
-                        <v:before-data-bind>
-                          <![CDATA[
                             control.ufl_value := self.repeatParam (self.v_repeat, 'M2', 3, null);
                           ]]>
                         </v:before-data-bind>
                       </v:select-list>
-                      month(s)
                    </td>
                   </tr>
                   <tr>
@@ -1697,7 +1753,9 @@
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_6" value="--'Every'" />
-                      <v:select-list name="e_repeat_param1_Y1">
+                      <v:text name="e_repeat_param1_Y1" null-value="''" value="--self.repeatParam (self.v_repeat, 'Y1', 1, null);" xhtml_class="textbox" xhtml_size="1"/> year(s)
+                      on
+                      <v:select-list name="e_repeat_param2_Y1">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1726,11 +1784,11 @@
                         </v:on-init>
                         <v:before-data-bind>
                           <![CDATA[
-                            control.ufl_value := self.repeatParam (self.v_repeat, 'Y1', 1, null);
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'Y1', 2, null);
                           ]]>
                         </v:before-data-bind>
                       </v:select-list>
-                      <v:select-list name="e_repeat_param2_Y1">
+                      <v:select-list name="e_repeat_param3_Y1">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1746,7 +1804,7 @@
                         </v:on-init>
                         <v:before-data-bind>
                           <![CDATA[
-                            control.ufl_value := self.repeatParam (self.v_repeat, 'Y1', 2, null);
+                            control.ufl_value := self.repeatParam (self.v_repeat, 'Y1', 3, null);
                           ]]>
                         </v:before-data-bind>
                       </v:select-list>
@@ -2146,7 +2204,10 @@
                 <v:label for="t_subject" value="Subject"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:text name="t_subject" null-value="''" value="--CAL.WA.utf2wide (self.v_subject)" xhtml_class="textbox" xhtml_size="60"/>
+                </vm:if>
+                <?vsp self.viewField (self.v_subject); ?>
               </td>
             </tr>
             <tr>
@@ -2154,10 +2215,13 @@
                 <v:label for="t_eventEndDate" value="Start Date"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
                 <a href="#" name="t_eventStartDatt_select" id="t_eventStartDatt_select" onclick="cPopup.select(document.forms['F1'].t_eventStartDate, 't_eventStartDatt_select', '<?V self.cDateFormat ?>'); return false;">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
+                </vm:if>
+                <?vsp self.viewField (self.v_eventStart); ?>
               </td>
             </tr>
             <tr>
@@ -2165,10 +2229,13 @@
                 <v:label for="t_eventEndDate" value="Due Date"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
                 <a href="#" name="t_eventEndDatt_select" id="t_eventEndDatt_select" onclick="cPopup.select(document.forms['F1'].t_eventEndDate, 't_eventEndDatt_select', '<?V self.cDateFormat ?>'); return false;">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
+                </vm:if>
+                <?vsp self.viewField (self.v_eventEnd); ?>
               </td>
             </tr>
             <tr>
@@ -2176,6 +2243,7 @@
                 <v:label for="t_priority" value="Priority"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:select-list name="t_priority">
                   <v:on-init>
                     <![CDATA[
@@ -2202,6 +2270,8 @@
                     ]]>
                   </v:before-data-bind>
                 </v:select-list>
+                </vm:if>
+                <?vsp self.viewField (self.v_priority); ?>
               </td>
             </tr>
             <tr>
@@ -2209,6 +2279,7 @@
                 <v:label for="t_status" value="Status"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:select-list name="t_status">
                   <v:on-init>
                     <![CDATA[
@@ -2231,6 +2302,8 @@
                     ]]>
                   </v:before-data-bind>
                 </v:select-list>
+                </vm:if>
+                <?vsp self.viewField (self.v_status); ?>
               </td>
             </tr>
             <tr>
@@ -2238,6 +2311,7 @@
                 <v:label for="t_complete" value="% Complete"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:select-list name="t_complete">
                   <v:on-init>
                     <![CDATA[
@@ -2260,6 +2334,8 @@
                     ]]>
                   </v:before-data-bind>
                 </v:select-list>
+                </vm:if>
+                <?vsp self.viewField (self.v_complete); ?>
               </td>
             </tr>
             <tr>
@@ -2267,15 +2343,59 @@
                 <v:label for="t_description" value="Description"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:textarea name="t_description" null-value="--''" value="--CAL.WA.utf2wide (self.v_description)" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6"/>
+                </vm:if>
+                <?vsp self.viewField (self.v_description); ?>
               </td>
             </tr>
+            <tr>
+              <script type="text/javascript">
+                function suggestTags ()
+                {
+                  window.open ('tags.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;txt='+escape(document.F1.elements['t_subject'].value)+'&amp;txt2='+escape(document.F1.elements['t_description'].value) + '&amp;fld=n_tags', 'bookmarks_suggest_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500');
+                }
+              </script>
+              <th>
+                <v:label for="t_tags" value="Comma Delimited Tags" />
+              </th>
+              <td>
+                <vm:if test="self.cAction <> 'view'">
+                  <v:text name="t_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
+                  <input type="button" value="Suggest" onClick="javascript: suggestTags();" class="button" />
+                  <input type="button" value="Clear" onClick="javascript: document.F1.elements['t_tags'].value = ''" class="button" />
+                </vm:if>
+                <?vsp self.viewField (self.v_tags); ?>
+              </td>
+            </tr>
+            <vm:if test="self.cAction <> 'view'">
+              <tr>
+                <th>
+                  My Tags
+                </th>
+                <td>
+                  <?vsp
+                    declare _done integer;
+
+                    _done := 0;
+                    for (select T_TAG from CAL.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
+                      http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'t_tags\');">%s</a> ', T_TAG, T_TAG));
+                      _done := 1;
+                    }
+                    if (not _done)
+                      http ('no tags');
+                  ?>
+                </td>
+              </tr>
+            </vm:if>
           </table>
         </div>
         <div class="new-form-footer">
           <v:button action="simple" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" enabled="--case when (self.cAction in ('create', 'edit')) then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
+                declare tmp any;
+
                 declare exit handler for SQLSTATE '*' {
                   if (__SQL_STATE = 'TEST') {
                     self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
@@ -2290,8 +2410,13 @@
                 self.v_priority := cast (self.t_priority.ufl_value as integer);
                 self.v_status := self.t_status.ufl_value;
                 self.v_complete := cast (self.t_complete.ufl_value as integer);
+                self.v_tags := trim (self.t_tags.ufl_value);
 
                 CAL.WA.test (self.v_subject, vector('name', 'Subject', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                CAL.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
+                tmp := CAL.WA.tags2vector (self.v_tags);
+                tmp := CAL.WA.vector_unique (tmp);
+                self.v_tags := CAL.WA.vector2tags (tmp);
 
                 self.v_eventStart := CAL.WA.test (trim (self.t_eventStartDate.ufl_value), vector('name', 'Task start date', 'class', 'date-'||self.cDateFormat));
                 self.v_eventEnd := CAL.WA.test (trim (self.t_eventEndDate.ufl_value), vector('name', 'Task due date', 'class', 'date-'||self.cDateFormat, 'canEmpty', 0));
@@ -2369,7 +2494,10 @@
                 <v:label for="n_subject" value="Subject"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:text name="n_subject" null-value="''" value="--CAL.WA.utf2wide (self.v_subject)" xhtml_class="textbox" xhtml_size="60"/>
+                </vm:if>
+                <?vsp self.viewField (self.v_subject); ?>
               </td>
             </tr>
             <tr>
@@ -2377,15 +2505,59 @@
                 <v:label for="n_description" value="Description"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:textarea name="n_description" null-value="--''" value="--CAL.WA.utf2wide (self.v_description)" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6"/>
+                </vm:if>
+                <?vsp self.viewField (self.v_description); ?>
               </td>
             </tr>
+            <tr>
+              <script type="text/javascript">
+                function suggestTags ()
+                {
+                  window.open ('tags.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;txt='+escape(document.F1.elements['n_subject'].value)+'&amp;txt2='+escape(document.F1.elements['n_description'].value) + '&amp;fld=n_tags', 'bookmarks_suggest_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500');
+                }
+              </script>
+              <th>
+                <v:label for="n_tags" value="Comma Delimited Tags" />
+              </th>
+              <td>
+                <vm:if test="self.cAction <> 'view'">
+                  <v:text name="n_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
+                  <input type="button" value="Suggest" onClick="javascript: suggestTags();" class="button" />
+                  <input type="button" value="Clear" onClick="javascript: document.F1.elements['n_tags'].value = ''" class="button" />
+                </vm:if>
+                <?vsp self.viewField (self.v_tags); ?>
+              </td>
+            </tr>
+            <vm:if test="self.cAction <> 'view'">
+              <tr>
+                <th>
+                  My Tags
+                </th>
+                <td>
+                  <?vsp
+                    declare _done integer;
+
+                    _done := 0;
+                    for (select T_TAG from CAL.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
+                      http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'n_tags\');">%s</a> ', T_TAG, T_TAG));
+                      _done := 1;
+                    }
+                    if (not _done)
+                      http ('no tags');
+                  ?>
+                </td>
+              </tr>
+            </vm:if>
           </table>
         </div>
         <div class="new-form-footer">
           <v:button action="simple" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" enabled="--case when (self.cAction in ('create', 'edit')) then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
+                declare tmp any;
+
                 declare exit handler for SQLSTATE '*' {
                   if (__SQL_STATE = 'TEST') {
                     self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
@@ -2397,8 +2569,13 @@
 
                 self.v_subject := trim (self.n_subject.ufl_value);
                 self.v_description := trim (self.n_description.ufl_value);
+                self.v_tags := trim (self.n_tags.ufl_value);
 
                 CAL.WA.test (self.v_subject, vector('name', 'Subject', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                CAL.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
+                tmp := CAL.WA.tags2vector (self.v_tags);
+                tmp := CAL.WA.vector_unique (tmp);
+                self.v_tags := CAL.WA.vector2tags (tmp);
 
                 CAL.WA.note_update (
                   self.v_id,
@@ -2527,7 +2704,7 @@
                   </th>
                   <td>
                     <v:text name="f_dav" value="--''" xhtml_size="40" />
-                    <v:browse-button value="Browse..." selector="popup_browser.vspx" child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"  browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=f_dav', AB.WA.dav_home(self.account_id))">
+                    <v:browse-button value="Browse..." selector="popup_browser.vspx" child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"  browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=f_dav', CAL.WA.dav_home (self.account_id))">
                       <v:field name="f_dav" />
                     </v:browse-button>
                   </td>
@@ -2560,7 +2737,7 @@
                     declare _done integer;
 
                     _done := 0;
-                    for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
+                    for (select T_TAG from CAL.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
                       http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'i_tags\');"><i>%s</i></a> ', T_TAG, T_TAG));
                       _done := 1;
                     }
@@ -2588,7 +2765,7 @@
 
                   declare exit handler for SQLSTATE '*' {
                     if (__SQL_STATE = 'TEST') {
-                      self.vc_error_message := AB.WA.test_clear (__SQL_MESSAGE);
+                      self.vc_error_message := CAL.WA.test_clear (__SQL_MESSAGE);
                       self.vc_is_valid := 0;
                       return;
                     }
@@ -2605,12 +2782,12 @@
 
                   } else if (self.icSource = 1) {
                     self.f_dav.ufl_value := trim(self.f_dav.ufl_value);
-                    if (self.f_dav.ufl_value not like (AB.WA.dav_home (self.account_id) || '%')) {
-                      self.vc_error_message := sprintf('Please select file from your WebDAV home directory ''%s''!', AB.WA.dav_home (self.account_id));
+                    if (self.f_dav.ufl_value not like (CAL.WA.dav_home (self.account_id) || '%')) {
+                      self.vc_error_message := sprintf('Please select file from your WebDAV home directory ''%s''!', CAL.WA.dav_home (self.account_id));
                       self.vc_is_valid := 0;
                       return;
                     }
-                    content := AB.WA.dav_content (AB.WA.host_url () || self.f_dav.ufl_value);
+                    content := CAL.WA.dav_content (CAL.WA.host_url () || self.f_dav.ufl_value);
                     if (isnull(content)) {
                       self.vc_error_message := 'Bad import source!';
                       self.vc_is_valid := 0;
@@ -2624,7 +2801,7 @@
                       self.vc_is_valid := 0;
                       return;
                     }
-                    content := AB.WA.dav_content (self.f_uri.ufl_value);
+                    content := CAL.WA.dav_content (self.f_uri.ufl_value);
                     if (isnull(content)) {
                       self.vc_error_message := 'Bad URI source!';
                       self.vc_is_valid := 0;
@@ -2634,10 +2811,10 @@
 
                   -- test tags value
                   self.v_tags := trim (self.i_tags.ufl_value);
-                  AB.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
-                  tmp := AB.WA.tags2vector (self.v_tags);
-                  tmp := AB.WA.vector_unique (tmp);
-                  self.v_tags := AB.WA.vector2tags (tmp);
+                  CAL.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
+                  tmp := CAL.WA.tags2vector (self.v_tags);
+                  tmp := CAL.WA.vector_unique (tmp);
+                  self.v_tags := CAL.WA.vector2tags (tmp);
 
                   -- vCard
                   if (self.icType = 0)

@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="tags" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Suggest Tags</vm:pagetitle>
+  <vm:popup_page_wrapper>
+    <vm:variables>
+      <v:variable persist="0" name="v_txt" param-name="txt" type="varchar"/>
+      <v:variable persist="0" name="v_txt2" param-name="txt2" type="varchar"/>
+      <v:variable persist="0" name="v_field" param-name="fld" type="varchar"/>
+      <v:variable persist="0" name="v_tags" type="any"/>
+    </vm:variables>
+    <vm:pagebody>
+      <table id="tags" class="grid" style="width: 100%;" cellspacing="0">
+        <thead class="sortHeader">
+          <tr>
+            <th class="checkbox" width="1%">
+              <?vsp
+                http('<input type="checkbox" name="cb_all" value="Unselect All" checked="checked" onclick="selectAllCheckboxes(this, \'cb_item\'); "/>');
+              ?>
+            </th>
+            <th style="text-align: center; width: 100%;" class="last">Tag</th>
+          </tr>
+        </thead>
+        <?vsp
+          declare exit handler for SQLSTATE '*' { goto _end;};
+
+          declare N integer;
+          declare rules, vTags any;
+
+          self.v_tags := '';
+          rules := user_tag_rules (self.account_id);
+          vTags := tag_document (self.v_txt, 0, rules);
+          for (N := 0; N < length (vTags); N := N + 2)
+            self.v_tags := concat (self.v_tags, ',', vTags[N]);
+
+          vTags := tag_document (self.v_txt2, 0, rules);
+          for (N := 0; N < length(vTags); N := N + 2)
+            self.v_tags := concat (self.v_tags, ',', vTags[N]);
+          self.v_tags := trim(self.v_tags, ',');
+
+        _end:
+          if (not is_empty_or_null(self.v_tags)) {
+            vTags := CAL.WA.tags2vector (self.v_tags);
+            for (N := 0; N < length (vTags); N := N + 1) {
+        ?>
+          <tr>
+            <td>
+              <?vsp
+                http (sprintf ('<input type="checkbox" name="cb_item" value="%s" checked="checked" onclick="javascript: coloriseRow(getParent(this, \'tr\'), this.checked);"/>', vTags[N]));
+              ?>
+            </td>
+            <td>
+              &nbsp;<?V vTags[N] ?>
+            </td>
+          </tr>
+        <?vsp
+            }
+          } else {
+        ?>
+            <tr>
+              <td align="center" colspan="2">
+                No tags suggested
+              </td>
+            </tr>
+        <?vsp
+          }
+        ?>
+      </table>
+      <div class="form-footer">
+        <?vsp
+          http(sprintf('<input type="hidden" name="fld" id="fld" value="%s" />', self.v_field));
+          if (length (self.v_tags))
+            http('<input type="button" name="use" value="Use Selection" onclick="javascript: addCheckedTags(\'fld\', \'cb_item\')" />');
+        ?>
+        <input type="button" name="close" value="Cancel" onclick="javascript: window.close()" />
+      </div>
+      <script type="text/javascript">
+        <![CDATA[
+          coloriseTable('tags');
+
+          var objForm = document.forms['F1'];
+          for (var i = 0; i < objForm.elements.length; i++) {
+            var o = objForm.elements[i];
+            if (o != null && o.type == 'checkbox' && !o.disabled && o.name.indexOf ('cb_item') != -1)
+              coloriseRow(getParent(o, 'tr'), o.checked);
+          }
+        ]]>
+      </script>
+    </vm:pagebody>
+  </vm:popup_page_wrapper>
+</v:page>

@@ -2726,7 +2726,7 @@ create procedure CAL.WA.event_user2gmt (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.event_occurAtDate (
-  in pDate datetime,
+  in dt datetime,
   in event integer,
   in eventStart datetime,
   in eventRepeat varchar,
@@ -2737,68 +2737,68 @@ create procedure CAL.WA.event_occurAtDate (
   in eventRepeatExceptions varchar,
   in weekStarts varchar := 'm')
 {
-  declare tmp any;
+  declare tmp, dtEnd any;
 
-  -- before start date
+  -- after until date
+  if ((not isnull (eventRepeatUntil)) and (dt > eventRepeatUntil))
+    return 0;
+
   if (event = 1)
     eventStart := dateadd ('hour', -12, eventStart);
 
-  if (pDate < eventStart)
-    return 0;
-
-  -- after until date
-  if ((not isnull (eventRepeatUntil)) and (pDate > eventRepeatUntil))
+  dtEnd := dateadd ('second',86399, dt);
+  -- before start date
+  if (dtEnd < eventStart)
     return 0;
 
   -- deleted occurence
-  if (not isnull (strstr (eventRepeatExceptions, '<' || cast (datediff ('day', eventStart, pDate) as varchar) || '>')))
+  if (not isnull (strstr (eventRepeatExceptions, '<' || cast (datediff ('day', eventStart, dt) as varchar) || '>')))
     return 0;
 
   -- Every N-th day(s)
   if (eventRepeat = 'D1') {
-    if (mod (datediff ('day', eventStart, pDate), eventRepeatParam1) = 0)
+    if (mod (datediff ('day', eventStart, dtEnd), eventRepeatParam1) = 0)
       return 1;
   }
 
   -- Every week day
   if (eventRepeat = 'D2') {
-    tmp := dayofweek (pDate);
+    tmp := dayofweek (dt);
     if ((tmp > 1) and (tmp < 7))
       return 1;
   }
 
   -- Every N-th week on ...
   if (eventRepeat = 'W1') {
-    if (mod (datediff ('day', dateadd ('day', 7, CAL.WA.dt_EndOfWeek (eventStart, weekStarts)), pDate) / 7, eventRepeatParam1) = 0)
-      if (bit_and (eventRepeatParam2, power (2, CAL.WA.dt_WeekDay (pDate, weekStarts)-1)))
+    if (mod (datediff ('day', eventStart, dtEnd) / 7, eventRepeatParam1) = 0)
+      if (bit_and (eventRepeatParam2, power (2, CAL.WA.dt_WeekDay (dt, weekStarts)-1)))
         return 1;
   }
 
   -- Every N-th day of M-th month(s)
   if (eventRepeat = 'M1') {
-    tmp := datediff ('month', CAL.WA.dt_BeginOfMonth (eventStart), pDate);
-    if ((tmp <> 0) and (mod (tmp, eventRepeatParam2) = 0))
-      if (dayofmonth (pDate) = eventRepeatParam1)
+    if (mod (datediff ('month', eventStart, dtEnd), eventRepeatParam1) = 0)
+      if (dayofmonth (dt) = eventRepeatParam2)
         return 1;
   }
 
   -- Every X day/weekday/wekkend/... of Y-th month(s)
   if (eventRepeat = 'M2') {
-    tmp := datediff ('month', CAL.WA.dt_BeginOfMonth (eventStart), pDate);
-    if ((tmp <> 0) and (mod (tmp, eventRepeatParam3) = 0))
-      if (dayofmonth (pDate) = CAL.WA.event_findDay (pDate, eventRepeatParam1, eventRepeatParam2))
+    if (mod (datediff ('month', eventStart, dtEnd), eventRepeatParam1) = 0)
+      if (dayofmonth (dt) = CAL.WA.event_findDay (dt, eventRepeatParam2, eventRepeatParam3))
         return 1;
   }
 
   if (eventRepeat = 'Y1') {
-    if ((month (pDate) = eventRepeatParam1) and (dayofmonth (pDate) = eventRepeatParam2))
+    if (mod (datediff ('year', eventStart, dtEnd), eventRepeatParam1) = 0)
+      if ((month (dt) = eventRepeatParam2) and (dayofmonth (dt) = eventRepeatParam3))
       return 1;
   }
 
   -- Every X day/weekday/wekkend/... of Y-th month(s)
   if (eventRepeat = 'Y2') {
-    if (month (pDate) = eventRepeatParam3)
-      if (dayofmonth (pDate) = CAL.WA.event_findDay (pDate, eventRepeatParam1, eventRepeatParam2))
+    if (month (dt) = eventRepeatParam3)
+      if (dayofmonth (dt) = CAL.WA.event_findDay (dt, eventRepeatParam1, eventRepeatParam2))
         return 1;
   }
 
@@ -2812,39 +2812,39 @@ create procedure CAL.WA.event_occurAtDate (
 --
 --------------------------------------------------------------------------------
 create procedure CAL.WA.event_findDay (
-  in pDate   date,
+  in dt   date,
   in eventRepeatParam1 integer,
   in eventRepeatParam2 integer)
 {
   declare N, pDay integer;
 
-  pDay := dayofmonth (pDate);
+  pDay := dayofmonth (dt);
   -- last (day|weekday|weekend|m|t|w|t|f|s|s)
   if (eventRepeatParam1 = 5) {
-    pDate := CAL.WA.dt_EndOfMonth (pDate);
-    while (not CAL.WA.event_testDayKind (pDate, eventRepeatParam2))
-      pDate := dateadd ('day', -1, pDate);
-    return dayofmonth (pDate);
+    dt := CAL.WA.dt_EndOfMonth (dt);
+    while (not CAL.WA.event_testDayKind (dt, eventRepeatParam2))
+      dt := dateadd ('day', -1, dt);
+    return dayofmonth (dt);
   }
 
-  pDate := CAL.WA.dt_BeginOfMonth (pDate);
+  dt := CAL.WA.dt_BeginOfMonth (dt);
   -- first|second|third|fourth (m|t|w|t|f|s|s)
   if (1 <= eventRepeatParam2 and eventRepeatParam2 <= 7) {
-    while (not CAL.WA.event_testDayKind (pDate, eventRepeatParam2))
-      pDate := dateadd ('day', 1, pDate);
-    return dayofmonth (dateadd ('day', 7*(eventRepeatParam1-1), pDate));
+    while (not CAL.WA.event_testDayKind (dt, eventRepeatParam2))
+      dt := dateadd ('day', 1, dt);
+    return dayofmonth (dateadd ('day', 7*(eventRepeatParam1-1), dt));
   }
 
   -- first|second|third|fourth  (m|t|w|t|f|s|s) (day|weekday|weekend)
   if (1 <= eventRepeatParam1 and eventRepeatParam1 <= 4) {
     N := eventRepeatParam1;
-    while (pDay >= dayofmonth (pDate)) {
-      if (CAL.WA.event_testDayKind (pDate, eventRepeatParam2)) {
+    while (pDay >= dayofmonth (dt)) {
+      if (CAL.WA.event_testDayKind (dt, eventRepeatParam2)) {
         N := N - 1;
         if (N = 0)
-          return dayofmonth (pDate);
+          return dayofmonth (dt);
       }
-      pDate := dateadd ('day', 1, pDate);
+      dt := dateadd ('day', 1, dt);
     }
   }
 
@@ -2889,7 +2889,7 @@ create procedure CAL.WA.events_forPeriod (
   in pTimezone integer,
   in pWeekStarts varchar := 'm')
 {
-  declare dt date;
+  declare dt, dtStart, dtEnd, tzDT, tzEventStart, tzRepeatUntil date;
   declare dt_offset integer;
 
   declare c0, c1, c6, c7 integer;
@@ -2897,8 +2897,8 @@ create procedure CAL.WA.events_forPeriod (
   declare c3, c4 datetime;
   result_names (c0, c1, c2, c3, c4, c5, c6, c7);
 
-  pDateStart := CAL.WA.event_user2gmt (CAL.WA.dt_dateClear (pDateStart), pTimezone);
-  pDateEnd := CAL.WA.event_user2gmt (dateadd ('day', 1, CAL.WA.dt_dateClear (pDateEnd)), pTimezone);
+  dtStart := CAL.WA.event_user2gmt (CAL.WA.dt_dateClear (pDateStart), pTimezone);
+  dtEnd := CAL.WA.event_user2gmt (dateadd ('day', 1, CAL.WA.dt_dateClear (pDateEnd)), pTimezone);
 
   -- regular events
   for (select E_ID,
@@ -2911,8 +2911,8 @@ create procedure CAL.WA.events_forPeriod (
          from CAL.WA.EVENTS
         where E_DOMAIN_ID = domain_id
           and (E_REPEAT = '' or E_REPEAT is null)
-          and E_EVENT_START >= pDateStart
-          and E_EVENT_START <  pDateEnd) do
+          and E_EVENT_START >= dtStart
+          and E_EVENT_START <  dtEnd) do
   {
     result (E_ID,
             E_EVENT,
@@ -2940,25 +2940,28 @@ create procedure CAL.WA.events_forPeriod (
          from CAL.WA.EVENTS
         where E_DOMAIN_ID = domain_id
           and E_REPEAT <> ''
-          and E_EVENT_START <  pDateEnd
-          and ((E_REPEAT_UNTIL is null) or (E_REPEAT_UNTIL <  pDateEnd))) do
+          and E_EVENT_START < dtEnd
+          and ((E_REPEAT_UNTIL is null) or (E_REPEAT_UNTIL < dtEnd))) do
   {
-    dt := pDateStart;
-    while (dt < pDateEnd) {
-      if (CAL.WA.event_occurAtDate (dt,
+    tzEventStart := CAL.WA.event_gmt2user (E_EVENT_START, pTimezone);
+    tzRepeatUntil := CAL.WA.event_gmt2user (E_REPEAT_UNTIL, pTimezone);
+    dt := dtStart;
+    while (dt < dtEnd) {
+      tzDT := CAL.WA.event_gmt2user (dt, pTimezone);
+      if (CAL.WA.event_occurAtDate (tzDT,
                                     E_EVENT,
-                                    E_EVENT_START,
+                                    tzEventStart,
                                     E_REPEAT,
                                     E_REPEAT_PARAM1,
                                     E_REPEAT_PARAM2,
                                     E_REPEAT_PARAM3,
-                                    E_REPEAT_UNTIL,
+                                    tzRepeatUntil,
                                     E_REPEAT_EXCEPTIONS,
                                     pWeekStarts)) {
         if (E_EVENT = 1) {
           dt_offset := datediff ('day', dateadd ('hour', -12, E_EVENT_START), dt);
         } else {
-          dt_offset := datediff ('day', E_EVENT_START, dt);
+          dt_offset := datediff ('day', E_EVENT_START, dateadd ('second', 86399, dt));
         }
         result (E_ID,
                 E_EVENT,
@@ -3171,11 +3174,11 @@ create procedure CAL.WA.vcal_str2date (
 {
   declare S, dt, tzID, tzOffset any;
 
-  S := cast (xquery_eval (sprintf (xmlPath || '%s', 'val'), xmlItem, 1) as varchar);
+  S := cast (xquery_eval (xmlPath || 'val', xmlItem, 1) as varchar);
   dt := CAL.WA.vcal_iso2date (S);
   if (not isnull (dt)) {
     if (chr (S[length(S)-1]) <> 'Z') {
-      tzID := cast (xquery_eval (sprintf (xmlPath || '%s', 'TZID'), xmlItem, 1) as varchar);
+      tzID := cast (xquery_eval (xmlPath || 'TZID', xmlItem, 1) as varchar);
       if (not isnull (tzID)) {
         tzOffset := dict_get (tzDict, tzID, 0);
         dt := dateadd ('minute', tzOffset, dt);
@@ -3226,8 +3229,8 @@ create procedure CAL.WA.vcal_date2utc (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.vcal_str2recurrence (
-  in vcalVersion any,
-  in S any,
+  in xmlItem any,
+  in xmlPath varchar,
   inout eventRepeat varchar,
   inout eventRepeatParam1 integer,
   inout eventRepeatParam2 integer,
@@ -3235,8 +3238,8 @@ create procedure CAL.WA.vcal_str2recurrence (
   inout eventRepeatUntil datetime)
 {
   declare N integer;
-  declare T varchar;
-  declare V any;
+  declare S, T varchar;
+  declare V, ruleParams any;
 
   eventRepeat := '';
   eventRepeatParam1 := null;
@@ -3244,58 +3247,62 @@ create procedure CAL.WA.vcal_str2recurrence (
   eventRepeatParam3 := null;
   eventRepeatUntil := null;
 
-  if (isnull (S))
-    return;
+  V := vector ();
+  ruleParams := xquery_eval (xmlPath, xmlItem, 0);
+  foreach (any ruleParam in ruleParams) do  {
+    S := cast (xpath_eval ('.', ruleParam) as varchar);
+    V := vector_concat (V, split_and_decode (S, 1, '\0\0;='));
+  }
 
-  N := 0;
-  V := split_and_decode (S, 0, '\0\0 ');
   if (length (V) = 0)
     return;
 
-  T := V[N];
-  if (length (T) < 2)
-    return;
-
   -- dayly rule
-  if (chr (T[0]) = 'D') {
+  if (get_keyword ('FREQ', V) = 'DAYLY') {
     eventRepeat := 'D1';
-    eventRepeatParam1 := atoi (substring (T, 1));
-    for (N := 1; N < length (V); N := N + 1)
-      if (chr (V[N][0]) <> '#')
-        eventRepeatUntil := CAL.WA.vcal_str2date (V[N]);
+    eventRepeatParam1 := cast (get_keyword ('INTERVAL', V, '1') as integer);
   }
 
-  -- weekly rule
-  if (chr (T[0]) = 'W') {
-    eventRepeat := 'W2';
-    eventRepeatParam1 := atoi (substring (T, 1));
-    for (N := 1; N < length (V); N := N + 1)
-      if (chr (V[N][0]) <> '#') {
-        if ((chr (V[N][0]) >= '0') and (chr (V[N][0]) <= '9')) {
-          eventRepeatUntil := CAL.WA.vcal_str2date (V[N]);
-        } else {
-          if (isnull (eventRepeatParam2))
+  if (get_keyword ('FREQ', V) = 'WEEKLY') {
+    eventRepeat := 'W1';
+    eventRepeatParam1 := cast (get_keyword ('INTERVAL', V, '1') as integer);
             eventRepeatParam2 := 0;
-          if        (V[N] = 'MO') {
-            eventRepeatParam2 := bit_or (eventRepeatParam2, 0);
-          } else if (V[N] = 'TU') {
-            eventRepeatParam2 := bit_or (eventRepeatParam2, 1);
-          } else if (V[N] = 'WE') {
-            eventRepeatParam2 := bit_or (eventRepeatParam2, 2);
-          } else if (V[N] = 'TH') {
-            eventRepeatParam2 := bit_or (eventRepeatParam2, 3);
-          } else if (V[N] = 'FR') {
-            eventRepeatParam2 := bit_or (eventRepeatParam2, 4);
-          } else if (V[N] = 'SA') {
-            eventRepeatParam2 := bit_or (eventRepeatParam2, 5);
-          } else if (V[N] = 'SU') {
-            eventRepeatParam2 := bit_or (eventRepeatParam2, 6);
+    T := get_keyword ('BYDAY', V);
+    if (not isnull (T)) {
+      T := split_and_decode (T, 0, '\0\0,');
+      for (N := 0; N < length (T); N := N + 1) {
+        if        (T[N] = 'MO') {
+          eventRepeatParam2 := bit_or (eventRepeatParam2, power (2, 0));
+        } else if (T[N] = 'TU') {
+          eventRepeatParam2 := bit_or (eventRepeatParam2, power (2, 1));
+        } else if (T[N] = 'WE') {
+          eventRepeatParam2 := bit_or (eventRepeatParam2, power (2, 2));
+        } else if (T[N] = 'TH') {
+          eventRepeatParam2 := bit_or (eventRepeatParam2, power (2, 3));
+        } else if (T[N] = 'FR') {
+          eventRepeatParam2 := bit_or (eventRepeatParam2, power (2, 4));
+        } else if (T[N] = 'SA') {
+          eventRepeatParam2 := bit_or (eventRepeatParam2, power (2, 5));
+        } else if (T[N] = 'SU') {
+          eventRepeatParam2 := bit_or (eventRepeatParam2, power (2, 6));
           }
         }
       }
   }
 
-  return;
+  if (get_keyword ('FREQ', V) = 'MONTHLY') {
+    eventRepeat := 'M1';
+    eventRepeatParam1 := cast (get_keyword ('INTERVAL', V, '1') as integer);
+    eventRepeatParam2 := cast (get_keyword ('BYMONTHDAY', V, '1') as integer);
+  }
+  if (get_keyword ('FREQ', V) = 'YEARLY') {
+    eventRepeat := 'Y1';
+    eventRepeatParam1 := cast (get_keyword ('INTERVAL', V, '1') as integer);
+    eventRepeatParam2 := cast (get_keyword ('BYMONTH', V, '1') as integer);
+    eventRepeatParam3 := cast (get_keyword ('BYMONTHDAY', V, '1') as integer);
+  }
+
+  eventRepeatUntil := CAL.WA.vcal_iso2date (get_keyword ('UNTIL', V));
 }
 ;
 
@@ -3308,28 +3315,96 @@ create procedure CAL.WA.vcal_recurrence2str (
   inout eventRepeatParam3 integer,
   inout eventRepeatUntil datetime)
 {
-  declare N integer;
-  declare S, T varchar;
-  declare V any;
+  declare S varchar;
 
   if (is_empty_or_null (eventRepeat))
     return null;
 
+  S := null;
   -- dayly rule
   if (eventRepeat = 'D1') {
-    S := 'D' || cast (eventRepeatParam1 as varchar);
+    S := 'FREQ=DAYLY';
+    S := S || ';INTERVAL=' || cast (eventRepeatParam1 as varchar);
     if (not isnull (eventRepeatUntil))
-      return S || ' ' || CAL.WA.vcal_date2str (eventRepeatUntil);
+      S := S || ';UNTIL=' || CAL.WA.vcal_date2utc (eventRepeatUntil);
   }
 
-  return null;
+  if (eventRepeat = 'D2') {
+    S := 'FREQ=DAYLY';
+    S := S || ';INTERVAL=1';
+    S := S || ';BYDAY=MO,TU,WE,TH,FR';
+    if (not isnull (eventRepeatUntil))
+      S := S || ';UNTIL=' || CAL.WA.vcal_date2utc (eventRepeatUntil);
+  }
+
+  if (eventRepeat = 'W1') {
+    S := 'FREQ=WEEKLY';
+    S := S || ';INTERVAL=' || cast (eventRepeatParam1 as varchar);
+    if (eventRepeatParam2 <> 0) {
+      S := S || ';BYDAY=';
+      if (bit_and (eventRepeatParam2, power (2, 0)))
+        S := S || 'MO,';
+      if (bit_and (eventRepeatParam2, power (2, 1)))
+        S := S || 'TU,';
+      if (bit_and (eventRepeatParam2, power (2, 2)))
+        S := S || 'WE,';
+      if (bit_and (eventRepeatParam2, power (2, 3)))
+        S := S || 'TH,';
+      if (bit_and (eventRepeatParam2, power (2, 4)))
+        S := S || 'FR,';
+      if (bit_and (eventRepeatParam2, power (2, 5)))
+        S := S || 'SA,';
+      if (bit_and (eventRepeatParam2, power (2, 6)))
+        S := S || 'SU,';
+      S := trim (S, ',');
+    }
+    if (not isnull (eventRepeatUntil))
+      S := S || ';UNTIL=' || CAL.WA.vcal_date2utc (eventRepeatUntil);
+  }
+
+  if (eventRepeat = 'M1') {
+    S := 'FREQ=MONTHLY';
+    S := S || ';INTERVAL=' || cast (eventRepeatParam1 as varchar);
+    S := S || ';BYMONTHDAY=' || cast (eventRepeatParam2 as varchar);
+    if (not isnull (eventRepeatUntil))
+      S := S || ';UNTIL=' || CAL.WA.vcal_date2utc (eventRepeatUntil);
+  }
+
+  if (eventRepeat = 'M2') {
+    S := 'FREQ=MONTHLY';
+    S := S || ';INTERVAL=' || cast (eventRepeatParam1 as varchar);
+    if (eventRepeatParam3 = 10)
+      S := S || ';BYMONTHDAY=' || cast (eventRepeatParam2 as varchar);
+    if (not isnull (eventRepeatUntil))
+      S := S || ';UNTIL=' || CAL.WA.vcal_date2utc (eventRepeatUntil);
+  }
+
+  if (eventRepeat = 'Y1') {
+    S := 'FREQ=YEARLY';
+    S := S || ';INTERVAL=' || cast (eventRepeatParam1 as varchar);
+    S := S || ';BYMONTH=' || cast (eventRepeatParam2 as varchar);
+    S := S || ';BYMONTHDAY=' || cast (eventRepeatParam3 as varchar);
+    if (not isnull (eventRepeatUntil))
+      S := S || ';UNTIL=' || CAL.WA.vcal_date2utc (eventRepeatUntil);
+  }
+
+  if (eventRepeat = 'Y2') {
+    S := 'FREQ=YEARLY';
+    S := S || ';INTERVAL=1';
+    S := S || ';BYMONTH=' || cast (eventRepeatParam3 as varchar);
+    if (eventRepeatParam1 = 10)
+      S := S || ';BYMONTHDAY=' || cast (eventRepeatParam2 as varchar);
+    if (not isnull (eventRepeatUntil))
+      S := S || ';UNTIL=' || CAL.WA.vcal_date2utc (eventRepeatUntil);
+  }
+
+  return S;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.vcal_str2reminder (
-  in vcalVersion any,
   in S any,
   in eventStart datetime,
   inout eventReminder integer)
@@ -3440,10 +3515,9 @@ create procedure CAL.WA.import_vcal (
           eventEnd := CAL.WA.p_dateadd (eventStart, tmp);
         }
         event := case when (isnull (eventEnd)) then 1 else 0 end;
-        tmp := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/RRULE/val', N), xmlItem, 1) as varchar);
-        CAL.WA.vcal_str2recurrence (vcalVersion, tmp, eventRepeat, eventRepeatParam1, eventRepeatParam2, eventRepeatParam3, eventRepeatUntil);
+        CAL.WA.vcal_str2recurrence (xmlItem, sprintf ('IMC-VEVENT[%d]/RRULE/fld', N), eventRepeat, eventRepeatParam1, eventRepeatParam2, eventRepeatParam3, eventRepeatUntil);
         tmp := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DALARM/val', N), xmlItem, 1) as varchar);
-        CAL.WA.vcal_str2reminder (vcalVersion, tmp, eventStart, eventReminder);
+        CAL.WA.vcal_str2reminder (tmp, eventStart, eventReminder);
         CAL.WA.event_update
           (
             id,
@@ -3504,7 +3578,7 @@ create procedure CAL.WA.export_vcal_line (
 {
   if (isnull (value))
     return;
-  http (sprintf ('%s:%s\r\n', property, value), sStream);
+  http (sprintf ('%s:%s\r\n', property, cast (value as varchar)), sStream);
 }
 ;
 ----------------------------------------------------------------------
@@ -3546,7 +3620,7 @@ create procedure CAL.WA.export_vcal (
     CAL.WA.export_vcal_line ('CATEGORIES', replace (E_TAGS, ',', ';'), sStream);
     CAL.WA.export_vcal_line (sprintf ('DTSTART;TZID=%s', tzID), CAL.WA.vcal_date2str (CAL.WA.event_gmt2user (E_EVENT_START, tz)), sStream);
     CAL.WA.export_vcal_line (sprintf ('DTEND;TZID=%s', tzID), CAL.WA.vcal_date2str (CAL.WA.event_gmt2user (E_EVENT_END, tz)), sStream);
-    --CAL.WA.export_vcal_line ('RRULE', CAL.WA.vcal_recurrence2str (E_REPEAT, E_REPEAT_PARAM1, E_REPEAT_PARAM2, E_REPEAT_PARAM3, E_REPEAT_UNTIL), sStream);
+    CAL.WA.export_vcal_line ('RRULE', CAL.WA.vcal_recurrence2str (E_REPEAT, E_REPEAT_PARAM1, E_REPEAT_PARAM2, E_REPEAT_PARAM3, E_REPEAT_UNTIL), sStream);
     --CAL.WA.export_vcal_line ('DALARM', CAL.WA.vcal_reminder2str (E_REMINDER), sStream);
 	  http ('END:VEVENT\r\n', sStream);
 	}

@@ -139,8 +139,9 @@ a:hover
   border-top: 0;
 }
 
-.lc div
+.lc a, .lc div
 {
+  display: block;
   padding: 3px;
   margin: 3px;
 }

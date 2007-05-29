@@ -192,7 +192,6 @@
                   self.cScope := 'search';
                   self.cAction := 'advanced';
                   self.cSearch := null;
-                  CAL.WA.xml_set('keywords', self.cSearch, self.keywords.ufl_value);
                   CAL.WA.xml_set('mode', self.cSearch, 'advanced');
                   self.vc_data_bind (e);
                 ]]>
@@ -387,108 +386,34 @@
       <b>Calendar Gems</b>
     </div>
     <div id="gems" class="lc lc_closer lc_noborder" style="display: none;">
-      <xsl:call-template name="vm:geoUrl-link" />
-      <vm:rss-link />
-      <vm:atom-link />
-      <vm:rdf-link />
-		  <vm:sioc-link format="rdf"> SIOC (RDF/XML)</vm:sioc-link>
-		  <vm:sioc-link format="ttl"> SIOC (N3/Turtle)</vm:sioc-link>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="vm:geoUrl-link">
-    <?vsp
-      declare exit handler for not found;
-      declare lat, lng any;
-
-      select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.account_id;
-      if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id)) {
-    ?>
-      <div style="border-bottom: 1px solid #7f94a5;">
-        <?vsp
-          http (sprintf('<a href="http://geourl.org/near?p=%U" title="GeoURL link" alt="GeoURL link" class="gems"><img src="http://i.geourl.org/geourl.png" border="0"/></a>', CAL.WA.calendar_url (self.domain_id)));
-        ?>
-      </div>
-    <?vsp
-      }
-    ?>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template match="vm:atom-link">
-    <div>
       <?vsp
-        http (sprintf('<a href="%sCalendar.atom" target="_blank" title="ATOM export" alt="ATOM export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> Atom</a>', CAL.WA.dav_url (self.domain_id)));
+        declare S varchar;
+
+        S := CAL.WA.dav_url (self.domain_id);
+        http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS'));
+        http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'Atom'));
+        http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF'));
+
+        S := sprintf ('http://%s/dataspace/%U/calendar/%U/', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (self.domain_id), CAL.WA.domain_name (self.domain_id));
+        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
+        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
       ?>
     </div>
   </xsl:template>
 
-  <!--=========================================================================-->
-  <xsl:template match="vm:rss-link">
-    <div>
-      <?vsp
-        http (sprintf('<a href="%sCalendar.rss" target="_blank" title="RSS export" alt="RSS export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> RSS</a>', CAL.WA.dav_url (self.domain_id)));
-      ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template match="vm:rdf-link">
-    <div>
-      <?vsp
-        http (sprintf('<a href="%sCalendar.rdf" target="_blank" title="RDF export" alt="RDF export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> RDF</a>', CAL.WA.dav_url (self.domain_id)));
-      ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="vm:foaf-link">
-    <div>
-      <?vsp
-        http (sprintf('<a href="%sCalendar.foaf" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.gif" border="0"/></a>', CAL.WA.dav_url(self.domain_id)));
-      ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template match="vm:sioc-link">
-    <div>
-      <?vsp
-      {
-        declare suffix varchar;
-
-        suffix := 'rdf';
-      ?>
-      <xsl:if test="@format">
-        <xsl:processing-instruction name="vsp">
-  	      suffix := '<xsl:value-of select="@format"/>';
-        </xsl:processing-instruction>
-      </xsl:if>
-  	  <a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/calendar/%U/sioc.%s', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (self.domain_id), CAL.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
-    	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
-      </a>
-      <?vsp
-        }
-      ?>
-    </div>
-  </xsl:template>
 
   <!--=========================================================================-->
   <xsl:template match="vm:ds-navigation">
     &lt;?vsp
       {
         declare _prev, _next, _last, _first vspx_button;
-        declare d_prev, d_next, d_last, d_first int;
+        declare d_prev, d_next, d_last, d_first integer;
 
         d_prev := d_next := d_last := d_first := 0;
         _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
         _last := control.vc_find_control ('<xsl:value-of select="@data-set"/>_last');
         _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
         _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
-
-        if (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)
-          goto _skip;
 
         if (_first is not null and not _first.vc_enabled)
           d_first := 1;
@@ -501,39 +426,27 @@
 
         if (_last is not null and not _last.vc_enabled)
           d_last := 1;
-
-      _skip:;
     ?&gt;
-    <xsl:if test="not(@type) or @type = 'set'">
     <?vsp
       if (d_first)
-        http ('<img src="image/first_16.gif" alt="First" title="First" border="0" /> First');
+        http ('<img src="image/first_16.gif" alt="First" title="First" border="0" />&nbsp;');
     ?>
-    <v:button name="{@data-set}_first" action="simple" style="image" value="image/first_16.gif" xhtml_alt="First" text="&amp;nbsp;First"/>
-    </xsl:if>
+    <v:button name="{@data-set}_first" action="simple" style="image" value="image/first_16.gif" xhtml_alt="First" text="&amp;nbsp;"/>
     <?vsp
-      if (d_first or _first.vc_enabled)
-        http ('&nbsp;');
       if (d_prev)
-        http ('<img src="image/previous_16.gif" alt="Previous" title="Previous" border="0" /> Previous');
+        http ('<img src="image/previous_16.gif" alt="Previous" title="Previous" border="0" />&nbsp;');
     ?>
-    <v:button name="{@data-set}_prev" action="simple" style="image" value="image/previous_16.gif" xhtml_alt="Previous" text="&amp;nbsp;Previous"/>
+    <v:button name="{@data-set}_prev" action="simple" style="image" value="image/previous_16.gif" xhtml_alt="Previous" text="&amp;nbsp;"/>
     <?vsp
-      if (d_prev or _prev.vc_enabled)
-        http ('&nbsp;');
       if (d_next)
-        http ('<img src="image/next_16.gif" alt="Next" title="Next" border="0" /> Next');
+        http ('<img src="image/next_16.gif" alt="Next" title="Next" border="0" />&nbsp;');
     ?>
-    <v:button name="{@data-set}_next" action="simple" style="image" value="image/next_16.gif" xhtml_alt="Next" text="&amp;nbsp;Next"/>
-    <xsl:if test="not(@type) or @type = 'set'">
+    <v:button name="{@data-set}_next" action="simple" style="image" value="image/next_16.gif" xhtml_alt="Next" text="&amp;nbsp;"/>
     <?vsp
-      if (d_next or _next.vc_enabled)
-        http ('&nbsp;');
       if (d_last)
-        http ('<img src="image/last_16.gif" alt="Last" title="Last" border="0" /> Last');
+        http ('<img src="image/last_16.gif" alt="Last" title="Last" border="0" />');
     ?>
-    <v:button name="{@data-set}_last" action="simple" style="image" value="image/last_16.gif" xhtml_alt="Last" text="&amp;nbsp;Last"/>
-    </xsl:if>
+    <v:button name="{@data-set}_last" action="simple" style="image" value="image/last_16.gif" xhtml_alt="Last" text="&amp;nbsp;"/>
     <?vsp
       }
     ?>
