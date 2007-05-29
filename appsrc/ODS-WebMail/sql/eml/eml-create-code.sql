@@ -1369,6 +1369,8 @@ create procedure OMAIL.WA.omail_delete_user_data(
   for (select FOLDER_ID from OMAIL.WA.FOLDERS where DOMAIN_ID = _domain_id and USER_ID = _user_id and PARENT_ID IS NULL) do
     OMAIL.WA.omail_del_folder(_domain_id,_user_id,FOLDER_ID,0);
   delete from OMAIL.WA.SETTINGS         where DOMAIN_ID = _domain_id and USER_ID = _user_id;
+  if (_domain_id <> 1)
+    OMAIL.WA.nntp_update (_domain_id, 1, 0);
 }
 ;
 

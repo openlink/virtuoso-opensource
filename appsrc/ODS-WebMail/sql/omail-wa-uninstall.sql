@@ -19,11 +19,16 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------
--- nws-d.sql
--- script for cleaning wa installation.
-------------------------------------------------------------------------------
+-- dropping nntp procedure
+create procedure OMAIL.WA.drop_nntp ()
+{
+  for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oMail') do
+    OMAIL.WA.nntp_update (WAI_ID, 1, 0);
+}
+;
+OMAIL.WA.drop_nntp ();
 
 -- Tables
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.MSG_PARTS_TDATA_WORDS');

@@ -19,10 +19,12 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+------------------------------------------------------------------------------
 
+use DB;
 
-USE DB;
-
+------------------------------------------------------------------------------
+--
 create function WA_SEARCH_OMAIL_GET_EXCERPT_HTML (
         in current_user_id integer,
 	in words any,
@@ -47,22 +49,24 @@ create function WA_SEARCH_OMAIL_GET_EXCERPT_HTML (
        _NAME,
        _SUBJECT,
        _TDATA);
-       --search_excerpt (words, subseq (coalesce (_TDATA, ''), 0, 200000)));
   return res;
 }
 ;
 
+------------------------------------------------------------------------------
+--
 create function WA_SEARCH_OMAIL_AGG_init (inout _agg any)
 {
   _agg := null; -- The "accumulator" is a string session. Initially it is empty.
 }
 ;
 
+------------------------------------------------------------------------------
+--
 create function WA_SEARCH_OMAIL_AGG_acc (
   inout _agg any,		-- The first parameter is used for passing "accumulator" value.
   in _val varchar,	-- Second parameter gets the value passed by first parameter of aggregate call.
-  in words any
-  )	-- Third parameter gets the value passed by second parameter of aggregate call.
+  in words any)	    -- Third parameter gets the value passed by second parameter of aggregate call.
 {
   if (_val is not null and _agg is null)	-- Attributes with NULL names should not affect the result.
     {
@@ -71,16 +75,21 @@ create function WA_SEARCH_OMAIL_AGG_acc (
 }
 ;
 
+------------------------------------------------------------------------------
+--
 create function WA_SEARCH_OMAIL_AGG_final (inout _agg any) returns varchar
 {
   return coalesce (_agg, '');
 }
 ;
 
+------------------------------------------------------------------------------
+--
 create aggregate WA_SEARCH_OMAIL_AGG (in _val varchar, in words any) returns varchar
   from WA_SEARCH_OMAIL_AGG_init, WA_SEARCH_OMAIL_AGG_acc, WA_SEARCH_OMAIL_AGG_final;
 
-
+------------------------------------------------------------------------------
+--
 create function WA_SEARCH_OMAIL (in max_rows integer, in current_user_id integer,
    in str varchar, in _words_vector varchar) returns varchar
 {
