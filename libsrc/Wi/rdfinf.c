@@ -65,13 +65,13 @@ caddr_t rdfs_type;
 
 
 void
-ri_outer_output (rdf_inf_pre_node_t * ri, caddr_t * inst)
+ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t * inst)
 {
   data_source_t * qn;
   data_source_t * next_qn = NULL;
   table_source_t * ts = NULL;
   hash_source_t * hs = NULL;
-  if (!ri->ri_outer_any_passed || qst_get (inst, ri->ri_outer_any_passed))
+  if (!any_flag || qst_get (inst, any_flag))
     return;
   /* the ts or hs after ri is outer.  Must call the appropriate outer output.  */
   while ((qn = qn_next ((data_source_t *) ri)))
@@ -93,6 +93,14 @@ ri_outer_output (rdf_inf_pre_node_t * ri, caddr_t * inst)
 	  qst_set_bin_string (inst, sl, (db_buf_t) "", 0, DV_DB_NULL);
 	}
       END_DO_SET ();
+      if (ts->ts_main_ks)
+	{
+	  DO_SET (state_slot_t *, sl, &ts->ts_main_ks->ks_out_slots)
+	    {
+	      qst_set_bin_string (inst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+	    }
+	  END_DO_SET ();
+	}
     }
   else 
     {
@@ -131,7 +139,7 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 		  else if (RI_SUBPROPERTY == ri->ri_mode)
 		    qst_set (inst, ri->ri_output, box_copy_tree (ri->ri_given));
 		  qn_send_output ((data_source_t *) ri, inst);
-		  ri_outer_output (ri, inst);
+		  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
 		  return;
 		}
 	      qst_set (inst, ri->ri_output, box_copy_tree ((caddr_t) list->data));
@@ -147,7 +155,7 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 		{
 		  SRC_IN_STATE ((data_source_t *)ri, inst) = NULL;;
 		  qn_send_output ((data_source_t *) ri, inst);
-		  ri_outer_output (ri, inst);
+		  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
 		  return;
 		}
 	    }
@@ -178,7 +186,7 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 		      else if (RI_SUBPROPERTY == ri->ri_mode)
 			qst_set (inst, ri->ri_output, box_copy_tree (qst_get (inst, ri->ri_p)));
 		      qn_send_output ((data_source_t *)ri, inst);
-		      ri_outer_output (ri, inst);
+		      ri_outer_output (ri, ri->ri_outer_any_passed, inst);
 		      return;
 		    }
 		}
@@ -189,7 +197,7 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 		  else if (RI_SUBPROPERTY == ri->ri_mode)
 		    qst_set (inst, ri->ri_output, box_copy_tree (qst_get (inst, ri->ri_p)));
 		  qn_send_output ((data_source_t *) ri, inst);
-		  ri_outer_output (ri, inst);
+		  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
 		  return;
 		}
 	    }
@@ -198,7 +206,7 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
       if (!list)
 	{
 	  SRC_IN_STATE ((data_source_t *) ri, inst) = NULL;
-	  ri_outer_output (ri, inst);
+	  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
 	  return;
 	}
 
@@ -207,7 +215,7 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 	{
 	  SRC_IN_STATE ((data_source_t*)ri, inst) = NULL;
 	  qn_send_output ((data_source_t *)ri, inst);
-	  ri_outer_output (ri, inst);
+	  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
 	  return;
 	}
       inst[ri->ri_list_slot] = (caddr_t) list->next;
@@ -477,6 +485,51 @@ sqlg_ri_post_filter (table_source_t * ts, df_elt_t * tb_dfe, rdf_inf_pre_node_t 
       else
 	((hash_source_t *) ts)->hs_after_join_test = NULL;
     }
+}
+
+#define IS_POST_TEST(qn) \
+  ((qn_input_fn) end_node_input == (qn)->src_input)
+
+
+data_source_t *
+qn_last_post_iter (data_source_t * qn)
+{
+  for (;;)
+    {
+      data_source_t * next = qn_next (qn);
+
+      if (!next)
+	return qn;
+      if (!IS_POST_TEST (next))
+	return qn;
+      qn = next;
+    }
+}
+
+
+void
+sqlg_outer_post_filter (table_source_t * ts, df_elt_t * tb_dfe, state_slot_t * any_flag)
+{
+  /* if a node has iters in front and is outer, this makes a node to record that there was at leastt one joined.  Also do the post join test here. */
+  code_vec_t ajt;
+  sql_comp_t * sc = tb_dfe->dfe_sqlo->so_sc;
+  dk_set_t code = NULL;
+  data_source_t * last_post_node = qn_last_post_iter ((data_source_t*) ts);
+  SQL_NODE_INIT (end_node_t, en, end_node_input, NULL);
+  sql_node_append ((data_source_t**)&last_post_node, (data_source_t*) en);
+  cv_artm (&code, box_identity, any_flag,  ssl_new_constant (sc->sc_cc, box_num (1)), NULL);
+  cv_bret (&code, 1);
+  en->src_gen.src_after_test = code_to_cv (sc, code);
+  if ((ajt = IS_TS (ts) ? ts->ts_after_join_test : ((hash_source_t *)ts)->hs_after_join_test))
+    {
+      SQL_NODE_INIT (end_node_t, en2, end_node_input, NULL);
+      sql_node_append ((data_source_t **)&en, (data_source_t *)en2);
+      en2->src_gen.src_after_test = ajt;
+      if (IS_TS (ts))
+	ts->ts_after_join_test = NULL;
+      else
+	((hash_source_t *) ts)->hs_after_join_test = NULL;
+    }
   if (IS_TS (ts))
     ts->ts_is_outer = 0;
   else 
@@ -495,8 +548,6 @@ sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t *
     return; /* if p is neither specified nor extracted, then do nothing.  P must ve specified or extracted if a dfe is for inference */
   ri = sqlg_rdf_inf_node (so->so_sc);
   qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
-  if (tb_dfe->_.table.ot->ot_is_outer)
-    ri->ri_outer_any_passed = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "any_passed", DV_LONG_INT);
   ri->ri_mode = RI_SUBCLASS;
   ri->ri_output = ssl_new_variable (o_dfe->dfe_sqlo->so_sc->sc_cc, "inferred", DV_IRI_ID);
 
@@ -531,6 +582,7 @@ sqlg_trailing_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t 
   if (!o_slot)
     return; /* o is unspecified and but is not accessed */ 
   ri = sqlg_rdf_inf_node (so->so_sc);
+  ri->ri_is_after = 1;
   sql_node_append (q_head, (data_source_t *)ri);
   ri->ri_mode = RI_SUPERCLASS;
   ri->ri_output = o_slot;
@@ -553,8 +605,6 @@ sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_
     return; /* if p is neither specified nor extracted, then do nothing.  P must ve specified or extracted if a dfe is for inference */
   ri = sqlg_rdf_inf_node (so->so_sc);
   qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
-  if (tb_dfe->_.table.ot->ot_is_outer)
-    ri->ri_outer_any_passed = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "any_passed", DV_LONG_INT);
   ri->ri_mode = RI_SUBPROPERTY;
   ri->ri_output = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "inferred", DV_IRI_ID);
 
@@ -583,6 +633,7 @@ sqlg_trailing_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source
   if (!p_slot)
     return; /* P is unspecified and but is not accessed */ 
   ri = sqlg_rdf_inf_node (so->so_sc);
+  ri->ri_is_after = 1;
   sql_node_append (q_head, (data_source_t *)ri);
   ri->ri_mode = RI_SUPERPROPERTY;
   ri->ri_output = p_slot;
@@ -604,6 +655,10 @@ sqlg_trailing_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source
 
 #define TRAILING_SUBP \
   sqlg_trailing_subproperty_inf (tb_dfe->dfe_sqlo, q_head, ts, p_dfe, const_p, o_dfe, const_o, ctx, tb_dfe, inxop_inx)
+
+#define LEADING_SAME_AS_S
+
+#define LEADING_SAME_AS_O 
 
 
 caddr_t
@@ -647,10 +702,13 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
   col_preds = tb_dfe->_.table.col_preds;
   DO_SET (df_elt_t *, cp, &col_preds)
     {
-      dbe_column_t * col = cp->_.bin.left->_.col.col;
+      df_elt_t ** g_in_list = sqlo_in_list (cp, NULL, NULL);
+      dbe_column_t * col = g_in_list ? g_in_list[0]->_.col.col : cp->_.bin.left->_.col.col;
+      if (g_in_list && col->col_name[0] != 'G')
+	continue;
       switch (col->col_name[0])
 	{
-	case 'G': g_dfe = cp->_.bin.right; break;
+	case 'G': g_dfe = cp; break;
 	case 'S': s_dfe = cp->_.bin.right; break;
 	case 'P': p_dfe = cp->_.bin.right; break;
 	case 'O': o_dfe = cp->_.bin.right; break;
@@ -667,6 +725,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
     }
   else if (!s_dfe && !p_dfe && o_dfe)
     {
+      LEADING_SAME_AS_O;
       LEADING_SUBCLASS;
       TRAILING_SUBP;
     }
@@ -677,26 +736,33 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
     }
   else if (!s_dfe && p_dfe && o_dfe)
     {
+      LEADING_SAME_AS_O;
       LEADING_SUBP;
       LEADING_SUBCLASS;
     }
   else if (s_dfe && !p_dfe && !o_dfe)
     {
+      LEADING_SAME_AS_S;
       TRAILING_SUBCLASS;
       TRAILING_SUBP;
     }
   else if (s_dfe && !p_dfe && o_dfe)
     {
+      LEADING_SAME_AS_O;
+      LEADING_SAME_AS_S;
       LEADING_SUBCLASS;
       TRAILING_SUBP;
     }
   else if (s_dfe && p_dfe && !o_dfe)
     {
+      LEADING_SAME_AS_S
       LEADING_SUBP;
       TRAILING_SUBCLASS;
     }
   else if (s_dfe && p_dfe && o_dfe)
     {
+      LEADING_SAME_AS_S;
+      LEADING_SAME_AS_O;
       LEADING_SUBP;
       LEADING_SUBCLASS;
     }
@@ -719,4 +785,52 @@ sqlg_rdf_inf (df_elt_t * tb_dfe, data_source_t * qn, data_source_t ** q_head)
     }
   else 
     sqlg_rdf_inf_1 (tb_dfe, qn, q_head, -1);
+}
+
+#define IS_ITER(q) \
+  (((qn_input_fn) rdf_inf_pre_input == (qn)->src_input && !((rdf_inf_pre_node_t *)(qn))->ri_is_after) \
+    || (qn_input_fn)in_iter_input  == (qn)->src_input)
+
+
+#define IS_IN_ITER(qn) \
+  ((qn_input_fn)in_iter_input  == (qn)->src_input)
+
+
+
+void
+sqlg_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** head)
+{
+  /* if the ts has in iters or rdf inf iters before it, make the outermost iter node handle the outer output and add a node after the ts to set the any passed flag */
+  data_source_t * first_iter = NULL;
+  data_source_t * qn = *head;
+  while (qn)
+    {
+      if (IS_ITER (qn))
+	{
+	  if (!first_iter)
+	    first_iter = qn;
+    }
+      else if (ts == qn)
+	{
+	  if (first_iter)
+	    {
+	      if (IS_IN_ITER (first_iter))
+		{
+		  in_iter_node_t * ii = (in_iter_node_t *) first_iter;
+		  ii->ii_outer_any_passed = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "any_passed", DV_LONG_INT);
+		  sqlg_outer_post_filter ((table_source_t *) ts, tb_dfe, ii->ii_outer_any_passed);
+		}
+	      else 
+		{
+		  rdf_inf_pre_node_t * ri = (rdf_inf_pre_node_t *) first_iter;
+		  ri->ri_outer_any_passed = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "any_passed", DV_LONG_INT);
+		  sqlg_outer_post_filter ((table_source_t *) ts, tb_dfe, ri->ri_outer_any_passed);
+		}
+
+	    }
+	}
+      else
+	first_iter = NULL;
+      qn = qn_next (qn);
+    }
 }

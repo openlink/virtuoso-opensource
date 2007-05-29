@@ -42,11 +42,12 @@ typedef struct rdf_inf_ctx_s
 } rdf_inf_ctx_t;
 
 
-typedef struct rdf_inf_node_s
+struct rdf_inf_node_s
 {
   data_source_t	src_gen;
   rdf_inf_ctx_t *	ri_ctx;
   char		ri_mode; /* enum subclasses or subproperties */
+  char		ri_is_after; /* true if postprocess of the ts or hs */
   state_slot_t *	ri_p; /* if open P and subclass, thios is the p, so look if this is rdf:type before activation */
   state_slot_t *	ri_o;
   state_slot_t *	ri_isnon_org_o; /* for gs, fp, go, this ssl is true if the o is an enum other than the given o */
@@ -54,7 +55,12 @@ typedef struct rdf_inf_node_s
   state_slot_t *	ri_output;
   state_slot_t *	ri_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */ 
   int		ri_list_slot;
-} rdf_inf_pre_node_t;
+  state_slot_t *	ri_sas_in; /* the value whose same_as-s are to be listed */
+  state_slot_t **	ri_sas_g;
+    state_slot_t *	ri_sas_result;
+  state_slot_t *	ri_sas_reached;
+  state_slot_t *	ri_sas_followed;
+};
 
 
 #define RI_CONT_RESTORE ((dk_set_t) -1)
@@ -70,3 +76,5 @@ caddr_t dfe_iri_const (df_elt_t * dfe);
 dk_set_t ri_list (rdf_inf_pre_node_t * ri, caddr_t iri);
 rdf_inf_ctx_t * rdf_name_to_ctx (caddr_t name);
 rdf_sub_t * ric_iri_to_sub (rdf_inf_ctx_t * ctx, caddr_t iri);
+void ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t * inst);
+void sqlg_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** head);

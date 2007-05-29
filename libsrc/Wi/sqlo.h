@@ -511,7 +511,6 @@ col_ref_rec_t * sqlo_find_col_ref (sql_comp_t *sc, ST * tree);
 #define sqlo_col_or_param(sc,tree) sqlo_col_or_param_1 (sc, tree, 1)
 void dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float * overhead_ret);
 void dfe_table_cost (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, int first_inx_only);
-long dbe_key_count (dbe_key_t * key);
 float  sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t inxes, float * arity_ret);
 
 /* sqloinx.c */
@@ -596,7 +595,7 @@ ST *sqlo_udt_check_mutator (sqlo_t * so, sql_comp_t * sc, ST * tree);
 ST *sqlo_udt_is_mutator (sqlo_t * so, sql_comp_t * sc, ST * lvalue);
 ST *sqlo_udt_make_mutator (sqlo_t * so, sql_comp_t * sc, ST * lvalue, ST *rvalue, ST *var_to_be);
 
-long dbe_key_count (dbe_key_t * key);
+int64 dbe_key_count (dbe_key_t * key);
 
 int sqlo_is_seq_in_oby_order (sqlo_t * so, df_elt_t * dfe, df_elt_t * last_tb);
 void sqlg_find_aggregate_sqt (dbe_schema_t *schema, sql_type_t *arg_sqt, ST *fref, sql_type_t *res_sqt);

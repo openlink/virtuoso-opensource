@@ -46,10 +46,12 @@ void dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float *
 #define ABS(x) (x < 0 ? -(x) : x)
 
 
-long
+int64
 dbe_key_count (dbe_key_t * key)
 {
   dbe_table_t * tb = key->key_table;
+  /*  if (!strcmp (tb->tb_name, "DB.DBA.RDF_QUAD"))
+      printf ("snaap\n"); */
   if (key->key_table->tb_count != DBE_NO_STAT_DATA)
     return MAX (key->key_table->tb_count, 1);
   else if (tb->tb_count_estimate == DBE_NO_STAT_DATA
@@ -847,6 +849,7 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
   int v_fill = 0, inx;
   search_spec_t ** prev_sp;
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
+  dbe_key_count (key); /* this is the max of the sample so must be up to date */
   itc_clear_stats (itc);
   itc_from (itc, key);
   memset (&specs,0,  sizeof (specs));
@@ -889,7 +892,8 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
       ST * org_o = NULL, * org_p = NULL;
       for (inx = 0; inx < n_parts; inx++)
 	{
-	  switch (lowers[inx]->_.bin.left->_.col.col->col_name[0])
+	  dbe_column_t * left_col = cp_left_col (lowers[inx]);
+	  switch (left_col->col_name[0])
 	    {
 	    case 'P': p_dfe = lowers[inx]->_.bin.right; org_p = p_dfe->dfe_tree; break;
 	    case 'O': o_dfe = lowers[inx]->_.bin.right; org_o = o_dfe->dfe_tree; break;

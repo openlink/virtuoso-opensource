@@ -534,7 +534,8 @@ typedef void (*itc_clup_func_t) (it_cursor_t *);
 
 #define SQLO_RATE_NAME "rnd-stat-rate"
 
-typedef enum { RANDOM_SEARCH_OFF = 0, RANDOM_SEARCH_ON = 1, RANDOM_SEARCH_AUTO = 2 } random_search_mode;
+typedef enum { RANDOM_SEARCH_OFF = 0, RANDOM_SEARCH_ON = 1, RANDOM_SEARCH_AUTO = 2 ,
+RANDOM_SEARCH_COND = 3} random_search_mode;
 
 
 struct it_cursor_s

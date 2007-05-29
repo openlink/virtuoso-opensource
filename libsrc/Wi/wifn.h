@@ -162,6 +162,7 @@ void itc_read_ahead (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 	r = itc_compare_spec (it, sp); \
     }
 
+int64 dbe_key_count (dbe_key_t * key);
 
 
 

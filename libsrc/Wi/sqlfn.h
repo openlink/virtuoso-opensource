@@ -1105,5 +1105,9 @@ void itc_bm_ends (it_cursor_t * itc, buffer_desc_t * buf, bitno_t * start, bitno
 int pl_next_bit (placeholder_t * itc, db_buf_t bm, short bm_len, bitno_t bm_start, int is_desc);
 void pl_set_at_bit (placeholder_t * pl, db_buf_t bm, short bm_len, bitno_t bm_start, bitno_t value, int is_desc);
 
+/* sqlcost.h */
+int sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data);
+
+void ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t * inst);
 
 #endif /* _SQLFN_H */

@@ -2895,13 +2895,15 @@ itc_random_leaf (it_cursor_t * itc, buffer_desc_t *buf, dp_addr_t * leaf_ret)
 
 
 int
-itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret, dp_addr_t * alt_leaf_ret)
+itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret, int * rows_per_bm, dp_addr_t * alt_leaf_ret, int angle)
 {
+  dp_addr_t leaves[PAGE_DATA_SZ / 8];
+  int leaf_fill = 0;
   db_buf_t page = buf->bd_buffer;
-  int have_left_leaf = 0;
+  int have_left_leaf = 0, was_left_leaf = 0;
   int pos = itc->itc_position; /* itc is at leftmost match. Nothing at left of the itc */
   int save_pos = itc->itc_position;
-  int ctr = 0, leaf_ctr = 0;
+  int ctr = 0, leaf_ctr = 0, row_ctr = 0;
   while (pos)
 		{
       int res = DVC_MATCH;
@@ -2912,7 +2914,8 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 	{
 	  if (LONG_REF (page + pos + IE_LEAF))
 	    {
-	      have_left_leaf = 1;
+	      was_left_leaf = have_left_leaf = 1;
+	      leaves[leaf_fill++] = LONG_REF (page + pos + IE_LEAF);
 	      leaf_ctr++;
 		}
 	    }
@@ -2931,6 +2934,7 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 	    {
 	      if (r_k_id)
 		{
+		  row_ctr++;
 		  if (itc->itc_insert_key->key_is_bitmap)
 		    {
 		      save_pos = itc->itc_position;
@@ -2943,11 +2947,13 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 		}
 	      else 
 		{
+		  dp_addr_t leaf1 = LONG_REF (page + pos + IE_LEAF);
+		  leaves[leaf_fill++] = leaf1;
 		  if (have_left_leaf)
 		    {
 		      /* prefer giving the next to leftmost instead of leftmost leaf if leftmost is left dummy.
 		       * The leftmost branch can be empty because the leaf with the left dummy never can get deleted */
-		      *alt_leaf_ret = LONG_REF (page + pos + IE_LEAF);
+		      *alt_leaf_ret = leaf1;
 		      have_left_leaf = 0;
     }
 		  leaf_ctr++;
@@ -2957,16 +2963,28 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
       pos = IE_NEXT (page + pos);
     }
   *leaf_ctr_ret = leaf_ctr;
+  if (row_ctr)
+    *rows_per_bm = ctr / row_ctr;
+  else
+    *rows_per_bm = 1;
+  if (leaf_ctr && angle != -1)
+    {
+      /* angle is a measure between 0 to 999.  Scale it to leaf count and pick the leaf */
+      int nth = (leaf_ctr * angle) / 1000;
+      *alt_leaf_ret = leaves[MIN (nth, leaf_ctr - 1)];
+    }
   return ctr;
 }
 
+
 int64
-itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret)
+itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, int angle)
 {
   dp_addr_t leaf, rnd_leaf;
   int res;
-  int ctr  = 0, leaf_ctr = 0;
-  int64 leaf_estimate = 0;
+  int ctr  = 0, leaf_ctr = 0, rows_per_bm;
+  dbe_table_t * tb = it->itc_insert_key->key_table;
+  int64 leaf_estimate = 0, tb_count;
 
   it->itc_search_mode = SM_READ;
  start:
@@ -2988,9 +3006,10 @@ itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret)
     res = itc_page_split_search_1 (it, *buf_ret, &leaf);
   if (it->itc_st.cols)
     itc_page_col_stat (it, *buf_ret);
-  ctr = itc_matches_on_page (it, *buf_ret, &leaf_ctr, &leaf);
+  ctr = itc_matches_on_page (it, *buf_ret, &leaf_ctr, &rows_per_bm, &leaf, angle);
   if (leaf_estimate)
-    leaf_estimate = leaf_estimate * (*buf_ret)->bd_content_map->pm_count + leaf_ctr;
+    leaf_estimate = (((float)leaf_estimate) - 0.5) * (*buf_ret)->bd_content_map->pm_count * rows_per_bm
++ leaf_ctr;
   else if (leaf_ctr > 1)
     leaf_estimate = leaf_ctr - 1;
   if (rnd_leaf)
@@ -2998,21 +3017,25 @@ itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret)
   switch (res)
 	{
     case DVC_LESS:
+    case DVC_MATCH:
       {
 	if (leaf)
 	  {
 	    /* Go down on the right edge. */
 	    itc_down_transit (it, buf_ret, leaf);
-	    goto start;
-	  }
-
-	break;
-      }
-    case DVC_MATCH:
-      {
-	if (leaf)
+	    if (it->itc_write_waits || it->itc_read_waits)
 	    {
-	      itc_down_transit (it, buf_ret, leaf);
+		/* if the cursor had a wait, a reset or any such thing, the path from top to bottom is not the normal one and the sample must be discarded */
+		int old_rnd = it->itc_random_search;
+		itc_page_leave (it, *buf_ret);
+		it->itc_random_search = RANDOM_SEARCH_ON; /* disable use of root cache by itc_reset */
+		*buf_ret = itc_reset (it);
+		it->itc_random_search = old_rnd;
+		it->itc_read_waits = 0;
+		it->itc_write_waits = 0;
+		TC (tc_key_sample_reset);
+		ctr = leaf_ctr = leaf_estimate = 0;
+	      }
 	    goto start;
 	    }
 	break;
@@ -3023,16 +3046,79 @@ itc_sample (it_cursor_t * it, buffer_desc_t ** buf_ret)
 	break;
       }
     }
+  if (n_leaves_ret)
+    *n_leaves_ret = leaf_estimate;
+ 
   return ctr + leaf_estimate;
 }
 
 
+void 
+samples_stddev (int64 * samples, int n_samples, float * mean_ret, float * stddev_ret)
+{
+  int inx;
+  float mean = 0, var = 0;
+  for (inx = 0; inx < n_samples; inx++)
+    mean += (float) samples[inx];
+  mean /= n_samples;
+  for (inx = 0; inx < n_samples; inx++)
+    {
+      float d = samples[inx] - mean;
+      var += d * d;
+    }
+  *stddev_ret = sqrt (var / n_samples);
+  *mean_ret = mean;
+}
+
+#define MAX_SAMPLES 20
+
+int64
+itc_sample (it_cursor_t * itc, buffer_desc_t ** buf_ret)
+{
+  float mean, stddev;
+  int64 samples[MAX_SAMPLES];
+  int64 n_leaves, sample, tb_count;
+  dbe_table_t * tb = itc->itc_insert_key->key_table;
+  int n_samples = 1;
+  if (!itc->itc_key_spec.ksp_spec_array)
+    return itc_sample_1 (itc, buf_ret, NULL, -1);
+  samples[0] = itc_sample_1 (itc, buf_ret, &n_leaves, -1);
+  if (!n_leaves)
+    return samples[0];
+  {
+    int angle, step = 248, offset = 5;
+    for (;;)
+      {
+	for (angle = step + offset; angle < 1000; angle += step)
+	  {
+	    itc_page_leave (itc, *buf_ret);
+	    itc->itc_random_search = RANDOM_SEARCH_ON;
+	    *buf_ret = itc_reset (itc);
+	    itc->itc_random_search = RANDOM_SEARCH_OFF;
+	    sample = itc_sample_1 (itc, buf_ret , &n_leaves, angle);
+	    tb_count = tb->tb_count == DBE_NO_STAT_DATA ? tb->tb_count_estimate : tb->tb_count;
+	    tb_count = MAX (tb_count, 1);
+	    if (sample < 0 || sample > tb_count)
+	      sample = (tb_count * 3) / 4;
+	    samples[n_samples++] = sample;
+	    if (n_samples == MAX_SAMPLES)
+	      break;
+	  }
+	samples_stddev (samples, n_samples, &mean, &stddev);
+	if (n_samples >  MAX_SAMPLES - 2 || stddev < mean / 3)
+	  break;
+	offset += step / 5;
+	step /= 2;
+      }
+  }
+  return ((int64) mean);
+}    
 
 
 unsigned int64
 key_count_estimate  (dbe_key_t * key, int n_samples, int upd_col_stats)
 {
-  int64 res = 0;
+  int64 res = 0, sample;
   int n;
   buffer_desc_t * buf;
   it_cursor_t itc_auto;
@@ -3045,8 +3131,12 @@ key_count_estimate  (dbe_key_t * key, int n_samples, int upd_col_stats)
     itc->itc_st.cols = hash_table_allocate (23);
   for (n = 0; n < n_samples; n++)
     {
+      itc->itc_random_search = RANDOM_SEARCH_ON; /* disable use of root cache by itc_reset */
       buf = itc_reset (itc);
-      res += itc_sample (itc, &buf);
+      sample = itc_sample (itc, &buf);
+      if (sample < 0 || sample > 1e12)
+	sample = 100000000; /* arbitrary.  If tree badly skewed will return nonsense figures */
+      res += sample;
       itc_page_leave (itc, buf);
       if (upd_col_stats)
 	{
@@ -3090,7 +3180,7 @@ key_rdf_lang_id (caddr_t name)
       res = itc_search (itc, &buf);
       if (DVC_MATCH == res)
 	{
-	  id = (int) itc_box_column (itc, buf->bd_buffer, twobyte_col->col_id, NULL);
+	  id = (int) (ptrlong) itc_box_column (itc, buf->bd_buffer, twobyte_col->col_id, NULL);
 	}
       itc_page_leave (itc, buf);
     }

@@ -677,6 +677,7 @@ extern long  tc_read_wait;
 extern long  tc_reentry_split;
 extern long  tc_write_wait;
 extern long tc_dive_would_deadlock;
+extern long tc_key_sample_reset;
 extern long tc_pl_moved_in_reentry;
 extern long tc_enter_transiting_bm_inx;
 extern long tc_aio_seq_read;

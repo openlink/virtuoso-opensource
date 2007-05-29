@@ -743,6 +743,16 @@ node_print (data_source_t * node)
       ssl_print (ri->ri_p);
       stmt_printf (("\n"));
     }
+  else if (in == in_iter_input)
+    {
+      in_iter_node_t *ii = (in_iter_node_t *) node;
+      stmt_printf (("in  %s iterates ", ii->ii_outer_any_passed ? " outer " : ""));
+      ssl_print (ii->ii_output);
+      stmt_printf (("\n  over "));
+      ssl_array_print (ii->ii_values);
+      stmt_printf (("\n"));
+      
+    }
 #ifdef BIF_XML
   else if (in == (qn_input_fn) txs_input)
     {

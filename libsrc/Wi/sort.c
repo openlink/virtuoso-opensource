@@ -524,7 +524,6 @@ void
 in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 {
   ptrlong current, n_total;
-  int inx;
   for (;;)
     {
       caddr_t * arr = NULL;
@@ -533,6 +532,8 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 	  dk_set_t members = NULL;
 	  int inx;
 	  inst[ii->ii_nth_value] = (caddr_t) 0;
+	  if (ii->ii_outer_any_passed)
+	    qst_set (inst, ii->ii_outer_any_passed, NULL);
 	  DO_BOX (state_slot_t *, ssl, inx, ii->ii_values)
 	    {
 	      caddr_t val = qst_get (inst, ssl);
@@ -563,6 +564,7 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
       if (current >= BOX_ELEMENTS (arr))
 	{
 	  SRC_IN_STATE ((data_source_t *) ii, inst) = NULL;
+	  ri_outer_output ((rdf_inf_pre_node_t *) ii, ii->ii_outer_any_passed, inst);
 	  return;
 	}
       if (current == BOX_ELEMENTS (arr) - 1)
@@ -570,7 +572,10 @@ in_iter_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
       qst_set (inst, ii->ii_output, box_copy_tree (arr[current]));
       qn_send_output ((data_source_t*) ii, inst);
       if (current == BOX_ELEMENTS (arr) - 1)
+	{
+	  ri_outer_output ((rdf_inf_pre_node_t *) ii, ii->ii_outer_any_passed, inst);
 	return;
+    }
     }
 }
 

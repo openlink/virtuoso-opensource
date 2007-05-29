@@ -75,6 +75,7 @@ long  tc_split_2nd_read;
 long  tc_read_wait;
 long  tc_write_wait;
 long tc_dive_would_deadlock;
+long tc_key_sample_reset;
 long tc_pl_moved_in_reentry;
 long tc_enter_transiting_bm_inx;
 extern long tc_aio_seq_read;
@@ -1128,6 +1129,7 @@ stat_desc_t stat_descs [] =
     {"tc_read_wait",  &tc_read_wait, NULL},
     {"tc_write_wait",  &tc_write_wait, NULL},
     {"tc_dive_would_deadlock", &tc_dive_would_deadlock},
+    {"tc_key_sample_reset", &tc_key_sample_reset},
     {"tc_pl_moved_in_reentry", &tc_pl_moved_in_reentry},
     {"tc_enter_transiting_bm_inx", &tc_enter_transiting_bm_inx},
     {"tc_aio_seq_write", &tc_aio_seq_write},
@@ -2997,6 +2999,86 @@ bif_real_cv_size (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #endif
 
 
+int
+key_stat_to_spec (caddr_t * data, dbe_key_t * key, int nth,
+search_spec_t *sp, it_cursor_t * itc, int * v_fill)
+{
+  int res = 0;
+  dbe_column_t * left_col;
+  left_col = (dbe_column_t *) dk_set_nth (key->key_parts, nth);
+  sp->sp_cl = *key_find_cl (key, left_col->col_id);
+  sp->sp_col = left_col;
+  sp->sp_collation = sp->sp_col->col_sqt.sqt_collation;
+
+  sp->sp_min_op  = CMP_EQ;
+  sp->sp_max_op = CMP_NONE;
+  res = sample_search_param_cast (itc, sp, data);
+  sp->sp_min = itc->itc_search_par_fill - 1;
+  return res;
+}
+
+
+caddr_t
+bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int n_parts = BOX_ELEMENTS (args) - 2;
+  int64 res;
+  buffer_desc_t * buf;
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  search_spec_t specs[10];
+  int v_fill = 0, inx;
+  search_spec_t ** prev_sp;
+  query_instance_t *qi = (query_instance_t *) qst;
+  dbe_key_t * key;
+  caddr_t tb_name = bif_string_arg (qst, args, 0, "sys_stat");
+  caddr_t key_name = bif_string_arg (qst, args, 1, "sys_stat");
+  dbe_table_t *tb = qi_name_to_table (qi, tb_name);
+  if (!tb)
+    {
+      sqlr_new_error ("42S02", "SR243", "No table %s in key_estimate", tb_name);
+    }
+  DO_SET (dbe_key_t *, key1, &tb->tb_keys)
+    {
+      if (0 == strcmp (key1->key_name, key_name))
+	{
+	  key = key1;
+	  goto found;
+	}
+    }
+  END_DO_SET();
+
+  sqlr_new_error ("42S02", "SR243", "No key %s in key_estimate", key_name);
+ found:
+  dbe_key_count (key); /* max of the sample, must be defd */
+  ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
+  itc_clear_stats (itc);
+  itc_from (itc, key);
+  memset (&specs,0,  sizeof (specs));
+  prev_sp = &itc->itc_key_spec.ksp_spec_array;
+  itc->itc_key_spec.ksp_key_cmp = NULL;
+  for (inx = 0; inx < n_parts; inx++)
+    {
+      res = key_stat_to_spec (bif_arg (qst, args, inx + 2, "key_estimate"),key, inx, &specs[inx],
+			       itc, &v_fill);
+      if (KS_CAST_OK != res)
+	{
+	  itc_free (itc);
+	  return box_num (KS_CAST_NULL == res ? 0 : -1);
+	}
+      *prev_sp = &specs[inx];
+      prev_sp = &specs[inx].sp_next;
+    }
+
+  itc->itc_random_search = RANDOM_SEARCH_ON; /* disable use of root cache by itc_reset */
+  buf = itc_reset (itc);
+  itc->itc_random_search = RANDOM_SEARCH_OFF;
+  res = itc_sample (itc, &buf);
+  itc_page_leave (itc, buf);
+  return box_num (res);
+}
+
+
 void
 bif_status_init (void)
 {
@@ -3011,6 +3093,7 @@ bif_status_init (void)
   bif_define ("status", bif_status);
   bif_define ("sys_stat", bif_sys_stat);
   bif_define_typed ("key_stat", bif_key_stat, &bt_integer);
+  bif_define_typed ("key_estimate", bif_key_estimate, &bt_integer);
   bif_define_typed ("col_stat", bif_col_stat, &bt_integer);
   bif_define ("prof_enable", bif_profile_enable);
   bif_define ("prof_sample", bif_profile_sample);

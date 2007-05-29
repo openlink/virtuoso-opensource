@@ -3247,6 +3247,9 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 	      if (DFE_TABLE== dfe->dfe_type
 		  && HR_FILL != dfe->_.table.hash_role)
 		sqlg_rdf_inf (dfe, qn, &head);
+	      if (DFE_TABLE== dfe->dfe_type && dfe->_.table.ot->ot_is_outer)
+		sqlg_outer_with_iters (dfe, qn, &head);
+		
 	      while (qn_next (last_qn))
 		last_qn = qn_next (last_qn);
 	      break;

@@ -837,7 +837,6 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
 #endif
 
  general_case:
-      itc->itc_read_waits += 256;
   page_wait_access (itc, to, *buf_ret, buf_ret, itc->itc_dive_mode, RWG_WAIT_KEY);
       if (itc->itc_to_reset >= RWG_WAIT_SPLIT)
 	{

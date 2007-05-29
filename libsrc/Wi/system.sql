@@ -5883,6 +5883,7 @@ result_names (n, cond);
   tc_result ('tc_insert_follow_wait');
   tc_result ('tc_history_itc_delta_wait');
   tc_result ('tc_page_wait_reset');
+  tc_result ('tc_key_sample_reset');
   tc_result ('tc_posthumous_lock');
   tc_result ('tc_finalize_while_being_read');
   tc_result ('tc_rollback_cpt_page');
