@@ -697,8 +697,7 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **o
 	graph		, subject	, predicate	, object	,
 	t_box_num_nonull (is_real),
         spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (final_atables))),
-        spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (final_cond_tmpls)))
- ),
+        spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (final_cond_tmpls))) ),
       options );
 }
 

@@ -508,7 +508,7 @@ spar_construct_query	/* [6]  	ConstructQuery	  ::=  	'CONSTRUCT' ConstructTempla
             spar_ctor_template spar_dataset_clauses_opt
 	    spar_where_clause spar_solution_modifier {
 		$$ = spar_make_top (sparp_arg, CONSTRUCT_L,
-                  spar_retvals_of_construct (sparp_arg, $3),
+                  spar_retvals_of_construct (sparp_arg, $3, (caddr_t)($6[1]), (caddr_t)($6[2]), 1),
                   spar_selid_pop (sparp_arg),
 		  $5, (SPART **)($6[0]), (caddr_t)($6[1]), (caddr_t)($6[2]) ); }
 	;
@@ -596,10 +596,10 @@ spar_order_conditions	/* ::=  OrderCondition+	*/
 	;
 
 spar_order_condition	/* [16]*	OrderCondition	 ::=  ( 'ASC' | 'DESC' )? ( FunctionCall | Var | ( '(' Expn ')' ) | ( '[' Expn ']' ) )	*/
-	: spar_asc_or_desc_opt _LPAR spar_expn _RPAR		{ $$ = spartlist (sparp_arg, 3, ORDER_L, $1, $3); }
-	| spar_asc_or_desc_opt _LSQBRA spar_expn _RSQBRA	{ $$ = spartlist (sparp_arg, 3, ORDER_L, $1, $3); }
-	| spar_function_call					{ $$ = spartlist (sparp_arg, 3, ORDER_L, ASC_L, $1); }
-	| spar_var						{ $$ = spartlist (sparp_arg, 3, ORDER_L, ASC_L, $1); }
+	: spar_asc_or_desc_opt _LPAR spar_expn _RPAR		{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)$1, $3); }
+	| spar_asc_or_desc_opt _LSQBRA spar_expn _RSQBRA	{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)$1, $3); }
+	| spar_function_call					{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)ASC_L, $1); }
+	| spar_var						{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)ASC_L, $1); }
 	;
 
 spar_asc_or_desc_opt	/* ::=  ( 'ASC' | 'DESC' )? */
@@ -750,13 +750,13 @@ spar_triple_option_commalist
 spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF | SPARQL_STRING )	*/
 	: INFERENCE_L SPARQL_PLAIN_ID {
 		if (strcasecmp ($2, "none"))
-		  $$ = (SPART **)t_list (2, INFERENCE_L, $2);
+		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2);
 		else
-		  $$ = (SPART **)t_list (2, INFERENCE_L, NULL); }
+		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, NULL); }
 	| INFERENCE_L QNAME {
-		  $$ = (SPART **)t_list (2, INFERENCE_L, sparp_expand_qname_prefix (sparp_arg, $2)); }
-        | INFERENCE_L Q_IRI_REF { $$ = (SPART **)t_list (2, INFERENCE_L, $2); }
-	| INFERENCE_L SPARQL_STRING { $$ = (SPART **)t_list (2, INFERENCE_L, $2); }
+		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, sparp_expand_qname_prefix (sparp_arg, $2)); }
+        | INFERENCE_L Q_IRI_REF { $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2); }
+	| INFERENCE_L SPARQL_STRING { $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2); }
 	;
 
 spar_verb		/* [33]  	Verb	  ::=  	VarOrBlankNodeOrIRIref | 'a'	*/
@@ -915,7 +915,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 		  SPAR_BIN_OP ($$, BOP_EQ, $1, $3); }
 	| spar_expn _NOT_EQ spar_expn	{ SPAR_BIN_OP ($$, BOP_NEQ, $1, $3); }
         | spar_expn LIKE_L spar_expn	{	/* Virtuoso-specific extension of [47] */
-		$$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, LIKE_L, t_list (2, $1, $3)); }
+		$$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)LIKE_L, t_list (2, $1, $3)); }
         | spar_expn IN_L _LPAR spar_expns _RPAR	{	/* Virtuoso-specific extension of [47] */
                 dk_set_t args = $4;
                   if (1 == dk_set_length (args))
@@ -925,7 +925,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
                   else
                     {
                 t_set_push (&args, $1);
-		      $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, IN_L, t_revlist_to_array (args));
+		      $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)IN_L, t_revlist_to_array (args));
                     }
 		}
 	| spar_expn _LT spar_expn	{ SPAR_BIN_OP ($$, BOP_LT, $1, $3); }
@@ -963,33 +963,33 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 
 spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
 	: STR_L _LPAR spar_expn _RPAR		/*... ( 'STR' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, STR_L, t_list (1, $3)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)STR_L, t_list (1, $3)); }
 	| IRI_L _LPAR spar_expn _RPAR		/*... | ( 'IRI' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, IRI_L, t_list (1, $3)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)IRI_L, t_list (1, $3)); }
 	| LANG_L _LPAR spar_expn _RPAR		/*... | ( 'LANG' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, LANG_L, t_list (1, $3)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, $3)); }
 	| LANGMATCHES_L _LPAR spar_expn _COMMA spar_expn _RPAR	/*... | ( 'LANGMATCHES' '(' Expn ',' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, LANGMATCHES_L, t_list (2, $3, $5)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANGMATCHES_L, t_list (2, $3, $5)); }
 	| DATATYPE_L _LPAR spar_expn _RPAR	/*... | ( 'DATATYPE' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, DATATYPE_L, t_list (1, $3)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, $3)); }
 	| BOUND_L _LPAR spar_var _RPAR		/*... | ( 'BOUND' '(' Var ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, BOUND_L, t_list (1, $3)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, $3)); }
 	| isIRI_L _LPAR spar_expn _RPAR		/*... | ( 'isIRI' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, isIRI_L, t_list (1, $3)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isIRI_L, t_list (1, $3)); }
 	| isURI_L _LPAR spar_expn _RPAR		/*... | ( 'isURI' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, isURI_L, t_list (1, $3)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isURI_L, t_list (1, $3)); }
 	| isBLANK_L _LPAR spar_expn _RPAR	/*... | ( 'isBLANK' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, isBLANK_L, t_list (1, $3)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isBLANK_L, t_list (1, $3)); }
 	| isLITERAL_L _LPAR spar_expn _RPAR	/*... | ( 'isLITERAL' '(' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, isLITERAL_L, t_list (1, $3)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isLITERAL_L, t_list (1, $3)); }
 	| spar_built_in_regex		/*... | RegexExpn	*/
 	;
 
 spar_built_in_regex	/* [53]	RegexExpn	 ::=  'REGEX' '(' Expn ',' Expn ( ',' Expn )? ')'	*/
 	: REGEX_L _LPAR spar_expn _COMMA spar_expn _RPAR
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, REGEX_L, t_list (2, $3, $5)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)REGEX_L, t_list (2, $3, $5)); }
 	| REGEX_L _LPAR spar_expn _COMMA spar_expn _COMMA spar_expn _RPAR
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, REGEX_L, t_list (3, $3, $5, $7)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)REGEX_L, t_list (3, $3, $5, $7)); }
 	;
 
 spar_function_call	/* [54]  	FunctionCall	  ::=  	IRIref ArgList	*/
@@ -1028,14 +1028,14 @@ spar_rdf_literal	/* [60]  	RDFLiteral	  ::=  	String ( LANGTAG | ( '^^' IRIref )
 	;
 
 spar_boolean_literal	/* [61]  	BooleanLiteral	  ::=  	'true' | 'false'	*/
-	: true_L		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, 1, uname_xmlschema_ns_uri_hash_boolean, NULL); }
-	| false_L		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, 0, uname_xmlschema_ns_uri_hash_boolean, NULL); }
+	: true_L		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, (ptrlong)1, uname_xmlschema_ns_uri_hash_boolean, NULL); }
+	| false_L		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, (ptrlong)0, uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	;
 
 spar_iriref_or_star_or_default
 	: spar_iriref		{ $$ = $1; }
-	| _STAR			{ $$ = _STAR; }
-	| DEFAULT_L		{ $$ = DEFAULT_L; }
+	| _STAR			{ $$ = (SPART *)((ptrlong)_STAR); }
+	| DEFAULT_L		{ $$ = (SPART *)((ptrlong)DEFAULT_L); }
 	;
 
 spar_iriref		/* [63]  	IRIref	  ::=  	Q_IRI_REF | QName	*/
@@ -1083,7 +1083,7 @@ spar_sparul_insert	/* [DML]*	InsertAction	 ::=  */
 	: INSERT_L spar_in_graph_precode_opt { spar_selid_push (sparp_arg); }
             spar_ctor_template spar_action_solution {
 		$$ = spar_make_top (sparp_arg, INSERT_L,
-                  spar_retvals_of_insert (sparp_arg, $2, $4),
+                  spar_retvals_of_insert (sparp_arg, $2, $4, (caddr_t)($5[2]), (caddr_t)($5[3]) ),
                   spar_selid_pop (sparp_arg),
                   $5[0], (SPART **)($5[1]), (caddr_t)($5[2]), (caddr_t)($5[3]) ); }
 	;
@@ -1094,7 +1094,7 @@ spar_sparul_delete	/* [DML]*	DeleteAction	 ::=  */
 	: DELETE_L spar_from_graph_precode_opt { spar_selid_push (sparp_arg); }
             spar_ctor_template spar_action_solution {
 		$$ = spar_make_top (sparp_arg, DELETE_L,
-                  spar_retvals_of_delete (sparp_arg, $2, $4),
+                  spar_retvals_of_delete (sparp_arg, $2, $4, (caddr_t)($5[2]), (caddr_t)($5[3]) ),
                   spar_selid_pop (sparp_arg),
 		  $5[0], (SPART **)($5[1]), (caddr_t)($5[2]), (caddr_t)($5[3]) ); }
 	;
@@ -1107,7 +1107,7 @@ spar_sparul_modify	/* [DML]*	ModifyAction	 ::=  */
             DELETE_L spar_ctor_template INSERT_L spar_ctor_template
 	    spar_action_solution {
 		$$ = spar_make_top (sparp_arg, DELETE_L,
-                  spar_retvals_of_modify (sparp_arg, $2, $5, $7),
+                  spar_retvals_of_modify (sparp_arg, $2, $5, $7, (caddr_t)($8[2]), (caddr_t)($8[3])),
                   spar_selid_pop (sparp_arg),
 		  $8[0], (SPART **)($8[1]), (caddr_t)($8[2]), (caddr_t)($8[3]) ); }
 	;
@@ -1305,7 +1305,7 @@ spar_qm_literal_class_option	/* [Virt]	QmLiteralClassOption	 ::=  */
 	| LANG_L spar_qm_sql_id	{			/*... | ( 'LANG' STRING )	*/
 		$$ = t_list (2, t_box_dv_uname_string ("LANG"), t_box_dv_uname_string ($2)); }
 	| BIJECTION_L		{			/*... | 'BIJECTION'	*/
-		$$ = t_list (2, t_box_dv_uname_string ("BIJECTION"), 1L); }
+		$$ = t_list (2, t_box_dv_uname_string ("BIJECTION"), (ptrlong)1); }
 	| RETURNS_L spar_qm_sprintff_list	{			/*... | 'RETURNS' STRING ('UNION' STRING)*	*/
 		$$ = t_list (2, t_box_dv_uname_string ("RETURNS"),
 		    spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($2)) ); }
@@ -1660,7 +1660,7 @@ spar_qm_option_commalist	/* ::=  QmOption ( ',' QmOption )*	*/
 	;
 
 spar_qm_option		/* [Virt]	QmOption	 ::=  'EXCLUSIVE' | ( 'ORDER' INTEGER ) | ( 'USING' PLAIN_ID )	*/
-	: EXCLUSIVE_L			{ $$ = (SPART **)t_list (2, t_box_dv_uname_string ("EXCLUSIVE"), 1L); }
+	: EXCLUSIVE_L			{ $$ = (SPART **)t_list (2, t_box_dv_uname_string ("EXCLUSIVE"), (ptrlong)1); }
 	| ORDER_L SPARQL_INTEGER	{ $$ = (SPART **)t_list (2, t_box_dv_uname_string ("ORDER"), $2); }
 	| USING_L SPARQL_PLAIN_ID	{ $$ = (SPART **)t_list (2, t_box_dv_uname_string ("USING"), $2); }
 	;

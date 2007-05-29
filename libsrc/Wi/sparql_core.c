@@ -845,7 +845,7 @@ void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t p
   else
     {
       t_set_push (&precodes, graph_expn_copy);
-      filter = spartlist (sparp, 3, SPAR_BUILT_IN_CALL, IN_L, 
+      filter = spartlist (sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)IN_L, 
         (SPART **)t_list_to_array (precodes) );
     }
 #endif
@@ -861,7 +861,7 @@ spar_gp_add_filter_for_named_graph (sparp_t *sparp)
 }
 
 SPART **
-spar_retvals_of_construct (sparp_t *sparp, SPART *ctor_gp)
+spar_retvals_of_construct (sparp_t *sparp, SPART *ctor_gp, caddr_t limit, caddr_t offset, int var_idx)
 {
   int triple_ctr, fld_ctr, var_count = 0, blank_count = 0;
   dk_set_t vars = NULL;
@@ -870,6 +870,10 @@ spar_retvals_of_construct (sparp_t *sparp, SPART *ctor_gp)
   dk_set_t const_tvectors = NULL;
   dk_set_t var_tvectors = NULL;
   SPART *ctor_call;
+  SPART *var_vector_expn;
+  SPART *var_vector_arg;
+  caddr_t limofs_name;
+  int need_limofs_trick = ((SPARP_MAXLIMIT != unbox (limit)) || (0 != unbox (offset)));
 /* Making lists of variables, blank nodes, fixed triples, triples with variables and blank nodes. */
   for (triple_ctr = BOX_ELEMENTS_INT (ctor_gp->_.gp.members); triple_ctr--; /* no step */)
     {
@@ -936,54 +940,64 @@ blank_added:
       else
         t_set_push (&var_tvectors, tvector_call);
     }
+  var_vector_expn = spar_make_funcall (sparp, 0, "LONG::bif:vector",
+    (SPART **)t_revlist_to_array (vars) );
+  if (need_limofs_trick)
+    {
+      limofs_name = t_box_sprintf (100, ":\"limofs\".\"ctor-%d\"", var_idx);
+      var_vector_arg = spar_make_variable (sparp, limofs_name);
+    }
+  else
+    var_vector_arg = var_vector_expn;
   ctor_call = spar_make_funcall (sparp, 0, "sql:SPARQL_CONSTRUCT",
       (SPART **)t_list (3,
         spar_make_funcall (sparp, 0, "bif:vector",
           (SPART **)t_list_to_array (var_tvectors) ),
-        spar_make_funcall (sparp, 0, "LONG::bif:vector",
-          (SPART **)t_revlist_to_array (vars) ),
+        var_vector_arg,
         spar_make_funcall (sparp, 0, "bif:vector",
           (SPART **)t_list_to_array (const_tvectors) ) ) );
-#if 1
+  if (need_limofs_trick)
+    return (SPART **)t_list (2, ctor_call,
+      spartlist (sparp, 3, SPAR_ALIAS, var_vector_expn, t_box_sprintf (100, "ctor-%d", var_idx)) );
+  else
   return (SPART **)t_list (1, ctor_call);
-#else /* This was when list of retvals was also in use as a list of variables */
-  t_set_push (&vars, ctor_call);
-  return (SPART **)t_list_to_array (vars);
-#endif
 }
 
 SPART **
-spar_retvals_of_insert (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp)
+spar_retvals_of_insert (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp, caddr_t limit, caddr_t offset)
 {
-  SPART **ctor_retval = spar_retvals_of_construct (sparp, ctor_gp);
+  SPART **ctor_retval = spar_retvals_of_construct (sparp, ctor_gp, limit, offset, 1);
   ctor_retval[0] = spar_make_funcall (sparp, 0, "sql:SPARQL_INSERT_DICT_CONTENT",
       (SPART **)t_list (2, graph_to_patch, ctor_retval[0]) );
   return ctor_retval;
 }
 
 SPART **
-spar_retvals_of_delete (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp)
+spar_retvals_of_delete (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp, caddr_t limit, caddr_t offset)
 {
-  SPART **ctor_retval = spar_retvals_of_construct (sparp, ctor_gp);
+  SPART **ctor_retval = spar_retvals_of_construct (sparp, ctor_gp, limit, offset, 1);
   ctor_retval[0] = spar_make_funcall (sparp, 0, "sql:SPARQL_DELETE_DICT_CONTENT",
       (SPART **)t_list (2, graph_to_patch, ctor_retval[0]) );
   return ctor_retval;
 }
 
 SPART **
-spar_retvals_of_modify (sparp_t *sparp, SPART *graph_to_patch, SPART *del_ctor_gp, SPART *ins_ctor_gp)
+spar_retvals_of_modify (sparp_t *sparp, SPART *graph_to_patch, SPART *del_ctor_gp, SPART *ins_ctor_gp, caddr_t limit, caddr_t offset)
 {
   SPART **ctor_retval;
-  SPART **del_ctor_retval = spar_retvals_of_construct (sparp, del_ctor_gp);
-  SPART **ins_ctor_retval = spar_retvals_of_construct (sparp, ins_ctor_gp);
-  ctor_retval = (SPART **)t_list (1,
-    spar_make_funcall (sparp, 0, "sql:SPARQL_MODIFY_BY_DICT_CONTENTS",
-      (SPART **)t_list (3, graph_to_patch, del_ctor_retval[0], ins_ctor_retval[0]) ) );
+  SPART **del_ctor_retval = spar_retvals_of_construct (sparp, del_ctor_gp, limit, offset, 1);
+  SPART **ins_ctor_retval = spar_retvals_of_construct (sparp, ins_ctor_gp, limit, offset, 2);
+  SPART **args = (SPART **)t_list (3, graph_to_patch, del_ctor_retval[0], ins_ctor_retval[0]);
+  SPART *mod_call = spar_make_funcall (sparp, 0, "sql:SPARQL_MODIFY_BY_DICT_CONTENTS", args);
+  if (2 == BOX_ELEMENTS (ins_ctor_retval))
+    ctor_retval = (SPART **)t_list (3, mod_call, del_ctor_retval[1], ins_ctor_retval[1]);
+  else
+    ctor_retval = (SPART **)t_list (1, mod_call);
   return ctor_retval;
 }
 
 SPART **
-spar_retvals_of_describe (sparp_t *sparp, SPART **retvals)
+spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_t offset)
 {
   int retval_ctr;
   dk_set_t vars = NULL;
@@ -991,6 +1005,10 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals)
   dk_set_t graphs = NULL;
   SPART *descr_call;
   SPART *agg_call;
+  SPART *var_vector_expn;
+  SPART *var_vector_arg;
+  caddr_t limofs_name;
+  int need_limofs_trick = ((SPARP_MAXLIMIT != unbox (limit)) || (0 != unbox (offset)));
 /* Making lists of variables, blank nodes, fixed triples, triples with variables and blank nodes. */
   for (retval_ctr = BOX_ELEMENTS_INT (retvals); retval_ctr--; /* no step */)
     {
@@ -1015,10 +1033,17 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals)
       t_set_push (&graphs, g);
     }
   END_DO_SET()
+  var_vector_expn = spar_make_funcall (sparp, 0, "LONG::bif:vector",
+    (SPART **)t_list_to_array (vars) );
+  if (need_limofs_trick)
+    {
+      limofs_name = t_box_dv_short_string (":\"limofs\".\"describe-1\"");
+      var_vector_arg = spar_make_variable (sparp, limofs_name);
+    }
+  else
+    var_vector_arg = var_vector_expn;
   agg_call = spar_make_funcall (sparp, 0, "sql:SPARQL_DESC_AGG",
-      (SPART **)t_list (1,
-        spar_make_funcall (sparp, 0, "LONG::bif:vector",
-          (SPART **)t_list_to_array (vars) ) ) );
+      (SPART **)t_list (1, var_vector_arg ) );
   descr_call = spar_make_funcall (sparp, 0, "sql:SPARQL_DESC_DICT",
       (SPART **)t_list (4,
         agg_call,
@@ -1028,6 +1053,10 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals)
           spar_make_funcall (sparp, 0, "LONG::bif:vector",
             (SPART **)t_list_to_array (graphs) ) ),
         spar_make_funcall (sparp, 0, "bif:vector", NULL) ) ); /*!!!TBD describe options will come here */
+  if (need_limofs_trick)
+    return (SPART **)t_list (2, descr_call,
+      spartlist (sparp, 3, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1")) );
+  else
   return (SPART **)t_list (1, descr_call);
 }
 
@@ -1100,7 +1129,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
           qm_iri = ctx_qm->_.lit.val;
           break;
         }
-      ctx_qm = (caddr_t)qm_iri;
+      ctx_qm = (SPART *)qm_iri;
       break;
     }
   if (SPAR_QNAME == SPART_TYPE (predicate))
@@ -1174,7 +1203,7 @@ spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
     graph, subject, predicate, object, qm_iri,
     env->spare_selids->data, key, NULL,
     NULL, NULL, NULL, NULL,
-    options, 0L, (sparp->sparp_unictr)++ );
+    options, (ptrlong)0, (ptrlong)((sparp->sparp_unictr)++) );
   for (fctr = 0; fctr < SPART_TRIPLE_FIELDS_COUNT; fctr++)
     {
       SPART *fld = triple->_.triple.tr_fields[fctr];
@@ -1271,9 +1300,9 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
   if (uname_xmlschema_ns_uri_hash_boolean == type)
     {
       if (!strcmp ("true", strg))
-        return spartlist (sparp, 4, SPAR_LIT, 1, type, NULL);
+        return spartlist (sparp, 4, SPAR_LIT, (ptrlong)1, type, NULL);
       if (!strcmp ("false", strg))
-        return spartlist (sparp, 4, SPAR_LIT, 0, type, NULL);
+        return spartlist (sparp, 4, SPAR_LIT, (ptrlong)0, type, NULL);
       goto cannot_cast;
     }
   if (uname_xmlschema_ns_uri_hash_date == type)
@@ -1318,7 +1347,7 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
   return spartlist (sparp, 4, SPAR_LIT, strg, type, NULL);
 
 do_sql_cast:
-  tgt_dtp_tree = (sql_tree_tmp *)t_list (3, (ptrlong)tgt_dtp, 0, 0);
+  tgt_dtp_tree = (sql_tree_tmp *)t_list (3, (ptrlong)tgt_dtp, (ptrlong)0, (ptrlong)0);
   parsed_value = box_cast ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), strg, tgt_dtp_tree, DV_STRING);
   res = spartlist (sparp, 4, SPAR_LIT, t_full_box_copy_tree (parsed_value), type, NULL);
   dk_free_tree (parsed_value);
@@ -2412,7 +2441,7 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   spar_query_env_t sparqre;
   sparp_t * sparp;
   caddr_t str = bif_string_arg (qst, args, 0, "sparql_to_sql_text");
-  caddr_t err = NULL;
+  /*caddr_t err = NULL;*/
   spar_sqlgen_t ssg;
   sql_comp_t sc;
   MP_START ();

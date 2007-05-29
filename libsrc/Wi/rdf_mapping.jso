@@ -161,6 +161,10 @@ JSO_SCALAR qmTableRowFilter STRING OPTIONAL		--!< DEPRECATED Filter expression t
 JSO_POINTER qmUserSubMaps quad_map_array OPTIONAL	--!< Array of user-defined submaps, should never appear in MJVs or default storage
 JSO_SCALAR qmMatchingFlags BITMASK OPTIONAL		--!< What should be done in case of match of triple pattern to conditions of the quad map
 JSO_SCALAR qmPriorityOrder INTEGER OPTIONAL		--!< Integer to specify default order in parent's qmUserSubMaps
+JSO_SCALAR qmAllATableUses INTEGER_array PRIVATE	--!< Complete list of all qmatu made for qmATables and qmvATables, sorted alphabeticaly by qmatu_alias
+JSO_SCALAR qmAllATableUseCount INTEGER PRIVATE		--!< Number of used elements in qmAllATableUseCount
+JSO_SCALAR qmAllConds STRING_array PRIVATE		--!< Complete list of all join conditions from qmConds and qmvConds, sorted alphabeticaly
+JSO_SCALAR qmAllCondCount INTEGER PRIVATE		--!< Number of used elements in qmAllCondCount
 JSO_STRUCT_END
 
 JSO_STRUCT_BEGIN quad_storage virtrdf QuadStorage	--!< All mapping patterns plus tracking info

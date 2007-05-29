@@ -503,11 +503,11 @@ extern int spar_filter_is_freetext (SPART *filt);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
 extern void spar_gp_add_filter_for_graph (sparp_t *sparp, SPART *graph_expn, dk_set_t precodes, int suppress_filters_for_good_names);
 extern void spar_gp_add_filter_for_named_graph (sparp_t *sparp);
-extern SPART **spar_retvals_of_construct (sparp_t *sparp, SPART *ctor_gp);
-extern SPART **spar_retvals_of_insert (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp);
-extern SPART **spar_retvals_of_delete (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp);
-extern SPART **spar_retvals_of_modify (sparp_t *sparp, SPART *graph_to_patch, SPART *del_ctor_gp, SPART *ins_ctor_gp);
-extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals);
+extern SPART **spar_retvals_of_construct (sparp_t *sparp, SPART *ctor_gp, caddr_t limit, caddr_t offset, int var_idx);
+extern SPART **spar_retvals_of_insert (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp, caddr_t limit, caddr_t offset);
+extern SPART **spar_retvals_of_delete (sparp_t *sparp, SPART *graph_to_patch, SPART *ctor_gp, caddr_t limit, caddr_t offset);
+extern SPART **spar_retvals_of_modify (sparp_t *sparp, SPART *graph_to_patch, SPART *del_ctor_gp, SPART *ins_ctor_gp, caddr_t limit, caddr_t offset);
+extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_t offset);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **order, caddr_t limit, caddr_t offset);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);

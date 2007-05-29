@@ -2931,7 +2931,6 @@ fixed_field_matches_qmv_sff: ;
             }
           if (SPART_VARR_SPRINTFF & field->_.var.rvr.rvrRestrictions)
             { /* Check if either of formats of a field variable matches to one of sffs of the mapping value */
-              int hit = 0;
               int fld_ctr, qmv_ctr;
 /* First pass is optimistic and tries to find an exact equality */
               for (fld_ctr = field->_.var.rvr.rvrSprintffCount; fld_ctr--; /* no step */)
@@ -2990,6 +2989,7 @@ field_sff_isects_qmv_sff: ;
   return SSG_QM_NO_MATCH;
 }
 
+int
 sparp_check_field_mapping_spo (sparp_t *sparp, tc_context_t *tcc, SPART *field,
   quad_map_t *qm, qm_value_t *qmv, rdf_val_range_t *rvr)
 {
@@ -3001,7 +3001,7 @@ sparp_check_field_mapping_spo (sparp_t *sparp, tc_context_t *tcc, SPART *field,
             qmv_or_fmt_rvr = &(qmv->qmvRange);
           else if (NULL != qmv->qmvFormat)
             {
-          if ((SPART_VARR_SPRINTFF | SPART_VARR_FIXED) & qmv->qmvFormat->qmfValRange.rvrRestrictions)
+          if ((SPART_VARR_SPRINTFF | SPART_VARR_FIXED | SPART_VARR_IS_LIT | SPART_VARR_IS_REF) & qmv->qmvFormat->qmfValRange.rvrRestrictions)
                 qmv_or_fmt_rvr = &(qmv->qmvFormat->qmfValRange);
             }
         }
@@ -3055,13 +3055,24 @@ field_sff_isects_qmv_sff: ;
     }
   else if ((SPAR_LIT == field_type) || (SPAR_QNAME == field_type))
     {
+      rdf_val_range_t *some_map_rvr = ((NULL != qmv_or_fmt_rvr) ? qmv_or_fmt_rvr : rvr);
+      if (SPAR_LIT == field_type)
+        {
+          if (SPART_VARR_IS_REF & some_map_rvr->rvrRestrictions)
+            return SSG_QM_NO_MATCH;
+        }
+      else
+        {
+          if (SPART_VARR_IS_LIT & some_map_rvr->rvrRestrictions)
+            return SSG_QM_NO_MATCH;
+        }
       if (NULL != rvr->rvrFixedValue)
     {
           if (!sparp_fixedvalues_equal (sparp, field, (SPART *)(rvr->rvrFixedValue)))
         return SSG_QM_NO_MATCH;
       return SSG_QM_FULL_MATCH;
     }
-      if (NULL != qmv_or_fmt_rvr)
+      if ((NULL != qmv_or_fmt_rvr) && (SPART_VARR_SPRINTFF & qmv_or_fmt_rvr->rvrRestrictions))
         {
           caddr_t fv = SPAR_LIT_OR_QNAME_VAL (field);
           if ((NULL != fv) && IS_STRING_DTP (DV_TYPE_OF (fv)))
@@ -3210,7 +3221,7 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
       for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         {
           if (NULL != tcc->tcc_cuts [fld_ctr])
-            tc->tc_red_cuts [fld_ctr] = t_revlist_to_array (tcc->tcc_cuts [fld_ctr]);
+            tc->tc_red_cuts [fld_ctr] = (ccaddr_t *)t_revlist_to_array (tcc->tcc_cuts [fld_ctr]);
           else
             tc->tc_red_cuts [fld_ctr] = NULL;
         }
@@ -4779,20 +4790,242 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, void **trav_env_t
   return 0;
 }
 
+
+static void
+sparp_collect_atable_uses (sparp_t *sparp, qm_atable_array_t qmatables, qm_atable_use_t *uses, ptrlong *use_count_ptr )
+{
+  int ata_ctr;
+  DO_BOX_FAST (qm_atable_t *, ata, ata_ctr, qmatables)
+    {
+      ptrlong old_qmatu_idx = ecm_find_name (ata->qmvaAlias, uses, use_count_ptr[0], sizeof (qm_atable_use_t));
+      if (ECM_MEM_NOT_FOUND == old_qmatu_idx)
+        {
+          ptrlong use_idx = ecm_add_name (ata->qmvaAlias, (void **)(&uses), use_count_ptr, sizeof (qm_atable_use_t));
+          qm_atable_use_t *use = uses + use_idx;
+          use->qmatu_alias = ata->qmvaAlias;
+          use->qmatu_ata = ata;
+          use->qmatu_more = NULL;
+        }
+      else
+        {
+          qm_atable_use_t *qmatu = uses + old_qmatu_idx;
+          if (strcmp (ata->qmvaTableName, qmatu->qmatu_ata->qmvaTableName))
+            spar_internal_error (sparp, "sparp_" "collect_atable_uses(): probable corruption of some quad map");
+        }
+    }
+  END_DO_BOX_FAST;
+}
+
+void
+sparp_collect_all_atable_uses (sparp_t *sparp, quad_map_t *qm)
+{
+  int fld_ctr, max_uses = 0;
+  ptrlong use_count = 0;
+  qm_atable_use_t *uses;
+  for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
+    {
+      qm_value_t *qmv = SPARP_FIELD_QMV_OF_QM (qm, fld_ctr);
+      if (NULL != qmv)
+        max_uses += BOX_ELEMENTS_0 (qmv->qmvATables);
+    }
+  max_uses += BOX_ELEMENTS_0 (qm->qmATables);
+  uses = dk_alloc_box_zero (sizeof (qm_atable_use_t) * max_uses, DV_ARRAY_OF_LONG);
+  for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
+    {
+      qm_value_t *qmv = SPARP_FIELD_QMV_OF_QM (qm, fld_ctr);
+      if (NULL != qmv)
+        sparp_collect_atable_uses (sparp, qmv->qmvATables, uses, &use_count);
+    }
+  sparp_collect_atable_uses (sparp, qm->qmATables, uses, &use_count);
+  qm->qmAllATableUses = (ptrlong *)uses;
+  qm->qmAllATableUseCount = use_count;
+}
+
+#if 0
+static int
+sparp_atable_uses_match (
+  qm_atable_array_t qmatables,
+  qm_atable_use_t *uses, int use_count )
+{
+  int ata_ctr, use_ctr, found_ctr = 0;
+  DO_BOX_FAST (qm_atable_t *, ata, ata_ctr, qmatables)
+    {
+      qm_atable_use_t *qmatu;
+      for (use_ctr = use_count; use_ctr--; /* no step */)
+        {
+          qmatu = uses + use_ctr;
+          if (strcmp (ata->qmvaAlias, qmatu->qmatu_alias))
+            continue;
+          if (strcmp (ata->qmvaTableName, qmatu->qmatu_ata->qmvaTableName))
+            continue;
+          if (NULL == qmatu->qmatu_more)
+            {
+              found_ctr++;
+              qmatu->qmatu_more = ata;
+            }
+          goto qmatu_exists; /* see below */
+        }
+      return -1; /* No match because qmatables contains an item that is not in \c uses */
+qmatu_exists: ;
+    }
+  END_DO_BOX_FAST;
+  return found_ctr;
+}
+#endif
+
+static void
+sparp_collect_all_conds (sparp_t *sparp, quad_map_t *qm)
+{
+  int fld_ctr, max_conds = 0;
+  ptrlong cond_ctr, cond_count = 0;
+  ccaddr_t *conds;
+  for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
+    {
+      qm_value_t *qmv = SPARP_FIELD_QMV_OF_QM (qm, fld_ctr);
+      if (NULL != qmv)
+        max_conds += BOX_ELEMENTS_0 (qmv->qmvConds);
+    }
+  max_conds += BOX_ELEMENTS_0 (qm->qmConds);
+  conds = dk_alloc_box_zero (sizeof (ccaddr_t) * max_conds, DV_ARRAY_OF_LONG);
+  for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
+    {
+      qm_value_t *qmv = SPARP_FIELD_QMV_OF_QM (qm, fld_ctr);
+      if (NULL == qmv)
+        continue;
+      DO_BOX_FAST (ccaddr_t, cond, cond_ctr, qmv->qmvConds)
+        {
+          ecm_map_name (cond, (void **)(&conds), &cond_count, sizeof (ccaddr_t));
+        }
+      END_DO_BOX_FAST;
+    }
+  DO_BOX_FAST (ccaddr_t, cond, cond_ctr, qm->qmConds)
+    {
+      ecm_map_name (cond, (void **)(&conds), &cond_count, sizeof (ccaddr_t));
+    }
+  END_DO_BOX_FAST;
+  qm->qmAllConds = conds;
+  qm->qmAllCondCount = cond_count;
+}
+
+int
+sparp_quad_maps_eq_for_breakup (sparp_t *sparp, quad_map_t *qm_one, quad_map_t *qm_two)
+{
+  int use_ctr, use_count, cond_ctr, cond_count;
+  qm_atable_use_t *uses_one, *uses_two;
+  ccaddr_t *conds_one, *conds_two;
+/* First of all we check if sets of atables are equal */
+  if (NULL == qm_one->qmAllATableUses)
+    sparp_collect_all_atable_uses (sparp, qm_one);
+  if (NULL == qm_two->qmAllATableUses)
+    sparp_collect_all_atable_uses (sparp, qm_two);
+  uses_one = (qm_atable_use_t *)(qm_one->qmAllATableUses);
+  uses_two = (qm_atable_use_t *)(qm_two->qmAllATableUses);
+  use_count = qm_one->qmAllATableUseCount;
+  if (use_count != qm_two->qmAllATableUseCount)
+    return 0;
+  for (use_ctr = use_count; use_ctr--; /* no step */)
+    {
+      if (strcmp (uses_one[use_ctr].qmatu_alias, uses_two[use_ctr].qmatu_alias))
+        return 0;
+      if (strcmp (uses_one[use_ctr].qmatu_ata->qmvaTableName, uses_two[use_ctr].qmatu_ata->qmvaTableName))
+        return 0;
+    }
+  /* If sets of atables are equal then we compare conditions */
+  if (NULL == qm_one->qmAllConds)
+    sparp_collect_all_conds (sparp, qm_one);
+  if (NULL == qm_two->qmAllConds)
+    sparp_collect_all_conds (sparp, qm_two);
+  conds_one = qm_one->qmAllConds;
+  conds_two = qm_two->qmAllConds;
+  cond_count = qm_one->qmAllCondCount;
+  if (cond_count != qm_two->qmAllCondCount)
+    return 0;
+  for (cond_ctr = cond_count; cond_ctr--; /* no step */)
+    {
+      if (strcmp (conds_one[cond_ctr], conds_two[cond_ctr]))
+        return 0;
+    }
+  return 1;
+}
+
+caddr_t *
+sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, int expected_triples_count)
+{
+  dk_set_t res = NULL;
+  int triple_ctr;
+  if ((SPAR_GP != gp->type) ||
+    (0 != gp->_.gp.subtype) )
+    return NULL;
+  if ((0 <= expected_triples_count) && (BOX_ELEMENTS (gp->_.gp.members) != expected_triples_count))
+    return NULL;
+  DO_BOX_FAST (SPART *, gp_triple, triple_ctr, gp->_.gp.members)
+    {
+      if (SPAR_TRIPLE != gp_triple->type)
+        return 0;
+      if (1 != BOX_ELEMENTS (gp_triple->_.triple.tc_list))
+        return 0;
+      if (gp_triple->_.triple.ft_type)
+        return 0; /* TBD: support of free-text indexing in breakup */
+    }
+  END_DO_BOX_FAST;
+  DO_BOX_FAST (SPART *, gp_triple, triple_ctr, gp->_.gp.members)
+    {
+      t_set_push (&res, gp_triple->_.triple.tabid);
+    }
+  END_DO_BOX_FAST;
+  return t_revlist_to_array (res);
+}
+
 void
 sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
 {
-  SPART *base = (SPART *)(curr->_.gp.members[base_idx]);
-  quad_map_t *base_qm = base->_.triple.tc_list[0]->tc_qm;
-  int key_field_idx;
-
-return ;
-
-/*
-  DO_BOX_FAST (SPART *, base, base_idx, curr->_.gp.members)
+  SPART *base = curr->_.gp.members[base_idx];
+  /*SPART **base_filters = base->_.gp.filters; !!!TBD: check for fitlers that may restrict the search by idex */
+  SPART **base_triples = base->_.gp.members;
+  int bt_ctr, base_triples_count = BOX_ELEMENTS (base_triples);
+  int dep_idx, memb_count;
+  memb_count = BOX_ELEMENTS_0 (curr->_.gp.members);
+  for (dep_idx = base_idx + 1; /* breakup optimization is symmetrical so the case of two triples should be considered only once, not base_triple...dep then dep...base_triple */
+    dep_idx < memb_count; dep_idx++)
     {
+      SPART *dep = curr->_.gp.members[dep_idx];
+      SPART **dep_triples;
+      if (NULL == sparp_gp_may_reuse_tabids_in_union (sparp, dep, base_triples_count))
+        continue;
+      dep_triples = dep->_.gp.members;
+      for (bt_ctr = base_triples_count; bt_ctr--; /* no step */)
+        {
+          SPART *base_triple = base_triples[bt_ctr];
+          SPART *dep_triple = dep_triples[bt_ctr];
+          quad_map_t *base_qm, *dep_qm;
+          if (dep_triple->_.triple.src_serial != base_triple->_.triple.src_serial)
+            goto next_dep; /* see below */
+          base_qm = base_triple->_.triple.tc_list[0]->tc_qm;
+          dep_qm = dep_triple->_.triple.tc_list[0]->tc_qm;
+          if (!sparp_expn_lists_are_equal (sparp, base->_.gp.filters, dep->_.gp.filters))
+            goto next_dep; /* see below */
+          if (!sparp_quad_maps_eq_for_breakup (sparp, base_qm, dep_qm))
+            goto next_dep; /* see below */
+        }
+      /* At this point all checks of dep are passed, can adjust selids and tabids */
+      sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
+      for (bt_ctr = base_triples_count; bt_ctr--; /* no step */)
+        {
+          SPART *base_triple = base_triples[bt_ctr];
+          SPART *dep_triple = dep_triples[bt_ctr];
+          sparp_set_triple_selid_and_tabid (sparp, dep_triple, dep->_.gp.selid, base_triple->_.triple.tabid);
+        }
+      if (dep_idx > (base_idx + 1)) /* Adjustment to keep reused tabids together. The old join order of dep is of zero importance because there's no more dep as a separate subtable */
+        {
+          int swap_ctr;
+          for (swap_ctr = dep_idx; swap_ctr > base_idx; swap_ctr--)
+            curr->_.gp.members[swap_ctr] = curr->_.gp.members[swap_ctr-1];
+          curr->_.gp.members[base_idx + 1] = dep;
+        }
+      sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
+
+next_dep: ;
     }
-*/
 }
 
 
@@ -4926,9 +5159,7 @@ sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, void **trav_env_this, v
     case UNION_L:
       DO_BOX_FAST (SPART *, base, base_idx, curr->_.gp.members)
         {
-          if (SPAR_TRIPLE != base->type) /* Only triples have tabids to merge */
-            continue;
-          if (1 != BOX_ELEMENTS (base->_.triple.tc_list)) /* Only triples with one allowed quad map can be reused, unions can not */
+          if (NULL == sparp_gp_may_reuse_tabids_in_union (sparp, base, -1))
             continue;
           sparp_try_reuse_tabid_in_union (sparp, curr, base_idx);
         }
@@ -4963,7 +5194,10 @@ spar_retvals_of_describe() should wait for obtaining all variables and then
 sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */
   if (DESCRIBE_L == sparp->sparp_expr->_.req_top.subtype)
     sparp->sparp_expr->_.req_top.retvals = 
-      spar_retvals_of_describe (sparp, sparp->sparp_expr->_.req_top.retvals);
+      spar_retvals_of_describe (sparp,
+        sparp->sparp_expr->_.req_top.retvals,
+        sparp->sparp_expr->_.req_top.limit,
+        sparp->sparp_expr->_.req_top.offset );
   if (rgc->rgc_pview_mode)
     {
       sparp_rewrite_grab (sparp);
@@ -5194,7 +5428,7 @@ sparp_rewrite_grab (sparp_t *sparp)
     t_box_copy (rgc->rgc_base),	/* #13 */
     t_box_copy (rgc->rgc_destination), t_box_copy (rgc->rgc_group_destination),	/* #14-#15 */
     t_box_copy (rgc->rgc_resolver_name), t_box_copy (rgc->rgc_loader_name),	/* #16-#17 */
-    use_plain_return,	/* #18 */
+    (ptrlong)use_plain_return,	/* #18 */
     t_box_num (rgc_flags) );	/* #19 */
 }
 
@@ -5321,7 +5555,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   PROC_PARAM_EQ_SPART ("_grabber_group_destination", group_destination);
   PROC_PARAM_EQ_SPART ("_grabber_resolver", resolver_name);
   PROC_PARAM_EQ_SPART ("_grabber_loader", loader_name);
-  PROC_PARAM_EQ_SPART ("_plain_ret", use_plain_return);
+  PROC_PARAM_EQ_SPART ("_plain_ret", ((ptrlong)use_plain_return));
   PROC_PARAM_EQ_SPART ("_grabber_flags", rgc_flags);
 #undef PROC_PARAM_EQ_SPART
   if (use_plain_return)

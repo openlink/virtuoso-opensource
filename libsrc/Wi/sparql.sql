@@ -3154,6 +3154,7 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
       jsubj_iid := (sparql
         define input:storage ""
         define output:valmode "LONG"
+        define sql:table-option "LOOP, index RDF_QUAD"
         select ?s
         where { graph ?:jgraph { ?s rdf:name ?:jinst } } );
       if (jsubj_iid is null)
@@ -3161,6 +3162,7 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
     }
   jclass := (sparql
     define input:storage ""
+    define sql:table-option "LOOP, index RDF_QUAD"
     select ?t
     where {
       graph ?:jgraph { ?:jsubj_iid rdf:type ?t } } );
@@ -3168,6 +3170,7 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
     {
       if (exists (sparql
           define input:storage ""
+          define sql:table-option "LOOP, index RDF_QUAD"
           select ?x
             where { graph ?:jgraph {
                 { ?:jinst ?x ?o }
@@ -3187,6 +3190,7 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
       from (sparql
           define input:storage ""
           define output:valmode "LONG"
+          define sql:table-option "LOOP, index RDF_QUAD"
           select ?p ?o1 ?o2
       where {
         graph ?:jgraph {
@@ -3236,6 +3240,7 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
     from ( sparql
       define output:valmode "LONG"
       define input:storage ""
+      define sql:table-option "LOOP, index RDF_QUAD"
       select ?jclass ?jinst ?s
       where {
         graph ?:jgraph {
@@ -3279,6 +3284,7 @@ create function JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1)
 /* Pass 6. Load all separate triples */
   for (sparql
       define input:storage ""
+      define sql:table-option "LOOP, index RDF_QUAD"
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       select ?s ?p ?o
       where { graph ?:jgraph_iid { ?p virtrdf:loadAs virtrdf:jsoTriple . ?s ?p ?o } } ) do
@@ -4405,7 +4411,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
     {
       declare coldtp, colnullable integer;
       declare coltype varchar;
-      select COL_DTP, COL_NULLABLE into coldtp, colnullable
+      select COL_DTP, coalesce (COL_NULLABLE, 1) into coldtp, colnullable
       from DB.DBA.SYS_COLS where "TABLE" = sqlcols[0][0] and "COLUMN" = sqlcols[0][2];
       coltype := case (coldtp)
         when 125 then 'longvarchar'
@@ -7855,7 +7861,7 @@ virtrdf:DefaultQuadStorage-UserMaps
       sum_lst := vector_concat (lst1, lst2);
       foreach (any triple in sum_lst) do
         {
-          delete from DB.DBA.RDF_QUAD where G = jso_sys_g_iid and S = triple[0] and P = triple[1];
+          delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where G = jso_sys_g_iid and S = triple[0] and P = triple[1];
         }
       foreach (any triple in sum_lst) do
         {
