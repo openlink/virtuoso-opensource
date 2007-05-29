@@ -313,18 +313,31 @@ nntpf_print_message_href (in _subj varchar,
           replace (_from, '"', '&#34;') ||
           '</span></span>';
 
-   declare _curr_uid integer;
-   declare exit handler for not found{_curr_uid:=0;};
+   declare _curr_uid,_not_logged integer;
+   _not_logged:=0;
+   declare exit handler for not found{_curr_uid:=0;_not_logged:=1;};
    select U_ID into _curr_uid from DB.DBA.SYS_USERS where U_NAME=coalesce(connection_get('vspx_user'),'');
    
+  declare _tagscount int;
+
+   _tagscount:=discussions_tagscount(_group,encode_base64 (_id),coalesce(_curr_uid,0) );
+   
+   if(_not_logged=0 or _tagscount>0)
+   {
    ret := ret ||
           ' <span ><a '||curr_a_id||' href=&#34;javascript:void(0)&#34; ' ||
           ' onclick=&#34; document.getElementById(''show_tagsblock'').value=1;'||
           ' doPostValueN (''nnv'', ''disp_artic'', '''||encode_base64 (_id)||''');'||
 --          'showTagsDiv(''' ||cast (_group as varchar)||''','''||encode_base64 (_id)||''',this);'||
           ' return false&#34;>' ||
-          sprintf('tags (%d)', discussions_tagscount(_group,encode_base64 (_id),coalesce(_curr_uid,0) )) ||
+          sprintf('tags (%d)', _tagscount )||
           '</a></span>';
+    }
+    else
+    {
+      ret := ret ||
+          ' <span >' || sprintf('tags (%d)', _tagscount ) || '</span>';
+    }
 
 
    if (nntpf_show_cancel_link (_id))

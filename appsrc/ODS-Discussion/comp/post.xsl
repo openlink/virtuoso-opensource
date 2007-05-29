@@ -184,7 +184,6 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
 		        {
 
               self.postprepare_err:='Selected group is not available for posting.';
-		        
 		        }
 	       
 	       }
@@ -265,16 +264,11 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
                      isAuthor:=0;
                      zeroPostNA:=0;
                      
-                     declare _wai_name varchar;
-
-                     declare exit handler for not found {
-                                                         isAuthor:=0;
-                                                         goto _skip;
-                                                        };
+                     declare _wai_name,qry varchar;
 
                      if(_ng_type='BLOG')
                      {
-                        select BI_WAI_NAME into _wai_name from BLOG.DBA.SYS_BLOG_INFO where BI_BLOG_ID=_selected_groups_arr[i];
+                        qry:='select BI_WAI_NAME from BLOG.DBA.SYS_BLOG_INFO where BI_BLOG_ID=\''||_selected_groups_arr[i]||'\'';
                      }
                      else if(_ng_type='oWiki')
                      {
@@ -296,6 +290,20 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
 --                        select WAI_NAME into  _wai_name from WA_INSTANCE,NEWS_GROUPS where OMAIL.WA.domain_nntp_name (WAI_ID)=NG_NAME and NG_NAME= _selected_groups_arr[i];
                      }
              
+                            
+                     declare state,msg,metas,rset any;
+                     rset := null;
+                     state := '00000';
+                     msg := '';
+                     exec (qry, state, msg, vector(), 0, metas, rset);
+                     if (state = '00000')
+	                   {
+	                     _wai_name := rset[0][0];
+                     }else
+                     {
+                        isAuthor:=0;
+                        goto _skip;
+                     }
                             
                      declare _ugroup,_membertype integer;
                      _ugroup:=-1;
@@ -328,7 +336,7 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
                                                                  )
                                                 );
                      else if (isAuthor=0)
-                        _ngrp_err:=vector_concat(_ngrp_err,vector('You are not author for <b>'||_selected_groups_arr[i]||'</b>. You can not create new post.'));
+                        _ngrp_err:=vector_concat(_ngrp_err,vector('You do not have rights to send posts to  <b>'||_selected_groups_arr[i]||'</b>.'));
                      else
                         _checked_ngroups:=vector_concat(_checked_ngroups,vector(_selected_groups_arr[i]));
 
@@ -377,7 +385,6 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
 	     if (get_keyword ('Post_done', params, '') <> '')
 	       {
          --it is better go get it back to where it came.
-        
 		  http_request_status ('HTTP/1.1 302 Found');
   		  http_header (sprintf ('Location: nntpf_main.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
 	       }
@@ -388,16 +395,25 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
 	     if (self.grp_sel_thr <> 0)
 	       {
 		  self.grp_selected := vector ((select NG_NAME from NEWS_GROUPS where NG_GROUP = self.grp_sel_thr));
-        self.grp_list_size := 1;
        }else if(length(_selected_groups_arr))
                 self.grp_selected :=_selected_groups_arr;
 
        self.grp_list:=vector();
-	     for (select NG_NAME, NG_POST, NG_GROUP from NEWS_GROUPS
-		where NG_POST = 1 and ns_rest (NG_GROUP, 1) = 1 and NG_STAT<>-1) do
-	           self.grp_list := vector_concat (self.grp_list, vector (NG_NAME));
 
-      if(self.grp_list is null)
+       
+       
+       if(_isreply>0 or length(_id))
+       {
+             self.grp_list_size := 1;
+             self.grp_list := self.grp_selected;
+       }else
+       {
+	     for (select NG_NAME, NG_POST, NG_GROUP from NEWS_GROUPS
+            where NG_POST = 1 and ns_rest (NG_GROUP, 1) = 1 and NG_STAT<>-1 and NG_TYPE not in ('OFM','oWiki')) do
+	           self.grp_list := vector_concat (self.grp_list, vector (NG_NAME));
+       }
+
+       if(self.grp_list is null or length(self.grp_list)=0)
       {
         self.vc_post_ready:=1;
         self.postprepare_err:= 'There are no available group(s) for posting.';

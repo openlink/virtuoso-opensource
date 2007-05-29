@@ -310,12 +310,16 @@
             ?>
             </td>
            <td align="left">
-               <v:url value="--sprintf('tags (%d)', discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%U', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end) )"
+               <v:url value="--sprintf('tags (%d)', discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end) )"
                     url="--'javascript:void(0)'"
                     xhtml_class="nntp_group_rss"
                     xhtml_onClick="--concat ('showTagsDiv(\'',cast (self.grp_sel_no_thr as varchar),'\'',
                                                          ',\'',sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),'\',this)')"
+                  enabled="--(case when length(self.u_name)>0 or discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end)>0 then 1 else 0 end)"
+
                />
+               <v:label value="--'tags (0)'" enabled="--(case when length(self.u_name)=0 and discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end)=0 then 1 else 0 end)"/>
+
            </td>
 
           <?vsp

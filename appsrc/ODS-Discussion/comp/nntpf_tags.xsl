@@ -41,7 +41,7 @@
                <?vsp
                }
                ?>
-               <a href="#" onClick="hideTagsDiv()">close</a>
+               <a href="javascript: void(0);" onClick="hideTagsDiv()">close</a>
                <br/>
                <div id="tagslist_div">
                
@@ -181,8 +181,12 @@
      $('curr_ngroup').value=ngroupId;
      $('curr_post').value=postId;
 
+     genTagsList(ngroupId,postId);
+
+     var calendarH=0;
      if(typeof(nntpCal.div)!='undefined')
-        nntpCal.div.style.display="none";
+        calendarH=nntpCal.div.scrollHeight;
+
 
       var myDiv=$('tags_div');
       myDiv.curr_a_elm=curr_a_elm;
@@ -191,16 +195,32 @@
            if (OAT.Dom.isIE() == false)
            {
               myDiv.style.left = (anchorTopLeft[0]+10)+'px';     
-              myDiv.style.top = (anchorTopLeft[1]+16)+'px';
+         myDiv.style.top = (anchorTopLeft[1]+20+calendarH)+'px';
+         
            }
            else
            {
               myDiv.style.left = (anchorTopLeft[0]+10)+'px';     
-              myDiv.style.top = (anchorTopLeft[1]+6)+'px';
+         myDiv.style.top = (anchorTopLeft[1]+12+calendarH)+'px';
            }
 
-      genTagsList(ngroupId,postId);
       OAT.Dom.show('tags_div');
+
+      if (OAT.Dom.isIE() == false)
+      {
+         if($('LT').offsetHeight<(calendarH+16+$('tags_div').offsetHeight))
+         {
+           $('LT').style.height=(calendarH+25+$('tags_div').offsetHeight)+'px';
+         }
+      }
+      else
+      {
+         if($('LT').offsetHeight<(calendarH+6+$('tags_div').offsetHeight))
+         {
+           $('LT').style.height=(calendarH+15+$('tags_div').offsetHeight)+'px';
+         }
+      }
+
     }
     
     function hideTagsDiv()

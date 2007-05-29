@@ -42,7 +42,7 @@
 
            nntpCal = new OAT.Calendar();
            
-           if(typeof($('show_tagsblock'))!='undefined' && $('show_tagsblock').value==1) return;
+//           if(typeof($('show_tagsblock'))!='undefined' && $('show_tagsblock').value==1) return;
            
            showCalendar();
 
