@@ -1,3 +1,21 @@
+May 30, 2007, V5.0.1:
+  * Enhanced cost based optimizer
+	- Fixed cost calculation for RDF inf nodes
+	- Added larger sample in query cost model sampling
+  * Enhanced SPARQL support
+	- Added BREAKUP
+	- Added CONSTRUCT ... LIMIT ...
+	- Significant performance optimizations 
+	* Added QUAD MAP <...> { ... } group pattern
+  * Updated documentation
+  * Significant update of all ODS applications
+	- Added compliance to latest SIOC vocabulary
+	- Added calendar
+	- Added OpenID login and registration
+	- Enhancements to existing applications
+	- Bug fixes
+	
+
 April 06, 2007, V5.0.0:
   * Significant rewrite of database engine resulting in 50%-100%
     improvement on single CPU and in some cases up to 300% on
