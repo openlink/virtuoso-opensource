@@ -28,10 +28,9 @@
     <base href="<?V CAL.WA.host_url () || http_path () ?>" />
     <?vsp
       http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s" />', CAL.WA.foaf_url (self.account_id)));
-    ?>
-    <?vsp
       if (CAL.WA.domain_is_public (self.domain_id))
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', CAL.WA.sioc_url (self.domain_id)));
+      http (CAL.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
@@ -39,39 +38,24 @@
     <link rel="alternate" type="application/atom+xml" title="Virtuoso Product Blog (Atom)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
     <link rel="alternate" type="application/rss+xml" title="ODBC for Mac OS X Screencast Demos"  href="http://support.openlinksw.com/viewlets/mac_uda_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Benchmark & Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
-    <?vsp
-      declare url varchar;
-      declare N integer;
-      url := concat('http://', http_request_header (lines, 'Host'));
-      for (N := 0; N < length(path)-1; N := N + 1)
-        url := concat (url, '/', path[N]);
-      http (sprintf ('<link rel="subscriptions" type="text/x-opml" title="Subscriptions" href="%s/export.vspx?output=OPML&aid=%d&did=%d" />', url, self.account_id, self.domain_id));
-
-      http (CAL.WA.geo_url (self.domain_id, self.account_id));
-    ?>
+    <link rel="alternate" type="application/rss+xml" title="Benchmark and Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <meta name="dc.description" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-    <script type="text/javascript" src="js/calendar.js" />
-    <?vsp http('</script>'); ?>
-    <script type="text/javascript" src="js/CalendarPopup.js" />
-    <?vsp http('</script>'); ?>
-    <script type="text/javascript">
       <![CDATA[
+      <script type="text/javascript" src="js/calendar.js"></script>
+      <script type="text/javascript" src="js/CalendarPopup.js"></script>
+      <script type="text/javascript">
         // CalendarPopup
         var cPopup = new CalendarPopup('cDiv');
 
         // OAT
         var toolkitPath="/ods/oat";
         var featureList=["dialog"];
-      ]]>
     </script>
-    <script type="text/javascript" src="/ods/oat/loader.js" />
-    <?vsp http('</script>'); ?>
+      <script type="text/javascript" src="/ods/oat/loader.js"></script>
   	<script type="text/javascript">
-      <![CDATA[
     		function getWindowHeight() {
     			var windowHeight = 0;
     			if (typeof(window.innerHeight) == 'number') {
@@ -106,13 +90,12 @@
     		window.onresize = function() {
     			setFooter();
     		}
-      ]]>
   	</script>
+    ]]>
     <title></title>
   </head>
   <body>
     <v:page xmlns:v="http://www.openlinksw.com/vspx/">
-      <vm:variables>
         <v:variable persist="0" name="domain_id" type="integer" default="-1" />
         <v:variable persist="0" name="account_id" type="integer" default="-1" />
         <v:variable persist="0" name="account_role" type="varchar" default="'public'" />
@@ -120,7 +103,6 @@
         <v:variable persist="0" name="owner_id" type="integer" default="null" />
         <v:variable persist="0" name="ownerName" type="varchar" default="null" />
         <v:variable persist="0" name="settings" type="any" />
-      </vm:variables>
       <v:on-init>
         <![CDATA[
           set ISOLATION = 'Committed';

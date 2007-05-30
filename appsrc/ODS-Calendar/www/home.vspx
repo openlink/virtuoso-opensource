@@ -150,17 +150,18 @@
     <![CDATA[
       declare showDelete, S varchar;
 
-      showDelete := '';
-      if (self.account_role not in ('public', 'guest')) {
         S := 'null';
         if (not isnull (e_repeat_offset))
           S := cast (e_repeat_offset as varchar);
-        showDelete :=  sprintf ('<span id="d_%d" unselectable="on" onclick="eDelete(event, this, %s)">[<span class="EV_delete">X</span>]</span> ', e_id, S);
+
+      showDelete := '';
+      if (self.account_role not in ('public', 'guest')) {
+        showDelete :=  sprintf ('<span id="d_%d_%s" onclick="eDelete(event, this, %s)">[<span class="EV_delete">X</span>]</span> ', e_id, S, S);
       }
       if (e_event = 1) {
-        http (sprintf ('<div id="e_%d" class="EV" unselectable="on" onclick="eEdit(this)">%s %s%s<span class="EV_subject">%s</span></div>', e_id, showDelete, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject)));
+        http (sprintf ('<div id="e_%d_%s" class="EV" onclick="eEdit(this)">%s %s%s<span class="EV_subject">%s</span></div>', e_id, S, showDelete, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject)));
       } else {
-        http (sprintf ('<div id="e_%d" class="EV" unselectable="on" onclick="eEdit(this)">%s <span class="EV_time">%s-%s</span>%s%s<span class="EV_subject">%s</span></span></div>', e_id, showDelete, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject)));
+        http (sprintf ('<div id="e_%d_%s" class="EV" onclick="eEdit(this)">%s <span class="EV_time">%s-%s</span>%s%s<span class="EV_subject">%s</span></div>', e_id, S, showDelete, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject)));
       }
     ]]>
   </v:method>
@@ -652,7 +653,7 @@
 
                 ?>
               </span>
-              <v:button action="simple" style="url" value="<" xhtml_class="calendar_button" xhtml_alt="Previous">
+                <v:button action="simple" style="url" value="--'&amp;lt;'" xhtml_class="calendar_button" xhtml_alt="Previous">
                 <v:on-post>
                   <![CDATA[
                     if (self.cScope = 'day')
@@ -667,7 +668,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" style="url" value=">" xhtml_class="calendar_button" xhtml_alt="Next">
+                <v:button action="simple" style="url" value="--'&amp;gt;'" xhtml_class="calendar_button" xhtml_alt="Next">
                 <v:on-post>
                   <![CDATA[
                     if (self.cScope = 'day')
@@ -810,7 +811,7 @@
                         C := '';
                         if (CAL.WA.dt_compare (self.cDay, curdate ()))
                           C := C || ' CE_cell_today';
-                        http (sprintf ('<td class="CE_cell_pointer CE_cell CE_cell_odd%s" unselectable="on" onclick="cNewEvent(null, %d)">', C, N*30));
+                        http (sprintf ('<td class="CE_cell_pointer CE_cell CE_cell_odd%s" onclick="cNewEvent(null, %d)">', C, N*30));
                         hasEvents := 0;
                       _event:;
                         if ((pHour = N/2) and (pMinute = mod (N, 2)*30)) {
@@ -857,13 +858,13 @@
                             C := C || ' C_weekend';
                           if (CAL.WA.dt_compare (dt, curdate ()))
                             C := C || ' C_today';
-                          http (sprintf ('<div unselectable="on" onclick="cSelect(this)" id="d_day_%d_%d" class="CE_cell_header%s">%s %d</div>', W, D, C, CAL.WA.dt_WeekName (dt, self.cWeekStarts, 0), abs (self.cDays [N])));
+                          http (sprintf ('<div onclick="cSelect(this)" id="d_day_%d_%d" class="CE_cell_header%s">%s %d</div>', W, D, C, CAL.WA.dt_WeekName (dt, self.cWeekStarts, 0), abs (self.cDays [N])));
                           http ('&nbsp;');
                           http ('</td>');
                           C := '';
                           if (CAL.WA.dt_compare (dt, curdate ()))
                             C := C || ' CE_cell_today';
-                          http (sprintf ('<td class="CE_cell CE_cell_pointer%s" unselectable="on" onclick="cNewEvent(%d, -1)">', C, N));
+                          http (sprintf ('<td class="CE_cell CE_cell_pointer%s" onclick="cNewEvent(%d, -1)">', C, N));
                           hasEvents := 0;
                           for (select distinct rs.*
                                  from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_repeat_offset integer, e_reminder integer) rs
@@ -897,7 +898,7 @@
                           C := C || ' CE_cell_middle';
                         if (CAL.WA.dt_compare (dt, curdate ()))
                           C := C || ' CE_cell_today';
-                        http (sprintf ('<td width="%s" class="CE_cell CE_cell_pointer %s" unselectable="on" onclick="cNewEvent(%d, -1)">', '14.2857%', C, N));
+                        http (sprintf ('<td width="%s" class="CE_cell CE_cell_pointer %s" onclick="cNewEvent(%d, -1)">', '14.2857%', C, N));
                         C := '';
                         if (self.cDays[N] > 0)
                           C := C || ' C_onmonth';
@@ -909,7 +910,7 @@
                           C := C || ' C_weekend';
                         if (CAL.WA.dt_compare (dt, curdate ()))
                           C := C || ' C_today';
-                        http (sprintf ('<div unselectable="on" onclick="cSelect(this)" id="d_day_%d_%d" class="CE_cell_header%s">%d</div>', W, D, C, abs (self.cDays [N])));
+                        http (sprintf ('<div onclick="cSelect(this)" id="d_day_%d_%d" class="CE_cell_header%s">%d</div>', W, D, C, abs (self.cDays [N])));
                         for (select distinct rs.*
                                from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_repeat_offset integer, e_reminder integer) rs
                               where rs0 = self.domain_id
@@ -1522,7 +1523,7 @@
                   </tr>
                   <tr>
                     <td width="1%" rowspan="2" valign="top">
-                      Dayly
+                      Daily
                     </td>
                     <td>
                       <?vsp
@@ -1535,7 +1536,7 @@
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_1" value="--'Every'" />
-                      <v:text name="e_repeat_param1_D1" null-value="''" value="--self.repeatParam (self.v_repeat, 'D1', 1, null);" xhtml_class="textbox" xhtml_size="1"/> day(s)
+                      <v:text name="e_repeat_param1_D1" null-value="''" value="--self.repeatParam (self.v_repeat, 'D1', 1, null);" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_1\');'" xhtml_class="textbox" xhtml_size="1" /> day(s)
                     </td>
                   </tr>
                   <tr>
@@ -1567,15 +1568,15 @@
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_3" value="--'Every'" />
-                      <v:text name="e_repeat_param1_W1" null-value="''" value="--self.repeatParam (self.v_repeat, 'W1', 1, null);" xhtml_class="textbox" xhtml_size="1"/> week(s) on
+                      <v:text name="e_repeat_param1_W1" null-value="''" value="--self.repeatParam (self.v_repeat, 'W1', 1, null);" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_3\');'" xhtml_class="textbox" xhtml_size="1" /> week(s) on
                       <?vsp
-                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_0"/> M', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 0)) then '' else 'checked="checked"' end));
-                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_1"/> T', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 1)) then '' else 'checked="checked"' end));
-                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_2"/> W', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 2)) then '' else 'checked="checked"' end));
-                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_3"/> T', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 3)) then '' else 'checked="checked"' end));
-                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_4"/> F', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 4)) then '' else 'checked="checked"' end));
-                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_5"/> S', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 5)) then '' else 'checked="checked"' end));
-                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_6"/> S', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 6)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_0" onfocus="checkRepetition (\'e_repeat\', \'e_repeat_3\');" /> M', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 0)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_1" onfocus="checkRepetition (\'e_repeat\', \'e_repeat_3\');" /> T', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 1)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_2" onfocus="checkRepetition (\'e_repeat\', \'e_repeat_3\');" /> W', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 2)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_3" onfocus="checkRepetition (\'e_repeat\', \'e_repeat_3\');" /> T', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 3)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_4" onfocus="checkRepetition (\'e_repeat\', \'e_repeat_3\');" /> F', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 4)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_5" onfocus="checkRepetition (\'e_repeat\', \'e_repeat_3\');" /> S', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 5)) then '' else 'checked="checked"' end));
+                        http (sprintf ('<input type="checkbox" value="1" %s name="e_repeat_param2_W1_6" onfocus="checkRepetition (\'e_repeat\', \'e_repeat_3\');" /> S', case when is_empty_or_null (self.repeatParam (self.v_repeat, 'W1', 2, 6)) then '' else 'checked="checked"' end));
                       ?>
                     </td>
                   </tr>
@@ -1594,7 +1595,7 @@
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_4" value="--'Every'" />
-                      <v:select-list name="e_repeat_param1_M1">
+                      <v:select-list name="e_repeat_param1_M1" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_4\');'" >
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1615,7 +1616,7 @@
                         </v:before-data-bind>
                       </v:select-list>
                       month(s) on
-                      <v:select-list name="e_repeat_param2_M1">
+                      <v:select-list name="e_repeat_param2_M1" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_4\');'">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1650,7 +1651,7 @@
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_5" value="--'Every'" />
-                      <v:select-list name="e_repeat_param1_M2">
+                      <v:select-list name="e_repeat_param1_M2" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_5\');'">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1671,7 +1672,7 @@
                         </v:before-data-bind>
                       </v:select-list>
                       month(s) on the
-                      <v:select-list name="e_repeat_param2_M2">
+                      <v:select-list name="e_repeat_param2_M2" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_5\');'">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1697,7 +1698,7 @@
                           ]]>
                         </v:before-data-bind>
                       </v:select-list>
-                      <v:select-list name="e_repeat_param3_M2">
+                      <v:select-list name="e_repeat_param3_M2" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_5\');'">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1753,9 +1754,9 @@
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_6" value="--'Every'" />
-                      <v:text name="e_repeat_param1_Y1" null-value="''" value="--self.repeatParam (self.v_repeat, 'Y1', 1, null);" xhtml_class="textbox" xhtml_size="1"/> year(s)
+                      <v:text name="e_repeat_param1_Y1" null-value="''" value="--self.repeatParam (self.v_repeat, 'Y1', 1, null);" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_6\');'" xhtml_class="textbox" xhtml_size="1" /> year(s)
                       on
-                      <v:select-list name="e_repeat_param2_Y1">
+                      <v:select-list name="e_repeat_param2_Y1" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_6\');'">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1788,7 +1789,7 @@
                           ]]>
                         </v:before-data-bind>
                       </v:select-list>
-                      <v:select-list name="e_repeat_param3_Y1">
+                      <v:select-list name="e_repeat_param3_Y1" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_6\');'">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1822,7 +1823,7 @@
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_7" value="--'The'" />
-                      <v:select-list name="e_repeat_param1_Y2">
+                      <v:select-list name="e_repeat_param1_Y2" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_7\');'">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1848,7 +1849,7 @@
                           ]]>
                         </v:before-data-bind>
                       </v:select-list>
-                      <v:select-list name="e_repeat_param2_Y2">
+                      <v:select-list name="e_repeat_param2_Y2" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_7\');'">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1888,7 +1889,7 @@
                         </v:before-data-bind>
                       </v:select-list>
                       of
-                      <v:select-list name="e_repeat_param3_Y2">
+                      <v:select-list name="e_repeat_param3_Y2" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_7\');'">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -1956,7 +1957,7 @@
                 <xsl:call-template name="nbsp"/>
                 <vm:label for="e_repeatUntilKind_1" value="--'Until'" />
                 <xsl:call-template name="nbsp"/>
-                <v:text name="e_repeatUntil" xhtml_id="e_repeatUntil" null-value="--''" value="--CAL.WA.dt_datestring (self.v_repeatUntil, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
+                <v:text name="e_repeatUntil" xhtml_id="e_repeatUntil" null-value="--''" value="--CAL.WA.dt_datestring (self.v_repeatUntil, self.cDateFormat)" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeatUntilKind\', \'e_repeatUntilKind_1\');'" xhtml_class="textbox" xhtml_size="10" />
                 <a href="#" name="e_repeatUntil_select" id="e_repeatUntil_select" onclick="cPopup.select(document.forms['F1'].e_repeatUntil, 'e_repeatUntil_select', '<?V self.cDateFormat ?>'); return false;">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
@@ -2072,9 +2073,11 @@
                 self.v_repeatParam3 := 0;
                 if (self.v_repeat = 'D1') {
                   self.v_repeatParam1 := self.e_repeat_param1_D1.ufl_value;
+                  CAL.WA.test (self.v_repeatParam1, vector('name', 'Day(s)', 'class', 'integer', 'minValue', 1));
                 }
                 if (self.v_repeat = 'W1') {
                   self.v_repeatParam1 := self.e_repeat_param1_W1.ufl_value;
+                  CAL.WA.test (self.v_repeatParam1, vector('name', 'Week(s)', 'class', 'integer', 'minValue', 1));
                   self.v_repeatParam2 := 0;
                   for (N := 0; N < 7; N := N + 1)
                     if (cast (get_keyword ('e_repeat_param2_W1_' || cast (N as varchar), params, '0') as integer))
@@ -2091,6 +2094,7 @@
                 }
                 if (self.v_repeat = 'Y1') {
                   self.v_repeatParam1 := self.e_repeat_param1_Y1.ufl_value;
+                  CAL.WA.test (self.v_repeatParam1, vector('name', 'Year(s)', 'class', 'integer', 'minValue', 1));
                   self.v_repeatParam2 := self.e_repeat_param2_Y1.ufl_value;
                 }
                 if (self.v_repeat = 'Y2') {
@@ -2362,8 +2366,8 @@
               <td>
                 <vm:if test="self.cAction <> 'view'">
                   <v:text name="t_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
-                  <input type="button" value="Suggest" onClick="javascript: suggestTags();" class="button" />
-                  <input type="button" value="Clear" onClick="javascript: document.F1.elements['t_tags'].value = ''" class="button" />
+                  <input type="button" value="Suggest" onclick="javascript: suggestTags();" class="button" />
+                  <input type="button" value="Clear" onclick="javascript: document.F1.elements['t_tags'].value = ''" class="button" />
                 </vm:if>
                 <?vsp self.viewField (self.v_tags); ?>
               </td>
@@ -2524,8 +2528,8 @@
               <td>
                 <vm:if test="self.cAction <> 'view'">
                   <v:text name="n_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
-                  <input type="button" value="Suggest" onClick="javascript: suggestTags();" class="button" />
-                  <input type="button" value="Clear" onClick="javascript: document.F1.elements['n_tags'].value = ''" class="button" />
+                  <input type="button" value="Suggest" onclick="javascript: suggestTags();" class="button" />
+                  <input type="button" value="Clear" onclick="javascript: document.F1.elements['n_tags'].value = ''" class="button" />
                 </vm:if>
                 <?vsp self.viewField (self.v_tags); ?>
               </td>

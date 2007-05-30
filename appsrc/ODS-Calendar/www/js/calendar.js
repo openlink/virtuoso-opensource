@@ -748,3 +748,16 @@ function exchangeHTML ()
   $('navigation').innerHTML = S;
   $(T).innerHTML = '';
 }
+
+// ---------------------------------------------------------------------------
+function checkRepetition (grpName, checkName)
+{
+  for (var i = 0; i < document.forms['F1'].elements.length; i++) {
+    var obj = document.forms['F1'].elements[i];
+    if (obj.type == "radio" && obj.name == grpName) {
+      obj.checked = false;
+      if (obj.id == checkName)
+        obj.checked = true;
+    }
+  }
+}

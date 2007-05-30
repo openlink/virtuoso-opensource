@@ -155,7 +155,7 @@
           <v:url value="--''" format="%s" url="--sprintf ('%shome.vspx?sid=%s&realm=%s', CAL.WA.calendar_url (self.domain_id), self.sid, self.realm)" xhtml_title="Calendar Home">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/calendarbanner_sml.jpg" border="0" />';
+                control.ufl_value := '<img src="image/calendarbanner_sml.jpg" border="0" alt="Calendar Home" />';
               ]]>
             </v:before-render>
           </v:url>
@@ -269,18 +269,18 @@
   <!--=========================================================================-->
   <xsl:template name="vm:calendar">
     <div class="lc">
-      <table cols="7" cellspacing="0" cellpadding="3" style="-moz-user-select: none; cursor: pointer;" class="C_monthtable" id="c_tbl">
+      <table cellspacing="0" cellpadding="3" style="-moz-user-select: none; cursor: pointer;" class="C_monthtable" id="c_tbl">
         <tbody>
           <tr id="c_header" class="C_heading">
-            <td class="C_prev" id="c_month_-1" onmousedown="cSelect(this)" unselectable="on" colspan="1">&lt;</td>
-            <td class="C_cur" unselectable="on" colspan="5">
+            <td class="C_prev" id="c_month_-1" onmousedown="cSelect(this)" colspan="1">&amp;lt;</td>
+            <td class="C_cur" colspan="5">
               <span id="c_month_0" onmousedown="cSelect(this)">
               <?vsp
                 http (sprintf ('%s %d', monthname (self.cnMonth), year (self.cnMonth)));
               ?>
               </span>
             </td>
-            <td class="C_next" id="c_month_1" onmousedown="cSelect(this)" unselectable="on" colspan="1">&gt;</td>
+            <td class="C_next" id="c_month_1" onmousedown="cSelect(this)" colspan="1">&amp;gt;</td>
           </tr>
           <tr id="c_dow" class="C_days">
             <?vsp
@@ -289,7 +289,7 @@
 
               names := CAL.WA.dt_WeekNames (self.cWeekStarts, 1);
               for (N := 0; N < length (names); N := N + 1)
-                http (sprintf ('<td id="c_day_%d" class="C_dayh" unselectable="on">%s</td>', N, names[N]));
+                http (sprintf ('<td id="c_day_%d" class="C_dayh">%s</td>', N, names[N]));
             ?>
           </tr>
           <?vsp
@@ -356,7 +356,7 @@
                 }
               }
             _exit:;
-              http (sprintf ('<td unselectable="on" onclick="cSelect(this)" class="%s" %s id="c_day_%d_%d">%d</td>', C, S, W, D, abs (self.cnDays[N])));
+              http (sprintf ('<td onclick="cSelect(this)" class="%s" %s id="c_day_%d_%d">%d</td>', C, S, W, D, abs (self.cnDays[N])));
             }
             http ('</tr>');
           ?>
@@ -372,10 +372,10 @@
     </div>
     <div id="exchange" class="lc lc_closer lc_noborder" style="display: none;">
       <div style="-moz-user-select: none; cursor: pointer;" onclick="javascript: cExchange('import');">
-        <img src="image/upld_16.png" border="0"/> Import
+        <img src="image/upld_16.png" border="0" alt="Import"/> Import
       </div>
       <div style="-moz-user-select: none; cursor: pointer;" onclick="javascript: cExchange('export');">
-        <img src="image/dwnld_16.png" border="0"/> Export
+        <img src="image/dwnld_16.png" border="0" alt="Export"/> Export
       </div>
     </div>
   </xsl:template>
@@ -387,16 +387,25 @@
     </div>
     <div id="gems" class="lc lc_closer lc_noborder" style="display: none;">
       <?vsp
+        declare exit handler for not found;
+
         declare S varchar;
+        declare lat, lng any;
+
+        select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.account_id;
+        if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id))
+          http (sprintf('<a href="http://geourl.org/near?p=%U" title="GeoURL link" alt="GeoURL link" class="gems"><img src="http://i.geourl.org/geourl.png" border="0"/></a>', CAL.WA.calendar_url (self.domain_id)));
 
         S := CAL.WA.dav_url (self.domain_id);
-        http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS'));
-        http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'Atom'));
-        http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF'));
+        http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
+        http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'ATOM', 'Atom'));
+        http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF', 'RDF'));
+
+        http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0" alt="FOAF export" /> FOAF</a>', CAL.WA.foaf_url (self.domain_id)));
 
         S := sprintf ('http://%s/dataspace/%U/calendar/%U/', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (self.domain_id), CAL.WA.domain_name (self.domain_id));
-        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
-        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
+        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
+        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
       ?>
     </div>
   </xsl:template>
@@ -415,6 +424,7 @@
         _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
         _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
 
+        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)) {
         if (_first is not null and not _first.vc_enabled)
           d_first := 1;
 
@@ -426,6 +436,7 @@
 
         if (_last is not null and not _last.vc_enabled)
           d_last := 1;
+        }
     ?&gt;
     <?vsp
       if (d_first)
