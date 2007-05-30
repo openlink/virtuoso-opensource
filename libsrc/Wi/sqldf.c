@@ -3744,6 +3744,8 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
     return 0;
   if (DFE_TABLE != dfe->dfe_type || dfe_ot (dfe)->ot_is_proc_view)
     return 0;
+  if (ot && ot->ot_table && ot->ot_table->tb_name && 0 != stricmp (ot->ot_table->tb_name, "DB.DBA.RDF_QUAD"))
+    return 0;
   DO_SET (df_elt_t *, pred, &preds)
     {
       if (pred->dfe_type == DFE_TEXT_PRED)
