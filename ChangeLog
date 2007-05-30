@@ -1,3 +1,854 @@
+2007-05-30 11:41  source
+
+	* Updated version to 5.0.1-rc4
+
+2007-05-30 11:37  source
+
+	* Updated webdav css
+	* Fixed JS error in reply to article
+
+2007-05-30 11:37  source
+
+	* Fixed JS errors
+	* Fixed validation errors
+
+2007-05-30 11:35  source
+
+	* Fixed validation errors
+
+2007-05-30 11:34  source
+
+	* Added missing graphics
+
+2007-05-29 12:29  source
+
+	* Updated version to 5.0.1-rc3
+
+2007-05-29 12:27  source
+
+	* Updated version of database
+
+2007-05-29 12:27  source
+
+	* Cast int as ptrlong when passing trailing args of future
+
+2007-05-29 12:27  source
+
+	* Fixed cost model
+	* Fixed cost calc for RD inf nodes
+	* Fixed cost calc for nodes in OJ tables
+	* Added larger sample in query cost model sampling and table initial stats
+	* Added api key_estimate for index sample
+
+2007-05-29 12:23  source
+
+	* Added row autocommit mode
+
+2007-05-29 12:15  source
+
+	* Re-Added previously removed test
+
+2007-05-29 12:15  source
+
+	* Added testing of "same as"
+
+2007-05-29 12:13  source
+
+	* Updated copyright and version
+
+2007-05-29 12:12  source
+
+	* Merged from upstream project
+
+2007-05-29 11:45  source
+
+	* Fixed comments
+	* Small UI changes
+	* Removed disabling of menus on tab change
+
+2007-05-29 11:29  source
+
+	* Added BREAKUP in sql code
+	* Added Breakup with joins of triples
+	* Added explicit 'define sql:table-option "LOOP, index RDF_QUAD" to
+	  all queries inside DB.DBA.SPARQL_RELOAD_QM_GRAPH
+	* Fixed CONSTRUCT...LIMIT...
+	* Fixed sparql define output:format "TTL"
+	* Fixed build on AIX
+	* Fixed proper detection of columns as nullable if COL_NULLABLE is null
+
+2007-05-29 10:54  source
+
+	* Fixed repeatable events
+	* Fixed navigation
+	* Added import/export
+	* Added tags
+
+2007-05-29 10:52  source
+
+	* Fixed newsgroup name in post to blog
+	* Fixed error message when post to feeds newsgroup
+	* Fixed dependency on blog table
+	* Fixed minor problem in SIOC
+	* Updated discussion tags
+	* Added missing images
+
+2007-05-29 10:49  source
+
+	* Added create instance dependency of calendar procedure
+	* Added missing images
+
+2007-05-29 10:47  source
+
+	* Fixed error for undefined procedure in calendar
+	* Minor updates to sign in, sign up buttons
+	* Added new Addressbook icons
+
+2007-05-29 10:46  source
+
+	* Added missing images
+
+2007-05-29 10:41  source
+
+	* Fixed uninstall to delete mail newsgroups
+
+2007-05-29 10:01  source
+
+	* Fixed error during uninstall
+
+2007-05-29 10:00  source
+
+	* Added images
+
+2007-05-24 16:24  source
+
+	* Added LC_ALL=POSIX to fix bad gawk output generation
+
+2007-05-23 12:25  source
+
+	* Fixed VC2003 project file
+
+2007-05-23 10:14  source
+
+	* Updated version to.5.0.1-rc2
+
+2007-05-23 10:13  source
+
+	* Added source serial number to SPART structures for tripes
+	* Fixed for tridgell32 to improve performance of DB.DBA.RDF_MAKE_RO_DIGEST
+
+2007-05-23 10:12  source
+
+	* Fixed speed issues
+
+2007-05-23 09:42  source
+
+	* Added support for 0 level posts from discussion
+
+2007-05-23 09:41  source
+
+	* Added foaf import
+	* Fixed discussion sparql query
+
+2007-05-23 09:40  source
+
+	* Updated post process
+
+2007-05-23 09:40  source
+
+	* Added import and export
+
+2007-05-23 09:39  source
+
+	* Added new parameter for foaf imports
+
+2007-05-22 14:42  source
+
+	* Added new INI parameter names for sparql
+	* Added support for QUAD MAP <...> { ... } group pattern
+
+2007-05-22 12:05  source
+
+	* Fixed message content into created conversations in ods discussion
+
+2007-05-22 12:03  source
+
+	* Fixed error reporting
+	* Enhanced post mechanism for discussion
+	* Minor bugfixes and enhancements
+
+2007-05-22 12:02  source
+
+	* Fixed URL rewrite
+	* Fixed repeat event
+	* Small bugfixes and enhancements
+
+2007-05-22 12:00  source
+
+	* Added openID login and registration
+
+2007-05-22 12:00  source
+
+	* Fixed vcard import
+
+2007-05-21 15:45  source
+
+	* Fixed building managed and unmanaged data providers for Mono
+
+2007-05-21 08:31  source
+
+	* Merged from upstream project
+
+2007-05-18 18:30  source
+
+	* Fixed for conversation send from wiki - now discussion and wiki
+	  comments work
+
+2007-05-18 18:25  source
+
+	* Added support to register with openid
+	* Small fixes
+
+2007-05-17 19:13  source
+
+	* Updated version to 5.0.1-rc1
+
+2007-05-17 19:02  source
+
+	* Added foaf profile
+
+2007-05-17 19:00  source
+
+	* Fixed speed of SQL query
+
+2007-05-17 18:59  source
+
+	* Fixed Gems URL
+
+2007-05-17 18:58  source
+
+	* Fixed Gems URL
+	* Bugfixes and enhancements
+
+2007-05-17 18:58  source
+
+	* Fixed Gems URL
+	* Fixed RDF update
+
+2007-05-17 18:42  source
+
+	* Updated vad version
+
+2007-05-17 18:42  source
+
+	* Updated vad_version
+
+2007-05-17 18:40  source
+
+	* Updated version of vad package
+
+2007-05-17 18:39  source
+
+	* Added drop down box for known DNS names
+
+2007-05-17 15:37  source
+
+	* Merged from upstream project
+
+2007-05-17 15:37  source
+
+	* Fixed Firefox bug wih svg position and lables
+	* Fixed graph input size
+
+2007-05-17 15:33  source
+
+	* Updated version to 3013
+
+2007-05-17 15:33  source
+
+	* Do not pass ref of the a1 as it is a ref anyway
+
+2007-05-17 15:32  source
+
+	* Removed unneeded datastructure
+
+2007-05-17 15:13  source
+
+	* Fixed building on mono
+
+2007-05-17 13:47  source
+
+	* Fixed building fully manager provider
+
+2007-05-17 13:45  source
+
+	* Fixed bug using innerCommand
+
+2007-05-16 09:31  source
+
+	* Added support for H1
+
+2007-05-16 09:31  source
+
+	* Updated newsgroups list control
+	* Added newsgroup search to interface and sparql query
+
+2007-05-15 16:59  source
+
+	* Fixed build problem
+
+2007-05-15 14:46  source
+
+	* Updated CSS files to be in sync with OAT
+
+2007-05-15 14:22  source
+
+	* Fixed CSS for IE6
+
+2007-05-15 12:40  source
+
+	* Clean rewrite rules before the test
+
+2007-05-15 12:39  source
+
+	* Added iCal support
+
+2007-05-15 12:12  source
+
+	* Fixed URL rewrite
+
+2007-05-15 12:12  source
+
+	* Fixed default format to jpg as flickr does not seem to return it
+
+2007-05-15 12:11  source
+
+	* Fixed discussion search
+	* Fixed decode and remobe dep from blog
+	* Fixed URL rewrite
+	* Fixed bad test
+	* Added date support for NNTP search query
+	* Added URL rewriting rules for gallery
+	* Fixed bug in search link
+	* Added URL rewriters
+	* Added Calendar application RDF views
+	* Fixed search range determined by current ods app type
+
+2007-05-15 12:05  source
+
+	* Fixed URL rewrite
+	* Fixed search params redirected to ODS search page
+	* Fixed get params when user is logged in
+	* Fixed calendar search get params
+	* Fixed ods search
+	* Fixed search label
+
+2007-05-15 12:02  source
+
+	* Fixed RDF update
+	* Fixed URL rewrite
+
+2007-05-15 12:01  source
+
+	* Fixed URL rewrite
+	* Fixed RDF update
+	* Fixed URL parser
+
+2007-05-15 12:00  source
+
+	* Added initial URL rewriting
+
+2007-05-15 12:00  source
+
+	* Fixed URL rewrite
+	* Fixed RDF update
+
+2007-05-15 09:37  source
+
+	* Merged from upstream project
+
+2007-05-14 19:32  source
+
+	* Fixed setting default user to empty instead of demo when demo user
+	  does not exist
+
+2007-05-14 19:27  source
+
+	* Fixed tree wrapping
+	* Fixed image path
+	* Fixed tree width
+	* Removed duplicate images
+
+2007-05-14 14:43  source
+
+	* Fixed metadata retrieval from google-kind to google-base
+
+2007-05-14 09:21  source
+
+	* Merged from upstream project
+
+2007-05-14 09:19  source
+
+	* Fixes and extentions for bio2rdf
+
+2007-05-14 09:18  source
+
+	* Commented out debugging lines
+
+2007-05-11 13:45  source
+
+	* Fixed debugging mode
+
+2007-05-11 09:42  source
+
+	* Merged from upstream project
+
+2007-05-10 13:33  source
+
+	* Disabled buggy test
+
+2007-05-10 11:00  source
+
+	* Updated version to 5.0.1-pre4
+
+2007-05-10 10:57  source
+
+	* Updated version
+
+2007-05-10 10:44  source
+
+	* Changed vi: namespace to ods:
+
+2007-05-10 10:43  source
+
+	* Changed vi: namespace to ods:
+	* Fixed Atom bug
+
+2007-05-10 09:55  source
+
+	* Updated version to 5.0.1-pre3
+
+2007-05-10 09:52  source
+
+	* Updated version of vad package
+
+2007-05-10 09:49  source
+
+	* Fixed build dependencies
+
+2007-05-10 09:36  source
+
+	* Fixed packlist
+
+2007-05-10 09:24  source
+
+	* Added Calendar application - RDF views
+
+2007-05-10 09:24  source
+
+	* Merged latest fixes
+
+2007-05-10 09:23  source
+
+	* Fixed iCalendar uploads
+
+2007-05-10 07:35  source
+
+	* Added 'ShortOfNiceSqlvalTmpl' optimization
+
+2007-05-10 07:34  source
+
+	* Added "ShortOfNiceSqlvalTmpl" optimization
+
+2007-05-10 07:34  source
+
+	* Added parameter for output format
+
+2007-05-10 07:33  source
+
+	* Merged from upstream project
+
+2007-05-09 10:55  source
+
+	* Added missing images
+
+2007-05-09 10:53  source
+
+	* Updated versin to 5.0.1-pre2
+
+2007-05-09 10:53  source
+
+	* Changed UI to use 3 tabs
+
+2007-05-09 10:49  source
+
+	 * Removed attribute content
+
+2007-05-09 10:14  source
+
+	* Added new graphic
+
+2007-05-09 10:12  source
+
+	* Bugfixes and enhancements
+
+2007-05-09 10:11  source
+
+	* Updated ping web service
+	* Added trigger for new ping schedule
+	* Updated SIOC link
+
+2007-05-09 10:08  source
+
+	* Fixed import from URI
+
+2007-05-09 08:54  source
+
+	* Disabled IN pred optimization temp
+
+2007-05-09 08:52  source
+
+	* Fixed win32 build
+
+2007-05-08 17:57  source
+
+	* Return NULL for fake columns
+
+2007-05-08 17:54  source
+
+	* Sync from upstream project
+
+2007-05-08 17:44  source
+
+	* Added changes for the new SIOC spec
+	* Updated version number of package
+
+2007-05-08 17:41  source
+
+	* Added replace for dt:dt and foaf:foaf
+	* Changed escape of dt to dcterms
+	* Removed attribute content
+
+2007-05-08 17:39  source
+
+	* Added Yahoo traffic service
+	* Added atomwl to feed mappings
+
+2007-05-08 17:35  source
+
+	* Fix for safari
+
+2007-05-08 17:34  source
+
+	* Merged from upstream project
+
+2007-05-07 20:17  source
+
+	* Additional template macros
+
+2007-05-07 20:15  source
+
+	* Added calendar properties
+
+2007-05-07 20:14  source
+
+	* New color scheme and template update
+	* Added SQL for web service notifications - PTSW administration
+
+2007-05-07 14:26  source
+
+	* Fixed GPF in hash space fill when DV_NULL in ANY column
+
+2007-05-07 14:09  source
+
+	* Changed banner
+	* Fixed registery key
+
+2007-05-07 14:08  source
+
+	* Added iCalendar uploads
+
+2007-05-07 14:07  source
+
+	* Added Calendar application
+	* Added dashboard for ODS discussions
+	* Fixed tags in nntp search
+	* Added tagging
+	* Fixed SIOC to use subclasses
+	* Added calendar properties
+	* Added search in discussions using sparql
+	* Minor change to oat map control
+	* Added OGPS index
+	* Fixed deleting other views
+	* Added funtion to make RDF for embedding
+	* Fixed cosmetic detail in user profile page
+	* Fixed errro catching
+	* Added owl:sameAs
+	* Fixed vCard properties to use uppercase
+	* Changed tab labels in Search | SPARQL | Load
+	* Fixed default wiki instance links on ODS tab
+
+2007-05-07 13:47  source
+
+	* Added SIOC mapper
+
+2007-05-07 13:46  source
+
+	* Added check for FreeType
+
+2007-05-07 13:41  source
+
+	* Files to ignore
+
+2007-05-07 13:23  source
+
+	* Added support for ODS Calendar app
+
+2007-05-04 15:25  source
+
+	* Updated version to 5.0.1-pre1
+
+2007-05-04 15:18  source
+
+	* Fixed missing dt
+	* Fixed upstreaming / retransmitting on error
+	* Fixed CSS cosmetics to ODS-Weblog template
+	* Fixed latest articles view
+	* Fixed setting main menu
+
+2007-05-04 15:18  source
+
+	* Added new color schema and template update
+	* Added tag support
+	* Added tagging in nntp search
+	* Added trigger for deleting tags after post is deleted
+	* Use read NG_ID in NNTPF_NGROUP_POST_TAGS
+	* Fixed rss view
+	* Added interface suport for user specific tags
+	* Added search in discussions using sparql
+
+2007-05-04 15:17  source
+
+	* Fixed RDF data
+	* Insert DAV meta into ODS graph
+
+2007-05-04 15:17  source
+
+	* Fixed import from WebDAV
+
+2007-05-04 15:17  source
+
+	* Added feature Spam Filtering
+	* Fixed import from WebDAV
+	* Fixed Import from LDAP does not show Comma Delimited tags
+
+2007-05-04 15:17  source
+
+	* Fixed admin access
+	* Fixed map control
+	* Added FOAF gem support in search
+	* Added missing tabs for Polls, Addressbook and Bookmarks
+	* Fixed login form when public endpoint is accessed
+
+2007-05-04 15:16  source
+
+	* Added tagging support
+	* Added dashboard for ODS Discussions
+	* Added calendar application
+	* Added search in discussions using sparql
+	* Added OGPS index
+	* Fix for deleting other views
+	* Added function to make RDF for embedding
+	* Added CC licenses
+	* Fixed catching error
+	* Added owl:sameAs
+	* Fixed vCard properties values to use upper case
+	* Fixed tab names in Search | SPARQL | Load
+	* Fixed default wiki instance links on ODS tab
+	* Fixed correct position of map template
+	* Fixed visibility of mail signature
+
+2007-05-04 15:16  source
+
+	* Fixed collecting emails using pop3
+	* Added export to Addressbook
+	* Added get name and email address from Addressbook
+	* Added spam filtering
+
+2007-05-04 15:16  source
+
+	* Fixed css
+
+2007-05-04 13:50  source
+
+	* Added bif:xcontains SPARQL magic predicate
+	* Added code generation for IN.
+	* Added support for array of integers built-in type (e.g. for private data)
+	* Added declaration of struct qm_atable_use_s (for breakup)
+	* Added error masquerading for virtuoso/PL backward-compatibility versions
+	  of XSD constructor functions.  These functions now return NULL instead
+	  of signalling a parse/cast error.
+	* Added code generation for an additional flag to xqf_str_parse(),
+	  to return NULL instead of signalling a parse error.
+	* Added support for REAL and SHORTINT columns in mapping.
+	* Added DB.DBA.RDF_GRAPH_TO_TTL()
+	* Added flag for the mapper to enable/disable
+	* Return sparql ini parameters via /sparql endpoint
+	* Fixes for Musicbrainz:
+	  1. Improved DEBUG diagnostics for invalid fixed IRIs in restrictions.
+	  2. Improved metadata generation for IRI classes with non-bijection
+	     functions.
+	  3. Improved code generation for 'field=const' restrictions in
+	     fields with non-bijection formats.
+	  4. Improved generation of restrictions on graph variable if sponge
+	     is in use.
+	* Fixed max returns NULL if 1-st arg is null, therefore pas only integers
+	  to be sure it will find ':' for example
+	* Fixed bad aref message
+	* Fixed code generation for FILTER (?var = <iri>)
+	* Fix for compilation of ORDER BY with grab: there was missing case in
+	  sparp_tree_full_copy ().
+	* Fix for pronting templates with loop in the middle when the number
+	  of columns is zero and the loop is not the last phrase in the template.
+	* Cleanup for private fields in jso_delete(), not used ATM but may be
+	  used for BREAKUP.
+	* Functions that will be used in BREAKUP processing but not yet in use.
+	* Fixes ctr instead of arg_ctr in __xqf_str_parse codegen
+	* Fixed bad var name in DATATYPE_OF_LONG.
+	* Improved compilation of Fred's Q15 from long list: match of quad map
+	  patterns and triple patterns can use sprintff restriction for constant
+	  fields of triples.
+	* Fixes for file & https urls
+	*  Added http OWL added to be extracted by rdf mappers
+	* Fixed bug in sparp_full_clone_int for built-in functions, including
+	  'IN' operator.
+	* Fixed and enabled sparp_gp_trav_reuse_tabids
+	* Fix for caching of free-text indexing rules in memory at startup.
+	* Fix for DATATYPE() and LANGUAGE() builtins in SPARQL
+	  (additional default param)
+	* Changes in the syntax annotations.
+	* Fixed bad number of params
+
+2007-05-04 13:47  source
+
+	* Added extra check
+
+2007-05-04 13:46  source
+
+	* Added new function to reload vd map
+
+2007-05-04 13:46  source
+
+	* Added dump into a file
+	* Added more logging
+
+2007-05-04 13:45  source
+
+	* Added BIF __trx_disk_log_length().
+	* Prevent cpt to hang on this thread if it waiting
+
+2007-05-04 13:43  source
+
+	* Added additional flag to xqf_str_parse(), to return NULL instead of
+	  signalling a parse error.
+
+2007-05-04 13:42  source
+
+	* Fixed gpf when thread leave the client
+
+2007-05-04 13:42  source
+
+	* Fixed predicate with exp list to use index when possible
+	* Fixed cost model to fit.
+	* If many in exp list preds on same inx, will be good for one
+	* Safety checks in binary search that prevent GPF if the sorting criterion
+	  is not transitive.
+
+2007-05-04 13:40  source
+
+	* Fixed optimize problem with readed variable
+
+2007-05-04 13:05  source
+
+	* Added extra space to avoid "unrestrictedSTATIC" generation
+
+2007-05-04 13:04  source
+
+	* Added JDK 1.5 version string
+
+2007-05-04 13:02  source
+
+	* Added additional tests
+
+2007-05-04 12:53  source
+
+	* Added version information in plugin
+
+2007-05-04 12:52  source
+
+	* Updated to latest OAT release
+	* Fixed permissions
+	* Fixed save dialog in advanced tab
+	* Temporary patched saved files to be o+r
+	* Fixed bug with browsing and loosing the default graph for the first
+	  executed query
+	* Fixed to store the format when browsing
+	* Removed "Get Classes"
+	* Change user - pass transfer
+	* Set authentication enabled by default
+	* Added registry for custom auth verification
+	* Changed to show auth failure text
+	* Fixed problem in IE
+	* Fixed problem with invalid chars in user/pass
+	* Set no execute perms for index.html
+	* Added auth verification on loading
+	* Added extensions for ODS session authentication
+	* Fixed problem with losing default-graph when browsing in advanced tab
+	* Extended browsing to remember all consequential queries
+
+2007-05-04 12:45  source
+
+	* Added version information to plugin
+
+2007-05-04 12:44  source
+
+	* Fixed bad permissions
+	* Added new mime types
+	* Return error when resource was not found to prevent confusion
+	* Fixed problem with vcard
+	* Use update/insert instead of replacing as the latter only runs the
+	  insert triggers
+
+2007-05-04 12:40  source
+
+	* Added execution order setting for RDF filters
+	* Added only appropriate scripts from vspx directory
+	* Added URL rewriting
+
+2007-05-04 12:23  source
+
+	* Merged from upstream project
+
+2007-05-04 12:23  source
+
+	* Added support for HTTP OWL
+	* Added support to use aperture metadata extractor if available
+	* Fixed ebay result
+	* Fixed space handling between xmlns declarations
+	* Small fixes
+
+2007-05-04 11:24  source
+
+	* Added new RDF mapper tutorials
+	* Moved JSP hosting check
+	* Changed sioc:type to rdf:type
+	* Changes to comply with latest SIOC spec
+	* Small fixes
+
+2007-05-04 11:07  source
+
+	* Updated documentation
+
 2007-04-06 17:03  source
 
 	* Updated version to 5.0.0 for final release
