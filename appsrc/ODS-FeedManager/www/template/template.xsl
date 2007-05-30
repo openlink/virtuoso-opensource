@@ -405,9 +405,7 @@
   	    _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
   	    _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
 
-  	    if (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)
-  	      goto _skip;
-
+        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)) {
         if (_first is not null and not _first.vc_enabled)
     	    d_first := 1;
 
@@ -419,8 +417,7 @@
 
         if (_last is not null and not _last.vc_enabled)
     	    d_last := 1;
-
-      _skip:;
+        }
     ?&gt;
     <xsl:if test="not(@type) or @type = 'set'">
     <?vsp

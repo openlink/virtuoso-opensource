@@ -155,7 +155,7 @@
           <v:url value="--''" format="%s" url="--sprintf ('%shome.vspx?sid=%s&realm=%s', AB.WA.ab_url (self.domain_id), self.sid, self.realm)" xhtml_title="AddressBook Home">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/abbanner_sml.jpg" border="0" />';
+                control.ufl_value := '<img src="image/abbanner_sml.jpg" border="0" alt="AddressBook Home"/>';
               ]]>
             </v:before-render>
           </v:url>
@@ -228,89 +228,24 @@
   <!--=========================================================================-->
   <xsl:template name="vm:formats">
     <div class="left_container">
-      <xsl:call-template name="vm:geoUrl-link" />
-      <vm:rss-link />
-      <vm:atom-link />
-      <vm:rdf-link />
-		  <vm:sioc-link format="rdf"> SIOC (RDF/XML)</vm:sioc-link>
-		  <vm:sioc-link format="ttl"> SIOC (N3/Turtle)</vm:sioc-link>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="vm:geoUrl-link">
     <?vsp
       declare exit handler for not found;
+
+        declare S varchar;
       declare lat, lng any;
 
       select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.account_id;
-      if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id)) {
-    ?>
-      <div style="border-bottom: 1px solid #7f94a5;">
-        <?vsp
+        if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id))
           http (sprintf('<a href="http://geourl.org/near?p=%U" title="GeoURL link" alt="GeoURL link" class="gems"><img src="http://i.geourl.org/geourl.png" border="0"/></a>', AB.WA.ab_url (self.domain_id)));
-        ?>
-      </div>
-    <?vsp
-      }
-    ?>
-  </xsl:template>
 
-  <!--=========================================================================-->
-  <xsl:template match="vm:atom-link">
-    <div>
-      <?vsp
-        http (sprintf('<a href="%sAddressBook.atom" target="_blank" title="ATOM export" alt="ATOM export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> Atom</a>', AB.WA.dav_url (self.domain_id)));
-      ?>
-    </div>
-  </xsl:template>
+        S := AB.WA.dav_url (self.domain_id);
+        http (sprintf('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
+        http (sprintf('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'ATOM', 'Atom'));
+        http (sprintf('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF', 'RDF'));
 
-  <!--=========================================================================-->
-  <xsl:template match="vm:rss-link">
-    <div>
-      <?vsp
-        http (sprintf('<a href="%sAddressBook.rss" target="_blank" title="RSS export" alt="RSS export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> RSS</a>', AB.WA.dav_url (self.domain_id)));
-      ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template match="vm:rdf-link">
-    <div>
-      <?vsp
-        http (sprintf('<a href="%sAddressBook.rdf" target="_blank" title="RDF export" alt="RDF export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> RDF</a>', AB.WA.dav_url (self.domain_id)));
-      ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="vm:foaf-link">
-    <div>
-      <?vsp
-        http (sprintf('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', AB.WA.foaf_url (self.domain_id)));
-      ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template match="vm:sioc-link">
-    <div>
-      <?vsp
-      {
-        declare suffix varchar;
-
-        suffix := 'rdf';
-      ?>
-      <xsl:if test="@format">
-        <xsl:processing-instruction name="vsp">
-  	      suffix := '<xsl:value-of select="@format"/>';
-        </xsl:processing-instruction>
-      </xsl:if>
-  	  <a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/addressbook/%U/sioc.%s', DB.DBA.wa_cname (), AB.WA.domain_owner_name (self.domain_id), AB.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
-    	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
-      </a>
-      <?vsp
-        }
+        S := sprintf ('http://%s/dataspace/%U/addressbook/%U/', DB.DBA.wa_cname (), AB.WA.domain_owner_name (self.domain_id), AB.WA.domain_name (self.domain_id));
+        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
+        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
       ?>
     </div>
   </xsl:template>
@@ -328,9 +263,7 @@
         _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
         _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
 
-        if (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)
-          goto _skip;
-
+        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)) {
         if (_first is not null and not _first.vc_enabled)
           d_first := 1;
 
@@ -342,8 +275,7 @@
 
         if (_last is not null and not _last.vc_enabled)
           d_last := 1;
-
-      _skip:;
+        }
     ?&gt;
     <xsl:if test="not(@type) or @type = 'set'">
     <?vsp

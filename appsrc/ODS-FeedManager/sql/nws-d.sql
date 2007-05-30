@@ -20,6 +20,15 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+-- dropping nntp procedure
+create procedure ENEWS.WA.drop_nntp ()
+{
+  for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'eNews2') do
+    ENEWS.WA.nntp_update (WAI_ID, null, 1, 0);
+}
+;
+ENEWS.WA.drop_nntp ();
+
 -- Scheduler
 ENEWS.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'eNews feed aggregator\'');
 ENEWS.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'eNews blog aggregator\'');

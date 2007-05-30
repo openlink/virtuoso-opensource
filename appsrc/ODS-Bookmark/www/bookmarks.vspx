@@ -526,7 +526,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''bookmarks'');'" xhtml_title="My Bookmarks" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/bmk_32.png" border="0"/>' || self.toolbarLabel('My Bookmarks');
+                control.ufl_value := '<img src="image/bmk_32.png" border="0" alt="My Bookmarkss" />' || self.toolbarLabel('My Bookmarks');
               ]]>
             </v:before-render>
           </v:url>
@@ -534,7 +534,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" enabled="--self.toolbarEnable('shared')" xhtml_title="Show Shared Bookmarks" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/shared_32.png" border="0"/>' || self.toolbarLabel('Shared Bookmarks');
+                control.ufl_value := '<img src="image/shared_32.png" border="0" alt="Shared Bookmarks" />' || self.toolbarLabel('Shared Bookmarks');
               ]]>
             </v:before-render>
           </v:url>
@@ -544,12 +544,12 @@
             </span>
           </v:template>
 
-          <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
+          <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
 
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''import'');'" enabled="--self.toolbarEnable('import')" xhtml_title="Import Bookmarks" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/impt_32.png" border="0"/>' || self.toolbarLabel('Import');
+                control.ufl_value := '<img src="image/impt_32.png" border="0" alt="Import" />' || self.toolbarLabel('Import');
               ]]>
             </v:before-render>
           </v:url>
@@ -562,7 +562,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''export'');'" enabled="--self.toolbarEnable('export')" xhtml_title="Export" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/exp_32.png" border="0"/>' || self.toolbarLabel('Export');
+                control.ufl_value := '<img src="image/exp_32.png" border="0" alt="Export" />' || self.toolbarLabel('Export');
               ]]>
             </v:before-render>
           </v:url>
@@ -572,12 +572,12 @@
             </span>
           </v:template>
 
-          <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
+          <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
 
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''Bookmark/Create'');'" enabled="--self.toolbarEnable('Bookmark/Create')" xhtml_title="Create New Bookmark" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/bmk_add_32.png" border="0"/>' || self.toolbarLabel('New Bookmark');
+                control.ufl_value := '<img src="image/bmk_add_32.png" border="0" alt="New Bookmark" />' || self.toolbarLabel('New Bookmark');
               ]]>
             </v:before-render>
           </v:url>
@@ -590,7 +590,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''Folder/Create'');'" enabled="--self.toolbarEnable('Folder/Create')" xhtml_title="Create New Folder" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/new_fldr_32.png" border="0"/>' || self.toolbarLabel('New Folder');
+                control.ufl_value := '<img src="image/new_fldr_32.png" border="0" alt="New Folder" />' || self.toolbarLabel('New Folder');
               ]]>
             </v:before-render>
           </v:url>
@@ -603,7 +603,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''Smart Folder/Create'');'" enabled="--self.toolbarEnable('Smart Folder/Create')" xhtml_title="New Smart Folder" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/sfolder_32.jpg" border="0"/>' || self.toolbarLabel('New Smart Folder');
+                control.ufl_value := '<img src="image/sfolder_32.jpg" border="0" alt="New Smart Folder" />' || self.toolbarLabel('New Smart Folder');
               ]]>
             </v:before-render>
           </v:url>
@@ -613,13 +613,13 @@
             </span>
           </v:template>
 
-          <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
+          <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
 
           <span id="tbTag" class="toolbar" style="display: none">
             <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''tag'');'" enabled="--self.toolbarEnable('tag')" xhtml_title="Tag">
               <v:before-render>
                 <![CDATA[
-                  control.ufl_value := '<img src="image/tag_32.png" border="0"/>' || self.toolbarLabel('Tag');
+                  control.ufl_value := '<img src="image/tag_32.png" border="0" alt="Tag" />' || self.toolbarLabel('Tag');
                 ]]>
               </v:before-render>
             </v:url>
@@ -632,7 +632,7 @@
             <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''move'');'" enabled="--self.toolbarEnable('move')" xhtml_title="Move">
               <v:before-render>
                 <![CDATA[
-                  control.ufl_value := '<img src="image/move_32.png" border="0"/>' || self.toolbarLabel('Move');
+                  control.ufl_value := '<img src="image/move_32.png" border="0" alt="Move" />' || self.toolbarLabel('Move');
                 ]]>
               </v:before-render>
             </v:url>
@@ -641,13 +641,13 @@
             <img src="image/grey_move_32.png" border="0" alt="Move"/><?vsp http(self.toolbarLabel('Move'));?>
           </span>
 
-          <img src="image/c.gif" height="32" width="2" border="0" class="toolbar"/>
+          <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" alt="" />
 
           <span id="tbSharing" class="toolbar" style="display: none">
             <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''grants'');'" enabled="--self.toolbarEnable('grants')" xhtml_title="Sharing">
               <v:before-render>
                 <![CDATA[
-                  control.ufl_value := '<img src="image/grants_32.png" border="0"/>' || self.toolbarLabel('Sharing');
+                  control.ufl_value := '<img src="image/grants_32.png" border="0" alt="Sharing" />' || self.toolbarLabel('Sharing');
                 ]]>
               </v:before-render>
             </v:url>
@@ -660,7 +660,7 @@
             <v:url value="--''" format="%s" url="--'javascript: if (confirmAction(\'Are you sure that you want to delete selected items?\', document.F1, ''cb_'', ''No items were selected for deletion.'')) toolbarPost(''delete'');'" xhtml_title="Delete">
               <v:before-render>
                 <![CDATA[
-                  control.ufl_value := '<img src="image/del_32.png" border="0"/>' || self.toolbarLabel('Delete');
+                  control.ufl_value := '<img src="image/del_32.png" border="0" alt="Delete" />' || self.toolbarLabel('Delete');
                 ]]>
               </v:before-render>
             </v:url>
@@ -857,7 +857,7 @@
                 nodeName := BMK.WA.stringCut(coalesce(nodeName, ''), self.chars);
               if (not is_empty_or_null(nodeName)) {
                 http('<div id="channel_header">');
-                  http(sprintf('<div id="channel_header_left"><img src="image/%s" border="0"/> %s</div>', image, nodeName));
+                  http(sprintf('<div id="channel_header_left"><img src="image/%s" border="0" alt="" /> %s</div>', image, nodeName));
                   http(sprintf('<div id="channel_header_right">%s %s</div>', mt, st));
                 http('<br style="clear: both;"/>');
                 http('</div>');
@@ -1073,7 +1073,7 @@
                         </th>
                        </v:template>
                       <th width="1%" class="last">
-                        <img src="image/c.gif" border="0"/>
+                          <img src="image/c.gif" border="0" alt="" />
                       </th>
                       <th width="80%">
                         <?vsp self.sortColumn('Name', '_NAME'); ?>

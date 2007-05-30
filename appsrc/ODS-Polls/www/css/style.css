@@ -128,8 +128,9 @@ a:hover
   width: auto;
 }
 
-.left_container div
+.left_container div, .left_container a
 {
+  display: block;
   padding: 3px;
   margin: 3px;
 }

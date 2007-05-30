@@ -49,7 +49,7 @@
 
         params := self.vc_page.vc_event.ve_params;
 
-        http_header(sprintf ('Content-type: application/octet-stream\r\nContent-Disposition: inline; filename="%s"\r\n', get_keyword('file', params, 'Bookmarks.html')));
+        http_header(sprintf ('Content-type: application/x-download\r\nContent-Disposition: inline; filename="%s"\r\n', get_keyword('file', params, 'Bookmarks.html')));
         http_value(xslt (BMK.WA.xslt_full (get_keyword('format', params, 'Netscape') || '.xsl'), xtree_doc(BMK.WA.bookmark_export(self.domain_id, null))));
       } else {
         http_header ('Content-Type: text/xml; charset=UTF-8\r\n');

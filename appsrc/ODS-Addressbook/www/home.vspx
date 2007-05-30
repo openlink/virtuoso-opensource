@@ -246,7 +246,7 @@
         } else {
           http(sprintf('<a href="#" name="pt_toggle_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_toggle\', \'%s\', \'pt_path\', \'%s\'); return false"><img src="image/%s" border="0" class="nolink" alt="%s" title="%s" /></a>', nodes[N+2], nodes[N+1], nodes[N+2], image, alt, alt));
         }
-        http(sprintf('<a href="#" name="pt_node_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'%s\'); return false" class="nolink3 %s" alt="%s" title="%s" > <img src="image/%s" border="0" /> %s</a>', nodes[N+2], nodes[N+1], nodes[N+2], class, nodes[N], nodes[N], image2, nodes[N]));
+        http(sprintf('<a href="#" name="pt_node_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'%s\'); return false" class="nolink3 %s" alt="%s" title="%s" > <img src="image/%s" border="0" alt="" /> %s</a>', nodes[N+2], nodes[N+1], nodes[N+2], class, nodes[N], nodes[N], image2, nodes[N]));
         if (image = 'minus.gif')
           self.showTree(level+1, domain_id, user_id, nodes[N+1], nodes[N+2]);
 
@@ -551,7 +551,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''MyContacts'');'" xhtml_title="My Contacts" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/ab_32.png" border="0" />' || self.toolbarLabel('My Contacts');
+                control.ufl_value := '<img src="image/ab_32.png" border="0" alt="My Contacts" />' || self.toolbarLabel('My Contacts');
               ]]>
             </v:before-render>
           </v:url>
@@ -559,7 +559,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''MySharedContacts'');'" xhtml_title="Shared Contacts" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/ab_shared_32.png" border="0" />' || self.toolbarLabel('Shared Contacts');
+                control.ufl_value := '<img src="image/ab_shared_32.png" border="0" alt="Shared Contacts" />' || self.toolbarLabel('Shared Contacts');
               ]]>
             </v:before-render>
           </v:url>
@@ -569,7 +569,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''import'');'" enabled="--self.toolbarEnable('import')" xhtml_title="Import" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/impt_32.png" border="0" />' || self.toolbarLabel('Import');
+                control.ufl_value := '<img src="image/impt_32.png" border="0" alt="Import" />' || self.toolbarLabel('Import');
               ]]>
             </v:before-render>
           </v:url>
@@ -582,7 +582,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''export'');'" enabled="--self.toolbarEnable('export')" xhtml_title="Export" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/exp_32.png" border="0" />' || self.toolbarLabel('Export');
+                control.ufl_value := '<img src="image/exp_32.png" border="0" alt="Export" />' || self.toolbarLabel('Export');
               ]]>
             </v:before-render>
           </v:url>
@@ -597,7 +597,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''create'');'" enabled="--self.toolbarEnable('create')" xhtml_title="Create New Contact" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/ab_add_32.png" border="0" />' || self.toolbarLabel('New Contact');
+                control.ufl_value := '<img src="image/ab_add_32.png" border="0" alt="New Contact" />' || self.toolbarLabel('New Contact');
               ]]>
             </v:before-render>
           </v:url>
@@ -613,7 +613,7 @@
             <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''tag'');'" enabled="--self.toolbarEnable('tag')" xhtml_title="Tag">
               <v:before-render>
                 <![CDATA[
-                  control.ufl_value := '<img src="image/tag_32.png" border="0" />' || self.toolbarLabel('Tag');
+                  control.ufl_value := '<img src="image/tag_32.png" border="0" alt="Tag" />' || self.toolbarLabel('Tag');
                 ]]>
               </v:before-render>
             </v:url>
@@ -626,7 +626,7 @@
             <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''grants'');'" enabled="--self.toolbarEnable('grants')" xhtml_title="Sharing">
               <v:before-render>
                 <![CDATA[
-                  control.ufl_value := '<img src="image/grants_32.png" border="0"/>' || self.toolbarLabel('Sharing');
+                  control.ufl_value := '<img src="image/grants_32.png" border="0" alt="Sharing" />' || self.toolbarLabel('Sharing');
                 ]]>
               </v:before-render>
             </v:url>
@@ -639,7 +639,7 @@
             <v:url value="--''" format="%s" url="--'javascript: if (confirmAction(\'Are you sure that you want to delete selected items?\', document.F1, ''cb_'', ''No items were selected for deletion.'')) toolbarPost(''delete'');'" xhtml_title="Delete">
             <v:before-render>
               <![CDATA[
-                  control.ufl_value := '<img src="image/del_32.png" border="0" />' || self.toolbarLabel('Delete');
+                  control.ufl_value := '<img src="image/del_32.png" border="0" alt="Delete" />' || self.toolbarLabel('Delete');
               ]]>
             </v:before-render>
           </v:url>
@@ -765,7 +765,7 @@
 
               --nodeName := AB.WA.stringCut (coalesce(nodeName, ''), self.chars);
               if (image <> '')
-                image := sprintf ('<img src="image/%s" border="0"/> ', image);
+                image := sprintf ('<img src="image/%s" border="0" alt="" /> ', image);
 
               if (not is_empty_or_null(nodeName)) {
                 http('<div id="ab_header">');

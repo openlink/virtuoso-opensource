@@ -27,12 +27,11 @@
     <base href="<?V ODRIVE.WA.host_url () || http_path () ?>" />
     <?vsp
       http (sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s/dataspace/%U/about.rdf" />', ODRIVE.WA.host_url (), ODRIVE.WA.domain_owner_name (self.domain_id)));
-    ?>
-    <?vsp
       if (ODRIVE.WA.domain_is_public (self.domain_id)) {
         http (sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC (RDF/XML)" href="%s" />', ODRIVE.WA.sioc_url (self.domain_id)));
-        http (sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC (N3/Turtle)" href="%s" />', replace(sprintf('%s/dataspace/%U/briefcase/%U/sioc.ttl', ODRIVE.WA.host_url (), ODRIVE.WA.account (), ODRIVE.WA.domain_name (self.domain_id)), '+', '%2B')));
+        http (sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC (N3/Turtle)" href="%s" />', replace(ODRIVE.WA.sioc_url (self.domain_id), 'sioc.rdf', 'sioc.ttl')));
       }
+      http (ODRIVE.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
@@ -40,27 +39,23 @@
     <link rel="alternate" type="application/atom+xml" title="Virtuoso Product Blog (Atom)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
     <link rel="alternate" type="application/rss+xml" title="ODBC for Mac OS X Screencast Demos"	href="http://support.openlinksw.com/viewlets/mac_uda_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Benchmark & Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
-    <?vsp
-      http (ODRIVE.WA.geo_url (self.domain_id, self.account_id));
-    ?>
+    <link rel="alternate" type="application/rss+xml" title="Benchmark and Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
     <link rel="stylesheet" href="css/style.css" type="text/css" />
     <meta name="dc.description" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <script language="JavaScript" type="text/javascript" src="js/odrive.js" />
-    <?vsp http('</script>'); ?>
+    <![CDATA[
+      <script type="text/javascript" src="js/odrive.js"></script>
+    ]]>
     <title />
   </head>
   <body>
     <v:page name="main" xmlns:v="http://www.openlinksw.com/vspx/">
-      <vm:variables>
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
         <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
         <v:variable persist="0" name="settings" type="any" />
-      </vm:variables>
 
       <v:on-init>
         <![CDATA[
