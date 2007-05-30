@@ -60,7 +60,7 @@ function dd(txt){
 	
 	      if (typeof(window.davbrowseInit) == "function")
         {
-          OAT.Loader.loadFeatures(["dav","window"], function(){davbrowseInit()});
+          OAT.Loader.loadFeatures(["dav","mswin","macwin"], function(){davbrowseInit()});
         };
 
 	      if (typeof(window.calendarInit) == "function")

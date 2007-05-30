@@ -9,6 +9,7 @@
  */
 
 /* ------------------ toolbar ---------------- */
+@import url("grid.css");
 
 #dav_browser .toolbar {
 	margin: auto;
@@ -48,126 +49,92 @@
 
 }
 
-#dav_tree{
-  border:1px solid #999999;
-  background-color:#fff;
-  height:290px;
-  width:200px;
-  padding-right:5px;
-  float:left;
-  overflow:auto;
+/* main part */
+
+#dav_path {
+	margin: 5px 3px;
 }
 
-#dav_tree ul {
-	margin:0px;
-	padding:0px;
-	font-size:10px;
-	list-style-type:none;
+#dav_main {
+	border: 1px solid #999;
+}
+
+#dav_tree {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	width: 200px;
+  overflow:auto;
+  background-color:#fff;
 }
 
 #dav_tree li {
-	margin-top: .5em;
-	margin-left: 1.1em;
-	font-size:12px;
-	white-space: nowrap;
-	cursor:pointer;
-	width:350px;
+	margin-top: 3px;
+}
+
+#dav_tree span {
+	cursor: pointer;
 }
 
 
-
-#dav_browser #spliter {
-  width: 5px;
-  height: 290px;
-  float:left;
-  background-color:#999999;
-  border:1px solid #999999;
-}
-
-
-/* ---------------- grid -------------- */
-#dav_grid{
-  border:1px solid #999999;
-  width:510px;
-  height: 290px;
-  overflow:auto;
-  background-color:#fff;
-}
-
-#dav_grid table {
-	border-collapse: collapse;
-	font: menu;
-	width:100%;
-}
-
-#dav_grid tr {
-	border-left: 1px solid #000;
-	border-right: 1px solid #000;
-}
-
-#dav_grid tr.even {
-	background-color: #f0f0ff;
-}
-
-#dav_grid tr.odd {
-	background-color: #f8f8ff;
-}
-
-#dav_grid tr.hover {
-	background-color: #feb;
-	border: 2px solid #000;
-	cursor:pointer;
-}
-
-
-#dav_grid thead td {
-	background-color: #ebeadb;
+#dav_tree .tree_li_selected  {
 	font-weight: bold;
-	background-image: url(toolkit/images/Grid_header.gif);
-	background-position: 0% 100%;
-	background-repeat: repeat-x;
-	border-left: 1px solid #ccc;
-	border-right: 1px solid #ccc;
 }
 
-#dav_grid thead td.hover {
-	background-image: url(toolkit/images/Grid_header_hover.gif);
-}
-
-#dav_grid td {
-	border-bottom: 1px solid #888;
-	border-left: 1px solid #888;
-	border-right: 1px solid #888;
-}
-
-#dav_grid td.index {
-	background-color: #aaa;
-}
-
-#dav_grid tr.selected td{
-	background: #0000ff !important;
-	color:#fff;
+#dav_tree .tree_ul_selected {
+	font-weight: normal !important;
 }
 
 
-#dav_grid .header_value {
-	padding: 2px 3px;
+.dav_item {
+	background-color: #eee;
+	width: 80px;
+	height: 65px;
+	padding-top: 15px;
+	float: left;
+	text-align: center;
+	overflow: hidden; 
+	margin: 5px;
 }
 
-#dav_grid .row_value {
-	padding: 2px 3px;
+.dav_item_selected {
+	background-color: #ddf;
 }
 
-
-#dav_browser #action_buttons{
-  	width: 98%;
+#dav_splitter {
 	position: absolute;
-	bottom: 3px;
-	left: 0px;
-	height: 50px;
-	border-top: 2px outset;
-	z-index: 100;
-	text-align:right;
-	padding:5px;
-
+	left: 201px;
+	top:0px;
+	width: 5px;
+	background-color:#999;
 }
+
+#dav_right {
+	left: 207px;
+	top: 0px; 
+	width: 542px; 
+	overflow:auto;
+	position:relative; 
+	background-color: #fff;
+}
+
+#dav_right_content {
+	position: relative;
+	width: 522px;
+	height: 100%;
+}
+
+#dav_bottom {
+	text-align: right;
+	margin-top: 3px;
+	margin-right: 5px;
+}
+
+#dav_permissions {
+	border-collapse: collapse;
+}
+
+#dav_permissions td {
+	text-align: center;
+}
+
