@@ -353,12 +353,18 @@ if (not control.vl_authenticated and length(self.oid_sig))
       goto auth_failed1;
   }
 
-  control.vl_authenticated := 1;
+  whenever not found goto no_auth2;
   select U_NAME into uname from WA_USER_INFO, SYS_USERS where WAUI_U_ID = U_ID and WAUI_OPENID_URL = self.oid_identity;
+  control.vl_authenticated := 1;
   connection_set ('vspx_user', uname);
   self.sid := vspx_sid_generate ();
   self.realm := 'wa';
   insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (self.sid, self.realm, uname, now ());
+  no_auth2:;
+  if (not control.vl_authenticated)
+    {
+      self.login_attempts := coalesce(self.login_attempts, 0) + 1;
+    }
 }
 
 if (not control.vl_authenticated and length (open_id_url) and e.ve_is_post)
