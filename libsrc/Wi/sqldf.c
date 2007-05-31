@@ -3730,6 +3730,10 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   dk_set_t org_preds = NULL, post_preds = NULL;
   int mode, has_non_inv_key = 0, dt_mode;
   op_table_t * ot = dfe->_.table.ot;
+  if (DFE_TABLE != dfe->dfe_type) 
+    return 0;
+  if (ot && ot->ot_table && ot->ot_table->tb_name && 0 == stricmp (ot->ot_table->tb_name, "DB.DBA.RDF_QUAD"))
+    return 0;
   if (RHJ_NONE == remote)
     return 0;
   if (dfe->_.table.inx_op && dfe->_.table.inx_op->dio_is_join)
