@@ -160,10 +160,10 @@ select count distinct ?s ?p ?o from <g> where {?s ?p ?o}
 
 sparql define input:inference 'inft' select ?s ?p count  (?o) from <inft> from <extra> where {?s ?p ?o};
 
--- sparql define input:inference 'inft' 
--- select ?icpe ?cl from <inft> from <extra> where { ?icpe <icpe> ?v . optional { ?icpe a ?cl } };
--- echo both $if $equ $rowcnt 7 "PASSED" "***FAILED";
--- echo both ": 2 graph oj \n";
+sparql define input:inference 'inft' 
+select ?icpe ?cl from <inft> from <extra> where { ?icpe <icpe> ?v . optional { ?icpe a ?cl } };
+echo both $if $equ $rowcnt 7 "PASSED" "***FAILED";
+echo both ": 2 graph oj \n";
 
 
 ttlp (
