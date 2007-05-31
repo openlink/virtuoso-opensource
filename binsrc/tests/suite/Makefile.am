@@ -46,6 +46,7 @@ EXTRA_DIST= \
 	eml2.eml \
 	etalon_ouput_gz \
 	gtkbench.sh \
+	grddl-tests.tar.gz \
 	inprocess.sh \
 	large_db.sh \
 	lowerall.sh \
