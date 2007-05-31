@@ -29,7 +29,7 @@
     <title>File Browser</title>
   </head>
   <body style="padding: 5px;">
-    <v:page name="file_browser" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+    <v:page name="file_browser" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
       <v:template type="simple" condition="not self.vc_is_valid">
         <div class="warning">
             <v:error-summary/>

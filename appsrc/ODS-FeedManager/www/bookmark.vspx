@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="bookmark" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="bookmark" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <v:after-data-bind>
     <![CDATA[
       self.url := sprintf('<a onClick="alert(''To drag the button to your toolbar, left click the link and while holding the mouse button down, drag it to the browser toolbar and release the button.''); return false;" href="javascript:location.href=''%s/enews2/%d/channels_create.vspx?URL=''+location.href">Bookmark with ODS Feed Manager</a>', ENEWS.WA.host_url(), self.domain_id);

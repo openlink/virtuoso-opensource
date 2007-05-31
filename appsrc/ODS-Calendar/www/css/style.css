@@ -1071,7 +1071,7 @@ a.calendar_button {
   position: relative;
   background-color: #FFF;
   overflow-x: hidden;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 .CE_name

@@ -23,7 +23,7 @@
  -
 -->
 
-<v:page name="channels_create" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="channels_create" decor="template/template.vspx" style="template/template.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <v:method name="check_url" arglist="in url varchar, in url2 varchar, in type integer, in msg any">
     <![CDATA[
       declare exit handler for sqlstate '*' { goto _error; };
