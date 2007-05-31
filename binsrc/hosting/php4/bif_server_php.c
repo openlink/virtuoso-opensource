@@ -1,62 +1,120 @@
 /*
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
+ *
  *  Copyright (C) 1998-2006 OpenLink Software
- *  
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
+ *
+ *
 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-#if defined (__cplusplus) && !defined (WIN32)
-#include <strstream.h>
-#endif
-
 #define C_BEGIN()
 #define C_END()
+
 
 C_BEGIN ()
 #define uint16  unsigned short
 #define uint8   unsigned char
-#include <ksrvext.h>
-    C_END ()
+/*#include <ksrvext.h>*/
+#define hash_func_t v_hash_func_t
+#ifdef WIN32
+#define _REGEXP_H
+#define HAVE_STRTOK_R
+#endif
+#include <Dk.h>
+#include "libutil.h"
+#include "sqlnode.h"
+#include "sqlfn.h"
+#include "sqlpar.h"
+#include "security.h"
+#include "license.h"
+#include <util/fnmatch.h>
+#include <util/md5.h>
+#include "statuslog.h"
+#include "sqlcmps.h"
+#include "sqlintrp.h"
+#include "sqltype.h"
+#include "sqltype_c.h"
+#include "sqlbif.h"
+#include "sqlo.h"
+#include "sqlpfn.h"
+#include "sql3.h"
+#include "arith.h"
+#include "srvmultibyte.h"
+#undef hash_func_t
+C_END ()
+
 #undef YYDEBUG
+
 #ifdef _PHP
+
+#ifdef WIN32
+#undef strcasecmp
+#undef strncasecmp
+#undef assert
+#endif
+
+
+#include "php.h"
+#if defined (__cplusplus) && !defined (WIN32)
+#include <strstream.h>
+#endif
+
+
 #ifdef __MINGW32__
 #define storage _tempnam (NULL, NULL)
 #elif defined (WIN32)
-     typedef unsigned int uint;
-     typedef unsigned long ulong;
-     WINBASEAPI DWORD WINAPI
-	 SignalObjectAndWait (HANDLE hObjectToSignal,
-    HANDLE hObjectToWaitOn, DWORD dwMilliseconds, BOOL bAlertable);
+typedef unsigned int uint;
+typedef unsigned long ulong;
+WINBASEAPI DWORD WINAPI
+SignalObjectAndWait (HANDLE hObjectToSignal,
+HANDLE hObjectToWaitOn, DWORD dwMilliseconds, BOOL bAlertable);
 #define storage _tempnam (NULL, NULL)
 #else
 #define storage tmpnam (NULL)
 #endif
 #define MAX_FILENAME_LEN 8096
+
+/*
 #undef thread_s
 #undef semaphore_s
 #define semaphore_t semaphore_s
 #define thread_t thread_s
-#include "php.h"
+*/
+
+#if PHP_MAJOR_VERSION == 5
+#include "php_globals.h"
+#include "php_variables.h"
+#include "zend_hash.h"
+#include "zend_modules.h"
+#include "zend.h"
+#include "php_ini.h"
+#include "php_globals.h"
+#include "php_main.h"
+#include "fopen_wrappers.h"
+#include "ext/standard/php_standard.h"
+#include "zend_compile.h"
+#include "zend_execute.h"
+#include "zend_highlight.h"
+#include "zend_indent.h"
+#elif PHP_MAJOR_VERSION == 4
 #include "php_main.h"
 #include "php_ini.h"
 #include "rfc1867.h"
@@ -64,19 +122,29 @@ C_BEGIN ()
 #include "php_variables.h"
 #include "php_content_types.h"
 #include "ext/standard/info.h"
+#else
+#error Unsupported PHP version
+#endif
+
 #include "ksrvextphp.h"
-     int php_virt_module_shutdown_wrapper ()
+#define SES_WRITE(ses, s) session_buffered_write (ses, s, strlen (s))
+
+
+int
+php_virt_module_shutdown_wrapper ()
 {
   TSRMLS_FETCH ();
   php_module_shutdown (TSRMLS_C);
   return SUCCESS;
 }
 
+
 static int
 sapi_virtuoso_deactivate (TSRMLS_D)
 {
   return SUCCESS;
 }
+
 
 char *virt_env_lst[] = {
   "DOCUMENT_ROOT",
@@ -107,15 +175,14 @@ char *virt_env_lst[] = {
   "REQUEST_URI",
   "SCRIPT_NAME",
   NULL
-}
+};
 
-;
 
 /*
    "REMOTE_HOST"
    "HTTP_CONNECTION"
    "PATH_TRANSLATED"
-*/  
+*/
 
 static sapi_module_struct virtuoso_sapi_module = {
   "Virtuoso",
@@ -151,7 +218,7 @@ static sapi_module_struct virtuoso_sapi_module = {
 };
 
 
-
+#if PHP_MAJOR_VERSION == 4
 static sapi_post_entry php_app_post_entry = {
   APP_POST_CONTENT_TYPE,
   sizeof (APP_POST_CONTENT_TYPE) - 1,
@@ -159,12 +226,14 @@ static sapi_post_entry php_app_post_entry = {
   php_std_post_handler
 };
 
+
 static sapi_post_entry php_multi_post_entry = {
   MULTIPART_CONTENT_TYPE,
   sizeof (MULTIPART_CONTENT_TYPE) - 1,
   sapi_read_standard_form_data,
   rfc1867_post_handler
 };
+#endif
 
 
 int
@@ -183,6 +252,7 @@ sapi_virtuoso_ub_write (const char *str, uint str_length TSRMLS_DC)
 
   return 0;
 }
+
 
 static int
 sapi_virtuoso_activate (TSRMLS_D)
@@ -317,10 +387,9 @@ lookup_header (caddr_t * lines, char *key_int)
 static char *
 ap_lines_get (caddr_t * lines, char *key)
 {
-  thr_atrp *thra =
-      (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
+  thr_atrp *thra = (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
   caddr_t *qi = (caddr_t *) thra->qi;
-  client_connection_t *cli = qi_client (qi);
+  client_connection_t *cli = ((query_instance_t *) qi)->qi_client;
   char *script_path = (char *) thra->org_file_name;
   char *in_header = NULL;
 
@@ -386,8 +455,7 @@ ap_lines_get (caddr_t * lines, char *key)
       char user[16];
       char peer[32];
 
-      dks_client_ip (cli, remote_client_ip, user, peer,
-	  sizeof (remote_client_ip), sizeof (user), sizeof (peer));
+      dks_client_ip (cli, remote_client_ip, user, peer, sizeof (remote_client_ip), sizeof (user), sizeof (peer));
 
       return remote_client_ip;
     }
@@ -426,8 +494,7 @@ ap_lines_get (caddr_t * lines, char *key)
   if (!strncasecmp (key, "SERVER_SIGNATURE", 16))
     {
       sprintf (server_signature, "<ADDRESS>%s %s at %s Port %s</ADDRESS>",
-	  srv_st_dbms_name (), srv_st_dbms_ver (), srv_dns_host_name (),
-	  srv_http_port ());
+	  srv_st_dbms_name (), srv_st_dbms_ver (), srv_dns_host_name (), srv_http_port ());
       return server_signature;
     }
 
@@ -448,20 +515,17 @@ static char *
 php_virtuoso_getenv (char *name, size_t name_len TSRMLS_DC)
 {
 
-  thr_atrp *t1 =
-      (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
+  thr_atrp *t1 = (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
   return ap_lines_get (t1->in_lines, name);
 }
 
 
 int
-sapi_virtuoso_handle_headers (sapi_header_struct * sapi_header,
-    sapi_headers_struct * sapi_headers TSRMLS_DC)
+sapi_virtuoso_handle_headers (sapi_header_struct * sapi_header, sapi_headers_struct * sapi_headers TSRMLS_DC)
 {
 
   dk_session_t *headers;
-  thr_atrp *t1 =
-      (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
+  thr_atrp *t1 = (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
   char *header_name, *header_content, *p;
 
   header_name = sapi_header->header;
@@ -470,8 +534,7 @@ sapi_virtuoso_handle_headers (sapi_header_struct * sapi_header,
 
   if (sapi_header && sapi_header->header_len && sapi_header->header)
     {
-      session_buffered_write (headers, sapi_header->header,
-	  sapi_header->header_len);
+      session_buffered_write (headers, sapi_header->header, sapi_header->header_len);
       session_buffered_write (headers, "\r\n", 2);
     }
 
@@ -501,8 +564,7 @@ static int
 sapi_virtuoso_send_headers (sapi_headers_struct * sapi_headers TSRMLS_DC)
 {
   dk_session_t *headers;
-  thr_atrp *t1 =
-      (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
+  thr_atrp *t1 = (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
   headers = t1->s_head;
 
   if (sapi_headers && sapi_headers->http_status_line)
@@ -512,8 +574,7 @@ sapi_virtuoso_send_headers (sapi_headers_struct * sapi_headers TSRMLS_DC)
   else if (sapi_headers && sapi_headers->http_response_code)
     {
       char tmp[100];
-      sprintf (tmp, "HTTP/1.1 %d Something",
-	  sapi_headers->http_response_code);
+      sprintf (tmp, "HTTP/1.1 %d Something", sapi_headers->http_response_code);
       SES_WRITE (headers, tmp);
     }
   if (sapi_headers)
@@ -546,9 +607,7 @@ sapi_virtuoso_read_post (char *buffer, uint count_bytes TSRMLS_DC)
   else
     to = count_bytes;
 
-  res =
-      (caddr_t) dk_alloc_box (count_bytes + 1 * sizeof (char),
-      DV_LONG_STRING);
+  res = (caddr_t) dk_alloc_box (count_bytes + 1 * sizeof (char), DV_LONG_STRING);
   memset (res, 0, count_bytes + 1 * sizeof (char));
 
   strses_get_part ((dk_session_t *) t1->post, res, from, to);
@@ -566,16 +625,15 @@ sapi_virtuoso_read_post (char *buffer, uint count_bytes TSRMLS_DC)
 static char *
 sapi_virtuoso_read_cookies (TSRMLS_D)
 {
-  thr_atrp *t1 =
-      (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
+  thr_atrp *t1 = (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
   return ap_lines_get (t1->in_lines, "Cookie");
 }
+
 
 static void
 sapi_virtuoso_register_variables (zval * track_vars_array TSRMLS_DC)
 {
-  thr_atrp *t1 =
-      (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
+  thr_atrp *t1 = (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
   char *temp = ap_lines_get_line0 (t1->in_lines);
   int i = 0;
 
@@ -586,7 +644,7 @@ sapi_virtuoso_register_variables (zval * track_vars_array TSRMLS_DC)
       temp = ap_lines_get (t1->in_lines, virt_env_lst[i]);
       if (NULL != temp)
 	php_register_variable (virt_env_lst[i], temp, track_vars_array TSRMLS_CC);
-      i ++;
+      i++;
     }
 }
 
@@ -603,12 +661,11 @@ virt_get_uri (caddr_t * qi, char *base, char *uri)
 
   if (!qr)
     qr = sql_compile ("select blob_to_string("
-	"DB.DBA.XML_URI_GET (NULL, WS.WS.EXPAND_URL(?, ?)))",
-	qi_client (qi), &err, 0);
+	"DB.DBA.XML_URI_GET (NULL, WS.WS.EXPAND_URL(?, ?)))", ((query_instance_t *) qi)->qi_client, &err, 0);
 
   if (!err && qr)
     {
-      err = qr_rec_exec (qr, qi_client (qi), &lc, (query_instance_t *) qi,
+      err = qr_rec_exec (qr, ((query_instance_t *) qi)->qi_client, &lc, (query_instance_t *) qi,
 	  NULL, 2, ":0", base, QRP_STR, ":1", uri, QRP_STR);
       if (err || !lc)
 	return NULL;
@@ -631,14 +688,13 @@ virt_get_uri (caddr_t * qi, char *base, char *uri)
     }
 
   return ret;
-};
+}
 
 
 zend_op_array *
 virt_php_compile_file (zend_file_handle * file_handle, int type TSRMLS_DC)
 {
-  thr_atrp *thra =
-      (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
+  thr_atrp *thra = (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
   zend_file_handle *fh = thra->fh;
   caddr_t *qi = (caddr_t *) thra->qi;
   char *org = (char *) thra->org_file_name;
@@ -672,17 +728,14 @@ virt_php_compile_file (zend_file_handle * file_handle, int type TSRMLS_DC)
     }
 
   return php_compile_file (file_handle, type TSRMLS_CC);
-};
-
+}
 
 /* The fopen wrapper
    If there is something to do, we'll do it and then will switch to the php wrapper
  */
-static FILE *
-virt_fopen_wrapper_for_zend (const char *filename, char **opened_path)
+static FILE *virt_fopen_wrapper_for_zend(const char *filename, char **opened_path)
 {
-  thr_atrp *thra =
-      (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
+  thr_atrp *thra = (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
   zend_file_handle *fh = thra->fh;
   caddr_t *qi = (caddr_t *) thra->qi;
   char *org = (char *) thra->org_file_name;
@@ -712,12 +765,11 @@ virt_fopen_wrapper_for_zend (const char *filename, char **opened_path)
   return php_fopen_func (filename, opened_path);
 }
 
+
 /* The file destructor wrapper */
-static void
-virt_zend_file_handle_dtor (zend_file_handle * fh)
+static void virt_zend_file_handle_dtor(zend_file_handle *fh)
 {
-  thr_atrp *thra =
-      (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
+  thr_atrp *thra = (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
   char *name = (char *) thra->rm_name;
 
   if (name)
@@ -727,11 +779,14 @@ virt_zend_file_handle_dtor (zend_file_handle * fh)
     }
 
   zend_file_handle_dtor (fh);
-};
+}
 
-PHP_INI_BEGIN ()PHP_INI_END ()
-     static
-     PHP_MINIT_FUNCTION (virt)
+PHP_INI_BEGIN()
+PHP_INI_END()
+
+
+static
+PHP_MINIT_FUNCTION (virt)
 {
   REGISTER_INI_ENTRIES ();
   return SUCCESS;
@@ -742,8 +797,7 @@ PHP_MINFO_FUNCTION (virt)
 {
   int i;
   char *value;
-  thr_atrp *t1 =
-      (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
+  thr_atrp *t1 = (thr_atrp *) THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT);
 
   /* DISPLAY_INI_ENTRIES(); */
 
@@ -761,18 +815,20 @@ PHP_MINFO_FUNCTION (virt)
   php_info_print_table_end ();
 }
 
+
 zend_module_entry virt_module_entry = {
-  STANDARD_MODULE_HEADER,
-  "Virtuoso",
-  NULL,
-  PHP_MINIT (virt),
-  NULL,
-  NULL,
-  NULL,
-  PHP_MINFO (virt),
-  NO_VERSION_YET,
-  STANDARD_MODULE_PROPERTIES
+    STANDARD_MODULE_HEADER,
+    "Virtuoso",
+    NULL,
+    PHP_MINIT(virt),
+    NULL,
+    NULL,
+    NULL,
+    PHP_MINFO(virt),
+    NO_VERSION_YET,
+    STANDARD_MODULE_PROPERTIES
 };
+
 
 #ifdef WIN32
 #define VIRT_PHP_RUNTIME_NAME "DLL"
@@ -780,11 +836,11 @@ zend_module_entry virt_module_entry = {
 #define VIRT_PHP_RUNTIME_NAME "shared object"
 #endif
 
+
 static int
 php_module_startup_int (sapi_module_struct * sapi_module)
 {
-  if (php_module_startup (&virtuoso_sapi_module, &virt_module_entry,
-	  1) == FAILURE)
+  if (php_module_startup (&virtuoso_sapi_module, &virt_module_entry, 1) == FAILURE)
     {
       return FAILURE;
     }
@@ -801,37 +857,33 @@ check_php_version ()
   if (virtuoso_cfg_getstring ("PHP", "Version", &php_ini_version) == -1)
     php_ini_version = PHP_VERSION;
 
-  if (zend_get_constant ("PHP_VERSION", sizeof ("PHP_VERSION") - 1,
-	  &val TSRMLS_CC) && Z_TYPE (val) == IS_STRING)
+  if (zend_get_constant ("PHP_VERSION", sizeof ("PHP_VERSION") - 1, &val TSRMLS_CC) && Z_TYPE (val) == IS_STRING)
     {
       php_dll_version = Z_STRVAL (val);
       if (strncmp (php_dll_version, PHP_VERSION, Z_STRLEN (val)))
 /*    if (php_version_compare (PHP_VERSION, &php_dll_version) == 1) */
 	{
-	  log_info ("PHP " VIRT_PHP_RUNTIME_NAME
-	      " version %s does not match the compilation version %s; "
-	      "unpredictable behaviour may result.", php_dll_version,
-	      PHP_VERSION);
+	  log_info ("PHP " VIRT_PHP_RUNTIME_NAME " version %s does not match the compilation version %s; "
+	      "unpredictable behaviour may result.", php_dll_version, PHP_VERSION);
 	}
     }
   else
     log_info ("PHP " VIRT_PHP_RUNTIME_NAME " version unknown. "
-	"If your PHP " VIRT_PHP_RUNTIME_NAME
-	" version is not %s, unpredictable behaiviour may follow",
-	PHP_VERSION);
+	"If your PHP " VIRT_PHP_RUNTIME_NAME " version is not %s, unpredictable behaiviour may follow", PHP_VERSION);
 }
 
 
-void
-virtuoso_php_init (void)
+void virtuoso_php_init(void)
 {
   tsrm_startup (1, 1, 0, NULL);
   sapi_startup (&virtuoso_sapi_module);
   virtuoso_sapi_module.startup (&virtuoso_sapi_module);
   check_php_version ();
+#if PHP_MAJOR_VERSION == 4
   zend_startup_module (&virt_module_entry);
   sapi_register_post_entry (&php_app_post_entry);
   sapi_register_post_entry (&php_multi_post_entry);
+#endif
   php_fopen_func = zend_fopen;
   php_compile_file = zend_compile_file;
   zend_fopen = virt_fopen_wrapper_for_zend;
@@ -843,22 +895,24 @@ virtuoso_php_init (void)
 
 
 
-void
-virtuoso_php_shutdown (void)	/*  XXX FIX add to server shutdown XXX */
+void virtuoso_php_shutdown(void)  /*  XXX FIX add to server shutdown XXX */
 {
 }
 
 
-/* this function checks the type of parameters and return string session with the
-  URL encoded params, so it raises a flag to know caller
-  is the session allocated and must be freed at the end of request */
+/* 
+ * this function checks the type of parameters and return string 
+ * session with the URL encoded params, so it raises a flag to know caller
+ * is the session allocated and must be freed at the end of request 
+ */
 static void
 prepare_params (caddr_t * in, dk_session_t ** out, int *to_free)
 {
   volatile int len, br;
 
-  /* if the parameter is a string session then we do not needed to copy as
-     thus will increase memory consumption
+  /* 
+   * if the parameter is a string session then we do not needed to copy as
+   * thus will increase memory consumption
    */
   if (DV_TYPE_OF (in) == DV_STRING_SESSION)
     {
@@ -889,9 +943,9 @@ prepare_params (caddr_t * in, dk_session_t ** out, int *to_free)
     }
 }
 
+
 caddr_t
-http_handler_php (char *file, caddr_t * params, caddr_t * lines,
-    caddr_t string, caddr_t ** head_ret, query_instance_t * qi)
+http_handler_php (char *file, caddr_t * params, caddr_t * lines, caddr_t string, caddr_t ** head_ret, query_instance_t * qi)
 {
   caddr_t ret_str = NULL;
   dk_session_t *ret = NULL, *post = NULL, *r_head = NULL, *s_head = NULL;
@@ -915,11 +969,9 @@ http_handler_php (char *file, caddr_t * params, caddr_t * lines,
 	{
 	  if (IS_BOX_POINTER (params))
 	    {
-	      if (DV_ARRAY_OF_POINTER == box_tag (params)
-		  || DV_STRING_SESSION == box_tag (params))
+	      if (DV_ARRAY_OF_POINTER == box_tag (params) || DV_STRING_SESSION == box_tag (params))
 		prepare_params ((caddr_t *) params, &post, &to_free);
-	      else if (DV_LONG_STRING == box_tag (params)
-		  || DV_SHORT_STRING == box_tag (params))
+	      else if (DV_LONG_STRING == box_tag (params) || DV_SHORT_STRING == box_tag (params))
 		{
 		  to_free = 1;
 		  post = strses_allocate ();
@@ -948,9 +1000,7 @@ http_handler_php (char *file, caddr_t * params, caddr_t * lines,
   thr_atrp_php.in_lines = lines;
   thr_atrp_php.cookie = NULL;
 
-
   SET_THR_ATTR (THREAD_CURRENT_THREAD, VIRT_PRINT_OUT, &thr_atrp_php);
-
 
   if (php_module_startup_int (&virtuoso_sapi_module) == FAILURE)
     {
@@ -994,8 +1044,7 @@ http_handler_php (char *file, caddr_t * params, caddr_t * lines,
 		{
 		  memset (uri, 0, sizeof (uri));
 		  memcpy (uri, p2, pmethod - p2);
-		  SG (request_info).query_string =
-		      (char *) box_dv_short_string (uri);
+		  SG (request_info).query_string = (char *) box_dv_short_string (uri);
 		}
 	    }
 	}
@@ -1058,8 +1107,7 @@ http_handler_php (char *file, caddr_t * params, caddr_t * lines,
     }
   else
     {
-      (&CG (open_files))->dtor =
-	  (void (*)(void *)) virt_zend_file_handle_dtor;
+      (&CG (open_files))->dtor = (void (*)(void *)) virt_zend_file_handle_dtor;
     }
 
 
@@ -1074,7 +1122,6 @@ http_handler_php (char *file, caddr_t * params, caddr_t * lines,
 
   /* FREE the memory & handles */
 
-
   if (to_free)
     strses_free (post);
 
@@ -1087,9 +1134,7 @@ http_handler_php (char *file, caddr_t * params, caddr_t * lines,
 
   if (head_ret)
     {
-      *head_ret =
-	  (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t),
-	  DV_ARRAY_OF_POINTER);
+      *head_ret = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       (*head_ret)[0] = strses_string (s_head);
       (*head_ret)[1] = strses_string (r_head);
     }
@@ -1115,12 +1160,13 @@ bif_http_handler_php (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t *lines = NULL, *head_ret = NULL;
   caddr_t in_file, file, res;
   int is_alocated = 0;
+  caddr_t what = NULL;
 
   in_file = bif_arg (qst, args, 0, "http_handler_php");
 
   if (DV_TYPE_OF (in_file) == DV_BLOB_HANDLE)
     {
-      file = blob_to_string (qst, in_file);
+      file = blob_to_string (((query_instance_t *) qst)->qi_trx, in_file);
       is_alocated = 1;
     }
   else
@@ -1138,20 +1184,27 @@ bif_http_handler_php (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (BOX_ELEMENTS (args) > 3)	/* the 1-st parameter is a content of PHP page not a file  */
     {
-      caddr_t what =
-	  bif_string_or_null_arg (qst, args, 3, "http_handler_php");
-      res =
-	  http_handler_php ((what ? what : file), params, lines,
-	  (what ? file : NULL), &head_ret, (query_instance_t *) qst);
+      what = bif_string_or_null_arg (qst, args, 3, "http_handler_php");
+    }
+
+  IO_SECT (qst);
+  if (BOX_ELEMENTS (args) > 3)
+    {
+      res = http_handler_php ((what ? what : file), params, lines, (what ? file : NULL), &head_ret, (query_instance_t *) qst);
+    }
+  else
+    {
+      res = http_handler_php (file, params, lines, NULL, NULL, (query_instance_t *) qst);
+    }
+  END_IO_SECT (err_ret);
+
+  if (BOX_ELEMENTS (args) > 3)
+    {
       if (ssl_is_settable (args[3]))
 	qst_set (qst, args[3], (caddr_t) head_ret);
       else
 	dk_free_tree (head_ret);
     }
-  else
-    res =
-	http_handler_php (file, params, lines, NULL, NULL,
-	(query_instance_t *) qst);
 
   if (is_alocated)
     dk_free_box (file);
@@ -1168,6 +1221,7 @@ bif_php_str (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t *params = NULL;
   caddr_t *lines = NULL;
   caddr_t in_string = bif_string_arg (qst, args, 0, "php_str");
+  caddr_t ret = NULL;
 
   if (BOX_ELEMENTS (args) > 1)
     {
@@ -1179,11 +1233,14 @@ bif_php_str (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       lines = (caddr_t *) bif_arg (qst, args, 2, "php_str");
     }
 
+  IO_SECT (qst);
+  ret = http_handler_php (NULL, params, lines, in_string, NULL, (query_instance_t *) qst);
+  END_IO_SECT (err_ret);
   /*XXX: We will not return headers for now */
-  return http_handler_php (NULL, params, lines, in_string, NULL,
-      (query_instance_t *) qst);
+  return ret;
 }
 #endif
+
 
 void
 init_func_php (void)
@@ -1196,6 +1253,18 @@ init_func_php (void)
 #endif
 }
 
+
+char *
+phplib_version_string ()
+{
+#if PHP_MAJOR_VERSION == 5
+  return "5";
+#elif PHP_MAJOR_VERSION == 4
+  return "4";
+#endif
+}
+
+
 #ifndef ONLY_PHP
 int
 main (int argc, char *argv[])
@@ -1203,7 +1272,12 @@ main (int argc, char *argv[])
 #ifdef MALLOC_DEBUG
   dbg_malloc_enable ();
 #endif
+
+#if PHP_MAJOR_VERSION == 5
+  build_set_special_server_model ("PHP5");
+#elif PHP_MAJOR_VERSION == 4
   build_set_special_server_model ("PHP4");
+#endif
   VirtuosoServerSetInitHook (init_func_php);
   return VirtuosoServerMain (argc, argv);
 }
