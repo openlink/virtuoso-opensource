@@ -1,4 +1,4 @@
-May 30, 2007, V5.0.1:
+May 31, 2007, V5.0.1:
   * Enhanced cost based optimizer
 	- Fixed cost calculation for RDF inf nodes
 	- Added larger sample in query cost model sampling

@@ -1,3 +1,19 @@
+2007-05-31 12:28  source
+
+	* Updated version to 5.0.1 for final release
+
+2007-05-31 12:18  source
+
+	* Fixed typo
+
+2007-05-31 12:15  source
+
+	* Fixed building php4/php5 hosting
+
+2007-05-31 11:53  source
+
+	* Added missing file to distribution
+
 2007-05-31 10:33  source
 
 	* Updated version to 5.0.1-rc5
