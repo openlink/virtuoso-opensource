@@ -44,7 +44,6 @@ C_BEGIN ()
 #include "sqlfn.h"
 #include "sqlpar.h"
 #include "security.h"
-#include "license.h"
 #include <util/fnmatch.h>
 #include <util/md5.h>
 #include "statuslog.h"
@@ -869,7 +868,7 @@ check_php_version ()
     }
   else
     log_info ("PHP " VIRT_PHP_RUNTIME_NAME " version unknown. "
-	"If your PHP " VIRT_PHP_RUNTIME_NAME " version is not %s, unpredictable behaiviour may follow", PHP_VERSION);
+	"If your PHP " VIRT_PHP_RUNTIME_NAME " version is not %s, unpredictable behaviour may follow", PHP_VERSION);
 }
 
 
