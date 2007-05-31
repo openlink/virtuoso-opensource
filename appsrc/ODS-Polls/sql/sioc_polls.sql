@@ -129,7 +129,7 @@ create procedure polls_insert (
             and U_ID = WAM_USER) do
   {
       graph_iri := get_graph ();
-      c_iri := bmk_iri (WAI_NAME);
+      c_iri := polls_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
 
     -- maker
