@@ -1,3 +1,40 @@
+2007-05-31 10:33  source
+
+	* Updated version to 5.0.1-rc5
+
+2007-05-31 10:11  source
+
+	* Re-enabled test
+
+2007-05-31 10:10  source
+
+	* Fixed rdf inf cost calculation
+
+2007-05-31 08:38  source
+
+	* Added SPARQL section
+
+2007-05-31 08:31  source
+
+	* Fixed OpenID login problem when id not found
+
+2007-05-31 08:29  source
+
+	* Fixed bug in sioc attributes
+	* Fixed validation errors
+
+2007-05-30 20:29  source
+
+	* Commented out oj graph test for now
+
+2007-05-30 20:26  source
+
+	* Reverted previous patch
+
+2007-05-30 12:40  source
+
+	* Removed hash for RDF quad for now
+
 2007-05-30 11:41  source
 
 	* Updated version to 5.0.1-rc4

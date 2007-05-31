@@ -12,6 +12,7 @@ May 30, 2007, V5.0.1:
 	- Added compliance to latest SIOC vocabulary
 	- Added calendar
 	- Added OpenID login and registration
+	- Added new SIOC subclasses to allow RDF inference 
 	- Enhancements to existing applications
 	- Bug fixes
 	
