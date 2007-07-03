@@ -8,46 +8,74 @@
  *  See LICENSE file for details.
  */
 /*
-	OAT.Instant.assign(something,callback)
+	var i = new OAT.Instant(element,callback)
+	i.show()
+	i.hide()
+	
+	i.createHandle(handleID)
+	i.removeHandle(handleID)
 */
 
-OAT.Instant = {
-	element:false,
-	
-	assign:function(something,callback) {
-		/* assigned -> hide it, show when elm._Instant_show() is called */
-		var elm = $(something);
-		elm._Instant_show = function() {
-			if (!OAT.Instant.element) { /* show only when hidden */
-				OAT.Instant.element = elm;
-				OAT.Dom.show(elm);
-				OAT.Dom.attach(document,"mousedown",OAT.Instant.check);
-			}
-		}
-		elm._Instant_hide = function() {
-			OAT.Dom.hide(this);
-			OAT.Instant.element = false;
-			OAT.Dom.detach(document,"mousedown",OAT.Instant.check);
-		}
-		elm._Instant_hide();
-		elm._Instant_callback = function(){};
-		if (callback) { elm._Instant_callback = callback; }
-	},
-	
-	check:function(event) {
-		/* element shown, checking where user clicked */
-		var node = OAT.Dom.source(event);
-		/* walk up from the clicker. if we find instant element, then user clicked on it -> do nothing */
-		window.nodes = [];
-		do {
-			window.nodes.push(node);
-			if (node == OAT.Instant.element) { return; }
-			node = node.parentNode;
-		} while (node != document.body && node != document);
-		if (OAT.Instant.element) {
-			OAT.Instant.element._Instant_callback();
-			OAT.Instant.element._Instant_hide();
-		}
+OAT.Instant = function(element, optObj) {
+	var self = this;
+	this.options = {
+		showCallback:false,
+		hideCallback:false
 	}
+	
+	for (var p in optObj) { self.options[p] = optObj[p]; }
+	this.state = 1;
+	this.elm = $(element);
+	this.handles = [];
+	
+	this.hide = function() {
+		self.state = 0;
+		OAT.Dom.hide(self.elm);
+	}
+	
+	this.show = function() {
+		if (self.options.showCallback) { self.options.showCallback(); }
+		OAT.Dom.show(self.elm);
+		self.state = 1;
+	}
+	
+	this.check = function(event) {
+		/* element shown, checking where user clicked */
+		if (!self.state) { return; }
+		var node = OAT.Event.source(event);
+		if (node == self.elm || OAT.Dom.isChild(node,self.elm)) { return; } /* clicked in element -> not hiding */
+
+		if (self.options.hideCallback) { self.options.hideCallback(); }
+		self.hide();
+	}
+	
+	this.createHandle = function(elm) {
+		var e = $(elm);
+		self.handles.push(e);
+		OAT.Event.attach(e,"mousedown",function(event) {
+			if (self.handles.find(e) == -1) { return; }
+			if (!self.state) { 
+				OAT.Event.cancel(event);
+				self.show(); 
+			}
+		});
+	}
+	
+	this.removeHandle = function(elm) {
+		var e = $(elm);
+		var i = self.handles.find(e);
+		if (i != -1) { self.handles.splice(i,1); }
+		}
+	
+	self.elm._Instant_show = self.show;
+	self.elm._Instant_hide = self.hide;
+	self.hide();
+	OAT.Dom.attach(document,"mousedown",self.check);
+	
+	}
+
+OAT.Instant.assign = function(something, callback) { /* backward compatibility */
+	var obj = new OAT.Instant(something, {hideCallback:callback});
 }
+
 OAT.Loader.featureLoaded("instant");

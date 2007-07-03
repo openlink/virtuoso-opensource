@@ -56,7 +56,10 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	webclip:"webclipbinding",
 	declarative:"json",
 	tree:"ghostdrag",
-	rdfbrowser:["rdf","tree","dereference","anchor","rdftabs","tab","dav"],
+	rdfbrowser:["rdfstore","tree","anchor","rdftabs","tab","dav"],
+	rdfmini:["rdfstore","rdftabs"],
+	rdfstore:["rdf","dereference","n3"],
+	dereference:"ajax2",
 	graphsidebar:"tree",
 	form:["ajax2","dialog","datasource","formobject","crypto"],
 	rssreader:"xml"
@@ -70,7 +73,6 @@ OAT.Loader.Files = { /* only those whose names differ */
 }
 
 OAT.LoaderTMP = { /* second part of loader */
-	dimmer:false,
 	loadedLibs:[], /* libraries ready to be used */
 	loadingLibs:[], /* libraries marked for inclusion */
 	loadCallbacks:[], /* features & callbacks to be executed */
@@ -85,12 +87,6 @@ OAT.LoaderTMP = { /* second part of loader */
 			var index = OAT.Loader.loadedLibs.find(name); /* detect whether lib was already included */
 			if (index == -1) { loadList.push(name);	}
 		}
-		if (loadList.length && OAT.Dimmer && !OAT.Loader.dimmer && document.body) {
-			OAT.Loader.dimmer = 1;
-			document.body.appendChild(OAT.Loader.dimmerElm);
-			OAT.Dimmer.show(OAT.Loader.dimmerElm);
-			OAT.Dom.center(OAT.Loader.dimmerElm,1,1);
-		}
 		
 		OAT.Loader.loadCallbacks.push([loadList,callback]); /* all needed, not yet loaded, libs */
 		var cpy = [];
@@ -101,6 +97,7 @@ OAT.LoaderTMP = { /* second part of loader */
 			if (index == -1) { 
 				var fileName = name+".js";
 				if (name in OAT.Loader.Files) { fileName = OAT.Loader.Files[name]; }
+				OAT.Loader.loadingLibs.push(name);
 				OAT.Loader.include(fileName); 
 			} /* include only if not in loadingLibs list */
 		}
@@ -125,20 +122,39 @@ OAT.LoaderTMP = { /* second part of loader */
 		for (var i=0;i<OAT.Loader.loadCallbacks.length;i++) { /* check all lists for completion */
 			var list = OAT.Loader.loadCallbacks[i][0];
 			if (!list.length) { /* nothing to be loaded -> execute and mark for removal */
+				var ok = false;
+				/* check for windows - special delivery */
+				if (OAT.Loader.loadedLibs.find("window") != -1) { /* include default window */
+					var obj = {
+						1:"mswin",
+						2:"macwin",
+						3:"roundwin",
+						4:"rectwin"
+					}
+					var name = obj[OAT.WindowType()];
+					if (OAT.Loader.loadedLibs.find(name) == -1) { /* not yet loaded! */
+						var deps = OAT.Loader.makeDep(name);
+						for (var j=0;j<deps.length;j++) { /* postpone until all necessary are loaded */
+							if (OAT.Loader.loadedLibs.find(deps[j]) == -1) { list.push(deps[j]); }
+						}
+						if (OAT.Loader.loadingLibs.find(name) == -1) { /* not scheduled! */
+							OAT.Loader.loadFeatures(name,false);
+						}
+					} else { ok = true; }
+				} else { ok = true; }
+				if (ok) {
 				toExecute.push(OAT.Loader.loadCallbacks[i][1]);
 				done.push(i);
 			}
-		}
+			} /* if all prerequisities satisfied */
+		} /* for all pending callbacks */
+		
 		/* remove all executed */
 		for (var i=done.length-1;i>=0;i--) {
 			var index = done[i];
 			OAT.Loader.loadCallbacks.splice(index,1);
 		}
-		if (!OAT.Loader.loadCallbacks.length && OAT.Loader.dimmer) { 
-			OAT.Loader.dimmer = 0; 
-			if (OAT.Loader.dimmerElm == OAT.Dimmer.elm) { OAT.Dimmer.hide(); }
-		}
-		for (var i=0;i<toExecute.length;i++) { toExecute[i](); }
+		for (var i=0;i<toExecute.length;i++) { if (toExecute[i]) { toExecute[i](); } }
 	},
 	
 	startInit:function() { /* check if everything is ready */
@@ -154,16 +170,7 @@ OAT.LoaderTMP = { /* second part of loader */
 			OAT.MSG.send(OAT,OAT.MSG.OAT_LOAD,{});
 			if (typeof(window.init) == "function") { window.init(); } /* pass control to userspace */
 		}
-		if (OAT.Loader.loadedLibs.find("window") != -1) { /* include default window */
-			var obj = {
-				1:"mswin",
-				2:"macwin",
-				3:"roundwin",
-				4:"rectwin"
-			}
-			var name = obj[OAT.WindowType()];
-			OAT.Loader.loadFeatures(name,ref);
-		} else { ref(); } /* no window needed, let's wait for onload */
+		ref();
 	},
 
 	makeDep:function(features) {
@@ -185,9 +192,6 @@ OAT.LoaderTMP = { /* second part of loader */
 	},
 	
 	start:function() {
-		/* create dimmer element */
-		OAT.Loader.dimmerElm = OAT.Dom.create("div",{border:"2px solid #000",padding:"1em",position:"absolute",backgroundColor:"#fff"});
-		OAT.Loader.dimmerElm.innerHTML = "OAT Components loading...";
 		/* initial set of libraries */
 		var fl = (window.featureList ? window.featureList : []);
 		fl.push("preferences");
@@ -196,4 +200,5 @@ OAT.LoaderTMP = { /* second part of loader */
 	}
 }
 for (var p in OAT.LoaderTMP) { OAT.Loader[p] = OAT.LoaderTMP[p]; } /* mix to OAT.Loader  */
+OAT.LoaderTMP = null;
 OAT.Loader.start();

@@ -668,20 +668,12 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			if (!node.svg.parentNode) { self.svg.appendChild(node.svg); }
 			switch (node.type) {
 				case 0:
-					var oldx = node.svg.getAttribute("x")+node.radius;
-					var oldy = node.svg.getAttribute("y")+node.radius;
-					if (oldx != node.draw_x || oldy != node.draw_y) { /* if was moved */
 						node.svg.setAttribute("x",node.draw_x-node.radius);
 						node.svg.setAttribute("y",node.draw_y-node.radius);
-					}
 				break;
 				case 1:
-					var oldx = node.svg.getAttribute("cx");
-					var oldy = node.svg.getAttribute("cx");
-					if (oldx != node.draw_x || oldy != node.draw_y) { /* if was moved */
 						node.svg.setAttribute("cx",node.draw_x);
 						node.svg.setAttribute("cy",node.draw_y);
-					}
 				break;
 			} /* switch */
 		/* if not visible and still present, unlink svg element */
@@ -781,13 +773,11 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		self.computeVisibility();
 		self.svgc.suspendRedraw(0);
 		
-		var dims = OAT.Dom.getWH(self.div);
-		var w = dims[0];
-		var h = dims[1];
 		if (self.options.projection == 1) {
-			var r = Math.min(w,h) / 2 - self.options.padding;
-			self.sphereMask.setAttribute("cx",w/2);
-			self.sphereMask.setAttribute("cy",h/2);
+			var dims = OAT.Dom.getWH(self.div);
+			var r = Math.min(dims[0],dims[1]) / 2 - self.options.padding;
+			self.sphereMask.setAttribute("cx",dims[0]/2);
+			self.sphereMask.setAttribute("cy",dims[1]/2);
 			self.sphereMask.setAttribute("r",r);
 		}
 		

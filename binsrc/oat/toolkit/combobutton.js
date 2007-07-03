@@ -21,27 +21,27 @@ OAT.ComboButton = function() {
 	this.div = OAT.Dom.create("div"); /* THE element */
 	this.options = [];
 	this.optList = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px"},"combo_button"); /* list of other options; hidden most of the time */
-	this.image = OAT.Dom.create("img",{},"combo_button_image"); /* dropdown clicker */
+	this.image = OAT.Dom.create("img",{cursor:"pointer"},"combo_button_image"); /* dropdown clicker */
 	this.image.src = OAT.Preferences.imagePath+"Combobutton_select.gif";
 	this.selected = OAT.Dom.create("div",{cssFloat:"left",styleFloat:"left"}); /* currently selected option */
 	
-	OAT.Instant.assign(this.optList);
+	self.instant = new OAT.Instant(this.optList);
 	OAT.Dom.append([this.div,this.selected,this.image],[document.body,self.optList]);
 	
 	this.select = function(index,do_callback) { /* select one option, call for action */
 		if (self.selected.firstChild) { self.optList.appendChild(self.selected.firstChild); } /* remove old option, if any */
 		self.selected.appendChild(self.options[index][0]); /* append one from listbox */
-		if (self.optList.parentNode) { self.optList._Instant_hide(); } /* hide listbox */
+		if (self.optList.parentNode) { self.instant.hide(); } /* hide listbox */
 		if (do_callback) { self.options[index][1](); } /* if not selected automatically, action */
 	}
 	
-	this.open = function() { /* open listbox */
+	self.instant.options.showCallback = function() { /* open listbox */
 		var coords = OAT.Dom.position(self.div); /* calculate the place */
 		var dims = OAT.Dom.getWH(self.div); /* calculate the place */
 		self.optList.style.left = coords[0]+"px";
 		self.optList.style.top = (coords[1]+dims[1])+"px";
-		self.optList._Instant_show(); /* show listbox */
 	}
+	self.instant.createHandle(self.image); /* show listbox */
 	
 	this.addOption = function(imagePath,textValue,callback) {
 		var opt = OAT.Dom.create("div",{},"combo_button_option");
@@ -76,6 +76,5 @@ OAT.ComboButton = function() {
 		self.options.splice(index,1);
 		if (was_active && self.options.length) { self.select(0,false); } /* then select the first available */
 	}
-	OAT.Dom.attach(this.image,"click",self.open);
 }
 OAT.Loader.featureLoaded("combobutton");

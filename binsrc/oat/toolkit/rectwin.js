@@ -22,7 +22,7 @@ OAT.RectWin = function(optObj) {
 	this.options.moveHeight = 16;
 	
 	OAT.Dom.applyStyle(this.div,{border:"1px solid rgb(164,163,163)",font:"menu",backgroundColor:"#fff"});
-	OAT.Dom.applyStyle(this.content,{overflow:"auto",top:"16px",marginBottom:"30px",position:"relative"}); 
+	OAT.Dom.applyStyle(this.content,{overflow:"auto",top:"16px",position:"relative"}); 
 	OAT.Dom.applyStyle(this.move,{position:"absolute",left:"0px",top:"0px",height:this.options.moveHeight+"px"}); 
 
 	if (self.options.move) { 

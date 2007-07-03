@@ -119,6 +119,7 @@ Date.prototype.format = function(formatStr) {
 	result = result.replace(/U/,this.getTime());
 	result = result.replace(/w/,this.getDay());
 	result = result.replace(/Y/,this.getFullYear());
+	result = result.replace(/x/,this.getMilliseconds().toString().leadingZero(3));
 	return result;
 }
 
@@ -289,8 +290,10 @@ OAT.Dom = { /* DOM common object */
 		var new_y = Math.round(par_dims[1]/2 - dims[1]/2);
 		if (new_y < 0) { new_y = 30; }
 		var s = OAT.Dom.getScroll();
+		if (p == document.body || p.tagName.toLowerCase() == "html") {
 		new_x += s[0];
 		new_y += s[1];
+		}
 		if (x) { elm.style.left = new_x + "px"; }
 		if (y) { elm.style.top = new_y + "px"; }
 	},
@@ -609,12 +612,17 @@ OAT.Dom = { /* DOM common object */
 		}
 		if (ok) {
 			e.href = newHref;
-		} else {
+		} else if (e.parentNode) {
 			var oldParent = e.parentNode;
+			var next = e.nextSibling;
 			document.body.appendChild(e);
 			e.href = newHref;
 			OAT.Dom.unlink(e);
-			if (oldParent) { oldParent.appendChild(e); }
+			oldParent.insertBefore(e,next);
+		} else {
+			document.body.appendChild(e);
+			e.href = newHref;
+			OAT.Dom.unlink(e);
 		}
 	},
 	

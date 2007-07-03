@@ -16,6 +16,7 @@ OAT.RDF = {
 	toTriples:function(xmlDoc) {
 		var triples = [];
 		var root = xmlDoc.documentElement;
+		if (!root || !root.childNodes) { return triples; }
 		var bnodePrefix = "_:" + Math.round(1000*Math.random()) + "_";
 		var idPrefix = "#";
 		var bnodeCount = 0;
@@ -36,21 +37,21 @@ OAT.RDF = {
 				} else if (id2) {
 					subj = idPrefix+id2; 
 				} else {
-					subj = bnodePrefix+""+bnodeCount;
+					subj = bnodePrefix+bnodeCount;
 					bnodeCount++;
 				}
 			}
 			
 			if (OAT.Xml.localName(node) != "Description" && !isPredicateNode) { /* add 'type' where needed */
 				var pred = "type";
-				var obj = OAT.Xml.localName(node);
+				var obj = node.namespaceURI + OAT.Xml.localName(node);
 				triples.push([subj,pred,obj,0]); /* 0 - literal, 1 - reference */
 			}
 			for (var i=0;i<node.attributes.length;i++) {
 				var a = node.attributes[i];
 				var local = OAT.Xml.localName(a);
 				if (OAT.RDF.ignoredAttributes.find(local) == -1) {
-					var pred = OAT.Xml.localName(a);
+					var pred = a.namespaceURI+OAT.Xml.localName(a);
 					var obj = a.nodeValue;
 					triples.push([subj,pred,obj,1]);
 				}
@@ -58,7 +59,7 @@ OAT.RDF = {
 			for (var i=0;i<node.childNodes.length;i++) if (node.childNodes[i].nodeType == 1) {
 				var n = node.childNodes[i];
 				var nattribs = OAT.Xml.getLocalAttributes(n);
-				var pred = OAT.Xml.localName(n);
+				var pred = n.namespaceURI+OAT.Xml.localName(n);
 				if (getAtt(nattribs,"resource") != "") { /* link via id */
 					var obj = getAtt(nattribs,"resource");
 					if (obj[0] == "#") { obj = idPrefix + obj.substring(1); }

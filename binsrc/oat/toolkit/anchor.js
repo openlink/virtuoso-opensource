@@ -24,10 +24,7 @@ OAT.Anchor = {
 		if (options.content) {
 			if (typeof(options.content) == "function") { options.content = options.content(); }
 			var win = OAT.AnchorData.window;
-			win.content.style.width = "";
-			win.content.style.height = "";
-			if (options.width) { win.content.style.width = options.width + "px"; }
-			if (options.height) { win.content.style.height = options.height + "px"; }
+			win.resizeTo(options.width,options.height);
 			OAT.Dom.clear(win.content);
 			win.content.appendChild(options.content);
 		}

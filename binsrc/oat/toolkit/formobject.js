@@ -804,6 +804,7 @@ OAT.FormObject = {
 			self.map = new OAT.Map(self.elm,self.provider,self.fixObj);
 			self.map.centerAndZoom(0,0,self.zoom);
 			self.map.addTypeControl();
+			self.map.addTrafficControl();
 			self.map.addMapControl();
 
 			self.form = false;
@@ -1259,15 +1260,14 @@ OAT.FormObject = {
 			self.elm.appendChild(self.container);
 			var ds = self.datasources[0].fieldSets[0];
 			var ah = forbidHiding ? 0 : 1;
-			self.grid = new OAT.Grid(self.container,true,ah); /* autonumber & allowHiding */
-			self.grid.reorderNotifier = function(i1,i2) {
+			self.grid = new OAT.Grid(self.container,{autoNumber:true,allowHiding:ah}); /* autonumber & allowHiding */
+			self.grid.options.reorderNotifier = function(i1,i2) {
 				var fs = self.datasources[0].fieldSets[0];
 				var tmp = fs.realIndexes[i1-1];
 				var newi = (i1 < i2 ? i2-2 : i2-1);
 				fs.realIndexes.splice(i1-1,1);
 				fs.realIndexes.splice(newi,0,tmp);
 			}
-			self.grid.imagePath = OAT.Preferences.imagePath;
 			if (!self.showAll) { 
 				var data = [];
 				for (var i=0;i<ds.names.length;i++) { 
@@ -1321,7 +1321,7 @@ OAT.FormObject = {
 				}
 				value.push(row);
 			}
-			self.grid.rowOffset = currentPageIndex;
+			self.grid.options.rowOffset = currentPageIndex;
 			self.setValue(value);
 			self.pageIndex = currentPageIndex;
 		}
@@ -1701,7 +1701,7 @@ OAT.FormObject = {
 				
 				case "Tabular":
 					self.grid.clearData();
-					self.grid.rowOffset = self.rowOffset;
+					self.grid.options.rowOffset = self.rowOffset;
 					for (var i=0;i<data.length;i++) {
 						self.grid.createRow(data[i]);
 					}
@@ -1776,15 +1776,14 @@ OAT.FormObject = {
 						}
 						data.push(o); 
 					}
-					self.grid = new OAT.Grid(self.container,true);
-					self.grid.reorderNotifier = function(i1,i2) {
+					self.grid = new OAT.Grid(self.container,{autoNumber:true});
+					self.grid.options.reorderNotifier = function(i1,i2) {
 						var fs = self.datasources[0].fieldSets[0];
 						var tmp = fs.realIndexes[i1-1];
 						var newi = (i1 < i2 ? i2-2 : i2-1);
 						fs.realIndexes.splice(i1-1,1);
 						fs.realIndexes.splice(newi,0,tmp);
 					}
-					self.grid.imagePath = OAT.Preferences.imagePath;
 					self.grid.createHeader(data);
 					
 					OAT.Dom.attach(self.container,"scroll",function(event){event.cancelBubble = true;});

@@ -134,7 +134,7 @@ OAT.Dock = function(div,numColumns) {
 		blank.style.height = dims[1]+"px";
 		mover.parentNode.insertBefore(blank,mover);
 		var sf = function(){OAT.Dom.unlink(blank);}
-		var a = new OAT.AnimationSize(blank,{speed:5,delay:5,height:0,stopFunction:sf});
+		var a = new OAT.AnimationSize(blank,{speed:dims[1]/30,delay:5,height:0,stopFunction:sf});
 		OAT.MSG.attach(a.animation,OAT.MSG.ANIMATION_STOP,sf);
 		a.start();
 

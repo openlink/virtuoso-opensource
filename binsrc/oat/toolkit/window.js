@@ -113,7 +113,7 @@ OAT.WindowParent = function(obj,options) { /* abstract parent for all window imp
 	obj.div = OAT.Dom.create("div",{position:"absolute"});
 	obj.content = OAT.Dom.create("div",{overflow:"auto",position:"relative"}); 
 	obj.move = OAT.Dom.create("div");
-	
+
 	if (options.move) { 
 		OAT.Drag.create(obj.move,obj.div,{magnetsH:options.magnetsH,magnetsV:options.magnetsV});	
 	}

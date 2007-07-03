@@ -9,35 +9,57 @@
  */
 
 /*
-	var tab = new OAT.RDFTab.[name](parent, optObj);
-	document.appendChild(tab.elm);
-	tab.reset();
-	tab.redraw();
+	API FOR RDF TABS
+	----------------
 	
-	.rdf_sort .rdf_group .rdf_clear .rdf_data .rtf_tl_port .rdf_tl_slider
-*/
-OAT.RDFTabs = {};
+	1) MUST implement
+	-----------------
+		[constructor](parent, optionsObject) - parent is a reference to owner object (rdfbrowser, rdfmini)
+		.elm - DOM node
+		.description - textual
+		.redraw() - redraw contents
+		.reset(hard) - called by parent when triple store changes. when the change is initiated by applying filteres, hard == false.
+						when the change is initiated by adding/removing URL, hard == true
 
-OAT.RDFTabs.parent = function() {
+	2) CAN use
+	----------
+		parent.data = {
+			triples:[] - array of triples
+			all:{} - object
+			structured:{} - object with applied filters
+		}
+		parent.store - instance of OAT.RDFStore
+		parent.getContentType(string) - return 1=link, 2=mail, 3=image, 0=others
+		parent.getTitle(dataItem) - returns title string for data item
+		parent.getURI(dataItem) - returns URI for data item
+
+	
+	.rdf_sort .rdf_group .rdf_clear .rdf_data .rtf_tl_port .rdf_tl_slider .rdf_tagcloud
+*/
+if (!OAT.RDFTabs) { OAT.RDFTabs = {}; }
+
+OAT.RDFTabs.parent = function(obj) {
 	/* methods & properties that need to be implemented by each RDFTab */
-	this.redraw = function() {} /* redraw contents */
-	this.reset = function(hard) {} /* triples were changed - reset */
-	this.elm = OAT.Dom.create("div");
+	obj.redraw = function() {} /* redraw contents */
+	obj.reset = function(hard) {} /* triples were changed - reset */
+	obj.elm = OAT.Dom.create("div");
+	obj.description = "";
 }
 
 OAT.RDFTabs.browser = function(parent,optObj) {
 	var self = this;
+	OAT.RDFTabs.parent(self);
 		
 	this.options = {
-		pageSize:20
+		pageSize:20,
+		removeNS:false
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
 	this.initialized = false;
 	this.dataDiv = OAT.Dom.create("div",{},"rdf_data");
 	this.sortDiv = OAT.Dom.create("div",{},"rdf_sort");
-	this.descDiv = OAT.Dom.create("div");
-	this.descDiv.innerHTML = "This module is used for viewing all filtered data, structured into resource items.";
+	this.description = "This module is used for viewing all filtered data, structured into resource items.";
 	this.parent = parent;
 	this.sortTerm = false;
 	this.groupMode = false;
@@ -97,15 +119,15 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 			var pred = preds[p];
 			var ok = true;
 			
-			for (var i=0;i<self.parent.filtersProperty.length;i++) {
-				var f = self.parent.filtersProperty[i];
+			for (var i=0;i<self.parent.store.filtersProperty.length;i++) {
+				var f = self.parent.store.filtersProperty[i];
 				if (p == f[0] && f[1] != "") { ok = false; }
 			}
 			if (!ok) { continue; } /* don't draw this property */
 			
 			var d = OAT.Dom.create("div");
 			var strong = OAT.Dom.create("strong");
-			strong.innerHTML = p+": ";
+			strong.innerHTML = (self.options.removeNS ? self.parent.simplify(p) : p)+": ";
 			OAT.Dom.append([d,strong],[div,d]);
 			
 			/* decide output format */
@@ -247,7 +269,7 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 			for (var p in preds) {
 				var index1 = list.find(p);
 				var index2 = -1;
-				for (var j=0;j<self.parent.filtersProperty.length;j++) { if (self.parent.filtersProperty[j][0] == p) { index2 = p; } }
+				for (var j=0;j<self.parent.store.filtersProperty.length;j++) { if (self.parent.store.filtersProperty[j][0] == p) { index2 = p; } }
 				if (index1 == -1 && index2 == -1) { list.push(p); }
 			} /* for all predicates */
 		} /* for all data */
@@ -268,7 +290,7 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 				elm.href = "javascript:void(0);"
 				attach(elm,list[i]);
 			}
-			elm.innerHTML = list[i];
+			elm.innerHTML = self.parent.simplify(list[i]);
 			if (i) { self.sortDiv.appendChild(OAT.Dom.text(", ")); }
 			self.sortDiv.appendChild(elm);
 		}
@@ -277,19 +299,20 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 	this.redraw = function() {
 		if (!self.initialized) {
 			self.initialized = true;
-			OAT.Dom.append([self.elm,self.descDiv,self.sortDiv,self.dataDiv]);
+			OAT.Dom.append([self.elm,self.sortDiv,self.dataDiv]);
 		} 
 		self.drawSort();
 		self.drawData();
 		self.drawPager();
 	}
 }
-OAT.RDFTabs.browser.prototype = new OAT.RDFTabs.parent();
 
 OAT.RDFTabs.navigator = function(parent,optObj) {
 	var self = this;
+	OAT.RDFTabs.parent(self);
 		
 	this.options = {
+		limit:5
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
@@ -298,14 +321,42 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	this.history = [];
 	this.historyIndex = -1;
 	this.nav = {};
+	this.waiting = false;
 	this.topDiv = OAT.Dom.create("div",{},"rdf_nav");
-	this.mainDiv = OAT.Dom.create("div",{},"rdf_item");
-	this.descDiv = OAT.Dom.create("div");
-	this.descDiv.innerHTML = "This module is used for navigating through all locally cached data, one resource at a time. "+
+	this.mainDiv = OAT.Dom.create("div");
+	this.description = "This module is used for navigating through all locally cached data, one resource at a time. "+
 							"Note that filters doesn't apply here, all data is displayed.";
-	OAT.Dom.append([self.elm,self.descDiv,self.topDiv,self.mainDiv]);
+	OAT.Dom.append([self.elm,self.topDiv,self.mainDiv]);
 
-	this.attach = function(elm,item) {
+	this.gd = new OAT.GhostDrag();
+	this.dropReference = function(source) {
+		return function(target,x,y) { /* reposition two row blocks */
+			if (source == target) { return; }
+			var stop = target;
+			if (source._rows[source._rows.length-1].nextSibling == target) { stop = target._rows[target._rows.length-1].nextSibling; }
+			target.parentNode.insertBefore(source,stop);
+			for (var i=0;i<source._rows.length;i++) {
+				var row = source._rows[i];
+				target.parentNode.insertBefore(row,stop);
+			}
+		}
+	}
+	this.gdProcess = function(elm) {
+		var t = OAT.Dom.create("table",{},"rdf_nav_spotlight");
+		var tb = OAT.Dom.create("tbody");
+		OAT.Dom.append([t,tb],[tb,elm.firstChild]);
+		elm.appendChild(t);
+	}
+	
+	this.reset = function(hard) {
+		if (!hard) { return; } /* we ignore filters */
+		if (!self.waiting) {
+			self.historyIndex = -1;
+			self.history = [];
+		}
+	}
+
+	this.attach = function(elm,item) { /* attach navigation to link */
 		OAT.Dom.addClass(elm,"rdf_link");
 		OAT.Dom.attach(elm,"click",function() {
 			self.history.splice(self.historyIndex+1,self.history.length-self.history.index+1); /* clear forward history */
@@ -314,75 +365,105 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		});
 	}
 	
-	this.drawPredicate = function(name,pred) { /* draw one pred's content; return DIV */
-		var d = OAT.Dom.create("div");
-		var strong = OAT.Dom.create("strong");
-		strong.innerHTML = name+": ";
-		OAT.Dom.append([d,strong]);
-
-		/* decide output format */
-		for (var i=0;i<pred.length;i++) {
-			var value = pred[i];
-			var svalue = (typeof(value) == "object" ? value.uri : value);
-			var type = self.parent.getContentType(svalue);
-			if (type == 3) { /* image */
-				var content = OAT.Dom.create("img");
-				content.src = svalue;
-			} else { /* text */
-				var content = OAT.Dom.create("span");
-				content.innerHTML = svalue;
+	this.dattach = function(elm,uri) { /* attach dereference to link */
+		OAT.Event.attach(elm,"click",function() {
+			self.waiting = true;
+			var img = OAT.Dom.create("img");
+			img.src = self.parent.options.imagePath + "Dav_throbber.gif";
+			var start = function(xhr) {
+				elm.parentNode.insertBefore(img,elm);
+				OAT.Event.attach(img,"click",xhr.abort);
+			}
+			var end = function() {
+				OAT.Dom.unlink(img);
+			}
+			self.parent.store.addURL(uri,start,end);
+		});
 			}
 			
-			if (typeof(value) == "object") { /* link! */
-				self.attach(content,value);
+	this.getTypeObject = function() { /* object of resource types */
+		var obj = {};
+		var data = self.parent.data.all;
+		for (var i=0;i<data.length;i++) {
+			var item = data[i];
+			var t = false;
+			for (var p in item.preds) {
+				if (self.parent.simplify(p) == "type") { t = item.preds[p][0]; }
+				if (typeof(t) == "object") { t = t.uri; }
 			}
-			
-			if (i) { d.appendChild(OAT.Dom.text(", ")); }
-			d.appendChild(content);
+			if (!t) { continue; }
+			var a = (t in obj ? obj[t] : []);
+			a.push(item);
+			obj[t] = a;
 		}
-		return d;
+		return obj;
+	}
+
+	this.drawPredicate = function(value) { /* draw one pred's content; return ELM */
+		var content = false;
+		if (typeof(value) == "object") { /* resource */
+			content = OAT.Dom.create("a");
+			content.href = "#";
+			content.innerHTML = self.parent.getTitle(value);
+			self.attach(content,value); 
+		} else { /* literal */
+			var type = self.parent.getContentType(value);
+			if (type == 3) { /* image */
+				content = OAT.Dom.create("img");
+				content.src = value;
+			} else if (type == 1) { /* dereferencable link */
+				content = OAT.Dom.create("a");
+				content.href = "#";
+				content.innerHTML = value;
+				self.dattach(content,value);
+			} else { /* text */
+				content = OAT.Dom.create("span");
+				content.innerHTML = value;
+				var anchors_ = content.getElementsByTagName("a");
+				var anchors = [];
+				for (var j=0;j<anchors_.length;j++) { anchors.push(anchors_[j]); }
+				for (var j=0;j<anchors.length;j++) {
+					var anchor = anchors[j];
+					var done = false;
+					for (var k=0;k<self.parent.data.all.length;k++) {
+						var item = self.parent.data.all[k];
+						if (anchor.href == item.uri) {
+							self.attach(anchor,item);
+							done = true;
+							k = self.parent.data.all.length;
+						} 
+					} /* for all resources */
+					if (!done) { self.dattach(anchor,anchor.href); }
+					OAT.Dom.changeHref(anchor,"#");
+				} /* for all nested anchors */
+		}
+		} /* if literal */
+		return content;
 	}
 	
 	this.drawItem = function(item) { /* one item */
-		OAT.Dom.clear(self.mainDiv);
-		var h = OAT.Dom.create("h3");
-		h.innerHTML = item.uri;
-		self.mainDiv.appendChild(h);
-
-		var preds = item.preds;
-		for (var p in preds) {
-			var pred = preds[p];
-			self.mainDiv.appendChild(self.drawPredicate(p,pred));
-		} /* for all predicates */
-		
-		/* draw ancestors */
-		var h = OAT.Dom.create("h3");
-		h.innerHTML = "What links here";
-		self.mainDiv.appendChild(h);
-		for (var i=0;i<item.back.length;i++) {
-			if (i) { self.mainDiv.appendChild(OAT.Dom.text(", ")); }
-			var sitem = item.back[i];
-			var s = OAT.Dom.create("span");
-			s.innerHTML = sitem.uri;
-			self.attach(s,sitem);
-			self.mainDiv.appendChild(s);
+		var obj = {};
+		for (var p in item.preds) {
+			var simple = self.parent.simplify(p);
+			if (!(simple in obj)) { obj[simple] = []; }
+			var a = obj[simple];
+			for (var i=0;i<item.preds[p].length;i++) {
+				var value = item.preds[p][i];
+				if (a.find(value) == -1) { a.push(value);}
+			}
 		}
+		obj["What links here"] = item.back;
+		self.drawSpotlight(self.parent.getTitle(item),obj);
 	}
 
-	this.navigate = function(index) {
+	this.navigate = function(index) { /* navigate to history index */
 		var item = self.history[index];
 		self.drawItem(item);
 		self.historyIndex = index;
 		self.redrawTop();
 	}
 	
-	this.reset = function(hard) {
-		if (!hard) { return; } /* we ignore filters */
-		self.historyIndex = -1;
-		self.history = [];
-	}
-	
-	this.redrawTop = function() {
+	this.redrawTop = function() { /* navigation controls */
 		var activate = function(elm) {
 			OAT.Style.opacity(elm,1);
 			elm.style.cursor = "pointer";
@@ -414,24 +495,118 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		}
 	}
 	
+	this.drawSpotlightHeading = function(tr,label,arr) {
+		tr._rows = arr;
+		self.gd.addTarget(tr);
+		self.gd.addSource(tr,self.gdProcess,self.dropReference(tr,arr));
+		var states = ["&#x25bc;","&#x25b6;"];
+		var state = 0;
+		var arrow = OAT.Dom.create("span",{cursor:"pointer"});
+		arrow.innerHTML = states[state];
+		var td = OAT.Dom.create("td");
+		td.appendChild(arrow);
+		tr.appendChild(td);
+		var td = OAT.Dom.create("td");
+		td.colSpan = 3;
+		td.innerHTML = self.parent.simplify(label);
+		tr.appendChild(td);
+		OAT.Event.attach(arrow,"click",function() {
+			state = (state+1) % 2;
+			arrow.innerHTML = states[state];
+			for (var i=0;i<arr.length;i++) {
+				if (state) { OAT.Dom.hide(arr[i]); } else { OAT.Dom.show(arr[i]); }
+			}
+		});
+	}
+	
+	this.drawSpotlightType = function(label,data,table) {
+		var state = 0;
+		var states = [" more...","less..."];
+		var count = Math.min(data.length,self.options.limit);
+		var tr = OAT.Dom.create("tr",{},"rdf_nav_header");
+		var trset = [];
+		self.drawSpotlightHeading(tr,label,trset);
+		table.appendChild(tr);
+		var createRow = function(item) {
+			var tr = OAT.Dom.create("tr");
+			tr.appendChild(OAT.Dom.create("td"));
+			var td = OAT.Dom.create("td");
+			td.appendChild(self.drawPredicate(item));
+			tr.appendChild(td);
+			if (typeof(item) == "object") {
+				var predc = 0;
+				var propc = 0;
+				for (var p in item.preds) {
+					predc++;
+					propc += item.preds[p].length;
+				}
+				var td1 = OAT.Dom.create("td",{},"rdf_nav_desc");
+				td1.innerHTML = predc+" predicates"
+				var td2 = OAT.Dom.create("td",{},"rdf_nav_desc");
+				td2.innerHTML = propc+" property values"
+				OAT.Dom.append([tr,td1,td2]);
+			} else {
+				td.colSpan = 3;
+			}
+			return tr;
+		}
+		
+		for (var i=0;i<count;i++) {
+			var item = data[i];
+			var tr = createRow(item);
+			trset.push(tr);
+			table.appendChild(tr);
+		}
+		
+		if (count < data.length) {
+			var toggletr = OAT.Dom.create("tr",{},"rdf_nav_toggle");
+			toggletr.appendChild(OAT.Dom.create("td"));
+			trset.push(toggletr);
+			var td = OAT.Dom.create("td");
+			var toggle = OAT.Dom.create("span",{cursor:"pointer"});
+			toggle.innerHTML = (data.length - count) + states[state];
+			OAT.Dom.append([td,toggle],[toggletr,td],[table,toggletr]);
+			OAT.Event.attach(toggle,"click",function() {
+				state = (state+1) % 2;
+				toggle.innerHTML = (state ? states[state] : (data.length - count) + states[state]);
+				if (state) { /* show more */
+					for (var i=count;i<data.length;i++) {
+						var item = data[i];
+						var tr = createRow(item);
+						trset.splice(i,0,tr);
+						table.insertBefore(tr,toggletr);
+					}
+				} else { /* show less */
+					for (var i=data.length-1;i>=count;i--) {
+						OAT.Dom.unlink(trset[i]);
+						trset.splice(i,1);
+					}
+				}
+			}); /* click callback */
+		}
+	}
+
+	this.drawSpotlight = function(title,obj) { /* list of resources */
+		OAT.Dom.clear(self.mainDiv);
+		var h3 = OAT.Dom.create("h3",{clear:"both"});
+		h3.innerHTML = title;
+		var table = OAT.Dom.create("table",{},"rdf_nav_spotlight");
+		var tbody = OAT.Dom.create("tbody");
+		OAT.Dom.append([self.mainDiv,h3,table],[table,tbody]);
+		for (var p in obj) {
+			self.drawSpotlightType(p,obj[p],tbody);
+		}
+	}
+	
 	this.redraw = function() {
+		if (self.waiting) { self.waiting = false; }
 		if (self.historyIndex != -1) { 
 			self.navigate(self.historyIndex);
 			return;
 		}
 		/* give a list of items for navigation */
-		OAT.Dom.clear(self.mainDiv);
-		var h = OAT.Dom.create("h3");
-		h.innerHTML = "Please pick a starting resource";
-		self.mainDiv.appendChild(h);
-		for (var i=0;i<self.parent.data.structured.length;i++) {
-			var item = self.parent.data.structured[i];
-			var div = OAT.Dom.create("div");
-			var a = OAT.Dom.create("span");
-			a.innerHTML = item.uri;
-			self.attach(a,item);
-			OAT.Dom.append([self.mainDiv,div],[div,a]);
-		}
+		var obj = self.getTypeObject();
+		self.drawSpotlight("Pick a starting resource",obj);
 		self.redrawTop();
 	}
 
@@ -476,10 +651,10 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	}
 	self.initTop();
 }
-OAT.RDFTabs.navigator.prototype = new OAT.RDFTabs.parent();
 
 OAT.RDFTabs.triples = function(parent,optObj) {
 	var self = this;
+	OAT.RDFTabs.parent(self);
 	this.options = {
 		pageSize:100
 	}
@@ -491,9 +666,8 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 	this.currentPage = 0;
 	this.pageDiv = OAT.Dom.create("div");
 	this.gridDiv = OAT.Dom.create("div");
-	this.descDiv = OAT.Dom.create("div");
-	this.descDiv.innerHTML = "This module displays all filtered triples.";
-	OAT.Dom.append([self.elm,self.descDiv,self.pageDiv,self.gridDiv]);
+	this.description = "This module displays all filtered triples.";
+	OAT.Dom.append([self.elm,self.pageDiv,self.gridDiv]);
 	
 	this.patchAnchor = function(column) {
 		var a = OAT.Dom.create("a");
@@ -502,7 +676,7 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		self.parent.createAnchor(a,a.innerHTML);
 		var imglist = self.parent.generateImageActions(a.innerHTML);
 		OAT.Dom.clear(v);
-		OAT.Dom.append([v,a,imglist]);;
+		OAT.Dom.append([v,a,imglist]);
 	}
 	
 	this.reset = function() {
@@ -544,11 +718,11 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 	this.redraw = function() {
 		if (!self.initialized) {
 			self.initialized = true;
-			self.grid = new OAT.Grid(self.gridDiv,true,true);
+			self.grid = new OAT.Grid(self.gridDiv,{autoNumber:true,allowHiding:true});
 		}
+		self.grid.options.rowOffset = self.options.pageSize * self.currentPage;
 		self.grid.createHeader(["Subject","Predicate","Object"]);
 		self.grid.clearData();
-		self.grid.rowOffset = self.options.pageSize * self.currentPage;
 		
 		var total = 0;
 		var triples = self.parent.data.triples;
@@ -564,23 +738,20 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		self.drawPager();
 	}
 }
-OAT.RDFTabs.triples.prototype = new OAT.RDFTabs.parent();
 
 OAT.RDFTabs.svg = function(parent,optObj) {
 	var self = this;
+	OAT.RDFTabs.parent(self);
 	this.options = {
 		limit:100
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 
 	this.parent = parent;
-	this.svgDiv = OAT.Dom.create("div");
-	this.descDiv = OAT.Dom.create("div");
-	this.descDiv.innerHTML = "This module displays filtered data as SVG Graph. For performance reasons, the number of used triples is limited to "+self.options.limit+".";
-	this.svgDiv.style.position = "relative";
-	this.svgDiv.style.height = "600px";
-	this.svgDiv.style.top = "24px";
-	OAT.Dom.append([self.elm,self.descDiv,self.svgDiv]);
+	this.description = "This module displays filtered data as SVG Graph. For performance reasons, the number of used triples is limited to "+self.options.limit+".";
+	this.elm.style.position = "relative";
+	this.elm.style.height = "600px";
+	this.elm.style.top = "24px";
 	
 	this.redraw = function() {
 		/* create better triples */
@@ -598,7 +769,7 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 			triples.push(triple);
 		}
 		var x = OAT.GraphSVGData.fromTriples(triples);
-		self.graphsvg = new OAT.GraphSVG(self.svgDiv,x[0],x[1],{vertexSize:[4,8],sidebar:false});
+		self.graphsvg = new OAT.GraphSVG(self.elm,x[0],x[1],{vertexSize:[4,8],sidebar:false});
 		
 		for (var i=0;i<self.graphsvg.data.length;i++) {
 			var node = self.graphsvg.data[i];
@@ -608,31 +779,30 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 		}
 	}
 }
-OAT.RDFTabs.svg.prototype = new OAT.RDFTabs.parent();
 
 OAT.RDFTabs.map = function(parent,optObj) {
 	var self = this;
+	OAT.RDFTabs.parent(self);
 	
 	this.options = {
 		provider:OAT.MapData.TYPE_G,
 		fix:OAT.MapData.FIX_ROUND1
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
-
+	
 	this.map = false;
 	this.parent = parent;
-	this.descDiv = OAT.Dom.create("div");
-	this.descDiv.innerHTML = "This module plots all geodata found in filtered resources onto a map.";
-	this.mapDiv = OAT.Dom.create("div");
-	this.mapDiv.style.position = "relative";
-	this.mapDiv.style.height = "600px";
-	OAT.Dom.append([self.elm,self.descDiv,self.mapDiv]);
+	this.description = "This module plots all geodata found in filtered resources onto a map.";
+	this.elm.style.position = "relative";
+	this.elm.style.height = "600px";
 	
 	this.keyProperties = ["based_near","geo"]; /* containing coordinates */
 	this.locProperties = ["location"]; /* containing location */
 	this.latProperties = ["lat","latitude"];
 	this.lonProperties = ["lon","long","longitude"];
 	this.lookupProperties = ["name","location"]; /* interesting to be put into lookup pin */
+
+	this.usedBlanknodes = [];
 
 	this.geoCode = function(address,item) {
 		self.pointListLock++;
@@ -650,36 +820,54 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		var preds = item.preds;
 		var pointResource = false;
 		var locValue = false;
+		var coords = [0,0];
 		for (var p in preds) {
 			var pred = preds[p];
-			if (self.keyProperties.find(p) != -1) { pointResource = pred[0]; } /* this is resource containig geo coordinates */
-			if (self.locProperties.find(p) != -1) { locValue = pred[0]; } /* this is resource containig geo coordinates */
+			var simple = self.parent.simplify(p);
+			if (self.keyProperties.find(simple) != -1) { pointResource = pred[0]; } /* this is resource containig geo coordinates */
+			if (self.locProperties.find(simple) != -1) { locValue = pred[0]; } /* this is resource containig geo coordinates */
 		}
-		if (!pointResource && !locValue) { return false; }
+		if (!pointResource && !locValue) { return; }
 		
 		if (!pointResource) { /* geocode location */
 			self.geoCode(locValue,item);
 			return;
 		}
 		if (typeof(pointResource) != "object") { return; } /* not a reference */
+		self.usedBlanknodes.push(pointResource);
 		/* normal marker add */
 		var it = pointResource;
-				var coords = [0,0];
 		var preds = it.preds;
 		for (var p in preds) {
 			var pred = preds[p];
-			if (self.latProperties.find(p) != -1) { coords[0] = pred[0]; }
-			if (self.lonProperties.find(p) != -1) { coords[1] = pred[0]; }
+			var simple = self.parent.simplify(p);
+			if (self.latProperties.find(simple) != -1) { coords[0] = pred[0]; }
+			if (self.lonProperties.find(simple) != -1) { coords[1] = pred[0]; }
 				} /* for all geo properties */
 				if (coords[0] == 0 || coords[1] == 0) { return; }
 				self.pointList.push(coords);
 				self.attachMarker(coords,item);
 	} /* tryItem */
 	
+	this.trySimple = function(item) {
+		if (self.usedBlanknodes.find(item) != -1) { return; }
+		var preds = item.preds;
+		var coords = [0,0];
+		for (var p in preds) {
+			var pred = preds[p];
+			var simple = self.parent.simplify(p);
+			if (self.latProperties.find(simple) != -1) { coords[0] = pred[0]; } /* latitude */
+			if (self.lonProperties.find(simple) != -1) { coords[1] = pred[0]; } /* longitude */
+		}
+		if (!coords[0] && !coords[1]) { return; }
+		self.pointList.push(coords);
+		self.attachMarker(coords,item);
+	} /* trySimple */
+
 	this.attachMarker = function(coords,item) {
 		var m = false;
 		var callback = function() { /* draw item contents */
-			if (OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
+			if (OAT.AnchorData && OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
 			var div = OAT.Dom.create("div",{overflow:"auto",width:"450px",height:"250px"});
 			var s = OAT.Dom.create("div",{fontWeight:"bold"});
 			var title = self.parent.getTitle(item);
@@ -692,9 +880,10 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			var preds = item.preds;
 			for (var p in preds) {
 				var pred = preds[p];
-				if (pred.length == 1 || self.lookupProperties.find(p) != -1) {
-				var s = OAT.Dom.create("div");
-					s.innerHTML = p+": ";
+				var simple = self.parent.simplify(p);
+				if (pred.length == 1 || self.lookupProperties.find(simple) != -1) {
+					var s = OAT.Dom.create("div");
+					s.innerHTML = simple+": ";
 					var content = self.parent.getContent(pred[0],"replace");
 					OAT.Dom.append([s,content],[div,s]);
 				} /* only interesting data */
@@ -707,10 +896,11 @@ OAT.RDFTabs.map = function(parent,optObj) {
 			self.markerIndex++;
 		}
 		var file = self.markerMapping[ouri];
-		m = self.map.addMarker(1,coords[0],coords[1],file,18,41,callback);
+		m = self.map.addMarker(1,coords[0],coords[1],file,18,41,callback,callback);	
 	}
 	
 	this.redraw = function() {
+		self.usedBlanknodes = [];
 		var markerPath = OAT.Preferences.imagePath+"markers/";
 		self.markerFiles = []; 
 		for (var i=1;i<=12;i++) {
@@ -720,18 +910,23 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		self.markerIndex = 0;
 		self.markerMapping = {};
 
-		self.map = new OAT.Map(self.mapDiv,self.options.provider,{fix:self.options.fix});
+		self.map = new OAT.Map(self.elm,self.options.provider,{fix:self.options.fix});
 		self.map.centerAndZoom(0,0,0);
 		self.map.addTypeControl();
 		self.map.addMapControl();
+		self.map.addTrafficControl();
 		self.pointList = [];
 		self.pointListLock = 0;
 		for (var i=0;i<self.parent.data.structured.length;i++) {
 			var item = self.parent.data.structured[i];
-			var data = self.tryItem(item);
+			self.tryItem(item);
+		}
+		for (var i=0;i<self.parent.data.structured.length;i++) {
+			var item = self.parent.data.structured[i];
+			self.trySimple(item);
 		}
 		
-		OAT.Resize.createDefault(self.mapDiv);
+		OAT.Resize.createDefault(self.elm);
 
 		function tryList() {
 			if (!self.pointListLock) { 
@@ -744,10 +939,10 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		tryList();
 	}
 }
-OAT.RDFTabs.map.prototype = new OAT.RDFTabs.parent();
 
 OAT.RDFTabs.timeline = function(parent,optObj) {
 	var self = this;
+	OAT.RDFTabs.parent(self);
 	
 	this.options = {
 		imagePath:OAT.Preferences.imagePath
@@ -756,26 +951,22 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 
 	this.initialized = false;
 	this.parent = parent;
-	this.tlDiv = OAT.Dom.create("div");
-	this.descDiv = OAT.Dom.create("div");
-	this.descDiv.innerHTML = "This module displays all date/time containing resources on an interactive time line.";
-	this.tlDiv.style.position = "relative";
-	this.tlDiv.style.width = "100%";
-	this.tlDiv.style.margin = "1em";
-	this.tlDiv.style.top = "20px";
-	OAT.Dom.append([self.elm,self.descDiv,self.tlDiv]);
+	this.description = "This module displays all date/time containing resources on an interactive time line.";
+	this.elm.style.position = "relative";
+	this.elm.style.margin = "1em";
+	this.elm.style.top = "20px";
 	
-	this.bothProperties = ["date"]; /* containing coordinates */
+	this.bothProperties = ["date","created"]; /* containing coordinates */
 	this.startProperties = ["dtstart"]; /* containing location */
 	this.endProperties = ["dtend"];
 	this.subProperties = ["dateTime"];
-	
 	
 	this.tryDeepItem = function(value) {
 		if (typeof(value) != "object") { return value; }
 		for (var p in value.preds) {
 			var pred = value.preds[p];
-			if (self.subProperties.find(p) != -1) { return pred[0]; }
+			var simple = self.parent.simplify(p);
+			if (self.subProperties.find(simple) != -1) { return pred[0]; }
 		}
 		return false;
 	}
@@ -786,16 +977,17 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 		var end = false;
 		for (var p in preds) {
 			var pred = preds[p];
-			if (self.bothProperties.find(p) != -1) {
+			var simple = self.parent.simplify(p);
+			if (self.bothProperties.find(simple) != -1) {
 				var value = pred[0];
 				start = self.tryDeepItem(value);
 				end = self.tryDeepItem(value);
 			}
-			if (self.startProperties.find(p) != -1) {
+			if (self.startProperties.find(simple) != -1) {
 				var value = pred[0];
 				start = self.tryDeepItem(value);
 			}
-			if (self.endProperties.find(p) != -1) {
+			if (self.endProperties.find(simple) != -1) {
 				var value = pred[0];
 				end = self.tryDeepItem(value);
 			}
@@ -806,7 +998,7 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 	
 	this.redraw = function() {
 		if (!self.initialized) {
-			self.tl = new OAT.Timeline(self.tlDiv,self.options);
+			self.tl = new OAT.Timeline(self.elm,self.options);
 			self.initialized = true;
 		}	
 		var uris = [];
@@ -843,48 +1035,186 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 		self.tl.slider.slideTo(0,1);
 	}
 }
-OAT.RDFTabs.timeline.prototype = new OAT.RDFTabs.parent();
-
 
 OAT.RDFTabs.images = function(parent,optObj) {
 	var self = this;
+	OAT.RDFTabs.parent(self);
+
 	this.options = {
+		columns:4,
+		thumbSize:150,
+		size:600
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 
+	this.elm.style.textAlign = "center";
 	this.parent = parent;
 	this.initialized = false;
-	this.imgDiv = OAT.Dom.create("div");
-	this.descDiv = OAT.Dom.create("div");
-	this.descDiv.innerHTML = "This module displays all images found in filtered data set.";
-	OAT.Dom.append([self.elm,self.descDiv,self.imgDiv]);
-	
-	this.drawOne = function(uri,item) {
-		var img = OAT.Dom.create("img",{},"rdf_image")
-		img.src = uri;
-		img.title = self.parent.getTitle(item);
-		self.imgDiv.appendChild(img);
-		self.parent.createAnchor(img,uri);
+	this.cache = {};
+	this.images = [];
+	this.container = false;
+	this.description = "This module displays all images found in filtered data set.";
+	this.dimmer = false;
+
+	this.showBig = function(index) {
+		if (!self.dimmer) {
+			self.dimmer = OAT.Dom.create("div",{position:"absolute",padding:"1em",backgroundColor:"#fff",border:"4px solid #000",textAlign:"center"});
+			OAT.Dimmer.show(self.dimmer);
+			self.container = OAT.Dom.create("div",{margin:"auto"});
+			self.prev = OAT.Dom.create("span",{fontWeight:"bold",cursor:"pointer"});
+			self.next = OAT.Dom.create("span",{fontWeight:"bold",cursor:"pointer"});
+			var middle = OAT.Dom.create("span");
+			middle.innerHTML = "&nbsp;&nbsp;&nbsp;";
+			self.prev.innerHTML = "&lt;&lt;&lt; ";
+			self.next.innerHTML = " &gt;&gt;&gt;";
+			self.close = OAT.Dom.create("div",{position:"absolute",top:"0px",right:"0px",backgroundColor:"#fff",padding:"3px",cursor:"pointer",fontWeight:"bold"});
+			self.close.innerHTML = "X";
+			OAT.Dom.append([self.dimmer,self.close,self.container,self.prev,middle,self.next]);
+			
+			var closeRef = function() {
+				OAT.Dimmer.hide();
+				self.dimmer = false;
+			}
+			OAT.Dom.attach(self.close,"click",closeRef);
+			OAT.Dom.attach(self.prev,"click",function(){ self.showBig(self.index-1); });
+			OAT.Dom.attach(self.next,"click",function(){ self.showBig(self.index+1); });
+		}
+		self.index = index;
+		var img = OAT.Dom.create("img",{border:"2px solid #000"});
+		OAT.Dom.clear(self.container);
+		OAT.Dom.attach(img,"load",function() {
+			var port = OAT.Dom.getViewport();
+			var dim = Math.max(img.width,img.height);
+			var limit = Math.min(self.options.size,port[0]-20,port[1]-20);
+			if (dim > limit) { 
+				var coef = limit/dim;
+				var neww = img.width * coef;
+				var newh = img.height * coef;
+				img.width = neww;
+				img.height = newh;
+			}
+			self.container.appendChild(img);
+			OAT.Dom.center(self.dimmer,1,1);
+		});
+		img.src = self.images[index][0];
+		self.fixNav();
 	}
 	
-	this.redraw = function() {
-		OAT.Dom.clear(self.imgDiv);
+	this.fixNav = function() { /* visibility of navigation */
+		self.prev.style.display = (self.index ? "inline" : "none");
+		self.next.style.display = (self.index+1 < self.images.length ? "inline" : "none");
+	}
+	
+	this.drawThumb = function(index,td) {
+		var size = self.options.thumbSize;
+		var uri = self.images[index][0];
+		var item = self.images[index][1];
+		var img = OAT.Dom.create("img",{},"rdf_image")
+		td.appendChild(img);
+		OAT.Dom.attach(img,"load",function() {
+			var max = Math.max(img.width,img.height);
+			if (max <= size) { return; }
+			var coef = size / max;
+			var neww = img.width * coef;
+			var newh = img.height * coef;
+			img.width = neww;
+			img.height = newh;
+		});
+		img.src = uri;
+		img.title = self.parent.getTitle(item);
+		// self.parent.createAnchor(img,uri);
+		OAT.Dom.attach(img,"click",function() { self.showBig(index); });
+	}
+	
+	this.addUriItem = function(uri,item) {
+		if (uri in self.cache) { return; }
+		self.cache[uri] = true;
+		self.images.push([uri,item]);
+	}
+	
+	this.getImages = function() {
+		self.images = [];
 		var data = self.parent.data.structured;
 		for (var i=0;i<data.length;i++) {
 			var item = data[i];
 			var preds = item.preds;
-			if (self.parent.getContentType(item.uri) == 3) { self.drawOne(item.uri,item); }
+			if (self.parent.getContentType(item.uri) == 3) { self.addUriItem(item.uri,item); }
 			for (var p in preds) {
 				var pred = preds[p];
 				for (var j=0;j<pred.length;j++) {
 					var value = pred[j];
 					if (typeof(value) == "object") { continue; }
-					if (self.parent.getContentType(value) == 3) { self.drawOne(value,item); }
+					if (self.parent.getContentType(value) == 3) { 
+						self.addUriItem(value,item); 
+					} else {
+						var all = value.match(/http:[^'"]+\.(jpg|png|gif)/g);
+						if (all) for (var k=0;k<all.length;k++) { self.addUriItem(all[k],item); } /* for all embedded images */
+					} /* if not image */
 				} /* for all values */
 			} /* for all predicates */
 		} /* for all items */
+	}
+	
+	this.redraw = function() {
+		var cnt = self.options.columns;
+		self.cache = {};
+		OAT.Dom.clear(self.elm);
+		self.getImages();
+		var imgs = self.images;
+		var table = OAT.Dom.create("table",{margin:"auto"});
+		var tbody = OAT.Dom.create("tbody");
+		var tr = OAT.Dom.create("tr");
+		OAT.Dom.append([self.elm,table],[table,tbody],[tbody,tr]);
+		for (var i=0;i<imgs.length;i++) {
+			var td = OAT.Dom.create("td",{textAlign:"center"});
+			tr.appendChild(td);
+			if (i % cnt == cnt-1) {
+				tr = OAT.Dom.create("tr");
+				tbody.appendChild(tr);
+			}
+			self.drawThumb(i,td);
+		}
 	} /* redraw */
 }
-OAT.RDFTabs.images.prototype = new OAT.RDFTabs.parent();
+
+OAT.RDFTabs.tagcloud = function(parent,optObj) {
+	var self = this;
+	OAT.RDFTabs.parent(self);
+
+	this.options = {
+	}
+	for (var p in optObj) { self.options[p] = optObj[p]; }
+	
+	this.parent = parent;
+	this.initialized = false;
+	this.elm.className = "rdf_tagcloud";
+	this.description = "This module displays all links found in filtered data set.";
+	self.tc = new OAT.TagCloud(self.elm,optObj);
+	
+	this.redraw = function() {
+		self.tc.clearItems();
+
+		var data = self.parent.data.structured;
+		for (var i=0;i<data.length;i++) {
+			var item = data[i];
+			var preds = item.preds;
+			var ok = false;
+			for (var p in preds) {
+				var pred = preds[p];
+				for (var j=0;j<pred.length;j++) {
+					var value = pred[j];
+					if (typeof(value) != "object" && self.parent.simplify(value) == "Concept") { ok = true; }
+				} /* for all values */
+			} /* for all predicates */
+			if (ok) { self.tc.addItem(self.parent.getTitle(item),item.uri); }
+		} /* for all items */
+		self.tc.draw();
+		var links = self.elm.getElementsByTagName("a");
+		for (var i=0;i<links.length;i++) {
+			var link = links[i];
+			self.parent.createAnchor(link,link.href);
+		}
+	} /* redraw */
+}
 
 OAT.Loader.featureLoaded("rdftabs");

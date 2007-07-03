@@ -32,7 +32,7 @@ OAT.Combolist = function(optList,value,optObj) {
 	this.div = OAT.Dom.create("div",{},"combo_list");
 	this.onchange = function() {};
 	
-	this.img = OAT.Dom.create("img");
+	this.img = OAT.Dom.create("img",{cursor:"pointer"});
 	this.img.src = self.options.imagePath + "Combolist_select.gif";
 	this.input = OAT.Dom.create("input",{},"combo_list_input");
 	this.input.type = "text";
@@ -40,8 +40,11 @@ OAT.Combolist = function(optList,value,optObj) {
 	this.input.value = value;
 	
 	this.list = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",zIndex:200},"combo_list_list");
-	OAT.Dom.attach(this.input,"keyup",function(){self.value = self.input.value; self.onchange(self.value);});
-	OAT.Instant.assign(this.list);
+	OAT.Dom.attach(this.input,"keyup",function(){
+		self.value = self.input.value; 
+		self.onchange(self.value);
+	});
+	self.instant = new OAT.Instant(self.list);
 	
 	this.clearOpts = function() {
 		OAT.Dom.clear(self.list);
@@ -63,7 +66,7 @@ OAT.Combolist = function(optList,value,optObj) {
 			self.value = option.value;
 			self.input.value = option.value;
 			self.onchange(self.value);
-			self.list._Instant_hide();
+			self.instant.hide();
 		}
 		OAT.Dom.attach(option,"click",ref);
 	}
@@ -74,13 +77,12 @@ OAT.Combolist = function(optList,value,optObj) {
 	
 	OAT.Dom.append([self.div,self.input,self.img],[document.body,self.list]);
 	
-	var showRef = function(event) {
+	self.instant.options.showCallback = function() {
 		var coords = OAT.Dom.position(self.input);
 		var dims = OAT.Dom.getWH(self.input);
 		self.list.style.left = coords[0] +"px";
 		self.list.style.top = (coords[1]+dims[1])+"px";
-		self.list._Instant_show();
 	}
-	OAT.Dom.attach(this.img,"click",showRef);
+	self.instant.createHandle(self.img);
 }
 OAT.Loader.featureLoaded("combolist");

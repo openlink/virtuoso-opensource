@@ -49,7 +49,7 @@ OAT.TimelineEvent = function(bandIndex,startTime,endTime,content,color,options) 
 	var self = this;
 	this.bandIndex = bandIndex;
 	this.line = 0;
-	this.elm = OAT.Dom.create("div",{position:"absolute",cursor:"pointer",zIndex:3});
+	this.elm = OAT.Dom.create("div",{position:"absolute",height:options.lineHeight+"px",cursor:"pointer",zIndex:3});
 	this.startTime = startTime;
 	this.endTime = endTime;
 	var t = (options.timeTitleOverride ? options.timeTitleOverride(startTime) : startTime.toHumanString());
@@ -133,8 +133,14 @@ OAT.Timeline = function(contentElm,paramsObj) {
 	this.fixDate = function(str) {
 		if (str instanceof Date) { return str; }
 		var r=false;
+		function dt() { 
+			var result = new Date();
+			result.setMonth(0);
+			result.setDate(1);
+			return result;
+		}
 		if ((r = str.match(/(....)-(..)-(..) (..):(..):(..)/))) {
-			var d = new Date();
+			var d = dt();
 			d.setFullYear(r[1]);
 			d.setMonth(parseInt(r[2])-1);
 			d.setDate(r[3]);
@@ -145,7 +151,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 			return d;
 		}
 		if ((r = str.match(/(....)-(..)-(..)T(..):(..):(..)/))) {
-			var d = new Date();
+			var d = dt();
 			d.setFullYear(r[1]);
 			d.setMonth(parseInt(r[2])-1);
 			d.setDate(r[3]);
@@ -156,7 +162,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 			return d;
 		}
 		if ((r = str.match(/(....)-(..)-(..)T(..):(..)/))) {
-			var d = new Date();
+			var d = dt();
 			d.setFullYear(r[1]);
 			d.setMonth(parseInt(r[2])-1);
 			d.setDate(r[3]);
@@ -167,7 +173,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 			return d;
 		}
 		if ((r = str.match(/(.{1,2})\.(.{1,2})\.(....)/))) {
-			var d = new Date();
+			var d = dt();
 			d.setFullYear(r[3]);
 			d.setMonth(parseInt(r[2])-1);
 			d.setDate(r[1]);
@@ -178,7 +184,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 			return d;
 		}
 		if ((r = str.match(/(.{4})-(.{2})-(.{2})/))) {
-			var d = new Date();
+			var d = dt();
 			d.setFullYear(r[1]);
 			d.setMonth(parseInt(r[2])-1);
 			d.setDate(r[3]);
@@ -189,7 +195,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 			return d;
 		}
 		if ((r = str.match(/^(.{4}):(.{2}):(.{2})$/))) {
-			var d = new Date();
+			var d = dt();
 			d.setFullYear(r[1]);
 			d.setMonth(parseFloat(r[2])-1);
 			d.setDate(r[3]);
@@ -278,7 +284,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		var index = 1;
 		while (index < self.events.length-1 && self.events[index].startTime.getTime() == first.startTime.getTime()) { index++; }
 		if (index == self.events.length) { index--; } /* if all events at the same time */
-		var scale = OAT.TlScale.findScale(first.startTime,self.events[index].startTime,self.options.timeStepOverride);
+		var scale = OAT.TlScale.findScale(first.startTime,self.events[index].startTime,false,self.options.timeStepOverride);
 		var line = scale.initBefore(self.events[0].startTime);
 		self.dateLabels.push(line);
 		line.style.left = self.width + "px";

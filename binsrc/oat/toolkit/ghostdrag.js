@@ -70,7 +70,7 @@ OAT.GhostDragData = {
 			/* create the duplicate */
 			document.body.appendChild(elm);
 			elm.style.zIndex = 2000;
-			obj.process(elm);
+			if (obj.process) { obj.process(elm); }
 			obj.pending = 0;
 		}
 		/*

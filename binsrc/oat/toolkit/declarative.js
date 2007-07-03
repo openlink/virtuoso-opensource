@@ -108,7 +108,7 @@ OAT.Declarative = {
 					OAT.Validation.create(o.elm,o.params.type, o.params);
 				break;
 				case "grid":
-					var g = new OAT.Grid(o.elm,o.params.autonumber,o.params.allowhiding);
+					var g = new OAT.Grid(o.elm,{autoNumber:o.params.autonumber,allowHiding:o.params.allowhiding});
 					g.fromTable(o.params.table);
 					addObject("grid",g);
 				break;

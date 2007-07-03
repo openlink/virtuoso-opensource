@@ -21,8 +21,12 @@
 	CSS: .toolbar .toolbar_icon .toolbar_icon_down .toolbar_separator
 */
 
-OAT.Toolbar = function(div) {
+OAT.Toolbar = function(div,optObj) {
 	var self = this;
+	this.options = {
+		labels:false
+	}
+	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
 	this.div = $(div);
 	OAT.Dom.addClass(this.div,"toolbar");
@@ -30,18 +34,20 @@ OAT.Toolbar = function(div) {
 	this.separators = [];
 	
 	this.addIcon = function(twoStates,imagePath,tooltip,callback) {
-		var div = OAT.Dom.create("div");
-		div.className = "toolbar_icon";
+		var div = OAT.Dom.create("div",{},"toolbar_icon");
 		div.title = tooltip;
 		div.state = 0;
 		
 		var img = OAT.Dom.create("img");
-		img.setAttribute("src",imagePath);
-		div.appendChild(img);
+		img.src = imagePath;
 		
 		div.toggleState = function(newState) {
 			div.state = newState;
-			div.className = (div.state ? "toolbar_icon toolbar_icon_down" : "toolbar_icon");
+			if (div.state) { 
+				OAT.Dom.addClass(div,"toolbar_icon_down"); 
+			} else {
+				OAT.Dom.removeClass(div,"toolbar_icon_down"); 
+			}
 			callback(div.state);
 		}
 		
@@ -53,14 +59,18 @@ OAT.Toolbar = function(div) {
 		}
 		
 		OAT.Dom.attach(div,"click",div.toggle);
-		self.div.appendChild(div);
+		OAT.Dom.append([div,img],[self.div,div]);
+		
+		if (self.options.labels) {
+			div.appendChild(OAT.Dom.text(tooltip));
+		}
+		
 		self.icons.push(div);
 		return div;
 	}
 	
 	this.addSeparator = function() {
-		var div = OAT.Dom.create("div");
-		div.className = "toolbar_separator";
+		var div = OAT.Dom.create("div",{},"toolbar_separator");
 		self.div.appendChild(div);
 		self.separators.push(div);
 		return div;

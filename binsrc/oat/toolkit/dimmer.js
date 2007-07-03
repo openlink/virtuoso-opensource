@@ -33,7 +33,8 @@ OAT.Dimmer = {
 		var options = {
 			color:"#000",
 			opacity:0.5,
-			popup:false
+			popup:false,
+			delay:10
 		}
 		for (var p in optObj) { options[p] = optObj[p]; }
 		var elm = $(something);
@@ -48,11 +49,18 @@ OAT.Dimmer = {
 		} 
 
 		OAT.Dimmer.root.style.backgroundColor = options.color;
-		OAT.Style.opacity(OAT.Dimmer.root,options.opacity);
+		OAT.Style.opacity(OAT.Dimmer.root,0);
 		document.body.appendChild(OAT.Dimmer.root);
 		document.body.appendChild(elm);
 		OAT.Dom.show(elm);
 		if (options.popup) { OAT.Dom.attach(OAT.Dimmer.root,"click",OAT.Dimmer.hide); }
+		
+		if (options.delay && OAT.Loader.loadedLibs.find("animation") != -1) {
+			var a = new OAT.AnimationOpacity(OAT.Dimmer.root,{opacity:options.opacity,delay:options.delay,speed:0.1});
+			a.start();
+		} else { 
+			OAT.Style.opacity(OAT.Dimmer.root,options.opacity);
+		}
 	},
 	
 	hide:function() {

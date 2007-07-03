@@ -9,16 +9,19 @@
  */
 /*
 	Abstract API atop various mapping engines
-	var m = new OAT.Map(something, provider, optionsObject)
+	
+	var m = new OAT.Map(something, provider, optionsObject, specificOptions)
 	m.addTypeControl()
 	m.addMapControl()
+	m.addTrafficControl()
 	m.setMapType(type)
 	m.centerAndZoom(lat,lon,zoom)
 	m.setZoom(zoom)
 	m.getZoom()
-	m.addMarker(group,lat,lon,file,w,h,callback)
+	
+	marker = m.addMarker(group,lat,lon,file,w,h,callback)
 	m.removeMarker(marker)
-	m.removeMarkers()
+	m.removeMarkers(group)
 	m.openWindow(marker,something)
 	m.closeWindow()
 	m.optimalPosition(pointArr)
@@ -40,7 +43,7 @@ OAT.MapData = {
 	FIX_STACK:3
 }
 
-OAT.Map = function(something, provider, optionsObject) {
+OAT.Map = function(something, provider, optionsObject, specificOptions) {
 	var self = this;
 	this.options = {
 		fix:OAT.MapData.FIX_NONE,
@@ -57,11 +60,11 @@ OAT.Map = function(something, provider, optionsObject) {
 	
 	switch (self.provider) { /* create main object */
 		case OAT.MapData.TYPE_G: 
-			self.obj = new GMap2(self.elm); 
+			self.obj = new GMap2(self.elm,specificOptions); 
 			self.geoCoder = new GClientGeocoder();
 		break;
 		case OAT.MapData.TYPE_Y: 
-			self.obj = new YMap(self.elm); 
+			self.obj = new YMap(self.elm,specificOptions); 
 			self.geoCodeBuffer = [];
 			YEvent.Capture(self.obj,EventsList.onEndGeoCode,function(result){
 				var index = -1;
@@ -78,7 +81,7 @@ OAT.Map = function(something, provider, optionsObject) {
 		break;
 		case OAT.MapData.TYPE_MS: 
 			self.elm.id = 'our_mapping_element';
-			self.obj = new VEMap('our_mapping_element');
+			self.obj = new VEMap('our_mapping_element',specificOptions);
 			try {
 				self.obj.LoadMap();
 			} 
@@ -86,7 +89,7 @@ OAT.Map = function(something, provider, optionsObject) {
 			self.layerObj = new OAT.Layers(100);
 		break;
 		case OAT.MapData.TYPE_OL: 
-		    self.obj = new OpenLayers.Map(self.elm);
+		    self.obj = new OpenLayers.Map(self.elm,specificOptions);
 		    var wms = new OpenLayers.Layer.WMS( "OpenLayers WMS", 
 		        "http://labs.metacarta.com/wms/vmap0?", {layers: 'basic'} );
 		    self.obj.addLayer(wms);
@@ -120,7 +123,7 @@ OAT.Map = function(something, provider, optionsObject) {
 		}
 	}
 	
-	/* --- methods --- */
+	/* --- map methods --- */
 	
 	this.geoCode = function(addr,callback) {
 		
@@ -278,6 +281,23 @@ OAT.Map = function(something, provider, optionsObject) {
 		}	
 	}
 
+	this.addTrafficControl = function() {
+		var trafficState = 0;
+		switch (self.provider) {
+			case OAT.MapData.TYPE_G: 
+				if (!window.GTrafficOverlay) { return; }
+				var ovr = new GTrafficOverlay(); 
+				var btn = OAT.Dom.button("Toggle traffic");
+				OAT.Style.apply(btn,{position:"absolute",top:"27px",right:"7px"});
+				OAT.Dom.attach(btn,"click",function() {
+					trafficState = (trafficState + 1) % 2;
+					if (trafficState) { self.obj.addOverlay(ovr); } else { self.obj.removeOverlay(ovr); }
+				});
+				self.elm.appendChild(btn);
+			break;
+		}	
+	}
+
 	this.setMapType = function(type) {
 		switch (self.provider) {
 			case OAT.MapData.TYPE_G: 
@@ -332,98 +352,6 @@ OAT.Map = function(something, provider, optionsObject) {
 			case OAT.MapData.TYPE_OL: return self.obj.getZoom(); break;
 		}
 		return false;
-	}
-	
-	this.addMarker = function(group,lat,lon,file,w,h,clickCallback) {
-		switch (self.provider) {
-			case OAT.MapData.TYPE_G: 
-				var icon = new GIcon(G_DEFAULT_ICON,file);
-				if (w && h) { icon.iconSize = new GSize(w,h); }
-				icon.shadow = "";
-				var marker = new GMarker(new GLatLng(lat,lon),icon);
-				self.obj.addOverlay(marker);
-				if (clickCallback) { GEvent.addListener(marker,'click',function(event){clickCallback(marker,event);}); }
-			break;
-			case OAT.MapData.TYPE_Y: 
-				var icon = false;
-				if (w && h) { var icon = new YImage(file,new YSize(w,h)); }
-				var marker = new YMarker(new YGeoPoint(lat,lon),icon);
-				self.obj.addOverlay(marker);
-				if (clickCallback) { YEvent.Capture(marker,EventsList.MouseClick,function(event){clickCallback(marker,event);}); }
-			break;
-			case OAT.MapData.TYPE_MS:
-				self.id++;
-				var id = "pin_"+self.id;
-				var f = (file ? file : null);
-				var marker = new VEPushpin(id,new VELatLong(lat,lon),f,null,null);
-				VEPushpin.ShowDetailOnMouseOver = false;
-				self.obj.AddPushpin(marker);
-				marker.__id = id;
-				marker.closeInfoWindow = function() { if (marker.__win) {
-						OAT.Dom.unlink(marker.__win.div); 
-						marker.__win = false;
-					}
-				}
-				self.layerObj.addLayer(id,"mouseover");
-				if (clickCallback) { OAT.Dom.attach($(id).firstChild,"click",function(event){clickCallback(marker,event);}); }
-			break;
-			case OAT.MapData.TYPE_OL: 
-				var icon = false;
-				if (w && h) { icon = new OpenLayers.Icon(file,new OpenLayers.Size(w,h)); }
-			    var marker = new OpenLayers.Marker( new OpenLayers.LonLat(lon,lat),icon);
-			    self.markersLayer.addMarker(marker);
-				marker.closeInfoWindow = function() { if (marker.__win) {
-						OAT.Dom.unlink(marker.__win.div); 
-						marker.__win = false;
-					}
-				}
-				self.layerObj.addLayer(marker.icon.imageDiv,"mouseover");
-				if (clickCallback) {
-					marker.icon.imageDiv.style.cursor = "pointer";
-					OAT.Dom.attach(marker.icon.imageDiv,"click",function(event){if (!marker.__win){clickCallback(marker,event);}}); 
-				}
-			break;
-		}	
-
-		marker.__coords = [lat,lon];
-		marker.__group = group;
-		self.markerArr.push(marker);
-//		self.fixMarkers();
-		return marker;
-	}
-	
-	this.removeMarker = function(marker) {
-		var index = self.markerArr.find(marker);
-		self.markerArr.splice(index,1);
-		switch (self.provider) {
-			case OAT.MapData.TYPE_G: 
-				self.obj.removeOverlay(marker);
-				self.obj.closeInfoWindow(); 
-			break;
-			case OAT.MapData.TYPE_Y:
-				self.obj.removeOverlay(marker);
-				marker.closeSmartWindow(); 
-			break;
-			case OAT.MapData.TYPE_MS: 
-				marker.closeInfoWindow();
-				self.layerObj.removeLayer(marker.__id);
-				self.obj.DeletePushpin(marker.__id);
-			break;
-			case OAT.MapData.TYPE_OL: 
-				marker.closeInfoWindow();
-				self.layerObj.removeLayer(marker);
-				self.markersLayer.removeMarker(marker);
-			break;
-		}	
-	}
-	
-	this.removeMarkers = function(group) {
-		var toRemove = [];
-		for (var i=0;i<self.markerArr.length;i++) if (self.markerArr[i].__group == group) { toRemove.push(self.markerArr[i]); }
-		while (toRemove.length) {
-			self.removeMarker(toRemove[0]);
-			toRemove.splice(0,1);
-		}
 	}
 	
 	this.optimalPosition = function(pointArr) {
@@ -568,6 +496,107 @@ OAT.Map = function(something, provider, optionsObject) {
 				case OAT.MapData.TYPE_OL: marker.closeInfoWindow();	break;
 			} /* switch */
 		} /* for all markers */
+	}
+
+	/* --- marker methods --- */
+	
+	this.addMarker = function(group,lat,lon,file,w,h,clickCallback,overCallback) {
+		switch (self.provider) {
+			case OAT.MapData.TYPE_G: 
+				var icon = new GIcon(G_DEFAULT_ICON,file);
+				if (w && h) { icon.iconSize = new GSize(w,h); }
+				icon.shadow = "";
+				var marker = new GMarker(new GLatLng(lat,lon),icon);
+				self.obj.addOverlay(marker);
+				if (clickCallback) { GEvent.addListener(marker,'click',function(event){clickCallback(marker,event);}); }
+				if (overCallback) { GEvent.addListener(marker,'mouseover',function(event){overCallback(marker,event);}); }
+			break;
+			case OAT.MapData.TYPE_Y: 
+				var icon = false;
+				if (w && h) { var icon = new YImage(file,new YSize(w,h)); }
+				var marker = new YMarker(new YGeoPoint(lat,lon),icon);
+				self.obj.addOverlay(marker);
+				if (clickCallback) { YEvent.Capture(marker,EventsList.MouseClick,function(event){clickCallback(marker,event);}); }
+				if (overCallback) { YEvent.Capture(marker,EventsList.MouseOver,function(event){overCallback(marker,event);}); }
+			break;
+			case OAT.MapData.TYPE_MS:
+				self.id++;
+				var id = "pin_"+self.id;
+				var f = (file ? file : null);
+				var marker = new VEPushpin(id,new VELatLong(lat,lon),f,null,null);
+				VEPushpin.ShowDetailOnMouseOver = false;
+				self.obj.AddPushpin(marker);
+				marker.__id = id;
+				marker.closeInfoWindow = function() { if (marker.__win) {
+						OAT.Dom.unlink(marker.__win.div); 
+						marker.__win = false;
+					}
+				}
+				self.layerObj.addLayer(id,"mouseover");
+				if (clickCallback) { OAT.Event.attach($(id).firstChild,"click",function(event){clickCallback(marker,event);}); }
+				if (overCallback) { OAT.Event.attach($(id).firstChild,"mouseover",function(event){overCallback(marker,event);}); }
+			break;
+			case OAT.MapData.TYPE_OL: 
+				var icon = false;
+				if (w && h) { icon = new OpenLayers.Icon(file,new OpenLayers.Size(w,h)); }
+			    var marker = new OpenLayers.Marker( new OpenLayers.LonLat(lon,lat),icon);
+			    self.markersLayer.addMarker(marker);
+				marker.closeInfoWindow = function() { if (marker.__win) {
+						OAT.Dom.unlink(marker.__win.div); 
+						marker.__win = false;
+					}
+				}
+				self.layerObj.addLayer(marker.icon.imageDiv,"mouseover");
+				if (clickCallback) {
+					marker.icon.imageDiv.style.cursor = "pointer";
+					OAT.Event.attach(marker.icon.imageDiv,"click",function(event){if (!marker.__win){clickCallback(marker,event);}}); 
+				}
+				if (overCallback) {
+					marker.icon.imageDiv.style.cursor = "pointer";
+					OAT.Event.attach(marker.icon.imageDiv,"mouseover",function(event){if (!marker.__win){overCallback(marker,event);}}); 
+				}
+			break;
+		}	
+
+		marker.__coords = [lat,lon];
+		marker.__group = group;
+		self.markerArr.push(marker);
+//		self.fixMarkers();
+		return marker;
+	}
+	
+	this.removeMarker = function(marker) {
+		var index = self.markerArr.find(marker);
+		self.markerArr.splice(index,1);
+		switch (self.provider) {
+			case OAT.MapData.TYPE_G: 
+				self.obj.removeOverlay(marker);
+				self.obj.closeInfoWindow(); 
+			break;
+			case OAT.MapData.TYPE_Y:
+				self.obj.removeOverlay(marker);
+				marker.closeSmartWindow(); 
+			break;
+			case OAT.MapData.TYPE_MS: 
+				marker.closeInfoWindow();
+				self.layerObj.removeLayer(marker.__id);
+				self.obj.DeletePushpin(marker.__id);
+			break;
+			case OAT.MapData.TYPE_OL: 
+				marker.closeInfoWindow();
+				self.layerObj.removeLayer(marker);
+				self.markersLayer.removeMarker(marker);
+			break;
+		}	
+	}
+	
+	this.removeMarkers = function(group) {
+		var toRemove = [];
+		for (var i=0;i<self.markerArr.length;i++) if (self.markerArr[i].__group == group) { toRemove.push(self.markerArr[i]); }
+		while (toRemove.length) {
+			self.removeMarker(toRemove[0]);
+			toRemove.splice(0,1);
+		}
 	}
 
 } /* OAT.Map() */
