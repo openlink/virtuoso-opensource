@@ -38,6 +38,7 @@
   xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
   xmlns:georss="http://www.georss.org/georss"
   xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+  xmlns:sioc="http://rdfs.org/sioc/ns#"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -140,9 +141,11 @@
 </xsl:template>
 
 <xsl:template match="channel/category|item/category">
-    <skos:Concept rdf:parseType="Resource">
+    <dc:subject>
+	<skos:Concept rdf:about="{concat (/rss/channel/link, '#', .)}">
 	<skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
     </skos:Concept>
+    </dc:subject>
 </xsl:template>
 
 <!-- elements from 0.94 not converted:

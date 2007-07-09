@@ -35,6 +35,8 @@
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:a="http://www.w3.org/2005/Atom"
   xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
+  xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+  xmlns:sioc="http://rdfs.org/sioc/ns#"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -103,11 +105,13 @@
     <item rdf:about="{a:link[@href]/@href}">
 	<xsl:apply-templates/>
 	<xsl:if test="a:category[@term]">
-	    <dc:subject>
 		<xsl:for-each select="a:category[@term]">
-		    <xsl:value-of select="@term"/><xsl:text> </xsl:text>
-		</xsl:for-each>
+		<dc:subject>
+		    <skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
+			<skos:prefLabel><xsl:value-of select="@term"/></skos:prefLabel>
+		    </skos:Concept>
 	    </dc:subject>
+	    </xsl:for-each>
 	</xsl:if>
     </item>
 </xsl:template>

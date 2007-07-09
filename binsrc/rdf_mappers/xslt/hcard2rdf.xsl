@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-		xmlns:v="http://nwalsh.com/rdf/vCard#"
+  xmlns:v="http://www.w3.org/2006/vcard/ns#"
 		xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 		xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 		xmlns:h="http://www.w3.org/1999/xhtml"
@@ -74,6 +74,12 @@
   <xsl:variable name="sort-string">
     <xsl:call-template name="testclass">
       <xsl:with-param name="val" select="'sort-string'"/>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:variable name="nickname">
+    <xsl:call-template name="testclass">
+      <xsl:with-param name="val" select="'nickname'"/>
     </xsl:call-template>
   </xsl:variable>
 
@@ -385,6 +391,14 @@
     </v:rev>
   </xsl:if>
 
+  <xsl:if test="$sort-string != 0">
+    <v:sort-string><xsl:value-of select="."/></v:sort-string>
+  </xsl:if>
+
+  <xsl:if test="$nickname != 0">
+    <v:nickname><xsl:value-of select="."/></v:nickname>
+  </xsl:if>
+
   <xsl:apply-templates mode="extract-vcard"/>
 </xsl:template>
 
@@ -615,9 +629,7 @@
     <xsl:when test="$class = $val
 		    or starts-with($class,concat($val, ' '))
 		    or contains($class,concat(' ',$val,' '))
-		    or substring($class,
-		                 string-length($class)-string-length($val))
-			= concat(' ',$val)">1</xsl:when>
+		    or substring($class, string-length($class)-string-length($val)) = concat(' ',$val)">1</xsl:when>
     <xsl:otherwise>0</xsl:otherwise>
   </xsl:choose>
 </xsl:template>
