@@ -4798,7 +4798,7 @@ create method vc_render () for vspx_browse_button
           tfl := self.vc_parent.vc_find_control (self.vcb_fields[i]);
           http (sprintf ('window.%s=document.%s[\'%s\']; ',
           self.vcb_fields[i], frm.vc_name, self.vcb_ref_fields[i]));
-          pars := concat (pars, self.vcb_fields[i], '=\'+ escape (document.',frm.vc_name, '[\'', self.vcb_ref_fields[i], '\'].value)+\'&');
+          pars := concat (pars, self.vcb_fields[i], '=\'+ encodeURIComponent (document.',frm.vc_name, '[\'', self.vcb_ref_fields[i], '\'].value)+\'&');
           fld_pars := concat (fld_pars, 'fld_name=', self.vcb_ref_fields[i], '&');
           i := i + 1;
         }
@@ -4826,7 +4826,7 @@ create method vc_render () for vspx_browse_button
     result_stream := string_output();
     frm := self.vc_find_parent_form (self);
     while(i < l) {
-      http(sprintf('&%s='' + escape (document.%s.%s.value) + ''', self.vcb_params[i], frm.vc_name, self.vcb_params[i]), params_stream);
+      http(sprintf('&%s='' + encodeURIComponent (document.%s.%s.value) + ''', self.vcb_params[i], frm.vc_name, self.vcb_params[i]), params_stream);
       i := i + 1;
     }
     params_string := string_output_string(params_stream);
@@ -6302,13 +6302,13 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
   result := cast(DB.DBA.DAV_SEARCH_ID('/DAV/sys_http_recording/', 'c') as integer);
   if(result < 0) {
     -- create DAV collection
-    result := cast(DB.DBA.DAV_COL_CREATE('/DAV/sys_http_recording/', '110110110R', 'dav', 'dav', 'dav', pwd) as integer);
+    result := cast(DB.DBA.DAV_COL_CREATE('/DAV/sys_http_recording/', '110100000NN', 'dav', 'dav', 'dav', pwd) as integer);
     if(result < 0) {
       signal('VSPX9', 'Can not create /DAV/sys_http_recording/ directory');
       return;
     }
   }
-  result := cast(DB.DBA.DAV_RES_UPLOAD(name, content,'text/html','110110110R','dav','dav','dav', pwd) as INTEGER);
+  result := cast(DB.DBA.DAV_RES_UPLOAD(name, content,'text/html','110100000NN','dav','dav','dav', pwd) as INTEGER);
   if(result < 0) {
     signal('VSPX9', 'Can not upload resource into /DAV/sys_http_recording/ directory');
   }
