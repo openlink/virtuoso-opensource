@@ -167,11 +167,11 @@ echo both ": 2 graph oj \n";
 
 
 ttlp (
-'<syn1-c1> <http://www.w3.org/2002/07/owl#same-as> <ic1> .
-<ic1> <http://www.w3.org/2002/07/owl#same-as> <syn2-ic1> .
-<syn2-ic1> <http://www.w3.org/2002/07/owl#same-as> <syn3-ic1> .
-<syn4-ic1> <http://www.w3.org/2002/07/owl#same-as> <syn3-ic1> .
-<syn4-ic1> <http://www.w3.org/2002/07/owl#same-as> <ic1> .
+'<syn1-c1> <http://www.w3.org/2002/07/owl#sameAs> <ic1> .
+<ic1> <http://www.w3.org/2002/07/owl#sameAs> <syn2-ic1> .
+<syn2-ic1> <http://www.w3.org/2002/07/owl#sameAs> <syn3-ic1> .
+<syn4-ic1> <http://www.w3.org/2002/07/owl#sameAs> <syn3-ic1> .
+<syn4-ic1> <http://www.w3.org/2002/07/owl#sameAs> <ic1> .
 <syn2-ic1> <psyn2> 2 .
 ', '', 'sas', 0);
 
