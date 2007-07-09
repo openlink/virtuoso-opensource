@@ -221,6 +221,9 @@ dv_to_sql_type (dtp_t dv, int cli_binary_timestamp)
     case DV_ANY:
       return SQL_VARCHAR;
 
+    case DV_INT64:
+      return SQL_INTEGER;
+
     default:
       return SQL_VARCHAR;
     }
@@ -2237,12 +2240,18 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 
       case DV_SHORT_INT:
       case DV_LONG_INT:
-	snprintf (temp, sizeof (temp), "%ld", (long) unbox (it));
+	snprintf (temp, sizeof (temp), BOXINT_FMT, (boxint) unbox (it));
 	break;
 
       case DV_IRI_ID:
-	snprintf (temp, sizeof (temp), "#i%ld", (long) unbox_iri_id (it));
+        {
+          iri_id_t iid = unbox_iri_id (it);
+          if (iid >= MIN_64BIT_BNODE_IRI_ID)
+	    snprintf (temp, sizeof (temp), "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+          else
+	    snprintf (temp, sizeof (temp), "#i" BOXINT_FMT, (boxint)(iid));
 	break;
+        }
 
       case DV_SINGLE_FLOAT:
 	snprintf (temp, sizeof (temp), "%.16g", unbox_float (it));
@@ -2693,9 +2702,15 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 	    {
 	    case DV_LONG_INT:
 	    case DV_SHORT_INT:
+              {
+		boxint n = unbox (it);		
+		if (n < (int64) INT32_MIN || n > (int64) INT32_MAX)
+		  {
+		    set_error (&stmt->stmt_error, "22003", "CL098", "Integer value out of range");
+		  }
 	      *((long *) place) = (long) unbox (it);
 	      break;
-
+	      }
 	    case DV_SINGLE_FLOAT:
 	      *((long *) place) = (long) unbox_float (it);
 	      break;
@@ -3423,6 +3438,9 @@ col_desc_get_display_size (col_desc_t *cd, int cli_binary_timestamp)
 
     case DV_LONG_INT:
       return 11;
+
+    case DV_INT64:
+      return 20;
 
     case DV_SINGLE_FLOAT:
     case DV_DOUBLE_FLOAT:

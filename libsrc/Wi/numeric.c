@@ -1725,6 +1725,69 @@ numeric_from_int32 (numeric_t num, int32 val)
 }
 
 
+int
+numeric_from_int64 (numeric_t num, int64 val)
+{
+  char buffer[30];
+  char *bptr, *vptr;
+  int ix = 1;
+
+  switch (val)
+    {
+    case -1:
+      NUM_SET_1 (num);
+      num->n_neg = 1;
+      return NUMERIC_STS_SUCCESS;
+    case 0:
+      NUM_SET_0 (num);
+      return NUMERIC_STS_SUCCESS;
+    case 1:
+      NUM_SET_1 (num);
+      return NUMERIC_STS_SUCCESS;
+    case ((-INT64_MAX) - 1): /* Cannot change the sign to process! */
+      numeric_from_int64 (num, val+1);
+      num->n_value[num->n_len-1] += 1;
+      return NUMERIC_STS_SUCCESS;
+    default:
+      break;
+    }
+
+  /* Sign. */
+  if (val < 0)
+    {
+      num->n_neg = 1;
+      val = -val;
+    }
+  else
+    num->n_neg = 0;
+
+  /* Get things going. */
+  bptr = buffer;
+  *bptr++ = (char) (val % 10);
+  val = val / 10;
+
+  /* Extract remaining digits. */
+  while (val != 0)
+    {
+      *bptr++ = (char) (val % 10);
+      val = val / 10;
+      ix++;			/* Count the digits. */
+    }
+
+  /* Make the number. */
+  num->n_len = ix;
+  num->n_scale = 0;
+  num->n_invalid = 0;
+
+  /* Assign the digits. */
+  vptr = num->n_value;
+  while (ix-- > 0)
+    *vptr++ = *--bptr;
+
+  return NUMERIC_STS_SUCCESS;
+}
+
+
 /*
  *  Assign a double to a number
  */
@@ -1939,6 +2002,40 @@ numeric_to_int32 (numeric_t n, int32 *pvalue)
       return NUMERIC_STS_MARSHALLING;
     }
   else if (val == (- INT32_MAX - 1) )
+    val = -val;
+  else if (val < 0)
+    {
+      *pvalue = 0;
+      return NUMERIC_STS_MARSHALLING;
+    }
+
+  /* Return the value. */
+  *pvalue = n->n_neg ? -val : val;
+
+  return NUMERIC_STS_SUCCESS;
+}
+
+
+int
+numeric_to_int64 (numeric_t n, int64 *pvalue)
+{
+  char *nptr;
+  int index;
+  int64 val;
+
+  /* Extract the int value, ignore the fraction. */
+  val = 0;
+  nptr = n->n_value;
+  for (index = n->n_len; index > 0 && val <= (INT64_MAX / 10); index--)
+    val = 10 * val + *nptr++;
+
+  /* Check for overflow.  If overflow, return zero. */
+  if (index > 0)
+    {
+      *pvalue = 0;
+      return NUMERIC_STS_MARSHALLING;
+    }
+  else if (val == (- INT64_MAX - 1) )
     val = -val;
   else if (val < 0)
     {

@@ -1866,6 +1866,24 @@ err:;
 }
 ;
 
+create procedure DB.DBA.col_of_type (in tb varchar, in col varchar, in type_needed int)
+{
+  if (not isstring (tb) or not isstring (col))
+    return 0;
+  declare ret, _col_dtp int;
+  ret := 0;
+  declare c cursor for select COL_DTP from DB.DBA.SYS_COLS
+      where 0 = casemode_strcmp ("TABLE", tb) and 0 = casemode_strcmp ("COLUMN", col);
+  whenever not found goto nf;
+  open c (prefetch 1);
+  fetch c into _col_dtp;
+  if (_col_dtp = type_needed)
+    ret := 1;
+  nf:;
+  close c;
+  return ret;
+}
+;
 
 -- Added new columns for schema in SYS_VT_INDEX (backward compatibility)
 
@@ -4733,7 +4751,7 @@ xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
     <xsl:template match="SUBDIR">
 	 <xsl:param name="f_path" />
     	&lt;tr&gt;
-	   &lt;td&gt;&lt;img src="/images/dir.gif"&gt;&lt;/td&gt;
+	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/foldr_16.png" alt="folder"&gt;&lt;/td&gt;
 	   &lt;td&gt;&lt;a href="<xsl:value-of select="$f_path"/><xsl:value-of select="@name"/>/"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
 	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;-&lt;/td&gt;
 	&lt;/tr&gt;
@@ -4742,7 +4760,7 @@ xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
     <xsl:template match="FILE">
 	 <xsl:param name="f_path" />
     	&lt;tr&gt;
-	   &lt;td&gt;&lt;img src="/images/generic.gif"&gt;&lt;/td&gt;
+	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/file_gen_16.png" alt="file"&gt;&lt;/td&gt;
 	   &lt;td&gt;&lt;a href="<xsl:value-of select="$f_path"/><xsl:value-of select="@name"/>"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
 	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;<xsl:value-of select="@hs"/>&lt;/td&gt;
 	&lt;/tr&gt;

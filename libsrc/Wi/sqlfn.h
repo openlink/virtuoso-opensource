@@ -277,6 +277,19 @@ caddr_t * qn_get_in_state (data_source_t * src, caddr_t * inst);
 
 void qn_record_in_state (data_source_t * src, caddr_t * inst, caddr_t * state);
 
+/*gets rid of col types that just refer to storage versions of one actual type */
+#define DTP_NORMALIZE(dtp) \
+switch (dtp) \
+{ \
+ case DV_WIDE: dtp = DV_LONG_WIDE; break; \
+ case DV_INT64: \
+ case DV_SHORT_INT: dtp = DV_LONG_INT; break; \
+ case DV_IRI_ID_8: dtp = DV_IRI_ID; break; \
+}
+
+
+
+
 void table_source_input (table_source_t * ts, caddr_t * inst,
     caddr_t * volatile state);
 void inx_op_source_input (table_source_t * ts, caddr_t * inst,
@@ -466,7 +479,8 @@ dk_set_t sql_warnings_save (dk_set_t new_warnings);
 
 #define SQW_DTP_COERCE(dtp) \
 	(IS_NUM_DTP(dtp) ? DV_NUMERIC : \
-	 ((dtp) == DV_REFERENCE ? DV_OBJECT : \
+	 (dtp) == DV_IRI_ID_8 ? DV_IRI_ID \
+: ((dtp) == DV_REFERENCE ? DV_OBJECT :	  \
 	  ((dtp) == DV_DB_NULL ? DV_ANY : \
 	  (IS_BLOB_DTP (dtp) ? DV_ANY : \
 	   (dtp)))))
@@ -538,7 +552,7 @@ void log_text (lock_trx_t * lt, char * text);
 void log_text_array (lock_trx_t * lt, caddr_t box);
 int log_text_array_sync (lock_trx_t * lt, caddr_t box);
 
-void log_sequence (lock_trx_t * lt, char * text, long count);
+void log_sequence (lock_trx_t * lt, char * text, boxint count);
 void log_sequence_remove (lock_trx_t * lt, char *text);
 
 int log_commit (lock_trx_t * lt);
@@ -580,7 +594,7 @@ extern int qst_swap_or_get_copy (caddr_t * state, state_slot_t * sl, caddr_t *v)
 
 void qst_set_float (caddr_t * state, state_slot_t * sl, float fv);
 
-void qst_set_long (caddr_t * state, state_slot_t * sl, ptrlong lv);
+void qst_set_long (caddr_t * state, state_slot_t * sl, boxint lv);
 
 void qst_set_double (caddr_t * state, state_slot_t * sl, double dv);
 
@@ -939,7 +953,7 @@ int itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsign
 extern void itc_ha_flush_memcache (hash_area_t * ha, caddr_t * qst);
 
 
-long num_check_prec (long val, int prec, char *title, caddr_t *err_ret);
+boxint num_check_prec (boxint val, int prec, char *title, caddr_t *err_ret);
 const char *dv_type_title (int type);
 
 /* sqlbif.c */
@@ -989,7 +1003,7 @@ caddr_t bif_commit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
 void db_replay_registry_setting (caddr_t ent, caddr_t *err_ret);
 
-int32 safe_atoi (const char *data, caddr_t *err_ret);
+boxint safe_atoi (const char *data, caddr_t *err_ret);
 double safe_atof (const char *data, caddr_t *err_ret);
 caddr_t box_to_any (caddr_t data, caddr_t * err_ret);
 char* __get_column_name (oid_t col_id, dbe_key_t *key);

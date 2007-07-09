@@ -19,8 +19,9 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
+ *  
  */
-
+#include "../Dk/Dkhash64.h"
 #include "libutil.h"
 #include "sqlnode.h"
 #include "sqlbif.h"
@@ -1025,14 +1026,14 @@ end_of_test:
 typedef struct name_id_cache_s 
 {
   dk_mutex_t *	nic_mtx;
-  dk_hash_t *	nic_id_to_name;
+  dk_hash_64_t *	nic_id_to_name;
   id_hash_t *	nic_name_to_id;
   unsigned long	nic_size;
 } name_id_cache_t;
 
 
 void
-nic_set (name_id_cache_t * nic, caddr_t name, ptrlong id)
+nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
 {
   caddr_t name_box = NULL;
   caddr_t * place;
@@ -1040,39 +1041,39 @@ nic_set (name_id_cache_t * nic, caddr_t name, ptrlong id)
   place = (caddr_t*) id_hash_get (nic->nic_name_to_id, (caddr_t)&name);
   if(place)
     {
-      ptrlong old_id = *(ptrlong*)place;
+      boxint old_id = *(boxint*)place;
       name_box = ((caddr_t*)place) [-1];
-      *(ptrlong*) place = id;
-      remhash ((void*)old_id, nic->nic_id_to_name);
-      sethash ((void*)id, nic->nic_id_to_name,  (void*) name_box);
+      *(boxint*) place = id;
+      remhash_64 (old_id, nic->nic_id_to_name);
+      sethash_64 (id, nic->nic_id_to_name,  (boxint) name_box);
     }
   else 
     {
       while (nic->nic_id_to_name->ht_count > nic->nic_size)
 	{
 	  caddr_t key;
-	  ptrlong id;
+	  boxint id;
 	  int32 rnd  = sqlbif_rnd (&tf_rnd_seed);
 	  if (id_hash_remove_rnd (nic->nic_name_to_id, rnd, (caddr_t)&key, (caddr_t)&id))
 	    {
-	      remhash ((void*) id, nic->nic_id_to_name);
+	      remhash_64 ( id, nic->nic_id_to_name);
 	      dk_free_box (key);
 	    }
 	}
       name_box = treehash == nic->nic_name_to_id->ht_hash_func  ? box_copy (name) :  box_dv_short_string (name);
       id_hash_set (nic->nic_name_to_id, (caddr_t)&name_box, (caddr_t)&id);
-      sethash ((void*)id, nic->nic_id_to_name, (void*) name_box);
+      sethash_64 (id, nic->nic_id_to_name, (boxint) name_box);
     }
   mutex_leave (nic->nic_mtx);
 }
 
 
-ptrlong
+boxint
 nic_name_id (name_id_cache_t * nic, char * name)
 {
-  ptrlong * place, res = 0;
+  boxint * place, res = 0;
   mutex_enter (nic->nic_mtx);
-  place = (ptrlong*) id_hash_get (nic->nic_name_to_id, (caddr_t) &name);
+  place = (boxint*) id_hash_get (nic->nic_name_to_id, (caddr_t) &name);
   if (place)
     res = *place;
   mutex_leave (nic->nic_mtx);
@@ -1081,13 +1082,13 @@ nic_name_id (name_id_cache_t * nic, char * name)
 
 
 caddr_t 
-nic_id_name (name_id_cache_t * nic, ptrlong id)
+nic_id_name (name_id_cache_t * nic, boxint id)
 {
-  caddr_t res;
+  boxint r;
   mutex_enter (nic->nic_mtx);
-  res = (caddr_t) gethash ((void*)id, nic->nic_id_to_name);
+  gethash_64 (r, id, nic->nic_id_to_name);
   mutex_leave(nic->nic_mtx);
-  return res ? box_copy (res) : NULL;
+  return r ? box_copy ((caddr_t) (ptrlong)r) : NULL;
 }
 
 name_id_cache_t *
@@ -1096,10 +1097,10 @@ nic_allocate (unsigned long sz, int is_box)
   NEW_VARZ (name_id_cache_t, nic);
   nic->nic_size = sz;
   if (!is_box)
-    nic->nic_name_to_id = id_hash_allocate (sz / 3, sizeof (caddr_t), sizeof (ptrlong), strhash, strhashcmp);
+    nic->nic_name_to_id = id_hash_allocate (sz / 3, sizeof (caddr_t), sizeof (boxint), strhash, strhashcmp);
   else
-    nic->nic_name_to_id = id_hash_allocate (sz / 3, sizeof (caddr_t), sizeof (ptrlong), treehash, treehashcmp);
-  nic->nic_id_to_name = hash_table_allocate (sz / 3);
+    nic->nic_name_to_id = id_hash_allocate (sz / 3, sizeof (caddr_t), sizeof (boxint), treehash, treehashcmp);
+  nic->nic_id_to_name = hash_table_allocate_64 (sz / 3);
   nic->nic_mtx =mutex_allocate ();
   mutex_option (nic->nic_mtx, is_box ? "NICB" : "NIC", NULL, NULL);
   return nic;
@@ -1114,10 +1115,10 @@ nic_flush (name_id_cache_t * nic)
   for (bucket_ctr = nic->nic_name_to_id->ht_buckets; bucket_ctr--; /* no step */)
     {
       caddr_t key;
-      ptrlong id;
+      boxint id;
       while (id_hash_remove_rnd (nic->nic_name_to_id, bucket_ctr, (caddr_t)&key, (caddr_t)&id))
         {
-          remhash ((void*) id, nic->nic_id_to_name);
+          remhash_64 ( id, nic->nic_id_to_name);
           dk_free_box (key);
         }
     }
@@ -1146,7 +1147,7 @@ tb_string_and_int_for_insert (dbe_key_t * key, db_buf_t image, it_cursor_t * ins
   sqlr_resignal (err);
 }
 
-#define IS_INT_LIKE(x) ((x) == DV_LONG_INT || (x) == DV_IRI_ID || (x) == DV_IRI_ID_8)
+#define IS_INT_LIKE(x) ((x) == DV_LONG_INT || (x) == DV_INT64 || (x) == DV_IRI_ID || (x) == DV_IRI_ID_8)
 
 
 int
@@ -1179,10 +1180,13 @@ tb_new_id_and_name (lock_trx_t * lt, it_cursor_t * itc, dbe_table_t * tb, caddr_
   caddr_t seq_box = box_dv_short_string (value_seq_name);
   int64 res = sequence_next_inc (seq_box, OUTSIDE_MAP, 1);
   dbe_column_t * id_col = (dbe_column_t *)id_key->key_parts->data;
-  caddr_t res_box = box_iri_int64 (res, id_col->col_sqt.sqt_dtp);
+  caddr_t res_box;
   dtp_t pk_image[MAX_ROW_BYTES];
   dtp_t sk_image[MAX_ROW_BYTES];
+  if (!res)
+    res = sequence_next_inc (seq_box, OUTSIDE_MAP, 1);
   dk_free_box (seq_box);
+  res_box = box_iri_int64 (res, id_col->col_sqt.sqt_dtp);
   tb_string_and_int_for_insert (tb->tb_primary_key, pk_image, itc, name, res_box);
   itc->itc_insert_key = tb->tb_primary_key;
   itc->itc_owned_search_par_fill= 0; /* do not free the name yet */
@@ -1346,7 +1350,7 @@ name_id_cache_t * iri_prefix_cache;
 caddr_t
 key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
 {
-  ptrlong pref_id_no, iri_id_no;
+  boxint pref_id_no, iri_id_no;
   caddr_t local_copy;
   caddr_t prefix, local;
   caddr_t pref_id, iri_id;
@@ -1505,7 +1509,7 @@ tb_id_to_name (lock_trx_t * lt, char * tb_name, caddr_t id)
 caddr_t 
 key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
 {
-  ptrlong pref_id;
+  boxint pref_id;
   caddr_t local, prefix, name;
   local = nic_id_name (iri_name_cache, iri_id_no);
   if (!local)
@@ -1542,11 +1546,18 @@ caddr_t
 bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
-  iri_id_t id = bif_iri_id_or_null_arg (qst, args, 0, "id_to_iri");
+  iri_id_t iid = bif_iri_id_or_null_arg (qst, args, 0, "id_to_iri");
   caddr_t iri;
-  if (0L == id)
+  if (0L == iid)
     return NEW_DB_NULL;
-  iri = key_id_to_iri (qi, id);
+  if (iid >= min_bnode_iri_id ())
+    {
+      if (iid >= MIN_64BIT_BNODE_IRI_ID)
+        return box_sprintf (30, "nodeID://b" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+      else
+        return box_sprintf (30, "nodeID://" BOXINT_FMT, (boxint)(iid));
+    }
+  iri = key_id_to_iri (qi, iid);
   if (!iri)
     return NEW_DB_NULL;
   return iri;
@@ -1806,6 +1817,8 @@ hit:
 
 void rdf_inf_init ();
 
+int iri_cache_size = 0;
+
 void
 rdf_core_init (void)
 {
@@ -1829,8 +1842,10 @@ rdf_core_init (void)
 #ifdef DEBUG
   bif_define ("turtle_lex_test", bif_turtle_lex_test);
 #endif
-  iri_name_cache = nic_allocate (main_bufs / 2, 1);
-  iri_prefix_cache = nic_allocate (main_bufs / 20, 0);
+  if (100 >= iri_cache_size)
+    iri_cache_size = main_bufs / 2;
+  iri_name_cache = nic_allocate (iri_cache_size, 1);
+  iri_prefix_cache = nic_allocate (iri_cache_size / 10, 0);
   ddl_ensure_table ("DB.DBA.RDF_PREFIX", rdf_prefix_text);
   ddl_ensure_table ("DB.DBA.RDF_IRI", rdf_iri_text);
   rdf_obj_ft_rules_mtx = mutex_allocate ();

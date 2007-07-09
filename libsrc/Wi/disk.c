@@ -2889,6 +2889,11 @@ dbs_reset_row_na (db_buf_t row, dbe_key_t * page_key)
 	case DV_IRI_ID:
 	  DBS_REVERSE_LONG (row + off);
 	  break;
+	case DV_INT64:
+	case DV_IRI_ID_8:
+	  DBS_REVERSE_LONG (row + off);
+	  DBS_REVERSE_LONG (row + off + 4);
+	  break;
 	case DV_ARRAY_OF_LONG:
 	  {
 	    int inx;

@@ -572,14 +572,14 @@ log_text_array (lock_trx_t * lt, caddr_t box)
 
 
 void
-log_sequence (lock_trx_t * lt, char *text, long count)
+log_sequence (lock_trx_t * lt, char *text, boxint count)
 {
   if (!lt || lt->lt_replicate == REPL_NO_LOG)
     return;
   mutex_enter (lt->lt_log_mtx);
-  session_buffered_write_char (LOG_SEQUENCE, lt->lt_log);
+  session_buffered_write_char (LOG_SEQUENCE_64, lt->lt_log);
   print_object (text, lt->lt_log, NULL, NULL);
-  print_long (count, lt->lt_log);
+  print_int (count, lt->lt_log);
   TXN_CHECK_LOG_IMAGE (lt);
   mutex_leave (lt->lt_log_mtx);
 }
@@ -1181,6 +1181,18 @@ log_replay_sequence (lock_trx_t * lt, dk_session_t * in)
 
 
 caddr_t
+log_replay_sequence_64 (lock_trx_t * lt, dk_session_t * in)
+{
+  caddr_t text = (caddr_t) scan_session (in);
+  caddr_t count =  (caddr_t) scan_session_boxing (in);
+  sequence_set (text, unbox (count), SET_IF_GREATER, OUTSIDE_MAP);
+  dk_free_box (text);
+  dk_free_box (count);
+  return ((caddr_t) SQL_SUCCESS);
+}
+
+
+caddr_t
 log_replay_entry (lock_trx_t * lt, dtp_t op, dk_session_t * in, int is_pushback)
 {
   switch (op)
@@ -1217,6 +1229,8 @@ log_replay_entry (lock_trx_t * lt, dtp_t op, dk_session_t * in, int is_pushback)
       return (log_replay_text (lt, in, is_pushback));
     case LOG_SEQUENCE:
       return (log_replay_sequence (lt, in));
+    case LOG_SEQUENCE_64:
+      return (log_replay_sequence_64 (lt, in));
     }
   return SQL_SUCCESS;
 }
@@ -1411,7 +1425,7 @@ logh_set_level (lock_trx_t * lt, caddr_t * logh)
       repl_acct_t *ra;
       ra = ra_find (replh[REPLH_SERVER], replh[REPLH_ACCOUNT]);
       if (level_print)
-	dbg_printf ((" Rfwd level %s %s %ld\n", replh [REPLH_SERVER], replh [REPLH_ACCOUNT] ? replh [REPLH_ACCOUNT] : "-", unbox (replh [REPLH_LEVEL])));
+	dbg_printf ((" Rfwd level %s %s " BOXINT_FMT "\n", replh [REPLH_SERVER], replh [REPLH_ACCOUNT] ? replh [REPLH_ACCOUNT] : "-", unbox (replh [REPLH_LEVEL])));
       if (!ra)
 	{
 	  ra = ra_add (replh[REPLH_SERVER], replh[REPLH_ACCOUNT], 1, 0, 0);

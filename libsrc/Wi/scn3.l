@@ -539,9 +539,16 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
   size_t ctr, len;
   long acc_lo, acc_hi;
   len = strlen (yytext);
-  if (len < 10)
+  if (len < 19)
     {
-      yylval.box = t_box_num_and_zero (atol (yytext));
+      caddr_t err = NULL;
+      int64 n = safe_atoi (yytext, &err);
+      if (err)
+	{
+	  dk_free_tree (err);
+	  yyerror ("bad integer constant");
+	}
+      yylval.box = t_box_num_and_zero (n);
       RETURN_CODE (INTNUM);
     }
   acc_lo = 0; acc_hi = 0;
@@ -567,15 +574,35 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
   RETURN_CODE (INTNUM);
 }
 
-<SQL>\#i[0-9]+ {
-  size_t ctr, len;
-  iri_id_t * box = (iri_id_t*) t_alloc_box (sizeof (iri_id_t), DV_IRI_ID);
-  len = strlen (yytext);
-    *box = atoi (&yytext[2]);
+<SQL>\#ib[0-9]+  {
+  iri_id_t * box;
+  caddr_t err = NULL;
+  int64 n = safe_atoi (yytext+3, &err) | MIN_64BIT_BNODE_IRI_ID;
+  if (err)
+    {
+      dk_free_tree (err);
+      yyerror ("bad iri literal");
+    }
+  box = (iri_id_t*) t_alloc_box (sizeof (iri_id_t), DV_IRI_ID);
+  *box = n;
     yylval.box = (caddr_t) box;
     RETURN_CODE (IRI_LIT);
 }
 
+<SQL>\#i[0-9]+  {
+  iri_id_t * box;
+  caddr_t err = NULL;
+  int64 n = safe_atoi (yytext+2, &err);
+  if (err)
+    {
+      dk_free_tree (err);
+      yyerror ("bad iri literal");
+    }
+  box = (iri_id_t*) t_alloc_box (sizeof (iri_id_t), DV_IRI_ID);
+  *box = n;
+  yylval.box = (caddr_t) box;
+  RETURN_CODE (IRI_LIT);
+}
 
 <SQL>0hex[0-9A-Fa-f]* {
   size_t ctr, len;

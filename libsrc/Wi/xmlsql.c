@@ -4747,11 +4747,11 @@ static char * szUpdate = "UPDATE \"%s\" SET %s WHERE %s";
 static char * szDelete = "DELETE FROM \"%s\" WHERE %s";
 
 /* get last identity value of first found column in given table */
-long
+boxint
 xs_get_identity (query_instance_t * qi, char * table)
 {
   char temp[4 * MAX_NAME_LEN + 4];
-  long *place, ret = 0;
+  boxint *place, ret = 0;
   dbe_column_t **ptc;
   char **pk;
   caddr_t seq_name;
@@ -4767,7 +4767,7 @@ xs_get_identity (query_instance_t * qi, char * table)
 	  snprintf (temp, sizeof (temp), "%s.%s.%s.%s", tb->tb_qualifier, tb->tb_owner,
 	      col->col_defined_in->tb_name, col->col_name);
 	  seq_name = box_string (temp);
-	  place = (long *) id_hash_get (sequences, (caddr_t) & seq_name);
+	  place = (boxint *) id_hash_get (sequences, (caddr_t) & seq_name);
 	  ret = *place;
 	  ret--;
 	  dk_free_box (seq_name);
@@ -4782,10 +4782,10 @@ xs_get_identity (query_instance_t * qi, char * table)
 box_t
 xs_idnval (id_hash_t * idn, id_hash_t * var, caddr_t val)
 {
-  long * place;
+  boxint * place;
   caddr_t * parm = NULL;
   if (DV_STRINGP(val))
-    place = (long *) id_hash_get (idn, (caddr_t) &val);
+    place = (boxint *) id_hash_get (idn, (caddr_t) &val);
   else
     place = NULL;
   if (!place)
@@ -5109,9 +5109,9 @@ xs_stmts_exec (query_instance_t * qi, caddr_t *err_ret, xmlsql_ugram_t * xs,
 	  /* if have identity reference & insert */
 	  if (is_insert && elm->sql_identity)
 	    {
-	      long idn_val, *place;
+	      boxint idn_val, *place;
 	      idn_val = xs_get_identity (qi, table);
-	      place = (long *)  id_hash_get (xs_idn, (caddr_t) &(elm->sql_identity));
+	      place = (boxint *)  id_hash_get (xs_idn, (caddr_t) &(elm->sql_identity));
 	      if (!place)
 		id_hash_set (xs_idn, (caddr_t) &(elm->sql_identity), (caddr_t) & idn_val);
 	      else

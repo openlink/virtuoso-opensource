@@ -544,7 +544,7 @@ report_error:
     {
       PROC_SAVE_PARENT;
       cli->cli_result_qi = qi;
-      cli->cli_result_ts = (table_source_t *) unbox (qst_get (qst, ins->_.call.proc_ssl));
+      cli->cli_result_ts = (table_source_t *) unbox_ptrlong (qst_get (qst, ins->_.call.proc_ssl));
     }
   err = qr_subq_exec (qi->qi_client, proc, qi,
 		 (caddr_t *) & auto_qi, sizeof (auto_qi), NULL, pars, NULL);
@@ -1318,7 +1318,7 @@ void err_append_callstack_param (caddr_t err, caddr_t param_name, caddr_t param_
 	      " (truncated)" : "") );
 	  break;
 	case DV_LONG_INT:
-	  param_print = box_sprintf (30, "%ld", (long)(unbox (param_value)));
+	  param_print = box_sprintf (40, BOXINT_FMT, unbox (param_value));
 	  break;
 	case DV_DB_NULL:
 	  param_print = box_string ("NULL");
@@ -1327,8 +1327,14 @@ void err_append_callstack_param (caddr_t err, caddr_t param_name, caddr_t param_
 	  param_print = box_sprintf (500, "instance %p of %.300s", param_value, UDT_I_CLASS(param_value)->scl_name);
 	  break;
         case DV_IRI_ID:
-	  param_print = box_sprintf (500, "#i%ld", (long)(((int32 *)param_value)[0]));
+          {
+            iri_id_t iid = unbox_iri_id (param_value);
+            if (iid >= MIN_64BIT_BNODE_IRI_ID)
+	      param_print = box_sprintf (30, "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+            else
+	      param_print = box_sprintf (30, "#i" BOXINT_FMT, (boxint)(iid));
           break;
+          }
 	case DV_REFERENCE:
 	  {
 	    caddr_t udi = udo_find_object_by_ref (param_value);

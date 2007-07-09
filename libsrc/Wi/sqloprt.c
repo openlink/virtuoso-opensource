@@ -105,7 +105,7 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
       if (AMMSC_USER == dfe->dfe_tree->_.fn_ref.fn_code)
 	{
 	  int argctr;
-	  user_aggregate_t * ua = (user_aggregate_t *)unbox(dfe->dfe_tree->_.fn_ref.user_aggr_addr);
+	  user_aggregate_t * ua = (user_aggregate_t *)unbox_ptrlong(dfe->dfe_tree->_.fn_ref.user_aggr_addr);
 	  sqlo_print (("   AGGREGATE %s (", ua->ua_name));
 	  DO_BOX_FAST (ST *, arg, argctr, dfe->dfe_tree->_.fn_ref.fn_arglist)
 	    {

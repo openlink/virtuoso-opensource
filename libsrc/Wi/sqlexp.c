@@ -1730,7 +1730,7 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
 	case AMMSC_USER:
 	  {
 	    state_slot_t *const_short_1 = ssl_new_constant (sc->sc_cc, (caddr_t) 1L);
-	    user_aggregate_t *ua = (user_aggregate_t *)(unbox(tree->_.fn_ref.user_aggr_addr));
+	    user_aggregate_t *ua = (user_aggregate_t *)(unbox_ptrlong (tree->_.fn_ref.user_aggr_addr));
 	    int argidx;
 	    jmp_label_t setenv_begin = sqlc_new_label (sc);
 	    jmp_label_t setenv_end = sqlc_new_label (sc);

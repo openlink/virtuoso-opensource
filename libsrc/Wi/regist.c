@@ -153,8 +153,11 @@ id_hash_t *sequences;
 
 #define ENSURE_REGISTRY \
   if (!registry) registry = id_str_hash_create (101);
+
 #define ENSURE_SEQUENCES \
-  if (!sequences) sequences = id_str_hash_create (101);
+  if (!sequences)  \
+sequences = id_hash_allocate  (101, sizeof (void *), sizeof (boxint), \
+				 strhash, strhashcmp);
 
 
 caddr_t
@@ -291,7 +294,7 @@ registry_update_sequences (void)
 {
   id_hash_iterator_t it;
   caddr_t *name;
-  long *value;
+  boxint *value;
   id_hash_iterator (&it, sequences);
   ASSERT_IN_TXN;
   while (hit_next (&it, (caddr_t *) & name, (caddr_t *) & value))
@@ -299,7 +302,7 @@ registry_update_sequences (void)
       char temp[2000];
       caddr_t the_id = box_sprintf_escaped (*name, 0);
 
-      snprintf (temp, sizeof (temp), "X sequence_set ('%s', %ld, 1)", the_id, *value);
+      snprintf (temp, sizeof (temp), "X sequence_set ('%s', " BOXINT_FMT ", 1)", the_id, *value);
       dk_free_box (the_id);
 
       registry_set (*name, temp);
@@ -452,19 +455,19 @@ registry_get (const char *name)
 }
 
 
-long
-sequence_next_inc (char *name, int in_map, long inc_by)
+boxint
+sequence_next_inc (char *name, int in_map, boxint inc_by)
 {
-  long res;
+  boxint  res;
   if (INSIDE_MAP != in_map)
     IN_TXN;
   ENSURE_SEQUENCES;
   {
-    long *place = (long *) id_hash_get (sequences, (caddr_t) & name);
+    boxint *place = (boxint *) id_hash_get (sequences, (caddr_t) & name);
     if (!place)
       {
 	caddr_t name_copy = box_string (name);
-	long init = 1;
+	boxint init = 1;
 	id_hash_set (sequences, (caddr_t) & name_copy, (caddr_t) & init);
 	res = 0;
       }
@@ -497,22 +500,22 @@ registry_remove (char *name)
 }
 
 
-long
+boxint
 sequence_next (char *name, int in_map)
 {
   return sequence_next_inc (name, in_map, 1);
 }
 
 
-long
-sequence_set (char *name, long value, int mode, int in_map)
+boxint
+sequence_set (char *name, boxint value, int mode, int in_map)
 {
-  long res;
+  boxint res;
   if (INSIDE_MAP != in_map)
   IN_TXN;
   ENSURE_SEQUENCES;
   {
-    long *place = (long *) id_hash_get (sequences, (caddr_t) & name);
+    boxint *place = (boxint *) id_hash_get (sequences, (caddr_t) & name);
     if (!place)
       {
 	if (mode == SEQUENCE_GET)
@@ -565,10 +568,10 @@ registry_get_all ( void )
 }
 
 
-long
+int
 sequence_remove (char *name, int in_map)
 {
-  long res;
+  int res;
   if (INSIDE_MAP != in_map)
   IN_TXN;
   ENSURE_SEQUENCES;

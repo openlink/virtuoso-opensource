@@ -627,7 +627,7 @@ ap_set_t **aps_tryrdlock_array (caddr_t *set_ids, int load_phrases, query_instan
   mutex_enter (ap_globals.apg_mutex);
   for (set_ctr = 0; set_ctr < set_count; set_ctr++)
     {
-      ap_set_t *set = (ap_set_t *)gethash ((void *)unbox (set_ids[set_ctr]), ap_globals.apg_sets);
+      ap_set_t *set = (ap_set_t *)gethash ((void *)unbox_ptrlong (set_ids[set_ctr]), ap_globals.apg_sets);
       if (NULL == set)
 	goto oblom;
       if (!rwlock_tryrdlock (set->aps_rwlock))

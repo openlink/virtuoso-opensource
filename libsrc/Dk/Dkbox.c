@@ -752,16 +752,39 @@ dk_free_box_and_int_boxes (box_t box)
 
 /* Number Boxes */
 
-ptrlong
+boxint
 unbox (ccaddr_t box)
 {
   if (!IS_BOX_POINTER (box))
-    return (ptrlong) box;
+    return (boxint) box;
 
   if (box_tag (box) == DV_LONG_INT)
-    return *(ptrlong *) box;
+    return *(boxint *) box;
 
+  return (boxint) box;
+}
+
+
+ptrlong
+unbox_ptrlong (ccaddr_t box)
+{
+  if (!IS_BOX_POINTER (box))
   return (ptrlong) box;
+
+  if (box_tag (box) == DV_LONG_INT)
+    {
+      boxint bi = *(boxint *) box;
+#ifdef DEBUG
+      if ((sizeof (ptrlong) < sizeof (boxint)))
+        {
+          boxint upper_bits = bi >> (8 * sizeof (ptrlong));
+          if ((0 != upper_bits) && (-1 != upper_bits))
+            GPF_T1 ("ptrlong overflow in unbox_ptrlong"); 
+        }
+#endif
+      return bi;
+    }
+  return (boxint)((ptrlong)box);
 }
 
 
@@ -772,30 +795,29 @@ unbox_int64 (ccaddr_t box)
     return (int64) box;
 
   if (box_tag (box) == DV_LONG_INT)
-    return *(ptrlong*) box;
-  /* the box contains a ptrlong. But this returns int64 regardless of what ptrlong is */
+    return *(boxint*) box;
   return (ptrlong) box;
 }
 
 
-box_t DBG_NAME(box_num) (DBG_PARAMS ptrlong n)
+box_t DBG_NAME(box_num) (DBG_PARAMS boxint n)
 {
   box_t *box;
-  if (!IS_POINTER (n))
+  if (!IS_BOXINT_POINTER (n))
     return (box_t) n;
-  box = (box_t *) DBG_NAME(dk_alloc_box) (DBG_ARGS sizeof (box_t), DV_LONG_INT);
-  *box = (box_t) n;
+  box = (box_t *) DBG_NAME(dk_alloc_box) (DBG_ARGS sizeof (boxint), DV_LONG_INT);
+  *(boxint *)box = n;
   return (box_t) box;
 }
 
 
-box_t DBG_NAME(box_num_nonull) (DBG_PARAMS ptrlong n)
+box_t DBG_NAME(box_num_nonull) (DBG_PARAMS boxint n)
 {
   box_t *box;
-  if (n && !IS_POINTER (n))
+  if (n && !IS_BOXINT_POINTER (n))
     return (box_t) n;
-  box = (box_t *) DBG_NAME(dk_alloc_box) (DBG_ARGS sizeof (box_t), DV_LONG_INT);
-  *box = (box_t) n;
+  box = (box_t *) DBG_NAME(dk_alloc_box) (DBG_ARGS sizeof (boxint), DV_LONG_INT);
+  *(boxint *)box = n;
   return (box_t) box;
 }
 
@@ -1231,7 +1253,7 @@ box_equal (cbox_t b1, cbox_t b2)
 {
   uint32 l1, l2;
   dtp_t b1_tag, b2_tag;
-  ptrlong b1_long_val, b2_long_val;
+  boxint b1_long_val, b2_long_val;
 
   if (b1 == b2)
     return 1;
@@ -1239,25 +1261,25 @@ box_equal (cbox_t b1, cbox_t b2)
   if (!IS_BOX_POINTER (b1))
     {
       b1_tag = DV_LONG_INT;
-      b1_long_val = (ptrlong) b1;
+      b1_long_val = (boxint) b1;
     }
   else
     {
       b1_tag = box_tag (b1);
       if (b1_tag == DV_LONG_INT)
-	b1_long_val = *(ptrlong *) b1;
+	b1_long_val = *(boxint *) b1;
     }
 
   if (!IS_BOX_POINTER (b2))
     {
       b2_tag = DV_LONG_INT;
-      b2_long_val = (ptrlong) b2;
+      b2_long_val = (boxint) b2;
     }
   else
     {
       b2_tag = box_tag (b2);
       if (b2_tag == DV_LONG_INT)
-	b2_long_val = *(ptrlong *) b2;
+	b2_long_val = *(boxint *) b2;
     }
 
   if (b1_tag == DV_LONG_INT || b2_tag == DV_LONG_INT)
@@ -1307,7 +1329,7 @@ dk_debug_dump_box (FILE *outfd, box_t box, int lvl)
 
   if (!IS_POINTER (box))
     {
-      fprintf (outfd, "immediate number %ld\n", unbox (box));
+      fprintf (outfd, "immediate number " BOXINT_FMT "\n", unbox (box));
       return;
     }
   if (box == NULL)
@@ -1995,9 +2017,9 @@ box_t box_copy (cbox_t box) { return dbg_box_copy (__FILE__, __LINE__, box); }
 #undef box_copy_tree
 box_t box_copy_tree (cbox_t box) { return dbg_box_copy_tree (__FILE__, __LINE__, box); }
 #undef box_num
-box_t box_num (ptrlong n) { return dbg_box_num (__FILE__, __LINE__, n); }
+box_t box_num (boxint n) { return dbg_box_num (__FILE__, __LINE__, n); }
 #undef box_num_nonull
-box_t box_num_nonull (ptrlong n) { return dbg_box_num_nonull (__FILE__, __LINE__, n); }
+box_t box_num_nonull (boxint n) { return dbg_box_num_nonull (__FILE__, __LINE__, n); }
 #undef box_dv_ubuf
 char * box_dv_ubuf (size_t buf_strlen) { return dbg_box_dv_ubuf (__FILE__, __LINE__, buf_strlen); }
 #undef box_dv_uname_from_ubuf

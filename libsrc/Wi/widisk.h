@@ -275,12 +275,11 @@ typedef unsigned char * db_buf_t;
 
 
 #define INT64_REF_NA(p) \
-  (((int64)LONG_REF_NA (p)) << 32 | LONG_REF_NA (((caddr_t)p) + 4))
+  (((int64)LONG_REF_NA (p)) << 32 | ((uint32)LONG_REF_NA (((caddr_t)p) + 4)))
 
 #define INT64_SET_NA(p, v) \
-  LOMG_SET_NA (p,  (v >> 32)); \
-  LONG_SET_NA (((caddr_t)p) + 4, 0xffffffff & v);
-
+  {LONG_SET_NA (p,  (v >> 32));				\
+    LONG_SET_NA (((caddr_t)p) + 4, 0xffffffff & v); }
 
 
 

@@ -1526,9 +1526,9 @@ soap_print_box (caddr_t object, dk_session_t *out, const char *tag, int soap_ver
 
 	case DV_LONG_INT:
 	  if (SOAP_USES_TYPES)
-	    snprintf (temp, sizeof (temp), " xsi:type=\"xsd:int\" dt:dt=\"int\">%ld", unbox (object));
+	    snprintf (temp, sizeof (temp), " xsi:type=\"xsd:int\" dt:dt=\"int\">" BOXINT_FMT, unbox (object));
 	  else
-	    snprintf (temp, sizeof (temp), ">%ld", unbox (object));
+	    snprintf (temp, sizeof (temp), ">" BOXINT_FMT, unbox (object));
 	  SES_PRINT (out, temp);
 	  break;
 
@@ -8133,7 +8133,7 @@ soap_find_attachment (caddr_t * entity, soap_ctx_t * ctx, int * conv)
       temp = elm[0];
       if (0 == strncmp (temp, "cid:", 4))
 	  temp = temp + 4;
-      if (0 == strcmp ((char *)unbox(id), temp))
+      if (0 == strcmp ((char *)unbox_ptrlong (id), temp))
 	{
 	  if (ctx->raw_attachments) /* no further processing, all is returned to proc */
 	    return box_copy_tree ((box_t) elm);

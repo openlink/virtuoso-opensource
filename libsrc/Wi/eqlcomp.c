@@ -2179,7 +2179,7 @@ qr_describe_key (dbe_column_t *col)
 }
 
 stmt_compilation_t *
-qr_describe (query_t * qr, caddr_t *err_ret)
+qr_describe_1 (query_t * qr, caddr_t *err_ret, client_connection_t * cli)
 {
   int cdef = 0;
   caddr_t *params;
@@ -2263,6 +2263,8 @@ retry_dupe_check:
 	      dtp = DV_BLOB_WIDE;
 	      desc->cd_flags = CDF_XMLTYPE;
 	    }
+	  if (cli && DV_INT64 == dtp && cli->cli_version < 3016)
+	    dtp = DV_NUMERIC;
 	  desc->cd_dtp = dtp;
 	  desc->cd_scale = box_num (sl->ssl_scale);
 	  if ((IS_STRING_DTP (dtp) || dtp == DV_BIN) && !prec)
@@ -2325,6 +2327,12 @@ retry_dupe_check:
     }
   sc->sc_hidden_columns = qr->qr_hidden_columns;
   return sc;
+}
+
+stmt_compilation_t *
+qr_describe (query_t * qr, caddr_t *err_ret)
+{
+  return qr_describe_1 (qr, err_ret, NULL);
 }
 
 

@@ -35,7 +35,7 @@ class VirtuosoTypes
    /**
     * The version string.
     */
-   public static final String version = "03.50.2727";
+   public static final String version = "05.51.5151";
 
    /**
     * NIL, false, the NULL pointer
@@ -110,6 +110,7 @@ class VirtuosoTypes
     * For transport, only 4 bytes are used
     */
    public static final int DV_LONG_INT = 189;
+   public static final int DV_INT64    = 247;
 
    /**
     * 4 byte float

@@ -40,8 +40,7 @@
 /*#define PAGE_TRACE 1 */
 /* #define DBG_BLOB_PAGES_ACCOUNT */
 #undef OLD_HASH
-#define NEW_HASH 
-#if !defined (OLD_HASH) && !defined (NEW_HASH)
+#if !defined (NEW_HASH)
 #define NEW_HASH
 #endif
 
@@ -1240,7 +1239,8 @@ typedef struct ra_req_s
    DV_SHORT_INT == dtp || \
    DV_SINGLE_FLOAT == dtp || \
    DV_DOUBLE_FLOAT == dtp || \
-   DV_NUMERIC == dtp)
+   DV_NUMERIC == dtp \
+  || DV_INT64 == dtp)
 
 #ifndef dbg_printf
 # ifdef DEBUG

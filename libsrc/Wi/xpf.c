@@ -964,7 +964,7 @@ xpf_let (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 /* This function should not have metadata described in the init. */
 void xpf_call_udf (xp_instance_t * top_xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  XT *bodytree, *defun = (XT *)(unbox(tree->_.xp_func.qname));
+  XT *bodytree, *defun = (XT *)(unbox_ptrlong (tree->_.xp_func.qname));
   int argvarctr, stepvar, itervarno, scalarvarno, argvarno = (int) defun->_.defun.argcount;
   ptrlong iteridx;
   caddr_t **bindings = (caddr_t **)dk_alloc_box_zero (argvarno * sizeof (xqi_binding_t *), DV_ARRAY_OF_LONG);
@@ -1998,10 +1998,9 @@ xpf_document_impl (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int cu
   XT *doc_arg;
   caddr_t doc_text = NULL;	/* It must be be freed on loading error */
   caddr_t loading_error = NULL;
-  caddr_t dtd_cfg = default_doc_dtd_config;
   char cache_key_place[sizeof (xml_doc_cache_stdkey_t) + BOX_AUTO_OVERHEAD];
   xml_doc_cache_stdkey_t *cache_key;
-  BOX_AUTO (cache_key, cache_key_place, sizeof (xml_doc_cache_stdkey_t), DV_ARRAY_OF_POINTER);
+  BOX_AUTO_TYPED (xml_doc_cache_stdkey_t *, cache_key, cache_key_place, sizeof (xml_doc_cache_stdkey_t), DV_ARRAY_OF_POINTER);
   cache_key->xdcs_type = XDC_DOCUMENT;
   cache_key->xdcs_abs_uri = NULL;
   cache_key->xdcs_parser_mode = 0;
@@ -2332,7 +2331,7 @@ xp_text_contains (xp_instance_t * xqi, XT * tree,  xml_entity_t * ctx_xe, xml_en
     {
       caddr_t err = NULL;
       caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_LONG_STRING, 1);
-      text_tree = xp_text_parse (str, &eh__UTF8, ((lang_handler_t **)(args[4]))[0], NULL /* ignore options */, &err);
+      text_tree = xp_text_parse (str, &eh__UTF8, ((lang_handler_t *)unbox_ptrlong ((caddr_t)(args[4]))), NULL /* ignore options */, &err);
       if (err)
 	sqlr_resignal (err);
       dk_free_tree ((caddr_t) args[2]);
@@ -2501,7 +2500,7 @@ xpf_format_number (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   NUMERIC_INIT (num_buf);
 
   if (xb && xb->xb_value && DV_TYPE_OF (xb->xb_value) == DV_LONG_INT)
-    xsh = (xslt_sheet_t *) unbox (xb->xb_value);
+    xsh = (xslt_sheet_t *) unbox_ptrlong (xb->xb_value);
   if (tree->_.xp_func.argcount > 2)
     dec_format = xpf_arg (xqi, tree, ctx_xe, DV_C_STRING, 2);
   if (xsh && dec_format != (caddr_t) -1)
@@ -2980,7 +2979,7 @@ xpf_create_element (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 	    case DV_LONG_INT:
 	      {
 		char buf[20];
-		sprintf(buf, "%ld", unbox(subvalue));
+		sprintf(buf, BOXINT_FMT, unbox (subvalue));
 	        if (prev_subval_is_text)
 		  dk_set_push (&res_raw_elems, box_dv_short_string (" "));
                 prev_subval_is_text = 1;

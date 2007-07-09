@@ -53,6 +53,8 @@ key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl)
   col->col_name = box_dv_short_string (SSL_HAS_NAME (ssl) ? ssl->ssl_name : "const");
   col->col_sqt = ssl->ssl_sqt;
   col->col_sqt.sqt_non_null = 0;
+  if (DV_LONG_INT == ssl->ssl_dtp && !ssl->ssl_column)
+    col->col_sqt.sqt_dtp = DV_INT64; /* temp results of int exprs can be wider */
   if (DV_UNKNOWN == col->col_sqt.sqt_dtp
       ||  (!dtp_is_fixed (col->col_sqt.sqt_dtp) && !dtp_is_var (col->col_sqt.sqt_dtp)))
     {

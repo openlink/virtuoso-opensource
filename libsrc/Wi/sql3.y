@@ -562,7 +562,7 @@
 
 /* literal keyword tokens */
 
-%token ALL AMMSC ANY ATTACH ASC AUTHORIZATION BETWEEN BREAKUP BY
+%token ALL AMMSC ANY ATTACH ASC AUTHORIZATION BETWEEN BIGINT BREAKUP BY
 %token CASCADE CHARACTER CHECK CLOSE COMMIT CONSTRAINT CONTINUE CREATE CUBE CURRENT
 %token CURSOR DECIMAL_L DECLARE DEFAULT DELETE_L DESC DISTINCT DOUBLE_L
 %token DROP ESCAPE EXISTS FETCH FLOAT_L FOR FOREIGN FOUND FROM GOTO GO
@@ -575,7 +575,7 @@
 %token ARRAY
 
 /* Extensions */
-%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID QUIETCAST_L SPARQL_L
+%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS QUIETCAST_L SPARQL_L
 
 /* Admin statements */
 %token SHUTDOWN CHECKPOINT BACKUP REPLICATION
@@ -1366,7 +1366,7 @@ ordering_spec_commalist
 
 ordering_spec
 	: scalar_exp opt_asc_desc
-		{ $$ = t_listst (3, ORDER_BY, INTEGERP ($1) ? (caddr_t) unbox ((caddr_t) $1) : (caddr_t) $1, (ptrlong) $2);  }
+		{ $$ = t_listst (3, ORDER_BY, INTEGERP ($1) ? (caddr_t) unbox_ptrlong ((caddr_t) $1) : (caddr_t) $1, (ptrlong) $2);  }
 	|  mssql_xml_col opt_asc_desc
 		{ $$ = (ST*) t_list (3, ORDER_BY, t_list (3, COL_DOTTED, NULL, sqlp_xml_col_name ($1)), (ptrlong) $2); }
 	;
@@ -2863,6 +2863,9 @@ base_data_type
 	| SMALLINT
 		{ $$ = t_listst (2, (long) DV_SHORT_INT, (long) 0);
 		}
+	| BIGINT
+{ $$ = t_listst (3, (ptrlong) DV_INT64, t_box_num (19), t_box_num (0));
+		}
 	| FLOAT_L
 		{ $$ = t_listst (2, (long) DV_DOUBLE_FLOAT, (long) 0);
 		}
@@ -2929,6 +2932,9 @@ base_data_type
 		}
 	| IRI_ID 
 		{ $$ = t_listst (2, (ptrlong) DV_IRI_ID, (ptrlong)12); /* #i+10digits */
+		}
+	| IRI_ID_8 
+		{ $$ = t_listst (2, (ptrlong) DV_IRI_ID_8, (ptrlong)22); /* #i+20digits */
 		}
 	;
 
@@ -3667,7 +3673,48 @@ opt_pk
 	|  PRIMARY KEY '(' column_commalist ')' { $$ = (ST *) t_list_to_array ($4); }
 	;
 
+int bnode_iri_ids_are_huge = 0;
 
+caddr_t
+bif_set_64bit_min_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  sec_check_dba ((query_instance_t *)qst, "__set_64bit_min_bnode_iri_id");
+  bnode_iri_ids_are_huge = 1;
+  return NEW_DB_NULL;
+}
+
+caddr_t
+bif_min_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_iri_id (min_bnode_iri_id());
+}
+
+caddr_t
+bif_iri_id_bnode32_to_bnode64 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "iri_id_bnode32_to_bnode64");
+  iri_id_t iid;
+  if (DV_IRI_ID != DV_TYPE_OF (arg0))
+    return box_copy_tree (arg0);
+  iid = unbox_iri_id (arg0);
+  if (iid < MIN_32BIT_BNODE_IRI_ID)
+    return box_iri_id (iid);
+  if (iid >= MIN_64BIT_BNODE_IRI_ID)
+    sqlr_new_error ("22012", "SR563", "64 bit bnode IRI ID is not a valid argument of iri_id_bnode32_to_bnode64() function");
+  return box_iri_id (iid + (MIN_64BIT_BNODE_IRI_ID - MIN_32BIT_BNODE_IRI_ID));
+}
+
+caddr_t
+bif_min_32bit_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_iri_id (MIN_32BIT_BNODE_IRI_ID);
+}
+
+caddr_t
+bif_min_64bit_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_iri_id (MIN_64BIT_BNODE_IRI_ID);
+}
 
 opt_join
 	:	{ $$ = NULL; }

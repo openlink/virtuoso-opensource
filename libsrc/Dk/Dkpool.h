@@ -212,8 +212,8 @@ caddr_t * t_sc_list (long n, ...);
 #define t_NEW_DB_NULL t_alloc_box (0, DV_DB_NULL)
 
 #ifdef MALLOC_DEBUG
-caddr_t dbg_t_box_num (const char *file, int line, ptrlong box);
-caddr_t dbg_t_box_num_and_zero (const char *file, int line, ptrlong box);
+caddr_t dbg_t_box_num (const char *file, int line, boxint box);
+caddr_t dbg_t_box_num_and_zero (const char *file, int line, boxint box);
 box_t dbg_t_box_double (const char *file, int line, double d);
 box_t dbg_t_box_float (const char *file, int line, float d);
 #define t_box_num(box) dbg_t_box_num (__FILE__, __LINE__, (box))
@@ -225,8 +225,8 @@ typedef caddr_t * (*t_list_impl_ptr_t)(long n, ...);
 extern t_list_impl_ptr_t t_list_cock (const char *file, int line);
 #define t_list (t_list_cock (__FILE__, __LINE__))
 #else
-caddr_t t_box_num (ptrlong box);
-caddr_t t_box_num_and_zero (ptrlong box);
+caddr_t t_box_num (boxint box);
+caddr_t t_box_num_and_zero (boxint box);
 box_t t_box_double (double d);
 box_t t_box_float (float d);
 extern caddr_t * t_list (long n, ...);

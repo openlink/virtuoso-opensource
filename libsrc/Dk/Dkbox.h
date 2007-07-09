@@ -61,6 +61,10 @@ We have three bytes in the header to record it. */
 #define IS_POINTER(n) \
 	(((unsigned ptrlong) (n)) >= (unsigned ptrlong) SMALLEST_POSSIBLE_POINTER)
 
+#define IS_BOXINT_POINTER(n) \
+	(((unsigned int64) (n)) >= (unsigned int64) SMALLEST_POSSIBLE_POINTER)
+
+
 /*
  * IS_BOX_POINTER.  Test if the item is a non null pointer
  */
@@ -411,7 +415,7 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define DV_REFERENCE 206	/*!< Reference to an 'self as ref' object, this is a read-only thing with do-nothing copy and free semantics */
 #define DV_XPATH_QUERY 232	/*!< Query object, this is a read-only thing with reference counting */
 #define DV_RDF 246		/*!< RDF object that is SQL value + type id + language id + outline id + flag whether the sql value is full */
-
+#define DV_INT64 247		/*!< This tag is used in schema and serialization. int box is always int64 */
 
 
 /* Special box for wrapping memory for user-specific objects. */
@@ -437,9 +441,16 @@ typedef struct dk_mem_wrapper_s
 
 #define LAST_DV_DTP 220
 
+typedef int64 boxint;
+
+#ifdef WIN32
+#define BOXINT_FMT "%I64d"
+#else
+#define BOXINT_FMT "%lld"
+#endif
 
 #define unbox_num(n) unbox(n)
-#define unbox_inline(n) (IS_BOX_POINTER (n) ? *(int32*)(n) : (int32) (ptrlong)(n))
+#define unbox_inline(n) (IS_BOX_POINTER (n) ? *(boxint*)(n) : (boxint) (ptrlong)(n))
 #define unbox_float(f) (*((float *)f))
 #define unbox_double(f) (*((double *)f))
 #define unbox_string(s) ((char *)s)
@@ -551,7 +562,7 @@ typedef struct rdf_box_s
   unsigned	rb_is_complete:1;
   unsigned	rb_is_outlined:1;
   unsigned	rb_chksum_tail:1;
-  int32		rb_ro_id;
+  int64		rb_ro_id;
   caddr_t	rb_box;
 } rdf_box_t;
 
@@ -566,6 +577,8 @@ typedef struct rdf_bigbox_s
 EXE_EXPORT (box_t, dk_alloc_box, (size_t bytes, dtp_t tag));
 EXE_EXPORT (box_t, dk_try_alloc_box, (size_t bytes, dtp_t tag));
 EXE_EXPORT (box_t, dk_alloc_box_zero, (size_t bytes, dtp_t tag));
+
+#define dk_alloc_list(n) ((caddr_t *)dk_alloc_box ((n) * sizeof (caddr_t), DV_ARRAY_OF_POINTER))
 
 #ifdef MALLOC_DEBUG
 void dk_alloc_box_assert (box_t box);
@@ -584,9 +597,11 @@ extern void dk_check_domain_of_connectivity (box_t box);
 EXE_EXPORT (int, dk_free_tree, (box_t box));
 EXE_EXPORT (int, dk_free_box_and_numbers, (box_t box));
 EXE_EXPORT (int, dk_free_box_and_int_boxes, (box_t pbox));
-EXE_EXPORT (ptrlong, unbox, (ccaddr_t n));
-EXE_EXPORT (box_t, box_num, (ptrlong n));
-EXE_EXPORT (box_t, box_num_nonull, (ptrlong n));
+EXE_EXPORT (boxint, unbox, (ccaddr_t n));
+EXE_EXPORT (ptrlong, unbox_ptrlong, (ccaddr_t n));
+EXE_EXPORT (int64, unbox_int64, (ccaddr_t n));
+EXE_EXPORT (box_t, box_num, (boxint n));
+EXE_EXPORT (box_t, box_num_nonull, (boxint n));
 EXE_EXPORT (box_t, box_string, (const char *string));
 EXE_EXPORT (box_t, box_dv_short_string, (const char *string));
 EXE_EXPORT (box_t, box_dv_short_nchars, (const char *buf, size_t buf_len));
@@ -642,8 +657,8 @@ box_t dbg_box_copy (const char *file, int line, cbox_t box);
 box_t dbg_box_try_copy (const char *file, int line, cbox_t box, box_t stub);
 box_t dbg_box_copy_tree (const char *file, int line, cbox_t box);
 box_t dbg_box_try_copy_tree (const char *file, int line, cbox_t box, box_t stub);
-box_t dbg_box_num (const char *file, int line, ptrlong n);
-box_t dbg_box_num_nonull (const char *file, int line, ptrlong n);
+box_t dbg_box_num (const char *file, int line, boxint n);
+box_t dbg_box_num_nonull (const char *file, int line, boxint n);
 char *dbg_box_dv_ubuf (const char *file, int line, size_t buf_strlen);
 box_t dbg_box_dv_uname_from_ubuf (const char *file, int line, char *ubuf);
 box_t dbg_box_dv_uname_string (const char *file, int line, const char *string);

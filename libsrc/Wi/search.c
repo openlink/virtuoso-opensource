@@ -334,6 +334,33 @@ itc_col_check (it_cursor_t * itc, search_spec_t * spec, int param_inx)
     case DV_SHORT_INT:
       n1 = SHORT_REF (row + spec->sp_cl.cl_pos);
 	      goto int_cmp;
+    case DV_INT64:
+      {
+	boxint n2, n1 = INT64_REF (row + spec->sp_cl.cl_pos);
+	param = itc->itc_search_params[param_inx];
+	switch (DV_TYPE_OF (param))
+	  {
+	  case DV_LONG_INT:
+	    n2 = unbox_inline (param);
+	    return NUM_COMPARE (n1, n2);
+	  case DV_SINGLE_FLOAT:
+	    return cmp_double (((float)n1), *(float*) param, DBL_EPSILON);
+	  case DV_DOUBLE_FLOAT:
+	    return cmp_double (((double)n1),  *(double*)param, DBL_EPSILON);
+	  case DV_NUMERIC:
+	    {
+	      NUMERIC_VAR (n);
+	      numeric_from_int64 ((numeric_t) &n, n1);
+	      return (numeric_compare_dvc ((numeric_t) &n, (numeric_t) param));
+	    }
+	  default: 
+	    {
+	      log_error ("Unexpected param dtp=[%d]", DV_TYPE_OF (param));
+	      GPF_T;
+	    }
+	  }
+      }
+
     case DV_DATETIME:
     case DV_TIMESTAMP:
     case DV_DATE:
@@ -393,7 +420,7 @@ itc_col_check (it_cursor_t * itc, search_spec_t * spec, int param_inx)
       }
     case DV_IRI_ID:
       {
-	iri_id_t i1 = (iri_id_t)(unsigned long) LONG_REF (row + spec->sp_cl.cl_pos);
+	iri_id_t i1 = (iri_id_t)(uint32) LONG_REF (row + spec->sp_cl.cl_pos);
 	iri_id_t i2 =  unbox_iri_id (itc->itc_search_params[param_inx]);
 	res = NUM_COMPARE (i1, i2);
 	return res;
@@ -881,7 +908,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
 	break;
 
       case DV_IRI_ID:
-	ln1 = (iri_id_t) (unsigned long) LONG_REF_NA (dv1 + 1);
+	ln1 = (iri_id_t) (uint32) LONG_REF_NA (dv1 + 1);
 	break;
       case DV_IRI_ID_8:
 	dtp1 = DV_IRI_ID;
@@ -988,7 +1015,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
 	break;
 
       case DV_IRI_ID:
-	ln2 = (iri_id_t) (unsigned long) LONG_REF_NA (dv2 + 1);
+	ln2 = (iri_id_t) (uint32) LONG_REF_NA (dv2 + 1);
 	break;
       case DV_IRI_ID_8:
 	dtp2 = DV_IRI_ID;

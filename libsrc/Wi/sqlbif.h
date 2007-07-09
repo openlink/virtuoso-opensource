@@ -76,9 +76,10 @@ EXE_EXPORT (caddr_t, bif_string_or_null_arg, (caddr_t * qst, state_slot_t ** arg
 EXE_EXPORT (caddr_t, bif_string_or_wide_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_string_or_uname_or_wide_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_string_or_wide_or_null_or_strses_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
-EXE_EXPORT (ptrlong, bif_long_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
+EXE_EXPORT (boxint, bif_long_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (ptrlong, bif_long_range_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, ptrlong low, ptrlong hi));
-EXE_EXPORT (ptrlong, bif_long_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *isnull));
+EXE_EXPORT (ptrlong, bif_long_low_range_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, ptrlong low));
+EXE_EXPORT (boxint, bif_long_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *isnull));
 EXE_EXPORT (float, bif_float_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (double, bif_double_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (ptrlong, bif_long_or_char_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));

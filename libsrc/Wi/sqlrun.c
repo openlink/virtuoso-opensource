@@ -706,14 +706,6 @@ sp_bind_ssl (db_buf_t * place, state_slot_t * ssl, caddr_t * state)
 }
 
 
-#define DTP_NORMALIZE(dtp) \
-switch (dtp) \
-{ \
- case DV_WIDE: dtp = DV_LONG_WIDE; break; \
- case DV_SHORT_INT: dtp = DV_LONG_INT; break; \
-}
-
-
 int
 ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 {

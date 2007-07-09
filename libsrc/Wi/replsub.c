@@ -451,7 +451,7 @@ is_in_circulation (subscription_t * sub, caddr_t * replh)
 
       if (replh_print)
         {
-	  dbg_printf_1 (("replh from '%s' level %ld",
+	  dbg_printf_1 (("replh from '%s' level " BOXINT_FMT,
               from_server, unbox (replh [REPLH_LEVEL])));
         }
       if (!from_server || 0 != strcmp (db_name, from_server))

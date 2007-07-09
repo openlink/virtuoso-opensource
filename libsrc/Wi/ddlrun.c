@@ -5791,7 +5791,7 @@ const char * bm_proc_1 =
 "  whenever not found goto err;\n"
 "  select kp_col into last_col from sys_key_parts where kp_key_id = bm_id and kp_nth = (select max (kp_nth) from sys_key_parts where kp_key_id = bm_id);\n"
 "  select col_dtp into last_col_dtp from sys_cols where col_id = last_col;\n"
-"  if (last_col_dtp in (189, 243, 244))\n"
+"  if (last_col_dtp in (189, 243, 244, 247))\n"
 "    update sys_keys set key_options = vector ('bitmap') where key_id = bm_id;\n"
 "  else \n"
 "    signal ('42000', 'BM001: The last effective part of a bitmap index must be an int or iri_id');\n"

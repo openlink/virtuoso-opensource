@@ -2038,7 +2038,7 @@ bif_scroll_cr_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (DV_TYPE_OF (arg) != DV_LONG_INT)
     sqlr_new_error ("22023", "SR233", "Wrong type of argument to __scroll_cr_init");
 
-  qr = (query_t *) unbox (arg);
+  qr = (query_t *) unbox_ptrlong (arg);
   stmt = (srv_stmt_t *) dk_alloc_box_zero (sizeof (srv_stmt_t), DV_PL_CURSOR);
   stmt->sst_is_pl_cursor = 1;
   stmt->sst_query = qr;

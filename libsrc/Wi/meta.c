@@ -735,6 +735,7 @@ sqt_fixed_length (sql_type_t * sqt)
       return (sqt->sqt_precision);
     case DV_DOUBLE_FLOAT:
     case DV_IRI_ID_8:
+    case DV_INT64:
       return 8;
     case DV_DATETIME:
     case DV_TIMESTAMP:
@@ -748,7 +749,7 @@ sqt_fixed_length (sql_type_t * sqt)
 
 
 dtp_t fixed_dtps[] =
-  {DV_LONG_INT, DV_DOUBLE_FLOAT, DV_SINGLE_FLOAT, DV_IRI_ID, DV_IRI_ID_8,
+  {DV_LONG_INT, DV_INT64, DV_DOUBLE_FLOAT, DV_SINGLE_FLOAT, DV_IRI_ID, DV_IRI_ID_8,
  DV_SHORT_INT, DV_DATETIME, DV_TIMESTAMP, DV_DATE, DV_TIME,
  DV_NUMERIC, 0};
 
@@ -780,12 +781,25 @@ dtp_is_column_compatible (dtp_t dtp)
 }
 
 
+int
+dtp_is_placed_with (dtp_t col_dtp, dtp_t placing_dtp)
+{
+  if (DV_INT64 == placing_dtp)
+    return 0;
+  if (placing_dtp == col_dtp)
+    return 1;
+  if (DV_LONG_INT == placing_dtp && DV_INT64 == col_dtp)
+    return 1;
+  return 0;
+}
+
+
 void
 key_place_fixed_1 (dbe_key_t * key, int * fill, int * null_fill, dk_set_t * cls, dk_set_t parts, dtp_t dtp)
 {
   DO_SET (dbe_column_t *, col, &parts)
     {
-      if (col->col_sqt.sqt_dtp == dtp)
+      if (dtp_is_placed_with (col->col_sqt.sqt_dtp, dtp))
 	{
 	  int len = sqt_fixed_length (&col->col_sqt);
 	  NEW_VARZ (dbe_col_loc_t, cl);

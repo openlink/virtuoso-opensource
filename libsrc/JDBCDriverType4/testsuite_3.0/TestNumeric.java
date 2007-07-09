@@ -56,6 +56,7 @@ public class TestNumeric
             System.out.println("    FAILED");
             System.exit(-1);
          }
+	 
          System.out.print("Execute CREATE TABLE");
          if(stmt.executeUpdate("create table EX..DEMO (ID integer,VAL numeric(9,0))") == 0)
             System.out.println("    PASSED");
@@ -110,6 +111,32 @@ public class TestNumeric
             System.out.println("    FAILED");
             System.exit(-1);
          }
+	 
+	 System.out.print("Execute CREATE PROC");
+         if(stmt.executeUpdate("create procedure test_int () { declare _new, _old, _it int; _new := 2; _old := 1; result_names (_it, _new, _old); while (_new > _old) { _old := _new; _new := _new + _new; _it := _it + 1; result (_new / _old, _old, _new); } end_result (); return; }") == 0)
+            System.out.println("    PASSED");
+         else
+         {
+            System.out.println("    FAILED");
+            System.exit(-1);
+         }
+         
+         System.out.print("Execute INT64 TEST");
+         rs = stmt.executeQuery("SELECT TEST_INT ()");
+
+	 for(int inx = 1; inx < 63 ; inx=inx+1)
+	     rs.next();
+
+	 if(rs.getInt(1) == -2)
+            System.out.println("    PASSED");
+         else
+         {
+            System.out.println(rs.getInt(1));
+            System.out.println("    FAILED");
+            System.exit(-1);
+         }
+	 
+	 
          System.out.print("Execute CREATE TABLE");
          if(stmt.executeUpdate("create table EX..DEMO (ID integer,VAL numeric(10,0))") == 0)
             System.out.println("    PASSED");

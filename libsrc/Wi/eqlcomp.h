@@ -52,6 +52,7 @@ query_t *eql_compile (const char *string, client_connection_t * cli);
 caddr_t box_keyword_get (caddr_t * box, char *kwd, int *);
 
 stmt_compilation_t *qr_describe (query_t * qr, caddr_t *err_ret);
+stmt_compilation_t *qr_describe_1 (query_t * qr, caddr_t *err_ret, client_connection_t * cli);
 
 caddr_t str_to_sym (const char *str);
 

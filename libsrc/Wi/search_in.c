@@ -37,11 +37,26 @@
 
 
 #define INTK_NN(offset, nth_param, lt, gt) \
+  { \
+    boxint n2; \
   dv2 = (db_buf_t) itc->itc_search_params[nth_param];	\
   n1 = LONG_REF (row + offset); \
   n2 = unbox_inline (((caddr_t)dv2));		\
   if (n1 < n2) goto lt; \
   if (n1 > n2) goto gt; \
+  }
+
+
+#define INT64K_NN(offset, nth_param, lt, gt) \
+  { \
+    boxint n1, n2; \
+  dv2 = (db_buf_t) itc->itc_search_params[nth_param];	\
+  n1 = INT64_REF (row + offset); \
+  n2 = unbox_inline (((caddr_t)dv2));		\
+  if (n1 < n2) goto lt; \
+  if (n1 > n2) goto gt; \
+}
+
 
 
 #define VAR_POS(nth_var) \
@@ -97,7 +112,18 @@
 { \
     iri_id_t i1, i2; \
     dv2 = (db_buf_t) itc->itc_search_params[nth_param];		\
-  i1 = (iri_id_t) (unsigned long) LONG_REF (row + offset);	\
+  i1 = (iri_id_t) (uint32) LONG_REF (row + offset);	\
+  i2 = unbox_iri_id (((caddr_t) dv2));				\
+  if (i1 < i2) goto lt; \
+  if (i1 > i2) goto gt; \
+}
+
+
+#define IRI64K_NN(offset, nth_param, lt, gt) \
+{ \
+    iri_id_t i1, i2; \
+    dv2 = (db_buf_t) itc->itc_search_params[nth_param];		\
+  i1 = (iri_id_t)  INT64_REF (row + offset);	\
   i2 = unbox_iri_id (((caddr_t) dv2));				\
   if (i1 < i2) goto lt; \
   if (i1 > i2) goto gt; \
@@ -117,7 +143,7 @@
 
 
 #define CMPF_HEADER(name) \
-int cmpf_##name (buffer_desc_t * buf, int pos, it_cursor_t * itc, short * lengths) \
+int cmpf_##name (buffer_desc_t * buf, int pos, it_cursor_t * itc) \
 { \
   db_buf_t dv1, dv2;				\
   db_buf_t row; \
@@ -240,6 +266,100 @@ CMPF_END;
 
 
 
+/* 64 bit versions of the above */
+
+CMPF_HEADER (int64n);
+INT64K_NN (0, 0, lt, gt); 
+CMPF_END;
+
+CMPF_HEADER (int64n_int64n);
+INT64K_NN (0, 0, lt, gt); 
+INT64K_NN (8, 1, lt, gt); 
+CMPF_END;
+
+
+CMPF_HEADER (int64n_int64n_int64n);
+INT64K_NN (0, 0, lt, gt); 
+INT64K_NN (8, 1, lt, gt); 
+INT64K_NN (16, 2, lt, gt); 
+CMPF_END;
+
+
+CMPF_HEADER (int64n_int64n_int64n_int64n);
+INT64K_NN (0, 0, lt, gt); 
+INT64K_NN (8, 1, lt, gt); 
+INT64K_NN (16, 2, lt, gt); 
+INT64K_NN (24, 3, lt, gt); 
+CMPF_END;
+
+
+
+CMPF_HEADER (strn_int64n);
+STRK_NN (0, 0, lt, gt); 
+INT64K_NN (0, 1, lt, gt);
+CMPF_END;
+
+
+
+CMPF_HEADER (strn_int64n_lte);
+STRK_NN (0, 0, lt, gt); 
+INT64K_NN (0, 1, match, gt);
+	 match:
+CMPF_END;
+
+
+
+CMPF_HEADER (iri64n_iri64n_anyn_iri64n);
+IRI64K_NN (0, 0, lt, gt);
+IRI64K_NN (8, 1, lt, gt);
+ANYK_NN (0, 2, lt, gt); 
+IRI64K_NN (16, 3, lt, gt);
+CMPF_END;
+
+
+
+CMPF_HEADER (iri64n_iri64n_anyn_iri64n_lte);
+IRI64K_NN (0, 0, lt, gt);
+IRI64K_NN (8, 1, lt, gt);
+ANYK_NN (0, 2, lt, gt); 
+IRI64K_NN (16, 3, match, gt);
+match:
+CMPF_END;
+
+CMPF_HEADER (iri64n_iri64n_anyn);
+IRI64K_NN (0, 0, lt, gt);
+IRI64K_NN (8, 1, lt, gt);
+ANYK_NN (0, 2, lt, gt); 
+CMPF_END;
+
+
+
+CMPF_HEADER (iri64n_iri64n_iri64n_anyn);
+IRI64K_NN (0, 0, lt, gt);
+IRI64K_NN (8, 1, lt, gt);
+IRI64K_NN (16, 2, lt, gt);
+ANYK_NN (0, 3, lt, gt); 
+CMPF_END;
+
+
+CMPF_HEADER (iri64n_iri64n_iri64n);
+IRI64K_NN (0, 0, lt, gt);
+IRI64K_NN (8, 1, lt, gt);
+IRI64K_NN (16, 2, lt, gt);
+CMPF_END;
+
+CMPF_HEADER (iri64n_iri64n);
+IRI64K_NN (0, 0, lt, gt);
+IRI64K_NN (8, 1, lt, gt);
+CMPF_END;
+
+
+CMPF_HEADER (iri64n);
+IRI64K_NN (0, 0, lt, gt);
+CMPF_END;
+
+
+
 
 dk_set_t cfd_list = NULL;
 
@@ -296,7 +416,7 @@ sp_add_func (key_cmp_t f, cmp_desc_t c[])
 
 #define SPF(f) \
 { \
-  key_cmp_t __f = cmpf_##f; \
+  key_cmp_t __f = (key_cmp_t) cmpf_##f; \
   static cmp_desc_t __a [] = {
 
 #define SPF_END \
@@ -379,9 +499,78 @@ search_inline_init ()
     {CMP_NONE, CMP_LTE, DV_LONG_INT, 1}
   SPF_END;
 
+/* 64 bit declarations */
+
+  SPF (iri64n_iri64n_anyn_iri64n)
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_ANY, 1},
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1}
+  SPF_END;
+  SPF (iri64n_iri64n_anyn_iri64n_lte)
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_ANY, 1},
+    {CMP_NONE, CMP_LTE, DV_IRI_ID_8, 1}
+  SPF_END;
+
+  SPF (iri64n)
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1}
+  SPF_END;
+  SPF (iri64n_iri64n)
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1}
+  SPF_END;
+
+  SPF (iri64n_iri64n_iri64n)
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1}
+  SPF_END;
+  SPF (iri64n_iri64n_iri64n_anyn)
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+  {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_ANY, 1}
+  SPF_END;
+
+  SPF (iri64n_iri64n_anyn)
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_IRI_ID_8, 1},
+    {CMP_EQ, CMP_NONE, DV_ANY, 1}
+  SPF_END;
+
+  SPF (int64n)
+    {CMP_EQ, CMP_NONE, DV_INT64, 1}
+  SPF_END;
+
+
+  SPF (int64n_int64n)
+    {CMP_EQ, CMP_NONE, DV_INT64, 1},
+    {CMP_EQ, CMP_NONE, DV_INT64, 1}
+  SPF_END;
+
+  SPF (int64n_int64n_int64n)
+    {CMP_EQ, CMP_NONE, DV_INT64, 1},
+    {CMP_EQ, CMP_NONE, DV_INT64, 1},
+    {CMP_EQ, CMP_NONE, DV_INT64, 1}
+  SPF_END;
+
+  SPF (int64n_int64n_int64n_int64n)
+    {CMP_EQ, CMP_NONE, DV_INT64, 1},
+    {CMP_EQ, CMP_NONE, DV_INT64, 1},
+    {CMP_EQ, CMP_NONE, DV_INT64, 1},
+    {CMP_EQ, CMP_NONE, DV_INT64, 1}
+  SPF_END;
+
+  SPF (strn_int64n)
+    {CMP_EQ, CMP_NONE, DV_STRING, 1},
+    {CMP_EQ, CMP_NONE, DV_INT64, 1}
+  SPF_END;
+  SPF (strn_int64n_lte)
+    {CMP_EQ, CMP_NONE, DV_STRING, 1},
+    {CMP_NONE, CMP_LTE, DV_INT64, 1}
+  SPF_END;
+
 
 }
-
-
-
-

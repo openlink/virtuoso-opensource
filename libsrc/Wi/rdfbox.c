@@ -342,6 +342,7 @@ bif_rdf_box_set_ro_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #define RBS_HAS_LANG	0x04
 #define RBS_HAS_TYPE	0x08
 #define RBS_CHKSUM	0x10
+#define RBS_64		0x20
 
 
 int 
@@ -352,6 +353,8 @@ rbs_length (db_buf_t rbs)
   db_buf_length (rbs + 2, &hl, &l);
   l += 2;
   if (flags & RBS_OUTLINED)
+    l += 4;
+  if (flags & RBS_64)
     l += 4;
   if (flags & (RBS_HAS_TYPE | RBS_HAS_LANG))
     l += 2;
@@ -379,18 +382,18 @@ void
 rb_serialize (caddr_t x, dk_session_t * ses)
 {
   /* dv_rdf, flags, data, ro_id, lang or type, opt chksum, opt dtp
-   * flags is or of 1. outlined 2. complete 4 has lang 8 has type 0x10 chksum+dtp */
+   * flags is or of 1. outlined 2. complete 4 has lang 8 has type 0x10 chksum+dtp 0x20 if id 8 bytes */
   rdf_box_t * rb = (rdf_box_t *) x;
   if (DKS_DB_DATA (ses))
     print_object (rb->rb_box, ses, NULL, NULL);
   else 
-
     {
-      int str_len = DV_STRING == DV_TYPE_OF (rb->rb_box) ? box_length (rb->rb_box) - 1 : 0;
       int flags = 0;
       session_buffered_write_char (DV_RDF, ses);
       if (rb->rb_ro_id)
 	flags |= RBS_OUTLINED;
+      if (rb->rb_ro_id > INT32_MAX)
+	flags |= RBS_64;
       if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
 	flags |= RBS_HAS_LANG;
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
@@ -429,7 +432,12 @@ rb_serialize (caddr_t x, dk_session_t * ses)
 	print_object (rb->rb_box, ses, NULL, NULL);
         }
       if (rb->rb_ro_id)
+	{
+	  if (rb->rb_ro_id > INT32_MAX)
+	    print_int64 (rb->rb_ro_id, ses);
+	  else
 	print_long (rb->rb_ro_id, ses);
+	}
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
 	print_short  (rb->rb_type, ses);
       if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
@@ -457,7 +465,12 @@ rb_deserialize (dk_session_t * ses)
   rb->rb_box = scan_session_boxing (ses);
     }
   if (flags & RBS_OUTLINED)
+    {
+      if (flags & RBS_64)
+	rb->rb_ro_id = read_int64 (ses);
+      else
     rb->rb_ro_id = read_long (ses);
+    }
   if (flags & RBS_COMPLETE)
     rb->rb_is_complete = 1;
   if (flags & RBS_HAS_TYPE)
@@ -495,6 +508,12 @@ rb_copy (rdf_box_t * rb)
   rb->rb_ref_count++;
   return (caddr_t)rb;
 }
+
+#define RBS_RO_ID_LEN(flags) \
+  (((flags) & RBS_OUTLINED) ? (((flags) & RBS_64) ? 8 : 4) : 0)
+
+#define RBS_RO_ID(place, flags) \
+  (((flags) & RBS_OUTLINED) ? (((flags) & RBS_64) ? INT64_REF_NA ((place)) : LONG_REF_NA ((place))) : 0)
 
 int
 dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
@@ -541,8 +560,8 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
     }
       len2 = data2[1];
       data2 += 2;
-      rdftype2 = ((RBS_HAS_TYPE & flags2) ? SHORT_REF_NA (data2 + len2 + ((RBS_OUTLINED & flags2) ? 4 : 0)) : RDF_BOX_DEFAULT_TYPE);
-      rdflang2 = ((RBS_HAS_LANG & flags2) ? SHORT_REF_NA (data2 + len2 + ((RBS_OUTLINED & flags2) ? 4 : 0)) : RDF_BOX_DEFAULT_LANG);
+      rdftype2 = ((RBS_HAS_TYPE & flags2) ? SHORT_REF_NA (data2 + len2 + RBS_RO_ID_LEN (flags2)) : RDF_BOX_DEFAULT_TYPE);
+      rdflang2 = ((RBS_HAS_LANG & flags2) ? SHORT_REF_NA (data2 + len2 + RBS_RO_ID_LEN (flags2)) : RDF_BOX_DEFAULT_LANG);
     }
   else
     {
@@ -572,10 +591,10 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
 	}
   len1 = data1[1];
   data1 += 2;
-  rdftype1 = ((RBS_HAS_TYPE & flags1) ? SHORT_REF_NA (data1 + len1 + ((RBS_OUTLINED & flags1) ? 4 : 0)) : RDF_BOX_DEFAULT_TYPE);
+  rdftype1 = ((RBS_HAS_TYPE & flags1) ? SHORT_REF_NA (data1 + len1 + RBS_RO_ID_LEN (flags1)) : RDF_BOX_DEFAULT_TYPE);
   if (rdftype1 < rdftype2) return DVC_LESS;
   if (rdftype1 > rdftype2) return DVC_GREATER;
-  rdflang1 = ((RBS_HAS_LANG & flags1) ? SHORT_REF_NA (data1 + len1 + ((RBS_OUTLINED & flags1) ? 4 : 0)) : RDF_BOX_DEFAULT_LANG);
+  rdflang1 = ((RBS_HAS_LANG & flags1) ? SHORT_REF_NA (data1 + len1 + RBS_RO_ID_LEN (flags1)) : RDF_BOX_DEFAULT_LANG);
   if (rdflang1 < rdflang2) return DVC_LESS;
   if (rdflang1 > rdflang2) return DVC_GREATER;
   if (RBS_CHKSUM & flags1)
@@ -623,8 +642,8 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
   if (DV_RDF == dtp2)
 	{
 	  /* neither is complete. Let the ro_id decide */
-      uint32 ro1 = ((RBS_OUTLINED & flags1) ? LONG_REF_NA (data1 + len1) : 0);
-      uint32 ro2 = ((RBS_OUTLINED & flags2) ? LONG_REF_NA (data2 + len2) : 0);
+      int64 ro1 = RBS_RO_ID (data1 + len1, flags1);
+      int64 ro2 = RBS_RO_ID (data2 + len2, flags2);
 	  if (ro1 == ro2)
 	    return DVC_MATCH;
 	  else if (ro1 < ro2)

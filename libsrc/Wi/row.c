@@ -285,7 +285,8 @@ itc_box_column (it_cursor_t * it, db_buf_t page, oid_t col, dbe_col_loc_t * cl)
   if (cl == it->itc_row_key->key_bit_cl && !it->itc_no_bitmap)
     {
       /* the current bm inx col value is in the itc */
-      if (DV_LONG_INT == it->itc_row_key->key_bit_cl->cl_sqt.sqt_dtp)
+      if (DV_LONG_INT == it->itc_row_key->key_bit_cl->cl_sqt.sqt_dtp
+	  || DV_INT64 == it->itc_row_key->key_bit_cl->cl_sqt.sqt_dtp)
 	return box_num (it->itc_bp.bp_value);
       else 
 	return box_iri_id (it->itc_bp.bp_value);
@@ -300,6 +301,8 @@ itc_box_column (it_cursor_t * it, db_buf_t page, oid_t col, dbe_col_loc_t * cl)
     case DV_LONG_INT:
       len = LONG_REF (xx);
       return (box_num (len));
+    case DV_INT64:
+      return box_num (INT64_REF (xx));
     case DV_IRI_ID:
       return box_iri_id ((unsigned long) LONG_REF (xx));
     case DV_IRI_ID_8:
@@ -619,8 +622,11 @@ itc_qst_set_column (it_cursor_t * it, dbe_col_loc_t * cl,
       len = LONG_REF ((row + FXO));
       qst_set_long (qst, target, len);
       return;
+    case DV_INT64:
+      qst_set_long (qst, target, INT64_REF ((row + FXO)));
+      return;
     case DV_IRI_ID:
-      ln1 = (iri_id_t) (unsigned long) LONG_REF ((row + FXO));
+      ln1 = (iri_id_t) (uint32) LONG_REF ((row + FXO));
       qst_set_bin_string (qst, target, (db_buf_t) &ln1, sizeof (iri_id_t), DV_IRI_ID);
       return;
     case DV_IRI_ID_8:
@@ -785,44 +791,17 @@ itc_qst_set_column (it_cursor_t * it, dbe_col_loc_t * cl,
 }
 
 
-int32
+int64
 safe_atoi (const char *data, caddr_t *err_ret)
 {
-#if 0
-  char *end_ptr = NULL;
-  int32 ret;
-  int eno_save;
-  caddr_t err = NULL;
-
-  if (!data)
-    goto error;
-
-  ret = strtol (data, &end_ptr, 10);
-  eno_save = errno;
-  while (end_ptr && *end_ptr && isspace (*end_ptr))
-    end_ptr++;
-  if (eno_save == ERANGE || !end_ptr || *end_ptr)
-    {
-error:
-      err = srv_make_new_error ("22023", "SR334", "Invalid integer value converting '%.100s'",
-	  data);
-      if (!err_ret)
-	sqlr_resignal (err);
-
-      *err_ret = err;
-      return 0;
-    }
-  else
-    return ret;
-#else
   caddr_t err;
-  int32 ret;
+  int64 ret;
   NUMERIC_VAR (n);
   NUMERIC_INIT (n);
 
   if (NUMERIC_STS_SUCCESS == numeric_from_string ((numeric_t)n, data))
     {
-      if (NUMERIC_STS_SUCCESS == numeric_to_int32 ((numeric_t) n, &ret))
+      if (NUMERIC_STS_SUCCESS == numeric_to_int64 ((numeric_t) n, &ret))
 	return ret;
     }
 
@@ -832,7 +811,6 @@ error:
   else
     *err_ret = err;
   return 0;
-#endif
 }
 
 
@@ -887,33 +865,37 @@ error:
 }
 
 
-int32
-box_to_int32 (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe_key_t *key)
+boxint
+box_to_boxint (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe_key_t *key, dtp_t col_dtp)
 {
+  boxint res;
   switch (dtp)
     {
     case DV_LONG_INT:
     case DV_SHORT_INT:
-      return ((int32) unbox (data));
+      res = unbox (data);
+      break;
     case DV_SINGLE_FLOAT:
-      return ((int32) unbox_float (data));
+      res =  (boxint) unbox_float (data);
+      break;
     case DV_DOUBLE_FLOAT:
-      return ((int32) unbox_double (data));
+      res =  (boxint) unbox_double (data);
+      break;
     case DV_STRING:
-      return safe_atoi (data, err_ret);
+      res = safe_atoi (data, err_ret);
+      break;
     case DV_WIDE:
     case DV_LONG_WIDE:
 	{
 	  char narrow [512];
 	  box_wide_string_as_narrow (data, narrow, 512, NULL);
-	  return safe_atoi (narrow, err_ret);
+	  res = safe_atoi (narrow, err_ret);
 	  break;
 	}
     case DV_NUMERIC:
       {
-	int32 i;
-	numeric_to_int32 ((numeric_t) data, &i);
-	return i;
+	numeric_to_int64 ((numeric_t) data, &res);
+	break;
       }
     default:
       {
@@ -924,6 +906,19 @@ box_to_int32 (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe_key_
       return 0;
       }
    }
+  if (DV_INT64 == col_dtp)
+    return res;
+  if (DV_LONG_INT == col_dtp
+      && INT32_MAX >= res && INT32_MIN <= res)
+    return res;
+  else if (INT16_MAX >= res && INT16_MIN <= res)
+    return res;
+  {
+    char * cl_name = __get_column_name (col_id, key);
+    *err_ret = srv_make_new_error ("22005", "SR130", "Integer " BOXINT_FMT " does not fit in  column %.*s.", res,
+				   MAX_NAME_LEN, cl_name);
+    return 0;
+  }
 }
 
 
@@ -1031,7 +1026,7 @@ row_set_col_cast (caddr_t data, sql_type_t *tsqt, caddr_t *err_ret,
 {
   dtp_t dtp = DV_TYPE_OF (data);
   caddr_t res = NULL;
-  long lv;
+  boxint lv;
 
   if (dtp != tsqt->sqt_dtp && dtp != DV_DB_NULL)
     {
@@ -1039,7 +1034,7 @@ row_set_col_cast (caddr_t data, sql_type_t *tsqt, caddr_t *err_ret,
 	{
 	  case DV_LONG_INT:
 	  case DV_SHORT_INT:
-	      lv = box_to_int32 (data, dtp, col_id, err_ret, key);
+	    lv = box_to_boxint (data, dtp, col_id, err_ret, key, DV_SHORT_INT);
 	      if (err_ret && *err_ret)
 		res = NULL;
 	      res = box_num (lv);
@@ -1108,7 +1103,7 @@ row_set_col (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int m
 	     dbe_key_t * key,
 	     caddr_t * err_ret, it_cursor_t * ins_itc, db_buf_t old_blob, caddr_t *qst)
 {
-  int32 lv;
+  boxint lv;
   caddr_t str;
   int pos = cl->cl_pos, len;
   dtp_t dtp = DV_TYPE_OF (data);
@@ -1164,7 +1159,7 @@ row_set_col (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int m
   switch (cl->cl_sqt.sqt_dtp)
     {
     case DV_LONG_INT:
-      lv = box_to_int32 (data, dtp, cl->cl_col_id, err_ret, key);
+      lv = box_to_boxint (data, dtp, cl->cl_col_id, err_ret, key, DV_LONG_INT);
       if (err_ret && *err_ret)
 	return;
       lv = num_check_prec (lv, cl->cl_sqt.sqt_precision, __get_column_name (cl->cl_col_id, key), err_ret);
@@ -1185,8 +1180,31 @@ row_set_col (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int m
 	}
       LONG_SET (row + pos, lv);
       break;
+    case DV_INT64:
+      lv = box_to_boxint (data, dtp, cl->cl_col_id, err_ret, key, DV_INT64);
+      if (err_ret && *err_ret)
+	return;
+      lv = num_check_prec (lv, cl->cl_sqt.sqt_precision, __get_column_name (cl->cl_col_id, key), err_ret);
+      if (err_ret && *err_ret)
+	return;
+      if (ins_itc)
+	{
+	  if (DV_LONG_INT == DV_TYPE_OF (data))
+	    {
+	      ITC_SEARCH_PARAM (ins_itc, data);
+	    }
+	  else 
+	    {
+	      caddr_t box = box_num (lv);
+	      ITC_SEARCH_PARAM (ins_itc, box);
+	      ITC_OWNS_PARAM (ins_itc, box);
+	    }
+	}
+      INT64_SET (row + pos, lv);
+      break;
+
     case DV_SHORT_INT:
-      lv = box_to_int32 (data, dtp, cl->cl_col_id, err_ret, key);
+      lv = box_to_boxint (data, dtp, cl->cl_col_id, err_ret, key, DV_SHORT_INT);
       if (err_ret && *err_ret)
 	return;
       lv = num_check_prec (lv, cl->cl_sqt.sqt_precision, __get_column_name (cl->cl_col_id, key), err_ret);
@@ -1223,12 +1241,25 @@ row_set_col (db_buf_t row, dbe_col_loc_t * cl, caddr_t data, int * v_fill, int m
 	iid = unbox_iri_id (data);
 	if (ins_itc)
 	  ITC_SEARCH_PARAM (ins_itc, data);
-	if (DV_IRI_ID_8 == dtp)
+	if (DV_IRI_ID_8 == cl->cl_sqt.sqt_dtp)
 	  {
 	    INT64_SET (row + pos, iid);
 	  }
 	else 
+	  {
+	    /* to don't overflow */
+	    if (iid <= 0xFFFFFFFF)
+	      {
 	  LONG_SET (row + pos, iid);
+	      }
+	    else
+	      {
+		if (err_ret)
+		  *err_ret = srv_make_new_error ("22023", "SR130", "Value for IRI ID column out of range");
+		return;
+	      }
+
+	  }
 	break;
 
       }
@@ -1737,6 +1768,7 @@ key_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * it, ins_key_t * ik
   buffer_desc_t *unq_buf;
   buffer_desc_t **unq_buf_ptr = NULL;
   int inx = 0, rc;
+  int ruling_part_bytes;
   union
    {
      dtp_t image_int[MAX_ROW_BYTES];
@@ -1766,7 +1798,7 @@ are implemented. */
 
 
   if (!key->key_parts)
-    sqlr_new_error ("42S11", "SR119", "Key %s has 0 parts. Create index probably failed",
+    sqlr_new_error ("42S11", "SR119", "Key %.300s has 0 parts. Create index probably failed",
 	key->key_name);
 
   SHORT_SET (&image[IE_KEY_ID], key->key_id);
@@ -1784,10 +1816,12 @@ are implemented. */
       itc_free_owned_params (it);
       sqlr_resignal (err);
     }
-  if (v_fill - key->key_row_var_start + key->key_key_var_start > MAX_RULING_PART_BYTES)
+  ruling_part_bytes = v_fill - key->key_row_var_start + key->key_key_var_start;
+  if (ruling_part_bytes > MAX_RULING_PART_BYTES)
     {
       itc_free_owned_params (it);
-      sqlr_error ("22026", "Key too long");
+      sqlr_error ("22026", "Key is too long, index %.300s, ruling part is %d bytes that exceeds %d byte limit",
+        key->key_name, ruling_part_bytes, MAX_RULING_PART_BYTES );
     }
 
   col_ctr = inx;
@@ -2024,7 +2058,7 @@ numeric_from_x (numeric_t res, caddr_t x, int prec, int scale, char * col_name, 
   switch (dtp)
     {
     case DV_LONG_INT:
-      rc = numeric_from_int32 ((numeric_t) tnum, (int32) unbox (x));
+      rc = numeric_from_int64 ((numeric_t) tnum, (int64) unbox (x));
       break;
     case DV_SINGLE_FLOAT:
       rc = numeric_from_double ((numeric_t) tnum, unbox_float (x));

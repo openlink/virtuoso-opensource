@@ -1015,7 +1015,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
       if (cli_ver && ODBC_DRV_VER_G_NO (cli_ver) >= 1619)
 	{
 	  caddr_t err = srv_make_new_error ("08004", "SR451",
-	      "Not allowed to connect using client versions older than 2203");
+	      "Not allowed to connect using client versions older than 2303");
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
 	  dk_free_tree (err);
 	}
@@ -1025,7 +1025,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 
       thrs_printf ((thrs_fo, "ses %p thr:%p in connect1\n", client, THREAD_CURRENT_THREAD));
       DKST_RPC_DONE (client);
-      log_error ("Refused connection to an old client (pre 2203)");
+      log_error ("Refused connection to an old client (pre 2303)");
       return 0;
     }
 
@@ -1194,13 +1194,13 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 
 
 void
-qr_send_compilation (query_t * qr)
+qr_send_compilation (query_t * qr, client_connection_t *cli)
 {
   caddr_t *box = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t),
       DV_ARRAY_OF_POINTER);
   caddr_t err = NULL;
   box[0] = (caddr_t) QA_COMPILED;
-  box[1] = (caddr_t) qr_describe (qr, &err);
+  box[1] = (caddr_t) qr_describe_1 (qr, &err, cli);
   if (err)
     {
       dk_free_tree ((box_t) box);
@@ -1344,7 +1344,7 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
     {
       CATCH (CATCH_LISP_ERROR)
 	{
-	  qr_send_compilation (qr);
+	  qr_send_compilation (qr, cli);
 	}
       THROW_CODE
 	{
@@ -1727,6 +1727,8 @@ report_error:
 	{
 	  mutex_leave (cli->cli_mtx);
 	  dk_free_tree ((caddr_t) params);
+	  dk_free_box ((caddr_t) options);
+
 	  if (DK_MEM_RESERVE)
 	    {
 	      IN_CLIENT (cli);
@@ -3045,6 +3047,38 @@ numeric_serialize_client (caddr_t n, dk_session_t * ses)
     numeric_serialize ((numeric_t) n, ses);
 }
 
+void 
+int64_serialize_client (caddr_t n1, dk_session_t * session)
+{
+  client_connection_t *cli = DKS_DB_DATA (session);
+  boxint n = *(boxint*)n1;
+  union {
+    int64 n64;
+    struct {
+      int32 n1;
+      int32 n2;
+    } n32;
+  } num;
+  if (cli && cli->cli_version < 3016)
+    {
+      NUMERIC_VAR(tnum);
+      numeric_from_int64 ((numeric_t)&tnum, n);
+      numeric_serialize_client ((numeric_t)&tnum, session);
+    }
+  else
+    {
+      session_buffered_write_char (DV_INT64, session);
+      num.n64 = n;
+#if WORDS_BIGENDIAN
+      print_long (num.n32.n1, session);
+      print_long (num.n32.n2, session);
+#else
+      print_long (num.n32.n2, session);
+      print_long (num.n32.n1, session);
+#endif
+    }
+}
+
 
 void
 wide_serialize_client (caddr_t n, dk_session_t * ses)
@@ -3121,6 +3155,7 @@ srv_compatibility_init (void)
   PrpcSetWriter (DV_NUMERIC, (ses_write_func) numeric_serialize_client);
   PrpcSetWriter (DV_WIDE, (ses_write_func) wide_serialize_client);
   PrpcSetWriter (DV_LONG_WIDE, (ses_write_func) wide_serialize_client);
+  int64_serialize_client_f = (ses_write_func) int64_serialize_client;
   blobio_compatibility_init ();
 }
 

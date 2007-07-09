@@ -2037,7 +2037,7 @@ void sqlg_find_aggregate_sqt (dbe_schema_t *schema, sql_type_t *arg_sqt, ST *fre
       res_sqt->sqt_non_null = 1;
       break;
     case AMMSC_USER:
-      ua = (user_aggregate_t *)(unbox(fref->_.fn_ref.user_aggr_addr));
+      ua = (user_aggregate_t *)(unbox_ptrlong (fref->_.fn_ref.user_aggr_addr));
       if (!ua->ua_init.uaf_bif)
 	{
 	  query_t * proc = sch_proc_def (schema, ua->ua_init.uaf_name);
@@ -2221,7 +2221,7 @@ bitmap_index_box);
 	  state_slot_t * arg;
 	  state_slot_t ** ua_arglist;
 	  state_slot_t ** acc_args;
-	  user_aggregate_t *ua = (user_aggregate_t *)(unbox(fref->_.fn_ref.user_aggr_addr));
+	  user_aggregate_t *ua = (user_aggregate_t *)(unbox_ptrlong (fref->_.fn_ref.user_aggr_addr));
           int arglist_len;
 	  if (AMMSC_USER != fref->_.fn_ref.fn_code)
 	    arg = scalar_exp_generate (sc, fref->_.fn_ref.fn_arg, &code);

@@ -72,7 +72,7 @@ typedef struct bm_pos_s
   (ce)[1] = (off) >> 16; (ce)[2] &= 0x1f; (ce)[2] |= ((off) >> 8) & 0xe0; }
 
 
-#define IS_64_DTP(dtp) (DV_IRI_ID_8 == dtp)
+#define IS_64_DTP(dtp) (DV_IRI_ID_8 == (dtp) || DV_INT64 == (dtp))
 
 #define CE_ROUND(n) \
   ((n) & 0xffffffffffffe000)
@@ -100,7 +100,7 @@ typedef struct bm_pos_s
 
 
 #define BIT_COL(row, key) \
-  (DV_IRI_ID_8 == key->key_bit_cl->cl_sqt.sqt_dtp ? INT64_REF (row + key->key_bit_cl->cl_pos) : \
+  (IS_64_DTP (key->key_bit_cl->cl_sqt.sqt_dtp) ? INT64_REF (row + key->key_bit_cl->cl_pos) : \
     DV_IRI_ID == key->key_bit_cl->cl_sqt.sqt_dtp ? (int64)(unsigned int32)LONG_REF (row + key->key_bit_cl->cl_pos) : \
     LONG_REF  (row + key->key_bit_cl->cl_pos))
 

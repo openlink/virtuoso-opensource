@@ -75,14 +75,14 @@ session_buffered_write_char (int c, dk_session_t * ses)
 #endif
 
 
-int
+ptrlong
 read_short_int (dk_session_t *session)
 {
   return (int) (signed char) session_buffered_read_char (session);
 }
 
 
-long
+ptrlong
 read_long (dk_session_t *session)
 {
   uint32 res;
@@ -92,6 +92,34 @@ read_long (dk_session_t *session)
 #else
   return (long) (int32) ntohl (res);
 #endif
+}
+
+
+boxint
+read_int64 (dk_session_t *session)
+{
+  union {
+    int64 n64;
+    struct {
+      int32 n1;
+      int32 n2;
+    } n32;
+  } num;
+#if WORDS_BIGENDIAN
+  num.n32.n1 = read_long (session);
+  num.n32.n2 = read_long (session);
+#else
+  num.n32.n2 = read_long (session);
+  num.n32.n1 = read_long (session);
+#endif
+  return num.n64;
+}
+
+
+void *
+box_read_int64 (dk_session_t * ses, dtp_t dtp)
+{
+  return (void *) box_num (read_int64 (ses));
 }
 
 
@@ -455,6 +483,7 @@ init_readtable (void)
   readtable[DV_NULL] = imm_read_null;
   readtable[DV_SHORT_INT] = imm_read_short_int;
   readtable[DV_LONG_INT] = imm_read_long;
+  readtable[DV_INT64] = box_read_int64;
   readtable[DV_CHARACTER] = imm_read_char;
   readtable[DV_SINGLE_FLOAT] = imm_read_float;
 
@@ -571,11 +600,11 @@ scan_session_boxing (dk_session_t *session)
 
   if (next_char == DV_LONG_INT || next_char == DV_SHORT_INT)
     {
-      box_t *box;
+      boxint *box;
       if (!IS_POINTER (result))
-	return (box_t) result;
-      MARSH_CHECK_BOX (box = (box_t *) dk_try_alloc_box (sizeof (box_t), DV_LONG_INT));
-      *box = (box_t) result;
+	return (void *) (ptrlong) result;
+      MARSH_CHECK_BOX (box = (boxint *) dk_try_alloc_box (sizeof (boxint), DV_LONG_INT));
+      *box = (boxint)(ptrlong) result;
       result = box;
     }
 
@@ -659,17 +688,49 @@ print_long (long l, dk_session_t *session)
 
 
 void
-print_int (long n, dk_session_t *session)
+print_int64 (boxint n, dk_session_t *session)
+{
+  union {
+    int64 n64;
+    struct {
+      int32 n1;
+      int32 n2;
+    } n32;
+  } num;
+  session_buffered_write_char (DV_INT64, session);
+  num.n64 = n;
+#if WORDS_BIGENDIAN
+  print_long (num.n32.n1, session);
+  print_long (num.n32.n2, session);
+#else
+  print_long (num.n32.n2, session);
+  print_long (num.n32.n1, session);
+#endif
+}
+
+ses_write_func int64_serialize_client_f;
+
+void
+print_int (boxint n, dk_session_t *session)
 {
   if ((n > -128) && (n < 128))
     {
       session_buffered_write_char (DV_SHORT_INT, session);
       session_buffered_write_char ((char) n, session);
     }
-  else
+  else if (n >= (int64) INT32_MIN && n <= (int64) INT32_MAX)
     {
       session_buffered_write_char (DV_LONG_INT, session);
       print_long (n, session);
+    }
+  else
+    {
+      if (int64_serialize_client_f)
+	{
+	  (*int64_serialize_client_f) ((caddr_t)&n, session);
+	}
+      else
+	print_int64 (n, session);
     }
 }
 
@@ -821,7 +882,7 @@ print_object2 (void *object, dk_session_t *session)
 	  break;
 
 	case DV_LONG_INT:
-	  print_int ((long)*(ptrlong *)object, session);
+	  print_int (*(boxint *)object, session);
 	  break;
 
 	case DV_STRING:

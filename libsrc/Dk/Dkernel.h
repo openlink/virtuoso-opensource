@@ -349,7 +349,7 @@ typedef struct future_s
 /* Future results are of type DV_ARRAY_OF_POINTER.
    usually we are only interested in the first one. */
 #define FUTURE_RESULT_FIRST(future_result) \
-	(future_result ? ((caddr_t) unbox (((caddr_t *)(future_result))[0])) : NULL)
+	(future_result ? ((caddr_t) unbox_ptrlong (((caddr_t *)(future_result))[0])) : NULL)
 
 
 

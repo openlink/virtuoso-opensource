@@ -28,6 +28,9 @@
 
 #ifndef _DKTYPES_H
 #define _DKTYPES_H
+#ifdef HAVE_STDINT_H
+#include <stdint.h> /* for INT64_MAX etc */
+#endif
 
 #ifdef _MSC_VER
 #include <limits.h>
@@ -52,6 +55,30 @@
 #  error Unable to guess the int32/uint32 types. Try including the <limits.h>
 # endif
 #endif
+
+#ifndef INT16_MAX
+# define INT16_MAX		(32767)
+#endif
+
+#ifndef INT16_MIN
+# define INT16_MIN		(-32767-1)
+#endif
+
+#ifndef INT32_MIN
+#define INT32_MIN 		(-2147483647-1)
+#endif
+
+#ifndef INT32_MAX
+#define INT32_MAX		(2147483647)
+#endif
+
+#ifndef INT64_MIN
+#define INT64_MIN		(-9223372036854775807LL-1)
+#endif
+
+#ifndef INT64_MAX
+# define INT64_MAX		(9223372036854775807LL)
+#endif 
 
 /* true for most compilers, subject to change */
 #if 1

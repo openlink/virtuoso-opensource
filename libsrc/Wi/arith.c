@@ -33,7 +33,7 @@
 
 
 void
-qst_set_long (caddr_t * state, state_slot_t * sl, ptrlong lv)
+qst_set_long (caddr_t * state, state_slot_t * sl, boxint lv)
 {
 #ifdef QST_DEBUG
   if (sl->ssl_index < QI_FIRST_FREE)
@@ -51,7 +51,7 @@ qst_set_long (caddr_t * state, state_slot_t * sl, ptrlong lv)
     {
       if (DV_LONG_INT == box_tag (old))
 	{
-	  *(ptrlong *) old = lv;
+	  *(boxint *) old = lv;
 	}
       else
 	{
@@ -61,7 +61,7 @@ qst_set_long (caddr_t * state, state_slot_t * sl, ptrlong lv)
     }
   else
     {
-      if (IS_POINTER (lv))
+      if (IS_BOXINT_POINTER (lv))
 	*place = box_num (lv);
       else
 	*(ptrlong *) place = lv;
@@ -167,7 +167,7 @@ qst_set_numeric_buf (caddr_t * qst, state_slot_t * sl, db_buf_t xx)
 int
 n_coerce (caddr_t n1, caddr_t n2, dtp_t dtp1, dtp_t dtp2, dtp_t * out_dtp)
 {
-  ptrlong tl;
+  boxint tl;
   double td;
   switch (dtp1)
     {
@@ -179,17 +179,17 @@ n_coerce (caddr_t n1, caddr_t n2, dtp_t dtp1, dtp_t dtp2, dtp_t * out_dtp)
 	    *out_dtp = DV_LONG_INT;
 	    return 1;
 	  case DV_SINGLE_FLOAT:
-	    *(float *) n1 = (float) *(ptrlong *) n1;
+	    *(float *) n1 = (float) *(boxint *) n1;
 	    *out_dtp = DV_SINGLE_FLOAT;
 	    return 1;
 	  case DV_DOUBLE_FLOAT:
-	    *(double *) n1 = (double) *(ptrlong *) n1;
+	    *(double *) n1 = (double) *(boxint *) n1;
 	    *out_dtp = DV_DOUBLE_FLOAT;
 	    return 1;
 	  case DV_NUMERIC:
-	    tl = *(ptrlong*) n1;
+	    tl = *(boxint*) n1;
 	    numeric_init_static ((numeric_t) n1, NUMERIC_STACK_BYTES);
-	    numeric_from_int32 ((numeric_t) n1, (int32) tl);
+	    numeric_from_int64 ((numeric_t) n1, (int64) tl);
 	    *out_dtp = DV_NUMERIC;
 	    return 1;
 	  default:
@@ -201,7 +201,7 @@ n_coerce (caddr_t n1, caddr_t n2, dtp_t dtp1, dtp_t dtp2, dtp_t * out_dtp)
 	switch (dtp2)
 	  {
 	  case DV_LONG_INT:
-	    *(float *) n2 = (float) *(ptrlong *) n2;
+	    *(float *) n2 = (float) *(boxint *) n2;
 	    *out_dtp = DV_SINGLE_FLOAT;
 	    return 1;
 	  case DV_SINGLE_FLOAT:
@@ -226,7 +226,7 @@ n_coerce (caddr_t n1, caddr_t n2, dtp_t dtp1, dtp_t dtp2, dtp_t * out_dtp)
 	switch (dtp2)
 	  {
 	  case DV_LONG_INT:
-	    *(double *) n2 = (double) *(ptrlong *) n2;
+	    *(double *) n2 = (double) *(boxint *) n2;
 	    *out_dtp = DV_DOUBLE_FLOAT;
 	    return 1;
 	  case DV_SINGLE_FLOAT:
@@ -251,9 +251,9 @@ n_coerce (caddr_t n1, caddr_t n2, dtp_t dtp1, dtp_t dtp2, dtp_t * out_dtp)
 	switch (dtp2)
 	  {
 	  case DV_LONG_INT:
-	    tl = *(ptrlong *) n2;
+	    tl = *(boxint *) n2;
 	    numeric_init_static ((numeric_t) n2, NUMERIC_STACK_BYTES);
-	    numeric_from_int32 ((numeric_t) n2, (int32) tl);
+	    numeric_from_int64 ((numeric_t) n2, (int64) tl);
 	    *out_dtp = DV_NUMERIC;
 	    return 1;
 	  case DV_SINGLE_FLOAT:
@@ -287,13 +287,16 @@ dv_ext_to_num (dtp_t * place, caddr_t to)
   switch (*place)
     {
     case DV_SHORT_INT:
-      *(ptrlong *) to = (ptrlong) (((char *) place)[1]);
+      *(boxint *) to = (ptrlong) (((char *) place)[1]);
       return DV_LONG_INT;
     case DV_LONG_INT:
-      *(ptrlong *) to = LONG_REF_NA (place + 1);
+      *(boxint *) to = LONG_REF_NA (place + 1);
+      return DV_LONG_INT;
+    case DV_INT64:
+      *(boxint*) place = INT64_REF_NA (place + 1);
       return DV_LONG_INT;
     case DV_NULL:
-      *(ptrlong *) to = 0;
+      *(boxint *) to = 0;
       return DV_LONG_INT;
     case DV_SINGLE_FLOAT:
       EXT_TO_FLOAT (to, place + 1);
@@ -322,7 +325,7 @@ dv_ext_to_num (dtp_t * place, caddr_t to)
       dtp = box_tag (n_box); \
     } \
      if (dtp == DV_LONG_INT) { \
-	* (ptrlong*) &mem = * (ptrlong*) n_box; \
+	* (boxint*) &mem = * (boxint*) n_box; \
     } else if (dtp == DV_DOUBLE_FLOAT) \
       * (double *) &mem = * (double *) n_box; \
     else if (dtp == DV_SINGLE_FLOAT) \
@@ -333,7 +336,7 @@ dv_ext_to_num (dtp_t * place, caddr_t to)
     } \
   } else { \
     nonboxed##mem: \
-    * (ptrlong *)&mem = (ptrlong) n_box; \
+    * (boxint *)&mem = (boxint)((ptrlong)n_box); \
     dtp = DV_LONG_INT; \
   }
 
@@ -437,7 +440,7 @@ cmp_dv_box (caddr_t dv, caddr_t box)
       switch (res_dtp)
 	{
 	case DV_LONG_INT:
-	  return (NUM_COMPARE (*(ptrlong *) &dn1, *(ptrlong *) &dn2));
+	  return (NUM_COMPARE (*(boxint *) &dn1, *(boxint *) &dn2));
 	case DV_SINGLE_FLOAT:
 	  return cmp_double (*(float *) &dn1, *(float *) &dn2, FLT_EPSILON);
 	case DV_DOUBLE_FLOAT:
@@ -473,7 +476,7 @@ cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *col
       switch (res_dtp)
 	{
 	case DV_LONG_INT:
-	  return (NUM_COMPARE (*(ptrlong *) &dn1, *(ptrlong *) &dn2));
+	  return (NUM_COMPARE (*(boxint *) &dn1, *(boxint *) &dn2));
 	case DV_SINGLE_FLOAT:
 	  return cmp_double (*(float *) &dn1, *(float *) &dn2, FLT_EPSILON);
 	case DV_DOUBLE_FLOAT:
@@ -720,12 +723,12 @@ retry_rdf_boxes: \
 	{ \
 	case DV_LONG_INT: \
 	int_case: \
-	  if (isdiv && 0 == *(ptrlong *) &dn2) \
+	  if (isdiv && 0 == *(boxint *) &dn2) \
 	    sqlr_new_error ("22012", "SR084", "Division by 0."); \
 	  if (target) \
 	    return (qst_set_long (qst, target, \
-		(*(ptrlong *) &dn1 op * (ptrlong *) &dn2)), (caddr_t) 0); \
-	  return (box_num (*(ptrlong *) &dn1 op * (ptrlong *) &dn2)); \
+		(*(boxint *) &dn1 op * (boxint *) &dn2)), (caddr_t) 0); \
+	  return (box_num (*(boxint *) &dn1 op * (boxint *) &dn2)); \
 	case DV_SINGLE_FLOAT: \
 	  if (isdiv && 0 == *(float *) &dn2) \
 	    sqlr_new_error ("22012", "SR085", "Division by 0."); \
@@ -782,12 +785,12 @@ retry_rdf_boxes:
       switch (res_dtp)
 	{
 	case DV_LONG_INT:
-	  if (0 == *(ptrlong *) &dn2)
+	  if (0 == *(boxint *) &dn2)
 	    sqlr_new_error ("22012", "SR088", "Division by 0.");
 	  if (target)
 	    return (qst_set_long (qst, target,
-		(*(ptrlong *) &dn1 % * (ptrlong *) &dn2)), (caddr_t) 0);
-	  return (box_num (*(ptrlong *) &dn1 % * (ptrlong *) &dn2));
+		(*(boxint *) &dn1 % * (boxint *) &dn2)), (caddr_t) 0);
+	  return (box_num (*(boxint *) &dn1 % * (boxint *) &dn2));
 	case DV_SINGLE_FLOAT:
 	  if (0 == *(float *) &dn2)
 	    sqlr_new_error ("22012", "SR089", "Division by 0.");

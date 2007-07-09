@@ -1589,13 +1589,14 @@ pl_next_bit (placeholder_t * itc, db_buf_t bm, short bm_len, bitno_t bm_start, i
 int64
 unbox_iri_int64 (caddr_t x)
 {
+  dtp_t x_dtp;
   if (!IS_BOX_POINTER (x))
-    return ((int64) x);
+    return ((int64)((ptrlong)x));
   if (DV_LONG_INT == box_tag (x))
-    return *(ptrlong*)x;
+    return *(boxint*)x;
   if (DV_IRI_ID == box_tag (x))
     return *(iri_id_t*)x;
-  return (int64)x;
+  return (int64)((ptrlong)(x));
 }
 
 
@@ -1619,7 +1620,7 @@ itc_bp_cmp (it_cursor_t * itc, int param_inx)
     case DV_NUMERIC:
       {
 	NUMERIC_VAR (n);
-	numeric_from_int32 ((numeric_t) &n, n1);
+	numeric_from_int64 ((numeric_t) &n, n1);
 	return (numeric_compare_dvc ((numeric_t) &n, (numeric_t) param));
 	  }
 	default: GPF_T;
@@ -1638,8 +1639,8 @@ dv_to_int64 (box_t x)
     case DV_DOUBLE_FLOAT: return unbox_double (x);
     case DV_NUMERIC:
       {
-	int32 res;
-	numeric_to_int32 ((numeric_t)x, &res);
+	int64 res;
+	numeric_to_int64 ((numeric_t)x, &res);
 	return res;
       }
     default: return 0;
@@ -1905,7 +1906,7 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 			  if (DV_IRI_ID == key->key_bit_cl->cl_sqt.sqt_dtp || DV_IRI_ID_8 == key->key_bit_cl->cl_sqt.sqt_dtp)
 			    qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) &itc->itc_bp.bp_value, sizeof (iri_id_t), DV_IRI_ID);
 			  else
-			    qst_set_long (itc->itc_out_state, ssl, (int32) itc->itc_bp.bp_value);
+			    qst_set_long (itc->itc_out_state, ssl, itc->itc_bp.bp_value);
 			}
 		      else if (OM_NULL == om[inx].om_is_null)
 			qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);

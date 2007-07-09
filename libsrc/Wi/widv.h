@@ -201,10 +201,18 @@ User-level object is of type DV_XML_ENTITY. */
 #define DV_ANY 242
 
 typedef unsigned int64 iri_id_t;
+#define MIN_32BIT_BNODE_IRI_ID ((iri_id_t)1000000000)
+#define MIN_64BIT_BNODE_IRI_ID (((iri_id_t)1) << 62)
 #define unbox_iri_id(i) (*(iri_id_t*)(i))
+extern int bnode_iri_ids_are_huge;
+#define min_bnode_iri_id() (bnode_iri_ids_are_huge ? MIN_64BIT_BNODE_IRI_ID : MIN_32BIT_BNODE_IRI_ID)
+
 
 #define DV_IRI_ID 243
 #define DV_IRI_ID_8 244
+
+#define IS_IRI_DTP(dtp) (DV_IRI_ID == (dtp) || DV_IRI_ID_8 == (dtp))
+
 #define DV_COMPOSITE 255 /* value important for free text, where long w/ high byte of 255 signifies composite key */
 
 #define DV_OBJECT 254
@@ -257,6 +265,10 @@ typedef unsigned int64 iri_id_t;
 
 #define IS_DB_NULL(x) \
   (IS_BOX_POINTER(x) && box_tag (x) == DV_DB_NULL)
+
+#define IS_INT_DTP(dtp) \
+  (DV_LONG_INT == dtp || DV_SHORT_INT == dtp || DV_INT64 == dtp)
+
 
 #define DV_STRINGP(q) \
   (IS_BOX_POINTER (q) && ((DV_STRING == box_tag (q)) || (DV_UNAME == box_tag (q))))
@@ -506,6 +518,7 @@ sqlr_new_error is void, and should never return.
     "UDT_REFERENCE" : \
     ((type) == DV_IRI_ID) ? "IRI_ID" : \
     ((type) == DV_IRI_ID_8) ? "IRI_ID" : \
+  ((type) == DV_INT64) ? "BIGINT" : \
   ((type) == DV_UNAME) ? "UNAME" : \
   ((type) == DV_RDF) ? "rdf" : \
   "UNK_DV_TYPE" )

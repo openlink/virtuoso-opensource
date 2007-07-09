@@ -260,6 +260,29 @@ voidptrhashcmp (char *x, char *y)
 }
 
 
+id_hashed_key_t
+boxint_hash (char *x)
+{
+  union {
+    boxint k;
+    struct {
+      int32 n1;
+      int32 n2;
+    } k32;
+  } n;
+  n.k = *(boxint*)x;
+  return 0xfffffff &  (n.k32.n1 ^ n.k32.n2);
+}
+
+
+int
+boxint_hashcmp (char *x, char *y)
+{
+  boxint k1 = *(boxint*)x, k2 = *(boxint*) y;
+		return k1 == k2 ? 1 : 0;
+}
+
+
 #define ROL(h) ((h << 1) | ((h >> 31) & 1))
 
 box_hash_func_t dtp_hash_func[256];

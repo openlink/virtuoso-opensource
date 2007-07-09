@@ -2913,9 +2913,12 @@ bif_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifndef NDEBUG
 #define CHECK_URI_TYPES(base_uri,rel_uri) \
   do { \
-    if ((NULL != base_uri) && (DV_STRING != DV_TYPE_OF (base_uri)) && (DV_WIDE != DV_TYPE_OF (base_uri)) && (DV_LONG_WIDE != DV_TYPE_OF (base_uri))) \
+    dtp_t b_dt, r_dt; \
+    b_dt = DV_TYPE_OF (base_uri); \
+    if ((NULL != base_uri) && (DV_STRING != b_dt) && (DV_WIDE != b_dt) && (DV_LONG_WIDE != b_dt) && (DV_UNAME != b_dt)) \
       GPF_T; \
-    if ((DV_STRING != DV_TYPE_OF (rel_uri)) && (DV_WIDE != DV_TYPE_OF (rel_uri)) && (DV_LONG_WIDE != DV_TYPE_OF (rel_uri))) \
+    r_dt = DV_TYPE_OF (rel_uri); \
+    if ((DV_STRING != r_dt) && (DV_WIDE != r_dt) && (DV_LONG_WIDE != r_dt) && (DV_UNAME != r_dt)) \
       GPF_T; \
     } while (0)
 #else

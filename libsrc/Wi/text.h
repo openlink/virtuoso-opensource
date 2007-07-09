@@ -30,10 +30,29 @@
 
 typedef union d_id_u {
   dtp_t	id[32];
-  int32 num;
+  int64 num;
 } d_id_t;
 
+
+#define D_ID_64 0xfd /*marks that the next 8 bytes are a 8 byte numeric d_id */
+#define D_ID32_MAX 0xfcffffff /* if unsigned int32 gt this, it is 64 */
+
+#define D_ID_NUM_REF(place) \
+  (  (((dtp_t*)(place))[0] == D_ID_64) \
+? INT64_REF_NA (((db_buf_t)(place)) + 1) \
+  : LONG_REF_NA (place))
 /* #define FREETEXT_PORTABILITY_TEST */
+
+#define D_ID_NUM_SET(place, id) \
+{ \
+  if ((int64) (id) > (int64)D_ID32_MAX) \
+    { ((dtp_t*)(place))[0] = D_ID_64; \
+      INT64_SET_NA ((((db_buf_t)(place)) + 1), (id)); \
+    } else { \
+    LONG_SET_NA ((place), (id)); \
+  } \
+}
+
 
 #ifndef FREETEXT_PORTABILITY_TEST
 typedef uint32 wpos_t; /* was uint32, then ptrlong then back to uint32 */
@@ -178,14 +197,14 @@ struct search_stream_s
 typedef struct search_stream_s search_stream_t;
 
 #define D_AT_END(d) ((d)->num == 0)
-#define D_INITIAL(d)  ((d)->num == (int32)(0xFFFFfe30))
-#define D_PRESET(d)  ((d)->num == (int32)(0xFFFFfe20))
-#define D_NEXT(d)  ((d)->num == (int32)(0xFFFFfe10))
+#define D_INITIAL(d)  ((d)->num == (int64)(0xFFFFFFFFFFFFfe30LL))
+#define D_PRESET(d)  ((d)->num == (int64)(0xFFFFFFFFFFFFfe20LL))
+#define D_NEXT(d)  ((d)->num == (int64)(0xFFFFFFFFFFFFfe10LL))
 
 #define D_SET_AT_END(d) ((d)->num = 0)
-#define D_SET_INITIAL(d)  ((d)->num = (int32)(0xFFFFfe30))
-#define D_SET_PRESET(d)  ((d)->num = (int32)(0xFFFFfe20))
-#define D_SET_NEXT(d)  ((d)->num = (int32)(0xFFFFfe10))
+#define D_SET_INITIAL(d)  ((d)->num = (int64)(0xFFFFFFFFFFFFfe30LL))
+#define D_SET_PRESET(d)  ((d)->num = (int64)(0xFFFFFFFFFFFFfe20LL))
+#define D_SET_NEXT(d)  ((d)->num = (int64)(0xFFFFFFFFFFFFfe10LL))
 
 #define D_ID_RESERVED_LEN(l) (((dtp_t) l) > 0xfb)
 
@@ -222,7 +241,10 @@ typedef struct search_stream_s search_stream_t;
 
 #define WP_D_ID 0
 #define WP_FIRST_POS(l) \
-  (((db_buf_t)l)[0] == DV_COMPOSITE ? ((db_buf_t)l)[1] + 2 : 4)
+  (((db_buf_t)l)[0] == DV_COMPOSITE ? ((db_buf_t)l)[1] + 2   \
+   : (((db_buf_t)l)[0] == D_ID_64 ? 9 : 4))
+
+
 #define VT_MAX_WORD_STRING_BYTES 2000
 
 #define LAST_FTI_COL "VI_ENCODING"

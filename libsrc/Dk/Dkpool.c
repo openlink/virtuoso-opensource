@@ -371,33 +371,33 @@ caddr_t DBG_NAME(mp_box_num) (DBG_PARAMS mem_pool_t * mp, ptrlong n)
   box_t *box;
   if (!IS_POINTER (n))
     return (box_t) n;
-  box = (box_t *) DBG_NAME(mp_alloc_box) (DBG_ARGS mp, sizeof (box_t), DV_LONG_INT);
+  box = (box_t *) DBG_NAME(mp_alloc_box) (DBG_ARGS mp, sizeof (boxint), DV_LONG_INT);
   *box = (box_t) n;
   return (caddr_t) box;
 }
 
-caddr_t DBG_NAME(t_box_num) (DBG_PARAMS ptrlong n)
+caddr_t DBG_NAME(t_box_num) (DBG_PARAMS boxint n)
 {
   box_t *box;
 
-  if (!IS_POINTER (n))
+  if (!IS_BOXINT_POINTER (n))
     return (box_t) n;
 
-  box = (box_t *) DBG_T_ALLOC_BOX (sizeof (box_t), DV_LONG_INT);
-  *box = (box_t) n;
+  box = (box_t *) DBG_T_ALLOC_BOX (sizeof (boxint), DV_LONG_INT);
+  *(boxint *)box = n;
 
   return (caddr_t) box;
 }
 
-caddr_t DBG_NAME(t_box_num_and_zero) (DBG_PARAMS ptrlong n)
+caddr_t DBG_NAME(t_box_num_and_zero) (DBG_PARAMS boxint n)
 {
   box_t *box;
 
-  if (!IS_POINTER (n) && n != 0)
+  if (!IS_BOXINT_POINTER (n) && n != 0)
     return (box_t) n;
 
-  box = (box_t *) DBG_T_ALLOC_BOX (sizeof (box_t), DV_LONG_INT);
-  *box = (box_t) n;
+  box = (box_t *) DBG_T_ALLOC_BOX (sizeof (boxint), DV_LONG_INT);
+  *(boxint *)box =  n;
 
   return (caddr_t) box;
 }

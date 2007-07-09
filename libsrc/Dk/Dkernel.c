@@ -968,13 +968,13 @@ sr_check_and_set_args (future_request_t *future, caddr_t *arguments, int argcoun
     {
       dtp_t arg_dtp = DV_TYPE_OF (arguments[inx]);
       if (!desc || !desc->sd_arg_types[inx])
-	arg_array[inx] = (caddr_t) unbox (arguments[inx]);
+	arg_array[inx] = (caddr_t) unbox_ptrlong (arguments[inx]);
       else if (arg_dtp == desc->sd_arg_types[inx] ||
 	  (is_string_type (arg_dtp) && is_string_type (desc->sd_arg_types[inx])) ||
 	  (is_array_of_long (arg_dtp) && is_array_of_long (desc->sd_arg_types[inx])) ||
 	  (!arguments[inx] && (!desc->sd_arg_nullable || desc->sd_arg_nullable[inx]))
 	  )
-	arg_array[inx] = (caddr_t) unbox (arguments[inx]);
+	arg_array[inx] = (caddr_t) unbox_ptrlong (arguments[inx]);
       else
 	{
 	  snprintf (buffer, sizeof (buffer), "invalid argument type (%d instead of %d) for arg %d",
@@ -1086,7 +1086,7 @@ future_wrapper (void *ignore)
 	{
 	  for (finx = 0; finx < MAX_FUTURE_ARGUMENTS; finx++)
 	    if (finx < argcount)
-	      arg_array[finx] = (caddr_t) unbox (arguments[finx]);
+	      arg_array[finx] = (caddr_t) unbox_ptrlong (arguments[finx]);
 	    else
 	      arg_array[finx] = NULL;
 	}
@@ -1797,7 +1797,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
     {
       for (finx = 0; finx < MAX_FUTURE_ARGUMENTS; finx++)
 	if (finx < argcount)
-	  arg_array[finx] = (caddr_t) unbox (arguments[finx]);
+	  arg_array[finx] = (caddr_t) unbox_ptrlong (arguments[finx]);
 	else
 	  arg_array[finx] = NULL;
     }

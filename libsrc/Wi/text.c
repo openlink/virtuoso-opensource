@@ -73,8 +73,8 @@ d_id_cmp (d_id_t * d1, d_id_t * d2)
     }
   else if (d1->id[0] != DV_COMPOSITE && d2->id[0] != DV_COMPOSITE)
     {
-      int32 n1 = LONG_REF_NA (&d1->id[0]);
-      int32 n2 = LONG_REF_NA (&d2->id[0]);
+      int64 n1 = D_ID_NUM_REF (&d1->id[0]);
+      int64 n2 = D_ID_NUM_REF (&d2->id[0]);
       return (NUM_COMPARE (n1, n2));
     }
   if (d1->id[0] == DV_COMPOSITE)
@@ -100,13 +100,13 @@ box_d_id (d_id_t * d_id)
       caddr_t box;
       int len = d_id->id[1];
       if (D_ID_RESERVED_LEN (len))
-	len = 2; /* the D_AT_END, D_INITIAL etc special 4 byte values */
+	len = 6; /* the D_AT_END, D_INITIAL etc special 4 byte values */
       box = dk_alloc_box (len + 2, DV_COMPOSITE);
       memcpy (box, &d_id->id[0], len + 2);
       return box;
     }
   else
-    return (box_num (LONG_REF_NA (&d_id->id[0])));
+    return (box_num (D_ID_NUM_REF (&d_id->id[0])));
 }
 
 
@@ -123,10 +123,10 @@ d_id_set_box (d_id_t * d_id, caddr_t box)
     }
   else if (DV_LONG_INT == dtp)
     {
-      uint32 n = (uint32) unbox (box);
-      if (n < 0xff000000)
+      unsigned int64 n = (unsigned int64) unbox (box);
+      if (n < 0xdf00000000000000ULL)
 	{
-	  LONG_SET_NA (&d_id->id[0], n);
+	  D_ID_NUM_SET (&d_id->id[0], n);
 	}
       else
 	D_SET_AT_END (d_id);
@@ -143,16 +143,12 @@ d_id_set (d_id_t * to, d_id_t * from)
     {
       int len = from->id[1];
       if (D_ID_RESERVED_LEN (len))
-	len = 2;
+	len = 6;
       memcpy (to, from, 2 + len);
     }
   else
     {
-      if (0 == (((ptrlong) from) & 0x3))
-	/* from not always aligned */
-	*(int32*) to = *(int32 *) from;
-      else
-	memcpy (to, from, 4);
+      memcpy (to, from, sizeof (int64) + 1);
     }
 }
 
@@ -211,8 +207,31 @@ wst_set_buffer (word_stream_t * wst, db_buf_t page, int len)
 
 
 void
+d_id_num_col_ref (d_id_t * d_id, db_buf_t p, int len)
+{
+  /* set d_id to the col'svalue, either 4 or 8 byte */
+  if (4 == len)
+    LONG_SET_NA (d_id->id, LONG_REF (p));
+  else
+    {
+      int64 n = INT64_REF (p);
+      if (n > D_ID32_MAX)
+	{
+	  d_id->id[0] = D_ID_64;
+	  INT64_SET_NA (&d_id->id[1], n);
+	}
+      else
+	{
+	  LONG_SET_NA (&d_id->id[0], n);
+	}
+    }
+}
+
+
+void
 d_id_ref (d_id_t * d_id, db_buf_t p)
 {
+  GPF_T1 ("not supposed to call d_id_ref.  Uses pre 3.0 data layout");
   if (DV_LONG_INT == *p)
     {
       int32 n = LONG_REF_NA (p + 1);
@@ -1091,6 +1110,7 @@ struct wst_search_specs_s
 typedef struct wst_search_specs_s wst_search_specs_t;
 
 static wst_search_specs_t wst_int_key_search_specs;
+static wst_search_specs_t wst_int64_key_search_specs;
 static wst_search_specs_t wst_any_key_search_specs;
 static dk_mutex_t * wst_get_specs_mtx;
 
@@ -1099,7 +1119,8 @@ wst_get_specs (dbe_key_t *key)
 {
   search_spec_t *ss;
   int key_is_int_d_id = DBE_KEY_IS_INT_D_ID(key);
-  wst_search_specs_t *res = (key_is_int_d_id ? &wst_int_key_search_specs : &wst_any_key_search_specs);
+  int key_is_int64_d_id = key_is_int_d_id ? key->key_key_fixed[0].cl_sqt.sqt_dtp == DV_INT64 : 0;
+  wst_search_specs_t *res = key_is_int64_d_id ? &wst_int64_key_search_specs : (key_is_int_d_id ? &wst_int_key_search_specs : &wst_any_key_search_specs);
   dbe_col_loc_t *word_cl;
   dbe_col_loc_t *d_id_cl;
   if (res->wst_specs_are_initialized)

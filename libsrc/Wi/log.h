@@ -45,6 +45,7 @@
 #define LOG_INSERT_SOFT	9  /* prime key row follows, like insert. */
 #define LOG_TEXT	10 /* SQL string follows */
 #define LOG_SEQUENCE	11 /* series name, count */
+#define LOG_SEQUENCE_64	12 /* series name, count */
 
 #define LOGH_TIME		0
 #define LOGH_USER		1

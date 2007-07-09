@@ -96,6 +96,7 @@ int numeric_error (int code, char *sqlstate, int state_len, char *sqlerror, int 
 /* conversion */
 int numeric_from_string (numeric_t n, const char *s);
 int numeric_from_int32 (numeric_t n, int32 i);
+int numeric_from_int64 (numeric_t n, int64 i);
 int numeric_from_double (numeric_t n, double d);
 int numeric_from_dv (numeric_t n, dtp_t *buf, int n_bytes);
 int numeric_from_buf (numeric_t n, dtp_t *buf);
@@ -105,6 +106,7 @@ int numeric_sign (numeric_t n);
 /* int numeric_to_string_box (numeric_t n, char **pvalue); */
 int numeric_to_string (numeric_t n, char *pvalue, size_t max_pvalue);
 int numeric_to_int32 (numeric_t n, int32 *pvalue);
+int numeric_to_int64 (numeric_t n, int64 *pvalue);
 int numeric_to_double (numeric_t n, double *pvalue);
 int numeric_to_dv (numeric_t n, dtp_t *res, size_t reslength);
 

@@ -938,7 +938,7 @@ st_collect_ps_info (dk_set_t * arr)
 	      caddr_t *text;
 	      IN_CLIENT (cli);
 	      id_hash_iterator (&it, cli->cli_statements);
-	      while (hit_next (&it, (void **) & text, (void **) & stmt))
+	      while (hit_next (&it, (char **) & text, (char **) & stmt))
 		{
 		  caddr_t * inst = (*stmt)->sst_inst;
 		  if ((*stmt)->sst_start_msec && inst && (*stmt)->sst_query)
@@ -1590,7 +1590,7 @@ prof_report (void)
   time (&tnow);
   ASSERT_IN_MTX (prof_mtx);
   id_hash_iterator (&hit, prof_stat);
-  while (hit_next (&hit, (caddr_t *) &kp, (caddr_t *) &qtp))
+  while (hit_next (&hit, (char **) &kp, (char **) &qtp))
     {
       if (qtp->qt_title != *(caddr_t *)kp)
 	GPF_T1 ("bad profile stats hash table");
@@ -2063,7 +2063,7 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	  }
 
 	case DV_LONG_INT:
-	  fprintf (out, "%ldld", unbox (object));
+	  fprintf (out, BOXINT_FMT"ld", unbox (object));
 	  break;
 
 	case DV_STRING:
@@ -2158,8 +2158,11 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	  break;
         case DV_IRI_ID:
             {
-              iri_id_t i = unbox_iri_id (object);
-	      fprintf (out, "#i%Ld", i);
+              iri_id_t iid = unbox_iri_id (object);
+	      if (iid >= MIN_64BIT_BNODE_IRI_ID)
+	        fprintf (out, "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+              else
+	        fprintf (out, "#i" BOXINT_FMT, (boxint)(iid));
               break;
             }
         case DV_RDF:
@@ -2320,11 +2323,29 @@ row_map_fprint (FILE * out, db_buf_t row, dbe_key_t * key)
 	  fprintf (out, " %d", SHORT_REF (row + off));
 	  break;
 	case DV_IRI_ID:
-	  fprintf (out, " #i%u ", (unsigned int32) LONG_REF (row + off));
+          {
+            iri_id_t iid = ((unsigned int32) LONG_REF (row + off));
+            if (iid >= MIN_64BIT_BNODE_IRI_ID)
+	      fprintf (out, " #ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+            else
+	      fprintf (out, " #i" BOXINT_FMT, (boxint)(iid));
 	  break;
+          }
 	case DV_LONG_INT:
 	  fprintf (out, " %d", (int) LONG_REF (row + off));
 	  break;
+	case DV_INT64:
+	  fprintf (out, " " BOXINT_FMT, INT64_REF (row + off));
+	  break;
+	case DV_IRI_ID_8:
+          {
+            iri_id_t iid = INT64_REF (row + off);
+            if (iid >= MIN_64BIT_BNODE_IRI_ID)
+	      fprintf (out, " #ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+            else
+	      fprintf (out, " #i" BOXINT_FMT, (boxint)(iid));
+            break;
+          }
 	case DV_STRING:
 	  fprintf (out, " \"");
 	  for (c = 0; c < len; c++)

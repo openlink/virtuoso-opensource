@@ -544,9 +544,10 @@ class VirtuosoInputStream extends BufferedInputStream
                      return res;
                    }
              case VirtuosoTypes.DV_IRI_ID_8:
+             case VirtuosoTypes.DV_INT64:
                    {
                      res = new Long((((long)readlongint() << 32) & 0xffffffff00000000L) |
-          (readlongint() & 0xffffffffL) );
+          (readlongint() & 0xffffffffL));
                      return res;
                    }
              default:

@@ -551,12 +551,10 @@ key_hash_col (db_buf_t row, dbe_key_t * key, dbe_col_loc_t * cl, uint32 code, in
 }
 
 
-#define IS_INT_DTP(dtp) \
-  (DV_LONG_INT == dtp || DV_SHORT_INT == dtp)
-
 #define CL_INT(cl, row) \
   (DV_SHORT_INT == cl.cl_sqt.sqt_dtp ? (int32) *(short*)(row + cl.cl_pos) \
-    : *(int32*)(row + cl.cl_pos))
+   : (DV_INT64 == cl.cl_sqt.sqt_dtp ? INT64_REF (row + cl.cl_pos) \
+      :*(int32*)(row + cl.cl_pos)))
 
 #define BOX_CMP_LEN(box, dtp, len) \
   switch (dtp) \
@@ -646,11 +644,14 @@ key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int * var_len, collation_t * 
       return code;
     case DV_LONG_INT:
       {
-	int32 v = (int32) unbox (box);
+	int64 v64 = unbox (box);
+	int32 v = (int32)v64;
 	if (v)
 	  code = (code * v) ^ (code >> 23);
 	else
 	  code = code << 2 | code >> 30;
+	if (v64 != v)
+	  code = code ^ (uint32)(v64 >> 32);
       }
       return code;
     case DV_STRING:
@@ -1055,7 +1056,7 @@ itc_ha_equal (it_cursor_t * itc, hash_area_t * ha, caddr_t * qst, db_buf_t hash_
 	    {
 	      if (DV_IRI_ID == h_cl->cl_sqt.sqt_dtp)
 		{
-		  if (unbox_iri_id (value) == (iri_id_t)(unsigned long) LONG_REF(hash_row + h_off))
+		  if (unbox_iri_id (value) == (iri_id_t)(uint32) LONG_REF(hash_row + h_off))
 		    continue;
 		  return 0;
 		}
@@ -2327,9 +2328,9 @@ it_hi_set_sensitive (index_tree_t * it)
 	    sethash ((void*) (ptrlong) hsi->hsi_col_ids[inx], hash_index_cache.hic_col_to_it, (void*) dk_set_cons ((void*) it, NULL));
 	}
     }
-  deps = (dk_set_t) gethash ((void*) unbox (hsi->hsi_super_key), hash_index_cache.hic_pk_to_it);
+  deps = (dk_set_t) gethash ((void*) unbox_ptrlong (hsi->hsi_super_key), hash_index_cache.hic_pk_to_it);
   dk_set_push (&deps, (void*) it);
-  sethash ((void*) unbox (hsi->hsi_super_key), hash_index_cache.hic_pk_to_it, deps);
+  sethash ((void*) unbox_ptrlong (hsi->hsi_super_key), hash_index_cache.hic_pk_to_it, deps);
 }
 
 
@@ -2351,9 +2352,9 @@ it_hi_clear_sensitive (index_tree_t * it)
 	  sethash ((void*) (ptrlong) hsi->hsi_col_ids[inx], hash_index_cache.hic_col_to_it, (void*) deps);
 	}
     }
-  deps = (dk_set_t) gethash ((void*) unbox (hsi->hsi_super_key), hash_index_cache.hic_pk_to_it);
+  deps = (dk_set_t) gethash ((void*) unbox_ptrlong (hsi->hsi_super_key), hash_index_cache.hic_pk_to_it);
   dk_set_delete (&deps, (void*) it);
-  sethash ((void*) unbox (hsi->hsi_super_key), hash_index_cache.hic_pk_to_it, deps);
+  sethash ((void*) unbox_ptrlong (hsi->hsi_super_key), hash_index_cache.hic_pk_to_it, deps);
 }
 
 

@@ -2048,7 +2048,7 @@ div_by_int:
       return;
     case CALL_STMT:
       {
-	xp_func_t fp = (xp_func_t) unbox (tree->_.xp_func.executable);
+	xp_func_t fp = (xp_func_t) unbox_ptrlong (tree->_.xp_func.executable);
 	if (!fp)
 	  {
 	    sqlr_new_error_xqi_xdl ("XP420", "XI002", xqi, "Undefined XPATH function '%.300s'",
@@ -3531,9 +3531,9 @@ snprint_xdl (char *buffer, size_t buflength, xp_debug_location_t *xdl)
     return res;
   if (0 != xdl->xdl_line)
     {
-      item_len = snprintf (buffer, buflength, " in line %ld",
+      item_len = snprintf (buffer, buflength, " in line " BOXINT_FMT,
 #ifdef EXTERNAL_XDLS
-	xdl->xdl_line
+	(boxint)(xdl->xdl_line)
 #else
 	unbox (xdl->xdl_line)
 #endif
@@ -4063,7 +4063,7 @@ xt_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, int h
 	      SES_PRINT (ses, buf);
 	      if (((xp_func_t)(xpf_call_udf)) == (xp_func_t)(exec))
 		{
-		  XT *defun = (XT *)(unbox(tree->_.xp_func.qname));
+		  XT *defun = (XT *)(unbox_ptrlong (tree->_.xp_func.qname));
 		  xt_dump (defun->_.defun.name, ses, indent+2, "UDF NAME", 0);
 		}
 	      else
@@ -9392,7 +9392,7 @@ caddr_t bif_xml_deserialize_packed (caddr_t * qst, caddr_t * err_ret, state_slot
       if (bh->bh_ask_from_client)
         sqlr_new_error ("22023", "SR561",
 	  "Blob argument to __xml_deserialize_packed() must be a non-interactive blob");
-      tmp_ses = blob_to_string_output (((query_instance_t *)qst)->qi_trx, bh);
+      tmp_ses = blob_to_string_output (((query_instance_t *)qst)->qi_trx, (caddr_t)bh);
       xte_deserialize_packed (tmp_ses, &res, NULL);
       dk_free_box (tmp_ses);
     }

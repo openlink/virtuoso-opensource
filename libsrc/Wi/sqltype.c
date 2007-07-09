@@ -1789,7 +1789,7 @@ bif_internal_udt_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
   sql_class_t *udt = NULL;
   if (DV_LONG_INT == DV_TYPE_OF (arg))
     {
-      udt = (sql_class_t *) unbox_num (arg);
+      udt = (sql_class_t *) unbox_ptrlong (arg);
     }
   else
     udt = bif_udt_arg (qst, args, nth, func);
