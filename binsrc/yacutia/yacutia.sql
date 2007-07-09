@@ -5202,10 +5202,10 @@ create procedure yac_syncml_detect (in _name any)
 create procedure y_sprintf_to_reg (in fmt varchar, in in_list any, in o_list any)
 {
   declare pc, cp_fmt varchar;
-  declare inx, pos, _from, _to, res, _left, _right, par any;
+  declare inx, pos, _from, _to, res, _left, _right, par, fchar any;
 
   cp_fmt := fmt;
-  pc := regexp_match ('%[sd]', fmt, 1);
+  pc := regexp_match ('%[sdU]', fmt, 1);
   inx := 0;
   while (pc is not null)
     {
@@ -5216,11 +5216,15 @@ create procedure y_sprintf_to_reg (in fmt varchar, in in_list any, in o_list any
       _right := substring (cp_fmt, _to+1, length (cp_fmt));
 
       pos := position (o_list[inx], in_list);
-      par := sprintf ('\x24%d', pos);
+
+      fchar := ltrim (pc, '%');
+      par := sprintf ('\x24%s%d', fchar, pos);
+      if (pos = 0 and o_list[inx] = '*accept*')
+	par := '\x24accept';
 
       cp_fmt := _left || par || _right;
 
-      pc := regexp_match ('%[sd]', fmt, 1);
+      pc := regexp_match ('%[sdU]', fmt, 1);
       inx := inx + 1;
     }
   return cp_fmt;
@@ -5230,10 +5234,10 @@ create procedure y_sprintf_to_reg (in fmt varchar, in in_list any, in o_list any
 create procedure y_reg_to_sprintf (in fmt varchar, out in_list any, out o_list any)
 {
   declare pc, cp_fmt varchar;
-  declare inx, pos, _from, _to, res, _left, _right, par any;
+  declare inx, pos, _from, _to, res, _left, _right, par, fchar any;
 
   cp_fmt := fmt;
-  pc := regexp_match ('\\x24[0-9]+', fmt, 1);
+  pc := regexp_match ('(\\x24[sdU]?[0-9]+)|(\\x24accept)', fmt, 1);
   inx := 0;
 
   in_list := vector ();
@@ -5247,9 +5251,15 @@ create procedure y_reg_to_sprintf (in fmt varchar, out in_list any, out o_list a
       _left := substring (cp_fmt, 1, _from);
       _right := substring (cp_fmt, _to+1, length (cp_fmt));
 
-      pos := atoi (ltrim (pc, '\x24'));
-
+      if (pc = '\x24accept')
+	{
+	  o_list := vector_concat (o_list, vector ('*accept*'));
+	}
+      else
+	{
+	  pos := atoi (ltrim (pc, '\x24sdU'));
       o_list := vector_concat (o_list, vector (sprintf ('par_%d', pos)));
+        }
 
       if (length (in_list) < pos)
 	{
@@ -5261,9 +5271,14 @@ create procedure y_reg_to_sprintf (in fmt varchar, out in_list any, out o_list a
       else
 	in_list [pos - 1] := sprintf ('par_%d', pos);
 
-      cp_fmt := _left || '%s'  || _right;
+      fchar := ltrim (pc, '\x24');
+      fchar := fchar[0];
+      fchar := chr (fchar);
+      if (fchar not in ('s', 'd', 'U'))
+	fchar := 'U';
+      cp_fmt := _left || '%' || fchar  || _right;
 
-      pc := regexp_match ('\\x24[0-9]+', fmt, 1);
+      pc := regexp_match ('(\\x24[sdU]?[0-9]+)|(\\x24accept)', fmt, 1);
       inx := inx + 1;
     }
   for (inx := 0; inx < length (in_list); inx := inx + 1)
