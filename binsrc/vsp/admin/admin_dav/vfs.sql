@@ -1827,9 +1827,10 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _start_path varchar
     {
       if (get_keyword ('meta_grddl', opts, 0) = 1 and __proc_exists ('DB.DBA.RDF_LOAD_HTML_RESPONSE'))
         {
-	  declare aq, ps, _key any;
-	  aq := ps := _key := null;
-	  DB.DBA.RDF_LOAD_HTML_RESPONSE (_graph, _graph, null, content, aq, ps, _key);
+	  declare aq, ps, _key, _opts any;
+	  _opts := aq := ps := _key := null;
+	  if (length (procedure_cols ('DB.DBA.RDF_LOAD_HTML_RESPONSE')) = 8)
+	    DB.DBA.RDF_LOAD_HTML_RESPONSE (_graph, _graph, null, content, aq, ps, _key, _opts);
 	}
     }
 }
