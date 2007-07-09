@@ -793,16 +793,19 @@ case $1 in
 	   exit 1
        fi
    fi
+   # Prepare GRDDL tests to run locally
    gzip -c -d ../grddl-tests.tar.gz | tar xf -
+   for f in `find grddl-tests -type f`
+   do
+       cat $f | sed -e "s/:12555/:$HTTPPORT/g" > tmp.tmp
+       cp -f tmp.tmp $f
+       rm -f tmp.tmp
+   done
+
    if [ ! -f ods_framework_dav.vad -o ! -f ods_blog_dav.vad ]
    then
      BLOG_TEST=0  
      LOG "ODS & Blog2 VAD packages are not built"
-   fi
-   if [ ! -f rdf_mappers_dav.vad -a -f ../../../../autogen.sh -a "x$HOST_OS" != "x" ]
-   then
-     (cd ../../../rdf_mappers; sh make_vad.sh)
-     cp ../../../rdf_mappers/rdf_mappers_dav.vad ./
    fi
    START_SERVER $DSN 1000
    sleep 4
