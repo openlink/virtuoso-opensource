@@ -459,6 +459,50 @@ errexit:
 }
 ;
 
+create function "DAV_EXTRACT_RDF_application/audio" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+  declare content any;
+  content := blob_to_string (content1);
+  return xml_tree_doc (audio_to_xml (content, length (content), 1));
+}
+;
+
+create function "DAV_EXTRACT_RDF_audio/mpeg" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/audio" (orig_res_name, content1, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_audio/x-flac" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/audio" (orig_res_name, content1, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_audio/x-mp3" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/audio" (orig_res_name, content1, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_audio/x-m4a" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/audio" (orig_res_name, content1, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_audio/x-m4p" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/audio" (orig_res_name, content1, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/ogg" (in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+  return "DAV_EXTRACT_RDF_application/audio" (orig_res_name, content1, html_start);
+}
+;
+
 create function "DAV_EXTRACT_RDF_application/msoffice+xml" (in type_descr varchar, in orig_res_name varchar, inout content any, inout html_start any, inout docprops any)
 {
   declare doc, metas, extras any;
@@ -2090,7 +2134,7 @@ create function DAV_EXTRACT_SPOTLIGHT (in resname varchar, inout rescontent any)
   { log_message ('SpotLight import fail: ' || __SQL_MESSAGE); return NULL; };
 
   if (not spotlight_status ())
-    return;
+    return NULL;
 
   _reg := cast (registry_get ('VAD_is_run') as varchar);
   if (_reg <> '0')
