@@ -65,10 +65,10 @@
     ext := subseq(_res,strrchr(_res,'.') + 1);
   if (ext = 'xml')
   {
-  DB.DBA.DAV_PROP_SET (_res,':virtpermissions','111101101',_u_name,get_keyword ('pass', _auth));
+    DB.DBA.DAV_PROP_SET (_res,':virtpermissions','111101101',_u_name,get_keyword ('pass', _auth));
     --DB.DBA.DAV_PROP_SET (_res,':getcontenttype','text/xml',_u_name,get_keyword ('pass', _auth));
-  DB.DBA.DAV_PROP_SET (_res,'xml-template','execute',_u_name,get_keyword ('pass', _auth));
-  DB.DBA.DAV_PROP_SET (_res,':virtowneruid',http_dav_uid(),_u_name,get_keyword ('pass', _auth));
+    DB.DBA.DAV_PROP_SET (_res,'xml-template','execute',_u_name,get_keyword ('pass', _auth));
+    DB.DBA.DAV_PROP_SET (_res,':virtowneruid',http_dav_uid(),_u_name,get_keyword ('pass', _auth));
   } else if (ext = 'isparql' or ext = 'rq') {
     DB.DBA.DAV_PROP_SET (_res,':virtpermissions','111100100',_u_name,get_keyword ('pass', _auth));
   }

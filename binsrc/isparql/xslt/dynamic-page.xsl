@@ -42,8 +42,9 @@
     <link type="text/css" rel="stylesheet" href="/isparql/isparql.css"/>
 		<script type="text/javascript" src="/isparql/toolkit/loader.js"></script>
 		<script type="text/javascript" src="/isparql/isparql.js"></script>
+		<script type="text/javascript" src="/isparql/main.js"></script>
 		<script type="text/javascript">
-		
+
 		var goptions = {};
 		goptions.service = "<xsl:value-of select="i:service" />";
 		var sponge = '';
@@ -59,6 +60,30 @@
 		<![CDATA[
 		  var toolkitImagesPath = "/isparql/toolkit/images";
 			function init() {
+			  if (OAT.Browser.isWebKit && !OAT.Dom.uriParams['srvXSLT'])
+			  {
+			    // This is a little bizzare hack for webkit. It seams that older version of webkit doesn't execute the send
+			    // method of XMLHttpRequest, and when it is working then sync requests throw and exception
+			    // so in order to catch only the non working browser we use the code below
+    			var req = new XMLHttpRequest();
+    			var isWorkingXMLHTTP = false;
+		    	req.onreadystatechange = function processReqChange() 
+		    	{
+            isWorkingXMLHTTP = true;
+          }
+      		req.open("GET", ".", false);
+      		try {
+            req.send("");
+          } catch(e){
+            isWorkingXMLHTTP = true;
+          }
+          if (!isWorkingXMLHTTP)
+          {
+            location.href = location.href + '?srvXSLT'
+            return;
+          }
+			  }
+			  
         OAT.Preferences.imagePath = toolkitImagesPath + "/";
         OAT.AJAX.imagePath = toolkitImagesPath;
         OAT.Anchor.imagePath = toolkitImagesPath + '/';
@@ -92,25 +117,24 @@
         if (page_params['showQuery'])
         {
           if (page_params['showQuery'] != '0')
-          params.showQuery = true;
+            params.showQuery = true;
           else
             params.showQuery = false;
         }
         if (page_params['showRequest'])
         {
           if (page_params['showRequest'] != '0')
-          params.hideRequest = false;
+            params.hideRequest = false;
           else
             params.hideRequest = true;
         }
         if (page_params['showResponce'])
         {
           if (page_params['showResponce'] != '0')
-          params.hideResponce = false;
+            params.hideResponce = false;
           else
             params.hideRequest = true;
         }
-
         iSPARQL.QueryExec(params);
 			}
 ]]>

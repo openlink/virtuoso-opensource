@@ -27,9 +27,14 @@
 	position: relative;
 	padding: 3px 8px}
 
-#menu li:hover, #menu li.hover {
-        color: #fff;
-	background-color: blue}
+#menu a {
+	behavior: url("hover.htc");
+}
+	
+#menu li:hover, #menu li.hover, #menu a:hover, #menu a.hover {
+	color: #fff;
+	background-color: blue
+}
 
 #menu ul {
 	position: absolute;
@@ -53,8 +58,17 @@
 	padding: 0px;
 }
 
+
 #menu .menu_help {
 	width: 200px;
+}
+
+#menu .menu_view {
+	width: 120px;
+}
+
+#menu .menu_isparql {
+	width: 120px;
 }
 
 #menu .menu_qbe {

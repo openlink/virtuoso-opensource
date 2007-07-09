@@ -64,7 +64,7 @@ create procedure WS.WS.__http_handler_isparql (in content any, in params any, in
 {
   return iSPARQL.DBA.http_isparql_file_handler(content, params, lines, in_path_url_out_status_and_hdr);
 }; 
-  
+
 create procedure WS.WS.__http_handler_head_isparql (in content any, in params any, in lines any, inout in_path_url_out_status_and_hdr any)
 {
   return iSPARQL.DBA.http_isparql_file_handler(content, params, lines, in_path_url_out_status_and_hdr);
@@ -74,7 +74,7 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
 {
   declare accept varchar;
   declare _format varchar;
-
+  
   accept := http_request_header(lines,'Accept',null,'');
 
   _format := get_keyword('format',params,'');
@@ -216,6 +216,22 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
     }
 
   }
+
+  if (http_param('srvXSLT')) 
+  {
+    declare _xml any;
+    declare _xslt any;
+    http_header ('Content-Type: text/html\r\n');
+    _xml := xtree_doc(content);
+    _xslt := xpath_eval('string(processing-instruction()[local-name() = \'xml-stylesheet\'])',_xml);
+    _xslt := cast(regexp_substr('href="(.*)"',_xslt,1) as varchar);
+    _xslt := 'http://' || HTTP_GET_HOST() || _xslt;
+    http(content);
+    xslt_stale(_xslt);
+    http_xslt (_xslt);
+    return '';
+  };
+
   http_header ('Content-Type: text/xml\r\n');
   http(content);
   

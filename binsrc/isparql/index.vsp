@@ -25,7 +25,7 @@
 ?>
 <?vsp
 
-            declare default_dgu varchar;
+  declare default_dgu varchar;
   default_dgu := cfg_item_value (virtuoso_ini_path(), 'SPARQL', 'DefaultGraph');
   if (default_dgu is null)
   {
@@ -33,7 +33,7 @@
     if (default_dgu is not null)
       default_dgu := 'http://' || default_dgu || '/dataspace';
     else
-    default_dgu := '';
+      default_dgu := '';
   }
 
   declare def_qry varchar;

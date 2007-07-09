@@ -44,62 +44,56 @@ var nav_stack = [];
 var nav_index = 0;
 var page_w = 800;
 var page_h = 800;
-var l = new OAT.Layers(100);
+//var l = new OAT.Layers(100);
 
 if (typeof(default_dgu) == 'undefined') var default_dgu = '';
 if (typeof(default_qry) == 'undefined') var default_qry = 'SELECT * WHERE {?s ?p ?o}';
 if (typeof(default_spng) == 'undefined') var default_spng = 'soft';
 if (typeof(do_auth_verify) == 'undefined') var do_auth_verify = '';
 if (typeof(fixed_sponge) == 'undefined') var fixed_sponge = '';
-if (typeof(toolkitImagesPath) == 'undefined') var toolkitImagesPath = "toolkit/images";
+if (typeof(toolkitImagesPath) == 'undefined') var toolkitImagesPath = "toolkit/images/";
 if (typeof(get_initial_credentials) == 'undefined') var get_initial_credentials = "";
 if (typeof(default_user) != 'undefined') goptions.username = default_user;
 if (typeof(default_pass) != 'undefined') goptions.password = default_pass;
 
-function init()
-{
-  //OAT.Preferences.windowTypeOverride = OAT.WindowData.TYPE_AUTO;
-  OAT.Preferences.imagePath = toolkitImagesPath + "/";
-  OAT.AJAX.imagePath = toolkitImagesPath;
-  OAT.AJAX.httpError = 0;
-  $('about_oat_version').innerHTML = OAT.Preferences.version;
-
-  OAT.Preferences.showAjax = 0;
+function init() {
+	OAT.Dom.hide("throbber");
+	/* fix image paths */
+	if (toolkitImagesPath.match(/[^\/]$/)) { toolkitImagesPath += "/"; }
+	OAT.Preferences.imagePath = toolkitImagesPath;
+	OAT.AJAX.imagePath = toolkitImagesPath;
+	OAT.Anchor.imagePath = toolkitImagesPath;
+	OAT.WebDav.options.imagePath = toolkitImagesPath;
+	
+	OAT.AJAX.httpError = 0;
+	$('about_oat_version').innerHTML = OAT.Preferences.version;
 
   // determine server type, if virtuoso we show virtuoso specifics
-  OAT.AJAX.GET('./version', '', function(data,headers){ 
-    if (headers.match(/VIRTUOSO/i))
-    {
-      isVirtuoso = true;
-      OAT.Dom.show('virtuoso_options');
-    }
-    var tmp = data.split("/");
-    if (tmp && tmp.length > 1)
-    {
-      $('about_version').innerHTML = tmp[0];
-      $('about_date').innerHTML = tmp[1];
-    }
-    
-  },{async:false});
+	OAT.AJAX.GET('./version', '', function(data,headers) { 
+		
+		if (headers.match(/VIRTUOSO/i)) {
+		isVirtuoso = true;
+		OAT.Dom.show('virtuoso_options');
+		}
+		var tmp = data.split("/");
+		if (tmp && tmp.length > 1) {
+		$('about_version').innerHTML = tmp[0];
+		$('about_date').innerHTML = tmp[1];
+		}
+	},{async:false});
 
-  OAT.Preferences.showAjax = 1;
 
   OAT.Anchor.zIndex = 1001;
-  OAT.Anchor.imagePath = toolkitImagesPath + '/';
 
 	var m = new OAT.Menu();
 	m.noCloseFilter = "noclose";
 	m.createFromUL("menu");
-  
-  /*var menuOn = function(index)
-  {
+
+  var menuOn = function(index) {
     var menu_on = menus[index];
-    if (OAT.Browser.isIE)
-      menu_on.style.filter = '';
-    for (var i = 0; i < menu_on.childNodes.length;i++)
-    {
-      if (menu_on.childNodes[i].tagName && menu_on.childNodes[i].tagName.toLowerCase() == "li")
-      {
+    if (OAT.Browser.isIE) menu_on.style.filter = '';
+    for (var i = 0; i < menu_on.childNodes.length;i++) {
+      if (menu_on.childNodes[i].tagName && menu_on.childNodes[i].tagName.toLowerCase() == "li") {
         menu_on.childNodes[i].style.opacity = '';
         menu_on.childNodes[i].style.filter = '';
         menu_on.childNodes[i].style.cursor = 'pointer';
@@ -107,58 +101,50 @@ function init()
     }
   }
   
-  var menuOff = function(index)
-  {
+  var menuOff = function(index) {
     if (tab.tabs[index].window)
       return;
     var menu_off = menus[index];
     if (OAT.Browser.isIE)
       menu_off.style.filter = 'alpha(opacity=50)';
-    for (var i = 0; i < menu_off.childNodes.length;i++)
-    {
-      if (menu_off.childNodes[i].tagName && menu_off.childNodes[i].tagName.toLowerCase() == "li")
-  {
+    for (var i = 0; i < menu_off.childNodes.length;i++) {
+      if (menu_off.childNodes[i].tagName && menu_off.childNodes[i].tagName.toLowerCase() == "li") {
         menu_off.childNodes[i].style.opacity = 0.5;
         menu_off.childNodes[i].style.filter = 'alpha(opacity=50)';
         menu_off.childNodes[i].style.cursor = 'default';
       }
     }
-  }*/
+  }
   
-  var menus = [$('menu_qbe_down'),$('menu_query_down')];
-    
-  var tab_goCallback = function(oldIndex,newIndex)
-  {
-    //for (var i=0;i < menus.length;i++)
-    //  if (newIndex == i)
-    //    menuOn(i);
-    //  else
-    //    menuOff(i);
+  var menus = [$('menu_file_down'),$('menu_tools_down')];
 
-    if (OAT.Browser.isIE && dialogs.qbe_unsupp && newIndex == 0)
-        {
+  var tab_goCallback = function(oldIndex,newIndex) {
+    if (oldIndex != newIndex) {
+      for (var i=0;i < menus.length;i++)
+        if (newIndex > 1)
+          menuOff(i);
+        else
+          menuOn(i);
+    }
+
+    if (OAT.Browser.isIE && dialogs.qbe_unsupp && newIndex == 0) {
       dialogs.qbe_unsupp.show();
       return;
-      }
     }
-    
-  var onUnDock = function(newIndex)
-    {
-    if (newIndex == 0)
-      {
+  }
+  
+  var onUnDock = function(newIndex) {
+    if (newIndex == 0) {
       var x = 720;
-      if (OAT.Browser.isMac)
-        x = x - 20;
+      if (OAT.Browser.isMac) x -= 20;
       qbe.props_win.moveTo(x,42);
       qbe.schema_win.moveTo(x,182);
-      }
-    //menuOn(newIndex);
     }
-    
-  var onDock = function(newIndex)
-    {
-    if (newIndex == 0)
-    {
+    //menuOn(newIndex);
+  }
+
+  var onDock = function(newIndex) {
+    if (newIndex == 0) {
       qbe.props_win.moveTo(page_w - 260,92);
       qbe.schema_win.moveTo(page_w - 260,232);
     }
@@ -193,7 +179,7 @@ function init()
   sr_cl.img.height = "16";
   $("sr_cl_div").appendChild(sr_cl.div);
 
-	OAT.WebDav.init({imagePath:toolkitImagesPath + "/",imageExt:"png"});
+	OAT.WebDav.init({imageExt:"png"});
 	
 	/* save */
 	dialogs.save = new OAT.Dialog("Save","save_div",{width:400,modal:1});
@@ -246,40 +232,38 @@ function init()
 			default: $('should-sponge-none').checked = true; break;
 		}
 	}
-	dialogs.goptions = new OAT.Dialog("Options","goptions",{width:450,height:500,modal:1,resize:0,close:0,zIndex:1001,onshow:dialogs_goptions_onshow,onhide:function(){OAT.Keyboard.disable('goptions');}});
+	dialogs.goptions = new OAT.Dialog("Preferences","goptions",{width:450,height:500,modal:1,resize:0,close:0,zIndex:1001,onshow:dialogs_goptions_onshow,onhide:function(){OAT.Keyboard.disable('goptions');}});
 	dialogs.goptions.cancel = function(){
-	  if (!do_auth_verify || !goptions.initial_screen)
-	  dialogs.goptions.hide();
+//	  if (!do_auth_verify || !goptions.initial_screen)
+	    dialogs.goptions.hide();
 	}
 	dialogs.goptions.ok = function(){
 	  var auth = iSPARQL.Common.checkAuth($v('username'),$v('password'));
 
-    if (auth == true)
-    {
-    goptions.username = $v('username');
-    goptions.password = $v('password');
-    goptions.login_put_type = $v('login_put_type');
-    goptions.service = $v('service');
-    goptions.proxy = $('proxy').checked;
-    var sel_sponge = '';
-    if  ($('should-sponge-grab-everything').checked) sel_sponge = 'grab-everything';
-    else if  ($('should-sponge-grab-seealso').checked) sel_sponge = 'grab-seealso';
-    else if  ($('should-sponge-grab-all').checked) sel_sponge = 'grab-all';
-    else if ($('should-sponge-soft').checked) sel_sponge = 'soft';
-    if (sel_sponge != goptions.should_sponge)
-    {
-      $('qbe_sponge').value = sel_sponge;
-      $('adv_sponge').value = sel_sponge;
-    }
-    goptions.should_sponge = sel_sponge;
-    	goptions.initial_screen = false;
-	  dialogs.goptions.hide();
-  	} else {
-  	  if (auth == false)
-  	    alert('Unauthorized');
-  	  else 
-  	    alert(auth);
-  	}
+	    if (auth == true) {
+	      goptions.username = $v('username');
+	      goptions.password = $v('password');
+	      goptions.login_put_type = $v('login_put_type');
+	      goptions.service = $v('service');
+	      goptions.proxy = $('proxy').checked;
+	      var sel_sponge = '';
+	      if  ($('should-sponge-grab-everything').checked) sel_sponge = 'grab-everything';
+	      else if  ($('should-sponge-grab-seealso').checked) sel_sponge = 'grab-seealso';
+	      else if  ($('should-sponge-grab-all').checked) sel_sponge = 'grab-all';
+	      else if ($('should-sponge-soft').checked) sel_sponge = 'soft';
+	      if (sel_sponge != goptions.should_sponge) {
+	        $('qbe_sponge').value = sel_sponge;
+	        $('adv_sponge').value = sel_sponge;
+	      }
+	      goptions.should_sponge = sel_sponge;
+	    	goptions.initial_screen = false;
+	  	  dialogs.goptions.hide();
+	  	} else {
+	  	  if (auth == false)
+	  	    alert('Unauthorized');
+	  	  else 
+	  	    alert(auth);
+	  	}
 	}
   OAT.Keyboard.add('esc',function(){dialogs.goptions.cancel();},null,'goptions');
   OAT.Keyboard.add('return',function(){dialogs.goptions.ok();},null,'goptions');
@@ -287,11 +271,11 @@ function init()
 	page_w = OAT.Dom.getWH('page')[0] - 20;
 
   var page_params = OAT.Dom.uriParams();
-  
+
   if (page_params['default-graph-uri']) default_dgu = page_params['default-graph-uri'];
   if (page_params['query']) default_qry = page_params['query'];
   if (page_params['should-sponge']) default_spng = page_params['should-sponge'];
-  
+
   $('default-graph-uri').value = default_dgu;
   $('query').value = default_qry;
   if (!fixed_sponge) fixed_sponge = '';
@@ -307,11 +291,54 @@ function init()
 
   qbe = new iSPARQL.QBE();
   adv = new iSPARQL.Advanced();
+  
+  OAT.Dom.attach("menu_b_reset","click",function() {
+    if (tab.tabs.find(tab_qbe) == tab.selectedIndex)
+      qbe.func_clear();
+    if (tab.tabs.find(tab_query) == tab.selectedIndex)
+      adv.func_reset();
+  });
+  
+  OAT.Dom.attach("menu_b_load","click",function() {
+    if (tab.tabs.find(tab_qbe) == tab.selectedIndex)
+      qbe.func_load();
+    if (tab.tabs.find(tab_query) == tab.selectedIndex)
+      adv.func_load();
+  });
+
+  OAT.Dom.attach("menu_b_save","click",function() {
+    if (tab.tabs.find(tab_qbe) == tab.selectedIndex)
+      qbe.func_save();
+    if (tab.tabs.find(tab_query) == tab.selectedIndex)
+      adv.func_save();
+  });
+
+  OAT.Dom.attach("menu_b_saveas","click",function(){
+    if (tab.tabs.find(tab_qbe) == tab.selectedIndex)
+      qbe.func_saveas();
+    if (tab.tabs.find(tab_query) == tab.selectedIndex)
+      adv.func_saveas();
+  });
+
+  OAT.Dom.attach("menu_b_run","click",function(){
+    if (tab.tabs.find(tab_qbe) == tab.selectedIndex)
+      qbe.func_run();
+    if (tab.tabs.find(tab_query) == tab.selectedIndex)
+      adv.func_run();
+  });
+
+  OAT.Dom.attach("menu_b_qbe","click",function(){
+    tab.go(tab_qbe);
+  });
+
+  OAT.Dom.attach("menu_b_adv","click",function(){
+    tab.go(tab_query);
+  });
 
   OAT.Dom.hide("page_loading");
   OAT.Dom.show("page_content");
   if (qbe.svgsparql)
-  qbe.svgsparql.reposition();
+    qbe.svgsparql.reposition();
 	if (window.__inherited) {
 		if (window.__inherited.username)       goptions.username = window.__inherited.username;
 		if (window.__inherited.password)       goptions.password = window.__inherited.password;
@@ -322,8 +349,7 @@ function init()
 		if (window.__inherited.query)          qbe.loadFromString(window.__inherited.query);
     if (window.__inherited.graph)          $('qbe_graph').value = window.__inherited.graph;
 
-  	if (window.__inherited.callback)
-  	{
+  	if (window.__inherited.callback) {
     	/* query returning */
     	var returnRef = function() {
     	  if ($v('default-graph-uri') == '' || confirm('WARNING ! ! !\nDefault graph will be lost, construct your query using FROM instead. \nDo you wish to continue?'))
@@ -347,8 +373,7 @@ function init()
     var page_params = OAT.Dom.uriParams();
   	for (var p in goptions) { if(page_params['goptions.'+p] != undefined) goptions[p] = page_params['goptions.'+p];}
     
-  	if (fixed_sponge)
-  	{
+  	if (fixed_sponge) {
   	  goptions.should_sponge = fixed_sponge;
   	  var inputs = document.getElementsByName('should-sponge');
       for(var i = 0; i < inputs.length; i++)
@@ -358,8 +383,7 @@ function init()
   	}
   	
   	var show_initial_screen = true;
-  	if(get_initial_credentials)
-  	{
+  	if(get_initial_credentials)	{
       OAT.AJAX.GET(get_initial_credentials, '', function(data,headers){ 
         if (data != '')
         {
@@ -377,7 +401,7 @@ function init()
   	}
 
   	if (show_initial_screen)
-    dialogs.goptions.show();
+      dialogs.goptions.show();
     else
     	goptions.initial_screen = true;
   }
@@ -388,21 +412,26 @@ function init()
   }
 }
 
-iSPARQL.Advanced = function ()
-{
+iSPARQL.Advanced = function () {
 	var self = this;
 
-	//this.nav_stack = [];
-	//this.nav_index = 0;
-	
 	var icon_reset, icon_load, icon_save, icon_saveas, icon_run, icon_load_to_qbe, icon_get_from_qbe;
 	var icon_back, icon_forward, icon_start, icon_finish;
 	
 	this.func_reset = function() {
 	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  tab.go(tab_query);
 		if(confirm('Are you sure you want to reset the query?'))
 		{
-		  $("query_form").reset();
+		  //$("query_form").reset();
+		  $("query").value = '';
+  	  
+  	  format_select();
+  	  
+      var table = $('named_graph_list');
+      if (table.tBodies.length)
+        OAT.Dom.unlink(table.tBodies[0]);
+      $('named_graphs_cnt').innerHTML=0;
   	  //$("res_area").innerHTML = '';
       //OAT.Dom.hide(self.results_win.div);
 		}
@@ -410,6 +439,7 @@ iSPARQL.Advanced = function ()
 	
 	this.func_load = function() {
 	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  tab.go(tab_query);
 	  var path = iSPARQL.Common.getFilePath();
 	  var file = iSPARQL.Common.getFile();
 	  //var pathDefault = iSPARQL.Common.getDefaultPath();
@@ -437,7 +467,7 @@ iSPARQL.Advanced = function ()
             $('default-graph-uri').value = nodes[i].getAttribute('default-graph-uri');
           }
       }
-	    
+
       var tmp = data.match(/#should-sponge:(.*)/i)
       if (tmp && tmp.length > 1)
       {
@@ -478,8 +508,8 @@ iSPARQL.Advanced = function ()
           goptions.last_path = path + fname;
           loadProcess(data);
           //OAT.WebDav.close();
+        }
       }
-    }
     	OAT.WebDav.openDialog(options);
     //	if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
     //}
@@ -487,6 +517,7 @@ iSPARQL.Advanced = function ()
 	
 	this.func_save = function() {
 	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  tab.go(tab_query);
     if (goptions.last_path)
     {
       self.save(goptions.last_path,get_file_type(goptions.last_path)); 
@@ -496,6 +527,7 @@ iSPARQL.Advanced = function ()
 	
 	this.func_saveas = function() {
 	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  tab.go(tab_query);
 	  //if (goptions.login_put_type == 'http')
 	  //{
     //  if (goptions.last_path)
@@ -527,7 +559,7 @@ iSPARQL.Advanced = function ()
     		dataCallback:function(fname,ext){
 				  //OAT.Dav.SaveContentType = get_mime_type(ext);
       		return self.getSaveData(ext);
-		}
+				}
 			};
 			OAT.WebDav.saveDialog(options);
     	//if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
@@ -536,27 +568,17 @@ iSPARQL.Advanced = function ()
 	
 	this.func_run = function() {
 	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
+	  tab.go(tab_query);
     var params = {
 	    service:self.service.input.value,
       query:$v('query'),
-      default_graph_uri:$v('default-graph-uri'),
+      default_graph_uri:$v('default-graph-uri').trim(),
       //maxrows:$v('maxrows'),
 	    should_sponge:$v('adv_sponge'),
       format:$v('format'),
       //res_div:$('res_area'),
       res_div:$('page_results'),
       named_graphs:[],
-      browseCallback:function(query,params){
-    	  //OAT.Dom.show(self.results_win.div);
-        //$('query').value = query;
-        //$('default-graph-uri').value = params.default_graph_uri;
-        /*self.*/nav_stack = params.nav_stack;
-        /*self.*/nav_index = params.nav_index;
-      },
-      //browseStart:icon_start,
-      //browseBack:icon_back,
-      //browseForward:icon_forward,
-      //browseFinish:icon_finish,
       showQuery:true
     }
     
@@ -588,23 +610,6 @@ iSPARQL.Advanced = function ()
         params.prefixes.push({"label":tmp[1],"uri":tmp[2]});
       }
 
-	  //OAT.Dom.show(self.results_win.div);
-	  //window.scrollTo(0,OAT.Dom.getWH(self.results_win.div)[0] - 40);
-
-	  if (/*self.*/nav_stack.length == 0)
-	  {
-	    /*self.*/nav_stack = [params];
-	    /*self.*/nav_index = 0;
-	  } else {
-	    if (params.query != /*self.*/nav_stack[/*self.*/nav_index].query ||
-	        params.default_graph_uri != /*self.*/nav_stack[/*self.*/nav_index].default_graph_uri/* ||
-	        params.format != self.nav_stack[self.nav_index].format - this is questianable*/)
-	    /*self.*/nav_index++;
-  	  /*self.*/nav_stack.splice(/*self.*/nav_index,/*self.*/nav_stack.length);
-    	/*self.*/nav_stack.push(params);
-  	}
-  	params.nav_index = /*self.*/nav_index;
-  	params.nav_stack = /*self.*/nav_stack;
 
 	  if(!tab_results.window) tab.go(2);
     iSPARQL.QueryExec(params);
@@ -614,14 +619,15 @@ iSPARQL.Advanced = function ()
 	  if (OAT.Browser.isIE) return;
 	  
 	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
-	  tab.go(0);
+	  tab.go(tab_qbe);
 	  qbe.loadFromString($('query').value);
 	  if ($v('qbe_graph') == '')
-	    $('qbe_graph').value = $v('default-graph-uri');
+	    $('qbe_graph').value = $v('default-graph-uri').trim();
     $('qbe_sponge').value = $v('adv_sponge');
 	}
 	
 	this.func_get_from_qbe = function() {
+	  tab.go(tab_query);
 	  if (OAT.Browser.isIE) return;
 
 	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
@@ -689,38 +695,19 @@ iSPARQL.Advanced = function ()
   }
 
 	var t = new OAT.Toolbar("toolbar");
-	icon_reset = t.addIcon(0,"images/qbe_clear.png","Reset",self.func_reset);
+	icon_reset = t.addIcon(0,"images/new.png","Reset",self.func_reset);
 	OAT.Dom.attach("menu_reset","click",self.func_reset);
 	
-	icon_load = t.addIcon(0,"images/fileopen.png","Open",self.func_load); 
+	icon_load = t.addIcon(0,"images/open_h.png","Open",self.func_load); 
 	OAT.Dom.attach("menu_load","click",self.func_load);
 
-	icon_save = t.addIcon(0,"images/filesave.png","Save",self.func_save); 
+	icon_save = t.addIcon(0,"images/save_h.png","Save",self.func_save); 
 	OAT.Dom.attach("menu_save","click",self.func_save);
 
-	icon_saveas = t.addIcon(0,"images/filesaveas.png","Save As...",self.func_saveas); 
+	icon_saveas = t.addIcon(0,"images/save_as_h.png","Save As...",self.func_saveas); 
 	OAT.Dom.attach("menu_saveas","click",self.func_saveas);
 
 	t.addSeparator();
-
-	//icon_start = t.addIcon(0,"images/start-22.png","First",function(){}); 
-  //icon_start.style.opacity = 0.3;
-  //icon_start.style.filter = 'alpha(opacity=30)';
-  //icon_start.style.cursor = 'default';
-	//icon_back = t.addIcon(0,"images/back-22.png","Back",function(){}); 
-  //icon_back.style.opacity = 0.3;
-  //icon_back.style.filter = 'alpha(opacity=30)';
-  //icon_back.style.cursor = 'default';
-	//icon_forward = t.addIcon(0,"images/forward-22.png","Forward",function(){}); 
-  //icon_forward.style.opacity = 0.3;
-  //icon_forward.style.filter = 'alpha(opacity=30)';
-  //icon_forward.style.cursor = 'default';
-	//icon_finish = t.addIcon(0,"images/finish-22.png","Last",function(){}); 
-  //icon_finish.style.opacity = 0.3;
-  //icon_finish.style.filter = 'alpha(opacity=30)';
-  //icon_finish.style.cursor = 'default';
-  //
-	//t.addSeparator();
 
 	icon_run = t.addIcon(0,"images/cr22-action-player_play.png","Run Query",self.func_run); 
 	OAT.Dom.attach("menu_run","click",self.func_run);
@@ -732,7 +719,7 @@ iSPARQL.Advanced = function ()
 
 	icon_get_from_qbe = t.addIcon(0,"images/compfile.png","Get from QBE",self.func_get_from_qbe); 
 	OAT.Dom.attach("menu_get_from_qbe","click",self.func_get_from_qbe);
-
+	
 	if (OAT.Browser.isIE)
 	{
 	  icon_load_to_qbe.style.filter = 'alpha(opacity=30)';
@@ -832,7 +819,7 @@ function get_mime_type(res){
 	    return 'text/xml';
 	  default:
 	    return 'text/plain';
-		}
+	}
 }
 
 var last_format = 1;

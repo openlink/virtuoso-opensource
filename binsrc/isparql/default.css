@@ -30,7 +30,7 @@ body {
   color: #335;
   margin:0px}
 
-img { border: 0;} 
+img { border: 0;}
 
 h1,h2,h3 { color: #005a9c }
 h2 { font-weight: normal}
@@ -65,11 +65,11 @@ ul, li {
   padding: 5px;
 }
 
-.main_col_page { 
+.main_col_page {
   margin: 0px;
 }
 
-#foot { 
+#foot {
   font-size: 7pt;
   text-align: right;
   float: left;
@@ -85,7 +85,7 @@ ul, li {
   color: #fff;
   padding-left: 400px;}
 
-ul#nav_bar { 
+ul#nav_bar {
   margin-top: 5px;
   list-style-type: none;
   text-align: left;
@@ -94,7 +94,7 @@ ul#nav_bar {
   padding: 0px;
 }
 
-#nav_bar li { 
+#nav_bar li {
   margin: 0px;
   margin-left: 20px;
   margin-right: 0px;
@@ -126,6 +126,7 @@ ul#nav_bar {
 	margin-top: 24px;
 	list-style-type: none;
 	padding-bottom: 1px;
+	text-align: center;
 }
 
 #tabs li {
@@ -165,22 +166,22 @@ img.corner {
   height: 300px;
 }
 
-div.pager { 
+div.pager {
   float: left; clear: both;
-  background-color: #576; 
+  background-color: #576;
   width: 99%;
   text-align: center;
 }
 
-div.pager a { 
+div.pager a {
   color: #ddd;
   font-weight: bold;
-  text-decoration: none; 
+  text-decoration: none;
   padding-left: 10px;
 }
 
-label { 
-  font-size: 10pt; 
+label {
+  font-size: 10pt;
   font-weight: normal}
 
 #load,
@@ -233,7 +234,7 @@ label.load { font-size: 8pt; font-weight: normal}
   float: left;
 }
 
-div#virtuoso_options 
+div#virtuoso_options
 {
   clear:both;
 }

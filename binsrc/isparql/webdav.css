@@ -64,7 +64,7 @@
 	left: 0px;
 	top: 0px;
 	width: 200px;
-  overflow:auto;
+	overflow:auto;
  	background-color: #fff;
 }
 
@@ -93,7 +93,7 @@
 	padding-top: 15px;
 	float: left;
 	text-align: center;
-	overflow: hidden; 
+	overflow: hidden;
 	margin: 5px;
 }
 
@@ -111,10 +111,10 @@
 
 #dav_right {
 	left: 207px;
-	top: 0px; 
-	width: 542px; 
+	top: 0px;
+	width: 542px;
 	overflow:auto;
-	position:relative; 
+	position:relative;
 	background-color: #fff;
 }
 
@@ -137,4 +137,3 @@
 #dav_permissions td {
 	text-align: center;
 }
-

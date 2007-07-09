@@ -24,6 +24,20 @@
 
 -->
   <head>
+
+<script type="text/javascript">
+//  var default_dgu = 'http://demo.openlinksw.com/dataspace/demo';
+  var default_qry = 'select distinct ?Concept where {[] a ?Concept}';
+  var fixed_sponge = '';
+  var default_spng = 'soft';
+  var do_auth_verify = './auth.vsp';
+  var default_user = 'demo';
+  var default_pass = 'demo';
+  var toolkitImagesPath = 'toolkit/images/';
+
+</script>
+
+
     <title>OpenLink iSPARQL</title>
     <link type="text/css" rel="stylesheet" href="SyntaxHighlighter.css"/>
     <link  type="text/css"rel="stylesheet" href="default.css"/>
@@ -44,13 +58,12 @@
   </head>
   <body>
     <div id="page">
-      <div id="page_loading" style="margin-top:200px;text-align:center;">
-      Loading ...
-      <img src="toolkit/images/progress.gif"/>
+      <div id="page_loading" style="margin-top:20px;text-align:center;">
+        <img src="toolkit/images/throbber.gif"/>
       </div>
       <div id="page_content" style="display:none;">
       <ul id="menu">
-        <li id="menu_qbe">QBE
+        <!--li id="menu_qbe">QBE
           <ul id="menu_qbe_down" class="menu_qbe" style="display:none;">
             <li id="menu_qbe_clear">Clear Pane</li>
             <li id="menu_qbe_load">Open</li>
@@ -77,8 +90,34 @@
             <li id="menu_load_to_qbe">Visualize</li>
             <li id="menu_get_from_qbe">Get from QBE</li>
           </ul>
+        </li-->
+        <li>iSPARQL
+          <ul class="menu_isparql">
+  				  <li id="menu_about">About iSPARQL</li>
+  				  <li><hr/></li>
+            <li id="menu_proc_opt" title="Preferences">Preferences</li>
+          </ul>
         </li>
-        <li id="menu_proc_opt" title="Setup and Configuration">Options</li>
+        <li>File
+          <ul id="menu_file_down" class="menu_file" style="display:none;">
+            <li id="menu_b_reset">Reset</li>
+            <li id="menu_b_load">Open</li>
+    				<li><hr/></li>
+            <li id="menu_b_save">Save</li>
+            <li id="menu_b_saveas">Save As...</li>
+          </ul>
+        </li>
+        <li>View
+          <ul class="menu_view" style="display:none;">
+            <li id="menu_b_qbe">Visual Builder</li>
+            <li id="menu_b_adv">Advanced Query</li>
+          </ul>
+        </li>
+        <li>Tools
+          <ul id="menu_tools_down">
+            <li id="menu_b_run">Run Query</li>
+          </ul>
+        </li>
         <li>Help
     			<ul class="menu_help" style="display:none;">
     				<li><a target="_blank" href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">Query Service Documentation</a></li>
@@ -87,8 +126,8 @@
     				<li><a target="_blank" href="http://virtuoso.openlinksw.com/blog/">Virtuoso Blog</a></li>
     			</ul>
         </li>
-				<li id="menu_about">About</li>
       </ul> <!-- menu -->
+	  <img id="throbber" src="toolkit/images/Dav_throbber.gif" style="float:right; margin-right: 2px;" />
       <ul id="tabs">
         <li id="tab_qbe" title="SPARQL Query By Example">QBE</li>
         <li id="tab_query" title="SPARQL Query By Typing">Advanced</li>
@@ -108,8 +147,9 @@
             	<div id="qbe_orders">
             	  <div id="qbe_orderby_grid"></div>
               </div>
-              <div> <!-- Opera hack -->
-                <label for="qbe_format" class="align">Output format</label>
+
+              <div> <!-- bottom options -->
+                Output format
                 <select id="qbe_format">
                   <option value="application/isparql+table" selected="selected">Table</option>
                   <option value="application/sparql-results+xml">XML</option>
@@ -117,36 +157,42 @@
                   <option value="application/javascript">Javascript</option>
                   <option value="text/html">HTML</option>
                 </select>
-                <!--
-                <label for="qbe_maxrows" class="align">Max Rows</label>
+                
+				Max Rows
                 <select id="qbe_maxrows">
                   <option value="10">10</option>
                   <option value="20">20</option>
                   <option value="50" selected="selected">50</option>
                   <option value="100">100</option>
                   <option value="200">200</option>
+                  <option value="0">[no limit]</option>
                 </select>
-                -->
+
                 <input type="checkbox" value="on" id="qbe_distinct"/>
                 <label for="qbe_distinct">Distinct</label>
+				
                 <select id="qbe_sponge">
                   <option value="">Get Local Data Only</option>
                   <option value="soft" selected="selected">Get Remote Data when Missing Locally</option>
                   <option value="grab-all">Get all Remote Data</option>
-                  <option value="grab-seealso">Get all Remote & Related Data</option>
+                  <option value="grab-seealso">Get all Remote &amp; Related Data</option>
                   <option value="grab-everything">Get everything (may by slow)</option>
                 </select>
-                <label for="qbe_query_type">Type</label>
+				
+                Type
                 <select id="qbe_query_type">
                   <option value="SELECT" selected="selected">SELECT</option>
                   <option value="DESCRIBE">DESCRIBE</option>
+                  <option value="INSERT">INSERT</option>
+                  <option value="DELETE">DELETE</option>
                 </select>
                 <input type="button" value="Use Query & Close" id="qbe_return_btn">
-              </div><!-- /Opera hack -->
-              <div> <!-- Opera hack -->
-                <label for="qbe_service">Endpoint</label>
+              </div>
+			  
+              <div>
+                Endpoint
                 <div id="qbe_service_div"></div>
-              </div><!-- /Opera hack -->
+              </div>
             </div>
           	<div id="qbe_props">
           	  <div id="qbe_props_node" style="display:none;">
@@ -424,11 +470,11 @@ WHERE
   		</div>
       <div id="about_div">
         <h1>OpenLink iSPARQL</h1>
-        <h2>Version: <span id="about_version">N/A</span><h2>
-        <h2>Build Date: <span id="about_date">N/A</span><h2>
-        <h3>Built using <a target="_blank" href="http://sourceforge.net/projects/oat">OpenLink Ajax Toolkit (OAT)</a><h3>
-        <h3>OAT version: <span id="about_oat_version">N/A</span></a><h3>
-  		</div>
+        <h2>Version: <span id="about_version">N/A</span></h2>
+        <h2>Build Date: <span id="about_date">N/A</span></h2>
+        <h3>Built using <a target="_blank" href="http://sourceforge.net/projects/oat">OpenLink Ajax Toolkit (OAT)</a></h3>
+        <h3>OAT version: <span id="about_oat_version">N/A</span></a></h3>
+		</div>
       <div id="qbe_unsupported_div">
         Unfortunately this interface is not supported in Microsoft Internet Explorer browser. Know browsers that work are: 
         <a target="_blank" href="http://www.firefox.com/">Firefox</a>, 
