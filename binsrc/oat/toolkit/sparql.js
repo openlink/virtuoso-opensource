@@ -81,7 +81,7 @@ OAT.SparqlQuery = function() {
 	var self = this;
 	this.variables = [];
 	this.distinct = false;
-	this.describe = false;
+	this.mode = "SELECT";
 	this.prefixes = [];
 	this.orders = [];
 	this.limit = false;
@@ -89,12 +89,12 @@ OAT.SparqlQuery = function() {
 	this.from = '';
 	this.from_named = [];
 	this.where = [];
-	this.construct = false;
+	self.construct = false;
 	
 	this.clear = function() {
 		self.variables = [];
   	self.distinct = false;
-  	self.describe = false;
+		self.mode = "SELECT";
 		self.prefixes = [];
 		self.orders = [];
   	self.limit = false;
@@ -109,8 +109,9 @@ OAT.SparqlQuery = function() {
 		var word = string.match(/^(\w+)\s*(.*)/);
 		switch (word[1].toUpperCase()) {
 			case "DESCRIBE":
-			  self.describe = true;
+				self.mode = "DESCRIBE";	
 			case "SELECT":
+				self.mode = "SELECT";
 				var main = word[2];
   				var tmp = main.match(/(distinct)?\s*(.*)/i);
   				var part = tmp[2];
@@ -166,6 +167,18 @@ OAT.SparqlQuery = function() {
 				    else 
 				      self.from = self.expandPrefix(tmp[2]);
 			break;
+			case "INSERT":
+			case "DELETE":
+				self.mode = word[1];
+				var main = word[2];
+				window.m = main;
+				var regs = main.match(/\s*(INTO|FROM)\s*GRAPH\s*(<[^>]+>)(.*)/);
+				self.from = regs[2];
+				var main = regs[3];
+				var bidx = main.indexOf('{');
+				var eidx = main.lastIndexOf('}');
+				self.parseWhere(main.substring(bidx + 1,eidx));
+			break
 			case "WHERE":
 				var main = word[2];
 				var bidx = main.indexOf('{');
@@ -181,18 +194,15 @@ OAT.SparqlQuery = function() {
 		} /* switch */
 	}
 	
-	this.parseWhere = function(where)
-	{
+	this.parseWhere = function(where) {
 	  self.where = self.parseParts(where,self);
 	}
 	
-	this.parseConstruct = function(construct)
-	{
+	this.parseConstruct = function(construct) {
 	  self.construct = self.parseParts(construct,self);
 	}
 	
-	this.parseParts = function(str,pobj,prev)
-	{
+	this.parseParts = function(str,pobj,prev) {
 	  str = str.trim();
 
 	  // separate the parts 
@@ -526,17 +536,24 @@ OAT.SparqlQuery = function() {
 	this.fromString = function(str) {
 		self.clear();
 		try {
-		  var keywords = ["PREFIX","SELECT","DESCRIBE","CONSTRUCT","ASK","FROM","WHERE","ORDER","LIMIT","OFFSET"];
+			var keywords = ["PREFIX","SELECT","INSERT INTO GRAPH","DELETE FROM GRAPH","DESCRIBE","CONSTRUCT","ASK","FROM","WHERE","ORDER","LIMIT","OFFSET"];
 		
 		  var pieces = self.splitOnKeywords(str,keywords);
-		  for (var i=1;i<pieces.length;i++) {	self.splitPiece(pieces[i]); }
+			for (var i=1;i<pieces.length;i++) {	
+				var piece = pieces[i];
+				/* hack */
+				if (piece == "DELETE ") {
+					piece += pieces[i+1];
+					pieces.splice(i+1,1);
+				}
+				self.splitPiece(piece); 
+			}
 		} catch (e) {
 		  alert('Invalid query!\nThere was a problem parsing the query. Please, check the syntax.');
 		}
 	}
 	
-	this.splitOnKeywords = function (str,keywords)
-	{
+	this.splitOnKeywords = function (str,keywords) {
 	  var ret = []
 	  var cnt = 0;
 	  var bgn = 0;
@@ -591,69 +608,74 @@ OAT.SparqlQuery = function() {
 	this.toString = function() {
 	  var fullquery = ''; 
 	  
-	  // prefix
-	  for(var i = 0;i<self.prefixes.length;i++)
-	    fullquery += 'PREFIX ' + self.prefixes[i].label + ': <' + self.prefixes[i].uri + '>\n';
+		// prefixes
+		for (var i = 0;i<self.prefixes.length;i++) { fullquery += 'PREFIX ' + self.prefixes[i].label + ': <' + self.prefixes[i].uri + '>\n'; }
 	  
 	  // select
 	  if (fullquery != '') fullquery += '\n';
-    if (self.construct)
-    {
+		switch (self.mode) {
+			case "CONSTRUCT":
       var construct = '';
       if (self.construct.type != 'group')
         construct = '{\n' + self.genWhere(self.construct,1) + '}';
       else
         construct = self.genWhere(self.construct,0);
   	  fullquery += 'CONSTRUCT ' + construct;
-    } else {
-      if (self.describe) fullquery += 'DESCRIBE ';
-      else fullquery += 'SELECT ';
-  	  if (self.distinct) fullquery += 'DISTINCT ';
+			break;
+			case "SELECT":
+			case "DESCRIBE":
+				fullquery += self.mode+" ";
+				if (self.distinct && self.mode != "DESCRIBE") fullquery += 'DISTINCT '; /* no DESCRIBE & DISTINCT?? */
   	  if (self.variables.length == 0) fullquery += '*';
   	  else fullquery += '?' + self.variables.join(' ?');
+			break;
+			case "INSERT":
+			case "DELETE":
+				fullquery += self.mode+" "+(self.mode == "INSERT" ? "INTO GRAPH " : "FROM GRAPH ");
+				var graph = "<http://URIQAREPLACEME/dataspace>";
+				if (self.from instanceof Array && self.from.length) {
+					graph = self.from[0];
+				} else if (self.from && !(self.from instanceof Array)) { graph = self.from; }
+				fullquery += graph+" ";
+				fullquery += self.genWhere(self.where,0);
+			break;
     }
 	  if (fullquery != '') fullquery += '\n';
 
+		if (self.mode != "INSERT" && self.mode != "DELETE") {
     // from	    
-	  if (self.from instanceof Array)
-	  {
-  	  for(var i = 0;i<self.from.length ;i++)
-  	    if (self.from[i] != '') fullquery += 'FROM ' + self.from[i] + '\n';
-  	} else
-  	  if (self.from != '') fullquery += 'FROM ' + self.from + '\n';
-
-	  for(var i = 0;i<self.from_named.length ;i++)
-	    fullquery += 'FROM NAMED ' + self.from_named[i] + '\n';
+			if (self.from instanceof Array)  {
+				for (var i = 0;i<self.from.length ;i++) {
+					if (self.from[i]) { fullquery += "FROM " + self.from[i] + '\n'; }
+				}
+			} else {
+				if (self.from) { fullquery += "FROM " + self.from + '\n'; }
+			}
+			for (var i = 0;i<self.from_named.length ;i++) { fullquery += 'FROM NAMED ' + self.from_named[i] + '\n'; }
 
     // where 
     var where = '';
-    if (self.where.type != 'group')
+			if (self.where.type != 'group') { 
       where = '{\n' + self.genWhere(self.where,1) + '}';
-    else
-      where = self.genWhere(self.where,0);
+			} else { where = self.genWhere(self.where,0); }
 	  fullquery += 'WHERE ' + where;
 	  
-	  if (self.orders.length > 0)
-	  {
+			if (self.orders.length > 0) {
   	  fullquery += '\nORDER BY';
-  	  for(var i = 0;i<self.orders.length ;i++)
-  	  {
+				for(var i = 0;i<self.orders.length ;i++) {
   	    var order = '?' + self.orders[i].variable;
-  	    if (self.orders[i].desc)
-  	      order = 'DESC(' + order + ')';
+					if (self.orders[i].desc) { order = 'DESC(' + order + ')'; }
   	    fullquery += ' ' + order;
   	  }
 	  }
 
-    if (self.limit)
-	    fullquery += '\nLIMIT ' + self.limit;
-    if (self.offset)
-	    fullquery += '\nOFFSET ' + self.offset;
+			if (self.limit) fullquery += '\nLIMIT ' + self.limit;
+			if (self.offset) fullquery += '\nOFFSET ' + self.offset;
+		}
 	  return fullquery;
 	}
 	
-	this.genWhere = function(obj,depth,next,prev)
-	{
+	this.genWhere = function(obj,depth,next,prev) {
 	  ret = '';
 	  indent = '  ';
 
@@ -754,8 +776,7 @@ OAT.SparqlQuery = function() {
             ret += '"' + obj.o + '"^^' + self.putPrefix(obj.otype);
           break;
         }
-        if (obj.filter != '')
-        {
+			if (obj.filter != '') {
           ret += ' ';
           ret += 'FILTER ';
           if (obj.filterRegex)
@@ -764,8 +785,7 @@ OAT.SparqlQuery = function() {
           ret += obj.filter;
           ret += ')';
         }
-        if (obj.parent.type != 'optional')
-        {
+			if (obj.parent.type != 'optional') {
           ret += ' ';
           if (next && obj.s == next.s && obj.p == next.p)
             ret += ',';
