@@ -34,8 +34,8 @@ create table at (i any primary key);
 insert into it values (#i1);
 insert into it values (#i2);
 insert into it values (#i3);
-insert into it values (iri_id_from_num (-3));
-insert into it values (iri_id_from_num (-3000));
+insert into it values (iri_id_from_num (4000000003));
+insert into it values (iri_id_from_num (4000003000));
 
 
 insert into at values (#i1);
@@ -54,7 +54,7 @@ echo both $if $equ $sqlstate 23000 "PASSED" "***FAILED";
 echo both " any IRI_ID unq\n";
 
 select iri_id_num (max (i)) from it;
-echo both  $if $equ $last[1] -3 "PASSED" "***FAILED";
+echo both  $if $equ $last[1] 4000003000 "PASSED" "***FAILED";
 echo both " IRI_ID max\n";
 
 select iri_id_num (max (i)) from at;

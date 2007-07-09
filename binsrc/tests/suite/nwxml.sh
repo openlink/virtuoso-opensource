@@ -143,6 +143,13 @@ then
     exit 3
 fi
 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxmlb.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: nwxml.sh: nwxmlb.sql functions "
+    exit 3
+fi
+
 STOP_SERVER
 START_SERVER $PORT 1000
 
