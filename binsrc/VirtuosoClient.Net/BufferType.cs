@@ -112,7 +112,7 @@ namespace OpenLink.Data.Virtuoso
 				    type.Name, 
 				    value.GetType().Name, 
 				    value.ToString ()));
-				return Convert.ChangeType (value, type);
+				return Convert.ChangeType (value, value.GetType());
 			  }
 			if (type == typeof (string))
 				return value.ToString ();

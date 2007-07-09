@@ -402,6 +402,13 @@ namespace OpenLink.Data.Virtuoso
 			case BoxTag.DV_SINGLE_FLOAT:
 				return UnmarshalSingle (stream);
 
+			case BoxTag.DV_IRI_ID:
+				return UnmarshalLongInt (stream);
+
+			case BoxTag.DV_IRI_ID_8:
+			case BoxTag.DV_INT64:
+				return UnmarshalInt64 (stream);
+
 			case BoxTag.DV_DOUBLE_FLOAT:
 				return UnmarshalDouble (stream);
 
@@ -487,6 +494,18 @@ namespace OpenLink.Data.Virtuoso
 			stream.WriteByte ((byte) value);
 		}
 
+		internal static void MarshalLongInt64 (Stream stream, int value)
+		{
+			stream.WriteByte ((byte) (value >> 56));
+			stream.WriteByte ((byte) (value >> 48));
+			stream.WriteByte ((byte) (value >> 40));
+			stream.WriteByte ((byte) (value >> 32));
+			stream.WriteByte ((byte) (value >> 24));
+			stream.WriteByte ((byte) (value >> 16));
+			stream.WriteByte ((byte) (value >> 8));
+			stream.WriteByte ((byte) value);
+		}
+
 		internal static int UnmarshalLongInt (Stream stream)
 		{
 			int b1 = ReadByte (stream);
@@ -495,6 +514,14 @@ namespace OpenLink.Data.Virtuoso
 			int b4 = ReadByte (stream);
 			return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
 		}
+
+		internal static Int64 UnmarshalInt64 (Stream stream)
+		{
+		  	Int64 i1, i2;
+			i1 = UnmarshalLongInt (stream);
+			i2 = UnmarshalLongInt (stream);
+			return (i1 << 32) | i2;
+		} 
 
 		internal static unsafe void MarshalSingle (Stream stream, float value)
 		{
