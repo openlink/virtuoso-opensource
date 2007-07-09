@@ -22,11 +22,11 @@
  -  
 -->
 
-<sect1 id="newssrvadm"><title>News Server Administration</title>
+<sect1 id="newssrvadm"><title>Conductor News Server Administration</title>
 
-  <sect2 id="newsgrpsadm"><title>Newsgroups Administration</title>
+  <sect2 id="newsgrpsadm"><title>Conductor Newsgroups Administration</title>
 	<para>
-	This page allows you to view and configure Newsgroups associated with the
+	From Conductor the NNTP tab allows you to view and configure Newsgroups associated with the
 	Virtuoso News Server.  Like Virtuoso's virtual database, Virtuoso can &quot;link&quot; in
 	newsgroups from remote news servers.  This interface allows you to view the
 	configuration and control the newsgroups both local and remote.</para>
@@ -34,23 +34,20 @@
 	The Virtuoso News server component will need to be enabled in
 	the <link linkend="VIRTINI">Virtuoso.ini</link> file by specifying
 	the NewsServerPort number.</para>
-    <figure float="1"><title>News Server Administration - Server Disabled</title>
-      <graphic fileref="ui/news_nntperr_01.jpg" width="379px" depth="62px"/></figure>
-	<para>
-	News servers are listed.  Use the plus icon to expand a server exposing a
-	table of newsgroups that have been linked.  Once
-	expanded, you can use the minus icon to contract the news server table.
-	This interface will always display the <emphasis>Local Virtuoso Server</emphasis>
-	news server.  This is a local server hosted entirely in Virtuoso which cannot
-	be removed.</para>
+	<para>The tab "NNTP Servers" shows list of the registered News servers.</para>
     <figure float="1"><title>News Server Administration</title>
-      <graphic fileref="ui/news_adm_01.jpg" width="584px" depth="240px"/></figure>
+          <graphic fileref="ui/news_adm_01.png"/>
+        </figure>
+        <para>Click the "Edit" link to change the news server settings, or click the "Delete"
+link to remove the news server.</para>
+        <figure float="1"><title>Edit News Server Properties</title>
+      <graphic fileref="ui/news_adm_01a.png"/></figure>
+        <para>Click the "Edit Groups" link for a current News Server in order to manage
+the list of available newsgroups.</para>
+    <figure float="1"><title>News Groups List</title>
+      <graphic fileref="ui/news_adm_01b.png"/></figure>
 	<para>
-	The options placed on the title bar of the news server name are available for
-	configuring the association to the external news server.
-	You can <emphasis>Remove</emphasis> external news servers from Virtuoso.  You
-	also edit the <emphasis>Properties</emphasis> of the server incase the location,
-	port or authentication credentials are changed.  You can also <emphasis>update</emphasis>
+	You can also <emphasis>update</emphasis>
 	the cache list of newsgroups.  Newsgroup names are (re)fetched in a batch
 	background scheduled task.  This is because the list can be very long
 	or the connection to the news server could be slow.  The status of the fetch
@@ -58,119 +55,57 @@
 	<para>
 	For each newsgroup listed for a news server you can <emphasis>update</emphasis>
 	the messages fetched, view and edit the <emphasis>Properties</emphasis> of the
-	group, or <emphasis>Remove</emphasis> the group from the list.</para>
-	<para>
-	The <emphasis>Add Newsgroups</emphasis> link lets you subscribe to newsgroups
-	on the server.  In the case of the Local Virtuoso Server you will be able to
-	create a new local group.  For remote servers you will be presented with a
-	screen for selecting newsgroups from the server</para>
-
-	<para>
-	Each listed newsgroup name is a link to a newsgroup viewing page.  Click on
-	the name of the newsgroup to list the messages fetched for that group.</para>
-
-	<para>
-	Use the <emphasis>Add Remote News Server</emphasis> button to add a new
-	reference to a remote news server.</para>
+	group, or <emphasis>Remove</emphasis> the group from the list. Also you can get
+        previous 500 messages or to get new messages by clicking the links at the bottom
+        of the form shown bellow.</para>
+        <figure float="1"><title>Manage subscribed for Newsgroup</title>
+          <graphic fileref="ui/news_adm_01c.png"/></figure>
 
     <sect3 id="newsaddgrp"><title>Add Newsgroup</title>
 		  <para>
-		  You can provide a filter to the <emphasis>Newsgroup Match</emphasis> field
-		  and a number of groups to list per page.  Press the <emphasis>Fetch Groups</emphasis>
-		  button to fetch the groups from the server.</para>
+	From the "NNTP Servers" tab click on the "Edit Groups" link for a registered News Server.
+        Then click the <emphasis>Subscribe to newsgroups</emphasis> link to subscribe to newsgroups
+	on the server.</para>
       <figure float="1"><title>Add Newsgroup</title>
-        <graphic fileref="ui/news_addgrp_01.jpg" width="524px" depth="194px"/></figure>
+        <graphic fileref="ui/news_addgrp_01.png"/></figure>
 		  <para>
-		  A new table should appear on the page with the list of groups.  Navigation
-		  buttons allow you to go the <emphasis>Next</emphasis> or <emphasis>Prev</emphasis>ious
-		  page.</para>
-		  <para>
-		  If a table of groups is not displayed this could be because either there
-		  are no groups available, none have been fetched into the cache yet or
-		  the filter is not broad enough.</para>
-      <figure float="1"><title>Add Newsgroup</title>
-        <graphic fileref="ui/news_addgrp_02.jpg" width="584px" depth="240px"/></figure>
-		  <para>
-		  Once groups are selected you can use the <emphasis>Add Groups</emphasis>
-		  button to add the groups.  A list of groups added will be displayed as
-		  a status indicator.  Previously linked groups will not be listed in the
-		  table of External Groups.
+		  Once groups are selected you can use the <emphasis>Subscribe Selected</emphasis>
+		  button to add the groups.
 		  </para>
-		  <para>Use the <emphasis>Back</emphasis> button to return to the News Server
-		  Administration page.</para>
+		  <para>Use the <emphasis>Back to servers list</emphasis> link to return to the News Servers
+		  List page.</para>
     </sect3>
 
     <sect3 id="newssrvadd"><title>Adding New News Server</title>
 		<para>
-		This page allows you to provide details for the remote server to be
-		associated with Virtuoso.</para>
-		<para><emphasis>Address</emphasis> is the IP address or hostname of the
+		From Conductor NNTP/NNTP Servers you can add remote servers. The values you need to provide in
+                the form are as follows:</para>
+		<para><emphasis>Server Address</emphasis> is the IP address or hostname of the
 		external news server.</para>
-		<para><emphasis>Port</emphasis> is the port number that the news server
+		<para><emphasis>Server Port</emphasis> is the port number that the news server
 		is listening on.  By default news servers listen on port 119.</para>
 		<para><emphasis>Username</emphasis> and <emphasis>Password</emphasis>
 		allow you to provide login credentials if the server requires them.</para>
       <figure float="1"><title>News Server Administration</title>
-        <graphic fileref="ui/news_add_01.jpg" width="509px" depth="203px"/></figure>
+        <graphic fileref="ui/news_add_01.png"/></figure>
     </sect3>
 
 	<sect3 id="newscliui"><title>Viewing Newsgroups</title>
-      <figure float="1"><title>View of messages in a newsgroup</title>
-        <graphic fileref="ui/news_lclsrvr_01.jpg" width="657px" depth="297px"/></figure>
+        <para>
+        You can view the messages of a newsgroup either using the Conductor UI going to
+NNTP/NNTP Servers/News Server/News Group, or using the ODS Framework UI. In the second case you need to
+have the ods_framework_dav.vad package and the ods_discussion_dav.vad package installed. Then you can go
+from ODS to tab "Discussions" where will be shown the list of avaible newsgroups. Each one has shown as
+link its name, which leads to page where are listed its messages.
+        </para>
+      <figure float="1"><title>View of messages in a newsgroup in ODS Discussions.</title>
+        <graphic fileref="ui/news_lclsrvr_01.png"/></figure>
 	</sect3>
 
 	</sect2>
 
 	<sect2 id="newsmsgft"><title>News Message Free Text Search</title>
-    <figure float="1"><title>News Text Search</title>
-      <graphic fileref="ui/news_txtsrch_01.jpg" width="608px" depth="535px"/></figure>
-    <figure float="1"><title>News Text Search Results</title>
-     <graphic fileref="ui/news_txtres_01.jpg" width="643px" depth="276px"/></figure>
+        <para>You can perform Free Text Search using the ODS search option.</para>
  </sect2>
 
 </sect1>
-
-
-<!--
-Virtuoso news server administration page
-
-First start the page, the list of news groups is empty.
-The administrator has two possibilities:
-1. Create local news group.
-2. Create mirror news group.
-To create mirror news group make following:
-1. Press button Attach news groups.
-2. Fill form. Example:
-News Server: news.openlinksw.com
-Port: 119
-mask : Empty (to show all groups on the server)
-3. Select groups from list
-3. Press the &quot;attach&quot; button.
-4. Group is attached now, but it's empty. To get messages from server press &quot;update now&quot;. (If the group has many massages (more 100), this is taking a long time. To evade the wait select &quot;Details&quot; for group and change field &quot;Messages for one pass&quot; from 0 to 50 for example. For every update the update procedure gets at most 50 messages from remote server).
-5. The column &quot;last update&quot; shows the result from the last update. Possibilities are:
-- OK - got all available messages.
-- OK* - Success but didn't got all available messages (if the value of &quot;Messages for one pass&quot; is not 0)
-- Unsuccessful. In the top of the page there should be an error text.
-6. Now the messages can be read from the Virtuoso new server with any NNTP news-reader directed to the Virtuoso NNTP port. (see the NewsServerPort in virtuoso.ini)
-
-Simple auto update procedure:
-
-create procedure
-news_auto_update_event ()
-{
-  declare _time integer;
-
-  for (select NG_GROUP, NG_UP_TIME, NG_UP_INT
-      from DB.DBA.NEWS_GROUPS where NG_AUTO = 1 ) do
-    {
-	_time := NG_UP_INT - datediff ('minute', NG_UP_TIME, now ());
-	if (_time &lt; 0 )
-	  new_news (NG_GROUP);
-    }
-}
-;
-To attach the auto update procedure in  DB.DBA.SYS_SCHEDULED_EVENT:
-
-  insert into DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
-    values ('NEWS_SERVER_UPDATE', now(), 'news_auto_update_event()', 20);
--->

@@ -23,7 +23,7 @@
 -->
 
 <sect1 id="servphpext">
-<title>Writing PHP Applications</title>
+<title>Deploying PHP Applications</title>
 
 <para>The PHP server extension allows Virtuoso to execute PHP (v4) pages
 stored in the file system or in Virtuoso’s WebDAV repository.   PHP pages run inside the Virtuoso process.</para>

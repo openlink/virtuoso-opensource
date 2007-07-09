@@ -1,4 +1,4 @@
-<chapter label="rdfandsparql.xml" id="rdfandsparql"><title>RDF Database and SPARQL</title>
+ <chapter label="rdfandsparql.xml" id="rdfandsparql"><title>RDF Database and SPARQL</title>
 <abstract>
 <para>
 Starting with version 4.5, Virtuoso provides built-in support for SPARQL, the standard query language for RDF and the semantic web.
@@ -71,7 +71,7 @@ if the string is not used before as an IRI then either NULL is returned or a new
 </para>
 <programlisting>
 create table DB.DBA.RDF_OBJ (
-  RO_ID integeR primary key,
+  RO_ID integer primary key,
     RO_VAL varchar,
   RO_LONG long varchar,
   RO_DIGEST any
@@ -84,7 +84,7 @@ create index RO_DIGEST on DB.DBA.RDF_OBJ (RO_DIGEST)
 Depending on the length of the value, it goes into the varchar or the long varchar column.
 The RO_ID is contained in rdf_box object that is stored in the O column.
 Still, the truncated value of O can be used for determining equality and range matching,
-even even if &lt; and &gt; of closely matching values need to look at the real string in RDF_OBJ.
+even if &lt; and &gt; of closely matching values need to look at the real string in RDF_OBJ.
 When RO_LONG is used to store very long value, RO_VAL contains a simple checksum of the value, to accelerate search for identical values when the table is populated by new values.
 </para>
 <programlisting>
@@ -117,16 +117,12 @@ create table DB.DBA.RDF_LANGUAGE (
 <para>The SQL value is the string as a narrow string representing the UTF8 encoding of the value, stripped of data type and language tag.</para>
 <para>The SQL form of an IRI is the string. The long and short forms are the IRI_ID referencing RU_IRI_ID of RDF_URL.</para>
 <para>For all non-string, non-IRI types, the short, long and SQL values are the same SQL scalar of the appropriate native SQL type. A SQL host variable meant to receive an O should be of the ANY type.</para>
-<para>The SPARQL implementation will usually translate results to the
-SQL format before returning them. Internally, it uses the shortest
-possible form suited to the operation. For equalities and joining, the
-short form is always good. For range comparisons, the long form is
-needed etc. For arithmetic, all three forms will do since the
-arguments are expected to be numbers which are stored as their binary
-selves in O, thus the O column unaltered and uncast will do as an
-argument of arithmetic or numeric comparison with, say, SQL literal
-constsnt.</para>
-
+<para>The SPARQL implementation will usually translate results to the SQL format before returning them.
+Internally, it uses the shortest possible form suited to the operation. For equalities and joining, the
+short form is always good. For range comparisons, the long form is needed etc. For arithmetic,
+all three forms will do since the arguments are expected to be numbers which are stored as their binary
+selves in O, thus the O column unaltered and uncast will do as an argument of arithmetic or numeric
+comparison with, say, SQL literal constants.</para>
 </sect2>
 <sect2 id="rdfxmlschemacompat"><title>Special Cases and XML Schema Compatibility</title>
 <para>We note that since we store numbers as the equivalent SQL binary type, we do not preserve the distinction of byte, boolean etc. These all become integer. If preserving such detail is for some reason important, then storage as a typed string is possible but is not done at present for reasons of compactness and performance.</para>
@@ -134,7 +130,7 @@ constsnt.</para>
 <sect2 id="rdfquietcast"><title>SQL Compiler Support - QUIETCAST option</title>
 <para>The type cast behaviors of SQL and SPARQL are different. SQL will generally signal an error when an automatic cast fails. For example, a string can be compared to a date column if the string can be parsed as a date but otherwise the comparison should signal an error. In SPARQL, such situations are supposed to silently fail. Generally, SPARQL is much more relaxed with respect to data types.</para>
 <para>These differences will be specially noticed if actual SQL data is processed with SPARQL via some sort of schema mapping translating references to triples into native tables and columns.</para>
-<para>Also, even when dealing with the triple-oriented RDF_QUAD table, there are cases of joining between S and O such that the O can be a heterogenous set of IRI's and other data whereas the S is always an IRI. The non-IRI to IRI comparison should not give cast errors but should silently fail. Also, in order to keep queries simple and easily optimizable, it should not be necessary to introduce extra predicates for testing if the O is n IRI before comparing with the S.</para>
+<para>Also, even when dealing with the triple-oriented RDF_QUAD table, there are cases of joining between S and O such that the O can be a heterogeneous set of IRI's and other data whereas the S is always an IRI. The non-IRI to IRI comparison should not give cast errors but should silently fail. Also, in order to keep queries simple and easily optimizable, it should not be necessary to introduce extra predicates for testing if the O is n IRI before comparing with the S.</para>
 <para>Due to these considerations, Virtuoso introduces a SQL statement option called QUIETCAST. When given in the OPTION clause of a SELECT, it switches to silent fail mode for automatic type casting.</para>
 <para>The syntax is as follows:</para>
 <programlisting>
@@ -154,7 +150,7 @@ Stored procedures can have SPARQL expressions inline and can declare cursors ove
 <para>
 Value conversions between SQL and SPARQL are most often automatic and
 invisible.  In some cases one needs to be aware of the different
-SPARQL value representations (valmodes).  SPARQL offers delcrations
+SPARQL value representations (valmodes). SPARQL offers declarations
 for determining if graphs to be returned are to be represented as XML
 or Turtle text serialization or whether these will be hash tables of
 triples. See <link linkend="fn_dict_new"><function>dict_new()</function></link> and related functions for a description of the hash table SQL data type.
@@ -166,10 +162,9 @@ and dictionaries to represent RDF triples and sets of triples.</para>
 <para><emphasis>Valmode</emphasis> means the "format of values returned by an
 expression", i.e. 'short', 'long' or 'SQL value'.</para>
 <para><emphasis>Triple vector</emphasis> is a vector (array) of S, P and O, where all values are in
-'long' formats, i.e. IRI_ID's for IRI values, vector of 5 items if O
-is a string, SQL scalar value if O is neither string nor IRI.</para>
+'long' formats, i.e. IRI_ID's for IRI values, numbers or datetimes for corresponding XMLSchema types, special &quot;RDF box&quot; objects if O is neither string nor IRI.</para>
 <para><emphasis>Dictionary of triples</emphasis> or <emphasis>Hash table of triples</emphasis> is an
-dictionary object made by the SQL function dict_new () whose keys are
+dictionary object made by the SQL function <emphasis>dict_new ()</emphasis> whose keys are
 triple vectors and values are not specified; this is a good storage
 format for an unordered set of distinct triples.</para>
 <para><emphasis>Dictionary of blank node names</emphasis> is a dictionary used for tricky
@@ -211,16 +206,16 @@ varchar
 ...
 </programlisting>
 <para>Note that names of variables returned from SPARQL are always case-sensitive and no case mode rules apply to them.
-Depending on CaseMode parameter in the virtuoso configudation file, double quotes should be used to refer to them in surrounding SQL code.
+Depending on CaseMode parameter in the virtuoso configuration file, double quotes should be used to refer to them in surrounding SQL code.
 </para>
 <para>
 It is possible to pass parameters to a  SPARQL query via a Virtuoso-specific syntax extension.
-'??' or '$?' indicates a positional parameter similar to '?' in plain SQL. '??' can be used in graph patterns or anywhere in the place of a SPARQL variable.
+<emphasis>??</emphasis> or <emphasis>$?</emphasis> indicates a positional parameter similar to <emphasis>?</emphasis> in plain SQL. <emphasis>??</emphasis> can be used in graph patterns or anywhere in the place of a SPARQL variable.
 The value of a parameter should be passed in SQL form, i.e. this should be a number or a untyped string.
 An IRI ID can be passed in all cases where an absolute IRI can, except the obvious case when the variable is an argument of a function that requires string.
 If the parameter is used in 'graph', 'subject' or 'object' position of the sparql pattern, the string parameter is converted into IRI automatically.
-In other cases, IRI string is undistinguishable from string literal, so there is a need in call of iri() buil-tin SPARL function, like iri (??).
-Using this notation, any dynamic SQL client, whether ODBC, JDBC or other can execute parametrized SPARQL queries, binding parametres just as with  dynamic SQL. 
+In other cases, IRI string is undistinguishable from string literal, so there is a need in call of <emphasis>iri()</emphasis> built-in SPARL function, like <emphasis>iri (??)</emphasis>.
+Using this notation, any dynamic SQL client, whether ODBC, JDBC or other can execute parameterized SPARQL queries, binding parameteres just as with dynamic SQL.
 </para>
 <programlisting><![CDATA[
 SQL> create function param_passing_demo ()
@@ -251,18 +246,18 @@ http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#four
 1 Rows. -- 00000 msec.
 ]]></programlisting>
 <para>An inline  SPARQL query can refer to SQL variables that are in scope in the SQL query or stored procedure containing it.
-Virtuoso extends the SPARQL syntax with a special notation to this effect. A reference to SQL variable X can be written as '?:X' or '$:X'.
-A reference to column C of table or sub-select with alias T can be written as '?:T.C' or '$:T.C'.
+Virtuoso extends the SPARQL syntax with a special notation to this effect. A reference to SQL variable X can be written as <emphasis>?:X</emphasis> or <emphasis>$:X</emphasis>.
+A reference to column <emphasis>C</emphasis> of table or sub-select with alias <emphasis>T</emphasis> can be written as <emphasis>?:T.C</emphasis> or <emphasis>$:T.C</emphasis>.
 Both notations can be used in any place where a variable name is allowed, except 'AS' clause described below.
 </para>
 <para>A column of a result set of a SPARQL SELECT can be used in SQL code inside a for statement just like any column from a SQL select.
 </para>
 <para>SQL rules about double-quoted names are applicable to variables that are passed to a SPARQL query or selected  from one.
 If a variable name contains unusual characters or should not be normalized according to SQL conventions then the
-name should use double quotes for escaping. E.g., the notation '?:"OrderLine"' will always refer to variable or column
-titled '"OrderLine"' whereas '?:OrderLine' can be converted to 'ORDERLINE' or 'orderline'.
+name should use double quotes for escaping. E.g., the notation <emphasis>?:"OrderLine"</emphasis> will always refer to variable or column
+titled <emphasis>OrderLine</emphasis> whereas <emphasis>?:OrderLine</emphasis> can be converted to <emphasis>ORDERLINE</emphasis> or <emphasis>orderline</emphasis>.
 </para>
-<para>It is safer to avoid using variable names that conflict with column names of RDF system tables, esp. 'G', 'P', 'S' and 'O'.
+<para>It is safer to avoid using variable names that conflict with column names of RDF system tables, esp. <emphasis>G</emphasis>, <emphasis>S</emphasis>, <emphasis>P</emphasis> and <emphasis>O</emphasis>.
 These names are not reserved now but they may cause subtle bugs when an incorrect SPARQL subquery is compiled into SQL code that refers to table columns of same names.
 Some of these names may be rejected as syntax errors by future Virtuoso versions.
 </para>
@@ -309,7 +304,7 @@ YES
 ]]>
 </programlisting>
 <sect3 id="rdfcontrollingsparqloutputtypes"><title>Controlling SPARQL Output Data Types</title>
-<para>The compilation of a SPARQL query may depend on environment that is usually provided by the SPARQL protocol, including name of default graph URI . Environment settings that come from protocol may override settings in the text of SPARQL query. To let an application configure the environment for a query,
+<para>The compilation of a SPARQL query may depend on environment that is usually provided by the SPARQL protocol, including name of default graph URI. Environment settings that come from protocol may override settings in the text of SPARQL query. To let an application configure the environment for a query,
  SPARQL syntax is extended with the 'define' clause:</para>
 <programlisting>
 define parameter-qname parameter-value
@@ -603,8 +598,7 @@ create procedure DB.DBA.SPARQL_REXEC (
     in query varchar,      -- text of SPARQL query to execute
     in dflt_graph varchar, -- default graph IRI, if not NULL then this overrides what's specified in query
     in named_graphs any,   -- vector of named graph IRIs, if not NULL then this overrides what's specified in query
-    in req_hdr any,        -- additional HTTP header lines that should be passed to the service; 'Host: ...' is most po
-pular.
+    in req_hdr any,        -- additional HTTP header lines that should be passed to the service; 'Host: ...' is most popular.
     in maxrows integer,    -- limit on numbers of rows that should be returned.
     in bnode_dict any )    -- dictionary of bnode ID references.
 
@@ -685,7 +679,7 @@ When the SPARQL web service endpoint receives a request it checks the <emphasis>
 This line contains zero or more target host names, delimited by commas.
 For every host name in the line the service scans the <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis> in search of row such that host name is like <emphasis>SH_HOST</emphasis>.
 The <emphasis>SH_HOST</emphasis> acts as 'pattern' argument for SQL string operator LIKE. If the row is found then the text of SPARQL request is extended.
-If default graph is not explicitely set by HTTP parameters and <emphasis>SH_GRAPH_URI</emphasis> is not null then default graph is set to <emphasis>SH_GRAPH_URI</emphasis>.
+If default graph is not explicitly set by HTTP parameters and <emphasis>SH_GRAPH_URI</emphasis> is not null then default graph is set to <emphasis>SH_GRAPH_URI</emphasis>.
 If <emphasis>SH_DEFINES</emphasis> is not null then it is added in front of query so this field is a good place for text for any <emphasis>define</emphasis> options.
 </para>
 <para>
@@ -711,34 +705,42 @@ code so SQL functions can be used even if <emphasis>define output:valmode
 'LONG'</emphasis> forces the use of internal RDF representation in the
 result set.</para>
 </sect2>
-<sect2 id="rdfinsertanddelete"><title>SPARUL -- an Update Language For RDF Graphs</title>
-<para>Starting from version 5.0, Virtuoso supports <ulink url="http://jena.hpl.hp.com/~afs/SPARQL-Update.html">SPARQL/Update</ulink> extension of SPARQL.
-This is sufficient for most of routine data manipulation operations.
-If <emphasis>SPARQL_UPDATE</emphasis> role is granted to <emphasis>SPARQL</emphasis> user then data manipulation statements may be executed via SPARQL web service enpoint as well as data querying.
-</para>
-<para>Two functions allow the user to alter RDF storage by inserting or deleting all triples lsited in some vector.
-Both functions receive an IRI of a graph that should be altered
-and a vector of triples that  should be added or removed. The graph IRI can
-be either IRI ID or a string. The return values of functions are not
-defined and should not be used by applications.</para>
-<programlisting>
-create function DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any)
-create function DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any)
-</programlisting>
-<para>Simple operations may be faster if written as low-level SQL code instead of using SPARUL.
-E.g, the use of SPARQL DELETE is redundand when the application should delete from RDF_QUAD by using simple filters like
-</para>
-<programlisting>
+</sect1>
+   <sect1 id="rdfsparul"><title>SPARUL -- an Update Language For RDF Graphs</title>
+     <sect2 id="rdfsparulintro"><title>Introduction</title>
+       <para>Starting from version 5.0, Virtuoso supports
+<ulink url="http://jena.hpl.hp.com/~afs/SPARQL-Update.html">SPARQL/Update</ulink> extension of SPARQL.
+This is sufficient for most of routine data manipulation operations. If <emphasis>SPARQL_UPDATE</emphasis>
+role is granted to <emphasis>SPARQL</emphasis> user then data manipulation statements may be
+executed via SPARQL web service endpoint as well as data querying.
+       </para>
+     </sect2>
+     <sect2 id="rdfsparulfunc"><title>Manage RDF Storage</title>
+       <para>Two functions allow the user to alter RDF storage by inserting or deleting all
+triples listed in some vector. Both functions receive an IRI of a graph that should be altered and
+a vector of triples that should be added or removed. The graph IRI can be either IRI ID or a string.
+The third optional argument of these functions control transactional behaviour: the value of parameter is
+passed to <link linkend="fn_log_enable"><function>log_enable</function></link> function.
+The return values of functions are not defined and should not be used by applications.
+       </para>
+       <programlisting>
+create function DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any, in log_mode integer := null)
+create function DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any, in log_mode integer := null)
+       </programlisting>
+       <para>Simple operations may be faster if written as low-level SQL code instead of using SPARUL.
+E.g, the use of SPARQL DELETE is redundant when the application should delete from RDF_QUAD
+by using simple filters like:
+       </para>
+       <programlisting>
 delete from DB.DBA.RDF_QUAD
 where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (
     'http://local.virt/DAV/sparql_demo/data/data-xml/source-simple2/source-data-01.rdf' );
-</programlisting>
-<para>
-On the other hand, simple filters does not work when search criteria refer to triples that are affected by the modification.
-Consider a function that deletes all triples whose subjects are nodes of type 'http://xmlns.com/foaf/0.1/Person'.
-Type information is stored in triples that will be deleted, so the simplest function is
-something like this:
-</para>
+       </programlisting>
+       <para>On the other hand, simple filters does not work when search criteria refer to triples
+that are affected by the modification. Consider a function that deletes all triples whose subjects
+are nodes of type 'http://xmlns.com/foaf/0.1/Person'. Type information is stored in triples that
+will be deleted, so the simplest function is something like this:
+       </para>
 <programlisting><![CDATA[
 create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
 {
@@ -758,9 +760,8 @@ create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
 DELETE_PERSONAL_DATA (
   'http://local.virt/DAV/sparql_demo/data/data-xml/source-simple2/source-data-01.rdf' );
 ]]></programlisting>
-<para>
-Starting from Virtuoso 5.0, application may use SPARUL to do the same in a convenient way:
-</para>
+       <para>Starting from Virtuoso 5.0, application may use SPARUL to do the same in a convenient way:
+       </para>
 <programlisting><![CDATA[
 create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
 {
@@ -770,8 +771,61 @@ create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
            } }
 };
 ]]></programlisting>
-</sect2>
-</sect1>
+     </sect2>
+     <sect2 id="rdfsparulexamples"><title>Examples</title>
+       <para>The graph where changes take place may be specified by an option in front of query, instead
+of being specified in 'insert into graph' clause.
+       </para>
+<programlisting><![CDATA[
+sparql define input:default-graph-uri <SparqlActions> insert { <s0> <p0> <o0> };
+]]></programlisting>
+       <para>The following two statements are equivalent but the latter may work faster, especially
+if there are many RDF views in the system or if some RDF views may contain triples for the graph
+in question. Note that neither of these two affect data that might come from RDF views.
+       </para>
+<programlisting><![CDATA[
+sparql delete from graph <SparqlActions> { ?s ?p ?o } from <SparqlActions> where { ?s ?p ?o };
+sparql clear graph <SparqlActions>;
+]]></programlisting>
+       <para>Keywords 'insert in' and 'insert into' are interchangeable in Virtuoso for backward
+compatibility but SPARUL spec lists only 'insert into':
+       </para>
+<programlisting><![CDATA[
+sparql insert in graph <SparqlActions> { <s1> <p11> <o111>, <o112> ; <p12> <o121> , <o122> };
+sparql insert into graph <SparqlActions> { <s2> <p2> <o2> };
+]]></programlisting>
+       <para>It is possible to use various expressions to calculate fields of new triples. This is
+proven to be very convenient, even if not a part of the original spec.
+       </para>
+<programlisting><![CDATA[
+sparql insert into graph <SparqlActions> { `iri (bif:concat (str (?s), "new"))` <p11> ?o } where { ?s <p11> ?o };
+]]></programlisting>
+       <para>'Modify graph' may be used as a sort of 'update' operation.
+       </para>
+<programlisting><![CDATA[
+sparql modify graph <SparqlActions> delete { ?s <p2> ?o } insert { ?s <p2new> ?o } where { ?s <p2> ?o };
+sparql delete from graph <SparqlActions> { <s2> <p2new> <o2> };
+]]></programlisting>
+       <para>The resource URL can be calculated by a string expression.</para>
+<programlisting><![CDATA[
+sparql load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf")
+   into graph <SparqlActions>;
+]]></programlisting>
+       <para>Number of operations can be sent to a web service endpoint as a single statement and
+executed in sequence.
+       </para>
+<programlisting><![CDATA[
+sparql
+  insert in graph <SparqlActions> { <s1> <p11> <o111>, <o112> ; <p12> <o121> , <o122> }
+  insert into graph <SparqlActions> { <s2> <p2> <o2> }
+  insert into graph <SparqlActions> { `iri (bif:concat (str (?s), "new"))` <p11> ?o } where { ?s <p11> ?o }
+  modify graph <SparqlActions> delete { ?s <p2> ?o } insert { ?s <p2new> ?o } where { ?s <p2> ?o }
+  delete from graph <SparqlActions> { <s2> <p2new> <o2> }
+  load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf") into graph <SparqlActions>
+;
+]]></programlisting>
+      </sect2>
+   </sect1>
 <sect1 id="rdfiridereferencing"><title>IRI Dereferencing</title>
 <para>There are many cases when RDF data should be retrieved from remote sources only when really needed.
 E.g., a scheduling application may read personal calendars from personal sites of its users.
@@ -781,7 +835,7 @@ Calendar data expire quickly, so there's no reason to frequently re-load them in
 Virtuoso extends SPARQL so it is possible to download RDF resource from a given IRI, parse them and store the resulting triples in a graph, all three operations will be performed during the SPARQL query execution.
 The IRI of graph to store triples is usually equal to the IRI where the resource is download from, so the feature is named &quot;IRI dereferencing&quot;
 There are two different use cases for this feature.
-In simple case, a SPARQL query contains <emphasis>from</emphasis> clauses that enumerate graphs to process, but there are no triples in <emphasis>DB.DBA.RDF_QUAD</emphasis> taht correspond to some of these graphs.
+In simple case, a SPARQL query contains <emphasis>from</emphasis> clauses that enumerate graphs to process, but there are no triples in <emphasis>DB.DBA.RDF_QUAD</emphasis> that correspond to some of these graphs.
 The query execution starts with dereferencing of these graphs and the rest runs as usual.
 In more sophisticated case, the query is executed many times in a loop.
 Every execution produces a partial result.
@@ -800,8 +854,8 @@ Names of allowed parameters are listed below.
 If the value is &quot;soft&quot; then the SPARQL processor will not even try to retrieve triples if the destination graph is non-empty.
 Other <emphasis>get:...</emphasis> parameters are useless without this one.</listitem>
   <listitem><emphasis>get:uri</emphasis> is the IRI to retrieve if it is not equal to the IRI of the <emphasis>from</emphasis> clause.
-Thes can be used if data should be retrieved from a mirror, not from original resource location or in any other case when the destination graph IRI differs from the location of the resource.</listitem>
-  <listitem><emphasis>get:method</emphasis> is the HGTTP method that should be used to retrieve the resource, supported methods are &quot;GET&quot; for plain HTTP and &quot;MGET&quot; for URIQA web service endpoint.
+These can be used if data should be retrieved from a mirror, not from original resource location or in any other case when the destination graph IRI differs from the location of the resource.</listitem>
+  <listitem><emphasis>get:method</emphasis> is the HTTP method that should be used to retrieve the resource, supported methods are &quot;GET&quot; for plain HTTP and &quot;MGET&quot; for URIQA web service endpoint.
 By default, &quot;MGET&quot; is used for IRIs that end with &quot;/&quot; and &quot;GET&quot; for everything else.</listitem>
   <listitem><emphasis>get:refresh</emphasis> is the maximum allowed age of the cached resource, no matter what is specified by the server where the resource resides.
 The value is an positive integer (number of seconds). Virtuoso reads HTTP headers and uses &quot;Date&quot;, &quot;ETag&quot;, &quot;Expires&quot;, &quot;Last-Modified&quot;, &quot;Cache-Control&quot; and &quot;Pragma: no-cache&quot; fields to calculate when the resource should be reloaded, this value can become smaller due to <emphasis>get:refresh</emphasis> but can not be incremented.</listitem>
@@ -833,7 +887,7 @@ where { graph ?g { ?id a ?o } };
 ]]></programlisting>
 <para>
 It can make text shorter and it is especially useful when the query text comes from client but the parameter should have a fixed value due to security reasons:
-the values set by <emphasis>define get:...</emphasis> can not be redefined inside the query and the applciation may prepend the text with desired pragmas before the execution.
+the values set by <emphasis>define get:...</emphasis> can not be redefined inside the query and the application may prevent the text with desired pragmas before the execution.
 </para>
 <para>
 Note that the user should have <emphasis>SPARQL_UPDATE</emphasis> role in order to execute such a query.
@@ -907,13 +961,13 @@ Every additional predicate may result in significant number of lookups in the RD
   <listitem><emphasis>input:grab-limit</emphasis> should be an integer that is a maximum allowed number of resource retrievals.
 The default value is pretty big (few millions of documents) so it is strongly recommended to set smaller value.
 Set it even if you're absolutely sure that the set of resources is small, because program errors are always possible.
-All resource downloads are counted, both successfull and failed, both forced by <emphasis>input:grab-iri</emphasis> and forced by <emphasis>input:grab-var</emphasis>.
+All resource downloads are counted, both successful and failed, both forced by <emphasis>input:grab-iri</emphasis> and forced by <emphasis>input:grab-var</emphasis>.
 Nevertheless, all constant IRIs specified by <emphasis>input:grab-iri</emphasis> (or <emphasis>input:grab-all</emphasis>) are downloaded before the first check of the <emphasis>input:grab-limit</emphasis> counter,
 so this limit will never prevent from downloading &quot;root&quot; resources.
 </listitem>
   <listitem><emphasis>input:grab-depth</emphasis> should be an integer that is a maximum allowed number of query iterations.
 Every iteration may find new IRIs to retrieve, because resources loaded on previous iteration may add these IRIs to <emphasis>DB.DBA.RDF_QUAD</emphasis> and make result set longer.
-The default value is 1, so the SPARQL processor will retrieve only resources explicitely named in &quot;root&quot; resources or in quad that are in the database before the query execution.
+The default value is 1, so the SPARQL processor will retrieve only resources explicitly named in &quot;root&quot; resources or in quad that are in the database before the query execution.
 </listitem>
   <listitem><emphasis>input:grab-base</emphasis> specifies a base IRI used to convert relative IRIs into absolute. The default is an empty string.</listitem>
   <listitem><emphasis>input:grab-resolver</emphasis> is a name of procedure that resolve IRIs and determines the HTTP method of retrieval.
@@ -1031,7 +1085,7 @@ Quad map values refer to schema elements of two further types: &quot;IRI classes
 <para>
 An IRI class declares that a column or set of columns gets converted into a IRI in a certain way.
 The conversion of this sort can be declared revertible (bijection) so an IRI can be parsed into original SQL values; this is useful when some equality of an IRI constant and a calculated IRI can be replaced with an equality of a parse result of a constant and an SQL column that is index criteria or simply faster.
-In addition, the SPARQL optimizer will eliminate redundand conversions if one IRI class is explicitly declared as a subclass of another.
+In addition, the SPARQL optimizer will eliminate redundant conversions if one IRI class is explicitly declared as a subclass of another.
 The most flexible declaration for conversion consists of specifying functions that assemble and disassemble from IRI into its constituent parts.
 This is overkill for typical conversions so it is possible to specify only one sprintf-style format string such that <emphasis>sprintf()</emphasis> SQL function will print an IRI using this format and <emphasis>sprintf_inverse()</emphasis> will be able to parse it back.
 </para><para>The use of <emphasis>sprintf_inverse()</emphasis> assumes that the format does not contain fragments like <emphasis>'%s%s'</emphasis> that make it impossible to separate parts of IRI from each other.
@@ -1130,11 +1184,11 @@ The next declaration creates an IRI class based on these two functions:
 create iri class oplsioc:grantee_iri using
   function DB.DBA.GRANTEE_URI (in id integer)
     returns varchar,
-function DB.DBA.GRANTEE_URI_INVERSE (in id_iri varchar)
+  function DB.DBA.GRANTEE_URI_INVERSE (in id_iri varchar)
     returns integer .
 ]]></programlisting>
 <para>
-In common case, IRI class declaration contains an N-ary function that composes IRIs and N inverse functions that gets an IRI as an argument and extracts the Nth SQL value.
+In common case, IRI class declaration contains an N-array function that composes IRIs and N inverse functions that gets an IRI as an argument and extracts the Nth SQL value.
 IRI composing function should silently return NULL on incorrect arguments instead of error signal.
 Inverse functions should return NULL if the argument has an incorrect type or value.
 </para>
@@ -1175,7 +1229,7 @@ Consider a better version of IRI class declaration listed above:
 <programlisting><![CDATA[
 create iri class oplsioc:grantee_iri using
   function DB.DBA.GRANTEE_URI (in id integer)
-    returns varchar ,
+    returns varchar,
   function DB.DBA.GRANTEE_URI_INVERSE (in id_iri varchar)
     returns integer
   option ( bijection,
@@ -1408,7 +1462,7 @@ When misused, it is as bad as &quot;red cut&quot; in PROLOG, but one must use th
 There is one exception from the rules described above.
 This exception is for <emphasis>virtrdf:DefaultQuadStorage</emphasis> only.
 If a graph variable of a quad map pattern is not bound and no source graph specified by <emphasis>FROM</emphasis> clauses then quad maps for specific constant graphs are ignored.
-In other words, if a default quad storage contains quad maps for specific graphs then the query in that storage should explicitely specify the graph in order to use a map for graph.
+In other words, if a default quad storage contains quad maps for specific graphs then the query in that storage should explicitly specify the graph in order to use a map for graph.
 This rule will not work if the default quad map is removed from the <emphasis>virtrdf:DefaultQuadStorage</emphasis>.
 This rule relates to the default storage itself, not to the containing patterns; copying some or all patterns into other storage will not reproduce there this special effect.
 </para>
@@ -1479,6 +1533,16 @@ It is an error to use an alias only in <emphasis>where</emphasis> clause of the 
 To detect more typos, an alias used in quad map values can not appear in <emphasis>option (using alias-name)</emphasis> clause.
 </para>
 </sect2>
+<sect2 id="rdfmetadatarecovery"><title>RDF Metadata Maintainance and Recovery</title>
+   <para>
+     To detect and fix automatically most popular sorts of RDF metadata corruption use <link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link>.
+It is also possible to backup RDF data by
+    <link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link>
+and restore the saved state later by using
+    <link linkend="fn_rdf_restore_metadata"><function>DB.DBA.RDF_RESTORE_METADATA</function></link>.
+It is convenient to make a backup before any modification of quad storages, quad map patterns or IRI classes, especially during debugging new RDF Views.
+   </para>
+</sect2>
 </sect1>
 <sect1 id="rdfsparqlimplementationextent"><title>SPARQL Implementation</title>
 
@@ -1522,7 +1586,7 @@ VARCHAR
 <para>
 This is BNF grammar of SPARQL with all Virtuoso extensions, but without rules for syntax of lexems.
 Rule numbers in square brackets are from W3C normative SPARQL grammar,
-asterick means that the rule differs from W3C grammar due to Virtuoso extensions,
+asterisk means that the rule differs from W3C grammar due to Virtuoso extensions,
 <emphasis>[Virt]</emphasis> means that the rule is Virtuoso-specific.
 <emphasis>[DML]</emphasis> stands for data manipulation language extensions from SPARUL.
 </para>
@@ -1702,7 +1766,7 @@ asterick means that the rule differs from W3C grammar due to Virtuoso extensions
 [Virt]	QmIRIrefConst	 ::=  IRIref | ( 'IRI' '(' String ')' )
 ]]></programlisting>
 <sect2 id="rdfsparqlandxquery"><title>SPARQL and XQuery</title>
-<para>In the current implementation, the XQuery Function Library is not available from SPARQL .</para>
+<para>In the current implementation, the XQuery Function Library is not available from SPARQL.</para>
 <para>As a temporary workaround, string parsing functions are made available, because they are widely used in W3C DAWG examples and the like. They are:</para>
 <programlisting>
 xsd:boolean (in strg any) returns integer
@@ -1768,9 +1832,61 @@ the behavior is undefined but will not involve unterminating recursion.
 </para>
 <para>For every <emphasis>?s ?subpredicate ?o</emphasis>, a triple <emphasis>?s ?superpredicate ?o</emphasis>
 is considered to exist if the rule context declares <emphasis>?superpredicate</emphasis> to be a superpredicate
-of <emphasis>?predicate</emphasis>. This is done by havingthe triple <emphasis>?subpredicate rdfs:subPropertyOf ?superpredicate</emphasis>
+of <emphasis>?predicate</emphasis>. This is done by having the triple <emphasis>?subpredicate rdfs:subPropertyOf ?superpredicate</emphasis>
 as part of the graphs making up the rule context. Transitivity is observed, thus if a is a subpredicate of b and b
 a subpredicate of c, then a is also a subpredicate of c.
+</para>
+</sect2>
+<sect2 id="rdfsameas"><title>OWL same-as Support</title>
+<para>
+Virtuoso has limited support for the OWL same-as predicate.
+</para>
+<para>
+In the following, the abbreviation owl:same-as is used for  the IRI http://www.w3.org/2002/07/owl#same-as .
+</para>
+<para>
+If same-as traversal is enabled and a triple pattern with a given
+subject or object is being matched, all the synonyms of the S and O
+will be tried and results gfenerated for all the tried bindings of S
+and O.  The set of synonyms is generated at run time by following all
+owl:same-as triples where the IRI in question is either the subject or
+the object.  These are followed recursively from object to subject and
+subject to object until the complete transitive closure is generated.
+All same-as triples from all the graphs applicable to instantiating
+the triple pattern at hand are considered.
+</para>
+<para>
+Thus, if we have 
+</para>
+<programlisting><![CDATA[
+<thing> <owl:same-as> <gizmo> .
+<thing> <label> "thingy" .
+]]></programlisting>
+<para>
+and we instantiate <emphasis>?s &lt;label> "thingy"</emphasis>
+we get <emphasis>?s</emphasis> bound to <emphasis>&lt;thing></emphasis>.
+</para>
+<para>
+If we instantiate <emphasis>&lt;gizmo> &lt;label> ?l</emphasis>
+we get <emphasis>?l</emphasis> bound to <emphasis>"thingy"</emphasis> because the subject was given and it was expanded to its synonyms.
+</para>
+<para>
+If binding a variable in a pattern where the variable was free, we do not expand the value to the complete set of its synonyms.
+</para>
+<para>
+Same-as expansion is enabled in a query by <emphasis>define input:same-as "yes"</emphasis> in the beginning of the SPARQL query.
+This has a significant run time cost but is in some cases useful when joining data between sets which are mapped to each other with same-as.
+</para>
+<para>
+We note that the number of same-as expansions will depend on the join order used for the SPARQL query.
+The compiler does not know the number of synonyms and cannot set the join order accordingly.
+Regardless of the join order we will however get at least one IRI of the each synonym set as answer.
+Also when interactively navigating a graph with a browser, the same-as expansion will take all synonyms into account.
+</para>
+<para>
+For getting the complete entaiment of same-as, a forward
+chaining approach should be used, effectivelty asserting all the
+implied triples.
 </para>
 </sect2>
 <sect2 id="rdfsparqlruleintro"><title>Implementation</title>
@@ -1794,8 +1910,11 @@ SQL> sparql define input:inference "sample" select * from &lt;g&gt; where {?s ?p
 </programlisting>
 <para>will include all the implied triples in the result set, using the rules in the sample rule set.
 </para>
-<para>
-Inference can be enabled triple pattern by triple patttern.  This is done with the option (inference 'rule_set') clause after the triple pattern concerned.  Specifying option (inference none) will disable inference for the pattern concerned while the default inference context applies to the rest of the patterns. Note that the keyword is input:inference in the query header and simply inference in the option clause.  See the examples section below for examples.
+<para>Inference can be enabled triple pattern by triple pattern. This is done with the option
+(inference 'rule_set') clause after the triple pattern concerned. Specifying option (inference none)
+will disable inference for the pattern concerned while the default inference context applies to the
+rest of the patterns. Note that the keyword is input:inference in the query header and simply inference
+in the option clause. See the examples section below for examples.
 </para>
 <para>In SQL, if RDF_QUAD occurs in a select from clause, inference can be added with the table option <emphasis>WITH</emphasis>, as follows:
 </para>
@@ -1950,11 +2069,11 @@ Removing one of them will still keep the rule in effect.
 If an object is indexed due to more than one rule the index data remain free from duplicates, neither index size nor speed is affected.
 </para>
 <para>
-If <emphasis>DB.DBA.RDF_OBJ_FT_RULE_ADD</emphasis> detects that the <emphasis>DB.DBA.RDF_QUAD</emphasis> contains quads whose graphs and/or predicates match to the new rule but not indexed before due to other rules then these quads are indexed automaticaly.
+If <emphasis>DB.DBA.RDF_OBJ_FT_RULE_ADD</emphasis> detects that the <emphasis>DB.DBA.RDF_QUAD</emphasis> contains quads whose graphs and/or predicates match to the new rule but not indexed before due to other rules then these quads are indexed automatically.
 However the function <emphasis>DB.DBA.RDF_OBJ_FT_RULE_DEL</emphasis> does not remove indexing data about related objects.
 Thus the presence of indexing data about an object does not imply that it is necessarily used in some quad that matches to some rule.
 </para>
-<para>Functions return one if the rule is added or deleted and zero if the call was redundand (the rule has been added before or there's no rule to delete).
+<para>Functions return one if the rule is added or deleted and zero if the call was redundant (the rule has been added before or there's no rule to delete).
 </para>
 <programlisting><![CDATA[
 
@@ -2041,19 +2160,19 @@ DB.DBA.VT_BATCH_UPDATE ('DB.DBA.RDF_OBJ', 'ON', null);
 <para>To set the text index to be updated every 10 minutes, use:
 </para>
 <programlisting>
-db.dba.vt_batch_update ('DB.DBA.RDF_OBJ', 'ON', 10);
+DB.DBA.VT_BATCH_UPDATE ('DB.DBA.RDF_OBJ', 'ON', 10);
 </programlisting>
 <para>To make the update always manual, specify NULL as the last argument above.
 </para>
 <para>
 Additional problem related to free-text index of <emphasis>DB.DBA.RDF_QUAD</emphasis> is that some applications (e.g. import of billions of triples) may set triggers off.
 This will make free-text index data incomplete.
-Call of procedure <emphasis>DB.DBA.RDF_OBJ_FT_RECOVER ()</emphasis> will insert all mising free-text index items by drop and re-insert every existing free-text index rule.
+Call of procedure <emphasis>DB.DBA.RDF_OBJ_FT_RECOVER ()</emphasis> will insert all missing free-text index items by drop and re-insert every existing free-text index rule.
 </para>
 </sect2>
 <sect2 id="rdfviewsandfreetext"><title>Free-Text Indexes on RDF Views</title>
 <para>
-If an <emphasis>O</emphasis> field of a quad map pattern gets its value from a database column that have a free text index then this index can be used in SPARQL for effecient text search.
+If an <emphasis>O</emphasis> field of a quad map pattern gets its value from a database column that have a free text index then this index can be used in SPARQL for efficient text search.
 As a variant, the free-text index of an additional table may be used.
 </para>
 <para>
@@ -2076,13 +2195,13 @@ from WS.WS.SYS_DAV_RES as dav_resource text literal RES_CONTENT
 ]]></programlisting>
 <para>
 The clause <emphasis>text literal RES_CONTENT</emphasis> grants the SPARQL compiler permission to use free-text index for objects that are literals composed from column <emphasis>dav_resource.RES_CONTENT</emphasis>; this clause also choose between <emphasis>text literal</emphasis> (supports <emphasis>contains()</emphasis> predicate only) and <emphasis>text xml literal</emphasis> (supports both <emphasis>contains()</emphasis> and <emphasis>xcontains()</emphasis>) text indexes.
-It is important to understand that free-text index will produce results using raw relatioinal data.
+It is important to understand that free-text index will produce results using raw relational data.
 If a literal class transformation changes the text stored in the column then these changes are ignored by free-text search.
 E.g., a transformation concatenates a word to the value of the column, but the free-text search will not find this word.
 </para>
 <para>
 The free-text index may be used in a more sophisticated way. Consider a built-in table <emphasis>DB.DBA.RDF_QUAD</emphasis> that does not have a free-text index.
-Moreover, the table does not contain full values of all objects; the <emphasis>O</emphasis> column contains &quot;short enough&quot; values inlined, but long and special values are represened by links to <emphasis>DB.DBA.RDF_OBJ</emphasis> table.
+Moreover, the table does not contain full values of all objects; the <emphasis>O</emphasis> column contains &quot;short enough&quot; values inlined, but long and special values are represented by links to <emphasis>DB.DBA.RDF_OBJ</emphasis> table.
 The RDF_OBJ table, however, has free-text index that can be used.
 The full declaration of built-in default mapping for default storage could be written this way:
 </para>
@@ -2122,9 +2241,9 @@ Boolean functions <function>bif:contains</function> and <function>bif:xcontains<
 Every function gets two arguments and returns a boolean value.
 The first argument is an local variable.
 The argument variable should be used as an object field in the group pattern where the filter condition is placed.
-Moreover, the occurence of variable in object field should be placed <emphasis>before</emphasis> the filter.
-If there are many occurences of the variable in object fields then the free-text search is associated with the rightmost occurence that is still to the left from the filter.
-The triple pattern that contains the rightmost occurence is called &quot;intake&quot; of free-text search.
+Moreover, the occurrence of variable in object field should be placed <emphasis>before</emphasis> the filter.
+If there are many occurrences of the variable in object fields then the free-text search is associated with the rightmost occurrence that is still to the left from the filter.
+The triple pattern that contains the rightmost occurrence is called &quot;intake&quot; of free-text search.
 When SPARQL compiler chooses appropriate quad map patterns that may generate data matching intake triple pattern it skips quad map patterns that have no declared free-text indexes, because nothing can be found by free-text search in data that have no free-text index.
 Every quad map pattern that has free-text pattern will finally produce an invocation of SQL <link linkend="containspredicate">contains</link> or <link linkend="xcontainspredicate">xcontains</link> predicate, so the whole result of free-text search may be a union of free-text searches from different quad map patterns.
 </para>
@@ -2421,7 +2540,7 @@ create procedure DB.DBA.SPARQL_REXEC_WITH_META (
 <para>If the query is a CONSTRUCT or DESCRIBE then the result set
 consists of a single row and a single column, the value inside is a
 dictionary of triples in 'long valmode'. Note that the dictionary
-object can not be sent to SQL client, say, via ODBC . The client can
+object can not be sent to SQL client, say, via ODBC. The client can
 loose database connection trying to fetch a result set row that
 contain a dictionary object. This disconnect will be safe for server,
 so the client can re-connect to the server, but the disconnected
@@ -2610,7 +2729,7 @@ Can be found at 'http://example.com:8080/sparql_demo/' depending on the local Vi
     <itemizedlist mark="bullet" spacing="compact">
       <listitem>Invoke the menu command Tools » Piggy Bank » My Semantic Bank Accounts....</listitem>
       <listitem>Click Add... in the Semantic Bank Accounts dialog box.</listitem>
-      <listitem>In the popup dialog box, type in the URL to the Virtuoso Semantic Bank you want to register with. Example: http://servar_name:server_port/bank</listitem>
+      <listitem>In the popup dialog box, type in the URL to the Virtuoso Semantic Bank you want to register with. Example: http://server_name:server_port/bank</listitem>
       <listitem>Enter an account a valid Virtuoso DAV user. (Note: currently we do not use encryption during authentication; do not use your precious password here.)</listitem>
       <listitem>Click OK, wait for the account to get registered, and then dismiss the Semantic Bank Accounts dialog box.</listitem>
       <listitem>To publish an item, just click the corresponding Publish button (much like how you save the item). To publish all the items being viewed, click the Publish All button.</listitem>

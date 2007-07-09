@@ -26,7 +26,7 @@
 
 	<sect2 id="httpvirtualdirs">
 		<title>HTTP Virtual Directories</title>
-	<para>This page allows you to define Virtual HTTP directories.  Virtual Directories 
+	<para>From HTTP Hosts &amp; Directories you can define Virtual HTTP directories. Virtual Directories
   let you define multiple HTTP server listeners in Virtuoso for either the same 
   network interface or another one.  Virtual directories can respond logically 
   to a name or directly by IP address.  Both types as well as default responses 
@@ -38,13 +38,13 @@
   during the virtual directory definition.</para>
     
       <figure float="1"><title>Virtual Directories</title>
-      <graphic fileref="ui/admvirtdir001.jpg" width="583px" depth="338px"/></figure>
+      <graphic fileref="ui/admvirtdir001.png"/></figure>
 
   <para>Click on the <emphasis>Add New Site</emphasis> button to start adding 
   a new Virtual Web Site and its directories.</para>
 
       <figure float="1"><title>Virtual Directories: Site Details</title>
-      <graphic fileref="ui/admvirtdir002.jpg" width="597px" depth="376px"/></figure>
+      <graphic fileref="ui/admvirtdir002.png"/></figure>
 
   <para>When adding or editing a web site you must supply a host.domain name, 
   which will be used to match again incoming requests to produce the correct 
@@ -55,21 +55,21 @@
   browsers will be determined by the host name specified in the request.  
   This provides the virtual site.</para>
 
-  <para>Click on "Add Site" to continue.</para>
+  <para>Click on "New Directory" to continue.</para>
 
       <figure float="1"><title>Virtual Directories Mappings</title>
-      <graphic fileref="ui/admvirtdir003.jpg" width="584px" depth="273px"/></figure>
+      <graphic fileref="ui/admvirtdir003.png"/></figure>
 
   <para>Before the directory settings are configured you can select from a 
-  few templates to help configure the details to follow quicker and easier.  
+  few types to help configure the details to follow quicker and easier.
   For SOAP virtual directories this step is particular useful.</para>
 
-  <para>Click on a template to continue.</para>
+  <para>Select "Type" and then click "Next" to continue.</para>
 
       <figure float="1"><title>Virtual Directories</title>
-      <graphic fileref="ui/admvirtdir004.jpg" width="598px" depth="727px"/></figure>
+      <graphic fileref="ui/admvirtdir004.png"/></figure>
 
-  <para>The main page lets you configure most aspects of the virtual directory.</para>
+  <para>The "Virtual Directory Information" tab lets you configure most aspects of the virtual directory.</para>
 
   <para>The default directory checkbox can be checked if you want the site being 
   defined to act as the default site for the interface.  This means that if a 
@@ -124,7 +124,7 @@ CR-escape=yes;
   save the them and proceed to configure mappings for the directory.</para>
 
       <figure float="1"><title>Virtual Directories Mappings</title>
-      <graphic fileref="ui/admvirtdir005.jpg" width="585px" depth="276px"/></figure>
+      <graphic fileref="ui/admvirtdir006.png"/></figure>
 
   <para>This screen lists mappings that have been defined for the virtual site.  
   If you have just created a fresh site then only one line will be displayed.  

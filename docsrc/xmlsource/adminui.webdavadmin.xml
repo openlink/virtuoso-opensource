@@ -23,56 +23,32 @@
 -->
 
 <sect1 id="webdavadmin">
-<title>WebDAV Administration</title>
-
-  <para>DAV, or WebDAV, is a protocol for Web-based Distributed Authoring and
-  Versioning.  The location where content items are placed is called the 
-  <emphasis>repository</emphasis>.  Content elements are called 
-  <emphasis>documents</emphasis>, corresponding to files, and  
-  <emphasis>folders/collections</emphasis>, corresponding to directories.
-  Collectively these documents and folders (collections) are known as
-  <emphasis>resources</emphasis>.</para>
-
-  <para>Virtuoso implements the DAV protocol, allowing you to create and
-  manage resources either directly through repository manipulations or
-  indirectly, through a variety of WebDAV services.</para>
-
-
-   <sect2 id="davuseradm">
-			<title>DAV Users Administration</title>
-		<para>
-The Virtuoso WebDAV repository has its own set of users to control access to its resources.
-You can use this page to configure these users.
-</para>
-		<para>
-To add a user enter the user name, full name, email address and group and then press the
-<emphasis>Add</emphasis> button
-</para>
-		<para>
-To edit a user choose the user from the list.  After the form automatically updates change
-the appropriate fields and press the <emphasis>Accept</emphasis> button.
-</para>
-		<para>
-<emphasis>Cancel</emphasis> will cancel editing and create an empty form for adding a new user.
-</para>
-		</sect2>
-
-    
+  <title>WebDAV Administration</title>
+  <para>DAV, or WebDAV, is a protocol for Web-based Distributed Authoring and Versioning. The location
+where content items are placed is called the <emphasis>repository</emphasis>. Content elements are called
+<emphasis>documents</emphasis>, corresponding to files, and <emphasis>folders/collections</emphasis>,
+corresponding to directories. Collectively these documents and folders (collections) are known as
+<emphasis>resources</emphasis>.
+  </para>
+  <para>Virtuoso implements the DAV protocol, allowing you to create and manage resources either directly
+through repository manipulations or indirectly, through a variety of WebDAV services.
+  </para>
     <sect2 id="resourcetypes">
 			<title>DAV Resource Types</title>
-		<para>
-To make sure that when Virtuoso serves files to client user agents the type of file is conveyed properly so
-that the right application can be used with that file a list or file types is maintained in the server.  This list
-is used when sending any content via the HTTP server which include content in DAV and under VSP.
-</para>
+    <para>To make sure that when Virtuoso serves files to client user agents the type of file is
+conveyed properly so that the right application can be used with that file a list or file
+types are maintained in the server. This list is used when sending any content via the HTTP
+server which include content in DAV and under VSP.
+    </para>
         <figure float="1"><title>DAV Resource Types</title>
-          <graphic fileref="ui/dav_resrctyp_01.jpg" width="585px" depth="502px"/></figure>
+          <graphic fileref="ui/dav_resrctyp_01.png"/></figure>
 		<para>
-The Resource Types page shows the list of currently defined resource types in the Virtuoso server.  You can edit or remove
-these types by using the action links on the right most column of the list next to the type applicable.
+The WebDAV &amp; HTTP/WebDAV Content Management/Resource Types page shows the list of currently
+defined resource types in the Virtuoso server. You can edit or remove these types by using the
+action links on the right most column of the list next to the type applicable.
 </para>
 		<para>
-Add new types by typing the details into the fields provided and pressing the <emphasis>Add</emphasis> button.
+Add new types by typing the details into the fields provided and pressing the <emphasis>Save</emphasis> button.
 </para>
 		</sect2>
 
@@ -83,12 +59,12 @@ Add new types by typing the details into the fields provided and pressing the <e
   commonly refered to as collections or folders in DAV, alter properties, 
   upload or remove files, or edit documents.</para>
 
-  <para>The Repository window lists the current location within the tree and 
+  <para>The Repository tab lists the current location within the tree and
   the current login name.  The root of the repository is usually 
   <code>/DAV/</code>.</para>
 
         <figure float="1"><title>WebDAV Content Management</title>
-          <graphic fileref="ui/davcont001.jpg" width="450px" depth="253px"/></figure>
+          <graphic fileref="webdav.png"/></figure>
 
   <sect3 id="davcontresnames"><title>Resource Names</title>
   <para>Resource names are given with collection (folder) names listed first, 
@@ -137,27 +113,27 @@ Add new types by typing the details into the fields provided and pressing the <e
   <para>Within the Content Management screen, you can change any of the 
   properties of a resource, other than its name, by selecting the 
   resource via the checkbox to the left of the icon, and pressing the 
-  &quot;Properties&quot; button at the bottom of the screen.</para>
+  &quot;Properties&quot; button.</para>
 
   <para>XML documents also permit you to edit their XML properties 
   specifically.  This can be done on any document of type text/xml by 
   clicking on the icon for the document.</para>
 
-    <sect4 id="davcontresprops"><title>Resource Properties</title>
-    <para>This screen permits you to edit the properties for one or a group of
-    resources.  The name of a resource cannot be changed.</para>
+    <sect4 id="davcontresprops"><title>Properties</title>
+    <para>When clicked this button from the bottom of the page, you can edit the properties
+for one or a group of resources which should be selected. The name of a resource cannot be changed.</para>
 
     <para>The owner, group, permissions, and indexing controls on this form 
     apply to the appropriate properties of resources, as documented 
     above.  Changes to the type of a collection (folder) are ignored.</para>
 
-    <para>The &quot;Property Update&quot; control permits you to change or add 
+    <para>The &quot;Property&quot; control permits you to change or add
     additional properties.  There is a pulldown of predefined XML-related 
     properties, or you may create your own property.</para>
     </sect4>
 
     <sect4 id="davcontdavprop"><title>WebDAV Properties</title>
-    <para>This screen permits you to manipulate the specific properties of XML 
+    <para>This control permits you to manipulate the specific properties of XML
     documents.  Existing properties are shown with their values, and can 
     be removed.  New properties can be added.</para>
 
@@ -200,7 +176,7 @@ a plethora of sites such as webzine articles and keep references to
 these imported resources in sensible locations for future
 reference.</para>
 
-<para>In the Virtuoso WebDAV Content Manager, links appear and are
+<para>In the Virtuoso Conductor WebDAV Content Manager, links appear and are
 accessed just as you would see a created resource.  Their Type is
 <parameter>Link:&lt;Target&gt;</parameter> where the target is the URL
 of the resource being linked.</para>
@@ -226,7 +202,7 @@ simply click the Add Link button, type a useful local name, such as
 &quot;Slippery SOAP article&quot; and paste the URL into the Link to
 field.</para>
 
-<para>More interestingly, I could set up a Web Data Import for the
+<para>More interesting, I could set up a Web Data Import for the
 target &lt;URL:
 http://news.cnet.com/news/0-1277-210-7545619-1.html?tag=bt_bh&gt;</para>
 
@@ -247,72 +223,20 @@ references, embedded links, etc.</para>
 		<sect3 id="contentidxmode">
 			<title>Indexing Mode</title>
 		<para>
-When files are inserted into Virtuoso's WebDAV repository, if their type is a type of text file such as plain text TXT, XML, or HTML,
-then they may be automatically free text indexed.
+When files are inserted into Virtuoso's WebDAV repository, if their type is a type of text file such
+as plain text TXT, XML, or HTML, then they may be automatically free text indexed.
 </para>
 		<para>
-By default files are automatically free text indexed as they are inserted into Virtuoso.  This is very convenient but can be time
-consuming if you frequently insert or update text files.  For this reason Virtuoso can be set to index in batch mode at a particular
-interval in minutes.
+By default files are automatically free text indexed as they are inserted into Virtuoso. This is
+very convenient but can be time consuming if you frequently insert or update text files. For
+this reason Virtuoso can be set to index in batch mode at a particular interval in minutes.
 </para>
         <figure float="1"><title>DAV Free Text Index Configuration</title>
-          <graphic fileref="ui/dav_idxprprty_01.jpg" width="626px" depth="258px"/></figure>
+          <graphic fileref="ui/dav_idxprprty_01.png"/></figure>
 		<para>
 To change the free-text index mode to batch mode check the check-box and provide a non-zero time interval (in minutes).
 Press the <emphasis>Accept</emphasis> button to save the changes into the server.
 </para>
 		</sect3>
-
-      <sect3 id="freetextsearch"><title>Search</title>
-
-	<para>Use the <emphasis>Search Method</emphasis> drop down to select the
-type query that you wish to make of the WebDAV repository.
-	</para>
-	<para>Type the words or phrases (contained in double quotes) separated by
-<emphasis>AND</emphasis> or <emphasis>OR</emphasis> keywords into the text area provided
-that you wish to search the WebDAV repository for.
-	</para>
-	<para>Press the <emphasis>Execute</emphasis> button to fetch the results of the search.
-        <figure float="1"><title>Free Text Searching</title>
-          <graphic fileref="ui/dav_freetxt_01.jpg" width="566px" depth="283px"/></figure>
-	</para>
-	<para>The results will be returned as a hyper-linked list of search hits.  Press on the links to
-go to the document.
-	</para>
-		</sect3>
-		<sect3 id="freetxttrigdef">
-			<title>Free Text Trigger Definition</title>
-			<para>
-To add a new text trigger fill the form details and press the <emphasis>Add</emphasis> button.
-		</para>
-			<para>
-To edit an existing text trigger press the <emphasis>Edit</emphasis> link next to the query
-item from the table at the base of the page.  The details of that item will populate the rest
-of the form.  Press the <emphasis>Update</emphasis> button to save the changes.
-		</para>
-			<para>
-To remove existing text trigger select "Remove" link subsequent to query.
-CAUTION: this operation cannot be reverted
-		</para>
-        <figure float="1"><title>Free Text Trigger Configuration</title>
-          <graphic fileref="ui/dav_txttrigr_01.jpg" width="613px" depth="268px"/></figure>
-			<para>
-This page will store the query and generate a hit for each time a DAV resource
-matching the query is either created or modified.
-Use the 'Test' button to see what pre-existing documents match the query.
-To return from query test page press browser 'Go back' button.
-Check the 'initialize hits' box if you wish the pre-existing matching documents to
-be added to the hits list for this text trigger.
-		</para>
-		</sect3>
-		<sect3 id="freetexttrigresults">
-			<title>Free Text Trigger Results</title>
-			<para>
-This page lists the WebDAV text trigger hits.  You can press on their links to view the results.
-		</para>
-        <figure float="1"><title>Free Text Trigger Hit Results</title>
-          <graphic fileref="ui/dav_txtresults_01.jpg" width="544px" depth="165px"/></figure>
-		</sect3>
 		</sect2>
-
 </sect1>

@@ -1255,7 +1255,7 @@ static method observe_stat_m ()
   within WebDAV.</para>
 
   <tip><title>See Also:</title>
-    <para><link linkend="rthwritaspxapps">Writing ASP.Net Web Applications</link></para>
+    <para><link linkend="rthwritaspxapps">Deploying ASP.Net Web Applications</link></para>
 	<para><link linkend="runtimehosting">Runtime Hosting</link></para></tip>
   </sect3>
 

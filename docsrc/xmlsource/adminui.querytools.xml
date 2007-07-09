@@ -25,37 +25,33 @@
 <sect1 id="querytools"><title>Query Tools</title>
 	<sect2 id="sqlqueries"><title>Relational Data using SQL</title>
 	<para>
-This interface allows you to quickly and directly query Virtuoso using SQL.  
-This interface has <emphasis>Save</emphasis> and <emphasis>Load</emphasis> 
+Conductor Interactive SQL allows you to quickly and directly query Virtuoso using SQL.
+It offers <emphasis>Save</emphasis> and <emphasis>Load</emphasis>
 facilities which allow SQL queries to be saved as an XML template, and read 
 back later.  With a query in the SQL Statement box click on the 
-<emphasis>Execute</emphasis> for the results which will appear on the 
-bottom of the page.  The <emphasis>Reset</emphasis> clears the SQL Statement 
-text box.</para>
+<emphasis>Execute</emphasis> for the results which will in the "Base" tab with option to return back
+to the query area. The <emphasis>Clear</emphasis> clears the SQL Statement text box.</para>
 
         <figure float="1"><title>Querying Relational Database Using SQL</title>
-          <graphic fileref="ui/qry_sql_01.jpg" width="505px" depth="274px"/></figure>
+          <graphic fileref="ui/qry_sql_01.png"/></figure>
 
-<para>Save a SQL query using the <emphasis>Save</emphasis> button, you will then 
-be presented with the Save as XML Template interface.</para>
+        <figure float="1"><title>Results</title>
+          <graphic fileref="ui/qry_sql_01a.png"/></figure>
+
+<para>Specify the location for the file to be saved to by selecting the "WebDAV source" or "Local file"
+check-box. </para>
 
         <figure float="1"><title>Saving SQL in an XML Template</title>
-          <graphic fileref="ui/qry_sql_02.jpg" width="541px" depth="281px"/></figure>
+          <graphic fileref="ui/qry_sql_02.png"/></figure>
 
-<para>This page allows you to define the XML template based on the SQL Query.  
-Specify a <emphasis>Root Element</emphasis> that will contain the 
-resulting XML tree.  Specify the file name and location of the XML Template, 
-this can be any place in the WebDAV repository - use the <emphasis>Browse</emphasis> 
-button to find a suitable location graphically.  In the same way you can optionally 
-provide an XSLT stylesheet.  The stylesheet, if provided will be used as the 
-default transformation for the XML result if the XML Template is executed 
-directly from WebDAV later.  Provide a description as necessary.  Change 
-the permissions that will be applied to the saved template before saving it.</para>
-
+<para>Click the "Browse" button. As result will be opened the Virtuoso WebDAV/File Browser
+where you should define the XML template based on the SQL Query. Specify a
+<emphasis>Root Element</emphasis> that will contain the resulting XML tree.
+Specify the file name and location of the XML Template. </para>
   </sect2>
 <sect2 id="xqueryqueries"><title>XML Data Using XQuery</title>
 <para>
-The Virtuoso Interactive XQuery facility allows you to create,
+The Conductor Interactive XQuery facility allows you to create,
 execute, save and reload queries using the evolving <ulink
 url="http://www.w3.org/TR/xquery/">W3C XML Query (XQuery) Language</ulink>.  
 Virtuoso currently supports the 1.0 version of this language.
@@ -125,5 +121,7 @@ value &quot;xqdemo/bib.xml&quot; in their Name column.</para>
 </bib>
 ]]></programlisting>
 </example>
+          <figure float="1"><title>XQuery Test File Results</title>
+          <graphic fileref="ui/qry_sql_02a.png"/></figure>
 </sect2>
 </sect1>

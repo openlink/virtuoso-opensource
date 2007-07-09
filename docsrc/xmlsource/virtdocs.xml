@@ -297,6 +297,11 @@
 <!ENTITY quote_dotted				SYSTEM	"funcref/quote_dotted.xml">
 <!ENTITY randomize				SYSTEM	"funcref/randomize.xml">
 <!ENTITY rclose					SYSTEM	"funcref/rclose.xml">
+<!ENTITY rdf_audit_metadata                     SYSTEM  "funcref/rdf_audit_metadata.xml">
+<!ENTITY rdf_backup_metadata                    SYSTEM  "funcref/rdf_backup_metadata.xml">
+<!ENTITY rdf_load_rdfxml                        SYSTEM  "funcref/rdf_load_rdfxml.xml">
+<!ENTITY rdf_load_turtle                        SYSTEM  "funcref/rdf_load_turtle.xml">
+<!ENTITY rdf_restore_metadata                   SYSTEM  "funcref/rdf_restore_metadata.xml">
 <!ENTITY regexp_instr				SYSTEM	"funcref/regexp_instr.xml">
 <!ENTITY regexp_like				SYSTEM	"funcref/regexp_like.xml">
 <!ENTITY regexp_match				SYSTEM	"funcref/regexp_match.xml">
@@ -903,6 +908,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 SYSTEM "xmlref\/\1
   <!ENTITY blogger       SYSTEM "blogger.xml">
   <!ENTITY rdfandsparql       SYSTEM "rdfandsparql.xml">
   <!ENTITY vacuum SYSTEM	"funcref/vacuum.xml">
+  <!ENTITY rdf_audit_metadata SYSTEM	"funcref/rdf_audit_metadata.xml">
 ]>
 <book id="virtdocs">
 	<title>OpenLink Virtuoso Universal Server: Documentation</title>
@@ -934,7 +940,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 SYSTEM "xmlref\/\1
 &sampleapps;
 &concepts;
 &server;
-<!--&adminui; -->
+&adminui;
 &accessinterfaces;
 &sqlreference;
 &sqlprocedures;

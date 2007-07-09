@@ -22,7 +22,7 @@
  -  
 -->
 
-  <sect1 id="rthwritaspxapps"><title>Writing ASP.Net Web Applications</title>
+  <sect1 id="rthwritaspxapps"><title>Deploying ASP.Net Web Applications</title>
 
  <para>Virtuoso is a CLR host.  It is responsible for initializing the runtime,
  defining the application domain (its runtime boundaries, security settings, etc),
@@ -587,31 +587,23 @@ DataGrid1.DataBind()
   </listitem>
 
   <listitem><formalpara><title>Configure Virtual Directory</title>
-    <para>Now we have to configure a Virtuoso virtual directory.  Launch a
-    web browser and go to the Virtuoso server, which would be
-    <computeroutput>http://localhost/</computeroutput> for this example, and
-    select Administration.  You will be prompted for the DBA user name and password
-    to administer Virtuoso.  These will be whatever you entered during the installation,
-    possibly both dba.  When the menu appears select
-    <menuchoice><guimenu>Web Services</guimenu></menuchoice> followed by
-    <menuchoice><guimenu>HTTP Virtual Directories</guimenu></menuchoice>.
-    You will see the default site listed, we will want to Edit URL mappings for
-    this site.  Click on the action link to continue.</para></formalpara>
+    <para>Now we have to configure a Virtuoso virtual directory. Go to Conductor / WebDAV &amp; HTTP / HTTP Hosts &mp; Directories.
+    </para></formalpara>
     <figure id="rthmig009"><title>Migrating ASP.Net Applications to Virtuoso</title>
-      <graphic fileref="rth/mig009.jpg" width="" depth=""/></figure>
+      <graphic fileref="rth/mig009.png"/></figure>
   </listitem>
 
   <listitem><formalpara><title>Add Virtual Directory</title>
-    <para>The next page will list all mappings currently present for the Virtuoso
-    server.  Scroll down the page to the Add Virtual Directory button and click it.</para></formalpara>
+    <para>The "folder" icon for the hosts defined will list all mappings currently present for the Virtuoso
+    server. Click on the "New Directory" link to continue.</para></formalpara>
     <figure id="rthmig010"><title>Migrating ASP.Net Applications to Virtuoso</title>
-      <graphic fileref="rth/mig010.jpg" width="" depth=""/></figure>
+      <graphic fileref="rth/mig010.png"/></figure>
   </listitem>
 
   <listitem><formalpara><title>Select DAV Domain template</title>
-    <para>On the next page select the DAV Domain template.</para></formalpara>
+    <para>On the next page select for "Type" the DAV Domain template and click "Next".</para></formalpara>
     <figure id="rthmig011"><title>Migrating ASP.Net Applications to Virtuoso</title>
-      <graphic fileref="rth/mig011.jpg" width="" depth=""/></figure>
+      <graphic fileref="rth/mig011.png"/></figure>
   </listitem>
 
   <listitem><formalpara><title>Configure the Virtual Directory parameters</title>
@@ -622,9 +614,9 @@ DataGrid1.DataBind()
     For now we will also set to Allow Directory Browsing, and Override execution
     permissions in WebDAV.  Finally we must set the VSP Execution user to
     <computeroutput>dba</computeroutput> using the drop down.
-    To save the changes click on the Add button at the bottom of the page.</para></formalpara>
+    To save the changes click on the "Save Changes" button at the bottom of the page.</para></formalpara>
     <figure id="rthmig012"><title>Migrating ASP.Net Applications to Virtuoso</title>
-      <graphic fileref="rth/mig012.jpg" width="" depth=""/></figure>
+      <graphic fileref="rth/mig012.png"/></figure>
   </listitem>
 
   <listitem><formalpara><title>View the ASPX page hosted in Virtuoso DAV</title>

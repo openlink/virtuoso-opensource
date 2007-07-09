@@ -27,9 +27,9 @@
 		<sect2 id="sqlxmlstmts">
 			<title>SQL-XML Statements</title>
 		<para>
-Enter a SQL to XML statement in the <emphasis>SQL Statement</emphasis> field:
+Go to XML/SQL-XML and enter a SQL to XML statement in the <emphasis>SQLX or SQL-XML Query</emphasis> text-area:
 </para>
-<example><title>For example</title>
+<example><title>For example:</title>
 <programlisting>
 SELECT &quot;product&quot;.ProductID AS &quot;id&quot;,
   &quot;product&quot;.ProductName AS &quot;name&quot;
@@ -39,99 +39,105 @@ FOR XML AUTO ELEMENT
 </programlisting>
 </example>
         <figure float="1"><title>SQL-XML Statements</title>
-          <graphic fileref="ui/sql_xml_mng_01.jpg" width="644px" depth="561px"/></figure>
+          <graphic fileref="ui/sql_xml_mng_01.png"/></figure>
 		<para>
 Type the root XML element name into the <emphasis>Root Element</emphasis> field.
 The results of the query will be contained within this root element.</para>
 		<para>
 Type the full path and resource name where you want your XML resource to reside under WebDAV
-in the <emphasis>WebDAV Location of Resource</emphasis> field.  Collection(s) described in the full path must
-already exist.</para>
+in the <emphasis>WebDAV Resource path for the result</emphasis> field. Collection(s) described
+in the full path must already exist.</para>
 		<para>
-You may use the <emphasis>Browse</emphasis> button next to the <emphasis>WebDAV Location of Resource</emphasis>
-field to navigate existing WebDAV collections (folders) or resources to store the result of query.  If a new resource should be created
-then type the resource name at the end of collection path string in the<emphasis>WebDAV Location of Resource</emphasis> field.</para>
+You may use the <emphasis>Browse</emphasis> button next to the <emphasis>WebDAV Resource path
+for the result</emphasis> field to navigate existing WebDAV collections (folders) or resources
+to store the result of query.</para>
 		<para>
-If you choose a resource that already exists as a query in WebDAV resource the form will automatically acquire
-the details from the previous query.  Existing queries should be listed in the table at the foot of the page which can be
-selected by pressing the <emphasis>Edit</emphasis> action hyperlink.</para>
+From the "Stored Queries" tab if you choose a resource that already exists as a query in WebDAV resource,
+after click the "Edit" link, the form will automatically acquire the details from the query.</para>
 		<para>
-If an XSLT transformation should be performed on retrieval time then you may either type the location of the stylesheet in the
-<emphasis>XSLT Stylesheet</emphasis> field or press the <emphasis>Browse</emphasis> button next to it to search for
-a valid XSLT stylesheet from the WebDAV repository.</para>
+If an XSLT transformation should be performed on retrieval time then you may either type the location
+of the stylesheet in the <emphasis>Stylesheet</emphasis> field or press the
+<emphasis>Browse</emphasis> button next to it to search for a valid XSLT stylesheet from the WebDAV
+repository.</para>
 		<para>
-Provide the appropriate <emphasis>WebDAV owner</emphasis> and <emphasis>group</emphasis> of stored result using the drop downs provided.</para>
+Provide the appropriate <emphasis>WebDAV owner</emphasis> and <emphasis>group</emphasis> of stored result
+using the drop downs provided.</para>
 		<para>
 Select appropriate <emphasis>permissions</emphasis> for the stored result.</para>
 		<para>
-You can use the default permissions of the user selected by pressing the <emphasis>Default</emphasis> button,
-the permissions will then be set to the default permissions of that WebDAV owner.</para>
-		<para>
-The query can be set to update itself at specific intervals of time or execute every time the resource is retrieved.
-If <emphasis>Execute query on retrieval</emphasis> is checked the query will be executed on resource
-retrieval time otherwise if <emphasis>Scheduler Interval</emphasis> contains a value greater than zero then the
-resource content will be refreshed at that interval in minutes only.  (Be sure that the Scheduler option is enabled)</para>
+The query can be set to update itself at specific intervals of time or execute every time the resource
+is retrieved. If <emphasis>Persist XML</emphasis> is checked the query will be executed
+on <emphasis>Update every</emphasis> 10 minutes by default.</para>
 		<para>
 Press the <emphasis>Execute</emphasis> button to execute the statement and store as a WebDAV
-resource.  Use <emphasis>Clear Form</emphasis> to clear the form</para>
+resource. Use <emphasis>Reset</emphasis> to clear the form</para>
 		<para>
-If you want to build a schema definition for the result then press the <emphasis>Build schema definition</emphasis> checkbox.
+If you want to build a schema definition for the result then press the
+<emphasis>Create XML Schema</emphasis> radio-button.
 </para>
 		<para>
-Virtuoso can provide the generated XML output with a full DTD for the data.  Press <emphasis>Build DTD</emphasis> to enable this
-option for the query.
-</para>
-		<para>
-If you wish to save the DTD as a separate file included from the XML document generated then use the
-<emphasis>Save DTD as separate resource</emphasis> checkbox.
-</para>
-		<para>
-To view the result of a saved query you can click on the file name link from the table at the foot of the page.
-</para>
-		<para>
-To edit an existing query click the edit action link for that query from the table at the foot of the page.
+Virtuoso can provide the generated XML output with a full DTD for the data. Press
+<emphasis>Create External DTD</emphasis> to enable this option for the query.
 </para>
 		</sect2>
 
 
     
-   <sect2 id="xpathsearch">
-		<title>XPATH Search</title>
 
-	<para>Use the <emphasis>Search Method</emphasis> drop down to select the
-type query that you wish to make of the WebDAV repository.
+   <sect2 id="xpathsearch">
+		<title>XQuery Search</title>
+
+	<para>Go to XML / XQuery /Xquery Basic.
 	</para>
-	<para>XPATH Document Search applies the XPATH expression to every realized XML contained
-within the Query Scope to qualify search hit results.  Note that this does not include XML Views unless persistent.  Use
-the Interactive XPATH page to directly query XML Views.
+	<para>XQuery Document Search applies the XPATH expression to every realized XML contained
+within the Query Scope to qualify search hit results. Note that this does not include XML Views unless
+persistent.
 	</para>
         <figure float="1"><title>XPATH Query of DAV</title>
-          <graphic fileref="ui/dav_xpath_01.jpg" width="575px" depth="466px"/></figure>
-	<para>Type that XPATH query expression into the text area that you wish
-to interrogate your WebDAV XML documents with.  e.g. <emphasis>//*</emphasis> or <emphasis>//title</emphasis>
+          <graphic fileref="ui/dav_xpath_01.png"/></figure>
+        <para>Choose the <emphasis>Scope of Query</emphasis> from within the WebDAV repository. You may
+define the scope as either No Context, DAV Resource (file), DAV Collection (folder), External Document URL,
+External Collection URL or Database Table. Use the <emphasis>Browse</emphasis> button to
+browse the contents of WebDAV to make a selection. The query will then be confined to the selected resource
+or collection and its children. Then Click the button "Next" in order to continue.
 	</para>
-	<para>Choose the <emphasis>Output Type</emphasis> that you wish to obtain.
-<emphasis>XML</emphasis> delivers proper XML content while <emphasis>Entity List</emphasis> delivers
-the results in plain text.
+      <figure float="1"><title>XPATH Query of DAV</title>
+          <graphic fileref="ui/dav_xpath_02.png"/></figure>
+        <para>Enter that XPATH query expression into the text area that you wish
+to interrogate your WebDAV XML documents with. e.g. <emphasis>//*</emphasis> or <emphasis>//title</emphasis>
 	</para>
 	<para>The <emphasis>Root Element</emphasis> field allows you specify the name of the root
 element to contain document element matches for each document found.  This aids stylesheet design.
-	</para>
-	<para>Choose the <emphasis>Scope of Query</emphasis> from within the WebDAV repository.  You may
-define the scope as either a collection (folder) or XML resource (file).  Use the <emphasis>Browse</emphasis> button to
-browse the contents of WebDAV to make a selection.  The query will then be confined to the selected resource
-or collection and its children.
 	</para>
 	<para>Choose an <emphasis>Output Style Sheet</emphasis> by either typing its
 URL or using <emphasis>Browse</emphasis> to select an XSL resource from WebDAV.  You only need to
 specify a style sheet if you want to transform your XML results using XSLT.
 	</para>
-	<para><emphasis>XSLT Transformation</emphasis>:  <emphasis>None</emphasis> will not attempt to
-transform the XML results.  <emphasis>Client</emphasis> will allow the Client UA (User Agent usually a Web Browser) to
-attempt to transform the XML.  The selected output style sheet will be referenced at the top of the output
-using the xml-stylesheet processing instruction.  <emphasis>Server</emphasis> will allow Virtuoso to
-transform the XML file using its own XSLT transformation engine.
+        <para>Click the button "Next" in order to continue.
+        </para>
+        <para>Choose an <emphasis>Store into</emphasis> location by either typing its
+URL or using <emphasis>Browse</emphasis> to select a DAV resource from WebDAV
 	</para>
+        <para>Set <emphasis>Permissions</emphasis> for the output result. Check "r" for read rights for Group and
+Users in order to view later the saved xml file.
+	</para>
+        <para>You may want to <emphasis>Replace the existing resource</emphasis> by checking the shown check-box with this label.
+	</para>
+	<para>Choose <emphasis>Output Type</emphasis> that you wish to obtain.
+<emphasis>Persist XML</emphasis> should be selected with Update interval im minutes or if you want to be created as XML Template,
+fill in the "Create as XML Template Description" field.
+	</para>
+        <para>Click the button "Save".
+        </para>
+        <figure float="1"><title>XPATH Query of DAV</title>
+          <graphic fileref="ui/dav_xpath_03.png"/></figure>
+        <figure float="1"><title>XPATH Query of DAV</title>
+          <graphic fileref="ui/dav_xpath_04.png"/></figure>
+        <para>If for location you have chosen /DAV/xmlsql/xquery.xml, you can view the saved file accessing the
+url: http://host:port/DAV/xmlsql/xquery.xml
+        </para>
+       <figure float="1"><title>XPATH Query of DAV</title>
+          <graphic fileref="ui/dav_xpath_05.png"/></figure>
 		</sect2>
 
 

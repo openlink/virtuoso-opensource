@@ -160,7 +160,7 @@
   <para>To allow XML template execution from a Virtuoso virtual directory and
   it's descendants the special option: 'xml_templates' must be used in the virtual
   directory definition.  This option can be set from the
-  <link linkend="httpvirtualdirs">Virtual Directories user interface</link> or from
+  <link linkend="httpvirtualdirs">Conductor / WebDAV &amp; HTTP / HTTP Hosts &amp; Directories</link> or from
   SQL (or ISQL) using the <link linkend="fn_vhost_define"><function>vhost_define(.... , opts=>vector('xml_templates', 'yes'));</function></link> function.  In the usual
   way, the SQL user specified for VSP execution within the virtual directory
   definition will be used for executing the templates within such web
@@ -190,42 +190,54 @@
 
 <sect2 id="saveqrytoxmltemplatessql"><title>Saving SQL Queries to XML Template</title>
 
-  <para>Using the Visual Server Administration Interface, we are going to make
+  <para>Using the Conductor Administration Interface, we are going to make
   and save a query to an XML template in WebDav, and then demonstration its
   use from a browser.</para>
-  <para>First we will make a new WebDAV directory.  From the Menu choose
-  WebDAV/Content Management:</para>
+  <para>First we will make a new WebDAV directory. From WebDAV &amp; HTTP / WebDAV Content Management
+/ Base click the "New folder" icon and in the shown form enter for "Folder Name": xmlt. Choose for
+"Owner" dav and click the "Create" button.</para>
 
     <figure id="xmltemplate001" float="1"><title>Creating a new directory (collection) in WebDAV</title>
-    <graphic fileref="xmltemplate001.jpg"/></figure>
+    <graphic fileref="xmltemplate001.png"/></figure>
 
   <para>Next we need to configure a virtual directory mapping to this so
-  that XML Templates can be executed later:</para>
+  that XML Templates can be executed later. Go to WebDAV &amp; HTTP / HTTP Hosts &amp; Directories
+and for your {Default Web Site} click the link "New Directory". In the shown form click "Next".</para>
+    <figure id="xmltemplate004" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>
+    <graphic fileref="xmltemplate004.png"/></figure>
+<para>The programmatic equivalent for creating a virtual directory is the command in iSQL:</para>
+<programlisting><![CDATA[
+SQL>vhost_define(lpath=>'/DAV/xmlt',
+                 ppath=>'/DAV/xmlt/',
+                 is_dav=>1,
+                 vsp_user=>'demo',
+                 opts=>vector('xml_templates', 'yes'));
+]]></programlisting>
 
-    <figure id="xmltemplate002" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>
-    <graphic fileref="xmltemplate004.jpg"/></figure>
-
-  <para>Now we go to the Interactive SQL interface and use a simple query.  Here
+  <para>Now we go to Database/Interactive SQL and will use a simple query. Here
   we are assuming that the Demo database is being used, so we will query the
   Customers table:</para>
 
-    <figure id="xmltemplate003" float="1"><title>A SQL Query with results</title>
-    <graphic fileref="xmltemplate002.jpg"/></figure>
+    <figure id="xmltemplate002" float="1"><title>A SQL Query</title>
+    <graphic fileref="xmltemplate002.png"/></figure>
+    <figure id="xmltemplate002a" float="1"><title>Results</title>
+    <graphic fileref="xmltemplate002a.png"/></figure>
 
-  <para>Next we will press the Save button to go to the Save XML Template page.
-  Here we can supply some "FOR XML" clause, "FOR XML AUTO" being the simplest.
-  We must save the template in the directory we created earlier, and as the user DAV.
-  The filename we have selected is <computeroutput>/DAV/xmlt/sql-template.xml</computeroutput>.</para>
+  <para>Now go to XML/SQL-XML and enter in the query area the sql statement from above.
+Here we can supply some "FOR XML" clause, "FOR XML AUTO" being the simplest.
+Enter in the field "WebDAV resource path for the result" the directory we created earlier, i.e.
+it should be /DAV/xmlt and add the name of the xmltemplate to which the result will be saved,
+for example: sql-template.xml So finally the value should be <computeroutput>/DAV/xmlt/sql-template.xml</computeroutput>.</para>
 
-    <figure id="xmltemplate004" float="1"><title>The Save XML Template page and settings</title>
-    <graphic fileref="xmltemplate005.jpg"/></figure>
+    <figure id="xmltemplate005" float="1"><title>The Save XML Template page and settings</title>
+    <graphic fileref="xmltemplate005.png"/></figure>
 
   <para>Once the template has been saved we can test it.  Point your browser at
   you newly created file, a URL similar to:
-  <computeroutput>http://myserver/xmlt/sql-template.xml</computeroutput>:</para>
+  <computeroutput>http://host:port/DAV/xmlt/sql-template.xml</computeroutput>:</para>
 
-    <figure id="xmltemplate005" float="1"><title>The test results: http://myserver/xmlt/sql-template.xml</title>
-    <graphic fileref="xmltemplate006.jpg"/></figure>
+    <figure id="xmltemplate006" float="1"><title>The test results: http://host:port/DAV/xmlt/sql-template.xml</title>
+    <graphic fileref="xmltemplate006.png"/></figure>
 
   <tip><title>See Also:</title>
   <para><link linkend="xmlqtemplates">Exposing XML Templates as Web Services</link>.</para>
@@ -235,23 +247,32 @@
 
 <sect2 id="saveqrytoxmltemplatessql"><title>Saving XQUERY Queries to XML Template</title>
 
-  <para>Using the Visual Server Administration Interface, we are going to make
+  <para>Using the Conductor Administration Interface, we are going to make
   and save a query to an XML template in WebDav, and then demonstration its
   use from a browser.</para>
-  <para>First we will make a new WebDAV directory.  From the Menu choose
-  WebDAV/Content Management:</para>
+  <para>First we will make a new WebDAV directory. From WebDAV &amp; HTTP / WebDAV Content Management
+/ Base click the "New folder" icon and in the shown form enter for "Folder Name": xmlt. Choose for
+"Owner" dav and click the "Create" button.</para>
 
-    <figure id="xmltemplate011" float="1"><title>Creating a new directory (collection) in WebDAV</title>
-    <graphic fileref="xmltemplate001.jpg"/></figure>
+  <figure id="xmltemplate001x" float="1"><title>Creating a new directory (collection) in WebDAV</title>
+    <graphic fileref="xmltemplate001.png"/></figure>
 
   <para>Next we need to configure a virtual directory mapping to this so
-  that XML Templates can be executed later:</para>
+  that XML Templates can be executed later. Go to WebDAV &amp; HTTP / HTTP Hosts &amp; Directories
+and for your {Default Web Site} click the link "New Directory". In the shown form click "Next".</para>
 
-    <figure id="xmltemplate012" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>
-    <graphic fileref="xmltemplate004.jpg"/></figure>
+    <figure id="xmltemplate004x" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>
+    <graphic fileref="xmltemplate004.png"/></figure>
+<para>The programmatic equivalent for creating a virtual directory is the command in iSQL:</para>
+<programlisting><![CDATA[
+SQL>vhost_define(lpath=>'/DAV/xmlt',
+                 ppath=>'/DAV/xmlt/',
+                 is_dav=>1,
+                 vsp_user=>'demo',
+                 opts=>vector('xml_templates', 'yes'));
+]]></programlisting>
 
-  <para>Now we turn to the XQUERY tool, from the Visual Server Administration
-  Interface menu choose <computeroutput>Query Tools/XQUERY</computeroutput>.</para>
+  <para>Now we go to XML / XQuery / XQuery Advanced.</para>
 
   <para>We will start by testing the following query against the Demo database</para>
 
@@ -268,17 +289,16 @@
 </bib>
 ]]></programlisting>
 
-    <figure id="xmltemplate013" float="1"><title>XQUERY query against the Demo database</title>
-    <graphic fileref="xmltemplate007.jpg"/></figure>
+    <figure id="xmltemplate007" float="1"><title>XQUERY query against the Demo database</title>
+    <graphic fileref="xmltemplate007.png"/></figure>
 
     <para>Now we will save this as an XML template by pressing the Save button.
     The query we used will be copied to the save XML template page.  We will ensure
     that the name of the file is
-    <computeroutput>/DAV/xmlt/xquery-template.xml</computeroutput> and
-    that the DAV owner is set to DAV:</para>
+    <computeroutput>/DAV/xmlt/xquery-template.xml</computeroutput>:</para>
 
-    <figure id="xmltemplate014" float="1"><title>Saving the XML template for the Xquery query</title>
-    <graphic fileref="xmltemplate008.jpg"/></figure>
+    <figure id="xmltemplate008" float="1"><title>Saving the XML template for the Xquery query</title>
+    <graphic fileref="xmltemplate008.png"/></figure>
 
   <tip><title>See Also:</title>
   <para><link linkend="xmlqtemplates">Exposing XML Templates as Web Services</link>.</para>
@@ -288,45 +308,54 @@
 
 <sect2 id="saveqrytoxmltemplatessql"><title>Saving XPATH Queries to XML Template</title>
 
-  <para>Using the Visual Server Administration Interface, we are going to make
+  <para>Using the Conductor Administration Interface, we are going to make
   and save a query to an XML template in WebDav, and then demonstration its
   use from a browser.</para>
-  <para>First we will make a new WebDAV directory.  From the Menu choose
-  WebDAV/Content Management:</para>
+  <para>First we will make a new WebDAV directory. From WebDAV &amp; HTTP / WebDAV Content Management
+/ Base click the "New folder" icon and in the shown form enter for "Folder Name": xmlt. Choose for
+"Owner" dav and click the "Create" button.</para>
 
-    <figure id="xmltemplate021" float="1"><title>Creating a new directory (collection) in WebDAV</title>
-    <graphic fileref="xmltemplate001.jpg"/></figure>
+<figure id="xmltemplate001y" float="1"><title>Creating a new directory (collection) in WebDAV</title>
+    <graphic fileref="xmltemplate001.png"/></figure>
 
   <para>Next we need to configure a virtual directory mapping to this so
-  that XML Templates can be executed later:</para>
+  that XML Templates can be executed later. Go to WebDAV &amp; HTTP / HTTP Hosts &amp; Directories
+and for your {Default Web Site} click the link "New Directory". In the shown form click "Next":</para>
 
-    <figure id="xmltemplate022" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>
-    <graphic fileref="xmltemplate004.jpg"/></figure>
+    <figure id="xmltemplate004y" float="1"><title>Configuring a Virtual Directory to respond to XML Template requests from our Dav</title>
+    <graphic fileref="xmltemplate004.png"/></figure>
+<para>The programmatic equivalent for creating a virtual directory is the command in iSQL:</para>
+<programlisting><![CDATA[
+SQL>vhost_define(lpath=>'/DAV/xmlt',
+                 ppath=>'/DAV/xmlt/',
+                 is_dav=>1,
+                 vsp_user=>'demo',
+                 opts=>vector('xml_templates', 'yes'));
+]]></programlisting>
 
     <para>Now we set our sights on the XML files in WebDAV.  We will perform a very
     simple XPATH query on an XML source file from this documentation.  We will
     search for the existence of <computeroutput>&lt;title&gt;</computeroutput>
-    tags in <computeroutput>/DAV/docsrc/adminui.xml</computeroutput>:</para>
+    tags in <computeroutput>http://host:port/DAV/docsrc/adminui.xml</computeroutput>:</para>
 
-    <figure id="xmltemplate023" float="1"><title>XPATH query on a file in WebDAV</title>
-    <graphic fileref="xmltemplate009.jpg"/></figure>
+    <figure id="xmltemplate009" float="1"><title>XPATH query on a file in WebDAV</title>
+    <graphic fileref="xmltemplate009.png"/></figure>
 
     <para>Make a quick mental note of the trivial result.  Now we will save our query
     as an XML template to be executed over HTTP.  Pressing the Save button takes
     us to the save XML Template page.  We ensure that the file to save is set to
-    <computeroutput>/DAV/xmlt/xpath-template.xml</computeroutput> and the
-    file owner is set to DAV:</para>
+    <computeroutput>/DAV/xmlt/xpath-template.xml</computeroutput>:</para>
 
-    <figure id="xmltemplate024" float="1"><title></title>
-    <graphic fileref="xmltemplate010.jpg"/></figure>
+    <figure id="xmltemplate010" float="1"><title></title>
+    <graphic fileref="xmltemplate010.png"/></figure>
 
     <para>Once our query has been saved in an XML template we can test it by
     pointing a web browser at the URL for the file as we configured our
     virtual directory for, which will be similar to:
-    <computeroutput>http://myvirtuoso:8890/xmlt/xpath-template.xml</computeroutput>:</para>
+    <computeroutput>http://localhost:8890/DAV/xmlt/xpath-template.xml</computeroutput>:</para>
 
-    <figure id="xmltemplate025" float="1"><title></title>
-    <graphic fileref="xmltemplate011.jpg"/></figure>
+    <figure id="xmltemplate011" float="1"><title></title>
+    <graphic fileref="xmltemplate011.png"/></figure>
 
   <tip><title>See Also:</title>
   <para><link linkend="xmlqtemplates">Exposing XML Templates as Web Services</link>.</para>

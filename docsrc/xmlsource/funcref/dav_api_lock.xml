@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- 
+  $Id$
+  (C)Copyright 2005 OpenLink Software
+-->
+<refentry id="fn_dav_api_lock">
+  <refmeta>
+    <refentrytitle>DAV lock manipulation functions</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DAV_LOCK</refname>
+    <refname>DAV_UNLOCK</refname>
+    <refname>DAV_IS_LOCKED</refname>
+    <refname>DAV_LIST_LOCKS</refname>
+    <refpurpose>Operations on locks of DAV collections and resources</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_dav_lock">
+      <funcprototype id="fproto_dav_lock">
+        <funcdef>integer <function>DAV_LOCK</function></funcdef>
+        <paramdef>in <parameter>path</parameter> varchar</paramdef>
+        <paramdef>in <parameter>locktype</parameter> varchar</paramdef>
+        <paramdef>in <parameter>scope</parameter> varchar</paramdef>
+        <paramdef>in <parameter>token</parameter> varchar</paramdef>
+        <paramdef>in <parameter>owner_name</parameter> varchar</paramdef>
+        <paramdef>in <parameter>owned_tokens</parameter> varchar</paramdef>
+        <paramdef>in <parameter>depth</parameter> varchar</paramdef>
+        <paramdef>in <parameter>timeout_sec</parameter> integer</paramdef>
+        <paramdef>in <parameter>auth_uname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_pwd</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_dav_unlock">
+      <funcprototype id="fproto_dav_unlock">
+        <funcdef>any <function>DAV_UNLOCK</function></funcdef>
+        <paramdef>in <parameter>path</parameter> varchar</paramdef>
+        <paramdef>in <parameter>token</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_uname</parameter> varchar</paramdef>
+        <paramdef>in <parameter>auth_pwd</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_dav_is_locked">
+      <funcprototype id="fproto_dav_is_locked">
+        <funcdef>integer <function>DAV_IS_LOCKED</function></funcdef>
+        <paramdef>in <parameter>id</parameter> any</paramdef>
+        <paramdef>in <parameter>type</parameter> char(1)</paramdef>
+        <paramdef>in <parameter>owned_tokens</parameter> any := 1</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <funcsynopsis id="fsyn_dav_list_locks">
+      <funcprototype id="fproto_dav_list_locks">
+        <funcdef>integer <function>DAV_LIST_LOCKS</function></funcdef>
+        <paramdef>in <parameter>id</parameter> any</paramdef>
+        <paramdef>in <parameter>type</parameter> char(1)</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_dav_api_lock"><title>Description</title>
+    <para><function>DAV_LOCK</function> sets a new lock or refresh an existing lock or creates a lock object.</para>
+    <para><function>DAV_UNLOCK</function> releases a lock.</para>
+    <para><function>DAV_IS_LOCKED</function> reports whether the resource or collection is locked.</para>
+    <para><function>DAV_LIST_LOCKS</function> returns a full list of all locks on a resource or collection.</para>
+    <para>It is strongly recommended to carefully study DAV standards before using these functions in applications.
+Improper use of DAV locks may result in subtle application errors that are hard to debug.</para>
+  </refsect1>
+  <refsect1 id="params_dav_api_lock"><title>Parameters</title>
+    <refsect2><title>path</title>
+      <para>Resource or collection path.
+As usual, colelction names must end with '/' and both sorts of path strings should begin with '/'.
+If the path specifies a non-existing resource in an existing collection then a lock object is created and only lock owner can create a resource with this name in future.
+</para>
+    </refsect2>
+    <refsect2><title>locktype</title>
+      <para>The type of lock. Current set of DAV standards specifies only one type of locks, called 'D:write'; the parameter value is stored 'as is' and never used, so the recommended value is an empty string.</para>
+    </refsect2>
+    <refsect2><title>scope</title>
+      <para>The scope of lock as a single-char string: 'S' for shared lock, 'X' for exclusive.</para>
+    </refsect2>
+    <refsect2><title>token</title>
+      <para>The token to update. Empty string or NULL means creation of a new lock, not an update of the existing one.</para>
+    </refsect2>
+    <refsect2><title>owner_name</title>
+      <para>Lock owner name as it will be displayed to other users that will query for existing locks. It is strongly recommended to provide commonly used names such as e-mails to let users ask each other to remove forgotten locks.</para>
+    </refsect2>
+    <refsect2><title>owned_tokens</title>
+      <para>String of tokens owned by a user, to let user ignore his own tokens. The string should match syntax of DAV HTTP 'If' parameter.
+This can be also an integer, this will work as empty list of tokens.</para>
+    </refsect2>
+    <refsect2><title>depth</title>
+      <para>This specifies the recursive depth of the lock.
+The string can be '0' to lock the specified collection only, '1' to lock the collection and its soubcollections, 'infinity' to lock the whole subtree.
+When the lock is added to a resource, the value '0' is used, for obvious reason.
+If NULL is passed to the function then the effective value is 'infinity' for collection lock or '0' for resource lock.</para>
+    </refsect2>
+    <refsect2><title>timeout_sec</title>
+      <para>Expiration interval for the lock, in seconds. If 0 or NULL is passed then HTTP DAV default is used that is equal to 604800 seconds (one week).</para>
+    </refsect2>
+    <refsect2><title>auth_uname</title>
+      <para>DAV user name to authenticate access. Lock, Lock refresh and unlock operations on existing resource or collection require write permission.
+To create a lock object in a collection, user should have write permission on that collection.
+This may cause problem when user first locks a resource and then loose write permission for some reason: the user is unable to remove his own lock.
+Default is NULL that means public access.
+</para>
+    </refsect2>
+    <refsect2><title>auth_pwd</title>
+      <para>User password. Default is NULL.</para>
+    </refsect2>
+    <refsect2><title>id</title>
+      <para>Internal identifier of a resource or collection as returned by DAV_SEARCH_ID().</para>
+    </refsect2>
+  </refsect1>
+
+<refsect1 id="examples_dav_api_lock"><title>Examples</title>
+    <example id="ex_dav_api_lock_1"><title>Two concurrent users</title>
+      <para>The following example shows how two users can prevent each other from undesired operations.</para>
+      <para>The sample function DAV_LOCK_DEMO() uses a function DUMP_VEC() that print the content of vector in Virtuoso/PL syntax.
+Yon can find the implementation of this function as one of examples for <link linkend="fn_vector"><function>vector()</function></link> Virtuoso/PL function.</para>
+      <screen><![CDATA[
+create procedure DAV_LOCK_DEMO (in dav_passwd varchar := 'dav')
+{
+  declare ACTION, RETVAL, token_s1, token_s2, token_x varchar;
+  result_names (ACTION, RETVAL);
+  result ('Adding group lock_demo_grp:',
+    DAV_ADD_GROUP ('lock_demo_grp', 'dav', dav_passwd) );
+  result ('Adding user lock_u1:',
+    DAV_ADD_USER ('lock_u1', 'lock_u1_pwd', 'lock_demo_grp', '110110000T', 0, '/DAV/lock_demo_u1_home/', 'First User of lock demo', 'lock_u1@localhost', 'dav', dav_passwd) );
+  result ('Adding user lock_u2:',
+    DAV_ADD_USER ('lock_u2', 'lock_u2_pwd', 'lock_demo_grp', '110110000T', 0, '/DAV/lock_demo_u2_home/', 'Second User of lock demo', 'lock_u2@localhost', 'dav', dav_passwd) );
+  result ('Adding a collection:',
+    DAV_COL_CREATE ('/DAV/lock_demo/', '110110000R', 'lock_u1', 'lock_demo_grp', 'dav', dav_passwd) );
+  result ('Uploading /DAV/lock_demo/sample.htm:',
+    DAV_RES_UPLOAD ('/DAV/lock_demo/sample.htm', '<html><body>This is /DAV/lock_demo/sample.htm</body></html>', 'text/plain', '110110000R', 'lock_u1', 'lock_demo_grp', 'lock_u1', 'lock_u1_pwd') );
+  token_s1 := DAV_LOCK ('/DAV/lock_demo/sample.htm', '', 'S', NULL, 'user1@example.com', '', '0', NULL, 'lock_u1', 'lock_u1_pwd');
+  result ('First user set a shared lock:', token_s1);
+  token_s2 := DAV_LOCK ('/DAV/lock_demo/sample.htm', '', 'S', NULL, 'user2@example.com', '', '0', NULL, 'lock_u2', 'lock_u2_pwd');
+  result ('Second user set a shared lock:', token_s2);
+  token_x := DAV_LOCK ('/DAV/lock_demo/sample.htm', '', 'X', NULL, 'user1@example.com', token_s1, '0', NULL, 'lock_u1', 'lock_u1_pwd');
+  result ('Lock dump',
+    DUMP_VEC (DAV_LIST_LOCKS (DAV_SEARCH_ID ('/DAV/lock_demo/sample.htm', 'R'), 'R')) );
+  result ('First user tries to set an exclusive lock:', token_x);
+  result ('Second user releases his lock:',
+    DAV_UNLOCK ('/DAV/lock_demo/sample.htm', token_s2, 'lock_u2', 'lock_u2_pwd') );
+  token_x := DAV_LOCK ('/DAV/lock_demo/sample.htm', '', 'X', NULL, 'user1@example.com', token_s1, '0', NULL, 'lock_u1', 'lock_u1_pwd');
+  result ('First user sets an exclusive lock:', token_x);
+  result ('First user releases his lock:',
+    DAV_UNLOCK ('/DAV/lock_demo/sample.htm', token_s1, 'lock_u1', 'lock_u1_pwd') );
+  token_x := DAV_LOCK ('/DAV/lock_demo/sample.htm', '', 'X', NULL, 'user1@example.com', token_s1, '0', NULL, 'lock_u1', 'lock_u1_pwd');
+  result ('First user sets an exclusive lock:', token_x);
+  result ('Second user tries to add a property to the resource:',
+    DAV_PROP_SET ('/DAV/lock_demo/sample.htm', 'sample_prop', 'sample value', 'lock_u2', 'lock_u2_pwd') );
+  result ('First user releases his shared:',
+    DAV_UNLOCK ('/DAV/lock_demo/sample.htm', token_x, 'lock_u1', 'lock_u1_pwd') );
+  result ('Second user adds a property to the resource:',
+    DAV_PROP_SET ('/DAV/lock_demo/sample.htm', 'sample_prop', 'sample value', 'lock_u2', 'lock_u2_pwd') );
+}
+
+DAV_LOCK_DEMO ();
+ACTION   RETVAL
+VARCHAR  VARCHAR
+_______________________________________________________________________________
+
+Adding group lock_demo_grp:  107
+Adding user lock_u1:  108
+Adding user lock_u2:  109
+Adding a collection:  171
+Uploading /DAV/lock_demo/sample.htm:  1103
+First user set a shared lock:  1545ce54-3599-11da-8697-8f3efbd86ef2
+Second user set a shared lock:  15460590-3599-11da-8697-8f3efbd86ef2
+Lock dump  
+vector (
+vector ('', 'S', '1545ce54-3599-11da-8697-8f3efbd86ef2', 604800, 108, 'user1@example.com'), 
+vector ('', 'S', '15460590-3599-11da-8697-8f3efbd86ef2', 604800, 109, 'user2@example.com'))
+First user tries to set an exclusive lock:  -8
+Second user releases his lock:  15460590-3599-11da-8697-8f3efbd86ef2
+First user sets an exclusive lock:  -8
+First user releases his lock:  1545ce54-3599-11da-8697-8f3efbd86ef2
+First user sets an exclusive lock:  1547251a-3599-11da-8697-8f3efbd86ef2
+Second user tries to add a property to the resource:  -8
+First user releases his shared:  1547251a-3599-11da-8697-8f3efbd86ef2
+Second user adds a property to the resource:  1321
+]]>
+      </screen>
+    </example>
+  </refsect1>
+  
+   <refsect1 id="seealso_dav_api_add"><title>See Also</title>
+    <para><link linkend="fn_dav_api_add">DAV content add/update/delete functions</link></para>
+    <para><link linkend="fn_dav_api_change">DAV content manipulation functions</link></para>
+    <para><link linkend="fn_dav_api_search">DAV search functions</link></para>
+    <para><link linkend="fn_dav_api_user">DAV user management functions</link></para>
+  </refsect1>
+
+</refentry>

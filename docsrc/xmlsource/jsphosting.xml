@@ -22,7 +22,7 @@
  -  
 -->
 
-<sect1 id="rthjsp"><title>Writing JSP Applications</title>
+<sect1 id="rthjsp"><title>Deploying JSP Applications</title>
 
 <para>The Virtuoso server with Java hosting support can be used to execute 
 JSP pages, however, Virtuoso requires a JSP container engine first.  Jakarta 

@@ -64,7 +64,7 @@
   <programlisting>http://[host:port]/SOAP/services.vsmx</programlisting>
 
     <figure float="0"><title>VSMX Test Page</title>
-      <graphic fileref="ui/vsmx001.jpg" width="482px" depth="566px"/></figure>
+      <graphic fileref="ui/vsmx001.png"/></figure>
 
   <para>The page shows all the operations that are available.  Click on 
   the link that corresponds to the operation to test and the services details and test 

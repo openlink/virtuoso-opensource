@@ -34,25 +34,42 @@
     <funcsynopsis id="fsyn_log_enable">
       <funcprototype id="fproto_log_enable">
         <funcdef><function>log_enable</function></funcdef>
-        <paramdef>in <parameter>flag</parameter> integer</paramdef>
+        <paramdef>in <parameter>bits</parameter> integer
+        <optional>in <parameter>quiet</parameter> integer</optional></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_log_enable"><title>Description</title>
-    <para>The <function>log_enable</function> function allows turning regular
-    transaction logging off or on.
-    A value of 0 terminates logging of DML statements inside the calling
-    transaction.  A value of 1 resumes logging of DML statements. Using
-    this function one can create situations where a transaction's outcome
+    <para>The <function>log_enable</function> function allows turning off or on
+    regular transaction logging or autocommit after every changed row.
+    The parameter <parameter>bits</parameter> is a bitmask.
+    Two bits that are in use in current versions are 1 and 2.
+    When bit 1 is not set (e.g. parameter value 0) then the function call
+    terminates logging of DML statements inside the calling
+    transaction. A value of 1 resumes logging of DML statements.
+    If bit 2 is set then automatic commits take place after every change
+    in every row in every DML statement.
+    Thus a parameter value of 2 disables logging and enables row-by-row autocommit.
+    A value of 3 enables row-by-row autocommit and enables logging.
+    While log on and off setting alone is reset at the end of the transaction so that one does not end up with logging disabled by acciudent,
+    the row-by-row autocommit mode causes the setting to be permanent inside the calling connection or web request.
+    That is, for a SQL client the setting stays ineffect until changed or disconnected and for a web request it stays in effect until the request is completed.
+    </para>
+    <para>
+    The function do nothing if the <parameter>bits</parameter> is NULL.
+    The function also do nothing when called inside atomic section.
+    </para>
+    <para>The function always returns the bitmask that describes old configuration of the log.</para>
+    <para>Attempt to disable transaction log that is disabled already result in an error.
+    If the second parameter is passed and it is not equal to zero then the error is
+    suppressed (and it's still possible to turn on or off autocommit).</para>
+    <para>Using this function one can create situations where a transaction's outcome
     would be different from the outcome of doing a roll forward of the
     transaction log.</para>
     <para>There are rare cases where it is more efficient to log an action in
     the form of a procedure call instead of logging the effects of the procedure on
     a row by row basis.  This is similar in concept to replicating procedure
     calls but applies to roll forward instead.</para>
-<para>A flag value of 2 disables logging and enables row-by-row autocommit.  A value of 3 enables row-by-row autocommit and enables logging.
-While log on and off setting alone is reset at the end of the transaction so that one does not end up with logging disabled by acciudent, the row-by-row autocommit mode causes the setting to be permanent inside the calling connection or web request.  That is,  for a SQL client the setting stays ineffect until changed or disconnected and for a web request it stays in effect until the request is completed.
-</para>
   </refsect1>
   <refsect1 id="seealso_log_enable"><title>See Also</title>
     <para><link linkend="fn_log_text"><function>log_text</function></link></para>

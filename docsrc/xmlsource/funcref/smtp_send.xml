@@ -58,10 +58,36 @@ the actual message text itself.  New lines can be added using '\r\n'
 <example id="examples_smtp_send"><title>Example:</title>
 		<programlisting>
 'Subject: subject message\r\nFrom: sender\r\nTo: recipient\r\nCc:
-copy\r\nBcc: copy\r\n body of message'
+copy\r\nBcc: copy\n\n body of message'
 </programlisting>
 		<para>
-Virtuoso will pick up Subject and other headers from the body content.
+Virtuoso will pick up Subject and other headers from the body content.  Note
+that the RFC insists there should be a NULL line between body headers and the 
+message body text.
+</para>
+</example>
+
+<example id="examples_smtp_send"><title>Example:</title>
+		<programlisting><![CDATA[
+smtp_send(
+		'mail.example.com:25', 
+		'<sender@example.com>',
+		'<receiver@example.com>', 
+		concat(
+		  'X-Mailer: Virtuoso Universal Server\r\n', 
+			'Date: ', soap_print_box (now (), '', 1), '\r\n', 
+			'Message-ID: <', regexp_replace(cast(now() as varchar), '[- :.]', '', 1, null), '#some.vsp@example.com>\r\n',
+			'Subject: This is a test mail...\r\n',
+			'From: <sender@example.com>\r\n', 
+			'To: <receiver@example.com>\r\n',
+			'\n',
+			'Hi Receiver, this is a test message from Virtuoso')
+	);
+]]></programlisting>
+		<para>
+A more involved example.  It is the responsibility of the developer to ensure 
+that the message is correctly formed, complete with all necessary headers.  This 
+example shows a complete use of the function.
 </para>
 </example>
 

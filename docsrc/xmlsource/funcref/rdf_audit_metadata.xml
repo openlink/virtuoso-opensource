@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="fn_rdf_audit_metadata">
+  <refmeta>
+    <refentrytitle>DB.DBA.RDF_AUDIT_METADATA</refentrytitle>
+    <refmiscinfo>admin</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.RDF_AUDIT_METADATA</refname>
+    <refpurpose>Fix RDF metadata corruption.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_audit_metadata">
+      <funcprototype id="fproto_rdf_audit_metadata">
+        <funcdef><function>DB.DBA.RDF_AUDIT_METADATA</function></funcdef>
+        <paramdef><optional>in <parameter>audit_mode</parameter> integer</optional></paramdef>
+        <paramdef><optional>in <parameter>str_value</parameter> varchar</optional></paramdef>
+        <paramdef><optional>in <parameter>graph_iri</parameter> varchar</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_audit_metadata"><title>Description</title>
+    <para>This function can detect and automatically fix most popular sorts of metadata corruption.</para>
+  </refsect1>
+  <refsect1 id="params_rdf_audit_metadata">
+    <title>Parameters</title>
+    <refsect2>
+      <title>audit_mode</title>
+      <para>(0|1 default 0) - 0 = for read-only audit operation; 1 = for audit and fix</para>
+    </refsect2>
+    <refsect2>
+      <title>str_value</title>
+      <para>Default '' is to stop if the metadata graph contains marks that some storages are being edited.</para>
+      <para>'*' is to remove such marks.</para>
+      <para>Other values will be suggested by the error dump when appropriate.</para>
+    </refsect2>
+    <refsect2>
+      <title>graph_iri</title>
+      <para>Default is system metadata graph.</para>
+      <para>If specified then it should be a name of graph created by
+        <link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link>.
+It is possible to make the backup to a graph, test and maybe fix that backup and finally restore metadata from the fixed backup.
+The disadvantage is that DB.DBA.RDF_AUDIT_METADATA() may detect and fix more errors on "active" metadata than on their backup.
+The possible approach is to make backup, test and maybe fix it (after fix it can be tested one more time).
+If the backup was successfully fixed then the DB.DBA.RDF_AUDIT_METADATA() is used to fix the "active" metadata, not the copy.
+In any case, if one makes a backup to fix it then it's worth to make and keep another 'untouched' backup, just to stay on safe side.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="examples_rdf_audit_metadata">
+    <title>Examples</title>
+    <example id="ex_rdf_audit_metadata">
+      <title>Simple example</title>
+      <para>Automatically fix the corrupted metadata:</para>
+      <screen>
+        SQL> DB.DBA.RDF_AUDIT_METADATA(1, '*');
+      </screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_rdf_audit_metadata">
+    <title>See Also</title>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_restore_metadata"><function>DB.DBA.RDF_RESTORE_METADATA</function></link></para>
+  </refsect1>
+</refentry>

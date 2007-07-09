@@ -442,6 +442,11 @@
   <xsl:when test="$chap='contents'"><xsl:value-of select="/book/title"/><xsl:text> - Contents</xsl:text></xsl:when>
   <xsl:when test="$chap='functionidx'"><xsl:value-of select="/book/title"/><xsl:text> - Function Index</xsl:text></xsl:when>
   <xsl:when test="$chap='index' or count(id($chap)) = 0"><xsl:value-of select="/book/title"/></xsl:when>
+  <xsl:when test="$chap='functions' and $function != 'NULL'"><xsl:text>Function: </xsl:text>
+    <xsl:value-of select="/book/chapter[@id='functions']/refentry[@id = $function]/refmeta/refentrytitle" />
+    <xsl:text> - </xsl:text>
+    <xsl:value-of select="/book/chapter[@id='functions']/title" />
+  </xsl:when>
   <xsl:otherwise>
    <xsl:for-each select="/book/chapter[@id = $chap or sect1/@id = $chap][1]">
     <xsl:call-template name="pos" />
