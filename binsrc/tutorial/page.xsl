@@ -970,6 +970,10 @@
       ;
     else if (aref (sources, i) <> current_page and (
           aref (sources, i) like '%.vsp' or
+          aref (sources, i) like '%.rq' or
+          aref (sources, i) like '%.isparql' or
+          aref (sources, i) like '%.csdl' or
+          aref (sources, i) like '%.owl' or
           aref (sources, i) like '%.html' or
           aref (sources, i) like '%.vspx' or
           aref (sources, i) like '%.aspx' or
@@ -1107,7 +1111,7 @@
       src_name <> 'options.xml' and
       src_name <> regexp_replace (current_page, '.vspx?$', '.xml') and
       source_ext in
-      ('vsp', 'sql','xsl','xml','xsd','html','java','pl','pm','py','rb','cs','vspx','aspx','wsdl','bpel','php', 'xq', 'xslt', 'cpp', 'h', 'jsp'))
+      ('rq', 'csdl', 'isparql', 'owl', 'vsp', 'sql','xsl','xml','xsd','html','java','pl','pm','py','rb','cs','vspx','aspx','wsdl','bpel','php', 'xq', 'xslt', 'cpp', 'h', 'jsp'))
     {
       if (sources[i] like '%.sql' and ((load_c <> '' and sources[i] = load_c) or (load_c = '' and sources[i] like '%.sql')))
         goto next_item;
@@ -1133,6 +1137,7 @@
             or aref (sources, i) like '%.html'
             or aref (sources, i) like '%.pl'
             or aref (sources, i) like '%.py'
+            or aref (sources, i) like '%.isparql'
             or aref (sources, i) like '%.rb'
             or aref (sources, i) like '%.vspx'
             or aref (sources, i) like '%.aspx'

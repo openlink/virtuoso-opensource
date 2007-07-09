@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="RD-V-1">
+  <refmeta>
+    <refentrytitle>RDF Views</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>RDF Views</refname>
+    <refpurpose>Develop custom RDF views for NorthWind database.</refpurpose>
+  </refnamediv>
+  <refsect1 id="RD-V-1a">
+    <title>Concept</title>
+    <para>
+      RDF Views map relational data into RDF and allow customizing RDF representation of locally
+      stored RDF data. To let SPARQL clients access relational data as well as physical RDF graphs
+      in a single query, we introduce a declarative Meta Schema Language for mapping SQL Data to
+      RDF Ontologies. As a result, all types of clients can efficiently access all data stored on
+      the server. The mapping functionality dynamically generates RDF Data Sets for popular ontologies
+      such as SIOC, SKOS, FOAF, and ATOM/OWL without disruption to the existing database infrastructure
+      of Web 1.0 or Web 2.0 solutions. RDF views are also suitable for declaring custom representation
+      for RDF triples, e.g. property tables, where one row holds many single-valued properties.
+    </para>
+    <para>
+      The Virtuoso RDF Views meta schema is a built-in feature of Virtuoso's SPARQL to SQL
+      translator. It recognizes triple patterns that refer to graphs for which an alternate
+      representation is declared and translates these into SQL accordingly. The main purpose
+      of this is evaluating SPARQL queries against existing relational databases. There exists
+      previous work from many parties for rendering relational data as RDF and opening it to
+      SPARQL access. We can mention D2RQ, SPASQL, Squirrel RDF, DBLP and others. The Virtuoso
+      effort differs from these mainly in the following:
+    </para>
+    <itemizedlist mark="bullet">
+      <listitem>
+        Integration with a triple store. Virtuoso can process a query for which some
+        triple patterns will go to local or remote relational data and some to local physical
+        RDF triples.
+      </listitem>
+      <listitem>
+        SPARQL query can be used in any place where SQL can. Database connectivity protocols
+        are neutral to the syntax of queries they transmit, thus any SQL client, e.g. JDBC,
+        ODBC or XMLA application, can send SPARQL queries and fetch result sets. Moreover,
+        a SQL query may contain SPARQL subqueries and SPARQL expressions may use SQL built-in
+        functions and stored procedures.
+      </listitem>
+      <listitem>
+        Integration with SQL. Since SPARQL and SQL share the same run time and query optimizer,
+        the query compilation decisions are always made with the best knowledge of the data and
+        its location. This is especially important when mixing triples and relational data or
+        when dealing with relational data distributed across many outside databases.
+      </listitem>
+      <listitem>
+        No limits on SPARQL. It remains possible to make queries with unspecified graph or
+        predicate against mapped relational data, even though these may sometimes be inefficient.
+      </listitem>
+      <listitem>
+        Coverage of the whole relational model. Multi-part keys etc. are supported in all places.
+      </listitem>
+    </itemizedlist>
+  </refsect1>
+  <refsect1 id="RD-V-1b">
+    <title>Quad Map Patterns, Value and IRI Classes</title>
+    <para>
+      In the simplest sense, any relational schema can be rendered into RDF by converting all primary
+      keys and foreign keys into IRI's, assigning a predicate IRI to each column, and an rdf:type predicate
+      for each row linking it to a RDF class IRI corresponding to the table. Then a triple with the primary
+      key IRI as subject, the column IRI as predicate and the column's value as object is considered to exist
+      for each column that is neither part of a primary or foreign key.
+    </para>
+    <para>
+      Strictly equating a subject value to a row and each column to a predicate is often good but is too
+      restrictive for the general case.
+    </para>
+    <itemizedlist>
+      <listitem>
+        Multiple triples with the same subject and predicate can exist.
+      </listitem>
+      <listitem>
+        A single subject can get single-valued properties from multiple tables or in some cases stored procedures.
+      </listitem>
+      <listitem>
+        An IRI value of a subject or other field of a triple can be composed from more than one SQL value,
+        these values may reside in different columns, maybe in different joined tables.
+      </listitem>
+      <listitem>
+        Some table rows should be excluded from mapping.
+      </listitem>
+    </itemizedlist>
+    <para>
+      Thus in the most common case the RDF meta schema should consist of independent transformations; the domain
+      of each transformation is a result-set of some SQL SELECT statement and range is a set of triples. The
+      SELECT that produce the domain is quite simple: it does not use aggregate functions, joins and sorting,
+      only inner joins and WHERE conditions. There is no need to support outer joins in the RDF meta schema
+      because NULLs are usually bad inputs for functions that produce IRIs. In the rare cases when NULLs are
+      OK for functions, outer joins can be encapsulated in SQL views. The range of mapping can be described
+      by a SPARQL triple pattern: a pattern field is a variable if it depends on table columns, otherwise it
+      is a constant. Values of variables in the pattern may have additional restrictions on datatypes, when
+      datatypes of columns are known.
+    </para>
+    <para>
+      This common case of an RDF meta schema is implemented in Virtuoso, with one adjustment. Virtuoso stores
+      quads, not triples, using the graph field (G) to indicate that a triple belongs to some particular
+      application or resource. A SPARQL query may use quads from different graphs without large difference
+      between G and the other three fields of a quad. E.g., variable ?g in expression GRAPH ?g {...} can be
+      unbound. SPARQL has special syntax for "graph group patterns" that is convenient for sets of triple
+      patterns with a common graph, but it also has shorthands for common subject and predicate, so the
+      difference is no more than in syntax. There is only one feature that is specific for graphs but not
+      for other fields: the SPARQL compiler can create restrictions on graphs according to FROM and FROM
+      NAMED clauses.
+    </para>
+    <para>
+      Virtuoso RDF Views should offer the same flexibility with the graphs as SPARQL addressing physical triples.
+      A transformation cannot always be identified by the graph used for ranges because graph may be composed
+      from SQL data. The key element of the meta schema is a "quad map pattern". A simple quad map pattern fully
+      defines one particular transformation from one set of relational columns into triples that match one SPARQL
+      graph pattern. The main part of quad map pattern is four declarations of "quad map values", each declaration
+      specifies how to calculate the value of the corresponding triple field from the SQL data. The pattern also
+      lists boolean SQL expressions that should be used to filter out unwanted rows of source data (and to join
+      multiple tables if source columns belong to different tables). There are also quad map patterns that group
+      together similar quad patterns but do not specify any real transformation or even prevent unwanted
+      transformations from being used, they are described in "Grouping Map Patterns" below.
+    </para>
+    <para>
+      Quad map values refer to schema elements of two further types: "IRI classes" and "literal classes".
+    </para>
+  </refsect1>
+  <refsect1 id="RD-V-1c">
+    <title>Implementation</title>
+    <para>
+      In the example script we implement RDF Views for Northwind tables (Customers, Orders, Order Details, Products,
+      Product Categories, Employee, Region, Country, Province).
+    </para>
+    <para>
+      To test the mapper we just use /sparql to execute:
+    </para>
+    <programlisting><![CDATA[
+        sparql select ?o where { graph ?g {?s ?p ?o . filter(?p like '%Country%') }} limit 10;
+    ]]></programlisting>
+    <para>
+      Or use <a href="/isparql" >iSparql</a> application.
+    </para>
+  </refsect1>
+</refentry>

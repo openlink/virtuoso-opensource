@@ -140,6 +140,13 @@
       </group>
       </group>
     </subsection>
+    <subsection Title="RDF" fspath="rdfview">
+      <group Title="RDF">
+        <group Title="RDF Views">
+                                <example id="RD-V-1" fspath="rdfview/rd_v_1"></example>
+        </group>
+      </group>
+    </subsection>
   </section>
   <section Title="Web Services">
     <subsection Title="SOAP Services" fspath="services">

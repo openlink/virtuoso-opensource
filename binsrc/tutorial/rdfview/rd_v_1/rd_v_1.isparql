@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/isparql/xslt/dynamic-page.xsl"?>
+<iSPARQL xmlns="urn:schemas-openlink-com:isparql">
+<ISparqlDynamicPage>
+<proxy>true</proxy>
+<query>#service:/sparql
+SELECT * WHERE {?s ?p ?o} limit 100</query>
+<graph>URIQA_MACRO</graph>
+</ISparqlDynamicPage>
+<service>/sparql</service>
+</iSPARQL>

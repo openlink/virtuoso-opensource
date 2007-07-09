@@ -1,0 +1,3 @@
+#service:/sparql
+#should-sponge:soft
+define SELECT * WHERE {?s ?p ?o} limit 10
