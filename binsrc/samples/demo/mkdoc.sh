@@ -334,10 +334,12 @@ LOG "Directory init..."
 
   $CP docsrc/images/*.jpg vad/data/doc/images/.
   $CP docsrc/images/*.gif vad/data/doc/images/.
+  $CP docsrc/images/*.png vad/data/doc/images/.
 
   $CP docsrc/images/inst/*.png vad/data/doc/images/inst/.
 
   $CP docsrc/images/rth/*.jpg vad/data/doc/images/rth/.
+  $CP docsrc/images/rth/*.png vad/data/doc/images/rth/.
 
   $CP docsrc/images/mac/*.jpg vad/data/doc/images/mac/.
   $CP docsrc/images/mac/*.gif vad/data/doc/images/mac/.
@@ -350,6 +352,7 @@ LOG "Directory init..."
 
   $CP docsrc/images/ui/*.jpg vad/data/doc/images/ui/.
   $CP docsrc/images/ui/*.gif vad/data/doc/images/ui/.
+  $CP docsrc/images/ui/*.png vad/data/doc/images/ui/.
 
   cp mksearch.sql vad/data/doc/code/.
   cp drop.sql vad/data/doc/code/.
