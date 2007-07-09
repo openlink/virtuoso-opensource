@@ -20,7 +20,7 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2007-05-08 0001' ;
+  virtrdf:version '2007-06-08 0001' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -51,10 +51,10 @@ rdfdf:default-iid
   virtrdf:qmfSqlvalTmpl " DB.DBA.RDF_QNAME_OF_IID (^{alias-dot}^^{column}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (^{tree}^ < #i1000000000)";			# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (^{tree}^ >= #i1000000000)";			# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " (^{tree}^ < min_bnode_iri_id ())";			# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " (^{tree}^ >= min_bnode_iri_id ())";			# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " ^{tree}^ ";					# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " DB.DBA.RDF_QNAME_OF_IID (^{tree}^)";		# STRING REQUIRED ... SQL value from short
@@ -154,8 +154,8 @@ rdfdf:default
   virtrdf:qmfBoolTmpl " DB.DBA.RQ_BOOL_OF_O (^{alias-dot}^^{column}^)";		# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
   virtrdf:qmfIsrefOfShortTmpl " isiri_id (^{tree}^)";				# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (case (isiri_id (^{tree}^)) when 0 then 0 else lt (^{tree}^, #i1000000000) end)";	# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (case (isiri_id (^{tree}^)) when 0 then 0 else gte (^{tree}^, #i1000000000) end)";	# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIsuriOfShortTmpl " (case (isiri_id (^{tree}^)) when 0 then 0 else lt (^{tree}^, min_bnode_iri_id ()) end)";	# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " (case (isiri_id (^{tree}^)) when 0 then 0 else gte (^{tree}^, min_bnode_iri_id ()) end)";	# STRING REQUIRED ... whether the short is blank node ref
   virtrdf:qmfIslitOfShortTmpl " DB.DBA.RQ_O_IS_LIT (^{tree}^)";			# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_LONG_OF_OBJ (^{tree}^)";		# STRING REQUIRED ... long from short
@@ -216,10 +216,10 @@ rdfdf:sql-varchar
   virtrdf:qmfSqlvalTmpl " ^{alias-dot}^^{column}^";				# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " (case (^{alias-dot}^^{column}^) when '' then 0 else 1 end)";	# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (^{tree}^)";	# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... SQL value from short
@@ -305,18 +305,18 @@ rdfdf:sql-longvarbinary
   virtrdf:qmfShortTmpl " ^{alias-dot}^^{column}^";				# STRING REQUIRED "short" value template, can be NULL
   virtrdf:qmfLongTmpl " ^{alias-dot}^^{column}^";				# STRING REQUIRED "long" value template, can be NULL
   virtrdf:qmfSqlvalTmpl " ^{alias-dot}^^{column}^";				# STRING REQUIRED "sqlval" value template, can be NULL
-  virtrdf:qmfBoolTmpl " (1=1)";							# STRING REQUIRED Boolean value template, can be NULL
+  virtrdf:qmfBoolTmpl " 1";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " ^{tree}^";					# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{tree}^";					# STRING REQUIRED ... SQL value from short
   virtrdf:qmfDatatypeOfShortTmpl " 'http://www.w3.org/2001/XMLSchema#octetStream'";  # STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
-  virtrdf:qmfBoolOfShortTmpl " (1=1)";						# STRING REQUIRED ... boolean value from short
+  virtrdf:qmfBoolOfShortTmpl " 1";						# STRING REQUIRED ... boolean value from short
   virtrdf:qmfIidOfShortTmpl " NULL";
   virtrdf:qmfUriOfShortTmpl " NULL";						# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " ^{tree}^";					# STRING REQUIRED ... SQL representation of the STRING value of short
@@ -370,10 +370,10 @@ rdfdf:sql-varchar-uri
   virtrdf:qmfSqlvalTmpl " sprintf (^{custom-string-1}^, ^{alias-dot}^^{column}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf (^{custom-string-1}^, ^{tree}^))";		# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " sprintf (^{custom-string-1}^, ^{tree}^)";	# STRING REQUIRED ... SQL value from short
@@ -441,10 +441,10 @@ rdfdf:sql-integer
   virtrdf:qmfSqlvalTmpl " ^{alias-dot}^^{column}^";				# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " (case (^{alias-dot}^^{column}^) when 0 then 0 else 1 end)";	# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... SQL value from short
@@ -546,10 +546,10 @@ rdfdf:sql-doubleprecision
   virtrdf:qmfSqlvalTmpl " ^{alias-dot}^^{column}^";				# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " (case (^{alias-dot}^^{column}^) when 0 then 0 else 1 end)";	# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... SQL value from short
@@ -614,10 +614,10 @@ rdfdf:sql-date
   virtrdf:qmfSqlvalTmpl " ^{alias-dot}^^{column}^";				# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " (case (^{alias-dot}^^{column}^) when 0 then 0 else 1 end)";	# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... SQL value from short
@@ -685,10 +685,10 @@ rdfdf:sql-datetime
   virtrdf:qmfSqlvalTmpl " ^{alias-dot}^^{column}^";				# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " (case (^{alias-dot}^^{column}^) when 0 then 0 else 1 end)";	# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... SQL value from short
@@ -753,10 +753,10 @@ rdfdf:multipart-uri
   virtrdf:qmfSqlvalTmpl " sprintf (^{custom-string-1}^, ^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{end}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf (^{custom-string-1}^, ^{comma-list-begin}^ ^{tree-N}^^{end}^))";	# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " sprintf (^{custom-string-1}^, ^{comma-list-begin}^ ^{tree-N}^^{end}^)";		# STRING REQUIRED ... SQL value from short
@@ -823,10 +823,10 @@ rdfdf:multipart-uri-fn-nullable
   virtrdf:qmfSqlvalTmpl " ^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{end}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{tree-N}^^{end}^))";	# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{tree-N}^^{end}^)";		# STRING REQUIRED ... SQL value from short
@@ -871,10 +871,10 @@ rdfdf:multipart-literal-fn-nullable
   virtrdf:qmfSqlvalTmpl " ^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{alias-N-dot}^^{column-N}^^{end}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is literal
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_LONG_OF_SQLVAL (^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{tree-N}^^{end}^))";	# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{custom-verbatim-1}^ (^{comma-list-begin}^ ^{tree-N}^^{end}^)";		# STRING REQUIRED ... SQL value from short
@@ -919,10 +919,10 @@ rdfdf:sql-varchar-uri-fn
   virtrdf:qmfSqlvalTmpl " ^{custom-verbatim-1}^ (^{alias-dot}^^{column}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (^{custom-verbatim-1}^ (^{tree}^))";		# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{custom-verbatim-1}^ (^{tree}^)";	# STRING REQUIRED ... SQL value from short
@@ -1019,10 +1019,10 @@ rdfdf:sql-varchar-literal-fn
   virtrdf:qmfSqlvalTmpl " ^{custom-verbatim-1}^ (^{alias-dot}^^{column}^)";	# STRING REQUIRED "sqlval" value template, can be NULL
   virtrdf:qmfBoolTmpl " NULL";							# STRING REQUIRED Boolean value template, can be NULL
 # Templates of booleans that tell whether the short is of some sort:
-  virtrdf:qmfIsrefOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is ref
-  virtrdf:qmfIsuriOfShortTmpl " (1=2)";						# STRING REQUIRED ... whether the short is uri
-  virtrdf:qmfIsblankOfShortTmpl " (1=2)";					# STRING REQUIRED ... whether the short is blank node ref
-  virtrdf:qmfIslitOfShortTmpl " (1=1)";						# STRING REQUIRED ... whether the short is literal
+  virtrdf:qmfIsrefOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is ref
+  virtrdf:qmfIsuriOfShortTmpl " 0";						# STRING REQUIRED ... whether the short is uri
+  virtrdf:qmfIsblankOfShortTmpl " 0";					# STRING REQUIRED ... whether the short is blank node ref
+  virtrdf:qmfIslitOfShortTmpl " 1";						# STRING REQUIRED ... whether the short is literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (^{custom-verbatim-1}^ (^{tree}^))";		# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{custom-verbatim-1}^ (^{tree}^)";	# STRING REQUIRED ... SQL value from short
