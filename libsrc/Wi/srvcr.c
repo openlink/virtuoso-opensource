@@ -2290,7 +2290,7 @@ cs_place (query_instance_t * qi, cursor_state_t * cs, dbe_table_t * tb)
   caddr_t err = NULL;
   caddr_t *qst = (caddr_t *) qi;
   int v_fill = key->key_key_var_start;
-
+  int ruling_part_bytes;
   SHORT_SET (&key_image[IE_NEXT_IE], 0);
   SHORT_SET (&key_image[IE_KEY_ID], key->key_id);
 
@@ -2314,9 +2314,11 @@ cs_place (query_instance_t * qi, cursor_state_t * cs, dbe_table_t * tb)
   END_DO_SET ();
   if (err)
     sqlr_resignal (err);
-  if (v_fill - key->key_row_var_start + key->key_key_var_start > MAX_RULING_PART_BYTES)
+  ruling_part_bytes = v_fill - key->key_row_var_start + key->key_key_var_start;
+  if (ruling_part_bytes > MAX_RULING_PART_BYTES)
     {
-      sqlr_new_error ("22026", "SR464", "Key too long");
+      sqlr_new_error ("22026", "SR464", "Key too long, index %.300s, ruling part is %d bytes that exceeds %d byte limit",
+        key->key_name, ruling_part_bytes, MAX_RULING_PART_BYTES );
     }
   row_deref (qst, (caddr_t) &key_image[0], &place, NULL, PL_EXCLUSIVE);
   if (!place)
