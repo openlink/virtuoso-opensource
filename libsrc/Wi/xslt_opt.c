@@ -873,7 +873,8 @@ After processing 'text1<!--comment-->text2' two string children text1 and text2 
 	    if (!(XSLT_ELGRP_RESELS & childgroups))
                 {
                   if (
-		      !strncmp (child_name, "http://www.w3.org/1999/xhtml:", 29) &&
+		      !(strncmp (child_name, "http://www.w3.org/1999/xhtml:", 29) &&
+		        strncmp (child_name, "http://www.w3.org/1999/02/22-rdf-syntax-ns#:", 44)) &&
                       !(strcmp (name, "http://www.w3.org/1999/XSL/Transform:stylesheet") &&
                         strcmp (name, "http://www.w3.org/1999/XSL/Transform:transform")) 
 		    )
