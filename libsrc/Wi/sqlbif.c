@@ -9517,10 +9517,7 @@ icc_lock_t *icc_lock_from_hashtable (caddr_t name)
   icc_lock_t **hash_lock_ptr;
   icc_lock_t *hash_lock;
   if (NULL == icc_locks_mutex)
-    {
-      icc_locks_mutex = mutex_allocate();
-      icc_locks = id_str_hash_create (31);
-    }
+    GPF_T1 ("icc_locks_mutex is uninitialized");
   mutex_enter (icc_locks_mutex);
   hash_lock_ptr = ((icc_lock_t **)(id_hash_get (icc_locks, (caddr_t)(&name))));
   if (NULL == hash_lock_ptr)
@@ -12430,6 +12427,9 @@ sql_bif_init (void)
 
   ssl_constant_init ();
   bif_cursors_init();
+
+  icc_locks_mutex = mutex_allocate();
+  icc_locks = id_str_hash_create (31);
 /* For debugging */
   bif_define_typed ("dbg_printf", bif_dbg_printf, &bt_varchar);
   bif_define ("dbg_obj_print", bif_dbg_obj_print);
