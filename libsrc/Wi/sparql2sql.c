@@ -327,6 +327,13 @@ agg_found:
   t_set_pop (&(env->spare_selids));
   if ((SPART **)_STAR == old_retvals)
     {
+      if (NULL == new_vars)
+        {
+          if (env->spare_signal_void_variables)
+            spar_error (sparp, "The list of return values contains '*' but the pattern does not contain variables");
+          else
+            t_set_push (&new_vars, spartlist (sparp, 3, SPAR_ALIAS, t_box_num (1), t_box_dv_short_string ("_star_fake")));
+        }
       sparp->sparp_expr->_.req_top.retvals = (SPART **)t_list_to_array (new_vars);
     }
 /*  else if ((SPART **)COUNT_L == old_retvals)
@@ -1810,38 +1817,7 @@ int
 sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *pri, ccaddr_t datatype, SPART *value)
 {
   rdf_val_range_t tmp;
-  memset (&tmp, 0, sizeof (rdf_val_range_t));
-  if (NULL != datatype)
-    {
-      tmp.rvrDatatype = datatype;
-      tmp.rvrRestrictions |= SPART_VARR_TYPED;
-    }
-      if (NULL != value)
-    {
-      if (SPAR_QNAME == SPART_TYPE (value))
-        {
-#ifdef DEBUG
-          if (DV_UNAME != DV_TYPE_OF (value->_.lit.val))
-            GPF_T1 ("sparp_" "equiv_restrict_by_literal(): bad QNAME");
-#endif
-          tmp.rvrFixedValue = value->_.lit.val;
-          tmp.rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED);
-        }
-      else if (DV_UNAME == DV_TYPE_OF (value))
-        {
-          tmp.rvrFixedValue = value;
-          tmp.rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED);
-        }
-      else
-        {
-#ifdef DEBUG
-              if (SPAR_LIT != SPART_TYPE (value))
-                GPF_T1("sparp_" "equiv_restrict_by_literal(): value is neither QNAME nor a literal");
-#endif
-      tmp.rvrFixedValue = (ccaddr_t)value;
-          tmp.rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_FIXED);
-        }
-    }
+  sparp_rvr_set_by_constant (sparp, &tmp, datatype, value);
   sparp_rvr_tighten (sparp, &tmp, &(pri->e_rvr), ~0);
   if (tmp.rvrRestrictions & SPART_VARR_CONFLICT)
     return SPARP_EQUIV_MERGE_ROLLBACK;
@@ -1959,7 +1935,7 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
 caddr_t
 rvr_string_fixedvalue (rdf_val_range_t *rvr)
 {
-  caddr_t fv = (rvr->rvrFixedValue);
+  caddr_t fv = (caddr_t) (rvr->rvrFixedValue);
   dtp_t fv_dtp = DV_TYPE_OF (fv);
   if (DV_ARRAY_OF_POINTER == fv_dtp)
     {
@@ -2372,6 +2348,43 @@ sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *src)
     dest->rvrRedCuts = (ccaddr_t *)t_box_copy ((caddr_t)(src->rvrRedCuts));
   sparp_rvr_audit (sparp, dest);
   return dest;
+}
+
+void
+sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value)
+{
+  memset (dest, 0, sizeof (rdf_val_range_t));
+  if (NULL != datatype)
+    {
+      dest->rvrDatatype = datatype;
+      dest->rvrRestrictions |= SPART_VARR_TYPED;
+    }
+  if (NULL != value)
+    {
+      if (SPAR_QNAME == SPART_TYPE (value))
+        {
+#ifdef DEBUG
+          if (DV_UNAME != DV_TYPE_OF (value->_.lit.val))
+            GPF_T1 ("sparp_" "rvr_set_by_constant(): bad QNAME");
+#endif
+          dest->rvrFixedValue = value->_.lit.val;
+          dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED);
+        }
+      else if (DV_UNAME == DV_TYPE_OF (value))
+        {
+          dest->rvrFixedValue = (ccaddr_t)value;
+          dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED);
+        }
+      else
+        {
+#ifdef DEBUG
+              if (SPAR_LIT != SPART_TYPE (value))
+                GPF_T1("sparp_" "rvr_set_by_constant(): value is neither QNAME nor a literal");
+#endif
+          dest->rvrFixedValue = (ccaddr_t)value;
+          dest->rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_FIXED);
+        }
+    }
 }
 
 void
@@ -3282,7 +3295,7 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
   if (((caddr_t)DEFAULT_L) == triple->_.triple.qm_iri)
     {
       if (NULL == sparp->sparp_storage->qsDefaultMap)
-        spar_internal_error (sparp, "QUAD MAP DEFAULT group pattern is used in RDF storage that has no default quad map");
+        spar_error (sparp, "QUAD MAP DEFAULT group pattern is used in RDF storage that has no default quad map");
       tmp_tcc.tcc_top_allowed_qm = sparp->sparp_storage->qsDefaultMap;
     }
   else if (((caddr_t)_STAR) == triple->_.triple.qm_iri)
@@ -3291,7 +3304,7 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
     {
       quad_map_t *top_qm = sparp_find_quad_map_by_name (triple->_.triple.qm_iri);
       if (NULL == top_qm)
-        spar_internal_error (sparp, "QUAD MAP '%.200s' group pattern refers to undefined quad map");
+        spar_error (sparp, "QUAD MAP '%.200s' group pattern refers to undefined quad map", triple->_.triple.qm_iri);
       tmp_tcc.tcc_top_allowed_qm = top_qm;
     }
   DO_BOX_FAST (quad_map_t *, qm, ctr, sparp->sparp_storage->qsMjvMaps)
@@ -3825,6 +3838,12 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.qm_sql_funcall.fname = t_box_copy (orig->_.qm_sql_funcall.fname);
       tgt->_.qm_sql_funcall.fixed = sparp_treelist_full_copy (sparp, orig->_.qm_sql_funcall.fixed, parent_gp);
       tgt->_.qm_sql_funcall.named = sparp_treelist_full_copy (sparp, orig->_.qm_sql_funcall.named, parent_gp);
+      return tgt;
+    case SPAR_ALIAS:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.alias.aname = t_box_copy (orig->_.alias.aname);
+      tgt->_.alias.arg = sparp_tree_full_copy (sparp, orig->_.alias.arg, parent_gp);
+      return tgt;
 /* Add more cases right above this line when introducing more SPAR_nnn constants */
     default: break; /* No need to copy names and literals because we will never change them in-place. */
     }
@@ -5301,6 +5320,15 @@ again:
     NULL );
 
 /* Final processing: */
+  switch (root->_.req_top.subtype)
+    {
+    case INSERT_L: case DELETE_L:
+      spar_optimize_retvals_of_insert_or_delete (sparp, root);
+      break;
+    case MODIFY_L:
+      spar_optimize_retvals_of_modify (sparp, root);
+      break;
+    }
   equivs = root->_.req_top.equivs = sparp->sparp_env->spare_equivs;
   equiv_count = root->_.req_top.equiv_count = sparp->sparp_env->spare_equiv_count;
   for (equiv_ctr = equiv_count; equiv_ctr--; /* no step */)
@@ -5315,9 +5343,11 @@ again:
 	((0 != eq->e_const_reads) || (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs))) &&
         !(eq->e_rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_GLOBAL)) )
         {
-          if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
+          if (!sparp->sparp_env->spare_signal_void_variables)
+            eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+          else if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
             spar_error (sparp, "Variable '%.100s' can not be bound due to mutially exclusive restrictions on its value", eq->e_varnames[0]);
-          if ((0 != eq->e_const_reads) ||
+          else if ((0 != eq->e_const_reads) ||
             (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)) )
             spar_error (sparp, "Variable '%.100s' is used in subexpressions of the query but can not be assigned", eq->e_varnames[0]);
         }

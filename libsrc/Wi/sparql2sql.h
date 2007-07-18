@@ -198,6 +198,9 @@ extern void dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, rdf
 If dest is equal to SPARP_RVR_CREATE then it allocates new rvr otherwise it overwrites \c dest */
 extern rdf_val_range_t *sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *src);
 
+/*! Tries to zap \dest and then restrict it by \c datatype and/or value. */
+extern void sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value);
+
 /*! Restricts \c dest by additional restrictions from \c addon that match the mask of \c changeable_flags */
 extern void sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, int changeable_flags);
 

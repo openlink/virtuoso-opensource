@@ -425,6 +425,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{D}{E}{F}{A}{U}{L}{T}		{ return DEFAULT_L	; }
 <SPARQL>{D}{E}{F}{I}{N}{E}		{ return DEFINE_L	; }
 <SPARQL>{D}{E}{L}{E}{T}{E}		{ return DELETE_L	; }
+<SPARQL>{D}{E}{R}{E}{F}			{ return DEREF_L	; }
 <SPARQL>{D}{E}{S}{C}			{ return DESC_L		; }
 <SPARQL>{D}{E}{S}{C}{R}{I}{B}{E}	{ return DESCRIBE_L	; }
 <SPARQL>{D}{I}{S}{T}{I}{N}{C}{T}	{ return DISTINCT_L	; }

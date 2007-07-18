@@ -138,6 +138,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token DEFAULT_L	/*:: PUNCT_SPAR_LAST("DEFAULT") ::*/
 %token DEFINE_L		/*:: PUNCT_SPAR_LAST("DEFINE") ::*/
 %token DELETE_L		/*:: PUNCT_SPAR_LAST("DELETE") ::*/
+%token DEREF_L		/*:: PUNCT_SPAR_LAST("DEREF") ::*/
 %token DESC_L		/*:: PUNCT_SPAR_LAST("DESC") ::*/
 %token DESCRIBE_L	/*:: PUNCT_SPAR_LAST("DESCRIBE") ::*/
 %token DISTINCT_L	/*:: PUNCT_SPAR_LAST("DISTINCT") ::*/
@@ -475,7 +476,7 @@ spar_prefix_decl	/* [4]  	PrefixDecl	  ::=  	'PREFIX' QNAME_NS Q_IRI_REF	*/
 	: PREFIX_L QNAME_NS Q_IRI_REF	{
                 if (!strcmp ("sql:", $2) || !strcmp ("bif:", $2))
 		  sparyyerror ("Prefixes 'sql:' and 'bif:' are reserved for SQL names");
-		t_set_push (&(sparp_env()->spare_namespace_prefixes), $3);
+		t_set_push (&(sparp_env()->spare_namespace_prefixes), sparp_expand_q_iri_ref (sparp_arg, $3));
 		t_set_push (&(sparp_env()->spare_namespace_prefixes), $2); }
 	| PREFIX_L QNAME_NS { sparyyerror ("Missing <namespace-iri-string> in PREFIX declaration"); }
 	| PREFIX_L error { sparyyerror ("Missing namespace prefix after PREFIX keyword"); }
@@ -507,10 +508,11 @@ spar_construct_query	/* [6]  	ConstructQuery	  ::=  	'CONSTRUCT' ConstructTempla
 	: CONSTRUCT_L { spar_selid_push (sparp_arg); }
             spar_ctor_template spar_dataset_clauses_opt
 	    spar_where_clause spar_solution_modifier {
-		$$ = spar_make_top (sparp_arg, CONSTRUCT_L,
-                  spar_retvals_of_construct (sparp_arg, $3, (caddr_t)($6[1]), (caddr_t)($6[2]), 1),
+		$$ = spar_make_top (sparp_arg, CONSTRUCT_L, NULL,
                   spar_selid_pop (sparp_arg),
-		  $5, (SPART **)($6[0]), (caddr_t)($6[1]), (caddr_t)($6[2]) ); }
+		  $5, (SPART **)($6[0]), (caddr_t)($6[1]), (caddr_t)($6[2]) );
+                spar_compose_retvals_of_construct (sparp_arg, $$, $3);
+ }
 	;
 
 spar_describe_query	/* [7]*	DescribeQuery	 ::=  'DESCRIBE' ( VarOrIRIrefOrBackquoted+ | '*' ) DatasetClause* WhereClause? SolutionModifier	*/
@@ -755,7 +757,7 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF 
 		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, NULL); }
 	| INFERENCE_L QNAME {
 		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, sparp_expand_qname_prefix (sparp_arg, $2)); }
-        | INFERENCE_L Q_IRI_REF { $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2); }
+        | INFERENCE_L Q_IRI_REF { $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, sparp_expand_q_iri_ref (sparp_arg, $2)); }
 	| INFERENCE_L SPARQL_STRING { $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2); }
 	;
 
@@ -893,8 +895,9 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 
 spar_backquoted		/* [Virt]	Backquoted	 ::=  '`' Expn '`'	*/
 	: _BACKQUOTE spar_expn _BACKQUOTE {
-		  if (CONSTRUCT_L == (ptrlong)(sparp_env()->spare_context_gp_subtypes->data))
-                    $$ = $2;
+		  dk_set_t gp_st = sparp_env()->spare_context_gp_subtypes;
+                  if ((NULL == gp_st) || (CONSTRUCT_L == (ptrlong)(gp_st->data)))
+                    $$ = $2; /* redundand backquotes in retlist or backquotes to bypass syntax limitation in CONSTRUCT gp */
                   else
 		    {
 		      SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:calc"), 1);
@@ -1039,7 +1042,7 @@ spar_iriref_or_star_or_default
 	;
 
 spar_iriref		/* [63]  	IRIref	  ::=  	Q_IRI_REF | QName	*/
-	: Q_IRI_REF		{ $$ = spartlist (sparp_arg, 2, SPAR_QNAME, $1); }
+	: Q_IRI_REF		{ $$ = spartlist (sparp_arg, 2, SPAR_QNAME, sparp_expand_q_iri_ref (sparp_arg, $1)); }
 	| spar_qname		{ $$ = $1; }
 	;
 
@@ -1082,10 +1085,10 @@ spar_sparul_insert	/* [DML]*	InsertAction	 ::=  */
 			/*... ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
 	: INSERT_L spar_in_graph_precode_opt { spar_selid_push (sparp_arg); }
             spar_ctor_template spar_action_solution {
-		$$ = spar_make_top (sparp_arg, INSERT_L,
-                  spar_retvals_of_insert (sparp_arg, $2, $4, (caddr_t)($5[2]), (caddr_t)($5[3]) ),
+		$$ = spar_make_top (sparp_arg, INSERT_L, NULL,
                   spar_selid_pop (sparp_arg),
-                  $5[0], (SPART **)($5[1]), (caddr_t)($5[2]), (caddr_t)($5[3]) ); }
+                  $5[0], (SPART **)($5[1]), (caddr_t)($5[2]), (caddr_t)($5[3]) );
+                spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $2, $4); }
 	;
 
 spar_sparul_delete	/* [DML]*	DeleteAction	 ::=  */
@@ -1093,10 +1096,10 @@ spar_sparul_delete	/* [DML]*	DeleteAction	 ::=  */
 			/*... ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
 	: DELETE_L spar_from_graph_precode_opt { spar_selid_push (sparp_arg); }
             spar_ctor_template spar_action_solution {
-		$$ = spar_make_top (sparp_arg, DELETE_L,
-                  spar_retvals_of_delete (sparp_arg, $2, $4, (caddr_t)($5[2]), (caddr_t)($5[3]) ),
+		$$ = spar_make_top (sparp_arg, DELETE_L, NULL,
                   spar_selid_pop (sparp_arg),
-		  $5[0], (SPART **)($5[1]), (caddr_t)($5[2]), (caddr_t)($5[3]) ); }
+		  $5[0], (SPART **)($5[1]), (caddr_t)($5[2]), (caddr_t)($5[3]) );
+                spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $2, $4); }
 	;
 
 spar_sparul_modify	/* [DML]*	ModifyAction	 ::=  */
@@ -1106,10 +1109,10 @@ spar_sparul_modify	/* [DML]*	ModifyAction	 ::=  */
 	: MODIFY_L spar_graph_precode_opt { spar_selid_push (sparp_arg); }
             DELETE_L spar_ctor_template INSERT_L spar_ctor_template
 	    spar_action_solution {
-		$$ = spar_make_top (sparp_arg, DELETE_L,
-                  spar_retvals_of_modify (sparp_arg, $2, $5, $7, (caddr_t)($8[2]), (caddr_t)($8[3])),
+		$$ = spar_make_top (sparp_arg, MODIFY_L, NULL,
                   spar_selid_pop (sparp_arg),
-		  $8[0], (SPART **)($8[1]), (caddr_t)($8[2]), (caddr_t)($8[3]) ); }
+		  $8[0], (SPART **)($8[1]), (caddr_t)($8[2]), (caddr_t)($8[3]) );
+                spar_compose_retvals_of_modify (sparp_arg, $$, $2, $5, $7); }
 	;
 
 spar_sparul_clear	/* [DML]*	ClearAction	 ::=  'CLEAR' ( 'GRAPH' ( 'IDENTIFIED' 'BY' )? PrecodeExpn )?	*/
@@ -1269,7 +1272,9 @@ spar_qm_iri_class_option_commalist
 
 spar_qm_iri_class_option	/* [Virt]	QmIRIClassOption	 ::=  */
 	: BIJECTION_L		{			/*... 'BIJECTION'	*/
-		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("BIJECTION"), 1L); }
+		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("BIJECTION"), (ptrlong)1); }
+	| DEREF_L		{			/*... | 'DEREF'	*/
+		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("DEREF"), (ptrlong)1); }
 	| RETURNS_L spar_qm_sprintff_list	{			/*... | 'RETURNS' STRING ('UNION' STRING)*	*/
 		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("RETURNS"),
 		    spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($2)) ); }
@@ -1306,6 +1311,8 @@ spar_qm_literal_class_option	/* [Virt]	QmLiteralClassOption	 ::=  */
 		$$ = t_list (2, t_box_dv_uname_string ("LANG"), t_box_dv_uname_string ($2)); }
 	| BIJECTION_L		{			/*... | 'BIJECTION'	*/
 		$$ = t_list (2, t_box_dv_uname_string ("BIJECTION"), (ptrlong)1); }
+	| DEREF_L		{			/*... | 'DEREF'	*/
+		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("DEREF"), (ptrlong)1); }
 	| RETURNS_L spar_qm_sprintff_list	{			/*... | 'RETURNS' STRING ('UNION' STRING)*	*/
 		$$ = t_list (2, t_box_dv_uname_string ("RETURNS"),
 		    spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($2)) ); }

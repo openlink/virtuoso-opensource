@@ -67,14 +67,14 @@ caddr_t rdfs_type;
 void
 ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t * inst)
 {
-  data_source_t * qn;
+  data_source_t * qn = (data_source_t *)ri;
   data_source_t * next_qn = NULL;
   table_source_t * ts = NULL;
   hash_source_t * hs = NULL;
   if (!any_flag || qst_get (inst, any_flag))
     return;
   /* the ts or hs after ri is outer.  Must call the appropriate outer output.  */
-  while ((qn = qn_next ((data_source_t *) ri)))
+  while ((qn = qn_next ((data_source_t *) qn)))
     {
       if (IS_TS ((table_source_t*)qn) || IS_HS ((table_source_t*)qn))
 	{
@@ -118,11 +118,198 @@ ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t * ins
 }
 
 
+
+
+char * sas_1_text = "select s from rdf_quad where g = ? and o = ? and p = ?";
+char * sas_2_text = "select o from rdf_quad where g = ? and s = ? and p = ?";
+query_t * sas_1_qr;
+query_t * sas_2_qr;
+
+
+void
+sas_ensure ()
+{
+  caddr_t err;
+  if (!sas_1_qr)
+    {
+      sas_1_qr = sql_compile (sas_1_text, bootstrap_cli, &err, SQLC_DEFAULT);
+      sas_2_qr = sql_compile (sas_2_text, bootstrap_cli, &err, SQLC_DEFAULT);
+    }
+}
+
+
+caddr_t same_as_iri;
+
+
+void
+hash_queue_add (id_hash_t * ht, query_instance_t * qi, int last, caddr_t item)
+{
+  caddr_t n_box;
+  ptrlong n = QST_INT (qi, last);
+  n_box = box_num (n);
+  /*item = box_copy_tree (item);*/
+  id_hash_set (ht, (caddr_t)&n_box, (caddr_t) &item);
+  QST_INT (qi, last) = n + 1;
+}
+
+
+caddr_t
+hash_queue_get (id_hash_t * ht, query_instance_t * qi, int next, int last)
+{
+  ptrlong n = QST_INT (qi, next);
+  ptrlong max = QST_INT (qi, last);
+  caddr_t n_box;
+  caddr_t * place;
+  if (n >= max)
+    return NULL;
+  n_box = box_num (n);
+  place = (caddr_t *) id_hash_get (ht, (caddr_t)&n_box);
+  if (place)
+    {
+      caddr_t res = *place;
+      caddr_t k = place[-1]; /* the num box that is the key of the ht.  Free after removing the ht entry */
+      id_hash_remove (ht, (caddr_t)&n_box);
+      dk_free_box (n_box);
+      dk_free_box (k);
+      QST_INT (qi, next) = n + 1;
+      return res;
+    }
+  dk_free_box (n_box);
+  return NULL;
+}
+
+
+void
+ri_same_as_iri (rdf_inf_pre_node_t * ri, query_instance_t * qi, caddr_t iri, query_t * qr)
+{
+  caddr_t * qst = (caddr_t *)qi;
+  ptrlong one = 1;
+  caddr_t err;
+  local_cursor_t * lc;
+  id_hash_t * reached = (id_hash_t *) QST_GET (qi, ri->ri_sas_reached);
+  id_hash_t * out = (id_hash_t *) QST_GET (qi, ri->ri_sas_out);
+  id_hash_t * follow = (id_hash_t *) QST_GET (qi, ri->ri_sas_follow);
+  int ginx;
+  DO_BOX (state_slot_t *, g_ssl, ginx, ri->ri_sas_g)
+    {
+      caddr_t g = qst_get (qst, g_ssl);
+      err = qr_rec_exec (qr, qi->qi_client, &lc, qi, NULL, 3,
+			 ":0", box_copy (g), QRP_RAW,
+			 ":1", box_copy (iri), QRP_RAW,
+			 ":2", box_copy (same_as_iri), QRP_RAW);
+      if (err)
+	sqlr_resignal (err);
+      while (lc_next (lc))
+	{
+	  caddr_t iri = lc_nth_col (lc, 0);
+	  if (DV_IRI_ID != DV_TYPE_OF (iri))
+	    continue;
+	  if (id_hash_get (reached,  (caddr_t)&iri))
+	    continue;
+	  iri = box_copy (iri);
+	  id_hash_set (reached, (caddr_t)&iri, (caddr_t)&one);
+	  iri = box_copy_tree (iri);
+	  hash_queue_add (follow, qi, ri->ri_sas_last_follow, iri);
+	  iri = box_copy_tree (iri);
+	  hash_queue_add (out, qi, ri->ri_sas_last_out, iri);
+	}
+      if (lc->lc_error != SQL_SUCCESS)
+	err = lc->lc_error;
+      lc_free (lc);
+      if (err)
+	sqlr_resignal (err);
+    }
+  END_DO_BOX;
+}
+
+
+void
+ri_follow_sas (rdf_inf_pre_node_t * ri, query_instance_t * qi, caddr_t iri)
+{
+  if (!sas_1_qr || !sas_2_qr)
+    {
+      log_error ("internal error: same-as inference disabled because saas queries not compiled");
+      return;
+    }
+  ri_same_as_iri (ri, qi, iri, sas_1_qr);
+  ri_same_as_iri (ri, qi, iri, sas_2_qr);
+}
+
+
+void
+ri_same_as_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
+		  caddr_t * volatile state)
+{
+  caddr_t start, next;
+  query_instance_t * qi = (query_instance_t *) inst;
+  ptrlong one = 1;
+  caddr_t next_out;
+  id_hash_t * reached = NULL, *follow = NULL, *out = NULL;
+  sas_ensure ();
+  for (;;)
+    {
+      if (state)
+	{
+	  if (ri->ri_outer_any_passed)
+	    qst_set (inst, ri->ri_outer_any_passed, NULL);
+	  qst_set (inst, ri->ri_sas_out, (caddr_t) (out = (id_hash_t *)box_dv_dict_hashtable (31)));
+	  qst_set (inst, ri->ri_sas_reached, (caddr_t) (reached = (id_hash_t *)box_dv_dict_hashtable (31)));
+	  qst_set (inst, ri->ri_sas_follow, (caddr_t) (follow = (id_hash_t *)box_dv_dict_hashtable (31)));
+	  QST_INT (inst, ri->ri_sas_last_out) = 0;
+	  QST_INT (inst, ri->ri_sas_next_out) = 0;
+	  QST_INT (inst, ri->ri_sas_last_follow) = 0;
+	  QST_INT (inst, ri->ri_sas_next_follow) = 0;
+	  
+	  start = box_copy_tree (qst_get (inst, ri->ri_sas_in));
+	  hash_queue_add (follow, qi, ri->ri_sas_last_follow, start);
+	  start = box_copy_tree (start);
+	  id_hash_set (reached, (caddr_t)&start, (caddr_t)&one);
+	  if (DV_TYPE_OF (start) != DV_IRI_ID && DV_TYPE_OF (start) != DV_IRI_ID_8)
+	    SRC_IN_STATE ((data_source_t *)ri, inst) = NULL;
+	  else
+	    SRC_IN_STATE ((data_source_t *)ri, inst) = inst;
+	  qst_set (inst, ri->ri_output, box_copy_tree (start));
+	  qn_send_output ((data_source_t*)ri, inst);
+	  if (DV_TYPE_OF (start) != DV_IRI_ID && DV_TYPE_OF (start) != DV_IRI_ID_8)
+	    return;
+	  state = NULL;
+	  continue;
+	}
+      out = (id_hash_t *) qst_get (inst, ri->ri_sas_out);
+      follow = (id_hash_t *) qst_get (inst, ri->ri_sas_follow);
+      reached = (id_hash_t *) qst_get (inst, ri->ri_sas_reached);
+      next_out = hash_queue_get (out, qi, ri->ri_sas_next_out, ri->ri_sas_last_out);
+      if (next_out)
+	{
+	  qst_set (inst, ri->ri_output, next_out);
+	  qn_send_output ((data_source_t *)ri, inst);
+	  continue;
+	}
+      /* no queued outputs, follow the follow set until there is at least one new output */
+      next = hash_queue_get (follow, qi, ri->ri_sas_next_follow, ri->ri_sas_last_follow);
+      if (!next)
+	{
+	  SRC_IN_STATE ((data_source_t *)ri, inst) = NULL;
+	  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
+	  return;
+	}
+      ri_follow_sas (ri, qi, next);
+      dk_free_tree (next);
+      continue;
+    }
+}
+
+
 void
 rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 		   caddr_t * volatile state)
 {
   dk_set_t list;
+  if (ri->ri_sas_follow)
+    {
+      ri_same_as_input (ri, inst, state);
+      return;
+    }
   for (;;)
     {
       if (state)
@@ -321,6 +508,26 @@ bif_rdf_inf_const_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return 0;
 }
 
+caddr_t
+bif_rdf_sas_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_copy_tree (same_as_iri);
+}
+
+
+void
+sas_init ()
+{
+  local_cursor_t * lc;
+  caddr_t err;
+  query_t * sas_id;
+  sas_id = sql_compile ("select iri_to_id ('http://www.w3.org/2002/07/owl#sameAs', 1)", bootstrap_cli, &err, SQLC_DEFAULT);
+  err = qr_quick_exec (sas_id, bootstrap_cli, "", &lc, 0);
+  lc_next (lc);
+  same_as_iri = box_copy_tree (lc_nth_col (lc, 0));
+  lc_free (lc);
+}
+
 
 void
 rdf_inf_init ()
@@ -329,6 +536,8 @@ rdf_inf_init ()
   bif_define ("rdf_inf_super", bif_rdf_inf_super);
   bif_define ("rdf_inf_const_init", bif_rdf_inf_const_init);
   bif_define ("rdf_inf_clear", bif_rdf_inf_clear);
+  bif_define ("rdf_sas_iri", bif_rdf_sas_iri);
+  sas_init ();
 }
 
 
@@ -377,7 +586,8 @@ qn_ins_before (sql_comp_t * sc, data_source_t ** head, data_source_t * ins_befor
 void
 rdf_inf_pre_free (rdf_inf_pre_node_t * ri)
 {
-  dk_free_box (ri->ri_given);
+  dk_free_tree (ri->ri_given);
+  dk_free_box ((caddr_t) ri->ri_sas_g);
 }
 
 
@@ -539,7 +749,7 @@ sqlg_outer_post_filter (table_source_t * ts, df_elt_t * tb_dfe, state_slot_t * a
 
 void
 sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t * ts, df_elt_t * p_dfe, caddr_t p_const, df_elt_t * o_dfe, caddr_t o_iri,
-			   rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx)
+			   rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx, rdf_inf_pre_node_t * sas_o)
 {
   rdf_inf_pre_node_t * ri;
   if (p_const && !box_equal (rdfs_type, p_const))
@@ -551,17 +761,20 @@ sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t *
   ri->ri_mode = RI_SUBCLASS;
   ri->ri_output = ssl_new_variable (o_dfe->dfe_sqlo->so_sc->sc_cc, "inferred", DV_IRI_ID);
 
+  if (sas_o)
+    ri->ri_o = sas_o->ri_output;
+  else
+    {
   if (o_iri)
     ri->ri_given = box_copy_tree (o_iri);
   ri->ri_o = o_dfe->dfe_ssl;
+    }
   if (!p_const)
     {
       ri->ri_p = p_dfe ? p_dfe->dfe_ssl : sqlg_col_ssl (tb_dfe, "P");
       sqlg_ri_post_filter ((table_source_t *)ts, tb_dfe, ri, p_dfe ? 0 : 1);
       /* if the p is not fixed but still generating alternate O's, add node for filtering out hits with p != rdf:type */
     }
-  else if (ri->ri_outer_any_passed)
-    sqlg_ri_post_filter ((table_source_t *)ts, tb_dfe, ri, 0);
   sqlg_rdf_ts_replace_ssl ((table_source_t*) ts, ri->ri_o, ri->ri_output, 0, inxop_inx);
   if (!p_dfe)
     ri->ri_p = NULL; /* if P is open, all o's get expanded but the non-rdfs:type p's are filtered out afterwards */
@@ -597,8 +810,9 @@ sqlg_trailing_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t 
 
 
 void
-sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_t * ts, df_elt_t * p_dfe, caddr_t p_const, df_elt_t * o_dfe, caddr_t o_iri,
-			   rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx)
+sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_t * ts, df_elt_t * p_dfe, 
+    caddr_t p_const, df_elt_t * o_dfe, caddr_t o_iri,
+    rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx, rdf_inf_pre_node_t * sas_p)
 {
   rdf_inf_pre_node_t * ri;
   if (!p_const && !p_dfe && !sqlg_col_ssl (tb_dfe, "P"))
@@ -608,7 +822,9 @@ sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_
   ri->ri_mode = RI_SUBPROPERTY;
   ri->ri_output = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "inferred", DV_IRI_ID);
 
-  if (p_const)
+  if (sas_p)
+    ri->ri_p = sas_p->ri_output;
+  else if (p_const)
     ri->ri_given = box_copy_tree (p_const);
   else
     {
@@ -616,6 +832,9 @@ sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_
     }
   if (ri->ri_outer_any_passed)
     sqlg_ri_post_filter ((table_source_t *)ts, tb_dfe, ri, 0);
+  if (sas_p)
+    ri->ri_p = sas_p->ri_output;
+  else
   ri->ri_p = p_dfe->dfe_ssl;
   sqlg_rdf_ts_replace_ssl ((table_source_t*) ts, ri->ri_p, ri->ri_output, 0, inxop_inx);
   ri->ri_list_slot = cc_new_instance_slot (tb_dfe->dfe_sqlo->so_sc->sc_cc);
@@ -645,20 +864,77 @@ sqlg_trailing_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source
 
 
 #define LEADING_SUBCLASS \
-  sqlg_leading_subclass_inf (tb_dfe->dfe_sqlo, q_head, ts, p_dfe, const_p, o_dfe, const_o, ctx, tb_dfe, inxop_inx)
+  sqlg_leading_subclass_inf (tb_dfe->dfe_sqlo, q_head, ts, p_dfe, const_p, o_dfe, const_o, ctx, tb_dfe, inxop_inx, sas_o)
 
 #define TRAILING_SUBCLASS \
   sqlg_trailing_subclass_inf (tb_dfe->dfe_sqlo, q_head, ts, p_dfe, const_p, o_dfe, const_o, ctx, tb_dfe, inxop_inx)
 
 #define LEADING_SUBP \
-  sqlg_leading_subproperty_inf (tb_dfe->dfe_sqlo, q_head, ts, p_dfe, const_p, o_dfe, const_o, ctx, tb_dfe, inxop_inx)
+  sqlg_leading_subproperty_inf (tb_dfe->dfe_sqlo, q_head, ts, p_dfe, const_p, o_dfe, const_o, ctx, tb_dfe, inxop_inx, sas_p)
 
 #define TRAILING_SUBP \
   sqlg_trailing_subproperty_inf (tb_dfe->dfe_sqlo, q_head, ts, p_dfe, const_p, o_dfe, const_o, ctx, tb_dfe, inxop_inx)
 
-#define LEADING_SAME_AS_S
 
-#define LEADING_SAME_AS_O 
+void
+sqlg_leading_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts, 
+    df_elt_t * g_dfe, df_elt_t * s_dfe, df_elt_t * p_dfe,  df_elt_t * o_dfe, int mode,
+		      rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx, rdf_inf_pre_node_t ** ri_ret)
+{
+  df_elt_t ** in_list;
+  rdf_inf_pre_node_t * ri;
+  if (!sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_SAME_AS))
+    /*return */ ;
+  if (!g_dfe)
+    sqlc_new_error (so->so_sc->sc_cc, "42000", "RDFSA", "Same-as expansion not allowed if graph not specified");
+  ri = sqlg_rdf_inf_node (so->so_sc);
+  *ri_ret = ri;
+  qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
+  ri->ri_mode = mode;
+  ri->ri_output = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "inferred", DV_IRI_ID);
+  if ((in_list = sqlo_in_list (g_dfe, NULL, NULL)))
+    {
+      int n = BOX_ELEMENTS (in_list) - 1, ginx;
+      state_slot_t ** gs = (state_slot_t **) dk_alloc_box (sizeof (caddr_t) * n, DV_BIN);
+      for (ginx = 1; ginx <= n; ginx++)
+	{
+	  gs[ginx - 1] = in_list[ginx]->dfe_ssl;
+	}
+      ri->ri_sas_g = gs;
+    }
+  else
+    ri->ri_sas_g = (state_slot_t **) list (1, g_dfe->_.bin.right->dfe_ssl);
+
+  if (RI_SAME_AS_O == mode)
+    ri->ri_sas_in = o_dfe->dfe_ssl;
+  else if (RI_SAME_AS_S == mode)
+    ri->ri_sas_in = s_dfe->dfe_ssl;
+  else if (RI_SAME_AS_P == mode)
+    ri->ri_sas_in = p_dfe->dfe_ssl;
+  sqlg_rdf_ts_replace_ssl ((table_source_t*) ts, ri->ri_sas_in, ri->ri_output, 0, inxop_inx);
+  ri->ri_sas_out = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "out", DV_UNKNOWN);
+  ri->ri_sas_reached = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "reached", DV_UNKNOWN);
+  ri->ri_sas_follow = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "follow", DV_UNKNOWN);
+  ri->ri_sas_next_out = cc_new_instance_slot (so->so_sc->sc_cc);
+  ri->ri_sas_last_out = cc_new_instance_slot (so->so_sc->sc_cc);
+  ri->ri_sas_next_follow = cc_new_instance_slot (so->so_sc->sc_cc);
+  ri->ri_sas_last_follow = cc_new_instance_slot (so->so_sc->sc_cc);
+  ri->ri_ctx = ctx;
+}
+
+
+#define LEADING_SAME_AS_S \
+  sqlg_leading_same_as (tb_dfe->dfe_sqlo, q_head, ts, g_dfe, s_dfe, p_dfe, o_dfe, RI_SAME_AS_S, \
+			ctx, tb_dfe, inxop_inx, &sas_s)
+
+#define LEADING_SAME_AS_O \
+  sqlg_leading_same_as (tb_dfe->dfe_sqlo, q_head, ts, g_dfe, s_dfe, p_dfe, o_dfe, RI_SAME_AS_O, \
+			ctx, tb_dfe, inxop_inx, &sas_o)
+
+#define LEADING_SAME_AS_P \
+  sqlg_leading_same_as (tb_dfe->dfe_sqlo, q_head, ts, g_dfe, s_dfe, p_dfe, o_dfe, RI_SAME_AS_P, \
+			ctx, tb_dfe, inxop_inx, &sas_p)
+
 
 
 caddr_t
@@ -673,6 +949,30 @@ dfe_iri_const (df_elt_t * dfe)
   return NULL;
 }
 
+rdf_inf_ctx_t ** 
+sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
+{
+  df_elt_t * dfe = tb_dfe;
+  static rdf_inf_ctx_t * ctx;
+  if (!ctx)
+    {
+      ctx = (rdf_inf_ctx_t *) dk_alloc (sizeof (rdf_inf_ctx_t));
+      memset (ctx, 0, sizeof (rdf_inf_ctx_t));
+      ctx->ric_name = box_dv_short_string ("dummy");
+      ctx->ric_iri_to_sub = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+    }
+  do
+    {
+      if (dfe->dfe_type == DFE_DT && sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_SAME_AS))
+	{
+	  return &ctx;
+	}
+      dfe = dfe->dfe_super;
+    } 
+  while (dfe);
+  return NULL;
+}
+
 
 void
 sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, int inxop_inx)
@@ -681,6 +981,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
   dk_set_t col_preds;
   caddr_t ctx_name = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE);
   rdf_inf_ctx_t * ctx, **place;
+  rdf_inf_pre_node_t * sas_s = NULL, * sas_o = NULL, * sas_p = NULL;
   caddr_t const_s = NULL, const_p = NULL, const_o = NULL;
   df_elt_t * g_dfe = NULL, * s_dfe = NULL, * p_dfe = NULL, * o_dfe = NULL;
   state_slot_t * given_g = NULL, * given_s = NULL, * given_p = NULL, * given_o = NULL;
@@ -696,6 +997,8 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
   if (stricmp (tb_dfe->_.table.ot->ot_table->tb_name, "DB.DBA.RDF_QUAD"))
     return;
   place = ctx_name ? (rdf_inf_ctx_t**)id_hash_get (rdf_name_to_ric, (caddr_t)&ctx_name) : NULL;
+  if (!place)
+    place = sqlg_rdf_inf_same_as_opt (tb_dfe);
   if (!place)
     return;
   ctx = *place;
@@ -731,12 +1034,14 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
     }
   else if (!s_dfe && p_dfe && !o_dfe)
     {
+      LEADING_SAME_AS_P;
       LEADING_SUBP;
       TRAILING_SUBCLASS;
     }
   else if (!s_dfe && p_dfe && o_dfe)
     {
       LEADING_SAME_AS_O;
+      LEADING_SAME_AS_P;
       LEADING_SUBP;
       LEADING_SUBCLASS;
     }
@@ -755,7 +1060,8 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
     }
   else if (s_dfe && p_dfe && !o_dfe)
     {
-      LEADING_SAME_AS_S
+      LEADING_SAME_AS_S;
+      LEADING_SAME_AS_P;
       LEADING_SUBP;
       TRAILING_SUBCLASS;
     }
@@ -763,6 +1069,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
     {
       LEADING_SAME_AS_S;
       LEADING_SAME_AS_O;
+      LEADING_SAME_AS_P;
       LEADING_SUBP;
       LEADING_SUBCLASS;
     }

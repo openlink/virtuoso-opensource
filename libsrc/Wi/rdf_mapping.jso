@@ -66,6 +66,7 @@ JSO_SCALAR qmfShortOfNiceSqlvalTmpl STRING OPTIONAL	--!< ... works like qmfShort
 JSO_SCALAR qmfDtpOfNiceSqlval INTEGER OPTIONAL          --!< The 'nice' DTP that is an acceptable type of qmfShortOfNiceSqlvalTmpl, zero or unset if no nice type
 -- Misc
 JSO_SCALAR qmfIsBijection BOOLEAN REQUIRED		--!< Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+JSO_SCALAR qmfDerefFlags BOOLEAN OPTIONAL		--!< Flags of IRI dereferencing
 JSO_SCALAR qmfIsStable BOOLEAN REQUIRED			--!< Nonzero if sql values are in order IFF of short values are in order
 JSO_SCALAR qmfIsSubformatOfLong BOOLEAN OPTIONAL	--!< Nonzero if the format is subformat of LONG valmode
 

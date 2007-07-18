@@ -57,9 +57,13 @@ struct rdf_inf_node_s
   int		ri_list_slot;
   state_slot_t *	ri_sas_in; /* the value whose same_as-s are to be listed */
   state_slot_t **	ri_sas_g;
-    state_slot_t *	ri_sas_result;
+    state_slot_t *	ri_sas_out;
   state_slot_t *	ri_sas_reached;
-  state_slot_t *	ri_sas_followed;
+  state_slot_t *	ri_sas_follow;
+  int		ri_sas_last_out;
+  int		ri_sas_next_out;
+  int		ri_sas_last_follow;
+  int		ri_sas_next_follow;
 };
 
 
@@ -70,6 +74,10 @@ struct rdf_inf_node_s
 #define RI_SUPERCLASS 2
 #define RI_SUBPROPERTY 3
 #define RI_SUPERPROPERTY 4
+#define RI_SAME_AS_O 5
+#define RI_SAME_AS_S 6
+#define RI_SAME_AS_P 7
+
 
 void rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst, 		   caddr_t * volatile state);
 caddr_t dfe_iri_const (df_elt_t * dfe);

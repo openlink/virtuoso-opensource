@@ -1402,6 +1402,7 @@ bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t name = bif_arg (qst, args, 0, "iri_to_id");
   caddr_t box_to_delete = NULL;
   caddr_t res;
+  caddr_t err;
   int make_new = (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "iri_to_id") : 1);
   dtp_t dtp = DV_TYPE_OF (name);
   switch (dtp)
@@ -1430,19 +1431,32 @@ bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (1 == box_length (name))
     {
-      if (NULL != box_to_delete)
-        dk_free_box (box_to_delete);
-      sqlr_new_error ("RDFXX", ".....", "Empty string is not a valid argument to iri_to_id (), type %d", (unsigned int)dtp);
+      err = srv_make_new_error ("RDFXX", ".....", "Empty string is not a valid argument to iri_to_id (), type %d", (unsigned int)dtp);
+      goto signal_error; /* see below */
     }
 /*                    0123456789 */
   if (!strncmp (name, "nodeID://", 9))
     {
       unsigned char *tail = (unsigned char *)(name + 9);
       int64 acc = 0;
+      int b_first = 0;
+      if ('b' == tail[0]) { b_first = 1; tail++; }
       while (isdigit (tail[0]))
         acc = acc * 10 + ((tail++)[0] - '0');
       if ('\0' != tail[0])
-        sqlr_new_error ("RDFXX", ".....", "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI", name);
+        {
+          err = srv_make_new_error ("RDFXX", ".....", "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI", name);
+          goto signal_error; /* see below */
+        }
+      if (b_first) acc += MIN_64BIT_BNODE_IRI_ID;
+      if ((acc > (2 * min_bnode_iri_id())) || (acc < min_bnode_iri_id()))
+        {
+          if ((bnode_iri_ids_are_huge) || (acc < 0))
+            err = srv_make_new_error ("RDFXX", ".....", "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI", name);
+          else
+            err = srv_make_new_error ("RDFXX", ".....", "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI for 32-bit RDF storage", name);
+          goto signal_error; /* see below */
+        }
       if (NULL != box_to_delete)
         dk_free_box (box_to_delete);
       return box_iri_int64 (acc, DV_IRI_ID);
@@ -1457,6 +1471,11 @@ bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (NULL != box_to_delete)
     dk_free_box (box_to_delete);
   return res;
+signal_error:
+  if (NULL != box_to_delete)
+    dk_free_box (box_to_delete);
+  sqlr_resignal (err);
+  return NULL; /* to keep compiler happy */
 }
 
 
@@ -1527,13 +1546,13 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
     {
       caddr_t pref_id_box = box_num (pref_id);
       prefix = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_PREFIX", pref_id_box);
-      nic_set (iri_name_cache, prefix, pref_id);
       dk_free_box (pref_id_box);
-    }
   if (!prefix)
     return NULL;
+      nic_set (iri_prefix_cache, prefix, pref_id);
+    }
   name = dk_alloc_box (box_length (local) + box_length (prefix) - 5, DV_STRING);
-  /* subtract 4 for the prefi x id in the local and 1 for one of the terminating nulls */
+  /* subtract 4 for the prefix id in the local and 1 for one of the terminating nulls */
   memcpy (name, prefix, box_length (prefix) - 1);
   memcpy (name + box_length (prefix) - 1, local + 4, box_length (local) - 4);
   dk_free_box (prefix);

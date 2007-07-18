@@ -632,7 +632,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
           sqlr_new_error ("22023", "SR496", "Property <%.500s> is not a field of %.500s, RDF class <%.500s>",
             jprop, cd->jsocd_c_typedef, jclass );
         }
-      fld_ptr = JSO_FIELD_PTR(inst,fldd);
+      fld_ptr = (void **)(JSO_FIELD_PTR(inst,fldd));
       dt = fldd->jsofd_type;
       break;
     case JSO_CAT_ARRAY:
@@ -925,6 +925,11 @@ jso_get_field_value_as_o (caddr_t val, ccaddr_t fld_type, int fld_req, ptrlong s
   return box_copy_tree (val);
 }
 
+typedef struct jso_rtti_proplist_acc_s {
+  dk_set_t acc_set;
+  int acc_only_loaded;
+} jso_rtti_proplist_acc_t;
+
 static const char *
 jso_status_string (int status)
 {
@@ -939,23 +944,26 @@ jso_status_string (int status)
 }
 
 void
-jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *env)
+jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *acc_env)
 {
+  jso_rtti_proplist_acc_t *acc = acc_env;
   jso_class_descr_t *cd = rtti->jrtti_class;
   const char *status_strg = jso_status_string (rtti->jrtti_status);
   jso_rtti_t *rtti_of_name = gethash (rtti->jrtti_inst_iri, jso_rttis_of_names);
   jso_rtti_t *rtti_of_self = gethash (rtti->jrtti_self, jso_rttis_of_structs);
-  dk_set_push (env, list (3, box_copy (iri),
+  dk_set_push (&(acc->acc_set), list (3, box_copy (iri),
       box_dv_uname_string (VIRTRDF_NS_URI "status"),
       box_sprintf (100, "%s%s", status_strg,
         ((rtti_of_name == rtti) ? "" : ", not key of jso_rttis_of_names"),
         ((rtti_of_self == rtti) ? "" : ", not key of jso_rttis_of_structs") ) ) );
   if (JSO_STATUS_DELETED == rtti->jrtti_status)
     {
-      dk_set_push (env, list (3, box_copy (iri), box_dv_uname_string (VIRTRDF_NS_URI "jso-type"), box_copy_tree (cd->jsocd_class_iri)));
+      dk_set_push (&(acc->acc_set), list (3, box_copy (iri),
+          box_dv_uname_string (VIRTRDF_NS_URI "jso-type"), box_copy_tree (cd->jsocd_class_iri)) );
     return;
     }
-  dk_set_push (env, list (3, box_copy (iri), uname_rdf_ns_uri_type, box_copy_tree (cd->jsocd_class_iri)));
+  dk_set_push (&(acc->acc_set), list (3, box_copy (iri),
+      uname_rdf_ns_uri_type, box_copy_tree (cd->jsocd_class_iri)) );
   switch (cd->jsocd_cat)
     {
     case JSO_CAT_STRUCT:
@@ -965,10 +973,20 @@ jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *env)
           {
             jso_field_descr_t * fldd = cd->_.sd.jsosd_field_list + ctr;
             caddr_t * fld_ptr = JSO_FIELD_PTR(rtti->jrtti_self,fldd);
-            caddr_t val = fld_ptr[0];
-            caddr_t o = jso_get_field_value_as_o (val, fldd->jsofd_type, fldd->jsofd_required, rtti->jrtti_status);
-            if (NULL != o)
-              dk_set_push (env, list (3, box_copy (iri), box_copy (fldd->jsofd_property_iri), o));
+            caddr_t val, o;
+            if (JSO_PRIVATE == fldd->jsofd_required)
+              continue;
+            val = fld_ptr[0];
+            o = jso_get_field_value_as_o (val, fldd->jsofd_type, fldd->jsofd_required, rtti->jrtti_status);
+            if (NULL == o)
+              {
+                if (JSO_STATUS_LOADED != rtti->jrtti_status)
+                  continue;
+                if ((JSO_OPTIONAL == fldd->jsofd_required) || (JSO_DEPRECATED == fldd->jsofd_required))
+                  continue;
+              }
+            dk_set_push (&(acc->acc_set), list (3, box_copy (iri),
+                box_copy (fldd->jsofd_property_iri), o) );
           }
         break;
       }
@@ -981,7 +999,8 @@ jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *env)
             caddr_t o = jso_get_field_value_as_o (val, cd->_.ad.jsoad_member_type, JSO_REQUIRED, rtti->jrtti_status);
             sprintf (buf, "%s_%d", RDF_NS_URI, ctr+1);
             if (NULL != o)
-              dk_set_push (env, list (3, box_copy (iri), box_dv_uname_string (buf), o));
+              dk_set_push (&(acc->acc_set), list (3, box_copy (iri),
+                  box_dv_uname_string (buf), o) );
           }
         END_DO_BOX_FAST;
         break;
@@ -992,22 +1011,23 @@ jso_rtti_proplist (caddr_t iri, jso_rtti_t *rtti, void *env)
 
 
 void
-jso_class_proplist (caddr_t iri, jso_class_descr_t *cd, void *env)
+jso_class_proplist (caddr_t iri, jso_class_descr_t *cd, void *acc_env)
 {
-  maphash3 (jso_rtti_proplist, cd->jsocd_rttis, env);
+  maphash3 ((maphash3_func) jso_rtti_proplist, cd->jsocd_rttis, acc_env);
 }
 
 
 caddr_t
 bif_jso_proplist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_set_t acc_set = NULL;
-  dk_set_t *acc_set_ptr = &acc_set;
-  if (0 == BOX_ELEMENTS (args))
-    maphash3 (jso_class_proplist, jso_classes, acc_set_ptr);
+  jso_rtti_proplist_acc_t acc;
+  acc.acc_set = NULL;
+  acc.acc_only_loaded = 2 & bif_long_arg (qst, args, 0, "jso_proplist");
+  if (1 == BOX_ELEMENTS (args))
+    maphash3 ((maphash3_func) jso_class_proplist, jso_classes, &acc);
   else
     {
-      caddr_t jclass = bif_string_or_wide_or_uname_arg (qst, args, 0, "jso_proplist");
+      caddr_t jclass = bif_string_or_wide_or_uname_arg (qst, args, 1, "jso_proplist");
       jso_class_descr_t *cd;
       jclass = box_cast_to_UTF8_uname (qst, jclass);
       cd = gethash (jclass, jso_classes);
@@ -1015,11 +1035,11 @@ bif_jso_proplist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         {
           sqlr_new_error ("22023", "SR514", "Undefined JSO class IRI <%.500s>", jclass);
         }
-      if (0 == BOX_ELEMENTS (args))
-        maphash3 (jso_rtti_proplist, cd->jsocd_rttis, acc_set_ptr);
+      if (2 == BOX_ELEMENTS (args))
+        maphash3 ((maphash3_func) jso_rtti_proplist, cd->jsocd_rttis, &acc);
       else
         {
-          caddr_t jinstance = bif_string_or_wide_or_uname_arg (qst, args, 1, "jso_proplist");
+          caddr_t jinstance = bif_string_or_wide_or_uname_arg (qst, args, 2, "jso_proplist");
           jso_rtti_t *inst_rtti;
           jinstance = box_cast_to_UTF8_uname (qst, jinstance);
           inst_rtti = gethash (jinstance, cd->jsocd_rttis);
@@ -1027,10 +1047,10 @@ bif_jso_proplist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
             {
               sqlr_new_error ("22023", "SR515", "JSO instance IRI <%.500s> does not exists", jinstance);
             }
-          jso_rtti_proplist (inst_rtti->jrtti_inst_iri, inst_rtti, acc_set_ptr);
+          jso_rtti_proplist (inst_rtti->jrtti_inst_iri, inst_rtti, &acc);
         }
     }
-  return list_to_array (acc_set);
+  return list_to_array (acc.acc_set);
 }
 
 caddr_t
@@ -1192,6 +1212,35 @@ bif_jso_triple_get_subjs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   return (caddr_t)jso_triple_get_subjs (qst, jpred, jobj);
 }
 
+void
+jso_triple_sp_objlist (caddr_t pred, dk_set_t jso_objs, void *acc_env)
+{
+  caddr_t subj = ((caddr_t *)acc_env)[0];
+  dk_set_t *res = ((dk_set_t *)acc_env)+1;
+  DO_SET (caddr_t, obj, &jso_objs)
+    {
+      dk_set_push (res, list (3, box_copy_tree (subj), box_copy_tree (pred), box_copy_tree (obj)));
+    }
+  END_DO_SET ()
+}
+
+void
+jso_triple_subj_predlist (caddr_t subj, dk_hash_t *jso_single_subj, void *acc_env)
+{
+  ((caddr_t *)acc_env)[0] = subj;
+  maphash3 ((maphash3_func) jso_triple_sp_objlist, jso_single_subj, acc_env);
+}
+
+caddr_t
+bif_jso_triple_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  void *acc_env[2];
+  acc_env[0] = NULL;
+  acc_env[1] = NULL;
+  maphash3 ((maphash3_func) jso_triple_subj_predlist, jso_triple_subjs, (void *)acc_env);
+  return revlist_to_array (acc_env[1]);
+}
+
 caddr_t
 bif_jso_mark_affected (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1247,10 +1296,10 @@ bif_jso_make_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         return box_copy (old_digest);
       /* no break */
     case 4:
-      dt_idx = (caddr_t *)bif_long_arg (qst, args, 0, "jso_make_digest");
-      strg = (caddr_t *)bif_string_arg (qst, args, 1, "jso_make_digest");
-      lang_idx = (caddr_t *)bif_long_arg (qst, args, 2, "jso_make_digest");
-      obj_id = (caddr_t *)bif_long_arg (qst, args, 3, "jso_make_digest");
+      dt_idx = bif_long_arg (qst, args, 0, "jso_make_digest");
+      strg = bif_string_arg (qst, args, 1, "jso_make_digest");
+      lang_idx = bif_long_arg (qst, args, 2, "jso_make_digest");
+      obj_id = bif_long_arg (qst, args, 3, "jso_make_digest");
       break;
     default:
       sqlr_new_error ("22023", "SR542", "%d arguments in call of jso_make_digest(), should be 1, 4 or 5", argcount);
@@ -1338,6 +1387,7 @@ void jso_init ()
   bif_define ("jso_triple_add", bif_jso_triple_add);
   bif_define ("jso_triple_get_objs", bif_jso_triple_get_objs);
   bif_define ("jso_triple_get_subjs", bif_jso_triple_get_subjs);
+  bif_define ("jso_triple_list", bif_jso_triple_list);
   bif_define ("jso_mark_affected", bif_jso_mark_affected);
   bif_define ("jso_make_digest", bif_jso_make_digest);
   bif_define ("jso_parse_digest", bif_jso_parse_digest);

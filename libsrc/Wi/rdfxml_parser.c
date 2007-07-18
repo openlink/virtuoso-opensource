@@ -51,6 +51,7 @@ extern "C" {
     { \
       dk_free_tree ((value)); \
         xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, errmsg); \
+        return ;\
     } \
   xrl->name = (value); \
   xrl->name##_set = 1; \
@@ -61,6 +62,7 @@ extern "C" {
       { \
         dk_free_tree ((value)); \
         xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, errmsg); \
+        return ;\
       } \
     xrl->name = (value); \
   } while (0)
@@ -225,6 +227,8 @@ xp_rdfxml_triple_l (xparse_ctx_t *xp, caddr_t s, caddr_t p, caddr_t o, caddr_t d
 }
 
 
+/*#define RECOVER_RDF_VALUE 1*/
+
 void
 xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
 {
@@ -237,6 +241,9 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
   dk_set_t inner_attr_props = NULL;
   caddr_t tmp_nsuri;
   char * tmp_local;
+#ifdef RECOVER_RDF_VALUE
+  caddr_t rdf_val = NULL;
+#endif
   if (XRL_PARSETYPE_LITERAL == outer->xrl_parsetype)
     {
       xp_element (userdata, name, attrdata);
@@ -352,6 +359,23 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
         }
     }
   n_attrs = attrdata->local_attrs_count;
+  /* we do one loop first to see if there a xml:base, then rest */
+  for (inx = 0; inx < n_attrs; inx ++)
+    {
+      char *raw_aname = attrdata->local_attrs[inx].ta_raw_name.lm_memblock;
+      caddr_t avalue = attrdata->local_attrs[inx].ta_value;
+      xp_rdfxml_get_name_parts (xn, raw_aname, 0, &tmp_nsuri, &tmp_local);
+      if (!stricmp (tmp_nsuri, "xml"))
+        {
+          if (!strcmp (tmp_local, "lang"))
+            XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue), "Attribute 'xml:lang' is used twice");
+          else if (!strcmp (tmp_local, "base"))
+            XRL_SET_INHERITABLE (inner, xrl_base, box_dv_short_string (avalue), "Attribute 'xml:base' is used twice");
+          else if (0 != strcmp (tmp_local, "space"))
+            xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
+              "Unsupported 'xml:...' attribute, only 'xml:lang', 'xml:base' and 'xml:space' are supported" );
+	}
+    }
   for (inx = 0; inx < n_attrs; inx ++)
     {
       char *raw_aname = attrdata->local_attrs[inx].ta_raw_name.lm_memblock;
@@ -448,12 +472,23 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   return;
                 }
             }
+	  else if (!strcmp (tmp_local, "value"))
+	    {
+#ifdef RECOVER_RDF_VALUE
+	      rdf_val = avalue;
+#else
+              goto push_inner_attr_prop;
+#endif
+	    }
           else
             xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
               "Unsupported 'rdf:...' attribute" );
+          continue;
         }
       else if (!stricmp (tmp_nsuri, "xml"))
         {
+/* 
+   	  XXX: moved above	  
           if (!strcmp (tmp_local, "lang"))
             XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue), "Attribute 'xml:lang' is used twice");
           else if (!strcmp (tmp_local, "base"))
@@ -461,15 +496,15 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           else if (0 != strcmp (tmp_local, "space"))
             xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
               "Unsupported 'xml:...' attribute, only 'xml:lang', 'xml:base' and 'xml:space' are supported" );
+*/	      
+          continue;
         }
-      else
-        {
+push_inner_attr_prop:
           dk_set_push (&inner_attr_props, avalue);
           dk_set_push (&inner_attr_props, tmp_local);
           dk_set_push (&inner_attr_props, tmp_nsuri);
           inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
         }
-    }
   if ((NULL != inner->xrl_subject) || (NULL != inner_attr_props))
     {
       if (XRL_PARSETYPE_LITERAL == inner->xrl_parsetype)
@@ -484,7 +519,11 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
 */
   if (NULL == inner->xrl_subject)
     {
-      if ((NULL != inner_attr_props) || (NULL != subj_type) || (XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype))
+      if ((NULL != inner_attr_props) || (NULL != subj_type) ||
+#ifdef RECOVER_RDF_VALUE
+        (NULL != rdf_val) ||
+#endif
+        (XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype) )
         {
           caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, NULL);
           XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Blank node object can not be defined here");
@@ -495,6 +534,14 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
     XRL_SET_NONINHERITABLE (outer, xrl_subject, box_copy_tree (inner->xrl_subject), "A property can not have two object values");
   if (NULL != subj_type)
     xp_rdfxml_triple (xp, inner->xrl_subject, uname_rdf_ns_uri_type, subj_type);
+#ifdef RECOVER_RDF_VALUE
+  if (NULL != rdf_val)
+    { /* This preserves semantics */
+      caddr_t resolved_rdf_val = xp_rdfxml_resolved_iid (xp, rdf_val, 0);
+      xp_rdfxml_triple (xp, inner->xrl_subject, uname_rdf_ns_uri_value, resolved_rdf_val);
+      dk_free_box (resolved_rdf_val);
+    }
+#endif
   if (NULL != xp->xp_boxed_name)
     {
       dk_free_box (xp->xp_boxed_name);
@@ -517,7 +564,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
       xp->xp_boxed_name = NULL;
     }
   if ((XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype) && (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype))
-    { /* This means pasrseType="Resource". It should be handled immediately to prevent error in case of pasrseType="Resource" nested inside inner. */
+    { /* This means parseType="Resource". It should be handled immediately to prevent error in case of pasrseType="Resource" nested inside inner. */
       xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, inner->xrl_subject);
       if (NULL != inner->xrl_reification_id)
         {
