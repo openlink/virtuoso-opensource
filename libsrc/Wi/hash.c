@@ -511,6 +511,7 @@ key_hash_col (db_buf_t row, dbe_key_t * key, dbe_col_loc_t * cl, uint32 code, in
   db_buf_t row_data = row + IE_FIRST_KEY;
   int off, len;
   KEY_COL (key, row_data, cl[0], off, len);
+  GPF_T1 ("key_hash_col is not supposed to be called");
   if (cl->cl_fixed_len < 0)
     *var_len += len;
   if (cl->cl_sqt.sqt_dtp == DV_LONG_INT)
