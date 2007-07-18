@@ -40,6 +40,50 @@ struct s_node_s
 #define DK_SET_FIRST(set) \
 	(*set ? (((dk_set_t) *set)->data) : NULL)
 
+#ifdef DO_SET_DEBUG
+
+#define DO_SET(_type, _var, _set) \
+	{ \
+	  _type _var; \
+	  s_node_t *_iter = *(_set); \
+	  s_node_t *_nxt; \
+	  for ( ; (NULL != _iter); _iter = _nxt) \
+	    { \
+	      _var = (_type) (_iter->data); \
+	      _nxt = _iter->next;
+
+#define DO_KEYWORD_SET(_keyvar, _type, _valuevar, _set) \
+	{ \
+	  ccaddr_t _keyvar; \
+	  _type _valuevar; \
+	  s_node_t *_iter = *(_set); \
+	  s_node_t *_nxt; \
+	  for ( ; (NULL != _iter); _iter = _nxt) \
+	    { \
+	      _keyvar = (_type) (_iter->data); \
+	      _nxt = _iter->next; \
+	      _valuevar = (_type) (_iter->data); \
+	      _nxt = _iter->next;
+
+#define DO_SET_WRITABLE(_type, _var, _iter, _set) \
+	{ \
+	  _type _var; \
+	  s_node_t *_nxt; \
+	  for ((_iter) = *(_set) ; (NULL != (_iter)); (_iter) = _nxt) \
+	    { \
+	      _var = (_type) ((_iter)->data); \
+	      _nxt = (_iter)->next;
+
+#define DO_SET_WRITABLE2(_type, _var, _iter, _nxt, _set) \
+	{ \
+	  _type _var; \
+	  for ((_iter) = *(_set) ; (NULL != (_iter)); (_iter) = (_nxt)) \
+	    { \
+	      _var = (_type) ((_iter)->data); \
+	      (_nxt) = (_iter)->next;
+
+#else
+
 #define DO_SET(type, var, set) \
 	{ \
 	  type var; \
@@ -66,6 +110,8 @@ struct s_node_s
 	    { \
 	      var = (type) ((iter)->data); \
 	      (nxt) = (iter)->next;
+
+#endif
 
 #define END_DO_SET()   \
 	    } \
