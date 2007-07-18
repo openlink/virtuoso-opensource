@@ -36,7 +36,27 @@ create table DB.DBA.URL_REWRITE_RULE (
   URR_TARGET_FORMAT     varchar,
   URR_TARGET_PARAMS     any,
   URR_TARGET_EXPR       varchar,
+  URR_ACCEPT_PATTERN	varchar,
+  URR_NO_CONTINUATION	int,
+  URR_HTTP_REDIRECT	int,
+  URR_HTTP_HEADERS	varchar,
   primary key (URR_RULE) )
+;
+
+--!AFTER
+alter table DB.DBA.URL_REWRITE_RULE add URR_ACCEPT_PATTERN varchar
+;
+
+--!AFTER
+alter table DB.DBA.URL_REWRITE_RULE add URR_NO_CONTINUATION int
+;
+
+--!AFTER
+alter table DB.DBA.URL_REWRITE_RULE add URR_HTTP_REDIRECT int
+;
+
+--!AFTER
+alter table DB.DBA.URL_REWRITE_RULE add URR_HTTP_HEADERS varchar
 ;
 
 create procedure DB.DBA.URLREWRITE_CREATE_RULE (
@@ -48,7 +68,11 @@ create procedure DB.DBA.URLREWRITE_CREATE_RULE (
   in nice_min_params integer,
   in target_format varchar,
   in target_params any,
-  in target_expn varchar := NULL)
+  in target_expn varchar := NULL,
+  in accept_pattern varchar := null,
+  in dont_continue int := 0,
+  in http_redirect int := null,
+  in http_headers varchar := null)
 {
   if (exists (select 1 from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rule_iri))
     signal ('42000', 'Rule IRI ' || rule_iri || ' is already in use as rule list IRI');
@@ -57,8 +81,8 @@ create procedure DB.DBA.URLREWRITE_CREATE_RULE (
     if (not allow_update)
       signal ('42000', 'Rule IRI ' || rule_iri || ' is already in use as rule IRI');
   }
-  insert replacing DB.DBA.URL_REWRITE_RULE (URR_RULE, URR_RULE_TYPE, URR_NICE_FORMAT, URR_NICE_PARAMS, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, URR_TARGET_PARAMS, URR_TARGET_EXPR)
-    values (rule_iri, rule_type, nice_format, serialize (nice_params), nice_min_params, target_format, serialize (target_params), target_expn);
+  insert replacing DB.DBA.URL_REWRITE_RULE (URR_RULE, URR_RULE_TYPE, URR_NICE_FORMAT, URR_NICE_PARAMS, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, URR_TARGET_PARAMS, URR_TARGET_EXPR, URR_ACCEPT_PATTERN, URR_NO_CONTINUATION, URR_HTTP_REDIRECT, URR_HTTP_HEADERS)
+    values (rule_iri, rule_type, nice_format, serialize (nice_params), nice_min_params, target_format, serialize (target_params), target_expn, accept_pattern, dont_continue, http_redirect, http_headers);
 }
 ;
 
@@ -70,9 +94,13 @@ create procedure DB.DBA.URLREWRITE_CREATE_SPRINTF_RULE (
   in nice_min_params integer,
   in target_format varchar,
   in target_params any,
-  in target_expn varchar := NULL)
+  in target_expn varchar := NULL,
+  in accept_pattern varchar := null,
+  in dont_continue int := 0,
+  in http_redirect int := null,
+  in http_headers varchar := null)
 {
-  DB.DBA.URLREWRITE_CREATE_RULE (0, rule_iri, allow_update, nice_format, nice_params, nice_min_params, target_format, target_params, target_expn);
+  DB.DBA.URLREWRITE_CREATE_RULE (0, rule_iri, allow_update, nice_format, nice_params, nice_min_params, target_format, target_params, target_expn, accept_pattern, dont_continue, http_redirect, http_headers);
 }
 ;
 
@@ -84,9 +112,13 @@ create procedure DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
   in nice_min_params integer,
   in target_format varchar,
   in target_params any,
-  in target_expn varchar := NULL)
+  in target_expn varchar := NULL,
+  in accept_pattern varchar := null,
+  in dont_continue int := 0,
+  in http_redirect int := null,
+  in http_headers varchar := null)
 {
-  DB.DBA.URLREWRITE_CREATE_RULE (1, rule_iri, allow_update, nice_format, nice_params, nice_min_params, target_format, target_params, target_expn);
+  DB.DBA.URLREWRITE_CREATE_RULE (1, rule_iri, allow_update, nice_format, nice_params, nice_min_params, target_format, target_params, target_expn, accept_pattern, dont_continue, http_redirect, http_headers);
 }
 ;
 
@@ -155,27 +187,30 @@ create procedure DB.DBA.URLREWRITE_DROP_RULELIST (
         signal ('42000', 'Rule list IRI ' || rulelist_iri || ' is in use as opts in some HTTP virtual host');
       for select HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT, HP_SECURITY, HP_REALM,
         HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS, HP_SOAP_OPTIONS, HP_AUTH_OPTIONS, HP_OPTIONS, HP_IS_DEFAULT_HOST
-        from DB.DBA.HTTP_PATH where HP_OPTIONS is not null and get_keyword ('url_rewrite', deserialize (HP_OPTIONS), 0) = rulelist_iri do
+        from DB.DBA.HTTP_PATH where HP_OPTIONS is not null do
         {
           declare opts, new_opts any;
           declare i, opts_len integer;
           declare st, msg varchar;
           msg := '';
           opts := deserialize (HP_OPTIONS);
-          opts_len := length (opts);
-          new_opts := vector ();
-          for (i := 0; i < opts_len; i := i + 2)
-            {
-              if ((opts[i] <> 'url_rewrite') or (opts[i+1] <> rulelist_iri))
-                new_opts := vector_concat (new_opts, vector (opts[i], opts[i+1]));
-            }
-          VHOST_REMOVE (HP_HOST, HP_LISTEN_HOST, HP_LPATH, 0);
-          exec ('VHOST_DEFINE (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', st, msg,
-            vector (HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE,
-            HP_DEFAULT, HP_AUTH_FUNC, HP_REALM, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS,
-            HP_RUN_SOAP_AS, HP_SECURITY, HP_PERSIST_SES_VARS,
-            deserialize (HP_SOAP_OPTIONS),
-            deserialize (HP_AUTH_OPTIONS), new_opts, HP_IS_DEFAULT_HOST));
+	  if (isarray (opts) and get_keyword ('url_rewrite', opts, 0) = rulelist_iri)
+	    {
+	      opts_len := length (opts);
+	      new_opts := vector ();
+	      for (i := 0; i < opts_len; i := i + 2)
+		{
+		  if ((opts[i] <> 'url_rewrite') or (opts[i+1] <> rulelist_iri))
+		    new_opts := vector_concat (new_opts, vector (opts[i], opts[i+1]));
+		}
+	      VHOST_REMOVE (HP_HOST, HP_LISTEN_HOST, HP_LPATH, 0);
+	      exec ('VHOST_DEFINE (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', st, msg,
+		vector (HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE,
+		HP_DEFAULT, HP_AUTH_FUNC, HP_REALM, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS,
+		HP_RUN_SOAP_AS, HP_SECURITY, HP_PERSIST_SES_VARS,
+		deserialize (HP_SOAP_OPTIONS),
+		deserialize (HP_AUTH_OPTIONS), new_opts, HP_IS_DEFAULT_HOST));
+	    }
         }
     }
   if (exists (select 1 from DB.DBA.URL_REWRITE_RULE_LIST where URRL_MEMBER = rulelist_iri))
@@ -268,16 +303,27 @@ create function DB.DBA.URLREWRITE_SPRINTF_RESULTS (
   in nice_parts any,
   in target_params any,
   in target_format varchar,
-  in target_exp varchar)
+  in target_exp varchar,
+  in accept_val varchar)
 returns varchar
 {
-  declare long_path, cur, tmp varchar;
+  declare long_path, cur, tmp, val varchar;
   declare i, j, tar_len integer;
   declare pos1, pos2, pos3 integer;
+  declare host varchar;
+
+  host := registry_get ('URIQADefaultHost');
   long_path := '';
   i := 0;
+
+  target_format := replace (target_format, '%%', '<PERCENT>');
   tar_len := length (target_format);
   pos2 := 1;
+  if (locate ('%', target_format, pos2) = 0)
+    {
+      long_path := target_format;
+      goto end_scan;
+    }
   -- dbg_obj_princ('sprintf! ', pos2, tar_len, i, length (target_params));
   while (pos2 < tar_len and i < length (target_params) and pos2 > 0)
     {
@@ -286,8 +332,10 @@ returns varchar
       if (pos1 < 0)
         return '';
       pos3 := locate ('%', target_format, pos1 + 2) - 1;
+
       if (i = 0)
 	long_path := left(target_format, pos1);
+
       -- dbg_obj_princ('sprintf10: ', pos3);
       if (pos3 < pos1 or pos3 < 0)
         cur := subseq (target_format, pos1);
@@ -297,23 +345,36 @@ returns varchar
           -- dbg_obj_princ('long_path: ', long_path);
         }
       pos2 := pos3;
+
       j := 0;
-      while (nice_params[j] <> target_params[i] and j < length (nice_params))
+      while (j < length (nice_params) and nice_params[j] <> target_params[i])
         {
           j := j + 1;
         }
-      if (target_exp is null)
-        tmp := sprintf (cur, nice_parts[j]);
+      if (position (target_params[i], nice_params))
+        val := nice_parts[j];
+      else if (target_params[i] = '*accept*')
+        val := accept_val;
       else
-        tmp := call (target_exp) (target_params[i], cur, nice_parts[j]);
+        val := '';
+      --dbg_obj_print ('fmt=', cur);
+      if (target_exp is null)
+        tmp := sprintf (cur, val);
+      else
+        tmp := call (target_exp) (target_params[i], cur, val);
       long_path := concat (long_path, tmp);
-      -- dbg_obj_princ('sprintf10: ', long_path);
+      --dbg_obj_princ('after sprintf: ', long_path);
       i := i + 1;
     }
+end_scan:
   -- dbg_obj_princ('=======sprintf22: ', long_path);
+  long_path := replace (long_path, '<PERCENT>', '%');
+  if (isstring (host))
+    long_path := replace (long_path, '^{URIQADefaultHost}^', host);
   return long_path;
 }
 ;
+
 
 create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
   in rulelist_iri varchar,
@@ -323,10 +384,13 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
   in nice_get_params varchar,
   in nice_frag varchar,
   in post_params any,
+  in accept_header varchar,
   out long_url varchar,
   out params any,
   out rule_iri varchar,
-  out target_vhost_pkey any)
+  out target_vhost_pkey any,
+  out http_redir int,
+  out http_headers varchar)
   returns integer
 {
 -- dbg_obj_princ('in side! ', rulelist_iri);
@@ -335,25 +399,42 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
       if (exists (select 1 from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = cur_iri))
         {
           if (DB.DBA.URLREWRITE_APPLY_RECURSIVE (cur_iri, nice_host,
-            nice_lhost, nice_lpath, nice_get_params, nice_frag, post_params, long_url, params,
-            rule_iri, target_vhost_pkey) = 1)
+            nice_lhost, nice_lpath, nice_get_params, nice_frag, post_params, accept_header, long_url, params,
+            rule_iri, target_vhost_pkey, http_redir, http_headers) = 1)
             return 1;
         }
       else
         {
             -- dbg_obj_princ('in side11! ', cur_iri);
-          for select URR_RULE_TYPE, URR_NICE_FORMAT, URR_NICE_PARAMS, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, URR_TARGET_PARAMS, URR_TARGET_EXPR from DB.DBA.URL_REWRITE_RULE where URR_RULE = cur_iri do
+          for select URR_RULE_TYPE, URR_NICE_FORMAT, URR_NICE_PARAMS, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, URR_TARGET_PARAMS,
+	    URR_TARGET_EXPR, URR_ACCEPT_PATTERN, URR_NO_CONTINUATION, URR_HTTP_REDIRECT, URR_HTTP_HEADERS
+	    from DB.DBA.URL_REWRITE_RULE where URR_RULE = cur_iri do
             {
                 -- dbg_obj_princ('in side2! ', cur_iri);
               declare parts, nice_params any;
-              declare _result varchar;
+              declare _result, accept_val varchar;
+
+	      if (length (URR_ACCEPT_PATTERN) and not length (accept_header))
+		goto next_rule;
+	      accept_val := null;
+	      if (length (URR_ACCEPT_PATTERN) and length (accept_header))
+		{
+	          accept_val := regexp_match (URR_ACCEPT_PATTERN, accept_header);
+	          if (accept_val is null)
+		    goto next_rule;
+		}
+
               if (URR_RULE_TYPE = 0)
                 {
                   -- dbg_obj_princ('parts1: ', nice_lpath, URR_NICE_FORMAT);
                   parts := sprintf_inverse (nice_lpath, URR_NICE_FORMAT, 2);
                   -- dbg_obj_princ('parts2: ', length(parts), parts[2], URR_NICE_MIN_PARAMS);
                   if ((length (parts) < URR_NICE_MIN_PARAMS) or (length (parts) >= URR_NICE_MIN_PARAMS and parts[URR_NICE_MIN_PARAMS - 1] is NULL))
-                    return 0;
+		    {
+		      if (URR_NO_CONTINUATION = 2)
+			goto next_rule;
+                      return 0;
+		    }
                   -- dbg_obj_princ('parts3');
                 }
               else if (URR_RULE_TYPE = 1)
@@ -363,7 +444,11 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
 --		  dbg_obj_print (regexp_match (URR_NICE_FORMAT, nice_lpath));
 --                  dbg_obj_princ('parts22: ', _result);
                   if (_result is null)
-                    return 0;
+		    {
+		      if (URR_NO_CONTINUATION = 2)
+			goto next_rule;
+                      return 0;
+		    }
                   else
                     {
                     -- dbg_obj_princ('parts3333', length (_result));
@@ -392,11 +477,17 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
                 params := post_params;
               else
 		params := vector_concat (post_params, nice_params);
+
               -- dbg_obj_princ('parts6: ', deserialize(URR_NICE_PARAMS), parts, deserialize(URR_TARGET_PARAMS), URR_TARGET_FORMAT);
-              long_url := DB.DBA.URLREWRITE_SPRINTF_RESULTS (deserialize(URR_NICE_PARAMS), parts, deserialize(URR_TARGET_PARAMS), URR_TARGET_FORMAT, URR_TARGET_EXPR);
+              long_url := DB.DBA.URLREWRITE_SPRINTF_RESULTS (deserialize(URR_NICE_PARAMS), parts, deserialize(URR_TARGET_PARAMS), URR_TARGET_FORMAT, URR_TARGET_EXPR, accept_val);
 	      if (registry_get ('__debug_url_rewrite') = '1')
 	        dbg_printf ('rule=[%s] URL=[%s]', cur_iri, long_url);
               rule_iri := cur_iri;
+	      http_redir := URR_HTTP_REDIRECT;
+	      http_headers := URR_HTTP_HEADERS;
+	      if (URR_NO_CONTINUATION = 1)
+		return 1;
+	      next_rule:;
             }
         }
     }
@@ -416,7 +507,8 @@ create procedure DB.DBA.URLREWRITE_APPLY (
 {
   declare elm any;
   declare _lhost, _lhost_port, _host, _lpath, _get_params, _frag, db_lhost, db_host, db_lpath varchar;
-  declare pos integer;
+  declare pos, http_redir integer;
+  declare http_headers varchar;
   elm := WS.WS.PARSE_URI (nice_url);
   -- dbg_obj_princ('bbb2');
   if (elm[2] is null)
@@ -473,10 +565,13 @@ create procedure DB.DBA.URLREWRITE_APPLY (
     _get_params,
     _frag,
     post_params,
+    null,
     long_url,
     params,
     rule_iri,
-    target_vhost_pkey);
+    target_vhost_pkey,
+    http_redir,
+    http_headers);
 }
 ;
 
@@ -690,26 +785,86 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   declare params any;
   declare nice_vhost_pkey any;
   declare top_rulelist_iri varchar;
-  declare rule_iri varchar;
-  declare target_vhost_pkey, hf any;
-  declare result int;
+  declare rule_iri, in_path, qstr varchar;
+  declare target_vhost_pkey, hf, accept any;
+  declare result, http_redir int;
+  declare http_headers varchar;
 
-  hf := WS.WS.PARSE_URI (path);
+  -- XXX: the path is just path string, no fragment no query no host
+  --hf := WS.WS.PARSE_URI (path);
   long_url := null;
-  result := DB.DBA.URLREWRITE_APPLY_RECURSIVE (rule_list, null, null, rtrim (hf[2], '/'), hf[4], hf[5], post_params,
-  	long_url, params, rule_iri, target_vhost_pkey);
+  in_path := rtrim (path, '/');
+  if (length (in_path) = 0)
+    in_path := '/';
+  accept := null;
+
+  if (is_http_ctx ())
+    {
+      qstr := http_request_get ('QUERY_STRING');
+      accept := http_request_header (http_request_header (), 'Accept');
+      if (not isstring (accept))
+	accept := '*/*';
+    }
+  else
+    qstr := null;
+
+  if (length (qstr))
+    in_path := in_path || '?' || qstr;
+
+  result := DB.DBA.URLREWRITE_APPLY_RECURSIVE (rule_list, null, null, in_path, '', qstr, post_params, accept,
+  	long_url, params, rule_iri, target_vhost_pkey, http_redir, http_headers);
   if (length (long_url) and is_http_ctx ()) -- should be result = 1
     {
       declare full_path, pars, p_full_path any;
       --dbg_obj_princ('Result: ', result, long_url,  params,  rule_iri,  target_vhost_pkey);
-      hf := WS.WS.PARSE_URI (long_url);
-      full_path := hf[2];
-      pars := split_and_decode (hf[4]);
-      p_full_path := http_physical_path_resolve (full_path, 1);
-      http_internal_redirect (full_path, p_full_path);
-      pars := vector_concat (params, pars);
-      http_set_params (pars);
+
+      if (length (http_headers) > 0)
+	{
+	  declare fn, tmp, repl any;
+
+	  if (http_headers not like '%\n')
+	    http_headers := http_headers || '\n';
+
+	  tmp := regexp_match ('\\^{sql:[^}]*}\\^', http_headers);
+	  while (tmp is not null)
+	    {
+	      fn := subseq (tmp, 6, length (tmp)-2);
+	      repl := '';
+	      if (__proc_exists (fn))
+	        {
+	          repl := call (fn) (in_path);
+		}
+              http_headers := replace (http_headers, tmp, repl);
+              tmp := regexp_match ('\\^{sql:[^}]*}\\^', http_headers);
+	    }
+	  http_header (http_headers);
+	}
+
+      if (http_redir in (301, 302, 303, 307))
+	{
+	  http_status_set (http_redir);
+	  http_header (http_header_get () || 'Location: '||long_url||'\r\n');
+	  http_body_read ();
+	  return 1;
+	}
+      else
+	{
+	  if (isinteger (http_redir) and http_redir > 399)
+	    {
+	      http_status_set (http_redir);
+	      http_body_read ();
+	      return 1;
+	    }
+	  hf := WS.WS.PARSE_URI (long_url);
+	  full_path := hf[2];
+	  pars := split_and_decode (hf[4]);
+	  p_full_path := http_physical_path_resolve (full_path, 1);
+	  http_internal_redirect (full_path, p_full_path);
+	  pars := vector_concat (params, pars);
+	  http_set_params (pars);
+        }
     }
-  return long_url;
+  return 0;
 }
 ;
+
