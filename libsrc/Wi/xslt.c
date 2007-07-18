@@ -2223,7 +2223,8 @@ xslt_key (xparse_ctx_t * xp, caddr_t * xstree)
 	    }
 	  else
 	    {
-	      ptrlong buf_len, busy_len;
+	      ptrlong buf_len;
+              boxint busy_len;
 	      dk_free_box (val_strg);
 	      val_nodes = val_nodes_ptr[0];
 	      buf_len = BOX_ELEMENTS (val_nodes);
@@ -2233,7 +2234,7 @@ xslt_key (xparse_ctx_t * xp, caddr_t * xstree)
 		  caddr_t * new_val_nodes;
 		  buf_len *= 2;
 		  new_val_nodes = (caddr_t *)dk_alloc_box_zero (buf_len * sizeof(caddr_t), DV_ARRAY_OF_POINTER);
-		  memcpy (new_val_nodes, val_nodes, busy_len * sizeof(caddr_t));
+		  memcpy (new_val_nodes, val_nodes, (size_t)busy_len * sizeof(caddr_t));
 		  dk_free_box ((caddr_t)val_nodes);
 		  val_nodes = val_nodes_ptr[0] = new_val_nodes;
 		}

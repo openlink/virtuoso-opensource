@@ -317,6 +317,7 @@ void itc_hold_pages (it_cursor_t * itc, buffer_desc_t * buf, int n);
 void itc_free_hold (it_cursor_t * itc);
 wi_db_t * wi_ctx_db (void);
 dbe_storage_t * wd_storage (wi_db_t * wd, caddr_t name);
+void it_not_in_any (du_thread_t * self, index_tree_t * except);
 
 /* insert.c */
 
@@ -744,10 +745,10 @@ int cpt_is_global_lock (void);
 
 
 void registry_exec (void);
-long sequence_set (char * name, long value, int mode, int in_map);
-long sequence_next (char * name, int in_map);
-long sequence_next_inc (char *name, int in_map, long inc_by);
-long sequence_remove (char *name, int in_map);
+boxint sequence_set (char * name, boxint value, int mode, int in_map);
+boxint sequence_next (char * name, int in_map);
+boxint sequence_next_inc (char *name, int in_map, boxint inc_by);
+int sequence_remove (char *name, int in_map);
 box_t sequence_get_all ( void ); /* returns the name,value, name,value array */
 
 EXE_EXPORT(caddr_t, registry_get, (const char *name));

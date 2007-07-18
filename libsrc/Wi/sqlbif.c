@@ -541,19 +541,19 @@ bif_type_t bt_datetime = {NULL, DV_DATETIME, 10, 0};
 bif_type_t bt_timestamp = {NULL, DV_DATETIME, 10, 0};
 bif_type_t bt_bin = {NULL, DV_BIN, 10, 0};
 
-ptrlong
+boxint
 bif_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   caddr_t arg = bif_arg (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp == DV_SINGLE_FLOAT)
-  return ((ptrlong) unbox_float (arg));
+  return ((boxint) unbox_float (arg));
   if (dtp == DV_DOUBLE_FLOAT)
-  return ((ptrlong) unbox_double (arg));
+  return ((boxint) unbox_double (arg));
   if (dtp == DV_NUMERIC)
   {
-    int32 tl;
-    numeric_to_int32 ((numeric_t) arg, &tl);
+    int64 tl;
+    numeric_to_int64 ((numeric_t) arg, &tl);
     return tl;
   }
   if (dtp != DV_SHORT_INT && dtp != DV_LONG_INT)
@@ -573,14 +573,14 @@ bif_iri_id_or_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
   caddr_t arg = bif_arg (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp == DV_SINGLE_FLOAT)
-    return ((iri_id_t) (uint32) unbox_float (arg));
+    return ((iri_id_t) (unsigned int64) unbox_float (arg));
   if (dtp == DV_DOUBLE_FLOAT)
-    return ((iri_id_t) (uint32) unbox_double (arg));
+    return ((iri_id_t) (unsigned int64) unbox_double (arg));
   if (dtp == DV_NUMERIC)
     {
-      int32 tl;
-      numeric_to_int32 ((numeric_t) arg, &tl);
-      return (iri_id_t)(uint32) tl;
+      int64 tl;
+      numeric_to_int64 ((numeric_t) arg, &tl);
+      return (iri_id_t)(unsigned int64) tl;
     }
   if (dtp == DV_IRI_ID)
     return unbox_iri_id (arg);
@@ -591,7 +591,7 @@ bif_iri_id_or_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
       "not an arg of type %s (%d)",
       func, nth + 1, dv_type_title (dtp), dtp);
     }
-  return (iri_id_t) (uint32) (unbox (arg));
+  return (iri_id_t) (unsigned int64) (unbox (arg));
 }
 
 
@@ -648,7 +648,7 @@ bif_long_low_range_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
 }
 
 
-ptrlong
+boxint
 bif_long_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *isnull)
 {
   caddr_t arg = bif_arg (qst, args, nth, func);
@@ -660,13 +660,13 @@ bif_long_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
       return 0;
     }
   if (dtp == DV_SINGLE_FLOAT)
-    return ((ptrlong) unbox_float (arg));
+    return ((boxint) unbox_float (arg));
   if (dtp == DV_DOUBLE_FLOAT)
-    return ((ptrlong) unbox_double (arg));
+    return ((boxint) unbox_double (arg));
   if (dtp == DV_NUMERIC)
   {
-    int32 tl;
-    numeric_to_int32 ((numeric_t) arg, &tl);
+    int64 tl;
+    numeric_to_int64 ((numeric_t) arg, &tl);
     return tl;
   }
   if (dtp != DV_SHORT_INT && dtp != DV_LONG_INT)
@@ -984,7 +984,7 @@ bif_proc_table_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
 	}
       if (dtp != DV_DB_NULL && !ha_dtp_check_done && dtp != target_dtp
           && (DV_ANY != target_dtp)
-	  && !(dtp == DV_LONG_INT && target_dtp == DV_SHORT_INT)
+	  && !(dtp == DV_LONG_INT && IS_INT_DTP (target_dtp))
 	  && !(ha->ha_key_cols[inx + 1].cl_sqt.sqt_is_xml && XE_IS_VALID_VALUE_FOR_XML_COL (v)))
 	{
 	  *err_ret = srv_make_new_error ("22023", "SR540",
@@ -3052,8 +3052,13 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 			    snprintf (tmp, SPRINTF_BUF_SPACE,
 				format, (short) bif_long_arg (qst, args, arg_inx++, szMe));
 			  else if (ptr[-1] == 'l')
+#if SIZEOF_LONG == 4
+			    snprintf (tmp, SPRINTF_BUF_SPACE,
+				      format, (int32) bif_long_arg (qst, args, arg_inx++, szMe));
+#else
 			    snprintf (tmp, SPRINTF_BUF_SPACE,
 				format, bif_long_arg (qst, args, arg_inx++, szMe));
+#endif
 			  else
 			    snprintf (tmp, SPRINTF_BUF_SPACE,
 				format, (int)bif_long_arg (qst, args, arg_inx++, szMe));
@@ -6867,7 +6872,7 @@ find_index_to_vector (caddr_t item, caddr_t vec, int veclen,
     }
   elem_size = sizeof (ptrlong);
   /* Do it here, not in loop. I hope that long fits to caddr_t (char *) */
-  item = ((caddr_t) unbox (item));
+  item = ((caddr_t) unbox_ptrlong (item));
   break;
     }
   case DV_ARRAY_OF_DOUBLE:
@@ -6910,7 +6915,7 @@ find_index_to_vector (caddr_t item, caddr_t vec, int veclen,
     }
   else if ((item_type == DV_SHORT_INT) || (item_type == DV_LONG_INT))
     {
-    item = ((caddr_t) unbox (item));
+    item = ((caddr_t) unbox_ptrlong (item));
     }
   else
     {
@@ -7702,8 +7707,8 @@ caddr_t string_to_time_dt_box (char * data);
   if (rc != NUMERIC_STS_SUCCESS) \
   sqlr_new_error ("22015", "SR064", "Conversion overflow from numeric");
 
-long
-num_check_prec (long val, int prec, char *title, caddr_t *err_ret)
+boxint
+num_check_prec (boxint val, int prec, char *title, caddr_t *err_ret)
 {
   long n;
   static long precs[] = {0, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
@@ -7737,7 +7742,7 @@ box_cast (caddr_t * qst, caddr_t data, ST * dtp, dtp_t arg_dtp)
   switch (dtp->type)
     {
       case DV_STRING: goto do_long_string;
-      case DV_LONG_INT: case DV_SHORT_INT: goto do_long_int;
+    case DV_LONG_INT: case DV_INT64: case DV_SHORT_INT: goto do_long_int;
       case DV_SINGLE_FLOAT: goto do_single_float;
       case DV_DOUBLE_FLOAT: goto do_double_float;
       case DV_NUMERIC: goto do_numeric;
@@ -7758,7 +7763,7 @@ do_long_string:
 	{
 	  case DV_LONG_INT:
 	  case DV_SHORT_INT:
-	      snprintf (tmp, sizeof (tmp), "%ld", unbox (data));
+	      snprintf (tmp, sizeof (tmp), BOXINT_FMT, unbox (data));
 	      break;
 	  case DV_SINGLE_FLOAT:
 	      snprintf (tmp, sizeof (tmp), "%.16g", unbox_float (data));
@@ -7928,16 +7933,16 @@ do_long_string:
 do_long_int:
     {
       int prec = BOX_ELEMENTS (dtp) > 1 ? (int) (unbox (((caddr_t *) dtp)[1])) : 0;
-      long val;
+      boxint val;
       switch (arg_dtp)
 	{
 	  case DV_LONG_INT:
 	  case DV_SHORT_INT:
-	      val = (long) unbox (data); break;
+	      val = unbox (data); break;
 	  case DV_SINGLE_FLOAT:
-	      val = (long) unbox_float (data); break;
+	      val = (boxint) unbox_float (data); break;
 	  case DV_DOUBLE_FLOAT:
-	      val = (long) unbox_double (data); break;
+	      val = (boxint) unbox_double (data); break;
 	  case DV_STRING:
 	      val = safe_atoi (data, NULL); break;
 #ifdef BIF_XML
@@ -7955,8 +7960,8 @@ do_long_int:
 #endif
 	  case DV_NUMERIC:
 		{
-		  int32 i;
-		  NUMCK (numeric_to_int32 ((numeric_t) data, &i));
+		  int64 i;
+		  NUMCK (numeric_to_int64 ((numeric_t) data, &i));
 		  val = i;
 		  break;
 		}
@@ -8233,7 +8238,7 @@ do_wide:
 		}
 	  case DV_LONG_INT:
 	  case DV_SHORT_INT:
-	      snprintf (tmp, sizeof (tmp), "%ld", unbox (data));
+	      snprintf (tmp, sizeof (tmp), BOXINT_FMT, unbox (data));
 	      break;
 	  case DV_SINGLE_FLOAT:
 	      snprintf (tmp, sizeof (tmp), "%f", unbox_float (data));
@@ -8550,10 +8555,10 @@ bif_raw_exit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_sequence_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  long res;
+  boxint res;
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
   caddr_t name = bif_string_arg (qst, args, 0, "sequence_set");
-  long count = (long) bif_long_arg (qst, args, 1, "sequence_set");
+  boxint count = (boxint) bif_long_arg (qst, args, 1, "sequence_set");
   long mode = (long) bif_long_arg (qst, args, 2, "sequence_set");
   res = sequence_set (name, count, mode, OUTSIDE_MAP);
   if (mode == SET_IF_GREATER)
@@ -8577,14 +8582,14 @@ bif_sequence_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
   caddr_t name = bif_string_arg (qst, args, 0, "sequence_next");
-  long inc_by = 1, res;
+  boxint inc_by = 1, res;
 
   if (BOX_ELEMENTS (args) > 1)
     {
       inc_by = (long) bif_long_arg (qst, args, 1, "sequence_next");
       if (inc_by < 1)
 	sqlr_new_error ("22023", "SR376",
-	    "sequence_next() needs an integer >= 0 as a second argument, not %ld", inc_by);
+	    "sequence_next() needs an nonnegative integer as a second argument, not " BOXINT_FMT, inc_by);
     }
   res = sequence_next_inc (name, OUTSIDE_MAP, inc_by);
   log_sequence (qi->qi_trx, name, res + inc_by);

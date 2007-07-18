@@ -2727,7 +2727,7 @@ srv_collect_inx_space_stats (caddr_t *err_ret, query_instance_t *qi)
 		  buf->bd_storage = storage;
 		  if (WI_ERROR == buf_disk_read (buf))
 		    {
-		      err = srv_make_new_error ("42000", "SR466", "Read of page %ld failed", page_no);
+		      err = srv_make_new_error ("42000", "SR466", "Read of page %ld failed", (unsigned long) page_no);
 		      break;
 		    }
 		  else
@@ -3021,7 +3021,7 @@ bif_real_cv_size (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 int
-key_stat_to_spec (caddr_t * data, dbe_key_t * key, int nth,
+key_stat_to_spec (caddr_t data, dbe_key_t * key, int nth,
 search_spec_t *sp, it_cursor_t * itc, int * v_fill)
 {
   int res = 0;
