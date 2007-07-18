@@ -1322,11 +1322,11 @@ ConfigDSNW (
   TKVList props;
   TSetupDlg setupDlg (props);
 
-  props.FromDSN (lpszAttributes);
+  props.FromAttributes (lpszAttributes);
   if (props.Get (_T("DSN"), szDSN, NUMCHARS (szDSN)))
     {
       props.ReadODBCIni (szDSN, _virtuoso_tags);
-      props.FromDSN (lpszAttributes);
+      props.FromAttributes (lpszAttributes);
     }
 
   if (fRequest == ODBC_REMOVE_DSN)
@@ -1335,20 +1335,36 @@ ConfigDSNW (
     }
   else if (fRequest == ODBC_CONFIG_DSN || fRequest == ODBC_ADD_DSN)
     {
-      setupDlg.m_bFileDSN = FALSE;
-      if (setupDlg.RunModal (g_hInstance, IDD_CONFIGDSN, hWinParent) == IDOK)
-	{
+      if (hWinParent)
+        {
+          setupDlg.m_bFileDSN = FALSE;
+          if (setupDlg.RunModal (g_hInstance, IDD_CONFIGDSN, hWinParent) == IDOK)
+	    {
+	      if (props.Get (_T("DSN"), szNewDSN, NUMCHARS (szNewDSN)))
+	        {
+	          props.Undefine (_T("PWD"));
+	          SQLWriteDSNToIni (szNewDSN, lpszDriver);
+	          props.WriteODBCIni (szNewDSN, _virtuoso_tags);
+
+	          /* If the DSN has changed, delete the old one */
+	          if (fRequest == ODBC_CONFIG_DSN && _tcsicmp (szDSN, szNewDSN))
+		    SQLRemoveDSNFromIni (szDSN);
+	        }
+	    }
+        }
+      else
+        {
 	  if (props.Get (_T("DSN"), szNewDSN, NUMCHARS (szNewDSN)))
 	    {
-	      props.Undefine (_T("PWD"));
-	      SQLWriteDSNToIni (szNewDSN, lpszDriver);
-	      props.WriteODBCIni (szNewDSN, _virtuoso_tags);
-
-	      /* If the DSN has changed, delete the old one */
-	      if (fRequest == ODBC_CONFIG_DSN && _tcsicmp (szDSN, szNewDSN))
-		SQLRemoveDSNFromIni (szDSN);
+	       props.Undefine (_T("PWD"));
+	       SQLWriteDSNToIni (szNewDSN, lpszDriver);
+	       props.WriteODBCIni (szNewDSN, _virtuoso_tags);
+              
+	       /* If the DSN has changed, delete the old one */
+	       if (fRequest == ODBC_CONFIG_DSN && _tcsicmp (szDSN, szNewDSN))
+	          SQLRemoveDSNFromIni (szDSN);
 	    }
-	}
+        }
     }
 
   return TRUE;

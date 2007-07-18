@@ -269,6 +269,39 @@ TKVList::ToDSN (void)
   return base;
 }
 
+void
+TKVList::FromAttributes (LPCTSTR szIn)
+{
+  LPCTSTR cp;
+  LPCTSTR tok;
+  TCHAR keyBuf[128];
+  TCHAR valueBuf[128];
+  int count = 0;
+
+  if ( *szIn != 0)
+    {
+      tok = cp = szIn;
+      do
+        {
+          cp++;
+          if (*cp == 0) //found token
+            {
+              LPCTSTR cp2 = _tcschr (tok, '=');
+              if (cp2)
+                {
+                  _tcsncpy (keyBuf, tok, cp2 - tok);
+                  keyBuf[cp2 - tok] = 0;
+                  tok = cp2 + 1;
+                  _tcscpy (valueBuf, tok);
+                  Define (keyBuf, valueBuf);
+                  count++;
+                }
+              tok = cp + 1;
+            }
+        }
+      while ( !(*cp == 0 && *(cp + 1) == 0) && count < MAXPAIRS);
+    }
+}
 
 void
 TKVList::Empty (void)

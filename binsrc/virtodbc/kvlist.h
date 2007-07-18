@@ -55,6 +55,7 @@ class TKVList
     void		WriteFileDSN (LPCTSTR filename, LPCTSTR names);
 
     void		FromDSN (LPCTSTR szIn);
+    void		FromAttributes (LPCTSTR szIn);
     PTSTR		ToDSN (void);
     index_t		DSize (void);
 
