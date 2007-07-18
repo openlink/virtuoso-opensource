@@ -159,7 +159,7 @@ db_buf_length (unsigned char *buf, long *head_ret, long *len_ret)
       break;
     case DV_RDF:
       *head_ret = 1;
-      len_ret = rbs_length (buf);
+      *len_ret = rbs_length (buf);
       break;
     default:
       /* Report */
