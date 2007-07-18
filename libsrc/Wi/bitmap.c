@@ -1103,7 +1103,10 @@ itc_init_bm_search (it_cursor_t * itc)
       sp = sp->sp_next;
     }
   if (!bm_spec)
+    {
+      itc->itc_bm_col_spec = NULL;
     return;
+    }
   if (CMP_EQ == bm_spec->sp_min_op 
       || (CMP_GT == bm_spec->sp_min_op && !itc->itc_desc_order)
       || (CMP_GTE == bm_spec->sp_min_op && !itc->itc_desc_order))
@@ -1485,6 +1488,11 @@ pl_set_at_bit (placeholder_t * pl, db_buf_t bm, short bm_len, bitno_t bm_start, 
 	  if (value >= ce_start && value < ce_start + CE_N_VALUES)
 	    {
 	      pl_ce_set (pl, ce, ce_len, bm_start, value, 1);
+	      if ( pl->itc_bp.bp_below_start)
+		{
+		  pl->itc_bp.bp_at_end = 0;
+		  return;
+		}
 	      if (!pl->itc_bp.bp_at_end)
 		return;
 	      ce += ce_len;

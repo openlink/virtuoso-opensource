@@ -184,6 +184,44 @@ inx_op_set_params (inx_op_t * iop, it_cursor_t * itc)
 }
 
 
+
+void 
+inxop_bm_leading_output (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  dbe_key_t * key = itc->itc_insert_key;
+  key_source_t * ks = itc->itc_ks;
+  if (ks->ks_out_cols)
+    {
+      int inx = 0;
+      out_map_t * om = itc->itc_ks->ks_out_map;
+      DO_SET (state_slot_t *, ssl, &ks->ks_out_slots)
+	{
+	  if (om[inx].om_is_null)
+	    {
+	      if (OM_BM_COL == om[inx].om_is_null)
+		{
+		  /* we set the bitmapped col.  Note both iri ids are 64 bit boxes.  An int is 32 bit */
+		  if (DV_IRI_ID == key->key_bit_cl->cl_sqt.sqt_dtp || DV_IRI_ID_8 == key->key_bit_cl->cl_sqt.sqt_dtp)
+		    qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) &itc->itc_bp.bp_value, sizeof (iri_id_t), DV_IRI_ID);
+		  else
+		    qst_set_long (itc->itc_out_state, ssl, itc->itc_bp.bp_value);
+		}
+	      else if (OM_NULL == om[inx].om_is_null)
+		qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);
+	      else
+		qst_set (itc->itc_out_state, ssl, itc_box_row (itc, buf->bd_buffer));
+	    }
+	  else
+	    {
+	      itc_qst_set_column (itc, &om[inx].om_cl, itc->itc_out_state, ssl);
+	    }
+	  inx++;
+	}
+      END_DO_SET();
+    }
+}
+
+
 typedef struct inxop_bm_s
 {
   bitno_t	iob_start;
@@ -264,14 +302,13 @@ inxop_iob_next (inx_op_t * iop, it_cursor_t * itc, inxop_bm_t * iob, int op, cad
 }
 
 
-int
+
 inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	       table_source_t * ts, it_cursor_t * itc)
 {
   caddr_t *qst = (caddr_t*)qi;
   int rc;
   buffer_desc_t * buf = NULL;
-  int is_random = 0;
   inxop_bm_t * iob = (inxop_bm_t *) QST_GET (qst, iop->iop_bitmap);
   if (iob &&  iob->iob_is_inited)
     {
@@ -284,31 +321,67 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
       switch (op)
 	{
 	case IOP_START:
-	  is_random = 1;
 	  itc->itc_search_mode = SM_READ;
 	  buf = itc_reset (itc);
 	  rc = itc_next (itc, &buf);
-	  if (DVC_GREATER == rc || DVC_INDEX_END == rc)
+	  if (DVC_MATCH == rc)
+	    {
+	      inxop_set_iob (iop, itc, buf, qst);
+	      itc_register (itc, buf);
+	      itc_page_leave (itc, buf);
+	      return IOP_ON_ROW;
+	    }
+	  else
 	    {
 	      itc_page_leave (itc, buf);
 	      return IOP_AT_END;
 	    }
-	  inxop_set_iob (iop, itc, buf, qst);
-	  break;
 	case IOP_TARGET:
-	  is_random = 1;
-	  itc->itc_search_mode = SM_READ_EXACT;
+	  itc->itc_search_mode = SM_READ;
 	  buf = itc_reset (itc);
 	  rc = itc_search (itc, &buf);
+	  if (DVC_LESS == rc)
+	    {
+	      /* the bm was not even checked, failed to find a match of leading parts.  
+	       * or Could be we got a match of leading and the first bm col was gt and we wanted lte.  So recheck one forward with just */
+	      itc->itc_desc_order = 0;
+	      itc->itc_bp.bp_value = BITNO_MIN;
+	      itc->itc_is_on_row = 0;
+	      itc_skip_entry (itc, buf->bd_buffer);
+	      itc->itc_key_spec = itc->itc_insert_key->key_bm_ins_leading;
+	      itc->itc_bm_col_spec = NULL;
+	      rc = itc_next (itc, &buf);
+	      if (DVC_MATCH != rc)
+		{
+	      itc_page_leave (itc, buf);
+	      return IOP_AT_END;
+	    }
+	      inxop_set_iob (iop, itc, buf, qst);
+	      itc_register (itc, buf);
+	      itc_page_leave (itc, buf);
+	      return IOP_NEW_VAL;
+	    }
 	  if (!itc->itc_bp.bp_is_pos_valid)
 	    {
-	      /* the bm was not even checked, failed to find a match of leading parts.  */
+	      /* bp not checked, must have changed so that hit gt right off */
 	      itc_page_leave (itc, buf);
 	      return IOP_AT_END;
 	    }
 	  inxop_set_iob (iop, itc, buf, qst);
+      if (DVC_MATCH == rc)
+	{
+	  itc_register (itc, buf);
+	  itc_page_leave (itc, buf);
+	  return IOP_ON_ROW;
+	}
+
 	  if (itc->itc_bp.bp_below_start)
 	    itc->itc_bp.bp_at_end = 0; /* use the value it is at, since bp)value will be set to 1st of ce evenif value sought was lt that */
+	  if (DVC_INDEX_END == rc)
+	{
+	      itc_page_leave (itc, buf);
+	      return IOP_AT_END;
+	    }
 	  if (itc->itc_bp.bp_at_end)
 	    {
 	      /* now it could be landed past the last bit of the bitmap whose range corresponds to the spec.  Can be one after that.  If still no next then really at end of range. */
@@ -319,63 +392,32 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	      rc2 = itc_next (itc, &buf);
 	      if (DVC_INDEX_END == rc2 || (DVC_GREATER == rc2 && itc->itc_bp.bp_at_end))
 		{
-	      itc_page_leave (itc, buf);
-	      return IOP_AT_END;
+		  itc_page_leave (itc, buf);
+		  return IOP_AT_END;
+		}
 	    }
-	    }
-	  break;
-	case IOP_NEXT:
-	  is_random = 0;
-	  buf = page_reenter_excl (itc);
-	  itc->itc_bm_col_spec = NULL;
-	  rc = itc_next (itc, &buf);
-	  if (DVC_GREATER == rc || DVC_INDEX_END == rc)
-	    {
-	      itc_page_leave (itc, buf);
-	      return IOP_AT_END;
-	    }
-	  inxop_set_iob (iop, itc, buf, qst);
-	  break;
-	}
-      FAILCK (itc);
-      if (DVC_MATCH == rc)
-	{
-	  itc_register (itc, buf);
-	  itc_page_leave (itc, buf);
-	  return IOP_ON_ROW;
-	}
-
-      switch (op)
-	{
-	case IOP_TARGET:
-	  if (is_random)
-	    {
 	      if (DVC_GREATER == rc)
 		{
 		  /* the bp_value is the next higher.  Set the ssl by it. */
 		  itc->itc_is_on_row = 1; /* set this so that next operation, should the other itc match, will advance and not repeat this same row */
-		  inxop_set_bm_ssl (iop, itc, qst);
+	      inxop_bm_leading_output (itc, buf);
+	      /*inxop_set_bm_ssl (iop, itc, qst); */
 		  itc_register (itc, buf);
 		  itc_page_leave (itc, buf);
 		  return IOP_NEW_VAL;
 		}
-	      else
-		{
-		  /* returned dvc_less on target seek.  Possible, if next not in range, will land at the end of the previous */
-		  itc->itc_bm_col_spec = NULL;
-		  itc->itc_is_on_row = 1;
-		  rc = itc_next (itc, &buf);
-		  if (DVC_MATCH == rc)
-		    return IOP_NEW_VAL;
-		  else
-		    return IOP_AT_END;
-		}
-	    }
-	  break;
+	  GPF_T1 ("bm inx and target seek rc impossible");
 	case IOP_NEXT:
-	case IOP_START:
+	  buf = page_reenter_excl (itc);
+		  itc->itc_bm_col_spec = NULL;
+		  rc = itc_next (itc, &buf);
+	  if (DVC_GREATER == rc || DVC_INDEX_END == rc)
+	    {
 	  itc_page_leave (itc, buf);
 	  return IOP_AT_END;
+	}
+	  inxop_set_iob (iop, itc, buf, qst);
+	  return DVC_MATCH;
 	}
     }
   ITC_FAILED
