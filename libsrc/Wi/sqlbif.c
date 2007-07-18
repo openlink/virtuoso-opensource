@@ -239,6 +239,7 @@ void bif_pop3_init (void);
 void bif_nntp_init (void);
 void bif_regexp_init(void);
 void bif_crypto_init(void);
+void bif_audio_init (void);
 void bif_uuencode_init(void);
 void bif_udt_init(void);
 void bif_xmlenc_init(void);
@@ -12843,6 +12844,7 @@ sql_bif_init (void)
   bif_kerberos_init ();
 #endif
   bif_crypto_init ();
+  bif_audio_init ();
   bif_uuencode_init();
   bif_udt_init();
 

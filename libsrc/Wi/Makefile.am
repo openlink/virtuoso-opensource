@@ -125,6 +125,7 @@ libwi_la_SOURCES = \
 	arith.c \
 	aqueue.c \
 	auxfiles.c \
+	bif_audio.c \
 	bif_diff.c \
 	bif_intl.c \
 	bif_regexp.c \
@@ -228,6 +229,7 @@ libwi_odbc_la_SOURCES = \
 	arith.c \
 	aqueue.c \
 	auxfiles.c \
+	bif_audio.c \
 	bif_diff.c \
 	bif_intl.c \
 	bif_regexp.c \
