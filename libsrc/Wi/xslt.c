@@ -409,7 +409,7 @@ xqi_match (xp_instance_t * xqi, XT * tree, xml_entity_t * xe /*, long position, 
     volatile int stack_top;
     printf("\n0x%lx : xqi_match", (long)(&stack_top));
   */
-  QI_CHECK_STACK (xqi->xqi_qi, &inx, 4000);
+  QI_CHECK_STACK (xqi->xqi_qi, &inx, 8000);
   if (xqi->xqi_qi->qi_client->cli_terminate_requested)
     sqlr_new_error_xqi_xdl ("37000", "SR366", xqi, "XSLT aborted by client request");
 again:
@@ -1447,7 +1447,7 @@ xslt_call_template (xparse_ctx_t * xp, caddr_t * xstree)
   xqi_binding_t * saved_locals = xp->xp_locals;
   caddr_t name = xslt_arg_value (xstree, XSLT_ATTR_CALLTEMPLATE_NAME);
   xslt_template_t * xst;
-  QI_CHECK_STACK (xp->xp_qi, &xst, 2000);
+  QI_CHECK_STACK (xp->xp_qi, &xst, 8000);
   if (xp->xp_qi->qi_client->cli_terminate_requested)
     sqlr_new_error_xsltree_xdl ("37000", "SR367", xstree, "XSLT aborted by client request");
 #ifdef DEBUG
@@ -2316,7 +2316,7 @@ xslt_traverse_inner (xparse_ctx_t * xp, xslt_sheet_t * first_xsh)
     volatile int stack_top;
     printf("\n0x%lx : xslt_traverse_inner", (long)(&stack_top));
   */
-  QI_CHECK_STACK (xp->xp_qi, &xst, 4000);
+  QI_CHECK_STACK (xp->xp_qi, &xst, 8000);
   if (xp->xp_qi->qi_client->cli_terminate_requested)
     sqlr_new_error ("37000", "SR368", "XSLT aborted by client request");
   if (xst)
