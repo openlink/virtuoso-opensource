@@ -75,8 +75,8 @@ sqlc_col_table (sql_comp_t * sc, ST * col_ref, dbe_column_t ** col_ret,
     {
       if (!sec_tb_check (ct->ct_table, ct->ct_g_id, ct->ct_u_id, GR_SELECT)
 	  && !sec_col_check (*col_ret, ct->ct_g_id, ct->ct_u_id, GR_SELECT))
-	sqlc_new_error (sc->sc_cc, "42000", "SQ033", "Access denied for column %s.",
-	    (*col_ret)->col_name);
+	sqlc_new_error (sc->sc_cc, "42000", "SQ033", "SELECT access denied for column %s of table %s, user ID %lu",
+	    (*col_ret)->col_name, ct->ct_table->tb_name, ct->ct_u_id );
     }
   return ct;
 }

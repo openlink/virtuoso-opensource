@@ -433,7 +433,7 @@ sqlc_update_view (sql_comp_t * sc, ST * view, ST * tree, dbe_table_t * tb)
 
   if (!sqlc_view_is_updatable (view))
     sqlc_new_error (sc->sc_cc, "37000", "SQ116",
-	"View %s is not updatable.", tb->tb_name);
+	"View %.300s is not updatable.", tb->tb_name);
 
   if (sec_tb_check (tb, SC_G_ID (sc), SC_U_ID (sc), GR_UPDATE))
     sec_checked = 1;
@@ -450,8 +450,8 @@ sqlc_update_view (sql_comp_t * sc, ST * view, ST * tree, dbe_table_t * tb)
       if (!sec_checked
 	  && (!v_col || !sec_col_check (v_col, ref_g_id, ref_u_id, GR_UPDATE)))
 	sqlc_new_error (sc->sc_cc, "42000", "SQ117",
-	    "No column update privilege for %s in view %s",
-	    v_col ? v_col->col_name : "<bad column>", tb->tb_name);
+	    "No column update privilege for %.100s in view %.300s (user ID = %lu)",
+	    v_col ? v_col->col_name : "<bad column>", tb->tb_name, ref_u_id );
       sqlc_col_to_view_scope (sc, &cols[inx], view, &aliases);
       sqlc_exp_to_view_scope (sc, &tree->_.update_src.vals[inx], NULL, view,
 	  &aliases);

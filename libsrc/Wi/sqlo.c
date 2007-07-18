@@ -240,8 +240,8 @@ ok:
       && !sec_col_check (col, def_ot->ot_g_id, def_ot->ot_u_id, GR_SELECT))
     {
       if (generate)
-	sqlc_new_error (sco->sco_so->so_sc->sc_cc, "42000", "SQ033", "Access denied for column %s.",
-	    col->col_name);
+	sqlc_new_error (sco->sco_so->so_sc->sc_cc, "42000", "SQ033", "SELECT access denied for column %s of table %s, user ID %lu",
+	    col->col_name, def_ot->ot_table->tb_name, def_ot->ot_u_id );
       else
 	return NULL;
     }
