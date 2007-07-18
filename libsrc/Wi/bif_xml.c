@@ -2987,10 +2987,14 @@ xml_uri_resolve (query_instance_t * qi, caddr_t *err_ret, ccaddr_t base_uri, cca
   local_cursor_t *lc = NULL;
   static const char *pl_call_text = "WS.WS.EXPAND_URL (?, ?, ?)";
   caddr_t err = NULL;
-
+  client_connection_t *cli;
+  if (CALLER_LOCAL == qi)
+    cli = bootstrap_cli;
+  else
+    cli = qi->qi_client;
   if (!qr)
     {
-      qr = sql_compile (pl_call_text, qi->qi_client, &err, SQLC_DEFAULT);
+      qr = sql_compile (pl_call_text, cli, &err, SQLC_DEFAULT);
       if (SQL_SUCCESS != err)
 	{
 	  qr = NULL;
@@ -3000,7 +3004,7 @@ xml_uri_resolve (query_instance_t * qi, caddr_t *err_ret, ccaddr_t base_uri, cca
 	}
     }
   CHECK_URI_TYPES(base_uri,rel_uri);
-  err = qr_rec_exec (qr, qi->qi_client, &lc, qi, NULL, 3,
+  err = qr_rec_exec (qr, cli, &lc, qi, NULL, 3,
       ":0", ((NULL == base_uri) ? box_dv_short_nchars ("", 0) : box_copy (base_uri)), QRP_RAW,
       ":1", box_copy (rel_uri), QRP_RAW,
       ":2", ((NULL == output_charset) ? NEW_DB_NULL : box_dv_short_string (output_charset)), QRP_RAW );
