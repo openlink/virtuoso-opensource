@@ -2667,7 +2667,10 @@ start_token_again:
 	      if (
 		(NULL != parser->inner_tag->ot_descr) &&
 		parser->inner_tag->ot_descr->htmltd_is_ptext )
-		goto character_data; /* no tags may be opened inside <SCRIPT> or <STYLE> */
+		{
+		  rem = parser->pptr;
+		  goto character_data_without_backstep; /* no tags may be opened inside <SCRIPT> or <STYLE> */
+		}
 	    }
 	  else
 	    {
@@ -3030,6 +3033,7 @@ attribute_completed:
 character_data:
       /* parser->errmsg = NULL; */
       tmp = rem;
+character_data_without_backstep:
       if (!parser->cfg.input_is_html)
 	{
 	  if (!(parser->state & XML_A_CHAR))
