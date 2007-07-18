@@ -3814,7 +3814,7 @@ end:
   return err;
 }
 
-static caddr_t
+caddr_t
 ws_http_error_header (int code)
 {
   char * ret;
@@ -5731,7 +5731,6 @@ bif_soap_call_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *) qst;
   soap_ctx_t ssc;
   soap_call_ctx_t ctx;
-  IO_SECT(qst);
 
   memset (&ctx, 0, sizeof (soap_call_ctx_t));
   memset (&ssc, 0, sizeof (soap_ctx_t));
@@ -6009,6 +6008,8 @@ bif_soap_call_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (!err)
     {
+      volatile int parse_reply = 0;
+      IO_SECT(qst);
       strses_write_out (ctx.sc_soap_out, ctx.sc_http_client->hcctx_req_body);
       if (ctx.sc_return_req)
 	{
@@ -6037,6 +6038,9 @@ bif_soap_call_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       else if (one_way && (!ctx.sc_http_client->hcctx_resp_body || !*ctx.sc_http_client->hcctx_resp_body))
 	ret = NEW_DB_NULL;
       else
+	parse_reply = 1;
+      END_IO_SECT (err_ret);
+      if (parse_reply)
 	ret = soap_call_parse_reply (&ctx, qst, &err, &skeys);
     }
 
@@ -6070,7 +6074,6 @@ bif_soap_call_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  sqlr_resignal (err);
         }
     }
-  END_IO_SECT (err_ret);
   if (*err_ret)
     {
       dk_free_tree (ret);
