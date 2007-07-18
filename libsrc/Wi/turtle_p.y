@@ -319,7 +319,7 @@ blank
 
 blank_block_subj
         : 
-		{ dk_set_push (&(ttlp_arg->ttlp_saved_uris), (ptrlong)(ttlp_arg->ttlp_pred_is_reverse));
+		{ dk_set_push (&(ttlp_arg->ttlp_saved_uris), (void *)(ptrlong)ttlp_arg->ttlp_pred_is_reverse);
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_subj_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
@@ -335,7 +335,7 @@ blank_block_subj
 blank_block_seq
         :	
 		{ caddr_t top_bnode = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
-                  dk_set_push (&(ttlp_arg->ttlp_saved_uris), (ptrlong)(ttlp_arg->ttlp_pred_is_reverse));
+                  dk_set_push (&(ttlp_arg->ttlp_saved_uris), (void *)(ptrlong)(ttlp_arg->ttlp_pred_is_reverse));
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), top_bnode); /* This is for retval */
@@ -358,7 +358,7 @@ blank_block_formula
 	:
 		{
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_formula_iid);
-                  dk_set_push (&(ttlp_arg->ttlp_saved_uris), (ptrlong)(ttlp_arg->ttlp_pred_is_reverse));
+                  dk_set_push (&(ttlp_arg->ttlp_saved_uris), (void *)(ptrlong)ttlp_arg->ttlp_pred_is_reverse);
                   dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_subj_uri);
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_formula_iid = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
