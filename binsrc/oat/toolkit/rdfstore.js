@@ -12,6 +12,9 @@
 	rb = new OAT.RDFStore(callback, optObj);
 	rb.addURL(url,onstart,onend);
 	rb.addTriples(triples,href);
+	rb.addXmlDoc(xmlDoc,href);
+	rb.disable(url); // must be dereferenced! 
+	rb.enable(url); // must be dereferenced!
 	
 	rb.addFilter(OAT.RDFStoreData.FILTER_PROPERTY,"property","object");
 	rb.addFilter(OAT.RDFStoreData.FILTER_URI,"uri");
@@ -53,6 +56,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 			structured: [
 				{
 					uri:"uri",
+					type:"type uri", // shortcut only! 
 					ouri:"originating uri",
 					preds:{a:[0,1],...},
 					back:[] - list of backreferences
@@ -85,26 +89,61 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		var end = onend ? onend : self.options.ajaxEnd;
 		OAT.Dereference.go(url,cback,{type:OAT.AJAX.TYPE_TEXT,onend:end,onstart:start});
 	}
+	
+	this.addXmlDoc = function(xmlDoc,href) {
+		var triples = OAT.RDF.toTriples(xmlDoc);
+		/* sanitize triples */
+		for (var i=0;i<triples.length;i++) {
+			var t = triples[i];
+			t[2] = t[2].replace(/<script[^>]*>/gi,'');
+		}
+		self.addTriples(triples,href);
+	}
 		
 	this.addTriples = function(triples,href) {
 		var o = {
 			triples:triples,
-			href:href
+			href:href,
+			enabled:true
 		}
 		self.items.push(o);
 		self.rebuild(false);
 	}
 		
+	this.findIndex = function(url) {
+		for (var i=0;i<self.items.length;i++) {
+			var item = self.items[i];
+			if (item.href == url) { return i; }
+		}
+		return -1;
+	}
+	
 	this.clear = function() {
 		self.items = [];
 		self.rebuild(true);
 	}
 		
-	this.remove = function(index) {
+	this.remove = function(url) {
+		var index = self.findIndex(url);
+		if (index == -1) { return; }
 		self.items.splice(index,1);
 		self.rebuild(true);
 	}
 		
+	this.enable = function(url) {
+		var index = self.findIndex(url);
+		if (index == -1) { return; }
+		self.items[index].enabled = true;
+		self.rebuild(true);
+	}
+		
+	this.disable = function(url) {
+		var index = self.findIndex(url);
+		if (index == -1) { return; }
+		self.items[index].enabled = false;
+		self.rebuild(true);
+	}
+
 	this.rebuild = function(complete) {
 		var conversionTable = {};
 		
@@ -113,6 +152,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 			var s = triple[0];
 			var p = triple[1];
 			var o = triple[2];
+			var type = (p == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" ? o : false);
 			var cnt = self.data.all.length;
 			
 			if (s in conversionTable) { /* we already have this; add new property */
@@ -123,6 +163,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 				var obj = {
 					preds:{},
 					ouri:originatingURI,
+					type:"",
 					uri:s,
 					back:[]
 				}
@@ -130,17 +171,18 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 				conversionTable[s] = obj;
 				self.data.all.push(obj);
 			}
+			if (type) { obj.type = type; }
 		} /* add one triple to the structure */
 
 		/* 1. add all needed triples into structure */
 		var todo = [];
-		if (complete) {
+		if (complete) { /* complete = all */
 			self.data.all = [];
 			for (var i=0;i<self.items.length;i++) {
 				var item = self.items[i];
-				todo.push([item.triples,item.href]);
+				if (item.enabled) { todo.push([item.triples,item.href]); }
 			}
-		} else {
+		} else { /* not complete - only last item */
 			var item = self.items[self.items.length-1];
 			todo.push([item.triples,item.href]);
 		}

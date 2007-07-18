@@ -49,7 +49,7 @@ OAT.AJAX = {
 	abortAll:function() {
 		while (OAT.AJAX.requests.length) { OAT.AJAX.requests[0].abort(); }
 	},
-
+	
 	GET:function(url,data,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);
@@ -60,7 +60,7 @@ OAT.AJAX = {
 		if (!options.noSecurityCookie) {
 			url_ += "&";
 			var secure = OAT.AJAX.createCookie(); /* array of name & value */
-		url_ += secure[0]+"="+secure[1];
+			url_ += secure[0]+"="+secure[1];
 		}
 		xhr.open("GET",url_,options.async);
 		OAT.AJAX.send(xhr,null);
@@ -82,7 +82,7 @@ OAT.AJAX = {
 		xhr.open("PUT",url,options.async);
 		OAT.AJAX.send(xhr,data);
 		return xhr;
-	},
+},
 	
 	SOAP:function(url,data,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
@@ -151,12 +151,12 @@ OAT.AJAX = {
 	
 	send:function(xhr,data) {
 		function go() {
-		xhr.send(data);
-		try{
+			xhr.send(data);
+			try {
 				if (OAT.Browser.isGecko && !xhr.options.async && xhr.obj.onreadystatechange == null) {
-  		  OAT.AJAX.response(xhr);
+					OAT.AJAX.response(xhr);
 				}	
-		}catch (e){}
+			} catch (e) {}
 		}
 		for (var p in xhr.options.headers) { xhr.setRequestHeader(p,xhr.options.headers[p]); }
 
@@ -188,7 +188,7 @@ OAT.AJAX = {
 						xmlStr = xhr.getResponseText(); 
 						var xmlDoc = OAT.Xml.createXmlDoc(xmlStr);
 					} else { 
-						var xmlDoc = xhr.getResponseXML(); 
+						var xmlDoc = xhr.getResponseXML();
 						if (!xmlDoc) { xmlDoc = OAT.Xml.createXmlDoc(xhr.getResponseText()); }
 					}
 					xhr.callback(xmlDoc,headers);

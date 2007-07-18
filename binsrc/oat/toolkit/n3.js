@@ -14,10 +14,16 @@
  
  OAT.N3 = {
 	cleanComments:function(str) { /* remove comments */
-		return str.replace(/(\r|\n|[ \t]+)#.*/g,"");
+		var lines = str.split(/\r|\n/);
+		for (var i=0;i<lines.length;i++) {
+			lines[i] = lines[i].replace(/\t/g," ");
+			lines[i] = lines[i].replace(/^#.*$/g,"");
+			lines[i] = lines[i].replace(/ #[^"]+$/g,"");
+		}
+		return lines.join(" ");
 	},
 	tokenize:function(string) { /* convert to array */
-		var str = string.replace(/[\t\r\n]/g," ");
+		var str = string;
 		var arr = [];
 		var item = "";
 		var instring = false;
@@ -67,7 +73,7 @@
 						if (item) { arr.push(item); }
 						arr.push(ch);
 						item = "";
-					}
+					} else { item += ch; }
 				break;
 				
 				case " ":

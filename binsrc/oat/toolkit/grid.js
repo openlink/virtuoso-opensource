@@ -85,7 +85,7 @@ OAT.GridData = {
 					if (grid.header.cells[i].signal) {
 						index = i;
 						grid.header.cells[i].signalEnd();
-				}
+					}
 				}
 				if (index == -1) { return; } /* nothing signalled? wtf? */
 				
@@ -186,63 +186,61 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 		self.options.autoNumber = optObj;
 	}
 	if (allowHiding) { self.options.allowHiding = true; }
-
-	this.imagePath = OAT.Preferences.imagePath;
 	
 	this.div = $(element);
 	OAT.Dom.clear(self.div);
 	
 	this.init = function() {
 		if (self.options.allowHiding) { /* column hiding */
-		var hide = OAT.Dom.create("a");
-		hide.href = "#";
-		hide.innerHTML = "visible columns";
+			var hide = OAT.Dom.create("a");
+			hide.href = "#";
+			hide.innerHTML = "visible columns";
 			self.div.appendChild(hide);
 			self.propPage = OAT.Dom.create("div",{position:"absolute",border:"2px solid #000",padding:"2px",backgroundColor:"#fff"});
 			self.propPage.style.paddingRight = "16px";
 			document.body.appendChild(self.propPage);
 			OAT.Instant.assign(self.propPage);
 			var refresh = function() { self.propPage._Instant_hide(); }
-		var generatePair = function(index) {
-			var state = (self.header.cells[index].html.style.display != "none");
-			var pair = OAT.Dom.create("div");
-			var ch = OAT.Dom.create("input");
-			ch.type = "checkbox";
-			ch.checked = (state ? true : false);
-			ch.__checked = (state ? "1" : "0");
-			pair.appendChild(ch);
+			var generatePair = function(index) {
+				var state = (self.header.cells[index].html.style.display != "none");
+				var pair = OAT.Dom.create("div");
+				var ch = OAT.Dom.create("input");
+				ch.type = "checkbox";
+				ch.checked = (state ? true : false);
+				ch.__checked = (state ? "1" : "0");
+				pair.appendChild(ch);
 				var span  = OAT.Dom.create("span");
 				span.innerHTML = " "+self.header.cells[index].value.innerHTML;
 				pair.appendChild(span);
 				OAT.Event.attach(ch,"change",function(){
-				var newdisp = (self.header.cells[index].html.style.display == "none" ? "" : "none");
-				self.header.cells[index].html.style.display = newdisp;
-				for (var i=0;i<self.rows.length;i++) {
-					self.rows[i].cells[index].html.style.display = newdisp;
-				}
-			});
-			return pair;
-		}
-		var clickRef =  function(event) {
-				var coords = OAT.Event.position(event);
-			self.propPage.style.left = coords[0] + "px";
-			self.propPage.style.top = coords[1] + "px";
-			OAT.Dom.clear(self.propPage);
-			/* contents */
-			var close = OAT.Dom.create("div",{position:"absolute",top:"3px",right:"3px",cursor:"pointer"});
-			close.innerHTML = "X";
-				OAT.Event.attach(close,"click",refresh);
-			self.propPage.appendChild(close);
-			var start = (self.autoNumber ? 1 : 0);
-			for (var i=start;i<self.header.cells.length;i++) {
-				var pair = generatePair(i);
-				self.propPage.appendChild(pair);
+					var newdisp = (self.header.cells[index].html.style.display == "none" ? "" : "none");
+					self.header.cells[index].html.style.display = newdisp;
+					for (var i=0;i<self.rows.length;i++) {
+						self.rows[i].cells[index].html.style.display = newdisp;
+					}
+				});
+				return pair;
 			}
-			self.propPage._Instant_show();
-		} /* clickref */
+			var clickRef =  function(event) {
+				var coords = OAT.Event.position(event);
+				self.propPage.style.left = coords[0] + "px";
+				self.propPage.style.top = coords[1] + "px";
+				OAT.Dom.clear(self.propPage);
+				/* contents */
+				var close = OAT.Dom.create("div",{position:"absolute",top:"3px",right:"3px",cursor:"pointer"});
+				close.innerHTML = "X";
+				OAT.Event.attach(close,"click",refresh);
+				self.propPage.appendChild(close);
+				var start = (self.autoNumber ? 1 : 0);
+				for (var i=start;i<self.header.cells.length;i++) {
+					var pair = generatePair(i);
+					self.propPage.appendChild(pair);
+				}
+				self.propPage._Instant_show();
+			} /* clickref */
 			OAT.Event.attach(hide,"click",clickRef);
-	} /* if allowHiding */
-	
+		} /* if allowHiding */
+		
 		OAT.Dom.makePosition(self.div);
 		self.html = OAT.Dom.create("table");
 		OAT.Dom.addClass(self.html,"grid");
@@ -334,7 +332,7 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 			var a = row_a.cells[index].value.innerHTML;
 			var b = row_b.cells[index].value.innerHTML;
 			if (a == b) { return 0; }
-			return (parseInt(a) > parseInt(b) ? c1 : c2);
+			return (parseFloat(a) > parseFloat(b) ? c1 : c2);
 		}
 		var strCmp = function(row_a,row_b) {
 			var a = row_a.cells[index].value.innerHTML;
@@ -350,7 +348,7 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 		switch (coltype) {
 			case OAT.GridData.TYPE_STRING: cmp = strCmp; break;
 			case OAT.GridData.TYPE_NUMERIC: cmp = numCmp; break;
-			case OAT.GridData.TYPE_AUTO: cmp = (testValue == parseInt(testValue) ? numCmp : strCmp); break;
+			case OAT.GridData.TYPE_AUTO: cmp = (testValue == parseFloat(testValue) ? numCmp : strCmp); break;
 		}
 		self.rows.sort(cmp);
 		
@@ -469,7 +467,7 @@ OAT.GridHeaderCell = function(grid,params_,number) {
 		if (!w) {
 			self.value.style.width = "";
 			return;
-	}
+		}
 		if (!self.value.style.width || self.value.style.width == "auto") {
 			w -= parseInt(OAT.Style.get(self.value,"paddingLeft"));
 			w -= parseInt(OAT.Style.get(self.value,"paddingRight"));
@@ -553,7 +551,7 @@ OAT.GridHeaderCell = function(grid,params_,number) {
 			self.changeWidth(false);
 			for (var i=0;i<self.grid.rows.length;i++) {
 				self.grid.rows[i].cells[self.number].changeWidth(false);
-		}
+			}
 		}
 		OAT.Event.attach(mover,"mousedown",callback);
 		OAT.Event.attach(mover,"dblclick",nullCallback);
@@ -567,15 +565,15 @@ OAT.GridHeaderCell = function(grid,params_,number) {
 			var pos = OAT.Event.position(event);
 			OAT.GridData.x = pos[0];
 			self.grid.tmp_drag = false;
-	}
+		}
 		OAT.Event.attach(self.container,"mousedown",callback);
-	}	
-	
+	}
+
 	switch (self.options.align) {
 		case OAT.GridData.ALIGN_LEFT: self.html.style.textAlign = "left"; break;
 		case OAT.GridData.ALIGN_CENTER: self.html.style.textAlign = "center"; break;
 		case OAT.GridData.ALIGN_RIGHT: self.html.style.textAlign = "right"; break;
-	}
+	}	
 	
 	var mouseover = function(event) { OAT.Dom.addClass(self.html,"hover"); }
 	var mouseout = function(event) { OAT.Dom.removeClass(self.html,"hover"); }

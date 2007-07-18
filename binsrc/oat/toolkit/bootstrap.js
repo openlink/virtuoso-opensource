@@ -62,7 +62,9 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	dereference:"ajax2",
 	graphsidebar:"tree",
 	form:["ajax2","dialog","datasource","formobject","crypto"],
-	rssreader:"xml"
+	rssreader:"xml",
+	notify:"animation",
+	slidebar:"animation"
 }
 
 OAT.Loader.Files = { /* only those whose names differ */
@@ -143,9 +145,9 @@ OAT.LoaderTMP = { /* second part of loader */
 					} else { ok = true; }
 				} else { ok = true; }
 				if (ok) {
-				toExecute.push(OAT.Loader.loadCallbacks[i][1]);
-				done.push(i);
-			}
+					toExecute.push(OAT.Loader.loadCallbacks[i][1]);
+					done.push(i);
+				}
 			} /* if all prerequisities satisfied */
 		} /* for all pending callbacks */
 		

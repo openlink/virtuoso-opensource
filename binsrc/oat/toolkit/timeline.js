@@ -11,9 +11,9 @@
 /*
 	tl = new OAT.Timeline(contentDiv, paramsObj)
 	paramsObj = {
-		lineHeight:16,
+		lineHeight:16, 
 		bandHeight:20,
-		margins:200,
+		margins:200, 
 		sliderHeight:20,
 		resize:true,
 		formatter:true,
@@ -60,7 +60,7 @@ OAT.TimelineEvent = function(bandIndex,startTime,endTime,content,color,options) 
 		if (!options.noIntervals) {
 			this.intervalElm = OAT.Dom.create("div",{position:"absolute",left:"0px",top:"0px",height:"100%",backgroundColor:color});
 			OAT.Style.opacity(this.intervalElm,0.5);
-		this.elm.appendChild(this.intervalElm);
+			this.elm.appendChild(this.intervalElm);
 		}
 		var t = (options.timeTitleOverride ? options.timeTitleOverride(endTime) : endTime.toHumanString());
 		this.elm.title += " - "+t;
@@ -357,7 +357,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		/*               there are remaining evens                     timeline is to narrow           there are pending ends    */
 		} while (lastPlottedIndex < self.events.length-1 || self.width + self.options.margins < dims[0] || pendingEnds.length);
 	} /* OAT.Timeline::positionEvents() */
-			
+	
 	this.draw = function() {
 		if (!self.events.length) { 
 			self.drawFormatSelect();
@@ -420,7 +420,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 			self.elm.style.height = "100%";
 			self.content.style.height = (total+self.options.sliderHeight)+"px";
 		} else {
-		self.elm.style.height = total + "px";
+			self.elm.style.height = total + "px";
 			var dims = OAT.Dom.getWH(self.content);
 			self.port.style.height = (dims[1]-self.options.sliderHeight)+"px";
 		}

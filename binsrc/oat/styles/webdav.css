@@ -1,0 +1,139 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+ *
+ *  Copyright (C) 2005-2007 OpenLink Software
+ *
+ *  See LICENSE file for details.
+ */
+
+/* ------------------ toolbar ---------------- */
+@import url("grid.css");
+
+#dav_browser .toolbar {
+	margin: auto;
+	width: 99%;
+	background-color: #e1e1e1;
+	border:1px solid #cccccc;
+	height: 22px;
+	padding: 2px;
+
+}
+
+#dav_browser .toolbar_icon {
+	width: 20px;
+	height: 20px;
+	float: left;
+	margin-left: 1px;
+	cursor:pointer;
+
+}
+
+#dav_browser .toolbar_icon:hover {
+	border: 1px solid #000;
+}
+
+#dav_browser .toolbar_separator {
+	float: left;
+	width: 1px;
+	height: 19px;
+	background-color: #888;
+	border: 1px outset #aaa;
+	margin-top: 1px;
+}
+
+#dav_browser .toolbar_icon_down {
+	border: 1px solid #000;
+	background-color: #8af;
+
+}
+
+/* main part */
+
+#dav_path {
+	margin: 5px 3px;
+}
+
+#dav_main {
+	border: 1px solid #999;
+}
+
+#dav_tree {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	width: 200px;
+	overflow:auto;
+ 	background-color: #fff;
+}
+
+#dav_tree li {
+	margin-top: 3px;
+}
+
+#dav_tree span {
+	cursor: pointer;
+}
+
+
+#dav_tree .tree_li_selected  {
+	font-weight: bold;
+}
+
+#dav_tree .tree_ul_selected {
+	font-weight: normal !important;
+}
+
+
+.dav_item {
+	background-color: #eee;
+	width: 80px;
+	height: 65px;
+	padding-top: 15px;
+	float: left;
+	text-align: center;
+	overflow: hidden; 
+	margin: 5px;
+}
+
+.dav_item_selected {
+	background-color: #ddf;
+}
+
+#dav_splitter {
+	position: absolute;
+	left: 201px;
+	top:0px;
+	width: 5px;
+	background-color:#999;
+}
+
+#dav_right {
+	left: 207px;
+	top: 0px; 
+	width: 542px; 
+	overflow:auto;
+	position:relative; 
+	background-color: #fff;
+}
+
+#dav_right_content {
+	position: relative;
+	width: 522px;
+	height: 100%;
+}
+
+#dav_bottom {
+	text-align: right;
+	margin-top: 3px;
+	margin-right: 5px;
+}
+
+#dav_permissions {
+	border-collapse: collapse;
+}
+
+#dav_permissions td {
+	text-align: center;
+}

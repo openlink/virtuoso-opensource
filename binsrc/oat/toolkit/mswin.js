@@ -15,7 +15,7 @@
 
 OAT.MsWin = function(optObj) {
 	var self = this;
-	
+
 	OAT.WindowParent(this,optObj);
 	this.options.statusHeight = 16;
 	this.options.moveHeight = 16;
@@ -45,7 +45,6 @@ OAT.MsWin = function(optObj) {
 	if (this.resize) {
 		OAT.Dom.applyStyle(this.resize,{width:"10px",height:"10px",fontSize:"1px",position:"absolute",right:"0px",bottom:"0px",cursor:"nw-resize",backgroundImage:"url("+self.options.imagePath+"MsWin_resize.gif)"});
 	}
-
 }
 
 OAT.Loader.featureLoaded("mswin");

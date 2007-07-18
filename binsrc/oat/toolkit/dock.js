@@ -11,15 +11,17 @@
 	var d = new OAT.Dock(div,numColumns)
 	d.addObject(colIndex, content, options)
 
-	CSS: .dock, .dock_column_0 .. .dock_column_n-1, .dock_blank .dock_window .dock_header .dock_content
+	CSS: .dock, .dock_column, .dock_column_0 .. .dock_column_n-1, .dock_blank .dock_window .dock_header .dock_content
 */
 
-OAT.DockWindow = function(content,options) {
+OAT.DockWindow = function(content,options,dock) {
 	var self = this;
+	this.dock = dock;
 	this.options = {
 		color:"#55f",
 		titleColor:"#fff",
-		title:"Dock window"
+		title:"Dock window",
+		states:["&#x25b6;","&#x25bc;"]
 	}
 	for (var p in options) { self.options[p] = options[p]; }
 	this.state = 1;
@@ -29,22 +31,24 @@ OAT.DockWindow = function(content,options) {
 	this.header = OAT.Dom.create("div",{fontWeight:"bold",padding:"1px",color:self.options.titleColor,backgroundColor:self.options.color},"dock_header");
 
 	this.toggle = OAT.Dom.create("div",{styleFloat:"left",cssFloat:"left",width:"16px"});
-	this.toggle.innerHTML = "";
 	this.headerContent = OAT.Dom.create("span");
 	this.headerContent.innerHTML = self.options.title;
+	
+	this.close = OAT.Dom.create("span",{cursor:"pointer",cssFloat:"right",styleFloat:"right"});
+	this.close.innerHTML = "X";
+	OAT.Event.attach(self.close,"click",function(){self.dock.removeObject(self);});
 	
 	this.content = OAT.Dom.create("div",{padding:"3px"},"dock_content");
 	this.content.appendChild($(content));
 
-	OAT.Dom.append([self.header,self.toggle,self.headerContent],[self.div,self.header,self.content]);
+	OAT.Dom.append([self.header,self.toggle,self.close,self.headerContent],[self.div,self.header,self.content]);
 
 	/* toggling */
 	this.actualizeState = function() {
+		self.toggle.innerHTML = self.options.states[self.state];
 		if (self.state) {
-			self.toggle.innerHTML = "&ndash;";
 			OAT.Dom.show(self.content);
 		} else {
-			self.toggle.innerHTML = "+";
 			OAT.Dom.hide(self.content);
 		}
 	}
@@ -54,16 +58,10 @@ OAT.DockWindow = function(content,options) {
 		self.actualizeState();
 	}
 	
-	var outRef = function() {
-		self.toggle.innerHTML = "&#9786;";
-	};	
 	
 	OAT.Dom.attach(self.toggle,"click",toggleRef);	
-	OAT.Dom.attach(self.toggle,"mouseover",self.actualizeState);
-	OAT.Dom.attach(self.toggle,"mouseout",outRef);
 
-	this.actualizeState();
-	outRef();
+	self.actualizeState();
 }
 
 OAT.Dock = function(div,numColumns) {
@@ -74,12 +72,12 @@ OAT.Dock = function(div,numColumns) {
 	this.windows = [];
 	this.dummies = [];
 	this.gd = new OAT.GhostDrag();
+	
 	this.ghost = OAT.Dom.create("div",{border:"1px dashed #000",position:"absolute",display:"none"});
 	document.body.appendChild(this.ghost);
 	this.lock = 0;
 	for (var i=0;i<numColumns;i++) {
-		var col = OAT.Dom.create("div");
-		col.className = "dock_column_"+i;
+		var col = OAT.Dom.create("div",{position:"relative"},"dock_column dock_column_"+i);
 		this.columns.push(col);
 		this.div.appendChild(col);
 		var dummie = OAT.Dom.create("div",{border:"none",margin:"0px",padding:"0px",backgroundColor:"transparent"});
@@ -87,31 +85,35 @@ OAT.Dock = function(div,numColumns) {
 		this.gd.addTarget(dummie);
 	}
 	
-	this.startDrag = function(w) {
+	for (var i=0;i<numColumns;i++) {
+		var neco = OAT.Dom.create("div",{position:"absolute",top:"0px",right:"-5px",width:"10px",height:"100%"});
+		this.columns[i].appendChild(neco);
+		
+		if (OAT.Browser.isIE) {
+			neco.style.height = "";
+			neco.className = "IEHeightFix";
+		}
+		
+		OAT.Resize.create(neco,this.columns[i],OAT.Resize.TYPE_X);
+	}
+	
+	this.startDrag = function(sender, msg, elm) {
 		self.lock = 1;
-		var dims = OAT.Dom.getWH(w.div);
+		var dims = OAT.Dom.getWH(elm);
 		for (var i=0;i<self.columns.length;i++) { 
 			self.columns[i].appendChild(self.dummies[i]);
 			self.dummies[i].style.height = dims[1] + "px";
 		}
-		
 	}
 	
 	this.endDrag = function() {
 		self.lock = 0;
 		OAT.Dom.hide(self.ghost);
-		/* 
-			hack: 
-			when we unlink dummies right after depressing mouse, 
-			ghostdrag won't register a successful drop on them,
-			so we have to delay it a little bit
-		*/	
-		var hideRef = function() {
-			for (var i=0;i<self.columns.length;i++) { OAT.Dom.unlink(self.dummies[i]); }
-		}
-		
-		/* setTimeout(hideRef,500); */ /* commenting this solved some unknown issue ;) */
+		for (var i=0;i<self.columns.length;i++) { OAT.Dom.unlink(self.dummies[i]); }
 	}
+	OAT.MSG.attach(self.gd,OAT.MSG.GD_END,self.endDrag);
+	OAT.MSG.attach(self.gd,OAT.MSG.GD_ABORT,self.endDrag);
+	OAT.MSG.attach(self.gd,OAT.MSG.GD_START,self.startDrag);
 	
 	this.move = function(mover,target) { /* finally moving the panel 'mover' to place 'target' */
 		if (mover == target) { return; }
@@ -196,7 +198,7 @@ OAT.Dock = function(div,numColumns) {
 	}
 	
 	this.addObject = function(colIndex,content,options) {
-		var w = new OAT.DockWindow(content,options);
+		var w = new OAT.DockWindow(content,options,self);
 		self.windows.push(w);
 		
 		w.header.style.cursor = "pointer";
@@ -207,18 +209,23 @@ OAT.Dock = function(div,numColumns) {
 			elm.style.width = dim[0]+"px";
 			elm.style.height = dim[1]+"px";
 			elm.style.border = "1px solid #000";
-			OAT.Dom.attach(elm,"mouseup",self.endDrag);
 		}
 		
 		var callback = function(target,x,y) { self.move(w.div,target); }
 		this.gd.addSource(w.header,postProcess,callback);
 		this.gd.addTarget(w.div);
-		
-		OAT.Dom.attach(w.header,"mousedown",function(){self.startDrag(w);});
-		OAT.Dom.attach(w.header,"mouseup",self.endDrag);
-		
 	}
 	
+	this.removeObject = function(win) {
+		var index = self.windows.find(win);
+		self.windows.splice(index,1);
+		
+		OAT.Dom.unlink(win.div);
+		var w = new OAT.DockWindow(content,options,self);
+		self.gd.removeSource(win.header);
+		self.gd.removeTarget(win.div);
+	}
+
 	OAT.Dom.attach(document,"mousemove",self.check);
 }
 OAT.Loader.featureLoaded("dock");

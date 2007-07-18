@@ -65,14 +65,14 @@ OAT.Instant = function(element, optObj) {
 		var e = $(elm);
 		var i = self.handles.find(e);
 		if (i != -1) { self.handles.splice(i,1); }
-		}
+	}
 	
 	self.elm._Instant_show = self.show;
 	self.elm._Instant_hide = self.hide;
 	self.hide();
 	OAT.Dom.attach(document,"mousedown",self.check);
 	
-	}
+}
 
 OAT.Instant.assign = function(something, callback) { /* backward compatibility */
 	var obj = new OAT.Instant(something, {hideCallback:callback});

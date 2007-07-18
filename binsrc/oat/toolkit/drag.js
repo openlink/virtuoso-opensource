@@ -78,19 +78,19 @@ OAT.Drag = {
 				if (check(ny+ndims[1],mpos[1]+mdims[1])) { element.style.top = (mpos[1]+mdims[1]-ndims[1])+"px"; magnetOK = false; break; }
 			}
 		}
-
+		
 		/* perform dragging */
 		if (checkOK && magnetOK) {
 			for (var i=0;i<movers.length;i++) {
-			var element = movers[i][0];
-			var options = movers[i][1];
-			if (options.moveFunction) { options.moveFunction(dx,dy); } else {
-				switch (options.type) {
-					case OAT.Drag.TYPE_X: OAT.Dom.moveBy(element,dx,0); break;
-					case OAT.Drag.TYPE_Y: OAT.Dom.moveBy(element,0,dy); break;
-					case OAT.Drag.TYPE_XY: OAT.Dom.moveBy(element,dx,dy); break;
-				} /* switch */
-			} /* if not custom move function */
+				var element = movers[i][0];
+				var options = movers[i][1];
+				if (options.moveFunction) { options.moveFunction(dx,dy); } else {
+					switch (options.type) {
+						case OAT.Drag.TYPE_X: OAT.Dom.moveBy(element,dx,0); break;
+						case OAT.Drag.TYPE_Y: OAT.Dom.moveBy(element,0,dy); break;
+						case OAT.Drag.TYPE_XY: OAT.Dom.moveBy(element,dx,dy); break;
+					} /* switch */
+				} /* if not custom move function */
 			} /* for all movers */
 			OAT.Drag.mouse_x = event.clientX;
 			OAT.Drag.mouse_y = event.clientY;

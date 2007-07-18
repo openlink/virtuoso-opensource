@@ -66,7 +66,7 @@ OAT.MacWin = function(optObj) {
 		if (y >= 0) { self.div.style.top = (y+self.options.moveHeight) + "px"; }
 		if (y < 0) { self.div.style.bottom = (-y) + "px"; }
 	}
-
+	
 	this.closeBtn = OAT.Dom.create("div",{cssFloat:"left",styleFloat:"left",fontSize:"1px",marginTop:"5px",marginRight:"1px",width:"13px",height:"13px",backgroundImage:"url("+self.options.imagePath+"MacWin_blank.gif)"});
 	this.minBtn = OAT.Dom.create("div",{cssFloat:"left",styleFloat:"left",fontSize:"1px",marginTop:"5px",marginRight:"1px",width:"13px",height:"13px",backgroundImage:"url("+self.options.imagePath+"MacWin_blank.gif)"});
 	this.maxBtn = OAT.Dom.create("div",{cssFloat:"left",styleFloat:"left",fontSize:"1px",marginTop:"5px",marginRight:"1px",width:"13px",height:"13px",backgroundImage:"url("+self.options.imagePath+"MacWin_blank.gif)"});

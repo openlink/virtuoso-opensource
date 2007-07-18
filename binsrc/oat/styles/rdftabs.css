@@ -1,0 +1,141 @@
+/* browser */
+
+.rdf_data {
+	width: 100%;
+	margin-top: 1em;
+	padding-bottom: 10px;
+}
+
+.rdf_sort {
+	padding-bottom: 10px;
+	background: url(../images/bottom_bkg_grad.png);
+	background-repeat: repeat-x;
+	background-position: bottom
+}
+
+.rdf_item h3 {
+	margin-top: 10px
+}
+
+.rdf_item {
+	padding: 10px;
+	padding-top: 0px;
+	width: 90%;
+	clear: both;
+	border: 1px solid #888;
+	margin: 0.5em;
+	background-color: #eee;
+	overflow: hidden;
+}
+
+.rdf_group {
+	background-color: #ddd
+}
+
+.rdf_clear {
+	clear:left
+}
+	
+/* timeline */
+.rdf_tl_port {
+	position: relative;
+	height: 100%
+}
+
+.rdf_tl_slider {
+	height: 20px;
+	margin-top: 5px;
+	position: relative
+}
+
+.timeline {
+	background-color: #fff;
+}
+
+/* images */
+
+.rdf_image {
+	border: 1px solid #aaa;
+	margin: auto;
+	padding: 0.3em;
+}
+
+.rdf_image:hover {
+	border: 1px solid #555;
+	cursor: pointer;
+}
+
+/* navigation */
+
+.rdf_nav div {
+	margin: 2px 5px;
+	float: left;
+}
+
+/* navigation - spotlight table */
+
+.rdf_nav_spotlight {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 1em 0em;
+}
+
+.rdf_nav_spotlight td {
+	padding: 2px 3px;
+}
+
+.rdf_nav_header {
+	color: #fff;
+	font-weight: bold;
+	background-color: #59e;
+	border-bottom: 1px solid #fff;
+	cursor: pointer;
+}
+
+.rdf_nav_desc {
+	font-size: 90%;
+}
+
+.rdf_nav_toggle {
+	color: #59e;
+}
+
+/* navigation - links */
+
+.rdf_link {
+	color: inherit;
+	border-bottom: 1px dotted #000;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.rdf_link:hover {
+	border-bottom: 1px solid #000;
+	color: #000;
+}
+
+.rdf_nav_spotlight a {
+	color: inherit;
+}
+
+.rdf_nav_spotlight a:hover {
+	color: #000;
+}
+
+/* tag cloud */
+
+.rdf_tagcloud {
+	width: 50%;
+	font-size: 120%;
+	text-align: justify;
+}
+
+.rdf_tagcloud a {
+	text-decoration: none;
+}
+
+/* fresnel */
+
+.fresnel_property .fresnel_container {
+	display: inline;
+}

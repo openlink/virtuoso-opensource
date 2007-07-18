@@ -11,6 +11,7 @@
 /*
 	rm = new OAT.RDFMini("div",optObj);
 	rm.open(url);
+	rm.search(string);
 */
 
 OAT.RDFMini = function(div,optObj) {
@@ -22,12 +23,13 @@ OAT.RDFMini = function(div,optObj) {
 			["browser","Browser",{removeNS:true}],
 			["triples","Raw Triples",{}],
 			["svg","SVG Graph",{}],
-			["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y}],
+			["map","Yahoo Map",{provider:2}],
 			["timeline","Timeline",{}],
 			["images","Images",{}],
 			["tagcloud","Tag Cloud",{}]
 		],
 		querySearchURI:false,
+		showSearch:true,
 		imagePath:OAT.Preferences.imagePath,
 		endpoint:"/sparql?query="
 	}
@@ -48,8 +50,8 @@ OAT.RDFMini = function(div,optObj) {
 		self.open(url);
 	}
 	
-	this.search = function() {
-		var s = $v(self.searchInput);
+	this.search = function(str) {
+		var s = (str ? str : $v(self.searchInput));
 		if (!s.trim()) { return; }
 		if (s.match(/^http/i)) {
 			if (self.options.querySearchURI) {
@@ -79,7 +81,7 @@ OAT.RDFMini = function(div,optObj) {
 		var btn = OAT.Dom.create("img",{cursor:"pointer",verticalAlign:"middle"});
 		btn.src = self.options.imagePath+"RDF_search.gif";
 		btn.title = "Search";
-		OAT.Dom.append([s,inp,btn],[self.parent,s]);
+		if (self.options.showSearch) { OAT.Dom.append([s,inp,btn],[self.parent,s]); }
 		OAT.Dom.attach(btn,"click",self.search);
 		OAT.Dom.attach(inp,"keypress",function(e) { if (e.keyCode == 13) { self.search(); } });
 		self.searchInput = inp;
@@ -134,7 +136,7 @@ OAT.RDFMini = function(div,optObj) {
 	this.store = new OAT.RDFStore(self.reset,{ajaxStart:ajaxStart,ajaxEnd:ajaxEnd});
 	this.data = self.store.data;
 
-	this.getContent = function(data_,forbid) {
+	this.getContent = function(data_,disabledActions) {
 		var content = false;
 		var data = (typeof(data_) == "object" ? data_.uri : data_);
 		var type = self.getContentType(data);
@@ -144,7 +146,7 @@ OAT.RDFMini = function(div,optObj) {
 				content = OAT.Dom.create("img");
 				content.title = data;
 				content.src = data;
-				self.createAnchor(content,data,forbid);
+				self.processLink(content,data);
 			break;
 			case 2:
 				content = OAT.Dom.create("a");
@@ -157,24 +159,20 @@ OAT.RDFMini = function(div,optObj) {
 				var a = OAT.Dom.create("a");
 				a.innerHTML = data;
 				a.href = data;
-				self.createAnchor(a,data,forbid);
-				var imglist = self.generateImageActions(data);
-				OAT.Dom.append([content,a,imglist]);
+				content.appendChild(a);
+				self.processLink(a,data,disabledActions);
 			break;
 			default:
 				content = OAT.Dom.create("span");
 				content.innerHTML = data;
 				/* create dereference a++ lookups for all anchors */
-				var anchors = content.getElementsByTagName("a");
+				var anchors_ = content.getElementsByTagName("a");
+				var anchors = [];
+				for (var j=0;j<anchors_.length;j++) { anchors.push(anchors_[j]); }
 				for (var j=0;j<anchors.length;j++) {
 					var a = anchors[j];
 					if (a.href.match(/^http/)) {
-						self.createAnchor(a,a.href); 
-						var imglist = self.generateImageActions(a.href);
-						var next = a.nextSibling;
-						for (var k=0;k<imglist.length;k++) {
-							a.parentNode.insertBefore(imglist[k],next);
-						}
+						self.processLink(a,a.href); 
 					}
 				}
 			break;
@@ -186,8 +184,7 @@ OAT.RDFMini = function(div,optObj) {
 	this.getContentType = self.store.getContentType;
 	this.getTitle = self.store.getTitle;
 	this.getURI = self.store.getURI;
-	this.createAnchor = function(){};
-	this.generateImageActions = function(){return [];};
+	this.processLink = function(domNode,href,disabledActions){};
 
 	this.init();
 }

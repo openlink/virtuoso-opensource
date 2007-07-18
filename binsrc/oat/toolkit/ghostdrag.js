@@ -66,12 +66,12 @@ OAT.GhostDragData = {
 		var elm = OAT.GhostDragData.lock;
 		var obj = elm.object;
 		if (obj.pending) {
-			OAT.MSG.send(obj,OAT.MSG.GD_START,elm);
 			/* create the duplicate */
 			document.body.appendChild(elm);
 			elm.style.zIndex = 2000;
 			if (obj.process) { obj.process(elm); }
 			obj.pending = 0;
+			OAT.MSG.send(obj,OAT.MSG.GD_START,elm);
 		}
 		/*
 			selection sukz. detect it and remove!

@@ -195,7 +195,7 @@ OAT.AnimationOpacity = function(element, optionsObject) {
 		OAT.Style.opacity(a.elm,self.options.opacity);
 	}
 	o.conditionFunction = function(a) {
-		var ok = (a.sign > 0 ? a.opacity >= self.options.opacity : a.opacity <= self.options.opacity);
+		var ok = (a.sign > 0 ? a.opacity+0.0001 >= self.options.opacity : a.opacity-0.0001 <= self.options.opacity);
 		return ok;	
 	}
 	o.stepFunction = function(a) {

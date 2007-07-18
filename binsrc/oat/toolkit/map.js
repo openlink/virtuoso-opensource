@@ -124,7 +124,7 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 	}
 	
 	/* --- map methods --- */
-	
+
 	this.geoCode = function(addr,callback) {
 		
 		var cb = function(results) {
@@ -504,8 +504,10 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 		switch (self.provider) {
 			case OAT.MapData.TYPE_G: 
 				var icon = new GIcon(G_DEFAULT_ICON,file);
+				icon.shadow = false;
+				icon.printShadow = false;
+				icon.printImage = false;
 				if (w && h) { icon.iconSize = new GSize(w,h); }
-				icon.shadow = "";
 				var marker = new GMarker(new GLatLng(lat,lon),icon);
 				self.obj.addOverlay(marker);
 				if (clickCallback) { GEvent.addListener(marker,'click',function(event){clickCallback(marker,event);}); }

@@ -8,6 +8,9 @@
  *  See LICENSE file for details.
  */
 /*
+	var txt = OAT.Xml.escape(xml);
+	var xml = OAT.Xml.unescape(txt);
+
 	var txt = OAT.Xml.textValue(elem)
 	var txt = OAT.Xml.localName(elem)
 	var arr = OAT.Xml.childElements(elm)
@@ -206,6 +209,9 @@ OAT.Xml = {
 	removeDefaultNamespace:function(xmlText) {
 		var xml = xmlText.replace(/xmlns="[^"]*"/g,"");
 		return xml;
-	}
+	},
+	
+	escape:OAT.Dom.toSafeXML,
+	unescape:OAT.Dom.fromSafeXML
 }
 OAT.Loader.featureLoaded("xml");

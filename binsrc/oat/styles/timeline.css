@@ -1,0 +1,41 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+ *
+ *  Copyright (C) 2005-2007 OpenLink Software
+ *
+ *  See LICENSE file for details.
+ */
+
+.timeline {
+	background-color: #cdf;
+	font: menu;
+}
+
+.timeline_port {
+	border: 1px solid #000;
+}
+
+.timeline_slider {
+	position: absolute;
+	width: 11px;
+	height: 21px;
+	top: 0px;
+	background-image: url("/DAV/JS/images/Slider.gif");
+	cursor: w-resize;
+}
+
+.timeline_bar {
+	border-left: 1px solid #bce;
+}
+
+.timeline_date {
+	color: #888;
+}
+
+.timeline_band {
+	opacity: 0.7;
+	filter: alpha(opacity=70);
+	border-bottom: 1px solid #000;
+}

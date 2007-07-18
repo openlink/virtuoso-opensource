@@ -35,8 +35,8 @@ OAT.GraphSVGData = {
 		if (!OAT.GraphSVGData.graph) return;
 		var g = OAT.GraphSVGData.graph;
 		var coef = g.svg.getCTM().a;
-		var dx = (event.clientX - OAT.GraphSVGData.mouse_x) /coef;
-		var dy = (event.clientY - OAT.GraphSVGData.mouse_y) /coef;
+		var dx = (event.clientX - OAT.GraphSVGData.mouse_x) / coef;
+		var dy = (event.clientY - OAT.GraphSVGData.mouse_y) / coef;
 		
 		function apply(n,recurse) {
 			n.x += dx;
@@ -52,14 +52,14 @@ OAT.GraphSVGData = {
 		} else {
 			if (g.options.projection) {
 				for (var i=0;i<g.data.length;i++) { /* shift all nodes */
-				var node = g.data[i];
-				apply(node,false);
-			}
+					var node = g.data[i];
+					apply(node,false);
+				}
 			} else { /* shift canvas */
 				g.transform.x += dx;
 				g.transform.y += dy;
 				g.applyTransform();
-		}
+			}
 		}
 		g.drawUpdate(false); /* only changed nodes */
 		OAT.GraphSVGData.mouse_x = event.clientX;
@@ -529,13 +529,13 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 		self.div.appendChild(self.control);
 		
 		if (self.options.sidebar) {
-		var st = OAT.Dom.create("input");
-		st.type = "button";
-		self.control.appendChild(st);
-		OAT.Dom.attach(st,"click",self.sidebar.toggle);
-		self.options.sidebarShown = !self.options.sidebarShown;
-		self.sidebar.create(st);
-		self.sidebar.toggle();
+			var st = OAT.Dom.create("input");
+			st.type = "button";
+			self.control.appendChild(st);
+			OAT.Dom.attach(st,"click",self.sidebar.toggle);
+			self.options.sidebarShown = !self.options.sidebarShown;
+			self.sidebar.create(st);
+			self.sidebar.toggle();
 		}
 		
 		var ds = self.options.disabledSelects;
@@ -665,20 +665,20 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			var node = self.data[i];
 			if (!total && !node.needsRedraw) { continue; }
 			if (self.data[i].visible.total) {
-			if (!node.svg.parentNode) { self.svg.appendChild(node.svg); }
-			switch (node.type) {
-				case 0:
+				if (!node.svg.parentNode) { self.svg.appendChild(node.svg); }
+				switch (node.type) {
+					case 0:
 						node.svg.setAttribute("x",node.draw_x-node.radius);
 						node.svg.setAttribute("y",node.draw_y-node.radius);
-				break;
-				case 1:
+					break;
+					case 1:
 						node.svg.setAttribute("cx",node.draw_x);
 						node.svg.setAttribute("cy",node.draw_y);
-				break;
-			} /* switch */
-		/* if not visible and still present, unlink svg element */
-		} else if (self.data[i].svg.parentNode) { OAT.Dom.unlink(self.data[i].svg);	}
-	}
+					break;
+				} /* switch */
+			/* if not visible and still present, unlink svg element */
+			} else if (self.data[i].svg.parentNode) { OAT.Dom.unlink(self.data[i].svg);	}
+		}
 	}
 
 	this.drawEdges = function(total) { /* DRAW EDGES phase */
@@ -686,37 +686,37 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 			e.visible.total = (node1.visible.total || node2.visible.total) && e.visible.sidebar1 && e.visible.sidebar2 && e.visible.sidebar3;
 			if (e.visible.total) {
 				if (!e.svg.parentNode) { self.svg.appendChild(e.svg); }
-					var dx = node2.draw_x - node1.draw_x;
-					var dy = node2.draw_y - node1.draw_y;
-					var a = Math.atan2(dy,dx);
-					var p1 = node1.radius + self.options.vertexPadding;
-					var p2 = node2.radius + self.options.vertexPadding;
-					var x1 = node1.draw_x + p1 * Math.cos(a);
-					var y1 = node1.draw_y + p1 * Math.sin(a);
-					var x2 = node2.draw_x - p2 * Math.cos(a);
-					var y2 = node2.draw_y - p2 * Math.sin(a);
-					e.x1 = x1;
-					e.x2 = x2;
-					e.y1 = y1;
-					e.y2 = y2;
-					e.n1vis = node1.visible.total;
-					e.n2vis = node2.visible.total;
-					/* update position/style */
-					if (node1 == node2) {
-						e.svg.setAttribute("d","M "+x1+" "+y1+" A "+(node1.radius * 2)+" "+(node1.radius * 2)+" 0 1 0 "+x2+" "+y2);
-					} else {
-						e.svg.setAttribute("x1",x1);
-						e.svg.setAttribute("x2",x2);
-						e.svg.setAttribute("y1",y1);
-						e.svg.setAttribute("y2",y2);
-						if (!e.n1vis || !e.n2vis) {
-							e.svg.setAttribute("stroke-dasharray","3,3");
-						} else { 
-							e.svg.setAttribute("stroke-dasharray","1,0");
-						}
+				var dx = node2.draw_x - node1.draw_x;
+				var dy = node2.draw_y - node1.draw_y;
+				var a = Math.atan2(dy,dx);
+				var p1 = node1.radius + self.options.vertexPadding;
+				var p2 = node2.radius + self.options.vertexPadding;
+				var x1 = node1.draw_x + p1 * Math.cos(a);
+				var y1 = node1.draw_y + p1 * Math.sin(a);
+				var x2 = node2.draw_x - p2 * Math.cos(a);
+				var y2 = node2.draw_y - p2 * Math.sin(a);
+				e.x1 = x1;
+				e.x2 = x2;
+				e.y1 = y1;
+				e.y2 = y2;
+				e.n1vis = node1.visible.total;
+				e.n2vis = node2.visible.total;
+				/* update position/style */
+				if (node1 == node2) {
+					e.svg.setAttribute("d","M "+x1+" "+y1+" A "+(node1.radius * 2)+" "+(node1.radius * 2)+" 0 1 0 "+x2+" "+y2);
+				} else {
+					e.svg.setAttribute("x1",x1);
+					e.svg.setAttribute("x2",x2);
+					e.svg.setAttribute("y1",y1);
+					e.svg.setAttribute("y2",y2);
+					if (!e.n1vis || !e.n2vis) {
+						e.svg.setAttribute("stroke-dasharray","3,3");
+					} else { 
+						e.svg.setAttribute("stroke-dasharray","1,0");
 					}
-				/* if not visible and still present, unlink svg element */
-				} else if (e.svg.parentNode) { OAT.Dom.unlink(e.svg); }
+				}
+			/* if not visible and still present, unlink svg element */
+			} else if (e.svg.parentNode) { OAT.Dom.unlink(e.svg); }
 		}
 	
 		var len1 = self.data.length;
@@ -764,8 +764,8 @@ OAT.GraphSVG = function(div,vertices,edges,optObj) { /* constructor */
 				var e = n.outEdges[j];
 				if (total || e.vertex1.needsRedraw || e.vertex2.needsRedraw) {
 					if (e.label.visible && e.visible.total) { drawSub(e,1); } else { removeSub(e); }
-		}
-	}
+				}
+			}
 		} /* for all data */
 	}
 	

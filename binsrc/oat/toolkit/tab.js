@@ -237,7 +237,7 @@ OAT.Tab = function(elm,optObj) {
 			tab.deactivate();
 		}
 	};
-
+	
 	this.go = function(something,forbidCallback) {
 		self.clear();
 		var index = (typeof(something) == "object" ? self.tabs.find(something) : something);
@@ -261,7 +261,7 @@ OAT.Tab = function(elm,optObj) {
 			}
 		}
 		if (index == -1) { return; }
-	
+		
 		var decreaseIndex = false;
 		if (index < self.selectedIndex) { decreaseIndex = true; }
 		if (index == self.selectedIndex) {

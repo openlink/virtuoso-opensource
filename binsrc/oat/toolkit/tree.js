@@ -74,13 +74,13 @@ OAT.TreeNode = function(li,ul,parent,root) {
 			var nn = n.nextSibling;
 			self._label.appendChild(n);
 			n = nn;
-		} 
+		}
 		OAT.Dom.clear(self.li);
 		OAT.Dom.append([self._gdElm,self._label],[self._div,self._gdElm],[self.li,self._div]);
 		if (self.ul) { 
 			self.li.appendChild(self.ul); 
 		}
-		}
+	}
 	
 	if (self.ul) { /* margin & padding */
 		self.ul.style.margin = "0px";
@@ -100,7 +100,7 @@ OAT.TreeNode = function(li,ul,parent,root) {
 		}
 		self._gdElm.insertBefore(self.checkbox,self._label); /* instead of icon */
 	}
-	
+
 	if (self.li) { /* custom image */
 		for (var i=0;i<self.li.attributes.length;i++) {
 			var a = self.li.attributes[i];
@@ -389,10 +389,10 @@ OAT.TreeNode = function(li,ul,parent,root) {
 	this.collapse = function() {
 		/* check children for selection. if at lease one descendant is selected, select this node */
 		if (self.options.ascendSelection) {
-		var list = self.testForSelected();
-		var willSelect = (list.length > 1 || (list.length == 1 && list[0] != self));
-		for (var i=0;i<list.length;i++) if (list[i] != self) { list[i].deselect(); }
-		if (!self.selected && willSelect) { self.select(); }
+			var list = self.testForSelected();
+			var willSelect = (list.length > 1 || (list.length == 1 && list[0] != self));
+			for (var i=0;i<list.length;i++) if (list[i] != self) { list[i].deselect(); }
+			if (!self.selected && willSelect) { self.select(); }
 		}
 		self.state = 0;
 		self.updateStyle();

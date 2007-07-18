@@ -36,21 +36,21 @@ OAT.WebDav = {
 	},
 	displayMode:0, /* details / icons */
 	mode:0, /* open / save */
-
+	
 /* basic api */
-
+	
 	openDialog:function(optObj) { /* open in browse file mode */
 		this.dom.ok.value = "Open";
 		this.mode = 0;
 		this.commonDialog(optObj);
 		OAT.Dom.hide("dav_permissions");
 	},
-
+	
 	saveDialog:function(optObj) { /* open in save file mode */
 		this.dom.ok.value = "Save";
 		this.mode = 1;
 		this.commonDialog(optObj);
-
+		
 		var state = [1,1,0,1,0,0,1,0,0];
 		this.dom.perms[2].disabled = true;
 		this.dom.perms[5].disabled = true;
@@ -59,19 +59,19 @@ OAT.WebDav = {
 			this.dom.perms[i].checked = (state[i] == 1);
 		}
 	},
-
+	
 /* standard methods */
 
 	openDirectory:function(newDir,treeOnly,treeNode) { /* try to open a path */
 		var dir = newDir;
 		if (dir.substring(newDir.length-1) != "/") { dir += "/"; } /* add trailing slash */
-
+		
 		var error = function(xhr) {
 			var p = prompt("Cannot change directory to "+dir+".\n Please specify other directory.",OAT.WebDav.options.pathFallback);
 			if (!p) { return; }
 			OAT.WebDav.openDirectory(p);
 		} /* error callback */
-
+		
 		var callback = function() {
 			if (treeOnly) { return; }
 			OAT.WebDav.options.path = dir;
@@ -95,29 +95,22 @@ OAT.WebDav = {
 			this.requestDirectory(dir,callback,error,endRef);
 		}
 	},
-
-	useFile:function(_path,_file) { /* finish */	
 	
+	useFile:function(_path,_file) { /* finish */	
 		if (_path || _file) {
 			var p = _path;
 			var f = _file;
-          }else{
+		} else {
 			var p = this.options.path;
 			var f = this.dom.file.value;
-  }
-
-		var item = this.fileExists(f);
-		if (item && item.dir) {
-			this.openDirectory(p+f);
-			return;
-}
+		}
 
 		if (this.mode == 0) { /* open */
 			var path = p + f;
 			var error = function(xhr) {
 				var desc = OAT.WebDav.genericError(xhr,path);
 				alert('Error while trying to open file.\n'+desc);
-      }
+			}
 			var url = path + '?'+ new Date().getMilliseconds();
 			var o = {
 				auth:OAT.AJAX.AUTH_BASIC,
@@ -125,14 +118,14 @@ OAT.WebDav = {
 				password:this.options.pass,
 				type:OAT.AJAX.TYPE_TEXT,
 				onerror:error
-    }
+			}
 			var response = function(data) {
 				OAT.Dom.hide(OAT.WebDav.window.div);
 				if (OAT.WebDav.options.callback) { OAT.WebDav.options.callback(p,f,data); }
-  }
+			}
 			OAT.AJAX.GET(url,false,response,o);
-  }
-
+		}
+		
 		if (this.mode == 1) { /* save */
 			var id = false;
 			if (this.options.isDav) {
@@ -146,53 +139,53 @@ OAT.WebDav = {
 				}
 				if (!c) { return; }
 				id = ext[0];
-  }
-
+			}
+			
 			/* ready to save */
 			var response = function() {
 				if (OAT.WebDav.options.isDav) { OAT.WebDav.updatePermissions(p+f); }
 				OAT.Dom.hide(OAT.WebDav.window.div);
 				if (OAT.WebDav.options.callback) { OAT.WebDav.options.callback(p,f); }
-}
+			}
 
 			if (!this.options.dataCallback) {
 				response();
 				return; 
-    }
+			}
 			var data = this.options.dataCallback(f,id);
 			var error = function(xhr) {
 				var desc = OAT.WebDav.genericError(xhr,p+f);
 				alert('Error while trying to save file.\n'+desc);
-  }
+			}
 			var o = {
 				auth:OAT.AJAX.AUTH_BASIC,
 				user:this.options.user,
 				password:this.options.pass,
 				type:OAT.AJAX.TYPE_TEXT,
 				onerror:error
-}
+			}
 			var r = f.match(/\.([^\.]+)$/); /* content type */
 			if (r) { /* has extension */
 				var ext = r[1];
 				for (var i=0;i<this.options.extensionFilters.length;i++) {
 					var filter = this.options.extensionFilters[i];
 					if (filter[1] == ext && filter.length == 4) { o.headers = {"Content-Type":filter[3]}; }
-  	  }
-		}
+				}
+			}
 			OAT.AJAX.PUT(p+f,data,response,o);
 		} /* save */
-  },
+	},
 
 	createDirectory:function(newDir) { /* create new directory */
 		if (this.fileExists(newDir)) {
 			alert("An item with name '"+newDir+"' already exists!");
-      return;
-    }
+			return;
+		}
 		var url = this.options.path+newDir;
 		var error = function(xhr) {
 			var desc = OAT.WebDav.genericError(xhr,newDir);
 			alert('Error while creating new directory.\n'+desc);
-  	}
+		}
 		var o = {
 			auth:OAT.AJAX.AUTH_BASIC,
 			user:OAT.WebDav.options.user,
@@ -240,28 +233,27 @@ OAT.WebDav = {
 		OAT.Dom.hide(div);
 		document.body.appendChild(div);
 		/* create toolbar */
-  	var toolbarDiv = OAT.Dom.create("div");
-    var toolbar = new OAT.Toolbar(toolbarDiv);
+		var toolbarDiv = OAT.Dom.create("div");
+		var toolbar = new OAT.Toolbar(toolbarDiv);
 		toolbar.addIcon(0,this.options.imagePath+"Dav_new_folder.gif","Create New Folder",function() {
 			var nd = prompt('Create new folder','New Folder');
 			if (!nd) { return; }
 			OAT.WebDav.createDirectory(nd);
-  	    });
-    	toolbar.addSeparator();
+		});
+		toolbar.addSeparator();
 		toolbar.addIcon(0,this.options.imagePath+"Dav_view_details.gif","Details",function(){
 			OAT.WebDav.displayMode = 0;
 			OAT.WebDav.redraw();
-    	});
+		});
 		toolbar.addIcon(0,this.options.imagePath+"Dav_view_icons.gif","Icons",function(){
 			OAT.WebDav.displayMode = 1;
 			OAT.WebDav.redraw();
-    	});
+		});
 		toolbar.addSeparator();
 		toolbar.addIcon(0,this.options.imagePath+"Dav_up.gif","Up one level",function(){
 			var nd = OAT.WebDav.options.path.match(/^(.*\/)[^\/]+\//);
 			OAT.WebDav.openDirectory(nd[1]);
-    });
-
+		});
 
 		/* path */
 		var path = OAT.Dom.create('div');
@@ -362,10 +354,10 @@ OAT.WebDav = {
 			this.dom.perms.push(ch);
 			ch.type="checkbox";
 			td.appendChild(ch);
-      }
+		}
 		parentDiv.appendChild(d);
 	},
-
+	
 	requestDirectory:function(directory,callback,error,onend) { /* send ajax request */
 		/* send a request */
 		var data = "";
@@ -386,8 +378,8 @@ OAT.WebDav = {
 			onerror:error,
 			onend:onend,
 			onstart:onend ? function(){} : false
-    }
-
+		}
+		
 		var ref = function(data) {
 			OAT.WebDav.parse(directory,data); /* add to cache */
 			OAT.WebDav.treeSyncDir(directory); /* sync with tree */
@@ -400,8 +392,8 @@ OAT.WebDav = {
 			callback();
 		}
 		OAT.AJAX.PROPFIND(escape(directory),data,ref,o);	
-  },
-
+	},
+	
 	parse:function(directory,xml) { /* parse dav response: update tree, add data to cache */
 		var items = [];
 		var data = xml.documentElement;
@@ -441,21 +433,21 @@ OAT.WebDav = {
 				for (var i=0;i<arr.length;i++) {
 					var e = arr[i];
 					OAT.Dom.removeClass(e,"dav_item_selected");
-        }
+				}
 				OAT.Dom.addClass(elm,"dav_item_selected");
-      });
-    }
+			});
+		}
 		function attachDblClick(elm,item) {
 			OAT.Dom.attach(elm,"dblclick",function() {
 				if (item.dir) { /* xxx */
 					var treeNode = OAT.WebDav.treeGetNode(item.fullName);
 					OAT.WebDav.openDirectory(OAT.WebDav.options.path+item.name,false,treeNode);
-    }else{
+				} else {
 					OAT.WebDav.useFile();
-    }
-      });
-    }
-
+				}
+			});
+		}
+		
 		if (this.displayMode == 0) { /* details */
 			var content = this.dom.content;
 			var g = new OAT.Grid(content,{imagePath:this.options.imagePath});
@@ -549,8 +541,8 @@ OAT.WebDav = {
 			OAT.Dom.attach(node._gdElm,"click",function(){
 				OAT.WebDav.openDirectory(path,false,node); 
 			});
-    }
-
+		}
+		
 		while (ptr < parts.length) { /* walk through whole path */
 			currentPath += parts[ptr] + "/";
 			var index = -1;
@@ -564,14 +556,14 @@ OAT.WebDav = {
 				index = node.children.length-1;
 				newNode.path = currentPath;
 				newNode.collapse();
-				attach(newNode,currentPath);
+				attach(newNode,currentPath);   
 			}
 			ptr++; 
 			node = node.children[index];
 		}
 		this.tree.walk("sync");
 	},
-
+	
 	treeGetNode:function(path) { /* return tree node for a given directory */
 		var parts = path.split("/");
 		if (parts[0] == "") { parts.shift(); }
@@ -598,11 +590,15 @@ OAT.WebDav = {
 	checkExtension:function(f) {
 		var active = this.options.extensionFilters[this.dom.ext.selectedIndex];
 		var ext = active[1];
+		
+		var r = OAT.WebDav.dom.file.value.match(/^\*\.(.*)$/);
+		if (r && r.length == 2) { ext = r[1]; }
+		
 		if (ext == "*") { return true;}
 		var r = f.match(/\.([^\.]+)$/);
 		if (r && r.length == 2 && r[1].toLowerCase() == ext) { return true; }
-    return false;
-  },
+		return false;
+	},
 
 	fileExists:function(f) { /* does the file exist in current directory? */
 		var list = this.cache[this.options.path];
@@ -610,9 +606,9 @@ OAT.WebDav = {
 		for (var i=0;i<list.length;i++) {
 			var item = list[i];
 			if (item.name == f) { return item; }
-      }
+		}
 		return false;
-  },
+	},
 
 	genericError:function(xhr,url) { /* generic error code explanation */
 		var status = xhr.getStatus();
@@ -622,13 +618,29 @@ OAT.WebDav = {
 			msg = 'HTTP/'+status+': Not found. The requested URL '+url+' was not found on this server.';
 		} else if (status == 401){
 			msg = 'HTTP/'+status+': Forbidden. You have no access to URL '+url+'.';
-    }else{
+		}else{
 			msg = 'HTTP/'+status+': '+text+'.';
-    }
+		}
 		return msg;
-  },
-
+	},
+	
 	attachEvents:function() { /* attach events to dom nodes */
+		var useRef = function() {
+			var p = OAT.WebDav.options.path;
+			var f = $v(OAT.WebDav.dom.file);
+			if (!f) { return; }
+			var item = OAT.WebDav.fileExists(f);
+			if (item && item.dir) { /* existing directory */
+				this.openDirectory(p+f);
+				return;
+			} else if (f.match(/^\*\.(.*)$/)) { /* extension filter */
+				OAT.WebDav.redraw();
+				return;
+			}
+		
+
+			OAT.WebDav.useFile();
+		}
 		OAT.Dom.attach(this.dom.path,"keypress",function(event) {
 			if (event.keyCode != 13) { return; }
 			var p = OAT.WebDav.dom.path.value;
@@ -640,25 +652,23 @@ OAT.WebDav = {
 		});
 		OAT.Dom.attach(this.dom.file,"keypress",function(event) {
 			if (event.keyCode != 13) { return; }
-			OAT.WebDav.useFile();
+			useRef();
 		});
-		OAT.Dom.attach(this.dom.ok,"click",function(event) {
-			if (!OAT.WebDav.dom.file.value) { return; }
-			OAT.WebDav.useFile();
-		});
+		OAT.Dom.attach(this.dom.ok,"click",useRef);
 		OAT.Dom.attach(this.dom.cancel,"click",function(event) {
 			OAT.Dom.hide(OAT.WebDav.window.div);
 		});
 		OAT.Dom.attach(this.dom.ext,"change",function(event) {
+			OAT.WebDav.dom.file.value = "";
 			OAT.WebDav.redraw();
 		});
-
+		
 		OAT.MSG.attach(this.tree,OAT.MSG.TREE_EXPAND,function(tree,msg,node) {
 			var path = node.path;
 			OAT.WebDav.openDirectory(path,true,node);
 		});
-  },
-  
+	},
+
 	parseNode:function(node) { /* parse one response node */
 		var result = {
 			length:"",
@@ -674,7 +684,7 @@ OAT.WebDav = {
 		};
 		var propstat = OAT.Xml.getElementsByLocalName(node,"propstat")[0]; /* first propstat contains http/200 */
 		var prop = OAT.Xml.getElementsByLocalName(propstat,"prop")[0]; /* this contains successfull properties */
-
+		
 		/* dir */
 		var col = OAT.Xml.getElementsByLocalName(prop,"collection");
 		if (col.length) { result.dir = true; }
@@ -704,14 +714,14 @@ OAT.WebDav = {
 		if (tmp.length) { result.type = OAT.Xml.textValue(tmp[0]); }
 		var tmp = OAT.Xml.getElementsByLocalName(prop,"getcontentlength"); 
 		if (tmp.length) { result.length = parseInt(OAT.Xml.textValue(tmp[0])).toSize(); }
-
+		
 		return result;
-  },
-
+	},
+	
 	applyOptions:function(optObj) { /* inherit options */
 		for (var p in optObj) { this.options[p] = optObj[p]; }
-  },
-
+	},
+	
 	commonDialog:function(optObj) { /* common phase for both dialog types */
 		this.applyOptions(optObj);
 		var allContained = false;
@@ -737,8 +747,8 @@ OAT.WebDav = {
 			var r = file.match(/^(.*)([^\/]+)$/);
 			this.useFile(r[1],r[2]);
 			return;
-    }
-
+		}
+		
 		OAT.Dom.show(this.window.div);
 		OAT.Dom.center(this.window.div,1,1);
 		OAT.Dom.show("dav_permissions");
@@ -787,10 +797,10 @@ OAT.WebDav = {
 		if (permString) { 
 			newPermissions = permString;
 		} else {
-		for (var i=0;i<this.dom.perms.length;i++) {
-			var ch = this.dom.perms[i];
-			newPermissions += (ch.checked ? "1" : "0");
-      }
+			for (var i=0;i<this.dom.perms.length;i++) {
+				var ch = this.dom.perms[i];
+				newPermissions += (ch.checked ? "1" : "0");
+			}
 		}
 		var data = "";
 		data += '<?xml version="1.0" encoding="utf-8" ?>' +
@@ -822,7 +832,7 @@ OAT.WebDav = {
 		OAT.AJAX.PROPFIND(escape(url),data,ref,o);	
 	},
 	
-/* backward compatibility */	
+/* backwards compatibility */	
 
 	open:function(opts) {
 		var o = {};
@@ -849,8 +859,8 @@ OAT.WebDav = {
 			o.dataCallback = o.callback;
 			o.callback = opts.afterSave;
 			OAT.WebDav.saveDialog(o);
-    }
-  },
+		}
+	},
 
 	getFileName:function(user,pass,path,oEF,button,callback) {
 		var o = {
@@ -858,24 +868,24 @@ OAT.WebDav = {
 			pass:pass,
 			path:path,
 			callback:callback
-    }
+		}
 		OAT.WebDav.openDialog(o);
-  },
-
+	},
+	
 	getFile:function(user,pass,path,oEF,button,callback) {
 		var o = {
 			user:user,
 			pass:pass,
 			path:path,
 			callback:callback
-    }
+		}
 		OAT.WebDav.openDialog(o);
-  },
-
+	},
+	
 	saveFile:function(user,pass,path,content,ui,callback) {
 		var dataCallback = function() {
 			return content;
-      }
+		}
 		var o = {
 			user:user,
 			pass:pass,
@@ -883,10 +893,10 @@ OAT.WebDav = {
 			confirmOverwrite:(ui == false),
 			dataCallback:dataCallback,
 			callback:callback
-    }
+		}
 		OAT.WebDav.saveDialog(o);
-  		}
-  		}
+	}
+}
 
 OAT.Dav = { /* legacy backwards compatibility! */
 
@@ -894,13 +904,13 @@ OAT.Dav = { /* legacy backwards compatibility! */
 		var ld = (dir ? dir : ".");
 		var lf = (file ? ld+"/"+file : ld+"/");
 		return prompt("Choose a file name",lf);
-  },
+	},
 
 	getNewFile:function(dir,file,filters) { /* no dav prompt */
 		var ld = (dir ? dir : ".");
 		var str = (file ? dir+"/"+file : dir+"/");
 		return prompt("Choose a file name",str);
-  }
+	}
 }
 
 OAT.Loader.featureLoaded("dav");

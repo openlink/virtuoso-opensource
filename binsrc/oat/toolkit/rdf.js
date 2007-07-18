@@ -11,6 +11,14 @@
 /*
 	OAT.RDF.toTriples(xmlDoc)
 */
+
+OAT.RDFData = {
+	DISABLE_HTML:1,
+	DISABLE_DEREFERENCE:2,
+	DISABLE_BOOKMARK:4,
+	DISABLE_FILTER:8
+}
+
 OAT.RDF = {
 	ignoredAttributes:["about","nodeID","ID","parseType"],
 	toTriples:function(xmlDoc) {
@@ -43,7 +51,7 @@ OAT.RDF = {
 			}
 			
 			if (OAT.Xml.localName(node) != "Description" && !isPredicateNode) { /* add 'type' where needed */
-				var pred = "type";
+				var pred = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 				var obj = node.namespaceURI + OAT.Xml.localName(node);
 				triples.push([subj,pred,obj,0]); /* 0 - literal, 1 - reference */
 			}

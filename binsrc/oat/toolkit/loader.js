@@ -291,8 +291,8 @@ OAT.Dom = { /* DOM common object */
 		if (new_y < 0) { new_y = 30; }
 		var s = OAT.Dom.getScroll();
 		if (p == document.body || p.tagName.toLowerCase() == "html") {
-		new_x += s[0];
-		new_y += s[1];
+			new_x += s[0];
+			new_y += s[1];
 		}
 		if (x) { elm.style.left = new_x + "px"; }
 		if (y) { elm.style.top = new_y + "px"; }
@@ -426,7 +426,7 @@ OAT.Dom = { /* DOM common object */
 		}
 		return [curr_x,curr_y];
 	},
-		
+
 	getWH:function(something) {
 		/*
 			This is tricky: we need to measure current element's width & height.
@@ -441,6 +441,8 @@ OAT.Dom = { /* DOM common object */
 		var elm = $(something);
 		if (elm.style.width && !elm.style.width.match(/%/) && elm.style.width != "auto") { 
 			curr_w = parseInt(elm.style.width); 
+		} else if (OAT.Style.get(elm,"width") && !OAT.Browser.isIE) {
+			curr_w = Math.round(parseFloat(OAT.Style.get(elm,"width")));
 		} else {
 			curr_w = elm.offsetWidth;
 			if (elm.tagName.toLowerCase() == "input") { curr_w += 5; }
@@ -448,10 +450,13 @@ OAT.Dom = { /* DOM common object */
 		
 		if (elm.style.height && !elm.style.height.match(/%/) && elm.style.height != "auto") {	
 			curr_h = parseInt(elm.style.height); 
+		} else if (OAT.Style.get(elm,"height") && !OAT.Browser.isIE) {
+			curr_h = Math.round(parseFloat(OAT.Style.get(elm,"height")));
 		} else {
 			curr_h = elm.offsetHeight;
 			if (elm.tagName.toLowerCase() == "input") { curr_h += 5; }
 		}
+		
 		/* one more bonus - if we are getting height of document.body, take window size */
 		if (elm == document.body) { 
 			curr_h = (OAT.Browser.isIE ? document.body.clientHeight : window.innerHeight); 
@@ -559,7 +564,7 @@ OAT.Dom = { /* DOM common object */
 		return [left,top];
 		
 	},
-	
+
 	toSafeXML:function(str) {
 		if (typeof(str) != "string") { return str; }
 		return str.replace(/&/g,"&amp;").replace(/>/g,"&gt;").replace(/</g,"&lt;");
@@ -568,6 +573,7 @@ OAT.Dom = { /* DOM common object */
 	fromSafeXML:function(str) {
 		return str.replace(/&amp;/g,"&").replace(/&gt;/g,">").replace(/&lt;/g,"<");
 	},
+	
 	
 	uriParams:function() {
 		var result = {};
@@ -663,11 +669,12 @@ OAT.Style = { /* Style helper */
 	},
 	
 	opacity:function(element,opacity) {
+		var o = Math.max(opacity,0);
 		var elm = $(element);
 		if (OAT.Browser.isIE) {
-			elm.style.filter = "alpha(opacity="+Math.round(opacity*100)+")";
+			elm.style.filter = "alpha(opacity="+Math.round(o*100)+")";
 		} else {
-			elm.style.opacity = opacity;
+			elm.style.opacity = o;
 		}
 	}
 }
@@ -684,7 +691,6 @@ OAT.Browser = { /* Browser helper */
 	isWebKit:OAT.Dom.isWebKit(),
 	isMac:OAT.Dom.isMac()
 }
-
 
 OAT.Event = { /* Event helper */
 	attach:function(elm,event,callback) {
@@ -782,7 +788,8 @@ OAT.MSG = { /* messages */
 	GD_ABORT:12,
 	GD_END:13,
 	DOCK_DRAG:14,
-	
+	SLB_OPENED:15,
+	SLB_CLOSED:16,
 	registry:[],
 	attach:function(sender,msg,callback) {
 		if (!sender) { return; }
@@ -833,7 +840,7 @@ OAT.Debug = {
 }
 OAT.Debug.attach("*",OAT.MSG.OAT_DEBUG);
 
-/* 
+/*
 	OAT Load:
 	1) check path
 	2) listen for window.onload (or ask OpenAjax to do this)
