@@ -354,5 +354,6 @@ extern int http_ses_size;
 extern caddr_t dns_host_name;
 void http_threads_allocate (int http_threads);
 caddr_t ws_soap_get_url (ws_connection_t *ws, int full_path);
+caddr_t ws_http_error_header (int code);
 
 #endif /* _HTTP_H */

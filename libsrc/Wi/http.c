@@ -2436,7 +2436,7 @@ err_end:
 * This calls the URL rewrite PL/SQL function
 * TODO: txn state check possibly need to retry
 *************************************************************/
-void
+static int
 ws_url_rewrite (ws_connection_t *ws)
 {
 #ifdef VIRTUAL_DIR
@@ -2444,11 +2444,11 @@ ws_url_rewrite (ws_connection_t *ws)
   client_connection_t * cli = ws->ws_cli;
   query_t * proc;
   caddr_t err = NULL;
-  int rc = LTE_OK;
+  int rc = LTE_OK, retc = 0;
   local_cursor_t * lc = NULL;
 
   if (!ws || !ws->ws_map || !ws->ws_map->hm_url_rewrite_rule)
-    return;
+    return 0;
 
   if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_URLREWRITE", NULL, "dba", 0)))
     {
@@ -2482,6 +2482,10 @@ ws_url_rewrite (ws_connection_t *ws)
       ":2", box_copy_tree (ws->ws_params), QRP_RAW
       );
 
+  if (!err && lc && DV_ARRAY_OF_POINTER == DV_TYPE_OF (lc->lc_proc_ret)
+      && BOX_ELEMENTS ((caddr_t *)lc->lc_proc_ret) > 1)
+    retc = (int) unbox (((caddr_t *)lc->lc_proc_ret)[1]);
+
   IN_TXN;
   if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
     lt_rollback (cli->cli_trx, TRX_CONT);
@@ -2496,6 +2500,12 @@ error_end:
     dk_free_tree (err);
   if (lc)
     lc_free (lc);
+  if (retc)
+    {
+      ws->ws_try_pipeline = 0;
+      ws_strses_reply (ws, NULL);
+    }
+  return retc;
 #endif
 }
 
@@ -3364,7 +3374,8 @@ ws_read_req (ws_connection_t * ws)
 	}
       ws->ws_lines = (caddr_t*) list_to_array (dk_set_nreverse (lines));
       ws_path_and_params (ws);
-      ws_url_rewrite (ws);
+	  if (ws_url_rewrite (ws))
+	    goto end_req;
 #ifdef _IMSG
 	}
 #endif
@@ -4311,7 +4322,7 @@ bif_http_kill (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ht_path = bif_string_arg (qst, args, 1, "http_kill");
     }
   if (BOX_ELEMENTS (args) > 2)
-    ht_num = (void *) bif_long_arg (qst, args, 2, "http_kill");
+    ht_num = (void *)(ptrlong)(bif_long_arg (qst, args, 2, "http_kill"));
 
   IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)
@@ -8596,6 +8607,20 @@ bif_http_current_charset (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   return box_dv_short_string (CHARSET_NAME (charset, "ISO-8859-1"));
 }
 
+
+caddr_t
+bif_http_status_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  int code = bif_long_arg (qst, args, 0, "http_status_set");
+  caddr_t new_stat;
+  if (!qi->qi_client->cli_http_ses)
+    sqlr_new_error ("42000", "HT012", "http_status_set function is allowed only inside HTTP request");
+  new_stat = ws_http_error_header (code);
+  HTTP_SET_STATUS_LINE (qi->qi_client->cli_ws, new_stat, 1);
+  return new_stat;
+}
+
 caddr_t *
 box_tpcip_get_interfaces ()
 {
@@ -8774,6 +8799,7 @@ http_init_part_one ()
   bif_define ("http_keep_session", bif_http_keep_session);
   bif_define ("http_recall_session", bif_http_recall_session);
   bif_define ("http_current_charset", bif_http_current_charset);
+  bif_define_typed ("http_status_set", bif_http_status_set, &bt_varchar);
   ws_cli_sessions = hash_table_allocate (100);
   ws_cli_mtx = mutex_allocate ();
 #ifdef VIRTUAL_DIR
@@ -9335,7 +9361,7 @@ soap_mime_tree_ctx (caddr_t ctype, caddr_t body, dk_set_t * set, caddr_t * err, 
 
   DO_SET (caddr_t *, line, &hdrs)
     {
-      if (!strnicmp ("Content-Type:", (char *) unbox ((caddr_t)line), 13))
+      if (!strnicmp ("Content-Type:", (char *) unbox_ptrlong ((caddr_t)line), 13))
 	my_ctype = box_copy ((caddr_t)line);
     }
   END_DO_SET();
@@ -9419,7 +9445,7 @@ soap_mime_tree_ctx (caddr_t ctype, caddr_t body, dk_set_t * set, caddr_t * err, 
 	    type = box_copy (temp[inx2+1]);
 	}
       END_DO_BOX;
-	  if (0 == strcmp ((char *)unbox(id), start_b))
+	  if (0 == strcmp ((char *)unbox_ptrlong(id), start_b))
 	    dk_set_push (set, (void *) list (4, id, box_string (SOAP_URI(soap_version)), data, NULL));
 	  else
 	    {
@@ -9463,7 +9489,7 @@ soap_mime_tree (ws_connection_t * ws, dk_set_t * set, caddr_t * err, int soap_ve
 	    type = box_copy (temp[inx2+1]);
 	}
       END_DO_BOX;
-	  if (0 == strcmp ((char *)unbox(id), start_b))
+	  if (0 == strcmp ((char *)unbox_ptrlong(id), start_b))
 	    dk_set_push (set, (void *) list (4, id, box_string (SOAP_URI(soap_version)), data, NULL));
 	  else
 	    {
