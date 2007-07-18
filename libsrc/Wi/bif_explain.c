@@ -734,16 +734,32 @@ node_print (data_source_t * node)
   else if (in == (qn_input_fn) rdf_inf_pre_input)
     {
       rdf_inf_pre_node_t *ri = (rdf_inf_pre_node_t *) node;
-      stmt_printf (("RDF Inference %s iterates ", ri->ri_outer_any_passed ? " outer " : ""));
+      char * mode = "";
+      switch (ri->ri_mode)
+	{
+	case RI_SUBCLASS: mode = "subclass"; break;
+	case RI_SUPERCLASS: mode = "superclass"; break;
+	case RI_SUBPROPERTY: mode = "subproperty"; break;
+	case RI_SUPERPROPERTY: mode = "superproperty"; break;
+	case RI_SAME_AS_O: mode = "same-as-O"; break;
+	case RI_SAME_AS_S: mode = "same-as-S"; break;
+	case RI_SAME_AS_P: mode = "same-as-P"; break;
+	}
+      stmt_printf (("RDF Inference %s %s iterates ", mode, ri->ri_outer_any_passed ? " outer " : ""));
       ssl_print (ri->ri_output);
       stmt_printf (("\n"));
+      if (ri->ri_sas_in)
+	{
+	  stmt_printf (("  same-as input = "));
+	  ssl_print (ri->ri_sas_in);
+	}
       stmt_printf (("  o= "));
       ssl_print (ri->ri_o);
       stmt_printf ((" p= "));
       ssl_print (ri->ri_p);
       stmt_printf (("\n"));
     }
-  else if (in == in_iter_input)
+  else if (in == (qn_input_fn) in_iter_input)
     {
       in_iter_node_t *ii = (in_iter_node_t *) node;
       stmt_printf (("in  %s iterates ", ii->ii_outer_any_passed ? " outer " : ""));
