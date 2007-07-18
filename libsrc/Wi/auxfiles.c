@@ -231,12 +231,12 @@ _cfg_set_checkpoint_interval (int32 f)
 {
   dk_set_t lines = NULL;
   char cfg_line[100];
-  int32 f_val;
+  int f_val;
   FILE *cfg = fopen (CFG_FILE, "r");
   while (fgets (cfg_line, sizeof (cfg_line), cfg))
     {
       if (1 == sscanf (cfg_line, "\nautocheckpoint: %d", &f_val))
-	snprintf (cfg_line, sizeof (cfg_line), "autocheckpoint: %d\n", f);
+	snprintf (cfg_line, sizeof (cfg_line), "autocheckpoint: %d\n", (int)f);
       dk_set_push (&lines, (void *) box_string (cfg_line));
     }
   fclose (cfg);

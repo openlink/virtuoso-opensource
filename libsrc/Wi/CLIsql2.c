@@ -2158,7 +2158,7 @@ virtodbc__SQLGetInfo (
          and whether there exists any protected tables in the system.
          (The group-id of the user is not currently included in connection
          structure, or at least I cannot find it.) */
-      strres = (char *) ((dbc->con_user && (char *) !strcmp ((char *) dbc->con_user, "dba")) ? "Y" : "N");
+      strres = (char *) ((dbc->con_user != NULL  && !strcmp ((char *) dbc->con_user, "dba")) ? "Y" : "N");
       break;
 
     case SQL_ACCESSIBLE_PROCEDURES:	/* The notes above apply here also. */
