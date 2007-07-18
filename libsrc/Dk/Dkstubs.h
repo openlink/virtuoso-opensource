@@ -30,12 +30,6 @@
 #define _DKSTUBS_H
 #include <stdarg.h>
 
-#ifndef __cplusplus
-#ifdef WIN32
-#define DK_NEED_VSNPRINTF
-#endif
-#endif
-
 #ifdef DK_NEED_VSNPRINTF
 int vsnprintf(char *str, size_t size, const char  *format, va_list ap);
 int snprintf(char *str, size_t size, const char  *format, ...);

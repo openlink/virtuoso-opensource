@@ -27,7 +27,7 @@
 */
 
 #include "libutil.h"
-#include "md5.h"
+#include <util/md5.h>
 
 
 void

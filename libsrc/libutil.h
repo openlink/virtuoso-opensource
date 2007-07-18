@@ -41,13 +41,9 @@
 #include "util/utf8funs.h"
 #include "util/utalloc.h"
 #ifdef IN_LIBUTIL
-# ifdef WIN32
 # define s_realloc	realloc
 # define s_strdup(X)	strdup(X)
 # define s_alloc	calloc
-# endif
-# define bigcalloc(X,Y)	dk_alloc(X * Y)
-# define bigfree(X)	dk_free(X, -1)
 #endif
 
 #ifdef WIN32

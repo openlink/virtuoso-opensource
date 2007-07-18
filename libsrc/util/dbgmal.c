@@ -29,8 +29,8 @@
 #undef MALLOC_DEBUG
 
 #include "libutil.h"
-#include "dyntab.h"
-#include "dbgmal.h"
+#include <util/dyntab.h>
+#include <util/dbgmal.h>
 
 #ifdef USE_KILL_RINGBUF
 #define KILL_RINGBUF_SIZE 0x1FF0

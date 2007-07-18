@@ -141,10 +141,8 @@ void free ();
 #endif
 
 #include <errno.h>
-#if !defined(linux) && !defined(__APPLE__) && !defined (__CYGWIN__) && !defined(__FreeBSD__) && !defined (__cplusplus)
-# if !defined (WIN32)
+#if !defined(linux) && !defined(__APPLE__) && !defined (WIN32) && !defined (__CYGWIN__) && !defined(__FreeBSD__) && !defined (__cplusplus)
 extern char *sys_errlist[];
-# endif
 extern int sys_nerr;
 #endif
 

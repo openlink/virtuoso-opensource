@@ -69,10 +69,6 @@
 # endif
 
 #else
-void *	malloc (size_t);
-void *	realloc (void *, size_t);
-void *	calloc (size_t, size_t);
-void	free (void *);
 #define mallocp(X,P) malloc (X)
 #define callocp(X,P) calloc (X)
 #define freep(X,P) free (X)
