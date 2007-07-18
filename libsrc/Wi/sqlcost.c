@@ -146,6 +146,8 @@ sqlo_enum_col_arity (df_elt_t * pred, dbe_column_t * left_col, float * a1)
     }
   else if (DFE_IS_CONST (right))
     data = (caddr_t) right->dfe_tree;
+  else 
+    return 0;
   place = (ptrlong*) id_hash_get (left_col->col_stat->cs_distinct, (caddr_t)&data);
   if (is_allocd)
     dk_free_box (data);
@@ -555,13 +557,6 @@ sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret)
 #define KS_CAST_UNDEF 16
 
 
-#define DTP_NORMALIZE(dtp) \
-switch (dtp) \
-{ \
- case DV_WIDE: dtp = DV_LONG_WIDE; break; \
- case DV_SHORT_INT: dtp = DV_LONG_INT; break; \
-}
-
 
 int
 rdf_obj_of_sqlval (caddr_t val, caddr_t * data_ret)
@@ -633,7 +628,7 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
       data = key_name_to_iri_id (NULL, name, 0);
       if (!data)
 	return KS_CAST_NULL;
-      if (sp->sp_col->col_sqt.sqt_dtp == DV_IRI_ID)
+      if (IS_IRI_DTP (sp->sp_col->col_sqt.sqt_dtp))
 	{
 	  ITC_SEARCH_PARAM (itc, data);
 	  ITC_OWNS_PARAM (itc, data);
@@ -673,7 +668,7 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	}
       else 
 	return KS_CAST_UNDEF;
-      if (sp->sp_col->col_sqt.sqt_dtp == DV_IRI_ID)
+      if (IS_IRI_DTP (sp->sp_col->col_sqt.sqt_dtp))
 	{
 	  ITC_SEARCH_PARAM (itc, data);
 	  ITC_OWNS_PARAM (itc, data);
@@ -873,6 +868,7 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
   itc->itc_random_search = RANDOM_SEARCH_OFF;
   res = itc_sample (itc, &buf);
   itc_page_leave (itc, buf);
+  itc_free (itc);
   tb_count = dbe_key_count (key->key_table->tb_primary_key);
   return MIN (tb_count, res);
 }
@@ -957,6 +953,10 @@ dfe_hash_fill_unit (df_elt_t * dfe, float arity)
 float 
 sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, float * arity_ret)
 {
+  /* the cost of an inx int is  min near cost of the cheapest term  times the number of terms. 
+   * We prefer orders of terms from lowest to highest card.  Hence the zap with cf which is a weight that is highest for first term.*/
+  float cf = 0;
+  int nth_term = 1; /* starts at 1, is a denominator */
   dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
   dbe_key_t * prev_key = tb_dfe->_.table.key;
   int n_inx = dk_set_length (group);
@@ -971,6 +971,8 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
       selectivity = selectivity * (arity / n_rows);
       if (-1 == min ||   cost < min)
 	min = cost;
+      cf = cf + log (arity) * ROW_SKIP_COST * 0.1 * (1.0 / nth_term);
+      nth_term++;
     }
   END_DO_SET();
   tb_dfe->_.table.key = prev_key;
@@ -978,9 +980,9 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
   /* must get the main row? If cols refd that are not in any of the inxes. */
   DO_SET (dbe_column_t *, col, &tb_dfe->_.table.ot->ot_table_refd_cols)
     {
-      DO_SET (dbe_key_t *, key, &group)
+      DO_SET (df_inx_op_t *, dio, &group)
 	{
-	  if (dk_set_member (key->key_parts, (void*) col))
+	  if (dk_set_member (dio->dio_key->key_parts, (void*) col))
 	    goto next_col;
 	}
       END_DO_SET();
@@ -989,9 +991,9 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
     next_col: ;
     }
   END_DO_SET ();
-  return (n_inx * min);
+  return cf + (n_inx * min * 0.7);
  get_main_row:
-  min = min * n_inx;
+  min = min * n_inx * 0.7;
   arity = n_rows * selectivity;
   total_cost = min + (arity * 
 	  (dbe_key_unit_cost (tb->tb_primary_key) 
@@ -1013,7 +1015,7 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
     }
   END_DO_SET();
   *arity_ret = arity;
-  return total_cost;
+  return cf + total_cost;
 }
 
 
@@ -1134,7 +1136,7 @@ dfe_table_cost_1 (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, 
       DO_SET (df_elt_t *, pred, &dfe->_.table.col_preds)
 	{
 	  df_elt_t ** in_list = sqlo_in_list (pred, NULL, NULL);
-	  df_elt_t * left_col = in_list ? in_list[0]->_.col.col : pred->_.bin.left->_.col.col;
+	  dbe_column_t * left_col = in_list ? in_list[0]->_.col.col : pred->_.bin.left->_.col.col;
 	  if (DFE_TEXT_PRED == pred->dfe_type)
 	    continue;
 	  if (DFE_BOP_PRED == pred->dfe_type && part == left_col && pred != lower && pred != upper)
@@ -1228,10 +1230,18 @@ dfe_table_cost_1 (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, 
     {
       /* very rough. 1/1000 selected, cost is 1.5*unit of text inx * 1/1000 of indexed table count.
        * no accounting for whether text inx joins with main table or offband ops */
-      float text_selectivity = 0.001;
-      float text_key_cost = dbe_key_unit_cost (tb_text_key (dfe->_.table.ot->ot_table)->key_text_table->tb_primary_key);
+      dbe_table_t *ot_tbl = dfe->_.table.ot->ot_table;
+      float text_selectivity;
+      float text_key_cost = dbe_key_unit_cost (tb_text_key (ot_tbl)->key_text_table->tb_primary_key);
+      int64 ot_tbl_size = dbe_key_count (ot_tbl->tb_primary_key);
+      if (dfe->_.table.is_unique)
+        text_selectivity = 0.001;
+      else
+        {
+          text_selectivity = (1 + 0.1 * (log (1024 | ot_tbl_size) / log (2))) / (1024 | ot_tbl_size);
+        }
       total_arity *= text_selectivity;
-      total_cost = 1.5 * text_key_cost + text_key_cost * dbe_key_count (dfe->_.table.ot->ot_table->tb_primary_key) * text_selectivity
+      total_cost = 1.5 * text_key_cost + text_key_cost * ot_tbl_size * text_selectivity
 	+ total_cost * text_selectivity;
     }
   if (HR_FILL == dfe->_.table.hash_role)
