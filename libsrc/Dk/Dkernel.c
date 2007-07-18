@@ -3977,7 +3977,9 @@ PrpcValueOrWait1T (future_t * future)
 {
   USE_GLOBAL
   caddr_t result;
-
+#ifdef NO_THREAD
+again:
+#endif  
   mutex_enter (value_mtx);
   switch (future->ft_is_ready)
     {
@@ -3999,7 +4001,11 @@ PrpcValueOrWait1T (future_t * future)
       if (future->ft_error)
 	return NULL;
       else
+#ifdef NO_THREAD
+	goto again;
+#else	
 	return PrpcValueOrWait (future);
+#endif      
 
     case FS_RESULT_LIST:
     case FS_RESULT_LIST_COMPLETE:
