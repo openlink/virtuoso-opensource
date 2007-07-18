@@ -1,24 +1,11 @@
 --
 --  $Id$
 --
---  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
---  project.
+--  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 2007 OpenLink Software
 --
---  This project is free software; you can redistribute it and/or modify it
---  under the terms of the GNU General Public License as published by the
---  Free Software Foundation; only version 2 of the License, dated June 1991.
---
---  This program is distributed in the hope that it will be useful, but
---  WITHOUT ANY WARRANTY; without even the implied warranty of
---  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
---  General Public License for more details.
---
---  You should have received a copy of the GNU General Public License along
---  with this program; if not, write to the Free Software Foundation, Inc.,
---  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---
+--  See LICENSE file for details.
 --
 
 create trigger ISPARQL_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES referencing new as N
@@ -64,7 +51,7 @@ create procedure WS.WS.__http_handler_isparql (in content any, in params any, in
 {
   return iSPARQL.DBA.http_isparql_file_handler(content, params, lines, in_path_url_out_status_and_hdr);
 }; 
-
+  
 create procedure WS.WS.__http_handler_head_isparql (in content any, in params any, in lines any, inout in_path_url_out_status_and_hdr any)
 {
   return iSPARQL.DBA.http_isparql_file_handler(content, params, lines, in_path_url_out_status_and_hdr);
@@ -74,7 +61,7 @@ create procedure iSPARQL.DBA.http_isparql_file_handler(in content any, in params
 {
   declare accept varchar;
   declare _format varchar;
-  
+
   accept := http_request_header(lines,'Accept',null,'');
 
   _format := get_keyword('format',params,'');

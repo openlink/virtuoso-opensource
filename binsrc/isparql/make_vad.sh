@@ -56,15 +56,6 @@ if [ -f ../../autogen.sh ]
 then
     VOS=1
 fi
-if [ "z$SERVER" = "z" ]  
-then
-    if [ "x$HOST_OS" != "x" ]
-    then
-	SERVER=virtuoso-odbc-t.exe
-    else
-	SERVER=virtuoso
-    fi
-fi
 
 . $HOME/binsrc/tests/suite/test_fn.sh
 
@@ -91,7 +82,7 @@ VERSION_INIT()
       for i in `find . -name 'Entries' | grep -v "vad/" | grep -v "toolkit[a-z-_]*/"`; do
 	  cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
       done
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=500 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=635 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
       rm -f version.tmp
       echo "$VERSION" > vad_version
   fi
@@ -106,11 +97,11 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ] 
+  if [ "x$HOST_OS" != "x" ]
     then
-      "$SERVER" +foreground &
+      $BUILD/../bin/virtuoso-odbc-t +foreground &
   else
-      "$SERVER" +wait
+    virtuoso +wait
   fi
   stat="true"
   while true
@@ -143,7 +134,7 @@ do_command_safe () {
   shift
   shift
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if [ "x$HOST_OS" != "x" -a "z$BUILD" != "z" ]
+  if [ "x$HOST_OS" != "x" ]
   then
     $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
   else
@@ -214,11 +205,25 @@ directory_init() {
   mkdir vad/data/iSPARQL/toolkit
   mkdir vad/data/iSPARQL/toolkit/images
   mkdir vad/data/iSPARQL/toolkit/images/markers
-  cp -p $HOME/binsrc/oat/toolkit/*.js vad/data/iSPARQL/toolkit/
-  cp -p $HOME/binsrc/oat/images/*.png vad/data/iSPARQL/toolkit/images/
-  cp -p $HOME/binsrc/oat/images/*.gif vad/data/iSPARQL/toolkit/images/
-  cp -p $HOME/binsrc/oat/images/markers/*.png vad/data/iSPARQL/toolkit/images/markers/
-
+  mkdir vad/data/iSPARQL/toolkit/styles
+  TOOLKIT_DIR=$HOME/binsrc/oat/toolkit
+  if [ -d toolkit ]; then 
+    TOOLKIT_DIR=toolkit
+  fi
+  TOOLKIT_IMG_DIR=$HOME/binsrc/oat/images
+  if [ -d toolkit/images ]; then 
+    TOOLKIT_IMG_DIR=toolkit/images
+  fi
+  TOOLKIT_CSS_DIR=$HOME/binsrc/oat/styles
+  if [ -d toolkit/styles ]; then 
+    TOOLKIT_CSS_DIR=toolkit/styles
+  fi
+  cp -p $TOOLKIT_DIR/*.js vad/data/iSPARQL/toolkit/
+  cp -p $TOOLKIT_IMG_DIR/*.png vad/data/iSPARQL/toolkit/images/
+  cp -p $TOOLKIT_IMG_DIR/*.gif vad/data/iSPARQL/toolkit/images/
+  cp -p $TOOLKIT_IMG_DIR/markers/*.png vad/data/iSPARQL/toolkit/images/markers/
+  cp -p $TOOLKIT_CSS_DIR/*.css vad/data/iSPARQL/toolkit/styles/
+  cp -p $TOOLKIT_CSS_DIR/*.htc vad/data/iSPARQL/toolkit/styles/
 
   for dir in `find . -type d | grep "\\./[^/]*$"  | grep -v CVS | grep -v vad | grep -v toolkit`
 #  for dir in `find . -type d | grep "\\./[^/]*$"  | grep -v CVS | grep -v vad`
@@ -231,10 +236,10 @@ directory_init() {
 
   cp *.html vad/data/iSPARQL
   cp *.vsp vad/data/iSPARQL
-  cp *.sql vad/data/iSPARQL
+  #cp *.sql vad/data/iSPARQL
   cp *.js vad/data/iSPARQL
-  cp *.css vad/data/iSPARQL
-  cp hover.htc vad/data/iSPARQL
+  #cp *.css vad/data/iSPARQL
+  #cp hover.htc vad/data/iSPARQL
   cp version vad/data/iSPARQL
 }
 

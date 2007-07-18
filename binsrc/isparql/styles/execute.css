@@ -1,26 +1,17 @@
 /*
  *  $Id$
  *  
- *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
- *  project.
- *  
- *  Copyright (C) 1998-2007 OpenLink Software
- *  
- *  This project is free software; you can redistribute it and/or modify it
- *  under the terms of the GNU General Public License as published by the
- *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
- *  This program is distributed in the hope that it will be useful, but
- *  WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- *  General Public License for more details.
- *  
- *  You should have received a copy of the GNU General Public License along
- *  with this program; if not, write to the Free Software Foundation, Inc.,
- *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+ *
+ *  Copyright (C) 2007 OpenLink Software
+ *
+ *  See LICENSE file for details.
  *  
  */
 
+ 
+@import url("/isparql/toolkit/styles/rdftabs.css");
+ 
 /* ---------------- grid -------------- */
 
 #graphs_grid_div table,
@@ -142,41 +133,9 @@ ul.tabres li.tab_selected:hover {
   background-color: #fff;
 }
 
-#res_area {
+body {
   font-family: arial, helvetica, sans-serif;
   font-size: 9pt;
   color: #335;
   margin:0px;
-}
-
-.res_container {
-  padding:0px;
-  background-color: #fff;
-}
-
-.result {
-  padding:5px;
-}
-
-.request,
-.response {
-  padding:5px;
-/*  overflow:auto; */
-}
-/* ---------------- rdf sidebar -------------- */
-.rdf_sidebar ul, .rdf_sidebar li {
-	margin: 0px;
-	padding: 0px;
-}
-
-.rdf_sidebar li {
-	margin-left: 0.5em;
-}
-
-.rdf_sidebar {
-	font-size: 80%;
-	border: 1px solid #000;
-	background-color: #fff;
-	width: 250px;
-	padding: 3px;
-}
+}  

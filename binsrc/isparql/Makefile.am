@@ -43,16 +43,14 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.css \
 	*.html \
 	*.js \
 	*.vsp \
-	hover.htc \
 	images/*.gif \
 	images/*.jpg \
 	images/*.png \
 	make_vad.sh \
 	sql/*.sql \
-	syntax/*.js \
+	styles/*.css \
 	vad_version \
 	xslt/*.xsl

@@ -1,0 +1,62 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<!--
+
+  $Id$
+
+  This file is part of the OpenLink Ajax Toolkit (OAT) project
+
+  Copyright (C) 2007 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991
+
+  This project is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software Foundation,
+  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+-->
+<head>
+
+<script type="text/javascript">
+	var featureList=["ajax2","grid","anchor","xml","tab","sparql","rdfstore","rdfmini"];
+	function init() {
+		OAT.Preferences.imagePath = "/isparql/toolkit/images/";
+		var qe = new QueryExec({div:"result"});
+		var opts = OAT.Dom.uriParams();
+		var p = {};
+		if ("sponge" in opts) { p.sponge = opts.sponge; }
+		if ("query" in opts) { p.query = opts.query; }
+		if ("limit" in opts) { p.limit = opts.limit; }
+		if ("defaultGraph" in opts) { p.defaultGraph = opts.defaultGraph; }
+		if ("endpoint" in opts) { p.endpoint = opts.endpoint; }
+		
+		if ("file" in opts) { 
+			var f = $("file");
+			f.appendChild(OAT.Dom.text("Displaying file: "));
+			var a = OAT.Dom.create("a");
+			a.innerHTML = opts.file;
+			a.href = opts.file;
+			f.appendChild(a);
+		}
+		qe.execute(p);
+	}
+</script>
+
+<script type="text/javascript" src="/isparql/toolkit/loader.js"></script>
+
+<script type="text/javascript" src="execute.js"></script>
+<link rel="stylesheet" type="text/css" href="styles/execute.css"/>
+
+<body>
+	<div id="file"></div><p></p>
+	<div id="result"></div>
+</body>
+</html>

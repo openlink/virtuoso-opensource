@@ -1,25 +1,19 @@
 /*
- *  
- *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
- *  project.
- *  
- *  Copyright (C) 1998-2007 OpenLink Software
- *  
- *  This project is free software; you can redistribute it and/or modify it
- *  under the terms of the GNU General Public License as published by the
- *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
- *  This program is distributed in the hope that it will be useful, but
- *  WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- *  General Public License for more details.
- *  
- *  You should have received a copy of the GNU General Public License along
- *  with this program; if not, write to the Free Software Foundation, Inc.,
- *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
-*/
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+ *
+ *  Copyright (C) 2007 OpenLink Software
+ *
+ *  See LICENSE file for details.
+ *
+ */
+
+var defaultEndpoints = ["/sparql","http://demo.openlinksw.com/sparql","http://myopenlink.net:8890/sparql/",
+						"http://xmlarmyknife.org/api/rdf/sparql/query","http://www.sparql.org/sparql",
+						"http://www.govtrack.us/sparql","http://abdera.watson.ibm.com:8080/sparql",
+						"http://km.aifb.uni-karlsruhe.de/services/sparql/SPARQL","http://jena.hpl.hp.com:3040/backstage",
+						"http://my.opera.com/community/sparql/sparql","http://www.wasab.dk/morten/2005/04/sparqlette/"];
 
 var dialogs = {};
 
@@ -39,25 +33,23 @@ var adv = {};
 var tab = {};
 var tab_qbe = {};
 var tab_query = {};
-var tab_results = {};
-var nav_stack = [];
-var nav_index = 0;
 var page_w = 800;
 var page_h = 800;
-//var l = new OAT.Layers(100);
+var iSPARQL = {};
 
 if (typeof(default_dgu) == 'undefined') var default_dgu = '';
 if (typeof(default_qry) == 'undefined') var default_qry = 'SELECT * WHERE {?s ?p ?o}';
 if (typeof(default_spng) == 'undefined') var default_spng = 'soft';
 if (typeof(do_auth_verify) == 'undefined') var do_auth_verify = '';
 if (typeof(fixed_sponge) == 'undefined') var fixed_sponge = '';
-if (typeof(toolkitImagesPath) == 'undefined') var toolkitImagesPath = "toolkit/images/";
+if (typeof(toolkitImagesPath) == 'undefined') var toolkitImagesPath = "/isparql/toolkit/images/";
 if (typeof(get_initial_credentials) == 'undefined') var get_initial_credentials = "";
 if (typeof(default_user) != 'undefined') goptions.username = default_user;
 if (typeof(default_pass) != 'undefined') goptions.password = default_pass;
 
 function init() {
 	OAT.Dom.hide("throbber");
+	init_qbe();
 	/* fix image paths */
 	if (toolkitImagesPath.match(/[^\/]$/)) { toolkitImagesPath += "/"; }
 	OAT.Preferences.imagePath = toolkitImagesPath;
@@ -67,6 +59,7 @@ function init() {
 	
 	OAT.AJAX.httpError = 0;
 	$('about_oat_version').innerHTML = OAT.Preferences.version;
+	$("throbber").src = OAT.Preferences.imagePath + "Dav_throbber.gif";
 
   // determine server type, if virtuoso we show virtuoso specifics
 	OAT.AJAX.GET('./version', '', function(data,headers) { 
@@ -154,7 +147,6 @@ function init() {
   tab = new OAT.Tab ("main_col",{dockMode:true,dockElement:"tabs",goCallback:tab_goCallback,onDock:onDock,onUnDock:onUnDock,dockWindowWidth:1000,dockWindowHeight:600});
   tab_qbe = tab.add ("tab_qbe","page_qbe");
   tab_query = tab.add ("tab_query","page_query");
-  tab_results = tab.add ("tab_results","page_results");
 
   tab.go (0); /* is 0-based index... */
   
@@ -170,7 +162,7 @@ function init() {
   tabgraphs.add ("tabgrph_named","tabgrph_named_content");
   tabgraphs.go (0);
 
-  var sr_cl = new OAT.Combolist(iSPARQL.defaultEndpoints,"/sparql");
+  var sr_cl = new OAT.Combolist(defaultEndpoints,"/sparql");
   sr_cl.input.name = "service";
   sr_cl.input.id = "service";
   sr_cl.list.style.zIndex = "1200";
@@ -270,27 +262,69 @@ function init() {
 
 	page_w = OAT.Dom.getWH('page')[0] - 20;
 
-  var page_params = OAT.Dom.uriParams();
+	var page_params = OAT.Dom.uriParams();
 
-  if (page_params['default-graph-uri']) default_dgu = page_params['default-graph-uri'];
-  if (page_params['query']) default_qry = page_params['query'];
-  if (page_params['should-sponge']) default_spng = page_params['should-sponge'];
+	if (page_params['default-graph-uri']) default_dgu = page_params['default-graph-uri'];
+	if (page_params['query']) default_qry = page_params['query'];
+	if (page_params['should-sponge']) default_spng = page_params['should-sponge'];
 
-  $('default-graph-uri').value = default_dgu;
-  $('query').value = default_qry;
-  if (!fixed_sponge) fixed_sponge = '';
-  else {
-    if (fixed_sponge == 'local')
-      default_spng = '';
-    else
-      default_spng = fixed_sponge;
-  }
-  $('qbe_sponge').value = default_spng;
-  $('adv_sponge').value = default_spng;
-  goptions.should_sponge = default_spng;
+	$('default-graph-uri').value = default_dgu;
+	$('query').value = default_qry;
+	if (!fixed_sponge) {
+		fixed_sponge = '';
+	} else {
+		if (fixed_sponge == 'local') {
+			default_spng = '';
+		} else {
+			default_spng = fixed_sponge;
+		}
+	}
+	$('qbe_sponge').value = default_spng;
+	$('adv_sponge').value = default_spng;
+	goptions.should_sponge = default_spng;
 
-  qbe = new iSPARQL.QBE();
-  adv = new iSPARQL.Advanced();
+	window.qbe = new iSPARQL.QBE();
+	window.adv = new iSPARQL.Advanced();
+	var execCB = function(query) {
+		if (qbe.QueryGenerate() ==	query) { return; }
+		tab.go(0);
+		qbe.loadFromString(query);
+	}
+	window.qe = new QueryExec({div:"page_results",executeCallback:execCB});
+
+	var loadToQBE = OAT.Dom.create("li",{},"nav");
+	loadToQBE.title = 'Load query to QBE';
+	var img = OAT.Dom.create("img");
+	img.src = "images/arrange.png";
+	OAT.Dom.attach(loadToQBE,'click',function(){ /* load to QBE */
+		tab.go(tab_qbe);
+		var cache = qe.cache[qe.cacheIndex];
+		qbe.loadFromString(cache.opts.query);
+		$('qbe_sponge').value = cache.opts.sponge;
+		qbe.service.input.value = cache.opts.endpoint;
+	});
+	OAT.Dom.append([qe.dom.ul,loadToQBE],[loadToQBE,img]);
+  
+  
+	var loadToAdvanced = OAT.Dom.create("li",{},"nav");
+	loadToAdvanced.title = 'Load query to Advanced';
+	var img = OAT.Dom.create("img");
+	img.src = "images/cr22-action-edit.png";
+	OAT.Dom.attach(loadToAdvanced,'click',function(){
+		tab.go(tab_query);
+		var cache = qe.cache[qe.cacheIndex];
+		$('query').value = cache.opts.query;
+		$('default-graph-uri').value = cache.opts.defaultGraph;
+		$('adv_sponge').value = cache.opts.sponge;
+		adv.service.input.value = cache.opts.endpoint;
+	});
+	OAT.Dom.append([qe.dom.ul,loadToAdvanced],[loadToAdvanced,img]);
+  
+  
+  
+  
+  
+  
   
   OAT.Dom.attach("menu_b_reset","click",function() {
     if (tab.tabs.find(tab_qbe) == tab.selectedIndex)
@@ -412,6 +446,139 @@ function init() {
   }
 }
 
+iSPARQL.QueryExec = function(paramsObj) {
+	    // We use this to fix IE visualization problems with pre content
+	    var putTextInPre = function(elm,txt){
+	      if (OAT.Browser.isIE) 
+	        txt = txt.replace(/\r\n/g,'\r').replace(/\n/g,'\r');
+	      OAT.Dom.append([elm,OAT.Dom.text(txt)]);
+	    }
+
+	  	var params = {
+			onstart:false,
+			onend:false,
+	  		service:goptions.service,               // The sparql endpoint to send the query to
+	  		default_graph_uri:'',                   // Default graph
+	  		query:'',                               // The query itself
+	  		res_div:$('res_area'),                  // DIV where to put the results
+	  		format:'text/html',                     // Sets format to the request and process the results accordinglly.
+	  		should_sponge:goptions.should_sponge,   // should-sponge param - as described in Virtuoso Docs.
+	  		maxrows:0,                              // sets maxrows params to the endpoint, 0 for nolimit /limit left to server/
+	  		proxy:goptions.proxy,                   // If the endpoint is http: ... and this is set, the request would be send to './remote.vsp'
+	  		named_graphs:[],                        // Array of named graphs to send to the endpoint
+	  		prefixes:[], // {"label":'rdf', "uri":'http://www.w3.org/1999/02/22-rdf-syntax-ns#'} // those are used when showing results
+	  		imagePath:'images/',
+	  		errorHandler:function(xhr) {             // function called when the endpoint returns error
+				var status = xhr.getStatus();
+				var response = xhr.getResponseText();
+				var headers = xhr.getAllResponseHeaders();
+				var data = '';
+				if (!response) {
+					data = 'There was a problem with your request! The server returned status code: ' + status + '<br/>\n';
+					data += 'Unfortunately your browser does not allow us to show the error. ';
+					data += 'This is a known bug in the Opera Browser.<br/>\n';
+					data += 'However you can click this link which will open a new window with the error: <br/>\n';
+					data += '<a target="_blank" href="/sparql/?' + body() + '">/sparql/?' + body() + '</a>';
+				} else {
+					data = response.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+				}
+				params.cb(data,headers,'er');
+			},
+	  		hideRequest:false,  // if true hides the request tab in the generated responce
+	  		hideResponce:false, // if true hides the responce tab in the generated responce
+	  		showQuery:false,    // if true shows the query tab in the generated responce
+			//RESULT PROCESSING
+	        callback:function(data,headers,param) {  // function called on result
+		    } /* callback */
+	  	};
+	  	
+	  	for (var p in paramsObj) { params[p] = paramsObj[p]; }
+
+	    if (params.service == '') {
+	      alert('You must specify "Query Service Endpoint"!');
+	      return;
+	    }
+	    
+	    var content_type = 'application/x-www-form-urlencoded';
+	    
+	    var ReqHeaders = {'Accept':params.format,'Content-Type':content_type};
+	  
+	    var endpoint = params.service;
+	    if (endpoint.match(/^http:\/\//) && params.proxy && isVirtuoso)
+	      endpoint = './remote.vsp';
+
+	    OAT.Dom.clear(params.res_div);
+	  
+	    // generate the request body
+	    var body = function()  {
+	      var body = '';
+
+	      if (params.default_graph_uri) {
+	        body += '&default-graph-uri=';
+	        body += encodeURIComponent(params.default_graph_uri);
+	      }
+
+	      if (params.query) {
+	        body += '&query=';
+	        body += encodeURIComponent(params.query);
+	      }
+
+	      if (params.format) {
+	        body += '&format=';
+	        if (params.format == 'application/isparql+table')
+	          body += encodeURIComponent('application/sparql-results+json'); 
+	        else if (params.format == 'application/isparql+rdf-graph')
+	          body += encodeURIComponent('application/rdf+xml'); 
+	        else
+	          body += encodeURIComponent(params.format);
+	      }
+
+	      if (params.maxrows) {
+	        body += '&maxrows=';
+	        body += encodeURIComponent(params.maxrows);
+	      }
+
+	      if (isVirtuoso && params.should_sponge && params.should_sponge != '') {
+	        body += '&should-sponge=';
+	        body += encodeURIComponent(params.should_sponge);
+	      }
+	      
+	      if (endpoint != params.service) {
+	        body += '&service=';
+	        body += encodeURIComponent(params.service);
+	      }
+	      
+	      for(var n = 0; n < params.named_graphs.length; n++) {
+	        if (params.named_graphs[n] != '')
+	        {
+	          body += '&named-graph-uri=';
+	          body += encodeURIComponent(params.named_graphs[n]); 
+	        }
+	      }
+	      return body.substring(1);
+	    }
+
+		var o = {
+			header:ReqHeaders,
+			onerror:params.errorHandler,
+			onstart:params.onstart || function(){OAT.Dom.show("throbber");},
+			onend:params.onend || function(){OAT.Dom.hide("throbber");}
+		}
+
+		function is_new() { /* is this request new? should we cache it? */
+			if (!nav_stack.length) { return true; }
+			var cache = nav_stack[nav_index];
+		    if (params.query != cache.query ||
+		        params.default_graph_uri != cache.default_graph_uri ||
+		        params.format != cache.format ||
+		        params.should_sponge != cache.should_sponge ||
+		        params.service != cache.service) { return true; }
+			return false;
+		}
+
+		OAT.AJAX.POST (endpoint, body(), params.callback, o);
+	}
+
 iSPARQL.Advanced = function () {
 	var self = this;
 
@@ -482,16 +649,6 @@ iSPARQL.Advanced = function () {
 	    $('query').value = data;
 	  }
 
-  	//if (goptions.login_put_type == 'http')
-  	//{
-    //  var fname = "";
-    //  if (goptions.last_path)
-    //    fname = goptions.last_path.substring(goptions.last_path.lastIndexOf("/") + 1);
-		//	var name = OAT.Dav.getFile(path,fname);
-		//	if (!name) { return; }
-    //  goptions.last_path = name;
-		//	OAT.AJAX.GET(name,'',loadProcess,{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC});
-  	//} else {
     	var options = {
     		user:goptions.username,
     		pass:goptions.password,
@@ -511,8 +668,6 @@ iSPARQL.Advanced = function () {
         }
       }
     	OAT.WebDav.openDialog(options);
-    //	if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
-    //}
 	}
 	
 	this.func_save = function() {
@@ -526,20 +681,9 @@ iSPARQL.Advanced = function () {
 	}
 	
 	this.func_saveas = function() {
-	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
 	  tab.go(tab_query);
-	  //if (goptions.login_put_type == 'http')
-	  //{
-    //  if (goptions.last_path)
-    //  {
-    //    $("save_name").value = goptions.last_path;
-    //    $("savetype").value = get_file_type(goptions.last_path);
-    //  }
-	  //  dialogs.save.show();
-	  //} else {
   	  var path = iSPARQL.Common.getFilePath();
   	  var file = iSPARQL.Common.getFile();
-  	  //var pathDefault = iSPARQL.Common.getDefaultPath();
 
 			var options = {
     		user:goptions.username,
@@ -562,57 +706,42 @@ iSPARQL.Advanced = function () {
 				}
 			};
 			OAT.WebDav.saveDialog(options);
-    	//if (goptions.last_path) $('dav_filetype').value = get_file_type(goptions.last_path);
-		//}
 	}
 	
 	this.func_run = function() {
-	  //if (tab.selectedIndex != 1 && !tab_query.window) return;
-	  tab.go(tab_query);
-    var params = {
-	    service:self.service.input.value,
-      query:$v('query'),
-      default_graph_uri:$v('default-graph-uri').trim(),
-      //maxrows:$v('maxrows'),
-	    should_sponge:$v('adv_sponge'),
-      format:$v('format'),
-      //res_div:$('res_area'),
-      res_div:$('page_results'),
-      named_graphs:[],
-      showQuery:true
-    }
-    
-    // get all checked named_graphs from named graphs tab
-    named_graphs = document.getElementsByName('named_graph_cbk');
-    
-    if(named_graphs && named_graphs.length > 0)
-    {
-      for(var n = 0; n < named_graphs.length; n++)
-      {
-        // if it is checked, add to params too
-        if (named_graphs[n].checked)
-        {
-          var named_graph_value = $v('named_graph_'+named_graphs[n].value);
-          if (named_graph_value != '')
-          {
-            params.named_graphs.push(named_graph_value); 
-          }
-        }
-      }
-    }
-    
-    params.prefixes = [];
-    var pre_arr = params.query.match(/prefix\s\w+:\s<\S+>/ig);
-    if (pre_arr)
-      for(var n = 0; n < pre_arr.length; n++)
-      {
-        var tmp = pre_arr[n].match(/prefix\s(\w+):\s<(\S+)>/i);
-        params.prefixes.push({"label":tmp[1],"uri":tmp[2]});
-      }
+		//if (tab.selectedIndex != 1 && !tab_query.window) return;
+		tab.go(tab_query);
 
+		// get all checked named_graphs from named graphs tab
+		var graphs = [];
+		named_graphs = document.getElementsByName('named_graph_cbk');
 
-	  if(!tab_results.window) tab.go(2);
-    iSPARQL.QueryExec(params);
+		if (named_graphs && named_graphs.length > 0) {
+			for (var n = 0; n < named_graphs.length; n++) {
+				// if it is checked, add to params too
+				if (named_graphs[n].checked) {
+					var named_graph_value = $v('named_graph_'+named_graphs[n].value);
+					if (named_graph_value != '') { graphs.push(named_graph_value); }
+				}
+			}
+		}
+
+		var q = $v("query");
+		var prefixes = [];
+		var pre_arr = q.match(/prefix\s\w+:\s<\S+>/ig);
+		if (pre_arr) for(var n = 0; n < pre_arr.length; n++) {
+			var tmp = pre_arr[n].match(/prefix\s(\w+):\s<(\S+)>/i);
+			prefixes.push({"label":tmp[1],"uri":tmp[2]});
+		}
+
+		var p = {
+			query:q,
+			defaultGraph:$v('default-graph-uri').trim(),
+			sponge:$v("adv_sponge"),
+			endpoint:self.service.input.value,
+			namedGraphs:graphs
+		}
+		qe.execute(p);
 	}
 	
 	this.func_load_to_qbe = function() {
@@ -720,21 +849,15 @@ iSPARQL.Advanced = function () {
 	icon_get_from_qbe = t.addIcon(0,"images/compfile.png","Get from QBE",self.func_get_from_qbe); 
 	OAT.Dom.attach("menu_get_from_qbe","click",self.func_get_from_qbe);
 	
-	if (OAT.Browser.isIE)
-	{
+	if (OAT.Browser.isIE) {
 	  icon_load_to_qbe.style.filter = 'alpha(opacity=30)';
 	  icon_load_to_qbe.style.cursor = 'default';
 	  icon_get_from_qbe.style.filter = 'alpha(opacity=30)';
 	  icon_get_from_qbe.style.cursor = 'default';
 	}
 
-	//this.results_win = new OAT.Window({title:"Query Results", close:1, min:0, max:0, width:page_w - 40, height:500, x:20,y:560});
-	//$("page_query").appendChild(self.results_win.div);
-	//self.results_win.content.appendChild($("res_area"));
-  //self.results_win.onclose = function() { OAT.Dom.hide(self.results_win.div); }
-  //OAT.Dom.hide(self.results_win.div);
 
-  this.service = new OAT.Combolist(iSPARQL.defaultEndpoints,"/sparql");
+  this.service = new OAT.Combolist(defaultEndpoints,"/sparql");
   self.service.img.src = "images/cl.gif";
   self.service.img.width = "16";
   self.service.img.height = "16";
@@ -792,8 +915,7 @@ iSPARQL.Common = {
 
 }
 
-function get_file_type(file_name)
-{
+function get_file_type(file_name) {
   if (file_name.match(/isparql\.xml$/i))
     return 'isparql';
   else
@@ -824,8 +946,7 @@ function get_mime_type(res){
 
 var last_format = 1;
 
-function format_select()
-{
+function format_select(){
   var query_obg = $('query');
   var query = query_obg.value;
   var format = $('format');
@@ -856,34 +977,29 @@ function format_select()
   
 }
 
-function prefix_insert()
-{
+function prefix_insert(){
   prefix = $v('prefix');
   if ($v('query').indexOf(prefix) == -1)
     $('query').value = prefix + '\n' + $v('query');
 }
 
-function template_insert()
-{
+function template_insert(){
   template = $v('template');
   insert_text($('query'),template);
   $('template').selectedIndex = 0;
 }
 
-function tool_invoke()
-{
+function tool_invoke(){
   tool = $v('tool');
   eval(tool);
   $('tool').selectedIndex = 0;
 }
 
-function tool_put(txt)
-{
+function tool_put(txt){
   insert_text($('query'),txt);
 }
 
-function tool_put_line_start(txt)
-{
+function tool_put_line_start(txt){
   var query = $('query');
   var query_value = $v('query').replace("\r",'');
   var lines = query_value.split("\n");
@@ -924,8 +1040,7 @@ function tool_put_line_start(txt)
   query.focus();
 }
 
-function tool_rem_line_start(txt)
-{
+function tool_rem_line_start(txt){
   var query = $('query');
   var query_value = $v('query').replace("\r",'');
   var lines = query_value.split("\n");
@@ -968,8 +1083,7 @@ function tool_rem_line_start(txt)
   query.focus();
 }
 
-function tool_put_around(btxt,atxt)
-{
+function tool_put_around(btxt,atxt){
   var elm = $('query');
   var start = 0;
   var end = 0;
@@ -984,8 +1098,7 @@ function tool_put_around(btxt,atxt)
 }
 
 
-function insert_text(elm,txt)
-{
+function insert_text(elm,txt){
   var start = 0;
   var end = 0;
   
@@ -1040,8 +1153,7 @@ function strCountLines(txt){
 
 var toolswin = null;
 
-function tools_popup()
-{
+function tools_popup(){
   if (toolswin == null)
   {
   	var topbox_ctl_xy = OAT.Dom.getLT('topbox_ctl');
@@ -1064,8 +1176,7 @@ function tools_popup()
 
 var graphs_grid_num = 1;
 
-function add_named_graph()
-{
+function add_named_graph(){
   var named_graph = $v('named_graph_add');
   
   if (!named_graph)
@@ -1121,16 +1232,9 @@ function add_named_graph()
   
 }
 
-function remove_named_graph(ind)
-{
-  OAT.Dom.unlink($('named_graph_list_rom'+ind));
-  $('named_graphs_cnt').innerHTML--;
-  
-  table = $('named_graph_list');
-  
-  if (!table.tBodies[0].rows.length)
-  {
-    OAT.Dom.unlink(table.tBodies[0]);
-  }
-  
+function remove_named_graph(ind){
+	OAT.Dom.unlink($('named_graph_list_rom'+ind));
+	$('named_graphs_cnt').innerHTML--;
+	var table = $('named_graph_list');
+	if (!table.tBodies[0].rows.length) { OAT.Dom.unlink(table.tBodies[0]); }
 }

@@ -6,7 +6,9 @@
  *  Copyright (C) 2007 OpenLink Software
  *
  *  See LICENSE file for details.
+ *
  */
+
 #menu {
 	font: menu;
 	background-color: #fff;
@@ -21,14 +23,14 @@
 
 #menu li {
 	cursor: pointer;
-	behavior: url("hover.htc");
+	behavior: url("/isparql/toolkit/styles/hover.htc");
 	display: block;
 	float: left;
 	position: relative;
 	padding: 3px 8px}
 
 #menu a {
-	behavior: url("hover.htc");
+	behavior: url("/isparql/toolkit/styles/hover.htc");
 }
 	
 #menu li:hover, #menu li.hover, #menu a:hover, #menu a.hover {

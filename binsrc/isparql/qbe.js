@@ -9,174 +9,201 @@
  *
  */
 
-var l = new OAT.Layers(100);
-
-OAT.SVGSparqlGroup.prototype.MySetType = function(type) {
-  if (type == OAT.SVGSparqlData.GROUP_OPTIONAL) 
-  {
-	  this.setFill('E5E5E5');
-	  this.MySetLabel(1,'OPTIONAL');
-	  this.label.setAttribute("fill",'797979');
-	} else if (type == OAT.SVGSparqlData.GROUP_UNION) {
-	  this.setFill('DEDEEF');
-	  this.MySetLabel(1,'UNION');
-	  this.label.setAttribute("fill",'6767B4');
-	} else if (type == OAT.SVGSparqlData.GROUP_CONSTRUCT) {
-	  for (var i = 0;i < this.svgsparql.groups.length;i++)
-	    if (this.svgsparql.groups[i] != this && this.svgsparql.groups[i].getType() == OAT.SVGSparqlData.GROUP_CONSTRUCT)
-	    {
-	      alert('More than one CONSTRUCT statement is not supported!');
-	      return false;
-	    }
-
-	  this.setFill('FFE3D7');
-	  this.MySetLabel(1,'CONSTRUCT');
-	  this.label.setAttribute("fill",'D23F00');
-	} else {
-	  this.label.setAttribute("fill",'000000');
-  }
-  this.setType(type);
-  return true;
-}
-
-OAT.SVGSparqlEdge.prototype.setValueByDrop = function(val,t,x,y) {
-	if (t == 'class') {
-		return false;
-	} else {
-		this.MySetLabel(1,val);
-		this.svgsparql.deselectEdges();
-		this.svgsparql.deselectNodes();
-		this.svgsparql.deselectGroups();
-		this.svgsparql.selectEdge(this);
+function init_qbe() {
+	OAT.SVGSparqlGroup.prototype.MySetType = function(type) {
+		if (type == OAT.SVGSparqlData.GROUP_OPTIONAL) {
+			this.setFill('#E5E5E5');
+			this.MySetLabel(1,'OPTIONAL');
+			this.label.setAttribute("fill",'#797979');
+		} else if (type == OAT.SVGSparqlData.GROUP_UNION) {
+			this.setFill('#DEDEEF');
+			this.MySetLabel(1,'UNION');
+			this.label.setAttribute("fill",'#6767B4');
+		} else if (type == OAT.SVGSparqlData.GROUP_CONSTRUCT) {
+			for (var i = 0;i < this.svgsparql.groups.length;i++)
+			if (this.svgsparql.groups[i] != this && this.svgsparql.groups[i].getType() == OAT.SVGSparqlData.GROUP_CONSTRUCT) {
+				alert('More than one CONSTRUCT statement is not supported!');
+				return false;
+			}
+			this.setFill('#FFE3D7');
+			this.MySetLabel(1,'CONSTRUCT');
+			this.label.setAttribute("fill",'#D23F00');
+		} else {
+			this.label.setAttribute("fill",'#000000');
+		}
+		this.setType(type);
 		return true;
 	}
-}
 
-OAT.SVGSparqlNode.prototype.setValueByDrop = function(val,t,x,y) {
-	if (t != 'class') {
-		this.svgsparql.startDrawing(this,x,y,val);
-		return true;
-	} else if (this.getType() == 1) { /* literal */
-		this.MySetLabel(2,val);
-		this.svgsparql.deselectEdges();
-		this.svgsparql.deselectNodes();
-		this.svgsparql.deselectGroups();
-		this.svgsparql.selectNode(this);
-		return true;
-	} else { /* resource */
-		var goodNode = false;
-		for (var i=0;i<this.edges.length;i++) { /* try to find existing rdf:type node */
-			var e = this.edges[i];
-			var l = e.getLabel(1);
-			if (e.node1 == this && (l == "rdf:type" || l == "a" || l == "type")) { goodNode = e.node2; }
-			if (e.node2 == this && (l == "rdf:type" || l == "a" || l == "type")) { goodNode = this; }
-		}
-		if (goodNode) {
-			goodNode.MySetLabel(1,val);
+	OAT.SVGSparqlEdge.prototype.setValueByDrop = function(val,t,x,y) {
+		if (t == 'class') {
+			return false;
+		} else {
+			this.MySetLabel(1,val);
 			this.svgsparql.deselectEdges();
 			this.svgsparql.deselectNodes();
 			this.svgsparql.deselectGroups();
-			this.svgsparql.selectNode(goodNode);
-		} else { alert("This resource doesn't have TYPE predicate yet, so type cannot be set."); }
+			this.svgsparql.selectEdge(this);
+			return true;
+		}
 	}
-}
 
-OAT.SVGSparqlNode.prototype.MySetLabel = function(which,newLabel) {
-  this.setLabel(which,newLabel);
-  if (which == 1 && this.orderby_cell)
-    this.orderby_cell.value.innerHTML = newLabel;
-}
+	OAT.SVGSparqlNode.prototype.setValueByDrop = function(val,t,x,y) {
+		if (t != 'class') {
+			this.svgsparql.startDrawing(this,x,y,val);
+			return true;
+		} else if (this.getType() == 1) { /* literal */
+			this.MySetLabel(2,val);
+			this.svgsparql.deselectEdges();
+			this.svgsparql.deselectNodes();
+			this.svgsparql.deselectGroups();
+			this.svgsparql.selectNode(this);
+			return true;
+		} else { /* resource */
+			var goodNode = false;
+			for (var i=0;i<this.edges.length;i++) { /* try to find existing rdf:type node */
+				var e = this.edges[i];
+				var l = e.getLabel(1);
+				if (e.node1 == this && (l == "rdf:type" || l == "a" || l == "type")) { goodNode = e.node2; }
+				if (e.node2 == this && (l == "rdf:type" || l == "a" || l == "type")) { goodNode = this; }
+			}
+			if (!goodNode) {
+				/* create a new rdf:type triple */
+				this.svgsparql.selectNode(this);
+				var dims = OAT.Dom.getWH("qbe_parent");
+				var tol = 20;
+				do {
+					var a = Math.random()*Math.PI*2;
+					var xx = x + 120 * Math.cos(a);
+					var yy = y + 120 * Math.sin(a);
+				} while (xx < tol || yy < tol || xx > dims[0]-tol || yy > dims[1]-tol);
+				goodNode = this.svgsparql.addNode(xx,yy,"",0);
+				var e = this.svgsparql.addEdge(this,goodNode,"",0);
+				e.MySetLabel(1,"rdf:type");
+				e.setVisible(false);
+			} else {
+				this.svgsparql.selectNode(goodNode);
+			}
+			goodNode.MySetLabel(1,val); 
+			this.svgsparql.deselectEdges();
+			this.svgsparql.deselectNodes();
+			this.svgsparql.deselectGroups();
+		}
+	}
 
-OAT.SVGSparqlEdge.prototype.MySetLabel = function(which,newLabel) {
-  this.setLabel(which,newLabel);
-  if (which == 1 && this.orderby_cell)
-    this.orderby_cell.value.innerHTML = newLabel;
-}
+	OAT.SVGSparqlNode.prototype.MySetLabel = function(which,newLabel) {
+		if (which == 1) {
+			var old = this.getLabel(1);
+			var count = 0;
+			for (var i=0;i<this.svgsparql.nodes.length;i++) {
+				var l2 = this.svgsparql.nodes[i].getLabel(1);
+				if (l2 == old) { count++; }
+			}
+			if (count == 1) { this.svgsparql.qbe.Schemas.DeleteNode(old); } 
+			this.svgsparql.qbe.Schemas.InsertNode(this.svgsparql.qbe.Schemas.Bound,newLabel,"class",false,false);
+		}
+		this.setLabel(which,newLabel);
+		if (which == 1 && this.orderby_cell) { this.orderby_cell.value.innerHTML = newLabel; }
+	}
 
-OAT.SVGSparqlGroup.prototype.MySetLabel = function(which,newLabel) {
-  this.setLabel(newLabel);
-  if (which == 1 && this.orderby_cell)
-    this.orderby_cell.value.innerHTML = newLabel;
+	OAT.SVGSparqlEdge.prototype.MySetLabel = function(which,newLabel) {
+		if (which == 1) {
+			var old = this.getLabel(1);
+			var count = 0;
+			for (var i=0;i<this.svgsparql.edges.length;i++) {
+				var l2 = this.svgsparql.edges[i].getLabel(1);
+				if (l2 == old) { count++; }
+			}
+			if (count == 1) { this.svgsparql.qbe.Schemas.DeleteNode(old); } 
+			this.svgsparql.qbe.Schemas.InsertNode(this.svgsparql.qbe.Schemas.Bound,newLabel,"property_attr",false,false);
+		}
+		this.setLabel(which,newLabel);
+		if (which == 1 && this.orderby_cell) { this.orderby_cell.value.innerHTML = newLabel; }
+	}
+
+	OAT.SVGSparqlGroup.prototype.MySetLabel = function(which,newLabel) {
+		this.setLabel(newLabel);
+		if (which == 1 && this.orderby_cell) { this.orderby_cell.value.innerHTML = newLabel; }
+	}
 }
 
 iSPARQL.GroupColorSeq = function() {
 	var self = this;
 	this.seq = ['#ff0','#f0f','#0ff','#0f0'];
 	this.inx = -1;
-  this.getNext = function()
-  {
-    self.inx++;
-
-    if (self.inx == self.seq.length)
-      self.inx = 0;
-    return self.seq[self.inx];
-  }
-  this.reset = function()
-  {
-    self.inx = -1;
-  }
+	this.getNext = function() {
+		self.inx++;
+		if (self.inx == self.seq.length) { self.inx = 0; }
+		return self.seq[self.inx];
+	}
+	this.reset = function() {
+		self.inx = -1;
+	}
 }
 
 iSPARQL.QBE = function () {
 	var self = this;
-	
+	this.l = new OAT.Layers(100);
 	this.group_color_seq = new iSPARQL.GroupColorSeq();
 
-	this.clear = function(){
-    if (self.svgsparql) {
-  	  self.svgsparql.clear();
-      self.svgsparql.ghostdrag.addTarget(self.props_win.content);
-    }
-	  for (var i = self.orderby_grid.header.cells.length;i > 1; i--) {
-      self.orderby_grid.header.removeColumn(i - 1);
-    }
-    self.resetPrefixes();
-	  $('qbe_distinct').checked = false;
-	  $('qbe_query_type').selectedIndex = 0;
-	  
-	  self.group_color_seq.reset();
-	  
-	  self.format_set();
-	  
-    var table = $('qbe_dataset_list');
-    if (table.tBodies.length)
-      OAT.Dom.unlink(table.tBodies[0]);
-    $('qbe_datasource_cnt').innerHTML=0;
+	this.clear = function() {
+		if (self.svgsparql) {
+			self.svgsparql.clear();
+			self.svgsparql.ghostdrag.addTarget(self.props_win.content);
+		}
+		for (var i = self.orderby_grid.header.cells.length;i > 1; i--) {
+			self.orderby_grid.header.removeColumn(i - 1);
+		}
+		self.resetPrefixes();
+		var root=self.Schemas.Bound;
+		for (var i=root.children.length-1;i>=0;i--) {
+			var ch = root.children[i];
+			root.deleteChild(ch);
+		}
+		$('qbe_distinct').checked = false;
+		$('qbe_query_type').selectedIndex = 0;
+
+		self.group_color_seq.reset();
+
+		self.format_set();
+
+		var table = $('qbe_dataset_list');
+		if (table.tBodies.length) { OAT.Dom.unlink(table.tBodies[0]); }
+		$('qbe_datasource_cnt').innerHTML=0;
 	}
 
-  this.format_set = function() {
-	var format = $('qbe_format');
-	OAT.Dom.clear(format);
-    for(var i = format.options.length; i >= 0; i--)  format.options[i] = null;
-    
-	
-    var set_rdf_options = function() {
-      format.options[0] = new Option('RDF Graph','application/isparql+rdf-graph');
-      format.options[1] = new Option('N3/Turtle','text/rdf+n3');
-      format.options[2] = new Option('RDF/XML','application/rdf+xml');
-      format.selectedIndex = 0;
-    }
-    
-	var type = $v("qbe_query_type");
-    if (type == 'DESCRIBE') {
-      set_rdf_options();
-      return;
-    } else if (type == 'SELECT') {
-		for (var i = 0;i < self.svgsparql.groups.length;i++)
-		if (self.svgsparql.groups[i].getType() == OAT.SVGSparqlData.GROUP_CONSTRUCT)  {
-			set_rdf_options();
-			return;
+	this.format_set = function() {
+		var format = $('qbe_format');
+		OAT.Dom.clear(format);
+		for(var i = format.options.length; i >= 0; i--) { format.options[i] = null; }
+
+		var set_rdf_options = function() {
+			format.options[0] = new Option('RDF Graph','application/isparql+rdf-graph');
+			format.options[1] = new Option('N3/Turtle','text/rdf+n3');
+			format.options[2] = new Option('RDF/XML','application/rdf+xml');
+			format.selectedIndex = 0;
 		}
 
-		format.options[0] = new Option('Table','application/isparql+table');
-		format.options[1] = new Option('XML','application/sparql-results+xml');
-		format.options[2] = new Option('JSON','application/sparql-results+json');
-		format.options[3] = new Option('Javascript','application/javascript');
-		format.options[4] = new Option('HTML','text/html');
-		format.selectedIndex = 0;
-		return;
-	}
-  };
+		var type = $v("qbe_query_type");
+		if (type == 'DESCRIBE') {
+			set_rdf_options();
+			return;
+		} else if (type == 'SELECT') {
+			for (var i = 0;i < self.svgsparql.groups.length;i++)
+			if (self.svgsparql.groups[i].getType() == OAT.SVGSparqlData.GROUP_CONSTRUCT)  {
+			set_rdf_options();
+			return;
+			}
+
+			format.options[0] = new Option('Table','application/isparql+table');
+			format.options[1] = new Option('XML','application/sparql-results+xml');
+			format.options[2] = new Option('JSON','application/sparql-results+json');
+			format.options[3] = new Option('Javascript','application/javascript');
+			format.options[4] = new Option('HTML','text/html');
+			format.selectedIndex = 0;
+			return;
+		}
+	};
 	
 	/* create SVGSparql object */
 	var options = {
@@ -278,120 +305,117 @@ iSPARQL.QBE = function () {
 			OAT.Dom.hide("qbe_props_group");
 			self.props_win.caption.innerHTML = '&nbsp;';
 		},
-	  addNodeCallback:function(node,loadMode)
-	  { 
-	    if (loadMode) return;
-	    node.setType(OAT.SVGSparqlData.NODE_CIRCLE); 
-	    node.MySetLabel(1,'?');
-	    node.MySetLabel(2,'--type--');
+		addNodeCallback:function(node,loadMode) { 
+			if (loadMode) { return; }
+			node.setType(OAT.SVGSparqlData.NODE_CIRCLE); 
+			node.MySetLabel(1,'?');
+			// node.MySetLabel(2,'--type--'); /* no type for resources! this works only for literals! */
 			self.svgsparql.deselectEdges();
 			self.svgsparql.deselectNodes();
-      self.svgsparql.deselectGroups();
-	    self.svgsparql.selectNode(node); 
-	  },
-	  addEdgeCallback:function(edge,loadMode)
-	  { 
-	    //edge.setVisible(true);
-	    if (loadMode) return;
-	    edge.MySetLabel(1,'?');
+			self.svgsparql.deselectGroups();
+			self.svgsparql.selectNode(node); 
+		},
+		addEdgeCallback:function(edge,loadMode) { 
+			//edge.setVisible(true);
+			if (loadMode) { return; }
+			edge.MySetLabel(1,'?');
 			self.svgsparql.deselectNodes();
 			self.svgsparql.deselectEdges();
-      self.svgsparql.deselectGroups();
-	    self.svgsparql.selectEdge(edge); 
-	  },
-	  addGroupCallback:function(group,loadMode)
-	  { 
-	    group.setVisible(true);
-	    group.setFill(self.group_color_seq.getNext());
-	    if (loadMode) return;
-	    group.MySetLabel(1,'?');
+			self.svgsparql.deselectGroups();
+			self.svgsparql.selectEdge(edge); 
+		},
+		addGroupCallback:function(group,loadMode) { 
+			group.setVisible(true);
+			group.setFill(self.group_color_seq.getNext());
+			if (loadMode) { return; }
+			group.MySetLabel(1,'?');
 			self.svgsparql.deselectEdges();
-      self.svgsparql.deselectGroups();
-	    self.svgsparql.selectGroup(group); 
-	  },
-	  removeNodeCallback:function(node){
-	    self.removeOrderBy(node);
-	  },
-	  removeEdgeCallback:function(edge){
-	    self.removeOrderBy(edge);
-    },
-	  removeGroupCallback:function(group){
-	    self.removeOrderBy(group);
-    }
+			self.svgsparql.deselectGroups();
+			self.svgsparql.selectGroup(group); 
+		},
+		removeNodeCallback:function(node) {
+			var type = node.getType();
+			if (type == OAT.SVGSparqlData.NODE_CIRCLE) {
+				var count = 0;
+				var label = node.getLabel(1);
+				for (var i=0;i<self.svgsparql.nodes.length;i++) {
+					var l2 = self.svgsparql.nodes[i].getLabel(1);
+					if (l2 == label) { count++; }
+				}
+				if (count == 1) { self.Schemas.DeleteNode(label); } 
+			}
+			self.removeOrderBy(node);
+		},
+		removeEdgeCallback:function(edge){
+			var count = 0;
+			var label = edge.getLabel(1);
+			for (var i=0;i<self.svgsparql.edges.length;i++) {
+				var l2 = self.svgsparql.edges[i].getLabel(1);
+				if (l2 == label) { count++; }
+			}
+			if (count == 1) { self.Schemas.DeleteNode(label); } 
+			self.removeOrderBy(edge);
+		},
+		removeGroupCallback:function(group){
+			self.removeOrderBy(group);
+		}
 	};
-	if (!OAT.Browser.isIE)
-	  this.svgsparql = new OAT.SVGSparql("qbe_parent",options);
+	if (!OAT.Browser.isIE) { 
+		this.svgsparql = new OAT.SVGSparql("qbe_parent",options); 
+		this.svgsparql.qbe = this;
+	}
 	var restrictionFunction = function(new_width,new_height)  { return new_width < 600; }
 
+	OAT.Resize.create("qbe_resizer_area", "qbe_bottom", OAT.Resize.TYPE_X,restrictionFunction);
 	OAT.Resize.create("qbe_resizer_area", "qbe_canvas", OAT.Resize.TYPE_XY,restrictionFunction);
 	OAT.Resize.create("qbe_resizer_area", "qbe_parent", OAT.Resize.TYPE_XY,restrictionFunction);
+	$("qbe_resizer_area").style.backgroundImage = 'url("'+OAT.Preferences.imagePath+"resize.gif"+'")';
 	
 	var win_width = 260;
 	var win_x = -20;
 
-	this.schema_win = new OAT.Window({title:"Schemas", close:0, min:0, max:0, width:win_width, height:340, x:win_x,y:232});
+	this.schema_win = new OAT.Window({title:"Schemas", close:0, min:0, max:0, width:win_width, height:340, x:win_x,y:212});
 	this.schema_win.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
 		return l < 0 || t < 0;
 	}
 	$("page_qbe").appendChild(this.schema_win.div);
-	l.addLayer(this.schema_win.div);
+	self.l.addLayer(this.schema_win.div);
 	this.schema_win.content.appendChild($("schemas"));
 	OAT.Resize.create(this.schema_win.resize, "schemas_tree_container", OAT.Resize.TYPE_XY);
 
-	this.props_win = new OAT.Window({title:"", close:0, min:0, max:0, width:win_width, height:120, x:win_x,y:92});
+	this.props_win = new OAT.Window({title:"", close:0, min:0, max:0, width:win_width, height:120, x:win_x,y:72});
 	this.props_win.move._Drag_movers[0][1].restrictionFunction = function(l,t) {
 		return l < 0 || t < 0;
 	}
 	$("page_qbe").appendChild(this.props_win.div);
-	l.addLayer(this.props_win.div);
+	self.l.addLayer(this.props_win.div);
 	this.props_win.content.appendChild($("qbe_props"));
-
-	//this.results_win = new OAT.Window({title:"Query Results", close:1, min:0, max:0, width:page_w - 40, height:500, x:20,y:600});
-	//$("page_qbe").appendChild(this.results_win.div);
-	//l.addLayer(this.results_win.div);
-	//this.results_win.content.appendChild($("qbe_res_area"));
-  //this.results_win.onclose = function() { OAT.Dom.hide(self.results_win.div); }
-  //OAT.Dom.hide(self.results_win.div);
-
-  this.orderby_grid = new OAT.Grid("qbe_orderby_grid",0)
-  self.orderby_grid.createHeader([{value:'order by',sortable:0,draggable:0,resizable:0}]);
+ 
+	this.orderby_grid = new OAT.Grid("qbe_orderby_grid",0)
+	self.orderby_grid.createHeader([{value:'order by',sortable:0,draggable:0,resizable:0}]);
 	
-  this.addOrderBy = function(obj,addmode){
-    var index = self.orderby_grid.header.cells.length;
-    if (obj.node2 && obj.node2.orderby_cell && !addmode)
-      index = obj.node2.orderby_cell.number;
-    if (!obj.orderby_cell)
-    {
-      var label = obj.getLabel(1).trim();
-      var orderby_cell = self.orderby_grid.appendHeader({value:label,sortable:1,draggable:1,resizable:0},index);
-      obj.orderby_cell = orderby_cell;
-    }
-  }
-  this.removeOrderBy = function(obj){
-    if (obj.orderby_cell)
-    {
-      self.orderby_grid.header.removeColumn(obj.orderby_cell.number);
-      obj.orderby_cell = false;
-    }
-  }
+	this.addOrderBy = function(obj,addmode) {
+	    var index = self.orderby_grid.header.cells.length;
+	    if (obj.node2 && obj.node2.orderby_cell && !addmode) { index = obj.node2.orderby_cell.number; }
+	    if (!obj.orderby_cell) {
+			var label = obj.getLabel(1).trim();
+			var orderby_cell = self.orderby_grid.appendHeader({value:label,sortable:1,draggable:1,resizable:0},index);
+			obj.orderby_cell = orderby_cell;
+	    }
+	}
+	this.removeOrderBy = function(obj) {
+		if (obj.orderby_cell) {
+			self.orderby_grid.header.removeColumn(obj.orderby_cell.number);
+			obj.orderby_cell = false;
+		}
+	}
 
 	this.var_cnt = 1;
 
-  this.schematree = new OAT.Tree({ext:"png",onClick:"toggle", onDblClick:"toggle"});
-  this.schematree.assign("schemas_tree",false);
-  this.schematree.unbound = self.schematree.tree.createChild('unbound',1);
-  self.schematree.unbound.collapse();
-  this.schematree.bound = self.schematree.tree.createChild('bound',1);
-  self.schematree.bound.collapse();
-  var ref_img = OAT.Dom.create('img',{width:'16px',height: '16px', verticalAlign: 'middle', marginLeft: '3px', cursor: 'pointer'});
-  ref_img.src = 'images/reload.png';
-	OAT.Dom.attach(ref_img,"click",function(){self.schematree.bound.expand();self.SchemaTreeRefresh()});
-	self.schematree.bound._gdElm.appendChild(ref_img);
-  
 	this.save = function(save_name,save_type) {
-	  var data = self.getSaveData(save_type)
-    goptions.last_path = save_name;
-    set_dav_props(goptions.last_path);
+		var data = self.getSaveData(save_type)
+		goptions.last_path = save_name;
+		set_dav_props(goptions.last_path);
 		var send_ref = function() { return data; }
 		var recv_ref = function(data) { alert('Saved.'); }
 		OAT.AJAX.PUT(save_name,send_ref(),recv_ref,{user:goptions.username,password:goptions.password,auth:OAT.AJAX.AUTH_BASIC,headers:{'Content-Type':get_mime_type(goptions.last_path)}});
@@ -428,8 +452,8 @@ iSPARQL.QBE = function () {
   			xml += '<proxy>'+goptions.proxy+'</proxy>\n';
   			//xml += '<query><![CDATA['+data+']]></query>\n';
   			xml += '<query>'+OAT.Dom.toSafeXML(data)+'</query>\n';
-  			for (var i=0;i < self.UpdatedSchemas.length;i++)
-  			  xml += '<schema uri="'+ self.UpdatedSchemas[i] +'"/>\n';
+  			for (var i=0;i < self.Schemas.Imported.length;i++)
+  			  xml += '<schema uri="'+ self.Schemas.Imported[i] +'"/>\n';
   			xml += '</ISparqlDynamicPage>\n';
   			xml += self.svgsparql.toXML();
   			xml += '<should_sponge>'+$v('qbe_sponge')+'</should_sponge>\n';
@@ -441,54 +465,76 @@ iSPARQL.QBE = function () {
 		return data;
 	}
 
-  this.UpdatedSchemas = [];
-  this.prefixes = [];
+	this.prefixes = [];
   
-  this.resetPrefixes = function(){
-    self.prefixes = [{"label":'atom', "uri":'http://atomowl.org/ontologies/atomrdf#'},
-                     {"label":'foaf', "uri":'http://xmlns.com/foaf/0.1/'},
-      			         {"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
-      			         {"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
-      			         {"label":'sioc', "uri":'http://rdfs.org/sioc/ns#'},
-      			         {"label":'ibis', "uri":'http://purl.org/ibis#'},
-      			         {"label":'ical', "uri":'http://www.w3.org/2002/12/cal/icaltzd#'},
-      			         {"label":'mo', "uri":'http://purl.org/ontology/mo/'},
-      			         {"label":'annotation', "uri":'http://www.w3.org/2000/10/annotation-ns#'},
-      			         {"label":'rdfs', "uri":'http://www.w3.org/2000/01/rdf-schema#'},
-      			         {"label":'rdf', "uri":'http://www.w3.org/1999/02/22-rdf-syntax-ns#'},
-      			         {"label":'dcterms', "uri":'http://purl.org/dc/terms/'},
-      			         {"label":'dc', "uri":'http://purl.org/dc/elements/1.1/'},
-      			         {"label":'cc', "uri":'http://web.resource.org/cc/'},
-      			         {"label":'geo', "uri":'http://www.w3.org/2003/01/geo/wgs84_pos#'},
-      			         {"label":'rss', "uri":'http://purl.org/rss/1.0/'},
-      			         {"label":'skos', "uri":'http://www.w3.org/2004/02/skos/core#'},
-      			         {"label":'vs', "uri":'http://www.w3.org/2003/06/sw-vocab-status/ns#'},
-      			         {"label":'wot', "uri":'http://xmlns.com/wot/0.1/',"hidden":1},
-      			         {"label":'xhtml', "uri":'http://www.w3.org/1999/xhtml',"hidden":1},
-      			         {"label":'dataview', "uri":'http://www.w3.org/2003/g/data-view#',"hidden":1},
-      			         {"label":'xsd', "uri":'http://www.w3.org/2001/XMLSchema#',"hidden":1}];
-  }
-  self.resetPrefixes();
+	this.resetPrefixes = function(){
+		self.prefixes = [{"label":'atom', "uri":'http://atomowl.org/ontologies/atomrdf#'},
+						 {"label":'foaf', "uri":'http://xmlns.com/foaf/0.1/'},
+						 {"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
+						 {"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
+						 {"label":'sioc', "uri":'http://rdfs.org/sioc/ns#'},
+						 {"label":'ibis', "uri":'http://purl.org/ibis#'},
+						 {"label":'ical', "uri":'http://www.w3.org/2002/12/cal/icaltzd#'},
+						 {"label":'mo', "uri":'http://purl.org/ontology/mo/'},
+						 {"label":'annotation', "uri":'http://www.w3.org/2000/10/annotation-ns#'},
+						 {"label":'rdfs', "uri":'http://www.w3.org/2000/01/rdf-schema#'},
+						 {"label":'rdf', "uri":'http://www.w3.org/1999/02/22-rdf-syntax-ns#'},
+						 {"label":'dcterms', "uri":'http://purl.org/dc/terms/'},
+						 {"label":'dc', "uri":'http://purl.org/dc/elements/1.1/'},
+						 {"label":'cc', "uri":'http://web.resource.org/cc/'},
+						 {"label":'geo', "uri":'http://www.w3.org/2003/01/geo/wgs84_pos#'},
+						 {"label":'rss', "uri":'http://purl.org/rss/1.0/'},
+						 {"label":'skos', "uri":'http://www.w3.org/2004/02/skos/core#'},
+						 {"label":'vs', "uri":'http://www.w3.org/2003/06/sw-vocab-status/ns#'},
+						 {"label":'wot', "uri":'http://xmlns.com/wot/0.1/',"hidden":1},
+						 {"label":'xhtml', "uri":'http://www.w3.org/1999/xhtml',"hidden":1},
+						 {"label":'dataview', "uri":'http://www.w3.org/2003/g/data-view#',"hidden":1},
+						 {"label":'xsd', "uri":'http://www.w3.org/2001/XMLSchema#',"hidden":1}];
+	}
+	self.resetPrefixes();
 
-  this.putPrefix = function(str) 
-  {
-    var tmp = '';
-    if ((tmp = str.match(/^<(.*)>$/)))
-    {
-      for(var i = 0;i < self.prefixes.length; i++)
-      {
-        if (tmp[1].substring(0,self.prefixes[i].uri.length) == self.prefixes[i].uri && 
-            !tmp[1].substring(self.prefixes[i].uri.length,tmp[1].length).match(/\//))
-        {
-          return self.prefixes[i].label + ':' + tmp[1].substring(self.prefixes[i].uri.length);
-        }
-      }
-    }
-    return str;
-  }
+	this.putPrefix = function(str) { /* replace first part of URI with prefix, if applicable */
+		var tmp = '';
+		if ((tmp = str.match(/^<(.*)>$/))) { /* if is an <URI> */
+			var uri = tmp[1];
+			for (var i = 0;i < self.prefixes.length; i++) {
+				var prefix = self.prefixes[i];
+				if (uri.substring(0,prefix.uri.length) == prefix.uri &&  /* if prefix.uri is left substring of uri */
+					!uri.substring(prefix.uri.length,uri.length).match(/\//)) { /* remaining part doesn't contain slash */
+						return prefix.label + ':' + uri.substring(prefix.uri.length); /* prefix:remainder */
+				}
+			}
+		}
+		return str;
+	}
 
-	this.expandPrefix = function(str)
-	{
+	this.getPrefixParts = function(str) { /* return firstpart, secondpart, prefix (if found) */
+		var s = str;
+		if (!s) { return; }
+		if (s.charAt(0) == "<") { s = s.substring(1,s.length-1); }
+		var first = "";
+		var second = "";
+		var pf = false;
+		
+		for (var i=0;i<self.prefixes.length;i++) {
+			var prefix = self.prefixes[i];
+			if (s.substring(0,prefix.uri.length) == prefix.uri) {
+				first = prefix.uri;
+				pf = prefix.label+":";
+				second = s.substring(prefix.uri.length); 
+				return [first,second,pf];
+			}
+		}
+		var i1 = s.lastIndexOf("/");
+		var i2 = s.lastIndexOf("#");
+		var index = Math.max(i1,i2);
+		if (index == -1) { return false; }
+		first = s.substring(0,index+1);
+		second = s.substring(index+1);
+		return [first,second,pf];
+	}
+	
+	this.expandPrefix = function(str)	{
 	  var tmp = '';
 	  if(str.match(/^\?/))
 	    return str;
@@ -512,8 +558,7 @@ iSPARQL.QBE = function () {
 	  return str;
 	}
 
-  this.optPrefix = function(str,used_prefixes) 
-  {
+	this.optPrefix = function(str,used_prefixes)   {
     var prefix = '';
     for(var i = 0;i < self.prefixes.length; i++)
     {
@@ -531,481 +576,562 @@ iSPARQL.QBE = function () {
     return str;
   }
 
+	var t = new OAT.Tree({ext:"png",onClick:"toggle", onDblClick:"toggle", imagePath:"images/"});
+	t.assign("schemas_tree",false);
+	var root = t.tree;
+	var bound = root.createChild('bound',1);
+	var unbound = root.createChild('unbound',1);
+	bound.collapse();
+	unbound.collapse();
+	var ref_img = OAT.Dom.create('img',{width:'16px',height: '16px', verticalAlign: 'middle', marginLeft: '3px', cursor: 'pointer'});
+	ref_img.src = 'images/reload.png';
+	unbound._gdElm.appendChild(ref_img);
+	OAT.Event.attach(ref_img,"click",function(){
+		self.Schemas.Unbound.expand();
+		self.Schemas.Tree.Refresh()
+	});
 	OAT.Dom.attach("schema_import","click",function() {
-	  var schema = $v('schema').trim();
-	  
-	  self.SchemaImport(schema);
-    
-    return false;
+		self.Schemas.Import($v('schema').trim());
 	});
-	
-	this.SchemaImport = function(schema, silent)
-	{
-	  self.schematree.unbound.expand();
-	  if (self.UpdatedSchemas.find(schema) != -1)
-	  {
-	    if (!silent)
-	      alert('Schema "' + schema + '" already imported!');
-	    return;
-	  }
-
-	  self.SchemaAdd(schema);
-
-    self.UpdatedSchemas.push(schema);
-	}
-	
-	this.SchemaUpdate = function(node) {
-	  //var node = li.OATTreeObj;
-	  $('schema').value = node.li.uri;
-	  if (node.children.length > 0)
-	  {
-	    ; //node.toggleState();
-	  } else {
-      // Executed when results are returned
-	    var callback = function(data)
-	    {
-	      var processed = [];
-	      var JSONData = eval('(' + data + ')');
-	      if (JSONData.results.bindings.length > 0)
-	      {
-	        var Concepts;
-	        var Properties;
-	        var attr_inx = 0;
-	        var objs = JSONData.results.bindings
-          for(var i = 0;i < objs.length; i++)
-          {
-            var nodetype = '';
-            // The uri should be from the current schema
-            if (node.li.uri == objs[i].uri.value.substring(0,node.li.uri.length) && processed.find(objs[i].uri.value) == -1) 
-            {
-              switch (objs[i].type.value) {
-                case "http://www.w3.org/2000/01/rdf-schema#Class":
-                case "http://www.w3.org/2002/07/owl#Class":
-                  nodetype = 'class';
-                  break;
-                case "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property":
-                case "http://www.w3.org/2002/07/owl#ObjectProperty":
-                case "http://www.w3.org/2002/07/owl#DatatypeProperty":
-                case "http://www.w3.org/2002/07/owl#InverseFunctionalProperty":
-                  if(self.SchemaIsAttribute(objs[i]))
-                    nodetype = 'property_attr';
-                  else
-                    nodetype = 'property_rel';
-                  break
-                default:
-                  nodetype = '';
-              }
-              
-              if (nodetype != '')
-              {
-                if (objs[i].label) var label = objs[i].label.value;
-                else var label = self.putPrefix('<' + objs[i].uri.value + '>').replace('<','').replace('>','');
-      	        if (nodetype == 'class')
-      	        {
-      	          if (!Concepts) 
-      	          { 
-      	            Concepts = node.createChild('Concepts',1,0); 
-      	            Concepts.collapse();
-      	          }
-      	          var pnode = Concepts;
-      	        } else {
-      	          if (!Properties) 
-      	          { 
-      	            Properties = node.createChild('Properties',1); 
-      	            Properties.collapse();
-      	          }
-      	          var pnode = Properties;
-      	        }
-      	        if (nodetype == 'property_attr')
-      	        {
-      	          var leaf = pnode.createChild(label,1,attr_inx);
-      	          attr_inx++;
-      	        } else
-                  var leaf = pnode.createChild(label,1);
-      	        leaf.collapse();
-                if (objs[i].comment)
-                {
-                  leaf.li.alt = objs[i].comment.value;
-                  leaf.li.title = objs[i].comment.value;
-                }
-                leaf.li.uri = objs[i].uri.value;
-                leaf.li.uritype = nodetype;
-                leaf.li.schema = node.li.uri;
-                leaf.li.bound = node.li.bound;
-                leaf._label.OATTreeObj = leaf;
-                
-        			  self.svgsparql.ghostdrag.addSource(leaf._label,self.SchemaNodeDragProcess,self.SchemaNodeDragDrop);
-              	OAT.Dom.attach(leaf._label,"dblclick",self.SchemaNodeDblClick);
-
-      	        if (nodetype == 'class')
-      	          leaf.setImage('/../../../images/concept-icon-16');
-      	        else if (nodetype == 'property_attr')
-                  leaf.setImage('/../../../images/attribute-icon-16');
-                else
-                  leaf.setImage('/../../../images/relation-icon-16');
-
-            	  //OAT.Dom.attach(leaf._label,"click",SchemaWalkClick);
-              }
-            }
-            processed.push(objs[i].uri.value);
-          }
-	      }
-	      //node.expand();
-	    }
-      var params = {
-        //service:'./schema_import.vsp',
-        service:self.service.input.value,
-        query:'PREFIX owl: <http://www.w3.org/2002/07/owl#>' + '\n' +
-              'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' + '\n' +
-              'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
-              '' + '\n' +
-              'SELECT DISTINCT ?type ?uri ?label ?comment ?range' + '\n' +
-            ((node.li.bound)?
-              getFromQueryStr() +
-              'WHERE {  ' + '\n' +
-//              '  ?s rdf:type ?uri' + '\n' +
-              '  { ' + '\n' +
-              '    { ?s ?uri ?o }' + '\n' +
-              '    union' + '\n' +
-              '    { ?s a ?uri }' + '\n' +
-              '  }' + '\n' +
-              '    GRAPH <' + node.li.uri + '> {' + '\n' +
-            '':
-              'FROM <' + node.li.uri + '>' + '\n' +
-              'WHERE {  ' + '\n' +
-              '        {  ' + '\n' +
-            '') + 
-              '         ?uri rdf:type ?type .' + '\n' +
-              '               FILTER (?type in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>)' + '\n' +
-              '                    || ?type in (<http://www.w3.org/2002/07/owl#Class>)' + '\n' +
-              '                    || ?type in (<http://www.w3.org/2000/01/rdf-schema#Class>)' + '\n' +
-              '                    || ?type in (<http://www.w3.org/2002/07/owl#ObjectProperty>)' + '\n' +
-              '                    || ?type in (<http://www.w3.org/2002/07/owl#DatatypeProperty>)' + '\n' +
-              '                    || ?type in (<http://www.w3.org/2002/07/owl#InverseFunctionalProperty>))' + '\n' +
-              '         OPTIONAL { ?uri rdfs:label ?label } .' + '\n' +
-              '         OPTIONAL { ?uri rdfs:comment ?comment } .' + '\n' +
-              '         OPTIONAL { ?uri rdfs:range ?range } .' + '\n' +
-              '  }' + '\n' +
-              '}' + '\n' +
-              'ORDER BY ?uri',
-        //default_graph_uri:node.li.uri,
-        default_graph_uri:'',
-        maxrows:0,
-  	    should_sponge:((node.li.bound)?'':'soft'),
-        format:'application/sparql-results+json',
-        errorHandler:function(xhr)
-        {
-          var status = xhr.getStatus();
-          var response = xhr.getResponseText();
-    			var headers = xhr.getAllResponseHeaders();
-          alert(response);
-        },
-        callback:callback
-      }
-	    iSPARQL.QueryExec(params);
-	  }
-	}
-
-  // Function for dblclick
-  this.SchemaNodeDblClick = function() {
-    var obj = this.OATTreeObj.li;
-	  if(obj.uritype == 'class')
-	  {
-	      for(var i = 0;i < self.svgsparql.selectedNodes.length;i++)
-  		    self.svgsparql.selectedNodes[i].MySetLabel(2,self.putPrefix('<' + obj.uri + '>'));
-  	} else {
-  		  for(var i = 0;i < self.svgsparql.selectedEdges.length;i++)
-    		  self.svgsparql.selectedEdges[i].MySetLabel(1,self.putPrefix('<' + obj.uri + '>'));
-  	}
-  }
-
-  // Function for drag dim
-  this.SchemaNodeDragProcess = function(elm) { elm.firstChild.style.color = "#f00"; elm.firstChild.style.listStyleType = "none";}
-
-  // Function executed on drop
-  this.SchemaNodeDragDrop = function(target,x_,y_) { 
-    var obj = this.originalElement.OATTreeObj.li;
-    var val = self.putPrefix('<' + obj.uri + '>');
-    if (target == qbe.svgsparql)
-    {
-      if (obj.uritype == 'class')
-      {
-  			var pos = OAT.Dom.position(target.parent);
-  			var x = x_ - pos[0];
-  			var y = y_ - pos[1];
-        var node = target.addNode(x,y,"",0);
-        node.MySetLabel(2,val);
-      }
-    } else if (target.svgsparql) {
-			var pos = OAT.Dom.position(target.svgsparql.parent);
-			var x = x_ - pos[0];
-			var y = y_ - pos[1];
-      target.setValueByDrop(val,obj.uritype,x,y); 
-    } else if (target == self.props_win.content) {
-  		if (self.svgsparql.selectedNode) 
-  		  self.svgsparql.selectedNode.setValueByDrop(val,obj.uritype);
-  		else if (self.svgsparql.selectedEdge) 
-  		  self.svgsparql.selectedEdge.setValueByDrop(val,obj.uritype);
-    }
-  }
-  		  
-  this.SchemaWalkClick = function(node) {
-    //var node = this.OATTreeObj;
-    if (node.children.length > 0)
-    {
-      ; //node.toggleState();
-    } else {
-      var callback = function(data)
-      {
-        var processed = [];
-        var JSONData = eval('(' + data + ')');
-        if (JSONData.results.bindings.length > 0)
-        {
-          var Domains;
-          var Ranges;
-          var attr_inx = 0;
-          var objs = JSONData.results.bindings
-          for(var i = 0;i < objs.length; i++)
-          {
-            if (node.li.uritype == 'class')
-            {
-              if(self.SchemaIsAttribute(objs[i]))
-                nodetype = 'property_attr';
-              else
-                nodetype = 'property_rel';
-            } else
-              var nodetype = 'class';
-            // The uri should be from the current schema
-            if (node.li.schema == objs[i].uri.value.substring(0,node.li.schema.length) && processed.find(objs[i].uri.value) == -1) 
-            {
-              if (objs[i].label) var label = objs[i].label.value;
-              else var label = self.putPrefix('<' + objs[i].uri.value + '>').replace('<','').replace('>','');
-  
-    	        if (objs[i].type && objs[i].type.value == 'http://www.w3.org/2000/01/rdf-schema#domain')
-    	        {
-    	          if (!Domains) 
-    	          { 
-    	            Domains = node.createChild('in-domain-of',1,0); 
-    	            Domains.collapse();
-    	            //OAT.Dom.attach(Domains._label,"click",function(){ Domains.toggleState()});
-    	          }
-    	          var pnode = Domains;
-    	        } else {
-    	          if (!Ranges) 
-    	          { 
-    	            Ranges = node.createChild('in-range-of',1); 
-    	            Ranges.collapse();
-    	            //OAT.Dom.attach(Ranges._label,"click",function(){ Ranges.toggleState()});
-    	          }
-    	          var pnode = Ranges;
-    	        }
-  
-    	        if (nodetype == 'property_attr')
-    	        {
-    	          var leaf = pnode.createChild(label,1,attr_inx);
-    	          attr_inx++;
-    	        } else
-                var leaf = pnode.createChild(label,1);
-    	        leaf.collapse();
-              if (objs[i].comment)
-              {
-                leaf.li.alt = objs[i].comment.value;
-                leaf.li.title = objs[i].comment.value;
-              }
-              leaf.li.uri = objs[i].uri.value;
-              leaf.li.uritype = nodetype;
-              leaf.li.schema = node.li.schema;
-              leaf.li.bound = node.li.bound;
-              leaf._label.OATTreeObj = leaf;
-              
-      			  self.svgsparql.ghostdrag.addSource(leaf._label,self.SchemaNodeDragProcess,self.SchemaNodeDragDrop);
-            	OAT.Dom.attach(leaf._label,"dblclick",self.SchemaNodeDblClick);
-  
-    	        if (nodetype == 'class')
-    	          leaf.setImage('/../../../images/concept-icon-16');
-    	        else if (nodetype == 'property_attr')
-                leaf.setImage('/../../../images/attribute-icon-16');
-              else
-                leaf.setImage('/../../../images/relation-icon-16');
-  
-          	  //OAT.Dom.attach(leaf._label,"click",SchemaWalkClick);
-            }
-          	processed.push(objs[i].uri.value)
-          }
-        }
-        //node.expand();
-      }
-      var params = {
-        service:self.service.input.value,
-        query:'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' + '\n' +
-              'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
-              '' + '\n' +
-              'SELECT DISTINCT ?type ?uri ?label ?comment ?range' + '\n' +
-            ((node.li.bound)?
-              getFromQueryStr() +
-              'WHERE {' + '\n' +
-              //'  ?s rdf:type ?uri' + '\n' +
-              '    { ' + '\n' +
-              '      { ?s ?uri ?o }' + '\n' +
-              '      union' + '\n' +
-              '      { ?s a ?uri }' + '\n' +
-              '    }' + '\n' +
-              '    GRAPH <' + node.li.schema + '> {' + '\n' +
-            '':
-              'FROM <' + node.li.schema + '>' + '\n' +
-              'WHERE {  ' + '\n' +
-              '        {  ' + '\n' +
-            '') + 
-              '    { ?uri rdfs:domain <' + node.li.uri + '> . }' + '\n' +
-              '      union' + '\n' +
-              '    { ?uri rdfs:range <' + node.li.uri + '> . }' + '\n' +
-              '    ?uri ?type <' + node.li.uri + '>' + '\n' +
-              '    OPTIONAL { ?uri rdfs:label ?label } .' + '\n' +
-              '    OPTIONAL { ?uri rdfs:comment ?comment } .' + '\n' +
-              '    OPTIONAL { ?uri rdfs:range ?range } .' + '\n' +
-              '  }' + '\n' +
-              '}' + '\n' +
-              'ORDER BY ?uri',
-        //default_graph_uri:node.li.schema,
-        default_graph_uri:'',
-        maxrows:0,
-  	    should_sponge:'',
-        format:'application/sparql-results+json',
-        errorHandler:function(xhr)
-        {
-          var status = xhr.getStatus();
-          var response = xhr.getResponseText();
-    			var headers = xhr.getAllResponseHeaders();
-          alert(response);
-        },
-        callback:callback
-      }
-      if (node.li.uritype != 'class')
-        params.query = 'PREFIX owl: <http://www.w3.org/2002/07/owl#>' + '\n' +
-              'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' + '\n' +
-              'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
-              '' + '\n' +
-              'SELECT DISTINCT ?uri, ?label, ?comment, ?range' + '\n' +
-            ((node.li.bound)?
-              getFromQueryStr() +
-              'WHERE {' + '\n' +
-//              '  ?s rdf:type ?uri' + '\n' +
-              '    { ' + '\n' +
-              '      { ?s ?uri ?o }' + '\n' +
-              '      union' + '\n' +
-              '      { ?s a ?uri }' + '\n' +
-              '    }' + '\n' +
-              '    GRAPH <' + node.li.schema + '> {' + '\n' +
-            '':
-              'FROM <' + node.li.schema + '>' + '\n' +
-              'WHERE {  ' + '\n' +
-              '        {  ' + '\n' +
-            '') + 
-              '    { <' + node.li.uri + '> rdfs:domain ?uri . }' + '\n' +
-              '      union' + '\n' +
-              '    { <' + node.li.uri + '> rdfs:range ?uri . }' + '\n' +
-              '    <' + node.li.uri + '> ?type ?uri' + '\n' +
-              '    OPTIONAL { ?uri rdfs:label ?label } .' + '\n' +
-              '    OPTIONAL { ?uri rdfs:comment ?comment } .' + '\n' +
-              '    OPTIONAL { ?uri rdfs:range ?range } .' + '\n' +
-              '  }' + '\n' +
-              '}' + '\n' +
-              'ORDER BY ?type ?uri';
-      iSPARQL.QueryExec(params);
-    }
-  }
-
-  this.SchemaIsAttribute = function(obj) {
-    value = '';
-    if (obj.range)
-      value = obj.range.value;
-    switch (value) {
-      case "http://www.w3.org/2000/01/rdf-schema#Literal":
-      case "http://atomowl.org/ontologies/atomrdf#Text":
-      case "http://www.w3.org/1999/02/22-rdf-syntax-ns#value":
-      case "http://atomowl.org/ontologies/atomrdf#Link":
-      case "":
-        return true;
-        break;
-      default:
-        return false;
-    }
-    return false;
-  }
-
-  this.SchemaAdd = function(schema)
-  {
-    var node = self.schematree.unbound.createChild(self.putPrefix('<' + schema + '>').replace('<','').replace('>',''),1);
-    node.setImage('/../../../images/rdf-icon-16');
-    node.collapse();
-    node.li.uri = schema;
-    node.li.uritype = 'schema';
-    node.li.bound = false;
-    node._label.OATTreeObj = node;
-  	//OAT.Dom.attach(node._label,"click",function() {
-  	//  self.SchemaUpdate(this);
-    //});
-  }
-  
-OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,node) {
-    if (node.li.uritype)
-    {
-      if (node.li.uritype == 'schema')
-        self.SchemaUpdate(node);
-      else 
-        self.SchemaWalkClick(node);
-    }
-    if (node == self.schematree.bound)
-      self.SchemaTreeRefresh(true);
-  });
-  
-  this.SchemasReset = function()  {
-    for(var i = self.schematree.unbound.children.length - 1;i >= 0;i--)
-      self.schematree.unbound.deleteChild(self.schematree.unbound.children[i]);
-    self.UpdatedSchemas = [];
-    //for(var i = 0;i<self.prefixes.length;i++)
-    //  self.SchemaImport(self.prefixes[i].uri);
-  }
-  self.SchemasReset();
-  
-  this.SchemaRemove = function(schema) {
-    for(var i = self.schematree.unbound.children.length - 1;i >= 0;i--)
-    {
-      if (self.schematree.unbound.children[i].li.uri == schema)
-        self.schematree.unbound.deleteChild(self.schematree.unbound.children[i]);
-    }
-    if (self.UpdatedSchemas.find(schema) != -1)
-      self.UpdatedSchemas.splice(self.UpdatedSchemas.find(schema),1);
-  }
-
 	OAT.Dom.attach("schema_remove","click",function() {
-	  var schema = $v('schema').trim();
-	  
-    self.SchemaRemove(schema);
-    
-    return false;
+		self.Schemas.Remove($v('schema').trim());
 	});
+	self.Schemas = {
+		Tree:t,
+		Bound:bound,
+		Unbound:unbound,
+		Imported:[],
+		Import:function(schema, silent) {
+			self.Schemas.Unbound.expand(true);
+			if (self.Schemas.Imported.find(schema) != -1)	{
+				// if (!silent) { alert('Schema "' + schema + '" already imported!'); }
+				// return;
+			} else { self.Schemas.Imported.push(schema); }
+			self.Schemas.Add(schema);
+		},
+		Add:function(schema) {
+			var parts = self.getPrefixParts(schema);
+			if (!parts) { 
+				alert("Malformed schema!"); 
+				return;
+			}
+			var label = parts[2] || parts[0];
+			var node = self.Schemas.MergeSchema(self.Schemas.Unbound,parts[0],schema,label);
+			node.expand();
+		},
+		MergeSchema:function(parent,schema,graphSchema,label,bound) { /* insert a new prefix into schemas */
+			for (var i=0;i<parent.children.length;i++) {
+				if (parent.children[i].schema == schema) { return parent.children[i]; } /* we already have this */
+			}
+		    var node = parent.createChild(label,1);
+		    node.setImage('rdf-icon-16');
+		    node.collapse();
+			/* custom properties */
+		    node.schema = schema;
+		    node.graphSchema = graphSchema;
+		    node.uritype = (parent == self.Schemas.Unbound ? 'schema' : false);
+		    node.bound = bound;
+			return node;
+		},
+		Reset:function() {
+			var p = self.Schemas.Unbound;
+		    for (var i=p.children.length-1;i>=0;i--) { p.deleteChild(p.children[i]); }
+			var p = self.Schemas.Bound;
+		    for (var i=p.children.length-1;i>=0;i--) { p.deleteChild(p.children[i]); }
+		    self.Schemas.Imported = [];
+		},
+		Remove:function(schema) {
+			var p = self.Schemas.Unbound;
+		    for (var i=p.children.length-1;i>=0;i--) {
+				var child = p.children[i];
+				if (child.schema == schema) { p.deleteChild(child); }
+		    }
+			var p = self.Schemas.Bound;
+		    for (var i=p.children.length-1;i>=0;i--) {
+				var child = p.children[i];
+				if (child.schema == schema) { p.deleteChild(child); }
+		    }
+			var index = self.Schemas.Imported.find(schema);
+		    if (index != -1) { self.Schemas.Imported.splice(index,1); }
+		},
+		NodeDblClick:function() {
+			var node = this.node;
+			if (node.uritype == 'class') {
+				for(var i = 0;i < self.svgsparql.selectedNodes.length;i++) {
+					self.svgsparql.selectedNodes[i].MySetLabel(2,self.putPrefix('<' + node.uri + '>'));
+				}
+			} else {
+				for(var i = 0;i < self.svgsparql.selectedEdges.length;i++) {
+					self.svgsparql.selectedEdges[i].MySetLabel(1,self.putPrefix('<' + node.uri + '>'));
+				}
+			}
+		},
+		NodeDragProcess:function(elm) { 
+			elm.firstChild.style.color = "#f00";
+			elm.firstChild.style.listStyleType = "none";
+		},
+		NodeDragDrop:function(target,x_,y_) { 
+			/* insert into "Bound" tree */
+		    var treeNode = this.originalElement.node;
+			self.Schemas.InsertNode(self.Schemas.Bound,treeNode.uri,treeNode.uritype,treeNode.label,treeNode.comment);
+			
+		    var val = self.putPrefix('<' + treeNode.uri + '>');
+		    if (target == qbe.svgsparql) {
+				if (treeNode.uritype == 'class') {
+					var pos = OAT.Dom.position(target.parent);
+					var x = x_ - pos[0];
+					var y = y_ - pos[1];
+					var node = target.addNode(x,y,"",0);
+					node.setValueByDrop(val,treeNode.uritype,x,y);
+				}
+			} else if (target.svgsparql) {
+				var pos = OAT.Dom.position(target.svgsparql.parent);
+				var x = x_ - pos[0];
+				var y = y_ - pos[1];
+				target.setValueByDrop(val,treeNode.uritype,x,y); 
+			} else if (target == self.props_win.content) {
+				if (self.svgsparql.selectedNode) 
+				self.svgsparql.selectedNode.setValueByDrop(val,treeNode.uritype);
+				else if (self.svgsparql.selectedEdge) 
+				self.svgsparql.selectedEdge.setValueByDrop(val,treeNode.uritype);
+			}
+		},
+		IsAttribute:function(obj) {
+			value = '';
+			if (obj.range) { value = obj.range.value; }
+			switch (value) {
+				case "http://www.w3.org/2000/01/rdf-schema#Literal":
+				case "http://atomowl.org/ontologies/atomrdf#Text":
+				case "http://www.w3.org/1999/02/22-rdf-syntax-ns#value":
+				case "http://atomowl.org/ontologies/atomrdf#Link":
+				case "":
+					return true;
+				break;
+			}
+			return false;
+		},
+		InsertNode:function(parent,uri_,type,label,comment) {
+			/* first, test for a good parent */
+			var uri = self.expandPrefix(uri_);
+			if (uri.charAt(0) == "<") {	uri = uri.substring(1,uri.length-1); }
 
-  var schema_cl = new OAT.Combolist([],self.prefixes[0].uri);
-  schema_cl.input.name = "schema";
-  schema_cl.input.id = "schema";
-  schema_cl.img.src = "images/cl.gif";
-  schema_cl.img.width = "16";
-  schema_cl.img.height = "16";
-  $("schema_div").appendChild(schema_cl.div);
+			var parts = self.getPrefixParts(uri);
+			if (!parts) { return; }
+			var schemaLabel = parts[2] || parts[0];
+			var schemaNode = self.Schemas.MergeSchema(parent,parts[0],parts[0],schemaLabel,false);
+			
+			var nodeLabel = label || parts[1];
+			
+			/* search for Concepts / Properties node */
+			var labels = {};
+			for (var i=0;i<schemaNode.children.length;i++) {
+				var child = schemaNode.children[i];
+				labels[child._label.innerHTML] = child;
+			}
+			
+			var parentNode = false;
+			if (type == 'class') {
+				if ("Concepts" in labels) {
+					parentNode = labels["Concepts"];
+				} else {
+					parentNode = schemaNode.createChild('Concepts',1); 
+					parentNode.collapse();
+				}
+			} else {
+				if ("Properties" in labels) {
+					parentNode = labels["Properties"];
+				} else {
+					parentNode = schemaNode.createChild('Properties',1); 
+					parentNode.collapse();
+				}
+			}
+			
+			for (var i=0;i<parentNode.children.length;i++) {
+				var child = parentNode.children[i];
+				if (child.uri == uri) { return; } /* already inserted */
+			}
+			
+			var leaf = parentNode.createChild(nodeLabel,0); 
 
-  for(var i = 0;i < self.prefixes.length; i++)
-    if (!self.prefixes[i].hidden)
-      schema_cl.addOption(self.prefixes[i].uri);
+			if (comment) {
+				leaf.li.alt = comment;
+				leaf.li.title = comment;
+			}
+			
+			leaf.uri = uri;
+			leaf.uritype = type;
+			leaf.bound = schemaNode.bound;
+			leaf.label = label;
+			leaf.comment = comment;
+			leaf._gdElm.node = leaf;
+
+			self.svgsparql.ghostdrag.addSource(leaf._gdElm,self.Schemas.NodeDragProcess,self.Schemas.NodeDragDrop);
+			OAT.Dom.attach(leaf._gdElm,"dblclick",self.Schemas.NodeDblClick);
+
+			if (type == 'class') {
+				leaf.setImage('concept-icon-16');
+			} else if (type == 'property_attr') {
+				leaf.setImage('attribute-icon-16');
+			} else { leaf.setImage('relation-icon-16'); }
+		},
+		DeleteNode:function(uri) { /* only from "Bound" subtree */
+			var url = self.expandPrefix(uri);
+			if (url.charAt(0) == "<") {	url = url.substring(1,url.length-1); }
+			var parts = self.getPrefixParts(url);
+			if (!parts) { return; }
+			var root = self.Schemas.Bound;
+			var schemaNode = false;
+			for (var i=0;i<root.children.length;i++) {
+				var child = root.children[i];
+				if (child.schema == parts[0])  { schemaNode = child; }
+			}
+			if (!schemaNode) { return; }
+			var containerNode = false;
+			var finalNode = false;
+			for (var i=0;i<schemaNode.children.length;i++) {
+				var child1 = schemaNode.children[i];
+				for (var j=0;j<child1.children.length;j++) {
+					var child2 = child1.children[j];
+					if (child2.uri == url) { 
+						containerNode = child1;
+						finalNode = child2;
+					}
+				}
+			}
+			if (!finalNode) { return; }
+			containerNode.deleteChild(finalNode);
+			if (!containerNode.children.length) { schemaNode.deleteChild(containerNode); }
+			if (!schemaNode.children.length) { root.deleteChild(schemaNode); }
+		},
+		Update:function(node) { /* get Concepts and Properties for a prefix */
+			if (node.children.length > 0) { return; } /* nothing when already fetched */
+			var callback = function(data) {
+				var JSONData = eval('(' + data + ')');
+				if (JSONData.results.bindings.length > 0) {
+					var objs = JSONData.results.bindings;
+					var schemaParts = self.getPrefixParts(node.schema);
+					for (var i=0;i<objs.length;i++) {
+						var obj = objs[i];
+						var uri = obj.uri.value;
+						var parts = self.getPrefixParts(uri);
+						if (parts[0] != schemaParts[0]) { continue; }
+						var label = (obj.label ? obj.label.value : false);
+						var comment = (obj.comment ? obj.comment.value : false);
+						
+						var type = false;
+						switch (obj.type.value) {
+							case "http://www.w3.org/2000/01/rdf-schema#Class":
+							case "http://www.w3.org/2002/07/owl#Class":
+								type = 'class';
+							break;
+							case "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property":
+							case "http://www.w3.org/2002/07/owl#ObjectProperty":
+							case "http://www.w3.org/2002/07/owl#DatatypeProperty":
+							case "http://www.w3.org/2002/07/owl#InverseFunctionalProperty":
+								type = (self.Schemas.IsAttribute(obj) ? 'property_attr' : 'property_rel');
+							break;
+						}
+						if (!type) { continue; }
+						self.Schemas.InsertNode(self.Schemas.Unbound,uri,type,label,comment);
+					} /* for all elements */
+				} /* if data ok */
+			}
+			var oldIcon = "";
+			var oldFilter = "";
+			var params = {
+				service:self.service.input.value,
+				query:'PREFIX owl: <http://www.w3.org/2002/07/owl#>' + '\n' +
+				  'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' + '\n' +
+				  'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
+				  '' + '\n' +
+				  'SELECT DISTINCT ?type ?uri ?label ?comment ?range' + '\n' +
+				((node.bound)?
+				  getFromQueryStr() +
+				  'WHERE {  ' + '\n' +
+				//              '  ?s rdf:type ?uri' + '\n' +
+				  '  { ' + '\n' +
+				  '    { ?s ?uri ?o }' + '\n' +
+				  '    union' + '\n' +
+				  '    { ?s a ?uri }' + '\n' +
+				  '  }' + '\n' +
+				  '    GRAPH <' + node.schema + '> {' + '\n' +
+				'':
+				  'FROM <' + node.schema + '>' + '\n' +
+				  'WHERE {  ' + '\n' +
+				  '        {  ' + '\n' +
+				'') + 
+				  '         ?uri rdf:type ?type .' + '\n' +
+				  '               FILTER (?type in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>)' + '\n' +
+				  '                    || ?type in (<http://www.w3.org/2002/07/owl#Class>)' + '\n' +
+				  '                    || ?type in (<http://www.w3.org/2000/01/rdf-schema#Class>)' + '\n' +
+				  '                    || ?type in (<http://www.w3.org/2002/07/owl#ObjectProperty>)' + '\n' +
+				  '                    || ?type in (<http://www.w3.org/2002/07/owl#DatatypeProperty>)' + '\n' +
+				  '                    || ?type in (<http://www.w3.org/2002/07/owl#InverseFunctionalProperty>))' + '\n' +
+				  '         OPTIONAL { ?uri rdfs:label ?label } .' + '\n' +
+				  '         OPTIONAL { ?uri rdfs:comment ?comment } .' + '\n' +
+				  '         OPTIONAL { ?uri rdfs:range ?range } .' + '\n' +
+				  '  }' + '\n' +
+				  '}' + '\n' +
+				  'ORDER BY ?uri',
+				//default_graph_uri:node.li.uri,
+				default_graph_uri:'',
+				maxrows:0,
+				should_sponge:((node.bound)?'':'soft'),
+				format:'application/sparql-results+json',
+				errorHandler:function(xhr) {
+					var status = xhr.getStatus();
+					var response = xhr.getResponseText();
+					var headers = xhr.getAllResponseHeaders();
+					alert(response);
+				},
+				onstart:function() {
+					var oldIcon = node._icon.src;
+					var oldFilter = node._icon.style.filter;
+					node._icon.src = OAT.Preferences.imagePath+"Dav_throbber.gif";
+					node._icon.style.filter = "";
+				},
+				onend:function() {
+					node._icon.src = oldIcon;
+					node._icon.style.filter = oldFilter;
+				},
+				callback:callback
+			}
+			iSPARQL.QueryExec(params);
+		}, /* Schemas.Update */
+		WalkClick:function(node) { /* get in-domain-of and in-range-of; obsolete */
+		    if (node.children.length > 0) {
+		      ; //node.toggleState();
+		    } else {
+				var callback = function(data) {
+					var processed = [];
+					var JSONData = eval('(' + data + ')');
+					if (JSONData.results.bindings.length > 0) {
+						var Domains;
+						var Ranges;
+						var attr_inx = 0;
+						var objs = JSONData.results.bindings
+						for(var i = 0;i < objs.length; i++) {
+							if (node.uritype == 'class') { 
+								if (self.SchemaIsAttribute(objs[i])) {
+									nodetype = 'property_attr'; 
+								} else { nodetype = 'property_rel'; }
+							} else { var nodetype = 'class'; }
+							// The uri should be from the current schema
+							if (node.schema == objs[i].uri.value.substring(0,node.schema.length) && processed.find(objs[i].uri.value) == -1) {
+								if (objs[i].label) {
+									var label = objs[i].label.value;
+								} else {
+									var label = self.putPrefix('<' + objs[i].uri.value + '>').replace('<','').replace('>','');
+								}
+
+								if (objs[i].type && objs[i].type.value == 'http://www.w3.org/2000/01/rdf-schema#domain') {
+									if (!Domains) { 
+										Domains = node.createChild('in-domain-of',1,0); 
+										Domains.collapse();
+									}
+									var pnode = Domains;
+								} else {
+									if (!Ranges) { 
+										Ranges = node.createChild('in-range-of',1); 
+										Ranges.collapse();
+									}
+									var pnode = Ranges;
+								}
+
+								if (nodetype == 'property_attr') {
+									var leaf = pnode.createChild(label,0,attr_inx);
+									attr_inx++;
+								} else { var leaf = pnode.createChild(label,0); }
+								if (objs[i].comment) {
+									leaf.li.alt = objs[i].comment.value;
+									leaf.li.title = objs[i].comment.value;
+								}
+								leaf.uri = objs[i].uri.value;
+								leaf.uritype = nodetype;
+								leaf.schema = node.schema;
+								leaf.bound = node.bound;
+								leaf._gdElm.node = leaf;
+
+								self.svgsparql.ghostdrag.addSource(leaf._gdElm,self.Schemas.NodeDragProcess,self.Schemas.NodeDragDrop);
+
+								if (nodetype == 'class') { leaf.setImage('concept-icon-16'); }
+								else if (nodetype == 'property_attr') {	leaf.setImage('attribute-icon-16'); }
+								else { leaf.setImage('relation-icon-16'); }
+
+							}
+							processed.push(objs[i].uri.value)
+						}
+					}
+				}
+				var params = {
+					service:self.service.input.value,
+					query:'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' + '\n' +
+					'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
+					'' + '\n' +
+					'SELECT DISTINCT ?type ?uri ?label ?comment ?range' + '\n' +
+					((node.bound)?
+					getFromQueryStr() +
+					'WHERE {' + '\n' +
+					//'  ?s rdf:type ?uri' + '\n' +
+					'    { ' + '\n' +
+					'      { ?s ?uri ?o }' + '\n' +
+					'      union' + '\n' +
+					'      { ?s a ?uri }' + '\n' +
+					'    }' + '\n' +
+					'    GRAPH <' + node.schema + '> {' + '\n' +
+					'':
+					'FROM <' + node.schema + '>' + '\n' +
+					'WHERE {  ' + '\n' +
+					'        {  ' + '\n' +
+					'') + 
+					'    { ?uri rdfs:domain <' + node.uri + '> . }' + '\n' +
+					'      union' + '\n' +
+					'    { ?uri rdfs:range <' + node.uri + '> . }' + '\n' +
+					'    ?uri ?type <' + node.uri + '>' + '\n' +
+					'    OPTIONAL { ?uri rdfs:label ?label } .' + '\n' +
+					'    OPTIONAL { ?uri rdfs:comment ?comment } .' + '\n' +
+					'    OPTIONAL { ?uri rdfs:range ?range } .' + '\n' +
+					'  }' + '\n' +
+					'}' + '\n' +
+					'ORDER BY ?uri',
+					//default_graph_uri:node.li.schema,
+					default_graph_uri:'',
+					maxrows:0,
+					should_sponge:'',
+					format:'application/sparql-results+json',
+					errorHandler:function(xhr) {
+						var status = xhr.getStatus();
+						var response = xhr.getResponseText();
+						var headers = xhr.getAllResponseHeaders();
+						alert(response);
+					},
+					callback:callback
+				}
+				
+				if (node.uritype != 'class') {
+					params.query = 'PREFIX owl: <http://www.w3.org/2002/07/owl#>' + '\n' +
+					'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' + '\n' +
+					'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
+					'' + '\n' +
+					'SELECT DISTINCT ?uri, ?label, ?comment, ?range' + '\n' +
+					((node.bound)?
+					getFromQueryStr() +
+					'WHERE {' + '\n' +
+					//              '  ?s rdf:type ?uri' + '\n' +
+					'    { ' + '\n' +
+					'      { ?s ?uri ?o }' + '\n' +
+					'      union' + '\n' +
+					'      { ?s a ?uri }' + '\n' +
+					'    }' + '\n' +
+					'    GRAPH <' + node.schema + '> {' + '\n' +
+					'':
+					'FROM <' + node.schema + '>' + '\n' +
+					'WHERE {  ' + '\n' +
+					'        {  ' + '\n' +
+					'') + 
+					'    { <' + node.uri + '> rdfs:domain ?uri . }' + '\n' +
+					'      union' + '\n' +
+					'    { <' + node.uri + '> rdfs:range ?uri . }' + '\n' +
+					'    <' + node.uri + '> ?type ?uri' + '\n' +
+					'    OPTIONAL { ?uri rdfs:label ?label } .' + '\n' +
+					'    OPTIONAL { ?uri rdfs:comment ?comment } .' + '\n' +
+					'    OPTIONAL { ?uri rdfs:range ?range } .' + '\n' +
+					'  }' + '\n' +
+					'}' + '\n' +
+					'ORDER BY ?type ?uri';
+				}
+				iSPARQL.QueryExec(params);
+			}
+		}, /* Schemas.WalkClick */
+		Refresh:function(force) { /* get a list of prefixes */
+			if (self.Schemas.Unbound.state == 0 && !force) { return; }
+			var node = self.Schemas.Unbound;
+			var oldIcon = "";
+			var oldFilter = "";
+			var callback = function(data) {
+				for (var i = node.children.length-1;i >= 0;i--) { /* clear old children */
+					node.deleteChild(node.children[i]);
+				}
+				var JSONData = eval('(' + data + ')');
+				if (JSONData.results.bindings.length > 0) {
+					var objs = JSONData.results.bindings;
+					for (var i = 0;i < objs.length; i++) { /* for each result row */
+						var uri = objs[i].g.value;
+						var parts = self.getPrefixParts(uri);
+						if (!parts) { continue; }
+						var label = parts[2] || parts[0];
+						self.Schemas.MergeSchema(self.Schemas.Unbound,parts[0],uri,label,true);
+					}
+				}
+			}
+			var params = {
+				service:self.service.input.value,
+				query:'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
+				'' + '\n' +
+				'SELECT DISTINCT ?g' + '\n' +
+				getFromQueryStr() +
+				'WHERE { ?s rdf:type ?o .' + '\n' +
+				' GRAPH ?g { ?o rdf:type ?type .' + '\n' +
+				'               FILTER (?type in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>)' + '\n' +
+				'                    || ?type in (<http://www.w3.org/2002/07/owl#Class>)' + '\n' +
+				'                    || ?type in (<http://www.w3.org/2000/01/rdf-schema#Class>)' + '\n' +
+				'                    || ?type in (<http://www.w3.org/2002/07/owl#ObjectProperty>)' + '\n' +
+				'                    || ?type in (<http://www.w3.org/2002/07/owl#DatatypeProperty>)' + '\n' +
+				'                    || ?type in (<http://www.w3.org/2002/07/owl#InverseFunctionalProperty>))' + '\n' +
+				'  }' + '\n' +
+				'}' + '\n' +
+				'',
+				//default_graph_uri:,
+				maxrows:0,
+				should_sponge:'',
+				format:'application/sparql-results+json',
+				onstart:function() {
+					var oldIcon = node._icon.src;
+					var oldFilter = node._icon.style.filter;
+					node._icon.src = OAT.Preferences.imagePath+"Dav_throbber.gif";
+					node._icon.style.filter = "";
+				},
+				onend:function() {
+					node._icon.src = oldIcon;
+					node._icon.style.filter = oldFilter;
+				},
+				errorHandler:function(xhr) {
+					var status = xhr.getStatus();
+					var response = xhr.getResponseText();
+					var headers = xhr.getAllResponseHeaders();
+					alert(response);
+				},
+				callback:callback
+			}
+			iSPARQL.QueryExec(params);
+		}
+	}
+	self.Schemas.Reset();
+	
+	OAT.MSG.attach(self.Schemas.Tree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,node) {
+		if (node.uritype) {
+			if (node.uritype == 'schema') { self.Schemas.Update(node); } else  { self.Schemas.WalkClick(node); }
+		}
+		if (node == self.Schemas.Unbound) { self.Schemas.Refresh(true); }
+	});
+  
+
+	var schema_cl = new OAT.Combolist([],self.prefixes[0].uri);
+	schema_cl.input.name = "schema";
+	schema_cl.input.id = "schema";
+	schema_cl.img.src = "images/cl.gif";
+	schema_cl.img.width = "16";
+	schema_cl.img.height = "16";
+	$("schema_div").appendChild(schema_cl.div);
+
+	for (var i = 0;i < self.prefixes.length; i++) {
+		if (!self.prefixes[i].hidden) { schema_cl.addOption(self.prefixes[i].uri); }
+	}
       
-  this.func_clear = function() {
-	  //if (tab.selectedIndex != 0 && !tab_qbe.window) return;
-	  tab.go(tab_qbe);
-		if(confirm('Are you sure you want to clear the pane?'))
-		{
-		  self.clear();
-  	  //$("qbe_res_area").innerHTML = '';
-      //OAT.Dom.hide(self.results_win.div);
+	this.func_clear = function() {
+		tab.go(tab_qbe);
+		if (confirm('Are you sure you want to clear the pane?')) {
+			self.clear();
 		}
 	}
 	
@@ -1093,31 +1219,11 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 
 	t.addSeparator();
 
-	//icon_start = t.addIcon(0,"images/start-22.png","First",function(){}); 
-  //icon_start.style.opacity = 0.3;
-  //icon_start.style.filter = 'alpha(opacity=30)';
-  //icon_start.style.cursor = 'default';
-	//icon_back = t.addIcon(0,"images/back-22.png","Back",function(){}); 
-  //icon_back.style.opacity = 0.3;
-  //icon_back.style.filter = 'alpha(opacity=30)';
-  //icon_back.style.cursor = 'default';
-	//icon_forward = t.addIcon(0,"images/forward-22.png","Forward",function(){}); 
-  //icon_forward.style.opacity = 0.3;
-  //icon_forward.style.filter = 'alpha(opacity=30)';
-  //icon_forward.style.cursor = 'default';
-	//icon_finish = t.addIcon(0,"images/finish-22.png","Last",function(){}); 
-  //icon_finish.style.opacity = 0.3;
-  //icon_finish.style.filter = 'alpha(opacity=30)';
-  //icon_finish.style.cursor = 'default';
-  //
-	//t.addSeparator();
-
 	icon_drag = t.addIcon(1,"images/select_mode_h.png","Drag mode",function(state) {
 		if (!state) { return; }
 		icon_add.toggleState(0);
 		icon_draw.toggleState(0);
-    if (self.svgsparql)
-  		self.svgsparql.mode = OAT.SVGSparqlData.MODE_DRAG;
+		if (self.svgsparql) { self.svgsparql.mode = OAT.SVGSparqlData.MODE_DRAG; }
 	});
 	icon_add = t.addIcon(1,"images/add_node_mode_h.png","Add mode",function(state) {
 		if (!state) { return; }
@@ -1125,24 +1231,22 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 		icon_draw.toggleState(0);
 		self.svgsparql.mode = OAT.SVGSparqlData.MODE_ADD;
 	});
-  var process = function(elm) { elm.firstChild.style.color = "#f00"; elm.firstChild.style.listStyleType = "none";}
-  var drop = function(target,x_,y_) { 
-    if (target == qbe.svgsparql)
-    {
+	var process = function(elm) { elm.firstChild.style.color = "#f00"; elm.firstChild.style.listStyleType = "none";}
+	var drop = function(target,x_,y_) { 
+	    if (target == qbe.svgsparql) {
 			var pos = OAT.Dom.position(target.parent);
 			var x = x_ - pos[0];
 			var y = y_ - pos[1];
-      node = target.addNode(x,y,"",0);
-    }; 
-  }
-  if (self.svgsparql)
-    self.svgsparql.ghostdrag.addSource(icon_add,process,drop);
-  OAT.Dom.unlink(icon_add.firstChild);
-  icon_add.style.backgroundImage = "url(images/add_node_mode_h.png)";
-  icon_add.style.backgroundRepeat = "no-repeat";
-  icon_add.style.backgroundPosition = "center";
-  icon_add.style.width = '24';
-  icon_add.style.height = '24';
+			node = target.addNode(x,y,"",0);
+	    }; 
+	}
+	if (self.svgsparql) { self.svgsparql.ghostdrag.addSource(icon_add,process,drop); }
+	OAT.Dom.unlink(icon_add.firstChild);
+	icon_add.style.backgroundImage = "url(images/add_node_mode_h.png)";
+	icon_add.style.backgroundRepeat = "no-repeat";
+	icon_add.style.backgroundPosition = "center";
+	icon_add.style.width = '24';
+	icon_add.style.height = '24';
 
 	icon_draw = t.addIcon(1,"images/connect_mode_h.png","Connector",function(state) {
 		if (!state) { return; }
@@ -1150,67 +1254,63 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 		icon_add.toggleState(0);
 		self.svgsparql.mode = OAT.SVGSparqlData.MODE_DRAW;
 	});
-  var process = function(elm) { elm.firstChild.style.color = "#f00"; elm.firstChild.style.listStyleType = "none";}
-  var drop = function(target,x_,y_) { 
-    if (target != qbe.svgsparql && !target.node2)
-    {
-			var pos = OAT.Dom.position(target.svgsparql.parent);
-			var x = x_ - pos[0];
-			var y = y_ - pos[1];
-      qbe.svgsparql.startDrawing(target,x,y,'?');
-    }
-  }
-  if (self.svgsparql)
-    self.svgsparql.ghostdrag.addSource(icon_draw,process,drop);
-  OAT.Dom.unlink(icon_draw.firstChild);
-  icon_draw.style.backgroundImage = "url(images/connect_mode_h.png)";
-  icon_draw.style.backgroundRepeat = "no-repeat";
-  icon_draw.style.backgroundPosition = "center";
-  icon_draw.style.width = '24';
-  icon_draw.style.height = '24';
+	var process = function(elm) { 
+		elm.firstChild.style.color = "#f00"; 
+		elm.firstChild.style.listStyleType = "none";
+	}
+	var drop = function(target,x_,y_) { 
+	    if (target != qbe.svgsparql && !target.node2) {
+				var pos = OAT.Dom.position(target.svgsparql.parent);
+				var x = x_ - pos[0];
+				var y = y_ - pos[1];
+	      qbe.svgsparql.startDrawing(target,x,y,'?');
+	    }
+	}
+	if (self.svgsparql) { self.svgsparql.ghostdrag.addSource(icon_draw,process,drop); }
+	OAT.Dom.unlink(icon_draw.firstChild);
+	icon_draw.style.backgroundImage = "url(images/connect_mode_h.png)";
+	icon_draw.style.backgroundRepeat = "no-repeat";
+	icon_draw.style.backgroundPosition = "center";
+	icon_draw.style.width = '24';
+	icon_draw.style.height = '24';
 
 	icon_group = t.addIcon(0,"images/group_h.png","Group Selected",function(state) {
-	  if (self.svgsparql.selectedNodes.length > 0)
-	  {
-	    if (self.svgsparql.selectedGroups.length == 0)
-  	    var g = self.svgsparql.addGroup("");
-  	  else 
-  	    var g = self.svgsparql.selectedGroups[0];
+		if (self.svgsparql.selectedNodes.length > 0) {
+			if (self.svgsparql.selectedGroups.length == 0) {
+				var g = self.svgsparql.addGroup("");
+			} else {
+				var g = self.svgsparql.selectedGroups[0];
+			}
 
-  	  for(var i = 0;i < self.svgsparql.selectedNodes.length;i++)
-  	  {
-  	    node = self.svgsparql.selectedNodes[i];
-  	    var oldgroup = node.group;
-  	    node.setGroup(g);
-  	    if(oldgroup && oldgroup.nodes.length == 0)
-  	      self.svgsparql.removeGroup(oldgroup);
-  	  }
-      self.svgsparql.deselectNodes();
-	  } else if (self.svgsparql.selectedGroups.length > 0){
-	    if (self.svgsparql.selectedGroups.length == 1)
-  	    var g = false;
-  	  else 
-  	    var g = self.svgsparql.selectedGroups[0];
-  	  for(var i = 0;i < self.svgsparql.selectedGroups.length;i++)
-  	  {
-  	    if (self.svgsparql.selectedGroups[i] != g)
-  	      self.svgsparql.selectedGroups[i].setParent(g);
-  	  }
-	  }
+			for (var i = 0;i < self.svgsparql.selectedNodes.length;i++) {
+				node = self.svgsparql.selectedNodes[i];
+				var oldgroup = node.group;
+				node.setGroup(g);
+				if(oldgroup && oldgroup.nodes.length == 0)
+				self.svgsparql.removeGroup(oldgroup);
+			}
+			self.svgsparql.deselectNodes();
+		} else if (self.svgsparql.selectedGroups.length > 0) {
+			if (self.svgsparql.selectedGroups.length == 1) { var g = false; } else { var g = self.svgsparql.selectedGroups[0]; }
+			for(var i = 0;i < self.svgsparql.selectedGroups.length;i++)	{
+				if (self.svgsparql.selectedGroups[i] != g) { self.svgsparql.selectedGroups[i].setParent(g); }
+			}
+		}
 	});
 
 	icon_remove = t.addIcon(0,"images/delete_h.png","Remove",function(state) {
 		//if (!state) { return; }
 		if (self.svgsparql.selectedEdges.length + self.svgsparql.selectedNodes.length + self.svgsparql.selectedGroups.length > 0 )
-  		if(confirm('Are you sure you want to delete selected objects?'))
-  		{
-  		  for(var i = 0;i < self.svgsparql.selectedEdges.length;i++)
-  		    self.svgsparql.removeEdge(self.svgsparql.selectedEdges[i]);
-  		  for(var i = 0;i < self.svgsparql.selectedNodes.length;i++)
-  		    self.svgsparql.removeNode(self.svgsparql.selectedNodes[i]);
-  		  for(var i = 0;i < self.svgsparql.selectedGroups.length;i++)
-  		    self.svgsparql.removeGroup(self.svgsparql.selectedGroups[i]);
-
+  		if (confirm('Are you sure you want to delete selected objects?')) {
+			for(var i = 0;i < self.svgsparql.selectedEdges.length;i++) {
+				self.svgsparql.removeEdge(self.svgsparql.selectedEdges[i]);
+			}
+			for(var i = 0;i < self.svgsparql.selectedNodes.length;i++) {
+				self.svgsparql.removeNode(self.svgsparql.selectedNodes[i]);
+			}
+			for(var i = 0;i < self.svgsparql.selectedGroups.length;i++) {
+				self.svgsparql.removeGroup(self.svgsparql.selectedGroups[i]);
+			}
     		self.svgsparql.deselectNodes();
     		self.svgsparql.deselectEdges();
     		self.svgsparql.deselectGroups();
@@ -1219,33 +1319,33 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 
 	t.addSeparator();
 
-  this.func_run = function() {
+	this.func_run = function() {
 	  //if (tab.selectedIndex != 0 && !tab_qbe.window) return;
 	  self.RunQuery();
 	}
 	
 	this.func_generate = function() {
-	  //if (tab.selectedIndex != 0 && !tab_qbe.window) return;
-	  tab.go(tab_query); 
-	  $('query').value = self.QueryGenerate();
-	  format_select();
-	  $('default-graph-uri').value = '';
-    $('adv_sponge').value = $v('qbe_sponge');
+		//if (tab.selectedIndex != 0 && !tab_qbe.window) return;
+		tab.go(tab_query); 
+		$('query').value = self.QueryGenerate();
+		format_select();
+		$('default-graph-uri').value = '';
+		$('adv_sponge').value = $v('qbe_sponge');
 	}
 	
 	this.func_get_from_adv = function() {
-	  tab.go(tab_qbe);
-	  //if (tab.selectedIndex != 0 && !tab_qbe.window) return;
-	  self.loadFromString($('query').value);
-	  if ($v('qbe_graph') == '')
-	    $('qbe_graph').value = $v('default-graph-uri').trim();
-    $('qbe_sponge').value = $v('adv_sponge');
+		tab.go(tab_qbe);
+		//if (tab.selectedIndex != 0 && !tab_qbe.window) return;
+		self.loadFromString($('query').value);
+		if ($v('qbe_graph') == '')
+		$('qbe_graph').value = $v('default-graph-uri').trim();
+		$('qbe_sponge').value = $v('adv_sponge');
 	}
 	
 	this.func_arrange = function() {
-	  tab.go(tab_qbe);
-	  //if (tab.selectedIndex != 0 && !tab_qbe.window) return;
-	  self.svgsparql.reposition();
+		tab.go(tab_qbe);
+		//if (tab.selectedIndex != 0 && !tab_qbe.window) return;
+		self.svgsparql.reposition();
 	}
 
 	icon_run = t.addIcon(0,"images/cr22-action-player_play.png","Run Query",self.func_run); 
@@ -1267,42 +1367,43 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 	t.addSeparator();
 
 	icon_datasets = t.addIcon(0,"images/folder_html.png","Dataset",function(){
-	  if (self.dataset_win.div.style.display == 'none')
-	    OAT.Dom.show(self.dataset_win.div);
-	  else
-	    OAT.Dom.hide(self.dataset_win.div);
-	  l.raise(self.dataset_win.div);
+		if (self.dataset_win.div.style.display == 'none') {
+			OAT.Dom.show(self.dataset_win.div);
+		} else {
+			OAT.Dom.hide(self.dataset_win.div);
+		}
+		l.raise(self.dataset_win.div);
 	}); 
 	//icon_datasets.style.cssFloat = 'right';
 
-  var ds_graph_add = function(){
-    self.addDataSource($v('qbe_graph').trim());
-    $('qbe_graph').value = '';
-    //return;    
-    self.SchemaTreeRefresh();
-  };
+	var ds_graph_add = function() {
+		self.addDataSource($v('qbe_graph').trim());
+		$('qbe_graph').value = '';
+		//return;    
+		self.Schemas.Refresh();
+	};
   
-  var qbe_graph_input = OAT.Dom.create("input");
-  qbe_graph_input.id = "qbe_graph";
-  qbe_graph_input.name = "qbe_graph";
+	var qbe_graph_input = OAT.Dom.create("input");
+	qbe_graph_input.id = "qbe_graph";
+	qbe_graph_input.name = "qbe_graph";
 
-  var calc_width = function(){
-    var w = OAT.Dom.getViewport()[0];
-    qbe_graph_input.style.width = w - 620 + 'px';
-  }
-  calc_width();
+	var calc_width = function(){
+	var w = OAT.Dom.getViewport()[0];
+	qbe_graph_input.style.width = w - 640 + 'px';
+	}
+	calc_width();
 	OAT.Dom.attach(window,"resize",calc_width);
 
-  var qbe_graph_label = OAT.Dom.create("label");
-  qbe_graph_label["htmlFor"] = "qbe_graph";
-  
-  qbe_graph_label.innerHTML = 'Data Source URI';
+	var qbe_graph_label = OAT.Dom.create("label");
+	qbe_graph_label["htmlFor"] = "qbe_graph";
 
-  var qbe_datasource_cnt = OAT.Dom.create("sub");
-  qbe_datasource_cnt.id = "qbe_datasource_cnt";
-  qbe_datasource_cnt.innerHTML = '0';
-  
-  OAT.Dom.append([t.div,qbe_datasource_cnt,qbe_graph_label,qbe_graph_input]);
+	qbe_graph_label.innerHTML = 'Data Source URI';
+
+	var qbe_datasource_cnt = OAT.Dom.create("sub");
+	qbe_datasource_cnt.id = "qbe_datasource_cnt";
+	qbe_datasource_cnt.innerHTML = '0';
+
+	OAT.Dom.append([t.div,qbe_datasource_cnt,qbe_graph_label,qbe_graph_input]);
 	
 	icon_graph_add = t.addIcon(0,"images/edit_add.png","add",ds_graph_add)
 	//OAT.Dom.attach("qbe_datasource_graph_add","click",ds_graph_add);
@@ -1310,161 +1411,95 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 
 	this.dataset_win = new OAT.Window({title:"Dataset", close:1, min:0, max:0, width:page_w - 400, height:200, x:200,y:160});
 	$("page_qbe").appendChild(this.dataset_win.div);
-	l.addLayer(this.dataset_win.div);
+	self.l.addLayer(this.dataset_win.div);
 	this.dataset_win.content.appendChild($("qbe_dataset_div"));
-  this.dataset_win.onclose = function() { OAT.Dom.hide(self.dataset_win.div); }
-  OAT.Dom.hide(self.dataset_win.div);
+	this.dataset_win.onclose = function() { OAT.Dom.hide(self.dataset_win.div); }
+	OAT.Dom.hide(self.dataset_win.div);
   
-  this.dataSourceNum = 1;
+	this.dataSourceNum = 1;
 
-  this.addDataSource = function(val,type) {
-    if (!val){ alert('Empty Data Source!'); return false; }
-    
-    var table = $('qbe_dataset_list');
-    if (!table.tBodies.length)
-    {
-      var body = OAT.Dom.create("tbody")
-    	table.appendChild(body);
-    }
-    
-    var row = OAT.Dom.create("tr");
-    OAT.Dom.addClass(row,"odd");
-    row.id = 'ds_list_row'+self.dataSourceNum;
-    table.tBodies[0].appendChild(row);
-    
-    var cell_cb = OAT.Dom.create("td");
-    cell_cb.innerHTML = '<input type="checkbox" name="ds_cbk" value="'+self.dataSourceNum+'" checked="checked"/>';
-    cell_cb.style.textAlign = "center";
-    row.appendChild(cell_cb);
+	this.addDataSource = function(val,type) {
+	    if (!val){ alert('Empty Data Source!'); return false; }
+	    
+	    var table = $('qbe_dataset_list');
+	    if (!table.tBodies.length) {
+			var body = OAT.Dom.create("tbody")
+	    	table.appendChild(body);
+	    }
+	    
+	    var row = OAT.Dom.create("tr");
+	    OAT.Dom.addClass(row,"odd");
+	    row.id = 'ds_list_row'+self.dataSourceNum;
+	    table.tBodies[0].appendChild(row);
+	    
+	    var cell_cb = OAT.Dom.create("td");
+	    cell_cb.innerHTML = '<input type="checkbox" name="ds_cbk" value="'+self.dataSourceNum+'" checked="checked"/>';
+	    cell_cb.style.textAlign = "center";
+	    row.appendChild(cell_cb);
 
-    var cell_cb = OAT.Dom.create("td");
-    cell_cb.innerHTML = '<select id="ds_type_'+self.dataSourceNum+'"><option value="F">From</option><option value="N"'+((type == 'N')?' selected="selected"':'')+'>Named</option></select>';
-    row.appendChild(cell_cb);
-  
-    var cell_ds = OAT.Dom.create("td");
-    cell_ds.innerHTML = '<input type="text" style="width: 440px;" id="ds_'+self.dataSourceNum+'" value="'+val+'"/>';
-    row.appendChild(cell_ds);
-  
-    var cell_rm = OAT.Dom.create("td");
-    cell_rm.style.textAlign = "center";
-    row.appendChild(cell_rm);
-    var rem_btn = OAT.Dom.create("button");
-    rem_btn.innerHTML = '<img src="images/edit_remove.png" title="del" alt="del"/> del';
-    cell_rm.appendChild(rem_btn);
-    
-  	OAT.Dom.attach(rem_btn,"click",function(){
-      OAT.Dom.unlink(row);
-      if (!table.tBodies[0].rows.length)
-        OAT.Dom.unlink(table.tBodies[0]);
-      $('qbe_datasource_cnt').innerHTML--;
-      self.SchemaTreeRefresh();
-  	});
+	    var cell_cb = OAT.Dom.create("td");
+	    cell_cb.innerHTML = '<select id="ds_type_'+self.dataSourceNum+'"><option value="F">From</option><option value="N"'+((type == 'N')?' selected="selected"':'')+'>Named</option></select>';
+	    row.appendChild(cell_cb);
+	  
+	    var cell_ds = OAT.Dom.create("td");
+	    cell_ds.innerHTML = '<input type="text" style="width: 440px;" id="ds_'+self.dataSourceNum+'" value="'+val+'"/>';
+	    row.appendChild(cell_ds);
+	  
+	    var cell_rm = OAT.Dom.create("td");
+	    cell_rm.style.textAlign = "center";
+	    row.appendChild(cell_rm);
+	    var rem_btn = OAT.Dom.create("button");
+	    rem_btn.innerHTML = '<img src="images/edit_remove.png" title="del" alt="del"/> del';
+	    cell_rm.appendChild(rem_btn);
+	    
+	  	OAT.Dom.attach(rem_btn,"click",function(){
+			OAT.Dom.unlink(row);
+			if (!table.tBodies[0].rows.length) { OAT.Dom.unlink(table.tBodies[0]); }
+			$('qbe_datasource_cnt').innerHTML--;
+			self.Schemas.Refresh();
+	  	});
 
-  	OAT.Dom.attach($('ds_'+self.dataSourceNum),"change",function(){
-      self.SchemaTreeRefresh();
-  	});
-    
-    $('qbe_datasource_cnt').innerHTML++;
-    self.dataSourceNum++;
-   
-   return true; 
-  }
+	  	OAT.Dom.attach($('ds_'+self.dataSourceNum),"change",function(){
+			self.Schemas.Refresh();
+	  	});
+	    
+	    $('qbe_datasource_cnt').innerHTML++;
+	    self.dataSourceNum++;
+	   
+		return true; 
+	}
 	OAT.Dom.attach("qbe_dataset_add_btn","click",function() {
-    self.addDataSource($v('qbe_dataset_add'));
-    $('qbe_dataset_add').value = '';
-    self.SchemaTreeRefresh();
-  });
-
-  var getFromQueryStr = function() {
-    var qbe_graph = $v('qbe_graph').trim();
-    var from = '';
-  	if (qbe_graph != '')
-  	  from = 'FROM <' + qbe_graph + '>\n';
-    var ds_cbks = document.getElementsByName('ds_cbk');
-    if(ds_cbks && ds_cbks.length > 0)
-    {
-      for(var n = 0; n < ds_cbks.length; n++)
-      {
-        if (ds_cbks[n].checked)
-        {
-          var val = $v('ds_'+ds_cbks[n].value).trim();
-          if (val != '')
-          {
-            if ($v('ds_type_'+ds_cbks[n].value) == 'N')
-              from += 'FROM NAMED <' + val + '>\n';
-            else 
-              from += 'FROM <' + val + '>\n';
-          }
-        }
-      }
-    }
-    return from;
-  }
-  
-  this.SchemaTreeRefresh = function(force) {
-    if (self.schematree.bound.state == 0 && !force)
-      return;
-    
-    var callback = function(data)
-    {
-      for(var i = self.schematree.bound.children.length - 1;i >= 0;i--)
-        self.schematree.bound.deleteChild(self.schematree.bound.children[i]);
-	    var JSONData = eval('(' + data + ')');
-	    if (JSONData.results.bindings.length > 0)
-	    {
-        var objs = JSONData.results.bindings
-        for(var i = 0;i < objs.length; i++)
-        {
-          var node = self.schematree.bound.createChild(self.putPrefix('<' + objs[i].g.value + '>').replace('<','').replace('>',''),1);
-          node.setImage('/../../../images/rdf-icon-16');
-          node.collapse();
-          node.li.uri = objs[i].g.value;
-          node.li.uritype = 'schema';
-          node.li.bound = true;
-          node._label.OATTreeObj = node;
-        }
-      }
-    }
-    var params = {
-      service:self.service.input.value,
-      query:'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
-            '' + '\n' +
-            'SELECT DISTINCT ?g' + '\n' +
-            getFromQueryStr() +
-            'WHERE { ?s rdf:type ?o .' + '\n' +
-            ' GRAPH ?g { ?o rdf:type ?type .' + '\n' +
-            '               FILTER (?type in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>)' + '\n' +
-            '                    || ?type in (<http://www.w3.org/2002/07/owl#Class>)' + '\n' +
-            '                    || ?type in (<http://www.w3.org/2000/01/rdf-schema#Class>)' + '\n' +
-            '                    || ?type in (<http://www.w3.org/2002/07/owl#ObjectProperty>)' + '\n' +
-            '                    || ?type in (<http://www.w3.org/2002/07/owl#DatatypeProperty>)' + '\n' +
-            '                    || ?type in (<http://www.w3.org/2002/07/owl#InverseFunctionalProperty>))' + '\n' +
-            '  }' + '\n' +
-            '}' + '\n' +
-            '',
-      //default_graph_uri:,
-      maxrows:0,
-	    should_sponge:'',
-      format:'application/sparql-results+json',
-      errorHandler:function(xhr)
-      {
-        var status = xhr.getStatus();
-        var response = xhr.getResponseText();
-  			var headers = xhr.getAllResponseHeaders();
-        alert(response);
-      },
-      callback:callback
-    }
-    iSPARQL.QueryExec(params);
-  }
-  
-  OAT.Keyboard.add('return',self.func_run,null,null,null,$('qbe_graph'));
-	OAT.Dom.attach($('qbe_graph'),"change",function(){
-    self.SchemaTreeRefresh();
+		self.addDataSource($v('qbe_dataset_add'));
+		$('qbe_dataset_add').value = '';
+		self.Schemas.Refresh();
 	});
 
+	var getFromQueryStr = function() {
+		var qbe_graph = $v('qbe_graph').trim();
+		var from = '';
+		if (qbe_graph != '') { from = 'FROM <' + qbe_graph + '>\n'; }
+		var ds_cbks = document.getElementsByName('ds_cbk');
+		if (ds_cbks && ds_cbks.length > 0) {
+			for(var n = 0; n < ds_cbks.length; n++)	{
+				if (ds_cbks[n].checked)	{
+					var val = $v('ds_'+ds_cbks[n].value).trim();
+					if (val != '') {
+						if ($v('ds_type_'+ds_cbks[n].value) == 'N') {
+							from += 'FROM NAMED <' + val + '>\n';
+						} else {
+							from += 'FROM <' + val + '>\n';
+						}
+					}
+				}
+			}
+		}
+		return from;
+	}
+  
+	OAT.Keyboard.add('return',self.func_run,null,null,null,$('qbe_graph'));
+	OAT.Dom.attach($('qbe_graph'),"change",self.Schemas.Refresh);
+
 	icon_drag.toggleState(1);
-	
 	/* input field for value editing */
 	OAT.Dom.attach("qbe_node_id","keyup",function() {
 		var obj = false;
@@ -1520,11 +1555,10 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 	/* input field for node type switching */
 	OAT.Dom.attach("qbe_node_type","change",function() {
 		var obj = false;
-		if (self.svgsparql.selectedNode) 
-		{
-		  obj = self.svgsparql.selectedNode; 
-		  obj.setType($v('qbe_node_type'));
-  		self.svgsparql.selectNode(obj);
+		if (self.svgsparql.selectedNode) {
+			obj = self.svgsparql.selectedNode; 
+			obj.setType($v('qbe_node_type'));
+			self.svgsparql.selectNode(obj);
 		}
 	}); 
 
@@ -1616,30 +1650,22 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 	}
 	OAT.Dom.attach("qbe_browse_btn","click",fileRef);
 
-  this.service = new OAT.Combolist(iSPARQL.defaultEndpoints,"/sparql");
-  self.service.img.src = "images/cl.gif";
-  self.service.img.width = "16";
-  self.service.img.height = "16";
-  $("qbe_service_div").appendChild(self.service.div);
+	this.service = new OAT.Combolist(defaultEndpoints,"/sparql");
+	self.service.img.src = "images/cl.gif";
+	self.service.img.width = "16";
+	self.service.img.height = "16";
+	$("qbe_service_div").appendChild(self.service.div);
 	
 	this.RunQuery = function() {
 		var maxrows = parseInt($v("qbe_maxrows"));
-		var params = {
-			service:self.service.input.value,
+		var p = {
 			query:self.QueryGenerate(),
-			default_graph_uri:'',
-			should_sponge:$v('qbe_sponge'),
-			format:$v('qbe_format'),
-			//default_graph_uri:$v('qbe_graph'),
-			//res_div:$('qbe_res_area'),
-			res_div:$('page_results'),
-			prefixes:self.prefixes,
-			showQuery:true
+			defaultGraph:"",
+			sponge:$v("qbe_sponge"),
+			endpoint:self.service.input.value,
+			limit:maxrows
 		}
-		if (maxrows) { params.maxrows = maxrows; }
-
-		if (!tab_results.window) { tab.go(2); }
-		iSPARQL.QueryExec(params);
+		qe.execute(p);
 	}
 	
 	this.loadFromString = function(data) {
@@ -1650,306 +1676,268 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 		}
 
 		var walkSparqlQuery = function(obj,nodes,group) {
-	  	  ret = [];
-	      switch (obj.type) {
-    	  case 'group':
-    		  for (var i = 0; i < obj.children.length; i++)
-    		  {
-    		    var t = walkSparqlQuery(obj.children[i],nodes,group);
-    		    ret.push(t);
-    		  }
-    		  return ret;
-        break;
-    	  case 'union':
-  	      var new_group = self.svgsparql.addGroup("",1);
-  	      new_group.MySetType(OAT.SVGSparqlData.GROUP_UNION);
-          if (group) new_group.setParent(group);
-    		  for (var i = 0; i < obj.children.length; i++)
-    		  {
-        		var new_nodes = [];
-    		    walkSparqlQuery(obj.children[i],new_nodes,new_group);
-    		  }
-    		  return new_group;
-        break;
-    	  case 'optional':
-    	    if (obj.content.type == 'pattern')
-    		    return walkSparqlQuery(obj.content,nodes,group);
-    		  else
-  		    {
-  		      var new_group = self.svgsparql.addGroup("",1);
-  		      new_group.MySetType(OAT.SVGSparqlData.GROUP_OPTIONAL);
-            if (group) new_group.setParent(group);
-  		      walkSparqlQuery(obj.content,nodes,new_group);
-  		      return group;
-  		    }
-        break;
-    	  case 'graph':
-          var g = self.putPrefix(obj.name);
-  		    var new_group = self.svgsparql.addGroup(g,1);
-    		  new_group.setFill(self.group_color_seq.getNext());
-          if (!g.match(/^\?/) || (g.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(g.substring(1)) == -1))
-            new_group.setVisible(false);
-          if (group) new_group.setParent(group);
-  		    walkSparqlQuery(obj.content,nodes,new_group);
-  
-          if (findByLabel(nodes,g) != -1)
-          {
-            var inx = findByLabel(nodes,g);
-            var node = nodes[inx];
-            for(var i = 0; i < node.edges.length; i++)
-            {
-              var node1 = node.edges[i].node1;
-        			var edge = self.svgsparql.addEdge(node1,new_group,node.edges[i].getLabel(1),1);
-        			edge.setVisible(node.edges[i].getVisible());
-            }
-      			self.svgsparql.removeNode(node);
-            nodes.splice(inx,1);
-          }
-  
-  		    return new_group;
-        break;
-        case "pattern":
-          var node1;
-          var node2;
-          var s = self.putPrefix(obj.s);
-          if (findByLabel(nodes,s) == -1)
-          {
-            node1 = self.svgsparql.addNode(0,0,"",1);
-            node1.MySetLabel(1,s);
-            node1.setType(OAT.SVGSparqlData.NODE_CIRCLE);
-            if (!s.match(/^\?/) || (s.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(s.substring(1)) == -1))
-              node1.setVisible(false);
-            if (group) node1.setGroup(group);
-            nodes.push(node1);
-          } else
-            node1 = nodes[findByLabel(nodes,s)];
-            
-          var o = self.putPrefix(obj.o);
-          if (obj.p == '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>' && 
-               (!o.match(/^\?/) ||
-                o.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(o.substring(1)) == -1)
-             )
-          {
-            node1.MySetLabel(2,o);
-            return node1;  
-            break;
-          }
-          
-          if (findByLabel(nodes,o) == -1) {
-            node2 = self.svgsparql.addNode(0,0,"",1);
-            node2.MySetLabel(1,o);
-            if (obj.otype == '')
-              node2.setType(OAT.SVGSparqlData.NODE_CIRCLE);
-            else
-              node2.MySetLabel(2,self.putPrefix(obj.otype));
-              
-            if (!o.match(/^\?/) || (o.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(o.substring(1)) == -1))
-              node2.setVisible(false);
-            if (group) node2.setGroup(group);
-            nodes.push(node2);
-          } else
-            node2 = nodes[findByLabel(nodes,o)];
-            
-          var p = self.putPrefix(obj.p);
-    			var edge = self.svgsparql.addEdge(node1,node2,"",1);
-    			edge.MySetLabel(1,p);
-    			if (obj.parent.type == 'optional')
-    			  edge.setType(OAT.SVGSparqlData.EDGE_DASHED);
-          if (!p.match(/^\?/) || (p.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(p.substring(1)) == -1))
-            edge.setVisible(false);
-          return node1;  
-        break;
-        default:
-        break;
-      }
-  	  return ret;
-  	}
+		  	ret = [];
+		    switch (obj.type) {
+	    	  case 'group':
+	    		  for (var i = 0; i < obj.children.length; i++)
+	    		  {
+	    		    var t = walkSparqlQuery(obj.children[i],nodes,group);
+	    		    ret.push(t);
+	    		  }
+	    		  return ret;
+	        break;
+	    	  case 'union':
+	  	      var new_group = self.svgsparql.addGroup("",1);
+	  	      new_group.MySetType(OAT.SVGSparqlData.GROUP_UNION);
+	          if (group) new_group.setParent(group);
+	    		  for (var i = 0; i < obj.children.length; i++)
+	    		  {
+	        		var new_nodes = [];
+	    		    walkSparqlQuery(obj.children[i],new_nodes,new_group);
+	    		  }
+	    		  return new_group;
+	        break;
+	    	  case 'optional':
+	    	    if (obj.content.type == 'pattern')
+	    		    return walkSparqlQuery(obj.content,nodes,group);
+	    		  else
+	  		    {
+	  		      var new_group = self.svgsparql.addGroup("",1);
+	  		      new_group.MySetType(OAT.SVGSparqlData.GROUP_OPTIONAL);
+	            if (group) new_group.setParent(group);
+	  		      walkSparqlQuery(obj.content,nodes,new_group);
+	  		      return group;
+	  		    }
+	        break;
+	    	  case 'graph':
+	          var g = self.putPrefix(obj.name);
+	  		    var new_group = self.svgsparql.addGroup(g,1);
+	    		  new_group.setFill(self.group_color_seq.getNext());
+	          if (!g.match(/^\?/) || (g.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(g.substring(1)) == -1))
+	            new_group.setVisible(false);
+	          if (group) new_group.setParent(group);
+	  		    walkSparqlQuery(obj.content,nodes,new_group);
+	  
+	          if (findByLabel(nodes,g) != -1)
+	          {
+	            var inx = findByLabel(nodes,g);
+	            var node = nodes[inx];
+	            for(var i = 0; i < node.edges.length; i++)
+	            {
+	              var node1 = node.edges[i].node1;
+	        			var edge = self.svgsparql.addEdge(node1,new_group,node.edges[i].getLabel(1),1);
+	        			edge.setVisible(node.edges[i].getVisible());
+	            }
+	      			self.svgsparql.removeNode(node);
+	            nodes.splice(inx,1);
+	          }
+	  
+	  		    return new_group;
+	        break;
+	        case "pattern":
+	          var node1;
+	          var node2;
+	          var s = self.putPrefix(obj.s);
+	          if (findByLabel(nodes,s) == -1)
+	          {
+	            node1 = self.svgsparql.addNode(0,0,"",1);
+	            node1.MySetLabel(1,s);
+	            node1.setType(OAT.SVGSparqlData.NODE_CIRCLE);
+	            if (!s.match(/^\?/) || (s.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(s.substring(1)) == -1))
+	              node1.setVisible(false);
+	            if (group) node1.setGroup(group);
+	            nodes.push(node1);
+	          } else
+	            node1 = nodes[findByLabel(nodes,s)];
+	            
+	          var o = self.putPrefix(obj.o);
+	          if (obj.p == '<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>' && 
+	               (!o.match(/^\?/) ||
+	                o.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(o.substring(1)) == -1)
+	             )
+	          {
+	            node1.MySetLabel(2,o);
+	            return node1;  
+	            break;
+	          }
+	          
+	          if (findByLabel(nodes,o) == -1) {
+	            node2 = self.svgsparql.addNode(0,0,"",1);
+	            node2.MySetLabel(1,o);
+	            if (obj.otype == '')
+	              node2.setType(OAT.SVGSparqlData.NODE_CIRCLE);
+	            else
+	              node2.MySetLabel(2,self.putPrefix(obj.otype));
+	              
+	            if (!o.match(/^\?/) || (o.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(o.substring(1)) == -1))
+	              node2.setVisible(false);
+	            if (group) node2.setGroup(group);
+	            nodes.push(node2);
+	          } else
+	            node2 = nodes[findByLabel(nodes,o)];
+	            
+	          var p = self.putPrefix(obj.p);
+	    			var edge = self.svgsparql.addEdge(node1,node2,"",1);
+	    			edge.MySetLabel(1,p);
+	    			if (obj.parent.type == 'optional')
+	    			  edge.setType(OAT.SVGSparqlData.EDGE_DASHED);
+	          if (!p.match(/^\?/) || (p.match(/^\?/) && obj.obj.variables.length != 0 && obj.obj.variables.find(p.substring(1)) == -1))
+	            edge.setVisible(false);
+	          return node1;  
+	        break;
+	        default:
+	        break;
+	      }
+	  	  return ret;
+	  	}
   	
-  	// Starting actual routines
-  	try {
+	  	try {
+			if (data.match(/<[\w:_ ]+>/)) {
+				var xml = OAT.Xml.createXmlDoc(data);
+			} else {
+				var xml = {};
+			}
+			if (xml.firstChild && xml.firstChild.tagName == 'sparql_design') {
+				self.clear();
+				self.svgsparql.fromXML(xml);
+				
+			} else if (xml.firstChild && xml.getElementsByTagName("iSPARQL").length) {
+			  if (xml.getElementsByTagName("ISparqlDynamicPage").length)
+			  {
+				var dyn_page_node = xml.getElementsByTagName("ISparqlDynamicPage")[0];
+				var query_node = dyn_page_node.getElementsByTagName("query")[0];
+				data = OAT.Xml.textValue(query_node);
+			  }
+			  var design_loaded = false;
+			  if (xml.getElementsByTagName("sparql_design").length) {
+				var isparql_node = xml.getElementsByTagName("iSPARQL")[0];
+					self.clear();
+				if (isparql_node.getElementsByTagName("sparql_design").length) {
+				  self.svgsparql.fromXML(isparql_node.getElementsByTagName("sparql_design")[0]);
+				}
+				
+				if (xml.getElementsByTagName("schema").length) {
+				  var schemas = xml.getElementsByTagName("schema");
+				  for (var i=0;i < schemas.length;i++)
+					self.Schemas.Import(schemas[i].getAttribute('uri'),1);
+				}
 
-  	  if (data.match(/<[\w:_ ]+>/))
-        var xml = OAT.Xml.createXmlDoc(data);
-      else
-        var xml = {};
-      if (xml.firstChild && xml.firstChild.tagName == 'sparql_design')
-      {
-    		self.clear();
-        self.svgsparql.fromXML(xml);
-//      } else if (xml.firstChild && xml.getElementsByTagName("iSPARQL").length && xml.getElementsByTagName("sparql_design").length) {
-//        var isparql_node = xml.getElementsByTagName("iSPARQL")[0];
-//    		self.clear();
-//        if (isparql_node.getElementsByTagName("sparql_design").length)
-//        {
-//          self.svgsparql.fromXML(isparql_node.getElementsByTagName("sparql_design")[0]);
-//        }
-//        
-//        if (xml.getElementsByTagName("schema").length)
-//        {
-//          var schemas = xml.getElementsByTagName("schema");
-//          for (var i=0;i < schemas.length;i++)
-//            self.SchemaImport(schemas[i].getAttribute('uri'),1);
-//        }
-//  
-//        if (xml.getElementsByTagName("should_sponge").length)
-//        {
-//          var sponge_node = xml.getElementsByTagName("should_sponge")[0];
-//          $('qbe_sponge').value = OAT.Xml.textValue(sponge_node);
-//        }
-//  
-//        if (xml.getElementsByTagName("service").length)
-//        {
-//          var service = xml.getElementsByTagName("service")[0];
-//          self.service.input.value = OAT.Xml.textValue(service);
-//        }
-//        
-//    		for (var i=0;i<self.svgsparql.groups.length;i++)
-//    		  self.svgsparql.groups[i].MySetType(self.svgsparql.groups[i].getType());
-  
-      } else {
-        if (xml.firstChild && xml.getElementsByTagName("iSPARQL").length) {
-          if (xml.getElementsByTagName("ISparqlDynamicPage").length)
-          {
-            var dyn_page_node = xml.getElementsByTagName("ISparqlDynamicPage")[0];
-            var query_node = dyn_page_node.getElementsByTagName("query")[0];
-            data = OAT.Xml.textValue(query_node);
-          }
-          var design_loaded = false;
-          if (xml.getElementsByTagName("sparql_design").length)
-          {
-            var isparql_node = xml.getElementsByTagName("iSPARQL")[0];
-        		self.clear();
-            if (isparql_node.getElementsByTagName("sparql_design").length)
-            {
-              self.svgsparql.fromXML(isparql_node.getElementsByTagName("sparql_design")[0]);
-            }
-            
-            if (xml.getElementsByTagName("schema").length)
-            {
-              var schemas = xml.getElementsByTagName("schema");
-              for (var i=0;i < schemas.length;i++)
-                self.SchemaImport(schemas[i].getAttribute('uri'),1);
-            }
-      
-            if (xml.getElementsByTagName("should_sponge").length)
-            {
-              var sponge_node = xml.getElementsByTagName("should_sponge")[0];
-              $('qbe_sponge').value = OAT.Xml.textValue(sponge_node);
-            }
-      
-            if (xml.getElementsByTagName("service").length)
-            {
-              var service = xml.getElementsByTagName("service")[0];
-              self.service.input.value = OAT.Xml.textValue(service);
-            }
-            
-        		for (var i=0;i<self.svgsparql.groups.length;i++)
-        		  self.svgsparql.groups[i].MySetType(self.svgsparql.groups[i].getType());
-        		design_loaded = true;
-          }
-          
-        } else if (xml.firstChild && xml.getElementsByTagName("sparql").length) {
-          var nodes = xml.getElementsByTagName("sparql");
-          for (var i=0;i<nodes.length;i++)
-            if (nodes[i].namespaceURI == "urn:schemas-openlink-com:xml-sql")
-              data = OAT.Xml.textValue(nodes[i]);
-        }
-        
-        if (!design_loaded)
-        {
-          var tmp = data.match(/#should-sponge:(.*)/i)
-          if (tmp && tmp.length > 1)
-          {
-            $('qbe_sponge').value = tmp[1].trim();
-          }
-    
-          var tmp = data.match(/#service:(.*)/i)
-          if (tmp && tmp.length > 1)
-          {
-            self.service.input.value = tmp[1].trim();
-          }
-        }
+				if (xml.getElementsByTagName("should_sponge").length) {
+				  var sponge_node = xml.getElementsByTagName("should_sponge")[0];
+				  $('qbe_sponge').value = OAT.Xml.textValue(sponge_node);
+				}
 
-      	var sq = new OAT.SparqlQuery();
-      	sq.fromString(data);
-        if (!design_loaded)
-      		self.clear();
-  
-    		/* prefixes */
-    		self.prefixes = sq.prefixes.concat(self.prefixes);
-    		self.SchemasReset();
-    		for (var i=0;i<sq.prefixes.length;i++)
-    		  self.SchemaImport(sq.prefixes[i].uri,1);
-    		  
-    	  $('qbe_graph').value = '';
-    	  if (sq.from instanceof Array)
-    	  {
-      	  for(var i = 0;i<sq.from.length ;i++)
-      	    if (sq.from[i] != '') self.addDataSource(sq.from[i].trim().match(/^<(.*)>$/)[1]);
-      	} else
-        	if (sq.from)
-        	  $('qbe_graph').value = sq.from.trim().match(/^<(.*)>$/)[1];
-    
-    	  for(var i = 0;i<sq.from_named.length ;i++)
-    	    self.addDataSource(sq.from_named.trim().match(/^<(.*)>$/)[1],'N');
-  
-    	  $('qbe_distinct').checked = sq.distinct;
-  
-    	  if (sq.mode == "SELECT") $('qbe_query_type').selectedIndex = 0;
-    	  if (sq.mode == "DESCRIBE") $('qbe_query_type').selectedIndex = 1;
-    	  if (sq.mode == "INSERT") $('qbe_query_type').selectedIndex = 2;
-    	  if (sq.mode == "DELETE") $('qbe_query_type').selectedIndex = 3;
+				if (xml.getElementsByTagName("service").length)	{
+				  var service = xml.getElementsByTagName("service")[0];
+				  self.service.input.value = OAT.Xml.textValue(service);
+				}
+				
+					for (var i=0;i<self.svgsparql.groups.length;i++)
+					  self.svgsparql.groups[i].MySetType(self.svgsparql.groups[i].getType());
+					design_loaded = true;
+			  }
+			  
+			} else if (xml.firstChild && xml.getElementsByTagName("sparql").length) {
+			  var nodes = xml.getElementsByTagName("sparql");
+			  for (var i=0;i<nodes.length;i++)
+				if (nodes[i].namespaceURI == "urn:schemas-openlink-com:xml-sql")
+				  data = OAT.Xml.textValue(nodes[i]);
+			}
 
-        if (!design_loaded)
-        {
-      	  if (sq.construct)
-      	  {
-        		var const_nodes = [];
-  	        var new_group = self.svgsparql.addGroup("",1);
-  	        new_group.MySetType(OAT.SVGSparqlData.GROUP_CONSTRUCT);
-    		    walkSparqlQuery(sq.construct,const_nodes,new_group);
-    		  }
-    	  
-      		var nodes = [];
-      		walkSparqlQuery(sq.where,nodes,false);
-    	  }
-    		/* orders */
-        for (var i=0;i<sq.orders.length;i++)
-        {
-          var n = findByLabel(self.svgsparql.nodes,'?' + sq.orders[i].variable);
-          if(n != -1)
-          {
-            self.addOrderBy(self.svgsparql.nodes[n]);
-            if (sq.orders[i].desc)
-              self.svgsparql.nodes[n].orderby_cell.changeSort(OAT.GridData.SORT_DESC);
-          }
-  
-          var n = self.svgsparql.edges.find('?' + sq.orders[i].variable);
-          if(n != -1)
-          {
-            self.addOrderBy(self.svgsparql.edges[n],1);
-            if (sq.orders[i].desc)
-              self.svgsparql.edges[n].orderby_cell.changeSort(OAT.GridData.SORT_DESC);
-          }
-  
-          var n = findByLabel(self.svgsparql.groups,'?' + sq.orders[i].variable);
-          if(n != -1)
-          {
-            self.addOrderBy(self.svgsparql.groups[n]);
-            if (sq.orders[i].desc)
-              self.svgsparql.groups[n].orderby_cell.changeSort(OAT.GridData.SORT_DESC);
-          }
-        }
-        
-    	  self.format_set();
-        self.SchemaTreeRefresh();
-        if (!design_loaded)
-      		self.svgsparql.reposition();
-      }
-    } catch (e) {
-  		self.clear();
-      alert('There was an error trying to visualize the query. Please check if the query is valid.');
-    }
+			if (!design_loaded) {
+			  var tmp = data.match(/#should-sponge:(.*)/i)
+			  if (tmp && tmp.length > 1) {
+				$('qbe_sponge').value = tmp[1].trim();
+			  }
+
+			  var tmp = data.match(/#service:(.*)/i)
+			  if (tmp && tmp.length > 1) {
+				self.service.input.value = tmp[1].trim();
+			  }
+			}
+
+			var sq = new OAT.SparqlQuery();
+			sq.fromString(data);
+			if (!design_loaded) { self.clear(); }
+
+				/* prefixes */
+				self.prefixes = sq.prefixes.concat(self.prefixes);
+				self.Schemas.Reset();
+				for (var i=0;i<sq.prefixes.length;i++)
+				  self.Schemas.Import(sq.prefixes[i].uri,1);
+				  
+			  $('qbe_graph').value = '';
+			  if (sq.from instanceof Array)  {
+			  for(var i = 0;i<sq.from.length ;i++)
+				if (sq.from[i] != '') self.addDataSource(sq.from[i].trim().match(/^<(.*)>$/)[1]);
+				} else
+				if (sq.from)
+				  $('qbe_graph').value = sq.from.trim().match(/^<(.*)>$/)[1];
+
+			  for(var i = 0;i<sq.from_named.length ;i++)
+				self.addDataSource(sq.from_named.trim().match(/^<(.*)>$/)[1],'N');
+
+			  $('qbe_distinct').checked = sq.distinct;
+
+			  if (sq.mode == "SELECT") $('qbe_query_type').selectedIndex = 0;
+			  if (sq.mode == "DESCRIBE") $('qbe_query_type').selectedIndex = 1;
+			  if (sq.mode == "INSERT") $('qbe_query_type').selectedIndex = 2;
+			  if (sq.mode == "DELETE") $('qbe_query_type').selectedIndex = 3;
+
+			if (!design_loaded)	{
+			  if (sq.construct)
+			  {
+					var const_nodes = [];
+				var new_group = self.svgsparql.addGroup("",1);
+				new_group.MySetType(OAT.SVGSparqlData.GROUP_CONSTRUCT);
+					walkSparqlQuery(sq.construct,const_nodes,new_group);
+				  }
+			  
+				var nodes = [];
+				walkSparqlQuery(sq.where,nodes,false);
+			} else {
+				
+				for (var i=0;i<self.svgsparql.nodes.length;i++) {
+					var node = self.svgsparql.nodes[i];
+					self.Schemas.InsertNode(self.Schemas.Bound,node.getLabel(1),"class",false,false);
+				}
+				for (var i=0;i<self.svgsparql.edges.length;i++) {
+					var edge = self.svgsparql.edges[i];
+					self.Schemas.InsertNode(self.Schemas.Bound,edge.getLabel(1),"property_attr",false,false);
+				}
+			}
+				/* orders */
+			for (var i=0;i<sq.orders.length;i++) {
+			  var n = findByLabel(self.svgsparql.nodes,'?' + sq.orders[i].variable);
+			  if(n != -1) {
+				self.addOrderBy(self.svgsparql.nodes[n]);
+				if (sq.orders[i].desc)
+				  self.svgsparql.nodes[n].orderby_cell.changeSort(OAT.GridData.SORT_DESC);
+			  }
+
+			  var n = self.svgsparql.edges.find('?' + sq.orders[i].variable);
+			  if(n != -1) {
+				self.addOrderBy(self.svgsparql.edges[n],1);
+				if (sq.orders[i].desc)
+				  self.svgsparql.edges[n].orderby_cell.changeSort(OAT.GridData.SORT_DESC);
+			  }
+
+			  var n = findByLabel(self.svgsparql.groups,'?' + sq.orders[i].variable);
+			  if(n != -1) {
+				self.addOrderBy(self.svgsparql.groups[n]);
+				if (sq.orders[i].desc)
+				  self.svgsparql.groups[n].orderby_cell.changeSort(OAT.GridData.SORT_DESC);
+			  }
+			}
+
+			self.format_set();
+			// self.Schemas.Refresh();
+			if (!design_loaded) { self.svgsparql.reposition(); }
+			
+		} catch (e) {
+			self.clear();
+			alert('There was an error trying to visualize the query. Please check if the query is valid.');
+		}
 	}
 	
 	this.QueryGenerate = function()	{
@@ -1963,8 +1951,7 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
   	var sq = new OAT.SparqlQuery();
   	var where;
   	
-  	var QueryGenerateProcNode = function(node,sq_grp,sq,group)
-  	{
+  	var QueryGenerateProcNode = function(node,sq_grp,sq,group) {
   	  
   	  if (!proc_nodes[group]) proc_nodes[group] = [];
 	    if (node instanceof OAT.SVGSparqlGroup)
@@ -2133,8 +2120,7 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 			return sq_grp;
   	}
 
-  	var QueryGenerateProcEdge = function(ptr,edge,sq_grp,sq,group)
-  	{
+  	var QueryGenerateProcEdge = function(ptr,edge,sq_grp,sq,group) {
       // Init the names  
       if (edge.node1.getLabel(1) == '?' || edge.node1.getLabel(1) == '')
       { if (sc > 0) edge.node1.MySetLabel(1,'?s' + sc); 
@@ -2216,14 +2202,6 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 		    pc++;
 		}
 
-    // put graph ?g if there isn't one
-    //var qbe_graph = $v('qbe_graph').trim();
-    //if (qbe_graph == '')
-    //{
-    //  if (gc > 0) var grph_name = '?g' + gc;
-    //  else var grph_name = '?g'; 
-    //  gc++; 
-    //}
 
   	var primary_nodes = [];
   	// find primary nodes (the once that are not a child of any)
@@ -2266,29 +2244,13 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
     	  child_groups.push(grp);
 		}
 
-  	//if (primary_nodes.length > 1)
-  	//{
-    //	var sq_un = new OAT.SparqlQueryDataUnion(sq,sq);
-  	//	for (var i=0;i < primary_nodes.length;i++)
-  	//	{
-    //  	var sq_grp = new OAT.SparqlQueryDataGroup(sq_un,sq);
-  	//	  sq_un.children.push(QueryGenerateProcNode(primary_nodes[i],sq_grp,sq,false));
-    //  }
-    //  where = sq_un;
-    //} else {
-    //  var sq_grp = new OAT.SparqlQueryDataGroup(sq,sq);
-    //  where = QueryGenerateProcNode(primary_nodes[0],sq_grp,sq,false);
-    //}
     var sq_grp = new OAT.SparqlQueryDataGroup(sq,sq);
 
-    for (var i=0;i < primary_nodes.length;i++)
-      QueryGenerateProcNode(primary_nodes[i],sq_grp,sq,false);
+    for (var i=0;i < primary_nodes.length;i++) { QueryGenerateProcNode(primary_nodes[i],sq_grp,sq,false); }
 
-		for (var n=0;n < child_groups.length;n++) 
-      QueryGenerateProcNode(child_groups[n],sq_grp,sq,child_groups[n]);
+	for (var n=0;n < child_groups.length;n++) { QueryGenerateProcNode(child_groups[n],sq_grp,sq,child_groups[n]); }
 
     where = sq_grp;
-
   	sq.where = where;
 
     var qbe_graph = $v('qbe_graph').trim();
@@ -2347,27 +2309,18 @@ OAT.MSG.attach(self.schematree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,nod
 	}
 	
 	if (window.__inherited) {
-  	if (window.__inherited.callback)
-  	{
-    	/* query returning */
-    	var returnRef = function() {
-    		window.__inherited.callback(self.QueryGenerate());
-    		window.close();
-    	}
-    	OAT.Dom.attach("qbe_return_btn","click",returnRef);
-    }
-    else
-      OAT.Dom.hide("qbe_return_btn");
-    
+		if (window.__inherited.callback) {
+			/* query returning */
+			var returnRef = function() {
+				window.__inherited.callback(self.QueryGenerate());
+				window.close();
+			}
+			OAT.Dom.attach("qbe_return_btn","click",returnRef);
+		} else { OAT.Dom.hide("qbe_return_btn");} 
+
 	} else {
-    if (self.svgsparql)
-  	  self.loadFromString(default_qry);
-    $('qbe_graph').value = default_dgu;
-    //var node1 = self.svgsparql.addNode(0,0,"?s",1);
-    //node1.setType(OAT.SVGSparqlData.NODE_CIRCLE); 
-    //var node2 = self.svgsparql.addNode(0,0,"?o",1);
-    //node2.setType(OAT.SVGSparqlData.NODE_CIRCLE); 
-    //var edge  = self.svgsparql.addEdge(node1,node2,"?p",1);	
-    OAT.Dom.hide("qbe_return_btn");
-  }
+		if (self.svgsparql) { self.loadFromString(default_qry); }
+		$('qbe_graph').value = default_dgu;
+		OAT.Dom.hide("qbe_return_btn");
+	}
 }
