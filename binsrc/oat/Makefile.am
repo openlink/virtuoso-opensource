@@ -18,4 +18,10 @@
 #  Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-SUBDIRS = images toolkit
+EXTRA_DIST = \
+	$(srcdir)/images/*.gif \
+	$(srcdir)/images/*.png \
+	$(srcdir)/images/markers/*.png \
+	$(srcdir)/styles/*.css \
+	$(srcdir)/styles/hover.htc \
+	$(srcdir)/toolkit/*.js

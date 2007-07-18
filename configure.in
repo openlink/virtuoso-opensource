@@ -2146,8 +2146,6 @@ AC_CONFIG_FILES([
 	binsrc/isparql/Makefile
 	binsrc/maildrop/Makefile
 	binsrc/oat/Makefile
-	binsrc/oat/images/Makefile
-	binsrc/oat/toolkit/Makefile
 	binsrc/mono/Makefile
 	binsrc/samples/demo/Makefile
 	binsrc/samples/docbookview/Makefile
