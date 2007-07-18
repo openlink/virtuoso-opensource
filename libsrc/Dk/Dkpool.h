@@ -49,6 +49,7 @@ struct mem_pool_s
   int mp_size;
   caddr_t *mp_allocs;
   size_t mp_bytes;
+  dk_hash_t *mp_unames;
 #ifdef DEBUG
   const char *mp_alloc_file;
   int mp_alloc_line;
@@ -73,6 +74,7 @@ struct mem_pool_s
   mem_block_t *	mp_first;
   int	mp_block_size;
   size_t mp_bytes;
+  dk_hash_t *mp_unames;
 #ifdef DEBUG
   const char *mp_alloc_file;
   int mp_alloc_line;
@@ -93,6 +95,8 @@ extern caddr_t dbg_mp_alloc_box (const char *file, int line, mem_pool_t * mp, si
 extern caddr_t dbg_mp_box_string (const char *file, int line, mem_pool_t * mp, const char * str);
 extern caddr_t dbg_mp_box_substr (const char *file, int line, mem_pool_t * mp, ccaddr_t str, int n1, int n2);
 extern box_t dbg_mp_box_dv_short_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
+extern caddr_t dbg_mp_box_dv_uname_string (const char *file, int line, mem_pool_t * mp, const char * str);
+extern box_t dbg_mp_box_dv_uname_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
 extern caddr_t dbg_mp_box_copy (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_full_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
@@ -101,6 +105,8 @@ extern caddr_t dbg_mp_box_num (const char *file, int line, mem_pool_t * mp, ptrl
 #define mp_box_string(mp, str) dbg_mp_box_string (__FILE__, __LINE__, (mp), (str))
 #define mp_box_substr(mp, str, n1, n2) dbg_mp_box_substr (__FILE__, __LINE__, (mp), (str), (n1), (n2))
 #define mp_box_dv_short_nchars(mp, str, len) dbg_mp_box_dv_short_nchars (__FILE__, __LINE__, (mp), (str), (len))
+#define mp_box_dv_uname_string(mp, str) dbg_mp_box_dv_uname_string (__FILE__, __LINE__, (mp), (str))
+#define mp_box_dv_uname_nchars(mp, str, len) dbg_mp_box_dv_uname_nchars (__FILE__, __LINE__, (mp), (str), (len))
 #define mp_box_copy(mp, box) dbg_mp_box_copy (__FILE__, __LINE__, (mp), (box))
 #define mp_box_copy_tree(mp, box) dbg_mp_box_copy_tree (__FILE__, __LINE__, (mp), (box))
 #define mp_full_box_copy_tree(mp, box) dbg_mp_full_box_copy_tree (__FILE__, __LINE__, (mp), (box))
@@ -110,6 +116,8 @@ extern caddr_t mp_alloc_box (mem_pool_t * mp, size_t len, dtp_t dtp);
 extern caddr_t mp_box_string (mem_pool_t * mp, const char * str);
 extern caddr_t mp_box_substr (mem_pool_t * mp, ccaddr_t str, int n1, int n2);
 extern box_t mp_box_dv_short_nchars (mem_pool_t * mp, const char *str, size_t len);
+extern caddr_t mp_box_dv_uname_string (mem_pool_t * mp, const char * str);
+extern box_t mp_box_dv_uname_nchars (mem_pool_t * mp, const char *str, size_t len);
 extern caddr_t mp_box_copy (mem_pool_t * mp, caddr_t box);
 extern caddr_t mp_box_copy_tree (mem_pool_t * mp, caddr_t box);
 extern caddr_t mp_full_box_copy_tree (mem_pool_t * mp, caddr_t box);
@@ -191,6 +199,8 @@ caddr_t * mp_list (mem_pool_t * mp, long n, ...);
 #define dbg_t_box_string(str)		dbg_mp_box_string (DBG_ARGS THR_TMP_POOL, (str))
 #define dbg_t_box_substr(str,n1,n2)	dbg_mp_box_substr (DBG_ARGS THR_TMP_POOL, (str), (n1), (n2))
 #define dbg_t_box_dv_short_nchars(str,len) dbg_mp_box_dv_short_nchars (DBG_ARGS THR_TMP_POOL, (str), (len))
+#define dbg_t_box_dv_uname_string(str)	dbg_mp_box_dv_uname_string (DBG_ARGS THR_TMP_POOL, (str))
+#define dbg_t_box_dv_uname_nchars(str,len) dbg_mp_box_dv_uname_nchars (DBG_ARGS THR_TMP_POOL, (str), (len))
 #define dbg_t_box_copy(box)		dbg_mp_box_copy (DBG_ARGS THR_TMP_POOL, (box))
 #define dbg_t_box_copy_tree(box)	dbg_mp_box_copy_tree (DBG_ARGS THR_TMP_POOL, (box))
 #define dbg_t_full_box_copy_tree(box)	dbg_mp_full_box_copy_tree (DBG_ARGS THR_TMP_POOL, (box))
@@ -198,10 +208,13 @@ caddr_t * mp_list (mem_pool_t * mp, long n, ...);
 #define t_box_string(str)		mp_box_string (THR_TMP_POOL, (str))
 #define t_box_substr(str,n1,n2)		mp_box_substr (THR_TMP_POOL, (str), (n1), (n2))
 #define t_box_dv_short_nchars(str,len)		mp_box_dv_short_nchars (THR_TMP_POOL, (str), (len))
+#define t_box_dv_uname_string(str)	mp_box_dv_uname_string (THR_TMP_POOL, (str))
+#define t_box_dv_uname_nchars(str,len)	mp_box_dv_uname_nchars (THR_TMP_POOL, (str), (len))
 #define t_box_copy(box)			mp_box_copy (THR_TMP_POOL, (box))
 #define t_box_copy_tree(box)		mp_box_copy_tree (THR_TMP_POOL, (box))
 #define t_full_box_copy_tree(box)	mp_full_box_copy_tree (THR_TMP_POOL, (box))
 
+#define t_alloc_list(n) ((caddr_t *)t_alloc_box ((n) * sizeof (caddr_t), DV_ARRAY_OF_POINTER))
 extern caddr_t *t_list_concat_tail (caddr_t list, long n, ...);
 extern caddr_t *t_list_concat (caddr_t list1, caddr_t list2);
 extern caddr_t *t_list_remove_nth (caddr_t list, int pos);
@@ -296,9 +309,6 @@ void mp_check_tree (mem_pool_t * mp, box_t box);
 #define mp_check_tree(mp,box) ;
 #define t_check_tree(box) ;
 #endif
-
-#define t_box_dv_uname_string box_dv_uname_string
-#define t_box_dv_uname_nchars box_dv_uname_nchars
 
 #ifdef _DKSYSTEM_H
 caddr_t t_box_vsprintf (size_t buflen_eval, const char *format, va_list tail);

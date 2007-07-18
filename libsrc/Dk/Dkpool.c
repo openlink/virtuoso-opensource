@@ -34,6 +34,18 @@
 #define DBG_MP_ALLOC_BOX(mp,len,tag) DBG_NAME(mp_alloc_box) (DBG_ARGS (mp), (len), (tag))
 #define DBG_T_ALLOC_BOX(len,tag) DBG_NAME(t_alloc_box) (DBG_ARGS (len), (tag))
 
+void mp_uname_free (void *k, void *data)
+{
+#ifdef DEBUG
+  caddr_t box = k;
+  int len = box_length (box) - 1;
+  ptrlong qchk = ((len > 0) ? (box[0] | len) : 1);
+  if (data != (void *)qchk)
+    GPF_T1 ("mp_uname_free(): bad checksum");
+#endif
+  dk_free_box (k);
+}
+
 #ifdef LACERATED_POOL
 
 #ifdef DEBUG /* Not MALLOC_DEBUG */
@@ -45,6 +57,7 @@ mem_pool_t * mem_pool_alloc (void)
   NEW_VARZ (mem_pool_t, mp);
   mp->mp_allocs = (caddr_t *)dk_alloc (sizeof (caddr_t) * 0x100);
   mp->mp_size = 0x100;
+  mp->mp_unames = hash_table_allocate (4096);
 #ifdef DEBUG /* Not MALLOC_DEBUG */
   mp->mp_alloc_file = (char *)file;
   mp->mp_alloc_line = line;
@@ -67,6 +80,8 @@ mp_free (mem_pool_t * mp)
 	GPF_T1 (err);
       dbg_freep (__FILE__, __LINE__, buf, mp);
     }
+  maphash (mp_uname_free, mp->mp_unames);
+  hash_table_free (mp->mp_unames);
   dk_free ((caddr_t) mp->mp_allocs, mp->mp_size * sizeof (caddr_t));
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
@@ -97,6 +112,7 @@ mem_pool_t * mem_pool_alloc (void)
 {
   NEW_VARZ (mem_pool_t, mp);
   mp->mp_block_size = ALIGN_8(4096);
+  mp->mp_unames = hash_table_allocate (4096);
 #ifdef DEBUG /* Not MALLOC_DEBUG */
   mp->mp_alloc_file = (char *)file;
   mp->mp_alloc_line = line;
@@ -115,6 +131,8 @@ mp_free (mem_pool_t * mp)
       dk_free ((caddr_t) mb, mb->mb_size);
       mb = next;
     }
+  maphash (mp_uname_free, mp->mp_unames);
+  hash_table_free (mp->mp_unames);
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
 
@@ -258,6 +276,64 @@ caddr_t DBG_NAME(mp_box_substr) (DBG_PARAMS mem_pool_t * mp, ccaddr_t str, int n
   return res;
 }
 
+caddr_t DBG_NAME(mp_box_dv_uname_string) (DBG_PARAMS mem_pool_t * mp, const char * str)
+{
+  size_t len;
+  caddr_t box;
+#ifdef DEBUG
+  ptrlong qchk, qv;
+#endif
+  if (!str)
+    return 0;
+  len = strlen (str);
+  box = box_dv_uname_nchars (str, len);
+#ifdef DEBUG
+  qchk = ((len > 0) ? (str[0] | len) : 1);
+  qv = gethash (box, mp->mp_unames);
+  if (qv)
+    {
+      if (qv != qchk)
+        GPF_T1 ("mp_box_dv_uname_string: dead hash table");
+      dk_free_box (box); /* free extra copy */
+    }
+  else
+    sethash (box, mp->mp_unames, qchk);
+#else
+  if (gethash (box, mp->mp_unames))
+    dk_free_box (box); /* free extra copy */
+  else
+    sethash (box, mp->mp_unames, (ptrlong)1);
+#endif
+  return box;
+}
+
+box_t
+DBG_NAME(mp_box_dv_uname_nchars) (DBG_PARAMS mem_pool_t * mp, const char *buf, size_t buf_len)
+{
+  caddr_t box;
+#ifdef DEBUG
+  ptrlong qchk, qv;
+#endif
+  box = box_dv_uname_nchars (buf, buf_len);
+#ifdef DEBUG
+  qchk = ((buf_len > 0) ? (buf[0] | buf_len) : 1);
+  qv = gethash (box, mp->mp_unames);
+  if (qv)
+    {
+      if (qv != qchk)
+        GPF_T1 ("mp_box_dv_uname_nchars: dead hash table");
+      dk_free_box (box); /* free extra copy */
+    }
+  else
+    sethash (box, mp->mp_unames, qchk);
+#else
+  if (gethash (box, mp->mp_unames))
+    dk_free_box (box); /* free extra copy */
+  else
+    sethash (box, mp->mp_unames, (ptrlong)1);
+#endif
+  return box;
+}
 
 extern box_copy_f box_copier[256];
 extern box_tmp_copy_f box_tmp_copier[256];
@@ -272,7 +348,16 @@ caddr_t DBG_NAME(mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
   switch (dtp)
     {
     case DV_UNAME:
-      box_dv_uname_make_immortal (box);
+      if (!gethash (box, mp->mp_unames))
+        {
+#ifdef DEBUG
+          int len = box_length (box) - 1;
+          ptrlong qchk = ((len > 0) ? (box[0] | len) : 1);
+          sethash (box_copy (box), mp->mp_unames, qchk);
+#else
+          sethash (box_copy (box), mp->mp_unames, 1);
+#endif
+        }
       return box;
     case DV_REFERENCE:
       return box;
@@ -312,7 +397,16 @@ caddr_t DBG_NAME(mp_box_copy_tree) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
     }
   if (DV_UNAME == dtp)
     {
-      box_dv_uname_make_immortal (box);
+      if (!gethash (box, mp->mp_unames))
+        {
+#ifdef DEBUG
+          int len = box_length (box) - 1;
+          ptrlong qchk = ((len > 0) ? (box[0] | len) : 1);
+          sethash (box_copy (box), mp->mp_unames, qchk);
+#else
+          sethash (box_copy (box), mp->mp_unames, 1);
+#endif
+        }
       return box;
     }
   return box;
@@ -329,7 +423,16 @@ caddr_t DBG_NAME(mp_full_box_copy_tree) (DBG_PARAMS mem_pool_t * mp, caddr_t box
   switch (dtp)
     {
     case DV_UNAME:
-      box_dv_uname_make_immortal (box);
+      if (!gethash (box, mp->mp_unames))
+        {
+#ifdef DEBUG
+          int len = box_length (box) - 1;
+          ptrlong qchk = ((len > 0) ? (box[0] | len) : 1);
+          sethash (box_copy (box), mp->mp_unames, qchk);
+#else
+          sethash (box_copy (box), mp->mp_unames, 1);
+#endif
+        }
       return box;
     case DV_REFERENCE:
       return box;
