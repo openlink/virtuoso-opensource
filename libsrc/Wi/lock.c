@@ -37,6 +37,9 @@
 #include "statuslog.h"
 #include "security.h"
 #include "srvstat.h"
+#ifdef DEBUG
+#include "shuric.h"
+#endif
 
 resource_t *lock_rc;
 resource_t *row_lock_rc;
@@ -1756,6 +1759,10 @@ the_grim_lock_reaper (void)
 	}
       wi_free_schemas ();
   LEAVE_TXN;
+#if defined (UNIVERSE)
+  if (server_is_idle)
+    rds_reaper ();
+#endif
   failed_login_purge ();
 
   if (cfg_autocheckpoint > 0)	/* Autocheckpointing wanted? */
