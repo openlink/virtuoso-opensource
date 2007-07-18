@@ -936,6 +936,7 @@ extern caddr_t uname_rdf_ns_uri_subject;
 extern caddr_t uname_rdf_ns_uri_type;
 extern caddr_t uname_rdf_ns_uri_datatype;
 extern caddr_t uname_rdf_ns_uri_parseType;
+extern caddr_t uname_rdf_ns_uri_value;
 extern caddr_t uname_space;
 extern caddr_t uname_swap_reify_ns_uri;
 extern caddr_t uname_swap_reify_ns_uri_statement;

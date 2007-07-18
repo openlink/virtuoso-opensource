@@ -9727,6 +9727,7 @@ caddr_t uname_rdf_ns_uri_subject;
 caddr_t uname_rdf_ns_uri_type;
 caddr_t uname_rdf_ns_uri_datatype;
 caddr_t uname_rdf_ns_uri_parseType;
+caddr_t uname_rdf_ns_uri_value;
 caddr_t uname_space;
 caddr_t uname_swap_reify_ns_uri;
 caddr_t uname_swap_reify_ns_uri_statement;
@@ -9812,6 +9813,7 @@ xml_tree_init (void)
   UNAME_IT(uname_rdf_ns_uri_type		, RDF_NS_URI "type"		);
   UNAME_IT(uname_rdf_ns_uri_datatype		, RDF_NS_URI "datatype"		);
   UNAME_IT(uname_rdf_ns_uri_parseType		, RDF_NS_URI "parseType"	);
+  UNAME_IT(uname_rdf_ns_uri_value		, RDF_NS_URI "value"		);
   UNAME_IT(uname_space				, "space"			);
   UNAME_IT(uname_swap_reify_ns_uri		, SWAP_REIFY_NS_URI		);
   UNAME_IT(uname_swap_reify_ns_uri_statement	, SWAP_REIFY_NS_URI "#statement"	);
