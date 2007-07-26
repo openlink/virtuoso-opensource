@@ -88,6 +88,8 @@
       <input type="hidden" name="disp_artic" id="disp_artic" value="-"/>
       <input type="hidden" name="thr" value="1"/>
       <input type="hidden" name="show_tagsblock" id="show_tagsblock" value="<?= get_keyword ('show_tagsblock', self.vc_page.vc_event.ve_params,0) ?>" />
+	    <input type="hidden" name="signin_returl_params" value="group=<?=self.grp_sel_thr?>&thr=1"/>
+      <input type="hidden" name="thr" value="1"/>
 
 <!-- DATA SET TO CONTROL LIST -->
       <v:data-source nrows="--self.list_len"
@@ -145,17 +147,12 @@
           <tr><td><br />&nbsp;</td></tr>
           <tr>
             <td align="center">
-              <v:button name="ds_list_thread_prev" style="url" action="simple" value="&lt;&lt;"/>[
+              <v:button name="ds_list_thread_prev" style="url" action="simple" value="&lt;"/><![CDATA[&nbsp;]]>
               <v:template name="template_pager" type="page-navigator">
                 <v:button name="ds_list_thread_pager"
                           style="url"
                           action="simple"
-                          value="--sprintf('%d..%d',
-                                           (self.ds_list_thread.ds_data_source.ds_current_pager_idx - 1) *
-                                            self.list_len + 1,
-                                           __min (self.ds_list_thread.ds_data_source.ds_current_pager_idx *
-                                                    self.list_len,
-                                                  self.ds_list_thread.ds_data_source.ds_total_rows))"
+                          value="--sprintf('%d',self.ds_list_thread.ds_data_source.ds_current_pager_idx )"
                           xhtml_disabled="--case
                                               when self.ds_list_thread.ds_data_source.ds_current_pager_idx =
                                                      self.ds_list_thread.ds_data_source.ds_current_page
@@ -167,14 +164,18 @@
                                                   self.ds_list_thread.ds_data_source.ds_current_page
                                            then 'width:24pt;color:red;font-weight:bolder;text-decoration:underline'
                                            else 'width:24pt'
-                                         end" />
+                                         end"
+                          enabled ="--case when self.ds_list_thread.ds_data_source.ds_total_pages - self.ds_list_thread.ds_data_source.ds_current_pager_idx >= 0 then 1 else 0 end"
+               />
 <?vsp
   if (self.ds_list_thread.ds_data_source.ds_total_pages -
-        self.ds_list_thread.ds_data_source.ds_current_pager_idx >= 0)
+        self.ds_list_thread.ds_data_source.ds_current_pager_idx > 0)
   http ('&nbsp; | &nbsp;');
 ?>
-              </v:template>]
-              <v:button name="ds_list_thread_next" style="url" action="simple" value="&gt;&gt;"/>
+              </v:template>
+              <![CDATA[&nbsp;]]><v:button name="ds_list_thread_next" style="url" action="simple" value="&gt;"
+                        enabled ="--case when self.ds_list_thread.ds_data_source.ds_total_pages - self.ds_list_thread.ds_data_source.ds_current_pager_idx >= 0 then 1 else 0 end"
+              />
             </td>
           </tr>
         </v:template>

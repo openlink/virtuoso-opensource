@@ -121,14 +121,49 @@
     <v:data-source nrows="--self.article_list_lenght"
                    initial-offset="0"
                    name="dss"
-                   data='--nntpf_group_list_v_data (self.grp_sel_no_thr, self.fordate, self.article_list_lenght, self.order_full_str)'
+                   data="--nntpf_group_list_v_data (self.grp_sel_no_thr, self.fordate, self.article_list_lenght, self.order_full_str)"
                    meta="--nntpf_group_list_v_meta (self.grp_sel_no_thr, self.fordate, self.article_list_lenght, self.order_full_str)"
-                   expression-type="array" />
+                   expression-type="array"
+                   control-udt="vspx_data_source">
+                   <v:after-data-bind>
+                     control.ds_make_statistic();
+                   </v:after-data-bind>
+    </v:data-source>               
+<!--
+
+    <v:data-source nrows="10"
+                   initial-offset="0"
+                   name="dss"
+                   expression-type="sql">
+      <v:expression>
+        <![CDATA[
+          select _datestr, _subj, _from, _nm_id from 
+          nntpf_group_list_sp(_group, _orderby)
+                             (_datestr varchar,
+                              _subj varchar,
+                              _from varchar,
+                              _nm_id varchar) nntpf_group_list               
+          where _group = ? and _orderby = ?
+        ]]>
+      </v:expression>
+      <v:column name="_datestr" />
+      <v:column name="_subj" />
+      <v:column name="_from" />
+      <v:column name="_nm_id" />
+      <v:param name="P1" value="self.grp_sel_no_thr" />
+      <v:param name="P2" value="self.order_full_str" />
+      <v:after-data-bind>
+         control.ds_make_statistic ();
+      </v:after-data-bind>
+    </v:data-source>               
+-->                   
+
     <v:data-set name="ds_list_message"
                 data-source="self.dss"
                 scrollable="1"
                 width="80"
-                nrows="--self.article_list_lenght">
+                cursor-type="keyset">
+                >
       <v:template name="template_head"
                   type="simple"
                   name-to-remove="table"
@@ -310,15 +345,15 @@
             ?>
             </td>
            <td align="left">
-               <v:url value="--sprintf('tags (%d)', discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end) )"
+               <v:url value="--sprintf('tags (%d)', discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end) )"
                     url="--'javascript:void(0)'"
                     xhtml_class="nntp_group_rss"
                     xhtml_onClick="--concat ('showTagsDiv(\'',cast (self.grp_sel_no_thr as varchar),'\'',
                                                          ',\'',sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),'\',this)')"
-                  enabled="--(case when length(self.u_name)>0 or discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end)>0 then 1 else 0 end)"
+                  enabled="--(case when length(self.u_name)>0 or discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end)>0 then 1 else 0 end)"
 
                />
-               <v:label value="--'tags (0)'" enabled="--(case when length(self.u_name)=0 and discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end)=0 then 1 else 0 end)"/>
+               <v:label value="--'tags (0)'" enabled="--(case when length(self.u_name)=0 and discussions_tagscount(cast (self.grp_sel_no_thr as varchar),sprintf ('%s', encode_base64 (cast ((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))),case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end)=0 then 1 else 0 end)"/>
 
            </td>
 
@@ -338,6 +373,17 @@
               <![CDATA[&nbsp;]]>
               <v:button name="ds_list_message_prev" style="url" action="simple" value="&lt;"/>
               <![CDATA[&nbsp;]]>
+<?vsp
+declare _pages integer;
+declare _total_rows,_nrows folat;
+
+_total_rows:=cast(self.ds_list_message.ds_data_source.ds_total_rows as float);
+_nrows:=cast(self.ds_list_message.ds_data_source.ds_nrows as float);
+_pages:=ceiling(_total_rows/_nrows);
+
+if(self.ds_list_message.ds_data_source.ds_total_pages<_pages)
+   self.ds_list_message.ds_data_source.ds_total_pages:=_pages;
+?>
               
 	      <v:template name="template_pager" type="page-navigator">
 <!--
@@ -352,24 +398,34 @@
                      xhtml_style="--case when self.ds_list_message.ds_data_source.ds_current_pager_idx = self.ds_list_message.ds_data_source.ds_current_page then 'width:24pt;color:red;font-weight:bolder;text-decoration:underline' else 'width:24pt' end"
                    />
 -->
+<?vsp
+declare _enabled integer;
+_enabled:=0;
+if(self.ds_list_message.ds_data_source.ds_total_pages >= self.ds_list_message.ds_data_source.ds_current_pager_idx)
+  _enabled:=1;;
+?>
 
                    <v:button
                      name="ds_list_message_pager"
                      style="url"
                      action="simple"
-                     value="--case when self.ds_list_message.ds_data_source.ds_current_pager_idx = self.ds_list_message.ds_data_source.ds_current_page
-                                   then '<b>'||cast(self.ds_list_message.ds_data_source.ds_current_pager_idx as varchar)||'</b>'
-                                   else cast(self.ds_list_message.ds_data_source.ds_current_pager_idx as varchar) end"
-                    
+                     value="--cast(self.ds_list_message.ds_data_source.ds_current_pager_idx as varchar)"
+                     xhtml_style="--case when self.ds_list_message.ds_data_source.ds_current_pager_idx = self.ds_list_message.ds_data_source.ds_current_page
+                                   then 'font-weight: bold' else '' end"              
+                     enabled ="_enabled"
                    />
 			<?vsp
-				if (self.ds_list_message.ds_data_source.ds_total_pages - self.ds_list_message.ds_data_source.ds_current_pager_idx >= 0)
+
+		
+				if (self.ds_list_message.ds_data_source.ds_total_pages - self.ds_list_message.ds_data_source.ds_current_pager_idx > 0)
 				   http ('&nbsp; | &nbsp;');
 			?>
                 </v:template>
                 
               <![CDATA[&nbsp;]]>
-              <v:button name="ds_list_message_next" style="url" action="simple" value="&gt;"/>
+              <v:button name="ds_list_message_next" style="url" action="simple" value="&gt;"
+                        enabled ="_enabled"
+              />
               <![CDATA[&nbsp;]]>
 <!--
               <v:button name="ds_list_message_last" style="url" action="simple" value="&gt;&gt;"/>
@@ -377,6 +433,7 @@
 	      <input type="hidden" name="group" value="<?= get_keyword ('group', self.vc_page.vc_event.ve_params) ?>"/>
 	      <input type="hidden" name="view" value="<?= self.article_list_lenght ?>"/>
 	      <input type="hidden" name="old_view" value="<?=self.old_view?>"/>
+	      <input type="hidden" name="signin_returl_params" value="group=<?=self.grp_sel_no_thr?>"/>
             </td>
           </tr>
         </table>

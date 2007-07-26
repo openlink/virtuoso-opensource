@@ -155,15 +155,15 @@
                        xhtml_class="nntp_group_rss"/>
                 </td>
                 <td align="left">
-                  <v:url value="--sprintf('tags (%d)', discussions_tagscount(cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),'',case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end) )"
+                  <v:url value="--sprintf('tags (%d)', discussions_tagscount(cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),'',case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end) )"
                        url="--'javascript:void(0)'"
                        xhtml_class="nntp_group_rss"
                        xhtml_onClick="--concat ('showTagsDiv(\'',
                                                 cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),
                                                 '\',\'\',this)')"
-                       enabled="--(case when length(self.u_name)>0 or discussions_tagscount(cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),'',case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end)>0 then 1 else 0 end)"
+                       enabled="--(case when length(self.u_name)>0 or discussions_tagscount(cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),'',case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end)>0 then 1 else 0 end)"
                        />
-                   <v:label value="--'tags (0)'" enabled="--(case when length(self.u_name)=0 and discussions_tagscount(cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),'','0')=0 then 1 else 0 end)"/>
+                   <v:label value="--'tags (0)'" enabled="--(case when length(self.u_name)=0 and discussions_tagscount(cast ((control.vc_parent as vspx_row_template).te_rowset[0] as varchar),'','-1')=0 then 1 else 0 end)"/>
                 </td>
 
 <?vsp

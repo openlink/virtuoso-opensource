@@ -636,7 +636,7 @@ function dd(txt){
         <?vsp
 
 
-         declare i, n, t, c,dc integer;
+         declare i, n, t, tp, c, dc integer;
          declare _class varchar;
          declare dss vspx_data_source;
          declare ds vspx_data_set;
@@ -657,14 +657,15 @@ function dd(txt){
          {
              t := ds.ds_rows_total;
          }
-         c := ds.ds_rows_offs/10;
 
+         c := ds.ds_rows_offs/n;
 
---dbg_obj_print ('n=',n, ' t=',t,' c=', c);
+         tp:=ceiling (cast(t as float)/cast(n as float));
+         dc:=tp-c;
 
-         dc:=ceiling (t/n)+1-c;
+--         dbg_obj_print ('rows per page',n, ' total rows',t,'total pages',tp,' current page', c,'delta of shown pages ',dc,'start from page',i,'total pages',tp);
 
-         if ((t/n) > 20)
+         if (tp > 20)
          { 
            if( c>10 and c<ceiling(t/n) - 10)
            {
@@ -683,7 +684,8 @@ function dd(txt){
          if(c=0)     
             _nav_prev:=0;
 
-         if(c=ceiling (t/n))     
+
+         if(c=tp)
             _nav_next:=0;
 
          http('&#160;');
@@ -699,7 +701,6 @@ function dd(txt){
            <![CDATA[&nbsp;]]>
         <?vsp            
         }  
-        
         
         while (i < c+dc )
         {
@@ -729,7 +730,61 @@ function dd(txt){
     </xsl:if>
   </xsl:template>
 
+  <xsl:template match="vm:posts-settings">
+    <v:variable name="posts_enabled" type="any"/>
+    <v:variable name="openid_enabled" type="any"/>
+      <v:before-data-bind>
+        <![CDATA[
+        declare _e_posts,_e_openid integer;
+        _e_posts:=1;
+        _e_openid:=1;
 
+--        declare exit handler for sqlstate '*'{goto _skip;};
+--        select  1,1 into _e_posts,_e_openid from ???;
+--        
+--        _skip:;
+
+        if(registry_get('nntpf_posts_enabled')='0')
+           _e_posts:=0;
+        if(registry_get('nntpf_openid_enabled')='0')
+           _e_openid:=0;
+
+         self.posts_enabled:=_e_posts;
+         self.openid_enabled:=_e_openid;
+
+        ]]>
+      </v:before-data-bind>
+      <div style="padding:10px;">
+      <v:check-box name="posts_enabled_cbx"
+                   value="--self.posts_enabled"
+                   initial-checked="--self.posts_enabled"  /> Posts allowed
+      <br/>             
+      <v:check-box name="openid_enabled_cbx"
+                   value="--self.openid_enabled"
+                   initial-checked="--self.openid_enabled"  /> Posts verification via OpenID URL
+      <br/><br/>
+      <v:button name="settings_save"
+              action="simple"
+              style="submit"
+              value="--' Save '">
+        <v:on-post>
+
+        declare _e_post,_e_openid varchar;
+        _e_post:='0';
+        _e_openid:='0';
+        
+        if(self.posts_enabled_cbx.ufl_selected)
+           _e_post:='1';
+        if(self.openid_enabled_cbx.ufl_selected)
+           _e_openid:='1';
+        
+        registry_set('nntpf_posts_enabled', _e_post);
+        registry_set('nntpf_openid_enabled', _e_openid);
+        </v:on-post>
+      </v:button>
+      </div>
+      
+  </xsl:template>
 
 
 </xsl:stylesheet>

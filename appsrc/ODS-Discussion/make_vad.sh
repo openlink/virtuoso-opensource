@@ -192,6 +192,7 @@ directory_init() {
   cp *.vspx vad/data/nntpf
   cp *.xsl vad/data/nntpf
   cp *.css vad/data/nntpf
+  cp *.js vad/data/nntpf
   cp *.sql vad/data/nntpf
   cp *.vsp vad/data/nntpf
   cp $HOME/binsrc/dav/DET_nntp.sql vad/data/nntpf
@@ -262,6 +263,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/nntpf_tags.sql', 1, 'report', 1);" >> $STICKER  
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/nntpf_web_svc.sql', 1, 'report', 1);" >> $STICKER  
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/sioc_nntp.sql', 1, 'report', 1);" >> $STICKER  
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/nntpf/wa_install.sql', 1, 'report', 1);" >> $STICKER  
   echo "      vhost_remove (lpath=>'/nntpf');" >> $STICKER
   echo "      vhost_define (lpath=>'/nntpf',ppath=>'/DAV/VAD/nntpf/', is_dav=>1, vsp_user=>'dba', def_page=>'nntpf_main.vspx');" >> $STICKER
   echo "    ]]>" >> $STICKER

@@ -35,12 +35,17 @@
   </xsl:template>
 
 <xsl:template name="vm:attach_files">
-  <vm:template enabled="--self.vc_attach">
     <tr>
       <td>
         <span class="header">Attachments</span>
       </td>
       <td>
+        <div id="attach_min">
+        <a href="javascript:void(0)" onclick="OAT.Dom.hide('attach_min');OAT.Dom.show('attach_normal');" >[Attach files]</a>
+        </div>
+
+        <div id="attach_normal" style="display:none;">
+
   <p><span class="header">Select: </span>
       <v:template type="simple" name="is_dav1_container" enabled="--self.vc_authenticated">
       <v:check-box name="is_dav1" xhtml_id="is_dav1"
@@ -98,18 +103,8 @@
 		      </v:button>
 		  </span>
   </p>
+  </div>
   </td>
   </tr>
-  </vm:template>
-  <vm:template enabled="--abs (self.vc_attach - 1)">
-    <tr>
-      <td>
-        <span class="header">Attachments: </span>
-      </td>
-      <td>
-        <v:button name="make_attachments" value="[Attach files]" action="simple" style="url"/>
-      </td>
-    </tr>
-  </vm:template>
  </xsl:template>
 </xsl:stylesheet>

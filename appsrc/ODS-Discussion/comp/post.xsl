@@ -31,13 +31,15 @@
   <v:variable name="grp_list_enabled" type="integer" default="1"/>
   <v:variable name="grp_list_size" type="integer" default="5"/>
   <v:variable name="grp_selected" type="varchar"/>
-  <v:variable name="vc_attach" type="integer" default="0"/>
   <v:variable name="vc_post_ready" type="integer" default="0"/>
   <v:variable name="vc_disl_warnning" type="integer" default="0"/>
   <v:variable name="vc_invalid_email_addr" type="integer" default="0"/>
   <v:variable name="grplist_succ" type="varchar"/>
   <v:variable name="grplist_err" type="varchar"/>
   <v:variable name="postprepare_err" type="varchar"/>
+  <v:variable name="post_from_openid" type="varchar"/>
+  <v:variable name="posts_enabled" type="integer" default="1"/>
+
 
   <script type="text/javascript">
     <![CDATA[
@@ -48,7 +50,7 @@
 	  {
 	   var options = {imagePath:toolkitImagesPath+'/',
                     imageExt:'png',
-                    pathDefault:_currDavRoot
+                    path:_currDavRoot
                    };
      
      OAT.WebDav.init(options);
@@ -119,6 +121,20 @@
   </script>
     <v:before-data-bind>
 	<![CDATA[
+
+if(registry_get('nntpf_posts_enabled')='0')
+{
+ 
+  if (get_keyword ('back_to_home', params, '') <> '')
+  {
+       http_request_status ('HTTP/1.1 302 Found');
+       http_header (sprintf ('Location: nntpf_main.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+  }
+ 
+  self.vc_post_ready :=1;
+  self.posts_enabled :=0;
+  goto _skipall;            
+}
 
 declare _isreply integer;
 
@@ -212,12 +228,16 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
          
        };
 
-	     if (get_keyword ('make_attachments', params, '') <> '')
-	       self.vc_attach := 1;
 
        
 	     if (get_keyword ('Post', params, '') <> '')
 	       {
+
+          if(length(get_keyword_ucase ('post_subj_n', params, ''))=0 )
+          {
+             self.postprepare_err:='Please fill in <b>Subject</b>.';
+          }
+
 		  if ((get_keyword_ucase ('availble_groups', params, NULL) is NULL) and
 		       (get_keyword_ucase ('post_old_hdr', params, '') = ''))
 		    {
@@ -269,6 +289,9 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
                      if(_ng_type='BLOG')
                      {
                         qry:='select BI_WAI_NAME from BLOG.DBA.SYS_BLOG_INFO where BI_BLOG_ID=\''||_selected_groups_arr[i]||'\'';
+                        
+                        if(length(nntpf_uudecode_file (1, params)) or length(nntpf_uudecode_file (2, params)) or length(nntpf_uudecode_file (3, params)) )
+                            _ngrp_err:=vector_concat(_ngrp_err,vector('Inline attachments are not allowed for newsgroup <b>'||_selected_groups_arr[i]||'</b>. Attachments are truncated.'));
                      }
                      else if(_ng_type='oWiki')
                      {
@@ -375,6 +398,7 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
             
            if(length(self.grplist_succ))
            {
+           
             nntpf_post_message (_tmp_params,auth_uname);
            }
 		  self.vc_post_ready := 1;
@@ -419,6 +443,7 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
         self.postprepare_err:= 'There are no available group(s) for posting.';
       }
 
+_skipall:;
 	]]>
     </v:before-data-bind>
    <xsl:call-template name="vm:post_fills" />
@@ -427,7 +452,7 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
 <xsl:template name="vm:post_fills">
     <br/>
   <vm:template enabled="--length(self.postprepare_err)">
-     <div style="padding:10px">
+     <div style="padding:10px" id="error_msg_div">
        <?vsp http(self.postprepare_err); ?>
      </div>
   </vm:template>
@@ -437,12 +462,12 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
         <th colspan="2">Post article</th>
       </tr>
       <tr>
-        <td>
+        <td valign="top">
           <span class="header">
 	    <v:label enabled="--self.grp_list_enabled" value="--'Select group'" format="%s"/>
           </span>
         </td>
-        <td>
+        <td valign="top">
           <v:select-list name="availble_groups"
                          xhtml_size="--self.grp_list_size"
                          xhtml_style="width:216"
@@ -472,28 +497,47 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
         </td>
       </tr>
       <tr>
-        <td>
+        <td valign="top">
           <span class="header">From</span>
         </td>
         <td>
-          <v:label value="--coalesce(self.post_from,'')" format="%V" width="80" enabled="--self.vc_authenticated" />
-          <v:text name="post_from_n" value="--coalesce(self.post_from,'')" format="%s" xhtml:size="50" enabled="--abs (self.vc_authenticated - 1)" />
-          <font color="rgb(0,64,123)">
-            <v:label value="--' Please enter a valid email address.'" format="%s" enabled="--abs (self.vc_authenticated - 1)" />
-          </font>
+          <div id="post_from"><v:label value="--coalesce(self.post_from,'')" format="%V" width="80" enabled="--self.vc_authenticated" /></div>
+          
+          <v:text name="post_from_n" value="--coalesce(self.post_from,'')" format="%s" xhtml:size="50" enabled="--abs (self.vc_authenticated - 1)" xhtml_id="post_from_n"/>
+
+          <v:template type="simple"  enabled="--abs (self.vc_authenticated - 1)">
+          <span color="rgb(0,64,123)" id="mail_warr_msg">
+            <v:label value="--' Please enter a valid email address.'" format="%s" />
+          </span><br/>
+          </v:template>
           <v:template type="simple" enabled="--self.vc_invalid_email_addr">
+            <div id="mail_warr_msg_loggedin">
             Please enter a valid <v:url url="--'/ods/uiedit.vspx?focus=email'" value="mail"/> address.
+            </div>
+          </v:template>
+
+          <v:template type="simple" enabled="--nntpf_openid_enabled(self.vc_authenticated)">
+            or<br/>
+            Website <img src="images/spacer.png" border="0"  style="vertical-align: text-bottom;" alt="check" id="openIdStatus"/>
+            <v:text name="post_from_openid_ctrl" value="" format="%s" xhtml:size="50" xhtml_id="openid_url"/>
+            <![CDATA[&nbsp;]]>
+            <input type="button" onClick="onClickVerify(event);" value="Verify" /><br/>
+            <input type="hidden" name="oid_key" value="" id="oid_key" />
+            <input type="hidden" name="oid_sig" value="" id="oid_sig" />
+            <input type="hidden" name="virified_openid_url" value="" id="virified_openid_url" />
+            <span id="img"><img src="" width="16" height="16" hspace="1" style="display: none;" /></span>
+            <span id="msg" />
           </v:template>
 <!--
           <v:label enabled="--self.vc_invalid_email_addr"
                    value="--'The current user''s email address appears to be invalid. Posting is likely to fail.'"
                    format="%s"/>
 -->
-          <input type="hidden" name="post_from_n" value="<?= self.post_from ?>" enabled="--self.vc_authenticated" />
+          <input type="hidden" name="post_from_n" value="<?= self.post_from ?>" enabled="--self.vc_authenticated" id="post_from_n"/>
         </td>
       </tr>
       <tr>
-        <td>
+        <td valign="top">
           <span class="header">Subject</span>
         </td>
         <td>
@@ -502,7 +546,7 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
       </tr>
       <xsl:call-template name="vm:attach_files" />
       <tr>
-        <td>
+        <td valign="top">
           <span class="header">Body</span>
         </td>
         <td>
@@ -530,7 +574,7 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
   </vm:template>
 
 
-  <vm:template enabled="--self.vc_post_ready">
+  <vm:template enabled="--case  when self.vc_post_ready and self.posts_enabled then 1 else 0 end">
    <div style="padding:10px">
     <vm:template enabled="--length(self.grplist_err)">
      <p>
@@ -546,6 +590,15 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
 
         <input type="submit" name="Post_done" value="Ok" />
    </div>
+  </vm:template>
+
+  <vm:template enabled="--(1-self.posts_enabled)">
+     <div style="padding:10px;">
+     Posts are not allowed.
+     <br/><br/>
+     <input type="submit" name="back_to_home" value="Go back to home"/>
+     
+     </div>
   </vm:template>
 
  </xsl:template>

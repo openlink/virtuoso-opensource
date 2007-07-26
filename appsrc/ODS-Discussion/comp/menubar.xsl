@@ -35,7 +35,7 @@
         <td class="menuitem">
           <v:url value="Home" format="%s" url="nntpf_main.vspx" />
         </td>
-        <v:template type="simple" condition="nntpf_groups_defined_p()">
+        <v:template type="simple" condition="nntpf_posts_enabled()">
           <td class="menuitem">
             <v:url value="Post" url="nntpf_post.vspx" />
           </td>
@@ -69,7 +69,7 @@
         <td class="menuitem">
           <v:url value="--'Home'" format="%s" url="--'nntpf_main.vspx'" />
         </td>
-        <v:template type="simple" condition="nntpf_groups_defined_p()">
+        <v:template type="simple" condition="nntpf_posts_enabled()">
           <td class="menuitem">
             <v:url value="Post" url="--'nntpf_post.vspx'" />
           </td>

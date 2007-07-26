@@ -151,9 +151,37 @@ nntpf_display_ds_group_list ()
 create procedure
 nntpf_groups_defined_p ()
 {
+
   if (not exists (select 1 from DB.DBA.NEWS_GROUPS))
     return 0;
-  else
+
+    return 1;
+}
+;
+
+create procedure
+nntpf_posts_enabled ()
+{
+  if(registry_get('nntpf_posts_enabled')='0')
+     return 0;
+
+  if(nntpf_groups_defined_p ()=0)
+     return 0;
+ 
+   return 1;
+}
+;
+
+create procedure
+nntpf_openid_enabled ( in _auth integer)
+{
+
+  if(registry_get('nntpf_openid_enabled')='0')
+     return 0;
+
+  if(_auth=1)
+     return 0;
+ 
     return 1;
 }
 ;
@@ -205,6 +233,7 @@ nntpf_get_mess_attachments (inout _data any, in get_uuparts integer)
   while (1 = 1)
     {
       line := ses_read_line (data, 0);
+      
       if (line is null or isstring (line) = 0)
 	{
 	   if (_all = vector ())
@@ -291,16 +320,18 @@ nntpf_print_message_href (in _subj varchar,
        ret := '<span class=&#34;thr_msg&#34;>';
      }
 
---   dbg_obj_print ('_subj=', _subj);
+
+   _subj:=subseq(_subj,0,500);
+   _subj:=xmlstr_fix(_subj);
 
    ret := ret ||
           '<span class=&#34;dc-subject&#34;><a class=&#34;thr_list_subj&#34;' ||
               ' href=&#34;#&#34;' ||
-              ' onclick=&#34;javascript: doPostValueN (''nnv'', ''disp_artic'', ''' ||
+              ' onclick=&#34;javascript: doPostValueN (&#39;nnv&#39;, &#39;disp_artic&#39;, &#39;' ||
           encode_base64 (_id) ||
-          '''); return false&#34;>' ||
-          replace (_subj, '"', '&#34;', 1000) ||
+          '&#39;); return false&#34;>' || _subj ||
           '</a></span>';
+
    ret := ret ||
           ' (<span class=&#34;dc-date&#34;><a class=&#34;thr_list_date&#34; href=&#34;#&#34; ' ||
                ' onclick=&#34;javascript: doPostValueN (''nnv'', ''disp_artic'', ''' ||
@@ -310,7 +341,7 @@ nntpf_print_message_href (in _subj varchar,
           '</a></span>)';
    ret := ret ||
           ' by <span class=&#34;thr_list_from&#34;><span class=&#34;dc-creator&#34;>' ||
-          replace (_from, '"', '&#34;') ||
+          xmlstr_fix(_from) ||
           '</span></span>';
 
    declare _curr_uid,_not_logged integer;
@@ -320,18 +351,20 @@ nntpf_print_message_href (in _subj varchar,
    
   declare _tagscount int;
 
-   _tagscount:=discussions_tagscount(_group,encode_base64 (_id),coalesce(_curr_uid,0) );
+   _tagscount:=discussions_tagscount(_group,encode_base64 (_id),coalesce(_curr_uid,-1) );
    
    if(_not_logged=0 or _tagscount>0)
    {
    ret := ret ||
-          ' <span ><a '||curr_a_id||' href=&#34;javascript:void(0)&#34; ' ||
-          ' onclick=&#34; document.getElementById(''show_tagsblock'').value=1;'||
-          ' doPostValueN (''nnv'', ''disp_artic'', '''||encode_base64 (_id)||''');'||
+          ' <span >'||
+          '<a '||curr_a_id||' href=&#34;javascript:void(0)&#34; ' ||
+          ' onclick=&#34; document.getElementById(&#39;show_tagsblock&#39;).value=1;'||
+          ' doPostValueN (&#39;nnv&#39;, &#39;disp_artic&#39;, &#39;'||encode_base64 (_id)||'&#39;);'||
 --          'showTagsDiv(''' ||cast (_group as varchar)||''','''||encode_base64 (_id)||''',this);'||
           ' return false&#34;>' ||
           sprintf('tags (%d)', _tagscount )||
-          '</a></span>';
+          '</a>'||
+          '</span>';
     }
     else
     {
@@ -353,7 +386,7 @@ nntpf_print_message_href (in _subj varchar,
           _cur_art ||
           '"/>\n';
 
-   --dbg_printf ('%s', ret);
+
    return ret;
 }
 ;
@@ -445,13 +478,16 @@ nntpf_post_message (in params any, in auth_uname varchar :='')
 {
    
 
-   declare new_body, old_hdr, new_subj, nfrom, new_ref, new_attachments any;
+   declare new_body, old_hdr, new_subj, nfrom, nfrom_openid, new_ref, new_attachments any;
    declare _old_ref, _groups, _old_id any;
    declare new_mess any;
 
    new_body := get_keyword ('post_body_n', params, '');
    new_subj := get_keyword ('post_subj_n', params, '');
    nfrom := get_keyword ('post_from_n', params);
+   nfrom_openid :=get_keyword ('virified_openid_url', params,'');
+
+   
 
    new_ref := '';
 
@@ -514,6 +550,13 @@ nntpf_post_message (in params any, in auth_uname varchar :='')
 -- BODY
 
 
+
+
+  if(length(trim(nfrom_openid)))
+  {
+     nfrom_openid:=sprintf('\r\n\Verified openID: %s \r\n',trim(nfrom_openid));
+     new_mess := new_mess || new_body ||nfrom_openid ||new_attachments || '\r\n.\r\n';
+  }else
   new_mess := new_mess || new_body || new_attachments || '\r\n.\r\n';
 
 
@@ -555,10 +598,16 @@ nntpf_uudecode_file (in num integer, in params any)
       {
       f_name  := f_name_fs;
        content := f_value_fs;
-      }
+      }else
+        return '';
    }
    else
+   {
+    declare exit handler for not found{
+                                      return '';
+                                      }; 
      select blob_to_string (RES_CONTENT) into content from WS.WS.SYS_DAV_RES where RES_FULL_PATH = f_name;
+   }
 
    content := uuencode (content, 1, 1024*1024); -- 1 MB
    if (length (content) > 2)
@@ -1206,6 +1255,10 @@ nntpf_display_message_reply (in sid varchar, in id varchar, in group_name varcha
 {
 	 declare show_replylink integer;
 	 show_replylink:=1;
+   
+   if(registry_get('nntpf_posts_enabled')='0')
+      show_replylink:=0;
+   
 	 if(group_name is not null)
 	 { 
 	  
@@ -1214,10 +1267,16 @@ nntpf_display_message_reply (in sid varchar, in id varchar, in group_name varcha
 		    show_replylink:=0;
    }
 
+   declare _href varchar;
+   if(sid is null or length(sid)=0)
+     _href:=sprintf('nntpf_post.vspx?article=%V',id);
+   else
+    _href:=sprintf('nntpf_post.vspx?sid=%s&amp;realm=wa&amp;article=%V',sid,id);
+     
    if(show_replylink)
 {
    http ('<br/>');
-   http (sprintf ('<a href="nntpf_post.vspx?sid=%s&amp;realm=wa&amp;article=%V"> Reply to this article </a>', sid, id));
+       http (sprintf ('<a href="%s"> Reply to this article </a>',_href));
    http ('<br/>');
 }
 }
@@ -1354,6 +1413,43 @@ nntpf_search_result_v_meta (in _str varchar)   -- FIXME make only one procedure.
   exec ('select _date, _subj, _from, _nm_id, _grp_list from nntpf_search_result_v where _str = ?',
 	null, null, vector (_str), -1, mtd, dta);
   return mtd[0];
+}
+;
+
+
+create procedure
+nntpf_group_list_sp (in _group integer, in _orderby varchar := '')
+{
+
+  declare q_str,stat, msg, mdt, dta  any;
+  declare _datestr,_subj,_from,_nm_id varchar;
+  
+  result_names (_datestr, _subj, _from, _nm_id);
+
+  q_str:='select _date, _subj, _from, _nm_id from '||
+         '(select FTHR_DATE as _date, FTHR_SUBJ as _subj, '||
+         '        deserialize (FTHR_MESS_DETAILS)[0] as _from, FTHR_MESS_ID as _nm_id '||
+         ' from NNFE_THR where FTHR_GROUP = '||cast(_group as varchar)||' order by FTHR_DATE desc) grplist_view '||
+         _orderby;
+         
+	
+  stat := '00000';
+  exec (q_str, stat, msg, vector (), 0, mdt, dta);
+
+
+  if (stat = '00000')
+  {
+		foreach (any elm in dta) do
+		{
+
+     _datestr:=nntpf_print_date_in_thread (coalesce(elm[0],''));
+     _subj   :=coalesce(elm[1],'');
+     _from   :=coalesce(elm[2],'');
+     _nm_id  :=coalesce(elm[3],'');
+
+      result(_datestr, _subj, _from, _nm_id);
+    }
+  }else signal('NNTPF',msg);
 }
 ;
 
@@ -2057,6 +2153,33 @@ nntpf_group_child_node (in node_name varchar,
                        cast (gr_num as varchar) ||
                        '''); return false&#34;> RSS </a> ';
 
+
+           declare _curr_uid,_not_logged integer;
+           _not_logged:=0;
+           declare exit handler for not found{_curr_uid:=-1;_not_logged:=1;};
+           select U_ID into _curr_uid from DB.DBA.SYS_USERS where U_NAME=coalesce(connection_get('vspx_user'),'');
+           
+           declare _tagscount int;
+           _tagscount:=discussions_tagscount(cast(gr_num as varchar),'',coalesce(_curr_uid,-1) );
+            
+           declare tags_link varchar;
+           tags_link:='';
+           
+           if(_not_logged=0 or _tagscount>0)
+           {
+           tags_link :=
+                  ' | <a  href=&#34;javascript:void(0)&#34; ' ||
+                  ' onclick=&#34;'||
+                  'showTagsDiv(''' ||cast (gr_num as varchar)||''','''',this);'||
+                  ' return false&#34;>' ||
+                  sprintf('tags (%d)', _tagscount )||
+                  '</a> ';
+           }
+           else
+           {
+             tags_link := ' | ' || sprintf('tags (%d)', _tagscount ) || ' ';
+           }
+
            temp_name := '<a href=&#34;nntpf_nthread_view.vspx?group=1&#34; ' ||
                           ' onclick=&#34;javascript:doPostValueNT (''nntpf'', ''disp_group'', ''' ||
                         cast (gr_num as varchar) ||
@@ -2067,8 +2190,10 @@ nntpf_group_child_node (in node_name varchar,
                           ' onclick=&#34;javascript:doPostValueT (''nntpf'', ''disp_group_thr'', ''' ||
                         cast (gr_num as varchar) ||
                         '''); return false&#34;> thread </a>' ||
-                        rss_link;
+                        rss_link||
+                        tags_link;
          }
+
 
        ret := ret ||
               '<node name="' ||
@@ -3174,5 +3299,28 @@ create procedure nntpf_implode ( in _str_vector varchar, in _str_separator varch
   }
 
   return _res;
+}
+;
+create procedure xmlstr_fix(in _str varchar)
+{
+    declare i integer;
+    declare _corr_str varchar;
+	  _corr_str:='';
+    
+		for (i:=1; i <= length(_str); i:=i+1)
+		{
+		  declare _chr any;
+		  _chr:=substring(_str,i,1);
+
+		  if(   (ascii(_chr)>40 and ascii(_chr)<59)
+	       or (ascii(_chr)>63 and ascii(_chr)<90)
+	       or (ascii(_chr)>97 and ascii(_chr)<126))
+
+  		  _corr_str:=_corr_str||_chr;
+		  else  
+  		  _corr_str:=_corr_str||'&#'||cast(ascii(_chr) as varchar)||';';
+		  
+    }
+  return _corr_str;
 }
 ;

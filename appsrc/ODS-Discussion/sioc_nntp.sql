@@ -474,10 +474,10 @@ create procedure sioc.DBA.rdf_nntpf_view_str ()
 
 -- END NNTPF
 
-grant select on ODS_NNTP_GROUPS to "SPARQL";
-grant select on ODS_NNTP_POSTS to "SPARQL";
-grant select on ODS_NNTP_USERS to "SPARQL";
-grant select on ODS_NNTP_LINKS to "SPARQL";
+grant select on ODS_NNTP_GROUPS to SPARQL_SELECT;
+grant select on ODS_NNTP_POSTS to SPARQL_SELECT;
+grant select on ODS_NNTP_USERS to SPARQL_SELECT;
+grant select on ODS_NNTP_LINKS to SPARQL_SELECT;
 
 
 ODS_RDF_VIEW_INIT ();

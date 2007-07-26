@@ -26,13 +26,19 @@ DROP VIEW NNTPF_GROUP_LIST_V;
 DROP VIEW NNTPF_SEARCH_RESULT_V;
 DROP TABLE NNFE_THR;
 DROP TABLE NNTPFE_USERRSSFEEDS;
+DROP TABLE NNTPF_PING_REG;
+DROP TABLE NNTPF_PING_LOG;
+DROP TABLE NNTPF_NGROUP_POST_TAGS;
+DROP TABLE NNTPF_TAG;
+
 VHOST_REMOVE (lpath=>'/nntpf');
+
 
 create procedure NNTPFE_DROP_ALL_PROC ()
 {
   declare arr any;
   arr := vector ();
-  for select P_NAME from DB.DBA.SYS_PROCEDURES where lower (P_NAME) like 'db.dba.nntpf_%'
+  for select P_NAME from DB.DBA.SYS_PROCEDURES where lower (P_NAME) like 'db.dba.nntpf_%' or (P_NAME) like 'db.dba.NNTPF_%'
 	and P_NAME <> 'DB.DBA.NNTPFE_DROP_ALL_PROC'
         do
     {
@@ -40,7 +46,7 @@ create procedure NNTPFE_DROP_ALL_PROC ()
     }
   foreach (any elm in arr) do
     {
-      DB.DBA.EXEC_STMT ('drop procedure "'||elm||'"', 0);
+      DB.DBA.wa_exec_no_error('drop procedure "'||elm||'"');
     }
 }
 ;
@@ -50,10 +56,21 @@ NNTPFE_DROP_ALL_PROC ()
 
 registry_remove ('__nntpf_ver');
 
-drop procedure NNTPFE_DROP_ALL_PROC;
-drop procedure NEWS_MULTI_MSG_TO_NNFE_THR;
-drop procedure NNFE_FILL_THR_INIT;
+DB.DBA.wa_exec_no_error('drop procedure NEWS_MULTI_MSG_TO_NNFE_THR');
+DB.DBA.wa_exec_no_error('drop procedure NNFE_FILL_THR_INIT');
 
 drop trigger NEWS_MULTI_MSG_I_NNTPF;
 drop trigger NEWS_MULTI_MSG_D_NNTPF;
+drop trigger NEWS_MULTI_MSG_D_NGROUP_POST_TAGS;
 
+
+DELETE FROM DB.DBA.WA_MEMBER      WHERE WAM_INST      IN (SELECT WAI_NAME FROM DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Discussion')
+;
+DELETE FROM DB.DBA.WA_INSTANCE    WHERE WAI_TYPE_NAME = 'Discussion'
+;
+DELETE FROM DB.DBA.WA_MEMBER_TYPE WHERE WMT_APP       = 'Discussion'
+;
+drop type ODS.DISCUSSION.discussion
+;
+DELETE FROM DB.DBA.WA_TYPES       WHERE WAT_NAME      = 'Discussion'
+;

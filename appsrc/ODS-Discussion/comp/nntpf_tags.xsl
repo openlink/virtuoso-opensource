@@ -29,7 +29,7 @@
                 version="1.0">
 
   <xsl:template match="vm:tags-block">
-              <div id="tags_div" style="display: none;">
+              <div id="tags_div" style="display: none;height:72px;">
                <input type="hidden" name="curr_ngroup" id="curr_ngroup" value=""/>
                <input type="hidden" name="curr_post" id="curr_post" value=""/>
 
@@ -37,7 +37,12 @@
                {
                ?>
                <input type="text" id="new_tag" style="width:140px"/>
-               <a href="#" onClick="doTag( $$('curr_ngroup'),$$('curr_post'),$$('new_tag'),'add'); return false"><img src="images/add_10.png" alt="Add Tag" title="Add Tag" border="0" /></a>
+               <a href="javascript:void(0)" onClick="doTag( $$('curr_ngroup'),$$('curr_post'),$$('new_tag'),'add'); return false"><img src="images/add_10.png" alt="Add Tag" title="Add Tag" border="0" /></a>
+               <?vsp
+               }else
+               {
+               ?>
+                 <img src="images/spacer.png" style="height:10px;width:170px;"/>
                <?vsp
                }
                ?>
@@ -52,13 +57,13 @@
     <![CDATA[
     function genTagsList(ngroupId,postId)
     {
-      var wsdl = "<?VWA_LINK(1, '/')?>ods_services/services.wsdl";
+      var wsdl = "<?VWA_LINK(0, '/')?>ods_services/services.wsdl";
       var serviceName = "discussions_taglist";
       var inputObject = {
           discussions_taglist:{
                                ngroup_id:ngroupId,
                                post_id:postId,
-                               u_id:<?V(case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '0' end)?>
+                               u_id:<?V(case when length(self.u_name)>0 then (select U_ID from DB.DBA.SYS_USERS where U_NAME=self.u_name) else '-1' end)?>
           }  
       }     
 
@@ -71,7 +76,7 @@
            res=outputObject.discussions_taglistResponse.CallReturn;
            
            var listHTML='';
-           
+           var isAdminTag=0;
            if(res.length>0)
            {
             var tagsArr=res.split(',');
@@ -79,28 +84,40 @@
             {
               for(i=0;i<tagsArr.length;i++)
               {        
+              if(tagsArr[i].length)
+              {          
+                if(tagsArr[i]=='###')
+                {
+                 isAdminTag=1;
+                 listHTML=listHTML+'<br/>';
+                }else
+                { 
               listHTML=listHTML+
-                       '<span style="float:left;"><a href="#" onClick="showTag(\''+tagsArr[i]+'\');" title="Show items with tag '+tagsArr[i]+'"><b>'+tagsArr[i]+'</b></a>';
+                          '<span style="float:left;"><a href="javascript:void(0)" onClick="showTag(\''+tagsArr[i]+'\');" title="Show items with tag '+tagsArr[i]+'"><b>'+tagsArr[i]+'</b></a>';
               <?vsp
                if(length(self.u_name))
                {
               ?>
+                 if(!isAdminTag)
+                 {
               listHTML=listHTML+
-                         '<a href="#" onclick="doTag( $$(\'curr_ngroup\'),$$(\'curr_post\'),\''+tagsArr[i]+'\',\'del\'); return false"><img src="images/del_10.png" alt="Delete Tag" title="Delete Tag" border="0"/></a>';
+                            '<a href="javascript:void(0)" onclick="doTag( $$(\'curr_ngroup\'),$$(\'curr_post\'),\''+tagsArr[i]+'\',\'del\'); return false"><img src="images/del_10.png" alt="Delete Tag" title="Delete Tag" border="0"/></a>';
+                 }
               <?vsp
                }
               ?>
+                 }
               if(i<tagsArr.length-1)
                   listHTML=listHTML+'&nbsp;';
 
               listHTML=listHTML+'</span>';
-              
+                }
               }
             }
             else
             {
-            listHTML='<a href="#" onClick="showTag(\''+res+'\');" title="Show items with tag '+res+'"><b>'+res+'</b></a>'+
-                     '<a href="#" onclick="doTag( $$(\'curr_ngroup\'),$$(\'curr_post\'),\''+res+'\',\'del\'); return false"><img src="images/del_10.png" alt="Delete Tag" title="Delete Tag" border="0"/></a>';
+            listHTML='<a href="javascript:void(0)" onClick="showTag(\''+res+'\');" title="Show items with tag '+res+'"><b>'+res+'</b></a>'+
+                     '<a href="javascript:void(0)" onclick="doTag( $$(\'curr_ngroup\'),$$(\'curr_post\'),\''+res+'\',\'del\'); return false"><img src="images/del_10.png" alt="Delete Tag" title="Delete Tag" border="0"/></a>';
             }
            }
            $('tagslist_div').innerHTML=listHTML;
@@ -125,7 +142,7 @@
     {
       
       
-      var wsdl = "<?VWA_LINK(1, '/')?>ods_services/services.wsdl";
+      var wsdl = "<?VWA_LINK(0, '/')?>ods_services/services.wsdl";
       var serviceName = "discussions_dotag";
       var inputObject = {
           discussions_dotag:{
@@ -154,7 +171,7 @@
     
     function updateTagsCount(ngroupId,_postId)
     {
-      var wsdl = "<?VWA_LINK(1, '/')?>ods_services/services.wsdl";
+      var wsdl = "<?VWA_LINK(0, '/')?>ods_services/services.wsdl";
       var serviceName = "discussions_tagscount";
       var inputObject = {
           discussions_tagscount:{
@@ -233,8 +250,17 @@
     }
 
 
-    function showTag()
+    function showTag(tag)
     {
+      var sid='<?Vself.sid?>';
+      var realm='<?Vself.realm?>';
+      var loginParams=(sid.length?'sid='+sid:'')+(realm.length?'&realm='+realm:'');
+      var searchStr;
+ 
+      searchStr  = '?'+loginParams +'&q_tags='+tag;
+
+      document.location='<?V sprintf ('%ssearch.vspx', self.odsbar_ods_gpath) ?>'+searchStr;
+     
       return false;
     }
 

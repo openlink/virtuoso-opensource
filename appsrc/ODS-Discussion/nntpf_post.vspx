@@ -35,6 +35,8 @@
       <v:include url="virtuoso_app_links.xhtml"/>
       <link rel="stylesheet" type="text/css" href="nntpf.css"/>
       <link rel="stylesheet" type="text/css" href="webdav.css"/>
+      <script type='text/javascript' src='openid.js'></script>
+
       <title>ODS Discussion</title>
     </head>
     <body>

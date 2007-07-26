@@ -275,21 +275,56 @@ create procedure discussions_taglist(in ngroup_id varchar, in post_id varchar, i
     select NNPT_TAGS into _tags from NNTPF_NGROUP_POST_TAGS where NNPT_NGROUP_ID=_ngroup_id and NNPT_POST_ID=post_id and NNPT_UID=u_id;
 
     _end:
+    
+      _tags:=vector(_tags,',###,',discussions_admin_taglist(ngroup_id,post_id,u_id));
+    
     return _tags;
 }
 ;
+create procedure discussions_admin_taglist(in ngroup_id varchar, in post_id varchar, in exclude_user_id integer :=-1)
+{
+    declare _ngroup_id integer;
+    _ngroup_id:=cast(ngroup_id as integer);
+
+
+    post_id:=decode_base64(post_id);
+
+    declare _tags,_admin_tags varchar;
+    _tags:='';
+
+    for 
+      select NNPT_TAGS from NNTPF_NGROUP_POST_TAGS where NNPT_NGROUP_ID=_ngroup_id and NNPT_POST_ID=post_id and
+             NNPT_UID in (select U_ID from SYS_USERS where U_GROUP in (0,3) and U_ID<> exclude_user_id) 
+    do
+    {
+      if(length(NNPT_TAGS))
+      {
+         if(not length(_tags))
+           _tags:=NNPT_TAGS;
+         else
+           _tags:=_tags||','||NNPT_TAGS;
+      }
+    }
+
+    return _tags;
+}
+;
+
 
 create procedure discussions_tagscount(in ngroup_id varchar, in post_id varchar, in u_id integer )
 {
     declare _ngroup_id integer;
     _ngroup_id:=cast(ngroup_id as integer);
 
-    declare tags_arr any;
+    declare tags,_tags_arr,_admin_tags_arr any;
 
-    tags_arr := split_and_decode (discussions_taglist(ngroup_id,post_id,u_id), 0, '\0\0,');
+    tags := discussions_taglist(ngroup_id,post_id,u_id);
+    _tags_arr := split_and_decode (tags[0], 0, '\0\0,');
+    _admin_tags_arr:=split_and_decode (tags[2], 0, '\0\0,');
 
-    if(length(tags_arr))
-       return length(tags_arr);
+
+    if(length(_tags_arr) or length(_admin_tags_arr))
+       return length(_tags_arr)+length(_admin_tags_arr);
     else
       return 0;
 }
