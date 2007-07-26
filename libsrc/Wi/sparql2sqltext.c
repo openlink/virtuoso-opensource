@@ -423,6 +423,8 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{alias-N-dot}^ if qm_val is NULL", asname_printed);
           if (col_idx < 0)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{alias-N-dot}^ outside a loop, should be ^{alias-dot}^", asname_printed);
+          if (col_idx >= BOX_ELEMENTS (qm_val->qmvColumns))
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): col index for ^{alias-N-dot}^ exceedes number of columns", asname_printed);
           colalias = qm_val->qmvColumns[col_idx]->qmvcAlias;
           if (NULL != alias)
             {
@@ -492,6 +494,8 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{column-N}^ if qm_val is NULL", asname_printed);
           if (col_idx < 0)
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{column-N}^ outside a loop", asname_printed);
+          if (col_idx >= BOX_ELEMENTS (qm_val->qmvColumns))
+            spar_sqlprint_error2 ("ssg_" "print_tmpl(): col index for ^{column-N}^ exceedes number of columns", asname_printed);
           ssg_prin_id (ssg, qm_val->qmvColumns[col_idx]->qmvcColumnName);
         }
 /*                        0         1         2 */
@@ -1400,13 +1404,13 @@ ssg_print_literal (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (lit))
     {
       if (SPAR_LIT == lit->type)
-        value = lit->_.lit.val;
-      else if ((SPAR_QNAME == lit->type)/* || (SPAR_QNAME_NS == lit->type)*/)
         {
         value = lit->_.lit.val;
           dt = lit->_.lit.datatype;
           lang = lit->_.lit.language;
         }
+      else if ((SPAR_QNAME == lit->type)/* || (SPAR_QNAME_NS == lit->type)*/)
+        value = lit->_.lit.val;
       else
         {
           spar_sqlprint_error ("ssg_print_literal(): non-lit tree as argument");
@@ -4546,10 +4550,18 @@ void
 ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_count, int pass)
 {
   SPART *tree;
-#ifdef DEBUG
-  if (1 > tree_count)
-    spar_internal_error (ssg->ssg_sparp, "ssg_" "print_table_exp(): weird tree_count");
-#endif
+  if (0 == tree_count)
+    {
+      if (1 == pass)
+        {
+          char buf[100];
+          sprintf (buf, " (select top 1 1 as __fake_col_%d from DB.DBA.RDF_QUAD) as __fake_tbl_%d",
+            ssg->ssg_sparp->sparp_unictr, ssg->ssg_sparp->sparp_unictr );
+          ssg->ssg_sparp->sparp_unictr++;
+          ssg_puts (buf);
+        }
+      return;
+    }
   tree = trees[0];
   switch (SPART_TYPE(tree))
     {

@@ -4971,14 +4971,16 @@ caddr_t *
 sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, int expected_triples_count)
 {
   dk_set_t res = NULL;
-  int triple_ctr;
+  int triple_ctr, triples_count;
   if ((SPAR_GP != gp->type) ||
     (0 != gp->_.gp.subtype) )
     return NULL;
-  if ((0 <= expected_triples_count) && (BOX_ELEMENTS (gp->_.gp.members) != expected_triples_count))
+  triples_count = BOX_ELEMENTS (gp->_.gp.members);
+  if (((0 <= expected_triples_count) && (triples_count != expected_triples_count)) || (0 == triples_count))
     return NULL;
-  DO_BOX_FAST (SPART *, gp_triple, triple_ctr, gp->_.gp.members)
+  for (triple_ctr = 0; triple_ctr < triples_count; triple_ctr++)
     {
+      SPART * gp_triple = gp->_.gp.members[triple_ctr];
       if (SPAR_TRIPLE != gp_triple->type)
         return 0;
       if (1 != BOX_ELEMENTS (gp_triple->_.triple.tc_list))
@@ -4986,12 +4988,11 @@ sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, int expected_trip
       if (gp_triple->_.triple.ft_type)
         return 0; /* TBD: support of free-text indexing in breakup */
     }
-  END_DO_BOX_FAST;
-  DO_BOX_FAST (SPART *, gp_triple, triple_ctr, gp->_.gp.members)
+  for (triple_ctr = 0; triple_ctr < triples_count; triple_ctr++)
     {
+      SPART * gp_triple = gp->_.gp.members[triple_ctr];
       t_set_push (&res, gp_triple->_.triple.tabid);
     }
-  END_DO_BOX_FAST;
   return t_revlist_to_array (res);
 }
 

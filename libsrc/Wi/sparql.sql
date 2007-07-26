@@ -8258,7 +8258,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
 load_grddl:;
   for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
     {
-      declare val_match, pcols any;
+      declare val_match, pcols, new_opts any;
       declare npars int;
 
       if (RM_TYPE = 'MIME')
@@ -8286,19 +8286,20 @@ load_grddl:;
           if (isarray (pcols))
 	    npars := length (pcols);
 	    --!!!TBD: Carefully check what happens when dest is NULL vs dest is nonNULL, then add support for groupdest.
+	  new_opts := vector_concat (options, RM_OPTIONS);
 	  if (RM_TYPE <> 'HTTP')
 	    {
 	      if (npars = 7)
 	  rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, RM_KEY);
           else
-	        rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, RM_KEY, RM_OPTIONS);
+	        rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, RM_KEY, new_opts);
 	    }
           else
 	    {
 	      if (npars = 7)
 	    rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, vector (req_hdr_arr, ret_hdr));
 	      else
-	        rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, vector (req_hdr_arr, ret_hdr), RM_OPTIONS);
+	        rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, vector (req_hdr_arr, ret_hdr), new_opts);
 	    }
 	  if (rc < 0)
 	return 0;
@@ -8397,8 +8398,23 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
     }
   if (lower (local_iri) like 'file:%')
     return DB.DBA.SYS_FILE_SPONGE_UP (local_iri, graph_iri, null, 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
-  else
+  else if (lower (local_iri) like 'http:%' or lower (local_iri) like 'https:%')
   return DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, graph_iri, 'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
+  else
+    {
+      declare sch, rc any;
+      sch := WS.WS.PARSE_URI (local_iri);
+      sch := upper (sch[0]);
+      if (__proc_exists ('DB.DBA.SYS_'||sch||'_SPONGE_UP') is not null)
+        {
+	  rc := call ('DB.DBA.SYS_'||sch||'_SPONGE_UP') (local_iri, graph_iri, options);
+	  return rc;
+        }
+      else
+	{
+	  signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger do not support "%s" IRI scheme', lower(sch)));
+	}
+    }
 }
 ;
 
