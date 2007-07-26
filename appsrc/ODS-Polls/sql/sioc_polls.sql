@@ -228,4 +228,143 @@ create procedure ods_polls_sioc_init ()
 
 --POLLS.WA.exec_no_error('ods_polls_sioc_init ()');
 
+-------------------------------------------------------------------------------
+--
+-- Polls RDF Views
+--
+-------------------------------------------------------------------------------
 use DB;
+
+wa_exec_no_error ('drop view ODS_POLLS_POSTS');
+
+-------------------------------------------------------------------------------
+--
+create view ODS_POLLS_POSTS as
+  select
+  	WAI_NAME,
+  	P_DOMAIN_ID,
+  	P_ID,
+  	P_NAME,
+  	P_DESCRIPTION,
+  	sioc..sioc_date (P_UPDATED) as P_UPDATED,
+  	sioc..sioc_date (P_CREATED) as P_CREATED,
+  	sioc..post_iri (U_NAME, 'polls', WAI_NAME, cast (P_ID as varchar)) || '/sioc.rdf' as SEE_ALSO,
+  	U_NAME
+  from
+  	DB.DBA.WA_INSTANCE,
+  	POLLS..POLL,
+  	DB.DBA.WA_MEMBER,
+  	DB.DBA.SYS_USERS
+  where
+  	P_DOMAIN_ID = WAI_ID and
+  	WAM_INST = WAI_NAME and
+  	WAM_IS_PUBLIC = 1 and
+  	WAM_USER = U_ID and
+  	WAM_MEMBER_TYPE = 1;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODS_POLLS_TAGS ()
+{
+  declare V any;
+  declare inst, uname, p_id, tag any;
+
+  result_names (inst, uname, p_id, tag);
+
+  for (select WAM_INST,
+              U_NAME,
+              P_TAGS,
+              P_ID
+         from POLLS.WA.POLL,
+              WA_MEMBER,
+              WA_INSTANCE,
+              SYS_USERS
+         where WAM_INST = WAI_NAME
+           and WAM_MEMBER_TYPE = 1
+           and WAM_USER = U_ID
+           and P_DOMAIN_ID = WAI_ID
+           and length (P_TAGS) > 0) do {
+    V := split_and_decode (P_TAGS, 0, '\0\0,');
+    foreach (any t in V) do {
+      t := trim(t);
+      if (length (t))
+ 	      result (WAM_INST, U_NAME, P_ID, t);
+    }
+  }
+}
+;
+
+grant execute on DB.DBA.ODS_POLLS_TAGS to SPARQL_SELECT;
+
+wa_exec_no_error ('drop view ODS_POLLS_TAGS');
+create procedure view ODS_POLLS_TAGS as DB.DBA.ODS_POLLS_TAGS () (WAM_INST varchar, U_NAME varchar, P_ID int, P_TAG varchar);
+
+-------------------------------------------------------------------------------
+--
+create procedure sioc.DBA.rdf_polls_view_str ()
+{
+  return
+    '
+      # Post
+      sioc:poll_post_iri (DB.DBA.ODS_POLLS_POSTS.U_NAME, DB.DBA.ODS_POLLS_POSTS.WAI_NAME, DB.DBA.ODS_POLLS_POSTS.P_ID)
+    	  rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
+        dc:title P_NAME;
+        dct:created P_CREATED ;
+    	  dct:modified P_UPDATED ;
+    	  dc:date P_UPDATED ;
+    	  dc:creator U_NAME ;
+    	  sioc:content P_DESCRIPTION ;
+    	  sioc:has_creator sioc:user_iri (U_NAME) ;
+    	  sioc:has_container sioc:poll_forum_iri (U_NAME, WAI_NAME) ;
+    	  foaf:maker foaf:person_iri (U_NAME)
+    	.
+
+      sioc:poll_forum_iri (DB.DBA.ODS_POLLS_POSTS.U_NAME, DB.DBA.ODS_POLLS_POSTS.WAI_NAME)
+        sioc:container_of	sioc:poll_post_iri (U_NAME, WAI_NAME, P_ID)
+      .
+
+     	sioc:user_iri (DB.DBA.ODS_POLLS_POSTS.U_NAME)
+     	  sioc:creator_of	sioc:poll_post_iri (U_NAME, WAI_NAME, P_ID)
+     	.
+
+    	# Post tags
+    	sioc:poll_post_iri (DB.DBA.ODS_POLLS_TAGS.U_NAME, DB.DBA.ODS_POLLS_TAGS.WAM_INST, DB.DBA.ODS_POLLS_TAGS.P_ID)
+    	  sioc:topic sioc:tag_iri (U_NAME, P_TAG)
+    	.
+
+    	sioc:tag_iri (DB.DBA.ODS_POLLS_TAGS.U_NAME, DB.DBA.ODS_POLLS_TAGS.P_TAG)
+    	  a skos:Concept ;
+    	  skos:prefLabel P_TAG ;
+    	  skos:isSubjectOf sioc:poll_post_iri (U_NAME, WAM_INST, P_ID)
+    	.
+
+      sioc:poll_post_iri (DB.DBA.ODS_POLLS_POSTS.U_NAME, DB.DBA.ODS_POLLS_POSTS.WAI_NAME, DB.DBA.ODS_POLLS_POSTS.P_ID)
+	      a atom:Entry ;
+      	atom:title P_NAME ;
+      	atom:source sioc:poll_forum_iri (U_NAME, WAI_NAME) ;
+      	atom:author foaf:person_iri (U_NAME) ;
+        atom:published P_CREATED ;
+	      atom:updated P_UPDATED ;
+	      atom:content sioc:poll_post_text_iri (U_NAME, WAI_NAME, P_ID)
+	    .
+
+      sioc:poll_post_iri (DB.DBA.ODS_POLLS_POSTS.U_NAME, DB.DBA.ODS_POLLS_POSTS.WAI_NAME, DB.DBA.ODS_POLLS_POSTS.P_ID)
+        a atom:Content ;
+        atom:type "text/plain" ;
+	      atom:lang "en-US" ;
+	      atom:body P_DESCRIPTION
+	    .
+
+      sioc:poll_forum_iri (DB.DBA.ODS_POLLS_POSTS.U_NAME, DB.DBA.ODS_POLLS_POSTS.WAI_NAME)
+	      atom:contains sioc:poll_post_iri (U_NAME, WAI_NAME, P_ID)
+	    .
+    '
+    ;
+};
+
+grant select on ODS_POLLS_POSTS to SPARQL_SELECT;
+grant select on ODS_POLLS_TAGS to SPARQL_SELECT;
+grant execute on ODS_POLLS_TAGS to SPARQL_SELECT;
+
+-- END BOOKMARK
+ODS_RDF_VIEW_INIT ();

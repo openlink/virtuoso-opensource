@@ -634,7 +634,7 @@
               <table cellspacing="0">
                 <tr>
                   <th>
-                    <v:label for="t_tag" value="Comma Delimited Tags" />
+                    <v:label for="t_tag" value="Tags" />
                   </th>
                   <td>
                     <v:text name="t_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60" />
@@ -859,7 +859,7 @@
                 <table cellspacing="0">
                   <tr>
                     <th>
-                      <v:label for="p_name" value="-- case when (self.v_mode = 'S') then 'Question' else 'Poll Name' end" />
+                      <v:label for="p_name" value="-- case when (self.v_mode = 'S') then 'Question (*)' else 'Poll Name (*)' end" />
                     </th>
                     <td>
                       <v:text name="p_name" null-value="--''" value="--POLLS.WA.utf2wide(self.v_name)" fmt-function="POLLS.WA.utf2wide" xhtml_size="60" />
@@ -881,7 +881,7 @@
                       }
                     </script>
                     <th>
-                      <v:label for="p_tags" value="Comma Delimited Tags" />
+                      <v:label for="p_tags" value="Tags" />
                     </th>
                     <td>
                       <v:text name="p_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
