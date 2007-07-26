@@ -4597,10 +4597,11 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
   caddr_t org_qual, proc_name = box_copy (qr->qr_proc_name);
   user_t *owner_user;
   dk_set_t old_qr_set = NULL;
-  dbe_schema_t *sc = wi_inst.wi_schema;
+  dbe_schema_t *sc; 
 
   mutex_enter (recomp_mtx);
-
+  /* whe should get schema after we got mutex as it can be changed in the meantime */
+  sc = wi_inst.wi_schema;
   if (proc_name && !qr->qr_trig_table)
     {
       /* it's possible when procedure is going to be re-compiled to be
