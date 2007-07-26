@@ -561,7 +561,9 @@ create function WV.WIKI.MACRO_SEARCH (inout _data varchar, inout _context any, i
   declare _res varchar; 
   declare _args any;
   declare _cluster_col_id int;
-  declare sid, realm varchar;
+  declare sid, realm, searchPath varchar;
+
+
   _data := WV.WIKI.EXPAND_SIMPLE_MACRO (_data);
   _args := WV.WIKI.PARSEMACROARGS (_data);
   search_word := WV.WIKI.GETMACROPARAM (_args, 'search', NULL);
@@ -575,10 +577,11 @@ create function WV.WIKI.MACRO_SEARCH (inout _data varchar, inout _context any, i
 	  search_word := WV.WIKI.STRJOIN (' OR ', swords);
 	}
     }
-  sid := WV.WIKI.GETMACROPARAM (_args, 'sid', NULL);
-  realm := WV.WIKI.GETMACROPARAM (_args, 'realm', NULL);
+  sid := get_keyword ('sid', _env);
+  realm := get_keyword ('realm', _env);
   cluster := WV.WIKI.GETMACROPARAM (_args, 'cluster');
-  --dbg_obj_princ ('Search: ', _args);
+
+  searchPath := WS.WS.COL_PATH (cast (get_keyword ('ti_col_id', _env, 0) as integer));
   if (cluster is not null)
     {
       _cluster_col_id := (select ColId from WV.WIKI.CLUSTERS where ClusterId = cluster);
@@ -614,15 +617,16 @@ end_parse:
                             from WS.WS.SYS_DAV_RES, DB.DBA.SYS_USERS
                             where
                              contains (RES_CONTENT, concat ('[__lang ''x-ViDoc''] ',exp1))
-                             and RES_FULL_PATH like '/DAV/VAD/wiki/%.txt'
+                             and RES_FULL_PATH like searchPath || '%.txt'
 			     and U_ID = RES_OWNER;
       declare cluster_cr cursor for select RES_ID, U_NAME, RES_NAME, length (RES_CONTENT) as RES_LEN, WV.WIKI.DATEFORMAT(RES_CR_TIME) as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH
                             from WS.WS.SYS_DAV_RES, DB.DBA.SYS_USERS
                             where
                              contains (RES_CONTENT, concat ('[__lang ''x-ViDoc''] ',exp1))
-                             and RES_FULL_PATH like '/DAV/VAD/wiki/%.txt'
+                             and RES_FULL_PATH like searchPath || '%.txt'
 			     and U_ID = RES_OWNER
 			     and RES_COL = _cluster_col_id;
+
 whenever sqlstate '37000' goto failed;
 	declare _ctx, _idx any;
 	_ctx := string_output ();

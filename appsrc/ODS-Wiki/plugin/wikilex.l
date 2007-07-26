@@ -55,14 +55,14 @@ typedef struct bufmem_s {
 } bufmem_t;
 
 typedef struct wlex_state_s {
-  int wlex_font;
-  int wlex_headerlevel;
-  int wlex_listlevel;  
-  int wlex_listmodes[MAXLISTDEPTH];
-  int wlex_in_para;
-  int wlex_para_depressed;
-  int wlex_noautolink;
-  int wlex_in_table;
+  int wlex_font;			/*!< Bitmask of WLEX_FONT_xx values */
+  int wlex_headerlevel;			/*!< Last header level, 1 to 6 for H1 to H6 */
+  int wlex_listlevel;			/*!< Nesting level for lists, 0 = outside list, 1 = three spaces etc. */
+  int wlex_listmodes[MAXLISTDEPTH];	/*!< Array of WLEX_LIST_UL and WLEX_LIST_OL */
+  int wlex_in_para;			/*!< Inside a text paragraph */
+  int wlex_para_depressed;		/*!< No splitting to paragraphs due to verbatim or table or the like */
+  int wlex_noautolink;			/*!< Automatic links are disabled */
+  int wlex_in_table;			/*!< Table is in progress */
   int wlex_in_any_text;
   int wlex_format_lock;
   int wlex_xmp_depth;
@@ -325,7 +325,7 @@ static void wlex_para(int enable)
   if (enable)
     PRINT("<P>");
   else
-    if (STATE(wlex_para_depressed))
+    if (!STATE(wlex_para_depressed))
       PRINT("</P>\n");
   STATE(wlex_in_para) = enable;
   STATE(wlex_para_depressed) = 0;

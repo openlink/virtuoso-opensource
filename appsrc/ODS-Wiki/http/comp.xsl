@@ -219,7 +219,7 @@
 	  </tr>
 	  <tr>
 	    <th>password</th>
-	    <td><v:text name="upstream_password" value="--get_keyword ('passwd', self.defval, '')"/></td>
+	    <td><v:text name="upstream_password" type="password" value="--get_keyword ('passwd', self.defval, '')"/></td>
 	  </tr>
 <!--
 	  <tr>

@@ -215,10 +215,10 @@ void creole_connect (void *appdata)
 #ifdef _USRDLL
 static unit_version_t
 creole_version = {
-  "WikiV",				/*!< Title of unit, filled by unit */
+  "CreoleWiki",				/*!< Title of unit, filled by unit */
   creole_VERSION,			/*!< Version number, filled by unit */
   "OpenLink Software",			/*!< Plugin's developer, filled by unit */
-  "Support functions for WikiV collaboration tool",	/*!< Any additional info, filled by unit */
+  "Support functions for CreoleWiki collaboration tool",	/*!< Any additional info, filled by unit */
   0,					/*!< Error message, filled by unit loader */
   0,					/*!< Name of file with unit's code, filled by unit loader */
   creole_connect,			/*!< Pointer to connection function, cannot be 0 */

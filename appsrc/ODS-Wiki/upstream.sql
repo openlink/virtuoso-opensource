@@ -50,7 +50,7 @@ create method ti_register_for_upstream (in optype varchar(1)) returns any for WV
 
 create procedure PROCESS_UPSTREAMS ()
 {
-  declare cr static cursor for select UE_ID, UE_STREAM_ID, UE_TOPIC_ID, UE_CLUSTER_NAME, UE_LOCAL_NAME, UE_OP from UPSTREAM_ENTRY where UE_STATUS is null;
+  declare cr static cursor for select UE_ID, UE_STREAM_ID, UE_TOPIC_ID, UE_CLUSTER_NAME, UE_LOCAL_NAME, UE_OP from UPSTREAM_ENTRY where UE_STATUS is null order by UE_ID;
   
   declare id, streamid, _topicid, res int;
   declare clustername, localname, op varchar;
@@ -94,7 +94,50 @@ create procedure UPSTREAM_SCHEDULED_JOB ()
 }
 ;
 
-create function ATOM_RTOPIC (
+create procedure WV.WIKI.UPSTREAM_TOPIC_NOW (in topicid int)
+{
+  delete from UPSTREAM_ENTRY where UE_STATUS = 1 and UE_TOPIC_ID = topicid;
+  commit work;
+
+  declare cr static cursor for select UE_ID, UE_STREAM_ID, UE_TOPIC_ID, UE_CLUSTER_NAME, UE_LOCAL_NAME, UE_OP from UPSTREAM_ENTRY where UE_STATUS is null and UE_TOPIC_ID = topicid order by UE_ID;
+
+  declare id, streamid, _topicid, res int;
+  declare clustername, localname, op varchar;
+  declare bm any;
+
+  whenever not found goto complete;
+
+  open cr (exclusive, prefetch 1);
+  fetch cr first into id, streamid, _topicid, clustername, localname, op;
+again:
+  bm := bookmark (cr);
+  close cr;
+  if (op = 'D')
+    res := PROCESS_ATOM_DELETE (streamid, clustername, localname);
+  else
+    {
+      declare _topic WV.WIKI.TOPICINFO;
+      _topic := WV.WIKI.TOPICINFO();
+      _topic.ti_id := _topicid;
+      _topic.ti_find_metadata_by_id ();
+      if (op = 'I')
+        res := PROCESS_ATOM_INSERT (streamid, _topic);
+      else if (op = 'U')
+        res := PROCESS_ATOM_UPDATE (streamid, _topic);
+    }
+  update UPSTREAM_ENTRY set UE_LAST_TRY = now(), UE_STATUS = res where UE_ID = id and UE_TOPIC_ID = topicid;
+  commit work;
+  open cr (exclusive, prefetch 1);
+  fetch cr bookmark bm into id, streamid, _topicid, clustername, localname, op;
+  goto again;
+complete:
+  close cr;
+  update UPSTREAM_ENTRY set UE_STATUS = null where UE_STATUS <> 1 and UE_TOPIC_ID = topicid;
+}
+;
+
+
+create function WV.DBA.ATOM_RTOPIC (
     in rcluster varchar,
     in default_cluster varchar,
     in local_name varchar)
@@ -108,13 +151,13 @@ create function ATOM_RTOPIC (
 }
 ;
 
-create procedure ATOM_UUID ()
+create procedure WV.DBA.ATOM_UUID ()
 {
   return 'urn:uuid:{' || uuid() || '}';
 }
 ;
 
-create procedure ATOM_ENTRY (
+create procedure WV.DBA.ATOM_ENTRY (
        in _title varchar,
        in _id varchar,
        in _updated datetime,
@@ -133,7 +176,6 @@ create procedure ATOM_ENTRY (
    http (sprintf ('<summary type="text"></summary>', _summary), ss);
    http (sprintf ('<content type="text"><![CDATA[%s]]></content>', _text), ss);
    http ('</entry>', ss);
-   --dbg_obj_print (string_output_string(ss));
    return string_output_string (ss);
 }
 ;
@@ -162,10 +204,7 @@ create procedure C_RESP (in hdr any)
 
 create function HDR_TERM (in _user varchar, in _pwd varchar)
 {
-  return concat ('Authorization: Basic ', 
-	encode_base64 (_user || ':' || _pwd), 
-		'\n\r',
-		'Content-Type: application/atom+xml');
+  return concat ('Authorization: Basic ',  encode_base64 (_user || ':' || _pwd),  '\r\nContent-Type: application/atom+xml');
 }
 ;
 
@@ -180,17 +219,18 @@ create procedure PROCESS_ATOM_INSERT (in streamid int, inout _topic WV.WIKI.TOPI
    declare res varchar;
    for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
      {
-       declare http_res varchar;
        declare rc any;
-       res := ATOM_ENTRY (
-	    ATOM_RTOPIC (UP_RCLUSTER, _topic.ti_cluster_name, _topic.ti_local_name),
-	    ATOM_UUID(), now(), now(), '', _topic.ti_text);
-       http_res := http_get (UP_URI, rc, 'POST', HDR_TERM (UP_USER, UP_PASSWD), res);
-       --dbg_obj_print (rc);
+      res := WV.DBA.ATOM_ENTRY (WV.DBA.ATOM_RTOPIC (UP_RCLUSTER, _topic.ti_cluster_name, _topic.ti_local_name),
+                         WV.DBA.ATOM_UUID(),
+                         now(),
+                         now(),
+                         '',
+                         _topic.ti_text);
+      http_get (UP_URI, rc, 'POST', HDR_TERM (UP_USER, UP_PASSWD), res);
+      commit work;
        rc := C_RESP (rc);
        if (rc < 300 and rc >= 200)
 	 return 1;
-       commit work;
      }
    return 0;
 }
@@ -204,23 +244,24 @@ create procedure PROCESS_ATOM_UPDATE (in streamid int, inout _topic WV.WIKI.TOPI
 	commit work;
 	return 0;
    };
+
+  declare res varchar;
    for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
      {
-       declare res varchar;
-       res := ATOM_ENTRY (
-	    ATOM_RTOPIC (UP_RCLUSTER, _topic.ti_cluster_name, _topic.ti_local_name),
-	    ATOM_UUID(), now(), now(), '', _topic.ti_text);
-       declare http_res varchar;
        declare rc any;
-       http_res := http_get (UP_URI, rc, 'PUT', HDR_TERM (UP_USER, UP_PASSWD), res);
-       --dbg_obj_print (http_res, rc);
+
+      res := WV.DBA.ATOM_ENTRY (WV.DBA.ATOM_RTOPIC (UP_RCLUSTER, _topic.ti_cluster_name, _topic.ti_local_name),
+                         WV.DBA.ATOM_UUID(),
+                         now(),
+                         now(),
+                         '',
+                         _topic.ti_text);
+      http_get (UP_URI, rc, 'PUT', HDR_TERM (UP_USER, UP_PASSWD), res);
+      commit work;
        rc := C_RESP (rc);
        if (rc < 300 and rc >= 200)
 	 return 1;
-       commit work;
      }
-  --dbg_obj_print ('update: ', streamid, _topic);
-  commit work;
   return 0;
 }
 ;
@@ -233,21 +274,25 @@ create procedure PROCESS_ATOM_DELETE (in streamid int, in clustername varchar, i
 	commit work;
 	return 0;
    };
+
+  declare res varchar;
    for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
      {
        declare http_res varchar;
        declare rc any;
-       declare res varchar;
-       res := ATOM_ENTRY (
-	    ATOM_RTOPIC (UP_RCLUSTER, clustername, localname),
-	    ATOM_UUID(), now(), now(), '', '');
+
+      res := WV.DBA.ATOM_ENTRY (WV.DBA.ATOM_RTOPIC (UP_RCLUSTER, clustername, localname),
+                         WV.DBA.ATOM_UUID(),
+                         now(),
+                         now(),
+                         '',
+                         '');
        http_res := http_get (UP_URI, rc, 'DELETE', HDR_TERM(UP_USER, UP_PASSWD), res);
+      commit work;
        rc := C_RESP (rc);
        if (rc < 300 and rc >= 200)
 	 return 1;
-       commit work;
      }
-  commit work;
   return 0;
 }
 ;

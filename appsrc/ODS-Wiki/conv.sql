@@ -192,7 +192,11 @@ create procedure POST_RFC_MSG (inout head varchar, inout body varchar, in tree i
   declare ses any;
   ses := string_output ();
 --  dbg_printf ('tag_head=[%d], tag_body=[%d]', __tag(head), __tag (body));
+  -- check if null is passed, so we don't kill sparql queries
+  if (head is null)
+    return '';
   http (head, ses);
+  if (body is not null)
   http (body, ses);
   http ('\r\n.\r\n', ses);
   ses := string_output_string (ses);
@@ -208,6 +212,15 @@ create trigger WV_WIKI_CLUSTERS_NEWS_I after insert on CLUSTERS referencing new 
    ;
 }
 ;
+
+create procedure WV.WIKI.DISCUSSION_CHECK ()
+{
+  if (isnull (DB.DBA.VAD_CHECK_VERSION ('Discussion')))
+    return 0;
+  return 1;
+}
+;
+
 
 create procedure WV.WIKI.TOGGLE_CONVERSATION (in _cluster_name varchar, in enablep int := 1)
 {
@@ -820,3 +833,83 @@ create procedure DB.DBA.oWiki_NEWS_MSG_D (inout O_NM_ID any)
 }
 ;
 
+create procedure WV.WIKI.COMMENT_GET_MESS_ATTACHMENTS (inout _data any, in get_uuparts integer)
+{
+  declare data, outp, _all any;
+  declare line varchar;
+  declare in_UU, get_body integer;
+
+  data := string_output (http_strses_memory_size ());
+  http (_data, data);
+  http ('\n', data);
+  _all := vector ();
+
+  outp := string_output (http_strses_memory_size ());
+
+  in_UU := 0;
+  get_body := 1;
+  while (1 = 1)
+  {
+      line := ses_read_line (data, 0);
+
+      if (line is null or isstring (line) = 0)
+      {
+       if (_all = vector ())
+         {
+            _all := vector_concat (_all, vector (string_output_string (outp)));
+         }
+
+         return _all;
+      }
+
+      if (in_UU = 0 and subseq (line, 0, 6) = 'begin ' and length (line) > 6)
+      {
+          in_UU := 1;
+          if (get_body)
+          {
+            get_body := 0;
+            _all := vector_concat (_all, vector (string_output_string (outp)));
+            http_output_flush (outp);
+          }
+          _all := vector_concat (_all, vector (subseq (line, 10)));
+     }
+     else if (in_UU = 1 and subseq (line, 0, 3) = 'end')
+     {
+          in_UU := 0;
+          if (get_uuparts)
+          {
+             _all := vector_concat (_all, vector (string_output_string (outp)));
+             http_output_flush (outp);
+          }
+     }
+     else if ((get_uuparts and in_UU = 1) or get_body)
+     {
+            http (line, outp);
+            http ('\n', outp);
+     }
+  }
+
+  return _all;
+
+}
+;
+
+create procedure WV.WIKI.COMMENT_GET_CN_TYPE (in f_name varchar)
+{
+   declare ext varchar;
+   declare temp any;
+
+   ext := 'text/html';
+   temp := split_and_decode (f_name, 0, '\0\0.');
+
+   if (length (temp) < 2)
+     return ext;
+
+   temp := temp[1];
+
+   if (exists (select 1 from WS.WS.SYS_DAV_RES_TYPES where T_EXT = temp))
+	ext := ((select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = temp));
+
+   return ext;
+}
+;

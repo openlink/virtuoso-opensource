@@ -449,7 +449,7 @@ create procedure sioc.DBA.rdf_wiki_view_str ()
       ;
 };
 
-grant select on ODS_WIKI_POSTS to "SPARQL";
---grant select on ODS_WIKI_TAGS to "SPARQL";
+grant select on ODS_WIKI_POSTS to SPARQL_SELECT;
+--grant select on ODS_WIKI_TAGS to SPARQL_SELECT;
 -- END WIKI
 ODS_RDF_VIEW_INIT ();

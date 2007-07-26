@@ -19,7 +19,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
-
+--
 -- create new wikiv application in WA
 
 wa_exec_no_error_log (
@@ -136,8 +136,8 @@ create method wa_state_edit_form (inout stream any) for wa_wikiv {
 }
 ;
 
-
 create method wa_drop_instance () for wa_wikiv {
+  WV.WIKI.DROPCLUSTERUPSTREAM (self.cluster_id);
   WV.WIKI.DROPCLUSTERCONTENT (self.cluster_id);
   WV.WIKI.DELETECLUSTER (self.cluster_id);
   delete from WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and (WAI_INST as wa_wikiv).cluster_id = self.cluster_id;

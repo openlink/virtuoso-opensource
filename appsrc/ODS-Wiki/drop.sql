@@ -23,10 +23,9 @@
 create procedure wiki_uninst()
 {
   whenever sqlstate '*' goto fin;
-  --dbg_obj_princ ('Dropping oWiki');
+
   for select WAI_INST, WAI_NAME from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'WIKIV' or WAI_TYPE_NAME = 'oWiki' do
     {
-	--dbg_obj_princ ('dropping ', WAI_NAME);
         (WAI_INST as wa_wikiv).wa_drop_instance();
 	commit work;
     }
@@ -34,245 +33,119 @@ fin:
   ;
 }
 ;
-
-wiki_uninst()
+create procedure WV.Wiki.drop_procedures()
+{
+  for (select P_NAME from DB.DBA.SYS_PROCEDURES where (P_NAME like 'WV.Wiki.%') or (P_NAME like 'WV.DBA.%')) do {
+    if (P_NAME not in ('WV.Wiki.SILENT_EXEC', 'WV.Wiki.drop_procedures'))
+      WV.Wiki.SILENT_EXEC(sprintf('drop procedure %s', P_NAME));
+  }
+}
 ;
 
-drop procedure wiki_uninst
-;
+wiki_uninst();
+drop procedure wiki_uninst;
 
-DELETE FROM WV.WIKI.CLUSTERS
-;
+DELETE FROM WV.WIKI.CLUSTERS;
+WV.WIKI.DROP_ALL_MEMBERS();
+DELETE FROM DB.DBA.WA_INSTANCE    WHERE WAI_TYPE_NAME = 'oWiki';
+DELETE FROM DB.DBA.WA_MEMBER_TYPE WHERE WMT_APP       = 'oWiki';
 
-WV.WIKI.DROP_ALL_MEMBERS()
-;
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_AttachmentDelete');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_ClusterDelete');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_ClusterDeleteContent');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_ClusterInsert');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_ClusterUpdate');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_Tagging');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TaggingUpdate');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicDelete');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextAttachment');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextAttachment_D');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextDelete');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextInsert');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextInsertMeta');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextInsertPerms');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextUpdate');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextUpdatePerms');
+WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.SYS_USERS_WIKI_USERS_U');
+WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_MEMBERSHIP');
+WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_MEMBERSHIP_OPEN');
+WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_INSTANCE_U');
+WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_INSTANCE_D');
 
-DELETE FROM DB.DBA.WA_INSTANCE    WHERE WAI_TYPE_NAME = 'oWiki'
-;
-DELETE FROM DB.DBA.WA_MEMBER_TYPE WHERE WMT_APP       = 'oWiki'
-;
+WV.WIKI.SILENT_EXEC('drop table WV.DBA.ERRORS');
+WV.WIKI.SILENT_EXEC('drop table WV.DBA.HIST');
+WV.WIKI.SILENT_EXEC('drop table WV.DBA.UPSTREAM_LOG');
+WV.WIKI.SILENT_EXEC('drop table WV.DBA.UPSTREAM_ENTRY');
+WV.WIKI.SILENT_EXEC('drop table WV.DBA.UPSTREAM');
+WV.WIKI.SILENT_EXEC('drop type WV.WIKI.TOPICINFO');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.DOCBOOK_IDS');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.DOMAIN_PATTERN_1');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.EDIT_TEMP_STORAGE');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.COMMENT');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.SEMANTIC_OBJ');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.PREDICATE');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.LOCKTOKEN');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.COMMITCOUNTER');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.HITCOUNTER');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.ATTACHMENTINFONEW');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.CLUSTERSETTINGS');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.USERSETTINGS');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.CATEGORY');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.LOCK');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.HISTORY');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.DASHBOARD');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.TMP');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.LINK');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.TOPIC');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.CLUSTERS');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.APPERRORS');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.MEMBERSHIP');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.USERS');
+WV.WIKI.SILENT_EXEC('drop table WV.WIKI.GROUPS');
 
-			  
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_ClusterInsert"')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_ClusterDelete"')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_ClusterUpdate"')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextInsert"')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextDelete"')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextUpdate"')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_AttachmentDelete"')
-;	  
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_WA_MEMBERSHIP')
-;	  
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.WIKI_SYS_USERS')
-;	  
-WV.WIKI.SILENT_EXEC ('drop trigger DB.DBA.WIKI_WA_INSTANCE_U')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger DB.DBA.WIKI_WA_INSTANCE_D')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextInsertPerms"')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextUpdatePerms"')
-;
+WV.WIKI.SILENT_EXEC ('delete from WA_TYPES where WAT_NAME = \'oWiki\' or WAT_NAME=\'WIKIV\'');
+WV.WIKI.SILENT_EXEC ('drop type wa_wikiv');
 
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_ClusterInsert')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_ClusterDelete')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_ClusterUpdate')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_TopicTextInsert')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_TopicTextInsertMeta')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_TopicTextDelete')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_TopicTextUpdate')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_AttachmentDelete')
-;	  
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_TaggingUpdate')
-;	  
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_Tagging')
-;	  
-WV.WIKI.SILENT_EXEC ('drop trigger DB.DBA.WIKI_WA_MEMBERSHIP')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger DB.DBA.WIKI_WA_MEMBERSHIP_OPEN')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger DB.DBA.WIKI_WA_INSTANCE')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WV.Wiki.WV_WIKI_COMMITCOUNTER_FK_CHECK_INSERT')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WV.Wiki.WV_WIKI_COMMITCOUNTER_FK_CHECK_UPDATE')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger DB.DBA.SYS_USERS_WIKI_USERS_U')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WV.Wiki.Wiki_ClusterDeleteContent')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WV.DBA.WIKI_UPSTREAM_D')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WV.Wiki.WIKI_UPSTREAM_D')
-;
+WV.WIKI.SILENT_EXEC('drop view DB.DBA.ODS_WIKI_POSTS');
 
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_TopicTextAttachment_D')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextAttachment_D"')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS.Wiki_TopicTextAttachment')
-;
-WV.WIKI.SILENT_EXEC ('drop trigger WS.WS."Wiki_TopicTextAttachment"')
-;
+WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiAdmin\')');
+WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiUser\')');
+WV.WIKI.SILENT_EXEC('drop procedure DB.DBA.WA_SEARCH_DAV_OR_WIKI_GET_EXCERPT_HTM');
+WV.WIKI.SILENT_EXEC('drop procedure DB.DBA.WA_SEARCH_WIKI_GET_EXCERPT_HTML');
 
-WV.WIKI.SILENT_EXEC ('delete from DB.DBA.SYS_XPF_EXTENSIONS where XPE_PNAME like ''WV.WIKI.%'' ')
-;
+DB.DBA.VHOST_REMOVE(lpath=>'/wiki');
+DB.DBA.VHOST_REMOVE(lpath=>'/wiki/Main');
+DB.DBA.VHOST_REMOVE(lpath=>'/wiki/Doc');
+DB.DBA.VHOST_REMOVE(lpath=>'/wikix');
+DB.DBA.VHOST_REMOVE(lpath=>'/wiki/wikix');
+DB.DBA.VHOST_REMOVE(lpath=>'/wikiview');
+DB.DBA.VHOST_REMOVE(lpath=>'/DAV/wikiview');
 
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.DOMAIN_PATTERN')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.LockToken')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.LOCKTOKEN')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.HitCounter')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.HIT_COUNTER')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.AttachmentInfoNew')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.ATTACHMENTINFONEW')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.AttachmentInfo')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.ATTACHMENTINFO')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.Tmp')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.TMP')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.Link')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.LINK')
-;
-WV.WIKI.SILENT_EXEC ('drop table "WV"."Wiki"."TopicHistory"')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.TOPICHISTORY')
-;
-
-
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.COMMENT')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.PREDICATE')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.SEMANTIC_OBJ')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.DOCBOOK_IDS')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.DOMAIN_PATTERN_1')
-;
-WV.WIKI.SILENT_EXEC ('drop table "WV"."Wiki"."Topic"')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.TOPIC')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV..UPSTREAM_ENTRY')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV..UPSTREAM')
-;
-WV.WIKI.SILENT_EXEC ('drop table "WV"."Wiki"."Cluster"')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.CLUSTERS')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.AppErrors')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.APPERRORS')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.EditTrx')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.EDITTRX')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.Membership')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.MEMBERSHIP')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.User')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.USERS')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.Group')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.GROUPS')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.History')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.HISTORY')
-;
-WV.WIKI.SILENT_EXEC ('drop type WV.Wiki.TopicInfo')
-;
-WV.WIKI.SILENT_EXEC ('drop type WV.WIKI.TOPICINFO')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.Category')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.CATEGORY')
-;
-
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.UserSettings')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.USERSSETTINGS')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.ClusterSettings')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.CLUSTERSSETTINGS')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.Wiki.Lock')
-;
-WV.WIKI.SILENT_EXEC ('drop table WV.WIKI.LOCK')
-;
-
-
-
-
-
-
-
-WV.WIKI.SILENT_EXEC ('delete from WA_TYPES where WAT_NAME = \'oWiki\' or WAT_NAME=\'WIKIV\'')
-;
-WV.WIKI.SILENT_EXEC ('drop type wa_wikiv')
-;
-WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiAdmin\')')
-;
-WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiUser\')')
-;
-WV.WIKI.SILENT_EXEC('drop procedure DB.DBA.WA_SEARCH_DAV_OR_WIKI_GET_EXCERPT_HTM')
-;
-WV.WIKI.SILENT_EXEC('drop procedure DB.DBA.WA_SEARCH_WIKI_GET_EXCERPT_HTML')
-;
-DB.DBA.VHOST_REMOVE(lpath=>'/wiki')
-;
-DB.DBA.VHOST_REMOVE(lpath=>'/wiki/Main')
-;
-DB.DBA.VHOST_REMOVE(lpath=>'/wiki/Doc')
-;
-DB.DBA.VHOST_REMOVE(lpath=>'/wikix')
-;
-DB.DBA.VHOST_REMOVE(lpath=>'/wiki/wikix')
-;
-DB.DBA.VHOST_REMOVE(lpath=>'/wikiview')
-;
-DB.DBA.VHOST_REMOVE(lpath=>'/DAV/wikiview')
-;
---DB.DBA.DAV_DELETE ('/DAV/VAD/wiki/', 0, 'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()))
---;
-registry_remove('wiki default uri')
-;
+registry_remove('wiki default uri');
 
 -- NNTP
-DROP procedure DB.DBA.oWiki_NEWS_MSG_I
-;
-DROP procedure DB.DBA.oWiki_NEWS_MSG_U
-;
-DROP procedure DB.DBA.oWiki_NEWS_MSG_D
-;
+DROP procedure DB.DBA.oWiki_NEWS_MSG_I;
+DROP procedure DB.DBA.oWiki_NEWS_MSG_U;
+DROP procedure DB.DBA.oWiki_NEWS_MSG_D;
 DB.DBA.NNTP_NEWS_MSG_DEL ('oWiki');
+
+-- dropping procedures for Wiki
+WV.Wiki.drop_procedures ();
+WV.Wiki.SILENT_EXEC('DROP procedure WV.Wiki.drop_procedures');
+
+WV.WIKI.SILENT_EXEC('drop procedure WV.DBA.CLUSTER_URL');
+WV.WIKI.SILENT_EXEC('drop procedure WV.DBA.COLLECTION_LIST');
+WV.WIKI.SILENT_EXEC('drop procedure WV.DBA.TOPIC_LIST');
+WV.WIKI.SILENT_EXEC('drop procedure WV.DBA.TOPIC_URL');
+WV.WIKI.SILENT_EXEC('drop procedure WV.DBA.ADD_ERROR');
+WV.WIKI.SILENT_EXEC('drop procedure WV.DBA.ODS_LINK');
+WV.WIKI.SILENT_EXEC('drop procedure WV.DBA.RESOURCE_PATH');
+WV.WIKI.SILENT_EXEC('drop procedure WV.DBA.SEND_NOTIFICATION');
+WV.WIKI.SILENT_EXEC('drop procedure WV.DBA.WIKI_LINK');
+WV.WIKI.SILENT_EXEC('drop procedure WV.DBA.WIPE_OLD_ERRORS');
+WV.WIKI.SILENT_EXEC('drop procedure DB.DBA.WA_NEW_WIKI_IN');
+WV.WIKI.SILENT_EXEC('drop procedure DB.DBA.WA_NEW_WIKI_RM');
+WV.WIKI.SILENT_EXEC('drop procedure DB.DBA.WA_SEARCH_DAV_OR_WIKI_GET_EXCERPT_HTML');
+WV.WIKI.SILENT_EXEC('drop procedure DB.DBA.wiki_exec_no_error');
+
+drop procedure WV.WIKI.SILENT_EXEC;

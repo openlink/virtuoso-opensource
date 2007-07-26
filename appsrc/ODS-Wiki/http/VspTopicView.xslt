@@ -544,6 +544,11 @@
           <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'edit')"/></xsl:with-param>
           <xsl:with-param name="wikiref_cont">Edit</xsl:with-param>
         </xsl:call-template>
+      <xsl:text> | </xsl:text>
+	    <xsl:call-template name="wikiref">
+	      <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'upstream_now')"/></xsl:with-param>
+	      <xsl:with-param name="wikiref_cont">Upstream now</xsl:with-param>
+	    </xsl:call-template>
         <xsl:text> | Ref-By (</xsl:text>
         <xsl:call-template name="wikiref">
           <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'refby')"/></xsl:with-param>

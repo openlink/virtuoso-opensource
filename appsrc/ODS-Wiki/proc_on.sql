@@ -283,7 +283,7 @@ create method ti_full_name () returns varchar for WV.WIKI.TOPICINFO
 create method ti_run_lexer (in _env any) returns varchar for WV.WIKI.TOPICINFO
 {
   declare exit handler for sqlstate '*' {
-    dbg_obj_print ('lexer:', __SQL_STATE, __SQL_MESSAGE);
+    --dbg_obj_print ('lexer:', __SQL_STATE, __SQL_MESSAGE);
     return '';
   }
   ;
@@ -354,7 +354,7 @@ use WV
 create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
 {
   declare exit handler for sqlstate '*' {
-    dbg_obj_print ('compile:', __SQL_STATE, __SQL_MESSAGE);
+    --dbg_obj_print ('compile:', __SQL_STATE, __SQL_MESSAGE);
     resignal;
   }
   ;
@@ -1352,9 +1352,11 @@ xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:QueryWikiWordLink', 'W
 ;
 
 create function WV.WIKI.EXPANDMACRO (
-  inout _name varchar, inout _data varchar, inout _context any, inout _env any) returns varchar
+  inout _name varchar,
+  inout _data varchar,
+  inout _context any,
+  inout _env any) returns varchar
 { -- Calls the implementation of macro and returns the composed XML fragment.
-  --dbg_obj_princ ('WV.WIKI.EXPANDMACRO ', _name, _data, _context, _env);
   declare _funname varchar;
   declare _res any;
   declare exit handler for sqlstate '*' {
@@ -1975,8 +1977,18 @@ create procedure WV.WIKI.DELETETOPIC (in _id integer)
 {
   --dbg_obj_princ ('DELETETOPIC: ', _id);
   delete from WV.WIKI.TOPIC where TopicId = _id;
-  if (__proc_exists ('DB.DBA.WA_NEW_RM'))
+  if (__proc_exists ('DB.DBA.WA_NEW_WIKI_RM'))
      WA_NEW_WIKI_RM (_id);
+}
+;
+
+create procedure WV.WIKI.DROPCLUSTERUPSTREAM (in _cid int)
+{
+  for select UP_ID from WV.DBA.UPSTREAM where UP_CLUSTER_ID = _cid do {
+    delete from WV.DBA.UPSTREAM_LOG where UL_UPSTREAM_ID = UP_ID;
+    delete from WV.DBA.UPSTREAM_ENTRY where UE_STREAM_ID = UP_ID;
+  }
+  delete from WV.DBA.UPSTREAM where UP_CLUSTER_ID = _cid;
 }
 ;
 
@@ -2734,6 +2746,7 @@ create function WV.WIKI.GETMACROPARAM (in params any, in name varchar, in defval
 {
   declare _idx int;
   declare _name varchar;
+  _idx := 0;
   _name := lcase (name);
   while (_idx < length (params))
     {
@@ -4558,6 +4571,45 @@ create procedure RESOURCE_PATH()
 }
 ;
 
+create procedure WV..WIKI_PROFILE(in _cluster_name varchar, in _type varchar)
+{
+  declare author varchar;
+  author:=WV.WIKI.CLUSTERPARAM( coalesce(_cluster_name, 'Main'), 'creator'); --dav
+  declare _out any;
+  _out := string_output();
+
+  http ('<?xml version="1.0" encoding="utf-8"?>');
+  http ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:wiki="http://purl.org/wikirdf/wikiprofile#" xmlns:doap = "http://usefulinc.com/ns/doap#" xmlns:foaf = "http://xmlns.com/foaf/0.1">');
+  http (sprintf ('<wiki:Wiki rdf:ID="%s">', _cluster_name));
+  http (sprintf ('<wiki:name>%s</wiki:name>', _cluster_name));
+  http (sprintf ('<wiki:description>%s</wiki:description>', (select coalesce(WAI_DESCRIPTION,'') from DB..WA_INSTANCE where WAI_IS_PUBLIC = 1 and WAI_MEMBERS_VISIBLE = 1 and WAI_NAME = _cluster_name )));
+  http ('<wiki:creator>');
+    http (sprintf ('<foaf:Person rdf:about="http://%s%s/%s">', sioc..get_cname (), sioc..get_base_path (), author));
+      http (sprintf ('<foaf:name>%s</foaf:name>', (select coalesce(U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_NAME = author) ));
+      http (sprintf ('<foaf:homepage rdf:resource="http://%s%s/%s" />', sioc..get_cname (), sioc..get_base_path (), author));
+    http ('</foaf:Person>');
+  http ('</wiki:creator>');
+  -- Crediting the Software
+
+  -- Wiki Features
+  http (sprintf ('<wiki:wikiURI rdf:resource="http://%s%s/%s/%s" />', sioc..get_cname(), WV.WIKI.CLUSTERPARAM (_cluster_name, 'home', '/wiki/main'), _cluster_name, WV.WIKI.CLUSTERPARAM (_cluster_name, 'index-page', 'WelcomeVisitors')));
+--  <wiki:icon             rdf:resource="http://example.com/wiki_logo.gif"                 />
+  http (sprintf ('<wiki:baseURI rdf:resource="%s?" />', WV..WIKI_LINK() ) );
+  http (sprintf ('<wiki:allPagesURI rdf:resource="http://%s%s/%s/%s?command=index" />', sioc..get_cname(), WV.WIKI.CLUSTERPARAM (_cluster_name, 'home', '/wiki/main'), _cluster_name, WV.WIKI.CLUSTERPARAM (_cluster_name, 'index-page', 'WelcomeVisitors')));
+  http (sprintf ('<wiki:recentChangesURI rdf:resource="%s/history.vspx?id=" />', RESOURCE_PATH()));
+  http (sprintf ('<wiki:rssURI rdf:resource="%s/gems.vsp?type=rss20&amp;cluster=%s" />', RESOURCE_PATH(), _cluster_name) );
+--  <wiki:lastDiffURI      rdf:resource="http://example.com/wiki?action=diff;id="          />
+  http (sprintf ('<wiki:editPageURI      rdf:resource="http://%s%s/%s/%s?command=edit" />', sioc..get_cname(), WV.WIKI.CLUSTERPARAM (_cluster_name, 'home', '/wiki/main'), _cluster_name, WV.WIKI.CLUSTERPARAM (_cluster_name, 'index-page', 'WelcomeVisitors')));
+--  <wiki:pageHistoryURI   rdf:resource="http://example.com/wiki?action=history;id="       />
+  http (sprintf ('<wiki:searchURI        rdf:resource="%s/advanced_search.vspx?cluster=" />', RESOURCE_PATH()));
+--  <wiki:searchTitlesURI  rdf:resource="http://example.com/wiki?action=titlesearch;term=" />
+
+  http('</wiki:Wiki>');
+  http('</rdf:RDF>');
+
+  return string_output_string(_out);
+}
+;
 
 use DB
 ;

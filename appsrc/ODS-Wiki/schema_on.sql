@@ -727,3 +727,14 @@ create table WV..ERRORS (
 	primary key (E_ID)
 )')
 ;
+
+create procedure WV.WIKI.deletetopic_update ()
+{
+  if (registry_get ('wv_deletetopic_update') <> '1') {
+    delete from DB.DBA.wa_new_wiki where not exists (select 1 from WV.WIKI.TOPIC where TopicId = wnw_topic_id);
+  }
+}
+;
+
+WV.WIKI.deletetopic_update ();
+registry_set ('wv_deletetopic_update', '1');

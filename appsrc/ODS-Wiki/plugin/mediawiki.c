@@ -216,10 +216,10 @@ void mediawiki_connect (void *appdata)
 #ifdef _USRDLL
 static unit_version_t
 mediawiki_version = {
-  "WikiV",				/*!< Title of unit, filled by unit */
+  "MediaWiki",				/*!< Title of unit, filled by unit */
   MEDIAWIKI_VERSION,			/*!< Version number, filled by unit */
   "OpenLink Software",			/*!< Plugin's developer, filled by unit */
-  "Support functions for WikiV collaboration tool",	/*!< Any additional info, filled by unit */
+  "Support functions for MediaWiki collaboration tool",	/*!< Any additional info, filled by unit */
   0,					/*!< Error message, filled by unit loader */
   0,					/*!< Name of file with unit's code, filled by unit loader */
   mediawiki_connect,			/*!< Pointer to connection function, cannot be 0 */

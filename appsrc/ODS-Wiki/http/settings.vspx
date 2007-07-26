@@ -30,9 +30,7 @@
    on-error-redirect="../main/" 
    xmlns:v="http://www.openlinksw.com/vspx/" 
    xmlns:vm="http://www.openlinksw.com/vspx/macro"> 
-   
-    <v:variable name="url" type="varchar" default="null" persist="0"
-		xmlns:v="http://www.openlinksw.com/vspx/" />
+  <v:variable name="url" type="varchar" default="null" persist="0" xmlns:v="http://www.openlinksw.com/vspx/" />
     <v:variable name="delicious_enable" type="integer"/>
     <v:variable name="webmail_enable" type="integer"/>
     <v:variable name="host" type="vadchar"/>
@@ -67,15 +65,15 @@
      self.cluster := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME= self.cluster_name);
       self.source_page := WV.WIKI.READONLYWIKIWORDLINK (self.cluster_name, '');
     </v:on-init>
-    <v:before-data-bind><![CDATA[
-	    
-      self.vspx_user := coalesce((select vs_uid from
-        VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
+  <v:before-data-bind>
+    <![CDATA[
+      self.vspx_user := coalesce((select vs_uid from VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
       self.index_page := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'index-page', 'WelcomeVisitors');
       self.new_topic_template := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'new-topic-template', '');
       self.new_category_template := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'new-category-template', '');
       self.skin2_vhost_regexp := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'skin2-vhost-regexp', '');
-    ]]></v:before-data-bind>
+    ]]>
+  </v:before-data-bind>
     <v:after-data-bind>
       <![CDATA[
 	self.index_page_tmpl.vc_data_bind(e);
@@ -108,10 +106,7 @@
                   self.conv_enable := WV.WIKI.CLUSTERPARAM (self.cluster_name, 'conv_enabled', 2);
                 if (self.host is null)
                   self.host := aref (split_and_decode (http_request_header (lines, 'Host'), 0, '\0\0:'), 0);
-		self.domains := (select XMLELEMENT ('domains',
-					XMLAGG (
-						XMLELEMENT ('domain', WD_DOMAIN)))
-				from DB.DBA.WA_DOMAINS);
+                self.domains := (select XMLELEMENT ('domains', XMLAGG (XMLELEMENT ('domain', WD_DOMAIN))) from DB.DBA.WA_DOMAINS);
 		declare _dav_list_collections, sks any;
 		_dav_list_collections := WV.WIKI.GETCOLLECTIONS (WV.WIKI.SKINSCOLLECTION (), 0);		
 		self.skins := XMLELEMENT ('skins');
@@ -124,18 +119,13 @@
 		self.plugins := XMLELEMENT ('plugins', XMLELEMENT ('plugin', XMLATTRIBUTES ('oWiki' as "name", 0 as "id")));
 	        plugins := xpath_eval ('/plugins', self.plugins);
 		foreach (any pl in WV..PLUGIN_NAMES()) do {
-			XMLAppendChildren (plugins, 
-			  XMLELEMENT ('plugin',
-			    XMLATTRIBUTES (pl[1] as "name",
-			    		      	       pl[0] as "id")));
+                  XMLAppendChildren (plugins, XMLELEMENT ('plugin', XMLATTRIBUTES (pl[1] as "name", pl[0] as "id")));
                 }
                 declare email_obfuscation_types_ent any;
 	        self.email_obfuscation_types := XMLELEMENT ('email_obfuscation_types');
                 email_obfuscation_types_ent := xpath_eval ('/email_obfuscation_types', self.email_obfuscation_types);
-	        for select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'WV.%.EMAIL_OBFUSCATE_%'
-                do {
- 		  XMLAppendChildren (email_obfuscation_types_ent, 
-		    XMLELEMENT ('type', subseq (P_NAME, 24)));
+                for select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'WV.%.EMAIL_OBFUSCATE_%' do {
+                   XMLAppendChildren (email_obfuscation_types_ent, XMLELEMENT ('type', subseq (P_NAME, 24)));
                 }		
                 ]]>
               </v:script>
@@ -151,16 +141,13 @@
             if ({?'save'} is not null) {
             WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_user', self.delicious_user.ufl_value);
                     WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_update_interval', cast (self.delicious_update_interval.ufl_value as integer) * 60);
-            if (self.delicious_passwd.ufl_value is not null 
-                         and self.delicious_passwd.ufl_value <> '')
+            if (self.delicious_passwd.ufl_value is not null and self.delicious_passwd.ufl_value <> '')
             WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_digest', encode_base64 (self.delicious_user.ufl_value || ':' || self.delicious_passwd.ufl_value) );
---            if (self.cluster_name_dns.ufl_value is not null
---              and self.cluster_dns.ufl_value <> '')
+--            if (self.cluster_name_dns.ufl_value is not null and self.cluster_dns.ufl_value <> '')
 --              WV.WIKI.SETCLUSTERDNS (self.cluster, self.cluster_dns.ufl_value);
 	    WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'index-page', self.index_page_name.ufl_value);
             WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_enabled', self.delicious_enable);
-	    if (self.webmail_enable = 1 and (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'webmail_initialized') is null))
-	      {
+            if (self.webmail_enable = 1 and (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'webmail_initialized') is null)) {
 		DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wiki/webmail.sql', 1, 'report', 1);
 		WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'webmail_initialized', 1);
 	      }
@@ -178,8 +165,7 @@
 		WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin2-vhost-regexp', NULL);
 	    else 
 		WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'skin2-vhost-regexp', WV.WIKI.TRIM (self.skin2_vhost_regexp_text.ufl_value));
-	    if (self.is_sync)
-	      {
+            if (self.is_sync) {
 	        WV.WIKI.DELICIOUSSYNC (cluster_id, self.vspx_user);
 	      }
 	    self.sync_tmpl.vc_data_bind(e);
@@ -190,16 +176,13 @@
 	  <v:after-data-bind>
 	    <![CDATA[
 	    if (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'delicious_last_update') is not null)
-	      self.sync_message := 'last ping: ' 
-	        || WV.WIKI.DATEFORMAT (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'delicious_last_update'));
+              self.sync_message := 'last ping: ' || WV.WIKI.DATEFORMAT (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'delicious_last_update'));
 	    else
 	      self.sync_message := '';
-
 	    self.technorati_api_key := WV.WIKI.CLUSTERPARAM(self.cluster_name,'technorati_api_key', '');
 	    self.technorati_tmpl.vc_data_bind(e);
 	    ]]>
 	  </v:after-data-bind>
-	      
 	<table class="wiki-settings">
           <tr>
             <td>
@@ -242,9 +225,7 @@
           </tr>
 	  <vm:setting-section name="del.icio.us integration">
 	    <vm:setting-parameter name="Toggle integration:">
-                        <v:button name="delicious_toggle" action="simple" xhtml_disabled="--self.enabled" 
-				value="--case when self.delicious_enable = 1 then 'Turn Off' else 'Turn On' end" 
-				>
+              <v:button name="delicious_toggle" action="simple" xhtml_disabled="--self.enabled" value="--case when self.delicious_enable = 1 then 'Turn Off' else 'Turn On' end">
                           <v:on-post>
                             <![CDATA[
                               self.delicious_enable := 3 - self.delicious_enable;
@@ -302,7 +283,6 @@
 		      <td>
 			<v:data-list name="webmail_domains" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'webmail_domain', 'domain.com')" list-document="--self.domains" list-match="/domains/domain" list-key-path="." list-value-path="."  enabled="--case when self.webmail_enable = 1 then 1 else 0 end"/>
 		      </td>
-			
                     </tr>
                   </table>
                 </p>
@@ -339,15 +319,15 @@
 		      </td>
                     </tr>
 		    <tr>
-		      <th>Secondary Skin:</th>
+                      <th>Secondary Skin: <a href="#" onclick="javascript: showInfo.show();">?</a></th>
 		      <td>
-			<v:data-list name="wiki_skin_2" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'skin2', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="."/>
+                        <v:data-list name="wiki_skin_2" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'skin2', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="." xhtml_title=" used when host matches the regular expression below "/>
 		      </td>
 		    </tr>
 		    <tr>
 		      <th>VHost regular expression:</th>
 		      <td>
-                       <v:text name="skin2_vhost_regexp_text" value="--self.skin2_vhost_regexp"/>
+                        <v:text name="skin2_vhost_regexp_text" value="--self.skin2_vhost_regexp" xhtml_title=" if host matches this expression Secondary Skin is used "/>
 		     </td>
 		    </tr>
                   </table>
@@ -389,11 +369,8 @@
 		  <v:template name="technorati_tmpl" type="simple">
                    <tr>
                       <th width="50%">API key (32 characters long):</th>
-		      
                       <td>
-                       <v:text error-glyph="*" name="technorati_api_key_f" 
-		        value="--self.technorati_api_key" 
-		        xhtml_size="40">
+                          <v:text error-glyph="*" name="technorati_api_key_f" value="--self.technorati_api_key" xhtml_size="40">
 			 <v:validator test="regexp" regexp="^[a-z0-9]{32}$|^[ ]*$" message="API key is expected"/>
 		       </v:text>
                       </td>
@@ -405,9 +382,9 @@
 	    </td>
 	  </tr>
 	  <vm:setting-section name="Conversation (NNTP integration)">
+            <v:template type="simple" enabled="--case when WV.WIKI.DISCUSSION_CHECK ()=1 then 1 else 0 end">
 	     <vm:setting-parameter name="Conversation (NNTP integration)">
-			<v:button name="conv_toggle" action="simple" xhtml_disabled="--self.enabled" 
-				value="--case when self.conv_enable = 1 then 'Turn Off' else 'Turn On' end">
+                <v:button name="conv_toggle" action="simple" xhtml_disabled="--self.enabled" value="--case when self.conv_enable = 1 then 'Turn Off' else 'Turn On' end">
 			  <v:on-post>
                             <![CDATA[
                               self.conv_enable := 3 - self.conv_enable;
@@ -417,6 +394,13 @@
                           </v:on-post>
                         </v:button>
 	    </vm:setting-parameter>
+            </v:template>
+            <v:template type="simple" enabled="--case when WV.WIKI.DISCUSSION_CHECK ()=0 then 1 else 0 end">
+              <vm:setting-parameter name="Conversation feature is disabled. You need to install ODS Discussion package in order to use it.">
+                <v:button name="conv_toggle2" action="simple" xhtml_disabled="'disabled'" value="--case when self.conv_enable = 1 then 'Turn Off' else 'Turn On' end">
+                </v:button>
+              </vm:setting-parameter>
+            </v:template>
          </vm:setting-section>
          <vm:setting-section name="Syntax">
 	   <vm:setting-parameter name="Compatibility">
@@ -426,12 +410,14 @@
           <tr>
             <td align="left">
               <v:button name="save" action="submit" value="Save Changes" xhtml_disabled="--self.enabled">
-	       <v:on-post><![CDATA[
+                 <v:on-post>
+                   <![CDATA[
  	        if (not self.vc_is_valid)
 		  return;
 	        WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'technorati_api_key', trim (self.technorati_api_key_f.ufl_value));
 		self.technorati_tmpl.vc_data_bind(e);
-	       ]]></v:on-post>
+                  ]]>
+                </v:on-post>
 	      </v:button>
 	      <vm:back-button/>
             </td>
@@ -439,6 +425,10 @@
         </table>
        </v:template>
       </v:form>
+    <div id="infoDiv" style="text-align: center;">
+      Secondary Skin is used when host matches the VHost regular expression. <br /><br />
+      <input type="button" value="Close" onclick="javascript: showInfo.hide();" />
+    </div>
     </vm:body>
 </v:page>
 <?vsp

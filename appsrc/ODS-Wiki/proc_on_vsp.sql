@@ -828,7 +828,9 @@ create function WV.WIKI.HEADER_KUPU_SCRIPT (in script_name varchar)
 ;
 
 create procedure WV.WIKI.VSPHEADER (
-  inout path any, inout params any, inout lines any,
+  inout path any,
+  inout params any,
+  inout lines any,
   in topic_or_title any,
   in _base_adjust varchar := '')
 {
@@ -873,6 +875,7 @@ create procedure WV.WIKI.VSPHEADER (
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (RSS 2.0)" href="' || _server_base || 'gems.vsp?&amp;type=rss20"></link>\n');
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (ATOM)" href="' || _server_base || 'gems.vsp?&amp;type=atom"></link>\n');
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (RDF)" href="' || _server_base || 'gems.vsp?&amp;type=rdf"></link>\n');
+      http ('<link rel="alternate" type="application/rss+xml" title="Changelog (WIKI_PROFILE)" href="' || _server_base || 'gems.vsp?&amp;type=wiki_profile"></link>\n');
     }
   else if (_topic.ti_id > 0)
     {
@@ -880,7 +883,24 @@ create procedure WV.WIKI.VSPHEADER (
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (RSS 2.0)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=rss20"></link>\n');
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (ATOM)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=atom"></link>\n');
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (RDF)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=rdf"></link>\n');
+      http ('<link rel="alternate" type="application/rss+xml" title="Changelog (WIKI_PROFILE)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=wiki_profile"></link>\n');
     }
+  if (topic_or_title = 'Settings') {
+    http ('<script type="text/javascript">\n');
+    http ('  // OAT\n');
+    http ('  var toolkitPath="/ods/oat";\n');
+    http ('  var featureList=["dialog"];\n');
+    http ('</script>\n');
+    http ('<script type="text/javascript" src="/ods/oat/loader.js"></script>\n');
+    http ('<script type="text/javascript">\n');
+    http (' 	var showInfo;\n');
+    http (' 	function myInit ()\n');
+    http (' 	{\n');
+    http (' 	  showInfo = new OAT.Dialog("Secondary Skin", "infoDiv", {width:400, modal:1, buttons:0});\n');
+    http (' 	}\n');
+    http (' 	OAT.MSG.attach(OAT,OAT.MSG.OAT_LOAD,myInit);\n');
+    http ('</script>\n');
+  }
   if (add_kupu_headers)
     {
       declare scripts any;
@@ -1634,7 +1654,6 @@ create function WV.WIKI.RSSMAKECONTENT (in cluster_name varchar,
 
 create function WV.WIKI.SIDURLPART (in sid varchar, in realm varchar)
 {
-  return '';
   if (sid is not null)
     return sprintf ('sid=%s&realm=%s', sid, realm);
   else
@@ -1681,15 +1700,17 @@ create function WV.WIKI.GET_HOST ()
 
 create function WV.WIKI.MAKEHREFFROMRES (in res_id int, in res_name varchar, in sid varchar, in realm varchar, in _base varchar := '/')
 {
+  declare _clusterPath varchar;
   declare _topic WV.WIKI.TOPICINFO;
+
   _topic := WV.WIKI.TOPICINFO ();
   _topic.ti_id := (select TopicId from WV.WIKI.TOPIC where ResId = res_id);
   if (_topic.ti_id is null)
     return null;
   _topic.ti_find_metadata_by_id ();
   _topic.ti_fill_cluster_by_id ();
-  return sprintf ('<a href="http://%s/wiki/main/%U/%U&%s">%s.%s</a>', WV.WIKI.GET_HOST(), _topic.ti_cluster_name, _topic.ti_local_name, 
-	WV.WIKI.SIDURLPART (sid, realm), _topic.ti_cluster_name, _topic.ti_local_name);
+  _clusterPath := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_name, 'home');
+  return sprintf ('<a href="http://%s/%s/%U/%U?%s">%s.%s</a>', WV.WIKI.GET_HOST(), _clusterPath, _topic.ti_cluster_name, _topic.ti_local_name,  WV.WIKI.SIDURLPART (sid, realm), _topic.ti_cluster_name, _topic.ti_local_name);
 }
 ;
 

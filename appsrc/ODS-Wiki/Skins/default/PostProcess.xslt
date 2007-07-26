@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,7 +19,9 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
+ -
 -->
+
 <xsl:stylesheet version="1.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:xhtml="http://www.w3.org/TR/xhtml1/strict"
@@ -161,6 +161,18 @@
                     RDF
 		  </a>
 		</li>
+                  <li>
+                    <img border="0"
+                         alt="Wiki Profile"
+                         title="Wiki Profile"
+                         src="{wv:ResourceHREF ('images/rdf-icon-12.png', $baseadjust)}"></img>
+                    <a>
+		      <xsl:attribute name="href">
+		        <xsl:value-of select="wv:ResourceHREF2 ('gems.vsp',$baseadjust,vector('type','wiki_profile','cluster', $ti_cluster_name))"/>
+		      </xsl:attribute>
+                      Wiki Profile
+                    </a>
+                  </li>
 	      </ul>
               </div>
               <div class="col">

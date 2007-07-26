@@ -106,20 +106,18 @@ create function WV.WIKI.ATOM_ENTRY (inout _topic WV.WIKI.TOPICINFO)
   declare ss any; 
   ss := string_output ();
   
-  http (sprintf('<entry xmlns="http://www.w3.org/2005/Atom">
-         <title>%s</title>
-         <id>%s</id>
-         <updated>%s</updated>
-         <published>%s</published>
-         <author><name>%s</name></author>
-         <content type="text/plain">', 
-		_topic.ti_cluster_name || '.' || _topic.ti_local_name, 
-		WV.WIKI.RESOURCE_CANONICAL (_topic.ti_res_id),
-		WV.WIKI.DATEFORMAT (_topic.ti_mod_time, 'iso8601'),
-		WV.WIKI.DATEFORMAT ( (select RES_CR_TIME from WS.WS.SYS_DAV_RES where RES_ID = _topic.ti_res_id), 'iso8601'),
-                WV.WIKI.USER_WIKI_NAME_2(_topic.ti_author_id)), ss);
+  http ('<entry xmlns="http://www.w3.org/2005/Atom">', ss);
+
+  http (sprintf('<title>%s</title>', _topic.ti_cluster_name || '.' || _topic.ti_local_name), ss);
+  http (sprintf('<id>%s</id>', WV.WIKI.RESOURCE_CANONICAL (_topic.ti_res_id)), ss);
+  http (sprintf('<updated>%s</updated>', WV.WIKI.DATEFORMAT (_topic.ti_mod_time, 'iso8601')), ss);
+  http (sprintf('<published>%s</published>', WV.WIKI.DATEFORMAT ((select RES_CR_TIME from WS.WS.SYS_DAV_RES where RES_ID = _topic.ti_res_id), 'iso8601')), ss);
+  http (sprintf('<author><name>%s</name></author>', WV.WIKI.USER_WIKI_NAME_2(_topic.ti_author_id)), ss);
+  http ('<content type="text/plain">%s</content>', ss);
   http_value (_topic.ti_text, null, ss);
-  http(sprintf ('</content><link rel="edit" href="http://%s/wiki/Atom/%s/%s" />', WV.WIKI.GET_HOST(), _topic.ti_cluster_name, _topic.ti_local_name), ss);
+  http ('</content>', ss);
+  http (sprintf ('<link rel="edit" href="http://%s/wiki/Atom/%s/%s" />', WV.WIKI.GET_HOST(), _topic.ti_cluster_name, _topic.ti_local_name), ss);
+
   http ('</entry>', ss);
   return string_output_string (ss);
 }
@@ -129,10 +127,12 @@ create function WV.WIKI.ATOM_ENTRY (inout _topic WV.WIKI.TOPICINFO)
 create function WV.WIKI.ATOM_COLLECTION (in _cluster varchar)
 {
   declare _res any;
+
   _res := string_output ();
   http (sprintf ('<feed xmlns="http://www.w3.org/2005/Atom"><id>%s</id>', WV.WIKI.CLUSTER_CANONICAL (_cluster)), _res);
-  for select LOCALNAME, RESID, RES_MOD_TIME, RES_OWNER from 
-	WV.WIKI.TOPIC t inner join WV.WIKI.CLUSTERS c on (c.CLUSTERID = t.CLUSTERID)
+  for select LOCALNAME, RESID, RES_MOD_TIME, RES_OWNER
+        from WV.WIKI.TOPIC t
+               inner join WV.WIKI.CLUSTERS c on (c.CLUSTERID = t.CLUSTERID)
 	inner join WS.WS.SYS_DAV_RES on (RESID = RES_ID)
     where CLUSTERNAME = _cluster do
     {
@@ -151,9 +151,7 @@ create function WV.WIKI.ATOM_COLLECTION (in _cluster varchar)
 }
 ;
 
-
-create procedure WV.WIKI.gdata
-	(
+create procedure WV.WIKI.gdata (
 	 in q varchar := null,
 	 in author varchar := null,
 	 in alt varchar := 'atom',
@@ -161,86 +159,50 @@ create procedure WV.WIKI.gdata
 	 in "updated-max" datetime := null,
 	 in "start-index" int := 1,
 	 in "max-results" int := 10
-	 )
-    __SOAP_HTTP 'text/xml'
+) __SOAP_HTTP 'text/xml'
 {
-	--  dbg_obj_princ (http_request_header ());
-  declare auth any;
-  auth := DB.DBA.vsp_auth_vec (http_request_header());
+  --dbg_obj_princ ('WV.WIKI.gdata - header', http_request_header ());
+  --dbg_obj_princ ('WV.WIKI.gdata - body', string_output_string (http_body_read ()));
+
   declare _user varchar;
-  if (auth = 0)
+  declare _auth any;
+
+  _auth := DB.DBA.vsp_auth_vec (http_request_header());
+  if (_auth = 0)
     {
        http_body_read ();
        http_request_status ('HTTP/1.1 401 Unauthorized');
-       return NULL;
+      return null;
     }
   else
     {
-      if (get_keyword ('authtype', auth) <> 'basic' or
-         WV.WIKI.AUTHENTICATE (get_keyword ('username', auth),
-                               get_keyword ('pass', auth)) = 0)
+      if ((get_keyword ('authtype', _auth) <> 'basic') or WV.WIKI.AUTHENTICATE (get_keyword ('username', _auth), get_keyword ('pass', _auth)) = 0)
         {
           http_body_read ();
           http_request_status ('HTTP/1.1 401 Unauthorized');
           return NULL;
         }
-      _user := get_keyword ('username', auth);
+      _user := get_keyword ('username', _auth);
       connection_set ('HTTP_CLI_UID', _user);
     }
 
-
-  --dbg_obj_princ ('got it!: ', q, "updated-min", "updated-max", author);
-
-  declare path, lpath, ppath, cont, xmlt, rc, opts any;
-  declare pars, lines, xt any;
-  declare meth, blogid, u_name, ppath_pref, lpath_strip, logical_path varchar;
-  declare u_id, ver, to_trim int;
-  declare full_path, p_full_path, ct, id varchar;
-  declare title, content, author_name, author_mail, hstat, h varchar;
+  declare lpath, ppath, cont, rc, xt any;
+  declare meth, ct varchar;
+  declare title, content, hstat, h varchar;
+  declare _page, _cluster, gdata_url varchar;
   declare "atom-pub", i int;
-  declare vhost, lhost, p_path_str, l_path_str, gdata_url varchar;
+  declare _topicid int;
 
-  opts := http_map_get ('options');
-  if (isarray (opts))
-    "atom-pub" := get_keyword ('atom-pub', opts, 0);
-  else
-    "atom-pub" := 0;
-  pars := http_param ();
-  lines := http_request_header ();
-  ppath := http_physical_path ();
-  logical_path := http_path ();
-  -- dbg_obj_princ(logical_path);
   meth := http_request_get ('REQUEST_METHOD');
   ct := http_request_header (http_request_header (), 'Content-Type');
   lpath := http_map_get ('domain');
 
-  vhost := http_map_get ('vhost');
-  lhost := http_map_get ('lhost');
-
   h := DB.DBA.WA_GET_HOST ();
-  --dbg_printf ('meth=[%s] path=[%s]', meth, http_path ());
-  path := split_and_decode (ppath, 0, '\0\0/');
 
-  blogid := null;
-  id := null;
-
-  declare _page, _cluster, _lname, _att, _badjust varchar;
-  declare exit handler for sqlstate '*' {
-	--dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
-	resignal;
-  };
-  declare _topicid int;
   WV.WIKI.ATOMDECODEWIKIPATH (_topicid, _cluster);
-  --dbg_obj_print (_topicid, _cluster);
   declare _topic WV.WIKI.TOPICINFO;
   _topic := WV.WIKI.TOPICINFO();
   _topic.ti_id := _topicid;
---  if (_topic.ti_id = 0 and _cluster is null)
---    {
---      cont := http_body_read ();
---      signal ('22023', 'No such blog');
---    }
-  --dbg_obj_print (_cluster);
   if (_topic.ti_id <> 0)
     _topic.ti_find_metadata_by_id ();
 
@@ -264,9 +226,7 @@ create procedure WV.WIKI.gdata
     return null;
   };
 
-
   xt := null;
-  --dbg_obj_print (ct);
   if (
       ct = 'application/atom+xml'
       or ct = 'application/x.atom+xml'
@@ -274,52 +234,44 @@ create procedure WV.WIKI.gdata
       or ct = 'application/xml'
      )
     {
-      cont := http_body_read ();
-      xmlt := string_output_string (cont);
-      if (length (xmlt))
+      cont := string_output_string (http_body_read ());
+      if (length (cont))
 	{
-	  xt := xml_tree_doc (xml_tree (xmlt));
+        xt := xml_tree_doc (xml_tree (cont));
 	  xml_tree_doc_encoding (xt, 'utf-8');
 	}
     }
-  --dbg_obj_print (xt);
-
+  --dbg_obj_print ( 'meth', meth);
   hstat := 'HTTP/1.1 200 OK';
-  --dbg_obj_print (meth, q, id, "updated-min", "updated-max", author, _topicid);
   if (meth = 'GET' and _cluster is null)
     {
       http_header ('Content-Type: application/atomserv+xml\r\n');
-      http('<?xml version="1.0" encoding=\'utf-8\'?>
-<service xmlns="http://purl.org/atom/app#">');
+      http ('<?xml version="1.0" encoding=\'utf-8\'?><service xmlns="http://purl.org/atom/app#">');
       http('<workspace title="Wiki">');
       http(WV.WIKI.ATOM_PUBLISH(NULL));
       http('</workspace>');
       http('</service>');
-      hstat := 'HTTP/1.1 200 OK';
     }
   else if (meth = 'GET' and _cluster is not null and _topicid = 0)
     {
       http_header ('Content-Type: application/atom+xml\r\n');
       http('<?xml version="1.0" encoding=\'utf-8\'?>');
---      http (sprintf('<collection xmlns="http://purl.org/atom/app#" title="%s" href="http://%s/wiki/Atom/%s/">', _cluster, WV.WIKI.GET_HOST(), _cluster));
       http(WV.WIKI.ATOM_COLLECTION(_cluster));
---      http('</collection>');
-      hstat := 'HTTP/1.1 200 OK';
     }      
   else if (meth = 'GET' and _cluster is not null  and _topicid <> 0)
     {
       http_header ('Content-Type: application/atom+xml\r\n');
       http('<?xml version="1.0" encoding=\'utf-8\'?>');
       http(WV.WIKI.ATOM_ENTRY(_topic));
-      hstat := 'HTTP/1.1 200 OK';
     }
   else if (meth = 'PUT')
     {
           declare title2, content2 varchar;
+      declare _newtopic WV.WIKI.TOPICINFO;
+
           title2 := xpath_eval ('/entry/title/text()', xt);
           content2 := cast (xpath_eval ('/entry/content/text()', xt) as varchar);
         
-          declare _newtopic WV.WIKI.TOPICINFO;
           _newtopic := WV.WIKI.TOPICINFO();
 	  _newtopic.ti_default_cluster := coalesce (_cluster, 'Main');
 	  _newtopic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
@@ -328,35 +280,22 @@ create procedure WV.WIKI.gdata
           _newtopic.ti_find_id_by_local_name ();
 	  if (_newtopic.ti_id <> 0)
 	    {
-	       declare _res int;
-	       _res := WV.WIKI.UPLOADPAGE (_newtopic.ti_col_id, _newtopic.ti_local_name || '.txt',
-	 content2, 
-	 _user);
---               _newtopic.ti_update_text (content2, 'dav'); 
-          hstat := 'HTTP/1.1 200 OK';
+        WV.WIKI.UPLOADPAGE (_newtopic.ti_col_id, _newtopic.ti_local_name || '.txt', content2, _user);
         }
 	   else
 	     hstat := 'HTTP/1.1 404 Not Found';
-        
     }
   else if (meth = 'POST')
     {
-      content := cast (xpath_eval ('/entry/content/text()', xt) as varchar);
       declare _newtopic WV.WIKI.TOPICINFO;
+
+      content := cast (xpath_eval ('/entry/content/text()', xt) as varchar);
       _newtopic := WV.WIKI.TOPICINFO();
       _newtopic.ti_default_cluster := coalesce (_cluster, 'Main');
       _newtopic.ti_raw_name := cast (xpath_eval ('/entry/title/text()', xt) as varchar);
       _newtopic.ti_parse_raw_name ();
       _newtopic.ti_fill_cluster_by_name ();
-      declare _res int;
-      _res := WV.WIKI.UPLOADPAGE (_newtopic.ti_col_id, _newtopic.ti_local_name || '.txt',
-	 content, 
-	 _user);
-
-
-
-      --dbg_obj_print (_newtopic, _res);
- 
+      WV.WIKI.UPLOADPAGE (_newtopic.ti_col_id, _newtopic.ti_local_name || '.txt', content, _user);
       hstat := 'HTTP/1.1 201 Created';
     }
   else if (meth = 'DELETE')
@@ -371,9 +310,7 @@ create procedure WV.WIKI.gdata
 	  if (_newtopic.ti_id <> 0)
         {
 	       _newtopic.ti_find_metadata_by_id ();
-	       declare _res int;
-	       _res := DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (_newtopic.ti_res_id, 'R'), 1, null, null, 0);      
-	       --dbg_obj_print (_res);
+        DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (_newtopic.ti_res_id, 'R'), 1, null, null, 0);
 	  hstat := 'HTTP/1.1 200 OK';
         }
 	   else

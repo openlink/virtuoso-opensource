@@ -21,13 +21,16 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-if ({?'type'} is not null)
-{
+if ({?'type'} is not null) {
  if ({?'mode'} = 'list')
    http_header ('Content-Type: application/atomserv+xml\r\n');
  else
    http_header ('Content-Type: text/xml; charset="ISO-8859-1"\r\n');
 
+  if ({?'type'} = 'wiki_profile') {
+    http(WV..WIKI_PROFILE({?'cluster'}, coalesce({?'type'}, 'rss20')));
+  }
+  else {
  http(WV..RSS({?'cluster'}, coalesce({?'type'}, 'rss20')));
 
   if ({?'type'} = 'rdf')
@@ -36,6 +39,7 @@ if ({?'type'} is not null)
     http_xslt (WV.WIKI.WA_PPATH_URL ('rss2atom.xsl'), vector ('keep-space', 1));  
   else if ({?'type'} <> 'rss20')
    signal ('WV800', 'Feed type [' || {?'type'} || '] is not supported');
+}
 }
 
 ?>
