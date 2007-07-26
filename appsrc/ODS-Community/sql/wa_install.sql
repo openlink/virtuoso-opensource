@@ -98,6 +98,17 @@ create method wa_drop_instance () for ODS.COMMUNITY.wa_community {
     DB.DBA.VHOST_REMOVE(vhost=>HP_HOST, lhost=>HP_LISTEN_HOST, lpath=>HP_LPATH);
   }
 
+  declare pwd,_instance_customtemplate_path varchar;
+  pwd := ( select pwd_magic_calc ( U_NAME , U_PASSWORD , 1 ) from DB.DBA.SYS_USERS where U_NAME = 'dav' ) ; 
+  _instance_customtemplate_path := '';
+
+  declare exit handler for not found{goto _skip_davdel;};
+  select CI_TEMPLATE into _instance_customtemplate_path from ODS.COMMUNITY.SYS_COMMUNITY_INFO where CI_COMMUNITY_ID = self.wa_name;
+
+  if(length(_instance_customtemplate_path))
+     DB.DBA.DAV_DELETE (_instance_customtemplate_path||'/', 0, 'dav', pwd);
+
+_skip_davdel:;
 
   delete from ODS.COMMUNITY.COMMUNITY_MEMBER_APP WHERE CM_COMMUNITY_ID=self.wa_name;
   delete from COMMUNITY.SYS_COMMUNITY_INFO WHERE CI_COMMUNITY_ID = self.wa_name;
@@ -168,8 +179,21 @@ create procedure COMMUNITY.community_install()
 
       }  
   }
+--eliminate old templates
+  if(iIsDav)
+  {
+   declare pwd varchar;
+   pwd := ( select pwd_magic_calc ( U_NAME , U_PASSWORD , 1 ) from DB.DBA.SYS_USERS where U_NAME = 'dav' ) ; 
                     
-
+     for select WS.WS.COL_PATH (COL_ID) as _path, COL_NAME as _name FROM WS.WS.SYS_DAV_COL
+          WHERE WS..COL_PATH (COL_ID) like registry_get('_community_path_') || 'www-root/templates/_*' do
+     {
+        if(_name not in ('myopenlink_v1','myopenlink_v2','openlink','xdiaspora_v1','xdiaspora_v2'))
+        {
+           DB.DBA.DAV_DELETE (_path, 0, 'dav', pwd);
+        }
+     }
+  }
 }
 ;
 

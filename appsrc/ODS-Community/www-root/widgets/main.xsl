@@ -35,9 +35,12 @@
 <!-- FS include
   <xsl:include href="../../../samples/wa/comp/ods_bar.xsl"/>
 -->    
+  <xsl:include href="../../../wa/comp/ods_bar.xsl"/>
 <!-- DAV include
 -->    
-  <xsl:include href="../../../wa/comp/ods_bar.xsl"/>
+
+
+
     
   <xsl:template match="vm:page">
 
@@ -1660,14 +1663,18 @@ c.length);
               declare q_str, rc, dta, h, curr_davres any;
               curr_davres := '';
 
-              q_str:='select distinct RES_FULL_PATH,RES_MOD_TIME,U_FULL_NAME,U_NAME,coalesce(text,RES_NAME) as res_comment
+              declare _gallery_folder_name varchar;
+              _gallery_folder_name := coalesce (PHOTO.WA.get_gallery_folder_name (), 'Gallery');
+
+
+              q_str:='select distinct RES_FULL_PATH,RES_MOD_TIME,U_FULL_NAME,U_NAME,coalesce(text,RES_NAME) as res_comment,A.RES_ID
                       from WS.WS.SYS_DAV_RES A
                         LEFT JOIN WS.WS.SYS_DAV_COL B on A.RES_COL=B.COL_ID
                         LEFT JOIN WS.WS.SYS_DAV_COL C on C.COL_ID=B.COL_PARENT
                         LEFT JOIN WS.WS.SYS_DAV_COL D on D.COL_ID=C.COL_PARENT
                         LEFT JOIN PHOTO.WA.comments CM on CM.RES_ID=A.RES_ID
                         LEFT JOIN DB.DBA.SYS_USERS U on U.U_ID=A.RES_OWNER
-                      where C.COL_NAME=coalesce (PHOTO.WA.get_gallery_folder_name (), ''Gallery'') and D.COL_NAME='''||self.owner_name||'''
+                      where C.COL_NAME like '''||_gallery_folder_name||'%'' and D.COL_NAME='''||self.owner_name||'''
                       order by RES_MOD_TIME desc,CM.CREATE_DATE desc';
               
               rc := exec (q_str, null, null, vector (), 0, null, null, h);
@@ -1677,18 +1684,69 @@ c.length);
 
                 if (curr_davres<>dta[0]){
                     curr_davres:=dta[0];
+                   
+                    declare photo_href,gallery_davhome_foldername,_home_url,q_str varchar;
+                    declare gallery_path_arr any;
+                    gallery_path_arr:=split_and_decode(dta[0],0,'\0\0/');
+                    
+                    photo_href:=' href="javascript:void(0);" ';
+                    
+
+                    if(locate(_gallery_folder_name,gallery_path_arr[4]))
+                    {
+                     gallery_davhome_foldername:='/'||gallery_path_arr[1]||'/'||gallery_path_arr[2]||'/'||gallery_path_arr[3]||'/'||gallery_path_arr[4]||'/';
+                     
+                     q_str:='select HOME_URL from PHOTO.WA.SYS_INFO where HOME_PATH=\''||gallery_davhome_foldername||'\'';
+                    
+                     
+                     declare state, msg, descs, rows any;
+                     state := '00000';
+                     exec (q_str, state, msg, vector (), 1, descs, rows);
+                    
+                     if (state = '00000')
+                         _home_url:=rows[0][0];
+                     else
+                         goto _skip;
+                     
+                               
+                     photo_href:=' href="'||_home_url||'/?'||subseq(self.login_pars,1)||'#'||'/'||gallery_path_arr[5]||'/'||gallery_path_arr[6]||'" target="_blank" ';
+                    }
+                    
+                    _skip:;
+                    
+                    declare img_size_arr,new_img_size_arr any;
+                    
+                    img_size_arr:=wa_get_image_sizes(dta[5]);
+                    new_img_size_arr:=vector(100,75);
+                    if(length(img_size_arr) and img_size_arr[0]<>0)
+                    {
+                      declare _img_aspect_ratio any;
+                      _img_aspect_ratio:=cast(img_size_arr[0] as float)/cast(img_size_arr[1] as float);
+                      if(_img_aspect_ratio>=1.333)
+                      {
+                        new_img_size_arr:=vector(100,ceiling(100/_img_aspect_ratio));
+                      }else
+                      {
+                        new_img_size_arr:=vector(ceiling(75*_img_aspect_ratio),75);
+                      }
+                    }
+                    
+                    photo_href:='<a '||photo_href||' > <img src="'||
+                                     self.odsbar_ods_gpath||'image.vsp?'||subseq(self.login_pars,1)||'&image_id='||cast(dta[5] as varchar)||'&width='|| cast(new_img_size_arr[0] as varchar) ||'&height='||cast(new_img_size_arr[1] as varchar)||'"' ||
+                                     '" width="'||cast(new_img_size_arr[0] as varchar)||'" height="'||cast(new_img_size_arr[1] as varchar)||'" border="0" class="photoborder" /></a>';
+                    
          ?>
 
-         <td>
+         <td align="center">
           <table border="0" cellpadding="0" cellspacing="0">
            <tr>
-             <td>
-              <a href="<?V '/photos/'||self.user_name||'/?'||subseq(self.login_pars,1)||'#'||subseq(dta[0],locate('/gallery/',dta[0])+7) ?>" target="_blank"><img src="<?V dta[0] ?>" width="100" height="75" border="0" class="photoborder" /></a>
+              <td style="text-align:center;height:75px;">
+                <?vsp http(photo_href);?>
              </td>
            </tr>
            <tr>
-             <td><br/><p><strong><?V dta[4] ?></strong><br />
-                 <a href="<?V self.wa_home?>/uhome.vspx?page=1&ufname=<?V coalesce(dta[3],dta[2])||self.login_pars ?>"><?V coalesce(dta[2],dta[3]) ?></a><br />
+             <td><br/><p><strong><?V case when length(dta[4])>12 then substring (dta[4],1,9)||'...' else dta[4] end ?></strong><br />
+                 <a href="<?V self.wa_home?>/uhome.vspx?page=1&ufname=<?V coalesce(dta[3],dta[2])||self.login_pars ?>"><?V wa_utf8_to_wide(coalesce(dta[2],dta[3])) ?></a><br />
                  <?V wa_abs_date(dta[1])?></p>
              </td>
            </tr>

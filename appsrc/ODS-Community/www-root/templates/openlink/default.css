@@ -394,7 +394,7 @@ h3 {
 }
 .infoarea2 {
 	text-align: left;
-	width: 700px;
+	width: 685px;
 	vertical-align: top;
 	line-height: 120%;
 	background-color: #FFFFFF;
@@ -409,7 +409,7 @@ h3 {
 	text-decoration: none;
 }
 .photoborder {
-	border: 3px solid #99B3C5;
+	border: 1px solid #99B3C5;
 }
 .info_container {
 	border: 1px solid #99B3C5;
