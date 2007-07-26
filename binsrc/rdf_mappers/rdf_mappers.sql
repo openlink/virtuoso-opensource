@@ -57,6 +57,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('.+\.ics\$', 'URL', 'DB.DBA.RDF_LOAD_ICAL', null, 'iCaledar');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
+    values ('http://www.facebook.com/.*',
+            'URL', 'DB.DBA.RDF_LOAD_FQL', null, 'FaceBook', vector ('secret', '', 'session', ''));
+
 
 -- we do default http & html handler first of all
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
@@ -157,6 +161,8 @@ create procedure DB.DBA.XSLT_SPLIT_AND_DECODE (in val varchar, in md int, in pat
 
 create procedure DB.DBA.XSLT_UNIX2ISO_DATE (in val int)
 {
+  if (val is null)
+    return null;
   return  date_iso8601 (dt_set_tz (dateadd ('second', val, dt_set_tz (stringdate ('1970-01-01'), 0)), 0));
 }
 ;
@@ -352,6 +358,154 @@ create procedure DB.DBA.RDF_LOAD_HTTP_SESSION (
   return 0;
 }
 ;
+
+create procedure FB_SIG (in params any, in secret any)
+{
+  declare arr, pars, str any;
+  arr := split_and_decode (params, 0, '\0\0&=');
+  pars := vector ();
+  for (declare i int, i := 0; i < length (arr); i := i + 2)
+     {
+       declare tmp any;
+       tmp := split_and_decode (arr[i+1]);
+       tmp := tmp[0];
+       pars := vector_concat (pars, vector (arr[i]||'='||tmp));
+     }
+  pars := __vector_sort (pars);
+  str := '';
+  foreach (any elm in pars) do
+    {
+      str := str || elm;
+    }
+  str := str || secret;
+  return md5 (str);
+};
+
+create procedure FQL_CALL (in q varchar, in api_key varchar, in ses_id varchar, in secret varchar)
+{
+  declare url, pars, sig, ret varchar;
+  url := 'http://api.facebook.com/restserver.php?';
+  pars := 'method=facebook.fql.query&api_key='||api_key||'&v=1.0&session_key='||ses_id||'&call_id='|| cast (msec_time () as varchar) ||
+   '&query=' || sprintf ('%U', q) ;
+  sig := DB.DBA.FB_SIG (pars, secret);
+  url := url || pars || '&sig=' || sig;
+  --dbg_printf ('%s', url);
+  ret := http_get (url);
+  return ret;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare api_key, ses_id, secret varchar;
+  declare ret, tmp, karr, xt, xd any;
+  declare url, sig, pars, q, own, pid, aid, acc varchar;
+
+  --dbg_obj_print (graph_iri, new_origin_uri);
+  declare exit handler for sqlstate '*'
+    {
+      --dbg_printf ('%s', __SQL_MESSAGE);
+      return 0;
+    };
+
+  if (isarray (opts) = 0 or mod (length(opts), 2) <> 0)
+    {
+--      dbg_obj_print (_key, opts);
+      return 0;
+    }
+
+  acc := get_keyword ('get:login', opts);
+  api_key := null;
+  if (acc is not null)
+    {
+      tmp := DB.DBA.USER_GET_OPTION (acc, 'FBKey');
+      if (tmp is not null)
+	{
+	  tmp := replace (tmp, '\r', '\n');
+	  tmp := replace (tmp, '\n\n', '\n');
+	  tmp := rtrim (tmp, '\n');
+	  tmp := split_and_decode (tmp, 0, '\0\0\n=');
+	  api_key := get_keyword ('key', tmp);
+	  secret := get_keyword ('secret', tmp);
+	  ses_id := get_keyword ('session', tmp);
+	}
+    }
+  if (0 = length (api_key))
+    {
+  api_key := _key;
+  secret := get_keyword ('secret', opts);
+  ses_id := get_keyword ('session', opts);
+    }
+  if (not length (api_key) or not length (secret) or not length (ses_id))
+    return 0;
+
+  own := ''; pid := '';
+
+  tmp := sprintf_inverse (graph_iri, 'http://www.facebook.com/album.php?aid=%s&l=%s&id=%s', 0);
+  if (length (tmp) <> 3)
+    goto try_profile;
+  own := tmp[2];
+  aid := tmp[0];
+
+  q := sprintf ('SELECT pid, aid, owner, src_small, src_big, src, link, caption, created FROM photo '||
+  'WHERE aid in (select aid from album where owner = %s and strpos (link, "aid=%s&") > 0)', own, aid);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  xt := xtree_doc (ret);
+  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+--  dbg_printf ('%s', xd);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+  q := sprintf ('SELECT aid, cover_pid, owner, name, created, modified, description, location, size, link FROM album '||
+  'WHERE owner = %s and strpos (link, "aid=%s&") > 0', own, aid);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  xt := xtree_doc (ret);
+  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+--  dbg_printf ('%s', xd);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  goto end_sp;
+
+try_profile:
+  tmp := sprintf_inverse (graph_iri, 'http://www.facebook.com/p/%s/%s', 0);
+  if (length (tmp) <> 2)
+    return 0;
+  own := tmp[1];
+  q :=  sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, affiliations, profile_update_time, timezone, religion, birthday, sex, hometown_location, meeting_sex, meeting_for, relationship_status, significant_other_id, political, current_location, activities, interests, is_app_user, music, tv, movies, books, quotes, about_me, hs_info, education_history, work_history, notes_count, wall_count, status, has_added_app FROM user WHERE uid = %s', own);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  --dbg_printf ('%s', ret);
+  xt := xtree_doc (ret);
+  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+--  dbg_printf ('%s', xd);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+  q := sprintf ('SELECT aid, cover_pid, owner, name, created, modified, description, location, size, link FROM album '||
+  'WHERE owner = %s', own);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  xt := xtree_doc (ret);
+  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+--  dbg_printf ('%s', xd);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+  q := sprintf ('select eid, name, tagline, nid, pic_small, pic_big, pic, host, description, event_type, event_subtype, '||
+  ' start_time, end_time, creator, update_time, location, venue from event where eid in '||
+  '(SELECT eid FROM event_member where uid = %s)', own);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  xt := xtree_doc (ret);
+  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+--  dbg_printf ('%s', xd);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+  goto end_sp;
+
+end_sp:
+  return 1;
+};
+
 
 create procedure DB.DBA.RDF_LOAD_OO_DOCUMENT (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
@@ -1187,3 +1341,20 @@ create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in g
 
 registry_set ('__sparql_sponge_use_w3c_xslt', 'on')
 ;
+
+
+create procedure DB.DBA.SYS_URN_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
+{
+  if (lower (local_iri) like 'urn:lsid:%')
+    {
+      options := vector_concat (vector ('get:uri', 'http://lsid.tdwg.org/'||get_uri), options);
+      return DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, get_uri,
+	  'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
+    }
+  else
+    {
+      signal ('RDFZZ', 'This version of Virtuoso Sponger do not support "urn" IRI scheme');
+    }
+}
+;
+
