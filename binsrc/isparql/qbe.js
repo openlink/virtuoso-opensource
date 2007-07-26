@@ -1643,7 +1643,7 @@ iSPARQL.QBE = function () {
 		var maxrows = parseInt($v("qbe_maxrows"));
 		var p = {
 			query:self.QueryGenerate(),
-			defaultGraph:"",
+			defaultGraph:$v("qbe_graph"),
 			sponge:$v("qbe_sponge"),
 			endpoint:self.service.input.value,
 			limit:maxrows

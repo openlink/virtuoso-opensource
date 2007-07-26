@@ -290,6 +290,7 @@ function init() {
 		if (qbe.QueryGenerate() ==	query) { return; }
 		tab.go(0);
 		qbe.loadFromString(query);
+		$("query").value = query;
 		tab.go(orig);
 	}
 	window.qe = new QueryExec({div:"page_results",executeCallback:execCB});
@@ -323,6 +324,10 @@ function init() {
 	OAT.Dom.append([qe.dom.ul,loadToAdvanced],[loadToAdvanced,img]);
   
   
+	OAT.Resize.create("query_resizer_area", "query_div", OAT.Resize.TYPE_X);
+	OAT.Resize.create("query_resizer_area", "query", OAT.Resize.TYPE_Y);
+	$("query_resizer_area").style.backgroundImage = 'url("'+OAT.Preferences.imagePath+"resize.gif"+'")';
+	$("query_resizer_area").style.cursor = "nw-resize";
   
   
   
@@ -373,8 +378,7 @@ function init() {
 
   OAT.Dom.hide("page_loading");
   OAT.Dom.show("page_content");
-  if (qbe.svgsparql)
-    qbe.svgsparql.reposition();
+  if (qbe.svgsparql) { qbe.svgsparql.reposition(); }
 	if (window.__inherited) {
 		if (window.__inherited.username)       goptions.username = window.__inherited.username;
 		if (window.__inherited.password)       goptions.password = window.__inherited.password;
@@ -442,8 +446,7 @@ function init() {
     	goptions.initial_screen = true;
   }
 
-  if (OAT.Browser.isIE)
-  {
+  if (OAT.Browser.isIE) {
     tab.go (1); /* is 0-based index... */
   }
 }

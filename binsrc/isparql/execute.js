@@ -316,6 +316,7 @@ var QueryExec = function(optObj) {
 		var dereferenceRef = function() {
 			var cache = self.cache[self.cacheIndex];
 			var q = "SELECT ?p, ?o \n"+
+					(cache.opts.defaultGraph ? "FROM <"+cache.opts.defaultGraph+">" : "")+
 					"WHERE {<"+href+"> ?p ?o}";
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
@@ -325,6 +326,7 @@ var QueryExec = function(optObj) {
 		var exploreRef = function() {
 			var cache = self.cache[self.cacheIndex];
 			var q = "SELECT ?property ?hasValue ?isValueOf\n"+
+					(cache.opts.defaultGraph ? "FROM <"+cache.opts.defaultGraph+">" : "")+
 					"WHERE {\n"+
 					"{ <"+href+"> ?property ?hasValue }\n"+
 					"UNION\n"+

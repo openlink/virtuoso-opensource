@@ -64,7 +64,8 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	form:["ajax2","dialog","datasource","formobject","crypto"],
 	rssreader:"xml",
 	notify:"animation",
-	slidebar:"animation"
+	slidebar:"animation",
+	fresnel:"xml"
 }
 
 OAT.Loader.Files = { /* only those whose names differ */

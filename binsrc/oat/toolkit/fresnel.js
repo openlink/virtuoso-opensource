@@ -77,6 +77,16 @@ OAT.Fresnel = function(optObj) {
 		self.store.addURL(url);
 	}
 	
+	self.addClass = function(element,className) {
+		var arr = [];
+		var all = element.getAttribute("class").toString().split(" ");
+		for (var i=0;i<all.length;i++) {
+			if (all[i] != className) { arr.push(all[i]); }
+		}
+		arr.push(className);
+		element.setAttribute("class",arr.join(" "));
+	}
+	
 	/* -------------------- formatting detection ---------- */
 	
 	this.findGFResource = function(item,lens,use) { /* find groups and format for a resource */
@@ -178,32 +188,33 @@ OAT.Fresnel = function(optObj) {
 				var values = tmp.preds[property];
 				for (var j=0;j<values.length;j++) {
 					var value = values[j];
+					
 					if (value.match(/:/)) {
 						var s = box.getAttribute("style") || "";
 						s += value+" ";
 						box.setAttribute("style",s);
 					} else {
-						OAT.Dom.addClass(box,value);
+						self.addClass(box,value);
 					}
 				} /* for all values */
 			} /* if correct property */
 			if (format in tmp.preds) {
 				var obj = tmp.preds[format][0];
 				if (self.ns+"contentBefore" in obj.preds) {	
-					pre = OAT.Dom.create("span");
-					pre.innerHTML = obj.preds[self.ns+"contentBefore"];	
+					pre = self.xmlDoc.createElement("fresnel_text");
+					pre.appendChild(self.xml.createTextNode(obj.preds[self.ns+"contentBefore"]));	
 				}
 				if (self.ns+"contentAfter" in obj.preds) { 
-					post = OAT.Dom.create("span");
-					post.innerHTML = obj.preds[self.ns+"contentAfter"];	
+					post = self.xmlDoc.createElement("fresnel_text");
+					post.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentAfter"]));	
 				}
 				if (self.ns+"contentFirst" in obj.preds && counter && counter[0] == 0) {
-					pre = OAT.Dom.create("span");
-					pre.innerHTML = obj.preds[self.ns+"contentFirst"];	
+					pre = self.xmlDoc.createElement("fresnel_text");
+					pre.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentFirst"]));	
 				}
 				if (self.ns+"contentLast" in obj.preds && counter && counter[0]+1 == counter[1]) {
-					post = OAT.Dom.create("span");
-					post.innerHTML = obj.preds[self.ns+"contentLast"];	
+					post = self.xmlDoc.createElement("fresnel_text");
+					post.appendChild(self.xmlDoc.createTextNode(obj.preds[self.ns+"contentLast"]));	
 				}
 			} /* if correct property */
 		} /* for all formatting objects */
@@ -223,11 +234,10 @@ OAT.Fresnel = function(optObj) {
 	
 	this.styleLabel = function(box,lens,property,use) { /* if available, include label */
 		var tmp = self.findGFProperty(lens,property,use);
-		var label = OAT.Dom.create("span",{},"fresnel_label");
-		label.innerHTML = self.store.simplify(property);
+		var label = self.xmlDoc.createElement("fresnel_label");
+		label.appendChild(self.xmlDoc.createTextNode(self.store.simplify(property)));
 		var list = tmp[0];
 		if (tmp[1]) { list.push(tmp[1]); }
-//		if (self.store.simplify(property) == "knows") window.cica = list;
 		var result = self.styleBox(label,list,self.ns+"labelStyle");
 		for (var i=0;i<list.length;i++) {
 			var tmp = list[i];
@@ -235,7 +245,10 @@ OAT.Fresnel = function(optObj) {
 				var val = tmp.preds[self.ns+"label"][0];
 				if (val == self.ns+"none") { label = false; }
 				else if (val == self.ns+"show") {}
-				else { label.innerHTML = val; }
+				else { 
+					OAT.Dom.clear(label);
+					label.appendChild(self.xmlDoc.createTextNode(val)); 
+				}
 			}
 		}
 		if (label) { OAT.Dom.append([box,result]); }
@@ -287,7 +300,7 @@ OAT.Fresnel = function(optObj) {
 	}
 
 	this.formatProperty = function(parent,item,lens,property,sublens,use) { /* add this property to resource's box */
-		var box = OAT.Dom.create("div",{},"fresnel_property");
+		var box = self.xmlDoc.createElement("fresnel_property");
 		var htmlElements = self.styleProperty(box,lens,property,use);
 		
 		self.styleLabel(box,lens,property,use);
@@ -313,7 +326,7 @@ OAT.Fresnel = function(optObj) {
 			var depth = -1;
 			var use = false;
 			if (typeof(property) == "object") { /* analyze object */
-				if (self.ns+"use" in property.preds) { use = property.preds[use]; }
+				if (self.ns+"use" in property.preds) { use = property.preds[self.ns+"use"]; }
 				if (self.ns+"property" in property.preds) { pname = property.preds[self.ns+"property"][0]; }
 				if (self.ns+"sublens" in property.preds) { sublens = property.preds[self.ns+"sublens"][0]; }
 				if (self.ns+"depth" in property.preds) { depth = parseInt(property.preds[self.ns+"depth"][0]); }
@@ -342,8 +355,9 @@ OAT.Fresnel = function(optObj) {
 		var box = false;
 		
 		if (typeof(item) == "object") {
-			box = OAT.Dom.create("div",{},"fresnel_value");
-			self.formatResource(box,pair,use);
+			box = self.xmlDoc.createElement("fresnel_value");
+			box.setAttribute("type","resource");
+			self.formatResource(box,pair,use,parent);
 		} else {
 			var value = false;
 			var tmp = self.findGFProperty(lens,property,use);
@@ -354,26 +368,30 @@ OAT.Fresnel = function(optObj) {
 				if (self.ns+"value" in tmp.preds) { value = tmp.preds[self.ns+"value"][0]; }
 			}
 			if (value == self.ns+"uri" || value == self.ns+"externalLink" || value == self.ns+"replacedResource") {
-				box = OAT.Dom.create("a",{},"fresnel_value");
-				box.innerHTML = item;
-				box.href = item;
+				box = self.xmlDoc.createElement("fresnel_value");
+				box.setAttribute("type","a");
+				box.setAttribute("href",item);
+				box.appendChild(self.xmlDoc.createTextNode(item));
 			} else if (value == self.ns+"image") {
-				box = OAT.Dom.create("img");
-				box.src = item;
+				box = self.xmlDoc.createElement("fresnel_value");
+				box.setAttribute("type","img");
+				box.setAttribute("src",item);
 			} else {
-				box = OAT.Dom.create("span",{},"fresnel_value");
-				box.innerHTML = item;
+				box = self.xmlDoc.createElement("fresnel_value");
+				box.setAttribute("type","text");
+				box.appendChild(self.xmlDoc.createTextNode(item));
 			}
 		}
 		var htmlElements = self.styleValue(box,lens,property,use,counter);
 		OAT.Dom.append([parent,htmlElements]);
 	}
 	
-	this.formatResource = function(parent,pair,use) { /* add resource to container */
+	this.formatResource = function(parent,pair,use,container) { /* add resource to container */
 		var item = pair[0];
 		var lens = pair[1];
-		var box = OAT.Dom.create("div",{},"fresnel_resource");
-		var htmlElements = self.styleResource(parent,box,item,lens,use);
+		var box = self.xmlDoc.createElement("fresnel_resource");
+		var container = container || parent;
+		var htmlElements = self.styleResource(container,box,item,lens,use);
 		self.formatProperties(box,item,lens); /* add all these properties */
 		OAT.Dom.append([parent,htmlElements]);
 	}
@@ -401,7 +419,7 @@ OAT.Fresnel = function(optObj) {
 				list.push([item,lens]);
 			}
 		}
-		var container = OAT.Dom.create("div",{},"fresnel_container");
+		var container = self.xmlDoc.createElement("fresnel_container");
 		for (var i=0;i<list.length;i++) {
 			var counter = [i,list.length]
 			self.formatItem(container,list[i],property,counter,use);
@@ -417,7 +435,12 @@ OAT.Fresnel = function(optObj) {
 	this.format = function(data) {
 		self.depth = 1;
 		self.stylesheets = [];
-		return [self.formatContainer(false,data),self.stylesheets];
+		var xmlDoc = OAT.Xml.createXmlDoc();
+		if (!xmlDoc) { alert("No XML support, sorry :/"); }
+		self.xmlDoc = xmlDoc;
+		var node = self.formatContainer(false,data);
+		xmlDoc.appendChild(node);
+		return [xmlDoc,self.stylesheets];
 	}
 }
 OAT.Loader.featureLoaded("fresnel");

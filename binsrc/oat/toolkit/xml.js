@@ -58,6 +58,7 @@ OAT.Xml = {
 	
 	createXmlDoc:function(string) {
 		if (document.implementation && document.implementation.createDocument) {				
+			if (!string) { return document.implementation.createDocument("","",null); }
 			var parser = new DOMParser();
 			try {
 				var xml = parser.parseFromString(string, "text/xml");
@@ -66,7 +67,8 @@ OAT.Xml = {
 			}
 			return xml;
 		} else if (window.ActiveXObject) {
-			var xml = new ActiveXObject("Microsoft.XMLDOM")
+			var xml = new ActiveXObject("Microsoft.XMLDOM");
+			if (!string) { return xml; }
 			xml.loadXML(string);
 			if (xml.parseError.errorCode) {
 				alert('IE XML ERROR: '+xml.parseError.reason+' ('+xml.parseError.errorCode+')');

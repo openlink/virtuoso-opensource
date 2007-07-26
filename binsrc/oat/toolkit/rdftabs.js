@@ -400,8 +400,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		var data = self.parent.data.all;
 		for (var i=0;i<data.length;i++) {
 			var item = data[i];
-			var t = item.type;
-			if (!t) { continue; }
+			var t = item.type || " ";
 			var a = (t in obj ? obj[t] : []);
 			a.push(item);
 			obj[t] = a;
@@ -605,9 +604,15 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		var table = OAT.Dom.create("table",{},"rdf_nav_spotlight");
 		var tbody = OAT.Dom.create("tbody");
 		OAT.Dom.append([self.mainDiv,h3,table],[table,tbody]);
+		var remain = false;
 		for (var p in obj) {
+			if (p == " ") { 
+				remain = obj[p]; 
+			} else {
 			self.drawSpotlightType(p,obj[p],tbody);
 		}
+	}
+		if (remain) { self.drawSpotlightType("[no type specified]",remain,tbody); }
 	}
 	
 	this.redraw = function() {
@@ -1252,8 +1257,13 @@ OAT.RDFTabs.fresnel = function(parent,optObj) {
 			document.getElementsByTagName("head")[0].appendChild(elm);
 		}
 		/* go */
+		var cb = function(xslDoc) {
+			var xmlDoc = results[0];
+			var out = OAT.Xml.transformXSLT(xmlDoc,xslDoc);
 		OAT.Dom.clear(self.mainElm);
-		self.mainElm.appendChild(results[0]);
+			self.mainElm.innerHTML = OAT.Xml.serializeXmlDoc(out);
+		}
+		OAT.AJAX.GET(OAT.Preferences.xsltPath+"fresnel2html.xsl",false,cb,{type:OAT.AJAX.TYPE_XML});
 	} /* redraw */
 	
 	var inp = OAT.Dom.create("input");
