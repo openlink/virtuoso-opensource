@@ -255,6 +255,29 @@ BMK.WA.exec_no_error('
 -------------------------------------------------------------------------------
 --
 BMK.WA.exec_no_error('
+  create table BMK.WA.ANNOTATIONS (
+    A_ID integer identity,
+    A_DOMAIN_ID integer not null,
+    A_OBJECT_ID integer not null,
+    A_BODY long varchar,
+    A_CONTEXT varchar,
+    A_AUTHOR varchar,
+    A_CREATED datetime,
+    A_UPDATED datetime,
+
+    constraint FK_BMK_ANNOTATIONS_01 FOREIGN KEY (A_OBJECT_ID) references BMK.WA.BOOKMARK_DOMAIN (BD_ID) on delete cascade,
+
+    primary key (A_ID)
+  )
+');
+
+BMK.WA.exec_no_error ('
+  create index SK_BMK_ANNOTATIONS_01 on BMK.WA.ANNOTATIONS (A_OBJECT_ID, A_ID)
+');
+
+-------------------------------------------------------------------------------
+--
+BMK.WA.exec_no_error('
   create table BMK.WA.TAGS (
   	T_DOMAIN_ID integer not null,
   	T_ACCOUNT_ID integer not null,

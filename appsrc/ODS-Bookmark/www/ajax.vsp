@@ -32,7 +32,7 @@
   action := get_keyword ('a', params, '');
   subAction := get_keyword ('sa', params, '');
 
-  aSession   := ENEWS.WA.session_restore (params);
+  aSession   := BMK.WA.session_restore (params);
   domain_id  := cast(get_keyword('domain_id', aSession, '0') as integer);
   account_id := cast(get_keyword('user_id', aSession, '0') as integer);
 

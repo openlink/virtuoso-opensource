@@ -1,0 +1,226 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="annotea" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+  <v:method name="showTDValue" arglist="in id integer, in value any">
+    <![CDATA[
+      if (self.v_mode = 'show') {
+        http (value);
+      } else if (self.v_mode = 'create') {
+        http (value);
+      } else if (id <> self.v_id) {
+        http (value);
+      } else {
+        http ('<b>' || value || '</b>');
+      }
+    ]]>
+  </v:method>
+
+  <vm:pagetitle>Annotation page</vm:pagetitle>
+  <vm:popup_page_wrapper>
+    <vm:variables>
+      <v:variable persist="0" name="v_mode" type="varchar" default="'show'"/>
+      <v:variable persist="0" name="v_oid" param-name="oid" type="integer" />
+      <v:variable persist="0" name="v_did" param-name="did" type="integer" />
+      <v:variable persist="0" name="v_aid" param-name="aid" type="integer" />
+      <v:variable persist="0" name="v_id" type="integer" />
+      <v:variable persist="0" name="v_author" type="varchar" default="''" />
+      <v:variable persist="0" name="v_body" type="varchar" default="''" />
+    </vm:variables>
+    <vm:pagebody>
+      <div class="new-form-header">
+        Annotations for '<?V (select coalesce(BD_NAME, '~ no title ~') from BMK.WA.BOOKMARK_DOMAIN where BD_ID = self.v_oid) ?>'
+      </div>
+
+      <div class="new-form-body">
+        <v:data-set name="ds" sql="select * from BMK.WA.ANNOTATIONS where A_OBJECT_ID = :p0 and A_DOMAIN_ID = :p1 order by A_ID desc" nrows="0" scrollable="1">
+          <v:param name="p0" value="--self.v_oid" />
+          <v:param name="p1" value="--self.v_did" />
+
+          <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+            <div style="padding-bottom: 5px;">
+              <v:button action="simple" value="Annotate" xhtml_title="Annotate" xhtml_class="button">
+                <v:on-post>
+                  <![CDATA[
+                    self.v_id := null;
+                    self.v_mode := 'create';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+            <table id="annotations" class="grid1" cellspacing="0" style="border: 0;">
+            </table>
+          </v:template>
+
+          <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+            <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+              <table>
+                <tr align="center">
+                  <td>
+                    No annotations
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+
+            <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
+              <table>
+                <tr>
+                  <td width="1%" nowrap="nowrap">
+                    <?vsp self.showTDValue ((control as vspx_row_template).te_column_value('A_ID'), BMK.WA.dt_value ((control as vspx_row_template).te_column_value('A_CREATED'))); ?>
+                  </td>
+                  <td>
+                    <?vsp self.showTDValue ((control as vspx_row_template).te_column_value('A_ID'), (control as vspx_row_template).te_column_value('A_AUTHOR')); ?>
+                  </td>
+                  <td width="1%" nowrap="nowrap">
+                    <v:button action="simple" value="edit" xhtml_title="Edit" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          self.v_id := (control.vc_parent as vspx_row_template).te_column_value('A_ID');
+                          self.v_mode := 'edit';
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" value="Delete" xhtml_title="Delete" xhtml_onclick="return confirmAction(\'Are you sure that you want to delete this annotation?\');" xhtml_class="button">
+                      <v:on-post>
+                        <![CDATA[
+                          declare id integer;
+
+                          id := (control.vc_parent as vspx_row_template).te_column_value('A_ID');
+                          delete from BMK.WA.ANNOTATIONS where A_ID = id;
+
+                          self.v_mode := 'show';
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+                <tr>
+                  <td />
+                  <td colspan="2">
+                    <i><?vsp self.showTDValue ((control as vspx_row_template).te_column_value('A_ID'), (control as vspx_row_template).te_column_value('A_BODY')); ?></i>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+
+          </v:template>
+
+          <v:template type="simple" name-to-remove="table" set-to-remove="top">
+            <table>
+            </table>
+          </v:template>
+
+        </v:data-set>
+        <vm:if test="self.v_mode <> 'show'">
+          <hr />
+          <v:before-data-bind>
+            <![CDATA[
+              self.v_author := BMK.WA.account_fullName (self.v_aid);
+              self.v_body := '';
+              if (self.v_mode = 'edit') {
+                select A_AUTHOR,
+                       A_BODY
+                  into self.v_author,
+                       self.v_body
+                  from BMK.WA.ANNOTATIONS
+                 where A_ID = self.v_id;
+              }
+            ]]>
+          </v:before-data-bind>
+          <table width="90%" cellspacing="0">
+            <tr>
+              <th>
+                <v:label for="f_author" value="Author" />
+              </th>
+              <td>
+                <v:text name="f_author" xhtml_id="f_author" value="--self.v_author" xhtml_class="textbox" xhtml_size="50">
+                  <v:before-data-bind>
+                    <![CDATA[
+                      if (self.v_mode = 'edit')
+                        control.tf_style :=3;
+                    ]]>
+                  </v:before-data-bind>
+                </v:text>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Annotation
+              </th>
+              <td>
+                <v:textarea name="f_body" null-value="--''" value="--self.v_body" fmt-function="BMK.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" align="center">
+                <div class="comment-button">
+                  <v:button action="simple" value="Post" xhtml_title="Post" xhtml_class="button">
+                    <v:on-post>
+                      <![CDATA[
+                        self.v_body := trim (self.f_body.ufl_value);
+
+                        if (self.v_mode = 'create') {
+                          self.v_author := trim (self.f_author.ufl_value);
+                          insert into BMK.WA.ANNOTATIONS (A_DOMAIN_ID, A_OBJECT_ID, A_BODY, A_AUTHOR, A_CREATED, A_UPDATED)
+                            values (self.v_did, self.v_oid, self.v_body, self.v_author, now (), now ());
+                        } else {
+                          update BMK.WA.ANNOTATIONS
+                             set A_BODY = self.v_body,
+                                 A_UPDATED = now ()
+                           where A_ID = self.v_id;
+                        }
+
+                        self.v_mode := 'show';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button action="simple" value="Cancel" xhtml_title="Cancel" xhtml_class="button">
+                    <v:on-post>
+                      <![CDATA[
+                        self.v_mode := 'show';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </vm:if>
+      </div>
+      <script>
+        <![CDATA[
+          coloriseTable('annotations');
+        ]]>
+      </script>
+    </vm:pagebody>
+  </vm:popup_page_wrapper>
+</v:page>

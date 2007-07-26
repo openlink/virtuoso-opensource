@@ -21,6 +21,8 @@
 --
 use sioc;
 
+-------------------------------------------------------------------------------
+--
 create procedure bmk_post_iri (
   in domain_id int,
   in bookmark_id int)
@@ -36,6 +38,26 @@ create procedure bmk_post_iri (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure bmk_annotation_iri (
+	in domain_id varchar,
+	in contact_id integer,
+	in annotation_id integer)
+{
+	declare _member, _inst varchar;
+	declare exit handler for not found { return null; };
+
+	select U_NAME, WAI_NAME into _member, _inst
+		from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
+	 where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
+
+	return sprintf ('http://%s%s/%U/bookmark/%U/%d/annotation/%d', get_cname(), get_base_path (), _member, _inst, contact_id, annotation_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure bmk_links_to (inout content any)
 {
   declare xt, retValue any;
@@ -55,6 +77,8 @@ create procedure bmk_links_to (inout content any)
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure fill_ods_bookmark_sioc (
   in graph_iri varchar,
   in site_iri varchar,
@@ -117,6 +141,25 @@ create procedure fill_ods_bookmark_sioc (
         iri := bmk_post_iri (domain_id, bookmark_id);
 	  ods_sioc_tags (graph_iri, iri, BD_TAGS);
       }
+			for (select A_ID,
+									A_DOMAIN_ID,
+									A_OBJECT_ID,
+									A_BODY,
+									A_AUTHOR,
+									A_CREATED,
+									A_UPDATED
+						 from BMK.WA.ANNOTATIONS
+						where A_OBJECT_ID = BD_ID) do
+			{
+				bmk_annotation_insert (graph_iri,
+    													 A_ID,
+    													 A_DOMAIN_ID,
+    													 A_OBJECT_ID,
+    													 A_BODY,
+    													 A_AUTHOR,
+    													 A_CREATED,
+    													 A_UPDATED);
+			}
 
     cnt := cnt + 1;
       if (mod (cnt, 500) = 0) {
@@ -130,6 +173,8 @@ create procedure fill_ods_bookmark_sioc (
     }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure bookmark_domain_insert (
   in graph_iri varchar,
   in c_iri varchar,
@@ -180,6 +225,8 @@ create procedure bookmark_domain_insert (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure bookmark_domain_delete (
   inout domain_id integer,
   inout bookmark_id integer)
@@ -197,6 +244,8 @@ create procedure bookmark_domain_delete (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger BOOKMARK_DOMAIN_SIOC_I after insert on BMK.WA.BOOKMARK_DOMAIN referencing new as N
 {
   bookmark_domain_insert (null,
@@ -212,6 +261,8 @@ create trigger BOOKMARK_DOMAIN_SIOC_I after insert on BMK.WA.BOOKMARK_DOMAIN ref
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger BOOKMARK_DOMAIN_SIOC_U after update on BMK.WA.BOOKMARK_DOMAIN referencing old as O, new as N
 {
   bookmark_domain_delete (O.BD_DOMAIN_ID,
@@ -229,6 +280,8 @@ create trigger BOOKMARK_DOMAIN_SIOC_U after update on BMK.WA.BOOKMARK_DOMAIN ref
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger BOOKMARK_DOMAIN_SIOC_D before delete on BMK.WA.BOOKMARK_DOMAIN referencing old as O
     {
   bookmark_domain_delete (O.BD_DOMAIN_ID,
@@ -236,6 +289,8 @@ create trigger BOOKMARK_DOMAIN_SIOC_D before delete on BMK.WA.BOOKMARK_DOMAIN re
     }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure bookmark_tags_insert (
   in domain_id integer,
   in bookmark_id integer,
@@ -261,6 +316,8 @@ create procedure bookmark_tags_insert (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure bookmark_tags_delete (
   in domain_id integer,
   in bookmark_id integer,
@@ -285,6 +342,8 @@ create procedure bookmark_tags_delete (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger BOOKMARK_DATA_SIOC_I after insert on BMK.WA.BOOKMARK_DATA referencing new as N
 {
   if (N.BD_MODE = 0)
@@ -292,6 +351,8 @@ create trigger BOOKMARK_DATA_SIOC_I after insert on BMK.WA.BOOKMARK_DATA referen
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger BOOKMARK_DATA_SIOC_U after update on BMK.WA.BOOKMARK_DATA referencing old as O, new as N
 {
   if (O.BD_MODE = 0)
@@ -301,6 +362,8 @@ create trigger BOOKMARK_DATA_SIOC_U after update on BMK.WA.BOOKMARK_DATA referen
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger BOOKMARK_DATA_SIOC_D before delete on BMK.WA.BOOKMARK_DATA referencing old as O
 {
   if (O.BD_MODE = 0)
@@ -308,6 +371,119 @@ create trigger BOOKMARK_DATA_SIOC_D before delete on BMK.WA.BOOKMARK_DATA refere
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure bmk_annotation_insert (
+	in graph_iri varchar,
+	inout annotation_id integer,
+	inout domain_id integer,
+	inout master_id integer,
+	inout author varchar,
+	inout body varchar,
+	inout created datetime,
+	inout updated datetime)
+{
+  declare bookmark_id integer;
+	declare master_iri, annotattion_iri varchar;
+
+	declare exit handler for sqlstate '*' {
+		sioc_log_message (__SQL_MESSAGE);
+		return;
+	};
+
+	if (isnull (graph_iri))
+		for (select WAI_ID, WAM_USER, WAI_NAME
+					 from DB.DBA.WA_INSTANCE,
+								DB.DBA.WA_MEMBER
+					where WAI_ID = domain_id
+						and WAM_INST = WAI_NAME
+						and WAI_IS_PUBLIC = 1) do
+		{
+			graph_iri := get_graph ();
+		}
+
+	if (not isnull (graph_iri)) {
+    bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = master_id);
+		master_iri := bmk_post_iri (domain_id, bookmark_id);
+		annotattion_iri := bmk_annotation_iri (domain_id, bookmark_id, annotation_id);
+		DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
+		DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
+		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
+		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
+		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
+		DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+	}
+	return;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure bmk_annotation_delete (
+	inout annotation_id integer,
+	inout domain_id integer,
+	inout master_id integer)
+{
+  declare bookmark_id integer;
+	declare graph_iri, iri varchar;
+
+	declare exit handler for sqlstate '*' {
+		sioc_log_message (__SQL_MESSAGE);
+		return;
+	};
+
+	graph_iri := get_graph ();
+  bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = master_id);
+	iri := bmk_annotation_iri (domain_id, bookmark_id, annotation_id);
+	delete_quad_s_or_o (graph_iri, iri, iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger ANNOTATIONS_SIOC_I after insert on BMK.WA.ANNOTATIONS referencing new as N
+{
+	bmk_annotation_insert (null,
+    										 N.A_ID,
+    										 N.A_DOMAIN_ID,
+    										 N.A_OBJECT_ID,
+    										 N.A_BODY,
+    										 N.A_AUTHOR,
+    										 N.A_CREATED,
+    										 N.A_UPDATED);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger ANNOTATIONS_SIOC_U after update on BMK.WA.ANNOTATIONS referencing old as O, new as N
+{
+	bmk_annotation_delete (O.A_ID,
+    										 O.A_DOMAIN_ID,
+    										 O.A_OBJECT_ID);
+	bmk_annotation_insert (null,
+    										 N.A_ID,
+    										 N.A_DOMAIN_ID,
+    										 N.A_OBJECT_ID,
+    										 N.A_BODY,
+    										 N.A_AUTHOR,
+    										 N.A_CREATED,
+    										 N.A_UPDATED);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger ANNOTATIONS_SIOC_D before delete on BMK.WA.ANNOTATIONS referencing old as O
+{
+	bmk_annotation_delete (O.A_ID,
+    										 O.A_DOMAIN_ID,
+    										 O.A_OBJECT_ID);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ods_bookmark_sioc_init ()
 {
   declare sioc_version any;
@@ -325,9 +501,13 @@ create procedure ods_bookmark_sioc_init ()
 
 --BMK.WA.exec_no_error('ods_bookmark_sioc_init ()');
 
+-------------------------------------------------------------------------------
+--
+-- Bookmrks RDF Views
+--
+-------------------------------------------------------------------------------
 use DB;
-use DB;
--- BOOKMARK
+
 wa_exec_no_error ('drop view ODS_BMK_POSTS');
 
 create view ODS_BMK_POSTS as select
@@ -355,6 +535,8 @@ create view ODS_BMK_POSTS as select
 	WAM_USER = U_ID and
 	WAM_MEMBER_TYPE = 1;
 
+-------------------------------------------------------------------------------
+--
 create procedure ODS_BMK_TAGS ()
 {
   declare inst, uname, item_id, tag any;
@@ -364,26 +546,24 @@ create procedure ODS_BMK_TAGS ()
        where WAM_INST = WAI_NAME and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID and BD_OBJECT_ID = WAI_ID and BD_MODE = 0
    do
      {
-       if (length (BD_TAGS))
-	 {
+       if (length (BD_TAGS)) {
 	   declare arr any;
 	   arr := split_and_decode (BD_TAGS, 0, '\0\0,');
-	  foreach (any t in arr) do
-	    {
+         foreach (any t in arr) do {
 	      t := trim(t);
 	      if (length (t))
-		{
 		  result (WAM_INST, U_NAME, BD_BOOKMARK_ID, t);
 		}
 	    }
 	 }
      }
-}
 ;
 
 wa_exec_no_error ('drop view ODS_BMK_TAGS');
-create procedure view ODS_BMK_TAGS as ODS_BMK_TAGS () (WAM_INST varchar, U_NAME varchar, ITEM_ID int, BD_TAG varchar);
+create procedure view ODS_BMK_TAGS as DB.DBA.ODS_BMK_TAGS () (WAM_INST varchar, U_NAME varchar, ITEM_ID int, BD_TAG varchar);
 
+-------------------------------------------------------------------------------
+--
 create procedure sioc.DBA.rdf_bookmark_view_str ()
 {
   return
@@ -403,24 +583,27 @@ create procedure sioc.DBA.rdf_bookmark_view_str ()
 	sioc:has_creator sioc:user_iri (U_NAME) ;
 	foaf:maker foaf:person_iri (U_NAME) ;
 	rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
-	sioc:has_container sioc:bmk_forum_iri (U_NAME, WAI_NAME) .
+    	  sioc:has_container sioc:bmk_forum_iri (U_NAME, WAI_NAME)
+    	.
 
         sioc:bmk_forum_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME)
-        sioc:container_of
-	sioc:bmk_post_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID) .
+        sioc:container_of	sioc:bmk_post_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID)
+      .
 
 	sioc:user_iri (DB.DBA.ODS_BMK_POSTS.U_NAME)
-	sioc:creator_of
-	sioc:bmk_post_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID) .
+     	  sioc:creator_of	sioc:bmk_post_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID)
+     	.
 
 	# Post tags
 	sioc:bmk_post_iri (DB.DBA.ODS_BMK_TAGS.U_NAME, DB.DBA.ODS_BMK_TAGS.WAM_INST, DB.DBA.ODS_BMK_TAGS.ITEM_ID)
-	sioc:topic
-	sioc:tag_iri (U_NAME, BD_TAG) .
+    	  sioc:topic sioc:tag_iri (U_NAME, BD_TAG)
+    	.
 
-	sioc:tag_iri (DB.DBA.ODS_BMK_TAGS.U_NAME, DB.DBA.ODS_BMK_TAGS.BD_TAG) a skos:Concept ;
+    	sioc:tag_iri (DB.DBA.ODS_BMK_TAGS.U_NAME, DB.DBA.ODS_BMK_TAGS.BD_TAG)
+    	  a skos:Concept ;
 	skos:prefLabel BD_TAG ;
-	skos:isSubjectOf sioc:bmk_post_iri (U_NAME, WAM_INST, ITEM_ID) .
+    	  skos:isSubjectOf sioc:bmk_post_iri (U_NAME, WAM_INST, ITEM_ID)
+    	.
 
         sioc:bmk_post_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME, DB.DBA.ODS_BMK_POSTS.BD_BOOKMARK_ID)
 	a atom:Entry ;
@@ -429,7 +612,8 @@ create procedure sioc.DBA.rdf_bookmark_view_str ()
 	atom:author foaf:person_iri (U_NAME) ;
         atom:published BD_CREATED ;
 	atom:updated BD_LAST_UPDATE ;
-	atom:content sioc:bmk_post_text_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID) .
+	      atom:content sioc:bmk_post_text_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID)
+	    .
 
         sioc:bmk_post_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME, DB.DBA.ODS_BMK_POSTS.BD_BOOKMARK_ID)
         a atom:Content ;
@@ -438,16 +622,15 @@ create procedure sioc.DBA.rdf_bookmark_view_str ()
 	atom:body BD_DESCRIPTION .
 
         sioc:bmk_forum_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME)
-	atom:contains
-	sioc:bmk_post_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID) .
-
+	      atom:contains sioc:bmk_post_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID)
+	    .
       '
       ;
 };
 
-grant select on ODS_BMK_POSTS to "SPARQL";
-grant select on ODS_BMK_TAGS to "SPARQL";
-
+grant select on ODS_BMK_POSTS to SPARQL_SELECT;
+grant select on ODS_BMK_TAGS to SPARQL_SELECT;
+grant execute on DB.DBA.ODS_BMK_TAGS to SPARQL_SELECT;
 
 -- END BOOKMARK
 ODS_RDF_VIEW_INIT ();

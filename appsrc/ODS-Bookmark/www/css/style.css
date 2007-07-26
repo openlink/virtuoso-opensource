@@ -135,6 +135,17 @@ a:hover
 	margin: 3px;
 }
 
+.left_container a
+{
+  text-decoration: none;
+}
+
+.left_container a:hover
+{
+  color: black;
+  background: #99b3c5;
+}
+
 .navigator_info
 {
   font-size: smaller;

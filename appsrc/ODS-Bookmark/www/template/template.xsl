@@ -229,11 +229,14 @@
         http (sprintf('<a href="%sBM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
         http (sprintf('<a href="%sBM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'ATOM', 'Atom'));
         http (sprintf('<a href="%sBM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF', 'RDF'));
+        http ('<div style="border-top: 1px solid #7f94a5;"></div>');
         http (sprintf('<a href="%sBM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'opml', 'OPML', 'OPML', 'OPML', 'OPML'));
         http (sprintf('<a href="%sBM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ocs', 'OCS', 'OCS', 'OCS', 'OCS'));
 
+        http ('<div style="border-top: 1px solid #7f94a5;"></div>');
         http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0" alt="FOAF export" /> FOAF</a>', BMK.WA.foaf_url (self.domain_id)));
 
+        http ('<div style="border-top: 1px solid #7f94a5;"></div>');
         S := sprintf ('http://%s/dataspace/%U/bookmark/%U/', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (self.domain_id), BMK.WA.domain_name (self.domain_id));
         http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
         http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));

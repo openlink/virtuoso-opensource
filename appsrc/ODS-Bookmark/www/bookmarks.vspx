@@ -1142,16 +1142,17 @@
                       <td valign="top">
                           <?vsp
                             if (lcase(BMK.WA.node_type((control as vspx_row_template).te_column_value('_NODE'))) = 'b') {
-                              declare id, target, uri, title varchar;
+                              declare id, target, uri, title, title2 varchar;
 
                               id := BMK.WA.node_id ((control as vspx_row_template).te_column_value('_NODE'));
                               uri := (control as vspx_row_template).te_column_value('_URI');
                               title := (control as vspx_row_template).te_column_value('_NAME');
+                              title2 := BMK.WA.rdfa_value (title, 'dc:title');
                               if (cast(get_keyword ('panes', self.settings, '0') as integer) = 0) {
                                 target := case when (cast(get_keyword ('bookmarkOpen', self.settings, '0') as integer) = 0) then '_blank' else '_self' end;
-                                http (sprintf('<a id="%d" href="%s" target="%s" onclick="javascript: openBookmark (\'%d\', \'%d\');" class="%s" title="Full window view of \'%s\'">%s</a>', id, uri, target, id, self.account_id, self.linkClass(node), title, title));
+                                http (sprintf('<a id="%d" href="%s" target="%s" onclick="javascript: openBookmark (\'%d\', \'%d\');" class="%s" title="Full window view of \'%s\'">%s</a>', id, uri, target, id, self.account_id, self.linkClass(node), title, title2));
                               } else {
-                                http (sprintf('<a id="%d" href="javascript: openIFrame (\'%d\', \'%d\', \'%U\');" class="%s" title="3-Pane view of \'%s\'">%s</a>', id, id, self.account_id, uri, self.linkClass(node), title, title));
+                                http (sprintf('<a id="%d" href="javascript: openIFrame (\'%d\', \'%d\', \'%U\');" class="%s" title="3-Pane view of \'%s\'">%s</a>', id, id, self.account_id, uri, self.linkClass(node), title, title2));
                               }
                             }
                           ?>
@@ -1201,6 +1202,9 @@
                               actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%s\');" title="Edit %s" class="link_ed">edit</a>', node, title);
 
                             if (not ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
+                              actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="#" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="link_ed">annotate</a>', self.sid, self.realm, id, self.domain_id, self.account_id, title);
+
+                            if (not ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
                               actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf('<a href="javascript: if (confirm (\'Are you sure that you want to delete this item?\')) vspxPost (\'pt_browse\', \'pt_action\', \'delete\', \'pt_value\', \'%s\'); " title="Delete %s" class="link_ed">delete</a>', node, title);
 
                             http (actions);
@@ -1222,12 +1226,12 @@
                       </td>
                       <v:template type="simple" enabled="-- equ(cast(get_keyword('column_#2', self.settings, '0') as integer), 1)">
                         <td align="right" nowrap="nowrap" valign="top">
-                          <v:label value="--BMK.WA.dt_value(((control.vc_parent).vc_parent as vspx_row_template).te_column_value('_CREATED'))" />
+                            <?vsp http (BMK.WA.rdfa_value (BMK.WA.dt_value((control.vc_parent as vspx_row_template).te_column_value('_CREATED')), 'dct:created')); ?>
                         </td>
                       </v:template>
                       <v:template type="simple" enabled="-- equ(cast(get_keyword('column_#3', self.settings, '1') as integer), 1)">
                         <td align="right" nowrap="nowrap" valign="top">
-                          <v:label value="--BMK.WA.dt_value(((control.vc_parent).vc_parent as vspx_row_template).te_column_value('_LAST_UPDATE'))" />
+                            <?vsp http (BMK.WA.rdfa_value (BMK.WA.dt_value((control.vc_parent as vspx_row_template).te_column_value('_LAST_UPDATE')), 'dct:modified')); ?>
                         </td>
                       </v:template>
                     <?vsp
@@ -1531,7 +1535,7 @@
 	                </tr>
 	                <tr>
 	                  <th>
-	                    <v:label for="i_tag" value="Comma Delimited Tags"/>
+	                    <v:label for="i_tag" value="Tags"/>
 	                  </th>
 	                  <td>
 	                    <v:text name="i_tag" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60"/>
@@ -1762,7 +1766,7 @@
               <table cellspacing="0">
                 <tr>
                   <th>
-                    <v:label for="t_tag" value="Comma Delimited Tags"/>
+                    <v:label for="t_tag" value="Tags"/>
                   </th>
                   <td>
                     <v:text name="t_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60"/>
@@ -2062,7 +2066,7 @@
               <table cellspacing="0">
                 <tr>
                   <th width="25%">
-                    <v:label for="b_name" value="Name"/>
+                    <v:label for="b_name" value="Name (*)"/>
                   </th>
                   <td>
                     <vm:if test="self.bMode <> 'Bookmark/View'">
@@ -2073,7 +2077,7 @@
                 </tr>
                 <tr>
                   <th>
-                    <v:label for="b_uri" value="Link"/>
+                    <v:label for="b_uri" value="Link (*)"/>
                   </th>
                   <td>
                     <vm:if test="self.bMode <> 'Bookmark/View'">
@@ -2107,7 +2111,7 @@
                 </tr>
                 <tr>
                   <th>
-                    <v:label for="b_grants" value="Share to user(s)" />
+                    <v:label for="b_grants" value="Share with" />
                   </th>
                   <td>
                     <vm:if test="self.bMode <> 'Bookmark/View'">
@@ -2126,7 +2130,7 @@
                     }
                   </script>
                   <th>
-                    <v:label for="b_tags" value="Comma Delimited Tags"/>
+                    <v:label for="b_tags" value="Tags"/>
                   </th>
                   <td>
                     <vm:if test="self.bMode <> 'Bookmark/View'">
@@ -2448,7 +2452,7 @@
                 </tr>
                 <tr>
                   <th>
-                    <v:label for="s_tags" value="Comma Delimited Tags" />
+                    <v:label for="s_tags" value="Tags" />
                   </th>
                   <td>
                     <v:text name="s_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>

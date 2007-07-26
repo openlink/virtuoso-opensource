@@ -33,9 +33,6 @@
       if (page_name = 'error.vspx')
         return;
 
-      if (BMK.WA.check_grants2 (self.account_role, page_name))
-        return;
-
       declare vh, lh, hf, ods_path any;
 
       vh := http_map_get ('vhost');
@@ -51,6 +48,9 @@
         self.vc_redirect(sprintf('%slogin.vspx?URL=%U', ods_path, sprintf('%s?URI=%s&TITLE=%V', HTTP_REQUESTED_URL(), get_keyword('URL', self.vc_page.vc_event.ve_params, ''), get_keyword('TITLE', self.vc_page.vc_event.ve_params, ''))));
         return;
       }
+
+      if (BMK.WA.check_grants2 (self.account_role, page_name))
+        return;
 
       if (self.account_role = 'expire') {
         http_request_status ('HTTP/1.1 302 Found');
