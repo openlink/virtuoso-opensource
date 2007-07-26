@@ -100,8 +100,8 @@ CLEANFILES = \
 C_FILES_SPARQL	= \
 	jso.c \
 	rdfbox.c \
-	rdfinf.c \
 	rdf_core.c \
+	rdfinf.c \
 	rdf_mapping_jso.c \
 	rdfxml_parser.c \
 	sparql2sql.c \
@@ -111,6 +111,7 @@ C_FILES_SPARQL	= \
 	sparql_p.c \
 	sparql_qm.c \
 	sparql_sff.c \
+	sparul2sql.c \
 	sql_code_sparql.c \
 	turtle_l.c \
 	turtle_p.c
@@ -494,6 +495,7 @@ SQL_FILES		= \
 	$(srcdir)/snapshot_repl.sql \
 	$(srcdir)/system.sql \
 	$(srcdir)/system2.sql \
+	$(srcdir)/rdf_net.sql \
 	$(srcdir)/soap.sql \
 	$(srcdir)/wsrp_ultim.xsl \
 	$(srcdir)/wsrp_resp.xsl \
