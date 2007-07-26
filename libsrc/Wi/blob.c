@@ -3326,7 +3326,9 @@ return_empty_string:
 caddr_t
 blob_to_string (lock_trx_t * lt, caddr_t bhp)
 {
+#ifdef DEBUG
   blob_handle_t * bh = (blob_handle_t *) bhp;
+#endif
   return blob_to_string_isp (lt, bhp);
 }
 
@@ -3334,7 +3336,9 @@ blob_to_string (lock_trx_t * lt, caddr_t bhp)
 dk_session_t *
 blob_to_string_output (lock_trx_t * lt, caddr_t bhp)
 {
+#ifdef DEBUG
   blob_handle_t * bh = (blob_handle_t *) bhp;
+#endif
   return blob_to_string_output_isp (lt, bhp);
 }
 

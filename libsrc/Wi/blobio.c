@@ -405,7 +405,7 @@ caddr_t
 bh_mp_copy (mem_pool_t * mp, caddr_t box)
 {
   blob_handle_t *bh = (blob_handle_t *) box;
-  blob_handle_t *bhcopy = mp_alloc_box (mp, sizeof (blob_handle_t), box_tag (box));
+  blob_handle_t *bhcopy = (blob_handle_t *)mp_alloc_box (mp, sizeof (blob_handle_t), box_tag (box));
   memcpy (bhcopy, bh, sizeof (*bhcopy));
   bhcopy->bh_pages = (dp_addr_t *) mp_box_copy (mp, (caddr_t) bhcopy->bh_pages);
   bh->bh_source_session = NULL;
@@ -500,7 +500,7 @@ xx_encrypt_passwd (char *thing, int thing_len, char *user_name)
   MD5Update (&ctx, (unsigned char *) the_pass, sizeof (the_pass));
   MD5Final (md5, &ctx);
   for (md5_inx = 0, thing_ptr = (unsigned char *) thing; thing_ptr - ((unsigned char *)thing) < thing_len;
-      thing_ptr++, md5_inx = (++md5_inx) % MD5_SIZE)
+      thing_ptr++, md5_inx = (md5_inx+1) % MD5_SIZE)
     *thing_ptr = *thing_ptr ^ md5[md5_inx];
 }
 
