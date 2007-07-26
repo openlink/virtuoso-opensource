@@ -468,28 +468,10 @@ iSPARQL.QBE = function () {
 	this.prefixes = [];
   
 	this.resetPrefixes = function(){
-		self.prefixes = [{"label":'atom', "uri":'http://atomowl.org/ontologies/atomrdf#'},
-						 {"label":'foaf', "uri":'http://xmlns.com/foaf/0.1/'},
-						 {"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
-						 {"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
-						 {"label":'sioc', "uri":'http://rdfs.org/sioc/ns#'},
-						 {"label":'ibis', "uri":'http://purl.org/ibis#'},
-						 {"label":'ical', "uri":'http://www.w3.org/2002/12/cal/icaltzd#'},
-						 {"label":'mo', "uri":'http://purl.org/ontology/mo/'},
-						 {"label":'annotation', "uri":'http://www.w3.org/2000/10/annotation-ns#'},
-						 {"label":'rdfs', "uri":'http://www.w3.org/2000/01/rdf-schema#'},
-						 {"label":'rdf', "uri":'http://www.w3.org/1999/02/22-rdf-syntax-ns#'},
-						 {"label":'dcterms', "uri":'http://purl.org/dc/terms/'},
-						 {"label":'dc', "uri":'http://purl.org/dc/elements/1.1/'},
-						 {"label":'cc', "uri":'http://web.resource.org/cc/'},
-						 {"label":'geo', "uri":'http://www.w3.org/2003/01/geo/wgs84_pos#'},
-						 {"label":'rss', "uri":'http://purl.org/rss/1.0/'},
-						 {"label":'skos', "uri":'http://www.w3.org/2004/02/skos/core#'},
-						 {"label":'vs', "uri":'http://www.w3.org/2003/06/sw-vocab-status/ns#'},
-						 {"label":'wot', "uri":'http://xmlns.com/wot/0.1/',"hidden":1},
-						 {"label":'xhtml', "uri":'http://www.w3.org/1999/xhtml',"hidden":1},
-						 {"label":'dataview', "uri":'http://www.w3.org/2003/g/data-view#',"hidden":1},
-						 {"label":'xsd', "uri":'http://www.w3.org/2001/XMLSchema#',"hidden":1}];
+		self.prefixes = [];
+		for (var i=0;i<window.defaultPrefixes.length;i++) {
+			self.prefixes.push(window.defaultPrefixes[i]);
+		}
 	}
 	self.resetPrefixes();
 
@@ -1397,7 +1379,8 @@ iSPARQL.QBE = function () {
 	var qbe_graph_label = OAT.Dom.create("label");
 	qbe_graph_label["htmlFor"] = "qbe_graph";
 
-	qbe_graph_label.innerHTML = 'Data Source URI';
+	qbe_graph_label.innerHTML = 'URI';
+	qbe_graph_label.title = 'RDF Data Source URI';
 
 	var qbe_datasource_cnt = OAT.Dom.create("sub");
 	qbe_datasource_cnt.id = "qbe_datasource_cnt";
@@ -1419,7 +1402,7 @@ iSPARQL.QBE = function () {
 	this.dataSourceNum = 1;
 
 	this.addDataSource = function(val,type) {
-	    if (!val){ alert('Empty Data Source!'); return false; }
+	    if (!val){ alert('Empty Information Source!'); return false; }
 	    
 	    var table = $('qbe_dataset_list');
 	    if (!table.tBodies.length) {

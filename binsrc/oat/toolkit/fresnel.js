@@ -23,6 +23,9 @@ OAT.Fresnel = function(optObj) {
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	this.callback = false;
 	this.ns = "http://www.w3.org/2004/09/fresnel#";
+	this.nsFormat = "http://www.w3.org/2004/09/fresnel#Format";
+	this.nsGroup = "http://www.w3.org/2004/09/fresnel#Group";
+	this.nsLens = "http://www.w3.org/2004/09/fresnel#Lens";
 	
 	self.data = {};
 	self.data.lenses = [];
@@ -37,9 +40,9 @@ OAT.Fresnel = function(optObj) {
 		var gns = self.ns+"group";
 		for (var i=0;i<self.store.data.all.length;i++) {
 			var item = self.store.data.all[i];
-			if (item.type == self.ns+"Lens") { self.data.lenses.push(item); }
-			if (item.type == self.ns+"Format") { self.data.formats.push(item); }
-			if (item.type == self.ns+"Group") { self.data.groups.push(item); }
+			if (item.type == self.nsLens) { self.data.lenses.push(item); }
+			if (item.type == self.nsFormat) { self.data.formats.push(item); }
+			if (item.type == self.nsGroup) { self.data.groups.push(item); }
 		}
 		
 		for (var i=0;i<self.data.lenses.length;i++) { /* each lens has shortcuts to groups */
@@ -80,46 +83,80 @@ OAT.Fresnel = function(optObj) {
 		var groups = [];
 		var format_class = false;
 		var format_instance = false;
+		var format = false;
 		
+		if (use) for (var i=0;i<use.length;i++) {
+			var item = use[i];
+			if  (item.type = self.nsFormat) { format = item; } else { groups.push(item); }
+		}
+
 		groups.append(lens.groups);
-		if (use) { groups.append(use); }
+		if (format) { return [groups,format]; }
 		
 		var classNS = self.ns+"classFormatDomain";
 		var instanceNS = self.ns+"instanceFormatDomain";
-		for (var i=0;i<groups.length;i++) {
+		
+		function checkFormat(f) {
+			if (classNS in f.preds && f.preds[classNS].find(item.type) != -1) { format_class = f; }
+			if (instanceNS in f.preds && f.preds[instanceNS].find(item.uri) != -1) { format_instance = f; }
+		}
+		
+		for (var i=0;i<groups.length;i++) { /* first check formats in groups */
 			var g = groups[i];
 			if (g.formats) for (var j=0;j<g.formats.length;j++) {
-				var f = g.formats[j];
-				
-				if (classNS in f.preds && f.preds[classNS].find(item.type) != -1) { format_class = f; }
-				if (instanceNS in f.preds && f.preds[instanceNS].find(item.uri) != -1) { format_instance = f; }
+				checkFormat(g.formats[j]);				
+			}
+		}
+		
+		if (!format_class && !format_instance) { /* try again in all formats */
+			for (var i=0;i<self.data.formats.length;i++) {
+				checkFormat(self.data.formats[i]);
 			}
 		}
 
-		var f = false;
-		if (format_class) { f = format_class; }
-		if (format_instance) { f = format_instance; }
+		if (format_class) { format = format_class; }
+		if (format_instance) { format = format_instance; }
 		
-		return [groups,f];
+		return [groups,format];
 	}
 	
 	this.findGFProperty = function(lens,property,use) {
 		var groups = [];
 		var format = false;
-		var format_instance = false;
+		
+		if (use) for (var i=0;i<use.length;i++) {
+			var item = use[i];
+			if  (item.type = self.nsFormat) { format = item; } else { groups.push(item); }
+		}
 		
 		groups.append(lens.groups);
-		if (use) { groups.append(use); }
+		if (format) { return [groups,format]; }
+		
+		var format_prop = false;
+		var format_all = false;
+		
 		var ns = self.ns+"propertyFormatDomain";
-		for (var i=0;i<groups.length;i++) {
+		function checkFormat(f) {
+			if (ns in f.preds) {
+				if (f.preds[ns].find(property) != -1) { format_prop = f; }
+				if (f.preds[ns].find(self.ns+"allProperties") != -1) { format_all = f; }
+			}	
+		}
+
+		for (var i=0;i<groups.length;i++) { /* first formats in groups */
 			var g = groups[i];
 			if (g.formats) for (var j=0;j<g.formats.length;j++) {
-				var f = g.formats[j];
-				if (ns in f.preds) {
-					if (f.preds[ns].find(property) != -1 || f.preds[ns].find(self.ns+"allProperties") != -1) { format = f; }
-				}	
+				checkFormat(g.formats[j]);
 			}
 		}
+		
+		if (!format) for (var i=0;i<self.data.formats.length;i++) { /* all remaining formats */
+			checkFormat(self.data.formats[i]);
+		}
+		
+		if (format_all) { format = format_all; }
+		if (format_prop) { format = format_prop; }
+		
 		return [groups,format];
 	}
 	
@@ -260,7 +297,7 @@ OAT.Fresnel = function(optObj) {
 		OAT.Dom.append([parent,htmlElements]);
 	}
 	
-	this.formatProperties = function(parent,item,lens,use1) { /* add (some?) properties to resource's box */
+	this.formatProperties = function(parent,item,lens) { /* add (some?) properties to resource's box */
 		var showProps = [];
 		var hideProps = [];
 		var usedProps = []; /* store used properties */
@@ -274,17 +311,13 @@ OAT.Fresnel = function(optObj) {
 			var pname = property;
 			var sublens = false;
 			var depth = -1;
-			var use2 = [];
+			var use = false;
 			if (typeof(property) == "object") { /* analyze object */
-				if (self.ns+"use" in property.preds) { use2 = property.preds[use]; }
+				if (self.ns+"use" in property.preds) { use = property.preds[use]; }
 				if (self.ns+"property" in property.preds) { pname = property.preds[self.ns+"property"][0]; }
 				if (self.ns+"sublens" in property.preds) { sublens = property.preds[self.ns+"sublens"][0]; }
 				if (self.ns+"depth" in property.preds) { depth = parseInt(property.preds[self.ns+"depth"][0]); }
 			}
-			var use = [];
-			if (use1) { use.append(use1); }
-			if (use2) { use.append(use2); }
-			if (!use.length) { use = false; }
 			if (pname == self.ns + "allProperties") { all = true; }
 			if (!(pname in item.preds)) { continue; }
 			if (depth != -1 && self.depth > depth) { continue; }
@@ -341,7 +374,7 @@ OAT.Fresnel = function(optObj) {
 		var lens = pair[1];
 		var box = OAT.Dom.create("div",{},"fresnel_resource");
 		var htmlElements = self.styleResource(parent,box,item,lens,use);
-		self.formatProperties(box,item,lens,use); /* add all these properties */
+		self.formatProperties(box,item,lens); /* add all these properties */
 		OAT.Dom.append([parent,htmlElements]);
 	}
 	

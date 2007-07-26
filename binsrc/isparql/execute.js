@@ -13,6 +13,30 @@
 	iSPARQL query executer & visualizer
 */
 
+window.defaultPrefixes = [{"label":'atom', "uri":'http://atomowl.org/ontologies/atomrdf#'},
+						 {"label":'foaf', "uri":'http://xmlns.com/foaf/0.1/'},
+						 {"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
+						 {"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
+						 {"label":'sioc', "uri":'http://rdfs.org/sioc/ns#'},
+						 {"label":'ibis', "uri":'http://purl.org/ibis#'},
+						 {"label":'ical', "uri":'http://www.w3.org/2002/12/cal/icaltzd#'},
+						 {"label":'mo', "uri":'http://purl.org/ontology/mo/'},
+						 {"label":'annotation', "uri":'http://www.w3.org/2000/10/annotation-ns#'},
+						 {"label":'rdfs', "uri":'http://www.w3.org/2000/01/rdf-schema#'},
+						 {"label":'rdf', "uri":'http://www.w3.org/1999/02/22-rdf-syntax-ns#'},
+						 {"label":'dcterms', "uri":'http://purl.org/dc/terms/'},
+						 {"label":'dc', "uri":'http://purl.org/dc/elements/1.1/'},
+						 {"label":'cc', "uri":'http://web.resource.org/cc/'},
+						 {"label":'geo', "uri":'http://www.w3.org/2003/01/geo/wgs84_pos#'},
+						 {"label":'rss', "uri":'http://purl.org/rss/1.0/'},
+						 {"label":'skos', "uri":'http://www.w3.org/2004/02/skos/core#'},
+						 {"label":'vs', "uri":'http://www.w3.org/2003/06/sw-vocab-status/ns#'},
+						 {"label":'wot', "uri":'http://xmlns.com/wot/0.1/',"hidden":1},
+						 {"label":'xhtml', "uri":'http://www.w3.org/1999/xhtml',"hidden":1},
+						 {"label":'dataview', "uri":'http://www.w3.org/2003/g/data-view#',"hidden":1},
+						 {"label":'xsd', "uri":'http://www.w3.org/2001/XMLSchema#',"hidden":1}];
+
+
 var QueryExec = function(optObj) {
 	var self = this;
 	
@@ -53,7 +77,7 @@ var QueryExec = function(optObj) {
 		var tabs2 = [self.dom.result,self.dom.request,self.dom.response,self.dom.query];
 		self.dom.tab = OAT.Dom.create("div",{padding:"5px",backgroundColor:"#fff"});
 		self.dom.ul = OAT.Dom.create("ul",{},"tabres");
-		self.tab = new OAT.Tab(self.dom.tab);
+		self.tab = new OAT.Tab(self.dom.tab,{dockMode:true,dockElement:self.dom.ul});
 		for (var i=0;i<tabs1.length;i++) {
 			var li = OAT.Dom.create("li");
 			self.dom.ul.appendChild(li);
@@ -195,22 +219,28 @@ var QueryExec = function(optObj) {
 		
 		for (var i=0;i<solutions.length;i++) {
 			var row = [];
-			for (var j=0;j<header.length;j++) { row.push(""); }
+			var simplified_row = [];
+			for (var j=0;j<header.length;j++) { 
+				row.push(""); 
+				simplified_row.push(""); 
+			}
 			
 			var sol = solutions[i];
+			if (!(ns_bind in sol.preds)) { continue; }
 			var bindings = sol.preds[ns_bind];
 			for (var j=0;j<bindings.length;j++) {
 				var val = bindings[j].preds[ns_val][0];
 				var v = bindings[j].preds[ns_var2][0];
 				var index = header.find(v);
 				row[index] = val;
+				simplified_row[index] = self.simplifyPrefix(val);;
 			}
-			grid.createRow(row);
+			grid.createRow(simplified_row);
 			for (var j=0;j<row.length;j++) {
 				var val = row[j];
 				if (val.match(/^http/i)) { /* a++ */
 					var a = OAT.Dom.create("a");
-					a.innerHTML = val;
+					a.innerHTML = simplified_row[j];
 					a.href = "#";
 					var v = grid.rows[grid.rows.length-1].cells[j].value;
 					OAT.Dom.clear(v);
@@ -267,12 +297,26 @@ var QueryExec = function(optObj) {
 		self.refreshNav();
 	}
 	
+	this.simplifyPrefix = function(str) {
+		var plist = window.defaultPrefixes;
+		var s = str;
+		if (!s) { return; }
+		if (s.charAt(0) == "<") { s = s.substring(1,s.length-1); }
+		
+		for (var i=0;i<plist.length;i++) {
+			var prefix = plist[i];
+			if (s.substring(0,prefix.uri.length) == prefix.uri) {
+				return prefix.label + ":" + s.substring(prefix.uri.length); 
+			}
+		}
+		return s;
+	}
+	
 	this.processLink = function(domNode,href) {
 		var dereferenceRef = function() {
 			var cache = self.cache[self.cacheIndex];
-			var q = "SELECT ?s, ?p, ?o \n"+
-					"FROM <"+href+">\n"+
-					"WHERE {?s ?p ?o}";
+			var q = "SELECT ?p, ?o \n"+
+					"WHERE {<"+href+"> ?p ?o}";
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
 			o.query = q;

@@ -308,6 +308,22 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 OAT.RDFTabs.navigator = function(parent,optObj) {
 	var self = this;
 	OAT.RDFTabs.parent(self);
+	
+	this.plurals = {
+		"Person":"People",
+		"Point":"Points",
+		"Class":"Classes",
+		"Concept":"Concepts",
+		"item":"Items",
+		"Post":"Posts",
+		"Link":"Links",
+		"Entry":"Entries",
+		"User":"Users",
+		"Image":"Images",
+		"MessageHeader":"MessageHeaders",
+		"HeaderElement":"HeaderElements",
+		"channel":"Channels"
+	}
 		
 	this.options = {
 		limit:5
@@ -397,7 +413,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		var content = false;
 		if (typeof(value) == "object") { /* resource */
 			content = OAT.Dom.create("a");
-			content.href = "#";
+			content.href = "javascript:void(0)";
 			content.innerHTML = self.parent.getTitle(value);
 			self.attach(content,value); 
 		} else { /* literal */
@@ -407,7 +423,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 				content.src = value;
 			} else if (type == 1) { /* dereferencable link */
 				content = OAT.Dom.create("a");
-				content.href = "#";
+				content.href = "javascript:void(0)";
 				content.innerHTML = value;
 				self.dattach(content,value);
 			} else { /* text */
@@ -428,7 +444,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 						} 
 					} /* for all resources */
 					if (!done) { self.dattach(anchor,anchor.href); }
-					OAT.Dom.changeHref(anchor,"#");
+					OAT.Dom.changeHref(anchor,"javascript:void(0)");
 				} /* for all nested anchors */
 			}
 		} /* if literal */
@@ -489,7 +505,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		}
 	}
 	
-	this.drawSpotlightHeading = function(tr,label,arr) {
+	this.drawSpotlightHeading = function(tr,label,arr,cnt) {
 		tr._rows = arr;
 		self.gd.addTarget(tr);
 		self.gd.addSource(tr,self.gdProcess,self.dropReference(tr,arr));
@@ -502,7 +518,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		tr.appendChild(td);
 		var td = OAT.Dom.create("td");
 		td.colSpan = 3;
-		td.innerHTML = self.parent.simplify(label);
+		var simple = self.parent.simplify(label);
+		if (cnt > 1 && simple in self.plurals) { simple = self.plurals[simple]; }
+		td.innerHTML = simple;
 		tr.appendChild(td);
 		OAT.Event.attach(arrow,"click",function() {
 			state = (state+1) % 2;
@@ -519,7 +537,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		var count = Math.min(data.length,self.options.limit);
 		var tr = OAT.Dom.create("tr",{},"rdf_nav_header");
 		var trset = [];
-		self.drawSpotlightHeading(tr,label,trset);
+		self.drawSpotlightHeading(tr,label,trset,data.length);
 		table.appendChild(tr);
 		var createRow = function(item) {
 			var tr = OAT.Dom.create("tr");
@@ -622,7 +640,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		self.nav.help.title = "List of resources";
 		self.nav.next.title = "Forward";
 		self.nav.last.title = "Last";
-		OAT.Dom.append([self.topDiv,self.nav.first,self.nav.prev,self.nav.help,self.nav.next,self.nav.last]);
+		OAT.Dom.append([self.topDiv,self.nav.help,self.nav.first,self.nav.prev,self.nav.next,self.nav.last]);
 		OAT.Dom.attach(self.nav.first,"click",function(){
 			if (self.historyIndex > 0) { self.navigate(0); }
 		});
@@ -687,7 +705,7 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		
 		function assign(a,page) {
 			a.setAttribute("title","Jump to page "+(page+1));
-			a.setAttribute("href","#");
+			a.setAttribute("href","javascript:void(0)");
 			OAT.Dom.attach(a,"click",function() {
 				self.currentPage = page;
 				self.redraw();
@@ -1193,9 +1211,11 @@ OAT.RDFTabs.tagcloud = function(parent,optObj) {
 			}
 		} /* for all items */
 		self.tc.draw();
+		var all = [];
 		var links = self.elm.getElementsByTagName("a");
-		for (var i=0;i<links.length;i++) {
-			var link = links[i];
+		for (var i=0;i<links.length;i++) { all.push(links[i]); }
+		for (var i=0;i<all.length;i++) {
+			var link = all[i];
 			self.parent.processLink(link,link.href);
 		}
 	} /* redraw */

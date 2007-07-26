@@ -214,16 +214,17 @@ OAT.Dock = function(div,numColumns) {
 		var callback = function(target,x,y) { self.move(w.div,target); }
 		this.gd.addSource(w.header,postProcess,callback);
 		this.gd.addTarget(w.div);
+		return w;
 	}
 	
 	this.removeObject = function(win) {
+		OAT.MSG.send(self,OAT.MSG.DOCK_REMOVE,win);
 		var index = self.windows.find(win);
 		self.windows.splice(index,1);
 		
 		OAT.Dom.unlink(win.div);
-		var w = new OAT.DockWindow(content,options,self);
-		self.gd.removeSource(win.header);
-		self.gd.removeTarget(win.div);
+		self.gd.delSource(win.header);
+		self.gd.delTarget(win.div);
 	}
 
 	OAT.Dom.attach(document,"mousemove",self.check);

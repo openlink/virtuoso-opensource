@@ -286,9 +286,11 @@ function init() {
 	window.qbe = new iSPARQL.QBE();
 	window.adv = new iSPARQL.Advanced();
 	var execCB = function(query) {
+		var orig = tab.selectedIndex;
 		if (qbe.QueryGenerate() ==	query) { return; }
 		tab.go(0);
 		qbe.loadFromString(query);
+		tab.go(orig);
 	}
 	window.qe = new QueryExec({div:"page_results",executeCallback:execCB});
 

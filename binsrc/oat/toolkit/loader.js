@@ -788,8 +788,9 @@ OAT.MSG = { /* messages */
 	GD_ABORT:12,
 	GD_END:13,
 	DOCK_DRAG:14,
-	SLB_OPENED:15,
-	SLB_CLOSED:16,
+	DOCK_REMOVE:15,
+	SLB_OPENED:16,
+	SLB_CLOSED:17,
 	registry:[],
 	attach:function(sender,msg,callback) {
 		if (!sender) { return; }

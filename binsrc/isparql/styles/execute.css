@@ -94,6 +94,10 @@ ul.tabres {
 /*  margin-right:20px; */
 }
 
+ul.tab_signal {
+  background-color: #999;
+}
+
 ul.tabres li.tab {
   margin: 3px;
   padding: 0px 3px;

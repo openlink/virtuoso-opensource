@@ -109,7 +109,7 @@ OAT.RDFBrowser = function(div,optObj) {
 				a.innerHTML = item.label;
 				a.href = item.uri;
 				var r = OAT.Dom.create("a");
-				r.href = "#";
+				r.href = "javascript:void(0)";
 				r.innerHTML = "Remove";
 				removeRef(r,i);
 				OAT.Dom.append([d,a,OAT.Dom.text(" - "),r,OAT.Dom.create("br")]);
@@ -178,7 +178,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			
 			
 			var remove = OAT.Dom.create("a");
-			remove.href = "#";
+			remove.href = "javascript:void(0)";
 			remove.innerHTML = "Remove from storage";
 			removeRef(remove,item.href);
 			checkRef(ch,item.href);
@@ -235,7 +235,8 @@ OAT.RDFBrowser = function(div,optObj) {
 		self.btnStart = self.throbberReplace(self.store.div,false);
 		
 		var h = OAT.Dom.create("h3");
-		h.innerHTML = "Data Source URI";
+		h.innerHTML = "URI";
+		h.title = "RDF Data Source URI";
 		OAT.Dom.append([self.cacheDiv,h,url,btn1,OAT.Dom.text(" "),self.store.div]);
 		OAT.Dom.attach(url,"keypress",function(event) {
 			if (event.keyCode == 13) { self.store.loadFromInput(); }

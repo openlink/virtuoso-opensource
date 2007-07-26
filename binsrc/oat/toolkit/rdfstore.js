@@ -358,7 +358,10 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 		var preds = item.preds;
 		for (var p in preds) {
 			var simple = self.simplify(p);
-			if (props.find(simple) != -1) { return preds[p][0]; }
+			if (props.find(simple) != -1) { 
+				var x = preds[p][0];
+				if (typeof(x) != "object") { return x; }
+			}
 		}
 		return result;
 	}
