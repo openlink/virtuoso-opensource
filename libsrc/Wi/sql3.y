@@ -1628,22 +1628,23 @@ insert_atom
 
 
 sql_option
-	: ORDER { $$ = CONS (OPT_ORDER, CONS (1, NULL)); }
-	| QUIETCAST_L { $$ = CONS (OPT_SPARQL, CONS (1, NULL)); }
-	| HASH { $$ = CONS (OPT_JOIN, CONS (OPT_HASH, NULL)); }
-	| INTERSECT { $$ = CONS (OPT_JOIN, CONS (OPT_INTERSECT, NULL)); }
-	| LOOP { $$ = CONS (OPT_JOIN, CONS (OPT_LOOP, NULL)); }
-	| LOOP EXISTS { $$ = CONS (OPT_SUBQ_LOOP, CONS (SUBQ_LOOP, NULL)); }
-	| DO NOT LOOP EXISTS { $$ = CONS (OPT_SUBQ_LOOP, CONS (SUBQ_NO_LOOP, NULL)); }
-	| INDEX identifier { $$ = CONS (OPT_INDEX, CONS ($2, NULL)); }
-	| INDEX PRIMARY KEY { $$ = CONS (OPT_INDEX, CONS (t_box_string ("PRIMARY KEY"), NULL)); }
-	| INDEX TEXT_L KEY { $$ = CONS (OPT_INDEX, CONS (t_box_string ("TEXT KEY"), NULL)); }
-	| WITH STRING { $$ = CONS (OPT_RDF_INFERENCE, CONS ($2, NULL)); }
+	: ORDER { $$ = t_CONS (OPT_ORDER, t_CONS (1, NULL)); }
+	| QUIETCAST_L { $$ = t_CONS (OPT_SPARQL, t_CONS (1, NULL)); }
+	| SAME_AS { $$ = t_CONS (OPT_SAME_AS, t_CONS (1, NULL)); }
+	| HASH { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_HASH, NULL)); }
+	| INTERSECT { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_INTERSECT, NULL)); }
+	| LOOP { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_LOOP, NULL)); }
+	| LOOP EXISTS { $$ = t_CONS (OPT_SUBQ_LOOP, t_CONS (SUBQ_LOOP, NULL)); }
+	| DO NOT LOOP EXISTS { $$ = t_CONS (OPT_SUBQ_LOOP, t_CONS (SUBQ_NO_LOOP, NULL)); }
+	| INDEX identifier { $$ = t_CONS (OPT_INDEX, t_CONS ($2, NULL)); }
+	| INDEX PRIMARY KEY { $$ = t_CONS (OPT_INDEX, t_CONS (t_box_string ("PRIMARY KEY"), NULL)); }
+	| INDEX TEXT_L KEY { $$ = t_CONS (OPT_INDEX, t_CONS (t_box_string ("TEXT KEY"), NULL)); }
+	| WITH STRING { $$ = t_CONS (OPT_RDF_INFERENCE, t_CONS ($2, NULL)); }
 	| NAME INTNUM {
 	  if (!stricmp ($1, "vacuum"))
-	    $$ = CONS (OPT_VACUUM, CONS ($2, NULL));
+	    $$ = t_CONS (OPT_VACUUM, t_CONS ($2, NULL));
 	  else if (!stricmp ($1, "RANDOM"))
-	    $$ = CONS (OPT_RANDOM_FETCH, CONS ($2, NULL));
+	    $$ = t_CONS (OPT_RANDOM_FETCH, t_CONS ($2, NULL));
 	  else
 	    $$ = NULL;
 	}
@@ -1906,7 +1907,7 @@ query_no_from_spec
 breakup_term 
 : '(' select_scalar_exp_commalist  ')' { $$ = dk_set_conc ($2, t_CONS (t_list (5, BOP_AS, (ptrlong) 1, NULL, t_box_string ("__brkup_cond"), NULL), NULL)); }
 	| '(' select_scalar_exp_commalist WHERE search_condition ')' {
-	  ST * cond = (ST*)t_list (2, SEARCHED_CASE, t_list (4, $4, (caddr_t)1,  t_list (2, QUOTE, NULL), 0));
+	  ST * cond = (ST*) t_list (5, BOP_AS, t_list (2, SEARCHED_CASE, t_list (4, $4, (caddr_t)1,  t_list (2, QUOTE, NULL), 0)), NULL, t_box_string ("__brkup_cond"), NULL);
 	  $$ = dk_set_conc ($2, t_CONS (cond, NULL)); }
 	;
 
@@ -1917,7 +1918,7 @@ breakup_list
 
 selection
 	: select_scalar_exp_commalist	{ $$ = (ST *) t_list_to_array ($1); }
-| BREAKUP breakup_list { $$ = t_list_to_array (t_CONS (t_list (1, SELECT_BREAKUP), $2)); }
+| BREAKUP breakup_list { $$ = (ST *) t_list_to_array (t_CONS (t_list (1, SELECT_BREAKUP), $2)); }
 	;
 
 non_final_table_exp
