@@ -77,7 +77,8 @@
 		  URR_TARGET_EXPR,
 		  URR_ACCEPT_PATTERN,
 		  URR_NO_CONTINUATION,
-		  URR_HTTP_REDIRECT
+		  URR_HTTP_REDIRECT,
+		  URR_HTTP_HEADERS
 		  from DB.DBA.URL_REWRITE_RULE, DB.DBA.URL_REWRITE_RULE_LIST where URR_RULE = URRL_MEMBER
 		  and URRL_LIST = :self.rulelist
 		  order by URRL_INX "
@@ -138,6 +139,7 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
   self.pl1.ufl_value := coalesce (control.te_rowset[6], '');
   self.typ1.ufl_value := cast (control.te_rowset[1] as varchar);
   self.ah1.ufl_value := control.te_rowset[7];
+  self.hh1.ufl_value := cast (control.te_rowset[10] as varchar);
   self.hc1.ufl_value := cast (control.te_rowset[9] as varchar);
   self.rc1.ufl_value := cast (control.te_rowset[8] as varchar);
   self.hc1.vs_set_selected ();
@@ -228,8 +230,13 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
 		      <v:item name="301" value="301"/>
 		      <v:item name="302" value="302"/>
 		      <v:item name="303" value="303"/>
+		      <v:item name="406" value="406"/>
 		  </v:select-list>
 		  <br />
+
+		  <label for="hh1">HTTP Headers</label>
+		  <v:textarea name="hh1" value="" xhtml_rows="5" xhtml_cols="100" xhtml_id="hh1" error-glyph="*">
+		  </v:textarea><br />
 
 		  <label for="rc1">Rule condition</label>
 		  <v:select-list name="rc1" value="0" xhtml_id="rc1" error-glyph="*">
@@ -253,6 +260,7 @@ self.hc1.ufl_value := 0;
 self.rc1.ufl_value := 0;
 self.hc1.vs_set_selected ();
 self.rc1.vs_set_selected ();
+self.hh1.ufl_value := '';
 		      </v:on-post>
 		  </v:button>
 		  <v:button name="save1" value="--case when self.edit_item is null then 'Add' else 'Update' end" action="simple">
@@ -261,7 +269,7 @@ declare rule_name, tgt varchar;
 declare i_par, o_par, rules any;
 declare typ, upd_vd int;
 declare h_opts any;
-declare ah_pattern varchar;
+declare ah_pattern, hh varchar;
 declare rc_code, rule_code int;
 
 if (not self.vc_is_valid)
@@ -276,6 +284,7 @@ declare exit handler for sqlstate '23000'
   return;
 };
 
+hh := trim (self.hh1.ufl_value);
 self.spat1.ufl_value := trim (self.spat1.ufl_value);
 self.dest1.ufl_value := trim (self.dest1.ufl_value);
 self.pl1.ufl_value   := trim (self.pl1.ufl_value);
@@ -327,14 +336,14 @@ if (0 = length (self.rulelist))
   }
 
 tgt := y_reg_to_sprintf (self.dest1.ufl_value, i_par, o_par);
-dbg_obj_print (tgt);
+--dbg_obj_print (tgt);
 
 if (typ = 1)
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE (rule_name, 1, self.spat1.ufl_value, i_par, length (i_par), tgt, o_par, self.pl1.ufl_value,
-	ah_pattern, rule_code, rc_code);
+	ah_pattern, rule_code, rc_code, hh);
 else
   DB.DBA.URLREWRITE_CREATE_SPRINTF_RULE (rule_name, 1, self.spat1.ufl_value, i_par, length (i_par), tgt, o_par, self.pl1.ufl_value,
-        ah_pattern, rule_code, rc_code);
+        ah_pattern, rule_code, rc_code, hh);
 
 
 DB.DBA.URLREWRITE_CREATE_RULELIST (self.rulelist, 1, rules);
@@ -362,6 +371,7 @@ self.spat1.ufl_value := '';
 self.dest1.ufl_value := '';
 self.pl1.ufl_value := '';
 self.ah1.ufl_value := '';
+self.hh1.ufl_value := '';
 self.hc1.ufl_value := 0;
 self.rc1.ufl_value := 0;
 self.hc1.vs_set_selected ();
