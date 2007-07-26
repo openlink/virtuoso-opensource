@@ -1784,12 +1784,27 @@ itc_set_xper_col (it_cursor_t * row_itc, db_buf_t col, xper_entity_t *data, dp_a
   return 0;
 }
 
+
+void
+blob_str_head_len (int32 str_head_len, buffer_desc_t * first, blob_handle_t * target_bh)
+{
+  if (-1 == str_head_len)
+    return;
+  first->bd_buffer[DP_DATA] = DV_LONG_STRING;
+  LONG_SET_NA (first->bd_buffer + DP_DATA + 1, str_head_len);
+  LONG_SET (first->bd_buffer + DP_BLOB_LEN, 5);
+  target_bh->bh_diskbytes = 5;
+  target_bh->bh_length = 5;
+}
+
+
 int
 itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
     caddr_t data, blob_layout_t * replaced_version,
     int log_as_insert, sql_type_t * col_sqt)
 {
   dtp_t col_dtp = col_sqt->sqt_dtp;
+  int32 str_head_len = -1;
   blob_handle_t *volatile target_bh = NULL, * volatile source_bh = NULL;
   dk_set_t volatile pages = NULL;
   int n_pages = 0, page_inx;
@@ -1808,6 +1823,24 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
 
   int rc;
   ASSERT_OUTSIDE_MAPS (row_itc);
+  if (col_sqt->sqt_class && !IS_BLOB_HANDLE_DTP (dtp))
+    {
+      if (DV_STRING_SESSION == dtp)
+	{
+	  str_head_len = strses_length ((dk_session_t*) data);
+	  goto maybe_rfwd;
+	}
+      strses = strses_allocate ();
+      if (DV_OBJECT == dtp)
+	udt_serialize (data, strses);
+      else 
+	print_object (data, strses, NULL, NULL);
+      source_bh = bh_alloc (DV_BLOB_HANDLE);
+      source_bh->bh_string = (caddr_t) strses;
+      target_bh = bh_alloc (DV_BLOB_HANDLE);
+      goto bh_is_ready;		/* see below */
+    }
+ maybe_rfwd:
   if (data && !IS_BOX_POINTER (data))
     {
       rc = LTE_SQL_ERROR;
@@ -1906,15 +1939,6 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
       goto bh_is_ready;		/* see below */
     }
 #endif
-  if (col_sqt->sqt_class)
-    {
-      strses = strses_allocate ();
-      udt_serialize (data, strses);
-      source_bh = bh_alloc (DV_BLOB_HANDLE);
-      source_bh->bh_string = (caddr_t) strses;
-      target_bh = bh_alloc (DV_BLOB_HANDLE);
-      goto bh_is_ready;		/* see below */
-    }
   source_bh = bh_alloc ((dtp_t)DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP (col_dtp));
 	/*(IS_WIDE_STRING_DTP (dtp) ? DV_BLOB_WIDE_HANDLE : DV_BLOB_HANDLE));*/
   source_bh->bh_string = data;
@@ -1962,6 +1986,7 @@ bh_is_ready:
     pos = 0;
     target_bh->bh_diskbytes = 0;
     target_bh->bh_length = 0;
+    blob_str_head_len (str_head_len, first_buf, target_bh);
     for (;;)
       {
 	ITC_LEAVE_MAPS (row_itc);
