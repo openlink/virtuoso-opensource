@@ -79,7 +79,6 @@ libutil_la_SOURCES = \
 	strxpect.c \
 	terminat.c \
 	usage.c \
-	utalloc.c \
 	uuid.c \
 	wcslen.c \
 	virt_mbrtowc.c \
