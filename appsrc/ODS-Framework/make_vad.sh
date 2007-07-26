@@ -233,6 +233,9 @@ directory_init() {
   mkdir vad/data/wa/tmpl
   mkdir vad/data/wa/templates
   mkdir vad/data/wa/templates/default
+  mkdir vad/data/wa/users
+  mkdir vad/data/wa/users/css
+  mkdir vad/data/wa/users/js
   cp *.vspx vad/data/wa
   cp *.vsp vad/data/wa
   cp *.xsl vad/data/wa

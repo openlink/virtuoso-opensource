@@ -76,6 +76,12 @@ EXTRA_DIST = \
 	tmpl/WS_REJECT_BY_USER_TEMPLATE \
 	tmpl/WS_TERM_BY_OWNER_TEMPLATE \
 	tmpl/WS_TERM_BY_USER_TEMPLATE \
+	users/*.html \
+	users/*.php \
+	users/*.sql \
+	users/*.vsp \
+	users/css/*.css \
+	users/js/*.js \
 	vad_version \
 	version.base \
 	version.curr
