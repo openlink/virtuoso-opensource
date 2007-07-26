@@ -603,9 +603,11 @@ itc_make_rl (it_cursor_t * itc)
 #endif
   page_lock_t *pl = itc->itc_pl;
   row_lock_t *rl = rl_allocate ();
+#if 0 /* Disabled according to Orri's instruction 2007-JUL-19 */ 
 #ifdef DEBUG
   if (cli && cli->cli_autocommit && itc->itc_ltrx == cli->cli_trx)
     GPF_T1 ("row lock on the cli_trx");
+#endif
 #endif
   if (pl->pl_page != itc->itc_page)
     GPF_T1 ("itc has itc_pl of a different page");
