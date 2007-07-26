@@ -1298,15 +1298,6 @@ re_search:
 }
 
 
-caddr_t 
-box_n_chars (char * str, int len)
-{
-  caddr_t res = dk_alloc_box (len + 1, DV_STRING);
-  memcpy (res, str, len);
-  res[len] = 0;
-  return res;
-}
-
 int 
 iri_split (char * iri, caddr_t * pref, caddr_t * name)
 {
@@ -1337,8 +1328,8 @@ iri_split (char * iri, caddr_t * pref, caddr_t * name)
     }
   else 
     local_start++;
-  *pref = box_n_chars (iri, local_start - iri);
-  *name = box_n_chars (local_start - 4, 4 + strlen (local_start));
+  *pref = box_dv_short_nchars (iri, local_start - iri);
+  *name = box_dv_short_nchars (local_start - 4, 4 + strlen (local_start));
   return 1;
 }
 
@@ -1366,6 +1357,7 @@ key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
       if (!pref_id)
 	{
 	  dk_free_box (pref_copy);
+	  dk_free_box (local);
 	  return NULL;
 	}
       pref_id_no = unbox (pref_id);

@@ -633,8 +633,8 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           dk_set_t *opts_ptr = &(sparp->sparp_env->spare_common_sponge_options);
           if (0 < dk_set_position_of_string (opts_ptr[0], param))
             spar_error (sparp, "'define %.30s' is used more than once", param);
-          dk_set_push (opts_ptr, t_box_dv_short_string (value));
-          dk_set_push (opts_ptr, t_box_dv_uname_string (param));
+          t_set_push (opts_ptr, t_box_dv_short_string (value));
+          t_set_push (opts_ptr, t_box_dv_uname_string (param));
           return;
         }
     }
@@ -2295,10 +2295,10 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   ssg_make_whole_sql_text (&ssg);
   if (NULL != sparqre->sparqre_catched_error)
         {
-      /* ssg_free (ssg); */
+      strses_free (ssg.ssg_out);
+      ssg.ssg_out = NULL;
       return;
     }
-  /* ssg_free (ssg); */
   session_buffered_write (ssg.ssg_out, sparqre->sparqre_tail_sql_text, strlen (sparqre->sparqre_tail_sql_text));
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* First terminator */
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* Second terminator. Most of Lex-es need two! */
@@ -2308,7 +2308,6 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
 #endif
   strses_free (ssg.ssg_out);
   ssg.ssg_out = NULL;
-  /* ssg_free (ssg); */
   sparqre->sparqre_compiled_text = t_box_copy (res);
   dk_free_box (res);
 }
@@ -2369,11 +2368,11 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ssg_make_whole_sql_text (&ssg);
   if (NULL != sparqre.sparqre_catched_error)
     {
-      /* ssg_free (ssg); */
+      strses_free (ssg.ssg_out);
+      ssg.ssg_out = NULL;
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
-  /* ssg_free (ssg); */
   MP_DONE ();
   return (caddr_t)(ssg.ssg_out);
 }
