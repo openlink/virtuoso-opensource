@@ -193,6 +193,7 @@
     <v:variable name="official_host_label" type="varchar" default="null" persist="temp" />
     <v:variable name="openid_sig" type="varchar" default="null" persist="temp" param-name="oid_sig"/>
     <v:variable name="openid_key" type="varchar" default="null" persist="temp" param-name="oid_key"/>
+    <v:variable name="blog_iri" type="varchar" default="null" persist="temp" />
 
     <!-- eRDF data -->
 
@@ -446,6 +447,7 @@
 	-- initial eRDF values
 	self.e_author := self.owner;
 	self.e_title := self.title;
+	self.blog_iri := sprintf ('http://%s/dataspace/%U/weblog/%U', self.chost, self.owner_name, self.inst_name);
 
 	{
 	  declare exit handler for not found;
@@ -504,7 +506,7 @@
         if (self.opts is null)
 	  self.opts := vector ();
 
-    self.tb_enable := get_keyword('EnableTrackback', self.opts, 1);
+    self.tb_enable := get_keyword('EnableTrackback', self.opts, 0);
 
     if (self.custom_rss is null)
     self.custom_rss := get_keyword ('AddonRSS', self.opts,
@@ -621,6 +623,13 @@ else if (length (self.catid))
  if (self.official_host_label = '*ini*')
    self.official_host_label := sys_stat ('st_host_name') || ':' || server_http_port ();
 
+ self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');
+ self.vc_add_attribute ('xmlns:dc', 'http://purl.org/dc/elements/1.1/');
+ self.vc_add_attribute ('xmlns:dct', 'http://purl.org/dc/terms/');
+ self.vc_add_attribute ('xmlns:rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+ self.vc_add_attribute ('xmlns:rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
+ self.vc_add_attribute ('xmlns:sioct', 'http://rdfs.org/sioc/types#');
+ self.vc_add_attribute ('xmlns:sioc', 'http://rdfs.org/sioc/ns#');
       ]]>
       <xsl:if test="//vm:keep-variable">
       self.restore_vars ();
@@ -2044,7 +2053,7 @@ window.onload = function (e)
 
   <xsl:template match="vm:post-link">
       <xsl:call-template name="post-parts-check"/>
-      <v:url name="permalink_url" value="{@title}" format="%s" url="--concat('index.vspx?page=', self.page, '&amp;amp;id=', t_post_id)" render-only="1" />
+      <v:url name="permalink_url" value="{@title}" format="%s" url="--concat(self.blog_iri, '/', t_post_id)" render-only="1" />
   </xsl:template>
 
   <xsl:template match="vm:post-delicious-link">
@@ -2091,7 +2100,7 @@ window.onload = function (e)
 
   <xsl:template match="vm:post-date">
       <xsl:call-template name="post-parts-check"/>
-      <span class="dc-date">
+      <span class="dc-date" property="dct:created">
       <v:label name="label6" value="--BLOG..blog_date_fmt ((control.vc_parent as vspx_row_template).te_rowset[1], self.tz)" format="%s" render-only="1"/>
       </span>
   </xsl:template>
@@ -2103,17 +2112,19 @@ window.onload = function (e)
 			        if (datediff('second', control.te_rowset[1], control.te_rowset[7]))
 			          { ?>
 			    <xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$val"/>);</xsl:processing-instruction>
+			    <span property="dct:modified">
 			    <v:label name="label6_mod"
 				value="--BLOG..blog_date_fmt ((control.vc_parent as vspx_row_template).te_rowset[7], self.tz)"
 				format='<span class="modified-date">%s</span>'
 				render-only="1"/>
+			    </span>
 			    <xsl:call-template name="apply-or-return" />
 			    <?vsp } ?>
   </xsl:template>
 
   <xsl:template match="vm:post-author">
       <xsl:call-template name="post-parts-check"/>
-      <span class="dc-creator">
+      <span class="dc-creator" property="dc:creator">
 	<?vsp
 	     {
 		    declare title_val any;
@@ -2221,7 +2232,7 @@ window.onload = function (e)
 
   <xsl:template match="vm:post-title">
       <xsl:call-template name="post-parts-check"/>
-      <span class="dc-title">
+      <span class="dc-title" property="dc:title">
       <?vsp
         http (control.te_rowset[9]);
       ?>
@@ -2293,7 +2304,7 @@ window.onload = function (e)
       { ?><xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$delm"/>);</xsl:processing-instruction><?vsp
       }
       ?>
-      <span class="dc-subject">
+      <span class="dc-subject" property="dc:subject">
       <a href="index.vspx?cat=<?vsp http (MTC_ID); ?><?V self.login_pars ?>" rel="category"><?vsp http (MTC_NAME); ?></a>
       </span>
       <?vsp
@@ -2326,7 +2337,7 @@ window.onload = function (e)
       else
       { ?><xsl:processing-instruction name="vsp">http_value (<xsl:value-of select="$delm"/>);</xsl:processing-instruction><?vsp }
   ?>
-      <span class="dc-subject">
+      <span class="dc-subject" property="dc:subject">
 	  <a href="<?V this_url ?>?tag=<?vsp http (BT_TAG); ?><?V self.login_pars ?>" rel="tag"><?vsp http (BT_TAG); ?></a>
       </span>
       <!--a href="http://technorati.com/tag/<?vsp http (BT_TAG); ?>" rel="tag"><?vsp http (BT_TAG); ?></a-->
@@ -3074,7 +3085,7 @@ window.onload = function (e)
           <xsl:when test="$test = 'fish'"> get_keyword('ShowFish', self.opts)</xsl:when>
           <xsl:when test="$test = 'google'"> get_keyword('ShowGoogle', self.opts)</xsl:when>
           <xsl:when test="$test = 'tagid'"> self.tagid is not null</xsl:when>
-          <xsl:when test="$test = 'trackbacks'">get_keyword ('EnableTrackback', self.opts, 1)</xsl:when>
+          <xsl:when test="$test = 'trackbacks'">get_keyword ('EnableTrackback', self.opts, 0)</xsl:when>
           <xsl:when test="$test = 'referral'">get_keyword ('EnableReferral', self.opts, 1)</xsl:when>
           <xsl:when test="$test = 'login'"> length (self.sid) </xsl:when>
           <xsl:when test="$test = 'have_tags'"> exists (select top 1 1 from BLOG..BLOG_POST_TAGS_STAT_2 where postid = t_post_id and blogid = control.te_rowset[10]) </xsl:when>
@@ -6598,11 +6609,11 @@ window.onload = function (e)
         </tr>
         <tr>
           <td/>
-          <td><v:check-box name="tb1" xhtml_id="tb1" value="1" initial-checked="--get_keyword('EnableTrackback', self.opts, 1)"/><label for="tb1">Trackback/Pingback enabled</label></td>
+          <td><v:check-box name="tb1" xhtml_id="tb1" value="1" initial-checked="--get_keyword('EnableTrackback', self.opts, 0)"/><label for="tb1">Trackback/Pingback enabled</label></td>
         </tr>
         <tr>
           <td/>
-          <td><v:check-box name="pb1" xhtml_id="pb1" value="1" initial-checked="--get_keyword ('EnableReferral', self.opts, 1)"/><label for="pb1">Referrals enabled</label></td>
+          <td><v:check-box name="pb1" xhtml_id="pb1" value="1" initial-checked="--get_keyword ('EnableReferral', self.opts, 0)"/><label for="pb1">Referrals enabled</label></td>
         </tr>
         <tr>
           <td/>

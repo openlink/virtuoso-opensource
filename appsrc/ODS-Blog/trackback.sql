@@ -83,7 +83,7 @@ __SOAP_HTTP 'text/xml'
      if (not isarray(opts))
        opts := vector ();
 
-     if (get_keyword ('EnableTrackback', opts, 1) = 1)
+     if (get_keyword ('EnableTrackback', opts, 0) = 1)
        {
 	 insert into BLOG.DBA.MTYPE_TRACKBACK_PINGS (MP_POST_ID, MP_URL, MP_TITLE, MP_EXCERPT, MP_BLOG_NAME, MP_IP, MP_VIA_DOMAIN)
 	     values (id, url, title, excerpt, blog_name, http_client_ip (), host);
@@ -416,7 +416,7 @@ create procedure "pingback.ping" (in sourceURI varchar, in targetURI varchar)
   if (not isarray(opts))
     opts := vector ();
 
-  if (get_keyword ('EnableTrackback', opts, 1) = 1)
+  if (get_keyword ('EnableTrackback', opts, 0) = 1)
     {
       insert into BLOG.DBA.MTYPE_TRACKBACK_PINGS (MP_POST_ID, MP_URL, MP_TITLE, MP_EXCERPT, MP_BLOG_NAME, MP_IP)
          values (id, sourceURI, '', '', title, http_client_ip ());

@@ -433,7 +433,7 @@ create view ODS_BLOG_POSTS as select
 	p.B_CONTENT	as B_CONTENT,
 	sioc..sioc_date (p.B_TS) as B_CREATED,
 	sioc..sioc_date (p.B_MODIFIED) as B_MODIFIED,
-	WA_LINK (1, BI_HOME ||'?id='||B_POST_ID) as B_LINK,
+	DB.DBA.WA_LINK (1, BI_HOME ||'?id='||B_POST_ID) as B_LINK,
 	uc.U_NAME	as B_CREATOR,
         sioc..post_iri (uo.U_NAME, 'WEBLOG2', i.BI_WAI_NAME, p.B_POST_ID) || '/sioc.rdf' as B_SEE_ALSO,
         md5 (sioc..post_iri (uo.U_NAME, 'WEBLOG2', i.BI_WAI_NAME, p.B_POST_ID)) as IRI_MD5
@@ -600,11 +600,11 @@ create procedure sioc.DBA.rdf_weblog_view_str ()
       ';
 };
 
-grant select on ODS_BLOG_POSTS to "SPARQL";
-grant select on ODS_BLOG_POST_LINKS to "SPARQL";
-grant select on ODS_BLOG_POST_ATTS to "SPARQL";
-grant select on ODS_BLOG_POST_TAGS to "SPARQL";
-grant select on ODS_BLOG_COMMENTS to "SPARQL";
+grant select on ODS_BLOG_POSTS to SPARQL_SELECT;
+grant select on ODS_BLOG_POST_LINKS to SPARQL_SELECT;
+grant select on ODS_BLOG_POST_ATTS to SPARQL_SELECT;
+grant select on ODS_BLOG_POST_TAGS to SPARQL_SELECT;
+grant select on ODS_BLOG_COMMENTS to SPARQL_SELECT;
 
 -- END BLOG
 ODS_RDF_VIEW_INIT ();

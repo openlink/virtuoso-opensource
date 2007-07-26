@@ -23,7 +23,7 @@
 USE "BLOG"
 ;
 
-create procedure weblog2_uninst()
+create procedure BLOG.DBA.weblog2_uninst()
 {
   for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'WEBLOG2' do
   {
@@ -31,44 +31,67 @@ create procedure weblog2_uninst()
   }
 }
 ;
-weblog2_uninst()
+BLOG.DBA.weblog2_uninst()
 ;
-drop procedure weblog2_uninst
+DB.DBA.wa_exec_no_error('DROP procedure BLOG.DBA.weblog2_uninst');
+
+-- Procedures
+create procedure BLOG.DBA._drop_procedures()
+{
+  for (select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'BLOG.%' or P_NAME like 'DB.DBA.BLOG%' or P_NAME like 'DB.DBA.Blog%') do {
+    if (P_NAME not in ( 'BLOG.DBA._drop_procedures'))
+        DB.DBA.wa_exec_no_error(sprintf('drop procedure %s', P_NAME));
+  }
+}
 ;
-drop procedure BLOG2_HOME_GET_RDF
-;
-drop procedure BLOG2_HOME_GET_RSSCOMMENT
-;
-drop procedure BLOG2_HOME_GET_RSS
-;
-drop procedure BLOG2_HOME_GET_ATOM
-;
-drop procedure BLOG2_HOME_GET_OPML
-;
-drop procedure BLOG2_HOME_GET_FOAF
-;
-drop procedure BLOG2_COMMUNITY_GET_RSS
-;
-drop procedure BLOG2_COMMUNITY_GET_ATOM
-;
-drop procedure BLOG2_COMMUNITY_GET_OCS
-;
-drop procedure BLOG2_COMMUNITY_GET_OPML
-;
-drop procedure BLOG2_COMMUNITY_GET_FOAF
-;
-drop procedure BLOG2_GET_HOME_DIR
-;
-drop procedure BLOG2_MAKE_TITLE
-;
-drop procedure BLOG2_GET_TITLE
-;
-drop procedure BLOG2_GET_HOST
-;
-drop procedure BLOG2_GET_CURRENT_BLOG_HOME
-;
-drop procedure BLOG2_GET_CURRENT_BLOG_ID
-;
+
+-- dropping procedures for BLOG
+BLOG.DBA._drop_procedures();
+
+DB.DBA.wa_exec_no_error('DROP procedure BLOG.DBA._drop_procedures');
+
+
+
+
+--drop procedure BLOG2_HOME_GET_RDF
+--;
+--drop procedure BLOG2_HOME_GET_RSSCOMMENT
+--;
+--drop procedure BLOG2_HOME_GET_RSS
+--;
+--drop procedure BLOG2_HOME_GET_ATOM
+--;
+--drop procedure BLOG2_HOME_GET_OPML
+--;
+--drop procedure BLOG2_HOME_GET_FOAF
+--;
+--drop procedure BLOG2_COMMUNITY_GET_RSS
+--;
+--drop procedure BLOG2_COMMUNITY_GET_ATOM
+--;
+--drop procedure BLOG2_COMMUNITY_GET_OCS
+--;
+--drop procedure BLOG2_COMMUNITY_GET_OPML
+--;
+--drop procedure BLOG2_COMMUNITY_GET_FOAF
+--;
+--drop procedure BLOG2_GET_HOME_DIR
+--;
+--drop procedure BLOG2_MAKE_TITLE
+--;
+--drop procedure BLOG2_GET_TITLE
+--;
+--drop procedure BLOG2_GET_HOST
+--;
+--drop procedure BLOG2_GET_CURRENT_BLOG_HOME
+--;
+--drop procedure BLOG2_GET_CURRENT_BLOG_ID
+--;
+--drop procedure BLOG2_CREATE_DEFAULT_SITE
+--;
+--drop procedure BLOG2_HOME_CREATE
+--;
+
 DB.DBA.vhost_remove(lpath=>'/weblog')
 ;
 DB.DBA.vhost_remove(lpath=>'/weblog/public')
@@ -87,33 +110,33 @@ DB.DBA.vhost_remove(lpath=>'/weblog/gems/index.opml')
 ;
 DB.DBA.vhost_remove(lpath=>'/weblog/gems/foaf.xml')
 ;
-drop procedure BLOG2_CREATE_DEFAULT_SITE
-;
-drop procedure BLOG2_HOME_CREATE
-;
+
+use DB;
+
 DELETE FROM DB.DBA.WA_MEMBER      WHERE WAM_INST      IN (SELECT WAI_NAME FROM DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'WEBLOG2')
 ;
 DELETE FROM DB.DBA.WA_INSTANCE    WHERE WAI_TYPE_NAME = 'WEBLOG2'
 ;
 DELETE FROM DB.DBA.WA_MEMBER_TYPE WHERE WMT_APP       = 'WEBLOG2'
 ;
-drop type wa_blog2
+drop type DB.DBA.wa_blog2
 ;
 DELETE FROM DB.DBA.WA_TYPES       WHERE WAT_NAME      = 'WEBLOG2'
 ;
-
-use DB;
 
 drop trigger SYS_USERS_BLOG_INFO_UP
 ;
 
 -- NNTP
-DROP procedure DB.DBA.BLOG_NEWS_MSG_I
+DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.BLOG_NEWS_MSG_I')
 ;
-DROP procedure DB.DBA.BLOG_NEWS_MSG_U
+DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.BLOG_NEWS_MSG_U')
 ;
-DROP procedure DB.DBA.BLOG_NEWS_MSG_D
+DB.DBA.wa_exec_no_error('DROP procedure DB.DBA.BLOG_NEWS_MSG_D')
 ;
-DB.DBA.NNTP_NEWS_MSG_DEL ('BLOG');
+DB.DBA.wa_exec_no_error('DB.DBA.NNTP_NEWS_MSG_DEL (''BLOG'')')
+;
+DB.DBA.wa_exec_no_error('delete from DB.DBA.news_groups where NG_TYPE=''BLOG''')
+;
 
 

@@ -152,7 +152,7 @@ create procedure DB.DBA.BLOG_NEWS_MSG_I
 	}
       next1:;
       if (ctype = 'text/plain')
-	content := '<pre>' || content || '</pre>';
+	content := '<pre>' || ns_make_index_content (content, 1) || '</pre>';
     }
   else if (ctype like 'multipart/%')
     {
@@ -266,15 +266,24 @@ create procedure DB.DBA.BLOG_NEWS_MSG_I
       insert into BLOG..BLOG_COMMENTS (BM_BLOG_ID, BM_POST_ID, BM_COMMENT, BM_NAME, BM_E_MAIL,
 				       BM_HOME_PAGE, BM_ADDRESS, BM_TS, BM_RFC_ID, BM_RFC_HEADER, BM_TITLE,
 				       BM_REF_ID, BM_RFC_REFERENCES)
-	  values (bid, id, content, name, mail, '', '127.0.0.1', N_NM_REC_DATE, N_NM_ID, rfc_header, subject,
+	  values (bid, id, content, name, mail, '', client_attr ('client_ip'), N_NM_REC_DATE, N_NM_ID, rfc_header, subject,
 	      			       p_bm_id, p_refs);
     }
   else -- post,  user is authorized
     {
       declare rc, u_id int;
       declare meta BLOG.DBA."MTWeblogPost";
+      declare bids any;
+      declare i integer;
 
-      bid :=  get_keyword_ucase ('Newsgroups', head);
+
+--      bid :=  get_keyword_ucase ('Newsgroups', head);
+      bids:= split_and_decode (get_keyword_ucase ('Newsgroups', head,''), 0, '\0\0,');
+      for(i:=0;i<length(bids);i:=i+1)
+      {
+        if(locate('-blog-',bids[i]))
+        {
+          bid :=bids[i];
       rc := DB.DBA.BLOG2_GET_USER_ACCESS (bid, uid);
 
       if (rc <> 1 and rc <> 2)
@@ -295,7 +304,8 @@ create procedure DB.DBA.BLOG_NEWS_MSG_I
       insert into BLOG..SYS_BLOGS (B_APPKEY, B_POST_ID, B_BLOG_ID, B_TS, B_CONTENT, B_USER_ID, B_META, B_STATE,
 	  B_RFC_ID, B_RFC_HEADER, B_TITLE)
 	  values ('NNTP', id, bid, N_NM_REC_DATE, content, u_id, meta, 2, N_NM_ID, rfc_header, subject);
-
+        }
+      }
     }
 };
 
