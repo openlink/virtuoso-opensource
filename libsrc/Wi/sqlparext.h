@@ -313,7 +313,7 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define SUBQ_LOOP 1
 #define OPT_VACUUM (ptrlong)913
 #define OPT_RDF_INFERENCE ((ptrlong)1014)
-
+#define OPT_SAME_AS ((ptrlong) 1016)
 /* GROUPING SETS */
 #define GROUPING_FUNC	"__grouping"
 #define GROUPING_SET_FUNC   "__grouping_set_bitmap"
