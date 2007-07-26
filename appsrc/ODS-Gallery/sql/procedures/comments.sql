@@ -48,6 +48,53 @@ create procedure PHOTO.WA.add_comment(
 ;
 --------------------------------------------------------------------------------
 
+create procedure PHOTO.WA.remove_comment(
+  in sid varchar,
+  in _comment_id integer)
+
+{
+  declare auth_uid,auth_pwd,current_gallery varchar;
+  declare current_user photo_user;
+
+  auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
+
+  if(exists (select 1 from PHOTO.WA.comments where COMMENT_ID=_comment_id and USER_ID=current_user.user_id))
+  {
+     delete from PHOTO.WA.comments where COMMENT_ID=_comment_id;
+     return 1;
+
+  }
+  return 0;
+   
+}
+;
+--------------------------------------------------------------------------------
+
+create procedure PHOTO.WA.edit_comment(
+  in sid varchar,
+  in _comment_id integer,
+  in _text varchar)
+
+{
+  declare auth_uid,auth_pwd,current_gallery varchar;
+  declare current_user photo_user;
+
+  auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
+
+  if(exists (select 1 from PHOTO.WA.comments where COMMENT_ID=_comment_id and USER_ID=current_user.user_id))
+  {
+     update PHOTO.WA.comments set TEXT=_text where COMMENT_ID=_comment_id;
+     return 1;
+
+  }
+     
+ return 0;
+}
+;
+
+--------------------------------------------------------------------------------
+
+
 create procedure PHOTO.WA.get_comments(
   in sid varchar,
   in p_gallery_id integer,
@@ -89,6 +136,8 @@ create procedure PHOTO.WA.get_comments(
 
 PHOTO.WA._exec_no_error('grant execute on photo_comment TO SOAPGallery');
 PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.add_comment TO SOAPGallery');
+PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.remove_comment TO SOAPGallery');
+PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_comment TO SOAPGallery');
 PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_comments TO SOAPGallery');
 
 

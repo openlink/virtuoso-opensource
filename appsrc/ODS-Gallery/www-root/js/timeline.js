@@ -71,6 +71,8 @@ var TL = {
 				a.id = 'tl_showalbum_idx_'+i;
         var tlAlbumClick = function(e){
             var id_arr=e.target.id.split('_');
+            OAT.Dom.hide('timeline');
+            OAT.Dom.hide('map');
             var album_idx = id_arr[id_arr.length-1];
             gallery.setCurrent(album_idx);
             gallery.ajax.load_images(album_idx);
@@ -81,15 +83,22 @@ var TL = {
             var infoWinContent=preview_collection_4_map(ds_albums.list[album_idx],album_idx);
             var marker_idx=map.findMarkerIndexByGroup(album_idx);
             map.markerArr[marker_idx].openInfoWindow(infoWinContent);
+            if (!e) var e = window.event
+            var el = (e.target) ? e.target : e.srcElement
+            OAT.Dom.addClass((ds_albums.list[album_idx]).event.elm,"event_active");
+
         }
         var tlAlbumOnMouseOut = function(e){
             var id_arr=e.target.id.split('_');
             var album_idx = id_arr[id_arr.length-1];
             map.obj.closeInfoWindow();
+            if (!e) var e = window.event
+            var el = (e.target) ? e.target : e.srcElement
+            OAT.Dom.removeClass((ds_albums.list[album_idx]).event.elm,"event_active"); 
         }
+        OAT.Dom.attach(a,'click',tlAlbumClick); 
         if(album.geolocation[2]=='true')
         {
-          OAT.Dom.attach(a,'click',tlAlbumClick); 
           OAT.Dom.attach(a,'mouseover',tlAlbumOnMouseOver); 
           OAT.Dom.attach(a,'mouseout',tlAlbumOnMouseOut); 
         }

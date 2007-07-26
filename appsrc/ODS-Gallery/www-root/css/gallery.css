@@ -60,7 +60,9 @@ li:hover{
 
 #head{
   background:#fff url(../i/gallerybanner_sml.jpg) no-repeat;
-  height:70px;
+  height:65px;
+  border-bottom:1px solid #E2E2E2;
+
 }
 
 #head h1 {
@@ -75,6 +77,9 @@ li:hover{
 #nav {
   padding:0px;
   background:#fff;
+  margin: 0 auto;
+  height: 15px;
+  float: right;
 
 }
 
@@ -83,8 +88,6 @@ li:hover{
   margin:0px;
   padding: 0px;
   list-style: none;
-  height:20px;
-  border-bottom:1px solid #859FB1;
 
 }
 
@@ -123,9 +126,11 @@ li:hover{
 
 
 #left_col{
-  border-right:1px solid #E2E2E2;
   width:175px;
 }
+#right_col{
+}
+
 
 .toolbar{
 }
@@ -163,9 +168,6 @@ li:hover{
 }
 
 
-#right_col{
-  width:580px;
-}
 
 #albums{
 
@@ -257,7 +259,7 @@ div.album_obsolete {
   float:left;
   text-align:center;
   padding:2px;
-  margin:6px;
+  margin:0px;
   font-size:12px;
   width:100px;
   height:90px;
@@ -277,6 +279,17 @@ div#images_ctrl{
   position:relative;
 }
 
+div#imageCaptionContainer
+{
+  border:0px solid red;
+  padding: 0px;
+  margin: 6px;
+  width:106px;
+  height:130px;
+  text-align:left;
+  word-wrap: break-word;
+  
+}
 
 
 div#mssage{
@@ -352,12 +365,16 @@ div#mssage{
   margin:5px;
 }
 
-#preview_nav #preview_left,
-#preview_nav #preview_right
+#preview_nav #preview_left
 {
   width:100px;
   float:left;
   border-left:1px solid #AAAAAA;
+}
+#preview_nav #preview_right
+{
+  width:100px;
+  float:left;
 }
 
 
@@ -428,7 +445,7 @@ div#mssage{
 }
 
 #new_album{
-  border: 1px solid #ccc;
+  border-top: 1px solid #ccc;
   margin: 5px;
 }
 
@@ -699,4 +716,9 @@ color:red;
 td.calendar_special
 {
 background-color: #85B9D2;
+}
+
+p#ods_bar_sep
+{
+  display:block;
 }

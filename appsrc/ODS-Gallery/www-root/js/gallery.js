@@ -35,6 +35,14 @@ var gallery_path;
 //------------------------------------------------------------------------------
 gallery.init = function (path){
 
+  var agentWidth=OAT.Dom.getViewport();
+  
+  $('wrapper').style.width=agentWidth[0]+'px';
+  $('main_container').style.width=agentWidth[0]-15+'px';
+  $('map').style.width=agentWidth[0]-15+'px';
+  if(agentWidth[1]<800)
+  $('map').style.height=350+'px';  
+
   this.albums         = new panel('albums');
   this.albums_list    = new panel('care_my_albums');
   this.albums_man     = new panel('my_albums_man');
@@ -204,6 +212,9 @@ gallery.closePanels = function(){
 gallery.albums_click = function(el){
   current_id = getId(el.id);
 
+  OAT.Dom.hide('timeline');
+  OAT.Dom.hide('map');
+
   gallery.setCurrent(current_id);
   //ajax.Start(gallery_load_images,current_id);
   gallery.ajax.load_images(current_id);
@@ -239,6 +250,8 @@ gallery.albums_click = function(el){
     TL.draw();
     
     mapInit();
+    OAT.Dom.hide('map');    
+    OAT.Dom.hide('timeline');    
 
     
     
@@ -249,6 +262,8 @@ gallery.albums_click = function(el){
 //------------------------------------------------------------------------------
 gallery.new_album_tab_click = function (){
 
+  OAT.Dom.show('timeline');
+  OAT.Dom.show('map');
 
   $('map').className = $('map').className.replace( "view","edit");
  	map.lastGEvent =	GEvent.addListener(map.obj,"click",function(o,p){if (!p){ return; } newAlbumMarker(p);});
@@ -515,6 +530,7 @@ gallery.edit_album_cancel = function (){
 
   $('map').className = $('map').className.replace( "edit","view");
   GEvent.removeListener(map.lastGEvent);
+  OAT.Dom.hide('map');
 
   this.images.show();
   this.edit_album.hide();
@@ -686,18 +702,70 @@ gallery.addComment = function(comment){
   document.f1.new_comment.value = '';
 
   var pub_date = sdate2obj(comment.create_date);
-  var txt = document.createElement('div');
+  var comment_block = document.createElement('div');
   var edit = document.createElement('span');
   var user = document.createElement('h3');
 
-  txt.appendChild(document.createTextNode(comment.text));
-  edit.appendChild(document.createTextNode('[Edit] [Delete]'));
+	comment_block.setAttribute("id",'comment_'+comment.comment_id);
+  comment_block.appendChild(document.createTextNode(comment.text));
+
+  var del_img = OAT.Dom.create("img");
+  del_img.style.cursor="pointer";
+	del_img.setAttribute("src",base_path+ 'i/del_10.png');
+	del_img.setAttribute("alt",'Delete');
+	del_img.setAttribute("title",'Delete');
+  OAT.Dom.attach(del_img,'click',gallery.delete_comment_icon_click);
+
+
+  var edit_img = OAT.Dom.create("img");
+
+  edit_img.style.cursor="pointer";
+	edit_img.setAttribute("src",base_path+ 'i/edit_10.png');
+	edit_img.setAttribute("alt",'Edit');
+	edit_img.setAttribute("title",'Edit');
+  OAT.Dom.attach(edit_img,'click',gallery.edit_comment_icon_click);
+//  OAT.Dom.attach(edit_img,'click',gallery.delete_tag_click)
+  
+//	edit.setAttribute("id",'commentctrl_'+comment.comment_id);
+  edit.appendChild(del_img);
+  edit.appendChild(document.createTextNode(' '));
+  edit.appendChild(edit_img);
+
   user.appendChild(document.createTextNode(comment.user_name));
   user.appendChild(document.createTextNode(','));
   user.appendChild(document.createTextNode(pub_date.day+'/'+pub_date.month+'/'+pub_date.year));
-  this.comments_list.appendChild(txt);
-  this.comments_list.appendChild(edit);
-  this.comments_list.appendChild(user);
+  
+  comment_block.appendChild(edit);
+  comment_block.appendChild(user);
+  
+  this.comments_list.appendChild(comment_block);
+}
+//------------------------------------------------------------------------------
+gallery.delete_comment_icon_click = function(e){
+  if (!e) var e = window.event
+  var el = (e.target) ? e.target : e.srcElement
+
+  if(confirm('Are you sure that you want to detele this comment?')){
+    var comment = el.parentNode.parentNode.id;
+    dd(el.parentNode.parentNode);
+    var comment_id = comment.substring(comment.indexOf('_')+1,comment.length);
+   gallery.ajax.image_remove_comments(comment_id);
+  }
+}
+
+//------------------------------------------------------------------------------
+gallery.edit_comment_icon_click = function(e){
+  if (!e) var e = window.event
+  var el = (e.target) ? e.target : e.srcElement
+
+    OAT.Dom.hide('new_comment_block');
+    OAT.Dom.show('edit_comment_block');
+
+    var comment = el.parentNode.parentNode.id;
+
+    $('edit_comment').value=$(comment).firstChild.nodeValue;
+    var comment_id = comment.substring(comment.indexOf('_')+1,comment.length);
+    $('edit_comment').comment_id=comment_id;
 }
 
 //------------------------------------------------------------------------------
@@ -739,7 +807,13 @@ gallery.addTag = function(tag,first){
   div.appendChild(edit);
   }
   txt.appendChild(document.createTextNode(tag));
-  edit.appendChild(document.createTextNode('[Delete]'));
+  var img = OAT.Dom.create("img");
+  img.style.cursor="pointer";
+	img.setAttribute("src",base_path+ 'i/del_10.png');
+	img.setAttribute("alt",'Delete');
+	img.setAttribute("title",'Delete');
+
+  edit.appendChild(img);
   OAT.Dom.attach(edit,'click',gallery.delete_tag_click)
   }
 
@@ -1044,6 +1118,35 @@ gallery.bnt_new_comment_click = function(){
 
   gallery.ajax.image_add_comments(comment);
 }
+//------------------------------------------------------------------------------
+gallery.bnt_cancelnew_comment_click = function(){
+
+$('new_comment').value='';
+}
+
+//------------------------------------------------------------------------------
+gallery.bnt_edit_comment_click = function(){
+
+var comment_new_text = $('edit_comment').value;
+var comment_id       = $('edit_comment').comment_id;
+gallery.ajax.image_edit_comments(comment_id,comment_new_text);
+}
+//------------------------------------------------------------------------------
+gallery.bnt_canceledit_comment_click = function(){
+
+OAT.Dom.hide('edit_comment_block');
+OAT.Dom.show('new_comment_block');
+//  var comment = new Object();
+//  comment.comment_id = '';
+//  comment.create_date = '';
+//  comment.user_id = '';
+//  comment.user_name = '';
+//  comment.modify_date = '';
+//  comment.text = document.f1.edit_comment.value
+//  comment.res_id = ds_current_album.current.id;
+//
+//  gallery.ajax.image_add_comments(comment);
+}
 
 //------------------------------------------------------------------------------
 gallery.get_image = function(id){
@@ -1149,6 +1252,8 @@ function preview_collection_4_map(album,i){
   thumb = makeImg(src);
   thumb.setAttribute('id','album_map_preview_th_'+i);
   OAT.Dom.attach(thumb,"click",function(){
+                                       OAT.Dom.hide('timeline');
+                                       OAT.Dom.hide('map');
                                        current_id = i;
                                        gallery.setCurrent(current_id);
                                        gallery.ajax.load_images(current_id);
@@ -1166,6 +1271,8 @@ function preview_collection_4_map(album,i){
     a.innerHTML = album.name.substring(0,12)+" ("+sdate2obj(album.start_date).year +'/'+sdate2obj(album.start_date).month+")";
     a.href = "#/"+album.name+'/';
     OAT.Dom.attach(a,"click",function(){
+                                         OAT.Dom.hide('timeline');
+                                         OAT.Dom.hide('map');
                                          current_id = i;
                                          gallery.setCurrent(current_id);
                                          gallery.ajax.load_images(current_id);
@@ -1217,29 +1324,33 @@ function preview_image(i,mode){
   }else{
     var alt = 'Private visible';
   }
+
   var div = OAT.Dom.create('div');
+  div.id='imageCaptionContainer';
+  
+  var imageDiv = OAT.Dom.create('div');
   //div.appendChild(makeHref('javascript:gallery.showImage("'+i+'")',makeImg(src,'','','img',alt)))
   image_html = makeImg(src,'','','img',alt);
-  div.appendChild(image_html);
+  imageDiv.appendChild(image_html);
   OAT.Dom.attach(image_html,'click',function(){
     gallery.showImage(i);
   })
-  div.current_image = current_image;
+  imageDiv.current_image = current_image;
 
   if(mode == 'previous'){
-    div.appendChild(makeHref('javascript:gallery.showImage("'+i+'")',makeImg(base_path + 'i/frew.gif',12,12,'move_button')))
+    imageDiv.appendChild(makeHref('javascript:gallery.showImage("'+i+'")',makeImg(base_path + 'i/frew.gif',12,12,'move_button')))
   }
 
   if(mode == 'next'){
-    div.appendChild(makeHref('javascript:gallery.showImage("'+i+'")',makeImg(base_path + 'i/ffwd.gif',12,12,'move_button')))
+    imageDiv.appendChild(makeHref('javascript:gallery.showImage("'+i+'")',makeImg(base_path + 'i/ffwd.gif',12,12,'move_button')))
   }
 
   if(mode != 'previous' && mode != 'next'){
     chbox = makeCheckbox('image_id_'+i,current_image.id);
-    div.appendChild(document.createElement('br'));
+    imageDiv.appendChild(document.createElement('br'));
     
   
-   ctrlDiv=OAT.Dom.create('div');
+   var ctrlDiv=OAT.Dom.create('div');
    ctrlDiv.setAttribute('id','images_ctrl');
 
     if(isOwner){
@@ -1258,10 +1369,25 @@ function preview_image(i,mode){
 
     }
     
-    div.appendChild(ctrlDiv)
+    imageDiv.appendChild(ctrlDiv)
 
+    var caption ='';
+    if(typeof(current_image.description)!='undefined')
+    {
+       caption=current_image.description;
+       if(caption.length>35)
+          caption= caption.substr(0,33)+'...';
 }
+    
+    div.appendChild(imageDiv);
+    div.appendChild(OAT.Dom.text(caption));
+
+
   return div;
+
+  }
+
+  return imageDiv;
 }
 
 //------------------------------------------------------------------------------
@@ -1375,6 +1501,15 @@ gallery.managePanels = function(action){
   OAT.Dom.hide('images_export');
 
   if(action == 'my_albums'){
+    OAT.Dom.show('timeline');
+    OAT.Dom.show('map');
+    if(typeof(map)!='undefined')
+    {
+       $('map').className = $('map').className.replace( "edit","view");
+       if(typeof(map.lastGEvent)!='undefined')
+         GEvent.removeListener(map.lastGEvent);
+    };
+    
     gallery.albums.show();
     gallery.showAlbumsInfo();
     gallery.albums_list.show();
@@ -1434,7 +1569,7 @@ gallery.managePanels = function(action){
   }else if(action == 'edit_album'){
       OAT.Dom.show('edit_album');
       OAT.Dom.hide('images');
-
+    OAT.Dom.show('map');
     OAT.Dom.hide('images_upload');
 
   }else if(action == 'new_album'){
@@ -1522,6 +1657,7 @@ gallery.ajax.load_albums = function(path){
     
     
     gallery.managePanels('my_albums');
+    $('myAlbumsTxt').innerHTML='My Albums ('+ds_albums.list.length+')';
     TL.draw();
 
 
@@ -1736,6 +1872,8 @@ gallery.ajax.delete_images = function(in_ids){
     return Array(sid,gallery_id,'r',in_ids)
   };
   finish = function(out_ids) {
+    if(out_ids!=null)
+    {
     var list = ds_current_album.list;
     for(var i=0;i<list.length;i++){
       for(var x=0;x<out_ids.length;x++){
@@ -1745,6 +1883,7 @@ gallery.ajax.delete_images = function(in_ids){
     }
   }
     gallery.showImagesInside();
+    }
   };
 
   gallery.ajax(prepare,call,finish);
@@ -1778,6 +1917,38 @@ gallery.ajax.image_add_comments = function(comment){
   };
   finish = function(p) {
     gallery.addComment(p)
+  };
+
+  gallery.ajax(prepare,call,finish);
+};
+//------------------------------------------------------------------------------
+gallery.ajax.image_remove_comments = function(comment_id){
+
+  call = proxies.SOAP.remove_comment;
+  prepare = function() {
+    return Array(sid,comment_id)
+  };
+  finish = function(p) {
+      if(p==1)
+      {
+        OAT.Dom.unlink('comment_'+comment_id);
+      }
+  };
+
+  gallery.ajax(prepare,call,finish);
+};
+//------------------------------------------------------------------------------
+gallery.ajax.image_edit_comments = function(comment_id,comment_new_text){
+
+  call = proxies.SOAP.edit_comment;
+  prepare = function() {
+    return Array(sid,comment_id,comment_new_text)
+  };
+  finish = function(p) {
+      if(p==1)
+      {
+          $('comment_'+comment_id).firstChild.nodeValue=comment_new_text;
+      }
   };
 
   gallery.ajax(prepare,call,finish);

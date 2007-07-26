@@ -124,7 +124,7 @@
         <h1>
           oGallery
         </h1>
-      </div>
+       <img src="/photos/res/i/grad_2.gif" width="0" height="45" /><br/>
       <div id="nav">
         <ul>
           <xsl:choose>
@@ -159,17 +159,20 @@
             </xsl:otherwise>
           </xsl:choose>
           <script> var wa_home_link = '<xsl:value-of select="wa_home_link"/>'</script>
-
         </ul>
       </div>
+
+      </div>
+<!--
       <div id="grad">
         <xsl:call-template name="nbsp"/>
       </div>
+-->
       <div id="error_box" style="display:none;">
         <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
       </div>
 
-      <table cellpadding="0" cellspacing="4">
+      <table cellpadding="0" cellspacing="4" id="main_container">
         <tr>
          <td colspan="2">
 	  	  	<div id="timeline"></div>
@@ -177,14 +180,14 @@
         </tr>
         <tr>
         <td colspan="2">
-              <div id="map" style="display:block;with:1000px;height:500px;" class="view"/>
+              <div id="map" style="display:block;with:800px;height:450px;" class="view"/>
         </td>
         </tr>
         <tr>
           <td id="left_col" valign="top">
 
             <div id="care_my_albums" class="toolbar">
-              <h3>My Albums</h3>
+              <h3><span id="myAlbumsTxt">My Albums</span></h3>
               <ul id="my_albums_list"/>
               <h4 id="my_albums_list_more">see all albums...</h4>
               <ul id="my_albums_man" style="display:none">
@@ -360,12 +363,23 @@
           </div>
         </td>
         <td valign="top" class="right">
+            <div id="new_comment_block">
           <h2>Add new comment</h2>
           Comment:<br/>
           <textarea name="new_comment" id="new_comment"><xsl:call-template name="nbsp"/></textarea>
           <br/>
-          <button type="button" name="bnt_new_comment" id="">Cancel</button>
+            <button type="button" name="bnt_cancelnew_comment" id="bnt_cancelnew_comment">Cancel</button>
           <button type="button" name="bnt_new_comment" id="bnt_new_comment">Save</button>
+            </div>
+            <div id="edit_comment_block" style="display:none;">
+            <h2>Edit comment</h2>
+            Comment:<br/>
+            <textarea name="edit_comment" id="edit_comment"><xsl:call-template name="nbsp"/></textarea>
+            <br/>
+            <button type="button" name="bnt_canceledit_comment" id="bnt_canceledit_comment">Cancel</button>
+            <button type="button" name="bnt_edit_comment" id="bnt_edit_comment">Save</button>
+            </div>
+
         </td>
       </tr>
     </table>
@@ -399,8 +413,8 @@
 <!-- ======================================================================= -->
   <xsl:template name="new_album">
       <div id="new_album" style="display:none;">
-              <h3>Create new album</h3>
-              <table id="forma">
+    <table id="forma" class="box">
+      <caption>Create new album</caption>
                 <tr>
                   <td><label for="new_album_name">Name</label></td>
                   <td>
