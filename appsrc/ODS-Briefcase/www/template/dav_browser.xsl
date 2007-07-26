@@ -554,7 +554,9 @@
             return 'image/dav/html.gif';
           if (itemPath like '%.wav')
             return 'image/dav/wave.gif';
-          if (itemPath like '%.mp3')
+          if (itemPath like '%.ogg')
+            return 'image/dav/wave.gif';
+          if (itemPath like '%.flac')
             return 'image/dav/wave.gif';
           if (itemPath like '%.wma')
             return 'image/dav/wave.gif';

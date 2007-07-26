@@ -780,6 +780,8 @@ create view ODS_ODRIVE_POSTS as select
 	RES_FULL_PATH like ODRIVE.WA.odrive_dav_home(um.U_NAME) || 'Public/%'
 ;
 
+grant execute on ODRIVE.WA.odrive_dav_home to SPARQL_SELECT;
+
 create procedure ODS_ODRIVE_TAGS ()
 {
   declare path, owner, tags any;
@@ -803,7 +805,7 @@ create procedure ODS_ODRIVE_TAGS ()
     }
 };
 
-create procedure view ODS_ODRIVE_TAGS as ODS_ODRIVE_TAGS () (RES_FULL_PATH varchar, U_OWNER varchar, TAG varchar);
+create procedure view ODS_ODRIVE_TAGS as DB.DBA.ODS_ODRIVE_TAGS () (RES_FULL_PATH varchar, U_OWNER varchar, TAG varchar);
 
 create procedure sioc.DBA.rdf_briefcase_view_str ()
 {
@@ -862,9 +864,9 @@ create procedure sioc.DBA.rdf_briefcase_view_str ()
       ;
 };
 
-grant select on ODS_ODRIVE_POSTS to "SPARQL";
-grant select on ODS_ODRIVE_TAGS to "SPARQL";
-grant execute on DB.DBA.ODS_ODRIVE_TAGS to "SPARQL";
+grant select on ODS_ODRIVE_POSTS to SPARQL_SELECT;
+grant select on ODS_ODRIVE_TAGS to SPARQL_SELECT;
+grant execute on DB.DBA.ODS_ODRIVE_TAGS to SPARQL_SELECT;
 
 -- END ODRIVE
 ODS_RDF_VIEW_INIT ();

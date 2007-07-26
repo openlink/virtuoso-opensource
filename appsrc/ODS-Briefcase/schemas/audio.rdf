@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+ -  
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+-->
+<rdf:RDF xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:owl ="http://www.w3.org/2002/07/owl#"
+         xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
+         >
+  <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/audio#">
+    <rdfs:label>audio</rdfs:label>
+    <rdfs:comment>Audio files.</rdfs:comment>
+    <virtrdf:catName>Music</virtrdf:catName>
+    <virtrdf:version>1.00</virtrdf:version>
+  </owl:Ontology>
+
+  <!-- common properties first -->
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Album">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Album</virtrdf:label>
+    <virtrdf:catName>Album</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Title">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Title</virtrdf:label>
+    <virtrdf:catName>Title</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Artist">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Artist</virtrdf:label>
+    <virtrdf:catName>Artist</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Composer">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Composer</virtrdf:label>
+    <virtrdf:catName>Composer</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Copyright">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Copyright</virtrdf:label>
+    <virtrdf:catName>Copyright</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Encoder">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Encoder</virtrdf:label>
+    <virtrdf:catName>Encoder</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Publisher">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Publisher</virtrdf:label>
+    <virtrdf:catName>Publisher</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#OriginalArtist">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>OriginalArtist</virtrdf:label>
+    <virtrdf:catName>OriginalArtist</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#TrackNumber">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>TrackNumber</virtrdf:label>
+    <virtrdf:catName>TrackNumber</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#DiscNumber">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>DiscNumber</virtrdf:label>
+    <virtrdf:catName>DiscNumber</virtrdf:catName>
+  </rdf:Property>
+
+  <!-- supported, but less common -->
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Accompaniment">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Accompaniment</virtrdf:label>
+    <virtrdf:catName>Accompaniment</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#AlbumArtist">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>AlbumArtist</virtrdf:label>
+    <virtrdf:catName>AlbumArtist</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#AlbumSortOrder">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>AlbumSortOrder</virtrdf:label>
+    <virtrdf:catName>AlbumSortOrder</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#ArtistSortOrder">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>ArtistSortOrder</virtrdf:label>
+    <virtrdf:catName>ArtistSortOrder</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#ArtistUrl">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>ArtistUrl</virtrdf:label>
+    <virtrdf:catName>ArtistUrl</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#AudioFileUrl">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>AudioFileUrl</virtrdf:label>
+    <virtrdf:catName>AudioFileUrl</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#AudioSourceUrl">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>AudioSourceUrl</virtrdf:label>
+    <virtrdf:catName>AudioSourceUrl</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Bpm">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Bpm</virtrdf:label>
+    <virtrdf:catName>Bpm</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Comment">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Comment</virtrdf:label>
+    <virtrdf:catName>Comment</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#CommercialInfoUrl">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>CommercialInfoUrl</virtrdf:label>
+    <virtrdf:catName>CommercialInfoUrl</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Compilation">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Compilation</virtrdf:label>
+    <virtrdf:catName>Compilation</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Conductor">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Conductor</virtrdf:label>
+    <virtrdf:catName>Conductor</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#CopyrightUrl">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>CopyrightUrl</virtrdf:label>
+    <virtrdf:catName>CopyrightUrl</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#DateRecorded">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>DateRecorded</virtrdf:label>
+    <virtrdf:catName>DateRecorded</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#EncoderSettings">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>EncoderSettings</virtrdf:label>
+    <virtrdf:catName>EncoderSettings</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#EncodingTimestamp">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>EncodingTimestamp</virtrdf:label>
+    <virtrdf:catName>EncodingTimestamp</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#FileOwnerName">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>FileOwnerName</virtrdf:label>
+    <virtrdf:catName>FileOwnerName</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#FileSizeExcludingTag">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>FileSizeExcludingTag</virtrdf:label>
+    <virtrdf:catName>FileSizeExcludingTag</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#FileType">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>FileType</virtrdf:label>
+    <virtrdf:catName>FileType</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Genre">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Genre</virtrdf:label>
+    <virtrdf:catName>Genre</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Grouping">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Grouping</virtrdf:label>
+    <virtrdf:catName>Grouping</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#InitialKey">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>InitialKey</virtrdf:label>
+    <virtrdf:catName>InitialKey</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#InternetRadioStationName">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>InternetRadioStationName</virtrdf:label>
+    <virtrdf:catName>InternetRadioStationName</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#InternetRadioStationOwner">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>InternetRadioStationOwner</virtrdf:label>
+    <virtrdf:catName>InternetRadioStationOwner</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#InternetRadioStationUrl">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>InternetRadioStationUrl</virtrdf:label>
+    <virtrdf:catName>InternetRadioStationUrl</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#InvolvedPeople">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>InvolvedPeople</virtrdf:label>
+    <virtrdf:catName>InvolvedPeople</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#ISRC">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>ISRC</virtrdf:label>
+    <virtrdf:catName>ISRC</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Languages">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Languages</virtrdf:label>
+    <virtrdf:catName>Languages</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#LengthMilliseconds">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>LengthMilliseconds</virtrdf:label>
+    <virtrdf:catName>LengthMilliseconds</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Lyricist">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Lyricist</virtrdf:label>
+    <virtrdf:catName>Lyricist</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Lyrics">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Lyrics</virtrdf:label>
+    <virtrdf:catName>Lyrics</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#MediaType">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>MediaType</virtrdf:label>
+    <virtrdf:catName>MediaType</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Mood">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Mood</virtrdf:label>
+    <virtrdf:catName>Mood</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#MucisianCreditsList">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>MucisianCreditsList</virtrdf:label>
+    <virtrdf:catName>MucisianCreditsList</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#OriginalFileName">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>OriginalFileName</virtrdf:label>
+    <virtrdf:catName>OriginalFileName</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#OriginalLyricist">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>OriginalLyricist</virtrdf:label>
+    <virtrdf:catName>OriginalLyricist</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#OriginalReleaseTimestamp">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>OriginalReleaseTimestamp</virtrdf:label>
+    <virtrdf:catName>OriginalReleaseTimestamp</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#OriginalReleaseYear">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>OriginalReleaseYear</virtrdf:label>
+    <virtrdf:catName>OriginalReleaseYear</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#OriginalSourceTitle">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>OriginalSourceTitle</virtrdf:label>
+    <virtrdf:catName>OriginalSourceTitle</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#PaymentUrl">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>PaymentUrl</virtrdf:label>
+    <virtrdf:catName>PaymentUrl</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#PlaylistDelayMilliseconds">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>PlaylistDelayMilliseconds</virtrdf:label>
+    <virtrdf:catName>PlaylistDelayMilliseconds</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#ProducedNotice">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>ProducedNotice</virtrdf:label>
+    <virtrdf:catName>ProducedNotice</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#PublisherUrl">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>PublisherUrl</virtrdf:label>
+    <virtrdf:catName>PublisherUrl</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#RecordingDates">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>RecordingDates</virtrdf:label>
+    <virtrdf:catName>RecordingDates</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#RecordingTimestamp">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>RecordingTimestamp</virtrdf:label>
+    <virtrdf:catName>RecordingTimestamp</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#ReleaseTimestamp">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>ReleaseTimestamp</virtrdf:label>
+    <virtrdf:catName>ReleaseTimestamp</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#RemixedBy">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>RemixedBy</virtrdf:label>
+    <virtrdf:catName>RemixedBy</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#SetSubtitle">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>SetSubtitle</virtrdf:label>
+    <virtrdf:catName>SetSubtitle</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Subtitle">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Subtitle</virtrdf:label>
+    <virtrdf:catName>Subtitle</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#TaggingTimestamp">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>TaggingTimestamp</virtrdf:label>
+    <virtrdf:catName>TaggingTimestamp</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#TimeRecorded">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>TimeRecorded</virtrdf:label>
+    <virtrdf:catName>TimeRecorded</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#TitleSortOrder">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>TitleSortOrder</virtrdf:label>
+    <virtrdf:catName>TitleSortOrder</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Url">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Url</virtrdf:label>
+    <virtrdf:catName>Url</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#UserDefined">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>UserDefined</virtrdf:label>
+    <virtrdf:catName>UserDefined</virtrdf:catName>
+  </rdf:Property>
+  <rdf:Property rdf:about="http://www.openlinksw.com/schemas/audio#Year">
+    <rdfs:Range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <virtrdf:cardinality>single</virtrdf:cardinality>
+    <virtrdf:label>Year</virtrdf:label>
+    <virtrdf:catName>Year</virtrdf:catName>
+  </rdf:Property>
+</rdf:RDF>

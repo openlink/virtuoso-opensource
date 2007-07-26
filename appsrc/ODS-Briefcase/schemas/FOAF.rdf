@@ -30,7 +30,7 @@
   <owl:Ontology rdf:about="http://xmlns.com/foaf/0.1/">
     <rdfs:label>FOAF</rdfs:label>
     <rdfs:comment>'Friend Of A Friend' descriptions of people, groups, documents and projects.</rdfs:comment>
-    <virtrdf:catName>People</virtrdf:catName>
+    <virtrdf:catName>Profiles</virtrdf:catName>
     <virtrdf:version>1.00</virtrdf:version>
   </owl:Ontology>
   <rdf:Property rdf:about="http://xmlns.com/foaf/0.1/accountName">

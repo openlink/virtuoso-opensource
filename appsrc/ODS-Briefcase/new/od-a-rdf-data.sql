@@ -72,6 +72,7 @@ ODRIVE.WA.rdf_upload('opl-lic.rdf');
 ODRIVE.WA.rdf_upload('google-base.rdf');
 ODRIVE.WA.rdf_upload('archive.rdf');
 ODRIVE.WA.rdf_upload('OpenDocument.rdf');
+ODRIVE.WA.rdf_upload('audio.rdf');
 
 -- register schemas
 --
@@ -102,6 +103,7 @@ DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/OplLic#',null,'http:/
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/google-base#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/google-base.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('urn:oasis:names:tc:opendocument:xmlns:meta:1.0',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/OpenDocument.rdf','replacing');
 DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/opendocument#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/OpenDocument.rdf','replacing');
+DAV_REGISTER_RDF_SCHEMA('http://www.openlinksw.com/schemas/audio#',null,'http://localdav.virt/DAV/VAD/oDrive/schemas/audio.rdf','replacing');
 
 -- register mime types
 --
@@ -152,6 +154,12 @@ DAV_REGISTER_MIME_TYPE ('application/license', 'OpenLink License', 'lic', null, 
 --DAV_REGISTER_MIME_TYPE ('application/google-kinds+xml', 'Google Kinds documents', 'xml', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/google-base+xml', 'Google Base documents', 'xml', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('image/png', 'PNG Image', 'png', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('audio/mpeg', 'MP3 Format Sound', 'mp3', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('audio/x-flac', 'FLAC Format Sound', 'flac', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('audio/x-mp3', 'MP3 Format Sound', 'mp3', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('audio/x-m4a', 'M4A Format Sound', 'm4a', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('audio/x-m4p', 'M4P Format Sound', 'm4p', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('application/ogg', 'OGG Media', 'ogg', null, 'replacing');
 
 -- register relations - RDF <-> MIME
 --
@@ -229,3 +237,9 @@ DAV_REGISTER_MIME_RDF('image/x-rgb', 'http://www.openlinksw.com/schemas/Image#')
 DAV_REGISTER_MIME_RDF('image/x-xbitmap', 'http://www.openlinksw.com/schemas/Image#');
 DAV_REGISTER_MIME_RDF('image/x-xpixmap', 'http://www.openlinksw.com/schemas/Image#');
 DAV_REGISTER_MIME_RDF('image/x-xwindowdump', 'http://www.openlinksw.com/schemas/Image#');
+DAV_REGISTER_MIME_RDF('audio/mpeg', 'http://www.openlinksw.com/schemas/audio#');
+DAV_REGISTER_MIME_RDF('audio/x-flac', 'http://www.openlinksw.com/schemas/audio#');
+DAV_REGISTER_MIME_RDF('audio/x-mp3', 'http://www.openlinksw.com/schemas/audio#');
+DAV_REGISTER_MIME_RDF('audio/x-m4a', 'http://www.openlinksw.com/schemas/audio#');
+DAV_REGISTER_MIME_RDF('audio/x-m4p', 'http://www.openlinksw.com/schemas/audio#');
+DAV_REGISTER_MIME_RDF('application/ogg', 'http://www.openlinksw.com/schemas/audio#');
