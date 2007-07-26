@@ -9449,25 +9449,32 @@ caddr_t
 bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
-  long flag = (long) bif_long_arg (qst, args, 0, "log_enable");
-  long quiet = (BOX_ELEMENTS (args) > 1) ? (long) bif_long_arg (qst, args, 1, "log_enable") : 0L;
-
+  int flag_is_null = 0;
+  long flag = (long) bif_long_or_null_arg (qst, args, 0, "log_enable", &flag_is_null);
+  long quiet;
+  long old_value;
+  old_value = (((REPL_NO_LOG == qi->qi_trx->lt_replicate) ? 0 : 1) | /* not || */
+     (qi->qi_client->cli_row_autocommit ? 2 : 0) );
+  if (flag_is_null)
+    return box_num (old_value);
+  quiet = (BOX_ELEMENTS (args) > 1) ? (long) bif_long_arg (qst, args, 1, "log_enable") : 0L;
   if (srv_have_global_lock (THREAD_CURRENT_THREAD))
-    return box_num (1);
-
-  qi->qi_client->cli_row_autocommit = flag &  2 ? 1 : 0;
-  flag &= 1;
-  if (!flag && qi->qi_client != bootstrap_cli &&
+    return box_num (old_value);
+  if (!(flag & 1) && qi->qi_client != bootstrap_cli &&
       qi->qi_trx->lt_replicate == REPL_NO_LOG)
     {
       if (quiet)
-        return box_num (0);
+        {
+          qi->qi_client->cli_row_autocommit = ((flag & 2) ? 1 : 0);
+          return box_num (old_value);
+        }
       sqlr_new_error ("42000", "SR471",
 	"log_enable () called twice to disable the already disabled log output" );
     }
-  qi->qi_trx->lt_replicate = flag
-  ? (caddr_t*) box_copy_tree ((caddr_t) qi->qi_client->cli_replicate)  : REPL_NO_LOG;
-  return box_num (1);
+  qi->qi_client->cli_row_autocommit = ((flag & 2) ? 1 : 0);
+  qi->qi_trx->lt_replicate = ((flag & 1) ?
+    (caddr_t*) box_copy_tree ((caddr_t) qi->qi_client->cli_replicate) : REPL_NO_LOG );
+  return box_num (old_value);
 }
 
 
