@@ -307,6 +307,29 @@ bif_strict_type_array_arg (dtp_t element_dtp, caddr_t * qst, state_slot_t ** arg
   return arg;
 }
 
+caddr_t *
+bif_strict_2type_array_arg (dtp_t element_dtp1, dtp_t element_dtp2, caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t * arg =  (caddr_t*) bif_arg (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  int inx;
+  if (dtp != DV_ARRAY_OF_POINTER)
+    sqlr_new_error ("22023", "SR476",
+		    "Function %s needs an array of %s or %s as argument %d, not an arg of type %s (%d)",
+		    func, dv_type_title (element_dtp1), dv_type_title (element_dtp2),
+                    nth + 1, dv_type_title (dtp), dtp );
+  DO_BOX (caddr_t, el, inx, arg)
+    {
+      if ((DV_TYPE_OF (el) != element_dtp1) && (DV_TYPE_OF (el) != element_dtp2))
+	sqlr_new_error ("22023", "SR476",
+			"Function %s needs an array of %s or %s as argument %d, not an array of %s (%d)",
+			func, dv_type_title (element_dtp1), dv_type_title (element_dtp2),
+                        nth + 1, dv_type_title (DV_TYPE_OF (el)), DV_TYPE_OF (el) );
+    }
+  END_DO_BOX;
+  return arg;
+}
+
 caddr_t
 bif_string_or_uname_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
@@ -5008,6 +5031,27 @@ bif_isiri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_bool (DV_IRI_ID == DV_TYPE_OF (arg0));
 }
 
+caddr_t
+bif_is_named_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "is_named_iri_id");
+  iri_id_t iid;
+  if (DV_IRI_ID != DV_TYPE_OF (arg0))
+    return box_bool (0);
+  iid = unbox_iri_id (arg0);
+  return box_bool (iid < min_bnode_iri_id());
+}
+
+caddr_t
+bif_is_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "is_bnode_iri_id");
+  iri_id_t iid;
+  if (DV_IRI_ID != DV_TYPE_OF (arg0))
+    return box_bool (0);
+  iid = unbox_iri_id (arg0);
+  return box_bool (iid >= min_bnode_iri_id());
+}
 
 caddr_t
 bif_iri_id_num (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -5024,7 +5068,48 @@ bif_iri_id_from_num (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_iri_id (arg);
 }
 
+int bnode_iri_ids_are_huge = 0;
 
+caddr_t
+bif_set_64bit_min_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  sec_check_dba ((query_instance_t *)qst, "__set_64bit_min_bnode_iri_id");
+  bnode_iri_ids_are_huge = 1;
+  return NEW_DB_NULL;
+}
+
+caddr_t
+bif_min_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_iri_id (min_bnode_iri_id());
+}
+
+caddr_t
+bif_iri_id_bnode32_to_bnode64 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "iri_id_bnode32_to_bnode64");
+  iri_id_t iid;
+  if (DV_IRI_ID != DV_TYPE_OF (arg0))
+    return box_copy_tree (arg0);
+  iid = unbox_iri_id (arg0);
+  if (iid < MIN_32BIT_BNODE_IRI_ID)
+    return box_iri_id (iid);
+  if (iid >= MIN_64BIT_BNODE_IRI_ID)
+    sqlr_new_error ("22012", "SR563", "64 bit bnode IRI ID is not a valid argument of iri_id_bnode32_to_bnode64() function");
+  return box_iri_id (iid + (MIN_64BIT_BNODE_IRI_ID - MIN_32BIT_BNODE_IRI_ID));
+}
+
+caddr_t
+bif_min_32bit_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_iri_id (MIN_32BIT_BNODE_IRI_ID);
+}
+
+caddr_t
+bif_min_64bit_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_iri_id (MIN_64BIT_BNODE_IRI_ID);
+}
 
 caddr_t
 bif_all_eq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -7754,6 +7839,10 @@ box_cast (caddr_t * qst, caddr_t data, ST * dtp, dtp_t arg_dtp)
       case DV_TIME: goto do_time;
       case DV_WIDE: case DV_LONG_WIDE: goto do_wide;
       case DV_ANY: goto do_any;
+    case DV_IRI_ID: case DV_IRI_ID_8:
+      if (DV_IRI_ID == arg_dtp)
+	return box_copy (data);
+      goto cvt_error;
       default: goto cvt_error;
     }
 
@@ -7923,8 +8012,11 @@ do_long_string:
 		}
 	  case DV_IRI_ID: /* TBD: 64bit case */
 		{
-		  iri_id_t i = unbox_iri_id (data);
-		  snprintf (tmp, sizeof (tmp), "#i%ld", (long) i);
+		  iri_id_t iid = unbox_iri_id (data);
+                  if (iid >= MIN_64BIT_BNODE_IRI_ID)
+                    snprintf (tmp, sizeof (tmp), "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+                  else
+                    snprintf (tmp, sizeof (tmp), "#i" BOXINT_FMT, (boxint)(iid) );
 		  break;
 		}
 	  default:
@@ -12533,10 +12625,17 @@ sql_bif_init (void)
   bif_define_typed ("isbinary", bif_isbinary, &bt_integer);
   bif_define_typed ("isarray", bif_isarray, &bt_integer);
   bif_define_typed ("isiri_id", bif_isiri_id, &bt_integer);
+  bif_define_typed ("is_named_iri_id", bif_is_named_iri_id, &bt_integer);
+  bif_define_typed ("is_bnode_iri_id", bif_is_bnode_iri_id, &bt_integer);
   bif_define_typed ("isuname", bif_isuname, &bt_integer);
 
   bif_define_typed ("iri_id_num", bif_iri_id_num, &bt_integer);
   bif_define_typed ("iri_id_from_num", bif_iri_id_from_num, &bt_iri);
+  bif_define ("__set_64bit_min_bnode_iri_id", bif_set_64bit_min_bnode_iri_id);
+  bif_define_typed ("min_bnode_iri_id", bif_min_bnode_iri_id, &bt_iri);
+  bif_define_typed ("min_32bit_bnode_iri_id", bif_min_32bit_bnode_iri_id, &bt_iri);
+  bif_define_typed ("min_64bit_bnode_iri_id", bif_min_64bit_bnode_iri_id, &bt_iri);
+  bif_define_typed ("iri_id_bnode32_to_bnode64", bif_iri_id_bnode32_to_bnode64, &bt_iri);
 
   bif_define ("__all_eq", bif_all_eq);
   bif_define ("__max", bif_max);

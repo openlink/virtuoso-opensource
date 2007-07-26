@@ -3673,48 +3673,7 @@ opt_pk
 	|  PRIMARY KEY '(' column_commalist ')' { $$ = (ST *) t_list_to_array ($4); }
 	;
 
-int bnode_iri_ids_are_huge = 0;
 
-caddr_t
-bif_set_64bit_min_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  sec_check_dba ((query_instance_t *)qst, "__set_64bit_min_bnode_iri_id");
-  bnode_iri_ids_are_huge = 1;
-  return NEW_DB_NULL;
-}
-
-caddr_t
-bif_min_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  return box_iri_id (min_bnode_iri_id());
-}
-
-caddr_t
-bif_iri_id_bnode32_to_bnode64 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t arg0 = bif_arg (qst, args, 0, "iri_id_bnode32_to_bnode64");
-  iri_id_t iid;
-  if (DV_IRI_ID != DV_TYPE_OF (arg0))
-    return box_copy_tree (arg0);
-  iid = unbox_iri_id (arg0);
-  if (iid < MIN_32BIT_BNODE_IRI_ID)
-    return box_iri_id (iid);
-  if (iid >= MIN_64BIT_BNODE_IRI_ID)
-    sqlr_new_error ("22012", "SR563", "64 bit bnode IRI ID is not a valid argument of iri_id_bnode32_to_bnode64() function");
-  return box_iri_id (iid + (MIN_64BIT_BNODE_IRI_ID - MIN_32BIT_BNODE_IRI_ID));
-}
-
-caddr_t
-bif_min_32bit_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  return box_iri_id (MIN_32BIT_BNODE_IRI_ID);
-}
-
-caddr_t
-bif_min_64bit_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  return box_iri_id (MIN_64BIT_BNODE_IRI_ID);
-}
 
 opt_join
 	:	{ $$ = NULL; }
