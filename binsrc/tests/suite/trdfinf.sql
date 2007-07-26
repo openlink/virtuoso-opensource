@@ -190,3 +190,37 @@ select ?p ?o  from <inft> from <sas> where { <syn3-ic1> ?p ?o };
 sparql define input:inference 'inft'
 select ?s from <inft> from <sas> where { ?s <p1> <ic1p1> };
 
+
+ttlp (' @prefix owl: <http://www.w3.org/2002/07/owl#> .
+ @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+#<c2> rdfs:subClassOf <c1> .
+<p2> rdfs:subPropertyOf <p1> .
+<p1> rdfs:subPropertyOf <p0> .
+#<sas-ic1> owl:sameAs <ic1> .
+<sas-p1>  owl:sameAs <p1> .
+<sas-p12>  owl:sameAs <sas-p1> .
+<ic1> a <c1> .
+#<ic2> a <c2> .
+<ic1> <p1> <ic1p1> .
+<ic1> <p2> <ic1p2> .
+<ic1> <sas-p1> <ic1sas-p1> .
+#<ic2> <p1> <ic2p1> .
+', '', 'sas-p');
+
+rdfs_rule_set ('sas-p', 'sas-p');
+
+sparql define input:inference 'sas-p'
+select * from <sas-p> where { ?s <p0> ?o };
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": same-as for super property\n";
+
+sparql define input:inference 'sas-p'
+select * from <sas-p> where { ?s <p1> ?o };
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": same-as for property\n";
+
+sparql define input:inference 'sas-p'
+select * from <sas-p> where { ?s <sas-p1> ?o };
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": same-as for sameAs property\n";
+
