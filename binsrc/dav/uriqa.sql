@@ -356,10 +356,11 @@ create function DB.DBA."DAV_EXTRACT_DYN_RDF_application/xbel+xml" (in id any, in
 
 create function WS.WS.URIQA_HANDLER_LOCALDAV (inout op varchar, inout uri varchar, inout split any, inout body any, inout params varchar, inout lines varchar, inout app_env any, inout is_final integer) returns any
 {
-  declare id, old_prop, rc any;
+  declare id, old_prop, old_descr, rc any;
   declare uid, a_uid, a_gid integer;
   declare st, a_uname, a_pwd, a_perms, res_path varchar;
   -- dbg_obj_princ ('WS.WS.URIQA_HANDLER_LOCALDAV (', op, uri, body, params, lines, app_env, is_final, ')');
+  old_descr := null;
   res_path := split[2];
   is_final := 1;
   if (res_path = '')
@@ -393,6 +394,17 @@ create function WS.WS.URIQA_HANDLER_LOCALDAV (inout op varchar, inout uri varcha
 	      goto id_found;
 	    }
 	}
+      if ((id = -1) and ('MGET' = op))
+        {
+          declare dct any;
+          dct := ((sparql define output:valmode "LONG" describe `iri(?:uri)`));
+          if (dict_size (dct) > 0)
+            {
+              old_descr := dct;
+              dct := 0;
+              goto do_op;
+            }
+        }
       return vector ('URIQA', id, NULL, DAV_PERROR (id) || sprintf ('; path "%s"', res_path));
     }
 id_found:
@@ -434,9 +446,44 @@ dyn_n3_set: ;
           ;
         }
     }
+do_op:
   if ('MGET' = op)
     {
       declare fmt varchar;
+      if (old_descr is null)
+        {
+          declare dct any;
+          dct := ((sparql define output:valmode "LONG" describe `iri(?:uri)`));
+          if (dict_size (dct) > 0)
+            {
+              old_descr := dct;
+              dct := 0;
+            }
+        }
+      if (old_descr is not null)
+        {
+          declare dct_triples, descr_n3 any;
+          declare dct_ctr, dct_len integer;
+          dct_triples := dict_list_keys (old_descr, 1);
+          dct_len := length (dct_triples);
+          xte_nodebld_init (descr_n3);
+          for (dct_ctr := 0; dct_ctr < dct_len; dct_ctr := dct_ctr + 1)
+            {
+              declare tr, s, p any;
+              tr := dct_triples[dct_ctr];
+              s := id_to_iri (tr[0]);
+              p := id_to_iri (tr[1]);
+              if (isiri_id (tr[2]))
+                xte_nodebld_acc (descr_n3, xte_node (xte_head (UNAME'N3', UNAME'N3S', s, UNAME'N3P', p, UNAME'N3O', id_to_iri (tr[2]))));
+              else
+                xte_nodebld_acc (descr_n3, xte_node (xte_head (UNAME'N3', UNAME'N3S', s, UNAME'N3P', p), DB.DBA.RDF_STRSQLVAL_OF_LONG (tr[2])));
+            }
+          xte_nodebld_final (descr_n3, xte_head (UNAME' root'));
+          if (isentity (old_prop))
+            XMLAppendChildren (old_prop, descr_n3);
+          else
+            old_prop := xml_tree_doc (descr_n3);
+        }
       fmt := get_keyword ('format', params, 'application/rdf+xml');
       if ('C' = st)
         XMLAppendChildren (old_prop, WS.WS.URIQA_N3_DIR_LIST (split, a_uid));
@@ -545,7 +592,7 @@ create function WS.WS.URIQA_HANDLER_NATIVE_HTTP (inout op varchar, inout uri var
       is_final := 1;
       return vector ('URIQA', 0, '500', 'Virtuoso tries to recursively access itself via HTTP to get metadata via URIQA (wrong config?)');
     }
-  http (sprintf ('%U=%U', our_fingerprint, registry_get ('URIQADefaultHost')), req_uri);
+  http (sprintf ('&%U=%U', our_fingerprint, registry_get ('URIQADefaultHost')), req_uri);
   req_uri := string_output_string (req_uri);
   req_header := string_output ();
   line_count := length (lines);
