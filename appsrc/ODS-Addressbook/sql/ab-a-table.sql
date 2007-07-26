@@ -254,6 +254,29 @@ AB.WA.exec_no_error('
 -------------------------------------------------------------------------------
 --
 AB.WA.exec_no_error('
+  create table AB.WA.ANNOTATIONS (
+    A_ID integer identity,
+    A_DOMAIN_ID integer not null,
+    A_OBJECT_ID integer not null,
+    A_BODY long varchar,
+    A_CONTEXT varchar,
+    A_AUTHOR varchar,
+    A_CREATED datetime,
+    A_UPDATED datetime,
+
+    constraint FK_AB_ANNOTATIONS_01 FOREIGN KEY (A_OBJECT_ID) references AB.WA.PERSONS (P_ID) on delete cascade,
+
+    primary key (A_ID)
+  )
+');
+
+AB.WA.exec_no_error ('
+  create index SK_AB_ANNOTATIONS_01 on AB.WA.ANNOTATIONS (A_OBJECT_ID, A_ID)
+');
+
+-------------------------------------------------------------------------------
+--
+AB.WA.exec_no_error('
   create table AB.WA.SETTINGS (
     S_ACCOUNT_ID integer not null,
     S_DATA varchar,

@@ -402,6 +402,9 @@
     <vm:pagebody>
       <v:before-data-bind>
         <![CDATA[
+          self.abLabels := cast (get_keyword ('tbLabels', self.settings, '1') as integer);
+          self.abChars := cast (get_keyword ('chars', self.settings, '60') as integer);
+
           self.mode_test();
         ]]>
       </v:before-data-bind>
@@ -891,6 +894,8 @@
                           if (not ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
                           actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link_ed">edit</a>', id, title);
                           if (not ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
+                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="#" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="link_ed">annotate</a>', self.sid, self.realm, id, self.domain_id, self.account_id, title);
+                          if (not ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
                           actions := actions || either(equ(actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to delete this item?\')) vspxPost (\'pt_browse\', \'pt_action\', \'delete\', \'pt_value\', \'%d\'); " title="Delete %s" class="link_ed">delete</a>', id, title);
 
                           http ('<div style="float: right; text-align: right; padding-right: 0.3em;">');
@@ -950,7 +955,7 @@
               <table cellspacing="0">
                 <tr>
                   <th>
-                    <v:label for="t_tag" value="Comma Delimited Tags" />
+                    <v:label for="t_tag" value="Tags" />
                   </th>
                   <td>
                     <v:text name="t_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60" />
@@ -1046,8 +1051,8 @@
                   </th>
                   <td>
                     <v:text name="s_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                    <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=s_grants:s1;',520)" class="button" />
-                    <input type="button" value="Clear" onClick="javascript: document.F1.elements['s_grants'].value = ''" class="button" />
+                    <input type="button" value="Select" onclick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=s_grants:s1;',520)" class="button" />
+                    <input type="button" value="Clear" onclick="javascript: document.F1.elements['s_grants'].value = ''" class="button" />
                   </td>
                 </tr>
                 <tr>
@@ -1210,7 +1215,7 @@
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
-                        <v:label for="ab_name" value="Name"/>
+                        <v:label for="ab_name" value="Name (*)" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
@@ -1379,7 +1384,7 @@
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_foaf" value="External FOAF file URL"/>
+                        <v:label for="ab_foaf" value="FOAF file URL" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
@@ -1391,12 +1396,12 @@
                     <vm:if test="self.abAction <> 'view'">
                       <tr>
                         <th>
-                          <v:label for="ab_grants" value="Share to user(s)" />
+                          <v:label for="ab_grants" value="Share with" />
                         </th>
                         <td>
                           <v:text name="ab_grants" null-value="--''" value="--self.v_grants" xhtml_class="textbox" xhtml_size="60" xhtml_title="User names must be comma delimited!" />
-                          <input type="button" value="Select" onClick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=ab_grants:s1;',520)" class="button" />
-                          <input type="button" value="Clear" onClick="javascript: document.F1.elements['ab_grants'].value = ''" class="button" />
+                          <input type="button" value="Select" onclick="javascript: windowShow('users.vspx?mode=u&dst=m&amp;params=ab_grants:s1;',520)" class="button" />
+                          <input type="button" value="Clear" onclick="javascript: document.F1.elements['ab_grants'].value = ''" class="button" />
                         </td>
                       </tr>
                     </vm:if>
@@ -1408,13 +1413,13 @@
                         }
                       </script>
                       <th>
-                        <v:label for="ab_tags" value="Comma Delimited Tags"/>
+                        <v:label for="ab_tags" value="Tags" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
                         <v:text name="ab_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
-                        <input type="button" value="Suggest" onClick="javascript: suggestTags();" class="button" />
-                          <input type="button" value="Clear" onClick="javascript: document.F1.elements['ab_tags'].value = ''" class="button" />
+                          <input type="button" value="Suggest" onclick="javascript: suggestTags();" class="button" />
+                          <input type="button" value="Clear" onclick="javascript: document.F1.elements['ab_tags'].value = ''" class="button" />
                         </vm:if>
                         <?vsp self.viewField (self.v_tags); ?>
                       </td>
@@ -2000,7 +2005,7 @@
                       resignal;
                     };
 
-                    self.v_name := AB.WA.test (self.ab_name.ufl_value, vector('name', 'Contact Name', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
+                    self.v_name := AB.WA.test (self.ab_name.ufl_value, vector('name', 'Name', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
                     self.v_tags := trim (self.ab_tags.ufl_value);
                     AB.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
                     tmp := AB.WA.tags2vector (self.v_tags);
@@ -2811,7 +2816,7 @@
 	              <table id="progressHide" cellspacing="0">
 	                <tr>
 	                  <th>
-                      <v:label for="i_tags" value="Comma Delimited Tags" />
+                      <v:label for="i_tags" value="Tags" />
 	                  </th>
 	                  <td>
                       <v:text name="i_tags" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60" />

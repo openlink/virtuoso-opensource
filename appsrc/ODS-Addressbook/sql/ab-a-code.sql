@@ -674,6 +674,33 @@ create procedure AB.WA.account_delete(
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.account_name (
+  in account_id integer)
+{
+  return coalesce((select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.account_fullName (
+  in account_id integer)
+{
+  return coalesce((select coalesce(U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.account_mail(
+  in account_id integer)
+{
+  return coalesce((select U_E_MAIL from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.user_name(
   in u_name any,
   in u_full_name any) returns varchar
@@ -3348,7 +3375,7 @@ create procedure AB.WA.search_sql (
   inout data varchar,
   in maxRows varchar := '')
 {
-  declare S, tmp, where2, delimiter2 varchar;
+  declare S, T, tmp, where2, delimiter2 varchar;
 
   where2 := ' \n ';
   delimiter2 := '\n and ';
@@ -3364,7 +3391,7 @@ create procedure AB.WA.search_sql (
          ' p.P_UPDATED                   \n' ||
          'from                           \n' ||
          '  AB.WA.PERSONS p              \n' ||
-         'where p.P_DOMAIN_ID = <DOMAIN_ID> <TEXT> <TAGS> <WHERE> \n';
+         'where p.P_DOMAIN_ID = <DOMAIN_ID> <TEXT> <WHERE>';
   }
   if (not is_empty_or_null(AB.WA.xml_get('MySharedContacts', data))) {
     if (S <> '')
@@ -3381,25 +3408,31 @@ create procedure AB.WA.search_sql (
          '  AB.WA.PERSONS p,             \n' ||
          '  AB.WA.GRANTS g               \n' ||
          'where p.P_ID = g.G_PERSON_ID   \n' ||
-         '  and g.G_GRANTEE_ID = <ACCOUNT_ID> <TEXT> <TAGS> <WHERE> \n';
+         '  and g.G_GRANTEE_ID = <ACCOUNT_ID> <TEXT> <WHERE>';
   }
 
   S := 'select <MAX> * from (' || S || ') x';
 
+  T := '';
   tmp := AB.WA.xml_get('keywords', data);
   if (not is_empty_or_null(tmp)) {
-    S := replace(S, '<TEXT>', sprintf('and contains(p.P_NAME, \'[__lang "x-ViDoc"] %s\') \n', FTI_MAKE_SEARCH_STRING(tmp)));
+    T := FTI_MAKE_SEARCH_STRING(tmp);
   } else {
     tmp := AB.WA.xml_get('expression', data);
     if (not is_empty_or_null(tmp))
-      S := replace(S, '<TEXT>', sprintf('and contains(p.P_NAME, \'[__lang "x-ViDoc"] %s\') \n', tmp));
+      T := tmp;
   }
 
   tmp := AB.WA.xml_get('tags', data);
   if (not is_empty_or_null(tmp)) {
-    tmp := AB.WA.tags2search (tmp);
-    S := replace(S, '<TAGS>', sprintf('and contains(p.P_NAME, \'[__lang "x-ViDoc"] %s\') \n', tmp));
+    if (T = '') {
+      T := AB.WA.tags2search (tmp);
+    } else {
+      T := T || ' and ' || AB.WA.tags2search (tmp);
+    }
   }
+  if (T <> '')
+    S := replace(S, '<TEXT>', sprintf('and contains(p.P_NAME, \'[__lang "x-ViDoc"] %s\') \n', T));
 
   if (maxRows <> '')
     maxRows := 'TOP ' || maxRows;
@@ -3407,7 +3440,6 @@ create procedure AB.WA.search_sql (
   S := replace(S, '<MAX>', maxRows);
   S := replace(S, '<DOMAIN_ID>', cast(domain_id as varchar));
   S := replace(S, '<ACCOUNT_ID>', cast(account_id as varchar));
-  S := replace(S, '<TAGS>', '');
   S := replace(S, '<TEXT>', '');
   S := replace(S, '<WHERE>', where2);
 
