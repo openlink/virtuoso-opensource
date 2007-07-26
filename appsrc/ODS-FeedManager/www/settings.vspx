@@ -59,6 +59,15 @@
           <div id="1" class="tabContent" style="display: none;">
             <table class="form-body" cellspacing="0">
               <tr>
+                <th>
+
+                </th>
+                <td>
+                  <v:check-box name="f_favourites" xhtml_id="f_favourites" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('favourites', self.settings, '0') as integer)"  xhtml_title="Show Favourites" />
+                  <vm:label for="f_favourites" value="show Favourites"/>
+                </td>
+              </tr>
+              <tr>
                 <th width="30%">
                   <v:label for="f_rows" value="Rows per page"/>
                 </th>
@@ -83,11 +92,11 @@
               </tr>
               <tr>
                 <th>
-                  Feed images
+
                 </th>
                 <td>
                   <v:check-box name="f_feedIcons" xhtml_id="f_feedIcons" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('feedIcons', self.settings, '1') as integer)"  xhtml_title="Show Feed Icons" />
-                  <vm:label for="f_feedIcons" value="show"/>
+                  <vm:label for="f_feedIcons" value="show Feed''s Images"/>
                 </td>
               </tr>
               <tr>
@@ -169,6 +178,7 @@
           		  return;
               }
               tmp := cast(tmp as varchar);
+              self.settings := ENEWS.WA.set_keyword ('favourites', self.settings, self.f_favourites.ufl_selected);
               self.settings := ENEWS.WA.set_keyword('rows', self.settings, tmp);
               self.settings := ENEWS.WA.set_keyword('updateFeeds', self.settings, self.f_updateFeeds.ufl_selected);
               self.settings := ENEWS.WA.set_keyword('updateBlogs', self.settings, self.f_updateBlogs.ufl_selected);

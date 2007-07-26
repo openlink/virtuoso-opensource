@@ -126,7 +126,7 @@
           </tr>
           <tr>
             <th>
-              <v:label for="f_tags" value="Comma delimited tags" />
+              <v:label for="f_tags" value="Tags" />
             </th>
             <td>
               <v:text name="f_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="70%"/>

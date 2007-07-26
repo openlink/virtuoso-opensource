@@ -291,6 +291,81 @@ function loadIFrame(id, domainID, accountID, flag, mode)
 }
 
 // ---------------------------------------------------------------------------
+function loadIFrameURL(URL)
+{
+  document.getElementById('feed_content').innerHTML = '<iframe src="http://feedvalidator.org/check.cgi?url='+URL+'" style="margin: -2px 0px 0px 0px;" width="100%" height="100%" frameborder="0" scrolling="auto" hspace="0" vspace="0" marginwidth="0" marginheight="0"></iframe>';
+}
+
+// ---------------------------------------------------------------------------
+function myInit()
+{
+
+  var favourites = $('pane_right2');
+  if (favourites) {
+    var gd = new OAT.GhostDrag();
+
+    var dummyReference = function(){};
+    var successReference = function(node) {
+      return function(target,x,y) {
+        addFavourite(node.id.replace('pt_node_',''));
+      }
+    }
+    gd.addTarget(favourites);
+    nodes = document.getElementsByTagName('span');
+    if (nodes)
+      for (var i = 0; i < nodes.length; i++)
+        if (nodes[i].id)
+          if (nodes[i].id.indexOf('pt_node_') != -1)
+            gd.addSource(nodes[i], dummyReference, successReference(nodes[i]));
+  }
+}
+
+// ---------------------------------------------------------------------------
+function addFavourite(node)
+{
+  var favourite = $('pt_favourite_'+node);
+  if (favourite)
+    return;
+  var tNode = $('pt_node_'+node);
+  if (!tNode)
+    return;
+
+  var S = 'favourites.vsp?sid='+document.F1.sid.value+'&realm='+document.F1.realm.value+'&a=add&node='+escape(node)+'&seq=1';
+  OAT.AJAX.GET(S, '', favouriteCallback);
+}
+
+// ---------------------------------------------------------------------------
+function favouriteCallback()
+{
+  getFavourites ();
+}
+
+// ---------------------------------------------------------------------------
+function removeFavourite(node)
+{
+  var favourite = $('pt_favourite_'+node);
+  if (!favourite)
+    return;
+  if (confirmAction('Are you sure you want to remove this item from Favourites?')) {
+    var S = 'favourites.vsp?sid='+document.F1.sid.value+'&realm='+document.F1.realm.value+'&a=remove&node='+escape(node)+'&seq=1';
+    OAT.AJAX.GET(S, '', favouriteCallback);
+  }
+}
+
+// ---------------------------------------------------------------------------
+function getFavourites()
+{
+  var S = 'favourites.vsp?sid='+document.F1.sid.value+'&realm='+document.F1.realm.value+'&a=list';
+  OAT.AJAX.GET(S, '', getFavouritesCallback);
+}
+
+// ---------------------------------------------------------------------------
+function getFavouritesCallback(txt)
+{
+  $("pane_right2").innerHTML = txt;
+}
+
+// ---------------------------------------------------------------------------
 function loadFromIFrame(id, domainID, accountID, flag, mode) {
   if (flag == null)
     flag = 'r1';

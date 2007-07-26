@@ -205,6 +205,8 @@
         } else if ((node_type = 's') and (node_id <> -1)) {
           image2 := 'image/sfolder_16.jpg';
         }
+        if (node_type = 'b')
+          image2 := 'image/ods_weblog_16.png';
 
         class := 'nolink_b';
         if (nodes[N+2] = self.fPath) {
@@ -223,6 +225,9 @@
         {
           http (sprintf(' <img src="%s" border="0" /> <b>%s</b>', image2, nodes[N]));
         } else {
+          if ((node_type = 'c') or (node_type = 'b'))
+            http (sprintf('<span id="pt_node_%s" class="dragable"><a href="#" name="pt_node_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'%s\'); return false" class="nolink3 %s" alt="%s" title="%s" > <img src="%s" border="0" /> %s</a></span>', nodes[N+1], nodes[N+2], nodes[N+1], nodes[N+2], class, nodes[N], nodes[N], image2, nodes[N]));
+          if ((node_type <> 'c') and (node_type <> 'b'))
           http (sprintf('<a href="#" name="pt_node_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'%s\'); return false" class="nolink3 %s" alt="%s" title="%s" > <img src="%s" border="0" /> %s</a>', nodes[N+2], nodes[N+1], nodes[N+2], class, nodes[N], nodes[N], image2, nodes[N]));
         }
         if (image = 'minus.gif')
@@ -341,7 +346,7 @@
       </v:template>
 
       <div class="pane_main">
-        <div class="pane_left">
+        <div class="pane_left" style="width: <?V case when ENEWS.WA.settings_favourites(self.settings) then '20.3%' else '' end ?>">
                   <?vsp
               if (0)
               {
@@ -410,7 +415,7 @@
             }
           ?>
         </div>
-        <div class="pane_right">
+        <div class="pane_right" style="width: <?V case when ENEWS.WA.settings_favourites(self.settings) then '59.3%' else '' end ?>">
           <div class="pane_right_sub1">
           <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
             <v:before-data-bind>
@@ -517,7 +522,7 @@
           <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
             <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                 <?vsp
-                  declare mt, st, sv, sButtons varchar;
+                  declare mt, st, sv, sButtons, T varchar;
                   declare data, node_type, node_id any;
 
                   node_id := ENEWS.WA.node_id (self.fNode);
@@ -538,6 +543,7 @@
                   cNext := control.vc_find_control ('ds_next');
                   cPrevious := control.vc_find_control ('ds_prev');
 
+                  T := '';
                   sButtons := '';
                   if (not (cNext is not null and not cNext.vc_enabled and cPrevious is not null and not cPrevious.vc_enabled)) {
                     if (cFirst is not null and not cFirst.vc_enabled) {
@@ -573,12 +579,13 @@
                                 EF_ICON_URI
                            from ENEWS.WA.FEED
                           where EF_ID = node_id) do {
-                      http (sprintf('<div id="channel_header"><div id="channel_header_left"><a href="%s" target="_blank" alt="Feed %s" title="Feed %s"><img src="%s" border="0"/> %s</a></div><div id="channel_header_right">&nbsp;%s</div><br style="clear: left;"/></div>', EF_HOME_URI, EF_TITLE, EF_TITLE, ENEWS.WA.channel_image (self.settings, EF_IMAGE_URI, EF_ICON_URI, 'image/docs_16.gif'), EF_TITLE, sButtons));
-                      http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i></div>', ENEWS.WA.dt_value(EF_LAST_UPDATE)));
+                      http (sprintf('<div id="channel_header"><div id="channel_header_left"><a href="%s" target="_blank" alt="Feed %s" title="Feed %s"><img src="%s" border="0"/> %s</a></div><div id="channel_header_right">&nbsp;%s</div><br style="clear: left;"/></div>', EF_HOME_URI, EF_TITLE, EF_TITLE, ENEWS.WA.channel_image (self.settings, EF_IMAGE_URI, EF_ICON_URI, 'image/docs_16.gif'), ENEWS.WA.rdfa_value (EF_TITLE, 'dc:title'), sButtons));
+                      http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i></div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EF_LAST_UPDATE), 'dct:modified')));
                     }
 
                   if ((node_type = 'c') and (self.domain_id > 0))
                     for (select EFD_TITLE,
+                                EF_URI,
                                 EF_HOME_URI,
                                 EF_LAST_UPDATE,
                                 EF_IMAGE_URI,
@@ -588,8 +595,10 @@
                           where EFD_ID = node_id) do {
                       if (sButtons <> '')
                         sButtons := ' | ' || sButtons;
-                      http (sprintf('<div id="channel_header"><div id="channel_header_left"><a href="%s" target="_blank" alt="Feed %s" title="Feed %s"><img src="%s" border="0"/> %s</a></div><div id="channel_header_right"><a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><br style="clear: both;"/></div>', EF_HOME_URI, EFD_TITLE, EFD_TITLE, ENEWS.WA.channel_image (self.settings, EF_IMAGE_URI, EF_ICON_URI, 'image/docs_16.gif'), EFD_TITLE, self.fNode, sButtons));
-                      http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> | %s | %s</div>', ENEWS.WA.dt_value(EF_LAST_UPDATE), mt, st));
+                      if (ENEWS.WA.settings_favourites(self.settings))
+                        T := sprintf('<a href="javascript: addFavourite(''%s'');" alt="Add to Favourites" title="Add to Favourites"><img src="image/add_16.png" border="0"/></a>',self.fNode);
+                      http (sprintf('<div id="channel_header"><div id="channel_header_left"><a href="%s" target="_blank" alt="Feed %s" title="Feed %s"><img src="%s" border="0"/> %s</a></div><div id="channel_header_right">%s <a href="#" onclick="javascript: loadIFrameURL(''%U'');" alt="Validate" title="Validate"><img src="image/green-icon-16.gif" border="0"/></a> <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><br style="clear: both;"/></div>',EF_HOME_URI, EFD_TITLE, EFD_TITLE, ENEWS.WA.channel_image (self.settings, EF_IMAGE_URI, EF_ICON_URI, 'image/docs_16.gif'), ENEWS.WA.rdfa_value (EFD_TITLE, 'dc:title'), T, EF_URI, self.fNode, sButtons));
+                      http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> | %s | %s</div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EF_LAST_UPDATE), 'dct:modified'), mt, st));
                     }
 
                   if ((node_type = 'f') and (node_id = -1)) {
@@ -628,8 +637,10 @@
                             and EW_DOMAIN_ID = self.domain_id) do {
                       if (sButtons <> '')
                         sButtons := ' | ' || sButtons;
-                      http (sprintf('<div id="channel_header"><div id="channel_header_left"><a href="weblog.vspx?sid=%s&realm=%s&id=%d&mode=update_blog" alt="Blog %s" title="Blog %s"><img src="image/sfolder_16.jpg" border="0"/> %s</a></div><div id="channel_header_right"><a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><br style="clear: left;"/></div>', self.sid, self.realm, EB_ID, EB_NAME, EB_NAME, EB_NAME, self.fNode, sButtons));
-                      http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> | %s | %s </div>', ENEWS.WA.dt_value(EB_LAST_UPDATE), mt, st));
+                      if (ENEWS.WA.settings_favourites(self.settings))
+                        T := sprintf('<a href="javascript: addFavourite(''%s'');" alt="Add to Favourites" title="Add to Favourites"><img src="image/add_16.png" border="0"/></a>',self.fNode);
+                      http (sprintf('<div id="channel_header"><div id="channel_header_left"><a href="weblog.vspx?sid=%s&realm=%s&id=%d&mode=update_blog" alt="Blog %s" title="Blog %s"><img src="image/ods_weblog_16.png" border="0"/> %s</a></div><div id="channel_header_right">%s <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><br style="clear: left;"/></div>', self.sid, self.realm, EB_ID, EB_NAME, EB_NAME, ENEWS.WA.rdfa_value (EB_NAME, 'dc:title'), T, self.fNode, sButtons));
+                      http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> | %s | %s </div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EB_LAST_UPDATE), 'dct:modified'), mt, st));
                     }
 
                   if ((node_type = 't') and not is_empty_or_null(ENEWS.WA.node_suffix(self.fNode))) {
@@ -713,7 +724,7 @@
                       <img src="image/html.png" border="0" alt="folder" width="16"/>
                     </td>
                     <td>
-                      <v:url value="--(control.vc_parent as vspx_row_template).te_column_value('EFI_TITLE')" url="--'javascript: return false;'" format="%s" xhtml_id="--concat('feed_', cast((control.vc_parent as vspx_row_template).te_column_value('EFI_ID') as varchar))" xhtml_title="--ENEWS.WA.utf2wide((control.vc_parent as vspx_row_template).te_column_value('EFI_TITLE'))" xhtml_class="--self.linkClass((control.vc_parent as vspx_row_template).te_column_value('EFID_READ_FLAG'))">
+                        <v:url value="--ENEWS.WA.rdfa_value ((control.vc_parent as vspx_row_template).te_column_value('EFI_TITLE'), 'dc:title')" url="--'javascript: return false;'" format="%s" xhtml_id="--concat('feed_', cast((control.vc_parent as vspx_row_template).te_column_value('EFI_ID') as varchar))" xhtml_title="--ENEWS.WA.utf2wide((control.vc_parent as vspx_row_template).te_column_value('EFI_TITLE'))" xhtml_class="--self.linkClass((control.vc_parent as vspx_row_template).te_column_value('EFID_READ_FLAG'))">
                         <v:after-data-bind>
                           <![CDATA[
                             control.vu_url := sprintf('javascript: loadIFrame(\'%d\', \'%d\', \'%d\', null, \'%s\');', (control.vc_parent as vspx_row_template).te_column_value('EFI_ID'), self.domain_id, self.account_id, ENEWS.WA.node_type(self.fNode));
@@ -727,10 +738,10 @@
                         </td>
                       </v:template>
                     <td>
-                      <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('EFI_AUTHOR')" format="%s"/>
+                        <v:label value="--ENEWS.WA.rdfa_value ((control.vc_parent as vspx_row_template).te_column_value('EFI_AUTHOR'), 'dc:creator')" format="%s"/>
                     </td>
                     <td align="right" nowrap="nowrap">
-                      <i><v:label value="--ENEWS.WA.dt_value((control.vc_parent as vspx_row_template).te_column_value('EFI_PUBLISH_DATE'))" format="%s"/></i>
+                        <i><v:label value="--ENEWS.WA.rdfa_value (ENEWS.WA.dt_value ((control.vc_parent as vspx_row_template).te_column_value('EFI_PUBLISH_DATE')), 'dct:modified')" format="%s"/></i>
                     </td>
                   </tr>
                 </table>
@@ -750,9 +761,24 @@
             ]]>
           </script>
         </div>
-          <div class="pane_right_sub2" id="feed_content"/>
+          <div class="pane_right_sub2" id="feed_content">
+          </div>
         </div>
+        <?vsp
+          if (ENEWS.WA.settings_favourites(self.settings)) {
+        ?>
+        <div class="pane_right2" id="pane_right2">
       </div>
+      <script type="text/javascript">
+        <![CDATA[
+            getFavourites();
+          ]]>
+        </script>
+        <?vsp
+          }
+        ?>
+      </div>
+
       <script type="text/javascript">
         <![CDATA[
           if (document.forms['F1'].elements['fid'])

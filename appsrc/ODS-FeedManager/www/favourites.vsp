@@ -1,0 +1,61 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2007 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+
+  set http_charset = 'utf-8';
+
+  declare id, domain_id, account_id, seq integer;
+  declare sid, realm, node, action any;
+  declare aSession any;
+
+  aSession   := ENEWS.WA.session_restore (params);
+  domain_id  := cast(get_keyword('domain_id', aSession, '0') as integer);
+  account_id := cast(get_keyword('user_id', aSession, '0') as integer);
+
+  if (domain_id < 0)
+    return;
+  if (account_id < 0)
+    return;
+
+  action := get_keyword ('a', params, '');
+  if (action = 'add') {
+    node := get_keyword ('node', params, '');
+    seq := cast(get_keyword('seq', params, '1') as integer);
+    ENEWS.WA.favourite_add (node, seq);
+  }
+  if (action = 'remove') {
+    node := get_keyword ('node', params, '');
+    ENEWS.WA.favourite_remove (node);
+  }
+  if (action = 'list') {
+    for (select EFD_ID, EFD_TITLE from ENEWS.WA.FEED_DOMAIN where EFD_DOMAIN_ID = domain_id and EFD_FAVOURITE > 0 order by EFD_TITLE) do {
+      node := ENEWS.WA.make_node ('c', EFD_ID);
+      http (sprintf('<span id="pt_favourite_%s"><a class="remove" href="javascript: removeFavourite(''%s'');" alt="Remove" title="Remove">[X]</a> <a href="#" name="pt_favourite_%s" class="nolink3 nolink_b" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'\'); return false" alt="%s" title="%s" > <img src="%s" border="0" /> %s</a></span>', node, node, node, node, EFD_TITLE, EFD_TITLE, ENEWS.WA.channel_icon (EFD_ID, 'image/docs_16.gif'), EFD_TITLE));
+      http ( ' <br />' );
+    }
+    for (select EB_ID, EB_NAME from ENEWS.WA.WEBLOG join ENEWS.WA.BLOG on EB_WEBLOG_ID = EW_ID where EW_DOMAIN_ID = domain_id and EB_FAVOURITE > 0 order by EB_NAME) do {
+      node := ENEWS.WA.make_node ('b', EB_ID);
+      http (sprintf('<span id="pt_favourite_%s"><a class="remove" href="javascript: removeFavourite(''%s'');" alt="Remove" title="Remove">[X]</a> <a href="#" name="pt_favourite_%s" class="nolink3 nolink_b" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'\'); return false" alt="%s" title="%s" > <img src="%s" border="0" /> %s</a></span>', node, node, node, node, EB_NAME, EB_NAME, 'image/ods_weblog_16.png', EB_NAME));
+      http ( ' <br />' );
+    }
+  }
+?>

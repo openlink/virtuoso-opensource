@@ -22,6 +22,8 @@
 
 use sioc;
 
+-------------------------------------------------------------------------------
+--
 -- the same as feeds_iri (wai_name)
 create procedure feed_mgr_iri (
   inout domain_id integer)
@@ -33,6 +35,8 @@ create procedure feed_mgr_iri (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 -- this represents a feed, not an instance
 create procedure feed_iri (
   inout feed_id integer)
@@ -41,7 +45,9 @@ create procedure feed_iri (
 }
 ;
 
--- this represents item in the given feed
+-------------------------------------------------------------------------------
+--
+-- this represents item in the given feed, if name changed should change in sioc.sql too
 create procedure feed_item_iri (
   inout feed_id integer,
   inout item_id integer)
@@ -50,6 +56,8 @@ create procedure feed_item_iri (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 -- this represents comment in the given feed item
 create procedure feed_comment_iri (
   inout domain_id integer,
@@ -63,6 +71,26 @@ create procedure feed_comment_iri (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure feed_annotation_iri (
+  in domain_id varchar,
+  in item_id integer,
+  in annotation_id integer)
+{
+  declare _member, _inst varchar;
+  declare exit handler for not found { return null; };
+
+  select U_NAME, WAI_NAME into _member, _inst
+    from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
+   where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
+
+  return sprintf ('http://%s%s/%U/feeds/%U/%d/annotation/%d', get_cname(), get_base_path (), _member, _inst, item_id, annotation_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure feed_item_url (
   inout domain_id integer,
   inout item_id integer)
@@ -71,6 +99,8 @@ create procedure feed_item_url (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 -- this represents author in the diven post
 create procedure author_iri (inout feed_id integer, inout author any, inout content any)
 {
@@ -99,6 +129,8 @@ _end:
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 -- this represents author in the diven post
 create procedure feeds_foaf_maker (inout graph_iri varchar, inout feed_id integer, inout author any, inout content any)
 {
@@ -129,6 +161,8 @@ _end:
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure feed_links_to (inout content any)
 {
   declare xt, retValue any;
@@ -153,6 +187,8 @@ create procedure feed_links_to (inout content any)
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare iri, m_iri, f_iri, t_iri, u_iri, c_iri varchar;
@@ -244,6 +280,27 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
       DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('reply_of'), iri);
     }
     }
+      -- annotations
+      for (select A_ID,
+                  A_DOMAIN_ID,
+                  A_OBJECT_ID,
+                  A_BODY,
+                  A_AUTHOR,
+                  A_CREATED,
+                  A_UPDATED
+             from ENEWS.WA.ANNOTATIONS
+            where A_OBJECT_ID = EFI_ID) do
+      {
+        feeds_annotation_insert (graph_iri,
+                                 feed_mgr_iri (A_DOMAIN_ID),
+                                 A_ID,
+                                 A_DOMAIN_ID,
+                                 A_OBJECT_ID,
+                                 A_BODY,
+                                 A_AUTHOR,
+                                 A_CREATED,
+                                 A_UPDATED);
+      }
     cnt := cnt + 1;
       if (mod (cnt, 500) = 0) {
 	commit work;
@@ -255,6 +312,8 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 -- ENEWS..FEED
 create trigger FEEDD_SIOC_I after insert on ENEWS..FEED_DOMAIN referencing new as N
 {
@@ -271,6 +330,8 @@ create trigger FEEDD_SIOC_I after insert on ENEWS..FEED_DOMAIN referencing new a
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger FEEDD_SIOC_D before delete on ENEWS..FEED_DOMAIN referencing old as O
 {
   declare iri, graph_iri, m_iri varchar;
@@ -286,6 +347,8 @@ create trigger FEEDD_SIOC_D before delete on ENEWS..FEED_DOMAIN referencing old 
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 -- ENEWS..FEED_ITEM
 create procedure feeds_item_insert (
   inout feed_id integer,
@@ -314,6 +377,8 @@ create procedure feeds_item_insert (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure feeds_item_delete (
   inout feed_id integer,
   inout id integer)
@@ -332,12 +397,16 @@ create procedure feeds_item_delete (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger FEED_ITEM_SIOC_I after insert on ENEWS..FEED_ITEM referencing new as N
 {
   feeds_item_insert (N.EFI_FEED_ID, N.EFI_ID, N.EFI_TITLE, N.EFI_PUBLISH_DATE, N.EFI_AUTHOR, N.EFI_LINK, N.EFI_DESCRIPTION, N.EFI_DATA);
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger FEED_ITEM_SIOC_U after update on ENEWS..FEED_ITEM referencing old as O, new as N
 {
   feeds_item_delete (O.EFI_FEED_ID, O.EFI_ID);
@@ -345,12 +414,16 @@ create trigger FEED_ITEM_SIOC_U after update on ENEWS..FEED_ITEM referencing old
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger FEED_ITEM_SIOC_D before delete on ENEWS..FEED_ITEM referencing old as O
 {
   feeds_item_delete (O.EFI_FEED_ID, O.EFI_ID);
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure feeds_tags_insert (
   inout domain_id integer,
   inout item_id integer,
@@ -377,6 +450,8 @@ create procedure feeds_tags_insert (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure feeds_tags_delete (
   inout domain_id integer,
   inout item_id integer,
@@ -399,12 +474,16 @@ create procedure feeds_tags_delete (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger FEED_ITEM_DATA_SIOC_I after insert on ENEWS.WA.FEED_ITEM_DATA referencing new as N
 {
   feeds_tags_insert (N.EFID_DOMAIN_ID, N.EFID_ITEM_ID, N.EFID_TAGS);
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger FEED_ITEM_DATA_SIOC_U after update on ENEWS.WA.FEED_ITEM_DATA referencing old as O, new as N
 {
   feeds_tags_delete (O.EFID_DOMAIN_ID, O.EFID_ITEM_ID, O.EFID_TAGS);
@@ -412,12 +491,16 @@ create trigger FEED_ITEM_DATA_SIOC_U after update on ENEWS.WA.FEED_ITEM_DATA ref
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger FEED_ITEM_DATA_SIOC_D before delete on ENEWS.WA.FEED_ITEM_DATA referencing old as O
 {
   feeds_tags_delete (O.EFID_DOMAIN_ID, O.EFID_ITEM_ID, O.EFID_TAGS);
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure feeds_comment_insert (
   inout domain_id integer,
   inout item_id integer,
@@ -454,6 +537,8 @@ create procedure feeds_comment_insert (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create procedure feeds_comment_delete (
   inout domain_id integer,
   inout item_id integer,
@@ -473,6 +558,8 @@ create procedure feeds_comment_delete (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger FEED_ITEM_COMMENT_SIOC_I after insert on ENEWS.WA.FEED_ITEM_COMMENT referencing new as N
 {
   if (not isnull(N.EFIC_PARENT_ID))
@@ -480,6 +567,8 @@ create trigger FEED_ITEM_COMMENT_SIOC_I after insert on ENEWS.WA.FEED_ITEM_COMME
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger FEED_ITEM_COMMENT_SIOC_U after update on ENEWS.WA.FEED_ITEM_COMMENT referencing old as O, new as N
 {
   if (not isnull(O.EFIC_PARENT_ID))
@@ -489,6 +578,8 @@ create trigger FEED_ITEM_COMMENT_SIOC_U after update on ENEWS.WA.FEED_ITEM_COMME
 }
 ;
 
+-------------------------------------------------------------------------------
+--
 create trigger FEED_ITEM_COMMENT_SIOC_D before delete on ENEWS.WA.FEED_ITEM_COMMENT referencing old as O
 {
   if (not isnull(O.EFIC_PARENT_ID))
@@ -496,6 +587,126 @@ create trigger FEED_ITEM_COMMENT_SIOC_D before delete on ENEWS.WA.FEED_ITEM_COMM
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure feeds_annotation_insert (
+  in graph_iri varchar,
+  in forum_iri varchar,
+  inout annotation_id integer,
+  inout domain_id integer,
+  inout master_id integer,
+  inout author varchar,
+  inout body varchar,
+  inout created datetime,
+  inout updated datetime)
+{
+  declare master_iri, annotattion_iri varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  if (isnull (graph_iri))
+    for (select WAI_ID, WAM_USER, WAI_NAME
+           from DB.DBA.WA_INSTANCE,
+                DB.DBA.WA_MEMBER
+          where WAI_ID = domain_id
+            and WAM_INST = WAI_NAME
+            and WAI_IS_PUBLIC = 1) do
+    {
+      graph_iri := get_graph ();
+      forum_iri := feeds_iri (WAI_NAME);
+    }
+
+  if (not isnull (graph_iri)) {
+    declare feed_id integer;
+
+    feed_id := (select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = master_id);
+    master_iri := feed_item_iri (feed_id, master_id);
+    annotattion_iri := feed_annotation_iri (domain_id, cast (master_id as integer), annotation_id);
+
+	  DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, sioc_iri ('has_container'), forum_iri);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, forum_iri, sioc_iri ('container_of'), annotattion_iri);
+
+	  DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+  }
+  return;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure feeds_annotation_delete (
+  inout annotation_id integer,
+  inout domain_id integer,
+  inout master_id integer)
+{
+  declare graph_iri, iri varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := feed_annotation_iri (domain_id, master_id, annotation_id);
+  delete_quad_s_or_o (graph_iri, iri, iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger ANNOTATIONS_SIOC_I after insert on ENEWS.WA.ANNOTATIONS referencing new as N
+{
+  feeds_annotation_insert (null,
+                           null,
+                           N.A_ID,
+                           N.A_DOMAIN_ID,
+                           N.A_OBJECT_ID,
+                           N.A_BODY,
+                           N.A_AUTHOR,
+                           N.A_CREATED,
+                           N.A_UPDATED);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger ANNOTATIONS_SIOC_U after update on ENEWS.WA.ANNOTATIONS referencing old as O, new as N
+{
+  feeds_annotation_delete (O.A_ID,
+                           O.A_DOMAIN_ID,
+                           O.A_OBJECT_ID);
+  feeds_annotation_insert (null,
+                           null,
+                           N.A_ID,
+                           N.A_DOMAIN_ID,
+                           N.A_OBJECT_ID,
+                           N.A_BODY,
+                           N.A_AUTHOR,
+                           N.A_CREATED,
+                           N.A_UPDATED);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger ANNOTATIONS_SIOC_D before delete on ENEWS.WA.ANNOTATIONS referencing old as O
+{
+  feeds_annotation_delete (O.A_ID,
+                           O.A_DOMAIN_ID,
+                           O.A_OBJECT_ID);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ods_feeds_sioc_init ()
 {
   declare sioc_version any;
@@ -598,7 +809,7 @@ create procedure ODS_FEED_TAGS ()
     }
 };
 
-create procedure view ODS_FEED_TAGS as ODS_FEED_TAGS() (WAM_INST varchar, U_NAME varchar, EFID_ITEM_ID int, EFID_TAG varchar, EFI_FEED_ID int);
+create procedure view ODS_FEED_TAGS as DB.DBA.ODS_FEED_TAGS() (WAM_INST varchar, U_NAME varchar, EFID_ITEM_ID int, EFID_TAG varchar, EFI_FEED_ID int);
 
 create view ODS_FEED_LINKS as select EFIL_LINK, EFI_FEED_ID, EFI_ID
 	from ENEWS.WA.FEED_ITEM, ENEWS.WA.FEED_ITEM_LINK
@@ -697,15 +908,15 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
       ';
 };
 
-grant select on ODS_FEED_FEED_DOMAIN to "SPARQL";
-grant select on ODS_FEED_POSTS to "SPARQL";
-grant select on ODS_FEED_COMMENTS to "SPARQL";
-grant select on ODS_FEED_TAGS to "SPARQL";
-grant select on ODS_FEED_LINKS to "SPARQL";
-grant select on ODS_FEED_ATTS to "SPARQL";
-grant execute on sioc.DBA.feed_comment_iri_1 to "SPARQL";
-grant execute on sioc.DBA.feed_item_url to "SPARQL";
-grant execute on DB.DBA.ODS_FEED_TAGS to "SPARQL";
+grant select on ODS_FEED_FEED_DOMAIN to SPARQL_SELECT;
+grant select on ODS_FEED_POSTS to SPARQL_SELECT;
+grant select on ODS_FEED_COMMENTS to SPARQL_SELECT;
+grant select on ODS_FEED_TAGS to SPARQL_SELECT;
+grant select on ODS_FEED_LINKS to SPARQL_SELECT;
+grant select on ODS_FEED_ATTS to SPARQL_SELECT;
+grant execute on sioc.DBA.feed_comment_iri_1 to SPARQL_SELECT;
+grant execute on sioc.DBA.feed_item_url to SPARQL_SELECT;
+grant execute on DB.DBA.ODS_FEED_TAGS to SPARQL_SELECT;
 
 -- END FEEDS
 ODS_RDF_VIEW_INIT ();

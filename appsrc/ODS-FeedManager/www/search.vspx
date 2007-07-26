@@ -576,7 +576,7 @@
                 <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
                 <tr>
                   <th>
-                    <v:label for="f_tags" value="Comma delimited tags" />
+                      <v:label for="f_tags" value="Tags" />
                   </th>
                   <td>
                     <v:text name="f_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="70%"/>

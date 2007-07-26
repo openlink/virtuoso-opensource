@@ -23,7 +23,9 @@
  -
 -->
 
-<html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns:v="http://www.openlinksw.com/vspx/"
+      xmlns:xhtml="http://www.w3.org/1999/xhtml"
+      xmlns="http://www.w3.org/1999/xhtml">
   <head profile="http://internetalchemy.org/2003/02/profile">
     <base href="<?V ENEWS.WA.host_url () || http_path () ?>" />
     <?vsp
@@ -32,13 +34,6 @@
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', ENEWS.WA.sioc_url (self.domain_id)));
       http (ENEWS.WA.geo_url (self.domain_id, self.account_id));
     ?>
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Product Blog (RSS 2.0)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
-    <link rel="alternate" type="application/atom+xml" title="Virtuoso Product Blog (Atom)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
-    <link rel="alternate" type="application/rss+xml" title="ODBC for Mac OS X Screencast Demos"	href="http://support.openlinksw.com/viewlets/mac_uda_viewlets_rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Benchmark and Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
     <?vsp
       declare url varchar;
       declare N integer;
@@ -53,6 +48,14 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <![CDATA[
       <script type="text/javascript" src="js/enews.js"></script>
+      <script type="text/javascript">
+        var toolkitPath="/ods/oat";
+        var featureList=["ajax2","ghostdrag"];
+      </script>
+      <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript">
+        OAT.MSG.attach(OAT,OAT.MSG.OAT_LOAD,myInit);
+      </script>
     ]]>
     <title></title>
   </head>
@@ -77,6 +80,14 @@
           self.account_role := get_keyword('user_role', aSessInfo, '');
           self.accountName := get_keyword('user_name', aSessInfo, '');
           self.settings := ENEWS.WA.settings (self.domain_id, self.account_id);
+
+          self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');
+          self.vc_add_attribute ('xmlns:dc', 'http://purl.org/dc/elements/1.1/');
+          self.vc_add_attribute ('xmlns:dct', 'http://purl.org/dc/terms/');
+          self.vc_add_attribute ('xmlns:rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+          self.vc_add_attribute ('xmlns:rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
+          self.vc_add_attribute ('xmlns:sioct', 'http://rdfs.org/sioc/types#');
+          self.vc_add_attribute ('xmlns:sioc', 'http://rdfs.org/sioc/ns#');
         ]]>
       </v:on-init>
 

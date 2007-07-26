@@ -373,6 +373,7 @@ ENEWS.WA.exec_no_error('
     EFD_TITLE varchar,
     EFD_TAGS varchar,
   	EFD_FOLDER_ID integer,
+    EFD_FAVOURITE integer,
 
     constraint FK_FEED_DOMAIN_01 FOREIGN KEY (EFD_FEED_ID) references ENEWS.WA.FEED (EF_ID),
     constraint FK_FEED_DOMAIN_02 FOREIGN KEY (EFD_DOMAIN_ID, EFD_FOLDER_ID) references ENEWS.WA.FOLDER (EFO_DOMAIN_ID, EFO_ID) on delete set null,
@@ -382,6 +383,9 @@ ENEWS.WA.exec_no_error('
 ');
 
 
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.FEED_DOMAIN add EFD_FAVOURITE integer', 'C', 'ENEWS.WA.FEED_DOMAIN', 'EFD_FAVOURITE'
+);
 
 ENEWS.WA.exec_no_error('
   create index SK_FEED_DOMAIN_01 on ENEWS.WA.FEED_DOMAIN(EFD_DOMAIN_ID, EFD_FEED_ID)
@@ -547,6 +551,29 @@ ENEWS.WA.exec_no_error('
 -------------------------------------------------------------------------------
 --
 ENEWS.WA.exec_no_error('
+  create table ENEWS.WA.ANNOTATIONS (
+    A_ID integer identity,
+    A_DOMAIN_ID integer not null,
+    A_OBJECT_ID integer not null,
+    A_BODY long varchar,
+    A_CONTEXT varchar,
+    A_AUTHOR varchar,
+    A_CREATED datetime,
+    A_UPDATED datetime,
+
+    constraint FK_ENEWS_ANNOTATIONS_01 FOREIGN KEY (A_OBJECT_ID) references ENEWS.WA.FEED_ITEM (EFI_ID) on delete cascade,
+
+    primary key (A_ID)
+  )
+');
+
+ENEWS.WA.exec_no_error ('
+  create index SK_ENEWS_ANNOTATIONS_01 on ENEWS.WA.ANNOTATIONS (A_OBJECT_ID, A_DOMAIN_ID, A_ID)
+');
+
+-------------------------------------------------------------------------------
+--
+ENEWS.WA.exec_no_error ('
   create table ENEWS.WA.TAGS (
   	ETS_DOMAIN_ID integer not null,
   	ETS_ACCOUNT_ID integer not null,
@@ -638,12 +665,17 @@ ENEWS.WA.exec_no_error('
     EB_LAST_UPDATE datetime,
     EB_QUEUE_FLAG integer,
     EB_ERROR_LOG long varchar,
+    EB_FAVOURITE integer,
 
     constraint FK_BLOG_01 FOREIGN KEY (EB_WEBLOG_ID) references ENEWS.WA.WEBLOG (EW_ID) on delete cascade,
 
     primary key (EB_ID)
   )
 ');
+
+ENEWS.WA.exec_no_error (
+  'alter table ENEWS.WA.BLOG add EB_FAVOURITE integer', 'C', 'ENEWS.WA.BLOG', 'EB_FAVOURITE'
+);
 
 ENEWS.WA.exec_no_error('
   create unique index SK_BLOG_01 on ENEWS.WA.BLOG(EB_WEBLOG_ID, EB_NAME)

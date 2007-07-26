@@ -562,6 +562,7 @@ create procedure ENEWS.WA.domain_delete (
   DELETE FROM ENEWS.WA.FEED_DOMAIN WHERE EFD_DOMAIN_ID = domain_id;
   DELETE FROM ENEWS.WA.WEBLOG      WHERE EW_DOMAIN_ID = domain_id;
   DELETE FROM ENEWS.WA.SETTINGS    WHERE ES_DOMAIN_ID = domain_id;
+  DELETE FROM ENEWS.WA.ANNOTATIONS WHERE A_DOMAIN_ID = domain_id;
 
   for (select WAM_USER from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'eNews2' and WAI_ID = domain_id) do
     ENEWS.WA.account_delete (domain_id, WAM_USER);
@@ -623,7 +624,6 @@ create procedure ENEWS.WA.domain_nntp_name (
   in domain_id integer)
 {
   return sprintf ('ods.feeds.%s.%U', ENEWS.WA.domain_owner_name (domain_id), ENEWS.WA.string2nntp (ENEWS.WA.domain_name (domain_id)));
-  --return ENEWS.WA.domain_name (domain_id);
 }
 ;
 
@@ -851,6 +851,43 @@ create procedure ENEWS.WA.feeds_queue_add (
        set EF_QUEUE_FLAG = 1
      where EF_ID = id;
    	commit work;
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.favourite_add (
+  in node varchar,
+  in numb integer)
+{
+  if (ENEWS.WA.node_type (node) = 'c') {
+    update ENEWS.WA.FEED_DOMAIN
+       set EFD_FAVOURITE = numb
+     where EFD_ID = ENEWS.WA.node_id (node);
+  }
+  if (ENEWS.WA.node_type (node) = 'b') {
+    update ENEWS.WA.BLOG
+       set EB_FAVOURITE = numb
+     where EB_ID = ENEWS.WA.node_id (node);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.favourite_remove (
+  in node varchar)
+{
+  if (ENEWS.WA.node_type (node) = 'c') {
+    update ENEWS.WA.FEED_DOMAIN
+       set EFD_FAVOURITE = 0
+     where EFD_ID = ENEWS.WA.node_id (node);
+  }
+  if (ENEWS.WA.node_type (node) = 'b') {
+    update ENEWS.WA.BLOG
+       set EB_FAVOURITE = 0
+     where EB_ID = ENEWS.WA.node_id (node);
   }
 }
 ;
@@ -1834,9 +1871,10 @@ create procedure ENEWS.WA.channel_select(
 create procedure ENEWS.WA.channel_delete(
   inout id integer)
 {
-  declare feed_id integer;
+  declare feed_id, domain_id integer;
 
-  feed_id := (select EFD_FEED_ID from ENEWS.WA.FEED_DOMAIN where EFD_ID = id);
+  select EFD_FEED_ID, EFD_DOMAIN_ID into feed_id, domain_id from ENEWS.WA.FEED_DOMAIN where EFD_ID = id;
+  delete from ENEWS.WA.ANNOTATIONS where A_DOMAIN_ID = domain_id and A_OBJECT_ID in (select EFI_ID from ENEWS.WA.FEED_ITEM where EFI_FEED_ID = feed_id);
   delete from ENEWS.WA.FEED_DOMAIN where EFD_ID = id;
 
   ENEWS.WA.channel_reindex(feed_id);
@@ -3752,6 +3790,14 @@ create procedure ENEWS.WA.settings (
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.settings_favourites (
+  inout settings any)
+{
+  return cast(get_keyword ('favourites', settings, '0') as integer);
+}
+;
+
+---------------------------------------------------------------------------------
 create procedure ENEWS.WA.settings_rows (
   inout settings any)
 {
@@ -3955,9 +4001,9 @@ create procedure ENEWS.WA.sioc_url (
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.foaf_url (
-  in account_id integer)
+  in domain_id integer)
 {
-  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), ENEWS.WA.account_name (account_id));
+  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (domain_id));
 }
 ;
 
@@ -5675,6 +5721,18 @@ create procedure ENEWS.WA.validate_tags (
 
 -----------------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.rdfa_value (
+  in S varchar,
+  in property varchar)
+{
+  if (isnull (S))
+    return '';
+  return sprintf ('<span property="%s">%s</span>', property, S);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.oMail_check(
   in account_id integer)
 {
@@ -6445,3 +6503,83 @@ ENEWS.WA.news_comment_upgrade ()
 registry_set ('news_comment_upgrade', '1')
 ;
 
+create procedure ENEWS.WA.news_comment_get_mess_attachments (inout _data any, in get_uuparts integer)
+{
+  declare data, outp, _all any;
+  declare line varchar;
+  declare in_UU, get_body integer;
+
+  data := string_output (http_strses_memory_size ());
+  http (_data, data);
+  http ('\n', data);
+  _all := vector ();
+
+  outp := string_output (http_strses_memory_size ());
+
+  in_UU := 0;
+  get_body := 1;
+  while (1 = 1)
+  {
+      line := ses_read_line (data, 0);
+
+      if (line is null or isstring (line) = 0)
+      {
+       if (_all = vector ())
+         {
+            _all := vector_concat (_all, vector (string_output_string (outp)));
+         }
+
+         return _all;
+      }
+
+      if (in_UU = 0 and subseq (line, 0, 6) = 'begin ' and length (line) > 6)
+      {
+          in_UU := 1;
+          if (get_body)
+          {
+            get_body := 0;
+            _all := vector_concat (_all, vector (string_output_string (outp)));
+            http_output_flush (outp);
+          }
+          _all := vector_concat (_all, vector (subseq (line, 10)));
+     }
+     else if (in_UU = 1 and subseq (line, 0, 3) = 'end')
+     {
+          in_UU := 0;
+          if (get_uuparts)
+          {
+             _all := vector_concat (_all, vector (string_output_string (outp)));
+             http_output_flush (outp);
+          }
+     }
+     else if ((get_uuparts and in_UU = 1) or get_body)
+     {
+            http (line, outp);
+            http ('\n', outp);
+     }
+  }
+
+  return _all;
+
+}
+;
+
+create procedure ENEWS.WA.news_comment_get_cn_type (in f_name varchar)
+{
+   declare ext varchar;
+   declare temp any;
+
+   ext := 'text/html';
+   temp := split_and_decode (f_name, 0, '\0\0.');
+
+   if (length (temp) < 2)
+     return ext;
+
+   temp := temp[1];
+
+   if (exists (select 1 from WS.WS.SYS_DAV_RES_TYPES where T_EXT = temp))
+	ext := ((select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = temp));
+
+   return ext;
+}
+;

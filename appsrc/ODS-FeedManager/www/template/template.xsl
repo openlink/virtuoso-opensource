@@ -318,7 +318,7 @@
   <xsl:template name="vm:foaf-link">
     <div>
     <?vsp
-        http(sprintf('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', ENEWS.WA.foaf_url (self.account_id)));
+        http(sprintf('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', ENEWS.WA.foaf_url (self.domain_id)));
     ?>
     </div>
   </xsl:template>
@@ -552,6 +552,18 @@
   <!--=========================================================================-->
   <xsl:template match="vm:init">
     <xsl:apply-templates select="node()|processing-instruction()"/>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template match="vm:if">
+    <xsl:processing-instruction name="vsp">
+      if (<xsl:value-of select="@test"/>)
+      {
+    </xsl:processing-instruction>
+        <xsl:apply-templates />
+    <xsl:processing-instruction name="vsp">
+      }
+    </xsl:processing-instruction>
   </xsl:template>
 
   <!--=========================================================================-->

@@ -108,6 +108,41 @@
                       		    into title, comment, u_name, last_update
                       		    from ENEWS.WA.FEED_ITEM_COMMENT
                       		   where EFIC_ID = id;
+                         
+                        declare parsed_message any;
+                        declare _print_body,d_name varchar;
+                        declare idx integer;
+
+                        parsed_message := ENEWS.WA.news_comment_get_mess_attachments (comment, 0);
+                        
+                        _print_body := parsed_message[0];
+                        comment:=_print_body;
+                        
+                        comment:=comment||'<br/>';
+                        idx := 1;
+                        while (idx < length (parsed_message))
+                        {
+	                         d_name := parsed_message[idx];
+	                           comment:=comment||sprintf ('Download attachment : <a target="_BLANK" href="%senews2/%d/attachment.vsp?id=%d&part=%i&fn=%s">%s</a><br/>',
+                                                        WA_LINK(1,'/'),
+                                                        self.v_did,
+                                                        id,
+                                                        idx,
+                                                        d_name,
+                                                        d_name);
+	                         if (d_name like '%.jpg' or d_name like '%.gif' or d_name like '%.png')
+	                         {
+	                           comment:=comment||sprintf ('<img alt="attachment" src="%senews2/%d/attachment.vsp?id=%d&part=%i&fn=%s" />',
+                                                       WA_LINK(1,'/'),
+                                                       self.v_did,
+                                                       id,
+                                                       idx,
+                                                       d_name);
+	                           comment:=comment||'<br/>';
+	                         }
+                           
+	                         idx := idx + 1;
+                        }
                       	?>
 	                      <div class="comment" id="msg_<?V id ?>">
 		                      <div class="comment-header">

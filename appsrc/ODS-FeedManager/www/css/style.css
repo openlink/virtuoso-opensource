@@ -465,7 +465,8 @@ table#list thead input {
 {
   width: 69.3%;
   height: 100%;
-  float: right;
+  float: left;
+  margin-left: 0.15%;
 }
 
 .pane_right_sub1
@@ -474,7 +475,7 @@ table#list thead input {
   height: 49.5%;
   overflow: auto;
   border: solid #7f94a5;
-  border-width: 1px
+  border-width: 1px;
 }
 
 .pane_right_sub2
@@ -483,7 +484,17 @@ table#list thead input {
   height: 49.5%;
   margin-top: 0.3%;
   border: solid #7f94a5;
-  border-width: 1px
+  border-width: 1px;
+}
+.pane_right2
+{
+  width: 19.6%;
+  height: 100%;
+  float: right;
+  overflow: auto;
+  border: solid #7f94a5;
+  border-width: 1px;
+  margin-left: 0.15%;
 }
 
 /*====== news ======*/
@@ -1001,6 +1012,13 @@ div.tabContent {
   font-size: 1em;
   padding: 6px;
 }
+
+a.remove
+{
+  color: red;
+  font-weight: bold;
+}
+
 
 a.tab {
   color: #000;
