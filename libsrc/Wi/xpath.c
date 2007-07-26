@@ -3628,6 +3628,13 @@ xpt_add_attr_name (caddr_t * phrase, XT * node)
   return phrase;
 }
 
+lang_handler_t *
+xpt_lhptr (caddr_t lhptr)
+{
+  ptrlong x = unbox_ptrlong (lhptr);
+  return ((lang_handler_t *)x);
+}
+
 caddr_t *
 xpt_eq (XT * tree, XT * ctx_step)
 {
@@ -3650,7 +3657,7 @@ xpt_eq (XT * tree, XT * ctx_step)
     node = left->_.step.node;
   if (XP_ATTRIBUTE == left->_.step.axis)
     {
-      word_or_phrase = xp_word_or_phrase_from_string (NULL /* no xp_error */, right->_.literal.val, &eh__UTF8, right->_.literal.lhptr[0], 0);
+      word_or_phrase = xp_word_or_phrase_from_string (NULL /* no xp_error */, right->_.literal.val, &eh__UTF8, xpt_lhptr (right->_.literal.lhptr), 0);
       if (NULL == word_or_phrase)
 	return NULL;
       xpt_edit_range_flags ((caddr_t *)(word_or_phrase), ~SRC_RANGE_DUMMY, SRC_RANGE_ATTR);
@@ -3658,7 +3665,7 @@ xpt_eq (XT * tree, XT * ctx_step)
     }
   if (!(ARRAYP(node) || ((XT *)XP_TEXT == node) || ((XT *)XP_STAR == node) || ((XT *)XP_ELT == node) || ((XT *)XP_ELT_OR_ROOT == node)))
     return NULL;
-  word_or_phrase = xp_word_or_phrase_from_string (NULL /* no xp_error */, right->_.literal.val, &eh__UTF8, right->_.literal.lhptr[0], 0);
+  word_or_phrase = xp_word_or_phrase_from_string (NULL /* no xp_error */, right->_.literal.val, &eh__UTF8, xpt_lhptr (right->_.literal.lhptr), 0);
   if (NULL == word_or_phrase)
     return NULL;
   xpt_edit_range_flags (word_or_phrase, ~SRC_RANGE_DUMMY, SRC_RANGE_MAIN);
@@ -3723,7 +3730,7 @@ xpt_call (XT * tree)
 	return in; /* literal expected as the second argument */
       if (! DV_STRINGP (args[1]->_.literal.val))
 	return in;
-      text_tree = xp_text_parse (args[1]->_.literal.val, &eh__UTF8, args[1]->_.literal.lhptr[0], NULL /* no runtime options */, &err);
+      text_tree = xp_text_parse (args[1]->_.literal.val, &eh__UTF8, xpt_lhptr (args[1]->_.literal.lhptr), NULL /* no runtime options */, &err);
       if (err)
 	dk_free_tree (err);
       if (NULL != text_tree)
@@ -4141,7 +4148,7 @@ XT *xp_make_seq_type (xpp_t *xpp, ptrlong first_token, caddr_t top_name, XT *typ
 	    xp_error_printf (xpp, "XMLSchema has no predefined type for name '%s' in sequence type declaration", component_name);
 	  goto component_name_resolved;
 	}
-      schema_shu = (shuric_t *)(unbox (((caddr_t *)schema_shu_addr_ptr)[0]));
+      schema_shu = (shuric_t *)(unbox_ptrlong (((caddr_t *)schema_shu_addr_ptr)[0]));
       schema = (schema_parsed_t *)(schema_shu->shuric_data);
       dict = schema->sp_hashtables[dict_to_search];
       dict_entry = ((NULL != dict) ? (xs_component_t **) id_hash_get (dict, (caddr_t) &component_name) : NULL);
@@ -5046,10 +5053,11 @@ xp_query_enable_wr (xp_query_t * xqr, XT *tree, int target_is_wr)
 		(XP_STEP == l_exp->type) && (XP_SELF == l_exp->_.step.axis) &&
 		(XP_LITERAL == exp_r->type) )
 		{
+		  lang_handler_t * lh = xpt_lhptr (exp_r->_.literal.lhptr);
 		  int word_count = lh_count_words(
-		    &eh__UTF8, exp_r->_.literal.lhptr[0],
+		    &eh__UTF8, lh,
 		    exp_r->_.literal.val, box_length(exp_r->_.literal.val),
-		    exp_r->_.literal.lhptr[0]->lh_is_vtb_word );
+		    lh->lh_is_vtb_word );
 		  if (0 < word_count)
 		    {	/* Case like <CODE>... / tag_name [. = "Some words"]</CODE> or like <CODE>... / tag_name [. like "%Some words%"]</CODE> */
 		      goto enable_wr_here;	/* see below */
@@ -5083,10 +5091,11 @@ enable_wr_in_step_input:
 	goto enable_wr_in_l_exp;	/* see below */
       if (XP_LITERAL == exp_r->type)
 	{
+	  lang_handler_t * lh = xpt_lhptr (exp_r->_.literal.lhptr);
 	  int word_count = lh_count_words(
-	    &eh__UTF8, exp_r->_.literal.lhptr[0],
+	    &eh__UTF8, lh,
 	    exp_r->_.literal.val, box_length(exp_r->_.literal.val),
-	    exp_r->_.literal.lhptr[0]->lh_is_vtb_word );
+	    lh->lh_is_vtb_word );
 	  if (0 < word_count)
 	    {	/* Case like <CODE>... / tag_name [. = "Some words"]</CODE> or like <CODE>... / tag_name [. like "%Some words%"]</CODE> */
 	      l_exp->_.step.axis = axs_wr;

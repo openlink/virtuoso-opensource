@@ -3383,9 +3383,9 @@ bif_gvector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t *vect = (caddr_t *)bif_array_arg (qst, args, 0, "gvector_sort");
   ptrlong vect_elems = BOX_ELEMENTS (vect);
-  int block_elts = bif_long_arg (qst, args, 1, "gvector_sort");
-  int key_ofs = bif_long_arg (qst, args, 2, "gvector_sort");
-  int sort_asc = bif_long_arg (qst, args, 3, "gvector_sort");
+  ptrlong block_elts = bif_long_range_arg (qst, args, 1, "gvector_sort", 1, 1024);
+  ptrlong key_ofs = bif_long_range_arg (qst, args, 2, "gvector_sort", 0, 1024);
+  ptrlong sort_asc = bif_long_range_arg (qst, args, 3, "gvector_sort", 0, 1);
   caddr_t *temp;
   vector_sort_t specs;
   if (block_elts <= 0)

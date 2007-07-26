@@ -380,7 +380,7 @@ typedef struct xp_tree_s
       xqst_t	init;
     } var;
     struct {
-      lang_handler_t	**lhptr;
+      caddr_t           lhptr; /* a numeric box keeping lang_handler_t ** */
       caddr_t		val;
       xqst_t		res;
     } literal;
