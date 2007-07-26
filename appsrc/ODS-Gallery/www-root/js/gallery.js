@@ -226,18 +226,32 @@ gallery.albums_click = function(el){
       ds_albums.setCurrent(r);
       coll = preview_collection(ds_albums.list[r],r);
 
-      gallery.albums.removeChild(gallery.albums.childNodes[Number(ds_albums.current.index)]);
-      gallery.albums.appendChild(coll)
+    
+//    gallery.albums.removeChild(gallery.albums.childNodes[Number(ds_albums.current.index)]);
+//    gallery.albums.appendChild(coll)
+
+    gallery.albums.replaceChild(coll, gallery.albums.childNodes[Number(ds_albums.current.index)]); 
 
       gallery.edit_album.hide();
 
       gallery.showImages();
+
+    TL.draw();
+    
+    mapInit();
+
+    
+    
 
   }
 
 
 //------------------------------------------------------------------------------
 gallery.new_album_tab_click = function (){
+
+
+  $('map').className = $('map').className.replace( "view","edit");
+ 	map.lastGEvent =	GEvent.addListener(map.obj,"click",function(o,p){if (!p){ return; } newAlbumMarker(p);});
 
   gallery.managePanels('new_album');
   $('new_album_description').value = '';
@@ -247,9 +261,18 @@ gallery.new_album_tab_click = function (){
   var month = d.getMonth()
   var month = d.getDay()
 
-  $('new_album_pub_date_day').selectedIndex = d.getDate()-1;
-  $('new_album_pub_date_month').selectedIndex = d.getMonth();
-  $('new_album_pub_date_year').selectedIndex = String(d.getFullYear()).substring(3)-1;
+//  $('new_album_pub_date_day').selectedIndex = d.getDate()-1;
+//  $('new_album_pub_date_month').selectedIndex = d.getMonth();
+//  $('new_album_pub_date_year').selectedIndex = String(d.getFullYear()).substring(3)-1;
+  
+
+  $('new_album_start_date_day').selectedIndex = d.getDate();
+  $('new_album_start_date_month').selectedIndex = d.getMonth();
+  $('new_album_start_date_year').selectedIndex = String(d.getFullYear()).substring(3);
+
+  $('new_album_end_date_day').selectedIndex = d.getDate();
+  $('new_album_end_date_month').selectedIndex = d.getMonth();
+  $('new_album_end_date_year').selectedIndex = String(d.getFullYear()).substring(3);
   
   gallery.nav.tabs(2);
 }
@@ -263,16 +286,70 @@ gallery.new_album_close_click = function(){
 //------------------------------------------------------------------------------
 gallery.new_album_action = function (){
 
+  $('new_album_name').style.background             = "#FFFFFF";
+  $('new_album_lng').style.background              = "#FFFFFF";
+  $('new_album_lat').style.background              = "#FFFFFF";
+  $('new_album_showonmap').style.background        = "#FFFFFF";
+  $('new_album_start_date_year').style.background  = "#FFFFFF";
+  $('new_album_start_date_month').style.background = "#FFFFFF";
+  $('new_album_start_date_day').style.background   = "#FFFFFF";
+
   var name = strip_spaces(document.getElementById('new_album_name').value);
   document.getElementById('new_album_name').value = name;
 
   if(document.getElementById('new_album_name').value == ''){
-    alert('Please, type album name');
+    alert('Please, type album name.');
     document.getElementById('new_album_name').focus();
     document.getElementById('new_album_name').style.background = "#FFFF9B";
     return;
   }
-  //ajax.Start(gallery_new_album,'');
+  geo_regexp = new RegExp('^\\-{0,1}\\d{0,3}\\.\\d{0,6}$');
+  if( $('new_album_lng').value.length && !geo_regexp.test($('new_album_lng').value)){
+    alert('Please, fill in correct longitude value. [{-}ddd.dddddd]');
+    $('new_album_lng').focus();
+    $('new_album_lng').style.background = "#FFFF9B";
+    return;
+  }
+
+  if( $('new_album_lat').value.length && !geo_regexp.test($('new_album_lat').value)){
+    alert('Please, fill in correct latitude value. [{-}ddd.dddddd]');
+    $('new_album_lat').focus();
+    $('new_album_lat').style.background = "#FFFF9B";
+    return;
+  }
+
+  if( ($('new_album_lng').value.length==0 || $('new_album_lat').value.length==0) && $('new_album_showonmap').checked )
+  {
+    alert('Fill in correct Longitude / Latitude coordinates to show album on map.');
+    $('new_album_showonmap').style.background = "#FFFF9B";
+    if($('new_album_lng').value.length==0)
+    {
+      $('new_album_lng').focus();
+      $('new_album_lng').style.background = "#FFFF9B";
+    }
+    else
+    {
+      $('new_album_lat').focus();
+      $('new_album_lat').style.background = "#FFFF9B";
+    }
+    return;
+  }
+    
+  var startDate = new Date ( $('new_album_start_date_year').value,$('new_album_start_date_month').value,$('new_album_start_date_day').value,0,0,0 );
+  var endDate   = new Date ( $('new_album_end_date_year').value,$('new_album_end_date_month').value,$('new_album_end_date_day').value,0,0,0 );
+  if(endDate<startDate)
+  {
+    alert('Start Date should be prior to End Date.');
+    $('new_album_start_date_year').style.background = "#FFFF9B";
+    $('new_album_start_date_month').style.background = "#FFFF9B";
+    $('new_album_start_date_day').style.background = "#FFFF9B";
+    return;
+  }
+
+
+  $('map').className = $('map').className.replace( "edit","view");
+  GEvent.removeListener(map.lastGEvent);
+
   gallery.ajax.new_album();
 }
 
@@ -286,35 +363,132 @@ gallery.link_edit_album_click = function (){
 
   gallery.managePanels('edit_album');
 
+
+  $('map').className = $('map').className.replace( "view","edit");
+ 	map.lastGEvent =	GEvent.addListener(map.obj,"click",function(o,p){if (!p){ return; } changeAlbumMarkerPos(p);});
+
   document.getElementById('edit_album_name_old').value = ds_albums.current.name;
   document.getElementById('edit_album_name').value = ds_albums.current.name;
 
   if((typeof ds_albums.current.description) != 'undefined'){
     document.f1.edit_album_description.value = ds_albums.current.description;
   }
-  var t_date = sdate2obj(ds_albums.current.pub_date);
+//  var t_date = sdate2obj(ds_albums.current.pub_date);
 
-  $('edit_album_pub_date_year').selectedIndex  = String(t_date.elements[0]).substring(3,4);
-  $('edit_album_pub_date_day').selectedIndex   = Number(t_date.elements[2])-1;
-  $('edit_album_pub_date_month').selectedIndex = Number(t_date.elements[1])-1;
+  var s_date = sdate2obj(ds_albums.current.start_date);
+  var e_date = sdate2obj(ds_albums.current.end_date);
+
+//  $('edit_album_pub_date_year').selectedIndex  = String(t_date.elements[0]).substring(3,4);
+//  $('edit_album_pub_date_day').selectedIndex   = Number(t_date.elements[2])-1;
+//  $('edit_album_pub_date_month').selectedIndex = Number(t_date.elements[1])-1;
+
+  $('edit_album_start_date_year').selectedIndex  = String(s_date.elements[0]).substring(3,4);
+  $('edit_album_start_date_day').selectedIndex   = Number(s_date.elements[2])-1;
+  $('edit_album_start_date_month').selectedIndex = Number(s_date.elements[1])-1;
+
+  $('edit_album_end_date_year').selectedIndex  = String(e_date.elements[0]).substring(3,4);
+  $('edit_album_end_date_day').selectedIndex   = Number(e_date.elements[2])-1;
+  $('edit_album_end_date_month').selectedIndex = Number(e_date.elements[1])-1;
+
+
+
+  if(typeof(ds_albums.current.geolocation[0])!='undefined')
+     $('edit_album_lng').value = ds_albums.current.geolocation[0];
+  else
+    $('edit_album_lng').value='';
+
+  if(typeof(ds_albums.current.geolocation[1])!='undefined')
+     $('edit_album_lat').value = ds_albums.current.geolocation[1];
+  else 
+     $('edit_album_lat').value = '';
+
+  if(ds_albums.current.geolocation[2]=='true')
+  {   
+     $('edit_album_showonmap').checked = true;
+  }else
+     $('edit_album_showonmap').checked =  false;
+
+
 
   if(ds_albums.current.visibility == 1){
     $('album_visibility_all').checked = true;
   }else{
     $('album_visibility_me').checked = true;
   }
+  
+  if(ds_albums.current.obsolete == 1)
+    $('edit_album_obsolete').checked = true;
+  else
+    $('edit_album_obsolete').checked= false;
+    
   gallery.hideAlbums();
 }
 
 //------------------------------------------------------------------------------
 gallery.edit_album_action = function (){
+
+  $('edit_album_name').style.background = "#FFFFFF";
+  $('edit_album_lng').style.background = "#FFFFFF";
+  $('edit_album_lat').style.background = "#FFFFFF";
+  $('edit_album_start_date_year').style.background = "#FFFFFF";
+  $('edit_album_start_date_month').style.background = "#FFFFFF";
+  $('edit_album_start_date_day').style.background = "#FFFFFF";
+
   if(document.getElementById('edit_album_name').value == ''){
     alert('Please, type album name');
     document.getElementById('edit_album_name').focus();
     document.getElementById('edit_album_name').style.background = "#FFFF9B";
     return;
   }
+  
+  geo_regexp = new RegExp('^\\-{0,1}\\d{0,3}\\.\\d{0,6}$');
+  if(  $('edit_album_lng').value.length && !geo_regexp.test($('edit_album_lng').value)){
+    alert('Please, fill in correct longitude value. [{-}ddd.dddddd]');
+    $('edit_album_lng').focus();
+    $('edit_album_lng').style.background = "#FFFF9B";
+    return;
+  }
+
+  if( $('edit_album_lat').value.length && !geo_regexp.test($('edit_album_lat').value)){
+    alert('Please, fill in correct latitude value. [{-}ddd.dddddd]');
+    $('edit_album_lat').focus();
+    $('edit_album_lat').style.background = "#FFFF9B";
+    return;
+  }
+
+  if( ($('edit_album_lng').value.length==0 || $('edit_album_lat').value.length==0) && $('edit_album_showonmap').checked )
+  {
+    alert('Fill in correct Longitude / Latitude coordinates to show album on map.');
+    $('edit_album_showonmap').style.background = "#FFFF9B";
+    if($('edit_album_lng').value.length==0)
+    {
+      $('edit_album_lng').focus();
+      $('edit_album_lng').style.background = "#FFFF9B";
+    }
+    else
+    {
+      $('edit_album_lat').focus();
+      $('edit_album_lat').style.background = "#FFFF9B";
+    }
+    return;
+  }
+
+  var startDate = new Date ( $('edit_album_start_date_year').value,$('edit_album_start_date_month').value,$('edit_album_start_date_day').value,0,0,0 );
+  var endDate   = new Date ( $('edit_album_end_date_year').value,$('edit_album_end_date_month').value,$('edit_album_end_date_day').value,0,0,0 );
+  if(endDate<startDate)
+  {
+    alert('Start Date should be prior to End Date.');
+    $('edit_album_start_date_year').style.background = "#FFFF9B";
+    $('edit_album_start_date_month').style.background = "#FFFF9B";
+    $('edit_album_start_date_day').style.background = "#FFFF9B";
+    return;
+  }
+  
   //ajax.Start(gallery_edit_album,'');
+  
+  
+  $('map').className = $('map').className.replace( "edit","view");
+  GEvent.removeListener(map.lastGEvent);
   gallery.ajax.edit_album();
 }
 //------------------------------------------------------------------------------
@@ -338,10 +512,40 @@ gallery.images_upload_finish = function(id){
 
 //------------------------------------------------------------------------------
 gallery.edit_album_cancel = function (){
+
+  $('map').className = $('map').className.replace( "edit","view");
+  GEvent.removeListener(map.lastGEvent);
+
   this.images.show();
   this.edit_album.hide();
   }
+//------------------------------------------------------------------------------
 
+gallery.setThumbnail= function (i){
+  elm1=$('setThumb_'+ds_albums.current.thumb_id);
+  
+  
+  if(elm1)
+  {
+    elm1.firstChild.src=base_path + 'i/orb_blank.gif'
+    elm1.href='javascript:gallery.setThumbnail('+ds_albums.current.thumb_id+')';  
+  };
+  
+  elm2=$('setThumb_'+i);
+  if(elm2)
+  {
+   elm2.firstChild.src=base_path + 'i/orb_selected.gif'
+   elm2.href='javascript:void(0)'
+  };
+  
+  ds_albums.current.thumb_id=i;
+
+  $('album_map_preview_th_'+ds_albums.current.index).src=base_path+'image.vsp?'+setSid()+'image_id='+i+'&size=0';
+  $('album_preview_th_'+ds_albums.current.index).src=base_path+'image.vsp?'+setSid()+'image_id='+i+'&size=0';
+    
+  gallery.ajax.thumbnail_album();  
+
+}
 //------------------------------------------------------------------------------
 gallery.showImages = function (){
   var path  = location.hash.substring(1).split('/');
@@ -822,6 +1026,7 @@ gallery.link_delete_album_click = function(){
   if(!confirm('Are you sure that you want to delete current Album?')){
     return;
   }
+  removeAlbumMarker();
   gallery.ajax.delete_album(ds_albums.current.id);
 }
 
@@ -873,7 +1078,7 @@ gallery.showError = function (ex){
   gallery.error_box.clear();
   gallery.error_box.show();
   gallery.error_box.appendChild(box);
-  OAT.Dom.hide('wait');
+  hideWait();
 
 }
 
@@ -890,6 +1095,11 @@ function showPreviewNav(){
 function preview_collection(album,i){
 
   var div = document.createElement('div')
+  if(album.obsolete==1)
+     div.className='album_obsolete';
+  else
+     div.className='album';
+  
   var ramka = document.createElement('span')
   div.setAttribute('id','album_preview_'+i);
   div.setAttribute('path',album.name);
@@ -916,6 +1126,63 @@ function preview_collection(album,i){
   }
   return div;
 }
+
+//------------------------------------------------------------------------------
+function preview_collection_4_map(album,i){
+
+  var div = OAT.Dom.create("div");
+  div.setAttribute('id','album_map_preview_'+i);
+  div.setAttribute('path',album.name);
+
+
+  var table = OAT.Dom.create("table",{padding:'0px 7px 5px 0px'});
+  var tbody = OAT.Dom.create("tbody");
+
+  var td_img = OAT.Dom.create("td",{verticalAlign:"middle",textAlign:"center"});
+  var img_a = OAT.Dom.create("a");
+  img_a.href = "#/"+album.name+'/';
+  if(album.thumb_id){
+    src = base_path+'image.vsp?'+setSid()+'image_id='+album.thumb_id+'&size=0';
+  }else
+    src = '';
+  
+  thumb = makeImg(src);
+  thumb.setAttribute('id','album_map_preview_th_'+i);
+  OAT.Dom.attach(thumb,"click",function(){
+                                       current_id = i;
+                                       gallery.setCurrent(current_id);
+                                       gallery.ajax.load_images(current_id);
+                                      
+                                      });
+
+  img_a.appendChild(thumb);
+  td_img.appendChild(img_a);
+  
+  var tr = OAT.Dom.create("tr");
+  var item = OAT.Dom.create("td");
+  var a = OAT.Dom.create("a");
+
+  if(album.name){
+    a.innerHTML = album.name.substring(0,12)+" ("+sdate2obj(album.start_date).year +'/'+sdate2obj(album.start_date).month+")";
+    a.href = "#/"+album.name+'/';
+    OAT.Dom.attach(a,"click",function(){
+                                         current_id = i;
+                                         gallery.setCurrent(current_id);
+                                         gallery.ajax.load_images(current_id);
+                                        
+                                        });
+  }
+  
+  OAT.Dom.append([item,a],[tr,item],[tbody,tr]);
+  tr.appendChild(td_img);
+  OAT.Dom.append([table,tbody]);
+
+  div.appendChild(table);
+
+  return div;
+  
+}
+
 
 //------------------------------------------------------------------------------
 function preview_album(album,i,mode){
@@ -969,15 +1236,52 @@ function preview_image(i,mode){
 
   if(mode != 'previous' && mode != 'next'){
     chbox = makeCheckbox('image_id_'+i,current_image.id);
+    div.appendChild(document.createElement('br'));
+    
+  
+   ctrlDiv=OAT.Dom.create('div');
+   ctrlDiv.setAttribute('id','images_ctrl');
 
-    div.appendChild(document.createElement('br'))
-    if(sid != ''){
-      div.appendChild(chbox)
+    if(isOwner){
+      
+      ctrlDiv.appendChild(chbox);
+      
+
+      thumbCtrl = makeHref('javascript:gallery.setThumbnail('+current_image.id+')',makeImg(base_path + 'i/orb_blank.gif',13,13,'setthumb_button'));
+      if(current_image.id==ds_albums.current.thumb_id)
+         thumbCtrl = makeHref('javascript:void(0)',makeImg(base_path + 'i/orb_selected.gif',13,13,'setthumb_button'));
+
+      thumbCtrl.setAttribute('id','setThumb_'+current_image.id);
+      
+
+      ctrlDiv.appendChild(thumbCtrl);
+
     }
+    
+    div.appendChild(ctrlDiv)
+
 }
   return div;
 }
 
+//------------------------------------------------------------------------------
+function showWait()
+{
+    var portSize  =OAT.Dom.getViewport();
+    var scrollSize =OAT.Dom.getScroll()
+
+    $('wait').style.left = (scrollSize[0]+portSize[0]/2-63)+'px';
+    $('wait').style.top  = (scrollSize[1]+portSize[1]/2-30)+'px';
+
+    OAT.Dom.show('wait');
+}
+
+//------------------------------------------------------------------------------
+
+function hideWait()
+{
+    OAT.Dom.hide('wait');
+}
 
 //------------------------------------------------------------------------------
 gallery.feed_rss_click = function(){
@@ -1020,11 +1324,14 @@ feed_url = function(type){
   }else{
     current_album = '';
   }
+
+//  dd(base_url + type + current_album);
   location.href =  base_url + type + current_album;
 }
 
 //------------------------------------------------------------------------------
 gallery.link_images_import_click = function(){
+    
   gallery.managePanels('images_import');
   if(gallery.flickr.status == 'logged'){
     OAT.Dom.addClass('images_import_flickr','link_disabled');
@@ -1055,7 +1362,7 @@ gallery.link_images_export_click = function(){
   $('path_pub_date').innerHTML = sdate2obj(ds_albums.current.pub_date).year + ' > ';
   $('path_album_name').innerHTML = ds_albums.current.name;
   $('path_image_name').innerHTML = "";
-  $('caption').innerHTML = 'Export images from Flickr';
+  $('caption').innerHTML = 'Export images to Flickr';
   $('preview_left').innerHTML = "";
   $('preview_right').innerHTML = "";
 
@@ -1071,9 +1378,13 @@ gallery.managePanels = function(action){
     gallery.albums.show();
     gallery.showAlbumsInfo();
     gallery.albums_list.show();
-    if(sid != ''){
+    if(isOwner != ''){
       gallery.albums_man.show();
-    }
+      OAT.Dom.show('new_album_tab');
+      
+    }else
+    OAT.Dom.hide('new_album_tab');
+      
     gallery.images_upload.hide();
     gallery.new_album.hide();
     gallery.error_box.clear();
@@ -1088,7 +1399,7 @@ gallery.managePanels = function(action){
     OAT.Dom.hide('image_edit');
 
   }else if(action == 'showImages'){
-    if(sid != ''){
+    if(isOwner != ''){
       OAT.Dom.show('care_edit_album');
     }
     OAT.Dom.show('care_view_album');
@@ -1102,7 +1413,7 @@ gallery.managePanels = function(action){
   }else if(action == 'showImage'){
       OAT.Dom.hide('care_edit_album');
     OAT.Dom.show('care_nav_image');
-    if(sid != ''){
+    if(isOwner != ''){
       OAT.Dom.show('care_edit_image');
     }
       OAT.Dom.show('care_view_mode');
@@ -1197,6 +1508,9 @@ gallery.ajax.load_albums = function(path){
     gallery.showAlbumsInfo();
     gallery.albums.innerHTML="";
     $('my_albums_list').innerHTML="";
+    
+//    var is_owner=gallery.ajax.user_get_role();
+    
     for(var r=0;r<ds_albums.list.length;r++){
       new_coll = preview_collection(ds_albums.list[r],r);
       gallery.albums.appendChild(new_coll);
@@ -1205,7 +1519,11 @@ gallery.ajax.load_albums = function(path){
       album_list.id = "my_albums_list_"+r;
       $('my_albums_list').appendChild(album_list);
     };
+    
+    
     gallery.managePanels('my_albums');
+    TL.draw();
+
 
   };
 
@@ -1238,8 +1556,11 @@ gallery.ajax.new_album = function(){
                          home_path,
                          document.getElementById('new_album_name').value,
                          v,
-                         document.getElementById('new_album_pub_date_year').value + '-' + document.getElementById('new_album_pub_date_month').value + '-' + document.getElementById('new_album_pub_date_day').value + 'T00:00:00',
-                         document.getElementById('new_album_description').value);
+//                         document.getElementById('new_album_pub_date_year').value + '-' + document.getElementById('new_album_pub_date_month').value + '-' + document.getElementById('new_album_pub_date_day').value + 'T00:00:00',
+                         document.getElementById('new_album_start_date_year').value + '-' + document.getElementById('new_album_start_date_month').value + '-' + document.getElementById('new_album_start_date_day').value + 'T00:00:00',
+                         document.getElementById('new_album_end_date_year').value + '-' + document.getElementById('new_album_end_date_month').value + '-' + document.getElementById('new_album_end_date_day').value + 'T00:00:00',
+                         document.getElementById('new_album_description').value,
+                         $('new_album_lng').value+';'+$('new_album_lat').value+';'+$('new_album_showonmap').checked);
   };
   finish = function(dav_lines){
     gallery.error_box.clear();
@@ -1266,6 +1587,9 @@ gallery.ajax.new_album = function(){
     gallery.showImages();
     gallery.link_images_upload_click();
     gallery.new_album.hide();
+    
+    
+    newAlbumMarkerUpdate ();
   };
 
   gallery.ajax(prepare,call,finish);
@@ -1281,15 +1605,44 @@ gallery.ajax.edit_album = function(){
             }else{
               v=0
             };
+            var obsolete=0;
+            if ($('edit_album_obsolete').checked)
+              obsolete=1;
+              
             return Array(sid,gallery_id,
                          home_path,
                          $('edit_album_name_old').value,
                          $('edit_album_name').value,
                          v,
-                         $('edit_album_pub_date_year').value + '-' + $('edit_album_pub_date_month').value + '-' + $('edit_album_pub_date_day').value + 'T00:00:00',
-                         $('edit_album_description').value);
+//                         $('edit_album_pub_date_year').value + '-' + $('edit_album_pub_date_month').value + '-' + $('edit_album_pub_date_day').value + 'T00:00:00',
+                         $('edit_album_start_date_year').value + '-' + $('edit_album_start_date_month').value + '-' + $('edit_album_start_date_day').value + 'T00:00:00',
+                         $('edit_album_end_date_year').value + '-' + $('edit_album_end_date_month').value + '-' + $('edit_album_end_date_day').value + 'T00:00:00',
+                         $('edit_album_description').value,
+                         $('edit_album_lng').value+';'+$('edit_album_lat').value+';'+$('edit_album_showonmap').checked,
+                         obsolete);
            };
   finish = gallery.editCollections;
+
+  gallery.ajax(prepare,call,finish);
+}
+
+//------------------------------------------------------------------------------
+gallery.ajax.thumbnail_album = function(){
+
+  call = proxies.SOAP.thumbnail_album;
+  prepare = function() {
+            if(document.f1.album_visibility[0].checked){
+              v=1
+            }else{
+              v=0
+            };
+            return Array(sid,gallery_id,
+                         home_path,
+                         ds_albums.current.name,
+                         v,
+                         ds_albums.current.thumb_id);
+           };
+  finish = function(){};
 
   gallery.ajax(prepare,call,finish);
 }
@@ -1326,7 +1679,7 @@ gallery.ajax.delete_album = function(id){
   finish = function (p) {
     ds_current_album.loadList(p.albums);
     gallery.showImages()
-    OAT.Dom.hide('wait');
+    hideWait();
   };
   gallery.ajax(prepare,call,finish);
   }
@@ -1514,7 +1867,7 @@ gallery.ajax.flickr_login_link = function(e){
   }
   call = proxies.SOAP.flickr_login_link;
   prepare = function(){
-    OAT.Dom.show('wait');
+    showWait();
     return Array(sid)
   };
   finish = function(out_data) {
@@ -1540,7 +1893,7 @@ gallery.ajax.flickr_login_link = function(e){
         }
       },500);
 
-    OAT.Dom.hide('wait');
+    hideWait();
   };
   gallery.ajax(prepare,call,finish);
 };
@@ -1553,7 +1906,7 @@ gallery.ajax.flickr_get_photos_list = function(){
   }
   call = proxies.SOAP.flickr_get_photos_list;
   prepare = function() {
-    OAT.Dom.show('wait');
+    showWait();
     return Array(sid,gallery.flickr.frob)
   };
   finish = function(out_data) {
@@ -1567,7 +1920,7 @@ gallery.ajax.flickr_get_photos_list = function(){
     //OAT.Dom.hide('images_import_flickr_list');
     OAT.Dom.show('images_import');
     //OAT.Dom.show('images_import_flickr_save');
-    OAT.Dom.hide('wait');
+    hideWait();
     return;
   };
   gallery.ajax(prepare,call,finish);
@@ -1583,9 +1936,10 @@ gallery.ajax.flickr_save_photos = function(){
   }
   for(var i=0;i<ds_current_album.list.length;i++){
     if($('image_id_'+i).checked){
-      ids[ids.length]= $('image_id_'+i).parentNode.current_image.id + '_' + $('image_id_'+i).parentNode.current_image.secret;
+      ids[ids.length]= $('image_id_'+i).parentNode.parentNode.current_image.id + '_' + $('image_id_'+i).parentNode.parentNode.current_image.secret;
     }
   }
+
   if(ids.length == 0){
     alert('Please, first select one or more photos');
     return;
@@ -1593,7 +1947,7 @@ gallery.ajax.flickr_save_photos = function(){
 
   call = proxies.SOAP.flickr_save_photos;
   prepare = function() {
-    OAT.Dom.show('wait');
+    showWait();
     return Array(sid,ds_albums.current.id,ids);
   };
   finish = function(out_data) {
@@ -1619,7 +1973,7 @@ gallery.ajax.flickr_send_photos = function(){
   var ids = new Array();
   for(var i=0;i<ds_current_album.list.length;i++){
     if($('image_id_'+i).checked){
-      ids[ids.length]= $('image_id_'+i).parentNode.current_image.id;
+      ids[ids.length]= $('image_id_'+i).parentNode.parentNode.current_image.id;
     }
   }
   if(ids.length == 0){
@@ -1629,7 +1983,7 @@ gallery.ajax.flickr_send_photos = function(){
 
   call = proxies.SOAP.flickr_send_photos;
   prepare = function() {
-    OAT.Dom.show('wait');
+    showWait();
     return Array(sid,ids);
   };
   finish = function(out_data) {
@@ -1641,8 +1995,22 @@ gallery.ajax.flickr_send_photos = function(){
         $('image_id_'+i).checked = false
       }
     }
-    OAT.Dom.hide('wait');
+    hideWait();
     return;
   };
   gallery.ajax(prepare,call,finish);
 };
+//------------------------------------------------------------------------------
+gallery.ajax.user_get_role = function(){
+
+  call = proxies.SOAP.user_get_role;
+  prepare = function() {
+    return Array(sid,gallery_id)
+  };
+  finish = function(p) {
+      dd(p);
+  };
+
+  gallery.ajax(prepare,call,finish);
+};
+

@@ -149,16 +149,20 @@ create type SOAP_album as (
   length integer,
   modification datetime,
   id integer,
+  obsolete integer,
   visibility integer,
   group_id integer,
   owner_id integer,
   created datetime,
   mime_type varchar,
   name varchar,
-  pub_date datetime,
+--  pub_date datetime,
+  start_date datetime,
+  end_date datetime,
   description varchar,
   private_tags varchar array,
   public_tags varchar array,
+  geolocation varchar array,
   thumb_id integer
 ) __soap_type 'services.wsdl:dav_album'
 
@@ -175,9 +179,32 @@ constructor method SOAP_album(
   created datetime,
   mime_type varchar,
   name varchar,
-  pub_date datetime,
+--pub_date datetime,
+  start_date datetime,
+  end_date datetime,
   description varchar
 ),
+constructor method SOAP_album(
+  fullpath varchar,
+  type varchar,
+  length integer,
+  modification datetime,
+  id integer,
+  visibility integer,
+  group_id integer,
+  owner_id integer,
+  created datetime,
+  mime_type varchar,
+  name varchar,
+--  pub_date datetime,
+  start_date datetime,
+  end_date datetime,
+  description varchar,
+  geolocation varchar array,
+  obsolete integer
+
+),
+
 constructor method SOAP_album(
   fullpath varchar,
   id integer,
@@ -202,7 +229,9 @@ create constructor method SOAP_album(
  in created datetime,
  in mime_type varchar,
  in name varchar,
- in pub_date datetime,
+-- in pub_date datetime,
+ in start_date datetime,
+ in end_date datetime,
  in description varchar
 
 )
@@ -219,13 +248,62 @@ for SOAP_album
   self.created      := created;
   self.mime_type    := mime_type;
   self.name         := name;
-  self.pub_date     := pub_date;
+--  self.pub_date     := pub_date;
+  self.start_date   := start_date;
+  self.end_date     := end_date;
   self.description  := description;
+  self.obsolete     := 0;
+
  }
 ;
 
 --------------------------------------------------------------------------------
 --
+create constructor method SOAP_album(
+ in fullpath varchar,
+ in type varchar,
+ in length integer,
+ in modification datetime,
+ in id integer,
+ in visibility integer,
+ in group_id integer,
+ in owner_id integer,
+ in created datetime,
+ in mime_type varchar,
+ in name varchar,
+-- in pub_date datetime,
+ in start_date datetime,
+ in end_date datetime,
+ in description varchar,
+ in geolocation varchar array,
+ in obsolete integer
+)
+for SOAP_album
+{
+  self.fullpath     := fullpath;
+  self.type         := type;
+  self.length       := length;
+  self.modification := modification;
+  self.id           := id;
+  self.visibility   :=  visibility;
+  self.group_id     := group_id;
+  self.owner_id     := owner_id;
+  self.created      := created;
+  self.mime_type    := mime_type;
+  self.name         := name;
+--  self.pub_date     := pub_date;
+  self.start_date   := start_date;
+  self.end_date     := end_date;
+  self.description  := description;
+  self.geolocation  := geolocation;
+  self.obsolete     := obsolete;
+
+ }
+;
+
+--------------------------------------------------------------------------------
+--
+
 create constructor method SOAP_album(
  in id integer,
  in name varchar
@@ -234,6 +312,8 @@ for SOAP_album
 {
   self.id   := id;
   self.name := name;
+  self.obsolete := 0;
+
 
 }
 ;
@@ -257,6 +337,8 @@ for SOAP_album
   self.mime_type    := mime_type;
   self.name         := name;
   self.description  := description;
+  self.obsolete     := 0;
+
  }
 ;
 
@@ -365,7 +447,17 @@ create type photo_instance as (
 create constructor method photo_instance()
 for photo_instance
 {
-  self.photo_instance_create(http_path());
+  declare home_url,url_last_part varchar;
+  declare home_url_arr any;
+  
+  home_url:=http_path();
+  home_url_arr:=split_and_decode(http_path(),0,'\0\0/');
+  url_last_part:=home_url_arr[length(home_url_arr)-1];
+
+  if(url_last_part<>'' and locate('.',url_last_part))
+     home_url:=subseq(home_url,0,length(home_url)-length(url_last_part));
+
+  self.photo_instance_create(home_url);
 }
 ;
 

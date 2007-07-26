@@ -25,14 +25,14 @@
 create procedure PHOTO.WA.rss_output(in current_instance photo_instance,inout params any){
 
   declare iUser,_album_id integer;
-  declare UserName,_home_path,_home_url,wa_name,_current_folder varchar;
+  declare UserName,UserFullName,eMail,_home_path,_home_url,wa_name,_current_folder varchar;
   declare _xml,_xml_temp any;
   declare _col_id,flag integer;
 
   wa_name := current_instance.name;
 
   select WAM_USER into iUser from WA_MEMBER where WAM_INST = wa_name;
-  select U_NAME into UserName from WS.WS.SYS_DAV_USER WHERE U_ID = iUser;
+  select U_NAME,U_FULL_NAME,U_E_MAIL into UserName,UserFullName,eMail from WS.WS.SYS_DAV_USER WHERE U_ID = iUser;
   select HOME_PATH,HOME_URL into _home_path,_home_url from PHOTO.WA.SYS_INFO WHERE WAI_NAME = wa_name;
 
   _col_id := DAV_SEARCH_ID(_home_path,'C');
@@ -55,10 +55,14 @@ create procedure PHOTO.WA.rss_output(in current_instance photo_instance,inout pa
 
   http_value(XMLELEMENT('rss',
              XMLATTRIBUTES('2.0' 'version'),
-             XMLELEMENT("title",current_instance.name),
-             XMLELEMENT("link",concat(current_instance.home_url,_current_folder)),
-             XMLELEMENT("ttl",40),
+--             XMLELEMENT("ttl",40),
              XMLELEMENT("channel",
+                         XMLELEMENT("title",current_instance.name),
+                         XMLELEMENT("link",sprintf('http://%s%s',_host,concat(current_instance.home_url,_current_folder))),
+                         XMLELEMENT("description",''),
+                         XMLELEMENT("managingEditor",coalesce(UserFullName,'') ||' <'||coalesce(eMail,'')||'>'),
+                         XMLELEMENT("webMaster",coalesce(eMail,'')),
+                         XMLELEMENT("generator",sprintf('Virtuoso Universal Server %s',sys_stat('st_dbms_ver'))),
             (SELECT
                     XMLAGG(XMLELEMENT('item',
                               XMLELEMENT("pubDate",PHOTO.WA.date_2_humans(RES_MOD_TIME)),

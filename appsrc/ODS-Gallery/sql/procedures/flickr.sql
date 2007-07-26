@@ -150,6 +150,16 @@ create procedure PHOTO.WA.flickr_method_photos_getInfo(
 };
 
 
+create procedure PHOTO.WA.flickr_method_photos_getSizes(
+  in photo_id varchar
+){
+  declare data any;
+  data := PHOTO.WA.flickr_execure(vector('method','flickr.photos.getSizes','photo_id',photo_id));
+  data := xpath_eval('rsp/sizes',data);
+  return data;
+};
+
+
 create procedure PHOTO.WA.flickr_method_auth_checkToken(
   in token varchar
 ){
@@ -307,12 +317,12 @@ create procedure PHOTO.WA.flickr_save_photos(
 ){
   declare path varchar;
   declare i,result integer;
-  declare res,data,new_id integer;
-  declare auth_uid,image_type,rights,current_album_path varchar;
+  declare res,data,new_id,hasLarge integer;
+  declare auth_uid,image_type,rights,current_album_path,farm_no varchar;
   declare current_user photo_user;
   declare id integer;
   declare res_ids,url,image any;
-  declare originalformat,server,title,description,visibility,tags any;
+  declare originalformat,originalsecret,server,title,description,visibility,tags,size_data any;
 
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
 
@@ -326,14 +336,37 @@ create procedure PHOTO.WA.flickr_save_photos(
   while(i < length(ids)){
 
       res := split_and_decode(cast(ids[i] as varchar),0,'\0\0_');
+
+      size_data:=PHOTO.WA.flickr_method_photos_getSizes(res[0]);
+
+      hasLarge:=0;
+      hasLarge:=xpath_eval('size/@label="Large"',size_data);
+
       data := PHOTO.WA.flickr_method_photos_getInfo(res[0],res[1]);
+
+      originalsecret :=  coalesce (cast(xpath_eval('@originalsecret',data) as varchar), '');
       originalformat :=  coalesce (cast(xpath_eval('@originalformat',data) as varchar), 'jpg');
+      farm_no := cast(xpath_eval('@farm',data) as varchar);
       server := cast(xpath_eval('@server',data) as varchar);
       title :=  cast(xpath_eval('title',data) as varchar);
       description :=  cast(xpath_eval('description',data) as varchar);
       visibility :=  cast(xpath_eval('visibility',data) as varchar);
       tags :=  cast(xpath_eval('tags',data) as varchar);
-      url := sprintf('http://static.flickr.com/%s/%s_%s_o.%s',server,res[0],res[1],originalformat);
+
+
+      if(length(originalsecret))
+        url := sprintf('http://farm%s.static.flickr.com/%s/%s_%s_o.%s',farm_no,server,res[0],originalsecret,originalformat);
+      else{
+        if(hasLarge)
+        {
+           url := cast(xpath_eval('size[@label="Large"]/@source',size_data) as varchar);
+           declare url_parts any;
+           url_parts:=split_and_decode(url,0,'\0\0.');
+           originalformat:=url_parts[length(url_parts)-1];
+        }else
+           url := sprintf('http://farm%s.static.flickr.com/%s/%s_%s.%s',farm_no,server,res[0],res[1],originalformat);
+      }
+    
       image := http_get(url,NULL, 'GET',NULL,NULL,PHOTO.WA.get_proxy());
       image_type := concat('image/',originalformat);
       rights := '110100100R';

@@ -74,7 +74,8 @@ create procedure PHOTO.WA.dav_browse(
   }
 
   declare ctr integer;
-  declare pub_date,description any;
+  declare pub_date,start_date,end_date, description,geolocation,default_thumbnail,obsolete any;
+
   ctr := 0;
   while (ctr < length(dirlist))
   {
@@ -99,26 +100,62 @@ create procedure PHOTO.WA.dav_browse(
       album.created := dirlist[ctr][8];
       album.mime_type := dirlist[ctr][9];
       album.name := dirlist[ctr][10];
-      album.thumb_id := (select RES_ID from WS.WS.SYS_DAV_RES where RES_COL = dirlist[ctr][4] AND regexp_match('^\\.',RES_NAME) IS NULL );
 
       res_user :=  PHOTO.WA._get_user_name(album.owner_id);
 
-      pub_date := DAV_PROP_GET(album.fullpath,'pub_date',res_user[0],res_user[1]);
-      if(__tag(pub_date ) <> 189){
-        album.pub_date := cast(pub_date  as datetime);
+      album.thumb_id := (select RES_ID from WS.WS.SYS_DAV_RES where RES_COL = dirlist[ctr][4] AND regexp_match('^\\.',RES_NAME) IS NULL );
+      default_thumbnail := DAV_PROP_GET(album.fullpath,'default_thumbnail',res_user[0],res_user[1]);
+      if(__tag(default_thumbnail) <> 189){
+        album.thumb_id := cast(default_thumbnail  as integer);
       }
+
+      pub_date := DAV_PROP_GET(album.fullpath,'pub_date',res_user[0],res_user[1]);
+--      if(__tag(pub_date ) <> 189){
+--        album.pub_date := cast(pub_date  as datetime);
+--      }
+
+      start_date := DAV_PROP_GET(album.fullpath,'start_date',res_user[0],res_user[1]);
+      if(__tag(start_date ) <> 189){
+        album.start_date := cast(start_date  as datetime);
+      }else if(__tag(pub_date ) <> 189)
+        album.start_date := cast(pub_date  as datetime);
+       else
+        album.start_date := cast(now() as datetime);
+        
+      end_date := DAV_PROP_GET(album.fullpath,'end_date',res_user[0],res_user[1]);
+      if(__tag(end_date ) <> 189){
+        album.end_date := cast(end_date  as datetime);
+      }else if(__tag(pub_date ) <> 189)
+        album.end_date :=  cast(pub_date  as datetime);
+       else
+        album.end_date := cast(now() as datetime);
 
       description := DAV_PROP_GET(album.fullpath,'description',res_user[0],res_user[1]);
       if(__tag(description) <> 189){
         album.description := cast(description  as varchar);
       }
 
+      geolocation := DAV_PROP_GET(album.fullpath,'geolocation',res_user[0],res_user[1]);
+      if(__tag(geolocation) <> 189){
+        album.geolocation := PHOTO.WA.string2vector(geolocation,';');
+      }
+
+      if(album.geolocation is null)
+         album.geolocation:=(vector('0.0','0.0','false'));
+      
+
+      obsolete := coalesce( DAV_PROP_GET(album.fullpath,'obsolete',res_user[0],res_user[1]),0);
+      if(__tag(obsolete) <> 189){
+        album.obsolete := atoi(obsolete);
+      }else
+        album.obsolete := 0;
+
       private_tags := DAV_PROP_GET(album.fullpath,':virtprivatetags',res_user[0],res_user[1]);
       if(__tag(private_tags) <> 189){
         album.private_tags := PHOTO.WA.tags2vector(private_tags);
       }
 
-
+      if(is_own=1 or album.obsolete=0)
       result := vector_concat(result,vector(album));
     }
     ctr := ctr + 1;
@@ -138,8 +175,11 @@ create procedure PHOTO.WA.create_new_album(
   in home_path varchar,
   in name varchar,
   in visibility integer,
-  in pub_date datetime,
-  in description varchar
+--  in pub_date datetime,
+  in start_date datetime,
+  in end_date datetime,
+  in description varchar,
+  in geolocation varchar
   )
   returns SOAP_album
   {
@@ -166,8 +206,11 @@ create procedure PHOTO.WA.create_new_album(
 
   if(col_id > 0){
 
-    DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'pub_date',cast(pub_date as varchar),current_user.auth_uid,current_user.auth_pwd);
+--    DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'pub_date',cast(pub_date as varchar),current_user.auth_uid,current_user.auth_pwd);
+    DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'start_date',cast(start_date as varchar),current_user.auth_uid,current_user.auth_pwd);
+    DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'end_date',cast(end_date as varchar),current_user.auth_uid,current_user.auth_pwd);
     DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'description',description,current_user.auth_uid,current_user.auth_pwd);
+    DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'geolocation',geolocation,current_user.auth_uid,current_user.auth_pwd);
 
     result := new SOAP_album(concat(home_path,name,'/'),
                              'C',
@@ -180,8 +223,12 @@ create procedure PHOTO.WA.create_new_album(
                              now(),
                              'folder',
                              name,
-                             cast(pub_date as datetime),
-                             description
+--                             cast(pub_date as datetime),
+                             cast(start_date as datetime),
+                             cast(end_date as datetime),
+                             description,
+                             PHOTO.WA.string2vector(geolocation,';'),
+                             0
                             );
 
   }else{
@@ -201,8 +248,12 @@ create procedure PHOTO.WA.edit_album(
   in old_name varchar,
   in new_name varchar,
   in visibility integer,
-  in pub_date datetime,
-  in description varchar
+--  in pub_date datetime,
+  in start_date datetime,
+  in end_date datetime,
+  in description varchar,
+  in geolocation varchar,
+  in obsolete integer
   )
   returns SOAP_album
   {
@@ -234,10 +285,19 @@ create procedure PHOTO.WA.edit_album(
 
   if(col_id > 0){
     declare res any;
-    DAV_PROP_REMOVE(DAV_SEARCH_PATH (col_id,'C'),'pub_date',current_user.auth_uid,current_user.auth_pwd);
+--    DAV_PROP_REMOVE(DAV_SEARCH_PATH (col_id,'C'),'pub_date',current_user.auth_uid,current_user.auth_pwd);
+    DAV_PROP_REMOVE(DAV_SEARCH_PATH (col_id,'C'),'start_date',current_user.auth_uid,current_user.auth_pwd);
+    DAV_PROP_REMOVE(DAV_SEARCH_PATH (col_id,'C'),'end_date',current_user.auth_uid,current_user.auth_pwd);
     DAV_PROP_REMOVE(DAV_SEARCH_PATH (col_id,'C'),'description',current_user.auth_uid,current_user.auth_pwd);
-    res := DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'pub_date',cast(pub_date as varchar),current_user.auth_uid,current_user.auth_pwd);
+    DAV_PROP_REMOVE(DAV_SEARCH_PATH (col_id,'C'),'geolocation',current_user.auth_uid,current_user.auth_pwd);
+    DAV_PROP_REMOVE(DAV_SEARCH_PATH (col_id,'C'),'obsolete',current_user.auth_uid,current_user.auth_pwd);
+
+--    res := DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'pub_date',cast(pub_date as varchar),current_user.auth_uid,current_user.auth_pwd);
+    res := DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'start_date',cast(start_date as varchar),current_user.auth_uid,current_user.auth_pwd);
+    res := DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'end_date',cast(end_date as varchar),current_user.auth_uid,current_user.auth_pwd);
     res := DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'description',description,current_user.auth_uid,current_user.auth_pwd);
+    res := DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'geolocation',geolocation,current_user.auth_uid,current_user.auth_pwd);
+    res := DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'obsolete',cast(obsolete as varchar),current_user.auth_uid,current_user.auth_pwd);
 
     res := DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),':virtpermissions',rights,current_user.auth_uid,current_user.auth_pwd);
 
@@ -252,9 +312,14 @@ create procedure PHOTO.WA.edit_album(
                              now(),
                              'folder',
                              new_name,
-                             pub_date,
-                             description
+--                             pub_date,
+                             start_date,
+                             end_date,
+                             description,
+                             PHOTO.WA.string2vector(geolocation,';'),
+                             obsolete
                             );
+
   }else{
     result := new SOAP_album(cast(col_id as integer),new_name);
 
@@ -262,6 +327,51 @@ create procedure PHOTO.WA.edit_album(
   result.thumb_id := (select RES_ID from WS.WS.SYS_DAV_RES where RES_COL = col_id);
 
   return result;
+}
+;
+
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.thumbnail_album(
+  in sid varchar,
+  in p_gallery_id integer,
+  in home_path varchar,
+  in gallery_name varchar,
+  in visibility integer,
+  in thumb_id integer
+  )
+  returns integer
+  {
+  declare current_user photo_user;
+  declare auth_uid,rights varchar;
+
+  auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
+
+  if(auth_uid = ''){
+    return 0;
+  }
+
+  if(visibility = 1){
+    rights := '110100100R';
+  }else{
+    rights := '110000000R';
+    visibility := 0;
+  }
+
+  declare col_id interger;
+
+  col_id := DAV_SEARCH_ID(concat(home_path,gallery_name,'/'),'C');
+
+  if(col_id > 0){
+    declare res any;
+    DAV_PROP_REMOVE(DAV_SEARCH_PATH (col_id,'C'),'default_thumbnail',current_user.auth_uid,current_user.auth_pwd);
+    res := DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'default_thumbnail',cast(thumb_id as varchar),current_user.auth_uid,current_user.auth_pwd);
+
+  }else{
+    return 0;
+
+  }
+
+  return 1;
 }
 ;
 
@@ -376,6 +486,7 @@ returns  integer array
   i := 0;
   res_ids := vector();
 
+  
   while(i < length(ids)){
 
     if(mode = 'r'){
@@ -385,6 +496,14 @@ returns  integer array
     };
 
     if(cast(path as varchar) <> ''){
+
+        if(subseq(path,length(path)-1,length(path))<>'/')
+      {   
+        declare res integer;
+        res:=PHOTO.WA.delete_image_thumbnail(path,current_user.auth_uid,current_user.auth_pwd);
+        
+      }   
+
       result := DAV_DELETE( path,
                             null,
                             current_user.auth_uid,
@@ -392,7 +511,6 @@ returns  integer array
 
       if(result > 0){
         res_ids := vector_concat(res_ids,vector(ids[i]));
-        -- TODO: Da trie i thumbcheta
       }
 
     }
@@ -402,6 +520,37 @@ returns  integer array
 }
 ;
 
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.delete_image_thumbnail(
+  in image_path varchar,
+  in auth_uid integer,
+  in auth_pwd varchar
+)
+returns  integer
+{
+  declare image_id,col_id,result integer;
+  declare image_name,thumb_path varchar;
+  
+
+  image_id:=DAV_SEARCH_ID (image_path,'R'); 
+
+  if(image_id<0) return -1;
+  
+  declare exit handler for sqlstate '*' {dbg_obj_print (__SQL_STATE, ' ', __SQL_MESSAGE);return -1;};
+  select RES_NAME,RES_COL into image_name,col_id from WS.WS.SYS_DAV_RES where RES_ID= image_id;
+
+  thumb_path:=DAV_SEARCH_PATH (col_id,'C');
+  
+  thumb_path:=thumb_path||'.thumbnails/'||image_name;
+  
+  result := DAV_DELETE( thumb_path,
+                        null,
+                        auth_uid,
+                        auth_pwd);
+
+  return result;
+}
+;
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA.get_image(
   in sid varchar,
@@ -433,7 +582,9 @@ create procedure PHOTO.WA.get_image(
     description := '';
   }
 
-  return new SOAP_album(_path,'R',0,_res_mod_time,_res_id,visibility,_res_group,_res_owner,_res_cr_time,_res_type,_res_name,now(),description);
+
+
+  return new SOAP_album(_path,'R',0,_res_mod_time,_res_id,visibility,_res_group,_res_owner,_res_cr_time,_res_type,_res_name,now(),now(),description);
 }
 ;
 
@@ -720,10 +871,43 @@ create procedure PHOTO.WA.sioc_content(
   DB.DBA.RDF_QUAD_URI (sioc.DBA.get_graph(), iri, sioc.DBA.sioc_iri ('content'), content);
 }
 ;
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.user_get_role(
+  in sid varchar,
+  in p_gallery_id integer)
+  returns integer
+{
+  declare auth_uid,_owner_uid integer;
+
+  whenever not found goto not_found;
+
+  select U.U_ID
+    into auth_uid
+   from DB.DBA.VSPX_SESSION S,WS.WS.SYS_DAV_USER U
+  where S.VS_REALM = 'wa'
+    and S.VS_SID   = sid
+    and S.VS_UID   = U.U_NAME;
+
+  SELECT OWNER_ID
+    INTO _owner_uid
+    FROM PHOTO.WA.SYS_INFO
+   WHERE GALLERY_ID = p_gallery_id;
+
+
+  if(auth_uid=_owner_uid)
+     return 1;
+
+not_found:;
+     return 0;
+
+}
+;
+
 
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.dav_browse TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.create_new_album TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_album TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.thumbnail_album TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_image TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.dav_delete TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_image TO SOAPGallery');

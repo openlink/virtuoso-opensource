@@ -405,3 +405,5 @@ create procedure ods_gallery_sioc_init ()
 PHOTO.WA._exec_no_error('ods_gallery_sioc_init()');
 
 PHOTO.WA._exec_no_error('PHOTO.WA.fill_exif_data()');
+
+PHOTO.WA._exec_no_error('PHOTO.WA.update_gallery_foldername()');

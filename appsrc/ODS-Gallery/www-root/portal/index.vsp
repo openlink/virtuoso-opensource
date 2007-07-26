@@ -81,7 +81,8 @@
 
       _xsl := '';
       if(my_file = 'atom.xml'){
-        _xsl := 'rss2atom03.xsl';
+--        _xsl := 'rss2atom03.xsl';
+        _xsl := 'rss2atom.xsl';
 
       }else if(my_file = 'index.rdf'){
         _xsl := 'rss2rdf.xsl';
@@ -110,11 +111,17 @@
   _xsl_path := sprintf('%sxslt/index.xsl',PHOTO.WA.base_path());
   _xml := string_output();
 
+  declare isOwner integer;
+  isOwner:=0;
+  if(current_instance.owner_id=current_user.user_id)
+     isOwner:=1;
+  
   http(sprintf('<root sid="%s" realm="%s">',_sid,either(current_user.realm,'')),_xml);
-  http(sprintf('<user lat="%.06f" lng="%.06f">',coalesce(geo_data[0],0),coalesce(geo_data[1],0)),_xml);
+  http(sprintf('<user lat="%.06f" lng="%.06f" owner="%d">',coalesce(geo_data[0],0),coalesce(geo_data[1],0),isOwner),_xml);
   http(sprintf('<full_name>%s</full_name>',current_user.full_name),_xml);
   http(sprintf('<first_name>%s</first_name>',current_user.first_name),_xml);
   http(sprintf('<last_name>%s</last_name>',current_user.last_name),_xml);
+  http(sprintf('<user_name>%s</user_name>',coalesce(current_user.auth_uid,'')),_xml);
   http(sprintf('<user_name>%s</user_name>',coalesce(current_user.auth_uid,'')),_xml);
   http('</user>',_xml);     --&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/%s/sioc.rdf', self.st_host, self.fname, wa_type_to_app (self.app_type)), '+', '%2B')); ?>
   http(sprintf('<host>%s</host>',WA_GET_HOST ()),_xml);
@@ -126,10 +133,11 @@
   http(sprintf('<gallery_id>%d</gallery_id>',current_instance.gallery_id),_xml);
   http(sprintf('<instance_owner>%s</instance_owner>',current_instance.owner_name),_xml);
   http(sprintf('<instance_description>%s</instance_description>',replace(current_instance.description,'\'','&#39;')),_xml);
+  http(sprintf('<map>%d</map>',1),_xml);
 
-  if(PHOTO.WA.isDav()){
+--  if(PHOTO.WA.isDav()){
     http(sprintf('<bar><![CDATA[%s]]></bar>',ODS.BAR._EXEC('oGallery', params, lines)),_xml);
-  }
+--  }
   http(user_gallery,_xml);
   http(PHOTO.WA.get_lastest_users(current_user),_xml);
   http('</root>',_xml);

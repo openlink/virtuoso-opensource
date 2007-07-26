@@ -64,7 +64,7 @@
         </link>
         <script type="text/javascript">
       		var toolkitPath = "/ods/oat";
-      		var featureList = ["dom","rotator","slider","xml","ajax"];
+      		var featureList = ["dom","rotator","slider","xml","ajax","timeline","calendar"];
       	</script>
 
       	<script type="text/javascript" src="/ods/oat/loader.js"></script>
@@ -72,9 +72,13 @@
         <script type="text/javascript" language="JavaScript" src="/photos/res/js/dataset.js"></script>
         <script type="text/javascript" language="JavaScript" src="/photos/res/js/ui.js"></script>
         <script type="text/javascript" language="JavaScript" src="/photos/res/js/gallery.js"></script>
+        <script type="text/javascript" language="JavaScript" src="/photos/res/js/timeline.js"></script>
+        <script type="text/javascript" language="JavaScript" src="/photos/res/js/map.js"></script>
+        <script type="text/javascript" language="JavaScript" src="/photos/res/js/calendar.js"></script>
         <script type="text/javascript" language="JavaScript" src="/photos/res/proxy.vsp"></script>
         <link rel="stylesheet" href="/photos/res/css/gallery.css" type="text/css"/>
         <link rel="stylesheet" href="/photos/res/css/winclassic.css" type="text/css"/>
+        <link rel="stylesheet" href="/photos/res/css/timeline.css" type="text/css"/>
       </head>
         <xsl:apply-templates/>
     </html>
@@ -167,6 +171,16 @@
 
       <table cellpadding="0" cellspacing="4">
         <tr>
+         <td colspan="2">
+	  	  	<div id="timeline"></div>
+         </td>
+        </tr>
+        <tr>
+        <td colspan="2">
+              <div id="map" style="display:block;with:1000px;height:500px;" class="view"/>
+        </td>
+        </tr>
+        <tr>
           <td id="left_col" valign="top">
 
             <div id="care_my_albums" class="toolbar">
@@ -235,7 +249,7 @@
             <div id="feeds" class="toolbar">
               <h3>Feeds</h3>
               <ul>
-                <li id="feed_atom">Atom</li>
+                <li id="feed_atom">Atom 1.0</li>
                 <li id="feed_rss">RSS 2.0</li>
                 <li id="feed_rdf">RDF</li>
                 <li id="feed_xbel">XBEL</li>
@@ -271,14 +285,15 @@
             <xsl:call-template name="new_album"/>
             <xsl:call-template name="edit_album"/>
 
+            
             <div id="group_images">
               <div id="images_upload" style="display:none;">
               <iframe width="100%" height="750" src="" border="0" frameborder="0" ></iframe>
             </div>
               <div id="images_import" style="display:none;">
-                <div id="images_import_flickr" class="link">Sing in Flickr</div>
-                <div id="images_import_flickr_list" class="link_disabled">Get your images from Flickr</div>
-                <div id="images_import_flickr_save" class="link_disabled">Save selected images in current gallery</div>
+                <div id="images_import_flickr" class="link">Sing in</div>
+                <div id="images_import_flickr_list" class="link_disabled">View and select images</div>
+                <div id="images_import_flickr_save" class="link_disabled">Import</div>
               </div>
               <div id="images_export" style="display:none;">
                 <div id="images_export_flickr" class="link">Sing in Flickr</div>
@@ -308,7 +323,7 @@
     </div>
     <xsl:call-template name="ajax_action"/>
     <div id="wait" style="display:none;">
-      Please, wait
+      <img id="throbber" src="/photos/res/i/throbber.gif" border="0" /> Please, wait ...
     </div>
   </body>
   </xsl:template>
@@ -373,6 +388,7 @@
 <xsl:template name="ajax_action">
  <script type="text/javascript">
       var sid = '<xsl:value-of select="@sid"/>';
+    var isOwner = <xsl:value-of select="user/@owner"/>;
       var realm = '<xsl:value-of select="@realm"/>';
       var home_path = '<xsl:value-of select="gallery"/>';
     var home_url = '<xsl:value-of select="home_url"/>';
@@ -395,6 +411,7 @@
                   <td>Description</td>
                   <td><textarea type="text" name="new_album_description" id="new_album_description"></textarea></td>
                 </tr>
+<!--
                 <tr>
                   <td>Date</td>
                   <td>
@@ -460,6 +477,183 @@
                       </select>
                     </td>
                 </tr>
+-->
+      <tr>
+        <td>Start Date</td>
+        <td>
+            <select name="new_album_start_date_year" id="new_album_start_date_year">
+              <option value="2000">2000</option>
+              <option value="2001">2001</option>
+              <option value="2002">2002</option>
+              <option value="2003">2003</option>
+              <option value="2004">2004</option>
+              <option value="2005">2005</option>
+              <option value="2006">2006</option>
+              <option value="2007">2007</option>
+              <option value="2008">2008</option>
+              <option value="2009">2009</option>
+              <option value="2010">2010</option>
+              <option value="2011">2011</option>
+              <option value="2012">2012</option>
+              <option value="2013">2013</option>
+              <option value="2014">2014</option>
+              <option value="2015">2015</option>
+              <option value="2016">2016</option>
+              <option value="2017">2017</option>
+              <option value="2018">2018</option>
+              <option value="2019">2019</option>
+              <option value="2020">2020</option>
+            </select>
+            <xsl:text>/</xsl:text>
+            <select name="new_album_start_date_month" id="new_album_start_date_month">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+            <xsl:text>/</xsl:text>
+            <select name="new_album_start_date_day" id="new_album_start_date_day">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="21">21</option>
+              <option value="22">22</option>
+              <option value="23">23</option>
+              <option value="24">24</option>
+              <option value="25">25</option>
+              <option value="26">26</option>
+              <option value="27">27</option>
+              <option value="28">28</option>
+              <option value="29">29</option>
+              <option value="30">30</option>
+              <option value="31">31</option>
+            </select>
+            <a  href="javascript:void(0)">
+            <img src="/photos/res/i/date_selector.png" width="22" height="22" border="0" id="new_album_start_date_selector" alt="Select Start Date" onClick="GCallendar.show(this.id);"/>
+            </a>            
+          </td>
+      </tr>
+      <tr>
+        <td>End Date</td>
+        <td>
+            <select name="new_album_end_date_year" id="new_album_end_date_year">
+              <option value="2000">2000</option>
+              <option value="2001">2001</option>
+              <option value="2002">2002</option>
+              <option value="2003">2003</option>
+              <option value="2004">2004</option>
+              <option value="2005">2005</option>
+              <option value="2006">2006</option>
+              <option value="2007">2007</option>
+              <option value="2008">2008</option>
+              <option value="2009">2009</option>
+              <option value="2010">2010</option>
+              <option value="2011">2011</option>
+              <option value="2012">2012</option>
+              <option value="2013">2013</option>
+              <option value="2014">2014</option>
+              <option value="2015">2015</option>
+              <option value="2016">2016</option>
+              <option value="2017">2017</option>
+              <option value="2018">2018</option>
+              <option value="2019">2019</option>
+              <option value="2020">2020</option>
+            </select>
+            <xsl:text>/</xsl:text>
+            <select name="new_album_end_date_month" id="new_album_end_date_month">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+            <xsl:text>/</xsl:text>
+            <select name="new_album_end_date_day" id="new_album_end_date_day">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="21">21</option>
+              <option value="22">22</option>
+              <option value="23">23</option>
+              <option value="24">24</option>
+              <option value="25">25</option>
+              <option value="26">26</option>
+              <option value="27">27</option>
+              <option value="28">28</option>
+              <option value="29">29</option>
+              <option value="30">30</option>
+              <option value="31">31</option>
+            </select>
+            <a  href="javascript:void(0)">
+            <img src="/photos/res/i/date_selector.png" width="22" height="22" border="0" id="new_album_end_date_selector" alt="Select end Date" onClick="GCallendar.show(this.id);" />
+            </a>
+          </td>
+      </tr>
+
+      <tr>
+        <td><label for="new_album_lng">Geolocation</label></td>
+        <td>
+          <input type="text" name="new_album_lng" id="new_album_lng" value=""/>  
+          <xsl:call-template name="nbsp"/><xsl:text>/</xsl:text><xsl:call-template name="nbsp"/>
+          <input type="text" name="new_album_lat" id="new_album_lat" value=""/> Longitude / Latitude
+        </td>
+      </tr>
+      <tr>
+        <td><label for="new_album_showonmap">Show on map</label></td>
+        <td>
+          <input type="checkbox" name="new_album_showonmap" id="new_album_showonmap" value=""/>  
+        </td>
+      </tr>
+
                 <tr>
                   <td><label for="edit_album_name">Visible</label></td>
                   <td>
@@ -477,10 +671,17 @@
                       <button type="button" name="btn_new_album" OnClick="gallery.new_album_action()">Create</button>
                     </td>
                   </tr>
+<!--
+        <tr>
+          <td><label for="new_album_obsolete">Obsolete</label></td>
+          <td>
+            <input type="checkbox" name="new_album_obsolete" id="edit_album_obsolete" value=""/>  
+          </td>
+        </tr>
+-->
+
                 </tfoot>
               </table>
-
-
             </div>
 </xsl:template>
 
@@ -502,6 +703,7 @@
                   <td>Description</td>
                   <td><textarea type="text" name="edit_album_description" id="edit_album_description"></textarea></td>
                 </tr>
+<!--
                 <tr>
                   <td>Date</td>
                   <td>
@@ -568,6 +770,185 @@
                       </select>
                     </td>
                   </tr>
+-->
+      <tr>
+        <td>Start Date</td>
+        <td>
+            <select name="edit_album_start_date_year" id="edit_album_start_date_year">
+              <option value="2000">2000</option>
+              <option value="2001">2001</option>
+              <option value="2002">2002</option>
+              <option value="2003">2003</option>
+              <option value="2004">2004</option>
+              <option value="2005">2005</option>
+              <option value="2006">2006</option>
+              <option value="2007">2007</option>
+              <option value="2008">2008</option>
+              <option value="2009">2009</option>
+              <option value="2010">2010</option>
+              <option value="2011">2011</option>
+              <option value="2012">2012</option>
+              <option value="2013">2013</option>
+              <option value="2014">2014</option>
+              <option value="2015">2015</option>
+              <option value="2016">2016</option>
+              <option value="2017">2017</option>
+              <option value="2018">2018</option>
+              <option value="2019">2019</option>
+              <option value="2020">2020</option>
+            </select>
+            <xsl:text>/</xsl:text>
+            <select name="edit_album_start_date_month" id="edit_album_start_date_month">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+            <xsl:text>/</xsl:text>
+            <select name="edit_album_start_date_day" id="edit_album_start_date_day">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="21">21</option>
+              <option value="22">22</option>
+              <option value="23">23</option>
+              <option value="24">24</option>
+              <option value="25">25</option>
+              <option value="26">26</option>
+              <option value="27">27</option>
+              <option value="28">28</option>
+              <option value="29">29</option>
+              <option value="30">30</option>
+              <option value="31">31</option>
+            </select>
+            <xsl:call-template name="nbsp"/>
+            <a  href="javascript:void(0)">
+            <img src="/photos/res/i/date_selector.png" width="22" height="22" border="0" id="edit_album_start_date_selector" alt="Select end Date" onClick="GCallendar.show(this.id);"/>
+            </a>
+          </td>
+      </tr>
+      <tr>
+        <td>End Date</td>
+        <td>
+            <select name="edit_album_end_date_year" id="edit_album_end_date_year">
+              <option value="2000">2000</option>
+              <option value="2001">2001</option>
+              <option value="2002">2002</option>
+              <option value="2003">2003</option>
+              <option value="2004">2004</option>
+              <option value="2005">2005</option>
+              <option value="2006">2006</option>
+              <option value="2007">2007</option>
+              <option value="2008">2008</option>
+              <option value="2009">2009</option>
+              <option value="2010">2010</option>
+              <option value="2011">2011</option>
+              <option value="2012">2012</option>
+              <option value="2013">2013</option>
+              <option value="2014">2014</option>
+              <option value="2015">2015</option>
+              <option value="2016">2016</option>
+              <option value="2017">2017</option>
+              <option value="2018">2018</option>
+              <option value="2019">2019</option>
+              <option value="2020">2020</option>
+            </select>
+            <xsl:text>/</xsl:text>
+            <select name="edit_album_end_date_month" id="edit_album_end_date_month">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+            <xsl:text>/</xsl:text>
+            <select name="edit_album_end_date_day" id="edit_album_end_date_day">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="21">21</option>
+              <option value="22">22</option>
+              <option value="23">23</option>
+              <option value="24">24</option>
+              <option value="25">25</option>
+              <option value="26">26</option>
+              <option value="27">27</option>
+              <option value="28">28</option>
+              <option value="29">29</option>
+              <option value="30">30</option>
+              <option value="31">31</option>
+            </select>
+            <xsl:call-template name="nbsp"/>
+            <a  href="javascript:void(0)">
+            <img src="/photos/res/i/date_selector.png" width="22" height="22" border="0" alt="Select End Date" id="edit_album_end_date_selector"  onClick="GCallendar.show(this.id);" />
+            </a>
+
+          </td>
+      </tr>
+
+        <tr>
+          <td><label for="edit_album_lng">Geolocation</label></td>
+          <td>
+            <input type="text" name="edit_album_lng" id="edit_album_lng" value=""/>  
+            <xsl:call-template name="nbsp"/><xsl:text>/</xsl:text><xsl:call-template name="nbsp"/>
+            <input type="text" name="edit_album_lat" id="edit_album_lat" value=""/> Longitude / Latitude
+          </td>
+        </tr>
+        <tr>
+          <td><label for="edit_album_showonmap">Show on map</label></td>
+          <td>
+            <input type="checkbox" name="edit_album_showonmap" id="edit_album_showonmap" value=""/>  
+          </td>
+        </tr>
                   <tr>
                     <td><label for="edit_album_name">Visible</label></td>
                     <td>
@@ -575,6 +956,13 @@
             <input type="radio" name="album_visibility" id="album_visibility_me" value="0"/>only for me (private )
                     </td>
                   </tr>
+        <tr>
+          <td><label for="edit_album_obsolete">Obsolete</label></td>
+          <td>
+            <input type="checkbox" name="edit_album_obsolete" id="edit_album_obsolete" value=""/>  
+          </td>
+        </tr>
+
                   <tfoot>
                     <tr>
                       <td></td>
@@ -649,5 +1037,7 @@
   <xsl:template name="sid">
     <xsl:if test="/root/@sid != ''">?sid=<xsl:value-of select="/root/@sid"/>&amp;realm=wa</xsl:if>
   </xsl:template>
+<!-- ======================================================================= -->
+
 </xsl:stylesheet>
 

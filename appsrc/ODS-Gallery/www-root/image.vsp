@@ -32,7 +32,7 @@
 
     if(image_id <> ''){
       image := blob_to_string(PHOTO.WA.get_thumbnail(sid,image_id,size,image_type));
-dbg_obj_print(image_type);
+-- dbg_obj_print(image_type);
       http_rewrite();
       http_header (sprintf('Content-Type: %s\r\n',image_type));
       http(image);

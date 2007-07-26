@@ -531,6 +531,44 @@ create procedure PHOTO.WA.vector2tags(
 
 -------------------------------------------------------------------------------
 --
+
+
+-------------------------------------------------------------------------------
+create procedure PHOTO.WA.string2vector(
+  inout _str varchar,
+  in separator varchar)
+{
+  return split_and_decode(_str, 0, '\0\0'||separator);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.vector2string(
+  inout aVector any,
+  in separator varchar)
+{
+  declare N integer;
+  declare aResult any;
+
+  aResult := '';
+  for (N := 0; N < length(aVector); N := N + 1)
+    if (N = 0) {
+      aResult := trim(aVector[N]);
+    } else {
+      aResult := concat(aResult, separator , trim(aVector[N]));
+    }
+  return aResult;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+
+
+
+
+
 create procedure PHOTO.WA.tags2unique(
   inout aVector any)
 {
@@ -593,7 +631,40 @@ create procedure PHOTO.WA.isDav(){
 }
 ;
 
---
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.update_gallery_foldername()
+{
+  declare gallery_foldername varchar;
+  
+  gallery_foldername:=coalesce (PHOTO.WA.get_gallery_folder_name (), 'Gallery');
+  
+  for select GALLERY_ID as _gallery_id,OWNER_ID,HOME_PATH from PHOTO.WA.SYS_INFO  do
+  {
+   if (not locate(gallery_foldername,HOME_PATH ))
+   {
+    declare auth_uname,auth_pwd,new_home_path varchar;
+    declare res,arr_len integer;
+    declare old_foldername_arr any;
+  
+    select U_NAME,pwd_magic_calc(U_NAME, coalesce(U_PWD,''), 1) into auth_uname,auth_pwd from WS.WS.SYS_DAV_USER where U_ID=OWNER_ID;
+  
+    old_foldername_arr:=split_and_decode(HOME_PATH,0,'\0\0-');
+    arr_len:=length(old_foldername_arr);
+    
+    if(arr_len=1)
+       new_home_path := '/DAV/home/' || auth_uname || '/' || gallery_foldername || '/';
+    else if(arr_len>1)
+       new_home_path := '/DAV/home/' || auth_uname || '/' || gallery_foldername || '-' || old_foldername_arr[arr_len-1];
+   
+    res := DAV_MOVE(HOME_PATH,new_home_path,0,auth_uname,auth_pwd);
+  
+    if(res>0)
+       update PHOTO.WA.SYS_INFO set HOME_PATH=new_home_path where GALLERY_ID=_gallery_id;
+   }
+  }
+}
+;
+--------------------------------------------------------------------------------
 create procedure PHOTO.WA.GET_ODS_BAR (
   inout _params any,
   inout _lines any)

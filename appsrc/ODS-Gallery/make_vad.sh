@@ -22,7 +22,7 @@
 #
 
 LOGDIR=`pwd`
-VERSION="0.3.55"
+VERSION="0.3.56"
 LOGFILE="${LOGDIR}/make_vad.log"
 STICKER="${LOGDIR}/make_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
@@ -77,6 +77,16 @@ then
 else
   myrm=$RM
 fi
+
+VERSION_INIT() 
+{
+  rm -f version.tmp
+  for i in `find . -name 'Entries' | grep -v "vad/"`; do
+        cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
+  done
+  VERSION=`cat version.tmp | awk ' BEGIN { cnt=9 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+  rm -f version.tmp
+}
 
 virtuoso_start() {
   echo "Starting $SERVER"
@@ -381,6 +391,7 @@ echo '----------------------'
 
 STOP_SERVER
 directory_clean
+VERSION_INIT
 directory_init
 virtuoso_init
 sticker_init

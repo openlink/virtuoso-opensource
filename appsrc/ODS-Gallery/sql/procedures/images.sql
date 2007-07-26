@@ -68,7 +68,7 @@ create procedure PHOTO.WA.get_thumbnail(
   }else{
     -- Get big image 500x370
   declare sizes_org,sizes_new,sizes,new_id any;
-  declare   ratio,max_width,max_height,org_width,org_height,new_width,new_height any;
+    declare ratio,max_width,max_height,org_width,org_height,new_width,new_height,image any;
 
   sizes_new := PHOTO.WA.image_sizes();
   sizes_new := sizes_new[size];
@@ -83,7 +83,14 @@ create procedure PHOTO.WA.get_thumbnail(
 
     select blob_to_string (RES_CONTENT), RES_TYPE into _content,image_type from WS.WS.SYS_DAV_RES where RES_ID= image_id;
 
-    return "IM ThumbnailImageBlob" (_content, length(_content), sizes[0], sizes[1],1);
+    declare exit handler for sqlstate '*'{image := _content;
+                                          goto _skip_thumbnail;     
+                                         };
+    image := "IM ThumbnailImageBlob" (_content, length(_content), sizes[0], sizes[1],1);
+
+_skip_thumbnail:;
+
+    return image;
   }
 
 }
@@ -137,9 +144,14 @@ create procedure PHOTO.WA.make_thumbnail(
     -- check for existing thumbnails folder
     result := PHOTO.WA.DAV_SUBCOL_CREATE(current_user,concat(path,'.thumbnails'));
   }
+  
+  declare exit handler for sqlstate '*'{image := _content;
+                                        goto _skip_thumbnail;     
+                                       };
   -- params: content, length of content, number of columns, number of rows
   image := "IM ThumbnailImageBlob" (_content, length(_content), sizes[0], sizes[1],1);
 
+_skip_thumbnail:;
 
   path := concat(path,'.thumbnails/',image_name);
 
@@ -230,8 +242,16 @@ create procedure PHOTO.WA.extact_meta(
   ind := 0;
   attributes := PHOTO.WA.get_meta_data_list();
   result_values := vector();
+
+  declare exit handler for sqlstate '*'{res:=vector();
+                                        goto _skip_im_action;     
+                                       };
+
   res := "IM GetImageBlobIdentify" (_content, length(_content));
   res := split_and_decode(res,1,'\0\0\n');
+
+_skip_im_action:;     
+
 
   while(ind < length(res)){
     rowche := res[ind];

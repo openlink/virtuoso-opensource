@@ -53,6 +53,8 @@
 <xsl:template match="title">
     <title><xsl:apply-templates /></title>
 </xsl:template>
+<xsl:template match="ttl">
+</xsl:template>
 
 <xsl:template match="link">
     <link href="{.}" type="text/html" rel="alternate"/>
@@ -74,6 +76,7 @@
 
 <xsl:template match="channel/itunes:*" />
 <xsl:template match="item/itunes:*" />
+<xsl:template match="atom:*" />
 
 <xsl:template match="channel/description[.!='']">
     <subtitle><xsl:apply-templates /></subtitle>
@@ -131,6 +134,10 @@
 
 <xsl:template match="item/vi:modified">
     <updated><xsl:apply-templates /></updated>
+</xsl:template>
+
+<xsl:template match="item/category">
+    <category term="{.}" />
 </xsl:template>
 
 <xsl:template match="item">

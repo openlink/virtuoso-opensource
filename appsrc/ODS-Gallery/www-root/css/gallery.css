@@ -179,13 +179,37 @@ li:hover{
   margin:8px;
   font-size:12px;
   font-family: Verdana;
-  background:#A4C6E1 url(../i/notebook-75-blue.png) no-repeat;
+
   cursor:pointer;
 }
 
 #albums div span{
   width:100px;
   height:100px;
+}
+
+
+div.album {
+  float:left;
+  width: 171px;
+  height:153px;
+  text-align:center;
+  margin:8px;
+  font-size:12px;
+  font-family: Verdana;
+  background:#A4C6E1 url(../i/notebook-75-blue.png) no-repeat;
+  cursor:pointer;
+}
+div.album_obsolete {
+  float:left;
+  width: 171px;
+  height:153px;
+  text-align:center;
+  margin:8px;
+  font-size:12px;
+  font-family: Verdana;
+  background-image: url(../i/notebook-75-gray.png);
+  cursor:pointer;
 }
 
 #new_album,
@@ -206,6 +230,23 @@ li:hover{
 
 }
 
+#new_album_lng,
+#new_album_lat,
+#edit_album_lng,
+#edit_album_lat{
+  width:80px;
+
+}
+
+
+#new_album_start_date_selector,
+#new_album_end_date_selector,
+#edit_album_start_date_selector,
+#edit_album_end_date_selector{
+  vertical-align: text-bottom;
+}
+
+
 #images {
   clear:both;
   text-align:center;
@@ -223,6 +264,20 @@ li:hover{
   overflow:hidden;
   position:relative;
 }
+div#images_ctrl{
+  border: 0px;
+  float:none;
+  text-align:center;
+  padding:3px;
+  margin:0px;
+  font-size:12px;
+  width:96px;
+  height:15px;
+  overflow:hidden;
+  position:relative;
+}
+
+
 
 div#mssage{
   border:1px solid #ADC9E0;
@@ -327,6 +382,11 @@ div#mssage{
 
 #move_button{
   vertical-align:middle;
+}
+
+#setthumb_button{
+  float:right;
+  padding: 2px 0px 0px 0px;
 }
 
 
@@ -594,7 +654,7 @@ padding:0;
   padding:30px;
   background: #FFFF9B;
   font-size:14px;
-  width:400px;
+  width:126px;
   background-repeat:no-repeat;
   background-position:5% center;
   padding-left:45px;
@@ -611,4 +671,32 @@ padding:0;
   padding:5px;
   color:#ccc;
   cursor:pointer;
+}
+
+#map.edit div img { cursor: crosshair; } /* overwrite the cursor on tile image  */
+
+div.calendar
+{
+  background-color: #FFFFFF;
+  padding: 2px 5px;
+  border: 1px solid #67A3BD;
+  margin-top: 4px;
+  margin-bottom: 5px;
+  margin-right: 5px;
+  background-image: url(images/default_widget.png);
+  background-repeat: repeat-x;
+}
+
+div.calendar_year,div.calendar_month
+{
+  text-align: center;
+}
+
+td.calendar_selected
+{
+color:red;
+}
+td.calendar_special
+{
+background-color: #85B9D2;
 }

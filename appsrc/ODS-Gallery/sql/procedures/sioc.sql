@@ -477,7 +477,7 @@ create procedure ODS_PHOTO_TAGS ()
     }
 };
 
-create procedure view ODS_PHOTO_TAGS as ODS_PHOTO_TAGS () (WAI_NAME varchar, U_MEMBER varchar, RES_FULL_PATH varchar, RES_TAG varchar);
+create procedure view ODS_PHOTO_TAGS as DB.DBA.ODS_PHOTO_TAGS () (WAI_NAME varchar, U_MEMBER varchar, RES_FULL_PATH varchar, RES_TAG varchar);
 
 create procedure sioc.DBA.rdf_photos_view_str ()
 {
@@ -534,10 +534,10 @@ create procedure sioc.DBA.rdf_photos_view_str ()
       ;
 };
 
-grant select on ODS_PHOTO_POSTS to "SPARQL";
-grant select on ODS_PHOTO_COMMENTS to "SPARQL";
-grant select on ODS_PHOTO_TAGS to "SPARQL";
-grant execute on DB.DBA.ODS_PHOTO_TAGS to "SPARQL";
+grant select on ODS_PHOTO_POSTS to SPARQL_SELECT;
+grant select on ODS_PHOTO_COMMENTS to SPARQL_SELECT;
+grant select on ODS_PHOTO_TAGS to SPARQL_SELECT;
+grant execute on DB.DBA.ODS_PHOTO_TAGS to SPARQL_SELECT;
 
 -- END PHOTO
 ODS_RDF_VIEW_INIT ();
