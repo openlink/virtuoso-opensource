@@ -4215,6 +4215,7 @@ dv_to_sql_type_server_side (int dv)
       case DV_SINGLE_FLOAT:
     return 7;     /* SQL_REAL */
       case DV_NUMERIC:
+    case DV_INT64:
     return 2;     /* SQL_DECIMAL */
       case DV_BLOB:
     return (-1);    /* SQL_LONGVARCHAR */
@@ -4336,6 +4337,8 @@ dv_buffer_length (int type, int prec)
     return 4;
   case DV_LONG_INT: /* 189 */
     return 4;
+  case DV_INT64:
+    return 20; /* max 19 chars plus sign */
   case DV_SINGLE_FLOAT: /* 190 */
     return 10;
   case DV_DOUBLE_FLOAT: /* 191 */
