@@ -428,3 +428,4 @@ conductor/sparql_load.vspx
 conductor/sparql_filters.vspx
 conductor/rdf_filters.vspx
 conductor/http_url_rewrite.vspx
+conductor/fb_popup.vspx
