@@ -7451,6 +7451,11 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
                         'rfc_id',    N_NM_ID,
                          'rfc_references', N_NM_REF);
     }
+    _msg_id := 0;
+    _msg_id := OMAIL.WA.omail_save_msg (_domain_id, _user_id, _params, _msg_id, _error);
+    _request := sprintf ('http://' || DB.DBA.http_get_host () || '/oMail/res/flush.vsp?did=%s&uid=%s&mid=%s&addr=%U', cast(_domain_id as varchar), cast(_user_id as varchar), cast(_msg_id as varchar), _address);
+    http_get (_request, _respond);
+    
   }else
   {
       declare  _to,_use_ngroup varchar;
@@ -7466,11 +7471,6 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
         if(locate('ods.mail',_ngroups[i]))
         {
            _use_ngroup:=_ngroups[i];
-           goto exit_loop;
-        }
-      }
-      
-      exit_loop:
       
       if(length(_use_ngroup)=0)
             signal ('CONVX', 'There is no ODS mail newsgroup to post.');
@@ -7490,6 +7490,10 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
       
 
       _address :=  get_keyword_ucase ('From', head, 'nobody@unknown');
+          if(not exists(select 1 from OMAIL.WA.FOLDERS where domain_id=_domain_id and user_id=_user_id and folder_id=100) )
+          {
+              OMAIL.WA.dcc_address(_address,_to);
+          }
       _params := vector ('folder_id',      100,
                          'from',           _address,
                          'to',             _to,
@@ -7499,14 +7503,20 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
                          'rfc_id',         N_NM_ID  
                         );
     
-  }
+          
       _msg_id := 0;
       _msg_id := OMAIL.WA.omail_save_msg (_domain_id, _user_id, _params, _msg_id, _error);
       _request := sprintf('http://' || DB.DBA.http_get_host () || '/oMail/res/flush.vsp?did=%s&uid=%s&mid=%s&addr=%U', cast(_domain_id as varchar), cast(_user_id as varchar), cast(_msg_id as varchar), _address);
       http_get (_request, _respond);
     
 }
+      }
+
+  }
+
+}
 ;
+
 
 -----------------------------------------------------------------------------------------
 --

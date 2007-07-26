@@ -194,13 +194,6 @@
       <xsl:attribute name="href"><xsl:value-of select="/page/user_info/sioc" /></xsl:attribute>
     </link>
     </xsl:if>
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Product Blog (RSS 2.0)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
-    <link rel="alternate" type="application/atom+xml" title="Virtuoso Product Blog (Atom)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
-    <link rel="alternate" type="application/rss+xml" title="ODBC for Mac OS X Screencast Demos"	href="http://support.openlinksw.com/viewlets/mac_uda_viewlets_rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Benchmark & Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
     <meta name="ICBM">
       <xsl:attribute name="content"><xsl:value-of select="/page/user_info/geo/longitude" />, <xsl:value-of select="/page/user_info/geo/latitude" /></xsl:attribute>
     </meta>
