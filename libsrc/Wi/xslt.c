@@ -1549,6 +1549,12 @@ xslt_attr_or_element_qname (xparse_ctx_t * xp, caddr_t * elt, int use_deflt)
 	  dk_free_box (name);
 	  sqlr_new_error_xsltree_xdl ("XS370", "XS045", elt, "Attribute xmlns required for resolving prefix in qualified name '%.500s'", tmp);
 	}
+      if (bx_std_ns_pref (name, ns_len))
+	{
+	  ns = "xml";
+	  ns_len = 3;
+	  goto ns_found;
+	}
       len = BOX_ELEMENTS (xmlns);
       for (inx = 0; inx < len; inx += 2)
 	{
@@ -2692,9 +2698,9 @@ bif_xslt_sheet (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_xslt_stale (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t name = bif_string_arg (qst, args, 0, "xslt_sheet");
+  caddr_t iri = bif_string_arg (qst, args, 0, "xslt_stale");
   caddr_t err = NULL;
-  shuric_t *shu = shuric_get_typed (name, &shuric_vtable__xslt, &err);
+  shuric_t *shu = shuric_get_typed (iri, &shuric_vtable__xslt, &err);
   if (NULL != err)
     sqlr_resignal (err);
   shuric_stale_tree (shu);
@@ -2991,7 +2997,7 @@ char * xslt_copy_text =
 /*--*/ "</xsl:stylesheet>"
 "')))";
 
-id_hash_iterator_t *
+struct id_hash_iterator_s *
 bif_dict_iterator_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int chk_version)
 {
   caddr_t arg = bif_arg (qst, args, nth, func);
@@ -3013,6 +3019,21 @@ bif_dict_iterator_arg (caddr_t * qst, state_slot_t ** args, int nth, const char 
   return res;
 }
 
+struct id_hash_iterator_s *
+bif_dict_iterator_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int chk_version)
+{
+  caddr_t arg = bif_arg (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (DV_DB_NULL == dtp)
+    return NULL;
+  if (dtp != DV_DICT_ITERATOR)
+    {
+      sqlr_new_error ("22023", "SR564",
+	"Function %.300s needs a NULL or a dictionary reference as argument %d, not an arg of type %s (%d)",
+	func, nth + 1, dv_type_title (dtp), dtp );
+    }
+  return bif_dict_iterator_arg (qst, args, nth, func, chk_version);
+}
 
 caddr_t
 bif_dict_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -3115,8 +3136,11 @@ bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_dict_size (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  id_hash_iterator_t *hit1 = bif_dict_iterator_arg (qst, args, 0, "dict_size", 0);
-  id_hash_t *ht = hit1->hit_hash;
+  id_hash_iterator_t *hit1 = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_size", 0);
+  id_hash_t *ht;
+  if (NULL == hit1)
+    return box_num (0);
+  ht = hit1->hit_hash;
   return box_num (ht->ht_inserts - ht->ht_deletes);
 }
 
@@ -3124,12 +3148,15 @@ bif_dict_size (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_dict_list_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  id_hash_iterator_t hit, *hit1 = bif_dict_iterator_arg (qst, args, 0, "dict_list_keys", 0);
-  id_hash_t *ht = hit1->hit_hash;
-  caddr_t *res = (caddr_t *)dk_alloc_box ((ht->ht_inserts - ht->ht_deletes) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  caddr_t *tail = res;
-  int destructive = bif_long_arg (qst, args, 1, "dict_list_keys");
-  caddr_t *keyp, *valp;
+  id_hash_iterator_t hit, *hit1 = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_list_keys", 0);
+  boxint destructive = bif_long_arg (qst, args, 1, "dict_list_keys");
+  id_hash_t *ht;
+  caddr_t *res, *tail, *keyp, *valp;
+  if (NULL == hit1)
+    return list (0);
+  ht = hit1->hit_hash;
+  res = (caddr_t *)dk_alloc_box ((ht->ht_inserts - ht->ht_deletes) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  tail = res;
   id_hash_iterator (&hit, ht);
   if (1 != ht->ht_dict_refctr)
     destructive &= ~1;
@@ -3157,12 +3184,15 @@ bif_dict_list_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_dict_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  id_hash_iterator_t hit, *hit1 = bif_dict_iterator_arg (qst, args, 0, "dict_to_vector", 0);
-  id_hash_t *ht = hit1->hit_hash;
-  caddr_t *res = (caddr_t *)dk_alloc_box ((ht->ht_inserts - ht->ht_deletes) * 2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  caddr_t *tail = res;
-  int destructive = bif_long_arg (qst, args, 1, "dict_to_vector");
-  caddr_t *keyp, *valp;
+  id_hash_iterator_t hit, *hit1 = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_to_vector", 0);
+  boxint destructive = bif_long_arg (qst, args, 1, "dict_to_vector");
+  id_hash_t *ht;
+  caddr_t *res, *tail, *keyp, *valp;
+  if (NULL == hit1)
+    return list (0);
+  ht = hit1->hit_hash;
+  res = (caddr_t *)dk_alloc_box ((ht->ht_inserts - ht->ht_deletes) * 2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  tail = res;
   id_hash_iterator (&hit, ht);
   if (1 != ht->ht_dict_refctr)
     destructive &= ~1;
