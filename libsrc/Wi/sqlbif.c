@@ -11392,6 +11392,7 @@ bif_trx_disk_log_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       return box_num (2000000000);
     default: sqlr_new_error ("22023", "SR562", "Supported values of argument 1 of __trx_disk_log_length() are 0 and 1 but not %ld", mode);
     }
+  return NULL; /* never reached */
 }
 
 caddr_t
