@@ -600,6 +600,7 @@ int64 dbe_key_count (dbe_key_t * key);
 int sqlo_is_seq_in_oby_order (sqlo_t * so, df_elt_t * dfe, df_elt_t * last_tb);
 void sqlg_find_aggregate_sqt (dbe_schema_t *schema, sql_type_t *arg_sqt, ST *fref, sql_type_t *res_sqt);
 void sqlg_rdf_inf ( df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head);
+void sqlg_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** head);
 data_source_t * qn_next (data_source_t * qn);
 caddr_t sqlo_iri_constant_name (ST* tree);
 int sqlo_is_postprocess (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * last_tb_dfe);

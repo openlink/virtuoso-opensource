@@ -957,10 +957,16 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
   sql_comp_t * sc = so->so_sc;
 #ifdef NEW_HASH
   table_source_t *ts = (table_source_t *) ts_src;
+  data_source_t * ts_post = ts_src, * head = ts_src;
   key_source_t * ks = ts->ts_main_ks ? ts->ts_main_ks : ts->ts_order_ks;
 #endif
   int shareable = !tb_dfe->_.table.all_preds;
   SQL_NODE_INIT (setp_node_t, setp, setp_node_input, setp_node_free);
+
+  if ( so->so_in_list_nodes)
+    sqlg_in_iter_nodes (so, ts_src, &head);
+  while (qn_next (ts_post))
+    ts_post = qn_next (ts_post);
   if (IS_BOX_POINTER (tb_dfe->dfe_locus))
     shareable = 0;
   ot->ot_hash_filler = setp;
@@ -987,7 +993,7 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
   ha = setp->setp_ha;
   ha->ha_allow_nulls = 0;
   ha->ha_op = HA_FILL;
-  sqlg_setp_append (&ts_src, setp);
+  sqlg_setp_append (&ts_post, setp);
 
 #ifdef NEW_HASH
   if (shareable)
@@ -995,7 +1001,7 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
 #endif
   {
     SQL_NODE_INIT (fun_ref_node_t, fref, (shareable ? hash_fill_node_input : fun_ref_node_input) , fun_ref_free);
-    fref->fnr_select = ts_src;
+    fref->fnr_select = head;
     fref->fnr_setp = setp;
     if (shareable)
       fref->fnr_hi_signature = hs_make_signature (setp, tb_dfe->_.table.ot->ot_table);

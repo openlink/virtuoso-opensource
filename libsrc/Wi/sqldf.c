@@ -2119,8 +2119,10 @@ sqlo_merge_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set
 df_elt_t **
 sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
 {
-  if (DFE_BOP_PRED == pred->dfe_type && BOP_LT == pred->_.bin.op && DFE_CONST == pred->_.bin.left->dfe_type && !pred->_.bin.left->dfe_tree && DFE_CALL == pred->_.bin.right->dfe_type 
-      && pred->_.bin.right->_.call.func_name && 0 == stricmp (pred->_.bin.right->_.call.func_name, "one_of_these"))
+  if (DFE_BOP_PRED == pred->dfe_type && BOP_LT == pred->_.bin.op &&
+    DFE_CONST == pred->_.bin.left->dfe_type && !unbox ((ccaddr_t)(pred->_.bin.left->dfe_tree)) &&
+    DFE_CALL == pred->_.bin.right->dfe_type && pred->_.bin.right->_.call.func_name &&
+    0 == stricmp (pred->_.bin.right->_.call.func_name, "one_of_these") )
     {
       df_elt_t ** args = pred->_.bin.right->_.call.args;
       if (args[0] && DFE_COLUMN == args[0]->dfe_type  
@@ -2363,8 +2365,13 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
     }
   else if (!opt_inx_name && !best_unq && !tb_dfe->_.table.is_text_order 
 	   && HR_FILL != tb_dfe->_.table.hash_role)
+    {
+      if (OPT_INTERSECT == (ptrlong) sqlo_opt_value (ot->ot_opts, OPT_JOIN))
+	best_cost = 1e30;
     sqlo_find_inx_intersect (so, tb_dfe, col_preds, best_cost);
+    }
 }
+
 
 void
 sqlo_tb_order (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds)
@@ -4177,9 +4184,9 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
 	  {
 	    sqlo_dfe_unplace (so, (df_elt_t *) dfe->_.table.xpath_pred);
 	  }
-	sqlo_dfe_unplace (so, dfe->_.table.join_test);
-	sqlo_dfe_unplace (so, dfe->_.table.after_join_test);
-	sqlo_dfe_unplace (so, dfe->_.table.vdb_join_test);
+	sqlo_dfe_unplace (so, (df_elt_t *)dfe->_.table.join_test);
+	sqlo_dfe_unplace (so, (df_elt_t *)dfe->_.table.after_join_test);
+	sqlo_dfe_unplace (so, (df_elt_t *)dfe->_.table.vdb_join_test);
 	if (dfe->_.table.inx_op)
 	  sqlo_inx_op_unplace (so, dfe->_.table.inx_op);
 	memset (&dfe->_, 0, sizeof (dfe->_.table));
