@@ -32,13 +32,6 @@
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', CAL.WA.sioc_url (self.domain_id)));
       http (CAL.WA.geo_url (self.domain_id, self.account_id));
     ?>
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Virtuoso Product Blog (RSS 2.0)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
-    <link rel="alternate" type="application/atom+xml" title="Virtuoso Product Blog (Atom)" href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
-    <link rel="alternate" type="application/rss+xml" title="ODBC for Mac OS X Screencast Demos"  href="http://support.openlinksw.com/viewlets/mac_uda_viewlets_rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
-    <link rel="alternate" type="application/rss+xml" title="Benchmark and Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <meta name="dc.description" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />

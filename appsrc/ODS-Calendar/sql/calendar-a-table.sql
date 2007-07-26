@@ -125,6 +125,14 @@ CAL.WA.exec_no_error ('
 ');
 
 CAL.WA.exec_no_error ('
+  create index SK_EVENTS_01 on CAL.WA.EVENTS (E_DOMAIN_ID, E_KIND, E_EVENT_START)
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_EVENTS_02 on CAL.WA.EVENTS (E_REMINDER_DATE)
+');
+
+CAL.WA.exec_no_error ('
   create trigger EVENTS_AI after insert on CAL.WA.EVENTS referencing new as N {
     CAL.WA.tags_update (N.E_DOMAIN_ID, \'\', N.E_TAGS);
     CAL.WA.domain_ping (N.E_DOMAIN_ID);
@@ -244,6 +252,60 @@ CAL.WA.exec_no_error ('
 -------------------------------------------------------------------------------
 --
 CAL.WA.exec_no_error ('
+  create table CAL.WA.ALARMS (
+    A_ID integer identity,
+    A_DOMAIN_ID integer not null,
+    A_EVENT_ID integer not null,
+    A_EVENT_OFFSET integer default 0,
+    A_ACTION integer default 0,           -- 0 - Display
+                                          -- 1 - Mail
+    A_TRIGGER datetime,
+    A_REPEAT integer,
+    A_DURATION integer,
+
+    constraint FK_ALARMS_01 FOREIGN KEY (A_EVENT_ID) references CAL.WA.EVENTS (E_ID) ON DELETE CASCADE,
+
+    primary key (A_ID)
+  )
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_ALARMS_01 on CAL.WA.ALARMS (A_DOMAIN_ID, A_TRIGGER)
+');
+
+CAL.WA.exec_no_error ('
+  create trigger ALARMS_AU after update on CAL.WA.ALARMS referencing  old as O, new as N {
+    if (N.A_REPEAT = 0)
+      delete from CAL.WA.ALARMS where A_ID = N.A_ID;
+  }
+');
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  create table CAL.WA.ANNOTATIONS (
+    A_ID integer identity,
+    A_DOMAIN_ID integer not null,
+    A_OBJECT_ID integer not null,
+    A_BODY long varchar,
+    A_CONTEXT varchar,
+    A_AUTHOR varchar,
+    A_CREATED datetime,
+    A_UPDATED datetime,
+
+    constraint FK_CAL_ANNOTATIONS_01 FOREIGN KEY (A_OBJECT_ID) references CAL.WA.EVENTS (E_ID) on delete cascade,
+
+    primary key (A_ID)
+  )
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_CAL_ANNOTATIONS_01 on CAL.WA.ANNOTATIONS (A_OBJECT_ID, A_ID)
+');
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
   create table CAL.WA.SETTINGS (
     S_ACCOUNT_ID integer not null,
     S_DATA varchar,
@@ -268,5 +330,13 @@ create procedure CAL.WA.tags_procedure (
 
 CAL.WA.exec_no_error ('
   create procedure view CAL..TAGS_VIEW as CAL.WA.tags_procedure (tags) (TV_TAG varchar)
+')
+;
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
+    values(\'Calendar Alarm Scheduler\', now(), \'CAL.WA.alarm_scheduler ()\', 30)
 ')
 ;

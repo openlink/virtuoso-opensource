@@ -23,7 +23,9 @@ use SIOC;
 
 -------------------------------------------------------------------------------
 --
-create procedure calendar_event_iri (in domain_id varchar, in event_id int)
+create procedure calendar_event_iri (
+  in domain_id varchar,
+  in event_id integer)
 {
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
@@ -33,6 +35,24 @@ create procedure calendar_event_iri (in domain_id varchar, in event_id int)
    where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
 
   return sprintf ('http://%s%s/%U/calendar/%U/%d', get_cname(), get_base_path (), _member, _inst, event_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure calendar_annotation_iri (
+  in domain_id varchar,
+  in event_id integer,
+  in annotation_id integer)
+{
+  declare _member, _inst varchar;
+  declare exit handler for not found { return null; };
+
+  select U_NAME, WAI_NAME into _member, _inst
+    from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
+   where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
+
+  return sprintf ('http://%s%s/%U/calendar/%U/%d/annotation/%d', get_cname(), get_base_path (), _member, _inst, event_id, annotation_id);
 }
 ;
 
@@ -84,7 +104,7 @@ create procedure fill_ods_calendar_sioc (
             and E_DOMAIN_ID = WAI_ID
           order by E_ID) do
   {
-    c_iri := polls_iri (WAI_NAME);
+      c_iri := calendar_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
 
       event_insert (graph_iri,
@@ -105,6 +125,25 @@ create procedure fill_ods_calendar_sioc (
                     E_UPDATED,
                     E_TAGS);
 
+      for (select A_ID,
+                  A_DOMAIN_ID,
+                  A_OBJECT_ID,
+                  A_BODY,
+                  A_AUTHOR,
+                  A_CREATED,
+                  A_UPDATED
+             from CAL.WA.ANNOTATIONS
+            where A_OBJECT_ID = E_ID) do
+      {
+        cal_annotation_insert (graph_iri,
+                               A_ID,
+                               A_DOMAIN_ID,
+                               A_OBJECT_ID,
+                               A_BODY,
+                               A_AUTHOR,
+                               A_CREATED,
+                               A_UPDATED);
+      }
       cnt := cnt + 1;
       if (mod (cnt, 500) = 0) {
   	    commit work;
@@ -262,6 +301,115 @@ create trigger EVENTS_SIOC_D before delete on CAL.WA.EVENTS referencing old as O
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure cal_annotation_insert (
+  in graph_iri varchar,
+  inout annotation_id integer,
+  inout domain_id integer,
+  inout master_id integer,
+  inout author varchar,
+  inout body varchar,
+  inout created datetime,
+  inout updated datetime)
+{
+  declare master_iri, annotattion_iri varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  if (isnull (graph_iri))
+    for (select WAI_ID, WAM_USER, WAI_NAME
+           from DB.DBA.WA_INSTANCE,
+                DB.DBA.WA_MEMBER
+          where WAI_ID = domain_id
+            and WAM_INST = WAI_NAME
+            and WAI_IS_PUBLIC = 1) do
+    {
+      graph_iri := get_graph ();
+    }
+
+  if (not isnull (graph_iri)) {
+    master_iri := calendar_event_iri (domain_id, cast (master_id as integer));
+    annotattion_iri := calendar_annotation_iri (domain_id, cast (master_id as integer), annotation_id);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, annotattion_iri, an_iri ('annotates'), master_iri);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, master_iri, an_iri ('hasAnnotation'), annotattion_iri);
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('author'), author);
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('body'), body);
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('created'), created);
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, annotattion_iri, an_iri ('modified'), updated);
+  }
+  return;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure cal_annotation_delete (
+  inout annotation_id integer,
+  inout domain_id integer,
+  inout master_id integer)
+{
+  declare graph_iri, iri varchar;
+
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := calendar_annotation_iri (domain_id, master_id, annotation_id);
+  delete_quad_s_or_o (graph_iri, iri, iri);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger ANNOTATIONS_SIOC_I after insert on CAL.WA.ANNOTATIONS referencing new as N
+{
+  cal_annotation_insert (null,
+                         N.A_ID,
+                         N.A_DOMAIN_ID,
+                         N.A_OBJECT_ID,
+                         N.A_BODY,
+                         N.A_AUTHOR,
+                         N.A_CREATED,
+                         N.A_UPDATED);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger ANNOTATIONS_SIOC_U after update on CAL.WA.ANNOTATIONS referencing old as O, new as N
+{
+  cal_annotation_delete (O.A_ID,
+                         O.A_DOMAIN_ID,
+                         O.A_OBJECT_ID);
+  cal_annotation_insert (null,
+                         N.A_ID,
+                         N.A_DOMAIN_ID,
+                         N.A_OBJECT_ID,
+                         N.A_BODY,
+                         N.A_AUTHOR,
+                         N.A_CREATED,
+                         N.A_UPDATED);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create trigger ANNOTATIONS_SIOC_D before delete on CAL.WA.ANNOTATIONS referencing old as O
+{
+  cal_annotation_delete (O.A_ID,
+                         O.A_DOMAIN_ID,
+                         O.A_OBJECT_ID);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ods_calendar_sioc_init ()
 {
   declare sioc_version any;
@@ -279,7 +427,10 @@ create procedure ods_calendar_sioc_init ()
 
 --CAL.WA.exec_no_error ('ods_calendar_sioc_init ()');
 
+-------------------------------------------------------------------------------
+--
 -- RDF Views
+--
 use DB;
 
 -------------------------------------------------------------------------------
@@ -346,7 +497,7 @@ create procedure ODS_CALENDAR_TAGS ()
 --
 wa_exec_no_error ('drop view ODS_CALENDAR_TAGS');
 
-create procedure view ODS_CALENDAR_TAGS as ODS_CALENDAR_TAGS () (WAM_INST varchar, U_NAME varchar, ITEM_ID int, E_TAG varchar);
+create procedure view ODS_CALENDAR_TAGS as DB.DBA.ODS_CALENDAR_TAGS () (WAM_INST varchar, U_NAME varchar, ITEM_ID int, E_TAG varchar);
 
 -------------------------------------------------------------------------------
 --
@@ -361,46 +512,61 @@ create procedure sioc.DBA.rdf_calendar_view_str ()
         dct:created E_CREATED ;
        	dct:modified E_UPDATED ;
 	      dc:date E_UPDATED ;
-	      ann:created E_CREATED ;
 	      dc:creator U_NAME ;
 	      sioc:link sioc:proxy_iri (E_URI) ;
 	      sioc:content E_DESCRIPTION ;
 	      sioc:has_creator sioc:user_iri (U_NAME) ;
 	      foaf:maker foaf:person_iri (U_NAME) ;
 	      rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
-	      sioc:has_container sioc:calendar_forum_iri (U_NAME, WAI_NAME) .
+	      sioc:has_container sioc:calendar_forum_iri (U_NAME, WAI_NAME)
+	    .
 
-        sioc:calendar_forum_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME, DB.DBA.ODS_CALENDAR_EVENTS.WAI_NAME) sioc:container_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID) .
+      sioc:calendar_forum_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME, DB.DBA.ODS_CALENDAR_EVENTS.WAI_NAME)
+        sioc:container_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+      .
 
-	      sioc:user_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME) sioc:creator_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID) .
+	    sioc:user_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME)
+	      sioc:creator_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+	    .
 
       	# Event tags
-      	sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_TAGS.U_NAME, DB.DBA.ODS_CALENDAR_TAGS.WAM_INST, DB.DBA.ODS_CALENDAR_TAGS.ITEM_ID) sioc:topic sioc:tag_iri (U_NAME, E_TAG) .
+    	sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_TAGS.U_NAME, DB.DBA.ODS_CALENDAR_TAGS.WAM_INST, DB.DBA.ODS_CALENDAR_TAGS.ITEM_ID)
+    	  sioc:topic sioc:tag_iri (U_NAME, E_TAG)
+    	.
 
-      	sioc:tag_iri (DB.DBA.ODS_CALENDAR_TAGS.U_NAME, DB.DBA.ODS_CALENDAR_TAGS.E_TAG) a skos:Concept ;
+    	sioc:tag_iri (DB.DBA.ODS_CALENDAR_TAGS.U_NAME, DB.DBA.ODS_CALENDAR_TAGS.E_TAG)
+    	  a skos:Concept ;
       	skos:prefLabel E_TAG ;
-      	skos:isSubjectOf sioc:calendar_event_iri (U_NAME, WAM_INST, ITEM_ID) .
+    	  skos:isSubjectOf sioc:calendar_event_iri (U_NAME, WAM_INST, ITEM_ID)
+    	.
 
-        sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME, DB.DBA.ODS_CALENDAR_EVENTS.WAI_NAME, DB.DBA.ODS_CALENDAR_EVENTS.E_ID) a atom:Entry ;
+      sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME, DB.DBA.ODS_CALENDAR_EVENTS.WAI_NAME, DB.DBA.ODS_CALENDAR_EVENTS.E_ID)
+        a atom:Entry ;
       	atom:title E_SUBJECT ;
       	atom:source sioc:calendar_forum_iri (U_NAME, WAI_NAME) ;
       	atom:author foaf:person_iri (U_NAME) ;
         atom:published E_CREATED ;
       	atom:updated E_UPDATED ;
-      	atom:content sioc:calendar_event_text_iri (U_NAME, WAI_NAME, E_ID) .
+      	atom:content sioc:calendar_event_text_iri (U_NAME, WAI_NAME, E_ID)
+     	.
 
-        sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME, DB.DBA.ODS_CALENDAR_EVENTS.WAI_NAME, DB.DBA.ODS_CALENDAR_EVENTS.E_ID) a atom:Content ;
+      sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME, DB.DBA.ODS_CALENDAR_EVENTS.WAI_NAME, DB.DBA.ODS_CALENDAR_EVENTS.E_ID)
+        a atom:Content ;
         atom:type "text/plain" ;
       	atom:lang "en-US" ;
-	      atom:body E_DESCRIPTION .
+	      atom:body E_DESCRIPTION
+	    .
 
-        sioc:calendar_forum_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME, DB.DBA.ODS_CALENDAR_EVENTS.WAI_NAME) atom:contains sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID) .
+      sioc:calendar_forum_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME, DB.DBA.ODS_CALENDAR_EVENTS.WAI_NAME)
+        atom:contains sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+      .
       '
       ;
 };
 
-grant select on ODS_CALENDAR_EVENTS to "SPARQL";
-grant select on ODS_CALENDAR_TAGS to "SPARQL";
+grant select on ODS_CALENDAR_EVENTS to SPARQL_SELECT;
+grant select on ODS_CALENDAR_TAGS to SPARQL_SELECT;
+grant execute on ODS_CALENDAR_TAGS to SPARQL_SELECT;
 
 -- RDF Views
 ODS_RDF_VIEW_INIT ();

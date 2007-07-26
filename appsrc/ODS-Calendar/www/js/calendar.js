@@ -709,6 +709,16 @@ function eDelete(event, obj, onOffset)
 }
 
 // ---------------------------------------------------------------------------
+function eAnnotea(event, id, domain_id, account_id)
+{
+  event.cancelBubble = true;
+
+  URL = 'annotea.vspx?sid=' + document.forms[0].sid.value + '&realm=' + document.forms[0].realm.value + '&oid=' + id + '&did=' + domain_id + '&aid=' + account_id;
+  window.open (URL, 'addressbook_anotea_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600');
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 function cNewEvent (onDate, onTime)
 {
   if (onDate != null)

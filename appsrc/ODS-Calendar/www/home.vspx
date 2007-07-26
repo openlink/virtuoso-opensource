@@ -148,20 +148,22 @@
 
   <v:method name="showEvent" arglist="in e_id integer, in e_event integer, in e_subject varchar, in e_start datetime, in e_end datetime, in e_repeat varchar, in e_repeat_offset integer, in e_reminder integer">
     <![CDATA[
-      declare showDelete, S varchar;
+      declare showDelete, showAnnotate, S varchar;
 
         S := 'null';
         if (not isnull (e_repeat_offset))
           S := cast (e_repeat_offset as varchar);
 
       showDelete := '';
-      if (self.account_role not in ('public', 'guest')) {
+      if (self.account_role not in ('public', 'guest'))
         showDelete :=  sprintf ('<span id="d_%d_%s" onclick="eDelete(event, this, %s)">[<span class="EV_delete">X</span>]</span> ', e_id, S, S);
-      }
+      showAnnotate := '';
+      if (self.account_role not in ('public', 'guest'))
+        showAnnotate := sprintf ('<img border="0" width="11" height="11" title="Annotate" alt="Annotate" src="image/ann_16.gif" onclick="eAnnotea (event, %d, %d, %d);" /> ', e_id, self.domain_id, self.account_id);
       if (e_event = 1) {
-        http (sprintf ('<div id="e_%d_%s" class="EV" onclick="eEdit(this)">%s %s%s<span class="EV_subject">%s</span></div>', e_id, S, showDelete, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject)));
+        http (sprintf ('<div id="e_%d_%s" class="EV" onclick="eEdit(this)">%s %s%s%s<span class="EV_subject">%s</span></div>', e_id, S, showDelete, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), showAnnotate, CAL.WA.show_subject (e_subject)));
       } else {
-        http (sprintf ('<div id="e_%d_%s" class="EV" onclick="eEdit(this)">%s <span class="EV_time">%s-%s</span>%s%s<span class="EV_subject">%s</span></div>', e_id, S, showDelete, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject)));
+        http (sprintf ('<div id="e_%d_%s" class="EV" onclick="eEdit(this)">%s <span class="EV_time">%s-%s</span>%s%s%s<span class="EV_subject">%s</span></div>', e_id, S, showDelete, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), showAnnotate, CAL.WA.show_subject (e_subject)));
       }
     ]]>
   </v:method>
@@ -328,6 +330,41 @@
              http (CAL.WA.utf2wide (cast (fValue as varchar)));
            }
          }
+    ]]>
+  </v:method>
+
+  <v:method name="arrays4Reminder" arglist="inout x any, inout y any">
+    <![CDATA[
+      x := make_array (14, 'any');
+      x[0] := 'No remainder';
+      x[1] := '5 minutes';
+      x[2] := '10 minutes';
+      x[3] := '15 minutes';
+      x[4] := '20 minutes';
+      x[5] := '25 minutes';
+      x[6] := '30 minutes';
+      x[7] := '45 minutes';
+      x[8] := '1 hour';
+      x[9] := '2 hours';
+      x[10]:= '3 hours';
+      x[11]:= '1 day';
+      x[12]:= '2 days';
+      x[13]:= '1 week';
+      y:= make_array (14, 'any');
+      y[0] := '-1';
+      y[1] := '300';
+      y[2] := '600';
+      y[3] := '900';
+      y[4] := '1200';
+      y[5] := '1500';
+      y[6] := '1800';
+      y[7] := '2700';
+      y[8] := '3600';
+      y[9] := '7200';
+      y[10]:= '10800';
+      y[11]:= '86400';
+      y[12]:= '172800';
+      y[13]:= '604800';
     ]]>
   </v:method>
 
@@ -520,7 +557,7 @@
               </tr>
               <tr>
                 <th>
-                  <vm:label for="s_tags" value="Comma delimited tags" />
+                  <vm:label for="s_tags" value="Tags" />
                 </th>
                 <td>
                   <v:text name="s_tags" value="--CAL.WA.xml_get ('tags', self.cSearch)" xhtml_class="textbox" xhtml_size="60"/>
@@ -958,6 +995,11 @@
                         <th>
                           Subject
                         </th>
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <th width="1%">
+                            Action
+                          </th>
+                        </vm:if>
                       </tr>
                     </thead>
                   </table>
@@ -989,6 +1031,11 @@
                                                    (control as vspx_row_template).te_column_value('E_REMINDER'));
                           ?>
                         </td>
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <td>
+                            <?vsp http (sprintf ('<input type="button" value="Annotate" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('E_ID'), self.domain_id, self.account_id, (control as vspx_row_template).te_column_value('E_SUBJECT'))); ?>
+                          </td>
+                        </vm:if>
                       </tr>
                     </table>
                   </v:template>
@@ -1043,6 +1090,11 @@
                         <th width="1%">
                           Updated
                         </th>
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <th width="1%">
+                            Action
+                          </th>
+                        </vm:if>
                       </tr>
                     </thead>
                   </table>
@@ -1085,6 +1137,11 @@
                         <td nowrap="nowrap">
                           <v:label value="--CAL.WA.dt_datestring ((control.vc_parent as vspx_row_template).te_column_value('E_UPDATED'), self.cDateFormat)" />
                         </td>
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <td>
+                            <?vsp http (sprintf ('<input type="button" value="Annotate" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('E_ID'), self.domain_id, self.account_id, (control as vspx_row_template).te_column_value('E_SUBJECT'))); ?>
+                          </td>
+                        </vm:if>
                       </tr>
                     </table>
                   </v:template>
@@ -1130,6 +1187,11 @@
                         <th width="1%">
                           Updated
                         </th>
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <th width="1%">
+                            Action
+                          </th>
+                        </vm:if>
                       </tr>
                     </thead>
                   </table>
@@ -1157,6 +1219,11 @@
                         <td nowrap="nowrap" style="padding: 0 2px 0 2px;">
                           <v:label value="--CAL.WA.dt_datestring ((control.vc_parent as vspx_row_template).te_column_value('E_UPDATED'), self.cDateFormat)" />
                         </td>
+                        <vm:if test="self.account_role not in ('public', 'guest')">
+                          <td>
+                            <?vsp http (sprintf ('<input type="button" value="Annotate" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('E_ID'), self.domain_id, self.account_id, (control as vspx_row_template).te_column_value('E_SUBJECT'))); ?>
+                          </td>
+                        </vm:if>
                       </tr>
                     </table>
                   </v:template>
@@ -1380,7 +1447,10 @@
                 <v:label for="e_subject" value="Subject"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:text name="e_subject" null-value="''" value="--CAL.WA.utf2wide (self.v_subject)" xhtml_class="textbox" xhtml_size="60"/>
+                </vm:if>
+                <?vsp self.viewField (self.v_subject); ?>
               </td>
             </tr>
             <tr>
@@ -1388,6 +1458,7 @@
                 <v:label for="e_eventEndDate" value="Duration"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <table>
                   <tr>
                     <td width="1%">
@@ -1482,6 +1553,15 @@
                     </td>
                   </tr>
                 </table>
+                </vm:if>
+                <?vsp
+                  if (self.cAction = 'view')
+                    if (self.v_event = 0) {
+                      self.viewField (sprintf ('%s - %s', CAL.WA.dt_datetimestring (self.v_eventStart, self.cDateFormat, self.cTimeFormat), CAL.WA.dt_datetimestring (self.v_eventEnd, self.cDateFormat, self.cTimeFormat)));
+                    } else {
+                      self.viewField (sprintf ('%s - %s', CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat), CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)));
+                    }
+                ?>
               </td>
             </tr>
             <tr>
@@ -1489,7 +1569,10 @@
                 <v:label for="e_description" value="Description"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:textarea name="e_description" null-value="--''" value="--CAL.WA.utf2wide (self.v_description)" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6"/>
+                </vm:if>
+                <?vsp self.viewField (self.v_description); ?>
               </td>
             </tr>
             <tr>
@@ -1497,7 +1580,10 @@
                 <v:label for="e_location" value="Location"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:text name="e_location" null-value="''" value="--CAL.WA.utf2wide (self.v_location)" xhtml_class="textbox" xhtml_size="60"/>
+                </vm:if>
+                <?vsp self.viewField (self.v_location); ?>
               </td>
             </tr>
             <tr>
@@ -1505,6 +1591,7 @@
                 <v:label for="e_repeat" value="Repeats"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <table>
                   <tr>
                     <td />
@@ -1925,13 +2012,27 @@
                     </td>
                   </tr>
                 </table>
+                </vm:if>
+                <?vsp
+                  self.viewField (CAL.WA.vcal_recurrence2str (self.v_repeat,
+                                                              self.v_RepeatParam1,
+                                                              self.v_RepeatParam2,
+                                                              self.v_RepeatParam3,
+                                                              self.v_repeatUntil
+                                                             )
+                                 );
+                ?>
               </td>
             </tr>
             <tr>
-              <th valign="top" rowspan="2">
+              <th valign="top">
                 <v:label for="e_repeat_range" value="Repeats range"/>
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
+                  <table>
+                    <tr>
+                      <td>
                 <?vsp
                   declare S varchar;
 
@@ -1963,47 +2064,26 @@
                 </a>
               </td>
             </tr>
+                  </table>
+                </vm:if>
+                <?vsp
+                  self.viewField (self.v_repeatUntil);
+                ?>
+              </td>
+            </tr>
             <tr>
               <th>
                 <vm:label for="e_reminder" value="--'Reminder'" />
               </th>
               <td>
+                <vm:if test="self.cAction <> 'view'">
                 <v:select-list name="e_reminder">
                   <v:on-init>
                     <![CDATA[
                       declare N integer;
                       declare x, y any;
 
-                      x := make_array (14, 'any');
-                      x[0] := 'No remainder';
-                      x[1] := '5 minutes';
-                      x[2] := '10 minutes';
-                      x[3] := '15 minutes';
-                      x[4] := '20 minutes';
-                      x[5] := '25 minutes';
-                      x[6] := '30 minutes';
-                      x[7] := '45 minutes';
-                      x[8] := '1 hour';
-                      x[9] := '2 hours';
-                      x[10]:= '3 hours';
-                      x[11]:= '1 day';
-                      x[12]:= '2 days';
-                      x[13]:= '1 week';
-                      y:= make_array (14, 'any');
-                      y[0] := '-1';
-                      y[1] := '300';
-                      y[2] := '600';
-                      y[3] := '900';
-                      y[4] := '1200';
-                      y[5] := '1500';
-                      y[6] := '1800';
-                      y[7] := '2700';
-                      y[8] := '3600';
-                      y[9] := '7200';
-                      y[10]:= '10800';
-                      y[11]:= '86400';
-                      y[12]:= '172800';
-                      y[13]:= '604800';
+                        self.arrays4Reminder (x, y);
                       control.vsl_item_values := y;
                       control.vsl_items := x;
                       control.ufl_value := '';
@@ -2015,6 +2095,15 @@
                     ]]>
                   </v:before-data-bind>
                 </v:select-list>
+                </vm:if>
+                <?vsp
+                  declare N integer;
+                  declare x, y any;
+
+                  self.arrays4Reminder (x, y);
+                  N := CAL.WA.vector_indexOf (y, self.v_reminder, 0);
+                  self.viewField (x [N]);
+                ?>
               </td>
             </tr>
           </table>
@@ -2361,7 +2450,7 @@
                 }
               </script>
               <th>
-                <v:label for="t_tags" value="Comma Delimited Tags" />
+                <v:label for="t_tags" value="Tags" />
               </th>
               <td>
                 <vm:if test="self.cAction <> 'view'">
@@ -2523,7 +2612,7 @@
                 }
               </script>
               <th>
-                <v:label for="n_tags" value="Comma Delimited Tags" />
+                <v:label for="n_tags" value="Tags" />
               </th>
               <td>
                 <vm:if test="self.cAction <> 'view'">
@@ -2726,7 +2815,7 @@
               </vm:if>
               <tr>
                 <th>
-                  <v:label for="i_tags" value="Comma Delimited Tags" />
+                  <v:label for="i_tags" value="Tags" />
                 </th>
                 <td>
                   <v:text name="i_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
