@@ -69,7 +69,7 @@ create view SIOC_SITE as select top 1
 	from DB.DBA.WA_SETTINGS;
 
 create view SIOC_USERS as select U_ID, U_NAME, U_FULL_NAME,
-	case when length (U_E_MAIL) then 'mailto:'||U_E_MAIL else null end as E_MAIL,
+	case when length (U_E_MAIL) then U_E_MAIL else null end as E_MAIL,
 	case when length (U_E_MAIL) then sha1_digest (U_E_MAIL) else null end as E_MAIL_SHA1,
 	sioc..user_obj_iri (U_NAME) || '/sioc.rdf' as SEE_ALSO
 	from DB.DBA.SYS_USERS
@@ -132,25 +132,25 @@ create procedure ods_filter_uinf (in val any, in flags varchar, in fld int, in f
 
 create view ODS_FOAF_PERSON as select
 	U_NAME,
-	case when length (U_E_MAIL) then 'mailto:'||U_E_MAIL else null end as E_MAIL,
+	case when length (U_E_MAIL) then U_E_MAIL else null end as E_MAIL,
 	case when length (U_E_MAIL) then sha1_digest (U_E_MAIL) else null end as E_MAIL_SHA1,
 	sioc..user_obj_iri (U_NAME) || '/about.rdf' as SEE_ALSO,
-	ods_filter_uinf (WAUI_FIRST_NAME, WAUI_VISIBLE, 1) as FIRST_NAME,
-	ods_filter_uinf (WAUI_LAST_NAME, WAUI_VISIBLE, 2) as LAST_NAME,
+	DB.DBA.ods_filter_uinf (WAUI_FIRST_NAME, WAUI_VISIBLE, 1) as FIRST_NAME,
+	DB.DBA.ods_filter_uinf (WAUI_LAST_NAME, WAUI_VISIBLE, 2) as LAST_NAME,
 	U_FULL_NAME,
-	ods_filter_uinf (WAUI_GENDER, WAUI_VISIBLE, 5) as GENDER,
-	ods_filter_uinf (WAUI_ICQ, WAUI_VISIBLE, 10) as ICQ,
-	ods_filter_uinf (WAUI_MSN, WAUI_VISIBLE, 14) as MSN,
-	ods_filter_uinf (WAUI_AIM, WAUI_VISIBLE, 12) as AIM,
-	ods_filter_uinf (WAUI_YAHOO, WAUI_VISIBLE, 13) as YAHOO,
-	ods_filter_uinf (
+	DB.DBA.ods_filter_uinf (WAUI_GENDER, WAUI_VISIBLE, 5) as GENDER,
+	DB.DBA.ods_filter_uinf (WAUI_ICQ, WAUI_VISIBLE, 10) as ICQ,
+	DB.DBA.ods_filter_uinf (WAUI_MSN, WAUI_VISIBLE, 14) as MSN,
+	DB.DBA.ods_filter_uinf (WAUI_AIM, WAUI_VISIBLE, 12) as AIM,
+	DB.DBA.ods_filter_uinf (WAUI_YAHOO, WAUI_VISIBLE, 13) as YAHOO,
+	DB.DBA.ods_filter_uinf (
 	    substring (datestring(coalesce (WAUI_BIRTHDAY, now ())), 6, 5)
 	    , WAUI_VISIBLE, 6) as BIRTHDAY,
-	ods_filter_uinf (WAUI_BORG, WAUI_VISIBLE, 20) as ORG,
+	DB.DBA.ods_filter_uinf (WAUI_BORG, WAUI_VISIBLE, 20) as ORG,
 	case when length (WAUI_HPHONE) and sioc..wa_user_pub_info (WAUI_VISIBLE, 18) then WAUI_HPHONE
 	when length (WAUI_HMOBILE) and sioc..wa_user_pub_info (WAUI_VISIBLE, 18) then WAUI_HMOBILE else  WAUI_BPHONE end as PHONE,
-	ods_filter_uinf (WAUI_LAT, WAUI_VISIBLE, 39, '%.06f') as LAT,
-	ods_filter_uinf (WAUI_LNG, WAUI_VISIBLE, 39, '%.06f') as LNG,
+	DB.DBA.ods_filter_uinf (WAUI_LAT, WAUI_VISIBLE, 39, '%.06f') as LAT,
+	DB.DBA.ods_filter_uinf (WAUI_LNG, WAUI_VISIBLE, 39, '%.06f') as LNG,
 	WAUI_WEBPAGE as WEBPAGE
 	from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS
 	where WAUI_U_ID = U_ID;
@@ -273,6 +273,20 @@ create iri class sioc:blog_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U
 	    (in uname varchar not null, in inst_name varchar not null, in calendar_id integer not null) .
     create iri class sioc:calendar_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/calendar/%U"
 	    ( in uname varchar not null, in forum_name varchar not null) .
+    # Polls
+    create iri class sioc:poll_post_iri "http://^{URIQADefaultHost}^/dataspace/%U/polls/%U/%d"
+	    (in uname varchar not null, in inst_name varchar not null, in poll_id integer not null) .
+    create iri class sioc:poll_post_text_iri "http://^{URIQADefaultHost}^/dataspace/%U/polls/%U/%d/text"
+	    (in uname varchar not null, in inst_name varchar not null, in poll_id integer not null) .
+    create iri class sioc:poll_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/polls/%U"
+	    ( in uname varchar not null, in forum_name varchar not null) .
+    # AddressBook
+    create iri class sioc:addressbook_contact_iri "http://^{URIQADefaultHost}^/dataspace/%U/addressbook/%U/%d"
+	    (in uname varchar not null, in inst_name varchar not null, in contact_id integer not null) .
+    create iri class sioc:addressbook_contact_text_iri "http://^{URIQADefaultHost}^/dataspace/%U/addressbook/%U/%d/text"
+	    (in uname varchar not null, in inst_name varchar not null, in contact_id integer not null) .
+    create iri class sioc:addressbook_forum_iri "http://^{URIQADefaultHost}^/dataspace/%U/addressbook/%U"
+	    ( in uname varchar not null, in forum_name varchar not null) .
     # NNTPF
     create iri class sioc:nntp_forum_iri "http://^{URIQADefaultHost}^/dataspace/discussion/%U"
 	    ( in forum_name varchar not null) .
@@ -361,6 +375,13 @@ prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 		    a sioct:Wiki
 	            where (^{alias}^.WAM_APP_TYPE = ''oWiki'') option (EXCLUSIVE) .
 
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioct:Polls
+	            where (^{alias}^.WAM_APP_TYPE = ''Polls'') option (EXCLUSIVE) .
+
+	    sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
+		    a sioct:AddressBook
+	            where (^{alias}^.WAM_APP_TYPE = ''AddressBook'') option (EXCLUSIVE) .
 
 	    #sioc:forum_iri (DB.DBA.SIOC_ODS_FORUMS.U_NAME, DB.DBA.SIOC_ODS_FORUMS.APP_TYPE, DB.DBA.SIOC_ODS_FORUMS.WAM_INST)
 	    #	    a sioct:MailingList
@@ -495,23 +516,24 @@ create procedure ODS_GET_APP_RDF_VIEWS ()
 };
 
 
-grant select on SIOC_SITE to "SPARQL";
-grant select on SIOC_USERS to "SPARQL";
-grant select on SIOC_ODS_FORUMS to "SPARQL";
-grant select on SIOC_ROLES to "SPARQL";
-grant select on SIOC_ROLE_GRANTS to "SPARQL";
-grant select on SIOC_GROUPS to "SPARQL";
-grant select on SIOC_KNOWS to "SPARQL";
-grant select on ODS_FOAF_PERSON to "SPARQL";
-grant execute on wa_type_to_app to "SPARQL";
-grant select on DB.DBA.NEWS_GROUPS to "SPARQL";
-grant execute on sioc.DBA.get_ods_link to "SPARQL";
-grant execute on DB.DBA.WA_LINK to "SPARQL";
-grant execute on sioc.DBA.sioc_date to "SPARQL";
-grant execute on sioc.DBA.user_obj_iri to "SPARQL";
-grant execute on sioc.DBA.forum_iri to "SPARQL";
-grant execute on sioc.DBA.post_iri to "SPARQL";
-grant execute on DB.DBA.ods_filter_uinf to "SPARQL";
+grant select on SIOC_SITE to SPARQL_SELECT;
+grant select on SIOC_USERS to SPARQL_SELECT;
+grant select on SIOC_ODS_FORUMS to SPARQL_SELECT;
+grant select on SIOC_ROLES to SPARQL_SELECT;
+grant select on SIOC_ROLE_GRANTS to SPARQL_SELECT;
+grant select on SIOC_GROUPS to SPARQL_SELECT;
+grant select on SIOC_KNOWS to SPARQL_SELECT;
+grant select on ODS_FOAF_PERSON to SPARQL_SELECT;
+grant execute on wa_type_to_app to SPARQL_SELECT;
+grant select on DB.DBA.NEWS_GROUPS to SPARQL_SELECT;
+grant execute on sioc.DBA.get_ods_link to SPARQL_SELECT;
+grant execute on DB.DBA.WA_LINK to SPARQL_SELECT;
+grant execute on sioc.DBA.sioc_date to SPARQL_SELECT;
+grant execute on sioc.DBA.user_obj_iri to SPARQL_SELECT;
+grant execute on sioc.DBA.forum_iri to SPARQL_SELECT;
+grant execute on sioc.DBA.post_iri to SPARQL_SELECT;
+grant execute on DB.DBA.ods_filter_uinf to SPARQL_SELECT;
+grant execute on sioc..wa_user_pub_info to SPARQL_SELECT;
 
 ODS_RDF_VIEW_INIT ();
 

@@ -31,7 +31,7 @@ VHOST_DEFINE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/ods_services',ppath=>'/SOAP
 
 
 create procedure
-ODS_CREATE_USER(in _username varchar, in _passwd varchar, in _email varchar, in _host varchar := '',in _creator_username varchar :='',in _creator_passwd varchar :='' )
+ODS_CREATE_USER(in _username varchar, in _passwd varchar, in _email varchar, in _host varchar := '',in _creator_username varchar :='',in _creator_passwd varchar :='', in _is_searchable integer := 0, in _show_activity integer := 0)
 {
 
    declare dom_reg int;
@@ -129,6 +129,9 @@ ODS_CREATE_USER(in _username varchar, in _passwd varchar, in _email varchar, in 
    WA_USER_SET_INFO(_username, '', '');
    WA_USER_TEXT_SET(uid, _username||' '||_email);
    wa_reg_register (uid, _username);
+
+   WA_USER_EDIT (_username, 'WAUI_SEARCHABLE', _is_searchable);
+   WA_USER_EDIT (_username, 'WAUI_SHOWACTIVE', _show_activity);
 
    {
      declare coords any;
@@ -336,3 +339,242 @@ report_err:;
 };
 
 grant execute on ODS_CREATE_NEW_APP_INST to GDATA_ODS;
+
+
+create procedure
+ODS_DELETE_USER(in _username varchar, in _delDAV integer := 1, in _auth_username varchar :='',in _auth_passwd varchar :='' )
+{
+  declare _err varchar;
+  _err:='';
+  
+  if(web_user_password_check(_auth_username,_auth_passwd)=0
+     or
+     not exists(select 1 from SYS_USERS where U_NAME=_auth_username and U_GROUP in (0,3))
+    )
+  {
+     _err := 'Authentication is incorrect.';
+     goto report_err;
+  }
+
+  connection_set('odsapi_auth_username',_auth_username);
+  connection_set('odsapi_auth_userpass',_auth_passwd);
+  connection_set('odsapi_deldav',_delDAV);
+
+  declare exit handler for SQLSTATE '*' { ROLLBACK WORK; RESIGNAL; };
+  delete from DB.DBA.SYS_USERS where U_NAME=_username;
+
+  return 1;
+
+report_err:;
+ 
+ return _err;
+
+};
+
+grant execute on ODS_DELETE_USER to GDATA_ODS;
+
+
+-- This procedure is called inside trigger SYS_USERS_ON_DELETE_WA_FK on SYS_USERS;
+create procedure
+ODS_DELETE_USER_DATA(in _username varchar, in _delDAV integer := 1,in _auth_username varchar :='',in _auth_passwd varchar :='' )
+{
+  declare _u_name,_err varchar;
+  declare _u_id integer;
+  _err:='';
+ 
+  {
+  declare exit handler for not found{ _err:='Given user name is not ODS user name.';
+                                      goto report_err;
+                                    };
+  select U_NAME,U_ID into _u_name,_u_id from DB.DBA.SYS_USERS,WA_USER_INFO where U_ID=WAUI_U_ID and U_NAME= _username;
+  }   
+  
+  declare _auth integer;
+  _auth:=0;
+  
+  if(is_http_ctx())
+  {
+      if(http_map_get('mounted')='/SOAP/')
+      {
+        if(_auth_username='')
+        {
+          _auth_username:= coalesce(connection_get('odsapi_auth_username'),'');
+          _auth_passwd  := coalesce(connection_get('odsapi_auth_userpass'),'');
+          
+            if(web_user_password_check(_auth_username,_auth_passwd)=0
+               or
+               not exists(select 1 from SYS_USERS where U_NAME=_auth_username and U_GROUP in (0,3))
+              )
+            {
+               _err := 'Authentication is incorrect.';
+               goto report_err;
+            }
+        }else
+        {
+          if(web_user_password_check(_auth_username,_auth_passwd)=0
+             or
+             not exists(select 1 from SYS_USERS where U_NAME=_auth_username and U_GROUP in (0,3))
+            )
+          {
+             _err := 'Authentication is incorrect.';
+             goto report_err;
+          }
+         
+          connection_set('odsapi_auth_username',_auth_username);
+          connection_set('odsapi_auth_userpass',_auth_passwd);
+          connection_set('odsapi_deldav',_delDAV);
+        }
+      }
+        
+      _auth:=1;        
+  }else 
+      _auth:=1;
+
+  if(_auth)
+  { 
+   
+
+    {
+    declare _sne_id integer;
+    declare exit handler for not found{goto skip_sn;};
+    select sne_id into _sne_id from sn_entity where sne_org_id = _u_id;
+
+    delete from DB.DBA.sn_alias where sna_entity = _sne_id;
+    delete from DB.DBA.sn_invitation where sni_from = _sne_id;
+    delete from DB.DBA.sn_related where snr_from = _sne_id or snr_to=_sne_id;
+    delete from DB.DBA.sn_member  where snm_group = _sne_id or snm_entity=_sne_id;
+    delete from DB.DBA.sn_person  where sne_org_id = _u_id;
+    delete from DB.DBA.sn_entity  where sne_org_id = _u_id;
+    }
+skip_sn:;
+
+    declare exit handler for SQLSTATE '*' { ROLLBACK WORK; RESIGNAL; };
+
+    declare _p_res any;
+    _p_res:=ODS_DELETE_USER_INSTANCES(_u_id);
+    if(_p_res<>1)
+    {
+       _err := _p_res;
+       goto report_err;
+    }
+
+    delete from "DB"."DBA"."WA_USERS"  where "WAU_U_ID" = _u_id;
+    delete from "DB"."DBA"."WA_USER_INFO"  where "WAUI_U_ID" = _u_id;
+
+    if(_delDAV)
+    {  
+      _p_res:=ODS_DELETE_USER_DAV(_u_name);
+      if(_p_res<>1)
+         {
+           _err := _p_res;
+           goto report_err;
+         }
+    }
+  
+  }
+  
+ return 1;
+
+report_err:;
+ 
+ return _err;
+
+}
+;
+
+
+create procedure
+ODS_DELETE_USER_INSTANCES(in _user_id integer)
+{
+  declare _err varchar;
+  _err:='';
+
+  
+  if (is_http_ctx())
+  {
+    if(http_map_get('mounted')='/SOAP/')
+    {
+     declare _auth_username,_auth_passwd varchar;
+     _auth_username:= coalesce(connection_get('odsapi_auth_username'),'');
+     _auth_passwd  := coalesce(connection_get('odsapi_auth_userpass'),'');
+     
+       if(web_user_password_check(_auth_username,_auth_passwd)=0
+          or
+          not exists(select 1 from SYS_USERS where U_NAME=_auth_username and U_GROUP in (0,3))
+         )
+       {
+          _err := 'Authentication is incorrect.';
+          goto report_err;
+       }
+    }
+  }
+ 
+  for select WAI_INST from DB.DBA.WA_INSTANCE,DB.DBA.WA_MEMBER where WAI_NAME=WAM_INST and WAM_USER=_user_id do
+  {
+     declare h, id any;
+     h := udt_implements_method(WAI_INST, 'wa_drop_instance');
+     declare exit handler for sqlstate '*'{
+                                            _err:=WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
+                                            rollback work;
+                                            goto report_err;
+                                          };
+     commit work;
+     id := call (h) (WAI_INST);
+  }
+ 
+ return 1;
+report_err:;
+ 
+ return _err;
+
+}
+;
+
+create procedure
+ODS_DELETE_USER_DAV(in _user_name varchar)
+{
+  declare _err varchar;
+  _err:='';
+
+  if (is_http_ctx())
+  {
+    if(http_map_get('mounted')='/SOAP/')
+    {
+     declare _auth_username,_auth_passwd varchar;
+     _auth_username:= coalesce(connection_get('odsapi_auth_username'),'');
+     _auth_passwd  := coalesce(connection_get('odsapi_auth_userpass'),'');
+     
+       if(web_user_password_check(_auth_username,_auth_passwd)=0
+          or
+          not exists(select 1 from SYS_USERS where U_NAME=_auth_username and U_GROUP in (0,3))
+         )
+       {
+          _err := 'Authentication is incorrect.';
+          goto report_err;
+       }
+    }
+  }
+ 
+   
+  declare _davadmin, _davadminpwd, _user_homepath varchar;
+  _davadmin := 'dav';
+  _davadminpwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
+  _user_homepath := '/DAV/home/'||_user_name||'/';
+  
+  declare rc integer;
+  rc := DB.DBA.DAV_DELETE (_user_homepath, 0, _davadmin, _davadminpwd);
+
+  if(rc<>1)
+  {
+    _err:='DAV resource delete failed with code: '||cast(rc as varchar);
+    goto report_err;
+  }
+  
+  return 1;
+
+report_err:;
+ 
+ return _err;
+
+}
+;

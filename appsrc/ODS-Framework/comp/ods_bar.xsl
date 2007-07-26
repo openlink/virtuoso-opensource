@@ -192,19 +192,22 @@ nf_uid2:;
          }
 
      ]]>
+
     </v:before-data-bind>
+
 <![CDATA[
 <script  type="text/javascript">
-if(typeof(OAT)=='undefined')
-{
-    var toolkitPath="<?V self.odsbar_ods_gpath ?>oat";
-  var toolkitImagesPath="<?V self.odsbar_ods_gpath ?>images/oat";
-    var featureList = ["dom"];
 
     var ODSInitArray = new Array();
     
   window._apiKey='<?U WA_MAPS_GET_KEY () ?>'; //Google maps key needed before OAT load
   window.YMAPPID ='<?U WA_MAPS_GET_KEY ('YAHOO') ?>'; //Yahoo maps key needed before OAT load
+
+if (typeof (OAT) == 'undefined')
+{
+  var toolkitPath="<?V self.odsbar_ods_gpath ?>oat";
+  var toolkitImagesPath="<?V self.odsbar_ods_gpath ?>images/oat";
+  var featureList = ["dom"];
 
     var script = document.createElement("script");
     script.src = '<?V self.odsbar_ods_gpath ?>oat/loader.js';
@@ -293,7 +296,10 @@ function getUrlOnEnter(e)
   <div id="ods_bar_odslogin" style="display:none;text-align:right">
     <v:url name="odsbar_odslogin_button"
            value="Sign In"
-           url="--self.odsbar_ods_gpath||'login.vspx?URL='||http_path()||(case when length(http_request_get ('QUERY_STRING'))>0 then '?'||http_request_get ('QUERY_STRING') else '' end ) "
+           url="--self.odsbar_ods_gpath||'login.vspx?URL='||http_path()||
+                  (case when length(http_request_get ('QUERY_STRING'))>0 then '?'||http_request_get ('QUERY_STRING')
+                        when get_keyword ('signin_returl_params', self.vc_event.ve_params,'')<>'' then '?'||get_keyword ('signin_returl_params', self.vc_event.ve_params,'')
+                        else '' end ) "
            is-local="1"/>
       |
     <v:template name="odsbar_barregister"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
@@ -363,7 +369,10 @@ function getUrlOnEnter(e)
           |
               <v:url name="odsbar_login_button"
                      value="Sign In"
-                     url="--self.odsbar_ods_gpath||'login.vspx'"
+                     url="--self.odsbar_ods_gpath||'login.vspx?URL='||http_path()||
+                            (case when length(http_request_get ('QUERY_STRING'))>0 then '?'||http_request_get ('QUERY_STRING')
+                                  when get_keyword ('signin_returl_params', self.vc_event.ve_params,'')<>'' then '?'||get_keyword ('signin_returl_params', self.vc_event.ve_params,'')
+                                  else '' end ) "
                      is-local="1"/>
           |
               <v:template name="ods_barregister"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
@@ -821,7 +830,7 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
                      vector ('oMail', 'oMail'),
                      vector ('eCRM', 'eCRM'),
                      vector ('Bookmark', 'bookmark'),
-                     vector ('nntpf','Discussion'),
+--                     vector ('nntpf','Discussion'),
                      vector ('Polls','Polls'),
                      vector ('AddressBook','AddressBook'),
                      vector ('Calendar','Calendar')
@@ -835,7 +844,7 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
                                vector ('oWiki', 'wiki'),
                                vector ('eCRM', 'eCRM'),
                                vector ('Bookmark', 'bookmark'),
-                               vector ('nntpf','Discussion'),
+--                               vector ('nntpf','Discussion'),
                                vector ('Polls','Polls'),
                                vector ('AddressBook','AddressBook'),
                                vector ('Calendar','Calendar')
@@ -915,6 +924,37 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
          }
         }
       }
+
+    declare arr_custom_app any;
+    arr_custom_app:=wa_get_custom_app_options();
+
+    foreach (any custom_app in arr_custom_app) do
+    {
+      declare _name, _url varchar;
+      declare _show_logged, _show_not_logged integer;
+      _name:=get_keyword('name',custom_app,'');
+      _url:=get_keyword('url',custom_app,'');
+      _show_logged:=get_keyword('show_logged',custom_app,1);
+      _show_not_logged:=get_keyword('show_not_logged',custom_app,1);
+
+      if ((length (self.sid) > 0 and _show_logged) or
+          (length (self.sid) = 0 and _show_not_logged)
+         )
+         {
+    ?>
+             <li>
+                <v:url name="slice1"
+                       url="--_url"
+                       value="--WA_GET_APP_NAME (_name)"
+                       render-only="1"
+                       is-local="1"/>
+             </li>
+    
+    
+    <?vsp
+         }
+    }
+    
       }
 ?>
  </xsl:template>

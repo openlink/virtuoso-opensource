@@ -1,0 +1,99 @@
+.error
+{
+  color: red;
+  font-weight: bold;
+  padding: 5px 0px 5px 0px;
+  background-color: white;
+  border: 1pt solid red;
+  text-align: center;
+}
+
+#ob {
+  float: left;
+  background-color: #85B9D2;
+  width: 100%;
+}
+
+#ob_left {
+  padding: 5px;
+  float: left;
+}
+
+#ob_right {
+  padding: 5px;
+  float: right;
+}
+
+div.form {
+  width: 600px;
+  background-color: #FFF;
+  margin: 5px;
+}
+
+div.header {
+  width: 100%;
+  padding: 5px 0 5px 0;
+  background-color: #F6F6F6;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+div.footer {
+  width: 100%;
+  padding: 5px 0 5px 0;
+  background-color: #F6F6F6;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+table.form {
+  width: 100%;
+}
+
+table.form th {
+  text-align: right;
+  padding-right: 3px;
+  margin-bottom: 5px;
+}
+
+table.form td {
+  padding-left: 3px;
+  margin-bottom: 5px;
+}
+
+#tabs {
+	margin-top: 24px;
+	list-style-type: none;
+	padding-bottom: 1px;
+}
+
+#tabs li {
+	display: inline;
+	padding: 1px 3px;
+	margin-left: 0.5em;
+	cursor: pointer;
+  border-top: 1px solid #aaa;
+  border-left: 1px solid #aaa;
+  border-right: 1px solid #aaa;
+	background-color: #F6F6F6;
+	z-index: 10;
+}
+
+#tabs li.tab_selected {
+	background-color: #FFF;
+}
+
+#tabs li.tab:hover {
+	background-color: #FFF;
+}
+
+#tabs.tab_signal {
+  background-color: #999;
+}
+
+input.openID {
+  background: #FFFFFF url(/ods/images/login-bg.gif) no-repeat scroll;
+  padding-left: 18px;
+}

@@ -126,7 +126,7 @@
           <h3>Recently Signed In</h3>
           <ul class="w_act_lst">
 	<?vsp
-	for select top 3  nu_name, u_full_name from wa_new_user join sys_users on (u_id = nu_u_id) order by nu_row_id desc do
+  for select top 3  nu_name, u_full_name from wa_new_user join sys_users on (u_id = nu_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nu_row_id desc do
 	   {
 	      if (not length (u_full_name))
 	        u_full_name := null;
@@ -139,7 +139,7 @@
           <h3>New Users</h3>
         <ul class="w_act_lst">
 	<?vsp
-	for select top 3  nr_name, u_full_name from wa_new_reg join sys_users on (u_id = nr_u_id) order by nr_row_id desc do
+  for select top 3  nr_name, u_full_name from wa_new_reg join sys_users on (u_id = nr_u_id) join wa_user_info on (u_id=WAUI_U_ID) where WAUI_SHOWACTIVE=1 order by nr_row_id desc do
 	   {
 	?>
 	      <li>
@@ -1994,14 +1994,14 @@
               curr_davres := '';
   _gallery_folder_name:=coalesce(PHOTO.WA.get_gallery_folder_name(),'Gallery');
 
-              q_str:='select distinct RES_FULL_PATH,RES_MOD_TIME,U_FULL_NAME,U_NAME,coalesce(text,RES_NAME) as res_comment
+  q_str := 'select distinct RES_FULL_PATH, RES_MOD_TIME, U_FULL_NAME, U_NAME, coalesce (text,RES_NAME) as res_comment,A.RES_ID
                       from WS.WS.SYS_DAV_RES A
                         LEFT JOIN WS.WS.SYS_DAV_COL B on A.RES_COL=B.COL_ID
                         LEFT JOIN WS.WS.SYS_DAV_COL C on C.COL_ID=B.COL_PARENT
                         LEFT JOIN WS.WS.SYS_DAV_COL D on D.COL_ID=C.COL_PARENT
                         LEFT JOIN PHOTO.WA.comments CM on CM.RES_ID=A.RES_ID
                         LEFT JOIN DB.DBA.SYS_USERS U on U.U_ID=A.RES_OWNER
-              where C.COL_NAME='''||_gallery_folder_name||''' and D.COL_NAME='''||self.u_name||'''
+              where C.COL_NAME like '''||_gallery_folder_name||'%'' and D.COL_NAME='''||self.u_name||'''
                       order by RES_MOD_TIME desc,CM.CREATE_DATE desc';
 
               rc := exec (q_str, null, null, vector (), 0, null, null, h);
@@ -2013,13 +2013,63 @@
                   if (curr_davres <> dta[0]) 
                     {
                     curr_davres:=dta[0];
+
+          declare photo_href,gallery_davhome_foldername,_home_url,q_str varchar;
+          declare gallery_path_arr any;
+          gallery_path_arr:=split_and_decode(dta[0],0,'\0\0/');
+
+          photo_href:=' href="javascript:void(0);" ';
+
+          if(locate(_gallery_folder_name,gallery_path_arr[4]))
+          {
+           gallery_davhome_foldername:='/'||gallery_path_arr[1]||'/'||gallery_path_arr[2]||'/'||gallery_path_arr[3]||'/'||gallery_path_arr[4]||'/';
+           
+           q_str:='select HOME_URL from PHOTO.WA.SYS_INFO where HOME_PATH=\''||gallery_davhome_foldername||'\'';
+
+           
+           declare state, msg, descs, rows any;
+           state := '00000';
+           exec (q_str, state, msg, vector (), 1, descs, rows);
+
+           if (state = '00000')
+               _home_url:=rows[0][0];
+           else
+               goto _skip;
+           
+                     
+           photo_href:=' href="'||_home_url||'/?'||subseq(self.login_pars,1)||'#'||'/'||gallery_path_arr[5]||'/'||gallery_path_arr[6]||'" target="_blank" ';
+          }
+
+          _skip:;
+
+          declare img_size_arr,new_img_size_arr any;
+          
+          img_size_arr:=wa_get_image_sizes(dta[5]);
+          new_img_size_arr:=vector(100,75);
+          if(length(img_size_arr) and img_size_arr[0]<>0)
+          {
+            declare _img_aspect_ratio any;
+            _img_aspect_ratio:=cast(img_size_arr[0] as float)/cast(img_size_arr[1] as float);
+            if(_img_aspect_ratio>=1.333)
+            {
+              new_img_size_arr:=vector(100,ceiling(100/_img_aspect_ratio));
+            }else
+            {
+              new_img_size_arr:=vector(ceiling(75*_img_aspect_ratio),75);
+            }
+          }
+
+          photo_href:='<a '||photo_href||' > <img src="'||
+                           self.odsbar_ods_gpath||'image.vsp?'||subseq(self.login_pars,1)||'&image_id='||cast(dta[5] as varchar)||'&width='|| cast(new_img_size_arr[0] as varchar) ||'&height='||cast(new_img_size_arr[1] as varchar)||'"' ||
+                           '" width="'||cast(new_img_size_arr[0] as varchar)||'" height="'||cast(new_img_size_arr[1] as varchar)||'" border="0" class="photoborder" /></a>';
+
          ?>
 
-         <td>
+            <td style="padding:5px;">
           <table border="0" cellpadding="1" cellspacing="0">
            <tr>
-             <td>
-                    <a href="&lt;?V '/photos/'||self.u_name||'/?'||subseq(self.login_pars,1)||'#'||subseq(dta[0],locate('/gallery/',dta[0])+7) ?&gt;" target="_blank"><img src="&lt;?V dta[0] ?&gt;" width="100" height="75" border="0" class="photoborder" /></a>
+                  <td style="text-align:center;height:75px;">
+                    <?vsp http(photo_href);?>
              </td>
            </tr>
            <tr>
@@ -2294,6 +2344,120 @@
         </div> <!-- app_ad -->
          </vm:if>
   </xsl:template>
+
+
+
+  <xsl:template match="vm:dash-my-briefcase">
+
+<?vsp
+  declare has_briefcase int;
+
+  has_briefcase := 0;
+
+  if (wa_check_package('Briefcase') and
+      exists (select 1
+                from wa_member
+                where WAM_APP_TYPE='oDrive' and
+                      WAM_MEMBER_TYPE=1 and
+                      WAM_USER=self.u_id) )
+    {
+      has_briefcase := 1;
+    }
+?>
+    <vm:if test="has_briefcase">
+      <div class="widget w_my_news">
+        <div class="w_title_bar">
+          <div class="w_title_text_ctr">
+            <img class="w_title_icon"
+                 src="images/icons/ods_briefcase_16.png"
+                 alt="ODS-Briefcase icon" />
+            <span class="w_title_text">My briefcase</span>
+          </div>
+          <div class="w_title_btns_ctr">
+            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
+            <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          </div>
+        </div>
+        <div class="w_pane content_pane">
+        <ul>
+<?vsp
+
+  declare q_str, rc, dta, h any;
+
+
+  q_str := 'select top 10 inst_name, title, ts, author, url, uname, email from '||
+           '  WA_USER_DASHBOARD_SP '||
+           '     (uid, inst_type) '||
+           '     (inst_name varchar, title nvarchar, ts datetime, author nvarchar, url nvarchar, uname varchar, email varchar) '||
+           '  WA_USER_DASHBOARD '||
+           'where uid = '||cast(self.u_id as varchar)||' and inst_type = ''oDrive'' '||
+           'order by ts desc';
+
+  rc := exec (q_str, null, null, vector (), 0, null, null, h);
+  while (0 = exec_next (h, null, null, dta))
+    {
+      exec_result (dta);
+      
+?>
+          <li>
+             <a href="&lt;?V wa_expand_url (dta[4], self.login_pars) ?&gt;"><?V wa_utf8_to_wide (dta[1], 1, 55) ?></a>
+          </li>
+<?vsp
+    }
+  exec_close (h);
+?>
+        </ul>
+       </div> <!-- content_pane -->
+       <div class="w_footer">
+<?vsp
+
+  declare shared_res_count integer;
+  shared_res_count:=wa_get_user_sharedres_count(self.u_id);
+   
+  declare _inst_url varchar;
+  
+  _inst_url:='#';
+  declare exit handler for not found{_inst_url:='#';};
+  select top 1 WAM_HOME_PAGE into _inst_url from WA_MEMBER
+   where WAM_APP_TYPE='oDrive' and
+         WAM_MEMBER_TYPE=1 and
+         WAM_USER=self.u_id;
+  
+  declare share_dir varchar;
+  share_dir:='';
+  share_dir:=coalesce(ODRIVE.WA.shared_name(),'');
+  
+  if(length(share_dir))
+  _inst_url:=sprintf('%s?dir=%U',_inst_url,share_dir);
+
+
+    if (shared_res_count = 0)
+      http (sprintf ('<a href="%s">You have no shared resources.</a>',
+                     wa_expand_url (_inst_url, self.login_pars)));
+    else
+      http (sprintf ('<a href="%s"> You have %d shared resource%s. </a>',
+                     wa_expand_url (_inst_url, self.login_pars),
+                     shared_res_count,
+                     case when shared_res_count<> 1 then 's' else '' end));
+?>
+       </div>
+
+      </div> <!-- widget -->
+    </vm:if>
+    <vm:if test="not has_briefcase">
+      <div class="app_ad">
+        <a href="index_inst.vspx?wa_name=oDrive&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
+          <img border="0" src="images/app_ads/ods_bann_briefcase.jpg" alt="Briefcase app ad banner" />
+        </a>
+        <div class="app_ad_ft">
+          <input type="checkbox" id="briefcase_app_ad_nuke"/>
+          <label for="briefcase_app_ad_nuke">Do not show this next time</label>
+          <a href="#">Dismiss</a>
+        </div>
+      </div> <!-- app_ad -->
+    </vm:if>
+  </xsl:template>
+
 
 
 </xsl:stylesheet>

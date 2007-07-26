@@ -32,7 +32,7 @@ TPORT=${TPORT-8440}
 PORT=${PORT-1940}
 ISQL=${ISQL-isql}
 DSN="$HOST:$PORT"
-NEED_VERSION=04.50.2921
+NEED_VERSION=05.00.3016
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
 then
@@ -273,6 +273,9 @@ directory_init() {
   cp tmpl/* vad/data/wa/tmpl
   cat home.vspx | sed -e "s/home\.xsl/\/DAV\/VAD\/wa\/home\.xsl/g" >  vad/data/wa/templates/default/home.vspx
   cp default.css vad/data/wa/templates/default
+  cp users/* vad/data/wa/users
+  cp users/css/* vad/data/wa/users/css
+  cp users/js/* vad/data/wa/users/js
 }
 
 virtuoso_shutdown() {
@@ -307,7 +310,7 @@ sticker_init() {
   echo "    case_mode := cfg_item_value (ini, 'Parameters', 'CaseMode'); " >> $STICKER
   echo "    cname := cfg_item_value (ini, 'URIQA', 'DefaultHost'); " >> $STICKER
   echo "    is_api := registry_get ('__blog_api_tests__'); " >> $STICKER
-  echo "    if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) " >> $STICKER
+  echo "    if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION') or __proc_exists ('HTTP_STATUS_SET',2) is null) " >> $STICKER
   echo "      { " >> $STICKER
   echo "         result ('ERROR', 'The ods package requires server version $NEED_VERSION or greater'); " >> $STICKER
   echo "	 signal ('FATAL', 'The ods package requires server version $NEED_VERSION or greater'); " >> $STICKER
@@ -350,6 +353,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/openid.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ods_api.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ldap.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/users/users_api.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/trs_export.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/foaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/ufoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
@@ -358,8 +362,10 @@ sticker_init() {
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/sfoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      vhost_remove (lpath=>'/wa');" >> $STICKER
   echo "      vhost_remove (lpath=>'/ods');" >> $STICKER
+  echo "      vhost_remove (lpath=>'/ods/users');" >> $STICKER
   #echo "      vhost_define (lpath=>'/wa',ppath=>'/DAV/VAD/wa/', is_dav=>1, vsp_user=>'dba', def_page=>'index.vspx');" >> $STICKER
   echo "      vhost_define (lpath=>'/ods',ppath=>'/DAV/VAD/wa/', is_dav=>1, vsp_user=>'dba', def_page=>'sfront.vspx');" >> $STICKER
+  echo "      vhost_define (lpath=>'/ods/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sioc.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/web_svc.sql', 1, 'report', 1);" >> $STICKER
@@ -377,7 +383,7 @@ sticker_init() {
 
   for file in `find vad/data/wa -type f -print | sort`
   do
-     if echo "$file" | grep -v ".vsp" >/dev/null
+     if echo "$file" | grep -v ".vsp" | grep -v ".php" >/dev/null
      then
 	 if echo "$file" | grep -v "trs_export.xml" | grep -v "foaf.xml" >/dev/null
 	 then

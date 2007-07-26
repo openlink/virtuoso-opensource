@@ -100,6 +100,12 @@
           </td>
         </tr>
         <tr>
+          <td><label for="fbkey">FaceBook Session</label></td>
+          <td>
+            <v:textarea xhtml_id="fbkey" xhtml_rows="3" xhtml_cols="70" xhtml_class="textbox" name="fbkey" value="--get_keyword('FBKey', self.opts, 'key=\nsecret=\nsession=')"/>
+          </td>
+        </tr>
+        <tr>
           <td colspan="2" class="ctrl">
 		      <span class="fm_ctl_btn">
 			<v:button name="bt_cncl_6" value="Cancel" action="simple">
@@ -117,6 +123,7 @@
                   USER_SET_OPTION (self.u_name, 'EbayID', trim(self.ebayid.ufl_value));
                   USER_SET_OPTION (self.u_name, 'AssociateID', trim(self.refass.ufl_value));
                   USER_SET_OPTION (self.u_name, 'Vendor', trim(self.regven.ufl_value));
+                  USER_SET_OPTION (self.u_name, 'FBKey', trim(self.fbkey.ufl_value));
                 ]]>
               </v:on-post>
             </v:button>

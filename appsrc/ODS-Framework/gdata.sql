@@ -242,6 +242,7 @@ create procedure wa_app_to_type (in app varchar)
 	'discussion','nntpf',
 	'polls','Polls',
 	'addressbook', 'AddressBook',
+	'socialnetwork', 'SocialNetwork',
 	'calendar', 'Calendar'
 	), app);
 };
@@ -260,6 +261,7 @@ create procedure wa_type_to_app (in app varchar)
 	'nntpf',    'discussion',
 	'Polls',       'polls',
 	'AddressBook', 'addressbook',
+	'SocialNetwork', 'socialnetwork',
 	'Calendar',    'calendar'
 	), app);
 };
@@ -277,6 +279,7 @@ create procedure wa_type_to_appg (in app varchar)
 	'Bookmark','Bookmarks',
 	'nntpf',   'Discussions',
 	'addressbook', 'AddressBooks',
+	'socialnetwork', 'SocialNetwork',
 	'calendar', 'Calendar'
 	), app);
 };
@@ -473,7 +476,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
     }
 
   if (length (app) and app not in
-      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed', 'sparql', 'polls', 'addressbook', 'calendar'))
+      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed', 'sparql', 'polls', 'addressbook', 'socialnetwork', 'calendar'))
    {
      if (has_accept)
        {

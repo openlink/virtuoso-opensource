@@ -70,7 +70,7 @@
     </v:before-data-bind>
 
     <v:form name="usr_contact" type="simple" method="POST" action="uiedit.vspx?page=2">
-    <v:text type="hidden" name="cpage" value="2"/>
+    <input type="hidden" name="page" value="2"/>
     <table  class="ctl_grp">
               <tr>
                 <th><label for="u_icq">ICQ Number</label></th>
@@ -122,6 +122,58 @@
 		    <vm:u-prop-select name="sel_14" value="self.sav14" />
                 </td>
               </tr>
+	      <?vsp
+	      declare cix, todel int;
+	      cix := 1;
+	      todel := atoi(get_keyword ('cc_del', self.vc_event.ve_params, '-1'));
+	      if (todel >= 0)
+	        {
+                  delete from WA_USER_OL_ACCOUNTS where WUO_ID = todel;
+		  commit work;
+		}
+
+	      for select WUO_ID, WUO_NAME, WUO_URL from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id do
+	         {
+	      ?>
+              <tr>
+		  <th><label for="cc_<?V WUO_ID ?>"><?V WUO_NAME ?></label></th>
+		  <td class="listing_col" nowrap="1">
+		      <input type="hidden" name="ccd" value="<?V WUO_ID ?>"/>
+		      <input type="text" name="cc_<?V WUO_ID ?>"
+			  value="<?V WUO_URL ?>"
+			  style="width:216px"
+			  tabindex="<?V 5 + cix ?>"/>
+		      <v:url render-only="1" name="cc_del" value="Delete" url="--sprintf ('uiedit.vspx?page=2&amp;cc_del=%d', WUO_ID)"
+			  />
+                </td>
+	      </tr>
+	      <?vsp
+	            cix := cix + 1;
+	         }
+	      ?>
+	      <tr>
+		  <td>
+		      <v:text name="cc_new" value="" error-glyph="*">
+			  <v:validator test="sql"
+			      expression="length(trim(control.ufl_value)) < 2" message="Provider name cannot be empty"/>
+		      </v:text>
+		  </td>
+		  <td><v:text name="cc_new_val" value="" xhtml_style="width:216px" tabindex="<?V 5 + cix ?>"/></td>
+	      </tr>
+	      <tr>
+		  <td colspan="2">
+		      <v:button name="add_new" value="Add new" action="simple" >
+			  <v:on-post><![CDATA[
+			      if (not self.vc_is_valid)
+			        return;
+			      insert into WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_U_ID )
+		              values (self.cc_new.ufl_value, self.cc_new_val.ufl_value, self.u_id );
+			      self.cc_new_val.ufl_value := '';
+			      self.cc_new.ufl_value := '';
+			      ]]></v:on-post>
+		      </v:button>
+		  </td>
+	      </tr>
               <tr>
 		  <th><label for="set_all">Set access for all fields as </label></th>
 		  <td class="ctrl">
@@ -158,6 +210,15 @@
                         declare _cdata long varchar;
                         _cdata := WA_GET_USER_INFO(0, self.u_id, WA_USER_VISIBILITY(self.u_name), 0, 1);
                         WA_USER_TEXT_SET(self.u_id, _cdata);
+
+			declare pos, inx, val any;
+			pos := 0;
+			while ((inx := adm_next_keyword ('ccd', e.ve_params, pos)))
+		          {
+			    val := get_keyword ('cc_'||inx, e.ve_params, '');
+			    update WA_USER_OL_ACCOUNTS set WUO_URL = val where WUO_ID = inx;
+		          }
+
 
 			self.vc_redirect ('uiedit.vspx?page=2');
                       ]]>

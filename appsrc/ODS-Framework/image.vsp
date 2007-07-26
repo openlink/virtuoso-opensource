@@ -1,0 +1,48 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2006 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+
+    declare image,image_type any;
+    declare image_id varchar;
+    declare sid,realm varchar;
+    
+    declare width,height integer;
+
+    sid := get_keyword('sid',params,'');
+    realm := get_keyword('realm',params,'wa');
+    image_id := get_keyword('image_id',params,'');
+    width := atoi(get_keyword('width',params,'1'));
+    height := atoi(get_keyword('height',params,'1'));
+
+    if(image_id <> ''){
+      image := blob_to_string(wa_make_thumbnail(sid,realm,image_id,width,height,image_type));
+      if(length(image))
+      {
+      http_rewrite();
+      http_header (sprintf('Content-Type: %s\r\n',image_type));
+      http(image);
+      http_flush();
+      }else http('Resource not available.');
+    }else{
+      dbg_obj_print('Error: no image_id');
+    }
+?>

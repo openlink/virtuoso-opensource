@@ -562,6 +562,8 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_DEFAULT_MAIL_DOMAIN', 'varchar')
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_VERIFY_TIP', 'int')
 ;
 
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_UNIQUE_MAIL', 'int default 0')
+;
 
 wa_exec_no_error(
   'alter type web_app drop method wa_notify_member_changed(account int, otype int, ntype int, odata any, ndata any) returns any'
@@ -1358,16 +1360,11 @@ create procedure wa_vad_check (in pname varchar)
 }
 ;
 
--- zdravko
 
 create trigger SYS_USERS_ON_DELETE_WA_FK before delete
- on "DB"."DBA"."SYS_USERS" order 66 referencing old as O {
- declare exit handler for SQLSTATE '*' { ROLLBACK WORK; RESIGNAL; };
-  DECLARE _VAR_U_ID VARCHAR;
- _VAR_U_ID := O."U_ID";
-   DELETE FROM "DB"."DBA"."WA_MEMBER"  WHERE "WAM_USER" = _VAR_U_ID;
-  DELETE FROM "DB"."DBA"."WA_USERS"  WHERE "WAU_U_ID" = _VAR_U_ID;
-  delete from sn_entity where sne_org_id = _VAR_U_ID;
+ on "DB"."DBA"."SYS_USERS" order 66 referencing old as O
+{
+   ODS_DELETE_USER_DATA(O.U_NAME);
 };
 
 insert soft WA_MEMBER_MODEL (WMM_ID, WMM_NAME) values (0, 'Open')
@@ -2842,6 +2839,7 @@ wa_exec_no_error_log(
     WAUI_FAVORITE_MUSIC  LONG VARCHAR,  -- 45
     WAUI_FAVORITE_MOVIES LONG VARCHAR,  -- 46
     WAUI_SEARCHABLE	 int default 1,
+    WAUI_SHOWACTIVE	 int default 1, -- new field related to user active information dashboard
     WAUI_LATLNG_HBDEF SMALLINT default 0,
     WAUI_SITE_NAME long varchar,
     WAUI_INTERESTS long varchar,  -- 48
@@ -2865,6 +2863,7 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FAVORITE_MUSIC', 'LONG VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FAVORITE_MOVIES', 'LONG VARCHAR');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SEARCHABLE', 'int default 1');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SHOWACTIVE', 'int default 1');
 
 wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_BLAT', 'REAL');
 wa_add_col('DB.DBA.WA_USER_INFO', 'WAUI_BLNG', 'REAL');
@@ -2934,6 +2933,31 @@ wa_exec_no_error(
 
 wa_exec_no_error(
   'create index WA_USER_TAG_TAG_ID on WA_USER_TAG (WAUTG_TAG_ID)'
+)
+;
+
+wa_exec_no_error_log(
+    'CREATE TABLE WA_USER_PROJECTS (
+      WUP_ID int identity,
+      WUP_U_ID int,
+      WUP_NAME varchar,
+      WUP_URL varchar,
+      WUP_DESC long varchar,
+      WUP_PUBLIC int default 0,
+      primary key (WUP_U_ID, WUP_ID)
+      )'
+)
+;
+
+wa_exec_no_error_log(
+    'CREATE TABLE WA_USER_OL_ACCOUNTS (
+      WUO_ID int identity,
+      WUO_U_ID int,
+      WUO_NAME varchar,
+      WUO_URL varchar,
+      WUO_PUBLIC int default 0,
+      primary key (WUO_U_ID, WUO_ID)
+      )'
 )
 ;
 
@@ -3133,6 +3157,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_FAVORITE_MOVIES = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_SEARCHABLE')
     UPDATE WA_USER_INFO SET WAUI_SEARCHABLE = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_SHOWACTIVE')
+    UPDATE WA_USER_INFO SET WAUI_SHOWACTIVE = _data WHERE WAUI_U_ID = _uid;
 
   return;
 
@@ -3410,8 +3436,8 @@ return_id:
 create procedure WA_USER_INTERESTS (in txt any)
 {
   declare arr any;
-  declare interest any;
-  result_names (interest);
+  declare interest, label any;
+  result_names (interest, label);
   if (not length (txt))
     return;
   txt := replace(txt, '\r', '\n');
@@ -3421,7 +3447,16 @@ create procedure WA_USER_INTERESTS (in txt any)
     {
       i := trim (i);
       if (length (i))
-	result (i);
+	{
+	  declare u, l, tmp any;
+	  tmp := split_and_decode (i, 0, '\0\0;');
+	  u := tmp[0];
+	  if (length (tmp) > 1)
+	    l := tmp[1];
+	  else
+	    l := '';
+	  result (u, l);
+	}
     }
 };
 
@@ -5349,3 +5384,246 @@ WA_CREATE_NEW_APP_INST (in app_type varchar, in inst_name varchar, in owner varc
              WAI_DESCRIPTION = inst_name || ' Description'
        where WAI_ID = id;
 };
+
+------------------------------------------------------------------------------------------------------
+create procedure
+wa_get_image_sizes(
+  in image_id varchar)
+{
+
+  declare _content any;
+  declare width,height integer;
+
+  declare exit handler for sqlstate '*' {
+    return vector(0,0);
+  };
+  
+  select blob_to_string (RES_CONTENT) into _content from WS.WS.SYS_DAV_RES where RES_ID= image_id;
+
+  -- params: content, length of content, number of columns, number of rows
+  width := "IM GetImageBlobWidth" (_content, length(_content));
+  height := "IM GetImageBlobHeight" (_content, length(_content));
+
+  return vector(width,height);
+}
+;
+------------------------------------------------------------------------------------------------------
+create procedure wa_make_thumbnail(
+  in sid varchar,
+  in realm varchar,
+  in image_id varchar,
+  in width     integer,
+  in height    integer,
+  out image_type varchar)
+{
+
+   declare image_name,rights varchar;
+   declare curr_user_id, owner_id integer;
+   
+   image_type:='';
+   
+   curr_user_id:=-1;
+   
+   whenever not found goto not_found;
+   select U.U_ID
+     into curr_user_id
+    from DB.DBA.VSPX_SESSION S,WS.WS.SYS_DAV_USER U
+   where S.VS_REALM = realm
+     and S.VS_SID   = sid
+     and S.VS_UID   = U.U_NAME;
+   
+   not_found:
+   
+   select RES_NAME,RES_OWNER,RES_PERMS,RES_TYPE into image_name,owner_id,rights,image_type from WS.WS.SYS_DAV_RES where RES_ID= image_id;
+   
+   if(not(owner_id = curr_user_id or substring(rights,7,1) = '1')){
+      return '';
+   }
+
+  declare _content,image any;
+
+  select blob_to_string (RES_CONTENT)
+    into _content
+    from WS.WS.SYS_DAV_RES 
+   where RES_ID= image_id;
+
+  if(length(_content) = 0){
+    return;  
+  }
+
+  declare exit handler for sqlstate '*' {
+                                          return _content;
+                                        };
+  -- params: content, length of content, number of columns, number of rows
+  image := "IM ThumbnailImageBlob" (_content, length(_content), width, height,1);
+
+  return image;
+
+}
+;
+-- this function returns the name of the package that has defined a specific WA_TYPE
+-- it will make possible to check if package is installed on the system or the type is for custom applciation that do not have package-build script.
+-- it includes only the applications  created by Openlink Software developers
+
+create procedure wa_get_package_name (in type_name varchar)
+{ declare arr any;
+-- arr is array of type key, value; key is WA_TYPE and value is the name(not file name) of the package that contains this type.
+  arr:=vector('Community', 'Community',   
+
+             'oDrive', 'oDrive',         
+
+             'WEBLOG2', 'blog2',         
+
+             'oGallery', 'oGallery',     
+
+             'eNews2', 'enews2',         
+
+             'oWiki', 'wiki',            
+
+             'oMail', 'oMail',           
+
+             'eCRM', 'eCRM',             
+
+             'Bookmark', 'bookmark',     
+
+             'nntpf','Discussion',       
+
+             'Polls','Polls',            
+
+             'AddressBook','AddressBook',
+
+             'Calendar','Calendar');
+
+return get_keyword(type_name,arr,'');   
+
+
+}
+;
+-- this function is looking for all WA_TYPE that are not defined as complete ODS application type.
+-- We suppose that developer has defined it's custom application type with minimum methods to correspond to ODS Framework.
+-- That will not give full functionality to this application type but will include it in navigation bar of ODS and will make ODS framework to know defined application home.
+-- in order to be compatible UDT should have at least wa_home_url and get_options methods.
+
+create procedure wa_get_custom_app_options ()
+{
+declare res any;
+res:=vector();
+for select WAT_NAME,WAT_TYPE from DB.DBA.WA_TYPES do
+{
+  if(length(wa_get_package_name(WAT_NAME))=0)
+  {
+    declare _inst db.dba.web_app;
+    _inst:=__udt_instantiate_class (fix_identifier_case (WAT_TYPE), 0);
+    
+    declare _options any;
+    declare _url varchar;
+    declare _show_logged,_show_not_logged integer;
+    
+    _show_logged     :=0;
+    _show_not_logged :=0;
+
+    declare h any;
+
+    h:=udt_implements_method (_inst, 'get_options');
+
+    if(h<>0)
+      _options := call(h) (vector());
+    else goto _skip;
+
+    h:=udt_implements_method (_inst, 'wa_home_url');
+
+    if(h<>0)
+      _url := call(h) (vector());
+    else goto _skip;
+
+
+    if(isarray(_options) )
+    {
+      _show_logged     :=get_keyword('show_logged',_options,0);
+      _show_not_logged :=get_keyword('show_not_logged',_options,0);
+    }      
+    
+    res:=vector_concat(res,vector(vector('name',WAT_NAME,'url',_url,'show_logged',_show_logged,'show_not_logged',_show_not_logged)));
+     _skip:;
+  }
+
+}
+return res;
+}
+;
+
+create procedure wa_get_user_sharedres_count
+( in user_id integer
+)
+{
+ declare shared_res_count integer;
+
+ shared_res_count:=0;
+
+ for 
+  select AI_PARENT_ID,AI_PARENT_TYPE
+   from WS.WS.SYS_DAV_ACL_INVERSE
+   join WS.WS.SYS_DAV_ACL_GRANTS on GI_SUB = AI_GRANTEE_ID
+  where AI_FLAG = 'G'
+        and GI_SUPER = user_id
+ do       
+ {
+  if(AI_PARENT_TYPE='R')
+     shared_res_count:=shared_res_count+1;
+  else
+  {
+    declare _ACL,_colACL any;
+    declare _res_ACL_type integer;
+    
+    _res_ACL_type:=0;
+
+    declare exit handler for sqlstate '*' {goto _skip_currcol;};
+    select COL_ACL into _colACL from WS.WS.SYS_DAV_COL where COL_ID=AI_PARENT_ID;
+
+   _ACL := WS.WS.ACL_PARSE(_colACL, '012', 0);
+
+    foreach (any _ACL_row in _ACL) do
+    {
+      if(_ACL_row[0]=user_id)
+        _res_ACL_type:=_ACL_row[2];
+    }
+
+    if (_res_ACL_type>0)
+      shared_res_count:=shared_res_count+wa_get_col_allres_count(AI_PARENT_ID);
+--    else
+--      shared_res_count:=shared_res_count+1;
+
+    _skip_currcol:;   
+
+   }
+
+ }
+
+ return  shared_res_count;
+ 
+}
+;
+create procedure wa_get_col_allres_count
+( 
+  in _col_id integer
+)
+{  declare _res_count integer;
+
+   _res_count:=0;
+
+ declare exit handler for sqlstate '*'{goto skip_res_count;};
+ select count(RES_ID) into _res_count from WS.WS.SYS_DAV_RES where RES_COL = _col_id;
+
+skip_res_count:;
+
+ for 
+  select COL_ID from WS.WS.SYS_DAV_COL where COL_PARENT = _col_id
+ do       
+ {
+  _res_count:=_res_count+wa_get_col_allres_count(COL_ID);
+ }
+
+ return _res_count;
+ 
+}
+;

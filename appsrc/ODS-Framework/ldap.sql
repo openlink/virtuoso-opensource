@@ -124,7 +124,7 @@ create procedure LDAP..foaf_propName (
   -- surname
   if (name = 'surname')
     return 'surname';
-  -- famity
+  -- family
   if (name = 'familyName')
     return 'family_name';
   -- mbox

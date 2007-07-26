@@ -1,0 +1,496 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+  <head>
+    <title>Virtuoso Web Applications</title>
+    <link rel="stylesheet" type="text/css" href="/ods/default.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
+    <link rel="stylesheet" type="text/css" href="css/users.css" />
+    <script type="text/javascript" src="js/oid_login.js"></script>
+    <script type="text/javascript" src="js/users.js"></script>
+    <script type="text/javascript">
+      var toolkitPath="/ods/oat";
+      var featureList = ["dom", "ajax2", "ws", "tab", "dimmer"];
+    </script>
+    <script type="text/javascript" src="/ods/oat/loader.js"></script>
+  </head>
+  <body>
+    <form name="page_form" method="post">
+      <input type="hidden" name="sid" id="sid" value="" />
+      <input type="hidden" name="realm" id="realm" value="wa" />
+      <div id="ob">
+        <div id="ob_left"><a href="/ods/?sid=&realm=wa">ODS Home</a> > Login</div>
+        <div id="ob_right" style="display: none;"><a href="#" onclick="javascript: return logoutSubmit();">Logout</a></div>
+      </div>
+      <div id="MD">
+        <table cellspacing="0">
+          <tr>
+            <td>
+              <img style="margin: 60px;" src="/ods/images/odslogo_200.png" /><br />
+              <div id="ob_links" style="display: none; margin-left: 60px;">
+                <a id="ob_links_foaf" href="#">
+                  <img border="0" alt="FOAF" src="/ods/images/foaf.gif"/>
+                </a>
+              </div>
+            </td>
+            <td>
+              <div id="lf" class="form">
+                <div class="header">
+                  Enter your Member ID and Password
+                </div>
+                <table class="form" cellspacing="5">
+                  <tr>
+                    <th width="30%">
+                      <label for="lf_uid">Member ID</label>
+                    </th>
+                    <td nowrap="nowrap">
+                      <input type="text" name="lf_uid" value="" id="lf_uid" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <label for="lf_password">Password</label>
+                    </th>
+                    <td nowrap="nowrap">
+                      <input type="password" name="lf_password" value="" id="lf_password" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      or
+                    </th>
+                    <td nowrap="nowrap" />
+                  </tr>
+                  <tr>
+                    <th>
+                      <label for="lf_openID">Login with OpenID</label>
+                    </th>
+                    <td nowrap="nowrap">
+                      <input type="text" name="lf_openID" value="" id="lf_openID" class="openID" size="40"/>
+                    </td>
+                  </tr>
+                </table>
+                <div class="footer">
+                  <input type="button" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
+                  <input type="button" name="lf_register" value="Sign Up" id="lf_register" onclick="javascript: return lfRegisterSubmit();"/>
+                </div>
+              </div>
+
+              <div id="rf" class="form" style="display: none">
+                <div class="header">
+                  Enter register data
+                </div>
+                <table class="form" cellspacing="5">
+                  <tr>
+                    <th width="30%">
+                      <label for="rf_openID">Register with OpenID</label>
+                    </th>
+                    <td nowrap="nowrap">
+                      <input type="text" name="rf_openID" value="" id="rf_openID" class="openID" size="40"/>
+                      <input type="button" name="rf_authenticate" value="Authenticate" id="rf_authenticate" onclick="javascript: return rfAuthenticateSubmit();"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th />
+                    <td nowrap="nowrap">
+                      <input type="checkbox" name="rf_useOpenID" id="rf_useOpenID" onclick="javascript: rfAlternateLogin(this);" value="1" />
+                      <label for="rf_useOpenID">Do not create password, I want to use my OpenID URL to login</label>
+                    </td>
+                  </tr>
+                  <tr id="rf_login_1">
+                    <th>
+                      <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                    </th>
+                    <td nowrap="nowrap">
+                      <input type="text" name="rf_uid" value="" id="rf_uid" />
+                    </td>
+                  </tr>
+                  <tr id="rf_login_2">
+                    <th>
+                      <label for="rf_mail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                    </th>
+                    <td nowrap="nowrap">
+                      <input type="text" name="rf_mail" value="" id="rf_mail" size="40"/>
+                    </td>
+                  </tr>
+                  <tr id="rf_login_3">
+                    <th>
+                      <label for="rf_pwd">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                    </th>
+                    <td nowrap="nowrap">
+                      <input type="password" name="rf_password" value="" id="rf_password" />
+                    </td>
+                  </tr>
+                  <tr id="rf_login_4">
+                    <th>
+                      <label for="rf_pwd2">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                    </th>
+                    <td nowrap="nowrap">
+                      <input type="password" name="rf_password2" value="" id="rf_password2" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td nowrap="nowrap" colspan="2">
+                      <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
+                    </td>
+                  </tr>
+                </table>
+                <div class="footer" id="rf_login_5">
+                  <input type="button" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
+                </div>
+              </div>
+
+              <div id="uf" class="form" style="display: none;">
+                <div class="header">
+                  User profile
+                </div>
+                <table class="form" cellspacing="5">
+                  <tr>
+                    <th width="30%">
+                      Login Name
+                    </th>
+                    <td nowrap="nowrap">
+                      <span id="uf_name"></span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      E-mail
+                    </th>
+                    <td nowrap="nowrap">
+                      <span id="uf_mail"></span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      Title
+                    </th>
+                    <td nowrap="nowrap">
+                      <span id="uf_title"></span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      First Name
+                    </th>
+                    <td nowrap="nowrap">
+                      <span id="uf_firstName"></span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      Last Name
+                    </th>
+                    <td nowrap="nowrap">
+                      <span id="uf_lastName"></span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      Full Name
+                    </th>
+                    <td nowrap="nowrap">
+                      <span id="uf_fullName"></span>
+                    </td>
+                  </tr>
+                </table>
+                <div class="footer">
+                  <input type="button" name="uf_profile" value="Edit Profile" onclick="javascript: return ufProfileSubmit();" />
+                </div>
+              </div>
+
+              <div id="pf" class="form" style="display: none;">
+                <div class="header">
+                  Update user profile
+                </div>
+                <ul id="tabs">
+                  <li id="tab_0" title="Personal">Personal</li>
+                  <li id="tab_1" title="Contact">Contact</li>
+                  <li id="tab_2" title="Home">Home</li>
+                  <li id="tab_3" title="Business">Business</li>
+                  <li id="tab_4" title="Security">Security</li>
+                </ul>
+                <div style="min-height: 180px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                  <div id="content"></div>
+
+                  <div id="page_0">
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                          <label for="pf_mail">E-mail</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_mail" value="" id="pf_mail" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_title">Title</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <select name="pf_title" value="" id="pf_title">
+                            <option value=""/>
+                            <option value="Mr">Mr</option>
+                            <option value="Mrs">Mrs</option>
+                            <option value="Dr">Dr</option>
+                            <option value="Ms">Ms</option>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_firstName">First Name</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_firstName" value="" id="pf_firstName" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_lastName">Last Name</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_lastName" value="" id="pf_lastName" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_fullName">Full Name</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_fullName" value="" id="pf_fullName" size="60" />
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <div id="page_1" style="display:none;">
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                          <label for="pf_icq">ICQ</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_icq" value="" id="pf_icq" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_skype">Skype</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_skype" value="" id="pf_skype" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_yahoo">Yahoo</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_yahoo" value="" id="pf_yahoo" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_aim">AIM</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_aim" value="" id="pf_aim" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_msn">MSN</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_msn" value="" id="pf_msn" size="40" />
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <div id="page_2" style="display:none;">
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                          <label for="pf_homeCountry">Country</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <select name="pf_homeCountry" id="pf_homeCountry" onchange="javascript: return updateState('pf_homeCountry', 'pf_homeState');" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_homeState">State/Province</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <select name="pf_homeState" id="pf_homeState" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_homeCity">City/Town</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_homeCity" value="" id="pf_homeCity" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_homeCode">Zip/Postal Code</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_homeCode" value="" id="pf_homeCode" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_homeAddress1">Address1</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_homeAddress1" value="" id="pf_homeAddress1" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_homeAddress2">Address2</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_homeAddress2" value="" id="pf_homeAddress2" size="40" />
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <div id="page_3" style="display:none;">
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                          <label for="pf_businessIndustry">Industry</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <select name="pf_businessIndustry" id="pf_businessIndustry" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_businessOrganization">Organization</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_businessOrganization" value="" id="pf_businessOrganization" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_businessJob">Job Title</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_businessJob" value="" id="pf_businessJob" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th width="30%">
+                          <label for="pf_businessCountry">Country</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <select name="pf_businessCountry" id="pf_businessCountry"  onchange="javascript: return updateState('pf_businessCountry', 'pf_businessState');" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_businessState">State/Province</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <select name="pf_businessState" id="pf_businessState" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_businessCity">City/Town</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_businessCity" value="" id="pf_businessCity" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_businessCode">Zip/Postal Code</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_businessCode" value="" id="pf_businessCode" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_businessAddress1">Address1</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_businessAddress1" value="" id="pf_businessAddress1" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label for="pf_businessAddress2">Address2</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_businessAddress2" value="" id="pf_businessAddress2" size="40" />
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <div id="page_4" style="display:none;">
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th width="30%">
+                          <label for="pf_oldPassword">Password</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="password" name="pf_oldPassword" value="" id="pf_oldPassword" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th width="30%">
+                          <label for="pf_newPassword">New Password</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="password" name="pf_newPassword" value="" id="pf_newPassword" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th width="30%">
+                          <label for="pf_password">Password</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="password" name="pf_newPassword2" value="" id="pf_newPassword2" />
+                          <input type="button" name="pf_change" value="Change" onclick="javascript: return pfChangeSubmit();" />
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+
+                </div>
+                <div class="footer">
+                  <input type="button" name="pf_update" value="Update" onclick="javascript: return pfUpdateSubmit();" />
+                  <input type="button" name="pf_cancel" value="Cancel" onclick="javascript: return pfCancelSubmit();" />
+                </div>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </form>
+   </div>
+   <div id="FT">
+     <div id="FT_L">
+       <a href="http://www.openlinksw.com/virtuoso"><img alt="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/virt_power_no_border.png" border="0" /></a>
+     </div>
+     <div id="FT_R">
+       <a href="faq.html">FAQ</a> | <a href="privacy.html">Privacy</a> | <a href="rabuse.vspx">Report Abuse</a>
+       <div>
+         Copyright &copy; 1999-2007 OpenLink Software
+       </div>
+     </div>
+    </div>
+   </form>
+  </body>
+</html>

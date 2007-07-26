@@ -52,7 +52,7 @@
       <v:variable name="oid_postcode" type="varchar" default="''" param-name="openid.sreg.postcode" />
       <v:variable name="oid_country" type="varchar" default="''" param-name="openid.sreg.country" />
       <v:variable name="oid_tz" type="varchar" default="''" param-name="openid.sreg.timezone" />
-      <v:variable name="use_oid_url" type="int" default="0" param-name="uoid" />
+      <v:variable name="use_oid_url" type="int" default="0" param-name="uoid" persist="temp"/>
     <div>
       <v:label name="regl1" value="--''" />
     </div>
@@ -104,7 +104,7 @@
 	      self.vc_is_valid := 0;
 	      self.vc_error_message := 'Verification failed.';
 	    }
-          if (self.oid_mode = 'id_res' and self.oid_sig is not null)
+          if (self.oid_mode = 'id_res' and self.oid_sig is not null and not self.vc_event.ve_is_post)
 	    {
 	      declare cnt, pref, ix int;
 	      ix := 1;
@@ -170,11 +170,10 @@ try_next:
             }
 	    function showhideLogin (cb)
 	    {
-	      var tb = document.getElementById ('login_info');
               if (cb.checked)
-	        tb.style.visibility = "hidden";
+	        OAT.Dom.hide ('login_info');
 	      else
-                tb.style.visibility = "visible";
+	        OAT.Dom.show ('login_info');
 	    }
             // -->
           ]]>
@@ -194,12 +193,12 @@ declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, ch
 
 host := http_request_header (e.ve_lines, 'Host');
 
-uoid := atoi(get_keyword ('use_oid', e.ve_params, '0'));
+uoid := atoi(get_keyword ('uoid', e.ve_params, '0'));
 is_agreed := atoi(get_keyword ('is_agreed', e.ve_params, '0'));
 
 if (uoid and not is_agreed)
   {
-    self.regf1.vc_error_message := 'You have not agreed to the Terms of Service.';
+    self.vc_error_message := 'You have not agreed to the Terms of Service.';
     self.vc_is_valid := 0;
     return;
   }
@@ -246,14 +245,18 @@ check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U',
 self.vc_redirect (check_immediate);
 			    ]]></v:on-post>
 		    </v:button><br/>
-		    <v:check-box name="use_oid" xhtml_id="use_oid" value="1" xhtml_onclick="javascript:showhideLogin(this)"
-			initial-checked="--self.use_oid_url"/>
-		    <label for="use_oid">Do not create password, I want to use my OpenID URL to login</label>
+		    <v:check-box name="uoid" xhtml_id="uoid" value="1" xhtml_onclick="javascript:showhideLogin(this)"
+			initial-checked="--self.use_oid_url">
+			<v:after-data-bind>
+			    control.ufl_selected := atoi(get_keyword ('uoid', e.ve_params, '0'));
+			</v:after-data-bind>
+		    </v:check-box>
+		    <label for="uoid">Do not create password, I want to use my OpenID URL to login</label>
 		</v:form>
 	    </td>
 	</tr>
     </table>
-    <div id="login_info">
+    <div id="login_info" style="<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>">
       <table>
         <tr>
           <th><label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
@@ -361,7 +364,7 @@ self.vc_redirect (check_immediate);
       <v:on-post>
         <![CDATA[
 	 declare u_name1, dom_reg varchar;
-         declare country, city, lat, lng, xt, xp any;
+         declare country, city, lat, lng, xt, xp, uoid, is_agr any;
 
 	 u_name1 := trim(self.reguid.ufl_value);
 
@@ -381,18 +384,26 @@ self.vc_redirect (check_immediate);
          else if (not exists (select 1 from WA_SETTINGS where WS_REGISTER = 1))
 	 {
 	   notall:
-           self.regf1.vc_error_message := 'Registration is not allowed';
+           self.vc_error_message := 'Registration is not allowed';
            self.vc_is_valid := 0;
            return;
          }
-         --if (not control.vc_focus or not self.vc_is_valid) return;
+
+	 uoid := atoi(get_keyword ('uoid', e.ve_params, '0'));
+
+	 if (uoid and not self.vc_is_valid and not self.reguid.ufl_failed)
+	   {
+	     self.vc_is_valid := 1;
+	     self.regpwd.ufl_failed := 0;
+	     self.regpwd1.ufl_failed := 0;
+	   }
 
          if(self.vc_is_valid = 0) return;
          declare uid int;
          declare sid any;
          declare exit handler for sqlstate '*'
          {
-           self.regf1.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+           self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
            self.vc_is_valid := 0;
            rollback work;
            return;
@@ -405,12 +416,27 @@ self.vc_redirect (check_immediate);
            return;
          }
 
-         if (not(self.is_agreed.ufl_selected ))
+	 is_agr := self.is_agreed.ufl_selected;
+         if (not(is_agr))
          {
-           self.regf1.vc_error_message := 'You have not agreed to the Terms of Service.';
+           self.vc_error_message := 'You have not agreed to the Terms of Service.';
            self.vc_is_valid := 0;
            return;
          };
+
+	 if (self.use_oid_url and self.oid_sig is not null and exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = self.oid_identity))
+	   {
+             self.vc_error_message := 'This OpenID identity is already registered.';
+             self.vc_is_valid := 0;
+             return;
+	   }
+	 if (exists(select 1 from SYS_USERS where U_E_MAIL=self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+	   {
+             self.vc_error_message := 'This e-mail address is already registered.';
+             self.vc_is_valid := 0;
+             return;
+	   }
+
 
          -- determine if mail verification is necessary
          declare _mail_verify_on any;
@@ -454,6 +480,7 @@ self.vc_redirect (check_immediate);
 	        WA_USER_EDIT (u_name1, 'WAUI_HCOUNTRY', (select WC_NAME from WA_COUNTRY where WC_ISO_CODE = upper (self.oid_country)));
               if (length (self.oid_tz))
 	        WA_USER_EDIT (u_name1, 'WAUI_HTZONE', self.oid_tz);
+              if (self.use_oid_url)
 	      update WA_USER_INFO set WAUI_OPENID_URL = self.oid_identity where WAUI_U_ID = uid;
 	   }
 	 else
@@ -534,7 +561,7 @@ self.vc_redirect (check_immediate);
              _smtp_server := (select max(WS_SMTP) from WA_SETTINGS);
            if (_smtp_server = 0)
            {
-             self.regf1.vc_error_message := 'Default Mail Server is not defined. Mail verification impossible.';
+             self.vc_error_message := 'Default Mail Server is not defined. Mail verification impossible.';
              self.vc_is_valid := 0;
              rollback work;
              return 0;
@@ -557,11 +584,11 @@ self.vc_redirect (check_immediate);
                _use_sys_errors := (select top 1 WS_SHOW_SYSTEM_ERRORS from WA_SETTINGS);
                if(_use_sys_errors)
                {
-                 self.regf1.vc_error_message := _error || ' ' || _sys_error;
+                 self.vc_error_message := _error || ' ' || _sys_error;
                }
                else
                {
-                 self.regf1.vc_error_message := _error;
+                 self.vc_error_message := _error;
                }
                rollback work;
                return;

@@ -134,8 +134,25 @@ input.button {
       <v:variable name="v_dst" persist="0" type="varchar" default="'sc'" />
       <v:variable name="v_s1" persist="0" type="varchar" default="''" />
       <v:variable name="v_s2" persist="0" type="varchar" default="''" />
+      <v:variable name="show_all" type="integer" default="0" />
+      <v:variable name="page_rows" type="integer" default="10" />
     </vm:variables>
   <vm:body>
+  <v:before-data-bind>
+  declare _show_all integer;
+  _show_all:=get_keyword('show_all_cbx',self.vc_page.vc_event.ve_params,0);
+  if(_show_all)
+  {
+     self.page_rows:=10000;
+     self.ds.ds_rows_fetched:=0;
+     self.ds.ds_rows_offs:=0;
+  }
+  else
+     self.page_rows:=10;
+     
+     
+  </v:before-data-bind>
+  
 
 
       <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
@@ -185,12 +202,17 @@ input.button {
               ]]>
             </v:on-post>
           </v:button>
+		      <v:check-box auto-submit="1" name="show_all_cbx" xhtml_id="show_all_cbx"
+			      initial-checked="--self.show_all"
+			      value="--1"/>
+          show all
         </div>
-        <v:data-source name="dsrc" expression-type="sql" nrows="--10" initial-offset="--0">
+        <v:data-source name="dsrc" expression-type="sql" nrows="--self.page_rows" initial-offset="--0">
           <v:before-data-bind>
             <![CDATA[
               declare user_sql, group_sql varchar;
 
+              
               self.v_mask := case self.v_how
                                when '1' then self.v_value || '%'
                                when '2' then '%' || self.v_value || '%'

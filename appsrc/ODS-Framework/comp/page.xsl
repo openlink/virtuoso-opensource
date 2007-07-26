@@ -335,22 +335,6 @@
 <xsl:template match="vm:header">
   <head>
     <base href="http://<?V self.st_host ?>/ods/"/>
-    <link rel="alternate" 
-          type="application/rss+xml" 
-          title="Virtuoso Screencast Demos" 
-          href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp"/>
-    <link rel="alternate" 
-          type="application/rss+xml" 
-          title="Virtuoso Tutorials" 
-          href="http://demo.openlinksw.com/tutorial/rss.vsp"/>
-    <link rel="alternate" 
-          type="application/rss+xml" 
-          title="Virtuoso Product Blog (RSS 2.0)" 
-          href="http://www.openlinksw.com/weblogs/virtuoso/gems/rss.xml" />
-    <link rel="alternate" 
-          type="application/atom+xml" 
-          title="Virtuoso Product Blog (Atom)" 
-          href="http://www.openlinksw.com/weblogs/virtuoso/gems/atom.xml" />
     <?vsp
       {
         declare style varchar;
@@ -1453,6 +1437,34 @@ if (i > 0)
       </td>
     </tr>
     <tr>
+      <th valign="top">Require unique email</th>
+      <td>
+        <table border="0" cellspacing="0" cellpadding="0">
+        <tr>
+        <td valign="top">
+        <v:check-box name="unique_mail" value="1" initial-checked="--(select top 1 WS_UNIQUE_MAIL from WA_SETTINGS)" xhtml_id="unique_mail"/>
+        </td>
+        <td valign="top">
+        <v:template name="nonunique_warr" type="simple"
+		                enabled="--(select 1 from(select count(U_E_MAIL) as mailcount from SYS_USERS where U_E_MAIL <> '' group by U_E_MAIL) tmp where mailcount>1)
+                                "
+			  >
+			  <div style="padding: 0px 0px 0px 10px;display:none;color:red;" id="dublicate_warrning">
+			  There are e-mail addresses that are registered to more than on one account.<br/>
+			  If you set this option :<br/>
+			    1. Duplicate e-mail addresses will be reset to blank <br/>
+			    2. System will send message to the e-mail address with the account names which addresses should be filled in again!
+			  </div>
+			  <script type="text/javascript">
+         if(!$('unique_mail').checked) OAT.Dom.show('dublicate_warrning');
+			  </script>
+			  </v:template>
+			  </td>
+			  </tr>
+			  </table>
+      </td>
+    </tr>
+    <tr>
       <th>Verify registration with <?V case when self.im_enabled then 'image' else 'formula' end ?></th>
       <td>
         <v:check-box name="ssetc3" value="1" initial-checked="--(select top 1 WS_VERIFY_TIP from WA_SETTINGS)" />
@@ -1505,9 +1517,60 @@ if (i > 0)
                   control.vc_parent.vc_error_message := 'Membership (Join) expiry time should be positive integer and greater then 0';
                   return;
                 }
+                
+                if(self.unique_mail.ufl_selected and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 0))
+                {
+                  for select U_E_MAIL as _email from (select U_E_MAIL,count(U_E_MAIL) as mailcount from SYS_USERS where U_E_MAIL <> '' group by U_E_MAIL) tmp
+                                      where mailcount>1
+                  do
+                  {
+                   declare i integer;
+                   declare account_notchanged,accounts_reset varchar;
+                   declare reset_list any;
+
+                   i:=0;
+                   account_notchanged:='';
+                   accounts_reset:='';
+                   
+                   
+                   for select U_ID,U_NAME,U_ACCOUNT_DISABLED from SYS_USERS where U_E_MAIL=_email order by U_LOGIN_TIME desc do
+                   {
+                     if(length(accounts_reset)=0)
+                        accounts_reset:=accounts_reset||U_NAME;
+                     else
+                        accounts_reset:=accounts_reset||','||U_NAME;
+
+                     if(i=0)
+                     {
+                      account_notchanged:=U_NAME;
+                     }else
+                     {
+--                        dbg_obj_print('');
+                       WA_USER_EDIT (U_NAME, 'E_MAIL', '');
+                     }
+                     i:=i+1;
+                   }
+                   
+                  declare admin_email_address,_subject,_msg varchar;
+                  
+                  admin_email_address:=(select U_E_MAIL from SYS_USERS where U_ID = http_dav_uid ());
+                  
+                  _subject:='Account e-mail address set to blank';
+                  _msg:=sprintf('Your accounts - '||accounts_reset||' on '||WA_LINK(1,'/ods/')||' are using the same e-mail address - '||_email||'.\nDue to server administration - users with the same e-mail addresses are not allowed any more.\n\n'||
+                                _email||' is still valid e-mail address for account: '||account_notchanged||' .\n\nIn order to receive system notifications for the rest of the accounts please enter valid e-mail address.');
+               
+                  declare exit handler for sqlstate '*' {goto _skip_mail;};
+                  WA_SEND_MAIL (admin_email_address, _email ,_subject, _msg);
+                  
+                  _skip_mail:;
+                  
+                  }
+                }
+                
                 update WA_SETTINGS set
                   WS_REGISTER = self.ssetc1.ufl_selected,
                   WS_MAIL_VERIFY = self.ssetc2.ufl_selected,
+                  WS_UNIQUE_MAIL = self.unique_mail.ufl_selected,
                   WS_VERIFY_TIP = self.ssetc3.ufl_selected,
                   WS_REGISTRATION_EMAIL_EXPIRY = _reg,
                   WS_JOIN_EXPIRY = _join;

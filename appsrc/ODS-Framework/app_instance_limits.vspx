@@ -37,6 +37,12 @@
       <vm:rawheader caption="Application instances limitations"/>
       <vm:body>
          <vm:login redirect="index.vspx"/>
+         <br/>
+         <div style="padding: 0px 0px 0px 10px">
+         1. N/A: this value will cause to have unlimited number of instances for application.<br/>
+         2. 0: this value will hide the Application tab to be shown at the ODS Main Navigation Bar.<br/>
+         3. [n]: a value in the range 0&lt;[n]&lt;999 will cause the application to have maximum [n] instances.<br/>
+         </div><br/>
          <table class="listing" rules="groups">
              <colgroup>
            <col/>
@@ -56,7 +62,7 @@
                  </td>
                  <td>
                   <v:text name="txt2"
-                          value="--cast(coalesce((control.vc_parent as vspx_row_template).te_rowset[1],'MAX') as varchar)"
+                          value="--cast(coalesce((control.vc_parent as vspx_row_template).te_rowset[1],'N/A') as varchar)"
                           xhtml_size="1" xhtml_MAXLENGTH="3" error-glyph="*">
 
                     <v:on-post><![CDATA[
@@ -69,12 +75,11 @@
                          and control.ufl_value<>'0'
                        )
                        {
-                         if(control.ufl_value<>'MAX')
+                         if(control.ufl_value<>'N/A')
                          { 
                             self.vc_is_valid := 0;
-                            self.vc_error_message := 'The application instace number should be "0" - disabled, 3 digits number - sets number as limit, "MAX" - no limit';
+                            self.vc_error_message := ' Instance maximum number is not correct.';
                             control.ufl_failed := 1;
-                            dbg_obj_print('error',control.ufl_value);
                             return;
                          }
                        }
@@ -82,16 +87,13 @@
                     if (e.ve_button = self.save1)
                     {
                         update WA_TYPES
-                           set WAT_MAXINST = (case when control.ufl_value='MAX' then null else cast(control.ufl_value as integer) end)
+                           set WAT_MAXINST = (case when control.ufl_value='N/A' then null else cast(control.ufl_value as integer) end)
                          where WAT_NAME = (control.vc_parent as vspx_row_template).te_rowset[0];
-
-                   dbg_obj_print((control.vc_parent as vspx_row_template).te_rowset[0]);
-                   dbg_obj_print(control.ufl_value);
 
                     }
                     else if (e.ve_button = self.cancel1)
                     {
-                        control.ufl_value := cast(coalesce((SELECT WAT_MAXINST from WA_TYPES where WAT_NAME=(control.vc_parent as vspx_row_template).te_rowset[0]),'MAX') as varchar);
+                        control.ufl_value := cast(coalesce((SELECT WAT_MAXINST from WA_TYPES where WAT_NAME=(control.vc_parent as vspx_row_template).te_rowset[0]),'N/A') as varchar);
                         self.vc_is_valid := 1;
                         control.ufl_failed := 0;
                     }

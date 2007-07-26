@@ -1,7 +1,7 @@
 setup
 
 *make sure wa directory is under your http root as "webapp" , or change the
-hosted_services.sql instaead
+hosted_services.sql instead
 *load hosted_services.sql as DBA via ISQL tool
 * hit http://host:port/ods , if you see login there all is installed
 
@@ -19,7 +19,7 @@ Below are the infrastructure components for hosted services, such as blogs,
     method wa__join_request (login varchar),
     method wa_state_edit_form (inout stream any), -- emit a state
     edit  form
-    into the stream, presebnt this to owner for setting the state
+    into the stream, present this to owner for setting the state
     wa_state_posted (in post any, inout stream),  -- process a
     post,
     updateing state and writing a reply into the stream for web
@@ -91,7 +91,7 @@ instance list, otherwise not.
 Other:
 
 - the membership application pending approval is marked by a value in  the
-membership class field of the membrship table.  Have -1 or  something less
+membership class field of the membership table.  Have -1 or  something less
 than all others to create a simple membership check of  >= 0.
 
 
@@ -100,7 +100,7 @@ Selecting a service instance will go to the home page of said service
 instance, not show the members.
 
 - The my services  page will show all services with some type of
-membership.  There will be a link for memebrship options.  his will be  a
+membership.  There will be a link for membership options.  his will be  a
 URL to a page chosen in function of the user and the service  instance.  For
 owners this is editing the service instance's options.   For other members
 this is setting attributes of membership.  These can  be notification

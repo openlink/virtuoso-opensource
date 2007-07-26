@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="foaf-import-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+	      doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+	<v:variable name="edit_prj" type="int" default="null" param-name="edit" />
+	<v:variable name="del_prj" type="int" default="null" param-name="del" />
+	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=9">
+	    <input type="hidden" name="page" value="9"/>
+	  <table class="listing" rules="groups">
+	      <colgroup>
+		  <col/>
+		  <col/>
+		  <col/>
+	      </colgroup>
+	      <tr class="listing_header_row">
+		  <th>Project</th>
+		  <th>Description</th>
+		  <th>Action</th>
+	      </tr>
+	      <v:data-set name="prj" sql="select WUP_ID, WUP_NAME, WUP_URL, WUP_DESC from WA_USER_PROJECTS where WUP_U_ID = :self.u_id"
+		  scrollable="1" editable="1" nrows="1000">
+		  <v:before-data-bind>
+if (not e.ve_is_post and self.del_prj is not null)
+{
+  delete from WA_USER_PROJECTS where WUP_ID = self.del_prj and WUP_U_ID = self.u_id;
+}
+		  </v:before-data-bind>
+
+		  <v:template name="maps_rep" type="repeat">
+		      <v:template name="maps_brows" type="browse">
+			  <v:after-data-bind>
+if (not e.ve_is_post and control.te_rowset[0] = self.edit_prj)
+{
+  self.prj_name.ufl_value := control.te_rowset[1];
+  self.prj_url.ufl_value := control.te_rowset[2];
+  self.prj_desc.ufl_value := control.te_rowset[3];
+}
+	                  </v:after-data-bind>
+			  <tr class="<?V case when self.edit_prj = control.te_rowset[0] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+			      <td>
+				  <v:url name="ur1"
+				      value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[1])'
+				      format="%s"
+				      url="--sprintf ('uiedit.vspx?page=9&amp;edit=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
+				      xhtml_title="Edit"
+				      xhtml_alt="Edit"
+				      />
+			      </td>
+			      <td>
+				  <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[3]"/>
+
+			      </td>
+			      <td>
+				  <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+				      format="%s"
+				      url="--sprintf ('uiedit.vspx?page=9&amp;del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
+				      xhtml_title="Delete"
+				      xhtml_alt="Delete"
+				      />
+			      </td>
+			  </tr>
+		      </v:template>
+		  </v:template>
+
+		  <v:template name="maps_footer" type="simple">
+		      <tr>
+			  <td colspan="3" class="listing_col_action">
+			      <vm:ds-navigation data-set="prj" type="set" />
+			  </td>
+		      </tr>
+		  </v:template>
+	      </v:data-set>
+	  </table>
+	  <div class="fm">
+	      <fieldset>
+		  <label for="prj_name">Project</label>
+		  <v:text name="prj_name" value="" xhtml_id="prj_name" xhtml_size="50" error-glyph="*">
+		      <v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Project name can not be empty"/>
+		  </v:text>
+		  <br/>
+		  <label for="prj_url">URL</label>
+		  <v:text name="prj_url" value="" xhtml_id="prj_url" xhtml_size="50"/>
+		  <br />
+		  <label for="prj_desc">Description</label>
+		  <v:textarea name="prj_desc" value="" xhtml_id="prj_desc" xhtml_rows="5" xhtml_cols="50"/>
+		  <br />
+	      <span class="fm_ctl_btn">
+		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_prj),0)">
+		      <v:on-post>
+self.prj_name.ufl_value := null;
+self.prj_url.ufl_value := null;
+self.prj_desc.ufl_value := null;
+self.edit_prj := null;
+self.save1.vc_data_bind (e);
+control.vc_enabled := 0;
+		      </v:on-post>
+		  </v:button>
+		  <v:button name="save1" value="--case when self.edit_prj is null then 'Add' else 'Update' end" action="simple">
+		      <v:on-post><![CDATA[
+if (not self.vc_is_valid)
+  return;
+
+if (self.edit_prj is null)
+  {
+    insert into WA_USER_PROJECTS (WUP_U_ID,WUP_NAME,WUP_URL,WUP_DESC) values (self.u_id, self.prj_name.ufl_value, self.prj_url.ufl_value, self.prj_desc.ufl_value);
+  }
+else
+  {
+    update WA_USER_PROJECTS set WUP_NAME = self.prj_name.ufl_value, WUP_URL = self.prj_url.ufl_value, WUP_DESC = self.prj_desc.ufl_value where WUP_ID = self.edit_prj;
+  }
+
+self.edit_prj := null;
+self.prj_name.ufl_value := null;
+self.prj_url.ufl_value := null;
+self.prj_desc.ufl_value := null;
+control.vc_data_bind (e);
+self.prj.vc_data_bind (e);
+]]></v:on-post>
+		  </v:button>
+	      </span>
+	  </fieldset>
+      </div>
+	</v:form>
+</v:page>

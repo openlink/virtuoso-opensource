@@ -558,14 +558,66 @@ create procedure DB.DBA.URL_REW_ODS_POLLS (in par varchar, in fmt varchar, in va
 }
 ;
 
+create procedure DB.DBA.URL_REW_ODS_FOAF_EXT (in par varchar, in fmt varchar, in val varchar)
+{
+  if (par = '*accept*')
+    {
+      declare ext any;
+      ext := 'rdf';
+      if (val = 'text/rdf+n3')
+	ext := 'n3';
+      return sprintf (fmt, ext);
+    }
+  else
+    return sprintf (fmt, val);
+}
+;
+
+create procedure ur_ods_rdf_doc (in path varchar)
+{
+  declare r any;
+  r := regexp_match ('[^/]*\x24', path);
+  return r||'#this';
+};
+
+create procedure ur_ods_html_doc (in path varchar)
+{
+  declare pos, r any;
+  if (path like '%/foaf.%')
+    {
+      pos := strrchr (path, '/');
+    }
+  else if (path like '%#%')
+    {
+      pos := strrchr (path, '#');
+    }
+  if (pos > 0)
+    r := subseq (path, 0, pos);
+  else
+    r := '/';
+  return r;
+};
 -- ODS Rules
 
+-- http://cname/dataspace/uname
+-- http://cname/dataspace/person/uname
+
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule1', 1,
-    '/dataspace/((person/)?[^/]*)', vector('ufname'), 1,
+    '/dataspace/((person/)?[^/#]*)', vector('ufname'), 1,
     '%s', vector('ufname'),
     'DB.DBA.URL_REW_ODS_USER');
 
+-- http://cname/dataspace/uname with Accept will do 303 to the /sparql
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule2', 1,
+    '/dataspace/([^/]*)', vector('ufname'), 1,
+    '/sparql?query=define+input%%3Ainference+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E+DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace/%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E&format=%U', vector('ufname', '*accept*'),
+    null,
+    '(application|text)/rdf.(xml|n3|turtle|ttl)',
+    0,
+    303);
+
+-- http://cname/dataspace/uname/app_type
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule3', 1,
     '/dataspace/((?!person)[^/]*)/([^\\./]*)', vector('ufname', 'app'), 2,
     '/ods/app_inst.vspx?app=%s&ufname=%s&l=1', vector('app', 'ufname'),
     'DB.DBA.URL_REW_ODS_APP');
@@ -574,6 +626,34 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule4', 1,
     '/dataspace/([^/]*)/(sioc|about|yadis)\\.(rdf|n3|ttl|xrds)', vector('ufname', 'file', 'fmt'), 3,
     '%s', vector('ufname'),
     'DB.DBA.URL_REW_ODS_USER_GEM');
+
+-- Rules for FOAF profile
+
+-- http://cname/dataspace/person/uname with Accept, do 303 to http://cname/dataspace/person/uname/foaf.ext
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule5', 1,
+    '/dataspace/person/([^/#]*)/?', vector('ufname'), 1,
+    '/dataspace/person/%U/foaf.%s', vector('ufname', '*accept*'),
+    'DB.DBA.URL_REW_ODS_FOAF_EXT',
+    '(application|text)/rdf.(xml|n3|turtle|ttl)',
+    2,
+    303);
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule6', 1,
+    '/dataspace/person/([^/]*)/page/([^/]*)/?', vector('ufname', 'page'), 1,
+    '/dataspace/person/%U/foaf.%s?page=%s', vector('ufname', '*accept*', 'page'),
+    'DB.DBA.URL_REW_ODS_FOAF_EXT',
+    '(application|text)/rdf.(xml|n3|turtle|ttl)',
+    2,
+    303);
+
+-- http://cname/dataspace/person/uname/foaf.ext
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule7', 1,
+    '/dataspace/person/([^/]*)/foaf.(rdf|n3|ttl)', vector('ufname', 'fmt'), 1,
+    '/ods/foaf.vsp?uname=%U&fmt=%U', vector('ufname', 'fmt'),
+    null,
+    null,
+    2,
+    null);
 
 -- App Instance Gem
 
@@ -769,7 +849,12 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
 -- ODS Base rules
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_base_rule_list1', 1,
     	vector(
-	        'ods_rule1', 'ods_rule2', 'ods_rule4'
+	        'ods_rule1', 'ods_rule2', 'ods_rule3', 'ods_rule4'
+	      ));
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_foaf_rule_list1', 1,
+    	vector(
+	        'ods_rule5', 'ods_rule6', 'ods_rule7'
 	      ));
 
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_gems_rule_list1', 1,
@@ -865,6 +950,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST (
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
     	vector(
 	    'ods_base_rule_list1',
+	  'ods_foaf_rule_list1',
   		'ods_blog_rule_list1',
 	  	'ods_nntp_rule_list1',
 		  'ods_xd_rule_list1',

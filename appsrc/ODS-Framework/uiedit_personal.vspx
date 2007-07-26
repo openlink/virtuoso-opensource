@@ -48,6 +48,7 @@
     <v:variable persist="0" name="music" type="varchar" default="''"/>
     <v:variable persist="0" name="movie" type="varchar" default="''"/>
     <v:variable persist="0" name="issearch" type="int" default="1"/>
+    <v:variable persist="0" name="showactive" type="int" default="1"/>
     <v:variable persist="0" name="interests" type="varchar" default="''"/>
 
     <v:variable name="sav0" type="varchar" default="'1'" />
@@ -83,11 +84,11 @@
                WAUI_MSIGNATURE, WAUI_SUMMARY,
 	       U_E_MAIL, WAUI_PHOTO_URL,
 	       WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
-	       WAUI_SEARCHABLE, WAUI_INTERESTS
+	       WAUI_SEARCHABLE,WAUI_SHOWACTIVE, WAUI_INTERESTS
           INTO _utitle, _ftname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum,
 	       _email, self.photo,
 	       self.audio, self.books, self.music, self.movie,
-	       self.issearch, self.interests
+	       self.issearch,self.showactive, self.interests
           FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
 
         self.utitle := _utitle;
@@ -234,8 +235,8 @@
                     <v:validator test="regexp" regexp="[^@ ]+@([^\. ]+\.)+[^\. ]+" message="Invalid E-mail address" name="vv_email2"/>
                   </v:text>
     <script type="text/javascript"><![CDATA[
-    var focus='<?V get_keyword('focus',self.vc_event.ve_params,'')?>'+'';
-    if(focus=='email')
+    var focusItem = '<?V get_keyword('focus',self.vc_event.ve_params,'')?>'+'';
+    if(focusItem == 'email')
     {
       $('regmail').focus();
     }
@@ -407,8 +408,45 @@
 		      <span class="explain"> (one URL per line)</span>
 		  </th>
 		<td class="listing_col" nowrap="1">
-		  <v:textarea name="e_int" value="--self.interests" xhtml_cols="50" xhtml_rows="5" xhtml_tabindex="13"/>
+		    <table>
+			<tr>
+			    <td>
+		    <v:text type="hidden" name="e_int" xhtml_id="e_int"
+			value="--self.interests" xhtml_cols="50" xhtml_rows="5" xhtml_tabindex="13"/>
+		    <div id="interests_div">
+		    </div>
+		    <script type="text/javascript"><![CDATA[
+			ODSInitArray.push(interestsPrepare);
+			function interestsPrepare ()
+			{
+
+			    OAT.Loader.loadFeatures(["grid"], function(){setTimeout(interestsPrepare1,60)});
+			}
+			function interestsPrepare1 ()
+			{
+			    var grid = new OAT.Grid("interests_div",0,0);
+                            var txt = document.getElementById ("e_int");
+                            var arr = txt.value.split ("\n");
+			    grid.createHeader (["URI", "Label"]);
+			    for (i = 0; i < arr.length; i++)
+			      {
+                                var row = arr[i].split(";");
+				if (row.length > 0 && row[0].length > 0)
+				  grid.createRow (row);
+			      }
+			}
+			]]></script>
+		</td>
+		<td nowrap="1">
+		      <v:button action="browse" name="interbt" value="Edit..." selector="edit_interests_popup.vspx"
+			  child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=800"
+			>
+			  <v:field name="e_int"/>
+			</v:button>
 		  <vm:u-prop-select name="sel_48" value="self.sav48" />
+		</td>
+	      </tr>
+	</table>
 		</td>
 	      </tr>
 
@@ -487,6 +525,16 @@
 	      </tr>
 
               <tr>
+          <td colspan="2">
+            <v:check-box name="show_active" value="--self.showactive" xhtml_id="show_active" >
+             <v:after-data-bind>
+              control.ufl_selected := self.showactive;
+             </v:after-data-bind>
+            </v:check-box >
+            <label for="show_active">Include in User active information</label>
+          </td>
+	      </tr>
+        <tr>
                 <td colspan="2" class="ctrl">
 		      <span class="fm_ctl_btn">
 			<v:button name="bt_cncl_1" value="Cancel" action="simple">
@@ -497,6 +545,12 @@
                   <v:button name="user_sset_personal" value="Save" action="simple" xhtml_tabindex="21">
                     <v:on-post>
                       <![CDATA[
+                        if (exists(select 1 from SYS_USERS where U_E_MAIL=self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+                    	  {
+                          self.vc_error_message := 'This e-mail address is already registered.';
+                          self.vc_is_valid := 0;
+                    	  }
+
                         if(self.vc_is_valid = 0) return;
 
                         declare _arr any;
@@ -641,6 +695,7 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MUSIC', self.e_fmusic.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MOVIES', self.e_fmovie.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_SEARCHABLE', self.in_search.ufl_selected);
+                        WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
                         WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.e_int.ufl_value);
 
                         -- change user_text data
