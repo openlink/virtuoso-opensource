@@ -257,7 +257,6 @@ d_id_ref (d_id_t * d_id, db_buf_t p)
 }
 
 
-#ifdef O12
 int
 itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
 {
@@ -323,12 +322,12 @@ itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
     }
   KEY_COL(key, row, d_id_cl[0], d_id_off, d_id_len);
   if (d_id_is_int)
-    LONG_SET_NA (wst->wst_first_d_id.id, LONG_REF(row + d_id_off));
+    d_id_num_col_ref (&wst->wst_first_d_id, row + d_id_off, d_id_len);
   else
     d_id_ref (&wst->wst_first_d_id, row + d_id_off);
   KEY_COL(key, row, d_id2_cl[0], d_id2_off, d_id2_len);
   if (d_id_is_int)
-    LONG_SET_NA (wst->wst_last_d_id.id, LONG_REF(row + d_id2_off));
+    d_id_num_col_ref (&wst->wst_last_d_id, row + d_id2_off, d_id2_len);
   else
     d_id_ref (&wst->wst_last_d_id, row + d_id2_off);
   if (!D_INITIAL (&wst->wst_seek_target))
@@ -393,124 +392,7 @@ cond_boundary:
   return DVC_GREATER;
 }
 
-#else
-int
-itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, int key_pos, dp_addr_t * leaf_ret)
-{
-  dbg_page_map (buf);
-  /* the row order is key_id, word, low_d_id, high_d_id, string, blob_string */
-  long key_id;
-  word_stream_t * wst = itc->itc_wst;
-  key_id_t row_key_id;
-  dtp_t dtp;
-  int  rc;
-  long len, head_len;
-  db_buf_t page = buf->bd_buffer;
-  row_key_id = SHORT_REF ((page + key_pos - 4) + IE_KEY_ID);
-  DB_BUF_TLEN (len, page[key_pos], &page[key_pos]);
-  dtp = page[key_pos];
-  if (dtp != DV_LONG_INT)
-    return DVC_GREATER;
-  key_id = LONG_REF (page + key_pos + 1);
-  if (key_id != itc->itc_key_id)
-    goto cond_boundary;
-  key_pos += 5;
-  dtp = page[key_pos];
-  rc = dv_compare_box (page + key_pos, wst->wst_word, NULL);
-  if (DVC_MATCH != rc)
-    goto cond_boundary;
-  DB_BUF_TLEN (len, page[key_pos], &page[key_pos]);
-  key_pos += len;
-  dtp = page[key_pos];
-  /* we're at the number after the word. */
-  d_id_ref (&wst->wst_first_d_id, page + key_pos);
-  DB_BUF_TLEN (len, page[key_pos], &page[key_pos]);
-  key_pos += len;
-  dtp = page[key_pos];
-  if (DV_LEAF == dtp)
-    {
-      *leaf_ret = LONG_REF (page + key_pos + 1);
-      return DVC_MATCH;
-    }
-  if (DV_DEPENDENT != dtp)
-    {
-      *leaf_ret = leaf_pointer (page, 0, key_pos);
-      return DVC_LESS;
-    }
-  if (row_key_id != itc->itc_key_id)
-    return DVC_LESS;
-  key_pos++;
-  d_id_ref (&wst->wst_last_d_id, page + key_pos);
-  if (!D_INITIAL (&wst->wst_seek_target))
-    {
-      if ((!wst->sst_is_desc &&  IS_GT (d_id_cmp (&wst->wst_seek_target, &wst->wst_last_d_id)))
-	  || (wst->sst_is_desc && IS_LT (d_id_cmp (&wst->wst_seek_target, &wst->wst_first_d_id))))
-	return DVC_LESS;
-    }
-  DB_BUF_TLEN (len, page[key_pos], &page[key_pos]);
-  key_pos += len;
-  dtp = page[key_pos];
-  db_buf_length (page + key_pos, &head_len, &len);
-  wst->sst_pos = 0;
-  if (DV_LONG_STRING == dtp || DV_SHORT_STRING == dtp)
-    {
-      rc = wst_chunk_scan (wst, page + key_pos + head_len, len);
-      if (DVC_MATCH == rc)
-	{
-	  wst_set_buffer (wst, page + key_pos + head_len, len);
-	  return rc;
-	}
-    }
-  else
-    {
-      /* the string was not in place so we have a blob in the next place, could be optimized into inlined varchar  */
-      caddr_t blob, bh;
-      key_pos += head_len + len;
-      dtp = page[key_pos];
-      if (DV_LONG_STRING == dtp || DV_SHORT_STRING == dtp)
-	{
-	  rc = wst_chunk_scan (wst, page + key_pos + head_len, len);
-	  if (DVC_MATCH == rc)
-	    {
-	      wst_set_buffer (wst, page + key_pos + head_len, len);
-	      return rc;
-	    }
-	}
-      else
-	{
-	  if (DV_BLOB != dtp)
-	    GPF_T1 ("text index row with no string has no blob");
-	  bh = itc_box_column (NULL, NULL, 0, page + key_pos);
-	  blob = blob_to_string (itc->itc_ltrx, bh);
-	  dk_free_box (bh);
-	  rc = wst_chunk_scan (wst, (db_buf_t) blob, box_length (blob) - 1);
-	  if (DVC_MATCH == rc)
-	    {
-	      dk_free_box (wst->sst_buffer);
-	      wst->sst_buffer = blob;
-	      wst->sst_buffer_size = box_length (blob);
-	      wst->sst_fill = wst->sst_buffer_size - 1;
-	    }
-	  else
-	    dk_free_box (blob);
-	  return rc;
-	}
-    }
-  return DVC_LESS;
- cond_boundary:
 
-  if (itc->itc_desc_order)
-    {
-      *leaf_ret = leaf_pointer (page, itc->itc_position, key_pos);
-      if (*leaf_ret)
-	return DVC_MATCH;
-    }
-  return DVC_GREATER;
-}
-#endif
-
-
-#ifdef O12
 int
 itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret)
 {
@@ -649,98 +531,6 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
     }
 }
 
-#else
-
-int
-itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret)
-{
-  db_buf_t page = (*buf_ret)->bd_buffer;
-  long key_id;
-  int res = DVC_LESS;
-  int pos, key_pos, key_pos_1;
-  long head_len;
-  pos = it->itc_position;
-
-  while (1)
-    {
-      if (!pos)
-	{
-	  *leaf_ret = 0;
-	  it->itc_position = 0;
-	  return DVC_INDEX_END;
-	}
-      if (pos >= PAGE_SZ)
-	GPF_T;			/* Link over page end */
-
-      if (it->itc_owns_page != it->itc_page
-	  && ITC_IS_LTRX (it)
-	  && it->itc_isolation != ISO_UNCOMMITTED)
-	{
-	  if (it->itc_isolation == ISO_SERIALIZABLE
-	      || ITC_MAYBE_LOCK (itc, pos))
-	    {
-	      it->itc_position = pos;
-	      for (;;)
-		{
-		  int wrc = itc_landed_lock_check (it, buf_ret);
-		  if (ISO_SERIALIZABLE == it->itc_isolation
-		      || NO_WAIT == wrc)
-		    break;
-		  /* passing this means for a RR cursor that a subsequent itc_set_lock_on_row is
-		   * GUARANTEED to be with no wait. Needed not to run sa_row_check side effect twice */
-		  wrc = wrc;	/* breakpoint here */
-		}
-	      pos = it->itc_position;
-	      page = (*buf_ret)->bd_buffer;
-	      if (0 == pos)
-		{
-		  /* The row may have been deleted during lock wait.
-		   * if this was the last row, the itc_position will have been set to 0 */
-		  *leaf_ret = 0;
-		  return DVC_INDEX_END;
-		}
-	    }
-	}
-
-      head_len = page[pos] == DV_SHORT_CONT_STRING ? 2 : 5;
-      key_pos = pos + (int) head_len + IE_FIRST_KEY;
-      key_pos_1 = key_pos;
-      key_id = SHORT_REF (page + key_pos - 4 + IE_KEY_ID);
-      it->itc_row_key_id = (key_id_t) key_id;
-
-
-      if (IE_ISSET (page + pos + head_len, IEF_DELETE))
-	goto next_row;
-      it->itc_position = pos;
-      *leaf_ret = 0;
-      res = itc_text_row (it, *buf_ret, key_pos, leaf_ret);
-      if (DVC_GREATER == res)
-	return DVC_GREATER;
-      if (!*leaf_ret)
-	it->itc_at_data_level = 1;
-      else
-	return DVC_MATCH;
-
-      if (! *leaf_ret && res == DVC_MATCH)
-	{
-	  it->itc_position = pos;
-	  KEY_TOUCH (it->itc_insert_key);
-
-	  return DVC_MATCH;
-	}
-
-    next_row:
-      if (!it->itc_desc_order)
-	pos = IE_NEXT (page + pos + (int) head_len);
-      else
-	{
-	  itc_prev_entry (it, *buf_ret);
-	  pos = it->itc_position;
-	}
-    }
-}
-
-#endif
 
 
 #define WP_NEXT(p, pos, end) \
@@ -1262,7 +1052,6 @@ wst_random_seek (word_stream_t * wst)
 }
 
 
-#ifdef O12
 
 caddr_t wst_itc_col_word (it_cursor_t * itc, buffer_desc_t * buf)
 {
@@ -1310,32 +1099,6 @@ caddr_t wst_itc_col_long_data (it_cursor_t * itc, buffer_desc_t * buf)
   return itc_box_column (itc, buf->bd_buffer, 0, cl);
 }
 
-#else
-
-#define WST_WORD 1
-#define WST_D_ID 2
-
-caddr_t
-wst_itc_col (it_cursor_t * itc, buffer_desc_t * buf, int col)
-{
-  db_buf_t page = buf->bd_buffer;
-  long hl, l;
-  int pos = itc->itc_position;
-  db_buf_length (page + pos, &hl, &l);
-  pos += hl + IE_FIRST_KEY;
-  DB_BUF_TLEN (l, page[pos], &page[pos]);
-  pos += l;
-  if (WST_WORD == col)
-    return (itc_box_column (itc, page, 0, page + pos));
-  DB_BUF_TLEN (l, page[pos], &page[pos]);
-  pos += l;
-  if (WST_D_ID == col)
-    return (itc_box_column (itc, page, 0, page + pos));
-  GPF_T;
-  return NULL;
-}
-
-#endif
 
 it_cursor_t *
 wst_range_itc (sst_tctx_t *tctx, const char * word, caddr_t *lower, caddr_t higher)
@@ -1540,7 +1303,7 @@ int
 wst_is_target_far (word_stream_t * wst)
 {
   /* if distance over 30 times the width of the current window */
-  int32 row_width, dist;
+  int64 row_width, dist;
   if (D_INITIAL (&wst->wst_seek_target) || D_NEXT (&wst->wst_seek_target))
     return 0;
   if (DV_COMPOSITE == wst->wst_first_d_id.id[0])
@@ -1550,8 +1313,8 @@ wst_is_target_far (word_stream_t * wst)
       return (dist > 30 * row_width);
     }
 
-  row_width = LONG_REF_NA (wst->wst_last_d_id.id) - LONG_REF_NA (wst->wst_first_d_id.id);
-  dist = LONG_REF_NA (wst->wst_seek_target.id) - LONG_REF_NA (wst->wst_last_d_id.id);
+  row_width = D_ID_NUM_REF (wst->wst_last_d_id.id) - D_ID_NUM_REF (wst->wst_first_d_id.id);
+  dist = D_ID_NUM_REF (wst->wst_seek_target.id) - D_ID_NUM_REF (wst->wst_last_d_id.id);
   if (dist < 0)
     dist = -dist;
   return (dist  > 30 * row_width);
