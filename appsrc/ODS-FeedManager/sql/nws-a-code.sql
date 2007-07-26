@@ -6503,6 +6503,8 @@ ENEWS.WA.news_comment_upgrade ()
 registry_set ('news_comment_upgrade', '1')
 ;
 
+-----------------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.news_comment_get_mess_attachments (inout _data any, in get_uuparts integer)
 {
   declare data, outp, _all any;
@@ -6564,6 +6566,8 @@ create procedure ENEWS.WA.news_comment_get_mess_attachments (inout _data any, in
 }
 ;
 
+-----------------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.news_comment_get_cn_type (in f_name varchar)
 {
    declare ext varchar;
@@ -6581,5 +6585,50 @@ create procedure ENEWS.WA.news_comment_get_cn_type (in f_name varchar)
 	ext := ((select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = temp));
 
    return ext;
+}
+;
+
+
+-----------------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.subscription_create (
+  in pURL varchar,
+  in pInstance varchar,
+  in pUser varchar,
+  in pPassword varchar)
+{
+  declare domain_id, feed_id integer;
+  declare channels any;
+
+  pUser := (select U_NAME from DB.DBA.SYS_USERS where U_NAME = pUser and pwd_magic_calc (U_NAME, U_PASSWORD, 1) = pPassword);
+  if (isnull (pUser))
+    signal ('FM101', 'Bad username and/or password!');
+  if (not exists (select 1
+                    from SYS_USERS A,
+                         WA_MEMBER B,
+                         WA_INSTANCE C
+                   where A.U_NAME = pUser
+                     and B.WAM_USER = A.U_ID
+                     and B.WAM_INST = C.WAI_NAME
+                     and C.WAI_NAME = pInstance))
+    signal ('FM102', 'No instance and/or user not a member!');
+
+  domain_id := ENEWS.WA.domain_id (pInstance);
+  channels := ENEWS.WA.channels_uri (pUrl);
+  if (not length (channels))
+    signal ('FM103', 'Bad subscription source!');
+  if (channels[0] <> 'channel')
+    signal ('FM103', 'Bad subscription source!');
+  feed_id := ENEWS.WA.channel_create (channels[1]);
+  --dbg_obj_print ( domain_id, feed_id, get_keyword ('title', channels[1]), null, '', 0);
+  ENEWS.WA.channel_domain (-1, domain_id, feed_id, get_keyword ('title', channels[1]), null, '', 0);
+  commit work;
+  if (not ENEWS.WA.channel_feeds (feed_id)) {
+    declare continue handler for sqlstate '*' {
+      goto _next;
+    };
+    ENEWS.WA.feed_refresh (feed_id);
+  }
+_next:;
 }
 ;
