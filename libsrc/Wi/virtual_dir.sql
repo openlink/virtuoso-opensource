@@ -794,7 +794,7 @@ virt_proxy_init ()
 ;
 
 
-create procedure ext_http_proxy (in url varchar, in header varchar := null, in force varchar := null, in "output-format" varchar := null, in get varchar := 'soft') __SOAP_HTTP 'text/html'
+create procedure ext_http_proxy (in url varchar, in header varchar := null, in force varchar := null, in "output-format" varchar := null, in get varchar := 'soft', in login varchar := '') __SOAP_HTTP 'text/html'
 {
   declare hdr, content, req_hdr any;
   declare ct any;
@@ -820,8 +820,12 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
           stat := '00000';
 	  if (get not in ('soft', 'replacing'))
 	    get := 'soft';
+	  if (length (login))
+	    login := concat ('define get:login "', login, '" ');
+	  else
+	    login := '';
 	  set_user_id ('SPARQL');
-          exec (sprintf ('sparql define get:soft "%s" CONSTRUCT { ?s ?p ?o } FROM <%s> WHERE { ?s ?p ?o }', get, url),
+          exec (sprintf ('sparql %s define get:soft "%s" CONSTRUCT { ?s ?p ?o } FROM <%s> WHERE { ?s ?p ?o }', login, get, url),
 	    stat, msg, vector (), 0, metas, rset);
 	  if (stat <> '00000')
 	    signal (stat, msg);

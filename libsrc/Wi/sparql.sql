@@ -7006,7 +7006,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare paramctr, paramcount, maxrows, can_sponge integer;
   declare ses, content any;
   declare def_max, add_http_headers, timeout, sp_ini int;
-  declare http_meth, content_type, ini_dflt_graph varchar;
+  declare http_meth, content_type, ini_dflt_graph, get_user varchar;
   declare state, msg varchar;
   declare metas, rset any;
   declare accept varchar;
@@ -7039,6 +7039,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 	  set TRANSACTION_TIMEOUT=timeout;
         }
     }
+  get_user := '';
   content_type := http_request_header (lines, 'Content-Type', null, '');
   content := null;
   can_sponge := coalesce ((select top 1 1
@@ -7271,6 +7272,10 @@ http('</html>\n');
 	       return;
 	    }
 	}
+      else if ('get-login' = pname)
+	{
+	  get_user := pvalue;
+	}
     }
 
   if (format <> '')
@@ -7387,10 +7392,12 @@ host_found:
   full_query := concat ('define output:valmode "LONG" ', full_query);
   if (debug <> '')
     full_query := concat ('define sql:signal-void-variables 1 ', full_query);
+  if (get_user <> '')
+    full_query := concat ('define get:login "', get_user, '" ', full_query);
   state := '00000';
   metas := null;
   rset := null;
-  -- dbg_obj_princ ('full_query = ', full_query);
+  --dbg_obj_princ ('full_query = ', full_query);
   exec ('isnull (sparql_to_sql_text (?))', state, msg, vector (full_query));
   if (state <> '00000')
     {
