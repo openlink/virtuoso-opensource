@@ -2195,6 +2195,9 @@ create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
     return;
   };
 
+  if (vaddir not like '%/')
+    vaddir := vaddir || '/';
+
   arr := sys_dirlist (vaddir, 1);
 
   if (isstring (file_stat (vaddir || 'ods_framework_dav.vad')))
