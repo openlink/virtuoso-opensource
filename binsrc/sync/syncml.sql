@@ -1027,6 +1027,7 @@ create method sync_handle_get (inout xt any, inout resp any)  for sync_cmd
 --      	xte_nodebld_acc (devinf_node, xte_node (xte_head ('SupportLargeObjs'), slob));
 --      	xte_nodebld_acc (devinf_node, xte_node (xte_head ('SupportNumberOfChanges'), snoc));
 
+--     dbg_obj_print ('sync_handle_get ver = ', ver);
 
       for (select CT_NAME, CT_TYPE from SYNC_COLS_TYPES where CT_VER = ver) do
 	{
@@ -1177,6 +1178,7 @@ create method sync_issue_sync (inout xt any, inout resp any) for sync_cmd
 	    whenever not found goto skipit;
 	    select RES_CONTENT, RES_TYPE into data, meta
 	    from WS.WS.SYS_DAV_RES where RES_ID = RLOG_RES_ID;
+--		dbg_obj_print ('DATA 0 RLOG_RES_ID = ', RLOG_RES_ID);
 	    skipit:;
 	  }
 
@@ -1198,8 +1200,11 @@ create method sync_issue_sync (inout xt any, inout resp any) for sync_cmd
 	  {
 	    if (not xslt_is_sheet ('http://local.virt/sync_out_xsl'))
 	       sync_define_xsl ();
+--		dbg_obj_print ('DATA 0 data = ', blob_to_string (data));
 	    data := xslt ('http://local.virt/sync_out_xsl', xtree_doc (data, 0, '', 'utf-8'),
 		vector ('devinf', dev_info, 'mime', meta));
+--		dbg_obj_print ('DATA dev_info = ', dev_info);
+--		dbg_obj_print ('DATA meta     = ', meta);
 
 	    data := serialize_to_UTF8_xml (data);
 	    data := charset_recode (data, 'UTF-8', '_WIDE_');
@@ -1233,6 +1238,7 @@ _continue:;
 		xte_node (xte_head ('Source'), xte_node (xte_head ('LocURI'),
 				cast(RLOG_RES_ID as varchar))),
 		xte_node (xte_head ('Data'), blob_to_string (data))));
+--		dbg_obj_print ('DATA 1 data = ', blob_to_string (data));
 	      }
 	    else
 	      {
@@ -1464,6 +1470,9 @@ create method sync_handle_alert (inout xt any, inout resp any)  for sync_cmd
 	xte_node (xte_head ('Next'), arnext))));
   xte_nodebld_final (necho, xte_head ('Item'));
   self.out_data := necho;
+
+-- dbg_obj_print ('sync_handle_alert necho = ', necho);
+
 
   if (self.batch.init)
     {
@@ -2186,6 +2195,13 @@ return sprintf ('
 }
 ;
 
+--            <PropName>DTSTART</PropName>
+--            <PropName>SUMMARY</PropName>
+--            <PropName>SEQUENCE</PropName>
+--            <PropName>DTSTAMP</PropName>
+--            <PropName>DURATION</PropName>
+
+
 create procedure
 sync_datastore_vcalendar_11 (in _sourceref varchar)
 {
@@ -2374,6 +2390,9 @@ sync_xml_to_node (in _mode any, in _col_name any)
    declare _xml, _xml_text, pl, id any;
    declare res, mdta, dta, state, msg any;
 
+--   dbg_obj_print ('+ + + + + + sync_xml_to_node _mode = ', _mode);
+--   dbg_obj_print ('+ + + + + + sync_xml_to_node _col_name = ', _col_name);
+
    _xml_text := 'select sync_datastore_' || _mode || '(?)';
 
    res := exec (_xml_text, state, msg, vector (_col_name), 0, mdta, dta);
@@ -2387,6 +2406,8 @@ sync_xml_to_node (in _mode any, in _col_name any)
    pl := cast (xslt ('http://local.virt/sync_xml_to_pl', xml_tree_doc (_xml), vector ('id', id)) as varchar);
 
    pl := replace (pl, '), )', '))');
+
+--   dbg_obj_print ('+ + + + + + sync_xml_to_node pl = ', pl);
 
    exec (pl);
 
@@ -2526,40 +2547,6 @@ create trigger SRLOG_SYS_DAV_RES_D after delete on WS.WS.SYS_DAV_RES
 ')
 ;
 
-create procedure sync_recode (inout _body any)
-{
-   declare ret, fl any;
-
-   fl := 1;
-
-   if (strstr (_body, 'BEGIN') is not NULL)
-     return _body;
-
-   declare exit handler for sqlstate '2C000'
-     {
-   	whenever SQLSTATE '2C000' default;
-        if (fl = 2) return _body;
-   	goto _next;
-     };
-
-   ret := charset_recode (cast (_body as varchar), 'UTF-16', 'UTF-8');
-   return ret;
-
-_next:;
-
-   whenever SQLSTATE '*' default;
-
-   declare exit handler for sqlstate '*'
-     {
-	return _body;
-     };
-
-   fl := 2;
-   ret := charset_recode (cast (_body as varchar), 'UTF-16BE', 'UTF-8');
-   return ret;
-}
-;
-
 create procedure sync_pars_mult (inout _body any)
 {
    declare ret, _beg, t2, _end, _part, _name, _ibody, _old any;
@@ -2612,157 +2599,12 @@ __next:;
 ;
 
 
-create trigger SRLOG_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES order 190
-  {
-    declare local_time datetime;
-    declare temp, mime, new_name, id, p_id, atm, idx, line, f_p any;
-    declare __rowguid any;
-
-    if (not exists (select 1 from SYNC_COLS_TYPES where RES_COL = CT_COL_ID))
-	return;
-
-    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
-
-    atm := connection_get ('__ATM');
-
-    if (atm = RES_ID) return;
-
-    if (connection_get ('__sync_dav_upl') = '1')
-	{
-	  insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
-	      values (RES_ID, RES_COL, 'I', local_time);
-	  return;
-	}
-
-    if ("LEFT" (RES_NAME, 1) = '.') return;
-
-    if (not exists (select 1 from SYNC_COLS_TYPES where RES_COL = CT_COL_ID))
-	return;
-
-    __rowguid := ROWGUID;
-
-    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
-    temp := RES_CONTENT;
-    temp := sync_pars_vcard_int (temp);
-
-    if (temp is NULL)
-      return;
-
---	insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
---	    values (RES_ID, RES_COL, 'I', local_time);
-
-    for (idx := 0; idx < length (temp); idx := idx + 1)
-      {
-	line := temp[idx];
-
-	--new_name := md5 (line) || uuid ();
-	new_name :=line[1];
-
-	id := WS.WS.GETID ('R');
-	p_id := RES_COL;
-	f_p  := RES_FULL_PATH;
-	f_p  := WS.WS.EXPAND_URL (f_p, new_name);
-
-	set triggers off;
-
-	connection_set ('__ATM', cast (id as varchar));
-
-	if (length (line[0]) > 0)
-	 {
-	   insert soft WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP,
-	       RES_CONTENT, RES_TYPE, ROWGUID, RES_FULL_PATH)
-	       values (id, new_name, p_id, now (), now (), 2, '111111111NN', http_nogroup_gid(),
-		   line[0], 'text/x-vcard', __rowguid, f_p);
-
-	--dbg_obj_print ('Insert  ->', RES_NAME);
---	if ('vCards.vcf' <> RES_NAME)
-	   insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
-	       values (id, p_id, 'I', local_time);
-
---	if ('vCards.vcf' = RES_NAME) raw_exec ();
-	 }
-      }
-  }
-;
-
-
-create trigger SRLOG_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referencing old as O, new as N
-  {
-    declare local_time datetime;
-    declare temp, mime, new_name, id, p_id, atm, idx, line, f_p any;
-    declare __rowguid any;
-
-    if (not exists (select 1 from SYNC_COLS_TYPES where N.RES_COL = CT_COL_ID))
-      return;
-
-    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
-
-    atm := connection_get ('__ATU');
-
-    if (atm = N.RES_ID) return;
-
-    if (connection_get ('__sync_dav_upl') = '1')
-      {
-    	 update SYNC_RPLOG set RLOG_RES_COL = O.RES_COL, DMLTYPE = 'U', SNAPTIME = local_time
-		where RLOG_RES_ID = O.RES_ID;
-	 return;
-      }
-
-    if ("LEFT" (N.RES_NAME, 1) = '.') return;
-
-    __rowguid := N.ROWGUID;
-
-    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
-    temp := N.RES_CONTENT;
-    temp := sync_pars_vcard_int (temp);
-
-    if (temp is NULL)
-      return;
-
---    	   update SYNC_RPLOG set RLOG_RES_COL = O.RES_COL, DMLTYPE = 'U', SNAPTIME = local_time
---		where RLOG_RES_ID = O.RES_ID;
-
-    for (idx := 0; idx < length (temp); idx := idx + 1)
-      {
-	line := temp[idx];
-
-	--new_name := md5 (line) || uuid ();
-	new_name :=line[1];
-
-	id := WS.WS.GETID ('R');
-	p_id := N.RES_COL;
-	f_p  := N.RES_FULL_PATH;
-	f_p  := WS.WS.EXPAND_URL (f_p, new_name);
-
-
-	set triggers off;
-
-	connection_set ('__ATU', cast (id as varchar));
-
-	if (length (line[0]) > 0)
-	 {
-	insert replacing WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP,
-	    RES_CONTENT, RES_TYPE, ROWGUID, RES_FULL_PATH)
-	    values (id, new_name, p_id, now (), now (), 2, '111111111', http_nogroup_gid(), line[0], 'text/x-vcard',
-		__rowguid, f_p);
-
-    	local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
-
-	--dbg_obj_print ('Update  ->', N.RES_NAME);
-	   insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
-	       values (id, N.RES_COL, 'U', local_time);
-	 }
-	}
-  }
-;
-
-
 create procedure sync_pars_vcard_int (inout _body any)
 {
    declare parsed, _xml, len, line, idx, pos, val, elm, prop any;
 
    declare exit handler for sqlstate '*'
-     {
+  {
 	return NULL;
      };
 
@@ -2825,8 +2667,8 @@ sync_parse_in_data (in _data any, inout _mime any)
   _mime := NULL;
   idx := 0;
 
-   while (idx < len)
-     {
+  while (idx < len)
+    {
        line := split_and_decode (parsed[idx], 0, '\0\0:');
        pos := strstr (parsed[idx], ':');
        if (pos is not NULL)
@@ -2870,7 +2712,7 @@ sync_parse_in_data_get_long (in _all any, inout line integer)
     {
        ret := ret || _all[line] || '\n';
        line := line + 1;
-     }
+    }
    return ret;
 }
 ;
@@ -2890,3 +2732,310 @@ sync_parse_in_data_note (in _all any, inout line integer)
    return ret;
 }
 ;
+
+create trigger SRLOG_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES order 190
+{
+    declare local_time datetime;
+    declare temp, mime, new_name, id, p_id, atm, idx, line, f_p any;
+    declare __rowguid any;
+    declare __res_type any;
+
+    __res_type := 'text/x-vcard';
+
+    if (not exists (select 1 from SYNC_COLS_TYPES where RES_COL = CT_COL_ID))
+	return;
+
+    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
+
+    atm := connection_get ('__ATM');
+
+    if (atm = RES_ID) return;
+
+    if (connection_get ('__sync_dav_upl') = '1')
+	{
+	  insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
+	      values (RES_ID, RES_COL, 'I', local_time);
+	  return;
+	}
+
+    if ("LEFT" (RES_NAME, 1) = '.') return;
+
+    if (not exists (select 1 from SYNC_COLS_TYPES where RES_COL = CT_COL_ID))
+	return;
+
+    __rowguid := ROWGUID;
+
+    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
+    temp := RES_CONTENT;
+
+    if ("RIGHT" (RES_NAME, 4) = '.ics')
+      {
+         __res_type := 'text/x-vcalendar';
+         temp := sync_pars_ical_int (temp);
+      }
+    else
+      {
+    temp := sync_pars_vcard_int (temp);
+      }
+
+    if (temp is NULL)
+      return;
+
+--	insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
+--	    values (RES_ID, RES_COL, 'I', local_time);
+
+    for (idx := 0; idx < length (temp); idx := idx + 1)
+      {
+	line := temp[idx];
+
+	--new_name := md5 (line) || uuid ();
+	new_name :=line[1];
+
+	id := WS.WS.GETID ('R');
+	p_id := RES_COL;
+	f_p  := RES_FULL_PATH;
+	f_p  := WS.WS.EXPAND_URL (f_p, new_name);
+
+	set triggers off;
+
+	connection_set ('__ATM', cast (id as varchar));
+
+	if (length (line[0]) > 0)
+	 {
+	   insert soft WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP,
+	       RES_CONTENT, RES_TYPE, ROWGUID, RES_FULL_PATH)
+	       values (id, new_name, p_id, now (), now (), 2, '111111111NN', http_nogroup_gid(),
+		   line[0], __res_type, __rowguid, f_p);
+
+	   insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
+	       values (id, p_id, 'I', local_time);
+
+      }
+  }
+}
+;
+
+
+create procedure sync_recode (inout _body any)
+{
+   declare ret, fl any;
+
+   fl := 1;
+
+   if (strstr (_body, 'BEGIN') is not NULL)
+     return _body;
+
+   declare exit handler for sqlstate '2C000'
+      {
+   	whenever SQLSTATE '2C000' default;
+        if (fl = 2) return _body;
+   	goto _next;
+     };
+
+   ret := charset_recode (cast (_body as varchar), 'UTF-16', 'UTF-8');
+   return ret;
+
+_next:;
+
+   whenever SQLSTATE '*' default;
+
+   declare exit handler for sqlstate '*'
+	 {
+	return _body;
+     };
+
+   fl := 2;
+   ret := charset_recode (cast (_body as varchar), 'UTF-16BE', 'UTF-8');
+   return ret;
+}
+;
+
+
+create procedure sync_pars_ical_int (inout _body any)
+{
+   declare parsed, _xml, len, line, idx, pos, val, elm, prop any;
+
+   declare exit handler for sqlstate '*'
+     {
+	return NULL;
+     };
+
+   if (1)
+     _body := sync_recode (cast (_body as varchar));
+
+  _xml := string_output ();
+  _body := replace (_body, '\r\n', '\n');
+  _body := replace (_body, '\r', '\n');
+  parsed := split_and_decode (_body, 0, '\0\0\n');
+
+--  http (sprintf ('<BEGIN><![CDATA[VCALENDAR]]></BEGIN><VERSION><![CDATA[1.0]]></VERSION>'), _xml);
+
+  len := length (parsed);
+  idx := 0;
+
+  while (idx < len)
+    {
+       line := split_and_decode (parsed[idx], 0, '\0\0:');
+       pos := strstr (parsed[idx], ':');
+       if (pos is not NULL)
+	 {
+            val := subseq (parsed[idx], pos + 1, length (parsed[idx]));
+	    line := split_and_decode ("LEFT"(parsed[idx], pos), 0, '\0\0\;');
+	    --dbg_obj_print ('val = ', val);
+	    --dbg_obj_print ('line = ', line);
+	    if (val <> '' and upper (line[0]) in ('PHOTO', 'NOTE')) val := val || sync_parse_in_data_get_long (parsed, idx);
+	    elm := line[0];
+	    prop := sync_parse_in_data_get_prop (line);
+	    if (elm='AALARM' and strstr (val, 'mp3')) goto next;  -- Sony put full path and break sync.
+	    elm := replace (elm, '\n', '');
+	    if (upper (elm) <> 'BEGIN' and idx = 0)
+	      return NULL;
+	    prop := replace (prop, '""', '"');
+	    http (sprintf ('<%s%s><![CDATA[%s]]></%s>\n', upper (elm), upper (prop), val, upper (elm)), _xml);
+	 }
+next:;
+       idx := idx + 1;
+    }
+
+--   http ('<END><![CDATA[VCALENDAR]]></END>', _xml);
+-- declare zzz any; zzz := string_output_string(_xml); string_to_file ('test.xml', '<a>' || zzz || '</a>', -2);
+
+   return sync_pars_mult_cal (string_output_string(_xml));
+}
+;
+
+
+create procedure sync_pars_mult_cal (inout _body any)
+{
+   declare ret, _beg, t2, _end, _part, _p2, _name, _ibody, _old any;
+   _ibody := _body;
+   _body := replace (_body, '\n', '');
+
+   ret := vector ();
+
+   while (length (trim (_body)))
+    {
+       _beg := strstr (_body, '<BEGIN');
+       _beg := strstr (_body, '<BEGIN><![CDATA[VEVENT]]>');
+       _body := subseq (_body, _beg);
+       _end := strstr (_body, '/END>');
+       _old := length (trim (_body));
+
+       _part := subseq (_body, 0, _end + 5);
+
+       t2 := xml_tree_doc ('<root>' || _part || '</root>');
+       _name := cast (xpath_eval ('//SUMMARY', t2, 1) as varchar);
+       _name := replace (_name, ';', '_');
+       _name := replace (_name, '.', '_');
+       _name := trim (_name, '_');
+--       if (_name = '') _name := cast (xpath_eval ('//SUMMARY', t2, 1) as varchar);
+       _name := replace (_name, '.', '_');
+       _name := replace (_name, '?', '_');
+       _name := replace (_name, ' ', '+');
+       _name := trim (_name, '_');
+
+       if (_name = '' or _name is NULL) _name := md5 (_ibody);
+--     string_to_file ('123/' || _name, _part, -2);
+
+	{;
+       declare exit handler for sqlstate '*'
+	      {
+	   goto __next;
+	};
+	  xtree_doc (_part, 0, '', 'utf-8');
+	};
+
+       _p2 := '<BEGIN><![CDATA[VCALENDAR]]></BEGIN><VERSION><![CDATA[1.0]]></VERSION>' || _part
+		|| '<END><![CDATA[VCALENDAR]]></END>';
+
+       ret := vector_concat (ret, vector (vector (_p2, _name)));
+__next:;
+       _body := replace (_body, _part, '');
+       if (_old = length (trim (_body))) return ret;
+    }
+
+  return ret;
+}
+;
+
+create trigger SRLOG_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referencing old as O, new as N
+{
+    declare local_time datetime;
+    declare temp, mime, new_name, id, p_id, atm, idx, line, f_p any;
+    declare __rowguid any;
+    declare __res_type any;
+
+    if (not exists (select 1 from SYNC_COLS_TYPES where N.RES_COL = CT_COL_ID))
+      return;
+
+    __res_type := 'text/x-vcard';
+
+    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
+
+    atm := connection_get ('__ATU');
+
+    if (atm = N.RES_ID) return;
+
+    if (connection_get ('__sync_dav_upl') = '1')
+    {
+    	 update SYNC_RPLOG set RLOG_RES_COL = O.RES_COL, DMLTYPE = 'U', SNAPTIME = local_time
+		where RLOG_RES_ID = O.RES_ID;
+	 return;
+     }
+
+    if ("LEFT" (N.RES_NAME, 1) = '.') return;
+
+    __rowguid := N.ROWGUID;
+
+    local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
+    temp := N.RES_CONTENT;
+    if ("RIGHT" (N.RES_NAME, 4) = '.ics')
+      {
+         __res_type := 'text/x-vcalendar';
+         temp := sync_pars_ical_int (temp);
+      }
+    else
+      {
+         temp := sync_pars_vcard_int (temp);
+      }
+
+    if (temp is NULL)
+      return;
+
+--    	   update SYNC_RPLOG set RLOG_RES_COL = O.RES_COL, DMLTYPE = 'U', SNAPTIME = local_time
+--		where RLOG_RES_ID = O.RES_ID;
+
+    for (idx := 0; idx < length (temp); idx := idx + 1)
+    {
+	line := temp[idx];
+
+	--new_name := md5 (line) || uuid ();
+	new_name :=line[1];
+
+	id := WS.WS.GETID ('R');
+	p_id := N.RES_COL;
+	f_p  := N.RES_FULL_PATH;
+	f_p  := WS.WS.EXPAND_URL (f_p, new_name);
+
+
+	set triggers off;
+
+	connection_set ('__ATU', cast (id as varchar));
+
+	if (length (line[0]) > 0)
+	 {
+	insert replacing WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP,
+	    RES_CONTENT, RES_TYPE, ROWGUID, RES_FULL_PATH)
+	    values (id, new_name, p_id, now (), now (), 2, '111111111', http_nogroup_gid(), line[0], __res_type,
+		__rowguid, f_p);
+
+    	local_time := coalesce (connection_get ('A_LAST_LOCAL'), now ());
+
+	--dbg_obj_print ('Update  ->', N.RES_NAME);
+	   insert replacing SYNC_RPLOG (RLOG_RES_ID, RLOG_RES_COL, DMLTYPE, SNAPTIME)
+	       values (id, N.RES_COL, 'U', local_time);
+	 }
+    }
+}
+;
+
