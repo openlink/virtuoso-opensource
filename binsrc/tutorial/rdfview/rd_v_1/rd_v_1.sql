@@ -36,27 +36,32 @@ drop quad map graph iri("http://^{URIQADefaultHost}^/tutorial/Northwind") .
 ;
 
 DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://www.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-create iri class northwind:Category "http://^{URIQADefaultHost}^/tutorial/Northwind/Category/%d" (in category_id integer not null) .
-create iri class northwind:Shipper "http://^{URIQADefaultHost}^/tutorial/Northwind/Shipper/%d" (in shipper_id integer not null) .
-create iri class northwind:Supplier "http://^{URIQADefaultHost}^/tutorial/Northwind/Supplier/%d" (in supplier_id integer not null) .
-create iri class northwind:Product   "http://^{URIQADefaultHost}^/tutorial/Northwind/Product/%d" (in product_id integer not null) .
-create iri class northwind:Customer "http://^{URIQADefaultHost}^/tutorial/Northwind/Customer/%U" (in customer_id varchar not null) .
-create iri class northwind:Employee "http://^{URIQADefaultHost}^/tutorial/Northwind/Employee/%d" (in employee_id integer not null) .
-create iri class northwind:Order "http://^{URIQADefaultHost}^/tutorial/Northwind/Order/%d" (in order_id integer not null) .
-create iri class northwind:CustomerContact "http://^{URIQADefaultHost}^/tutorial/Northwind/CustomerContact/%U" (in customer_id integer not null) .
-create iri class northwind:OrderLine "http://^{URIQADefaultHost}^/tutorial/Northwind/OrderLine/%d/%d" (in order_id integer not null, in product_id integer not null) .
-create iri class northwind:Province "http://^{URIQADefaultHost}^/tutorial/Northwind/Province/%U/%U" (in country_name varchar not null, in province_name varchar not null) .
-create iri class northwind:Country "http://^{URIQADefaultHost}^/tutorial/Northwind/Country/%U" (in country_name varchar not null) .
-create iri class northwind:Flag "http://^{URIQADefaultHost}^/DAV/sample_data/images/flags/%s" (in flag_path varchar not null) .
+drop quad map virtrdf:TutorialNorthwindDemo .
 ')
 ;
 
 DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://www.openlinksw.com/schemas/northwind#>
+prefix tut_northwind: <http://www.openlinksw.com/schemas/tut_northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+create iri class tut_northwind:Category "http://^{URIQADefaultHost}^/tutorial/Northwind/Category/%d" (in category_id integer not null) .
+create iri class tut_northwind:Shipper "http://^{URIQADefaultHost}^/tutorial/Northwind/Shipper/%d" (in shipper_id integer not null) .
+create iri class tut_northwind:Supplier "http://^{URIQADefaultHost}^/tutorial/Northwind/Supplier/%d" (in supplier_id integer not null) .
+create iri class tut_northwind:Product   "http://^{URIQADefaultHost}^/tutorial/Northwind/Product/%d" (in product_id integer not null) .
+create iri class tut_northwind:Customer "http://^{URIQADefaultHost}^/tutorial/Northwind/Customer/%U" (in customer_id varchar not null) .
+create iri class tut_northwind:Employee "http://^{URIQADefaultHost}^/tutorial/Northwind/Employee/%d" (in employee_id integer not null) .
+create iri class tut_northwind:Order "http://^{URIQADefaultHost}^/tutorial/Northwind/Order/%d" (in order_id integer not null) .
+create iri class tut_northwind:CustomerContact "http://^{URIQADefaultHost}^/tutorial/Northwind/CustomerContact/%U" (in customer_id integer not null) .
+create iri class tut_northwind:OrderLine "http://^{URIQADefaultHost}^/tutorial/Northwind/OrderLine/%d/%d" (in order_id integer not null, in product_id integer not null) .
+create iri class tut_northwind:Province "http://^{URIQADefaultHost}^/tutorial/Northwind/Province/%U/%U" (in country_name varchar not null, in province_name varchar not null) .
+create iri class tut_northwind:Country "http://^{URIQADefaultHost}^/tutorial/Northwind/Country/%U" (in country_name varchar not null) .
+create iri class tut_northwind:Flag "http://^{URIQADefaultHost}^/DAV/sample_data/images/flags/%s" (in flag_path varchar not null) .
+')
+;
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix tut_northwind: <http://www.openlinksw.com/schemas/tut_northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -77,252 +82,257 @@ where (^{customers.}^.Country = ^{countries.}^.Name)
 where (^{employees.}^.Country = ^{countries.}^.Name)
 where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
 {
-        create virtrdf:NorthwindDemo as graph iri ("http://^{URIQADefaultHost}^/tutorial/Northwind") option (exclusive)
+        create virtrdf:TutorialNorthwindDemo as graph iri ("http://^{URIQADefaultHost}^/tutorial/Northwind") option (exclusive)
         {
-                northwind:CustomerContact (customers.CustomerID)
+                tut_northwind:CustomerContact (customers.CustomerID)
                         a foaf:Person
-                                as virtrdf:CustomerContact-foaf_Person .
-                northwind:CustomerContact (customers.CustomerID)
-                        a northwind:CustomerContact
-                                as virtrdf:CustomerContact-CustomerContact;
+                                as virtrdf:tutCustomerContact-foaf_Person .
+                tut_northwind:CustomerContact (customers.CustomerID)
+                        a tut_northwind:CustomerContact
+                                as virtrdf:tutCustomerContact-CustomerContact;
                         foaf:name customers.ContactName
-                                as virtrdf:CustomerContact-contact_name ;
+                                as virtrdf:tutCustomerContact-contact_name ;
                         foaf:phone customers.Phone
-                                as virtrdf:CustomerContact-foaf_phone ;
-                        northwind:is_contact_at northwind:Customer (customers.CustomerID)
-                                as virtrdf:CustomerContact-is_contact_at ;
-                        northwind:country northwind:Country (customers.Country)
-                                as virtrdf:CustomerContact-country .
-                northwind:Country (customers.Country)
-                        northwind:is_country_of
-                northwind:CustomerContact (customers.CustomerID) as virtrdf:CustomerContact-is_country_of .
-                northwind:Product (products.ProductID)
-                        a northwind:Product
-                                as virtrdf:Product-ProductID ;
-                        northwind:has_category northwind:Category (products.CategoryID)
-                                as virtrdf:Product-product_has_category ;
-                        northwind:has_supplier northwind:Supplier (products.SupplierID)
-                                as virtrdf:Product-product_has_supplier ;
-                        northwind:productName products.ProductName
-                                as virtrdf:Product-name_of_product ;
-                        northwind:quantityPerUnit products.QuantityPerUnit
-                                as virtrdf:Product-quantity_per_unit ;
-                        northwind:unitPrice products.UnitPrice
-                                as virtrdf:Product-unit_price ;
-                        northwind:unitsInStock products.UnitsInStock
-                                as virtrdf:Product-units_in_stock ;
-                        northwind:unitsOnOrder products.UnitsOnOrder
-                                as virtrdf:Product-units_on_order ;
-                        northwind:reorderLevel products.ReorderLevel
-                                as virtrdf:Product-reorder_level ;
-                        northwind:discontinued products.Discontinued
-                                as virtrdf:Product-discontinued .
-                northwind:Category (products.CategoryID)
-                        northwind:category_of northwind:Product (products.ProductID) as virtrdf:Product-category_of .
-                northwind:Supplier (products.SupplierID)
-                        northwind:supplier_of northwind:Product (products.ProductID) as virtrdf:Product-supplier_of .
-                northwind:Supplier (suppliers.SupplierID)
-                        a northwind:Supplier
-                                as virtrdf:Supplier-SupplierID ;
-                        northwind:companyName suppliers.CompanyName
-                                as virtrdf:Supplier-company_name ;
-                        northwind:contactName suppliers.ContactName
-                                as virtrdf:Supplier-contact_name ;
-                        northwind:contactTitle suppliers.ContactTitle
-                                as virtrdf:Supplier-contact_title ;
-                        northwind:address suppliers.Address
-                                as virtrdf:Supplier-address ;
-                        northwind:city suppliers.City
-                                as virtrdf:Supplier-city ;
-                        northwind:region suppliers.Region
-                                as virtrdf:Supplier-region ;
-                        northwind:postalCode suppliers.PostalCode
-                                as virtrdf:Supplier-postal_code ;
-                        northwind:country suppliers.Country
-                                as virtrdf:Supplier-country ;
-                        northwind:phone suppliers.Phone
-                                as virtrdf:Supplier-phone ;
-                        northwind:fax suppliers.Fax
-                                as virtrdf:Supplier-fax ;
-                        northwind:homePage suppliers.HomePage
-                                as virtrdf:Supplier-home_page .
-                northwind:Category (categories.CategoryID)
-                        a northwind:Category
-                                as virtrdf:Category-CategoryID ;
-                        northwind:categoryName categories.CategoryName
-                                as virtrdf:Category-home_page ;
-                        northwind:description categories.Description
-                                as virtrdf:Category-description .
-                northwind:Shipper (shippers.ShipperID)
-                        a northwind:Shipper
-                                as virtrdf:Shipper-ShipperID ;
-                        northwind:companyName shippers.CompanyName
-                                as virtrdf:Shipper-company_name ;
-                        northwind:phone shippers.Phone
-                                as virtrdf:Shipper-phone .
-                northwind:Customer (customers.CustomerID)
+                                as virtrdf:tutCustomerContact-foaf_phone ;
+                        tut_northwind:is_contact_at tut_northwind:Customer (customers.CustomerID)
+                                as virtrdf:tutCustomerContact-is_contact_at ;
+                        tut_northwind:country tut_northwind:Country (customers.Country)
+                                as virtrdf:tutCustomerContact-country .
+                tut_northwind:Country (customers.Country)
+                        tut_northwind:is_country_of
+                tut_northwind:CustomerContact (customers.CustomerID) as virtrdf:tutCustomerContact-is_country_of .
+                tut_northwind:Product (products.ProductID)
+                        a tut_northwind:Product
+                                as virtrdf:tutProduct-ProductID ;
+                        tut_northwind:has_category tut_northwind:Category (products.CategoryID)
+                                as virtrdf:tutProduct-product_has_category ;
+                        tut_northwind:has_supplier tut_northwind:Supplier (products.SupplierID)
+                                as virtrdf:tutProduct-product_has_supplier ;
+                        tut_northwind:productName products.ProductName
+                                as virtrdf:tutProduct-name_of_product ;
+                        tut_northwind:quantityPerUnit products.QuantityPerUnit
+                                as virtrdf:tutProduct-quantity_per_unit ;
+                        tut_northwind:unitPrice products.UnitPrice
+                                as virtrdf:tutProduct-unit_price ;
+                        tut_northwind:unitsInStock products.UnitsInStock
+                                as virtrdf:tutProduct-units_in_stock ;
+                        tut_northwind:unitsOnOrder products.UnitsOnOrder
+                                as virtrdf:tutProduct-units_on_order ;
+                        tut_northwind:reorderLevel products.ReorderLevel
+                                as virtrdf:tutProduct-reorder_level ;
+                        tut_northwind:discontinued products.Discontinued
+                                as virtrdf:tutProduct-discontinued .
+                tut_northwind:Category (products.CategoryID)
+                        tut_northwind:category_of tut_northwind:Product (products.ProductID) as virtrdf:tutProduct-category_of .
+                tut_northwind:Supplier (products.SupplierID)
+                        tut_northwind:supplier_of tut_northwind:Product (products.ProductID) as virtrdf:tutProduct-supplier_of .
+                tut_northwind:Supplier (suppliers.SupplierID)
+                        a tut_northwind:Supplier
+                                as virtrdf:tutSupplier-SupplierID ;
+                        tut_northwind:companyName suppliers.CompanyName
+                                as virtrdf:tutSupplier-company_name ;
+                        tut_northwind:contactName suppliers.ContactName
+                                as virtrdf:tutSupplier-contact_name ;
+                        tut_northwind:contactTitle suppliers.ContactTitle
+                                as virtrdf:tutSupplier-contact_title ;
+                        tut_northwind:address suppliers.Address
+                                as virtrdf:tutSupplier-address ;
+                        tut_northwind:city suppliers.City
+                                as virtrdf:tutSupplier-city ;
+                        tut_northwind:region suppliers.Region
+                                as virtrdf:tutSupplier-region ;
+                        tut_northwind:postalCode suppliers.PostalCode
+                                as virtrdf:tutSupplier-postal_code ;
+                        tut_northwind:country suppliers.Country
+                                as virtrdf:tutSupplier-country ;
+                        tut_northwind:phone suppliers.Phone
+                                as virtrdf:tutSupplier-phone ;
+                        tut_northwind:fax suppliers.Fax
+                                as virtrdf:tutSupplier-fax ;
+                        tut_northwind:homePage suppliers.HomePage
+                                as virtrdf:tutSupplier-home_page .
+                tut_northwind:Category (categories.CategoryID)
+                        a tut_northwind:Category
+                                as virtrdf:tutCategory-CategoryID ;
+                        tut_northwind:categoryName categories.CategoryName
+                                as virtrdf:tutCategory-home_page ;
+                        tut_northwind:description categories.Description
+                                as virtrdf:tutCategory-description .
+                tut_northwind:Shipper (shippers.ShipperID)
+                        a tut_northwind:Shipper
+                                as virtrdf:tutShipper-ShipperID ;
+                        tut_northwind:companyName shippers.CompanyName
+                                as virtrdf:tutShipper-company_name ;
+                        tut_northwind:phone shippers.Phone
+                                as virtrdf:tutShipper-phone .
+                tut_northwind:Customer (customers.CustomerID)
                         a  foaf:Organization
-                                as virtrdf:Customer-CustomerID ;
+                                as virtrdf:tutCustomer-CustomerID ;
                         foaf:name customers.CompanyName
-                                as virtrdf:Customer-foaf_name ;
-                        northwind:companyName customers.CompanyName
-                                as virtrdf:Customer-company_name ;
-                        northwind:has_contact northwind:CustomerContact (customers.CustomerID)
-                                as virtrdf:Customer-contact ;
-                        northwind:has_country northwind:Country (customers.Country)
-                                as virtrdf:Customer-has_country ;
-                        northwind:contactName customers.ContactName
-                                as virtrdf:Customer-contact_name ;
-                        northwind:contactTitle customers.ContactTitle
-                                as virtrdf:Customer-contact_title ;
-                        northwind:address customers.Address
-                                as virtrdf:Customer-address ;
-                        northwind:city customers.City
-                                as virtrdf:Customer-city ;
-                        northwind:region customers.Region
-                                as virtrdf:Customer-region ;
-                        northwind:PostalCode customers.PostalCode
-                                as virtrdf:Customer-postal_code ;
-                        northwind:country customers.Country
-                                as virtrdf:Customer-country ;
+                                as virtrdf:tutCustomer-foaf_name ;
+                        tut_northwind:companyName customers.CompanyName
+                                as virtrdf:tutCustomer-company_name ;
+                        tut_northwind:has_contact tut_northwind:CustomerContact (customers.CustomerID)
+                                as virtrdf:tutCustomer-contact ;
+                        tut_northwind:has_country tut_northwind:Country (customers.Country)
+                                as virtrdf:tutCustomer-has_country ;
+                        tut_northwind:contactName customers.ContactName
+                                as virtrdf:tutCustomer-contact_name ;
+                        tut_northwind:contactTitle customers.ContactTitle
+                                as virtrdf:tutCustomer-contact_title ;
+                        tut_northwind:address customers.Address
+                                as virtrdf:tutCustomer-address ;
+                        tut_northwind:city customers.City
+                                as virtrdf:tutCustomer-city ;
+                        tut_northwind:region customers.Region
+                                as virtrdf:tutCustomer-region ;
+                        tut_northwind:PostalCode customers.PostalCode
+                                as virtrdf:tutCustomer-postal_code ;
+                        tut_northwind:country customers.Country
+                                as virtrdf:tutCustomer-country ;
                         foaf:phone customers.Phone
-                                as virtrdf:Customer-foaf_phone ;
-                        northwind:phone customers.Phone
-                                as virtrdf:Customer-phone ;
-                        northwind:fax customers.Fax
-                                as virtrdf:Customer-fax .
-                northwind:Country (customers.Country)
-                        northwind:is_country_of
-                northwind:Customer (customers.CustomerID) as virtrdf:Customer-is_country_of .
-                northwind:Employee (employees.EmployeeID)
+                                as virtrdf:tutCustomer-foaf_phone ;
+                        tut_northwind:phone customers.Phone
+                                as virtrdf:tutCustomer-phone ;
+                        tut_northwind:fax customers.Fax
+                                as virtrdf:tutCustomer-fax .
+                tut_northwind:Country (customers.Country)
+                        tut_northwind:is_country_of
+                tut_northwind:Customer (customers.CustomerID) as virtrdf:tutCustomer-is_country_of .
+                tut_northwind:Employee (employees.EmployeeID)
                         a foaf:Person
-                                as virtrdf:Employee-EmployeeID ;
+                                as virtrdf:tutEmployee-EmployeeID ;
                         foaf:surname employees.LastName
-                                as virtrdf:Employee-foaf_last_name ;
-                        northwind:lastName employees.LastName
-                                as virtrdf:Employee-last_name ;
+                                as virtrdf:tutEmployee-foaf_last_name ;
+                        tut_northwind:lastName employees.LastName
+                                as virtrdf:tutEmployee-last_name ;
                         foaf:firstName employees.FirstName
-                                as virtrdf:Employee-foaf_first_name ;
-                        northwind:firstName employees.FirstName
-                                as virtrdf:Employee-first_name ;
+                                as virtrdf:tutEmployee-foaf_first_name ;
+                        tut_northwind:firstName employees.FirstName
+                                as virtrdf:tutEmployee-first_name ;
                         foaf:title employees.Title
-                                as virtrdf:Employee-title ;
-                        northwind:titleOfCourtesy employees.TitleOfCourtesy
-                                as virtrdf:Employee-title_of_courtesy ;
+                                as virtrdf:tutEmployee-title ;
+                        tut_northwind:titleOfCourtesy employees.TitleOfCourtesy
+                                as virtrdf:tutEmployee-title_of_courtesy ;
                         foaf:birthday employees.BirthDate
-                                as virtrdf:Employee-foaf_birth_date ;
-                        northwind:birthday employees.BirthDate
-                                as virtrdf:Employee-birth_date ;
-                        northwind:hireDate employees.HireDate
-                                as virtrdf:Employee-hire_date ;
-                        northwind:address employees.Address
-                                as virtrdf:Employee-address ;
-                        northwind:city employees.City
-                                as virtrdf:Employee-city ;
-                        northwind:region employees.Region
-                                as virtrdf:Employee-region ;
-                        northwind:postalCode employees.PostalCode
-                                as virtrdf:Employee-postal_code ;
-                        northwind:country employees.Country
-                                as virtrdf:Employee-country ;
-                        northwind:has_country northwind:Country (employees.Country)
-                                as virtrdf:Employee-has_country ;
+                                as virtrdf:tutEmployee-foaf_birth_date ;
+                        tut_northwind:birthday employees.BirthDate
+                                as virtrdf:tutEmployee-birth_date ;
+                        tut_northwind:hireDate employees.HireDate
+                                as virtrdf:tutEmployee-hire_date ;
+                        tut_northwind:address employees.Address
+                                as virtrdf:tutEmployee-address ;
+                        tut_northwind:city employees.City
+                                as virtrdf:tutEmployee-city ;
+                        tut_northwind:region employees.Region
+                                as virtrdf:tutEmployee-region ;
+                        tut_northwind:postalCode employees.PostalCode
+                                as virtrdf:tutEmployee-postal_code ;
+                        tut_northwind:country employees.Country
+                                as virtrdf:tutEmployee-country ;
+                        tut_northwind:has_country tut_northwind:Country (employees.Country)
+                                as virtrdf:tutEmployee-has_country ;
                         foaf:phone employees.HomePhone
-                                as virtrdf:Employee-home_phone ;
-                        northwind:extension employees.Extension
-                                as virtrdf:Employee-extension ;
-                        northwind:notes employees.Notes
-                                as virtrdf:Employee-notes ;
-                        northwind:reportsTo employees.ReportsTo
-                                as virtrdf:Employee-reports_to .
-                northwind:Employee (orders.EmployeeID)
-                        northwind:is_salesrep_of
-                northwind:Order (orders.OrderID) as virtrdf:Order-is_salesrep_of .
-                northwind:Country (employees.Country)
-                        northwind:is_country_of
-                northwind:Employee (employees.EmployeeID) as virtrdf:Employee-is_country_of .
-                northwind:Order (orders.OrderID)
-                        a northwind:Order
-                                as virtrdf:Order-Order ;
-                        northwind:has_customer northwind:Customer (orders.CustomerID)
-                                as virtrdf:Order-order_has_customer ;
-                        northwind:has_salesrep northwind:Employee (orders.EmployeeID)
-                                as virtrdf:Customer-has_salesrep ;
-                        northwind:has_employee northwind:Employee (orders.EmployeeID)
-                                as virtrdf:Order-order_has_employee ;
-                        northwind:orderDate orders.OrderDate
-                                as virtrdf:Order-order_date ;
-                        northwind:requiredDate orders.RequiredDate
-                                as virtrdf:Order-required_date ;
-                        northwind:shippedDate orders.ShippedDate
-                                as virtrdf:Order-shipped_date ;
-                        northwind:order_ship_via northwind:Shipper (orders.ShipVia)
-                                as virtrdf:Order-order_ship_via ;
-                        northwind:freight orders.Freight
-                                as virtrdf:Order-freight ;
-                        northwind:shipName orders.ShipName
-                                as virtrdf:Order-ship_name ;
-                        northwind:shipAddress orders.ShipAddress
-                                as virtrdf:Order-ship_address ;
-                        northwind:shipCity orders.ShipCity
-                                as virtrdf:Order-ship_city ;
-                        northwind:shipRegion orders.ShipRegion
-                                as virtrdf:Order-ship_region ;
-                        northwind:shipPostal_code orders.ShipPostalCode
-                                as virtrdf:Order-ship_postal_code ;
-                        northwind:shipCountry orders.ShipCountry
-                                as virtrdf:ship_country .
-                northwind:Customer (orders.CustomerID)
-                        northwind:has_order northwind:Order (orders.OrderID) as virtrdf:Order-has_order .
-                northwind:Employee (orders.EmployeeID)
-                        northwind:placed_order northwind:Order (orders.OrderID) as virtrdf:Order-placed_order .
-                northwind:Shipper (orders.ShipVia)
-                        northwind:ship_order northwind:Order (orders.OrderID) as virtrdf:Order-ship_order .
-                northwind:OrderLine (order_lines.OrderID, order_lines.ProductID)
-                        a northwind:OrderLine
-                                as virtrdf:OrderLine-OrderLines ;
-                        northwind:has_order_id northwind:Order (order_lines.OrderID)
-                                as virtrdf:order_lines_has_order_id ;
-                        northwind:has_product_id northwind:Product (order_lines.ProductID)
-                                as virtrdf:order_lines_has_product_id ;
-                        northwind:unitPrice order_lines.UnitPrice
-                                as virtrdf:OrderLine-unit_price ;
-                        northwind:quantity order_lines.Quantity
-                                as virtrdf:OrderLine-quantity ;
-                        northwind:discount order_lines.Discount
-                                as virtrdf:OrderLine-discount .
-                northwind:Country (countries.Name)
+                                as virtrdf:tutEmployee-home_phone ;
+                        tut_northwind:extension employees.Extension
+                                as virtrdf:tutEmployee-extension ;
+                        tut_northwind:notes employees.Notes
+                                as virtrdf:tutEmployee-notes ;
+                        tut_northwind:reportsTo employees.ReportsTo
+                                as virtrdf:tutEmployee-reports_to .
+                tut_northwind:Employee (orders.EmployeeID)
+                        tut_northwind:is_salesrep_of
+                tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-is_salesrep_of .
+                tut_northwind:Country (employees.Country)
+                        tut_northwind:is_country_of
+                tut_northwind:Employee (employees.EmployeeID) as virtrdf:tutEmployee-is_country_of .
+                tut_northwind:Order (orders.OrderID)
+                        a tut_northwind:Order
+                                as virtrdf:tutOrder-Order ;
+                        tut_northwind:has_customer tut_northwind:Customer (orders.CustomerID)
+                                as virtrdf:tutOrder-order_has_customer ;
+                        tut_northwind:has_salesrep tut_northwind:Employee (orders.EmployeeID)
+                                as virtrdf:tutCustomer-has_salesrep ;
+                        tut_northwind:has_employee tut_northwind:Employee (orders.EmployeeID)
+                                as virtrdf:tutOrder-order_has_employee ;
+                        tut_northwind:orderDate orders.OrderDate
+                                as virtrdf:tutOrder-order_date ;
+                        tut_northwind:requiredDate orders.RequiredDate
+                                as virtrdf:tutOrder-required_date ;
+                        tut_northwind:shippedDate orders.ShippedDate
+                                as virtrdf:tutOrder-shipped_date ;
+                        tut_northwind:order_ship_via tut_northwind:Shipper (orders.ShipVia)
+                                as virtrdf:tutOrder-order_ship_via ;
+                        tut_northwind:freight orders.Freight
+                                as virtrdf:tutOrder-freight ;
+                        tut_northwind:shipName orders.ShipName
+                                as virtrdf:tutOrder-ship_name ;
+                        tut_northwind:shipAddress orders.ShipAddress
+                                as virtrdf:tutOrder-ship_address ;
+                        tut_northwind:shipCity orders.ShipCity
+                                as virtrdf:tutOrder-ship_city ;
+                        tut_northwind:shipRegion orders.ShipRegion
+                                as virtrdf:tutOrder-ship_region ;
+                        tut_northwind:shipPostal_code orders.ShipPostalCode
+                                as virtrdf:tutOrder-ship_postal_code ;
+                        tut_northwind:shipCountry orders.ShipCountry
+                                as virtrdf:tutship_country .
+                tut_northwind:Customer (orders.CustomerID)
+                        tut_northwind:has_order tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-has_order .
+                tut_northwind:Employee (orders.EmployeeID)
+                        tut_northwind:placed_order tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-placed_order .
+                
+                tut_northwind:Shipper (orders.ShipVia)
+                        tut_northwind:ship_order tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-ship_order .
+                
+                tut_northwind:OrderLine (order_lines.OrderID, order_lines.ProductID)
+                        a tut_northwind:OrderLine
+                                as virtrdf:tutOrderLine-OrderLines ;
+                        tut_northwind:has_order_id tut_northwind:Order (order_lines.OrderID)
+                                as virtrdf:tutorder_lines_has_order_id ;
+                        tut_northwind:has_product_id tut_northwind:Product (order_lines.ProductID)
+                                as virtrdf:tutorder_lines_has_product_id ;
+                        tut_northwind:unitPrice order_lines.UnitPrice
+                                as virtrdf:tutOrderLine-unit_price ;
+                        tut_northwind:quantity order_lines.Quantity
+                                as virtrdf:tutOrderLine-quantity ;
+                        tut_northwind:discount order_lines.Discount
+                                as virtrdf:tutOrderLine-discount .
+                
+                tut_northwind:Country (countries.Name)
                         a wgs:SpatialThing
-                                as virtrdf:Country-Type ;
-                        northwind:name countries.Name
-                                as virtrdf:Country-Name ;
-                        northwind:code countries.Code
-                                as virtrdf:Country-Code ;
-                        northwind:smallFlagDAVResourceName northwind:Flag (countries.SmallFlagDAVResourceName)
-                                as virtrdf:Country-SmallFlagDAVResourceName ;
-                        northwind:largeFlagDAVResourceName northwind:Flag (countries.LargeFlagDAVResourceName)
-                                as virtrdf:Country-LargeFlagDAVResourceName ;
-                        northwind:smallFlagDAVResourceURI countries.SmallFlagDAVResourceURI
-                                as virtrdf:Country-SmallFlagDAVResourceURI ;
-                        northwind:largeFlagDAVResourceURI countries.LargeFlagDAVResourceURI
-                                as virtrdf:Country-LargeFlagDAVResourceURI ;
+                                as virtrdf:tutCountry-Type ;
+                        tut_northwind:name countries.Name
+                                as virtrdf:tutCountry-Name ;
+                        tut_northwind:code countries.Code
+                                as virtrdf:tutCountry-Code ;
+                        tut_northwind:smallFlagDAVResourceName tut_northwind:Flag (countries.SmallFlagDAVResourceName)
+                                as virtrdf:tutCountry-SmallFlagDAVResourceName ;
+                        tut_northwind:largeFlagDAVResourceName tut_northwind:Flag (countries.LargeFlagDAVResourceName)
+                                as virtrdf:tutCountry-LargeFlagDAVResourceName ;
+                        tut_northwind:smallFlagDAVResourceURI countries.SmallFlagDAVResourceURI
+                                as virtrdf:tutCountry-SmallFlagDAVResourceURI ;
+                        tut_northwind:largeFlagDAVResourceURI countries.LargeFlagDAVResourceURI
+                                as virtrdf:tutCountry-LargeFlagDAVResourceURI ;
                         wgs:lat countries.Lat
-                                as virtrdf:Country-Lat ;
+                                as virtrdf:tutCountry-Lat ;
                         wgs:long countries.Lng
-                                as virtrdf:Country-Lng .
-                northwind:Country (countries.Name)
-                        northwind:has_province
-                northwind:Province (provinces.CountryCode, provinces.Province) where (^{provinces.}^.CountryCode = ^{countries.}^.Code) as virtrdf:Country-has_province .
-                northwind:Province (provinces.CountryCode, provinces.Province)
-                        a northwind:Province
-                                as virtrdf:Province-Provinces ;
-                        northwind:has_country_code northwind:Country (provinces.CountryCode)
-                                as virtrdf:has_country_code ;
-                        northwind:provinceName provinces.Province
-                                as virtrdf:Province-ProvinceName .
-                northwind:Province (provinces.CountryCode, provinces.Province)
-                        northwind:is_province_of
-                northwind:Country (countries.Name) where  (^{countries.}^.Code = ^{provinces.}^.CountryCode) as virtrdf:Province-country_of .
+                                as virtrdf:tutCountry-Lng .
+                
+                tut_northwind:Country (countries.Name)
+                        tut_northwind:has_province
+                tut_northwind:Province (provinces.CountryCode, provinces.Province) where (^{provinces.}^.CountryCode = ^{countries.}^.Code) as virtrdf:tutCountry-has_province .
+
+                tut_northwind:Province (provinces.CountryCode, provinces.Province)
+                        a tut_northwind:Province
+                                as virtrdf:tutProvince-Provinces ;
+                        tut_northwind:has_country_code tut_northwind:Country (provinces.CountryCode)
+                                as virtrdf:tuthas_country_code ;
+                        tut_northwind:provinceName provinces.Province
+                                as virtrdf:tutProvince-ProvinceName .
+                tut_northwind:Province (provinces.CountryCode, provinces.Province)
+                        tut_northwind:is_province_of
+                tut_northwind:Country (countries.Name) where  (^{countries.}^.Code = ^{provinces.}^.CountryCode) as virtrdf:tutProvince-country_of .
         }
 }
 ')
@@ -344,3 +354,56 @@ DB.DBA.install_run()
 drop procedure DB.DBA.install_run
 ;
 
+
+create procedure nw_rdf_doc (in path varchar)
+{
+  declare r any;
+  r := regexp_match ('[^/]*\x24', path);
+  return r||'#this';
+};
+
+create procedure nw_html_doc (in path varchar)
+{
+  declare r any;
+  r := regexp_match ('[^/]*#', path);
+  return subseq (r, 0, length (r)-1);
+};
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'nw_rule1',
+    1,
+    '(.*)',
+    vector('path'),
+    1,
+    '/isparql/isparql.vsp?query=SELECT+%%3Fp+%%3Fo+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/tutorial/Northwind%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+%%3Fp+%%3Fo+}',
+    vector('path'),
+    null,
+    '(text/html)|(\\*/\\*)',
+    0
+    );
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'nw_rule2',
+    1,
+    '(.*)',
+    vector('path'),
+    1,
+    '/sparql?query=CONSTRUCT+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+%%3Fp+%%3Fo+}+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/tutorial/Northwind%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+%%3Fp+%%3Fo+}&format=%U',
+    vector('path', 'path', '*accept*'),
+    null,
+    '(text/rdf.n3)|(application/rdf.xml)',
+    0,
+    303
+    );
+
+DB.DBA.URLREWRITE_CREATE_RULELIST (
+    'nw_rule_list1',
+    1,
+    vector (
+                'nw_rule1',
+                'nw_rule2'
+          ));
+
+
+VHOST_REMOVE (lpath=>'/tutorial/Northwind');
+VHOST_DEFINE (lpath=>'/tutorial/Northwind', ppath=>'/DAV/VAD/tutorial/rdfview/rd_v_1/', is_dav=>1, vsp_user=>'dba', is_brws=>0, opts=>vector ('url_rewrite', 'nw_rule_list1'));
