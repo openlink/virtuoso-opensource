@@ -142,7 +142,7 @@
 		var triples = [];
 	
 		var resStack = [];
-		var pred = "";
+		var predStack = [];
 		
 		var expected = 0;
 		
@@ -152,6 +152,7 @@
 				case ")": break; /* nothing interesting */
 				case "]": 
 					resStack.pop();
+					predStack.pop();
 				break; 
 
 				case "(":
@@ -161,8 +162,10 @@
 					expected = 1;
 					bnodeCount++;
 					var res = bnodePrefix+bnodeCount;
+					var pred = predStack[predStack.length-1];
 					if (resStack.length) { triples.push([resStack[resStack.length-1],pred,res]); }
 					resStack.push(res); /* new blank node */
+					predStack.push(""); /* new empty predicate */
 				break;
 				
 				case ";":
@@ -181,11 +184,13 @@
 				default: 
 					if (expected == 0) { 
 						resStack.push(token); 
+						predStack.push("");
 						expected = 1;
 					} else if (expected == 1) { 
-						pred = token; 
+						predStack[predStack.length-1] = token; 
 						expected = 2;
 					} else if (expected == 2) {
+						var pred = predStack[predStack.length-1];
 						triples.push([resStack[resStack.length-1],pred,token]);
 					}
 				break;
@@ -197,6 +202,7 @@
 	toTriples:function(str) {
 		var clean = OAT.N3.cleanComments(str);
 		var tokens = OAT.N3.tokenize(clean);
+		window.tok = tokens;
 		var triples = OAT.N3.parse(tokens);
 		var ns = OAT.N3.analyzeNamespaces(triples);
 		OAT.N3.applyNamespaces(triples,ns);

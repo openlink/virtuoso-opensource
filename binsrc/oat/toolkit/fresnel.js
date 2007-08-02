@@ -79,7 +79,8 @@ OAT.Fresnel = function(optObj) {
 	
 	self.addClass = function(element,className) {
 		var arr = [];
-		var all = element.getAttribute("class").toString().split(" ");
+		var c = element.getAttribute("class") || "";
+		var all = c.split(" ");
 		for (var i=0;i<all.length;i++) {
 			if (all[i] != className) { arr.push(all[i]); }
 		}
@@ -140,6 +141,7 @@ OAT.Fresnel = function(optObj) {
 		}
 		
 		groups.append(lens.groups);
+		
 		if (format) { return [groups,format]; }
 		
 		var format_prop = false;
@@ -160,7 +162,8 @@ OAT.Fresnel = function(optObj) {
 			}
 		}
 		
-		if (!format) for (var i=0;i<self.data.formats.length;i++) { /* all remaining formats */
+		
+		if (!format_all && !format_prop) for (var i=0;i<self.data.formats.length;i++) { /* all remaining formats */
 			checkFormat(self.data.formats[i]);
 		}
 		
@@ -184,6 +187,7 @@ OAT.Fresnel = function(optObj) {
 					if (self.stylesheets.find(s) == -1) { self.stylesheets.push(s); }
 				}
 			}
+
 			if (property in tmp.preds) {
 				var values = tmp.preds[property];
 				for (var j=0;j<values.length;j++) {
@@ -294,8 +298,8 @@ OAT.Fresnel = function(optObj) {
 		}
 		if (d_instance) { return d_instance; }
 		if (d_class) { return d_class; }
-		if (l_instance) { return l_instance; }
-		if (l_class) { return l_class; }
+//		if (l_instance) { return l_instance; }
+//		if (l_class) { return l_class; }
 		return false;
 	}
 

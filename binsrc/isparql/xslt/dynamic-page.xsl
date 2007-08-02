@@ -52,7 +52,7 @@
 		</script>
 		<title>iSPARQL XSLT Forward</title>
 	</head>
-	<body><xsl:value-of select="i:query"/></body>
+	<body style="visibility:hidden;"><xsl:value-of select="i:query"/></body>
 	</html>
 	
 	</xsl:template>

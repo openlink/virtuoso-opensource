@@ -662,7 +662,7 @@ iSPARQL.Advanced = function () {
     		extension:get_file_type(goptions.last_path),
     		isDav:((goptions.login_put_type == 'http')?false:true),
     		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
-    		                  ['isparql','isparql','Dynamic Data Web Page',get_mime_type('isparql')],
+    		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
     		                  ['xml','xml','XML Server Page',get_mime_type('xml')],
     		                  ['','*','All files','']
     		                 ],
@@ -698,7 +698,7 @@ iSPARQL.Advanced = function () {
     		extension:get_file_type(goptions.last_path),
     		isDav:((goptions.login_put_type == 'http')?false:true),
     		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
-    		                  ['isparql','isparql','Dynamic Data Web Page',get_mime_type('isparql')],
+    		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
     		                  ['xml','xml','XML Server Page',get_mime_type('xml')]
     		                 ],
 				callback:function(path,fname){

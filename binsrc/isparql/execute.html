@@ -46,6 +46,7 @@
 			a.href = opts.file;
 			f.appendChild(a);
 		}
+		OAT.Dom.unlink("throbber");
 		qe.execute(p);
 	}
 </script>
@@ -56,6 +57,7 @@
 <link rel="stylesheet" type="text/css" href="styles/execute.css"/>
 
 <body>
+	<div id="throbber" style="text-align: center;"><img style="margin: auto;" src="/isparql/toolkit/images/throbber.gif" /></div>
 	<div id="file"></div><p></p>
 	<div id="result"></div>
 </body>

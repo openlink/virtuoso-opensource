@@ -311,18 +311,8 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	
 	this.plurals = {
 		"Person":"People",
-		"Point":"Points",
 		"Class":"Classes",
-		"Concept":"Concepts",
-		"item":"Items",
-		"Post":"Posts",
-		"Link":"Links",
-		"Entry":"Entries",
-		"User":"Users",
-		"Image":"Images",
-		"MessageHeader":"MessageHeaders",
-		"HeaderElement":"HeaderElements",
-		"channel":"Channels"
+		"Entry":"Entries"
 	}
 		
 	this.options = {
@@ -518,7 +508,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		var td = OAT.Dom.create("td");
 		td.colSpan = 3;
 		var simple = self.parent.simplify(label);
-		if (cnt > 1 && simple in self.plurals) { simple = self.plurals[simple]; }
+		if (cnt > 1 && simple.charAt(0) != "[") {
+			simple = (simple in self.plurals ? self.plurals[simple] : simple+"s");
+		}
 		td.innerHTML = simple;
 		tr.appendChild(td);
 		OAT.Event.attach(arrow,"click",function() {
@@ -609,9 +601,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 			if (p == " ") { 
 				remain = obj[p]; 
 			} else {
-			self.drawSpotlightType(p,obj[p],tbody);
+				self.drawSpotlightType(p,obj[p],tbody);
+			}
 		}
-	}
 		if (remain) { self.drawSpotlightType("[no type specified]",remain,tbody); }
 	}
 	
@@ -1260,7 +1252,7 @@ OAT.RDFTabs.fresnel = function(parent,optObj) {
 		var cb = function(xslDoc) {
 			var xmlDoc = results[0];
 			var out = OAT.Xml.transformXSLT(xmlDoc,xslDoc);
-		OAT.Dom.clear(self.mainElm);
+			OAT.Dom.clear(self.mainElm);
 			self.mainElm.innerHTML = OAT.Xml.serializeXmlDoc(out);
 		}
 		OAT.AJAX.GET(OAT.Preferences.xsltPath+"fresnel2html.xsl",false,cb,{type:OAT.AJAX.TYPE_XML});
