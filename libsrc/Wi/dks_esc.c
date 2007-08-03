@@ -77,33 +77,35 @@ unsigned char dks_esc_char_props[0x100] = {
 #define CDATA2	'D'
 #define BSLASHC	'\\'
 #define BSLASHU	'u'
+#define DOCWRI  'W'
+#define REPEAT  'R'
 
 
 typedef unsigned char dks_charclass_props_t[COUNTOF__DKS_ESC];
 
 dks_charclass_props_t dks_charclasses['Q'+1-'>'] = {
-/*		|0	|1	|2	|3	|4	|5	|6	|7	|8	|9	|10	|11	|12	*/
-/*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	*/
-/* > wide    */ {0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU},
-/* ? enc.miss*/ {BAD	,LATTICE,LATTICE,LATTICE,LATTICE,CDATA2	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU},
-/* @ letters */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
-/* A 8-bit   */	{0	,0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU},
-/* B < 0x20  */	{BAD	,LATTICE,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU},
-/* C !       */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,PCT	,0	,0	,0	},
-/* D 0x09    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHC},
-/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHC},
-/* F 0x0D    */	{0	,SOAPCR	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHC},
-/* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,BSLASHC,0	},
-/* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PCT	,PCT	,PCT	,0	,0	,0	,0	},
-/* I '       */	{0	,LATTICE,LATTICE,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,0	,0	},
-/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PLUS	,PCT	,PCT	,PCT	,0	,0	,0	},
-/* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,0	},
-/* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHC},
-/* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	},
-/* N /	     */	{0	,0	,0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	},
-/* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	},
-/* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	},
-/* Q \	     */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,BSLASHC,BSLASHC,BSLASHC} };
+/*		|0	|1	|2	|3	|4	|5	|6	|7	|8	|9	|10	|11	|12	|13	*/
+/*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	|JS_SQ	*/
+/* > wide    */ {0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
+/* ? enc.miss*/ {BAD	,LATTICE,LATTICE,LATTICE,LATTICE,CDATA2	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
+/* @ letters */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* A 8-bit   */	{0	,0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
+/* B < 0x20  */	{BAD	,LATTICE,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
+/* C !       */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,PCT	,0	,0	,0	,0	},
+/* D 0x09    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHC,BSLASHC},
+/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHC,DOCWRI },
+/* F 0x0D    */	{0	,SOAPCR	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHC,BSLASHC},
+/* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,BSLASHC,0	,0	},
+/* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	},
+/* I '       */	{0	,LATTICE,LATTICE,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,0	,0	,REPEAT	},
+/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PLUS	,PCT	,PCT	,PCT	,0	,0	,0	,0	},
+/* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,0	,0	},
+/* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHC,0	},
+/* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	},
+/* N /	     */	{0	,0	,0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	},
+/* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	},
+/* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	},
+/* Q \	     */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,BSLASHC,BSLASHC,BSLASHC,BSLASHC} };
 
 unsigned char dks_esc_bslashc[0x80] = {
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
@@ -245,6 +247,10 @@ again:
         out_buf[out_buf_idx++] = "0123456789ABCDEF"[wc&0x0000000F];
         goto char_done;
       }
+/*                            0          1         2   */
+/*                            012 34567890123456789012 */
+    case DOCWRI: OUT_TO_BUF ("');\ndocument.writeln('", 22); goto char_done;
+    case REPEAT: out_buf[out_buf_idx++] = wc; out_buf[out_buf_idx++] = wc; goto char_done;
       default: GPF_T;
     }
 

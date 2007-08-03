@@ -4555,7 +4555,7 @@ ssg_print_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tree_coun
       if (1 == pass)
         {
           char buf[100];
-          sprintf (buf, " (select top 1 1 as __fake_col_%d from DB.DBA.RDF_QUAD) as __fake_tbl_%d",
+          sprintf (buf, " (select top 1 1 as __fake_table_col_%d from DB.DBA.RDF_QUAD) as __fake_table_%d",
             ssg->ssg_sparp->sparp_unictr, ssg->ssg_sparp->sparp_unictr );
           ssg->ssg_sparp->sparp_unictr++;
           ssg_puts (buf);

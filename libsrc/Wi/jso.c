@@ -747,7 +747,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
         {
           caddr_t value_iri;
           jso_rtti_t *value_rtti;
-          value_iri = box_dv_uname_string (defarg_dtp ? box_copy (defarg) : box_cast_to_UTF8 (qst, (bif_string_or_wide_or_uname_arg (qst, args, 3, func_name))));
+          value_iri = (defarg_dtp ? box_dv_uname_string (defarg) : box_cast_to_UTF8_uname (qst, (bif_string_or_wide_or_uname_arg (qst, args, 3, func_name))));
           value_rtti = gethash (value_iri, jso_rttis_of_names);
           if (NULL == value_rtti)
             {

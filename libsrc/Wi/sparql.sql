@@ -1426,13 +1426,21 @@ create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any)
               vc := cast (rdf_box_data (longobj) as varchar); --!!!TBD: replace with proper serialization
               return replace (vc, ' ', 'T');
             }
+          if (230 = rdf_box_data_tag (longobj))
+            {
+              return serialize_to_UTF8_xml (rdf_box_data (longobj));
+            }
           return cast (rdf_box_data (longobj) as varchar);
         }
       declare id integer;
       declare v2 any;
       id := rdf_box_ro_id (longobj);
       if (230 = rdf_box_data_tag (longobj))
+        {
         v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
+          rdf_box_set_data (longobj, v2, 1);
+          return serialize_to_UTF8_xml (v2);
+        }
       else
       v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
       if (v2 is null)
@@ -1457,6 +1465,10 @@ create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any)
     }
   if (225 = __tag (longobj))
     return charset_recode (longobj, '_WIDE_', 'UTF-8');
+  if (230 = __tag (longobj))
+    {
+      return serialize_to_UTF8_xml (longobj);
+    }
   return cast (longobj as varchar);
 }
 ;
@@ -6568,21 +6580,15 @@ create procedure SPARQL_RESULTS_TTL_WRITE_ROW (inout ses any, in mdta any, inout
 }
 ;
 
-create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout metas any, inout rset any, in is_js integer := 0)
+create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout metas any, inout rset any, in is_js integer := 0, in esc_mode integer := 1)
 {
   declare varctr, varcount, resctr, rescount integer;
   varcount := length (metas[0]);
   rescount := length (rset);
   if (is_js)
   {
-	  declare tmp_str varchar;
-	  declare tmp_ses any;
-	  tmp_ses := string_output();
-    http ('document.writeln(''', tmp_ses);
-    SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(tmp_ses,metas,rset,0);
-	  tmp_str := string_output_string(tmp_ses);
-	  tmp_str := replace(tmp_str, '\n', ''');\ndocument.writeln(''');
-	  http (tmp_str, ses);
+      http ('document.writeln(''', ses);
+      SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses,metas,rset,0,13);
 	  http (''');', ses);
 	  return;
   }
@@ -6592,7 +6598,7 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
     {
       http('\n    <th>', ses);
-      http_escape (metas[0][varctr][0], 11, ses, 0, 1);
+      http_escape (metas[0][varctr][0], esc_mode, ses, 0, 1);
       http('</th>', ses);
     }
   http ('\n  </tr>', ses);
@@ -6614,19 +6620,23 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
           http('\n    <td>', ses);
           if (isiri_id (val))
             {
-	           http_escape (DB.DBA.RDF_QNAME_OF_IID (val), 11, ses, 0, 1);
+              http_escape (DB.DBA.RDF_QNAME_OF_IID (val), esc_mode, ses, 0, 1);
             }
           else if (182 = __tag (val))
 			{
-			  http_escape (val, 11, ses, 1, 1);
+              http_escape (val, esc_mode, ses, 1, 1);
 			}
 	  else if (185 = __tag (val)) -- string output
 	    {
-              http_escape (cast (val as varchar), 11, ses, 1, 1);
+              http_escape (cast (val as varchar), esc_mode, ses, 1, 1);
+	    }
+	  else if (230 = rdf_box_data_tag (val)) -- string output
+	    {
+              http (DB.DBA.RDF_STRSQLVAL_OF_LONG (val), ses);
 	    }
           else
             {
-              http_escape (DB.DBA.RDF_STRSQLVAL_OF_LONG (val), 11, ses, 1, 1);
+              http_escape (DB.DBA.RDF_STRSQLVAL_OF_LONG (val), esc_mode, ses, 1, 1);
             }
           http ('</td>', ses);
 end_of_val_print: ;
