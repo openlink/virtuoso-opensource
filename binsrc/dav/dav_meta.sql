@@ -1080,7 +1080,8 @@ errexit:
 
 create function "DAV_EXTRACT_RDF_application/opml+xml" (in orig_res_name varchar, inout content any, inout html_start any)
 {
-  declare doc, metas, extras any;
+  declare doc, metas, extras, result, vals, outlines any;
+  declare graph_uri, new_uri, title, dateCreated, dateModified, ownerName, ownerEmail, owner_iri varchar;
   --dbg_obj_princ ('DAV_EXTRACT_RDF_application/opml+xml (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
   doc := xtree_doc (content, 0);
@@ -1093,8 +1094,37 @@ create function "DAV_EXTRACT_RDF_application/opml+xml" (in orig_res_name varchar
         );
   extras := vector (
         'http://www.openlinksw.com/virtdav#dynRdfExtractor', 'application/opml+xml' );
-  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
-
+  result := "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
+  title := cast(xquery_eval ('/N3[@N3P="http://www.openlinksw.com/schemas/OPML#title"]', result, 1) as varchar);
+  dateCreated := cast(xquery_eval ('/N3[@N3P="http://www.openlinksw.com/schemas/OPML#dateCreated"]', result, 1) as varchar);
+  dateModified := cast(xquery_eval ('/N3[@N3P="http://www.openlinksw.com/schemas/OPML#dateModified"]', result, 1) as varchar);
+  ownerName := cast(xquery_eval ('/N3[@N3P="http://www.openlinksw.com/schemas/OPML#ownerName"]', result, 1) as varchar);
+  ownerEmail := cast(xquery_eval ('/N3[@N3P="http://www.openlinksw.com/schemas/OPML#ownerEmail"]', result, 1) as varchar);
+  graph_uri := registry_get ('DB.DBA.DAV_RDF_GRAPH_URI');
+  new_uri := DB.DBA.DAV_FULL_PATH_TO_IRI (graph_uri, orig_res_name);
+  if (left(orig_res_name, 4) = '/DAV')
+    orig_res_name := right(orig_res_name, length(orig_res_name) - 4);
+  DB.DBA.RDF_QUAD_URI (graph_uri, new_uri, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 'http://rdfs.org/sioc/ns#SubscriptionList');
+  if (ownerName is not null)
+  {
+    declare s_out any;
+    s_out := string_output();
+    declare s varchar;
+    http_url(ownerName, null, s_out);
+    s := string_output_string(s_out);
+    owner_iri := concat(new_uri, '#', s);
+  }
+  if (ownerEmail is not null)
+    DB.DBA.RDF_QUAD_URI (graph_uri, new_uri, 'http://rdfs.org/sioc/ns#email', 'mailto:'|| ownerEmail);
+  if (title is not null)
+    DB.DBA.RDF_QUAD_URI_L (graph_uri, new_uri, 'http://purl.org/dc/elements/1.1/title', title);
+  if (ownerName is not null)
+    DB.DBA.RDF_QUAD_URI_L (graph_uri, new_uri, 'http://rdfs.org/sioc/ns#has_owner', ownerName);
+  if (dateModified is not null)
+    DB.DBA.RDF_QUAD_URI_L (graph_uri, new_uri, 'http://purl.org/dc/terms/modified', dateModified);
+  if (dateCreated is not null)
+    DB.DBA.RDF_QUAD_URI_L (graph_uri, new_uri, 'http://purl.org/dc/terms/created', dateCreated);
+  return result;
 errexit:
   return xml_tree_doc (xte_node (xte_head (UNAME' root')));
 }
@@ -1510,7 +1540,15 @@ create function "DAV_EXTRACT_RDF_text/wiki" (in orig_res_name varchar, inout con
 	    _title := cast (t as varchar);
 	}
       if (_title is null)
-        _title := subseq (orig_res_name, 0, length (orig_res_name) - 4);
+      {
+        declare pos integer;
+        pos := strrchr(orig_res_name, '/');
+        if (pos > 0)
+          pos := pos + 1;
+        else
+          pos := 0;
+        _title := subseq (orig_res_name, pos, length (orig_res_name) - 4);
+      }
       else
         _title := cast (_title as varchar);
       _date := now();	
