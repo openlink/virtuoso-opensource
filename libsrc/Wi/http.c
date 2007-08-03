@@ -4598,7 +4598,7 @@ http_dks_connect (char * host2, caddr_t * err_ret)
       if (rc != SER_NOREC)
 	session_disconnect (ses->dks_session);
       PrpcSessionFree (ses);
-      *err_ret = srv_make_new_error ("08001", "HT016", "Cannot connect in http_get");
+      *err_ret = srv_make_new_error ("08001", "HT016", "Cannot connect to %s in http_get", host);
       return NULL;
     }
 
