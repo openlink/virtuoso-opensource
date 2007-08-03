@@ -769,6 +769,8 @@ tcpses_connect (session_t *ses)
 
   p_addr = &(ses->ses_device->dev_address->a_serveraddr.t);
 
+  ses->ses_device->dev_connection->con_s = -1;
+
   /* Create a socket */
   if ((s = (int) socket (AF_INET, SOCK_STREAM, 0)) < 0)
     {
@@ -776,8 +778,6 @@ tcpses_connect (session_t *ses)
       dbg_perror ("socket()");
       return (SER_NOREC);
     }
-
-  ses->ses_device->dev_connection->con_s = s;
 
   /* Connect to the server */
 #ifdef ERESTARTSYS
@@ -795,8 +795,11 @@ tcpses_connect (session_t *ses)
       test_eintr (ses, rc, errno);
       dbg_perror ("connect()");
       dbg_printf_2 (("SER_SYSCALL"));
+      close (s);
       return (SER_SYSCALL);
     }
+
+  ses->ses_device->dev_connection->con_s = s;
 
   rc = ses_control_all (ses);
   if (rc != SER_SUCC)
@@ -2545,7 +2548,7 @@ unixses_connect (session_t *ses)
       return (SER_NOREC);
     }
 
-  ses->ses_device->dev_connection->con_s = s;
+  ses->ses_device->dev_connection->con_s = -1;
 
   /* Connect to the server */
 #ifdef ERESTARTSYS
@@ -2563,8 +2566,11 @@ unixses_connect (session_t *ses)
       test_eintr (ses, rc, errno);
       dbg_perror ("connect()");
       dbg_printf_2 (("SER_SYSCALL"));
+      close (s);
       return (SER_SYSCALL);
     }
+
+  ses->ses_device->dev_connection->con_s = s;
 
   rc = ses_control_all (ses);
   if (rc != SER_SUCC)
