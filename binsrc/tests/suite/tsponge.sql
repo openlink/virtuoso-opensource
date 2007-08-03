@@ -28,7 +28,7 @@ ECHO BOTH ": Get RDF from a spreadsheet : " $ROWCNT " triples, expected 22\n";
 sparql define get:soft "replacing" define input:default-graph-uri
 <http://localhost:$U{HTTPPORT}/grddl-tests/rdf_sem.html>
 select * where { ?s ?p ?o . };
-ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": RDFa example : " $ROWCNT " triples, expected 3\n";
 

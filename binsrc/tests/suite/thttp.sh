@@ -801,7 +801,10 @@ case $1 in
        cp -f tmp.tmp $f
        rm -f tmp.tmp
    done
-
+   if [ ! -f rdf_mappers_dav.vad -a -f ../../../rdf_mappers/rdf_mappers_dav.vad ]
+   then
+     cp ../../../rdf_mappers/rdf_mappers_dav.vad .
+   fi
    if [ ! -f ods_framework_dav.vad -o ! -f ods_blog_dav.vad ]
    then
      BLOG_TEST=0  
@@ -1036,6 +1039,12 @@ fi
       exit 1
    fi
 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < xhtml1-testcases.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: xhtml1-testcases.sql"
+      exit 1
+   fi
 
    SHUTDOWN_SERVER
 
