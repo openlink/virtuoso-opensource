@@ -157,11 +157,7 @@ CREATE TRIGGER "Versioning_PROP_DELETE" BEFORE DELETE ON WS.WS.SYS_DAV_PROP REFE
    --dbg_obj_princ ('Versioning_DAV_DELETE ()');
   
   --dbg_obj_print ('DELETE: ', O.PROP_NAME, ' ', connection_get ('Versioning REM PROP'));
-  if (connection_get ('Versioning REM PROP') is null
-    and O.PROP_NAME in ('DAV:checked-in', 
-  	'DAV:checked-out', 
-	'DAV:version-history',
-	'DAV:author'))
+  if (connection_get ('Versioning REM PROP') is null and O.PROP_NAME in ('DAV:checked-in', 'DAV:checked-out', 'DAV:version-history', 'DAV:author'))
     signal ('VR004', O.PROP_NAME || ' property belongs to Versioning control and it is read-only');
 }
 ;
@@ -183,15 +179,13 @@ create procedure "Versioning_ADD_NEW_DIFF" (in _res_id int,
   else
     _ver_prev_id := version_prev_id;
   --dbg_obj_print ('test2');
-  if ('c' = _type)
-    {
+  if ('c' = _type) {
       update WS.WS.SYS_DAV_RES_DIFF
       	set RD_FROM_ID = _ver_id
 	where RD_RES_ID = _res_id
 	  and RD_TO_ID = _ver_prev_id;
     }
-  else if ( ('D' = _type) and (_diff is not null) )
-    {
+  else if ( ('D' = _type) and (_diff is not null) ) {
       update WS.WS.SYS_DAV_RES_DIFF
       	set RD_FROM_ID = _ver_id,
 	    RD_DELTA = _diff,
@@ -235,10 +229,9 @@ CREATE TRIGGER "Versioning_DAV_RES_INSERT" AFTER INSERT ON WS.WS.SYS_DAV_RES ORD
     resignal;
   }
   ;
-  if (exists (select * from WS.WS.SYS_DAV_COL where COL_ID = N.RES_COL and COL_AUTO_VERSIONING is not null))
-    {
+  if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = N.RES_COL and COL_AUTO_VERSIONING is not null)) {
       --dbg_obj_princ ('Versioning_DAV_RES_INSERT (', N.RES_COL, ' ', N.RES_NAME, ' ', N.RES_FULL_PATH,')');
---dbg_obj_princ (3, WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
+  --dbg_obj_princ (3, WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
       declare exit handler for sqlstate '*' {
         rollback work;
         --dbg_obj_princ (__SQL_STATE, ' ', __SQL_MESSAGE);
@@ -262,10 +255,9 @@ CREATE TRIGGER "Versioning_DAV_RES_INSERT" AFTER INSERT ON WS.WS.SYS_DAV_RES ORD
 		  RV_MOD_TIME, -- Old modification time as it was in WS.WS.SYS_DAV_RES.RES_MOD_TIME
 		  RV_WHO,
 		  RV_SIZE)
-	values (N.RES_ID, 1,
-		NULL, NULL, NULL, N.RES_TYPE, dt, dt, connection_get ('HTTP_CLI_UID'), length(N.RES_CONTENT));
+    values (N.RES_ID, 1, NULL, NULL, NULL, N.RES_TYPE, dt, dt, connection_get ('HTTP_CLI_UID'), length(N.RES_CONTENT));
 	"Versioning_ADD_NEW_DIFF" (N.RES_ID, NULL, NULL, N.RES_CONTENT, 'c');
---dbg_obj_princ (4, WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
+    --dbg_obj_princ (4, WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
 
       declare _hist_col varchar;
       declare _props any;
@@ -275,27 +267,25 @@ CREATE TRIGGER "Versioning_DAV_RES_INSERT" AFTER INSERT ON WS.WS.SYS_DAV_RES ORD
 			'DAV:author',
 			(select U_NAME from DB.DBA.SYS_USERS where U_ID = N.RES_OWNER));
       _hist_col := DAV_PROP_GET_INT (N.RES_COL, 'C','virt:Versioning-History', 0);
---dbg_obj_princ (5, WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
+    --dbg_obj_princ (5, WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
 
       if (not isinteger (_hist_col))
-	_props := vector_concat (_props,
-				 vector ('DAV:checked-in', _hist_col || N.RES_NAME || '/last',
-					 'DAV:version-history', _hist_col || N.RES_NAME || '/history.xml'));
-      DAV_SET_VERSIONING_PROPERTIES (N.RES_FULL_PATH,
-				     _props);
---dbg_obj_princ (6, WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
-
+      _props := vector_concat (_props, vector ('DAV:checked-in', _hist_col || N.RES_NAME || '/last', 'DAV:version-history', _hist_col || N.RES_NAME || '/history.xml'));
+    DAV_SET_VERSIONING_PROPERTIES (N.RES_FULL_PATH, _props);
+    --dbg_obj_princ (6, WS.WS.ACL_PARSE (dav_prop_get ('/DAV/home/dav/wiki/Main/BlogFAQ.txt', ':virtacl', 'dav','dav')));
     }
 }
 ;
 
 CREATE TRIGGER "Versioning_DAV_RES_UPDATE" AFTER UPDATE ON WS.WS.SYS_DAV_RES ORDER 10 REFERENCING NEW AS N, OLD AS O
 {
-  --dbg_obj_princ ('Versioning_DAV_RES_UPDATE ', N.RES_FULL_PATH);
+  declare _diff, _diff_type varchar;
+  _diff := NULL;
+  _diff_type := 'c';
+
   declare exit handler for sqlstate '*' {
-    --dbg_obj_princ ('Error: ', __SQL_STATE, ':', __SQL_MESSAGE);
     if (__SQL_STATE like 'DF*')
-      goto full_copy;
+      goto _next;
     resignal;
   }
   ;
@@ -304,13 +294,11 @@ CREATE TRIGGER "Versioning_DAV_RES_UPDATE" AFTER UPDATE ON WS.WS.SYS_DAV_RES ORD
   _auto_version_type := coalesce (
 	 "Versioning_AUTO_VERSION_PROP" ((select COL_AUTO_VERSIONING from WS.WS.SYS_DAV_COL where COL_ID = N.RES_COL and COL_AUTO_VERSIONING is not null)),
 	 DAV_HIDE_ERROR(DAV_PROP_GET_INT (N.RES_ID, 'R', 'DAV:auto-version', 0)));
-  if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (N.RES_ID,'R','DAV:checked-out')) is null and
-	_auto_version_type is not null)
-    {
-      if (N.RES_CONTENT = O.RES_CONTENT)
-	{
-	  if (N.RES_NAME <> O.RES_NAME) -- move 
-	    {
+
+  if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (N.RES_ID,'R','DAV:checked-out')) is null and _auto_version_type is not null) {
+    if ((length (N.RES_CONTENT) < 10000000) and (length (O.RES_CONTENT) < 10000000)) {
+      if (cast (N.RES_CONTENT as varchar) = cast (O.RES_CONTENT as varchar)) {
+        if (N.RES_NAME <> O.RES_NAME) { -- move
 	      declare _hist_col varchar;
 	      _hist_col := DAV_PROP_GET_INT (N.RES_COL, 'C','virt:Versioning-History', 0);
 	      if (not isinteger (_hist_col))
@@ -319,31 +307,22 @@ CREATE TRIGGER "Versioning_DAV_RES_UPDATE" AFTER UPDATE ON WS.WS.SYS_DAV_RES ORD
 					 'DAV:version-history', _hist_col || N.RES_NAME || '/history.xml'));
 	    }
   	  return;
+      };
+      if ( (N.RES_TYPE = O.RES_TYPE) and (N.RES_TYPE like 'text/%') ) {
+      -- whenever sqlstate '22*' goto full_copy;
+      _diff := diff (cast (N.RES_CONTENT as varchar), cast (O.RES_CONTENT as varchar), '--normal');
+      _diff_type := 'D';
+      --dbg_obj_print ('_diff: ', _diff);
 	}
-      --dbg_obj_princ ('Versioning_DAV_RES_UPDATE ()', _auto_version_type);
+    };
+  _next:
+    --dbg_obj_princ ('SQL ERR: ', __SQL_STATE, __SQL_MESSAGE);
       declare dt datetime;
       dt:=now();
       declare _ver_id, _ver_prev_id int;
-      _ver_prev_id := coalesce ((select max (RV_ID) from WS.WS.SYS_DAV_RES_VERSION
-      			where RV_RES_ID = N.RES_ID),0);
+    _ver_prev_id := coalesce ((select max (RV_ID) from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = N.RES_ID),0);
       _ver_id := _ver_prev_id + 1;
 
-      declare _diff, _diff_type varchar;
-      -- dbg_obj_princ ('pre: ', N.RES_TYPE, O.RES_TYPE);
-      if ( (N.RES_TYPE = O.RES_TYPE) and
-           (N.RES_TYPE like 'text/%') )
-	{
--- whenever sqlstate '22*' goto full_copy;
-	   _diff := diff (cast (N.RES_CONTENT as varchar), cast (O.RES_CONTENT as varchar), '--normal');
-	   _diff_type := 'D';
-	}
-      else
-        {
-full_copy:
-	   -- dbg_obj_princ ('SQL ERR: ', __SQL_STATE, __SQL_MESSAGE);
-	    _diff := NULL;
-	    _diff_type := 'c';
-	}
       declare _id int;
       declare _type varchar;
       _id := N.RES_ID;
@@ -362,8 +341,7 @@ full_copy:
 		  RV_MOD_TIME, -- Old modification time as it was in WS.WS.SYS_DAV_RES.RES_MOD_TIME
 		  RV_WHO,
 		  RV_SIZE)
-		values (N.RES_ID, _ver_id,
-		  NULL, _ver_prev_id, NULL, N.RES_TYPE, dt, dt, connection_get ('HTTP_CLI_UID'), length (N.RES_CONTENT));
+      values (N.RES_ID, _ver_id, NULL, _ver_prev_id, NULL, N.RES_TYPE, dt, dt, connection_get ('HTTP_CLI_UID'), length (N.RES_CONTENT));
               --dbg_obj_print ('>', N.RES_ID, _ver_id, _ver_prev_id, N.RES_CONTENT, _diff_type, _diff);
 	       "Versioning_ADD_NEW_DIFF" (N.RES_ID, _ver_id, _ver_prev_id, N.RES_CONTENT, _diff_type, _diff);
 	}
@@ -397,16 +375,14 @@ create function DAV_GET_VERSION_CONTENT (in res_id integer, in ver integer, inou
 
 find_next_ver:
   for select RD_DELTA, RD_MODE, RD_ARGS from WS.WS.SYS_DAV_RES_DIFF
-    where RD_RES_ID = res_id and RD_TO_ID = curr_ver and RD_FROM_ID = 0 do
-    {
+    where RD_RES_ID = res_id and RD_TO_ID = curr_ver and RD_FROM_ID = 0 do {
       -- unpack RD_DELTA
       goto key_found;
     }
   next_ver_copy := null;
   next_ver := null;
   for select RD_FROM_ID from WS.WS.SYS_DAV_RES_DIFF
-    where RD_RES_ID = res_id and RD_TO_ID = curr_ver and RD_FROM_ID <> 0 do
-  {
+    where RD_RES_ID = res_id and RD_TO_ID = curr_ver and RD_FROM_ID <> 0 do {
     next_ver_copy := rd_from_id;
     next_ver := rd_from_id;
   }
@@ -423,8 +399,7 @@ key_found:
   whenever not found goto report_invalid_version_number;
   declare ctr int;
   curr_ver := 0;
-  for (ctr := length (ver_path)-1; ctr >= 0; ctr := ctr - 1)
-    {
+  for (ctr := length (ver_path)-1; ctr >= 0; ctr := ctr - 1) {
       declare curr_delta any;
       declare curr_mode, curr_args varchar;
       prev_ver := ver_path [ctr];
@@ -442,8 +417,7 @@ key_found:
       curr_ver := prev_ver;
     }
   -- put the resulting doc to \c content.
-  type := (select RV_RES_TYPE from WS.WS.SYS_DAV_RES_VERSION V
-  		where V.RV_RES_ID = res_id and V.RV_ID = ver);
+  type := (select RV_RES_TYPE from WS.WS.SYS_DAV_RES_VERSION V where V.RV_RES_ID = res_id and V.RV_ID = ver);
   return 0;
 report_invalid_version_number:
   return -1;
@@ -475,18 +449,8 @@ create function DAV_RES_RESTORE (in VVCfolder varchar, in file varchar, in auth 
   select RES_CONTENT, RES_TYPE, RES_PERMS, RES_OWNER, RES_GROUP
       	into _content, _type, _perms, _owner, _group
         from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
-       new_res_id := DAV_RES_UPLOAD_STRSES_INT (
-		       		_base || file,
-				_content,
-				_type,
-				_perms,
-				_owner,
-				_group,
-				auth,
-				pwd,
-				1);
-  if (new_res_id > 0)
-    {
+  new_res_id := DAV_RES_UPLOAD_STRSES_INT (_base || file, _content, _type, _perms, _owner, _group, auth, pwd, 1);
+  if (new_res_id > 0) {
       DAV_VERSION_CONTROL (_base || file, auth, pwd);
       delete from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = new_res_id;
       delete from WS.WS.SYS_DAV_RES_DIFF where RD_RES_ID = new_res_id;
@@ -536,28 +500,23 @@ create function "Versioning_DAV_AUTHENTICATE_HTTP" (in id any, in what char(1), 
       ), puid+1);
   if ((what <> 'R') and (what <> 'C'))
     return -14;
-  if ('R' = what and (length(id) > 2))
-    {
+  if ('R' = what and (length(id) > 2)) {
       select RES_PERMS, RES_OWNER, RES_GROUP into pperms, puid, pgid from WS.WS.SYS_DAV_RES where RES_ID = id[2]; -- Versioning permissions are original resource permissions
     }
-  else
-    {
+  else {
       pperms := '110100100NN';
     }
   allow_anon := WS.WS.PERM_COMP (substring (cast (pperms as varchar), 7, 3), req);
-  if (a_uid is null)
-    {
+  if (a_uid is null) {
       if ((not allow_anon) or ('' <> WS.WS.FINDPARAM (a_lines, 'Authorization:')))
       rc := WS.WS.GET_DAV_AUTH (a_lines, allow_anon, can_write_http, a_uname, u_password, a_uid, a_gid, _perms);
       if (rc < 0)
         return rc;
     }
-  if (isinteger (a_uid))
-    {
+  if (isinteger (a_uid)) {
       if (a_uid < 0)
 	return a_uid;
-     if (a_uid = 1) -- Anonymous FTP
-	{
+    if (a_uid = 1) { -- Anonymous FTP
           a_uid := 0;
 	  a_gid := 0;
 	}
@@ -612,8 +571,7 @@ create function "Versioning_DAV_COL_MOUNT_HERE" (in parent_id any, in full_mount
 create function "Versioning_DAV_DELETE" (in detcol_id any, in path_parts any, in what char(1), in silent integer, in auth_uid integer) returns integer
 {
    -- dbg_obj_princ ('Versioning_DAV_DELETE (', detcol_id, path_parts, what, silent, auth_uid, ')');
-  if ('R' = what)
-    {
+  if ('R' = what) {
       if (length (path_parts) <> 2)
         return -20;
 
@@ -625,17 +583,14 @@ create function "Versioning_DAV_DELETE" (in detcol_id any, in path_parts any, in
       _res_id := DAV_SEARCH_ID (_base_path || path_parts[0], 'R');
       if (_res_id < 0)
         return -1;
-      if (path_parts[1] = 'last')
-        {
+    if (path_parts[1] = 'last') {
 	      -- move to Attic
 	      declare _attic varchar;
 	      _attic := "Versioning_GET_ATTIC_PATH" (detcol_id);
-	      if (_attic is not null)
-	        {
+      if (_attic is not null) {
 		  declare _attic_id int;
 		  _attic_id := DAV_SEARCH_ID (_attic, 'C');
-		  if (_attic_id >= 0)
-		    {
+        if (_attic_id >= 0) {
 		       declare new_res_id int;
 		       declare _content any;
 		       declare _type, _perms varchar;
@@ -643,18 +598,8 @@ create function "Versioning_DAV_DELETE" (in detcol_id any, in path_parts any, in
 		       select RES_CONTENT, RES_TYPE, RES_PERMS, RES_OWNER, RES_GROUP
 		       	into _content, _type, _perms, _owner, _group
 		        from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
-		       new_res_id := DAV_RES_UPLOAD_STRSES_INT (
-		       		_attic || path_parts[0],
-				_content,
-				_type,
-				_perms,
-				_owner,
-				_group,
-				null,
-				null,
-				0);
-		      if (new_res_id > 0)
-		        {
+          new_res_id := DAV_RES_UPLOAD_STRSES_INT (_attic || path_parts[0], _content, _type, _perms, _owner, _group, null, null, 0);
+          if (new_res_id > 0) {
 			  delete from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = new_res_id;
 			  delete from WS.WS.SYS_DAV_RES_DIFF where RD_RES_ID = new_res_id;
 			  
@@ -669,12 +614,10 @@ create function "Versioning_DAV_DELETE" (in detcol_id any, in path_parts any, in
 		 }
 	      delete from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
 	}
-      else
-	{
+    else {
 	  declare ver_id int;
 	  ver_id := atoi (path_parts[1]);
-	  if (cast (ver_id as varchar) = path_parts[1]) -- syntax is ok
-	    {
+      if (cast (ver_id as varchar) = path_parts[1]) { -- syntax is ok
 		-- delete old version
 		declare cnt int;
 		cnt := coalesce ((select count (*) from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = _res_id and RV_ID > ver_id), 0);
@@ -718,8 +661,7 @@ create function "Versioning_DAV_PROP_REMOVE" (in id any, in what char(0), in pro
 create function "Versioning_DAV_PROP_SET" (in id any, in what char(0), in propname varchar, in propvalue any, in overwrite integer, in auth_uid integer) returns any
 {
    -- dbg_obj_princ ('Versioning_DAV_PROP_SET (', id, what, propname, propvalue, overwrite, auth_uid, ')');
-  if (propname[0] = 58)
-    {
+  if (propname[0] = 58) {
       return -16;
     }
   return -20;
@@ -730,32 +672,22 @@ create function "Versioning_DAV_PROP_SET" (in id any, in what char(0), in propna
 create function "Versioning_DAV_PROP_GET" (in id any, in what char(0), in propname varchar, in auth_uid integer)
 {
   -- dbg_obj_princ ('Versioning_DAV_PROP_GET (', id, what, propname, auth_uid, ')');
-  if (isarray (id) and
-	length (id) = 4)
-   {
-     if (id[3] = -1) -- history.xml
-       {
+  if (isarray (id) and length (id) = 4) {
+    if (id[3] = -1) { -- history.xml
  	 declare _hist_col, _res_name varchar;
-	 if (propname = 'DAV:root-version')
-      	   {
+      if (propname = 'DAV:root-version') {
 	     declare _root_ver int;
  	     _res_name := (select RES_NAME from WS.WS.SYS_DAV_RES where RES_ID = id[2]);
 	     _hist_col := DAV_SEARCH_PATH (id[1], 'C');
-	     _root_ver := (select min (RV_ID) from ws.ws.sys_dav_res_version where RV_ID > 0
-			and RV_RES_ID = id[2]);
-	     return '<D:href>' || _hist_col || _res_name || '/' || cast (_root_ver as varchar) ||
-			'</D:href>';
+        _root_ver := (select min (RV_ID) from ws.ws.sys_dav_res_version where RV_ID > 0 and RV_RES_ID = id[2]);
+        return '<D:href>' || _hist_col || _res_name || '/' || cast (_root_ver as varchar) || '</D:href>';
            }
-	 else if (propname = 'DAV:version-set')
-	   {
+      else if (propname = 'DAV:version-set') {
 	     declare _res any;
 	     _res := string_output ();
 	     _hist_col := DAV_SEARCH_PATH (id[1], 'C');
  	     _res_name := (select RES_NAME from WS.WS.SYS_DAV_RES where RES_ID = id[2]);
-	     for select RV_ID from WS.WS.SYS_DAV_RES_VERSION
-		where RV_RES_ID = id[2]
-		 and RV_ID <> 0
-		order by RV_ID
+        for select RV_ID from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = id[2] and RV_ID <> 0 order by RV_ID
 	     do {
 		http ('<D:href>', _res);
 		http (_hist_col || _res_name || '/' ||  cast (RV_ID as varchar), _res);
@@ -764,30 +696,23 @@ create function "Versioning_DAV_PROP_GET" (in id any, in what char(0), in propna
 	     return string_output_string (_res);
 	   }
       }
-     else
-      {
+    else {
 	     declare exit handler for not found {
 		return -1;
 	     };
 	     declare _props any;
   	     if (id[3] = -2) -- last version
-	        select RD_PROPS into _props from WS.WS.SYS_DAV_RES_DIFF
-			where RD_RES_ID = id[2]
-			and RD_FROM_ID = 0;
-	     else if (id[3] > 0)
-	      {
-		if (propname = ':creationdate')
-		  {
+        select RD_PROPS into _props from WS.WS.SYS_DAV_RES_DIFF where RD_RES_ID = id[2] and RD_FROM_ID = 0;
+      else if (id[3] > 0) {
+        if (propname = ':creationdate') {
 		    declare dt datetime;
 		    select RV_CR_TIME into dt from WS.WS.SYS_DAV_RES_VERSION
-			where RV_RES_ID = id[2]
-			and RV_ID = id[3];
+            where RV_RES_ID = id[2] and RV_ID = id[3];
 		    return dt;
 		  }
 		else
 	          select RD_PROPS into _props from WS.WS.SYS_DAV_RES_DIFF
-			where RD_RES_ID = id[2]
-			and RD_TO_ID = id[3];
+            where RD_RES_ID = id[2] and RD_TO_ID = id[3];
 	      }
 		-- dbg_obj_princ ('props: ', _props);
 	     if (_props is not null)
@@ -834,8 +759,7 @@ create function "Versioning_version_set" (in _res_id int, in _hist_col varchar)
 create function "Versioning_DAV_PROP_LIST" (in id any, in what char(0), in propmask varchar, in auth_uid integer)
 {
   -- dbg_obj_princ ('Versioning_DAV_PROP_LIST (', id, what, propmask, auth_uid, ')');
-  if (isarray (id) and length (id) = 4 and id[3] = -1)
-    {
+  if (isarray (id) and length (id) = 4 and id[3] = -1) {
       declare _hist_col varchar;
       _hist_col := DAV_SEARCH_PATH (id[1], 'C');
       return vector (
@@ -850,10 +774,8 @@ create function "Versioning_DAV_PROP_LIST" (in id any, in what char(0), in propm
 create function "Versioning_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('Versioning_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
-  if (what = 'C')
-   {
-     if (isarray (id) and length (id) = 3)
-       {
+  if (what = 'C') {
+    if (isarray (id) and length (id) = 3) {
 	 declare _res_name, _col_path varchar;
 	 declare dirlist any;
 	 _res_name := (select RES_NAME from WS.WS.SYS_DAV_RES where RES_ID = id[2]);
@@ -871,20 +793,16 @@ create function "Versioning_DAV_DIR_SINGLE" (in id any, in what char(0), in path
 	 }
       }
    }
-  else if (what = 'R')
-   {
+  else if (what = 'R') {
      if (not isarray(id))
        return -20;
-     if (length (id) = 4 and isinteger(id[3]) and id[3] > 0)
-       {
+    if (length (id) = 4 and isinteger(id[3]) and id[3] > 0) {
 	 declare res any;
          for select RV_ID, RES_NAME, RES_FULL_PATH, RV_SIZE as l,
   	    	RES_PERMS, RV_CR_TIME, RV_MOD_TIME, RES_GROUP, RES_OWNER,
 		RV_RES_TYPE, cast (RV_ID as VARCHAR) as ver_id
-      		from WS.WS.SYS_DAV_RES INNER JOIN WS.WS.SYS_DAV_RES_VERSION
-		  ON (RV_RES_ID = RES_ID)
-		where RES_ID = id[2]
-		  and RV_ID = id[3]
+        from WS.WS.SYS_DAV_RES INNER JOIN WS.WS.SYS_DAV_RES_VERSION ON (RV_RES_ID = RES_ID)
+        where RES_ID = id[2] and RV_ID = id[3]
          do  {
 	  return vector (
 --	  0
@@ -897,10 +815,8 @@ create function "Versioning_DAV_DIR_SINGLE" (in id any, in what char(0), in path
 	  RV_RES_TYPE,  ver_id);
 	}
       }
-    if (length (id) = 4) -- last, history.xml, diff
-      {       
-        if (isinteger (id[3]) and id[3] < 0)
-	  {
+    if (length (id) = 4) { -- last, history.xml, diff
+      if (isinteger (id[3]) and id[3] < 0) {
 	    declare _target varchar;
 	    declare _res_name, _type, _perms varchar;
 	    declare _cr_time, _mod_time datetime;
@@ -915,18 +831,17 @@ create function "Versioning_DAV_DIR_SINGLE" (in id any, in what char(0), in path
 	    else
 	      return -20;
 	  return vector (
---	  0
+    --    0
 	  DAV_SEARCH_PATH (id[1], 'C') || _res_name || '/' || _target,
---	  1 		2		3		4
+    --    1     2    3    4
 	  'R',		1000,		_cr_time,	id,
---	  5		6		7		8
+    --    5    6    7    8
 	  _perms,	_group,		_owner,		_mod_time,
---	  9		10
+    --    9    10
 	  _type,  	_target);
           }
       }
-    else if (length(id) = 5 and isstring(id[4]) and id[4] = 'diff')
-      {
+    else if (length(id) = 5 and isstring(id[4]) and id[4] = 'diff') {
 	 declare res any;
          for select RV_ID, RES_NAME, RES_FULL_PATH, RV_SIZE as l,
   	    	RES_PERMS, RV_CR_TIME, RV_MOD_TIME, RES_GROUP, RES_OWNER,
@@ -976,12 +891,10 @@ create function "Versioning_SET_LIST" (in detcol_id int, in _res_id int, in virt
       for select RV_ID, RES_NAME, RES_FULL_PATH, RV_SIZE as l,
       	RES_PERMS, RV_CR_TIME, RV_MOD_TIME, RES_GROUP, RES_OWNER,
 	RV_RES_TYPE, cast (RV_ID as VARCHAR) as ver_id
-      	from WS.WS.SYS_DAV_RES INNER JOIN WS.WS.SYS_DAV_RES_VERSION
-	  ON (RV_RES_ID = RES_ID)
+    from WS.WS.SYS_DAV_RES INNER JOIN WS.WS.SYS_DAV_RES_VERSION ON (RV_RES_ID = RES_ID)
 	where RES_ID = _res_id
 	order by ver_id
-      do
-        {
+  do {
 	  vectorbld_acc (res, vector (
 --	  0
 	  virt_base_path || RES_NAME || '/' || ver_id,
@@ -1020,8 +933,7 @@ create function "Versioning_DAV_DIR_LIST" (in detcol_id any, in path_parts any, 
   --dbg_obj_princ ('Versioning_DAV_DIR_LIST (', detcol_id, path_parts, detcol_path, name_mask, recursive, auth_uid, ')');
   declare res any;
   vectorbld_init (res);
-  if (length (path_parts) = 1)
-    {
+  if (length (path_parts) = 1) {
       for select RES_ID, RES_NAME, RES_CONTENT, RES_FULL_PATH, RES_PERMS, RES_OWNER, RES_MOD_TIME, RES_TYPE, RES_GROUP, RES_CR_TIME
 	from WS.WS.SYS_DAV_RES, WS.WS.SYS_DAV_PROP
 	 where RES_COL = DAV_SEARCH_ID (base_path, 'C')
@@ -1037,8 +949,7 @@ create function "Versioning_DAV_DIR_LIST" (in detcol_id any, in path_parts any, 
          RES_NAME ) );
       }
     }
-  else if (length (path_parts) = 2)
-    {
+  else if (length (path_parts) = 2) {
       declare _res_id int;
       _res_id := DAV_SEARCH_ID (base_path || aref (path_parts, 0), 'R');
       if (_res_id < 0)
@@ -1060,10 +971,8 @@ create function "Versioning_DAV_DIR_LIST" (in detcol_id any, in path_parts any, 
 	     _rv_mod_time,
 	     _rv_cr_time,
 	     _len
-  	from WS.WS.SYS_DAV_RES inner join WS.WS.SYS_DAV_RES_VERSION
-		on (RV_RES_ID = RES_ID)
-	  where RES_ID = _res_id
-		and RV_ID = _max_ver;
+       from WS.WS.SYS_DAV_RES inner join WS.WS.SYS_DAV_RES_VERSION on (RV_RES_ID = RES_ID)
+       where RES_ID = _res_id and RV_ID = _max_ver;
 
        -- history.xml
        declare _owner, _group int;
@@ -1113,20 +1022,17 @@ create function "Versioning_DAV_SEARCH_ID" (in detcol_id any, in path_parts any,
   if (base_path is null)
     return -20;
    -- dbg_obj_princ ('Versioning_DAV_SEARCH_ID (', detcol_id, path_parts, what, ')');
-  if ('C' = what)
-    {
+  if ('C' = what) {
       if ( (length (path_parts) = 3) )
         return -1;
       declare base_id int;
       base_id := DAV_SEARCH_ID (base_path, 'C');
-      if (base_id > 0)
-        {
+    if (base_id > 0) {
 	  declare _res_id int;
 	  _res_id :=  (select RES_ID from WS.WS.SYS_DAV_RES where RES_COL = base_id
 	  		and RES_NAME = aref (path_parts, 0) );
 	   -- dbg_obj_princ ('Versioning_DAV_SEARCH_ID = ', _res_id);
-	  if (_res_id is not null)
-	    {
+      if (_res_id is not null) {
 	      if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'DAV:checked-in', 0)) is null
 	      	and DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'DAV:checked-out', 0)) is null)
 	       return -1;
@@ -1135,10 +1041,8 @@ create function "Versioning_DAV_SEARCH_ID" (in detcol_id any, in path_parts any,
 	}
       return -1;
     }
-  else if ('R' = what)
-    {
-      if (length (path_parts) = 2)
-	{
+  else if ('R' = what) {
+    if (length (path_parts) = 2) {
 	  declare _res_id, _ver_id, _id int;
 	  _res_id := DAV_SEARCH_ID (base_path || path_parts[0], 'R');
 	   -- dbg_obj_princ ('res id == ', _res_id);
@@ -1151,17 +1055,13 @@ create function "Versioning_DAV_SEARCH_ID" (in detcol_id any, in path_parts any,
 	    _ver_id := -1;
 	  else if (path_parts[1] = 'last')
 	    _ver_id := -2;
-	  else if (path_parts[1] like '%.diff')
-	    {
+      else if (path_parts[1] like '%.diff') {
 	      _ver_id := atoi (path_parts[1]);
 	      return vector (UNAME'Versioning', detcol_id, _res_id, _ver_id, 'diff');
 	    }
-	  else
-	    {
+      else {
 	      _ver_id := cast (path_parts[1] as integer);
-	      if (not exists (select 1 from WS.WS.SYS_DAV_RES_VERSION
-			      where RV_RES_ID = _res_id
-			      and RV_ID = _ver_id))
+        if (not exists (select 1 from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = _res_id and RV_ID = _ver_id))
 		return -1;
 	    }
 	  return vector (UNAME'Versioning', detcol_id, _res_id, _ver_id);
@@ -1177,8 +1077,7 @@ create function "Versioning_DAV_SEARCH_ID" (in detcol_id any, in path_parts any,
 create function "Versioning_DAV_SEARCH_PATH" (in id any, in what char(1)) returns any
 {
   -- dbg_obj_princ ('Versioning_DAV_SEARCH_PATH (', id, what, ')');
-  if (what = 'C' and isarray (id) and length (id) = 3)
-    {
+  if (what = 'C' and isarray (id) and length (id) = 3) {
       declare base_coll varchar;
       base_coll := DAV_PROP_GET_INT (id[1], 'C','virt:Versioning-Collection', 0);
       if (isinteger (base_coll))
@@ -1216,12 +1115,10 @@ create function "Versioning_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_part
     return -1;
   declare _old_res_id, _target_col_id int;
   _target_col_id := DAV_SEARCH_ID (_target_col, 'C');
-  if (_target_col_id > 0)
-    {
+  if (_target_col_id > 0) {
       -- dbg_obj_princ ('tgt col: ', _target_col_id);
       _old_res_id := DAV_SEARCH_ID (_target_col || path_parts[0], 'R');
-      if (_old_res_id > 0)
-        {
+    if (_old_res_id > 0) {
            -- dbg_obj_princ ('res id: ', _old_res_id);
 	  delete from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = _old_res_id;
 	  delete from WS.WS.SYS_DAV_RES_DIFF where RD_RES_ID = _old_res_id;
@@ -1272,8 +1169,7 @@ create function "Versioning_DAV_RES_CONTENT" (in id any, inout content any, out 
 {
    -- dbg_obj_princ ('Versioning_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
   declare _res int;
-  if (aref (id, 3) = -1) -- history
-    {
+  if (aref (id, 3) = -1) { -- history
       declare _xml any;
       _xml := ( select XMLELEMENT ('history',
 			XMLAGG ( XMLELEMENT ('version',
@@ -1290,16 +1186,14 @@ create function "Versioning_DAV_RES_CONTENT" (in id any, inout content any, out 
      type := 'plain/xml';
      return 1;
     }
-  else if (aref (id, 3) = -2) -- "last" version
-    {
+  else if (aref (id, 3) = -2) { -- "last" version
       select RD_DELTA, RES_TYPE into content, type from WS.WS.SYS_DAV_RES_DIFF inner join
 		WS.WS.SYS_DAV_RES on (RD_RES_ID = RES_ID)
         where RD_RES_ID = aref (id, 2)
 	  and RD_FROM_ID = 0; -- last version
       return 1;
     }
-  else if (length (id) = 5)
-    {
+  else if (length (id) = 5) {
       if (id[4] <> 'diff')
 	return -1;
       content := (select RD_DELTA from WS.WS.SYS_DAV_RES_DIFF where
@@ -1309,8 +1203,7 @@ create function "Versioning_DAV_RES_CONTENT" (in id any, inout content any, out 
       if (_res is not null)
 	return 1;
     }
-  else
-    {
+  else {
       _res := DAV_GET_VERSION_CONTENT (aref (id, 2), aref (id, 3), content, type, content_mode);
       if (_res >= 0)
         return 1;
@@ -1397,12 +1290,10 @@ create function "Versioning_AUTO_VERSION_PROP" (in _auto_version varchar)
 
 
 --| internal API: set properties
-create procedure DAV_SET_VERSIONING_PROPERTIES (in path varchar,
-						in props any)
+create procedure DAV_SET_VERSIONING_PROPERTIES (in path varchar, in props any)
 {
   declare idx, res int;
-  for (idx := 0; idx < length (props) / 2; idx := idx + 1)
-    {
+  for (idx := 0; idx < length (props) / 2; idx := idx + 1) {
       -- dbg_obj_princ ('set prop: ', props[idx*2], ' to: ', props[2*idx + 1]);
       res := DAV_PROP_SET_INT (path,
 			       props[2*idx],
@@ -1456,8 +1347,7 @@ create function "Versioning_SETPROP" (in _resource varchar, in _propname varchar
 {
   declare res int;
   res := DAV_PROP_SET (_resource, _propname, _value, _auth, _pwd);  
-  if (DAV_HIDE_ERROR (res) is null)
-    {
+  if (DAV_HIDE_ERROR (res) is null) {
       if (res = -16 and (DAV_PROP_GET (_resource, _propname, _auth, _pwd) = _value))
         return _value;
     }
@@ -1520,7 +1410,7 @@ create function DAV_SET_VERSIONING_CONTROL (in _main varchar, in _vvc varchar, i
       goto err;
   }
   return _vvc_id;
- err:
+err:
   rollback work;
   -- dbg_obj_princ ('res=', res);
   return res;
@@ -1550,13 +1440,11 @@ create procedure DAV_MKWORKSPACE (in path varchar)
   _owner_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _owner);
   _group_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _group);
   if (exists (select PROP_VALUE from WS.WS.SYS_DAV_PROP where
-    PROP_NAME = 'virt:Versioning-History' and PROP_PARENT_ID = _parent))
-    {
+    PROP_NAME = 'virt:Versioning-History' and PROP_PARENT_ID = _parent)) {
       declare _parent_path, _copy_path varchar;
       _parent_path := DAV_SEARCH_PATH (_parent, 'C');
       _copy_path := _parent_path || 'workspace!/' || _name;
-      if (0 > DAV_SEARCH_ID (_parent_path || 'workspace!/', 'C'))
-	{
+    if (0 > DAV_SEARCH_ID (_parent_path || 'workspace!/', 'C')) {
 	   -- dbg_obj_princ ('upload to ', _copy_path);
 	  _res := DAV_COL_CREATE_INT (_parent_path || 'workspace!/', '110000000--',
 		_owner_name, _group_name,
@@ -1586,15 +1474,13 @@ create procedure DAV_CHECKOUT_INT (in path_or_id any, in auth varchar, in pwd va
   declare _id int;
   declare _checked_in varchar;
   declare path varchar;
-  if (isstring (path_or_id))
-    {
+  if (isstring (path_or_id)) {
       path := path_or_id;
       _id := DAV_SEARCH_ID (path, 'R');
       if (_id < 0)
 	return _id;
     }
-  else if (isinteger (path_or_id))
-    {
+  else if (isinteger (path_or_id)) {
       _id := path_or_id;
       path := DAV_SEARCH_PATH (_id, 'R');
       if (DAV_HIDE_ERROR (path) is null)
@@ -1671,8 +1557,7 @@ create procedure DAV_CHECKIN_INT (in path varchar, in auth varchar, in pwd varch
   declare _ver_id, _ver_next_id int;
   _ver_id := (select max (RV_ID) from WS.WS.SYS_DAV_RES_VERSION where
 		RV_RES_ID = _id);
-  if (_ver_id is null)
-    {
+  if (_ver_id is null) {
       insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either existing resource ID or to an attic ID
 		  RV_ID, -- Version ID
 		  RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
@@ -1687,24 +1572,19 @@ create procedure DAV_CHECKIN_INT (in path varchar, in auth varchar, in pwd varch
 		NULL, NULL, NULL, _type, dt, dt, auth, length (_content));
       "Versioning_ADD_NEW_DIFF" (_id, NULL, NULL, _content, 'c');
     }
-  else
-   {
+  else {
      declare _old_content any;
      select RD_DELTA into _old_content from WS.WS.SYS_DAV_RES_DIFF
-	where RD_FROM_ID = 0
-	and RD_RES_ID = _id;
-
+      where RD_FROM_ID = 0 and RD_RES_ID = _id;
 
       declare _diff, _diff_type varchar;
-      if (_type like 'text/%')
-	{
-whenever sqlstate 'DF*' goto full_copy;
-whenever sqlstate '22*' goto full_copy;
+    if (_type like 'text/%') {
+      whenever sqlstate 'DF*' goto full_copy;
+      whenever sqlstate '22*' goto full_copy;
 	   _diff := diff (_content, _old_content, '--normal');
 	   _diff_type := 'D';
 	}
-      else
-        {
+    else {
 full_copy:
 	   -- dbg_obj_princ ('SQL ERR: ', __SQL_STATE, __SQL_MESSAGE);
 	    _diff := NULL;
@@ -1803,8 +1683,7 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
   _vvc_id := DAV_SEARCH_ID (_vvc, 'C');
   oname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = ouid);
   gname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = guid);
-  if (DAV_HIDE_ERROR (_vvc_id) is null) -- no VVC exists
-    {
+  if (DAV_HIDE_ERROR (_vvc_id) is null) { -- no VVC exists
 	-- dbg_obj_princ ('DAV_VERSION_CONTROL create ', _vvc);
 	_vvc_id := DB.DBA.DAV_COL_CREATE (_vvc, '110100000--', oname, gname, auth, pwd);
 	if (_vvc_id < 0)
@@ -1833,14 +1712,12 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
     {
 	-- dbg_obj_princ ('DAV_VERSION_CONTROL create ', _attic);
 	_attic_id := DB.DBA.DAV_COL_CREATE (_attic, '110100000--', oname, gname, auth, pwd);
-	if (DAV_HIDE_ERROR (_attic_id) is null)
-	  {
+    if (DAV_HIDE_ERROR (_attic_id) is null) {
 	      -- dbg_obj_princ ('DAV_VERSION_CONTROL3 ', _attic_id);
 	      return _attic_id;
 	  }
   	_rc := DAV_PROP_SET (_vvc, 'virt:Versioning-Attic', _attic, auth, pwd);
-	if (DAV_HIDE_ERROR (_rc) is null)
-	  {
+    if (DAV_HIDE_ERROR (_rc) is null) {
 	      -- dbg_obj_princ ('DAV_VERSION_CONTROL4 ',_rc);
 	      return _rc;
 	  }
@@ -1896,15 +1773,13 @@ create function DAV_UNCHECKOUT (in path varchar, in auth varchar, in pwd varchar
   if (DAV_HIDE_ERROR(DAV_PROP_GET_INT (_id, 'R', 'DAV:checked-out', 0)) is null
 	or (DAV_HIDE_ERROR(DAV_PROP_GET_INT(_id, 'R', 'DAV:checked-in', 0))))
     return -38;
-whenever not found goto nf;
+  whenever not found goto nf;
   select RD_DELTA,RD_PROPS into _content, _props from WS.WS.SYS_DAV_RES_DIFF
 	inner join WS.WS.SYS_DAV_RES on (RD_RES_ID = RES_ID)
-  where RES_FULL_PATH = path
-	and RD_FROM_ID = 0;
+    where RES_FULL_PATH = path and RD_FROM_ID = 0;
   update WS.WS.SYS_DAV_RES set RES_CONTENT = _content where RES_ID = _id;
   declare _rc int;
-  if (_props is not null and isentity (_props))
-    {
+  if (_props is not null and isentity (_props)) {
   	declare idx int;
 	declare _ent any;
 	idx := 1;
@@ -1935,22 +1810,19 @@ whenever not found goto nf;
    }
   declare _checked_out varchar;
   _checked_out := DAV_PROP_GET_INT (_id, 'R', 'DAV:checked-out', 0);
-  if (DAV_HIDE_ERROR (_checked_out) is null)
-    {
+  if (DAV_HIDE_ERROR (_checked_out) is null) {
       rollback work;
       return _checked_out;
     }
    connection_set ('Versioning REM PROP', 1);
   _rc :=  DAV_PROP_REMOVE_INT (path, 'DAV:checked-out', null, null, 0, 0);
    connection_set ('Versioning REM PROP', NULL);
-  if (DAV_HIDE_ERROR (_rc) is null)
-    {
+  if (DAV_HIDE_ERROR (_rc) is null) {
       rollback work;
       return _rc;
     }
   _rc := DAV_PROP_SET_INT (path, 'DAV:checked-in', _checked_out, NULL, NULL, 0, 0, 1);
-  if (DAV_HIDE_ERROR (_rc) is null)
-    {
+  if (DAV_HIDE_ERROR (_rc) is null) {
       rollback work;
       return _rc;
     }
@@ -2012,14 +1884,12 @@ create procedure DAV_REMOVE_VERSION_CONTROL (in _resource varchar, in auth varch
         return _err;
       declare _attic varchar;
       _attic := "Versioning_Attic" (_resource);
-      if (_attic is not null)
-        {
+    if (_attic is not null) {
 	  declare _name varchar;
 	  select RES_NAME into _name from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _resource;
 	  DAV_DELETE (_attic || _name, 1, pwd, auth);
 	}
-      if (not "Versioning_OTHER_FILES_IN_VVC" (_resource))
-        {
+    if (not "Versioning_OTHER_FILES_IN_VVC" (_resource)) {
 	  if (_attic is not null)
 	    DAV_DELETE (_attic, 1, pwd, auth);
 	}
@@ -2034,8 +1904,7 @@ create procedure DAV_REMOVE_VERSION_CONTROL (in _resource varchar, in auth varch
       delete from WS.WS.SYS_DAV_RES_DIFF where RD_RES_ID = _id;
       return _id;
     }
-  else
-    {
+  else {
       if (isinteger (_err))
         return _err;
       else
@@ -2069,26 +1938,22 @@ create procedure DAV_VERSION_FOLD_INT (in path varchar, in target_version int, i
 	return -17;
    };
    select RV_PREV_ID into _prev_version from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = id and RV_ID = target_version;
-   if (_prev_version is null)
-     {
+  if (_prev_version is null) {
        delete from WS.WS.SYS_DAV_RES_DIFF where RD_RES_ID = id and RD_TO_ID <> target_version;
        delete from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = id and RV_ID <> target_version;
        update WS.WS.SYS_DAV_RES_DIFF set RD_DELTA = _curr_content where RD_RES_ID = id and RD_TO_ID = target_version;
        return id;
      }
-   else
-     {
+  else {
        declare _prev_content, _prev_type, _prev_mode varchar;
        DAV_GET_VERSION_CONTENT (id, _prev_version, _prev_content, _prev_type, _prev_mode);
        whenever sqlstate 'DF*' goto full_copy;
        declare _diff, _diff_type varchar;
-       if (_type like 'text/%') 
-	{
+    if (_type like 'text/%') {
 	   _diff := diff (cast (_curr_content as varchar), cast (_prev_content as varchar), '--normal');
 	   _diff_type := 'D';
 	}
-      else
-        {
+    else {
 full_copy:
 	   -- dbg_obj_princ ('SQL ERR: ', __SQL_STATE, __SQL_MESSAGE);
 	    _diff := NULL;
@@ -2140,6 +2005,3 @@ CREATE TRIGGER "Versioning_DELETE_COL_B" BEFORE DELETE ON WS.WS.SYS_DAV_COL ORDE
     }
 }
 ;
-
-
-      
