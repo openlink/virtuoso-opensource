@@ -4630,7 +4630,7 @@ create procedure www_tree (in path any)
       declare hp_opts, url_rew any;
 
       hp_opts := deserialize (HP_OPTIONS);
-      dbg_obj_print (hp_opts);
+      --dbg_obj_print (hp_opts);
       if (not isarray (hp_opts))
 	hp_opts := vector ();
 

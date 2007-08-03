@@ -658,18 +658,64 @@ else
                     }
                   </script>
                   <tr>
+		    <td>Destination</td>
+		    <td>
+		      <v:select-list name="dst_sel" value="" default_value="dav" auto-submit="1">
+			<v:item name="WebDAV" value="dav"/>
+			<v:item name="RDF Store" value="rdf"/>
+		      </v:select-list>
+		    </td>
+		  </tr>
+
+		  <v:template type="simple" name="sw1" condition="self.dst_sel.ufl_value = 'rdf'">
+
+                  <tr id="rd1">
+		    <td><v:radio-button name="rb1" group-name="rb" value="fs">
+			<v:before-render>
+			  if (get_keyword ('rb', self.vc_event.ve_params) = 'fs'
+			  or get_keyword ('rb', self.vc_event.ve_params) is null)
+			    control.ufl_selected := 1;
+			</v:before-render>
+		      </v:radio-button>
+			File<span class="redstar">*</span></td>
+                    <td>
+                      <input type="file" name="t_rdf_file" size="100"></input>
+                    </td>
+                  </tr>
+                  <tr id="rd1">
+		    <td><v:radio-button name="rb2" group-name="rb" value="ur">
+			<v:before-render>
+			  if (get_keyword ('rb', self.vc_event.ve_params) = 'ur')
+			    control.ufl_selected := 1;
+			</v:before-render>
+		      </v:radio-button>
+		      URI<span class="redstar">*</span></td>
+                    <td>
+                      <input type="text" name="t_rdf_url" size="100"></input>
+                    </td>
+                  </tr>
+                  <tr id="rd2">
+                    <td>RDF IRI<span class="redstar">*</span></td>
+                    <td>
+		      <v:text name="rdf_graph_name" value="" default_value="-- 'http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/' || self.curpath" xhtml_size="100"/>
+                    </td>
+                  </tr>
+
+		  </v:template>
+		  <v:template type="simple" name="sw2" condition="self.dst_sel.ufl_value <> 'rdf' or self.dst_sel.ufl_value is null">
+                  <tr id="fi1">
                     <td>Path to File<span class="redstar">*</span></td>
                     <td>
                       <input type="file" name="t_newfolder" onBlur="javascript:getFileName();"></input>
                     </td>
                   </tr>
-                  <tr>
+                  <tr id="fi2">
                     <td nowrap="nowrap">DAV Resource Name<span class="redstar">*</span></td>
                     <td>
                       <v:text name="resname" value="--get_keyword('resname', self.vc_page.vc_event.ve_params, '')"/>
                     </td>
                   </tr>
-                  <tr>
+                  <tr id="fi3">
                     <td nowrap="nowrap">MIME Type (blank for extension default)</td>
                     <td>
                       <div id="mime_cl"></div>
@@ -683,12 +729,14 @@ else
                         ?>
                       </script>
                       <!--
-                      <v:text name="mime_type" value="--(get_keyword('mime_type', self.vc_page.vc_event.ve_params, ''))" />
+                      <v:text name="mime_type" value="-#-(get_keyword('mime_type', self.vc_page.vc_event.ve_params, ''))" />
                       -->
                     </td>
                   </tr>
                 </v:template>
-                <tr>
+                </v:template>
+		  <v:template type="simple" name="sw3" condition="self.dst_sel.ufl_value <> 'rdf' or self.dst_sel.ufl_value is null">
+                <tr id="fi4">
                   <td>Owner</td>
                   <td>
                     <v:data-list name="t_folder_own"
@@ -711,7 +759,7 @@ else
                     </v:data-list>
                   </td>
                 </tr>
-                <tr>
+                <tr id="fi5">
                   <td>Group</td>
                   <td>
                     <v:data-list name="t_folder_grp" sql="select -1 as G_ID, '&amp;lt;none&amp;gt;' as G_NAME from WS.WS.SYS_DAV_GROUP where G_NAME = 'administrators' union all select G_ID, G_NAME from WS.WS.SYS_DAV_GROUP" key-column="G_ID" value-column="G_NAME">
@@ -738,7 +786,7 @@ else
                   </td>
                   <td>&nbsp;</td>
                 </tr>
-                <tr>
+                <tr id="fi6">
                   <td>Permissions</td>
                   <td>
                     <table class="ctl_grp">
@@ -812,7 +860,7 @@ else
                     </table>
                   </td>
                 </tr>
-                <tr>
+                <tr id="fi7">
                   <td>Free Text Indexing</td>
                   <td>
                     <select name="idx">
@@ -832,7 +880,7 @@ else
                   </td>
                 </tr>
                 <v:template name="dav_template003" type="simple" enabled="-- equ(isstring (vad_check_version ('SyncML')), 1)">
-                  <tr>
+                  <tr id="fi8">
                     <td>SyncML version</td>
                     <td>
                     <select name="s_v">
@@ -851,7 +899,7 @@ else
                     </select>
                     </td>
                   </tr>
-                  <tr>
+                  <tr id="fi9">
                     <td>SyncML type</td>
                     <td>
                     <select name="s_t">
@@ -871,6 +919,7 @@ else
                     </td>
                   </tr>
                 </v:template>
+		</v:template>
                 <tr align="center">
                   <td colspan="2">
                     <v:button action="simple" name="create_folder" value="Create">
@@ -889,7 +938,63 @@ else
                           declare usr, grp vspx_select_list;
                           declare i, _uid, ownern, groupn integer;
                           declare cname, _perms, _p, _idx, mimetype, owner_name, group_name varchar;
-                          declare _file any;
+			  declare _file, _graph, is_ttl, is_xml any;
+
+			  if (self.dst_sel.ufl_value = 'rdf')
+			    {
+			      _file := get_keyword ('t_rdf_file', e.ve_params);
+			      _graph := trim (self.rdf_graph_name.ufl_value);
+		              if (not length (_graph))
+	                        {
+				  self.vc_is_valid := 0;
+				  self.vc_error_message := 'The graph IRI must be non-empty string.';
+				  return;
+	                        }
+
+			      if (not length (_file))
+			        {
+				  declare uri any;
+				  declare exit handler for sqlstate '*'
+				  {
+				    self.vc_is_valid := 0;
+				    self.vc_error_message := regexp_match ('[^\r\n]*', __SQL_MESSAGE);
+				    return;
+				  };
+				  uri := get_keyword ('t_rdf_url', e.ve_params);
+				  exec (sprintf (
+				  'sparql define get:soft "soft" define get:uri "%s" select * from <%s> where { ?s ?p ?o }',
+				  uri, _graph));
+		                  goto end_post;
+				}
+
+			      is_ttl := 1;
+			      {
+			         declare continue handler for SQLSTATE '*'
+				 {
+				   is_ttl := 0;
+				 };
+				 DB.DBA.TTLP (_file, '', _graph);
+		              }
+			      is_xml := 0;
+			      if (not is_ttl)
+			      {
+				 is_xml := 1;
+			         declare continue handler for SQLSTATE '*'
+				 {
+				   is_xml := 0;
+				 };
+				 DB.DBA.RDF_LOAD_RDFXML (_file, '', _graph);
+		              }
+                              if ((is_ttl + is_xml) = 0)
+			        {
+				  self.vc_is_valid := 0;
+				  self.vc_error_message := 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.';
+				  return;
+				}
+
+			      goto end_post;
+			    }
+
                           if (self.crfolder_mode = 1)
                             cname := get_keyword('t_newfolder', self.vc_page.vc_event.ve_params, '');
                           if (self.crfolder_mode = 2)
@@ -898,8 +1003,8 @@ else
                             cname := get_keyword('resname', self.vc_page.vc_event.ve_params, '');
                             mimetype := get_keyword('mime_type', self.vc_page.vc_event.ve_params, '');
                           }
-                          usr := control.vc_parent.vc_find_control('t_folder_own');
-                          grp := control.vc_parent.vc_find_control('t_folder_grp');
+                          usr := self.t_folder_own;
+                          grp := self.t_folder_grp;
                           ownern := atoi(aref(usr.vsl_item_values, usr.vsl_selected_inx));
                           groupn := atoi(aref(grp.vsl_item_values, grp.vsl_selected_inx));
         whenever not found goto nfu;
@@ -996,6 +1101,7 @@ else
                               }
                             }
                           }
+			  end_post:
                           self.crfolder_mode := 0;
                           self.vc_data_bind(e);
                           self.ds_items.vc_data_bind(e);
@@ -2445,7 +2551,7 @@ else
                               _user := 0;
                               if (get_keyword('cm_owner', control.vc_page.vc_event.ve_params, '') = 'on')
                               {
-                              usr := control.vc_parent.vc_find_control('own_name');
+                                usr := self.own_name;
                               _user := atoi(aref (usr.vsl_item_values, usr.vsl_selected_inx));
                                 _set_user := 1;
                               } else {
@@ -2455,7 +2561,7 @@ else
                               _group := 0;
                               if (get_keyword('cm_group', control.vc_page.vc_event.ve_params, '') = 'on')
                               {
-                                grp := control.vc_parent.vc_find_control('grp_name');
+                                grp := self.grp_name;
                               _group := atoi(aref (grp.vsl_item_values, grp.vsl_selected_inx));
                                 _set_group := 1;
                               } else {
