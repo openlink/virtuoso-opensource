@@ -105,12 +105,12 @@
     <item rdf:about="{a:link[@href]/@href}">
 	<xsl:apply-templates/>
 	<xsl:if test="a:category[@term]">
-		<xsl:for-each select="a:category[@term]">
+	    <xsl:for-each select="a:category[@term]">
 		<dc:subject>
 		    <skos:Concept rdf:about="{concat (/a:feed/a:link[@rel='self']/@href, '#', @term)}">
 			<skos:prefLabel><xsl:value-of select="@term"/></skos:prefLabel>
 		    </skos:Concept>
-	    </dc:subject>
+		</dc:subject>
 	    </xsl:for-each>
 	</xsl:if>
     </item>

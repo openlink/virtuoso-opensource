@@ -13,7 +13,7 @@
 
     <xsl:template match="html">
 	<rdf:RDF>
-	    <xsl:apply-templates />
+	    <xsl:apply-templates select="*[@class='xfolkentry']"/>
 	</rdf:RDF>
     </xsl:template>
 

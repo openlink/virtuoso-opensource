@@ -433,9 +433,9 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
     }
   if (0 = length (api_key))
     {
-  api_key := _key;
-  secret := get_keyword ('secret', opts);
-  ses_id := get_keyword ('session', opts);
+      api_key := _key;
+      secret := get_keyword ('secret', opts);
+      ses_id := get_keyword ('session', opts);
     }
   if (not length (api_key) or not length (secret) or not length (ses_id))
     return 0;
@@ -500,6 +500,23 @@ try_profile:
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 
+  q := sprintf ('select uid2 from friend where uid1 = %s', own);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  --dbg_printf ('%s', ret);
+  xt := xtree_doc (ret);
+  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  --dbg_printf ('%s', xd);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+
+  q := sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, profile_update_time, timezone, religion, birthday, sex, current_location FROM user WHERE uid IN (select uid2 from friend where uid1 = %s)', own);
+  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+  --dbg_printf ('%s', ret);
+  xt := xtree_doc (ret);
+  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  --dbg_printf ('%s', xd);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   goto end_sp;
 
 end_sp:
@@ -985,8 +1002,10 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in graph_iri varchar, in new_origin_
   -- take PF transform
   foreach (any prof in profs) do
     {
+      declare prof_base any;
       if (length (prof) = 0)
         goto next_prof_1;
+      prof_base := null;
       prof := WS.WS.EXPAND_URL (base_url, prof);
       declare cnt, tmp_url, tmp_xt, tmp_prof, tmp_profs any;
       declare exit handler for sqlstate '*' {
@@ -1003,16 +1022,24 @@ create procedure DB.DBA.RDF_LOAD_GRDDL_REC (in graph_iri varchar, in new_origin_
 
       pf_docs := vector_concat (pf_docs, vector (vector (prof, tmp_xt)));
 
+      prof_base := cast (xpath_eval ('/html/head/base/@href', tmp_xt) as varchar);
+      if (length (prof_base) = 0)
+        {
+	  prof_base := cast (xpath_eval ('/*[1]/@xml:base', tmp_xt) as varchar);
+	}
+      if (length (prof_base) = 0)
+        prof_base := prof;
+
       tmp_prof := xpath_eval (
       '//*[contains (concat (" ", @rel, " "), " profileTransformation ")]/@href', tmp_xt, 0);
       --  get here profileTransformation and push into a profile_trf
-      tmp_prof := DB.DBA.RDF_MAPPER_EXPN_URLS (tmp_prof, prof);
+      tmp_prof := DB.DBA.RDF_MAPPER_EXPN_URLS (tmp_prof, prof_base);
       profile_trf := vector_concat (profile_trf, tmp_prof);
 
       tmp_prof := xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" '||
 	' xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ] '||
 	'//dv:profileTransformation/@rdf:resource', tmp_xt, 0);
-      tmp_prof := DB.DBA.RDF_MAPPER_EXPN_URLS (tmp_prof, prof);
+      tmp_prof := DB.DBA.RDF_MAPPER_EXPN_URLS (tmp_prof, prof_base);
       profile_trf := vector_concat (profile_trf, tmp_prof);
       next_prof_1:;
     }
@@ -1137,6 +1164,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (in graph_iri varchar, in new_ori
 	    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	}
     }
+
 try_grddl:
   xmlnss := xmlnss_get (xt);
   nss := '<namespaces>';
@@ -1181,24 +1209,30 @@ try_grddl:
   try_rdfa:;
 
   -- /* GRDDL - plan A, eRDF going here */
-      foreach (any prof in profs) do
-	{
+  foreach (any prof in profs) do
+    {
       prof := WS.WS.EXPAND_URL (new_origin_uri, prof);
-	  xslt_style := (select GM_XSLT from DB.DBA.SYS_GRDDL_MAPPING where GM_PROFILE = prof);
-	  if (xslt_style is not null)
-	    {
-	      declare exit handler for sqlstate '*' { goto next_prof; };
-	      xd := xslt (xslt_style, xt, vector ('baseUri', coalesce (dest, graph_iri)));
-	      if (xpath_eval ('count(/RDF/*)', xd) > 0)
-		mdta := mdta + 1;
-	      xd := serialize_to_UTF8_xml (xd);
-	      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-	      profs_done := vector_concat (profs_done, vector (prof));
+      xslt_style := (select GM_XSLT from DB.DBA.SYS_GRDDL_MAPPING where GM_PROFILE = prof);
+      if (xslt_style is not null)
+	{
+	  declare exit handler for sqlstate '*' { goto next_prof; };
+	  xd := xslt (xslt_style, xt, vector ('baseUri', coalesce (dest, graph_iri)));
+	  if (xpath_eval ('count(/RDF/*)', xd) > 0)
+            {
+	      --dbg_obj_print ('plan A:', prof, xd);
+	      mdta := mdta + 1;
 	    }
-	  next_prof:;
-        }
+	  xd := serialize_to_UTF8_xml (xd);
+	  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+	  profs_done := vector_concat (profs_done, vector (prof));
+	}
+      next_prof:;
+    }
 
   -- brute force attack, scan w/o profile
+  if (xt_xml is not null)
+    xt := xt_xml;
+  --dbg_obj_print ('try all grddl mappings here');
   if (mdta = 0)
     {
       -- currently no profile in RDFa and some similar, so we try it to extract directly
@@ -1211,6 +1245,7 @@ try_grddl:
 	  if (xpath_eval ('count(/RDF/*)', xd) > 0)
 	    {
 	      mdta := mdta + 1;
+	      --dbg_obj_print ('plan B:', GM_XSLT, xd);
 	      xd := serialize_to_UTF8_xml (xd);
 	      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	    }
@@ -1313,7 +1348,7 @@ ret:
   for select RM_PATTERN from DB.DBA.SYS_RDF_MAPPERS where RM_ID > ord and RM_TYPE = 'URL' and RM_ENABLED = 1 order by RM_ID do
     {
       if (regexp_match (RM_PATTERN, new_origin_uri) is not null)
-    mdta := 0;
+        mdta := 0;
     }
 
   return (mdta * ret_flag);
@@ -1358,3 +1393,21 @@ create procedure DB.DBA.SYS_URN_SPONGE_UP (in local_iri varchar, in get_uri varc
 }
 ;
 
+create procedure DB.DBA.SYS_DOI_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
+{
+  if (lower (local_iri) like 'doi:%' and __proc_exists ('HS_Resolve', 2) is not null)
+    {
+      declare new_get_uri varchar;
+      new_get_uri := HS_Resolve (substring (get_uri, 5, length (get_uri)));
+      if (new_get_uri is null)
+        signal ('RDFZZ', 'Cannot resolve IRI='||get_uri);
+      options := vector_concat (vector ('get:uri', new_get_uri), options);
+      return DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, get_uri,
+	  'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
+    }
+  else
+    {
+      signal ('RDFZZ', 'This version of Virtuoso Sponger do not support "doi" IRI scheme');
+    }
+}
+;

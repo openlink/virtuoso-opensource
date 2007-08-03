@@ -77,40 +77,79 @@
 	    <xsl:apply-templates select="fb:album"/>
     </xsl:template>
     <xsl:template match="fb:album">
-	<sioct:ImageGallery rdf:about="{fb:link}">
-	<fb:aid><xsl:value-of select="fb:aid"/></fb:aid>
-	<dc:title><xsl:value-of select="fb:name"/></dc:title>
-	<dct:created><xsl:value-of select="vi:unix2iso-date (fb:created)"/></dct:created>
-	<dct:modified><xsl:value-of select="vi:unix2iso-date (fb:modified)"/></dct:modified>
-	<sioc:link rdf:resource="{fb:link}"/>
+	<sioct:ImageGallery rdf:about="{fb:link}#album">
+	    <fb:aid><xsl:value-of select="fb:aid"/></fb:aid>
+	    <dc:title><xsl:value-of select="fb:name"/></dc:title>
+	    <dct:created><xsl:value-of select="vi:unix2iso-date (fb:created)"/></dct:created>
+	    <dct:modified><xsl:value-of select="vi:unix2iso-date (fb:modified)"/></dct:modified>
+	    <sioc:link rdf:resource="{fb:link}"/>
+	    <xsl:if test="not contains ($baseUri, '&amp;')">
+		<sioc:has_owner rdf:resource="{$baseUri}"/>
+	    </xsl:if>
 	</sioct:ImageGallery>
+	<xsl:if test="not contains ($baseUri, '&amp;')">
+	    <foaf:Person rdf:about="{$baseUri}">
+		<sioc:owner_of rdf:resource="{fb:link}#album"/>
+	    </foaf:Person>
+	</xsl:if>
     </xsl:template>
-    <xsl:template match="fb:user">
+    <xsl:template match="fb:user[contains ($baseUri, fb:uid)]">
 	<foaf:Person rdf:about="{$baseUri}">
 	    <fb:uid><xsl:value-of select="fb:uid"/></fb:uid>
 	    <foaf:name><xsl:value-of select="fb:name"/></foaf:name>
 	    <foaf:firstName><xsl:value-of select="fb:first_name"/></foaf:firstName>
 	    <foaf:family_name><xsl:value-of select="fb:last_name"/></foaf:family_name>
-	    <foaf:gender><xsl:value-of select="fb:sex"/></foaf:gender>
+	    <xsl:if test="fb:sex != ''">
+		<foaf:gender><xsl:value-of select="fb:sex"/></foaf:gender>
+	    </xsl:if>
 	    <foaf:birthday><xsl:value-of select="fb:birthday"/></foaf:birthday>
-	    <foaf:depiction rdf:resource="{fb:pic}"/>
-	    <foaf:thumbnail rdf:resource="{fb:pic_small}"/>
+	    <xsl:if test="fb:pic != ''">
+		<foaf:depiction rdf:resource="{fb:pic}"/>
+	    </xsl:if>
+	    <xsl:if test="fb:pic_small != ''">
+		<foaf:thumbnail rdf:resource="{fb:pic_small}"/>
+	    </xsl:if>
 	    <vcard:ADR rdf:resource="{$baseUri}#current_location"/>
 	</foaf:Person>
 	<xsl:apply-templates select="fb:current_location"/>
     </xsl:template>
+    <xsl:template match="fb:user[not contains ($baseUri, fb:uid)]">
+	<foaf:Person rdf:about="#{fb:uid}">
+	    <fb:uid><xsl:value-of select="fb:uid"/></fb:uid>
+	    <foaf:name><xsl:value-of select="fb:name"/></foaf:name>
+	    <foaf:firstName><xsl:value-of select="fb:first_name"/></foaf:firstName>
+	    <foaf:family_name><xsl:value-of select="fb:last_name"/></foaf:family_name>
+	    <xsl:if test="fb:sex != ''">
+		<foaf:gender><xsl:value-of select="fb:sex"/></foaf:gender>
+	    </xsl:if>
+	    <foaf:birthday><xsl:value-of select="fb:birthday"/></foaf:birthday>
+	    <xsl:if test="fb:pic != ''">
+		<foaf:depiction rdf:resource="{fb:pic}"/>
+	    </xsl:if>
+	    <xsl:if test="fb:pic_small != ''">
+		<foaf:thumbnail rdf:resource="{fb:pic_small}"/>
+	    </xsl:if>
+	    <foaf:knows rdf:resource="{$baseUri}"/>
+	</foaf:Person>
+    </xsl:template>
     <xsl:template match="fb:current_location">
 	<vcard:ADR rdf:about="{$baseUri}#current_location">
 	    <dc:title>Location</dc:title>
-	    <vcard:Locality>
-		<xsl:value-of select="fb:city"/>
-	    </vcard:Locality>
-	    <vcard:Region>
-		<xsl:value-of select="fb:state"/>
-	    </vcard:Region>
-	    <vcard:Country>
-		<xsl:value-of select="fb:country"/>
-	    </vcard:Country>
+	    <xsl:if test="fb:city != ''">
+		<vcard:Locality>
+		    <xsl:value-of select="fb:city"/>
+		</vcard:Locality>
+	    </xsl:if>
+	    <xsl:if test="fb:state != ''">
+		<vcard:Region>
+		    <xsl:value-of select="fb:state"/>
+		</vcard:Region>
+	    </xsl:if>
+	    <xsl:if test="fb:country != ''">
+		<vcard:Country>
+		    <xsl:value-of select="fb:country"/>
+		</vcard:Country>
+	    </xsl:if>
 	</vcard:ADR>
     </xsl:template>
     <xsl:template match="fb:event">
@@ -130,6 +169,15 @@
 	    <c:description>
 		<xsl:value-of select="fb:name"/>
 	    </c:description>
+	    <sioc:has_creator rdf:resource="{$baseUri}"/>
 	</c:Vevent>
+	<foaf:Person rdf:about="{$baseUri}">
+	    <sioc:creator_of rdf:resource="{$baseUri}#{fb:eid}"/>
+	</foaf:Person>
+    </xsl:template>
+    <xsl:template match="fb:friend_info">
+	<foaf:Person rdf:about="{$baseUri}">
+	    <foaf:knows rdf:resource="#{fb:uid2}"/>
+	</foaf:Person>
     </xsl:template>
 </xsl:stylesheet>

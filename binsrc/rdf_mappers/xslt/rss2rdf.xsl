@@ -56,14 +56,14 @@
   <xsl:choose>
     <xsl:when test="name() = 'image'"/>
     <xsl:when test="namespace-uri()='' or namespace-uri()='http://backend.userland.com/rss2'">
-      <xsl:element name="{local-name()}" namespace="http://purl.org/rss/1.0/">
-        <xsl:apply-templates select="*|text()" />
-      </xsl:element>
+	<xsl:element name="{local-name()}" namespace="http://purl.org/rss/1.0/">
+	    <xsl:apply-templates select="*|text()" />
+	</xsl:element>
     </xsl:when>
     <xsl:when test="not ends-with (namespace-uri(), '/')">
 	<xsl:element name="{local-name()}" namespace="{concat (namespace-uri(), '/')}">
-        <xsl:apply-templates select="*|text()" />
-      </xsl:element>
+	    <xsl:apply-templates select="*|text()" />
+	</xsl:element>
     </xsl:when>
     <xsl:otherwise>
       <xsl:copy>
@@ -143,8 +143,8 @@
 <xsl:template match="channel/category|item/category">
     <dc:subject>
 	<skos:Concept rdf:about="{concat (/rss/channel/link, '#', .)}">
-	<skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
-    </skos:Concept>
+	    <skos:prefLabel><xsl:value-of select="."/></skos:prefLabel>
+	</skos:Concept>
     </dc:subject>
 </xsl:template>
 
