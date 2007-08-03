@@ -33,9 +33,9 @@
   <refsect1 id="RI-S-1a">
     <title>VSPX page invoking the SPARQL sponger</title>
     <para>
-	This demo present a VSPX form to the user to enter a URL. 
-	The form action (buton click) will perform SPARQL query with sponge parameters and on success will ping the 
-	pingthesemanticweb.com. 
+       This demo presents a VSPX-based form for entering an URL. The form's
+       submit (button click) will perform a SPARQL query with sponge parameters and
+       will ping pingthesemanticweb.com upon success.
     </para>
     <para>
 	Note that pinging the service is not needed if [SPARQL] INI section have 
