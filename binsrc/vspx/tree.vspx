@@ -31,7 +31,7 @@
       </p>
       <v:form name="frm1" action="tree.vspx" method="POST" type="simple">
         <div>
-          <v:tree name="tree1" multi-branch="1" orientation="vertical" root="root_node" start-path="vsp" child-function="child_node">
+          <v:tree name="tree1" multi-branch="1" orientation="vertical" root="root_node" start-path="." child-function="child_node">
             <v:node-template name="node_tmpl">
               <div STYLE="margin-left:1em;">
                 <v:button name="tree1_toggle" action="simple" style="image" value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'plus.gif' else 'minus.gif' end"/>

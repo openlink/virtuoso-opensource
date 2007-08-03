@@ -3112,7 +3112,7 @@ create method vc_render () for vspx_url
       else
         url := vspx_uri_add_parameters (self.vu_url, self.vu_l_pars);
     }
-  http (sprintf ('<a href="%V"', case when self.ufl_active > 0 then url else '#' end));
+  http (sprintf ('<a href="%V"', case when self.ufl_active > 0 then url else 'javascript:void(0)' end));
   vspx_print_html_attrs (self);
   http('>');
   if (230 = __tag (self.ufl_value))
@@ -4701,7 +4701,7 @@ create method vc_render () for vspx_button
       else
         frm_name := '';
       http ( sprintf ( '<a href="%s" %s><img src="%s" border="0" ',
-                       case self.bt_url when '' then '#' else self.bt_url end,
+                       case self.bt_url when '' then 'javascript:void(0)' else self.bt_url end,
                        case when self.bt_url = '' and self.ufl_active > 0
                             then sprintf ( 'onclick="javascript: doPost (\'%s\', \'%s\'); return false"',
                                            frm_name,
@@ -4724,7 +4724,7 @@ create method vc_render () for vspx_button
       else
         frm_name := '';
       http ( sprintf ( '<a href="%s" %s',
-                       case self.bt_url when '' then '#' else self.bt_url end,
+                       case self.bt_url when '' then 'javascript:void(0)' else self.bt_url end,
                        case when self.bt_url = '' and self.ufl_active > 0
                             then sprintf ( 'onclick="javascript: doPost (\'%s\', \'%s\'); return false"',
                                            frm_name,
@@ -4761,13 +4761,13 @@ create method vc_render () for vspx_browse_button
   if (self.bt_style = 'url')
     {
       -- URL style
-      http ('<a href="#"');
+      http ('<a href="javascript:void(0)"');
       vspx_print_html_attrs (self);
     }
   else if (self.bt_style = 'image')
     {
       -- image style
-      http ('<a href="#" ');
+      http ('<a href="javascript:void(0)" ');
     }
   else
     {
@@ -4864,13 +4864,13 @@ create method vc_render () for vspx_return_button
   if (self.bt_style = 'url')
     {
       -- URL style
-      http ('<a href="#"');
+      http ('<a href="javascript:void(0)"');
       vspx_print_html_attrs (self);
     }
   else if (self.bt_style = 'image')
     {
       -- image style
-      http ('<a href="#"');
+      http ('<a href="javascript:void(0)"');
     }
   else
     {
