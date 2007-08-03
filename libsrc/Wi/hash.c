@@ -717,6 +717,8 @@ hash_cast (query_instance_t * qi, hash_area_t * ha, int inx, state_slot_t * ssl,
       || DV_ANY == target_dtp
       || sqt->sqt_is_xml)
     return data;
+  if (target_dtp == DV_INT64 && dtp == DV_LONG_INT)
+    return data;
   if (SSL_CONSTANT == ssl->ssl_type)
     GPF_T1 ("constant ssl in hash_cast");
   if (IS_BLOB_DTP (target_dtp))
