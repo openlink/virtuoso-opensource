@@ -2692,7 +2692,23 @@ sf_shutdown (char *log_name, lock_trx_t * trx)
     {
       dbs_close (dbs);
     }
-  END_DO_SET();
+  END_DO_SET ();
+
+#if defined (MALLOC_DEBUG) || defined (VALGRIND)
+  wi_close ();
+
+  shuric_terminate_module ();
+  dkbox_terminate_module ();
+
+#if defined (MALLOC_DEBUG)
+  {
+    FILE *fp = fopen ("xmemdump.txt", "at");
+    dbg_malstats (fp ? fp : stderr, DBG_MALSTATS_ALL);
+    if (fp)
+      fclose (fp);
+  }
+#endif
+#endif
 
   if (db_exit_hook)
     (*db_exit_hook) ();

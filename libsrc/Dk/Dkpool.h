@@ -50,7 +50,7 @@ struct mem_pool_s
   caddr_t *mp_allocs;
   size_t mp_bytes;
   dk_hash_t *mp_unames;
-#ifdef DEBUG
+#if defined (DEBUG) || defined (MALLOC_DEBUG)
   const char *mp_alloc_file;
   int mp_alloc_line;
 #endif
@@ -75,7 +75,7 @@ struct mem_pool_s
   int	mp_block_size;
   size_t mp_bytes;
   dk_hash_t *mp_unames;
-#ifdef DEBUG
+#if defined (DEBUG) || defined (MALLOC_DEBUG)
   const char *mp_alloc_file;
   int mp_alloc_line;
 #endif
@@ -83,7 +83,7 @@ struct mem_pool_s
 #endif
 
 
-#ifdef DEBUG /* Not MALLOC_DEBUG */
+#if defined (DEBUG) || defined (MALLOC_DEBUG)
 extern mem_pool_t * dbg_mem_pool_alloc (const char *file, int line);
 #define mem_pool_alloc() dbg_mem_pool_alloc (__FILE__, __LINE__)
 #else

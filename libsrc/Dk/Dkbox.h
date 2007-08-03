@@ -739,4 +739,6 @@ typedef union memspy_u memspy_t;
 
 extern caddr_t uname___empty;
 
+extern void dkbox_terminate_module (void);
+
 #endif

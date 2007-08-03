@@ -246,11 +246,11 @@ DBG_NAME(hash_table_allocate) (DBG_PARAMS uint32 size)
 
 
 void
-hash_table_init (dk_hash_t * table, int size)
+DBG_NAME(hash_table_init) (DBG_PARAMS dk_hash_t * table, int size)
 {
   memset (table, 0, sizeof (dk_hash_t));
   size = hash_nextprime (size);
-  table->ht_elements = (hash_elt_t *) dk_alloc (sizeof (hash_elt_t) * size);
+  table->ht_elements = (hash_elt_t *) DK_ALLOC (sizeof (hash_elt_t) * size);
 #ifdef MEMDBG
   if (!table->ht_elements)
     GPF_T;

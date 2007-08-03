@@ -1226,7 +1226,7 @@ bp_make_buffer_list (int n)
 {
   buffer_desc_t *buf;
   int c;
-  unsigned char *buffers_space, *buf_ptr;
+  unsigned char *buf_ptr;
   NEW_VARZ (buffer_pool_t, bp);
   bp->bp_mtx = mutex_allocate ();
   mutex_option (bp->bp_mtx, "BP", NULL /*bp_mtx_entry_check */, (void*) bp);
@@ -1235,12 +1235,11 @@ bp_make_buffer_list (int n)
   memset (bp->bp_bufs, 0, sizeof (buffer_desc_t) * n);
   bp->bp_sort_tmp = (buffer_desc_t **) dk_alloc (sizeof (caddr_t) * n);
 
-  buffers_space = (unsigned char *) malloc (PAGE_SZ * (n + 1));
-  if (!buffers_space)
+  bp->bp_storage = (unsigned char *) calloc (n+1, PAGE_SZ);
+  if (!bp->bp_storage)
     GPF_T1 ("Cannot allocate memory for Database buffers, try to decrease NumberOfBuffers INI setting");
-  buffers_space = (db_buf_t) ALIGN_8K (buffers_space);
-  memset (buffers_space, 0, ALIGN_VOIDP (PAGE_SZ) * n);
-  buf_ptr = buffers_space;
+  buf_ptr = (db_buf_t) ALIGN_8K (bp->bp_storage);
+
   for (c = 0; c < n; c++)
     {
       buf = &bp->bp_bufs[c];
@@ -1260,6 +1259,17 @@ bp_make_buffer_list (int n)
 #endif
 
   return bp;
+}
+
+void
+bp_free_buffer_list (buffer_pool_t *bp)
+{
+  mutex_free (bp->bp_mtx);
+
+  dk_free (bp->bp_bufs, sizeof (buffer_desc_t) * bp->bp_n_bufs);
+  dk_free (bp->bp_sort_tmp, sizeof (caddr_t) * bp->bp_n_bufs);
+
+  free (bp->bp_storage);
 }
 
 
@@ -3403,6 +3413,33 @@ wi_open (char *mode)
 
   wi_open_dbs ();
   mt_write_init ();
+}
+
+
+void
+wi_close()
+{
+  int inx;
+
+  DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
+  {
+    bp_free_buffer_list (bp);
+    dk_free (bp, sizeof (buffer_pool_t));
+  }
+  END_DO_BOX;
+  dk_free_box (wi_inst.wi_bps);
+
+  resource_clear (pm_rc_1, NULL);
+  resource_clear (pm_rc_2, NULL);
+  resource_clear (pm_rc_3, NULL);
+  resource_clear (pm_rc_4, NULL);
+
+  buffer_free (cp_buf);
+
+#if HAVE_SYS_MMAN_H && !defined(__FreeBSD__)
+  if (cf_lock_in_mem)
+    munlockall ();
+#endif
 }
 
 

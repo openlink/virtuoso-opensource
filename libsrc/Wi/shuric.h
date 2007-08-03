@@ -213,6 +213,8 @@ extern void shuric_validate_refcounters (int strict);
 extern shuric_t shuric_anchor;
 
 extern void shuric_init (void);
+extern void shuric_terminate_module (void);
+
 
 /* Shuric caches */
 

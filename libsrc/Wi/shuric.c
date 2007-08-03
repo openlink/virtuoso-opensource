@@ -1002,7 +1002,7 @@ shuric_cache_vtable_t shuric_cache__LRU =
 /* Global init */
 
 
-void shuric_init(void)
+void shuric_init (void)
 {
   shuric_global_hashtable = id_str_hash_create (101);
   shuric_mtx = mutex_allocate ();
@@ -1011,4 +1011,19 @@ void shuric_init(void)
   bif_define ("__shuric_list", bif_shuric_list);
 }
 
-
+void
+shuric_terminate_module (void)
+{
+  int bucket_ctr;
+  for (bucket_ctr = shuric_global_hashtable->ht_buckets; bucket_ctr--; /* no step */)
+    {
+      caddr_t key;
+      shuric_t *sptr;
+      while (id_hash_remove_rnd (shuric_global_hashtable, bucket_ctr, (caddr_t)&key, (caddr_t)&sptr))
+	{
+          shuric_lock (sptr);
+          shuric_stale_tree (sptr);
+          shuric_release (sptr);
+	}
+    }
+}

@@ -158,6 +158,8 @@ struct buffer_pool_s
   bp_ts_t	bp_ts; /* ts to assign to next touched buffer */
   bp_ts_t	bp_stat_ts; /* bp_ts as of when the pool age stats were last computed */
 
+  unsigned char * bp_storage;	/* pointer to storage area */
+
   /* Each pool is divided into BP_N_BUCKETS, each holding a approx
    * * equal no f buffers.  They are divided by bp_ts, with the 1st bucket
    * holding the oldest 1/BP_N_BUCKETS and so on.  Used for scheduling

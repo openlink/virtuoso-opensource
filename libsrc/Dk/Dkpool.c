@@ -48,17 +48,17 @@ void mp_uname_free (void *k, void *data)
 
 #ifdef LACERATED_POOL
 
-#ifdef DEBUG /* Not MALLOC_DEBUG */
+#if defined (DEBUG) || defined (MALLOC_DEBUG)
 mem_pool_t * dbg_mem_pool_alloc (const char *file, int line)
 #else
 mem_pool_t * mem_pool_alloc (void)
 #endif
 {
   NEW_VARZ (mem_pool_t, mp);
-  mp->mp_allocs = (caddr_t *)dk_alloc (sizeof (caddr_t) * 0x100);
   mp->mp_size = 0x100;
+  mp->mp_allocs = (caddr_t *)DK_ALLOC (sizeof (caddr_t) * mp->mp_size);
   mp->mp_unames = hash_table_allocate (4096);
-#ifdef DEBUG /* Not MALLOC_DEBUG */
+#if defined (DEBUG) || defined (MALLOC_DEBUG)
   mp->mp_alloc_file = (char *)file;
   mp->mp_alloc_line = line;
 #endif
@@ -104,7 +104,7 @@ void mp_alloc_box_assert (mem_pool_t * mp, caddr_t box)
 
 #define MP_BLOCK_SIZE (4096 - ALIGN_8((sizeof (mem_block_t))))
 
-#ifdef DEBUG /* Not MALLOC_DEBUG */
+#if defined (DEBUG) || defined (MALLOC_DEBUG)
 mem_pool_t * dbg_mem_pool_alloc (const char *file, int line)
 #else
 mem_pool_t * mem_pool_alloc (void)
@@ -112,8 +112,8 @@ mem_pool_t * mem_pool_alloc (void)
 {
   NEW_VARZ (mem_pool_t, mp);
   mp->mp_block_size = ALIGN_8(4096);
-  mp->mp_unames = hash_table_allocate (4096);
-#ifdef DEBUG /* Not MALLOC_DEBUG */
+  mp->mp_unames = DBG_NAME (hash_table_allocate) (DBG_ARGS 4096);
+#if defined (DEBUG) || defined (MALLOC_DEBUG)
   mp->mp_alloc_file = (char *)file;
   mp->mp_alloc_line = line;
 #endif

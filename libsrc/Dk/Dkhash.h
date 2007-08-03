@@ -125,12 +125,14 @@ extern uint32 hash_nextprime (uint32 n);
 
 #ifdef MALLOC_DEBUG
 extern dk_hash_t *dbg_hash_table_allocate (const char *file, int line, uint32 size);
+extern void dbg_hash_table_init (const char *file, int line, dk_hash_t * ht, int size);
 extern void dbg_hash_table_free (const char *file, int line, dk_hash_t *table);
 extern void *dbg_sethash (const char *file, int line, const void *key, dk_hash_t *ht, void *data);
 extern int dbg_remhash (const char *file, int line, const void *key, dk_hash_t *ht);
 extern void dbg_clrhash (const char *file, int line, dk_hash_t *table);
 extern void dbg_dk_rehash (const char *file, int line, dk_hash_t *ht, uint32 new_sz);
 #define hash_table_allocate(SIZE)	dbg_hash_table_allocate (__FILE__, __LINE__, (SIZE))
+#define hash_table_init(TABLE,SIZE)	dbg_hash_table_init (__FILE__, __LINE__, (TABLE), (SIZE))
 #define hash_table_free(TABLE)		dbg_hash_table_free (__FILE__, __LINE__, (TABLE))
 #define sethash(KEY,HT,DATA)		dbg_sethash (__FILE__, __LINE__, (KEY), (HT), (DATA))
 #define remhash(KEY,HT)			dbg_remhash (__FILE__, __LINE__, (KEY), (HT))
@@ -138,13 +140,13 @@ extern void dbg_dk_rehash (const char *file, int line, dk_hash_t *ht, uint32 new
 #define dk_rehash(HT,NEW_SZ)		dbg_dk_rehash (__FILE__, __LINE__, (HT), (NEW_SZ))
 #else
 extern dk_hash_t *hash_table_allocate (uint32 size);
+extern void hash_table_init (dk_hash_t * ht, int size);
 extern void hash_table_free (dk_hash_t *table);
 extern void *sethash (const void *key, dk_hash_t *ht, void *data);
 extern int remhash (const void *key, dk_hash_t *ht);
 extern void clrhash (dk_hash_t *table);
 extern void dk_rehash (dk_hash_t *ht, uint32 new_sz);
 #endif
-void hash_table_init (dk_hash_t * ht, int size);
 void hash_table_destroy (dk_hash_t * ht);
 
 extern void *gethash (const void *key, dk_hash_t *ht);

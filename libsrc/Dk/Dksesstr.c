@@ -74,7 +74,7 @@ long read_wides_from_utf8_file (
  *  Returns a pointer to a non-full buffer
  */
 static buffer_elt_t *
-strdev_get_buf (dk_session_t *ses)
+DBG_NAME (strdev_get_buf) (DBG_PARAMS dk_session_t *ses)
 {
   buffer_elt_t *buf = ses->dks_buffer_chain_tail;
   buffer_elt_t **last_ref = &ses->dks_buffer_chain_tail;
@@ -94,7 +94,7 @@ strdev_get_buf (dk_session_t *ses)
   new_buf->read = 0;
   new_buf->fill_chars = 0;
   new_buf->space_exausted = 0;
-  new_buf->data = (char *) dk_alloc (DKSES_OUT_BUFFER_LENGTH);
+  new_buf->data = (char *) DK_ALLOC (DKSES_OUT_BUFFER_LENGTH);
   new_buf->next = NULL;
   last_ref[0] = new_buf;
   if (NULL == ses->dks_buffer_chain)
@@ -1092,6 +1092,17 @@ DBG_NAME(strses_string) (DBG_PARAMS dk_session_t * ses)
   return box;
 }
 
+
+caddr_t
+t_strses_string (dk_session_t * ses)
+{
+  int len = strses_length (ses);
+  caddr_t box;
+  box = t_alloc_box (len + 1, DV_LONG_STRING);
+  strses_to_array (ses, box);
+  box[len] = 0;
+  return box;
+}
 
 void
 strses_free (dk_session_t *ses)

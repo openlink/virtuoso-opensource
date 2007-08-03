@@ -515,6 +515,32 @@ dk_free_box (box_t box)
   return (0);
 }
 
+void
+dkbox_terminate_module (void)
+{
+  int uname_cpair_ctr;
+  for (uname_cpair_ctr = UNAME_TABLE_SIZE; uname_cpair_ctr--; /* no step */)
+    {
+      uname_chain_pair_t *cpair = unames + uname_cpair_ctr;
+      while (NULL != cpair->unc_immortals)
+        {
+          uname_blk_t *first_imm = cpair->unc_immortals;
+          cpair->unc_immortals = first_imm->unb_next;
+          first_imm->unb_hdr[UNB_HDR_REFCTR] = 1;
+          first_imm->unb_next = cpair->unc_refcounted;
+          cpair->unc_refcounted = first_imm;
+        }
+      while (NULL != cpair->unc_refcounted)
+        {
+          cpair->unc_refcounted->unb_hdr[UNB_HDR_REFCTR] = 1;
+#ifdef MALLOC_DEBUG
+          dk_free_box (cpair->unc_refcounted->unb_data_ptr);
+#else
+          dk_free_box (cpair->unc_refcounted->unb_data);
+#endif
+        }
+    }
+}
 
 int
 dk_free_tree (box_t box)

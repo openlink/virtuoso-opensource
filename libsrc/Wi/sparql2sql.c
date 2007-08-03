@@ -5438,7 +5438,7 @@ sparp_rewrite_grab (sparp_t *sparp)
       ssg.ssg_tree = sub_sparp->sparp_expr;
       ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
       ssg_make_sql_query_text (&ssg);
-      sql_texts [sub_sparp_ctr] = strses_string (ssg.ssg_out);
+      sql_texts [sub_sparp_ctr] = t_strses_string (ssg.ssg_out);
       strses_free (ssg.ssg_out);
     }
   if (rgc->rgc_intermediate)

@@ -702,6 +702,7 @@ extern timeout_t time_now;
 
 EXE_EXPORT (dk_session_t *, strses_allocate, (void));
 EXE_EXPORT (caddr_t, strses_string, (dk_session_t * ses));
+extern caddr_t t_strses_string (dk_session_t * ses);
 void strses_set_utf8 (dk_session_t *ses, int is_utf8);
 int strses_is_utf8 (dk_session_t *ses);
 
