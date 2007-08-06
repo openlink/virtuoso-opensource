@@ -333,7 +333,10 @@ cont:
       };
 
       declare _filename, _retval any;
-
+      _text := coalesce(_text, '');
+      if (length (_text) > 0)
+        if (_text[length (_text)-1] = ascii('\n'))
+          _text := subseq(_text, 0, length (_text)- 2);
       _text := WV.WIKI.DELETE_SYSINFO_FOR (_text, NULL);      
       _topic.ti_text := _text;
       _filename := coalesce ((select RES_NAME from WS.WS.SYS_DAV_RES where RES_ID = _topic.ti_res_id), concat (_topic.ti_local_name,'.txt'));

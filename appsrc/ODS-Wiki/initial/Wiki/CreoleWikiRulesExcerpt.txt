@@ -1,0 +1,233 @@
+<b>Text formatting tips</b>
+
+<table class="page_help">
+  <tr>
+    <td class="ex_text"><nowiki>**bold**</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <span class="ex_bold">bold</span>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>//italics//</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <span class="ex_ital">italics</span>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text">
+      <nowiki>
+        **//bold italics//**
+      </nowiki>
+    </td>
+    <td>⇒</td>
+    <td><span class="ex_bold_ital">bold italics</span></td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>//**bold italics**//</nowiki></td>
+    <td>⇒</td>
+    <td><span class="ex_bold_ital">bold italics</span></td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>//This is **also** good.//</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <span class="ex_ital">This is </span><span class="ex_bold_ital">also</span><span class="ex_ital"> good.</span>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text"><nowiki>[[http://foo.com|link]]</nowiki></td>
+    <td>⇒</td>
+    <td>
+      <a href="http://openlinksw.com">link</a>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text">Ordered List:
+      <nowiki>
+        # Item 1
+        ## Item 1.1
+        # Item 2
+      </nowiki>
+    </td>
+    <td>⇒</td>
+    <td>
+      <ol>
+	<li>Item 1</li>
+        <ol>
+          <li>Item 1.1</li>
+        </ol>
+	<li>Item 2</li>
+      </ol>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text">Headings:
+      <nowiki>
+        = Level 1 =
+        == Level 2 ==
+        === Level 3 ===
+        ==== Level 4 ====
+      </nowiki>
+    </td>
+    <td>⇒</td>
+    <td>
+      <span class="ex_head_1">Level 1</span>
+      <br>
+      <span class="ex_head_2">Level 2</span>
+      <br>
+      <span class="ex_head_3">Level 3</span>
+      <br>
+      <span class="ex_head_4">Level 4</span>
+      <br>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text">Table:
+      <nowiki>
+        |=Heading Col 1 |=Heading Col 2         |
+        |Cell 1.1       |Cell 1.2               |
+        |Cell 2.1       |Cell 2.2               |
+      </nowiki>
+    </td>
+    <td>⇒</td>
+    <td>
+      <table>
+        <tr>
+          <th>Heading Col 1</th>
+          <th>Heading Col 2</th>
+        </tr>
+        <tr>
+          <td>Cell 1.1</td>
+          <td>Cell 1.2</td>
+        </tr>
+        <tr>
+          <td>Cell 2.1</td>
+          <td>Cell 2.2</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td class="ex_text">Nowiki (Preformatted):
+      <nowiki>
+        {{{
+          //This// does **not** get [[formatted]]
+        }}}
+      </nowiki>
+    </td>
+    <td>⇒</td>
+    <td>
+      <nowiki>
+        //This// does **not** get [[formatted]]
+      </nowiki>
+    </td>
+  </tr>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

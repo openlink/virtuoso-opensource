@@ -3747,6 +3747,7 @@ create function WV.WIKI.DELETE_SYSINFO_FOR (in _text varchar, in _pred varchar :
   declare _lines any;
   declare _res any;
   declare _prefix varchar;
+  declare i integer;
   if (not isstring(_text))
     _text := cast (_text as varchar);
   if (_pred is not null)
@@ -3756,11 +3757,10 @@ create function WV.WIKI.DELETE_SYSINFO_FOR (in _text varchar, in _pred varchar :
   
   _lines := split_and_decode (_text, 0, '\0\0\n');
   _res := string_output();
-  foreach (varchar l0 in _lines) do
-    { 
-      if (l0  not like _prefix)
-        {
-	  http (l0, _res);
+  for (i:=0; i<length(_lines); i:=i+1) {
+    if (_lines[i]  not like _prefix) {
+	    http (_lines[i], _res);
+	    if (i<>length(_lines)-1)
 	  http ('\n', _res);
 	}
     }

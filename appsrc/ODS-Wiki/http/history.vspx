@@ -86,7 +86,8 @@
 		       <td>
 		        <img src="images/notep_16.png" title="View Revision" alt="View Revision"/><v:button name="link" action="simple" style="url" value="--'1.' || (control.vc_parent as vspx_row_template).te_rowset">
 			   <v:on-post><![CDATA[
-			     self.vc_redirect ('../main/' || WV.WIKI.READONLYWIKIWORDLINK (self.topic.ti_cluster_name, self.topic.ti_local_name) || '?rev=' || (control.vc_parent as vspx_row_template).te_rowset);
+			     -- self.vc_redirect ('../main/' || WV.WIKI.READONLYWIKIWORDLINK (self.topic.ti_cluster_name, self.topic.ti_local_name) || '?rev=' || (control.vc_parent as vspx_row_template).te_rowset);
+			     self.vc_redirect (self.topic.ti_fill_url() || '?rev=' || (control.vc_parent as vspx_row_template).te_rowset);
 			      ;
 			   ]]></v:on-post>
 			</v:button>
@@ -95,7 +96,8 @@
 		        <v:template name="diff_tmpl" type="simple" enabled="--case when (control.vc_parent as vspx_row_template).te_ctr = ((control.vc_parent.vc_parent as vspx_data_set).ds_rows_total - 1) then 0 else 1 end">
 		         <img src="images/opts_16.png" title="View Diff" alt="View Diff"/><v:button name="diff" action="simple" style="url" value="View Diff">
 			   <v:on-post><![CDATA[
-			     self.vc_redirect ('../main/' || WV.WIKI.READONLYWIKIWORDLINK (self.topic.ti_cluster_name, self.topic.ti_local_name) || sprintf ('?command=diff&rev=%ld', cast ((control.vc_parent.vc_parent as vspx_row_template).te_rowset as int) -1 ));
+			     -- self.vc_redirect ('../main/' || WV.WIKI.READONLYWIKIWORDLINK (self.topic.ti_cluster_name, self.topic.ti_local_name) || sprintf ('?command=diff&rev=%ld', cast ((control.vc_parent.vc_parent as vspx_row_template).te_rowset as int) -1 ));
+           self.vc_redirect (sprintf ('%s?command=diff&rev=%ld', self.topic.ti_fill_url(), cast ((control.vc_parent.vc_parent as vspx_row_template).te_rowset as int) -1 ));
 			      ;
 			   ]]></v:on-post>
 			 </v:button>

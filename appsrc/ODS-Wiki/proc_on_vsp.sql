@@ -1709,8 +1709,10 @@ create function WV.WIKI.MAKEHREFFROMRES (in res_id int, in res_name varchar, in 
     return null;
   _topic.ti_find_metadata_by_id ();
   _topic.ti_fill_cluster_by_id ();
-  _clusterPath := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_name, 'home');
-  return sprintf ('<a href="http://%s/%s/%U/%U?%s">%s.%s</a>', WV.WIKI.GET_HOST(), _clusterPath, _topic.ti_cluster_name, _topic.ti_local_name,  WV.WIKI.SIDURLPART (sid, realm), _topic.ti_cluster_name, _topic.ti_local_name);
+  _clusterPath := cast (WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_name, 'home') as varchar);
+  if (_clusterPath not like 'http://%')
+    _clusterPath := sprintf('http://%s%s', WV.WIKI.GET_HOST(), _clusterPath);
+  return sprintf ('<a href="%s/%U/%U?%s">%s.%s</a>', _clusterPath, _topic.ti_cluster_name, _topic.ti_local_name,  WV.WIKI.SIDURLPART (sid, realm), _topic.ti_cluster_name, _topic.ti_local_name);
 }
 ;
 
@@ -2335,6 +2337,8 @@ create function WV.WIKI.TRANSLATE_COMMAND (in _cmd varchar)
   _cmd := lcase (_cmd);
   if (_cmd like 'save%')
     return 'save';
+  if (_cmd like 'back%')
+    return 'back';
   return _cmd;
 }
 ;

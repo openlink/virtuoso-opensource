@@ -83,7 +83,7 @@
     <xsl:param name="linkisbad"/>
     <xsl:choose>
       <xsl:when test="$preview_mode = '1'">
-        <xsl:attribute name="href"><xsl:value-of select="$baseadjust" />Main/NoWhere</xsl:attribute>
+        <xsl:attribute name="href">javascript: alert('You are in Preview mode! Save your article first.');</xsl:attribute>
       </xsl:when>
       <xsl:when test="$linkisbad = 1">
 	<xsl:attribute name="href"><xsl:value-of select="wv:ReadOnlyWikiWordHREF($ti_cluster_name,@href,$sid,$realm, $baseadjust, '')" />?parent=<xsl:value-of select="$ti_local_name"/> </xsl:attribute>   
@@ -774,8 +774,8 @@
       <xsl:if test="$parent">
 	<input type="hidden" name="parent" value="{$parent}"></input>
       </xsl:if>
-      <input type="submit" name="command" value="Save and release lock"></input>
-      <input type="submit" name="command" value="Cancel" />
+      <input type="submit" name="command" value="Save and release lock"></input>&nbsp;
+      <input type="submit" name="command" value="Cancel" />&nbsp;
 
       <script type="text/javascript">
         function insertAtCursor(myField, myValue) {

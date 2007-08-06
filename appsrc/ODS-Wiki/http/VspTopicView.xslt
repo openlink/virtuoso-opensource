@@ -475,7 +475,7 @@
   
   <!-- copy of text above -->
   <xsl:if test="$preview_mode = '1'">
-      <form method="post">
+      <form name="preview_form" method="post">
         <xsl:attribute name="action"><xsl:call-template name="link-to-topic"/></xsl:attribute>
 	<xsl:call-template name="security_hidden_inputs"/>
         <input type="hidden" name="topic_id" value="{$ti_id}"/>
@@ -499,7 +499,11 @@
             </span>
 	    &nbsp;
             <span>
-              <input type="submit" name="command" value="Cancel"></input>
+              <input type="button" value="Back to edit" onclick="history.go(-1);return true;"></input>
+            </span>
+	          &nbsp;
+            <span>
+              <input type="button" name="command" value="Cancel" onclick="javascript: if (confirm ('If you really want to discard your changes, click OK.')) document.preview_form.submit();"></input>
 	    </span>
           </div>
         </div>

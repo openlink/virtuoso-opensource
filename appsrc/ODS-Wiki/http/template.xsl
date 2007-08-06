@@ -37,6 +37,7 @@
    </xsl:when>
    <xsl:when test="$preview_mode = '1'">
      <div class="working-area">
+     <h3>Preview of '<xsl:value-of select="wv:NormalizeWikiWordLink ($ti_cluster_name, $ti_local_name)"/>'</h3>
        <div id="content">
          <xsl:call-template name="Root"/>
        </div>
