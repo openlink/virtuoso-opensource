@@ -81,6 +81,8 @@ void rdf_ds_load_all (void)
   qmf->qmfIsuriOfShortTmpl = box_dv_short_string (" (^{tree}^ < min_bnode_iri_id ())");
   qmf->qmfIsblankOfShortTmpl = box_dv_short_string (" (^{tree}^ >= min_bnode_iri_id ())");
   qmf->qmfIslitOfShortTmpl = box_dv_short_string (" 0");
+  qmf->qmf01uriOfShortTmpl = box_dv_short_string (" (lt (^{tree}^, min_bnode_iri_id ()))");
+  qmf->qmf01blankOfShortTmpl = box_dv_short_string (" (gte (^{tree}^, min_bnode_iri_id ()))");
   qmf->qmfLongOfShortTmpl = box_dv_short_string (" ^{tree}^ ");
   qmf->qmfDatatypeOfShortTmpl = box_dv_short_string (" 'http://www.w3.org/2001/XMLSchema#anyURI'");
   qmf->qmfLanguageOfShortTmpl = box_dv_short_string (" NULL");
@@ -2246,7 +2248,11 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
       else
       {
         if (IS_BOX_POINTER (arg1_native))
-            ssg_print_tmpl (ssg, arg1_native, arg1_native->qmfIsblankOfShortTmpl, NULL, NULL, arg1, NULL_ASNAME);
+            {
+              const char *tmpl = ((top_filter_op || (NULL == arg1_native->qmf01blankOfShortTmpl)) ?
+                arg1_native->qmfIsblankOfShortTmpl : arg1_native->qmf01blankOfShortTmpl );
+              ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
+            }
         else if (SSG_VALMODE_LONG == arg1_native)
           ssg_print_tmpl (ssg, arg1_native,
             (top_filter_op ?
@@ -2272,7 +2278,11 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
       else
       {
         if (IS_BOX_POINTER (arg1_native))
-            ssg_print_tmpl (ssg, arg1_native, arg1_native->qmfIsuriOfShortTmpl, NULL, NULL, arg1, NULL_ASNAME);
+            {
+              const char *tmpl = ((top_filter_op || (NULL == arg1_native->qmf01uriOfShortTmpl)) ?
+                arg1_native->qmfIsuriOfShortTmpl : arg1_native->qmf01uriOfShortTmpl );
+              ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
+            }
         else if (SSG_VALMODE_LONG == arg1_native)
           ssg_print_tmpl (ssg, arg1_native,
             (top_filter_op ?
