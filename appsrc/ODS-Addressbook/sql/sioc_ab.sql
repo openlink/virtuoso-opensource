@@ -813,6 +813,7 @@ create procedure sioc.DBA.rdf_addressbook_view_str ()
 grant select on ODS_ADDRESSBOOK_CONTACTS to SPARQL_SELECT;
 grant select on ODS_ADDRESSBOOK_TAGS to SPARQL_SELECT;
 grant execute on ODS_ADDRESSBOOK_TAGS to SPARQL_SELECT;
+grant execute on AB.WA.contact_url to SPARQL_SELECT;
 
 -- RDF Views
 ODS_RDF_VIEW_INIT ();
