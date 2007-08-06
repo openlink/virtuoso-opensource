@@ -1186,6 +1186,9 @@ create procedure BLOG_TAGS_STAT (in blogid any)
 }
 ;
 
+grant execute on BLOG.DBA.BLOG_TAGS_STAT to SPARQL_SELECT
+;
+
 blog2_exec_no_error ('create procedure view BLOG_TAGS_STAT as BLOG.DBA.BLOG_TAGS_STAT (blogid) (BT_POST_ID varchar, BT_TAG varchar)');
 
 create procedure BLOG_TAGS_STAT_EXT (in blogid any, in community int)
