@@ -284,7 +284,7 @@ function getNonLoginParamsStr()
   
   var nonLoginParams = '';
   
-  if(allParams.length > 0 )
+  if(allParams!= null && allParams.length > 0 )
   {
      for(var i = 0 ; i < allParams.length ; i++)
      {

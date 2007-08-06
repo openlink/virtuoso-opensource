@@ -720,18 +720,6 @@
  </v:method>
 
  <vm:header>
-   <v:template name="search_results_map" type="simple" enabled="--length (self.map_query)">
-    <vm:oatmap-control
-	sql="self.map_query"
-	baloon-inx="1"
-	lat-inx="6"
-	lng-inx="7"
-	key-name-inx="8"
-	key-val="self.u_id"
-        div_id="google_map"
-        zoom="0"
-        base_url="connection_get ('WA_SEARCH_PATH')" />
-   </v:template>
   <vm:title>Search</vm:title>
    <?vsp if (self.plate_enabled) { ?>
     <link rel="alternate" type="application/rss+xml" title="Search RSS feed (RSS 2.0)" href="<?V self.page_url ?>&amp;o=xml" />
@@ -740,6 +728,7 @@
    <?vsp } ?>
  </vm:header>
  <vm:pagewrapper>
+ 
   <vm:variable name="ds_data" type="any" default="null"/>
   <vm:variable name="ds_meta" type="any" default="null"/>
   <vm:variable name="ds_rel_tags_data" type="any" default="null"/>
@@ -758,6 +747,18 @@
   <vm:navigation-new on="site"/>
   <vm:subnavigation-new on="site"/>
   <vm:body>
+   <v:template name="search_results_map" type="simple" enabled="--length (self.map_query)">
+    <vm:oatmap-control
+       sql="self.map_query"
+       baloon-inx="1"
+       lat-inx="6"
+       lng-inx="7"
+       key-name-inx="8"
+       key-val="self.u_id"
+             div_id="google_map"
+             zoom="0"
+             base_url="connection_get ('WA_SEARCH_PATH')" />
+    </v:template>
    <vm:login redirect="search.vspx"/>
    <v:form name="form1" type="simple" method="POST">
     <v:on-post>

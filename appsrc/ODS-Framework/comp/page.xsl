@@ -126,7 +126,7 @@
         err := 'Invalid search string entered.';
       self.vc_error_message := regexp_match ('[^\r\n]*', err);
   </v:method>
-  <html>
+  <html xmlns="http://www.w3.org/1999/xhtml" >
     <xsl:apply-templates/>
   </html>
   <?vsp
@@ -346,6 +346,9 @@
     <?vsp
       }
     ?>
+<!--
+    <link rel="stylesheet" type="text/css" href="<?V self.odsbar_ods_gpath ?>ods-bar.css" />
+-->
     <xsl:apply-templates />
   </head>
 </xsl:template>

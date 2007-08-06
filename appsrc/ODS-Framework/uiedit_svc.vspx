@@ -99,12 +99,15 @@
             <v:text xhtml_id="akey" xhtml_class="textbox" xhtml_style="width: 220px" name="akey" value="--get_keyword('AmazonKey', self.opts, '')"/>
           </td>
         </tr>
+	<?vsp if (__proc_exists ('DB.DBA.FB_SIG') is not null) { ?>
         <tr>
           <td><label for="fbkey">FaceBook Session</label></td>
           <td>
             <v:textarea xhtml_id="fbkey" xhtml_rows="3" xhtml_cols="70" xhtml_class="textbox" name="fbkey" value="--get_keyword('FBKey', self.opts, 'key=\nsecret=\nsession=')"/>
+	      <v:browse-button name="fbt1" value="Get FB session" child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=800, width=800" selector="fb_popup.vspx" style="button"/>
           </td>
         </tr>
+        <?vsp } ?>
         <tr>
           <td colspan="2" class="ctrl">
 		      <span class="fm_ctl_btn">

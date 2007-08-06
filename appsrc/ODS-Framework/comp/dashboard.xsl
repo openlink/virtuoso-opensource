@@ -42,8 +42,8 @@
           <xsl:value-of select="@title"/>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div--> <!-- w_title_bar -->
       <!--xsl:apply-templates/>
@@ -118,8 +118,8 @@
           <span class="w_title_text">Users <span class="usr_count"> active: <?V active ?></span></span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -131,11 +131,11 @@
 	      if (not length (u_full_name))
 	        u_full_name := null;
 	?>
-	            <li><a href="uhome.vspx?page=1&amp;ufname=&lt;?V nu_name ?&gt;&lt;?V self.login_pars ?&gt;"><?V wa_utf8_to_wide ( coalesce (u_full_name, nu_name) ) ?></a></li>
+	            <li><a href="uhome.vspx?&lt;?V 'page=1&amp;ufname='|| nu_name ?&gt;&lt;?V self.login_pars ?&gt;"><?V wa_utf8_to_wide ( coalesce (u_full_name, nu_name) ) ?></a></li>
 	<?vsp
 	   }
 	?>
-      </ul>
+          <li/></ul>
           <h3>New Users</h3>
         <ul class="w_act_lst">
 	<?vsp
@@ -148,10 +148,10 @@
 	<?vsp
 	   }
 	?>
-      </ul>
+        <li/></ul>
       </div> <!-- pane content_pane -->
       <div class="w_footer">
-        <a href="search.vspx?newest=users&lt;?V self.login_pars ?&gt;">More&amp;#133;</a>
+        <a href="search.vspx?newest=users&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
       </div>
     </div>
   </xsl:template>
@@ -166,8 +166,8 @@
           <span class="w_title_text">Top Blogs</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -183,7 +183,7 @@
       </ul>
     </div>
       <div class="w_footer">
-        <a href="search.vspx?newest=blogs&lt;?V self.login_pars ?&gt;">More&amp;#133;</a>
+        <a href="search.vspx?newest=blogs&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
       </div>
     </div> <!-- widget w_blog_summary -->
   </xsl:template>
@@ -198,9 +198,9 @@
           <span class="w_title_text">Latest News</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
@@ -218,7 +218,7 @@
       </ul>
       </div> <!-- w_pane content_pane -->
       <div class="w_footer">
-        <a href="search.vspx?newest=news&lt;?V self.login_pars ?&gt;">More&amp;#133;</a>
+        <a href="search.vspx?newest=news&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
       </div>
     </div>
   </xsl:template>
@@ -233,9 +233,9 @@
           <span class="w_title_text">Wiki Activity</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane"> 
@@ -255,7 +255,7 @@
       </ul>
       </div> <!-- content_pane -->
       <div class="w_footer">
-        <a href="search.vspx?newest=wiki&lt;?V self.login_pars ?&gt;">More&amp;#133;</a>
+        <a href="search.vspx?newest=wiki&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
     </div>
     </div> <!-- widget -->
   </xsl:template>
@@ -270,9 +270,9 @@
           <span class="w_title_text"><?V WA_GET_APP_NAME ('WEBLOG2') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -652,8 +652,8 @@
             <span class="w_title_text"><?V WA_GET_APP_NAME ('eNews2') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -718,8 +718,8 @@
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oMail') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -774,8 +774,8 @@
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oWiki') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -839,8 +839,8 @@
           <span class="w_title_text"><?V WA_GET_APP_NAME ('oDrive') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -895,9 +895,9 @@
           <span class="w_title_text"><?V WA_GET_APP_NAME ('Bookmark') ?> summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
@@ -962,9 +962,9 @@
           <span class="w_title_text"><?V WA_GET_APP_NAME ('Community') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png"/></a>
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="edit_btn" href="#"><img src="i/w_btn_configure.png" alt="configure icon"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
@@ -990,8 +990,8 @@
             <span class="w_title_text"><?V WA_GET_APP_NAME ('oGallery') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1056,8 +1056,8 @@
             <span class="w_title_text"><?V WA_GET_APP_NAME ('Polls') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1122,8 +1122,8 @@
             <span class="w_title_text"><?V WA_GET_APP_NAME ('AddressBook') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1188,8 +1188,8 @@
             <span class="w_title_text"><?V WA_GET_APP_NAME ('Calendar') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1254,8 +1254,8 @@
             <span class="w_title_text"><?V WA_GET_APP_NAME ('nntpf') ?> Summary</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1321,8 +1321,8 @@
           What's New
      </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="images/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="images/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="images/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="images/w_btn_close.png" alt="close icon"/></a>
     </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
@@ -1378,8 +1378,8 @@
           My Profile
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1481,7 +1481,7 @@
    </v:template>
       </div> <!-- pane content_pane -->
       <div class="w_footer">
-        <a href="uhome.vspx?page=1&amp;ufname=&lt;?V self.u_name ?&gt;&lt;?V self.login_pars ?&gt;">View full profile...</a> 
+        <a href="uhome.vspx?&lt;?V 'page=1&amp;ufname='|| self.u_name || self.login_pars ?&gt;">View full profile...</a>
         <vm:user-info-edit-link title="Edit..."/>
       </div>
     </div>
@@ -1503,8 +1503,8 @@
     <vm:if test="not has_blog_app">
       <div class="app_ad">
         <!-- TODO create app ad button and call template to create-->
-        <!--vm:url value="Foo" url="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo&amp;l=1"-->
-        <a href="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
+        <!--vm:url value="Foo" url="index_inst.vspx?wa_name=WEBLOG2&amp;fr=promo"-->
+        <a href="index_inst.vspx?&lt;?V 'wa_name=WEBLOG2&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
           <img border="0" src="images/app_ads/ods_bann_blog.jpg" alt="Your Own Blog IS Just 3 Clicks Away!" />
         </a>
         <div class="app_ad_ft">
@@ -1524,8 +1524,8 @@
             <span class="w_title_text">My Blog</span>
           </div>
           <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div>
         <div class="w_pane content_pane">
@@ -1537,13 +1537,13 @@
       </ul>
         </div> <!-- pane content_pane -->
         <div class="w_footer">
-          <a href="search.vspx?newest=blogs&amp;l=1&lt;?V self.login_pars ?&gt;">More&amp;#133;</a>
+          <a href="search.vspx?newest=blogs&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
         </div> <!-- w_footer -->
       </div> <!-- widget -->
     </vm:if>
   </xsl:template>
 
-<!--vm:url value="Start using Wiki" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo&amp;l=1" /-->
+<!--vm:url value="Start using Wiki" url="index_inst.vspx?wa_name=oWiki&amp;fr=promo" /-->
 
   <xsl:template match="vm:dash-my-wiki">
       <?vsp
@@ -1557,7 +1557,7 @@
       ?>
     <vm:if test="not has_wiki_app">
       <div class="app_ad">
-        <a href="index_inst.vspx?wa_name=oWiki&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
+        <a href="index_inst.vspx?&lt;?V 'wa_name=oWiki&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
           <img border="0" src="images/app_ads/ods_bann_wiki.jpg" alt="Share Information, Collaborate With ODS-Wiki!" />
         </a>
         <div class="app_ad_ft">
@@ -1586,13 +1586,13 @@
       </ul>
         </div> <!-- pane content_pane -->
         <div class="w_footer">
-          <a href="search.vspx?newest=wiki&amp;l=1&lt;?V self.login_pars ?&gt;">More&amp;#133;</a>
+          <a href="search.vspx?newest=wiki&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
         </div> <!-- w_footer -->
       </div> <!-- widget -->
          </vm:if>
   </xsl:template>
 
-  <!--vm:url value="Create your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo&amp;l=1" /-->
+  <!--vm:url value="Create your personalized news desk now!" url="index_inst.vspx?wa_name=eNews2&amp;fr=promo" /-->
 
   <xsl:template match="vm:dash-my-news">
 
@@ -1609,7 +1609,7 @@
 ?>
     <vm:if test="not has_news_app">
       <div class="app_ad">
-        <a href="index_inst.vspx?wa_name=eNews2&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
+        <a href="index_inst.vspx?&lt;?V 'wa_name=eNews2&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
           <img border="0" src="images/app_ads/ods_bann_feeds.jpg" alt="Create Your Own Personalized News Desk!" />
         </a>
         <div class="app_ad_ft">
@@ -1629,8 +1629,8 @@
             <span class="w_title_text">My News</span>
           </div>
           <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div> <!-- w_title_bar -->
         <div class="w_pane content_pane">
@@ -1642,7 +1642,7 @@
       </ul>
         </div> <!-- content-pane -->
         <div class="w_footer">
-          <a href="search.vspx?newest=news&amp;l=1&lt;?V self.login_pars ?&gt;">More&amp;#133;</a>
+          <a href="search.vspx?newest=news&lt;?V self.login_pars ?&gt;">More&amp;#8230;</a>
         </div>
       </div> <!-- widget -->
     </vm:if>
@@ -1675,8 +1675,8 @@
             <span class="w_title_text">My Bookmarks</span>
           </div>
           <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div> <!-- w_title_bar -->
         <div class="w_pane content_pane">
@@ -1688,7 +1688,7 @@
           </ul>
         </div> <!-- content_pane -->
         <div class="w_footer">
-          <a href="search.vspx?newest=bookmarks&l=1<?V self.login_pars ?>">More&amp;#133;</a>
+          <a href="search.vspx?newest=bookmarks&l=1<?V self.login_pars ?>">More&amp;#8230;</a>
 <?vsp
 
   declare _inst_url varchar;
@@ -1732,12 +1732,12 @@
          </vm:if>
     <vm:if test="not has_bookmarks">
       <div class="app_ad">
-        <a href="index_inst.vspx?wa_name=Bookmark&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
+        <a href="index_inst.vspx?&lt;?V 'wa_name=Bookmark&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
           <img border="0" src="images/app_ads/ods_bann_bookmarks.jpg" alt="Let us help you organize and share your bookmarks!" />
         </a>
         <div class="app_ad_ft">
-          <input type="checkbox" id="news_app_ad_nuke"/>
-          <label for="news_app_ad_nuke">Do not show this next time</label>
+          <input type="checkbox" id="bookmarks_app_ad_nuke"/>
+          <label for="bookmarks_app_ad_nuke">Do not show this next time</label>
           <a href="#">Dismiss</a>
     </div>
       </div> <!-- app_ad -->
@@ -1786,8 +1786,8 @@
           <span class="w_title_text">My Connections</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1837,7 +1837,7 @@
              if (self.isowner)
                {
            ?>
-           <p class="msg">You have no connections. Why not <v:url name="search_users_fr" value="have a look" url="search.vspx?page=2&amp;l=1" render-only="1"/> - people you know may already have signed up here.</p>
+           <p class="msg">You have no connections. Why not <v:url name="search_users_fr" value="have a look" url="search.vspx?page=2" render-only="1"/> - people you know may already have signed up here.</p>
            <?vsp
                }else
                {
@@ -1902,7 +1902,7 @@
       </div> <!-- content-pane -->
       <div class="w_footer">
         <vm:if test="self.isowner">
-          <v:url name="search_users_fr" value="Search for Connections" url="search.vspx?page=2&amp;l=1" render-only="1"/>
+          <v:url name="search_users_fr" value="Search for Connections" url="search.vspx?page=2" render-only="1"/>
         </vm:if>
     </div>
     </div> <!-- widget -->
@@ -1918,8 +1918,8 @@
           <span class="w_title_text">My Communities</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -1950,7 +1950,7 @@
 	    ?>
       </div> <!-- content-pane -->
       <div class="w_footer">
-        <a href="&lt;?V 'app_inst.vspx?app=Community'||self.login_pars ?&gt;">More&amp;#133;</a>
+        <a href="&lt;?V 'app_inst.vspx?app=Community'||self.login_pars ?&gt;">More&amp;#8230;</a>
       </div> <!-- w_footer -->
     </div> <!-- widget -->
   </xsl:template>
@@ -1961,12 +1961,13 @@
         <div class="w_title_text_ctr">
           <img class="w_title_icon" 
                src="images/icons/ods_gallery_16.png"
-               width="16" height="16"/>
+               width="16" height="16"
+               alt="ods gallery icon"/>
           <span class="w_title_text">My Photos</span>
         </div>
         <div class="w_title_btns_ctr">
-          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-          <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
         </div>
       </div>
       <div class="w_pane content_pane">
@@ -2060,8 +2061,8 @@
           }
 
           photo_href:='<a '||photo_href||' > <img src="'||
-                           self.odsbar_ods_gpath||'image.vsp?'||subseq(self.login_pars,1)||'&image_id='||cast(dta[5] as varchar)||'&width='|| cast(new_img_size_arr[0] as varchar) ||'&height='||cast(new_img_size_arr[1] as varchar)||'"' ||
-                           '" width="'||cast(new_img_size_arr[0] as varchar)||'" height="'||cast(new_img_size_arr[1] as varchar)||'" border="0" class="photoborder" /></a>';
+                           self.odsbar_ods_gpath||'image.vsp?'||subseq(self.login_pars,1)||'&amp;image_id='||cast(dta[5] as varchar)||'&amp;width='|| cast(new_img_size_arr[0] as varchar) ||'&amp;height='||cast(new_img_size_arr[1] as varchar)||'"' ||
+                           ' width="'||cast(new_img_size_arr[0] as varchar)||'" height="'||cast(new_img_size_arr[1] as varchar)||'" border="0" class="photoborder" alt="'||gallery_path_arr[6]||'"/></a>';
 
          ?>
 
@@ -2078,7 +2079,7 @@
                     <p>
                       <?V case when length(dta[4])>12 then substring (dta[4],1,9)||'...' else dta[4] end ?>
                       <br />
-                      <a href="uhome.vspx?page=1&amp;ufname=&lt;?V coalesce(dta[3],dta[2]) ?&gt;"><?V wa_utf8_to_wide(coalesce(dta[2],dta[3])) ?></a>
+                      <a href="uhome.vspx?&lt;?V 'page=1&amp;ufname=' || coalesce(dta[3],dta[2]) ?&gt;"><?V wa_utf8_to_wide(coalesce(dta[2],dta[3])) ?></a>
                       <br />
                       <?V wa_abs_date(dta[1])?>
                     </p>
@@ -2111,7 +2112,7 @@
      <br/>
       </div>
       <div class="w_footer">
-        <a href="&lt;?V '/photos/'||self.u_name||'/?'||subseq(self.login_pars,1) ?&gt;">More&amp;#133;</a>
+        <a href="&lt;?V '/photos/'||self.u_name||'/?'||subseq(self.login_pars,1) ?&gt;">More&amp;#8230;</a>
       </div>
      <?vsp
            }
@@ -2136,8 +2137,8 @@
             <span class="w_title_text">My Guestbook</span>
           </div>
           <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div>
         <div class="w_pane content_pane">
@@ -2289,8 +2290,8 @@
             <span class="w_title_text">My Mail</span>
           </div>
           <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div>
         <div class="w_pane content_pane">
@@ -2333,12 +2334,12 @@
          </vm:if>
       <vm:if test="not has_webmail">
         <div class="app_ad">
-          <a href="index_inst.vspx?wa_name=oMail&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
+        <a href="index_inst.vspx?&lt;?V 'wa_name=oMail&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
             <img border="0" src="images/app_ads/ods_bann_webmail.jpg" alt="Webmail app ad banner" />
           </a>
           <div class="app_ad_ft">
-            <input type="checkbox" id="news_app_ad_nuke"/>
-            <label for="news_app_ad_nuke">Do not show this next time</label>
+          <input type="checkbox" id="mail_app_ad_nuke"/>
+          <label for="mail_app_ad_nuke">Do not show this next time</label>
             <a href="#">Dismiss</a>
           </div>
         </div> <!-- app_ad -->
@@ -2374,8 +2375,8 @@
             <span class="w_title_text">My briefcase</span>
           </div>
           <div class="w_title_btns_ctr">
-            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png"/></a>
-            <a class="close_btn" href="#"><img src="i/w_btn_close.png"/></a>
+            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
           </div>
         </div>
         <div class="w_pane content_pane">
@@ -2446,7 +2447,7 @@
     </vm:if>
     <vm:if test="not has_briefcase">
       <div class="app_ad">
-        <a href="index_inst.vspx?wa_name=oDrive&amp;fr=promo&amp;l=1&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
+        <a href="index_inst.vspx?wa_name=oDrive&amp;fr=promo&lt;?V concat ('&amp;', trim (self.login_pars, '&amp;')) ?&gt;">
           <img border="0" src="images/app_ads/ods_bann_briefcase.jpg" alt="Briefcase app ad banner" />
         </a>
         <div class="app_ad_ft">

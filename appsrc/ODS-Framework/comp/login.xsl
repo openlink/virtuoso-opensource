@@ -49,7 +49,7 @@
         <v:login name="login1" realm="wa" mode="url" user-password-check="web_user_password_check">
     <div id="id_col"> 
       <div id="site_id">
-        <img class="id_logo" src="images/odslogo_200.png"/>
+        <img class="id_logo" src="images/odslogo_200.png" alt="ods logo icon"/>
       </div> <!-- site_id -->
     </div> <!-- id_col -->
     <div id="form_col">

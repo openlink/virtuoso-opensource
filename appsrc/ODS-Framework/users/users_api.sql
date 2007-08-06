@@ -54,6 +54,7 @@ create procedure ODS_USER_XML (
       http (sprintf ('<businessIndustry>%V</businessIndustry>', coalesce (WAUI_BINDUSTRY, '')), pStream);
       http (sprintf ('<businessOrganization>%V</businessOrganization>', coalesce (WAUI_BORG, '')), pStream);
       http (sprintf ('<businessJob>%V</businessJob>', coalesce (WAUI_BJOB, '')), pStream);
+      http (sprintf ('<businessCountry>%V</businessCountry>', coalesce (WAUI_BCOUNTRY, '')), pStream);
       http (sprintf ('<businessState>%V</businessState>', coalesce (WAUI_BSTATE, '')), pStream);
       http (sprintf ('<businessCity>%V</businessCity>', coalesce (WAUI_BCITY, '')), pStream);
       http (sprintf ('<businessCode>%V</businessCode>', coalesce (WAUI_BCODE, '')), pStream);

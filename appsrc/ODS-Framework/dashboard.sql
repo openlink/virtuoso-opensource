@@ -140,7 +140,7 @@ create procedure vspx_wa_session_start (in N_VS_UID any, in O_VS_UID any, in N_V
 
 
 
-  if (N_VS_UID is null or O_VS_UID is not null)
+  if (length (N_VS_UID) = 0 or length (O_VS_UID) > 0)
     return;
 
 again:

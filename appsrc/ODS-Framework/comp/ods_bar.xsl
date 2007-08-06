@@ -116,7 +116,7 @@
       length (vsp2vspx_user) > 0)
          {
            self.sid:=get_keyword('sid',self.vc_event.ve_params);
-           self.realm:=get_keyword('realm',self.vc_event.ve_params);
+      self.realm := coalesce(get_keyword ('realm', self.vc_event.ve_params),'wa');
            connection_set ('vspx_user',vsp2vspx_user);
 
          };
@@ -168,7 +168,7 @@
          if(length(self.sid))
          {
 
-         self.odsbar_loginparams:='sid='||coalesce(self.sid,'')||'&realm='||coalesce(self.realm,'wa');
+      self.odsbar_loginparams:='sid='||coalesce(self.sid,'')||'&amp;realm='||coalesce(self.realm,'wa');
 
   whenever not found goto nf_uid2;
 
@@ -198,6 +198,30 @@ nf_uid2:;
 <![CDATA[
 <script  type="text/javascript">
 
+var _head=document.getElementsByTagName("head")[0];
+
+var odsbarCSSloaded=0;
+
+for (var i = 0; i < _head.childNodes.length; i++)
+{
+   if(typeof(_head.childNodes[i].href)!='undefined')
+   {
+     if(_head.childNodes[i].href.indexOf('ds-bar.css')>0)
+        odsbarCSSloaded=1;
+   }
+}
+
+//console.debug(odsbarCSSloaded);
+
+if(odsbarCSSloaded==0)
+{
+ var cssNode = document.createElement('link');
+ cssNode.type = 'text/css';
+ cssNode.rel = 'stylesheet';
+ cssNode.href = '<?V self.odsbar_ods_gpath ?>ods-bar.css';
+_head.appendChild(cssNode);
+}
+
     var ODSInitArray = new Array();
     
   window._apiKey='<?U WA_MAPS_GET_KEY () ?>'; //Google maps key needed before OAT load
@@ -212,7 +236,7 @@ if (typeof (OAT) == 'undefined')
     var script = document.createElement("script");
     script.src = '<?V self.odsbar_ods_gpath ?>oat/loader.js';
 //  alert ("OAT loader path: "+script.src);
-    document.getElementsByTagName("head")[0].appendChild(script);
+  _head.appendChild(script);
 }
 
   function init()
@@ -278,8 +302,8 @@ function getUrlOnEnter(e)
 //        alert('<?V sprintf('%ssearch.vspx',self.odsbar_ods_gpath) ?>?q='+$('odsbar_search_text').value);
           document.location.href =
             '<?V sprintf ('%ssearch.vspx', self.odsbar_ods_gpath) ?>?q='+$('odsbar_search_text').value+
-            '<?vsp http(case when self.sid is not null then '&sid='||self.sid||'&realm='||coalesce(self.realm,'wa') else '' end);?>'+
-            '<?vsp http(case when coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) is not null then '&ontype='||coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) else '' end);?>'
+            '<?vsp http(case when self.sid is not null then '&amp;sid='||self.sid||'&amp;realm='||coalesce(self.realm,'wa') else '' end);?>'+
+            '<?vsp http(case when coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) is not null then '&amp;ontype='||coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)) else '' end);?>'
             ;
 
       return false;
@@ -292,7 +316,9 @@ function getUrlOnEnter(e)
 </script>
 ]]>
 
+<!--
     <link rel="stylesheet" type="text/css" href="<?V self.odsbar_ods_gpath ?>ods-bar.css" />
+-->
   <div id="ods_bar_odslogin" style="display:none;text-align:right">
     <v:url name="odsbar_odslogin_button"
            value="Sign In"
@@ -321,16 +347,20 @@ function getUrlOnEnter(e)
         <a href="javascript:void(0);" onclick="ods_bar_state_toggle();return false;">
           <img id="ods_bar_toggle_min"
                src="<?V self.odsbar_ods_gpath ?>images/ods_bar_handle_c.png"
-               style="display: none;"/>
+               style="display: none;"
+               alt="minimized bar icon"/>
           <img id="ods_bar_toggle_half"
                src="<?V self.odsbar_ods_gpath ?>images/ods_bar_handle_m.png"
-               style="display: none;"/>
+               style="display: none;"
+               alt="normal bar icon"/>
           <img id="ods_bar_toggle_full"
-               src="<?V self.odsbar_ods_gpath ?>images/ods_bar_handle_l.png"/>
+               src="<?V self.odsbar_ods_gpath ?>images/ods_bar_handle_l.png"
+               alt="maximized bar icon"/>
        </a>
         <img id="ods_bar_toggle_min_spacer"
              src="<?V self.odsbar_ods_gpath ?>images/odsbar_spacer.png"
-             style="display: none; width:0px; height:1px;"/>
+             style="display: none; width:0px; height:1px;"
+             alt="spacer"/>
       </div> <!-- ods_bar_handle -->
       <div id="ods_bar_content">
         <div id="ods_bar_top">
@@ -390,7 +420,8 @@ function getUrlOnEnter(e)
          <vm:if test=" length (self.sid) > 0 ">
               <img class="ods_bar_inline_icon"
                    style="float:none"
-                   src="<?V self.odsbar_ods_gpath ?>images/lock.png"/>
+                   src="<?V self.odsbar_ods_gpath ?>images/lock.png"
+                   alt="lock icon"/>
 
               <v:url name="odsbar_userinfo_button"
                      value="--self.odsbar_u_full_name"
@@ -404,7 +435,6 @@ function getUrlOnEnter(e)
                      value="Logout"
                     url="?logout=true"
                      xhtml_title="Logout"
-                     xhtml_alt="Logout"
                      xhtml_class="logout_lnk"
                      is-local="1"/>
          </vm:if>
@@ -419,18 +449,18 @@ function getUrlOnEnter(e)
          curr_location:='';
 
          if (registry_get ('wa_home_link') = 0){
-              curr_location:=sprintf('<a href="%s?sid=%s&realm=%s">%s</a> > ','/ods/', coalesce(self.sid,''), coalesce(self.realm,'wa') ,case when registry_get ('wa_home_title') = 0 then 'ODS Home' else registry_get ('wa_home_title') end);
+              curr_location:=sprintf('<a href="%s?sid=%s&amp;realm=%s">%s</a> &gt; ','/ods/', coalesce(self.sid,''), coalesce(self.realm,'wa') ,case when registry_get ('wa_home_title') = 0 then 'ODS Home' else registry_get ('wa_home_title') end);
          }else{
-              curr_location:=sprintf('<a href="%s?sid=%s&realm=%s">%s</a> > ',registry_get ('wa_home_link'), coalesce(self.sid,''), coalesce(self.realm,'wa') ,case when registry_get ('wa_home_title') = 0 then 'ODS Home' else registry_get ('wa_home_title') end);
+              curr_location:=sprintf('<a href="%s?sid=%s&amp;realm=%s">%s</a> &gt; ',registry_get ('wa_home_link'), coalesce(self.sid,''), coalesce(self.realm,'wa') ,case when registry_get ('wa_home_title') = 0 then 'ODS Home' else registry_get ('wa_home_title') end);
          }
 
          if(length(self.odsbar_u_name)>0)
          {
             if( length(self.odsbar_fname)>0 and self.odsbar_u_name<>self.odsbar_fname)
             {
-              curr_location:=curr_location||'<a href="'||self.odsbar_ods_gpath||'myhome.vspx?l=1&'||self.odsbar_loginparams||'">'||self.odsbar_fname||' Home</a> > ';
+              curr_location:=curr_location||'<a href="'||self.odsbar_ods_gpath||'myhome.vspx?'||self.odsbar_loginparams||'">'||self.odsbar_fname||' Home</a> > ';
             }else{
-              curr_location:=curr_location||'<a href="'||self.odsbar_ods_gpath||'myhome.vspx?l=1&'||self.odsbar_loginparams||'">'||self.odsbar_u_name||' Home</a> > ';
+              curr_location:=curr_location||'<a href="'||self.odsbar_ods_gpath||'myhome.vspx?'||self.odsbar_loginparams||'">'||self.odsbar_u_name||' Home</a> > ';
             }
          }
 
@@ -447,7 +477,7 @@ function getUrlOnEnter(e)
             curr_location:=curr_location||'Settings > ';
 
         declare settings_url varchar;
-        settings_url:='<a href="'||self.odsbar_ods_gpath||'app_settings.vspx?l=1&'||self.odsbar_loginparams||'">Settings</a> > ';
+        settings_url:='<a href="'||self.odsbar_ods_gpath||'app_settings.vspx?'||self.odsbar_loginparams||'">Settings</a> > ';
 
         if(locate('/services.vspx',_http_path))
             curr_location:=curr_location||settings_url||'Applications > ';
@@ -540,7 +570,10 @@ function getUrlOnEnter(e)
               curr_location:=curr_location||' '||self.odsbar_fname||' > ';
 
 
-         http(rtrim(curr_location,' > '));
+         if(subseq(curr_location,length(curr_location)-3,length(curr_location)) = ' > ')
+            curr_location:=subseq(curr_location,0,length(curr_location)-3);
+
+            http(curr_location);
        ?>
        </div>
        <div id="ods_bar_data_space_indicator">
@@ -576,9 +609,7 @@ function applyTransparentImg(parent_elm)
 
       if (OAT.Dom.isIE()==false) return;
 
-      var img_elements;
-
-      img_elements=parent_elm.getElementsByTagName('IMG');
+        var img_elements = parent_elm.getElementsByTagName('IMG');
 
       for (var i=0;i<img_elements.length;i++)
       {
@@ -768,7 +799,7 @@ odsbarSafeInit();
                    style="image"
                    xhtml_title="home"
                    xhtml_alt="home"
-                   url="--self.odsbar_ods_gpath||'myhome.vspx?l=1'" />
+                   url="--self.odsbar_ods_gpath||'myhome.vspx'" />
       </li>
         </v:template>
         <v:template name="odsbar_ops_home" type="simple" condition="length(self.odsbar_u_name)=0">
@@ -799,7 +830,7 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
 
 ?>
       <a href="<?V_search_link?>">
-        <img class="tab_img" src="<?V self.odsbar_ods_gpath ?>images/search.png"/>
+        <img class="tab_img" src="<?V self.odsbar_ods_gpath ?>images/search.png" alt="search icon"/>
       </a>
          </li>
          <li>
@@ -885,7 +916,7 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
                    }
                  else if (length (self.sid) > 0)
           {
-                     url_value := sprintf ('%sapp_my_inst.vspx?app=%s&ufname=%V&l=1',
+                     url_value := sprintf ('%sapp_my_inst.vspx?app=%s&ufname=%V',
                                            self.odsbar_ods_gpath,
                                            app[0],
                                            coalesce (self.odsbar_fname, self.odsbar_u_name));
@@ -893,7 +924,7 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
                    }
                  else
           {
-                     url_value := sprintf ('%sapp_inst.vspx?app=%s&ufname=%V&l=1',
+                     url_value := sprintf ('%sapp_inst.vspx?app=%s&ufname=%V',
                                            self.odsbar_ods_gpath,
                                            app[0],
                                            coalesce (self.odsbar_fname,self.odsbar_u_name));
@@ -1004,6 +1035,7 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
 <xsl:template match="vm:odsbar_navigation_level2">
         <ul id="ods_bar_second_lvl">
           <vm:odsbar_instances_menu/>
+          <li></li>
         </ul>
 </xsl:template>
 
@@ -1038,7 +1070,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
 
        <vm:if test=" (length(self.sid) > 0) AND self.odsbar_app_type<>'oMail' AND self.odsbar_app_type<>'nntpf' ">
        <li>
-       <v:url name="slice_all" url="--sprintf ('%sapp_inst.vspx?app=%s&ufname=%V',self.odsbar_ods_gpath, self.odsbar_app_type, coalesce(self.odsbar_fname,''))"
+       <v:url name="slice_all" url="--sprintf ('%sapp_inst.vspx?app=%s&amp;ufname=%V',self.odsbar_ods_gpath, self.odsbar_app_type, coalesce(self.odsbar_fname,''))"
           value="--'All '||WA_GET_MFORM_APP_NAME(self.odsbar_app_type)"
           render-only="1"
           is-local="1"
@@ -1105,7 +1137,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
         if (i = 0 and length (self.odsbar_fname)and apptype_instnum<>0)
         {
 ?>
-       <li><a href="<?V self.odsbar_ods_gpath||'index_inst.vspx?wa_name=' || self.odsbar_app_type ||'&'|| self.odsbar_loginparams?>">No Personal <?V WA_GET_APP_NAME(self.odsbar_app_type) ?> - create new one?</a></li>
+       <li><a href="<?V self.odsbar_ods_gpath||'index_inst.vspx?wa_name=' || self.odsbar_app_type ||'&amp;'|| self.odsbar_loginparams?>">No Personal <?V WA_GET_APP_NAME(self.odsbar_app_type) ?> - create new one?</a></li>
 <?vsp
         }
 
@@ -1123,19 +1155,19 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
 --          };
           
           if (self.odsbar_app_type='WEBLOG2'){
-              search_app_type:='newest=blogs&';  
+              search_app_type:='newest=blogs&amp;';
           };
           
           if (self.odsbar_app_type='oWiki'){
-              search_app_type:='newest=wiki&';  
+              search_app_type:='newest=wiki&amp;';
           };
           
           if (self.odsbar_app_type='eNews2'){
-              search_app_type:='newest=news&';  
+              search_app_type:='newest=news&amp;';
           };
           
           if (self.odsbar_app_type='Bookmark'){
-              search_app_type:='newest=bookmarks&';  
+              search_app_type:='newest=bookmarks&amp;';
           };
           
 ?>

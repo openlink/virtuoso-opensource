@@ -250,7 +250,7 @@ function afterLogin(xml) {
    	} else {
      	var T = $('ob_left');
      	if (T) {
-     	  T.innerHTML = '<a href="/ods/myhome.vspx?sid='+$('sid').value+'&realm='+$('realm').value+'">ODS Home</a> > Profile';
+     	  T.innerHTML = '<a href="/ods/myhome.vspx?sid='+$('sid').value+'&realm='+$('realm').value+'">ODS Home</a> > View Profile';
      	}
       OAT.Dom.show("ob_right");
       OAT.Dom.hide("ob_links");
@@ -569,7 +569,8 @@ function ufProfileSubmit() {
   var inputObject = {
   	ODS_USER_SELECT:{
       pSid:$v('sid'),
-      pRealm:$v('realm')
+      pRealm:$v('realm'),
+      pShort: 0
   	}
   }
 	OAT.WS.invoke(wsdl, serviceName, ufProfileCallback, inputObject);
@@ -618,6 +619,10 @@ function ufProfileCallback(obj) {
       fieldUpdate(user, 'businessAddress1', 'pf_businessAddress1');
       fieldUpdate(user, 'businessAddress2', 'pf_businessAddress2');
 
+     	var T = $('ob_left');
+     	if (T) {
+     	  T.innerHTML = '<a href="/ods/myhome.vspx?sid='+$('sid').value+'&realm='+$('realm').value+'">ODS Home</a> > Edit Profile';
+     	}
       OAT.Dom.hide("lf");
       OAT.Dom.hide("rf");
       OAT.Dom.hide("uf");
@@ -712,11 +717,19 @@ function pfChangeSubmit(event) {
 function pfChangeCallback(obj) {
   var xml = OAT.Xml.createXmlDoc(obj.ODS_USER_UPDATE_PASSWORDResponse.CallReturn);
 	var root = xml.documentElement;
-	!hasError(root);
+	if (!hasError(root)) {
+   	var T = $('pf_change_txt');
+   	if (T)
+   	  T.innerHTML = 'The password was changed successfully.';
+	}
   // executingEnd();
 }
 
 function pfCancelSubmit() {
+ 	var T = $('ob_left');
+ 	if (T) {
+ 	  T.innerHTML = '<a href="/ods/myhome.vspx?sid='+$('sid').value+'&realm='+$('realm').value+'">ODS Home</a> > View Profile';
+ 	}
   OAT.Dom.hide("lf");
   OAT.Dom.hide("rf");
   OAT.Dom.show("uf");

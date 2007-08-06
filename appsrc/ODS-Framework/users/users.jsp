@@ -1,176 +1,282 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<%@ page import="java.sql.*" %>
+<%@ page import="java.io.*" %>
+
+<%@ page import="javax.xml.parsers.DocumentBuilderFactory" %>
+<%@ page import="javax.xml.parsers.DocumentBuilder" %>
+<%@ page import="javax.xml.xpath.XPathFactory" %>
+<%@ page import="javax.xml.xpath.XPath" %>
+<%@ page import="javax.xml.xpath.XPathExpressionException" %>
+
+<%@ page import="org.xml.sax.InputSource" %>
+
+<%@ page import="org.w3c.dom.Document" %>
 <html>
   <head>
     <title>Virtuoso Web Applications</title>
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
-    <link rel="stylesheet" type="text/css" href="css/users.css" />
-    <script type="text/javascript" src="js/oid_login.js"></script>
-    <script type="text/javascript" src="js/users.js"></script>
+    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
+    <script type="text/javascript" src="/ods/users/js/oid_login.js"></script>
+    <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript">
       var toolkitPath="/ods/oat";
       var featureList = ["dom", "ajax2", "ws", "tab", "dimmer"];
     </script>
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
   </head>
-  <?php
-    function selectList ($handle, $sql)
-    {
-      $_V = Array ();
-      $_result = odbc_exec ($handle, $sql);
-      $N = 1;
-      while (odbc_fetch_row ($_result)) {
-        $_S = odbc_result($_result, 1);
-        if ($_S <> "0")
-          $_V[$N] = $_S;
-        $N++;
-      }
-      return $_V;
-    }
+  <%!
+    XPathFactory factory = XPathFactory.newInstance();
+    XPath xpath = factory.newXPath();
 
-    function outFormTitle ($form)
+    Document createDocument (String S)
     {
-      if ($form == "login")
-        print "Login";
-      if ($form == "register")
-        print "Register";
-      if ($form == "user")
-        print "View Profile";
-      if ($form == "profile")
-        print "Edit Profile";
-    }
-
-    $_error = "";
-    $_form = "login";
-    if (isset ($_POST['form']))
-      $_form = $_POST['form'];
-    $_sid = $_POST['sid'];
-    $_realm = $_POST['realm'];
-
-    $_dsn = "Virtuoso50";
-    $_user = "dba";
-    $_pass = "dba";
-    $handle = odbc_connect ($_dsn, $_user, $_pass);
-    if (!$handle)
-    {
-      $_error = "Failure to connect to DSN [$_dsn]:";
-      odbc_errormsg();
-    }
-    else
-    {
-      if ($_form == "login")
+      try
       {
-        if (isset ($_POST['lf_login']) && ($_POST['lf_login'] <> ""))
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        if (factory == null)
+	        throw new RuntimeException("Unable to create XML document factory");
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        if (builder == null)
+	        throw new RuntimeException("Unable to create XML document factory");
+        StringReader stringReader = new StringReader(S);
+        InputSource is = new InputSource(stringReader);
+	      return builder.parse(is);
+      }
+      catch (Exception e)
+      {
+        throw new RuntimeException("Error creating XML document factory : " + e.getMessage());
+      }
+    }
+
+    String xpathEvaluate (Document doc, String xpathString)
+      throws XPathExpressionException
+    {
+      return xpath.evaluate(xpathString, doc);
+    }
+
+    void outPrint (javax.servlet.jsp.JspWriter out, String S)
+      throws IOException
+    {
+      if (S == null)
+        return;
+      out.print(S);
+    }
+
+    void outFormTitle (javax.servlet.jsp.JspWriter out, String formName)
+      throws IOException
+    {
+      if (formName.equals("login"))
+        out.print("Login");
+      if (formName.equals("register"))
+        out.print("Register");
+      if (formName.equals("user"))
+        out.print("View Profile");
+      if (formName.equals("profile"))
+        out.print("Edit Profile");
+    }
+
+    void outSelectOptions (javax.servlet.jsp.JspWriter out, Connection conn, String sql, String fieldValue, String paramValue)
+      throws IOException, SQLException
+    {
+      PreparedStatement ps = null;
+      ResultSet rs = null;
+
+      try
+      {
+        ps = conn.prepareStatement(sql);
+        if (paramValue != null)
+          ps.setObject(1, paramValue);
+        rs = ps.executeQuery();
+        while (rs.next())
         {
-          $_result = odbc_exec ($handle, sprintf ("select ODS_USER_LOGIN('%s', '%s')", $_POST['lf_uid'], $_POST['lf_password']));
-          $_xml = new SimpleXMLElement(odbc_result ($_result, 1));
-          if ($_xml->error->code <> 'OK')
+          String F = rs.getString("NAME");
+          out.print ("<option" + ((fieldValue.equals(F)) ? " selected=\"selected\"": "") + ">" + F + "</option>");
+        }
+      }
+      finally
+      {
+        if (rs != null)
+        {
+          try
           {
-            $_error = $_xml->error->message;
-          }
-          else
-          {
-            $_sid = $_xml->session->sid;
-            $_realm = $_xml->session->realm;
-            $_form = "user";
+            rs.close();
+          } catch (SQLException e) {
           }
         }
-        if (isset ($_POST['lf_register']) && ($_POST['lf_register'] <> ""))
+        if (ps != null)
+        {
+          try {
+            ps.close();
+          } catch (SQLException e) {
+          }
+        }
+      }
+    }
+  %>
+  <%
+    String $_form = "login";
+    if (request.getParameter("form") != null)
+      $_form = request.getParameter("form");
+    String $_sid = request.getParameter("sid");
+    String $_realm = request.getParameter("realm");
+    String $_error = "";
+    String $_retValue;
+    Document $_document = null;
+
+    Connection conn = null;
+    CallableStatement cs = null;
+
+    try
+    {
+	    Class.forName("virtuoso.jdbc3.Driver");
+	    // must be updated
+	    conn = DriverManager.getConnection("jdbc:virtuoso://localhost:1116", "dba", "dba");
+
+      if ($_form.equals("login"))
+      {
+        if (request.getParameter("lf_login") != null)
+        {
+          try
+          {
+            cs = conn.prepareCall("{? = call ODS_USER_LOGIN(?, ?)}");
+            cs.registerOutParameter(1, Types.VARCHAR);
+            cs.setString(2, request.getParameter("lf_uid"));
+            cs.setString(3, request.getParameter("lf_password"));
+
+            // Execute and retrieve the returned value
+            cs.execute();
+            $_retValue = cs.getString(1);
+  		      $_document = createDocument($_retValue);
+            if ("OK".compareTo(xpathEvaluate($_document, "//error/code")) != 0)
+            {
+              $_error = xpathEvaluate($_document, "//error/message");
+            }
+            else
+            {
+              $_sid = xpathEvaluate($_document, "/root/session/sid");
+              $_realm = xpathEvaluate($_document, "/root/session/realm");
+              $_form = "user";
+            }
+          }
+          catch (Exception e)
+          {
+            $_error = e.getMessage();
+          }
+        }
+        if (request.getParameter("lf_register") != null)
           $_form = "register";
       }
-      if ($_form == "register")
+      if ($_form.equals("register"))
       {
-        if (isset ($_POST['rf_signup']) && ($_POST['rf_signup'] <> ""))
+        if (request.getParameter("rf_signup") != null)
         {
-          if (strlen ($_POST['rf_uid']) == 0)
+          if (request.getParameter("rf_uid").length() == 0)
           {
             $_error = "Bad username. Please correct!";
           }
-          else if (strlen ($_POST['rf_mail']) == 0)
+          else if (request.getParameter("rf_mail").length() == 0)
           {
             $_error = "Bad mail. Please correct!";
           }
-          else if (strlen ($_POST['rf_password']) == 0)
+          else if (request.getParameter("rf_password").length() == 0)
           {
             $_error = "Bad password. Please correct!";
           }
-          else if ($_POST['rf_password'] <> $_POST['rf_password2'])
+          else if (request.getParameter("rf_password").compareTo(request.getParameter("rf_password2")) != 0)
           {
             $_error = "Bad password. Please retype!";
           }
-          else if (!isset ($_POST['rf_is_agreed']))
+          else if (request.getParameter("rf_is_agreed") == null)
           {
             $_error = "You have not agreed to the Terms of Service!";
           }
           else
           {
-            $_result = odbc_exec ($handle, sprintf ("select ODS_USER_REGISTER('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
-                                                    $_POST['rf_uid'],
-                                                    $_POST['rf_password'],
-                                                    $_POST['rf_mail'],
-                                                    $_POST['rf_identity'],
-                                                    $_POST['rf_fullname'],
-                                                    $_POST['rf_birthday'],
-                                                    $_POST['rf_gender'],
-                                                    $_POST['rf_postcode'],
-                                                    $_POST['rf_country'],
-                                                    $_POST['rf_tz'])
-                                 );
-            $_xml = new SimpleXMLElement(odbc_result ($_result, 1));
-            if ($_xml->error->code <> 'OK')
+            try
             {
-              $_error = $_xml->error->message;
+              cs = conn.prepareCall("{? = call ODS_USER_REGISTER(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}");
+              cs.registerOutParameter(1, Types.VARCHAR);
+              cs.setString( 2, request.getParameter("rf_uid"));
+              cs.setString( 3, request.getParameter("rf_password"));
+              cs.setString( 4, request.getParameter("rf_mail"));
+              cs.setString( 5, request.getParameter("rf_identity"));
+              cs.setString( 6, request.getParameter("rf_fullname"));
+              cs.setString( 7, request.getParameter("rf_birthday"));
+              cs.setString( 8, request.getParameter("rf_gender"));
+              cs.setString( 9, request.getParameter("rf_postcode"));
+              cs.setString(10, request.getParameter("rf_country"));
+              cs.setString(11, request.getParameter("rf_tz"));
+
+              // Execute and retrieve the returned value
+              cs.execute();
+              $_retValue = cs.getString(1);
+    		      $_document = createDocument($_retValue);
+              if ("OK".compareTo(xpathEvaluate($_document, "//error/code")) != 0)
+              {
+                $_error = xpathEvaluate($_document, "//error/message");
+              }
+              else
+              {
+                $_sid = xpathEvaluate($_document, "/root/session/sid");
+                $_realm = xpathEvaluate($_document, "/root/session/realm");
+                $_form = "user";
+              }
             }
-            else
+            catch (Exception e)
             {
-              $_sid = $_xml->session->sid;
-              $_realm = $_xml->session->realm;
-              $_form = "user";
+              $_error = e.getMessage();
             }
           }
         }
       }
-      if ($_form == "user")
+      if ($_form.equals("user"))
       {
-        if (isset ($_POST['uf_profile']) && ($_POST['uf_profile'] <> ""))
+        if (request.getParameter("uf_profile") != null)
           $_form = "profile";
       }
-      if ($_form == "profile")
+      if ($_form.equals("profile"))
       {
-        if (isset ($_POST['pf_update']) && ($_POST['pf_update'] <> ""))
+        if (request.getParameter("pf_update") != null)
         {
-          $_S = "select ODS_USER_UPDATE('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')";
-          $_result = odbc_exec ($handle, sprintf ($_S, $_sid,
-                                                       $_realm,
-                                                       $_POST['pf_mail'],
-                                                       $_POST['pf_title'],
-                                                       $_POST['pf_firstName'],
-                                                       $_POST['pf_lastName'],
-                                                       $_POST['pf_fullName'],
-                                                       $_POST['pf_icq'],
-                                                       $_POST['pf_skype'],
-                                                       $_POST['pf_yahoo'],
-                                                       $_POST['pf_aim'],
-                                                       $_POST['pf_msn'],
-                                                       $_POST['pf_homeCountry'],
-                                                       $_POST['pf_homeState'],
-                                                       $_POST['pf_homeCity'],
-                                                       $_POST['pf_homeCode'],
-                                                       $_POST['pf_homeAddress1'],
-                                                       $_POST['pf_homeAddress2'],
-                                                       $_POST['pf_businessIndustry'],
-                                                       $_POST['pf_businessOrganization'],
-                                                       $_POST['pf_businessJob'],
-                                                       $_POST['pf_businessCountry'],
-                                                       $_POST['pf_businessState'],
-                                                       $_POST['pf_businessCity'],
-                                                       $_POST['pf_businessCode'],
-                                                       $_POST['pf_businessAddress1'],
-                                                       $_POST['pf_businessAddress2']));
-          $_xml = new SimpleXMLElement(odbc_result ($_result, 1));
-          if ($_xml->error->code <> 'OK')
+          cs = conn.prepareCall("{? = call ODS_USER_UPDATE( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)}");
+          cs.registerOutParameter(1, Types.VARCHAR);
+          cs.setString( 2, $_sid);
+          cs.setString( 3, $_realm);
+          cs.setString( 4, request.getParameter("pf_mail"));
+          cs.setString( 5, request.getParameter("pf_title"));
+          cs.setString( 6, request.getParameter("pf_firstName"));
+          cs.setString( 7, request.getParameter("pf_lastName"));
+          cs.setString( 8, request.getParameter("pf_fullName"));
+          cs.setString( 9, request.getParameter("pf_icq"));
+          cs.setString(10, request.getParameter("pf_skype"));
+          cs.setString(11, request.getParameter("pf_yahoo"));
+          cs.setString(12, request.getParameter("pf_aim"));
+          cs.setString(13, request.getParameter("pf_msn"));
+          cs.setString(14, request.getParameter("pf_homeCountry"));
+          cs.setString(15, request.getParameter("pf_homeState"));
+          cs.setString(16, request.getParameter("pf_homeCity"));
+          cs.setString(17, request.getParameter("pf_homeCode"));
+          cs.setString(18, request.getParameter("pf_homeAddress1"));
+          cs.setString(19, request.getParameter("pf_homeAddress2"));
+          cs.setString(20, request.getParameter("pf_businessIndustry"));
+          cs.setString(21, request.getParameter("pf_businessOrganization"));
+          cs.setString(22, request.getParameter("pf_businessJob"));
+          cs.setString(23, request.getParameter("pf_businessCountry"));
+          cs.setString(24, request.getParameter("pf_businessState"));
+          cs.setString(25, request.getParameter("pf_businessCity"));
+          cs.setString(26, request.getParameter("pf_businessCode"));
+          cs.setString(27, request.getParameter("pf_businessAddress1"));
+          cs.setString(28, request.getParameter("pf_businessAddress2"));
+
+          // Execute and retrieve the returned value
+          cs.execute();
+          $_retValue = cs.getString(1);
+		      $_document = createDocument($_retValue);
+          if ("OK".compareTo(xpathEvaluate($_document, "//error/code")) != 0)
           {
-            $_error = $_xml->error->message;
+            $_error = xpathEvaluate($_document, "//error/message");
             $_form = "login";
           }
           else
@@ -178,59 +284,77 @@
             $_form = "user";
           }
         }
-        if (isset ($_POST['pf_cancel']) && ($_POST['pf_cancel'] <> ""))
+        if (request.getParameter("pf_cancel") != null)
           $_form = "user";
-        if ($_form == "profile")
+        if ($_form.equals("profile"))
         {
-          $_result = odbc_exec ($handle, sprintf ("select ODS_USER_SELECT('%s', '%s', 0)", $_sid, $_realm));
-          $_xml = new SimpleXMLElement(odbc_result ($_result, 1));
-          if ($_xml->error->code <> 'OK')
+          cs = conn.prepareCall("{? = call ODS_USER_SELECT(?, ?, ?)}");
+          cs.registerOutParameter(1, Types.VARCHAR);
+          cs.setString(2, $_sid);
+          cs.setString(3, $_realm);
+          cs.setInt(4, 0);
+
+          // Execute and retrieve the returned value
+          cs.execute();
+          $_retValue = cs.getString(1);
+		      $_document = createDocument($_retValue);
+          if ("OK".compareTo(xpathEvaluate($_document, "//error/code")) != 0)
           {
-            $_error = $_xml->error->message;
+            $_error = xpathEvaluate($_document, "//error/message");
             $_form = "login";
           }
-          else
+        }
+      }
+      if ($_form.equals("user"))
+      {
+        try
+        {
+          cs = conn.prepareCall("{? = call ODS_USER_SELECT(?, ?)}");
+          cs.registerOutParameter(1, Types.VARCHAR);
+          cs.setString(2, $_sid);
+          cs.setString(3, $_realm);
+
+          // Execute and retrieve the returned value
+          cs.execute();
+          $_retValue = cs.getString(1);
+		      $_document = createDocument($_retValue);
+          if ("OK".compareTo(xpathEvaluate($_document, "//error/code")) != 0)
           {
-            $_industries = selectList ($handle, "select WI_NAME from DB.DBA.WA_INDUSTRY order by WI_NAME");
-            $_countries = selectList ($handle, "select WC_NAME from DB.DBA.WA_COUNTRY order by WC_NAME");
-            $_homeStates = selectList ($handle, sprintf ("select WP_PROVINCE from DB.DBA.WA_PROVINCE where WP_COUNTRY = '%s' and WP_COUNTRY <> '' order by WP_PROVINCE", $_xml->user->homeCountry));
-            $_businessStates = selectList ($handle, sprintf ("select WP_PROVINCE from DB.DBA.WA_PROVINCE where WP_COUNTRY = '%s' and WP_COUNTRY <> '' order by WP_PROVINCE", $_xml->user->businessCountry));
+            $_error = xpathEvaluate($_document, "//error/message");
+            $_form = "login";
           }
         }
-      }
-      if ($_form == "user")
-      {
-        $_result = odbc_exec ($handle, sprintf ("select ODS_USER_SELECT('%s', '%s')", $_sid, $_realm));
-        $_xml = new SimpleXMLElement(odbc_result ($_result, 1));
-        if ($_xml->error->code <> 'OK')
+        catch (Exception e)
         {
-          $_error = $_xml->error->message;
-          $_form = "login";
+          $_error = e.getMessage();
         }
       }
-      if ($_form == "login")
+      if ($_form.equals("login"))
       {
         $_sid = "";
         $_realm = "";
       }
-      odbc_close($handle);
     }
-  ?>
+    catch (Exception e)
+    {
+      $_error = "Failure to connect to JDBC. " + e.getMessage();
+    }
+  %>
   <body>
     <form name="page_form" method="post">
-      <input type="hidden" name="sid" id="sid" value="<?php print($_sid); ?>" />
-      <input type="hidden" name="realm" id="realm" value="<?php print($_realm); ?>" />
-      <input type="hidden" name="form" id="form" value="<?php print($_form); ?>" />
+      <input type="hidden" name="sid" id="sid" value="<% out.print($_sid); %>" />
+      <input type="hidden" name="realm" id="realm" value="<% out.print($_realm); %>" />
+      <input type="hidden" name="form" id="form" value="<% out.print($_form); %>" />
       <div id="ob">
-        <div id="ob_left"><a href="/ods/?sid=<?php print($_sid); ?>&realm=<?php print($_realm); ?>">ODS Home</a> > <?php outFormTitle($_form); ?></div>
-        <?php
-          if ($_form <> 'login')
+        <div id="ob_left"><a href="/ods/?sid=<% out.print($_sid); %>&realm=<% out.print($_realm); %>">ODS Home</a> > <% outFormTitle (out, $_form); %></div>
+        <%
+          if ($_form != "login")
           {
-        ?>
+        %>
         <div id="ob_right"><a href="#" onclick="javascript: return logoutSubmit2();">Logout</a></div>
-        <?php
+        <%
           }
-        ?>
+        %>
       </div>
       <div id="MD">
         <table cellspacing="0">
@@ -244,17 +368,17 @@
               </div>
             </td>
             <td>
-              <?php
-              if ($_form == 'login')
+              <%
+              if ($_form.equals("login"))
               {
-              ?>
+              %>
               <div id="lf" class="form">
-                <?php
-                  if ($_error <> '')
+                <%
+                  if ($_error != "")
                   {
-                    print "<div class=\"error\">".$_error."</div>";
+                    out.print("<div class=\"error\">" + $_error + "</div>");
                   }
-                ?>
+                %>
                 <div class="header">
                   Enter your Member ID and Password
                 </div>
@@ -295,20 +419,18 @@
                   <input type="submit" name="lf_register" value="Sign Up" id="lf_register" />
                 </div>
               </div>
-
-              <?php
+              <%
               }
-              if ($_form == 'register')
+              if ($_form.equals("register"))
               {
-              ?>
-
+              %>
               <div id="rf" class="form">
-                <?php
-                  if ($_error <> '')
+                <%
+                  if ($_error != "")
                   {
-                    print "<div class=\"error\">".$_error."</div>";
+                    out.print("<div class=\"error\">" + $_error + "</div>");
                   }
-                ?>
+                %>
                 <div class="header">
                   Enter register data
                 </div>
@@ -318,7 +440,7 @@
                       <label for="rf_openID">Register with OpenID</label>
                     </th>
                     <td nowrap="nowrap">
-                      <input type="text" name="rf_openID" value="<?php print($_POST['rf_openID']); ?>" id="rf_openID" class="openID" size="40"/>
+                      <input type="text" name="rf_openID" value="<% outPrint(out, request.getParameter("rf_openID")); %>" id="rf_openID" class="openID" size="40"/>
                       <input type="button" name="rf_authenticate" value="Authenticate" id="rf_authenticate" onclick="javascript: return rfAuthenticateSubmit();"/>
                     </td>
                   </tr>
@@ -334,7 +456,7 @@
                       <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                     </th>
                     <td nowrap="nowrap">
-                      <input type="text" name="rf_uid" value="<?php print($_POST['rf_uid']); ?>" id="rf_uid" />
+                      <input type="text" name="rf_uid" value="<% outPrint(out, request.getParameter("rf_uid")); %>" id="rf_uid" />
                     </td>
                   </tr>
                   <tr id="rf_login_2">
@@ -342,7 +464,7 @@
                       <label for="rf_mail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                     </th>
                     <td nowrap="nowrap">
-                      <input type="text" name="rf_mail" value="<?php print($_POST['rf_mail']); ?>" id="rf_mail" size="40"/>
+                      <input type="text" name="rf_mail" value="<% outPrint(out, request.getParameter("rf_mail")); %>" id="rf_mail" size="40"/>
                     </td>
                   </tr>
                   <tr id="rf_login_3">
@@ -371,13 +493,11 @@
                   <input type="submit" name="rf_signup" value="Sign Up" />
                 </div>
               </div>
-
-              <?php
+              <%
               }
-              if ($_form == 'user')
+              if ($_form.equals("user"))
               {
-              ?>
-
+              %>
               <div id="uf" class="form">
                 <div class="header">
                   User profile
@@ -388,7 +508,7 @@
                       Login Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_name"><?php print($_xml->user->name); ?></span>
+                      <span id="uf_name"><% out.print(xpathEvaluate($_document, "/root/user/name")); %></span>
                     </td>
                   </tr>
                   <tr>
@@ -396,7 +516,7 @@
                       E-mail
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_mail"><?php print($_xml->user->mail); ?></span>
+                      <span id="uf_mail"><% out.print(xpathEvaluate($_document, "/root/user/mail")); %></span>
                     </td>
                   </tr>
                   <tr>
@@ -404,7 +524,7 @@
                       Title
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_title"><?php print($_xml->user->title); ?></span>
+                      <span id="uf_title"><% out.print(xpathEvaluate($_document, "/root/user/title")); %></span>
                     </td>
                   </tr>
                   <tr>
@@ -412,7 +532,7 @@
                       First Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_firstName"><?php print($_xml->user->firstName); ?></span>
+                      <span id="uf_firstName"><% out.print(xpathEvaluate($_document, "/root/user/firstName")); %></span>
                     </td>
                   </tr>
                   <tr>
@@ -420,7 +540,7 @@
                       Last Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_lastName"><?php print($_xml->user->lastName); ?></span>
+                      <span id="uf_lastName"><% out.print(xpathEvaluate($_document, "/root/user/lastName")); %></span>
                     </td>
                   </tr>
                   <tr>
@@ -428,7 +548,7 @@
                       Full Name
                     </th>
                     <td nowrap="nowrap">
-                      <span id="uf_fullName"><?php print($_xml->user->fullName); ?></span>
+                      <span id="uf_fullName"><% out.print(xpathEvaluate($_document, "/root/user/fullName")); %></span>
                     </td>
                   </tr>
                 </table>
@@ -436,20 +556,18 @@
                   <input type="submit" name="uf_profile" value="Edit Profile" />
                 </div>
               </div>
-
-              <?php
+              <%
               }
-              if ($_form == 'profile')
+              if ($_form.equals("profile"))
               {
-              ?>
-
+              %>
               <div id="pf" class="form">
-                <?php
-                  if ($_error <> '')
+                <%
+                  if ($_error != "")
                   {
-                    print "<div class=\"error\">".$_error."</div>";
+                    out.print("<div class=\"error\">" + $_error + "</div>");
                   }
-                ?>
+                %>
                 <div class="header">
                   Update user profile
                 </div>
@@ -470,7 +588,7 @@
                           <label for="pf_mail">E-mail</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_mail" value="<?php print($_xml->user->mail); ?>" id="pf_mail" size="40" />
+                          <input type="text" name="pf_mail" value="<% out.print(xpathEvaluate($_document, "/root/user/mail")); %>" id="pf_mail" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -480,12 +598,16 @@
                         <td nowrap="nowrap">
                           <select name="pf_title" id="pf_title">
                             <option></option>
-                            <?php
-                              print sprintf("<option %s>Mr </option>", (("Mr"  == $_xml->user->title) ? "selected=\"selected\"": ""));
-                              print sprintf("<option %s>Mrs</option>", (("Mrs" == $_xml->user->title) ? "selected=\"selected\"": ""));
-                              print sprintf("<option %s>Dr </option>", (("Dr"  == $_xml->user->title) ? "selected=\"selected\"": ""));
-                              print sprintf("<option %s>Ms </option>", (("Ms"  == $_xml->user->title) ? "selected=\"selected\"": ""));
-                            ?>
+                            <%
+                              {
+                                String S = xpathEvaluate($_document, "/root/user/title");
+
+                                out.print("<option " + (("Mr".equals(S))  ? ("selected=\"selected\""): ("")) + ">Mr</option>");
+                                out.print("<option " + (("Mrs".equals(S)) ? ("selected=\"selected\""): ("")) + ">Mrs</option>");
+                                out.print("<option " + (("Dr".equals(S))  ? ("selected=\"selected\""): ("")) + ">Dr</option>");
+                                out.print("<option " + (("Ms".equals(S))  ? ("selected=\"selected\""): ("")) + ">Ms</option>");
+                              }
+                            %>
                           </select>
                         </td>
                       </tr>
@@ -494,7 +616,7 @@
                           <label for="pf_firstName">First Name</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_firstName" value="<?php print($_xml->user->firstName); ?>" id="pf_firstName" size="40" />
+                          <input type="text" name="pf_firstName" value="<% out.print(xpathEvaluate($_document, "/root/user/firstName")); %>" id="pf_firstName" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -502,7 +624,7 @@
                           <label for="pf_lastName">Last Name</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_lastName" value="<?php print($_xml->user->lastName); ?>" id="pf_lastName" size="40" />
+                          <input type="text" name="pf_lastName" value="<% out.print(xpathEvaluate($_document, "/root/user/lastName")); %>" id="pf_lastName" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -510,7 +632,7 @@
                           <label for="pf_fullName">Full Name</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_fullName" value="<?php print($_xml->user->fullName); ?>" id="pf_fullName" size="60" />
+                          <input type="text" name="pf_fullName" value="<% out.print(xpathEvaluate($_document, "/root/user/fullName")); %>" id="pf_fullName" size="60" />
                         </td>
                       </tr>
                     </table>
@@ -523,7 +645,7 @@
                           <label for="pf_icq">ICQ</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_icq" value="<?php print($_xml->user->icq); ?>" id="pf_icq" size="40" />
+                          <input type="text" name="pf_icq" value="<% out.print(xpathEvaluate($_document, "/root/user/icq")); %>" id="pf_icq" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -531,7 +653,7 @@
                           <label for="pf_skype">Skype</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_skype" value="<?php print($_xml->user->skype); ?>" id="pf_skype" size="40" />
+                          <input type="text" name="pf_skype" value="<% out.print(xpathEvaluate($_document, "/root/user/skype")); %>" id="pf_skype" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -539,7 +661,7 @@
                           <label for="pf_yahoo">Yahoo</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_yahoo" value="<?php print($_xml->user->yahoo); ?>" id="pf_yahoo" size="40" />
+                          <input type="text" name="pf_yahoo" value="<% out.print(xpathEvaluate($_document, "/root/user/yahoo")); %>" id="pf_yahoo" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -547,7 +669,7 @@
                           <label for="pf_aim">AIM</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_aim" value="<?php print($_xml->user->aim); ?>" id="pf_aim" size="40" />
+                          <input type="text" name="pf_aim" value="<% out.print(xpathEvaluate($_document, "/root/user/aim")); %>" id="pf_aim" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -555,7 +677,7 @@
                           <label for="pf_msn">MSN</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_msn" value="<?php print($_xml->user->msn); ?>" id="pf_msn" size="40" />
+                          <input type="text" name="pf_msn" value="<% out.print(xpathEvaluate($_document, "/root/user/msn")); %>" id="pf_msn" size="40" />
                         </td>
                       </tr>
                     </table>
@@ -570,15 +692,9 @@
                         <td nowrap="nowrap">
                           <select name="pf_homeCountry" id="pf_homeCountry" onchange="javascript: return updateState('pf_homeCountry', 'pf_homeState');">
                             <option></option>
-                            <?php
-                              for ($N = 1; $N <= count ($_countries); $N += 1)
-                              {
-                                $_S = "";
-                                if ($_countries[$N] == $_xml->user->homeCountry)
-                                  $_S = "selected=\"selected\"";
-                                print sprintf("<option %s>%s</option>", $_S, $_countries[$N]);
-                              }
-                            ?>
+                            <%
+                              outSelectOptions (out, conn, "select WC_NAME NAME from DB.DBA.WA_COUNTRY order by WC_NAME", xpathEvaluate($_document, "/root/user/homeCountry"), null);
+                            %>
                           </select>
                         </td>
                       </tr>
@@ -589,17 +705,9 @@
                         <td nowrap="nowrap">
                           <select name="pf_homeState" id="pf_homeState">
                             <option></option>
-                            <?php
-                              for ($N = 1; $N <= count ($_homeStates); $N += 1)
-                              {
-                                if ($_homeStates[$N] <> '') {
-                                  $_S = "";
-                                  if ($_homeStates[$N] == $_xml->user->homeState)
-                                    $_S = "selected=\"selected\"";
-                                  print sprintf("<option %s>%s</option>", $_S, $_homeStates[$N]);
-                                }
-                              }
-                            ?>
+                            <%
+                              outSelectOptions (out, conn, "select WP_PROVINCE NAME from DB.DBA.WA_PROVINCE where WP_COUNTRY = ? and WP_COUNTRY <> '' order by WP_PROVINCE", xpathEvaluate($_document, "/root/user/homeState"), xpathEvaluate($_document, "/root/user/homeCountry"));
+                            %>
                           </select>
                         </td>
                       </tr>
@@ -608,7 +716,7 @@
                           <label for="pf_homeCity">City/Town</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeCity" value="<?php print($_xml->user->homeCity); ?>" id="pf_homeCity" size="40" />
+                          <input type="text" name="pf_homeCity" value="<% out.print(xpathEvaluate($_document, "/root/user/homeCity")); %>" id="pf_homeCity" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -616,7 +724,7 @@
                           <label for="pf_homeCode">Zip/Postal Code</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeCode" value="<?php print($_xml->user->homeCode); ?>" id="pf_homeCode" />
+                          <input type="text" name="pf_homeCode" value="<% out.print(xpathEvaluate($_document, "/root/user/homeCode")); %>" id="pf_homeCode" />
                         </td>
                       </tr>
                       <tr>
@@ -624,7 +732,7 @@
                           <label for="pf_homeAddress1">Address1</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeAddress1" value="<?php print($_xml->user->homeAddress1); ?>" id="pf_homeAddress1" size="40" />
+                          <input type="text" name="pf_homeAddress1" value="<% out.print(xpathEvaluate($_document, "/root/user/homeAddress1")); %>" id="pf_homeAddress1" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -632,7 +740,7 @@
                           <label for="pf_homeAddress2">Address2</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_homeAddress2" value="<?php print($_xml->user->homeAddress2); ?>" id="pf_homeAddress2" size="40" />
+                          <input type="text" name="pf_homeAddress2" value="<% out.print(xpathEvaluate($_document, "/root/user/homeAddress2")); %>" id="pf_homeAddress2" size="40" />
                         </td>
                       </tr>
                     </table>
@@ -647,27 +755,18 @@
                         <td nowrap="nowrap">
                           <select name="pf_businessIndustry" id="pf_businessIndustry">
                             <option></option>
-                            <?php
-                              for ($N = 1; $N <= count ($_industries); $N += 1)
-                              {
-                                if ($_industries[$N] <> '') {
-                                  $_S = "";
-                                  if ($_industries[$N] == $_xml->user->businessIndustry)
-                                    $_S = "selected=\"selected\"";
-                                  print sprintf("<option %s>%s</option>", $_S, $_industries[$N]);
-                                }
-                              }
-                            ?>
+                            <%
+                              outSelectOptions (out, conn, "select WI_NAME NAME from DB.DBA.WA_INDUSTRY order by WI_NAME", xpathEvaluate($_document, "/root/user/businessIndustry"), null);
+                            %>
                           </select>
                         </td>
                       </tr>
                       <tr>
                         <th>
                           <label for="pf_businessOrganization">Organization</label>
-                          <?php print($_xml->user->businessOrganization); ?>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessOrganization" value="<?php print($_xml->user->businessOrganization); ?>" id="pf_businessOrganization" size="40" />
+                          <input type="text" name="pf_businessOrganization" value="<% out.print(xpathEvaluate($_document, "/root/user/businessOrganization")); %>" id="pf_businessOrganization" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -675,7 +774,7 @@
                           <label for="pf_businessJob">Job Title</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessJob" value="<?php print($_xml->user->businessJob); ?>" id="pf_businessJob" size="40" />
+                          <input type="text" name="pf_businessJob" value="<% out.print(xpathEvaluate($_document, "/root/user/businessJob")); %>" id="pf_businessJob" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -685,15 +784,9 @@
                         <td nowrap="nowrap">
                           <select name="pf_businessCountry" id="pf_businessCountry" onchange="javascript: return updateState('pf_businessCountry', 'pf_businessState');">
                             <option></option>
-                            <?php
-                              for ($N = 1; $N <= count ($_countries); $N += 1)
-                              {
-                                $_S = "";
-                                if ($_countries[$N] == $_xml->user->businessCountry)
-                                  $_S = "selected=\"selected\"";
-                                print sprintf("<option %s>%s</option>", $_S, $_countries[$N]);
-                              }
-                            ?>
+                            <%
+                              outSelectOptions (out, conn, "select WC_NAME NAME from DB.DBA.WA_COUNTRY order by WC_NAME", xpathEvaluate($_document, "/root/user/businessCountry"), null);
+                            %>
                           </select>
                         </td>
                       </tr>
@@ -704,18 +797,9 @@
                         <td nowrap="nowrap">
                           <select name="pf_businessState" id="pf_businessState">
                             <option></option>
-                            <?php
-                              for ($N = 1; $N <= count ($_businessStates); $N += 1)
-                              {
-                                if ($_businessStates[$N] <> '')
-                                {
-                                  $_S = "";
-                                  if ($_businessStates[$N] == $_xml->user->businessState)
-                                    $_S = "selected=\"selected\"";
-                                  print sprintf("<option %s>%s</option>", $_S, $_businessStates[$N]);
-                                }
-                              }
-                            ?>
+                            <%
+                              outSelectOptions (out, conn, "select WP_PROVINCE NAME from DB.DBA.WA_PROVINCE where WP_COUNTRY = ? and WP_COUNTRY <> '' order by WP_PROVINCE", xpathEvaluate($_document, "/root/user/businessState"), xpathEvaluate($_document, "/root/user/businessCountry"));
+                            %>
                           </select>
                         </td>
                       </tr>
@@ -724,7 +808,7 @@
                           <label for="pf_businessCity">City/Town</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessCity" value="<?php print($_xml->user->businessCity); ?>" id="pf_businessCity" size="40" />
+                          <input type="text" name="pf_businessCity" value="<% out.print(xpathEvaluate($_document, "/root/user/businessCity")); %>" id="pf_businessCity" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -732,7 +816,7 @@
                           <label for="pf_businessCode">Zip/Postal Code</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessCode" value="<?php print($_xml->user->businessCode); ?>" id="pf_businessCode" />
+                          <input type="text" name="pf_businessCode" value="<% out.print(xpathEvaluate($_document, "/root/user/businessCode")); %>" id="pf_businessCode" />
                         </td>
                       </tr>
                       <tr>
@@ -740,7 +824,7 @@
                           <label for="pf_businessAddress1">Address1</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessAddress1" value="<?php print($_xml->user->businessAddress1); ?>" id="pf_businessAddress1" size="40" />
+                          <input type="text" name="pf_businessAddress1" value="<% out.print(xpathEvaluate($_document, "/root/user/businessAddress1")); %>" id="pf_businessAddress1" size="40" />
                         </td>
                       </tr>
                       <tr>
@@ -748,7 +832,7 @@
                           <label for="pf_businessAddress2">Address2</label>
                         </th>
                         <td nowrap="nowrap">
-                          <input type="text" name="pf_businessAddress2" value="<?php print($_xml->user->businessAddress2); ?>" id="pf_businessAddress2" size="40" />
+                          <input type="text" name="pf_businessAddress2" value="<% out.print(xpathEvaluate($_document, "/root/user/businessAddress2")); %>" id="pf_businessAddress2" size="40" />
                         </td>
                       </tr>
                     </table>
@@ -795,9 +879,9 @@
                   <input type="submit" name="pf_cancel" value="Cancel" />
                 </div>
               </div>
-              <?php
+              <%
               }
-              ?>
+              %>
             </td>
           </tr>
         </table>
