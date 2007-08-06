@@ -823,7 +823,7 @@ gallery.delete_tag_click = function(e){
   var el = (e.target) ? e.target : e.srcElement
 
   if(confirm('Are you sure that you want to detele this tag?')){
-    var tag = el.parentNode.childNodes[1].innerHTML;
+    var tag = el.parentNode.parentNode.childNodes[1].innerHTML;
    gallery.ajax.image_remove_tags(ds_current_album.current.id,tag);
   }
 }
