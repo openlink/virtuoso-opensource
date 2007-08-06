@@ -519,8 +519,7 @@ create procedure OMAIL.WA.omail_box(
   _pnames := 'folder_id,skiped,order,direction,folder_view';
   _params := OMAIL.WA.omail_str2params(_pnames,get_keyword('bp',params, '100,0,0,0,0'),',');
 
-  _order     := vector('','MSTATUS','PRIORITY','ADDRES_INFO','SUBJECT','RCV_DATE','DSIZE','ATTACHED');
-  _direction := vector('',' ','desc');
+  OMAIL.WA.getOrderDirection (_order, _direction);
 
   -- Check Params for ilegal values---------------------------------------------------
   if (OMAIL.WA.omail_check_folder_id(_domain_id,_user_id, get_keyword('folder_id',_params)) = 0) {
@@ -2913,11 +2912,9 @@ create procedure OMAIL.WA.omail_msg_list(
 {
   declare _sql_statm,_sql_params,_order,_direction any;
 
-  _order      := vector('','MSTATUS','PRIORITY','ADDRES_INFO','SUBJECT','RCV_DATE','DSIZE','ATTACHED');
-  _direction  := vector('',' ','desc');
+  OMAIL.WA.getOrderDirection (_order, _direction);
   _sql_statm  := sprintf('SELECT SUBJECT,ATTACHED,ADDRESS,DSIZE DSIZE,MSG_ID,MSTATUS,PRIORITY,RCV_DATE FROM OMAIL.WA.MESSAGES where DOMAIN_ID = ? and USER_ID = ? and FOLDER_ID = ? and PARENT_ID IS NULL ORDER BY %s %s,RCV_DATE desc', _order[OMAIL.WA.omail_getp('order',_params)], _direction[OMAIL.WA.omail_getp('direction',_params)]);
   _sql_params := vector(1, _user_id, OMAIL.WA.omail_getp('folder_id',_params));
-
   return OMAIL.WA.omail_sql_exec(_domain_id, _user_id, _sql_statm, _sql_params, OMAIL.WA.omail_getp('skiped',_params),OMAIL.WA.omail_getp('aresults',_params),concat(cast(OMAIL.WA.omail_getp('order',_params) as varchar),cast(OMAIL.WA.omail_getp('direction',_params) as varchar)));
 }
 ;
@@ -3007,8 +3004,7 @@ create procedure OMAIL.WA.omail_msg_search(
 {
   declare tmp, _empty, _sql, _sql_statm, _sql_params, _order, _direction, _aquery any;
 
-  _order       := vector('','MSTATUS','PRIORITY','ADDRES_INFO','SUBJECT','RCV_DATE','DSIZE','ATTACHED');
-  _direction   := vector('',' ','desc');
+  OMAIL.WA.getOrderDirection (_order, _direction);
   _sql_params  := vector(_domain_id, _user_id);
   _empty       := 0;
 
@@ -4058,8 +4054,7 @@ create procedure OMAIL.WA.omail_search(
     OMAIL.WA.omail_setparam('direction', _params, cast(get_keyword('q_direction', params, get_keyword('direction', _params)) as integer));
   }
 
-  _order := vector('','MSTATUS','PRIORITY','ADDRES_INFO','SUBJECT','RCV_DATE','DSIZE','ATTACHED');
-  _direction := vector('',' ','desc');
+  OMAIL.WA.getOrderDirection (_order, _direction);
 
   if (OMAIL.WA.omail_getp('msg_result',_settings) <> '') {
     OMAIL.WA.omail_setparam('aresults',_params,OMAIL.WA.omail_getp('msg_result',_settings));
@@ -4349,8 +4344,7 @@ create procedure OMAIL.WA.omail_select_next_prev(
   declare _sql varchar;
   declare _order, _direction, _sql_params any;
 
-  _order := vector('','MSTATUS','PRIORITY','ADDRES_INFO','SUBJECT','RCV_DATE','DSIZE');
-  _direction := vector('',' ','desc');
+  OMAIL.WA.getOrderDirection (_order, _direction);
   _sql := sprintf('SELECT MSG_ID FROM OMAIL.WA.MESSAGES where DOMAIN_ID = ? and USER_ID = ? and FOLDER_ID = ? and PARENT_ID IS NULL ORDER BY %s %s,RCV_DATE desc', _order[OMAIL.WA.omail_getp('order',_params)], _direction[OMAIL.WA.omail_getp('direction',_params)]);
   _sql_params := vector(_domain_id, _user_id, OMAIL.WA.omail_getp('folder_id', _params));
   return OMAIL.WA.omail_select_next_prev_exec(_sql,_sql_params,_params);
@@ -6073,6 +6067,17 @@ create procedure OMAIL.WA.omail_api_message_create(
 
   _msg_id := OMAIL.WA.omail_save_msg(_domain_id, _user_id, params, 0, _error);
   OMAIL.WA.omail_insert_attachment(_domain_id,_user_id,params,_msg_id,_error);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.getOrderDirection (
+  inout _order any,
+  inout _direction any)
+{
+  _order     := vector ('','MSTATUS','PRIORITY','ADDRES_INFO','SUBJECT','RCV_DATE','DSIZE','ATTACHED');
+  _direction := vector ('',' ','desc');
 }
 ;
 
