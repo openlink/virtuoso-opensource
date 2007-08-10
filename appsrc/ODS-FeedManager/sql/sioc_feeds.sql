@@ -917,6 +917,7 @@ grant select on ODS_FEED_ATTS to SPARQL_SELECT;
 grant execute on sioc.DBA.feed_comment_iri_1 to SPARQL_SELECT;
 grant execute on sioc.DBA.feed_item_url to SPARQL_SELECT;
 grant execute on DB.DBA.ODS_FEED_TAGS to SPARQL_SELECT;
+grant execute on ENEWS.WA.make_post_rfc_msg to SPARQL_SELECT;
 
 -- END FEEDS
 ODS_RDF_VIEW_INIT ();
