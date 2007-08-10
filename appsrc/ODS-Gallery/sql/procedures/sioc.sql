@@ -538,6 +538,8 @@ grant select on ODS_PHOTO_POSTS to SPARQL_SELECT;
 grant select on ODS_PHOTO_COMMENTS to SPARQL_SELECT;
 grant select on ODS_PHOTO_TAGS to SPARQL_SELECT;
 grant execute on DB.DBA.ODS_PHOTO_TAGS to SPARQL_SELECT;
+grant execute on sioc.DBA.gallery_prop_get to SPARQL_SELECT;
+grant execute on sioc.DBA.gallery_post_url to SPARQL_SELECT;
 
 -- END PHOTO
 ODS_RDF_VIEW_INIT ();
