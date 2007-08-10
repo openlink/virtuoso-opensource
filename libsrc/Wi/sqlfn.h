@@ -788,7 +788,10 @@ int cli_check_ws_terminate (client_connection_t *cli);
 
 
 
+#ifndef _REMOTE_STMT_T_
+#define _REMOTE_STMT_T_
 typedef struct _rstmtstruct remote_stmt_t;
+#endif
 
 
 /* sqlprt.h */

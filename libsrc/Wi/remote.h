@@ -128,11 +128,8 @@ typedef struct rcon_cache_s
 } rcon_cache_t;
 
 
-
-
-
-
-#ifdef SOLARIS
+#ifndef _REMOTE_STMT_T_
+#define _REMOTE_STMT_T_
 typedef struct _rstmtstruct  remote_stmt_t;
 #endif
 
