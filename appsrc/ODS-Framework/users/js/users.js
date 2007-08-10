@@ -592,6 +592,10 @@ function ufProfileCallback(obj) {
       fieldUpdate(user, 'firstName', 'pf_firstName');
       fieldUpdate(user, 'lastName', 'pf_lastName');
       fieldUpdate(user, 'fullName', 'pf_fullName');
+      fieldUpdate(user, 'gender',                 'pf_gender');
+      fieldUpdate(user, 'birthdayDay',            'pf_birthdayDay');
+      fieldUpdate(user, 'birthdayMonth',          'pf_birthdayMonth');
+      fieldUpdate(user, 'birthdayYear',           'pf_birthdayYear');
 
       // cntact
       fieldUpdate(user, 'icq', 'pf_icq');
@@ -607,10 +611,17 @@ function ufProfileCallback(obj) {
       fieldUpdate(user, 'homeCode', 'pf_homeCode');
       fieldUpdate(user, 'homeAddress1', 'pf_homeAddress1');
       fieldUpdate(user, 'homeAddress2', 'pf_homeAddress2');
+      fieldUpdate(user, 'homeTimeZone',           'pf_homeTimeZone');
+      fieldUpdate(user, 'homeLatitude',           'pf_homeLatitude');
+      fieldUpdate(user, 'homeLongitude',          'pf_homeLongitude');
+      fieldUpdate(user, 'defaultMapLocation',     'pf_homeDefaultMapLocation');
+      fieldUpdate(user, 'homePhone',              'pf_homePhone');
+      fieldUpdate(user, 'homeMobile',             'pf_homeMobile');
 
       // business
       fieldUpdate(user, 'businessIndustry', 'pf_businessIndustry');
       fieldUpdate(user, 'businessOrganization', 'pf_businessOrganization');
+      fieldUpdate(user, 'businessHomePage',       'pf_businessHomePage');
       fieldUpdate(user, 'businessJob', 'pf_businessJob');
       fieldUpdate(user, 'businessCountry', 'pf_businessCountry');
       updateState('pf_businessCountry', 'pf_businessState', tagValue(user, 'businessState'));
@@ -618,6 +629,25 @@ function ufProfileCallback(obj) {
       fieldUpdate(user, 'businessCode', 'pf_businessCode');
       fieldUpdate(user, 'businessAddress1', 'pf_businessAddress1');
       fieldUpdate(user, 'businessAddress2', 'pf_businessAddress2');
+      fieldUpdate(user, 'businessTimeZone',       'pf_businessTimeZone');
+      fieldUpdate(user, 'businessLatitude',       'pf_businessLatitude');
+      fieldUpdate(user, 'businessLongitude',      'pf_businessLongitude');
+      fieldUpdate(user, 'defaultMapLocation',     'pf_businessDefaultMapLocation');
+      fieldUpdate(user, 'businessPhone',          'pf_businessPhone');
+      fieldUpdate(user, 'businessMobile',         'pf_businessMobile');
+      fieldUpdate(user, 'businessRegNo',          'pf_businessRegNo');
+      fieldUpdate(user, 'businessCareer',         'pf_businessCareer');
+      fieldUpdate(user, 'businessEmployees',      'pf_businessEmployees');
+      fieldUpdate(user, 'businessVendor',         'pf_businessVendor');
+      fieldUpdate(user, 'businessService',        'pf_businessService');
+      fieldUpdate(user, 'businessOther',          'pf_businessOther');
+      fieldUpdate(user, 'businessNetwork',        'pf_businessNetwork');
+      fieldUpdate(user, 'businessResume',         'pf_businessResume');
+
+      // sucurity
+      fieldUpdate(user, 'securitySecretQuestion', 'pf_securitySecretQuestion');
+      fieldUpdate(user, 'securitySecretAnswer',   'pf_securitySecretAnswer');
+      fieldUpdate(user, 'securitySiocLimit',      'pf_securitySiocLimit');
 
      	var T = $('ob_left');
      	if (T) {
@@ -646,26 +676,53 @@ function pfUpdateSubmit(event) {
       pFirstName:$v('pf_firstName'),
       pLastName:$v('pf_lastName'),
       pFullName:$v('pf_fullName'),
+      pGender:$v('pf_gender'),
+      pBirthdayDay:$v('pf_birthdayDay'),
+      pBirthdayMonth:$v('pf_birthdayMonth'),
+      pBirthdayYear:$v('pf_birthdayYear'),
       pIcq:$v('pf_icq'),
       pSkype:$v('pf_skype'),
       pYahoo:$v('pf_yahoo'),
       pAim:$v('pf_aim'),
       pMsn:$v('pf_msn'),
+      pDefaultMapLocation:$v('pf_homeDefaultMapLocation'),
       pHomeCountry:$v('pf_homeCountry'),
       pHomeState:$v('pf_homeState'),
       pHomeCity:$v('pf_homeCity'),
       pHomeCode:$v('pf_homeCode'),
       pHomeAddress1:$v('pf_homeAddress1'),
       pHomeAddress2:$v('pf_homeAddress2'),
+      pHomeTimeZone:$v('pf_homeTimeZone'),
+      pHomeLatitude:$v('pf_homeLatitude'),
+      pHomeLongitude:$v('pf_homeLongitude'),
+      pHomePhone:$v('pf_homePhone'),
+      pHomeMobile:$v('pf_homeMobile'),
       pBusinessIndustry:$v('pf_businessIndustry'),
       pBusinessOrganization:$v('pf_businessOrganization'),
+      pBusinessHomePage:$v('pf_businessHomePage'),
       pBusinessJob:$v('pf_businessJob'),
       pBusinessCountry:$v('pf_businessCountry'),
       pBusinessState:$v('pf_businessState'),
       pBusinessCity:$v('pf_businessCity'),
       pBusinessCode:$v('pf_businessCode'),
       pBusinessAddress1:$v('pf_businessAddress1'),
-      pBusinessAddress2:$v('pf_businessAddress2')
+      pBusinessAddress2:$v('pf_businessAddress2'),
+      pBusinessTimeZone:$v('pf_businessTimeZone'),
+      pBusinessLatitude:$v('pf_businessLatitude'),
+      pBusinessLongitude:$v('pf_businessLongitude'),
+      pBusinessPhone:$v('pf_businessPhone'),
+      pBusinessMobile:$v('pf_businessMobile'),
+      pBusinessRegNo:$v('pf_businessRegNo'),
+      pBusinessCareer:$v('pf_businessCareer'),
+      pBusinessEmployees:$v('pf_businessEmployees'),
+      pBusinessVendor:$v('pf_businessVendor'),
+      pBusinessService:$v('pf_businessService'),
+      pBusinessOther:$v('pf_businessOther'),
+      pBusinessNetwork:$v('pf_businessNetwork'),
+      pBusinessResume:$v('pf_businessResume'),
+      pSecuritySecretQuestion:$v('pf_securitySecretQuestion'),
+      pSecuritySecretAnswer:$v('pf_securitySecretAnswer'),
+      pSecuritySiocLimit:$v('pf_securitySiocLimit')
     }
   }
 	OAT.WS.invoke(wsdl, serviceName, pfUpdateCallback, inputObject);
@@ -734,4 +791,61 @@ function pfCancelSubmit() {
   OAT.Dom.hide("rf");
   OAT.Dom.show("uf");
   OAT.Dom.hide("pf");
+}
+
+function pfGetLocation(mode) {
+  var wsdl = "/ods_services/services.wsdl";
+  var serviceName = "ODS_GET_LOCATION";
+
+  var inputObject = {
+  	ODS_GET_LOCATION:{
+      pCountry:$v('pf_'+mode+'Country'),
+      pState:$v('pf_'+mode+'State'),
+      pCity:$v('pf_'+mode+'City'),
+      pCode:$v('pf_'+mode+'Code'),
+      pAddress1:$v('pf_'+mode+'Address1'),
+      pAddress2:$v('pf_'+mode+'Address2'),
+    }
+  }
+  if (mode == 'home') {
+	  OAT.WS.invoke(wsdl, serviceName, pfGetLocationHCallback, inputObject);
+	} else {
+	  OAT.WS.invoke(wsdl, serviceName, pfGetLocationBCallback, inputObject);
+	}
+  return false;
+}
+
+function pfGetLocationBCallback(obj) {
+  var xml = OAT.Xml.createXmlDoc(obj.ODS_GET_LOCATIONResponse.CallReturn);
+	var root = xml.documentElement;
+  if (root) {
+ 	  var pLocation = root.getElementsByTagName('location')[0];
+    if (pLocation) {
+      fieldUpdate(pLocation, 'latitude',  'pf_businessLatitude');
+      fieldUpdate(pLocation, 'longitude', 'pf_businessLongitude');
+    }
+	}
+}
+
+function pfGetLocationHCallback(obj) {
+  var xml = OAT.Xml.createXmlDoc(obj.ODS_GET_LOCATIONResponse.CallReturn);
+	var root = xml.documentElement;
+  if (root) {
+ 	  var pLocation = root.getElementsByTagName('location')[0];
+    if (pLocation) {
+      fieldUpdate(pLocation, 'latitude',  'pf_homeLatitude');
+      fieldUpdate(pLocation, 'longitude', 'pf_homeLongitude');
+    }
+	}
+}
+
+function setDefaultMapLocation (from, to) {
+  $('pf_' + to + 'DefaultMapLocation').checked = $('pf_' + from + 'DefaultMapLocation').checked;
+}
+
+function setSecretQuestion () {
+  var S = $("pf_secretQuestion_select");
+  var V = S[S.selectedIndex].value;
+
+  $("pf_secretQuestion").value = V;
 }

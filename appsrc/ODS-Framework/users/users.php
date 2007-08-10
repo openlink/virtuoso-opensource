@@ -47,9 +47,7 @@
     $_sid = $_POST['sid'];
     $_realm = $_POST['realm'];
 
-    $_dsn = "Virtuoso50";
-    $_user = "dba";
-    $_pass = "dba";
+    include 'users_dsn.php';
     $handle = odbc_connect ($_dsn, $_user, $_pass);
     if (!$handle)
     {
@@ -139,7 +137,7 @@
       {
         if (isset ($_POST['pf_update']) && ($_POST['pf_update'] <> ""))
         {
-          $_S = "select ODS_USER_UPDATE('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')";
+          $_S = "select ODS_USER_UPDATE('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')";
           $_result = odbc_exec ($handle, sprintf ($_S, $_sid,
                                                        $_realm,
                                                        $_POST['pf_mail'],
@@ -147,26 +145,54 @@
                                                        $_POST['pf_firstName'],
                                                        $_POST['pf_lastName'],
                                                        $_POST['pf_fullName'],
+                                                       $_POST['pf_gender'],
+                                                       $_POST['pf_birthdayDay'],
+                                                       $_POST['pf_birthdayMonth'],
+                                                       $_POST['pf_birthdayYear'],
                                                        $_POST['pf_icq'],
                                                        $_POST['pf_skype'],
                                                        $_POST['pf_yahoo'],
                                                        $_POST['pf_aim'],
                                                        $_POST['pf_msn'],
+                                                       $_POST['pf_homeDefaultMapLocation'],
                                                        $_POST['pf_homeCountry'],
                                                        $_POST['pf_homeState'],
                                                        $_POST['pf_homeCity'],
                                                        $_POST['pf_homeCode'],
                                                        $_POST['pf_homeAddress1'],
                                                        $_POST['pf_homeAddress2'],
+                                                       $_POST['pf_homeTimeZone'],
+                                                       $_POST['pf_homeLatitude'],
+                                                       $_POST['pf_homeLongitude'],
+                                                       $_POST['pf_homePhone'],
+                                                       $_POST['pf_homeMobile'],
                                                        $_POST['pf_businessIndustry'],
                                                        $_POST['pf_businessOrganization'],
+                                                       $_POST['pf_businessHomePage'],
                                                        $_POST['pf_businessJob'],
                                                        $_POST['pf_businessCountry'],
                                                        $_POST['pf_businessState'],
                                                        $_POST['pf_businessCity'],
                                                        $_POST['pf_businessCode'],
                                                        $_POST['pf_businessAddress1'],
-                                                       $_POST['pf_businessAddress2']));
+                                                       $_POST['pf_businessAddress2'],
+                                                       $_POST['pf_businessTimeZone'],
+                                                       $_POST['pf_businessLatitude'],
+                                                       $_POST['pf_businessLongitude'],
+                                                       $_POST['pf_businessPhone'],
+                                                       $_POST['pf_businessMobile'],
+                                                       $_POST['pf_businessRegNo'],
+                                                       $_POST['pf_businessCareer'],
+                                                       $_POST['pf_businessEmployees'],
+                                                       $_POST['pf_businessVendor'],
+                                                       $_POST['pf_businessService'],
+                                                       $_POST['pf_businessOther'],
+                                                       $_POST['pf_businessNetwork'],
+                                                       $_POST['pf_businessResume'],
+                                                       $_POST['pf_securitySecretQuestion'],
+                                                       $_POST['pf_securitySecretAnswer'],
+                                                       $_POST['pf_securitySiocLimit']));
+
           $_xml = new SimpleXMLElement(odbc_result ($_result, 1));
           if ($_xml->error->code <> 'OK')
           {
@@ -443,7 +469,7 @@
               {
               ?>
 
-              <div id="pf" class="form">
+              <div id="pf" class="form" style="width: 800px;">
                 <?php
                   if ($_error <> '')
                   {
@@ -466,51 +492,96 @@
                   <div id="page_0">
                     <table class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
-                          <label for="pf_mail">E-mail</label>
-                        </th>
-                        <td nowrap="nowrap">
-                          <input type="text" name="pf_mail" value="<?php print($_xml->user->mail); ?>" id="pf_mail" size="40" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
+                        <th width="30%" nowrap="nowrap">
                           <label for="pf_title">Title</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <select name="pf_title" id="pf_title">
-                            <option></option>
+                            <option></option>s
                             <?php
-                              print sprintf("<option %s>Mr </option>", (("Mr"  == $_xml->user->title) ? "selected=\"selected\"": ""));
-                              print sprintf("<option %s>Mrs</option>", (("Mrs" == $_xml->user->title) ? "selected=\"selected\"": ""));
-                              print sprintf("<option %s>Dr </option>", (("Dr"  == $_xml->user->title) ? "selected=\"selected\"": ""));
-                              print sprintf("<option %s>Ms </option>", (("Ms"  == $_xml->user->title) ? "selected=\"selected\"": ""));
+                              $X = array ("Mr", "Mrs", "Dr", "Ms");
+                              for ($N = 0; $N < count ($X); $N += 1)
+                                print sprintf("<option %s>%s</option>", (($X[$N] == $_xml->user->title) ? "selected=\"selected\"": ""), $X[$N]);
                             ?>
                           </select>
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th nowrap="nowrap">
                           <label for="pf_firstName">First Name</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_firstName" value="<?php print($_xml->user->firstName); ?>" id="pf_firstName" size="40" />
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th nowrap="nowrap">
                           <label for="pf_lastName">Last Name</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_lastName" value="<?php print($_xml->user->lastName); ?>" id="pf_lastName" size="40" />
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th nowrap="nowrap">
                           <label for="pf_fullName">Full Name</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_fullName" value="<?php print($_xml->user->fullName); ?>" id="pf_fullName" size="60" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_mail">E-mail</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_mail" value="<?php print($_xml->user->mail); ?>" id="pf_mail" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_gender">Gender</label>
+                        </th>
+                        <td>
+                          <select name="pf_gender" value="" id="pf_gender">
+                            <option></option>
+                            <?php
+                              $X = array ("Male", "Female");
+                              for ($N = 0; $N < count ($X); $N += 1)
+                                print sprintf("<option value=\"%s\" %s>%s</option>", strtolower($X[$N]), ((strtolower($X[$N]) == $_xml->user->gender) ? "selected=\"selected\"": ""), $X[$N]);
+                            ?>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_birthday">Birthday</label>
+                        </th>
+                        <td>
+                          <select name="pf_birthdayDay" id="pf_birthdayDay">
+                            <option></option>
+                            <?php
+                              for ($N = 1; $N <= 31; $N += 1)
+                                print sprintf("<option value=\"%d\" %s>%d</option>", $N, (($N == $_xml->user->birthdayDay) ? "selected=\"selected\"": ""), $N);
+                            ?>
+                          </select>
+        		              -
+                          <select name="pf_birthdayMonth" id="pf_birthdayMonth">
+                            <option></option>
+                            <?php
+                              $X = array ("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec");
+                              for ($N = 1; $N <= 12; $N += 1)
+                                print sprintf("<option value=\"%d\" %s>%s</option>", $N, (($N == $_xml->user->birthdayMonth) ? "selected=\"selected\"": ""), $X[$N-1]);
+                            ?>
+                          </select>
+                          -
+                          <select name="pf_birthdayYear" id="pf_birthdayYear">
+                            <option></option>
+                            <?php
+                              for ($N = 1950; $N <= 2003; $N += 1)
+                                print sprintf("<option value=\"%d\" %s>%d</option>", $N, (($N == $_xml->user->birthdayYear) ? "selected=\"selected\"": ""), $N);
+                            ?>
+                          </select>
                         </td>
                       </tr>
                     </table>
@@ -522,7 +593,7 @@
                         <th width="30%">
                           <label for="pf_icq">ICQ</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_icq" value="<?php print($_xml->user->icq); ?>" id="pf_icq" size="40" />
                         </td>
                       </tr>
@@ -530,7 +601,7 @@
                         <th>
                           <label for="pf_skype">Skype</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_skype" value="<?php print($_xml->user->skype); ?>" id="pf_skype" size="40" />
                         </td>
                       </tr>
@@ -538,7 +609,7 @@
                         <th>
                           <label for="pf_yahoo">Yahoo</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_yahoo" value="<?php print($_xml->user->yahoo); ?>" id="pf_yahoo" size="40" />
                         </td>
                       </tr>
@@ -546,7 +617,7 @@
                         <th>
                           <label for="pf_aim">AIM</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_aim" value="<?php print($_xml->user->aim); ?>" id="pf_aim" size="40" />
                         </td>
                       </tr>
@@ -554,7 +625,7 @@
                         <th>
                           <label for="pf_msn">MSN</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_msn" value="<?php print($_xml->user->msn); ?>" id="pf_msn" size="40" />
                         </td>
                       </tr>
@@ -583,10 +654,10 @@
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th nowrap="nowrap">
                           <label for="pf_homeState">State/Province</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <select name="pf_homeState" id="pf_homeState">
                             <option></option>
                             <?php
@@ -604,18 +675,18 @@
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th nowrap="nowrap">
                           <label for="pf_homeCity">City/Town</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_homeCity" value="<?php print($_xml->user->homeCity); ?>" id="pf_homeCity" size="40" />
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th nowrap="nowrap">
                           <label for="pf_homeCode">Zip/Postal Code</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_homeCode" value="<?php print($_xml->user->homeCode); ?>" id="pf_homeCode" />
                         </td>
                       </tr>
@@ -635,6 +706,54 @@
                           <input type="text" name="pf_homeAddress2" value="<?php print($_xml->user->homeAddress2); ?>" id="pf_homeAddress2" size="40" />
                         </td>
                       </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_homeTimeZone">Time-Zone</label>
+                        </th>
+                        <td>
+                          <select name="pf_homeTimeZone" id="pf_homeTimeZone">
+                            <?php
+                              for ($N = -12; $N <= 12; $N += 1)
+                                print sprintf("<option value=\"%d\" %s>GMT %d:00</option>", $N, (($N == $_xml->user->homeTimeZone) ? "selected=\"selected\"": ""), $N);
+                            ?>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_homeLatitude">Latitude</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_homeLatitude" value="<?php print($_xml->user->homeLatitude); ?>" id="pf_homeLatitude" />
+                          <input type="button" name="pf_setHomeLocation" value="Set From Address" onclick="javascript: pfGetLocation('home');" />
+                          <input type="checkbox" name="pf_homeDefaultMapLocation" id="pf_homeDefaultMapLocation" onclick="javascript: setDefaultMapLocation('home', 'business');" />
+                          <label for="pf_homeDefaultMapLocation">Default Map Location</label>
+                        <td>
+                      <tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_homeLongitude">Longitude</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_homeLongitude" value="<?php print($_xml->user->homeLongitude); ?>" id="pf_homeLongitude" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_homePhone">Phone</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_homePhone" value="<?php print($_xml->user->homePhone); ?>" id="pf_homePhone" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_homeMobile">Mobile</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_homeMobile" value="<?php print($_xml->user->homeMobile); ?>" id="pf_homeMobile" />
+                        </td>
+                      </tr>
                     </table>
                   </div>
 
@@ -644,7 +763,7 @@
                         <th width="30%">
                           <label for="pf_businessIndustry">Industry</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <select name="pf_businessIndustry" id="pf_businessIndustry">
                             <option></option>
                             <?php
@@ -664,25 +783,32 @@
                       <tr>
                         <th>
                           <label for="pf_businessOrganization">Organization</label>
-                          <?php print($_xml->user->businessOrganization); ?>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_businessOrganization" value="<?php print($_xml->user->businessOrganization); ?>" id="pf_businessOrganization" size="40" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="pf_businessJob">Job Title</label>
+                          <label for="pf_businessHomePage">Organization Home Page</label>
                         </th>
                         <td nowrap="nowrap">
+                          <input type="text" name="pf_businessHomePage" value="<?php print($_xml->user->businessHomePage); ?>" id="pf_businessNetwork" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessJob">Job Title</label>
+                        </th>
+                        <td>
                           <input type="text" name="pf_businessJob" value="<?php print($_xml->user->businessJob); ?>" id="pf_businessJob" size="40" />
                         </td>
                       </tr>
                       <tr>
-                        <th width="30%">
+                        <th>
                           <label for="pf_businessCountry">Country</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <select name="pf_businessCountry" id="pf_businessCountry" onchange="javascript: return updateState('pf_businessCountry', 'pf_businessState');">
                             <option></option>
                             <?php
@@ -698,10 +824,10 @@
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th nowrap="nowrap">
                           <label for="pf_businessState">State/Province</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <select name="pf_businessState" id="pf_businessState">
                             <option></option>
                             <?php
@@ -720,18 +846,18 @@
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th nowrap="nowrap">
                           <label for="pf_businessCity">City/Town</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_businessCity" value="<?php print($_xml->user->businessCity); ?>" id="pf_businessCity" size="40" />
                         </td>
                       </tr>
                       <tr>
-                        <th>
+                        <th nowrap="nowrap">
                           <label for="pf_businessCode">Zip/Postal Code</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_businessCode" value="<?php print($_xml->user->businessCode); ?>" id="pf_businessCode" />
                         </td>
                       </tr>
@@ -739,7 +865,7 @@
                         <th>
                           <label for="pf_businessAddress1">Address1</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_businessAddress1" value="<?php print($_xml->user->businessAddress1); ?>" id="pf_businessAddress1" size="40" />
                         </td>
                       </tr>
@@ -747,8 +873,148 @@
                         <th>
                           <label for="pf_businessAddress2">Address2</label>
                         </th>
-                        <td nowrap="nowrap">
+                        <td>
                           <input type="text" name="pf_businessAddress2" value="<?php print($_xml->user->businessAddress2); ?>" id="pf_businessAddress2" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessTimeZone">Time-Zone</label>
+                        </th>
+                        <td>
+                          <select name="pf_businessTimeZone" id="pf_businessTimeZone">
+                            <?php
+                              for ($N = -12; $N <= 12; $N += 1)
+                                print sprintf("<option value=\"%d\" %s>GMT %d:00</option>", $N, (($N == $_xml->user->businessTimeZone) ? "selected=\"selected\"": ""), $N);
+                            ?>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessLatitude">Latitude</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_businessLatitude" value="<?php print($_xml->user->businessLatitude); ?>" id="pf_businessLatitude" />
+                          <input type="button" name="pf_setBusinessLocation" value="Set From Address" onclick="javascript: pfGetLocation('business');" />
+                          <input type="checkbox" name="pf_businessDefaultMapLocation" id="pf_businessDefaultMapLocation" onclick="javascript: setDefaultMapLocation('business', 'home');" />
+                          <label for="pf_businessDefaultMapLocation">Default Map Location</label>
+                        <td>
+                      <tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessLongitude">Longitude</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_businessLongitude" value="<?php print($_xml->user->businessLongitude); ?>" id="pf_businessLongitude" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessPhone">Phone</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_businessPhone" value="<?php print($_xml->user->businessPhone); ?>" id="pf_businessPhone" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessMobile">Mobile</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_businessMobile" value="<?php print($_xml->user->businessMobile); ?>" id="pf_businessMobile" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessRegNo">VAT Reg number (EU only) or Tax ID</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_businessRegNo" value="<?php print($_xml->user->businessRegNo); ?>" id="pf_businessRegNo" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessCareer">Career / Organization Status</label>
+                        </th>
+                        <td>
+                          <select name="pf_businessCareer" id="pf_businessCareer">
+                            <option />
+                            <?php
+                              $X = array ("Job seeker-Permanent", "Job seeker-Temporary", "Job seeker-Temp/perm", "Employed-Unavailable", "Employer", "Agency", "Resourcing supplier");
+                              for ($N = 0; $N < count ($X); $N += 1)
+                                print sprintf("<option %s>%s</option>", (($X[$N] == $_xml->user->businessCareer) ? "selected=\"selected\"": ""), $X[$N]);
+                            ?>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessEmployees">No. of Employees</label>
+                        </th>
+                        <td>
+                          <select name="pf_businessEmployees" id="pf_businessEmployees">
+                            <option />
+                            <?php
+                              $X = array ("1-100", "101-250", "251-500", "501-1000", ">1000");
+                              for ($N = 0; $N < count ($X); $N += 1)
+                                print sprintf("<option %s>%s</option>", (($X[$N] == $_xml->user->businessEmployees) ? "selected=\"selected\"": ""), $X[$N]);
+                            ?>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessVendor">Are you a technology vendor</label>
+                        </th>
+                        <td>
+                          <select name="pf_businessVendor" id="pf_businessVendor">
+                            <option />
+                            <?php
+                              $X = array ("Not a Vendor", "Vendor", "VAR", "Consultancy");
+                              for ($N = 0; $N < count ($X); $N += 1)
+                                print sprintf("<option %s>%s</option>", (($X[$N] == $_xml->user->businessVendor) ? "selected=\"selected\"": ""), $X[$N]);
+                            ?>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessService">If so, what technology and/or service do you provide?</label>
+                        </th>
+                        <td>
+                          <select name="pf_businessService" id="pf_businessService">
+                            <option />
+                            <?php
+                              $X = array ("Enterprise Data Integration", "Business Process Management", "Other");
+                              for ($N = 0; $N < count ($X); $N += 1)
+                                print sprintf("<option %s>%s</option>", (($X[$N] == $_xml->user->businessService) ? "selected=\"selected\"": ""), $X[$N]);
+                            ?>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessOther">Other Technology service</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_businessOther" value="<?php print($_xml->user->businessOther); ?>" id="pf_businessOther" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessNetwork">Importance of OpenLink Network for you</label>
+                        </th>
+                        <td>
+                          <input type="text" name="pf_businessNetwork" value="<?php print($_xml->user->businessNetwork); ?>" id="pf_businessNetwork" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_businessResume">Resume</label>
+                        </th>
+                        <td>
+                          <textarea name="pf_businessResume" id="pf_businessResume" cols="50"><?php print($_xml->user->businessResume); ?></textarea>
                         </td>
                       </tr>
                     </table>
@@ -762,7 +1028,12 @@
                         </td>
                       </tr>
                       <tr>
-                        <th width="30%">
+                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
+                          Password Settings
+                        </th>
+                      </tr>
+                      <tr>
+                        <th width="30%" nowrap="nowrap">
                           <label for="pf_oldPassword">Old Password</label>
                         </th>
                         <td nowrap="nowrap">
@@ -770,7 +1041,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th width="30%">
+                        <th nowrap="nowrap">
                           <label for="pf_newPassword">New Password</label>
                         </th>
                         <td nowrap="nowrap">
@@ -778,12 +1049,54 @@
                         </td>
                       </tr>
                       <tr>
-                        <th width="30%">
+                        <th nowrap="nowrap">
                           <label for="pf_password">Repeat Password</label>
                         </th>
                         <td nowrap="nowrap">
                           <input type="password" name="pf_newPassword2" value="" id="pf_newPassword2" />
                           <input type="button" name="pf_change" value="Change" onclick="javascript: return pfChangeSubmit();" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
+                          Password Recovery
+                        </th>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_securitySecretQuestion">Secret Question</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_securitySecretQuestion" value="<?php print($_xml->user->securitySecretQuestion); ?>" id="pf_securitySecretQuestion" size="40" />
+                          <select name="pf_secretQuestion_select" value="" id="pf_secretQuestion_select" onchange="setSecretQuestion ();">
+                            <option value="">~pick predefined~</option>
+                            <option value="First Car">First Car</option>
+                            <option value="Mothers Maiden Name">Mothers Maiden Name</option>
+                            <option value="Favorite Pet">Favorite Pet</option>
+                            <option value="Favorite Sports Team">Favorite Sports Team</option>
+                          </select>
+                          <?php print($_xml->user->securitySecretQuestion); ?>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_securitySecretAnswer">Secret Answer</label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_securitySecretAnswer" value="<?php print($_xml->user->securitySecretAnswer); ?>" id="pf_securitySecretAnswer" size="40" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th style="text-align: left; background-color: #F6F6F6;" colspan="2">
+                          Applications restrictions
+                        </th>
+                      </tr>
+                      <tr>
+                        <th nowrap="nowrap">
+                          <label for="pf_securitySiocLimit">SIOC Query Result Limit  </label>
+                        </th>
+                        <td nowrap="nowrap">
+                          <input type="text" name="pf_securitySiocLimit" value="<?php print($_xml->user->securitySiocLimit); ?>" id="pf_securitySiocLimit" />
                         </td>
                       </tr>
                     </table>

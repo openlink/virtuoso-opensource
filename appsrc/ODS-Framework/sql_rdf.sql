@@ -20,6 +20,72 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+-- RDF Import
+
+create procedure rdf_import (
+  in pURL varchar,
+  in pMode integer := 1,
+  in pGraph varchar := null)
+{
+  declare retValue integer;
+
+  retValue := 0;
+
+  if (isnull (pGraph))
+    pGraph := pURL;
+  if (pMode) {
+    declare st, msg, meta, rows any;
+
+    st := '00000';
+    exec (sprintf ('SPARQL define get:soft "soft" SELECT * FROM <%s> WHERE { ?s ?p ?o }', pURL), st, msg, vector (), 0, meta, rows);
+    if ('00000' = st) {
+      foreach (any row in rows) do {
+        if (row[2] like 'http://%') {
+          DB.DBA.RDF_QUAD_URI (pGraph, row[0], row[1], row[2]);
+        } else {
+          DB.DBA.RDF_QUAD_URI_L (pGraph, row[0], row[1], row[2]);
+        }
+        retValue := retValue + 1;
+      }
+    }
+  } else {
+  	declare content, hdr any;
+
+  	content := http_get (pURL, hdr, 'GET');
+  	if (hdr[0] not like 'HTTP%200%')
+  	  signal ('22023', hdr[0]);
+
+  	declare is_ttl, is_xml integer;
+    {
+      declare continue handler for SQLSTATE '*' {
+        is_ttl := 0;
+      };
+      is_ttl := 1;
+      DB.DBA.RDF_TTL2HASH (content, pGraph, pGraph);
+    }
+    if (not is_ttl) {
+      {
+        declare continue handler for SQLSTATE '*' {
+          is_xml := 0;
+        };
+        is_xml := 1;
+        xtree_doc (content, 0, pGraph);
+      }
+    }
+    if (is_xml = 0 and is_ttl = 0)
+      signal ('ODS10', 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store!');
+
+    if (is_ttl) {
+      DB.DBA.TTLP (content, '', pGraph);
+    } else {
+      DB.DBA.RDF_LOAD_RDFXML (content, '', pGraph);
+    }
+    retValue := (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph));
+  }
+  return retValue;
+}
+;
+
 -- Helpers
 
 create procedure ODS_SPARQL_QM_RUN (in txt varchar, in sig int := 1, in fl int := 0)

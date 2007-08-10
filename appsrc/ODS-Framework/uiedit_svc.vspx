@@ -36,8 +36,11 @@
       <v:before-data-bind><![CDATA[
 	  whenever not found goto nf;
 	  self.opts := vector ();
-	  select deserialize (U_OPTS) into self.opts from SYS_USERS where U_NAME = self.u_name;
+	  select deserialize (blob_to_string(U_OPTS)) into self.opts from SYS_USERS where U_NAME = self.u_name;
 	  nf:;
+	  if (self.opts is null)
+	      self.opts:=vector();
+	     
 	  ]]></v:before-data-bind>
 	<input type="hidden" name="page" value="6"/>
     <table  class="ctl_grp">

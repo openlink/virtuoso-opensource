@@ -168,7 +168,7 @@
          if(length(self.sid))
          {
 
-      self.odsbar_loginparams:='sid='||coalesce(self.sid,'')||'&amp;realm='||coalesce(self.realm,'wa');
+      self.odsbar_loginparams:='sid='||coalesce(self.sid,'')||'&realm='||coalesce(self.realm,'wa');
 
   whenever not found goto nf_uid2;
 
