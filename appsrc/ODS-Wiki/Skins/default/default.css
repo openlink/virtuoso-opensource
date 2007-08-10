@@ -129,6 +129,21 @@ div.fm {
   background-color: #86B9D9;
 }
 
+#head-cols {
+  display: block;}
+
+#head-cols div.row {
+  color: #dee;
+  margin-left: 4px}
+
+#head-cols div.row ul {
+  list-style-type: none;
+  padding: 0}
+
+#head-cols div.row ul li {
+  float: left;
+  margin-left: 5px}
+
 #foot {
   float: left;
   clear: both;

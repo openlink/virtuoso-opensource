@@ -61,6 +61,7 @@
   <xsl:param name="col"/>
   <xsl:param name="acs"/>
   <xsl:param name="acs_marker"/>
+  <xsl:param name="tree"/>
 
   <!-- wikiref -->
   <xsl:param name="wikiref_params"/>
@@ -294,10 +295,22 @@
   </xsl:choose>
   </xsl:template>
 
+  <xsl:template match="Parent" mode="plainPath">
+    <xsl:choose>
+      <xsl:when test="@LOCALNAME != ''">/<xsl:value-of select="@LOCALNAME"/></xsl:when>
+      <xsl:otherwise>/<xsl:value-of select="@CLUSTERNAME"/></xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <xsl:template match="WikiPath">
  <xsl:param name="show_path"/>
  <xsl:if test="$show_path = '1'">
    <div class="wiki-nav-container">
+        <span id="plainPath" style="dislay: none;">
+          <xsl:apply-templates select="Parent" mode="plainPath">
+            <xsl:sort select="@DEPTH" data-type = "number" order = "descending"/>
+          </xsl:apply-templates>
+        </span>
      <xsl:apply-templates select="Parent">
        <xsl:sort select="@DEPTH" data-type = "number" order = "descending"/>
      </xsl:apply-templates>
@@ -418,7 +431,8 @@
           </xsl:call-template>(<xsl:call-template name="revision"/>)
         </span>
         <span>
-          -- <xsl:call-template name="wikiref">
+            --
+            <xsl:call-template name="wikiref">
             <xsl:with-param name="ti_local_name"><xsl:value-of select="$ti_author"/></xsl:with-param>
             <xsl:with-param name="wikiref_cont"><xsl:value-of select="$ti_author"/></xsl:with-param>
           </xsl:call-template>, <xsl:value-of select="fn:substring ($ti_mod_time, 0, 20)"/>
@@ -509,8 +523,6 @@
         </div>
       </form>
   </xsl:if>
- 
-    
     <!--  <table width="100%" border="0"><tr><td align="left"> -->
   </xsl:template>
 
@@ -581,7 +593,8 @@
           Maintenance
         </a>
         <xsl:text> | </xsl:text>
-	    Publish to (<a>
+            Publish to (
+            <a>
 	      <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', 'wa'))"/></xsl:attribute>		
 	      Web
         </a>

@@ -444,6 +444,13 @@ content:
 	}
       goto do_nothing;
     }
+
+  if (_cmd = 'showtree')
+    WV.WIKI.SETCLUSTERPARAM (_topic.ti_cluster_id, 'tree','show');
+
+  if (_cmd = 'hidetree')
+    WV.WIKI.SETCLUSTERPARAM (_topic.ti_cluster_id, 'tree','hide');
+
   if (_cmd = 'edit')
     {
       declare exit handler for sqlstate '42WV9' {

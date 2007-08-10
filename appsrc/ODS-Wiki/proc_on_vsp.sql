@@ -175,6 +175,16 @@ ins:
   	vector ('is_hist', _is_hist, 'revision', _topic.ti_rev_id));
   if (WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'qwiki', 2) = 1)
     _ext_params := vector_concat (_ext_params, vector ('qwikidisabled', '1'));
+
+  declare _tree varchar;
+  _tree := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'tree', 'hide');
+  _ext_params := vector_concat (_ext_params, vector ('tree', _tree));
+
+  declare _tree_content any;
+  _tree_content := WV.WIKI.CLUSTER_TREE_BUILD (_topic.ti_cluster_id, _topic.ti_cluster_name);
+  _tree_content := xtree_doc(_tree_content, 2);
+  _ext_params := vector_concat (_ext_params, vector ('tree_content', _tree_content));
+
   _xhtml := _topic.ti_get_entity(null, 1);
 --  dbg_obj_princ ('>>>>>>' ,_xhtml);
 --  dbg_obj_princ ('[[[', _ext_params);
@@ -2748,6 +2758,47 @@ create function WV..ODS_LINK(inout lines any)
     return 'http://' || hf || '/ods/';
   else
     return WA_LINK(1, '/ods/');
+}
+;
+
+--
+CREATE PROCEDURE WV.WIKI.CLUSTER_TREE_BUILD(
+  in cluster_id integer,
+  in cluster_name varchar)
+{
+  declare retValue any;
+  retValue := string_output ();
+  http (sprintf ('<ul id="tree_content_ul"><li>%s<ul>', cluster_name), retValue);
+  for (select TopicId, ParentId, coalesce (LocalName, LocalName2) as TopicName from WV.WIKI.TOPIC where ClusterId = cluster_id and coalesce(ParentId,0) = 0 order by LocalName) do {
+    http (sprintf ('<li><a href="%s">%s</a>', TopicName, TopicName), retValue);
+    WV.WIKI.CLUSTER_TREE_BUILD_TEMP (cluster_id, cluster_name, TopicId, retValue);
+    http ('</li>', retValue);
+  }
+  http ('</ul></li></ul>', retValue);
+  return string_output_string (retValue);
+}
+;
+
+--
+CREATE PROCEDURE WV.WIKI.CLUSTER_TREE_BUILD_TEMP(
+  in cluster_id integer,
+  in cluster_name varchar,
+  in parent_id integer,
+  inout retValue any)
+{
+  declare _ul integer;
+  _ul := 0;
+  for (select TopicId, ParentId, coalesce (LocalName, LocalName2) as TopicName from WV.WIKI.TOPIC where ClusterId = cluster_id and ParentId = parent_id order by LocalName) do {
+    if (_ul = 0) {
+      http ('\n<ul>', retValue);
+      _ul := 1;
+    }
+    http (sprintf ('<li><a href="%s">%s</a>', TopicName, TopicName), retValue);
+    WV.WIKI.CLUSTER_TREE_BUILD_TEMP (cluster_id, cluster_name, TopicId, retValue);
+    http ('</li>', retValue);
+  }
+  if (_ul = 1)
+    http('</ul>', retValue);
 }
 ;
 

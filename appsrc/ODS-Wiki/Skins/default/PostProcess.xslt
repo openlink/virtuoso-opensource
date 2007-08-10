@@ -41,6 +41,10 @@
     <xsl:param name="sid"/>
     <xsl:param name="realm"/>
   <xsl:param name="ods-bar"/>
+    <xsl:param name="tree"/>
+    <xsl:param name="tree_content"/>
+    <xsl:param name="command"/>
+
 
     <html>
     <head>	
@@ -70,6 +74,49 @@
       <link rel="service.post" 
             type="application/x.atom+xml"
 	      href="{wv:atom_pub_uri($ti_cluster_name)}"/>
+      <script type="text/javascript">
+        var toolkitPath="/ods/oat";
+        var featureList=["tree"];
+      </script>
+      <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript">
+        var clusterTree;
+        function treeGetNode(path) {
+      		var parts = path.split("/");
+      		if (parts[0] == "") { parts.shift(); }
+      		parts.shift();
+      		if (parts[parts.length-1] == "") { parts.pop(); }
+
+      		var ptr = 0;
+      		var node = clusterTree.tree;
+      	  node.expand();
+      		var currentPath = parts[0] + "/";
+      		parts.shift();
+
+          while (ptr &lt; parts.length-1) {
+      			currentPath += parts[ptr] + "/";
+      			var index = -1;
+      			for (var i=0;i &lt; node.children.length;i++) {
+      				var child = node.children[i];
+      				if (child.path == currentPath) { index = i; }
+      			}
+      			ptr++;
+      		  node = node.children[index];
+      		  node.expand();
+      		}
+      		return node;
+      	}
+        ;
+       	function myInit ()
+       	{
+       	  if ($('tree_content_ul')) {
+       	    clusterTree = new OAT.Tree({allowDrag:1,onClick:"select",onDblClick:"toggle",imagePath:"/ods/images/oat/",imagePrefix:"",ext:"png"});
+            clusterTree.assign("tree_content_ul",false);
+            /* treeGetNode($('plainPath').innerHTML); */
+          }
+       	}
+       	OAT.MSG.attach(OAT,OAT.MSG.OAT_LOAD,myInit);
+      </script>
     </head>
       <body>
 	<div id="page">
@@ -86,27 +133,44 @@
 	  </div>
           <div id="hdr-search-form-ctr">
             <xsl:copy-of select="//form[@id='search-form']"/>
+              &nbsp;|&nbsp;
+              <xsl:copy-of select="//a[@id='advanced-search-link']"/>
+              &nbsp;
           </div>
         </div> <!-- head -->
 	  <div id="mid">
 	    <div id="wiki-path">
               <xsl:copy-of select="//div[@class='wiki-nav-container']"/>
             </div>
-            <xsl:apply-templates select="//div[@id='content']/."/>
-              <xsl:if test="//span[@id='top-mod-by']">
-                <div id="node-footer">
-                Modified by 
-                <xsl:copy-of select="//span[@id='top-mod-by']"/> at 
-                <xsl:copy-of select="//span[@id='top-mod-time']"/>
+          <div id="head-cols">
+            <xsl:if test="$command != 'refby' and $command != 'refby-all' and $command != 'index' and $command != 'diff'">
+              <div class="row">
+                <ul>
+                  <li>
+                    <xsl:choose>
+              	      <xsl:when test="$tree='show'">
+                  	    <xsl:call-template name="wikiref">
+                  	      <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'hidetree')"/></xsl:with-param>
+                  	      <xsl:with-param name="wikiref_cont">HideTree</xsl:with-param>
+                  	    </xsl:call-template>
+                  	  </xsl:when>
+                  	  <xsl:otherwise>
+                  	    <xsl:call-template name="wikiref">
+                  	      <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'showtree')"/></xsl:with-param>
+                  	      <xsl:with-param name="wikiref_cont">ShowTree</xsl:with-param>
+                  	    </xsl:call-template>
+                  	  </xsl:otherwise>
+                  	</xsl:choose>
+                  	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                  </li>
+                </ul>
                 </div>
               </xsl:if>
-	  </div> <!-- mid -->
-	  <div id="foot"> 
-            <xsl:copy-of select="//div[@id='wiki-toolbar-container']"/>
-            <div id="foot-cols-ctr">
-              <div class="col">
-                <h3>This Page</h3>
+            <div class="row">
 	      <ul>
+                <li>
+                  <b>This Page:</b>
+                </li>
 		<xsl:for-each select="//div[@class='wiki-source-type']">
 		  <xsl:element name="li">
 		    <xsl:copy-of select="a"/>
@@ -117,7 +181,68 @@
                   <xsl:apply-templates select="//li[@id='wiki-nstab-main']"/>
                   <xsl:apply-templates select="//li[@id='wiki-nstab-talks']"/>
               </ul>
-              </div> <!-- col -->
+            </div> <!-- row This Page -->
+            <div class="row">
+    	        <ul>
+    	          <li>
+    	            <b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tools:</b>
+    	          </li>
+    	          <!--li>
+                  <a href="{wv:registry_get ('wa_home_link', '/wa/')}/?sid={$sid}&realm={$realm}">
+                    <xsl:value-of select="wv:registry_get('wa_home_title', 'OPS Home')"/>
+                  </a>
+    	          </li-->
+    	          <li>
+                  <xsl:copy-of select="//a[@id='user-settings-link']"/>
+    	          </li>
+                <li>
+                  <xsl:copy-of select="//a[@id='cluster-settings-link']"/>
+    	          </li>
+          		  <li>
+          		    <xsl:copy-of select="//a[@id='users-link']"/>
+          		  </li>
+  	          </ul>
+            </div> <!-- row Tools -->
+          </div> <!-- head-menus -->
+          &nbsp;
+          <xsl:choose>
+    	      <xsl:when test="$tree='show'">
+            	<div id="cluster-tree-content">
+                <div style="float:left; width: 13%; overflow:auto">
+                  <br />
+                  <xsl:copy-of select="$tree_content"/>
+                </div>
+                <div style="float:right; width:87%">
+                  <xsl:apply-templates select="//div[@id='content']/."/>
+                  <xsl:if test="//span[@id='top-mod-by']">
+                    <div id="node-footer">
+                      Modified by
+                      <xsl:copy-of select="//span[@id='top-mod-by']"/> at
+                      <xsl:copy-of select="//span[@id='top-mod-time']"/>
+                    </div>
+                  </xsl:if>
+                  <xsl:copy-of select="//div[@id='wiki-toolbar-container']"/>
+                </div>
+              </div>
+        	  </xsl:when>
+        	  <xsl:otherwise>
+        	    <xsl:apply-templates select="//div[@id='content']/."/>
+        	    <xsl:if test="//span[@id='top-mod-by']">
+          	    <div id="node-footer">
+                  Modified by
+                  <xsl:copy-of select="//span[@id='top-mod-by']"/> at
+                  <xsl:copy-of select="//span[@id='top-mod-time']"/>
+                </div>
+              </xsl:if>
+              <xsl:copy-of select="//div[@id='wiki-toolbar-container']"/>
+        	  </xsl:otherwise>
+        	</xsl:choose>
+          <br style="clear: both"/>
+
+  	    </div> <!-- mid -->
+  	    <div id="foot">
+
+          <div id="foot-cols-ctr">
 <!--xsl:apply-templates select="//div[@id='virtuoso-info']"/--> 
               <div class="col">
 	      <h3>Cluster changes</h3>
@@ -216,36 +341,14 @@
 		</li>
 	      </ul>
               </div> <!-- col -->
-              <div class="col">
-                <h3>Tools</h3>
-	        <ul>
-	          <!--li>
-                    <a href="{wv:registry_get ('wa_home_link', '/wa/')}/?sid={$sid}&realm={$realm}">
-                      <xsl:value-of select="wv:registry_get('wa_home_title', 'OPS Home')"/>
-                    </a>
-	          </li-->
-	          <li>
-                    <xsl:copy-of select="//a[@id='user-settings-link']"/>
-	          </li>
-                  <li>
-                    <xsl:copy-of select="//a[@id='cluster-settings-link']"/>
-	          </li>
-	          <li>
-                    <xsl:copy-of select="//a[@id='advanced-search-link']"/>
-                  </li>
-		  <li>
-		    <xsl:copy-of select="//a[@id='users-link']"/>
-		  </li>
-	        </ul>
-              </div> <!-- col -->
             </div> <!-- foot-col-ctr -->
             <div class="debug-info">Default PostProcess.xslt</div>
           </div> <!-- foot -->
 	</div> <!-- page -->
       </body>
     </html>
-  </xsl:template>
 
+  </xsl:template>
 
   <xsl:template match="node()">
     <xsl:copy>
