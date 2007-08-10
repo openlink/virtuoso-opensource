@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef _PTRDIFF_T_DEFINED
+#if !defined(_PTRDIFF_T_DEFINED) && !defined(_PTRDIFF_T)
 typedef signed long ptrdiff_t;
 #endif
 
