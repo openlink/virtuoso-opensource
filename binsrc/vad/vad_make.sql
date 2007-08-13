@@ -2213,12 +2213,15 @@ create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
              pisdav := 1;
 	   VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, 0);
 	   ver := vad_check_version (pname);
-	   if (ver is not null)
+	   if (pver is not null)
 	     {
-	       isdav := coalesce (
-		(select top 1 1 from VAD.DBA.VAD_REGISTRY where R_KEY like sprintf ('/VAD/%s/%s/resources/dav/%%', pname, ver)),
-		0);
+		if (exists (select top 1 1 from VAD.DBA.VAD_REGISTRY
+			where R_KEY like sprintf ('/VAD/%s/%s/resources/dav/%%', pname, ver)))
+		  isdav := 0;
+		else
+		  isdav := 1;
 	     }
+	   if (ver is NULL) ver := '';
 --           dbg_obj_print (pname, pver, pfull, isdav);
 	   if (pver > ver and isdav = pisdav)
 	     {
