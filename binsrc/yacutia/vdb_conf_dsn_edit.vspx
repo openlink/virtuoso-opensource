@@ -186,7 +186,6 @@
 
 	    self.add_str_par (conn, 'Options', self.opl_srv_opts);
 	    self.add_str_par (conn, 'Host', self.opl_host);
-	    self.add_str_par (conn, 'Port', self.opl_port);
 	    self.add_str_par (conn, 'Database', self.opl_db_name);
 	    conn := conn || 'Protocol=TCP/IP;';
 	    self.add_str_par (conn, 'ServerType', self.opl_domain);
@@ -458,8 +457,6 @@
 				      self.opl_uid.ufl_value := val;
 				    else if (nam = 'Database')
 				      self.opl_db_name.ufl_value := val;
-				    else if (nam = 'Port')
-				      self.opl_port.ufl_value := val;
 				    else if (nam = 'Password')
 				      self.opl_pwd.ufl_value := val;
 				    else if (nam = 'FetchBufferSize')
@@ -529,11 +526,6 @@
 				    <td class="genlisthead">Hostname</td>
 				    <td><v:text name="opl_host" value="" xhtml_size="20"/></td>
 				  </tr>
-				  <tr>
-				    <td class="genlisthead">Port</td>
-				    <td><v:text name="opl_port" value="" xhtml_size="4"/></td>
-				  </tr>
-
 				  <tr><th class="genhead" colspan="2">Database</th></tr>
 				  <tr>
 				    <td class="genlisthead">Name</td>
