@@ -197,6 +197,7 @@ int mutex_enter_dbg (int ln, const char * file, dk_mutex_t *mtx);
 #if defined (MTX_DEBUG) || defined (MTX_METER)
 void mutex_option (dk_mutex_t * mtx, char * name, mtx_entry_check_t ck, void * cd);
 #else
+#define MUTEX_OPTION_NOP
 #define mutex_option(mtx,name,ck,cd) do { ; } while (0)
 #endif
 int mutex_try_enter (dk_mutex_t *mtx);

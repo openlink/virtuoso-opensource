@@ -3555,25 +3555,27 @@ dbe_key_open (dbe_key_t * key)
       start_str = registry_get (kf->kf_name);
       LEAVE_TXN;
       kf->kf_it = it_allocate (kf->kf_storage);
+#ifndef MUTEX_OPTION_NOP
       {
-	int inx;
+      int inx2;
 	char mtx_name[200];
 	snprintf (mtx_name, sizeof (mtx_name), "lock_rel_%100s", kf->kf_name);
 	mutex_option (kf->kf_it->it_lock_release_mtx, mtx_name, NULL,  NULL);
-	for (inx = 0; inx < IT_N_MAPS; inx++)
+      for (inx2 = 0; inx2 < IT_N_MAPS; inx2++)
 	  {
-	    sprintf (mtx_name, "%s:%d", kf->kf_name, inx);
-	    mutex_option (&(kf->kf_it->it_maps[inx].itm_mtx), mtx_name, NULL /*it_page_map_entry_check*/, (void*) &kf->kf_it->it_maps[inx]);
+	  sprintf (mtx_name, "%s:%d", kf->kf_name, inx2);
+	  mutex_option (&(kf->kf_it->it_maps[inx2].itm_mtx), mtx_name, NULL, (void *) &kf->kf_it->it_maps[inx2]);
       }
       }
+#endif
       kf->kf_it->it_key = key;
       if (start_str)
 	start_dp = atol (start_str);
       dk_free_tree (start_str);
       if (!start_dp)
 	{
-	  it_map_t * itm;
-	  buffer_desc_t * buf = it_new_page (kf->kf_it, 0, DPF_INDEX, 0, 0);
+	it_map_t *itm;
+	buffer_desc_t *buf = it_new_page (kf->kf_it, 0, DPF_INDEX, 0, 0);
 	  pg_init_new_root (buf);
 	  kf->kf_it->it_root = buf->bd_page;
 	  itm = IT_DP_MAP (kf->kf_it, buf->bd_page);
