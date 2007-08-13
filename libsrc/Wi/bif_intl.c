@@ -115,7 +115,7 @@ bif_charset_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   for (i = 0; i < (int) (box_length (_table) / sizeof (wchar_t) - 1); i++)
     if (!table[i])
-      sqlr_new_error ("2C000", "IN003", "crahset_define : 0 not allowed as a charset definition");
+      sqlr_new_error ("2C000", "IN003", "charset_define : 0 not allowed as a charset definition");
 
   wcharset = sch_name_to_charset (name);
   if (wcharset)
