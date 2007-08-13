@@ -220,7 +220,7 @@ logmsg_ap (int level, char *file, int line, int mask, char *format, va_list ap)
   time_t now;
   int month, day, year;
   size_t remain;
-#if defined (linux)
+#if defined (linux) || defined (__APPLE__)
   va_list save_ap;
 #endif
 #ifdef HAVE_LOCALTIME_R
@@ -350,7 +350,7 @@ logmsg_ap (int level, char *file, int line, int mask, char *format, va_list ap)
 	   */
 	  remain = sizeof (buf) - (bufptr - &buf[0]);
 
-#if defined (linux)
+#if defined (linux) || defined (__APPLE__)
 	  /* 
  	   *  Corrects bug on various systems 
 	   *  va_list is modified after use :-(

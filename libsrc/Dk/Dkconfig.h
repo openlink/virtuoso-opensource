@@ -71,6 +71,18 @@
 
 #  define	POINTER_64
 
+# elif defined (__x86_64__)
+
+#  define	SIZEOF_INT 	4
+#  define	SIZEOF_LONG 	8
+#  define	SIZEOF_CHAR_P 	8
+#  define	SIZEOF_VOID_P 	8
+
+#  undef	_BIG_ENDIAN
+
+#  define	POINTER_64
+
+
 # elif defined (__ppc__)
 
 #  define	SIZEOF_INT 	4
