@@ -45,18 +45,18 @@ prefix tut_northwind: <http://www.openlinksw.com/schemas/tut_northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
-create iri class tut_northwind:Category "http://^{URIQADefaultHost}^/tutorial/Northwind/Category/%d" (in category_id integer not null) .
-create iri class tut_northwind:Shipper "http://^{URIQADefaultHost}^/tutorial/Northwind/Shipper/%d" (in shipper_id integer not null) .
-create iri class tut_northwind:Supplier "http://^{URIQADefaultHost}^/tutorial/Northwind/Supplier/%d" (in supplier_id integer not null) .
-create iri class tut_northwind:Product   "http://^{URIQADefaultHost}^/tutorial/Northwind/Product/%d" (in product_id integer not null) .
-create iri class tut_northwind:Customer "http://^{URIQADefaultHost}^/tutorial/Northwind/Customer/%U" (in customer_id varchar not null) .
-create iri class tut_northwind:Employee "http://^{URIQADefaultHost}^/tutorial/Northwind/Employee/%d" (in employee_id integer not null) .
-create iri class tut_northwind:Order "http://^{URIQADefaultHost}^/tutorial/Northwind/Order/%d" (in order_id integer not null) .
-create iri class tut_northwind:CustomerContact "http://^{URIQADefaultHost}^/tutorial/Northwind/CustomerContact/%U" (in customer_id integer not null) .
-create iri class tut_northwind:OrderLine "http://^{URIQADefaultHost}^/tutorial/Northwind/OrderLine/%d/%d" (in order_id integer not null, in product_id integer not null) .
-create iri class tut_northwind:Province "http://^{URIQADefaultHost}^/tutorial/Northwind/Province/%U/%U" (in country_name varchar not null, in province_name varchar not null) .
-create iri class tut_northwind:Country "http://^{URIQADefaultHost}^/tutorial/Northwind/Country/%U" (in country_name varchar not null) .
-create iri class tut_northwind:Flag "http://^{URIQADefaultHost}^/DAV/sample_data/images/flags/%s" (in flag_path varchar not null) .
+create iri class tut_northwind:Category "http://^{URIQADefaultHost}^/tutorial/Northwind/Category/%d#this" (in category_id integer not null) .
+create iri class tut_northwind:Shipper "http://^{URIQADefaultHost}^/tutorial/Northwind/Shipper/%d#this" (in shipper_id integer not null) .
+create iri class tut_northwind:Supplier "http://^{URIQADefaultHost}^/tutorial/Northwind/Supplier/%d#this" (in supplier_id integer not null) .
+create iri class tut_northwind:Product   "http://^{URIQADefaultHost}^/tutorial/Northwind/Product/%d#this" (in product_id integer not null) .
+create iri class tut_northwind:Customer "http://^{URIQADefaultHost}^/tutorial/Northwind/Customer/%U#this" (in customer_id varchar not null) .
+create iri class tut_northwind:Employee "http://^{URIQADefaultHost}^/tutorial/Northwind/Employee/%d#this" (in employee_id integer not null) .
+create iri class tut_northwind:Order "http://^{URIQADefaultHost}^/tutorial/Northwind/Order/%d#this" (in order_id integer not null) .
+create iri class tut_northwind:CustomerContact "http://^{URIQADefaultHost}^/tutorial/Northwind/CustomerContact/%U#this" (in customer_id integer not null) .
+create iri class tut_northwind:OrderLine "http://^{URIQADefaultHost}^/tutorial/Northwind/OrderLine/%d/%d#this" (in order_id integer not null, in product_id integer not null) .
+create iri class tut_northwind:Province "http://^{URIQADefaultHost}^/tutorial/Northwind/Province/%U/%U#this" (in country_name varchar not null, in province_name varchar not null) .
+create iri class tut_northwind:Country "http://^{URIQADefaultHost}^/tutorial/Northwind/Country/%U#this" (in country_name varchar not null) .
+create iri class tut_northwind:Flag "http://^{URIQADefaultHost}^/DAV/sample_data/images/flags/%s#this" (in flag_path varchar not null) .
 ')
 ;
 
@@ -355,14 +355,14 @@ drop procedure DB.DBA.install_run
 ;
 
 
-create procedure nw_rdf_doc (in path varchar)
+create procedure tut_nw_rdf_doc (in path varchar)
 {
   declare r any;
   r := regexp_match ('[^/]*\x24', path);
   return r||'#this';
 };
 
-create procedure nw_html_doc (in path varchar)
+create procedure tut_nw_html_doc (in path varchar)
 {
   declare r any;
   r := regexp_match ('[^/]*#', path);
@@ -370,25 +370,12 @@ create procedure nw_html_doc (in path varchar)
 };
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'nw_rule1',
+    'tut_nw_rule1',
     1,
-    '(.*)',
+    '(/[^#]*)\x24',
     vector('path'),
     1,
-    '/isparql/isparql.vsp?query=SELECT+%%3Fp+%%3Fo+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/tutorial/Northwind%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+%%3Fp+%%3Fo+}',
-    vector('path'),
-    null,
-    '(text/html)|(\\*/\\*)',
-    0
-    );
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'nw_rule2',
-    1,
-    '(.*)',
-    vector('path'),
-    1,
-    '/sparql?query=CONSTRUCT+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+%%3Fp+%%3Fo+}+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/tutorial/Northwind%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+%%3Fp+%%3Fo+}&format=%U',
+    '/sparql?query=CONSTRUCT+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/tutorial/Northwind%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}&format=%U',
     vector('path', 'path', '*accept*'),
     null,
     '(text/rdf.n3)|(application/rdf.xml)',
@@ -396,14 +383,28 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     303
     );
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'tut_nw_rule2',
+    1,
+    '(/[^#]*)\x24',
+    vector('path'),
+    1,
+    '/isparql/execute.html?query=SELECT%%20%%3Fp%%20%%3Fo%%20FROM%%20%%3Chttp%%3A//^{URIQADefaultHost}^/tutorial/Northwind%%3E%%20WHERE%%20{%%20%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E%%20%%3Fp%%20%%3Fo%%20}&endpoint=/sparql',
+    vector('path'),
+    null,
+    '(text/html)|(\\*/\\*)',
+    0,
+    303
+    );
+
 DB.DBA.URLREWRITE_CREATE_RULELIST (
-    'nw_rule_list1',
+    'tut_nw_rule_list1',
     1,
     vector (
-                'nw_rule1',
-                'nw_rule2'
+                'tut_nw_rule1',
+                'tut_nw_rule2'
           ));
 
 
 VHOST_REMOVE (lpath=>'/tutorial/Northwind');
-VHOST_DEFINE (lpath=>'/tutorial/Northwind', ppath=>'/DAV/VAD/tutorial/rdfview/rd_v_1/', is_dav=>1, vsp_user=>'dba', is_brws=>0, opts=>vector ('url_rewrite', 'nw_rule_list1'));
+VHOST_DEFINE (lpath=>'/tutorial/Northwind', ppath=>'/DAV/VAD/tutorial/rdfview/rd_v_1/', is_dav=>1, vsp_user=>'dba', is_brws=>0, opts=>vector ('url_rewrite', 'tut_nw_rule_list1'));
