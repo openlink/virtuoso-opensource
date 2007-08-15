@@ -573,7 +573,7 @@
          inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
          inst_url_local := (case when locate('http://',inst_url_local)=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||inst_url_local;
          
-         if(isDiscussions) inst_url_local := rtrim(self.odsbar_ods_gpath,'/ods/')||'/nntpf/nntpf_nthread_view.vspx?group='||cast(rows[i][7] as varchar);
+         if(isDiscussions) inst_url_local := wa_expand_url (rtrim(self.odsbar_ods_gpath,'/ods/')||'/nntpf/nntpf_nthread_view.vspx?group='||cast(rows[i][7] as varchar), self.login_pars);
 
 
          url:=(case when locate('http://',sprintf('%s',url))=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||url;
