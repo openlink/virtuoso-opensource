@@ -1,0 +1,469 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="blog-home-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>Application Endpoint Administration</vm:title>
+    </vm:header>
+    <vm:pagewrapper>
+      <vm:variable name="inst" type="db.dba.web_app" default="null" persist="0" />
+      <vm:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
+      <vm:variable name="imodel" type="int" default="null" persist="0"/>
+      <vm:variable name="is_public" type="int" default="null" persist="0"/>
+      <vm:variable name="is_visible" type="int" default="null" persist="0"/>
+      <vm:variable name="iid" type="int" default="null" persist="0" param-name="wai_id"/>
+      <vm:variable name="iname" type="varchar" default="null" persist="0"/>
+      <vm:variable name="idesc" type="varchar" default="null" persist="0"/>
+      <vm:variable name="_app" type="varchar" default="null" persist="0"/>
+      <vm:variable name="_host" type="varchar" default="null" persist="0"/>
+      <vm:variable name="_lhost" type="varchar" default="null" persist="0"/>
+      <vm:variable name="wa_host" type="varchar" default="null" persist="0"/>
+      <vm:variable name="_path" type="varchar" default="null" persist="0"/>
+      <vm:variable name="remove_mode" type="integer" default="0" persist="0"/>
+
+      <vm:variable name="edit_inst" type="int" default="null" param-name="inst"/>
+      <vm:variable name="edit_vhost" type="varchar" default="null" param-name="vhost"/>
+      <vm:variable name="edit_lhost" type="varchar" default="null" param-name="lhost"/>
+      <vm:variable name="edit_lpath" type="varchar" default="null" param-name="lpath"/>
+
+      <vm:navigation on="settings"/>
+      <vm:navigation1 on="admin"/>
+      <vm:navigation2 on="endpoint"/>
+      <vm:rawheader caption="Application Endpoint Definitions"/>
+      <vm:body>
+        <vm:login redirect="index.vspx"/>
+        <v:before-data-bind>
+          <![CDATA[
+            declare i integer;
+            i := 0;
+            while (i < length(self.vc_event.ve_lines))
+            {
+              if( 'Host: ' = left(self.vc_event.ve_lines[i], 6))
+                self.wa_host := trim(subseq(self.vc_event.ve_lines[i], 6), '\r\n');
+              i := i + 1;
+            }
+            if (self.wa_host is not null)
+            {
+              if (subseq(self.wa_host, 0, 3) = 'wa.')
+              {
+                declare domain varchar;
+                domain := subseq(self.wa_host, 3);
+                if (strchr(domain, '.') is not null)
+                  self.wa_host := domain;
+              }
+              declare pos integer;
+              pos := strchr(self.wa_host, ':');
+              declare _port varchar;
+              if (pos is not null)
+              {
+                _port := trim(subseq(self.wa_host, pos + 1));
+                if (_port = '80' or _port is null or _port = '')
+                 self.wa_host := subseq(self.wa_host, 0, pos);
+              }
+              if (exists(select 1 from HTTP_PATH where HP_HOST=self.wa_host))
+              {
+                self._lhost := (select HP_LISTEN_HOST from HTTP_PATH where HP_HOST=self.wa_host);
+              }
+            }
+          ]]>
+        </v:before-data-bind>
+        <div class="box">
+          <div style="padding: 10px;">
+            <div style="padding: 10px;display: none;">
+              Application Endpoint Definitions allow you to create multiple home URLs on your application websites.
+              For example, if your weblog application is "http://myopenlink.com:8080/weblog/user" you can
+              add a new multi-home site to point to "http://myweblog.com".<br/> Users can then view your journal via
+              the shorter and more direct URL.
+            </div>
+            <div >
+             <h2>
+              <v:label name="app_name_label" format="%s" value="--(select WAI_NAME from WA_INSTANCE where WAI_ID=self.iid)" />
+             </h2>
+            </div>
+            <v:template name="main1" type="simple" condition="self.remove_mode = 0">
+              <div id="main">
+                <div class="box_noscroll" id="accesspoints">
+                  <table class="listing">
+                    <tr class="listing_header_row">
+<!--                      <th>Application Name</th>-->
+                      <th>Endpoint</th>
+                      <th>Action</th>
+                    </tr>
+                    <v:data-set name="vd" scrollable="1" edit="1" nrows="-1">
+                    <v:sql>
+                    <![CDATA[
+                      select * from
+                      WA_MEMBER_URLS (uid)
+                      (  WAI_NAME varchar,
+                         HP_HOST varchar,
+                         HP_LPATH varchar,
+                         HP_LISTEN_HOST varchar,
+                         IS_DEFAULT integer,
+                         DEF_PAGE varchar,
+                         WAI_ID int
+                      )
+                      WA_MEMBER_URLS_PT where uid = :usr and WAI_ID = :_wai_id
+                    ]]>
+                    </v:sql>
+                    <v:param name="usr" value="--self.u_id" />
+                    <v:param name="_wai_id" value="--self.iid" />
+                    <v:column name="WAI_NAME" label="Name" />
+                    <v:column name="HP_HOST" label="Host" />
+                    <v:column name="HP_LPATH" label="Instance" />
+                    <v:column name="HP_LISTEN_HOST" label="ListenHost" />
+                    <v:column name="IS_DEFAULT" label="isDefault" />
+                    <v:column name="DEF_PAGE" label="DefaultPage" />
+                    <v:column name="WAI_ID" label="WAI_ID" />
+                    <vm:template type="repeat">
+                        <vm:template type="browse">
+            <v:after-data-bind><![CDATA[
+          declare host, domain, lhost, arr, tmp any;
+
+    if (not e.ve_is_post and  self.edit_inst = control.te_rowset[6]
+        and self.edit_vhost = control.te_rowset[1]
+        and self.edit_lhost = control.te_rowset[3]
+        and self.edit_lpath = control.te_rowset[2]
+        )
+      {
+
+          self.l_path1.ufl_value := ltrim (self.edit_lpath, '/');
+          host := self.edit_vhost;
+          lhost := self.edit_lhost;
+          self.l_site1.ufl_value := '';
+          if (host <> '*ini*')
+            {
+              self.l_site1.ufl_value := host;
+
+              arr := split_and_decode (host, 0, '\0\0:');
+              tmp := arr[0];
+
+              domain := coalesce ((select min(WD_DOMAIN) from WA_DOMAINS where tmp like concat ('%.', WD_DOMAIN)), host);
+
+              if (domain = host)
+                {
+                  self.l_domain1.ufl_value := '{My Own Domain}';
+      self.l_site1.ufl_value := host;
+          }
+              else
+                {
+                  self.l_domain1.ufl_value := domain;
+                  self.l_site1.ufl_value := substring (tmp, 1, length(tmp)-length (domain) - 1);
+    }
+      }
+          else
+            {
+              self.l_domain1.ufl_value := '{Default Domain}';
+      }
+    }
+          ]]></v:after-data-bind>
+          <tr class="<?V case when self.edit_vhost = control.te_rowset[1] and self.edit_lhost = control.te_rowset[3] and self.edit_lpath = control.te_rowset[2] then 'listing_row_selected' when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
+            <?vsp
+             -- unneeded duplication of info
+             if (0)
+             {
+              declare dns_host varchar;
+              declare inst web_app;
+              dns_host := sys_stat('st_host_name');
+              dns_host := 'http://' || dns_host || ':' ||
+              cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'ServerPort');
+              
+              select WAI_INST into inst from WA_INSTANCE where WAI_NAME=cast(self.vd.ds_current_row.te_rowset[0] as varchar);
+              dns_host := dns_host || rtrim(inst.wa_home_url(), '/');
+              http(sprintf(' (%s)', dns_host));
+             }
+            ?>
+<!--
+                            <td>
+                              <v:label format="%s" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))" />
+                            </td>
+-->
+                            <td>
+        <v:url format="%s" value="" url="">
+        <v:after-data-bind><![CDATA[
+          declare url any;
+          declare host, path, host1, lhost, page, pars any;
+          declare inst web_app;
+          declare _inst_name varchar;
+
+          _inst_name := (control.vc_parent as vspx_row_template).te_rowset[0];
+          host1 := (control.vc_parent as vspx_row_template).te_rowset[1];
+          lhost := (control.vc_parent as vspx_row_template).te_rowset[3];
+          path := (control.vc_parent as vspx_row_template).te_rowset[2];
+          page := (control.vc_parent as vspx_row_template).te_rowset[5];
+      --! following is a dirty hack
+    --! \todo change it to a accurate checking of 'noinheritance' flag of vhost
+    if (exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = _inst_name and WAI_TYPE_NAME = 'oWiki'))
+      page := '';
+          path := rtrim (path, '/');
+
+          host := host1;
+          if (host = '*ini*')
+      host := sys_stat('st_host_name') || ':' || server_http_port ();
+
+    pars := sprintf ('?sid=%s&realm=%s', self.sid, self.realm);
+
+          url := wa_make_url_from_vd (host, lhost, path);
+
+          control.ufl_value := url;
+          control.vu_url := concat (url, page, pars);
+
+          if ((control.vc_parent as vspx_row_template).te_rowset[4])
+            {
+              declare bt vspx_control;
+              bt := control.vc_parent.vc_find_control ('vd_edit');
+              bt.vc_enabled := 0;
+              bt := control.vc_parent.vc_find_control ('vd_delete');
+              bt.vc_enabled := 0;
+            }
+      ]]></v:after-data-bind>
+        </v:url>
+                            </td>
+                            <td>
+            <v:url value='<img src="images/icons/edit_16.png" hspace="3" border="0"/> Edit' name="vd_edit"
+            url="--sprintf ('vhost_simple.vspx?wai_id=%d&amp;inst=%d&amp;vhost=%U&amp;lhost=%U&amp;lpath=%U',
+              (control.vc_parent as vspx_row_template).te_rowset[6],
+              (control.vc_parent as vspx_row_template).te_rowset[6],
+              (control.vc_parent as vspx_row_template).te_rowset[1],
+              (control.vc_parent as vspx_row_template).te_rowset[3],
+          (control.vc_parent as vspx_row_template).te_rowset[2])"
+          xhtml_title="Edit" xhtml_alt="Edit"
+        />
+            <v:button style="image" name="vd_delete" action="simple" value="images/icons/del_16.png"
+        xhtml_hspace="3" xhtml_title="Remove" xhtml_alt="Remove" text="Remove" >
+                                <v:on-post>
+                                  <v:script>
+                                    <![CDATA[
+                                      self._app := cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar);
+                                      self._host := cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar);
+                                      self._lhost := cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar);
+                                      self._path := cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar);
+                                      self.remove_mode := 1;
+                                      self.vc_data_bind(e);
+                                    ]]>
+                                  </v:script>
+                                </v:on-post>
+                              </v:button>
+                            </td>
+                          </tr>
+                        </vm:template>
+                      </vm:template>
+                    </v:data-set>
+                  </table>
+                </div>
+        </div>
+        <br/>
+        <div class="fm">
+          <v:form name="endp_f" mthod="POST" type="simple">
+      <fieldset>
+          <label for="">Endpoint: </label>http://
+          <v:text name="l_site1" xhtml_size="30" error-glyph="*">
+           <v:validator name="v_site1" test="regexp" regexp="[\-0-9A-Za-z]." empty-allowed="1" message="* You should provide a site prefix."/>
+           <v:before-render>
+             if (self.l_domain1.ufl_value = '\173Default Domain\175' or length (self.l_domain1.ufl_value) = 0)
+             control.vc_add_attribute ('disabled', '1');
+            </v:before-render>
+           </v:text>
+           <v:data-list
+              name="l_domain1" key-column="WD_DOMAIN" value-column="WD_DOMAIN"
+              sql="select '{Default Domain}' as WD_DOMAIN from WA_SETTINGS union all
+                   select WD_DOMAIN from WA_DOMAINS where length (WD_LISTEN_HOST)
+                   union select '{My Own Domain}' from WA_SETTINGS"
+              xhtml_onchange='javascript: toggleControl (this, "\173Default Domain\175", this.form["l_site1"]); if(this.value=="\173Default Domain\175") this.form["l_site1"].value="";'/>
+           /
+           <v:text name="l_path1" xhtml_size="20" error-glyph="*">
+           </v:text>
+
+          <br />
+        <span class="fm_ctl_btn">
+      <v:button name="cancel_btn" value="Cancel" action="simple" enabled="--length(self.edit_vhost)">
+        <v:on-post>
+           self.edit_inst := null;
+           self.edit_vhost := '';
+           self.l_site1.ufl_value := '';
+           self.l_domain1.ufl_value := '';
+           self.l_domain1.vs_set_selected ();
+           self.l_path1.ufl_value := '';
+           self.save_btn.vc_data_bind (e);
+           control.vc_enabled := 0;
+        </v:on-post>
+      </v:button>
+          <v:button name="save_btn" action="submit" value="-- case when length(self.edit_vhost) then 'Update' else 'Add' end">
+        <v:on-post>
+            <v:script>
+          <![CDATA[
+            declare app, prefix, domain, path, old_path, old_host, old_ip, id any;
+            if (self.iid<1)
+                return;
+            id := self.iid;
+
+            old_path := self.edit_lpath;
+            old_host := self.edit_vhost;
+            old_ip   := self.edit_lhost;
+
+            prefix   := self.l_site1.ufl_value;
+            path     := self.l_path1.ufl_value;
+
+            if (strstr(prefix, 'http://') = 0)
+            {
+               prefix := subseq(prefix, 7);
+            }
+
+            domain  := get_keyword ('l_domain1', e.ve_params);
+
+            commit work;
+          
+          dbg_obj_print('prefix',prefix,'domain',domain);
+       
+          if(domain='{Default Domain}') prefix:=null;
+          WA_SET_APP_URL (id, path, prefix, domain, old_path, old_host, old_ip);
+          http_request_status('HTTP/1.1 302 Found');
+          http_header(sprintf('Location: vhost_simple.vspx?wai_id=%d&sid=%s&realm=%s\r\n',self.iid, self.sid , self.realm));
+          return;
+          ]]>
+            </v:script>
+        </v:on-post>
+          </v:button>
+      </span>
+      </fieldset>
+          </v:form>
+        </div>
+            </v:template>
+            <v:template name="main2" type="simple" condition="self.remove_mode = 1">
+              <v:form name="event_form2" type="simple" method="POST" action="">
+                <div class="box_noscroll" id="accesspoints" style="padding:10px;">
+                  <h2>Remove Confirmation of Application Endpoint</h2>
+                  <table class="data">
+                    <tr>
+                      <td>Are you sure you want to remove the application endpoint
+       <?vsp
+                         http (wa_make_url_from_vd (self._host, self._lhost, self._path));
+                        ?>
+                        for the application <?V self._app ?>?
+                      </td>
+                    </tr>
+                    <tr>
+                      <td align="center">
+                        <v:button action="simple" name="cancel1" value="Cancel">
+                          <v:on-post>
+                            <v:script>
+                              <![CDATA[
+                                self.remove_mode := 0;
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:script>
+                          </v:on-post>
+                        </v:button>
+                        <v:button action="simple" name="rem" value="Remove">
+                          <v:on-post>
+                            <v:script>
+                              <![CDATA[
+                                declare _host, _path, app varchar;
+                                declare inst web_app;
+                                declare ssl_port varchar;
+                                declare num integer;
+                                self.remove_mode := 0;
+                                app := self._app;
+                                _host := self._host;
+                                _path := self._path;
+                                declare pos integer;
+                                declare _port, logical_path, physical_path varchar;
+
+                                select WAI_INST into inst from WA_INSTANCE where WAI_NAME = app;
+
+                                pos := strchr(_host, ':');
+                                if (pos is null)
+                                  _port := '80';
+                                else
+                                {
+                                  _port := subseq(_host, pos + 1);
+                                  _port := trim(_port);
+                                  if (atoi(_port) = 80 or _port = '')
+                                  {
+                                    _port := '80';
+                                    _host := subseq(_host, 0, pos);
+                                  }
+                                }
+
+                                commit work;
+                                declare exit handler for sqlstate '*' {
+                                  self.vc_is_valid := 0;
+                                  self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+                                  rollback work;
+                                  return;
+                                };
+                                -- XXX: do not remove them now, can break the other instances
+                                -- Application additional URL
+                                declare len, i integer;
+                                declare cur_add_url any;
+                                if (0)
+                                {
+                                  len := length(inst.wa_addition_urls());
+                                  i := 0;
+                                  while (i < len)
+                                  {
+                                    cur_add_url := aref(inst.wa_addition_urls(), i);
+                                    VHOST_REMOVE(
+                                      vhost=>_host,
+                                      lhost=>self._lhost,
+                                      lpath=>cur_add_url[2]);
+                                    i := i + 1;
+                                  }
+                                }
+                                -- Instance additional URL
+                                len := length (inst.wa_addition_instance_urls(_path));
+                                i := 0;
+                                while (i < len)
+                                {
+                                  cur_add_url := aref(inst.wa_addition_instance_urls(_path), i);
+                                  VHOST_REMOVE(
+                                    vhost=>_host,
+                                    lhost=>self._lhost,
+                                    lpath=>cur_add_url[2]);
+                                  i := i + 1;
+                                }
+                                -- Home URL
+                                VHOST_REMOVE(vhost=>_host, lhost=>self._lhost, lpath=>_path);
+                                self.vc_redirect (sprintf('vhost_simple.vspx?wai_id=%d',self.iid));
+                              ]]>
+                            </v:script>
+                          </v:on-post>
+                        </v:button>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </v:form>
+            </v:template>
+          </div>
+        </div>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+</v:page>

@@ -101,7 +101,7 @@ VERSION_INIT()
 	  BASE=`cat version.base`
       fi
 
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=560 } { cnt = cnt + $1 } END { print cnt }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=561 } { cnt = cnt + $1 } END { print cnt }'`
 
       VERSION=`expr $BASE + $VERSION`
       CURR_VERSION=$VERSION

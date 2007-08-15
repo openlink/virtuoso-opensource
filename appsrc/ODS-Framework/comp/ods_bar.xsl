@@ -479,14 +479,21 @@ function getUrlOnEnter(e)
         declare settings_url varchar;
         settings_url:='<a href="'||self.odsbar_ods_gpath||'app_settings.vspx?'||self.odsbar_loginparams||'">Settings</a> > ';
 
+
         if(locate('/services.vspx',_http_path))
-            curr_location:=curr_location||settings_url||'Applications > ';
+            curr_location:=curr_location||settings_url||'Applications Management > ';
+
+        declare settings_applications_url varchar;
+        settings_applications_url:='<a href="'||self.odsbar_ods_gpath||'services.vspx?'||self.odsbar_loginparams||'">Applications Management</a> > ';
+
         if(locate('/delete_inst.vspx',_http_path))
-            curr_location:=curr_location||settings_url||'Applications > Delete> ';
+            curr_location:=curr_location||settings_url||settings_applications_url||' Delete > ';
         if(locate('/edit_inst.vspx',_http_path))
-            curr_location:=curr_location||settings_url||'Applications > Edit> ';
+            curr_location:=curr_location||settings_url||settings_applications_url||' Edit > ';
         if(locate('/members.vspx',_http_path))
-            curr_location:=curr_location||settings_url||'Applications > Members> ';
+            curr_location:=curr_location||settings_url||settings_applications_url||' Members > ';
+        if(locate('/vhost_simple.vspx',_http_path))
+            curr_location:=curr_location||settings_url||settings_applications_url||' Endpoints > ';
 
 
 

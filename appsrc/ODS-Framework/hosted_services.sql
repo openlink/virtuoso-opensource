@@ -4862,6 +4862,20 @@ create procedure WA_SET_APP_URL
        signal ('42000', 'This site already exists');
      }
 
+   declare _vhost_no_port any;
+   _vhost_no_port:=split_and_decode (_vhost, 0, '\0\0:');
+   _vhost_no_port:=_vhost_no_port[0];
+  
+   if(_vhost_no_port<>_vhost)
+   {
+     if (exists(select 1 from HTTP_PATH where HP_HOST= _vhost_no_port and HP_LISTEN_HOST= _lhost and HP_LPATH = lpath))
+       {
+         if (silent)
+	           return;
+         signal ('42000', 'This site already exists');
+       }
+   };
+
   --! dirty hack
   connection_set ('vhost', _vhost);
   connection_set ('port', port);

@@ -29,25 +29,11 @@ create procedure rdf_import (
 {
   declare retValue integer;
 
-  retValue := 0;
-
   if (isnull (pGraph))
     pGraph := pURL;
+  retValue := (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph));
   if (pMode) {
-    declare st, msg, meta, rows any;
-
-    st := '00000';
-    exec (sprintf ('SPARQL define get:soft "soft" SELECT * FROM <%s> WHERE { ?s ?p ?o }', pURL), st, msg, vector (), 0, meta, rows);
-    if ('00000' = st) {
-      foreach (any row in rows) do {
-        if (row[2] like 'http://%') {
-          DB.DBA.RDF_QUAD_URI (pGraph, row[0], row[1], row[2]);
-        } else {
-          DB.DBA.RDF_QUAD_URI_L (pGraph, row[0], row[1], row[2]);
-        }
-        retValue := retValue + 1;
-      }
-    }
+    exec (sprintf ('SPARQL define get:soft "soft" SELECT * FROM <%s> WHERE { ?s ?p ?o }', pURL));
   } else {
   	declare content, hdr any;
 
@@ -80,9 +66,8 @@ create procedure rdf_import (
     } else {
       DB.DBA.RDF_LOAD_RDFXML (content, '', pGraph);
     }
-    retValue := (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph));
   }
-  return retValue;
+  return (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph)) - retValue;
 }
 ;
 
