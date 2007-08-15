@@ -21,7 +21,6 @@
 */
 
 var tab;
-var executingDiv;
 var setupWin;
 
 function init() {
@@ -34,11 +33,6 @@ function init() {
     tab.add ("tab_4", "page_4");
     tab.go (0);
   }
-
-	executingDiv = OAT.Dom.create("div",{border:"2px solid #000",padding:"1em",position:"absolute",backgroundColor:"#fff"});
-	executingDiv.innerHTML = "Executing...";
-	document.body.appendChild(executingDiv);
-	OAT.Dom.hide(executingDiv);
 }
 
 function hiddenCreate(objName) {
@@ -50,11 +44,6 @@ function hiddenCreate(objName) {
     hidden.setAttribute("id", objName);
     document.forms[0].appendChild(hidden);
   }
-}
-
-function executingStart() {
-	OAT.Dimmer.show(executingDiv);
-	OAT.Dom.center(executingDiv,1,1);
 }
 
 function executingEnd() {
@@ -299,7 +288,6 @@ function selectProfile() {
   	}
   }
 	OAT.WS.invoke(wsdl, serviceName, selectProfileCallback, inputObject);
-  // executingStart();
 }
 
 function selectProfileCallback(obj) {
@@ -353,7 +341,6 @@ function logoutSubmit() {
   	}
   }
 	OAT.WS.invoke(wsdl, serviceName, logoutCallback, inputObject);
-  // executingStart();
   return false;
 }
 
@@ -407,7 +394,6 @@ function lfLoginSubmit() {
     	}
     }
   	OAT.WS.invoke(wsdl, serviceName, lfLoginCallback, inputObject);
-    // executingStart();
   }
   $('lf_password').value = '';
 }
@@ -544,7 +530,6 @@ function rfSignupSubmit(event) {
     	}
     }
   	OAT.WS.invoke(wsdl, serviceName, rfSignupCallback, inputObject);
-    // executingStart();
   }
   $('rf_password').value = '';
   $('rf_password2').value = '';
@@ -574,7 +559,6 @@ function ufProfileSubmit() {
   	}
   }
 	OAT.WS.invoke(wsdl, serviceName, ufProfileCallback, inputObject);
-  // executingStart();
 }
 
 function ufProfileCallback(obj) {
@@ -726,7 +710,6 @@ function pfUpdateSubmit(event) {
     }
   }
 	OAT.WS.invoke(wsdl, serviceName, pfUpdateCallback, inputObject);
-  // executingStart();
 
   $('pf_oldPassword').value = '';
   $('pf_newPassword').value = '';
@@ -763,7 +746,6 @@ function pfChangeSubmit(event) {
       }
     }
   	OAT.WS.invoke(wsdl, serviceName, pfChangeCallback, inputObject);
-    // executingStart();
   }
   $('pf_oldPassword').value = '';
   $('pf_newPassword').value = '';
