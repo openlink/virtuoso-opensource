@@ -2312,13 +2312,14 @@ create procedure WV.WIKI.COPYTOPIC (
   in old_topic WV.WIKI.TOPICINFO,
 	in vspx_user varchar)
 {
-  whenever sqlstate '*' goto fin;
+  declare exit handler for sqlstate '*' {
+    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    goto fin;
+  };
 
   new_topic_name := trim (new_topic_name);
   if (new_topic_name = '')
 	  signal ('XXXXX', 'Invalid topic name');
-  if (WV.WIKI.ISWIKIWORD (new_topic_name) <> 1)
-	  signal ('XXXXX', new_topic_name || ' is not WikiWord');
 
 	declare _content, _type  varchar;
 	declare _owner_uid int;
@@ -2382,6 +2383,87 @@ fin:
 	;
 }
 ;
+create procedure WV.WIKI.DELETETOPIC2 (
+  in topic WV.WIKI.TOPICINFO,
+	in vspx_user varchar)
+{
+  declare exit handler for sqlstate '*' {
+    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    goto fin;
+  };
+
+  DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (topic.ti_res_id, 'R'), 1, null, null, 0);
+
+  -- delete attachments
+  declare _attachments_path varchar;
+  _attachments_path := WS.WS.COL_PATH(topic.ti_col_id) || topic.ti_local_name || '/';
+  if (DB.DBA.DAV_SEARCH_ID (_attachments_path, 'C') > 0)
+    DB.DBA.DAV_DELETE_INT (_attachments_path, 1, null, null, 0);
+
+fin:
+	;
+}
+;
+
+create procedure WV.WIKI.RENAMETOPIC2 (in _topic WV.WIKI.TOPICINFO,
+	in _user varchar,
+	in new_cluster int,
+	in new_name varchar)
+{
+  declare exit handler for sqlstate '*' {
+    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+    rollback work;
+    return;
+  };
+
+  new_name := trim (new_name);
+  if (new_name = '')
+	signal ('XXXXX', 'Invalid topic name');
+
+  declare _from, _to varchar;
+  _from := DB.DBA.DAV_SEARCH_PATH (_topic.ti_res_id, 'R');
+  _to := DB.DBA.DAV_SEARCH_PATH ( (select ColId from WV.WIKI.CLUSTERS where ClusterId = new_cluster) , 'C') || new_name || '.txt';
+
+  declare _res int;
+  _res := DB.DBA.DAV_MOVE_INT (_from, _to, 1,
+    'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()), 1,
+    coalesce (WV.WIKI.GET_LOCKTOKEN (_topic.ti_res_id), 1));
+  if (DAV_HIDE_ERROR (_res) is null) {
+    WV.WIKI.APPSIGNAL (11002, '&Topic; can not be moved to &NewTopic; due to DAV_MOVE fail: &Result;',
+       vector ('Topic', _topic.ti_local_name, 'NewTopic', new_name, 'Result', _res));
+    return;
+  }
+
+  -- rename/move attachments' collection
+  declare _attachments_path varchar;
+  _attachments_path := WS.WS.COL_PATH(_topic.ti_col_id) || _topic.ti_local_name || '/';
+  if (DB.DBA.DAV_SEARCH_ID (_attachments_path, 'C') > 0) {
+    declare _attfrom, _attto varchar;
+    _attfrom := _attachments_path;
+    _attto := WS.WS.COL_PATH(_topic.ti_col_id) || new_name || '/';
+    declare _attres int;
+    _attres := DB.DBA.DAV_MOVE_INT (_attfrom, _attto, 1,
+      'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid()), 1, 1);
+    if (DAV_HIDE_ERROR (_attres) is null) {
+      WV.WIKI.APPSIGNAL (11002, 'Attachments of &Topic; can not be moved to &NewTopic; due to DAV_MOVE fail: &Result;',
+         vector ('Topic', _topic.ti_local_name, 'NewTopic', new_name, 'Result', _attres));
+      return;
+    }
+  }
+  declare wiki_user varchar;
+  declare user_id int;
+  user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _user);
+  wiki_user := WV.WIKI.USER_WIKI_NAME_2 (user_id);
+  update WV.WIKI.TOPIC
+    set AuthorName = 'Main.' || wiki_user
+  	  , AuthorId = user_id
+  	  , LocalName = new_name
+  	  , LocalName2 = WV.WIKI.SINGULARPLURAL (new_name)
+     where ResId = _topic.ti_res_id;
+
+  commit work;
+}
+;
 
 
 create procedure WV.WIKI.GETFULLDAVPATH (in col_id int, in _res_id int, in local_name varchar)
@@ -2419,7 +2501,6 @@ create function WV.WIKI.GET_LOCKTOKEN (in res_id int)
 {
   declare res_path varchar;
   res_path := DB.DBA.DAV_SEARCH_PATH (res_id, 'R');
-  --dbg_obj_print ((select Token from WV.WIKI.LOCKTOKEN where ResPath = res_path));
   if (isstring (res_path))
     return (select Token from WV.WIKI.LOCKTOKEN where ResPath = res_path);
   return NULL;

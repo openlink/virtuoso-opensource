@@ -51,15 +51,19 @@
 	_topic := WV.WIKI.TOPICINFO();
 	_topic.ti_id := self.id;
 	_topic.ti_find_metadata_by_id();	
-	dbg_obj_print (self.sid, self.realm);
 	self.source_page := WV.WIKI.READONLYWIKIWORDLINK (_topic.ti_cluster_name,_topic.ti_local_name);
 	self.topic := _topic;
+        self.sid := get_keyword('sid', params);
+        self.realm := get_keyword('realm', params, 'wiki');
         if (self.topic.ti_local_name = WV.WIKI.CLUSTERPARAM (self.topic.ti_cluster_id, 'index-page', 'WelcomeVisitors')) {
 	    self.allow_delete := 'disabled';
 	    self.allow_rename := 'disabled';
 	  }
       ]]>
     </v:on-init>
+    <v:before-data-bind><![CDATA[
+      self.vspx_user := coalesce ((select vs_uid from  VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
+    ]]></v:before-data-bind>
     <v:after-data-bind>
       <![CDATA[
         declare pwd varchar;
@@ -74,16 +78,6 @@
         self.topic_info.vc_data_bind(e);
       ]]>
     </v:after-data-bind>
-    <v:method name="delete_topic" arglist="inout e vspx_event">
-      <![CDATA[
-	 self.vc_redirect(sprintf ('delete.vspx?topic=%ld', self.topic.ti_id));
-      ]]>
-      </v:method>
-    <v:method name="rename_topic" arglist="inout e vspx_event">
-      <![CDATA[
-	 self.vc_redirect(sprintf ('rename.vspx?topic=%ld', self.topic.ti_id));
-      ]]>
-      </v:method>
     <v:method name="set_message" arglist="inout e vspx_event, in message varchar">
       <![CDATA[
         self.message := message;
@@ -100,10 +94,20 @@
 	        <tr bgcolor="#DFFFDF">
 		  <td/>
 		  <td>
-		   <v:button name="delete_btn" value="Delete Topic..." action="simple" xhtml_disabled="--self.allow_delete">
+                  <v:button name="delete_btn" value="Delete Topic..." action="simple" xhtml_disabled="--self.allow_delete"
+                    xhtml_onclick="javascript: return confirm (\'If you really want to delete the topic, click OK.\');">
                     <v:on-post>
                       <![CDATA[
-		         self.delete_topic(e);
+                        declare index_page varchar;
+                        index_page := WV.WIKI.CLUSTERPARAM (self.topic.ti_cluster_id, 'index-page', 'WelcomeVisitors');
+                        if (self.topic.ti_local_name = index_page) {
+                          self.vc_error_message := 'Can not delete index topic';
+                          self.vc_is_valid := 0;
+                          self.set_message (e, '');
+                          return;
+                        }
+                        WV.WIKI.DELETETOPIC2(self.topic, self.vspx_user);
+                        self.vc_redirect (WV.WIKI.TOPIC_URL (WV.WIKI.READONLYWIKIWORDLINK (self.topic.ti_cluster_name, index_page)));
 		      ]]>
 		    </v:on-post>
 		   </v:button>
@@ -112,13 +116,18 @@
 		<tr bgcolor="#FFDFFF">
 		 <td>
                   <v:text name="copy_topic_name" value="--concat('CopyOf', self.topic.ti_local_name)" error-glyph="*">
-                    <v:validator test="regexp" regexp='^[ ]*[A-Z]+[a-z]+[A-Z]+[A-Za-z0-9]*[ ]*$' message="Topic name is not WikiWord"/>
                   </v:text>
                 </td>
                 <td>
-                  <v:button name="copy_btn" value="Copy Topic" action="simple" xhtml_disabled="--self.allow_copy">
+                  <v:button name="copy_btn" value="\ \ Copy Topic\ \ \ " action="simple" xhtml_disabled="--self.allow_copy">
                     <v:on-post>
                       <![CDATA[
+                        if (trim (self.copy_topic_name.ufl_value) <> WV.WIKI.CONVERTTITLETOWIKIWORD (trim (self.copy_topic_name.ufl_value))) {
+                          self.vc_error_message := 'Topic name is not WikiWord';
+                          self.vc_is_valid := 0;
+                          self.set_message (e, '');
+                          return;
+                        }
                         declare _new_name varchar;
                         _new_name := trim (self.copy_topic_name.ufl_value);
                         declare _new_topic WV.WIKI.TOPICINFO;
@@ -143,7 +152,6 @@
               <tr bgcolor="#FFDFFF">
                 <td>
 		   <v:text name="new_topic_name" value="--self.topic.ti_local_name" error-glyph="*">
-		     <v:validator test="regexp" regexp='^[ ]*[A-Z]+[a-z]+[A-Z]+[A-Za-z0-9]*[ ]*$' message="Topic name is not WikiWord"/>
 		   </v:text>
 		   <br/>
 		   <v:check-box name="fix_refs" value="1" initial-checked="1"/>
@@ -153,8 +161,12 @@
 		  <v:button name="rename_btn" value="Rename Topic" action="simple" xhtml_disabled="--self.allow_rename">
                     <v:on-post>
                       <![CDATA[
-		     if (not self.vc_is_valid)
+                        if (trim (self.new_topic_name.ufl_value) <> WV.WIKI.CONVERTTITLETOWIKIWORD (trim (self.new_topic_name.ufl_value))) {
+                          self.vc_error_message := 'Topic name is not WikiWord';
+                          self.vc_is_valid := 0;
+                          self.set_message (e, '');
 		       return;
+                        }
 		     declare index_page varchar;
                         index_page := WV.WIKI.CLUSTERPARAM (self.topic.ti_cluster_id, 'index-page', 'WelcomeVisitors');
                         if (self.topic.ti_local_name = index_page) {
@@ -188,8 +200,8 @@
 		       }
 		     else
 			 self.set_message (e, '');
-                        WV.WIKI.RENAMETOPIC (self.topic, self.vspx_user, self.topic.ti_cluster_id, _new_name);
-
+                        WV.WIKI.RENAMETOPIC2 (self.topic, self.vspx_user, self.topic.ti_cluster_id, _new_name);
+                        self.source_page := WV.WIKI.READONLYWIKIWORDLINK (self.topic.ti_cluster_name, _other_topic.ti_local_name);
 		    ]]>
 		   </v:on-post>
 		  </v:button>
