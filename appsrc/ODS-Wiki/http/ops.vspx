@@ -40,11 +40,13 @@
       <v:variable name="all_topics" type="any" default="NULL"/>
       <v:variable name="message" type="varchar" default="''"/>
       <v:variable name="allow_delete" type="varchar" default="'@@hidden@@'"/>
+    <v:variable name="allow_copy" type="varchar" default="'@@hidden@@'"/>
       <v:variable name="allow_rename" type="varchar" default="'@@hidden@@'"/>
       <v:variable name="allow_set_parent" type="varchar" default="'@@hidden@@'"/>
       <v:variable name="parent_topic" type="integer" default="0" param-name="parent_topic"/>
       <v:variable name="source_page" type="varchar"/>
-      <v:on-init><![CDATA[
+    <v:on-init>
+      <![CDATA[
 	declare _topic WV.WIKI.TOPICINFO;
 	_topic := WV.WIKI.TOPICINFO();
 	_topic.ti_id := self.id;
@@ -52,33 +54,38 @@
 	dbg_obj_print (self.sid, self.realm);
 	self.source_page := WV.WIKI.READONLYWIKIWORDLINK (_topic.ti_cluster_name,_topic.ti_local_name);
 	self.topic := _topic;
-	if (self.topic.ti_local_name = WV.WIKI.CLUSTERPARAM (self.topic.ti_cluster_id, 'index-page', 'WelcomeVisitors'))
-	  {
+        if (self.topic.ti_local_name = WV.WIKI.CLUSTERPARAM (self.topic.ti_cluster_id, 'index-page', 'WelcomeVisitors')) {
 	    self.allow_delete := 'disabled';
 	    self.allow_rename := 'disabled';
 	  }
-      ]]></v:on-init>
-      <v:after-data-bind><![CDATA[
+      ]]>
+    </v:on-init>
+    <v:after-data-bind>
+      <![CDATA[
         declare pwd varchar;
 	pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = self.vspx_user);
-	if (DAV_HIDE_ERROR (DAV_AUTHENTICATE (self.topic.ti_res_id, 'R', '_1_', self.vspx_user, pwd)) is null)
-	  {
+        if (DAV_HIDE_ERROR (DAV_AUTHENTICATE (self.topic.ti_res_id, 'R', '_1_', self.vspx_user, pwd)) is null) {
 	    self.allow_delete := 'disabled';
 	    self.allow_rename := 'disabled';
 	    self.allow_set_parent := 'disabled';
+          self.allow_copy := 'disabled';
 	  }
         self.login.vc_data_bind(e);
         self.topic_info.vc_data_bind(e);
-    ]]></v:after-data-bind>
-      <v:method name="delete_topic" arglist="inout e vspx_event"><![CDATA[
+      ]]>
+    </v:after-data-bind>
+    <v:method name="delete_topic" arglist="inout e vspx_event">
+      <![CDATA[
 	 self.vc_redirect(sprintf ('delete.vspx?topic=%ld', self.topic.ti_id));
       ]]>
       </v:method>
-      <v:method name="rename_topic" arglist="inout e vspx_event"><![CDATA[
+    <v:method name="rename_topic" arglist="inout e vspx_event">
+      <![CDATA[
 	 self.vc_redirect(sprintf ('rename.vspx?topic=%ld', self.topic.ti_id));
       ]]>
       </v:method>
-      <v:method name="set_message" arglist="inout e vspx_event, in message varchar"><![CDATA[
+    <v:method name="set_message" arglist="inout e vspx_event, in message varchar">
+      <![CDATA[
         self.message := message;
 	self.message_tmpl.vc_data_bind(e);
 	]]>
@@ -94,7 +101,8 @@
 		  <td/>
 		  <td>
 		   <v:button name="delete_btn" value="Delete Topic..." action="simple" xhtml_disabled="--self.allow_delete">
-		    <v:on-post><![CDATA[
+                    <v:on-post>
+                      <![CDATA[
 		         self.delete_topic(e);
 		      ]]>
 		    </v:on-post>
@@ -103,6 +111,37 @@
 		</tr>
 		<tr bgcolor="#FFDFFF">
 		 <td>
+                  <v:text name="copy_topic_name" value="--concat('CopyOf', self.topic.ti_local_name)" error-glyph="*">
+                    <v:validator test="regexp" regexp='^[ ]*[A-Z]+[a-z]+[A-Z]+[A-Za-z0-9]*[ ]*$' message="Topic name is not WikiWord"/>
+                  </v:text>
+                </td>
+                <td>
+                  <v:button name="copy_btn" value="Copy Topic" action="simple" xhtml_disabled="--self.allow_copy">
+                    <v:on-post>
+                      <![CDATA[
+                        declare _new_name varchar;
+                        _new_name := trim (self.copy_topic_name.ufl_value);
+                        declare _new_topic WV.WIKI.TOPICINFO;
+                        _new_topic := WV.WIKI.TOPICINFO();
+                        _new_topic.ti_cluster_id := self.topic.ti_cluster_id;
+                        _new_topic.ti_cluster_name := self.topic.ti_cluster_name;
+                        _new_topic.ti_local_name := _new_name;
+                        _new_topic.ti_find_id_by_local_name();
+                        if (_new_topic.ti_id <> 0) {
+                          self.vc_error_message := 'Topic ' || self.topic.ti_cluster_name || '.' || _new_topic.ti_local_name || ' exists already';
+                          self.vc_is_valid := 0;
+                          self.set_message (e, '');
+                          return;
+                        }
+                        ;
+                        WV.WIKI.COPYTOPIC (_new_name, self.topic, self.vspx_user);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </td>
+              </tr>
+              <tr bgcolor="#FFDFFF">
+                <td>
 		   <v:text name="new_topic_name" value="--self.topic.ti_local_name" error-glyph="*">
 		     <v:validator test="regexp" regexp='^[ ]*[A-Z]+[a-z]+[A-Z]+[A-Za-z0-9]*[ ]*$' message="Topic name is not WikiWord"/>
 		   </v:text>
@@ -112,16 +151,13 @@
 		 </td>
 		 <td valign="top">
 		  <v:button name="rename_btn" value="Rename Topic" action="simple" xhtml_disabled="--self.allow_rename">
-		   <v:on-post><![CDATA[
+                    <v:on-post>
+                      <![CDATA[
 		     if (not self.vc_is_valid)
 		       return;
 		     declare index_page varchar;
-			index_page := 
-				WV.WIKI.CLUSTERPARAM (self.topic.ti_cluster_id,
-					              'index-page',
-						      'WelcomeVisitors');
-		     if (self.topic.ti_local_name = index_page)
-		       {
+                        index_page := WV.WIKI.CLUSTERPARAM (self.topic.ti_cluster_id, 'index-page', 'WelcomeVisitors');
+                        if (self.topic.ti_local_name = index_page) {
 		         self.vc_error_message := 'Can not rename index topic';
 			 self.vc_is_valid := 0;
 			 self.set_message (e, '');
@@ -134,8 +170,7 @@
 		     _other_topic.ti_cluster_id := self.topic.ti_cluster_id;
 		     _other_topic.ti_local_name := _new_name;
 		     _other_topic.ti_find_id_by_local_name();
-		     if (_other_topic.ti_id <> 0)
-		       {
+                        if (_other_topic.ti_id <> 0) {
 		         self.vc_error_message := 'Topic ' || self.topic.ti_cluster_name || '.' || _other_topic.ti_local_name || ' exists already';
 			 self.vc_is_valid := 0;
 			 self.set_message (e, '');
@@ -143,8 +178,7 @@
 		       }
 		     ;
 		
-		     if (self.fix_refs.ufl_selected)
-		       {
+                        if (self.fix_refs.ufl_selected) {
 		         declare topics_changed int;
 			 topics_changed := WV.WIKI.CHANGE_WORD_IN_CLUSTER (self.topic.ti_cluster_name,
 			 	self.topic.ti_local_name,
@@ -154,10 +188,8 @@
 		       }
 		     else
 			 self.set_message (e, '');
-		     WV.WIKI.RENAMETOPIC (self.topic,
-		       self.vspx_user,
-		       self.topic.ti_cluster_id,
-		       _new_name);
+                        WV.WIKI.RENAMETOPIC (self.topic, self.vspx_user, self.topic.ti_cluster_id, _new_name);
+
 		    ]]>
 		   </v:on-post>
 		  </v:button>
@@ -168,9 +200,7 @@
 		   <select name="parent_topic">
 <?vsp		  
 			http ('<option value="0">**no parent**</option>');
-			for select LocalName, TopicId from WV.WIKI.TOPIC where ClusterId = self.topic.ti_cluster_id 
-			  order by LocalName do
-			  {
+                      for select LocalName, TopicId from WV.WIKI.TOPIC where ClusterId = self.topic.ti_cluster_id order by LocalName do {
 			    if (self.topic.ti_parent_id = TopicId)
 			      http (sprintf ('<option value="%ld" selected="selected">%s</option>', TopicId, LocalName));
 			    else
@@ -187,8 +217,7 @@
 		       _pid := cast (self.parent_topic as integer);
 		       declare _error varchar;
 		       _error := WV.WIKI.TOPICSETPARENT (self.topic.ti_id, _pid);
-		       if (_error is not null)
-		         {
+                        if (_error is not null) {
 			   self.vc_error_message := _error;
 			   self.vc_is_valid := 0;
 			 }		      

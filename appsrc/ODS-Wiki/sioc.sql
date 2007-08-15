@@ -360,9 +360,10 @@ create function WV.WIKI.SIOC_BASE(in _cluster_name varchar)
 }
 ;
 
-
-grant execute on WV.WIKI.SIOC_URI to public
-;
+grant execute on WV.WIKI.SIOC_URI to public;
+grant execute on WV.WIKI.TOPIC_TEXT to SPARQL_SELECT;
+grant execute on WV.DBA.POST_RFC_MSG to SPARQL_SELECT;
+grant execute on WV.Wiki.COMMENT_TEXT to SPARQL_SELECT;
 
 
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:sioc_uri', 'WV.WIKI.SIOC_URI')

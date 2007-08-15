@@ -74,49 +74,7 @@
       <link rel="service.post" 
             type="application/x.atom+xml"
 	      href="{wv:atom_pub_uri($ti_cluster_name)}"/>
-      <script type="text/javascript">
-        var toolkitPath="/ods/oat";
-        var featureList=["tree"];
-      </script>
-      <script type="text/javascript" src="/ods/oat/loader.js"></script>
-      <script type="text/javascript">
-        var clusterTree;
-        function treeGetNode(path) {
-      		var parts = path.split("/");
-      		if (parts[0] == "") { parts.shift(); }
-      		parts.shift();
-      		if (parts[parts.length-1] == "") { parts.pop(); }
 
-      		var ptr = 0;
-      		var node = clusterTree.tree;
-      	  node.expand();
-      		var currentPath = parts[0] + "/";
-      		parts.shift();
-
-          while (ptr &lt; parts.length-1) {
-      			currentPath += parts[ptr] + "/";
-      			var index = -1;
-      			for (var i=0;i &lt; node.children.length;i++) {
-      				var child = node.children[i];
-      				if (child.path == currentPath) { index = i; }
-      			}
-      			ptr++;
-      		  node = node.children[index];
-      		  node.expand();
-      		}
-      		return node;
-      	}
-        ;
-       	function myInit ()
-       	{
-       	  if ($('tree_content_ul')) {
-       	    clusterTree = new OAT.Tree({allowDrag:1,onClick:"select",onDblClick:"toggle",imagePath:"/ods/images/oat/",imagePrefix:"",ext:"png"});
-            clusterTree.assign("tree_content_ul",false);
-            /* treeGetNode($('plainPath').innerHTML); */
-          }
-       	}
-       	OAT.MSG.attach(OAT,OAT.MSG.OAT_LOAD,myInit);
-      </script>
     </head>
       <body>
 	<div id="page">
@@ -144,7 +102,7 @@
             </div>
           <div id="head-cols">
             <xsl:if test="$command != 'refby' and $command != 'refby-all' and $command != 'index' and $command != 'diff'">
-              <div class="row">
+              <div class="row" style="display:none">
                 <ul>
                   <li>
                     <xsl:choose>

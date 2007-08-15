@@ -2192,8 +2192,7 @@ create procedure WV.WIKI.ATTACH2 (in _uid int, in _filename varchar, in _type va
   _topic.ti_find_metadata_by_id ();
 
   _attachment_col_id := WV.WIKI.GETATTCOLID (_topic);
-  if (_attachment_col_id < 0)
-    {
+  if (_attachment_col_id < 0) {
     _attachment_col_id := WV.WIKI.CREATEDAVCOLLECTION (_topic.ti_col_id, _topic.ti_local_name, _uid,  WV.WIKI.WIKIUSERGID());
       DB.DBA.DAV_PROP_SET_INT(DB.DBA.DAV_SEARCH_PATH (_attachment_col_id, 'C'),
 			      'oWiki:topic-id', serialize (_topic.ti_id),
@@ -2307,6 +2306,83 @@ create procedure WV.WIKI.RENAMETOPIC (in _topic WV.WIKI.TOPICINFO,
   commit work;
 }
 ;
+
+create procedure WV.WIKI.COPYTOPIC (
+  in new_topic_name varchar,
+  in old_topic WV.WIKI.TOPICINFO,
+	in vspx_user varchar)
+{
+  whenever sqlstate '*' goto fin;
+
+  new_topic_name := trim (new_topic_name);
+  if (new_topic_name = '')
+	  signal ('XXXXX', 'Invalid topic name');
+  if (WV.WIKI.ISWIKIWORD (new_topic_name) <> 1)
+	  signal ('XXXXX', new_topic_name || ' is not WikiWord');
+
+	declare _content, _type  varchar;
+	declare _owner_uid int;
+	_owner_uid := (select COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = old_topic.ti_col_id);
+  if (0 < DB.DBA.DAV_RES_CONTENT_INT (old_topic.ti_res_id, _content, _type, 0, 0)) {
+    if (new_topic_name like 'Category%')
+	    if (old_topic.ti_local_name not like 'Category%')
+	      _content := WV.WIKI.ADD_REFBY_MACRO (_content);
+    WV.WIKI.UPLOADPAGE (old_topic.ti_col_id, new_topic_name ||'.txt', _content, _owner_uid, old_topic.ti_cluster_id, vspx_user, 1);
+  }
+
+  -- copy attachments
+
+  -- declare _author_uid int;
+  -- _author_uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = vspx_user);
+  declare attachments_path varchar;
+  attachments_path := WS.WS.COL_PATH(old_topic.ti_col_id) || old_topic.ti_local_name || '/';
+  if (DB.DBA.DAV_SEARCH_ID (attachments_path, 'C') > 0) {
+    declare attachment_list any;
+  	  --dbg_obj_princ ('dir list');
+    attachment_list := WV..TOPIC_LIST (attachments_path);
+    if (attachment_list is not null){
+    	declare _topic WV.WIKI.TOPICINFO;
+  	  _topic := WV.WIKI.TOPICINFO();
+  	  _topic.ti_cluster_name := old_topic.ti_cluster_name;
+  	  _topic.ti_fill_cluster_by_name();
+  	  _topic.ti_local_name := new_topic_name;
+  	  _topic.ti_find_id_by_local_name();
+  	  if (_topic.ti_id is not null and _topic.ti_id > 0) {
+  	    _topic.ti_find_metadata_by_id();
+  	    foreach (any att_spec in attachment_list) do	{
+    		  declare res_id int;
+    		  declare att_type varchar;
+    		  declare att_content, att_content2 any;
+    		  res_id := DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (attachments_path || att_spec, 'R'),
+    		  	att_content,
+    			  att_type,
+    			  0, 0);
+    		  if (att_type is null)
+    		    att_type := 'application/octet-stream';
+    		  if (1) {
+    		    declare att_id any;
+  		      att_id := DAV_SEARCH_ID (DAV_SEARCH_PATH (_topic.ti_attach_col_id, 'C') || att_spec, 'R');
+  		      declare content, _type any;
+    		    if (_topic.ti_attach_col_id = 0
+    			    or (coalesce(DAV_HIDE_ERROR (DAV_PROP_GET_INT (att_id, 'R', 'oWiki:md5', null, null, 0)), '') <> md5 (cast (att_content as varbinary))))
+    			  {
+  				    declare _res int;
+  				    _res := WV.WIKI.ATTACH2 (_owner_uid, att_spec, att_type,	_topic.ti_id,	att_content,	' -- ');
+  				    commit work;
+  				    result (att_spec);
+  				  }
+  			  }
+  		  }
+  	  }
+  	}
+  }
+;
+
+fin:
+	;
+}
+;
+
 
 create procedure WV.WIKI.GETFULLDAVPATH (in col_id int, in _res_id int, in local_name varchar)
 {

@@ -177,13 +177,14 @@ ins:
     _ext_params := vector_concat (_ext_params, vector ('qwikidisabled', '1'));
 
   declare _tree varchar;
-  _tree := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'tree', 'hide');
+--  _tree := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'tree', 'hide');
+  _tree := 'hide';
   _ext_params := vector_concat (_ext_params, vector ('tree', _tree));
 
-  declare _tree_content any;
-  _tree_content := WV.WIKI.CLUSTER_TREE_BUILD (_topic.ti_cluster_id, _topic.ti_cluster_name);
-  _tree_content := xtree_doc(_tree_content, 2);
-  _ext_params := vector_concat (_ext_params, vector ('tree_content', _tree_content));
+--  declare _tree_content any;
+--  _tree_content := WV.WIKI.CLUSTER_TREE_BUILD (_topic.ti_cluster_id, _topic.ti_cluster_name);
+--  _tree_content := xtree_doc(_tree_content, 2);
+--  _ext_params := vector_concat (_ext_params, vector ('tree_content', _tree_content));
 
   _xhtml := _topic.ti_get_entity(null, 1);
 --  dbg_obj_princ ('>>>>>>' ,_xhtml);
@@ -1671,46 +1672,77 @@ create function WV.WIKI.SIDURLPART (in sid varchar, in realm varchar)
 }
 ;
 
-
-create function WV.WIKI.GET_QHOST (in hostname varchar, in portname varchar)
+create procedure WV.WIKI.GET_HOST ()
 {
-  if (portname <> '80')
-    return hostname || ':' || portname;
-  return hostname;
-}
-;
+  declare host varchar;
 
--- stolen from Blog2
-create function WV.WIKI.GET_HOST ()
-{
-  declare ret varchar;
-  if (is_http_ctx ())
-    {
-      ret := http_request_header (http_request_header (), 'Host', null, sys_connected_server_address ());
-      if (isstring (ret) and strchr (ret, ':') is null)
-        {
+  declare exit handler for sqlstate '*' { goto _default; };
+
+  if (is_http_ctx ()) {
+    host := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
+    if (isstring (host) and strchr (host , ':') is null) {
           declare hp varchar;
           declare hpa any;
+
           hp := sys_connected_server_address ();
           hpa := split_and_decode (hp, 0, '\0\0:');
-          ret := WV.WIKI.GET_QHOST (ret, hpa[1]);
-        }
+      host := host || ':' || hpa [1];
     }
-  else
-   {
-     ret := sys_connected_server_address ();
-     if (ret is null)
-       ret := WV.WIKI.GET_QHOST (sys_stat ('st_host_name'),server_http_port ());
+    goto _exit;
    }
 
-  return ret;
+_default:;
+  host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (host is not null)
+    return host;
+  host := sys_stat ('st_host_name');
+  if (server_http_port () <> '80')
+    host := host || ':' || server_http_port ();
+
+_exit:;
+  return host ;
 }
 ;
+
+--create function WV.WIKI.GET_QHOST (in hostname varchar, in portname varchar)
+--{
+--  if (portname <> '80')
+--    return hostname || ':' || portname;
+--  return hostname;
+--}
+--;
+--
+---- stolen from Blog2
+--create function WV.WIKI.GET_HOST ()
+--{
+--  declare ret varchar;
+--  if (is_http_ctx ())
+--    {
+--      ret := http_request_header (http_request_header (), 'Host', null, sys_connected_server_address ());
+--      if (isstring (ret) and strchr (ret, ':') is null)
+--        {
+--          declare hp varchar;
+--          declare hpa any;
+--          hp := sys_connected_server_address ();
+--          hpa := split_and_decode (hp, 0, '\0\0:');
+--          ret := WV.WIKI.GET_QHOST (ret, hpa[1]);
+--        }
+--    }
+--  else
+--   {
+--     ret := sys_connected_server_address ();
+--     if (ret is null)
+--       ret := WV.WIKI.GET_QHOST (sys_stat ('st_host_name'),server_http_port ());
+--   }
+--
+--  return ret;
+--}
+--;
 
 
 create function WV.WIKI.MAKEHREFFROMRES (in res_id int, in res_name varchar, in sid varchar, in realm varchar, in _base varchar := '/')
 {
-  declare _clusterPath varchar;
+  declare _clusterPath, _home varchar;
   declare _topic WV.WIKI.TOPICINFO;
 
   _topic := WV.WIKI.TOPICINFO ();
@@ -1719,7 +1751,13 @@ create function WV.WIKI.MAKEHREFFROMRES (in res_id int, in res_name varchar, in 
     return null;
   _topic.ti_find_metadata_by_id ();
   _topic.ti_fill_cluster_by_id ();
-  _clusterPath := cast (WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_name, 'home') as varchar);
+
+  if (exists (select 1 from WV.WIKI.DOMAIN_PATTERN_1 where DP_HOST = '%' and DP_PATTERN = '/wiki/main'))
+    _home := '/wiki/main';
+  else
+    _home := '/wiki';
+
+  _clusterPath := cast (WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_name, 'home', _home) as varchar);
   if (_clusterPath not like 'http://%')
     _clusterPath := sprintf('http://%s%s', WV.WIKI.GET_HOST(), _clusterPath);
   return sprintf ('<a href="%s/%U/%U?%s">%s.%s</a>', _clusterPath, _topic.ti_cluster_name, _topic.ti_local_name,  WV.WIKI.SIDURLPART (sid, realm), _topic.ti_cluster_name, _topic.ti_local_name);
@@ -2735,11 +2773,41 @@ create function WV..CLUSTER_URL(in _cluster varchar)
   return sprintf('http://%s/wiki/%U', sioc..get_cname(), _cluster);
 }
 ;
-create function WV..TOPIC_URL(in _topic varchar)
+--create function WV..TOPIC_URL(in _topic varchar)
+--{
+--  if (exists (select 1 from WV.WIKI.DOMAIN_PATTERN_1 where DP_HOST = '%' and DP_PATTERN = '/wiki/main'))
+--    return sprintf('http://%s/wiki/main/%s', sioc..get_cname(), _topic);
+--  return sprintf('http://%s/wiki/%s', sioc..get_cname(), _topic);
+--
+--}
+--;
+
+create function WV.WIKI.TOPIC_URL(in source_page varchar)
 {
+  declare _cluster_name, _topic_name, _clusterPath, _home varchar;
+  declare _V any;
+  _V := split_and_decode (source_page, 0, '\0\0/');
+  _cluster_name := '';
+  if (length (_V) > 0)
+    _cluster_name := _V[0];
+  if (_cluster_name = '')
+    return 'http://' || WV.WIKI.GET_HOST();
+
   if (exists (select 1 from WV.WIKI.DOMAIN_PATTERN_1 where DP_HOST = '%' and DP_PATTERN = '/wiki/main'))
-    return sprintf('http://%s/wiki/main/%s', sioc..get_cname(), _topic);
-  return sprintf('http://%s/wiki/%s', sioc..get_cname(), _topic);
+    _home := '/wiki/main';
+  else
+    _home := '/wiki';
+  _clusterPath := cast (WV.WIKI.CLUSTERPARAM (_cluster_name, 'home', _home) as varchar);
+  if (_clusterPath not like 'http://%')
+    _clusterPath := sprintf('http://%s%s', WV.WIKI.GET_HOST(), _clusterPath);
+  _clusterPath := _clusterPath || '/' || _cluster_name;
+
+  _topic_name := '';
+  if (length (_V) > 1)
+    _topic_name := _V[1];
+  if (_topic_name = '')
+    return _clusterPath;
+  return _clusterPath || '/' || _topic_name;
 }
 ;
 

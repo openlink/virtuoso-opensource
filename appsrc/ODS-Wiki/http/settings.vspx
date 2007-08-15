@@ -42,6 +42,7 @@
     <v:variable name="index_page" type="varchar" default="'WelcomeVisitors'" persist="0"/>
     <v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
     <v:variable name="cluster_name" type="varchar" default="'Main'" param-name="cluster"/>
+  <v:variable name="topic_name" type="varchar" default="'WelcomeVisitors'" param-name="name"/>
     <v:variable name="cluster" type="int"/> 
     <v:variable name="new_topic_template" type="varchar" default="''" persist="0"/>
     <v:variable name="new_category_template" type="varchar" default="''" persist="0"/>
@@ -63,7 +64,7 @@
           self.name.ufl_value := {?'name'};		  
     --dbg_obj_print (self.cluster_name);
      self.cluster := (select CLUSTERID from WV..CLUSTERS where CLUSTERNAME= self.cluster_name);
-      self.source_page := WV.WIKI.READONLYWIKIWORDLINK (self.cluster_name, '');
+    self.source_page := WV.WIKI.READONLYWIKIWORDLINK (self.cluster_name, self.topic_name);
     </v:on-init>
   <v:before-data-bind>
     <![CDATA[
