@@ -142,7 +142,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		if ((r = str.match(/(....)-(..)-(..) (..):(..):(..)/))) {
 			var d = dt();
 			d.setFullYear(r[1]);
-			d.setMonth(parseInt(r[2])-1);
+			d.setMonth(parseInt(r[2],10)-1);
 			d.setDate(r[3]);
 			d.setHours(r[4]);
 			d.setMinutes(r[5]);
@@ -153,7 +153,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		if ((r = str.match(/(....)-(..)-(..)T(..):(..):(..)/))) {
 			var d = dt();
 			d.setFullYear(r[1]);
-			d.setMonth(parseInt(r[2])-1);
+			d.setMonth(parseInt(r[2],10)-1);
 			d.setDate(r[3]);
 			d.setHours(r[4]);
 			d.setMinutes(r[5]);
@@ -164,7 +164,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		if ((r = str.match(/(....)-(..)-(..)T(..):(..)/))) {
 			var d = dt();
 			d.setFullYear(r[1]);
-			d.setMonth(parseInt(r[2])-1);
+			d.setMonth(parseInt(r[2],10)-1);
 			d.setDate(r[3]);
 			d.setHours(r[4]);
 			d.setMinutes(r[5]);
@@ -175,7 +175,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		if ((r = str.match(/(.{1,2})\.(.{1,2})\.(....)/))) {
 			var d = dt();
 			d.setFullYear(r[3]);
-			d.setMonth(parseInt(r[2])-1);
+			d.setMonth(parseInt(r[2],10)-1);
 			d.setDate(r[1]);
 			d.setHours(0);
 			d.setMinutes(0);
@@ -186,7 +186,7 @@ OAT.Timeline = function(contentElm,paramsObj) {
 		if ((r = str.match(/(.{4})-(.{2})-(.{2})/))) {
 			var d = dt();
 			d.setFullYear(r[1]);
-			d.setMonth(parseInt(r[2])-1);
+			d.setMonth(parseInt(r[2],10)-1);
 			d.setDate(r[3]);
 			d.setHours(0);
 			d.setMinutes(0);
