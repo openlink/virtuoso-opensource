@@ -20,8 +20,8 @@ create procedure ODS_USER_XML_ITEM (
   in pValue any,
   inout pStream any)
 {
-  if (not isnull (pValue))
-    http (sprintf ('<%s>%V</%s>', pTag, coalesce (cast(pValue as varchar), ''), pTag), pStream);
+  if (not DB.DBA.is_empty_or_null (pValue))
+    http (sprintf ('<%s>%V</%s>', pTag, cast (pValue as varchar), pTag), pStream);
 }
 ;
 
@@ -591,6 +591,12 @@ create procedure ODS_CREATE_DSN ()
 	declare _pass varchar;
 	declare _attrib varchar;
 
+	_dsn := 'LocalVirtuosoDemo';
+	_address := 'localhost:' || cfg_item_value (virtuoso_ini_path (), 'Parameters', 'ServerPort');
+	_user := 'dba';
+	_pass := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dba');
+
+  if ((sys_stat('st_build_opsys_id') = 'Win32') and (sys_stat('st_has_vdb') = 1)) {
 	_driver := null;
 	foreach (varchar _drv in sql_get_installed_drivers ()) do {
 		if (upper(_drv) like 'OPENLINK VIRTUOSO%' or upper(_drv) like 'VIRTUOSO%') {
@@ -598,15 +604,8 @@ create procedure ODS_CREATE_DSN ()
 			goto _exit;
 		}
 	}
-  signal('ODS11', 'Can''t find Virtuoso driver.');
-
 _exit:;
-	_dsn := 'LocalVirtuosoDemo';
-	_address := 'localhost:' || cfg_item_value (virtuoso_ini_path (), 'Parameters', 'ServerPort');
-	_user := 'dba';
-	_pass := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dba');
-
-  if (sys_stat('st_build_opsys_id') = 'Win32') {
+    if (not isnull (_driver)) {
   	_attrib := '';
   	_attrib := _attrib || 'DSN=' || _dsn || ';';
   	_attrib := _attrib || 'Address=' || _address || ';';
@@ -615,6 +614,7 @@ _exit:;
   	_attrib := _attrib || 'Description=Local Virtuoso Demo DSN for ODS Users;';
 
   	sql_config_data_sources(_driver, 'system', _attrib);
+  }
   }
 
   -- create PHP dsn file
