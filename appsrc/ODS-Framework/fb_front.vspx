@@ -1,0 +1,220 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="fb-user-home"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        fast-render="1"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <vm:page>
+    <vm:header>
+      <vm:title>
+        <v:label value="--self.banner" render-only="1"/>
+      </vm:title>
+    </vm:header>
+    <vm:pagewrapper>
+      <vm:navigation-new on="site"/>
+      <vm:subnavigation-new on="site"/>
+      <v:variable name="_fb" type="DB.DBA.Facebook"/>
+      <v:variable name="_fb_isset" type="integer"/>
+      <v:variable name="appcallbackurl" type="varchar" default="'http://bdimitrov.tradenet-ltd.com:8890/ods/fb_front.vspx'"/>
+      <v:variable name="_dhtml" type="any" />
+      <vm:body>
+        <v:before-data-bind>
+        <![CDATA[
+          declare fb_dba_options any;
+          if(_get_ods_fb_settings(fb_dba_options)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
+          {
+             self._fb_isset:=1;
+             self._fb:= new Facebook(fb_dba_options[0], fb_dba_options[1], params,lines);
+          }
+          else 
+             self._fb_isset:=0;
+         
+          self._dhtml:=vector();
+          
+          declare _html,_src varchar;
+
+          if(self._fb_isset)
+          {
+            
+            declare _user integer;
+            _user := self._fb.require_login();
+            
+            if(_user<>0)
+            {
+              declare _res any;
+            
+              _res:=self._fb.api_client.users_getInfo(cast(_user as varchar),'name,pic');
+            
+              if(_res is not null)
+              {
+                _src:=cast(xpath_eval('/users_getInfo_response/user/pic',_res) as varchar);
+                if(length(_src)=0)
+                   _src:=self.odsbar_ods_gpath ||'images/t_default.jpg';
+                _html:='<img src="'||_src||'">'||
+                       '<h3>'||cast(xpath_eval('/users_getInfo_response/user/name',_res) as varchar)||'</h3><br/>';
+            
+              }else
+                _html:='Hello, user:'||cast(_user as varchar)||'<br/>';
+            
+              self._dhtml:=vector_concat(self._dhtml,vector('user',_html));
+            
+              _res:=self._fb.api_client.friends_get();
+            
+              if(_res is not null and length(_res)>0)
+              { 
+                declare ff_ids varchar;
+                ff_ids:='';
+                declare i integer;
+                i:=0;
+                _html:='';
+                while(i<length(_res))
+                {
+                 if(i<(length(_res)-1)) 
+                    ff_ids:=ff_ids||_res[i]||',';
+                 else
+                    ff_ids:=ff_ids||_res[i];
+                    
+                 i:=i+1;
+                }
+            
+                _res:=self._fb.api_client.users_getInfo(ff_ids,'name,pic_small');
+            
+                 if(_res is not null)
+                 {
+                 _html:='<div class="doc">';
+            
+                  _res:=xpath_eval('/users_getInfo_response/user',_res,0);
+                  if(_res is not null and length(_res)>0)
+                  {
+                    i := 0;
+                    while (i < length(_res))
+                    {
+                      _src:=xpath_eval('string(pic_small)',_res[i]);
+                      if(length(_src)=0)
+                        _src:=self.odsbar_ods_gpath ||'images/t_default.jpg';
+            
+                      _html:=_html|| '<div class="dock_column" style="text-align:center">'||
+                                      '<img src="'||_src||'" >'||
+                                      '<br/>'||
+                                      xpath_eval('string(name)',_res[i])||'</div>';
+                      i := i + 1;
+                    }
+                  }
+                  _html:=_html||'</div>';
+                 }
+                
+                
+              }else
+                _html:='You have no Facebook friends.';
+             
+              self._dhtml:=vector_concat(self._dhtml,vector('friends',_html));
+            }
+             
+            _html:='You are not ODS user.<br/> <a href="javascript:void(0)">Use my Facebook login in ODS from now on.</a>';
+            self._dhtml:=vector_concat(self._dhtml,vector('ods_user',_html));
+         } 
+        ]]>
+        </v:before-data-bind>
+<v:template type='simple' enabled='--self._fb_isset'>
+<script type="text/javascript">
+function dd(txt){
+  if(typeof console == 'object'){
+    console.debug(txt);
+  }
+}
+
+ var cssDockNode = document.createElement('link');
+ cssDockNode.type = 'text/css';
+ cssDockNode.rel = 'stylesheet';
+ cssDockNode.href = '<?V self.odsbar_ods_gpath ?>dock.css';
+ document.getElementsByTagName("head")[0].appendChild(cssDockNode);
+
+
+ods_bar_state_set('min');
+ODSInitArray.push(fbInitPrepare);
+
+function fbInitPrepare()
+{
+  OAT.Loader.loadFeatures(["dock"],function(){setTimeout(fbInit,60)});
+  return;
+}
+
+var colors = ["#99c","#cc9","#c8c","#9c9"];
+var dock = false;
+var counter = 0;
+var urls = {};
+
+
+function fbInit()
+{
+
+ dock = new OAT.Dock('fbDock',3);
+ 
+ var user_win=dockAdd('Facebook User Info');
+ var friends_win=dockAdd('User Facebook Friends Info');
+ var ods_win=dockAdd('ODS User Info');
+
+ $(user_win.id+'_body').innerHTML='<?vsp http(get_keyword('user',self._dhtml,'')); ?>';
+ $(friends_win.id+'_body').innerHTML='<?vsp http(get_keyword('friends',self._dhtml,'')); ?>';
+ $(ods_win.id+'_body').innerHTML='<?vsp http(get_keyword('ods_user',self._dhtml,'')); ?>';
+
+}
+
+function dockAdd(win_title)
+{
+
+	var container = OAT.Dom.create("div");
+  container.setAttribute('id','dockwin_'+counter+'container');
+
+	var bodyDiv = OAT.Dom.create("div");
+  bodyDiv.setAttribute('id','dockwin_'+counter+'_body');
+	var subDiv = OAT.Dom.create("div");
+  subDiv.setAttribute('id','dockwin_'+counter+'_sub');
+
+	var color = colors[counter % colors.length];
+	var win = dock.addObject(counter % 3,container,{color:color,title:win_title,titleColor:"#000"});
+  win.id='dockwin_'+counter;
+
+	OAT.Dom.append([container,bodyDiv,subDiv]);
+
+	counter++;
+
+  return win;
+}
+</script>
+<div id="fbDock"></div>
+</v:template>
+
+<v:template type='simple' enabled='--(1-self._fb_isset)'>
+<div style="padding:10px;">ODS is not set up to use Facebook. Please contact ODS administrator.</div>
+</v:template>
+      </vm:body>
+    </vm:pagewrapper>
+  </vm:page>
+</v:page>
+

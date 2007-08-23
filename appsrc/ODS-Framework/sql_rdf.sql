@@ -25,10 +25,19 @@
 create procedure rdf_import (
   in pURL varchar,
   in pMode integer := 1,
-  in pGraph varchar := null)
+  in pGraph varchar := null,
+  in pUser varchar := null,
+  in pPassword varchar := null)
 {
   declare retValue integer;
+  declare user_id integer;
 
+  user_id := null;
+  if (not isnull (pUser)) {
+    user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = pUser and pwd_magic_calc (U_NAME, U_PASSWORD, 1) = pPassword);
+    if (isnull (user_id))
+  	  signal ('ODS11', 'Bad user name or password');
+  }
   if (isnull (pGraph))
     pGraph := pURL;
   retValue := (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph));
@@ -67,7 +76,34 @@ create procedure rdf_import (
       DB.DBA.RDF_LOAD_RDFXML (content, '', pGraph);
     }
   }
-  return (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph)) - retValue;
+  retValue := (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph)) - retValue;
+  if (not isnull (user_id)) {
+    declare read_perm, exec_perm, name, path, content, S varchar;
+
+    path := DB.DBA.DAV_HOME_DIR(pUser);
+    if (isstring (path)) {
+      read_perm := '110100100NN';
+      exec_perm := '111101101NN';
+      path := path || 'Uploads/';
+      DB.DBA.DAV_MAKE_DIR (path, user_id, null, read_perm);
+
+      path := path || 'RDF/';
+      DB.DBA.DAV_MAKE_DIR (path, user_id, null, read_perm);
+
+      -- RDF
+      name := replace ( replace ( replace ( replace ( replace ( replace ( replace (pUrl, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_');
+      path := path || name || '.RDF';
+      DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
+
+      S := sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', DB.DBA.wa_cname (), pGraph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml');
+      content := '';
+      DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, content, 'text/xml', exec_perm, http_dav_uid (), http_dav_uid () + 1, null, null, 0);
+      DB.DBA.DAV_PROP_SET_INT (path, 'redirectref', S, 'dav', null, 0, 0, 1);
+    }
+  }
+  if (retValue < 0)
+    retValue := 0;
+  return retValue;
 }
 ;
 

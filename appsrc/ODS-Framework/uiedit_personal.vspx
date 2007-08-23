@@ -358,7 +358,7 @@
                 </td>
               </tr>
               <tr>
-		  <th><label for="e_foaf">External identity URLs</label>
+		  <th><label for="e_foaf">Other Identity URIs (synonyms)</label>
 		      <span class="explain">(one URL per line)</span>
 		  </th>
                 <td class="listing_col" nowrap="1">

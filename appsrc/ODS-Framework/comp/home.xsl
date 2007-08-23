@@ -297,7 +297,7 @@
 			    if (length (self.arr[8])) {
 			    ?>
                             <tr>
-                              <th><v:label name="1foaf" value="External identity URLs:" /></th>
+                              <th><v:label name="1foaf" value="Other Identity URIs (synonyms):" /></th>
 			      <td>
 				  <?vsp
 				    {
