@@ -87,7 +87,8 @@ create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, 
 	{
 	  declare cr_iri varchar;
 	  cr_iri := user_iri_by_uname(U_NAME);
-	  ods_sioc_post (graph_iri, 
+      ods_sioc_post (
+        graph_iri,
 			 iri, 
 			 c_iri, 
 			 cr_iri,
@@ -100,6 +101,48 @@ create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, 
 			 );
         }
     }
+  {
+    declare deadl, cnt any;
+    declare _wid, iri, w_iri any;
+
+    _wid := 0;
+    deadl := 3;
+    cnt := 0;
+    declare exit handler for sqlstate '40001' {
+      if (deadl <= 0)
+        resignal;
+      rollback work;
+      deadl := deadl - 1;
+      goto l1;
+    };
+    l1:
+
+    for (select WAI_ID,
+                WAI_NAME,
+                U_NAME
+           from DB.DBA.WA_INSTANCE,
+                DB.DBA.WA_MEMBER,
+                DB.DBA.SYS_USERS
+          where WAI_TYPE_NAME = 'oWiki'
+            and ((WAI_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+            and WAM_INST = WAI_NAME
+            and WAM_USER = U_ID
+            and WAM_MEMBER_TYPE = 1
+            and WAI_ID > _wid
+          order by WAI_ID) do
+    {
+      w_iri := wiki_iri (WAI_NAME);
+      iri := sprintf ('http://%s/dataspace/%s/wiki/%s/atom-pub/', get_cname(), U_NAME, WAI_NAME);
+      ods_sioc_service (graph_iri, iri, w_iri, null, null, null, iri, 'Atom');
+      cnt := cnt + 1;
+      if (mod (cnt, 500) = 0) {
+        commit work;
+        _wid := WAI_ID;
+      }
+    }
+  commit work;
+ }
+
 }
 ;
 

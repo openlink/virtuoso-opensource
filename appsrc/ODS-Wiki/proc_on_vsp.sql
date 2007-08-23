@@ -900,18 +900,20 @@ create procedure WV.WIKI.VSPHEADER (
     http ('<script type="text/javascript">\n');
     http ('  // OAT\n');
     http ('  var toolkitPath="/ods/oat";\n');
-    http ('  var featureList=["dialog"];\n');
+--    http ('  var featureList=["dialog"];\n');
     http ('</script>\n');
     http ('<script type="text/javascript" src="/ods/oat/loader.js"></script>\n');
-    http ('<script type="text/javascript">\n');
-    http (' 	var showInfo;\n');
-    http (' 	function myInit ()\n');
-    http (' 	{\n');
-    http (' 	  showInfo = new OAT.Dialog("Secondary Skin", "infoDiv", {width:400, modal:1, buttons:0});\n');
-    http (' 	}\n');
-    http (' 	OAT.MSG.attach(OAT,OAT.MSG.OAT_LOAD,myInit);\n');
-    http ('</script>\n');
+    http ('<script type="text/javascript" src="js/wiki.js"></script>\n');
+--    http ('<script type="text/javascript">\n');
+--    http (' 	var showInfo;\n');
+--    http (' 	function myInit ()\n');
+--    http (' 	{\n');
+--    http (' 	  showInfo = new OAT.Dialog("Secondary Skin", "infoDiv", {width:400, modal:1, buttons:0});\n');
+--    http (' 	}\n');
+--    http (' 	OAT.MSG.attach(OAT,OAT.MSG.OAT_LOAD,myInit);\n');
+--    http ('</script>\n');
   }
+
   if (add_kupu_headers)
     {
       declare scripts any;

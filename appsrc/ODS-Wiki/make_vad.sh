@@ -30,7 +30,7 @@ SERVER=${SERVER-virtuoso}
 THOST=${THOST-localhost}
 TPORT=${TPORT-8440}
 PORT=${PORT-1940}
-PORT=`expr $PORT '+' 10`
+PORT=`expr $PORT '+' 20`
 ISQL=${ISQL-isql}
 DSN="$HOST:$PORT"
 HOST_OS=`uname -s | grep WIN`
@@ -215,6 +215,7 @@ directory_init() {
   cp -r http/* vad/data/wiki/Root
   cp -r Skins  vad/data/wiki/Root
   cp -r kupu  vad/data/wiki/Root
+  cp -r js  vad/data/wiki/Root
   cp -r initial/Main/* vad/data/wiki/Main
   cp -r initial/Wiki/* vad/data/wiki/Doc
   cp -r Template/* vad/data/wiki/Template
@@ -383,6 +384,15 @@ sticker_init() {
     if echo "$file" | grep -v "CVS" >/dev/null
     then
       echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Root/kupu/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+    fi
+  done
+  cd ..
+  cd js
+  for file in `find . -type f | sed 's/^..//'`
+  do
+    if echo "$file" | grep -v "CVS" >/dev/null
+    then
+      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/Root/js/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
     fi
   done
   cd ..

@@ -306,7 +306,7 @@
  <xsl:param name="show_path"/>
  <xsl:if test="$show_path = '1'">
    <div class="wiki-nav-container">
-        <span id="plainPath" style="dislay: none;">
+        <span id="plainPath" style="display: none;">
           <xsl:apply-templates select="Parent" mode="plainPath">
             <xsl:sort select="@DEPTH" data-type = "number" order = "descending"/>
           </xsl:apply-templates>

@@ -52,6 +52,25 @@
     </v:button>
   </xsl:template>
       
+  <xsl:template match="vm:tabCaption">
+    <div class="tabLabel">
+      <xsl:attribute name="id"><xsl:value-of select="concat('tabLabel_', @tab)"/></xsl:attribute>
+      <xsl:element name="v:url">
+        <xsl:attribute name="url">javascript:showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>
+        <xsl:attribute name="value"><xsl:value-of select="@caption"/></xsl:attribute>
+        <xsl:attribute name="xhtml_id"><xsl:value-of select="concat('tab_', @tab)"/></xsl:attribute>
+        <xsl:attribute name="xhtml_class">tab <xsl:if test="@activeTab = @tab">activeTab</xsl:if></xsl:attribute>
+      </xsl:element>
+    </div>
+  </xsl:template>
+
+  <xsl:template match="vm:label">
+    <label>
+      <xsl:attribute name="for"><xsl:value-of select="@for"/></xsl:attribute>
+      <v:label><xsl:attribute name="value"><xsl:value-of select="@value"/></xsl:attribute></v:label>
+    </label>
+  </xsl:template>
+
   <xsl:template match="vm:security-syscalls">
     <vm:setting-section name="Content">
       <vm:setting-parameter name="Inline macros">
@@ -59,8 +78,7 @@
 		  value="--case when WV.WIKI.CLUSTERPARAM(self.cluster_name, 'syscalls', 2) = 1 then 'Turn Off' else 'Turn On' end">
 	  <v:on-post>
 	    <![CDATA[
-		     if (WV.WIKI.CLUSTERPARAM(self.cluster_name, 'creator', '--') = self.vspx_user)
-		       {
+              if (WV.WIKI.CLUSTERPARAM(self.cluster_name, 'creator', '--') = self.vspx_user) {
 		         WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'syscalls', 3 - WV.WIKI.CLUSTERPARAM(self.cluster_name, 'syscalls', 2));
 			 self.vc_data_bind(e);
 		       }
@@ -73,8 +91,7 @@
 		  value="--case when WV.WIKI.CLUSTERPARAM(self.cluster_name, 'qwiki', 2) = 2 then 'Turn Off' else 'Turn On' end">
 	  <v:on-post>
 	    <![CDATA[
-		     if (WV.WIKI.CLUSTERPARAM(self.cluster_name, 'creator', '--') = self.vspx_user)
-		       {
+              if (WV.WIKI.CLUSTERPARAM(self.cluster_name, 'creator', '--') = self.vspx_user) {
 		         WV.WIKI.SETCLUSTERPARAM(self.cluster_name, 'qwiki', 3 - WV.WIKI.CLUSTERPARAM(self.cluster_name, 'qwiki', 2));
 			 self.vc_data_bind(e);
 		       }
@@ -165,7 +182,6 @@
 		<v:button name="delete_btn" value="Delete" action="simple">
 		  <v:on-post>
 		    <![CDATA[
-			     --self.vc_redirect(sprintf ('delete.vspx?topic=%ld', self.topic.ti_id));
 			     delete from WV..UPSTREAM where UP_ID = (control.vc_parent as vspx_row_template).te_rowset[1];
 			     self.vc_data_bind(e);
 		    ]]>
@@ -189,9 +205,10 @@
     <v:variable name="name_fixed" type="varchar"/>
     <v:on-init>
 	<![CDATA[
+        declare params any;
+        params := self.vc_page.vc_event.ve_params;
 	       self.name_fixed := '@@hidden@@';
-	       if (get_keyword ('upstream', params) is not null)
-	         {
+         if (get_keyword ('upstream', params) is not null) {
 	           self.defval := (select vector ('id', UP_ID, 'name', UP_NAME, 'uri', UP_URI, 'user', UP_USER, 'passwd', UP_PASSWD, 'rcluster', UP_RCLUSTER) from WV..UPSTREAM where UP_NAME=get_keyword('upstream', params));
 		   --self.name_fixed := 'disabled';
 		 }
@@ -239,15 +256,9 @@
 	      <v:button name="add" action="submit" value="Add/Update Upstream">
 		<v:on-post>
 		  <![CDATA[
---			   dbg_obj_print (self.defval);
---			   dbg_obj_print (self.upstream_name.ufl_value);
---			   dbg_obj_print (self.upstream_url.ufl_value);
---			   dbg_obj_print (self.upstream_user.ufl_value);
---			   dbg_obj_print (self.upstream_password.ufl_value);
 		   declare upid int;
 		   upid := (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self.cluster and UP_NAME = self.upstream_name.ufl_value);
-                     if (upid is null)
-		       {
+                    if (upid is null) {
 		         insert into WV..UPSTREAM (UP_CLUSTER_ID, UP_NAME, UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER)
 			     values (
 			        self.cluster,
@@ -260,8 +271,7 @@
                          if (self.initial_insert.ufl_selected)
                            WV..UPSTREAM_ALL( (select UP_ID from WV..UPSTREAM where UP_CLUSTER_ID = self.cluster and UP_NAME = self.upstream_name.ufl_value) );
 		       }
-		     else
-		       {
+                    else {
 			 update WV..UPSTREAM
 			   set UP_NAME = self.upstream_name.ufl_value,
 			       UP_URI = self.upstream_url.ufl_value,
@@ -287,6 +297,8 @@
     <v:variable name="streamid" type="int"/>
     <v:on-init>
       <![CDATA[
+        declare params any;
+        params := self.vc_page.vc_event.ve_params;
         self.streamid := atoi (coalesce (get_keyword ('streamid', params), '0'));
         ]]>
     </v:on-init>
@@ -336,7 +348,8 @@
 	<![CDATA[
 	    self.vc_redirect(WV..CLUSTER_URL(self.cluster_name));
 		 return;
-	]]></v:on-post>
+          ]]>
+        </v:on-post>
     </v:button>
     </v:form>
   </xsl:template>
@@ -471,9 +484,9 @@
           <img src="images/wikibanner_sml.jpg"></img>
         </xsl:template>
         <xsl:template match="vm:back-button">
-          <v:button xhtml_class="real_button" action="simple" name="cancel" value="Back to the topic" xhtml_title="Cancel" xhtml_alt="Cancel">
+          <v:button xhtml_class="real_button" action="simple" value="Back to the Topic" xhtml_title="Cancel" xhtml_alt="Cancel">
             <v:on-post><![CDATA[   
-	      self.vc_redirect(WV..TOPIC_URL(self.source_page));
+              self.vc_redirect(WV.WIKI.TOPIC_URL(self.source_page));
             ]]></v:on-post>
           </v:button>
         </xsl:template>

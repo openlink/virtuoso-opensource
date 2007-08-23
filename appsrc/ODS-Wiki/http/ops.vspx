@@ -29,9 +29,14 @@
     <v:page 
 	  name="main" 
 	  style="comp.xsl"
+    on-deadlock-retry="5"
+    fast-render="1"
+    button-anchors="1"
 	  on-error-redirect="../main/" 
 	  xmlns:v="http://www.openlinksw.com/vspx/" 
-	  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+    xmlns:vm="http://www.openlinksw.com/vspx/macro"
+    doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+    doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 	  
       <v:variable name="cluster_key" type="varchar" param-name="cluster"/>
       <v:variable name="id" type="integer" default="NULL" param-name="id"/>
@@ -202,6 +207,8 @@
 			 self.set_message (e, '');
                         WV.WIKI.RENAMETOPIC2 (self.topic, self.vspx_user, self.topic.ti_cluster_id, _new_name);
                         self.source_page := WV.WIKI.READONLYWIKIWORDLINK (self.topic.ti_cluster_name, _other_topic.ti_local_name);
+                        self.topic := _other_topic;
+                        self.vc_data_bind(e);
 		    ]]>
 		   </v:on-post>
 		  </v:button>
