@@ -38,10 +38,18 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <![CDATA[
       <script type="text/javascript" src="js/ab.js"></script>
+      <script type="text/javascript" src="js/CalendarPopup.js"></script>
+      <script type="text/javascript">
+        // CalendarPopup
+        var cPopup = new CalendarPopup('cDiv');
+        cPopup.isShowYearNavigation = true;
+      </script>
     ]]>
     <title></title>
   </head>
   <body>
+    <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
+    </div>
     <v:page xmlns:v="http://www.openlinksw.com/vspx/">
         <v:variable persist="0" name="domain_id" type="integer" default="-1" />
         <v:variable persist="0" name="account_id" type="integer" default="-1" />

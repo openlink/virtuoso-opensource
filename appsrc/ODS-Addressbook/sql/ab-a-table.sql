@@ -51,6 +51,7 @@ AB.WA.exec_no_error('
     P_NAME varchar not null,
     P_TITLE varchar,
     P_FIRST_NAME varchar,
+    P_MIDDLE_NAME varchar,
     P_LAST_NAME varchar,
     P_FULL_NAME varchar,
     P_GENDER varchar,
@@ -74,6 +75,7 @@ AB.WA.exec_no_error('
     P_H_LNG real,
     P_H_PHONE varchar,
     P_H_MOBILE varchar,
+    P_H_FAX varchar,
     P_H_MAIL varchar,
     P_H_WEB varchar,
     P_B_ADDRESS1 varchar,
@@ -87,8 +89,10 @@ AB.WA.exec_no_error('
     P_B_LNG real,
     P_B_PHONE varchar,
     P_B_MOBILE varchar,
+    P_B_FAX varchar,
     P_B_INDUSTRY varchar,
     P_B_ORGANIZATION varchar,
+    P_B_DEPARTMENT varchar,
     P_B_JOB varchar,
     P_B_MAIL varchar,
     P_B_WEB varchar,
@@ -99,6 +103,22 @@ AB.WA.exec_no_error('
     primary key (P_ID)
   )
 ');
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_MIDDLE_NAME varchar', 'C', 'AB.WA.PERSONS', 'P_MIDDLE_NAME'
+);
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_H_FAX varchar', 'C', 'AB.WA.PERSONS', 'P_H_FAX'
+);
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_B_FAX varchar', 'C', 'AB.WA.PERSONS', 'P_B_FAX'
+);
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_B_DEPARTMENT varchar', 'C', 'AB.WA.PERSONS', 'P_B_DEPARTMENT'
+);
 
 AB.WA.exec_no_error ('
   create trigger PERSONS_AI after insert on AB.WA.PERSONS referencing new as N {
@@ -166,6 +186,7 @@ create procedure AB.WA.PERSONS_P_NAME_int (inout vtb any, inout d_id any, in mod
 
     vt_batch_feed (vtb, coalesce(P_NAME, ''), mode);
     vt_batch_feed (vtb, coalesce(P_FIRST_NAME, ''), mode);
+    vt_batch_feed (vtb, coalesce(P_MIDDLE_NAME, ''), mode);
     vt_batch_feed (vtb, coalesce(P_LAST_NAME, ''), mode);
     vt_batch_feed (vtb, coalesce(P_FULL_NAME, ''), mode);
     vt_batch_feed (vtb, coalesce(P_GENDER, ''), mode);
@@ -239,7 +260,7 @@ create procedure AB.WA.PERSONS_P_NAME_unindex_hook (inout vtb any, inout d_id an
 --
 create procedure AB.WA.drop_index()
 {
-  if (registry_get ('ab_index_version') <> '1') {
+  if (registry_get ('ab_index_version') <> '2') {
     AB.WA.exec_no_error ('drop table AB.WA.PERSONS_P_NAME_WORDS');
   }
 }
@@ -338,7 +359,7 @@ AB.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
-registry_set ('ab_index_version', '0');
+registry_set ('ab_index_version', '2');
 
 -------------------------------------------------------------------------------
 --

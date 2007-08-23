@@ -81,7 +81,7 @@ create procedure fill_ods_addressbook_sioc (
   in _wai_name varchar := null)
 {
   declare id, deadl, cnt integer;
-  declare ab_iri, sc_iri, creator_iri, r_iri varchar;
+	declare ab_iri, sc_iri, creator_iri, r_iri, iri varchar;
 
   {
     id := -1;
@@ -213,6 +213,35 @@ create procedure fill_ods_addressbook_sioc (
       }
     }
     commit work;
+
+		id := -1;
+		deadl := 3;
+		cnt := 0;
+		declare exit handler for sqlstate '40001' {
+			if (deadl <= 0)
+				resignal;
+			rollback work;
+			deadl := deadl - 1;
+			goto l1;
+		};
+	l1:
+		for (select WAI_ID,
+								WAI_NAME
+					 from DB.DBA.WA_INSTANCE
+					where ((WAI_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+					order by WAI_ID) do
+		{
+			ab_iri := addressbook_iri (WAI_NAME);
+      iri := sprintf ('http://%s%s/services/addressbook', get_cname(), get_base_path ());
+      ods_sioc_service (graph_iri, iri, ab_iri, null, 'text/xml', iri||'/services.wsdl', iri, 'SOAP');
+
+			cnt := cnt + 1;
+			if (mod (cnt, 500) = 0) {
+				commit work;
+				id := WAI_ID;
+			}
+    }
+		commit work;
   }
 }
 ;

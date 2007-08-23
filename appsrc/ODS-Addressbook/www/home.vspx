@@ -88,6 +88,7 @@
         'P_NAME',           'Name',
         'P_TITLE',          'Title',
         'P_FIRST_NAME',     'First Name',
+        'P_MIDDLE_NAME',    'Middle Name',
         'P_LAST_NAME',      'Last Name',
         'P_FULL_NAME',      'Full Name',
         'P_GENDER',         'Gender',
@@ -110,6 +111,7 @@
         'P_H_LNG',          'Home - Longitude',
         'P_H_PHONE',        'Home - Phone',
         'P_H_MOBILE',       'Home - Mobile',
+        'P_H_FAX',          'Home - Fax',
         'P_H_MAIL',         'Home - Mail',
         'P_H_WEB',          'Home - Web address',
         'P_B_COUNTRY',      'Business - Country',
@@ -123,8 +125,10 @@
         'P_B_LNG',          'Business - Longitude',
         'P_B_PHONE',        'Business - Phone',
         'P_B_MOBILE',       'Business - Mobile',
+        'P_B_FAX',          'Business - Fax',
         'P_B_INDUSTRY',     'Business - Industry',
         'P_B_ORGANIZATION', 'Business - Organization',
+        'P_B_DEPARTMENT',   'Business - Department',
         'P_B_JOB',          'Business - Job Title',
         'P_B_MAIL',         'Business - Mail',
         'P_B_WEB',          'Business - Web address');
@@ -334,6 +338,7 @@
       <v:variable name="v_name" type="varchar" default="''" />
       <v:variable name="v_title" type="varchar" default="''" />
       <v:variable name="v_fName" type="varchar" default="''" />
+      <v:variable name="v_mName" type="varchar" default="''" />
       <v:variable name="v_lName" type="varchar" default="''" />
       <v:variable name="v_fullName" type="varchar" default="''" />
       <v:variable name="v_gender" type="varchar" default="''" />
@@ -359,6 +364,7 @@
       <v:variable name="v_hLng" type="real" default="0.00"/>
       <v:variable name="v_hPhone" type="varchar" default="''" />
       <v:variable name="v_hMobile" type="varchar" default="''"/>
+      <v:variable name="v_hFax" type="varchar" default="''" />
       <v:variable name="v_hMail" type="varchar" default="''"/>
       <v:variable name="v_hWeb" type="varchar" default="''"/>
 
@@ -373,10 +379,12 @@
       <v:variable name="v_bLng" type="real" default="0.00"/>
       <v:variable name="v_bPhone" type="varchar" default="''" />
       <v:variable name="v_bMobile" type="varchar" default="''"/>
+      <v:variable name="v_bFax" type="varchar" default="''" />
       <v:variable name="v_bMail" type="varchar" default="''"/>
       <v:variable name="v_bWeb" type="varchar" default="''"/>
       <v:variable name="v_bIndustry" type="varchar" default="''"/>
       <v:variable name="v_bOrganization" type="varchar" default="''"/>
+      <v:variable name="v_bDepartment" type="varchar" default="''" />
       <v:variable name="v_bJob" type="varchar" default="''"/>
 
       <v:variable name="v_tag" type="varchar" default="''" />
@@ -440,6 +448,7 @@
                     self.v_name := '';
                     self.v_title := '';
                     self.v_fName := '';
+                    self.v_mName := '';
                     self.v_lName := '';
                     self.v_fullName := '';
                     self.v_gender := '';
@@ -468,6 +477,7 @@
                     self.v_hWeb := '';
                     self.v_hPhone := '';
                     self.v_hMobile := '';
+                    self.v_hFax := '';
 
                     self.v_bCountry := '';
                     self.v_bCity := '';
@@ -482,8 +492,10 @@
                     self.v_bWeb := '';
                     self.v_bPhone := '';
                     self.v_bMobile := '';
+                    self.v_bFax := '';
                     self.v_bIndustry := '';
                     self.v_bOrganization := '';
+                    self.v_bDepartment := '';
                     self.v_bJob := '';
                     self.v_grants := '';
                   }
@@ -1104,6 +1116,7 @@
                   select P_NAME,
                          P_TITLE,
                          P_FIRST_NAME,
+                         P_MIDDLE_NAME,
                          P_LAST_NAME,
                          P_FULL_NAME,
                          P_GENDER,
@@ -1127,6 +1140,7 @@
                          P_H_LNG,
                          P_H_PHONE,
                          P_H_MOBILE,
+                         P_H_FAX,
                          P_H_MAIL,
                          P_H_WEB,
                          P_B_COUNTRY,
@@ -1140,8 +1154,10 @@
                          P_B_LNG,
                          P_B_PHONE,
                          P_B_MOBILE,
+                         P_B_FAX,
                          P_B_INDUSTRY,
                          P_B_ORGANIZATION,
+                         P_B_DEPARTMENT,
                          P_B_JOB,
                          P_B_MAIL,
                          P_B_WEB,
@@ -1149,6 +1165,7 @@
                     into self.v_name,
                          self.v_title,
                          self.v_fName,
+                         self.v_mName,
                          self.v_lName,
                          self.v_fullName,
                          self.v_gender,
@@ -1172,6 +1189,7 @@
                          self.v_hLng,
                          self.v_hPhone,
                          self.v_hMobile,
+                         self.v_hFax,
                          self.v_hMail,
                          self.v_hWeb,
                          self.v_bCountry,
@@ -1185,8 +1203,10 @@
                          self.v_bLng,
                          self.v_bPhone,
                          self.v_bMobile,
+                         self.v_bFax,
                          self.v_bIndustry,
                          self.v_bOrganization,
+                         self.v_bDepartment,
                          self.v_bJob,
                          self.v_bMail,
                          self.v_bWeb,
@@ -1260,6 +1280,17 @@
                     </tr>
                     <tr>
                       <th>
+                        <v:label for="ab_mName" value="Middle Name" />
+                      </th>
+                      <td>
+                        <vm:if test="self.abAction <> 'view'">
+                          <v:text name="ab_mName" value="--AB.WA.utf2wide (self.v_mName)" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                        </vm:if>
+                        <?vsp self.viewField (self.v_mName); ?>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>
                         <v:label for="ab_lName" value="Last Name"/>
                       </th>
                       <td>
@@ -1307,77 +1338,10 @@
                       </th>
                       <td nowrap="1">
                         <vm:if test="self.abAction <> 'view'">
-                        <v:select-list name="ab_bday" value="">
-                          <v:after-data-bind>
-                            <![CDATA[
-                              declare m, arr varchar;
-                              declare ddd datetime;
-      			                  declare i int;
-
-                              ddd := self.v_birthday;
-                              m := '';
-                              if (ddd is not null and ddd <> 0)
-                                m := dayofmonth(ddd);
-                              control.ufl_value := m;
-                        			arr := make_array (32, 'any');
-                        			arr[0] := '';
-                        			for (i := 1; i <= 31; i := i + 1)
-                      			    arr[i] := cast(i as varchar);
-                        			control.vsl_items := arr;
-                        			control.vsl_item_values := arr;
-                        			control.vs_set_selected ();
-                            ]]>
-                          </v:after-data-bind>
-                        </v:select-list>
-                        -
-                        <v:select-list name="ab_bmonth" value="">
-                          <v:before-data-bind>
-                            <![CDATA[
-                              declare m, arr, marr varchar;
-                        			declare ddd datetime;
-                        			declare i int;
-
-                              ddd := self.v_birthday;
-                              m := '';
-                              if (ddd is not null and ddd <> 0)
-                                m := month(ddd);
-                        			control.ufl_value := m;
-                        			arr := make_array (13, 'any');
-                        			marr := vector ('', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-                        			arr[0] := '';
-                        			for (i := 1; i <= 12; i := i + 1)
-                      			    arr[i] := cast(i as varchar);
-                        			control.vsl_items := marr;
-                        			control.vsl_item_values := arr;
-                        			control.vs_set_selected ();
-                            ]]>
-                          </v:before-data-bind>
-                        </v:select-list>
-                        -
-                        <v:select-list name="ab_byear" value="">
-                          <v:after-data-bind>
-                            <![CDATA[
-                              declare m, arr varchar;
-                              declare ddd datetime;
-                         			declare i, lim int;
-
-                              ddd := self.v_birthday;
-                              m := '';
-                              if (ddd is not null and ddd <> 0)
-                                m := year(ddd);
-                        			control.ufl_value := m;
-
-                        			lim := year (now()) - 4;
-                        			arr := make_array (lim - 1950 + 2, 'any');
-                        			arr[0] := '';
-                        			for (i := 1950; i <= lim; i := i + 1)
-                      			    arr[i-1949] := cast(i as varchar);
-                        			control.vsl_items := arr;
-                        			control.vsl_item_values := arr;
-                        			control.vs_set_selected ();
-                            ]]>
-                          </v:after-data-bind>
-                		    </v:select-list>
+                          <v:text name="ab_birthday" xhtml_id="ab_birthday" null-value="--''" value="--AB.WA.dt_format (self.v_birthday, 'Y-M-D')" xhtml_class="textbox" xhtml_size="10" />
+                          <a href="#" name="ab_birthday_select" id="ab_birthday_select" onclick="cPopup.select(document.forms['F1'].ab_birthday, 'ab_birthday_select', 'yyyy-MM-dd'); return false;">
+                            <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
+                          </a>
                         </vm:if>
                         <?vsp self.viewField (self.v_birthday); ?>
                       </td>
@@ -1736,6 +1700,17 @@
                         <?vsp self.viewField (self.v_hMobile); ?>
                       </td>
                     </tr>
+                    <tr>
+                      <th>
+                        <v:label for="ab_hFax" value="Fax" />
+                      </th>
+                      <td>
+                        <vm:if test="self.abAction <> 'view'">
+                          <v:text name="ab_hFax" value="--AB.WA.utf2wide (self.v_hFax)" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                        </vm:if>
+                        <?vsp self.viewField (self.v_hFax); ?>
+                      </td>
+                    </tr>
                   </table>
                 </div>
                 <div id="4" class="tabContent" style="display: none;">
@@ -1933,6 +1908,17 @@
                     </tr>
                     <tr>
                       <th>
+                        <v:label for="ab_bDepartment" value="Department" />
+                      </th>
+                      <td>
+                        <vm:if test="self.abAction <> 'view'">
+                          <v:text name="ab_bDepartment" value="--AB.WA.utf2wide (self.v_bDepartment)" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                        </vm:if>
+                        <?vsp self.viewField (self.v_bDepartment); ?>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>
                         <v:label for="ab_bJob" value="Job Title"/>
                       </th>
                       <td>
@@ -1986,6 +1972,17 @@
                         <?vsp self.viewField (self.v_bMobile); ?>
                       </td>
                     </tr>
+                    <tr>
+                      <th>
+                        <v:label for="ab_bFax" value="Fax" />
+                      </th>
+                      <td>
+                        <vm:if test="self.abAction <> 'view'">
+                          <v:text name="ab_bFax" value="--AB.WA.utf2wide (self.v_bFax)" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                        </vm:if>
+                        <?vsp self.viewField (self.v_bFax); ?>
+                      </td>
+                    </tr>
                   </table>
                 </div>
               </div>
@@ -2015,14 +2012,13 @@
                     declare dt datetime;
 
   	                dt := null;
-                    if (not is_empty_or_null (self.ab_byear.ufl_value) and not is_empty_or_null (self.ab_bmonth.ufl_value) and not is_empty_or_null (self.ab_bday.ufl_value)) {
- 			                tmp := sprintf('%s.%s.%s', self.ab_bmonth.ufl_value, self.ab_bday.ufl_value, self.ab_byear.ufl_value);
+                    if (not is_empty_or_null (self.ab_birthday.ufl_value)) {
 			                declare exit handler for sqlstate '*' {
 			                  self.vc_error_message := sprintf ('An invalid birth date (%s) is specified', tmp);
 			                  self.vc_is_valid := 0;
            			        return;
 			                };
- 			                dt := stringdate (tmp);
+                      dt := stringdate (self.ab_birthday.ufl_value);
 			              }
 
                 		self.v_hLat := null;
@@ -2039,6 +2035,7 @@
 			              }
                     self.v_title         := trim (self.ab_title.ufl_value);
                     self.v_fName         := trim (self.ab_fName.ufl_value);
+                    self.v_mName         := trim (self.ab_mName.ufl_value);
                     self.v_lName         := trim (self.ab_lName.ufl_value);
                     self.v_fullName      := trim (self.ab_fullName.ufl_value);
                     self.v_gender        := trim (self.ab_gender.ufl_value);
@@ -2060,6 +2057,7 @@
                     self.v_hTzone        := trim (self.ab_hTzone.ufl_value);
                     self.v_hPhone        := trim (self.ab_hPhone.ufl_value);
                     self.v_hMobile       := trim (self.ab_hMobile.ufl_value);
+                    self.v_hFax          := trim (self.ab_hFax.ufl_value);
                     self.v_hMail         := trim (self.ab_hMail.ufl_value);
                     self.v_hWeb          := trim (self.ab_hWeb.ufl_value);
                     self.v_bCountry      := trim (self.ab_bCountry.ufl_value);
@@ -2071,8 +2069,10 @@
                     self.v_bTzone        := trim (self.ab_bTzone.ufl_value);
                     self.v_bPhone        := trim (self.ab_bPhone.ufl_value);
                     self.v_bMobile       := trim (self.ab_bMobile.ufl_value);
+                    self.v_bFax          := trim (self.ab_bFax.ufl_value);
                     self.v_bIndustry     := trim (self.ab_bIndustry.ufl_value);
                     self.v_bOrganization := trim (self.ab_bOrganization.ufl_value);
+                    self.v_bDepartment   := trim (self.ab_bDepartment.ufl_value);
                     self.v_bJob          := trim (self.ab_bJob.ufl_value);
                     self.v_bMail         := trim (self.ab_bMail.ufl_value);
                     self.v_bWeb          := trim (self.ab_bWeb.ufl_value);
@@ -2083,6 +2083,7 @@
                       self.v_name,
                       self.v_title,
                       self.v_fName,
+                      self.v_mName,
                       self.v_lName,
                       self.v_fullName,
                       self.v_gender,
@@ -2106,6 +2107,7 @@
                       self.v_hLng,
                       self.v_hPhone,
                       self.v_hMobile,
+                      self.v_hFax,
                       self.v_hMail,
                       self.v_hWeb,
                       self.v_bCountry,
@@ -2119,8 +2121,10 @@
                       self.v_bLng,
                       self.v_bPhone,
                       self.v_bMobile,
+                      self.v_bFax,
                       self.v_bIndustry,
                       self.v_bOrganization,
+                      self.v_bDepartment,
                       self.v_bJob,
                       self.v_bMail,
                       self.v_bWeb,
@@ -2558,13 +2562,7 @@
                           self.vc_is_valid := 0;
                           return;
                         }
-                        self.i_data := AB.WA.dav_content (self.f_uri.ufl_value);
-                        if (isnull(self.i_data)) {
-                          self.vc_error_message := 'Bad URI source!';
-                          self.vc_is_valid := 0;
-                          return;
-                        }
-
+                        self.i_data := self.f_uri.ufl_value;
                       } else if (self.i_source = 3) {
                         self.i_lName := trim (self.f_lName.ufl_value);
                         self.i_lHost := trim (self.f_lHost.ufl_value);
@@ -2720,12 +2718,16 @@
                           'Business State',       'P_B_STATE',
                           'Business Postal Code', 'P_B_CODE',
                           'Business Country',     'P_B_COUNTRY',
+                          'Business Phone',       'P_B_PHONE',
+                          'Business Fax',         'P_B_FAX',
                           'Home Street',          'P_H_ADDRESS1',
                           'Home Street 2',        'P_H_ADDRESS2',
                           'Home City',            'P_H_CITY',
                           'Home State',           'P_H_STATE',
                           'Home Postal Code',     'P_H_CODE',
                           'Home Country',         'P_H_COUNTRY',
+                          'Home Phone',           'P_H_PHONE',
+                          'Home Fax',             'P_H_FAX',
                           'E-mail Address',       'P_MAIL',
                           'E-mail 2 Address',     'P_H_MAIL',
                           'E-mail 3 Address',     'P_B_MAIL');
@@ -2883,7 +2885,7 @@
 
 			                -- FOAF
                       if (self.i_type = 1)
-                        AB.WA.import_foaf (self.domain_id, self.i_data, self.v_tags);
+                        AB.WA.import_foaf (self.domain_id, self.i_data, self.v_tags, case when (self.i_source = 2) then 1 else 0 end);
 
 			                -- CSV
                       if (self.i_type = 2)

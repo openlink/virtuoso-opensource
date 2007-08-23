@@ -86,7 +86,14 @@ create procedure AB.WA.vhost()
                realm    => 'wa',
                def_page => 'home.vspx'
              );
-}
+  USER_CREATE ('SOAP_ADDRESSBOOK', md5 (cast (now() as varchar)));
+  USER_SET_QUALIFIER ('SOAP_ADDRESSBOOK', 'DBA');
+
+  VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
+  VHOST_DEFINE (lpath => '/dataspace/services/addressbook',
+                ppath => '/SOAP/',
+                soap_user => 'SOAP_ADDRESSBOOK',
+                soap_opts => vector('Use', 'literal', 'XML-RPC', 'no' )); }
 ;
 
 AB.WA.vhost();
@@ -181,9 +188,9 @@ create method wa_notify_member_changed(in account int, in otype int, in ntype in
 --
 create method wa_new_inst (in login varchar) for wa_AddressBook
 {
-  declare
-    iUserID,
-    iWaiID integer;
+  declare iUserID, iWaiID integer;
+  declare retValue any;
+
 
   iUserID := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
   if (isnull (iUserID))
@@ -215,7 +222,17 @@ create method wa_new_inst (in login varchar) for wa_AddressBook
              );
 
   AB.WA.domain_update (iWaiID, iUserID);
-  return (self as web_app).wa_new_inst(login);
+  retValue := (self as web_app).wa_new_inst(login);
+
+  --  SIOC service
+  declare  graph_iri, iri, ab_iri varchar;
+
+  graph_iri := SIOC..get_graph ();
+  iri := sprintf ('http://%s%s/services/addressbook', SIOC..get_cname(), SIOC..get_base_path ());
+  ab_iri := SIOC..addressbook_iri (self.wa_name);
+  SIOC..ods_sioc_service (graph_iri, iri, ab_iri, null, null, null, iri, 'SOAP');
+
+  return retValue;
 }
 ;
 

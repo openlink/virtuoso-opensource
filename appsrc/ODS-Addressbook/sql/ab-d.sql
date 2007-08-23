@@ -20,6 +20,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+VHOST_REMOVE (lpath => '/addressbook');
+VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
+
 -- Tables
 AB.WA.exec_no_error('DROP TABLE AB.WA.GRANTS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.PERSONS');
@@ -57,6 +60,10 @@ AB.WA.exec_no_error('DROP procedure AB.WA.drop_procedures');
 -- dropping SIOC procs
 AB.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_addressbook_sioc');
 AB.WA.exec_no_error('DROP procedure SIOC.DBA.ods_addressbook_sioc_init');
+
+-- dropping SIOC procs
+AB.WA.exec_no_error('DROP procedure DBA.DB.addressbook_import');
+AB.WA.exec_no_error('DROP procedure DBA.DB.addressbook_export');
 
 -- final proc
 AB.WA.exec_no_error('DROP procedure AB.WA.exec_no_error');
