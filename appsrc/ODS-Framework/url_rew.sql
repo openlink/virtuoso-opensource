@@ -27,9 +27,12 @@ create procedure DB.DBA.URL_REW_ODS_ACCEPT ()
 create procedure  DB.DBA.URL_REW_ODS_SPQ (in graph varchar, in iri varchar, in acc varchar)
 {
   declare q, ret any;
-  iri := replace (iri, '''', '%27');
-  iri := replace (iri, '<', '%3C');
-  iri := replace (iri, '>', '%3E');
+--  iri := replace (iri, '''', '%27');
+--  iri := replace (iri, '<', '%3C');
+--  iri := replace (iri, '>', '%3E');
+--  iri := replace (iri, ' ', '%20');
+  iri := sprintf ('%U', iri);
+  iri := replace (iri, '%3A', ':');
   q := sprintf ('define input:inference <%s> DESCRIBE <%s> FROM <%s>', graph, iri, graph);
   ret := sprintf ('/sparql?query=%U&format=%U', q, acc);
   return ret;
