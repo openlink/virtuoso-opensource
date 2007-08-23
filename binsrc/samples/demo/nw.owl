@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<rdf:RDF xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:owl ="http://www.w3.org/2002/07/owl#"
+         xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
+         xml:base="http://www.openlinksw.com/schemas/demo#">
+  <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/demo#">
+        <rdfs:label>Northwind</rdfs:label>
+        <rdfs:comment>Northwind database classes and properties</rdfs:comment>
+        <virtrdf:catName>Northwind</virtrdf:catName>
+        <virtrdf:version>1.00</virtrdf:version>
+  </owl:Ontology>
+  
+  <rdfs:Class rdf:ID="Product">
+    <rdfs:label>Product</rdfs:label>
+  </rdfs:Class>
+  <rdf:Property rdf:ID="has_category">
+    <rdfs:range rdf:resource="Category"/>
+    <rdfs:domain rdf:resource="Product"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Category</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="has_supplier">
+    <rdfs:range rdf:resource="Supplier"/>
+    <rdfs:domain rdf:resource="Product"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Supplier</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ProductName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Product"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ProductName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="QuantityPerUnit">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Product"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>QuantityPerUnit</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="UnitPrice">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:domain rdf:resource="Product"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>UnitPrice</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="UnitsInStock">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:domain rdf:resource="Product"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>UnitsInStock</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="UnitsOnOrder">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:domain rdf:resource="Product"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>UnitsOnOrder</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ReorderLevel">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:domain rdf:resource="Product"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ReorderLevel</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Discontinued">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:domain rdf:resource="Product"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Discontinued</rdfs:label>
+  </rdf:Property>
+
+  <rdfs:Class rdf:ID="Supplier">
+    <rdfs:label>Supplier</rdfs:label>
+  </rdfs:Class>
+  <rdf:Property rdf:ID="CompanyName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Supplier"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>CompanyName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ContactName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Supplier"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ContactName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ContactTitle">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Supplier"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ContactTitle</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Address">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Supplier"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Address</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="City">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Supplier"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>City</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Region">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Supplier"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Region</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="PostalCode">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Supplier"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>PostalCode</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Country">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Supplier"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Country</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Phone">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Supplier"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Phone</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Fax">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Supplier"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Fax</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="HomePage">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Supplier"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>HomePage</rdfs:label>
+  </rdf:Property>
+
+  <rdfs:Class rdf:ID="Category">
+    <rdfs:label>Category</rdfs:label>
+  </rdfs:Class>
+  <rdf:Property rdf:ID="CategoryName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Category"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>CategoryName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Description">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Category"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Description</rdfs:label>
+  </rdf:Property>
+
+  <rdfs:Class rdf:ID="Shipper">
+    <rdfs:label>Shipper</rdfs:label>
+  </rdfs:Class>
+  <rdf:Property rdf:ID="CompanyName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Shipper"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>CompanyName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Phone">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Shipper"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Phone</rdfs:label>
+  </rdf:Property>
+
+  <rdfs:Class rdf:ID="Customer">
+    <rdfs:label>Customer</rdfs:label>
+  </rdfs:Class>
+  <rdf:Property rdf:ID="CompanyName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Customer"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>CompanyName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ContactName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Customer"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ContactName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ContactTitle">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Customer"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ContactTitle</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Address">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Customer"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Address</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="City">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Customer"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>City</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Region">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Customer"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Region</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="PostalCode">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Customer"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>PostalCode</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Country">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Customer"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Country</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Phone">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Customer"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Phone</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Fax">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Customer"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Fax</rdfs:label>
+  </rdf:Property>
+
+  <rdfs:Class rdf:ID="Employee">
+    <rdfs:label>Employee</rdfs:label>
+  </rdfs:Class>
+  <rdf:Property rdf:ID="LastName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>LastName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="FirstName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>FirstName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Title">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Title</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="TitleOfCourtesy">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>TitleOfCourtesy</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="BirthDate">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>BirthDate</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="HireDate">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>HireDate</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Address">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Address</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="City">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>City</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Region">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Region</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="PostalCode">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>PostalCode</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Country">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Country</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="HomePhone">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>HomePhone</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Extension">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Extension</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Notes">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Notes</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ReportsTo">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:domain rdf:resource="Employee"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ReportsTo</rdfs:label>
+  </rdf:Property>
+
+  <rdfs:Class rdf:ID="Order">
+    <rdfs:label>Order</rdfs:label>
+  </rdfs:Class>
+  <rdf:Property rdf:ID="has_customer">
+    <rdfs:range rdf:resource="Customer"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Customer</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="has_employee">
+    <rdfs:range rdf:resource="Employee"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Employee</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="OrderDate">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>OrderDate</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="RequiredDate">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>RequiredDate</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ShippedDate">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ShippedDate</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="order_ship_via">
+    <rdfs:range rdf:resource="Shipper"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Shipper</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Freight">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Freight</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ShipName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ShipName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ShipAddress">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ShipAddress</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ShipCity">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ShipCity</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ShipRegion">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ShipRegion</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ShipPostalCode">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ShipPostalCode</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ShipCountry">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Order"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ShipCountry</rdfs:label>
+  </rdf:Property>
+
+  <rdfs:Class rdf:ID="OrderLine">
+    <rdfs:label>OrderLine</rdfs:label>
+  </rdfs:Class>
+  <rdf:Property rdf:ID="has_order_id">
+    <rdfs:range rdf:resource="Order"/>
+    <rdfs:domain rdf:resource="OrderLine"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Order</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="has_product_id">
+    <rdfs:range rdf:resource="Product"/>
+    <rdfs:domain rdf:resource="OrderLine"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Product</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="UnitPrice">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:domain rdf:resource="OrderLine"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>UnitPrice</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Quantity">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:domain rdf:resource="OrderLine"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Quantity</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Discount">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:domain rdf:resource="OrderLine"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Discount</rdfs:label>
+  </rdf:Property>
+
+  <rdfs:Class rdf:ID="Country">
+    <rdfs:label>Country</rdfs:label>
+  </rdfs:Class>
+  <rdf:Property rdf:ID="Name">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Country"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Name</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Code">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Country"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Code</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="SmallFlagDAVResourceName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Country"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>SmallFlagDAVResourceName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="LargeFlagDAVResourceName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Country"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>LargeFlagDAVResourceName</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="SmallFlagDAVResourceURI">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Country"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>SmallFlagDAVResourceURI</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="LargeFlagDAVResourceURI">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Country"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>LargeFlagDAVResourceURI</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Lat">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:domain rdf:resource="Country"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Lat</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="Lng">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:domain rdf:resource="Country"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Lng</rdfs:label>
+  </rdf:Property>
+
+  <rdfs:Class rdf:ID="Province">
+    <rdfs:label>Province</rdfs:label>
+  </rdfs:Class>  
+  <rdf:Property rdf:ID="has_country_code">
+    <rdfs:range rdf:resource="Country"/>
+    <rdfs:domain rdf:resource="Provinces"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>Country Code</rdfs:label>
+  </rdf:Property>
+  <rdf:Property rdf:ID="ProvinceName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="Province"/>
+    <rdfs:cardinality>1</rdfs:cardinality>
+    <rdfs:label>ProvinceName</rdfs:label>
+  </rdf:Property>
+
+</rdf:RDF>
