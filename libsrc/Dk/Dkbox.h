@@ -133,6 +133,24 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define box_tag_modify(box,new_tag) box_tag_modify_impl(box,new_tag)
 #endif
 
+#ifdef NDEBUG
+#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+  *ptr++ = (unsigned char) (bytes & 0xff); \
+  *ptr++ = (unsigned char) ((bytes >> 8) & 0xff); \
+  *ptr++ = (unsigned char) ((bytes >> 16) & 0xff); \
+  *ptr++ = (unsigned char) tag
+#else
+  /* GK : this is to signal when a  box to be allocated exceeds the maximum allowed length */
+#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+  if (bytes >= (256L * 256L * 256L)) \
+    GPF_T1 ("box to allocate too large"); \
+  *ptr++ = (unsigned char) (bytes & 0xff); \
+  *ptr++ = (unsigned char) ((bytes >> 8) & 0xff); \
+  *ptr++ = (unsigned char) ((bytes >> 16) & 0xff); \
+  *ptr++ = (unsigned char) tag
+#endif
+
+
 #define BOX_ELEMENTS(b) \
 	(box_length ((box_t) (b)) / sizeof (box_t))
 

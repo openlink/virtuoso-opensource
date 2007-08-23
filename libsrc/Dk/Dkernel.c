@@ -438,16 +438,13 @@ is_protocol (session_t * ses, int proto)
 }
 
 
-#if 0
-#define bytes_in_read_buffer(ses) \
-	(ses->dks_in_fill != ses->dks_in_read)
-#else
-static int
+
+int
 bytes_in_read_buffer (dk_session_t * ses)
 {
   return (ses->dks_in_fill - ses->dks_in_read);
 }
-#endif
+
 
 
 #ifndef NO_COMBINED_SELECT
