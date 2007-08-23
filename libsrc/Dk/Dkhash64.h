@@ -1,10 +1,30 @@
+/*
+ *  $Id$
+ *
+ *  Hash tables
+ *  
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *  
+ *  Copyright (C) 1998-2007 OpenLink Software
+ *  
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *  
+ */
+#ifndef DKHASH64_H
+#define DKHASH64_H
 
-
-
-
-/* int64 ht for 32 bit platforms */
-
-/* #if SIZEOF_VOIDPTR == 4 */
 
 #define dk_hash_64_t id_hash_t
 
@@ -32,6 +52,4 @@ id_hash_set (ht, (caddr_t)&kr, (caddr_t)&vr);	\
 #define hash_table_free_64(ht) \
   id_hash_free (ht)
 
-
-
-  /* #endif */
+#endif /* DKHASH64_H */
