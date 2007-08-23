@@ -82,4 +82,7 @@ void *basket_peek (basket_t *bsk);
 void *basket_get (basket_t *bsk);
 int basket_is_empty (basket_t *bsk);
 
+typedef int (*basket_check_t ) (void* elt, void* cd);
+void * basket_remove_if (basket_t * bsk, basket_check_t f, void * cd);
+
 #endif

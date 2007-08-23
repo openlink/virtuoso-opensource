@@ -82,3 +82,32 @@ basket_is_empty (basket_t *bsk)
 {
   return bsk->bsk_count == 0;
 }
+
+
+void * 
+basket_remove_if (basket_t * bsk, basket_check_t f, void * cd)
+{
+  int found = 0;
+  void* remd = NULL;
+  dk_set_t tmp = NULL;
+  void * elt;
+  while ((elt = basket_get (bsk)))
+    {
+      if (!found && f (elt, cd))
+	{
+	  remd = elt;
+	  found = 1;
+	}
+      else 
+	dk_set_push (&tmp, elt);
+    }
+  dk_set_nreverse (tmp);
+  DO_SET (void*, x, &tmp)
+    {
+      basket_add (bsk, x);
+    }
+  END_DO_SET();
+  dk_set_free (tmp);
+  return remd;
+}
+
