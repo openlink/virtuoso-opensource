@@ -2211,18 +2211,27 @@ create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
 	   pisdav := 0;
            if (f like '%_dav.vad')
              pisdav := 1;
+
 	   VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, 0);
+
 	   ver := vad_check_version (pname);
-	   if (pver is not null)
+	   if (ver is not null)
 	     {
 		if (exists (select top 1 1 from VAD.DBA.VAD_REGISTRY
 			where R_KEY like sprintf ('/VAD/%s/%s/resources/dav/%%', pname, ver)))
-		  isdav := 0;
-		else
 		  isdav := 1;
+		else
+		  isdav := 0;
 	     }
-	   if (ver is NULL) ver := '';
---           dbg_obj_print (pname, pver, pfull, isdav);
+
+	   --  Only install Conductor DAV in empty database
+	   if (ver is null and pname = 'conductor')
+	     {
+		  isdav := 1;
+		ver := '';
+	     }
+
+	   -- Only upgrade if package exists in database with older version
 	   if (pver > ver and isdav = pisdav)
 	     {
 	       log_message ('Installing '||pfull||' version '||pver|| ' '||case when isdav then '(DAV)' else '' end);
