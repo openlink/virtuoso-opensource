@@ -53,6 +53,7 @@
 	    <xsl:apply-templates/>
 	</rdf:RDF>
     </xsl:template>
+    <xsl:template match="fb:error_response"/>
     <xsl:template match="fb:fql_query_response[fb:photo]">
 	<sioct:ImageGallery rdf:about="{$baseUri}">
 	    <xsl:for-each select="fb:photo">

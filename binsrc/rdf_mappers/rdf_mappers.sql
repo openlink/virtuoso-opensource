@@ -193,6 +193,15 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT
 
 --RDF_LOAD_AMAZON_ARTICLE_INIT ();
 
+create procedure RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
+{
+  set_user_id ('dba');
+  if (params is null)
+    return xslt (xslt, xt);
+  else
+    return xslt (xslt, xt, params);
+};
+
 
 create procedure RDF_APERTURE_INIT ()
 {
@@ -452,7 +461,7 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
   'WHERE aid in (select aid from album where owner = %s and strpos (link, "aid=%s&") > 0)', own, aid);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   xt := xtree_doc (ret);
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -461,7 +470,7 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
   'WHERE owner = %s and strpos (link, "aid=%s&") > 0', own, aid);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   xt := xtree_doc (ret);
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -476,7 +485,7 @@ try_profile:
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   --dbg_printf ('%s', ret);
   xt := xtree_doc (ret);
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -485,7 +494,7 @@ try_profile:
   'WHERE owner = %s', own);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   xt := xtree_doc (ret);
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -495,7 +504,7 @@ try_profile:
   '(SELECT eid FROM event_member where uid = %s)', own);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   xt := xtree_doc (ret);
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -504,7 +513,7 @@ try_profile:
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   --dbg_printf ('%s', ret);
   xt := xtree_doc (ret);
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   --dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -513,7 +522,7 @@ try_profile:
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   --dbg_printf ('%s', ret);
   xt := xtree_doc (ret);
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   --dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -540,7 +549,7 @@ create procedure DB.DBA.RDF_LOAD_OO_DOCUMENT (in graph_iri varchar, in new_origi
   if (meta is null)
     return 0;
   xt := xtree_doc (meta);
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/oo2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/oo2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
@@ -559,7 +568,7 @@ create procedure DB.DBA.RDF_LOAD_YAHOO_TRAFFIC_DATA (in graph_iri varchar, in ne
     };
 --  dbg_obj_print ('DB.DBA.RDF_LOAD_YAHOO_TRAFFIC_DATA');
   xt := xtree_doc (_ret_body);
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/yahoo_trf2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/yahoo_trf2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
@@ -578,7 +587,7 @@ create procedure DB.DBA.RDF_LOAD_ICAL (in graph_iri varchar, in new_origin_uri v
     };
 --  dbg_obj_print ('ICAL');
   xt := xml_tree_doc (DB.DBA.IMC_TO_XML (_ret_body));
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/ics2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/ics2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
 --  string_to_file ('x.rdf', xd, -2);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -618,7 +627,7 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/amazon2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/amazon2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
@@ -657,7 +666,7 @@ create procedure DB.DBA.RDF_LOAD_FLICKR_IMG (in graph_iri varchar, in new_origin
       ende:;
   }
 
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/flickr2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'exif', exif));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/flickr2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri), 'exif', exif));
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
@@ -706,7 +715,7 @@ create procedure DB.DBA.RDF_LOAD_EBAY_ARTICLE (in graph_iri varchar, in new_orig
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
 
   xd := xtree_doc (tmp);
-  xt := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/ebay2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/ebay2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
 
   xd := serialize_to_UTF8_xml (xt);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -836,7 +845,7 @@ create procedure DB.DBA.RDF_DO_XSLT_AND_LOAD (in graph_iri varchar, in new_origi
 	  xslt_sheet (xslt_uri, xtree_doc (xslt_body, 0, xslt_uri));
 	}
     }
-    xd := xslt (xslt_uri, xt);
+    xd := DB.DBA.RDF_MAPPER_XSLT (xslt_uri, xt);
     xsl_doc := xd;
     if (what <> '')
       goto try_next;
@@ -1181,7 +1190,7 @@ try_grddl:
       if (xpath_eval ('/rdf', xt) is not null and xt_xml is not null)
 	{
 	  declare exit handler for sqlstate '*' { goto not_rdf; };
-          xd :=  xslt (registry_get ('_rdf_mappers_path_') || 'xslt/rdf_wo_grddl.xsl', xt_xml);
+          xd :=  DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rdf_wo_grddl.xsl', xt_xml);
 	  xd := serialize_to_UTF8_xml (xd);
 	  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 	  mdta := mdta + 1;
@@ -1216,7 +1225,7 @@ try_grddl:
       if (xslt_style is not null)
 	{
 	  declare exit handler for sqlstate '*' { goto next_prof; };
-	  xd := xslt (xslt_style, xt, vector ('baseUri', coalesce (dest, graph_iri)));
+	  xd := DB.DBA.RDF_MAPPER_XSLT (xslt_style, xt, vector ('baseUri', coalesce (dest, graph_iri)));
 	  if (xpath_eval ('count(/RDF/*)', xd) > 0)
             {
 	      --dbg_obj_print ('plan A:', prof, xd);
@@ -1241,7 +1250,7 @@ try_grddl:
 	  if (position (GM_PROFILE, profs_done) > 0)
 	    goto try_next1;
 	  declare exit handler for sqlstate '*' { goto try_next1; };
-	  xd := xslt (GM_XSLT, xt, vector ('baseUri', coalesce (dest, graph_iri), 'nss', nss));
+	  xd := DB.DBA.RDF_MAPPER_XSLT (GM_XSLT, xt, vector ('baseUri', coalesce (dest, graph_iri), 'nss', nss));
 	  if (xpath_eval ('count(/RDF/*)', xd) > 0)
 	    {
 	      mdta := mdta + 1;
@@ -1306,11 +1315,11 @@ do_detect:;
 	  }
 	else if (xpath_eval ('/feed', xt) is not null)
 	  {
-	    xd := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/atom2rdf.xsl', xt);
+	    xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atom2rdf.xsl', xt);
 	  }
 	else if (xpath_eval ('/rss', xt) is not null)
 	  {
-	    xd := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xt);
+	    xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xt);
 	  }
 	else
 	  goto no_feed;
@@ -1331,7 +1340,7 @@ no_feed:;
   xt := xt_sav;
   if (add_html_meta = 1 and xpath_eval ('/html', xt) is not null)
     {
-      xd := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/html2rdf.xsl', xt, vector ('base', coalesce (dest, graph_iri)));
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/html2rdf.xsl', xt, vector ('base', coalesce (dest, graph_iri)));
       if (xpath_eval ('count(/RDF/*)', xd) > 0)
         {
 	  mdta := mdta + 1;
@@ -1366,7 +1375,7 @@ create procedure DB.DBA.RDF_LOAD_FEED_SIOC (in content any, in iri varchar, in g
       goto no_sioc;
     };
   xt := xtree_doc (content);
-  xd := xslt (registry_get ('_rdf_mappers_path_') || 'xslt/feed2sioc.xsl', xt, vector ('base', graph_iri));
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/feed2sioc.xsl', xt, vector ('base', graph_iri));
   xd := serialize_to_UTF8_xml (xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, iri, graph_iri);
   no_sioc:
