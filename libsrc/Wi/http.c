@@ -5493,7 +5493,9 @@ bif_http_proxy (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 
+  IO_SECT (qst);
   http_proxy (qi->qi_client->cli_ws, host, head, body, ent_ses);
+  END_IO_SECT (err_ret);
   return 0;
 }
 
