@@ -540,6 +540,7 @@
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vhost_define"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vhost_remove"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="virtuoso_ini_path"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="server_root"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vt_batch_d_id"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vt_batch_feed_offband"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="vt_batch_feed"/>

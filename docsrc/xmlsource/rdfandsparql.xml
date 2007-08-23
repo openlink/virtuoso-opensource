@@ -506,11 +506,31 @@ create procedure DB.DBA.TTLP (
     in graph varchar, -- target graph IRI, parsed triples will appear in that graph.
     in flags int)   -- bitmask of flags that permit some sorts of syntax errors in resource, use 0.
 </programlisting>
-<para>For loading a file of any greater length, it is most practical to use the file_to_string_output function with this, as follows:</para>
+<para>For loading a file of any greater length, it is most practical to use
+the file_to_string_output function.
+</para>
+<para>It is important the file to be accessible for the Virtuoso server. You need to have set properly the
+<emphasis>DirsAllowed</emphasis> parameter value in section [Parameters] of the Virtuoso database INI file.
+For example on Windows it could be:
+</para>
 <programlisting>
-SQL> ttlp (file_to_string_output ('data.ttl'), '', 'http://my_graph', 0);
+virtuoso.ini file:
+[Parameters]
+...
+DirsAllowed =  .\tmp
+...
 </programlisting>
-<para>The DB.DBA.TTLP_MT() procedure is like DB.DBA.TTLP() but loads the file on multiple threads, using parallel IO and multiprocessing if available. The functions does not leave a transaction log. Hence, after successful load, one should execute the checkpoint statement to make sure that a server restart does not wipe out the results.</para>
+<para>So in the example the file you want to import from, should be in the tmp folder or in its subfolder.
+Note that this example folder is a subfolder of the Virtuoso Server working directory.
+</para>
+<programlisting>
+SQL> ttlp (file_to_string_output ('.\tmp\data.ttl'), '', 'http://my_graph', 0);
+</programlisting>
+<para>The DB.DBA.TTLP_MT() procedure is like DB.DBA.TTLP() but loads the file on multiple threads,
+using parallel IO and multiprocessing if available. The functions does not leave a transaction log.
+Hence, after successful load, one should execute the checkpoint statement to make sure that a
+server restart does not wipe out the results.
+</para>
 <programlisting>
 create procedure DB.DBA.TTLP_MT (
     in strg any,       -- text of the resource
@@ -826,7 +846,7 @@ sparql
 ]]></programlisting>
       </sect2>
    </sect1>
-<sect1 id="rdfiridereferencing"><title>IRI Dereferencing</title>
+<sect1 id="rdfiridereferencing"><title>Dereferencable IRIs and RDF Linked Data</title>
 <para>There are many cases when RDF data should be retrieved from remote sources only when really needed.
 E.g., a scheduling application may read personal calendars from personal sites of its users.
 Calendar data expire quickly, so there's no reason to frequently re-load them in hope that they are queried before expired.

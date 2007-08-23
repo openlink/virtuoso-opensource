@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="fn_server_root">
+  <refmeta>
+    <refentrytitle>server_root</refentrytitle>
+    <refmiscinfo>admin</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>server_root</refname>
+    <refpurpose>Returns server working directory.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_server_root">
+      <funcprototype id="fproto_server_root">
+        <funcdef><function>server_root</function></funcdef>
+        <paramdef></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>This function returns the complete physical path to
+    server working directory.
+    </para>
+  </refsect1>
+  <refsect1 id="examples"><title>Examples</title>
+    <example id="ex_server_root"><title>Simple examples</title>
+<para>Show in the result the server working directory and INI file name:</para>
+<programlisting>
+<![CDATA[
+SQL> select server_root(), virtuoso_ini_path ();
+callret                                   callret
+VARCHAR                                   VARCHAR
+_______________________________________
+
+C:\Program Files\OpenLink\Virtuoso 5.0\   C:\Program Files\OpenLink\Virtuoso 5.0\demo\demo.ini
+
+1 Rows. -- 20 msec.
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para>
+      <link linkend="fn_cfg_section_count"><function>cfg_section_count</function></link>
+      <link linkend="fn_cfg_section_name"><function>cfg_section_name</function></link>
+      <link linkend="fn_cfg_item_count"><function>cfg_item_count</function></link>
+      <link linkend="fn_cfg_item_name"><function>cfg_item_name</function></link>
+      <link linkend="fn_cfg_item_value"><function>cfg_item_value</function></link>
+      <link linkend="fn_cfg_write"><function>cfg_write</function></link>
+    </para>
+  </refsect1>
+</refentry>
+

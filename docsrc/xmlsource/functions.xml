@@ -223,7 +223,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &vad_install; &vad_load_file;	&vad_pack; &vad_safe_exec; &vad_uninstall;
 &vd_remote_data_source; &vd_remote_proc_wrapper; &vd_remote_table; &vd_statistics;
 &vdd_disconnect_data_source; &vdd_measure_rpc_time; &vector; &vector_concat;
-&vhost_define; &vhost_remove; &virtuoso_ini_path; &vsp_calculate_digest; &vt_batch;
+&vhost_define; &vhost_remove; &virtuoso_ini_path; &server_root; &vsp_calculate_digest; &vt_batch;
 &vt_batch_d_id; &vt_batch_feed; &vt_batch_feed_offband; &vt_batch_update;
 &vt_create_text_index; &vt_drop_ftt; &vt_is_noise;
 

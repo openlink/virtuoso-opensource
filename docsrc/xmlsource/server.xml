@@ -636,8 +636,25 @@ parameters, the unspecified ones are assumed to be NULL.</para>
 comma-delimited list of OS directories allowed for file
 operations such as <function>file_to_string()</function>.  The server
 base directory (the directory containing this INI file) must appear on
-this list in order to enable File DSNs to work.
+this list in order to enable File DSNs to work. On Windows use in the path "\".
 </para>
+<para>The Virtuoso ISQL utility can be used to check  the Server DirsAllowed params
+as follows:</para>
+
+<programlisting><![CDATA[
+SQL> select server_root (), virtuoso_ini_path ();
+]]></programlisting>
+
+<para>The above should show in the result the server working directory and INI
+file name.</para>
+
+<para>Also you can check the relevant INI setting by running following
+statement via ISQL command line utility:</para>
+
+<programlisting><![CDATA[
+SQL> select cfg_item_value (virtuoso_ini_path (), 'Parameters',
+'DirsAllowed');
+]]></programlisting>
 </formalpara>
 				</listitem>
 				<listitem id="ini_Parameters_DirsDenied">
@@ -2589,6 +2606,24 @@ DirsDenied = &lt;path&gt; [, &lt;path&gt;]
 
 <note><title>Note:</title>
 <para>A relative path is relative to the servers current working directory.</para></note>
+
+<para>The Virtuoso ISQL utility can be used to check  the Server DirsAllowed params
+as follows:</para>
+
+<programlisting><![CDATA[
+SQL> select server_root (), virtuoso_ini_path ();
+]]></programlisting>
+
+<para>The above should show in the result the server working directory and INI
+file name.</para>
+
+<para>Also you can check the relevant INI setting by running following
+statement via ISQL command line utility:</para>
+
+<programlisting><![CDATA[
+SQL> select cfg_item_value (virtuoso_ini_path (), 'Parameters',
+'DirsAllowed');
+]]></programlisting>
 
 <tip><title>See Also:</title>
 <para><link linkend="VIRTINI">Virtuoso INI File Configuration</link></para></tip>

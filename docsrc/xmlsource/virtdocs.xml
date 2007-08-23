@@ -520,6 +520,7 @@
 <!ENTITY vhost_define				SYSTEM	"funcref/vhost_define.xml">
 <!ENTITY vhost_remove				SYSTEM	"funcref/vhost_remove.xml">
 <!ENTITY virtuoso_ini_path			SYSTEM	"funcref/virtuoso_ini_path.xml">
+<!ENTITY server_root			        SYSTEM	"funcref/server_root.xml">
 <!ENTITY vsp_calculate_digest			SYSTEM	"funcref/vsp_calculate_digest.xml">
 <!ENTITY vt_batch				SYSTEM	"funcref/vt_batch.xml">
 <!ENTITY vt_batch_d_id				SYSTEM	"funcref/vt_batch_d_id.xml">

@@ -76,6 +76,9 @@ so that when Virtuoso synchronizes its content with that on the remote host
 it will check for files that have been removed on the remote and remove
 them from the local copy also.</para>
 		<para>
+<emphasis>Store metadata*</emphasis> when checked offers to be stored respectively
+metadata from FOAF, RDF, RSS/RDF and GRDLL data depending on which check-box is checked.</para>
+    <para>
 When all details have been completed press the <emphasis>Add</emphasis> (or
 Update if updating) button to submit the web robot task to the queue.
     </para>
