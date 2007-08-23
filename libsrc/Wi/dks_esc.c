@@ -36,11 +36,11 @@ unsigned char dks_esc_char_props[0x100] = {
 /* @   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O  */
   '@','@','@','@','@','@','@','@','@','@','@','@','@','@','@','@',
 /* P   Q   R   S   T   U   V   W   X   Y   Z   [   \   ]   ^   _  */
-  '@','@','@','@','@','@','@','@','@','@','@','@','Q','@','@','@',
+  '@','@','@','@','@','@','@','@','@','@','@','O','Q','O','O','@',
 /* `   a   b   c   d   e   f   g   h   i   j   k   l   m   n   o  */
   '@','@','@','@','@','@','@','@','@','@','@','@','@','@','@','@',
 /* p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~      */
-  '@','@','@','@','@','@','@','@','@','@','@','@','@','@','@','@',
+  '@','@','@','@','@','@','@','@','@','@','@','O','@','O','@','@',
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
   'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
@@ -98,14 +98,14 @@ dks_charclass_props_t dks_charclasses['Q'+1-'>'] = {
 /* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,BSLASHC,0	,0	},
 /* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	},
 /* I '       */	{0	,LATTICE,LATTICE,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,0	,0	,REPEAT	},
-/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PLUS	,PCT	,PCT	,PCT	,0	,0	,0	,0	},
+/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,0	,0	},
 /* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,0	,0	},
 /* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHC,0	},
 /* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	},
 /* N /	     */	{0	,0	,0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	},
 /* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	},
 /* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	},
-/* Q \	     */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,BSLASHC,BSLASHC,BSLASHC,BSLASHC} };
+/* Q \	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,BSLASHC,BSLASHC,BSLASHC} };
 
 unsigned char dks_esc_bslashc[0x80] = {
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */

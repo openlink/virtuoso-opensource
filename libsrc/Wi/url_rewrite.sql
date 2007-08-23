@@ -782,7 +782,7 @@ create procedure DB.DBA.URLREWRITE_TRY_INVERSE (
 create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, in post_params any := null) returns any
 {
   declare long_url varchar;
-  declare params any;
+  declare params, lines any;
   declare nice_vhost_pkey any;
   declare top_rulelist_iri varchar;
   declare rule_iri, in_path, qstr varchar;
@@ -797,16 +797,23 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   if (length (in_path) = 0)
     in_path := '/';
   accept := null;
+  qstr := null;
 
   if (is_http_ctx ())
     {
+      lines := http_request_header ();
+      if (length (lines))
+	{
+	  in_path := regexp_match ('/[^ \\t\\n\\r]*', lines[0]);
+	}
+      else
+	{
       qstr := http_request_get ('QUERY_STRING');
-      accept := http_request_header (http_request_header (), 'Accept');
+	}
+      accept := http_request_header (lines, 'Accept');
       if (not isstring (accept))
 	accept := '*/*';
     }
-  else
-    qstr := null;
 
   if (length (qstr))
     in_path := in_path || '?' || qstr;
@@ -859,7 +866,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 	  full_path := hf[2];
 	  pars := split_and_decode (hf[4]);
 	  p_full_path := http_physical_path_resolve (full_path, 1);
-	  http_internal_redirect (full_path, p_full_path);
+	  http_internal_redirect (full_path, p_full_path, long_url);
 	  pars := vector_concat (params, pars);
 	  http_set_params (pars);
         }

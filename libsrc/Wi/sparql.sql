@@ -3136,7 +3136,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
       fname := sprintf ('SPARQL_DESC_DICT_QMV1_%U', md5 (storage_name || md5_box (maps)));
       if (not exists (select top 1 1 from Db.DBA.SYS_PROCEDURES where P_NAME = 'DB.DBA.' || fname))
         {
-          declare ses, txt any;
+          declare ses, txt, saved_user any;
           ses := string_output ();
           http ('create procedure DB.DBA."' || fname || '" (in subj any, inout res any)\n', ses);
           http ('{\n', ses);
@@ -3150,7 +3150,10 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
           http ('            } } ) do { dict_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
+	  saved_user := user;
+	  set_user_id ('dba');
           exec (txt);
+	  set_user_id (saved_user);
         }
       -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, res, ')');
       call ('DB.DBA.' || fname)(s, res);
@@ -8015,9 +8018,18 @@ resp_received:
 error_during_load:
   rollback work;
   -- dbg_obj_princ ('error during load: ', __SQL_STATE, __SQL_MESSAGE);
+
+  load_end_msec := msec_time();
+  if (new_expiration is null)
+    new_expiration := dateadd ('second', load_end_msec - load_begin_msec, now());
+  if (ret_dt_expires is null and explicit_refresh is not null)
+    new_expiration := __min (new_expiration, dateadd ('second', 0.7 * explicit_refresh, now()));
+
   update DB.DBA.SYS_HTTP_SPONGE
   set HS_SQL_STATE = __SQL_STATE,
-    HS_SQL_MESSAGE = __SQL_MESSAGE
+    HS_SQL_MESSAGE = __SQL_MESSAGE,
+    HS_EXPIRATION = coalesce (ret_dt_expires, new_expiration, now()),
+    HS_EXP_IS_TRUE = case (isnull (ret_dt_expires)) when 1 then 0 else 1 end
   where
     HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
   commit work;

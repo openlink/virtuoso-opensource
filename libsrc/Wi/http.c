@@ -4430,7 +4430,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 {
   query_instance_t * qi = (query_instance_t *) qst;
   caddr_t new_path = bif_string_arg (qst, args, 0, "http_internal_redirect");
-  caddr_t new_phy_path = NULL;
+  caddr_t new_phy_path = NULL, new_url = NULL;
   caddr_t * parr;
   ws_connection_t * ws = qi->qi_client->cli_ws;
 
@@ -4459,6 +4459,17 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       ws->ws_p_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
     }
 #endif  
+  if (BOX_ELEMENTS (args) > 2)
+    new_url = bif_string_or_null_arg (qst, args, 2, "http_internal_redirect");
+  if (NULL != new_url && NULL != ws->ws_lines && BOX_ELEMENTS (ws->ws_lines) > 0)
+    {
+      caddr_t * lines = ws->ws_lines;
+      caddr_t new_req = dk_alloc_box (box_length (new_url) + strlen (ws->ws_method_name) + strlen (ws->ws_proto) + 4,
+	  DV_STRING);
+      snprintf (new_req, box_length (new_req), "%s %s %s\r\n", ws->ws_method_name, new_url, ws->ws_proto);
+      dk_free_box (lines[0]);
+      lines[0] = new_req;
+    }
   
   return (caddr_t) NULL;
 }
