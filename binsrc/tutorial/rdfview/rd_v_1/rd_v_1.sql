@@ -41,7 +41,7 @@ drop quad map virtrdf:TutorialNorthwindDemo .
 ;
 
 DB.DBA.SPARQL_NW_RUN ('
-prefix tut_northwind: <http://www.openlinksw.com/schemas/tut_northwind#>
+prefix tut_northwind: <http://www.openlinksw.com/schemas/tutorial/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -61,7 +61,7 @@ create iri class tut_northwind:Flag "http://^{URIQADefaultHost}^/DAV/sample_data
 ;
 
 DB.DBA.SPARQL_NW_RUN ('
-prefix tut_northwind: <http://www.openlinksw.com/schemas/tut_northwind#>
+prefix tut_northwind: <http://www.openlinksw.com/schemas/tutorial/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -143,7 +143,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutSupplier-region ;
                         tut_northwind:postalCode suppliers.PostalCode
                                 as virtrdf:tutSupplier-postal_code ;
-                        tut_northwind:country suppliers.Country
+                        tut_northwind:country tut_northwind:Country(suppliers.Country)
                                 as virtrdf:tutSupplier-country ;
                         tut_northwind:phone suppliers.Phone
                                 as virtrdf:tutSupplier-phone ;
@@ -151,6 +151,9 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutSupplier-fax ;
                         tut_northwind:homePage suppliers.HomePage
                                 as virtrdf:tutSupplier-home_page .
+                tut_northwind:Country (suppliers.Country)
+                        tut_northwind:is_country_of
+                tut_northwind:Supplier (suppliers.SupplierID) as virtrdf:tutSupplier-is_country_of .
                 tut_northwind:Category (categories.CategoryID)
                         a tut_northwind:Category
                                 as virtrdf:tutCategory-CategoryID ;
@@ -174,8 +177,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutCustomer-company_name ;
                         tut_northwind:has_contact tut_northwind:CustomerContact (customers.CustomerID)
                                 as virtrdf:tutCustomer-contact ;
-                        tut_northwind:has_country tut_northwind:Country (customers.Country)
-                                as virtrdf:tutCustomer-has_country ;
+                        tut_northwind:country tut_northwind:Country (customers.Country)
+                                as virtrdf:tutCustomer-country ;
                         tut_northwind:contactName customers.ContactName
                                 as virtrdf:tutCustomer-contact_name ;
                         tut_northwind:contactTitle customers.ContactTitle
@@ -188,8 +191,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutCustomer-region ;
                         tut_northwind:PostalCode customers.PostalCode
                                 as virtrdf:tutCustomer-postal_code ;
-                        tut_northwind:country customers.Country
-                                as virtrdf:tutCustomer-country ;
                         foaf:phone customers.Phone
                                 as virtrdf:tutCustomer-foaf_phone ;
                         tut_northwind:phone customers.Phone
@@ -228,10 +229,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutEmployee-region ;
                         tut_northwind:postalCode employees.PostalCode
                                 as virtrdf:tutEmployee-postal_code ;
-                        tut_northwind:country employees.Country
+                        tut_northwind:country tut_northwind:Country (employees.Country)
                                 as virtrdf:tutEmployee-country ;
-                        tut_northwind:has_country tut_northwind:Country (employees.Country)
-                                as virtrdf:tutEmployee-has_country ;
                         foaf:phone employees.HomePhone
                                 as virtrdf:tutEmployee-home_phone ;
                         tut_northwind:extension employees.Extension
@@ -275,7 +274,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutOrder-ship_region ;
                         tut_northwind:shipPostal_code orders.ShipPostalCode
                                 as virtrdf:tutOrder-ship_postal_code ;
-                        tut_northwind:shipCountry orders.ShipCountry
+                        tut_northwind:shipCountry tut_northwind:Country(orders.ShipCountry)
                                 as virtrdf:tutship_country .
                 tut_northwind:Customer (orders.CustomerID)
                         tut_northwind:has_order tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-has_order .
@@ -370,7 +369,7 @@ create procedure tut_nw_html_doc (in path varchar)
 };
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'tut_nw_rule1',
+    'tut_nw_rule2',
     1,
     '(/[^#]*)\x24',
     vector('path'),
@@ -384,7 +383,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     );
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'tut_nw_rule2',
+    'tut_nw_rule1',
     1,
     '(/[^#]*)\x24',
     vector('path'),
