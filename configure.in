@@ -822,7 +822,7 @@ then
 	   openldap_LDFLAGS="-lldap -llber"
 	   ;;
 	*) 
-	   openldap="-I$with_ldap/include"
+	   openldap_CFLAGS="-I$with_ldap/include"
 	   openldap_LDFLAGS="-L$with_ldap/lib -lldap -llber"
 	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_ldap/lib"
 	   export LD_LIBRARY_PATH 
