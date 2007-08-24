@@ -401,6 +401,11 @@ sticker_init() {
 	echo "" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
+  echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER
+  echo "    <![CDATA[" >> $STICKER
+  echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/uninst.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "    ]]>" >> $STICKER
+  echo "  </sql>" >> $STICKER
 	echo "  <sql purpose=\"post-uninstall\">" >> $STICKER
 	echo "    vhost_remove (lpath=>'/tutorial');" >> $STICKER
 	echo "  </sql>" >> $STICKER
