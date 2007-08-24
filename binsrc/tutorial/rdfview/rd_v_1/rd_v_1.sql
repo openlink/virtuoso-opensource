@@ -371,7 +371,7 @@ create procedure tut_nw_html_doc (in path varchar)
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'tut_nw_rule2',
     1,
-    '(/[^#]*)\x24',
+    '(/[^#]*)',
     vector('path'),
     1,
     '/sparql?query=CONSTRUCT+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/tutorial/Northwind%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+%%3Fp+%%3Fo+}&format=%U',
@@ -385,10 +385,10 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'tut_nw_rule1',
     1,
-    '(/[^#]*)\x24',
+    '(/[^#]*)',
     vector('path'),
     1,
-    '/isparql/execute.html?query=SELECT%%20%%3Fp%%20%%3Fo%%20FROM%%20%%3Chttp%%3A//^{URIQADefaultHost}^/tutorial/Northwind%%3E%%20WHERE%%20{%%20%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E%%20%%3Fp%%20%%3Fo%%20}&endpoint=/sparql',
+    '/isparql/execute.html?query=SELECT%%20%%3Fp%%20%%3Fo%%20WHERE%%20{%%20%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E%%20%%3Fp%%20%%3Fo%%20}&endpoint=/sparql&defaultGraph=http%%3A//^{URIQADefaultHost}^/tutorial/Northwind',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
