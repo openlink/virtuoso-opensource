@@ -47,7 +47,7 @@ clntlibs = @clntlibs@ @LIBS@
 #
 VIRTODBC_CFLAGS	= $(base_cflags)
 
-VIRTODBC_LDFLAGS = -avoid-version -export-dynamic #-no-undefined
+VIRTODBC_LDFLAGS = -avoid-version -export-dynamic -no-undefined
 
 VIRTODBC_FIBER_LIBS = \
         $(top_srcdir)/libsrc/Thread/libthrs.la \
@@ -70,6 +70,7 @@ VIRTODBC_PTHREAD_LIBS = \
 #
 libvirtodbc_la_CFLAGS = $(VIRTODBC_CFLAGS)
 libvirtodbc_la_SOURCES = \
+	$(srcdir)/unixodbc.c \
 	$(top_srcdir)/libsrc/Wi/CLIuti.c \
 	$(top_srcdir)/libsrc/Wi/CLIsql1.c \
 	$(top_srcdir)/libsrc/Wi/CLIsql2.c \

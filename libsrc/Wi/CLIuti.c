@@ -33,22 +33,6 @@
 
 #include "widd.h"
 
-
-#if 0 /*def UNIX_ODBC*/
-/*
- *  Program information (keep libutil happy)
- */
-extern char *version;
-struct pgm_info program_info = {
-    "VIRTODBC",
-    NULL,
-    NULL,
-    0,
-    NULL
-};
-#endif /* UNIX_ODBC */
-
-
 caddr_t
 stmt_param_place_ptr (parm_binding_t * pb, int nth, cli_stmt_t * stmt,
     SQLULEN length)
