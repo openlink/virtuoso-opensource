@@ -370,11 +370,15 @@ aq_sql_func (caddr_t *av , caddr_t * err_ret)
       *err_ret = NULL;
       proc = qr_recompile (proc, err_ret);
       if (*err_ret)
+        {
+          dk_free_tree ((caddr_t)params);
       return NULL;
+    }
     }
   if (!sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
     {
       *err_ret = srv_make_new_error ("42000", "SR186", "No permission to execute %s in aq_request", full_name);
+      dk_free_tree ((caddr_t)params);
       return NULL;
     }
   DO_SET (state_slot_t *, ssl, &proc->qr_parms)
@@ -382,6 +386,7 @@ aq_sql_func (caddr_t *av , caddr_t * err_ret)
       if (SSL_REF_PARAMETER == ssl->ssl_type)
 	{
 	  *err_ret = srv_make_new_error ("42000", "AQ002", "Reference parameters not allowed in aq_request");
+          dk_free_tree ((caddr_t)params);
 	  return NULL;
 	}
     }
