@@ -259,6 +259,7 @@ libwi_odbc_la_SOURCES = \
 	rltrx.c \
 	row.c \
 	search.c \
+	search_in.c \
 	hash.c \
 	security.c \
 	sort.c \
