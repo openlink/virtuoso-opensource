@@ -5129,15 +5129,15 @@ caddr_t
 bif_max (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int inx;
-  caddr_t first = bif_arg (qst, args, 0, "__max");
+  caddr_t best = bif_arg (qst, args, 0, "__max");
+  collation_t * coll = args[0]->ssl_sqt.sqt_collation;
   for (inx = 1; inx < BOX_ELEMENTS_INT (args); inx++)
   {
-    collation_t * coll = args[0]->ssl_sqt.sqt_collation;
     caddr_t a = bif_arg (qst, args, inx, "__max");
-    if (DVC_GREATER == cmp_boxes (a, first, coll, coll))
-  first = a;
+      if (DVC_GREATER == cmp_boxes (a, best, coll, coll))
+        best = a;
   }
-  return (box_copy_tree (first));
+  return (box_copy_tree (best));
 }
 
 
@@ -5145,15 +5145,69 @@ caddr_t
 bif_min (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int inx;
-  caddr_t first = bif_arg (qst, args, 0, "__min");
+  caddr_t best = bif_arg (qst, args, 0, "__min");
+  collation_t * coll = args[0]->ssl_sqt.sqt_collation;
   for (inx = 1; inx < BOX_ELEMENTS_INT (args); inx++)
   {
-    collation_t * coll = args[0]->ssl_sqt.sqt_collation;
     caddr_t a = bif_arg (qst, args, inx, "__min");
-    if (DVC_LESS == cmp_boxes (a, first, coll, coll))
-  first = a;
+      if (DVC_LESS == cmp_boxes (a, best, coll, coll))
+        best = a;
   }
-  return (box_copy_tree (first));
+  return (box_copy_tree (best));
+}
+
+
+caddr_t
+bif_max_notnull (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int notnull_found = 0;
+  int inx;
+  caddr_t best;
+  collation_t * coll;
+  for (inx = 0; inx < BOX_ELEMENTS_INT (args); inx++)
+    {
+      caddr_t a = bif_arg (qst, args, inx, "__max_notnull");
+      if (DV_DB_NULL == DV_TYPE_OF (a))
+        continue;
+      if (!notnull_found)
+        {
+          coll = args[0]->ssl_sqt.sqt_collation;
+          best = a;
+        }
+      notnull_found = 1;
+      if (DVC_GREATER == cmp_boxes (a, best, coll, coll))
+        best = a;
+    }
+  if (notnull_found)
+    return (box_copy_tree (best));
+  return NEW_DB_NULL;
+}
+
+
+caddr_t
+bif_min_notnull (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int notnull_found = 0;
+  int inx;
+  caddr_t best;
+  collation_t * coll;
+  for (inx = 0; inx < BOX_ELEMENTS_INT (args); inx++)
+    {
+      caddr_t a = bif_arg (qst, args, inx, "__min_notnull");
+      if (DV_DB_NULL == DV_TYPE_OF (a))
+        continue;
+      if (!notnull_found)
+        {
+          coll = args[0]->ssl_sqt.sqt_collation;
+          best = a;
+        }
+      notnull_found = 1;
+      if (DVC_LESS == cmp_boxes (a, best, coll, coll))
+        best = a;
+    }
+  if (notnull_found)
+    return (box_copy_tree (best));
+  return NEW_DB_NULL;
 }
 
 
@@ -12648,6 +12702,8 @@ sql_bif_init (void)
   bif_define ("__all_eq", bif_all_eq);
   bif_define ("__max", bif_max);
   bif_define ("__min", bif_min);
+  bif_define ("__max_notnull", bif_max_notnull);
+  bif_define ("__min_notnull", bif_min_notnull);
   bif_define_typed ("either", bif_either, &bt_any);
   bif_define_typed ("ifnull", bif_ifnull, &bt_any);
   bif_define_typed ("__and", bif_and, &bt_integer);
