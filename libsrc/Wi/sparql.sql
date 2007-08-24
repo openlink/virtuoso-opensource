@@ -176,11 +176,11 @@ create procedure DB.DBA.RDF_GLOBAL_RESET ()
 --  sequence_set ('RDF_RO_ID', 1, 0);
   sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 0);
   sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 0);
-  TTLP (
+  DB.DBA.TTLP (
     cast ( DB.DBA.XML_URI_GET (
         'http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl', '' ) as varchar ),
     '', 'http://www.openlinksw.com/schemas/virtrdf#' );
-  TTLP ('
+  DB.DBA.TTLP ('
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -203,6 +203,7 @@ virtrdf:DefaultQuadStorage-UserMaps
   sequence_set ('RDF_PREF_SEQ', 101, 1);
   sequence_set ('RDF_RO_ID', 1001, 1);
   iri_id_cache_flush ();
+  DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
   __atomic (0);
   exec ('checkpoint');
 }
@@ -1819,6 +1820,8 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
 
 create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0)
 {
+  if (126 = __tag (strg))
+    strg := cast (strg as varchar);
   return rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_EV_NEW_GRAPH(?,?)',
@@ -1886,11 +1889,13 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L (
 }
 ;
 
-create function DB.DBA.RDF_TTL2HASH (in str varchar, in base varchar, in graph varchar := null, in flags integer := 0) returns any
+create function DB.DBA.RDF_TTL2HASH (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0) returns any
 {
   declare res any;
   res := dict_new ();
-  rdf_load_turtle (str, base, graph, flags,
+  if (126 = __tag (strg))
+    strg := cast (strg as varchar);
+  rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH(?,?)',
       'select DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK(?,?)',
@@ -3996,7 +4001,7 @@ create function DB.DBA.RDF_RESTORE_METADATA (in read_from_file integer, in backu
   graphiri_id := iri_to_id (DB.DBA.JSO_SYS_GRAPH (), 1);
   sparql define input:storage "" clear graph ?:graphiri_id;
   commit work;
-  SPARQL_RELOAD_QM_GRAPH ();
+  DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
   commit work;
   foreach (any triple in proplist) do
     {
@@ -4011,7 +4016,7 @@ create function DB.DBA.RDF_RESTORE_METADATA (in read_from_file integer, in backu
         }
     }
   commit work;
-  SPARQL_RELOAD_QM_GRAPH ();
+  DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
   commit work;
   return backup_name;
 }
@@ -4480,7 +4485,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   declare basetype, basetypeiri varchar;
   declare bij, deref integer;
   declare sffs, res any;
-  declare arglist_len, isnotnull, sff_ctr, sff_count integer;
+  declare argctr, arglist_len, isnotnull, sff_ctr, sff_count integer;
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
   bij := get_keyword_ucase ('BIJECTION', options, 0);
   deref := get_keyword_ucase ('DEREF', options, 0);
@@ -4509,6 +4514,14 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   if (arglist_len <> 1)
     {
       basetype := 'multipart-uri';
+      for (argctr := 0; (argctr < arglist_len) and isnotnull; argctr := argctr + 1)
+        {
+          if (not (coalesce (arglist[argctr][3], 0)))
+            {
+              basetype := basetype || '-nullable';
+              isnotnull := 0;
+            }
+        }
     }
   else /* arglist is 1 item long */
     {
@@ -7617,6 +7630,8 @@ create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varc
 {
   declare app_env, err any;
   app_env := vector (async_queue (3), 0, log_mode);
+  if (126 = __tag (strg))
+    strg := cast (strg as varchar);
   rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_EV_NEW_GRAPH (?,?)',
@@ -8332,15 +8347,15 @@ load_grddl:;
     }
 
   -- else if not handled with the above cases
-  xd := DAV_EXTRACT_META_AS_RDF_XML (new_origin_uri, ret_body);
-  if (xd is not null)
-    {
+  --xd := DAV_EXTRACT_META_AS_RDF_XML (new_origin_uri, ret_body);
+  --if (xd is not null)
+  --  {
       -- delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (dest);
-      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
-      if (groupdest is not null)
-        DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, groupdest);
-      return 1;
-    }
+  --    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  --    if (groupdest is not null)
+  --      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, groupdest);
+  --    return 1;
+  --  }
   if (dest is null)
   delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
   if (strstr (ret_content_type, 'text/plain') is not null)
@@ -8608,7 +8623,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2007-08-04 0001'
+                virtrdf:version '2007-09-23 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;

@@ -20,7 +20,7 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2007-08-04 0001' ;
+  virtrdf:version '2007-09-23 0001' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -533,7 +533,13 @@ rdfdf:sql-integer-uri-nullable
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI;
   virtrdf:qmfName "sql-integer-uri-nullable";
+  virtrdf:qmfLongTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{alias-dot}^^{column}^))";	# STRING REQUIRED "long" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " sprintf_or_null (^{custom-string-1}^, ^{alias-dot}^^{column}^)";				# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";		# STRING REQUIRED ... long from short
+  virtrdf:qmfSqlvalOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{tree}^)";	# STRING REQUIRED ... SQL value from short
   virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";
+  virtrdf:qmfUriOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{tree}^)";		# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfStrsqlvalOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{tree}^)";	# STRING REQUIRED ... SQL representation of the STRING value of short
   virtrdf:qmfSuperFormats rdfdf:sql-integer-uri-nullable-SuperFormats
 .
 
@@ -600,7 +606,13 @@ rdfdf:sql-doubleprecision-nullable
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT;
   virtrdf:qmfName "sql-doubleprecision-nullable";
+  virtrdf:qmfLongTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{alias-dot}^^{column}^))";	# STRING REQUIRED "long" value template, can be NULL
+  virtrdf:qmfSqlvalTmpl " sprintf_or_null (^{custom-string-1}^, ^{alias-dot}^^{column}^)";				# STRING REQUIRED "sqlval" value template, can be NULL
+  virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";		# STRING REQUIRED ... long from short
+  virtrdf:qmfSqlvalOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{tree}^)";	# STRING REQUIRED ... SQL value from short
   virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";
+  virtrdf:qmfUriOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{tree}^)";		# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfStrsqlvalOfShortTmpl " sprintf_or_null (^{custom-string-1}^, ^{tree}^)";	# STRING REQUIRED ... SQL representation of the STRING value of short
   virtrdf:qmfSuperFormats rdfdf:sql-doubleprecision-nullable-SuperFormats
 .
 
