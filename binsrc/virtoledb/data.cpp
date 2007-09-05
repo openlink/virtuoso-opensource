@@ -861,7 +861,7 @@ DataRecordInfo::Complete (size_t /*overhead*/)
 /* DataAccessor                                                       */
 
 HRESULT
-DataAccessor::Init (DBACCESSORFLAGS dwAccessorFlags, ULONG cBindings, const DBBINDING rgBindings[], DBLENGTH cbRowSize)
+DataAccessor::Init (DBACCESSORFLAGS dwAccessorFlags, DBCOUNTITEM cBindings, const DBBINDING rgBindings[], DBLENGTH cbRowSize)
 {
   m_iRefCount = 1;
   m_dwAccessorFlags = dwAccessorFlags;
@@ -1142,7 +1142,7 @@ HRESULT
 DataTransferHandler::GetData(
   const DataRecordInfo& info,
   GetDataHandler* pgd,
-  ULONG iRecordID,
+  HROW iRecordID,
   char* pbProviderData,
   const DataAccessor& accessor,
   DBCOUNTITEM iBinding,
@@ -1640,7 +1640,7 @@ HRESULT
 DataTransferHandler::SetData(
   const DataRecordInfo& info,
   SetDataHandler* psd,
-  ULONG iRecordID,
+  HROW iRecordID,
   char* pbProviderData,
   const DataAccessor& accessor,
   DBCOUNTITEM iBinding,
@@ -1829,7 +1829,7 @@ DataTransferHandler::SetDataAtExec(
 
   for (;;)
     {
-      ULONG iRecordID;
+      HROW iRecordID;
       DBCOUNTITEM iBinding = -1;
       HRESULT hr = psd->GetDataAtExec(iRecordID, iBinding);
       if (FAILED(hr))

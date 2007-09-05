@@ -100,7 +100,7 @@ HRESULT
 CDataObj::CreateAccessor
 (
   DBACCESSORFLAGS dwAccessorFlags,
-  ULONG cBindings,
+  DBCOUNTITEM cBindings,
   const DBBINDING rgBindings[],
   DBLENGTH cbRowSize,
   HACCESSOR* phAccessor
@@ -235,7 +235,7 @@ STDMETHODIMP
 CDataObj::AddRefAccessor
 (
   HACCESSOR hAccessor,
-  ULONG *pcRefCount
+  DBREFCOUNT *pcRefCount
 )
 {
   LOGCALL(("CDataObj::AddRefAccessor()\n"));
@@ -262,9 +262,9 @@ STDMETHODIMP
 CDataObj::CreateAccessor
 (
   DBACCESSORFLAGS dwAccessorFlags,
-  ULONG cBindings,
+  DBCOUNTITEM cBindings,
   const DBBINDING rgBindings[],
-  ULONG cbRowSize,
+  DBLENGTH cbRowSize,
   HACCESSOR *phAccessor,
   DBBINDSTATUS rgStatus[]
 )
@@ -307,7 +307,7 @@ CDataObj::CreateAccessor
     }
 
   bool errors = false;
-  for (ULONG iBinding = 0; iBinding < cBindings; iBinding++)
+  for (DBCOUNTITEM iBinding = 0; iBinding < cBindings; iBinding++)
     {
       DBBINDSTATUS status = m_dth.ValidateBinding(dwAccessorFlags, rgBindings[iBinding]);
       if (status == DBBINDSTATUS_OK && !IsCommand())
@@ -358,7 +358,7 @@ CDataObj::GetBindings
 (
   HACCESSOR hAccessor,
   DBACCESSORFLAGS *pwdAccessorFlags,
-  ULONG *pcBindings,
+  DBCOUNTITEM *pcBindings,
   DBBINDING **prgBindings
 )
 {
@@ -406,7 +406,7 @@ STDMETHODIMP
 CDataObj::ReleaseAccessor
 (
   HACCESSOR hAccessor,
-  ULONG *pcRefCount
+  DBREFCOUNT *pcRefCount
 )
 {
   LOGCALL(("CDataObj::ReleaseAccessor()\n"));
@@ -435,7 +435,7 @@ CDataObj::ReleaseAccessor
 STDMETHODIMP
 CDataObj::GetColumnInfo
 (
-  ULONG *pcColumns,
+  DBORDINAL *pcColumns,
   DBCOLUMNINFO **prgInfo,
   OLECHAR **ppStringsBuffer
 )
@@ -473,13 +473,14 @@ CDataObj::GetColumnInfo
   if (rgInfo == NULL)
     return ErrorInfo::Set(E_OUTOFMEMORY);
 
-  int iColumn, cwTotalLength = 0;
+  int iColumn;
+  size_t cwTotalLength = 0;
 
   for(iColumn = 0; iColumn < cColumns; iColumn++)
     {
       const ColumnInfo& columnInfo = pRowsetInfo->GetColumnInfo(iColumn);
       DBCOLUMNINFO& dbColumnInfo = rgInfo[iColumn];
-      int iColumnOrdinal = pRowsetInfo->IndexToOrdinal(iColumn);
+      DBORDINAL iColumnOrdinal = pRowsetInfo->IndexToOrdinal(iColumn);
 
       dbColumnInfo.pwszName = NULL;
       dbColumnInfo.pTypeInfo = NULL;
@@ -518,7 +519,7 @@ CDataObj::GetColumnInfo
 	    }
 
 	  if (!columnInfo.GetName().empty())
-	    cwTotalLength += columnInfo.GetName().length() + 1;
+	    cwTotalLength += (DBLENGTH)columnInfo.GetName().length() + 1;
 	}
     }
 
@@ -565,9 +566,9 @@ CDataObj::GetColumnInfo
 STDMETHODIMP
 CDataObj::MapColumnIDs
 (
-  ULONG cColumnIDs,
+  DBORDINAL cColumnIDs,
   const DBID rgColumnIDs[],
-  ULONG rgColumns[]
+  DBORDINAL rgColumns[]
 )
 {
   LOGCALL(("CDataObj::MapColumnIDs()\n"));
@@ -604,7 +605,7 @@ CDataObj::MapColumnIDs
   bool success = false;
   bool failure = false;
 
-  for (ULONG iColumnID = 0; iColumnID < cColumnIDs; iColumnID++)
+  for (DBORDINAL iColumnID = 0; iColumnID < cColumnIDs; iColumnID++)
     {
       bool fFound = false;
 
@@ -637,7 +638,7 @@ CDataObj::MapColumnIDs
 	    }
 	  else
 	    {
-	      for (ULONG iColumn = 0; iColumn < pRowsetInfo->GetFieldCount(); iColumn++)
+	      for (DBORDINAL iColumn = 0; iColumn < pRowsetInfo->GetFieldCount(); iColumn++)
 		{
 		  const ColumnInfo& info = pRowsetInfo->GetColumnInfo(iColumn);
 		  const DBID* pdbid = info.GetDBID();

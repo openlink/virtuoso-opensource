@@ -286,7 +286,7 @@ Module::Register()
       const RegInfo* ri = reg_info + i;
 
       TCHAR buffer[1024];
-      int size;
+      size_t size;
       if (ri->type == REG_DWORD)
 	{
 	  *(DWORD*)buffer = _ttoi(ri->value);

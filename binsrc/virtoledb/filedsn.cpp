@@ -90,7 +90,7 @@ FileDSN::ReadLine(std::istream& is)
     }
   else
     {
-      int i, j, n, m;
+      size_t i, j, n, m;
       i = str.find_first_not_of(" \t");
       if (i != str.npos && str[i] != ';')
 	{

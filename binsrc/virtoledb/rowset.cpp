@@ -822,10 +822,10 @@ CRowset::GetData(HROW hRow, char* pbProviderData, const DataAccessor& accessor, 
   bool failure = false;
   bool success = false;
 
-  for (ULONG iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
+  for (DBCOUNTITEM iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
     {
-      HRESULT hr = m_dth.GetData(m_info, m_pRowsetPolicy->GetGetDataHandler(), hRow, pbProviderData,
-				 accessor, iBinding, pbConsumerData, false);
+      HRESULT hr = m_dth.GetData(m_info, m_pRowsetPolicy->GetGetDataHandler(), 
+	hRow, pbProviderData, accessor, iBinding, pbConsumerData, false);
       if (FAILED(hr))
 	{
 	  ErrorInfo::Clear();
@@ -1340,10 +1340,10 @@ CRowset::InsertRow(
     }
 
   bool failure = false;
-  for (ULONG iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
+  for (DBCOUNTITEM iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
     {
-      hr = m_dth.SetData(m_info, m_pRowsetPolicy->GetSetDataHandler(), hRow, pRowData->GetData(),
-			 accessor, iBinding, (char*) pData, false);
+      hr = m_dth.SetData(m_info, m_pRowsetPolicy->GetSetDataHandler(), hRow, 
+	pRowData->GetData(), accessor, iBinding, (char*) pData, false);
       if (FAILED(hr))
 	{
 	  m_pRowPolicy->ReleaseRowData(hRow);
@@ -1530,7 +1530,7 @@ CRowset::SetData(HROW hRow, HACCESSOR hAccessor, void *pData)
       DBORDINAL iField;
       for (iField = 0; iField < m_info.GetFieldCount(); iField++)
 	rgColumns[iField] = 0;
-      for (DBORDINAL iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
+      for (DBCOUNTITEM iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
 	{
 	  iField = m_info.OrdinalToIndex(accessor.GetBinding(iBinding).iOrdinal);
 	  if (iField < m_info.GetFieldCount())
@@ -1564,10 +1564,10 @@ CRowset::SetData(HROW hRow, HACCESSOR hAccessor, void *pData)
   assert(pScrollablePolicy != 0);
 
   bool failure = false;
-  for (ULONG iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
+  for (DBCOUNTITEM iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
     {
-      hr = m_dth.SetData(m_info, m_pRowsetPolicy->GetSetDataHandler(), hRow, pRowData->GetData(),
-			 accessor, iBinding, (char*) pData, false);
+      hr = m_dth.SetData(m_info, m_pRowsetPolicy->GetSetDataHandler(), hRow, 
+	pRowData->GetData(), accessor, iBinding, (char*) pData, false);
       if (FAILED(hr))
 	{
 	  memcpy(pRowData->GetData(), pbOriginalData, m_info.GetRecordSize());
@@ -2932,7 +2932,7 @@ CRowset::Undo(
   AutoRelease<HROW, ComMemFree> rgRows;
   if (cRows == 0)
     {
-      cRows = m_mpOriginalData.size();
+      cRows = (DBCOUNTITEM) m_mpOriginalData.size();
       rgRows.Set((HROW*) CoTaskMemAlloc(cRows * sizeof(HROW)));
       if (rgRows == NULL)
 	return ErrorInfo::Set(E_OUTOFMEMORY);
@@ -3080,7 +3080,7 @@ CRowset::Update(
   AutoRelease<HROW, ComMemFree> rgRows;
   if (cRows == 0)
     {
-      cRows = m_mpOriginalData.size();
+      cRows = (DBCOUNTITEM)m_mpOriginalData.size();
       rgRows.Set((HROW*) CoTaskMemAlloc(cRows * sizeof(HROW)));
       if (rgRows == NULL)
 	return ErrorInfo::Set(E_OUTOFMEMORY);

@@ -141,7 +141,7 @@ CommandHandler::SetParams()
   DataAccessor& accessor = m_pCommand->GetAccessor(m_accessor_iter);
   for (ULONG iParamSet = 0; iParamSet < m_params.GetParamSets(); iParamSet++)
     {
-      for (ULONG iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
+      for (DBCOUNTITEM iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
 	{
 	  HRESULT hr = m_pdth->SetData(m_params, &m_params, iParamSet, m_params.GetParamSetData(iParamSet),
 				       accessor, iBinding, pbConsumerData, true);
@@ -217,7 +217,7 @@ CommandHandler::GetParams()
   DataAccessor& accessor = m_pCommand->GetAccessor(m_accessor_iter);
   for (ULONG iParamSet = 0; iParamSet < m_params.GetParamSets(); iParamSet++)
     {
-      for (ULONG iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
+      for (DBCOUNTITEM iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
 	{
 	  HRESULT hr = m_pdth->GetData(m_params, NULL, iParamSet, m_params.GetParamSetData(iParamSet),
 				       accessor, iBinding, pbConsumerData, true);
@@ -1027,7 +1027,7 @@ CCommand::GetParameterInfo
   AutoRelease<OLECHAR, ComMemFree> pNamesBuffer;
   if (ppNamesBuffer != NULL)
     {
-      long total = 0;
+      size_t total = 0;
       for (i = 0; i < n; i++)
 	{
 	  if (param_info[i].IsSet() && !param_info[i].GetName().empty())

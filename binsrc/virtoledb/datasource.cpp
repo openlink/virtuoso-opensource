@@ -1658,7 +1658,8 @@ CDataSource::GetLiteralInfo(
   if (rgLiteralInfo == NULL)
     return E_OUTOFMEMORY;
 
-  ULONG i, cbCharBuffer = 0;
+  ULONG i;
+  size_t cbCharBuffer = 0;
   std::vector<LiteralInfo*> li_vec;
   bool success = false;
   bool failure = false;

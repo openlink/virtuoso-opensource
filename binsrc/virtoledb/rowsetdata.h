@@ -124,7 +124,7 @@ public:
 
   void Release();
 
-  virtual ULONG
+  virtual DBORDINAL
   GetFieldCount() const
   {
     assert(IsInitialized());
@@ -187,14 +187,14 @@ public:
   static int GetOptionalMetaColumns();
   static void GetOptionalMetaColumnIDs(DBID* rgOptColumns);
 
-  HRESULT InitMetaRow(ULONG iColumnOrdinal, const ColumnInfo& info, bool fIsHidden, char* pbData);
+  HRESULT InitMetaRow(DBORDINAL iColumnOrdinal, const ColumnInfo& info, bool fIsHidden, char* pbData);
 
 protected:
 
   virtual ULONG
   GetExtraSize() const
   {
-    return sizeof(LONG) * GetFieldCount();
+    return sizeof(DBORDINAL) * GetFieldCount();
   }
 
 private:
@@ -495,14 +495,14 @@ public:
 
   HRESULT Init(Statement& stmt);
 
-  virtual HRESULT ResetLongData(ULONG iRecordID, DBORDINAL iFieldOrdinal);
-  virtual HRESULT GetLongData(ULONG iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
+  virtual HRESULT ResetLongData(HROW iRecordID, DBORDINAL iFieldOrdinal);
+  virtual HRESULT GetLongData(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
 			      char* pv, SQLINTEGER cb, SQLINTEGER& rcb);
-  virtual HRESULT CreateStreamObject(ULONG iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
+  virtual HRESULT CreateStreamObject(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
 				     REFIID riid, IUnknown** ppUnk);
-  virtual HRESULT SetDataAtExec(ULONG iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
+  virtual HRESULT SetDataAtExec(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
 				DBCOUNTITEM iBinding);
-  virtual HRESULT GetDataAtExec(ULONG& iRecordID, DBCOUNTITEM& iBinding);
+  virtual HRESULT GetDataAtExec(HROW& iRecordID, DBCOUNTITEM& iBinding);
   virtual HRESULT PutDataAtExec(char* pv, SQLINTEGER cb);
 
   virtual DBCOUNTITEM GetRowsObtained();
@@ -518,7 +518,7 @@ protected:
   HRESULT BindRows(HROW hRowBase, DBCOUNTITEM cRows);
   HRESULT InitRow(ULONG iRow, RowData* pRowData, char* pbRowData = NULL);
   HRESULT InitRows();
-  HRESULT SetRowPos(ULONG iPosition);
+  HRESULT SetRowPos(SQLSETPOSIROW iPosition);
 
   virtual HRESULT SnatchRow(HROW hRow);
   virtual HRESULT BookmarkRow(HROW hRow, ULONG ulBookmark);
@@ -589,14 +589,14 @@ public:
 
 protected:
 
-  HRESULT BindColumns(char* pbRowData, ULONG iPosition, bool fDeferred);
+  HRESULT BindColumns(char* pbRowData, SQLSETPOSIROW iPosition, bool fDeferred);
   void UnbindColumns(char* pbRowData, bool fDeferred);
 
   HRESULT Fetch(SQLSMALLINT dwOrientation, DBROWOFFSET lRowsOffset);
-  HRESULT Refresh(ULONG iPosition);
-  HRESULT Update(ULONG iPosition);
-  HRESULT Delete(ULONG iPosition);
-  HRESULT Insert(ULONG iPosition);
+  HRESULT Refresh(SQLSETPOSIROW iPosition);
+  HRESULT Update(SQLSETPOSIROW iPosition);
+  HRESULT Delete(SQLSETPOSIROW iPosition);
+  HRESULT Insert(SQLSETPOSIROW iPosition);
   HRESULT Insert();
 
   bool m_fStartPos;

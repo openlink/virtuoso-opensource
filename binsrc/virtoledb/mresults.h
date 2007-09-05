@@ -76,7 +76,7 @@ public:
     IUnknown* pUnkOuter,
     DBRESULTFLAG lResultFlag,
     REFIID riid,
-    LONG* pcRowsAffected,
+    DBROWCOUNT* pcRowsAffected,
     IUnknown** ppRowset
   );
 

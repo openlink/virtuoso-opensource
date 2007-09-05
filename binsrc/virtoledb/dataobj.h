@@ -73,7 +73,7 @@ public:
   HRESULT CreateAccessor
   (
     DBACCESSORFLAGS dwAccessorFlags,
-    ULONG cBindings,
+    DBCOUNTITEM cBindings,
     const DBBINDING rgBindings[],
     DBLENGTH cbRowSize,
     HACCESSOR* phAccessor
@@ -160,15 +160,15 @@ public:
   STDMETHODIMP AddRefAccessor
   (
     HACCESSOR hAccessor,
-    ULONG *pcRefCount
+    DBREFCOUNT *pcRefCount
   );
 
   STDMETHODIMP CreateAccessor
   (
     DBACCESSORFLAGS dwAccessorFlags,
-    ULONG cBindings,
+    DBCOUNTITEM cBindings,
     const DBBINDING rgBindings[],
-    ULONG cbRowSize,
+    DBLENGTH cbRowSize,
     HACCESSOR *phAccessor,
     DBBINDSTATUS rgStatus[]
   );
@@ -177,30 +177,30 @@ public:
   (
     HACCESSOR hAccessor,
     DBACCESSORFLAGS *pwdAccessorFlags,
-    ULONG *pcBindings,
+    DBCOUNTITEM *pcBindings,
     DBBINDING **prgBindings
   );
 
   STDMETHODIMP ReleaseAccessor
   (
     HACCESSOR hAccessor,
-    ULONG *pcRefCount
+    DBREFCOUNT *pcRefCount
   );
 
   // IColumnsInfo members
 
   STDMETHODIMP GetColumnInfo
   (
-    ULONG *pcColumns,
+    DBORDINAL *pcColumns,
     DBCOLUMNINFO **prgInfo,
     OLECHAR **ppStringsBuffer
   );
 
   STDMETHODIMP MapColumnIDs
   (
-    ULONG cColumnIDs,
+    DBORDINAL cColumnIDs,
     const DBID rgColumnIDs[],
-    ULONG rgColumns[]
+    DBORDINAL rgColumns[]
   );
 
   // IColumnsRowset members

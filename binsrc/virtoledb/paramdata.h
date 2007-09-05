@@ -82,7 +82,7 @@ public:
     IDataConvert* pIDataConvert
   );
 
-  virtual ULONG
+  virtual DBORDINAL
   GetFieldCount() const
   {
     assert(IsInitialized());

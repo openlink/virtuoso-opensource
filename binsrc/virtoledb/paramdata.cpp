@@ -309,7 +309,7 @@ HRESULT
 ParameterPolicy::Init(
   Statement& stmt,
   const std::vector<ParameterInfo>& param_info,
-  ULONG cBindings,
+  DBCOUNTITEM cBindings,
   const DBBINDING rgBindings[],
   DB_UPARAMS cParamSets,
   DBLENGTH cbRowSize
@@ -319,7 +319,8 @@ ParameterPolicy::Init(
 
   m_statement = stmt;
 
-  ULONG param, binding;
+  DBORDINAL param;
+  DBCOUNTITEM binding;
   ULONG max_ordinal = param_info.size();
   for (binding = 0; binding < cBindings; binding++)
     {
@@ -459,7 +460,7 @@ ParameterPolicy::Init(
   if (FAILED(hr))
     return hr;
 
-  for (ULONG param = 0; param < pSchema->cParams; param++)
+  for (DBORDINAL param = 0; param < pSchema->cParams; param++)
     {
       ParameterInfo& info = m_rgFieldInfos[param];
       SchemaParam& schema_param = pSchema->rgParams[param];

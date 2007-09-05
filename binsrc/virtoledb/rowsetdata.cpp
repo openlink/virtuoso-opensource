@@ -476,12 +476,12 @@ RowsetInfo::GetOptionalMetaColumnIDs(DBID* rgOptColumns)
 }
 
 HRESULT
-RowsetInfo::InitMetaRow(ULONG iColumnOrdinal, const ColumnInfo& info, bool fIsHidden, char* pbMetaData)
+RowsetInfo::InitMetaRow(DBORDINAL iColumnOrdinal, const ColumnInfo& info, bool fIsHidden, char* pbMetaData)
 {
   assert(IsCompleted());
 
-  ULONG cColumns = GetFieldCount();
-  for (ULONG iColumn = 0; iColumn < cColumns; iColumn++)
+  DBORDINAL cColumns = GetFieldCount();
+  for (DBORDINAL iColumn = 0; iColumn < cColumns; iColumn++)
     {
       SetColumnStatus(pbMetaData, iColumn, COLUMN_STATUS_UNCHANGED);
 
@@ -814,14 +814,14 @@ ReleaseRowsPolicy::AllocateRows(HROW hRowBase, DBCOUNTITEM cRows, const DataReco
 RowData*
 ReleaseRowsPolicy::GetRowData(HROW hRow)
 {
-  int i = hRow - m_hRowBase;
+  int i = (int)(hRow - m_hRowBase);
   return i < ((int) m_rows.size()) && i >= 0 ? &m_rows[i] : NULL;
 }
 
 void
 ReleaseRowsPolicy::ReleaseRowData(HROW hRow)
 {
-  int i = hRow - m_hRowBase;
+  int i = (int)(hRow - m_hRowBase);
   assert(i < ((int) m_rows.size()) && i >= 0);
   m_rows[i].Reset();
   m_cHeldRows--;
@@ -959,7 +959,7 @@ CanHoldRowsPolicy::DeleteRow(RowData* pRowData)
 DBCOUNTITEM
 CanHoldRowsPolicy::GetActiveRows()
 {
-  return m_rows.size();
+  return (DBCOUNTITEM) m_rows.size();
 }
 
 void
@@ -1293,7 +1293,7 @@ RowsetPolicy::BindRows(HROW hRowBase, DBCOUNTITEM cRows)
 
   /* Bind columns to a newly created buffer. */
   HSTMT hstmt = m_statement.GetHSTMT();
-  for (int i = 0; i < GetFieldCount(); i++)
+  for (DBORDINAL i = 0; i < GetFieldCount(); i++)
     {
       const DataFieldInfo& info = GetFieldInfo(i);
       if (info.IsLong())
@@ -1303,7 +1303,8 @@ RowsetPolicy::BindRows(HROW hRowBase, DBCOUNTITEM cRows)
 	    (int) i,
 	    (int) info.GetSqlCType (),
 	    (long) info.GetInternalLength ()));
-      SQLRETURN rc = SQLBindCol(hstmt, IndexToOrdinal(i), info.GetSqlCType(),
+      SQLRETURN rc = SQLBindCol(hstmt, (SQLUSMALLINT)IndexToOrdinal(i), 
+				info.GetSqlCType(),
 				GetFieldBuffer(pbRowData, i),
 				info.GetInternalLength(),
 				GetFieldLengthPtr(pbRowData, i));
@@ -1340,7 +1341,7 @@ RowsetPolicy::InitRow(ULONG iRow, RowData* pRowData, char* pbRowData)
 
   if (m_rgRowStatus[iRow] == SQL_ROW_ERROR)
     {
-      for (ULONG iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
+      for (DBORDINAL iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
 	{
 	  const DataFieldInfo& info = m_pRowsetInfo->GetFieldInfo(iField);
 	  m_pRowsetInfo->SetFieldLength(pbRowData, iField, 0);
@@ -1349,12 +1350,12 @@ RowsetPolicy::InitRow(ULONG iRow, RowData* pRowData, char* pbRowData)
       return S_OK;
     }
 
-  HRESULT hr = SetRowPos(iRow + 1);
+  HRESULT hr = SetRowPos((SQLSETPOSIROW)(iRow + 1));
   if (FAILED(hr))
     return hr;
 
   LOG (("RowsetPolicy::InitRow fld_count=%d\n", m_pRowsetInfo->GetFieldCount ()));
-  for (ULONG iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
+  for (DBORDINAL iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
     {
       const DataFieldInfo& info = m_pRowsetInfo->GetFieldInfo(iField);
       if (info.IsLong())
@@ -1463,7 +1464,7 @@ RowsetPolicy::GetRowsObtained()
 }
 
 HRESULT
-RowsetPolicy::ResetLongData(ULONG iRecordID, DBORDINAL iFieldOrdinal)
+RowsetPolicy::ResetLongData(HROW iRecordID, DBORDINAL iFieldOrdinal)
 {
   LOGCALL (("RowsetPolicy::ResetLongData(iRecordID=%d, iFieldOrdinal=%d)\n", iRecordID, iFieldOrdinal));
 
@@ -1475,12 +1476,12 @@ RowsetPolicy::ResetLongData(ULONG iRecordID, DBORDINAL iFieldOrdinal)
   if (FAILED(hr))
     return hr;
 
-  return SetRowPos(iRecordID - m_hRowBase + 1);
+  return SetRowPos((SQLSETPOSIROW)(iRecordID - m_hRowBase + 1));
 }
 
 HRESULT
 RowsetPolicy::GetLongData(
-  ULONG iRecordID,
+  HROW iRecordID,
   DBORDINAL iFieldOrdinal,
   SQLSMALLINT wSqlCType,
   char* pv,
@@ -1509,7 +1510,7 @@ RowsetPolicy::GetLongData(
 
 HRESULT
 RowsetPolicy::CreateStreamObject(
-  ULONG iRecordID,
+  HROW iRecordID,
   DBORDINAL iFieldOrdinal,
   SQLSMALLINT wSqlCType,
   REFIID riid,
@@ -1529,7 +1530,7 @@ RowsetPolicy::CreateStreamObject(
   HRESULT hr = SnatchRow(iRecordID);
   if (FAILED(hr))
     return hr;
-  hr = SetRowPos(iRecordID - m_hRowBase + 1);
+  hr = SetRowPos((SQLSETPOSIROW)(iRecordID - m_hRowBase + 1));
   if (FAILED(hr))
     return hr;
 
@@ -1552,7 +1553,7 @@ RowsetPolicy::CreateStreamObject(
 
 HRESULT
 RowsetPolicy::SetDataAtExec(
-  ULONG iRecordID,
+  HROW iRecordID,
   DBORDINAL iFieldOrdinal,
   SQLSMALLINT wSqlCType,
   DBCOUNTITEM iBinding
@@ -1574,7 +1575,7 @@ RowsetPolicy::SetDataAtExec(
 }
 
 HRESULT
-RowsetPolicy::GetDataAtExec(ULONG& iRecordID, DBCOUNTITEM& iBinding)
+RowsetPolicy::GetDataAtExec(HROW& iRecordID, DBCOUNTITEM& iBinding)
 {
   LOGCALL(("RowsetPolicy::GetDataAtExec()\n"));
 
@@ -1626,14 +1627,14 @@ RowsetPolicy::BookmarkRow(HROW hRow, ULONG ulBookmark)
 }
 
 HRESULT
-RowsetPolicy::SetRowPos(ULONG iPosition)
+RowsetPolicy::SetRowPos(SQLSETPOSIROW iPosition)
 {
   LOGCALL(("RowsetPolicy::SetRowPos(iPosition = %d)\n", iPosition));
 
-  assert(iPosition > 0 && iPosition <= m_cRowsFetched);
+  assert((SQLINTEGER)iPosition > 0 && (SQLINTEGER)iPosition <= m_cRowsFetched);
 
   HSTMT hstmt = m_statement.GetHSTMT();
-  SQLRETURN rc = SQLSetPos(hstmt, (SQLUSMALLINT) iPosition, SQL_POSITION, SQL_LOCK_NO_CHANGE);
+  SQLRETURN rc = SQLSetPos(hstmt, iPosition, SQL_POSITION, SQL_LOCK_NO_CHANGE);
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
     {
       TRACE((__FILE__, __LINE__, "RowsetPolicy::SetRowPos(): SQLSetPos() failed.\n"));
@@ -1704,7 +1705,7 @@ ForwardOnlyPolicy::RestartPosition()
 
   m_pRowPolicy->ReleaseAllRows();
 
-  ULONG cFields = m_pRowsetInfo->GetFieldCount();
+  DBORDINAL cFields = m_pRowsetInfo->GetFieldCount();
   AutoRelease<DataFieldInfo, DeleteArray <DataFieldInfo> > rgFields(new DataFieldInfo[cFields]);
   if (rgFields == NULL)
     return ErrorInfo::Set(E_OUTOFMEMORY);
@@ -1832,7 +1833,7 @@ ScrollablePolicy::GetNextRows(DBROWOFFSET lRowsOffset, DBROWCOUNT cRows)
   assert(cRows != 0);
 
   SQLSMALLINT wFetchOrientation;
-  SQLINTEGER lFetchOffset;
+  DBROWOFFSET lFetchOffset;
   if (m_fStartPos)
     {
       wFetchOrientation = SQL_FETCH_ABSOLUTE;
@@ -1951,11 +1952,11 @@ ScrollablePolicy::UpdateRow(HROW hRow, bool fDeferred)
   RowData* pRowData = m_pRowPolicy->GetRowData(hRow);
   assert(pRowData != NULL);
 
-  hr = BindColumns(pRowData->GetData(), hRow - m_hRowBase + 1, fDeferred);
+  hr = BindColumns(pRowData->GetData(), (SQLSETPOSIROW)(hRow - m_hRowBase + 1), fDeferred);
   if (FAILED(hr))
     return hr;
 
-  hr = Update(hRow - m_hRowBase + 1);
+  hr = Update((SQLSETPOSIROW)(hRow - m_hRowBase + 1));
   UnbindColumns(pRowData->GetData(), fDeferred);
   return hr;
 }
@@ -1969,7 +1970,7 @@ ScrollablePolicy::DeleteRow(HROW hRow)
   if (FAILED(hr))
     return hr;
 
-  return Delete(hRow - m_hRowBase + 1);
+  return Delete((SQLSETPOSIROW)(hRow - m_hRowBase + 1));
 }
 
 HRESULT
@@ -1981,18 +1982,18 @@ ScrollablePolicy::ResyncRow(HROW hRow, char* pbData)
   if (FAILED(hr))
     return hr;
 
-  hr = Refresh(hRow - m_hRowBase + 1);
+  hr = Refresh((SQLSETPOSIROW)(hRow - m_hRowBase + 1));
   if (FAILED(hr))
     return hr;
 
   RowData* pRowData = m_pRowPolicy->GetRowData(hRow);
   assert(pRowData != NULL);
 
-  return InitRow(hRow - m_hRowBase, pRowData, pbData);
+  return InitRow((ULONG)(hRow - m_hRowBase), pRowData, pbData);
 }
 
 HRESULT
-ScrollablePolicy::BindColumns(char* pbRowData, ULONG iPosition, bool fDeferred)
+ScrollablePolicy::BindColumns(char* pbRowData, SQLSETPOSIROW iPosition, bool fDeferred)
 {
   LOGCALL(("ScrollablePolicy::BindColumns(pbData=%x, iPosition=%d, fDeferred=%d)\n",
 	   pbRowData, iPosition, fDeferred));
@@ -2005,7 +2006,7 @@ ScrollablePolicy::BindColumns(char* pbRowData, ULONG iPosition, bool fDeferred)
   pbRowData -= cbOffset;
 
   HSTMT hstmt = m_statement.GetHSTMT();
-  for (ULONG iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
+  for (DBORDINAL iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
     {
       const DataFieldInfo& info = m_pRowsetInfo->GetFieldInfo(iField);
       COLUMN_STATUS status = m_pRowsetInfo->GetColumnStatus(pbRowData, iField);
@@ -2046,7 +2047,7 @@ ScrollablePolicy::UnbindColumns(char* pbRowData, bool fDeferred)
   LOGCALL(("ScrollablePolicy::UnbindColumns(pbData=%x, fDeferred=%d)\n", pbRowData, fDeferred));
 
   HSTMT hstmt = m_statement.GetHSTMT();
-  for (ULONG iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
+  for (DBORDINAL iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
     {
       const DataFieldInfo& info = m_pRowsetInfo->GetFieldInfo(iField);
       COLUMN_STATUS status = m_pRowsetInfo->GetColumnStatus(pbRowData, iField);
@@ -2058,7 +2059,7 @@ ScrollablePolicy::UnbindColumns(char* pbRowData, bool fDeferred)
       m_pRowsetInfo->SetColumnStatus(pbRowData, iField, COLUMN_STATUS_UNCHANGED);
 
       SQLUSMALLINT iColumnOrdinal = (SQLUSMALLINT) m_pRowsetInfo->IndexToOrdinal(iField);
-      SQLRETURN rc = SQLBindCol(hstmt, iColumnOrdinal, info.GetSqlCType(), NULL, 0, NULL);
+      SQLRETURN rc = SQLBindCol(hstmt, (SQLSETPOSIROW)iColumnOrdinal, info.GetSqlCType(), NULL, 0, NULL);
       if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
 	{
 	  TRACE((__FILE__, __LINE__, "ScrollablePolicy::UnbindColumns(): SQLBindCol() failed.\n"));
@@ -2084,14 +2085,14 @@ ScrollablePolicy::Fetch(SQLSMALLINT dwOrientation, DBROWOFFSET lRowsOffset)
 }
 
 HRESULT
-ScrollablePolicy::Refresh(ULONG iPosition)
+ScrollablePolicy::Refresh(SQLSETPOSIROW iPosition)
 {
   LOGCALL(("ScrollablePolicy::Refresh(iPosition = %d)\n", iPosition));
 
-  assert (iPosition > 0 && iPosition <= m_cRowsFetched);
+  assert ((SQLINTEGER)iPosition > 0 && (SQLINTEGER)iPosition <= m_cRowsFetched);
 
   HSTMT hstmt = m_statement.GetHSTMT();
-  SQLRETURN rc = SQLSetPos(hstmt, (SQLUSMALLINT) iPosition, SQL_REFRESH, SQL_LOCK_NO_CHANGE);
+  SQLRETURN rc = SQLSetPos(hstmt, iPosition, SQL_REFRESH, SQL_LOCK_NO_CHANGE);
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
     {
       TRACE((__FILE__, __LINE__, "ScrollablePolicy::Refresh(): SQLSetPos() failed.\n"));
@@ -2103,14 +2104,14 @@ ScrollablePolicy::Refresh(ULONG iPosition)
 }
 
 HRESULT
-ScrollablePolicy::Update(ULONG iPosition)
+ScrollablePolicy::Update(SQLSETPOSIROW iPosition)
 {
   LOGCALL(("ScrollablePolicy::Update(iPosition = %d)\n", iPosition));
 
-  assert (iPosition > 0 && iPosition <= m_cRowsFetched);
+  assert ((SQLINTEGER)iPosition > 0 && (SQLINTEGER)iPosition <= m_cRowsFetched);
 
   HSTMT hstmt = m_statement.GetHSTMT();
-  SQLRETURN rc = SQLSetPos(hstmt, (SQLSMALLINT) iPosition, SQL_UPDATE, SQL_LOCK_NO_CHANGE);
+  SQLRETURN rc = SQLSetPos(hstmt, iPosition, SQL_UPDATE, SQL_LOCK_NO_CHANGE);
   if (rc == SQL_SUCCESS_WITH_INFO)
     {
       char sqlstate[6];
@@ -2140,14 +2141,14 @@ ScrollablePolicy::Update(ULONG iPosition)
 }
 
 HRESULT
-ScrollablePolicy::Delete(ULONG iPosition)
+ScrollablePolicy::Delete(SQLSETPOSIROW iPosition)
 {
   LOGCALL(("ScrollablePolicy::Delete(iPosition = %d)\n", iPosition));
 
-  assert (iPosition > 0 && iPosition <= m_cRowsFetched);
+  assert ((SQLINTEGER)iPosition > 0 && (SQLINTEGER)iPosition <= m_cRowsFetched);
 
   HSTMT hstmt = m_statement.GetHSTMT();
-  SQLRETURN rc = SQLSetPos(hstmt, (SQLSMALLINT) iPosition, SQL_DELETE, SQL_LOCK_NO_CHANGE);
+  SQLRETURN rc = SQLSetPos(hstmt, iPosition, SQL_DELETE, SQL_LOCK_NO_CHANGE);
   if (rc == SQL_SUCCESS_WITH_INFO)
     {
       char sqlstate[6];
@@ -2177,14 +2178,14 @@ ScrollablePolicy::Delete(ULONG iPosition)
 }
 
 HRESULT
-ScrollablePolicy::Insert(ULONG iPosition)
+ScrollablePolicy::Insert(SQLSETPOSIROW iPosition)
 {
   LOGCALL(("ScrollablePolicy::Insert(iPosition = %d)\n", iPosition));
 
   assert (m_cRows > 0 && iPosition <= m_cRowsMax && iPosition > m_cRowsFetched);
 
   HSTMT hstmt = m_statement.GetHSTMT();
-  SQLRETURN rc = SQLSetPos(hstmt, (SQLSMALLINT) iPosition, SQL_ADD, SQL_LOCK_NO_CHANGE);
+  SQLRETURN rc = SQLSetPos(hstmt, iPosition, SQL_ADD, SQL_LOCK_NO_CHANGE);
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO && rc != SQL_NEED_DATA)
     {
       TRACE((__FILE__, __LINE__, "ScrollablePolicy::Insert(): SQLSetPos() failed.\n"));
@@ -2337,15 +2338,15 @@ PositionalPolicy::GetNextRows(DBROWOFFSET lRowsOffset, DBROWCOUNT cRows)
     }
 
   SQLSMALLINT wFetchOrientation = SQL_FETCH_ABSOLUTE;
-  SQLINTEGER lFetchOffset = hRowBase;
+  DBROWOFFSET lFetchOffset = (DBROWOFFSET)hRowBase;
 
-  SQLINTEGER lReverseOffset = m_cTotalRows - hRowBase + 1;
+  DBROWOFFSET lReverseOffset = (DBROWOFFSET)(m_cTotalRows - hRowBase + 1);
   if (lReverseOffset < lFetchOffset)
     lFetchOffset = -lReverseOffset;
 
   if (!m_fStartPos)
     {
-      SQLINTEGER lRelativeOffset = hRowBase - m_hRowBase;
+      DBROWOFFSET lRelativeOffset = (DBROWOFFSET)(hRowBase - m_hRowBase);
       if (abs(lRelativeOffset) < abs(lFetchOffset))
 	{
 	  if (lRelativeOffset == 1)
@@ -2391,20 +2392,20 @@ PositionalPolicy::GetRowsAtPosition(
 
   assert(cRows != 0);
 
-  LONG hRowBase;
+  HROW hRowBase;
   if (fStandardBookmark)
     {
       if (ulBookmark == DBBMK_FIRST)
-	hRowBase = 1 + lRowsOffset;
+	hRowBase = (HROW)(1 + lRowsOffset);
       else if (ulBookmark == DBBMK_LAST)
-	hRowBase = m_cTotalRows + lRowsOffset;
+	hRowBase = (HROW)(m_cTotalRows + lRowsOffset);
     }
   else
     {
       bm_iter_t i = m_bookmarks.find(ulBookmark);
       if (i == m_bookmarks.end())
 	return ErrorInfo::Set(DB_E_BADBOOKMARK);
-      hRowBase = i->second + lRowsOffset;
+      hRowBase = (HROW)(i->second + lRowsOffset);
     }
 
   if (hRowBase <= 0 || hRowBase > m_cTotalRows)
@@ -2417,12 +2418,12 @@ PositionalPolicy::GetRowsAtPosition(
     {
       if (hRowBase + cRows - 1 < 0)
 	{
-	  cRows = hRowBase;
+	  cRows = (DBROWCOUNT)hRowBase;
 	  hRowBase = 1;
 	}
       else
 	{
-	  hRowBase += cRows + 1;
+	  hRowBase += (HROW)(cRows + 1);
 	  cRows = -cRows;
 	}
 
@@ -2431,21 +2432,21 @@ PositionalPolicy::GetRowsAtPosition(
   else
     {
       if (hRowBase + cRows - 1 > m_cTotalRows)
-	cRows = m_cTotalRows - hRowBase + 1;
+	cRows = (DBCOUNTITEM)(m_cTotalRows - hRowBase + 1);
 
       m_fBackward = false;
     }
 
   SQLSMALLINT wFetchOrientation = SQL_FETCH_ABSOLUTE;
-  SQLINTEGER lFetchOffset = hRowBase;
+  DBROWOFFSET lFetchOffset = (DBROWOFFSET)hRowBase;
 
-  SQLINTEGER lReverseOffset = m_cTotalRows - hRowBase + 1;
+  DBROWOFFSET lReverseOffset = (DBROWOFFSET)(m_cTotalRows - hRowBase + 1);
   if (lReverseOffset < lFetchOffset)
     lFetchOffset = -lReverseOffset;
 
   if (!m_fStartPos)
     {
-      SQLINTEGER lRelativeOffset = hRowBase - m_hRowBase;
+      DBROWOFFSET lRelativeOffset = (DBROWOFFSET)(hRowBase - m_hRowBase);
       if (abs(lRelativeOffset) < abs(lFetchOffset))
 	{
 	  if (lRelativeOffset == 1)
@@ -2489,18 +2490,18 @@ PositionalPolicy::GetRowByBookmark(ULONG ulBookmark)
   if (i == m_bookmarks.end())
     return DBROWSTATUS_E_INVALID;
 
-  ULONG hRow = i->second;
+  HROW hRow = i->second;
 
   SQLSMALLINT wFetchOrientation = SQL_FETCH_ABSOLUTE;
-  SQLINTEGER lFetchOffset = hRow;
+  DBROWOFFSET lFetchOffset =  (DBROWOFFSET)hRow;
 
-  SQLINTEGER lReverseOffset = m_cTotalRows - hRow + 1;
+  DBROWOFFSET lReverseOffset = (DBROWOFFSET)(m_cTotalRows - hRow + 1);
   if (lReverseOffset < lFetchOffset)
     lFetchOffset = -lReverseOffset;
 
   if (!m_fStartPos)
     {
-      SQLINTEGER lRelativeOffset = hRow - m_hRowBase;
+      DBROWOFFSET lRelativeOffset = (DBROWOFFSET)(hRow - m_hRowBase);
       if (abs(lRelativeOffset) < abs(lFetchOffset))
 	{
 	  if (lRelativeOffset == 1)
@@ -2543,15 +2544,15 @@ PositionalPolicy::SnatchRow(HROW hRow)
     return S_OK;
 
   SQLSMALLINT wFetchOrientation = SQL_FETCH_ABSOLUTE;
-  SQLINTEGER lFetchOffset = hRow;
+  DBROWOFFSET lFetchOffset = (DBROWOFFSET)hRow;
 
-  SQLINTEGER lReverseOffset = m_cTotalRows - hRow + 1;
+  DBROWOFFSET lReverseOffset = (DBROWOFFSET)(m_cTotalRows - hRow + 1);
   if (lReverseOffset < lFetchOffset)
     lFetchOffset = -lReverseOffset;
 
   if (!m_fStartPos)
     {
-      SQLINTEGER lRelativeOffset = hRow - m_hRowBase;
+      DBROWOFFSET lRelativeOffset = (DBROWOFFSET)(hRow - m_hRowBase);
       if (abs(lRelativeOffset) < abs(lFetchOffset))
 	{
 	  if (lRelativeOffset == 1)
@@ -2609,7 +2610,7 @@ PositionalPolicy::GetPosition(bool fStandardBookmark, ULONG ulBookmark)
     {
       bm_iter_t i = m_bookmarks.find(ulBookmark);
       if (i != m_bookmarks.end())
-	return i->second;
+	return (DBCOUNTITEM)i->second;
     }
   return 0;
 }

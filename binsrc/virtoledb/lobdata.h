@@ -82,7 +82,7 @@ struct CGetDataSequentialStreamInitializer
 {
   LobStreamSyncObj* pStreamSync;
   GetDataHandler* pgd;
-  ULONG iRecordID;
+  HROW iRecordID;
   DBORDINAL iFieldOrdinal;
   SQLSMALLINT wSqlCType;
 };
@@ -106,7 +106,7 @@ public:
   const IID** GetSupportErrorInfoIIDs();
 
   HRESULT Init(LobStreamSyncObj* pStreramSync, GetDataHandler* pgd,
-	       ULONG iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType);
+	       HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType);
 
   void Kill();
 
@@ -140,7 +140,7 @@ private:
   StreamStatus m_status;
   LobStreamSyncObj* m_pStreamSync;
   GetDataHandler* m_pgd;
-  ULONG m_iRecordID;
+  HROW m_iRecordID;
   DBORDINAL m_iFieldOrdinal;
   SQLSMALLINT m_wSqlCType;
   IUnknown* m_pUnkFTM;

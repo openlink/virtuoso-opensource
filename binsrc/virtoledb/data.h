@@ -338,7 +338,7 @@ public:
   HRESULT Init();
   void Release();
 
-  virtual ULONG GetFieldCount() const = 0;
+  virtual DBORDINAL GetFieldCount() const = 0;
   virtual const DataFieldInfo& GetFieldInfo(ULONG index) const = 0;
 
   HRESULT Optimize(ULONG iField, DBTYPE type);
@@ -451,7 +451,7 @@ public:
     FreeBindings ();
   }
 
-  HRESULT Init (DBACCESSORFLAGS dwAccessorFlags, ULONG cBindings, const DBBINDING rgBindings[], DBLENGTH cbRowSize);
+  HRESULT Init (DBACCESSORFLAGS dwAccessorFlags, DBCOUNTITEM cBindings, const DBBINDING rgBindings[], DBLENGTH cbRowSize);
   HRESULT Init (const DataAccessor& accessor, DBACCESSORFLAGS dwAccessorFlags);
   
   LONG
@@ -521,13 +521,13 @@ public:
   // DB_E_OBJECTOPEN if a stream object was already created,
   // DB_E_COLUMNUNAVAILABLE if cannot retreive the specified BLOB.
   // and others (E_FAIL) as appropriate,
-  virtual HRESULT ResetLongData(ULONG iRecordID, DBORDINAL iFieldOrdinal) = 0;
+  virtual HRESULT ResetLongData(HROW iRecordID, DBORDINAL iFieldOrdinal) = 0;
 
   // The return codes are:
   // S_OK if everything's ok,
   // S_FALSE if no more data available,
   // and others (E_OUTOFMEMORY, E_FAIL) as appropriate,
-  virtual HRESULT GetLongData(ULONG iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
+  virtual HRESULT GetLongData(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
 			      char* pv, SQLINTEGER cb, SQLINTEGER& rcb) = 0;
 
   // The return codes are:
@@ -536,7 +536,7 @@ public:
   // DB_E_OBJECTOPEN if another stream object was already created,
   // DB_E_COLUMNUNAVAILABLE if cannot retreive the specified BLOB.
   // and others (E_OUTOFMEMORY, E_FAIL) as appropriate,
-  virtual HRESULT CreateStreamObject(ULONG iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
+  virtual HRESULT CreateStreamObject(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
 				     REFIID riid, IUnknown** ppUnk) = 0;
 
 };
@@ -546,7 +546,7 @@ class SetDataHandler
 {
 public:
 
-  virtual HRESULT SetDataAtExec(ULONG iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
+  virtual HRESULT SetDataAtExec(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
 				DBCOUNTITEM iBinding) = 0;
   virtual HRESULT GetDataAtExec(ULONG& iRecordID, DBCOUNTITEM& iBinding) = 0;
   virtual HRESULT PutDataAtExec(char* pv, SQLINTEGER cb) = 0;
@@ -574,11 +574,11 @@ public:
   DBBINDSTATUS MetadataValidateBinding(const DataRecordInfo& info, const DBBINDING& binding);
   HRESULT CanConvert(DBTYPE wFromType, DBTYPE wToType, DBCONVERTFLAGS dwConvertFlags, bool fIsCommand);
 
-  HRESULT GetData(const DataRecordInfo& info, GetDataHandler* pgd, ULONG iRecordID,
+  HRESULT GetData(const DataRecordInfo& info, GetDataHandler* pgd, HROW iRecordID,
 		  char* pbProviderData, const DataAccessor& accessor, DBCOUNTITEM iBinding,
 		  char* pbConsumerData, bool fIsParameter);
 
-  HRESULT SetData(const DataRecordInfo& info, SetDataHandler* psd, ULONG iRecordID,
+  HRESULT SetData(const DataRecordInfo& info, SetDataHandler* psd, HROW iRecordID,
 		  char* pbProviderData, const DataAccessor& accessor, DBCOUNTITEM iBinding,
 		  char* pbConsumerData, bool fIsParameter);
 
