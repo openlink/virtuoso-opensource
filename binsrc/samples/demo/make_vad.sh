@@ -84,7 +84,7 @@ VERSION_INIT()
       for i in `find . -name 'Entries' | grep -v "vad/"`; do
           cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
       done
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=250 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=10250 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
       rm -f version.tmp
       echo "$VERSION" > vad_version
   fi
@@ -355,6 +355,14 @@ sticker_init() {
   echo "  <sql purpose=\"post-install\"></sql>" >> $STICKER
   echo "</procedures>" >> $STICKER
   echo "<ddls>" >> $STICKER
+  echo "    <sql purpose=\"uninstall-check\"><![CDATA[ " >> $STICKER
+  echo "     if (VAD_CHECK_VERSION ('tutorial') is not null) " >> $STICKER
+  echo "       {" >> $STICKER
+  echo "         VAD.DBA.VAD_FAIL_CHECK ('The tutorial package is not uninstalled. Please uninstall Tutorial first.'); " >> $STICKER
+  echo "         result ('ERROR', 'The tutorial package is not uninstalled. Please uninstall Tutorial first.'); " >> $STICKER
+  echo "         signal ('FATAL', 'The tutorial package is not uninstalled. Please uninstall Tutorial first.'); " >> $STICKER
+  echo "       }" >> $STICKER
+  echo "  ]]></sql>" >> $STICKER
   echo "    <sql purpose=\"pre-install\"><![CDATA[ " >> $STICKER
   echo "    if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) " >> $STICKER
   echo "      { " >> $STICKER
