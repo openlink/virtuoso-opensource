@@ -747,8 +747,8 @@ create procedure "DB"."DBA"."VAD_CHECK_INSTALLABILITY" (
   in fname varchar,
   in is_dav integer) returns varchar
 {
-  declare name, vers, fullname any;
-  "VAD"."DBA"."VAD_TEST_READ" (fname, name, vers, fullname, is_dav);
+  declare name, vers, fullname, pkg_date any;
+  "VAD"."DBA"."VAD_TEST_READ" (fname, name, vers, fullname, pkg_date, is_dav);
   return 'OK';
 }
 ;
@@ -759,6 +759,7 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
   inout pkg_name varchar,
   inout pkg_vers varchar,
   inout pkg_fullname varchar,
+  inout pkg_date varchar,
   in need_action integer := 0 )
 {
   declare ddl_install_check_code, proc_install_check_code, s2, s3 varchar;
@@ -822,6 +823,7 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
   if (n = 0)
     "VAD"."DBA"."VAD_FAIL_CHECK" ('VAD sticker should mention the Release Date in /sticker/caption/version/prop[@name=\'Release Date\']');
   s2 := cast (xpath_eval ('@value', aref (items, 0)) as varchar);
+  pkg_date := s2;
   if (need_action)
     {
       "VAD"."DBA"."VAD_MKNODE" (parr, pkgid, 'Release Date', 'STRING', s2);
@@ -979,6 +981,7 @@ create procedure "VAD"."DBA"."VAD_TEST_READ" (
   inout pkg_name varchar,
   inout pkg_vers varchar,
   inout pkg_fullname varchar,
+  inout pkg_date varchar,
   in is_dav integer )
 {
   declare flen, pos, i, n, statusid integer;
@@ -1052,7 +1055,7 @@ create procedure "VAD"."DBA"."VAD_TEST_READ" (
       declare tree, doc any;
       tree := xml_tree (data);
       doc := xml_tree_doc (tree);
-      "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (parr, doc, pkg_name, pkg_vers, pkg_fullname);
+      "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (parr, doc, pkg_name, pkg_vers, pkg_fullname, pkg_date);
       return 1;
     }
     i := i + 1;
@@ -1286,7 +1289,7 @@ create procedure "VAD"."DBA"."VAD_READ" (
       proc_post_install_code := NULL;
       proc_pre_uninstall_code := NULL;
       proc_post_uninstall_code := NULL;
-      declare pkg_vers, pkg_fullname, s2, s3, s4, s7, s8, s9 varchar;
+      declare pkg_vers, pkg_fullname, s2, s3, s4, s7, s8, s9, pkg_date varchar;
       declare pkgid, tid, tid2 integer;
       declare docsid, filesid, ddls, docsid2, filesid2, ddls2  integer;
       docsid := "VAD"."DBA"."VAD_CHDIR" (parr, 0, '/DOCS');
@@ -1299,7 +1302,7 @@ create procedure "VAD"."DBA"."VAD_READ" (
       doc := xml_tree_doc (tree);
       declare items any;
       declare j, n, ix integer;
-      "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (parr, doc, pkg_name, pkg_vers, pkg_fullname, 0);
+      "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (parr, doc, pkg_name, pkg_vers, pkg_fullname, pkg_date, 0);
 
       connection_set ('vad_pkg_fullname', pkg_fullname);
 
@@ -1314,7 +1317,7 @@ create procedure "VAD"."DBA"."VAD_READ" (
       "VAD"."DBA"."VAD_EXEC" (ddl_pre_install_code);
       "VAD"."DBA"."VAD_EXEC" (proc_pre_install_code);
       registry_set ('VAD_wet_run', '1');
-      "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (parr, doc, pkg_name, pkg_vers, pkg_fullname, 1);
+      "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (parr, doc, pkg_name, pkg_vers, pkg_fullname, pkg_date, 1);
       pkgid := "VAD"."DBA"."VAD_GET_PKG_ID" (parr, pkg_name, pkg_vers);
       if (not pkgid)
         "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('Illegal pkgID for : %s/%s', pkg_name, pkg_vers));
@@ -2181,7 +2184,7 @@ create procedure DB.DBA.VAD_DEPS_CHECK (in parr any, in name varchar, in version
 create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
 {
   declare vads, name, ver, arr, isdav any;
-  declare pname, pver, pfull, pisdav any;
+  declare pname, pver, pfull, pisdav, pdate any;
   declare vaddir any;
 
   vaddir := cfg_item_value (virtuoso_ini_path (), 'Parameters', 'VADInstallDir'); --'../vad/';
@@ -2212,7 +2215,7 @@ create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
            if (f like '%_dav.vad')
              pisdav := 1;
 
-	   VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, 0);
+	   VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, pdate, 0);
 
 	   ver := vad_check_version (pname);
 	   if (ver is not null)
