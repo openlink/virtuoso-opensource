@@ -508,9 +508,11 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		var td = OAT.Dom.create("td");
 		td.colSpan = 3;
 		var simple = self.parent.simplify(label);
+		/*
 		if (cnt > 1 && simple.charAt(0) != "[") {
 			simple = (simple in self.plurals ? self.plurals[simple] : simple+"s");
 		}
+		*/
 		td.innerHTML = simple;
 		tr.appendChild(td);
 		OAT.Event.attach(arrow,"click",function() {

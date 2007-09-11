@@ -118,7 +118,7 @@ OAT.Anchor = {
 			datasource:false,
 			content:false,
 			title:false,
-			imagePath:"/DAV/JS/images/",
+			imagePath:OAT.Anchor.imagePath,
 			result_control:"grid",
 			activation:"hover",
 			width:300,

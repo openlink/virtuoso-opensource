@@ -188,7 +188,7 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 	if (allowHiding) { self.options.allowHiding = true; }
 	
 	this.div = $(element);
-	OAT.Dom.clear(self.div);
+//	OAT.Dom.clear(self.div);
 	
 	this.init = function() {
 		if (self.options.allowHiding) { /* column hiding */

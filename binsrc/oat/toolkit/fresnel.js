@@ -11,7 +11,7 @@
 /*
 	f = new OAT.Fresnel();
 	f.addURL("fresnel-resource-url",callback)
-	[div, stylesheetsArray] = f.format(RDFDataObject);
+	[xmlDoc, stylesheetsArray] = f.format(RDFDataObject);
 */
  
 OAT.Fresnel = function(optObj) {
@@ -97,8 +97,8 @@ OAT.Fresnel = function(optObj) {
 		var format = false;
 		
 		if (use) for (var i=0;i<use.length;i++) {
-			var item = use[i];
-			if  (item.type = self.nsFormat) { format = item; } else { groups.push(item); }
+			var it = use[i];
+			if  (it.type == self.nsFormat) { format = it; } else { groups.push(it); }
 		}
 
 		groups.append(lens.groups);
@@ -137,7 +137,7 @@ OAT.Fresnel = function(optObj) {
 		
 		if (use) for (var i=0;i<use.length;i++) {
 			var item = use[i];
-			if  (item.type = self.nsFormat) { format = item; } else { groups.push(item); }
+			if  (item.type == self.nsFormat) { format = item; } else { groups.push(item); }
 		}
 		
 		groups.append(lens.groups);
@@ -394,8 +394,8 @@ OAT.Fresnel = function(optObj) {
 		var item = pair[0];
 		var lens = pair[1];
 		var box = self.xmlDoc.createElement("fresnel_resource");
-		var container = container || parent;
-		var htmlElements = self.styleResource(container,box,item,lens,use);
+		var cont = container || parent;
+		var htmlElements = self.styleResource(cont,box,item,lens,use);
 		self.formatProperties(box,item,lens); /* add all these properties */
 		OAT.Dom.append([parent,htmlElements]);
 	}

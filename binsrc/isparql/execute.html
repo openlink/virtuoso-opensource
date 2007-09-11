@@ -28,10 +28,17 @@
 <script type="text/javascript">
 	var featureList=["ajax2","grid","anchor","xml","tab","sparql","rdfstore","rdfmini"];
 	function init() {
+		var startRef = function() {
+			OAT.Dom.show("throbber");
+		}
+		var endRef = function() {
+			OAT.Dom.hide("throbber");
+		}
+	
 		OAT.Preferences.imagePath = "/isparql/toolkit/images/";
 		var qe = new QueryExec({div:"result"});
 		var opts = OAT.Dom.uriParams();
-		var p = {};
+		var p = {onstart:startRef,onend:endRef};
 		if ("sponge" in opts) { p.sponge = opts.sponge; }
 		if ("query" in opts) { p.query = opts.query; }
 		if ("limit" in opts) { p.limit = opts.limit; }
@@ -46,7 +53,9 @@
 			a.href = opts.file;
 			f.appendChild(a);
 		}
-		OAT.Dom.unlink("throbber");
+		OAT.Dom.hide("throbber");
+		$("throbber").style.position = "absolute";
+		$("throbber").style.right = "10px";
 		qe.execute(p);
 	}
 </script>
@@ -60,5 +69,12 @@
 	<div id="throbber" style="text-align: center;"><img style="margin: auto;" src="/isparql/toolkit/images/throbber.gif" /></div>
 	<div id="file"></div><p></p>
 	<div id="result"></div>
+    <p class="copyright">
+		Dynamic <a href="http://dbpedia.org/resource/linkeddata">Linked Data Page</a>
+		<br/>
+		<a href="http://www.openlinksw.com/virtuoso">
+			<img border="0" src="http://myopenlink.net/ods/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso Universal Server"/>
+		</a>
+	</p>
 </body>
 </html>

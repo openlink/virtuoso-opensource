@@ -659,7 +659,12 @@ OAT.WebDav = {
 			OAT.Dom.hide(OAT.WebDav.window.div);
 		});
 		OAT.Dom.attach(this.dom.ext,"change",function(event) {
-			OAT.WebDav.dom.file.value = "";
+			var ext = OAT.WebDav.options.extensionFilters[OAT.WebDav.dom.ext.selectedIndex];
+			var val = OAT.WebDav.dom.file.value;
+			var idx = val.lastIndexOf(".");
+			if (idx != -1 && ext[1] != "*") { 
+				OAT.WebDav.dom.file.value = val.substring(0,idx)+"."+ext[1];
+			}
 			OAT.WebDav.redraw();
 		});
 		

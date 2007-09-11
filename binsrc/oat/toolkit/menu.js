@@ -65,7 +65,7 @@ OAT.MenuItem = function(menu,parent,li,ul) {
 		}
 		var clickRef = function(event) {
 			var src = OAT.Dom.source(event);
-			if (src != self.li) { return; }
+//			if (src != self.li) { return; }
 			if (self.state) { self.close(); } else { self.open(); }
 		}
 		OAT.Dom.attach(self.li,"mouseover",overRef);
@@ -77,7 +77,7 @@ OAT.MenuItem = function(menu,parent,li,ul) {
 		}
 		var clickRef = function(event) {
 			var src = OAT.Dom.source(event);
-			if (src != self.li) { return; }
+//			if (src != self.li) { return; }
 			if (OAT.Dom.isClass(self.li,menu.closeFilter) && !OAT.Dom.isClass(self.li,menu.noCloseFilter)) {
 				menu.root.close();
 			}
