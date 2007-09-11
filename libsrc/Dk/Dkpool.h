@@ -50,6 +50,7 @@ struct mem_pool_s
   caddr_t *mp_allocs;
   size_t mp_bytes;
   dk_hash_t *mp_unames;
+  dk_set_t	mp_trash; /* dk_alloc_box boxes that must be freed with the mp */
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
   const char *mp_alloc_file;
   int mp_alloc_line;
@@ -75,6 +76,7 @@ struct mem_pool_s
   int	mp_block_size;
   size_t mp_bytes;
   dk_hash_t *mp_unames;
+  dk_set_t	mp_trash;
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
   const char *mp_alloc_file;
   int mp_alloc_line;
@@ -314,6 +316,8 @@ void mp_check_tree (mem_pool_t * mp, box_t box);
 caddr_t t_box_vsprintf (size_t buflen_eval, const char *format, va_list tail);
 caddr_t t_box_sprintf (size_t buflen_eval, const char *format, ...);
 #endif
+
+void mp_trash (mem_pool_t * mp, caddr_t box);
 
 #endif /* ifdef __DKPOOL_H */
 

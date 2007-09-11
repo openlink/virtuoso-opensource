@@ -82,6 +82,12 @@ mp_free (mem_pool_t * mp)
     }
   maphash (mp_uname_free, mp->mp_unames);
   hash_table_free (mp->mp_unames);
+  DO_SET (caddr_t, box, &mp->mp_trash)
+    {
+      dk_free_tree (box);
+    }
+  END_DO_SET();
+  dk_set_free (mp->mp_trash);
   dk_free ((caddr_t) mp->mp_allocs, mp->mp_size * sizeof (caddr_t));
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
@@ -102,7 +108,6 @@ void mp_alloc_box_assert (mem_pool_t * mp, caddr_t box)
 
 
 
-#define MP_BLOCK_SIZE (4096 - ALIGN_8((sizeof (mem_block_t))))
 
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
 mem_pool_t * dbg_mem_pool_alloc (const char *file, int line)
@@ -111,7 +116,7 @@ mem_pool_t * mem_pool_alloc (void)
 #endif
 {
   NEW_VARZ (mem_pool_t, mp);
-  mp->mp_block_size = ALIGN_8(4096);
+  mp->mp_block_size = ALIGN_8((4096 * 8));
   mp->mp_unames = DBG_NAME (hash_table_allocate) (DBG_ARGS 4096);
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
   mp->mp_alloc_file = (char *)file;
@@ -133,6 +138,13 @@ mp_free (mem_pool_t * mp)
     }
   maphash (mp_uname_free, mp->mp_unames);
   hash_table_free (mp->mp_unames);
+  DO_SET (caddr_t, box, &mp->mp_trash)
+    {
+      dk_free_tree (box);
+    }
+  END_DO_SET();
+  dk_set_free (mp->mp_trash);
+
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
 
@@ -904,4 +916,11 @@ caddr_t t_box_sprintf (size_t buflen_eval, const char *format, ...)
   res = t_box_vsprintf (buflen_eval, format, tail);
   va_end (tail);
   return res;
+}
+
+
+void
+mp_trash (mem_pool_t * mp, caddr_t box)
+{
+  dk_set_push (&mp->mp_trash, (void*)box);
 }
