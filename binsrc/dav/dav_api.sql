@@ -106,10 +106,16 @@ create function DAV_PERROR (in x any)
 }
 ;
 
+
 create procedure
-DAV_ADD_USER_INT (in uid varchar, in pwd varchar, in gid any,
-              in perms varchar, in disable integer,
-              in home varchar, in full_name varchar, in email varchar)
+DAV_ADD_USER_INT (in uid varchar,
+                  in pwd varchar,
+                  in gid any,
+                  in perms varchar,
+                  in disable integer,
+                  in home varchar,
+                  in full_name varchar,
+                  in email varchar)
 {
   declare id, gd, rc integer;
   if (not exists (select 1 from WS.WS.SYS_DAV_USER where U_NAME = uid))
@@ -301,6 +307,46 @@ DAV_HOME_DIR (in uid varchar) returns any
   return coalesce (res, -19);
 er:
   return -18;
+}
+;
+
+create function
+DAV_HOME_DIR_CREATE (in uid varchar) returns any
+{
+  declare exit handler for sqlstate '*' { return -1; };
+
+  declare rc, c_id integr;
+  declare host, path varchar;
+
+  for (select U_ID, U_GROUP, U_DEF_PERMS, U_HOME from SYS_USERS where U_NAME = uid) do {
+    path := '/DAV/home/';
+    rc := DAV_MAKE_DIR (path, http_dav_uid (), http_admin_gid (), '110100100R');
+    if (isnull (DAV_HIDE_ERROR (rc)))
+      goto _end;
+    path := path || uid || '/';
+    rc := DAV_MAKE_DIR (path, U_ID, U_GROUP, U_DEF_PERMS);
+    if (isnull (DAV_HIDE_ERROR (rc)))
+      goto _end;
+    path := path || 'rdf_sink/';
+    rc := DAV_MAKE_DIR (path, U_ID, U_GROUP, U_DEF_PERMS);
+    if (isnull (DAV_HIDE_ERROR (rc)))
+      goto _end;
+
+    host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+    if (host is null) {
+      host := sys_stat ('st_host_name');
+      if (server_http_port () <> '80')
+        host := host ||':'|| server_http_port ();
+    }
+    rc := DAV_PROP_SET_INT (path, 'virt:rdf_graph', 'http://' || host || path, null, null, 0, 0);
+    if (isnull (DAV_HIDE_ERROR (rc)))
+      goto _end;
+    rc := DAV_PROP_SET_INT (path, 'virt:rdf_sponger', 'on', null, null, 0, 0);
+    if (isnull (DAV_HIDE_ERROR (rc)))
+      goto _end;
+  }
+_end:;
+  return rc;
 }
 ;
 
@@ -1854,7 +1900,7 @@ DAV_RES_UPLOAD_STRSES_INT (
   declare pperms, name varchar;
   declare par any;
   declare op char;
-  declare det, content_type varchar;
+  declare det varchar;
   declare detcol_id, _is_xper_res, fake integer;
   declare detcol_path, unreached_path any;
   declare res_cr cursor for select RES_ID+1 from WS.WS.SYS_DAV_RES where RES_ID = id for update;
@@ -2025,7 +2071,7 @@ DAV_RES_UPLOAD_STRSES_INT (
     type := http_mime_type (path);
   --dbg_printf ('path [%s], type [%s], op [%s], perms [%s], rowguid [%s]',
   --    path, type, op, permissions, _rowguid);
-  if (content_type = 'text/xml'
+  if (type = 'text/xml'
     and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = pid and PROP_TYPE = 'C'
                       and PROP_NAME = 'xper'))
     {
@@ -2038,6 +2084,117 @@ DAV_RES_UPLOAD_STRSES_INT (
       delete from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xper' and PROP_TYPE = 'R' and PROP_PARENT_ID = id;
       _is_xper_res := 0;
     }
+
+  declare c_id integer;
+ 	declare is_rdf integer;
+  declare rdf_graph, rdf_sponger any;
+  declare rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path, host any;
+
+  -- flag for rdf upload
+  is_rdf := 0;
+
+  -- get parent collection id
+  c_id := pid;
+  if (op <> 'i')
+    c_id := (select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = id);
+
+  -- is rdf_sink folder?
+  rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_graph');
+  if (not DB.DBA.is_empty_or_null (rdf_graph)) {
+    -- get sponger parameter?
+    rdf_sponger := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_sponger'), 'on');
+
+    if (
+         strstr (type, 'application/rdf+xml') is not null or
+         strstr (type, 'application/foaf+xml') is not null
+       )
+    {
+      if (rdf_sponger = 'on') {
+        declare xt any;
+
+        xt := xtree_doc (content);
+        if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
+          goto _grddl;
+      }
+      DB.DBA.RDF_LOAD_RDFXML (content, rdf_graph, rdf_graph);
+      goto _rdf_graph_resource;
+    }
+    if (
+         strstr (type, 'text/rdf+n3') is not null or
+         strstr (type, 'text/rdf+ttl') is not null or
+         strstr (type, 'application/rdf+n3') is not null or
+         strstr (type, 'application/rdf+turtle') is not null or
+         strstr (type, 'application/turtle') is not null or
+         strstr (type, 'application/x-turtle') is not null
+       )
+    {
+      DB.DBA.TTLP (content, rdf_graph, rdf_graph);
+      goto _rdf_graph_resource;
+    }
+
+_grddl:;
+    if (rdf_sponger = 'on') {
+      declare aq, ps, xrc any;
+
+      aq := null;
+      ps := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'PingService');
+      if (length (ps))
+        aq := async_queue (1);
+
+      for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do {
+        declare val_match, pcols, npars any;
+
+        if (RM_TYPE = 'MIME') {
+	        val_match := type;
+	      } else {
+	        val_match := null;
+	      }
+        if (isstring (val_match) and regexp_match (RM_PATTERN, val_match) is not null)	{
+	        if (__proc_exists (RM_HOOK) is null)
+	          goto try_next_mapper;
+
+	        declare exit handler for sqlstate '*' {
+	          goto try_next_mapper;
+	        };
+
+          pcols := DB.DBA.RDF_PROC_COLS (RM_HOOK);
+          npars := 8;
+          if (isarray (pcols))
+	          npars := length (pcols);
+  	      if (npars = 7) {
+	          xrc := call (RM_HOOK) (rdf_graph, rdf_graph, null, content, aq, ps, RM_KEY);
+	        } else {
+	          xrc := call (RM_HOOK) (rdf_graph, rdf_graph, null, content, aq, ps, RM_KEY, RM_OPTIONS);
+	        }
+  	      if (xrc > 0)
+            goto _rdf_graph_resource;
+	      }
+	    }
+      try_next_mapper:;
+    }
+
+    if (is_rdf) {
+      -- save rdf resource
+    _rdf_graph_resource:;
+      rdf_graph_resource_name := replace ( replace ( replace ( replace ( replace ( replace ( replace (rdf_graph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
+      rdf_graph_resource_path := WS.WS.COL_PATH (c_id) || rdf_graph_resource_name;
+      if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R')))) {
+        -- RDF content
+        host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+        if (host is null) {
+          host := sys_stat ('st_host_name');
+          if (server_http_port () <> '80')
+            host := host ||':'|| server_http_port ();
+        }
+        rdf_graph_resource_id := rc + 1;
+        if (op <> 'i')
+          rdf_graph_resource_id := WS.WS.GETID ('R');
+        insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
+          values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
+        DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml'), null, null, 0, 0, 1);
+      }
+    }
+  }
 
     whenever sqlstate '*' goto unhappy_upload;
 
@@ -5849,3 +6006,19 @@ no_op:
   ;
 }
 ;
+
+create function
+DAV_HOME_DIR_UPDATE ()
+{
+  if (isstring (registry_get ('DAV_HOME_DIR_UPDATE')))
+    return;
+  for (select U_NAME from SYS_USERS where U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and U_NAME <> 'nobody') do
+    DAV_HOME_DIR_CREATE (U_NAME);
+  registry_set ('DAV_HOME_DIR_UPDATE', 'done');
+}
+;
+
+--!AFTER
+DAV_HOME_DIR_UPDATE ()
+;
+
