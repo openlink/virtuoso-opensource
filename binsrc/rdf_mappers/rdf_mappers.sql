@@ -61,6 +61,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('http://www.facebook.com/.*',
             'URL', 'DB.DBA.RDF_LOAD_FQL', null, 'FaceBook', vector ('secret', '', 'session', ''));
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
+    values ('http://www.freebase.com/view/.*',
+            'URL', 'DB.DBA.RDF_LOAD_MQL', null, 'Freebase', vector ());
+
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
     values ('.*', 'MIME', 'DB.DBA.RDF_LOAD_DAV_META', null, 'WebDAV Metadata', 1);
 
@@ -393,6 +397,100 @@ create procedure FB_SIG (in params any, in secret any)
   str := str || secret;
   return md5 (str);
 };
+
+create procedure  DB.DBA.MQL_TREE_TO_XML_REC (in tree any, in tag varchar, inout ses any)
+{
+  if (not isarray (tree) or isstring (tree))
+    http_value (tree, tag, ses);
+  else if (length (tree) > 1 and __tag (tree[0]) = 255)
+    {
+      http (sprintf ('<%U>', tag), ses);
+      for (declare i,l int, i := 2, l := length (tree); i < l; i := i + 2)
+         {
+	   DB.DBA.MQL_TREE_TO_XML_REC (tree[i+1], tree[i], ses);
+	 }
+      http (sprintf ('</%U>', tag), ses);
+    }
+  else if (length (tree) > 0)
+    {
+      for (declare i,l int, i := 0, l := length (tree); i < l; i := i + 1)
+         {
+	   DB.DBA.MQL_TREE_TO_XML_REC (tree[i], tag, ses);
+	 }
+    }
+}
+;
+
+create procedure  DB.DBA.MQL_TREE_TO_XML (in tree any)
+{
+  declare ses any;
+  ses := string_output ();
+  DB.DBA.MQL_TREE_TO_XML_REC (tree, 'results', ses);
+  ses := string_output_string (ses);
+  ses := xtree_doc (ses);
+  return ses;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare qr, path, hdr any;
+  declare tree, xt, xd, types any;
+  declare k, cnt, url varchar;
+
+  hdr := null;
+  declare exit handler for sqlstate '*'
+    {
+      --dbg_printf ('%s', __SQL_MESSAGE);
+      return 0;
+    };
+
+  path := split_and_decode (new_origin_uri, 0, '%\0/');
+  --dbg_obj_print (path);
+  if (length (path) < 1)
+    return 0;
+  k := path [length(path) - 1];
+
+  if (k like '#%')
+    k := sprintf ('"id":"%s"', k);
+  else
+    k := sprintf ('"key":"%s"', k);
+
+  qr := sprintf ('{"ROOT":{"query":[{%s, "type":[]}]}}', k);
+  url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
+  --dbg_obj_print (url);
+  cnt := http_get (url, hdr);
+  tree := json_parse (cnt);
+  xt := get_keyword ('ROOT', tree);
+  if (not isarray (xt))
+    return 0;
+  xt := get_keyword ('result', xt);
+  types := vector ();
+  foreach (any tp in xt) do
+    {
+      declare tmp any;
+      --dbg_obj_print (tp);
+      tmp := get_keyword ('type', tp);
+      types := vector_concat (types, tmp);
+    }
+  --types := get_keyword ('type', xt);
+  foreach (any tp in types) do
+    {
+      qr := sprintf ('{"ROOT":{"query":{%s, "type":"%s", "*":[]}}}', k, tp);
+      url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
+      cnt := http_get (url, hdr);
+      tree := json_parse (cnt);
+      xt := get_keyword ('ROOT', tree);
+      xt := DB.DBA.MQL_TREE_TO_XML (tree);
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/mql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+      xd := serialize_to_UTF8_xml (xt);
+      --  dbg_printf ('%s', xd);
+      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    }
+  return 1;
+}
+;
 
 create procedure FQL_CALL (in q varchar, in api_key varchar, in ses_id varchar, in secret varchar)
 {
