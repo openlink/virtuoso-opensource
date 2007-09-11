@@ -66,6 +66,12 @@ typedef struct
 #endif
   } dk_hash_t;
 
+#ifdef MTX_DEBUG
+#define HT_REQUIRE_MTX(h, m) h->ht_required_mtx = m
+#else 
+#define HT_REQUIRE_MTX(h, m)
+#endif
+
 typedef struct
   {
     dk_hash_t *		hit_ht;
