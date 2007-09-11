@@ -8861,6 +8861,7 @@ http_init_part_one ()
       http_server_id_string = http_server_id_string_buf;
     }
 
+  dns_host_name = get_qualified_host_name ();
   return 1;
 }
 
@@ -8940,8 +8941,6 @@ http_init_part_two ()
       log_error ("Failed setting the HTTP listen address at %s.", http_port);
       call_exit (-1);
     }
-
-  dns_host_name = get_qualified_host_name ();
 
   session_listen (listening->dks_session);
 
