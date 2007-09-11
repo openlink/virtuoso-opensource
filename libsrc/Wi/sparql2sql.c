@@ -2902,10 +2902,10 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
         }
       if (NULL != rvr->rvrFixedValue)
         {
-          int ctr;
+          int source_ctr;
           int checked_sources_count = 0;
           int source_found = 0;
-      DO_BOX_FAST (SPART *, source, ctr, tcc->tcc_sources)
+          DO_BOX_FAST (SPART *, source, source_ctr, tcc->tcc_sources)
         {
           if (tcc->tcc_required_source_type != SPART_TYPE(source))
             continue;
@@ -2929,6 +2929,24 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
         }
       if (NULL != qmv_or_fmt_rvr)
         {
+          int source_ctr;
+          int checked_sources_count = 0;
+          DO_BOX_FAST (SPART *, source, source_ctr, tcc->tcc_sources)
+            {
+              int ctr;
+              if (tcc->tcc_required_source_type != SPART_TYPE(source))
+                continue;
+              checked_sources_count++;
+
+              for (ctr = qmv_or_fmt_rvr->rvrSprintffCount; ctr--; /* no step */)
+                if (sprintff_like (source->_.lit.val, qmv_or_fmt_rvr->rvrSprintffs[ctr]))
+                  goto source_matches_qmv_sff; /* see below */
+            }
+          END_DO_BOX_FAST;
+          if (0 != checked_sources_count)
+            return SSG_QM_NO_MATCH;
+
+source_matches_qmv_sff:
           if (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions)
             { /* Check if a fixed value of a field variable matches to one of sffs of the mapping value */
               caddr_t fv = rvr_string_fixedvalue (&(field->_.var.rvr));
