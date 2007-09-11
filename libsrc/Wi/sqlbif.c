@@ -1066,8 +1066,8 @@ bif_proc_table_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
 caddr_t
 bif_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
-  client_connection_t * cli = (client_connection_t *) ((query_instance_t *)qst)->qi_client;
+  caddr_t cli_ws = (caddr_t) ((query_instance_t *) qst)->qi_client->cli_ws;
+  client_connection_t *cli = (client_connection_t *) ((query_instance_t *) qst)->qi_client;
   va_list dummy;
 
   if (cli->cli_result_qi)
@@ -1078,49 +1078,53 @@ bif_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if ((!cli_ws && cli_is_interactive (cli)) || cli->cli_resultset_data_ptr)
     {
       if (cli->cli_resultset_data_ptr && !cli->cli_resultset_max_rows)
-  return NULL;
+	return NULL;
       else
-  {
-    long len;
-          long n_args = BOX_ELEMENTS ((caddr_t)args);
-    long n_cols = cli->cli_resultset_cols;
-    int inx;
-    caddr_t * out;
-          if (n_args < n_cols)
-            sqlr_new_error ("22023", "SR534",
-	      "Function result() is called with %ld arguments, but the declared result-set contains %ld columns", n_args, n_cols);
-          len = sizeof (caddr_t) * MAX (n_args, n_cols);
-    if (!cli->cli_resultset_data_ptr)
-      {
-        caddr_t anil = NEW_DB_NULL;
-        out = (caddr_t *) dk_alloc_box (sizeof (caddr_t) + len, DV_ARRAY_OF_POINTER);
-        out[0] = (caddr_t) QA_ROW;
-        DO_BOX (state_slot_t *, arg, inx, args)
-    {
-      out[inx + 1] = qst_get (qst, arg);
-    }
-        END_DO_BOX;
-        for (; inx < n_cols; inx++)
-    out[inx + 1] = anil;
-        PrpcAddAnswer ((caddr_t) out, DV_ARRAY_OF_POINTER, PARTIAL, 0);
-        dk_free_box ((box_t) out);
-        dk_free_box (anil);
-      }
-    else
-      {
-        out = (caddr_t *) dk_alloc_box (len, DV_ARRAY_OF_POINTER);
-        DO_BOX (state_slot_t *, arg, inx, args)
-    {
-      out[inx] = box_copy_tree (qst_get (qst, arg));
-    }
-        END_DO_BOX;
-        for (; inx < n_cols; inx++)
-    out[inx + 1] = NEW_DB_NULL;
-        dk_set_push (cli->cli_resultset_data_ptr, out);
-        if (cli->cli_resultset_max_rows != -1)
-    cli->cli_resultset_max_rows--;
-      }
-  }
+	{
+	  long len;
+	  long n_args = BOX_ELEMENTS ((caddr_t) args);
+	  long n_cols = cli->cli_resultset_cols;
+	  int inx;
+	  caddr_t *out;
+	  if (n_args < n_cols)
+	    sqlr_new_error ("22023", "SR534",
+		"Function result() is called with %ld arguments, but the declared result-set contains %ld columns", n_args, n_cols);
+	  len = sizeof (caddr_t) * MAX (n_args, n_cols);
+	  if (!cli->cli_resultset_data_ptr)
+	    {
+	      caddr_t anil = NEW_DB_NULL;
+	      out = (caddr_t *) dk_alloc_box (sizeof (caddr_t) + len, DV_ARRAY_OF_POINTER);
+	      out[0] = (caddr_t) QA_ROW;
+	      DO_BOX (state_slot_t *, arg, inx, args)
+	      {
+		out[inx + 1] = qst_get (qst, arg);
+	      }
+	      END_DO_BOX;
+	      for (; inx < n_cols; inx++)
+		out[inx + 1] = anil;
+	      IO_SECT (qst)
+	      {
+		PrpcAddAnswer ((caddr_t) out, DV_ARRAY_OF_POINTER, PARTIAL, 0);
+	      }
+	      END_IO_SECT (err_ret);
+	      dk_free_box ((box_t) out);
+	      dk_free_box (anil);
+	    }
+	  else
+	    {
+	      out = (caddr_t *) dk_alloc_box (len, DV_ARRAY_OF_POINTER);
+	      DO_BOX (state_slot_t *, arg, inx, args)
+	      {
+		out[inx] = box_copy_tree (qst_get (qst, arg));
+	      }
+	      END_DO_BOX;
+	      for (; inx < n_cols; inx++)
+		out[inx + 1] = NEW_DB_NULL;
+	      dk_set_push (cli->cli_resultset_data_ptr, out);
+	      if (cli->cli_resultset_max_rows != -1)
+		cli->cli_resultset_max_rows--;
+	    }
+	}
     }
   return NULL;
 }
@@ -1129,63 +1133,65 @@ bif_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_exec_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
-  client_connection_t * cli = (client_connection_t *) ((query_instance_t *)qst)->qi_client;
+  caddr_t cli_ws = (caddr_t) ((query_instance_t *) qst)->qi_client->cli_ws;
+  client_connection_t *cli = (client_connection_t *) ((query_instance_t *) qst)->qi_client;
   va_list dummy;
   caddr_t arg_values = bif_arg (qst, args, 0, "exec_result");
 
-  if (DV_TYPE_OF (arg_values) != DV_ARRAY_OF_POINTER ||
-      BOX_ELEMENTS (arg_values) < 1)
-    sqlr_new_error ("22023", "SR334",
-  "The result names description should be an array in exec_result");
+  if (DV_TYPE_OF (arg_values) != DV_ARRAY_OF_POINTER || BOX_ELEMENTS (arg_values) < 1)
+    sqlr_new_error ("22023", "SR334", "The result names description should be an array in exec_result");
 
   if (cli->cli_result_qi)
     {
-      bif_proc_table_result ((caddr_t *) -1, err_ret, (state_slot_t **) arg_values, cli, dummy, 0);
+      bif_proc_table_result ((caddr_t *) - 1, err_ret, (state_slot_t **) arg_values, cli, dummy, 0);
       return NULL;
     }
   if ((!cli_ws && cli_is_interactive (cli)) || cli->cli_resultset_data_ptr)
     {
       if (cli->cli_resultset_data_ptr && !cli->cli_resultset_max_rows)
-  return NULL;
+	return NULL;
       else
-  {
-    long len;
-    long n_cols = cli->cli_resultset_cols;
-    int inx;
-    caddr_t * out;
-    len = MAX ((n_cols * sizeof (caddr_t)), (box_length ((caddr_t) arg_values)));
-    if (!cli->cli_resultset_data_ptr)
-      {
-        caddr_t anil = NEW_DB_NULL;
-        out = (caddr_t *) dk_alloc_box (sizeof (caddr_t) + len, DV_ARRAY_OF_POINTER);
-        out[0] = (caddr_t) QA_ROW;
-        _DO_BOX (inx, ((caddr_t *)arg_values))
-    {
-      out[inx + 1] = ((caddr_t *) arg_values)[inx];
-    }
-        END_DO_BOX;
-        for (; inx < n_cols; inx++)
-    out[inx + 1] = anil;
-        PrpcAddAnswer ((caddr_t) out, DV_ARRAY_OF_POINTER, PARTIAL, 0);
-        dk_free_box ((box_t) out);
-        dk_free_box (anil);
-      }
-    else
-      {
-        out = (caddr_t *) dk_alloc_box (len, DV_ARRAY_OF_POINTER);
-        _DO_BOX (inx, ((caddr_t *)arg_values))
-    {
-      out[inx] = box_copy_tree (((caddr_t *) arg_values)[inx]);
-    }
-        END_DO_BOX;
-        for (; inx < n_cols; inx++)
-    out[inx + 1] = NEW_DB_NULL;
-        dk_set_push (cli->cli_resultset_data_ptr, out);
-        if (cli->cli_resultset_max_rows != -1)
-    cli->cli_resultset_max_rows--;
-      }
-  }
+	{
+	  long len;
+	  long n_cols = cli->cli_resultset_cols;
+	  int inx;
+	  caddr_t *out;
+	  len = MAX ((n_cols * sizeof (caddr_t)), (box_length ((caddr_t) arg_values)));
+	  if (!cli->cli_resultset_data_ptr)
+	    {
+	      caddr_t anil = NEW_DB_NULL;
+	      out = (caddr_t *) dk_alloc_box (sizeof (caddr_t) + len, DV_ARRAY_OF_POINTER);
+	      out[0] = (caddr_t) QA_ROW;
+	      _DO_BOX (inx, ((caddr_t *) arg_values))
+	      {
+		out[inx + 1] = ((caddr_t *) arg_values)[inx];
+	      }
+	      END_DO_BOX;
+	      for (; inx < n_cols; inx++)
+		out[inx + 1] = anil;
+	      IO_SECT (qst)
+	      {
+		PrpcAddAnswer ((caddr_t) out, DV_ARRAY_OF_POINTER, PARTIAL, 0);
+	      }
+	      END_IO_SECT (err_ret);
+	      dk_free_box ((box_t) out);
+	      dk_free_box (anil);
+	    }
+	  else
+	    {
+	      out = (caddr_t *) dk_alloc_box (len, DV_ARRAY_OF_POINTER);
+	      _DO_BOX (inx, ((caddr_t *) arg_values))
+	      {
+		out[inx] = box_copy_tree (((caddr_t *) arg_values)[inx]);
+	      }
+	      END_DO_BOX;
+	      for (; inx < n_cols; inx++)
+		out[inx + 1] = NEW_DB_NULL;
+	      dk_set_push (cli->cli_resultset_data_ptr, out);
+	      if (cli->cli_resultset_max_rows != -1)
+		cli->cli_resultset_max_rows--;
+	    }
+	}
     }
   return NULL;
 }
@@ -1248,13 +1254,16 @@ bif_result_inside_bif (int n, ...)
 caddr_t
 bif_end_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
-  client_connection_t * cli = (client_connection_t *) ((query_instance_t *)qst)->qi_client;
+  caddr_t cli_ws = (caddr_t) ((query_instance_t *) qst)->qi_client->cli_ws;
+  client_connection_t *cli = (client_connection_t *) ((query_instance_t *) qst)->qi_client;
 
-  if (!cli_ws && cli_is_interactive (cli) && !cli->cli_result_qi &&
-      !cli->cli_resultset_comp_ptr)
+  if (!cli_ws && cli_is_interactive (cli) && !cli->cli_result_qi && !cli->cli_resultset_comp_ptr)
     {
-      PrpcAddAnswer (SQL_SUCCESS, DV_ARRAY_OF_POINTER, PARTIAL, 0);
+      IO_SECT (qst)
+      {
+	PrpcAddAnswer (SQL_SUCCESS, DV_ARRAY_OF_POINTER, PARTIAL, 0);
+      }
+      END_IO_SECT (err_ret);
       cli->cli_resultset_cols = 0;
     }
   return NULL;
@@ -1265,8 +1274,8 @@ caddr_t
 bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   long n_out = BOX_ELEMENTS (args), inx;
-  caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
-  client_connection_t * cli = (client_connection_t *) ((query_instance_t *)qst)->qi_client;
+  caddr_t cli_ws = (caddr_t) ((query_instance_t *) qst)->qi_client->cli_ws;
+  client_connection_t *cli = (client_connection_t *) ((query_instance_t *) qst)->qi_client;
 
   if (cli->cli_result_qi)
     return NULL;
@@ -1274,16 +1283,13 @@ bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (cli->cli_resultset_comp_ptr && *cli->cli_resultset_comp_ptr)
 	{
-	  *err_ret = srv_make_new_error ("37000", "SR001",
-	      "More than one resultset not supported in a procedure called from exec");
+	  *err_ret = srv_make_new_error ("37000", "SR001", "More than one resultset not supported in a procedure called from exec");
 	  return NULL;
 	}
       else
 	{
-	  stmt_compilation_t *sc = (stmt_compilation_t *)
-	      dk_alloc_box (sizeof (stmt_compilation_t), DV_ARRAY_OF_POINTER);
-	  col_desc_t **cols = (col_desc_t **)
-	      dk_alloc_box (n_out * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+	  stmt_compilation_t *sc = (stmt_compilation_t *) dk_alloc_box (sizeof (stmt_compilation_t), DV_ARRAY_OF_POINTER);
+	  col_desc_t **cols = (col_desc_t **) dk_alloc_box (n_out * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 	  memset (sc, 0, sizeof (stmt_compilation_t));
 
 	  for (inx = 0; inx < n_out; inx++)
@@ -1308,15 +1314,18 @@ bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  sc->sc_is_select = QT_PROC_CALL;
 	  if (!cli->cli_resultset_comp_ptr)
 	    {
-	      caddr_t *desc_box = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t),
-		  DV_ARRAY_OF_POINTER);
+	      caddr_t *desc_box = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 	      desc_box[0] = (caddr_t) QA_COMPILED;
 	      desc_box[1] = (caddr_t) sc;
-	      PrpcAddAnswer ((caddr_t) desc_box, DV_ARRAY_OF_POINTER, PARTIAL, 0);
+	      IO_SECT (qst)
+	      {
+		PrpcAddAnswer ((caddr_t) desc_box, DV_ARRAY_OF_POINTER, PARTIAL, 0);
+	      }
+	      END_IO_SECT (err_ret);
 	      dk_free_tree ((caddr_t) desc_box);
 	    }
 	  else
-	    *((caddr_t *)cli->cli_resultset_comp_ptr) = (caddr_t) sc;
+	    *((caddr_t *) cli->cli_resultset_comp_ptr) = (caddr_t) sc;
 	  cli->cli_resultset_cols = n_out;
 	}
     }
@@ -1328,14 +1337,12 @@ static caddr_t
 bif_exec_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   long n_out, inx;
-  caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
-  client_connection_t * cli = (client_connection_t *) ((query_instance_t *)qst)->qi_client;
+  caddr_t cli_ws = (caddr_t) ((query_instance_t *) qst)->qi_client->cli_ws;
+  client_connection_t *cli = (client_connection_t *) ((query_instance_t *) qst)->qi_client;
   caddr_t arg_descs = bif_arg (qst, args, 0, "exec_result_names");
 
-  if (DV_TYPE_OF (arg_descs) != DV_ARRAY_OF_POINTER ||
-      BOX_ELEMENTS (arg_descs) < 1)
-    sqlr_new_error ("22023", "SR335",
-  "The result names description should be an array in exec_result_names");
+  if (DV_TYPE_OF (arg_descs) != DV_ARRAY_OF_POINTER || BOX_ELEMENTS (arg_descs) < 1)
+    sqlr_new_error ("22023", "SR335", "The result names description should be an array in exec_result_names");
 
   n_out = BOX_ELEMENTS (arg_descs);
   if (cli->cli_result_qi)
@@ -1343,81 +1350,77 @@ bif_exec_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if ((!cli_ws && cli_is_interactive (cli)) || cli->cli_resultset_comp_ptr)
     {
       if (cli->cli_resultset_comp_ptr && *cli->cli_resultset_comp_ptr)
-  {
-    *err_ret = srv_make_new_error ("37000", "SR001",
-        "More than one resultset not supported in a procedure called from exec");
-    return NULL;
-  }
+	{
+	  *err_ret = srv_make_new_error ("37000", "SR001", "More than one resultset not supported in a procedure called from exec");
+	  return NULL;
+	}
       else
-  {
-    stmt_compilation_t *sc = (stmt_compilation_t *)
-        dk_alloc_box (sizeof (stmt_compilation_t), DV_ARRAY_OF_POINTER);
-    col_desc_t **cols = (col_desc_t **)
-        dk_alloc_box (n_out * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-    memset (sc, 0, sizeof (stmt_compilation_t));
-    memset (cols, 0, n_out * sizeof (caddr_t));
+	{
+	  stmt_compilation_t *sc = (stmt_compilation_t *) dk_alloc_box (sizeof (stmt_compilation_t), DV_ARRAY_OF_POINTER);
+	  col_desc_t **cols = (col_desc_t **) dk_alloc_box (n_out * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+	  memset (sc, 0, sizeof (stmt_compilation_t));
+	  memset (cols, 0, n_out * sizeof (caddr_t));
 
-    for (inx = 0; inx < n_out; inx++)
-      {
-        col_desc_t *desc = (col_desc_t *) dk_alloc_box (sizeof (col_desc_t),
-      DV_ARRAY_OF_POINTER);
-        caddr_t *value = ((caddr_t **)arg_descs)[inx];
+	  for (inx = 0; inx < n_out; inx++)
+	    {
+	      col_desc_t *desc = (col_desc_t *) dk_alloc_box (sizeof (col_desc_t),
+		  DV_ARRAY_OF_POINTER);
+	      caddr_t *value = ((caddr_t **) arg_descs)[inx];
 
-        cols[inx] = desc;
-        memset (desc, 0, sizeof (col_desc_t));
+	      cols[inx] = desc;
+	      memset (desc, 0, sizeof (col_desc_t));
 
-        if (DV_STRINGP (value))
-    {
-      desc->cd_name = box_dv_short_string ((caddr_t) value);
-      desc->cd_dtp = DV_SHORT_STRING;
-      desc->cd_nullable = 1;
-      desc->cd_precision = box_num (256);
-    }
-        else if (DV_TYPE_OF (value) == DV_ARRAY_OF_POINTER &&
-      (BOX_ELEMENTS (value) == 7 || BOX_ELEMENTS (value) == 12)  /* num elements in col_desc_t */)
-    {
-      if (DV_TYPE_OF (value[1]) != DV_LONG_INT ||
-          !strcmp (dv_type_title ((int) (ptrlong) value[1]), "UNK_DV_TYPE"))
-        goto error;
-      if (DV_TYPE_OF (value[2]) != DV_LONG_INT ||
-          unbox(value[2]) < 0 || unbox(value[2]) > 20)
-        goto error;
-      if (DV_TYPE_OF (value[3]) != DV_LONG_INT ||
-          unbox(value[3]) < 0)
-        goto error;
+	      if (DV_STRINGP (value))
+		{
+		  desc->cd_name = box_dv_short_string ((caddr_t) value);
+		  desc->cd_dtp = DV_SHORT_STRING;
+		  desc->cd_nullable = 1;
+		  desc->cd_precision = box_num (256);
+		}
+	      else if (DV_TYPE_OF (value) == DV_ARRAY_OF_POINTER &&
+		  (BOX_ELEMENTS (value) == 7 || BOX_ELEMENTS (value) == 12) /* num elements in col_desc_t */ )
+		{
+		  if (DV_TYPE_OF (value[1]) != DV_LONG_INT || !strcmp (dv_type_title ((int) (ptrlong) value[1]), "UNK_DV_TYPE"))
+		    goto error;
+		  if (DV_TYPE_OF (value[2]) != DV_LONG_INT || unbox (value[2]) < 0 || unbox (value[2]) > 20)
+		    goto error;
+		  if (DV_TYPE_OF (value[3]) != DV_LONG_INT || unbox (value[3]) < 0)
+		    goto error;
 
-      desc->cd_name = box_dv_short_string (value[0]);
-      desc->cd_dtp = (ptrlong) value[1];
-      desc->cd_scale = box_num (unbox (value[2]));
-      desc->cd_precision = box_num (unbox (value[3]));
-      desc->cd_nullable = value[4] ? 1 : 0;
-      desc->cd_updatable = value[5] ? 1 : 0;
-      desc->cd_searchable = value[6] ? 1 : 0;
-    }
-        else
-    {
-error:
-      dk_free_tree ((box_t) cols);
-      dk_free_box ((box_t) sc);
-      sqlr_new_error ("22023", "SR336",
-          "Wrong result description in bif_result_string_names.");
-    }
-      }
-    sc->sc_columns = (caddr_t *) cols;
-    sc->sc_is_select = QT_PROC_CALL;
-    if (!cli->cli_resultset_comp_ptr)
-      {
-        caddr_t *desc_box = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t),
-      DV_ARRAY_OF_POINTER);
-        desc_box[0] = (caddr_t) QA_COMPILED;
-        desc_box[1] = (caddr_t) sc;
-        PrpcAddAnswer ((caddr_t) desc_box, DV_ARRAY_OF_POINTER, PARTIAL, 0);
-        dk_free_tree ((caddr_t) desc_box);
-      }
-    else
-      *((caddr_t *)cli->cli_resultset_comp_ptr) = (caddr_t) sc;
-    cli->cli_resultset_cols = n_out;
-  }
+		  desc->cd_name = box_dv_short_string (value[0]);
+		  desc->cd_dtp = (ptrlong) value[1];
+		  desc->cd_scale = box_num (unbox (value[2]));
+		  desc->cd_precision = box_num (unbox (value[3]));
+		  desc->cd_nullable = value[4] ? 1 : 0;
+		  desc->cd_updatable = value[5] ? 1 : 0;
+		  desc->cd_searchable = value[6] ? 1 : 0;
+		}
+	      else
+		{
+		error:
+		  dk_free_tree ((box_t) cols);
+		  dk_free_box ((box_t) sc);
+		  sqlr_new_error ("22023", "SR336", "Wrong result description in bif_result_string_names.");
+		}
+	    }
+	  sc->sc_columns = (caddr_t *) cols;
+	  sc->sc_is_select = QT_PROC_CALL;
+	  if (!cli->cli_resultset_comp_ptr)
+	    {
+	      caddr_t *desc_box = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+	      desc_box[0] = (caddr_t) QA_COMPILED;
+	      desc_box[1] = (caddr_t) sc;
+	      IO_SECT (qst)
+	      {
+		PrpcAddAnswer ((caddr_t) desc_box, DV_ARRAY_OF_POINTER, PARTIAL, 0);
+	      }
+	      END_IO_SECT (err_ret);
+	      dk_free_tree ((caddr_t) desc_box);
+	    }
+	  else
+	    *((caddr_t *) cli->cli_resultset_comp_ptr) = (caddr_t) sc;
+	  cli->cli_resultset_cols = n_out;
+	}
     }
   return NULL;
 }
@@ -9819,7 +9822,7 @@ bif_txn_error (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_trx_no (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  #ifdef PAGE_TRACE
+#ifdef PAGE_TRACE
   return (box_num (((query_instance_t *) qst)->qi_trx->lt_trx_no));
 #else
   return (box_num (-1));
@@ -9842,31 +9845,31 @@ bif_commit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rc = lt_commit (qi->qi_trx, TRX_CONT);
   LEAVE_TXN;
   if (rc != LTE_OK)
-  {
-    caddr_t err;
-    MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (qi->qi_trx));
-    *err_ret = err;
-  }
+    {
+      caddr_t err;
+      MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (qi->qi_trx));
+      *err_ret = err;
+    }
   else
     {
 /* At this point we are sure that there are no operations waiting for something.
 So it is possible to wait for an icc mutex without the danger of deadlock. */
       if (qi->qi_client->cli_icc_lock)
-  {
-    icc_lock_t *cli_lock = qi->qi_client->cli_icc_lock;
-    if (cli_lock->iccl_waits_for_commit)
-      {
-        icc_lock_t *hash_lock = icc_lock_from_hashtable (cli_lock->iccl_name);
-        cli_lock->iccl_waits_for_commit = 0;
-	      IO_SECT(qst)
-		{
-        semaphore_enter (cli_lock->iccl_sem);
-		}
-	      END_IO_SECT(err_ret);
-        hash_lock->iccl_cli = qi->qi_client;
-        hash_lock->iccl_qi = cli_lock->iccl_qi;
-      }
-        }
+	{
+	  icc_lock_t *cli_lock = qi->qi_client->cli_icc_lock;
+	  if (cli_lock->iccl_waits_for_commit)
+	    {
+	      icc_lock_t *hash_lock = icc_lock_from_hashtable (cli_lock->iccl_name);
+	      cli_lock->iccl_waits_for_commit = 0;
+	      IO_SECT (qst)
+	      {
+		semaphore_enter (cli_lock->iccl_sem);
+	      }
+	      END_IO_SECT (err_ret);
+	      hash_lock->iccl_cli = qi->qi_client;
+	      hash_lock->iccl_qi = cli_lock->iccl_qi;
+	    }
+	}
     }
   return 0;
 }
