@@ -52,7 +52,9 @@ create procedure DAVcommand (in host varchar, in port integer, in meth varchar, 
 
 -- cleanup WebDAV repository
 delete from WS.WS.SYS_DAV_RES;
-delete from WS.WS.SYS_DAV_COL where COL_ID > 1;
+--delete from WS.WS.SYS_DAV_COL where COL_ID > 1;
+select DAV_DELETE (WS.WS.COL_PATH (COL_ID), 0, 'dav', 'dav') from WS.WS.SYS_DAV_COL where COL_PARENT = 1;
+
 select count(*) from WS.WS.SYS_DAV_RES;
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
