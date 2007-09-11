@@ -3498,9 +3498,9 @@ xp_comp_init (void)
 {
   caddr_t err;
   fixed_doc = (caddr_t) sql_compile (fixed_doc_text,
-				     bootstrap_cli, &err, SQLC_PARSE_ONLY);
+				     bootstrap_cli, &err, SQLC_DEFAULT);
   wildcard_doc = (caddr_t) sql_compile (wildcard_doc_text,
-					bootstrap_cli, &err, SQLC_PARSE_ONLY);
+					bootstrap_cli, &err, SQLC_DEFAULT);
 }
 
 
