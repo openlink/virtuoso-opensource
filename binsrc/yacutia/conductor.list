@@ -429,3 +429,6 @@ conductor/sparql_filters.vspx
 conductor/rdf_filters.vspx
 conductor/http_url_rewrite.vspx
 conductor/fb_popup.vspx
+conductor/vad_install_batch.vspx
+conductor/vad_remove_batch.vspx
+conductor/vad_src.vspx

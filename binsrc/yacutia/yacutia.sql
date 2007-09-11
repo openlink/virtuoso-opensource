@@ -242,6 +242,9 @@ create procedure adm_menu_tree ()
      <node name="Package status" url="vad_status.vspx"  id="31" place="1" allowed="yacutia_vad_page"/>
      <node name="WA Package" url="vad_wa_config.vspx"  id="32" place="1" allowed="yacutia_vad_page"/>
      <node name="WA Package" url="vad_wa_create.vspx"  id="312" place="1" allowed="yacutia_vad_page"/>
+     <node name="Install packages" url="vad_install_batch.vspx"  id="29" place="1" allowed="yacutia_vad_page"/>
+     <node name="Remove packages" url="vad_remove_batch.vspx"  id="30" place="1" allowed="yacutia_vad_page"/>
+     <node name="Select VAD source" url="vad_src.vspx"  id="30" place="1" allowed="yacutia_vad_page"/>
    </node>
    <node name="Monitor" url="logging_page.vspx"  id="33" allowed="yacutia_loging_page">
      <node name="Version &amp; License Info" url="logging.vspx"  id="34" place="1" allowed="yacutia_loging_page"/>
@@ -5215,11 +5218,14 @@ create procedure y_sprintf_to_reg (in fmt varchar, in in_list any, in o_list any
       _left := substring (cp_fmt, 1, _from);
       _right := substring (cp_fmt, _to+1, length (cp_fmt));
 
+      if (inx < length (o_list))
       pos := position (o_list[inx], in_list);
+      else
+        pos := 0;
 
       fchar := ltrim (pc, '%');
       par := sprintf ('\x24%s%d', fchar, pos);
-      if (pos = 0 and o_list[inx] = '*accept*')
+      if (pos = 0 and inx < length (o_list) and o_list[inx] = '*accept*')
 	par := '\x24accept';
 
       cp_fmt := _left || par || _right;
@@ -5346,3 +5352,124 @@ create procedure view URL_REWRITE_LIST_DUMP as URL_REWRITE_LIST_DUMP (rule_list)
 	U_HM_NICE_FMT varchar, U_NICE_MIN_PARAMS int, U_TARGET_FORMAT varchar,
 	U_TARGET_EXPR varchar, U_ACCEPT_PATTERN varchar,
 	U_NO_CONTINUATION int, U_HTTP_REDIRECT int, U_HTTP_HEADERS varchar);
+create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
+{
+  declare vads, name, ver, arr, isdav any;
+  declare pname, pver, pfull, pisdav, pdate any;
+  declare vaddir any;
+  declare nlist, ilist, alist, tmp any;
+
+  declare PKG_NAME, PKG_VER, PKG_DATE, PKG_INST, PKG_DESC, PKG_NVER, PKG_NDATE, PKG_FILE, PKG_DEST varchar;
+
+  result_names (PKG_NAME, PKG_DESC, PKG_VER, PKG_DATE, PKG_INST, PKG_NVER, PKG_NDATE, PKG_FILE, PKG_DEST);
+
+  nlist := vector ();
+  vaddir := dir;
+  if (vaddir is null and fs_type = 0)
+    vaddir := cfg_item_value (virtuoso_ini_path (), 'Parameters', 'VADInstallDir');
+
+  if (vaddir is null)
+    return;
+
+  declare exit handler for sqlstate '*'
+  {
+    goto merge;
+  };
+
+  if (vaddir not like '%/')
+    vaddir := vaddir || '/';
+
+  if (fs_type = 0)
+    arr := sys_dirlist (vaddir, 1);
+  else
+    arr := (select vector_agg (RES_NAME) from WS..SYS_DAV_RES where RES_FULL_PATH like vaddir || '%' and RES_FULL_PATH = vaddir||RES_NAME);
+
+  foreach (any f in arr) do
+    {
+       if (f like '%.vad')
+	 {
+
+	   declare st, rc int;
+	   declare continue handler for sqlstate '*';
+
+	   pisdav := 0;
+           if (f like '%_dav.vad')
+             pisdav := 1;
+
+	   st := msec_time ();
+	   rc := VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, pdate, fs_type);
+
+           if (rc)
+           nlist := vector_concat (nlist, vector (pname, vector (pver, pdate, f)));
+	 }
+    }
+  merge:
+  declare exit handler for sqlstate '*'
+  {
+    resignal;
+  };
+  ilist := VAD.DBA.VAD_GET_PACKAGES ();
+  tmp := make_array (length (ilist) * 2, 'any');
+
+  for (declare i,l int, i := 0, l := length (ilist); i < l; i := i + 1)
+    {
+      declare isdav int;
+      isdav := 0;
+      if (exists (select top 1 1 from VAD.DBA.VAD_REGISTRY
+	    where R_KEY like sprintf ('/VAD/%s/%s/resources/dav/%%', ilist[i][1], ilist[i][2])))
+	isdav := 1;
+      tmp[i*2] := ilist[i][1];
+      tmp[(i*2)+1] := vector_concat (ilist[i], vector (null, null, null, isdav));
+    }
+  ilist := tmp;
+
+  tmp := vector ();
+  for (declare i,l int, i := 0, l := length (nlist); i < l; i := i + 2)
+    {
+      declare pos, nisdav int;
+      nisdav := 0;
+      if (nlist[i+1][2] like '%_dav.vad')
+	nisdav := 1;
+      if ((pos := position (nlist[i], ilist)))
+	{
+	  if (lte (ilist[pos][2], nlist[i+1][0]) and ilist[pos][9] = nisdav)
+	    {
+	      ilist[pos][6] := nlist[i+1][0];
+	      ilist[pos][7] := nlist[i+1][1];
+	      ilist[pos][8] := nlist[i+1][2];
+	    }
+	}
+      else
+	{
+	  declare suf any;
+	  suf := 0;
+	  if (nlist[i+1][2] like '%_dav.vad')
+	    suf := 1;
+	  tmp := vector_concat (tmp,
+	  	vector (nlist[i], vector (0, nlist[i], null, null, null, 'n/a', nlist[i+1][0], nlist[i+1][1], nlist[i+1][2], suf)));
+	}
+    }
+  ilist := vector_concat (ilist, tmp);
+  for (declare i,l int, i := 0, l := length (ilist); i < l; i := i + 2)
+    {
+      result
+	  (
+	      ilist[i+1][1],
+	      ilist[i+1][5],
+	      ilist[i+1][2],
+	      ilist[i+1][3],
+	      ilist[i+1][4],
+	      ilist[i+1][6],
+	      ilist[i+1][7],
+	      ilist[i+1][8],
+	      ilist[i+1][9]
+	  );
+    }
+};
+
+yacutia_exec_no_error('drop view DB.DBA.YAC_VAD_LIST');
+
+create procedure view YAC_VAD_LIST as DB.DBA.YAC_VAD_LIST (dir, fs_type)
+    (PKG_NAME varchar,  PKG_DESC varchar,  PKG_VER varchar,  PKG_DATE varchar,  PKG_INST varchar,
+     PKG_NVER varchar,  PKG_NDATE  varchar,  PKG_FILE varchar, PKG_DEST int);
+
