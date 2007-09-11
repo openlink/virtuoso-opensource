@@ -68,7 +68,7 @@ extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
 #define SPAR_CODEGEN		(ptrlong)1016
 /* Don't forget to update sparp_tree_full_clone_int() and sparp_tree_full_copy() */
 
-#define SPARP_MAX_LEXDEPTH 16
+#define SPARP_MAX_LEXDEPTH 30
 #define SPARP_MAX_SYNTDEPTH SPARP_MAX_LEXDEPTH+10
 
 #define SPARP_MAXLIMIT 0x7Fffffff /* Default value for LIMIT clause of SELECT */
