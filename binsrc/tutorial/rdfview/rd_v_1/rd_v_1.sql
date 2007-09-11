@@ -45,6 +45,7 @@ prefix tut_northwind: <http://www.openlinksw.com/schemas/tutorial/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
 create iri class tut_northwind:Category "http://^{URIQADefaultHost}^/tutorial/Northwind/Category/%d#this" (in category_id integer not null) .
 create iri class tut_northwind:Shipper "http://^{URIQADefaultHost}^/tutorial/Northwind/Shipper/%d#this" (in shipper_id integer not null) .
 create iri class tut_northwind:Supplier "http://^{URIQADefaultHost}^/tutorial/Northwind/Supplier/%d#this" (in supplier_id integer not null) .
@@ -56,7 +57,8 @@ create iri class tut_northwind:CustomerContact "http://^{URIQADefaultHost}^/tuto
 create iri class tut_northwind:OrderLine "http://^{URIQADefaultHost}^/tutorial/Northwind/OrderLine/%d/%d#this" (in order_id integer not null, in product_id integer not null) .
 create iri class tut_northwind:Province "http://^{URIQADefaultHost}^/tutorial/Northwind/Province/%U/%U#this" (in country_name varchar not null, in province_name varchar not null) .
 create iri class tut_northwind:Country "http://^{URIQADefaultHost}^/tutorial/Northwind/Country/%U#this" (in country_name varchar not null) .
-create iri class tut_northwind:Flag "http://^{URIQADefaultHost}^/DAV/sample_data/images/flags/%s#this" (in flag_path varchar not null) .
+create iri class tut_northwind:Flag "http://^{URIQADefaultHost}^%s#this" (in flag_path varchar not null) .
+create iri class tut_northwind:dbpedia_iri "http://dbpedia.org/resource/%U" (in uname varchar not null) .
 ')
 ;
 
@@ -66,6 +68,7 @@ prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+prefix owl: <http://www.w3.org/2002/07/owl#>
 alter quad storage virtrdf:DefaultQuadStorage
 from Demo.demo.Products as products
 from Demo.demo.Suppliers as suppliers
@@ -237,7 +240,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutEmployee-extension ;
                         tut_northwind:notes employees.Notes
                                 as virtrdf:tutEmployee-notes ;
-                        tut_northwind:reportsTo employees.ReportsTo
+                        tut_northwind:reportsTo tut_northwind:Employee(employees.ReportsTo)
                                 as virtrdf:tutEmployee-reports_to .
                 tut_northwind:Employee (orders.EmployeeID)
                         tut_northwind:is_salesrep_of
@@ -301,17 +304,18 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                 tut_northwind:Country (countries.Name)
                         a wgs:SpatialThing
                                 as virtrdf:tutCountry-Type ;
+                        owl:sameAs tut_northwind:dbpedia_iri (countries.Name) ;
                         tut_northwind:name countries.Name
                                 as virtrdf:tutCountry-Name ;
                         tut_northwind:code countries.Code
                                 as virtrdf:tutCountry-Code ;
-                        tut_northwind:smallFlagDAVResourceName tut_northwind:Flag (countries.SmallFlagDAVResourceName)
+                        tut_northwind:smallFlagDAVResourceName countries.SmallFlagDAVResourceName
                                 as virtrdf:tutCountry-SmallFlagDAVResourceName ;
-                        tut_northwind:largeFlagDAVResourceName tut_northwind:Flag (countries.LargeFlagDAVResourceName)
+                        tut_northwind:largeFlagDAVResourceName countries.LargeFlagDAVResourceName
                                 as virtrdf:tutCountry-LargeFlagDAVResourceName ;
-                        tut_northwind:smallFlagDAVResourceURI countries.SmallFlagDAVResourceURI
+                        tut_northwind:smallFlagDAVResourceURI tut_northwind:Flag(countries.SmallFlagDAVResourceURI)
                                 as virtrdf:tutCountry-SmallFlagDAVResourceURI ;
-                        tut_northwind:largeFlagDAVResourceURI countries.LargeFlagDAVResourceURI
+                        tut_northwind:largeFlagDAVResourceURI tut_northwind:Flag(countries.LargeFlagDAVResourceURI)
                                 as virtrdf:tutCountry-LargeFlagDAVResourceURI ;
                         wgs:lat countries.Lat
                                 as virtrdf:tutCountry-Lat ;
@@ -325,7 +329,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                 tut_northwind:Province (provinces.CountryCode, provinces.Province)
                         a tut_northwind:Province
                                 as virtrdf:tutProvince-Provinces ;
-                        tut_northwind:has_country_code tut_northwind:Country (provinces.CountryCode)
+                        tut_northwind:has_country_code provinces.CountryCode
                                 as virtrdf:tuthas_country_code ;
                         tut_northwind:provinceName provinces.Province
                                 as virtrdf:tutProvince-ProvinceName .
