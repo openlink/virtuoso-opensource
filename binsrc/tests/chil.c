@@ -540,6 +540,8 @@ out:;
 
   if (!strchr (mode, 'b'))
     http_init_part_two ();
+  if (2 == cl_run_local_only)
+    cl_run_local_only = 0; /*boot local and run with cluster on.  For debug.  Do here because this is last init.  */
 #ifdef REPLICATION
   if (read_from_rebuilt_database)	/* if booting from crash log, */
     {				/* go read the account levels from db */
@@ -587,13 +589,15 @@ extern int main_thread_ready;
    (if cfg_autocheckpoint is defined in wi.cfg) when the_grim_lock_reaper
    (in lock.c) periodically releases the semaphore for this thread.
  */
+extern semaphore_t * background_sem;
+
 int
 main_the_rest (void)
 {
   while (1)
     {
       main_thread_ready = 1;
-      semaphore_enter (current_process->thr_sem);
+      semaphore_enter (background_sem);
       if (db_shutdown)
 	{
 	  sf_shutdown (NULL, NULL);

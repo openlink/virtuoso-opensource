@@ -103,7 +103,7 @@ unsigned long int cfg_thread_threshold = 10;
 /* Specified in minutes. Note that 1440 minutes = 24 hours. */
 unsigned long int cfg_autocheckpoint = 0;
 int32 c_checkpoint_interval = 0;
-
+int32 cl_run_local_only;
 int wi_blob_page_dir_threshold;
 
 char *run_as_os_uname = NULL;

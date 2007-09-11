@@ -888,6 +888,7 @@ extern long last_exec_time;	/* used to know when the system is idle */
 
 extern unsigned long int cfg_autocheckpoint;	/* Defined in disk.c */
 extern int32 c_checkpoint_interval;
+extern int32 cl_run_local_only;
 extern unsigned long int cfg_thread_live_period;
 extern unsigned long int cfg_thread_threshold;
 extern du_thread_t *the_main_thread;	/* Set in srv_global_init in sqlsrv.c */
