@@ -52,7 +52,10 @@ int virt_wcsncmp (wchar_t *from, wchar_t *to, size_t len);
 
 caddr_t box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp);
 caddr_t t_box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp);
-caddr_t box_wide_as_utf8_char (ccaddr_t _wide, size_t wide_len, dtp_t dtp);
+extern caddr_t DBG_NAME (box_wide_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size_t wide_len, dtp_t dtp);
+#ifdef MALLOC_DEBUG
+#define box_wide_as_utf8_char(w,l,d) dbg_box_wide_as_utf8_char (__FILE__,__LINE__,(w),(l),(d))
+#endif
 wchar_t CHAR_TO_WCHAR (unsigned char uchar, wcharset_t *charset);
 unsigned char WCHAR_TO_CHAR (wchar_t wchar, wcharset_t *charset);
 

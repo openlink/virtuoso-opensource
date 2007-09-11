@@ -43,7 +43,10 @@ caddr_t box_narrow_string_as_wide (unsigned char *str, caddr_t wide, long max_le
 caddr_t box_wide_string_as_narrow (caddr_t str, caddr_t narrow, long max_len, wcharset_t *charset);
 caddr_t box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset);
 caddr_t t_box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset);
-caddr_t box_narrow_string_as_utf8 (caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset);
+caddr_t DBG_NAME (box_narrow_string_as_utf8) (DBG_PARAMS caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset);
+#ifdef MALLOC_DEBUG
+#define box_narrow_string_as_utf8(s,n,m,c) dbg_box_narrow_string_as_utf8 (__FILE__, __LINE__, (s), (n), (m), (c))
+#endif
 int parse_wide_string_literal (unsigned char **str_ptr, caddr_t box, wcharset_t *charset);
 
 extern id_hash_t * global_wide_charsets;

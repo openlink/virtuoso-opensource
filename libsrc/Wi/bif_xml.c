@@ -46,6 +46,7 @@
 #include "xmltree.h"
 #include "bif_xper.h"
 #include "srvmultibyte.h"
+#include "multibyte.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -3892,7 +3893,7 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	  return literal_as_utf8 (eh, data, box_length (data) - 1);
 	else
 	*/
-	  return box_narrow_string_as_utf8 (NULL, data, 0, QST_CHARSET (qst));
+	  return DBG_NAME (box_narrow_string_as_utf8) (DBG_ARGS NULL, data, 0, QST_CHARSET (qst));
       }
     default:
       {

@@ -940,7 +940,7 @@ t_box_utf8_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharse
 }
 
 caddr_t
-box_narrow_string_as_utf8 (caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset)
+DBG_NAME(box_narrow_string_as_utf8) (DBG_PARAMS caddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset)
 {
   caddr_t box = NULL, tmp;
   if (!charset)
@@ -955,7 +955,7 @@ box_narrow_string_as_utf8 (caddr_t _str, caddr_t narrow, long max_len, wcharset_
   tmp = box_narrow_string_as_wide ((unsigned char *) narrow, NULL, 0, charset);
   if (tmp)
     {
-      box = box_wide_as_utf8_char (tmp, box_length (tmp) / sizeof (wchar_t) - 1, DV_STRING);
+      box = DBG_NAME (box_wide_as_utf8_char) (DBG_ARGS tmp, box_length (tmp) / sizeof (wchar_t) - 1, DV_STRING);
       dk_free_box (tmp);
     }
   return box;

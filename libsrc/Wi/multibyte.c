@@ -87,7 +87,7 @@ box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size
 
 
 caddr_t
-box_wide_as_utf8_char (ccaddr_t _wide, size_t wide_len, dtp_t dtp)
+DBG_NAME(box_wide_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size_t wide_len, dtp_t dtp)
 {
   char *dest;
   size_t utf8_len;
@@ -100,7 +100,7 @@ box_wide_as_utf8_char (ccaddr_t _wide, size_t wide_len, dtp_t dtp)
   utf8_len = virt_wcsnrtombs (NULL, &wide_work, wide_len, 0, &state);
   if (((long) utf8_len) < 0)
     return NULL;
-  dest = dk_alloc_box (utf8_len + 1, dtp);
+  dest = DBG_NAME (dk_alloc_box) (DBG_ARGS utf8_len + 1, dtp);
 
   wide_work = wide;
   memset (&state, 0, sizeof (virt_mbstate_t));
