@@ -36,6 +36,7 @@
 #include "CLI.h"
 #include "repl.h"
 #include "replsr.h"
+#include "eqlcomp.h"
 
 #include "2pc.h"
 #include "2pc_client.h"
