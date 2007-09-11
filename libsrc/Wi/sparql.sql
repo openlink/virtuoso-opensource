@@ -167,6 +167,7 @@ create procedure DB.DBA.RDF_GLOBAL_RESET ()
   delete from DB.DBA.RDF_DATATYPE;
   delete from DB.DBA.RDF_LANGUAGE;
   delete from DB.DBA.RDF_OBJ_FT_RULES;
+  delete from DB.DBA.RDF_OBJ_RO_DIGEST_WORDS;
   for select rs_name from sys_rdf_schema do
     rdf_inf_clear (rs_name);
   delete from sys_rdf_schema;
@@ -1247,7 +1248,8 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
   declare t int;
   declare res any;
   t := __tag (v);
-  if (not t in (126, 182, 217, 225, 230))
+--  if (not t in (126, 182, 217, 225, 230))
+  if (position (t, vector (126, 182, 217, 225, 230)))
     return v;
   if (225 = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
@@ -1264,8 +1266,8 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
   declare t, dt_twobyte, lang_twobyte int;
   declare res any;
   t := __tag (v);
-  if (not t in (182, 217, 225, 230))
-    signal ('RDFXX', 'DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL() accepts only string representations of typed values');
+--  if (not t in (182, 217, 225, 230))
+--    signal ('RDFXX', 'DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL() accepts only string representations of typed values');
   if (225 = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t)
@@ -2846,6 +2848,11 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any) returns varchar
   case (gt (__trx_disk_log_length (0, S, O), 1000000))
   when 0 then 1 else 1 + exec (coalesce ('commit work', S, O)) end;
   commit work;
+  delete from DB.DBA.RDF_OBJ_RO_DIGEST_WORDS
+  where VT_WORD = cast (iri_to_id (graph_iri) as varchar) and
+  case (gt (__trx_disk_log_length (0, S, O), 1000000))
+  when 0 then 1 else 1 + exec (coalesce ('commit work', S, O)) end;
+  commit work;
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
   return sprintf ('Clear <%s> -- done', graph_iri);
@@ -3094,7 +3101,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
       vectorbld_final (phys_subjects);
       goto describe_physical_subjects;
     }
-  -- dbg_obj_princ ('storage_name=',storage_name);
+  -- dbg_obj_princ ('storage_name=',storage_name, ' sorted_graphs=', sorted_graphs);
   for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
     {
       declare s, phys_s, maps any;
@@ -3199,6 +3206,7 @@ describe_physical_subjects:
     }
   gvector_sort (sorted_graphs, 1, 0, 0);
   g_count := length (sorted_graphs);
+  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
   for (g_ctr := g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
     {
       declare graph any;
@@ -5973,6 +5981,8 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       http ('&named-graph-uri=', req_body);
       http_url (uri, 0, req_body);
     }
+  if (maxrows is not null)
+    http (sprintf ('&maxrows=%d', maxrows), req_body);
   req_body := string_output_string (req_body);
   local_req_hdr := 'Accept: application/sparql-results+xml, text/rdf+n3, text/rdf+ttl, application/turtle, application/x-turtle, application/rdf+xml, application/xml';
   if (length (req_body) + length (service) >= 1900)
@@ -6138,7 +6148,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
                     {
                       declare lang, dt varchar;
                       lang := charset_recode (xpath_eval ('*/@xml:lang', ret_col), '_WIDE_', 'UTF-8');
-                      dt := charset_recode (xpath_eval ('*/datatype', ret_col), '_WIDE_', 'UTF-8');
+                      dt := charset_recode (xpath_eval ('*/@datatype', ret_col), '_WIDE_', 'UTF-8');
                       out_fields [var_pos] := DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
                         var_strval, dt, lang );
                     }
@@ -6261,6 +6271,7 @@ create procedure DB.DBA.SPARQL_REXEC_WITH_META (
   )
 {
   resultset := DB.DBA.SPARQL_REXEC_INT (1, service, query, dflt_graph, named_graphs, req_hdr, maxrows, metadata, bnode_dict);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_WITH_META (): metadata = ', metadata, ' resultset = ', resultset);
 }
 ;
 
@@ -8623,7 +8634,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2007-09-23 0001'
+                virtrdf:version '2007-08-26 0002'
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -8655,6 +8666,13 @@ virtrdf:DefaultQuadStorage-UserMaps
       sum_lst := vector_concat (lst1, lst2);
       foreach (any triple in sum_lst) do
         {
+          if ((triple[1] = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')) and
+            isiri_id (triple[2]) and (triple[2] = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat')))
+            {
+              -- dbg_obj_princ ('will delete whole ', id_to_iri (triple[0]));
+              delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where G = jso_sys_g_iid and S = triple[0];
+            }
+          else
           delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where G = jso_sys_g_iid and S = triple[0] and P = triple[1];
         }
       foreach (any triple in sum_lst) do
