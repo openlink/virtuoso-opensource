@@ -133,7 +133,7 @@ setp_mem_sort (setp_node_t * setp, caddr_t * qst)
 
   if (!arr)
     {
-      if (setp_top_row_limit < top + skip)
+      if ((setp_top_row_limit < top) || (setp_top_row_limit < skip) || (setp_top_row_limit < top + skip))
 	sqlr_new_error ("22023", "SR353",
 	     "Sorted TOP clause specifies more then %ld rows to sort. "
 	     "Only %ld are allowed. "
