@@ -244,6 +244,7 @@ void bif_uuencode_init(void);
 void bif_udt_init(void);
 void bif_xmlenc_init(void);
 void tp_bif_init(void);
+void bif_json_init (void);
 #ifdef _KERBEROS
 void  bif_kerberos_init (void);
 #endif
@@ -13032,6 +13033,7 @@ sql_bif_init (void)
   bif_aq_init ();
   bif_diff_init();
   rdf_box_init ();
+  bif_json_init ();
   return;
 }
 
