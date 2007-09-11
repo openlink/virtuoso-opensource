@@ -1136,7 +1136,8 @@ dfe_table_cost_1 (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, 
       DO_SET (df_elt_t *, pred, &dfe->_.table.col_preds)
 	{
 	  df_elt_t ** in_list = sqlo_in_list (pred, NULL, NULL);
-	  dbe_column_t * left_col = in_list ? in_list[0]->_.col.col : pred->_.bin.left->_.col.col;
+	  dbe_column_t * left_col = in_list ? in_list[0]->_.col.col : 
+	    (pred->_.bin.left->dfe_type == DFE_COLUMN ? pred->_.bin.left->_.col.col : NULL);
 	  if (DFE_TEXT_PRED == pred->dfe_type)
 	    continue;
 	  if (DFE_BOP_PRED == pred->dfe_type && part == left_col && pred != lower && pred != upper)

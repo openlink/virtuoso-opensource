@@ -2191,7 +2191,7 @@ sqlo_key_part_best (dbe_column_t * col, dk_set_t col_preds, int upper_only)
 	    best_score = 5;
 	  }
       }
-    else if (!sqlo_in_list (cp, NULL, NULL) && cp->_.bin.left->_.col.col == col)
+    else if (!sqlo_in_list (cp, NULL, NULL) && DFE_COLUMN == cp->_.bin.left->dfe_type && cp->_.bin.left->_.col.col == col)
       {
 	if (cp->dfe_is_placed < DFE_GEN
 	    && (!upper_only || dfe_is_upper (cp)))
