@@ -176,9 +176,9 @@ static int ttlp_NUMBER_double (TTLP_PARAM void *yylval)
 	/* Special unreacheable state to fill the first item of ttlp_inst.ttlp_lexstates */
 %x UNREACHEABLE
 
-XMLNS_NCNAME	([A-Za-z_][A-Za-z0-9_.-]*)
+XMLNS_NCNAME	([A-Za-z\x7f-\xfe_][A-Za-z0-9_.\x7f-\xfe-]*)
 XMLNS_QNAME1	(({XMLNS_NCNAME}":")?{XMLNS_NCNAME})
-XMLNS_QNAME	({XMLNS_QNAME1}|("(!"[A-Za-z0-9:_./%#+-]+"!)"))
+XMLNS_QNAME	({XMLNS_QNAME1}|("(!"[A-Za-z0-9:_./%#+\x7f-\xfe-]+"!)"))
 XMLNS_QQNAME	({XMLNS_NCNAME}":"({XMLNS_NCNAME}":")+{XMLNS_NCNAME})
 XML_RESERVED	({X}{M}{L}([A-Za-z0-9_.-]*)":"{XMLNS_NCNAME})
 
@@ -201,12 +201,12 @@ HEX		([0-9A-Fa-f])
   SPAR_NCNAME		({SPAR_NCCHAR1}(({SPAR_NCCHAR}|[.])*{SPAR_NCCHAR})?)
   */
 
-SPAR_NCCHAR1p	([A-Za-z])
-SPAR_NCCHAR1	([A-Za-z_])
-SPAR_VARNAME	([A-Za-z0-9_]+)
-SPAR_NCCHAR	([A-Za-z0-9_-])
-SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
-SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
+SPAR_NCCHAR1p	([A-Za-z\x7f-\xfe])
+SPAR_NCCHAR1	([A-Za-z\x7f-\xfe_])
+SPAR_VARNAME	([A-Za-z0-9\x7f-\xfe_]+)
+SPAR_NCCHAR	([A-Za-z0-9_\x7f-\xfe-])
+SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
+SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 
 %%
 
@@ -356,17 +356,14 @@ ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
   ttlp_t *ttlp;
   if (!DV_STRINGP(str))
     {
-      return list (1, list (3, (ptrlong)0, (ptrlong)0, box_dv_short_string ("SPARQL analyzer: input text is not a string")));
+      return list (1, list (3, (ptrlong)0, (ptrlong)0, box_dv_short_string ("TURTLE parser: input text is not a string")));
     }
-  if (!ttl_lex_mtx)
-    ttl_lex_mtx = mutex_allocate ();
-  mutex_enter (ttl_lex_mtx);
   ttlp = ttlp_alloc ();
   QR_RESET_CTX
     {
       ttlp->ttlp_text = str;
       ttlp->ttlp_text_len = strlen (str);
-      ttlp->ttlp_err_hdr = "INITIAL analyzer";
+      ttlp->ttlp_err_hdr = "TURTLE parser";
       if (NULL == query_charset)
 	query_charset = default_charset;
       if (NULL == query_charset)
@@ -401,7 +398,6 @@ ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset)
       /*no POP_QR_RESET*/;
     }
   END_QR_RESET
-  mutex_leave (ttl_lex_mtx);
   if (NULL != ttlp->ttlp_catched_error)
     {
       dk_set_push (&lexems, list (3,
