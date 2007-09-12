@@ -2850,8 +2850,8 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any) returns varchar
   commit work;
   delete from DB.DBA.RDF_OBJ_RO_DIGEST_WORDS
   where VT_WORD = cast (iri_to_id (graph_iri) as varchar) and
-  case (gt (__trx_disk_log_length (0, S, O), 1000000))
-  when 0 then 1 else 1 + exec (coalesce ('commit work', S, O)) end;
+  case (gt (__trx_disk_log_length (0, VT_D_ID, VT_D_ID_2), 1000000))
+  when 0 then 1 else 1 + exec (coalesce ('commit work', VT_D_ID, VT_D_ID_2)) end;
   commit work;
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
