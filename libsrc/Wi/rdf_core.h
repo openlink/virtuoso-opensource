@@ -99,7 +99,9 @@ typedef struct ttlp_s
 } ttlp_t;
 
 
+#ifndef RE_ENTRANT_TTLYY
 extern dk_mutex_t *ttl_lex_mtx;
+#endif
 extern ttlp_t global_ttlp;
 extern ttlp_t *ttlp_alloc (void);
 extern void ttlp_free (ttlp_t *ttlp);

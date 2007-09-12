@@ -293,14 +293,18 @@ ttlp_t global_ttlp;
 ttlp_t *
 ttlp_alloc (void)
 {
+  ttlp_t *ttlp;
 #ifdef RE_ENTRANT_TTLYY
-  ttlp_t *ttlp = (ttlp_t *)dk_alloc (sizeof (ttlp_t));
+  ttlp = (ttlp_t *)dk_alloc (sizeof (ttlp_t));
 #else
-  ttlp_t *ttlp = &global_ttlp;
+  if (!ttl_lex_mtx)
+    ttl_lex_mtx = mutex_allocate ();
+  mutex_enter (ttl_lex_mtx);
+  ttlp = &global_ttlp;
 #endif
   memset (ttlp, 0, sizeof (ttlp_t));
   ttlp->ttlp_lexlineno = 1;
-  ttlp->ttlp_tf = tf_alloc();
+  ttlp->ttlp_tf = tf_alloc ();
   return ttlp;
 }
 
@@ -319,6 +323,8 @@ ttlp_free (ttlp_t *ttlp)
   dk_free_tree (ttlp->ttlp_formula_iid);
 #ifdef RE_ENTRANT_TTLYY
   dk_free (ttlp, sizeof (ttlp_t));
+#else
+  mutex_leave (ttl_lex_mtx);
 #endif
 }
 
@@ -694,14 +700,10 @@ rdf_load_turtle (
   triple_feed_t *tf;
   if (DV_BLOB_XPER_HANDLE == dtp_of_text)
     sqlr_new_error ("42000", "SP036", "Unable to parse TURTLE from persistent XML object");
-  if (!ttl_lex_mtx)
-    ttl_lex_mtx = mutex_allocate ();
-  mutex_enter (ttl_lex_mtx);
   ttlp = ttlp_alloc ();
   ttlp->ttlp_flags = flags;
   tf = ttlp->ttlp_tf;
   tf->tf_qi = qi;
-  tf->tf_graph_uri = box_copy (graph_uri);
   tf->tf_app_env = app_env;
   if ((DV_BLOB_HANDLE == dtp_of_text) /* !!!TBD: add wide support: || (DV_BLOB_WIDE_HANDLE == dtp_of_text)*/ )
     {
@@ -744,12 +746,12 @@ rdf_load_turtle (
       ttlp->ttlp_text_len = box_length(text) - 1;
       goto iter_is_set;
     }
-  mutex_leave (ttl_lex_mtx);
   ttlp_free (ttlp);
   sqlr_new_error ("42000", "SP037",
     "Unable to parse TURTLE from data of type %s (%d)", dv_type_title (dtp_of_text), dtp_of_text);
 
 iter_is_set:
+  tf->tf_graph_uri = box_copy (graph_uri);
   ttlp->ttlp_err_hdr = "TURTLE RDF loader";
   if (NULL == query_charset)
     query_charset = default_charset;
@@ -785,7 +787,6 @@ iter_is_set:
       /*no POP_QR_RESET*/;
     }
   END_QR_RESET
-  mutex_leave (ttl_lex_mtx);
   err_ret[0] = ttlp->ttlp_catched_error;
   ttlp->ttlp_catched_error = NULL;
   res = ttlp->ttlp_tf->tf_graph_uri;
