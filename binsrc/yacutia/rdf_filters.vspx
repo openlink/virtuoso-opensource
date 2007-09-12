@@ -131,7 +131,7 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 				  <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" />
 			      </td>
 			      <td>
-				  <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
+				  <v:label name="la1" format="%70.70s" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
 
 			      </td>
 			      <td>
