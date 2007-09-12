@@ -83,6 +83,7 @@ object	: OBJ_BEGIN members OBJ_END {
 
 members : pair 		    { $$ = $1; }
 	| pair COMMA members  { $$ = t_NCONC ($1, $3); }
+	;
 
 pair	: STRING COLON value  { 
      		dk_set_t set = NULL;

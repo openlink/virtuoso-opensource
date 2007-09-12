@@ -52,4 +52,6 @@ rdf_mapping_jso.c
 rdf_mapping_jso.h
 rdf_mapping_jso.ttl
 rdf_mapping_jso.ttl-sample
-
+json_p.c
+json_p.h
+json_l.c

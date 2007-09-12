@@ -55,32 +55,29 @@ noinst_HEADERS = \
 	virtext.h virtpwd.h widd.h widisk.h widv.h wifn.h wi.h wirpce.h \
 	wiservic.h wi_xid.h xmlenc_algos.h xmlenc.h xmlenc_test.h xmlgen.h \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
-	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h
+	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h \
+	json_p.h
 
 
 generated_code = \
+	json_l.c \
+	json_p.c \
+	json_p.h \
+	rdf_mapping_jso.c \
+	rdf_mapping_jso.h \
+	rdf_mapping_jso.ttl \
+	rdf_mapping_jso.ttl-sample \
 	scn3.c \
 	scn3split.c \
 	sparql_l.c \
 	sparql_p.c \
 	sparql_p.h \
 	sql3.c \
-	sqlwords.h \
-	turtle_l.c \
-	turtle_p.c \
-	turtle_p.h \
-	xpathp.c \
-	xpathp.h \
-	xpscn.c \
-	rdf_mapping_jso.h \
-	rdf_mapping_jso.c \
-	rdf_mapping_jso.ttl \
-	rdf_mapping_jso.ttl-sample \
-	sql_code.c \
 	sql_code_1.c \
 	sql_code_2pc.c \
 	sql_code_adm.c \
 	sql_code_auto.c \
+	sql_code.c \
 	sql_code_cache.c \
 	sql_code_dav.c \
 	sql_code_dbp.c \
@@ -89,7 +86,14 @@ generated_code = \
 	sql_code_sparql.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
-	sql_code_vdb.c
+	sql_code_vdb.c \
+	sqlwords.h \
+	turtle_l.c \
+	turtle_p.c \
+	turtle_p.h \
+	xpathp.c \
+	xpathp.h \
+	xpscn.c
 
 BUILT_SOURCES = $(generated_code)
 CLEANFILES = \
@@ -118,75 +122,97 @@ C_FILES_SPARQL	= \
 
 
 libwi_la_SOURCES = \
-	sql3.c \
-	scn3.c \
-	xpathp.c \
-	xpscn.c \
-	schspace.c \
-	arith.c \
 	aqueue.c \
+	arith.c \
 	auxfiles.c \
 	bif_audio.c \
+	bif_crypto.c \
 	bif_diff.c \
 	bif_intl.c \
+	bif_json.c \
 	bif_regexp.c \
+	bif_uuencode.c \
+	bitmap.c \
 	blob.c \
 	blobio.c \
 	datesupp.c \
 	ddlrun.c \
-	dks_esc.c \
 	disk.c \
+	dks_esc.c \
 	eqlcomp.c \
 	gate.c \
+	hash.c \
+	hosting.c \
 	http.c \
 	insert.c \
-	bitmap.c \
+	inxop.c \
+	json_l.c \
+	json_p.c \
 	lisprdr.c \
 	lock.c \
 	log.c \
+	map_schema.c \
 	meta.c \
 	mtwrite.c \
 	multibyte.c \
 	neodisk.c \
 	numeric.c \
 	obackup.c \
+	plugin_loader.c \
 	recovery.c \
 	regist.c \
+	rendezvous.c \
 	rltrx.c \
 	row.c \
+	schspace.c \
+	scn3.c \
 	search.c \
 	search_in.c \
-	hash.c \
 	security.c \
 	sort.c \
 	space.c \
-	sqlbif.c \
+	sql3.c \
 	sqlbif2.c \
-	sqlcomp.c \
+	sqlbif.c \
+	sql_code_1.c \
+	sql_code_2pc.c \
+	sql_code_adm.c \
+	sql_code_auto.c \
+	sql_code_blog.c \
+	sql_code.c \
+	sql_code_cache.c \
+	sql_code_dav.c \
+	sql_code_dbp.c \
+	sql_code_ddk.c \
+	sql_code_imsg.c \
+	sql_code_uddi.c \
+	sql_code_vad.c \
+	sql_code_vdb.c \
 	sqlcomp2.c \
-	sqlcr.c \
-	sqlexp.c \
-	sqlintrp.c \
-	sqlorder.c \
-	sqloinx.c \
-	sqlpfn.c \
-	sqlprocc.c \
-	sqlo.c \
-	sqldf.c \
-	sqloby.c \
+	sqlcomp.c \
 	sqlcost.c \
-	sqloprt.c \
+	sqlcr.c \
+	sqldf.c \
+	sqlexp.c \
 	sqlgen.c \
 	sqlhash.c \
-	sqlovdb.c \
+	sqlintrp.c \
+	sqloby.c \
+	sqlo.c \
 	sqlocr.c \
 	sqloinv.c \
+	sqloinx.c \
+	sqloprt.c \
+	sqlorder.c \
+	sqlovdb.c \
+	sqlpfn.c \
+	sqlprocc.c \
 	sqlprt.c \
 	sqlrun.c \
-	inxop.c \
 	sqlsrv.c \
 	sqlstmts.c \
 	sqltrig.c \
+	sqltype.c \
 	sqlver.c \
 	sqlview.c \
 	srvcr.c \
@@ -194,103 +220,105 @@ libwi_la_SOURCES = \
 	srvstat.c \
 	string.c \
 	update.c \
+	uuencode.c \
 	wirpc.c \
 	wiservic.c \
-	bif_crypto.c \
-	sql_code.c \
-	sql_code_1.c \
-	sql_code_dav.c \
-	sql_code_ddk.c \
-	sql_code_uddi.c \
-	sql_code_imsg.c \
-	sql_code_auto.c \
-	sql_code_adm.c \
-	sql_code_2pc.c \
-	sql_code_cache.c \
-	sql_code_blog.c \
-	sql_code_vdb.c \
-	bif_uuencode.c \
-	map_schema.c \
-	uuencode.c \
-	sqltype.c \
-	hosting.c \
-	plugin_loader.c \
-	bif_diff.c \
-	sql_code_vad.c \
-	sql_code_dbp.c \
-	rendezvous.c \
+	xpathp.c \
+	xpscn.c \
 	$(C_FILES_SPARQL)
 
 libwi_odbc_la_SOURCES = \
-	sql3.c \
-	scn3.c \
-	xpathp.c \
-	xpscn.c \
-	schspace.c \
-	arith.c \
 	aqueue.c \
+	arith.c \
 	auxfiles.c \
 	bif_audio.c \
+	bif_crypto.c \
 	bif_diff.c \
 	bif_intl.c \
+	bif_json.c \
 	bif_regexp.c \
+	bif_uuencode.c \
+	bitmap.c \
 	blob.c \
 	blobio.c \
 	datesupp.c \
 	ddlrun.c \
-	dks_esc.c \
 	disk.c \
+	dks_esc.c \
 	eqlcomp.c \
 	gate.c \
+	hash.c \
+	hosting.c \
 	http.c \
 	insert.c \
-	bitmap.c \
+	inxop.c \
+	json_l.c \
+	json_p.c \
 	lisprdr.c \
 	lock.c \
 	log.c \
+	map_schema.c \
 	meta.c \
 	mtwrite.c \
 	multibyte.c \
 	neodisk.c \
 	numeric.c \
 	obackup.c \
+	plugin_loader.c \
 	recovery.c \
 	regist.c \
+	rendezvous.c \
 	rltrx.c \
 	row.c \
+	schspace.c \
+	scn3.c \
 	search.c \
 	search_in.c \
-	hash.c \
 	security.c \
 	sort.c \
 	space.c \
-	sqlbif.c \
+	sql3.c \
 	sqlbif2.c \
-	sqlcomp.c \
+	sqlbif.c \
+	sql_code_1.c \
+	sql_code_2pc.c \
+	sql_code_adm.c \
+	sql_code_auto.c \
+	sql_code_blog.c \
+	sql_code.c \
+	sql_code_cache.c \
+	sql_code_dav.c \
+	sql_code_dbp.c \
+	sql_code_ddk.c \
+	sql_code_imsg.c \
+	sql_code_uddi.c \
+	sql_code_vad.c \
+	sql_code_vdb.c \
 	sqlcomp2.c \
-	sqlcr.c \
-	sqlexp.c \
-	sqlintrp.c \
-	sqlorder.c \
-	sqloinx.c \
-	sqlpfn.c \
-	sqlprocc.c \
-	sqlo.c \
-	sqldf.c \
-	sqloby.c \
+	sqlcomp.c \
 	sqlcost.c \
-	sqloprt.c \
+	sqlcr.c \
+	sqldf.c \
+	sqlexp.c \
 	sqlgen.c \
 	sqlhash.c \
-	sqlovdb.c \
+	sqlintrp.c \
+	sqloby.c \
+	sqlo.c \
 	sqlocr.c \
 	sqloinv.c \
+	sqloinx.c \
+	sqloprt.c \
+	sqlorder.c \
+	sqlovdb.c \
+	sqlpfn.c \
+	sqlprocc.c \
 	sqlprt.c \
 	sqlrun.c \
-	inxop.c \
 	sqlsrv.c \
 	sqlstmts.c \
 	sqltrig.c \
+	sqltype.c \
 	sqlver.c \
 	sqlview.c \
 	srvcr.c \
@@ -298,31 +326,11 @@ libwi_odbc_la_SOURCES = \
 	srvstat.c \
 	string.c \
 	update.c \
+	uuencode.c \
 	wirpc.c \
 	wiservic.c \
-	bif_crypto.c \
-	sql_code.c \
-	sql_code_1.c \
-	sql_code_dav.c \
-	sql_code_ddk.c \
-	sql_code_uddi.c \
-	sql_code_imsg.c \
-	sql_code_auto.c \
-	sql_code_adm.c \
-	sql_code_2pc.c \
-	sql_code_cache.c \
-	sql_code_blog.c \
-	sql_code_vdb.c \
-	bif_uuencode.c \
-	map_schema.c \
-	uuencode.c \
-	sqltype.c \
-	hosting.c \
-	plugin_loader.c \
-	bif_diff.c \
-	sql_code_vad.c \
-	sql_code_dbp.c \
-	rendezvous.c \
+	xpathp.c \
+	xpscn.c \
 	$(C_FILES_SPARQL)
 
 #KUBL_REPL_FILES
@@ -347,64 +355,64 @@ libwi_odbc_la_SOURCES += \
 
 #BIF_FILES
 libwi_la_SOURCES += \
+	bif_date.c \
 	bif_dav.c \
+	bif_explain.c \
+	bif_file.c \
+	bif_phrasematch.c \
+	bif_smtp.c \
 	bif_soap.c \
 	bif_text.c \
-	bif_phrasematch.c \
 	bif_tidy.c \
+	http_client.c \
 	shuric.c \
+	subseq.c \
 	text.c \
+	xmlenc_algos.c \
+	xmlenc.c \
+	xmlenc-dec.c \
 	xmlschema.c \
 	xmlsearch.c \
 	xmlsql.c \
 	xmltree.c \
-	xslt.c \
-	xslt_fmt.c \
-	xslt_opt.c \
 	xpath.c \
 	xpf.c \
 	xqf.c \
-	xmlenc.c \
-	xmlenc_algos.c \
-	xmlenc-dec.c \
-	subseq.c \
-	bif_date.c \
-	bif_explain.c \
-	bif_file.c \
-	bif_smtp.c \
-	http_client.c \
+	xslt.c \
+	xslt_fmt.c \
+	xslt_opt.c \
 	$(LDAP_BIF) \
 	$(KRB_BIF) \
 	$(IMSG_BIF)
 
 libwi_odbc_la_SOURCES += \
+	bif_date.c \
 	bif_dav.c \
+	bif_explain.c \
+	bif_file.c \
+	bif_phrasematch.c \
+	bif_smtp.c \
 	bif_soap.c \
 	bif_text.c \
-	bif_phrasematch.c \
 	bif_tidy.c \
+	http_client.c \
 	shuric.c \
+	subseq.c \
 	text.c \
+	xmlenc_algos.c \
+	xmlenc.c \
+	xmlenc-dec.c \
 	xmlschema.c \
 	xmlsearch.c \
 	xmlsql.c \
 	xmltree.c \
-	xslt.c \
-	xslt_fmt.c \
-	xslt_opt.c \
 	xpath.c \
 	xpathp.c \
 	xpf.c \
 	xqf.c \
-	xmlenc.c \
-	xmlenc_algos.c \
-	xmlenc-dec.c \
-	subseq.c \
-	bif_date.c \
-	bif_explain.c \
-	bif_file.c \
-	bif_smtp.c \
-	http_client.c \
+	xslt.c \
+	xslt_fmt.c \
+	xslt_opt.c \
 	$(LDAP_BIF) \
 	$(KRB_BIF) \
 	$(IMSG_BIF)
@@ -433,14 +441,14 @@ libwi_base_la_ldlags  = -static
 
 #KUBL_UNIV_FILES
 libwi_la_SOURCES += \
+	2pc.c \
+	bif_repl.c \
+	bif_xml.c \
+	odbccat.c \
 	sqlrbuf.c \
 	sqlrcomp.c \
 	sqlrrun.c \
-	odbccat.c \
-	bif_repl.c \
-	2pc.c \
 	wi_xid.c \
-	bif_xml.c \
 	$(libwi_base_la_sources)
 
 libwi_la_CFLAGS  = $(libwi_base_la_cflags)
@@ -448,34 +456,34 @@ libwi_la_LDLAGS  = -static
 
 #KUBL_UNIV_FILES_ODBC
 libwi_odbc_la_SOURCES += \
+	2pc.c \
+	bif_repl.c \
+	bif_xml.c \
+	odbccat.c \
 	sqlrbuf.c \
 	sqlrcomp.c \
 	sqlrrun.c \
-	odbccat.c \
-	bif_repl.c \
-	2pc.c \
-	wi_xid.c \
-	bif_xml.c
+	wi_xid.c
 
 libwi_odbc_la_CFLAGS  = $(libwi_base_la_cflags)
 libwi_odbc_la_CFLAGS  += -DUNIX_ODBC
 libwi_odbc_la_LDLAGS  = -static
 
 libwic_la_SOURCES = \
-	CLIuti.c \
+	blobio.c \
+	CLIcr.c \
+	CLIodbc3.c \
 	CLIsql1.c \
 	CLIsql2.c \
 	CLIsql3.c \
-	CLIodbc3.c \
-	wirpc.c \
-	wi_xid.c \
-	blobio.c \
-	datesupp.c \
-	numeric.c \
-	CLIcr.c \
-	multibyte.c \
 	CLIsql3W.c \
-	CLIw.c
+	CLIuti.c \
+	CLIw.c \
+	datesupp.c \
+	multibyte.c \
+	numeric.c \
+	wirpc.c \
+	wi_xid.c
 
 #PLDEBUG_CLI_FILES
 libwic_la_SOURCES += \
@@ -623,6 +631,13 @@ SQL_FILES_IMSG		 = \
 	$(srcdir)/nn_svr.sql \
 	$(top_srcdir)/binsrc/vsp/admin/admin_news/admin_news.sql
 endif
+
+json_p.c json_p.h: $(srcdir)/json.y Makefile
+	$(YACC) -vd -ojson_p.c -pjsonyy $(srcdir)/json.y
+
+json_l.c: $(srcdir)/json.l json_p.h Makefile
+	$(LEX) -Pjsonyy -ojson_l.c $(srcdir)/json.l
+
 
 sqlwords.h: $(srcdir)/sqlwords.gperf
 	@${GEN} ${GPERF} \
