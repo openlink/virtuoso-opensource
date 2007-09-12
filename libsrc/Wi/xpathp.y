@@ -1553,8 +1553,7 @@ xp_options_seq_opt
 	;
 
 xp_options_seq
-	:
-	| '[' xp_options ']'	{ ; }
+	: '[' xp_options ']'	{ ; }
 	| '[' xp_options error { yyerror ("']' or option expected"); }
 	;
 
