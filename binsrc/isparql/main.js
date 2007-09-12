@@ -285,13 +285,12 @@ function init() {
 
 	window.qbe = new iSPARQL.QBE();
 	window.adv = new iSPARQL.Advanced();
+
 	var execCB = function(query) {
-		var orig = tab.selectedIndex;
 		if (qbe.QueryGenerate() ==	query) { return; }
-		tab.go(0);
+		if (tab.selectedIndex != 0) { return; }
 		qbe.loadFromString(query);
 		$("query").value = query;
-		tab.go(orig);
 	}
 	window.qe = new QueryExec({div:"page_results",executeCallback:execCB});
 
@@ -451,6 +450,8 @@ function init() {
   }
 }
 
+iSPARQL.QueryCache = {};
+
 iSPARQL.QueryExec = function(paramsObj) {
 	    // We use this to fix IE visualization problems with pre content
 	    var putTextInPre = function(elm,txt){
@@ -505,13 +506,9 @@ iSPARQL.QueryExec = function(paramsObj) {
 	    }
 	    
 	    var content_type = 'application/x-www-form-urlencoded';
-	    
 	    var ReqHeaders = {'Accept':params.format,'Content-Type':content_type};
-	  
 	    var endpoint = params.service;
-	    if (endpoint.match(/^http:\/\//) && params.proxy && isVirtuoso)
-	      endpoint = './remote.vsp';
-
+	    if (endpoint.match(/^http:\/\//) && params.proxy && isVirtuoso) { endpoint = './remote.vsp'; }
 	    OAT.Dom.clear(params.res_div);
 	  
 	    // generate the request body
@@ -570,18 +567,16 @@ iSPARQL.QueryExec = function(paramsObj) {
 			onend:params.onend || function(){OAT.Dom.hide("throbber");}
 		}
 
-		function is_new() { /* is this request new? should we cache it? */
-			if (!nav_stack.length) { return true; }
-			var cache = nav_stack[nav_index];
-		    if (params.query != cache.query ||
-		        params.default_graph_uri != cache.default_graph_uri ||
-		        params.format != cache.format ||
-		        params.should_sponge != cache.should_sponge ||
-		        params.service != cache.service) { return true; }
-			return false;
+		var cb = function(data) {
+			iSPARQL.QueryCache[params.query] = data;
+			params.callback(data);
 		}
 
-		OAT.AJAX.POST (endpoint, body(), params.callback, o);
+		if (params.query in iSPARQL.QueryCache) {
+			params.callback(iSPARQL.QueryCache[params.query]);
+		} else {
+			OAT.AJAX.POST (endpoint, body(), cb, o);
+		}
 	}
 
 iSPARQL.Advanced = function () {

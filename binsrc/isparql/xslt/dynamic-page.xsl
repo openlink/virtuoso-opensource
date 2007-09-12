@@ -40,7 +40,7 @@
 				</xsl:if>
 
 				p.defaultGraph = "<xsl:value-of select="i:graph" />";
-				p.query = OAT.Xml.unescape(document.body.innerHTML);
+				p.query = OAT.Xml.unescape($("p").innerHTML);
 				p.file = window.location.href;
 				
 				var tmp = "";
@@ -52,7 +52,8 @@
 		</script>
 		<title>iSPARQL XSLT Forward</title>
 	</head>
-	<body style="visibility:hidden;"><xsl:value-of select="i:query"/></body>
+	<body><pre style="visibility:hidden;" id="p"><xsl:value-of select="i:query"/></pre>
+	</body>
 	</html>
 	
 	</xsl:template>

@@ -570,7 +570,7 @@ iSPARQL.QBE = function () {
 	unbound._gdElm.appendChild(ref_img);
 	OAT.Event.attach(ref_img,"click",function(){
 		self.Schemas.Unbound.expand();
-		self.Schemas.Tree.Refresh()
+		self.Schemas.Refresh()
 	});
 	OAT.Dom.attach("schema_import","click",function() {
 		self.Schemas.Import($v('schema').trim());
@@ -867,8 +867,8 @@ iSPARQL.QBE = function () {
 					alert(response);
 				},
 				onstart:function() {
-					var oldIcon = node._icon.src;
-					var oldFilter = node._icon.style.filter;
+					oldIcon = node._icon.src;
+					oldFilter = node._icon.style.filter;
 					node._icon.src = OAT.Preferences.imagePath+"Dav_throbber.gif";
 					node._icon.style.filter = "";
 				},

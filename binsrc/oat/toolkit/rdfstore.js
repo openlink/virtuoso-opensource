@@ -346,7 +346,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 
 	this.getContentType = function(str) {
 		/* 0 - generic, 1 - link, 2 - mail, 3 - image */
-		if (str.match(/^http.*(jpe?g|png|gif)$/i)) { return 3; }
+		if (str.match(/^http.*(jpe?g|png|gif)(#[^#]*)?$/i)) { return 3; }
 		if (str.match(/^(http|urn|doi)/i)) { return 1; }
 		if (str.match(/^[^@]+@[^@]+$/i)) { return 2; }
 		return 0;

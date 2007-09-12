@@ -230,7 +230,7 @@ var QueryExec = function(optObj) {
 		}
 		
 		var h = OAT.Dom.create("h3");
-		h.innerHTML = "Entities contained in query";
+		h.innerHTML = "This page is about:";
 		if (entities.length) {
 			var ul = OAT.Dom.create("ul");
 			for (var i=0;i<entities.length;i++) {
@@ -273,12 +273,13 @@ var QueryExec = function(optObj) {
 				var index = header.find(v);
 				row[index] = val;
 				simplified_row[index] = self.simplifyPrefix(val);
-			}
 			
 			if (self.dom.check.checked) {
 				var value = simplified_row[index];
 				var idx = Math.max(value.lastIndexOf("/"),value.lastIndexOf("#"));
-				if (idx != -1) { simplified_row[index] = value.substring(idx+1); }
+					var simple = value.substring(idx+1);
+					if (idx != -1 && simple != "this") { simplified_row[index] = simple; }
+				}
 			}
 			
 			grid.createRow(simplified_row);
@@ -313,8 +314,8 @@ var QueryExec = function(optObj) {
 		self.dom.query.innerHTML = OAT.Xml.escape(opts.query);
 
 		if (wasError) {
-			self.dom.result.innerHTML = data;
-			self.dom.response.innerHTML = data;
+			self.dom.result.innerHTML = OAT.Xml.escape(data);
+			self.dom.response.innerHTML = OAT.Xml.escape(data);
 		} else {
 			var txt = OAT.Xml.serializeXmlDoc(data);
 			txt = OAT.Xml.escape(txt);
@@ -388,14 +389,14 @@ var QueryExec = function(optObj) {
 			var ul = OAT.Dom.create("ul",{paddingLeft:"20px",marginLeft:"0px"});
 
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Dereference";
+			a.innerHTML = "Attributes";
 			a.href = "#";
 			OAT.Dom.attach(a,"click",dereferenceRef);
 			var li = OAT.Dom.create("li");
 			OAT.Dom.append([ul,li],[li,a]);
 
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Explore";
+			a.innerHTML = "Relationships";
 			a.href = "#";
 			OAT.Dom.attach(a,"click",exploreRef);
 			var li = OAT.Dom.create("li");
@@ -419,6 +420,22 @@ var QueryExec = function(optObj) {
 			activation:"click"
 		};
 		OAT.Anchor.assign(domNode,obj);
+		
+		var img1 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
+		img1.title = "Attributes";
+		img1.src = OAT.Preferences.imagePath + "RDF_rdf.png";
+		OAT.Dom.attach(img1,"click",dereferenceRef);
+
+		var a = OAT.Dom.create("a",{paddingLeft:"3px"});
+		var img2 = OAT.Dom.create("img",{border:"none"});
+		img2.src = OAT.Preferences.imagePath + "RDF_xhtml.gif";
+		a.title = "(X)HTML Page Open";
+		a.appendChild(img2);
+		a.target = "_blank";
+		a.href = href;
+		
+		domNode.parentNode.appendChild(img1);
+		domNode.parentNode.appendChild(a);
 	}
 	
 	this.execute = function(optObj) {
