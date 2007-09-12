@@ -1487,6 +1487,13 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
   return k;
 }
 
+static void dh_cb(int p, int n, void *arg)
+{
+#ifdef LINT
+  p=n;
+#endif
+}
+
 static /*xenc_key_DSA_create */
 caddr_t bif_xenc_key_dsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
@@ -1502,6 +1509,244 @@ caddr_t bif_xenc_key_dsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t **
   /* xenc_store_key (key, 0); */
   mutex_leave (xenc_keys_mtx);
   return NULL;
+}
+
+static 
+caddr_t bif_xenc_key_DH_create (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
+{
+  xenc_key_t * key;
+  caddr_t name = bif_string_arg (qst, args, 0, "xenc_key_DH_create");
+  int g = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "xenc_key_DH_create") : 2;
+  int num = 512;
+  caddr_t p = BOX_ELEMENTS (args) > 2 ? bif_arg (qst, args, 2, "xenc_key_DH_create") : NULL;
+  DH *dh;
+
+  if (g != 2 && g != 5)
+     sqlr_new_error ("42000", "XENC11", "DH generator value could be 2 or 5");
+
+  if (p != NULL && (DV_TYPE_OF (p) == DV_LONG_INT || DV_TYPE_OF (p) == DV_SHORT_INT))
+    {
+      num = unbox (p);
+      p = NULL;
+    }
+  else if (p)
+    {
+      p = bif_string_arg (qst, args, 2, "xenc_key_DH_create"); 
+    }
+
+  if (num <= 0)
+     sqlr_new_error ("42000", "XENC11", "DH bits number should be greater than 0");
+
+  mutex_enter (xenc_keys_mtx);
+  if (NULL == (key = xenc_key_create (name, XENC_DH_ALGO, DSIG_DH_SHA1_ALGO, 0)))
+    {
+      mutex_leave (xenc_keys_mtx);
+      SQLR_NEW_KEY_EXIST_ERROR (name);
+    }
+  if (p)
+    {
+      BIGNUM *bn_p, *bn_g;
+      caddr_t mod, mod_b64 = box_copy (p);
+      unsigned char g_bin[1];
+      int len;
+
+      g_bin[0] = (unsigned char)g;
+      len = xenc_decode_base64 (mod_b64, mod_b64 + box_length (mod_b64));
+      mod = dk_alloc_box (len, DV_BIN);
+      memcpy (mod, mod_b64, len);
+
+      dh = DH_new ();
+      bn_p = BN_bin2bn ((unsigned char *)mod, box_length (mod), NULL);
+      bn_g = BN_bin2bn (g_bin, 1, NULL);
+      dh->p = bn_p;
+      dh->g = bn_g;
+
+      dk_free_box (mod_b64);
+      dk_free_box (mod);
+    }
+  else
+    {
+      dh = DH_generate_parameters (num, g, dh_cb, NULL);
+    }
+  if (!dh)
+    {
+      sqlr_new_error ("42000", "XENC11",
+		    "DH parameters generation error");
+    }
+  if (!dh || !DH_generate_key(dh))
+    {
+      sqlr_new_error ("42000", "XENC12",
+		    "Can't generate the DH private key");
+    }
+  key->ki.dh.dh_st = dh;
+  key->xek_private_dh = dh;
+  mutex_leave (xenc_keys_mtx);
+  return NULL;
+}
+
+static 
+caddr_t bif_xenc_DH_get_params (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
+{
+  xenc_key_t * key;
+  caddr_t name = bif_string_arg (qst, args, 0, "xenc_DH_get_params");
+  int param = (int) bif_long_arg (qst, args, 1, "xenc_DH_get_params");
+  size_t buf_len = 0;
+  int n, len;
+  caddr_t buf = NULL, ret, b64;
+  DH *dh;
+  BIGNUM *num;
+
+  mutex_enter (xenc_keys_mtx);
+  key = xenc_get_key_by_name (name, 0);
+  if (!key || key->xek_type != DSIG_KEY_DH)
+    {
+      mutex_leave (xenc_keys_mtx);
+      SQLR_NEW_KEY_ERROR (name);
+    }
+
+  dh = key->xek_private_dh;
+
+  switch (param)
+    {
+  	case 1:
+	 num = dh->p;
+	 break;
+	case 2:
+	 num = dh->g;
+	 break;
+	case 3:
+	 num = dh->pub_key;
+	 break;
+	case 4:
+	 num = dh->priv_key;
+	 break;
+	default:
+	 num = dh->pub_key;
+    }
+
+  buf_len = (size_t)BN_num_bytes(num);
+  buf = dk_alloc_box (buf_len, DV_BIN);
+  n = BN_bn2bin (num, (unsigned char*) buf);
+  if (n != buf_len)
+    GPF_T;
+  mutex_leave (xenc_keys_mtx);
+
+  b64 = dk_alloc_box (buf_len*2, DV_STRING);
+  len = xenc_encode_base64 (buf, b64, buf_len);
+  ret = dk_alloc_box (len + 1, DV_STRING);
+  memcpy (ret, b64, len);
+  ret[len] = 0;
+  dk_free_box (buf);
+  dk_free_box (b64);
+
+  return ret;
+}
+
+static 
+caddr_t bif_xenc_DH_compute_key (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
+{
+  xenc_key_t * key;
+  caddr_t name = bif_string_arg (qst, args, 0, "xenc_DH_compute_key");
+  caddr_t pub, pub_b64 = box_copy (bif_string_arg (qst, args, 1, "xenc_DH_compute_key"));
+  DH *dh;
+  BIGNUM *pub_key;
+  size_t buf_len, len;
+  caddr_t buf, ret, b64;
+
+  len = xenc_decode_base64 (pub_b64, pub_b64 + box_length (pub_b64));
+  pub = dk_alloc_box (len + 1, DV_STRING);
+  memcpy (pub, pub_b64, len);
+
+  mutex_enter (xenc_keys_mtx);
+  key = xenc_get_key_by_name (name, 0);
+  if (!key || key->xek_type != DSIG_KEY_DH)
+    {
+      mutex_leave (xenc_keys_mtx);
+      dk_free_box (pub);
+      dk_free_box (pub_b64);
+      SQLR_NEW_KEY_ERROR (name);
+    }
+ 
+  pub_key = BN_bin2bn ((unsigned char *)pub, box_length (pub), NULL);
+  dh = key->xek_private_dh;  
+  buf_len = DH_size (dh);
+  buf = dk_alloc_box (buf_len, DV_BIN);
+  DH_compute_key ((unsigned char *)buf, pub_key, dh);
+  BN_free (pub_key);
+  mutex_leave (xenc_keys_mtx);
+
+
+  b64 = dk_alloc_box (buf_len*2, DV_STRING);
+  len = xenc_encode_base64 (buf, b64, buf_len);
+  ret = dk_alloc_box (len + 1, DV_STRING);
+  memcpy (ret, b64, len);
+  ret[len] = 0;
+
+  dk_free_box (buf);
+  dk_free_box (b64);
+  dk_free_box (pub);
+  dk_free_box (pub_b64);
+  return ret;
+}
+
+static 
+caddr_t bif_xenc_xor (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
+{
+  caddr_t x = box_copy (bif_string_arg (qst, args, 0, "xenc_xor"));
+  caddr_t y = box_copy (bif_string_arg (qst, args, 1, "xenc_xor"));
+  caddr_t z = NULL, b64, ret;
+  size_t len, i, x_len, y_len;
+
+  x_len = xenc_decode_base64 (x, x + box_length (x));
+  y_len = xenc_decode_base64 (y, y + box_length (y));
+
+  if (x_len != y_len)
+    {
+      dk_free_box (x);
+      dk_free_box (y);
+      sqlr_new_error ("22023", "XENCXX", "Both arguments needs to be same length");
+    }
+
+  len = x_len;
+  z = dk_alloc_box (len, DV_BIN);
+  for (i = 0; i < len; i++)
+    z[i] = x[i] ^ y[i];
+
+  dk_free_box (x);
+  dk_free_box (y);
+
+  b64 = dk_alloc_box (len*2, DV_STRING);
+  len = xenc_encode_base64 (z, b64, x_len);
+  ret = dk_alloc_box (len + 1, DV_STRING);
+  memcpy (ret, b64, len);
+  ret[len] = 0;
+
+  dk_free_box (b64);
+  dk_free_box (z);
+
+  return ret;
+}
+
+caddr_t bif_xenc_bn2dec (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
+{
+  caddr_t x = box_copy (bif_string_arg (qst, args, 0, "xenc_bn2dec"));
+  size_t len;
+  caddr_t ret;
+  char *dec;
+  BIGNUM *n;
+
+  len = xenc_decode_base64 (x, x + box_length (x));
+  n = BN_bin2bn ((unsigned char *)x, len, NULL);
+  dec = BN_bn2dec (n);
+  len = strlen (dec);
+  ret = dk_alloc_box (len+1, DV_STRING);
+  memcpy (ret, dec, len);
+  ret[len] = 0;
+
+  BN_free (n);
+  OPENSSL_free (dec);
+  dk_free_box (x);
+  return ret;
 }
 
 static int
@@ -1736,14 +1981,6 @@ caddr_t bif_xenc_key_exists (caddr_t * qst, caddr_t * err_r, state_slot_t ** arg
   return box_num (key ? 1 : 0);
 }
 
-static void dh_cb(int p, int n, void *arg)
-{
-#ifdef LINT
-  p=n;
-#endif
-}
-
-
 int __xenc_key_dsa_init (char *name, int lock)
 {
   DSA *dsa;
@@ -1766,6 +2003,30 @@ int __xenc_key_dsa_init (char *name, int lock)
     }
   pkey->ki.dsa.dsa_st = dsa;
   pkey->xek_private_dsa = dsa;
+  return 0;
+}
+
+int __xenc_key_dh_init (char *name, int lock)
+{
+  DH *dh;
+  int num=512, g=2;
+  xenc_key_t * pkey = xenc_get_key_by_name (name, lock);
+  if (NULL == pkey)
+    SQLR_NEW_KEY_ERROR (name);
+ 
+  dh = DH_generate_parameters (num, g, dh_cb, NULL);
+  if (!dh)
+    {
+      sqlr_new_error ("42000", "XENC11",
+		    "DH parameters generation error");
+    }
+  if (!dh || !DH_generate_key(dh))
+    {
+      sqlr_new_error ("42000", "XENC12",
+		    "Can't generate the DH private key");
+    }
+  pkey->ki.dh.dh_st = dh;
+  pkey->xek_private_dh = dh;
   return 0;
 }
 
@@ -5648,6 +5909,16 @@ void bif_xmlenc_init ()
 			  DSIG_KEY_AES);
 #endif
 
+  xenc_algorithms_create (XENC_DH_ALGO, "dh encoding algorithm",
+			  xenc_dh_encryptor,
+			  xenc_dh_decryptor,
+			  DSIG_KEY_DH);
+
+  xenc_algorithms_create (DSIG_DH_SHA1_ALGO, "dsa sha1 algorithm",
+			  xenc_signature_wrapper,
+			  xenc_signature_wrapper_1,
+			  DSIG_KEY_DH);
+
 
   bif_define ("xenc_encrypt", bif_xmlenc_encrypt);
 
@@ -5702,6 +5973,12 @@ void bif_xmlenc_init ()
   bif_define ("X509_get_subject", bif_x509_get_subject);
   bif_define ("xenc_sha1_digest", bif_xenc_sha1_digest);
   bif_define ("xenc_hmac_sha1_digest", bif_xenc_hmac_sha1_digest);
+
+  bif_define ("xenc_key_DH_create", bif_xenc_key_DH_create);
+  bif_define ("xenc_DH_get_params", bif_xenc_DH_get_params);
+  bif_define ("xenc_DH_compute_key", bif_xenc_DH_compute_key);
+  bif_define ("xenc_xor", bif_xenc_xor);
+  bif_define ("xenc_bn2dec", bif_xenc_bn2dec);
 
   xenc_cert_X509_idx = ecm_find_name ("X.509", (void*)xenc_cert_types, xenc_cert_types_len,
 					 sizeof (xenc_cert_type_t));

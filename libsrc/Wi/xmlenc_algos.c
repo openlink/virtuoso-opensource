@@ -1176,7 +1176,17 @@ dsig_dsa_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   return i;
 }
 
+int
+dsig_dh_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out)
+{
+  return 0;
+}
 
+int
+dsig_dh_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t digest)
+{
+  return 0;
+}
 /* signature functions
    typedef int (*dsig_algo_f) (dk_session_t * ses_in, long len, dk_session_t * ses_out);
 */
@@ -1644,6 +1654,24 @@ xenc_dsa_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out_b
 {
   if (t)
     xenc_report_error (t, 500, XENC_ENC_ERR, "DSA is for signatures only and is not an encryption algorithm");
+  return 0;
+}
+
+int
+xenc_dh_encryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out_base64,
+			xenc_key_t * key, xenc_try_block_t * t)
+{
+  if (t)
+    xenc_report_error (t, 500, XENC_ENC_ERR, "DH is for signatures only and is not an encryption algorithm");
+  return 0;
+}
+
+int
+xenc_dh_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out_base64,
+			xenc_key_t * key, xenc_try_block_t * t)
+{
+  if (t)
+    xenc_report_error (t, 500, XENC_ENC_ERR, "DH is for signatures only and is not an encryption algorithm");
   return 0;
 }
 

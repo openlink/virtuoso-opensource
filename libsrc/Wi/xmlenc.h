@@ -123,6 +123,7 @@ typedef enum {
 /* key transport */
 #define XENC_RSA_ALGO		"http://www.w3.org/2001/04/xmlenc#rsa-1_5"
 #define XENC_DSA_ALGO		"http://www.w3.org/2001/04/xmlenc#dsa"
+#define XENC_DH_ALGO		"http://www.w3.org/2001/04/xmlenc#dh"
 
 /* block encryption */
 #define XENC_3DES_ALGO		"http://www.w3.org/2001/04/xmlenc#tripledes-cbc"
@@ -136,6 +137,7 @@ typedef enum {
 
 #define DSIG_RSA_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#rsa-sha1"
 #define DSIG_DSA_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#dsa-sha1"
+#define DSIG_DH_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#dh-sha1"
 
 #define DSIG_HMAC_SHA1_ALGO  	"http://www.w3.org/2000/09/xmldsig#hmac-sha1"
 
@@ -242,6 +244,7 @@ typedef enum {
   DSIG_KEY_3DES = 3,
   DSIG_KEY_AES = 4,
   DSIG_KEY_KERBEROS = 5,
+  DSIG_KEY_DH = 6,
   DSIG_KEY_RAW = 15 /* base64 encoded */
 } DSIG_KEY_TYPE;
 
@@ -277,6 +280,8 @@ typedef uuid_t * xenc_id_t;
 #define xek_dsa ki.dsa.dsa_st
 #define xek_private_dsa ki.dsa.private_dsa_st
 #define xek_kerberos_tgs ki.kerb.tkt
+#define xek_dh ki.dh.dh_st
+#define xek_private_dh ki.dh.private_dh_st
 
 struct xenc_key_s
 {
@@ -328,6 +333,11 @@ struct xenc_key_s
       caddr_t		tkt;
     } kerb;
 #endif
+    struct dsig_dh_keyinfo_s
+    {
+      DH*	dh_st;
+      DH*	private_dh_st;
+    } dh;
     struct  dsig_raw_keyinfo_s
     {
       unsigned char *   k;
@@ -566,6 +576,7 @@ caddr_t wsse_get_content_val (caddr_t * curr);
 xenc_key_t * xenc_key_aes_create (const char * name, int keylen, const char * pwd);
 void xenc_key_remove (xenc_key_t * key, int lock);
 int __xenc_key_dsa_init (char *name, int lock);
+int __xenc_key_dh_init (char *name, int lock);
 
 void xenc_key_3des_init (xenc_key_t * pkey, unsigned char * k1, unsigned char * k2, unsigned char * k3);
 int xml_c_build_ancessor_ns_link (caddr_t * doc_tree, caddr_t * select_tree,

@@ -50,6 +50,8 @@ int dsig_rsa_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, cad
 int (*dsig_canon_2_f) (query_instance_t * qi, caddr_t *  doc_tree, caddr_t * siginfo_tree,
 	id_hash_t * nss, dk_session_t * ses_out);
 */
+int dsig_dh_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out);
+int dsig_dh_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t digest);
 
 int xml_canonicalize (query_instance_t * qi, caddr_t * doc_tree, caddr_t * siginfo_tree,
 	id_hash_t * nss, dk_session_t * ses_out);
@@ -83,6 +85,9 @@ int xenc_signature_wrapper (dk_session_t * ses_in, long seslen, dk_session_t * s
 			    xenc_key_t * key, xenc_try_block_t * t);
 int xenc_signature_wrapper_1 (dk_session_t * ses_in, long seslen, dk_session_t * ses_out,
 			      xenc_key_t * key, xenc_try_block_t * t);
+int xenc_dh_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out, xenc_key_t * key, xenc_try_block_t * t);
+int xenc_dh_encryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out,
+			   xenc_key_t * key, xenc_try_block_t * t);
 /* P_SHA-1 Algorithm */
 extern P_SHA1_CTX *P_SHA1_init(const char *secret, int secret_len, const char *seed, int seed_len);
 extern void P_SHA1_block(P_SHA1_CTX *ctx, char *dst);
