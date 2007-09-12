@@ -34,10 +34,12 @@
 
     <xsl:template match="/">
 	<rdf:RDF>
+	    <xsl:if test="/results/ROOT/result/*">
 	    <rdf:Description
 		rdf:about="{$baseUri}">
-		<xsl:apply-templates select="/results/ROOT/result"/>
+		    <xsl:apply-templates select="/results/ROOT/result/*"/>
 	    </rdf:Description>
+	    </xsl:if>
 	</rdf:RDF>
     </xsl:template>
 
@@ -45,6 +47,14 @@
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:attribute name="rdf:resource">
 		<xsl:value-of select="."/>
+	    </xsl:attribute>
+	</xsl:element>
+    </xsl:template>
+
+    <xsl:template match="*[starts-with(.,'/')]">
+	<xsl:element namespace="{$ns}" name="{name()}">
+	    <xsl:attribute name="rdf:resource">
+		<xsl:value-of select="$ns"/>view<xsl:value-of select="."/>
 	    </xsl:attribute>
 	</xsl:element>
     </xsl:template>

@@ -26,6 +26,7 @@
 
 -- install the handlers for supported metadata, keep in sync with xslt/html2rdf.xsl rules
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)' and RM_TYPE = 'MIME';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(http://www.amazon.com/gp/product/.*)|(http://www.amazon.[^/]+/o/ASIN/.*)';
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
     values ('.*', 'HTTP', 'DB.DBA.RDF_LOAD_HTTP_SESSION', null, 'HTTP in RDF', 0);
@@ -39,7 +40,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_FLICKR_IMG', null, 'Flickr Images');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
-    values ('(http://www.amazon.com/gp/product/.*)|(http://www.amazon.[^/]+/o/ASIN/.*)',
+    values ('(http://.*amazon.[^/]+/gp/product/.*)|'||
+	    '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
+	    '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+/.*)|'||
+	    '(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)',
             'URL', 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE', null, 'Amazon articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
@@ -68,6 +72,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
     values ('.*', 'MIME', 'DB.DBA.RDF_LOAD_DAV_META', null, 'WebDAV Metadata', 1);
 
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://.*.wikipedia.org.*',
+            'URL', 'DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE', null, 'Wikipedia');
 
 -- we do default http & html handler first of all
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
@@ -480,12 +488,13 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
       qr := sprintf ('{"ROOT":{"query":{%s, "type":"%s", "*":[]}}}', k, tp);
       url := sprintf ('http://www.freebase.com/api/service/mqlread?queries=%U', qr);
       cnt := http_get (url, hdr);
+      --dbg_printf ('%s', cnt);
       tree := json_parse (cnt);
       xt := get_keyword ('ROOT', tree);
       xt := DB.DBA.MQL_TREE_TO_XML (tree);
       xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/mql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
       xd := serialize_to_UTF8_xml (xt);
-      --  dbg_printf ('%s', xd);
+      --dbg_printf ('%s', xd);
       DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
     }
   return 1;
@@ -701,23 +710,38 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
 {
   declare xd, xt, url, tmp, api_key, asin, hdr, exif any;
+  asin := null;
   declare exit handler for sqlstate '*'
     {
       return 0;
     };
 
-  if (new_origin_uri like 'http://www.amazon.com/gp/product/%')
-    tmp := sprintf_inverse (new_origin_uri, 'http://www.amazon.%s/gp/product/%s', 0);
-  else if (new_origin_uri like 'http://www.amazon.%/o/ASIN/%')
-    tmp := sprintf_inverse (new_origin_uri, 'http://www.amazon.%s/o/ASIN/%s', 0);
+  if (new_origin_uri like 'http://%amazon.%/gp/product/%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/gp/product/%s', 0);
+      asin := tmp[2];
+    }
+  else if (new_origin_uri like 'http://%amazon.%/o/ASIN/%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/o/ASIN/%s', 0);
+      asin := tmp[2];
+    }
+  else if (new_origin_uri like 'http://%amazon.%/%/dp/%/%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/%s/dp/%s/%s', 0);
+      asin := tmp[3];
+    }
+  else if (new_origin_uri like 'http://%amazon.%/exec/obidos/tg/detail/-/%/%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/exec/obidos/tg/detail/-/%s/%s', 0);
+      asin := tmp[2];
+    }
   else
     return 0;
 
   api_key := _key;
-  if (tmp is null or length (tmp) <> 2 or not isstring (api_key))
+  if (asin is null or not isstring (api_key))
     return 0;
-
-  asin := tmp[1];
 
   url := sprintf ('http://xml.amazon.com/onca/xml3?t=webservices-20&dev-t=%s&AsinSearch=%s&type=lite&f=xml',
           api_key, asin);
@@ -925,6 +949,23 @@ RDF_MAPPER_CACHE_REGISTER (in url varchar, in top_url varchar, inout hdr any,
   return;
 }
 ;
+
+create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
+	(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    	 inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+
+    declare get_uri, body any;
+
+    get_uri := split_and_decode (new_origin_uri, 0, '\0\0/');
+    get_uri := get_uri[length (get_uri) - 1];
+
+    body := http_get ('http://dbpedia.org/data/'|| get_uri, null, 'GET', 'Accept: application/xml, */*');
+
+    return DB.DBA.RDF_LOAD_RDFXML (body, new_origin_uri, coalesce (dest, graph_iri));
+}
+;
+
 
 create procedure DB.DBA.RDF_DO_XSLT_AND_LOAD (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     in xt any, inout mdta any, in xslt_sheet varchar, in what varchar, in base varchar)
