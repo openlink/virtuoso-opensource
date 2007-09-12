@@ -107,6 +107,7 @@ struct dk_session_s
     /* burst mode */
     dks_thread_state_t  dks_thread_state;
     du_thread_t *	dks_waiting_http_recall_session;
+    dk_hash_t *		dks_pending_futures;
   };
 
 #define SESSION_DK_SESSION(session) \
@@ -311,7 +312,7 @@ struct service_s {
 typedef struct future_s
   {
     dk_session_t *	ft_server;
-    long		ft_request_no;
+    ptrlong		ft_request_no;
     service_desc_t *	ft_service;
     caddr_t *		ft_arguments;
     caddr_t		ft_result;
@@ -822,7 +823,7 @@ int is_protocol (session_t *ses, int proto);
 int check_inputs (TAKE_G timeout_t *timeout, int is_recursive);
 int read_service_request (dk_session_t *ses);
 EXE_EXPORT (dk_session_t *, dk_session_allocate, (int sesclass));
-void timeout_round (TAKE_G1);
+void timeout_round (TAKE_G dk_session_t * ses);
 void PrpcSuckAvidly (int mode);
 void PrpcAddAnswer (caddr_t result, int ret_type, int is_partial, int flush);
 void PrpcAnswerHead (du_thread_t *thr, int is_partial);

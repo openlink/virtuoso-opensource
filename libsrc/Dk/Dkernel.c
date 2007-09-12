@@ -133,13 +133,25 @@ srv_req_hook_func  service_request_hook = NULL;
 int prpcinitialized =  0;
 
 dk_mutex_t * value_mtx;
+#ifndef NO_THREAD
+#define IN_VALUE	mutex_enter (value_mtx)
+#define LEAVE_VALUE	mutex_leave (value_mtx)
+#else
+#define IN_VALUE	/* no value_mtx for single thread */
+#define LEAVE_VALUE
+#endif
 
 long connection_count;
 char *i_am = NULL;
 background_action_func background_action;
 
+ptrlong last_future = 0;
+#ifdef NO_THREAD
+#define PENDING_FUTURES(ses) (ses)->dks_pending_futures
+#else
 dk_hash_t *pending_futures;
-unsigned long last_future = 0;
+#define PENDING_FUTURES(ses) pending_futures
+#endif
 
 #ifndef NO_THREAD
 char *c_ssl_server_port;
@@ -2008,16 +2020,16 @@ SERVICE_0 (s_inprocess_ep, "ICEP", DA_FUTURE_REQUEST, DV_ARRAY_OF_POINTER);
  * FS_FALSE = false
  */
 static int
-realize_condition (long cond, caddr_t value, caddr_t error, int is_in_value_mtx)
+realize_condition (dk_session_t * ses, long cond, caddr_t value, caddr_t error, int is_in_value_mtx)
 {
   USE_GLOBAL
   future_t *future;
   future_request_t *waiting;
 
   if (!is_in_value_mtx)
-    mutex_enter (value_mtx);
+    IN_VALUE;
 
-  future = (future_t *) gethash ((void *)(ptrlong) cond, pending_futures);
+  future = (future_t *) gethash ((void *)(ptrlong) cond, PENDING_FUTURES(ses));
 
 /*
    puts("Realize condition");
@@ -2030,7 +2042,7 @@ realize_condition (long cond, caddr_t value, caddr_t error, int is_in_value_mtx)
       printf ("The condition %d was realized but had no future.\n", cond);
 */
       if (!is_in_value_mtx)
-	mutex_leave (value_mtx);
+	LEAVE_VALUE;
       return (-1);
     }
   if (future->ft_result)	/* (future->ft_is_ready == FS_RESULT_LIST) */
@@ -2067,9 +2079,9 @@ realize_condition (long cond, caddr_t value, caddr_t error, int is_in_value_mtx)
 	GPF_T;
       waiting = next;
     }
-  remhash ((void *) (ptrlong) cond, pending_futures);
+  remhash ((void *) (ptrlong) cond, PENDING_FUTURES(ses));
   if (!is_in_value_mtx)
-    mutex_leave (value_mtx);
+    LEAVE_VALUE;
   return (0);
 }
 
@@ -2098,13 +2110,13 @@ unfreeze_waiting (TAKE_G future_t * future)
  *  partial_realize_condition()
  */
 static int
-partial_realize_condition (long cond, caddr_t value)
+partial_realize_condition (dk_session_t * ses, long cond, caddr_t value)
 {
   USE_GLOBAL;
 
-  mutex_enter (value_mtx);
+  IN_VALUE;
   {
-    future_t *future = (future_t *) gethash ((void *) (ptrlong) cond, pending_futures);
+    future_t *future = (future_t *) gethash ((void *) (ptrlong) cond, PENDING_FUTURES(ses));
 
     if (!future)
       {
@@ -2114,7 +2126,7 @@ partial_realize_condition (long cond, caddr_t value)
    fflush(stdout);
    #endif
  */
-	mutex_leave (value_mtx);
+	LEAVE_VALUE;
 	return (-1);
       }
 
@@ -2130,7 +2142,7 @@ partial_realize_condition (long cond, caddr_t value)
 	get_real_time (&future->ft_time_received);
       }
     unfreeze_waiting (PASS_G future);
-    mutex_leave (value_mtx);
+    LEAVE_VALUE;
     return (0);
   }
 }
@@ -2160,8 +2172,10 @@ static dk_session_t * disconnected;
 static void
 is_this_disconnected (long cond, future_t * future)
 {
+#ifndef NO_THREAD
   if (future->ft_server == disconnected)
-    realize_condition (future->ft_request_no, (caddr_t) NULL,
+#endif    
+    realize_condition (future->ft_server, future->ft_request_no, (caddr_t) NULL,
 	(caddr_t) (ptrlong) FE_TIMED_OUT, 1);
 }
 
@@ -2171,10 +2185,12 @@ realize_all_waiting (dk_session_t * ses)
 {
   USE_GLOBAL
 
-  mutex_enter (value_mtx);
+  IN_VALUE;
+#ifndef NO_THREAD
   disconnected = ses;
-  maphash ((maphash_func) is_this_disconnected, pending_futures);
-  mutex_leave (value_mtx);
+#endif  
+  maphash ((maphash_func) is_this_disconnected, PENDING_FUTURES(ses));
+  LEAVE_VALUE;
 }
 
 
@@ -2400,7 +2416,7 @@ read_service_request (dk_session_t * ses)
       ss_dprintf_2 (("received answer %ld",
 	  (long) unbox ((caddr_t) request[RRC_COND_NUMBER])));
 
-      if (-1 == realize_condition (
+      if (-1 == realize_condition (ses,
 	  (long) unbox ((caddr_t) request[RRC_COND_NUMBER]),
 	      (caddr_t) request[RRC_VALUE],	/* mty HUHTI */
 	      (caddr_t) request[RRC_ERROR], 0))
@@ -2423,7 +2439,7 @@ read_service_request (dk_session_t * ses)
 
       ss_dprintf_2 (("received partial answer %ld",
 	  (long) unbox ((caddr_t) request[RRC_COND_NUMBER])));
-      if (-1 == partial_realize_condition (
+      if (-1 == partial_realize_condition (ses,
 	  (long) unbox ((caddr_t) request[RRC_COND_NUMBER]),
 	      (caddr_t) request[RRC_VALUE]))
 	dk_free_tree ((caddr_t) request);
@@ -2631,7 +2647,7 @@ is_this_timed_out (void *key, future_t * future)	/* MAALIS mty */
 	  future->ft_timeout.to_usec);
       printf ("Tmptime %ld %ld \n", tmptime.to_sec, tmptime.to_usec);
 #endif
-      realize_condition (future->ft_request_no, (caddr_t) NULL,
+      realize_condition (future->ft_server, future->ft_request_no, (caddr_t) NULL,
 	  (caddr_t) (long) FE_TIMED_OUT, 1);	/* mty MAALIS */
     }
   return (0);			/* mty MAALIS */
@@ -2639,11 +2655,14 @@ is_this_timed_out (void *key, future_t * future)	/* MAALIS mty */
 
 
 void
-timeout_round (TAKE_G1)
+timeout_round (TAKE_G dk_session_t * ses)
 {
   static timeout_t last_time;
   ss_dprintf_2 (("Timeout round."));
-
+#ifdef NO_THREAD
+  if (NULL == ses) /* if single thread session must be passed */
+    GPF_T;
+#endif  
   get_real_time (&time_now);
   time_now_msec = time_now.to_sec * 1000 + time_now.to_usec / 1000;
   if (time_now.to_sec - last_time.to_sec < atomic_timeout.to_sec)
@@ -2657,12 +2676,13 @@ timeout_round (TAKE_G1)
       CB_DONE;
     }
 
-  mutex_enter (value_mtx);
-  maphash ((maphash_func) is_this_timed_out, pending_futures);
-  mutex_leave (value_mtx);
+  IN_VALUE;
+  maphash ((maphash_func) is_this_timed_out, PENDING_FUTURES(ses));
+  LEAVE_VALUE;
 }
 
 
+#ifndef NO_THREAD
 #define DKT_THREAD_INIT() \
   { \
     dk_thread_t *dkt = dk_thread_alloc (); \
@@ -2671,7 +2691,6 @@ timeout_round (TAKE_G1)
     dkt->dkt_process = thr; \
   }
 
-#ifndef NO_THREAD
 /*##**********************************************************************
  *
  *              server_loop
@@ -2722,7 +2741,7 @@ server_loop (void *arg)
       if (time_spent >= time_between_rounds)
 	{
 	  time_spent = 0;
-	  timeout_round (PASS_G1);
+	  timeout_round (PASS_G NULL);
 	}
     }
 }
@@ -3010,6 +3029,10 @@ PrpcSessionFree (dk_session_t * ses)
     dk_free (ses->dks_out_buffer, DKSES_OUT_BUFFER_LENGTH);
   dk_free (SESSION_SCH_DATA (ses), sizeof (scheduler_io_data_t));
   session_free (ses->dks_session);
+#ifdef NO_THREAD  
+  if (NULL != ses->dks_pending_futures)
+    hash_table_free (ses->dks_pending_futures);  
+#endif  
   dk_free (ses, sizeof (dk_session_t));
 }
 
@@ -3485,7 +3508,7 @@ timeout_round_loop ()
 {
   while (1)
     {
-      timeout_round ();
+      timeout_round (NULL);
       process_sleep (&atomic_timeout);
     }
 }
@@ -3683,7 +3706,9 @@ PrpcInitialize (void)
   tcpses_rc = resource_allocate (50, (rc_constr_t) NULL,
       (rc_destr_t) NULL, (rc_destr_t) NULL, 0);
 
+#ifndef NO_THREAD  
   pending_futures = hash_table_allocate (201);
+#endif  
 
   value_mtx = mutex_allocate ();
   thread_mtx = mutex_allocate ();
@@ -3782,10 +3807,10 @@ PrpcFuture (dk_session_t * server, service_desc_t * service, ...)
   future->ft_server = server;
   future->ft_service = service;
 
-  mutex_enter (value_mtx);
+  IN_VALUE;
   future->ft_request_no = last_future++;
-  sethash ((void *) (ptrlong) future->ft_request_no, pending_futures, (void *) future);
-  mutex_leave (value_mtx);
+  sethash ((void *) (ptrlong) future->ft_request_no, PENDING_FUTURES(server), (void *) future);
+  LEAVE_VALUE;
 
   va_start (ap, service);
   argv = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * service->sd_arg_count,
@@ -3894,8 +3919,8 @@ PrpcFutureFree (future_t * future)
   USE_GLOBAL
 
   /* MAALIS mty needed for futures, which are not waited for */
-  mutex_enter (value_mtx);
-  remhash ((void *) (ptrlong) future->ft_request_no, pending_futures);
+  IN_VALUE;
+  remhash ((void *) (ptrlong) future->ft_request_no, PENDING_FUTURES(future->ft_server));
 
   switch (future->ft_is_ready)
     {
@@ -3912,7 +3937,7 @@ PrpcFutureFree (future_t * future)
       dk_set_free ((dk_set_t) future->ft_result);
     }
   dk_free (future, sizeof (future_t));
-  mutex_leave (value_mtx);
+  LEAVE_VALUE;
 }
 
 
@@ -3977,16 +4002,16 @@ PrpcValueOrWait1T (future_t * future)
 #ifdef NO_THREAD
 again:
 #endif  
-  mutex_enter (value_mtx);
+  IN_VALUE;
   switch (future->ft_is_ready)
     {
     case FS_SINGLE_COMPLETE:
       result = FUTURE_RESULT_FIRST (future->ft_result);
-      mutex_leave (value_mtx);
+      LEAVE_VALUE;
       return result;
 
     case FS_FALSE:
-      mutex_leave (value_mtx);
+      LEAVE_VALUE;
       FT_CHECK_TIMEOUT_1T (future);
       read_service_request (future->ft_server);
 
@@ -4013,7 +4038,7 @@ again:
 	result = NULL;
       else
 	result = FUTURE_RESULT_FIRST (DK_SET_FIRST (&(future->ft_result)));
-      mutex_leave (value_mtx);
+      LEAVE_VALUE;
       return result;
     }
 
@@ -4035,12 +4060,12 @@ PrpcValueOrWait (future_t * future)
   USE_GLOBAL
   caddr_t result;
 
-  mutex_enter (value_mtx);
+  IN_VALUE;
   switch (future->ft_is_ready)
     {
     case FS_SINGLE_COMPLETE:
       result = FUTURE_RESULT_FIRST (future->ft_result);
-      mutex_leave (value_mtx);
+      LEAVE_VALUE;
       return result;
 
     case FS_FALSE:
@@ -4051,7 +4076,7 @@ PrpcValueOrWait (future_t * future)
 	if (DKSESSTAT_ISSET (future->ft_server, SST_NOT_OK))
 	  {
 	    future->ft_error = (caddr_t) (long) FE_TIMED_OUT;
-	    mutex_leave (value_mtx);
+	    LEAVE_VALUE;
 	    call_service_cancel (future->ft_server);
 	    return NULL;
 	  }
@@ -4059,7 +4084,7 @@ PrpcValueOrWait (future_t * future)
 	if (!c_thread
 	    || 0 == c_thread->dkt_request_count)
 	  {
-	    mutex_leave (value_mtx);
+	    LEAVE_VALUE;
 	    return (PrpcValueOrWait1T (future));
 	  }
 
@@ -4068,7 +4093,7 @@ PrpcValueOrWait (future_t * future)
 	request->rq_next_waiting = future->ft_waiting_requests;
 	future->ft_waiting_requests = request;
 
-	mutex_leave (value_mtx);
+	LEAVE_VALUE;
 	semaphore_enter (current_process->thr_sem);
 	if (future->ft_error)
 	  return NULL;
@@ -4085,7 +4110,7 @@ PrpcValueOrWait (future_t * future)
 	result = NULL;
       else
 	result = FUTURE_RESULT_FIRST (DK_SET_FIRST (&(future->ft_result)));
-      mutex_leave (value_mtx);
+      LEAVE_VALUE;
       return result;
     }
 
@@ -4116,14 +4141,14 @@ PrpcFutureNextResult (future_t * future)
   USE_GLOBAL
   caddr_t result;
 
-  mutex_enter (value_mtx);
+  IN_VALUE;
   switch (future->ft_is_ready)
     {
     case FS_SINGLE_COMPLETE:
       result = FUTURE_RESULT_FIRST (future->ft_result);
       future->ft_result = NULL;
       future->ft_is_ready = FS_RESULT_LIST_COMPLETE;
-      mutex_leave (value_mtx);
+      LEAVE_VALUE;
       return result;
 
     case FS_RESULT_LIST_COMPLETE:
@@ -4132,10 +4157,10 @@ PrpcFutureNextResult (future_t * future)
 	  caddr_t r_box = (caddr_t) dk_set_pop ((dk_set_t *) & (future->ft_result));
 	  result = FUTURE_RESULT_FIRST (r_box);
 	  dk_free_box_and_numbers (r_box);
-	  mutex_leave (value_mtx);
+	  LEAVE_VALUE;
 	  return result;
 	}
-      mutex_leave (value_mtx);
+      LEAVE_VALUE;
       return NULL;
 
     case FS_RESULT_LIST:
@@ -4144,7 +4169,7 @@ PrpcFutureNextResult (future_t * future)
 	  caddr_t r_box = (caddr_t) dk_set_pop (((dk_set_t *) & future->ft_result));
 	  result = FUTURE_RESULT_FIRST (r_box);
 	  dk_free_box_and_numbers (r_box);
-	  mutex_leave (value_mtx);
+	  LEAVE_VALUE;
 	  return result;
 	}
       /* If no result is ready fall through to the next case to wait. */
@@ -4155,12 +4180,12 @@ PrpcFutureNextResult (future_t * future)
 	future_request_t *request;
 	if (!c_thread || 0 == c_thread->dkt_request_count)
 	  {
-	    mutex_leave (value_mtx);
+	    LEAVE_VALUE;
 	    return PrpcFutureNextResult1T (future);
 	  }
 	if (DKSESSTAT_ISSET (future->ft_server, SST_NOT_OK))
 	  {
-	    mutex_leave (value_mtx);
+	    LEAVE_VALUE;
 	    call_service_cancel (future->ft_server);
 	    future->ft_error = (caddr_t) (long) FE_TIMED_OUT;
 	    return NULL;
@@ -4168,7 +4193,7 @@ PrpcFutureNextResult (future_t * future)
 	request = c_thread->dkt_requests[c_thread->dkt_request_count - 1];
 	request->rq_next_waiting = future->ft_waiting_requests;
 	future->ft_waiting_requests = request;
-	mutex_leave (value_mtx);
+	LEAVE_VALUE;
 	semaphore_enter (current_process->thr_sem);
 	if (future->ft_error)
 	  return NULL;
@@ -4190,13 +4215,13 @@ PrpcFutureIsResult (future_t * future)
 #ifdef NO_THREAD
   timeout_t zero_timeout = {0, 0};
 #endif
-  mutex_enter (value_mtx);
+  IN_VALUE;
   if (future->ft_result)
     {
-      mutex_leave (value_mtx);
+      LEAVE_VALUE;
       return 1;
     }
-  mutex_leave (value_mtx);
+  LEAVE_VALUE;
 #ifdef NO_THREAD
   if (!bytes_in_read_buffer (future->ft_server))
     {
@@ -4237,14 +4262,14 @@ PrpcFutureNextResult1T (future_t * future)
   caddr_t result;
 
 again:
-  mutex_enter (value_mtx);
+  IN_VALUE;
   switch (future->ft_is_ready)
     {
     case FS_SINGLE_COMPLETE:
       result = FUTURE_RESULT_FIRST (future->ft_result);
       future->ft_result = NULL;
       future->ft_is_ready = FS_RESULT_LIST_COMPLETE;
-      mutex_leave (value_mtx);
+      LEAVE_VALUE;
       return result;
 
     case FS_RESULT_LIST_COMPLETE:
@@ -4253,10 +4278,10 @@ again:
 	  caddr_t r_box = (caddr_t) dk_set_pop ((dk_set_t *) & (future->ft_result));
 	  result = FUTURE_RESULT_FIRST (r_box);
 	  dk_free_box_and_numbers (r_box);
-	  mutex_leave (value_mtx);
+	  LEAVE_VALUE;
 	  return result;
 	}
-      mutex_leave (value_mtx);
+      LEAVE_VALUE;
       return NULL;
 
     case FS_RESULT_LIST:
@@ -4265,13 +4290,13 @@ again:
 	  caddr_t r_box = (caddr_t) dk_set_pop (((dk_set_t *) & future->ft_result));
 	  result = FUTURE_RESULT_FIRST (r_box);
 	  dk_free_box_and_numbers (r_box);
-	  mutex_leave (value_mtx);
+	  LEAVE_VALUE;
 	  return result;
 	}
       /* If no result is ready fall through to the next case to wait. */
 
     case FS_FALSE:
-      mutex_leave (value_mtx);
+      LEAVE_VALUE;
       FT_CHECK_TIMEOUT_1T (future);
       read_service_request (future->ft_server);
       if (future->ft_error)
@@ -4373,6 +4398,10 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
 	}
 #endif
     }
+
+#ifdef NO_THREAD
+  session->dks_pending_futures =  hash_table_allocate (21);
+#endif  
 
   SESSION_SCH_DATA (session)->sio_default_read_ready_action =
       read_service_request;

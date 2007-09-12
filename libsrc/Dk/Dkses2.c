@@ -414,7 +414,7 @@ service_read (dk_session_t * ses, char *buffer, int req_bytes, int need_all)
 		  PROCESS_ALLOW_SCHEDULE ();
 		  rc2 = check_inputs (PASS_G &atomic_timeout, 1);
 		  if (rc2 == 0)
-		    timeout_round (PASS_G1);
+		    timeout_round (PASS_G ses->dks_session);
 		}
 	      else
 		{
