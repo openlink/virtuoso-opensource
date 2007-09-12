@@ -26,7 +26,12 @@
 
 -- install the handlers for supported metadata, keep in sync with xslt/html2rdf.xsl rules
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(text/html)|(application/atom.xml)|(text/xml)|(application/xml)|(application/rss.xml)' and RM_TYPE = 'MIME';
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_PATTERN = '(http://www.amazon.com/gp/product/.*)|(http://www.amazon.[^/]+/o/ASIN/.*)';
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://.*amazon.[^/]+/gp/product/.*)|'||
+	    '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
+	    '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+/.*)|'||
+	    '(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
+	    '(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)'
+	where RM_HOOK = 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE';
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
     values ('.*', 'HTTP', 'DB.DBA.RDF_LOAD_HTTP_SESSION', null, 'HTTP in RDF', 0);
@@ -43,6 +48,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('(http://.*amazon.[^/]+/gp/product/.*)|'||
 	    '(http://.*amazon.[^/]+/o/ASIN/.*)|'||
 	    '(http://.*amazon.[^/]+/[^/]+/dp/[^/]+/.*)|'||
+	    '(http://.*amazon.[^/]+/exec/obidos/ASIN/.*)|' ||
 	    '(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)',
             'URL', 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE', null, 'Amazon articles');
 
@@ -719,17 +725,22 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   if (new_origin_uri like 'http://%amazon.%/gp/product/%')
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/gp/product/%s', 0);
-      asin := tmp[2];
+      asin := rtrim (tmp[2], '/');
     }
   else if (new_origin_uri like 'http://%amazon.%/o/ASIN/%')
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/o/ASIN/%s', 0);
-      asin := tmp[2];
+      asin := rtrim (tmp[2], '/');
     }
   else if (new_origin_uri like 'http://%amazon.%/%/dp/%/%')
     {
       tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/%s/dp/%s/%s', 0);
       asin := tmp[3];
+    }
+  else if (new_origin_uri like 'http://%amazon.%/exec/obidos/ASIN/%')
+    {
+      tmp := sprintf_inverse (new_origin_uri, 'http://%samazon.%s/exec/obidos/ASIN/%s', 0);
+      asin := rtrim (tmp[2], '/');
     }
   else if (new_origin_uri like 'http://%amazon.%/exec/obidos/tg/detail/-/%/%')
     {
