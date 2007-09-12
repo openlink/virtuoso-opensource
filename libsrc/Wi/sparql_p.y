@@ -186,6 +186,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token QUAD_L		/*:: PUNCT_SPAR_LAST("QUAD") ::*/
 %token REGEX_L		/*:: PUNCT_SPAR_LAST("REGEX") ::*/
 %token RETURNS_L	/*:: PUNCT_SPAR_LAST("RETURNS") ::*/
+%token SAMETERM_L	/*:: PUNCT_SPAR_LAST("SAMETERM") ::*/
 %token SELECT_L		/*:: PUNCT_SPAR_LAST("SELECT") ::*/
 %token SILENT_L		/*:: PUNCT_SPAR_LAST("SILENT") ::*/
 %token STORAGE_L	/*:: PUNCT_SPAR_LAST("STORAGE") ::*/
@@ -263,7 +264,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_order_condition
 %type <token_type> spar_asc_or_desc_opt
 %type <box> spar_limit_clause_opt
+%type <box> spar_limit_clause
 %type <box> spar_offset_clause_opt
+%type <box> spar_offset_clause
 %type <tree> spar_group_gp
 %type <nothing> spar_gp
 %type <nothing> spar_gp_not_triples
@@ -583,8 +586,10 @@ spar_where_clause	/* [13]  	WhereClause	  ::=  	'WHERE'? GroupGraphPattern	*/
 	| _LBRA { spar_gp_init (sparp_arg, WHERE_L); } spar_group_gp		{ $$ = $3; }
 	;
 
-spar_solution_modifier	/* [14]  	SolutionModifier	  ::=  	OrderClause? LimitClause? OffsetClause?	*/
-	: spar_order_clause_opt spar_limit_clause_opt spar_offset_clause_opt	{ $$ = (SPART **)t_list (3, t_revlist_to_array ($1), $2, $3); }
+spar_solution_modifier	/* [14]	SolutionModifier	 ::=  OrderClause? ((LimitClause OffsetClause?) | (OffsetClause LimitClause?))?	*/
+	: spar_order_clause_opt		{ $$ = (SPART **)t_list (3, t_revlist_to_array ($1), t_box_num (SPARP_MAXLIMIT), t_box_num (0)); }
+	| spar_order_clause_opt spar_limit_clause spar_offset_clause_opt	{ $$ = (SPART **)t_list (3, t_revlist_to_array ($1), $2, $3); }
+	| spar_order_clause_opt spar_offset_clause spar_limit_clause_opt	{ $$ = (SPART **)t_list (3, t_revlist_to_array ($1), $3, $2); }
 	;
 
 spar_order_clause_opt	/* [15]  	OrderClause	  ::=  	'ORDER' 'BY' OrderCondition+	*/
@@ -600,6 +605,7 @@ spar_order_conditions	/* ::=  OrderCondition+	*/
 spar_order_condition	/* [16]*	OrderCondition	 ::=  ( 'ASC' | 'DESC' )? ( FunctionCall | Var | ( '(' Expn ')' ) | ( '[' Expn ']' ) )	*/
 	: spar_asc_or_desc_opt _LPAR spar_expn _RPAR		{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)$1, $3); }
 	| spar_asc_or_desc_opt _LSQBRA spar_expn _RSQBRA	{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)$1, $3); }
+	| spar_built_in_call					{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)ASC_L, $1); }
 	| spar_function_call					{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)ASC_L, $1); }
 	| spar_var						{ $$ = spartlist (sparp_arg, 3, ORDER_L, (ptrlong)ASC_L, $1); }
 	;
@@ -612,12 +618,20 @@ spar_asc_or_desc_opt	/* ::=  ( 'ASC' | 'DESC' )? */
 
 spar_limit_clause_opt	/* [17]  	LimitClause	  ::=  	'LIMIT' INTEGER	*/
 	: /* empty */ { $$ = t_box_num (SPARP_MAXLIMIT); }
-	| LIMIT_L SPARQL_INTEGER { $$ = $2; }
+	| spar_limit_clause
+	;
+
+spar_limit_clause	/* [17]	LimitClause	 ::=  'LIMIT' INTEGER	*/
+	: LIMIT_L SPARQL_INTEGER { $$ = $2; }
 	;
 
 spar_offset_clause_opt	/* [18]  	OffsetClause	  ::=  	'OFFSET' INTEGER	*/
 	: /* empty */ { $$ = t_box_num (0); }
-	| OFFSET_L SPARQL_INTEGER { $$ = $2; }
+	| spar_offset_clause
+	;
+
+spar_offset_clause	/* [18]	OffsetClause	 ::=  'OFFSET' INTEGER	*/
+	: OFFSET_L SPARQL_INTEGER { $$ = $2; }
 	;
 
 spar_group_gp		/* [19]  	GroupGraphPattern	  ::=  	'{' GraphPattern '}'	*/
@@ -977,6 +991,8 @@ spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, $3)); }
 	| BOUND_L _LPAR spar_var _RPAR		/*... | ( 'BOUND' '(' Var ')' ) */
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, $3)); }
+	| SAMETERM_L _LPAR spar_expn _COMMA spar_expn _RPAR	/*... | ( 'sameTERM' '(' Expn ',' Expn ')' ) */
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (2, $3, $5)); }
 	| isIRI_L _LPAR spar_expn _RPAR		/*... | ( 'isIRI' '(' Expn ')' ) */
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isIRI_L, t_list (1, $3)); }
 	| isURI_L _LPAR spar_expn _RPAR		/*... | ( 'isURI' '(' Expn ')' ) */

@@ -345,9 +345,9 @@ X		([Xx])
 Y		([Yy])
 Z		([Zz])
 
-XMLNS_NCNAME	([A-Za-z_][A-Za-z0-9_.-]*)
+XMLNS_NCNAME	([A-Za-z_\x7f-\xfe][A-Za-z0-9_.\x7f-\xfe-]*)
 XMLNS_QNAME1	(({XMLNS_NCNAME}":")?{XMLNS_NCNAME})
-XMLNS_QNAME	({XMLNS_QNAME1}|("(!"[A-Za-z0-9:_./%#+-]+"!)"))
+XMLNS_QNAME	({XMLNS_QNAME1}|("(!"[A-Za-z0-9:_./%#+\x7f-\xfe-]+"!)"))
 XMLNS_QQNAME	({XMLNS_NCNAME}":"({XMLNS_NCNAME}":")+{XMLNS_NCNAME})
 XML_RESERVED	({X}{M}{L}([A-Za-z0-9_.-]*)":"{XMLNS_NCNAME})
 
@@ -370,12 +370,12 @@ HEX		([0-9A-Fa-f])
   SPAR_NCNAME		({SPAR_NCCHAR1}(({SPAR_NCCHAR}|[.])*{SPAR_NCCHAR})?)
   */
 
-SPAR_NCCHAR1p	([A-Za-z])
-SPAR_NCCHAR1	([A-Za-z_])
-SPAR_VARNAME	([A-Za-z0-9_]+)
-SPAR_NCCHAR	([A-Za-z0-9_-])
-SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
-SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
+SPAR_NCCHAR1p	([A-Za-z\x7f-\xfe])
+SPAR_NCCHAR1	([A-Za-z_\x7f-\xfe])
+SPAR_VARNAME	([A-Za-z0-9_\x7f-\xfe]+)
+SPAR_NCCHAR	([A-Za-z0-9_\x7f-\xfe-])
+SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
+SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 SPAR_PLAIN_SQLNAME	([A-Za-z_][A-Za-z0-9_]*)
 SPAR_DQ_SQLNAME		([""][^""\\\r\n]*[""])
 SPAR_SQLNAME		(([A-Za-z_][A-Za-z0-9_]*)|([""][^""\\\r\n]*[""]))
@@ -472,6 +472,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{Q}{U}{A}{D}			{ return QUAD_L		; }
 <SPARQL>{R}{E}{G}{E}{X}			{ return REGEX_L	; }
 <SPARQL>{R}{E}{T}{U}{R}{N}{S}		{ return RETURNS_L	; }
+<SPARQL>{S}{A}{M}{E}{T}{E}{R}{M}	{ return SAMETERM_L	; }
 <SPARQL>{S}{E}{L}{E}{C}{T}		{ return SELECT_L	; }
 <SPARQL>{S}{I}{L}{E}{N}{T}		{ return SILENT_L	; }
 <SPARQL>{S}{T}{O}{R}{A}{G}{E}		{ return STORAGE_L	; }
