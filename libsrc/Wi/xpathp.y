@@ -366,11 +366,10 @@ int xpyylex_from_xpp_bufs (caddr_t *yylval, xpp_t *xpp)
 %type <fts>		text_exp
 %type <tree>		variable_ref
 %type <box>		view_name
-%type <fts>		word
 %type <nothing>		xp_option
 %type <nothing>		xp_options
-%type <nothing>		xp_options_end
-%type <nothing>		xp_options_opt
+%type <nothing>		xp_options_seq
+%type <nothing>		xp_options_seq_opt
 %type <list>		xpath_arg_list
 %type <tree>		xpath_expr
 %type <tree>		xpath_function
@@ -548,7 +547,7 @@ top_xq	/* XQ2003[30] Module, XQ2003[31] MainModule, XQ2003[32] LibraryModule */
 	;
 
 top_xp
-	: xp_options_opt xpath_expr opt_semi_END_OF_XPSCN_TEXT { $$ = $2; }
+	: xp_options_seq_opt xpath_expr opt_semi_END_OF_XPSCN_TEXT { $$ = $2; }
 	;
 
 opt_semi_END_OF_XPSCN_TEXT
@@ -557,7 +556,7 @@ opt_semi_END_OF_XPSCN_TEXT
 	;
 
 top_ft
-	: xp_options_opt text_exp END_OF_XPSCN_TEXT { $$ = (XT*)($2); }
+	: xp_options_seq_opt text_exp END_OF_XPSCN_TEXT { $$ = (XT*)($2); }
 	;
 
 /* TOP-LEVEL end */
@@ -1548,22 +1547,22 @@ xq_qname
 /* XPath begin */
 
 
-xp_options_opt
+xp_options_seq_opt
 	: /* empty */ { ; }
-	| '[' xp_options xp_options_end	{ ; }
+        | xp_options_seq { ; }
 	;
 
-xp_options_end
-	: ']' { ; }
-	| _RSQBRA_LSQBRA xp_options xp_options_end	{ ; }
-	| error { yyerror ("']' or option expected"); }
+xp_options_seq
+	:
+	| '[' xp_options ']'	{ ; }
+	| '[' xp_options error { yyerror ("']' or option expected"); }
 	;
 
 xp_options
 	: xp_option { ; }
 	| xp_options xp_option { ; }
+	| xp_options _RSQBRA_LSQBRA xp_option { ; }
 	;
-
 
 xp_option
 	: O_HTTP { xp_reject_option_if_not_allowed (xpp_arg, XP_XPATH_OPTS); xpp_arg->xpp_xp_env->xe_is_http = 1; }
@@ -1784,16 +1783,12 @@ view_name
 	;
 
 text_exp
-	: word					/* default { $$ = $1; } is OK */
+	: SINGLE_WORD { $$ = xp_word_or_phrase_from_string (xpp_arg, $1, xpp_arg->xpp_enc, xpp_arg->xpp_lang, 1); }
+	| literal_strg { $$ = xp_word_or_phrase_from_string (xpp_arg, $1, xpp_arg->xpp_enc, xpp_arg->xpp_lang, 1); }
+	| '^' literal_strg { $$ = xp_word_from_exact_string (xpp_arg, $2, xpp_arg->xpp_enc, 1); }
 	| text_exp K_AND text_exp		{TBIN_OP ($$, BOP_AND, $1, $3); }
 	| text_exp K_AND K_NOT text_exp		{ TBIN_OP ($$, XP_AND_NOT, $1, $4); }
 	| text_exp K_OR text_exp		{ TBIN_OP ($$, BOP_OR, $1, $3); }
 	| text_exp K_NEAR text_exp		{ TBIN_OP ($$, XP_NEAR, $1, $3); }
-	| '(' text_exp ')' { $$ = $2; }
-	;
-
-word
-	: SINGLE_WORD { $$ = xp_word_or_phrase_from_string (xpp_arg, $1, xpp_arg->xpp_enc, xpp_arg->xpp_lang, 1); }
-	| literal_strg { $$ = xp_word_or_phrase_from_string (xpp_arg, $1, xpp_arg->xpp_enc, xpp_arg->xpp_lang, 1); }
-	| '^' literal_strg { $$ = xp_word_from_exact_string (xpp_arg, $2, xpp_arg->xpp_enc, 1); }
+	| '(' xp_options_seq_opt text_exp ')' { $$ = $3; }
 	;
