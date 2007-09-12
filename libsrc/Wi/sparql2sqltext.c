@@ -2175,6 +2175,37 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         ssg_puts (rtext);
       return;
       }
+    case SAMETERM_L:
+      {
+        SPART *arg2 = tree->_.builtin.args[1];
+        SPART *expanded = spartlist (ssg->ssg_sparp, 3, BOP_AND,
+          spartlist (ssg->ssg_sparp, 3, BOP_EQ, arg1, arg2),
+          spartlist (ssg->ssg_sparp, 3, BOP_AND,
+            spartlist (ssg->ssg_sparp, 3, BOP_OR,
+              spartlist (ssg->ssg_sparp, 3, BOP_EQ,
+                spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg1)),
+                spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg2)) ),
+              spartlist (ssg->ssg_sparp, 3, BOP_AND,
+                spartlist (ssg->ssg_sparp, 2, BOP_NOT,
+                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
+                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg1))))),
+                spartlist (ssg->ssg_sparp, 2, BOP_NOT,
+                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
+                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)DATATYPE_L, t_list (1, arg2))))) ) ),
+            spartlist (ssg->ssg_sparp, 3, BOP_OR,
+              spartlist (ssg->ssg_sparp, 3, BOP_EQ,
+                spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg1)),
+                spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg2)) ),
+              spartlist (ssg->ssg_sparp, 3, BOP_AND,
+                spartlist (ssg->ssg_sparp, 2, BOP_NOT,
+                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
+                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg1))))),
+                spartlist (ssg->ssg_sparp, 2, BOP_NOT,
+                  spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
+                      spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg2))))) ) ) ) );
+        ssg_print_bop_bool_expn (ssg, expanded, " AND ", " __and (", top_filter_op, needed);
+        return;
+      }
     case DATATYPE_L:
       if (SSG_VALMODE_SQLVAL != needed)
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, NULL_ASNAME);

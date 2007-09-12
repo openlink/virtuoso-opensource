@@ -1585,6 +1585,7 @@ const char *spart_dump_opname (ptrlong opname, int is_op)
     case PREDICATE_L: return "PREDICATE";
     case PREFIX_L: return "PREFIX";
     case REGEX_L: return "REGEX builtin";
+    case SAMETERM_L: return "sameTerm builtin";
     case SELECT_L: return "SELECT result-mode";
     case STR_L: return "STR builtin";
     case SUBJECT_L: return "SUBJECT";

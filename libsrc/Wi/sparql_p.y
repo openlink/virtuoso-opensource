@@ -992,7 +992,7 @@ spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
 	| BOUND_L _LPAR spar_var _RPAR		/*... | ( 'BOUND' '(' Var ')' ) */
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, $3)); }
 	| SAMETERM_L _LPAR spar_expn _COMMA spar_expn _RPAR	/*... | ( 'sameTERM' '(' Expn ',' Expn ')' ) */
-		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (2, $3, $5)); }
+		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)SAMETERM_L, t_list (2, $3, $5)); }
 	| isIRI_L _LPAR spar_expn _RPAR		/*... | ( 'isIRI' '(' Expn ')' ) */
 		{ $$ = spartlist (sparp_arg, 3, SPAR_BUILT_IN_CALL, (ptrlong)isIRI_L, t_list (1, $3)); }
 	| isURI_L _LPAR spar_expn _RPAR		/*... | ( 'isURI' '(' Expn ')' ) */
