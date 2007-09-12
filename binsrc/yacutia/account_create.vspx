@@ -970,6 +970,7 @@
                   i := i + 1;
                 }
             }
+            DAV_HOME_DIR_CREATE (user_name);
         }
       commit work;
     }
