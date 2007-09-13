@@ -1689,6 +1689,18 @@ create procedure BMK.WA.tag_delete(
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.tag_id (
+  in tag varchar)
+{
+  tag := trim(tag);
+  tag := replace (tag, ' ', '_');
+  tag := replace (tag, '+', '_');
+  return tag;
+}
+;
+
 ---------------------------------------------------------------------------------
 --
 create procedure BMK.WA.tags_join(
@@ -2130,7 +2142,9 @@ create procedure BMK.WA.geo_url (
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.dav_content (
-  inout uri varchar)
+  in uri varchar,
+  in auth_uid varchar := null,
+  in auth_pwd varchar := null)
 {
   declare content varchar;
   declare hp any;
@@ -2142,10 +2156,10 @@ create procedure BMK.WA.dav_content (
 
   declare N integer;
   declare oldUri, newUri, reqHdr, resHdr varchar;
-  declare auth_uid, auth_pwd varchar;
 
   newUri := uri;
   reqHdr := null;
+  if (isnull (auth_uid))
   BMK.WA.account_access (auth_uid, auth_pwd);
   reqHdr := sprintf('Authorization: Basic %s', encode_base64(auth_uid || ':' || auth_pwd));
 
@@ -3391,6 +3405,8 @@ create procedure BMK.WA.test (
       signal ('TEST', sprintf('The length of field ''%s'' should be greater then %s characters!<>', valueName, cast(tmp as varchar)));
     if (__SQL_STATE = 'MAXLENGTH')
       signal ('TEST', sprintf('The length of field ''%s'' should be less then %s characters!<>', valueName, cast(tmp as varchar)));
+    if (__SQL_STATE = 'SPECIAL')
+      signal ('TEST', __SQL_MESSAGE);
     signal ('TEST', 'Unknown validation error!<>');
     --resignal;
   };
@@ -3458,6 +3474,8 @@ create procedure BMK.WA.validate2 (
 {
   declare exit handler for SQLSTATE '*' {
     if (__SQL_STATE = 'CLASS')
+      resignal;
+    if (__SQL_STATE = 'SPECIAL')
       resignal;
     signal('TYPE', propertyType);
     return;
@@ -3614,8 +3632,11 @@ create procedure BMK.WA.validate_freeTexts (
 -----------------------------------------------------------------------------------------
 --
 create procedure BMK.WA.validate_tag (
-  in S varchar)
+  in T varchar)
 {
+  declare S any;
+  
+  S := T;
   S := replace(trim(S), '+', '_');
   S := replace(trim(S), ' ', '_');
   if (not BMK.WA.validate_freeText(S))

@@ -19,11 +19,14 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-
 ------------------------------------------------------------------------------
 -- bmk-d.sql
--- script for cleaning wa installation.
+-- script for cleaning wa instalation.
+-- Copyright (C) 2004 OpenLink Software
 ------------------------------------------------------------------------------
+
+VHOST_REMOVE (lpath => '/bookmark');
+VHOST_REMOVE (lpath => '/dataspace/services/bookmark');
 
 -- Scheduler
 BMK.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'BM tags aggregator\'');
@@ -84,6 +87,10 @@ BMK.WA.exec_no_error('DROP procedure SIOC.DBA.ods_bookmark_sioc_init');
 -- dropping ODS procs
 BMK.WA.exec_no_error('DROP procedure DB.DBA.wa_search_bmk_get_excerpt_html');
 BMK.WA.exec_no_error('DROP procedure DB.DBA.wa_collect_bmk_tags');
+
+-- dropping SIOC procs
+BML.WA.exec_no_error('DROP procedure DBA.DB.bookmarks_import');
+BML.WA.exec_no_error('DROP procedure DBA.DB.bookmarks_export');
 
 -- final proc
 BMK.WA.exec_no_error('DROP procedure BMK.WA.exec_no_error');

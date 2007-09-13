@@ -79,6 +79,20 @@ create procedure bmk_links_to (inout content any)
 
 -------------------------------------------------------------------------------
 --
+create procedure bmk_tag_iri (
+	in user_id integer,
+	in tag varchar)
+{
+	declare user_name varchar;
+	declare exit handler for not found { return null; };
+
+	select U_NAME into user_name from DB.DBA.SYS_USERS where U_ID = user_id;
+	return sprintf ('http://%s%s/%U/concept#%s', get_cname(), get_base_path (), user_name, BMK.WA.tag_id (tag));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure fill_ods_bookmark_sioc (
   in graph_iri varchar,
   in site_iri varchar,
@@ -169,6 +183,35 @@ create procedure fill_ods_bookmark_sioc (
   }
   commit work;
 
+		id := -1;
+		deadl := 3;
+		cnt := 0;
+		declare exit handler for sqlstate '40001' {
+			if (deadl <= 0)
+				resignal;
+			rollback work;
+			deadl := deadl - 1;
+			goto l1;
+		};
+	l1:
+		for (select WAI_ID,
+								WAI_NAME
+					 from DB.DBA.WA_INSTANCE
+					where ((WAI_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+					  and WAI_TYPE_NAME = 'Bookmark'
+					order by WAI_ID) do
+		{
+			c_iri := bmk_iri (WAI_NAME);
+      iri := sprintf ('http://%s%s/services/bookmark', get_cname(), get_base_path ());
+      ods_sioc_service (graph_iri, iri, c_iri, null, 'text/xml', iri||'/services.wsdl', iri, 'SOAP');
+
+			cnt := cnt + 1;
+			if (mod (cnt, 500) = 0) {
+				commit work;
+				id := WAI_ID;
+			}
+    }
+		commit work;
         }
     }
 ;
@@ -624,6 +667,55 @@ create procedure sioc.DBA.rdf_bookmark_view_str ()
         sioc:bmk_forum_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME)
 	      atom:contains sioc:bmk_post_iri (U_NAME, WAI_NAME, BD_BOOKMARK_ID)
 	    .
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_bookmark_view_str_tables ()
+{
+  return
+      '
+      from DB.DBA.ODS_BMK_POSTS as bmk_posts
+      where (^{bmk_posts.}^.U_NAME = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_BMK_TAGS as bmk_tags
+      where (^{bmk_tags.}^.U_NAME = ^{users.}^.U_NAME)
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_bookmark_view_str_maps ()
+{
+  return
+      '
+      # Bookmark
+	    ods:bmk_post (bmk_posts.U_NAME, bmk_posts.WAI_NAME, bmk_posts.BD_BOOKMARK_ID)
+        a bm:Bookmark ;
+	      dc:title bmk_posts.BD_NAME;
+	      dct:created bmk_posts.BD_CREATED ;
+	      dct:modified bmk_posts.BD_LAST_UPDATE ;
+	      dc:date bmk_posts.BD_LAST_UPDATE ;
+	      ann:created bmk_posts.BD_CREATED ;
+	      dc:creator bmk_posts.U_NAME ;
+	      bm:recalls ods:proxy (bmk_posts.B_URI) ;
+	      sioc:link ods:proxy (bmk_posts.B_URI) ;
+	      sioc:content bmk_posts.BD_DESCRIPTION ;
+	      sioc:has_creator ods:user (bmk_posts.U_NAME) ;
+	      foaf:maker ods:person (bmk_posts.U_NAME) ;
+	      sioc:has_container ods:bmk_forum (bmk_posts.U_NAME, bmk_posts.WAI_NAME) .
+
+      ods:bmk_forum (bmk_posts.U_NAME, bmk_posts.WAI_NAME)
+	      sioc:container_of ods:bmk_post (bmk_posts.U_NAME, bmk_posts.WAI_NAME, bmk_posts.BD_BOOKMARK_ID) .
+
+	    ods:user (bmk_posts.U_NAME)
+	      sioc:creator_of ods:bmk_post (bmk_posts.U_NAME, bmk_posts.WAI_NAME, bmk_posts.BD_BOOKMARK_ID) .
+
+	    ods:bmk_post (bmk_tags.U_NAME, bmk_tags.WAM_INST, bmk_tags.ITEM_ID)
+	      sioc:topic ods:tag (bmk_tags.U_NAME, bmk_tags.BD_TAG) .
+
+	    ods:tag (bmk_tags.U_NAME, bmk_tags.BD_TAG) a skos:Concept ;
+	      skos:prefLabel bmk_tags.BD_TAG ;
+	      skos:isSubjectOf ods:bmk_post (bmk_tags.U_NAME, bmk_tags.WAM_INST, bmk_tags.ITEM_ID) .
+	    # end Bookmark
       '
       ;
 };

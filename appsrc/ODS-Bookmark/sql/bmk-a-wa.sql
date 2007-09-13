@@ -86,6 +86,14 @@ create procedure BMK.WA.vhost()
                realm    => 'wa',
                def_page => 'bookmarks.vspx'
              );
+  USER_CREATE ('SOAP_BOOKMARK', md5 (cast (now() as varchar)));
+  USER_SET_QUALIFIER ('SOAP_BOOKMARK', 'DBA');
+
+  VHOST_REMOVE (lpath => '/dataspace/services/bookmark');
+  VHOST_DEFINE (lpath => '/dataspace/services/bookmark',
+                ppath => '/SOAP/',
+                soap_user => 'SOAP_BOOKMARK',
+                soap_opts => vector('Use', 'literal', 'XML-RPC', 'no' )); 
 }
 ;
 
@@ -189,6 +197,7 @@ create method wa_notify_member_changed(in account int, in otype int, in ntype in
 create method wa_new_inst (in login varchar) for wa_bookmark
 {
   declare iUserID, iWaiID integer;
+  declare retValue any;
 
   iUserID := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
   if (isnull(iUserID))
@@ -226,7 +235,17 @@ create method wa_new_inst (in login varchar) for wa_bookmark
 
   BMK.WA.domain_update (iWaiID, iUserID);
 
-  return (self as web_app).wa_new_inst(login);
+  retValue := (self as web_app).wa_new_inst(login);
+
+  --  SIOC service
+  declare  graph_iri, iri, bmk_iri varchar;
+
+  graph_iri := SIOC..get_graph ();
+  iri := sprintf ('http://%s%s/services/bookmark', SIOC..get_cname(), SIOC..get_base_path ());
+  bmk_iri := SIOC..bmk_iri (self.wa_name);
+  SIOC..ods_sioc_service (graph_iri, iri, bmk_iri, null, null, null, iri, 'SOAP');
+
+  return retValue;
 }
 ;
 

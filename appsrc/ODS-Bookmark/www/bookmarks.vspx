@@ -300,7 +300,7 @@
           if (internal_type (fValue) = 211) {
             http (left (cast (fValue as varchar), 10));
           } else {
-            http (AB.WA.utf2wide (fValue));
+            http (BMK.WA.utf2wide (fValue));
           }
         }
     ]]>
@@ -408,6 +408,13 @@
 
       <!-- Toolbar -->
       <v:template type="simple">
+        <?vsp 
+          declare sparqlUrl, graphIri any;
+          
+          sparqlUrl := 'http://' || SIOC..get_cname () || '/sparql';
+          graphIri := SIOC..get_graph ();
+          http(sprintf('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s?default-graph-uri=%U&query=%U&format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml')); 
+        ?>
         <?vsp http('<input type="hidden" name="tbHidden" value=""/>'); ?>
         <?vsp
           if (0)
@@ -799,8 +806,11 @@
             <div style="margin-left:3px; margin-top:3px;">
               <?vsp
                 declare tMin, tMax integer;
-                declare tClass, tStyle varchar;
+                declare appClass, tClass, tStyle varchar;
 
+                appClass := '';
+                if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                  appClass := 'app';  
                 if (is_empty_or_null (self.bTag))
                   self.bTag := BMK.WA.node_suffix (self.bNode);
                 select max(TS_COUNT), min(TS_COUNT) into tMax, tMin from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id;
@@ -810,7 +820,7 @@
                   tClass := '';
                     if (self.bTag = TS_TAG)
                     tClass := 'nolink_a';
-                  http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span class="%s" style="%s">%s</span></a> ', TS_TAG, TS_TAG, tClass, tStyle, TS_TAG));
+                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', TS_TAG, TS_TAG, TS_TAG, appClass, SIOC..bmk_tag_iri (self.account_id, TS_TAG), tClass, tStyle, TS_TAG));
                 }
               ?>
             </div>
@@ -849,7 +859,7 @@
               if (BMK.WA.node_type (self.bNode) = 't') {
                   nodeName := 'Tags';
                 if (BMK.WA.node_suffix (self.bNode) <> '')
-                  nodeName := BMK.WA.node_suffix (self.bNode);
+                    nodeName := 'Tag: ' || BMK.WA.node_suffix (self.bNode);
               } else {
                 nodeName := self.bName;
               }
@@ -1078,16 +1088,16 @@
                       <th width="80%">
                         <?vsp self.sortColumn('Name', '_NAME'); ?>
                       </th>
-                      <v:template type="simple" enabled="-- equ(cast(get_keyword('column_#2', self.settings, '0') as integer), 1)">
+                        <vm:if test="cast(get_keyword('column_#2', self.settings, '0') as integer) = 1">
                         <th nowrap="nowrap">
                           <?vsp self.sortColumn('Date Created', '_CREATED'); ?>
                         </th>
-                      </v:template>
-                      <v:template type="simple" enabled="-- equ(cast(get_keyword('column_#3', self.settings, '1') as integer), 1)">
+                        </vm:if>
+                        <vm:if test="cast(get_keyword('column_#3', self.settings, '0') as integer) = 1">
                         <th nowrap="nowrap">
                           <?vsp self.sortColumn('Last Update', '_LAST_UPDATE'); ?>
                         </th>
-                      </v:template>
+                        </vm:if>
                     </tr>
                   </thead>
                 </table>
@@ -1142,17 +1152,26 @@
                       <td valign="top">
                           <?vsp
                             if (lcase(BMK.WA.node_type((control as vspx_row_template).te_column_value('_NODE'))) = 'b') {
-                              declare id, target, uri, title, title2 varchar;
+                              declare id, domain_id integer;
+                              declare node, target, uri, onclick, appClass, title, title2 varchar;
 
-                              id := BMK.WA.node_id ((control as vspx_row_template).te_column_value('_NODE'));
+                              node := (control as vspx_row_template).te_column_value('_NODE');
+                              id := BMK.WA.node_id (node);
+                              domain_id := (select BD_DOMAIN_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id);
                               uri := (control as vspx_row_template).te_column_value('_URI');
                               title := (control as vspx_row_template).te_column_value('_NAME');
                               title2 := BMK.WA.rdfa_value (title, 'dc:title');
+                              onclick := '';
+                              if (self.account_id > 0)
+                                onclick := sprintf ('onclick="javascript: openBookmark (\'%d\');"', id);
+                              appClass := '';
+                              if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                                appClass := 'app';  
                               if (cast(get_keyword ('panes', self.settings, '0') as integer) = 0) {
                                 target := case when (cast(get_keyword ('bookmarkOpen', self.settings, '0') as integer) = 0) then '_blank' else '_self' end;
-                                http (sprintf('<a id="%d" href="%s" target="%s" onclick="javascript: openBookmark (\'%d\', \'%d\');" class="%s" title="Full window view of \'%s\'">%s</a>', id, uri, target, id, self.account_id, self.linkClass(node), title, title2));
+                                http (sprintf('<a id="bookmark_%d" href="%s" target="%s" %s class="%s %s" title="Full window view of \'%s\'" about="%U">%s</a>', id, uri, target, onclick, appClass, self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
                               } else {
-                                http (sprintf('<a id="%d" href="javascript: openIFrame (\'%d\', \'%d\', \'%U\');" class="%s" title="3-Pane view of \'%s\'">%s</a>', id, id, self.account_id, uri, self.linkClass(node), title, title2));
+                                http (sprintf('<a id="bookmark_%d" href="javascript: openIFrame (\'%d\', \'%d\', \'%U\');" class="%s %s" title="3-Pane view of \'%s\'" about="%U">%s</a>', id, id, self.account_id, uri, appClass, self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
                               }
                             }
                           ?>
@@ -1173,14 +1192,9 @@
                           </v:on-post>
                         </v:button>
                           </vm:if>
-                        <v:url value="--BMK.WA.stringCut((control.vc_parent as vspx_row_template).te_column_value('_NAME'), self.chars)"
-                               url="--(control.vc_parent as vspx_row_template).te_column_value('_URI')"
-                               format="%s"
-                               enabled="--case when (lcase(BMK.WA.node_type((control.vc_parent as vspx_row_template).te_column_value('_NODE'))) = 'b') then 0 else 0 end"
-                               xhtml_title="--BMK.WA.utf2wide((control.vc_parent as vspx_row_template).te_column_value('_NAME'))"/>
                         <?vsp
                           declare N integer;
-                            declare actions, node, id, uri, title, target, tags any;
+                            declare actions, node, id, uri, onclick, appClass, title, target, tags any;
 
                           node := (control as vspx_row_template).te_column_value('_NODE');
                             id := BMK.WA.node_id (node);
@@ -1190,8 +1204,11 @@
                             actions := '';
                             if (BMK.WA.node_type(node) = 'b') {
                               if (cast(get_keyword ('panes', self.settings, '0') as integer) = 1) {
+                                onclick := '';
+                                if (self.account_id > 0)
+                                  onclick := sprintf ('onclick="javascript: openBookmark (\'%d\');"', id);                                  
                                 target := case when (cast(get_keyword ('bookmarkOpen', self.settings, '0') as integer) = 0) then '_blank' else '_self' end;
-                                actions := sprintf('<a href="%s" target="%s" onclick="javascript: openBookmark (\'%d\', \'%d\');" title="Full window view of %s" class="link_ed">view</a>', uri, target, id, self.account_id, title);
+                                actions := sprintf('<a href="%s" target="%s" %s title="Full window view of %s" class="link_ed">view</a>', uri, target, onclick, title);
                               }
                             }
 
@@ -1210,12 +1227,15 @@
                             http (actions);
 
                           if (BMK.WA.node_type(node) = 'b') {
-                            tags := BMK.WA.tags_select2(self.domain_id, self.account_id, BMK.WA.node_id(node));
+                              appClass := '';
+                              if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                                appClass := 'app';  
+                              tags := BMK.WA.tags_select2(self.domain_id, self.account_id, id);
                             if (not is_empty_or_null(tags)) {
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
                               for (N := 0; N < length(tags); N := N + 1) {
-                                http(sprintf('<a href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s">%s</a>', BMK.WA.bookmark_url(self.domain_id), self.sid, self.realm, tags[N], tags[N]));
+                                  http(sprintf('<a id="tag_%d_%s" href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s" class="%s" about="%U">%s</a>', id, tags[N], BMK.WA.bookmark_url(self.domain_id), self.sid, self.realm, tags[N], appClass, SIOC..bmk_tag_iri (self.account_id, tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
                               }
@@ -1224,16 +1244,16 @@
                           }
                         ?>
                       </td>
-                      <v:template type="simple" enabled="-- equ(cast(get_keyword('column_#2', self.settings, '0') as integer), 1)">
+                        <vm:if test="cast(get_keyword('column_#2', self.settings, '0') as integer) = 1">
                         <td align="right" nowrap="nowrap" valign="top">
-                            <?vsp http (BMK.WA.rdfa_value (BMK.WA.dt_value((control.vc_parent as vspx_row_template).te_column_value('_CREATED')), 'dct:created')); ?>
+                            <?vsp http (BMK.WA.rdfa_value (BMK.WA.dt_value((control as vspx_row_template).te_column_value('_CREATED')), 'dct:created')); ?>
                         </td>
-                      </v:template>
-                      <v:template type="simple" enabled="-- equ(cast(get_keyword('column_#3', self.settings, '1') as integer), 1)">
+                        </vm:if>
+                        <vm:if test="cast(get_keyword('column_#3', self.settings, '0') as integer) = 1">
                         <td align="right" nowrap="nowrap" valign="top">
-                            <?vsp http (BMK.WA.rdfa_value (BMK.WA.dt_value((control.vc_parent as vspx_row_template).te_column_value('_LAST_UPDATE')), 'dct:modified')); ?>
+                            <?vsp http (BMK.WA.rdfa_value (BMK.WA.dt_value((control as vspx_row_template).te_column_value('_LAST_UPDATE')), 'dct:modified')); ?>
                         </td>
-                      </v:template>
+                        </vm:if>
                     <?vsp
                       http('</tr>');
                     ?>
@@ -1288,7 +1308,7 @@
             <div class="new-form-body">
               <table cellspacing="0">
                 <tr>
-                  <th rowspan="3" valign="middle">
+	                  <th rowspan="4" valign="middle">
 	                    <v:label for="i_file" value="Source type"/>
                   </th>
 	                  <td nowrap="nowarap">
@@ -1326,7 +1346,20 @@
                       </v:before-render>
                     </v:radio-button>
                     <xsl:call-template name="nbsp"/>
-                    <b><vm:label for="i_source_2" value="--'del.icio.us'" /></b>
+	                    <b><vm:label for="i_source_2" value="--'URI'" /></b>
+	                  </td>
+	                </tr>
+	                <tr>
+	                  <td nowrap="nowarap">
+	                    <v:radio-button name="i_source_3" xhtml_id="i_source_3" group-name="i_source" value="3">
+	                      <v:before-render>
+	                        <![CDATA[
+	                          control.ufl_selected := either(equ(self.v_source, 3), 1, 0);
+	                        ]]>
+	                      </v:before-render>
+	                    </v:radio-button>
+	                    <xsl:call-template name="nbsp"/>
+	                    <b><vm:label for="i_source_3" value="--'del.icio.us'" /></b>
                   </td>
                 </tr>
               </table>
@@ -1344,16 +1377,15 @@
 	                      self.v_source := 1;
 	                    } else if (self.i_source_2.ufl_selected) {
 	                      self.v_source := 2;
+	                    } else if (self.i_source_3.ufl_selected) {
+	                      self.v_source := 3;
 	                    }
-	                    if (tmp <> self.v_source)
-	                      self.v_sourceParam_1 := '';
-
                       self.bStep := '2';
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-	              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+	              <v:button action="simple" name="i1_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.bMode := 'browse';
@@ -1386,7 +1418,7 @@
 	                      Select WebDAV file
 		                  </th>
 		                  <td>
-	                      <v:text name="i_dav" value="--self.v_sourceParam_1" xhtml_size="40"/>
+	                      <v:text name="i_dav" value="--''" xhtml_size="40"/>
 	                      <v:browse-button value="Browse..." selector="popup_browser.vspx" child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"  browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=i_dav', BMK.WA.dav_home(self.account_id))">
 	                        <v:field name="i_dav"/>
 	                      </v:browse-button>
@@ -1394,6 +1426,16 @@
 		                </tr>
                   </vm:if>
                   <vm:if test="self.v_source = 2">
+	                  <tr>
+		                  <th width="30%">
+                        Select URI
+                      </th>
+                      <td>
+                        <v:text name="f_uri" value="--''" xhtml_size="40" />
+                      </td>
+                    </tr>
+                  </vm:if>
+                  <vm:if test="self.v_source = 3">
 	                  <tr>
 		                  <th width="30%">
 	                      <v:label for="i_deliciousUser" value="Delicious: User"/>
@@ -1465,6 +1507,20 @@
                       }
 
 	                    } else if (self.v_source = 2) {
+                        self.f_uri.ufl_value := trim(self.f_uri.ufl_value);
+                        if (is_empty_or_null (self.f_uri.ufl_value)) {
+                          self.vc_error_message := 'Please select correct URI address!';
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+	                      S := BMK.WA.dav_content (self.f_uri.ufl_value);
+	                      if (isnull(S)) {
+	                        self.vc_error_message := 'Bad import source!';
+	                        self.vc_is_valid := 0;
+	                        return;
+	                      }
+                        
+	                    } else if (self.v_source = 3) {
 	                      declare url, V any;
 
 	                      self.v_sourceParam_2 := trim (self.i_deliciousUser.ufl_value);
@@ -1507,7 +1563,7 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-	              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+	              <v:button action="simple"  name="i2_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.bMode := 'browse';
@@ -1535,7 +1591,7 @@
 	                </tr>
 	                <tr>
 	                  <th>
-	                    <v:label for="i_tag" value="Tags"/>
+	                    <v:label for="i_tag" value="Tags (comma-separated)"/>
 	                  </th>
 	                  <td>
 	                    <v:text name="i_tag" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60"/>
@@ -1608,7 +1664,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+	              <v:button action="simple"  name="i3_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.bMode := 'browse';
@@ -1747,7 +1803,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple"  name="i4_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.bMode := 'browse';
@@ -1766,7 +1822,7 @@
               <table cellspacing="0">
                 <tr>
                   <th>
-                    <v:label for="t_tag" value="Tags"/>
+                    <v:label for="t_tag" value="Tags (comma-separated)"/>
                   </th>
                   <td>
                     <v:text name="t_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60"/>
@@ -1818,7 +1874,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple"  name="t_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.v_tag := '';
@@ -1915,7 +1971,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple" name="m_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.v_folder_id := 0;
@@ -1997,7 +2053,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple" name="s_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.bMode := 'browse';
@@ -2130,7 +2186,7 @@
                     }
                   </script>
                   <th>
-                    <v:label for="b_tags" value="Tags"/>
+                    <v:label for="b_tags" value="Tags (comma-separated)"/>
                   </th>
                   <td>
                     <vm:if test="self.bMode <> 'Bookmark/View'">
@@ -2217,7 +2273,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple" name="b_cancel" value="Cancel" xhtml_class="form-button">
                 <v:after-data-bind>
                   <![CDATA[
                     if (self.v_return <> '')
@@ -2378,7 +2434,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple" name="f_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.bMode := 'browse';
@@ -2452,7 +2508,7 @@
                 </tr>
                 <tr>
                   <th>
-                    <v:label for="s_tags" value="Tags" />
+                    <v:label for="s_tags" value="Tags (comma-separated)" />
                   </th>
                   <td>
                     <v:text name="s_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
@@ -2527,7 +2583,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple" name="sf_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.bMode := 'browse';
@@ -2543,7 +2599,7 @@
       <?vsp
         if (self.bBookmark is not null) {
           http ('\n<script type="text/javascript">\n');
-          http (sprintf ('if (BrowserDetect.browser != \'Opera\') location.hash = "%s";\n', self.bBookmark));
+          http (sprintf ('if (!OAT.Browser.isOpera) location.hash = "%s";\n', self.bBookmark));
           http ('</script>\n');
         }
       ?>

@@ -308,6 +308,13 @@
           }
         ]]>
       </v:on-post>
+      <?vsp 
+        declare sparqlUrl, graphIri any;
+        
+        sparqlUrl := 'http://' || SIOC..get_cname () || '/sparql';
+        graphIri := SIOC..get_graph ();
+        http(sprintf('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s?default-graph-uri=%U&query=%U&format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml')); 
+      ?>
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <v:text name="step" xhtml_id="step" type="hidden" value="1"/>
       <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;">
@@ -349,11 +356,11 @@
                         <th>
                           <?vsp self.sortColumn('Name', '_NAME'); ?>
                         </th>
-                        <v:template type="simple" enabled="-- case when (self.v_shared = 1) then 1 else 0 end;">
+                        <vm:if test="self.v_shared = 1">
                           <th>
                             User
                           </th>
-                       </v:template>
+                       </vm:if>
                         <th>
                           <?vsp self.sortColumn('Folder', '_FOLDER_NAME'); ?>
                         </th>
@@ -384,21 +391,29 @@
                           ?>
                         </td>
                         <td valign="top">
-                          <v:url value="--BMK.WA.stringCut((control.vc_parent as vspx_row_template).te_rowset[3], self.chars)"
-                                 url="--(control.vc_parent as vspx_row_template).te_rowset[4]"
-                                 format="%s"
-                                 xhtml_title="--BMK.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[3])"/>
                           <?vsp
-                            declare N, node integer;
-                            declare node, tags any;
+                            declare N, id, domain_id, account_id integer;
+                            declare node, tags, target, uri, onclick, appClass, title, title2 varchar;
 
-                            node := (control as vspx_row_template).te_rowset[1];
-                            tags := BMK.WA.tags_select2(self.domain_id, self.account_id, node);
+                            node := (control as vspx_row_template).te_rowset[2];
+                            id := BMK.WA.node_id (node);
+                            domain_id := (select BD_DOMAIN_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id);
+                            account_id := BMK.WA.domain_owner_id (domain_id);
+                            uri := (control as vspx_row_template).te_rowset[4];
+                            title := (control as vspx_row_template).te_rowset[3];
+                            title2 := BMK.WA.rdfa_value (title, 'dc:title');
+                            appClass := '';
+                            if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                              appClass := 'app';  
+
+                            http (sprintf('<a id="bookmark_%d" href="%s" class="%s %s" title="Full window view of \'%s\'" about="%U">%s</a>', id, uri, appClass, self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
+                            
+                            tags := BMK.WA.tags_select2(self.domain_id, self.account_id, id);
                             if (not is_empty_or_null(tags)) {
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
                               for (N := 0; N < length(tags); N := N + 1) {
-                                http(sprintf('<a href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s">%s</a>', BMK.WA.bookmark_url(self.domain_id), self.sid, self.realm, tags[N], tags[N]));
+                                http(sprintf('<a id="tag_%d_%s" href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s" class="%s" about="%U">%s</a>', id, tags[N], BMK.WA.bookmark_url(domain_id), self.sid, self.realm, tags[N], appClass, SIOC..bmk_tag_iri (account_id, tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
                               }
@@ -406,13 +421,13 @@
                             }
                           ?>
                         </td>
-                        <v:template type="simple" enabled="-- case when (self.v_shared = 1) then 1 else 0 end;">
+                        <vm:if test="self.v_shared = 1">
                           <td valign="top">
                             <?vsp
-                              http(coalesce((SELECT U_NAME FROM WS.WS.SYS_DAV_USER, BMK.WA.GRANTS WHERE U_ID = G_GRANTER_ID and G_ID = (control.vc_parent as vspx_row_template).te_rowset[10]), ''));
+                              http (coalesce((SELECT U_NAME FROM WS.WS.SYS_DAV_USER, BMK.WA.GRANTS WHERE U_ID = G_GRANTER_ID and G_ID = (control as vspx_row_template).te_rowset[10]), ''));
                             ?>
                           </td>
-                        </v:template>
+                        </vm:if>
                         <td valign="top">
                           <v:url value="--BMK.WA.folder_path4 ((control.vc_parent as vspx_row_template).te_rowset[9], (control.vc_parent as vspx_row_template).te_rowset[10])"
                                  url="--sprintf('bookmarks.vspx?folder=%d&grant=%d', coalesce((control.vc_parent as vspx_row_template).te_rowset[8], -1), coalesce((control.vc_parent as vspx_row_template).te_rowset[10], -1))"
@@ -466,15 +481,18 @@
               <div style="margin-left:3px; margin-top:3px;">
                 <?vsp
                   declare N, tLength, tMax, tMin integer;
-                  declare tStyle varchar;
+                  declare appClass, tStyle varchar;
 
+                  appClass := '';
+                  if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                    appClass := 'app';  
                   tLength := length(self.ds_tags);
                   if (tLength > 2) {
                     tMin := self.ds_tags[0][1];
                     tMax := self.ds_tags[1][1];
                     for (N := 2; N < tLength; N := N + 1) {
                       tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
-                      http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], tStyle, self.ds_tags[N][0]));
+                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], appClass, SIOC..bmk_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
                   }
                   } else {
                     http ('no tags');
@@ -486,7 +504,7 @@
         </tr>
       </table>
       <br />
-      <v:template type="simple" enabled="--either(equ(self.v_mode, 'simple'), 0, 1)">
+      <vm:if test="self.v_mode <> 'simple'">
        	<div id="c1">
       		<div class="tabs">
       		  &nbsp;
@@ -514,7 +532,7 @@
                 </tr>
                 <tr>
                   <th>
-                    <vm:label for="f_tags" value="Tags" />
+                    <vm:label for="f_tags" value="Tags (comma-separated)" />
                   </th>
                   <td>
                     <v:text name="f_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
@@ -625,8 +643,8 @@
             changeState(document.F1.elements['f_shared'], 'f_grants');
           ]]>
         </script>
-      </v:template>
-      <v:template type="simple" enabled="--either(neq(self.v_mode, 'simple'), 0, 1)">
+      </vm:if>
+      <vm:if test="self.v_mode = 'simple'">
         <div class="new-form-body">
           <table cellspacing="0">
             <tr>
@@ -659,7 +677,7 @@
             </tr>
           </table>
         </div>
-      </v:template>
+      </vm:if>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

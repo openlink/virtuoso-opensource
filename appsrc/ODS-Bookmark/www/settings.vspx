@@ -50,7 +50,7 @@
           <div id="1" class="tabContent" style="display: none;">
             <table class="form-body" cellspacing="0">
           <tr>
-                <th width="30%" rowspan="2">
+                <th width="30%" rowspan="2" valign="top">
                   Bookmarks view
                 </th>
                 <td>
@@ -79,7 +79,7 @@
                 </td>
               </tr>
               <tr>
-                <th width="30%" rowspan="2">
+                <th rowspan="2" valign="top">
                   Open bookmarks on <br /><i>(2 panes view only)</i>
                 </th>
                 <td>
@@ -108,7 +108,7 @@
                 </td>
               </tr>
               <tr>
-                <th rowspan="2">
+                <th rowspan="2" valign="top">
                   Bookmark name display
             </th>
             <td>
@@ -139,7 +139,7 @@
                 </td>
               </tr>
               <tr>
-                <th width="30%"/>
+                <th />
                 <td>
                   <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.settings, '1') as integer)" />
                   <vm:label for="f_tbLabels" value="Show toolbar labels"/>
@@ -154,6 +154,13 @@
             </td>
           </tr>
           <tr>
+                <th />
+                <td>
+                  <v:check-box name="f_app" xhtml_id="f_app" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('app', self.settings, '0') as integer)" />
+                  <vm:label for="f_app" value="Show <a>++ links"/>
+                </td>
+              </tr>
+              <tr>
                 <th>
                   Show bookmark columns
                 </th>
@@ -269,6 +276,7 @@
               self.settings := BMK.WA.set_keyword('rows', self.settings, cast(cast(rows as integer) as varchar));
               self.settings := BMK.WA.set_keyword('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
               self.settings := BMK.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
+              self.settings := BMK.WA.set_keyword('app', self.settings, self.f_app.ufl_selected);
               self.settings := BMK.WA.set_keyword('column_#2', self.settings, self.f_column_2.ufl_selected);
               self.settings := BMK.WA.set_keyword('column_#3', self.settings, self.f_column_3.ufl_selected);
               self.settings := BMK.WA.set_keyword('deliciousUser', self.settings, self.f_deliciousUser.ufl_value);
