@@ -1216,9 +1216,13 @@ virtodbc__SQLError (
 
   if (pfNativeError)
     *pfNativeError = -1;
-
   V_SET_ODBC_STR (rec->sql_error_msg, szErrorMsg, cbErrorMsgMax, pcbErrorMsg, NULL);
-
+  if (bClearState)
+    {
+      dk_free_box (rec->sql_state);
+      dk_free_box (rec->sql_error_msg);
+      dk_free ((caddr_t) rec, sizeof (sql_error_rec_t));
+    }
   return rc;
 }
 
