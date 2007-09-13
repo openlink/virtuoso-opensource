@@ -219,7 +219,7 @@ create procedure PROCESS_ATOM_INSERT (in streamid int, inout _topic WV.WIKI.TOPI
    declare res varchar;
    for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
      {
-       declare rc any;
+      declare rc, rcc any;
       res := WV.DBA.ATOM_ENTRY (WV.DBA.ATOM_RTOPIC (UP_RCLUSTER, _topic.ti_cluster_name, _topic.ti_local_name),
                          WV.DBA.ATOM_UUID(),
                          now(),
@@ -228,8 +228,10 @@ create procedure PROCESS_ATOM_INSERT (in streamid int, inout _topic WV.WIKI.TOPI
                          _topic.ti_text);
       http_get (UP_URI, rc, 'POST', HDR_TERM (UP_USER, UP_PASSWD), res);
       commit work;
-       rc := C_RESP (rc);
-       if (rc < 300 and rc >= 200)
+
+      rcc := C_RESP (rc);
+      if (not (rcc < 300 and rcc >= 200))
+        signal('22023', trim(rc[0], '\r\n'), 'EN000');
 	 return 1;
      }
    return 0;
@@ -248,7 +250,7 @@ create procedure PROCESS_ATOM_UPDATE (in streamid int, inout _topic WV.WIKI.TOPI
   declare res varchar;
    for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
      {
-       declare rc any;
+      declare rc, rcc any;
 
       res := WV.DBA.ATOM_ENTRY (WV.DBA.ATOM_RTOPIC (UP_RCLUSTER, _topic.ti_cluster_name, _topic.ti_local_name),
                          WV.DBA.ATOM_UUID(),
@@ -258,8 +260,9 @@ create procedure PROCESS_ATOM_UPDATE (in streamid int, inout _topic WV.WIKI.TOPI
                          _topic.ti_text);
       http_get (UP_URI, rc, 'PUT', HDR_TERM (UP_USER, UP_PASSWD), res);
       commit work;
-       rc := C_RESP (rc);
-       if (rc < 300 and rc >= 200)
+      rcc := C_RESP (rc);
+      if (not (rcc < 300 and rcc >= 200))
+        signal('22023', trim(rc[0], '\r\n'), 'EN000');
 	 return 1;
      }
   return 0;
@@ -279,7 +282,7 @@ create procedure PROCESS_ATOM_DELETE (in streamid int, in clustername varchar, i
    for select UP_URI, UP_USER, UP_PASSWD, UP_RCLUSTER from UPSTREAM where UP_ID = streamid do
      {
        declare http_res varchar;
-       declare rc any;
+      declare rc, rcc any;
 
       res := WV.DBA.ATOM_ENTRY (WV.DBA.ATOM_RTOPIC (UP_RCLUSTER, clustername, localname),
                          WV.DBA.ATOM_UUID(),
@@ -289,8 +292,10 @@ create procedure PROCESS_ATOM_DELETE (in streamid int, in clustername varchar, i
                          '');
        http_res := http_get (UP_URI, rc, 'DELETE', HDR_TERM(UP_USER, UP_PASSWD), res);
       commit work;
-       rc := C_RESP (rc);
-       if (rc < 300 and rc >= 200)
+
+      rcc := C_RESP (rc);
+      if (not (rcc < 300 and rcc >= 200))
+        signal('22023', trim(rc[0], '\r\n'), 'EN000');
 	 return 1;
      }
   return 0;

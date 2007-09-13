@@ -65,7 +65,7 @@ create procedure wiki_cluster_iri (in cluster_name varchar)
 
 create procedure user_iri_by_uname (in uname varchar)
 {
-  return sprintf ('http://%s%s/%U', get_cname(), get_base_path (), uname);
+  return user_obj_iri (uname); --sprintf ('http://%s%s/%U', get_cname(), get_base_path (), uname);
 }
 ;
 
@@ -489,6 +489,43 @@ create procedure sioc.DBA.rdf_wiki_view_str ()
       atom:contains
       sioc:wiki_post_iri (U_NAME, CLUSTERNAME, LOCALNAME) .
 
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_wiki_view_str_tables ()
+{
+  return
+      '
+      from DB.DBA.ODS_WIKI_POSTS as wiki_posts
+      where (^{wiki_posts.}^.U_NAME = ^{users.}^.U_NAME)
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_wiki_view_str_maps ()
+{
+  return
+      '
+	    # Wiki
+      ods:wiki_post (wiki_posts.U_NAME, wiki_posts.CLUSTERNAME, wiki_posts.LOCALNAME) a wikiont:Article ;
+	    dc:title wiki_posts.LOCALNAME ;
+	    dct:created wiki_posts.RES_CREATED ;
+	    dct:modified wiki_posts.RES_MODIFIED ;
+	    sioc:content wiki_posts.RES_CONTENT ;
+	    sioc:has_creator ods:user (wiki_posts.U_NAME) ;
+	    foaf:maker ods:person (wiki_posts.U_NAME) ;
+	    sioc:has_container ods:wiki_forum (wiki_posts.U_NAME, wiki_posts.CLUSTERNAME) .
+
+	    ods:wiki_forum (wiki_posts.U_NAME, wiki_posts.CLUSTERNAME)
+	    sioc:container_of
+	    ods:wiki_post (wiki_posts.U_NAME, wiki_posts.CLUSTERNAME, wiki_posts.LOCALNAME) .
+
+	    ods:user (wiki_posts.U_NAME)
+	    sioc:creator_of
+	    ods:wiki_post (wiki_posts.U_NAME, wiki_posts.CLUSTERNAME, wiki_posts.LOCALNAME) .
+
+	    # end Wiki
       '
       ;
 };
