@@ -84,7 +84,7 @@ VERSION_INIT()
   for i in `find . -name 'Entries' | grep -v "vad/"`; do
         cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
   done
-  VERSION=`cat version.tmp | awk ' BEGIN { cnt=9 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
+  VERSION=`cat version.tmp | awk ' BEGIN { cnt=100 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
   rm -f version.tmp
 }
 
@@ -216,7 +216,7 @@ sticker_init() {
   echo "<sticker version=\"1.0.010505A\" xml:lang=\"en-UK\">" >> $STICKER
   echo "<caption>" >> $STICKER
   echo "  <name package=\"Community\">" >> $STICKER
-  echo "    <prop name=\"Title\" value=\"Community Module\"/>" >> $STICKER
+  echo "    <prop name=\"Title\" value=\"ODS Community\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Copyright\" value=\"(C) 2003 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER

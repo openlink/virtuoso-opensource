@@ -152,6 +152,32 @@ create procedure sioc.DBA.rdf_community_view_str ()
       ;
 };
 
-grant select on ODS_COMMUNITIES to "SPARQL";
+create procedure sioc.DBA.rdf_community_view_str_tables ()
+{
+  return
+      '
+      from DB.DBA.ODS_COMMUNITIES as community
+      where (^{community.}^.C_OWNER = ^{users.}^.U_NAME)
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_community_view_str_maps ()
+{
+  return
+      '
+      # Community
+	    ods:community_forum (community.C_OWNER, community.CM_COMMUNITY_ID) a sioc:Community ;
+	    sioc:has_part ods:forum (community.A_OWNER, community.A_TYPE, community.CM_MEMBER_APP) .
+
+	    ods:forum (community.A_OWNER, community.A_TYPE, community.CM_MEMBER_APP)
+	    sioc:part_of
+	    ods:community_forum (community.C_OWNER, community.CM_COMMUNITY_ID) .
+      # end Community
+      '
+      ;
+};
+
+grant select on ODS_COMMUNITIES to "SPARQL_SELECT";
 -- END COMMUNITY
 ODS_RDF_VIEW_INIT ();
