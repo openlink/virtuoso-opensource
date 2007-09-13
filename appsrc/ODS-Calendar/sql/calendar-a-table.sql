@@ -77,6 +77,7 @@ CAL.WA.exec_no_error ('
                                           -- 2 - CONFIDENTIAL
     E_SUBJECT varchar,
     E_DESCRIPTION varchar,
+    E_NOTES long varchar,
     E_LOCATION varchar,
     E_TAGS varchar,
 
@@ -123,6 +124,10 @@ CAL.WA.exec_no_error ('
     primary key (E_ID)
   )
 ');
+
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.EVENTS add E_NOTES long varchar', 'C', 'CAL.WA.EVENTS', 'E_NOTES'
+);
 
 CAL.WA.exec_no_error ('
   create index SK_EVENTS_01 on CAL.WA.EVENTS (E_DOMAIN_ID, E_KIND, E_EVENT_START)
@@ -202,6 +207,8 @@ create procedure CAL.WA.EVENTS_E_SUBJECT_int (inout vtb any, inout d_id any, in 
 
     vt_batch_feed (vtb, coalesce (E_LOCATION, ''), mode);
 
+    vt_batch_feed (vtb, coalesce (E_NOTES, ''), mode);
+    
     if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = E_DOMAIN_ID and WAI_TYPE_NAME = 'Calendar' and WAI_IS_PUBLIC = 1))
       vt_batch_feed (vtb, '^public', mode);
 
@@ -237,7 +244,7 @@ create procedure CAL.WA.EVENTS_E_SUBJECT_unindex_hook (inout vtb any, inout d_id
 --
 create procedure CAL.WA.drop_index()
 {
-  if (registry_get ('ab_index_version') <> '1') {
+  if (registry_get ('cal_index_version') <> '2') {
     CAL.WA.exec_no_error ('drop table CAL.WA.EVENTS_E_SUBJECT_WORDS');
   }
 }
@@ -246,7 +253,7 @@ create procedure CAL.WA.drop_index()
 CAL.WA.drop_index();
 
 CAL.WA.exec_no_error ('
-  create text index on CAL.WA.EVENTS (E_SUBJECT) with key E_ID clustered with (E_DOMAIN_ID) using function language \'x-ViDoc\'
+  create text index on CAL.WA.EVENTS (E_SUBJECT) with key E_ID clustered with (E_DOMAIN_ID, E_UPDATED) using function language \'x-ViDoc\'
 ');
 
 -------------------------------------------------------------------------------
@@ -332,6 +339,10 @@ CAL.WA.exec_no_error ('
   create procedure view CAL..TAGS_VIEW as CAL.WA.tags_procedure (tags) (TV_TAG varchar)
 ')
 ;
+
+-------------------------------------------------------------------------------
+--
+registry_set ('cal_index_version', '2');
 
 -------------------------------------------------------------------------------
 --

@@ -37,18 +37,40 @@
     <meta name="dc.title" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
       <![CDATA[
-      <script type="text/javascript" src="js/calendar.js"></script>
-      <script type="text/javascript" src="js/CalendarPopup.js"></script>
       <script type="text/javascript">
-        // CalendarPopup
-        var cPopup = new CalendarPopup('cDiv');
-
         // OAT
         var toolkitPath="/ods/oat";
-        var featureList=["dialog"];
+        var imagePath = "/ods/images/oat/";
+        
+        var featureList=["anchor", "dialog"];
     </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript" src="js/CalendarPopup.js"></script>
+      <script type="text/javascript" src="js/calendar.js"></script>
+      <script type="text/javascript" src="js/app.js"></script>
   	<script type="text/javascript">
+        // CalendarPopup
+        var cPopup = new CalendarPopup('cDiv');
+        cPopup.isShowYearNavigation = true;
+        
+        // publics
+      	var deleteDialog;
+      	var deleteDialog2;
+      	
+        function myInit() {
+          OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Anchor.imagePath = OAT.Preferences.imagePath;
+          OAT.Anchor.zIndex = 1001;
+        
+          gererateAPP (generateAPPList, {});
+          if ($('deleteDiv'))
+          	deleteDialog = new OAT.Dialog("Confirm delete", "deleteDiv", {width:400, modal:1});
+          if ($('deleteDiv2'))
+          	deleteDialog2 = new OAT.Dialog("Confirm delete", "deleteDiv2", {width:400, modal:1});
+        }
+        
+        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+        
     		function getWindowHeight() {
     			var windowHeight = 0;
     			if (typeof(window.innerHeight) == 'number') {
@@ -66,6 +88,7 @@
     			}
     			return windowHeight;
     		}
+    		
     		function setFooter() {
     			if (document.getElementById) {
     				var windowHeight = getWindowHeight();
@@ -73,10 +96,11 @@
     					var footerElement = document.getElementById('FT');
     					var footerHeight  = footerElement.offsetHeight;
     					if (document.getElementById('content'))
-                document.getElementById('content').style.height = (windowHeight - footerHeight - 200) + 'px';
+                document.getElementById('content').style.height = (windowHeight - footerHeight - 220) + 'px';
     				}
     			}
     		}
+    		
     		window.onload = function() {
     			setFooter();
     		}

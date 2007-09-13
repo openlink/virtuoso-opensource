@@ -84,6 +84,7 @@ create procedure fill_ods_calendar_sioc (
                 WAM_USER,
                 E_ID,
                 E_DOMAIN_ID,
+                E_KIND,
                 E_SUBJECT,
                 E_DESCRIPTION,
                 E_LOCATION,
@@ -112,6 +113,7 @@ create procedure fill_ods_calendar_sioc (
                     creator_iri,
                     E_ID,
                     E_DOMAIN_ID,
+                    E_KIND,
                     E_SUBJECT,
                     E_DESCRIPTION,
                     E_LOCATION,
@@ -163,6 +165,7 @@ create procedure event_insert (
   in creator_iri varchar,
   inout event_id integer,
   inout domain_id integer,
+  inout kind integer,
   inout subject varchar,
   inout description varchar,
   inout location varchar,
@@ -202,22 +205,46 @@ create procedure event_insert (
     ods_sioc_post (graph_iri, iri, c_iri, creator_iri, subject, created, updated, CAL.WA.event_url (domain_id, event_id), description);
     ods_sioc_tags (graph_iri, iri, tags);
 
+    if (kind = 0) {
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vevent'));
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('url'), CAL.WA.event_url (domain_id, event_id));
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstamp'), CAL.WA.dt_iso8601 (now ()));
+      if (not isnull (created))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('created'), CAL.WA.dt_iso8601 (created));
+      if (not isnull (updated))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('lastModified'), CAL.WA.dt_iso8601 (updated));
+      if (not isnull (eventStart))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstart'), CAL.WA.dt_iso8601 (eventStart));
+      if (not isnull (eventEnd))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtend'), CAL.WA.dt_iso8601 (eventEnd));
     if (not isnull (subject))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('summary'), subject);
     if (not isnull (description))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('description'), description);
     if (not isnull (location))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('location'), location);
+    }
+    if (kind = 1) {
+      DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vtodo'));
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('url'), CAL.WA.event_url (domain_id, event_id));
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstamp'), CAL.WA.dt_iso8601 (now ()));
+      if (not isnull (created))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('created'), CAL.WA.dt_iso8601 (created));
+      if (not isnull (updated))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('lastModified'), CAL.WA.dt_iso8601 (updated));
     if (not isnull (eventStart))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstart'), CAL.WA.dt_iso8601 (eventStart));
     if (not isnull (eventEnd))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtend'), CAL.WA.dt_iso8601 (eventEnd));
+      if (not isnull (subject))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('summary'), subject);
+      if (not isnull (description))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('description'), description);
     if (not isnull (priority))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('priority'), priority);
     if (not isnull (status))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('status'), status);
+  }
   }
   return;
 }
@@ -251,6 +278,7 @@ create trigger EVENTS_SIOC_I after insert on CAL.WA.EVENTS referencing new as N
                 null,
                 N.E_ID,
                 N.E_DOMAIN_ID,
+                N.E_KIND,
                 N.E_SUBJECT,
                 N.E_DESCRIPTION,
                 N.E_LOCATION,
@@ -277,6 +305,7 @@ create trigger EVENTS_SIOC_U after update on CAL.WA.EVENTS referencing old as O,
                 null,
                 N.E_ID,
                 N.E_DOMAIN_ID,
+                N.E_KIND,
                 N.E_SUBJECT,
                 N.E_DESCRIPTION,
                 N.E_LOCATION,
@@ -456,6 +485,34 @@ from
 	DB.DBA.WA_MEMBER,
 	DB.DBA.SYS_USERS
 where E_DOMAIN_ID = WAI_ID
+  and E_KIND = 0
+  and	WAM_INST = WAI_NAME
+  and	WAM_IS_PUBLIC = 1
+  and	WAM_USER = U_ID
+  and	WAM_MEMBER_TYPE = 1;
+
+wa_exec_no_error ('drop view ODS_CALENDAR_TASKS');
+
+create view ODS_CALENDAR_TASKS
+as
+select
+	WAI_NAME,
+	E_DOMAIN_ID,
+	E_ID,
+	E_SUBJECT,
+	E_DESCRIPTION,
+	sioc..sioc_date (E_UPDATED) as E_UPDATED,
+	sioc..sioc_date (E_CREATED) as E_CREATED,
+	sioc..post_iri (U_NAME, 'calendar', WAI_NAME, cast (E_ID as varchar)) || '/sioc.rdf' as SEE_ALSO,
+	CAL.WA.event_url (E_DOMAIN_ID, E_ID) E_URI,
+	U_NAME
+from
+	DB.DBA.WA_INSTANCE,
+	CAL.WA.EVENTS,
+	DB.DBA.WA_MEMBER,
+	DB.DBA.SYS_USERS
+where E_DOMAIN_ID = WAI_ID
+  and E_KIND = 1
   and	WAM_INST = WAI_NAME
   and	WAM_IS_PUBLIC = 1
   and	WAM_USER = U_ID
@@ -560,13 +617,206 @@ create procedure sioc.DBA.rdf_calendar_view_str ()
       sioc:calendar_forum_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME, DB.DBA.ODS_CALENDAR_EVENTS.WAI_NAME)
         atom:contains sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
       .
+      
+      #Task
+      sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_TASKS.U_NAME, DB.DBA.ODS_CALENDAR_TASKS.WAI_NAME, DB.DBA.ODS_CALENDAR_TASKS.E_ID)
+        a calendar:vtodo option (EXCLUSIVE) ;
+        dc:title E_SUBJECT ;
+        dct:created E_CREATED ;
+     	  dct:modified E_UPDATED ;
+	      dc:date E_UPDATED ;
+	      dc:creator U_NAME ;
+	      sioc:link sioc:proxy_iri (E_URI) ;
+	      sioc:content E_DESCRIPTION ;
+	      sioc:has_creator sioc:user_iri (U_NAME) ;
+	      foaf:maker foaf:person_iri (U_NAME) ;
+	      rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
+	      sioc:has_container sioc:calendar_forum_iri (U_NAME, WAI_NAME)
+	    .
+
+      sioc:calendar_forum_iri (DB.DBA.ODS_CALENDAR_TASKS.U_NAME, DB.DBA.ODS_CALENDAR_TASKS.WAI_NAME)
+        sioc:container_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+      .
+
+	    sioc:user_iri (DB.DBA.ODS_CALENDAR_TASKS.U_NAME)
+	      sioc:creator_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+	    .
+
+    	# Task tags
+    	sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_TAGS.U_NAME, DB.DBA.ODS_CALENDAR_TAGS.WAM_INST, DB.DBA.ODS_CALENDAR_TAGS.ITEM_ID)
+    	  sioc:topic sioc:tag_iri (U_NAME, E_TAG)
+    	.
+
+    	sioc:tag_iri (DB.DBA.ODS_CALENDAR_TAGS.U_NAME, DB.DBA.ODS_CALENDAR_TAGS.E_TAG)
+    	  a skos:Concept ;
+    	  skos:prefLabel E_TAG ;
+    	  skos:isSubjectOf sioc:calendar_event_iri (U_NAME, WAM_INST, ITEM_ID)
+    	.
+
+      sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_TASKS.U_NAME, DB.DBA.ODS_CALENDAR_TASKS.WAI_NAME, DB.DBA.ODS_CALENDAR_TASKS.E_ID)
+        a atom:Entry ;
+      	atom:title E_SUBJECT ;
+      	atom:source sioc:calendar_forum_iri (U_NAME, WAI_NAME) ;
+      	atom:author foaf:person_iri (U_NAME) ;
+        atom:published E_CREATED ;
+      	atom:updated E_UPDATED ;
+      	atom:content sioc:calendar_event_text_iri (U_NAME, WAI_NAME, E_ID)
+     	.
+
+      sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_TASKS.U_NAME, DB.DBA.ODS_CALENDAR_TASKS.WAI_NAME, DB.DBA.ODS_CALENDAR_TASKS.E_ID)
+        a atom:Content ;
+        atom:type "text/plain" ;
+    	  atom:lang "en-US" ;
+	      atom:body E_DESCRIPTION
+	    .
+
+      sioc:calendar_forum_iri (DB.DBA.ODS_CALENDAR_TASKS.U_NAME, DB.DBA.ODS_CALENDAR_TASKS.WAI_NAME)
+        atom:contains sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+      .
       '
       ;
 };
 
+create procedure sioc.DBA.rdf_calendar_view_str_tables ()
+{
+  return
+      '
+      from DB.DBA.ODS_CALENDAR_EVENTS as calendar_events
+      where (^{calendar_events.}^.U_NAME = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_CALENDAR_TASKS as calendar_tasks
+      where (^{calendar_tasks.}^.U_NAME = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_CALENDAR_TAGS as calendar_tags
+      where (^{calendar_tags.}^.U_NAME = ^{users.}^.U_NAME)
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_calendar_str_maps ()
+{
+  return
+    '
+      #Event
+      sioc:calendar_event_iri (calendar_events.U_NAME, calendar_events.WAI_NAME, calendar_events.E_ID)
+        a calendar:vevent option (EXCLUSIVE) ;
+        dc:title E_SUBJECT ;
+        dct:created E_CREATED ;
+     	  dct:modified E_UPDATED ;
+	      dc:date E_UPDATED ;
+	      dc:creator U_NAME ;
+	      sioc:link sioc:proxy_iri (E_URI) ;
+	      sioc:content E_DESCRIPTION ;
+	      sioc:has_creator sioc:user_iri (U_NAME) ;
+	      foaf:maker foaf:person_iri (U_NAME) ;
+	      rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
+	      sioc:has_container sioc:calendar_forum_iri (U_NAME, WAI_NAME)
+	    .
+
+      sioc:calendar_forum_iri (calendar_events.U_NAME, calendar_events.WAI_NAME)
+        sioc:container_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+      .
+
+	    sioc:user_iri (calendar_events.U_NAME)
+	      sioc:creator_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+	    .
+
+    	# Event tags
+    	sioc:calendar_event_iri (calendar_tags.U_NAME, calendar_tags.WAM_INST, calendar_tags.ITEM_ID)
+    	  sioc:topic sioc:tag_iri (U_NAME, E_TAG)
+    	.
+
+    	sioc:tag_iri (calendar_tags.U_NAME, calendar_tags.E_TAG)
+    	  a skos:Concept ;
+    	  skos:prefLabel E_TAG ;
+    	  skos:isSubjectOf sioc:calendar_event_iri (U_NAME, WAM_INST, ITEM_ID)
+    	.
+
+      sioc:calendar_event_iri (calendar_events.U_NAME, calendar_events.WAI_NAME, calendar_events.E_ID)
+        a atom:Entry ;
+      	atom:title E_SUBJECT ;
+      	atom:source sioc:calendar_forum_iri (U_NAME, WAI_NAME) ;
+      	atom:author foaf:person_iri (U_NAME) ;
+        atom:published E_CREATED ;
+      	atom:updated E_UPDATED ;
+      	atom:content sioc:calendar_event_text_iri (U_NAME, WAI_NAME, E_ID)
+     	.
+
+      sioc:calendar_event_iri (calendar_events.U_NAME, calendar_events.WAI_NAME, calendar_events.E_ID)
+        a atom:Content ;
+        atom:type "text/plain" ;
+    	  atom:lang "en-US" ;
+	      atom:body E_DESCRIPTION
+	    .
+
+      sioc:calendar_forum_iri (calendar_events.U_NAME, calendar_events.WAI_NAME)
+        atom:contains sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+      .
+      
+      #Task
+      sioc:calendar_event_iri (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME, calendar_tasks.E_ID)
+        a calendar:vtodo option (EXCLUSIVE) ;
+        dc:title E_SUBJECT ;
+        dct:created E_CREATED ;
+     	  dct:modified E_UPDATED ;
+	      dc:date E_UPDATED ;
+	      dc:creator U_NAME ;
+	      sioc:link sioc:proxy_iri (E_URI) ;
+	      sioc:content E_DESCRIPTION ;
+	      sioc:has_creator sioc:user_iri (U_NAME) ;
+	      foaf:maker foaf:person_iri (U_NAME) ;
+	      rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
+	      sioc:has_container sioc:calendar_forum_iri (U_NAME, WAI_NAME)
+	    .
+
+      sioc:calendar_forum_iri (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME)
+        sioc:container_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+      .
+
+	    sioc:user_iri (calendar_tasks.U_NAME)
+	      sioc:creator_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+	    .
+
+    	# Task tags
+    	sioc:calendar_event_iri (calendar_tags.U_NAME, calendar_tags.WAM_INST, calendar_tags.ITEM_ID)
+    	  sioc:topic sioc:tag_iri (U_NAME, E_TAG)
+    	.
+
+    	sioc:tag_iri (calendar_tags.U_NAME, calendar_tags.E_TAG)
+    	  a skos:Concept ;
+    	  skos:prefLabel E_TAG ;
+    	  skos:isSubjectOf sioc:calendar_event_iri (U_NAME, WAM_INST, ITEM_ID)
+    	.
+
+      sioc:calendar_event_iri (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME, calendar_tasks.E_ID)
+        a atom:Entry ;
+      	atom:title E_SUBJECT ;
+      	atom:source sioc:calendar_forum_iri (U_NAME, WAI_NAME) ;
+      	atom:author foaf:person_iri (U_NAME) ;
+        atom:published E_CREATED ;
+      	atom:updated E_UPDATED ;
+      	atom:content sioc:calendar_event_text_iri (U_NAME, WAI_NAME, E_ID)
+     	.
+
+      sioc:calendar_event_iri (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME, calendar_tasks.E_ID)
+        a atom:Content ;
+        atom:type "text/plain" ;
+    	  atom:lang "en-US" ;
+	      atom:body E_DESCRIPTION
+	    .
+
+      sioc:calendar_forum_iri (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME)
+        atom:contains sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+      .
+    '
+    ;
+}
+;
+
 grant select on ODS_CALENDAR_EVENTS to SPARQL_SELECT;
+grant select on ODS_CALENDAR_TASKS to SPARQL_SELECT;
 grant select on ODS_CALENDAR_TAGS to SPARQL_SELECT;
 grant execute on ODS_CALENDAR_TAGS to SPARQL_SELECT;
+grant execute on CAL.WA.event_url to SPARQL_SELECT;
+
 
 -- RDF Views
 ODS_RDF_VIEW_INIT ();

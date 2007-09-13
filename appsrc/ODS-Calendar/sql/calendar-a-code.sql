@@ -2255,6 +2255,8 @@ create procedure CAL.WA.test (
       signal ('TEST', sprintf ('The length of field ''%s'' should be greater then %s characters!<>', valueName, cast (tmp as varchar)));
     if (__SQL_STATE = 'MAXLENGTH')
       signal ('TEST', sprintf ('The length of field ''%s'' should be less then %s characters!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'SPECIAL')
+      signal ('TEST', __SQL_MESSAGE || '<>');
     signal ('TEST', 'Unknown validation error!<>');
     --resignal;
   };
@@ -2322,6 +2324,8 @@ create procedure CAL.WA.validate2 (
 {
   declare exit handler for SQLSTATE '*' {
     if (__SQL_STATE = 'CLASS')
+      resignal;
+    if (__SQL_STATE = 'SPECIAL')
       resignal;
     signal('TYPE', propertyType);
     return;
@@ -2490,8 +2494,11 @@ create procedure CAL.WA.validate_freeTexts (
 -----------------------------------------------------------------------------------------
 --
 create procedure CAL.WA.validate_tag (
-  in S varchar)
+  in T varchar)
 {
+  declare S any;
+  
+  S := T;
   S := replace (trim(S), '+', '_');
   S := replace (trim(S), ' ', '_');
   if (not CAL.WA.validate_freeText(S))
@@ -3115,6 +3122,7 @@ create procedure CAL.WA.events_forPeriod (
               E_REMINDER
          from CAL.WA.EVENTS
         where E_DOMAIN_ID = domain_id
+          and E_KIND = 0
           and (E_REPEAT = '' or E_REPEAT is null)
           and E_EVENT_START >= dtStart
           and E_EVENT_START <  dtEnd) do
@@ -3144,6 +3152,7 @@ create procedure CAL.WA.events_forPeriod (
               E_REMINDER
          from CAL.WA.EVENTS
         where E_DOMAIN_ID = domain_id
+          and E_KIND = 0
           and E_REPEAT <> ''
           and E_EVENT_START < dtEnd
           and ((E_REPEAT_UNTIL is null) or (E_REPEAT_UNTIL < dtEnd))) do

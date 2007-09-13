@@ -19,112 +19,6 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
 */
-var BrowserDetect = {
-  init: function () {
-    this.browser = this.searchString(this.dataBrowser) || "An unknown browser";
-    this.version = this.searchVersion(navigator.userAgent)
-      || this.searchVersion(navigator.appVersion)
-      || "an unknown version";
-    this.OS = this.searchString(this.dataOS) || "an unknown OS";
-  },
-  searchString: function (data) {
-    for (var i=0;i<data.length;i++)  {
-      var dataString = data[i].string;
-      var dataProp = data[i].prop;
-      this.versionSearchString = data[i].versionSearch || data[i].identity;
-      if (dataString) {
-        if (dataString.indexOf(data[i].subString) != -1)
-          return data[i].identity;
-      }
-      else if (dataProp)
-        return data[i].identity;
-    }
-  },
-  searchVersion: function (dataString) {
-    var index = dataString.indexOf(this.versionSearchString);
-    if (index == -1) return;
-    return parseFloat(dataString.substring(index+this.versionSearchString.length+1));
-  },
-  dataBrowser: [
-    { String: navigator.userAgent,
-      subString: "OmniWeb",
-      versionSearch: "OmniWeb/",
-      identity: "OmniWeb"
-    },
-    {
-      string: navigator.vendor,
-      subString: "Apple",
-      identity: "Safari"
-    },
-    {
-      prop: window.opera,
-      identity: "Opera"
-    },
-    {
-      string: navigator.vendor,
-      subString: "iCab",
-      identity: "iCab"
-    },
-    {
-      string: navigator.vendor,
-      subString: "KDE",
-      identity: "Konqueror"
-    },
-    {
-      string: navigator.userAgent,
-      subString: "Firefox",
-      identity: "Firefox"
-    },
-    {
-      string: navigator.vendor,
-      subString: "Camino",
-      identity: "Camino"
-    },
-    {    // for newer Netscapes (6+)
-      string: navigator.userAgent,
-      subString: "Netscape",
-      identity: "Netscape"
-    },
-    {
-      string: navigator.userAgent,
-      subString: "MSIE",
-      identity: "Explorer",
-      versionSearch: "MSIE"
-    },
-    {
-      string: navigator.userAgent,
-      subString: "Gecko",
-      identity: "Mozilla",
-      versionSearch: "rv"
-    },
-    {     // for older Netscapes (4-)
-      string: navigator.userAgent,
-      subString: "Mozilla",
-      identity: "Netscape",
-      versionSearch: "Mozilla"
-    }
-  ],
-  dataOS : [
-    {
-      string: navigator.platform,
-      subString: "Win",
-      identity: "Windows"
-    },
-    {
-      string: navigator.platform,
-      subString: "Mac",
-      identity: "Mac"
-    },
-    {
-      string: navigator.platform,
-      subString: "Linux",
-      identity: "Linux"
-    }
-  ]
-
-};
-BrowserDetect.init();
-
 // ---------------------------------------------------------------------------
 function myPost(frm_name, fld_name, fld_value)
 {
@@ -157,7 +51,8 @@ function toolbarPost(value)
 // ---------------------------------------------------------------------------
 //
 function submitEnter(myForm, myButton, e) {
-  var keycode;
+  var keyCode;
+  
   if (window.event)
     keycode = window.event.keyCode;
   else
@@ -173,14 +68,6 @@ function submitEnter(myForm, myButton, e) {
       document.forms[myForm].submit();
   }
   return true;
-}
-
-// ---------------------------------------------------------------------------
-function getObject(id)
-{
-  if (document.all)
-    return document.all[id];
-  return document.getElementById(id);
 }
 
 // ---------------------------------------------------------------------------
@@ -224,8 +111,8 @@ function enableToolbars (objForm, prefix)
 function enableElement (id, id_gray, idFlag)
 {
   var mode = 'block';
-  var element = document.getElementById(id);
-  if (element != null) {
+  var element = $(id);
+  if (element) {
     if (idFlag) {
       element.style.display = 'block';
       mode = 'none';
@@ -234,35 +121,28 @@ function enableElement (id, id_gray, idFlag)
       mode = 'block';
     }
   }
-  element = document.getElementById(id_gray);
-  if (element != null)
+  element = $(id_gray);
+  if (element)
     element.style.display = mode;
-}
-
-// ---------------------------------------------------------------------------
-function showCell (cell)
-{
-  var c = getObject (cell);
-  if ((c) && (c.style.display == "none"))
-    c.style.display = "";
-}
-
-// ---------------------------------------------------------------------------
-function hideCell(cell)
-{
-  var c = getObject(cell);
-  if ((c) && (c.style.display != "none"))
-    c.style.display = "none";
 }
 
 // ---------------------------------------------------------------------------
 function shCell(cell)
 {
-  var c = getObject(cell);
+  var c = $(cell);
+  var i = $(cell+'_image');
   if ((c) && (c.style.display == "none")) {
     c.style.display = "";
+    if (i) {
+      i.src = "image/tr_open.gif";
+      i.alt = "Close";
+    }
   } else {
     c.style.display = "none";
+    if (i) {
+      i.src = "image/tr_close.gif";
+      i.alt = "Open";
+    }
   }
 }
 
@@ -305,8 +185,8 @@ function anySelected (form, txt, selectionMsq) {
 // ---------------------------------------------------------------------------
 function coloriseTable(id) {
   if (document.getElementsByTagName) {
-    var table = document.getElementById(id);
-    if (table != null) {
+    var table = $(id);
+    if (table) {
       var rows = table.getElementsByTagName("tr");
       for (i = 0; i < rows.length; i++) {
         rows[i].className = rows[i].className + " tr_" + (i % 2);;
@@ -719,14 +599,17 @@ function eAnnotea(event, id, domain_id, account_id)
 }
 
 // ---------------------------------------------------------------------------
-function cNewEvent (onDate, onTime)
+function cNewEvent (event, onDate, onTime)
 {
+  var srcNode = OAT.Event.source(event);
+  if (OAT.Dom.isClass(srcNode, 'CE_new')) {
   if (onDate != null)
     createHidden('F1', 'onDate', onDate);
   if (onTime != null)
     createHidden('F1', 'onTime', onTime);
   createHidden('F1', 'select', 'create');
   doPost ('F1', 'command');
+}
 }
 
 // ---------------------------------------------------------------------------

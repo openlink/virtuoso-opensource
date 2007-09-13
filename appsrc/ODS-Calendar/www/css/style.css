@@ -157,6 +157,14 @@ a:hover
   background: #99b3c5;
 }
 
+.lc_head
+{
+  -moz-user-select: none; 
+  cursor: pointer; 
+  text-align: center; 
+  font-weight: bold;
+}
+
 .navigator_info
 {
   font-size: smaller;

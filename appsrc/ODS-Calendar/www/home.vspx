@@ -146,24 +146,29 @@
     ]]>
   </v:method>
 
-  <v:method name="showEvent" arglist="in e_id integer, in e_event integer, in e_subject varchar, in e_start datetime, in e_end datetime, in e_repeat varchar, in e_repeat_offset integer, in e_reminder integer">
+  <v:method name="showEvent" arglist="in _id integer, in e_event integer, in e_subject varchar, in e_start datetime, in e_end datetime, in e_repeat varchar, in e_repeat_offset integer, in e_reminder integer">
     <![CDATA[
+      declare domain_id integer;
+      declare appClass varchar;     
       declare showDelete, showAnnotate, S varchar;
 
         S := 'null';
         if (not isnull (e_repeat_offset))
           S := cast (e_repeat_offset as varchar);
-
       showDelete := '';
       if (self.account_role not in ('public', 'guest'))
-        showDelete :=  sprintf ('<span id="d_%d_%s" onclick="eDelete(event, this, %s)">[<span class="EV_delete">X</span>]</span> ', e_id, S, S);
+        showDelete :=  sprintf ('<span id="d_%d_%s" onclick="eDelete(event, this, %s)">[<span class="EV_delete">X</span>]</span> ', _id, S, S);
       showAnnotate := '';
       if (self.account_role not in ('public', 'guest'))
-        showAnnotate := sprintf ('<img border="0" width="11" height="11" title="Annotate" alt="Annotate" src="image/ann_16.gif" onclick="eAnnotea (event, %d, %d, %d);" /> ', e_id, self.domain_id, self.account_id);
+        showAnnotate := sprintf ('<img border="0" width="11" height="11" title="Annotate" alt="Annotate" src="image/ann_16.gif" onclick="eAnnotea (event, %d, %d, %d);" /> ', _id, self.domain_id, self.account_id);
+      appClass := '';
+      if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+        appClass := 'app';  
+      domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
       if (e_event = 1) {
-        http (sprintf ('<div id="e_%d_%s" class="EV" onclick="eEdit(this)">%s %s%s%s<span class="EV_subject">%s</span></div>', e_id, S, showDelete, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), showAnnotate, CAL.WA.show_subject (e_subject)));
+        http (sprintf ('<div id="e_%d_%s" class="EV %s" onclick="eEdit(this)" about="%U">%s%s<span class="EV_subject">%s%s%V</span> (%s)</div>', _id, S, appClass, SIOC..calendar_event_iri (domain_id, _id), showDelete, showAnnotate, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id)));
       } else {
-        http (sprintf ('<div id="e_%d_%s" class="EV" onclick="eEdit(this)">%s <span class="EV_time">%s-%s</span>%s%s%s<span class="EV_subject">%s</span></div>', e_id, S, showDelete, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), showAnnotate, CAL.WA.show_subject (e_subject)));
+        http (sprintf ('<div id="e_%d_%s" class="EV %s" onclick="eEdit(this)" about="%U">%s%s<span class="EV_time">%s-%s</span><span class="EV_subject">%s%s%V</span> (%s)</div>', _id, S, appClass, SIOC..calendar_event_iri (domain_id, _id), showDelete, showAnnotate, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id)));
       }
     ]]>
   </v:method>
@@ -216,9 +221,16 @@
     ]]>
   </v:method>
 
-  <v:method name="showEventSubject" arglist="in e_id integer, in e_event integer, in e_subject varchar, in e_repeat varchar, in e_reminder varchar">
+  <v:method name="showEventSubject" arglist="in _id integer, in e_event integer, in e_subject varchar, in e_repeat varchar, in e_reminder varchar">
     <![CDATA[
-      http (sprintf ('<span id="e_%d" unselectable="on" onclick="eEdit(this)" class="EVL EVL_subject">%s %s%s</span>', e_id, CAL.WA.show_subject (e_subject), self.repeatableImage (e_repeat), self.reminderImage (e_reminder)));
+      declare domain_id integer;
+      declare appClass varchar;
+      
+      appClass := '';
+      if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+        appClass := 'app';  
+      domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
+      http (sprintf ('<span id="e_%d" unselectable="on" href="#" onclick="javascript: eEdit(this);" class="EVL EVL_subject %s" about="%U"> %s%s%V</span> (%s)', _id, appClass, SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink(domain_id, _id)));
     ]]>
   </v:method>
 
@@ -226,7 +238,7 @@
     <![CDATA[
       if (is_empty_or_null (eRepeat))
         return '';
-      return '<img border="0" width="11" height="11" title="Repeatable" alt="Repeatable" src="image/repeatable.gif"/> ';
+      return '<img border="0" width="11" height="11" title="Repeatable Event" alt="Repeatable Event" src="image/repeatable.gif" /> ';
     ]]>
   </v:method>
 
@@ -234,7 +246,13 @@
     <![CDATA[
       if (is_empty_or_null (eReminder))
         return '';
-      return '<img border="0" width="11" height="11" title="Reminder" alt="Reminder" src="image/reminder.gif"/> ';
+      return '<img border="0" width="11" height="11" title="Has Reminder" alt="Has Reminder" src="image/reminder.gif" /> ';
+    ]]>
+  </v:method>
+
+  <v:method name="permaLink" arglist="in domain_id integer, in id integer">
+    <![CDATA[
+      return sprintf('<a href="%s" title="PermaLink" alt="PermaLink"><img border="0" width="11" height="11" src="image/link.gif" /><a>', SIOC..calendar_event_iri(domain_id, id));
     ]]>
   </v:method>
 
@@ -433,6 +451,13 @@
         ]]>
       </v:before-data-bind>
       <?vsp
+        declare sparqlUrl, graphIri any;
+        
+        sparqlUrl := 'http://' || SIOC..get_cname () || '/sparql';
+        graphIri := SIOC..get_graph ();
+        http(sprintf('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s?default-graph-uri=%U&amp;query=%U&amp;format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml')); 
+      ?>
+      <?vsp
         if (0)
         {
       ?>
@@ -543,8 +568,8 @@
         }
       ?>
 
-      <v:template type="simple" enabled="--case when (self.cAction in ('browse', 'advanced')) then 1 else 0 end">
-        <v:template type="simple" enabled="--case when (self.cAction = 'advanced') then 1 else 0 end">
+      <vm:if test="self.cAction in ('browse', 'advanced')">
+        <vm:if test="self.cAction = 'advanced'">
           <div class="new-form-body">
             <table cellspacing="0">
               <tr>
@@ -557,7 +582,7 @@
               </tr>
               <tr>
                 <th>
-                  <vm:label for="s_tags" value="Tags" />
+                  <vm:label for="s_tags" value="Tags (comma-separated)" />
                 </th>
                 <td>
                   <v:text name="s_tags" value="--CAL.WA.xml_get ('tags', self.cSearch)" xhtml_class="textbox" xhtml_size="60"/>
@@ -576,7 +601,7 @@
                 ]]>
               </v:on-post>
             </v:button>
-            <v:button action="simple" value="Cancel" xhtml_class="form-button">
+            <v:button action="simple" value="Cancel" name="s_cancel" xhtml_class="form-button">
               <v:on-post>
                 <![CDATA[
                   self.cAction := 'browse';
@@ -585,7 +610,7 @@
               </v:on-post>
             </v:button>
           </div>
-        </v:template>
+        </vm:if>
 
         <table cellspacing="0" style="width: 100%;">
           <tr style="height: 18px;">
@@ -643,6 +668,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
+              <!--
               <v:button action="simple" style="url" value="Notes" xhtml_class="-- case when (self.cScope = 'notes') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Note List">
                 <v:on-post>
                   <![CDATA[
@@ -653,6 +679,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
+              -->
               <vm:if test="not isnull (self.cSearch)">
                 <v:button action="simple" style="url" value="Search" xhtml_class="-- case when (self.cScope = 'search') then 'calendar_tab calendar_tabActive' else 'calendar_tab' end" xhtml_alt="Search List">
                   <v:on-post>
@@ -782,7 +809,7 @@
                   declare isEof, isFetched, hasEvents integer;
                   declare pHour, pMinute integer;
                   declare dt date;
-                  declare S, C varchar;
+                  declare S, C, onClick varchar;
 
                   if (self.cScope = 'day') {
                     for (M := 0; M < 48; M := M + 1)
@@ -848,7 +875,12 @@
                         C := '';
                         if (CAL.WA.dt_compare (self.cDay, curdate ()))
                           C := C || ' CE_cell_today';
-                        http (sprintf ('<td class="CE_cell_pointer CE_cell CE_cell_odd%s" onclick="cNewEvent(null, %d)">', C, N*30));
+                        if (self.domain_id > 0)
+                          C := C || ' CE_cell_pointer';
+                        onClick := '';
+                        if (self.domain_id > 0)
+                          onClick := sprintf (' onclick="javascript: cNewEvent(event, null, %d);"', N*30);
+                        http (sprintf ('<td class="CE_new CE_cell CE_cell_odd %s" %s>', C, onClick));
                         hasEvents := 0;
                       _event:;
                         if ((pHour = N/2) and (pMinute = mod (N, 2)*30)) {
@@ -901,7 +933,12 @@
                           C := '';
                           if (CAL.WA.dt_compare (dt, curdate ()))
                             C := C || ' CE_cell_today';
-                          http (sprintf ('<td class="CE_cell CE_cell_pointer%s" onclick="cNewEvent(%d, -1)">', C, N));
+                          if (self.domain_id > 0)
+                            C := C || ' CE_cell_pointer';
+                          onClick := '';
+                          if (self.domain_id > 0)
+                            onClick := sprintf (' onclick="javascript: cNewEvent(event, %d, -1);"', N);
+                          http (sprintf ('<td class="CE_new CE_cell %s" %s">', C, onClick));
                           hasEvents := 0;
                           for (select distinct rs.*
                                  from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_repeat_offset integer, e_reminder integer) rs
@@ -935,7 +972,12 @@
                           C := C || ' CE_cell_middle';
                         if (CAL.WA.dt_compare (dt, curdate ()))
                           C := C || ' CE_cell_today';
-                        http (sprintf ('<td width="%s" class="CE_cell CE_cell_pointer %s" onclick="cNewEvent(%d, -1)">', '14.2857%', C, N));
+                        if (self.domain_id > 0)
+                          C := C || ' CE_cell_pointer';
+                        onClick := '';
+                        if (self.domain_id > 0)
+                          onClick := sprintf (' onclick="javascript: cNewEvent(event, %d, -1);"', N);
+                        http (sprintf ('<td width="%s" class="CE_new CE_cell %s" %s>', '14.2857%', C, onClick));
                         C := '';
                         if (self.cDays[N] > 0)
                           C := C || ' C_onmonth';
@@ -1348,7 +1390,7 @@
               </script>
           </div>
         </div>
-      </v:template>
+      </vm:if>
 
       <vm:if test="self.cAction in ('create', 'edit', 'view')">
         <v:text name="timeZone" xhtml_id="timeZone" type="hidden" value="--self.cTimeZone" />
@@ -2232,7 +2274,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button action="simple" value="Cancel" name="e_cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'browse';
@@ -2450,7 +2492,7 @@
                 }
               </script>
               <th>
-                <v:label for="t_tags" value="Tags" />
+                <v:label for="t_tags" value="Tags (comma-separated)" />
               </th>
               <td>
                 <vm:if test="self.cAction <> 'view'">
@@ -2536,7 +2578,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button action="simple" value="Cancel" name="t_cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'browse';
@@ -2612,7 +2654,7 @@
                 }
               </script>
               <th>
-                <v:label for="n_tags" value="Tags" />
+                <v:label for="n_tags" value="Tags (comma-separated)" />
               </th>
               <td>
                 <vm:if test="self.cAction <> 'view'">
@@ -2683,7 +2725,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button action="simple" value="Cancel" name="n_cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'browse';
@@ -2694,8 +2736,8 @@
         </div>
       </v:template>
 
-      <v:template type="simple" enabled="--case when (self.cAction = 'import') then 1 else 0 end">
-        <v:template type="simple" enabled="-- case when (self.icStep = '1') then 1 else 0 end">
+      <vm:if test="self.cAction = 'import'">
+        <vm:if test="self.icStep = '1'">
         <div class="new-form-header">
             <v:label format="%s" value="Import: Select source type" />
         </div>
@@ -2763,7 +2805,7 @@
                 ]]>
               </v:on-post>
             </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+            <v:button action="simple" value="Cancel" name="i1_cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'browse';
@@ -2772,9 +2814,9 @@
             </v:on-post>
           </v:button>
         </div>
-      </v:template>
+        </vm:if>
 
-        <v:template type="simple" enabled="-- case when (self.icStep = '2') then 1 else 0 end">
+        <vm:if test="self.icStep = '2'">
         <div class="new-form-header">
             <v:label format="%s" value="Import: Select content type" />
         </div>
@@ -2815,7 +2857,7 @@
               </vm:if>
               <tr>
                 <th>
-                  <v:label for="i_tags" value="Tags" />
+                  <v:label for="i_tags" value="Tags (comma-separated)" />
                 </th>
                 <td>
                   <v:text name="i_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
@@ -2918,7 +2960,7 @@
                  ]]>
                </v:on-post>
             </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+            <v:button action="simple" value="Cancel" name="i2_cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'browse';
@@ -2927,10 +2969,10 @@
             </v:on-post>
           </v:button>
         </div>
-      </v:template>
-      </v:template>
+        </vm:if>
+      </vm:if>
 
-      <v:template type="simple" enabled="--case when (self.cAction = 'settings') then 1 else 0 end">
+      <vm:if test="self.cAction = 'settings'">
         <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo" />
         <div class="new-form-header">
           Preferences
@@ -2981,6 +3023,13 @@
                   </th>
                   <td>
                     <v:text name="s_rows" value="--CAL.WA.settings_rows (self.settings)" xhtml_size="3"/>
+                  </td>
+                </tr>
+                <tr>
+                  <th />
+                  <td>
+                    <v:check-box name="s_app" xhtml_id="f_app" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('app', self.settings, '0') as integer)" />
+                    <vm:label for="s_app" value="Show <a>++ links"/>
                   </td>
                 </tr>
                 <tr>
@@ -3132,6 +3181,7 @@
 
                 self.settings := CAL.WA.set_keyword ('chars', self.settings, cast(cast(chars as integer) as varchar));
                 self.settings := CAL.WA.set_keyword ('rows', self.settings, cast(cast(rows as integer) as varchar));
+                self.settings := CAL.WA.set_keyword ('app', self.settings, self.s_app.ufl_selected);
                 self.settings := CAL.WA.set_keyword ('atomVersion', self.settings, self.s_atomVersion.ufl_value);
                 self.settings := CAL.WA.set_keyword ('defaultView', self.settings, self.s_defaultView.ufl_value);
                 self.settings := CAL.WA.set_keyword ('weekStarts', self.settings, self.s_weekStarts.ufl_value);
@@ -3151,7 +3201,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button action="simple" value="Cancel" name="s1_cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.cAction := 'browse';
@@ -3165,9 +3215,11 @@
             initTab(2, 1);
           ]]>
         </script>
-      </v:template>
+      </vm:if>
+      
       <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
       </div>
+      
       <vm:if test="self.cScope in ('day', 'week', 'month')">
         <div id="deleteDiv">
           Are you sure that you want to delete selected item?
@@ -3177,12 +3229,6 @@
           <input type="radio" name="e_delete" id="e_delete_0" value="0" checked="checked" style="margin-left: 110px;" /><label for="e_delete_0">Delete this occurrence</label><br />
           <input type="radio" name="e_delete" id="e_delete_1" value="1" style="margin-left: 110px;" /><label for="e_delete_1">Delete the series</label><br />
         </div>
-        <script type="text/javascript">
-          <![CDATA[
-          	var deleteDialog = new OAT.Dialog("Confirm delete", "deleteDiv", {width:400, modal:1});
-          	var deleteDialog2 = new OAT.Dialog("Confirm delete", "deleteDiv2", {width:400, modal:1});
-          ]]>
-        </script>
       </vm:if>
     </vm:pagebody>
   </vm:pagewrapper>
