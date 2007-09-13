@@ -534,6 +534,68 @@ create procedure sioc.DBA.rdf_photos_view_str ()
       ;
 };
 
+create procedure sioc.DBA.rdf_photos_view_str_tables ()
+{
+  return
+      '
+      from DB.DBA.ODS_PHOTO_POSTS as photo_posts
+      where (^{photo_posts.}^.U_MEMBER = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_PHOTO_COMMENTS as photo_comments
+      where (^{photo_comments.}^.U_MEMBER = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_PHOTO_TAGS as photo_tags
+      where (^{photo_tags.}^.U_MEMBER = ^{users.}^.U_NAME)
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_photos_view_str_maps ()
+{
+  return
+      '
+	    # Photo
+	    ods:photo_post (photo_posts.RES_FULL_PATH) a exif:IFD ;
+	    dc:title photo_posts.RES_NAME ;
+	    dct:created photo_posts.RES_CREATED ;
+	    dct:modified photo_posts.RES_MODIFIED ;
+	    sioc:content photo_posts.RES_DESCRIPTION ;
+	    sioc:has_creator ods:user (photo_posts.U_OWNER) ;
+	    foaf:maker ods:person (photo_posts.U_OWNER) ;
+	    sioc:link ods:proxy (photo_posts.RES_LINK) ;
+	    sioc:has_container ods:photo_forum (photo_posts.U_MEMBER, photo_posts.WAI_NAME) .
+
+	    ods:photo_forum (photo_posts.U_MEMBER, photo_posts.WAI_NAME)
+	    sioc:container_of
+	    ods:photo_post (photo_posts.RES_FULL_PATH) .
+
+	    ods:user (photo_posts.U_OWNER)
+	    sioc:creator_of
+	    ods:photo_post (photo_posts.RES_FULL_PATH) .
+
+	    ods:photo_post (photo_tags.RES_FULL_PATH)
+	    sioc:topic
+	    ods:tag (photo_tags.U_MEMBER, photo_tags.RES_TAG) .
+
+	    ods:tag (photo_tags.U_MEMBER, photo_tags.RES_TAG) a skos:Concept ;
+	    skos:prefLabel photo_tags.RES_TAG ;
+	    skos:isSubjectOf ods:photo_post (photo_tags.RES_FULL_PATH) .
+
+	    ods:photo_comment (photo_comments.RES_FULL_PATH, photo_comments.COMMENT_ID) a sioct:Comment ;
+	    sioc:reply_of ods:photo_post (photo_comments.RES_FULL_PATH) ;
+	    sioc:has_container ods:photo_forum (photo_comments.U_MEMBER, photo_comments.WAI_NAME) ;
+	    dc:title photo_comments.RES_NAME ;
+	    dct:created photo_comments.CREATE_DATE ;
+	    dct:modified photo_comments.MODIFY_DATE ;
+	    sioc:content photo_comments.TEXT ;
+	    foaf:maker ods:person (photo_comments.U_MAKER) .
+
+	    ods:photo_post (photo_comments.RES_FULL_PATH)
+	    sioc:has_reply
+	    ods:photo_comment (photo_comments.RES_FULL_PATH, photo_comments.COMMENT_ID) .
+	    # end Photo
+      '
+      ;
+};
+
 grant select on ODS_PHOTO_POSTS to SPARQL_SELECT;
 grant select on ODS_PHOTO_COMMENTS to SPARQL_SELECT;
 grant select on ODS_PHOTO_TAGS to SPARQL_SELECT;
