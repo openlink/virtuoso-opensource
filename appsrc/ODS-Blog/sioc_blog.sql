@@ -486,6 +486,54 @@ create view ODS_BLOG_COMMENTS as select
 
 
 
+create procedure sioc.DBA.rdf_weblog_view_str_tables ()
+{
+  return
+      '
+      from DB.DBA.ODS_BLOG_POSTS as blog_posts
+      where (^{blog_posts.}^.B_OWNER = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_BLOG_POST_LINKS as blog_links
+      where (^{blog_links.}^.B_OWNER = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_BLOG_POST_ATTS as blog_atts
+      where (^{blog_atts.}^.B_OWNER = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_BLOG_POST_TAGS as blog_tags
+      where (^{blog_tags.}^.U_NAME = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_BLOG_COMMENTS as blog_comms
+      where (^{blog_comms.}^.U_NAME = ^{users.}^.U_NAME)
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_weblog_view_str_maps ()
+{
+  return
+      '
+      # Weblog
+	    ods:blog_post (blog_posts.B_OWNER, blog_posts.B_INST, blog_posts.B_POST_ID) a sioct:BlogPost ;
+	    sioc:link ods:proxy (blog_posts.B_LINK) ;
+	    sioc:has_creator ods:user (blog_posts.B_CREATOR) ;
+	    foaf:maker ods:person (blog_posts.B_CREATOR) ;
+	    sioc:has_container ods:blog_forum (blog_posts.B_OWNER, blog_posts.B_INST) ;
+	    dc:title blog_posts.B_TITLE ;
+	    dct:created blog_posts.B_CREATED ;
+	    dct:modified blog_posts.B_MODIFIED ;
+	    sioc:content blog_posts.B_CONTENT .
+
+	    ods:blog_forum (blog_posts.B_OWNER, blog_posts.B_INST)
+	    sioc:container_of
+	    ods:blog_post (blog_posts.B_OWNER, blog_posts.B_INST, blog_posts.B_POST_ID) .
+
+	    ods:user (blog_posts.B_CREATOR)
+	    sioc:creator_of
+	    ods:blog_post (blog_posts.B_OWNER, blog_posts.B_INST, blog_posts.B_POST_ID) .
+
+	    ods:blog_post (blog_links.B_OWNER, blog_links.B_INST, blog_links.B_POST_ID)
+	    sioc:links_to
+	    ods:proxy (blog_links.PL_LINK) .
+	    # end Weblog
+      '
+      ;
+};
 
 create procedure sioc.DBA.rdf_weblog_view_str ()
 {
