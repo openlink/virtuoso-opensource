@@ -342,8 +342,6 @@ ins_call (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
   int any_out = 0;
   int n_ret_param = qi->qi_query->qr_is_call == 2 ? 1 : 0;
   char auto_qi[AUTO_QI_DEFAULT_SZ];
-  if (0 == strcmp (proc_name, "STRING_OUTPUT"))
-    printf ("bang");
   if (ins->_.call.pn && (proc = ins->_.call.pn->pn_query))
     ;
   else if (DV_TYPE_OF (proc_name) == DV_ARRAY_OF_POINTER)
