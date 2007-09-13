@@ -32,7 +32,7 @@
   <vm:page>
     <vm:header>
       <vm:title>
-        <v:label value="--self.banner" render-only="1"/>
+        <v:label value="--'Facebook integration to ODS'" render-only="1"/>
       </vm:title>
     </vm:header>
     <vm:pagewrapper>
@@ -45,6 +45,67 @@
       <vm:body>
         <v:before-data-bind>
         <![CDATA[
+        
+          declare _http_query_str varchar;
+          _http_query_str:=http_request_get ('QUERY_STRING');
+          if (locate('auth_token',_http_query_str)>0)
+          {
+            declare _start,_end integer;
+            _start:=locate('&auth_token',_http_query_str);
+            _end:=locate('&',_http_query_str,_start+1);
+            if(_start>0)
+            {
+              if(_end>0)
+                 _http_query_str:=subseq(_http_query_str,0,_start-1)||subseq(_http_query_str,_end-1);
+              else
+                 _http_query_str:=subseq(_http_query_str,0,_start-1);
+                
+            }
+            
+            _http_query_str:=replace(_http_query_str,'auth_token','false_auth_token');
+          }
+          if(_http_query_str is not null and length(_http_query_str)>0)
+          {
+            declare _qstr_pos integer;
+            _qstr_pos:=position ('_http_query_str', params);
+            if(_qstr_pos>0)
+            {
+               params := vector_concat (subseq (params, 0, _qstr_pos-1),
+                                        vector('_http_query_str',_http_query_str),
+                                        subseq (params, _qstr_pos));
+
+            }else
+               params:=vector_concat(params, vector('_http_query_str',_http_query_str));
+          } 
+
+          
+          declare _ods_login_params varchar;
+          _ods_login_params:='';
+          if(length(self.sid)>0)
+            _ods_login_params:='sid='||self.sid||'&realm='||coalesce(self.realm,'wa');
+
+          declare _user_name varchar;
+          declare _user_id integer;
+          declare contatcst_import_res any;            
+
+          
+          _user_name:=null;
+          _user_id:=null;
+          
+          if (length(self.sid)>0)
+          {
+              declare exit handler for not found {_user_name:=null;_user_id:=null;};
+              select VS_UID,U_ID into _user_name,_user_id from DB.DBA.VSPX_SESSION, DB.DBA.SYS_USERS where VS_UID=U_NAME and VS_SID=self.sid;
+          }     
+            
+          declare _ods_fb_id integer;
+          _ods_fb_id:=null;
+          if(_user_id is not null)
+          {
+            declare exit handler for not found {_ods_fb_id:=null;};
+            select WAUI_FACEBOOK_ID into _ods_fb_id from DB.DBA.WA_USER_INFO where WAUI_U_ID=_user_id;
+          }
+          
           declare fb_dba_options any;
           if(_get_ods_fb_settings(fb_dba_options)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
           {
@@ -54,21 +115,70 @@
           else 
              self._fb_isset:=0;
          
+
           self._dhtml:=vector();
           
-          declare _html,_src varchar;
+          declare _html,_src,_fb_user_fullname varchar;
 
           if(self._fb_isset)
           {
             
-            declare _user integer;
-            _user := self._fb.require_login();
+            declare _fb_user integer;
+            _fb_user := self._fb.require_login(0);
             
-            if(_user<>0)
+            -- change login when ODS user is logged but the facebook user that is associated is not the same as the one that is currently logged in.
+           
+            if(_ods_fb_id is not null and _fb_user>0 and _ods_fb_id<>_fb_user)
+            {
+              _fb_user := self._fb.require_login(1);
+            }
+
+            if(get_keyword('assoc', params,null) is not null)
+            {
+            
+               if (_fb_user<>0 and _user_name is not null)
+               
+            
+               update DB.DBA.WA_USER_INFO set WAUI_FACEBOOK_ID=_fb_user where WAUI_U_ID=_user_id;
+               
+            }
+
+
+            
+            
+            -- ODS autologin for ODS use that has signed in to FB but not to ODS and he has associated his ods user to facebook user
+            if(_fb_user<>0 and _user_name is null)
+            {
+              declare exit handler for not found {_user_name:=null;_user_id:=null;};
+              select WAUI_U_ID,U_NAME into _user_id,_user_name from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID=U_ID and WAUI_FACEBOOK_ID=_fb_user;
+        
+              if( _user_id is not null)
+              {
+                 declare _sid varchar;
+                 _sid := md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
+                 
+                 insert into DB.DBA.VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
+                                          values ('wa', _sid, _user_name,
+                                                  serialize (vector ('vspx_user', _user_name)),
+                                                  now());
+                 http_request_status ('HTTP/1.1 302 Found');
+                 http_header (sprintf('Location: %sfb_front.vspx?sid=%s&realm=wa\r\n', self.odsbar_ods_gpath, _sid));
+                 return;
+              }
+            }
+            
+            declare _are_assoc int;
+            _are_assoc:=0;
+
+            if(exists (select 1 from DB.DBA.WA_USER_INFO where  WAUI_U_ID=_user_id and WAUI_FACEBOOK_ID=_fb_user))
+               _are_assoc:=1;
+
+            if(_fb_user<>0)
             {
               declare _res any;
             
-              _res:=self._fb.api_client.users_getInfo(cast(_user as varchar),'name,pic');
+            
+              _res:=self._fb.api_client.users_getInfo(cast(_fb_user as varchar),'name,pic');
             
               if(_res is not null)
               {
@@ -78,14 +188,15 @@
                 _html:='<img src="'||_src||'">'||
                        '<h3>'||cast(xpath_eval('/users_getInfo_response/user/name',_res) as varchar)||'</h3><br/>';
             
+                 _fb_user_fullname:=cast(xpath_eval('/users_getInfo_response/user/name',_res) as varchar);
               }else
-                _html:='Hello, user:'||cast(_user as varchar)||'<br/>';
+                _html:='Hello, user:'||cast(_fb_user as varchar)||'<br/>';
             
               self._dhtml:=vector_concat(self._dhtml,vector('user',_html));
             
               _res:=self._fb.api_client.friends_get();
             
-              if(_res is not null and length(_res)>0)
+              if(isarray(_res) and length(_res)>0)
               { 
                 declare ff_ids varchar;
                 ff_ids:='';
@@ -133,13 +244,67 @@
                 _html:='You have no Facebook friends.';
              
               self._dhtml:=vector_concat(self._dhtml,vector('friends',_html));
+            
+              
+              if(get_keyword('import', params,'')='import')
+                 sync_fbf_odsab(self._fb,_user_id,_fb_user);
+                 
+              if(get_keyword('import', params,'')='update')
+                 sync_fbf_odsab(self._fb,_user_id,_fb_user,1);
+
+              contatcst_import_res:=sync_fbf_odsab(self._fb,_user_id,_fb_user,0,1);
+             
             }
              
-            _html:='You are not ODS user.<br/> <a href="javascript:void(0)">Use my Facebook login in ODS from now on.</a>';
+
+            _html:='';
+
+            if(_user_id is not null)
+               _html:=_html||'You are logged as ODS user: '||_user_name||'.<br/>';
+            else
+               _html:=_html||'You are not logged as ODS user!<br/>';
+                  
+            if(_fb_user<>0)   
+               _html:=_html||'You are logged as Facebook user: '||_fb_user_fullname||'.<br/>';
+
+            if(exists(select 1 from DB.DBA.WA_USER_INFO where WAUI_U_ID=_user_id and (WAUI_FACEBOOK_ID is null or WAUI_FACEBOOK_ID<1) ) )
+            {
+               _html:=_html||'Your ODS and Facebook users are not associated.<br/> <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=yes',_ods_login_params)||'">Associate my ODS user to my Facebook user.</a>';
+           
+            }else if(_user_id is not null and _fb_user<>0 and _are_assoc=1)
+               _html:=_html||'Your ODS and Facebook users are associated.';
+            else if(_user_id is not null and _fb_user=0)
+               _html:=_html||'';
+            else if(_user_id is null and _fb_user<>0)
+               _html:=_html||'<a href="'||self.odsbar_ods_gpath ||'register.vspx?reguid='||lcase(replace(_fb_user_fullname,' ',''))||'&fb_id='||cast(_fb_user as varchar)||'&URL='||self.odsbar_ods_gpath ||'fb_front.vspx">Create ODS user and associate my Facebook user to it.</a>';
+
+            
+            if(isarray(contatcst_import_res) and contatcst_import_res[0]=-1 and wa_check_package ('addressbook'))
+               _html:=_html||'<br/><a href="'||self.odsbar_ods_gpath ||wa_expand_url('index_inst.vspx?wa_name=AddressBook',_ods_login_params)||'">Create ODS addressbook if you want to import Facebook contacts.</a>';
+
+            if(isarray(contatcst_import_res) and contatcst_import_res[0]=1 and contatcst_import_res[3]=0)
+               _html:=_html||'<br/>You have no Facebook contatcts that may be imported to ODS address book.';
+
+            if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[1]>0)
+              _html:=_html||'<br/>You have '||cast(contatcst_import_res[1] as varchar)||' Facebook contatct'||(case when contatcst_import_res[1]>1 then 's' else '' end)||
+                            ' that may be imported to your ODS address book.<a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=import',_ods_login_params)||'">Import</a>';
+
+            if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[2]>0)
+              _html:=_html||'<br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contatct'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
+                            ' that may be updated in your ODS address book.<a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',_ods_login_params)||'">Update</a>';
+
+            if(isarray(contatcst_import_res) and contatcst_import_res[0]=1 and contatcst_import_res[2]>0)
+              _html:=_html||'<br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contatct'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
+                            ' that may be updated in your ODS address book.<a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',_ods_login_params)||'">Update</a>';
+            
             self._dhtml:=vector_concat(self._dhtml,vector('ods_user',_html));
+          
+
          } 
         ]]>
         </v:before-data-bind>
+        <v:login/>
+
 <v:template type='simple' enabled='--self._fb_isset'>
 <script type="text/javascript">
 function dd(txt){

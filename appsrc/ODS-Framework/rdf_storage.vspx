@@ -99,6 +99,7 @@ function UpdateTab()
 		    <p>
 			The "Rebuild RDF Data" function will clean the persisted ODS RDF data and will re-load it.<br />
 			The "Rebuild RDF View" function will re-generate the ODS RDF view. <br/>
+			The "Rebuild User RDF View" function will re-generate the ODS RDF view defining graph per each ODS user. <br/>
 			Warning: Depending of the data volume of this ODS installation the above may take a very long time, please be patient.
 		    </p>
 		    <v:form name="build_f" mthod="POST" type="simple">
@@ -116,6 +117,12 @@ function UpdateTab()
 					self.what := 'view';
 				    </v:on-post>
 				</v:button>
+				<v:button action="simple" name="rdf_user_view" value="Rebuild User RDF View">
+				    <v:on-post>
+					self.confirm := 1;
+					self.what := 'uview';
+				    </v:on-post>
+				</v:button>
 			    </span>
 			</fieldset>
 		    </v:form>
@@ -124,7 +131,7 @@ function UpdateTab()
 	    <v:template name="tmpl2" type="simple" condition="self.confirm = 1">
 		<div class="fm">
 		    <p>
-			Do you really want to rebuild the <?V case when self.what = 'view' then 'ODS RDF View' else 'ODS RDF Data' end ?>?
+			Do you really want to rebuild the <?V case when self.what = 'view' then 'ODS RDF View' when self.what = 'uview' then 'ODS User RDF View' else 'ODS RDF Data' end ?>?
 		    </p>
 		    <v:form name="conf_f" mthod="POST" type="simple">
 			<fieldset>
@@ -167,7 +174,7 @@ setTimeout("UpdateTab()", 1000);
   </vm:page>
   <?vsp
   {
-    if (self.doit = 'view' or self.doit = 'data')
+    if (self.doit = 'view' or self.doit = 'data' or self.doit = 'uview')
       {
         http_flush ();
       }
@@ -186,6 +193,14 @@ setTimeout("UpdateTab()", 1000);
 	connection_set ('iri_result', 2);
 	ODS_RDF_VIEW_INIT_1 (0);
 	registry_set ('ods_rdf_state', 'ODS RDF view update finished');
+      }
+    else if (self.doit = 'uview')
+      {
+	-- run the rdf_view composition
+	registry_set ('ods_rdf_state', 'ODS User RDF view update started');
+	connection_set ('iri_result', 2);
+	ODS_RDF_USER_VIEW_INIT (0);
+	registry_set ('ods_rdf_state', 'ODS User RDF view update finished');
       }
     else if (self.doit = 'data')
       {

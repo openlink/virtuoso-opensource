@@ -27,10 +27,11 @@ create procedure rdf_import (
   in pMode integer := 1,
   in pGraph varchar := null,
   in pUser varchar := null,
-  in pPassword varchar := null)
+  in pPassword varchar := null,
+  in pFolder varchar := null)
 {
-  declare retValue integer;
-  declare user_id integer;
+  declare retValue, rc, user_id integer;
+	declare S, content, hdr any;
 
   user_id := null;
   if (not isnull (pUser)) {
@@ -40,12 +41,35 @@ create procedure rdf_import (
   }
   if (isnull (pGraph))
     pGraph := pURL;
+  if (not isnull (user_id)) {
+    if (isnull (pFolder)) {
+      pFolder := DB.DBA.DAV_HOME_DIR(pUser);
+      if (isstring (pFolder)) {
+        pFolder := pFolder || 'Uploads/';
+        DB.DBA.DAV_MAKE_DIR (pFolder, user_id, null, '110100100NN');
+  
+        pFolder := pFolder || 'RDF/';
+        DB.DBA.DAV_MAKE_DIR (pFolder, user_id, null, '110100100NN');
+      }
+    }
+    -- RDF
+    pFolder := pFolder || replace ( replace ( replace ( replace ( replace ( replace ( replace (pUrl, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
+    DB.DBA.DAV_DELETE_INT (pFolder, 1, null, null, 0);
+
+    content := '';
+    S := sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', DB.DBA.wa_cname (), pGraph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml');
+    rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (pFolder, content, 'text/xml', '111101101NN', http_dav_uid (), http_dav_uid () + 1, pUser, pPassword, 1);
+    if (isnull (DAV_HIDE_ERROR (rc)))
+  	  signal ('ODS12', DAV_PERROR (rc));
+    rc := DB.DBA.DAV_PROP_SET_INT (pFolder, 'redirectref', S, pUser, pPassword, 1, 0, 1);
+    if (isnull (DAV_HIDE_ERROR (rc)))
+  	  signal ('ODS12', DAV_PERROR (rc));
+  }
   retValue := (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph));
   if (pMode) {
-    exec (sprintf ('SPARQL define get:soft "soft" SELECT * FROM <%s> WHERE { ?s ?p ?o }', pURL));
+    exec (sprintf ('SPARQL define get:soft "soft" define get:uri "%s" SELECT * FROM <%s> WHERE { ?s ?p ?o }', pURL, pGraph));
   } else {
-  	declare content, hdr any;
-
+    commit work;
   	content := http_get (pURL, hdr, 'GET');
   	if (hdr[0] not like 'HTTP%200%')
   	  signal ('22023', hdr[0]);
@@ -67,54 +91,35 @@ create procedure rdf_import (
         xtree_doc (content, 0, pGraph);
       }
     }
-    if (is_xml = 0 and is_ttl = 0)
+    if (is_xml = 0 and is_ttl = 0) {
+      if (not isnull (pFolder))
+        DB.DBA.DAV_DELETE_INT (pFolder, 1, null, null, 0);
       signal ('ODS10', 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store!');
+    }
 
     if (is_ttl) {
-      DB.DBA.TTLP (content, '', pGraph);
+      DB.DBA.TTLP (content, pGraph, pGraph);
     } else {
-      DB.DBA.RDF_LOAD_RDFXML (content, '', pGraph);
+      DB.DBA.RDF_LOAD_RDFXML (content, pGraph, pGraph);
     }
   }
   retValue := (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph)) - retValue;
-  if (not isnull (user_id)) {
-    declare read_perm, exec_perm, name, path, content, S varchar;
-
-    path := DB.DBA.DAV_HOME_DIR(pUser);
-    if (isstring (path)) {
-      read_perm := '110100100NN';
-      exec_perm := '111101101NN';
-      path := path || 'Uploads/';
-      DB.DBA.DAV_MAKE_DIR (path, user_id, null, read_perm);
-
-      path := path || 'RDF/';
-      DB.DBA.DAV_MAKE_DIR (path, user_id, null, read_perm);
-
-      -- RDF
-      name := replace ( replace ( replace ( replace ( replace ( replace ( replace (pUrl, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_');
-      path := path || name || '.RDF';
-      DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-
-      S := sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', DB.DBA.wa_cname (), pGraph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml');
-      content := '';
-      DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, content, 'text/xml', exec_perm, http_dav_uid (), http_dav_uid () + 1, null, null, 0);
-      DB.DBA.DAV_PROP_SET_INT (path, 'redirectref', S, 'dav', null, 0, 0, 1);
-    }
-  }
   if (retValue < 0)
     retValue := 0;
+
   return retValue;
 }
 ;
 
 -- Helpers
-
+--
 create procedure ODS_SPARQL_QM_RUN (in txt varchar, in sig int := 1, in fl int := 0)
 {
   declare REPORT, stat, msg, sqltext varchar;
   declare metas, rowset any;
   if (fl)
    result_names (REPORT);
+  -- dbg_printf ('%s', txt);
   -- string_to_file ('ods_sparql_qm_run.sql', '\nSPARQL ' || txt || '\n;\n', -1);
   sqltext := string_output_string (sparql_to_sql_text (txt));
   --dump_large_text_impl (sqltext);
@@ -317,8 +322,8 @@ create iri class sioc:blog_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U
     create iri class sioc:feed_iri "http://^{URIQADefaultHost}^/dataspace/feed/%d" (in feed_id integer not null) .
     create iri class sioc:feed_item_iri "http://^{URIQADefaultHost}^/dataspace/feed/%d/%d" (in feed_id integer not null, in item_id integer not null) .
     create iri class sioc:feed_item_text_iri "http://^{URIQADefaultHost}^/dataspace/feed/%d/%d/text" (in feed_id integer not null, in item_id integer not null) .
-    create iri class sioc:feed_mgr_iri "http://^{URIQADefaultHost}^/dataspace/%U/feeds/%U" (in uname varchar not null, in inst_name varchar not null) .
-    create iri class sioc:feed_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U/feeds/%U/%d/%d"
+    create iri class sioc:feed_mgr_iri "http://^{URIQADefaultHost}^/dataspace/%U/subscriptions/%U" (in uname varchar not null, in inst_name varchar not null) .
+    create iri class sioc:feed_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U/subscriptions/%U/%d/%d"
 	    (in uname varchar not null, in inst_name varchar not null, in item_id integer not null, in comment_id integer not null) .
     #Bookmark
     create iri class sioc:bmk_post_iri "http://^{URIQADefaultHost}^/dataspace/%U/bookmark/%U/%d"

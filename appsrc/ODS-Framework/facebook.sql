@@ -747,8 +747,8 @@ create type DB.DBA.Facebook as (
   method do_get_session(auth_token any) returns any,
   method redirect(url varchar) returns any,
   method get_add_url(_next varchar) returns varchar,
-  method get_login_url(_next varchar,canvas integer) returns varchar,
-  method require_login() returns integer,
+  method get_login_url(_next varchar,canvas integer, skipcookie integer) returns varchar,
+  method require_login(relog integer) returns integer,
   method get_loggedin_user() returns varchar,
   method current_url() returns varchar
 ;
@@ -1050,7 +1050,8 @@ for DB.DBA.Facebook
 
 create method get_login_url(
       in _next varchar :=null,
-      in canvas integer :=0
+      in canvas integer :=0,
+      in skipcookie integer :=0
 )
 for DB.DBA.Facebook
 {
@@ -1060,21 +1061,37 @@ for DB.DBA.Facebook
        login_url:=login_url||'&next=' || sprintf('%U',_next);
     if(canvas=1)
        login_url:=login_url||'&canvas';
+    if(skipcookie=1)
+       login_url:=login_url||'&skipcookie';
        
     return login_url;
 }
 ;
 
-create method require_login()
+create method require_login(
+       in relog integer :=0
+)
 for DB.DBA.Facebook
 {
     declare _user any;
+ 
+    if(relog=1)
+    {
+      if(self._user > 0)
+      {
+         self._user:=0;
+         self.api_client:=udt_set(self.api_client,'session_key','');
+      }
+      
+      self.redirect(self.get_login_url(self.current_url(), self.in_frame(),1));
+    
+    }
     _user:=null;
     _user:=self.get_loggedin_user();
     if(_user is not null)
        return _user;
 
-    self.redirect(self.get_login_url(self.current_url(), self.in_frame()));
+    self.redirect(self.get_login_url(self.current_url(), self.in_frame(),0));
     return;
   }
 ;
@@ -1103,11 +1120,17 @@ for DB.DBA.Facebook
 create method current_url()
 for DB.DBA.Facebook
 {
-    declare _sid,_realm varchar;
+    declare _sid,_realm,_http_query_str varchar;
     _sid   :=get_keyword('sid',self._params,null);
     _realm := get_keyword('realm',self._params,null);
+    _http_query_str := get_keyword('_http_query_str',self._params,null);
+      
+--    dbg_obj_print('_http_query_str in UDT',_http_query_str);
 
-    if(_sid is not null and length(_sid)>0)
+    if(_http_query_str is not null and length(_http_query_str)>0)
+    {
+      return 'http://' || http_request_header(self._lines,'Host') || http_path()||'?'||_http_query_str;
+    }else if(_sid is not null and length(_sid)>0)
     {
       return 'http://' || http_request_header(self._lines,'Host') || http_path()||'?sid='||_sid||'&realm='||coalesce(_realm,'wa');
     }
@@ -1169,12 +1192,289 @@ _get_ods_fb_settings (out fb_settings any)
      fb_dba_options:=split_and_decode(fb_dba_options);
    };
    
-   if(length(trim(get_keyword('key',fb_dba_options)))=32 and length(trim(get_keyword('secret',fb_dba_options)))=32)
+   if(length(trim(get_keyword('key',fb_dba_options)))> 4 and length(trim(get_keyword('secret',fb_dba_options)))> 4)
    {
       fb_settings:=vector(trim(get_keyword('key',fb_dba_options)),trim(get_keyword('secret',fb_dba_options)));
       return 1;
    }
 
    return 0;
+}
+;
+
+create procedure sync_fbf_odsab (
+                 in fb_obj DB.DBA.Facebook,
+                 in ods_uid integer,
+                 in fb_user integer,
+                 in _update_odsab integer :=0,
+                 in _ischeck integer :=0 )
+{
+--_res_stat[0]
+-- 1 all fbu in odsab
+-- 0 fbu diff to odsab
+-- -1 no ods addressbook instance
+-- -2 fb_client error
+--_res_stat[1] - new contacts count
+--_res_stat[2] - updated contacts count
+--_res_stat[3] - total fb friends count
+
+declare _res_stat any;
+
+_res_stat:=vector(0,0,0,0);
+
+declare ab_domain_id integer;
+ab_domain_id:=0;
+
+if (ab_domain_id=0)
+{
+   declare exit handler for not found {ab_domain_id:=0; goto _no_address_book;};
+   select top 1 B.WAI_ID into ab_domain_id from WA_MEMBER A, WA_INSTANCE B where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and A.WAM_APP_TYPE='AddressBook' and A.WAM_USER=ods_uid ;
+
+_no_address_book:;
+
+  if(ab_domain_id=0)
+  {
+    _res_stat[0] := -1;
+    return _res_stat;
+  }
+}
+;
+
+
+declare _res any;
+
+  _res:=fb_obj.api_client.friends_get();
+
+  declare i integer;
+
+  if(isarray(_res) and length(_res)>0)
+  { 
+    declare ff_ids varchar;
+    ff_ids:='';
+    i:=0;
+    while(i<length(_res))
+    {
+     if(i<(length(_res)-1)) 
+        ff_ids:=ff_ids||_res[i]||',';
+     else
+        ff_ids:=ff_ids||_res[i];
+        
+     i:=i+1;
+    }
+
+    _res:=fb_obj.api_client.users_getInfo(ff_ids,'name,first_name,last_name,sex,birthday,current_location,work_history');
+  }else
+    _res_stat[0]:=-2;
+
+
+  if(_res is not null)
+  {
+    _res:=xpath_eval('/users_getInfo_response/user',_res,0);
+    if(_res is not null and length(_res)>0)
+    {
+      i := 0;
+      while (i < length(_res))
+      {
+
+        declare full_name,first_name,last_name varchar;
+        full_name  := trim(xpath_eval('string(name)',_res[i]));
+        first_name := trim(xpath_eval('string(first_name)',_res[i]));
+        last_name  := trim(xpath_eval('string(last_name)',_res[i]));
+        
+        if(ab_domain_id>0)
+        {
+          declare _p_id integer;
+          _p_id:=-1;
+          
+          declare exit handler for not found{_p_id:=-1;};
+          declare qry,state, msg, maxrows, metas, rset any;
+          
+          rset := null;
+          maxrows := 0;
+          state := '00000';
+          msg := '';
+
+          qry:=sprintf('select P_ID from AB.WA.PERSONS where P_FULL_NAME=''%s'' and P_FIRST_NAME=''%s'' and P_LAST_NAME=''%s''',full_name,first_name,last_name);
+          exec (qry, state, msg, vector(), maxrows, metas, rset);
+          if (state = '00000' and length(rset)>0)
+          {
+	            _p_id:=rset[0][0];
+	        }else 
+              _p_id:=-1;
+          
+
+          if (_ischeck=1)
+          {
+            if(_p_id=-1)
+               _res_stat[1]:=_res_stat[1]+1;
+            else
+               _res_stat[2]:=_res_stat[2]+1;
+
+            goto _skip_parseandupdate;
+          }
+          
+          declare _col, _val any;
+          declare _tmpval varchar;
+          _col    :=vector();
+          _val    :=vector();
+          _tmpval :='';
+
+          if(full_name<>'')
+          {
+             _col:=vector_concat(_col,vector('P_FULL_NAME'));
+             _val:=vector_concat(_val,vector(full_name));
+          }
+
+          if(first_name<>'')
+          {
+             _col:=vector_concat(_col,vector('P_FIRST_NAME'));
+             _val:=vector_concat(_val,vector(first_name));
+          }
+          
+          if(last_name<>'')
+          {
+             _col:=vector_concat(_col,vector('P_LAST_NAME'));
+             _val:=vector_concat(_val,vector(last_name));
+          }
+
+          _tmpval:=trim(xpath_eval('string(sex)',_res[i]));
+          if(_tmpval<>'')
+          {
+             _col:=vector_concat(_col,vector('P_GENDER'));
+             _val:=vector_concat(_val,vector(_tmpval));
+          }
+          
+          _tmpval:=trim(xpath_eval('string(birthday)',_res[i]));
+          if(_tmpval<>'')
+          {
+             _col:=vector_concat(_col,vector('P_BIRTHDAY'));
+             declare _date date;
+             declare _arr any;
+
+             _arr:=split_and_decode(cast(_tmpval as varchar),0,'\0\0,');
+             if(_arr is not null and length(_arr)>0)
+                _arr[0]:=split_and_decode(_arr[0],0,'\0\0 ');
+             if(length(_arr)=1)
+                _date:=stringdate('1970-'||cast(_get_montbyname(trim(_arr[0][0])) as varchar)||'-'||trim(_arr[0][1]));
+             else
+                _date:=stringdate(trim(_arr[1])||'-'||cast(_get_montbyname(trim(_arr[0][0])) as varchar)||'-'||trim(_arr[0][1]));
+
+             _val:=vector_concat(_val,vector(_date));
+          }
+          
+          _tmpval:=trim(xpath_eval('string(current_location/city)',_res[i]));
+          if(_tmpval<>'')
+          {
+             _col:=vector_concat(_col,vector('P_H_CITY'));
+             _val:=vector_concat(_val,vector(_tmpval));
+          }
+
+
+          _tmpval:=trim(xpath_eval('string(current_location/state)',_res[i]));
+          if(_tmpval<>'')
+          {
+             _col:=vector_concat(_col,vector('P_H_STATE'));
+             _val:=vector_concat(_val,vector(_tmpval));
+          }
+
+          _tmpval:=trim(xpath_eval('string(current_location/country)',_res[i]));
+          if(_tmpval<>'')
+          {
+             _col:=vector_concat(_col,vector('P_H_COUNTRY'));
+             _val:=vector_concat(_val,vector(_tmpval));
+          }
+
+          _tmpval:=trim(xpath_eval('string(current_location/zip)',_res[i]));
+          if(_tmpval<>'')
+          {
+             _col:=vector_concat(_col,vector('P_H_CODE'));
+             _val:=vector_concat(_val,vector(_tmpval));
+          }
+
+
+          _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/city)',_res[i]));
+          if(_tmpval<>'')
+          {
+             _col:=vector_concat(_col,vector('P_B_CITY'));
+             _val:=vector_concat(_val,vector(_tmpval));
+          }
+
+          _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/state)',_res[i]));
+          if(_tmpval<>'')
+          {
+             _col:=vector_concat(_col,vector('P_B_STATE'));
+             _val:=vector_concat(_val,vector(_tmpval));
+          }
+
+          _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/country)',_res[i]));
+          if(_tmpval<>'')
+          {
+             _col:=vector_concat(_col,vector('P_B_COUNTRY'));
+             _val:=vector_concat(_val,vector(_tmpval));
+          }
+
+          _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/company_name)',_res[i]));
+          if(_tmpval<>'')
+          {
+             _col:=vector_concat(_col,vector('P_B_ORGANIZATION'));
+             _val:=vector_concat(_val,vector(_tmpval));
+          }
+
+
+          _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/position)',_res[i]));
+          if(_tmpval<>'')
+          {
+             _col:=vector_concat(_col,vector('P_B_JOB'));
+             _val:=vector_concat(_val,vector(_tmpval));
+          }
+          
+          if(trim(coalesce(full_name,first_name||' '||last_name))<>'')
+          {
+            if(_p_id=-1)
+            {
+               declare _np_id integer;
+               _np_id:=-1;
+               _np_id:=AB.WA.contact_update2 (_p_id,ab_domain_id,'P_NAME',full_name);
+               if(_np_id>-1)
+               {
+                  AB.WA.contact_update3 (_np_id,ab_domain_id,_col,_val,'');
+                 _res_stat[1]:=_res_stat[1]+1;
+               }
+            }
+            
+            if(_p_id<>-1 and _update_odsab=1)
+            {
+               AB.WA.contact_update3 (_p_id,ab_domain_id,_col,_val,'');
+               _res_stat[2]:=_res_stat[2]+1;
+            }
+            
+          }
+
+        }
+_skip_parseandupdate:;  
+
+        i := i + 1;
+        
+      }
+    }
+  }      
+
+
+_res_stat[3]:=i;
+
+if(_res_stat[1]=0)
+   _res_stat[0]:=1;
+   
+return _res_stat;
+}
+;
+
+create procedure _get_montbyname(in monthname varchar)
+{
+  declare months_arr any;
+  months_arr:=vector('January','February','March','April','May','June','July','August','September','October','November','December');
+  
+  return position(monthname, months_arr);
+
 }
 ;

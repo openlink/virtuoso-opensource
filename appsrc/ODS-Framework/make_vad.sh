@@ -32,7 +32,7 @@ TPORT=${TPORT-8440}
 PORT=${PORT-1940}
 ISQL=${ISQL-isql}
 DSN="$HOST:$PORT"
-NEED_VERSION=05.00.3016
+NEED_VERSION=05.00.3018
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
 then
@@ -372,6 +372,7 @@ sticker_init() {
   echo "      vhost_define (lpath=>'/ods/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sioc.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/user_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/web_svc.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER

@@ -164,6 +164,11 @@ create procedure user_space_iri (in _u_name varchar)
 
 create procedure user_obj_iri (in _u_name varchar)
 {
+  return sprintf ('http://%s%s/%U#this', get_cname(), get_base_path (), _u_name);
+};
+
+create procedure user_doc_iri (in _u_name varchar)
+{
   return sprintf ('http://%s%s/%U', get_cname(), get_base_path (), _u_name);
 };
 
@@ -269,7 +274,7 @@ create procedure user_iri_ent (in sne int)
   declare _u_name varchar;
   declare exit handler for not found { return null; };
   select sne_name into _u_name from DB.DBA.sn_entity where sne_id = sne;
-  return sprintf ('http://%s%s/%U', get_cname(), get_base_path (), _u_name);
+  return sprintf ('http://%s%s/%U#this', get_cname(), get_base_path (), _u_name);
 };
 
 create procedure  blog_iri (in wai_name varchar)
@@ -420,9 +425,9 @@ create procedure foaf_maker (in graph_iri varchar, in iri varchar, in full_name 
 create procedure person_iri (in iri varchar, in suff varchar := '#this')
 {
   declare arr any;
-  arr := sprintf_inverse (iri, 'http://%s/dataspace/%s', 1);
+  arr := sprintf_inverse (iri, 'http://%s/dataspace/%s#this', 1);
   if (length (arr) <> 2)
-    signal ('22023', 'Non-user IRI can\'t be transformed to person IRI');
+    signal ('22023', sprintf ('Non-user IRI [%s] can\'t be transformed to person IRI', iri));
   return sprintf ('http://%s/dataspace/person/%s%s',arr[0],arr[1], suff);
 };
 
@@ -430,22 +435,23 @@ create procedure person_iri (in iri varchar, in suff varchar := '#this')
 create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varchar, in u_e_mail varchar, in full_name varchar := null)
 {
   declare u_site_iri varchar;
-  declare person_iri varchar;
+  declare person_iri, link varchar;
 
   ods_sioc_result (iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('User'));
   DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), U_NAME);
 
   u_site_iri := user_space_iri (u_name);
+  link := user_doc_iri (u_name);
 
   DB.DBA.RDF_QUAD_URI (graph_iri, u_site_iri, rdf_iri ('type'), sioc_iri ('Space'));
-  DB.DBA.RDF_QUAD_URI (graph_iri, u_site_iri, sioc_iri ('link'), iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, u_site_iri, sioc_iri ('link'), link);
 
   if (full_name is not null)
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('name'), full_name);
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('link'), link);
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (link, '/sioc.rdf'));
 
   if (length (u_e_mail))
     {
@@ -455,7 +461,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
 
   -- FOAF
   person_iri := person_iri (iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdfs_iri ('seeAlso'), concat (iri, '/about.rdf'));
+  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdfs_iri ('seeAlso'), concat (link, '/about.rdf'));
   DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Person'));
   DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('nick'), u_name);
   if (length (u_e_mail))
@@ -471,7 +477,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('account_of'), person_iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('holdsAccount'), iri);
   -- OpenID (new)
-  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('openid'), iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('openid'), link);
 
   -- ATOM
   delete_quad_sp (graph_iri, person_iri, atom_iri ('personEmail'));
@@ -2594,7 +2600,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
       DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
 	}
 
-      if (tp = 'feeds')
+      if (tp = 'subscriptions')
 	{
       qry := sprintf ('sparql
    	  prefix sioc: <http://rdfs.org/sioc/ns#>
@@ -3093,7 +3099,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    graph <%s>
 	    {
 	      {
-	      ?person foaf:holdsAccount <%s/%s> ;
+	      ?person foaf:holdsAccount <%s/%s#this> ;
 	      foaf:nick ?nick ;
 	      foaf:holdsAccount ?sioc_user .
 	      ?sioc_user rdfs:seeAlso ?see_also .
@@ -3144,7 +3150,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    graph <%s>
 	    {
 	      {
-	      ?person foaf:holdsAccount <%s/%s> ;
+	      ?person foaf:holdsAccount <%s/%s#this> ;
 	      foaf:openid ?oid .
 	      optional { ?person bio:olb ?bio  } .
               optional { ?person bio:event ?event . ?event a bio:Birth ; dc:date ?bdate } .
@@ -3174,7 +3180,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    graph <%s>
 	    {
 	      {
-	       ?person foaf:holdsAccount <%s/%s> ;
+	       ?person foaf:holdsAccount <%s/%s#this> ;
 	       foaf:holdsAccount ?sioc_user .
                optional {
 	 	 ?sioc_user sioc:has_function ?function .
@@ -3199,7 +3205,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    graph <%s>
 	    {
 	      {
-		?person foaf:holdsAccount <%s/%s> ;
+		?person foaf:holdsAccount <%s/%s#this> ;
 		foaf:holdsAccount ?sioc_user .
 		?sioc_user sioc:owner_of ?container .
 		?container sioc:container_of ?item .

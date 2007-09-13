@@ -150,7 +150,48 @@ create procedure associate
   http (sprintf ('assoc_handle:%s\x0A', assoc_handle), ses);
   http ('assoc_type:HMAC-SHA1\x0A', ses);
   http (sprintf ('expires_in:%d\x0A', 60*60), ses);
+
+  if (length (session_type) = 0)
+    {
   http (sprintf ('mac_key:%s\x0A', ss_key_data), ses);
+    }
+  else if (session_type = 'DH-SHA1')
+    {
+      declare dh_key varchar;
+      declare p, g, pub, sec, enc_sec, sha1_sec, bin_key any;
+      dh_key := 'OpenID_DH_'||assoc_handle;
+      if (not xenc_key_exists (dh_key))
+	{
+	  if (dh_modulus is null)
+	    p := encode_base64 (dh_defaut_p ());
+	  else
+	    p := dh_modulus;
+	  if (dh_gen is null)
+	    g := 2;
+	  else
+            g := cast (dh_gen as int);
+	  xenc_key_DH_create (dh_key, g, p);
+	}
+      pub := xenc_DH_get_params (dh_key, 3);
+      sec := xenc_DH_compute_key (dh_key, dh_consumer_public);
+
+      sha1_sec := xenc_sha1_digest (decode_base64 (sec));
+
+      bin_key := substring (decode_base64 (ss_key_data), 1, 20);
+      bin_key := encode_base64 (bin_key);
+      xenc_key_remove (ss_key);
+--      dbg_obj_print (ss_key, bin_key);
+      xenc_key_RAW_read (ss_key, bin_key);
+      update SERVER_SESSIONS set SS_KEY = bin_key, SS_KEY_TYPE = 'RAW' where SS_HANDLE = assoc_handle;
+      --dbg_obj_print (sha1_sec, bin_key);
+      enc_sec := xenc_xor (sha1_sec, bin_key);
+
+      http (sprintf ('dh_server_public:%s\x0A', pub), ses);
+      http (sprintf ('enc_mac_key:%s\x0A', enc_sec), ses);
+      http ('session_type:DH-SHA1\x0A', ses);
+    }
+  else
+    signal ('22023', 'Bad session type');
 
   return string_output_string (ses);
 };
@@ -237,7 +278,18 @@ create procedure checkid_immediate
       inv := '';
       if (length (assoc_handle) and exists (select 1 from SERVER_SESSIONS where SS_HANDLE = assoc_handle))
 	{
-	  select SS_KEY_NAME into ss_key from SERVER_SESSIONS where SS_HANDLE = assoc_handle;
+	  declare key_data, ktype any;
+	  select SS_KEY_NAME, SS_KEY, SS_KEY_TYPE into ss_key, key_data, ktype from SERVER_SESSIONS where SS_HANDLE = assoc_handle;
+	  if (user <> 'OpenID')
+	    set_user_id ('OpenID');
+	  if (not xenc_key_exists (ss_key))
+	    {
+	      key_data := cast (key_data as varchar);
+	      if (ktype = '3DES')
+		xenc_key_3DES_read (ss_key, key_data);
+              else
+		xenc_key_RAW_read (ss_key, key_data);
+	    }
 	}
       else
 	{
@@ -481,6 +533,21 @@ create procedure check_signature (in params varchar)
   if (nsig = sig)
     return 1;
   return 0;
+};
+
+create procedure dh_defaut_p ()
+{
+  declare str any;
+
+  str := '\xDC\xF9\x3A\x0B\x88\x39\x72\xEC\x0E\x19\x98\x9A\xC5\xA2\xCE\x31'||
+  '\x0E\x1D\x37\x71\x7E\x8D\x95\x71\xBB\x76\x23\x73\x18\x66\xE6\x1E\xF7\x5A'||
+  '\x2E\x27\x89\x8B\x05\x7F\x98\x91\xC2\xE2\x7A\x63\x9C\x3F\x29\xB6\x08\x14'||
+  '\x58\x1C\xD3\xB2\xCA\x39\x86\xD2\x68\x37\x05\x57\x7D\x45\xC2\xE7\xE5\x2D'||
+  '\xC8\x1C\x7A\x17\x18\x76\xE5\xCE\xA7\x4B\x14\x48\xBF\xDF\xAF\x18\x82\x8E'||
+  '\xFD\x25\x19\xF1\x4E\x45\xE3\x82\x66\x34\xAF\x19\x49\xE5\xB5\x35\xCC\x82'||
+  '\x9A\x48\x3B\x8A\x76\x22\x3E\x5D\x49\x0A\x25\x7F\x05\xBD\xFF\x16\xF2\xFB\x22\xC5\x83\xAB';
+
+  return str;
 };
 
 use DB;

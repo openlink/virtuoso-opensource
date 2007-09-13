@@ -270,6 +270,8 @@ self.vc_redirect (check_immediate);
 		message="The login name contains invalid characters" name="vv_reguid3">
 	      </v:validator>
             </v:text>
+            <v:text name="fb_id" type="hidden" value="--coalesce(self.fb_id.ufl_value,get_keyword('fb_id',self.vc_page.vc_event.ve_params,0))" control-udt="vspx_text" />  
+
           </td>
           <td>
           </td>
@@ -460,8 +462,8 @@ self.vc_redirect (check_immediate);
          --USER_SET_OPTION (u_name1, 'SEC_ANSWER', trim(self.sec_answer.ufl_value));
          --USER_SET_OPTION (u_name1, 'FIRST_NAME', trim(self.regfirstname.ufl_value));
 	 --USER_SET_OPTION (u_name1, 'LAST_NAME', trim(self.reglastname.ufl_value));
-
          --WA_USER_SET_INFO(u_name1,trim(self.regfirstname.ufl_value),trim(self.reglastname.ufl_value) );
+         DAV_HOME_DIR_CREATE (u_name1);
 	 WA_USER_SET_INFO(u_name1, '', '');
 	 WA_USER_TEXT_SET(uid, u_name1||' '||self.regmail.ufl_value);
 	 wa_reg_register (uid, u_name1);
@@ -521,6 +523,9 @@ self.vc_redirect (check_immediate);
 		   WA_USER_EDIT (u_name1, 'WAUI_LATLNG_HBDEF', 0);
 		 }
 	 }
+
+	 if(self.fb_id.ufl_value is not null and length(self.fb_id.ufl_value)>0)
+	   WA_USER_EDIT (u_name1, 'WAUI_FACEBOOK_ID', cast(self.fb_id.ufl_value as integer));
 
 	 insert soft sn_person (sne_name, sne_org_id) values (u_name1, uid);
 

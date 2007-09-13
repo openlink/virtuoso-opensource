@@ -232,7 +232,7 @@ create procedure wa_app_to_type (in app varchar)
 {
   return get_keyword (lower (app), vector (
 	'weblog','WEBLOG2',
-	'feeds','eNews2',
+	'subscriptions', 'eNews2',
 	'wiki','oWiki',
 	'briefcase','oDrive',
 	'mail','oMail',
@@ -251,7 +251,7 @@ create procedure wa_type_to_app (in app varchar)
 {
   return get_keyword (app, vector (
 	'WEBLOG2', 'weblog',
-	'eNews2',  'feeds',
+	'eNews2',        'subscriptions',
 	'oWiki',   'wiki',
 	'oDrive',  'briefcase',
 	'oMail',   'mail',
@@ -476,7 +476,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
     }
 
   if (length (app) and app not in
-      ('feeds','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed', 'sparql', 'polls', 'addressbook', 'socialnetwork', 'calendar'))
+      ('subscriptions','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed', 'sparql', 'polls', 'addressbook', 'socialnetwork', 'calendar'))
    {
      if (has_accept)
        {
@@ -791,7 +791,7 @@ create procedure ODS.ODS.gdata
       aarr := split_and_decode (app, 0, '\0\0,');
       foreach (any ap in aarr) do
 	{
-	  if (length (ap) and ap not in ('people','feeds','weblog','wiki','dav','mail','apps', 'users', 'bookmark', 'discussion'))
+	  if (length (ap) and ap not in ('people','subscriptions','weblog','wiki','dav','mail','apps', 'users', 'bookmark', 'discussion'))
 	    {
 	      http_header ('Content-Type: text/html\r\n');
               signal ('22023', 'Invalid application domain');

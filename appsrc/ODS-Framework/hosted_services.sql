@@ -2845,6 +2845,7 @@ wa_exec_no_error_log(
     WAUI_INTERESTS long varchar,  -- 48
     WAUI_BORG_HOMEPAGE long varchar,  -- 20 same as BORG
     WAUI_OPENID_URL varchar,
+    WAUI_FACEBOOK_ID int,
     primary key (WAUI_U_ID)
   )'
 )
@@ -2879,6 +2880,8 @@ wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO DROP WAUI_FOAF');
 wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO ADD WAUI_FOAF LONG VARCHAR');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_URL', 'VARCHAR');
+
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_ID', 'INT');
 
 wa_exec_no_error('create index WA_USER_INFO_OID on DB.DBA.WA_USER_INFO (WAUI_OPENID_URL)');
 
@@ -3159,6 +3162,8 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
     UPDATE WA_USER_INFO SET WAUI_SEARCHABLE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_SHOWACTIVE')
     UPDATE WA_USER_INFO SET WAUI_SHOWACTIVE = _data WHERE WAUI_U_ID = _uid;
+  else if (_key = 'WAUI_FACEBOOK_ID')
+    UPDATE WA_USER_INFO SET WAUI_FACEBOOK_ID = _data WHERE WAUI_U_ID = _uid;
 
   return;
 

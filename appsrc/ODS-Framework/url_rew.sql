@@ -33,6 +33,7 @@ create procedure  DB.DBA.URL_REW_ODS_SPQ (in graph varchar, in iri varchar, in a
 --  iri := replace (iri, ' ', '%20');
   iri := sprintf ('%U', iri);
   iri := replace (iri, '%3A', ':');
+  iri := replace (iri, '%23', '#');
   q := sprintf ('define input:inference <%s> DESCRIBE <%s> FROM <%s>', graph, iri, graph);
   ret := sprintf ('/sparql?query=%U&format=%U', q, acc);
   return ret;
@@ -98,7 +99,7 @@ create procedure DB.DBA.URL_REW_ODS_USER_GEM (in par varchar, in fmt varchar, in
 	}
       else
 	{
-        iri := sprintf ('%s/%U', graph, val);
+          iri := sprintf ('%s/%U#this', graph, val);
       ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
     }
     }
@@ -497,6 +498,15 @@ create procedure DB.DBA.URL_REW_ODS_FEEDS (in par varchar, in fmt varchar, in va
       else
 	      return '';
     }
+  else if (par = 'fid')
+    {
+      declare parts, url any;
+      parts := split_and_decode (val, 0, '\0\0/');
+      url := '/enews2/news.vspx?feed=' || parts[0];
+      if (length(parts) > 1)
+        url := url || '&link=' || parts[1];
+      return sprintf (fmt, url);
+    }
   else if (par = 'instance')
     {
       declare id, url any;
@@ -612,8 +622,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule1', 1,
 
 -- http://cname/dataspace/uname with Accept will do 303 to the /sparql
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule2', 1,
-    '/dataspace/([^/]*)', vector('ufname'), 1,
-    '/sparql?query=define+input%%3Ainference+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E+DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace/%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E&format=%U', vector('ufname', '*accept*'),
+    '/dataspace/([^/#]*)', vector('ufname'), 1,
+    '/sparql?query=define+input%%3Ainference+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E+DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace/%U%%23this%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E&format=%U', vector('ufname', '*accept*'),
     null,
     '(application|text)/rdf.(xml|n3|turtle|ttl)',
     0,
@@ -665,6 +675,18 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_post_gem_rule', 1,
     '%s', vector('ufname'),
     'DB.DBA.URL_REW_ODS_GEM');
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_rule1', 1,
+    '/dataspace/feed/([^#]*)', vector('fid'), 1,
+    '/sparql?query=define+input%%3Ainference+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E+DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace/feed/%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E&format=%U', vector('fid', '*accept*'),
+    null,
+    '(application|text)/rdf.(xml|n3|turtle|ttl)',
+    2,
+    303);
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_rule2', 1,
+    '/dataspace/feed/([^#]*)', vector('fid'), 1,
+    '%s', vector('fid'),
+    'DB.DBA.URL_REW_ODS_FEEDS');
 
 -- Weblog Rules
 
@@ -812,7 +834,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'ods_feeds_rule1',
     1,
-    '/dataspace/([^/]*)/feeds/([^/]*)',
+    '/dataspace/([^/]*)/subscriptions/([^/]*)',
     vector('uname', 'instance'),
     2,
     '%s', vector('instance'),
@@ -821,7 +843,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'ods_feeds_rule2',
     1,
-    '/dataspace/([^/]*)/feeds/([^/]*)/(.*)',
+    '/dataspace/([^/]*)/subscriptions/([^/]*)/(.*)',
     vector('uname', 'instance', 'params'),
     3,
     '%s%s',
@@ -936,6 +958,8 @@ DB.DBA.URLREWRITE_CREATE_RULELIST (
     'ods_feeds_rule_list1',
     1,
     vector (
+	    'ods_feed_rule1',
+	    'ods_feed_rule2',
   	 	'ods_feeds_rule1',
 	    'ods_feeds_rule2'
 	  ));
