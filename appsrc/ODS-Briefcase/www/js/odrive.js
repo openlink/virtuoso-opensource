@@ -226,7 +226,7 @@ function chkbx(bx1, bx2)
 //
 function updateLabel(value)
 {
-  hideLabel(4, 9);
+  hideLabel(4, 12);
   if (value == 'oMail')
     showLabel(4, 4);
   if (value == 'PropFilter')
@@ -235,6 +235,8 @@ function updateLabel(value)
     showLabel(7, 9);
   if (value == 'CatFilter')
     showLabel(7, 9);
+  if (value == 'rdfSink')
+    showLabel(10, 10);
 }
 
 // ---------------------------------------------------------------------------

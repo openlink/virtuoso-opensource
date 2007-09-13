@@ -21,7 +21,8 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-  declare auth_uid, auth_pwd, mode, file, uri, req_header, res_header, content, contentType varchar;
+  declare N integer;
+  declare auth_uid, auth_pwd, mode, file, uri, saveUri, req_header, res_header, content, contentType varchar;
 
   mode := get_keyword('mode', params, '');
   file := get_keyword('file', params);
@@ -33,7 +34,6 @@
   commit work;
 
   uri := ODRIVE.WA.http_escape(ODRIVE.WA.host_url() || file, 7);
-  -- dbg_obj_print('view ', uri);
   req_header := '';
   req_header := concat(req_header, 'Accept-Charset: UTF-8,*\n');
   req_header := concat(req_header, 'Keep-Alive: 300\n');
@@ -41,8 +41,23 @@
   req_header := concat(req_header, 'Accept: image/png,*/*;q=0.5\n');
   req_header := concat(req_header, sprintf('Authorization: Basic %s\n', encode_base64(concat(auth_uid, ':', auth_pwd))));
 
-  content := http_get (uri, res_header, 'GET', req_header, '');
-  contentType := http_request_header (res_header, 'Content-type');
+  N := 0;
+_again:
+  N := N + 1;
+  saveUri := uri;
+  commit work;
+  content := http_get (uri, res_header, 'GET', req_header);
+  contentType := http_request_header (res_header, 'Content-Type');
+  if (res_header[0] like 'HTTP/1._ 30_%') {
+    uri := http_request_header (res_header, 'Location');
+    uri := WS.WS.EXPAND_URL (saveUri, uri);
+    if (N > 15)
+      return 'Too many redirects or redirect loops back, please specify the correct URL.';
+    if (uri <> saveUri)
+      goto _again;
+  }
+  if (res_header[0] like 'HTTP/1._ 4__%' or res_header[0] like 'HTTP/1._ 5__%')
+    content := res_header[0];
 
   http_rewrite();
   if ((contentType = 'text/plain') and (mode <> 'download')) {
@@ -50,7 +65,7 @@
     http('<html><body><pre>\r\n');
     http(content);
     http('\r\n</pre></body></html>');
-  } else if (((contentType = 'text/xml') or (contentType = 'text/html')) and (mode <> 'download')) {
+  } else if ((contentType in ('text/xml', 'text/html')) and (mode <> 'download')) {
     http_header (sprintf('Content-Type: %s\r\n', contentType));
     http(content);
   } else {

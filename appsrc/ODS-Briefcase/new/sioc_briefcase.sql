@@ -864,6 +864,52 @@ create procedure sioc.DBA.rdf_briefcase_view_str ()
       ;
 };
 
+create procedure sioc.DBA.rdf_briefcase_view_str_tables ()
+{
+  return
+      '
+      from DB.DBA.ODS_ODRIVE_POSTS as odrv_posts
+      where (^{odrv_posts.}^.U_MEMBER = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_ODRIVE_TAGS as odrv_tags
+      where (^{odrv_tags.}^.U_OWNER = ^{users.}^.U_NAME)
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_briefcase_view_str_maps ()
+{
+  return
+      '
+      # Briefcase
+	    ods:odrive_post (odrv_posts.RES_FULL_PATH) a foaf:Document ;
+	    dc:title odrv_posts.RES_NAME ;
+	    dct:created odrv_posts.RES_CREATED ;
+	    dct:modified odrv_posts.RES_MODIFIED ;
+	    sioc:content odrv_posts.RES_DESCRIPTION ;
+	    sioc:has_creator ods:user (odrv_posts.U_OWNER) ;
+	    foaf:maker ods:person (odrv_posts.U_OWNER) ;
+	    sioc:has_container ods:odrive_forum (odrv_posts.U_MEMBER, odrv_posts.WAI_NAME) .
+
+	    ods:odrive_forum (odrv_posts.U_MEMBER, odrv_posts.WAI_NAME)
+	    sioc:container_of
+	    ods:odrive_post (odrv_posts.RES_FULL_PATH) .
+
+	    ods:user (odrv_posts.U_OWNER)
+	    sioc:creator_of
+	    ods:odrive_post (odrv_posts.RES_FULL_PATH) .
+
+	    ods:odrive_post (odrv_tags.RES_FULL_PATH)
+	    sioc:topic
+	    ods:tag (odrv_tags.U_OWNER, odrv_tags.TAG) .
+
+	    ods:tag (odrv_tags.U_OWNER, odrv_tags.TAG) a skos:Concept ;
+	    skos:prefLabel odrv_tags.TAG ;
+	    skos:isSubjectOf ods:odrive_post (odrv_tags.RES_FULL_PATH) .
+      # end Briefcase
+      '
+      ;
+};
+
 grant select on ODS_ODRIVE_POSTS to SPARQL_SELECT;
 grant select on ODS_ODRIVE_TAGS to SPARQL_SELECT;
 grant execute on DB.DBA.ODS_ODRIVE_TAGS to SPARQL_SELECT;

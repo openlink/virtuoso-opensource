@@ -2562,8 +2562,16 @@ create procedure ODRIVE.WA.DAV_GET (
     return cast(ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtacl', WS.WS.ACL_CREATE()) as varbinary);
   }
 
-  if ((property = 'detType') and (not isnull(resource[0])))
-    return ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtdet');
+  if ((property = 'detType') and (not isnull(resource[0]))) {
+    declare detType any;
+    
+    detType := ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtdet');
+    if (isnull (detType) and (ODRIVE.WA.DAV_GET (resource, 'type') = 'C')) {
+      if (ODRIVE.WA.DAV_PROP_GET (resource[0], 'virt:rdf_graph', '') <> '')
+        detType := 'rdfSink';
+    }  
+    return detType;
+  }
 
   if ((property = 'privatetags') and (not isnull(resource[0])))
     return coalesce(ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtprivatetags'), '');

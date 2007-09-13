@@ -775,16 +775,16 @@
         <v:template type="simple" enabled="-- case when ((self.command = 0) and (self.command_mode = 3)) then 1 else 0 end">
           <div id="c1">
             <div class="tabs">
-              <vm:tabCaption tab="7" tabs="11" caption="Base" />
-              <vm:tabCaption tab="8" tabs="11" caption="Extended" />
-              <vm:tabCaption tab="9" tabs="11" caption="Metadata" />
-              <vm:tabCaption tab="11" tabs="11" caption="Options" />
+            <vm:tabCaption tab="7" tabs="12" caption="Base" />
+            <vm:tabCaption tab="8" tabs="12" caption="Extended" />
+            <vm:tabCaption tab="9" tabs="12" caption="Metadata" />
+            <vm:tabCaption tab="12" tabs="12" caption="Options" />
             </div>
             <div class="contents">
               <xsl:call-template name="search-dc-template7" />
               <xsl:call-template name="search-dc-template8" />
               <xsl:call-template name="search-dc-template9" />
-              <xsl:call-template name="search-dc-template11" />
+            <xsl:call-template name="search-dc-template12" />
             </div>
             <div class="new-form-footer">
               <v:button action="simple" value="Search" xhtml_class="button">
@@ -987,23 +987,24 @@
           </div>
            <div id="c1">
             <div class="tabs">
-            <vm:tabCaption tab="1" tabs="10" caption="Main" />
+            <vm:tabCaption tab="1" tabs="12" caption="Main" />
               <v:template type="simple" enabled="-- gte(self.command_mode, 10)">
-            <vm:tabCaption tab="2" tabs="10" caption="Sharing" />
+            <vm:tabCaption tab="2" tabs="12" caption="Sharing" />
               </v:template>
               <v:template type="simple" enabled="-- case when (gte(self.command_mode, 10) and ODRIVE.WA.dav_rdf_has_metadata(self.dav_path)) then 1 else 0 end">
-            <vm:tabCaption tab="3" tabs="10" caption="Metadata" />
+            <vm:tabCaption tab="3" tabs="12" caption="Metadata" />
               </v:template>
               <v:template type="simple" enabled="-- case when (equ(self.command_mode, 10) and equ(self.dav_type, 'R') and ODRIVE.WA.det_action_enable(self.dav_path, 'version')) then 1 else 0 end">
-            <vm:tabCaption tab="10" tabs="10" caption="Versions" />
+            <vm:tabCaption tab="11" tabs="12" caption="Versions" />
               </v:template>
               <v:template type="simple" enabled="-- equ(self.dav_type, 'C')">
-              <!-- <vm:tabCaption tab="4" tabs="10" caption="oMail" /> -->
-            <vm:tabCaption tab="5" tabs="10" caption="Filter" />
-            <vm:tabCaption tab="6" tabs="10" caption="FS link" />
-            <vm:tabCaption tab="7" tabs="10" caption="Base" />
-            <vm:tabCaption tab="8" tabs="10" caption="Extended" />
-            <vm:tabCaption tab="9" tabs="10" caption="Metadata" />
+            <!-- <vm:tabCaption tab="4" tabs="12" caption="oMail" /> -->
+            <vm:tabCaption tab="5"  tabs="12" caption="Filter" />
+            <vm:tabCaption tab="6"  tabs="12" caption="FS link" />
+            <vm:tabCaption tab="10" tabs="12" caption="RDF Upload" />
+            <vm:tabCaption tab="7"  tabs="12" caption="Base" />
+            <vm:tabCaption tab="8"  tabs="12" caption="Extended" />
+            <vm:tabCaption tab="9"  tabs="12" caption="Metadata" />
               </v:template>
             </div>
             <div class="contents">
@@ -1109,6 +1110,7 @@
                               http(self.option_prepare('oMail',      'Mail Folders Link',             self.dav_detType));
                               http(self.option_prepare('News3',      'OFM Subscriptions',             self.dav_detType));
                               http(self.option_prepare('Versioning', 'Version Control Folder',        self.dav_detType));
+                            http(self.option_prepare('rdfSink',    'RDF Upload Folder',             self.dav_detType));
                             }
                           ?>
                         </select>
@@ -1507,9 +1509,10 @@
                 <xsl:call-template name="search-dc-template7" />
                 <xsl:call-template name="search-dc-template8" />
                 <xsl:call-template name="search-dc-template9" />
+              <xsl:call-template name="search-dc-template10" />
               </v:template>
               <v:template type="simple" enabled="-- equ(self.dav_type, 'R')">
-                <xsl:call-template name="search-dc-template10" />
+              <xsl:call-template name="search-dc-template11" />
               </v:template>
 
             </div>
@@ -1547,7 +1550,7 @@
               coloriseTable('properties');
               coloriseTable('metaProperties');
               initDisabled();
-            initTab(10, 1);
+            initTab(12, 1);
             ]]>
           </script>
         </v:template>
@@ -1921,8 +1924,10 @@
                             for (N := 0; N < length(itemList); N := N + 1)
                               if (itemList[N][1] = 'R') {
                                 ODRIVE.WA.DAV_SET(itemList[N][0], 'permissions', prop_perms);
+                              if (prop_owner <> -1)
                                 ODRIVE.WA.DAV_SET(itemList[N][0], 'ownerID', prop_owner);
-                                ODRIVE.WA.DAV_SET(itemList[N][0], 'groupID', prop_owner);
+                              if (prop_group <> -1)
+                                ODRIVE.WA.DAV_SET (itemList[N][0], 'groupID', prop_group);
                               }
                           }
                         }
@@ -3332,6 +3337,43 @@
       <table class="form-body" cellspacing="0">
         <tr>
           <th >
+            <v:label for="dav_rdfSink_rdfGraph" value="--'Graph name'" />
+          </th>
+          <td>
+            <v:text name="dav_rdfSink_rdfGraph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := get_keyword('dav_rdfSink_rdfGraph', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:rdf_graph', ''));
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_rdfSink_rdfSponger" value="--'Sponger (on/off)'" />
+          </th>
+          <td>
+            <v:text name="dav_rdfSink_rdfSponger" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := get_keyword('dav_rdfSink_rdfSponger', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_PROP_GET(self.dav_path, 'virt:rdf_sponger', ''));
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </xsl:template>
+  
+  <!--=========================================================================-->
+  <xsl:template name="search-dc-template11">
+    <div id="11" class="tabContent" style="display: none;">
+      <table class="form-body" cellspacing="0">
+        <tr>
+          <th >
             <v:label value="File State" />
           </th>
           <td>
@@ -3606,8 +3648,8 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template name="search-dc-template11">
-    <div id="11" class="tabContent" style="display: none;">
+  <xsl:template name="search-dc-template12">
+    <div id="12" class="tabContent" style="display: none;">
       <table class="form-body" cellspacing="0">
         <tr>
           <th>

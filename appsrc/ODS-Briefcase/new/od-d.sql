@@ -30,6 +30,7 @@ ODRIVE.WA.exec_no_error('
 
 VHOST_REMOVE (lpath => '/odrive');
 VHOST_REMOVE (lpath => '/odrive/SOAP');
+VHOST_REMOVE (lpath => '/dataspace/services/briefcase');
 
 ODRIVE.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'oDrive\'');
 ODRIVE.WA.exec_no_error('DROP type wa_oDrive');
@@ -60,6 +61,9 @@ ODRIVE.WA.exec_no_error('DROP procedure SIOC.DBA.fill_ods_briefcase_sioc');
 ODRIVE.WA.exec_no_error('DROP procedure SIOC.DBA.briefcase_sioc_insert');
 ODRIVE.WA.exec_no_error('DROP procedure SIOC.DBA.briefcase_sioc_delete');
 ODRIVE.WA.exec_no_error('DROP procedure SIOC.DBA.ods_briefcase_sioc_init');
+
+-- SOAP procs
+ODRIVE.WA.exec_no_error('DROP procedure DBA.SOAPODRIVE.Browse');
 
 -- dropping ODS procs
 ODRIVE.WA.exec_no_error('DROP procedure DB.DBA.wa_collect_odrive_tags');

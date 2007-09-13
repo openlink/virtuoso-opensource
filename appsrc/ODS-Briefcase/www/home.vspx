@@ -301,6 +301,10 @@
             if (self.dav_detType = 'CatFilter') {
               ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:Filter-Params');
             }
+              if (self.dav_detType = 'rdfSink') {
+                ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:rdf_graph');
+                ODRIVE.WA.DAV_PROP_REMOVE(self.dav_path, 'virt:rdf_sponger');
+              }
 
             if (dav_detType = 'ResFilter') {
                 -- save & validate metadata
@@ -347,6 +351,7 @@
               if (ODRIVE.WA.DAV_ERROR(retValue))
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
             } else {
+                if (self.dav_detType <> 'rdfSink')
               retValue := ODRIVE.WA.DAV_SET(self.dav_path, 'detType', either(equ(dav_detType, ''), null, dav_detType));
               if (dav_detType = 'oMail') {
                 ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:oMail-DomainId', get_keyword('dav_oMail_DomainId', self.vc_page.vc_event.ve_params));
@@ -359,6 +364,10 @@
                 ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:PropFilter-PropName', get_keyword('dav_PropFilter_PropName', self.vc_page.vc_event.ve_params));
                 ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:PropFilter-PropValue' , get_keyword('dav_PropFilter_PropValue', self.vc_page.vc_event.ve_params));
               }
+                if (self.dav_detType = 'rdfSink') {
+                  ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:rdf_graph', get_keyword('dav_rdfSink_rdfGraph', self.vc_page.vc_event.ve_params));
+                  ODRIVE.WA.DAV_PROP_SET(self.dav_path, 'virt:rdf_sponger', get_keyword('dav_rdfSink_rdfSponger', self.vc_page.vc_event.ve_params));
+                }
             }
           }
 
