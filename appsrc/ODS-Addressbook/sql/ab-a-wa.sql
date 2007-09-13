@@ -201,8 +201,6 @@ create method wa_new_inst (in login varchar) for wa_AddressBook
 
   insert into WA_INSTANCE (WAI_NAME, WAI_TYPE_NAME, WAI_INST, WAI_DESCRIPTION)
     values (self.wa_name, 'AddressBook', self, 'Description');
-
-  select WAI_ID into iWaiID from WA_INSTANCE where WAI_NAME = self.wa_name;
   iWaiID := self.wa_id ();
 
   -- make dir into Briefcase home

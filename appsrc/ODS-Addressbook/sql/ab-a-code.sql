@@ -742,6 +742,18 @@ create procedure AB.WA.tag_delete(
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.tag_id (
+  in tag varchar)
+{
+  tag := trim(tag);
+  tag := replace (tag, ' ', '_');
+  tag := replace (tag, '+', '_');
+  return tag;
+}
+;
+
 ---------------------------------------------------------------------------------
 --
 create procedure AB.WA.tags_join(
@@ -1934,6 +1946,8 @@ create procedure AB.WA.test (
       signal ('TEST', sprintf ('The length of field ''%s'' should be greater then %s characters!<>', valueName, cast (tmp as varchar)));
     if (__SQL_STATE = 'MAXLENGTH')
       signal ('TEST', sprintf ('The length of field ''%s'' should be less then %s characters!<>', valueName, cast (tmp as varchar)));
+    if (__SQL_STATE = 'SPECIAL')
+      signal ('TEST', __SQL_MESSAGE || '<>');
     signal ('TEST', 'Unknown validation error!<>');
     --resignal;
   };
@@ -2001,6 +2015,8 @@ create procedure AB.WA.validate2 (
 {
   declare exit handler for SQLSTATE '*' {
     if (__SQL_STATE = 'CLASS')
+      resignal;
+    if (__SQL_STATE = 'SPECIAL')
       resignal;
     signal('TYPE', propertyType);
     return;
@@ -2157,8 +2173,11 @@ create procedure AB.WA.validate_freeTexts (
 -----------------------------------------------------------------------------------------
 --
 create procedure AB.WA.validate_tag (
-  in S varchar)
+  in T varchar)
 {
+  declare S any;
+  
+  S := T;
   S := replace (trim(S), '+', '_');
   S := replace (trim(S), ' ', '_');
   if (not AB.WA.validate_freeText(S))
@@ -2634,6 +2653,7 @@ create procedure AB.WA.contact_update2 (
       update AB.WA.PERSONS set P_B_DEPARTMENT = pValue where P_ID = id;
     if (pName = 'P_B_JOB')
       update AB.WA.PERSONS set P_B_JOB = pValue where P_ID = id;
+    update AB.WA.PERSONS set P_UPDATED = now () where P_ID = id;
   }
   return id;
 }
@@ -2656,7 +2676,7 @@ create procedure AB.WA.contact_update3 (
     pFields := vector_concat (pFields, vector ('P_TAGS'));
     pValues := vector_concat (pValues, vector (tags));
   }
-  S := '';
+  S := 'P_UPDATED = now () ';
   for (N := 0; N < length (pFields); N := N + 1)
     S := S || ', ' || pFields[N] || ' = ?';
   S := trim (S, ',');
@@ -2922,9 +2942,11 @@ create procedure AB.WA.import_foaf (
 
   declare exit handler for sqlstate '*' {
     -- dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
-    goto _delete;
+    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (tmp_iri);
+    signal ('TEST', 'Bad import source!<>');    
   };
 
+  tmp_iri := 'http://local.virt/' || cast (rnd (1000) as varchar);
   Meta := vector
     (
       'P_NAME',
@@ -2941,9 +2963,14 @@ create procedure AB.WA.import_foaf (
     );
   mLength := length (Meta);
 
-  tmp_iri := 'http://local.virt/' || cast (rnd (1000) as varchar);
   if (contentType) {
-    Items := AB.WA.ab_sparql (sprintf ('SPARQL define get:soft "soft" define get:uri "%s" SELECT * FROM <%s> WHERE { ?s ?p ?o }', content, tmp_iri));
+    declare st, msg, meta any;
+  
+    st := '00000';
+    exec (sprintf ('SPARQL define get:soft "soft" define get:uri "%s" SELECT * FROM <%s> WHERE { ?s ?p ?o }', content, tmp_iri), st, msg, vector (), 0, meta, items);
+    if ('00000' <> st)
+      signal (st, msg);
+    
   } else {
   DB.DBA.RDF_LOAD_RDFXML (content, '', tmp_iri);
   }

@@ -249,6 +249,13 @@
           }
         ]]>
       </v:on-post>
+      <?vsp 
+        declare sparqlUrl, graphIri any;
+        
+        sparqlUrl := 'http://' || SIOC..get_cname () || '/sparql';
+        graphIri := SIOC..get_graph ();
+        http(sprintf('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s?default-graph-uri=%U&query=%U&format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml')); 
+      ?>
       <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
       <v:text name="step" xhtml_id="step" type="hidden" value="1"/>
       <v:template type="simple" enabled="-- case when (self.v_step and self.vc_is_valid) then 1 else 0 end;">
@@ -311,21 +318,28 @@
                     <table>
                       <tr>
                         <td valign="top">
-                          <v:url value="--AB.WA.stringCut ((control.vc_parent as vspx_row_template).te_rowset[2], self.pChars)"
-                                 url="--AB.WA.contact_url ((control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[0]) || sprintf('&sid=%s&realm=%s', self.sid, self.realm)"
-                                 format="%s"
-                                 xhtml_title="--AB.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[2])"/>
                           <?vsp
-                            declare N integer;
-                            declare id, tags any;
+                            declare N, id, domain_id integer;
+                            declare appClass, title, title2, tags any;
 
                             id := (control as vspx_row_template).te_rowset[0];
+                            domain_id := (control as vspx_row_template).te_rowset[1];
+                            title := (control as vspx_row_template).te_rowset[2];
+                            title2 := AB.WA.stringCut (title, self.pChars);
+                            appClass := '';
+                            if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                              appClass := 'app';  
+                            http (sprintf ('<a id="ab_%d" href="%s" title="%s" class="%s" about="%U">%s</a>', id, AB.WA.contact_url (domain_id, id) || sprintf('&sid=%s&realm=%s', self.sid, self.realm), title, appClass, SIOC..addressbook_contact_iri (domain_id, id), title2));
+                            
                             tags := (control as vspx_row_template).te_rowset[3];
                             if (not is_empty_or_null (tags)) {
+                              appClass := '';
+                              if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                                appClass := 'app';  
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
                               for (N := 0; N < length(tags); N := N + 1) {
-                                http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s">%s</a> ', tags[N], tags[N], tags[N]));
+                                http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, tags[N], tags[N], tags[N], appClass, SIOC..addressbook_tag_iri (self.account_id, tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
                               }
@@ -362,15 +376,18 @@
               <div style="margin-left:3px; margin-top:3px;">
                 <?vsp
                   declare N, tLength, tMax, tMin integer;
-                  declare tStyle varchar;
+                  declare appClass, tStyle varchar;
 
+                  appClass := '';
+                  if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                    appClass := 'app';  
                   tLength := length(self.ds_tags);
                   if (tLength > 2) {
                     tMin := self.ds_tags[0][1];
                     tMax := self.ds_tags[1][1];
                     for (N := 2; N < tLength; N := N + 1) {
                       tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
-                      http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], tStyle, self.ds_tags[N][0]));
+                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], appClass, SIOC..addressbook_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
                     }
                   } else {
                     http ('no tags');
@@ -382,7 +399,7 @@
         </tr>
       </table>
       <br />
-      <v:template type="simple" enabled="--either(equ(self.v_mode, 'simple'), 0, 1)">
+      <vm:if test="self.v_mode <> 'simple'">
          <div id="c1">
           <div class="tabs">
             &nbsp;
@@ -481,7 +498,7 @@
           </div>
         </div>
         <div class="form-footer">
-          <v:button action="simple" value="Search" xhtml_class="form-button">
+          <v:button action="simple" name="s_search" value="Search" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.do_search (e);
@@ -489,7 +506,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Cancel" xhtml_class="form-button">
+          <v:button action="simple" name="s_cancel" value="Cancel" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.vc_redirect('home.vspx');
@@ -502,8 +519,8 @@
             initTab(2, 1);
           ]]>
         </script>
-      </v:template>
-      <v:template type="simple" enabled="--either(neq(self.v_mode, 'simple'), 0, 1)">
+      </vm:if>
+      <vm:if test="self.v_mode = 'simple'">
         <div class="new-form-body">
           <table cellspacing="0">
             <tr>
@@ -537,7 +554,7 @@
             </tr>
           </table>
         </div>
-      </v:template>
+      </vm:if>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

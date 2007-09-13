@@ -416,7 +416,13 @@
           self.mode_test();
         ]]>
       </v:before-data-bind>
-      <v:template type="simple">
+      <?vsp 
+        declare sparqlUrl, graphIri any;
+        
+        sparqlUrl := 'http://' || SIOC..get_cname () || '/sparql';
+        graphIri := SIOC..get_graph ();
+        http(sprintf('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s?default-graph-uri=%U&query=%U&format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml')); 
+      ?>
         <?vsp http ('<input type="hidden" name="tbHidden" value="" />'); ?>
         <?vsp
           if (0)
@@ -665,7 +671,6 @@
 
         </div>
         <div style="clear: both;" />
-      </v:template>
 
       <div class="ab_main">
         <?vsp
@@ -727,10 +732,10 @@
         <div class="ab_left">
           <div class="ab_left_sub1">
             <?vsp
-              declare tMin, tMax integer;
-              declare tClass, tStyle varchar;
-
               if (self.abScope = 'MyContacts') {
+              declare tMin, tMax integer;
+                declare appClass, tClass, tStyle varchar;
+
                 select max(T_COUNT),
                        min(T_COUNT)
                   into tMax, tMin
@@ -738,6 +743,9 @@
                  where T_DOMAIN_ID = self.domain_id
                    and T_COUNT > 0;
 
+                appClass := '';
+                if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                  appClass := 'app';  
                 for (select T_TAG, T_COUNT
                        from AB.WA.TAGS
                       where T_DOMAIN_ID = self.domain_id
@@ -748,7 +756,7 @@
                   tClass := '';
                   if (self.abTag = T_TAG)
                     tClass := 'nolink_a';
-                  http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span class="%s" style="%s">%s</span></a> ', T_TAG, T_TAG, tClass, tStyle, T_TAG));
+                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', AB.WA.tag_id(T_TAG), T_TAG, T_TAG, appClass, SIOC..addressbook_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
                 }
               }
               if (self.abScope = 'MySharedContacts')
@@ -830,7 +838,7 @@
                                                     and b.G_GRANTER_ID = <ID>
                                                     and b.G_GRANTEE_ID = <USER_ID>) x
                                             where 1 = 1';
-                      control.ds_sql := replace(control.ds_sql, '<ID>', BMK.WA.node_suffix(self.abNode));
+                      control.ds_sql := replace(control.ds_sql, '<ID>', AB.WA.node_suffix(self.abNode));
                       control.ds_sql := replace(control.ds_sql, '<USER_ID>', cast (self.account_id as varchar));
                     }
                   }
@@ -891,17 +899,23 @@
                       <td valign="top">
                         <?vsp
                           declare N, id, did integer;
-                          declare title, actions, tags any;
+                          declare appClass, title, actions, tags, appClass any;
 
-                          http (sprintf ('<div style="float: left;"><b>%s</b></div>', AB.WA.stringCut((control as vspx_row_template).te_column_value('P_NAME'), self.abChars)));
+                          if ((self.abScope = 'MySharedContacts') and (AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) = -1)) {
+                            http (sprintf ('<div style="float: left; font-weight: bold;">%s</div>', AB.WA.stringCut((control as vspx_row_template).te_column_value('P_NAME'), self.abChars)));
+                            goto _skip;
+                          }
 
                           id := (control as vspx_row_template).te_column_value('P_ID');
                           did := (control as vspx_row_template).te_column_value('P_DOMAIN_ID');
-                          title := '\'' || (control as vspx_row_template).te_column_value('P_NAME') || '\'';
+                          title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
 
-                          if ((self.abScope = 'MySharedContacts') and (AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) = -1))
-                            goto _skip;
+                          appClass := '';
+                          if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                            appClass := 'app';  
+                          http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\');" title="View %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, appClass, SIOC..addressbook_contact_iri (self.domain_id, id), AB.WA.stringCut(title, self.abChars)));
+                          
                           actions := sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\');" title="View %s" class="link_ed">view</a>', id, title);
                           if (not ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
                           actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link_ed">edit</a>', id, title);
@@ -918,7 +932,7 @@
                             http ('<br style="clear: both;" /><i>Tags: ');
                             tags := split_and_decode (tags, 0, '\0\0,');
                             for (N := 0; N < length(tags); N := N + 1) {
-                              http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s">%s</a> ',  tags[N], tags[N], tags[N]));
+                              http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, AB.WA.tag_id (tags[N]), tags[N], tags[N], appClass, SIOC..addressbook_tag_iri (self.account_id, tags[N]), tags[N]));
                               if (N <> length(tags)-1)
                                 http (' | ');
                             }
@@ -967,7 +981,7 @@
               <table cellspacing="0">
                 <tr>
                   <th>
-                    <v:label for="t_tag" value="Tags" />
+                    <v:label for="t_tag" value="Tags (comma-separated)" />
                   </th>
                   <td>
                     <v:text name="t_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60" />
@@ -1017,7 +1031,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple" name="t_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.v_tag := '';
@@ -1093,7 +1107,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple" name="s_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.abAction := 'browse';
@@ -1377,7 +1391,7 @@
                         }
                       </script>
                       <th>
-                        <v:label for="ab_tags" value="Tags" />
+                        <v:label for="ab_tags" value="Tags (comma-separated)" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
@@ -2138,7 +2152,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple" name="ab_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.abAction := 'browse';
@@ -2244,7 +2258,7 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-	              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                <v:button action="simple" name="i1_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
@@ -2334,7 +2348,7 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-	              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                <v:button action="simple" name="i2_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
@@ -2563,6 +2577,7 @@
                           return;
                         }
                         self.i_data := self.f_uri.ufl_value;
+                        
                       } else if (self.i_source = 3) {
                         self.i_lName := trim (self.f_lName.ufl_value);
                         self.i_lHost := trim (self.f_lHost.ufl_value);
@@ -2601,7 +2616,7 @@
 	                  ]]>
 	                </v:on-post>
 	              </v:button>
-	              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                <v:button action="simple" name="i3_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
@@ -2793,7 +2808,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-	              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                <v:button action="simple" name="i4_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
@@ -2818,7 +2833,7 @@
 	              <table id="progressHide" cellspacing="0">
 	                <tr>
 	                  <th>
-                      <v:label for="i_tags" value="Tags" />
+                      <v:label for="i_tags" value="Tags (comma-separated)" />
 	                  </th>
 	                  <td>
                       <v:text name="i_tags" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60" />
@@ -2900,7 +2915,7 @@
 			               ]]>
 			             </v:on-post>
 			          </v:button>
-	              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                <v:button action="simple" name="i5_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
@@ -2999,7 +3014,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple" name="e_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.abAction := 'browse';

@@ -260,7 +260,7 @@ create procedure AB.WA.PERSONS_P_NAME_unindex_hook (inout vtb any, inout d_id an
 --
 create procedure AB.WA.drop_index()
 {
-  if (registry_get ('ab_index_version') <> '2') {
+  if (registry_get ('ab_index_version') <> '3') {
     AB.WA.exec_no_error ('drop table AB.WA.PERSONS_P_NAME_WORDS');
   }
 }
@@ -269,7 +269,7 @@ create procedure AB.WA.drop_index()
 AB.WA.drop_index();
 
 AB.WA.exec_no_error('
-  create text index on AB.WA.PERSONS (P_NAME) with key P_ID clustered with (P_DOMAIN_ID) using function language \'x-ViDoc\'
+  create text index on AB.WA.PERSONS (P_NAME) with key P_ID clustered with (P_DOMAIN_ID, P_UPDATED) using function language \'x-ViDoc\'
 ');
 
 -------------------------------------------------------------------------------
@@ -359,7 +359,7 @@ AB.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
-registry_set ('ab_index_version', '2');
+registry_set ('ab_index_version', '3');
 
 -------------------------------------------------------------------------------
 --

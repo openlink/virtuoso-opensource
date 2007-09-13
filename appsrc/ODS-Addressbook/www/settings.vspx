@@ -81,6 +81,13 @@
                   </td>
                 </tr>
                 <tr>
+            <th />
+            <td>
+              <v:check-box name="f_app" xhtml_id="f_app" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('app', self.settings, '0') as integer)" />
+              <vm:label for="f_app" value="Show <a>++ links"/>
+            </td>
+          </tr>
+          <tr>
                   <th>
                     Atom File Version
                   </th>
@@ -124,6 +131,7 @@
                     self.settings := AB.WA.set_keyword ('chars', self.settings, cast(cast(chars as integer) as varchar));
                     self.settings := AB.WA.set_keyword ('rows', self.settings, cast(cast(rows as integer) as varchar));
                     self.settings := AB.WA.set_keyword ('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
+              self.settings := AB.WA.set_keyword ('app', self.settings, self.f_app.ufl_selected);
                     self.settings := AB.WA.set_keyword ('atomVersion', self.settings, self.f_atomVersion.ufl_value);
 
                     insert replacing AB.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.settings));

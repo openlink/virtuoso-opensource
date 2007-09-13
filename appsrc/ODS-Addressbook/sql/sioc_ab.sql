@@ -75,6 +75,20 @@ create procedure socialnetwork_contact_iri (
 
 -------------------------------------------------------------------------------
 --
+create procedure addressbook_tag_iri (
+	in user_id integer,
+	in tag varchar)
+{
+	declare user_name varchar;
+	declare exit handler for not found { return null; };
+
+	select U_NAME into user_name from DB.DBA.SYS_USERS where U_ID = user_id;
+	return sprintf ('http://%s%s/%U/concept#%s', get_cname(), get_base_path (), user_name, AB.WA.tag_id (tag));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure fill_ods_addressbook_sioc (
   in graph_iri varchar,
   in site_iri varchar,
@@ -229,6 +243,7 @@ create procedure fill_ods_addressbook_sioc (
 								WAI_NAME
 					 from DB.DBA.WA_INSTANCE
 					where ((WAI_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+					  and WAI_TYPE_NAME = 'AddressBook'
 					order by WAI_ID) do
 		{
 			ab_iri := addressbook_iri (WAI_NAME);
@@ -837,6 +852,85 @@ create procedure sioc.DBA.rdf_addressbook_view_str ()
 			.
 		'
 		;
+};
+
+create procedure sioc.DBA.rdf_addressbook_view_str_tables ()
+{
+  return
+      '
+      from DB.DBA.ODS_ADDRESSBOOK_CONTACTS as addressbook_contacts
+      where (^{addressbook_contacts.}^.U_NAME = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_ADDRESSBOOK_TAGS as addressbook_tags
+      where (^{addressbook_tags.}^.U_NAME = ^{users.}^.U_NAME)
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_addressbook_view_str_maps ()
+{
+  return
+      '
+      # AddressBook
+      ods:addressbook_contact (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME, addressbook_contacts.P_ID)
+        a foaf:Person option (EXCLUSIVE) ;
+        dc:title addressbook_contacts.P_NAME ;
+        dct:created addressbook_contacts.P_CREATED ;
+       	dct:modified addressbook_contacts.P_UPDATED ;
+  	    dc:date addressbook_contacts.P_UPDATED ;
+  	    dc:creator addressbook_contacts.U_NAME ;
+  	    sioc:link ods:proxy (addressbook_contacts.P_URI) ;
+  	    sioc:content addressbook_contacts.P_FULL_NAME ;
+  	    sioc:has_creator ods:user (addressbook_contacts.U_NAME) ;
+  	    sioc:has_container ods:addressbook_forum (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME) ;
+  	    rdfs:seeAlso ods:proxy (addressbook_contacts.SEE_ALSO) ;
+  	    foaf:maker ods:person (addressbook_contacts.U_NAME) ;
+  	    foaf:nick addressbook_contacts.P_NAME ;
+  	    foaf:name addressbook_contacts.P_FULL_NAME ;
+  	    foaf:firstName addressbook_contacts.P_FIRST_NAME ;
+  	    foaf:family_name addressbook_contacts.P_LAST_NAME ;
+  	    foaf:gender addressbook_contacts.P_GENDER ;
+  	    foaf:mbox ods:proxy(addressbook_contacts.P_MAIL) ;
+  	    foaf:icqChatID addressbook_contacts.P_ICQ ;
+  	    foaf:msnChatID addressbook_contacts.P_MSN ;
+  	    foaf:aimChatID addressbook_contacts.P_AIM ;
+  	    foaf:yahooChatID addressbook_contacts.P_YAHOO ;
+  	    foaf:birthday addressbook_contacts.P_BIRTHDAY
+  	  .
+      ods:addressbook_forum (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME)
+        sioc:container_of ods:addressbook_contact (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME, addressbook_contacts.P_ID)
+      .
+	    ods:user (addressbook_contacts.U_NAME)
+	      sioc:creator_of ods:addressbook_contact (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME, addressbook_contacts.P_ID)
+	    .
+      ods:addressbook_contact (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME, addressbook_contacts.P_ID)
+        a atom:Entry ;
+      	atom:title addressbook_contacts.P_NAME ;
+      	atom:source ods:addressbook_forum (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME) ;
+      	atom:author ods:person (addressbook_contacts.U_NAME) ;
+        atom:published addressbook_contacts.P_CREATED ;
+      	atom:updated addressbook_contacts.P_UPDATED ;
+      	atom:content ods:addressbook_contact_text (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME, addressbook_contacts.P_ID)
+     	.
+      ods:addressbook_contact (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME, addressbook_contacts.P_ID)
+        a atom:Content ;
+        atom:type "text/plain" ;
+    	  atom:lang "en-US" ;
+	      atom:body addressbook_contacts.P_FULL_NAME
+	    .
+      ods:addressbook_forum (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME)
+        atom:contains ods:addressbook_contact (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME, addressbook_contacts.P_ID)
+      .
+    	ods:addressbook_contact (addressbook_tags.U_NAME, addressbook_tags.WAM_INST, addressbook_tags.P_ID)
+    	  sioc:topic ods:tag (addressbook_tags.U_NAME, addressbook_tags.P_TAG)
+    	.
+    	ods:tag (addressbook_tags.U_NAME, addressbook_tags.P_TAG)
+    	  a skos:Concept ;
+    	  skos:prefLabel addressbook_tags.P_TAG ;
+    	  skos:isSubjectOf ods:addressbook_contact (addressbook_tags.U_NAME, addressbook_tags.WAM_INST, addressbook_tags.P_ID)
+    	.
+      # end AddressBook
+      '
+      ;
 };
 
 grant select on ODS_ADDRESSBOOK_CONTACTS to SPARQL_SELECT;

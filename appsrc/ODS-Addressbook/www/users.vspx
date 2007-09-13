@@ -137,7 +137,7 @@
           </v:on-post>
         </v:button>
       </div>
-      <v:data-source name="dsrc" expression-type="sql" nrows="--BMK.WA.settings_rows(self.account_id)" initial-offset="0">
+      <v:data-source name="dsrc" expression-type="sql" nrows="--AB.WA.settings_rows(AB.WA.settings(self.account_id))" initial-offset="0">
         <v:before-data-bind>
           <![CDATA[
             declare user_sql, group_sql varchar;
@@ -153,7 +153,7 @@
 
             group_sql := '';
             if (self.v_mode = 's') {
-              user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where upper(U_NAME) like upper(\'%s\') and G_GRANTEE_ID = %d and G_GRANTER_ID = U_ID', self.v_mask, self.account_id);
+              user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where upper(U_NAME) like upper(\'%s\') and G_GRANTEE_ID = %d and G_GRANTER_ID = U_ID', self.v_mask, self.account_id);
             } else {
               user_sql := sprintf('select ''User'' U_TYPE, U_NAME, coalesce(U_FULL_NAME, \'\') U_FULL_NAME from WS.WS.SYS_DAV_USER where (upper(U_NAME) like upper(\'%s\') and (U_ID<>5) and (U_ID<>6) and (U_ID<>%d))', self.v_mask, self.account_id);
             }
