@@ -472,6 +472,70 @@ create procedure sioc.DBA.rdf_nntpf_view_str ()
       ;
 };
 
+create procedure sioc.DBA.rdf_nntpf_view_str_tables ()
+{
+  return
+      '
+      from DB.DBA.ODS_NNTP_GROUPS as nntp_groups
+      from DB.DBA.ODS_NNTP_POSTS as nntp_posts
+      from DB.DBA.ODS_NNTP_USERS as nntp_users
+      where (^{nntp_users.}^.U_NAME = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_NNTP_LINKS as nntp_links
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_nntpf_view_str_maps ()
+{
+  return
+      '
+	    # NNTP
+	    ods:nntp_forum (nntp_groups.NG_NAME) a sioct:MessageBoard ;
+	    sioc:id nntp_groups.NG_NAME ;
+	    sioc:description nntp_groups.NG_DESC .
+
+	    ods:nntp_post (nntp_posts.NG_NAME, nntp_posts.NM_ID) a sioct:BoardPost ;
+	    sioc:content nntp_posts.NM_BODY ;
+	    dc:title nntp_posts.FTHR_SUBJ ;
+	    dct:created  nntp_posts.REC_DATE ;
+	    dct:modified nntp_posts.REC_DATE ;
+	    foaf:maker ods:proxy (nntp_posts.MAKER) ;
+	    sioc:reply_of ods:nntp_post (nntp_posts.NG_NAME, nntp_posts.FTHR_REFER) ;
+	    sioc:has_container ods:nntp_forum (nntp_posts.NG_NAME) .
+
+	    ods:nntp_post (nntp_posts.NG_NAME, nntp_posts.FTHR_REFER)
+	    sioc:has_reply
+	    ods:nntp_post (nntp_posts.NG_NAME, nntp_posts.NM_ID) .
+
+	    ods:nntp_forum (nntp_posts.NG_NAME)
+	    sioc:container_of
+	    ods:nntp_post (nntp_posts.NG_NAME, nntp_posts.NM_ID) .
+
+
+	    ods:nntp_role (nntp_groups.NG_NAME)
+	    sioc:has_scope
+	    ods:nntp_forum (nntp_groups.NG_NAME) .
+
+	    ods:nntp_forum (nntp_groups.NG_NAME)
+	    sioc:scope_of
+	    ods:nntp_role (nntp_groups.NG_NAME) .
+
+	    ods:user (nntp_users.U_NAME)
+	    sioc:has_function
+	    ods:nntp_role (nntp_users.NG_NAME) .
+
+	    ods:nntp_role (nntp_users.NG_NAME)
+	    sioc:function_of
+	    ods:user (nntp_users.U_NAME) .
+
+	    ods:nntp_post (nntp_links.NG_NAME, nntp_links.NML_MSG_ID)
+	    sioc:links_to
+	    ods:proxy (nntp_links.NML_URL) .
+	    # end NNTP
+      '
+      ;
+};
+
 -- END NNTPF
 
 grant select on ODS_NNTP_GROUPS to SPARQL_SELECT;
