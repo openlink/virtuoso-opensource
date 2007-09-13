@@ -732,6 +732,18 @@ create procedure POLLS.WA.tag_delete(
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.tag_id (
+  in tag varchar)
+{
+  tag := trim(tag);
+  tag := replace (tag, ' ', '_');
+  tag := replace (tag, '+', '_');
+  return tag;
+}
+;
+
 ---------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.tags_join(
@@ -1850,6 +1862,8 @@ create procedure POLLS.WA.test (
       signal ('TEST', sprintf('The length of field ''%s'' should be greater then %s characters!<>', valueName, cast(tmp as varchar)));
     if (__SQL_STATE = 'MAXLENGTH')
       signal ('TEST', sprintf('The length of field ''%s'' should be less then %s characters!<>', valueName, cast(tmp as varchar)));
+    if (__SQL_STATE = 'SPECIAL')
+      signal ('TEST', __SQL_MESSAGE);
     signal ('TEST', 'Unknown validation error!<>');
     --resignal;
   };
@@ -1917,6 +1931,8 @@ create procedure POLLS.WA.validate2 (
 {
   declare exit handler for SQLSTATE '*' {
     if (__SQL_STATE = 'CLASS')
+      resignal;
+    if (__SQL_STATE = 'SPECIAL')
       resignal;
     signal('TYPE', propertyType);
     return;
@@ -2073,8 +2089,11 @@ create procedure POLLS.WA.validate_freeTexts (
 -----------------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.validate_tag (
-  in S varchar)
+  in T varchar)
 {
+  declare S any;
+  
+  S := T;
   S := replace(trim(S), '+', '_');
   S := replace(trim(S), ' ', '_');
   if (not POLLS.WA.validate_freeText(S))
@@ -2547,7 +2566,7 @@ create procedure POLLS.WA.search_sql (
   inout data varchar,
   in maxRows varchar := '')
 {
-  declare S, tmp, where2, delimiter2 varchar;
+  declare S, T, tmp, where2, delimiter2 varchar;
 
   where2 := ' \n ';
   delimiter2 := '\n and ';
@@ -2587,20 +2606,26 @@ create procedure POLLS.WA.search_sql (
 
   S := 'select <MAX> * from (' || S || ') x';
 
+  T := '';
   tmp := POLLS.WA.xml_get('keywords', data);
   if (not is_empty_or_null(tmp)) {
-    S := replace(S, '<TEXT>', sprintf('and contains(p.P_NAME, \'[__lang "x-ViDoc"] %s\') \n', FTI_MAKE_SEARCH_STRING(tmp)));
+    T := FTI_MAKE_SEARCH_STRING(tmp);
   } else {
     tmp := POLLS.WA.xml_get('expression', data);
     if (not is_empty_or_null(tmp))
-      S := replace(S, '<TEXT>', sprintf('and contains(p.P_NAME, \'[__lang "x-ViDoc"] %s\') \n', tmp));
+      T := tmp;
   }
 
   tmp := POLLS.WA.xml_get('tags', data);
   if (not is_empty_or_null(tmp)) {
-    tmp := POLLS.WA.tags2search (tmp);
-    S := replace(S, '<TAGS>', sprintf('and contains(p.P_NAME, \'[__lang "x-ViDoc"] %s\') \n', tmp));
+    if (T = '') {
+      T := POLLS.WA.tags2search (tmp);
+    } else {
+      T := T || ' and ' || POLLS.WA.tags2search (tmp);
+    }
   }
+  if (T <> '')
+    S := replace(S, '<TEXT>', sprintf('and contains(p.P_NAME, \'[__lang "x-ViDoc"] %s\') \n', T));
 
   if (maxRows <> '')
     maxRows := 'TOP ' || maxRows;

@@ -220,7 +220,13 @@
           self.mode_test();
         ]]>
       </v:before-data-bind>
-      <v:template type="simple">
+      <?vsp 
+        declare sparqlUrl, graphIri any;
+        
+        sparqlUrl := 'http://' || SIOC..get_cname () || '/sparql';
+        graphIri := SIOC..get_graph ();
+        http(sprintf('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s?default-graph-uri=%U&query=%U&format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml')); 
+      ?>
         <?vsp http ('<input type="hidden" name="tbHidden" value="" />'); ?>
         <?vsp
           if (0)
@@ -343,7 +349,6 @@
 
         </div>
         <div style="clear: both;" />
-      </v:template>
       <div class="polls_main">
         <?vsp
           if (0)
@@ -406,7 +411,7 @@
           <div class="polls_left_sub1">
             <?vsp
               declare tMin, tMax integer;
-              declare tClass, tStyle varchar;
+              declare appClass, tClass, tStyle varchar;
 
               if (self.pMode = 'MyPolls') {
                 select max(T_COUNT),
@@ -416,6 +421,9 @@
                  where T_DOMAIN_ID = self.domain_id
                    and T_COUNT > 0;
 
+                appClass := '';
+                if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                  appClass := 'app';  
                 for (select T_TAG, T_COUNT
                        from POLLS.WA.TAGS
                       where T_DOMAIN_ID = self.domain_id
@@ -426,7 +434,7 @@
                   tClass := '';
                   if (self.pTag = T_TAG)
                     tClass := 'nolink_a';
-                  http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span class="%s" style="%s">%s</span></a> ', T_TAG, T_TAG, tClass, tStyle, T_TAG));
+                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', POLLS.WA.tag_id(T_TAG), T_TAG, T_TAG, appClass, SIOC..poll_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
                 }
               }
               if (self.pMode = 'PublicPolls') {
@@ -547,15 +555,18 @@
                       <td valign="top">
                         <?vsp
                           declare N, id, did integer;
-                          declare title, actions, tags any;
-
-                          http (sprintf ('<div style="float: left;"><b>%s</b></div>', POLLS.WA.stringCut((control as vspx_row_template).te_column_value('P_NAME'), self.pChars)));
+                          declare appClass, title, actions, tags any;
 
                           id := (control as vspx_row_template).te_column_value('P_ID');
                           did := (control as vspx_row_template).te_column_value('P_DOMAIN_ID');
-                          title := '\'' || (control as vspx_row_template).te_column_value('P_NAME') || '\'';
+                          title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
 
+                          appClass := '';
+                          if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
+                            appClass := 'app';  
+                          http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, appClass, SIOC..poll_post_iri (self.domain_id, id), POLLS.WA.stringCut(title, self.pChars)));
+                            
                           actions := '';
                           if (POLLS.WA.poll_enable_vote (id))
                             actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'vote\', \'pt_value\', \'%d\');" title="Vote %s" class="link_ed">vote</a>', id, title);
@@ -586,7 +597,7 @@
                             http ('<br style="clear: both;" /><i>Tags: ');
                             tags := split_and_decode (tags, 0, '\0\0,');
                             for (N := 0; N < length(tags); N := N + 1) {
-                              http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s">%s</a> ',  tags[N], tags[N], tags[N]));
+                              http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, POLLS.WA.tag_id (tags[N]), tags[N], tags[N], appClass, SIOC..poll_tag_iri (self.account_id, tags[N]), tags[N]));
                               if (N <> length(tags)-1)
                                 http (' | ');
                             }
@@ -634,7 +645,7 @@
               <table cellspacing="0">
                 <tr>
                   <th>
-                    <v:label for="t_tag" value="Tags" />
+                    <v:label for="t_tag" value="Tags (comma-separated)" />
                   </th>
                   <td>
                     <v:text name="t_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60" />
@@ -881,7 +892,7 @@
                       }
                     </script>
                     <th>
-                      <v:label for="p_tags" value="Tags" />
+                      <v:label for="p_tags" value="Tags (comma-separated)" />
                     </th>
                     <td>
                       <v:text name="p_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
@@ -1626,7 +1637,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple" name="v_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.pAction := 'browse';
@@ -1755,7 +1766,7 @@
               ?>
             </div>
             <div class="new-form-footer">
-              <v:button action="simple" value="Back" xhtml_class="form-button">
+              <v:button action="simple" name="r_back" value="Back" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.pAction := 'browse';

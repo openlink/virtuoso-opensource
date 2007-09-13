@@ -34,6 +34,20 @@ create procedure poll_post_iri (in domain_id varchar, in poll_id int)
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure poll_tag_iri (
+	in user_id integer,
+	in tag varchar)
+{
+	declare user_name varchar;
+	declare exit handler for not found { return null; };
+
+	select U_NAME into user_name from DB.DBA.SYS_USERS where U_ID = user_id;
+	return sprintf ('http://%s%s/%U/concept#%s', get_cname(), get_base_path (), user_name, POLLS.WA.tag_id (tag));
+}
+;
+
 create procedure fill_ods_polls_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare id, deadl, cnt integer;
@@ -360,6 +374,72 @@ create procedure sioc.DBA.rdf_polls_view_str ()
 	    .
     '
     ;
+};
+
+create procedure sioc.DBA.rdf_polls_view_str_tables ()
+{
+  return
+      '
+      from DB.DBA.ODS_POLLS_POSTS as polls_posts
+      where (^{polls_posts.}^.U_NAME = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_POLLS_TAGS as polls_tags
+      where (^{polls_tags.}^.U_NAME = ^{users.}^.U_NAME)
+
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_polls_view_str_maps ()
+{
+  return
+      '
+	    # Polls
+	    ods:polls_post (polls_posts.U_NAME, polls_posts.WAI_NAME, polls_posts.P_ID)
+        dc:title polls_posts.P_NAME;
+        dct:created polls_posts.P_CREATED ;
+    	  dct:modified polls_posts.P_UPDATED ;
+    	  dc:date polls_posts.P_UPDATED ;
+    	  dc:creator polls_posts.U_NAME ;
+    	  sioc:content polls_posts.P_DESCRIPTION ;
+    	  sioc:has_creator ods:user (polls_posts.U_NAME) ;
+    	  sioc:has_container ods:polls_forum (polls_posts.U_NAME, polls_posts.WAI_NAME) ;
+    	  foaf:maker ods:person (polls_posts.U_NAME)
+    	.
+      ods:polls_forum (polls_posts.U_NAME, polls_posts.WAI_NAME)
+        sioc:container_of	ods:polls_post (polls_posts.U_NAME, polls_posts.WAI_NAME, polls_posts.P_ID)
+      .
+     	ods:user (polls_posts.U_NAME)
+     	  sioc:creator_of	ods:polls_post (polls_posts.U_NAME, polls_posts.WAI_NAME, polls_posts.P_ID)
+     	.
+      ods:polls_post (polls_posts.U_NAME, polls_posts.WAI_NAME, polls_posts.P_ID)
+	      a atom:Entry ;
+      	atom:title polls_posts.P_NAME ;
+      	atom:source ods:polls_forum (polls_posts.U_NAME, polls_posts.WAI_NAME) ;
+      	atom:author ods:person (polls_posts.U_NAME) ;
+        atom:published polls_posts.P_CREATED ;
+	      atom:updated polls_posts.P_UPDATED ;
+	      atom:content ods:polls_post_text (polls_posts.U_NAME, polls_posts.WAI_NAME, polls_posts.P_ID)
+	    .
+      ods:polls_post (polls_posts.U_NAME, polls_posts.WAI_NAME, polls_posts.P_ID)
+        a atom:Content ;
+        atom:type "text/plain" ;
+	      atom:lang "en-US" ;
+	      atom:body polls_posts.P_DESCRIPTION
+	    .
+      ods:polls_forum (polls_posts.U_NAME, polls_posts.WAI_NAME)
+	      atom:contains ods:polls_post (polls_posts.U_NAME, polls_posts.WAI_NAME, polls_posts.P_ID)
+	    .
+    	ods:polls_post (polls_tags.U_NAME, polls_tags.WAM_INST, polls_tags.P_ID)
+    	  sioc:topic ods:tag (polls_tags.U_NAME, polls_tags.P_TAG)
+    	.
+    	ods:tag (polls_tags.U_NAME, polls_tags.P_TAG)
+    	  a skos:Concept ;
+    	  skos:prefLabel polls_tags.P_TAG ;
+    	  skos:isSubjectOf ods:polls_post (polls_tags.U_NAME, polls_tags.WAM_INST, polls_tags.P_ID)
+    	.
+      # end Polls
+      '
+      ;
 };
 
 grant select on ODS_POLLS_POSTS to SPARQL_SELECT;
