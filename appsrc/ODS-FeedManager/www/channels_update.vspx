@@ -63,7 +63,11 @@
         <![CDATA[
    		    declare exit handler for not found goto _end;
 
-          if (isnull(get_keyword('f_title', self.vc_page.vc_event.ve_params))) {
+          declare params any;
+
+          params := self.vc_page.vc_event.ve_params;
+
+          if (isnull(get_keyword('f_title', params))) {
              select b.EF_ID,
                     b.EF_URI,
        			       b.EF_HOME_URI,
@@ -93,9 +97,6 @@
   	    		return;
   		    }
 
-          declare params any;
-
-          params := self.vc_page.vc_event.ve_params;
           if (get_keyword('dtag', params, '') <> '')
             self.v_tags := ENEWS.WA.tag_delete(self.v_tags, cast(get_keyword('dtag', params, '0') as integer));
 

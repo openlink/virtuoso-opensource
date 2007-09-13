@@ -257,7 +257,7 @@
       <?vsp
         if (self.ft_bookmark is not null) {
           http ('\n<script type="text/javascript">\n');
-          http (sprintf ('if (BrowserDetect.browser != \'Opera\') location.hash = "%s";\n', self.ft_bookmark));
+          http (sprintf ('if (!OAT.Browser.isOpera) location.hash = "%s";\n', self.ft_bookmark));
           http ('</script>\n');
         }
       ?>

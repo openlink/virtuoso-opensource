@@ -59,24 +59,36 @@
           <div id="1" class="tabContent" style="display: none;">
             <table class="form-body" cellspacing="0">
               <tr>
-                <th>
-
+                <th width="30%">
+                  <v:label for="f_rows" value="Rows per page"/>
                 </th>
+                <td>
+                  <v:text name="f_rows" value="--get_keyword ('rows', self.settings, '10')" xhtml_class="field-text"/>
+                </td>
+              </tr>
+              <tr>
+                <th />
                 <td>
                   <v:check-box name="f_favourites" xhtml_id="f_favourites" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('favourites', self.settings, '0') as integer)"  xhtml_title="Show Favourites" />
                   <vm:label for="f_favourites" value="show Favourites"/>
                 </td>
               </tr>
               <tr>
-                <th width="30%">
-                  <v:label for="f_rows" value="Rows per page"/>
-                </th>
+                <th />
                 <td>
-                  <v:text name="f_rows" value="--get_keyword('rows', self.settings, '10')" xhtml_class="field-text"/>
+                  <v:check-box name="f_feedIcons" xhtml_id="f_feedIcons" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword ('feedIcons', self.settings, '1') as integer)"  xhtml_title="Show Feed Icons" />
+                  <vm:label for="f_feedIcons" value="show Feed''s Images"/>
                 </td>
               </tr>
               <tr>
-                <th rowspan="2">
+                <th />
+                <td>
+                  <v:check-box name="f_app" xhtml_id="f_app" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('app', self.settings, '0') as integer)" />
+                  <vm:label for="f_app" value="Show <a>++ links"/>
+                </td>
+              </tr>
+              <tr>
+                <th rowspan="2" valign="top">
                   <v:label value="Auto-refresh at login"/>
                 </th>
                 <td>
@@ -88,15 +100,6 @@
                 <td>
                   <v:check-box name="f_updateBlogs" xhtml_id="f_updateBlogs" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('updateBlogs', self.settings, '0') as integer)"  xhtml_title="Auto-refresh blogs at login" />
                   <vm:label for="f_updateBlogs" value="for blogs"/>
-                </td>
-              </tr>
-              <tr>
-                <th>
-
-                </th>
-                <td>
-                  <v:check-box name="f_feedIcons" xhtml_id="f_feedIcons" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('feedIcons', self.settings, '1') as integer)"  xhtml_title="Show Feed Icons" />
-                  <vm:label for="f_feedIcons" value="show Feed''s Images"/>
                 </td>
               </tr>
               <tr>
@@ -184,6 +187,7 @@
               self.settings := ENEWS.WA.set_keyword('updateBlogs', self.settings, self.f_updateBlogs.ufl_selected);
               self.settings := ENEWS.WA.set_keyword('feedIcons', self.settings, self.f_feedIcons.ufl_selected);
               self.settings := ENEWS.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
+              self.settings := ENEWS.WA.set_keyword ('app', self.settings, self.f_app.ufl_selected);
 
               conv := cast(get_keyword('conv', self.v_conversation, '0') as integer);
               f_conv := cast (get_keyword ('f_conv', params, '0') as integer);

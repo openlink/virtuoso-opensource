@@ -3244,6 +3244,18 @@ create procedure ENEWS.WA.tag_delete(
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.tag_id (
+  in tag varchar)
+{
+  tag := trim(tag);
+  tag := replace (tag, ' ', '_');
+  tag := replace (tag, '+', '_');
+  return tag;
+}
+;
+
 ---------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.tags_join(

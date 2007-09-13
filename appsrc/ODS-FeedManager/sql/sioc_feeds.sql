@@ -67,7 +67,7 @@ create procedure feed_comment_iri (
   declare owner, instance varchar;
   declare exit handler for not found { return null; };
   select U_NAME, WAI_NAME into owner, instance from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAM_USER = U_ID and WAM_MEMBER_TYPE = 1 and WAM_INST = WAI_NAME and WAI_ID = domain_id;
-  return sprintf ('http://%s%s/%U/feeds/%U/%d/%d', get_cname(), get_base_path (), owner, instance, item_id, comment_id);
+  return sprintf ('http://%s%s/%U/subscriptions/%U/%d/%d', get_cname(), get_base_path (), owner, instance, item_id, comment_id);
 }
 ;
 
@@ -85,7 +85,7 @@ create procedure feed_annotation_iri (
     from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
    where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
 
-  return sprintf ('http://%s%s/%U/feeds/%U/%d/annotation/%d', get_cname(), get_base_path (), _member, _inst, item_id, annotation_id);
+  return sprintf ('http://%s%s/%U/subscriptions/%U/%d/annotation/%d', get_cname(), get_base_path (), _member, _inst, item_id, annotation_id);
 }
 ;
 
@@ -189,6 +189,26 @@ create procedure feed_links_to (inout content any)
 
 -------------------------------------------------------------------------------
 --
+create procedure feeds_tag_iri (
+	in user_id integer,
+	in tag varchar)
+{
+	declare user_name varchar;
+	declare exit handler for not found { return null; };
+
+	select U_NAME into user_name from DB.DBA.SYS_USERS where U_ID = user_id;
+	return sprintf ('http://%s%s/%U/concept#%s', get_cname(), get_base_path (), user_name, ENEWS.WA.tag_id (tag));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure fill_ods_subscriptions_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
+{
+  return fill_ods_feeds_sioc (graph_iri, site_iri, _wai_name);
+}
+;
+
 create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare iri, m_iri, f_iri, t_iri, u_iri, c_iri varchar;
@@ -224,6 +244,8 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), atom_iri ('Feed'));
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
     DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), m_iri);
+      DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('container_of'), iri);
     cnt := cnt + 1;
       if (mod (cnt, 500) = 0) {
 	commit work;
@@ -327,6 +349,8 @@ create trigger FEEDD_SIOC_I after insert on ENEWS..FEED_DOMAIN referencing new a
   m_iri := feed_mgr_iri (N.EFD_DOMAIN_ID);
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), m_iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('container_of'), iri);
 }
 ;
 
@@ -344,6 +368,8 @@ create trigger FEEDD_SIOC_D before delete on ENEWS..FEED_DOMAIN referencing old 
   m_iri := feed_mgr_iri (O.EFD_DOMAIN_ID);
   delete_quad_s_p_o (graph_iri, iri, sioc_iri ('has_parent'), m_iri);
   delete_quad_s_p_o (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
+  delete_quad_s_p_o (graph_iri, iri, sioc_iri ('has_container'), m_iri);
+  delete_quad_s_p_o (graph_iri, m_iri, sioc_iri ('container_of'), iri);
 }
 ;
 
@@ -731,7 +757,7 @@ create procedure feed_comment_iri_1 (
   inout item_id integer,
   inout comment_id integer)
 {
-  return sprintf ('http://%s%s/%U/feeds/%U/%d/%d', get_cname(), get_base_path (), owner, instance, item_id, comment_id);
+  return sprintf ('http://%s%s/%U/subscriptions/%U/%d/%d', get_cname(), get_base_path (), owner, instance, item_id, comment_id);
 }
 ;
 
@@ -817,6 +843,12 @@ create view ODS_FEED_LINKS as select EFIL_LINK, EFI_FEED_ID, EFI_ID
 
 create view ODS_FEED_ATTS as select EFIE_URL, EFI_FEED_ID, EFI_ID from ENEWS.WA.FEED_ITEM_ENCLOSURE, ENEWS.WA.FEED_ITEM
 	where EFI_ID = EFIE_ITEM_ID;
+
+create procedure sioc.DBA.rdf_subscriptions_view_str ()
+{
+  return sioc.DBA.rdf_feeds_view_str ();
+}
+;
 
 create procedure sioc.DBA.rdf_feeds_view_str ()
 {
@@ -906,6 +938,105 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
 	sioc:feed_item_iri (EFI_FEED_ID, EFI_ID) .
 
       ';
+};
+
+create procedure sioc.DBA.rdf_subscriptions_view_str_tables ()
+{
+  return
+      '
+      from DB.DBA.ODS_FEED_FEED_DOMAIN as feed_domain
+      where (^{feed_domain.}^.U_NAME = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_FEED_POSTS as feed_posts
+      where (^{feed_posts.}^.EFI_FEED_ID = ^{feed_domain.}^.EF_ID)
+      from DB.DBA.ODS_FEED_COMMENTS as feed_comments
+      where (^{feed_comments.}^.U_NAME = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_FEED_TAGS as feed_tags
+      where (^{feed_tags.}^.U_NAME = ^{users.}^.U_NAME)
+      from DB.DBA.ODS_FEED_LINKS as feed_links
+      where (^{feed_links.}^.EFI_FEED_ID = ^{feed_domain.}^.EF_ID)
+      from DB.DBA.ODS_FEED_ATTS as feed_atts
+      where (^{feed_atts.}^.EFI_FEED_ID = ^{feed_domain.}^.EF_ID)
+
+      '
+      ;
+};
+
+create procedure sioc.DBA.rdf_subscriptions_view_str_maps ()
+{
+  return
+      '
+      # Feeds
+	    ods:feed (feed_domain.EF_ID)
+	      a atom:Feed ;
+  	    sioc:link ods:proxy (feed_domain.EF_URI) ;
+  	    atom:link ods:proxy (feed_domain.EF_URI) ;
+  	    atom:title feed_domain.EF_TITLE ;
+  	    sioc:has_parent ods:feed_mgr (feed_domain.U_NAME, feed_domain.WAI_NAME) .
+
+	    ods:feed_mgr (feed_domain.U_NAME, feed_domain.WAI_NAME)
+	      sioc:parent_of ods:feed (feed_domain.EF_ID) .
+
+	    ods:feed_item (feed_tags.EFI_FEED_ID, feed_tags.EFID_ITEM_ID)
+	      sioc:topic ods:tag (feed_tags.U_NAME, feed_tags.EFID_TAG) .
+
+	    ods:tag (feed_tags.U_NAME, feed_tags.EFID_TAG)
+	      a skos:Concept ;
+  	    skos:prefLabel feed_tags.EFID_TAG ;
+  	    skos:isSubjectOf ods:feed_item (feed_tags.EFI_FEED_ID, feed_tags.EFID_ITEM_ID) .
+
+	    ods:feed_comment (feed_comments.U_NAME, feed_comments.WAI_NAME, feed_comments.EFIC_ITEM_ID, feed_comments.EFIC_ID)
+  	    a sioct:Comment ;
+  	    dc:title feed_comments.EFIC_TITLE ;
+  	    sioc:content feed_comments.EFIC_COMMENT ;
+  	    dct:modified feed_comments.LAST_UPDATE ;
+  	    dct:created feed_comments.LAST_UPDATE ;
+  	    sioc:link ods:proxy (feed_comments.LINK) ;
+  	    sioc:has_container ods:feed (feed_comments.EFI_FEED_ID) ;
+  	    sioc:reply_of ods:feed_item (feed_comments.EFI_FEED_ID, feed_comments.EFIC_ITEM_ID) ;
+  	    foaf:maker ods:proxy (feed_comments.EFIC_U_URL) .
+
+	    ods:proxy (feed_comments.EFIC_U_URL)
+	      a foaf:Person ;
+	      foaf:name feed_comments.EFIC_U_NAME;
+	      foaf:mbox ods:mbox (feed_comments.EFIC_U_MAIL) .
+
+      ods:feed (feed_comments.EFI_FEED_ID)
+	      sioc:container_of ods:feed_comment (feed_comments.U_NAME, feed_comments.WAI_NAME, feed_comments.EFIC_ITEM_ID, feed_comments.EFIC_ID) .
+
+      ods:feed_item (feed_comments.EFI_FEED_ID, feed_comments.EFIC_ITEM_ID)
+	      sioc:has_reply ods:feed_comment (feed_comments.U_NAME, feed_comments.WAI_NAME, feed_comments.EFIC_ITEM_ID, feed_comments.EFIC_ID) .
+
+      ods:feed_item (feed_links.EFI_FEED_ID, feed_links.EFI_ID)
+	      sioc:links_to ods:proxy (feed_links.EFIL_LINK) .
+
+	    ods:feed_item (feed_atts.EFI_FEED_ID, feed_atts.EFI_ID)
+	      sioc:attachment ods:proxy (feed_atts.EFIE_URL) .
+
+	    ods:feed_item (feed_posts.EFI_FEED_ID, feed_posts.EFI_ID) a atom:Entry ;
+  	    sioc:has_container ods:feed (feed_posts.EFI_FEED_ID) ;
+  	    dc:title feed_posts.EFI_TITLE ;
+  	    dct:created feed_posts.PUBLISH_DATE ;
+  	    dct:modified feed_posts.PUBLISH_DATE ;
+  	    sioc:link ods:proxy (feed_posts.EFI_LINK) ;
+  	    sioc:content feed_posts.EFI_DESCRIPTION ;
+  	    atom:title feed_posts.EFI_TITLE ;
+  	    atom:source ods:feed (feed_posts.EFI_FEED_ID) ;
+  	    atom:published feed_posts.PUBLISH_DATE ;
+  	    atom:updated feed_posts.PUBLISH_DATE ;
+  	    atom:content ods:feed_item_text (feed_posts.EFI_FEED_ID, feed_posts.EFI_ID) .
+
+	    ods:feed (feed_posts.EFI_FEED_ID) sioc:container_of ods:feed_item (feed_posts.EFI_FEED_ID, feed_posts.EFI_ID) .
+
+	    ods:feed_item_text (feed_posts.EFI_FEED_ID, feed_posts.EFI_ID) a atom:Content ;
+	      atom:type "text/xhtml" ;
+	      atom:lang "en-US" ;
+	      atom:body feed_posts.EFI_DESCRIPTION .
+
+	    ods:feed (feed_posts.EFI_FEED_ID)
+	      atom:contains ods:feed_item (feed_posts.EFI_FEED_ID, feed_posts.EFI_ID) .
+      # end Feeds
+      '
+      ;
 };
 
 grant select on ODS_FEED_FEED_DOMAIN to SPARQL_SELECT;

@@ -238,119 +238,34 @@
   <!--=========================================================================-->
   <xsl:template name="vm:formats">
     <div class="left_container">
-      <xsl:call-template name="vm:geoUrl-link" />
-      <xsl:call-template name="vm:atom-link" />
-      <xsl:call-template name="vm:rss-link" />
-      <xsl:call-template name="vm:rdf-link" />
-      <xsl:call-template name="vm:ocs-link" />
-      <xsl:call-template name="vm:opml-link" />
-      <xsl:call-template name="vm:foaf-link" />
-		  <vm:sioc-link format="rdf"> SIOC (RDF/XML)</vm:sioc-link>
-		  <vm:sioc-link format="ttl"> SIOC (N3/Turtle)</vm:sioc-link>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="vm:geoUrl-link">
     <?vsp
       declare exit handler for not found;
+
+        declare S varchar;
       declare lat, lng any;
 
       select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.account_id;
       if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id)) {
-    ?>
-      <div style="border-bottom: 1px solid #7f94a5;">
-        <?vsp
           http (sprintf('<a href="http://geourl.org/near?p=%U" title="GeoURL link" alt="GeoURL link" class="gems"><img src="http://i.geourl.org/geourl.png" border="0"/></a>', ENEWS.WA.enews_url (self.domain_id)));
-        ?>
-    </div>
-    <?vsp
+          http ('<div style="border-top: 1px solid #7f94a5;"></div>');
       }
-    ?>
-  </xsl:template>
 
-  <!--=========================================================================-->
-  <xsl:template name="vm:atom-link">
-    <div>
-    <?vsp
-        http(sprintf('<a href="%sOFM.atom" target="_blank" title="ATOM export" alt="ATOM export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> Atom</a>', ENEWS.WA.dav_url (self.domain_id)));
-    ?>
-    </div>
-  </xsl:template>
+        S := ENEWS.WA.dav_url (self.domain_id);
+        http (sprintf('<a href="%sOFM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
+        http (sprintf('<a href="%sOFM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'ATOM', 'Atom'));
+        http (sprintf('<a href="%sOFM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF', 'RDF'));
 
-  <!--=========================================================================-->
-  <xsl:template name="vm:rss-link">
-    <div>
-    <?vsp
-        http(sprintf('<a href="%sOFM.rss" target="_blank" title="RSS export" alt="RSS export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> RSS</a>', ENEWS.WA.dav_url (self.domain_id)));
-    ?>
-    </div>
-  </xsl:template>
+        http ('<div style="border-top: 1px solid #7f94a5;"></div>');
+        http (sprintf('<a href="%sOFM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'opml', 'OPML', 'OPML', 'OPML', 'OPML'));
+        http (sprintf('<a href="%sOFM.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ocs', 'OCS', 'OCS', 'OCS', 'OCS'));
 
-  <!--=========================================================================-->
-  <xsl:template name="vm:rdf-link">
-    <div>
-    <?vsp
-        http(sprintf('<a href="%sOFM.rdf" target="_blank" title="RDF export" alt="RDF export" class="gems"><img src="image/rdf-icon-16.gif" border="0"/> RDF</a>', ENEWS.WA.dav_url (self.domain_id)));
-    ?>
-    </div>
-  </xsl:template>
+        http ('<div style="border-top: 1px solid #7f94a5;"></div>');
+        http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0" alt="FOAF export" /> FOAF</a>', ENEWS.WA.foaf_url (self.domain_id)));
 
-  <!--=========================================================================-->
-  <xsl:template name="vm:ocs-link">
-    <div>
-    <?vsp
-        http(sprintf('<a href="%sOFM.ocs" target="_blank" title="OCS export" alt="OCS export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OCS</a>', ENEWS.WA.dav_url (self.domain_id)));
-    ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="vm:opml-link">
-    <div>
-    <?vsp
-        http(sprintf('<a href="%sOFM.opml" target="_blank" title="OPML export" alt="OPML export" class="gems"><img src="image/blue-icon-16.gif" border="0"/> OPML</a>', ENEWS.WA.dav_url (self.domain_id)));
-    ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="vm:foaf-link">
-    <div>
-    <?vsp
-        http(sprintf('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0"/> FOAF</a>', ENEWS.WA.foaf_url (self.domain_id)));
-    ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="vm:podcast-link">
-    <div>
-    <?vsp
-        http(sprintf('<a href="%sOFM.podcast" target="_blank" title="PODCAST export" alt="PODCAST export" class="gems"><img src="image/rss-icon-16.gif" border="0"/> Podcast</a>', ENEWS.WA.dav_url (self.domain_id)));
-    ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template match="vm:sioc-link">
-    <div>
-      <?vsp
-      {
-        declare suffix varchar;
-
-        suffix := 'rdf';
-      ?>
-      <xsl:if test="@format">
-        <xsl:processing-instruction name="vsp">
-  	      suffix := '<xsl:value-of select="@format"/>';
-        </xsl:processing-instruction>
-      </xsl:if>
-  	  <a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/feeds/%U/sioc.%s', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (self.domain_id), ENEWS.WA.domain_name (self.domain_id), suffix)); ?>" class="{local-name()}">
-    	  <img border="0" src="image/rdf-icon-16.gif" alt="SIOC" title="SIOC" /><xsl:apply-templates />
-      </a>
-      <?vsp
-        }
+        http ('<div style="border-top: 1px solid #7f94a5;"></div>');
+        S := sprintf ('http://%s/dataspace/%U/feeds/%U/', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (self.domain_id), ENEWS.WA.domain_name (self.domain_id));
+        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
+        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
       ?>
     </div>
   </xsl:template>
