@@ -178,13 +178,11 @@
     <tr>
       <th>Spam Filter</th>
       <td>
-        <xsl:call-template name="make_checkbox">
+         <xsl:call-template name="make_select">
           <xsl:with-param name="name">spam</xsl:with-param>
-          <xsl:with-param name="id">spam</xsl:with-param>
-          <xsl:with-param name="value">1</xsl:with-param>
-          <xsl:with-param name="checked"><xsl:if test=". = 1">1</xsl:if></xsl:with-param>
+           <xsl:with-param name="selected"><xsl:value-of select="." /></xsl:with-param>
+           <xsl:with-param name="list">0:Disable;1:My contacts only;2:My contacts and contacts with depth 1;3:My contacts and contacts with depth 2;4:My contacts and contacts with depth 3;5:My contacts and contacts with depth 4;</xsl:with-param>
         </xsl:call-template>
-        <label for="conversation">Enable mails from my contacts only</label>
       </td>
     </tr>
   </xsl:template>

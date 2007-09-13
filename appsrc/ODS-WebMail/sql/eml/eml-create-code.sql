@@ -2188,7 +2188,7 @@ create procedure OMAIL.WA.omail_get_settings (
   if (OMAIL.WA.omail_getp('atom_version',_settings) = '')
     OMAIL.WA.omail_setparam('atom_version',_settings, '1.0');
 
-  if (OMAIL.WA.omail_getp('spam', _settings) not in (0,1))
+  if (OMAIL.WA.omail_getp('spam', _settings) not in (0,1,2,3,4,5))
     OMAIL.WA.omail_setparam('spam',_settings, 0);
 
   if (OMAIL.WA.omail_getp('conversation', _settings) not in (0,1))
@@ -3637,6 +3637,54 @@ create procedure OMAIL.WA.omail_print(
 --
 create procedure OMAIL.WA.is_spam (
   in _user_id integer,
+  in _mail varchar,
+  in _level integer := 1)
+{
+  if (OMAIL.WA.is_spam_int (_user_id, _mail, 'foaf:mbox', _level))
+    return OMAIL.WA.is_spam_int (_user_id, _mail, 'foaf:mbox_sha1sum', _level);
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.is_spam_int (
+  in _user_id integer,
+  in _mail varchar,
+  in _foafParam varchar,
+  in _level integer := 1)
+{
+  declare N integer;
+  declare S, T varchar;
+  declare st, msg, meta, rows any;
+
+  S := 'sparql
+        PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+           ASK
+          FROM <%s>
+         WHERE {
+                 <%s> foaf:knows %s ?x.
+                 ?x <FOAF_PARAM> ?mail.
+                 FILTER (?mail = ''%s'').
+               }';  	
+  S := replace (S, '<FOAF_PARAM>', _foafParam);             
+  T := '';
+  for (N := 0; N < _level; N := N + 1) {
+    S := sprintf (S, SIOC..get_graph (), SIOC..user_iri (_user_id), T, _mail);
+    st := '00000';
+    exec (S, st, msg, vector (), 0, meta, rows);
+    if (('00000' = st) and length (rows))
+      return 0;
+    T := T || sprintf (' ?x%d. ?x%d foaf:knows', N, N);  
+  }
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.is_spam2 (
+  in _user_id integer,
   in _mail varchar)
 {
   declare S varchar;
@@ -3711,12 +3759,12 @@ create procedure OMAIL.WA.omail_receive_message(
   _attached      := 0;
   _tags          := '';
   _settings      := OMAIL.WA.omail_get_settings (_domain_id, _user_id, 'base_settings');
-  if (cast(get_keyword ('spam', _settings, '0') as integer) = 1)
+  if (cast(get_keyword ('spam', _settings, '0') as integer) > 0)
     if (OMAIL.WA.omail_address2xml ('from', _from, 2) <> OMAIL.WA.omail_address2xml ('to', _to, 2)) {
       if (OMAIL.WA.omail_address2xml ('from', _from, 2) <> OMAIL.WA.omail_address2xml ('returnPath', _returnPath, 2)) {
         _folder_id := 125;
       } else {
-        if (OMAIL.WA.is_spam (_user_id, OMAIL.WA.omail_address2xml ('returnPath', _returnPath, 2)))
+        if (OMAIL.WA.is_spam (_user_id, OMAIL.WA.omail_address2xml ('returnPath', _returnPath, 2), cast(get_keyword ('spam', _settings, '0') as integer)))
           _folder_id := 125;
       }
     }
