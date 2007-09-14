@@ -795,7 +795,9 @@ tcpses_connect (session_t *ses)
       test_eintr (ses, rc, errno);
       dbg_perror ("connect()");
       dbg_printf_2 (("SER_SYSCALL"));
+#ifndef WIN32
       close (s);
+#endif
       return (SER_SYSCALL);
     }
 
