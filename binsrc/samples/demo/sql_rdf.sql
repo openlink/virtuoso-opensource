@@ -1,16 +1,5 @@
 use DB;
 
-GRANT SELECT ON "Demo"."demo"."Products" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Suppliers" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Shippers" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Categories" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Customers" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Employees" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Orders" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Order_Details" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Countries" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Provinces" TO "SPARQL";
-
 create procedure DB.DBA.SPARQL_NW_RUN (in txt varchar)
 {
   declare REPORT, stat, msg, sqltext varchar;
@@ -29,6 +18,20 @@ create procedure DB.DBA.SPARQL_NW_RUN (in txt varchar)
     }
 }
 ;
+
+DB.DBA.exec_no_error('GRANT \"SPARQL_UPDATE\" TO \"SPARQL\"')
+;
+
+GRANT SELECT ON "Demo"."demo"."Products" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Suppliers" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Shippers" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Categories" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Customers" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Employees" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Orders" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Order_Details" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Countries" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Provinces" TO "SPARQL";
 
 DB.DBA.SPARQL_NW_RUN ('
 drop quad map graph iri("http://^{URIQADefaultHost}^/Northwind") .
