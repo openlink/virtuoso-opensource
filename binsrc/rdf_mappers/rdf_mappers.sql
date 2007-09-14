@@ -569,10 +569,19 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
   own := ''; pid := '';
 
   tmp := sprintf_inverse (graph_iri, 'http://www.facebook.com/album.php?aid=%s&l=%s&id=%s', 0);
-  if (length (tmp) <> 3)
-    goto try_profile;
+  if (length (tmp) = 3)
+    {
   own := tmp[2];
   aid := tmp[0];
+    }
+  else
+    {
+      tmp := sprintf_inverse (graph_iri, 'http://www.facebook.com/album.php?aid=%s&id=%s', 0);
+      if (length (tmp) <> 2)
+	goto try_profile;
+      own := tmp[1];
+      aid := tmp[0];
+    }
 
   q := sprintf ('SELECT pid, aid, owner, src_small, src_big, src, link, caption, created FROM photo '||
   'WHERE aid in (select aid from album where owner = %s and strpos (link, "aid=%s&") > 0)', own, aid);
