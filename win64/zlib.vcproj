@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="zlib"
 	ProjectGUID="{86645C8E-3BBE-4E1E-A8AE-C6990B4ECC64}"
+	RootNamespace="zlib"
 	>
 	<Platforms>
 		<Platform
@@ -353,11 +354,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libsrc\zlib\infblock.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\zlib\infcodes.c"
+				RelativePath="..\libsrc\zlib\infback.c"
 				>
 			</File>
 			<File
@@ -370,10 +367,6 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\zlib\inftrees.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libsrc\zlib\infutil.c"
 				>
 			</File>
 			<File

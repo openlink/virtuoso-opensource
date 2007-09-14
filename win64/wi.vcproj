@@ -350,6 +350,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\bif_audio.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\bif_crypto.c"
 				>
 			</File>
@@ -379,6 +383,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\bif_intl.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\bif_json.c"
 				>
 			</File>
 			<File
@@ -542,6 +550,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\json_l.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\json_p.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\lisprdr.c"
 				>
 			</File>
@@ -606,6 +622,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\rdfbox.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\rdfinf.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\rdfxml_parser.c"
 				>
 			</File>
@@ -654,6 +678,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\search_in.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\security.c"
 				>
 			</File>
@@ -695,6 +723,10 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sparql_sff.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sparul2sql.c"
 				>
 			</File>
 			<File
@@ -1878,6 +1910,52 @@
 		<Filter
 			Name="PreBuild"
 			>
+			<File
+				RelativePath="..\libsrc\Wi\json.l"
+				>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f json_l.c&#x0D;&#x0A;flex -8 -Pjsonyy -ojson_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)"
+						Outputs="$(InputDir)json_l.c"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f json_l.c&#x0D;&#x0A;flex -8 -Pjsonyy -ojson_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)"
+						Outputs="$(InputDir)json_l.c"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\json.y"
+				>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f json_p.c&#x0D;&#x0A;rm -f json_p.h&#x0D;&#x0A;bison -y -vd -pjsonyy json.y -ojson_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						AdditionalDependencies="$(InputDir)json_p.c;$(InputDir)json_p.h"
+						Outputs="$(InputDir)json_p.c;$(InputDir)json_p.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f json_p.c&#x0D;&#x0A;rm -f json_p.h&#x0D;&#x0A;bison -y -vd -pjsonyy json.y -ojson_p.c&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						AdditionalDependencies=""
+						Outputs="$(InputDir)json_p.c;$(InputDir)json_p.h"
+					/>
+				</FileConfiguration>
+			</File>
 			<File
 				RelativePath="..\libsrc\Wi\scn3.l"
 				>

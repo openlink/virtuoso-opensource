@@ -147,6 +147,9 @@
 				RelativePath="..\libsrc\Wi\auxfiles.c">
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\bif_audio.c">
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\bif_crypto.c">
 			</File>
 			<File
@@ -169,6 +172,9 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\bif_intl.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\bif_json.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\bif_kerberoscli.c">
@@ -278,6 +284,12 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\jso.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\json_l.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\json_p.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\lisprdr.c">
@@ -404,6 +416,9 @@
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sparql_sff.c">
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sparul2sql.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\Wi\sql3_vc.c">
@@ -1034,6 +1049,64 @@
 		<Filter
 			Name="PreBuild"
 			Filter="">
+			<File
+				RelativePath="..\libsrc\Wi\json.l">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="
+cd $(InputDir)
+rm -f json_l.c
+flex -Pjsonyy -ojson_l.c $(InputPath)
+cd $(ProjectDir)
+"
+						AdditionalDependencies="$(InputDir)json_p.h"
+						Outputs="$(InputDir)json_l.c"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="
+cd $(InputDir)
+rm -f json_l.c
+flex -Pjsonyy -ojson_l.c $(InputPath)
+cd $(ProjectDir)
+"
+						AdditionalDependencies="$(InputDir)json_p.h"
+						Outputs="$(InputDir)json_l.c"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\json.y">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="
+cd $(InputDir)
+rm -f json_p.c
+rm -f json_p.h
+bison -y -vd -pjsonyy json.y -ojson_p.c
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)json_p.c;$(InputDir)json_p.h"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="
+cd $(InputDir)
+rm -f json_p.c
+rm -f json_p.h
+bison -y -vd -pjsonyy json.y -ojson_p.c
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)json_p.c;$(InputDir)json_p.h"/>
+				</FileConfiguration>
+			</File>
 			<File
 				RelativePath="..\libsrc\Wi\scn3.l">
 				<FileConfiguration
