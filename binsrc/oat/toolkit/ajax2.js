@@ -82,7 +82,7 @@ OAT.AJAX = {
 		xhr.open("PUT",url,options.async);
 		OAT.AJAX.send(xhr,data);
 		return xhr;
-},
+	},
 	
 	SOAP:function(url,data,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
@@ -295,4 +295,5 @@ OAT.AJAX = {
 		}
 	}
 } /* OAT.AJAX */
-OAT.AJAX.cancelAll = OAT.AJAX.abortAll;OAT.Loader.featureLoaded("ajax2");
+OAT.AJAX.cancelAll = OAT.AJAX.abortAll;
+OAT.Loader.featureLoaded("ajax2");

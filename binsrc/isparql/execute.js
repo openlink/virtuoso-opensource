@@ -73,13 +73,11 @@ var QueryExec = function(optObj) {
 		this.dom.request = OAT.Dom.create("pre"); 
 		this.dom.response = OAT.Dom.create("pre");
 		this.dom.query = OAT.Dom.create("pre");
-		this.dom.check = OAT.Dom.create("input");
-		this.dom.check.type = "checkbox";
-		this.dom.check.id = "_check";
+		this.dom.select = OAT.Dom.create("select");
+		this.dom.select.id = "_select";
 		
-		var label = OAT.Dom.create("label");
-		label.innerHTML = "Simplify URIs?";
-		label.htmlFor = "_check";
+		OAT.Dom.option("Human readable","0",this.dom.select);
+		OAT.Dom.option("Machine readable","1",this.dom.select);
 		
 		var tabs1 = ["Result","SPARQL Params","Response","Query"];
 		var tabs2 = [self.dom.result,self.dom.request,self.dom.response,self.dom.query];
@@ -94,12 +92,12 @@ var QueryExec = function(optObj) {
 		}
 		if (self.options.div) { 
 			OAT.Dom.clear(self.options.div);
-			OAT.Dom.append([self.options.div,self.dom.check,label,OAT.Dom.create("br")]);
+			OAT.Dom.append([self.options.div,self.dom.select,OAT.Dom.create("br")]);
 			OAT.Dom.append([self.options.div,self.dom.ul,self.dom.tab]); 
 		}
 		self.initNav();
 		
-		OAT.Event.attach(self.dom.check,"change",function(){
+		OAT.Event.attach(self.dom.select,"change",function(){
 			if (self.cacheIndex > -1) { self.draw(); }
 		});
 		OAT.Event.attach(self.dom.check,"click",function(){
@@ -218,25 +216,29 @@ var QueryExec = function(optObj) {
 	this.drawTable = function() {
 		OAT.Dom.clear(self.dom.result);
 		
-		var entities = [];
+		var entCount = 0;
+		var entities = {};
 		var q = self.cache[self.cacheIndex].opts.query.replace(/[\r\n]/g," ");
 		var where = q.match(/where *{(.*)}/i);
 		if (where) {
 			var regs = where[1].match(/<[^>]+>/g);
 			if (regs) for (var i=0;i<regs.length;i++) {
 				var entity = regs[i].substring(1,regs[i].length-1);
-				entities.push(entity);
+				if (!(entity in entities)) { 
+					entities[entity] = 1; 
+					entCount++;
+				}
 			}
 		}
 		
 		var h = OAT.Dom.create("h3");
 		h.innerHTML = "This page is about:";
-		if (entities.length) {
+		if (entCount) {
 			var ul = OAT.Dom.create("ul");
-			for (var i=0;i<entities.length;i++) {
+			for (var p in entities) {
 				var li = OAT.Dom.create("li");
 				ul.appendChild(li);
-				li.innerHTML = entities[i];
+				li.innerHTML = p;
 			}
 			OAT.Dom.append([self.dom.result,h,ul]);
 		}
@@ -274,9 +276,9 @@ var QueryExec = function(optObj) {
 				row[index] = val;
 				simplified_row[index] = self.simplifyPrefix(val);
 			
-			if (self.dom.check.checked) {
+				if (self.dom.select.value == "0") {
 				var value = simplified_row[index];
-				var idx = Math.max(value.lastIndexOf("/"),value.lastIndexOf("#"));
+					var idx = Math.max(value.lastIndexOf("/"),value.lastIndexOf("#"),value.lastIndexOf(":"));
 					var simple = value.substring(idx+1);
 					if (idx != -1 && simple != "this") { simplified_row[index] = simple; }
 				}
@@ -363,7 +365,7 @@ var QueryExec = function(optObj) {
 		var dereferenceRef = function() {
 			var cache = self.cache[self.cacheIndex];
 			var q = "SELECT ?p, ?o \n"+
-					(cache.opts.defaultGraph ? "FROM <"+cache.opts.defaultGraph+">" : "")+
+					" FROM <"+href+">"+
 					"WHERE {<"+href+"> ?p ?o}";
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
@@ -373,7 +375,7 @@ var QueryExec = function(optObj) {
 		var exploreRef = function() {
 			var cache = self.cache[self.cacheIndex];
 			var q = "SELECT ?property ?hasValue ?isValueOf\n"+
-					(cache.opts.defaultGraph ? "FROM <"+cache.opts.defaultGraph+">" : "")+
+					" FROM <"+href+">"+
 					"WHERE {\n"+
 					"{ <"+href+"> ?property ?hasValue }\n"+
 					"UNION\n"+
@@ -386,7 +388,10 @@ var QueryExec = function(optObj) {
 		}
 	
 		var genRef = function() {
-			var ul = OAT.Dom.create("ul",{paddingLeft:"20px",marginLeft:"0px"});
+			var div = OAT.Dom.create("div",{margin:"5px"});
+			var s = OAT.Dom.create("strong");
+			s.innerHTML = "Data Links (Properties):";
+			var ul = OAT.Dom.create("ul");
 
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "Attributes";
@@ -401,21 +406,27 @@ var QueryExec = function(optObj) {
 			OAT.Dom.attach(a,"click",exploreRef);
 			var li = OAT.Dom.create("li");
 			OAT.Dom.append([ul,li],[li,a]);
+			OAT.Dom.append([div,s,ul]);
+
+			var s = OAT.Dom.create("strong");
+			s.innerHTML = "Document Links:";
+			var ul = OAT.Dom.create("ul");
 
 			var a = OAT.Dom.create("a");
 			a.innerHTML = "(X)HTML Page Open";
 			a.href = href;
 			var li = OAT.Dom.create("li");
 			OAT.Dom.append([ul,li],[li,a]);
+			OAT.Dom.append([div,s,ul]);
 			
-			return ul;
+			return div;
 		}
 			
 		var obj = {
 			title:"URL",
 			content:genRef,
 			width:200,
-			height:100,
+			height:160,
 			result_control:false,
 			activation:"click"
 		};

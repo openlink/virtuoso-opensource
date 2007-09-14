@@ -306,7 +306,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Get Data Set (Dereference)";
+			a.innerHTML = "Attributes";
 			a.href = "javascript:void(0)";
 			var start1 = self.throbberReplace(a);
 			OAT.Dom.attach(a,"click",function() {
@@ -318,7 +318,7 @@ OAT.RDFBrowser = function(div,optObj) {
 
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Get Data Set (Dereference) - replace storage";
+			a.innerHTML = "Attributes - replace storage";
 			a.href = "javascript:void(0)";
 			var start2 = self.throbberReplace(a);
 			OAT.Dom.attach(a,"click",function() {
@@ -334,7 +334,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Get Data Set (Dereference) - permalink";
+			a.innerHTML = "Attributes - permalink";
 			var root = window.location.toString().match(/^[^#]+/)[0];
 			a.href = root+"#"+encodeURIComponent(href);
 			list.push(a);
@@ -343,7 +343,7 @@ OAT.RDFBrowser = function(div,optObj) {
 
 		if (!(disabledActions & OAT.RDFData.DISABLE_FILTER)) {
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Explore";
+			a.innerHTML = "Relationships";
 			a.href = "javascript:void(0)";
 			OAT.Dom.attach(a,"click",function() {
 				/* dereference link */
@@ -379,7 +379,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		var list = [];
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var img1 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
-			img1.title = "Get Data Set (Dereference)";
+			img1.title = "Attributes";
 			img1.src = self.options.imagePath + "RDF_rdf.png";
 			var start = self.throbberReplace(img1,true);
 			OAT.Dom.attach(img1,"click",function() {

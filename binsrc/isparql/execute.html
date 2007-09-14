@@ -34,7 +34,7 @@
 		var endRef = function() {
 			OAT.Dom.hide("throbber");
 		}
-	
+		OAT.Event.attach("throbber","click",OAT.AJAX.cancelAll);
 		OAT.Preferences.imagePath = "/isparql/toolkit/images/";
 		var qe = new QueryExec({div:"result"});
 		var opts = OAT.Dom.uriParams();
@@ -66,7 +66,7 @@
 <link rel="stylesheet" type="text/css" href="styles/execute.css"/>
 
 <body>
-	<div id="throbber" style="text-align: center;"><img style="margin: auto;" src="/isparql/toolkit/images/throbber.gif" /></div>
+	<div id="throbber" style="text-align: center;"><img style="margin: auto; cursor:pointer;" src="/isparql/toolkit/images/throbber.gif" /></div>
 	<div id="file"></div><p></p>
 	<div id="result"></div>
     <p class="copyright">

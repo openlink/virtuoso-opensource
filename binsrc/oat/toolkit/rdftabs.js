@@ -410,6 +410,19 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 			if (type == 3) { /* image */
 				content = OAT.Dom.create("img");
 				content.src = value;
+				var ref = function() {
+					var w = content.width;
+					var h = content.height;
+					var max = Math.max(w,h);
+					if (max > 600) {
+						var coef = 600 / max;
+						var nw = Math.round(w*coef);
+						var nh = Math.round(h*coef);
+						content.width = nw;
+						content.height = nh;
+					}
+				}
+				OAT.Event.attach(content,"load",ref);
 			} else if (type == 1) { /* dereferencable link */
 				content = OAT.Dom.create("a");
 				content.href = "javascript:void(0)";
@@ -1067,7 +1080,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 
 	this.showBig = function(index) {
 		if (!self.dimmer) {
-			self.dimmer = OAT.Dom.create("div",{position:"absolute",padding:"1em",backgroundColor:"#fff",border:"4px solid #000",textAlign:"center"});
+			self.dimmer = OAT.Dom.create("div",{position:"absolute",padding:"1em",backgroundColor:"#fff",border:"4px solid #000",textAlign:"center",fontSize:"160%"});
 			OAT.Dimmer.show(self.dimmer);
 			self.container = OAT.Dom.create("div",{margin:"auto"});
 			self.prev = OAT.Dom.create("span",{fontWeight:"bold",cursor:"pointer"});
@@ -1102,6 +1115,33 @@ OAT.RDFTabs.images = function(parent,optObj) {
 				img.width = neww;
 				img.height = newh;
 			}
+			
+			var plus = OAT.Dom.create("strong",{cursor:"pointer",marginRight:"3px"});
+			var minus = OAT.Dom.create("strong",{cursor:"pointer"});
+			plus.innerHTML = "+";
+			minus.innerHTML = "&mdash;";
+			var d = OAT.Dom.create("div",{textAlign:"left"});
+			OAT.Dom.append([self.container,d],[d,plus,minus]);
+			
+			var resizeRef = function(coef) {
+				var w = img.width;
+				var h = img.height;
+				w = Math.round(w*coef);
+				h = Math.round(h*coef);
+				img.width = w;
+				img.height = h;
+				OAT.Dom.center(self.dimmer,1,1);
+			}
+			
+			OAT.Event.attach(plus,"click",function(){
+				resizeRef(1.5);
+			});
+
+			
+			OAT.Event.attach(minus,"click",function(){
+				resizeRef(0.667);
+			});
+
 			self.container.appendChild(img);
 			OAT.Dom.center(self.dimmer,1,1);
 		});

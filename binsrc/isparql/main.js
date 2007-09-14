@@ -49,6 +49,7 @@ if (typeof(default_pass) != 'undefined') goptions.password = default_pass;
 
 function init() {
 	OAT.Dom.hide("throbber");
+	OAT.Event.attach("throbber","click",OAT.AJAX.cancelAll);
 	init_qbe();
 	/* fix image paths */
 	if (toolkitImagesPath.match(/[^\/]$/)) { toolkitImagesPath += "/"; }
@@ -497,7 +498,6 @@ iSPARQL.QueryExec = function(paramsObj) {
 	        callback:function(data,headers,param) {  // function called on result
 		    } /* callback */
 	  	};
-	  	
 	  	for (var p in paramsObj) { params[p] = paramsObj[p]; }
 
 	    if (params.service == '') {

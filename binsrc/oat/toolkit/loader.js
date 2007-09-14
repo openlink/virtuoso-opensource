@@ -765,9 +765,7 @@ OAT.Loader = { /* first part of loader object */
 	},
 
 	startOpenAjax:function() {
-		OpenAjax.registerLibrary("oat", "http://www.openlinksw.com/oat", "1.0");
-		OpenAjax.registerGlobals("oat", ["OAT","featureList"]);
-		OpenAjax.addOnLoad(function(){OAT.Loader.loadOccurred = 1;}, null, "library");
+		OpenAjax.hub.registerLibrary("oat", "http://www.openlinksw.com/oat", "1.0");
 	}
 }
 
@@ -839,7 +837,7 @@ OAT.Debug = {
 		OAT.Debug.data.push([sender,name,event]);
 	}
 }
-OAT.Debug.attach("*",OAT.MSG.OAT_DEBUG);
+//OAT.Debug.attach("*",OAT.MSG.OAT_DEBUG);
 
 /*
 	OAT Load:
@@ -856,7 +854,6 @@ OAT.Debug.attach("*",OAT.MSG.OAT_DEBUG);
 		6c) execute window.init, if present
 */
 OAT.Loader.findPath();
-if (OAT.Loader.openAjax) { OAT.Loader.startOpenAjax(); } else {
-	OAT.Event.attach(window,"load",function(){OAT.Loader.loadOccurred = 1;});
-}
+if (OAT.Loader.openAjax) { OAT.Loader.startOpenAjax(); } 
+OAT.Event.attach(window,"load",function(){OAT.Loader.loadOccurred = 1;});
 OAT.Loader.include("bootstrap.js");
