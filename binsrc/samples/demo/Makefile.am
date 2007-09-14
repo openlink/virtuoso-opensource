@@ -112,4 +112,5 @@ EXTRA_DIST = \
 	mkdemo.ini \
 	mkdemo.sh \
 	mkdoc.sh \
+	nw.owl \
 	vad_version
