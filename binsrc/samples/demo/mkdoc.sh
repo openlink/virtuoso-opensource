@@ -289,6 +289,7 @@ LOAD_SQL()
 directory_clean () 
 {
     LOG "Directory clean..."
+    chmod -R +x vad 2>/dev/null
     $myrm -rf vad 2>/dev/null
     $myrm -rf vad.* 2>/dev/null
 
