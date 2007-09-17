@@ -1234,9 +1234,8 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char text[MAX_TEXT_SZ];
   int f = 0;
   int * fill = &f;
-  query_t * qr = NULL; /*dummy*/
-  qr = (query_t *) dk_alloc (sizeof (query_t));
-  memset (qr, 0, sizeof (query_t));
+  query_t * qr;
+  DK_ALLOC_QUERY (qr);
   memset (&sc, 0, sizeof (sc));
   CC_INIT (cc, cli);
   sc.sc_cc = &cc;

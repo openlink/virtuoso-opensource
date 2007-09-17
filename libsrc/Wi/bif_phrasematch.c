@@ -1585,11 +1585,11 @@ static const char *aps_select_max_id__text =
   "select max (APS_ID) from DB.DBA.SYS_ANN_PHRASE_SET";
 
 
-void sql_compile_many (int count, ...)
+void sql_compile_many (int count, int compile_static, ...)
 {
   int idx;
   va_list ap;
-  va_start (ap, count);
+  va_start (ap, compile_static);
   for (idx = 0; idx < count; idx++)
     {
       caddr_t err = NULL;
@@ -1597,6 +1597,9 @@ void sql_compile_many (int count, ...)
       query_t **qry_ptr = va_arg (ap, query_t **);
       if ((NULL == txt) || (NULL == qry_ptr))
         GPF_T;
+      if (compile_static)
+        qry_ptr[0] = sql_compile_static (txt, bootstrap_cli, &err, 0);
+      else
       qry_ptr[0] = sql_compile (txt, bootstrap_cli, &err, 0);
       if (NULL != err)
         sqlr_resignal (err);      
@@ -1610,7 +1613,7 @@ void ap_global_init (query_instance_t *qst)
 {
   caddr_t err, maxval;
   local_cursor_t *lc;
-  sql_compile_many (9,
+  sql_compile_many (9, 1,
     apc_select_by_id__text		, &apc_select_by_id__qr			,
     apc_select_max_id__text		, &apc_select_max_id__qr		,
     aps_select_by_id__text		, &aps_select_by_id__qr			,
