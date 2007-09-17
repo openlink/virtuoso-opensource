@@ -282,7 +282,9 @@ typedef struct xp_env_s
     dbe_schema_t *	xe_schema;
     struct sql_comp_s *	xe_sc;
     struct xml_view_s *	xe_view;
+#ifdef OLD_VXML_TABLES
     caddr_t		xe_doc_spec;
+#endif
     int			xe_is_http;
     int			xe_is_shallow;
     int			xe_is_for_key; /*!< __key XPATH option is set: Select the key of the selected entities instead of the serialization text. */

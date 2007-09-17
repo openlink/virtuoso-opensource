@@ -1572,7 +1572,13 @@ xp_option
 	| O_QUIET { xp_reject_option_if_not_allowed (xpp_arg, XP_XPATH_OPTS); xpp_arg->xpp_is_quiet = 1; }
 	| O_DAVPROP { xp_reject_option_if_not_allowed (xpp_arg, XP_XPATH_OPTS); xpp_arg->xpp_is_davprop = 1; }
 	| O_BASE_URI literal_strg { xp_reject_option_if_not_allowed (xpp_arg, XP_XPATH_OPTS); xpp_arg->xpp_xp_env->xe_base_uri = box_copy_tree ($2); }
-	| O_DOC literal_strg { xp_reject_option_if_not_allowed (xpp_arg, XP_XPATH_OPTS); xpp_arg->xpp_xp_env->xe_doc_spec = box_copy_tree ($2); }
+	| O_DOC literal_strg {
+#ifdef OLD_VXML_TABLES
+	   xp_reject_option_if_not_allowed (xpp_arg, XP_XPATH_OPTS); xpp_arg->xpp_xp_env->xe_doc_spec = box_copy_tree ($2);
+#else
+           xp_error (xpp_arg, "The __doc XPATH option is deprecated after version 2.7 of Virtuoso Universal Server and not available in any version of Virtuoso Open Source");
+#endif
+	   }
 	| O_VIEW view_name { 
 		xp_reject_option_if_not_allowed (xpp_arg, XP_XPATH_OPTS);
 		if (NULL != xpp_arg->xpp_xp_env->xe_view)

@@ -48,6 +48,7 @@ encoding_handler_t *intl_find_user_charset (const char *encname, int xml_input_i
 #define DELTA			8
 
 /* Table names and columns names */
+#ifdef OLD_VXML_TABLES
 #define	TN_ENTITY		 "DB.DBA.VXML_ENTITY"
 #define	TN_VXMLDOC		"DB.DBA.VXML_DOCUMENT"
 #define	TN_TEXTFRAG		"DB.DBA.VXML_TEXT_FRAGMENT"
@@ -66,6 +67,7 @@ encoding_handler_t *intl_find_user_charset (const char *encname, int xml_input_i
 
 #define	CN_FRAG_SHORT		"V_SHORT"
 #define	CN_FRAG_LONG		"V_LONG"
+#endif
 
 /* XML bif functions names */
 #ifndef O12

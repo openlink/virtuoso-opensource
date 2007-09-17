@@ -1095,6 +1095,7 @@ xp_join_pred (xp_ctx_t * start, xp_ctx_t * next)
 }
 
 
+#ifdef OLD_VXML_TABLES
 char * fixed_doc_text =
 "select 1 from (select _D.E_ID, (select N.E_ID from DB.DBA.VXML_DOCUMENT N where N.E_ID > _D.E_ID) as D_NEXT "
 "  from DB.DBA.VXML_DOCUMENT _D where D_URI = ':0' order by D_URI) __D";
@@ -1107,6 +1108,7 @@ char * wildcard_doc_text =
 
 caddr_t wildcard_doc = NULL;
 caddr_t fixed_doc = NULL;
+#endif
 
 
 void
@@ -1120,6 +1122,7 @@ xp_init_filter (xpp_t *xpp, xp_ctx_t * start_ctx, xp_ret_t * xr)
   sprintf (cn, "c__%d", start_ctx->xc_c_no);
   if (start_ctx->xc_is_generated)
     return;
+#ifdef OLD_VXML_TABLES
   start_ctx->xc_is_generated = 1;
   texp->_.table_exp.from =
     (ST**) t_list (1, t_list (3, TABLE_REF, t_list (5, TABLE_DOTTED, t_box_string ("DB.DBA.VXML_DOCUMENT"), t_box_string (cn),
@@ -1128,6 +1131,9 @@ xp_init_filter (xpp_t *xpp, xp_ctx_t * start_ctx, xp_ret_t * xr)
   texp->_.table_exp.where = where;
   sqlp_infoschema_redirect (texp);
   xr->xr_tree = sel;
+#else
+  GPF_T1("Access to old VXML tables");
+#endif
 }
 
 /*mapping schema 12.02.03*/
@@ -1153,6 +1159,7 @@ xp_is_constant_subelement (XT * xj)
 */
 /*end mapping schema*/
 
+#ifdef OLD_VXML_TABLES
 ST *
 xp_document_select (xpp_t *xpp)
 {
@@ -1253,7 +1260,7 @@ xp_init_doc_select (xpp_t *xpp, XT * step, xp_ret_t * xr)
   /* dbg_print_box (xr->xr_tree, stdout); printf ("\n"); */
 
 }
-
+#endif
 
 void
 xp_init_select (xpp_t *xpp, xp_ctx_t * xc, XT * step, xp_ret_t * xr)
@@ -1274,11 +1281,13 @@ xp_init_select (xpp_t *xpp, xp_ctx_t * xc, XT * step, xp_ret_t * xr)
     }
   else
     {
+#ifdef OLD_VXML_TABLES
       if (!xc->xc_table && xp_env ()->xe_doc_spec)
 	{
 	  xp_init_doc_select (xpp, step, xr);
 	  return;
 	}
+#endif
       if (axs == XP_CHILD || axs == XP_CHILD_WR || axs == XP_ABS_CHILD || axs == XP_ABS_CHILD_WR)
 	where = t_stlist (3, BOP_EQ, st_col_dotted (cn, "E_LEVEL"), t_box_num (1));
       else
@@ -3493,16 +3502,17 @@ sqlc_embedded_xpath (sql_comp_t * sc, char * str, caddr_t * err_ret)
 }
 
 
+#ifdef OLD_VXML_TABLES
 void
 xp_comp_init (void)
 {
   caddr_t err;
-  fixed_doc = (caddr_t) sql_compile (fixed_doc_text,
+  fixed_doc = (caddr_t) sql_compile_static (fixed_doc_text,
 				     bootstrap_cli, &err, SQLC_DEFAULT);
-  wildcard_doc = (caddr_t) sql_compile (wildcard_doc_text,
+  wildcard_doc = (caddr_t) sql_compile_static (wildcard_doc_text,
 					bootstrap_cli, &err, SQLC_DEFAULT);
 }
-
+#endif
 
 caddr_t *
 xpt_combine (int op, caddr_t *left, caddr_t *right)

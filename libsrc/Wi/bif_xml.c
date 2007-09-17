@@ -40,13 +40,13 @@
 #include "arith.h"
 #include "security.h"
 #include "libutil.h"
+#include "srvmultibyte.h"
+#include "multibyte.h"
 
 #include "xml.h"
 #include "http.h"
 #include "xmltree.h"
 #include "bif_xper.h"
-#include "srvmultibyte.h"
-#include "multibyte.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -2873,10 +2873,11 @@ xte_serialize_1 (caddr_t * current, dk_session_t * ses, xte_serialize_state_t *x
 }
 
 
+#ifdef OLD_VXML_TABLES
 const char * add_entity_with_param =
 "insert into %s (" CN_ENT_ID "," CN_ENT_LEVEL "," CN_ENT_NAME "," CN_ENT_MISC "," CN_ENT_WSPACE
  "," CN_ENT_LEAD "," CN_ENT_TRAIL "%s) values(?,?,?,?,?,?,?%s)";
-
+#endif
 
 caddr_t
 bif_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)

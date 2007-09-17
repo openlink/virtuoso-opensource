@@ -215,7 +215,9 @@ xmls_init (void)
     ddl_sel_for_effect ("select count (*)  from SYS_VT_INDEX where 0 = __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING, deserialize (VI_ID_CONSTR))");
   else
     ddl_sel_for_effect ("select count (*)  from SYS_VT_INDEX where 0 = __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, NULL, deserialize (VI_ID_CONSTR))");
+#ifdef OLD_VXML_TABLES
   xp_comp_init ();
+#endif
   xml_tree_init ();
 }
 

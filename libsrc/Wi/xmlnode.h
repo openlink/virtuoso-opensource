@@ -236,7 +236,9 @@ caddr_t qi_tb_xml_schema (query_instance_t * qi, char * read_tb);
 dbe_table_t * xmls_element_table (char * elt);
 
 void xmls_init (void);
+#ifdef OLD_VXML_TABLES
 void xp_comp_init (void);
+#endif
 
 void ddl_init_xml (void);
 
