@@ -2669,7 +2669,8 @@ create procedure CAL.WA.event_update (
   in eRepeatParam2 integer,
   in eRepeatParam3 integer,
   in eRepeatUntil datetime,
-  in eReminder integer)
+  in eReminder integer,
+  in notes varchar := '')
 {
   if (id = -1) {
     id := sequence_next ('CAL.WA.event_id');
@@ -2690,6 +2691,7 @@ create procedure CAL.WA.event_update (
         E_REPEAT_PARAM3,
         E_REPEAT_UNTIL,
         E_REMINDER,
+        E_NOTES,
         E_CREATED,
         E_UPDATED
       )
@@ -2710,6 +2712,7 @@ create procedure CAL.WA.event_update (
         eRepeatParam3,
         eRepeatUntil,
         eReminder,
+        notes,
         now (),
         now ()
       );
@@ -2728,6 +2731,7 @@ create procedure CAL.WA.event_update (
            E_REPEAT_PARAM3 = eRepeatParam3,
            E_REPEAT_UNTIL = eRepeatUntil,
            E_REMINDER = eReminder,
+           E_NOTES = notes,
            E_UPDATED = now ()
      where E_ID = id and
            E_DOMAIN_ID = domain_id;
@@ -3219,7 +3223,8 @@ create procedure CAL.WA.task_update (
   in eEventEnd datetime,
   in priority integer,
   in status varchar,
-  in complete integer)
+  in complete integer,
+  in notes varchar)
 {
   if (id = -1) {
     id := sequence_next ('CAL.WA.event_id');
@@ -3236,6 +3241,7 @@ create procedure CAL.WA.task_update (
         E_PRIORITY,
         E_STATUS,
         E_COMPLETE,
+        E_NOTES,
         E_CREATED,
         E_UPDATED
       )
@@ -3252,6 +3258,7 @@ create procedure CAL.WA.task_update (
         priority,
         status,
         complete,
+        notes,
         now (),
         now ()
       );
@@ -3265,6 +3272,7 @@ create procedure CAL.WA.task_update (
            E_PRIORITY = priority,
            E_STATUS = status,
            E_COMPLETE = complete,
+           E_NOTES = notes,
            E_UPDATED = now ()
      where E_ID = id and
            E_DOMAIN_ID = domain_id;

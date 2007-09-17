@@ -440,8 +440,9 @@
       <v:variable name="v_priority" type="integer" default="3"/>
       <v:variable name="v_complete" type="integer" default="0"/>
       <v:variable name="v_status" type="varchar" default="''"/>
+      <v:variable name="v_notes" type="varchar" default="''" />
 
-      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
+      <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="0" />
     </vm:variables>
     <vm:pagebody>
       <v:before-data-bind>
@@ -457,6 +458,7 @@
         graphIri := SIOC..get_graph ();
         http(sprintf('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s?default-graph-uri=%U&amp;query=%U&amp;format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml')); 
       ?>
+      <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo" />
       <?vsp
         if (0)
         {
@@ -505,6 +507,7 @@
                     }
                   }
                 }
+                
                 cCommand := get_keyword ('date', e.ve_params, '');
                 if (cCommand <> '') {
                   cParams := split_and_decode(cCommand, 0,'\0\0_');
@@ -1023,7 +1026,7 @@
               <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
 
                 <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="events" style="width: 100%; backgrownd-color: #FFF;" cellspacing="0">
+                  <table id="events" style="width: 100%; background-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
                         <vm:if test="self.account_role not in ('public', 'guest')">
@@ -1109,7 +1112,7 @@
 
               <v:data-set name="ds1" data-source="self.ds1rc" nrows="5" scrollable="1">
                 <v:template name="ds1_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="events" style="width: 100%; backgrownd-color: #FFF;" cellspacing="0">
+                  <table id="events" style="width: 100%; background-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
                         <vm:if test="self.account_role not in ('public', 'guest')">
@@ -1215,7 +1218,7 @@
               <v:data-set name="ds2" data-source="self.ds2rc" scrollable="1">
 
                 <v:template name="ds2_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="events" style="width: 100%; backgrownd-color: #FFF;" cellspacing="0">
+                  <table id="events" style="width: 100%; background-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
                         <vm:if test="self.account_role not in ('public', 'guest')">
@@ -1302,7 +1305,7 @@
               <v:data-set name="ds3" data-source="self.ds3rc" scrollable="1">
 
                 <v:template name="ds3_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                  <table id="events" style="width: 100%; backgrownd-color: #FFF;" cellspacing="0">
+                  <table id="events" style="width: 100%; background-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
                         <vm:if test="self.account_role not in ('public', 'guest')">
@@ -1482,8 +1485,14 @@
         <div class="new-form-header">
           <v:label format="%s" value="--initcap (self.cAction) || ' event'"/>
         </div>
-        <div class="new-form-body">
-          <table cellspacing="0">
+        <div id="e" class="c1">
+          <div class="tabs">
+            &nbsp;<vm:tabCaption tab="e" tabsCount="2" tabNo="0" caption="Main" />
+            &nbsp;<vm:tabCaption tab="e" tabsCount="2" tabNo="1" caption="Notes" />
+          </div>
+          <div class="contents">
+            <div id="e_content_0" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
             <tr>
               <th width="30%">
                 <v:label for="e_subject" value="Subject"/>
@@ -2150,8 +2159,41 @@
             </tr>
           </table>
         </div>
+            <div id="e_content_1" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <th width="20%" valign="top">
+                    Notes
+                  </th>
+                  <td>
+                    <?vsp
+                      declare tmpString any;
+                      
+                      tmpString := coalesce (self.v_notes, '');
+                      tmpString := replace(tmpString, '\'', '&#39;');
+                      tmpString := replace(tmpString, '"', '&#34;');
+                      tmpString := replace(tmpString, chr(10), ' ');
+                      tmpString := replace(tmpString, chr(13), ' ');
+                    ?>
+                    <![CDATA[
+                      <script language="JavaScript" type="text/javascript" src="js/rte/richtext.js"></script>
+                      <script language="JavaScript" type="text/javascript" src="js/rte/html2xhtml.js"></script>
+                      <script language="JavaScript" type="text/javascript">
+                        initRTE("js/rte/images/", "js/rte/", "", true);
+                      </script>
+                      <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
+                      <script language="JavaScript" type="text/javascript">
+                        writeRichText('e_notes', '<?vsp http (tmpString); ?>', 500, 170, true, false);
+                      </script>
+                    ]]>
+                  </td>
+                </tr>
+              </table>  
+            </div>
+          </div>
+        </div>
         <div class="new-form-footer">
-          <v:button action="simple" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" enabled="--case when (self.cAction in ('create', 'edit')) then 1 else 0 end" xhtml_class="form-button">
+          <v:button action="simple" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" enabled="--case when (self.cAction in ('create', 'edit')) then 1 else 0 end" xhtml_onclick="javascript:updateRTE(\'e_notes\')" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 declare N any;
@@ -2171,6 +2213,7 @@
                 self.v_subject := trim (self.e_subject.ufl_value);
                 self.v_location := trim (self.e_location.ufl_value);
                 self.v_description := trim (self.e_description.ufl_value);
+                self.v_notes := trim (get_keyword ('e_notes', e.ve_params, ''));
 
                 CAL.WA.test (self.v_subject, vector('name', 'Subject', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
                 CAL.WA.test (self.v_location, vector('name', 'Location', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
@@ -2263,7 +2306,8 @@
                   self.v_repeatParam2,
                   self.v_repeatParam3,
                   self.v_repeatUntil,
-                  self.v_reminder
+                  self.v_reminder,
+                  self.v_notes
                 );
 
                 if (self.cScope in ('tasks', 'notes'))
@@ -2301,7 +2345,8 @@
                        CAL.WA.event_gmt2user (E_EVENT_END, self.cTimezone),
                        E_PRIORITY,
                        E_STATUS,
-                       E_COMPLETE
+                       E_COMPLETE,
+                       blob_to_string (E_NOTES)
                   into self.v_subject,
                        self.v_description,
                        self.v_tags,
@@ -2309,7 +2354,8 @@
                        self.v_eventEnd,
                        self.v_priority,
                        self.v_status,
-                       self.v_complete
+                       self.v_complete,
+                       self.v_notes
                   from CAL.WA.EVENTS
                  where E_ID = self.v_id;
 
@@ -2326,14 +2372,21 @@
               self.v_priority := 3;
               self.v_status := '';
               self.v_complete := 0;
+              self.v_notes := '';
             }
           ]]>
         </v:before-data-bind>
         <div class="new-form-header">
           <v:label format="%s" value="--initcap (self.cAction) || ' task'"/>
         </div>
-        <div class="new-form-body">
-          <table cellspacing="0">
+        <div id="t" class="c1">
+          <div class="tabs">
+            &nbsp;<vm:tabCaption tab="t" tabsCount="2" tabNo="0" caption="Main" />
+            &nbsp;<vm:tabCaption tab="t" tabsCount="2" tabNo="1" caption="Notes" />
+          </div>
+          <div class="contents">
+            <div id="t_content_0" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
             <tr>
               <th width="30%">
                 <v:label for="t_subject" value="Subject"/>
@@ -2525,8 +2578,41 @@
             </vm:if>
           </table>
         </div>
+            <div id="t_content_1" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <th width="20%" valign="top">
+                    Notes
+                  </th>
+                  <td>
+                    <?vsp
+                      declare tmpString any;
+                      
+                      tmpString := coalesce (self.v_notes, '');
+                      tmpString := replace(tmpString, '\'', '&#39;');
+                      tmpString := replace(tmpString, '"', '&#34;');
+                      tmpString := replace(tmpString, chr(10), ' ');
+                      tmpString := replace(tmpString, chr(13), ' ');
+                    ?>
+                    <![CDATA[
+                      <script language="JavaScript" type="text/javascript" src="js/rte/richtext.js"></script>
+                      <script language="JavaScript" type="text/javascript" src="js/rte/html2xhtml.js"></script>
+                      <script language="JavaScript" type="text/javascript">
+                        initRTE("js/rte/images/", "js/rte/", "", true);
+                      </script>
+                      <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
+                      <script language="JavaScript" type="text/javascript">
+                        writeRichText('t_notes', '<?vsp http (tmpString); ?>', 500, 170, true, false);
+                      </script>
+                    ]]>
+                  </td>
+                </tr>
+              </table>  
+            </div>
+          </div>
+        </div>
         <div class="new-form-footer">
-          <v:button action="simple" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" enabled="--case when (self.cAction in ('create', 'edit')) then 1 else 0 end" xhtml_class="form-button">
+          <v:button action="simple" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" enabled="--case when (self.cAction in ('create', 'edit')) then 1 else 0 end" xhtml_onclick="javascript:updateRTE(\'t_notes\')" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 declare tmp any;
@@ -2546,6 +2632,7 @@
                 self.v_status := self.t_status.ufl_value;
                 self.v_complete := cast (self.t_complete.ufl_value as integer);
                 self.v_tags := trim (self.t_tags.ufl_value);
+                self.v_notes := trim (get_keyword ('t_notes', e.ve_params, ''));
 
                 CAL.WA.test (self.v_subject, vector('name', 'Subject', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
                 CAL.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
@@ -2570,7 +2657,8 @@
                   CAL.WA.event_user2gmt (self.v_eventEnd, self.cTimezone),
                   self.v_priority,
                   self.v_status,
-                  self.v_complete
+                  self.v_complete,
+                  self.v_notes
                 );
 
                 self.cAction := 'browse';
@@ -2973,17 +3061,16 @@
       </vm:if>
 
       <vm:if test="self.cAction = 'settings'">
-        <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo" />
         <div class="new-form-header">
           Preferences
         </div>
-        <div id="c1">
+        <div id="s" class="c1">
           <div class="tabs">
-            <vm:tabCaption tab="1" tabs="2" caption="General"/>&nbsp;
-            <vm:tabCaption tab="2" tabs="2" caption="Calendar"/>&nbsp;
+            &nbsp;<vm:tabCaption tab="s" tabsCount="2" tabNo="0" caption="General" />
+            &nbsp;<vm:tabCaption tab="s" tabsCount="2" tabNo="1" caption="Calendar" />
           </div>
-          <div class="contents">
-            <div id="1" class="tabContent" style="display: none;">
+          <div id="s_contents" class="contents">
+            <div id="s_content_0" class="tabContent" style="display: none;">
               <table class="form-body" cellspacing="0">
                 <tr>
                   <th width="30%">
@@ -3050,7 +3137,7 @@
                 </tr>
               </table>
             </div>
-            <div id="2" class="tabContent" style="display: none;">
+            <div id="s_content_1" class="tabContent" style="display: none;">
               <table class="form-body" cellspacing="0">
                 <tr>
                   <th width="30%">
@@ -3210,11 +3297,6 @@
             </v:on-post>
           </v:button>
         </div>
-        <script>
-          <![CDATA[
-            initTab(2, 1);
-          ]]>
-        </script>
       </vm:if>
       
       <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">

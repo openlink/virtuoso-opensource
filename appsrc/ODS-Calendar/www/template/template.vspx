@@ -67,6 +67,11 @@
           	deleteDialog = new OAT.Dialog("Confirm delete", "deleteDiv", {width:400, modal:1});
           if ($('deleteDiv2'))
           	deleteDialog2 = new OAT.Dialog("Confirm delete", "deleteDiv2", {width:400, modal:1});
+          	
+      		// init tabs
+          showTab('e', 2, 0);
+          showTab('t', 2, 0);
+          showTab('s', 2, 0);
         }
         
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);

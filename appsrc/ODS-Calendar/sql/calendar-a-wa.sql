@@ -78,14 +78,14 @@ create procedure CAL.WA.vhost()
   if (isnull(strstr(sHost, '/DAV')))
     iIsDav := 0;
   VHOST_REMOVE(lpath    => '/calendar');
-  VHOST_DEFINE(lpath    => '/calendar',
-               ppath    => concat(sHost, 'www/'),
-               is_dav   => iIsDav,
-               is_brws  => 0,
-               vsp_user => 'dba',
-               realm    => 'wa',
-               def_page => 'home.vspx'
-             );
+  -- VHOST_DEFINE(lpath    => '/calendar',
+  --              ppath    => concat(sHost, 'www/'),
+  --              is_dav   => iIsDav,
+  --              is_brws  => 0,
+  --              vsp_user => 'dba',
+  --              realm    => 'wa',
+  --              def_page => 'home.vspx'
+  --            );
 }
 ;
 

@@ -250,26 +250,23 @@ function sortSelect(box) {
 
 // ---------------------------------------------------------------------------
 //
-function showTab(tab, tabs)
+function showTab(tabs, tabsCount, tabNo)
 {
-  for (var i = 1; i <= tabs; i++) {
-    var div = document.getElementById(i);
-    if (div != null) {
-      var divTab = document.getElementById('tab_'+i);
-      if (i == tab) {
-        var divNo = document.getElementById('tabNo');
-        divNo.value = tab;
-        div.style.visibility = 'visible';
-        div.style.display = 'block';
-        if (divTab != null) {
-          divTab.className = "tab activeTab";
-          divTab.blur();
-        };
+  if ($(tabs)) {
+    for (var i = 0; i < tabsCount; i++) {
+      var l = $(tabs+'_tab_'+i);      // tab labels
+      var c = $(tabs+'_content_'+i);  // tab contents
+      if (i == tabNo) {
+        if ($('tabNo'))
+          $('tabNo').value = tabNo;
+        c.style.visibility = 'visible';
+        c.style.display = 'block';
+        l.className = "tab activeTab";
+        l.blur();
       } else {
-        div.style.visibility = 'hidden';
-        div.style.display = 'none';
-        if (divTab != null)
-          divTab.className = "tab";
+        c.style.visibility = 'hidden';
+        c.style.display = 'none';
+        l.className = "tab";
       }
     }
   }
@@ -281,6 +278,22 @@ function initTab(tabs, defaultNo)
 {
   var divNo = document.getElementById('tabNo');
   var tab = defaultNo;
+  if (divNo != null) {
+    var divTab = document.getElementById('tab_'+divNo.value);
+    if (divTab != null)
+      tab = divNo.value;
+  }
+  showTab(tab, tabs);
+}
+
+// ---------------------------------------------------------------------------
+//
+function initTabs (tabs)
+{
+  var divNo = 1;
+    divNo = $v('tabNo')
+  var tab = 1;
+  if ($('tabNo'))
   if (divNo != null) {
     var divTab = document.getElementById('tab_'+divNo.value);
     if (divTab != null)

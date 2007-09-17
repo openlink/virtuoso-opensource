@@ -550,15 +550,12 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:tabCaption">
-    <div class="tabLabel">
-      <xsl:attribute name="id"><xsl:value-of select="concat('tabLabel_', @tab)"/></xsl:attribute>
       <xsl:element name="v:url">
-        <xsl:attribute name="url">javascript:showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>
+      <xsl:attribute name="url">javascript: showTab(\'<xsl:value-of select="@tab" />\', <xsl:value-of select="@tabsCount" />, <xsl:value-of select="@tabNo" />);</xsl:attribute>
         <xsl:attribute name="value"><xsl:value-of select="@caption"/></xsl:attribute>
-        <xsl:attribute name="xhtml_id"><xsl:value-of select="concat('tab_', @tab)"/></xsl:attribute>
-        <xsl:attribute name="xhtml_class">tab <xsl:if test="@activeTab = @tab">activeTab</xsl:if></xsl:attribute>
+      <xsl:attribute name="xhtml_id"><xsl:value-of select="concat(@tab, '_tab_', @tabNo)" /></xsl:attribute>
+      <xsl:attribute name="xhtml_class">tab</xsl:attribute>
       </xsl:element>
-    </div>
   </xsl:template>
 
   <!--=========================================================================-->
