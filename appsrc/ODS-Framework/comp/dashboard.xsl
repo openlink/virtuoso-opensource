@@ -2121,6 +2121,30 @@
     </div> <!-- widget -->
   </xsl:template>
 
+  <xsl:template match="vm:dash-my-facebook">
+    <div class="widget w_my_photos">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="images/icons/facebook_16.png"
+               width="16" height="16"
+               alt="facebook icon"/>
+          <span class="w_title_text">My Facebook</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
+        </div>
+      </div>
+      <div class="w_pane content_pane">
+        <p>Are you familiar to <a href="http://www.facebook.com"><img src="images/facebook_logo_full.png" border="0" style="vertical-align: text-bottom;"/></a> ?<br/><br/> You are <v:url name="odsbar_myfacebook_link_1" url="--self.odsbar_ods_gpath||'fb_front.vspx'" render-only="1" value="1 click" is-local="1"/> away from its ODS implementation.</p>
+      </div>
+      <div class="w_footer">
+        <v:url name="odsbar_myfacebook_link_2" url="--self.odsbar_ods_gpath||'fb_front.vspx'" render-only="1" value="More..." is-local="1"/>
+      </div>
+    </div> <!-- widget -->
+  </xsl:template>
+
   <xsl:template match="vm:dash-my-guestbook">
     <vm:if test="wa_vad_check ('oMail') is not null and 
                  exists (select 1 

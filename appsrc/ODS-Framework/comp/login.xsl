@@ -127,9 +127,12 @@
                     </v:before-render>
               </v:button> <!-- login button -->
 
+<!--
 		  <xsl:if test="not(@inst)">
 		      <vm:register/>
 		  </xsl:if>
+-->
+                <vm:register/>
               <xsl:choose>
                 <xsl:when test="@inst">
                   If you are a new member, please enter the following to create an account:

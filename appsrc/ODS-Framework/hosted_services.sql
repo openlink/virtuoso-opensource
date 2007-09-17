@@ -5025,10 +5025,10 @@ create procedure WA_GET_MFORM_APP_NAME (in app varchar)
     return 'Discussions';
   else if (app = 'polls')
     return 'Polls';
-  else if (app = 'addressbook')
-    return 'AddressBook';
-  else if (app = 'calendar')
-    return 'Calendar';
+  else if (app = 'AddressBook')
+    return 'AddressBooks';
+  else if (app = 'Calendar')
+    return 'Calendars';
   else
     return app;
 };

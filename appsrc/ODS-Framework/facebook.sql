@@ -100,7 +100,6 @@ create method auth_getSession(
        self.session_key := cast(xpath_eval('/auth_getSession_response/session_key',_result) as varchar);
        _user:=cast(xpath_eval('/auth_getSession_response/uid',_result) as integer);
        
-       
        if (cast(xpath_eval('/auth_getSession_response/secret',_result) as varchar) is not null) {
          -- desktop apps have a special secret
          self.secret := cast(xpath_eval('/auth_getSession_response/secret',_result) as varchar);
@@ -126,9 +125,10 @@ create method call_method(
     _result:=xtree_doc(res_xml);
 
 
---    dbg_obj_print(xpath_eval('/error_response',_result));
     if(xpath_eval('/error_response',_result) is not null )
     {
+--       dbg_obj_print(cast(xpath_eval('/error_response/error_code',_result) as varchar));
+       
        if(self.debug_mode=1)
        {
           dbg_obj_print('Facebook REST API returns ERROR XML');
@@ -794,6 +794,11 @@ for DB.DBA.Facebook
     if(expires='0')
        expires:=dateadd ('hour', 168, now());
        
+    if(isstring(expires) and expires='0')
+         expires:=dateadd ('day', 15, now());
+    else expires:=now();
+
+    
     expires_str := sprintf (' expires=%s;', date_rfc1123 (dateadd ('hour', 1, expires)));
     
     declare _COOKIE any;
@@ -859,13 +864,15 @@ for DB.DBA.Facebook
           _cookies is not null)
     {
      self.fb_params:= _cookies;  
+      
   --       self := udt_set(self,'fb_params',_cookies);
     }
     
     if(get_keyword('auth_token',self._params,null) is not null)
        _session := self.do_get_session(get_keyword('auth_token',self._params)); --do_get_session sets self._user along the session
     else
-       _session:='';
+       _session:=null;
+
     
     
     if (self.fb_params is not null) {
@@ -884,17 +891,18 @@ for DB.DBA.Facebook
 --      dbg_obj_print('self.fb_params',self.fb_params);
       
       _user       := coalesce( self._user,get_keyword('user',self.fb_params,null)); --if do_get_session have already succeeded to set _user no need to look for it in fb_params
-      session_key := get_keyword('session_key',self.fb_params, _session);
+      session_key := coalesce(_session,get_keyword('session_key',self.fb_params, ''));
       expires     := get_keyword('expires',self.fb_params, now());
 
       self.set_user(_user, session_key, expires);
 
-    } else if (length(_cookies)>0) {
+    } else if (length(_cookies)>0)
+    {
       -- use api_key . '_' as a prefix for the cookies in case there are
       -- multiple facebook clients on the same domain.
       self.set_user(get_keyword('user',_cookies ),get_keyword('session_key',_cookies ),now());
-    } else if (length(get_keyword('auth_token',self._params,'')) and  length(_session)) {
-      self.set_user(get_keyword('uid',_session ), get_keyword('session_key',_session ), get_keyword('expires',_session ));
+    }else if (length(get_keyword('auth_token',self._params,'')) and  _session is not null) {
+      self.set_user(self._user,_session, now());
     }
 
     if( self.fb_params is not null)
@@ -999,10 +1007,12 @@ for DB.DBA.Facebook
     
     if(auth_res is not null)
     {
-      if((self._user is null or self._user=0) and auth_res[1] is not null)
+      if( auth_res[1] is not null and auth_res[0] is not null and locate(cast(auth_res[1] as varchar),cast(auth_res[0] as varchar))>0)
+      {
           self._user:=auth_res[1];
-      
       return auth_res[0];
+          
+      }else self.redirect(self.get_login_url(self.current_url(), self.in_frame(),0)); --this action is due to facebook issue(facebook site generates invalid auth token in some cases)
     }
     return '';
  
@@ -1129,13 +1139,17 @@ for DB.DBA.Facebook
 
     if(_http_query_str is not null and length(_http_query_str)>0)
     {
-      return 'http://' || http_request_header(self._lines,'Host') || http_path()||'?'||_http_query_str;
+--      return 'http://' || http_request_header(self._lines,'Host') || http_path()||'?'||_http_query_str;
+      return '?'||_http_query_str;
     }else if(_sid is not null and length(_sid)>0)
     {
-      return 'http://' || http_request_header(self._lines,'Host') || http_path()||'?sid='||_sid||'&realm='||coalesce(_realm,'wa');
+--      return 'http://' || http_request_header(self._lines,'Host') || http_path()||'?sid='||_sid||'&realm='||coalesce(_realm,'wa');
+      return '?sid='||_sid||'&realm='||coalesce(_realm,'wa');
     }
     
-    return 'http://' || http_request_header(self._lines,'Host') || http_path();
+--    return 'http://' || http_request_header(self._lines,'Host') || http_path();
+
+    return '';
 
 }
 ;
@@ -1217,10 +1231,11 @@ create procedure sync_fbf_odsab (
 --_res_stat[1] - new contacts count
 --_res_stat[2] - updated contacts count
 --_res_stat[3] - total fb friends count
+--_res_stat[4] - addressbook id if exists
 
 declare _res_stat any;
 
-_res_stat:=vector(0,0,0,0);
+_res_stat:=vector(0,0,0,0,0);
 
 declare ab_domain_id integer;
 ab_domain_id:=0;
@@ -1237,6 +1252,7 @@ _no_address_book:;
     _res_stat[0] := -1;
     return _res_stat;
   }
+  _res_stat[4]:=ab_domain_id;
 }
 ;
 
@@ -1294,7 +1310,7 @@ declare _res any;
           state := '00000';
           msg := '';
 
-          qry:=sprintf('select P_ID from AB.WA.PERSONS where P_FULL_NAME=''%s'' and P_FIRST_NAME=''%s'' and P_LAST_NAME=''%s''',full_name,first_name,last_name);
+          qry:=sprintf('select P_ID from AB.WA.PERSONS where P_FULL_NAME=''%s'' and P_FIRST_NAME=''%s'' and P_LAST_NAME=''%s'' and P_DOMAIN_ID=%d',full_name,first_name,last_name,ab_domain_id);
           exec (qry, state, msg, vector(), maxrows, metas, rset);
           if (state = '00000' and length(rset)>0)
           {

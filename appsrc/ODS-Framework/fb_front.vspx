@@ -40,7 +40,6 @@
       <vm:subnavigation-new on="site"/>
       <v:variable name="_fb" type="DB.DBA.Facebook"/>
       <v:variable name="_fb_isset" type="integer"/>
-      <v:variable name="appcallbackurl" type="varchar" default="'http://bdimitrov.tradenet-ltd.com:8890/ods/fb_front.vspx'"/>
       <v:variable name="_dhtml" type="any" />
       <vm:body>
         <v:before-data-bind>
@@ -106,6 +105,7 @@
             select WAUI_FACEBOOK_ID into _ods_fb_id from DB.DBA.WA_USER_INFO where WAUI_U_ID=_user_id;
           }
           
+          
           declare fb_dba_options any;
           if(_get_ods_fb_settings(fb_dba_options)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
           {
@@ -119,6 +119,7 @@
           self._dhtml:=vector();
           
           declare _html,_src,_fb_user_fullname varchar;
+          _fb_user_fullname:='';
 
           if(self._fb_isset)
           {
@@ -192,12 +193,16 @@
               }else
                 _html:='Hello, user:'||cast(_fb_user as varchar)||'<br/>';
             
+
+            
               self._dhtml:=vector_concat(self._dhtml,vector('user',_html));
             
               _res:=self._fb.api_client.friends_get();
             
+            
               if(isarray(_res) and length(_res)>0)
               { 
+
                 declare ff_ids varchar;
                 ff_ids:='';
                 declare i integer;
@@ -243,9 +248,20 @@
               }else
                 _html:='You have no Facebook friends.';
              
+              
               self._dhtml:=vector_concat(self._dhtml,vector('friends',_html));
             
               
+
+              if(get_keyword('import', params,'')='create_import')
+              {
+                 declare _inst_id integer; 
+                 
+                 _inst_id:=DB.DBA.ODS_CREATE_NEW_APP_INST ('AddressBook', _user_name||'\'s AddressBook', _user_name);
+                 
+                 sync_fbf_odsab(self._fb,_user_id,_fb_user);
+              }
+
               if(get_keyword('import', params,'')='import')
                  sync_fbf_odsab(self._fb,_user_id,_fb_user);
                  
@@ -259,43 +275,48 @@
 
             _html:='';
 
+
             if(_user_id is not null)
-               _html:=_html||'You are logged as ODS user: '||_user_name||'.<br/>';
+               _html:=_html||'You are logged as ODS user: '||_user_name||'.';
             else
-               _html:=_html||'You are not logged as ODS user!<br/>';
+               _html:=_html||'You are not logged as ODS user!';
+
                   
             if(_fb_user<>0)   
-               _html:=_html||'You are logged as Facebook user: '||_fb_user_fullname||'.<br/>';
+               _html:=_html||'<br/><br/>You are logged as Facebook user: '||_fb_user_fullname||'.';
+
 
             if(exists(select 1 from DB.DBA.WA_USER_INFO where WAUI_U_ID=_user_id and (WAUI_FACEBOOK_ID is null or WAUI_FACEBOOK_ID<1) ) )
             {
-               _html:=_html||'Your ODS and Facebook users are not associated.<br/> <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=yes',_ods_login_params)||'">Associate my ODS user to my Facebook user.</a>';
+               _html:=_html||'<br/><br/>Your ODS and Facebook users are not associated.<br/> <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=yes',_ods_login_params)||'">Associate my ODS user to my Facebook user.</a>';
            
             }else if(_user_id is not null and _fb_user<>0 and _are_assoc=1)
-               _html:=_html||'Your ODS and Facebook users are associated.';
+               _html:=_html||'<br/><br/>Your ODS and Facebook users are associated.';
             else if(_user_id is not null and _fb_user=0)
                _html:=_html||'';
             else if(_user_id is null and _fb_user<>0)
-               _html:=_html||'<a href="'||self.odsbar_ods_gpath ||'register.vspx?reguid='||lcase(replace(_fb_user_fullname,' ',''))||'&fb_id='||cast(_fb_user as varchar)||'&URL='||self.odsbar_ods_gpath ||'fb_front.vspx">Create ODS user and associate my Facebook user to it.</a>';
+               _html:=_html||'<br/><br/><a href="'||self.odsbar_ods_gpath ||'register.vspx?reguid='||lcase(replace(_fb_user_fullname,' ',''))||'&fb_id='||cast(_fb_user as varchar)||'&URL='||self.odsbar_ods_gpath ||'fb_front.vspx">Create ODS user and associate my Facebook user to it.</a>';
 
+
+            if(isarray(contatcst_import_res) and contatcst_import_res[0]=-1 and wa_check_package ('addressbook') and _user_id is not null)
+               _html:=_html||'<br/><br/><a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=create_import',_ods_login_params)||'">Create ODS addressbook and import Facebook contacts.</a>';
             
-            if(isarray(contatcst_import_res) and contatcst_import_res[0]=-1 and wa_check_package ('addressbook'))
-               _html:=_html||'<br/><a href="'||self.odsbar_ods_gpath ||wa_expand_url('index_inst.vspx?wa_name=AddressBook',_ods_login_params)||'">Create ODS addressbook if you want to import Facebook contacts.</a>';
+--               _html:=_html||'<br/><a href="'||self.odsbar_ods_gpath ||wa_expand_url('index_inst.vspx?wa_name=AddressBook',_ods_login_params)||'">Create ODS addressbook if you want to import Facebook contacts.</a>';
 
             if(isarray(contatcst_import_res) and contatcst_import_res[0]=1 and contatcst_import_res[3]=0)
-               _html:=_html||'<br/>You have no Facebook contatcts that may be imported to ODS address book.';
+               _html:=_html||'<br/><br/>You have no Facebook contatcts that may be imported to ODS address book.';
 
             if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[1]>0)
-              _html:=_html||'<br/>You have '||cast(contatcst_import_res[1] as varchar)||' Facebook contatct'||(case when contatcst_import_res[1]>1 then 's' else '' end)||
-                            ' that may be imported to your ODS address book.<a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=import',_ods_login_params)||'">Import</a>';
+              _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[1] as varchar)||' Facebook contatct'||(case when contatcst_import_res[1]>1 then 's' else '' end)||
+                            ' that may be imported to your <a href="'||wa_expand_url('/addressbook/'||cast(contatcst_import_res[4] as varchar)||'/home.vspx',_ods_login_params)||'">ODS address book</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=import',_ods_login_params)||'">Import</a>';
 
             if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[2]>0)
-              _html:=_html||'<br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contatct'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
-                            ' that may be updated in your ODS address book.<a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',_ods_login_params)||'">Update</a>';
+              _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contatct'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
+                            ' that may be updated in your <a href="'||wa_expand_url('/addressbook/'||cast(contatcst_import_res[4] as varchar)||'/home.vspx',_ods_login_params)||'">ODS address book</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',_ods_login_params)||'">Synchronize</a>';
 
             if(isarray(contatcst_import_res) and contatcst_import_res[0]=1 and contatcst_import_res[2]>0)
-              _html:=_html||'<br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contatct'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
-                            ' that may be updated in your ODS address book.<a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',_ods_login_params)||'">Update</a>';
+              _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contatct'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
+                            ' that may be updated in your <a href="'||wa_expand_url('/addressbook/'||cast(contatcst_import_res[4] as varchar)||'/home.vspx',_ods_login_params)||'">ODS address book</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',_ods_login_params)||'">Synchronize</a>';
             
             self._dhtml:=vector_concat(self._dhtml,vector('ods_user',_html));
           
