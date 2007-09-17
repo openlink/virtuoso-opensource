@@ -50,6 +50,7 @@ typedef struct triple_feed_s {
 extern triple_feed_t *tf_alloc (void);
 extern void tf_free (triple_feed_t *tf);
 extern void tf_set_stmt_texts (triple_feed_t *tf, const char **stmt_texts, caddr_t *err_ptr);
+extern void tf_new_graph (triple_feed_t *tf);
 extern caddr_t tf_get_iid (triple_feed_t *tf, caddr_t uri);
 extern void tf_commit (triple_feed_t *tf);
 extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri);

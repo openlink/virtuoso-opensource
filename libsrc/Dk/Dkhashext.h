@@ -52,9 +52,9 @@ typedef int (*cmp_func_with_ctx_t) (caddr_t d1, caddr_t d2, void *ctx);
 
 typedef struct id_hash_s
   {
-    int		ht_key_length;
-    int		ht_data_length;
-    id_hashed_key_t	ht_buckets;
+    int		ht_key_length;		/*!< Number of bytes in key */
+    int		ht_data_length;		/*!< Number of bytes in dependent data */
+    id_hashed_key_t	ht_buckets;	/*!< Number of buckets */
     int		ht_bucket_length;
     int		ht_data_inx;
     int		ht_ext_inx;
@@ -63,11 +63,12 @@ typedef struct id_hash_s
     cmp_func_t	ht_cmp;
     long	ht_inserts;
     long	ht_deletes;
-    long	ht_overflows;
-    long	ht_dict_refctr;
-    long	ht_dict_version;
+    long	ht_overflows;		/*!< Number of bucket overflows */
     uint32      ht_count;
     int         ht_rehash_threshold;
+    long	ht_dict_refctr;		/*!< Number of references to dictionary, if the hastable is used as a box */
+    long	ht_dict_version;	/*!< Version of dictionary, to track parallel access */
+    dk_mutex_t *ht_mutex;		/*!< Optional mutex, esp. popular when this is a dictionary propagated across threads of async queue. The mutex is NOT owned by the hashtable box! */
   } id_hash_t;
 
 

@@ -589,7 +589,7 @@ t_list_concat_tail (caddr_t list, long n,...)
 {
   caddr_t *res;
   va_list ap;
-  int old_elems = ((NULL == list) ? 0 : BOX_ELEMENTS (list));
+  int old_elems = BOX_ELEMENTS_0 (list);
   int inx;
 #ifdef DEBUG
   if ((NULL != list) && (DV_ARRAY_OF_POINTER != DV_TYPE_OF (list)) && (DV_ARRAY_OF_LONG != DV_TYPE_OF (list)))

@@ -2997,6 +2997,92 @@ char * xslt_copy_text =
 /*--*/ "</xsl:stylesheet>"
 "')))";
 
+caddr_t
+box_find_mt_unsafe_subtree (caddr_t box)
+{
+  switch DV_TYPE_OF (box)
+    {
+    case DV_STRING: case DV_LONG_INT: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT:
+    case DV_DB_NULL: case DV_UNAME: case DV_DATETIME: case DV_NUMERIC: 
+    case DV_IRI_ID: case DV_ASYNC_QUEUE:
+      return NULL;
+    case DV_DICT_ITERATOR:
+      {
+        id_hash_iterator_t *hit = (id_hash_iterator_t *)box;
+        caddr_t key, val;
+        id_hash_iterator_t tmp_hit;
+        if (NULL == hit->hit_hash)
+          return NULL;
+        if (NULL != hit->hit_hash->ht_mutex)
+          return NULL;
+        id_hash_iterator (&tmp_hit, hit->hit_hash);
+        while (hit_next (&tmp_hit, &key, &val))
+          {
+            caddr_t res;
+            res = box_find_mt_unsafe_subtree (key);
+            if (NULL != res) return res;
+            res = box_find_mt_unsafe_subtree (val);
+            if (NULL != res) return res;
+          }
+        return NULL;
+      }
+    case DV_ARRAY_OF_POINTER: case DV_ARRAY_OF_XQVAL: case DV_XTREE_HEAD: case DV_XTREE_NODE:
+      {
+        int ctr;
+        DO_BOX_FAST_REV (caddr_t, itm, ctr, box)
+          {
+            caddr_t res = box_find_mt_unsafe_subtree (itm);
+            if (NULL != res) return res;
+          }
+        END_DO_BOX_FAST_REV;
+        return NULL;
+      }
+    }
+  return box;
+}
+
+void
+box_make_tree_mt_safe (caddr_t box)
+{
+  switch DV_TYPE_OF (box)
+    {
+    case DV_STRING: case DV_LONG_INT: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT:
+    case DV_DB_NULL: case DV_UNAME: case DV_DATETIME: case DV_NUMERIC: 
+    case DV_IRI_ID: case DV_ASYNC_QUEUE:
+      return;
+    case DV_DICT_ITERATOR:
+      {
+        id_hash_iterator_t *hit = (id_hash_iterator_t *)box;
+        caddr_t key, val;
+        id_hash_iterator_t tmp_hit;
+        if (NULL != hit->hit_hash)
+          {
+            if (NULL != hit->hit_hash->ht_mutex)
+              return;
+            hit->hit_hash->ht_mutex = mutex_allocate ();
+          }
+        id_hash_iterator (&tmp_hit, hit->hit_hash);
+        while (hit_next (&tmp_hit, &key, &val))
+          {
+            box_make_tree_mt_safe (key);
+            box_make_tree_mt_safe (val);
+          }
+        return;
+      }
+    case DV_ARRAY_OF_POINTER: case DV_ARRAY_OF_XQVAL: case DV_XTREE_HEAD: case DV_XTREE_NODE:
+      {
+        int ctr;
+        DO_BOX_FAST_REV (caddr_t, itm, ctr, box)
+          {
+            box_make_tree_mt_safe (itm);
+          }
+        END_DO_BOX_FAST_REV;
+        return;
+      }
+    }
+  GPF_T1 ("Thread-unsafe box can not become thread safe");
+}
+
 struct id_hash_iterator_s *
 bif_dict_iterator_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int chk_version)
 {
@@ -3059,7 +3145,9 @@ bif_dict_duplicate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_iterator_t *orig_hit = bif_dict_iterator_arg (qst, args, 0, "dict_duplicate", 0);
   id_hash_t *new_ht = (id_hash_t *)box_dict_hashtable_copy_hook ((caddr_t)(orig_hit->hit_hash));
   id_hash_iterator_t *new_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)new_ht);
-  new_ht->ht_dict_refctr -= 1; /* This is because box_dict_hashtable_copy_hook sets it to 1 and box_dv_dict_iterator increments */
+#ifndef NDEBUG
+  printf ("Dict duplicate: from %p to %p\n", orig_hit->hit_hash, new_ht);
+#endif
   return (caddr_t)new_hit;
 }
 
@@ -3072,22 +3160,60 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t key = bif_arg (qst, args, 1, "dict_put");
   caddr_t val = bif_arg (qst, args, 2, "dict_put");
   caddr_t *old_val;
-  val = box_copy_tree (val);
+  long res;
+  if (ht->ht_mutex)
+    {
+      caddr_t unsafe_val_subtree;
+      unsafe_val_subtree = box_find_mt_unsafe_subtree (val);
+      if (NULL != unsafe_val_subtree)
+        {
+          dtp_t dtp = DV_TYPE_OF (unsafe_val_subtree);
+          sqlr_new_error ("42000", "SR565",
+            "Argument #3 for dict_put() contain data of type %s (%d) that can not be used as a value in a dictionary that is shared between threads",
+            dv_type_title (dtp), dtp );
+        }
+      mutex_enter (ht->ht_mutex);
+    }
   old_val = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
   if (NULL != old_val)
     {
       dk_free_tree (old_val[0]);
+      val = box_copy_tree (val);
+      if (ht->ht_mutex)
+        box_make_tree_mt_safe (val);
       old_val[0] = val;
     }
   else
     {
+      if (ht->ht_mutex)
+        {
+          caddr_t unsafe_key_subtree;
+          unsafe_key_subtree = box_find_mt_unsafe_subtree (key);
+          if (NULL != unsafe_key_subtree)
+            {
+              dtp_t dtp = DV_TYPE_OF (unsafe_key_subtree);
+              mutex_leave (ht->ht_mutex);
+              sqlr_new_error ("42000", "SR566",
+                "Argument #2 for dict_put() contain data of type %s (%d) that can not be used as a key in a dictionary that is shared between threads",
+                dv_type_title (dtp), dtp );
+            }
+        }
       key = box_copy_tree (key);
+      val = box_copy_tree (val);
+      if (ht->ht_mutex)
+        {
+          box_make_tree_mt_safe (key);
+          box_make_tree_mt_safe (val);
+        }
       id_hash_set (ht, (caddr_t)(&key), (caddr_t)(&val));
     }
   id_hash_iterator (hit, ht);
   ht->ht_dict_version++;
   hit->hit_dict_version = ht->ht_dict_version;
-  return box_num (ht->ht_inserts - ht->ht_deletes);
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  res = ht->ht_inserts - ht->ht_deletes;
+  return box_num (res);
 }
 
 
@@ -3098,14 +3224,23 @@ bif_dict_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_t *ht = hit->hit_hash;
   caddr_t key = bif_arg (qst, args, 1, "dict_get");
   caddr_t dflt_val = ((2 < BOX_ELEMENTS (args)) ? bif_arg (qst, args, 2, "dict_get") : 0);
-  caddr_t *valptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
+  caddr_t *valptr;
+  caddr_t res;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  valptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
   if (NULL == valptr)
     {
       if (2 < BOX_ELEMENTS (args))
-        return box_copy_tree (bif_arg (qst, args, 2, "dict_get"));
-      return NEW_DB_NULL;
+        res = box_copy_tree (bif_arg (qst, args, 2, "dict_get"));
+      else
+        res = NEW_DB_NULL;
     }
-  return box_copy_tree (valptr[0]);
+  else
+    res = box_copy_tree (valptr[0]);
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  return res;
 }
 
 
@@ -3115,11 +3250,16 @@ bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_remove", 0);
   id_hash_t *ht = hit->hit_hash;
   caddr_t key = bif_arg (qst, args, 1, "dict_remove");
-  caddr_t *old_val_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
-  caddr_t *old_key_ptr;
+  caddr_t *old_key_ptr, *old_val_ptr;
   caddr_t old_key, old_val;
+  int res;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
+  old_val_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
   if (NULL == old_val_ptr)
-    return box_num (0);
+    res = 0;
+  else
+    {
   old_key_ptr = (caddr_t *)id_hash_get_key_by_place (ht, (caddr_t)old_val_ptr);
   old_key = old_key_ptr[0];
   old_val = old_val_ptr[0];
@@ -3129,7 +3269,11 @@ bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_iterator (hit, ht);
   ht->ht_dict_version++;
   hit->hit_dict_version = ht->ht_dict_version;
-  return box_num (1);
+      res = 1;
+    }
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  return box_num (res);
 }
 
 
@@ -3155,6 +3299,8 @@ bif_dict_list_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (NULL == hit1)
     return list (0);
   ht = hit1->hit_hash;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
   res = (caddr_t *)dk_alloc_box ((ht->ht_inserts - ht->ht_deletes) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   tail = res;
   id_hash_iterator (&hit, ht);
@@ -3177,6 +3323,8 @@ bif_dict_list_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       id_hash_clear (ht);
       ht->ht_dict_version++;
     }
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
   return (caddr_t)res;
 }
 
@@ -3191,6 +3339,8 @@ bif_dict_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (NULL == hit1)
     return list (0);
   ht = hit1->hit_hash;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
   res = (caddr_t *)dk_alloc_box ((ht->ht_inserts - ht->ht_deletes) * 2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   tail = res;
   id_hash_iterator (&hit, ht);
@@ -3214,6 +3364,8 @@ bif_dict_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       id_hash_clear (ht);
       ht->ht_dict_version++;
     }
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
   return (caddr_t)res;
 }
 

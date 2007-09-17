@@ -142,11 +142,32 @@ tf_get_iid (triple_feed_t *tf, caddr_t uri)
 
 
 void
+tf_new_graph (triple_feed_t *tf)
+{
+  caddr_t *params;
+  caddr_t err = NULL;
+  params = (caddr_t *)list (4,
+    unames_colon_number[0],
+    box_copy (tf->tf_graph_iid),
+    unames_colon_number[1],
+    box_copy_tree (tf->tf_app_env) );
+  err = qr_exec (tf->tf_qi->qi_client, tf->tf_queries[TRIPLE_FEED_NEW_GRAPH], tf->tf_qi, NULL, NULL, NULL, params, NULL, 1);
+  dk_free_box ((box_t) params);
+  if (NULL != err)
+    sqlr_resignal (err);
+}
+
+
+void
 tf_commit (triple_feed_t *tf)
 {
   caddr_t *params;
   caddr_t err = NULL;
-  params = (caddr_t *)list (0);
+  params = (caddr_t *)list (4,
+    unames_colon_number[0],
+    box_copy (tf->tf_graph_uri),
+    unames_colon_number[1],
+    box_copy_tree (tf->tf_app_env) );
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_queries[TRIPLE_FEED_COMMIT], tf->tf_qi, NULL, NULL, NULL, params, NULL, 1);
   dk_free_box ((box_t) params);
   if (NULL != err)
@@ -770,6 +791,7 @@ iter_is_set:
       tf_set_stmt_texts (tf, (const char **)stmt_texts, NULL);
       tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
       tf_commit (tf);
+      tf_new_graph (tf);
       ttlyy_reset ();
       ttlyyparse();
       tf_commit (tf);
@@ -1690,6 +1712,8 @@ char * rdf_iri_text = "create table DB.DBA.RDF_IRI (RI_NAME varchar not null pri
 
 dk_mutex_t *rdf_obj_ft_rules_mtx = NULL;
 id_hash_t *rdf_obj_ft_rules = NULL;
+id_hash_t *rdf_obj_ft_graph_rule_counts = NULL;
+ptrlong rdf_obj_ft_predonly_rule_count = 0;
 
 typedef struct rdf_obj_ft_rule_hkey_s
 {
@@ -1710,6 +1734,22 @@ int rdf_obj_ft_rule_hkey_cmp (caddr_t d1, caddr_t d2)
   return ((ht1->hkey_g == ht2->hkey_g) && (ht1->hkey_p == ht2->hkey_p));
 }
 
+static ptrlong *
+rdf_obj_ft_get_rule_count_ptr (iri_id_t g_id)
+{
+  boxint g_id_int = g_id;
+  ptrlong *res;
+  if (0 == g_id)
+    return &rdf_obj_ft_predonly_rule_count;
+  res = (ptrlong *)id_hash_get (rdf_obj_ft_graph_rule_counts, (caddr_t)(&g_id_int));
+  if (NULL == res)
+    {
+      ptrlong ctr = 0;
+      res = id_hash_add_new (rdf_obj_ft_graph_rule_counts, (caddr_t)(&g_id_int), (caddr_t)(&ctr));
+    }
+  return res;
+}
+
 caddr_t
 bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1725,9 +1765,11 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   known_reasons_ptr = (dk_set_t *)id_hash_get (rdf_obj_ft_rules, (caddr_t)(&hkey));
   if (NULL == known_reasons_ptr)
     {
+      ptrlong *rule_count_ptr = rdf_obj_ft_get_rule_count_ptr (g_id);
       dk_set_t new_reasons = NULL;
       dk_set_push (&new_reasons, box_copy (reason));
-      id_hash_set (rdf_obj_ft_rules, (caddr_t)(&hkey), (caddr_t)(&new_reasons));
+      id_hash_add_new (rdf_obj_ft_rules, (caddr_t)(&hkey), (caddr_t)(&new_reasons));
+      rule_count_ptr[0]++;
       mutex_leave (rdf_obj_ft_rules_mtx);
       return box_num (1);
     }
@@ -1768,7 +1810,11 @@ bif_rdf_obj_ft_rule_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   dk_free_box (dk_set_delete_nth (known_reasons_ptr, reason_pos));
   if (NULL == known_reasons_ptr[0])
+    {
+      ptrlong *rule_count_ptr = rdf_obj_ft_get_rule_count_ptr (g_id);
     id_hash_remove (rdf_obj_ft_rules, (caddr_t)(&hkey));
+      rule_count_ptr[0]--;
+    }
   mutex_leave (rdf_obj_ft_rules_mtx);
   return box_num (1);
 }
@@ -1827,6 +1873,21 @@ hit:
   return box_num (1);
 }
 
+caddr_t
+bif_rdf_obj_ft_rule_count_in_graph (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  ptrlong res = rdf_obj_ft_predonly_rule_count;
+  ptrlong *graph_specific;
+  boxint g_id_int = bif_iri_id_arg (qst, args, 0, "__rdf_obj_ft_rule_count_in_graph");
+  mutex_enter (rdf_obj_ft_rules_mtx);
+  graph_specific = id_hash_get (rdf_obj_ft_graph_rule_counts, (caddr_t)(&g_id_int));
+  if (NULL != graph_specific)
+    res += graph_specific[0];
+  mutex_leave (rdf_obj_ft_rules_mtx);
+  return box_num (res);
+}
+
 void rdf_inf_init ();
 
 int iri_cache_size = 0;
@@ -1851,6 +1912,7 @@ rdf_core_init (void)
   bif_define ("__rdf_obj_ft_rule_del", bif_rdf_obj_ft_rule_del);
   bif_define ("__rdf_obj_ft_rule_zap_all", bif_rdf_obj_ft_rule_zap_all);
   bif_define ("__rdf_obj_ft_rule_check", bif_rdf_obj_ft_rule_check);
+  bif_define ("__rdf_obj_ft_rule_count_in_graph", bif_rdf_obj_ft_rule_count_in_graph);
 #ifdef DEBUG
   bif_define ("turtle_lex_test", bif_turtle_lex_test);
 #endif
@@ -1864,6 +1926,9 @@ rdf_core_init (void)
   rdf_obj_ft_rules = id_hash_allocate (10000,
     sizeof (rdf_obj_ft_rule_hkey_t), sizeof (dk_set_t),
     rdf_obj_ft_rule_hkey_hash, rdf_obj_ft_rule_hkey_cmp );
+  rdf_obj_ft_graph_rule_counts = id_hash_allocate (100,
+    sizeof (caddr_t), sizeof (ptrlong),
+    boxint_hash, boxint_hashcmp );
   ddl_std_proc (iri_replay, 0);
   rdf_inf_init ();
 }

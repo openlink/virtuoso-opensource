@@ -857,6 +857,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
       tf_set_stmt_texts (tf, stmt_texts, NULL);
       tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
       tf_commit (tf);
+      tf_new_graph (tf);
       if (0 == setjmp (context.xp_error_ctx))
         rc = VXmlParse (parser, text, xrie.xrie_text_len);
       else

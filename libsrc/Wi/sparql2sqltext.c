@@ -253,7 +253,7 @@ ssg_qr_uses_jso (spar_sqlgen_t *ssg, ccaddr_t jso_inst, ccaddr_t jso_name)
      {
       jso_rtti_t *jso_rtti = gethash (jso_inst, jso_rttis_of_names);
       if (NULL == jso_rtti)
-        spar_internal_error (ssg->ssg_sparp, "sg_qr_uses_jso (): reference to lost object");
+        return; /* Built-in anonymous JSO, like one used when define input:storage "" */
       jso_name = jso_rtti->jrtti_inst_iri;
      }
   cc = ssg->ssg_sc->sc_cc;
@@ -4470,7 +4470,7 @@ from_printed:
       if (tree->_.triple.ft_type)
         {
           caddr_t var_name = tree->_.triple.tr_object->_.var.vname;
-          SPART *ft_pred = NULL;
+          SPART *ft_pred = NULL, *ft_arg1;
           qm_ftext_t *qmft = qm->qmObjectMap->qmvFText;
           caddr_t ft_alias = t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
           int ctr;
@@ -4492,6 +4492,19 @@ from_printed:
           END_DO_BOX_FAST;
           if (NULL == ft_pred)
             spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == ft_predicate");
+          ft_arg1 = ft_pred->_.funcall.argtrees[1];
+          if ((SPAR_FT_CONTAINS == tree->_.triple.ft_type) &&
+            !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName))
+            {
+              SPART *g = tree->_.triple.tr_graph;
+              if (SPAR_IS_LIT_OR_QNAME (g) ||
+                (SPAR_IS_BLANK_OR_VAR (g) &&
+                  ((SPART_VARR_FIXED | SPART_VARR_GLOBAL) & g->_.var.rvr.rvrRestrictions) ) )
+                {
+                  ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "sql:RDF_OBJ_PATCH_CONTAINS_BY_GRAPH",
+                    (SPART **)t_list (2, ft_arg1, g) );
+                }
+            }
           ssg_print_where_or_and (ssg, "freetext predicate");
           ssg_puts (ft_pred->_.funcall.qname + 4);
           ssg_puts ("(");
@@ -4499,7 +4512,7 @@ from_printed:
           ssg_puts (".");
           ssg_prin_id (ssg, qmft->qmvftColumnName);
           ssg_puts (", ");
-          ssg_print_literal (ssg, NULL, ft_pred->_.funcall.argtrees[1]);
+          ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
           ssg_puts (")");
         }
       if ((0 == tree_ctr) || !inside_breakup)
@@ -4556,7 +4569,7 @@ ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tr
       return;
               }
 /* The rest of function is for single table of plain triples */
-  ssg_qr_uses_jso (ssg, NULL, qm->qmTableName);
+  ssg_qr_uses_jso (ssg, qm, NULL);
   if (1 == pass)
     {
       ssg_putchar (' ');

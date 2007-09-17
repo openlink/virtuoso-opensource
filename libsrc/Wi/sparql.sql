@@ -672,11 +672,11 @@ create function DB.DBA.RQ_O_IS_LIT (in shortobj any) returns integer
 -----
 -- Conversions from and to values in short representation that may be not field values (may perform more validation checks)
 
-create function DB.DBA.RDF_MAKE_RO_DIGEST (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR, in need_digest integer) returns varchar
+create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR, in ro_id_dict any := null) returns varchar
 {
-  declare llong, id int;
+  declare llong, id, need_digest integer;
   declare digest, old_digest any;
-  -- dbg_obj_princ ('DB.DBA.RDF_MAKE_RO_DIGEST (', dt_twobyte, v, lang_twobyte, need_digest,')');
+  -- dbg_obj_princ ('DB.DBA.RDF_OBJ_ADD (', dt_twobyte, v, lang_twobyte, case (isnull (ro_id_dict) when 1 then '/*no_ft*/' else '/*want_ft*/' end,')');
   if (126 = __tag (v))
     v := blob_to_string (v);
   else if (246 = __tag (v))
@@ -690,15 +690,16 @@ create function DB.DBA.RDF_MAKE_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
       else
         v := DB.DBA.RDF_SQLVAL_OF_OBJ (v);
     }
-  if (dt_twobyte <> 257 or lang_twobyte <> 257)
+  if (ro_id_dict is not null or dt_twobyte <> 257 or lang_twobyte <> 257)
     need_digest := 1;
+  else need_digest := 0;
   if ((dt_twobyte < 257) or (lang_twobyte < 257))
-    signal ('RDFXX', sprintf ('Bad datatype/lang code: DB.DBA.RDF_MAKE_RO_DIGEST (%d, %s, %d, %d)', dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte, need_digest) );
+    signal ('RDFXX', sprintf ('Bad datatype/lang code: DB.DBA.RDF_OBJ_ADD (%d, %s, %d, %d)', dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte, need_digest) );
   if (not isstring (v))
     {
       declare sum64 varchar;
       if (230 <> __tag (v))
-        signal ('RDFXX', sprintf ('Bad call: DB.DBA.RDF_MAKE_RO_DIGEST (%d, %s, %d, %d)', dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte, need_digest) );
+        signal ('RDFXX', sprintf ('Bad call: DB.DBA.RDF_OBJ_ADD (%d, %s, %d, %d)', dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte, need_digest) );
       sum64 := xtree_sum64 (v);
       whenever not found goto serializable_xtree;
       set isolation='committed';
@@ -724,12 +725,16 @@ serializable_xtree:
       fetch id_cr into id, old_digest;
 found_xtree:
       digest := old_digest;
+      if (ro_id_dict is not null)
+        dict_put (ro_id_dict, id, 1);
       return digest;
       -- goto recheck;
 new_xtree:
       id := sequence_next ('RDF_RO_ID');
       digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
       insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG, RO_DIGEST) values (id, sum64, __xml_serialize_packed (v), digest);
+      if (ro_id_dict is not null)
+        dict_put (ro_id_dict, id, 1);
       return digest;
       -- old_digest := null;
       -- goto recheck;
@@ -753,12 +758,16 @@ serializable_veryshort:
       open id_cr (exclusive);
       fetch id_cr into id;
 found_veryshort:      
+      if (ro_id_dict is not null)
+        dict_put (ro_id_dict, id, 1);
       return v;
       -- digest := v;
       -- goto recheck;
 new_veryshort:
       id := sequence_next ('RDF_RO_ID');
       insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_DIGEST) values (id, v, v);
+      if (ro_id_dict is not null)
+        dict_put (ro_id_dict, id, 1);
       return v;
       -- digest := v;
       -- old_digest := null;
@@ -797,6 +806,8 @@ found_long:
         }
       else
         digest := old_digest;
+      if (ro_id_dict is not null)
+        dict_put (ro_id_dict, id, 1);
       return digest;
       -- goto recheck;
 new_long:
@@ -809,6 +820,8 @@ new_long:
           set triggers off;
               insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG) values (id, tridgell, v);
         }
+      if (ro_id_dict is not null)
+        dict_put (ro_id_dict, id, 1);
       return digest;
       -- old_digest := null;
       -- goto recheck;
@@ -842,6 +855,8 @@ found_short:
         }
       else
         digest := old_digest;
+      if (ro_id_dict is not null)
+        dict_put (ro_id_dict, id, 1);
       return digest;
       -- goto recheck;
 new_short:
@@ -854,13 +869,15 @@ new_short:
           set triggers off;
               insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL) values (id, v);
         }
+      if (ro_id_dict is not null)
+        dict_put (ro_id_dict, id, 1);
       return digest;
       -- old_digest := null;
       -- goto recheck;
     }
 recheck:
   -- dbg_obj_princ ('recheck: id=', id, ', old_digest=', old_digest, ', need_digest=', need_digest, ', digest=', digest);
-  signal ('FUNNY', 'Debug code of DB.DBA.RDF_MAKE_RO_DIGEST() is reached. This can not happen (I believe). Please report this error.');
+  signal ('FUNNY', 'Debug code of DB.DBA.RDF_OBJ_ADD() is reached. This can not happen (I believe). Please report this error.');
   --if (not need_digest and old_digest is null)
   --  return digest;
   --if (not exists (select top 1 1
@@ -895,6 +912,8 @@ recheck:
   --  on ((a.RO_DIGEST = b.RO_DIGEST) or (a.RO_DIGEST is null and b.RO_DIGEST is null))
   --  where (a.RO_DIGEST = digest) option (HASH) ))
   --  signal ('RDFXX', sprintf ('Lost RO_DIGEST index entry (HASH join): RO_DIGEST=%U (id=%d)', serialize (digest), id));
+  --  if (ro_id_dict is not null)
+  --    dict_put (ro_id_dict, id, 1);
   --return digest;
 }
 ;
@@ -955,11 +974,11 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (in v any) returns any
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t or 126 = t)
     v := cast (v as varchar);
-  return DB.DBA.RDF_MAKE_RO_DIGEST (257, v, 257, 0);
+  return DB.DBA.RDF_OBJ_ADD (257, v, 257);
 }
 ;
 
-create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in p_iid IRI_ID) returns any
+create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in p_iid IRI_ID, in ro_id_dict any := null) returns any
 {
   declare t int;
   t := __tag (v);
@@ -969,7 +988,20 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in 
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t or 126 = t)
     v := cast (v as varchar);
-  return DB.DBA.RDF_MAKE_RO_DIGEST (257, v, 257, __rdf_obj_ft_rule_check (g_iid, p_iid));
+  if (not __rdf_obj_ft_rule_check (g_iid, p_iid))
+    ro_id_dict := null;
+  else
+    {
+      if (ro_id_dict is null)
+        {
+          declare res any;
+          ro_id_dict := dict_new ();
+          res := DB.DBA.RDF_OBJ_ADD (257, v, 257, ro_id_dict);
+          DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (g_iid, ro_id_dict);
+          return res;
+        }
+    }
+  return DB.DBA.RDF_OBJ_ADD (257, v, 257, ro_id_dict);
 }
 ;
 
@@ -991,7 +1023,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, 
       lang_twobyte := DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (lang);
   else
     lang_twobyte := 257;
-  return DB.DBA.RDF_MAKE_RO_DIGEST (dt_twobyte, v, lang_twobyte, 0);
+  return DB.DBA.RDF_OBJ_ADD (dt_twobyte, v, lang_twobyte);
 }
 ;
 
@@ -1222,7 +1254,7 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
     return longobj;
   if (rdf_box_is_storeable (longobj))
     return longobj;
-  return DB.DBA.RDF_MAKE_RO_DIGEST (257, longobj, 257, 0);
+  return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
 }
 ;
 
@@ -1236,7 +1268,7 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t)
     v := cast (v as varchar);
-  return DB.DBA.RDF_MAKE_RO_DIGEST (257, v, 257, 0);
+  return DB.DBA.RDF_OBJ_ADD (257, v, 257);
 }
 ;
 
@@ -1692,7 +1724,7 @@ create procedure DB.DBA.RDF_QUAD_URI (in g_uri varchar, in s_uri varchar, in p_u
 }
 ;
 
-create procedure DB.DBA.RDF_QUAD_URI_L (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_lit any)
+create procedure DB.DBA.RDF_QUAD_URI_L (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_lit any, in ro_id_dict any := null)
 {
   declare g_iid, p_iid IRI_ID;
   g_iid := DB.DBA.RDF_MAKE_IID_OF_QNAME (g_uri);
@@ -1702,11 +1734,11 @@ create procedure DB.DBA.RDF_QUAD_URI_L (in g_uri varchar, in s_uri varchar, in p
     g_iid,
     DB.DBA.RDF_MAKE_IID_OF_QNAME (s_uri),
     p_iid,
-    DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_lit, g_iid, p_iid) );
+    DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_lit, g_iid, p_iid, ro_id_dict) );
 }
 ;
 
-create procedure DB.DBA.RDF_QUAD_URI_L_TYPED (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_lit any, in dt any, in lang varchar)
+create procedure DB.DBA.RDF_QUAD_URI_L_TYPED (in g_uri varchar, in s_uri varchar, in p_uri varchar, in o_lit any, in dt any, in lang varchar, in ro_id_dict any := null)
 {
   if (dt is null and lang is null)
     {
@@ -1718,7 +1750,7 @@ create procedure DB.DBA.RDF_QUAD_URI_L_TYPED (in g_uri varchar, in s_uri varchar
         g_iid,
         DB.DBA.RDF_MAKE_IID_OF_QNAME (s_uri),
         p_iid,
-        DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_lit, g_iid, p_iid) );
+        DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_lit, g_iid, p_iid, ro_id_dict) );
       return;
     }
   insert soft DB.DBA.RDF_QUAD (G,S,P,O)
@@ -1773,6 +1805,10 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
   inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env, ');');
+  declare log_mode integer;
+  declare ro_id_dict any;
+  log_mode := app_env[0];
+  ro_id_dict := app_env[1];
   if (isstring (o_type))
     {
       declare parsed any;
@@ -1809,7 +1845,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
       p_iid := iri_to_id (p_uri, 1);
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
       values (g_iid, iri_to_id (s_uri, 1), p_iid,
-        DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_val, g_iid, p_iid) );
+        DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_val, g_iid, p_iid, ro_id_dict) );
     }
   else
     {
@@ -1820,8 +1856,26 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
 }
 ;
 
+create procedure DB.DBA.TTLP_EV_COMMIT (in g varchar, inout app_env any) {
+  -- dbg_obj_princ ('DB.DBA.TTLP_COMMIT(', g, app_env, ')');
+  declare log_mode integer;
+  declare ro_id_dict any;
+  log_mode := app_env[0];
+  ro_id_dict := app_env[1];
+  if (ro_id_dict is not null)
+    DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (g), ro_id_dict);
+}
+;
+
+
 create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0)
 {
+  declare ro_id_dict, app_env any;
+  if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
+    ro_id_dict := dict_new ();
+  else
+    ro_id_dict := null;
+  app_env := vector (flags, ro_id_dict);
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
   return rdf_load_turtle (strg, base, graph, flags,
@@ -1831,8 +1885,8 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
       'select DB.DBA.TTLP_EV_GET_IID(?,?,?)',
       'DB.DBA.TTLP_EV_TRIPLE(?, ?, ?, ?, ?)',
       'DB.DBA.TTLP_EV_TRIPLE_L(?, ?, ?, ?,?,?, ?)',
-      'commit work' ),
-    'app-env');
+      'DB.DBA.TTLP_EV_COMMIT(?,?)' ),
+    app_env);
 }
 ;
 
@@ -1912,6 +1966,12 @@ create function DB.DBA.RDF_TTL2HASH (in strg varchar, in base varchar, in graph 
 
 create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in graph varchar)
 {
+  declare ro_id_dict, app_env any;
+  if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
+    ro_id_dict := dict_new ();
+  else
+    ro_id_dict := null;
+  app_env := vector (null, ro_id_dict);
   rdf_load_rdfxml (strg, 0,
     graph,
     vector (
@@ -1920,8 +1980,8 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in gr
       'select DB.DBA.TTLP_EV_GET_IID(?,?,?)',
       'DB.DBA.TTLP_EV_TRIPLE(?, ?, ?, ?, ?)',
       'DB.DBA.TTLP_EV_TRIPLE_L(?, ?, ?, ?,?,?, ?)',
-      'commit work' ),
-    'app-env',
+      'DB.DBA.TTLP_EV_COMMIT(?,?)' ),
+    app_env,
     base );
   return graph;
 }
@@ -7493,9 +7553,11 @@ registry_set ('/!sparql/', 'no_vsp_recompile')
 
 create procedure DB.DBA.TTLP_EV_TRIPLE_W (
   in g_iid IRI_ID, in s_uri varchar, in p_uri varchar,
-  in o_uri varchar, in log_mode integer )
+  in o_uri varchar, in env any )
 {
-  -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, log_mode, ')');
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_W (', g_iid, s_uri, p_uri, o_uri, env, ')');
+  declare log_mode integer;
+  log_mode := env[0];
   if (log_mode = 1)
     {
       declare s_iid, p_iid, o_iid IRI_ID;
@@ -7533,9 +7595,13 @@ again_2:
 
 create procedure DB.DBA.TTLP_EV_TRIPLE_L_W (
   in g_iid IRI_ID, in s_uri varchar, in p_uri varchar,
-  in o_val any, in o_type any, in o_lang any, in log_mode integer)
+  in o_val any, in o_type any, in o_lang any, in env any )
 {
-  -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_W (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, log_mode, ')');
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_W (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, env, ')');
+  declare log_mode integer;
+  declare ro_id_dict any;
+  log_mode := env[0];
+  ro_id_dict := env[1];
   declare s_iid, p_iid IRI_ID;
   if (isstring (o_type))
     {
@@ -7575,16 +7641,16 @@ again_o:
               o_lang );
     }
       else
-        o_val := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_val, g_iid, p_iid);
+        o_val := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_val, g_iid, p_iid, ro_id_dict);
     }
   else if (246 = __tag (o_val))
     {
       whenever sqlstate '41000' goto again_o_box;
 again_o_box:
       if (182 = rdf_box_data_tag (o_val) and __rdf_obj_ft_rule_check (g_iid, p_iid))
-        o_val := DB.DBA.RDF_MAKE_RO_DIGEST (257, o_val, 257, 1);
+        o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257, ro_id_dict);
       else if (not rdf_box_is_storeable (o_val))
-        o_val := DB.DBA.RDF_MAKE_RO_DIGEST (257, o_val, 257, 0);
+        o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257);
     }
   -- dbg_obj_princ ('final o_val = ', o_val);
   whenever sqlstate '41000' goto again_quad;
@@ -7637,10 +7703,23 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_A (
 ;
 
 
+create procedure DB.DBA.TTLP_EV_COMMIT_A (
+  in graph_iri varchar, inout app_env any )
+{
+  -- dbg_obj_princ ('DB.DBA.TTLP_EV_COMMIT_A (', graph_iri, app_env, ')');
+  DB.DBA.TTLP_EV_COMMIT (graph_iri, app_env[2]);
+}
+;
+
+
 create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0, in log_mode integer := 1)
 {
-  declare app_env, err any;
-  app_env := vector (async_queue (3), 0, log_mode);
+  declare ro_id_dict, app_env, err any;
+  if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
+    ro_id_dict := dict_new ();
+  else
+    ro_id_dict := null;
+  app_env := vector (async_queue (3), 0, vector (log_mode, ro_id_dict));
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
   rdf_load_turtle (strg, base, graph, flags,
@@ -7650,7 +7729,7 @@ create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varc
       'select iri_to_id(cast (? as varchar), 1), ?, ?', -- was 'select DB.DBA.TTLP_EV_GET_IID(?,?,?)',
       'DB.DBA.TTLP_EV_TRIPLE_A (?, ?, ?, ?, ?)',
       'DB.DBA.TTLP_EV_TRIPLE_L_A (?, ?, ?, ?,?,?, ?)',
-      'commit work' ),
+      'DB.DBA.TTLP_EV_COMMIT_A (?,?)' ),
     app_env);
   commit work;
   aq_wait (app_env[0], app_env[1], err, 1);
@@ -7660,8 +7739,12 @@ create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varc
 
 create procedure DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in graph varchar, in log_mode integer := 1)
 {
-  declare app_env, err any;
-  app_env := vector (async_queue (3), 0, log_mode);
+  declare ro_id_dict, app_env, err any;
+  if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
+    ro_id_dict := dict_new ();
+  else
+    ro_id_dict := null;
+  app_env := vector (async_queue (3), 0, vector (log_mode, ro_id_dict));
   rdf_load_rdfxml (strg, 0,
     graph,
     vector (
@@ -7670,7 +7753,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in
       'select iri_to_id (cast (? as varchar), 1), ?, ?', -- was 'select DB.DBA.TTLP_EV_GET_IID(?,?,?)',
       'DB.DBA.TTLP_EV_TRIPLE_A (?, ?, ?, ?, ?)',
       'DB.DBA.TTLP_EV_TRIPLE_L_A (?, ?, ?, ?,?,?, ?)',
-      'commit work' ),
+      'DB.DBA.TTLP_EV_COMMIT_A (?,?)' ),
     app_env,
     base );
   commit work;
@@ -8444,14 +8527,14 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
 	    return dest;
 	}
     }
-  if (lower (local_iri) like 'file:%')
+  if (lower (graph_iri) like 'file:%')
     return DB.DBA.SYS_FILE_SPONGE_UP (local_iri, graph_iri, null, 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
-  else if (lower (local_iri) like 'http:%' or lower (local_iri) like 'https:%')
+  else if (lower (graph_iri) like 'http:%' or lower (graph_iri) like 'https:%')
   return DB.DBA.SYS_HTTP_SPONGE_UP (local_iri, graph_iri, 'DB.DBA.RDF_LOAD_HTTP_RESPONSE', 'DB.DBA.RDF_FORGET_HTTP_RESPONSE', options);
   else
     {
       declare sch, rc any;
-      sch := WS.WS.PARSE_URI (local_iri);
+      sch := WS.WS.PARSE_URI (graph_iri);
       sch := upper (sch[0]);
       if (__proc_exists ('DB.DBA.SYS_'||sch||'_SPONGE_UP') is not null)
         {
@@ -8460,7 +8543,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
         }
       else
 	{
-	  signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger do not support "%s" IRI scheme', lower(sch)));
+	  signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger do not support "%s" IRI scheme (IRI "%.1000s")', lower(sch), graph_iri));
 	}
     }
 }
@@ -8469,10 +8552,240 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
 -----
 -- Free text index on DB.DBA.RDF_OBJ
 
+create function DB.DBA.VT_DECODE_KEYWORD_ITM (inout vtdata varchar, inout ofs integer)
+{
+  declare res integer;
+  if ((5 <> vtdata[ofs]) or (0 <> vtdata[ofs+5]))
+    signal ('23023', 'Invalid VT_WORD data in DB.DBA.VT_DECODE_KEYWORD_ITM');
+  res := (((vtdata[ofs+1] * 256) + vtdata[ofs+2]) * 256 + vtdata[ofs+3]) * 256 + vtdata[ofs+4];
+  ofs := ofs + 6;
+  return res;
+}
+;
+
+create procedure DB.DBA.VT_ENCODE_KEYWORD_ITM (in id integer, inout ses any)
+{
+  declare strg varchar;
+  strg := '012345';
+  strg[5] := 0;
+  strg[4] := bit_and (id, 255); id := bit_shift (id, -8);
+  strg[3] := bit_and (id, 255); id := bit_shift (id, -8);
+  strg[2] := bit_and (id, 255); id := bit_shift (id, -8);
+  strg[1] := bit_and (id, 255); if (id > 255) signal ('22023', 'Abnormally big document id in DB.DBA.VT_ENCODE_KEYWORD_ITM');
+  strg[0] := 5;
+  http (strg, ses);
+}
+;
+
+create function DB.DBA.VT_COMPOSE_KEYWORD_INDEX_LINES (
+  inout carry_d_id integer, -- Smallest doc id of carry
+  inout carry_d_id_2 integer, -- largest doc id of carry
+  inout carry_data varchar, -- carry as ready-to-insert varchar data
+  in old_d_id integer, -- last read VT_D_ID, NULL when not found
+  in old_d_id_2 integer, -- last read VT_D_ID_2, NULL when not found
+  in old_data varchar, -- last read VT_DATA, NULL when not found
+  inout ro_id_offset integer,	-- offset of first not-yet-used new id
+  inout new_ro_ids any )	-- array of all new ids
+  returns any -- returns vector of vector (d_id, d_id_2, data) of everything before or at current
+{
+  declare res_acc, mix_ses any;
+  declare old_data_ofs, old_data_len, old_curr_id, mix_id integer;
+  declare new_ro_id_idx, new_ro_ids_count, mix_d_id, mix_d_id_2, mix_count integer;
+  -- dbg_obj_princ ('DB.DBA.VT_COMPOSE_KEYWORD_INDEX_LINES (', carry_d_id, carry_d_id_2, length (carry_data), ' bytes,', old_d_id, old_d_id_2, length (old_data), ' bytes,', ro_id_offset, length (new_ro_ids), ' items)');
+  vectorbld_init (res_acc);
+  mix_ses := string_output();
+  if (carry_data <> '')
+    {
+      mix_d_id := carry_d_id;
+      mix_d_id_2 := carry_d_id_2;
+      http (carry_data, mix_ses);
+      mix_count := length (carry_data) / 6;
+    }
+  else
+    {
+      mix_d_id := null;
+      mix_d_id_2 := null;
+      mix_count := 0;
+    }
+  old_data_ofs := 0;
+  if (old_data is null)
+    old_curr_id := null;
+  else
+    old_curr_id := DB.DBA.VT_DECODE_KEYWORD_ITM (old_data, old_data_ofs);
+  old_data_len := length (old_data);
+  new_ro_ids_count := length (new_ro_ids);
+  new_ro_id_idx := ro_id_offset;
+  if (new_ro_id_idx < new_ro_ids_count)
+    mix_id := new_ro_ids [new_ro_id_idx];
+  else
+    mix_id := null;
+  -- dbg_obj_princ ('DB.DBA.VT_COMPOSE_KEYWORD_INDEX_LINES starts/1: ', mix_d_id, old_curr_id, mix_id);
+  mix_d_id := __min_notnull (mix_d_id, old_curr_id, mix_id);
+  -- dbg_obj_princ ('DB.DBA.VT_COMPOSE_KEYWORD_INDEX_LINES starts/2: ', mix_d_id);
+
+next_mix:
+  if (old_curr_id is null)
+    {
+      if ((new_ro_id_idx >= new_ro_ids_count) or (new_ro_ids [new_ro_id_idx] > old_d_id_2))
+        goto complete;
+      mix_id := new_ro_ids [new_ro_id_idx];
+      new_ro_id_idx := new_ro_id_idx + 1;
+    }
+  else
+    {
+      if ((new_ro_id_idx >= new_ro_ids_count) or (new_ro_ids [new_ro_id_idx] >= old_curr_id))
+        {
+          if ((new_ro_id_idx < new_ro_ids_count) and (new_ro_ids [new_ro_id_idx] = old_curr_id))
+            new_ro_id_idx := new_ro_id_idx + 1;
+          mix_id := old_curr_id;
+          if (old_data_ofs >= old_data_len)
+            old_curr_id := null;
+          else
+            old_curr_id := DB.DBA.VT_DECODE_KEYWORD_ITM (old_data, old_data_ofs);
+        }
+      else
+        {
+          mix_id := new_ro_ids [new_ro_id_idx];
+          new_ro_id_idx := new_ro_id_idx + 1;
+        }
+    }
+  if ((mix_count > 180) or ((mix_d_id_2 / 10000) <> (mix_id  / 10000)))
+    {
+      -- dbg_obj_princ ('DB.DBA._COMPOSE_KEYWORD_INDEX_LINES completed a row from ', mix_d_id, ' to ', mix_d_id_2);
+      vectorbld_acc (res_acc, vector (mix_d_id, mix_d_id_2, string_output_string (mix_ses)));
+      mix_ses := string_output ();
+      mix_d_id := mix_id;
+      mix_count := 0;
+    }
+  DB.DBA.VT_ENCODE_KEYWORD_ITM (mix_id, mix_ses);
+  mix_d_id_2 := mix_id;
+  mix_count := mix_count + 1;
+  goto next_mix;
+
+complete:
+  ro_id_offset := new_ro_id_idx;
+  if (mix_count > 150)
+    {
+      -- dbg_obj_princ ('DB.DBA._COMPOSE_KEYWORD_INDEX_LINES completed (last) row from ', mix_d_id, ' to ', mix_d_id_2);
+      vectorbld_acc (res_acc, vector (mix_d_id, mix_d_id_2, string_output_string (mix_ses)));
+      carry_data := '';
+      carry_d_id := carry_d_id_2 := null;
+    }
+  else
+    {
+      carry_data := string_output_string (mix_ses);
+      carry_d_id := mix_d_id;
+      carry_d_id_2 := mix_d_id_2;
+    }
+  vectorbld_final (res_acc);
+  -- dbg_obj_princ ('DB.DBA._COMPOSE_KEYWORD_INDEX_LINES completed, carry ', carry_d_id, carry_d_id_2, length (carry_data), ' bytes, res ', res_acc);
+  return res_acc;
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.RDF_OBJ_PATCH_CONTAINS_BY_GRAPH (in phrase varchar, in graph_iri varchar)
+{
+  declare graph_keyword any;
+  whenever sqlstate '*' goto err;
+  graph_keyword := iri_to_id (graph_iri, 0);
+  if (graph_keyword is null)
+    goto err;
+  graph_keyword := WS.WS.STR_SQL_APOS (cast (graph_keyword as varchar));
+  return sprintf ('^%s AND (%s)', graph_keyword, phrase);
+err:
+  return '^"#nosuch"';
+}
+;
+
+create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inout ro_id_dict any)
+{
+  declare start_vt_d_id, ro_id_offset, ro_ids_count integer;
+  declare old_d_id, old_d_id_2, carry_d_id, carry_d_id_2 integer;
+  declare old_data, carry_data varchar;
+  declare split_ctr, split_len integer;
+  declare split any;
+  declare cr cursor for (
+    select VT_D_ID, VT_D_ID_2, coalesce (VT_DATA, cast (VT_LONG_DATA as varchar)) from RDF_OBJ_RO_DIGEST_WORDS
+    where (VT_WORD = cast (graph_iid as varchar)) and (VT_D_ID >= ((start_vt_d_id / 10000) * 10000)) and VT_D_ID_2 >= start_vt_d_id for update);
+  declare new_ro_ids any;
+  -- dbg_obj_princ ('DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (', graph_iid, ro_id_dict, ')');
+  new_ro_ids := dict_list_keys (ro_id_dict, 1);
+  ro_ids_count := length (new_ro_ids);
+  if (0 = ro_ids_count)
+    return;
+  gvector_sort (new_ro_ids, 1, 0, 1);
+  commit work;
+  whenever sqlstate '41000' goto retry_add;
+again:
+  ro_id_offset := 0;
+  start_vt_d_id := new_ro_ids[0];
+  carry_d_id := 0;
+  carry_d_id_2 := 0;
+  carry_data := '';
+  set isolation = 'serializable';
+  whenever not found goto no_more_olds;
+  open cr (prefetch 1);
+
+next_split:
+  fetch cr into old_d_id, old_d_id_2, old_data;
+  split := DB.DBA.VT_COMPOSE_KEYWORD_INDEX_LINES (carry_d_id, carry_d_id_2, carry_data, old_d_id, old_d_id_2, old_data, ro_id_offset, new_ro_ids);
+  split_len := length (split);
+  split_ctr := 0;
+  if ((split_len > 0) and (split[split_len-1][0] = old_d_id))
+    {
+      if ((old_d_id_2 = split[split_len-1][1]) and (old_data = split[split_len-1][2]))
+        { ; }
+      else
+        update RDF_OBJ_RO_DIGEST_WORDS set VT_D_ID_2 = split[split_len-1][1], VT_DATA = split[split_len-1][2], VT_LONG_DATA = null
+      where current of cr;
+      split_len := split_len - 1;
+    }
+  if (split_len > 0)
+    {
+      delete from RDF_OBJ_RO_DIGEST_WORDS
+        where (VT_WORD = cast (graph_iid as varchar)) and (VT_D_ID >= split[0][0]) and (VT_D_ID_2 <= split[split_len-1][1]);
+    }
+  for (split_ctr := 0; split_ctr < split_len; split_ctr := split_ctr+1)
+    {
+      insert replacing RDF_OBJ_RO_DIGEST_WORDS (VT_WORD, VT_D_ID, VT_D_ID_2, VT_DATA)
+      values (cast (graph_iid as varchar), split[split_ctr][0], split[split_ctr][1], split[split_ctr][2]);
+    }
+  if (carry_data = '')
+    commit work;
+
+no_more_olds:
+  split := DB.DBA.VT_COMPOSE_KEYWORD_INDEX_LINES (carry_d_id, carry_d_id_2, carry_data, null, null, null, ro_id_offset, new_ro_ids);
+  split_len := length (split);
+  split_ctr := 0;
+  if (split_len > 0)
+    {
+      delete from RDF_OBJ_RO_DIGEST_WORDS
+        where (VT_WORD = cast (graph_iid as varchar)) and (VT_D_ID >= split[0][0]) and (VT_D_ID_2 <= split[split_len-1][1]);
+    }
+  for (split_ctr := 0; split_ctr < split_len; split_ctr := split_ctr+1)
+    {
+      insert replacing RDF_OBJ_RO_DIGEST_WORDS (VT_WORD, VT_D_ID, VT_D_ID_2, VT_DATA)
+      values (cast (graph_iid as varchar), split[split_ctr][0], split[split_ctr][1], split[split_ctr][2]);
+    }
+  if (length (carry_data)  <> 0)
+    {
+      insert replacing RDF_OBJ_RO_DIGEST_WORDS (VT_WORD, VT_D_ID, VT_D_ID_2, VT_DATA)
+      values (cast (graph_iid as varchar), carry_d_id, carry_d_id_2, carry_data);
+    }
+  commit work;
+  return;
+retry_add:
+  close cr;
+  rollback work;
+  goto again;
+}
+;
+
 create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar, in reason varchar) returns integer
 {
-  declare need_scan integer;
   declare rule_g_iid, rule_p_iid IRI_ID;
+  declare ro_id_dict any;
   if (rule_g is null)
     rule_g := '';
   if (rule_p is null)
@@ -8485,26 +8798,25 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
       select top 1 1 from DB.DBA.RDF_OBJ_FT_RULES
       where ROFR_G = rule_g and ROFR_P = rule_p and ROFR_REASON = reason))
     return 0;
-  need_scan := 1;
-  if (exists (
+  if (not exists (
       select top 1 1 from DB.DBA.RDF_OBJ_FT_RULES
       where (ROFR_G = rule_g or ROFR_G = '') and (ROFR_P = rule_p or ROFR_P = '') ) )
-    need_scan := 0;
-  insert into DB.DBA.RDF_OBJ_FT_RULES (ROFR_G, ROFR_P, ROFR_REASON) values (rule_g, rule_p, reason);
-  commit work;
-  __rdf_obj_ft_rule_add (rule_g_iid, rule_p_iid, reason);
-  if (not need_scan)
-    return 1;
+    {
+      -- dbg_obj_princ ('DB.DBA.RDF_OBJ_FT_RULE_ADD: need scan');
       commit work;
       exec ('checkpoint');
       __atomic (1);
+      declare exit handler for sqlstate '*' {
+        __atomic (0); 
+        signal (__SQL_STATE, __SQL_MESSAGE); };
       if ((rule_g <> '') and (rule_p <> ''))
         {
+          ro_id_dict := dict_new (100000);
           for (select O as obj from DB.DBA.RDF_QUAD where G=rule_g_iid and P=rule_p_iid and not isiri_id (O)) do
             {
               if (isstring (obj))
                 {
-                  DB.DBA.RDF_MAKE_RO_DIGEST (257, obj, 257, 1);
+                  DB.DBA.RDF_OBJ_ADD (257, obj, 257, ro_id_dict);
                   commit work;
                 }
               else
@@ -8512,19 +8824,25 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
                   declare id integer;
                   id := rdf_box_ro_id (obj);
                   if (0 <> id)
+                    {
                     update DB.DBA.RDF_OBJ set RO_DIGEST = obj where RO_ID = id and RO_DIGEST is null;
+                      dict_put (ro_id_dict, id, 1);
+                    }
                   commit work;
                 }
+              if (dict_size (ro_id_dict) > 100000)
+                RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (rule_g), ro_id_dict);
             }
-      goto update_complete;
+          DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (rule_g), ro_id_dict);
         }
-      if (rule_g <> '')
+      else if (rule_g <> '')
         {
+          ro_id_dict := dict_new (100000);
           for (select O as obj from DB.DBA.RDF_QUAD where G=rule_g_iid and not isiri_id (O)) do
             {
               if (isstring (obj))
                 {
-                  DB.DBA.RDF_MAKE_RO_DIGEST (257, obj, 257, 1);
+                  DB.DBA.RDF_OBJ_ADD (257, obj, 257, ro_id_dict);
                   commit work;
                 }
               else
@@ -8532,42 +8850,68 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
                   declare id integer;
                   id := rdf_box_ro_id (obj);
                   if (0 <> id)
+                    {
                     update DB.DBA.RDF_OBJ set RO_DIGEST = obj where RO_ID = id and RO_DIGEST is null;
+                      dict_put (ro_id_dict, id, 1);
+                    }
                   commit work;
                 }
+              if (dict_size (ro_id_dict) > 100000)
+                RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (rule_g), ro_id_dict);
             }
-      goto update_complete;
+          RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (rule_g), ro_id_dict);
         }
-      if (rule_p <> '')
+      else
         {
-          for (select O as obj from DB.DBA.RDF_QUAD where P=rule_p_iid and not isiri_id (O)) do
+          declare old_g IRI_ID;
+          ro_id_dict := dict_new (100000);
+          old_g := #i0;
+          for (select O as obj, G as curr_g from DB.DBA.RDF_QUAD where ((rule_p = '') or equ (P,rule_p_iid)) and not isiri_id (O) order by G) do
             {
               if (isstring (obj))
                 {
-                  DB.DBA.RDF_MAKE_RO_DIGEST (257, obj, 257, 1);
+                  if (curr_g <> old_g)
+                    {
+                      if (old_g <> #i0)
+                        RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (old_g, ro_id_dict);
+                      ro_id_dict := dict_new (100000);
+                      old_g := curr_g;
+                    }
+                  DB.DBA.RDF_OBJ_ADD (257, obj, 257, ro_id_dict);
                   commit work;
+                  if (dict_size (ro_id_dict) > 100000)
+                    RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (curr_g, ro_id_dict);
                 }
               else
                 {
                   declare id integer;
                   id := rdf_box_ro_id (obj);
                   if (0 <> id)
+                    {
+                      if (curr_g <> old_g)
+                        {
+                          if (old_g <> #i0)
+                            RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (old_g, ro_id_dict);
+                          ro_id_dict := dict_new (100000);
+                          old_g := curr_g;
+                        }
                     update DB.DBA.RDF_OBJ set RO_DIGEST = obj where RO_ID = id and RO_DIGEST is null;
                   commit work;
+                      if (dict_size (ro_id_dict) > 100000)
+                        RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (curr_g, ro_id_dict);
                 }
             }
-      goto update_complete;
         }
-      update DB.DBA.RDF_OBJ set RO_DIGEST = rdf_box (coalesce (blob_to_string (RO_LONG), RO_VAL), 257, 257, RO_ID, 1) where RO_DIGEST is null;
-      commit work;
-  for (select O as obj from DB.DBA.RDF_QUAD where isstring (O)) do
-        {
-          DB.DBA.RDF_MAKE_RO_DIGEST (257, obj, 257, 1);
+          RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (old_g, ro_id_dict);
           commit work;
         }
-update_complete:
       __atomic (0);
       exec ('checkpoint');
+    }
+
+  insert into DB.DBA.RDF_OBJ_FT_RULES (ROFR_G, ROFR_P, ROFR_REASON) values (rule_g, rule_p, reason);
+  commit work;
+  __rdf_obj_ft_rule_add (rule_g_iid, rule_p_iid, reason);
   return 1;
 }
 ;
@@ -8727,7 +9071,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_BOOL_OF_O to SPARQL_SELECT',
     'grant execute on DB.DBA.RQ_IID_OF_O to SPARQL_SELECT',
     'grant execute on DB.DBA.RQ_O_IS_LIT to SPARQL_SELECT',
-    'grant execute on DB.DBA.RDF_MAKE_RO_DIGEST to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_OBJ_ADD to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FIND_RO_DIGEST to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT to SPARQL_SELECT',
@@ -9012,7 +9356,7 @@ tridgell_ok:
           }
         o_long := jso_parse_digest (o_old);
         o_strval := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = o_long[3]);
-        o_new := DB.DBA.RDF_MAKE_RO_DIGEST (o_long[0], o_strval, o_long[2], 0);
+        o_new := DB.DBA.RDF_OBJ_ADD (o_long[0], o_strval, o_long[2]);
         insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_old, s_old, p_old, o_new);
       }    
 longtyped_cur_end: ;
@@ -9042,7 +9386,7 @@ longtyped_cur_end: ;
           }
         o_dt := o_old[0] + o_old[1]*256;
         o_lang := o_old[val_len+3] + o_old[val_len+4]*256;
-        o_new := DB.DBA.RDF_MAKE_RO_DIGEST (o_dt, subseq (o_old, 2, val_len+2), o_lang, 0);
+        o_new := DB.DBA.RDF_OBJ_ADD (o_dt, subseq (o_old, 2, val_len+2), o_lang);
         if (isstring (o_new))
           insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_old, s_old, p_old, o_new || '012345678901234567890123456789');
         else

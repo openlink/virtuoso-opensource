@@ -93,7 +93,8 @@ EXE_EXPORT (iri_id_t, bif_iri_id_or_null_arg, (caddr_t * qst, state_slot_t ** ar
 EXE_EXPORT (struct id_hash_iterator_s *, bif_dict_iterator_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int chk_version));
 EXE_EXPORT (struct id_hash_iterator_s *, bif_dict_iterator_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int chk_version));
 
-
+EXE_EXPORT (caddr_t, box_find_mt_unsafe_subtree, (caddr_t box));
+EXE_EXPORT (void, box_make_tree_mt_safe, (caddr_t box));
 
 EXE_EXPORT (int, bif_uses_index, (bif_t bif));
 

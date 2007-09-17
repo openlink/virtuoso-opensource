@@ -90,7 +90,6 @@ DBG_HASHEXT_NAME(id_hash_clear) (DBG_PARAMS id_hash_t * hash)
   hash->ht_inserts = 0;
   hash->ht_deletes = 0;
   hash->ht_overflows = 0;
-  hash->ht_dict_refctr = 0;
   hash->ht_count = 0;
 }
 
@@ -138,6 +137,11 @@ DBG_HASHEXT_NAME(id_hash_add_new) (DBG_PARAMS id_hash_t * ht, caddr_t key, caddr
   char *bucket;
   caddr_t res;
   id_hashed_key_t inx = ht->ht_hash_func (key);
+#ifndef NDEBUG
+  caddr_t place = id_hash_get_with_hash_number (ht, key, inx);
+  if (place)
+    GPF_T1 ("id_hash_add_new with an existing key");
+#endif
   ID_HASHED_KEY_CHECK(inx);
   ID_CHECK_REHASH (ht);
   inx = (inx & ID_HASHED_KEY_MASK) % ht->ht_buckets;
