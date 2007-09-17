@@ -145,6 +145,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Supplier-address ;
                         northwind:city suppliers.City
                                 as virtrdf:Supplier-city ;
+                        northwind:dbpedia_city northwind:dbpedia_iri(suppliers.City)
+                                as virtrdf:Supplier-dbpediacity ;
                         northwind:region suppliers.Region
                                 as virtrdf:Supplier-region ;
                         northwind:postalCode suppliers.PostalCode
@@ -193,6 +195,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Customer-address ;
                         northwind:city customers.City
                                 as virtrdf:Customer-city ;
+                        northwind:dbpedia_city northwind:dbpedia_iri(customers.City)
+                                as virtrdf:Customer-dbpediacity ;
                         northwind:region customers.Region
                                 as virtrdf:Customer-region ;
                         northwind:PostalCode customers.PostalCode
@@ -231,6 +235,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Employee-address ;
                         northwind:city employees.City
                                 as virtrdf:Employee-city ;
+                        northwind:dbpedia_city northwind:dbpedia_iri(employees.City)
+                                as virtrdf:Employee-dbpediacity ;
                         northwind:region employees.Region
                                 as virtrdf:Employee-region ;
                         northwind:postalCode employees.PostalCode
@@ -276,6 +282,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Order-ship_address ;
                         northwind:shipCity orders.ShipCity
                                 as virtrdf:Order-ship_city ;
+                        northwind:dbpedia_shipCity northwind:dbpedia_iri(orders.ShipCity)
+                                as virtrdf:Order-dbpediaship_city ;
                         northwind:shipRegion orders.ShipRegion
                                 as virtrdf:Order-ship_region ;
                         northwind:shipPostal_code orders.ShipPostalCode

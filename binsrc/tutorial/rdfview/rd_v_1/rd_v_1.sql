@@ -142,6 +142,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutSupplier-address ;
                         tut_northwind:city suppliers.City
                                 as virtrdf:tutSupplier-city ;
+                        tut_northwind:dbpedia_city tut_northwind:dbpedia_iri(suppliers.City)
+                                as virtrdf:tutSupplier-dbpedia_city ;
                         tut_northwind:region suppliers.Region
                                 as virtrdf:tutSupplier-region ;
                         tut_northwind:postalCode suppliers.PostalCode
@@ -190,6 +192,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutCustomer-address ;
                         tut_northwind:city customers.City
                                 as virtrdf:tutCustomer-city ;
+                        tut_northwind:dbpedia_city tut_northwind:dbpedia_iri(customers.City)
+                                as virtrdf:tutCustomer-dbpedia_city ;
                         tut_northwind:region customers.Region
                                 as virtrdf:tutCustomer-region ;
                         tut_northwind:PostalCode customers.PostalCode
@@ -228,6 +232,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutEmployee-address ;
                         tut_northwind:city employees.City
                                 as virtrdf:tutEmployee-city ;
+                        tut_northwind:dbpedia_city tut_northwind:dbpedia_iri(employees.City)
+                                as virtrdf:tutEmployee-dbpedia_city ;
                         tut_northwind:region employees.Region
                                 as virtrdf:tutEmployee-region ;
                         tut_northwind:postalCode employees.PostalCode
@@ -273,6 +279,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutOrder-ship_address ;
                         tut_northwind:shipCity orders.ShipCity
                                 as virtrdf:tutOrder-ship_city ;
+                        tut_northwind:dbpedia_shipCity tut_northwind:dbpedia_iri(orders.ShipCity)
+                                as virtrdf:tutOrder-ship_dbpedia_city ;
                         tut_northwind:shipRegion orders.ShipRegion
                                 as virtrdf:tutOrder-ship_region ;
                         tut_northwind:shipPostal_code orders.ShipPostalCode
