@@ -1580,7 +1580,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
 void
 new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 {
-  char temp_string [2048];
+  char temp_string[2048];
   char *section = dbs->dbs_name;
   char *c_database_file;
   if (dbs->dbs_type == DBS_PRIMARY)
@@ -1601,9 +1601,8 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 
   if (cfg_getlong (pconfig, section, "MaxCheckpointRemap", &c_max_checkpoint_remap) == -1)
     {
-      if (dbs->dbs_type != DBS_PRIMARY ||
-    cfg_getlong (pconfig, "Parameters", "MaxCheckpointRemap", &c_max_checkpoint_remap) == -1)
-  c_max_checkpoint_remap = 0;
+      if (dbs->dbs_type != DBS_PRIMARY || cfg_getlong (pconfig, "Parameters", "MaxCheckpointRemap", &c_max_checkpoint_remap) == -1)
+	c_max_checkpoint_remap = 0;
     }
 
   /* from parameters */
@@ -1620,56 +1619,56 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
       log_segment_t **last_log = &c_log_segments;
       int modifier;
 
-      for (nlog_segments = 1; ; nlog_segments++)
-  {
-    sprintf (keyname, "Log%d", nlog_segments);
-    if (cfg_find (pconfig, section, keyname) != 0)
-      break;
+      for (nlog_segments = 1;; nlog_segments++)
+	{
+	  sprintf (keyname, "Log%d", nlog_segments);
+	  if (cfg_find (pconfig, section, keyname) != 0)
+	    break;
 
-    if (2 == sscanf(pconfig->value, "%s %ld", s_name, &llen))
-      {
-        NEW_VARZ(log_segment_t, ls);
+	  if (2 == sscanf (pconfig->value, "%s %ld", s_name, &llen))
+	    {
+	      NEW_VARZ (log_segment_t, ls);
 
-        modifier = toupper (pconfig->value[strlen (pconfig->value) - 1]);
-        switch (modifier)
-    {
-      case 'K':
-          llen *= 1024L;
-          break;
-      case 'M':
-          llen *= 1024L * 1024L;
-          break;
-      case 'G':
-          llen *= 1024L * 1024L * 1024L;
-          break;
-      default:
-          if (!isdigit (modifier))
-      goto invalid_log_entries;
-          break;
-      case 'B':
-          llen = llen;
-          break;
-    }
+	      modifier = toupper (pconfig->value[strlen (pconfig->value) - 1]);
+	      switch (modifier)
+		{
+		case 'K':
+		  llen *= 1024L;
+		  break;
+		case 'M':
+		  llen *= 1024L * 1024L;
+		  break;
+		case 'G':
+		  llen *= 1024L * 1024L * 1024L;
+		  break;
+		default:
+		  if (!isdigit (modifier))
+		    goto invalid_log_entries;
+		  break;
+		case 'B':
+		  llen = llen;
+		  break;
+		}
 
-        ls->ls_file = box_string(s_name);
-        ls->ls_bytes = llen;
-        *last_log = ls;
-        last_log = &ls->ls_next;
+	      ls->ls_file = box_string (s_name);
+	      ls->ls_bytes = llen;
+	      *last_log = ls;
+	      last_log = &ls->ls_next;
 
-      }
-    else
-      {
-      invalid_log_entries:;
-        log_error ("The values for log segment %d are invalid", nlog_segments);
-        exit(-1);
-      }
-  }
+	    }
+	  else
+	    {
+	    invalid_log_entries:;
+	      log_error ("The values for log segment %d are invalid", nlog_segments);
+	      exit (-1);
+	    }
+	}
 
       if (nlog_segments == 1)
-  {
-    log_error ("Log segmentation is enabled, but no log segments are specified");
-    return;
-  }
+	{
+	  log_error ("Log segmentation is enabled, but no log segments are specified");
+	  return;
+	}
     }
 
   if (cfg_getlong (pconfig, section, "Striping", &c_striping) == -1)
@@ -1679,9 +1678,8 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
    *  Parse [Striping] section
    */
 
-  if ((dbs->dbs_type == DBS_PRIMARY) ||
-      (dbs->dbs_type == DBS_RECOVER))
-     section = "Striping";
+  if ((dbs->dbs_type == DBS_PRIMARY) || (dbs->dbs_type == DBS_RECOVER))
+    section = "Striping";
   else if (dbs->dbs_type == DBS_TEMP)
     section = "TempStriping";
   else
@@ -1701,122 +1699,129 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
       long n_pages;
       int n_stripes;
       int modifier;
-      char s_name[100];
-      char s_ioq[1000];
 
-      char* c_stripe_growth_ratio_sz;
+      char *c_stripe_growth_ratio_sz;
 
       if (cfg_getstring (pconfig, section, "GrowthRatio", &c_stripe_growth_ratio_sz) == -1)
-  c_stripe_growth_ratio = 20; /* 20% */
+	c_stripe_growth_ratio = 20;	/* 20% */
       else
-  {
-    size_t sz_len = strlen (c_stripe_growth_ratio_sz);
-    if (!sz_len || c_stripe_growth_ratio_sz[sz_len-1] != '%')
-      {
-      growth_ratio_format_err:
-        log_error ("The GrowthRatio value format [N%%] error, default value is used (20%)");
-        c_stripe_growth_ratio = 20;
-      }
-    else
-      {
-        char buf[1024];
-        c_stripe_growth_ratio_sz[sz_len-1] = 0;
-        c_stripe_growth_ratio = atol (c_stripe_growth_ratio_sz);
-	sprintf (buf, "%ld", c_stripe_growth_ratio);
-        if (strcmp(c_stripe_growth_ratio_sz, buf))
-    goto growth_ratio_format_err;
-      }
-  }
+	{
+	  size_t sz_len = strlen (c_stripe_growth_ratio_sz);
+	  if (!sz_len || c_stripe_growth_ratio_sz[sz_len - 1] != '%')
+	    {
+	    growth_ratio_format_err:
+	      log_error ("The GrowthRatio value format [N%%] error, default value is used (20%)");
+	      c_stripe_growth_ratio = 20;
+	    }
+	  else
+	    {
+	      char buf[1024];
+	      c_stripe_growth_ratio_sz[sz_len - 1] = 0;
+	      c_stripe_growth_ratio = atol (c_stripe_growth_ratio_sz);
+	      sprintf (buf, "%ld", c_stripe_growth_ratio);
+	      if (strcmp (c_stripe_growth_ratio_sz, buf))
+		goto growth_ratio_format_err;
+	    }
+	}
 
-      for (nsegs = 1; ; nsegs++)
-  {
-    sprintf (keyname, "Segment%d", nsegs);
-    if (cfg_find (pconfig, section, keyname) != 0)
-      break;
+      for (nsegs = 1;; nsegs++)
+	{
+	  sprintf (keyname, "Segment%d", nsegs);
+	  if (cfg_find (pconfig, section, keyname) != 0)
+	    break;
 
-    n_stripes = cslnumentries (pconfig->value) - 1;
-    segszstr = cslentry (pconfig->value, 1);
-    segszvalue = atol (segszstr);
-    if (segszvalue == 0)
-      {
-      invalid_size:;
-        log_error ("The size for strip segment %d is invalid", nsegs);
-        return;
-      }
-    modifier = toupper (segszstr[strlen (segszstr) - 1]);
-    /* THIS ASSUMES PAGE_SZ == 4k */
+	  n_stripes = cslnumentries (pconfig->value) - 1;
+	  segszstr = cslentry (pconfig->value, 1);
+	  segszvalue = atol (segszstr);
+	  if (segszvalue == 0)
+	    {
+	    invalid_size:;
+	      log_error ("The size for strip segment %d is invalid", nsegs);
+	      return;
+	    }
+	  modifier = toupper (segszstr[strlen (segszstr) - 1]);
+	  /* THIS ASSUMES PAGE_SZ == 4k */
 #   define KILOS_PER_PAGE (PAGE_SZ/1024)
-    switch (modifier)
-      {
-      case 'K':
-        if (segszvalue % KILOS_PER_PAGE)
-    {
-      log_error (
-          "The size for stripe segment %d must be a multiple of %d",
-          nsegs, PAGE_SZ);
-      return;
-    }
-        n_pages = segszvalue / KILOS_PER_PAGE;
-        break;
-      case 'M':
-        n_pages = (1024 * segszvalue) / KILOS_PER_PAGE;
-        break;
-      case 'G':
-        n_pages = (1024 * 1024 * segszvalue) / KILOS_PER_PAGE;
-        break;
-      default:
-         if (!isdigit (modifier))
-     goto invalid_size;
-      case 'B':
-         n_pages = segszvalue;
-         break;
-      }
-    if (n_pages < 0 || (n_pages / n_stripes) > (LONG_MAX / PAGE_SZ))
-      {
+	  switch (modifier)
+	    {
+	    case 'K':
+	      if (segszvalue % KILOS_PER_PAGE)
+		{
+		  log_error ("The size for stripe segment %d must be a multiple of %d", nsegs, PAGE_SZ);
+		  return;
+		}
+	      n_pages = segszvalue / KILOS_PER_PAGE;
+	      break;
+	    case 'M':
+	      n_pages = (1024 * segszvalue) / KILOS_PER_PAGE;
+	      break;
+	    case 'G':
+	      n_pages = (1024 * 1024 * segszvalue) / KILOS_PER_PAGE;
+	      break;
+	    default:
+	      if (!isdigit (modifier))
+		goto invalid_size;
+	    case 'B':
+	      n_pages = segszvalue;
+	      break;
+	    }
+	  if (n_pages < 0 || (n_pages / n_stripes) > (LONG_MAX / PAGE_SZ))
+	    {
 #if (!defined (FILE64) && !defined (WIN32))
-         n_pages = (LONG_MAX / PAGE_SZ) * n_stripes;
-         log_error ("The size for stripe segment #%d exceeds 2G limit, setting to maximum allowed %d pages",
-	    nsegs, n_pages);
+	      n_pages = (LONG_MAX / PAGE_SZ) * n_stripes;
+	      log_error ("The size for stripe segment #%d exceeds 2G limit, setting to maximum allowed %d pages", nsegs, n_pages);
 #endif
-      }
-    free (segszstr);
-    if (n_pages % n_stripes)
-      {
-        log_error (
-      "The size for stripe segment %d must be a multiple of %d",
-      nsegs, n_stripes);
-        return;
-      }
-    seg = (disk_segment_t *) dk_alloc (sizeof (disk_segment_t));
-    seg->ds_size = n_pages;
-    seg->ds_n_stripes = n_stripes;
-    seg->ds_stripes = (disk_stripe_t **)
-        dk_alloc_box (n_stripes * sizeof (caddr_t), DV_ARRAY_OF_LONG);
-    for (indx = 0; indx < n_stripes; indx++)
-      {
-        char *value = cslentry (pconfig->value, 2 + indx);
-        s_ioq[0] = 0;
-        if (2 == sscanf (value, "%s %s", s_name, s_ioq)
-      || 1 == sscanf (value, "%s", s_name))
-    {
-      dst = (disk_stripe_t *) dk_alloc (sizeof (disk_stripe_t));
-      memset (dst, 0, sizeof (disk_stripe_t));
-      dst->dst_mtx = mutex_allocate ();
-      if (s_ioq[0])
-        dst->dst_iq_id = box_string (s_ioq);
-      dst->dst_file = box_string (s_name);
-      seg->ds_stripes[indx] = dst;
-    }
-        free (value);
-      }
-    c_stripes = dk_set_conc (c_stripes,
-        dk_set_cons ((caddr_t) seg, NULL));
-  }
+	    }
+	  free (segszstr);
+	  if (n_pages % n_stripes)
+	    {
+	      log_error ("The size for stripe segment %d must be a multiple of %d", nsegs, n_stripes);
+	      return;
+	    }
+
+	  seg = (disk_segment_t *) dk_alloc (sizeof (disk_segment_t));
+	  seg->ds_size = n_pages;
+	  seg->ds_n_stripes = n_stripes;
+	  seg->ds_stripes = (disk_stripe_t **) dk_alloc_box (n_stripes * sizeof (caddr_t), DV_ARRAY_OF_LONG);
+
+	  for (indx = 0; indx < n_stripes; indx++)
+	    {
+	      char *value = cslentry (pconfig->value, 2 + indx);
+	      char *sep = NULL;
+	      char *s_ioq = NULL;
+
+	      /* TODO: we should be able to recover from this condition */
+	      if (value == NULL || *value == 0)
+		{
+		  log_error ("Syntax error in Striping section");
+		  return;
+		}
+
+	      /* Check for queue name */
+	      if ((sep = strrchr (value, '=')) != NULL)
+		{
+		  s_ioq = ltrim (sep + 1);
+		  *sep = '\0';
+		}
+	      rtrim (value);
+
+	      dst = (disk_stripe_t *) dk_alloc (sizeof (disk_stripe_t));
+	      memset (dst, 0, sizeof (disk_stripe_t));
+	      dst->dst_mtx = mutex_allocate ();
+	      if (s_ioq && *s_ioq)
+		dst->dst_iq_id = box_string (s_ioq);
+	      dst->dst_file = box_string (value);
+	      seg->ds_stripes[indx] = dst;
+
+	      free (value);
+	    }
+	  c_stripes = dk_set_conc (c_stripes, dk_set_cons ((caddr_t) seg, NULL));
+	}
       if (nsegs == 1)
-  {
-    log_error ("Striping is enabled, but no stripes are specified");
-    return;
-  }
+	{
+	  log_error ("Striping is enabled, but no stripes are specified");
+	  return;
+	}
     }
 
   dbs->dbs_file = box_string (c_database_file);
