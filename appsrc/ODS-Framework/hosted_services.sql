@@ -2876,8 +2876,15 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SITE_NAME', 'LONG VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_INTERESTS', 'LONG VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_BORG_HOMEPAGE', 'LONG VARCHAR');
 
+create procedure WA_USER_INFO_WAUI_FOAF_UPGRADE ()
+{
+  if (exists (select 1 from SYS_COLS where \COLUMN = 'WAUI_FOAF' and \TABLE = 'DB.DBA.WA_USER_INFO' and COL_DTP = 125))
+    return;
 wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO DROP WAUI_FOAF');
 wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO ADD WAUI_FOAF LONG VARCHAR');
+};
+
+WA_USER_INFO_WAUI_FOAF_UPGRADE ();
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_URL', 'VARCHAR');
 
