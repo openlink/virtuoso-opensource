@@ -194,7 +194,7 @@ xmls_init (void)
   if (!xml_global)
     xml_global = xs_allocate ();
 
-  qr = sql_compile ("select A_ID, A_NAME from SYS_ATTR",
+  qr = sql_compile_static ("select A_ID, A_NAME from SYS_ATTR",
 		    bootstrap_cli, &err, SQLC_DEFAULT);
   err = qr_quick_exec (qr, bootstrap_cli, "", &lc, 0);
   while (lc_next (lc))
@@ -382,9 +382,9 @@ qi_new_attr (query_instance_t * qi, char *name)
 
   if (!new_attr_qr)
     {
-      new_attr_qr = sql_compile ("select A_ID from DB.DBA.SYS_ATTR order by A_ID desc for update",
+      new_attr_qr = sql_compile_static ("select A_ID from DB.DBA.SYS_ATTR order by A_ID desc for update",
 				 bootstrap_cli, &err, SQLC_DEFAULT);
-      ins_attr_qr = sql_compile ("insert into DB.DBA.SYS_ATTR (A_ID, A_NAME) values (?, ?)",
+      ins_attr_qr = sql_compile_static ("insert into DB.DBA.SYS_ATTR (A_ID, A_NAME) values (?, ?)",
 				 bootstrap_cli, &err, SQLC_DEFAULT);
       if (err)
 	sqlr_resignal (err);

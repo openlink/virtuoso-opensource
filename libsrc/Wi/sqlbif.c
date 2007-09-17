@@ -10113,7 +10113,7 @@ bif_proc_changed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	"from DB.DBA.SYS_PROCEDURES where P_NAME = ?",
 	cli, &err, SQLC_DEFAULT);
   else
-    rdproc = sql_compile ("select coalesce (T_TEXT, blob_to_string (T_MORE)), name_part (T_NAME, 1), T_SCH from DB.DBA.SYS_TRIGGERS where T_NAME = ? AND T_TABLE = ?", cli, &err, SQLC_DEFAULT);
+    rdproc = sql_compile_static ("select coalesce (T_TEXT, blob_to_string (T_MORE)), name_part (T_NAME, 1), T_SCH from DB.DBA.SYS_TRIGGERS where T_NAME = ? AND T_TABLE = ?", cli, &err, SQLC_DEFAULT);
   if (!err)
     {
       if (!is_trig)

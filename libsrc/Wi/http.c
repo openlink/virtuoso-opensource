@@ -2306,7 +2306,7 @@ ws_post_process (ws_connection_t * ws)
   query_t *proc;
 
   if (!http_ppr_qr)
-    http_ppr_qr = sql_compile ("call (?) ()", bootstrap_cli, &err, SQLC_DEFAULT);
+    http_ppr_qr = sql_compile_static ("call (?) ()", bootstrap_cli, &err, SQLC_DEFAULT);
   if ((ws && !ws->ws_map) || (ws && ws->ws_map && !ws->ws_map->hm_pfn))
     return;
   if (ws->ws_map && IS_STRING_DTP (DV_TYPE_OF(ws->ws_map->hm_pfn)))
@@ -2467,7 +2467,7 @@ ws_url_rewrite (ws_connection_t *ws)
 	goto error_end;
     }
   if (!url_rewrite_qr)
-    url_rewrite_qr = sql_compile ("DB.DBA.HTTP_URLREWRITE (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    url_rewrite_qr = sql_compile_static ("DB.DBA.HTTP_URLREWRITE (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
 
   ws->ws_cli->cli_http_ses = ws->ws_strses;
   ws->ws_cli->cli_ws = ws;
@@ -2528,7 +2528,7 @@ ws_auth_check (ws_connection_t * ws)
   query_t * proc;
 
   if (!http_auth_qr)
-    http_auth_qr = sql_compile ("call (?) (?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    http_auth_qr = sql_compile_static ("call (?) (?)", bootstrap_cli, &err, SQLC_DEFAULT);
 
   if ((ws && !ws->ws_map) || (ws && ws->ws_map && !ws->ws_map->hm_afn))
     return 1;
@@ -2726,7 +2726,7 @@ request_do_again:
    * connection_set (cli, con_dav_v_name, NULL);*/
   if (!http_call)
     {
-      http_call = sql_compile ("call (?) (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+      http_call = sql_compile_static ("call (?) (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
     }
   strses_flush (ws->ws_strses);
   IN_TXN;
@@ -8084,7 +8084,7 @@ ws_cache_check (ws_connection_t * ws)
       caddr_t * pars = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 
       if (!check_qr)
-	check_qr = sql_compile ("WS.WS.HTTP_CACHE_CHECK (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+	check_qr = sql_compile_static ("WS.WS.HTTP_CACHE_CHECK (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
       if (!check_qr)
 	{
 	  log_error ("No WS.WS.HTTP_CACHE_CHECK defined");
@@ -8130,7 +8130,7 @@ ws_cache_store (ws_connection_t * ws, int store)
     store = 0;
 
   if (!store_qr)
-    store_qr = sql_compile ("WS.WS.HTTP_CACHE_STORE (?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    store_qr = sql_compile_static ("WS.WS.HTTP_CACHE_STORE (?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
   pars[0] = ws->ws_store_in_cache;
   ws->ws_store_in_cache = NULL;
   pars[1] = (caddr_t) box_num_nonull ((ptrlong) store);
@@ -8408,7 +8408,7 @@ ws_serve_client_connection (ws_connection_t * ws)
   ws->ws_ignore_disconnect = 1;
 
   if (!qr)
-    qr = sql_compile ("call (?) (?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    qr = sql_compile_static ("call (?) (?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
 
   if (err)
     goto err_end;

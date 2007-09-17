@@ -61,8 +61,7 @@ sql_compile_st (ST ** ptree, client_connection_t * cli,
   sql_comp_t sc;
   query_t *volatile qr;
   client_connection_t *old_cli = sqlc_client ();
-  qr = (query_t *) dk_alloc (sizeof (query_t));
-  memset (qr, 0, sizeof (query_t));
+  DK_ALLOC_QUERY (qr);
   memset (&sc, 0, sizeof (sc));
 
   CC_INIT (cc, cli);

@@ -2687,7 +2687,10 @@ sf_shutdown (char *log_name, lock_trx_t * trx)
 
   IN_TXN;
   PrpcLeave ();
-
+#if defined (MALLOC_DEBUG) || defined (VALGRIND)
+  while (NULL != static_qr_dllist)
+    qr_free (static_qr_dllist);
+#endif
   DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_storage)
     {
       dbs_close (dbs);

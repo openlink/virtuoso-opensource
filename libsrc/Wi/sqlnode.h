@@ -253,7 +253,25 @@ struct query_s
     long 		qr_obsolete_msec;
     caddr_t		qr_parse_tree;
     float *		qr_proc_cost; /* box of floats: 0. unit cost 1. result set rows 2...n+2 multiplier if param 0...n is not given */
+#if defined (MALLOC_DEBUG) || defined (VALGRIND)
+    const char *	qr_static_source_file;
+    int			qr_static_source_line;
+    struct query_s *	qr_static_prev;
+    struct query_s *	qr_static_next;
+    int			qr_chkmark;
+#endif
   };
+
+#if defined (MALLOC_DEBUG) || defined (VALGRIND)
+#define DK_ALLOC_QUERY(qr) { \
+  qr = (query_t *) dk_alloc (sizeof (query_t)); \
+  memset (qr, 0, sizeof (query_t)); \
+  qr->qr_chkmark = 0x269beef; }
+#else
+#define DK_ALLOC_QUERY(qr) { \
+  qr = (query_t *) dk_alloc (sizeof (query_t)); \
+  memset (qr, 0, sizeof (query_t)); }
+#endif
 
 /* qr_remote_mode values */
 

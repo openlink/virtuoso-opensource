@@ -1677,85 +1677,85 @@ sec_read_users (void)
       sec_users = id_str_hash_create (101);
       sec_user_by_id = hash_table_allocate (101);
 
-      read_users_qr = sql_compile (
+      read_users_qr = sql_compile_static (
 	  "select U_NAME, U_PASSWORD, U_GROUP, U_ID, U_DATA, U_ACCOUNT_DISABLED, U_SQL_ENABLE, U_IS_ROLE "
 	  "from SYS_USERS where U_SQL_ENABLE = 1", cli, &err, 0);
       PRINT_ERR(err);
 
-      read_grants_qr = sql_compile (
+      read_grants_qr = sql_compile_static (
 	"select G_USER, G_OP, G_OBJECT, G_COL "
 	"from SYS_GRANTS "
 	"where G_OBJECT like ?", cli, &err, 0);
 
-      read_tb_rls_qr = sql_compile (
+      read_tb_rls_qr = sql_compile_static (
 	"select RLSP_TABLE, RLSP_FUNC, RLSP_OP "
 	"from DB.DBA.SYS_RLS_POLICY "
 	"where RLSP_TABLE like ?", cli, &err, 0);
 
       PRINT_ERR(err);
 
-      read_exec_grants_qr = sql_compile (
+      read_exec_grants_qr = sql_compile_static (
 	"select G_USER, G_OP, G_OBJECT, G_COL "
 	"from SYS_GRANTS "
 	"where G_OBJECT like ? AND G_OP = 32", cli, &err, 0);
       PRINT_ERR(err);
 
-      set_user_qr = sql_compile (
+      set_user_qr = sql_compile_static (
 	  "insert replacing SYS_USERS (U_NAME, U_PASSWORD, U_ID, U_GROUP, U_ACCOUNT_DISABLED, U_IS_ROLE, U_SQL_ENABLE, U_DAV_ENABLE) "
 	  "values (?, ?, ?, ?, 0, 0, 1, case when ? = 'dba' then 1 else 0 end)", cli, &err, 0);
       PRINT_ERR(err);
 
-      upd_user_qr = sql_compile ("update SYS_USERS set U_PASSWORD = ?, U_ID = ?, U_GROUP = ? where U_NAME = ?",
+      upd_user_qr = sql_compile_static ("update SYS_USERS set U_PASSWORD = ?, U_ID = ?, U_GROUP = ? where U_NAME = ?",
 	  cli, &err, 0);
       PRINT_ERR(err);
 
-      set_g_id_qr = sql_compile (
+      set_g_id_qr = sql_compile_static (
 	  "update SYS_USERS set U_GROUP = ? where U_NAME = ?", cli, &err, 0);
       PRINT_ERR(err);
 
-      add_g_id_qr = sql_compile (
+      add_g_id_qr = sql_compile_static (
 	  "insert replacing SYS_ROLE_GRANTS (GI_SUPER, GI_SUB) values (?, ?)", cli, &err, 0);
       PRINT_ERR(err);
 
-      del_g_id_qr = sql_compile (
+      del_g_id_qr = sql_compile_static (
 	  "delete from SYS_ROLE_GRANTS where GI_SUPER = ? and GI_SUB = ?", cli, &err, 0);
       PRINT_ERR(err);
 
-      last_id_qr = sql_compile (
+      last_id_qr = sql_compile_static (
 	  "select U_ID from SYS_USERS order by U_ID desc", cli, &err, 0);
       PRINT_ERR(err);
 
-      grant_qr = sql_compile (
+      grant_qr = sql_compile_static (
 	  "insert soft SYS_GRANTS (G_USER, G_OP, G_OBJECT, G_COL, G_GRANTOR) "
 	  "values (?,?,?,?,?)", cli, &err, 0);
       PRINT_ERR(err);
 
-      revoke_qr = sql_compile ("revoke_proc (?,?,?,?,?)", cli, &err, 0);
+      revoke_qr = sql_compile_static ("revoke_proc (?,?,?,?,?)", cli, &err, 0);
       PRINT_ERR(err);
 
       /* XXX: this is a some sort of a hack !!! */
-      null_users_qr = sql_compile (
+      null_users_qr = sql_compile_static (
 	  "update SYS_USERS set U_ID = 0, U_GROUP = 0 "
 	  "where (U_ID is null or U_GROUP is null) and U_IS_ROLE = 0 and U_SQL_ENABLE = 1", cli, &err, 0);
       PRINT_ERR(err);
 
-      delete_user_qr = sql_compile ("USER_DROP (?, ?)", cli, &err, 0); /* was del_user */
+      delete_user_qr = sql_compile_static ("USER_DROP (?, ?)", cli, &err, 0); /* was del_user */
       PRINT_ERR(err);
 
-      read_groups_qr = sql_compile (
+      read_groups_qr = sql_compile_static (
 	  "select distinct GI_SUB as GI_SUB from SYS_ROLE_GRANTS where GI_SUPER = ?", cli, &err, 0);
       PRINT_ERR(err);
 
-      user_grant_role_qr = sql_compile ("USER_GRANT_ROLE (?, ?, ?)", cli, &err, 0);
+      user_grant_role_qr = sql_compile_static ("USER_GRANT_ROLE (?, ?, ?)", cli, &err, 0);
       PRINT_ERR(err);
 
-      user_revoke_role_qr = sql_compile ("USER_REVOKE_ROLE (?, ?)", cli, &err, 0);
+      user_revoke_role_qr = sql_compile_static ("USER_REVOKE_ROLE (?, ?)", cli, &err, 0);
       PRINT_ERR(err);
 
-      user_create_role_qr = sql_compile ("USER_ROLE_CREATE (?, 0)", cli, &err, 0);
+      user_create_role_qr = sql_compile_static ("USER_ROLE_CREATE (?, 0)", cli, &err, 0);
       PRINT_ERR(err);
 
-      user_drop_role_qr = sql_compile ("USER_ROLE_DROP (?)", cli, &err, 0);
+      user_drop_role_qr = sql_compile_static ("USER_ROLE_DROP (?)", cli, &err, 0);
       PRINT_ERR(err);
     }
 
@@ -2158,7 +2158,7 @@ void
 sec_init (void)
 {
   caddr_t err = NULL;
-  sec_call_login_hook_qr = sql_compile (
+  sec_call_login_hook_qr = sql_compile_static (
       "DB.DBA.USER_CERT_LOGIN (?, ?, ?)", /* in UID, in digest, in secret */
       bootstrap_cli,
       &err,
@@ -2175,7 +2175,7 @@ sec_init (void)
     }
 
   err = NULL;
-  sec_call_find_user_qr = sql_compile (
+  sec_call_find_user_qr = sql_compile_static (
       "DB.DBA.USER_FIND (?)", /* in u_name */
       bootstrap_cli,
       &err,

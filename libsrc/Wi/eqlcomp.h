@@ -91,10 +91,30 @@ void sqlc_error (comp_context_t * cc, const char *st, const char *str,...);
 void sqlc_new_error (comp_context_t * cc, const char *st, const char *virt_code, const char *str,...);
 void sqlc_resignal_1 (comp_context_t * cc, caddr_t err);
 
-query_t *sql_compile (const char *string2, client_connection_t * cli, caddr_t * err,
+extern query_t *DBG_NAME (sql_compile) (DBG_PARAMS const char *string2, client_connection_t * cli, caddr_t * err,
     volatile int store_procs);
-query_t *sql_proc_to_recompile (const char *string2, client_connection_t * cli, caddr_t proc_name,
+extern query_t *DBG_NAME (sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connection_t * cli, caddr_t proc_name,
     int text_is_constant);
+#ifdef MALLOC_DEBUG
+#define sql_compile(s,c,e,sp) dbg_sql_compile(__FILE__,__LINE__,(s),(c),(e),(sp))
+#define sql_proc_to_recompile(s,c,pn,tic) dbg_sql_proc_to_recompile(__FILE__,__LINE__,(s),(c),(pn),(tic))
+#endif
+
+#if defined (MALLOC_DEBUG) || defined (VALGRIND)
+extern query_t *static_qr_dllist; /*!< Double-linked list of queries that should be freed only at server shutdown. */
+extern query_t *dbg_sql_compile_static (const char *file, int line,
+    const char *string2, client_connection_t * cli, caddr_t * err,
+    volatile int store_procs);
+#define sql_compile_static(s,c,e,sp) dbg_sql_compile_static(__FILE__,__LINE__,(s),(c),(e),(sp))
+extern void static_qr_dllist_append (query_t *qr, int gpf_on_dupe);
+extern void static_qr_dllist_remove (query_t *qr);
+#else
+extern query_t *sql_compile_static (const char *string2, client_connection_t * cli, caddr_t * err,
+    volatile int store_procs);
+#define static_qr_dllist_append(qr,g)
+#define static_qr_dllist_remove(qr)
+#endif
+
 
 void sqlc_set_client (client_connection_t * cli);
 

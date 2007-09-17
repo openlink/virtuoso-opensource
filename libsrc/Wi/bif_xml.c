@@ -2996,7 +2996,7 @@ xml_uri_resolve (query_instance_t * qi, caddr_t *err_ret, ccaddr_t base_uri, cca
     cli = qi->qi_client;
   if (!qr)
     {
-      qr = sql_compile (pl_call_text, cli, &err, SQLC_DEFAULT);
+      qr = sql_compile_static (pl_call_text, cli, &err, SQLC_DEFAULT);
       if (SQL_SUCCESS != err)
 	{
 	  qr = NULL;
@@ -3064,7 +3064,7 @@ xml_uri_resolve_like_get (query_instance_t * qi, caddr_t *err_ret, ccaddr_t base
 
   if (!qr)
     {
-      qr = sql_compile (pl_call_text, qi->qi_client, &err, SQLC_DEFAULT);
+      qr = sql_compile_static (pl_call_text, qi->qi_client, &err, SQLC_DEFAULT);
       if (SQL_SUCCESS != err)
 	{
 	  qr = NULL;

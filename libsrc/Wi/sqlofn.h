@@ -43,8 +43,11 @@ int ssl_is_special (state_slot_t * ssl);
 
 extern int sqlo_print_debug_output;
 
-query_t *sql_compile_1 (const char *string2, client_connection_t * cli,
+extern query_t *DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * cli,
 	     caddr_t * err, volatile int cr_type, ST *the_parse_tree, char *view_name);
+#ifdef MALLOC_DEBUG
+#define sql_compile_1(s,c,e,ct,tpt,vn) dbg_sql_compile_1(__FILE__, __LINE__, (s),(c),(e),(ct),(tpt),(vn))
+#endif
 
 void t_st_or (ST ** cond, ST * pred);
 

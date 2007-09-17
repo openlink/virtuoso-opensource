@@ -339,7 +339,7 @@ void mime_c_compose (soap_call_ctx_t ctx, caddr_t * input)
    caddr_t replay = NULL, arg, hdr, err = NULL;
 
    if (!mime_call)
-     mime_call = sql_compile ("DB.DBA.WS_MIME_RESP_C (?)", bootstrap_cli, &err, SQLC_DEFAULT);
+     mime_call = sql_compile_static ("DB.DBA.WS_MIME_RESP_C (?)", bootstrap_cli, &err, SQLC_DEFAULT);
 
    arg = box_copy_tree ((box_t) input);
 
@@ -377,7 +377,7 @@ void mime_compose (ws_connection_t * ws, caddr_t * input)
    caddr_t replay = NULL, arg, hdr, err = NULL;
 
    if (!mime_call)
-     mime_call = sql_compile ("DB.DBA.WS_MIME_RESP (?)", ws->ws_cli, &err, SQLC_DEFAULT);
+     mime_call = sql_compile_static ("DB.DBA.WS_MIME_RESP (?)", ws->ws_cli, &err, SQLC_DEFAULT);
 
    arg = box_copy_tree ((box_t) input);
 

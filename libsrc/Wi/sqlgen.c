@@ -3116,10 +3116,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
   query_t * qr = ext_query;
   int was_setp = 0;
   if (!qr)
-    {
-      qr = (query_t*) dk_alloc (sizeof (query_t));
-      memset (qr, 0, sizeof (query_t));
-    }
+    DK_ALLOC_QUERY (qr);
   sc->sc_cc->cc_query = qr;
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &sel_out_ret, 1000))
     sqlc_error (so->so_sc->sc_cc, ".....", "Stack Overflow");

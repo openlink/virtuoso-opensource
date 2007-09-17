@@ -1343,7 +1343,7 @@ qr_proc_repl_check_valid (query_t *qr, caddr_t *err)
 
 
 query_t *
-sql_compile_1 (const char *string2, client_connection_t * cli,
+DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * cli,
 	     caddr_t * err, volatile int cr_type, ST *the_parse_tree, char *view_name)
 {
   volatile long msecs = prof_on ? get_msec_real_time () : 0;
@@ -1363,8 +1363,7 @@ sql_compile_1 (const char *string2, client_connection_t * cli,
       log_info ("COMP_2 %s %s %s Compile %s %s",
 	  user, from, peer, the_parse_tree ? "tree" : "text: ", string2);
     }
-  qr = (query_t *) dk_alloc (sizeof (query_t));
-  memset (qr, 0, sizeof (query_t));
+  DK_ALLOC_QUERY (qr);
   memset (&sc, 0, sizeof (sc));
 
   CC_INIT (cc, cli);
@@ -1694,18 +1693,120 @@ sql_compile_1 (const char *string2, client_connection_t * cli,
 }
 
 query_t *
-sql_compile (const char *string2, client_connection_t * cli,
+DBG_NAME (sql_compile) (DBG_PARAMS const char *string2, client_connection_t * cli,
 	     caddr_t * err, volatile int cr_type)
 {
-  return sql_compile_1 (string2, cli, err, cr_type, NULL, NULL);
+  return DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_type, NULL, NULL);
 }
 
+#if defined (MALLOC_DEBUG) || defined (VALGRIND)
+query_t *static_qr_dllist = NULL;
+
+query_t *
+dbg_sql_compile_static (const char *file, int line, const char *string2, client_connection_t * cli,
+	     caddr_t * err, volatile int cr_type)
+{
+  caddr_t *my_err = NULL;
+  query_t *qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, &my_err, cr_type, NULL, NULL);
+  if (NULL != err)
+    err[0] = my_err;
+  if (NULL == qr)
+    {
+      log_error ("%s %s -- unable to compile static SQL query at file %s line %d: %.100s", ERR_STATE(my_err), ERR_MESSAGE(my_err), file, line, string2);
+      if (NULL == err)
+        dk_free_tree (my_err);
+      return qr;
+    }
+  if (NULL != my_err)
+    {
+      log_error ("%s %s -- static SQL query at file %s line %d: %.100s", ERR_STATE(my_err), ERR_MESSAGE(my_err), file, line, string2);
+      if (NULL == err)
+        dk_free_tree (my_err);
+      return qr;
+    }
+  static_qr_dllist_append (qr, 1);
+  qr->qr_static_source_file = file;
+  qr->qr_static_source_line = line;
+  return qr;
+}
+
+void
+static_qr_dllist_append (query_t *qr, int gpf_on_dupe)
+{
+  query_t *iter;
+  if ((NULL != static_qr_dllist) && (NULL != static_qr_dllist->qr_static_next))
+    GPF_T;
+  for (iter = static_qr_dllist; NULL != iter; iter = iter->qr_static_prev)
+    {
+      if ((iter != static_qr_dllist) && (iter->qr_static_next->qr_static_prev != iter))
+        GPF_T;
+      if (iter != qr)
+        continue;
+      printf ("Attempt to add duplicate qr into static_qr_dllist: %p", qr);
+      if (gpf_on_dupe)
+        GPF_T;
+      if (iter->qr_chkmark != 0x1766beef)
+        GPF_T;
+    }
+  if (qr->qr_chkmark != 0x269beef)
+    GPF_T;
+  qr->qr_static_prev = static_qr_dllist;
+  qr->qr_static_next = NULL;
+  if (NULL != static_qr_dllist)
+    static_qr_dllist->qr_static_next = qr;
+  static_qr_dllist = qr;
+  qr->qr_chkmark = 0x1766beef;
+}
+
+void
+static_qr_dllist_remove (query_t *qr)
+{
+  query_t *iter = static_qr_dllist;
+  query_t *prev_qr;
+  int qr_found = 0;
+  if ((NULL != static_qr_dllist) && (NULL != static_qr_dllist->qr_static_next))
+    GPF_T;
+  for (iter = static_qr_dllist; NULL != iter; iter = iter->qr_static_prev)
+    {
+      if ((iter != static_qr_dllist) && (iter->qr_static_next->qr_static_prev != iter))
+        GPF_T;
+      if (iter->qr_chkmark != 0x1766beef)
+        GPF_T;
+      if (iter == qr)
+        qr_found = 1;
+    }
+  if (!qr_found)
+    GPF_T;
+  prev_qr = qr->qr_static_prev;
+  if (NULL != prev_qr)
+    {
+      if ((prev_qr->qr_static_next != qr) || (prev_qr == qr))
+        GPF_T;
+      prev_qr->qr_static_next = qr->qr_static_next;
+    }
+  if (NULL != qr->qr_static_next)
+    qr->qr_static_next->qr_static_prev = prev_qr;
+  if (qr == static_qr_dllist)
+    static_qr_dllist = prev_qr;
+  qr->qr_static_prev = qr->qr_static_next = NULL;
+  qr->qr_chkmark = 0x269beef;
+}
+
+#else
+query_t *
+sql_compile_static (const char *string2, client_connection_t * cli,
+	     caddr_t * err, volatile int cr_type)
+{
+  query_t *qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_type, NULL, NULL);
+  return qr;
+}
+#endif
 
 int sql_proc_use_recompile = 0;
 
 
 query_t *
-sql_proc_to_recompile (const char *string2, client_connection_t * cli, caddr_t proc_name, int text_is_constant)
+DBG_NAME(sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connection_t * cli, caddr_t proc_name, int text_is_constant)
 {
   query_t *qr = NULL;
   char proc_name_buffer[MAX_QUAL_NAME_LEN];
@@ -1766,8 +1867,7 @@ sql_proc_to_recompile (const char *string2, client_connection_t * cli, caddr_t p
       dk_free_tree ((box_t) lexems);
     }
 
-  qr = (query_t *) dk_alloc (sizeof (query_t));
-  memset (qr, 0, sizeof (query_t));
+  DK_ALLOC_QUERY (qr);
   qr->qr_to_recompile = 1;
 
   qr->qr_proc_name = box_string (proc_name);
@@ -1996,3 +2096,12 @@ sqlc_test (void)
 
 #endif
 
+
+#ifdef MALLOC_DEBUG
+#undef sql_compile
+query_t *
+sql_compile (char *string2, client_connection_t * cli, caddr_t * err, int store_procs)
+{
+  dbg_sql_compile (__FILE__, __LINE__, string2, cli, err, store_procs);
+}
+#endif

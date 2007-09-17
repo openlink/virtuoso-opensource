@@ -2359,7 +2359,7 @@ xmls_publish (query_instance_t * qi, xml_view_t * xv)
   xv_metas_t *metas = (xv_metas_t *) xp->xpub_metas;
   caddr_t err = NULL;
   query_t *qr;
-  qr = sql_compile ("DB.DBA.xml_view_publish (?, ?, ?, ?, ?, ?, ?)", qi->qi_client, &err, SQLC_DEFAULT);
+  qr = sql_compile_static ("DB.DBA.xml_view_publish (?, ?, ?, ?, ?, ?, ?)", qi->qi_client, &err, SQLC_DEFAULT);
   if (err)
     sqlr_resignal (err);
   err = qr_rec_exec (qr, qi->qi_client, NULL, qi, NULL, 7,
@@ -2422,7 +2422,7 @@ xmls_proc (query_instance_t * qi, caddr_t name)
     static query_t *xml_view_drop_proc_qr = NULL;
     caddr_t err;
     if (NULL == xml_view_drop_proc_qr)
-      xml_view_drop_proc_qr = sql_compile ("DB.DBA.XML_VIEW_DROP_PROCS (concat (?, '.', ?, '.', ?), 1)", bootstrap_cli, &err, SQLC_DEFAULT);
+      xml_view_drop_proc_qr = sql_compile_static ("DB.DBA.XML_VIEW_DROP_PROCS (concat (?, '.', ?, '.', ?), 1)", bootstrap_cli, &err, SQLC_DEFAULT);
     err = qr_rec_exec (xml_view_drop_proc_qr, xvc.xvc_qi->qi_client, NULL, xvc.xvc_qi, NULL, 3,
 		     ":0", xvc.xvc_schema, QRP_STR,
 		     ":1", xvc.xvc_user, QRP_STR,

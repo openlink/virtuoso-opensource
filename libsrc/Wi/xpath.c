@@ -3389,8 +3389,7 @@ xp_embedded_xmlview (xpp_t *caller_xpp, xp_lexbmk_t *begin, XT * xp)
       comp_context_t cc;
       sql_comp_t sc;
       query_t * volatile qr;
-      qr = (query_t *) dk_alloc (sizeof (query_t));
-      memset (qr, 0, sizeof (query_t));
+      DK_ALLOC_QUERY (qr);
       memset (&sc, 0, sizeof (sc));
       CC_INIT (cc, caller_xpp->xpp_client);
       sc.sc_cc = &cc;

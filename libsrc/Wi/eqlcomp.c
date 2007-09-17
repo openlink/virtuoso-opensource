@@ -383,6 +383,10 @@ qr_free (query_t * qr)
       id_hash_free (qr->qr_call_counts);
     }
 #endif
+#if defined (MALLOC_DEBUG) || defined (VALGRIND)
+  if ((NULL != qr->qr_static_prev) || (NULL != qr->qr_static_next) || (qr == static_qr_dllist))
+    static_qr_dllist_remove (qr);
+#endif
   dk_free ((caddr_t) qr, sizeof (query_t));
 }
 

@@ -521,7 +521,7 @@ sas_init ()
   local_cursor_t * lc;
   caddr_t err;
   query_t * sas_id;
-  sas_id = sql_compile ("select iri_to_id ('http://www.w3.org/2002/07/owl#sameAs', 1)", bootstrap_cli, &err, SQLC_DEFAULT);
+  sas_id = sql_compile_static ("select iri_to_id ('http://www.w3.org/2002/07/owl#sameAs', 1)", bootstrap_cli, &err, SQLC_DEFAULT);
   err = qr_quick_exec (sas_id, bootstrap_cli, "", &lc, 0);
   lc_next (lc);
   same_as_iri = box_copy_tree (lc_nth_col (lc, 0));

@@ -197,7 +197,7 @@ ddl_ensure_init (client_connection_t * cli)
       get_col_from_key_stmt = eql_compile ((case_mode == CM_MSSQL) ? get_col_from_key_text_casemode_mssql : get_col_from_key_text, cli);
 
       ddl_std_proc (drop_key_proc_text, 0);
-      drop_key_stmt = sql_compile (drop_key_text, cli, NULL, SQLC_DEFAULT);
+      drop_key_stmt = sql_compile_static (drop_key_text, cli, NULL, SQLC_DEFAULT);
       key_id_stmt = eql_compile (key_id_text, cli);
       col_id_stmt = eql_compile (col_id_text, cli);
       drop_cols_stmt = eql_compile (drop_cols_text, cli);
@@ -633,7 +633,7 @@ ddl_key_opt (query_instance_t * qi, char * tb_name, key_id_t key_id)
   if (!ddl_std_procs_inited)
     return;
   if (! key_opt_qr)
-    key_opt_qr = sql_compile ("DB.DBA.ddl_reorg_pk (?, ?)",
+    key_opt_qr = sql_compile_static ("DB.DBA.ddl_reorg_pk (?, ?)",
 			      bootstrap_cli, &err, SQLC_DEFAULT);
   AS_DBA (qi, err = qr_rec_exec (key_opt_qr, qi->qi_client, NULL, qi, NULL, 2,
 		     ":0", tb_name, QRP_STR,
@@ -654,7 +654,7 @@ ddl_key_bitmap (query_instance_t * qi, char * tb_name, key_id_t key_id)
   if (!ddl_std_procs_inited)
     return;
   if (! key_bitmap_qr)
-    key_bitmap_qr = sql_compile ("DB.DBA.ddl_bitmap_inx (?, ?)",
+    key_bitmap_qr = sql_compile_static ("DB.DBA.ddl_bitmap_inx (?, ?)",
 			      bootstrap_cli, &err, SQLC_DEFAULT);
   AS_DBA (qi, err = qr_rec_exec (key_bitmap_qr, qi->qi_client, NULL, qi, NULL, 2,
 		     ":0", tb_name, QRP_STR,
@@ -1010,7 +1010,7 @@ ddl_key_name_to_id (query_instance_t * qi, const char *name, char *qual)
   if (!qr)
     {
       caddr_t err;
-      qr = sql_compile ((case_mode == CM_MSSQL) ? "select KEY_ID from DB.DBA.SYS_KEYS where upper(KEY_NAME) = upper(?) and upper(?) = upper(name_part (KEY_TABLE, 0))" : "select KEY_ID from DB.DBA.SYS_KEYS where KEY_NAME = ? and ? = name_part (KEY_TABLE, 0)", cli, &err, SQLC_DEFAULT);
+      qr = sql_compile_static ((case_mode == CM_MSSQL) ? "select KEY_ID from DB.DBA.SYS_KEYS where upper(KEY_NAME) = upper(?) and upper(?) = upper(name_part (KEY_TABLE, 0))" : "select KEY_ID from DB.DBA.SYS_KEYS where KEY_NAME = ? and ? = name_part (KEY_TABLE, 0)", cli, &err, SQLC_DEFAULT);
     }
   qr_rec_exec (qr, cli, &lc, qi, NULL, 2,
       ":0", name, QRP_STR,
@@ -1553,9 +1553,9 @@ isp_load_stats_data (client_connection_t *cli)
 
   if (!col_stat_qr)
     {
-      col_stat_qr = sql_compile (col_stat_text, cli, &err, SQLC_DEFAULT);
-      col_hist_qr = sql_compile (col_hist_text, cli, &err, SQLC_DEFAULT);
-      col_stat_col_qr = sql_compile (col_stat_col_text, cli, &err, SQLC_DEFAULT);
+      col_stat_qr = sql_compile_static (col_stat_text, cli, &err, SQLC_DEFAULT);
+      col_hist_qr = sql_compile_static (col_hist_text, cli, &err, SQLC_DEFAULT);
+      col_stat_col_qr = sql_compile_static (col_stat_col_text, cli, &err, SQLC_DEFAULT);
     }
 
   err = qr_quick_exec (col_stat_qr, cli, NULL, &lc_stat, 0);
@@ -2079,7 +2079,7 @@ ddl_fk_init (void)
   ddl_std_proc (dropt_text, 1);
   ddl_std_proc (dropt_check_text, 1);
   ddl_std_proc (constraint_check_text, 1);
-  ensure_constraint_unq_stmt = sql_compile (
+  ensure_constraint_unq_stmt = sql_compile_static (
       ensure_constraint_unq_txt, bootstrap_cli, NULL, SQLC_DEFAULT);
 }
 
@@ -2263,7 +2263,7 @@ ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col)
   dbe_table_t *tb = qi_name_to_table (qi, table);
 
   if (!add_col_proc)
-    add_col_proc = sql_compile ("DB.DBA.add_col (?, ?,?)",
+    add_col_proc = sql_compile_static ("DB.DBA.add_col (?, ?,?)",
 	bootstrap_cli, &err, SQLC_DEFAULT);
   if (!tb)
     sqlr_new_error ("42S02", "SQ018", "No table %s.", table);
@@ -2369,7 +2369,7 @@ ddl_modify_col (query_instance_t * qi, char *table, caddr_t * column)
     }
 
   if (!modify_col_stmt)
-    modify_col_stmt = sql_compile (
+    modify_col_stmt = sql_compile_static (
 	"DB.DBA.__DDL_MODIFY_COL ("
 	/*  COL_PREC =*/ " ?, "
 	/*  COL_CHECK =*/" ?, "
@@ -2412,7 +2412,7 @@ ddl_drop_col (query_instance_t * qi, char *table, caddr_t * col)
 
   sql_error_if_remote_table (qi_name_to_table (qi, table));
   if (!dc_qr)
-    dc_qr = sql_compile ("DB.DBA.ddl_drop_col (?, ?)", qi->qi_client, &err, SQLC_DEFAULT);
+    dc_qr = sql_compile_static ("DB.DBA.ddl_drop_col (?, ?)", qi->qi_client, &err, SQLC_DEFAULT);
   AS_DBA (qi, err = qr_rec_exec (dc_qr, qi->qi_client, NULL, qi, NULL, 2,
       ":0", table, QRP_STR,
       ":1", col, QRP_STR));
@@ -2928,7 +2928,7 @@ ddl_droptable_pre (query_instance_t * qi, char *name)
 
   if (!repl_check_stmt)
     {
-      repl_check_stmt = sql_compile (
+      repl_check_stmt = sql_compile_static (
 	  "select DB.DBA.DROPTABLE_PRE (?)",
 	   bootstrap_cli, &err, SQLC_DEFAULT);
       if (err != SQL_SUCCESS)
@@ -2978,7 +2978,7 @@ ddl_drop_table (query_instance_t * qi, char *name)
 
 #if 1
   /* first check for references to avoid delete action */
-  del_st = sql_compile ("DB.DBA.droptable_check (?)", cli, &err, SQLC_DEFAULT);
+  del_st = sql_compile_static ("DB.DBA.droptable_check (?)", cli, &err, SQLC_DEFAULT);
   if (del_st)
     {
       err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1, ":0", name, QRP_STR);
@@ -2993,9 +2993,25 @@ ddl_drop_table (query_instance_t * qi, char *name)
     }
 #endif
 
+#if UNIVERSE
+  del_st = sql_compile_static ("DB.DBA.vd_remote_table ('', ?, null)", cli, &err, SQLC_DEFAULT);
+  if (del_st)
+    {
+      AS_DBA (qi, err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
+	  ":0", name, QRP_STR));
+      if (err)
+	{
+	  atomic_mode (qi, 0, atomic);
+	  qr_free (del_st);
+	  sqlr_resignal (err);
+	}
+      qr_free (del_st);
+    }
+
+#endif
 
 #ifdef BIF_XML
-  del_st = sql_compile ("DB.DBA.vt_clear_text_index (?)", cli, &err, SQLC_DEFAULT);
+  del_st = sql_compile_static ("DB.DBA.vt_clear_text_index (?)", cli, &err, SQLC_DEFAULT);
   if (del_st)
     {
       AS_DBA (qi, err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
@@ -3039,7 +3055,7 @@ ddl_drop_table (query_instance_t * qi, char *name)
     }
   else
     sch_set_view_def (wi_inst.wi_schema, name, NULL);
-  del_st = sql_compile ("DB.DBA.droptable (?)", cli, &err, SQLC_DEFAULT);
+  del_st = sql_compile_static ("DB.DBA.droptable (?)", cli, &err, SQLC_DEFAULT);
   if (!del_st)
     {
       atomic_mode (qi, 0, atomic);
@@ -3110,7 +3126,7 @@ ddl_store_view (query_instance_t * qi, ST * tree)
   if (!set_view_qr)
     {
       ddl_ensure_view_table (qi);
-      set_view_qr = sql_compile ("insert replacing DB.DBA.SYS_VIEWS "
+      set_view_qr = sql_compile_static ("insert replacing DB.DBA.SYS_VIEWS "
 	  "  (V_SCH, V_NAME, V_TEXT, V_EXT) values (?, ?, ?, ?)",
 	  bootstrap_cli, &err, SQLC_DEFAULT);
     }
@@ -3169,7 +3185,7 @@ ddl_store_mapping_schema (query_instance_t * qi, caddr_t view_name, caddr_t relo
   if (!set_view_qr)
     {
       ddl_ensure_view_table (qi);
-      set_view_qr = sql_compile ("insert replacing DB.DBA.SYS_VIEWS "
+      set_view_qr = sql_compile_static ("insert replacing DB.DBA.SYS_VIEWS "
 	  "  (V_SCH, V_NAME, V_TEXT, V_EXT) values (?, ?, ?, ?)",
 	  bootstrap_cli, &err, SQLC_DEFAULT);
     }
@@ -3398,7 +3414,7 @@ ddl_table_constraints (query_instance_t * qi, ST * tree)
   if (!fk_qr)
     {
       err = NULL;
-      fk_qr = sql_compile ("DB.DBA.ddl_foreign_key (?, ?, ?)",
+      fk_qr = sql_compile_static ("DB.DBA.ddl_foreign_key (?, ?, ?)",
 	  bootstrap_cli, &err, SQLC_DEFAULT);
     }
   for (inx = 0; ((uint32) inx) < BOX_ELEMENTS (cols); inx += 2)
@@ -3450,7 +3466,7 @@ ddl_table_constraints (query_instance_t * qi, ST * tree)
 	  if (!constr_qr)
 	    {
 	      err = NULL;
-	      constr_qr = sql_compile (
+	      constr_qr = sql_compile_static (
 		  "INSERT into DB.DBA.SYS_CONSTRAINTS (C_TABLE, C_ID, C_TEXT, C_MODE) "
 		  "  values (?,?,?,serialize (?))",
 		  bootstrap_cli, &err, SQLC_DEFAULT);
@@ -4068,7 +4084,7 @@ ddl_read_views (void)
       ddl_std_proc_1 (proc_XML_VIEW_DROP_PROCS, 0x1, 1);
   }
 
-  qr = sql_compile ("select V_SCH, V_NAME, coalesce (V_TEXT, blob_to_string (V_EXT)) from DB.DBA.SYS_VIEWS",
+  qr = sql_compile_static ("select V_SCH, V_NAME, coalesce (V_TEXT, blob_to_string (V_EXT)) from DB.DBA.SYS_VIEWS",
       bootstrap_cli, NULL, SQLC_DEFAULT);
   if (!qr)
      {
@@ -4235,12 +4251,12 @@ ddl_read_constraints (char *spec_tb_name, caddr_t *qst)
   ST *check_cond = NULL;
 
   if (!rdproc_t)
-    rdproc_t = sql_compile (
+    rdproc_t = sql_compile_static (
 	"select C_TABLE, deserialize (blob_to_string (C_MODE)) from DB.DBA.SYS_CONSTRAINTS "
 	"where C_TABLE = ? order by C_TABLE, C_ID",
 	bootstrap_cli, NULL, SQLC_DEFAULT);
   if (!rdproc_a)
-    rdproc_a = sql_compile (
+    rdproc_a = sql_compile_static (
 	"select C_TABLE, deserialize (blob_to_string (C_MODE)) from DB.DBA.SYS_CONSTRAINTS "
 	"order by C_TABLE, C_ID",
 	bootstrap_cli, NULL, SQLC_DEFAULT);
@@ -4304,11 +4320,11 @@ read_proc_tables (int remotes)
   ddl_patch_triggers ();
   ddl_std_proc (trig_owner_proc_txt, 0x0); /* compile procedure for extracting a owner of trigger */
   if (remotes)
-    rdproc = sql_compile (
+    rdproc = sql_compile_static (
 	"select P_TEXT, P_MORE, P_OWNER, P_QUAL, P_TYPE, P_NAME from DB.DBA.SYS_PROCEDURES where P_TYPE = 1",
 	bootstrap_cli, NULL, SQLC_DEFAULT);
   else
-    rdproc = sql_compile ("select P_TEXT, P_MORE, P_OWNER, P_QUAL, P_TYPE, P_NAME from DB.DBA.SYS_PROCEDURES",
+    rdproc = sql_compile_static ("select P_TEXT, P_MORE, P_OWNER, P_QUAL, P_TYPE, P_NAME from DB.DBA.SYS_PROCEDURES",
 	bootstrap_cli, NULL, SQLC_DEFAULT);
   if (!rdproc)
     goto end;
@@ -4469,7 +4485,7 @@ scan_SYS_PROCEDURES:
 
   qr_free (rdproc);
 
-  rdproc = sql_compile (
+  rdproc = sql_compile_static (
       "select T_TEXT, T_MORE, T_SCH, DB.DBA.TRIG_OWNER (T_NAME, T_TABLE), T_NAME, T_TABLE from DB.DBA.SYS_TRIGGERS",
       bootstrap_cli, NULL, SQLC_DEFAULT);
   if (!rdproc)
@@ -4544,7 +4560,7 @@ scan_SYS_PROCEDURES:
 
   bootstrap_cli->cli_user = org_user;
   CLI_RESTORE_QUAL (bootstrap_cli, org_qual);
-  rdproc = sql_compile (
+  rdproc = sql_compile_static (
       "select blob_to_string (M_TEXT), M_QUAL, M_OWNER from DB.DBA.SYS_METHODS",
       bootstrap_cli, NULL, SQLC_DEFAULT);
   if (!rdproc)
@@ -4726,6 +4742,14 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	sqlr_resignal (err);
       return NULL;
     }
+#if defined (MALLOC_DEBUG) || defined (VALGRIND)
+  if ((NULL != qr->qr_static_prev) || (NULL != qr->qr_static_next) || (qr == static_qr_dllist))
+    {
+      static_qr_dllist_append (new_qr, 1);
+      new_qr->qr_static_source_file = qr->qr_static_source_file;
+      new_qr->qr_static_source_line = qr->qr_static_source_line;
+    }
+#endif
   return new_qr;
 }
 
@@ -4795,20 +4819,17 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
   if (!proc_st_query || proc_st_query->qr_to_recompile)
     {
       ddl_ensure_view_table (qi);
-      proc_st_query = sql_compile ("insert into DB.DBA.SYS_PROCEDURES (P_QUAL, P_OWNER, P_NAME, P_TEXT, P_MORE, P_TYPE) values (?, user, ?, ?, ?, ?)",
+      proc_st_query = sql_compile_static ("insert into DB.DBA.SYS_PROCEDURES (P_QUAL, P_OWNER, P_NAME, P_TEXT, P_MORE, P_TYPE) values (?, user, ?, ?, ?, ?)",
 	  bootstrap_cli, NULL, SQLC_DEFAULT);
-
-      proc_rm_duplicate_query = sql_compile ("delete from DB.DBA.SYS_PROCEDURES where P_NAME = ?",
+      proc_rm_duplicate_query = sql_compile_static ("delete from DB.DBA.SYS_PROCEDURES where P_NAME = ?",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
-
-      proc_revoke_query = sql_compile ("delete from DB.DBA.SYS_GRANTS where G_OBJECT = ? and G_OP = 32",
+      proc_revoke_query = sql_compile_static ("delete from DB.DBA.SYS_GRANTS where G_OBJECT = ? and G_OP = 32",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
-
     }
 
   if (!trig_st_query && op->op_code == OP_STORE_TRIGGER)
     {
-      trig_st_query = sql_compile ("insert replacing DB.DBA.SYS_TRIGGERS (T_SCH, T_TABLE, T_NAME, T_TEXT, T_MORE, T_TYPE, T_TIME) values (?, ?, ?, ?, ?, ?, ?)",
+      trig_st_query = sql_compile_static ("insert replacing DB.DBA.SYS_TRIGGERS (T_SCH, T_TABLE, T_NAME, T_TEXT, T_MORE, T_TYPE, T_TIME) values (?, ?, ?, ?, ?, ?, ?)",
 	  bootstrap_cli, NULL, SQLC_DEFAULT);
     }
 
@@ -6021,8 +6042,10 @@ ddl_std_proc_1 (const char *text, int is_public, int to_recompile)
 	}
     }
   else
+    {
     proc = sql_compile ((char *) _text, bootstrap_cli, &err,
 	is_stored ? SQLC_DEFAULT : SQLC_QR_TEXT_IS_CONSTANT);
+    }
   if (err)
     {
       char short_text[60];
@@ -6400,7 +6423,7 @@ sch_create_table_as (query_instance_t *qi, ST * tree)
   client_connection_t *cli = qi->qi_client;
 
   if (!qr)
-    qr = sql_compile ("DB.DBA.SYS_CREATE_TABLE_AS (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    qr = sql_compile_static ("DB.DBA.SYS_CREATE_TABLE_AS (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
 
   if (err)
     sqlr_resignal (err);

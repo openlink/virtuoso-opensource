@@ -2345,9 +2345,9 @@ qi_read_table_schema_old_keys (query_instance_t * qi, char *read_tb, dk_set_t ol
 
   if (!kp_qr)
     {
-      tb_qr = sql_compile (COLS_TEXT, lt->lt_client, NULL, 0);
-      key_qr = sql_compile (KEYS_TEXT, lt->lt_client, NULL, 0);
-      kp_qr = sql_compile (
+      tb_qr = sql_compile_static (COLS_TEXT, lt->lt_client, NULL, 0);
+      key_qr = sql_compile_static (KEYS_TEXT, lt->lt_client, NULL, 0);
+      kp_qr = sql_compile_static (
 	  "select KP_COL from DB.DBA.SYS_KEY_PARTS where KP_KEY_ID = ?",
 	  lt->lt_client, NULL, 0);
     }
