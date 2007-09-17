@@ -1759,10 +1759,7 @@ the_grim_lock_reaper (void)
 	}
       wi_free_schemas ();
   LEAVE_TXN;
-#if defined (UNIVERSE)
-  if (server_is_idle)
-    rds_reaper ();
-#endif
+
   failed_login_purge ();
 
   if (cfg_autocheckpoint > 0)	/* Autocheckpointing wanted? */

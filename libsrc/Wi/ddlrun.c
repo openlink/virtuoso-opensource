@@ -2993,23 +2993,6 @@ ddl_drop_table (query_instance_t * qi, char *name)
     }
 #endif
 
-#if UNIVERSE
-  del_st = sql_compile_static ("DB.DBA.vd_remote_table ('', ?, null)", cli, &err, SQLC_DEFAULT);
-  if (del_st)
-    {
-      AS_DBA (qi, err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
-	  ":0", name, QRP_STR));
-      if (err)
-	{
-	  atomic_mode (qi, 0, atomic);
-	  qr_free (del_st);
-	  sqlr_resignal (err);
-	}
-      qr_free (del_st);
-    }
-
-#endif
-
 #ifdef BIF_XML
   del_st = sql_compile_static ("DB.DBA.vt_clear_text_index (?)", cli, &err, SQLC_DEFAULT);
   if (del_st)
