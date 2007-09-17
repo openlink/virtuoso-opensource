@@ -1588,6 +1588,9 @@ virtodbc__SQLFreeConnect (SQLHDBC hdbc)
 
   if (con->con_session)
     {
+      /* if client by some reason do SQLFreeConnect but not SQLDisconnect */
+      if (SESSION_SCH_DATA (con->con_session)->sio_is_served != -1)
+	PrpcDisconnect (con->con_session);
       PrpcSessionFree (con->con_session);
     }
 
