@@ -5938,7 +5938,7 @@ create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (inout resid integer, inout resnam
   declare html_start, full_xml, type_tree any;
   declare old_n3, addon_n3, spotlight_addon_n3 any;
   declare rescontent any;
-  rescontent := subseq (_rescontent, 0, 10000000);
+  rescontent := subseq (_rescontent, 0, 10000000-1);
   -- dbg_obj_princ ('DAV_EXTRACT_AND_SAVE_RDF_INT (', resid, resname, restype, rescontent, ')');
   html_start := null;
   full_xml := null;
