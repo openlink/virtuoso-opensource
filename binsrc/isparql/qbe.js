@@ -1371,7 +1371,7 @@ iSPARQL.QBE = function () {
 
 	var calc_width = function(){
 	var w = OAT.Dom.getViewport()[0];
-	qbe_graph_input.style.width = w - 640 + 'px';
+		qbe_graph_input.style.width = w - 680 + 'px';
 	}
 	calc_width();
 	OAT.Dom.attach(window,"resize",calc_width);
@@ -1379,7 +1379,7 @@ iSPARQL.QBE = function () {
 	var qbe_graph_label = OAT.Dom.create("label");
 	qbe_graph_label["htmlFor"] = "qbe_graph";
 
-	qbe_graph_label.innerHTML = 'URI';
+	qbe_graph_label.innerHTML = 'Data Source URI';
 	qbe_graph_label.title = 'RDF Data Source URI';
 
 	var qbe_datasource_cnt = OAT.Dom.create("sub");

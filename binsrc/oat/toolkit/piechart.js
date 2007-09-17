@@ -24,13 +24,15 @@ OAT.PieChart = function(div,optObj) {
 		width:0, /* = auto */
 		height:0, /* = auto */
 		legend:1,
-		ycoef:0.7
+		ycoef:0.7,
+		left:30,
+		top:40
 	};
 	/* compute automatic radius */
 	if (!this.options.radius) {
 		var h = self.options.height;
 		if (!h) { h = OAT.Dom.getWH(self.div)[1]; }
-		this.options.radius = (h - 2*40 - self.options.depth) / (2*self.options.ycoef);
+		this.options.radius = (h - 2*self.options.top - self.options.depth) / (2*self.options.ycoef);
 	}
 	for (var p in optObj) { this.options[p] = optObj[p]; }
 	this.data = [];
@@ -134,8 +136,8 @@ OAT.PieChart = function(div,optObj) {
 		var total = 0;
 		for (var i=0;i<self.data.length;i++) { total += parseFloat(self.data[i]); }
 		var r = self.options.radius;
-		var cx = r+30;
-		var cy = r * self.options.ycoef + 40;
+		var cx = r+self.options.left;
+		var cy = r * self.options.ycoef + self.options.top;
 		var angle = 2*Math.PI - Math.PI/2;
 		if (self.options.depth) {
 			for (var i=0;i<self.data.length;i++) { /* lower part */
@@ -155,9 +157,9 @@ OAT.PieChart = function(div,optObj) {
 			angle = self.drawPie(group,v,total,angle,cx,cy,color,0);
 			/* legend */
 			if (self.options.legend) {
-				var rect = OAT.SVG.element("rect",{width:25,height:25,x:2*self.options.radius+100,y:i*35+20,fill:color,stroke:"#000"});
+				var rect = OAT.SVG.element("rect",{width:25,height:25,x:2*self.options.radius+70+self.options.left,y:i*35+20,fill:color,stroke:"#000"});
 				svg.appendChild(rect);
-				var text = OAT.SVG.element("text",{x:2*self.options.radius+130,y:i*35+35,color:"#000"});
+				var text = OAT.SVG.element("text",{x:2*self.options.radius+100+self.options.left,y:i*35+35,color:"#000"});
 				text.textContent = self.text[i];
 				svg.appendChild(text);
 			}

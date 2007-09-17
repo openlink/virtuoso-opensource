@@ -253,6 +253,16 @@ var QueryExec = function(optObj) {
 		
 		var grid = new OAT.Grid(self.dom.result);
 		var header = root.preds[ns_var];
+		if (self.dom.select.value == "1") {
+			var map = {
+				"hasValue":"Range",
+				"isValueOf":"Domain",
+				"property":"Property"
+			}
+			for (var i=0;i<header.length;i++) {
+				if (header[i] in map) { header[i] = map[header[i]]; } 
+			}
+		}
 		grid.createHeader(header);
 		
 		if (!(ns_sol in root.preds)) { return; }
@@ -280,7 +290,12 @@ var QueryExec = function(optObj) {
 				var value = simplified_row[index];
 					var idx = Math.max(value.lastIndexOf("/"),value.lastIndexOf("#"),value.lastIndexOf(":"));
 					var simple = value.substring(idx+1);
-					if (idx != -1 && simple != "this") { simplified_row[index] = simple; }
+					if (simple == "this") {
+						var idx1 = Math.max(value.lastIndexOf("/"));
+						var idx2 = Math.max(value.lastIndexOf("#"));
+						var simple = value.substring(idx1+1,idx2);
+					}
+					simplified_row[index] = simple;
 				}
 			}
 			
@@ -365,7 +380,7 @@ var QueryExec = function(optObj) {
 		var dereferenceRef = function() {
 			var cache = self.cache[self.cacheIndex];
 			var q = "SELECT ?p, ?o \n"+
-					" FROM <"+href+">"+
+					"FROM <"+href+">\n"+
 					"WHERE {<"+href+"> ?p ?o}";
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
@@ -374,8 +389,8 @@ var QueryExec = function(optObj) {
  		}
 		var exploreRef = function() {
 			var cache = self.cache[self.cacheIndex];
-			var q = "SELECT ?property ?hasValue ?isValueOf\n"+
-					" FROM <"+href+">"+
+			var q = "SELECT ?isValueOf ?property ?hasValue \n"+
+					"FROM <"+href+">\n"+
 					"WHERE {\n"+
 					"{ <"+href+"> ?property ?hasValue }\n"+
 					"UNION\n"+
@@ -469,6 +484,12 @@ var QueryExec = function(optObj) {
 			onend:opts.onend,
 			onerror:onerror
 		}
+		
+		/* fix remote endpoint: */
+		if (opts.endpoint.match(/^http/i)) {
+			opts.endpoint = "/proxy?url="+encodeURIComponent(opts.endpoint);
+		}
+		
 		OAT.AJAX.POST(opts.endpoint,request,callback,o);
 	}
 	

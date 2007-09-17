@@ -289,9 +289,12 @@ function init() {
 
 	var execCB = function(query) {
 		if (qbe.QueryGenerate() ==	query) { return; }
-		if (tab.selectedIndex != 0) { return; }
+		if (tab.selectedIndex == 0) { 
 		qbe.loadFromString(query);
+		}
+		if (tab.selectedIndex == 1) {
 		$("query").value = query;
+	}
 	}
 	window.qe = new QueryExec({div:"page_results",executeCallback:execCB});
 

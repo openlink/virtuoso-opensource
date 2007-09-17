@@ -53,7 +53,7 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		
 	this.options = {
 		pageSize:20,
-		removeNS:false
+		removeNS:true
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 	
@@ -680,7 +680,8 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 	var self = this;
 	OAT.RDFTabs.parent(self);
 	this.options = {
-		pageSize:100
+		pageSize:100,
+		removeNS:true
 	}
 	for (var p in optObj) { self.options[p] = optObj[p]; }
 
