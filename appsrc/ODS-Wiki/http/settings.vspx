@@ -206,7 +206,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th>Compatibility</th>
+                        <th>Compatibility:</th>
                         <td>
                           <v:data-list name="wiki_plugin" value="--WV.Wiki.ClusterParam (self.cluster_name, 'plugin', 'oWiki')" list-document="--self.plugins" list-match="/plugins/plugin" list-key-path="@name" list-value-path="@id"/>
                         </td>
@@ -366,7 +366,7 @@
                     </tr>
                       <tr>
                         <td colspan="2">
-                          <h2>Technorati integration</h2>
+                          <h2>Technorati Integration</h2>
 	    </td>
 	  </tr> 
 	  <tr>
@@ -422,8 +422,10 @@
                                 if (self.delicious_enable = 1) {
                                   WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_user', self.delicious_user.ufl_value);
                                   WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_update_interval', cast (self.delicious_update_interval.ufl_value as integer) * 60);
-                                  if (self.delicious_passwd.ufl_value is not null and self.delicious_passwd.ufl_value <> '')
+                                  if (self.delicious_passwd.ufl_value is not null and self.delicious_passwd.ufl_value <> '') {
                                     WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_digest', encode_base64 (self.delicious_user.ufl_value || ':' || self.delicious_passwd.ufl_value) );
+                                    WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'delicious_password', self.delicious_passwd.ufl_value);
+                                  }
                                   if (atoi (get_keyword ('delicious_sync_now', params, '0')))
                                     WV.WIKI.DELICIOUSSYNC (cluster_id, self.vspx_user);
                                 }
@@ -457,7 +459,7 @@
                     <table class="form" cellspacing="5">
                       <tr>
                     	  <td colspan="3">
-                          <h2>Upstream configuration</h2>
+                          <h2>Upstream Configuration</h2>
             </td>
           </tr>
           <tr>
@@ -516,21 +518,21 @@
                           <v:template name="upstream_edit_simple" type="simple">
                             <table class="wiki-settings">
                    <tr>
-                                <th>Name</th>
+                                <th>Name:</th>
                       <td>
                                   <v:text name="upstream_name" value="--get_keyword ('name', self.defval, '')" xhtml_title=" if you change the name in edit mode, a new upstream will be added!" />
                       </td>
                    </tr>
                               <tr>
-                                <th>URL</th>
+                                <th>URL:</th>
                                 <td><v:text name="upstream_url" value="--get_keyword ('uri', self.defval, '')" /></td>
                               </tr>
                               <tr>
-                                <th>User</th>
+                                <th>User:</th>
                                 <td><v:text name="upstream_user" value="--get_keyword ('user', self.defval, '')"/></td>
                               </tr>
                               <tr>
-                                <th>Password</th>
+                                <th>Password:</th>
                                 <td><v:text name="upstream_password" type="password" value="--get_keyword ('passwd', self.defval, '')"/></td>
                               </tr>
                               <!--

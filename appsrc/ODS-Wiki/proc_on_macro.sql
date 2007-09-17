@@ -1247,18 +1247,25 @@ create function WV.WIKI.MACRO_TECHNORATI_COSMOS (inout _data varchar, inout _con
   declare api_key varchar;
   api_key := WV.WIKI.CLUSTERPARAM (get_keyword ('ti_cluster_name', _env),
   	'technorati_api_key', NULL);
+
   if (api_key is null)
     return '((API Key is not set))';
+
   declare _args any;
+  declare _params, api_url varchar;
+  declare _idx int;
+
   _args := WV.WIKI.PARSEMACROARGS (_data);
-  declare url, api_url varchar;
-  url := trim (WV.WIKI.GETMACROPARAM (_args, 'param', NULL));
-  api_url := sprintf ('http://api.technorati.com/cosmos?key=%V&url=%V', api_key, url);
+  _params := '';
+  for (_idx := 0; _idx < length (_args); _idx := _idx + 1)
+    {
+      _params := _params || sprintf('&%s=%V', _args[_idx][0], _args[_idx][1]);
+    }
+
+  api_url := sprintf ('http://api.technorati.com/cosmos?key=%V%s', api_key, _params);
   
   declare _doc varchar;
   _doc := http_get (api_url);
-  --dbg_obj_print (api_url, _doc);
-  
 
   return xquery_eval (
   '<div class="macro-technorati-cosmos">
@@ -1287,18 +1294,25 @@ create function WV.WIKI.MACRO_TECHNORATI_TAG (inout _data varchar, inout _contex
   declare api_key varchar;
   api_key := WV.WIKI.CLUSTERPARAM (get_keyword ('ti_cluster_name', _env),
   	'technorati_api_key', NULL);
+
   if (api_key is null)
     return '((API Key is not set))';
+
   declare _args any;
+  declare _params, api_url varchar;
+  declare _idx int;
+
   _args := WV.WIKI.PARSEMACROARGS (_data);
-  declare tag, api_url varchar;
-  tag := trim (WV.WIKI.GETMACROPARAM (_args, 'param', NULL));
-  api_url := sprintf ('http://api.technorati.com/tag?key=%V&tag=%V', api_key, tag);
+  _params := '';
+  for (_idx := 0; _idx < length (_args); _idx := _idx + 1)
+    {
+      _params := _params || sprintf('&%s=%V', _args[_idx][0], _args[_idx][1]);
+    }
+
+  api_url := sprintf ('http://api.technorati.com/tag?key=%V%s', api_key, _params);
   
   declare _doc varchar;
   _doc := http_get (api_url);
-  --dbg_obj_print (api_url, _doc);
-  
 
   return xquery_eval (
   '<div class="macro-technorati-tag">

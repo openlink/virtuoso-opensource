@@ -1742,6 +1742,21 @@ _exit:;
 --;
 
 
+create function WV.WIKI.MAKE_CLUSTER_PATH (in cluster_name varchar)
+{
+  declare _clusterPath, _home varchar;
+  if (exists (select 1 from WV.WIKI.DOMAIN_PATTERN_1 where DP_HOST = '%' and DP_PATTERN = '/wiki/main'))
+    _home := '/wiki/main';
+  else
+    _home := '/wiki';
+
+  _clusterPath := cast (WV.WIKI.CLUSTERPARAM (cluster_name, 'home', _home) as varchar);
+  if (_clusterPath not like 'http://%')
+    _clusterPath := sprintf('http://%s%s', WV.WIKI.GET_HOST(), _clusterPath);
+  return _clusterPath;
+}
+;
+
 create function WV.WIKI.MAKEHREFFROMRES (in res_id int, in res_name varchar, in sid varchar, in realm varchar, in _base varchar := '/')
 {
   declare _clusterPath, _home varchar;

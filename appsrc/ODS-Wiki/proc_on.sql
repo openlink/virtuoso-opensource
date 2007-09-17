@@ -431,22 +431,21 @@ create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
     _links := xpath_eval ('//a[@style="wikiword"][@href] | //a[@style="qwikiword"][@href] | //a[@style="forcedwikiword"][@href]', _ent, 0);
     _count := length (_links);
     _ctr := 0;
-    declare _categories varchar;
+    declare _categories, _cat varchar;
     _categories := '';
-    while (_ctr < _count)
-      {
+
 	declare _a any;
 	declare _href, _linktext varchar;
 	declare _tgt WV.WIKI.TOPICINFO;
+    while (_ctr < _count) {
 	_a := aref (_links, _ctr);
 	_href := xpath_eval ('@href', _a);
 	_linktext := cast (_a as varchar);
 	if (length (_linktext) > 200)
 	  _linktext := concat (subseq (_linktext, 0, 100 + coalesce (strchr (subseq (_linktext, 100), ' '), 0)), ' ...');
-	if (_href like 'Category%' or
-	    _href like '%.Category%')
-	  {
-	    declare _cat varchar;
+      if (_href like '%.Category%')
+        _href := subseq (strchr (_href));
+      if (_href like 'Category%') {
 	    _cat := lcase (subseq ( cast (_href as varchar), 8));
 	    _categories := case when _categories = '' then _cat else _categories || ',' || _cat end;	
 	  }
@@ -505,7 +504,8 @@ create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
     update WV.WIKI.LINK set DestId = self.ti_id
     where DestId = 0 and DestClusterName = self.ti_cluster_name and
       (DestLocalName = self.ti_local_name or DestLocalName = self.ti_local_name_2 );
-    if (_categories <> '' and
+
+    if ((_categories <> '') and
 	(WV.WIKI.CLUSTERPARAM (self.ti_cluster_id, 'delicious_enabled', 2) = 1))
       WV.WIKI.DELICIOUSPUBLISH (self.ti_id, split_and_decode (_categories, 0, '\0\0,'));
     
@@ -2646,7 +2646,10 @@ create function WV.WIKI.MAKECATEGORYNAME (in _name varchar) returns varchar
 
 create function WV.WIKI.MAKECATEGORYSHORTNAME (in _name varchar) returns varchar
 {
-  return lcase (subseq (_name, 8));
+  _name := lcase (_name);
+  if (_name like 'category%')
+    return subseq (_name, 8);
+  return _name;
 }
 ;
 
@@ -2690,7 +2693,7 @@ create function WV.WIKI.DIUCATEGORYLINK (
   _cat := WV.WIKI.TAG_TO_CATEGORY (_tag, _c_id);
   if (not exists (select * from WV.WIKI.TOPIC where LocalName = _cat and ClusterId = _c_id))
     {
-      WV.WIKI.UPLOADPAGE (_c_col_id, _cat || '.txt', 'Imported from del.icio.us\nCategoryCategory', _owner);
+      WV.WIKI.UPLOADPAGE (_c_col_id, _cat || '.txt', 'Imported from del.icio.us\n', _owner);
 --      DB.DBA.DAV_CHECKIN_INT (DB.DBA.DAV_SEARCH_PATH (_c_col_id, 'C') ||  _cat || '.txt', null, null, 0);
     }
   return _cat;
@@ -2732,15 +2735,15 @@ create function WV.WIKI.DELICIOUSUPDATEFUNCTION (in _is_full int, in last_date d
 create procedure WV.WIKI.DELICIOUSSYNC (in _cluster int, in _user varchar)
 {
   --dbg_obj_princ ('WV.WIKI.DELICIOUSSYNC: ', _cluster, ' ', _user);
-  declare _digest varchar;
-  _digest := WV.WIKI.CLUSTERPARAM (_cluster , 'delicious_digest');
-  if (_digest is null)
+  declare _deluser, _delpassword varchar;
+  _delpassword := WV.WIKI.CLUSTERPARAM (_cluster , 'delicious_password');
+  if ((_delpassword is null) or (_delpassword = ''))
     return WV.WIKI.DELICIOUSSIGNAL (_cluster, 'del.icio.us integration is not configured');
+  _deluser := WV.WIKI.CLUSTERPARAM (_cluster , 'delicious_user');
+  declare _hdr, _doc, _res, _url any;
 
-  declare _hdr, _doc, _res any; 
-  --dbg_obj_princ ('http://del.icio.us/api/tags/get?', 'POST', sprintf ('Content-Type: text/xml\r\nDepth: 1\r\nAuthorization: Basic %s', _digest));
-  _res := http_get('http://del.icio.us/api/tags/get?', _hdr, 'POST', sprintf ('Content-Type: text/xml\r\nDepth: 1\r\nAuthorization: Basic %s', _digest));
-  --dbg_obj_print (_res);
+  _url := 'https://api.del.icio.us/v1/tags/get';
+  _res := http_client(_url, _deluser, _delpassword, 'GET', null, null, null, null);
   _doc := xtree_doc (_res, 2);
 
   connection_set ('ClusterId', _cluster);
@@ -2769,7 +2772,7 @@ create procedure WV.WIKI.DELICIOUSSYNC (in _cluster int, in _user varchar)
 create method ti_fill_url () for WV.WIKI.TOPICINFO
 {
   declare _home varchar;
-  _home := WV.WIKI.CLUSTERPARAM (self.ti_cluster_name, 'home');
+  _home := WV.WIKI.MAKE_CLUSTER_PATH(self.ti_cluster_name);
   if (_home is not null)
     self.ti_url := sprintf ('%s/%s', _home, WV.WIKI.READONLYWIKIWORDLINK (self.ti_cluster_name, self.ti_local_name));
   else
@@ -2780,22 +2783,17 @@ create method ti_fill_url () for WV.WIKI.TOPICINFO
 
 create procedure WV.WIKI.MAKECATEGORYNAMELIST (in _cluster int, in _category_names any)
 {
-  declare _res varchar;
-  _res := null;
-  declare idx int;
-  idx := 0;
-  while (idx < length (_category_names))
+  declare _res, _fullname varchar;
+  declare idx integer;
+
+  _res := '';
+  for (idx := 0; idx < length (_category_names); idx := idx + 1)
     {
-      declare _fullname varchar;
-      _fullname := aref (_category_names, idx);
+      _fullname := _category_names[idx];
       WV.WIKI.TOUCHCATEGORY (_cluster, _fullname, 1);
-      if (_res is null)
-        _res := WV.WIKI.CATEGORY_TO_TAG (_fullname);
-      else
-	_res := _res || '%20' || WV.WIKI.CATEGORY_TO_TAG (_fullname);
-      idx := idx + 1;
+      _res := _res || ' ' || WV.WIKI.MAKECATEGORYSHORTNAME (_fullname);
     }
-  return _res;
+  return trim (_res);
 }
 ;
 
@@ -2824,24 +2822,26 @@ create procedure WV.WIKI.DELICIOUSPUBLISH (in _topic_id int, in _category_names 
   _topic.ti_find_metadata_by_id ();
 
   declare exit handler for sqlstate 'HT*', sqlstate '2E*' {
+    --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
     rollback work;
     return WV.WIKI.DELICIOUSSIGNAL (_topic.ti_cluster_id, 'del.icio.us connection error');
   };
 
-  declare _digest varchar;
-  _digest := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id , 'delicious_digest');
-  if (_digest is null)
+  declare _deluser, _delpassword varchar;
+  _delpassword := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id , 'delicious_password');
+  if ((_delpassword is null) or (_delpassword = ''))
     return WV.WIKI.DELICIOUSSIGNAL (_topic.ti_cluster_id, 'del.icio.us integration is not configured');
-
+  _deluser := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id , 'delicious_user');
   declare _func_post varchar;
   commit work;
-  _func_post := sprintf ('http://del.icio.us/api/posts/add?&url=%s&description=%s&extended=&tags=%s&dt=%s',
+
+  _func_post := sprintf ('https://api.del.icio.us/v1/posts/add?&url=%U&description=%U&extended=&tags=%U&dt=%U',
 			 _topic.ti_fill_url (),
 			 _topic.ti_local_name, -- temporary solution
 			 WV.WIKI.MAKECATEGORYNAMELIST (_topic.ti_cluster_id, _category_names),
 			 WV.WIKI.MAKEDELICIOUSDATESTAMP (now()));
   declare _hdr, _doc, _res any; 
-  _res := http_get(_func_post, _hdr, 'POST', sprintf ('Content-Type: text/xml\r\nDepth: 1\r\nAuthorization: Basic %s', _digest));
+  _res := http_client(_func_post, _deluser, _delpassword, 'POST', null, null, null, null);
   return _res;
 }
 ;
