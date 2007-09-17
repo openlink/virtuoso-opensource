@@ -1118,7 +1118,7 @@
             </div>
           </v:template>
 
-          <v:template type="simple" enabled="--case when ((self.abAction = 'create') or (self.abAction = 'edit') or (self.abAction = 'view')) then 1 else 0 end">
+          <v:template type="simple" enabled="--case when (self.abAction in ('create', 'edit', 'view')) then 1 else 0 end">
             <v:before-data-bind>
               <![CDATA[
                 declare params any;
@@ -2002,7 +2002,7 @@
               </div>
             </div>
             <div class="new-form-footer">
-              <v:button action="simple" value="Save" xhtml_class="form-button">
+              <v:button action="simple" value="Save" enabled="--case when (self.abAction <> 'view') then 1 else 0 end" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     declare tmp any;
