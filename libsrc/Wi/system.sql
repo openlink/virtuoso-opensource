@@ -5938,3 +5938,44 @@ result_names (n, cond);
 }
 ;
 
+create procedure
+DB.DBA.SYS_SQL_VECTOR_PRINT (in in_vector any)
+{
+  declare len, idx integer;
+  declare temp varchar;
+  declare res varchar;
+
+  if (isstring (in_vector))
+    in_vector := vector (in_vector);
+
+  len := length (in_vector);
+  res:='';
+  idx := 0;
+  while ( idx < len ) {
+    if (idx > 0 )
+      res := concat (res, ', ');
+    temp := aref (in_vector, idx);
+    res := concat (res, SYS_SQL_VAL_PRINT (temp));
+    idx := idx+1;
+  }
+  return (res);
+}
+;
+
+create procedure
+DB.DBA.SYS_SQL_VAL_PRINT (in v any)
+{
+  if (isstring (v))
+    return sprintf ('\'%S\'', v);
+  else if (v is null)
+    return 'NULL';
+  else if (isinteger (v))
+    return sprintf ('%d', v);
+  else if (__tag (v) = 193)
+    {
+      return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
+    }
+  else
+    signal ('22023', 'Unsupported type');
+}
+;

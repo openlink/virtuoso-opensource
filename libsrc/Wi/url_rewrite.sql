@@ -875,3 +875,57 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 }
 ;
 
+create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
+{
+  declare ses, rules any;
+  ses := string_output ();
+  http (sprintf ('DB.DBA.URLREWRITE_CREATE_RULELIST ( \n\'%s\', 1, \n  vector (', rulelist_iri), ses);
+  rules := (select vector_agg (URRL_MEMBER) from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_iri order by URRL_INX);
+  http (SYS_SQL_VECTOR_PRINT (rules), ses);
+  http ('));\n\n', ses);
+
+  for select URRL_MEMBER from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_iri order by URRL_INX do
+    {
+      for select
+	URR_RULE_TYPE,
+	URR_NICE_FORMAT,
+	URR_NICE_PARAMS,
+	URR_NICE_MIN_PARAMS,
+	URR_TARGET_FORMAT,
+	URR_TARGET_PARAMS,
+	URR_TARGET_EXPR,
+	URR_ACCEPT_PATTERN,
+	URR_NO_CONTINUATION,
+	URR_HTTP_REDIRECT,
+	URR_HTTP_HEADERS from
+	    DB.DBA.URL_REWRITE_RULE
+	    where URR_RULE = URRL_MEMBER
+	do
+	  {
+	    if (URR_RULE_TYPE = 1)
+	      {
+		http (sprintf ('DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( \n\'%s\', 1, \n  ', URRL_MEMBER), ses);
+	      }
+	    else
+	      {
+		http (sprintf ('DB.DBA.URLREWRITE_CREATE_SPRINTF_RULE ( \n\'%s\', 1, \n  ', URRL_MEMBER), ses);
+	      }
+
+	      http (sprintf ('\'%S\', \n', URR_NICE_FORMAT), ses);
+	      http (sprintf ('vector (%s), \n', SYS_SQL_VECTOR_PRINT (deserialize (URR_NICE_PARAMS))), ses);
+	      http (sprintf ('%d, \n', URR_NICE_MIN_PARAMS), ses);
+	      http (sprintf ('\'%S\', \n', URR_TARGET_FORMAT), ses);
+	      http (sprintf ('vector (%s), \n', SYS_SQL_VECTOR_PRINT (deserialize (URR_TARGET_PARAMS))), ses);
+	      http (sprintf ('%s, \n', SYS_SQL_VAL_PRINT (URR_TARGET_EXPR)), ses);
+	      http (sprintf ('%s, \n', SYS_SQL_VAL_PRINT (URR_ACCEPT_PATTERN)), ses);
+	      http (sprintf ('%s, \n', SYS_SQL_VAL_PRINT (URR_NO_CONTINUATION)), ses);
+	      http (sprintf ('%s, \n', SYS_SQL_VAL_PRINT (URR_HTTP_REDIRECT)), ses);
+	      http (sprintf ('%s \n', SYS_SQL_VAL_PRINT (URR_HTTP_HEADERS)), ses);
+
+	      http (');\n\n', ses);
+	  }
+    }
+
+  return string_output_string (ses);
+}
+;

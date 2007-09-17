@@ -866,3 +866,68 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
 
 grant execute on ext_http_proxy to PROXY
 ;
+
+create procedure
+DB.DBA.VHOST_DUMP_SQL (in lpath varchar, in vhost varchar := '*ini*', in lhost varchar := '*ini*')
+{
+  declare ses any;
+  ses := string_output ();
+  for select
+    HP_PPATH,
+    HP_STORE_AS_DAV,
+    HP_DIR_BROWSEABLE,
+    HP_DEFAULT,
+    HP_SECURITY,
+    HP_REALM,
+    HP_AUTH_FUNC,
+    HP_POSTPROCESS_FUNC,
+    HP_RUN_VSP_AS,
+    HP_RUN_SOAP_AS,
+    HP_PERSIST_SES_VARS,
+    HP_SOAP_OPTIONS,
+    HP_AUTH_OPTIONS,
+    HP_OPTIONS,
+    HP_IS_DEFAULT_HOST
+    from
+    DB.DBA.HTTP_PATH
+    where HP_HOST = vhost and HP_LISTEN_HOST = lhost and HP_LPATH = lpath
+    do
+      {
+	http ('DB.DBA.VHOST_REMOVE (\n', ses);
+        http (concat ('\t lhost=>', SYS_SQL_VAL_PRINT (lhost), ',\n'), ses);
+        http (concat ('\t vhost=>', SYS_SQL_VAL_PRINT (vhost), ',\n'), ses);
+        http (concat ('\t lpath=>', SYS_SQL_VAL_PRINT (lpath), '\n'), ses);
+        http (');\n\n', ses);
+	http ('DB.DBA.VHOST_DEFINE (\n', ses);
+        http (concat ('\t lhost=>', SYS_SQL_VAL_PRINT (lhost), ',\n'), ses);
+        http (concat ('\t vhost=>', SYS_SQL_VAL_PRINT (vhost), ',\n'), ses);
+        http (concat ('\t lpath=>', SYS_SQL_VAL_PRINT (lpath), ',\n'), ses);
+        http (concat ('\t ppath=>', SYS_SQL_VAL_PRINT (HP_PPATH), ',\n'), ses);
+        http (concat ('\t is_dav=>', SYS_SQL_VAL_PRINT (HP_STORE_AS_DAV), ',\n'), ses);
+	if (HP_DEFAULT is not null)
+        http (concat ('\t def_page=>', SYS_SQL_VAL_PRINT (HP_DEFAULT), ',\n'), ses);
+	if (HP_SECURITY is not null)
+        http (concat ('\t sec=>', SYS_SQL_VAL_PRINT (HP_SECURITY), ',\n'), ses);
+	if (HP_REALM is not null)
+        http (concat ('\t realm=>', SYS_SQL_VAL_PRINT (HP_REALM), ',\n'), ses);
+	if (HP_AUTH_FUNC is not null)
+        http (concat ('\t auth_fn=>', SYS_SQL_VAL_PRINT (HP_AUTH_FUNC), ',\n'), ses);
+	if (HP_POSTPROCESS_FUNC is not null)
+        http (concat ('\t ppr_fn=>', SYS_SQL_VAL_PRINT (HP_POSTPROCESS_FUNC), ',\n'), ses);
+	if (HP_RUN_VSP_AS is not null)
+        http (concat ('\t vsp_user=>', SYS_SQL_VAL_PRINT (HP_RUN_VSP_AS), ',\n'), ses);
+	if (HP_RUN_SOAP_AS is not null)
+        http (concat ('\t soap_user=>', SYS_SQL_VAL_PRINT (HP_RUN_SOAP_AS), ',\n'), ses);
+        http (concat ('\t ses_vars=>', SYS_SQL_VAL_PRINT (HP_PERSIST_SES_VARS), ',\n'), ses);
+	if (HP_SOAP_OPTIONS is not null and deserialize (HP_SOAP_OPTIONS) is not null)
+        http (concat ('\t soap_opts=>', SYS_SQL_VAL_PRINT (deserialize (HP_SOAP_OPTIONS)), ',\n'), ses);
+	if (HP_AUTH_OPTIONS is not null and deserialize (HP_AUTH_OPTIONS) is not null)
+        http (concat ('\t auth_opts=>', SYS_SQL_VAL_PRINT (deserialize (HP_AUTH_OPTIONS)), ',\n'), ses);
+	if (HP_OPTIONS is not null and deserialize (HP_OPTIONS) is not null)
+        http (concat ('\t opts=>', SYS_SQL_VAL_PRINT (deserialize (HP_OPTIONS)), ',\n'), ses);
+        http (concat ('\t is_default_host=>', SYS_SQL_VAL_PRINT (HP_IS_DEFAULT_HOST), '\n'), ses);
+        http (');\n\n', ses);
+      }
+   return string_output_string (ses);
+}
+;
