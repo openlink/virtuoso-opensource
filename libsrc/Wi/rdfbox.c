@@ -69,6 +69,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /* data, type, lamg, ro_id, is_complete */
   rdf_box_t * rb;
   caddr_t box, chksum = NULL;
+  dtp_t box_dtp;
   long type, lang, ro_id, is_complete;
   box = bif_arg (qst, args, 0, "rdf_box");
   type = bif_long_arg (qst, args, 1, "rdf_box");
@@ -83,17 +84,25 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("22023", "SR549", "Both datatype id %ld and language id %ld are not default in call of rdf_box()", type, lang);
   if ((0 == ro_id) && !is_complete)
     sqlr_new_error ("22023", "SR550", "Neither is_complete nor ro_id argument is set in call of rdf_box()");
+  box_dtp = DV_TYPE_OF (box);
+  switch (box_dtp)
+    {
+    case DV_DB_NULL:
+      return NEW_DB_NULL;
+    case DV_XML_ENTITY:
+      if (!XE_IS_TREE (box))
+        sqlr_new_error ("22023", "SR559", "Persistent XML is not a valid argument #1 in call of rdf_box()");
+      break;
+    case DV_DICT_ITERATOR:
+      sqlr_new_error ("22023", "SR559", "Dictionary is not a valid argument #1 in call of rdf_box()");
+    }
   if (5 < BOX_ELEMENTS (args))
     chksum = bif_string_arg (qst, args, 5, "rdf_box");
   else
     {
-      if (DV_XML_ENTITY == DV_TYPE_OF (box))
-        {
-          if (!XE_IS_TREE (box))
-            sqlr_new_error ("22023", "SR559", "Persistent XML not allowed in call of rdf_box()");
+      if (DV_XML_ENTITY == box_dtp)
           chksum = xte_sum64 (((xml_tree_ent_t *)box)->xte_current);
         }
-    }
   if (NULL != chksum)
     {
       rdf_bigbox_t * rbb = rbb_allocate ();
