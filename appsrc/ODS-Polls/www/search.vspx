@@ -65,25 +65,29 @@
 
       declare data varchar;
 
+      self.ds_data := vector ();
+      self.ds_meta := vector ();
+      self.ds_tags := vector ();
+
       POLLS.WA.xml_set('keywords', data, self.v_keywords);
       if (self.v_mode <> 'simple') {
         POLLS.WA.xml_set('expression', data, self.v_expression);
         POLLS.WA.xml_set('tags', data, self.v_tags);
-        if (self.v_own = 1)
-          POLLS.WA.xml_set('MyPolls', data, 1);
-        if (self.v_public = 1)
-          POLLS.WA.xml_set('PublicPolls', data, 1);
       }
-
-      self.ds_data := vector ();
-      self.ds_meta := vector ();
-      self.ds_tags := vector ();
       if (length(xpath_eval('//entry', data, 0)) = 0) {
         if (e.ve_is_post or (self.v_mode = 'simple')) {
           self.vc_error_message := 'Empty search criteria.';
           self.vc_is_valid := 0;
         }
         return;
+      }
+      if (self.v_mode = 'simple') {
+        POLLS.WA.xml_set('MyPolls', data, 1);
+      } else {
+        if (self.v_own = 1)
+          POLLS.WA.xml_set('MyPolls', data, 1);
+        if (self.v_shared = 1)
+          POLLS.WA.xml_set('PublicPolls', data, 1);
       }
 
       declare sql, sqlParams, state, msg, meta, result, maxRows any;
@@ -522,6 +526,7 @@
                       self.ds_data := vector();
                       self.ds_meta := vector();
                       self.ds_tags := vector();
+                      self.f_own.ufl_selected := 1;
                       self.vc_data_bind(e);
                     ]]>
                   </v:on-post>

@@ -36,10 +36,16 @@ function generateAPPList (appIRI, appHref, appTarget, appOnclick)
 	a.innerHTML = "Doc Link (XHTML)";
 	a.href = appHref;
 	a.target = appTarget;
+	if (appOnclick) {
 	OAT.Dom.attach(a, "click", function(e) {
 				OAT.AnchorData.window.close();
 				appOnclick(e);
 			}); 	
+  } else {
+  	OAT.Dom.attach(a, "click", function(e) {
+  				OAT.AnchorData.window.close();
+  			}); 	
+  }			
 	list.push(a);
 	
 	return list;
