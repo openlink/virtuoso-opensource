@@ -2962,6 +2962,8 @@ create function DB.DBA.SPARUL_RUN (in results any) returns varchar
 create function DB.DBA.RDF_REGEX (in s varchar, in p varchar, in coll varchar := null)
 {
 -- !!!TBD proper use of third argument
+  if (not iswidestring (s) and not isstring (s))
+    return 0;
   if (regexp_match (p, s, 0) is not null)
     return 1;
   return 0;
@@ -6910,6 +6912,29 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           ret_mime := 'text/rdf+n3';
           DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
 	}
+      else if (strstr (accept, 'application/soap+xml') is not null)
+	{
+	  declare soap_ns, spt_ns varchar;
+	  declare soap_ver int;
+
+	  if (strstr (accept, 'application/soap+xml;11') is not null)
+	    soap_ver := 11;
+	  else
+	    soap_ver := 12;
+	  soap_ns := DB.DBA.SPARQL_SOAP_NS (soap_ver);
+	  spt_ns := DB.DBA.SPARQL_PT_NS ();
+	  if (soap_ver = 12)
+	    ret_mime := 'application/soap+xml';
+	  else
+	    ret_mime := 'text/xml';
+	  http ('<soapenv:Envelope xmlns:soapenv="'||soap_ns||'"><soapenv:Body><query-result xmlns="'||spt_ns||'">', ses);
+          http ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" '||
+      			'xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">', ses);
+          DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+	  http ('</rdf:RDF>', ses);
+	  http ('</query-result></soapenv:Body></soapenv:Envelope>', ses);
+	  goto body_complete;
+	}
       else
         {
           ret_mime := 'application/rdf+xml';
@@ -6947,8 +6972,20 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     }
   if (strstr (accept, 'application/soap+xml') is not null)
     {
+      declare soap_ns, spt_ns varchar;
+      declare soap_ver int;
+
+      if (strstr (accept, 'application/soap+xml;11') is not null)
+        soap_ver := 11;
+      else
+        soap_ver := 12;
+      soap_ns := DB.DBA.SPARQL_SOAP_NS (soap_ver);
+      spt_ns := DB.DBA.SPARQL_PT_NS ();
+      if (soap_ver = 12)
       ret_mime := 'application/soap+xml';
-      http ('<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope"><soapenv:Body><query-result xmlns="http://www.w3.org/2005/09/sparql-protocol-types/#">', ses);
+      else
+        ret_mime := 'text/xml';
+      http ('<soapenv:Envelope xmlns:soapenv="'||soap_ns||'"><soapenv:Body><query-result xmlns="'||spt_ns||'">', ses);
       SPARQL_RESULTS_XML_WRITE_NS (ses);
       SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
       SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
@@ -7060,11 +7097,22 @@ create procedure DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (
         errtitle := subseq (msg, 0, delim);
       httpstatus := sprintf ('Error %s %s', state, errtitle);
     }
-  if (accept is not null and accept = 'application/soap+xml')
+  if (accept is not null and strstr (accept, 'application/soap+xml') is not null)
     {
       declare err_str any;
+      declare soap_ver int;
+      if (strstr (accept, 'application/soap+xml;11') is not null)
+	{
+	  soap_ver := 11;
+	  http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+	}
+      else
+	{
+          soap_ver := 12;
+	  http_header ('Content-Type: application/soap+xml; charset=UTF-8\r\n');
+	}
       http_request_status (sprintf ('HTTP/1.1 500 %s', httpstatus));
-      err_str := soap_make_error ('320', state, msg, 12);
+      err_str := soap_make_error ('320', state, msg, soap_ver);
       http (err_str);
       return;
     }
@@ -7077,6 +7125,25 @@ create procedure DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (
       http ('\n\nSPARQL query:\n');
       http (query);
     }
+}
+;
+
+create procedure DB.DBA.SPARQL_WSDL11 (in lines any)
+{
+  declare host any;
+  host := http_request_header (lines, 'Host', null, null);
+    http (sprintf ('<?xml version="1.0" encoding="utf-8"?>
+    <definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
+		 xmlns:tns="http://www.w3.org/2005/08/sparql-protocol-query/#"
+		 targetNamespace="http://www.w3.org/2005/08/sparql-protocol-query/#">
+    <import namespace="http://www.w3.org/2005/08/sparql-protocol-query/#"
+    location="http://www.w3.org/TR/sprot11/sparql-protocol-query-11.wsdl"/>
+      <service name="SparqlService">
+        <port name="SparqlServicePort" binding="tns:QuerySoapBinding">
+	  <address location="http://%s/sparql"/>
+	</port>
+      </service>
+    </definitions>', host));
 }
 ;
 
@@ -7096,17 +7163,47 @@ create procedure DB.DBA.SPARQL_WSDL (in lines any)
 }
 ;
 
+create procedure DB.DBA.SPARQL_SOAP_NS (in ver int)
+{
+  if (ver = 11)
+    return 'http://schemas.xmlsoap.org/soap/envelope/';
+  else if (ver = 12)
+    return 'http://www.w3.org/2003/05/soap-envelope';
+  else
+    signal ('42000', 'Un-supported SOAP version');
+}
+;
+
+create procedure DB.DBA.SPARQL_PT_NS ()
+{
+  return 'http://www.w3.org/2005/09/sparql-protocol-types/#';
+}
+;
+
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
 {
   declare query, full_query, format, should_sponge, debug, def_qry varchar;
   declare dflt_graphs, named_graphs any;
   declare paramctr, paramcount, maxrows, can_sponge integer;
   declare ses, content any;
-  declare def_max, add_http_headers, timeout, sp_ini int;
+  declare def_max, add_http_headers, timeout, sp_ini, soap_ver int;
   declare http_meth, content_type, ini_dflt_graph, get_user varchar;
   declare state, msg varchar;
   declare metas, rset any;
-  declare accept varchar;
+  declare accept, soap_action varchar;
+
+  if (registry_get ('__sparql_endpoint_debug') = '1')
+    {
+      for (declare i int, i := 0; i < length (params); i := i + 2)
+        {
+	  if (isstring (params[i+1]))
+	    dbg_printf ('%s=%s',params[i],params[i+1]);
+	  else if (__tag (params[i+1]) = 185)
+	    dbg_printf ('%s=%s',params[i],'<strses>');
+	  else
+	    dbg_printf ('%s=%s',params[i],'<box>');
+	}
+    }
 
   set http_charset='utf-8';
   ses := 0;
@@ -7137,7 +7234,15 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
         }
     }
   get_user := '';
+  soap_ver := 0;
+  soap_action := http_request_header (lines, 'SOAPAction');
   content_type := http_request_header (lines, 'Content-Type', null, '');
+
+  if (content_type = 'application/soap+xml')
+    soap_ver := 12;
+  else if (soap_action is not null)
+    soap_ver := 11;
+
   content := null;
   can_sponge := coalesce ((select top 1 1
       from DB.DBA.SYS_USERS as sup
@@ -7159,9 +7264,15 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       DB.DBA.SPARQL_WSDL (lines);
       return;
     }
+  else if (http_path () = '/sparql/services11.wsdl')
+    {
+      http_header ('Content-Type: text/xml\r\n');
+      DB.DBA.SPARQL_WSDL11 (lines);
+      return;
+    }
 
   paramcount := length (params);
-  if (((0 = paramcount) or ((2 = paramcount) and ('Content' = params[0]))) and content_type <> 'application/soap+xml')
+  if (((0 = paramcount) or ((2 = paramcount) and ('Content' = params[0]))) and soap_ver = 0)
     {
        declare redir varchar;
        redir := registry_get ('WS.WS.SPARQL_DEFAULT_REDIRECT');
@@ -7399,15 +7510,20 @@ http('</html>\n');
 
 
   -- SOAP 1.2 operation begins
-  if (http_meth = 'POST' and content_type = 'application/soap+xml')
+  if (http_meth = 'POST' and soap_ver > 0)
     {
        declare xt, dgs, ngs any;
+       declare soap_ns, spt_ns, ns_decl varchar;
+       soap_ns := DB.DBA.SPARQL_SOAP_NS (soap_ver);
+       spt_ns := DB.DBA.SPARQL_PT_NS ();
+       ns_decl := '[ xmlns:soap="'||soap_ns||'" xmlns:sp="'||spt_ns||'" ] ';
        content := http_body_read ();
---       dbg_obj_print (string_output_string (content));
+       if (registry_get ('__sparql_endpoint_debug') = '1')
+         dbg_printf ('content=[%s]', string_output_string (content));
        xt := xtree_doc (content);
-       query := charset_recode (xpath_eval ('[ xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sp="http://www.w3.org/2005/09/sparql-protocol-types/#" ] string (/soap:Envelope/soap:Body/sp:query-request/sp:query)', xt), '_WIDE_', 'UTF-8');
-       dgs := xpath_eval ('[ xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sp="http://www.w3.org/2005/09/sparql-protocol-types/#" ] /soap:Envelope/soap:Body/sp:query-request/sp:default-graph-uri', xt, 0);
-       ngs := xpath_eval ('[ xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:sp="http://www.w3.org/2005/09/sparql-protocol-types/#" ] /soap:Envelope/soap:Body/sp:query-request/sp:named-graph-uri', xt, 0);
+       query := charset_recode (xpath_eval (ns_decl||'string (/soap:Envelope/soap:Body/sp:query-request/query)', xt), '_WIDE_', 'UTF-8');
+       dgs := xpath_eval (ns_decl||'/soap:Envelope/soap:Body/sp:query-request/default-graph-uri', xt, 0);
+       ngs := xpath_eval (ns_decl||'/soap:Envelope/soap:Body/sp:query-request/named-graph-uri', xt, 0);
        foreach (any frag in dgs) do
 	 {
 	   declare pvalue varchar;
@@ -7422,7 +7538,7 @@ http('</html>\n');
 	   if (position (pvalue, named_graphs) <= 0)
 	     named_graphs := vector_concat (named_graphs, vector (pvalue));
 	 }
-       format := 'application/soap+xml';
+       format := sprintf('application/soap+xml;%d', soap_ver);
     }
 
   if (sp_ini)
@@ -7494,7 +7610,8 @@ host_found:
   state := '00000';
   metas := null;
   rset := null;
-  --dbg_obj_princ ('full_query = ', full_query);
+  if (registry_get ('__sparql_endpoint_debug') = '1')
+    dbg_printf ('query=[%s]', full_query);
   exec ('isnull (sparql_to_sql_text (?))', state, msg, vector (full_query));
   if (state <> '00000')
     {
