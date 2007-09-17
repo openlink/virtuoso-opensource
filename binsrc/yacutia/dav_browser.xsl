@@ -3569,25 +3569,36 @@ else
                       <v:on-post>
                         <v:script>
                           <![CDATA[
-                            declare _resname varchar;
+                            declare _resname, _single varchar;
                             declare i integer;
+                            
                             self.source_dir := self.curpath;
                             self.col_array := vector();
                             self.res_array := vector();
                             i := 0;
                             while (_resname := adm_next_checkbox('CBC_', control.vc_page.vc_event.ve_params, i))
                             {
+                              _single := _resname;
                               self.col_array := vector_concat(self.col_array, vector(_resname, null));
                             }
                             i := 0;
                             while (_resname := adm_next_checkbox('CBR_', control.vc_page.vc_event.ve_params, i))
                             {
+                              _single := _resname;
                               self.res_array := vector_concat(self.res_array, vector(_resname, null));
                             }
                             if (length(self.res_array) > 0 or length(self.col_array) > 0)
                             {
-                              self.command := 4;
-                              self.crfolder_mode := 0;
+                              if (length(self.res_array) + length(self.col_array) <= 2) 
+                              {
+                                self.command := 12;
+                                self.source_dir := _single; 
+                              } 
+                              else 
+                              {
+                                self.command := 4;
+                                self.crfolder_mode := 0;
+                              }
                             }
 			    else
 			    {
