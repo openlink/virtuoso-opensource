@@ -1218,6 +1218,7 @@
                           if (not ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
                               actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%s\');" title="Edit %s" class="link_ed">edit</a>', node, title);
 
+                            if (BMK.WA.node_type (node) = 'b')
                             if (not ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
                               actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="#" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="link_ed">annotate</a>', self.sid, self.realm, id, self.domain_id, self.account_id, title);
 

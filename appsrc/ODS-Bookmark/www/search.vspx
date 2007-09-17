@@ -661,6 +661,7 @@
                       self.ds_data := vector();
                       self.ds_meta := vector();
                       self.ds_tags := vector();
+                      self.f_own.ufl_selected := 1;
                       self.vc_data_bind(e);
                     ]]>
                   </v:on-post>

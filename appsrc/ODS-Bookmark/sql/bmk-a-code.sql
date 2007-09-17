@@ -3101,8 +3101,6 @@ create procedure BMK.WA.dt_gmt2user(
   in pDate datetime,
   in pUser varchar := null)
 {
-  declare tz integer;
-
   if (isnull(pDate))
     return null;
   if (isnull(pUser))
@@ -3111,8 +3109,7 @@ create procedure BMK.WA.dt_gmt2user(
     pUser := connection_get('vspx_user');
   if (isnull(pUser))
     return pDate;
-  tz := cast(coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), timezone(now())/60) as integer) * 60;
-  return dateadd('minute', tz, pDate);
+  return dateadd('minute', coalesce (USER_GET_OPTION(pUser, 'TIMEZONE'), 0) * 60, pDate);
 }
 ;
 
