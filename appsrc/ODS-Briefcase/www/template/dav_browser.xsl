@@ -2546,7 +2546,7 @@
                               </td>
                             </v:template>
                           <td class="action">
-                              <v:button style="image" action="simple" value="image/dav/item_prop.png" enabled="--ODRIVE.WA.odrive_read_permission((control.vc_parent as vspx_row_template).te_rowset[8])" xhtml_title="Properties">
+                            <v:button style="image" action="simple" value="image/dav/item_prop.png" enabled="--ODRIVE.WA.odrive_read_permission((control.vc_parent as vspx_row_template).te_rowset[8])" xhtml_title="Edit Properties">
                                 <v:on-post>
                                   <![CDATA[
                                     self.source := (control.vc_parent as vspx_row_template).te_rowset[8];
@@ -3927,16 +3927,16 @@
 
       <img src="image/c.gif" height="32" width="2" border="0" class="toolbar" />
 
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for property changes.'')) toolbarPost(''properties'');'" enabled="--self.toolbarEnable('properties')" xhtml_title="Properties" xhtml_class="toolbar">
+      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for property changes.'')) toolbarPost(''properties'');'" enabled="--self.toolbarEnable('properties')" xhtml_title="Edit Properties" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
-            control.ufl_value := '<img src="image/prop_32.png" border="0" />' || self.toolbarLabel('Properties');
+            control.ufl_value := '<img src="image/prop_32.png" border="0" />' || self.toolbarLabel('Edit Properties');
           ]]>
         </v:before-render>
       </v:url>
       <v:template type="simple" enabled="--case when self.toolbarEnable('properties') then 0 else 1 end">
         <span class="toolbar">
-          <img src="image/grey_prop_32.png" border="0" alt="Properties" /><?vsp http(self.toolbarLabel('Properties'));?>
+          <img src="image/grey_prop_32.png" border="0" alt="Properties" /><?vsp http(self.toolbarLabel('Edit Properties'));?>
         </span>
       </v:template>
 
