@@ -40,6 +40,11 @@
 #include <openssl/err.h>
 #endif
 
+#ifndef WIN32
+#define closesocket	close
+#define ioctlsocket	ioctl
+#endif
+
 int last_errno;
 static int tcpdev_free (device_t * dev);
 static int ses_control_all (session_t * ses);
@@ -795,9 +800,7 @@ tcpses_connect (session_t *ses)
       test_eintr (ses, rc, errno);
       dbg_perror ("connect()");
       dbg_printf_2 (("SER_SYSCALL"));
-#ifndef WIN32
-      close (s);
-#endif
+      closesocket (s);
       return (SER_SYSCALL);
     }
 
@@ -864,22 +867,15 @@ tcpses_disconnect (session_t *ses)
 */
     rc = shutdown (ses->ses_device->dev_connection->con_s, 2);
   }
-#else
-  rc = close (ses->ses_device->dev_connection->con_s);
 #endif
+
+  rc = closesocket (ses->ses_device->dev_connection->con_s);
+  ses->ses_device->dev_connection->con_s = -1;
 
   /* Whether close succeeded or not, the connection will be
      unusable after the following */
 
   SESSTAT_SET (ses, SST_BROKEN_CONNECTION);
-
-#ifdef PCTCP
-/* XXX  if (rc >= 0)*/
-    rc = closesocket (ses->ses_device->dev_connection->con_s);
-#endif
-/*
-  ses->ses_device->dev_connection->con_s = -1;
-*/
 
   memset (ses->ses_device->dev_accepted_address, 0, sizeof (address_t));
 
@@ -1536,10 +1532,8 @@ tcpses_set_control (session_t *ses, int fieldtoset, char *p_value, int size)
 #ifdef FIONBIO
 # ifdef OS2
 	  rc = ioctl (s, FIONBIO, (char *) &dontblock, sizeof (dontblock));
-# elif defined(PCTCP)
-	  rc = ioctlsocket (s, FIONBIO, &dontblock);
 # else
-	  rc = ioctl (s, FIONBIO, &dontblock);
+	  rc = ioctlsocket (s, FIONBIO, &dontblock);
 # endif
 #else
 	  /*
@@ -1556,10 +1550,8 @@ tcpses_set_control (session_t *ses, int fieldtoset, char *p_value, int size)
 #ifdef FIONBIO
 # ifdef OS2
 	  rc = ioctl (s, FIONBIO, (char *) &dontblock, sizeof (dontblock));
-# elif defined(PCTCP)
-	  rc = ioctlsocket (s, FIONBIO, &dontblock);
 # else
-	  rc = ioctl (s, FIONBIO, &dontblock);
+	  rc = ioctlsocket (s, FIONBIO, &dontblock);
 # endif
 #else
 # ifdef O_NONBLOCK
@@ -2568,7 +2560,7 @@ unixses_connect (session_t *ses)
       test_eintr (ses, rc, errno);
       dbg_perror ("connect()");
       dbg_printf_2 (("SER_SYSCALL"));
-      close (s);
+      closesocket (s);
       return (SER_SYSCALL);
     }
 
@@ -2628,7 +2620,8 @@ unixses_disconnect (session_t *ses)
   p_addr = &(uaddr->a_serveraddr.u);
 
   /* Close the connected socket */
-  rc = close (ses->ses_device->dev_connection->con_s);
+  rc = closesocket (ses->ses_device->dev_connection->con_s);
+  ses->ses_device->dev_connection->con_s = -1;
 
   /* Whether close succeeded or not, the connection will be
      unusable after the following */
@@ -2638,9 +2631,6 @@ unixses_disconnect (session_t *ses)
   /* unlink the socket file if listening socket is closing */
   if (SESSTAT_ISSET (ses, SST_LISTENING))
     unlink (p_addr->sun_path);
-/*
-  ses->ses_device->dev_connection->con_s = -1;
-*/
 
   memset (ses->ses_device->dev_accepted_address, 0, sizeof (address_t));
 
