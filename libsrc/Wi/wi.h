@@ -1096,6 +1096,11 @@ struct buffer_desc_s
   int			bd_age;
 #ifdef MTX_DEBUG
   du_thread_t *	bd_writer; /* for debugging, the thread which has write access, if any */
+  char * 		bd_enter_file;
+  long 			bd_enter_line;
+  char * 		bd_leave_file;
+  long 			bd_leave_line;
+  char 			bd_el_flag;	/* what operation was last: 1-enter, 2-leave */
 #endif
 #ifdef PAGE_TRACE
   long		bd_trx_no;
@@ -1105,6 +1110,27 @@ struct buffer_desc_s
 #endif
 };
 
+#ifdef MTX_DEBUG
+#define BUF_DBG_ENTER(buf) \
+    do { \
+      if (buf) { \
+	(buf)->bd_enter_file = file; \
+	(buf)->bd_enter_line = line; \
+	(buf)->bd_el_flag = 1; \
+      } \
+    } while (0)
+#define BUF_DBG_LEAVE(buf) \
+    do { \
+      if (buf) { \
+	(buf)->bd_leave_file = file; \
+	(buf)->bd_leave_line = line; \
+	(buf)->bd_el_flag = 2; \
+      } \
+    } while (0)
+#else
+#define BUF_DBG_ENTER(buf)
+#define BUF_DBG_LEAVE(buf)
+#endif
 
 #define bd_registered bn.registered
 #define bd_next bn.next

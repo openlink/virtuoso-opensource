@@ -103,7 +103,11 @@ itc_adaptive_read_inc (it_cursor_t * itc, buffer_desc_t * dest_buf)
 
 #ifdef MTX_DEBUG
 #define AL_WAIT_SET_WRITER(buf) \
-  { if ((buf) && (buf)->bd_is_write) (buf)->bd_writer = THREAD_CURRENT_THREAD;}
+  { \
+    if ((buf) && (buf)->bd_is_write) \
+      (buf)->bd_writer = THREAD_CURRENT_THREAD; \
+    BUF_DBG_ENTER (buf); \
+  }
 #else
 #define AL_WAIT_SET_WRITER(buf)
 #endif
@@ -116,9 +120,14 @@ itc_adaptive_read_inc (it_cursor_t * itc, buffer_desc_t * dest_buf)
 
 #endif
 
-
+#ifdef MTX_DEBUG
+int
+page_wait_access_dbg (int line, const char * file, 
+    it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, buffer_desc_t ** buf_ret, int mode, int max_change)
+#else
 int
 page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, buffer_desc_t ** buf_ret, int mode, int max_change)
+#endif    
 {
   buffer_desc_t decoy;
   buffer_desc_t *buf;
@@ -202,6 +211,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
       ITC_LEAVE_MAPS (itc);
       /* complete transit.  This counts as no change since itc was aall the time in source and dest was acquired without possibility of interference */
       *buf_ret = buf;
+      BUF_DBG_ENTER (buf);
       return itc->itc_to_reset;
     }
   if (buf->bd_being_read)
@@ -251,6 +261,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
 	  ITC_LEAVE_MAPS (itc);
 	  *buf_ret = buf;
 	  BUF_TOUCH (buf);
+	  BUF_DBG_ENTER (buf);
 	  return  itc->itc_to_reset;
 	}
       else
@@ -273,6 +284,7 @@ page_wait_access (it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from, bu
 	  itc->itc_pl = buf->bd_pl;
 	  *buf_ret = buf;
 	  BUF_TOUCH (buf);
+	  BUF_DBG_ENTER (buf);
 	  return itc->itc_to_reset;
 	}
       else
@@ -390,12 +402,18 @@ page_release_writes (buffer_desc_t * buf)
 
 
 
+#ifdef MTX_DEBUG
+void
+page_leave_inner_dbg (int line, const char * file, buffer_desc_t * buf)
+#else 
 void
 page_leave_inner (buffer_desc_t * buf)
+#endif    
 {
 #ifdef MTX_DEBUG
   if (!is_crash_dump && buf->bd_tree)
     ASSERT_IN_MAP (buf->bd_tree, buf->bd_page);
+  BUF_DBG_LEAVE(buf);
 #endif
   if (buf->bd_readers)
     {
