@@ -290,12 +290,13 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Order-ship_postal_code ;
                         northwind:shipCountry northwind:Country(orders.ShipCountry)
                                 as virtrdf:ship_country .
+
                 northwind:Customer (orders.CustomerID)
                         northwind:has_order northwind:Order (orders.OrderID) as virtrdf:Order-has_order .
-                northwind:Employee (orders.EmployeeID)
-                        northwind:placed_order northwind:Order (orders.OrderID) as virtrdf:Order-placed_order .
+
                 northwind:Shipper (orders.ShipVia)
                         northwind:ship_order northwind:Order (orders.OrderID) as virtrdf:Order-ship_order .
+
                 northwind:OrderLine (order_lines.OrderID, order_lines.ProductID)
                         a northwind:OrderLine
                                 as virtrdf:OrderLine-OrderLines ;
