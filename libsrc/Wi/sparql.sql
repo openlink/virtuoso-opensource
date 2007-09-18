@@ -1994,7 +1994,7 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
   rdf_load_rdfxml (strg, 0,
     graph,
     vector (
-      'DB.DBA.TTL2HASH_EXEC_NEW_GRAPH(?,?)',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH(?,?)',
       'select DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK(?,?)',
       'select DB.DBA.RDF_TTL2HASH_EXEC_GET_IID(?,?,?)',
       'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE(?,?, ?,?, ?)',
@@ -7235,7 +7235,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
     }
   get_user := '';
   soap_ver := 0;
-  soap_action := http_request_header (lines, 'SOAPAction');
+  soap_action := http_request_header (lines, 'SOAPAction', null, null);
   content_type := http_request_header (lines, 'Content-Type', null, '');
 
   if (content_type = 'application/soap+xml')
