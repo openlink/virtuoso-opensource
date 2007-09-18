@@ -295,6 +295,10 @@ alldigits (char *string)
 extern int h_errno;
 #endif
 
+#ifndef INADDR_NONE
+#define INADDR_NONE (-1)
+#endif
+
 static int
 tcpses_set_address (session_t *ses, char *addrinfo1)
 {
@@ -304,10 +308,10 @@ tcpses_set_address (session_t *ses, char *addrinfo1)
   unsigned short *p_port;	/* listening port number */
   int HostAndPort = 0;
   struct hostent *host = NULL;
-  unsigned long int addr;
+  unsigned int addr = INADDR_NONE;
 #if defined (_REENTRANT)
-  char buff [4096];
-  int herrnop;
+  char buff[4096];
+  int herrnop = 0;
   struct hostent ht;
 # if defined (HPUX_10)
   struct hostent_data hted;
@@ -329,7 +333,7 @@ tcpses_set_address (session_t *ses, char *addrinfo1)
     char *stringplace;
     char localstring[50];
     strncpy (localstring, addrinfo, sizeof (localstring));
-    localstring [sizeof (localstring) - 1] = 0;
+    localstring[sizeof (localstring) - 1] = 0;
     stringplace = strtok_r (localstring, SEPARATOR, &strs);
     if (stringplace != NULL)
       {
@@ -337,8 +341,7 @@ tcpses_set_address (session_t *ses, char *addrinfo1)
 	  *p_port = atoi (stringplace);
 	else
 	  {
-	    strncpy (p_name, stringplace,
-		sizeof (ses->ses_device->dev_address->a_hostname));
+	    strncpy (p_name, stringplace, sizeof (ses->ses_device->dev_address->a_hostname));
 	    p_name[sizeof (ses->ses_device->dev_address->a_hostname) - 1] = 0;
 	    stringplace = strtok_r (NULL, SEPARATOR, &strs);
 	    if (stringplace != NULL)
@@ -355,51 +358,39 @@ tcpses_set_address (session_t *ses, char *addrinfo1)
 
   if (HostAndPort)
     {
+      if ((addr = inet_addr (p_name)) == INADDR_NONE)
+	{
 #if defined (_REENTRANT) && defined (linux)
-      if ((int)(addr = inet_addr (p_name)) == -1)
-	gethostbyname_r (p_name, &ht, buff, sizeof (buff), &host, &herrnop);
-      else
-	gethostbyaddr_r ((char *)&addr, sizeof (addr), AF_INET, &ht, buff, sizeof (buff), &host, &herrnop);
+	  gethostbyname_r (p_name, &ht, buff, sizeof (buff), &host, &herrnop);
 #elif defined (_REENTRANT) && defined (SOLARIS)
-      if ((int)(addr = inet_addr (p_name)) == -1)
-	host = gethostbyname_r (p_name, &ht, buff, sizeof (buff), &herrnop);
-      else
-	host = gethostbyaddr_r ((char *)&addr, sizeof (addr), AF_INET, &ht, buff, sizeof (buff), &herrnop);
+	  host = gethostbyname_r (p_name, &ht, buff, sizeof (buff), &herrnop);
 #elif defined (_REENTRANT) && defined (HPUX_10)
-      /* in HP-UX 10 these functions are MT-safe */
-      hted.current = NULL;
-      if ((int)(addr = inet_addr (p_name)) == -1)
-	{
-	  if ( -1 != gethostbyname_r (p_name, &ht, &hted))
+	  /* in HP-UX 10 these functions are MT-safe */
+	  hted.current = NULL;
+	  if (-1 != gethostbyname_r (p_name, &ht, &hted))
 	    host = &ht;
-	}
-      else
-	{
-	  if (-1 != gethostbyaddr_r ((char *)&addr, sizeof (addr), AF_INET, &ht, &hted))
-	    host = &ht;
-	}
 #else
-      /* gethostbyname and gethostbyaddr is a threadsafe on AIX4.3 HP-UX WindowsNT */
-      if ((int)(addr = inet_addr (p_name)) == -1)
-	host = gethostbyname (p_name);
-      else
-	host = gethostbyaddr ((char *)&addr, sizeof (addr), AF_INET);
+	  /* 
+	   * gethostbyname and gethostbyaddr is a threadsafe on AIX4.3 
+	   * HP-UX WindowsNT 
+	   */
+	  host = gethostbyname (p_name);
 #endif
 
-      if (!host && addr == -1)
-	{
+	  if (!host)
+	    {
 #if defined (_REENTRANT) && (defined (linux) || defined (SOLARIS))
-	  int status = herrnop;
+	      int status = herrnop;
 #else
-	  int status = h_errno;
+	      int status = h_errno;
 #endif
-
-	  printf ("The function gethostbyname returned"
-	      " error %d for host \"%s\".\n", status, p_name);
-	  SESSTAT_CLR (ses, SST_OK);
-	  return (SER_FAIL);
-	};
+	      log_error ("The function gethostbyname returned error %d for host \"%s\".\n", status, p_name);
+	      SESSTAT_CLR (ses, SST_OK);
+	      return (SER_FAIL);
+	    }
+	}
     }
+
   memset (p_addr, '\0', sizeof (saddrin_t));
   p_addr->sin_family = AF_INET;
   p_addr->sin_port = htons (*p_port);
