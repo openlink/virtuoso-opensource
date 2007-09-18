@@ -347,9 +347,14 @@
           }
 
           if (length(self.item_array) > 0) {
+            if ((command = 22) and (length (self.item_array) <= 2)) {
+              self.source := self.item_array[0];
+              self.command_push (10, 10);
+            } else {
             self.command_push(command, 0);
             self.dir_select := dir_select;
             self.need_overwrite := 0;
+            }
           } else {
             self.vc_error_message := 'Operation can not be executed on selected resources.';
             self.vc_is_valid := 0;
@@ -1625,7 +1630,6 @@
                   <th>Size</th>
                 <th nowrap="nowrap">Date Modified</th>
                   <th>Mime Type</th>
-                  <th>Kind</th>
                   <th>Owner</th>
                   <th>Group</th>
                   <th>Permissions</th>
