@@ -74,8 +74,6 @@ var QueryExec = function(optObj) {
 		this.dom.response = OAT.Dom.create("pre");
 		this.dom.query = OAT.Dom.create("pre");
 		this.dom.select = OAT.Dom.create("select");
-		this.dom.select.id = "_select";
-		
 		OAT.Dom.option("Human readable","0",this.dom.select);
 		OAT.Dom.option("Machine readable","1",this.dom.select);
 		
@@ -184,9 +182,9 @@ var QueryExec = function(optObj) {
 		var paramsObj = {};
 		paramsObj["query"] = opts.query;
 		paramsObj["format"] = "application/rdf+xml";
-		if (opts.defaultGraph) { paramsObj["default-graph-uri"] = opts.defaultGraph; }
+		if (opts.defaultGraph && !opts.query.match(/from *</i)) { paramsObj["default-graph-uri"] = opts.defaultGraph; }
 		if (opts.limit) { paramsObj["maxrows"] = opts.limit; }
-		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
+		if (opts.sponge) { paramsObj["should-sponge"] = opts.sponge; }
 
 		var arr = [];
 		for (var p in paramsObj) {
@@ -384,6 +382,7 @@ var QueryExec = function(optObj) {
 					"WHERE {<"+href+"> ?p ?o}";
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
+			o.defaultGraph = false;
 			o.query = q;
 			self.execute(o);
  		}
@@ -391,7 +390,7 @@ var QueryExec = function(optObj) {
 			var cache = self.cache[self.cacheIndex];
 			var q = "SELECT ?isValueOf ?property ?hasValue \n"+
 					"FROM <"+href+">\n"+
-					"WHERE {\n"+
+					" WHERE {\n"+
 					"{ <"+href+"> ?property ?hasValue }\n"+
 					"UNION\n"+
 					"{ ?isValueOf ?property <"+href+"> }\n" +
@@ -447,6 +446,11 @@ var QueryExec = function(optObj) {
 		};
 		OAT.Anchor.assign(domNode,obj);
 		
+		var img0 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
+		img0.title = "Relations";
+		img0.src = OAT.Preferences.imagePath + "RDF_relations.gif";
+		OAT.Dom.attach(img0,"click",exploreRef);
+
 		var img1 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
 		img1.title = "Attributes";
 		img1.src = OAT.Preferences.imagePath + "RDF_rdf.png";
@@ -460,6 +464,7 @@ var QueryExec = function(optObj) {
 		a.target = "_blank";
 		a.href = href;
 		
+		domNode.parentNode.appendChild(img0);
 		domNode.parentNode.appendChild(img1);
 		domNode.parentNode.appendChild(a);
 	}

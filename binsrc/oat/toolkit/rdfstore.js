@@ -377,11 +377,11 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	}
 	
 	this.simplify = function(str) {
-		var r = str.match(/([^\/#]*)$/);
-		if (r[1] == "this") {
+		var r = str.match(/([^\/#]+)$/);
+		if (r && r[1] == "this") {
 			r = str.match(/([^\/#])#[^#]*$/);
 		}
-		return r[1];
+		return (r ? r[1] : str);
 	}	
 }
 OAT.Loader.featureLoaded("rdfstore");

@@ -692,15 +692,21 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 	this.pageDiv = OAT.Dom.create("div");
 	this.gridDiv = OAT.Dom.create("div");
 	this.description = "This module displays all filtered triples.";
+	
+	this.select = OAT.Dom.create("select");
+	OAT.Dom.option("Human readable","0",this.select);
+	OAT.Dom.option("Machine readable","1",this.select);
+	
 	OAT.Dom.append([self.elm,self.pageDiv,self.gridDiv]);
 	
 	this.patchAnchor = function(column) {
 		var a = OAT.Dom.create("a");
 		var v = self.grid.rows[self.grid.rows.length-1].cells[column].value;
-		a.innerHTML = v.innerHTML;
+		var uri = v.innerHTML;
+		a.innerHTML = (self.select.value == "0" ? self.parent.store.simplify(uri) : uri);
 		OAT.Dom.clear(v);
 		v.appendChild(a);		
-		self.parent.processLink(a,a.innerHTML);
+		self.parent.processLink(a,uri);
 	}
 	
 	this.reset = function() {
@@ -714,7 +720,7 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 
 		cnt.innerHTML = "There are "+count+" triples available.";
 		OAT.Dom.clear(self.pageDiv);
-		OAT.Dom.append([self.pageDiv,cnt,div]);
+		OAT.Dom.append([self.pageDiv,cnt,div,self.select]);
 		
 		function assign(a,page) {
 			a.setAttribute("title","Jump to page "+(page+1));
@@ -754,12 +760,17 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 			if (i >= self.currentPage * self.options.pageSize && i < (self.currentPage + 1) * self.options.pageSize) {
 				var triple = triples[i];
 				self.grid.createRow(triple);
-				if (triple[0].match(/^http/i)) { self.patchAnchor(1); }
-				if (triple[2].match(/^http/i)) { self.patchAnchor(3); }
+				for (var j=0;j<triple.length;j++) {
+					var str = triple[j];
+					if (str.match(/^(http|urn|doi)/i)) { 
+						self.patchAnchor(j+1);
+					}
+				}
 			} /* if in current page */
 		} /* for all triples */
 		self.drawPager();
 	}
+	OAT.Event.attach(self.select,"change",self.redraw);
 }
 
 OAT.RDFTabs.svg = function(parent,optObj) {
