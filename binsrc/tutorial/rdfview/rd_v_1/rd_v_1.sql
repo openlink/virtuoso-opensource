@@ -287,10 +287,9 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutOrder-ship_postal_code ;
                         tut_northwind:shipCountry tut_northwind:Country(orders.ShipCountry)
                                 as virtrdf:tutship_country .
+
                 tut_northwind:Customer (orders.CustomerID)
                         tut_northwind:has_order tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-has_order .
-                tut_northwind:Employee (orders.EmployeeID)
-                        tut_northwind:placed_order tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-placed_order .
                 
                 tut_northwind:Shipper (orders.ShipVia)
                         tut_northwind:ship_order tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-ship_order .
