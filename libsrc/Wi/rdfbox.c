@@ -95,6 +95,9 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       break;
     case DV_DICT_ITERATOR:
       sqlr_new_error ("22023", "SR559", "Dictionary is not a valid argument #1 in call of rdf_box()");
+    case DV_BLOB: case DV_BLOB_HANDLE: case DV_BLOB_BIN: case DV_BLOB_WIDE: case DV_BLOB_WIDE_HANDLE:
+    case DV_BLOB_XPER: case DV_BLOB_XPER_HANDLE:
+      sqlr_new_error ("22023", "SR559", "Large object (tag %d) is not a valid argument #1 in call of rdf_box()", box_dtp);
     }
   if (5 < BOX_ELEMENTS (args))
     chksum = bif_string_arg (qst, args, 5, "rdf_box");
