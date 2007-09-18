@@ -972,7 +972,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (in v any) returns any
     return v;
   if (225 = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t or 126 = t)
+  else if (t in (126, 217))
     v := cast (v as varchar);
   return DB.DBA.RDF_OBJ_ADD (257, v, 257);
 }
@@ -986,7 +986,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in 
     return v;
   if (225 = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t or 126 = t)
+  else if (t in (126, 217))
     v := cast (v as varchar);
   if (not __rdf_obj_ft_rule_check (g_iid, p_iid))
     ro_id_dict := null;
@@ -1266,7 +1266,7 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any
     return v;
   if (225 = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t)
+  else if (t in (126, 217))
     v := cast (v as varchar);
   return DB.DBA.RDF_OBJ_ADD (257, v, 257);
 }
@@ -1512,11 +1512,11 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v any) returns any
 {
   declare t int;
   t := __tag (v);
-  if (not t in (182, 217, 225))
+  if (not t in (126, 182, 217, 225))
     return v;
   if (225 = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t)
+  else if (t in (126, 217))
     v := cast (v as varchar);
   return rdf_box (v, 257, 257, 0, 1);
 }
