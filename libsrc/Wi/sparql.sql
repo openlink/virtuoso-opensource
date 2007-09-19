@@ -1084,7 +1084,7 @@ create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := 
     {
       if (isiri_id (shortobj))
         return null;
-      return cast (coalesce (__xsd_type (shortobj), dflt) as varchar);
+      return cast (__xsd_type (shortobj, dflt) as varchar);
     }
   twobyte := rdf_box_type (shortobj);
   if (257 = twobyte)
@@ -1422,7 +1422,7 @@ badtype:
     }
   if (isiri_id (longobj))
     return NULL;
-  return cast (coalesce (__xsd_type (longobj), dflt) as varchar);
+  return cast (__xsd_type (longobj, dflt) as varchar);
 }
 ;
 
@@ -6243,7 +6243,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   if (strstr (ret_content_type, 'application/rdf+xml') is not null)
     {
       declare res_dict any;
-      res_dict := DB.DBA.RDF_RDFXML_TO_DICT (ret_body,'http://local.virt/tmp','');
+      res_dict := DB.DBA.RDF_RDFXML_TO_DICT (ret_body,'http://local.virt/tmp','http://local.virt/tmp');
       metas := vector (vector (vector ('res_dict', 242, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0)), 1);
       if (0 = res_mode)
         {
@@ -6419,12 +6419,11 @@ create procedure SPARQL_RESULTS_XML_WRITE_RES (inout ses any, in mdta any, inout
 }
 ;
 
-create procedure SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any, inout dta any)
+create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any, inout dta any)
 {
-
+  -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (..., ',mdta, dta, ')');
   http ('\n  <result>', ses);
   mdta := mdta[0];
-
   for (declare x any, x := 0; x < length (mdta); x := x + 1)
     {
       declare _name varchar;
@@ -9280,6 +9279,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_LOAD_HTTP_RESPONSE to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_FORGET_HTTP_RESPONSE to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_SPONGE_UP to SPARQL_UPDATE',
+    'grant execute on DB.DBA.TTLP_EV_COMMIT to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_PROC_COLS to "SPARQL"' );
   foreach (varchar cmd in cmds) do
     {
