@@ -1071,6 +1071,9 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
   if (ses->ses_device->dev_connection->con_is_file)
     return 1;
 
+  if (fd < 0) /* the sequential read will throw exception */
+    return SER_SUCC;
+
   FD_ZERO (&fds);
   FD_SET (fd, &fds);
 #endif
