@@ -19,8 +19,8 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- */
-
+ *  
+*/
 #include "sparql2sql.h"
 #include "arith.h"
 #include "sqlparext.h"
@@ -2669,7 +2669,7 @@ const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
   else if (SSG_VALMODE_DATATYPE == needed)
     {
       if (SSG_VALMODE_LONG	== native)	return " DB.DBA.RDF_DATATYPE_OF_LONG (^{tree}^)";
-      if (SSG_VALMODE_SQLVAL	== native)	return " __xsd_type (^{tree}^, NULL)";
+      if (SSG_VALMODE_SQLVAL	== native)	return " __xsd_type (^{tree}^, 0, NULL)";
     }
   else if (SSG_VALMODE_LANGUAGE == needed)
     {

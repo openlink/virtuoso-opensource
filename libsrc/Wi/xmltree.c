@@ -8105,7 +8105,7 @@ xn_input (xpath_node_t * xn, caddr_t * inst, caddr_t *state)
 caddr_t
 xn_text_query (xpath_node_t * xn, query_instance_t * qi, caddr_t xp_str)
 {
-  /* with a combination of text_node, taböe_source, xp_node
+  /* with a combination of text_node, table_source, xp_node
    * the txs calls this to get the text part of the query */
   caddr_t * qst = (caddr_t *) qi;
   caddr_t err = NULL;
@@ -9584,17 +9584,25 @@ caddr_t bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         case DT_TYPE_TIME: return uname_xmlschema_ns_uri_hash_time;
         default : return uname_xmlschema_ns_uri_hash_dateTime;
         }
-    case DV_STRING: return uname_xmlschema_ns_uri_hash_string;
+    case DV_STRING:
+      if (1 < BOX_ELEMENTS (args))
+        {
+          caddr_t dflt = bif_arg (qst, args, 1, "__xsd_type");
+          if (0 == unbox (dflt))
+            return NEW_DB_NULL;
+          return box_copy_tree (dflt);
+        }
+      return uname_xmlschema_ns_uri_hash_string;
     case DV_LONG_INT: return uname_xmlschema_ns_uri_hash_integer;
     case DV_NUMERIC: case DV_DOUBLE_FLOAT: return uname_xmlschema_ns_uri_hash_double;
     case DV_SINGLE_FLOAT: return uname_xmlschema_ns_uri_hash_float;
     case DV_DB_NULL: return NEW_DB_NULL;
     default:
-      if (1 == BOX_ELEMENTS (args))
+      if (2 >= BOX_ELEMENTS (args))
         sqlr_new_error ("22023", "SR544", 
           "Function __xsd_type() can not find XML Schema datatype that matches SQL datatype %s (%d)",
           dv_type_title (dtp), dtp );
-      return box_copy_tree (bif_arg (qst, args, 1, "__xsd_type"));
+      return box_copy_tree (bif_arg (qst, args, 2, "__xsd_type"));
     }
 }
 
