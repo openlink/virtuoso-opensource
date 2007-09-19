@@ -1274,6 +1274,7 @@ namespace OpenLink.Data.Virtuoso
             dt.Columns.Add("CHAR_OCTET_LENGTH", typeof(int));
             dt.Columns.Add("ORDINAL_POSITION", typeof(int));
             dt.Columns.Add("IS_NULLABLE", typeof(string));
+
             if(catalog == null)
                catalog = "";
             if(schema == null)
@@ -1287,7 +1288,6 @@ namespace OpenLink.Data.Virtuoso
             table = (table.Length == 0) ? "%" : table;
             column = (column.Length == 0) ? "%" : column;
    
-            DataTable dtColumns = new DataTable("Columns");
             String cmdText;
             cmdText = (innerConnection.IdentCase ==
           		CLI.IdentCase.SQL_IC_MIXED) ? getWideColumsText_case2 :
@@ -1312,7 +1312,7 @@ namespace OpenLink.Data.Virtuoso
             cmd.Parameters.Add (p4);
    
             VirtuosoDataReader reader = (VirtuosoDataReader)cmd.ExecuteReader();
-            dtColumns.Load(reader);
+            dt.Load(reader);
 
             return dt;
          }
@@ -1733,7 +1733,7 @@ namespace OpenLink.Data.Virtuoso
        "SELECT " +
          "charset_recode (name_part (\\P_NAME, 0), 'UTF-8', '_WIDE_') AS PROCEDURE_CAT NVARCHAR(128)," +
 	 "charset_recode (name_part (\\P_NAME, 1), 'UTF-8', '_WIDE_') AS PROCEDURE_SCHEM NVARCHAR(128)," +
-	 "chatset_recode (name_part (\\P_NAME, 2), 'UTF-8', '_WIDE_') AS PROCEDURE_NAME NVARCHAR(128)," +
+	 "charset_recode (name_part (\\P_NAME, 2), 'UTF-8', '_WIDE_') AS PROCEDURE_NAME NVARCHAR(128)," +
 	 "\\P_N_IN AS RES1," +
 	 "\\P_N_OUT AS RES2," +
 	 "\\P_N_R_SETS AS RES3," +
