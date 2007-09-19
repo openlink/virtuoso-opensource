@@ -554,7 +554,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
               rgc->rgc_intermediate = 1;
               return;
             }
-          if (!strcmp (param, "input:grab-seealso"))
+          if (!strcmp (param, "input:grab-seealso") || !strcmp (param, "input:grab-follow-predicate"))
             {
               switch (value_lexem_type)
                 {
