@@ -513,6 +513,45 @@ sparp_expn_rside_rank (SPART *tree)
   return 0x20000;
 }
 
+/* For an equality in group \c curr between member of \c eq_l and expression \c r,
+the function restricts \c eq_l or even merges it with variable of other equiv.
+\returns 1 if equality is no longer needed due to merge, 0 otherwise */
+int
+spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r)
+{
+  int ret = 0;
+  switch (SPART_TYPE (r))
+    {
+    case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+      {
+        sparp_equiv_t *eq_r = sparp_equiv_get (sparp, curr, r, 0);
+        eq_l->e_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL;
+        ret = sparp_equiv_merge (sparp, eq_l, eq_r);
+        break;
+      }
+    case SPAR_LIT: case SPAR_QNAME:
+      {
+        ret = sparp_equiv_restrict_by_constant (sparp, eq_l, NULL, r);
+        break;
+      }
+    case SPAR_BUILT_IN_CALL:
+      {
+        switch (r->_.builtin.btype)
+          {
+          case STR_L: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL; break;
+          case IRI_L: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_NOT_NULL; break;
+          }
+        break;
+      }
+    }
+  if (
+    (SPARP_EQUIV_MERGE_OK == ret) ||
+    (SPARP_EQUIV_MERGE_CONFLICT == ret) ||
+    (SPARP_EQUIV_MERGE_DUPE == ret) )
+    return 1;
+  return 0;
+}
+
 /* Processing of simple filters that introduce restrictions on variables
 \c trav_env_this is not used.
 \c common_env is not used. */
@@ -548,6 +587,20 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
           }
         break;
       }
+    case SPAR_BUILT_IN_CALL:
+      if (SAMETERM_L == filt->_.builtin.btype)
+        {
+          SPART *l = filt->_.builtin.args[0];
+          SPART *r = filt->_.builtin.args[1];
+          int lrrank = sparp_expn_rside_rank (l);
+          int rrrank = sparp_expn_rside_rank (r);
+          if (lrrank > rrrank)
+            {
+              filt->_.builtin.args[0] = r;
+              filt->_.builtin.args[1] = l;
+            }
+        }
+      break;
     default:
       break;
     }
@@ -558,40 +611,11 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
       {
         SPART *l = filt->_.bin_exp.left;
         SPART *r = filt->_.bin_exp.right;
-        int ret = 0;
         if (SPAR_IS_BLANK_OR_VAR (l))
           {
 		sparp_equiv_t *eq_l = sparp_equiv_get (sparp, curr, l, 0);
-            switch (SPART_TYPE (r))
-              {
-              case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
-                {
-		sparp_equiv_t *eq_r = sparp_equiv_get (sparp, curr, r, 0);
-                  eq_l->e_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL;
-	        ret = sparp_equiv_merge (sparp, eq_l, eq_r);
-                  break;
+            return spar_var_eq_to_equiv (sparp, curr, eq_l, r);
 	      }
-              case SPAR_LIT: case SPAR_QNAME:
-	      {
-                  ret = sparp_equiv_restrict_by_constant (sparp, eq_l, NULL, r);
-                  break;
-          }
-              case SPAR_BUILT_IN_CALL:
-          {
-                  switch (r->_.builtin.btype)
-              {
-                    case STR_L: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL; break;
-                    case IRI_L: eq_l->e_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_NOT_NULL; break;
-                    }
-                  break;
-                }
-	      }
-	  }
-        if (
-          (SPARP_EQUIV_MERGE_OK == ret) ||
-          (SPARP_EQUIV_MERGE_CONFLICT == ret) ||
-          (SPARP_EQUIV_MERGE_DUPE == ret) )
-          return 1;
         break;
      }
     case BOP_NOT: break;
@@ -618,6 +642,12 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
           case BOUND_L:
             arg1_eq->e_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL;
             return 1;
+          case SAMETERM_L:
+            {
+              SPART *arg2 = filt->_.builtin.args[1];
+              spar_var_eq_to_equiv (sparp, curr, arg1_eq, arg2); /* No return because sameTerm is more strict than merge of equivs */
+              break;
+            }
 #ifdef DEBUG
           case IRI_L:
           case STR_L:
