@@ -969,7 +969,7 @@ The typical use of this pragma is querying a set of related resources when only 
 It turns all variables and IRI constants in all graph, subject and object fields of all triple patterns of the query into values for
 <emphasis>input:grab-var</emphasis> and <emphasis>input:grab-iri</emphasis>,
 so the SPARQL processor will dereference everything what might be related to the text of the query.</listitem>
-  <listitem><emphasis>input:grab-seealso</emphasis> specifies an IRI of an predicate similar to foaf:seeAlso.
+  <listitem><emphasis>input:grab-seealso</emphasis> (and synonym <emphasis>input:grab-follow-predicate</emphasis>) specifies an IRI of an predicate similar to foaf:seeAlso.
 Predicates of that sort suggest location of resources that contain more data about predicate subject.
 The IRI dereferencing routine may use these predicates to find additional IRIs for loading resources.
 This is especially useful when the text of the query comes from remote client and may lack triple patterns like
