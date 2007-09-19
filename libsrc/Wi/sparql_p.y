@@ -786,7 +786,7 @@ spar_triples_node	/* [34]  	TriplesNode	  ::=  	Collection | BlankNodePropertyLi
 		t_set_push (&(sparp_env()->spare_context_subjects), bn); }
 	    spar_props spar_triples_opt_semi_rsqbra {
 		$$ = t_set_pop (&(sparp_env()->spare_context_subjects)); }
-	| _LPAR {	/* [36]  	Collection	  ::=  	'(' GraphNode+ ')'	*/
+	| _LPAR {	/* [36]	Collection	 ::=  '(' GraphNode* ')'	*/
 		SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:topcons"), 1); 
 		t_set_push (&(sparp_env()->spare_context_subjects), bn);
 		t_set_push (&(sparp_env()->spare_context_subjects), bn); }
@@ -798,6 +798,7 @@ spar_triples_node	/* [34]  	TriplesNode	  ::=  	Collection | BlankNodePropertyLi
 		  NULL, NULL );
 		t_set_pop (&(sparp_env()->spare_context_subjects));
 		$$ = t_set_pop (&(sparp_env()->spare_context_subjects)); }
+	| _LPAR _RPAR { $$ = spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_nil); }
 	;
 
 spar_triples_opt_semi_rsqbra	/* ::=  ';'? ']'	*/
@@ -805,7 +806,7 @@ spar_triples_opt_semi_rsqbra	/* ::=  ';'? ']'	*/
 	| _SEMI _RSQBRA {}
 	;
 
-spar_cons_collection	/* [32]  	ObjectList	  ::=  	GraphNode ( ',' ObjectList )?	*/
+spar_cons_collection
 	: spar_graph_node {
 		spar_gp_add_triple_or_special_filter (sparp_arg, NULL, NULL,
 		    spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_first),
