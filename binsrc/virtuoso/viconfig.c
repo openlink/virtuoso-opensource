@@ -167,6 +167,7 @@ extern unsigned long cfg_autocheckpoint; /* from auxfiles.c */
 extern int default_txn_isolation;
 extern int c_use_aio;
 extern long txn_after_image_limit; /* from log.c */
+extern long iri_cache_size;
 
 char * http_log_file_check (struct tm *now); /* http log name checking */
 
@@ -314,6 +315,7 @@ extern long http_keep_hosting; /* from http.c */
 char *c_ucm_load_path = 0;
 char *c_plugin_load_path = 0;
 int32 c_http_ses_trap = 0;
+long c_iri_cache_size = 0;
 
 /* externs about client configuration */
 extern int32 cli_prefetch;
@@ -951,6 +953,10 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "DbevEnable", &c_dbev_enable) == -1)
     c_dbev_enable = 1;
 
+  if (cfg_getlong (pconfig, section, "IriCacheSize", &c_iri_cache_size) == -1)
+    c_iri_cache_size = 0;
+
+
   section = "HTTPServer";
 
   if (cfg_getstring (pconfig, section, "ServerPort", &c_http_port) == -1)
@@ -1371,8 +1377,8 @@ cfg_setup (void)
     plugin_type = cslentry (pconfig->value, 1);
     plugin_dll = cslentry (pconfig->value, 2);
     plugin_load (plugin_type, plugin_dll, c_plugin_load_path, loadctr, log_info, log_error);
-    free (plugin_type);
-    free (plugin_dll);
+    /*free (plugin_type);*/
+    /*free (plugin_dll);*/
     if (msdtc_plugin)
       c_vd_use_mts = 1;
   }
@@ -1574,6 +1580,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   sql_warnings_to_syslog = c_sql_warnings_to_syslog;
   temp_db_size = c_temp_db_size;
   dbev_enable = c_dbev_enable;
+  iri_cache_size = c_iri_cache_size;
 }
 
 
