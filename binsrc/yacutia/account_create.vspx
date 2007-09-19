@@ -68,16 +68,31 @@
     </vm:rawheader>
     <vm:pagebody>
 	<vm:help id="account_create" sect=""/>
-    <script language="JavaScript">
+	<script tyep="text/javascript"><![CDATA[
       function onExitUserName()
       {
-        with (document.account_form) t_repository_path.value = t_login_name.value;
+        // no action yet
+        // with (document.account_form) t_repository_path.value = "/DAV/home/" + t_login_name.value;
       };
       function onExitAccountName()
       {
         with (document.account_form) t_login_name.value = t_full_name.value;
       };
-    </script>
+      function swHomeDir (cb)
+      {
+        var l, h;
+	with (document.account_form) l = t_login_name.value;
+	with (document.account_form) h = t_repository_path.value;
+	if (cb.checked == true && h.length == 0 && l.length > 0)
+	  {
+	    with (document.account_form) t_repository_path.value = "/DAV/home/" + l + "/";
+	  }
+	else if (cb.checked == false)
+          {
+	    with (document.account_form) t_repository_path.value = "";
+	  }
+      }
+      ]]></script>
     <v:before-data-bind>
       <v:script>
         <![CDATA[
@@ -452,8 +467,8 @@
                           xhtml_style="width:216"
                           xhtml_readonly="--case when self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1 then 'readonly' else '@@hidden@@' end"
                           xhtml_tabindex="18"/>
-                  <v:check-box name="cb_create_dav_home"
-                              xhtml_id="cb_create_dav_home"
+		      <v:check-box name="cb_create_dav_home" xhtml_id="cb_create_dav_home"
+			  	xhtml_onclick="javascript:swHomeDir (this)"
                               xhtml_tabindex="19"/>&nbsp;<label for="cb_create_dav_home">create</label>
                 </td>
               </tr>
