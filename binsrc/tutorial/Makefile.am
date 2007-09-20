@@ -94,6 +94,14 @@ EXTRA_DIST= \
 	rdf/rq_s_3/*.php \
 	rdf/rq_s_3/*.sql \
 	rdf/rq_s_3/*.xml \
+	rdfview/*.xml \
+	rdfview/rd_v_1/*.sql \
+	rdfview/rd_v_1/*.xml \
+	rdfview/rd_v_1/rd_v_1.csdl \
+	rdfview/rd_v_1/rd_v_1.isparql \
+	rdfview/rd_v_1/rd_v_1.n3 \
+	rdfview/rd_v_1/rd_v_1.owl \
+	rdfview/rd_v_1/rd_v_1.rq \
 	repl/*.css \
 	repl/*.xml \
 	repl/re_ds_1/*.sql \
