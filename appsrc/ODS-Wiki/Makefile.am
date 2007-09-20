@@ -66,6 +66,7 @@ EXTRA_DIST =  \
 	http/images/*.png \
 	initial/Main/*.txt \
 	initial/Wiki/*.txt \
+	js/*.js \
 	kupu/common/*.css \
 	kupu/common/*.js \
 	kupu/common/kupu.pox \

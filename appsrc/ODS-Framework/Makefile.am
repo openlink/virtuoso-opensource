@@ -83,6 +83,7 @@ EXTRA_DIST = \
 	users/css/*.css \
 	users/js/*.js \
 	users/users.jsp \
+	users/users.rb \
 	vad_version \
 	version.base \
 	version.curr

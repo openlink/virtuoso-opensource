@@ -43,13 +43,14 @@ clean-local:
 
 EXTRA_DIST = \
 	*.css \
-	*.xhtml \
+	*.js \
 	*.sql \
 	*.vsp \
 	*.vspx \
+	*.xhtml \
 	*.xsl \
-	make_vad.sh \
 	comp/*.xsl \
 	images/*.gif \
 	images/*.jpg \
-	images/*.png 
+	images/*.png \
+	make_vad.sh
