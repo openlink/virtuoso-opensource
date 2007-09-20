@@ -89,22 +89,17 @@ plugin_sample_la_LDFLAGS = $(base_plugin_ldflags)
 #########################################
 #rest of the stuff
 #########################################
-.PHONY: generated
-generated: $(libplugin_la_SOURCES)
+generated_code = \
+	export_plugin_msdtc.c import_plugin_msdtc.c import_plugin_msdtc.h \
+	export_gate_virtuoso.c import_gate_virtuoso.c import_gate_virtuoso.h \
+	export_plugin_lang25.c import_plugin_lang25.c import_plugin_lang25.h
 
-$(BUILT_FILES): Makefile gen_all_gates.sh gen_gate.sh
+$(generated_code): Makefile gen_all_gates.sh gen_gate.sh
 	cd $(top_srcdir)/libsrc/plugin; ./gen_all_gates.sh
 
+BUILT_SOURCES 	= $(generated_code)
+CLEANFILES	= $(generated_code)
 
-BUILT_FILES=\
-	export_plugin_msdtc.c import_plugin_msdtc.c import_plugin_msdtc.h \
-	export_gate_virtuoso.c import_gate_virtuoso.c import_gate_virtuoso.h \
-	export_plugin_lang25.c import_plugin_lang25.c import_plugin_lang25.h
-
-CLEANFILES=\
-	export_plugin_msdtc.c import_plugin_msdtc.c import_plugin_msdtc.h \
-	export_gate_virtuoso.c import_gate_virtuoso.c import_gate_virtuoso.h \
-	export_plugin_lang25.c import_plugin_lang25.c import_plugin_lang25.h
 
 # ----------------------------------------------------------------------
 #
