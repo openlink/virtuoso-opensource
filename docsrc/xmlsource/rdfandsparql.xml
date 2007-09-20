@@ -875,11 +875,35 @@ If the value is &quot;soft&quot; then the SPARQL processor will not even try to 
 Other <emphasis>get:...</emphasis> parameters are useless without this one.</listitem>
   <listitem><emphasis>get:uri</emphasis> is the IRI to retrieve if it is not equal to the IRI of the <emphasis>from</emphasis> clause.
 These can be used if data should be retrieved from a mirror, not from original resource location or in any other case when the destination graph IRI differs from the location of the resource.</listitem>
+<programlisting><![CDATA[
+sparql
+define get:uri "http://myhost2"
+select ?id
+from named <http://myhost/user1.ttl>
+where { graph ?g { ?id a ?o } };
+]]></programlisting>
   <listitem><emphasis>get:method</emphasis> is the HTTP method that should be used to retrieve the resource, supported methods are &quot;GET&quot; for plain HTTP and &quot;MGET&quot; for URIQA web service endpoint.
 By default, &quot;MGET&quot; is used for IRIs that end with &quot;/&quot; and &quot;GET&quot; for everything else.</listitem>
   <listitem><emphasis>get:refresh</emphasis> is the maximum allowed age of the cached resource, no matter what is specified by the server where the resource resides.
 The value is an positive integer (number of seconds). Virtuoso reads HTTP headers and uses &quot;Date&quot;, &quot;ETag&quot;, &quot;Expires&quot;, &quot;Last-Modified&quot;, &quot;Cache-Control&quot; and &quot;Pragma: no-cache&quot; fields to calculate when the resource should be reloaded, this value can become smaller due to <emphasis>get:refresh</emphasis> but can not be incremented.</listitem>
+<programlisting><![CDATA[
+sparql
+define get:refresh 3600
+select ?id
+from named <http://myhost/user1.ttl>
+where { graph ?g { ?id a ?o } };
+]]></programlisting>
   <listitem><emphasis>get:proxy</emphasis> address of the proxy server, as &quot;host:port&quot; string, if direct download is impossible; the default is to not use proxy.</listitem>
+<programlisting><![CDATA[
+sparql
+define get:proxy "proxy.server.com:8080"
+define get:method "GET"
+define get:soft "soft"
+select ?id
+from named <http://myhost/user2.ttl>
+where { graph ?g { ?id a ?o } };
+]]></programlisting>
+
 <!--
   <listitem><emphasis>get:login</emphasis></listitem>
   <listitem><emphasis>get:password</emphasis></listitem>
@@ -965,10 +989,33 @@ It is not an error if values of different variables result in same IRI or a vari
   <listitem><emphasis>input:grab-iri</emphasis> specifies an IRI that should be retrieved before executing the rest of the query, if it is not in the <emphasis>DB.DBA.RDF_QUAD</emphasis> already.
 This pragma can be used more than once to specify many IRIs.
 The typical use of this pragma is querying a set of related resources when only one &quot;root&quot; resource IRI is known but even that resource is not loaded.</listitem>
+<programlisting><![CDATA[
+sparql
+  define input:storage ""
+  define input:grab-iri <http/myhost/user1.ttl>
+  define input:grab-var "id"
+  define input:grab-depth 10
+  define input:grab-base "htp://myhost/"
+select ?id
+where { graph ?g { ?id a ?o } };
+]]></programlisting>
   <listitem><emphasis>input:grab-all</emphasis> is the simplest possible way to enable the feature but the resulting performance can be very bad.
 It turns all variables and IRI constants in all graph, subject and object fields of all triple patterns of the query into values for
 <emphasis>input:grab-var</emphasis> and <emphasis>input:grab-iri</emphasis>,
 so the SPARQL processor will dereference everything what might be related to the text of the query.</listitem>
+<programlisting><![CDATA[
+sparql
+  define input:grab-all "yes"
+  define input:grab-depth 10
+  define input:grab-limit 100
+  define input:grab-base-iri "http://myhost/"
+select ?id ?firstname ?email
+where {
+    graph ?g {
+        ?id a <Person> ;
+          <FirstName> ?firstname ;
+          <EMail> ?email . } };
+]]></programlisting>
   <listitem><emphasis>input:grab-seealso</emphasis> (and synonym <emphasis>input:grab-follow-predicate</emphasis>) specifies an IRI of an predicate similar to foaf:seeAlso.
 Predicates of that sort suggest location of resources that contain more data about predicate subject.
 The IRI dereferencing routine may use these predicates to find additional IRIs for loading resources.
@@ -978,6 +1025,18 @@ The use of <emphasis>input:grab-seealso</emphasis> makes the SPARQL query nondet
 depend on execution plan and they may change from run to run.
 This pragma can be used more than once to specify many IRIs, but this feature is costly.
 Every additional predicate may result in significant number of lookups in the RDF storage, affecting total execution time.</listitem>
+<programlisting><![CDATA[
+sparql
+  define input:grab-iri <http://myhost/user1.ttl>
+  define input:grab-var "id"
+  define input:grab-depth 10
+  define input:grab-base "http://myhost/"
+  define input:grab-seealso <ex://SeeAlso>
+select ?id
+where {
+    graph ?g {
+        ?id a <ex://Person> } };
+]]></programlisting>
   <listitem><emphasis>input:grab-limit</emphasis> should be an integer that is a maximum allowed number of resource retrievals.
 The default value is pretty big (few millions of documents) so it is strongly recommended to set smaller value.
 Set it even if you're absolutely sure that the set of resources is small, because program errors are always possible.
@@ -990,6 +1049,16 @@ Every iteration may find new IRIs to retrieve, because resources loaded on previ
 The default value is 1, so the SPARQL processor will retrieve only resources explicitly named in &quot;root&quot; resources or in quad that are in the database before the query execution.
 </listitem>
   <listitem><emphasis>input:grab-base</emphasis> specifies a base IRI used to convert relative IRIs into absolute. The default is an empty string.</listitem>
+<programlisting><![CDATA[
+sparql
+  define input:grab-var "more"
+  define input:grab-base "http://myhost/"
+select ?id
+where {
+    graph ?g {
+        ?id a <ex://Person>
+	optional { ?id <ex://SeeAlso> ?more } } };
+]]></programlisting>
   <listitem><emphasis>input:grab-resolver</emphasis> is a name of procedure that resolve IRIs and determines the HTTP method of retrieval.
 The default is name of <emphasis>DB.DBA.RDF_GRAB_RESOLVER_DEFAULT()</emphasis> procedure that is described below.
 If other procedure is specified, the signature should match to the default one.</listitem>
