@@ -2513,6 +2513,8 @@ ssg_rettype_of_function (spar_sqlgen_t *ssg, caddr_t name)
         return SSG_VALMODE_LONG;
       spar_sqlprint_error2 ("ssg_" "rettype_of_function(): unsupported SPECIAL", SSG_VALMODE_SQLVAL);
     }
+  if (!strcmp (name, uname_xmlschema_ns_uri_hash_string))
+    return SSG_VALMODE_LONG;
   return SSG_VALMODE_SQLVAL /* not "return res" */;
 }
 
@@ -2669,7 +2671,7 @@ const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
   else if (SSG_VALMODE_DATATYPE == needed)
     {
       if (SSG_VALMODE_LONG	== native)	return " DB.DBA.RDF_DATATYPE_OF_LONG (^{tree}^)";
-      if (SSG_VALMODE_SQLVAL	== native)	return " __xsd_type (^{tree}^, 0, NULL)";
+      if (SSG_VALMODE_SQLVAL	== native)	return " DB.DBA.RDF_DATATYPE_OF_SQLVAL (^{tree}^)";
     }
   else if (SSG_VALMODE_LANGUAGE == needed)
     {

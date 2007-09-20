@@ -1508,6 +1508,27 @@ create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any)
 }
 ;
 
+--!AWK PUBLIC
+create function DB.DBA.RDF_DATATYPE_OF_SQLVAL (in v any, in strg_datatype any := 0, in default_res any := NULL) returns varchar
+{
+  if (246 = __tag (v))
+    {
+      declare twobyte integer;
+      declare res varchar;
+      twobyte := rdf_box_type (v);
+      if (257 = twobyte)
+        return case (rdf_box_lang (v)) when 257 then strg_datatype else null end;
+      whenever not found goto badtype;
+      select RDT_QNAME into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
+      return res;
+
+badtype:
+  signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RDF_DATATYPE_OF_SQLVAL, bad id %d', twobyte));
+    }
+  return cast (__xst_type (v, strg_datatype, default_res) as varchar);
+}
+;
+
 create function DB.DBA.RDF_LONG_OF_SQLVAL (in v any) returns any
 {
   declare t int;
@@ -1674,6 +1695,25 @@ create function DB.DBA."http://www.w3.org/2001/XMLSchema#time" (in strg any) ret
   if (isstring (strg))
     return __xqf_str_parse ('time', strg);
   return cast (strg as time);
+ret_null:
+  return NULL;
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA."http://www.w3.org/2001/XMLSchema#string" (in strg any) returns any
+{
+  whenever sqlstate '*' goto ret_null;
+  declare t, dt_twobyte, lang_twobyte int;
+  t := __tag (strg);
+  if (225 = t)
+    strg := charset_recode (strg, '_WIDE_', 'UTF-8');
+  else if (182 <> t)
+    strg := cast (strg as varchar);
+  return DB.DBA.RDF_OBJ_ADD (
+    DB.DBA.RDF_TWOBYTE_OF_DATATYPE ('http://www.w3.org/2001/XMLSchema#string'),
+    strg, 257 );
+
 ret_null:
   return NULL;
 }

@@ -3501,6 +3501,7 @@ void xqf_init(void)
 
   bif_define ("__xqf_str_parse", bif_xqf_str_parse);
   bif_define ("__xqf_str_parse_to_rdf_box", bif_xqf_str_parse_to_rdf_box);
+  bif_define_typed ("__xqf_str_parse_boolean"	, bif_xqf_str_parse	, &bt_integer	);
   bif_define_typed ("__xqf_str_parse_date"	, bif_xqf_str_parse	, &bt_date	);
   bif_define_typed ("__xqf_str_parse_datetime"	, bif_xqf_str_parse	, &bt_datetime	);
   bif_define_typed ("__xqf_str_parse_double"	, bif_xqf_str_parse	, &bt_double	);
