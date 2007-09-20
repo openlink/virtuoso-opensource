@@ -336,6 +336,7 @@
           self.item_array := vector();
           i := 0;
           while (item := adm_next_checkbox('CB_', params, i)) {
+            item := split_and_decode (item)[0];
             if (((command = 20) and ODRIVE.WA.odrive_read_permission(item)) or
                 ((command = 21) and ODRIVE.WA.odrive_read_permission(item)) or
                 ((command = 22) and ODRIVE.WA.det_action_enable(item, 'edit')) or
@@ -974,7 +975,7 @@
           </v:before-data-bind>
           <v:text name="formRight" type="hidden" value="--self.dav_enable" />
           <div class="new-form-header">
-            <v:label format="%s">:
+          <v:label format="%V">:
               <v:before-data-bind>
                 <![CDATA[
                   if (self.command_mode = 10) {
@@ -2436,8 +2437,9 @@
                               declare rowset any;
                               rowset := (control as vspx_row_template).te_rowset;
 
-                              if ((self.dir_select = 0) and (self.dir_path <> ''))
-                              http(sprintf('<td align="center"><input type="checkbox" name="CB_%s" onclick="enableToolbars (this.form, \'CB_\')"/></td>', rowset[8]));
+                            if ((self.dir_select = 0) and (self.dir_path <> '')) {
+                              http(sprintf('<td align="center"><input type="checkbox" name="CB_%U" onclick="enableToolbars (this.form, \'CB_\')"/></td>', rowset[8]));
+                            }
                             ?>
                             <td nowrap="nowrap">
                               <v:button action="simple" style="image" value="''" text="''" format="%s" xhtml_title="--ODRIVE.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[0])">
@@ -2446,7 +2448,7 @@
                                     declare rowset any;
                                     rowset := ((control.vc_parent) as vspx_row_template).te_rowset;
                                     control.ufl_value := self.ui_image(rowset[8], rowset[1], rowset[4]);
-                                    control.bt_text := concat('&nbsp;&nbsp;', ODRIVE.WA.stringCut(rowset[0], self.chars));
+                                  control.bt_text := sprintf ('  %V', ODRIVE.WA.stringCut (rowset[0], self.chars));
                                   ]]>
                                 </v:before-data-bind>
                                 <v:on-post>
@@ -2464,7 +2466,7 @@
                                     self.dir_path := self.dir_path || (control.vc_parent as vspx_row_template).te_rowset[0];
                                     } else {
                                       http_request_status ('HTTP/1.1 302 Found');
-                                      http_header (sprintf('Location: view_file.vsp?sid=%s&realm=%s&file=%U\r\n', self.sid , self.realm, (control.vc_parent as vspx_row_template).te_rowset[8]));
+                                    http_header (sprintf('Location: view.vsp?sid=%s&realm=%s&file=%U&mode=download\r\n', self.sid , self.realm, (control.vc_parent as vspx_row_template).te_rowset[8]));
                                     }
                                     self.ds_items.vc_reset();
                                     self.vc_data_bind(e);
@@ -3535,7 +3537,7 @@
                     }
 
                     http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: view_file.vsp?sid=%s&realm=%s&file=%U\r\n', self.sid , self.realm, path));
+                    http_header (sprintf('Location: view.vsp?sid=%s&realm=%s&file=%U&mode=download\r\n', self.sid , self.realm, path));
                     self.vc_data_bind(e);
                   ]]>
                 </v:on-post>
@@ -3588,7 +3590,7 @@
                                 }
 
                                 http_request_status ('HTTP/1.1 302 Found');
-                                http_header (sprintf('Location: view_file.vsp?sid=%s&realm=%s&file=%U\r\n', self.sid , self.realm, path));
+                                http_header (sprintf('Location: view.vsp?sid=%s&realm=%s&file=%U&mode=download\r\n', self.sid , self.realm, path));
                                 self.vc_data_bind(e);
                               ]]>
                             </v:on-post>
@@ -3972,7 +3974,7 @@
         </span>
       </v:template>
 
-      <v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for download.'')) toolbarPost(''download'');'" enabled="--self.toolbarEnable('download')" xhtml_title="Download" xhtml_class="toolbar">
+      <!--v:url value="--''" format="%s" url="--'javascript: if (anySelected(document.F1, ''CB_'', ''No resources were selected for download.'')) toolbarPost(''download'');'" enabled="--self.toolbarEnable('download')" xhtml_title="Download" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
             control.ufl_value := '<img src="image/dwnld_32.png" border="0" />' || self.toolbarLabel('Download');
@@ -4001,7 +4003,7 @@
       </vm:if>
       <span id="tbMail_gray" class="toolbar" style="display: inline;">
           <img src="image/grey_mail_32.png" border="0" alt="Mail" /><?vsp http(self.toolbarLabel('Mail'));?>
-        </span>
+      </span-->
 
     </div>
     <div style="clear: both;" />

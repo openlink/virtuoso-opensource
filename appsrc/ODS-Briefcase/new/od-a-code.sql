@@ -1500,7 +1500,6 @@ _error:
 create procedure ODRIVE.WA.odrive_refine_path(
   in path varchar) returns varchar
 {
-  path := replace(path, '"', '');
   path := replace(path, '\\', '/');
   path := replace(path, '//', '/');
   return trim(path, '/');
