@@ -28,6 +28,7 @@
 EXTRA_DIST = \
 	*.gif \
 	*.jpg \
+	*.png \
 	inst/*.png \
 	mac/*.gif \
 	mac/*.jpg \
@@ -36,6 +37,7 @@ EXTRA_DIST = \
 	misc/*.jpg \
 	misc/favicon.ico \
 	rth/*.jpg \
+	rth/*.png \
 	tree/*.gif \
-	ui/*.gif \
-	ui/*.jpg
+	ui/*.jpg \
+	ui/*.png
