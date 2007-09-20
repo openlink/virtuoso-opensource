@@ -56,9 +56,12 @@ virt_mail.vers.c: $(LIBDEPS) $(MAKEVER)
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	INSTALL \
 	dkstub.c \
+	INSTALL \
+	odbc_mail.c \
 	odbc_mail.default.ini \
+	sysexits.h \
+	virt_mail.vers.c \
 	win32/BUILDING \
 	win32/generate.bat \
 	win32/maildrop.cpp \
@@ -67,10 +70,10 @@ EXTRA_DIST = \
 	win32/maildrop.rc \
 	win32/maildrop.rgs \
 	win32/mpl.c \
+	win32/OpenX/*.txt \
 	win32/OpenX/BUILDING \
 	win32/OpenX/Dialogs.ifs \
 	win32/OpenX/maildrop.iss \
 	win32/OpenX/odbc_mail.ini \
-	win32/OpenX/readme.txt \
 	win32/register.bat \
 	win32/smtpreg.vbs
