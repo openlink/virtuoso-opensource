@@ -255,6 +255,8 @@ directory_init() {
   cp -f $HOME/docsrc/releasenotes/*                             vad/data/demo/releasenotes
   cp -f drop_petshop.sql                                        vad/data/demo/sql
   cp -f grant_select.sql                                        vad/data/demo/sql
+  cp -f nw.owl                                                  vad/data/demo/sql
+  cp -f load_ontology_dav.sql                                   vad/data/demo/sql
   cp -f mkdemo_vad.sql                                          vad/data/demo/sql
   cp -f $HOME/binsrc/tutorial/rdfview/rd_v_1/rd_v_1.sql         vad/data/demo/sql
   cp -f sql_rdf.sql                                             vad/data/demo/sql
@@ -439,6 +441,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/rd_v_1.sql', 1, 'report', 1);" >> $STICKER  
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/virt_thalia.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/rdf_thalia.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/load_ontology_dav.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER

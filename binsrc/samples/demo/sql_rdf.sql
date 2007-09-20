@@ -54,7 +54,7 @@ create iri class northwind:Shipper "http://^{URIQADefaultHost}^/Northwind/Shippe
 create iri class northwind:Supplier "http://^{URIQADefaultHost}^/Northwind/Supplier/%d#this" (in supplier_id integer not null) .
 create iri class northwind:Product   "http://^{URIQADefaultHost}^/Northwind/Product/%d#this" (in product_id integer not null) .
 create iri class northwind:Customer "http://^{URIQADefaultHost}^/Northwind/Customer/%U#this" (in customer_id varchar not null) .
-create iri class northwind:Employee "http://^{URIQADefaultHost}^/Northwind/Employee/%d#this" (in employee_id integer not null) .
+create iri class northwind:Employee "http://^{URIQADefaultHost}^/Northwind/Employee/%U%U%d#this" (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null) .
 create iri class northwind:Order "http://^{URIQADefaultHost}^/Northwind/Order/%d#this" (in order_id integer not null) .
 create iri class northwind:CustomerContact "http://^{URIQADefaultHost}^/Northwind/CustomerContact/%U#this" (in customer_id integer not null) .
 create iri class northwind:OrderLine "http://^{URIQADefaultHost}^/Northwind/OrderLine/%d/%d#this" (in order_id integer not null, in product_id integer not null) .
@@ -210,7 +210,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                 northwind:Country (customers.Country)
                         northwind:is_country_of
                 northwind:Customer (customers.CustomerID) as virtrdf:Customer-is_country_of .
-                northwind:Employee (employees.EmployeeID)
+                
+                northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID)
                         a foaf:Person
                                 as virtrdf:Employee-EmployeeID ;
                         foaf:surname employees.LastName
@@ -249,22 +250,25 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:Employee-extension ;
                         northwind:notes employees.Notes
                                 as virtrdf:Employee-notes ;
-                        northwind:reportsTo northwind:Employee(employees.ReportsTo)
+                        northwind:reportsTo northwind:Employee(employees.FirstName, employees.LastName, employees.ReportsTo) where (^{employees.}^.ReportsTo = ^{employees.}^.EmployeeID)
                                 as virtrdf:Employee-reports_to .
-                northwind:Employee (orders.EmployeeID)
+
+                northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID)
                         northwind:is_salesrep_of
-                northwind:Order (orders.OrderID) as virtrdf:Order-is_salesrep_of .
+                northwind:Order (orders.OrderID) where (^{orders.}^.EmployeeID = ^{employees.}^.EmployeeID) as virtrdf:Order-is_salesrep_of .
+
                 northwind:Country (employees.Country)
                         northwind:is_country_of
-                northwind:Employee (employees.EmployeeID) as virtrdf:Employee-is_country_of .
+                northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID) as virtrdf:Employee-is_country_of .
+
                 northwind:Order (orders.OrderID)
                         a northwind:Order
                                 as virtrdf:Order-Order ;
                         northwind:has_customer northwind:Customer (orders.CustomerID)
                                 as virtrdf:Order-order_has_customer ;
-                        northwind:has_salesrep northwind:Employee (orders.EmployeeID)
+                        northwind:has_salesrep northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID) where (^{orders.}^.EmployeeID = ^{employees.}^.EmployeeID)
                                 as virtrdf:Customer-has_salesrep ;
-                        northwind:has_employee northwind:Employee (orders.EmployeeID)
+                        northwind:has_employee northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID) where (^{orders.}^.EmployeeID = ^{employees.}^.EmployeeID)
                                 as virtrdf:Order-order_has_employee ;
                         northwind:orderDate orders.OrderDate
                                 as virtrdf:Order-order_date ;
