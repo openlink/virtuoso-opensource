@@ -56,7 +56,7 @@ noinst_HEADERS = \
 	wiservic.h wi_xid.h xmlenc_algos.h xmlenc.h xmlenc_test.h xmlgen.h \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
 	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h \
-	json_p.h
+	json_p.h bif_audio_tags.h
 
 
 generated_code = \
@@ -911,7 +911,9 @@ EXTRA_DIST = \
 	2pc_client.c \
 	bif_kerberoscli.c \
 	bif_mts.c \
+	bif_gnw.c \
 	bif_purify.c \
+	crypt.c \
 	iodbcinst.c \
 	jso_reformat.awk \
 	list_lex_props.sh \
