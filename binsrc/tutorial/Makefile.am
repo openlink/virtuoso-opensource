@@ -24,7 +24,7 @@ TOP=@TOP@
 SUBDIRS = . apps hosting services web xml
 
 if WITH_BPEL_VAD
-nodist_vad_DATA = tutorial_filesystem.vad tutorial_dav.vad
+nodist_vad_DATA = tutorial_dav.vad
 endif
 
 CLEANFILES = tutorial_filesystem.vad tutorial_dav.vad

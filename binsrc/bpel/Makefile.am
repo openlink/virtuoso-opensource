@@ -22,7 +22,7 @@
 TOP=@TOP@
 
 if WITH_BPEL_VAD
-nodist_vad_DATA = bpel_dav.vad bpel_filesystem.vad
+nodist_vad_DATA = bpel_dav.vad
 endif
 
 BUILD_FILES = bpel_dav.vad bpel_filesystem.vad

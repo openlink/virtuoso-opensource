@@ -21,8 +21,7 @@
 
 TOP=@TOP@
 
-nodist_vad_DATA = conductor_filesystem.vad conductor_dav.vad
-
+nodist_vad_DATA = conductor_dav.vad
 
 noinst_SCRIPTS = mkvad.sh
 CLEANFILES =  \
