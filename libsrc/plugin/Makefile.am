@@ -96,6 +96,7 @@ generated_code = \
 
 $(generated_code): Makefile gen_all_gates.sh gen_gate.sh
 	cd $(top_srcdir)/libsrc/plugin; ./gen_all_gates.sh
+	-rm -rf tmp
 
 BUILT_SOURCES 	= $(generated_code)
 CLEANFILES	= $(generated_code)
