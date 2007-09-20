@@ -45,6 +45,7 @@ rm -f wierr.rep1 wierr.rep2 wierr.rep3
 rm -f noise.txt
 rm -f $SRVMSGLOGFILE
 rm -rf classlib
+rm -f tdav_meta_rdf_checks.sql
 
 #
 #  Remove databases
