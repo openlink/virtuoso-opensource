@@ -20,7 +20,7 @@
 #  
 TOP=@TOP@
 
-nodist_demo_DATA = demo.db demo.ini
+noinst_DATA = demo.db demo.ini
 nodist_vad_DATA = doc_dav.vad demo_dav.vad
 
 if WITH_HTMLDOC
@@ -30,13 +30,18 @@ endif
 
 install-data-local:
 	mkdir -p "$(dbdir)"
-	$(INSTALL_DATA) default.ini "$(dbdir)"/virtuoso.ini
+	$(INSTALL_DATA) default.ini "$(DESTDIR)$(dbdir)"/virtuoso.ini
+if WITH_HTMLDOC
 	mkdir -p "$(htmldocdir)"
-	$(INSTALL_DATA) $(top_srcdir)/docsrc/html_virt/*.html "$(htmldocdir)"
+	$(INSTALL_DATA) $(top_srcdir)/docsrc/html_virt/*.html "$(DESTDIR)$(htmldocdir)"
+endif
 
 uninstall-local:
-	rm -f "$(dbdir)/virtuoso.ini"
-	rm -f "$(htmldocdir)"/*.html
+	rm -f "$(DESTDIR)$(dbdir)/virtuoso.ini"
+if WITH_HTMLDOC
+	rm -f "$(DESTDIR)$(htmldocdir)"/*.html
+endif
+
 
 CLEANFILES =  \
 	*.log \
@@ -75,9 +80,10 @@ doc_dav.vad: mkdoc.sh mksearch.sql drop.sql mkdemo.ini
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HTMLDOC="$(HTMLDOC)" \
 	     HOST=localhost sh mkdoc.sh
 
-demo_dav.vad: make_vad.sh
+demo_dav.vad: make_vad.sh $(EXTRA_DIST)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HTMLDOC="$(HTMLDOC)" \
 	     HOST=localhost sh make_vad.sh
+
 
 
 # ----------------------------------------------------------------------
@@ -86,6 +92,7 @@ demo_dav.vad: make_vad.sh
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	*.owl \
 	*.sql \
 	*.txt \
 	art.tar.gz \
@@ -112,5 +119,4 @@ EXTRA_DIST = \
 	mkdemo.ini \
 	mkdemo.sh \
 	mkdoc.sh \
-	nw.owl \
 	vad_version
