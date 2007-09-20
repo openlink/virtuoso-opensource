@@ -46,10 +46,10 @@ create procedure rdf_import (
       pFolder := DB.DBA.DAV_HOME_DIR(pUser);
       if (isstring (pFolder)) {
         pFolder := pFolder || 'Uploads/';
-        DB.DBA.DAV_MAKE_DIR (pFolder, user_id, null, '110100100NN');
+        DB.DBA.DAV_MAKE_DIR (pFolder, user_id, user_id, '110100100NN');
   
         pFolder := pFolder || 'RDF/';
-        DB.DBA.DAV_MAKE_DIR (pFolder, user_id, null, '110100100NN');
+        DB.DBA.DAV_MAKE_DIR (pFolder, user_id, user_id, '110100100NN');
       }
     }
     -- RDF
@@ -58,7 +58,7 @@ create procedure rdf_import (
 
     content := '';
     S := sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', DB.DBA.wa_cname (), pGraph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml');
-    rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (pFolder, content, 'text/xml', '111101101NN', http_dav_uid (), http_dav_uid () + 1, pUser, pPassword, 1);
+    rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (pFolder, content, 'text/xml', '111101101NN', user_id, user_id, pUser, pPassword, 1);
     if (isnull (DAV_HIDE_ERROR (rc)))
   	  signal ('ODS12', DAV_PERROR (rc));
     rc := DB.DBA.DAV_PROP_SET_INT (pFolder, 'redirectref', S, pUser, pPassword, 1, 0, 1);
