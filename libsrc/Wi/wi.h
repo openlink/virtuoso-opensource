@@ -1101,6 +1101,8 @@ struct buffer_desc_s
   char * 		bd_leave_file;
   long 			bd_leave_line;
   char 			bd_el_flag;	/* what operation was last: 1-enter, 2-leave */
+  char *                bd_set_wr_file;
+  long                  bd_set_wr_line;
 #endif
 #ifdef PAGE_TRACE
   long		bd_trx_no;
@@ -1155,6 +1157,8 @@ struct buffer_desc_s
 { \
   (bd)->bd_is_write = f;			    \
   (bd)->bd_writer = f ? THREAD_CURRENT_THREAD : NULL;	\
+  (bd)->bd_set_wr_file = __FILE__; \
+  (bd)->bd_set_wr_line = __LINE__; \
 }
 #else
 #define BD_SET_IS_WRITE(bd, f) \
