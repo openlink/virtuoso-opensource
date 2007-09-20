@@ -737,6 +737,7 @@ create type DB.DBA.Facebook as (
   _lines       any
   
 )
+self as ref
   constructor method Facebook(api_key varchar,secret varchar,_params any, _lines any),
   method validate_fb_params () returns any,
   method get_valid_fb_params(params any, timeout any, namespace any) returns any,
@@ -1007,12 +1008,23 @@ for DB.DBA.Facebook
     
     if(auth_res is not null)
     {
-      if( auth_res[1] is not null and auth_res[0] is not null and locate(cast(auth_res[1] as varchar),cast(auth_res[0] as varchar))>0)
+--      if( auth_res[1] is not null and auth_res[0] is not null and locate(cast(auth_res[1] as varchar),cast(auth_res[0] as varchar))>0)
+      if( auth_res[1] is not null and auth_res[0] is not null)
       {
+          
           self._user:=auth_res[1];
+--          if(not locate(cast(auth_res[1] as varchar),cast(auth_res[0] as varchar))>0)
+--          {
+--            dbg_obj_print('2',self.api_client.auth_getSession(auth_token));
+--            dbg_obj_print(auth_res[0]);
+--            dbg_obj_print(split_and_decode(auth_res[0],0,'\0\0-')[0]||'-'||cast(auth_res[1] as varchar));
+--            return split_and_decode(auth_res[0],0,'\0\0-')[0]||'-'||cast(auth_res[1] as varchar);            
+--            return split_and_decode(auth_res[0],0,'\0\0-')[0]||'-'||split_and_decode(auth_res[0],0,'\0\0-')[1];            
+--          }
       return auth_res[0];
           
-      }else self.redirect(self.get_login_url(self.current_url(), self.in_frame(),0)); --this action is due to facebook issue(facebook site generates invalid auth token in some cases)
+      }
+--      else self.redirect(self.get_login_url(self.current_url(), self.in_frame(),0)); --this action is due to facebook issue(facebook site generates invalid auth token in some cases)
     }
     return '';
  

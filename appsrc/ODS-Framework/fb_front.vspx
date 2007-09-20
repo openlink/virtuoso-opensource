@@ -40,10 +40,14 @@
       <vm:subnavigation-new on="site"/>
       <v:variable name="_fb" type="DB.DBA.Facebook"/>
       <v:variable name="_fb_isset" type="integer"/>
+      <v:variable name="_fb_usernotcorrespond" type="integer"/>
+
       <v:variable name="_dhtml" type="any" />
       <vm:body>
         <v:before-data-bind>
         <![CDATA[
+          declare _cookies any;
+          _cookies:=vsp_ua_get_cookie_vec(lines);
         
           declare _http_query_str varchar;
           _http_query_str:=http_request_get ('QUERY_STRING');
@@ -97,7 +101,7 @@
               select VS_UID,U_ID into _user_name,_user_id from DB.DBA.VSPX_SESSION, DB.DBA.SYS_USERS where VS_UID=U_NAME and VS_SID=self.sid;
           }     
             
-          declare _ods_fb_id integer;
+          declare _ods_fb_id,_fb_user_assocexist integer;
           _ods_fb_id:=null;
           if(_user_id is not null)
           {
@@ -125,14 +129,78 @@
           {
             
             declare _fb_user integer;
+            
+            if(length(_cookies)>0)
+            { declare _cfb_id integer;
+              declare _cfb_session varchar;
+              
+              _cfb_id:=cast(get_keyword('fb_user',_cookies,0) as integer);
+              _cfb_session:=get_keyword('fb_session',_cookies,'');
+
+              if(_cfb_id>0 and _cfb_session<>'' and (_cfb_id=_ods_fb_id or _ods_fb_id=0))
+              {
+               self._fb.set_user(_cfb_id,_cfb_session,now());
+               _fb_user :=_cfb_id;
+               goto skip_login;
+                
+              }
+
+            }
+            
+            
             _fb_user := self._fb.require_login(0);
             
+skip_login:;
+           
+            _fb_user_assocexist:=0;
+            if(_fb_user is not null and _fb_user>0
+               and
+               exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_FACEBOOK_ID=_fb_user)
+              )
+            {
+               _fb_user_assocexist:=1;
+            }
+
+
             -- change login when ODS user is logged but the facebook user that is associated is not the same as the one that is currently logged in.
            
-            if(_ods_fb_id is not null and _fb_user>0 and _ods_fb_id<>_fb_user)
+            
+            self._fb_usernotcorrespond:=0;
+--            if(_ods_fb_id is not null and _ods_fb_id>0 and _fb_user>0 and _ods_fb_id<>_fb_user)
+
+            if((_ods_fb_id is not null
+                 and _ods_fb_id>0
+                 and _fb_user>0
+                 and _ods_fb_id<>_fb_user
+               )
+               or
+               ( (_ods_fb_id is null or _ods_fb_id=0)
+                 and _fb_user>0
+                 and _fb_user_assocexist=1
+               )
+              )
             {
-              _fb_user := self._fb.require_login(1);
+--              _fb_user := self._fb.require_login(1);
+              self._fb_usernotcorrespond:=1;
             }
+            
+              declare _exp varchar;
+              _exp:=cast (dateadd('hour',1,now()) as varchar);
+
+            if(self._fb_usernotcorrespond)
+            {
+              http_header(concat (http_header_get (),
+                                  sprintf ('Set-Cookie: fb_user=;%s path=/\r\n'||'Set-Cookie: fb_session=;%s path=/\r\n', _exp,_exp)
+                                 )
+                         );
+            }else if( self._fb_usernotcorrespond=0 and _fb_user>0)
+            {
+              http_header(concat (http_header_get (),
+                                  sprintf ('Set-Cookie: fb_user=%d;%s path=/\r\n'||'Set-Cookie: fb_session=%s;%s path=/\r\n', self._fb._user,_exp,self._fb.api_client.session_key,_exp)
+                                 )
+                         );
+            } 
+
 
             if(get_keyword('assoc', params,null) is not null)
             {
@@ -326,7 +394,7 @@
         </v:before-data-bind>
         <v:login/>
 
-<v:template type='simple' enabled='--self._fb_isset'>
+<v:template type='simple' enabled='--case when self._fb_isset=1 and self._fb_usernotcorrespond=0 then 1 else 0 end'> 
 <script type="text/javascript">
 function dd(txt){
   if(typeof console == 'object'){
@@ -399,6 +467,16 @@ function dockAdd(win_title)
 <v:template type='simple' enabled='--(1-self._fb_isset)'>
 <div style="padding:10px;">ODS is not set up to use Facebook. Please contact ODS administrator.</div>
 </v:template>
+
+<v:template type='simple' enabled='--self._fb_usernotcorrespond'>
+ <?vsp
+   http_get ('http://www.facebook.com/logout.php',null, 'POST', 'User-Agent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)', 'confirm=1'); --,'127.0.0.1:8888'
+ ?>
+
+ <div style="padding:10px;">Facebook user that is currently logged in do not correspond to your ODS user.<br/> Please <a href="<?Vself._fb.get_login_url(self._fb.current_url(), self._fb.in_frame(),1)?>">login</a> as Facebook user that corresponds to your ODS user.</div>
+ 
+</v:template>
+
       </vm:body>
     </vm:pagewrapper>
   </vm:page>
