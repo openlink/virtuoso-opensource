@@ -2013,6 +2013,23 @@ create procedure CAL.WA.dt_WeekDay (
 
 -----------------------------------------------------------------------------------------
 --
+create procedure CAL.WA.dt_isWeekDay (
+  in dt datetime,
+  in weekStarts varchar := 'm')
+{
+  declare dw integer;
+
+  dw := CAL.WA.dt_WeekDay (dt, weekStarts);
+  if ((weekStarts = 'm') and (dw <= 5))
+    return 1;
+  if ((weekStarts = 's') and ((dw >= 2) and (dw <= 6)))
+    return 1;
+  return 0;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
 create procedure CAL.WA.dt_WeekName (
   in dt datetime,
   in weekStarts varchar := 'm',

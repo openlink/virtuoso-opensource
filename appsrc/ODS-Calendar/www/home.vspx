@@ -924,10 +924,11 @@
                             C := C || ' C_onmonth';
                           if (self.cDays[N] < 0)
                             C := C || ' C_offmonth';
-                          if (D < 5)
+                          if (CAL.WA.dt_isWeekDay (dt, self.cWeekStarts)) {
                             C := C || ' C_weekday2';
-                          if (D >= 5)
+                          } else {
                             C := C || ' C_weekend';
+                          }
                           if (CAL.WA.dt_compare (dt, curdate ()))
                             C := C || ' C_today';
                           http (sprintf ('<div onclick="cSelect(this)" id="d_day_%d_%d" class="CE_cell_header%s">%s %d</div>', W, D, C, CAL.WA.dt_WeekName (dt, self.cWeekStarts, 0), abs (self.cDays [N])));
@@ -986,10 +987,11 @@
                           C := C || ' C_onmonth';
                         if (self.cDays[N] < 0)
                           C := C || ' C_offmonth';
-                        if (D < 5)
+                        if (CAL.WA.dt_isWeekDay (dt, self.cWeekStarts)) {
                           C := C || ' C_weekday2';
-                        if (D >= 5)
+                        } else {
                           C := C || ' C_weekend';
+                        }
                         if (CAL.WA.dt_compare (dt, curdate ()))
                           C := C || ' C_today';
                         http (sprintf ('<div onclick="cSelect(this)" id="d_day_%d_%d" class="CE_cell_header%s">%d</div>', W, D, C, abs (self.cDays [N])));
@@ -1519,26 +1521,17 @@
                         S := '';
                         if (self.v_event = 1)
                           S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="e_event" id="e_event_0" value="1" %s  onchange="javascript: shCell(\'e_eventStartTime\'); shCell(\'e_eventEndTime\');"/>', S));
+                              http(sprintf('<input type="checkbox" name="e_event" id="e_event" value="1" %s onchange="javascript: shCell(\'e_eventStartTime\'); shCell(\'e_eventEndTime\');" />', S));
                       ?>
                     </td>
                     <td nowrap="nowrap" width="1%" colspan="2">
-                      <xsl:call-template name="nbsp"/><vm:label for="e_event_0" value="--'All day event'" />
+                            <xsl:call-template name="nbsp" /><vm:label for="e_event" value="--'All day event'" />
                     </td>
                   </tr>
                   <tr>
-                    <td>
-                      <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_event = 0)
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="e_event" id="e_event_1" value="0" %s onchange="javascript: shCell(\'e_eventStartTime\'); shCell(\'e_eventEndTime\');"/>', S));
-                      ?>
-                    </td>
+                          <td />
                     <td  width="1%" align="right">
-                      <vm:label for="e_event_1" value="--'From'" />
+                            From
                     </td>
                     <td>
                       <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
@@ -1572,7 +1565,7 @@
                   <tr>
                     <td />
                     <td  width="1%" align="right">
-                      <vm:label for="e_event_1" value="--'To'" />
+                            To
                     </td>
                     <td>
                       <v:text name="e_eventEndDate" xhtml_id="e_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
@@ -1616,7 +1609,7 @@
               </td>
             </tr>
             <tr>
-              <th>
+                  <th valign="top">
                 <v:label for="e_description" value="Description"/>
               </th>
               <td>

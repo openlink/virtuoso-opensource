@@ -51,7 +51,7 @@
   	<script type="text/javascript">
         // CalendarPopup
         var cPopup = new CalendarPopup('cDiv');
-        cPopup.isShowYearNavigation = true;
+        cPopup.weekStartDay = <?V case when self.cWeekStarts = 's' then 0 else 1 end ?>;
         
         // publics
       	var deleteDialog;

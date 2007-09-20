@@ -329,15 +329,17 @@
                 C := C || ' C_offmonth';
               dt := self.nCalcDate (N);
               if ((dt >= self.cStart) and (dt <= self.cEnd)) {
-                if (D < 5)
+                if (CAL.WA.dt_isWeekDay (dt, self.cWeekStarts)) {
                   C := C || ' C_weekday_selected';
-                if (D >= 5)
+                } else {
                   C := C || ' C_weekend_selected';
+                }
               } else {
-                if (D < 5)
+                if (CAL.WA.dt_isWeekDay (dt, self.cWeekStarts)) {
                   C := C || ' C_weekday';
-                if (D >= 5)
+                } else {
                   C := C || ' C_weekend';
+              }
               }
               if (CAL.WA.dt_compare (self.cnMonth, CAL.WA.dt_BeginOfMonth (curdate ())))
                 if (CAL.WA.dt_compare (dt, curdate ()))
