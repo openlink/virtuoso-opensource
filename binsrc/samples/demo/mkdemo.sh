@@ -230,118 +230,29 @@ LOAD_SQL()
 }
 
 
-MAKE_WS()
-{
-  DO_COMMAND "USER_CREATE ('SOAP', uuid(), vector ('DISABLED', 1))" dba dba
-  DO_COMMAND "user_set_qualifier('SOAP', 'WS')" dba dba
-
-  DO_COMMAND "grant select on Demo.demo.Customers     to SOAP" dba dba
-  DO_COMMAND "grant select on Demo.demo.Orders        to SOAP" dba dba
-  DO_COMMAND "grant select on Demo.demo.Order_Details to SOAP" dba dba
-  DO_COMMAND "grant select on Demo.demo.Products      to SOAP" dba dba
-  DO_COMMAND "grant select on Demo.demo.Categories    to SOAP" dba dba
-}
-
-
-LOAD_XML_DAV()
-{
-  doc_col_fs_path=$1
-  doc_col_dav_path=$2
-  _cvs_entries='CVS/Entries'
-
-#  ECHO "CVS ENTRIES in " $HOME/docsrc$doc_col_fs_path$_cvs_entries
-  doc_files=`cat $HOME/docsrc$doc_col_fs_path$_cvs_entries | grep '^[^D]' | cut -f 2 -d '/'`
-#  ECHO "DOC FILES :" $doc_files
-
-  ECHO "Building sql script for loading $doc_col_fs_path files"
-
-  echo "DAV_COL_CREATE ('$doc_col_dav_path', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" > $TEMPFILE
-
-  cd $HOME/docsrc/$doc_col_fs_path
-
-  for filename in $doc_files
-    do
-      echo "select DAV_RES_UPLOAD ('$doc_col_dav_path$filename', file_to_string ('$HOME/docsrc$doc_col_fs_path$filename'), '', '110100100R', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-      echo "ECHO BOTH \$IF \$GT \$LAST[1] 0 "PASSED" "***FAILED";" >> $TEMPFILE
-      echo "ECHO BOTH \": $filename upload\\n\";" >> $TEMPFILE
-  done
-
-  LOAD_SQL $TEMPFILE dba dba
-  rm $TEMPFILE
-
-  cd $DEMO
-}
-
-LOAD_DOC_IMAGES_DAV ()
-{
-
-    for f in `find docsrc/images -type d | grep -v '/CVS' | cut -b8-`
-     do
-       echo "select DB.DBA.DAV_COL_CREATE ('/DAV/doc/$f/', '110100100N', 'dav','dav', 'dav', 'dav');" >> $TEMPFILE
-     done
-    for f in `find docsrc/images/ -type f | grep -v '/CVS/' | cut -b8-`
-     do
-       echo "select DB.DBA.DAV_RES_UPLOAD ('/DAV/doc/$f', file_to_string ('docsrc/$f'), '', '110100100N', 'dav', 'dav', 'dav', 'dav');" >> $TEMPFILE
-     done
-
-  LOAD_SQL $TEMPFILE dba dba
-  rm $TEMPFILE
-}
-
-
-#
-# make the whole documentation into an XPER
-#
-
-XSL_TRANSFORM ()
-{
-  xml_src=$1
-  xsl_stylesheet=$2
-  dst=$3
-  src_path=$4
-  xsl_params=$5
-
-
-  echo "SRC: $xml_src"
-  echo "SRCPATH: $src_path"
-  if test $MAKEDOCS -eq 1
-    then
-      DO_COMMAND "WS.WS.XML_ENTITY_TO_FILE (xslt ('$xsl_stylesheet', \
-                                        xtree_doc (file_to_string ('$xml_src'), 0, \
-						   '$src_path',
-                                                   'UTF8', \
-                                                   'en-US',
-                                                   'BuildStandalone=ENABLE IdDupe=IGNORE IdCache=ENABLE'), \
-				        vector ($xsl_params)), \
-				  '$dst');"
-    fi
-}
-
-DUMP_XML_ENTITY ()
-{
-  xml_src=$1
-  src_path=$2
-  dst=$3
-
-
-  echo "SRC: $xml_src"
-  echo "DST: $dst"
-  echo "WS.WS.XML_ENTITY_TO_FILE (xtree_doc (file_to_string ('$xml_src'), 0,\
-					     'src_path',
-                                             'UTF8', \
-                                             'en-US',
-                                             'IdDupe=IGNORE IdCache=ENABLE'), '$dst');" > $TEMPFILE
-
-  LOAD_SQL $TEMPFILE dba $DBPWD
-  rm $TEMPFILE
-
-
-}
-
 #==============================================================================
 #  MAIN ROUTINE
 #==============================================================================
 rm -f demo.db demo.trx demo.log demo.lck mkdemo.output virtuoso.ini
+
+if [ $VOS -eq 1 ]
+then
+    if [ "x$HOST_OS" = "x" ]
+    then
+	(cd $BPEL; make)
+	(cd $HOME/binsrc/samples/sparql_demo ; make)
+	(cd $HOME/binsrc/isparql ; make)
+	(cd $HOME/binsrc/tutorial ; make)
+	(cd $HOME/binsrc/yacutia ; make)
+	(cd $HOME/binsrc/rdf_mappers ; make)
+	(cd $HOME/binsrc/samples/image_magick ; make)
+	(cd $HOME/appsrc ; make)
+    fi
+else
+    (cd $BPEL; make )
+    [ -f doc_dav.vad ] || (chmod +x mkdoc.sh ; ./mkdoc.sh)
+fi
+
 
 BANNER "CREATING DEMO DATABASE (mkdemo.sh)"
 
@@ -355,29 +266,6 @@ if [ $? -eq 127 ] ; then
     ECHO "***ABORTED: CREATING DEMO DATABASE, server is not available"
     exit 1
 fi
-
-if [ $VOS -eq 1 ]
-then
-    if [ "x$HOST_OS" = "x" ]
-    then
-        (cd $BPEL; make)
-        (cd $HOME/binsrc/samples/sparql_demo ; make)
-        (cd $HOME/binsrc/isparql ; make)
-        (cd $HOME/binsrc/tutorial ; make)
-        (cd $HOME/binsrc/yacutia ; make)
-        (cd $HOME/binsrc/rdf_mappers ; make)
-	(cd $HOME/binsrc/samples/image_magick ; make)
-	(cd $HOME/appsrc ; make)
-    fi
-else
-    (cd $BPEL; make )
-    [ -f doc_dav.vad ] || (chmod +x mkdoc.sh ; ./mkdoc.sh)
-fi
-
-# curpwd=`pwd`
-# cd $HOME/binsrc/sqldoc
-# vspx_doc.sh
-# cd "$curpwd"
 
 cat mkdemo.ini | sed -e "s/1112/$PORT/g" | sed -e "s/1113/$HTTPPORT/g" > virtuoso.ini
 
@@ -427,331 +315,14 @@ cat $HOME/bin/installer/demo.ini | sed -e "s/DEMOSQLPORT/$DEMOSQLPORT/g" -e "s/D
 cat $HOME/bin/installer/virtuoso.ini | sed -e "s/DBSQLPORT/$DBSQLPORT/g" -e "s/DBHTTPPORT/$DBHTTPPORT/g" -e "s/HOSTNAMEREPLACEME/$HOSTNAME/g" -e "s/ZNAME/$HOSTNAME:$DBSQLPORT/g" -e "s/[A-Z]*SAFEREPLACEME/;/g" -e "s/\.\.\/bin\/hosting/$PLUGINDIR/g" -e "s/URIQAREPLACEME/$HOSTNAME:$DBHTTPPORT/g" > default.ini
 fi
 
-$RM -rf flags flags.tar
-cat flags.tar.gz | gunzip - > flags.tar
-tar -xf flags.tar
-
-$RM -rf art art.tar
-cat art.tar.gz | gunzip - > art.tar
-tar -xf art.tar
 
 STOP_SERVER
 START_SERVER
 
 #
-#  Load the content of the demo database
+#  Check status
 #
-BREAK
-LOAD_SQL mkdemo.sql dba dba
-LOAD_SQL countries.sql dba dba
-LOAD_SQL art.sql dba dba
-
-$RM -rf flags flags.tar
-$RM -rf art art.tar
-
-#
-#  Load MIME
-#
-#BREAK
-# XXX: no longer available
-#LOAD_SQL $HOME/binsrc/vsp/mime/mimeddl.sql dba dba
-
-
-#
-#  Load DAV
-#
-BREAK
-MAKE_WS
-
-
-#
-#  Load XML Documents and images
-#
-BREAK
- LOAD_XML_DAV "/xmlsource/"		"/DAV/docsrc/"
- LOAD_XML_DAV "/xmlsource/DocBook/"	"/DAV/docsrc/DocBook/"
- LOAD_XML_DAV "/xmlsource/DocBook/ent/"	"/DAV/docsrc/DocBook/ent/"
- LOAD_XML_DAV "/images/"			"/DAV/images/"
- LOAD_XML_DAV "/images/tree/"		"/DAV/images/tree/"
- LOAD_XML_DAV "/images/misc/"		"/DAV/images/misc/"
- LOAD_XML_DAV "/stylesheets/"		"/DAV/stylesheets/"
- LOAD_XML_DAV "/releasenotes/"		"/DAV/releasenotes/"
- LOAD_XML_DAV "/xmlsource/funcref/"	"/DAV/docsrc/funcref/"
-
- filename=doc.css
- doc_col_fs_path='/stylesheets/sections/'
- echo "DAV_RES_UPLOAD ('/DAV/docsrc/$filename', file_to_string ('$HOME/docsrc$doc_col_fs_path$filename'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" > $TEMPFILE
- LOAD_SQL $TEMPFILE dba dba
- rm $TEMPFILE
-
- filename=openlink.css
- doc_col_fs_path='/stylesheets/sections/'
- echo "DAV_RES_UPLOAD ('/DAV/docsrc/$filename', file_to_string ('$HOME/docsrc$doc_col_fs_path$filename'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" > $TEMPFILE
-
- LOAD_SQL $TEMPFILE dba dba
- rm $TEMPFILE
-
-
-#
-# Create the docos
-#
-
-#BANNER "Generating Kubl documentation"
-
-# $RM docsrc
-# $LN $HOME/docsrc docsrc
-# $LN $HOME/binsrc/vspx vspx
-
-# if [ "x$HOST_OS" != "x" ]
-# then
-# rm -rf docsrc/html_virt
-# mkdir docsrc/html_virt
-# cp $HOME/docsrc/stylesheets/sections/*.css docsrc/html_virt
-# else
-# rm -rf $HOME/docsrc/html_virt
-# mkdir $HOME/docsrc/html_virt
-# cp $HOME/docsrc/stylesheets/sections/*.css $HOME/docsrc/html_virt
-# fi
-
-
-#
-#LOAD_SQL mkdoc.sql dba dba
-#
-#ECHO "Generating the chapters"
-#
-#for i in `cat docsrc/bin/chapter_list.txt`;
-#  do ECHO "Transforming $i:";XSL_TRANSFORM $HOME/docsrc/xmlsource/virtdocs.xml \
-#file://docsrc/stylesheets/html_virt_mp_book.xsl docsrc/html_virt/$i.html \
-#file://docsrc/xmlsource/ "'chap','$i'";ECHO "Done.";done
-#
-#ECHO "Creating chapter menus"
-#XSL_TRANSFORM docsrc/xmlsource/virtdocs.xml file://docsrc/stylesheets/html_virt_chaptermenu.xsl \
-#docsrc/html_virt/chaptermenu.html file://docsrc/xmlsource/
-#
-#ECHO ""
-#XSL_TRANSFORM docsrc/xmlsource/virtdocs.xml file://docsrc/stylesheets/html_virt_mp_chaptermenu.xsl \
-#docsrc/html_virt/chaptermenu_virt_mp.html file://docsrc/xmlsource/
-#
-#ECHO ""
-#ECHO "Creating monolithic virtdocs.html"
-#XSL_TRANSFORM docsrc/xmlsource/virtdocs.xml file://docsrc/stylesheets/html_virt.xsl \
-#docsrc/html_virt/virtdocs.html file://docsrc/xmlsource/ "'renditionmode','one_file'"
-#
-##ECHO "Creating XUL Overlays"
-#
-##XSL_TRANSFORM docsrc/xmlsource/virtdocs.xml file://docsrc/stylesheets/xul_virt_chaptermenu.xsl \
-##docsrc/xul/virtdocs_chaptermenu.xul ""
-#
-##XSL_TRANSFORM docsrc/xmlsource/virtdocs.xml file://docsrc/stylesheets/xul_virt_tree.xsl \
-##docsrc/xul/virtdocs_tree.xul
-#
-
-# if test $HTMLDOCS -eq 1
-# then
-
-# LOAD_SQL mkvspxdoc.sql dba dba
-
-# LOAD_SQL mkdoc_new.sql dba dba
-
-# LOAD_SQL mksearch.sql dba dba
-
-# LOAD_DOC_IMAGES_DAV
-
-# under cygwin html_virt is a copy (see above LN)
-# if [ "x$HOST_OS" != "x" ]
-# then
-#     for _fil in `ls docsrc/html_virt`
-#     do
-#       chmod 644 docsrc/html_virt/$_fil
-#     done
-#     rm -rf $HOME/docsrc/html_virt
-#     cp -a docsrc/html_virt $HOME/docsrc/.
-#     cp docsrc/pdf/*.html $HOME/docsrc/pdf/.
-# fi
-
-# fi
-
-# $RM docsrc
-
-#ECHO "Prepare the doc package"
-
-#(./mkdoc.sh; cat mkdoc.output >> mkdemo.output)
-
-#BREAK
-
-#
-#  Load SOAP
-#
-BREAK
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/fishselect.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/soap_validator.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/interop-xsd.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/round2.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/round3-D.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/round3-E.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/round3-F.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/r4/dime-doc.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/r4/dime-rpc.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/r4/mime-doc.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/r4/mime-rpc.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/r4/simple-doc-literal.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/r4/simple-rpc-encoded.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/r4/complex-rpc-encoded.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/r4/complex-doc-literal.sql dba dba
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/r4/xsd.sql dba dba
-$RM r4
-$LN $HOME/binsrc/vsp/soapdemo/r4 r4
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/r4/load_xsd.sql dba dba
-$RM r4
-LOAD_SQL $HOME/binsrc/vsp/soapdemo/interop_client.sql
-
-# Web Application registration model
-#LOAD_SQL $HOME/binsrc/samples/wa/hosted_services.sql
-
-#
-#  Load XMLSQL
-#
-BREAK
-cp -f $HOME/binsrc/tests/suite/emp.xsl .
-cp -f $HOME/binsrc/tests/suite/emp_my.xsl .
-cp -f $HOME/binsrc/tests/suite/docsrc/html_v.xsl .
-cp -f $HOME/binsrc/tests/suite/docsrc/html_common_v.xsl .
-LOAD_SQL $HOME/binsrc/tests/suite/xmlsql.sql dba dba
-rm -f emp.xsl emp_my.xsl html_v.xsl html_common_v.xsl
-
-#
-#  Load XML
-#
-BREAK
-
-#  Trick to load the documents
-$LN $HOME/binsrc/tests/suite/docsrc docsrc
-
-#  Now we can run the scripts from here
-LOAD_SQL $HOME/binsrc/tests/suite/nwxml.sql dba dba
-LOAD_SQL $HOME/binsrc/tests/suite/nwxml2.sql dba dba
-
-#  Remove the temporary link
-$RM docsrc
-$RM vspx
-
-
-#
-#  XML DAV view
-#
-BREAK
-#DO_COMMAND "DAV_COL_CREATE ('/DAV/xmlviews/', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav')" dba dba
-#DO_COMMAND "XML_VIEW_PUBLISH ('cat', '/xmlviews/cat.xml', 'dav', 0, 0, 0, NULL)" dba dba
-#DO_COMMAND "XML_VIEW_PUBLISH ('cat', '/xmlviews/persistent-cat.xml', 'dav', 1, 0, 0, NULL)" dba dba
-
-#
-# Tutotials
-#
-rm -rf tutorial
-mkdir tutorial
-mkdir tutorial/xml
-mkdir tutorial/xml/usecases
-cp -f $HOME/binsrc/tutorial/*.vsp tutorial
-cp -f $HOME/binsrc/tutorial/xml/usecases/* tutorial/xml/usecases
-LOAD_SQL $HOME/binsrc/tutorial/setup_tutorial.sql dba dba
-LOAD_SQL $HOME/binsrc/tutorial/xml/usecases/usecases.sql
-rm -rf tutorial
-
-#
-# eNews
-#
-LOAD_SQL $HOME/binsrc/samples/webapp/eNews/eNews.sql dba dba
-
-#
-# Forums
-#
-LOAD_SQL $HOME/binsrc/samples/webapp/forums/def.sql dba dba
-LOAD_SQL $HOME/binsrc/samples/webapp/forums/func.sql dba dba
-
-#
-# HW simulator
-#
-#LOAD_SQL $HOME/binsrc/samples/ft_articles/sql4enews/article_copy_ddl.sql dba dba
-#LOAD_SQL $HOME/binsrc/samples/ft_articles/sql4enews/article_copy.sql dba dba
-#LOAD_SQL $HOME/binsrc/samples/ft_articles/sql4enews/eNews2article.sql dba dba
-
-#
-# IBuySpy
-#
-LOAD_SQL $HOME/binsrc/samples/IBuySpy/PortalDB.sql demo demo
-LOAD_SQL $HOME/binsrc/samples/IBuySpy/PortalDB_data.sql demo demo
-LOAD_SQL $HOME/binsrc/samples/IBuySpy/PortalDB_proc.sql demo demo
-LOAD_SQL $HOME/binsrc/samples/IBuySpy/StoreDB_schema.sql demo demo
-LOAD_SQL $HOME/binsrc/samples/IBuySpy/StoreDB_data.sql demo demo
-LOAD_SQL $HOME/binsrc/samples/IBuySpy/StoreDB_proc.sql demo demo
-DO_COMMAND "VHOST_DEFINE (lpath=>'/PortalCSVS', ppath=>'/IBuySpy/PortalCSVS/', def_page=>'Default.aspx', vsp_user=>'dba')" dba dba
-DO_COMMAND "VHOST_DEFINE (lpath=>'/StoreCSVS', ppath=>'/IBuySpy/StoreCSVS/', def_page=>'Default.aspx', vsp_user=>'dba')" dba dba
-
-#
-# PetShop
-#
-LOAD_SQL $HOME/binsrc/samples/petshop/CreateDBLogin1.sql dba dba
-LOAD_SQL $HOME/binsrc/samples/petshop/CreateTables1.sql petshop password
-LOAD_SQL $HOME/binsrc/samples/petshop/CreateTables2.sql petshop password
-LOAD_SQL $HOME/binsrc/samples/petshop/LoadTables1.sql petshop password
-DO_COMMAND "VHOST_DEFINE (lpath=>'/PetShop', ppath=>'/PetShop/Web/', def_page=>'Default.aspx', vsp_user=>'dba')" dba dba
-DO_COMMAND "drop user petshop" dba dba
-
-#
-# XQuery demo
-#
-# XPERs
-# This is part of tutorial vad now
-#$RM $HOME/binsrc/samples/xquery/data
-#$LN $HOME/binsrc/tests/wb/inputs/XqW3cUseCases $HOME/binsrc/samples/xquery/data
-#LOAD_SQL $HOME/binsrc/samples/xquery/presetup.sql dba dba
-#LOAD_SQL $HOME/binsrc/samples/xquery/desk.sql dba dba
-#LOAD_SQL $HOME/binsrc/samples/xquery/metadata.sql dba dba
-#LOAD_SQL $HOME/binsrc/samples/xquery/R-tables.sql dba dba
-#
-#
-#ECHO "Building sql script for loading xqdemo files"
-#
-#echo "DAV_COL_CREATE ('/DAV/xqdemo/', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" > $TEMPFILE
-#echo "DAV_COL_CREATE ('/DAV/factbook/', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#echo "DAV_COL_CREATE ('/DAV/feeds/', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#files=`ls $HOME/binsrc/samples/xquery/data|grep -v CVS`
-#for i in $files
-#do
-#   echo "DAV_RES_UPLOAD ('/DAV/xqdemo/$i', file_to_string ('$HOME/binsrc/samples/xquery/data/$i'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#done
-#
-#   echo "DAV_RES_UPLOAD ('/DAV/factbook/factbook.xml', file_to_string ('$HOME/binsrc/tutorial/services/so_s_11/factbook.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss1.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss1.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss2.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss2.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss3.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss3.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss4.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss4.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss5.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss5.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss6.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss6.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss7.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss7.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss8.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss8.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss9.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss9.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss10.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss10.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss11.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss11.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss12.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss12.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss13.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss13.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#   echo "DAV_RES_UPLOAD ('/DAV/feeds/rss14.xml', file_to_string ('$HOME/binsrc/tutorial/hosting/xq_s_2a/rss14.xml'), '', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', 'dav');" >> $TEMPFILE
-#
-#LOAD_SQL $TEMPFILE dba dba
-#rm $TEMPFILE
-#
-#LOAD_SQL $HOME/binsrc/samples/xquery/postsetup.sql dba dba
-
-DO_COMMAND "delete from SYS_REPL_ACCOUNTS" dba dba
-
-#
-# Check security
-#
-LOAD_SQL check_demo.sql dba dba
-
 RUN $ISQL $DSN dba dba '"EXEC=status();"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
-
 if test $STATUS -ne 0
 then
   ECHO "***FAILED: status()"
@@ -761,12 +332,8 @@ else
   ECHO "PASSED: status()"
 fi
 
-#
-#  Checkpoint and shutdown the demo database
-#
-
 BREAK
-
+ECHO "Collecting and installing VAD packages"
 
 $LN $BPEL/bpel_dav.vad .
 $LN $HOME/binsrc/samples/sparql_demo/sparql_demo_dav.vad .
@@ -775,19 +342,20 @@ $LN $HOME/binsrc/tutorial/tutorial_dav.vad .
 $LN $HOME/binsrc/yacutia/conductor_dav.vad .
 $LN $HOME/binsrc/rdf_mappers/rdf_mappers_dav.vad .
 
-DO_COMMAND "vad_install ('doc_dav.vad')" dba dba
-DO_COMMAND "vad_install ('bpel_dav.vad')" dba dba
-DO_COMMAND "vad_install ('sparql_demo_dav.vad')" dba dba
-DO_COMMAND "vad_install ('isparql_dav.vad')" dba dba
-DO_COMMAND "vad_install ('tutorial_dav.vad')" dba dba
 DO_COMMAND "vad_install ('conductor_dav.vad')" dba dba
+DO_COMMAND "vad_install ('bpel_dav.vad')" dba dba
+DO_COMMAND "vad_install ('demo_dav.vad')" dba dba
+DO_COMMAND "vad_install ('doc_dav.vad')" dba dba
+DO_COMMAND "vad_install ('isparql_dav.vad')" dba dba
 DO_COMMAND "vad_install ('rdf_mappers_dav.vad')" dba dba
+DO_COMMAND "vad_install ('sparql_demo_dav.vad')" dba dba
+DO_COMMAND "vad_install ('tutorial_dav.vad')" dba dba
 
+#
+#  OpenLink Data Spaces
+#
 if [ $VOS -eq 1 ]
 then
-    #
-    #  OpenLink Data Spaces
-    #
     for f in `find $HOME/appsrc -name '*_dav.vad' -print`
     do
 	$LN $f .
@@ -797,6 +365,7 @@ then
     DO_COMMAND "vad_install ('ods_blog_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_bookmark_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_briefcase_dav.vad')" dba dba
+    DO_COMMAND "vad_install ('ods_calendar_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_community_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_discussion_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_feedmanager_dav.vad')" dba dba
@@ -804,32 +373,46 @@ then
     DO_COMMAND "vad_install ('ods_polls_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_webmail_dav.vad')" dba dba
     DO_COMMAND "vad_install ('ods_wiki_dav.vad')" dba dba
-    DO_COMMAND "delete from wa_domains where WD_DOMAIN = 'localhost'" dba dba
 fi
 
+DO_COMMAND "delete from wa_domains where WD_DOMAIN = 'localhost'" dba dba
 
 DO_COMMAND checkpoint
 DO_COMMAND shutdown
 
+BREAK
 
-#
-# Dump and restore the db to remove the free pages
-#
+ECHO "Dump and restore the db to remove the free pages"
 
 rm -f demo.trx 
 chmod 644 demo.db
 
 sleep 10
 
-$SERVER -b -f
+RUN "$SERVER" -b -f
+if test $STATUS -ne 0
+then
+  ECHO "***FAILED: dump demo.db"
+  rm -f demo.db demo.trx demo.log demo.lck virtuoso.pxa
+  exit 1
+else
+  ECHO "PASSED: dump demo.db"
+fi
 
 rm -f demo.db 
 
-$SERVER -R -f
+RUN "$SERVER" -R -f
+if test $STATUS -ne 0
+then
+  ECHO "***FAILED: restore demo.db"
+  rm -f demo.db demo.trx demo.log demo.lck virtuoso.pxa
+  exit 1
+else
+  ECHO "PASSED: restore demo.db"
+fi
 
-#
-#  Clean ups
-#
+
+ECHO "Cleanups"
 
 rm -f demo.trx demo.log virtuoso.ini
 chmod 644 demo.db
