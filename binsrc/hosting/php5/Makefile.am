@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2007 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -27,10 +27,12 @@ if HAVE_PHP5
 bin_PROGRAMS = virtuoso-php5-t $(VIRT_IODBC)
 endif
 
-BUILT_SOURCES = ksrvext.h 
+BUILT_SOURCES	= ksrvext.h sql_code_php.c
+CLEANFILES	= ksrvext.h sql_code_php.c
 
 virtuoso_php5_t_SOURCES = \
-	bif_server_php.c
+	bif_server_php.c \
+	sql_code_php.c
 
 virtuoso_php5_t_CFLAGS  = @VIRT_AM_CFLAGS@ $(php5_CFLAGS)
 virtuoso_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc
@@ -43,14 +45,15 @@ virtuoso_php5_t_CFLAGS  += -D_PHP -DZTS -DPTHREADS
 virtuoso_php5_t_LDFLAGS  = $(VIRT_AM_LDFLAGS) 
 
 virtuoso_php5_t_LDADD = \
-	$(php5_LDFLAGS) -lxml2 \
+	$(php5_LDFLAGS) \
         ../../virtuoso/libvirtuoso-t.la \
 	@LIBS@ \
+	@XML_LIBS@
 	-lm
 
-
 virtuoso_iodbc_php5_t_SOURCES = \
-	bif_server_php.c
+	bif_server_php.c \
+	sql_code_php.c
 
 virtuoso_iodbc_php5_t_CFLAGS  = @VIRT_AM_CFLAGS@ $(php5_CFLAGS)
 virtuoso_iodbc_php5_t_CFLAGS  += -I$(top_srcdir)/libsrc
@@ -63,14 +66,26 @@ virtuoso_iodbc_php5_t_CFLAGS  += -D_PHP -DZTS -DPTHREADS
 virtuoso_iodbc_php5_t_LDFLAGS  = $(VIRT_AM_LDFLAGS)
 
 virtuoso_iodbc_php5_t_LDADD = \
-	$(php5_LDFLAGS) -lxml2 \
+	$(php5_LDFLAGS) \
 	$(iodbc_LDFLAGS) \
         ../../virtuoso/libvirtuoso-t.la \
 	@LIBS@ \
+	@XML_LIBS@
 	-lm
+
+#
+#  Generated code
+#
+GEN=${top_srcdir}/bin/generate
+
+sql_code_php.c: $(srcdir)/php.sql $(top_srcdir)/libsrc/Wi/sql_to_c.awk
+	@${GEN} ${GAWK} \
+		-o sql_code_php.c \
+		-f $(top_srcdir)/libsrc/Wi/sql_to_c.awk \
+		-v init_name=_php \
+		-v pass_bootstrap_cli=1 \
+		-v pl_stats=$(PLSTATS) \
+		$(srcdir)/php.sql
 
 ksrvext.h:
 	$(LN_S) ../../../libsrc/Wi/ksrvext.h ksrvext.h
-
-clean-local:
-	rm -rf ksrvext.h
