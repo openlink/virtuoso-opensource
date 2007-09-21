@@ -2169,8 +2169,8 @@ _grddl:;
   	      if (xrc > 0)
             goto _rdf_graph_resource;
 	      }
-	    }
       try_next_mapper:;
+    }
     }
 
     if (is_rdf) {
