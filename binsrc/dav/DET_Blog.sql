@@ -104,7 +104,7 @@ create procedure "Blog_PARSE_COMMENTS_NAME" (in fullname varchar, out title_patt
 
 create function "Blog_CHANNEL_DESC_NAMES" () returns any
 {
-  return vector ('atom.xml', 'foaf.xml', 'index.ocs', 'index.opml', 'index.rdf', 'rss.xml', 'xbel.xml');
+  return vector ('atom.xml', 'index.ocs', 'index.opml', 'index.rdf', 'rss.xml', 'xbel.xml');
 }
 ;
 
