@@ -68,7 +68,7 @@ alter table DB.DBA.RDF_OBJ add RO_DIGEST any
 create table DB.DBA.RDF_DATATYPE (
   RDT_IID IRI_ID not null primary key,
   RDT_TWOBYTE integer not null unique,
-  RDT_QNAME varchar )
+  RDT_QNAME varchar not null unique )
 ;
 
 create table DB.DBA.RDF_LANGUAGE (
@@ -241,7 +241,7 @@ create procedure DB.DBA.RDF_64BIT_UPGRADE ()
   exec ('create table DB.DBA.RDF_DATATYPE_NEW (
   RDT_IID IRI_ID_8 not null primary key,
   RDT_TWOBYTE integer not null,
-  RDT_QNAME varchar )');
+  RDT_QNAME varchar not null )');
   exec ('create table DB.DBA.RDF_OBJ_NEW (
   RO_ID integeR primary key,
   RO_VAL varchar,
@@ -1084,13 +1084,13 @@ create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := 
     {
       if (isiri_id (shortobj))
         return null;
-      return cast (__xsd_type (shortobj, dflt) as varchar);
+      return iri_to_id (__xsd_type (shortobj, dflt));
     }
   twobyte := rdf_box_type (shortobj);
   if (257 = twobyte)
-    return case (rdf_box_lang (shortobj)) when 257 then dflt else null end;
+    return case (rdf_box_lang (shortobj)) when 257 then iri_to_id (dflt) else null end;
   whenever not found goto badtype;
-  select RDT_QNAME into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
+  select RDT_IID into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
   return res;
 
 badtype:
@@ -1404,7 +1404,29 @@ badtype:
 }
 ;
 
-create function DB.DBA.RDF_DATATYPE_OF_LONG (in longobj any, in dflt varchar := 'http://www.w3.org/2001/XMLSchema#string') returns any
+create function DB.DBA.RDF_DATATYPE_OF_LONG (in longobj any, in dflt any := UNAME'http://www.w3.org/2001/XMLSchema#string') returns any
+{
+  if (246 = __tag (longobj))
+    {
+      declare twobyte integer;
+      declare res varchar;
+      twobyte := rdf_box_type (longobj);
+      if (257 = twobyte)
+        return case (rdf_box_lang (longobj)) when 257 then iri_to_id (dflt) else null end;
+      whenever not found goto badtype;
+      select RDT_IID into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
+      return res;
+
+badtype:
+  signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RDF_DATATYPE_OF_LONG, bad id %d', twobyte));
+    }
+  if (isiri_id (longobj))
+    return NULL;
+  return iri_to_id (__xsd_type (longobj, dflt));
+}
+;
+
+create function DB.DBA.RDF_DATATYPE_IRI_OF_LONG (in longobj any, in dflt any := UNAME'http://www.w3.org/2001/XMLSchema#string') returns any
 {
   if (246 = __tag (longobj))
     {
@@ -1418,11 +1440,11 @@ create function DB.DBA.RDF_DATATYPE_OF_LONG (in longobj any, in dflt varchar := 
       return res;
 
 badtype:
-  signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RDF_DATATYPE_OF_LONG, bad id %d', twobyte));
+  signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RDF_DATATYPE_IRI_OF_LONG, bad id %d', twobyte));
     }
   if (isiri_id (longobj))
     return NULL;
-  return cast (__xsd_type (longobj, dflt) as varchar);
+  return __xsd_type (longobj, dflt);
 }
 ;
 
@@ -1509,7 +1531,9 @@ create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any)
 ;
 
 --!AWK PUBLIC
-create function DB.DBA.RDF_DATATYPE_OF_SQLVAL (in v any, in strg_datatype any := 0, in default_res any := NULL) returns varchar
+create function DB.DBA.RDF_DATATYPE_OF_SQLVAL (in v any,
+  in strg_datatype any := UNAME'http://www.w3.org/2001/XMLSchema#string',
+  in default_res any := NULL) returns any
 {
   if (246 = __tag (v))
     {
@@ -1517,15 +1541,15 @@ create function DB.DBA.RDF_DATATYPE_OF_SQLVAL (in v any, in strg_datatype any :=
       declare res varchar;
       twobyte := rdf_box_type (v);
       if (257 = twobyte)
-        return case (rdf_box_lang (v)) when 257 then strg_datatype else null end;
+        return case (rdf_box_lang (v)) when 257 then iri_to_id (strg_datatype) else null end;
       whenever not found goto badtype;
-      select RDT_QNAME into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
+      select RDT_IID into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
       return res;
 
 badtype:
   signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RDF_DATATYPE_OF_SQLVAL, bad id %d', twobyte));
     }
-  return cast (__xst_type (v, strg_datatype, default_res) as varchar);
+  return iri_to_id (__xsd_type (v, strg_datatype, default_res));
 }
 ;
 
@@ -2541,7 +2565,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC (inout _env any, in
         {
 	  declare lang, dt varchar;
 	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val, null);
-	  dt := DB.DBA.RDF_DATATYPE_OF_LONG (_val, null);
+	  dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
 	  if (lang is not null)
 	    {
 	      if (dt is not null)
@@ -6501,7 +6525,7 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
               goto end_of_binding;
 	    }
 	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val, null);
-	  dt := DB.DBA.RDF_DATATYPE_OF_LONG (_val, null);
+	  dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
 	  if (lang is not null)
 	    {
 	      if (dt is not null)
@@ -6609,7 +6633,7 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
               goto end_of_binding;
 	    }
 	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val, null);
-	  dt := DB.DBA.RDF_DATATYPE_OF_LONG (_val, null);
+	  dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
 	  if (lang is not null)
 	    {
 	      if (dt is not null)
@@ -9248,6 +9272,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_SQLVAL_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_BOOL_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_DATATYPE_OF_LONG to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_DATATYPE_IRI_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_LANGUAGE_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_STRSQLVAL_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_LONG_OF_SQLVAL to SPARQL_SELECT',
