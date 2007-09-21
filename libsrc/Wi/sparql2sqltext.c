@@ -980,9 +980,9 @@ ssg_equiv_native_qmv (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq)
       triple = sparp_find_triple_of_var (ssg->ssg_sparp, gp, var);
 #ifdef DEBUG
       if (SPAR_TRIPLE != SPART_TYPE (triple))
-        spar_internal_error (ssg->ssg_sparp, "ssg_" "equiv_native_valmode(): bad tabid of a variable");
+        spar_internal_error (ssg->ssg_sparp, "ssg_" "equiv_native_qvm(): bad tabid of a variable");
       if (NULL == triple->_.triple.tc_list)
-        spar_internal_error (ssg->ssg_sparp, "ssg_" "equiv_native_valmode(): NULL == qm_list");
+        spar_internal_error (ssg->ssg_sparp, "ssg_" "equiv_native_qvm(): NULL == qm_list");
 #endif
       tr_idx = var->_.var.tr_idx;
       tr_qmv = SPARP_FIELD_QMV_OF_QM (triple->_.triple.tc_list[0]->tc_qm, tr_idx);
@@ -1124,9 +1124,15 @@ ssg_expn_native_qmv (spar_sqlgen_t *ssg, SPART *tree)
     case SPAR_LIT:
     case SPAR_QNAME:
     /*case SPAR_QNAME_NS:*/
-    case SPAR_BUILT_IN_CALL:
     case SPAR_FUNCALL:
       return NULL;
+    case SPAR_BUILT_IN_CALL:
+      switch (tree->_.builtin.btype)
+        {
+        case STR_L: case LANG_L: return SSG_VALMODE_SQLVAL;
+        case IRI_L: case DATATYPE_L: return SSG_VALMODE_LONG;
+        default: return NULL;
+        }
     case SPAR_CONV:
       {
         if (!IS_BOX_POINTER (tree->_.conv.needed) || !IS_BOX_POINTER (tree->_.conv.native))
@@ -1213,7 +1219,7 @@ ssg_expn_native_valmode (spar_sqlgen_t *ssg, SPART *tree)
         {
         case IN_L: case LIKE_L: case LANGMATCHES_L: case REGEX_L: case BOUND_L:
 	case isIRI_L: case isURI_L: case isBLANK_L: case isLITERAL_L: return SSG_VALMODE_BOOL;
-        case IRI_L: return SSG_VALMODE_LONG;
+        case IRI_L: case DATATYPE_L: return SSG_VALMODE_LONG;
         default: return SSG_VALMODE_SQLVAL;
         }
     case SPAR_FUNCALL:
@@ -2004,10 +2010,20 @@ vmodes_found:
 }
 
 void
-ssg_print_bop_calc_expn (spar_sqlgen_t *ssg, SPART *tree, const char *s1, const char *s2, const char *s3)
+ssg_print_bop_calc_expn (spar_sqlgen_t *ssg, SPART *tree, const char *s1, const char *s2, const char *s3, ssg_valmode_t needed)
 {
   SPART *left = tree->_.bin_exp.left;
   SPART *right = tree->_.bin_exp.right;
+  if (SSG_VALMODE_LANGUAGE == needed)
+    {
+      ssg_puts (" NULL");
+      return;
+    }
+  if ((SSG_VALMODE_LONG != needed) && (SSG_VALMODE_SQLVAL != needed))
+    {
+      ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, NULL);
+      return;
+    }
   ssg_puts (s1);
   ssg_print_scalar_expn (ssg, left, SSG_VALMODE_SQLVAL, NULL_ASNAME);
   ssg_puts (s2);
@@ -2207,8 +2223,8 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         return;
       }
     case DATATYPE_L:
-      if (SSG_VALMODE_SQLVAL != needed)
-        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+      if (SSG_VALMODE_LONG != needed)
+        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_LONG, NULL_ASNAME);
       else
         ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_DATATYPE, NULL_ASNAME);
       return;
@@ -2774,16 +2790,16 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
     needed = ssg_expn_native_valmode (ssg, tree);
   switch (SPART_TYPE (tree))
     {
-    case BOP_AND:	ssg_print_bop_bool_expn (ssg, tree, " AND "	, " __and ("	, 0, SSG_VALMODE_BOOL); goto print_asname;
-    case BOP_OR:	ssg_print_bop_bool_expn (ssg, tree, " OR "	, " __or ("	, 0, SSG_VALMODE_BOOL); goto print_asname;
-    case BOP_EQ:	ssg_print_bop_bool_expn (ssg, tree, " = "	, " equ ("	, 0, SSG_VALMODE_BOOL); goto print_asname;
-    case BOP_NEQ:	ssg_print_bop_bool_expn (ssg, tree, " <> "	, " neq ("	, 0, SSG_VALMODE_BOOL); goto print_asname;
-    case BOP_LT:	ssg_print_bop_bool_expn (ssg, tree, " < "	, " lt ("	, 0, SSG_VALMODE_BOOL); goto print_asname;
-    case BOP_LTE:	ssg_print_bop_bool_expn (ssg, tree, " <= "	, " lte ("	, 0, SSG_VALMODE_BOOL); goto print_asname;
-    case BOP_GT:	ssg_print_bop_bool_expn (ssg, tree, " > "	, " gt ("	, 0, SSG_VALMODE_BOOL); goto print_asname;
-    case BOP_GTE:	ssg_print_bop_bool_expn (ssg, tree, " >= "	, " gte ("	, 0, SSG_VALMODE_BOOL); goto print_asname;
+    case BOP_AND:	ssg_print_bop_bool_expn (ssg, tree, " AND "	, " __and ("	, 0, needed); goto print_asname;
+    case BOP_OR:	ssg_print_bop_bool_expn (ssg, tree, " OR "	, " __or ("	, 0, needed); goto print_asname;
+    case BOP_EQ:	ssg_print_bop_bool_expn (ssg, tree, " = "	, " equ ("	, 0, needed); goto print_asname;
+    case BOP_NEQ:	ssg_print_bop_bool_expn (ssg, tree, " <> "	, " neq ("	, 0, needed); goto print_asname;
+    case BOP_LT:	ssg_print_bop_bool_expn (ssg, tree, " < "	, " lt ("	, 0, needed); goto print_asname;
+    case BOP_LTE:	ssg_print_bop_bool_expn (ssg, tree, " <= "	, " lte ("	, 0, needed); goto print_asname;
+    case BOP_GT:	ssg_print_bop_bool_expn (ssg, tree, " > "	, " gt ("	, 0, needed); goto print_asname;
+    case BOP_GTE:	ssg_print_bop_bool_expn (ssg, tree, " >= "	, " gte ("	, 0, needed); goto print_asname;
    /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP!
-			ssg_print_bop_bool_expn (ssg, tree, " like "	, " strlike ("	, 0, SSG_VALMODE_BOOL); goto print_asname; */
+			ssg_print_bop_bool_expn (ssg, tree, " like "	, " strlike ("	, 0, needed); goto print_asname; */
 /*
     case BOP_SAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")"); goto print_asname;
     case BOP_NSAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")"); goto print_asname;
@@ -2806,11 +2822,11 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
           spar_sqlprint_error ("ssg_print_scalar_expn (): unsupported mode for 'not(X)'");
         goto print_asname;
       }
-    case BOP_PLUS:	ssg_print_bop_calc_expn (ssg, tree, " (", " + ", ")"); goto print_asname;
-    case BOP_MINUS:	ssg_print_bop_calc_expn (ssg, tree, " (", " - ", ")"); goto print_asname;
-    case BOP_TIMES:	ssg_print_bop_calc_expn (ssg, tree, " (", " * ", ")"); goto print_asname;
-    case BOP_DIV:	ssg_print_bop_calc_expn (ssg, tree, " div (", ", ", ")"); goto print_asname;
-    case BOP_MOD:	ssg_print_bop_calc_expn (ssg, tree, " mod (", ", ", ")"); goto print_asname;
+    case BOP_PLUS:	ssg_print_bop_calc_expn (ssg, tree, " (", " + ", ")", needed); goto print_asname;
+    case BOP_MINUS:	ssg_print_bop_calc_expn (ssg, tree, " (", " - ", ")", needed); goto print_asname;
+    case BOP_TIMES:	ssg_print_bop_calc_expn (ssg, tree, " (", " * ", ")", needed); goto print_asname;
+    case BOP_DIV:	ssg_print_bop_calc_expn (ssg, tree, " div (", ", ", ")", needed); goto print_asname;
+    case BOP_MOD:	ssg_print_bop_calc_expn (ssg, tree, " mod (", ", ", ")", needed); goto print_asname;
     case SPAR_BLANK_NODE_LABEL:
     case SPAR_VARIABLE:
       {
@@ -3147,8 +3163,8 @@ ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree)
 /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP!
 			ssg_print_bop_bool_expn (ssg, tree, " LIKE "	, " strlike ("	, 1, SSG_VALMODE_BOOL); return; */
 /*
-    case BOP_SAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")"); return;
-    case BOP_NSAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")"); return;
+    case BOP_SAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")", 1, SSG_VALMODE_BOOL); return;
+    case BOP_NSAME:	ssg_print_bop_bool_expn (ssg, tree, "(", "= ", ")", 1, SSG_VALMODE_BOOL); return;
 */
     case BOP_NOT:
       ssg_puts (" not ("); ssg_print_filter_expn (ssg, tree->_.bin_exp.left); ssg_putchar (')');
