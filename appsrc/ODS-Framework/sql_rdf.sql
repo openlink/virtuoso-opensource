@@ -111,6 +111,148 @@ create procedure rdf_import (
 }
 ;
 
+-- 
+--
+create procedure rdf_import_ext (
+  in pSource varchar,
+  in pSourceMimeType varchar := null,
+  in pSourceType varchar := 'URL',
+  in pSpongerMode integer := 1,
+  in pGraph varchar := null,
+  in pUser varchar := null,
+  in pPassword varchar := null,
+  in pFolder varchar := null)
+{
+  declare retValue, rc, user_id integer;
+	declare S, content, hdr any;
+	
+  if (pSourceType not in ('string', 'URL'))
+	  signal ('ODS13', 'Content source must be \'string\' or \'URL\'');
+  if ((pSourceType = 'string') and isnull (pSourceMimeType))
+	  signal ('ODS13', 'Mime Type must be set when content is string');
+  if ((pSourceType = 'string') and isnull (pGraph))
+	  signal ('ODS13', 'Graph must be set when content is string');
+	  
+  user_id := null;
+  if (not isnull (pUser)) {
+    user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = pUser and pwd_magic_calc (U_NAME, U_PASSWORD, 1) = pPassword);
+    if (isnull (user_id))
+  	  signal ('ODS11', 'Bad user name or password');
+  }
+  if (isnull (pGraph))
+    pGraph := pSource;
+  if (not isnull (user_id)) {
+    if (isnull (pFolder)) {
+      pFolder := DB.DBA.DAV_HOME_DIR(pUser);
+      if (isstring (pFolder)) {
+        pFolder := pFolder || 'Uploads/';
+        DB.DBA.DAV_MAKE_DIR (pFolder, user_id, user_id, '110100100NN');
+  
+        pFolder := pFolder || 'RDF/';
+        DB.DBA.DAV_MAKE_DIR (pFolder, user_id, user_id, '110100100NN');
+      }
+    }
+    -- RDF
+    pFolder := pFolder || replace ( replace ( replace ( replace ( replace ( replace ( replace (pGraph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
+    DB.DBA.DAV_DELETE_INT (pFolder, 1, null, null, 0);
+
+    content := '';
+    S := sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', DB.DBA.wa_cname (), pGraph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml');
+    rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (pFolder, content, 'text/xml', '111101101NN', user_id, user_id, pUser, pPassword, 1);
+    if (isnull (DAV_HIDE_ERROR (rc)))
+  	  signal ('ODS12a', DAV_PERROR (rc));
+    rc := DB.DBA.DAV_PROP_SET_INT (pFolder, 'redirectref', S, pUser, pPassword, 1, 0, 1);
+    if (isnull (DAV_HIDE_ERROR (rc)))
+  	  signal ('ODS12b', DAV_PERROR (rc));
+  }
+  
+  -- get count before
+  retValue := (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph));
+  
+  if (pSourceType = 'URL' and pSpongerMode) {
+    exec (sprintf ('SPARQL define get:soft "soft" define get:uri "%s" SELECT * FROM <%s> WHERE { ?s ?p ?o }', pSource, pGraph));
+  } else { 
+    if (pSourceType = 'URL') {
+      commit work;
+    	content := http_get (pSource, hdr, 'GET');
+    	if (hdr[0] not like 'HTTP%200%')
+    	  signal ('22023', hdr[0]);
+    	if (isnull (pSourceMimeType))  
+        pSourceMimeType := http_request_header (hdr, 'Content-Type');    	  
+    }	else {
+    	content := pSource;
+    }  
+  
+    if (pSourceMimeType in ('application/rdf+xml', 'application/foaf+xml')) {
+      if (pSpongerMode) {
+        declare xt any;
+  
+        xt := xtree_doc (content);
+        if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
+          goto _sponger;
+      }
+      DB.DBA.RDF_LOAD_RDFXML (content, pGraph, pGraph);
+      goto _end;
+    }
+    if (pSourceMimeType in ('text/rdf+n3', 'text/rdf+ttl', 'application/rdf+n3', 'application/rdf+turtle', 'application/turtle', 'application/x-turtle')) {
+      DB.DBA.TTLP (content, pGraph, pGraph);
+      goto _end;
+    }
+  
+  _sponger:;
+    if (pSpongerMode) {
+      declare aq, ps, xrc any;
+  
+      aq := null;
+      ps := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'PingService');
+      if (length (ps))
+        aq := async_queue (1);
+  
+      for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do {
+        declare val_match, pcols, npars any;
+  
+        if (RM_TYPE = 'MIME') {
+          val_match := pSourceMimeType;
+        } else {
+          val_match := null;
+        }
+        if (isstring (val_match) and regexp_match (RM_PATTERN, val_match) is not null)	{
+          if (__proc_exists (RM_HOOK) is null)
+            goto _next_mapper;
+  
+          declare exit handler for sqlstate '*' {
+            goto _next_mapper;
+          };
+  
+          pcols := DB.DBA.RDF_PROC_COLS (RM_HOOK);
+          npars := 8;
+          if (isarray (pcols))
+            npars := length (pcols);
+  	      if (npars = 7) {
+            xrc := call (RM_HOOK) (pGraph, pGraph, null, content, aq, ps, RM_KEY);
+          } else {
+            xrc := call (RM_HOOK) (pGraph, pGraph, null, content, aq, ps, RM_KEY, RM_OPTIONS);
+          }
+  	      if (xrc > 0)
+            goto _end;
+        }
+      _next_mapper:;
+      }
+    }
+  }
+
+_end:;  
+  -- get count after
+  retValue := (select count(*) from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (pGraph)) - retValue;
+  if (retValue <= 0) {
+    retValue := 0;
+    if (not isnull (pFolder))
+      DB.DBA.DAV_DELETE_INT (pFolder, 1, null, null, 0);
+  }
+  return retValue;
+}
+;
+
 -- Helpers
 --
 create procedure ODS_SPARQL_QM_RUN (in txt varchar, in sig int := 1, in fl int := 0)
