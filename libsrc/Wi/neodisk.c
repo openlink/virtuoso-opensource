@@ -167,14 +167,6 @@ cpt_rollback (int may_freeze)
 }
 
 
-typedef struct server_lock_s
-{
-  int		sl_count;
-  du_thread_t *	sl_owner;
-  dk_set_t	sl_waiting;
-} server_lock_t;
-
-
 server_lock_t server_lock;
 
 
@@ -873,7 +865,7 @@ cpt_place_buffers ()
 	      buf->bd_is_dirty = 0;
 	  buf->bd_storage = NULL;
 	}
-    }
+	}
       clrhash (&cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_dp_to_buf);
       mutex_leave (&cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_mtx);
     }
@@ -901,7 +893,7 @@ cpt_preread_unremaps (int stay_inside)
 	  mcp_itc->itc_tree = cpt_dbs->dbs_cpt_tree;
 	  buf = dbs_buf_by_dp (cpt_dbs, mcp_remap_ptrs[i]->rm_logical);
 	  if (!buf)
-	    {
+	{
 	  ITC_IN_KNOWN_MAP (mcp_itc, mcp_remap_ptrs[i]->rm_logical);
 	  page_wait_access (mcp_itc, mcp_remap_ptrs[i]->rm_logical, NULL, &buf, PA_WRITE, RWG_WAIT_ANY);
 	  if (!buf || PF_OF_DELETED == buf)
@@ -1058,7 +1050,7 @@ dbs_checkpoint (dbe_storage_t * dbs, char *log_name, int shutdown)
   END_DO_BOX;
   iq_shutdown (IQ_SYNC);
     }
-
+    
   IN_TXN;
   cpt_rollback (LT_KILL_FREEZE);
   iq_shutdown (IQ_STOP);

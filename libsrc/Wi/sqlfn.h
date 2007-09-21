@@ -348,6 +348,15 @@ void client_connection_set_worker_ses (client_connection_t *cli, dk_session_t *s
 
 void srv_close (void);
 
+typedef struct server_lock_s
+{
+  int		sl_count;
+  du_thread_t *	sl_owner;
+  dk_set_t	sl_waiting;
+} server_lock_t;
+
+extern server_lock_t server_lock;
+
 void plh_free (placeholder_t * plh);
 
 caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...)

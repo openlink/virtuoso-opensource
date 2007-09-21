@@ -24,6 +24,7 @@
 
 #include "sqlnode.h"
 #include "sqlbif.h"
+#include "sqlfn.h"
 #include "aqueue.h"
 #include "security.h"
 
@@ -407,6 +408,8 @@ bif_aq_request  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t f_args = bif_strict_array_or_null_arg (qst, args, 2, "aq_request");
   caddr_t unsafe_subtree;
   caddr_t aq_args;
+  if (0 != server_lock.sl_count)
+    sqlr_new_error ("22023", "SR567", "Function aq_request() can not be used inside atomic section");
   if (!f_args)
     sqlr_new_error ("42000", "AQ001", "Must have arguments for aq_request()");
   unsafe_subtree = box_find_mt_unsafe_subtree (f_args);
@@ -433,6 +436,8 @@ bif_aq_wait  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t err = NULL;
   query_instance_t * qi = (query_instance_t *) qst;
   caddr_t val;
+  if (0 != server_lock.sl_count)
+    sqlr_new_error ("22023", "SR568", "Function aq_wait() can not be used inside atomic section");
   if (qi->qi_trx->lt_locks)
     sqlr_new_error ("40010", "AQ003", "Not allowed to wait for AQ while holding locks");
   IO_SECT (qst);
@@ -458,6 +463,8 @@ bif_aq_wait_all  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t err = NULL;
   async_queue_t * aq = bif_aq_arg (qst, args, 0, "aq_wait");
   query_instance_t * qi = (query_instance_t *) qst;
+  if (0 != server_lock.sl_count)
+    sqlr_new_error ("22023", "SR569", "Function aq_wait_all() can not be used inside atomic section");
   if (qi->qi_trx->lt_locks)
     sqlr_new_error ("40010", "AQ003", "Not allowed to wait for AQ while holding locks");
   IO_SECT (qst);
