@@ -176,7 +176,7 @@ check_redir:
       _etag := WS.WS.FIND_KEYWORD (_resp, 'ETag:');
       WS.WS.LOCAL_STORE (_host, _url, _root, _content, _etag, _c_type, store_flag);
       if (try_to_get_rdf)
-        WS.WS.VFS_EXTRACT_RDF (_host, _start_url, _udata, _url, _content, _c_type);
+        WS.WS.VFS_EXTRACT_RDF (_host, _root, _start_url, _udata, _url, _content, _c_type, _header, _resp);
     }
   else if (_tmp = '401')
     {
@@ -1794,10 +1794,48 @@ create procedure WS.WS.VFS_GO (in url varchar)
 ;
 
 
-create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _start_path varchar, in opts any, in url varchar, inout content any, in ctype varchar)
+create procedure
+WS.WS.VFS_URI_COMPOSE (in res any)
 {
-  declare mime_type, _graph, _base varchar;
+  declare _full_path, _elm varchar;
+  declare idx integer;
+
+  if (length (res) < 6)
+    signal ('.....', 'WS.WS.VFS_URI_COMPOSE needs a vector of strings with 6 elements');
+
+  idx := 0;
+  _elm := '';
+  _full_path := '';
+  while (idx < 6)
+    {
+      _elm := res[idx];
+      if (isstring (_elm) and _elm <> '')
+  {
+    if (idx = 0)
+      _full_path := concat (_elm, ':');
+    else if (idx = 1)
+      _full_path := concat (_full_path, '//', _elm);
+    else if (idx = 2)
+      _full_path := concat (_full_path, _elm);
+    else if (idx = 3)
+      _full_path := concat (_full_path, ';', _elm);
+    else if (idx = 4)
+      _full_path := concat (_full_path, '?', _elm);
+    else if (idx = 5)
+      _full_path := concat (_full_path, '#', _elm);
+  }
+      idx := idx + 1;
+    }
+
+  return _full_path;
+}
+;
+
+create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _start_path varchar, in opts any, in url varchar, inout content any, in ctype varchar, inout outhdr any, inout inhdr any)
+{
+  declare mime_type, _graph, _base, out_arr, tmp varchar;
   declare html_start, xd any;
+  declare rc int;
 
   html_start := null;
 
@@ -1809,30 +1847,79 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _start_path varchar
     return;
   };
 
-  mime_type := DB.DBA.DAV_GUESS_MIME_TYPE (url, content, html_start);
+  -- RDF/XML or RDF/N3 depends on option
+  mime_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (url, ctype, content);
 
-  if (get_keyword ('meta_foaf', opts, 0) = 1 and mime_type = 'application/foaf+xml')
+  -- always true
+  if (1 and (get_keyword ('meta_rdf', opts, 0) = 1))
     {
-      DB.DBA.RDF_LOAD_RDFXML (content, '', _graph);
+      if (strstr (mime_type, 'application/rdf+xml') is not null)
+        DB.DBA.RDF_LOAD_RDFXML (content, url, _graph);
+      else if (
+       strstr (mime_type, 'text/rdf+n3') is not null or
+       strstr (mime_type, 'text/rdf+ttl') is not null or
+       strstr (mime_type, 'application/rdf+n3') is not null or
+       strstr (mime_type, 'application/rdf+turtle') is not null or
+       strstr (mime_type, 'application/turtle') is not null or
+       strstr (mime_type, 'application/x-turtle') is not null
+      )
+        DB.DBA.TTLP (content, url, _graph);
     }
-  else if (get_keyword ('meta_rss', opts, 0) = 1 and mime_type = 'application/rss+xml')
+
+  -- The rest is mappers work
+  for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS, WS.WS.VFS_SITE_RDF_MAP
+    where RM_ENABLED = 1 and VM_RDF_MAP = RM_PID and VM_HOST = _host and VM_ROOT = _root
+    order by VM_SEQ
+   do
     {
-      DB.DBA.RDF_LOAD_RDFXML (content, '', _graph);
+     declare val_match, pcols, new_opts, aq any;
+      if (RM_TYPE = 'MIME')
+	{
+	  val_match := mime_type;
     }
-  else if ((get_keyword ('meta_rdf', opts, 0) = 1) and mime_type = 'application/rdf+xml')
+      else if (RM_TYPE = 'URL' or RM_TYPE = 'HTTP')
     {
-      DB.DBA.RDF_LOAD_RDFXML (content, '', _graph);
+	  val_match := url;
     }
-  else if (mime_type = 'text/html' or ctype = 'text/html')
+      else
+	val_match := null;
+      aq := null;
+      if (isstring (val_match) and regexp_match (RM_PATTERN, val_match) is not null)
     {
-      if (get_keyword ('meta_grddl', opts, 0) = 1 and __proc_exists ('DB.DBA.RDF_LOAD_HTML_RESPONSE'))
+	  if (__proc_exists (RM_HOOK) is null)
+	    goto try_next_mapper;
+
+	  declare exit handler for sqlstate '*'
+	    {
+	      --dbg_printf ('%s', __SQL_MESSAGE);
+	      goto try_next_mapper;
+	    };
+
+	  new_opts := RM_OPTIONS;
+	  if (RM_TYPE <> 'HTTP')
         {
-	  declare aq, ps, _key, _opts any;
-	  _opts := aq := ps := _key := null;
-	  if (length (procedure_cols ('DB.DBA.RDF_LOAD_HTML_RESPONSE')) = 8)
-	    DB.DBA.RDF_LOAD_HTML_RESPONSE (_graph, _graph, null, content, aq, ps, _key, _opts);
+	      rc := call (RM_HOOK) (_graph, url, null, content, aq, aq, RM_KEY, new_opts);
 	}
+          else
+	    {
+	      declare hf any;
+	      hf := WS.WS.PARSE_URI (url);
+	      hf[0] := '';
+	      hf[1] := '';
+	      hf[5] := '';
+	      tmp := 'GET '||WS.WS.VFS_URI_COMPOSE (hf)||' HTTP/1.1\r\nHost: ' || _host || '\r\n' || outhdr;
+	      tmp := replace (tmp, '\r', '\n');
+	      tmp := replace (tmp, '\n\n', '\n');
+	      out_arr := split_and_decode (tmp, 0, '\0\0\n');
+	      rc := call (RM_HOOK) (_graph, url, null, content, aq, aq, vector (out_arr, inhdr), new_opts);
+	    }
+	  --dbg_printf ('filter=[%s] url=[%s] rc=%d', RM_HOOK, url, rc);
+	  if (rc < 0 or rc > 0)
+	    return;
     }
+      try_next_mapper:;
+   }
+
 }
 ;
 

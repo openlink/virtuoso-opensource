@@ -83,6 +83,15 @@ create table WS.WS.VFS_SITE (
 create index VS_HOST_ROOT on WS.WS.VFS_SITE (VS_HOST, VS_URL, VS_ROOT)
 ;
 
+create table WS.WS.VFS_SITE_RDF_MAP (
+    VM_ID   integer identity,
+    VM_HOST varchar,
+    VM_ROOT varchar,
+    VM_RDF_MAP int,	-- ref to SYS_RDF_MAPPERS table
+    VM_SEQ  integer identity,
+    primary key (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_SEQ))
+;
+
 create procedure WS.WS.VFS_TBL_UPGRADE ()
 {
   declare _err, _state varchar;

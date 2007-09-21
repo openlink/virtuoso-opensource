@@ -135,6 +135,8 @@
           ]]>
         </v:script>
       </v:before-data-bind>
+      <script type="text/javascript" src="admin_utils.js">
+      </script>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
@@ -315,20 +317,43 @@
               <td/>
 	      <td colspan="2">
 		<div  id="meta_opts" style="display: <?V case when self._get_rdf = 0 then 'none' else 'block' end ?>;">
-		  <v:check-box name="meta_foaf" value="1" initial-checked="--get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_foaf" />
+		      <table class="listing">
+			  <tr class="listing_header_row">
+			      <th><input type="checkbox" name="select_all" value="Select All"
+				      onclick="selectAllCheckboxes_mask(this.form, this, 'mapper')"/>
+			      RDF Cartridge</th>
+			  </tr>
+			  <?vsp
+			  declare ix int;
+			  ix := 0;
+			   for select RM_DESCRIPTION, RM_PID, VM_ID from WS.WS.VFS_SITE_RDF_MAP right outer join DB.DBA.SYS_RDF_MAPPERS on (VM_RDF_MAP = RM_PID) where RM_ENABLED = 1 order by RM_ID do {
+			   ?>
+			   <tr class="<?V case when mod(ix, 2) then 'listing_row_odd' else 'listing_row_even' end ?>" >
+			       <td>
+				   <?vsp if (VM_ID is null) { ?>
+				   <input type="checkbox" name="mapper" value="<?V RM_PID ?>" />
+				   <?vsp } else { ?>
+				   <input type="checkbox" name="mapper" value="<?V RM_PID ?>" checked="1" />
+				   <?vsp } ?>
+			       <?V RM_DESCRIPTION ?></td>
+			   </tr>
+			   <?vsp ix := ix + 1; } ?>
+		      </table>
+		  <!--v:check-box name="meta_foaf" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_foaf" />
 		  <label for="meta_foaf">FOAF</label>&#160;
 
 
-		  <v:check-box name="meta_rdf" value="1" initial-checked="--get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rdf" />
+		  <v:check-box name="meta_rdf" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rdf" />
 		  <label for="meta_rdf">RDF</label>&#160;
 
-		  <v:check-box name="meta_rss" value="1" initial-checked="--get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rss" />
+		  <v:check-box name="meta_rss" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rss" />
 		  <label for="meta_rss">RSS/RDF</label>&#160;
 
 		  <?vsp if (__proc_exists ('DB.DBA.RDF_LOAD_HTML_RESPONSE'))  { ?>
-		  <v:check-box name="meta_grddl" value="1" initial-checked="--get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_grddl" />
+		  <v:check-box name="meta_grddl" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_grddl" />
 		  <label for="meta_grddl">GRDDL</label>&#160;
 		  <?vsp } ?>
+		  -->
 
                 </div>
               </td>
@@ -414,12 +439,11 @@
 			self._store := get_keyword('store', params);
 			self._get_rdf := atoi (get_keyword ('get_rdf', params, '0'));
 
-			opts := vector (
-			 'meta_foaf', atoi (get_keyword ('meta_foaf', params, '0')),
-			 'meta_rdf', atoi (get_keyword ('meta_rdf', params, '0')),
-			 'meta_rss',   atoi (get_keyword ('meta_rss', params, '0')),
-			 'meta_grddl', atoi (get_keyword ('meta_grddl', params, '0'))
-			);
+			opts := vector ();
+			-- 'meta_foaf', atoi (get_keyword ('meta_foaf', params, '0')),
+			-- 'meta_rdf', atoi (get_keyword ('meta_rdf', params, '0')),
+			-- 'meta_rss',   atoi (get_keyword ('meta_rss', params, '0')),
+			-- 'meta_grddl', atoi (get_keyword ('meta_grddl', params, '0'))
 			self._udata := opts;
 
                         if (self.mode <> 'edit' and self._opage = '1') self._opage := 'checked';
@@ -503,6 +527,22 @@
                             self._root, stringdate(self._newd), self._del, self._flow, self._dflow, self._img, self._dav, _oth, self._auth, self._opage, self._redir, self._store, self._get_rdf, serialize (self._udata));
                           insert into WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
                         }
+
+			declare _mp, _idx, p_id, _seq any;
+			_seq := _idx := 0;
+			delete from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = self._root;
+			if (self._get_rdf)
+			  {
+			    while (_mp := adm_next_keyword ('mapper', control.vc_page.vc_event.ve_params, _idx))
+			      {
+				_seq := _seq + 1;
+				p_id := atoi (_mp);
+				insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_SEQ)
+				    values (self._host,self._root,p_id,_seq);
+			       }
+		  	  }
+			commit work;
+
                         http_request_status ('HTTP/1.1 302 Found');
                         http_header(sprintf('Location: cont_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid, self.realm));
                       ]]>
@@ -513,7 +553,7 @@
             </tr>
 	    <tr>
 	      <td colspan="2">
-		<span>* The "Target URL" will be used as a graph IRI</span>
+		<span>* The "Target URL" will be used as a graph IRI. If no RDF cartridge is enabled only RDF formats will be imported.</span>
 	      </td>
 	    </tr>
           </table>
