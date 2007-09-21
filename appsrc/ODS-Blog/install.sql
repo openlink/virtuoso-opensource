@@ -208,7 +208,7 @@ create procedure BLOG2_RSSSEARCH_XML_SQLX()
   http('XMLELEMENT(\'pubDate\', BLOG.DBA.date_rfc1123 (B_TS)),\n', ses);
   http('XMLELEMENT(\'description\', B_CONTENT)))\n', ses);
   http('from\n', ses);
-  http('(select TOP (cast (n: as integer)) B_CONTENT, B_TS, B_META, BI_HOME, B_POST_ID from\n', ses);
+  http('(select TOP (cast (:n as integer)) B_CONTENT, B_TS, B_META, BI_HOME, B_POST_ID from\n', ses);
   http('BLOG..SYS_BLOGS, BLOG..SYS_BLOG_INFO where B_STATE = 2 and B_BLOG_ID = :bi and BI_BLOG_ID = B_BLOG_ID\n', ses);
   http('and contains (B_CONTENT,  FTI_MAKE_SEARCH_STRING (:s)) order by B_TS desc\n', ses);
   http(') sub\n', ses);
