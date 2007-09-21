@@ -27,4 +27,4 @@ SUBDIRS = dav mono virtuoso tests rdf_mappers driver maildrop sqldoc hosting bpe
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST = config/ccdefs.c
+EXTRA_DIST = config/ccdefs.c config/libxml.m4
