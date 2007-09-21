@@ -6517,6 +6517,8 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
       else
         {
 	  declare lang, dt varchar;
+	  declare is_xml_lit int;
+	  declare sql_val any;
 	  if (__tag (_val) = 185) -- string output
 	    {
               http (sprintf ('\n   <binding name="%s"><literal>', _name), ses);
@@ -6526,6 +6528,10 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
 	    }
 	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val, null);
 	  dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
+	  if (dt = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral')
+	    is_xml_lit := 1;
+	  else
+            is_xml_lit := 0;
 	  if (lang is not null)
 	    {
 	      if (dt is not null)
@@ -6544,7 +6550,12 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
                 http (sprintf ('\n   <binding name="%s"><literal>',
 		    _name), ses);
 	    }
-	  http_value (DB.DBA.RDF_SQLVAL_OF_LONG (_val), 0, ses);
+	  sql_val := DB.DBA.RDF_SQLVAL_OF_LONG (_val);
+	  if (isentity (sql_val))
+	    is_xml_lit := 1;
+	  if (is_xml_lit) http ('<![CDATA[', ses);
+	  http_value (sql_val, 0, ses);
+	  if (is_xml_lit) http (']]>', ses);
           http ('</literal></binding>', ses);
         }
 end_of_binding: ;
@@ -8402,7 +8413,7 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
 
 -- Additional RDF mappers defined elsewhere
 create table DB.DBA.SYS_RDF_MAPPERS (
-    RM_ID integer identity,
+    RM_ID integer identity,		-- an ordered id for execution order
     RM_PATTERN varchar,			-- a LIKE pattern, URL or MIME
     RM_TYPE varchar default 'MIME', 	-- pattern type, MIME or URL
     RM_HOOK varchar,			-- PL hook
@@ -8410,8 +8421,10 @@ create table DB.DBA.SYS_RDF_MAPPERS (
     RM_DESCRIPTION long varchar,
     RM_ENABLED integer default 1,
     RM_OPTIONS any,
+    RM_PID integer identity,		-- permanent id for fk in application tables
     primary key (RM_TYPE, RM_PATTERN))
 create index SYS_RDF_MAPPERS_I1 on DB.DBA.SYS_RDF_MAPPERS (RM_ID)
+create index SYS_RDF_MAPPERS_I2 on DB.DBA.SYS_RDF_MAPPERS (RM_PID)
 ;
 
 --!AFTER
@@ -8420,6 +8433,30 @@ alter table DB.DBA.SYS_RDF_MAPPERS add RM_ENABLED integer default 1
 
 --!AFTER
 alter table DB.DBA.SYS_RDF_MAPPERS add RM_OPTIONS any
+;
+
+--!AFTER
+alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
+;
+
+--!AFTER
+alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
+;
+
+--!AFTER
+create procedure DB.DBA.SYS_RDF_MAPPERS_UPGRADE ()
+{
+  declare id int;
+  update DB.DBA.SYS_RDF_MAPPERS set RM_PID = RM_ID where RM_PID is null;
+  if (row_count() = 0)
+    return;
+  id := (select max (RM_PID) from DB.DBA.SYS_RDF_MAPPERS) + 1;
+  DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_PID', id);
+}
+;
+
+--!AFTER
+DB.DBA.SYS_RDF_MAPPERS_UPGRADE ()
 ;
 
 create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr any,
