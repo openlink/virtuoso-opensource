@@ -997,10 +997,13 @@ for DB.DBA.Facebook
 
     declare auth_res any;
     
-    declare exit handler for sqlstate '*' { dbg_obj_print('--REST CLIENT ERR--');
+    declare exit handler for sqlstate '*' { if(self.api_client.debug_mode=1)
+                                            {
+                                               dbg_obj_print('--REST CLIENT ERR--');
                                             dbg_obj_print(__SQL_STATE);
                                             dbg_obj_print(__SQL_MESSAGE);
                                             dbg_obj_print('-------------------');
+                                            };
                                             return null;
                                           };
     auth_res:='';
@@ -1322,7 +1325,7 @@ declare _res any;
           state := '00000';
           msg := '';
 
-          qry:=sprintf('select P_ID from AB.WA.PERSONS where P_FULL_NAME=''%s'' and P_FIRST_NAME=''%s'' and P_LAST_NAME=''%s'' and P_DOMAIN_ID=%d',full_name,first_name,last_name,ab_domain_id);
+          qry:=sprintf('select P_ID from AB.WA.PERSONS where (P_FULL_NAME=''%s'' or P_FIRST_NAME=''%s'' or P_LAST_NAME=''%s'') and P_DOMAIN_ID=%d',full_name,first_name,last_name,ab_domain_id);
           exec (qry, state, msg, vector(), maxrows, metas, rset);
           if (state = '00000' and length(rset)>0)
           {
@@ -1383,9 +1386,9 @@ declare _res any;
              if(_arr is not null and length(_arr)>0)
                 _arr[0]:=split_and_decode(_arr[0],0,'\0\0 ');
              if(length(_arr)=1)
-                _date:=stringdate('1970-'||cast(_get_montbyname(trim(_arr[0][0])) as varchar)||'-'||trim(_arr[0][1]));
+                _date:=stringdate('1970-'||cast(_get_monhtbyname(trim(_arr[0][0])) as varchar)||'-'||trim(_arr[0][1]));
              else
-                _date:=stringdate(trim(_arr[1])||'-'||cast(_get_montbyname(trim(_arr[0][0])) as varchar)||'-'||trim(_arr[0][1]));
+                _date:=stringdate(trim(_arr[1])||'-'||cast(_get_monhtbyname(trim(_arr[0][0])) as varchar)||'-'||trim(_arr[0][1]));
 
              _val:=vector_concat(_val,vector(_date));
           }
@@ -1497,12 +1500,128 @@ return _res_stat;
 }
 ;
 
-create procedure _get_montbyname(in monthname varchar)
+create procedure _get_monhtbyname(in monthname varchar)
 {
   declare months_arr any;
   months_arr:=vector('January','February','March','April','May','June','July','August','September','October','November','December');
   
   return position(monthname, months_arr);
 
+}
+;
+
+
+create procedure get_syncdata_arr (
+                 in fb_obj DB.DBA.Facebook,
+                 in ods_uid integer
+)
+{
+
+declare _res_str varchar;
+_res_str:=string_output();
+
+declare ab_domain_id integer;
+ab_domain_id:=0;
+
+if (ab_domain_id=0)
+{
+   declare exit handler for not found {ab_domain_id:=0; goto _no_address_book;};
+   select top 1 B.WAI_ID into ab_domain_id from WA_MEMBER A, WA_INSTANCE B where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and A.WAM_APP_TYPE='AddressBook' and A.WAM_USER=ods_uid ;
+
+_no_address_book:;
+
+  if(ab_domain_id=0)
+  {
+    return 'No addressbook instance';
+  }
+}
+;
+
+
+declare _res any;
+
+  _res:=fb_obj.api_client.friends_get();
+
+  declare i integer;
+
+  if(isarray(_res) and length(_res)>0)
+  { 
+    declare ff_ids varchar;
+    ff_ids:='';
+    i:=0;
+    while(i<length(_res))
+    {
+     if(i<(length(_res)-1)) 
+        ff_ids:=ff_ids||_res[i]||',';
+     else
+        ff_ids:=ff_ids||_res[i];
+        
+     i:=i+1;
+    }
+
+    _res:=fb_obj.api_client.users_getInfo(ff_ids,'name,first_name,last_name,sex,birthday,current_location,work_history');
+  }else
+    return 'REST API error';
+
+
+  if(_res is not null)
+  {
+
+     http ('new Array(', _res_str);
+
+    _res:=xpath_eval('/users_getInfo_response/user',_res,0);
+    if(_res is not null and length(_res)>0)
+    {
+      i := 0;
+      while (i < length(_res))
+      {
+        declare uid,full_name,first_name,last_name varchar;
+        uid        := trim(xpath_eval('string(uid)',_res[i]));
+        full_name  := trim(xpath_eval('string(name)',_res[i]));
+        first_name := trim(xpath_eval('string(first_name)',_res[i]));
+        last_name  := trim(xpath_eval('string(last_name)',_res[i]));
+        
+        if(ab_domain_id>0)
+        {
+          
+          declare qry,state, msg, maxrows, metas, rset any;
+          
+          rset := null;
+          maxrows := 0;
+          state := '00000';
+          msg := '';
+
+
+          qry:=sprintf('select P_ID,P_NAME,AB.WA.contact_url (P_DOMAIN_ID,P_ID) from AB.WA.PERSONS where (P_FULL_NAME=''%s'' or P_FIRST_NAME=''%s'' or P_LAST_NAME=''%s'') and P_DOMAIN_ID=%d',full_name,first_name,last_name,ab_domain_id);
+          exec (qry, state, msg, vector(), maxrows, metas, rset);
+          if (state = '00000' and length(rset)>0)
+          {
+            http ('{_name:"'||full_name||'",fb_id:'||cast(uid as varchar)||',fb_href:"http://www.facebook.com/profile.php?id='||cast(uid as varchar)||'",odsab_instid:'||cast(ab_domain_id as varchar)||',ods_contacts:new Array(', _res_str);
+            
+            declare k integer;
+            k:=0;
+            while (k < length(rset))
+            {
+	            http ('{ods_cid:'||cast(rset[k][0] as varchar)||',ods_name:"'||cast(rset[k][1] as varchar)||'",ods_href:"'||cast(rset[k][2] as varchar)||'"}', _res_str);
+	            if(k < length(rset)-1)
+	               http (',', _res_str);  
+	            
+	            k:=k+1;
+	          }
+            http (')}', _res_str);
+            if(i < length(_res)-1)
+               http (',\r\n', _res_str);  
+	        }
+        }
+        i := i + 1;
+        
+      }
+    }
+
+   http (')', _res_str);
+
+  }      
+   
+return string_output_string(_res_str);
 }
 ;

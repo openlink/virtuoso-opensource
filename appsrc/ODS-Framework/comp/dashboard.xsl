@@ -2129,7 +2129,7 @@
                src="images/icons/facebook_16.png"
                width="16" height="16"
                alt="facebook icon"/>
-          <span class="w_title_text">My Facebook</span>
+          <span class="w_title_text">Facebook</span>
         </div>
         <div class="w_title_btns_ctr">
           <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
@@ -2137,7 +2137,20 @@
         </div>
       </div>
       <div class="w_pane content_pane">
+        <?vsp
+          if(exists (select 1 from DB.DBA.WA_USER_INFO where  WAUI_U_ID= self.u_id and WAUI_FACEBOOK_ID is not null and WAUI_FACEBOOK_ID > 0))
+          {
+        ?>
+        <p>Go to <v:url name="odsbar_myfacebook_link_1" url="--self.odsbar_ods_gpath||'fb_front.vspx'" render-only="1" value="Facebook ODS" is-local="1"/> .</p>
+        <?vsp
+          }else
+          {
+        ?>
         <p>Are you familiar to <a href="http://www.facebook.com"><img src="images/facebook_logo_full.png" border="0" style="vertical-align: text-bottom;"/></a> ?<br/><br/> You are <v:url name="odsbar_myfacebook_link_1" url="--self.odsbar_ods_gpath||'fb_front.vspx'" render-only="1" value="1 click" is-local="1"/> away from its ODS implementation.</p>
+        <?vsp
+          }
+        ?>
+        
       </div>
       <div class="w_footer">
         <v:url name="odsbar_myfacebook_link_2" url="--self.odsbar_ods_gpath||'fb_front.vspx'" render-only="1" value="More..." is-local="1"/>

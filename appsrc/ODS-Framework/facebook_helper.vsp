@@ -1,0 +1,264 @@
+<?vsp
+--   search_ajax.vsp
+--
+--   $Id$
+--
+--   AJAX Handler for the google map control
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+   declare sid,realm,fb_session,_err_msg varchar;
+   declare curr_user_id,addressbook_instid,addressbook_domain_id,addressbook_cid,fb_userid,facebook_cid,_err_code integer;
+   declare fb_dba_options any;
+   declare _fb DB.DBA.Facebook;
+
+   sid := get_keyword('sid',params,'');
+   realm := get_keyword('realm',params,'wa');
+   addressbook_instid := cast(get_keyword('instid',params,-1) as integer);
+   addressbook_cid := cast(get_keyword('ods_cid',params,-1) as integer);
+   facebook_cid := cast(get_keyword('fb_cid',params,-1) as integer);
+   
+   fb_session := get_keyword('fb_session',params,'');
+   fb_userid := cast(get_keyword('fb_userid',params,-1) as integer);
+
+   _err_code :=0; --0 - successfull update; 1 - error
+   _err_msg  :='';
+   
+   if(_get_ods_fb_settings(fb_dba_options)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
+   {
+       _fb:= new Facebook(fb_dba_options[0], fb_dba_options[1], params,lines);
+    
+
+   }
+   else 
+   {
+     _err_code :=1;
+     _err_msg  :='Facebook integration not complete.';
+     goto _end;
+   }
+   
+   if(length(fb_session)=0 or fb_userid<1)
+   {
+     _err_code :=1;
+     _err_msg  :='Facebook authentication invalid.';
+     goto _end;
+   }
+
+   if(facebook_cid<1 or addressbook_cid<1)
+   {
+     _err_code :=1;
+     _err_msg  :='Incorrect syncronize contact pair.';
+     goto _end;
+   }
+
+   curr_user_id:=-1;
+
+   declare exit handler for not found {curr_user_id:=-1;
+                                       _err_code :=1;
+                                       _err_msg  :='Authentication invalid.';
+                                       goto _end;
+                                      };
+   select U.U_ID
+     into curr_user_id
+     from DB.DBA.VSPX_SESSION S,WS.WS.SYS_DAV_USER U
+    where S.VS_REALM = realm
+      and S.VS_SID   = sid
+      and S.VS_UID   = U.U_NAME;
+
+
+   if(curr_user_id>0)
+   {
+      declare exit handler for not found {
+                                          addressbook_domain_id:=-1;
+                                          _err_code :=1;
+                                          _err_msg  :='Addressbook instance invalid.';
+                                          goto _end;
+                                         };
+      select top 1 B.WAI_ID into addressbook_domain_id from WA_MEMBER A, WA_INSTANCE B where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and A.WAM_APP_TYPE='AddressBook' and A.WAM_USER=curr_user_id and B.WAI_ID=addressbook_instid;
+ 
+      if(addressbook_domain_id>0)
+      {
+  
+       _fb.set_user(fb_userid,fb_session,now());
+
+        declare _res any;
+       _res:=_fb.api_client.users_getInfo(facebook_cid,'name,first_name,last_name,sex,birthday,current_location,work_history');
+       if(_res is not null)
+       {
+         _res:=xpath_eval('/users_getInfo_response/user',_res);
+         if(_res is not null)
+         {
+            declare _col, _val any;
+            declare _tmpval varchar;
+            _col    :=vector();
+            _val    :=vector();
+            _tmpval :='';
+       
+            _tmpval:=trim(xpath_eval('string(name)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_FULL_NAME'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+       
+            _tmpval:=trim(xpath_eval('string(first_name)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_FIRST_NAME'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+            
+            _tmpval:=trim(xpath_eval('string(last_name)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_LAST_NAME'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+       
+            _tmpval:=trim(xpath_eval('string(sex)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_GENDER'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+            
+            _tmpval:=trim(xpath_eval('string(birthday)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_BIRTHDAY'));
+               declare _date date;
+               declare _arr any;
+       
+               _arr:=split_and_decode(cast(_tmpval as varchar),0,'\0\0,');
+               if(_arr is not null and length(_arr)>0)
+                  _arr[0]:=split_and_decode(_arr[0],0,'\0\0 ');
+               if(length(_arr)=1)
+                  _date:=stringdate('1970-'||cast(_get_monhtbyname(trim(_arr[0][0])) as varchar)||'-'||trim(_arr[0][1]));
+               else
+                  _date:=stringdate(trim(_arr[1])||'-'||cast(_get_monhtbyname(trim(_arr[0][0])) as varchar)||'-'||trim(_arr[0][1]));
+       
+               _val:=vector_concat(_val,vector(_date));
+            }
+            
+            _tmpval:=trim(xpath_eval('string(current_location/city)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_H_CITY'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+       
+       
+            _tmpval:=trim(xpath_eval('string(current_location/state)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_H_STATE'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+       
+            _tmpval:=trim(xpath_eval('string(current_location/country)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_H_COUNTRY'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+       
+            _tmpval:=trim(xpath_eval('string(current_location/zip)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_H_CODE'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+       
+       
+            _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/city)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_B_CITY'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+       
+            _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/state)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_B_STATE'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+       
+            _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/country)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_B_COUNTRY'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+       
+            _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/company_name)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_B_ORGANIZATION'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+       
+       
+            _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/position)',_res));
+            if(_tmpval<>'')
+            {
+               _col:=vector_concat(_col,vector('P_B_JOB'));
+               _val:=vector_concat(_val,vector(_tmpval));
+            }
+       
+            if(length(_col)>0)
+               AB.WA.contact_update3 (addressbook_cid,addressbook_domain_id,_col,_val,'');
+       
+       
+       
+         }else
+         {
+             _err_code :=1;
+             _err_msg  :='No such facebook contact.';
+             goto _end;
+         }
+       }    
+      }else
+      {
+        _err_code :=1;
+        _err_msg  :='Addressbook instance invalid.';
+        goto _end;
+      }     
+   }else
+   { _err_code :=1;
+     _err_msg  :='Authentication invalid.';
+     goto _end;
+   }
+
+_end:;
+
+  declare _xml varchar;
+  
+  _xml:='<?xml version="1.0" encoding="UTF-8"?>\r\n'||
+        '<resp_addressbook_updatecontact>'||
+        '<res_code>'||cast(_err_code as varchar)||'</res_code>'||
+        '<err_msg>'||_err_msg||'</err_msg>'||
+        '</resp_addressbook_updatecontact>';
+
+  http_rewrite();
+  http_header (sprintf ('Content-type: %s\r\n', 'text/html'));
+  http(_xml);
+
+?>
