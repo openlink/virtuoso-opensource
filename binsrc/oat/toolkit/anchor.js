@@ -20,10 +20,68 @@ OAT.Anchor = {
 	imagePath:'/DAV/JS/images/',
 	zIndex:200,
 	
+	assignedMoves:[],
+	assignedResizes:[],
+	assignedCloses:[],
+	
+	assignTemplate:function(options,node) {
+		function scanForClass(root,className) {
+			var all = [root];
+			var a = root.getElementsByTagName("*");
+			for (var i=0;i<a.length;i++) { all.push(a[i]); }
+			for (var i=0;i<all.length;i++) {
+				if (OAT.Dom.isClass(all[i],className)) { return all[i]; }
+			}
+			return false;
+		}
+		
+		var container = scanForClass(node,"oat_w_ctr");
+		var title = scanForClass(node,"oat_w_title_ctr");
+		var move = scanForClass(node,"oat_w_title_ctr");
+		var title = scanForClass(node,"oat_w_title_t_ctr");
+		var content = scanForClass(node,"oat_w_content");
+		var close = scanForClass(node,"oat_w_close_b");
+		var resize = scanForClass(node,"oat_w_resize_handle");
+		
+		if (!container) { alert("No container found for anchor window!"); }
+		if (!content) { alert("No content element found for anchor window!"); }
+		
+		options.window = {
+			div:container,
+			content:content,
+			caption:title,
+			close:function() { OAT.Dom.hide(container); },
+			resizeTo:function(w,h) { 
+				container.style.width = w+"px";
+				container.style.height = h+"px";
+			},
+			anchorTo:function(x,y) {
+				container.style.left = x+"px";
+				container.style.top = y+"px";
+			}
+		}
+		
+		if (move && !(move in OAT.Anchor.assignedMoves)) { 
+			OAT.Drag.create(move,container); 
+			OAT.Anchor.assignedMoves.push(move);
+		}
+		if (resize && !(resize in OAT.Anchor.assignedResizes)) { 
+			OAT.Resize.create(resize,container,OAT.Resize.TYPE_XY); 
+			OAT.Anchor.assignedResizes.push(resize);
+		}
+		if (close && !(close in OAT.Anchor.assignedCloses)) { 
+			OAT.Event.attach(close,"click",options.window.close);  
+			OAT.Anchor.assignedCloses.push(close);
+		}
+		container.style.position = "absolute";
+		OAT.Dom.hide(container);
+		document.body.appendChild(container);
+	},
+	
 	appendContent:function(options) {
 		if (options.content) {
 			if (typeof(options.content) == "function") { options.content = options.content(); }
-			var win = OAT.AnchorData.window;
+			var win = options.window;
 			win.resizeTo(options.width,options.height);
 			OAT.Dom.clear(win.content);
 			win.content.appendChild(options.content);
@@ -31,7 +89,7 @@ OAT.Anchor = {
 	},
 	
 	callForData:function(options,pos) {
-		var win = OAT.AnchorData.window;
+		var win = options.window;
 		options.status = 1; /* loading */
 		if (options.title) { win.caption.innerHTML = options.title; }
 
@@ -112,22 +170,27 @@ OAT.Anchor = {
 	assign:function(element,paramsObj) {
 		var elm = $(element);
 		var options = {
-			href:false,
+			href:false, /* url to be fetched */
 			newHref:"javascript:void(0)",
-			connection:false,
-			datasource:false,
-			content:false,
-			title:false,
+			connection:false, /* for url fetch */
+			datasource:false, /* for url fetch */
+			content:false, /* node or function to be inserted */
+			title:false, /* window title */
 			imagePath:OAT.Anchor.imagePath,
-			result_control:"grid",
+			result_control:"grid", /* for url fetch */
 			activation:"hover",
 			width:300,
-			height:200
+			height:200,
+			elm:elm, /* anchor node */
+			window:false, /* what should be displayed */
+			template:false /* node or function to be used instead of window */
 		};
 		for (var p in paramsObj) { options[p] = paramsObj[p]; }
-		options.elm = elm;
 
-		if (!OAT.AnchorData.window) { /* create window */
+		if (options.template) { /* wants own container */
+			var node = (typeof(options.template) == "function" ? options.template() : $(options.template));
+			OAT.Anchor.assignTemplate(options,node);
+		} else if (!OAT.AnchorData.window) { /* wants window, but we don't have it yet */
 			var win = new OAT.Window({close:1,resize:1,width:options.width,height:options.height,imagePath:OAT.Anchor.imagePath,title:"Loading..."},OAT.WindowData.TYPE_RECT);
 			win.div.style.zIndex = OAT.Anchor.zIndex;
 			win.close = function() { OAT.Dom.hide(win.div); }
@@ -148,13 +211,14 @@ OAT.Anchor = {
 			OAT.Dom.attach(win.div,"mouseout",checkOut);
 			OAT.AnchorData.window = win;
 		}
+		if (!options.template) { options.window = OAT.AnchorData.window; } /* assign common window to this anchor instance */
 
 		options.status = 0; /* not initialized */
 		if (!options.href && 'href' in elm) { options.href = elm.href; } /* if no oat:href provided, then try the default one */
 		if (elm.tagName.toString().toLowerCase() == "a") { OAT.Dom.changeHref(elm,options.newHref); }
 		
 		options.displayRef = function(event) {
-			var win = OAT.AnchorData.window;
+			var win = options.window;
 			win.close(); /* close existing window */
 			OAT.AnchorData.active = options;
 			options.endClose();
@@ -172,7 +236,7 @@ OAT.Anchor = {
 		}
 		options.closeRef = function() {
 			if (options.closeFlag) {
-				OAT.AnchorData.window.close();
+				options.window.close();
 				options.endClose();
 				OAT.AnchorData.active = false;
 			}

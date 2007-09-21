@@ -326,6 +326,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	this.historyIndex = -1;
 	this.nav = {};
 	this.waiting = false;
+	this.mlCache = [];
 	this.topDiv = OAT.Dom.create("div",{},"rdf_nav");
 	this.mainDiv = OAT.Dom.create("div");
 	this.description = "This module is used for navigating through all locally cached data, one resource at a time. "+
@@ -357,6 +358,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 		if (!self.waiting) {
 			self.historyIndex = -1;
 			self.history = [];
+			self.mlCache = [];
 		}
 	}
 
@@ -538,9 +540,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	}
 	
 	this.drawSpotlightType = function(label,data,table) {
-		var state = 0;
+		var state = (self.mlCache.find(label) == -1 ? 0 : 1);
 		var states = [" more...","less..."];
-		var count = Math.min(data.length,self.options.limit);
+		var count = (state ? data.length : Math.min(data.length,self.options.limit));
 		var tr = OAT.Dom.create("tr",{},"rdf_nav_header");
 		var trset = [];
 		self.drawSpotlightHeading(tr,label,trset,data.length);
@@ -576,7 +578,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 			table.appendChild(tr);
 		}
 		
-		if (count < data.length) {
+		if (self.options.limit < data.length) {
 			var toggletr = OAT.Dom.create("tr",{},"rdf_nav_toggle");
 			toggletr.appendChild(OAT.Dom.create("td"));
 			trset.push(toggletr);
@@ -588,6 +590,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 				state = (state+1) % 2;
 				toggle.innerHTML = (state ? states[state] : (data.length - count) + states[state]);
 				if (state) { /* show more */
+					self.mlCache.push(label);
 					for (var i=count;i<data.length;i++) {
 						var item = data[i];
 						var tr = createRow(item);
@@ -595,6 +598,8 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 						table.insertBefore(tr,toggletr);
 					}
 				} else { /* show less */
+					var index = self.mlCache.find(label);
+					self.mlCache.splice(label,index);
 					for (var i=data.length-1;i>=count;i--) {
 						OAT.Dom.unlink(trset[i]);
 						trset.splice(i,1);

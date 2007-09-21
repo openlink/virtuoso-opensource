@@ -184,7 +184,7 @@ var QueryExec = function(optObj) {
 		paramsObj["format"] = "application/rdf+xml";
 		if (opts.defaultGraph && !opts.query.match(/from *</i)) { paramsObj["default-graph-uri"] = opts.defaultGraph; }
 		if (opts.limit) { paramsObj["maxrows"] = opts.limit; }
-		if (opts.sponge) { paramsObj["should-sponge"] = opts.sponge; }
+		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
 
 		var arr = [];
 		for (var p in paramsObj) {
@@ -329,7 +329,15 @@ var QueryExec = function(optObj) {
 		self.dom.query.innerHTML = OAT.Xml.escape(opts.query);
 
 		if (wasError) {
+			/* trap http codes */
+			var r = data.match(/Error (..[0-9]{3})/);
+			if (r) {
+				self.dom.result.innerHTML = "SPARQL Processor error "+r[1];
+				if (r[1] == "HT404") { self.dom.result.innerHTML += ": Resource not found"; }
+				self.dom.result.innerHTML += ". Check your query and try again.";
+			} else {
 			self.dom.result.innerHTML = OAT.Xml.escape(data);
+			}
 			self.dom.response.innerHTML = OAT.Xml.escape(data);
 		} else {
 			var txt = OAT.Xml.serializeXmlDoc(data);
@@ -377,24 +385,11 @@ var QueryExec = function(optObj) {
 	this.processLink = function(domNode,href) {
 		var dereferenceRef = function() {
 			var cache = self.cache[self.cacheIndex];
-			var q = "SELECT ?p, ?o \n"+
-					"FROM <"+href+">\n"+
-					"WHERE {<"+href+"> ?p ?o}";
-			var o = {};
-			for (var p in cache.opts) { o[p] = cache.opts[p]; }
-			o.defaultGraph = false;
-			o.query = q;
-			self.execute(o);
- 		}
-		var exploreRef = function() {
-			var cache = self.cache[self.cacheIndex];
-			var q = "SELECT ?isValueOf ?property ?hasValue \n"+
-					"FROM <"+href+">\n"+
-					" WHERE {\n"+
-					"{ <"+href+"> ?property ?hasValue }\n"+
-					"UNION\n"+
-					"{ ?isValueOf ?property <"+href+"> }\n" +
-					"} ";
+
+			var q = 'define input:same-as "yes" \n'+
+					'define input:grab-seealso <http://www.w3.org/2002/07/owl#sameAs> \n'+
+					'DESCRIBE <'+href+'>';
+
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
 			o.query = q;
@@ -402,69 +397,48 @@ var QueryExec = function(optObj) {
 		}
 	
 		var genRef = function() {
-			var div = OAT.Dom.create("div",{margin:"5px"});
-			var s = OAT.Dom.create("strong");
-			s.innerHTML = "Data Links (Properties):";
-			var ul = OAT.Dom.create("ul");
+			var ul = OAT.Dom.create("ul",{marginLeft:"20px",marginTop:"10px"});
 
+			var li = OAT.Dom.create("li");
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Attributes";
+			a.innerHTML = "Data Link";
 			a.href = "#";
 			OAT.Dom.attach(a,"click",dereferenceRef);
 			var li = OAT.Dom.create("li");
 			OAT.Dom.append([ul,li],[li,a]);
 
-			var a = OAT.Dom.create("a");
-			a.innerHTML = "Relationships";
-			a.href = "#";
-			OAT.Dom.attach(a,"click",exploreRef);
 			var li = OAT.Dom.create("li");
-			OAT.Dom.append([ul,li],[li,a]);
-			OAT.Dom.append([div,s,ul]);
-
-			var s = OAT.Dom.create("strong");
-			s.innerHTML = "Document Links:";
-			var ul = OAT.Dom.create("ul");
-
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "(X)HTML Page Open";
+			a.innerHTML = "Document Link";
 			a.href = href;
-			var li = OAT.Dom.create("li");
 			OAT.Dom.append([ul,li],[li,a]);
-			OAT.Dom.append([div,s,ul]);
 			
-			return div;
+			return ul;
 		}
 			
 		var obj = {
 			title:"URL",
 			content:genRef,
 			width:200,
-			height:160,
+			height:100,
 			result_control:false,
 			activation:"click"
 		};
 		OAT.Anchor.assign(domNode,obj);
 		
-		var img0 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
-		img0.title = "Relations";
-		img0.src = OAT.Preferences.imagePath + "RDF_relations.gif";
-		OAT.Dom.attach(img0,"click",exploreRef);
-
 		var img1 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
-		img1.title = "Attributes";
+		img1.title = "Data Link";
 		img1.src = OAT.Preferences.imagePath + "RDF_rdf.png";
 		OAT.Dom.attach(img1,"click",dereferenceRef);
 
 		var a = OAT.Dom.create("a",{paddingLeft:"3px"});
 		var img2 = OAT.Dom.create("img",{border:"none"});
 		img2.src = OAT.Preferences.imagePath + "RDF_xhtml.gif";
-		a.title = "(X)HTML Page Open";
+		a.title = "Document Link";
 		a.appendChild(img2);
 		a.target = "_blank";
 		a.href = href;
 		
-		domNode.parentNode.appendChild(img0);
 		domNode.parentNode.appendChild(img1);
 		domNode.parentNode.appendChild(a);
 	}

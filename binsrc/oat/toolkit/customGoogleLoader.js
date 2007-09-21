@@ -56,7 +56,7 @@ function GLoad()
         return;
         
     }
-	GLoadApi(["http://mt0.google.com/mt?n=404&v=ap.55&","http://mt1.google.com/mt?n=404&v=ap.55&","http://mt2.google.com/mt?n=404&v=ap.55&","http://mt3.google.com/mt?n=404&v=ap.55&"], ["http://kh0.google.com/kh?n=404&v=17&","http://kh1.google.com/kh?n=404&v=17&","http://kh2.google.com/kh?n=404&v=17&","http://kh3.google.com/kh?n=404&v=17&"], ["http://mt0.google.com/mt?n=404&v=apt.54&","http://mt1.google.com/mt?n=404&v=apt.54&","http://mt2.google.com/mt?n=404&v=apt.54&","http://mt3.google.com/mt?n=404&v=apt.54&"],window._apiKey,"","",true,"G");
+	GLoadApi(["http://mt0.google.com/mt?n=404&v=w2.61&","http://mt1.google.com/mt?n=404&v=w2.61&","http://mt2.google.com/mt?n=404&v=w2.61&","http://mt3.google.com/mt?n=404&v=w2.61&"], ["http://kh0.google.com/kh?n=404&v=20&","http://kh1.google.com/kh?n=404&v=20&","http://kh2.google.com/kh?n=404&v=20&","http://kh3.google.com/kh?n=404&v=20&"], ["http://mt0.google.com/mt?n=404&v=w2t.61&","http://mt1.google.com/mt?n=404&v=w2t.61&","http://mt2.google.com/mt?n=404&v=w2t.61&","http://mt3.google.com/mt?n=404&v=w2t.61&"],window._apiKey,"","",false,"G");
 	if (window.GJsLoaderInit) {
 	        GJsLoaderInit("http://www.google.com/mapfiles/81/maps2" +".api/main.js","http://maps.google.com/maps?file=msgs_%1$s");
         
