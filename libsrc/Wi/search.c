@@ -1624,8 +1624,9 @@ start:
     }
       else
 	{
-      if (it->itc_bp.bp_just_landed && RWG_WAIT_SPLIT == itc_bm_land_lock (it, buf_ret))
+      if (it->itc_bp.bp_just_landed && RWG_NO_WAIT < itc_bm_land_lock (it, buf_ret)) /* was == RWG_WAIT_SPLIT */
 	{
+	  page_leave_outside_map (*buf_ret);
 	  *buf_ret = itc_reset (it);
 	  goto start;
 	}
