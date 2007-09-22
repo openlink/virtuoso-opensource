@@ -1,9 +1,10 @@
 /*
+ *  $Id$
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2007 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -17,9 +18,7 @@
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *
- *
-*/
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -767,13 +766,13 @@ virt_php_compile_file (zend_file_handle * file_handle, int type TSRMLS_DC)
     }
 
   return php_compile_file (file_handle, type TSRMLS_CC);
-};
+}
 
 
-/* 
+/*
  *  The fopen wrapper
  *
- *  If there is something to do, we'll do it and then will switch to the 
+ *  If there is something to do, we'll do it and then will switch to the
  *  php wrapper
  */
 static FILE *
@@ -824,7 +823,7 @@ virt_zend_file_handle_dtor (zend_file_handle * fh)
     }
 
   zend_file_handle_dtor (fh);
-};
+}
 
 
 PHP_INI_BEGIN()
@@ -944,10 +943,10 @@ virtuoso_php_shutdown (void)	/*  XXX FIX add to server shutdown XXX */
 }
 
 
-/* 
- * this function checks the type of parameters and return string session with 
- * the URL encoded params, so it raises a flag to know caller is the session 
- * allocated and must be freed at the end of request 
+/*
+ * this function checks the type of parameters and return string session with
+ * the URL encoded params, so it raises a flag to know caller is the session
+ * allocated and must be freed at the end of request
  */
 static void
 prepare_params (caddr_t * in, dk_session_t ** out, int *to_free)
@@ -1271,7 +1270,7 @@ bif_http_handler_php (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-/* 
+/*
  * This function doing PHP processing from string
  * select php_str ('<?php echo abs (-$a) ?>', vector ('a', '10'));
  */

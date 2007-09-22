@@ -73,9 +73,11 @@ virtuoso_iodbc_php5_t_LDADD = \
 	@XML_LIBS@
 	-lm
 
+# ----------------------------------------------------------------------
 #
 #  Generated code
 #
+# ----------------------------------------------------------------------
 GEN=${top_srcdir}/bin/generate
 
 sql_code_php.c: $(srcdir)/php.sql $(top_srcdir)/libsrc/Wi/sql_to_c.awk
@@ -89,3 +91,12 @@ sql_code_php.c: $(srcdir)/php.sql $(top_srcdir)/libsrc/Wi/sql_to_c.awk
 
 ksrvext.h:
 	$(LN_S) ../../../libsrc/Wi/ksrvext.h ksrvext.h
+
+
+# ----------------------------------------------------------------------
+#
+#  Additional files to distribute
+#
+# ----------------------------------------------------------------------
+EXTRA_DIST = \
+	php.sql

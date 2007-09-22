@@ -1,6 +1,27 @@
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2007 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
-create procedure
-DB.DBA.PHP_SYS_MKDIR (in path varchar)
+create procedure DB.DBA.PHP_SYS_MKDIR (in path varchar)
 {
   declare temp any;
   declare idx integer;
@@ -26,8 +47,8 @@ DB.DBA.PHP_SYS_MKDIR (in path varchar)
 }
 ;
 
-create procedure
-DB.DBA.PHP_COPY_DAV_DIR_TO_FILE_SYSTEM (in dav_path varchar)
+
+create procedure DB.DBA.PHP_COPY_DAV_DIR_TO_FILE_SYSTEM (in dav_path varchar)
 {
   declare full_path, f_name, d_path varchar;
   declare abs_path varchar;
@@ -94,11 +115,13 @@ DB.DBA.PHP_COPY_DAV_DIR_TO_FILE_SYSTEM (in dav_path varchar)
 }
 ;
 
+
 create procedure PHP_MAKE_FILE_NAME (in dav_path any)
 {
   return server_root () || 'tmp' || replace (PHP_REMOVE_DIR_PREF (dav_path), '/DAV', '', 1);
 }
 ;
+
 
 create procedure PHP_GET_VIRTUAL_DIR (in dav_path any)
 {
@@ -131,11 +154,13 @@ create procedure PHP_GET_VIRTUAL_DIR (in dav_path any)
 }
 ;
 
+
 create procedure PHP_REMOVE_DIR_PREF (in dav_path any)
 {
   return replace (dav_path, 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', '', 1);
 }
 ;
+
 
 create trigger PHP_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES
 {
@@ -150,6 +175,7 @@ create trigger PHP_SYS_DAV_RES_I after insert on WS.WS.SYS_DAV_RES
 }
 ;
 
+
 create trigger PHP_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referencing old as O, new as N
 {
     declare temp, d_path any;
@@ -162,4 +188,3 @@ create trigger PHP_SYS_DAV_RES_U after update on WS.WS.SYS_DAV_RES referencing o
       }
 }
 ;
-
