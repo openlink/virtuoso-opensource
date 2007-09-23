@@ -52,9 +52,12 @@ base_cflags += -DUNIX
 bin_PROGRAMS = $(INTEG_JDK_PROGS) $(IODBC_JDK_EXTRA)
 noinst_PROGRAMS = virtuoso-sample-t $(IODBC_EXTRA)
 
-BUILT_SOURCES = sql_code_javavm.c sql_code_clr.c sql_code_xslt.c
-CLEANFILES = sql_code_javavm.c sql_code_clr.c sql_code_xslt.c
+TESTS	= thook.sh
 
+BUILT_SOURCES = sql_code_javavm.c sql_code_clr.c sql_code_xslt.c
+CLEANFILES = \
+	sql_code_javavm.c sql_code_clr.c sql_code_xslt.c \
+	virtuoso.db virtuoso.ini virtuoso.log virtuoso.pxa virtuoso.tdb
 
 virtuoso_sample_t_SOURCES = bif_sample.c
 

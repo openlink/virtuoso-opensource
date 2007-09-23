@@ -13,3 +13,9 @@ sql_code_xslt.c
 virtuoso-javavm-t
 virtuoso-sample-t
 virtuoso-iodbc-sample-t
+thook.output
+virtuoso.db
+virtuoso.ini
+virtuoso.log
+virtuoso.pxa
+virtuoso.tdb

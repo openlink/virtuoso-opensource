@@ -21,7 +21,7 @@
 #  
 
 OUTPUT=thook.output
-ISQL=isql
+ISQL=../isql
 TIMEOUT=1000
 HOST_OS=`uname -s | grep WIN`
 SERVER=./virtuoso-iodbc-sample-t
@@ -32,7 +32,8 @@ HTTPPORT=`expr $PORT + 10`
 SQLOPTIMIZE=${SQLOPTIMIZE-0}
 LOCKFILE=virtuoso.lck
 #DSN=1111
-cat virtuoso-1111.ini | sed -e "s/PORT/$PORT/g" -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" -e "s/HTTP_LISTEN/$HTTPPORT/g" > virtuoso.ini
+
+cat virtuoso-sample.ini | sed -e "s/PORT/$PORT/g" -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" -e "s/HTTP_LISTEN/$HTTPPORT/g" > virtuoso.ini
 rm -f thook.bad
 rm -f $OUTPUT
 rm -f virtuoso.db
