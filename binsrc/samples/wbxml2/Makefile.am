@@ -20,7 +20,7 @@
 #  
 
 if WITH_WBXML2
-lib_LTLIBRARIES = wbxml2.la
+hosting_LTLIBRARIES = wbxml2.la
 else
 all:
 	@echo "**"

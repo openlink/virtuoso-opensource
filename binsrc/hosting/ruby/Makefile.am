@@ -20,7 +20,7 @@
 #  
 
 if WITH_RUBY
-lib_LTLIBRARIES = hosting_ruby.la
+hosting_LTLIBRARIES = hosting_ruby.la
 endif
 
 hosting_ruby_la_SOURCES = \

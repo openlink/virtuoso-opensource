@@ -25,19 +25,19 @@
 
 install-data-local:
 	@echo Installing in "$(httprootdir)" 
-	mkdir -p "$(httprootdir)"
-	mkdir -p "$(httprootdir)"/images
-	mkdir -p "$(httprootdir)"/admin
-	$(INSTALL_DATA) *.html "$(httprootdir)"
-	$(INSTALL_DATA) *.css "$(httprootdir)"
-	$(INSTALL_DATA) *.txt "$(httprootdir)"
-	$(INSTALL_DATA) admin/index_left.vsp "$(httprootdir)"/admin
-	$(INSTALL_DATA) images/*.gif "$(httprootdir)"/images
-	$(INSTALL_DATA) images/*.png "$(httprootdir)"/images
-	$(INSTALL_DATA) images/*.jpg "$(httprootdir)"/images
+	mkdir -p "$(DESTDIR)$(httprootdir)"
+	mkdir -p "$(DESTDIR)$(httprootdir)"/images
+	mkdir -p "$(DESTDIR)$(httprootdir)"/admin
+	$(INSTALL_DATA) *.html "$(DESTDIR)$(httprootdir)"
+	$(INSTALL_DATA) *.css "$(DESTDIR)$(httprootdir)"
+	$(INSTALL_DATA) *.txt "$(DESTDIR)$(httprootdir)"
+	$(INSTALL_DATA) admin/index_left.vsp "$(DESTDIR)$(httprootdir)"/admin
+	$(INSTALL_DATA) images/*.gif "$(DESTDIR)$(httprootdir)"/images
+	$(INSTALL_DATA) images/*.png "$(DESTDIR)$(httprootdir)"/images
+	$(INSTALL_DATA) images/*.jpg "$(DESTDIR)$(httprootdir)"/images
 
 uninstall-local:
-	rm -rf "$(httprootdir)"/*
+	rm -rf "$(DESTDIR)$(httprootdir)"/*
 
 
 # ----------------------------------------------------------------------

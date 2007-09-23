@@ -19,7 +19,7 @@
 #  
 #  
 
-lib_LTLIBRARIES = wikiv.la mediawiki.la creolewiki.la
+hosting_LTLIBRARIES = wikiv.la mediawiki.la creolewiki.la
 
 wikiv_la_SOURCES = \
 	wikiv.c \

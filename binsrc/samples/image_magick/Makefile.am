@@ -20,7 +20,7 @@
 #  
 
 if WITH_IM
-lib_LTLIBRARIES = im.la
+hosting_LTLIBRARIES = im.la
 endif
 
 im_la_SOURCES = \

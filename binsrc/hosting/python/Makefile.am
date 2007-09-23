@@ -20,7 +20,7 @@
 #  
 
 if WITH_PYTHON
-lib_LTLIBRARIES = hosting_python.la
+hosting_LTLIBRARIES = hosting_python.la
 endif
 
 hosting_python_la_SOURCES	= hosting_python.c

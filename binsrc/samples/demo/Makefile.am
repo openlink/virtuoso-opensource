@@ -29,10 +29,10 @@ if WITH_HTMLDOC
 endif
 
 install-data-local:
-	mkdir -p "$(dbdir)"
+	mkdir -p "$(DESTDIR)$(dbdir)"
 	$(INSTALL_DATA) default.ini "$(DESTDIR)$(dbdir)"/virtuoso.ini
 if WITH_HTMLDOC
-	mkdir -p "$(htmldocdir)"
+	mkdir -p "$(DESTDIR)$(htmldocdir)"
 	$(INSTALL_DATA) $(top_srcdir)/docsrc/html_virt/*.html "$(DESTDIR)$(htmldocdir)"
 endif
 

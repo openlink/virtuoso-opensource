@@ -95,7 +95,7 @@ chmod +x config.nice
 ##  Set Layout for Virtuoso						##
 ##									##
 ##########################################################################
-AC_PREFIX_DEFAULT(/usr/local)
+AC_PREFIX_DEFAULT(/usr/local/virtuoso-opensource)
 
 AC_MSG_CHECKING(for Virtuoso installation layout)
 AC_ARG_WITH(layout, [dnl
@@ -115,50 +115,105 @@ AC_HELP_STRING([--with-layout=LAYOUT], [Choose installation layout])dnl
 case ${VIRTUOSO_LAYOUT} in
   unset)					# No Layout set
 	virtuoso_layout="default"
-	inidir=/etc
+	vaddir=$datadir/virtuoso/vad
+	docdir=$datadir/virtuoso/doc
+	htmldocdir=$datadir/virtuoso/doc/html
+	pdfdocdir=$datadir/virtuoso/doc/pdf
+	demodir=$localstatedir/lib/virtuoso/demo
+	dbdir=$localstatedir/lib/virtuoso/db
+	httprootdir=$localstatedir/lib/virtuoso/vsp
+	hostingdir=$libdir/virtuoso/hosting
 	;;
 
   [[Gg]][[Nn]][[Uu]])				# GNU
 	virtuoso_layout="GNU"
 	test "x$prefix" = xNONE && prefix=/usr/local
-	inidir=${prefix}/etc/virtuoso
+	vaddir=$datadir/virtuoso/vad
+	docdir=$datadir/virtuoso/doc
+	htmldocdir=$datadir/virtuoso/doc/html
+	pdfdocdir=$datadir/virtuoso/doc/pdf
+	demodir=$localstatedir/lib/virtuoso/demo
+	dbdir=$localstatedir/lib/virtuoso/db
+	httprootdir=$localstatedir/lib/virtuoso/vsp
+	hostingdir=$libdir/virtuoso/hosting
 	;;
 
   [[Dd]][[Ee]][[Bb]][[Ii]][[Aa]][[Nn]])		# Debian
 	virtuoso_layout="Debian"
 	test "x$prefix" = xNONE && prefix=/usr
-	inidir=/etc
+	vaddir=$datadir/virtuoso/vad
+	docdir=$datadir/doc/virtuoso
+	htmldocdir=$datadir/doc/virtuoso/html
+	pdfdocdir=$datadir/doc/virtuoso/pdf
+	demodir=$localstatedir/lib/virtuoso/demo
+	dbdir=$localstatedir/lib/virtuoso/db
+	httprootdir=$localstatedir/lib/virtuoso/vsp
+	hostingdir=$libdir/virtuoso/hosting
 	;;
 
   [[Gg]][[Ee]][[Nn]][[Tt]][[Oo]][[Oo]])		# Gentoo
 	virtuoso_layout="Gentoo"
 	test "x$prefix" = xNONE && prefix=/usr
-	includedir='${prefix}/include/virtuoso'
-	inidir=/etc/virtuoso
+	vaddir=$datadir/virtuoso/vad
+	docdir=$datadir/doc/virtuoso
+	htmldocdir=$datadir/doc/virtuoso/html
+	pdfdocdir=$datadir/doc/virtuoso/pdf
+	demodir=$localstatedir/lib/virtuoso/demo
+	dbdir=$localstatedir/lib/virtuoso/db
+	httprootdir=$localstatedir/lib/virtuoso/vsp
+	hostingdir=$libdir/virtuoso/hosting
 	;;
 
   [[Rr]][[Ee]][[Dd]][[Hh]][[Aa]][[Tt]])		# RedHat
 	virtuoso_layout=RedHat
 	test "x$prefix" = xNONE && prefix=/usr
-	inidir=/etc
+	vaddir=$datadir/virtuoso/vad
+	docdir=$datadir/doc/virtuoso
+	htmldocdir=$datadir/doc/virtuoso/html
+	pdfdocdir=$datadir/doc/virtuoso/pdf
+	demodir=$localstatedir/lib/virtuoso/demo
+	dbdir=$localstatedir/lib/virtuoso/db
+	httprootdir=$localstatedir/lib/virtuoso/vsp
+	hostingdir=$libdir/virtuoso/hosting
 	;;
 
   [[Ff]][[Rr]][[Ee]][[Ee]][[Bb]][[Ss]][[Dd]])	# FreeBSD
 	virtuoso_layout=FreeBSD
 	test "x$prefix" = xNONE && prefix=/usr
-	inidir=/etc
+	vaddir=$datadir/virtuoso/vad
+	docdir=$datadir/virtuoso/doc
+	htmldocdir=$datadir/virtuoso/doc/html
+	pdfdocdir=$datadir/virtuoso/doc/pdf
+	demodir=$localstatedir/lib/virtuoso/demo
+	dbdir=$localstatedir/lib/virtuoso/db
+	httprootdir=$localstatedir/lib/virtuoso/vsp
+	hostingdir=$libdir/virtuoso/hosting
 	;;
 
   [[Oo]][[Pp]][[Tt]])				# /opt
 	virtuoso_layout=opt
-	test "x$prefix" = xNONE && prefix=/opt/virtuoso
-	inidir=/etc
+	test "x$prefix" = xNONE && prefix=/opt/virtuoso-opensource
+	vaddir='${prefix}/vad'
+	docdir='${prefix}/doc'
+	htmldocdir='${prefix}/doc/html'
+	pdfdocdir='${prefix}/doc/pdf'
+	demodir='${prefix}/demo'
+	dbdir='${prefix}/database'
+	httprootdir='${prefix}/vsp'
+	hostingdir='${prefix}/hosting'
 	;;
 
  [[Oo]][[Pp]][[Ee]][[Nn]][[Ll]][[Ii]][[Nn]][[Kk]])	# OpenLink
  	virtuoso_layout=openlink
-	prefix=/usr/local/virtuoso
-	inidir=/etc
+	test "x$prefix" = xNONE && prefix=/usr/local/virtuoso-opensource
+	vaddir='${prefix}/vad'
+	docdir='${prefix}/doc'
+	htmldocdir='${prefix}/doc/html'
+	pdfdocdir='${prefix}/doc/pdf'
+	demodir='${prefix}/demo'
+	dbdir='${prefix}/database'
+	httprootdir='${prefix}/vsp'
+	hostingdir='${prefix}/hosting'
 	;;
 
   *)						# UNKNOWN
@@ -171,6 +226,13 @@ case ${VIRTUOSO_LAYOUT} in
 esac
 AC_MSG_RESULT([${virtuoso_layout}])
 
+AC_SUBST(vaddir)
+AC_SUBST(demodir)
+AC_SUBST(dbdir)
+AC_SUBST(htmldocdir)
+AC_SUBST(pdfdocdir)
+AC_SUBST(httprootdir)
+AC_SUBST(hostingdir)
 
 ##########################################################################
 ##									##
@@ -2132,29 +2194,6 @@ AC_SUBST(srvrlibs)
 AC_SUBST(clntlibs)
 
 
-##########################################################################
-##									##
-##  various destination dirs                      			##
-##									##
-##########################################################################
-virtdatadir=$datadir/virtuoso
-vaddir=$virtdatadir/vad
-docdir=$virtdatadir/doc
-htmldocdir=$docdir/html
-pdfdocdir=$docdir/pdf
-
-virtstatedir=$localstatedir/lib/virtuoso
-demodir=$virtstatedir/demo
-dbdir=$virtstatedir/db
-httprootdir=$virtstatedir/vsp
-
-#AC_SUBST(virtdatadir)
-AC_SUBST(vaddir)
-AC_SUBST(demodir)
-AC_SUBST(dbdir)
-AC_SUBST(htmldocdir)
-AC_SUBST(pdfdocdir)
-AC_SUBST(httprootdir)
 
 
 ##########################################################################
@@ -2313,6 +2352,9 @@ echo "AC_HELP_STRING(programs,		[${bindir}])"
 echo "AC_HELP_STRING(include files, 	[${includedir}])"
 echo "AC_HELP_STRING(libraries, 	[${libdir}])"
 echo "AC_HELP_STRING(manual pages, 	[${mandir}])"
+echo "AC_HELP_STRING(vad packages, 	[${vaddir}])"
+echo "AC_HELP_STRING(database, 		[${dbdir}])"
+echo "AC_HELP_STRING(hosting, 		[${hostingdir}])"
 echo
 echo "${B}Options${N}"
 echo "AC_HELP_STRING(BUILD_OPTS,	[${BUILD_OPTS}])"

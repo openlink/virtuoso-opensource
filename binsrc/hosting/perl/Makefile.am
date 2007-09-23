@@ -20,7 +20,7 @@
 #  
 
 if WITH_PERL
-lib_LTLIBRARIES			= hosting_perl.la
+hosting_LTLIBRARIES			= hosting_perl.la
 endif
 
 hosting_perl_la_SOURCES 	= hosting_perl.c 
