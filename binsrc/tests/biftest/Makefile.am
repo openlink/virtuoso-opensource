@@ -49,7 +49,8 @@ base_cflags += -I$(top_srcdir)/libsrc/plugin
 base_cflags += -DUNIX
 
 
-bin_PROGRAMS = virtuoso-sample-t $(IODBC_EXTRA) $(INTEG_JDK_PROGS) $(IODBC_JDK_EXTRA)
+bin_PROGRAMS = $(INTEG_JDK_PROGS) $(IODBC_JDK_EXTRA)
+noinst_PROGRAMS = virtuoso-sample-t $(IODBC_EXTRA)
 
 BUILT_SOURCES = sql_code_javavm.c sql_code_clr.c sql_code_xslt.c
 CLEANFILES = sql_code_javavm.c sql_code_clr.c sql_code_xslt.c
@@ -107,23 +108,40 @@ virtuoso_javavm_t_LDADD = \
 	@LIBS@ \
 	@java_LDFLAGS@
 
+
+# ----------------------------------------------------------------------
+#
+#  Generated code
+#
+# ----------------------------------------------------------------------
+GEN=$(top_srcdir)/bin/generate
+
 sql_code_javavm.c: javavm_xml.sql $(top_srcdir)/libsrc/Wi/sql_to_c.awk
-	@echo "Generating sql_code_javavm.c"
-	@-gawk -f $(top_srcdir)/libsrc/Wi/sql_to_c.awk -v init_name=_javavm pass_bootstrap_cli=1 pl_stats=$(PLSTATS) javavm_xml.sql > sql_code_javavm.c.tmp
-	@-[ -s sql_code_javavm.c.tmp ] && mv sql_code_javavm.c.tmp sql_code_javavm.c
-	@touch sql_code_javavm.c
+	@$(GEN) $(GAWK) \
+		-o sql_code_javavm.c \
+		-f $(top_srcdir)/libsrc/Wi/sql_to_c.awk \
+		-v init_name=_javavm \
+		-v pass_bootstrap_cli=1 \
+		-v pl_stats=$(PLSTATS) \
+		$(srcdir)/javavm_xml.sql 
 
 sql_code_clr.c: import_clr.sql $(top_srcdir)/libsrc/Wi/sql_to_c.awk
-	@echo "Generating sql_code_clr.c"
-	@-gawk -f $(top_srcdir)/libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=$(PLSTATS) import_clr.sql > sql_code_clr.c.tmp
-	@-[ -s sql_code_clr.c.tmp ] && mv sql_code_clr.c.tmp sql_code_clr.c
-	@touch sql_code_clr.c
+	@$(GEN) $(GAWK) \
+		-o sql_code_clr.c \
+		-f $(top_srcdir)/libsrc/Wi/sql_to_c.awk  \
+		-v init_name=_clr \
+		-v pass_bootstrap_cli=1 \
+		-v pl_stats=$(PLSTATS) \
+		import_clr.sql
 
 sql_code_xslt.c: javavm_type.xsl $(top_srcdir)/libsrc/Wi/sql_to_c.awk
-	@echo "Generating sql_code_xslt.c"
-	@-gawk -f $(top_srcdir)/libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=$(PLSTATS) javavm_type.xsl > sql_code_xslt.c.tmp
-	@-[ -s sql_code_xslt.c.tmp ] && mv sql_code_xslt.c.tmp sql_code_xslt.c
-	@touch sql_code_xslt.c
+	@$(GEN) $(GAWK) \
+		-o sql_code_xslt.c \
+		-f $(top_srcdir)/libsrc/Wi/sql_to_c.awk \
+		-v init_name=_xslt \
+		-v pass_bootstrap_cli=1 \
+		-v pl_stats=$(PLSTATS) \
+		javavm_type.xsl
 
 
 # ----------------------------------------------------------------------
