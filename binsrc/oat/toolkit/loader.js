@@ -28,6 +28,18 @@
 /* global namespace */
 window.OAT = {};
 
+OAT.Preferences = {
+	showAjax:1, /* show Ajax window even if not explicitly requested by application? */
+	useCursors:1, /* scrollable cursors */
+	windowTypeOverride:0, /* do not guess window type */
+	xsltPath:"/DAV/JS/xslt/",
+	imagePath:"/DAV/JS/images/",
+	version:"24.9.2007",
+	httpError:1, /* show http errors */
+	allowDefaultResize:1,
+	allowDefaultDrag:1
+}
+
 function $(something) {
 	if (typeof(something) == "string") {
 		var elm = document.getElementById(something);

@@ -350,7 +350,9 @@ var QueryExec = function(optObj) {
 					["navigator","Navigator"],
 					["browser","Browser",{removeNS:true}],
 					["triples","Raw Triples",{}],
-					["svg","SVG Graph",{}]
+					["svg","SVG Graph",{}],
+					["images","Images",{}],
+					["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y}],
 				];
 				var mini = new OAT.RDFMini(self.dom.result,{tabs:tabs,showSearch:false});
 				mini.processLink = self.processLink;

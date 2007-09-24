@@ -43,7 +43,7 @@ OAT.Ajax = {
 	TYPE_XML: 1,
 	user:"",       /* for http authorization */
 	password:"",
-	imagePath:"/DAV/JS/images",
+	imagePath:OAT.Preferences.imagePath,
 	requests:[],
 	
 	startNotify:function() {

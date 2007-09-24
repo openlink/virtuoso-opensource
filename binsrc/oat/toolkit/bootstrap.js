@@ -197,7 +197,6 @@ OAT.LoaderTMP = { /* second part of loader */
 	start:function() {
 		/* initial set of libraries */
 		var fl = (window.featureList ? window.featureList : []);
-		fl.push("preferences");
 		/* go */
 		OAT.Loader.loadFeatures(fl,OAT.Loader.startInit);
 	}

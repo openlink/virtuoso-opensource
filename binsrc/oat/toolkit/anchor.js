@@ -17,7 +17,7 @@ OAT.AnchorData = {
 }
 
 OAT.Anchor = {
-	imagePath:'/DAV/JS/images/',
+	imagePath:OAT.Preferences.imagePath,
 	zIndex:200,
 	
 	assignedMoves:[],

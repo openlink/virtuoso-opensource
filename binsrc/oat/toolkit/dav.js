@@ -26,7 +26,7 @@ OAT.WebDav = {
 		pathFallback:'/DAV/', /* what to offer when dirchange fails */
 		width:760,
 		height:450,
-		imagePath:'/DAV/JS/images/',
+		imagePath:OAT.Preferences.imagePath,
 		imageExt:'png',
 		confirmOverwrite:true,
 		isDav:true,
