@@ -19,8 +19,7 @@
 #  
 #  
 
-noinst_LTLIBRARIES = libplugin.la 
-noinst_LTLIBRARIES = hosting_sample.la plugin_sample.la
+noinst_LTLIBRARIES = libplugin.la hosting_sample.la plugin_sample.la
 
 
 ##########################################
