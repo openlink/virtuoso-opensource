@@ -2562,6 +2562,33 @@ create procedure CAL.WA.dashboard_get(
 
   ses := string_output ();
   http ('<calendar-db>', ses);
+  for select top 10 *
+        from (select a.E_SUBJECT,
+                     CAL.WA.event_url (domain_id, E_ID) E_URI,
+                     coalesce (a.E_UPDATED, now ()) E_UPDATED
+                from CAL.WA.EVENTS a,
+                     DB.DBA.WA_INSTANCE b,
+                     DB.DBA.WA_MEMBER c
+                where a.E_DOMAIN_ID = domain_id
+                  and b.WAI_ID = a.E_DOMAIN_ID
+                  and c.WAM_INST = b.WAI_NAME
+                  and c.WAM_USER = user_id
+                order by a.E_UPDATED desc
+             ) x do {
+
+    declare uname, full_name varchar;
+
+    uname := (select coalesce (U_NAME, '') from DB.DBA.SYS_USERS where U_ID = user_id);
+    full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = user_id);
+
+    http ('<event>', ses);
+    http (sprintf ('<dt>%s</dt>', date_iso8601 (E_UPDATED)), ses);
+    http (sprintf ('<title><![CDATA[%s]]></title>', E_SUBJECT), ses);
+    http (sprintf ('<link><![CDATA[%s]]></link>', E_URI), ses);
+    http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
+    http (sprintf ('<uid>%s</uid>', uname), ses);
+    http ('</event>', ses);
+  }
   http ('</calendar-db>', ses);
   return string_output_string (ses);
 }
