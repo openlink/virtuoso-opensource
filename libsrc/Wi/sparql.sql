@@ -3313,7 +3313,8 @@ describe_physical_subjects:
           declare subj, graph any;
           subj := phys_subjects [s_ctr];
           graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj));
-          dict_put (g_dict, graph, 0);
+          if (graph is not null)
+            dict_put (g_dict, graph, 0);
         }
       sorted_graphs := dict_list_keys (g_dict, 1);
             }
@@ -3326,10 +3327,12 @@ describe_physical_subjects:
           declare subj, graph any;
           subj := phys_subjects [s_ctr];
           graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid));
-          dict_put (g_dict, graph, 0);
+          if (graph is not null)
+            dict_put (g_dict, graph, 0);
         }
       sorted_graphs := dict_list_keys (g_dict, 1);
     }
+  -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
   gvector_sort (sorted_graphs, 1, 0, 0);
   g_count := length (sorted_graphs);
   -- dbg_obj_princ ('sorted_graphs = ', sorted_graphs);
@@ -3343,6 +3346,7 @@ describe_physical_subjects:
           subj := phys_subjects [s_ctr];
           for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
             {
+              -- dbg_obj_princ ('found ', subj, p1, ' in ', graph);
               dict_put (res, vector (subj, p1, DB.DBA.RDF_LONG_OF_OBJ (obj1)), 0);
 --              if (isiri_id (obj1))
 --                {
@@ -3358,6 +3362,7 @@ describe_physical_subjects:
             where G = graph and O = subj and P <> rdf_type_iid
             option (QUIETCAST)) do
             {
+              -- dbg_obj_princ ('found ', s1, p1, subj, ' in ', graph);
               dict_put (res, vector (s1, p1, subj), 1);
         }
     }
