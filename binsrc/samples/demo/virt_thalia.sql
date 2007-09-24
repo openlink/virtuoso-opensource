@@ -1,611 +1,611 @@
-    CREATE TABLE thalia.virt.asu (
+    CREATE TABLE thalia.demo.asu (
         Title LONG VARCHAR NOT NULL,
         Description LONG VARCHAR,
         MoreInfoURL LONG VARCHAR
      );
     
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('100 Principles of Programming with                                  C++. (3)'
                         ,'Principles of problem                                  solving using C++, algorithm design, structured                                  programming, fundamental algorithms and                                  techniques, and computer systems concepts.                                  Social and ethical responsibility. Lecture, lab.                                  Prerequisite: MAT 170. General Studies: CS.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('110 Principles of Programming with                                  Java. (3)'
                         ,'Concepts of problem                                  solving using Java, algorithm design, structured                                  programming, fundamental algorithms and                                  techniques, and computer systems concepts.                                  Social and ethical responsibility. Lecture, lab.                                  Prerequisite: MAT 170.'
                         , 'http://www.eas.asu.edu/~cse110'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('120 Digital Design                                  Fundamentals.(3)'
                         ,'Number systems,                                  conversion methods, binary and complement                                  arithmetic, boolean and switching algebra,                                  circuit minimization. ROMs, PLAs, flipflops,                                  synchronous sequential circuits, and register                                  transfer design. Lecture, lab. Cross-listed with                                  EEE 120. Prerequisite: Computer Literacy.'
                         , 'http://www.eas.asu.edu/~cse120'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('180                                  Computer Literacy.(3)'
                         ,'Introduction to general                                  problem-solving approaches using widely                                  available software tools such as database                                  packages, word processors, spreadsheets, and                                  report generators. May be taken for credit on                                  either IBM PC or Macintosh, but not both.                                  Non-majors only. General Studies : CS.'
                         , 'http://www.eas.asu.edu/~cse180'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('181                                  Applied Problem Solving with Visual BASIC.                                  (3)'
                         ,'Introduction to                                  systematic definition of problems, solution                                  formulation, and method validation. Computer                                  solution using Visual BASIC required for                                  projects. Lecture, lab. Non-majors only.                                  Prerequisite: MAT 117. General Studies: CS.'
                         , 'http://www.eas.asu.edu/~cse181'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('185                                  Internet and the World Wide Web. (3)'
                         ,'Fundamental Internet                                  concepts. World Wide Web browsing, searching,                                  publishing, advanced Internet productivity                                  tools.'
                         , 'http://www.eas.asu.edu/~cse185'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('194 Introduction to Engineering Design.'
                         ,NULL
                         , 'http://www.eas.asu.edu/~hasancam/courses/Spring-2002/ece194/ece194.html'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('200 Concepts of Computer                                  Science.(3)'
                         ,'Overview of algorithms,                                  architecture, languages, computer systems,                                  theory. Problem solving by programming with a                                  high-level language (Java or another) .                                  Prerequisites: One year of high-school                                  programming with Pascal, C++ or Java; or CSE 100                                  or CSE 110. General Studies: CS.'
                         , 'http://www.eas.asu.edu/~cse200/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('210 Object-Oriented Design and                                  Data Structures.(3)'
                         ,'Object Oriented Design,                                  Static and Dynamic Data Structures (Strings,                                  Stacks, Queues, Binary Trees), Recursion,                                  Searching and Sorting, Professional                                  Responsibility. Prerequisite : CSE 200. General                                  Studies :                                  CS.'
                         , 'http://www.eas.asu.edu/~cse210/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('225 Assembly Language Programming                                  and Microprocessors (Motorola).(4)'
                         ,'Assembly language                                  programming, including input/output programming                                  and exception/interrupt handling. Register-level                                  computer organization, I/O interfaces,                                  assemblers, and linkers. Motorola-based                                  assignments. Lecture, lab. Cross-listed as EEE                                  225. Credit is allowed for only CSE 225 or EEE                                  225. Prerequisites: CSE 100 (or 110 or 200), 120                                  (or EEE 120).'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('226 Assembly Language Programming                                  and Microprocessors (Intel).(4)'
                         ,'CPU/memory/peripheral                                  device interfaces and programming. System buses,                                  interrupts, serial and parallel I/O, DMA,                                  coprocessors. Intel-based assignments. Lecture,                                  lab. Cross-listed as EEE 226. Credit is allowed                                  for only CSE 226 or EEE 226. Prerequisites: CSE                                  100 (or 110 or 200), 120 (or EEE 120).'
                         , 'http://www.eas.asu.edu/~sserc/226/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('240 Introduction to Programming                                  Languages.(3)'
                         ,'Introduces the                                  procedural (C++), applicative (LISP), and                                  declarative (Prolog) languages. Lecture, lab.                                  Prerequisite: CSE 210.'
                         , 'http://www.eas.asu.edu/~cse240/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('300    Intermediate Engineering Design.   (3)'
                         ,NULL
                         , 'http://www.eas.asu.edu/~ece300/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('310 Data Structures and                                  Algorithms. (3)'
                         ,'Advanced data                                  structures and algorithms, including stacks,                                  queues, trees (B, B+, AVL), and graphs.                                  Searching for graphs, hashing and external                                  sorting. Prerequiste: CSE 210, MAT 243.'
                         , 'http://www.eas.asu.edu/~cse310/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('330 Computer Organization and                                  Architecture. (3)'
                         ,'Instruction set                                  architecture, processor performance and design;                                  datapath, control (hardwired, microprogrammed),                                  pipelining, input/output. Memory organization                                  with cache, virtual memory. Prerequisite:                                  CSE/EEE 225 or CSE/EEE 226.'
                         , 'http://www.eas.asu.edu/~cse330/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('340 Principles of Programming                                  Languages. (3)'
                         ,'Introduction to                                  language design and implementation. Parallel,                                  machine dependent and declarative language                                  features; type theory; specification,                                  recognition, translation, run-time management.                                  Prerequisites: CSE 240, CSE 310, CSE/EEE 225 or                                  226.'
                         , 'http://www.eas.asu.edu/~cse340/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('355 Introduction to Theoretical                                  Computer Science.(3)'
                         ,'Introduction to formal                                  language theory and automata, Turing machines,                                  decidability/undecidability, recursive function                                  theory, and introduction to complexity theory.                                  Prerequisite: CSE 310.'
                         , 'http://www.eas.asu.edu/~cse355/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('360 Introduction to Software                                  Engineering. (3)'
                         ,'Software life cycle                                  models; Project management, team development,                                  environments and methodologies; software                                  architectures; quality assurance and standards;                                  legal, ethical issues. Prerequisite: CSE 240 and                                  CSE 210.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('408                                  Multimedia Information Systems.(3)'
                         ,'Design, use, and                                  applications of multimedia systems. An                                  introduction to acquisition, compression,                                  storage, retrieval, and presentation of data                                  from different media such as images, text,                                  voice, and alphanumeric. Prerequisite: CSE 310.'
                         , 'http://www.eas.asu.edu/~cse408/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('412 Database Management. (3)'
                         ,'Introduction to DBMS                                  concepts. Data models and languages. Relational                                  database theory. Database security/ integrity                                  and concurrency. Prerequisite: CSE 310.'
                         , 'http://www.eas.asu.edu/~cse412/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('420 Computer Architecture                                  I. (3)'
                         ,'Computer architecture.                                  Performance versus cost trade-offs. Instruction                                  set design. Basic processor implementation and                                  pipelining. Prerequisite: CSE 330.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('421 Microprocessor System Design                                  I.(4)'
                         ,'Assembly-language                                  programming and logical hardware design of                                  systems using 8-bit microprocessors and                                  micro-controllers. Fundamental concepts of                                  digital system design. Reliability and social,                                  legal implications. Lecture, lab. Prerequisite:                                  CSE/EEE 225.'
                         , 'http://www.eas.asu.edu/~cse421/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('422 Microprocessor System Design                                  II.(4)'
                         ,'Design of microcomputer                                  systems using contemporary logic and                                  microcomputer system components. Requires                                  assembly language programming. Prerequisite: CSE                                  421.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('423 Microcomputer System                                  Hardware.(3)'
                         ,'Information and                                  techniques presented in CSE 422 are used to                                  develop the hardware design of a microprocessor,                                  multiprogramming, microprocessor-based system.                                  Prerequisite: CSE 422. General Studies.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('428                                  Computer-Aided Processes.(3)'
                         ,'Hardware and software                                  considerations for computerized manufacturing                                  systems. Specific concentration on automatic                                  inspection, numerical control, robotics, and                                  integrated manufacturing systems. Prerequisite:                                  CSE 330.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('430 Operating Systems.(3)'
                         ,'Operating system                                  structure and services, processor scheduling,                                  concurrent processes, synchronization                                  techniques, memory management, virtual memory,                                  input/output, storage management, file systems.                                  Prerequisites: CSE 330, 340.'
                         , 'http://www.eas.asu.edu/~cse430/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('432 Operating System                                  Internals.(3)'
                         ,'IPC, exception and                                  interrupt processing, memory and thread                                  management, user-level device drivers, and OS                                  servers in a modern microkernel-based OS.                                  Prerequisite: CSE 430.'
                         , 'http://www.eas.asu.edu/~cse432/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('434                                  Computer Networks.(3)'
                         ,'Physical layer basics;                                  network protocol algorithms; error handling;                                  flow control; multihop routing; network                                  reliability, timing, security; data compression;                                  cryptography fundamentals. Prerequisite: CSE 330'
                         , 'http://www.eas.asu.edu/~cse434/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('438 Systems Programming.(3)'
                         ,'Design and                                  implementtion of systems programs, including                                  text editors, file utilities, monitors,                                  assemblers, relocating linking loaders, I/O                                  handlers, schedulers, etc. Prerequisite: CSE 421                                  or instructor approval. General Studies: L'
                         , 'http://www.eas.asu.edu/~cse438/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('440 Compiler Construction                                  I. (3)'
                         ,'Introduction to                                  programming language implementation.                                  Implementation strategies such as compilation,                                  interpretation, and translation. Major                                  compilation phases such as lexical analysis,                                  semantic analysis, optimization, and code                                  generation. Prerequisites: CSE 340, 355.'
                         , 'http://www.eas.asu.edu/~cse440/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('445 Distributed Computing with Java                                  and CORBA.(3)'
                         ,'Frameworks for                                  distributed software components. Foundations of                                  client-server computing and architectures for                                  distributed object systems. Dynamic discovery                                  and invocation. Prerequisites: CSE 360.'
                         , 'http://www.eas.asu.edu/~cse445/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('446 Client-Server User                                  Interfaces.(3)'
                         ,'Client-server model for                                  creating window interfaces. Toolkits and                                  libraries such as X11, Microsoft Foundation                                  Classes and Java Abstract Window Toolkit.                                  Prerequisites: CSE 310.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('450 Design and Analysis of                                  Algorithms.(3)'
                         ,'Design and analysis of                                  computer algorithms using analytical and                                  empirical methods; complexity measures, design                                  methodologies, and survey of important                                  algorithms. Prerequisite: CSE 310.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('457 Theory of Formal                                  Languages. (3)'
                         ,'Theory of grammar,                                  methods of syntactic analysis and specification,                                  types of artificial languages, relationship                                  between formal languages, and automata.                                  Cross-listed as MAT 401. Prerequisite: CSE 355.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('459                                  Logic for Computing Scientists. (3)'
                         ,'Propositional logic,                                  syntax and semantics, proof theory vs. model                                  theory, soundness, consistency and completeness,                                  first order logic, logical theories, automated                                  theorem proving, ground resolution, pattern                                  matching unification and resolution, Dijkstras                                  logic, proof obligations, and program proving.                                  Prerequisite: CSE 355.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('460 Software Analysis and                                  Design. (3)'
                         ,'Software engineering                                  foundations, formal representations in the                                  software process; use of formalisms in creating                                  a measured and structured working environment.                                  Prerequisite: CSE 360.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('461 Software Engineering Project                                  I.(3)'
                         ,'First of 2-course                                  software design sequence. Development planning,                                  management; process modeling; incremental and                                  team development using CASE tools. Prerequisite:                                  CSE 360.'
                         , 'http://www.eas.asu.edu/~cse461/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('462 Software Engineering Project                                  II.(3)'
                         ,'Second of 2-course                                  software design sequence. Process, product assessment and                                  improvement; incremental and team development                                  using CASE tools. Prerequisite: CSE 461.'
                         , 'http://www.eas.asu.edu/~cse462/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('470                                  Computer Graphics. (3)'
                         ,'Display devices, data                                  structures, transformation, interactive                                  graphics, 3-dimensional graphics, and hidden                                  line problem. Prerequisites: CSE 310; MAT 342.'
                         , 'http://www.eas.asu.edu/~cse470/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('471 Introduction to Artificial                                  Intelligence.(3)'
                         ,'State space search,                                  heuristic search, games, knowledge                                  representation techniques, expert systems, and                                  automated reasoning. Prerequisite: CSE 240, 310.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('473                                  Nonprocedural Programming Languages. (3)'
                         ,'Functional and logic                                  programming using languages like Lucid and                                  Prolog. Typical applications would be a Screen                                  Editor and an Expert System. Prerequisite: CSE                                  355.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('476 Introduction to Natural                                  Language Processing. (3)'
                         ,'Principles of                                  computational linguistics, formal syntax, and                                  semantics, as applied to the design of software                                  with natural (human) language I/O. Prerequisite:                                  CSE 310 or instructor approval.'
                         , 'http://www.eas.asu.edu/~cse476/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('477                                  Introduction to Computer-Aided Geometric                                  Design.(3)'
                         ,'Introduction to                                  parametric curves and surfaces. Bezier and                                  B-spline interpolation, and approximation                                  techniques. Prerequisites: CSE 210, CSE 470; MAT                                  342.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('494 Advanced Database                                  Concepts.(3)'
                         ,'Advanced data modeling,                                  object-oriented databases, and object-relational                                  databases. Web access to databases.                                  Professionalism and ethics in information                                  access. Credit: 3 hours. Prerequisite: CSE 412'
                         , 'http://www.eas.asu.edu/~cse494db'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('494 Building and                                  programming mobile robots.(3)'
                         ,NULL
                         , 'http://www.public.asu.edu/~cbaral/cse494-f00/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('494                                  Information Retrieval, Mining and Integration on                                  the Internet.(3)'
                         ,NULL
                         , 'http://rakaposhi.eas.asu.edu/cse494/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('494 Principles                                  of Information Engineering.(3)'
                         ,'Train computer science                                  students to be effective information specialists                                  with an entrepreneurial perspective and                                  managerial outlook.'
                         , 'http://ceaspub.eas.asu.edu/cse494b/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('494/598 Wireless                                  Sensor Networks(3)'
                         ,'Applications (pervasive                                  computing, health-monitoring, home land                                  security), data dissemination and aggregation,                                  security, localization, time synchronization,                                  energy-efficiency, reliability, programming                                  platforms.'
                         , 'http://shamir.eas.asu.edu/~mcn/cse494sp05.html'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('494 Real-Time Embedded Systems.                                  (3)'
                         ,NULL
                         , 'http://rts-lab.eas.asu.edu/courses/cse494/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('507 Virtual Reality Systems.(3)'
                         ,'Computer generated 3-D                                  environments, spatial presence of virtual                                  objects, technologies of immersion, tracking                                  systems, simulation of reality. Prerequisites:                                  CSE 408 or CSE 508 or CSE 470 or instructor                                  approval.'
                         , 'http://www.eas.asu.edu/~cse507/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('508 Digital Image Processing.(3)'
                         ,'Digital image                                  fundamentals, image transforms, image                                  enhancement and restoration techniques, image                                  encoding, and segmentation methods.                                  Prerequisite: EEE 303 or instructor approval.'
                         , 'http://www.eas.asu.edu/~cse508/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('510                                  Database Management System                                  Implementation.(3)'
                         ,'Implementation of                                  database systems. Data storage, indexing,                                  querying, and retrieval. Query optimization and                                  execution, concurrency control, and transaction                                  management. Prerequisite: CSE 412.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('512 Distributed Database                                  Systems.(3)'
                         ,'Distributed database                                  design, query processing, and transaction                                  processing. Distributed database architectures                                  and interoperability. Emerging technology.                                  Prerequisite: CSE 412.'
                         , 'http://www.eas.asu.edu/~cse512/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('513                                  Rules inDatabase Systems.(3)'
                         ,'Declarative and active                                  rules. Logic as a data model. Evaluation and                                  query optimization. Triggers and ECA rules.                                  Current research topics. Prerequisite: CSE 412.'
                         , 'http://www.eas.asu.edu/~cse513/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('514                                  Object-Oriented Database Systems.(3)'
                         ,'Object-oriented data                                  modeling, database and language integration,                                  object algebras, extensibility, transactions,                                  object managers, versioning/configuration,                                  active data, nonstandard applications. Research                                  seminar. Prerequisite: CSE 510.'
                         , 'http://www.eas.asu.edu/~cse514/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('515 Multimedia                                  and Web Databases. (3)'
                         ,'Data models for                                  multimedia and Web data; query processing and                                  optimization for inexact retrieval; advanced                                  indexing, clustering, and search techniques.                                  Prerequisites: CSE 408, 412.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('517                                  Hardware Design Languages. (3)'
                         ,'Introduction to                                  hardware design languages using VHDL. Modeling                                  concepts for specification, simulation,                                  synthesis.. Prerequisite: CSE 423 or EEE 425 or                                  consent of instructor.'
                         , 'http://www.eas.asu.edu/~cse517/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('518                                  Synthesis with Hardware Design                                  Languages.(3)'
                         ,'Modeling VLSI design in                                  hardware design languages for synthesis.                                  Transformation of language-based designs to                                  physical layout. Application of synthesis tools.                                  Prerequisite: CSE 517.'
                         , 'http://www.eas.asu.edu/~cse518/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('520 Computer Architecture II.(3)'
                         ,'Computer architecture                                  description languages, computer arithmetic,                                  memory-hierarchy design, parallel, vector, and                                  multiprocessors, and input/output..                                  Prerequisites: CSE 420, 430.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('521 Microprocessor Applications.(4)'
                         ,'Microprocessor                                  technology and its application to the design of                                  practical digital systems. Hardware, assembly                                  language programming, and interfacing of                                  microprocessor-based systems. Lecture, lab.                                  Prerequisite: CSE 421.'
                         , 'http://www.eas.asu.edu/~cse521/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('523 Microcomputer Systems                                  Software.(3)'
                         ,'Developing system                                  software for a multiprocessor, multiprogramming,                                  microprocessor-based system using information                                  and techniques presented in CSE 421, 422.                                  Prerequisite: CSE 422.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('526 Parallel Processing.(3)'
                         ,'Real and apparent                                  concurrency. Hardware organization of                                  multiprocessors, multiple computer systems,                                  scientific attached processors, and other                                  parallel systems. Prerequisite: CSE 330 or 423.'
                         , 'http://www.eas.asu.edu/~cse526/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('530 Operating System Case Study.(3)'
                         ,'Study of the design and                                  implementation of a timeshared multiprogramming                                  operating system, with emphasis on the UNIX                                  operating system. Prerequisites: CSE 430;                                  knowledge of C Language.'
                         , 'http://www.eas.asu.edu/~cse530/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('531 Distributed and Multiprocessor                                  Operating Systems.(3)'
                         ,'Distributed systems                                  architecture, remote file access, message-based                                  systems, object-based systems, client/server                                  paradigms, distributed algorithms, replication                                  and consistency, and multiprocessor operating                                  systems. Prerequisite: CSE 432 or instructor                                  approval.'
                         , 'http://cactus.eas.asu.edu/partha/Teaching/531.2002/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('532 Advanced Operating System                                  Internals.(3)'
                         ,'Memory, processor,                                  process and communication management, and                                  concurrency control in the Windows NT                                  multiprocessor and distributed operating system                                  kernel and servers. Prerequisite: CSE 530 and                                  either CSE 531 or CSE 536.'
                         , 'http://www.eas.asu.edu/~cse532/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('534 Advanced Computer Networks.(3)'
                         ,'Advanced network                                  protocols and infrastructure, applications of                                  high-performance networks to distributed                                  systems, high-performance computing and                                  multimedia domains, special features of                                  networks: real-time, security, reliability.                                  Prerequisite: CSE 434.'
                         , 'http://www.eas.asu.edu/~cse534/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('536 Advanced Operating Systems.(3)'
                         ,'Protection and file                                  systems. Communication, processes,                                  synchronization, naming, fault tolerance,                                  security, data replication, and coherence in                                  distributed systems. Real-time systems.                                  Prerequisite: CSE 430.'
                         , 'http://www.eas.asu.edu/~cse536s2/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('537 ATM Networks.(3)'
                         ,'Principles of ATM                                  networks, switch architecture, traffic                                  management, call and connection control,                                  routing, internetworking with ATM networks,                                  signaling, and OAM. Prerequisite: CSE 434.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('539 Applied Cryptography.(3)'
                         ,'Use of cryptography for                                  secure protocols over networked systems,                                  including signatures, certificates, timestamps,                                  electrons, digital cash, and other multiparty                                  coordination. Prerequisite: CSE 310 or                                  instructor approval.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('540 Compiler Construction II.(3)'
                         ,'Formal parsing                                  strategies, optimization techniques, code                                  generation, extensibility and transportability                                  considerations, and recent developments.                                  Prerequisite: CSE 440.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('545 Programming Language Design.(3)'
                         ,'Language constructs,                                  extensibility and abstractions, and runtime                                  support. Language design process. Prerequisite:                                  CSE 440.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('550                                  Combinatorial Algorithms and                                  Intractability.(3)'
                         ,'Combinatorial                                  algorithms, nondeterministic algorithms, classes                                  P and NP, NP-hard and NP-complete problems, and                                  intractability. Design techniques for fast                                  combinatorial algorithms. Prerequisite: CSE 450.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('555 Theory of Computation.(3)'
                         ,'Rigorous treatment of                                  regular languages, context-free languages,                                  Turing machines and decidability, reducibility,                                  and other advanced topics in computability                                  theory. Prerequisite: CSE 355.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('556                                  Expert Systems.(3)'
                         ,'Knowledge acquisition                                  and representation, rule-based systems,                                  frame-based system, validation of knowledge                                  bases, inexact reasoning, and expert database                                  systems.Prerequisite CSE 471.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('562                                  Software Process Automation.(3)'
                         ,'Software engineering                                  characteristics particular to parallel and                                  distributed systems. Tools and techniques to                                  support software engineering involving parallel                                  processing and distributed systems.                                  Prerequisite: CSE 360.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('563                                  Software Requirements and                                  Specification. (3)'
                         ,'Examination of the                                  definitional stage of software development;                                  analysis of specification representations and                                  techniques emphasizing important application                                  issues. Prerequisite: CSE 460.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('564                                  Software Design. (3)'
                         ,'Examination of software                                  design issues and techniques. Includes a survey                                  of design representations and a comparison of                                  design methods. Prerequisite: CSE 460.'
                         , 'http://www.eas.asu.edu/~cse564/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('565 Software Verification,                                  Validation and Testing.(3)'
                         ,'Test planning;                                  requirements-based and code-based testing                                  techniques; tools; reliability models;                                  statistical testing. Prerequisite: CSE 460.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('566 Software Project, Process and                                  Quality Management.(3)'
                         ,'Project Management,                                  risk management, configuration management,                                  quality management, simulated project management                                  experience. Prerequisite: CSE 460.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('570                                  Advanced Computer Graphics I.(3)'
                         ,'Hidden surface                                  algorithms, lighting models, and shading                                  techniques. User interface design. Animation                                  techniques. Fractals and stochastic models.                                  Raster algorithms. Prerequisite: CSE 470.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('571                                  Artificial Intelligence.(3)'
                         ,'Definitions of                                  intelligence, computer problem solving, game                                  playing, pattern recognition, theorem proving,                                  and semantic information processing;                                  evolutionary systems; heuristic programming.                                  Prerequisite: CSE 471.'
                         , 'http://www.public.asu.edu/~cbaral/cse571-f99/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('573 Advanced Computer Graphics II.                                  (3)'
                         ,'Modeling of natural                                  phenomena: terrain, clouds, fire, water, and                                  trees. Particle systems, deformation of solids,                                  antialiasing, adn volume visualization. Lecture,                                  Lab. Prerequisite: CSE 470.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('574 Planning and Learning Methods                                  in AI.(3)'
                         ,'Reasoning about time                                  and action, plan synthesis and execution,                                  improving planning performance, applications to                                  manufacturing intelligent agents. Prerequisite:                                  CSE 471.'
                         , 'http://rakaposhi.eas.asu.edu/cse574'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('575                                  Decision-Making Strategies in AI.(3)'
                         ,'Automatic knowledge                                  acquisition, automatic analysis/synthesis of                                  strategies, distributed planning/ problem                                  solving, casual modeling, predictive                                  human-machine environments. Prerequisite: CSE                                  571.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('576 Topics in                                  Natural Language Processing.(3)'
                         ,'Comparative parsing                                  strategies, scooping and reference problems,                                  nonfirst-order logical semantic representations,                                  and discourse structure. Prerequisite: CSE 476.'
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('577                                  Advanced Computer-Aided Geometric Design                                  I.(3)'
                         ,'General interpolation;                                  review of curve interpolation and approximation;                                  spline curves; visual smoothness of curves;                                  parameterization of curves; introduction to                                  surface interpolation and approximation.                                  Prerequisites: CSE 470 and 477.'
                         , 'http://eros.cagd.eas.asu.edu/~farin/classes/cse577/cse577.html'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('578                                  Advanced Computer-Aided Geometric Design II.                                  (3)'
                         ,'Coons patches and                                  Bezier patches; triangular patches; arbitrarily                                  located data methods; geometry processing of                                  surfaces; higher dimensional surfaces.                                  Prerequisites: CSE 470 and 477.'
                         , 'http://eros.cagd.eas.asu.edu/~farin/classes/cse578/cse578.html'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('579 NURBs:                                  Nonuniform Rational B-Splines.(3)'
                         ,'Projective geometry,                                  NURBs-based modeling, basic theory of conics and                                  rational surfaces, stereographic maps, quadrics,                                  IGES data specification. Prerequisites: CSE 470                                  and 477.'
                         , 'http://eros.cagd.eas.asu.edu/~farin/classes/cse579/cse579.html'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591                                  Advanced Topics on Parallel and Distributed                                  Computing. (3)'
                         ,NULL
                         , 'http://www.eas.asu.edu/~cse591os'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591 Autonomous                                  Agents: theory and practice. (3)'
                         ,NULL
                         , 'http://www.public.asu.edu/~cbaral/cse591-f01/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591 Computational Algorithms for                                  Systems Biology. (3)'
                         ,NULL
                         , 'http://www.eas.asu.edu/~csedept/courses/591_computational.htm'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591                                  Computational Molecular Biology. (3)'
                         ,NULL
                         , 'http://www.public.asu.edu/~cbaral/cse591-s03/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591 Data Mining.                                  (3)'
                         ,NULL
                         , 'http://www.public.asu.edu/~huanliu/cse591.html'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591                                  Hardware-Software Co-design. (3)'
                         ,NULL
                         , 'http://cse.asu.edu/~cse591b/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591 Image                                  Processing-II Digital Video processing. (3)'
                         ,NULL
                         , 'http://www.eas.asu.edu/~cse591f/'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591 Mobile Ad                                  Hoc Networking  Computing. (3)'
                         ,NULL
                         , 'http://www.public.asu.edu/~syrotiuk/cse591/index.html'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591 Mobile                                  Computing. (3)'
                         ,NULL
                         , 'http://shamir.eas.asu.edu/~cse591tv'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591 Object                                  Oriented Modeling  Simulation. (3)'
                         ,NULL
                         , 'http://www.eas.asu.edu/~hsarjou/Courses/CSE591fall02.pdf'
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591 Practical                                  Operating System Internals. (3)'
                         ,NULL
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591 Randomized                                  and Approximation Algorithms. (3)'
                         ,NULL
                         , NULL
         );
     
-        INSERT INTO thalia.virt.asu (Title,Description,MoreInfoURL)
+        INSERT INTO thalia.demo.asu (Title,Description,MoreInfoURL)
         VALUES ('591                                  Semantic Web Mining. (3)'
                         ,NULL
                         , 'http://www.public.asu.edu/~hdavulcu/CSE591_Semantic_Web_Mining.html'
@@ -615,7 +615,7 @@
 
 
 
-CREATE TABLE thalia.virt.brown (
+CREATE TABLE thalia.demo.brown (
         Code VARCHAR(8) NOT NULL UNIQUE, 
         Title LONG VARCHAR NOT NULL,
         Instructor LONG VARCHAR,
@@ -624,7 +624,7 @@ CREATE TABLE thalia.virt.brown (
 ;
     
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS002'
                         ,'"http://www.cs.brown.edu/courses/cs002/" Concepts                     Challenges of CS  C hr. MWF 10-11'
                         ,'"http://www.cs.brown.edu/~dls/" Stanford'
@@ -632,7 +632,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS004'
                         ,'"http://www.cs.brown.edu/courses/cs004/" Intro to                    Scientific Computing  K hr. T,Th 2:30-4'
                         ,'"http://www.cs.brown.edu/~ausas/" Usas'
@@ -640,7 +640,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS016'
                         ,'"http://www.cs.brown.edu/courses/cs016/" Intro to                    Algorithms  Data Structures  D hr. MWF 11-12'
                         ,'"http://www.cs.brown.edu/~rt/" Tamassia'
@@ -648,7 +648,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS018'
                         ,'"http://www.cs.brown.edu/courses/cs018/" CS: An                    Integrated Approach  J hr. T,Th 1-2:30'
                         ,'"http://www.cs.brown.edu/~klein/" Klein'
@@ -656,7 +656,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS022'
                         ,'"http://www.cs.brown.edu/courses/cs022/" Intro. to                    Discrete Mathematics  B hr. MWF 9-10'
                         ,'"http://www.cs.brown.edu/~anna/" Lysyanskaya'
@@ -664,7 +664,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS032'
                         ,'"http://www.cs.brown.edu/courses/cs032/" Intro. to                    Software Engineering  K hr. T,Th 2:30-4'
                         ,'"http://www.cs.brown.edu/~spr/" Reiss'
@@ -672,7 +672,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS034'
                         ,'"http://www.cs.brown.edu/courses/cs034/" Intro. to                    Systems Programming  THURSDAY ONLY 1-2:30'
                         ,'"http://www.cs.brown.edu/~er/" Manos                  Renieris'
@@ -680,7 +680,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS92'
                         ,''
                         ,'"http://www.cs.brown.edu/~rbb/" Blumberg'
@@ -688,7 +688,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CIT 506'
                         ,''
                         ,NULL
@@ -696,7 +696,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS138'
                         ,'"http://www.cs.brown.edu/courses/cs138/" Networked                    Information Systems  I hr. T,Th 10:30-12'
                         ,'"http://www.cs.brown.edu/~ugur/" Cetintemel'
@@ -704,7 +704,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS141'
                         ,'"http://www.cs.brown.edu/courses/cs141/" Intro. to                    Artificial Intelligence  I hr. T,Th 10:30-12'
                         ,'"http://www.cs.brown.edu/~amygreen/" Greenwald'
@@ -712,7 +712,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS148'
                         ,'"http://www.cs.brown.edu/courses/cs148/" Building                    Intelligent Robots  H hr. T,Th 9-10:30'
                         ,'"http://www.cs.brown.edu/~ec/" Charniak'
@@ -720,7 +720,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS155'
                         ,'"http://www.cs.brown.edu/courses/cs155/" Probabilistic                    Methods in CS  J hr. T,Th 1-2:30'
                         ,'"http://www.cs.brown.edu/~eli/" Upfal'
@@ -728,7 +728,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS168'
                         ,'"http://www.cs.brown.edu/courses/cs168/" Computer                    Networks  M hr. M 3-5:30'
                         ,'"http://www.cs.brown.edu/~twd/" Doeppner'
@@ -736,7 +736,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS181'
                         ,'"http://www.cs.brown.edu/courses/cs181/" Computational                    Molecular Biology  K hr. T,Th 2:30-4'
                         ,'"http://www.cs.brown.edu/~franco/" Preparata'
@@ -744,7 +744,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS190'
                         ,'"http://www.cs.brown.edu/courses/cs190/" Software                    System Design  D hr. MWF 11-12'
                         ,'"http://www.cs.brown.edu/~sk/" Krishnamurthi'
@@ -752,7 +752,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 )
 ;
     
-INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
+INSERT INTO thalia.demo.brown (Code,Title,Instructor,Room)
  VALUES ('CS196-9'
                         ,'"http://www.cs.brown.edu/courses/cs196-9/" Document                    Engineering  H hr. T,Th 9-10:30'
                         ,'"http://www.cs.brown.edu/~dgd/" Durand'
@@ -761,7 +761,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 ;
 
 
-    CREATE TABLE thalia.virt.cmu (
+    CREATE TABLE thalia.demo.cmu (
         Code VARCHAR(16) NOT NULL, -- not unique really ;)
         Sec VARCHAR(2),
         CourseXListed LONG VARCHAR,
@@ -774,7 +774,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
      );
     
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-721*'
                         , 'A'
                         , '.'
@@ -786,7 +786,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-744*'
                         , 'A'
                         , '.'
@@ -798,7 +798,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-750*'
                         , 'A'
                         , '.'
@@ -810,7 +810,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-780*'
                         , 'A'
                         , '16-731'
@@ -822,7 +822,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-782'
                         , 'A'
                         , '15-496'
@@ -834,7 +834,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-785'
                         , 'A'
                         , '15-485/ 85-485/785'
@@ -846,7 +846,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-802'
                         , 'A'
                         , '10-702'
@@ -858,7 +858,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-812*'
                         , 'A'
                         , '.'
@@ -870,7 +870,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-815'
                         , 'A'
                         , '.'
@@ -882,7 +882,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-818'
                         , 'A4'
                         , '.'
@@ -894,7 +894,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '6'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-819'
                         , 'B'
                         , '.'
@@ -906,7 +906,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-820'
                         , 'A'
                         , '.'
@@ -918,7 +918,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '6'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-820'
                         , 'B'
                         , '.'
@@ -930,7 +930,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '6'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-829'
                         , 'F'
                         , '18-732'
@@ -942,7 +942,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , NULL
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-845'
                         , 'A'
                         , '.'
@@ -954,7 +954,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '2'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-859'
                         , 'A'
                         , '.'
@@ -966,7 +966,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-859'
                         , 'K'
                         , '21-801'
@@ -978,7 +978,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-864'
                         , 'A'
                         , '.'
@@ -990,7 +990,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-887*'
                         , 'A'
                         , '16-830'
@@ -1002,7 +1002,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-889'
                         , 'D'
                         , '.'
@@ -1014,7 +1014,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , NULL
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-899'
                         , 'B'
                         , '.'
@@ -1026,7 +1026,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                         , '12'
         );
     
-        INSERT INTO thalia.virt.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
+        INSERT INTO thalia.demo.cmu (Code,Sec,CourseXListed,CourseTitle,Lecturer,Room,Day_,Time_,Units)
         VALUES ('15-998'
                         , 'A'
                         , '.'
@@ -1039,7 +1039,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
         );
 
     
-    CREATE TABLE thalia.virt.gatech (
+    CREATE TABLE thalia.demo.gatech (
         Department VARCHAR(2),
         Code INTEGER,
         Section VARCHAR(4),
@@ -1058,7 +1058,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
      );
     
     
-    INSERT INTO thalia.virt.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
+    INSERT INTO thalia.demo.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
     VALUES ('CS'
                     , 4001
                     , 'A'
@@ -1076,7 +1076,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Course restricted: Only class JR SR.'
     );
     
-    INSERT INTO thalia.virt.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
+    INSERT INTO thalia.demo.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
     VALUES ('CS'
                     , 4001
                     , 'B'
@@ -1094,7 +1094,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Course restricted: Only class JR SR.'
     );
     
-    INSERT INTO thalia.virt.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
+    INSERT INTO thalia.demo.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
     VALUES ('CS'
                     , 4001
                     , 'D'
@@ -1112,7 +1112,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Course restricted: Only class JR SR.'
     );
     
-    INSERT INTO thalia.virt.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
+    INSERT INTO thalia.demo.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
     VALUES ('CS'
                     , 4001
                     , 'RNZ'
@@ -1130,7 +1130,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Pacific Study Abroad in New Zealand'
     );
     
-    INSERT INTO thalia.virt.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
+    INSERT INTO thalia.demo.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
     VALUES ('CS'
                     , 4210
                     , 'A'
@@ -1148,7 +1148,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Enforced Pre-requisite(s): CS 2200 Or ECE 3055'
     );
     
-    INSERT INTO thalia.virt.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
+    INSERT INTO thalia.demo.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
     VALUES ('CS'
                     , 4220
                     , 'A'
@@ -1166,7 +1166,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'TBA     TBA     Pu     TBA'
     );
     
-    INSERT INTO thalia.virt.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
+    INSERT INTO thalia.demo.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
     VALUES ('CS'
                     , 4235
                     , 'A'
@@ -1184,7 +1184,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Enforced Pre-requisite(s): CS 3251'
     );
     
-    INSERT INTO thalia.virt.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
+    INSERT INTO thalia.demo.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
     VALUES ('CS'
                     , 4255
                     , 'A'
@@ -1202,7 +1202,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Enforced Pre-requisite(s): CS 3251'
     );
     
-    INSERT INTO thalia.virt.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
+    INSERT INTO thalia.demo.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
     VALUES ('CS'
                     , 4290
                     , 'A'
@@ -1220,7 +1220,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Enforced Pre-requisite(s): CS 2200'
     );
     
-    INSERT INTO thalia.virt.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
+    INSERT INTO thalia.demo.gatech (Department,Code,Section,Mode_,CRN,Title,Hours,In_,Max_,Days,Time_,Instructor,Room,Building,Description)
     VALUES ('CS'
                     , 4330
                     , 'A'
@@ -1239,7 +1239,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
     );
     
 
-    CREATE TABLE thalia.virt.toronto (
+    CREATE TABLE thalia.demo.toronto (
         No_ VARCHAR(16) NOT NULL,
         level_ LONG VARCHAR,
         offeredTerm LONG VARCHAR,
@@ -1252,7 +1252,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
         text_ LONG VARCHAR
      );
 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2103/407'
                                 , 'cross-listed'
                                 , 'Fall 2003'
@@ -1265,7 +1265,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'Design Patterns: Elements of Reusable Object-Oriented Software, Gamma et. al. Addison-Wesley (Professional Computing Series), 1995 ISBN 0-201-63361-2'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2104/465'
                                 , 'cross-listed'
                                 , 'Fall 2003'
@@ -1278,7 +1278,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'E.C.R. Hehner, A Practical Theory of Programming, second edition, Springer, 2003'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2105/408'
                                 , 'cross-listed'
                                 , 'Fall 2003'
@@ -1291,7 +1291,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'Hans van Vliet, Software Engineering - Principles and Practice (2nd ed.), John Wiley, 2000.'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2108'
                                 , 'graduate'
                                 , 'Fall 2003'
@@ -1304,7 +1304,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , '`Model Checking`, by Clarke, Grumberg, Peled, 1999, MIT Press.'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2204/468'
                                 , 'cross-listed'
                                 , 'Fall 2003'
@@ -1317,7 +1317,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'Applied Operating System Concepts (Windows XP Update), A. Silberschatz, P. B. GAlvin and G. Gagne, Wiley (2003).'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2209/458'
                                 , 'cross-listed'
                                 , 'Fall 2003/2004'
@@ -1330,7 +1330,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'Layered network architecture, ARQ retransmission strategies, delay models for data networks, multiaccess communication, routing, congestion control, addressing.'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2221'
                                 , 'graduate'
                                 , 'Fall 2003'
@@ -1343,7 +1343,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2221'
                                 , 'graduate'
                                 , 'Fall 2003'
@@ -1356,7 +1356,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2228'
                                 , 'graduate'
                                 , 'Fall 2003'
@@ -1369,7 +1369,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2306/456'
                                 , 'cross-listed'
                                 , 'Fall 2003'
@@ -1382,7 +1382,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2307'
                                 , 'graduate'
                                 , 'Fall 2003'
@@ -1395,7 +1395,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'The Engineering of Numerical Software, by Webb Miller, Prentice-Hall, 1984. Republished by the Custom Printing Dept., UofT Bookstore.'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2401'
                                 , 'graduate'
                                 , 'Fall 2003/2004'
@@ -1408,7 +1408,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'Theory of Computational Complexity, Ding-Zhu Du and Ker-I KO'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2404/438'
                                 , 'cross-listed'
                                 , 'Fall 2003/2004'
@@ -1421,7 +1421,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2405/448'
                                 , 'cross-listed'
                                 , 'Fall 2003/2004'
@@ -1434,7 +1434,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'Introduction to the Theory of Computation, by Michael Sipser'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2414'
                                 , 'graduate'
                                 , 'Fall 2003/2004'
@@ -1447,7 +1447,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2416'
                                 , 'graduate'
                                 , 'Fall 2003/2004'
@@ -1460,7 +1460,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'An Introduction to Computational Learning Theory by Kearns and Vazirani.'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2423'
                                 , 'graduate'
                                 , 'Fall 2003/2004'
@@ -1473,7 +1473,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'L. Libkin, Elements of Finite Model Theory, 293pp, 1st draft'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2429'
                                 , 'graduate'
                                 , 'Fall 2003/2004'
@@ -1486,7 +1486,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2501/485'
                                 , 'cross-listed'
                                 , 'Fall 2003/2004'
@@ -1499,7 +1499,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'Jurafsky, Daniel, Martin, James H. Speech and Language Processing. Prentice-Hall, 2000.'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2502/486'
                                 , 'cross-listed'
                                 , 'Fall 2003/2004'
@@ -1512,7 +1512,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'A hardcopy of the text for the course, a draft of a book by Brachman and Levesque, will be distributed in class.'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2503/487'
                                 , 'cross-listed'
                                 , 'Fall 2003/2004'
@@ -1525,7 +1525,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'E. Trucco and A. Verri, Introductory Techniques for 3D Computer Vision, Prentice-Hall, 1998 (ISBN 0-13-261108-2).'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2504/418'
                                 , 'cross-listed'
                                 , 'Fall 2003/2004'
@@ -1538,7 +1538,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'F.S. Hill, Jr. Computer Graphics Using OpenGL, Second Edition, Prentice Hall, 2001.'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2504/418'
                                 , 'cross-listed'
                                 , 'Fall 2003/2004'
@@ -1551,7 +1551,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'F.S. Hill, Jr. Computer Graphics Using OpenGL, Second Edition, Prentice Hall, 2001.'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2514/428'
                                 , 'cross-listed'
                                 , 'Fall 2003/2004'
@@ -1564,7 +1564,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2515'
                                 , 'graduate'
                                 , 'Fall 2003/2004'
@@ -1577,7 +1577,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'Elements of Statistical Learning, Hastie, Tibsshirani, Friedman.'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2519'
                                 , 'graduate'
                                 , 'Fall 2003/2004'
@@ -1590,7 +1590,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2521'
                                 , 'graduate'
                                 , 'Fall 2003/2004'
@@ -1603,7 +1603,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'Information Theory, Inference, and Learning Algorithms, by David MacKay'
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2524'
                                 , 'graduate'
                                 , 'Fall 2003/2004'
@@ -1616,7 +1616,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2525'
                                 , 'graduate'
                                 , 'Fall 2003/2004'
@@ -1629,7 +1629,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2541'
                                 , 'graduate'
                                 , 'Fall 2003/2004'
@@ -1642,7 +1642,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2103/407'
                                 , 'cross-listed'
                                 , 'Winter 2003/2004'
@@ -1655,7 +1655,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2106'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1668,7 +1668,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2105/408'
                                 , 'cross-listed'
                                 , 'Winter 2003/2004'
@@ -1681,7 +1681,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2107/488'
                                 , 'cross-listed'
                                 , 'Winter 2003/2004'
@@ -1694,7 +1694,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2206'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1707,7 +1707,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2209/458'
                                 , 'cross-listed'
                                 , 'Winter 2003/2004'
@@ -1720,7 +1720,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2302'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1733,7 +1733,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2321'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1746,7 +1746,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2410'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1759,7 +1759,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2415'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1772,7 +1772,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2415'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1785,7 +1785,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2426'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1798,7 +1798,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2427'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1811,7 +1811,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2506/412'
                                 , 'cross'
                                 , 'Winter 2003/2004'
@@ -1824,7 +1824,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2504/418'
                                 , 'cross-listed'
                                 , 'Winter 2003/2004'
@@ -1837,7 +1837,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2504/418'
                                 , 'cross-listed'
                                 , 'Winter 2003/2004'
@@ -1850,7 +1850,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2510'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1863,7 +1863,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2509'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1876,7 +1876,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2511/401'
                                 , 'cross-listed'
                                 , 'Winter 2003/2004'
@@ -1889,7 +1889,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2512'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1902,7 +1902,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2520'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1915,7 +1915,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2521'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1928,7 +1928,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2523'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1941,7 +1941,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2527/454'
                                 , 'cross-listed'
                                 , 'Winter 2003/2004'
@@ -1954,7 +1954,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2528'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1967,7 +1967,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2529'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1980,7 +1980,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2530'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -1993,7 +1993,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , NULL
                 );
                 
-                INSERT INTO thalia.virt.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
+                INSERT INTO thalia.demo.toronto (No_,level_,offeredTerm,title,instructorEmail,instructorName,location,coursewebsite,prereq,text_)
                 VALUES ('CSC 2535'
                                 , 'graduate'
                                 , 'Winter 2003/2004'
@@ -2008,7 +2008,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
 
 
 
-    CREATE TABLE thalia.virt.ucsd (
+    CREATE TABLE thalia.demo.ucsd (
         Number VARCHAR(32) NOT NULL,
         Title LONG VARCHAR NOT NULL,
         Fall2003 LONG VARCHAR,
@@ -2017,7 +2017,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
      );
     
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    200'
                     ,'Computability  Complexity'
                     , '-'
@@ -2025,7 +2025,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    201A'
                     ,'Advanced Complexity'
                     , '-'
@@ -2033,7 +2033,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Impagliazzo'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    202'
                     ,'Algorithms and Analysis'
                     , 'Paturi (PhD)'
@@ -2041,7 +2041,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Impagliazzo'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    203A'
                     ,'Advanced Algorithms'
                     , '-'
@@ -2049,7 +2049,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    204A'
                     ,'Combinatorial optimization'
                     , '-'
@@ -2057,7 +2057,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Hu'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    205A'
                     ,'Logic in Computer Science'
                     , '-'
@@ -2065,7 +2065,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    206A'
                     ,'Lattice Algorithms and                    Applications'
                     , '-'
@@ -2073,7 +2073,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    206B'
                     ,'Algorithms in Computational                    Biology'
                     , '-'
@@ -2081,7 +2081,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Pevzner'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    207'
                     ,'Modern Cryptography'
                     , '-'
@@ -2089,7 +2089,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Bellare'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    208'
                     ,'Advanced Cryptography'
                     , '-'
@@ -2097,7 +2097,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Micciancio'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    209A'
                     ,'Top/Sem: Alg,Complexity                     Logic'
                     , '-'
@@ -2105,7 +2105,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    209B'
                     ,'Top/Sem: Cryptography'
                     , '-'
@@ -2113,7 +2113,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    210'
                     ,'Principles of Software                  Engineering'
                     , '-'
@@ -2121,7 +2121,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Griswold'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    211'
                     ,'Software Testing   Analysis'
                     , 'Cancelled'
@@ -2129,7 +2129,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    218'
                     ,'Adv Topics: Software                  Engineering'
                     , 'Griswold'
@@ -2137,7 +2137,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    221'
                     ,'Operating Systems'
                     , 'Voelker (PhD)/ Savage (MS)'
@@ -2145,7 +2145,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    222A'
                     ,'Computer Communication  Networks'
                     , '-'
@@ -2153,7 +2153,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    222B'
                     ,'Internet Algorithmics'
                     , '-'
@@ -2161,7 +2161,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Canc'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    223A'
                     ,'Principles of Distributed                  Systems'
                     , '-'
@@ -2169,7 +2169,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    223B'
                     ,'Dist. Computing and Systems'
                     , '-'
@@ -2177,7 +2177,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Snoeren'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    224'
                     ,'Computer System Performance                    Evaluation'
                     , '-'
@@ -2185,7 +2185,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    225'
                     ,'High Perf Dist Comptg                   Grids'
                     , '-'
@@ -2193,7 +2193,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Chien'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    226'
                     ,'Storage Systems'
                     , '-'
@@ -2201,7 +2201,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    227'
                     ,'Computer Security'
                     , '-'
@@ -2209,7 +2209,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    228'
                     ,'Multimedia Systems'
                     , '-'
@@ -2217,7 +2217,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Rangan'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    229A'
                     ,'Top/Sem: Computer Systems'
                     , '-'
@@ -2225,7 +2225,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    229B'
                     ,'Top/Sem: Networks                     Communication'
                     , '-'
@@ -2233,7 +2233,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    229C'
                     ,'Top/Sem: Computer Security'
                     , '-'
@@ -2241,7 +2241,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    230'
                     ,'Principles Programming                  Languages'
                     , '-'
@@ -2249,7 +2249,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    231'
                     ,'Advanced Compiler Design'
                     , 'Ferrante'
@@ -2257,7 +2257,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    232'
                     ,'Principles of Data Base  Systems'
                     , '-'
@@ -2265,7 +2265,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    232B'
                     ,'Database System Implementation'
                     , '-'
@@ -2273,7 +2273,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Deutsch'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    233'
                     ,'Database Theory'
                     , '-'
@@ -2281,7 +2281,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Vianu'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    237A'
                     ,'Intro to Embedded Computing'
                     , '-'
@@ -2289,7 +2289,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Gupta'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    238'
                     ,'Topics Prog Lang Design                     Implem'
                     , '-'
@@ -2297,7 +2297,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    240A'
                     ,'Principles of Computer                    Architecture'
                     , 'Calder'
@@ -2305,7 +2305,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    240B'
                     ,'Advanced Computer Architecture'
                     , '-'
@@ -2313,7 +2313,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Calder'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    241A'
                     ,'Intro to Computing Circuitry'
                     , '-'
@@ -2321,7 +2321,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    242A'
                     ,'Integrated Circuit Layout                    Automation'
                     , '-'
@@ -2329,7 +2329,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Cheng'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    243A'
                     ,'Synthesis Methodologies in VLSI                    CAD'
                     , '-'
@@ -2337,7 +2337,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    244A'
                     ,'VLSI Test'
                     , '-'
@@ -2345,7 +2345,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    244B'
                     ,'Testable  Fault-Tolerant Hardware                    Des'
                     , '-'
@@ -2353,7 +2353,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    245'
                     ,'Comp Aided Circuit Simulation                     Verif'
                     , '-'
@@ -2361,7 +2361,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    246'
                     ,'Comp Arithmetic Algs  Hardware                    Des'
                     , '-'
@@ -2369,7 +2369,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    247'
                     ,'Applic Specific  Reconfig Comp                    Arch'
                     , '-'
@@ -2377,7 +2377,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    248'
                     ,'Alg  Optimization Found VLSI                    CAD'
                     , '-'
@@ -2385,7 +2385,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Kahng'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    249A'
                     ,'Top/Sem: Computer Architecture'
                     , '-'
@@ -2393,7 +2393,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    249B'
                     ,'Top/Sem: VLSI'
                     , '-'
@@ -2401,7 +2401,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    249C'
                     ,'Top/Sem: CAD'
                     , '-'
@@ -2409,7 +2409,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    250A'
                     ,'Artificial Intelligence I'
                     , '-'
@@ -2417,7 +2417,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    250B'
                     ,'Artificial Intelligence II'
                     , '_'
@@ -2425,7 +2425,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Dasgupta'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    252A'
                     ,'Computer Vision'
                     , '-'
@@ -2433,7 +2433,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    252B'
                     ,'Computer Vision II'
                     , '-'
@@ -2441,7 +2441,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Belongie'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    252C'
                     ,'Selected Topics in Vision                     Learning'
                     , 'Belongie'
@@ -2449,7 +2449,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    253'
                     ,'Neural Networks'
                     , '-'
@@ -2457,7 +2457,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    254'
                     ,'Machine Learning'
                     , '-'
@@ -2465,7 +2465,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Elkan'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    255'
                     ,'Intelligent Systems'
                     , '-'
@@ -2473,7 +2473,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    256'
                     ,'Statistical Natural Lang Proc'
                     , '-'
@@ -2481,7 +2481,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Cottrell'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    257'
                     ,'Computational Biology'
                     , '-'
@@ -2489,7 +2489,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    257A'
                     ,'Biomolecular Seq  Structure                    Analy'
                     , '-'
@@ -2497,7 +2497,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    258A'
                     ,'Connectionists Natural  Language'
                     , '-'
@@ -2505,7 +2505,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    259'
                     ,'Seminar Artificial Intellgnce'
                     , 'Cottrell'
@@ -2513,7 +2513,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Cottrell'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    260'
                     ,'Parallel Computation'
                     , 'Baden'
@@ -2521,7 +2521,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    261'
                     ,'Parallel  Distributed                    Computation'
                     , '-'
@@ -2529,7 +2529,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    262'
                     ,'Sys Supp Appl Par Computing'
                     , '-'
@@ -2537,7 +2537,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    267'
                     ,'Computer Graphics, New'
                     , '-'
@@ -2545,7 +2545,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    268A'
                     ,'Topics in Parallel Computing'
                     , '-'
@@ -2553,7 +2553,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    268C'
                     ,'Topics High-Performance Prog'
                     , '-'
@@ -2561,7 +2561,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    269'
                     ,'Seminar Parallel Computing'
                     , '-'
@@ -2569,7 +2569,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    270'
                     ,'Statistics  Prob                    Manufacturing'
                     , '-'
@@ -2577,7 +2577,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    271'
                     ,'User Intrface Des: Soc  Tech                    Issues'
                     , '-'
@@ -2585,7 +2585,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Goguen'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    272'
                     ,'Adv. Appearance Modeling'
                     , 'Jensen'
@@ -2593,7 +2593,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    275'
                     ,'Social Aspects Tech.                   Science'
                     , 'Goguen'
@@ -2601,7 +2601,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    268D'
                     ,'Social Aspects Tech  Sci'
                     , '-'
@@ -2609,7 +2609,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    290'
                     ,'Seminar in CSE'
                     , '-'
@@ -2617,7 +2617,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    291'
                     ,'Topics in CSE'
                     , 'Bafna, Genomic Alg.'
@@ -2625,7 +2625,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Ludaescer, Process                Integration'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    292'
                     ,'Faculty Research Seminar'
                     , 'Bafna'
@@ -2633,7 +2633,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    294'
                     ,'Research Mtg: Systems Seminar'
                     , 'Voelker'
@@ -2641,7 +2641,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Staff'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    294'
                     ,'Research Mtg: Reliable Sys.                    Synthesis'
                     , 'Orailoglu'
@@ -2649,7 +2649,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Staff'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    294'
                     ,'Research Mtg: Database'
                     , 'Deutsch'
@@ -2657,7 +2657,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , '-'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    294'
                     ,'Research Mtg: Meaning and                    Component'
                     , '-'
@@ -2665,7 +2665,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , 'Goguen'
     );
     
-    INSERT INTO thalia.virt.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
+    INSERT INTO thalia.demo.ucsd (Number,Title,Fall2003,Winter2004,Spring2004)
     VALUES ('CSE                    599'
                     ,'Teaching Methods in CS'
                     , 'Kube and Dasgupta'
@@ -2673,7 +2673,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                     , NULL
     );
     
-    CREATE TABLE thalia.virt.umd (
+    CREATE TABLE thalia.demo.umd (
         Code VARCHAR(8) NOT NULL,
         CourseName LONG VARCHAR NOT NULL,
         Credits LONG VARCHAR,
@@ -2683,7 +2683,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
      );
     
     
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC102'
                                 ,'Introduction to Information Technology;'
                                 , '(3              credits)'
@@ -2692,7 +2692,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......12:30pm- 1:45pm (CSI                  1115)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC102'
                                 ,'Introduction to Information Technology;'
                                 , '(3              credits)'
@@ -2701,7 +2701,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 2:00pm- 3:15pm (CSI                  1115)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC102'
                                 ,'Introduction to Information Technology;'
                                 , '(3              credits)'
@@ -2710,7 +2710,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 3:30pm- 4:45pm (CSI                  1115)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2719,7 +2719,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......11:00am-11:50am (CSI                  3117)                  MW........ 4:00pm- 4:50pm (CSI                  2107) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2728,7 +2728,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......11:00am-11:50am (CSI                  3117)                  MW........ 5:00pm- 5:50pm (CSI                  2107) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2737,7 +2737,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 1:00pm- 1:50pm (CSI                  2117)                  MW........ 4:00pm- 4:50pm (CSI                  2118) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2746,7 +2746,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 1:00pm- 1:50pm (CSI                  2117)                  MW........ 4:00pm- 4:50pm (CSI                  3120) Dis'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2755,7 +2755,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......11:00am-11:50am (CSI                  1115)                  MW........12:00pm-12:50pm (CSI                  1121) Dis'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2764,7 +2764,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......11:00am-11:50am (CSI                  1115)                  MW........ 1:00pm- 1:50pm (CSI                  1121) Dis'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2773,7 +2773,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......11:00am-11:50am (CSI                  1115)                  MW........12:00pm-12:50pm (CSI                  2107) Dis'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2782,7 +2782,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 2:00pm- 2:50pm (CSI                  1115)                  MW........12:00pm-12:50pm (CSI                  2120) Dis'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2791,7 +2791,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 2:00pm- 2:50pm (CSI                  1115)                  MW........ 1:00pm- 1:50pm (CSI                  2120) Dis'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2800,7 +2800,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 2:00pm- 2:50pm (CSI                  1115)                  MW........ 1:00pm- 1:50pm (CSI                  2107) Dis'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2809,7 +2809,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......10:00am-10:50am (CSI                  2117)                  MW........ 8:00am- 8:50am (CSI                  2107) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2818,7 +2818,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......10:00am-10:50am (CSI                  2117)                  MW........ 9:00am- 9:50am (CSI                  2107) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2827,7 +2827,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......11:00am-11:50am (CSI                  2117)                  MW........ 8:00am- 8:50am (CSI                  2120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2836,7 +2836,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......11:00am-11:50am (CSI                  2117)                  MW........ 9:00am- 9:50am (CSI                  2120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2845,7 +2845,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......12:00pm-12:50pm (CSI                  2117)                  MW........ 8:00am- 8:50am (CSI                  3120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2854,7 +2854,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......12:00pm-12:50pm (CSI                  2117)                  MW........ 9:00am- 9:50am (CSI                  3120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2863,7 +2863,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (CSI                  1115)                  MW........10:00am-10:50am (CSI                  1121) Dis'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2872,7 +2872,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (CSI                  1115)                  MW........11:00am-11:50am (CSI                  1121) Dis'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2881,7 +2881,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......11:00am-12:15pm (CSI                  1115)                  MW........10:00am-10:50am (CSI                  2107) Dis'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC114'
                                 ,'Computer Science I;'
                                 , '(4 credits)'
@@ -2890,7 +2890,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......11:00am-12:15pm (CSI                  1115)                  MW........11:00am-11:50am (CSI                  2107) Dis'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC311'
                                 ,'Computer              Organization;'
                                 , '(3 credits)'
@@ -2899,7 +2899,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (CSI                  3117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC311'
                                 ,'Computer              Organization;'
                                 , '(3 credits)'
@@ -2908,7 +2908,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......11:00am-12:15pm (CSI                  3117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC330'
                                 ,'Organization of              Programming Languages;'
                                 , '(3 credits)'
@@ -2917,7 +2917,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MW........10:00am-10:50am (CSI                  3117)                  MW........ 2:00pm- 2:50pm (CSI                  2107) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC330'
                                 ,'Organization of              Programming Languages;'
                                 , '(3 credits)'
@@ -2926,7 +2926,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MW........10:00am-10:50am (CSI                  3117)                  MW........ 3:00pm- 3:50pm (CSI                  2107) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC330'
                                 ,'Organization of              Programming Languages;'
                                 , '(3 credits)'
@@ -2935,7 +2935,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MW........12:00pm-12:50pm (CSI                  1115)                  MW........ 2:00pm- 2:50pm (CSI                  2120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC330'
                                 ,'Organization of              Programming Languages;'
                                 , '(3 credits)'
@@ -2944,7 +2944,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MW........12:00pm-12:50pm (CSI                  1115)                  MW........ 3:00pm- 3:50pm (CSI                  2120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC330'
                                 ,'Organization of              Programming Languages;'
                                 , '(3 credits)'
@@ -2953,7 +2953,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MW........ 1:00pm- 1:50pm (CSI                  1115)                  MW........ 2:00pm- 2:50pm (CSI                  3120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC330'
                                 ,'Organization of              Programming Languages;'
                                 , '(3 credits)'
@@ -2962,7 +2962,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MW........ 1:00pm- 1:50pm (CSI                  1115)                  MW........ 3:00pm- 3:50pm (CSI                  3120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC330'
                                 ,'Organization of              Programming Languages;'
                                 , '(3 credits)'
@@ -2971,7 +2971,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 3:30pm- 4:45pm (CSI                  1121)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC330'
                                 ,'Organization of              Programming Languages;'
                                 , '(3 credits)'
@@ -2980,7 +2980,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 2:00pm- 2:50pm (CSI                  3117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC330'
                                 ,'Organization of              Programming Languages;'
                                 , '(3 credits)'
@@ -2989,14 +2989,14 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 3:00pm- 3:50pm (CSI                  3117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod)
                 VALUES ('CMSC390'
                                 ,'Honors Paper;'
                                 , '(3              credits)'
                                 , 'REG. Individual Instruction course:              contact department or instructor to obtain section number.'
                 );
             
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC411'
                                 ,'Computer Systems Architecture;'
                                 , '(3              credits)'
@@ -3005,7 +3005,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......12:30pm- 1:45pm (CSI                  1121)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC411'
                                 ,'Computer Systems Architecture;'
                                 , '(3              credits)'
@@ -3014,7 +3014,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MW........ 3:30pm- 4:45pm (CSI                  1122)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC412'
                                 ,'Operating Systems;'
                                 , '(4 credits)'
@@ -3023,7 +3023,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......12:30pm- 1:45pm (CSI                  1122)                  MW........10:00am-10:50am (CSI                  2120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC412'
                                 ,'Operating Systems;'
                                 , '(4 credits)'
@@ -3032,7 +3032,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......12:30pm- 1:45pm (CSI                  1122)                  MW........11:00am-11:50am (CSI                  2120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC412'
                                 ,'Operating Systems;'
                                 , '(4 credits)'
@@ -3041,7 +3041,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (CSI                  1121)                  MW........10:00am-10:50am (CSI                  3120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC412'
                                 ,'Operating Systems;'
                                 , '(4 credits)'
@@ -3050,7 +3050,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (CSI                  1121)                  MW........11:00am-11:50am (CSI                  3120) Lab'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC412'
                                 ,'Operating Systems;'
                                 , '(4 credits)'
@@ -3059,7 +3059,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......12:30pm- 1:45pm (CSI                  2117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC420'
                                 ,'Data Structures;'
                                 , '(3 credits)'
@@ -3068,7 +3068,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 2:00pm- 3:15pm (CSI                  2117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC420'
                                 ,'Data Structures;'
                                 , '(3 credits)'
@@ -3077,7 +3077,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 3:30pm- 4:45pm (CSI                  2117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC421'
                                 ,'Introduction to Artificial              Intelligence;'
                                 , '(3 credits)'
@@ -3086,7 +3086,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 2:00pm- 3:15pm (CSI                  1122)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC424'
                                 ,'Database Design;'
                                 , '(3 credits)'
@@ -3095,7 +3095,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......11:00am-12:15pm (CSI                  1121)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC424'
                                 ,'Database Design;'
                                 , '(3 credits)'
@@ -3104,7 +3104,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'Tu........ 6:30pm- 9:00pm (CSI                  2117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC426'
                                 ,'Image Processing;'
                                 , '(3 credits)'
@@ -3113,7 +3113,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......11:00am-12:15pm (CSI                  1122)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC427'
                                 ,'Computer Graphics;'
                                 , '(3 credits)'
@@ -3122,7 +3122,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 2:00pm- 3:15pm (CSI                  3117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC430'
                                 ,'Theory of Language Translation;'
                                 , '(3              credits)'
@@ -3131,7 +3131,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......11:00am-12:15pm (CSI                  2117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC433'
                                 ,'Programming Language Technologies and              Paradigms;'
                                 , '(3 credits)'
@@ -3140,7 +3140,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 3:30pm- 4:45pm (CSI                  3117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC434'
                                 ,'Introduction to Human-Computer              Interaction;'
                                 , '(3 credits)'
@@ -3149,7 +3149,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (CSI                  1122)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC434'
                                 ,'Introduction to Human-Computer              Interaction;'
                                 , '(3 credits)'
@@ -3158,7 +3158,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MW........ 2:00pm- 3:15pm (CSI                  1122)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC435'
                                 ,'Software Engineering;'
                                 , '(3              credits)'
@@ -3167,7 +3167,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 2:00pm- 3:15pm (CSI                  1121)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC435'
                                 ,'Software Engineering;'
                                 , '(3              credits)'
@@ -3176,7 +3176,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (CSI                  2107)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC435'
                                 ,'Software Engineering;'
                                 , '(3              credits)'
@@ -3185,7 +3185,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......11:00am-12:15pm (CSI                  2120)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC450'
                                 ,'Logic for Computer Science;'
                                 , '(3              credits)'
@@ -3194,7 +3194,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 2:00pm- 2:50pm (MTH                  0405)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC451'
                                 ,'Design and Analysis of Computer              Algorithms;'
                                 , '(3 credits)'
@@ -3203,7 +3203,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......12:30pm- 1:45pm (CSI                  3117)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC456'
                                 ,'Cryptology;'
                                 , '(3 credits)'
@@ -3212,7 +3212,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF.......10:00am-10:50am (MTH                  B0421)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC456'
                                 ,'Cryptology;'
                                 , '(3 credits)'
@@ -3221,7 +3221,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 1:00pm- 1:50pm (MTH                  B0421)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC460'
                                 ,'Computational Methods;'
                                 , '(3              credits)'
@@ -3230,7 +3230,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 9:00am- 9:50am (MTH                  0304)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC460'
                                 ,'Computational Methods;'
                                 , '(3              credits)'
@@ -3239,7 +3239,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 2:00pm- 3:15pm (MTH                  0101)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC466'
                                 ,'Introduction to Numerical Analysis I;'
                                 , '(3 credits)'
@@ -3248,7 +3248,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 1:00pm- 1:50pm (MTH                  0403)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC475'
                                 ,'Combinatorics and Graph Theory;'
                                 , '(3              credits)'
@@ -3257,7 +3257,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (MTH                  0306)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC498A'
                                 ,'Special Problems in              Computer Science;'
                                 , '(1-3 credits)'
@@ -3266,7 +3266,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'Time and room to be arranged'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC498W'
                                 ,'Special Problems in Computer Science:              Semantic Web;'
                                 , '(3 credits)'
@@ -3275,14 +3275,14 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MW........ 2:00pm- 3:15pm (CSI                  1121)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod)
                 VALUES ('CMSC598'
                                 ,'Practical Training;'
                                 , '(1 credit)'
                                 , 'S-F. Individual Instruction course:              contact department or instructor to obtain section number.'
                 );
             
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC661'
                                 ,'Scientific Computing II;'
                                 , '(3              credits)'
@@ -3291,7 +3291,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......11:00am-12:15pm (CSI                  3118)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC664'
                                 ,'Advanced Scientific Computing II;'
                                 , '(3 credits)'
@@ -3300,7 +3300,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 2:00pm- 3:15pm (MTH                  1308)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC666'
                                 ,'Numerical Analysis I;'
                                 , '(3              credits)'
@@ -3309,7 +3309,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (MTH                  0303)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC667'
                                 ,'Numerical Analysis II;'
                                 , '(3              credits)'
@@ -3318,7 +3318,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (MTH                  0307)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC711'
                                 ,'Computer Networks;'
                                 , '(3 credits)'
@@ -3327,7 +3327,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 2:00pm- 3:15pm (CSI                  2120)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC723'
                                 ,'Natural Language Processing;'
                                 , '(3              credits)'
@@ -3336,7 +3336,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'W......... 4:00pm- 6:30pm (CSI                  3118)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC724'
                                 ,'Database Management Systems;'
                                 , '(3              credits)'
@@ -3345,7 +3345,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......11:00am-12:15pm (CSI                  2118)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC726'
                                 ,'Machine Learning;'
                                 , '(3 credits)'
@@ -3354,7 +3354,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......12:30pm- 1:45pm (CSI                  2120)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC733'
                                 ,'Computer Processing of Pictorial              Information;'
                                 , '(3 credits)'
@@ -3363,7 +3363,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......12:30pm- 1:45pm (CSI                  3118)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC740'
                                 ,'Advanced Computer Graphics;'
                                 , '(3              credits)'
@@ -3372,7 +3372,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 3:30pm- 4:45pm (CSI                  1122)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC751'
                                 ,'Parallel Algorithms;'
                                 , '(3              credits)'
@@ -3381,21 +3381,21 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MW........11:00am-12:15pm (CSI                  3118)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod)
                 VALUES ('CMSC798'
                                 ,'Graduate Seminar in              Computer Science;'
                                 , '(1-3 credits)'
                                 , 'REG/AUD.              Individual Instruction course: contact department or instructor to              obtain section number.'
                 );
             
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod)
                 VALUES ('CMSC799'
                                 ,'Master`s Thesis              Research;'
                                 , '(1-6 credits)'
                                 , 'REG/S-F. Individual              Instruction course: contact department or instructor to obtain              section number.'
                 );
             
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC818S'
                                 ,'Advanced Topics in Computer Systems: Grid              Computing;'
                                 , '(3 credits)'
@@ -3404,14 +3404,14 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 2:00pm- 3:15pm (CSI                  2107)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod)
                 VALUES ('CMSC828A'
                                 ,'Advanced Topics in              Information Processing;'
                                 , '(1-3 credits)'
                                 , 'REG/AUD. Individual Instruction course: contact department or              instructor to obtain section number.'
                 );
             
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC828C'
                                 ,'Advanced Topics in Information              Processing: Human Factors in Computer and Information Systems;'
                                 , '(3 credits)'
@@ -3420,7 +3420,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (CSI                  1122)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC828O'
                                 ,'Advanced Topics in Information              Processing;'
                                 , '(3 credits)'
@@ -3429,7 +3429,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'M......... 5:30pm- 8:15pm (EGR                  3140)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC828R'
                                 ,'Advanced Topics in Information              Processing: Medical Image Processing and Understanding;'
                                 , '(3              credits)'
@@ -3438,14 +3438,14 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MW........11:00am-12:15pm (CSI                  2118)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod)
                 VALUES ('CMSC838A'
                                 ,'Advanced Topics in              Programming Languages;'
                                 , '(1-3 credits)'
                                 , 'REG/AUD. Individual Instruction course: contact department or              instructor to obtain section number.'
                 );
             
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC838G'
                                 ,'Advanced Topics in Programming Languages:              New Devices for New Interactions;'
                                 , '(3 credits)'
@@ -3454,7 +3454,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 3:30pm- 4:45pm (CSI                  2107)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC838I'
                                 ,'Advanced Topics in Programming Languages:              HOW TO DO RESEARCH;'
                                 , '(1 credit)'
@@ -3463,7 +3463,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'M......... 4:00pm- 4:50pm (CSI                  2120)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC838P'
                                 ,'Advanced Topics in Programming Languages:              Software Engineering: Remote Analysis and Measurement of Software              Systems;'
                                 , '(3 credits)'
@@ -3472,7 +3472,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (CSI                  2120)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC838T'
                                 ,'Advanced Topics in Programming Languages:              Systems Software for High Performance Computing, Emphasis on              Bioinformatic Applications;'
                                 , '(3 credits)'
@@ -3481,7 +3481,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh......12:30pm- 1:45pm (CSI                  2107)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC838Z'
                                 ,'Advanced Topics in Programming              Languages;'
                                 , '(3 credits)'
@@ -3490,7 +3490,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 3:30pm- 4:45pm (CSI                  2120)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC858A'
                                 ,'Advanced Topics in              Theory of Computing;'
                                 , '(1-3 credits)'
@@ -3499,7 +3499,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'MWF....... 1:00pm- 1:50pm (CSI                  2118)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod,SectionTitle,SectionTime)
                 VALUES ('CMSC858K'
                                 ,'Advanced Topics in Theory of Computing:              Advanced Topics in Cryptography;'
                                 , '(3 credits)'
@@ -3508,7 +3508,7 @@ INSERT INTO thalia.virt.brown (Code,Title,Instructor,Room)
                                 , 'TuTh...... 9:30am-10:45am (CSI                  3120)'
                 );
                 
-                INSERT INTO thalia.virt.umd (Code,CourseName,Credits,GradeMethod)
+                INSERT INTO thalia.demo.umd (Code,CourseName,Credits,GradeMethod)
                 VALUES ('CMSC878A'
                                 ,'Advanced Topics in              Numerical Methods;'
                                 , '(1-3 credits)'

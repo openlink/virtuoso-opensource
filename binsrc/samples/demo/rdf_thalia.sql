@@ -19,21 +19,21 @@ create procedure DB.DBA.SPARQL_THALIA_RUN (in txt varchar)
 
 use thalia;
 
-DB.DBA.exec_no_error('drop View thalia.virt.asu_v');
-create View thalia.virt.asu_v as select left(Title,3) code,* from thalia.virt.asu;
-DB.DBA.exec_no_error('drop View thalia.virt.gatech_v');
-create View thalia.virt.gatech_v as select *, Room||' '||Building Place from thalia.virt.gatech;
+DB.DBA.exec_no_error('drop View thalia.demo.asu_v');
+create View thalia.demo.asu_v as select left(Title,3) code,* from thalia.demo.asu;
+DB.DBA.exec_no_error('drop View thalia.demo.gatech_v');
+create View thalia.demo.gatech_v as select *, Room||' '||Building Place from thalia.demo.gatech;
 
 
-GRANT SELECT ON thalia.virt.asu TO "SPARQL";
-GRANT SELECT ON thalia.virt.asu_v TO "SPARQL";
-GRANT SELECT ON thalia.virt.brown TO "SPARQL";
-GRANT SELECT ON thalia.virt.cmu TO "SPARQL";
-GRANT SELECT ON thalia.virt.gatech TO "SPARQL";
-GRANT SELECT ON thalia.virt.gatech_v TO "SPARQL";
-GRANT SELECT ON thalia.virt.toronto TO "SPARQL";
-GRANT SELECT ON thalia.virt.ucsd TO "SPARQL";
-GRANT SELECT ON thalia.virt.umd TO "SPARQL";
+GRANT SELECT ON thalia.demo.asu TO "SPARQL";
+GRANT SELECT ON thalia.demo.asu_v TO "SPARQL";
+GRANT SELECT ON thalia.demo.brown TO "SPARQL";
+GRANT SELECT ON thalia.demo.cmu TO "SPARQL";
+GRANT SELECT ON thalia.demo.gatech TO "SPARQL";
+GRANT SELECT ON thalia.demo.gatech_v TO "SPARQL";
+GRANT SELECT ON thalia.demo.toronto TO "SPARQL";
+GRANT SELECT ON thalia.demo.ucsd TO "SPARQL";
+GRANT SELECT ON thalia.demo.umd TO "SPARQL";
 
 DB.DBA.SPARQL_THALIA_RUN('
 drop quad map graph iri("http://^{URIQADefaultHost}^/Thalia") .
@@ -121,13 +121,13 @@ prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix skos: <http://www.w3.org/2004/02/skos/core#>
 prefix th: <http://purl.org/ontology/thalia/1.0/>
 alter quad storage virtrdf:DefaultQuadStorage
-from thalia.virt.asu_v as asus
-from thalia.virt.brown as browns
-from thalia.virt.cmu as cmus
-from thalia.virt.gatech_v as gatechs
-from thalia.virt.toronto as torontos
-from thalia.virt.ucsd as ucsds
-from thalia.virt.umd as umds
+from thalia.demo.asu_v as asus
+from thalia.demo.brown as browns
+from thalia.demo.cmu as cmus
+from thalia.demo.gatech_v as gatechs
+from thalia.demo.toronto as torontos
+from thalia.demo.ucsd as ucsds
+from thalia.demo.umd as umds
 {
         create virtrdf:ThaliaDemo as graph iri ("http://^{URIQADefaultHost}^/thalia") option (exclusive)
         {
