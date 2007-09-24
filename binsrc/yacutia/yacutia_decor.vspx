@@ -54,9 +54,12 @@ http ('<!--[IF lt IE 7]><script src="ie7/ie7-standard-p.js" type="text/javascrip
     ?>
   <![CDATA[
   <script type="text/javascript">
-  var featureList = ["preferences", "combolist", "ajax", "tab"];
+  var featureList = ["combolist", "ajax", "tab"];
   </script>
   <script type="text/javascript" src="toolkit/loader.js"></script>
+  <script type="text/javascript">
+    OAT.Preferences.imagePath = "toolkit/images/";
+  </script>
   ]]>
   </head>
   <body>

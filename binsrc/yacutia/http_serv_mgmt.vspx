@@ -563,7 +563,6 @@
 		  <![CDATA[
 		  <script type="text/javascript">
 	           window.onload = function () {
-		      OAT.Preferences.imagePath = "toolkit/images/";
 		      var sr_cl = new OAT.Combolist([],"0.0.0.0");
 		      var sr_cl1 = new OAT.Combolist([], "");
 
