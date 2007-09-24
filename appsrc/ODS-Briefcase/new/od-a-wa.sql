@@ -92,7 +92,7 @@ ODRIVE.WA.odrive_vhost();
 -- Insert data
 --
 -------------------------------------------------------------------------------
-ODRIVE.WA.exec_no_error ('insert replacing WA_TYPES(WAT_NAME, WAT_TYPE, WAT_REALM, WAT_DESCRIPTION) values (\'oDrive\', \'db.dba.wa_oDrive\', \'wa\', \'Briefcase Application\')')
+ODRIVE.WA.exec_no_error ('insert replacing WA_TYPES(WAT_NAME, WAT_TYPE, WAT_REALM, WAT_DESCRIPTION, WAT_MAXINST) values (\'oDrive\', \'db.dba.wa_oDrive\', \'wa\', \'Briefcase Application\', 1)')
 ;
 ODRIVE.WA.exec_no_error ('insert soft WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'oDrive\', \'owner\', 1, 0)')
 ;

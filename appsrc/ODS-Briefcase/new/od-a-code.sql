@@ -1099,6 +1099,7 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   in permission varchar := '1__')
 {
   declare item any;
+  
   item := ODRIVE.WA.DAV_INIT(path);
   if (isinteger(item))
     return 0;
