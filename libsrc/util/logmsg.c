@@ -220,7 +220,7 @@ logmsg_ap (int level, char *file, int line, int mask, char *format, va_list ap)
   time_t now;
   int month, day, year;
   size_t remain;
-#if defined (linux) || defined (__APPLE__)
+#if defined (HAVE_VA_COPY) || defined (HAVE___VA_COPY)
   va_list save_ap;
 #endif
 #ifdef HAVE_LOCALTIME_R
@@ -350,21 +350,28 @@ logmsg_ap (int level, char *file, int line, int mask, char *format, va_list ap)
 	   */
 	  remain = sizeof (buf) - (bufptr - &buf[0]);
 
-#if defined (linux) || defined (__APPLE__)
 	  /* 
  	   *  Corrects bug on various systems 
 	   *  va_list is modified after use :-(
 	   */
+#if defined  (HAVE_VA_COPY)
+	  va_copy (save_ap, ap);
+#elif defined (HAVE___VA_COPY)
 	  __va_copy (save_ap, ap);
-	  vsnprintf (bufptr, remain, formatbuf, save_ap);
-	  va_end (save_ap);
-#elif defined (WIN32)
+#endif
+
+#if defined (WIN32)
 	  _vsnprintf (bufptr, remain, formatbuf, ap);
 #elif defined (HAVE_VSNPRINTF)
 	  vsnprintf (bufptr, remain, formatbuf, ap);
 #else
 	  vsprintf (bufptr, formatbuf, ap);
 #endif
+
+#if defined (HAVE_VA_COPY) || defined (HAVE___VA_COPY)
+	  va_end (save_ap);
+#endif
+
 	  if (log->emitter)
 	    (*log->emitter) (log, level, buf);
 	}
