@@ -480,7 +480,10 @@ do_op:
             }
           xte_nodebld_final (descr_n3, xte_head (UNAME' root'));
           if (isentity (old_prop))
+	    {
+	      descr_n3 := xml_tree_doc (descr_n3);
             XMLAppendChildren (old_prop, descr_n3);
+	    }
           else
             old_prop := xml_tree_doc (descr_n3);
         }
