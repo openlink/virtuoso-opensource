@@ -99,6 +99,7 @@
 		  <![CDATA[
 		  <script type="text/javascript">
 	           window.onload = function () {
+		      OAT.Preferences.imagePath = "toolkit/images/";
 		      var sr_cl = new OAT.Combolist([],"<?V self.lhost1 ?>");
 		      sr_cl.input.name = "lhost_if";
 		      sr_cl.input.id = "lhost_if";
