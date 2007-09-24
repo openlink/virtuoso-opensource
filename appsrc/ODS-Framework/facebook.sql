@@ -1325,7 +1325,15 @@ declare _res any;
           state := '00000';
           msg := '';
 
-          qry:=sprintf('select P_ID from AB.WA.PERSONS where (P_FULL_NAME=''%s'' or P_FIRST_NAME=''%s'' or P_LAST_NAME=''%s'') and P_DOMAIN_ID=%d',full_name,first_name,last_name,ab_domain_id);
+--          qry:=sprintf('select P_ID from AB.WA.PERSONS where (P_FULL_NAME=''%s'' or P_FIRST_NAME=''%s'' or P_LAST_NAME=''%s'') and P_DOMAIN_ID=%d',full_name,first_name,last_name,ab_domain_id);
+            qry:=sprintf('select P_ID from AB.WA.PERSONS '||
+                         'where P_DOMAIN_ID=%d '||
+                         '   and (   (P_LAST_NAME=''%s'' and (P_MIDDLE_NAME=''%s'' or P_FIRST_NAME=''%s'')) '||
+                         '       or (P_FULL_NAME=''%s'') '||
+                         '       or (concat(trim(P_FIRST_NAME),'' '',trim(P_LAST_NAME))=''%s'') '||
+                         '       or (concat(trim(P_MIDDLE_NAME),'' '',trim(P_LAST_NAME))=''%s'') )',
+                         ab_domain_id,last_name,first_name,first_name,full_name,full_name,full_name);
+          
           exec (qry, state, msg, vector(), maxrows, metas, rset);
           if (state = '00000' and length(rset)>0)
           {
@@ -1592,10 +1600,19 @@ declare _res any;
           msg := '';
 
 
-          qry:=sprintf('select P_ID,P_NAME,AB.WA.contact_url (P_DOMAIN_ID,P_ID) from AB.WA.PERSONS where (P_FULL_NAME=''%s'' or P_FIRST_NAME=''%s'' or P_LAST_NAME=''%s'') and P_DOMAIN_ID=%d',full_name,first_name,last_name,ab_domain_id);
+--          qry:=sprintf('select P_ID,P_NAME,AB.WA.contact_url (P_DOMAIN_ID,P_ID) from AB.WA.PERSONS where (P_FULL_NAME=''%s'' or P_FIRST_NAME=''%s'' or P_LAST_NAME=''%s'') and P_DOMAIN_ID=%d',full_name,first_name,last_name,ab_domain_id);
+          qry:=sprintf('select P_ID,P_NAME,AB.WA.contact_url (P_DOMAIN_ID,P_ID) from AB.WA.PERSONS '||
+                       'where P_DOMAIN_ID=%d '||
+                       '   and (   (P_LAST_NAME=''%s'' and (P_MIDDLE_NAME=''%s'' or P_FIRST_NAME=''%s'')) '||
+                       '       or (P_FULL_NAME=''%s'') '||
+                       '       or (concat(trim(P_FIRST_NAME),'' '',trim(P_LAST_NAME))=''%s'') '||
+                       '       or (concat(trim(P_MIDDLE_NAME),'' '',trim(P_LAST_NAME))=''%s'') )',
+                       ab_domain_id,last_name,first_name,first_name,full_name,full_name,full_name);
+
           exec (qry, state, msg, vector(), maxrows, metas, rset);
           if (state = '00000' and length(rset)>0)
           {
+            if(i>0) http ('\r\n,', _res_str);  
             http ('{_name:"'||full_name||'",fb_id:'||cast(uid as varchar)||',fb_href:"http://www.facebook.com/profile.php?id='||cast(uid as varchar)||'",odsab_instid:'||cast(ab_domain_id as varchar)||',ods_contacts:new Array(', _res_str);
             
             declare k integer;
