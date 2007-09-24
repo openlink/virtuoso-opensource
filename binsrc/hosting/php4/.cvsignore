@@ -6,3 +6,4 @@ Makefile.in
 Makefile
 virtuoso-php4-t
 virtuoso-iodbc-php4-t
+sql_code_php.c

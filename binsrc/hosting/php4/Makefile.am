@@ -28,13 +28,16 @@ if HAVE_PHP4
 bin_PROGRAMS = virtuoso-php4-t $(VIRT_IODBC)
 endif
 
-BUILT_SOURCES = ksrvext.h 
+CLEANFILES	= ksrvext.h sql_code_php.c
+BUILT_SOURCES	= ksrvext.h sql_code_php.c
 
 virtuoso_iodbc_php4_t_SOURCES = \
-	bif_server_php.c
+	bif_server_php.c \
+	sql_code_php.c
 
 virtuoso_php4_t_SOURCES = \
-	bif_server_php.c
+	bif_server_php.c \
+	sql_code_php.c
 
 virtuoso_php4_t_CFLAGS  = @VIRT_AM_CFLAGS@ $(php4_CFLAGS)
 virtuoso_php4_t_CFLAGS  += -I$(top_srcdir)/libsrc
@@ -50,6 +53,7 @@ virtuoso_php4_t_LDADD = \
         ../../virtuoso/libvirtuoso-t.la \
 	$(php4_LDFLAGS) \
 	@LIBS@ \
+	@XML_LIBS@ \
 	-lm
 
 virtuoso_iodbc_php4_t_CFLAGS  = @VIRT_AM_CFLAGS@ $(php4_CFLAGS)
@@ -67,20 +71,28 @@ virtuoso_iodbc_php4_t_LDADD = \
         ../../virtuoso/libvirtuoso-t.la \
 	$(php4_LDFLAGS) \
 	@LIBS@ \
+	@XML_LIBS@ \
 	-lm
+
+
+# ----------------------------------------------------------------------
+#
+#  Generated code
+#
+# ----------------------------------------------------------------------
+GEN=$(top_srcdir)/bin/generate
+
+sql_code_php.c: $(srcdir)/php.sql $(top_srcdir)/libsrc/Wi/sql_to_c.awk
+	@$(GEN) $(GAWK) \
+		-o sql_code_php.c \
+		-f $(top_srcdir)/libsrc/Wi/sql_to_c.awk \
+		-v init_name=_php \
+		-v pass_bootstrap_cli=1 \
+		-v pl_stats=$(PLSTATS) \
+		$(srcdir)/php.sql
 
 ksrvext.h:
 	$(LN_S) ../../../libsrc/Wi/ksrvext.h ksrvext.h
-
-clean-local:
-	rm -rf ksrvext.h
-	rm -rf tests/php_tests
-	rm -rf tests/phpsrv.db
-	rm -rf tests/phpsrv.log
-	rm -rf tests/phpsrv.trx
-	rm -rf tests/tphp.pxa
-	rm -rf tests/tphp.tdb
-	rm -rf tests/tphpsrv.output
 
 
 # ----------------------------------------------------------------------
@@ -89,8 +101,4 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	bif_server_php.c \
-	tests/php_tests.tgz \
-	tests/tphpdav.sql \
-	tests/tphp.sql \
-	tests/tphpsrv.sh
+	php.sql
