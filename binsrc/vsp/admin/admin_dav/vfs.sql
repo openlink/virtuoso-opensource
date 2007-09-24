@@ -1771,17 +1771,23 @@ full_path_ready:
 create procedure WS.WS.VFS_MAKE_ENTRY (
 	in url varchar,
 	in follow varchar := '/*',
-	in disallow varchar := '%.zip;%.tar;%.pdf;%.tgz;%.arj;'
+	in disallow varchar := '%.zip;%.tar;%.pdf;%.tgz;%.arj;',
+	in get_rdf int := 0
 	)
 {
   declare hi any;
   hi := WS.WS.PARSE_URI (url);
-  insert into WS.WS.VFS_SITE
-     (VS_DESCR, VS_HOST, VS_URL, VS_OWN, VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_SRC)
-     values (hi[1], hi[1], hi[2], 2, hi[1], cast ('1990-01-01' as datetime),  'checked', follow, disallow, 'checked');
+  insert replacing WS.WS.VFS_SITE
+     (VS_DESCR, VS_HOST, VS_URL, VS_OWN, VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_SRC, VS_DLOAD_META)
+     values (hi[1], hi[1], hi[2], 2, hi[1], cast ('1990-01-01' as datetime),  'checked', follow, disallow, 'checked', get_rdf);
 
-  insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_ROOT, VQ_STAT)
+  insert replacing WS.WS.VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_ROOT, VQ_STAT)
 	values (hi[1], now(), hi[2], hi[1], 'waiting');
+  if (get_rdf)
+    {
+      insert replacing WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_SEQ)
+         select hi[1], hi[1], RM_PID, RM_ID from DB.DBA.SYS_RDF_MAPPERS;
+    }
 }
 ;
 
