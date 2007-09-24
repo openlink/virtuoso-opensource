@@ -48,7 +48,7 @@ virtuoso_php5_t_LDADD = \
 	$(php5_LDFLAGS) \
         ../../virtuoso/libvirtuoso-t.la \
 	@LIBS@ \
-	@XML_LIBS@
+	@XML_LIBS@ \
 	-lm
 
 virtuoso_iodbc_php5_t_SOURCES = \
@@ -70,7 +70,7 @@ virtuoso_iodbc_php5_t_LDADD = \
 	$(iodbc_LDFLAGS) \
         ../../virtuoso/libvirtuoso-t.la \
 	@LIBS@ \
-	@XML_LIBS@
+	@XML_LIBS@ \
 	-lm
 
 # ----------------------------------------------------------------------
@@ -78,10 +78,10 @@ virtuoso_iodbc_php5_t_LDADD = \
 #  Generated code
 #
 # ----------------------------------------------------------------------
-GEN=${top_srcdir}/bin/generate
+GEN=$(top_srcdir)/bin/generate
 
 sql_code_php.c: $(srcdir)/php.sql $(top_srcdir)/libsrc/Wi/sql_to_c.awk
-	@${GEN} ${GAWK} \
+	@$(GEN) $(GAWK) \
 		-o sql_code_php.c \
 		-f $(top_srcdir)/libsrc/Wi/sql_to_c.awk \
 		-v init_name=_php \
