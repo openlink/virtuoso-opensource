@@ -37,6 +37,9 @@
   xmlns:enc="http://purl.oclc.org/net/rss_2.0/enc#"
   xmlns:skos="http://www.w3.org/2004/02/skos/core#"
   xmlns:sioc="http://rdfs.org/sioc/ns#"
+  xmlns:g="http://base.google.com/ns/1.0"
+  xmlns:gd="http://schemas.google.com/g/2005"
+  xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -113,7 +116,14 @@
 		</dc:subject>
 	    </xsl:for-each>
 	</xsl:if>
+	<xsl:apply-templates select="g:*|gd:*" mode="rdfitem"/>
     </item>
+</xsl:template>
+
+<xsl:template match="g:*|gd:*" mode="rdfitem">
+    <xsl:element name="{local-name(.)}" namespace="http://www.openlinksw.com/schemas/google-base#">
+	<xsl:value-of select="."/>
+    </xsl:element>
 </xsl:template>
 
 <xsl:template name="removeTags">
