@@ -1,3 +1,203 @@
+2007-09-25 14:17  source
+
+	* Updated version to 5.0.2-rc7
+
+2007-09-25 14:17  source
+
+	* Added check for ptrdiff_t
+
+2007-09-25 14:11  source
+
+	* Added maxinst limitation check
+
+2007-09-25 14:07  source
+
+	* Fixed problem with unusually long transactions (> max string limit)
+
+2007-09-25 14:06  source
+
+	* Merged from upstream project
+
+2007-09-25 13:34  source
+
+	* Fixed win32 build
+
+2007-09-24 21:18  source
+
+	* Fixed gdata feed
+
+2007-09-24 21:09  source
+
+	* Fixed table owner
+
+2007-09-24 21:08  source
+
+	* Updated version
+
+2007-09-24 21:08  source
+
+	* Reversed patch for OAT image path, since this was fixed in OAT toolkit
+
+2007-09-24 21:06  source
+
+	* Fixed error in dav meta; cannot append vector, must be entity
+
+2007-09-24 14:36  source
+
+	* Added check for va_copy or __va_copy
+
+2007-09-24 13:46  source
+
+	* Fixed building plugin library
+
+2007-09-24 12:20  source
+
+	* Updated version to 5.0.2 rc6
+
+2007-09-24 12:14  source
+
+	* Adde new mapping rules for facebook import
+
+2007-09-24 12:14  source
+
+	* Fixed empty calendar dashboard item
+
+2007-09-24 12:13  source
+
+	* Fixed one instance problem
+
+2007-09-24 12:09  source
+
+	* Fixed API
+
+2007-09-24 12:08  source
+
+	* Fixed OAT path
+
+2007-09-24 12:07  source
+
+	* Fixed DESCRIBE on unspecified graphs
+
+2007-09-24 12:04  source
+
+	* Merged from upstream project
+
+2007-09-24 10:49  source
+
+	* Fixed building php4
+	* Added support for DAV virtual dirs
+
+2007-09-24 10:48  source
+
+	* Fixed small typo
+
+2007-09-23 20:27  source
+
+	* Fixed make check
+
+2007-09-23 20:16  source
+
+	* Removed sample agent from install list
+	* Cleaned up code generation section
+
+2007-09-23 17:34  source
+
+	* Added separate settings for installing vad, vsp, plugins directories
+	* Updated installation directories using  --with-layout=
+	* Fixed make install
+
+2007-09-23 17:28  source
+
+	* Increased line length
+
+2007-09-22 14:17  source
+
+	* Fixed make dist
+	* Small cleanups
+
+2007-09-21 20:09  source
+
+	* Updated facebook integration
+
+2007-09-21 19:56  source
+
+	* Fixed bot to use RDF mappers package
+
+2007-09-21 19:55  source
+
+	* Enclose xml literals in CDATA
+
+2007-09-21 19:54  source
+
+	* If bm_landed_lock returns something to wait, we need to release the
+	  buffer as it's marked for writing and sequential operation on it
+	  would block even on same thread
+
+2007-09-21 15:22  source
+
+	* Updated version to 5.0.2-rc5
+
+2007-09-21 15:21  source
+
+	* Added support for libxml2
+
+2007-09-21 15:21  source
+
+	* Added libxml.m4 so we can still create configure even if box does not have
+	  libxml2 installed
+
+2007-09-21 15:15  source
+
+	* Added support for hosting PHP programs in DAV
+
+2007-09-21 13:41  source
+
+	* Added new API function for RDF imports
+
+2007-09-21 13:40  source
+
+	* Fixed bad parameter name
+
+2007-09-21 13:19  source
+
+	* Additional patch for DATATYPE
+
+2007-09-21 13:19  source
+
+	* Added check to prevent running async queues in atomic sections
+
+2007-09-21 13:17  source
+
+	* Fixed rdf_sync folder functionality
+
+2007-09-21 12:31  source
+
+	* Fixed DATATYPE () of everything
+
+2007-09-21 12:25  source
+
+	* Updated version
+
+2007-09-21 12:23  source
+
+	* Merged from upstream project
+
+2007-09-21 12:23  source
+
+	* Removed obsolete foaf for channels
+
+2007-09-20 19:05  source
+
+	* Added better support for xsd:string() and sxd:boolean()
+
+2007-09-20 19:04  source
+
+	* Added more debug code
+
+2007-09-20 18:52  source
+
+	* Added northwind ontology
+
 2007-09-20 15:48  source
 
 	* Updated version to 5.0.2-rc4
