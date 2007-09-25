@@ -129,6 +129,9 @@
 			<File
 				RelativePath="..\binsrc\hosting\php4\bif_server_php.c">
 			</File>
+			<File
+				RelativePath="..\binsrc\hosting\php4\sql_code_php.c">
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -139,6 +142,35 @@
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+		</Filter>
+		<Filter
+			Name="PreBuild"
+			Filter="">
+			<File
+				RelativePath="..\binsrc\hosting\php4\php.sql">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)
+rm -f sql_code_php.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_php pass_bootstrap_cli=1 pl_stats=PLDBG php.sql &gt; sql_code_php.c
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)\sql_code_php.c"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)
+rm -f sql_code_php.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_php pass_bootstrap_cli=1 pl_stats=PLDBG php.sql &gt; sql_code_php.c
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)\sql_code_php.c"/>
+				</FileConfiguration>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
