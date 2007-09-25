@@ -274,45 +274,41 @@ cat mkdemo.ini | sed -e "s/1112/$PORT/g" | sed -e "s/1113/$HTTPPORT/g" > virtuos
 if [ $VOS -eq 1 ]
 then
 
-cat >> virtuoso.ini <<END_CFG
-[Plugins]
-LoadPath = ./plugin
-Load1    = plain, wikiv
-Load2    = plain, mediawiki
-Load3    = plain, creolewiki
-Load4    = plain, im
+    cat >> virtuoso.ini <<-END_CFG
+	[Plugins]
+	LoadPath = ./plugin
+	Load1    = plain, wikiv
+	Load2    = plain, mediawiki
+	Load3    = plain, creolewiki
+	Load4    = plain, im
 END_CFG
 
-if [ ! -d plugin ] 
-then
-    mkdir plugin
-fi
+    if [ ! -d plugin ] 
+    then
+	mkdir plugin
+    fi
 
-if [ "x$HOST_OS" != "x" ]
-then
-    cp -f $BINDIR/im.dll plugin
-    cp -f $BINDIR/wikiv.dll plugin
-    cp -f $BINDIR/mediawiki.dll plugin
-    cp -f $BINDIR/creolewiki.dll plugin
-else
-    cp -f $HOME/binsrc/samples/image_magick/.libs/im.so plugin
-    cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/wikiv.so plugin
-    cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/mediawiki.so plugin
-    cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/creolewiki.so plugin
-fi
+    if [ "x$HOST_OS" != "x" ]
+    then
+	cp -f $BINDIR/im.dll plugin
+	cp -f $BINDIR/wikiv.dll plugin
+	cp -f $BINDIR/mediawiki.dll plugin
+	cp -f $BINDIR/creolewiki.dll plugin
+    else
+	cp -f $HOME/binsrc/samples/image_magick/.libs/im.so plugin
+	cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/wikiv.so plugin
+	cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/mediawiki.so plugin
+	cp -f $HOME/appsrc/ODS-Wiki/plugin/.libs/creolewiki.so plugin
+    fi
 
-HOSTNAME=`uname -n`
-if [ $VOS -eq 1 -a "x$HOST_OS" != "x" ]
-then
-    BINDIR=`cygpath -m "$BINDIR"`    
-    PLUGINDIR=`echo "$BINDIR" | sed -e 's#/#\\\/#g; s# #\\ #g; s#-#\\-#g'`    
-else
-    PLUGINDIR=`echo "$prefix/lib"| sed -e 's#/#\\\/#g; s# #\\ #g; s#-#\\-#g'` 
-fi
-
-cat $HOME/bin/installer/demo.ini | sed -e "s/DEMOSQLPORT/$DEMOSQLPORT/g" -e "s/DEMOHTTPPORT/$DEMOHTTPPORT/g" -e "s/HOSTNAMEREPLACEME/$HOSTNAME/g" -e "s/ZNAME/$HOSTNAME:$DEMOSQLPORT/g" -e "s/[A-Z]*SAFEREPLACEME/;/g" -e "s/\.\.\/bin\/hosting/$PLUGINDIR/g" -e "s/URIQAREPLACEME/$HOSTNAME:$DEMOHTTPPORT/g" > demo.ini
-
-cat $HOME/bin/installer/virtuoso.ini | sed -e "s/DBSQLPORT/$DBSQLPORT/g" -e "s/DBHTTPPORT/$DBHTTPPORT/g" -e "s/HOSTNAMEREPLACEME/$HOSTNAME/g" -e "s/ZNAME/$HOSTNAME:$DBSQLPORT/g" -e "s/[A-Z]*SAFEREPLACEME/;/g" -e "s/\.\.\/bin\/hosting/$PLUGINDIR/g" -e "s/URIQAREPLACEME/$HOSTNAME:$DBHTTPPORT/g" > default.ini
+    HOSTNAME=`uname -n`
+    if [ $VOS -eq 1 -a "x$HOST_OS" != "x" ]
+    then
+	BINDIR=`cygpath -m "$BINDIR"`    
+	PLUGINDIR=`echo "$BINDIR" | sed -e 's#/#\\\/#g; s# #\\ #g; s#-#\\-#g'` 
+    else
+	PLUGINDIR=`echo "$prefix/lib"| sed -e 's#/#\\\/#g; s# #\\ #g; s#-#\\-#g'` 
+    fi
 fi
 
 

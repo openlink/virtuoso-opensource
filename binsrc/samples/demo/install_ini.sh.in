@@ -1,0 +1,77 @@
+#!/bin/sh
+
+#
+#  Settings from configure/make install
+#
+PREFIX=@PREFIX@
+DESTDIR=@DESTDIR@
+VADDIR=@VADDIR@
+DBDIR=@DBDIR@
+DEMODIR=@DEMODIR@
+HOSTINGDIR=@HOSTINGDIR@
+HTTPROOTDIR=@HTTPROOTDIR@
+
+#
+#  Argument
+#
+DB=${1-database}
+
+
+#
+#  Calculate hostname
+#
+HOST=`hostname | tr '[a-z]' '[A-Z]' | sed -e 's/\..*$//' 2>/dev/null`
+if test "x$HOST" = "x"
+then
+    HOST=localhost
+fi
+
+
+case $DB in
+	database)
+		PORT=1111
+		HTTP_PORT=8890
+		DBNAME=virtuoso
+		DIR="$DBDIR"
+		REPLNAME="db-$HOST"
+		;;
+
+	demo)
+		PORT=1112
+		HTTP_PORT=8891
+		DBNAME=demo
+		DIR="$DEMODIR"
+		REPLNAME="demo-$HOST"
+		;;
+
+	*)
+		echo "Unknown database name [$DB]"
+		exit 1
+		;;
+esac
+
+
+#
+#  Generate proper ini file
+#
+
+if test -f "${DESTDIR}${DIR}/${DBNAME}.ini"
+then
+	INIFILE="${DESTDIR}${DIR}/${DBNAME}.ini.sample"
+else
+	INIFILE="${DESTDIR}${DIR}/${DBNAME}.ini"
+fi
+echo "Installing default ini file as $INIFILE"
+
+sed	-e "s,[@]VADDIR[@],$VADDIR,g" \
+	-e "s,[@]HOSTINGDIR[@],$HOSTINGDIR,g" \
+	-e "s,[@]DBNAME[@],$DBNAME,g" \
+	-e "s,[@]HOST[@],$HOST,g" \
+	-e "s,[@]PORT[@],$PORT,g" \
+	-e "s,[@]HTTP_PORT[@],$HTTP_PORT,g" \
+	-e "s,[@]HTTP_ROOTDIR[@],$HTTPROOTDIR,g" \
+	-e "s,[@]REPLNAME[@],$REPLNAME,g" \
+	-e "s,[@]ZNAME[@],$DBNAME ($HOST),g" \
+	< default-virtuoso.ini > "$INIFILE"
+
+exit 0

@@ -28,9 +28,96 @@ if WITH_HTMLDOC
 #dist_pdfdoc_DATA = $(top_srcdir)/docsrc/pdf/virtdocs.pdf
 endif
 
+
+# ----------------------------------------------------------------------
+#
+#  Building documentation vad
+#
+# ----------------------------------------------------------------------
+doc_dav.vad: mkdoc.sh mksearch.sql drop.sql mkdemo.ini
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
+	HOME="$(TOP)" \
+	HTMLDOC="$(HTMLDOC)" \
+	HOST=localhost \
+	$(SHELL) mkdoc.sh
+
+
+# ----------------------------------------------------------------------
+#
+#  Building demo vad
+#
+# ----------------------------------------------------------------------
+DEMO_DEPS=\
+	*.owl \
+	*.sql \
+	*.txt \
+	art.tar.gz \
+	CAT1 \
+	CAT2 \
+	CAT3 \
+	CAT4 \
+	CAT5 \
+	CAT6 \
+	CAT7 \
+	CAT8 \
+	EMP1 \
+	EMP2 \
+	EMP3 \
+	EMP4 \
+	EMP5 \
+	EMP6 \
+	EMP7 \
+	EMP8 \
+	EMP9 \
+	flags.tar.gz \
+	make_vad.sh \
+	vad_version
+
+demo_dav.vad: make_vad.sh $(DEMO_DEPS)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
+	HOME="$(TOP)" \
+	HTMLDOC="$(HTMLDOC)" \
+	HOST=localhost \
+	$(SHELL) make_vad.sh
+
+
+
+# ----------------------------------------------------------------------
+#
+#  Building demo database
+#
+# ----------------------------------------------------------------------
+demo.db: mkdemo.sh mkdemo.ini doc_dav.vad demo_dav.vad
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
+	HOME="$(TOP)" \
+	HTMLDOC="$(HTMLDOC)" \
+	prefix="$(prefix)" \
+	HOST=localhost \
+	$(SHELL) mkdemo.sh
+
+
+# ----------------------------------------------------------------------
+#
+#  Installing components
+#
+# ----------------------------------------------------------------------
+do_subst = \
+	sed -e 's,[@]PREFIX[@],$(prefix),g' \
+            -e 's,[@]DESTDIR[@],$(DESTDIR),g' \
+            -e 's,[@]VADDIR[@],$(vaddir),g' \
+            -e 's,[@]HOSTINGDIR[@],$(hostingdir),g' \
+            -e 's,[@]DBDIR[@],$(dbdir),g' \
+            -e 's,[@]DEMODIR[@],$(demodir),g' \
+            -e 's,[@]HTTPROOTDIR[@],$(httprootdir),g'
+
 install-data-local:
+	@$(do_subst) < "$(srcdir)/install_ini.sh.in" > "install_ini.sh"
+	chmod +x ./install_ini.sh
 	mkdir -p "$(DESTDIR)$(dbdir)"
-	$(INSTALL_DATA) default.ini "$(DESTDIR)$(dbdir)"/virtuoso.ini
+	$(SHELL) install_ini.sh database
 if WITH_HTMLDOC
 	mkdir -p "$(DESTDIR)$(htmldocdir)"
 	$(INSTALL_DATA) $(top_srcdir)/docsrc/html_virt/*.html "$(DESTDIR)$(htmldocdir)"
@@ -43,6 +130,11 @@ if WITH_HTMLDOC
 endif
 
 
+# ----------------------------------------------------------------------
+#
+#  Cleanup
+#
+# ----------------------------------------------------------------------
 CLEANFILES =  \
 	*.log \
 	*.output \
@@ -67,23 +159,11 @@ CLEANFILES =  \
 	virtuoso.pxa \
 	virtuoso.tdb \
 	virtuoso.trx \
-	xmemdump.txt
+	xmemdump.txt \
+	install_ini.sh
 
 clean-local:
 	-rm -rf art flags vad plugin classlib
-
-demo.db: mkdemo.sh mkdemo.sql mkdemo.ini doc_dav.vad demo_dav.vad
-	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HTMLDOC="$(HTMLDOC)" \
-	     prefix="$(prefix)" HOST=localhost sh mkdemo.sh
-
-doc_dav.vad: mkdoc.sh mksearch.sql drop.sql mkdemo.ini
-	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HTMLDOC="$(HTMLDOC)" \
-	     HOST=localhost sh mkdoc.sh
-
-demo_dav.vad: make_vad.sh $(EXTRA_DIST)
-	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HTMLDOC="$(HTMLDOC)" \
-	     HOST=localhost sh make_vad.sh
-
 
 
 # ----------------------------------------------------------------------
@@ -92,31 +172,10 @@ demo_dav.vad: make_vad.sh $(EXTRA_DIST)
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.owl \
-	*.sql \
-	*.txt \
-	art.tar.gz \
-	CAT1 \
-	CAT2 \
-	CAT3 \
-	CAT4 \
-	CAT5 \
-	CAT6 \
-	CAT7 \
-	CAT8 \
-	EMP1 \
-	EMP2 \
-	EMP3 \
-	EMP4 \
-	EMP5 \
-	EMP6 \
-	EMP7 \
-	EMP8 \
-	EMP9 \
-	flags.tar.gz \
-	make_vad.sh \
+	$(DEMO_DEPS) \
+	install_ini.sh.in \
+	default-virtuoso.ini \
 	mkdemo.bat \
 	mkdemo.ini \
 	mkdemo.sh \
-	mkdoc.sh \
-	vad_version
+	mkdoc.sh
