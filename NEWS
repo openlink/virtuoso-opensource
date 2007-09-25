@@ -1,3 +1,51 @@
+September 25, 2007, V5.0.2:
+  * Enhanced database engine
+	- Added support for 64bit bigint
+	- Fixed memory leaks
+	- Fixed deadlocks in io sections and mutex handling
+	- Fixed unusually long transactions in replication
+	- Small bugfixes and enhancements
+  * Enhanced HTTP/DAV support
+	- Added support for RDF sync folders
+	- Added support for mapping audio tags
+	- Enhanced PHP support including access to DAV
+	- Enhanced url_rewrite rules
+	- Additional mappers for GDATA, Amazon, Wikipedia, MQL, DOI,
+	  LSID URN, FQL, XFN, XFOLK, Yahoo, Facebook and more
+	- Fixed inline attachements -/INLINE/ HTTP server pseudo-directory
+  * Enhanced SPARQL support
+	- Added support for SPARQL FreeText indexes
+	- Added support and optimization for SAMETERM
+	- Added support for 64bit IRI id
+	- Added SIOC has_service etc attributes support
+	- Added support for "OFFSET x LIMIT y'
+	- Added support for UTF-8 in TURTLE
+	- Added SPARUL optimization
+	- Added 'define uinput:same-as' syntax
+	- Added input:grab_follow_predicate
+	- Added support for rdf:value
+	- Additional support for xsd:string() and sxd:boolean()
+	- Fixed DESCRIBE on unspecified graphs
+	- Fixed DESCRIBE for RDF views
+	- Fixed DATATYPE
+	- Many bugfixes and enhancements
+  * Significant updates to ODS applications
+	- Added Facebook integration
+	- Added <a>++ links
+	- Added DH-SHA1 session mode to OpenID Server
+	- Added support for JSP
+	- Added SocialNetwork data space
+	- Fixed dashboard items
+	- Fixed integration with Del.ici.ous, Technocrati
+	- Many bugfixes and enhancements
+  * Added Thalia and Northwind demos and tutorials
+  * Enhanced portability 
+	- Added installation layouts for make install
+	- Fixed compiler warnings 
+	- Fixed 64bit specific problems
+	- Fixed platform specific problems
+
+
 May 31, 2007, V5.0.1:
   * Enhanced cost based optimizer
 	- Fixed cost calculation for RDF inf nodes
@@ -6,7 +54,7 @@ May 31, 2007, V5.0.1:
 	- Added BREAKUP
 	- Added CONSTRUCT ... LIMIT ...
 	- Significant performance optimizations 
-	* Added QUAD MAP <...> { ... } group pattern
+	- Added QUAD MAP <...> { ... } group pattern
   * Updated documentation
   * Significant update of all ODS applications
 	- Added compliance to latest SIOC vocabulary
