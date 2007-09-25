@@ -22,7 +22,6 @@
 	rb.removeFilter(OAT.RDFStoreData.FILTER_URI,"uri");
 	
 	rb.getTitle(item);
-	rb.getContent(value);
 	rb.getURI(item);
 	
 	#rdf_side #rdf_cache #rdf_filter #rdf_tabs #rdf_content

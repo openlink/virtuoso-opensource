@@ -45,7 +45,7 @@ table.grid {
 .grid thead td {
 	background-color: #ebeadb;
 	font-weight: bold;
-	background-image: url(/DAV/JS/images/Grid_header.gif);
+	background-image: url("../images/Grid_header.gif");
 	background-position: 0% 100%;
 	background-repeat: repeat-x;
 	border-left: 1px solid #ccc;
@@ -53,7 +53,7 @@ table.grid {
 }
 
 .grid thead td.hover {
-	background-image: url(/DAV/JS/images/Grid_header_hover.gif);
+	background-image: url("../images/Grid_header_hover.gif");
 }
 
 .grid td {

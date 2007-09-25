@@ -56,6 +56,7 @@ var QueryExec = function(optObj) {
 		
 		endpoint:false,
 		query:false,
+		backupQuery:false, /* to be execude if original fails */
 		defaultGraph:false,
 		namedGraphs:[],
 		sponge:false,
@@ -352,7 +353,7 @@ var QueryExec = function(optObj) {
 					["triples","Raw Triples",{}],
 					["svg","SVG Graph",{}],
 					["images","Images",{}],
-					["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y}],
+					["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y}] 
 				];
 				var mini = new OAT.RDFMini(self.dom.result,{tabs:tabs,showSearch:false});
 				mini.processLink = self.processLink;
@@ -388,13 +389,15 @@ var QueryExec = function(optObj) {
 		var dereferenceRef = function() {
 			var cache = self.cache[self.cacheIndex];
 
-			var q = 'define input:same-as "yes" \n'+
+			var q = 'define get:soft "replacing" \n'+
+					'define input:same-as "yes" \n'+
 					'define input:grab-seealso <http://www.w3.org/2002/07/owl#sameAs> \n'+
 					'DESCRIBE <'+href+'>';
-
+			var bq = 'DESCRIBE <'+href+'>';
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
 			o.query = q;
+			o.backupQuery = bq;
 			self.execute(o);
 		}
 	
@@ -456,8 +459,16 @@ var QueryExec = function(optObj) {
 		}
 		var onerror = function(xhr) {
 			var txt = xhr.getResponseText();
+			if (txt.match(/SP031/) && optObj.backupQuery) {
+				var newO = {};
+				for (var p in optObj) { newO[p] = optObj[p]; }
+				newO.query = newO.backupQuery;
+				newO.backupQuery = false;
+				self.execute(newO);
+			} else {
 			if (opts.onerror) { opts.onerror(txt); }
 			self.addResponse(request,optObj,1,txt);
+		}
 		}
 		var o = {
 			type:OAT.AJAX.TYPE_XML,

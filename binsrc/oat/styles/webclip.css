@@ -4,7 +4,7 @@
 .CopyPasteInput     { position: absolute; overflow:hidden; top:0px; left:0px; width:32px; height:19px;padding:0px; z-index:100; cursor:pointer; filter:alpha(opacity=0); KHTMLOpacity:0; MozOpacity:0; opacity:0; }
 
 .webClipControlDiv {
-background: url("/DAV/JS/images/clipOff.png") left top no-repeat;
+background: url("../images/clipOff.png") left top no-repeat;
 width:32px;
 height:22px;
 z-index:99;
@@ -18,13 +18,13 @@ float: left;
 width: 32px;
 height:22px;
 z-index:99;
-filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/DAV/JS/images/clipOff.png', sizingMethod='scale'); 
+filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='../images/clipOff.png', sizingMethod='scale'); 
 }
 /* */
 
 
 .webClipControlSelectedDiv {
-background: url("/DAV/JS/images/clipOn.png") left top no-repeat;
+background: url("../images/clipOn.png") left top no-repeat;
 width:32px;
 height:22px;
 z-index:99;
@@ -37,6 +37,6 @@ float: left;
 width: 32px;
 height:22px;
 z-index:99;
-filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/DAV/JS/images/clipOn.png', sizingMethod='scale'); 
+filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='../images/clipOn.png', sizingMethod='scale'); 
 }
 /* */

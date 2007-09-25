@@ -14,6 +14,7 @@
 	
 	Contains: 
 	* OAT
+	* OAT.Preferences
 	* OAT.Dom
 	* OAT.Event
 	* OAT.Style
@@ -34,7 +35,7 @@ OAT.Preferences = {
 	windowTypeOverride:0, /* do not guess window type */
 	xsltPath:"/DAV/JS/xslt/",
 	imagePath:"/DAV/JS/images/",
-	version:"24.9.2007",
+	version:"25.9.2007",
 	httpError:1, /* show http errors */
 	allowDefaultResize:1,
 	allowDefaultDrag:1
@@ -586,7 +587,6 @@ OAT.Dom = { /* DOM common object */
 		return str.replace(/&amp;/g,"&").replace(/&gt;/g,">").replace(/&lt;/g,"<");
 	},
 	
-	
 	uriParams:function() {
 		var result = {};
 		var s = location.search;
@@ -759,7 +759,6 @@ OAT.Loader = { /* first part of loader object */
 			var name = path+value[i];
 			var script = document.createElement("script");
 			script.src = name;
-			// alert("including "+name);
 			document.getElementsByTagName("head")[0].appendChild(script);
 		}
 	},
