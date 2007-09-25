@@ -107,7 +107,7 @@ static void
 repl_process_message (dk_session_t * ses)
 {
   scheduler_io_data_t trx_sio;
-  long bytes;
+  size_t bytes;
   caddr_t *header;
   caddr_t trx_string;
   header = (caddr_t *) PrpcReadObject (ses);
@@ -120,10 +120,10 @@ repl_process_message (dk_session_t * ses)
     }
   else
     {
-      bytes = (long) unbox (header[LOGH_BYTES]);
+      bytes = (size_t) unbox (header[LOGH_BYTES]);
       if (bytes)
 	{
-	  trx_string = dk_alloc_box (bytes, DV_LONG_STRING);
+	  trx_string = dk_alloc (bytes);
 	  CATCH_READ_FAIL (ses)
 	    {
 	      session_buffered_read (ses, trx_string, bytes);
@@ -137,7 +137,7 @@ repl_process_message (dk_session_t * ses)
 	    {
 	      dk_free_tree ((caddr_t) header);
 	      DKS_DB_DATA (ses)->cli_repl_pending = REPL_TO_DISCONNECT;
-	      dk_free_box (trx_string);
+	      dk_free (trx_string, bytes);
 	      return;
 	    }
 	  else
@@ -155,7 +155,7 @@ repl_process_message (dk_session_t * ses)
                       ra->ra_sync_user, ra->ra_account, ra->ra_server);
                   dk_free_tree ((caddr_t) header);
                   DKS_DB_DATA (ses)->cli_repl_pending = REPL_TO_DISCONNECT;
-	          dk_free_box (trx_string);
+	          dk_free (trx_string, bytes);
                   return;
                 }
 	      if (LTE_OK == log_replay_trx (repl_str_in, repl_cli,
@@ -169,7 +169,7 @@ repl_process_message (dk_session_t * ses)
 		  DKS_DB_DATA (ses)->cli_repl_pending = REPL_TO_DISCONNECT;
 		}
 
-	      dk_free_box (trx_string);
+	      dk_free (trx_string, bytes);
 	    }
 	}
       else if (IS_REPL_DISC(header))
