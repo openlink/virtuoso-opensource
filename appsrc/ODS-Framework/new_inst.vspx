@@ -34,9 +34,11 @@
     </vm:header>
     <v:on-init>
       <![CDATA[
+           
         if (self.instance_descr is null)
           self.instance_descr := WA_GET_APP_NAME (coalesce(get_keyword('wa_name', self.vc_event.ve_params), (select WAI_TYPE_NAME from WA_INSTANCE where WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), ''));
         self.wa_type := self.wa_name;
+        
         if (self.wa_type in ('oDrive', 'oMail'))
         {
           self.imodel := 1;
@@ -60,6 +62,7 @@
         self.domains := xml_tree_doc(self.domains);
       ]]>
     </v:on-init>
+    
     <v:method name="create_new_app" arglist="inout control vspx_button, inout e vspx_event">
     <![CDATA[
       declare _len any;
@@ -493,6 +496,7 @@
       <vm:variable name="page_type" type="varchar" default="'new'" persist="0"/>
       <vm:variable name="wa_desc" type="varchar" default="null" persist="0"/>
       <vm:variable name="wa_cnt" type="int" default="0" persist="0"/>
+      <vm:variable name="maxinstexceeded" type="int" default="0" persist="0"/>
       <vm:variable name="itemplate" type="varchar" default="null" persist="0"/>
 
       <vm:navigation on="settings"/>
@@ -508,6 +512,14 @@
 	    <div class="box">
 	      <v:local-variable name="dummy">
 		<v:before-data-bind><![CDATA[
+     if(exists (select 1  from WA_TYPES  where WAT_NAME =self.wa_name
+                and ( WAT_MAXINST=0 or WAT_MAXINST <= (select WMIC_INSTCOUNT from WA_MEMBER_INSTCOUNT where WMIC_TYPE_NAME=WAT_NAME  and WMIC_UID =self.u_id))))
+     {
+        self.maxinstexceeded:=1;
+     }else
+        self.maxinstexceeded:=0;
+
+
 		 if (self.promo = 'promo')
 		   {
 		    self.wa_cnt := (select count(1) from WA_MEMBER where WAM_APP_TYPE = self.wa_name and WAM_USER = self.u_id
@@ -521,9 +533,17 @@
 		    if (self.wa_cnt = 0)
 		      self.promo := '';
 		    }
+		   
+		   
 		  ]]></v:before-data-bind>
 	      </v:local-variable>
 	      <v:form type="simple" method="POST" name="aform1">
+	   <v:template name="maxinst_exceed" type="simple" condition="self.maxinstexceeded = 1">
+	         <div style="padding:10px">You have reached the maximum number of <?V WA_GET_MFORM_APP_NAME(self.wa_name) ?> per user. You are not allowed to create new instance of <?V WA_GET_APP_NAME(self.wa_name) ?>. Go to <a href="<?Vself.odsbar_ods_gpath ||wa_expand_url('services.vspx',self.odsbar_loginparams)?>">My Applications</a> .</div>
+	   </v:template>
+	   <v:template name="maxinst_notexceed" type="simple" condition="self.maxinstexceeded = 0">
+	      
+
 	      <v:template name="app_cr" type="simple" condition="self.promo = ''">
                   <v:before-data-bind>
                     <![CDATA[
@@ -714,6 +734,7 @@
 	      </div>
 
 	    </v:template>
+     </v:template>
 	  </v:form>
             </div>
           </div>

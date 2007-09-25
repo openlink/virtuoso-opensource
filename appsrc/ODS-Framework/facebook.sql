@@ -1626,8 +1626,7 @@ declare _res any;
 	            k:=k+1;
 	          }
             http (')}', _res_str);
-            if(i < length(_res)-1)
-               http (',\r\n', _res_str);  
+
 	        }
         }
         i := i + 1;
