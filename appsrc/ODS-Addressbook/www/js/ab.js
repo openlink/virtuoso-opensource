@@ -19,112 +19,6 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
 */
-var BrowserDetect = {
-  init: function () {
-    this.browser = this.searchString(this.dataBrowser) || "An unknown browser";
-    this.version = this.searchVersion(navigator.userAgent)
-      || this.searchVersion(navigator.appVersion)
-      || "an unknown version";
-    this.OS = this.searchString(this.dataOS) || "an unknown OS";
-  },
-  searchString: function (data) {
-    for (var i=0;i<data.length;i++)  {
-      var dataString = data[i].string;
-      var dataProp = data[i].prop;
-      this.versionSearchString = data[i].versionSearch || data[i].identity;
-      if (dataString) {
-        if (dataString.indexOf(data[i].subString) != -1)
-          return data[i].identity;
-      }
-      else if (dataProp)
-        return data[i].identity;
-    }
-  },
-  searchVersion: function (dataString) {
-    var index = dataString.indexOf(this.versionSearchString);
-    if (index == -1) return;
-    return parseFloat(dataString.substring(index+this.versionSearchString.length+1));
-  },
-  dataBrowser: [
-    { String: navigator.userAgent,
-      subString: "OmniWeb",
-      versionSearch: "OmniWeb/",
-      identity: "OmniWeb"
-    },
-    {
-      string: navigator.vendor,
-      subString: "Apple",
-      identity: "Safari"
-    },
-    {
-      prop: window.opera,
-      identity: "Opera"
-    },
-    {
-      string: navigator.vendor,
-      subString: "iCab",
-      identity: "iCab"
-    },
-    {
-      string: navigator.vendor,
-      subString: "KDE",
-      identity: "Konqueror"
-    },
-    {
-      string: navigator.userAgent,
-      subString: "Firefox",
-      identity: "Firefox"
-    },
-    {
-      string: navigator.vendor,
-      subString: "Camino",
-      identity: "Camino"
-    },
-    {    // for newer Netscapes (6+)
-      string: navigator.userAgent,
-      subString: "Netscape",
-      identity: "Netscape"
-    },
-    {
-      string: navigator.userAgent,
-      subString: "MSIE",
-      identity: "Explorer",
-      versionSearch: "MSIE"
-    },
-    {
-      string: navigator.userAgent,
-      subString: "Gecko",
-      identity: "Mozilla",
-      versionSearch: "rv"
-    },
-    {     // for older Netscapes (4-)
-      string: navigator.userAgent,
-      subString: "Mozilla",
-      identity: "Netscape",
-      versionSearch: "Mozilla"
-    }
-  ],
-  dataOS : [
-    {
-      string: navigator.platform,
-      subString: "Win",
-      identity: "Windows"
-    },
-    {
-      string: navigator.platform,
-      subString: "Mac",
-      identity: "Mac"
-    },
-    {
-      string: navigator.platform,
-      subString: "Linux",
-      identity: "Linux"
-    }
-  ]
-
-};
-BrowserDetect.init();
-
 // ---------------------------------------------------------------------------
 function myPost(frm_name, fld_name, fld_value)
 {
@@ -646,159 +540,27 @@ function addCheckedTags (openerName, checkName)
 
 // ---------------------------------------------------------------------------
 //
-function changeQuestionType (obj)
+function changeType (obj)
 {
-  var qType = obj.form['pq_type'];
-  if (qType.value == 'M') {
-    showCell ('tr_question_choices');
-    showCell ('tr_question_allowed');
-
-    aNumbers = obj.form.elements['pq_choices'].value;
-    for (var i = 1; i <= aNumbers; i = i + 1)
-      showCell ('tr_answer_'+i);
-
-    hideCell ('tr_range_start');
-    hideCell ('tr_range_end');
-    hideCell ('tr_range_decimals');
+  showTab(1, 4); 
+  if (obj.value != "1") {
+    OAT.Dom.show ('tab_2');
+    OAT.Dom.show ('tab_3');
   } else {
-    hideCell ('tr_question_choices');
-    hideCell ('tr_question_allowed');
-
-    aNumbers = Number (obj.form.elements['pq_choices'].value);
-    for (var i = 1; i <= aNumbers; i = i + 1)
-      hideCell ('tr_answer_'+i);
-
-    showCell ('tr_range_start');
-    showCell ('tr_range_end');
-    showCell ('tr_range_decimals');
-  }
+    OAT.Dom.hide ('tab_2');
+    OAT.Dom.hide ('tab_3');
 }
+	var trNodes = document.getElementsByTagName("tr");
 
-// ---------------------------------------------------------------------------
-//
-function changeAnswerChoices (obj)
-{
-  var qType = obj.form['pq_type'];
-  if (qType.value != 'M')
-    return;
-
-  var aNumbers = Number(obj.value);
-  for (var i = 1; i <= aNumbers; i = i + 1)
-    showCell ('tr_answer_'+i);
-  for (var i = aNumbers+1; i <= 10; i = i + 1)
-    hideCell ('tr_answer_'+i);
-
-  var qAllowed = obj.form['pq_allowed'];
-  var qIndex = qAllowed.selectedIndex;
-  for (var i = 0; i < qAllowed.length; i = i + 1)
-    qAllowed.options[i] = null;
-  for (var i = 0; i < aNumbers; i = i + 1) {
-    qAllowed.options[i] = new Option (i+1, i+1);
-    if (i == qIndex)
-      qAllowed.selectedIndex = i;
-  }
-}
-
-// ---------------------------------------------------------------------------
-//
-function checkChoices (obj)
-{
-  if (!obj.checked)
-    return;
-  var objName = obj.name;
-  var N = objName.lastIndexOf('_');
-  var qID = objName.substr(N+1);
-
-  var choices = obj.form.elements['choices_'+qID].value;
-  var allowed = obj.form.elements['allowed_'+qID].value;
-
-  if (allowed == 1) {
-    for (var i = 1; i <= choices; i = i + 1) {
-      if (objName != obj.form.elements['answer_'+i+'_'+qID].name)
-        obj.form.elements['answer_'+i+'_'+qID].checked = false;
-    }
+	for (var i = 0; i < trNodes.length; i++) {
+	  var tr = trNodes[i];
+	  if (OAT.Dom.isClass(tr, 'contactType'))
+      if (obj.value != "1") {
+	      OAT.Dom.show (tr);
   } else {
-    var checks = 0;
-    for (var i = 1; i <= choices; i = i + 1) {
-      if (obj.form.elements['answer_'+i+'_'+qID].checked)
-        checks++;
-    }
-    if (checks > allowed) {
-      obj.checked = false;
-      alert ('Maximum number of alowed answers is riched!');
-      return false;
-    }
+	      OAT.Dom.hide (tr);
   }
-  return true;
 }
 
-// ---------------------------------------------------------------------------
-//
-function checkRange (obj)
-{
-  var objName = obj.name;
-  var N = objName.lastIndexOf('_');
-  var qID = objName.substr(N+1);
-
-  var required = obj.form.elements['required_'+qID].value;
-  var range_start = obj.form.elements['range_start_'+qID].value;
-  var range_end = obj.form.elements['range_end_'+qID].value;
-  var range_decimals = obj.form.elements['range_decimals_'+qID].value;
-
-  var oValue = parseFloat(obj.value, range_decimals);
-  if (isNaN(oValue)) {
-    alert ('Bad value');
-    return false;
-  }
-  if ((required == 1) && (trim (obj.value) == '')) {
-    alert ('Must has value');
-    return false;
-  }
-  if ((oValue < range_start) || (oValue > range_end)) {
-    alert ('Value must be in range ['+range_start+', '+range_end+']');
-    return false;
-  }
-  return true;
 }
 
-// ---------------------------------------------------------------------------
-//
-function checkVote (obj)
-{
-  var objForm = obj.form;
-  var oName;
-  var N;
-  var qID;
-  var qType;
-  for (var i = 0; i < objForm.elements.length; i++) {
-    var o = objForm.elements[i];
-    if (o != null && o.type == 'hidden' && o.name.indexOf ('id_') != -1) {
-      qID = o.value;
-      qType = objForm.elements['type_'+qID].value;
-      if (qType == 'M') {
-        var choices = objForm.elements['choices_'+qID].value;
-        var allowed = objForm.elements['allowed_'+qID].value;
-        var required = objForm.elements['required_'+qID].value;
-        var checks = 0;
-
-        for (var j = 1; j <= choices; j = j + 1) {
-          if (obj.form.elements['answer_'+j+'_'+qID].checked)
-            checks++;
-        }
-        if (checks < required) {
-          alert ('Minimal number of alowed answers is riched!');
-          return false;
-        }
-        if (checks > allowed) {
-          alert ('Maximum number of alowed answers is riched!');
-          return false;
-        }
-      }
-      if (qType == 'N') {
-        if (!checkRange (objForm.elements['answer_'+qID]))
-          return false;
-      }
-    }
-  }
-  return true;
-}

@@ -335,6 +335,7 @@
       <v:variable persist="0" name="abStep" type="varchar" default="''" />
       <v:variable name="v_id" type="any" default="-1" />
 
+      <v:variable name="v_kind" type="integer" default="0" />
       <v:variable name="v_name" type="varchar" default="''" />
       <v:variable name="v_title" type="varchar" default="''" />
       <v:variable name="v_fName" type="varchar" default="''" />
@@ -733,7 +734,7 @@
           <div class="ab_left_sub1">
             <?vsp
               if (self.abScope = 'MyContacts') {
-              declare tMin, tMax integer;
+                declare _done, tMin, tMax integer;
                 declare appClass, tClass, tStyle varchar;
 
                 select max(T_COUNT),
@@ -746,18 +747,22 @@
                 appClass := '';
                 if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
                   appClass := 'app';  
+                _done := 0;  
                 for (select T_TAG, T_COUNT
                        from AB.WA.TAGS
                       where T_DOMAIN_ID = self.domain_id
                         and T_COUNT > 0
                       order by T_TAG) do
                 {
+                  _done := 1;  
                   tStyle := ODS.WA.tag_style(T_COUNT, tMin, tMax);
                   tClass := '';
                   if (self.abTag = T_TAG)
                     tClass := 'nolink_a';
                   http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', AB.WA.tag_id(T_TAG), T_TAG, T_TAG, appClass, SIOC..addressbook_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
                 }
+                if (not _done)
+                  http ('no tags');
               }
               if (self.abScope = 'MySharedContacts')
                 self.showTree(1, self.domain_id, self.account_id, AB.WA.make_node('r', 2), '');
@@ -1127,7 +1132,8 @@
                 if (isnull (get_keyword ('ab_name', params)))
                   self.v_tabNo := '1';
                 if (((self.abAction = 'edit') or (self.abAction = 'view')) and isnull (get_keyword ('ab_name', params))) {
-                  select P_NAME,
+                  select coalesce (P_KIND, 0),
+                         P_NAME,
                          P_TITLE,
                          P_FIRST_NAME,
                          P_MIDDLE_NAME,
@@ -1176,7 +1182,8 @@
                          P_B_MAIL,
                          P_B_WEB,
                          P_TAGS
-                    into self.v_name,
+                    into self.v_kind,
+                         self.v_name,
                          self.v_title,
                          self.v_fName,
                          self.v_mName,
@@ -1233,13 +1240,34 @@
             </v:before-data-bind>
 
             <div class="new-form-header">
-              <v:label format="%s" value="--'Create/Update Contact'" />
+              <div style="float: left; padding-top: 3px;">
+                <v:label format="%s" value="--initcap(self.abAction) || ' Contact'" />
+              </div>
+              <vm:if test="self.abAction <> 'view'">
+                <div style="float: right;">
+                  Type: 
+                  <v:select-list name="ab_kind" xhtml_id="ab_kind" xhtml_onchange="javascript: changeType(this);">
+                    <v:item value="0" name="Person" />
+                    <v:item value="1" name="Organization" />
+                    <v:before-data-bind>
+                    <![CDATA[
+                      control.ufl_value := self.v_kind;
+                      control.vc_data_bound := 1;
+                    ]]>
+                  </v:before-data-bind>
+                </v:select-list>
+                </div>
+              </vm:if>
+              <vm:if test="self.abAction = 'view'">
+                <?vsp http (sprintf ('<input type="hidden" name="ab_kind" id="ab_kind" value="%d" />', self.v_kind)); ?>
+              </vm:if>
+              <br style="clear: both;" />
             </div>
             <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
             <v:text name="dirty_force_global" xhtml_id="dirty_force_global" type="hidden" value="--get_keyword ('dirty_force_global', self.vc_event.ve_params, 'false')"/>
             <div id="c1">
               <div class="tabs">
-                <vm:tabCaption tab="1" tabs="4" caption="Personal"/>&nbsp;
+                <vm:tabCaption tab="1" tabs="4" caption="Main" />&nbsp;
                 <vm:tabCaption tab="2" tabs="4" caption="Contact"/>&nbsp;
                 <vm:tabCaption tab="3" tabs="4" caption="Home"/>&nbsp;
                 <vm:tabCaption tab="4" tabs="4" caption="Business"/>&nbsp;
@@ -1258,13 +1286,13 @@
                         <?vsp self.viewField (self.v_name); ?>
                       </td>
                     </tr>
-                    <tr>
+                    <tr class="contactType">
                       <th>
                         <v:label for="ab_title" value="Title"/>
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:select-list name="ab_title" xhtml_tabindex="1">
+                          <v:select-list name="ab_title">
                           <v:item name="" value=""/>
                           <v:item name="Mr" value="Mr"/>
                           <v:item name="Mrs" value="Mrs"/>
@@ -1281,7 +1309,7 @@
                         <?vsp self.viewField (self.v_title); ?>
                       </td>
                     </tr>
-                    <tr>
+                    <tr class="contactType">
                       <th>
                         <v:label for="ab_fName" value="First Name"/>
                       </th>
@@ -1292,7 +1320,7 @@
                         <?vsp self.viewField (self.v_fName); ?>
                       </td>
                     </tr>
-                    <tr>
+                    <tr class="contactType">
                       <th>
                         <v:label for="ab_mName" value="Middle Name" />
                       </th>
@@ -1303,7 +1331,7 @@
                         <?vsp self.viewField (self.v_mName); ?>
                       </td>
                     </tr>
-                    <tr>
+                    <tr class="contactType">
                       <th>
                         <v:label for="ab_lName" value="Last Name"/>
                       </th>
@@ -1325,13 +1353,13 @@
                         <?vsp self.viewField (self.v_fullName); ?>
                       </td>
                     </tr>
-                    <tr>
+                    <tr class="contactType">
                       <th>
                         <v:label for="ab_gender" value="Gender" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:select-list name="ab_gender" xhtml_tabindex="1">
+                          <v:select-list name="ab_gender">
                           <v:item name="" value=""/>
                           <v:item name="Male" value="male"/>
                           <v:item name="Female" value="female"/>
@@ -1346,7 +1374,7 @@
                         <?vsp self.viewField (self.v_gender); ?>
                       </td>
                     </tr>
-                    <tr>
+                    <tr class="contactType">
                       <th>
                         <v:label for="regbday" value="Birthday" />
                       </th>
@@ -1909,7 +1937,7 @@
                         <?vsp self.viewField (self.v_bIndustry); ?>
                       </td>
                     </tr>
-                    <tr>
+                    <tr class="contactType">
                       <th>
                         <v:label for="ab_bOrganization" value="Organization"/>
                       </th>
@@ -1920,7 +1948,7 @@
                         <?vsp self.viewField (self.v_bOrganization); ?>
                       </td>
                     </tr>
-                    <tr>
+                    <tr class="contactType">
                       <th>
                         <v:label for="ab_bDepartment" value="Department" />
                       </th>
@@ -1931,7 +1959,7 @@
                         <?vsp self.viewField (self.v_bDepartment); ?>
                       </td>
                     </tr>
-                    <tr>
+                    <tr class="contactType">
                       <th>
                         <v:label for="ab_bJob" value="Job Title"/>
                       </th>
@@ -2016,6 +2044,7 @@
                       resignal;
                     };
 
+                    self.v_kind := cast (self.ab_kind.ufl_value as integer);
                     self.v_name := AB.WA.test (self.ab_name.ufl_value, vector('name', 'Name', 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
                     self.v_tags := trim (self.ab_tags.ufl_value);
                     AB.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
@@ -2026,6 +2055,7 @@
                     declare dt datetime;
 
   	                dt := null;
+                    if (not self.v_kind) {
                     if (not is_empty_or_null (self.ab_birthday.ufl_value)) {
 			                declare exit handler for sqlstate '*' {
 			                  self.vc_error_message := sprintf ('An invalid birth date (%s) is specified', tmp);
@@ -2034,13 +2064,16 @@
 			                };
                       dt := stringdate (self.ab_birthday.ufl_value);
 			              }
+                    }
 
                 		self.v_hLat := null;
                 		self.v_hLng := null;
+                    if (not self.v_kind) {
 			              if (length (self.ab_hLat.ufl_value) and length (self.ab_hLng.ufl_value)) {
           			      self.v_hLat := atof (self.ab_hLat.ufl_value);
           			      self.v_hLng := atof (self.ab_hLng.ufl_value);
 			              }
+                    }
                 		self.v_bLat := null;
                 		self.v_bLng := null;
 			              if (length (self.ab_bLat.ufl_value) and length (self.ab_bLng.ufl_value)) {
@@ -2048,32 +2081,32 @@
           			      self.v_bLng := atof (self.ab_bLng.ufl_value);
 			              }
                     self.v_title         := trim (self.ab_title.ufl_value);
-                    self.v_fName         := trim (self.ab_fName.ufl_value);
-                    self.v_mName         := trim (self.ab_mName.ufl_value);
-                    self.v_lName         := trim (self.ab_lName.ufl_value);
+                    self.v_fName         := case when self.v_kind then '' else trim (self.ab_fName.ufl_value) end;
+                    self.v_mName         := case when self.v_kind then '' else trim (self.ab_mName.ufl_value) end;
+                    self.v_lName         := case when self.v_kind then '' else trim (self.ab_lName.ufl_value) end;
                     self.v_fullName      := trim (self.ab_fullName.ufl_value);
-                    self.v_gender        := trim (self.ab_gender.ufl_value);
+                    self.v_gender        := case when self.v_kind then '' else trim (self.ab_gender.ufl_value) end;
                     self.v_birthday      := dt;
                     self.v_foaf          := trim (self.ab_foaf.ufl_value);
-                    self.v_mail          := trim (self.ab_mail.ufl_value);
-                    self.v_web           := trim (self.ab_web.ufl_value);
-                    self.v_icq           := trim (self.ab_icq.ufl_value);
-                    self.v_skype         := trim (self.ab_skype.ufl_value);
-                    self.v_aim           := trim (self.ab_aim.ufl_value);
-                    self.v_yahoo         := trim (self.ab_yahoo.ufl_value);
-                    self.v_msn           := trim (self.ab_msn.ufl_value);
-                    self.v_hCountry      := trim (self.ab_hCountry.ufl_value);
-                    self.v_hCity         := trim (self.ab_hCity.ufl_value);
-                    self.v_hState        := trim (self.ab_hState.ufl_value);
-                    self.v_hCode         := trim (self.ab_hCode.ufl_value);
-                    self.v_hAddress1     := trim (self.ab_hAddress1.ufl_value);
-                    self.v_hAddress2     := trim (self.ab_hAddress2.ufl_value);
-                    self.v_hTzone        := trim (self.ab_hTzone.ufl_value);
-                    self.v_hPhone        := trim (self.ab_hPhone.ufl_value);
-                    self.v_hMobile       := trim (self.ab_hMobile.ufl_value);
-                    self.v_hFax          := trim (self.ab_hFax.ufl_value);
-                    self.v_hMail         := trim (self.ab_hMail.ufl_value);
-                    self.v_hWeb          := trim (self.ab_hWeb.ufl_value);
+                    self.v_mail          := case when self.v_kind then '' else trim (self.ab_mail.ufl_value) end;
+                    self.v_web           := case when self.v_kind then '' else trim (self.ab_web.ufl_value) end;
+                    self.v_icq           := case when self.v_kind then '' else trim (self.ab_icq.ufl_value) end;
+                    self.v_skype         := case when self.v_kind then '' else trim (self.ab_skype.ufl_value) end;
+                    self.v_aim           := case when self.v_kind then '' else trim (self.ab_aim.ufl_value) end;
+                    self.v_yahoo         := case when self.v_kind then '' else trim (self.ab_yahoo.ufl_value) end;
+                    self.v_msn           := case when self.v_kind then '' else trim (self.ab_msn.ufl_value) end;
+                    self.v_hCountry      := case when self.v_kind then '' else trim (self.ab_hCountry.ufl_value) end;
+                    self.v_hCity         := case when self.v_kind then '' else trim (self.ab_hCity.ufl_value) end;
+                    self.v_hState        := case when self.v_kind then '' else trim (self.ab_hState.ufl_value) end;
+                    self.v_hCode         := case when self.v_kind then '' else trim (self.ab_hCode.ufl_value) end;
+                    self.v_hAddress1     := case when self.v_kind then '' else trim (self.ab_hAddress1.ufl_value) end;
+                    self.v_hAddress2     := case when self.v_kind then '' else trim (self.ab_hAddress2.ufl_value) end;
+                    self.v_hTzone        := case when self.v_kind then '' else trim (self.ab_hTzone.ufl_value) end;
+                    self.v_hPhone        := case when self.v_kind then '' else trim (self.ab_hPhone.ufl_value) end;
+                    self.v_hMobile       := case when self.v_kind then '' else trim (self.ab_hMobile.ufl_value) end;
+                    self.v_hFax          := case when self.v_kind then '' else trim (self.ab_hFax.ufl_value) end;
+                    self.v_hMail         := case when self.v_kind then '' else trim (self.ab_hMail.ufl_value) end;
+                    self.v_hWeb          := case when self.v_kind then '' else trim (self.ab_hWeb.ufl_value) end;
                     self.v_bCountry      := trim (self.ab_bCountry.ufl_value);
                     self.v_bCity         := trim (self.ab_bCity.ufl_value);
                     self.v_bState        := trim (self.ab_bState.ufl_value);
@@ -2094,6 +2127,7 @@
                     self.v_id := AB.WA.contact_update (
                       self.v_id,
                       self.domain_id,
+                      self.v_kind,
                       self.v_name,
                       self.v_title,
                       self.v_fName,
@@ -2152,7 +2186,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" name="ab_cancel" value="Cancel" xhtml_class="form-button">
+              <v:button action="simple" name="ab_cancel" value="Cancel" html_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.abAction := 'browse';
@@ -2163,6 +2197,7 @@
             </div>
             <script>
               <![CDATA[
+                changeType($('ab_kind'));
                 initTab(4, 1);
               ]]>
             </script>
@@ -2216,7 +2251,7 @@
 	                      </v:before-render>
 	                    </v:radio-button>
 	                    <xsl:call-template name="nbsp"/>
-                      <b><vm:label for="i_source_2" value="--'URI'" /></b>
+                      <b><vm:label for="i_source_2" value="--'URL'" /></b>
                     </td>
                   </tr>
                   <tr>
@@ -2392,10 +2427,10 @@
                   <vm:if test="self.i_source = 2">
                     <tr>
 		                  <th width="30%">
-                        Select URI
+                        Select URL
                       </th>
                       <td>
-                        <v:text name="f_uri" value="--''" xhtml_size="40" />
+                        <v:text name="f_uri" value="--''" xhtml_size="60" />
                       </td>
                     </tr>
                   </vm:if>
@@ -2572,7 +2607,7 @@
 	                    } else if (self.i_source = 2) {
                         self.f_uri.ufl_value := trim(self.f_uri.ufl_value);
                         if (is_empty_or_null (self.f_uri.ufl_value)) {
-                          self.vc_error_message := 'Please select correct URI address!';
+                          self.vc_error_message := 'Please select correct URL address!';
                           self.vc_is_valid := 0;
                           return;
                         }
@@ -2950,7 +2985,7 @@
                 </tr>
                 <tr>
                   <td>
-                    <input type="radio" name="e_format" id="e_format_1" value="csv" onclick="changeExportName('e_file', ['.foaf', '.vcf'], '.csv');" /><xsl:call-template name="nbsp" /><label for="e_format_1">CSV</label>
+                    <input type="radio" name="e_format" id="e_format_2" value="csv" onclick="changeExportName('e_file', ['.foaf', '.vcf'], '.csv');" /><xsl:call-template name="nbsp" /><label for="e_format_2">CSV</label>
                   </td>
                 </tr>
                 <tr>
@@ -2958,7 +2993,7 @@
                     <v:label for="e_file" value="File name"/>
                   </th>
                   <td>
-                    <v:text name="e_file" value="contacts.vcf" xhtml_class="textbox" xhtml_size="40" />
+                    <v:text name="e_file" value="--'contacts.vcf'" xhtml_class="textbox" xhtml_size="40" />
                   </td>
                 </tr>
               </table>

@@ -2306,6 +2306,7 @@ create procedure AB.WA.settings_atomVersion (
 create procedure AB.WA.contact_update (
   in id integer,
   in domain_id integer,
+  in kind integer,
   in name varchar,
   in title varchar,
   in fName varchar,
@@ -2362,6 +2363,7 @@ create procedure AB.WA.contact_update (
       (
         P_ID,
         P_DOMAIN_ID,
+        P_KIND,
         P_NAME,
         P_TITLE,
         P_FIRST_NAME,
@@ -2417,6 +2419,7 @@ create procedure AB.WA.contact_update (
       values (
         id,
         domain_id,
+        kind,
         name,
         title,
         fName,
@@ -2471,7 +2474,8 @@ create procedure AB.WA.contact_update (
       );
   } else {
     update AB.WA.PERSONS
-       set P_NAME = name,
+       set P_KIND = kind,
+           P_NAME = name,
            P_TITLE = title,
            P_FIRST_NAME = fName,
            P_MIDDLE_NAME = mName,
@@ -2557,6 +2561,8 @@ create procedure AB.WA.contact_update2 (
     return id;
   }
   if (id <> -1) {
+    if (pName = 'P_KIND')
+      update AB.WA.PERSONS set P_KIND = pValue where P_ID = id;
     if (pName = 'P_NAME')
       update AB.WA.PERSONS set P_NAME = pValue where P_ID = id;
     if (pName = 'P_TITLE')
@@ -3192,7 +3198,13 @@ create procedure AB.WA.export_vcard (
 	  http (sprintf ('NICKNAME:%s\r\n', P_NAME), sStream);
 	  if (not is_empty_or_null (P_FULL_NAME))
   	  http (sprintf ('FN:%s\r\n', P_FULL_NAME), sStream);
-	  http (sprintf ('N:%s;%s\r\n', P_LAST_NAME, P_FIRST_NAME, P_MIDDLE_NAME, P_TITLE), sStream);
+    -- Home
+	  S := coalesce (P_LAST_NAME, '');
+	  S := S || ';' || coalesce (P_FIRST_NAME, '');
+	  S := S || ';' || coalesce (P_MIDDLE_NAME, '');
+	  S := S || ';' || coalesce (P_TITLE, '');
+	  if (S <> ';;;')
+  	  http (sprintf ('N:%s\r\n', S), sStream);
 	  if (not is_empty_or_null (P_BIRTHDAY))
 	    http (sprintf ('BDAY:%s\r\n', AB.WA.dt_format (P_BIRTHDAY, 'Y-M-D')), sStream);
 
@@ -3412,16 +3424,14 @@ create procedure AB.WA.export_foaf (
 	        graph <%s>
 	        {
 	          <FILTER>
-	          ?person sioc:has_container <%s> .
 	          optional { ?person foaf:nick ?nick } .
 	          optional { ?person foaf:name ?name } .
 	          optional { ?person foaf:firstName ?firstName } .
 	          optional { ?person foaf:family_name ?family_name } .
 	          optional { ?person foaf:gender ?gender } .
 	          optional { ?person foaf:birthday ?birthday } .
-	          optional { ?person foaf:mbox ?mbox ;
-	                             foaf:mbox_sha1sum ?mbox_sha1sum .
-	                   } .
+	          optional { ?person foaf:mbox ?mbox } .
+	          optional { ?person foaf:mbox_sha1sum ?mbox_sha1sum } .
 	          optional { ?person foaf:icqChatID ?icqChatID } .
 	          optional { ?person foaf:msnChatID ?msnChatID } .
 	          optional { ?person foaf:aimChatID ?aimChatID } .
@@ -3455,17 +3465,19 @@ create procedure AB.WA.export_foaf (
 	        }
 	      }';
 
-	S := sprintf (S, SIOC..get_graph (), SIOC..addressbook_iri (AB.WA.domain_name (domain_id)));
+	S := sprintf (S, SIOC..get_graph ());
   T := '';
 	if (not isnull (ids)) {
 	  foreach (any id in ids) do {
 	    if (T = '') {
-	      T := sprintf ('(?person = <%s>)', SIOC..addressbook_contact_iri (domain_id, cast (id as integer)));
+	      T := sprintf ('(?person = <%s>)', SIOC..socialnetwork_contact_iri (domain_id, cast (id as integer)));
 	    } else {
-	      T := T || ' || ' || sprintf ('(?person = <%s>)', SIOC..addressbook_contact_iri (domain_id, cast (id as integer)));
+	      T := T || ' || ' || sprintf ('(?person = <%s>)', SIOC..socialnetwork_contact_iri (domain_id, cast (id as integer)));
 	    }
 	  }
 	  T := sprintf ('FILTER (%s) .', T);
+	} else {
+	  T := sprintf ('?person sioc:has_container <%s> .', SIOC..socialnetwork_iri (AB.WA.domain_name (domain_id)));
 	}
   S := replace (S, '<FILTER>', T);
   st := '00000';

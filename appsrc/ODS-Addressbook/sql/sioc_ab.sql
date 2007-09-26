@@ -115,10 +115,13 @@ create procedure fill_ods_addressbook_sioc (
                 WAM_USER,
                 P_ID,
                 P_DOMAIN_ID,
+								P_KIND,
                 P_NAME,
                 P_TITLE,
                 P_FIRST_NAME,
+								P_MIDDLE_NAME,
                 P_LAST_NAME,
+								P_FULL_NAME,
                 P_GENDER,
                 P_BIRTHDAY,
                 P_MAIL,
@@ -144,6 +147,11 @@ create procedure fill_ods_addressbook_sioc (
                 P_B_CODE,
                 P_B_ADDRESS1,
                 P_B_ADDRESS1,
+								P_B_LAT,
+								P_B_LNG,
+								P_B_PHONE,
+								P_B_MAIL,
+								P_B_WEB,
                 P_CREATED,
                 P_UPDATED,
                 P_TAGS
@@ -167,10 +175,13 @@ create procedure fill_ods_addressbook_sioc (
                       r_iri,
                       P_ID,
                     P_DOMAIN_ID,
+											P_KIND,
                     P_NAME,
                       P_TITLE,
                     P_FIRST_NAME,
+											P_MIDDLE_NAME,
                     P_LAST_NAME,
+											P_FULL_NAME,
                     P_GENDER,
                     P_BIRTHDAY,
                       P_MAIL,
@@ -196,6 +207,11 @@ create procedure fill_ods_addressbook_sioc (
                       P_B_CODE,
                       P_B_ADDRESS1,
                       P_B_ADDRESS1,
+											P_B_LAT,
+											P_B_LNG,
+											P_B_PHONE,
+											P_B_MAIL,
+											P_B_WEB,
                     P_CREATED,
                     P_UPDATED,
                     P_TAGS);
@@ -271,10 +287,13 @@ create procedure contact_insert (
   in r_iri varchar,
   inout contact_id integer,
   inout domain_id integer,
+	inout kind integer,
   inout name varchar,
   inout title varchar,
   inout firstName varchar,
+	inout middleName varchar,
   inout lastName varchar,
+	inout fullName varchar,
   inout gender varchar,
   inout birthday datetime,
   inout mail varchar,
@@ -300,6 +319,11 @@ create procedure contact_insert (
   inout bCode varchar,
   inout bAddress1 varchar,
   inout bAddress2 varchar,
+	inout bLat real,
+	inout bLng real,
+	inout bPhone varchar,
+	inout bMail varchar,
+	inout bWeb varchar,
   inout created datetime,
   inout updated datetime,
   inout tags varchar)
@@ -333,6 +357,27 @@ create procedure contact_insert (
     ods_sioc_tags (graph_iri, iri, tags);
 
     -- FOAF Data Space
+		if (kind = 1) {
+		  -- Organization
+  		DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Organization'));
+  		DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, sioc_iri ('scope_of'), r_iri);
+  		DB.DBA.RDF_QUAD_URI   (graph_iri, r_iri, sioc_iri ('function_of'), iri);
+  		DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, foaf_iri ('knows'), iri);
+  		if (not DB.DBA.is_empty_or_null (bMail))
+  			DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), bMail);
+  		if (not DB.DBA.is_empty_or_null (bWeb))
+  			DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('homepage'), bWeb);
+  		if (not DB.DBA.is_empty_or_null (bPhone))
+  			DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('phone'), 'tel:' || bPhone);
+  		if (not DB.DBA.is_empty_or_null (bLat) and not DB.DBA.is_empty_or_null (bLng)) {
+  			temp_iri := iri || '#based_near';
+  			DB.DBA.RDF_QUAD_URI (graph_iri, temp_iri, rdf_iri ('type'), geo_iri ('Point'));
+  			DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('based_near'), temp_iri);
+  			DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('lat'), sprintf ('%.06f', coalesce (bLat, 0)));
+  			DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('long'), sprintf ('%.06f', coalesce (bLng, 0)));
+  		}
+		} else {
+		  -- Person
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
     DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, sioc_iri ('scope_of'), r_iri);
     DB.DBA.RDF_QUAD_URI   (graph_iri, r_iri, sioc_iri ('function_of'), iri);
@@ -372,6 +417,7 @@ create procedure contact_insert (
       DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('lat'), sprintf ('%.06f', coalesce (hLat, 0)));
       DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, geo_iri ('long'), sprintf ('%.06f', coalesce (hLng, 0)));
     }
+  	}
 
     -- AddressBook
     iri2 := addressbook_contact_iri (domain_id, contact_id);
@@ -382,12 +428,13 @@ create procedure contact_insert (
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri2, rdf_iri ('type'), vcard_iri ('vCard'));
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri2, vcard_iri ('UID'), iri);
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri2, vcard_iri ('NICKNAME'), name);
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri2, vcard_iri ('FN'), lastName);
+	  if (not DB.DBA.is_empty_or_null (fullName))
+		  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri2, vcard_iri ('FN'), fullName);
     if (not DB.DBA.is_empty_or_null (firstName) or not DB.DBA.is_empty_or_null (lastName) or not DB.DBA.is_empty_or_null (title)) {
       temp_iri := iri2 || '#n';
       DB.DBA.RDF_QUAD_URI (graph_iri, iri2, vcard_iri ('N'), temp_iri);
       if (not DB.DBA.is_empty_or_null (firstName))
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Given'), lastName);
+				DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Given'), firstName);
       if (not DB.DBA.is_empty_or_null (lastName))
 	      DB.DBA.RDF_QUAD_URI_L (graph_iri, temp_iri, vcard_iri ('Family'), lastName);
       if (not DB.DBA.is_empty_or_null (title))
@@ -463,6 +510,8 @@ create procedure contact_delete (
   };
 
   graph_iri := get_graph ();
+	iri := socialnetwork_contact_iri (domain_id, contact_id);
+	delete_quad_s_or_o (graph_iri, iri, iri);
   iri := addressbook_contact_iri (domain_id, contact_id);
   delete_quad_s_or_o (graph_iri, iri, iri);
 }
@@ -479,10 +528,13 @@ create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
                   null,
                   N.P_ID,
                   N.P_DOMAIN_ID,
+									N.P_KIND,
                   N.P_NAME,
                   N.P_TITLE,
                   N.P_FIRST_NAME,
+									N.P_MIDDLE_NAME,
                   N.P_LAST_NAME,
+									N.P_FULL_NAME,
                   N.P_GENDER,
                   N.P_BIRTHDAY,
                   N.P_MAIL,
@@ -508,6 +560,11 @@ create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
                   N.P_B_CODE,
                   N.P_B_ADDRESS1,
 									N.P_B_ADDRESS2,
+									N.P_B_LAT,
+									N.P_B_LNG,
+									N.P_B_PHONE,
+									N.P_B_MAIL,
+									N.P_B_WEB,
                   N.P_CREATED,
                   N.P_UPDATED,
                   N.P_TAGS);
@@ -527,10 +584,13 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
                   null,
                   N.P_ID,
                   N.P_DOMAIN_ID,
+									N.P_KIND,
                   N.P_NAME,
                   N.P_TITLE,
                   N.P_FIRST_NAME,
+									N.P_MIDDLE_NAME,
                   N.P_LAST_NAME,
+									N.P_FULL_NAME,
                   N.P_GENDER,
                   N.P_BIRTHDAY,
                   N.P_MAIL,
@@ -556,6 +616,11 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
                   N.P_B_CODE,
                   N.P_B_ADDRESS1,
 									N.P_B_ADDRESS2,
+									N.P_B_LAT,
+									N.P_B_LNG,
+									N.P_B_PHONE,
+									N.P_B_MAIL,
+									N.P_B_WEB,
                   N.P_CREATED,
                   N.P_UPDATED,
                   N.P_TAGS);

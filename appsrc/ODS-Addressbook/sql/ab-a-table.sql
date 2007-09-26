@@ -48,6 +48,7 @@ AB.WA.exec_no_error('
   create table AB.WA.PERSONS (
     P_ID integer not null,
     P_DOMAIN_ID integer not null,
+    P_KIND integer,
     P_NAME varchar not null,
     P_TITLE varchar,
     P_FIRST_NAME varchar,
@@ -103,6 +104,10 @@ AB.WA.exec_no_error('
     primary key (P_ID)
   )
 ');
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_KIND integer', 'C', 'AB.WA.PERSONS', 'P_KIND'
+);
 
 AB.WA.exec_no_error (
   'alter table AB.WA.PERSONS add P_MIDDLE_NAME varchar', 'C', 'AB.WA.PERSONS', 'P_MIDDLE_NAME'
