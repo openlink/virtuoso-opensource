@@ -21,10 +21,10 @@ September 25, 2007, V5.0.2:
 	- Added support for "OFFSET x LIMIT y'
 	- Added support for UTF-8 in TURTLE
 	- Added SPARUL optimization
-	- Added 'define uinput:same-as' syntax
+	- Added 'define input:same-as' syntax to support owl:sameAs relations
 	- Added input:grab_follow_predicate
 	- Added support for rdf:value
-	- Additional support for xsd:string() and sxd:boolean()
+	- Additional support for xsd:string() and xsd:boolean()
 	- Fixed DESCRIBE on unspecified graphs
 	- Fixed DESCRIBE for RDF views
 	- Fixed DATATYPE
