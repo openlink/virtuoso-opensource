@@ -20,7 +20,7 @@
 #  
 TOP=@TOP@
 
-noinst_DATA = demo.db demo.ini
+noinst_DATA = demo.db
 nodist_vad_DATA = doc_dav.vad demo_dav.vad
 
 if WITH_HTMLDOC
