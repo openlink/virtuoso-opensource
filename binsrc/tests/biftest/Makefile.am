@@ -153,23 +153,26 @@ sql_code_xslt.c: javavm_type.xsl $(top_srcdir)/libsrc/Wi/sql_to_c.awk
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	*.sql \
+	*.xsl \
+	bif_sample.c \
 	bif_sample.dep \
 	bif_sample.dsp \
 	bif_sample.mak \
 	bif_sample_win32.c \
 	bif_server.c \
-	java/*.class \
-	java_code.c \
 	java/*.java \
+	java/*.class \
+	javavm.c \
+	java_code.c \
 	java_skel.c \
 	java_to_c.awk \
 	lang_sample.c \
 	lang_sample.dsp \
-	*.sql \
+	tests/*.aspx \
 	tests/*.java \
-	tests/Point_src.aspx \
 	tests/*.sql \
 	tests/tjavavm.sh \
 	thook.sh \
-	win32.mk \
-	*.xsl
+	virtuoso-sample.ini \
+	win32.mk
