@@ -37,3 +37,30 @@ echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
 echo both ":  in list join\n";
 
 select count (*) from sys_users where u_name in (u_name);
+
+drop table tin;
+create table tin (id1 int primary key, id2 int, id3 int);
+create index tinidx on tin (id2);
+
+foreach integer between 1 10 insert into tin values (?, ?+1, ?+2);
+
+select * from tin table option (index tin) where id1 in (1, 2, 3);
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": id1 IN on main index \n";
+select * from tin table option (index tin) where id2 in (2, 3, 4);
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": id2 IN on main index \n";
+select * from tin table option (index tin) where id3 in (3, 4, 5);
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": id3 IN on main index \n";
+
+select * from tin table option (index tinidx) where id1 in (1, 2, 3);
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": id1 IN on secondary index \n";
+select * from tin table option (index tinidx) where id2 in (2, 3, 4);
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": id1 IN on secondary index \n";
+select * from tin table option (index tinidx) where id3 in (3, 4, 5);
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": id1 IN on secondary index \n";
+
