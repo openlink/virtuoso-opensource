@@ -199,7 +199,7 @@ rm -f maclex.c
 flex -8 -Pmacyy -omaclex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="maclex.c"/>
+						Outputs="$(InputDir)\maclex.c"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -211,7 +211,7 @@ rm -f maclex.c
 flex -8 -Pmacyy -omaclex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="maclex.c"/>
+						Outputs="$(InputDir)\maclex.c"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -226,7 +226,7 @@ rm -f wikilex.c
 flex -8 -Pwikiyy -owikilex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="wikilex.c"/>
+						Outputs="$(InputDir)\wikilex.c"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -238,7 +238,7 @@ rm -f wikilex.c
 flex -8 -Pwikiyy -owikilex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="wikilex.c"/>
+						Outputs="$(InputDir)\wikilex.c"/>
 				</FileConfiguration>
 			</File>
 		</Filter>

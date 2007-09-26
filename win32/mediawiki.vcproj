@@ -199,7 +199,7 @@ rm -f media_maclex.c
 flex -8 -Pmediamacyy -omedia_maclex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="media_maclex.c"/>
+						Outputs="$(InputDir)\media_maclex.c"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -211,7 +211,7 @@ rm -f media_maclex.c
 flex -8 -Pmediamacyy -omedia_maclex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="media_maclex.c"/>
+						Outputs="$(InputDir)\media_maclex.c"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -226,7 +226,7 @@ rm -f media_wikilex.c
 flex -8 -Pmediawikiyy -omedia_wikilex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="media_wikilex.c"/>
+						Outputs="$(InputDir)\media_wikilex.c"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -238,7 +238,7 @@ rm -f media_wikilex.c
 flex -8 -Pmediawikiyy -omedia_wikilex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="media_wikilex.c"/>
+						Outputs="$(InputDir)\media_wikilex.c"/>
 				</FileConfiguration>
 			</File>
 		</Filter>

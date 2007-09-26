@@ -199,7 +199,7 @@ rm -f creole_maclex.c
 flex -8 -Pcreolemacyy -ocreole_maclex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="creole_maclex.c"/>
+						Outputs="$(InputDir)\creole_maclex.c"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -211,7 +211,7 @@ rm -f creole_maclex.c
 flex -8 -Pcreolemacyy -ocreole_maclex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="creole_maclex.c"/>
+						Outputs="$(InputDir)\creole_maclex.c"/>
 				</FileConfiguration>
 			</File>
 			<File
@@ -226,7 +226,7 @@ rm -f creole_wikilex.c
 flex -8 -Pcreolewikiyy -ocreole_wikilex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="creole_wikilex.c"/>
+						Outputs="$(InputDir)\creole_wikilex.c"/>
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -238,7 +238,7 @@ rm -f creole_wikilex.c
 flex -8 -Pcreolewikiyy -ocreole_wikilex.c $(InputPath)
 cd $(ProjectDir)
 "
-						Outputs="creole_wikilex.c"/>
+						Outputs="$(InputDir)\creole_wikilex.c"/>
 				</FileConfiguration>
 			</File>
 		</Filter>

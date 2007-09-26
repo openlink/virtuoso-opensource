@@ -112,7 +112,7 @@ bash make_vad.sh
 cd $(ProjectDir)
 "
 					AdditionalDependencies="$(TargetDir)\..\isql.exe;$(TargetDir)\..\virtuoso-t.exe"
-					Outputs="$(InputDir)\ods_adressbook_dav.vad;$(InputDir)\ods_adressbook_filesystem.vad"/>
+					Outputs="$(InputDir)\ods_addressbook_dav.vad;$(InputDir)\ods_addressbook_filesystem.vad"/>
 			</FileConfiguration>
 		</File>
 	</Files>
