@@ -4,3 +4,4 @@
 *.la
 Makefile.in
 Makefile
+getdate.c

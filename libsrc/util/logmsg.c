@@ -355,20 +355,25 @@ logmsg_ap (int level, char *file, int line, int mask, char *format, va_list ap)
 	   *  va_list is modified after use :-(
 	   */
 #if defined (HAVE_VA_COPY)
+#define AP save_ap
 	  va_copy (save_ap, ap);
 #elif defined (HAVE___VA_COPY)
+#define AP save_ap
 	  __va_copy (save_ap, ap);
+#else
+#define AP ap
 #endif
 
 #if defined (WIN32)
-	  _vsnprintf (bufptr, remain, formatbuf, ap);
+	  _vsnprintf (bufptr, remain, formatbuf, AP);
 #elif defined (HAVE_VSNPRINTF)
-	  vsnprintf (bufptr, remain, formatbuf, ap);
+	  vsnprintf (bufptr, remain, formatbuf, AP);
 #else
-	  vsprintf (bufptr, formatbuf, ap);
+	  vsprintf (bufptr, formatbuf, AP);
 #endif
 
 #if defined (HAVE_VA_COPY) || defined (HAVE___VA_COPY)
+#undef AP
 	  va_end (save_ap);
 #endif
 
