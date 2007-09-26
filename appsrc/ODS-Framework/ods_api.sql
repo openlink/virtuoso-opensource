@@ -24,9 +24,14 @@
 -- Access to procedures granted to GDATA_ODS SOAP user using /ods_services endpoint.
 
 
-DB.DBA.VHOST_REMOVE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/ods_services');
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_svc_rule1', 1,
+  '/ods_services/search/(.*)', vector ('par'), 1,
+  '/sparql?query=prefix%%20rdfs%%3A%%20%%3Chttp%%3A//www.w3.org/2000/01/rdf-schema%%23%%3E%%20select%%20distinct%%20%%3Fu%%20%%3Ft%%20%%3Fl%%20from%%20%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E%%20where%%20%%7B%%20%%3Fu%%20a%%20%%3Ft%%20%%3B%%20rdfs%%3Alabel%%20%%3Fl%%20%%3B%%20%%3Fp%%20%%3Fo%%20.%%20filter%%20bif%%3Acontains%%20%%28%%3Fo%%2C%%20%%22%U%%22%%29%%20%%20%%7D', vector ('par'));
 
-VHOST_DEFINE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/ods_services',ppath=>'/SOAP/',soap_user=>'GDATA_ODS')
+DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_svc_rule_list1', 1, vector ('ods_svc_rule1'));
+
+DB.DBA.VHOST_REMOVE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/ods_services');
+DB.DBA.VHOST_DEFINE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/ods_services',ppath=>'/SOAP/',soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'ods_svc_rule_list1'))
 ;
 
 

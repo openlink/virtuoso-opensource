@@ -490,7 +490,14 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
 
   delete_quad_sp (graph_iri, person_iri, foaf_iri ('name'));
   if (length (full_name))
+    {
     DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('name'), full_name);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), full_name);
+    }
+  else
+    {
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), U_NAME);
+    }
 
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('account_of'), person_iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('holdsAccount'), iri);
@@ -791,7 +798,10 @@ create procedure sioc_forum (
   DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), wai_name);
   -- deprecated DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('type'), DB.DBA.wa_type_to_app (wai_type_name));
   if (wai_description is not null)
+    {
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('description'), wai_description);
+      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), wai_description);
+    }
   if (wai_type_name <> 'Community')
     {
       DB.DBA.RDF_QUAD_URI (graph_iri, site_iri, sioc_iri ('space_of'), iri);
@@ -926,7 +936,7 @@ create procedure ods_sioc_post (
                   do_ann := 1;
 		  creator := arr[0];
 		}
-	      else
+        else if (arr[1] <> 'socialnetwork')
 	        do_atom := 1;
 	    }
 	  else if (forum_iri like graph_iri || '/discussion/%')
@@ -973,7 +983,10 @@ create procedure ods_sioc_post (
 
       -- literal data
       if (title is not null)
+	{
         DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), title);
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), title);
+        }
       if (ts is not null)
         DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), (ts));
       if (modf is not null)
