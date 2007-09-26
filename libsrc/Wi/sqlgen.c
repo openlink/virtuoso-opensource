@@ -275,11 +275,11 @@ sqlg_non_index_ins (df_elt_t * tb_dfe)
       if (DFE_GEN != cp->dfe_is_placed
 	  && sqlo_in_list (cp, NULL, NULL))
 	{
-	  cp->dfe_is_placed = DFE_GEN;
 	  if (tb_dfe->_.table.join_test)
 	    tb_dfe->_.table.join_test = (df_elt_t **) list (3, BOP_AND, sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp), tb_dfe->_.table.join_test);
 	  else 
 	    tb_dfe->_.table.join_test = sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp);
+	  cp->dfe_is_placed = DFE_GEN;
 	}
     }
   END_DO_SET();
@@ -336,7 +336,7 @@ sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
 	  /* Only 0-n equalities plus 0-1 ordinal relations allowed here.  Rest go to row specs. */
 	  if (spec->sp_min_op != CMP_EQ)
 	    break;
-    next_part:
+next_part:
 	  part_no++;
 	  if (part_no >= key->key_n_significant)
 	    break;
@@ -389,7 +389,7 @@ tb_undone_specs (df_elt_t * tb_dfe)
 {
   DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
   {
-if (DFE_GEN != cp->dfe_is_placed)
+      if (DFE_GEN != cp->dfe_is_placed)
       return 1;
   }
   END_DO_SET ();
@@ -862,6 +862,7 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
 
   /* Done? Need the main row? */
 
+  sqlg_non_index_ins (tb_dfe);
   if (order_key != table->tb_primary_key || ts->ts_inx_op)
     {
       if (tb_undone_specs (tb_dfe) || tb_undone_cols (tb_dfe))
@@ -896,7 +897,6 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
   if (tb_dfe->_.table.xpath_node)
     sql_node_append ((data_source_t**) &ts, tb_dfe->_.table.xpath_node);
 #endif
-  sqlg_non_index_ins (tb_dfe);
   ts->src_gen.src_after_test = sqlg_pred_body (so, tb_dfe->_.table.join_test);
   ts->ts_after_join_test = sqlg_pred_body (so, tb_dfe->_.table.after_join_test);
   if (tb_dfe->_.table.is_unique && !ts->ts_main_ks)
