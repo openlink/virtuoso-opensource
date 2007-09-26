@@ -354,7 +354,7 @@ logmsg_ap (int level, char *file, int line, int mask, char *format, va_list ap)
  	   *  Corrects bug on various systems 
 	   *  va_list is modified after use :-(
 	   */
-#if defined  (HAVE_VA_COPY)
+#if defined (HAVE_VA_COPY)
 	  va_copy (save_ap, ap);
 #elif defined (HAVE___VA_COPY)
 	  __va_copy (save_ap, ap);
