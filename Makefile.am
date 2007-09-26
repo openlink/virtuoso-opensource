@@ -40,7 +40,7 @@ if MAINTAINER_MODE
 #
 binary-tar:
 	-mkdir @build@
-	$(MAKE) install prefix=`pwd`/@build@
+	$(MAKE) install DESTDIR="`pwd`/@build@/tmp/" prefix=..
 	tar cvf @build@.tar @build@
 	gzip -9vf @build@.tar
 	rm -rf @build@
