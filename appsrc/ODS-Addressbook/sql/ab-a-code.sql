@@ -2965,7 +2965,8 @@ create procedure AB.WA.import_foaf (
       'P_ICQ',
       'P_MSN',
       'P_AIM',
-      'P_YAHOO'
+      'P_YAHOO',
+      'P_KIND'
     );
   mLength := length (Meta);
 
@@ -2986,7 +2987,9 @@ create procedure AB.WA.import_foaf (
                                      ' SELECT ?x ' ||
                                      '   FROM <%s> ' ||
                                      '  WHERE { ' ||
-                                     '          ?x a foaf:Person . ' ||
+                                     '          {?x a foaf:Person .} ' ||
+                                     '          UNION ' ||
+                                     '          {?x a foaf:Organization .} ' ||
                                      '        }', tmp_iri));
   nLength := length (Items);
   for (N := 0; N < nLength; N := N + 1) {
@@ -2994,10 +2997,10 @@ create procedure AB.WA.import_foaf (
          ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
          ' PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
          ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
-         ' SELECT ?P_NAME, ?P_FULL_NAME, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO ' ||
+         ' SELECT ?P_NAME, ?P_FULL_NAME, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO, ?P_KIND ' ||
          ' FROM <%s> ' ||
          ' WHERE { ' ||
-         '         <PERSON> a foaf:Person .' ||
+         '         <PERSON> rdf:type ?P_KIND .' ||
          '         OPTIONAL{ <PERSON>  foaf:nick ?P_NAME} . ' ||
          '         OPTIONAL{ <PERSON>  foaf:name ?P_FULL_NAME} . ' ||
          '         OPTIONAL{ <PERSON>  foaf:firstNname ?P_FIRST_NAME} . ' ||
@@ -3043,6 +3046,9 @@ create procedure AB.WA.import_foaf (
                 };
                 tmp2 := AB.WA.dt_reformat (tmp2, 'Y-M-D');
               }
+            }
+            if (tmp = 'P_KIND') {
+              tmp2 := case when (tmp2 = 'http://xmlns.com/foaf/0.1/Person') then 0 else 1 end;
             }
             if (tmp <> '') {
               pFields := vector_concat (pFields, vector (tmp));
@@ -3384,7 +3390,7 @@ create procedure AB.WA.export_foaf (
         PREFIX vcard: <http://www.w3.org/2001/vcard-rdf/3.0#>
         PREFIX bio: <http://purl.org/vocab/bio/0.1/>
         CONSTRUCT {
-	        ?person a foaf:Person .
+	        ?person rdf:type ?rdfType .
 	        ?person foaf:nick ?nick .
 	        ?person foaf:name ?name .
 	        ?person foaf:firstName ?firstName .
@@ -3421,32 +3427,33 @@ create procedure AB.WA.export_foaf (
 	        ?event dc:date ?bdate .
 	      }
 	      WHERE {
-	        graph <%s>
+	        GRAPH <%s>
 	        {
 	          <FILTER>
-	          optional { ?person foaf:nick ?nick } .
-	          optional { ?person foaf:name ?name } .
-	          optional { ?person foaf:firstName ?firstName } .
-	          optional { ?person foaf:family_name ?family_name } .
-	          optional { ?person foaf:gender ?gender } .
-	          optional { ?person foaf:birthday ?birthday } .
-	          optional { ?person foaf:mbox ?mbox } .
-	          optional { ?person foaf:mbox_sha1sum ?mbox_sha1sum } .
-	          optional { ?person foaf:icqChatID ?icqChatID } .
-	          optional { ?person foaf:msnChatID ?msnChatID } .
-	          optional { ?person foaf:aimChatID ?aimChatID } .
-	          optional { ?person foaf:yahooChatID ?yahooChatID } .
-	          optional { ?person foaf:phone ?phone } .
-	          optional { ?person foaf:based_near ?based_near .
+	          ?person rdf:type ?rdfType .
+	          OPTIONAL { ?person foaf:nick ?nick } .
+	          OPTIONAL { ?person foaf:name ?name } .
+	          OPTIONAL { ?person foaf:firstName ?firstName } .
+	          OPTIONAL { ?person foaf:family_name ?family_name } .
+	          OPTIONAL { ?person foaf:gender ?gender } .
+	          OPTIONAL { ?person foaf:birthday ?birthday } .
+	          OPTIONAL { ?person foaf:mbox ?mbox } .
+	          OPTIONAL { ?person foaf:mbox_sha1sum ?mbox_sha1sum } .
+	          OPTIONAL { ?person foaf:icqChatID ?icqChatID } .
+	          OPTIONAL { ?person foaf:msnChatID ?msnChatID } .
+	          OPTIONAL { ?person foaf:aimChatID ?aimChatID } .
+	          OPTIONAL { ?person foaf:yahooChatID ?yahooChatID } .
+	          OPTIONAL { ?person foaf:phone ?phone } .
+	          OPTIONAL { ?person foaf:based_near ?based_near .
 	                     ?based_near ?based_near_predicate ?based_near_subject .
 	                   } .
-	          optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
-	          optional { ?org foaf:homepage ?workplaceHomepage .
+	          OPTIONAL { ?person foaf:workplaceHomepage ?workplaceHomepage } .
+	          OPTIONAL { ?org foaf:homepage ?workplaceHomepage .
 	                     ?org a foaf:Organization ;
 	                          dc:title ?orgtit .
 	                   } .
-	          optional { ?person foaf:homepage ?homepage } .
-	          optional { ?person vcard:ADR ?adr .
+	          OPTIONAL { ?person foaf:homepage ?homepage } .
+	          OPTIONAL { ?person vcard:ADR ?adr .
 	                     optional { ?adr vcard:Country ?country }.
 		                   optional { ?adr vcard:Region ?state } .
 		                   optional { ?adr vcard:Locality ?city } .
@@ -3454,11 +3461,11 @@ create procedure AB.WA.export_foaf (
 		                   optional { ?adr vcard:Street ?street } .
 		                   optional { ?adr vcard:Extadd ?extadd } .
 		                 }
-	          optional { ?person bio:olb ?bio } .
-            optional { ?person bio:event ?event.
+	          OPTIONAL { ?person bio:olb ?bio } .
+            OPTIONAL { ?person bio:event ?event.
                        ?event a bio:Birth ; dc:date ?bdate
                      }.
-	          optional { ?person foaf:knows ?knows .
+	          OPTIONAL { ?person foaf:knows ?knows .
 	                     ?knows rdfs:seeAlso ?knows_seeAlso .
 	                     ?knows foaf:nick ?knows_nick .
                      } .

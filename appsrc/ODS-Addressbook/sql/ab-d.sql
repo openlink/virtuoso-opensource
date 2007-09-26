@@ -20,6 +20,16 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+create procedure AB.WA.uninstall ()
+{
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'AddressBook' do {
+    (WAI_INST as DB.DBA.wa_AddressBook).wa_drop_instance();
+  }
+}
+;
+AB.WA.uninstall ()
+;
+
 VHOST_REMOVE (lpath => '/addressbook');
 VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
 
