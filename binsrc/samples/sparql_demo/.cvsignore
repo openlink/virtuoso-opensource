@@ -10,3 +10,5 @@ virtuoso.log
 virtuoso.pxa
 virtuoso.tdb
 virtuoso.trx
+make_sparql_demo_vad.log
+make_sparql_demo_vad.xml
