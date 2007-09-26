@@ -121,12 +121,18 @@ install-data-local:
 if WITH_HTMLDOC
 	mkdir -p "$(DESTDIR)$(htmldocdir)"
 	$(INSTALL_DATA) $(top_srcdir)/docsrc/html_virt/*.html "$(DESTDIR)$(htmldocdir)"
+	mkdir -p "$(DESTDIR)$(htmldocdir)/../images"
+	(cd $(top_srcdir)/docsrc/images; find . -name \*.gif -print | cpio -dump "$(DESTDIR)$(htmldocdir)/../images")
+	(cd $(top_srcdir)/docsrc/images; find . -name \*.jpg -print | cpio -dump "$(DESTDIR)$(htmldocdir)/../images")
+	(cd $(top_srcdir)/docsrc/images; find . -name \*.png -print | cpio -dump "$(DESTDIR)$(htmldocdir)/../images")
+	(cd $(top_srcdir)/docsrc/images; find . -name \*.ico -print | cpio -dump "$(DESTDIR)$(htmldocdir)/../images")
 endif
 
 uninstall-local:
 	rm -f "$(DESTDIR)$(dbdir)/virtuoso.ini"
 if WITH_HTMLDOC
-	rm -f "$(DESTDIR)$(htmldocdir)"/*.html
+	rm -rf "$(DESTDIR)$(htmldocdir)/../images"
+	rm -rf "$(DESTDIR)$(htmldocdir)"
 endif
 
 
