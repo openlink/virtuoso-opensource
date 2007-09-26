@@ -115,7 +115,7 @@ do_subst = \
 
 install-data-local:
 	@$(do_subst) < "$(srcdir)/install_ini.sh.in" > "install_ini.sh"
-	chmod +x ./install_ini.sh
+	chmod +x install_ini.sh
 	mkdir -p "$(DESTDIR)$(dbdir)"
 	$(SHELL) install_ini.sh database
 if WITH_HTMLDOC
