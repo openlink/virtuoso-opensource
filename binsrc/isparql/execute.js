@@ -396,6 +396,7 @@ var QueryExec = function(optObj) {
 			var bq = 'DESCRIBE <'+href+'>';
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
+			o.defaultGraph = false;
 			o.query = q;
 			o.backupQuery = bq;
 			self.execute(o);
