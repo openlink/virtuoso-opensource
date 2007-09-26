@@ -20,6 +20,18 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+create procedure POLLS.WA.uninstall ()
+{
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Polls' do {
+    (WAI_INST as DB.DBA.wa_Polls).wa_drop_instance();
+  }
+}
+;
+POLLS.WA.uninstall ()
+;
+
+VHOST_REMOVE (lpath => '/polls');
+
 -- Tables
 POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.ANSWER');
 POLLS.WA.exec_no_error('DROP TABLE POLLS.WA.VOTE');

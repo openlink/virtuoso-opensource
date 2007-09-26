@@ -20,13 +20,18 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-ODRIVE.WA.exec_no_error('
-  drop table ODRIVE.WA.GROUPS
-');
+ODRIVE.WA.exec_no_error('drop table ODRIVE.WA.GROUPS');
+ODRIVE.WA.exec_no_error('drop table ODRIVE.WA.SETTINGS');
 
-ODRIVE.WA.exec_no_error('
-  drop table ODRIVE.WA.SETTINGS
-');
+create procedure ODRIVE.WA.uninstall ()
+{
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'oDrive' do {
+    (WAI_INST as DB.DBA.wa_oDrive).wa_drop_instance();
+  }
+}
+;
+ODRIVE.WA.uninstall ()
+;
 
 VHOST_REMOVE (lpath => '/odrive');
 VHOST_REMOVE (lpath => '/odrive/SOAP');

@@ -20,6 +20,16 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+create procedure CAL.WA.uninstall ()
+{
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Calendar' do {
+    (WAI_INST as DB.DBA.wa_Calendar).wa_drop_instance();
+  }
+}
+;
+CAL.WA.uninstall ()
+;
+
 -- Tables
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.GRANTS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.EVENTS');

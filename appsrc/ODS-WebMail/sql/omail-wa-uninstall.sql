@@ -28,7 +28,18 @@ create procedure OMAIL.WA.drop_nntp ()
     OMAIL.WA.nntp_update (WAI_ID, 1, 0);
 }
 ;
-OMAIL.WA.drop_nntp ();
+OMAIL.WA.drop_nntp ()
+;
+
+create procedure OMAIL.WA.uninstall ()
+{
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'oMail' do {
+    (WAI_INST as DB.DBA.wa_mail).wa_drop_instance();
+  }
+}
+;
+OMAIL.WA.uninstall ()
+;
 
 -- Tables
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.MSG_PARTS_TDATA_WORDS');

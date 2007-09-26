@@ -25,6 +25,16 @@
 -- Copyright (C) 2004 OpenLink Software
 ------------------------------------------------------------------------------
 
+create procedure BMK.WA.uninstall ()
+{
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Bookmark' do {
+    (WAI_INST as DB.DBA.wa_bookmark).wa_drop_instance();
+  }
+}
+;
+BMK.WA.uninstall ()
+;
+
 VHOST_REMOVE (lpath => '/bookmark');
 VHOST_REMOVE (lpath => '/dataspace/services/bookmark');
 
@@ -89,8 +99,8 @@ BMK.WA.exec_no_error('DROP procedure DB.DBA.wa_search_bmk_get_excerpt_html');
 BMK.WA.exec_no_error('DROP procedure DB.DBA.wa_collect_bmk_tags');
 
 -- dropping SIOC procs
-BML.WA.exec_no_error('DROP procedure DBA.DB.bookmarks_import');
-BML.WA.exec_no_error('DROP procedure DBA.DB.bookmarks_export');
+BMK.WA.exec_no_error('DROP procedure DBA.DB.bookmarks_import');
+BMK.WA.exec_no_error('DROP procedure DBA.DB.bookmarks_export');
 
 -- final proc
 BMK.WA.exec_no_error('DROP procedure BMK.WA.exec_no_error');

@@ -27,7 +27,20 @@ create procedure ENEWS.WA.drop_nntp ()
     ENEWS.WA.nntp_update (WAI_ID, null, 1, 0);
 }
 ;
-ENEWS.WA.drop_nntp ();
+ENEWS.WA.drop_nntp ()
+;
+
+create procedure ENEWS.WA.uninstall ()
+{
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'eNews2' do {
+    (WAI_INST as DB.DBA.wa_eNews2).wa_drop_instance();
+  }
+}
+;
+ENEWS.WA.uninstall ()
+;
+
+VHOST_REMOVE (lpath => '/enews2');
 
 -- Scheduler
 ENEWS.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'eNews feed aggregator\'');
