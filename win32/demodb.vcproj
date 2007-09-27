@@ -89,17 +89,17 @@
 					CommandLine="cd $(InputDir)
 set PATH=$(InputDir);$(TargetDir)\..;%PATH%
 set BINDIR=$(TargetDir)\..
-set SRC=$(ProjectDir)\..\
 set HOME=$(ProjectDir)\..\
 set PORT=5555
 set ISQL=isql.exe
 set SERVER=virtuoso-t.exe
 rmdir /S /Q docsrc
+bash make_vad.sh
 bash mkdemo.sh
 cd $(ProjectDir)
 "
 					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-t.exe;..\binsrc\bpel\bpel_dav.vad;..\binsrc\yacutia\conductor_dav.vad;..\binsrc\samples\demo\doc_dav.vad;..\binsrc\tutorial\tutorial_dav.vad"
-					Outputs="$(InputDir)\demo.db"/>
+					Outputs="$(InputDir)\demo.db;$(InputDir)\demo_dav.vad"/>
 			</FileConfiguration>
 			<FileConfiguration
 				Name="Release|Win32">
@@ -108,17 +108,17 @@ cd $(ProjectDir)
 					CommandLine="cd $(InputDir)
 set PATH=$(InputDir);$(TargetDir)\..;%PATH%
 set BINDIR=$(TargetDir)\..
-set SRC=$(ProjectDir)\..\
 set HOME=$(ProjectDir)\..\
 set PORT=5555
 set ISQL=isql.exe
 set SERVER=virtuoso-t.exe
 rmdir /S /Q docsrc
+bash make_vad.sh
 bash mkdemo.sh
 cd $(ProjectDir)
 "
 					AdditionalDependencies="$(TargetDir)\isql.exe;$(TargetDir)\virtuoso-t.exe;..\binsrc\bpel\bpel_dav.vad;..\binsrc\yacutia\conductor_dav.vad;..\binsrc\samples\demo\doc_dav.vad;..\binsrc\tutorial\tutorial_dav.vad"
-					Outputs="$(InputDir)\demo.db"/>
+					Outputs="$(InputDir)\demo.db;$(InputDir)\demo_dav.vad"/>
 			</FileConfiguration>
 		</File>
 	</Files>
