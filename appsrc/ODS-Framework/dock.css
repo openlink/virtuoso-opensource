@@ -2,7 +2,7 @@
 
 .dock_column {
 	float: left;
-	width: 30%;
+	width: 32%;
 	padding: 0.5em;
 	border-right: 1px dotted #888;
 }
@@ -18,5 +18,5 @@
 
 .dock_content {
 	overflow: auto;
-	max-height: 300px;
+	max-height: 500px;
 }

@@ -512,8 +512,11 @@
 	    <div class="box">
 	      <v:local-variable name="dummy">
 		<v:before-data-bind><![CDATA[
-     if(exists (select 1  from WA_TYPES  where WAT_NAME =self.wa_name
+     if((exists (select 1  from WA_TYPES  where WAT_NAME =self.wa_name
                 and ( WAT_MAXINST=0 or WAT_MAXINST <= (select WMIC_INSTCOUNT from WA_MEMBER_INSTCOUNT where WMIC_TYPE_NAME=WAT_NAME  and WMIC_UID =self.u_id))))
+         or
+         self.wa_name='Discussion'
+       )
      {
         self.maxinstexceeded:=1;
      }else
@@ -538,9 +541,13 @@
 		  ]]></v:before-data-bind>
 	      </v:local-variable>
 	      <v:form type="simple" method="POST" name="aform1">
-	   <v:template name="maxinst_exceed" type="simple" condition="self.maxinstexceeded = 1">
+	   <v:template name="maxinst_exceed" type="simple" condition="self.maxinstexceeded = 1 and self.wa_name<>'Discussion'">
 	         <div style="padding:10px">You have reached the maximum number of <?V WA_GET_MFORM_APP_NAME(self.wa_name) ?> per user. You are not allowed to create new instance of <?V WA_GET_APP_NAME(self.wa_name) ?>. Go to <a href="<?Vself.odsbar_ods_gpath ||wa_expand_url('services.vspx',self.odsbar_loginparams)?>">My Applications</a> .</div>
 	   </v:template>
+	   <v:template type="simple" condition="self.maxinstexceeded = 1 and self.wa_name='Discussion'">
+	         <div style="padding:10px">You are not allowed to perform this operation. Go to <a href="<?Vself.odsbar_ods_gpath ||wa_expand_url('services.vspx',self.odsbar_loginparams)?>">My Applications</a> .</div>
+	   </v:template>
+	   
 	   <v:template name="maxinst_notexceed" type="simple" condition="self.maxinstexceeded = 0">
 	      
 

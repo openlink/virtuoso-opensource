@@ -31,6 +31,7 @@
   xmlns:v="http://www.openlinksw.com/vspx/">
 
   <v:variable name="opts" type="any" default="null" persist="temp" />
+  <v:variable name="fb_userid" type="varchar" default="''" persist="temp" />
 
   <v:form name="usr_svc" type="simple" method="POST" action="uiedit.vspx?page=6">
       <v:before-data-bind><![CDATA[
@@ -40,6 +41,15 @@
 	  nf:;
 	  if (self.opts is null)
 	      self.opts:=vector();
+	     
+     
+	  if(self.vc_event.ve_is_post=0 or (self.vc_event.ve_is_post=1 and get_keyword('web_services_set_button',self.vc_event.ve_params,null)='Save'))
+	  {
+	    self.fb_userid:='';
+	    whenever not found goto nf1;
+	    select  coalesce(WAUI_FACEBOOK_ID,'') into self.fb_userid from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.u_id;
+	    nf1:;
+	  }
 	     
 	  ]]></v:before-data-bind>
 	<input type="hidden" name="page" value="6"/>
@@ -100,6 +110,21 @@
           <td><label for="akey">Amazon API Key</label></td>
           <td>
             <v:text xhtml_id="akey" xhtml_class="textbox" xhtml_style="width: 220px" name="akey" value="--get_keyword('AmazonKey', self.opts, '')"/>
+          </td>
+        </tr>
+        <tr>
+          <td><label >Facebook User ID</label></td>
+          <td>
+            <span id="fb_userid_txt"><?Vself.fb_userid?></span>
+            <v:template type="simple" enabled ="--case when self.fb_userid<>'' then 1 else 0 end">
+             <v:button xhtml_class="real_button" action="simple" name="fb_unassoc_button" value="Un-associate" xhtml_title="Un-associate" xhtml_alt="Un-associate">
+               <v:on-post>
+                 <![CDATA[
+                   DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_FACEBOOK_ID', null);
+                 ]]>
+               </v:on-post>
+             </v:button>
+            </v:template>
           </td>
         </tr>
 	<?vsp if (__proc_exists ('DB.DBA.FB_SIG') is not null) { ?>

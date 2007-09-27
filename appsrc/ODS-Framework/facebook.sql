@@ -1521,7 +1521,8 @@ create procedure _get_monhtbyname(in monthname varchar)
 
 create procedure get_syncdata_arr (
                  in fb_obj DB.DBA.Facebook,
-                 in ods_uid integer
+                 in ods_uid integer,
+                 in simple integer :=0
 )
 {
 
@@ -1613,10 +1614,18 @@ declare _res any;
           if (state = '00000' and length(rset)>0)
           {
             if(i>0) http ('\r\n,', _res_str);  
+            if(simple=1)
+            http ('{fb_id:'||cast(uid as varchar)||',', _res_str);
+            else
             http ('{_name:"'||full_name||'",fb_id:'||cast(uid as varchar)||',fb_href:"http://www.facebook.com/profile.php?id='||cast(uid as varchar)||'",odsab_instid:'||cast(ab_domain_id as varchar)||',ods_contacts:new Array(', _res_str);
             
             declare k integer;
             k:=0;
+            if(simple)
+            {
+             http ('ods_cid:'||cast(rset[k][0] as varchar)||'}', _res_str);
+            }else
+            {
             while (k < length(rset))
             {
 	            http ('{ods_cid:'||cast(rset[k][0] as varchar)||',ods_name:"'||cast(rset[k][1] as varchar)||'",ods_href:"'||cast(rset[k][2] as varchar)||'"}', _res_str);
@@ -1626,6 +1635,7 @@ declare _res any;
 	            k:=k+1;
 	          }
             http (')}', _res_str);
+            }
 
 	        }
         }
