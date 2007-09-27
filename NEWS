@@ -1,4 +1,4 @@
-September 25, 2007, V5.0.2:
+September 27, 2007, V5.0.2:
   * Enhanced database engine
 	- Added support for 64bit bigint
 	- Fixed memory leaks

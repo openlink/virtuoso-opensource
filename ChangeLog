@@ -1,3 +1,103 @@
+2007-09-27 11:07  source
+
+	* Updated version to 5.0.2 for final release
+
+2007-09-27 10:54  source
+
+	* Fixed format
+	* Additional facebook updates, new synchronize, unassociate, ...
+
+2007-09-27 09:44  source
+
+	* Fixes for win32 build
+
+2007-09-26 15:25  source
+
+	* Fixed bug using va_copy
+
+2007-09-26 14:58  source
+
+	* Fixed search string
+
+2007-09-26 14:49  source
+
+	* Merged from upstream project
+
+2007-09-26 14:45  source
+
+	* Fixed building plugins on windows
+	* Fixed building addressbook
+
+2007-09-26 14:17  source
+
+	* Updated version to 5.0.2-rc9
+
+2007-09-26 14:02  source
+
+	* Fixed search api
+	* Removed 'Entry' type from socialnetwork items
+
+2007-09-26 14:00  source
+
+	* Fixed uninstall process
+
+2007-09-26 14:00  source
+
+	* Fixed uninstall process
+	* Fixed Organization checkbox
+
+2007-09-26 13:36  source
+
+	* Additional test for IN predicate
+
+2007-09-26 13:16  source
+
+	* Fixed internal compiler error with IN predicate
+
+2007-09-26 12:42  source
+
+	* Fixed typo
+
+2007-09-26 07:47  source
+
+	* Updated version to 5.0.2-rc8
+
+2007-09-26 07:47  source
+
+	* Added Organization checkbox to contact
+
+2007-09-26 07:18  source
+
+	* Small cleanup
+
+2007-09-26 07:17  source
+
+	* Fixed problem installing into directory with space in name
+
+2007-09-26 07:11  source
+
+	* Fixed building binary tarball
+
+2007-09-26 07:10  source
+
+	* Fixed installing html docu + images
+
+2007-09-26 06:42  source
+
+	* Fixed check for VOS tree
+
+2007-09-26 06:29  source
+
+	* Removed deprecated file
+
+2007-09-26 06:22  source
+
+	* Fixed make dist
+
+2007-09-25 22:45  source
+
+	* Generate initial virtuoso.ini based on prefix and installation layout
+
 2007-09-25 14:17  source
 
 	* Updated version to 5.0.2-rc7
