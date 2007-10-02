@@ -426,6 +426,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sparql_demo_vad", "sparql_d
 		{F4E88BFA-FC96-439D-9E67-0A92AB541EE0} = {F4E88BFA-FC96-439D-9E67-0A92AB541EE0}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "virtuoso_php5_t", "virtuoso_odbc_php5_t.vcproj", "{563AB1EC-70F0-11DC-AF10-CAB6191D018F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{FB836C59-41E1-48EA-A59B-460AB56587EE} = {FB836C59-41E1-48EA-A59B-460AB56587EE}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -654,6 +659,10 @@ Global
 		{CDFD5FAC-FD70-11DB-B29C-A18F012B09DC}.Debug.ActiveCfg = Debug|Win32
 		{CDFD5FAC-FD70-11DB-B29C-A18F012B09DC}.Release.ActiveCfg = Release|Win32
 		{CDFD5FAC-FD70-11DB-B29C-A18F012B09DC}.Release.Build.0 = Release|Win32
+		{563AB1EC-70F0-11DC-AF10-CAB6191D018F}.Debug.ActiveCfg = Debug|Win32
+		{563AB1EC-70F0-11DC-AF10-CAB6191D018F}.Debug.Build.0 = Debug|Win32
+		{563AB1EC-70F0-11DC-AF10-CAB6191D018F}.Release.ActiveCfg = Release|Win32
+		{563AB1EC-70F0-11DC-AF10-CAB6191D018F}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection
