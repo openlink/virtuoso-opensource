@@ -431,11 +431,33 @@ ap_lines_get (caddr_t * lines, char *key)
   client_connection_t *cli = ((query_instance_t *) qi)->qi_client;
   char *script_path = (char *) thra->org_file_name;
   char *in_header = NULL;
+  static char *uriqa_default_host = NULL, server_name[2048], *server_port = NULL;
 
   if (key == NULL)
     return NULL;
 
   in_header = lookup_header (lines, key);
+
+  if (!uriqa_default_host)
+    {
+      char *pos = NULL;
+      if (virtuoso_cfg_getstring ("URIQA", "DefaultHost", &uriqa_default_host) == -1)
+	{
+	  uriqa_default_host = srv_dns_host_name ();
+	  server_port = srv_http_port ();
+	}
+      strncpy (server_name, uriqa_default_host, sizeof (server_name));
+      pos = strchr (server_name, ':');
+      if (pos)
+	*pos = 0;
+      if (!server_port)
+	{
+	  if (pos)
+	    server_port = ++pos;
+	  else
+	    server_port = "80";
+	}
+    }
 
   if (in_header)
     return in_header;
@@ -507,7 +529,7 @@ ap_lines_get (caddr_t * lines, char *key)
 
   if (!strncasecmp (key, "SERVER_ADDR", 11))
     {
-      srv_ip (server_ip, sizeof (server_ip), srv_dns_host_name ());
+      srv_ip (server_ip, sizeof (server_ip), server_name);
       return server_ip;
     }
 
@@ -519,10 +541,12 @@ ap_lines_get (caddr_t * lines, char *key)
     }
 
   if (!strncasecmp (key, "SERVER_NAME", 11))
-    return srv_dns_host_name ();
+    {
+      return server_name;
+    }
 
   if (!strncasecmp (key, "SERVER_PORT", 11))
-    return srv_http_port ();
+    return server_port;
 
   if (!strncasecmp (key, "SCRIPT_FILENAME", 15))
     return script_path;
@@ -533,7 +557,7 @@ ap_lines_get (caddr_t * lines, char *key)
   if (!strncasecmp (key, "SERVER_SIGNATURE", 16))
     {
       sprintf (server_signature, "<ADDRESS>%s %s at %s Port %s</ADDRESS>",
-	  srv_st_dbms_name (), srv_st_dbms_ver (), srv_dns_host_name (), srv_http_port ());
+	  srv_st_dbms_name (), srv_st_dbms_ver (), server_name, server_port);
       return server_signature;
     }
 
