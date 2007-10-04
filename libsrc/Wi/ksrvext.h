@@ -153,7 +153,7 @@ caddr_t bif_string_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth,
     const char * func);
 caddr_t bif_string_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth,
     const char * func);
-ptrlong bif_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
+boxint bif_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
 float bif_float_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
 double bif_double_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
 long bif_long_or_char_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
