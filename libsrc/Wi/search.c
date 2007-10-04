@@ -2024,7 +2024,8 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 		}
 	    }
 	}
-      if (PS_LOCKS == txn_clear && ISO_COMMITTED == it->itc_isolation 
+      if (!leaf /* MI: if it is a leaf pointer no point to check for lock */
+	  && PS_LOCKS == txn_clear && ISO_COMMITTED == it->itc_isolation 
 	  && PL_EXCLUSIVE != it->itc_lock_mode 
 	  && ISO_REPEATABLE == min_iso_that_waits)
 	{
@@ -2063,7 +2064,7 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	}
       /* Next entry on page */
 
-    next_row:
+next_row:
 
       if (it->itc_desc_order)
 	{
