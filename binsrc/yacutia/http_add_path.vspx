@@ -276,6 +276,7 @@
                   <v:item name="WebDAV domain" value="2" />
                   <v:item name="Proxy server" value="3" />
                   <v:item name="SOAP access point" value="4" />
+                  <v:item name="SPARQL access point" value="5" />
                 </v:select-list>
               </td>
             </tr>
@@ -423,6 +424,21 @@
                             self.auth_opt := '';
                             http_request_status ('HTTP/1.1 302 Found');
                             http_header (sprintf('Location: soap_services_edit.vspx?sid=%s&realm=%s&mode=add2&_host=%s&_port=%s&_httphost=%s\r\n', self.sid, self.realm, self.edit_host, self.edit_port, self.edit_httphost));
+                          }
+                          else if (t_mode = '5')
+                          {
+                            self.lpath := '';
+                            self.ppath := '/!sparql/';
+                            self.defpage := '';
+                            self.dirbrowsing  := 0;
+                            self.xmlexec  := 0;
+                            self.vspuser  := 'dba';
+                            self.soapuser := '';
+                            self.auth_realm := '';
+                            self.auth_func := NULL;
+                            self.after_func := '';
+			    self.is_dav := 1;
+			    self.noinherit := 'yes';
                           }
                         }
                         self.mode := 'add2';
@@ -724,7 +740,7 @@
                         self.global_opts := vector_concat ( coalesce (self.global_opts, vector()), vector('executable', 'yes'));
                       if (self.ssbrow <> 0)
 		        self.global_opts := vector_concat ( coalesce (self.global_opts, vector()), vector('browse_sheet', self.ssbrow));
-	              if (self.noinherit is not null)
+			if (self.noinherit is not null or self.ppath = '/!sparql/')
 		        self.global_opts := vector_concat ( coalesce (self.global_opts, vector()), vector('noinherit', 'yes'));
 		      else if (get_keyword ('noinherit', self.global_opts) is not null)
 		        {

@@ -4647,6 +4647,8 @@ create procedure www_tree (in path any)
         tp := 'INL';
       else if (HP_PPATH like 'http%://%')
         tp := 'PROXY';
+      else if (HP_PPATH like '/!sparql/')
+        tp := 'SPARQL';
       else
         tp := 'FS';
 
