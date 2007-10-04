@@ -7504,6 +7504,8 @@ bif_http_map_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     res = box_num (map->hm_executable);
   else if (!strcmp (member, "url_rewrite"))
     res = box_copy_tree ((box_t) map->hm_url_rewrite_rule);
+  else if (!strcmp (member, "noinherit"))
+    res = box_num (map->hm_no_inherit);
   return res;
 }
 
@@ -8679,7 +8681,7 @@ box_tpcip_get_interfaces ()
 	  dk_set_push (&set, box_string (message));
 	}
       /* The FreeBSD returns variable length */
-#ifdef __FreeBSD__      
+#if defined (__FreeBSD__) || defined (__APPLE__)      
       ifrp = (struct ifreq *)((char *)&(ifrp->ifr_addr) + ifrp->ifr_addr.sa_len);
       len -= ifrp->ifr_addr.sa_len;
 #else      
