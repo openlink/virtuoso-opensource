@@ -1069,7 +1069,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
         {
               SPART *iri_arg = single_dflt->_.funcall.argtrees[0];
               SPART *eq;
-              graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_:graph"), 1);
+              graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
               eq = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, single_dflt, NULL));
               spar_gp_add_filter (sparp, eq);
               if (SPAR_QNAME == SPART_TYPE (iri_arg))
@@ -1085,7 +1085,7 @@ spar_gp_add_triple_or_special_filter (sparp_t *sparp, SPART *graph, SPART *subje
           graph = sparp_tree_full_copy (sparp, single_dflt, NULL);
           break;
 	}
-      graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_:graph"), 1);
+      graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 1);
       spar_gp_add_filter_for_graph (sparp, graph, dflts, 0);
       break;
     }

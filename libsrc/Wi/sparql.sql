@@ -2976,6 +2976,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iri any) returns varchar
   where VT_WORD = cast (iri_to_id (graph_iri) as varchar) and
   case (gt (__trx_disk_log_length (0, VT_D_ID, VT_D_ID_2), 1000000))
   when 0 then 1 else 1 + exec (coalesce ('commit work', VT_D_ID, VT_D_ID_2)) end;
+  delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = graph_iri;
   commit work;
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
@@ -6558,6 +6559,8 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
 	  sql_val := DB.DBA.RDF_SQLVAL_OF_LONG (_val);
 	  if (isentity (sql_val))
 	    is_xml_lit := 1;
+	  if (__tag (sql_val) = 182) -- UTF-8 value kept in a DV_STRING box
+	    sql_val := charset_recode (sql_val, 'UTF-8', '_WIDE_');
 	  if (is_xml_lit) http ('<![CDATA[', ses);
 	  http_value (sql_val, 0, ses);
 	  if (is_xml_lit) http (']]>', ses);
@@ -8915,6 +8918,37 @@ create function DB.DBA.RDF_OBJ_PATCH_CONTAINS_BY_GRAPH (in phrase varchar, in gr
     goto err;
   graph_keyword := WS.WS.STR_SQL_APOS (cast (graph_keyword as varchar));
   return sprintf ('^%s AND (%s)', graph_keyword, phrase);
+err:
+  return '^"#nosuch"';
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.RDF_OBJ_PATCH_CONTAINS_BY_MANY_GRAPHS (in phrase varchar, in graph_iris any)
+{
+  declare isfirst, gctr, gcount integer;
+  declare ses, graph_keyword any;
+  whenever sqlstate '*' goto err;
+  gcount := length (graph_iris);
+  ses := string_output ();
+  isfirst := 1;
+  for (gctr := 0; gctr < gcount; gctr := gctr + 1)
+    {
+      graph_keyword := iri_to_id (graph_iris[gctr], 0);
+      if (graph_keyword is not null)
+        {
+          if (isfirst)
+            {
+              http ('^', ses);
+              isfirst := 0;
+            }
+          else
+            http (' OR ^', ses);
+          http (WS.WS.STR_SQL_APOS (cast (graph_keyword as varchar)), ses);
+        }
+    }
+  if (not isfirst)
+    return sprintf ('(%s) AND (%s)', string_output_string (ses), phrase);
 err:
   return '^"#nosuch"';
 }

@@ -1129,8 +1129,8 @@ ssg_expn_native_qmv (spar_sqlgen_t *ssg, SPART *tree)
     case SPAR_BUILT_IN_CALL:
       switch (tree->_.builtin.btype)
         {
-        case STR_L: case LANG_L: return SSG_VALMODE_SQLVAL;
-        case IRI_L: case DATATYPE_L: return SSG_VALMODE_LONG;
+        case STR_L: case LANG_L: return (qm_value_t *)(SSG_VALMODE_SQLVAL);
+        case IRI_L: case DATATYPE_L: return (qm_value_t *)(SSG_VALMODE_LONG);
         default: return NULL;
         }
     case SPAR_CONV:
@@ -4521,8 +4521,28 @@ from_printed:
                 {
                   ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "sql:RDF_OBJ_PATCH_CONTAINS_BY_GRAPH",
                     (SPART **)t_list (2, ft_arg1, g) );
+                  goto ft_arg1_is_patched; /* see below */
+                }
+              else if (SPAR_IS_BLANK_OR_VAR (g))
+                {
+                  int precode_len;
+                  dk_set_t good_precodes = NULL;
+                  if ((SPAR_BLANK_NODE_LABEL == SPART_TYPE (g)) && !strncmp (g->_.var.vname, "_::default", 10))
+                    good_precodes = ssg->ssg_sparp->sparp_env->spare_default_graph_precodes;
+                  else
+                    good_precodes = ssg->ssg_sparp->sparp_env->spare_named_graph_precodes;
+                  precode_len = dk_set_length (good_precodes);
+                  if ((0 < precode_len) && (16 > precode_len))
+                    {
+                      ft_arg1 = spar_make_funcall (ssg->ssg_sparp, 0, "sql:RDF_OBJ_PATCH_CONTAINS_BY_MANY_GRAPHS",
+                        (SPART **)t_list (2, ft_arg1,
+                        spar_make_funcall (ssg->ssg_sparp, 0, "bif:vector",
+                          (SPART **)t_list_to_array (good_precodes) ) ) );
+                      goto ft_arg1_is_patched; /* see below */
+                    }
                 }
             }
+ft_arg1_is_patched:
           ssg_print_where_or_and (ssg, "freetext predicate");
           ssg_puts (ft_pred->_.funcall.qname + 4);
           ssg_puts ("(");
