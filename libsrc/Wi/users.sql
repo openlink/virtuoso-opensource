@@ -661,6 +661,16 @@ USER_SET_OPTION (in _name varchar, in opt varchar, in value any)
 	  case when _login_qual is not null then concat ('Q ', _login_qual) else NULL end);
       log_text ('sec_user_enable (?, ?)', _name, case when _disabled = 0 then 1 else 0 end);
     }
+  else
+    {
+      declare exit handler for sqlstate '28000'
+	{
+	  goto done;
+	};
+      sec_remove_user_struct (_name);
+      log_text ('sec_remove_user_struct(?)', _name);
+      done:;
+    }
 }
 ;
 
