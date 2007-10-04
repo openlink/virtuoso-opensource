@@ -1212,15 +1212,14 @@ create procedure WS.WS.HEAD (in path varchar, inout params varchar, in lines var
   if (id is null)
     {
       declare procname, full_path varchar;
-      declare hm_opts, clen any;
+      declare clen any;
 
       full_path := http_physical_path ();
-      hm_opts := http_map_get ('options');
       procname := sprintf ('%s.%s.%s', http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
 
       if (__proc_exists (procname) is not null and
 	  (cast (registry_get (full_path) as varchar) = 'no_vsp_recompile') and
-	  isarray (hm_opts) and (get_keyword ('noinherit', hm_opts, 0) = 1))
+	  http_map_get ('noinherit') = 1)
 	{
 	  commit work;
 	  __set_user_id (http_map_get ('vsp_uid'));
@@ -1777,22 +1776,13 @@ again:
   if (_res_id is null and _col_id is null)
     {
       declare procname varchar;
-      declare hm_opts any;
       -- dbg_obj_princ ('full_path=', full_path);
       procname := sprintf ('%s.%s.%s',
         http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
-      hm_opts := http_map_get ('options');
 
       if ( __proc_exists (procname) and
-         (cast (registry_get (full_path) as varchar) = 'no_vsp_recompile')
-	 and isarray (hm_opts) and (get_keyword ('noinherit', hm_opts, 0) = 1)
---	 and exists (
---	   select top 1 1 from HTTP_PATH
---	   where HP_PPATH = full_path and
---	     HP_STORE_AS_DAV = 1 and
---	     HP_OPTIONS is not null and
---	     get_keyword ('noinherit', deserialize (HP_OPTIONS), 0) = 1)
-	  )
+         (cast (registry_get (full_path) as varchar) = 'no_vsp_recompile') and
+	 (http_map_get ('noinherit') = 1))
         {
 	  commit work;
 	  __set_user_id (http_map_get ('vsp_uid'));
