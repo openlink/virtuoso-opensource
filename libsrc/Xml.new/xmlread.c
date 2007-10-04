@@ -2080,26 +2080,15 @@ static int dtd_compile (vxml_parser_t *parser)
   return XML_TOK_INVALID;\
 } while (0)
 
-#define RET_INVALID_SOFT_IMPL(ARGS) do {\
+#define RET_INVALID_SOFT_IMPL(dest, ARGS) do {\
   SET_DETECTOR; \
   xmlparser_logprintf ARGS; \
   if (DEAD_HTML == parser->cfg.input_is_html) \
-    goto character_data; \
+    goto dest; \
     return XML_TOK_INVALID;\
 } while (0)
 
-#define RET_INVALID_SOFT(X) RET_INVALID_SOFT_IMPL ((parser, XCFG_ERROR, 100, (X)))
-
-#define RET_INVALID_CONT(X) \
-  if (DEAD_HTML == parser->cfg.input_is_html) \
-    { \
-      SET_DETECTOR; \
-      xmlparser_logprintf (parser, XCFG_ERROR, 100, (X)); \
-      c = get_tok_char(parser); \
-      if ((0 > c) || ('>' == c)) break; else continue; \
-    } \
-  else \
-    RET_INVALID(X)
+#define RET_INVALID_SOFT(X) RET_INVALID_SOFT_IMPL (character_data, (parser, XCFG_ERROR, 100, (X)))
 
 #define RET_ERROR(X) do {\
   SET_DETECTOR; \
@@ -2549,7 +2538,8 @@ start_token_again:
 		  brcpy (&parser->tmp.flat_name, &parser->tmp.name);
 		  expected = parser->inner_tag->ot_name.lm_memblock;
 		  actual = parser->tmp.flat_name.lm_memblock;
-	          RET_INVALID_SOFT_IMPL ((parser, XCFG_ERROR, 100 + strlen (actual) + strlen (expected),
+	          RET_INVALID_SOFT_IMPL (character_data,
+                    (parser, XCFG_ERROR, 100 + strlen (actual) + strlen (expected),
 	            "Tag nesting error: name '%s' of end tag does not match the name '%s' of start tag at line %d column %d",
 	            actual, expected, parser->inner_tag->ot_pos.line_num, parser->inner_tag->ot_pos.col_c_num ));
 	        }
@@ -2680,12 +2670,13 @@ start_token_again:
 		  SET_STATE(XML_A_CHAR | XML_ST_NOT_EMPTY);
 		}
 	      else
-		RET_INVALID_SOFT("Processing instruction is not allowed here by XL structure rules");
+		RET_INVALID_SOFT("Start or empty tag is not allowed here by XML structure rules");
 	    }
 
 	  if (get_name (parser))
 	    {
 	      int ws_required = 1;
+	      rem = parser->pptr;
 	      if (parser->cfg.input_is_html)
 		{
 		  int start_tag_should_close;
@@ -2816,6 +2807,7 @@ start_token_again:
 			  test_ws (parser);
 			  if (!get_attr_value (parser,0))
 			    {
+			      rem = parser->pptr;
 			      RET_INVALID_SOFT ("Syntax error in the value of attribute");
 			    }
 			  ws_required = 1;
@@ -2845,6 +2837,7 @@ start_token_again:
 				{
 				  dk_free (raw_name.lm_memblock, -1);
 				  dk_free (raw_value.lm_memblock, -1);
+				  rem = parser->pptr;
 				  RET_INVALID_SOFT ("Too many namespace declarations");
 				}
 			      if (':' == raw_name.lm_memblock[5])
