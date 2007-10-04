@@ -483,21 +483,20 @@ DumpOpts (TCHAR *connStr)
 static int
 StrCopyOut (TCHAR *inStr, SQLTCHAR *outStr, SQLUSMALLINT size, SQLUSMALLINT *result)
 {
-  size_t length;
+  size_t length = _tcslen (inStr) * sizeof (TCHAR);
 
-  if (inStr && result)
-    *result = (SQLUSMALLINT) _tcslen (inStr) * sizeof (TCHAR);
-
-  if (!outStr || !inStr)
+  if (!inStr)
     return -1;
 
-  length = _tcslen (inStr) * sizeof (TCHAR);
+  if (result)
+    *result = (SQLUSMALLINT) length;
+
+  if (!outStr)
+    return 0;
 
   if (size >= length + sizeof (TCHAR))
     {
       memcpy (outStr, inStr, length + sizeof (TCHAR));
-      if (result)
-	*result = (SQLUSMALLINT) length;
       return 0;
     }
 
@@ -506,9 +505,6 @@ StrCopyOut (TCHAR *inStr, SQLTCHAR *outStr, SQLUSMALLINT size, SQLUSMALLINT *res
       memcpy (outStr, inStr, size);
       size--;
       outStr[size / sizeof (TCHAR)] = 0;
-
-      if (result)
-	*result = size;
     }
 
   return -1;
