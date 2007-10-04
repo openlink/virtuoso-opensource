@@ -3637,6 +3637,8 @@ dfe_arity_with_supers (df_elt_t * dfe)
   float sub_arity = 1;
   if (!dfe)
     return 1;
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &dfe, 128))
+    sqlc_error (dfe->dfe_sqlo->so_sc->sc_cc, ".....", "Stack Overflow");
   while (dfe->dfe_prev)
     {
       if (DFE_TABLE == dfe->dfe_type)
