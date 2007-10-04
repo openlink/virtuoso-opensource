@@ -812,8 +812,8 @@
         attr := vector_concat (attr, vector ('HOME', user_home));
         attr := vector_concat (attr, vector ('PERMISSIONS', user_perm));
         attr := vector_concat (attr, vector ('DISABLED', case when self.cb_user_enable.ufl_selected = 0 then 1 else 0 end ));
-        attr := vector_concat (attr, vector ('SQL_ENABLE', chr(self.cb_odbc_login.ufl_selected + 48) ));
-        attr := vector_concat (attr, vector ('DAV_ENABLE', chr(self.cb_http_login.ufl_selected + 48) ));
+        attr := vector_concat (attr, vector ('SQL_ENABLE', self.cb_odbc_login.ufl_selected ));
+        attr := vector_concat (attr, vector ('DAV_ENABLE', self.cb_http_login.ufl_selected ));
 
         if (os_name <> '' and os_password <> '')
           {
@@ -863,9 +863,9 @@
 	    if (user_name <> 'dba')
 	      {
                 USER_SET_OPTION (user_name, 'DISABLED', case when self.cb_user_enable.ufl_selected=0 then 1 else 0 end );
-	        USER_SET_OPTION (user_name, 'SQL_ENABLE', chr(self.cb_odbc_login.ufl_selected+48));
+	        USER_SET_OPTION (user_name, 'SQL_ENABLE', self.cb_odbc_login.ufl_selected);
 	      }
-            USER_SET_OPTION (user_name, 'DAV_ENABLE', chr(self.cb_http_login.ufl_selected+48));
+            USER_SET_OPTION (user_name, 'DAV_ENABLE', self.cb_http_login.ufl_selected);
 	    USER_SET_OPTION (user_name, 'HOME', user_home);
 	    if (lower (self.u_dav_quota.ufl_value) = 'unlimited' or atoi (self.u_dav_quota.ufl_value) < 0)
 	      USER_SET_OPTION (user_name, 'DAVQuota', -1);
