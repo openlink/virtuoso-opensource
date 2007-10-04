@@ -507,7 +507,7 @@ configuration.</para>
 <para>
 The automatic maintenance of the SPARQL queriable metadata can be
 disabled and enable using the function
-DB.DBA.DAVREPLICATE_ALL_TO_RDF_QUAD.  An argument of 1 enables this
+DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD.  An argument of 1 enables this
 and a 0 disables this. The setting stays in effect until it is changed
 with the same function.  For new database, the feature is on by
 default.  Old databases are by default upgraded to have a SPARQL
