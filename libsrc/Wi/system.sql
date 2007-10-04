@@ -5965,8 +5965,9 @@ DB.DBA.SYS_SQL_VECTOR_PRINT (in in_vector any)
 create procedure
 DB.DBA.SYS_SQL_VAL_PRINT (in v any)
 {
+  --no_c_escapes-
   if (isstring (v))
-    return sprintf ('\'%S\'', v);
+    return sprintf ('\'%S\'', replace (v, '\\', '\\\\'));
   else if (v is null)
     return 'NULL';
   else if (isinteger (v))
