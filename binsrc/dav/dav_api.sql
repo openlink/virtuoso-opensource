@@ -3904,7 +3904,8 @@ DAV_RES_CONTENT_INT (
     {
       select RES_CONTENT, RES_TYPE into cont, type from WS.WS.SYS_DAV_RES where RES_ID = id;
       -- dbg_obj_princ ('will write ', length (cont), ' bytes of content to the output session');
-      http (cont, content);
+      if (cont is not null)
+        http (cont, content);
     }
   else if (content_mode = 3)
     {
