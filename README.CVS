@@ -26,9 +26,9 @@ CVS Archive Server Access
 OpenLink currently provides read-only CVS Archive access through the
 SourceForge.net servers:
 
-    $ cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/virtuoso login
+    $ cvs -d:pserver:anonymous@virtuoso.cvs.sourceforge.net:/cvsroot/virtuoso login
     (The password is blank)
-    $ cvs -z3 -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/virtuoso co virtuoso-opensource
+    $ cvs -z3 -d:pserver:anonymous@virtuoso.cvs.sourceforge.net:/cvsroot/virtuoso co virtuoso-opensource
 
 
 Package Dependencies
