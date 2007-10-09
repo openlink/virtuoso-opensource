@@ -115,14 +115,7 @@
   <xsl:choose>
     <xsl:when test="struct">
 	<xsl:for-each select="struct/member">
-	    <xsl:choose>
-		<xsl:when test="name like '[0-9]%'">
-		    <xsl:variable name="mname" select="concat('_',name)"/>
-		</xsl:when>
-		<xsl:otherwise>
-		    <xsl:variable name="mname" select="name"/>
-		</xsl:otherwise>
-	    </xsl:choose>
+	  <xsl:variable name="mname" select="vi:makeElementName (name)"/>
           <xsl:element name="{$mname}">
 	      <xsl:attribute name="type" namespace="http://www.w3.org/2001/XMLSchema-instance">
 		  <xsl:apply-templates select="value" mode="type" />

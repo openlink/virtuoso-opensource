@@ -1413,6 +1413,19 @@ DB.DBA.XML_RPC_GET_PARAM_NAME (in proc varchar, in ordinal int)
 }
 ;
 
+--!AWK PUBLIC
+create procedure
+DB.DBA.XML_RPC_MAKE_ELT_NAME (in val varchar)
+{
+  if (val like '[0-9]%')
+    val := '_'||val;
+  val := sprintf ('%U', val);
+  val := replace (val, '/', '%2F');
+  val := replace (val, '%', '_x');
+  return val;
+}
+;
+
 --grant execute on DB.DBA.XML_RPC_GET_PARAM_NAME to public
 --;
 
@@ -1421,6 +1434,13 @@ insert soft DB.DBA.SYS_XPF_EXTENSIONS (XPE_NAME, XPE_PNAME)
 ;
 
 xpf_extension ('http://www.openlinksw.com/xmlrpc/:getParamName', 'DB.DBA.XML_RPC_GET_PARAM_NAME', 0)
+;
+
+insert soft DB.DBA.SYS_XPF_EXTENSIONS (XPE_NAME, XPE_PNAME)
+       VALUES ('http://www.openlinksw.com/xmlrpc/:makeElementName', 'DB.DBA.XML_RPC_MAKE_ELT_NAME')
+;
+
+xpf_extension ('http://www.openlinksw.com/xmlrpc/:makeElementName', 'DB.DBA.XML_RPC_MAKE_ELT_NAME', 0)
 ;
 
 --!AWK PUBLIC
@@ -1538,6 +1558,8 @@ XMLRPC2SOAP (INOUT BODY VARCHAR)
       {
 	signal ('42000', 'Not well formed XMLRPC response.', 'SP036');
       };
+    if (registry_get ('__debug_xmlrpc') = '1')
+      dbg_obj_print (BODY);
   tmp := xml_tree_doc (BODY);
   }
   ret := xslt ('http://local.virt/xmlrpc_soap', tmp, vector ('call', '1'));
@@ -1550,11 +1572,14 @@ XMLRPC2SOAP (INOUT BODY VARCHAR)
 create procedure
 SOAP2XMLRPC (INOUT BODY VARCHAR)
 {
-  declare tmp, ret any;
-  tmp := xml_tree_doc (string_output_string (BODY));
+  declare tmp, ret, body_str any;
+  body_str := string_output_string (BODY);
+  if (registry_get ('__debug_xmlrpc') = '1')
+    dbg_obj_print (body_str);
+  tmp := xml_tree_doc (body_str);
   ret := xslt ('http://local.virt/soap_xmlrpc', tmp, vector ('call', '1'));
   if (registry_get ('__debug_xmlrpc') = '1')
-    dbg_obj_print (tmp, ret);
+    dbg_obj_print (ret);
   string_output_flush (BODY);
   http_value (ret, null, BODY);
 }
