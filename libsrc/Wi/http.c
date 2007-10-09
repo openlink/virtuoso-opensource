@@ -6021,7 +6021,39 @@ bif_http_request_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     {
       if (lines)
+	{
+	  if (attr_name)
 	ret = ws_mime_header_field (lines, name, attr_name, 1);
+	  else
+	    {
+	      int inx;
+	      size_t len;
+	      char *p, *q;
+	      DO_BOX (caddr_t, line, inx, lines)
+		{
+		  p = strchr (line, ':');
+		  len = p - line;
+		  if (p && !strncasecmp (line, name, len) && !name[len])
+		    {
+		      len = strlen (++p);
+		      if (len)
+			{
+			  q = p + len - 1;
+			  while (q > p && isspace (*q))
+			    *q-- = 0;
+			  q = p;
+			  while (*q && isspace (*q))
+			    q++;
+			}
+		      else
+			q = p;
+		      ret = box_dv_short_string (q);
+		      break;
+		    }
+		}
+	      END_DO_BOX;
+	    }
+	}
       return (ret ? ret : box_copy (deflt));
     }
 }
@@ -7542,6 +7574,18 @@ bif_http_request_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	  while (isspace (*end_ptr))
 	    end_ptr--;
 	  return box_varchar_string ((db_buf_t) (qmark_pos + 1), end_ptr - qmark_pos, DV_STRING);
+	}
+    }
+  else if (!strcmp (cgi_var, "REQUEST_URI"))
+    {
+      char *space_pos = strchr (ws->ws_req_line, ' ');
+      if (space_pos)
+	{
+	  char *end_ptr = space_pos + 1 + strlen (space_pos + 1) - 1;
+
+	  while (isspace (*end_ptr))
+	    end_ptr--;
+	  return box_varchar_string ((db_buf_t) (space_pos + 1), end_ptr - space_pos, DV_STRING);
 	}
     }
   return box_dv_short_string ("");

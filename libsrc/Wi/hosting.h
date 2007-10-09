@@ -58,6 +58,7 @@ typedef struct hosting_version_s
   hv_client_clone_t hv_client_clone;
   hv_client_free_t hv_client_free;
   char **hv_extensions;
+  int hv_client_using_boxes;
 } hosting_version_t;
 
 void virtuoso_restore_sig_handlers (void);

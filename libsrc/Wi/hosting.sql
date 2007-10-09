@@ -24,29 +24,43 @@ create procedure WS.WS.GET_CGI_VARS_VECTOR (inout lines any) returns ANY
 {
   declare options any;
   declare sys_addr varchar;
-  sys_addr := split_and_decode (sys_connected_server_address (), 0, '\0\0:');
+  declare server_addr varchar;
+  declare host varchar;
+  declare line varchar;
+  declare fld varchar;
+  declare server_name varchar;
+  declare first_colon integer;
+
+  sys_addr := sys_connected_server_address ();
+  server_addr := split_and_decode (sys_addr, 0, '\0\0:');
+  server_name := server_addr[0];
+  host := http_request_header (lines, 'HOST', null, null);
+  if (host is not null)
+    {
+      first_colon := strchr (host, ':');
+      if (first_colon is null)
+	server_name := trim (host);
+      else
+	server_name := trim (subseq (host, 0, first_colon));
+    }
   options := vector (
     '__VIRT_CGI', 		'1'
-   ,'SERVER_SOFTWARE', 		'Virtuoso Universal Server/3.0'
-   ,'SERVER_SIGNATURE',		'Virtuoso Universal Server/3.0 on ' || sys_connected_server_address ()
-   ,'SERVER_NAME', 		sys_addr[0]
-   ,'SERVER_ADDR', 		sys_addr[0]
+   ,'SERVER_SOFTWARE', 		'Virtuoso Universal Server/5.0'
+   ,'SERVER_SIGNATURE',		'Virtuoso Universal Server/5.0 on ' || sys_addr
+   ,'SERVER_NAME', 		server_name
+   ,'SERVER_ADDR', 		server_addr[0]
    ,'DOCUMENT_ROOT', 		http_root()
    ,'GATEWAY_INTERFACE',	'CGI/1.1'
    ,'SERVER_PROTOCOL',		http_request_get ('SERVER_PROTOCOL')
-   ,'SERVER_PORT',		sys_addr[1]
+   ,'SERVER_PORT',		server_addr[1]
    ,'REQUEST_METHOD',		http_request_get ('REQUEST_METHOD')
-   ,'REQUEST_URI',		http_path()
-   ,'PATH_INFO',		http_path()
+   ,'REQUEST_URI',		http_request_get ('REQUEST_URI')
+ --,'PATH_INFO',		''
    ,'PATH_TRANSLATED',		http_root() || http_physical_path ()
    ,'SCRIPT_NAME',		http_path ()
    ,'SCRIPT_FILENAME',		http_root() || http_physical_path ()
    ,'QUERY_STRING',		http_request_get ('QUERY_STRING')
- --,'REMOTE_HOST',		http_client_ip ()
    ,'REMOTE_ADDR',		http_client_ip ()
- --,'AUTH_TYPE',		http_client_ip ()
- --,'REMOTE_USER',		http_client_ip ()
- --,'REMOTE_IDENT',		http_client_ip ()
    ,'CONTENT_TYPE',		http_request_header (lines, 'Content-Type', NULL, '')
    ,'CONTENT_LENGTH',		http_request_header (lines, 'Content-Length', NULL, '0')
   );
@@ -54,8 +68,6 @@ create procedure WS.WS.GET_CGI_VARS_VECTOR (inout lines any) returns ANY
   inx := 1;
   while (inx < length (lines))
     {
-      declare line,fld varchar;
-      declare first_colon integer;
       line := lines[inx];
       first_colon := strchr (line, ':');
       if (first_colon is not null)

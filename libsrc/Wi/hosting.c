@@ -486,6 +486,44 @@ bif_hosting_http_handler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     dk_free_tree (_params);
 
   virtuoso_restore_sig_handlers ();
+
+  if (ver->hv_client_using_boxes)
+    {
+      /* proposal - the hosting plugin needs to use boxes, otherwise
+       * it can return string content only; failing in subtle cases.
+       * When ruby/perl/python have been adapted, clean up this code.
+       * PmN
+       */
+      if (err[0] != 0)
+	{
+	  caddr_t cerr;
+	  dk_free_tree ((box_t) _res);
+	  dk_free_tree ((box_t) _head_ret);
+	  dk_free_tree ((box_t) _diag_ret);
+	  cerr = srv_make_new_error ("42000", "HO002", "%s", err);
+	  sqlr_resignal (cerr);
+	}
+      if (_head_ret)
+	{
+	  if (BOX_ELEMENTS (args) > 4 && ssl_is_settable (args[4]))
+	    qst_set (qst, args[4], (caddr_t) _head_ret);
+	  else
+	    dk_free_tree ((box_t) _head_ret);
+	}
+      if (_diag_ret)
+	{
+	  if (BOX_ELEMENTS (args) > 6 && ssl_is_settable (args[6]))
+	    qst_set (qst, args[6], (caddr_t) _diag_ret);
+	  else
+	    {
+	      log_debug ("hosting: [%s]", _diag_ret);
+	      dk_free_tree ((box_t) _diag_ret);
+	    }
+	}
+      res = _res;
+    }
+  else
+    {
   if (err[0] != 0)
     {
       caddr_t cerr;
@@ -493,9 +531,9 @@ bif_hosting_http_handler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	ver->hv_client_free (_res);
       if (_head_ret)
 	ver->hv_client_free (_head_ret);
-      cerr = srv_make_new_error ("42000", "HO002", "%s", err);
       if (_diag_ret)
 	ver->hv_client_free (_diag_ret);
+	  cerr = srv_make_new_error ("42000", "HO002", "%s", err);
       sqlr_resignal (cerr);
     }
   if (_res)
@@ -506,32 +544,33 @@ bif_hosting_http_handler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   if (_head_ret)
     {
       if (BOX_ELEMENTS (args) > 4)
-	head_ret = (caddr_t *) box_dv_short_string ((box_t) _head_ret);
-      ver->hv_client_free (_head_ret);
-      if (BOX_ELEMENTS (args) > 4)
 	{
+	      head_ret = (caddr_t *) box_copy_tree ((box_t) _head_ret);
 	  if (ssl_is_settable (args[4]))
 	    qst_set (qst, args[4], (caddr_t) head_ret);
 	  else
 	    dk_free_tree ((box_t) head_ret);
 	}
+	  ver->hv_client_free (_head_ret);
     }
   if (_diag_ret)
     {
       if (BOX_ELEMENTS (args) > 6)
-	diag_ret = (caddr_t *) box_dv_short_string (_diag_ret);
-      else
-	log_debug ("hosting: [%s]", _diag_ret);
-      ver->hv_client_free (_diag_ret);
-      if (BOX_ELEMENTS (args) > 6)
 	{
 	  if (ssl_is_settable (args[6]))
+		{
+		  diag_ret = (caddr_t *) box_dv_short_string (_diag_ret);
 	    qst_set (qst, args[6], (caddr_t) diag_ret);
+		}
 	  else
 	    {
 	      log_debug ("hosting: [%s]", diag_ret);
 	      dk_free_tree ((box_t) diag_ret);
 	    }
+	}
+	  else
+	    log_debug ("hosting: [%s]", _diag_ret);
+	  ver->hv_client_free (_diag_ret);
 	}
     }
 
@@ -572,7 +611,7 @@ ddl_init_plugin (void)
       char cmd_buffer [2048];
 
       snprintf (cmd_buffer, sizeof (cmd_buffer),
-         "create procedure \"WS\".\"WS\".\"__http_handler_%s\" (inout content any, inout params any, inout lines any, in filename varchar)\n"
+         "create procedure \"WS\".\"WS\".\"__http_handler_%s\" (inout content any, inout params any, inout lines any, inout filename varchar)\n"
 	 "{\n"
 	 "  return __hosting_http_handler ('%s', content, params, lines, filename,\n"
 	 " WS.WS.GET_CGI_VARS_VECTOR (lines));\n"
