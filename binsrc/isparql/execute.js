@@ -68,6 +68,7 @@ var QueryExec = function(optObj) {
 	this.dom = {};
 	this.tab = false;
 	this.store = new OAT.RDFStore(false);
+	this.mini = false;
 	
 	this.init = function() {
 		this.dom.result = OAT.Dom.create("div");
@@ -347,6 +348,7 @@ var QueryExec = function(optObj) {
 
 			if (opts.query.match(/describe/i) || opts.query.match(/construct/i)) {
 				/* rdf mini */
+				var lastIndex = 0;
 				var tabs = [
 					["navigator","Navigator"],
 					["browser","Browser",{removeNS:true}],
@@ -355,9 +357,15 @@ var QueryExec = function(optObj) {
 					["images","Images",{}],
 					["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y}] 
 				];
-				var mini = new OAT.RDFMini(self.dom.result,{tabs:tabs,showSearch:false});
-				mini.processLink = self.processLink;
-				mini.store.addXmlDoc(data);
+				
+				if(self.mini) {
+					lastIndex = self.mini.select.selectedIndex;
+				}
+				self.mini = new OAT.RDFMini(self.dom.result,{tabs:tabs,showSearch:false});
+				self.mini.processLink = self.processLink;
+				self.mini.store.addXmlDoc(data);
+				self.mini.select.selectedIndex = lastIndex;
+				self.mini.redraw();
 			} else {
 				/* own table */
 				self.store.clear();
