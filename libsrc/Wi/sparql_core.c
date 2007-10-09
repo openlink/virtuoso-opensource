@@ -991,11 +991,11 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   if ((0 == BOX_ELEMENTS (sources)) &&
     (NULL != (env->spare_common_sponge_options)) )
     spar_error (sparp, "Retrieval options for source graphs (e.g., '%s') may be useless if the query does not contain 'FROM' or 'FROM NAMED'", env->spare_common_sponge_options->data);
-  return spartlist (sparp, 15, SPAR_REQ_TOP, subtype,
+  return spartlist (sparp, 16, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
     env->spare_output_format_name,
     t_box_copy (env->spare_storage_name),
-    retvals, retselid,
+    retvals, NULL /* expanded_orig_retvals */, retselid,
     sources, pattern, NULL, order,
     limit, offset, NULL, (ptrlong)(0) );
 }

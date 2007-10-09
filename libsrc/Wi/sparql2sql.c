@@ -3862,6 +3862,7 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
     case SPAR_REQ_TOP:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.req_top.retvals = sparp_treelist_full_copy (sparp, orig->_.req_top.retvals, parent_gp);
+      tgt->_.req_top.expanded_orig_retvals = sparp_treelist_full_copy (sparp, orig->_.req_top.expanded_orig_retvals, parent_gp);
       tgt->_.req_top.sources = sparp_treelist_full_copy (sparp, orig->_.req_top.sources, parent_gp);
       tgt->_.req_top.pattern = sparp_tree_full_copy (sparp, orig->_.req_top.pattern, parent_gp);
       tgt->_.req_top.groupings = sparp_treelist_full_copy (sparp, orig->_.req_top.groupings, parent_gp);
@@ -5257,6 +5258,7 @@ sparp_rewrite_all (sparp_t *sparp)
   if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (root))
     return;
   sparp_expand_top_retvals (sparp);
+  sparp->sparp_expr->_.req_top.expanded_orig_retvals = t_box_copy (sparp->sparp_expr->_.req_top.retvals);
 /* Unlike spar_retvals_of_construct() that can be called during parsing,
 spar_retvals_of_describe() should wait for obtaining all variables and then
 sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */
@@ -5442,7 +5444,10 @@ sparp_rewrite_grab (sparp_t *sparp)
   if (NULL != rgc->rgc_group_destination)
     t_set_push (&sa_graphs, rgc->rgc_group_destination);
   t_set_pop (&(env->spare_selids));
+  if (NULL != new_vars)
   grab_retvals = (SPART **)t_revlist_to_array (new_vars);
+  else
+    grab_retvals = sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.expanded_orig_retvals, NULL);
 /* Making subqueries: seed */
   sub_sparps[0] = sparp_of_seed = sparp_clone_for_variant (sparp);
   sparp_of_seed->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);

@@ -365,6 +365,7 @@ typedef struct spar_tree_s
       caddr_t formatmode_name;
         caddr_t storage_name;
       SPART **retvals;
+        SPART **expanded_orig_retvals;
       caddr_t retselid;
       SPART **sources;
       SPART *pattern;
