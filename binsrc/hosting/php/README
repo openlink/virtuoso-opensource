@@ -1,0 +1,66 @@
+PHP SAPI module for Virtuoso
+============================
+
+This is a SAPI module for PHP 4.x and 5.x,
+implemented as a Virtuoso loadable module.
+
+
+Building:
+
+  To build the plugin, you need to build a static libphpX.a,
+  configured with ZTS.
+
+  In the php source directory, execute something similar to
+
+  [PHP 5]
+	./configure \
+		--prefix=/where/to/put/it \
+		--enable-maintainer-zts \
+		--with-tsrm-pthreads \
+		--with-config-file-scan-dir=. \
+		--with-config-file-path=. \
+		--enable-static \
+		--disable-shared \
+		--disable-ipv6 \
+		--enable-embed=static \
+		--with-iodbc=/usr \
+		--with-zlib \
+		--without-mysql \
+		--without-pear \
+		--disable-cli \
+		--disable-cgi
+
+  [PHP 4]
+	./configure \
+		--prefix=/where/to/put/it \
+		--enable-experimental-zts \
+		--with-tsrm-pthreads \
+		--with-config-file-path=. \
+		--with-config-file-scan-dir=. \
+		--enable-static \
+		--disable-shared \
+		--disable-ipv6 \
+		--enable-embed=static \
+		--with-iodbc=/usr \
+		--with-zlib \
+		--without-mysql \
+		--without-pear \
+		--disable-cli \
+		--disable-cgi
+
+
+Installation:
+
+1. Register the plugin in your virtuoso.ini:
+
+    [Plugins]
+    ..
+    Load10 = Hosting, hosting_php.so
+
+2. Copy the php.ini-recommended from the php distro to the same directory
+   as your virtuoso.ini.
+   Alternatively, you can set the PHP_INI_PATH environment variable to the
+   full path of the php.ini file to use.
+
+
+[Code by Paul Nieuwdorp, Oct 2007]

@@ -18,7 +18,26 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
-SUBDIRS = . perl python ruby php php4 php5 mono
+
+if HAVE_PHP5
+hosting_LTLIBRARIES = hosting_php.la
+endif
+
+hosting_php_la_SOURCES = \
+	hosting_php.c \
+	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+
+hosting_php_la_CFLAGS  = @VIRT_AM_CFLAGS@ 
+hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc 
+hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
+hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
+hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
+hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
+hosting_php_la_CFLAGS  +=  $(php5_CFLAGS)
+
+hosting_php_la_LDFLAGS = -module -avoid-version -export-dynamic 
+hosting_php_la_LDFLAGS += $(php5_LDFLAGS)
+
 
 # ----------------------------------------------------------------------
 #
@@ -26,8 +45,5 @@ SUBDIRS = . perl python ruby php php4 php5 mono
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	fcgi/cgi_fcgi.c \
-	fcgi/GNUmakefile \
-	fcgi/hosting_fcgi.c \
-	fcgi/hosting_fcgi.def \
-	fcgi/hosting_fcgi.h
+	README \
+	hosting_php.def
