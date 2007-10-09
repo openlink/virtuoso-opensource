@@ -518,6 +518,7 @@ create function DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (in id varchar) returns integer
   declare res integer;
   if (id is null)
     return 257;
+  id := lower (id);
   whenever not found goto mknew;
   set isolation='committed';
   select RL_TWOBYTE into res from DB.DBA.RDF_LANGUAGE where RL_ID = id;
@@ -1109,7 +1110,7 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any, in dflt varchar := 
   if (257 = twobyte)
     return dflt;
   whenever not found goto badtype;
-  select RL_ID into res from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
+  select lower (RL_ID) into res from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
   return res;
 
 badtype:
@@ -1458,7 +1459,7 @@ create function DB.DBA.RDF_LANGUAGE_OF_LONG (in longobj any, in dflt varchar := 
       if (257 = twobyte)
         return dflt;
       whenever not found goto badlang;
-      select RL_ID into res from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
+      select lower (RL_ID) into res from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
       return res;
 
 badlang:
@@ -2133,7 +2134,7 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
             }
       else if (257 <> rdf_box_lang (obj))
             {
-          res := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
+          res := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
               http ('"@', ses); http (res, ses); http (' ', ses);
             }
 	  else
@@ -2378,7 +2379,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
             }
           else if (257 <> rdf_box_lang (obj))
             {
-              res := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
+              res := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
               http (' xml:lang="', ses); http_value (res, 0, ses); http ('"', ses);
             }
           if (rdf_box_is_complete (obj))
@@ -6897,7 +6898,7 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
               else if (257 <> rdf_box_lang (val))
                 {
                   http ('"type": "literal", "xml:lang": "', ses);
-                  res := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (val)));
+                  res := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (val)));
                   http_escape (res, 11, ses, 1, 1);
                   http ('", "value": "', ses);
                 }
