@@ -74,7 +74,7 @@ are relative references to resources located &quot;somewhere near&quot; the
 &quot;top-level&quot; document passes as &quot;tree&quot; parameter.</para></refsect2>
   </refsect1>
   <refsect1 id="ret"><title>Return Types</title><para>XML entity object</para></refsect1>
-  <refsect1 id="errors"><title>Errors</title>
+  <refsect1 id="errors_xml_tree_doc"><title>Errors</title>
     <table><title>Errors signalled by </title>
       <tgroup cols="4">
       <thead>

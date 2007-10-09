@@ -54,7 +54,7 @@
       </simplelist>
 </refsect2>
   </refsect1>
-<refsect1 id="errors"><title>Errors</title>
+<refsect1 id="errors_client_attr"><title>Errors</title>
     <table><title>Errors signalled by <function>client_attr</function></title>
       <tgroup cols="3">
         <thead>

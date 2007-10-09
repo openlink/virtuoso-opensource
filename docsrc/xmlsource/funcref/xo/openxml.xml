@@ -224,7 +224,7 @@ The node types are:
   <refsect1 id="ret"><title>Return Values</title>
       <para><function>openxml</function> returns a result set</para>
   </refsect1>
-  <refsect1 id="errors"><title>Errors</title>
+  <refsect1 id="errors_openxml"><title>Errors</title>
     <table><title>Errors signalled by <function>openxml()</function></title>
       <tgroup cols="3">
        <thead><row><entry>SQL Code</entry><entry>Error Message</entry>

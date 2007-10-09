@@ -49,7 +49,7 @@
  <title>Return Types</title>
  <para>Upon success zero will be returned, otherwise an error is.</para>
 </refsect1>
-<refsect1 id="errors">
+<refsect1 id="errors_trace_off">
  <title>Errors</title>
  <table>
    <title>Errors signalled by <function>trace_off </function>

@@ -50,7 +50,7 @@
     <para>The operation blocks until the roll forward is complete.
     Other clients are not affected.</para>
   </refsect1>
-  <refsect1 id="errors"><title>Errors</title>
+  <refsect1 id="errors_replay"><title>Errors</title>
     <para><link linkend="datatypeerror">Parameter data type checking errors</link></para>
     <table><title>Errors signalled by</title>
       <tgroup cols="3">

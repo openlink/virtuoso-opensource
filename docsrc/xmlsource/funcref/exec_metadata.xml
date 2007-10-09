@@ -133,9 +133,15 @@
 <!-- In case of non-function-specific errors, i.e. only common
      parameter errors are signalled, comment out the table below 
      otherwise add the unique error values as individual errorcodes -->
-
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
+<para>
+The function will generate a SQL 22023 error value if a supplied parameter is not of the type expected.
+</para>
+<tip>
+<title>See Also:</title>
+<para>
+<link linkend="errors">List of SQL 22023 errors.</link>
+</para>
+</tip>
   </refsect1>
   <refsect1 id="examples_exec_metadata">
     <title>Examples</title>

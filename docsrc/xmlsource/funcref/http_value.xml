@@ -78,7 +78,7 @@
     <function>http_value</function> uses HTML-escapes for characters that
     should be escaped according to the HTML spec.</para>
   </refsect1>
-  <refsect1 id="errors"><title>Errors</title>
+  <refsect1 id="errors_http_value"><title>Errors</title>
     <table><title>Errors signalled by <function>http_value</function></title>
       <tgroup cols="4">
       <thead>

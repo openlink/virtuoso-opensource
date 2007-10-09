@@ -66,7 +66,7 @@
     <para>Text with the list of found errors and warnings, as string of
     type varchar.</para>
   </refsect1>
-  <refsect1 id="errors"><title>Errors</title>
+  <refsect1 id="errors_tidy_list_errors"><title>Errors</title>
     <para>This function should not signal errors. Unlike
     <link linkend="fn_tidy_html"><function>tidy_html</function></link>,
     it will log errors into the resulting string without signalling them.</para>

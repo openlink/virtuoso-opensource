@@ -54,7 +54,7 @@ wrapped into the specified root element.
   </refsect1>
   <refsect1 id="ret"><title>Return Types</title><para>XML Schema</para></refsect1>
 
-  <refsect1 id="errors"><title>Errors</title>
+  <refsect1 id="errors_xml_view_schema"><title>Errors</title>
     <table><title>Errors signalled by</title>
       <tgroup cols="4">
        <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>

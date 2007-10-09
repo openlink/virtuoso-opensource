@@ -70,7 +70,7 @@ http_get directly.
       <para>The name of the resource as a relative reference from the base URI.</para></refsect2>
   </refsect1>
   <refsect1 id="ret"><title>Return Types</title><para>The referenced resource.</para></refsect1>
-  <refsect1 id="errors"><title>Errors</title>
+  <refsect1 id="errors_xml_uri_get"><title>Errors</title>
     <table><title>Errors signalled by </title>
       <tgroup cols="4">
       <thead>

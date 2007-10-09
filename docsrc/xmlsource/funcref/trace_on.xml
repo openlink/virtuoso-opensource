@@ -139,7 +139,7 @@ SOAP_1 (response)
 </screen>
 
 </refsect1>
-<refsect1 id="errors"><title>Errors</title>
+<refsect1 id="errors_trace_on"><title>Errors</title>
     <table><title>Errors signalled by <function>trace_on</function></title>
       <tgroup cols="3">
         <thead>
