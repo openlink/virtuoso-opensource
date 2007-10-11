@@ -35,7 +35,8 @@ hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin
 hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
 hosting_php_la_CFLAGS  +=  $(php5_CFLAGS)
 
-hosting_php_la_LDFLAGS = -module -avoid-version -export-dynamic 
+hosting_php_la_LDFLAGS = -module -avoid-version -export-dynamic -no-undefined
+hosting_php_la_LDFLAGS += -export-symbols hosting_php.exp
 hosting_php_la_LDFLAGS += $(php5_LDFLAGS)
 
 
@@ -46,4 +47,5 @@ hosting_php_la_LDFLAGS += $(php5_LDFLAGS)
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	README \
-	hosting_php.def
+	hosting_php.def \
+	hosting_php.exp
