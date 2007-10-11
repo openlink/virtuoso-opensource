@@ -6004,11 +6004,11 @@ bif_ses_can_read_char (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_http_request_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t * qi = (query_instance_t *) qst;
+  query_instance_t *qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args);
-  caddr_t *lines = (caddr_t *) ((n_args > 0) ?   bif_array_arg (qst, args, 0, "http_request_header") : NULL);
-  caddr_t name = ((n_args > 1) ?   bif_string_arg (qst, args, 1, "http_request_header") : NULL);
-  caddr_t attr_name = ((n_args > 2) ?   bif_string_or_null_arg (qst, args, 2, "http_request_header") : NULL);
+  caddr_t *lines = (caddr_t *) ((n_args > 0) ? bif_array_arg (qst, args, 0, "http_request_header") : NULL);
+  caddr_t name = ((n_args > 1) ? bif_string_arg (qst, args, 1, "http_request_header") : NULL);
+  caddr_t attr_name = ((n_args > 2) ? bif_string_or_null_arg (qst, args, 2, "http_request_header") : NULL);
   caddr_t deflt = ((n_args > 3) ? bif_arg (qst, args, 3, "http_request_header") : NULL);
   caddr_t ret = NULL;
   if (lines && DV_ARRAY_OF_POINTER != DV_TYPE_OF (lines))
@@ -6021,42 +6021,64 @@ bif_http_request_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     {
       if (lines)
-	{
-	  if (attr_name)
 	ret = ws_mime_header_field (lines, name, attr_name, 1);
-	  else
-	    {
-	      int inx;
-	      size_t len;
-	      char *p, *q;
-	      DO_BOX (caddr_t, line, inx, lines)
-		{
-		  p = strchr (line, ':');
-		  len = p - line;
-		  if (p && !strncasecmp (line, name, len) && !name[len])
-		    {
-		      len = strlen (++p);
-		      if (len)
-			{
-			  q = p + len - 1;
-			  while (q > p && isspace (*q))
-			    *q-- = 0;
-			  q = p;
-			  while (*q && isspace (*q))
-			    q++;
-			}
-		      else
-			q = p;
-		      ret = box_dv_short_string (q);
-		      break;
-		    }
-		}
-	      END_DO_BOX;
-	    }
+      return (ret ? ret : box_copy (deflt));
+    }
+}
+
+
+caddr_t
+bif_http_request_header_full (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char *szMe = "http_request_header_full";
+  query_instance_t *qi = (query_instance_t *) qst;
+  int n_args = BOX_ELEMENTS (args);
+  caddr_t *lines = (caddr_t *) ((n_args > 0) ? bif_array_arg (qst, args, 0, szMe) : NULL);
+  caddr_t name = ((n_args > 1) ? bif_string_arg (qst, args, 1, szMe) : NULL);
+  caddr_t deflt = ((n_args > 2) ? bif_arg (qst, args, 2, szMe) : NULL);
+  caddr_t ret = NULL;
+  if (lines && DV_ARRAY_OF_POINTER != DV_TYPE_OF (lines))
+    sqlr_new_error ("22023", "SR012", "Function %s needs an array as argument 1, "
+	"not an arg of type %s (%d)", szMe, dv_type_title (DV_TYPE_OF (lines)), DV_TYPE_OF (lines));
+  if (qi->qi_client->cli_ws && !lines)
+    {
+      return box_copy_tree ((box_t) qi->qi_client->cli_ws->ws_lines);
+    }
+  else
+    {
+      if (lines)
+	{
+	  int inx;
+	  size_t len;
+	  char *p, *q;
+	  DO_BOX (caddr_t, line, inx, lines)
+	  {
+	    p = strchr (line, ':');
+	    len = p - line;
+	    if (p && !strncasecmp (line, name, len) && !name[len])
+	      {
+		len = strlen (++p);
+		if (len)
+		  {
+		    q = p + len - 1;
+		    while (q > p && isspace (*q))
+		      *q-- = 0;
+		    q = p;
+		    while (*q && isspace (*q))
+		      q++;
+		  }
+		else
+		  q = p;
+		ret = box_dv_short_string (q);
+		break;
+	      }
+	  }
+	  END_DO_BOX;
 	}
       return (ret ? ret : box_copy (deflt));
     }
 }
+
 
 caddr_t
 bif_http_param (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -8811,6 +8833,7 @@ http_init_part_one ()
   bif_define ("http_pending_req", bif_http_pending_req);
   bif_define ("http_kill", bif_http_kill);
   bif_define ("http_request_header", bif_http_request_header);
+  bif_define ("http_request_header_full", bif_http_request_header_full);
   bif_define_typed ("http_param", bif_http_param, &bt_any);
   bif_define_typed ("http_set_params", bif_http_set_params, &bt_any);
   bif_define_typed ("http_body_read", bif_http_body_read, &bt_any);

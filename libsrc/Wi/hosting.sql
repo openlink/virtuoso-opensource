@@ -61,8 +61,8 @@ create procedure WS.WS.GET_CGI_VARS_VECTOR (inout lines any) returns ANY
    ,'SCRIPT_FILENAME',		http_root() || http_physical_path ()
    ,'QUERY_STRING',		http_request_get ('QUERY_STRING')
    ,'REMOTE_ADDR',		http_client_ip ()
-   ,'CONTENT_TYPE',		http_request_header (lines, 'Content-Type', NULL, '')
-   ,'CONTENT_LENGTH',		http_request_header (lines, 'Content-Length', NULL, '0')
+   ,'CONTENT_TYPE',		http_request_header_full (lines, 'Content-Type', '')
+   ,'CONTENT_LENGTH',		http_request_header_full (lines, 'Content-Length', '0')
   );
   declare inx integer;
   inx := 1;
@@ -75,7 +75,7 @@ create procedure WS.WS.GET_CGI_VARS_VECTOR (inout lines any) returns ANY
 	  fld := trim (subseq (line, 0, first_colon));
 	  options := vector_concat (options, vector (
 		       concat ('HTTP_', upper (replace (fld, '-', '_'))),
-		       http_request_header (lines, fld)));
+		       http_request_header_full (lines, fld)));
 	}
       inx := inx + 1;
     }
