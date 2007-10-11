@@ -4899,9 +4899,9 @@ retval_list_complete:
       itm_count = BOX_ELEMENTS (member->_.gp.members);
       if (0 == itm_count)
         {
-          char buf[20];
+          char buf[105]; /* potentialy 100 chars long see sparp_clone_id etc. */
           ssg_newline (0);
-          sprintf (buf, "stub-%s", member->_.gp.selid);
+          snprintf (buf, sizeof (buf), "stub-%s", member->_.gp.selid);
           if (SSG_PRINT_UNION_NONEMPTY_STUB & head_flags)
             ssg_puts ("(SELECT TOP 1 1 AS __stub FROM DB.DBA.RDF_QUAD) AS ");
           else
