@@ -217,6 +217,7 @@
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_physical_path"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_proxy"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_request_header"/>
+    <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_request_header_full"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_request_status"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_rewrite"/>
     <file type="xml" ext="xml" dtd="DocBook/docbookx.dtd" group="Functions" name="http_root"/>

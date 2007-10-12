@@ -21,60 +21,43 @@
  -  
  -  
 -->
-<refentry id="fn_http_request_header">
+<refentry id="fn_http_request_header_full">
   <refmeta>
-    <refentrytitle>http_request_header</refentrytitle>
+    <refentrytitle>http_request_header_full</refentrytitle>
     <refmiscinfo>ws</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>http_request_header</refname>
+    <refname>http_request_header_full</refname>
     <refpurpose>returns array of HTTP request header lines</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
-    <funcsynopsis id="fsyn_http_request_header">
-      <funcprototype id="fproto_http_request_header">
-        <funcdef>any <function>http_request_header</function></funcdef>
+    <funcsynopsis id="fsyn_http_request_header_full">
+      <funcprototype id="fproto_http_request_header_full">
+        <funcdef>any <function>http_request_header_full</function></funcdef>
         <paramdef><optional>in <parameter>array</parameter> any</optional></paramdef>
         <paramdef><optional>in <parameter>field_name</parameter> varchar</optional></paramdef>
-        <paramdef><optional>in <parameter>attr-name</parameter> varchar</optional></paramdef>
         <paramdef><optional>in <parameter>default_value</parameter> varchar</optional></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc_http_request_header"><title>Description</title>
+  <refsect1 id="desc_http_request_header_full"><title>Description</title>
     <para>
 This function provides access to the HTTP request header lines.</para>
   </refsect1>
-  <refsect1 id="ret_http_request_header"><title>Return Types</title>
+  <refsect1 id="ret_http_request_header_full"><title>Return Types</title>
     <para>
 If no input parameters are supplied then this function returns a copy of
-the lines vector of VSP pages.  If array, field_name and mime_attribute is
-supplied then this function will attempt to extract the associated value,
-if is cannot be found then the default_value input will be returned.  If
-attr-name is supplied then the mime attribute from the field_name will
-be returned.
+the lines vector of VSP pages.  If array and field_name is
+supplied then this function will attempt to extract the associated field value,
+if is cannot be found then the default_value input will be returned.  
 </para>
-<para>
-    Note that when field value is requested then it will be treated as a MIME field and only value will be returned if found. For example consider presence of following header line: "Content-Type: text/plain; charset=utf-8", then if 'Content-Type' is requested, only "text/plain" will be returned. To obtain whole field_value must be used http_request_header_full function.
-    </para>
   </refsect1>
-  <refsect1 id="examples_http_request_header"><title>Examples</title>
-  <example id="ex_http_request_header"><title>Accessing the HTTP request headers</title>
+  <refsect1 id="examples_http_request_header_full"><title>Examples</title>
+  <example id="ex_http_request_header_full"><title>Accessing the HTTP request headers</title>
   <programlisting>
 &lt;p&gt;Your request follows&lt;/p&gt;
   &lt;?vsp
-    declare header any;
-    declare ix, len integer;
-    declare host varchar;
-    header := http_request_header ();
-    len := length (header);
-    ix := 0;
-    while (ix &lt; len)
-    {
-      http (aref (header, ix));
-		  ix := ix + 1;
-    }
-    host := http_request_header(lines, 'Host', null, '*** NO HOST IN REQUEST ***')
+    http (http_request_header_full(lines, 'Content-Type', '*none*'));
   ?&gt;
   </programlisting>
   </example>
