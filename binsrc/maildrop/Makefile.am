@@ -21,13 +21,19 @@
 
 MAKEVER	= $(top_srcdir)/bin/makever
 
-bin_PROGRAMS = virt_mail
+if WITH_IODBC
+ODBCMAIL	= odbc_mail
+endif
+
+bin_PROGRAMS = virt_mail $(ODBCMAIL)
 
 virt_mail_SOURCES = \
 	odbc_mail.c \
 	virt_mail.vers.c
 
 noinst_HEADERS = sysexits.h
+nodist_SOURCES	= virt_mail.vers.c odbc_mail.vers.c
+CLEANFILES	= virt_mail.vers.c odbc_mail.vers.c
 
 virt_mail_CFLAGS  = @VIRT_AM_CFLAGS@
 virt_mail_CFLAGS += -DUDBC 
@@ -50,6 +56,29 @@ virt_mail.vers.c: $(LIBDEPS) $(MAKEVER)
 		 -p "OpenLink Virtuoso Mail Interface" -v 2.01 -P"Release $(VERMAJ)" -B$(VERBMAJ)$(VERBMIN)
 
 
+odbc_mail_SOURCES = \
+	odbc_mail.c \
+	odbc_mail.vers.c
+
+odbc_mail_CFLAGS  = @VIRT_AM_CFLAGS@
+odbc_mail_CFLAGS += -I$(top_srcdir)/libsrc
+odbc_mail_CFLAGS += -I$(top_srcdir)/libsrc/Dk
+odbc_mail_CFLAGS += -I$(top_srcdir)/libsrc/Wi
+odbc_mail_CFLAGS += -I$(top_srcdir)/libsrc/odbcsdk/include
+
+odbc_mail_LDADD = \
+	$(top_srcdir)/libsrc/util/libutil.la \
+	$(top_builddir)/libsrc/Dk/libdk1t.la \
+	$(top_builddir)/libsrc/Thread/libthrs.la \
+	$(top_builddir)/libsrc/zlib/libz.la \
+	$(top_builddir)/libsrc/util/libutil.la \
+	@iodbc_LDFLAGS@ 
+
+odbc_mail.vers.c: $(LIBDEPS) $(MAKEVER)
+	$(MAKEVER) -o odbc_mail.vers.c \
+		 -p "OpenLink ODBC Mail Interface" -v 2.01 -P"Release $(VERMAJ)" -B$(VERBMAJ)$(VERBMIN)
+
+
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute
@@ -61,7 +90,6 @@ EXTRA_DIST = \
 	odbc_mail.c \
 	odbc_mail.default.ini \
 	sysexits.h \
-	virt_mail.vers.c \
 	win32/BUILDING \
 	win32/generate.bat \
 	win32/maildrop.cpp \
