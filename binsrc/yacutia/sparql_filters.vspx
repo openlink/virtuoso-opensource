@@ -45,6 +45,39 @@
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
+		<!-- tab -->
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+                        <td class="page_tab" align="center" nowrap="1">
+                          <v:url name="url1" value="RDF Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_selected" align="center" nowrap="1">
+                          GRDDL Mappings
+                        </td>
+                        <td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td width="100%" >
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+		<!-- tab -->
             <table cellpadding='10' cellspacing='0' border='0' width='100%'>
               <tr>
 		  <td>
@@ -200,6 +233,14 @@ self.maps.vc_data_bind (e);
                 </td>
               </tr>
             </table>
+	  <!-- end tab  -->
+      </td>
+  </tr>
+  </table>
+      </td>
+  </tr>
+  </table>
+		<!-- end tab -->
           </td>
         </tr>
       </table>

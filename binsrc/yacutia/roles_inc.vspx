@@ -239,16 +239,12 @@
                   update sys_users set U_FULL_NAME = val where U_NAME = role_name;
                   select distinct U_ID into r_ident from SYS_USERS where U_NAME= role_name and U_IS_ROLE =1;
 
-                  dbg_obj_print ('Role name at update', get_keyword ('role_name', control.vc_page.vc_event.ve_params));
 
                   if (exists (select GI_SUPER from SYS_ROLE_GRANTS where GI_GRANT = r_ident and GI_DIRECT = 1))
                     {
-                      dbg_obj_print ('role_ID', r_ident );
                       for select GI_SUPER  from SYS_ROLE_GRANTS  where  GI_GRANT = r_ident and GI_DIRECT =1 do
                         {
-                          dbg_obj_print ('Super ID', GI_SUPER  );
                           select distinct U_NAME  into g_name from SYS_USERS where U_ID = GI_SUPER;
-                          dbg_obj_print('revoke', g_name );
                           if (g_name <> '')
                             {
                               declare exit handler for sqlstate '*'
@@ -257,7 +253,6 @@
                                 };
                               USER_REVOKE_ROLE (g_name, role_name);
                             }
-                          dbg_obj_print('revoked');
                         }
                     }
 
@@ -301,8 +296,6 @@
                   declare cnt, i, size, indx , flag_  integer;
                   declare roles any;
                   roles := vector ();
-
---                --dbg_obj_print('Revoke');
 
                   cnt := length (self.roles_grant_list);
                   size:= length (control.vc_page.vc_event.ve_params);
@@ -359,7 +352,6 @@
               <v:textarea class="widget_full_width" name="desc_update" xhtml_id="role_edit_desc">
                 <v:before-data-bind>
                   <v:script><![CDATA[
-                    --dbg_obj_print (get_keyword ('update', control.vc_page.vc_event.ve_params));
                     if ((get_keyword ('update', control.vc_page.vc_event.ve_params) is NULL) and
                         (get_keyword('role_name', control.vc_page.vc_event.ve_params) is not NULL))
                       {
@@ -438,20 +430,14 @@
                               declare  g_name varchar;
                               g_name := get_keyword('role_name', control.vc_page.vc_event.ve_params);
                               self.roles_grant_list := vector();
-                              dbg_obj_print('Retrieve the array');
-                              dbg_obj_print(g_name);
                               select distinct U_ID into u_ident from SYS_USERS where U_NAME= g_name  and U_IS_ROLE =1;
-                              dbg_obj_print(u_ident);
                               if (exists (select GI_SUPER from SYS_ROLE_GRANTS where GI_GRANT = u_ident and GI_DIRECT =1))
                                 {
---                                dbg_obj_print('get roles');
                                    for select GI_SUPER  from SYS_ROLE_GRANTS  where  GI_GRANT = u_ident and GI_DIRECT ='1' do
                                      {
                                        if (exists (select distinct U_NAME from SYS_USERS where U_ID = GI_SUPER ))
                                          {
                                            select distinct U_NAME  into g_name from SYS_USERS where U_ID = GI_SUPER;
-                                           --dbg_obj_print('gets role name');
-                                           --dbg_obj_print(g_name);
                                            if (g_name is not NULL and g_name <> '')
                                              self.roles_grant_list := vector_concat (self.roles_grant_list, vector(g_name));
                                          }
@@ -538,8 +524,6 @@
        declare r_c integer;
        declare sql, h, dta any;
        r_c := 0;
-
-       dbg_obj_print (self.ordr, self.ordseqr);
 
        sql := 'select U_NAME, U_FULL_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 1';
        if (self.ordr <> '')

@@ -29,8 +29,6 @@ xsl_sheet := get_keyword('xsl_sheet',params);
 xml_src := get_keyword('xml_src',params);
 save_path:= get_keyword('file_loc',params);
 
-dbg_obj_print('XSLT', get_keyword('save_mode1',params));
-
 rel_path:='/';
 len:= length(path)-1;
 n:=0;

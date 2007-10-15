@@ -109,7 +109,6 @@
        {
         declare exit handler for sqlstate '*'
         {
-          dbg_obj_print ('ErroR', __SQL_MESSAGE);
 	        http_rewrite();
 		      http('<html><body><head><link rel="stylesheet" href="yacutia_style.css" type="text/css" /><title>Error of FOR XML Query execution</title></head>');
 			  http('<table  width="100%"><tr><td><div id="MB2" style="text-align: left;"><img src="images/con_banner.gif" /></div></td></tr>');

@@ -501,7 +501,6 @@
                         </v:button>
                         <v:button name="ds_delete" action="simple" value="remove" style="url" >
                           <v:on-post>
-                            --dbg_obj_print((control.vc_parent as vspx_row_template).te_ctr);
                             declare _inx integer;
                             _inx := self.ds_src_list.ds_prev_bookmark + (control.vc_parent.vc_parent as vspx_row_template).te_ctr;
                             self.repl_basic_sources := vector_concat(

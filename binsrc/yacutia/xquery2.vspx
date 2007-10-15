@@ -480,9 +480,7 @@
 
                           len := length(result);
                           n:=0;
-                           -- dbg_obj_print('VECTOR', stmt, result, len);
                           while (n < len) {
-                            -- dbg_obj_print('ITEM',aref(aref(result, n),0));
                             if (isnumeric(aref(aref(result, n),0)))
                               item_value := sprintf('%d', aref(aref(result, n),0));
                             else

@@ -56,7 +56,6 @@
    r_node := get_keyword('root_node',params);
    if (r_node is null or r_node = '')
       r_node := 'document';
-   --dbg_obj_print('XQuery text = ', query_text,  ' URL ', url);
 
    if (query_text = '' or query_text is null) {
      http_rewrite();

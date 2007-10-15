@@ -138,7 +138,6 @@
 				  }
 				n := name_part (self.tbl, 2);
 
-				--dbg_obj_print (q,o,n);
 				cols := sql_columns (self.current_dsn, q, o, n, NULL);
 				avail := vector ();
 				foreach (any elm in cols) do

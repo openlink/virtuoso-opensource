@@ -515,7 +515,6 @@
 
      declare pmode varchar;
 
-      dbg_obj_print (self.ctx_value, self.url, doc_base);
 
          doc_base := '';
       if (self.ctx_value ='1') { -- this is dav
@@ -630,7 +629,6 @@
                        res_string := concat(res_string,' sql:context="">');
                     res_string := concat(res_string,'<![CDATA[',self.query_text, ']]','></sql:xquery>');
                     res_string := concat(res_string, '</', self.doc_node, '>');
-                    --dbg_obj_print('XML Template', res_string, user_perm);
 		    YAC_DAV_RES_UPLOAD (get_keyword('save_path',params),  res_string, 'text/xml',user_perm,
 		       'dav', 'administrators');
                     YAC_DAV_PROP_SET (get_keyword('save_path',params),'xml-template','execute');

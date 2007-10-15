@@ -52,8 +52,6 @@
   save_path := get_keyword('file_loc', params);
   trf := get_keyword('clitrf1', params);
 
-  dbg_obj_print ('cli', trf);
-
   declare exit handler for sqlstate '*'
   {
     rollback work;

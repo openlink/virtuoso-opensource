@@ -51,7 +51,6 @@
         <v:script><![CDATA[
         if( get_keyword ('unlink', self.vc_page.vc_event.ve_params) = '' or self.vc_is_valid = 0) {
   error:
-          dbg_obj_print('Bad form');
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: vdb_resources.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
           return;
@@ -63,18 +62,15 @@
         psname := sprintf('%s_remote_procs', DS_DSN);
         declare tbl varchar;
         declare pos integer;
-        --dbg_obj_print(sprintf('getKeyword:%s',get_keyword(sname,self.vc_page.vc_event.ve_params)));
         pos := position (sname, self.vc_page.vc_event.ve_params, 0, 2);
         while( pos > 0 ) {
     tbl := aref (params, pos);
     pos := pos + 2;
-  --        dbg_obj_print(sprintf('tbl:%s sname:%s',tbl, sname));
     declare state, msg, m_dta, res, state1, msg1 varchar;
     state := '00000';
     exec( sprintf( 'drop table "%s"."%s"."%s"', name_part(tbl, 0, 'DB'), name_part(tbl, 1, 'DBA'), name_part(tbl, 2, null)), state, msg, vector(), m_dta, res);
     exec ('commit work', state1, msg1);
     if ('00000' <> state) {
-      dbg_obj_print(sprintf('SQL_STATE:%s, msg:%s',state,msg));
       http_request_status ('HTTP/1.1 302 Found');
       http_header (sprintf('Location: vdb_resources.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
       http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
@@ -91,13 +87,11 @@
         while( pos > 0 ) {
     tbl := aref (params, pos);
     pos := pos + 2;
-  --        dbg_obj_print(sprintf('tbl:%s sname:%s',tbl, sname));
     declare state, msg, m_dta, res, state1, msg1 varchar;
     state := '00000';
     exec( sprintf( 'drop procedure "%s"."%s"."%s"', name_part(tbl, 0, 'DB'), name_part(tbl, 1, 'DBA'), name_part(tbl, 2, null)), state, msg, vector(), m_dta, res);
     exec ('commit work', state1, msg1);
     if ('00000' <> state) {
-      dbg_obj_print(sprintf('SQL_STATE:%s, msg:%s',state,msg));
       http_request_status ('HTTP/1.1 302 Found');
       http_header (sprintf('Location: vdb_resources.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
       http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
@@ -112,14 +106,12 @@
         }
       }
     ?><!--                  for select RT_NAME from DB.DBA.SYS_REMOTE_TABLE do {
-          dbg_obj_print(sprintf('RT_NAME:%s option val:%s\n',RT_NAME,get_keyword( RT_NAME, self.vc_page.vc_event.ve_params )));
           if( get_keyword( RT_NAME, self.vc_page.vc_event.ve_params ) = '1' ) {
             declare state, msg, m_dta, res, state1, msg1 varchar;
             state := '00000';
             exec( sprintf( 'drop table "%s"."%s"."%s"', name_part(RT_NAME, 0, 'DB'), name_part(RT_NAME, 1, 'DBA'), name_part(RT_NAME, 2, null)), state, msg, vector(), m_dta, res);
             exec ('commit work', state1, msg1);
             if ('00000' <> state) {
-        dbg_obj_print(sprintf('SQL_STATE:%s, msg:%s',state,msg));
         http ('<TABLE CLASS="genlist" BORDER="0" CELLPADDING="0">');
         http (sprintf ('<TR><TD CLASS="errorhead" COLSPAN="2">Remove %s failed:</TD></TR>', RT_NAME));
         http ('<TR><TD CLASS="AdmBorders" COLSPAN="2"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
@@ -157,8 +149,6 @@
       else if( get_keyword ('what', self.vc_page.vc_event.ve_params) = 'closeall' ) {
         _all := 1; flag := ascii('0');
       }
-      dbg_obj_print(sprintf('dsn_no=%d, what=%s', dsn_no, get_keyword ('what', self.vc_page.vc_event.ve_params)));
-
       cnt:= 0;
       for (select DS_DSN from DB.DBA.SYS_DATA_SOURCE order by DS_DSN) do {
     cnt := cnt + 1;

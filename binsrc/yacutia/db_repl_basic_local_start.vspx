@@ -108,7 +108,6 @@
 	    if (_local_create = 1)
 	      {
 	        _stmt := y_make_tb_from_query (_local_full_name, self.repl_basic_local_sources[_idx]);
-		--dbg_obj_print (_stmt);
                 exec (_stmt);
               };
 

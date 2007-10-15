@@ -87,11 +87,9 @@
                   declare stat, msg varchar;
                   stat := '00000';
                   commit work;
-                  --dbg_obj_print(self.crproc_textfield.ufl_value);
                   if( length(self.crproc_textfield.ufl_value)=0)
                     return;
                   __set_user_id (connection_get ('vspx_user'), 1);
-		  --dbg_obj_print ('name', self.name, ' type', self.type);
 		  if (lower (self.type) = 'module')
 		    {
 		      exec (sprintf ('drop module "%I"."%I"."%I"',
@@ -100,7 +98,6 @@
 		    }
                   exec (self.crproc_textfield.ufl_value, stat, msg);
                   __set_user_id (user);
-		  --dbg_obj_print (stat);
 		  if (stat = '00000') {
                     http_request_status ('HTTP/1.1 302 Found');
                     http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));

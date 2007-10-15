@@ -67,7 +67,6 @@
         {
 	  if (params[j] like 'data_%')
 	    {
-	      --dbg_obj_print (params[j+1]);
 	      dt := deserialize (decode_base64 (params[j+1]));
               if (get_keyword ('cb_'||dt[0], params) = 'on')
                 {

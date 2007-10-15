@@ -329,8 +329,6 @@ if (not length (self.spat1.ufl_value) or not length (self.dest1.ufl_value))
     return;
   }
 
---dbg_obj_print (self.rlc1.ufl_value);
-
 orulelist := '';
 orules := vector ();
 if (length (self.child_rulelist))
@@ -377,7 +375,6 @@ if (0 = length (self.rulelist))
   }
 
 tgt := y_reg_to_sprintf (self.dest1.ufl_value, i_par, o_par);
---dbg_obj_print (tgt);
 
 if (typ = 1)
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE (rule_name, 1, self.spat1.ufl_value, i_par, length (i_par), tgt, o_par, self.pl1.ufl_value,
@@ -389,24 +386,18 @@ else
 if (orulelist <> '' and orulelist <> self.child_rulelist)
   {
     declare nrules any;
---    dbg_obj_print ('moved to another list');
     rules := vector_concat (rules, vector (rule_name));
---    dbg_obj_print ('child_rulelist', self.child_rulelist, rules);
     DB.DBA.URLREWRITE_CREATE_RULELIST (self.child_rulelist, 1, rules);
     nrules := vector ();
---    dbg_obj_print ('orulelist', orulelist, orules);
     for (declare i,j,l int, i := 0, j := 0, l := length (orules); i < l; i := i + 1)
        {
          if (orules[i] <> rule_name)
 	   nrules := vector_concat (nrules, vector (orules[i]));
        }
---    dbg_obj_print ('orulelist', orulelist, nrules);
     DB.DBA.URLREWRITE_CREATE_RULELIST (orulelist, 1, nrules);
   }
 else
   {
---    dbg_obj_print ('in new or in same list');
---    dbg_obj_print (self.child_rulelist, rules);
     DB.DBA.URLREWRITE_CREATE_RULELIST (self.child_rulelist, 1, rules);
   }
 

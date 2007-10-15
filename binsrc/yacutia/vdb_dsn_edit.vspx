@@ -205,7 +205,6 @@ error:
                     vdd_disconnect_data_source(self.ds_name);
                     delete from DB.DBA.SYS_DATA_SOURCE where DS_DSN = self.ds_name AND DS_UID = self.ds_login;
                   }
-		  dbg_obj_print('BEFORE connect', self.ds_name,  self.ds_login, ds_pwdn);
                   vd_remote_data_source (self.ds_name, '', self.ds_login, ds_pwdn);
                   http_request_status ('HTTP/1.1 302 Found');
                   http_header (sprintf('Location: vdb_dsns.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));

@@ -26,7 +26,6 @@
 <v:page name="uddi_browse_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" vm:owner="yacutia_uddi_page"  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <v:on-init>
   <v:script><![CDATA[
-  dbg_obj_print('INIT', self.uuid_value, self.contact_ident, self.service_ident);
 
      ]]></v:script>
   </v:on-init>
@@ -313,7 +312,6 @@
                   declare owner_id, cnt integer;
                   business_id := self.uuid_value;
                   -- get_keyword('id', control.vc_page.vc_event.ve_params);
-                  --dbg_obj_print('BUSINESS', business_id);
                   select BE_AUTHORIZED_NAME, BE_OPERATOR,  BE_NAME , BE_OWNER  into auth_name, provider_name, business_name, owner_id  from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY = business_id;
                   select U_NAME, U_FULL_NAME   into u_name, u_full_name from SYS_USERS  where  U_ID=owner_id;
 
@@ -392,7 +390,6 @@
                 { declare business_id varchar;
                   declare owner_id, cnt integer;
                   business_id := self.uuid_value;
-                  dbg_obj_print('BUSINESS', business_id);
 
                   http('<tr><td class="SubInfo"><table border="0" width="100%"  cellpadding="2" cellspacing="0">');
                     http('<tr><td class="ListHeader" width="100%"><b>Services</b></td> <td class="HeaderButton" align="right">');
@@ -732,7 +729,6 @@
 
                   contact_id := self.contact_ident;
                     cnt:=0;
-                    dbg_obj_print('EMAILS', self.contact_ident);
                   for select EM_EMAIL_KEY, EM_ADDR as email_addr,  EM_USE_TYPE as use_type from UDDI..EMAIL  where  EM_CONTACT_KEY = contact_id do {
 
                         http('<tr><td class="SubInfo">');
@@ -746,7 +742,6 @@
                           http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=email&mode=edit&contact_key=%s&sid=%s&realm=%s\r\n">Edit</a>', EM_EMAIL_KEY, self.sid ,self.realm));
                         http('</td></tr>');
                         cnt := cnt+1;
-                        dbg_obj_print('EMAILS VALUE', email_addr, use_type );
                     }
                     if  (cnt > 0) {
                       http('<tr><td class="SubInfo">');

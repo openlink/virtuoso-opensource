@@ -70,9 +70,7 @@
 
   <v:on-init>
   <v:script><![CDATA[
-    --dbg_obj_print('params', params);
     if( get_keyword('content-proc', params, '') <> '' ) {
-      dbg_obj_print('init params');
       self.retname := get_keyword('retname', params, '');
       self.caption := get_keyword('caption', params, '');
       self.dir_separator := get_keyword('dir-separator', params, '');
@@ -109,7 +107,6 @@
     }
     if( length(self.curpath) > 1)
       self.curpath := rtrim( self.curpath, self.dir_separator);
-    dbg_obj_print(self.curpath);
   ]]></v:script>
   </v:on-init>
   <v:form name="form1" type="simple" method="POST" action="vdir_browser.vspx">
@@ -170,7 +167,6 @@
                   -- self.ds_items.vc_reset();
                   self.ds_items.vc_data_bind(e);
                 }
-                dbg_obj_print('crfolder', self.curpath, self.t_newfolder.ufl_value);
                 self.crfolder_mode := 0;
               ]]></v:script></v:on-post>
             </v:button>

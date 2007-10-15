@@ -26,7 +26,6 @@
 <v:page name="xquery_create_page3" decor="yacutia_decor.vspx" style="yacutia_style.xsl" xhtml-owner="my_page_owner" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <v:on-init>
     <script><![CDATA[
-    dbg_obj_print('On Init');
     self.column_types := vector();
 
     self.column_types := vector_concat(self.column_types,  vector(189,'integer'));
@@ -62,7 +61,6 @@
     self.actions := vector_concat(self.actions,  vector('cascade','Cascade'));
     self.actions := vector_concat(self.actions,  vector('set default','Set Default'));
 
-    --dbg_obj_print('Vector ', self.column_types);
     self.column_edit_buff := xpath_eval('/column', xtree_doc('<column/>'));
     self.column_create_buff := xpath_eval('/column', xtree_doc('<column/>'));
 
@@ -150,12 +148,10 @@
             <vm:events>
                     <v:before-data-bind>
                       <script><![CDATA[
-  --               dbg_obj_print('Init xddl stream', self.objects);
             if (self.objects is null)
           self.objects := xddl_get(null);
       else
          self.objects := xml_tree_doc(self.objects);
--- dbg_obj_print('All tables', self.objects);
 
          ]]></script>
                     </v:before-data-bind>
@@ -168,7 +164,6 @@
           <vm:events>
             <v:on-post>
               <script><![CDATA[
-          dbg_obj_print(null);
           if (get_keyword('edit_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: xddl-tables.vspx?entry_mode=init_table&mode=%s&table_name=%s&sid=%s&realm=%s\r\n','edit',get_keyword('xddl_objects_list_contol',params),self.sid ,self.realm));
@@ -202,9 +197,7 @@
 
 
           difference := xddl_diff(self.objects);
-          dbg_obj_print('Difference', difference);
           res := xddl_to_ddl(xml_tree_doc(difference));
-          dbg_obj_print('Exec', res);
           self.statements := res;
 
           http_request_status ('HTTP/1.1 302 Found');
@@ -233,11 +226,9 @@
         if ( get_keyword('mode',params) is null) {
            declare t_obj, t_orig xml_tree;
            declare len, i integer;
---            dbg_obj_print('Orig', self.objects);
 
       t_obj := xpath_eval('/tables/table',self.objects,0); -- xddl_get(null)
       len := length(t_obj);
-      --dbg_obj_print('All tables',len, t_obj);
       i:=0;
           (control as vspx_select_list).vsl_items := vector();
           (control as vspx_select_list).vsl_item_values := vector();
@@ -245,8 +236,6 @@
            declare name varchar;
             name := xpath_eval('./@name',aref(t_obj,i));
             --name := xpath_eval('/*/@name',aref(t_obj,i), i+1);
-            --dbg_obj_print('item xml 2', xpath_eval('/*/@name',aref(t_obj,i), i+1) );
-            --dbg_obj_print('item name', name, ' pos ', i );
                               (control as vspx_select_list).vsl_items :=  vector_concat ((control as vspx_select_list).vsl_items, vector(name));
                               (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector(name));
          i:= i + 1;
@@ -375,8 +364,6 @@
     <?vsp
       { declare table_name varchar;
         table_name := get_keyword('table_name', control.vc_page.vc_event.ve_params);
-        dbg_obj_print('Table ',get_keyword('table_name', control.vc_page.vc_event.ve_params));
-
         if (self.current_table is not null and (get_keyword('mode', control.vc_page.vc_event.ve_params) = 'edit')) {
            declare objs xml_tree;
      declare buf, column_name, collation, id_by varchar;
@@ -386,7 +373,6 @@
            objs := xml_tree_doc(self.current_table);
 
      cols:= xpath_eval('/table/column',self.current_table,0);
-     dbg_obj_print('Result !!!!!' , self.current_table , cols, 'Len ', length(cols) );
      len := length(cols);
      i := 0;
       http('<table border="1" cellspacing="0" cellpadding="0" width="100%"><caption><b>Columns</b></caption>');
@@ -441,9 +427,6 @@
       http('</tr>');
 
        i := 0;
---       dbg_obj_print('Result !!!!!' , cols, 'Len ', length(cols) ); --xddl_get(null)
-
-
 
       while (i < len) {
         pk_column_name := xpath_eval('./@col',aref(cols,i));
@@ -483,9 +466,7 @@
 
         http(sprintf('<tr><td>&nbsp;</td><td>%s</td><td>On Update:%s</td><td>On Delete:%s</td><td  align="left"><a href="%s">Modify</a></td> </tr>',ref_table_name, update_rule , delete_rule, action_anchor  ));
         --http('<tr><td colspan="2">Column Name</td><td colspan="2">Reference Column Name</td></tr>');
-        dbg_obj_print('FK tree............... ', aref(cols,i));
         refs := xpath_eval('./reference', aref(cols,i),0  );
-        dbg_obj_print('Ref tree............... ', refs);
         len2 := length(refs);
         i2 := 0;
         while (i2 < len2) {
@@ -531,13 +512,11 @@
                       <script><![CDATA[
           if ( get_keyword('mode', control.vc_page.vc_event.ve_params) = 'column_edit' ) {
               declare path, table_name, column_name varchar;
-           dbg_obj_print('Template before-data-bind: post state ', e.ve_is_post, ' mode ', get_keyword('mode', control.vc_page.vc_event.ve_params));
            if (not e.ve_is_post) {
         if ( get_keyword('mode', control.vc_page.vc_event.ve_params) = 'column_edit' ) {
               table_name := get_keyword('table_name', control.vc_page.vc_event.ve_params);
         column_name := get_keyword('column_name', control.vc_page.vc_event.ve_params);
               path := sprintf('/table/column[@name=\'%s\']', column_name);
-        dbg_obj_print('Before cut', xpath_eval(path,xml_tree_doc(self.current_table)));
              self.column_edit_buff := xml_cut(xpath_eval(path,xml_tree_doc(self.current_table)) );
              self.type_value := xpath_eval('/column/@type', self.column_edit_buff);
         } else
@@ -546,13 +525,6 @@
                   self.column_edit_buff := xpath_eval('/column', xml_tree_doc(self.column_edit_buff));
 
       self.type_name := '';
-
-         dbg_obj_print('Tree in template',self.column_edit_buff);
-
-
---      dbg_obj_print( 'TYPE  ',  self.type_value);
-
---      dbg_obj_print('Mode 4', get_keyword('mode', params), 'Table in Create mode',  self.current_table);
 
          } ]]></script>
                     </v:before-data-bind>
@@ -572,8 +544,6 @@
           table_name := get_keyword('table_name', params);
           column_name := get_keyword('column_name', params);
           column_nname := xpath_eval('/column/@name', self.column_edit_buff);
-
-           dbg_obj_print('Tree in post mode ',self.column_edit_buff, column_nname );
 
           if (get_keyword('edit_column_cancel_command',params) is not null) {
           http_request_status ('HTTP/1.1 302 Found');
@@ -599,8 +569,6 @@
           path := sprintf('/table/column[@name=\'%s\']', column_name);
 
           self.current_table := XMLUpdate(xml_tree_doc(self.current_table),path, self.column_edit_buff);
-
-          dbg_obj_print('Update in Edit mode - Table',table_name, 'Column ' , column_name, 'Xml Tree' , self.column_edit_buff , self.current_table);
 
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n',get_keyword('back',params),self.sid ,self.realm,table_name));
@@ -707,7 +675,6 @@
          i:= i + 2;
       }
        self.type_name := aref((control as vspx_select_list).vsl_items, (control as vspx_select_list).vsl_selected_inx);
-       dbg_obj_print('Selected index ', (control as vspx_select_list).vsl_selected_inx);
         } ]]></script>
                 </v:before-data-bind>
         <v:on-post>
@@ -859,10 +826,6 @@
 
       table_name := get_keyword('table_name', control.vc_page.vc_event.ve_params);
 
-           dbg_obj_print('Create column template - Table',table_name , 'Tree',self.column_create_buff );
-
---dbg_obj_print('Mode 5', get_keyword('mode', params), 'Table in Create mode',  self.current_table);
-
           } ]]></script>
                     </v:before-data-bind>
             </vm:events>
@@ -905,7 +868,6 @@
              objs := xpath_eval('/table',xml_tree_doc(self.current_table));
           XMLAppendChildren(objs, self.column_create_buff);
           self.current_table := objs;
-          dbg_obj_print('Exit  Tree',self.column_create_buff, 'Table to add to',  self.current_table );
           table_name := get_keyword('table_name', control.vc_page.vc_event.ve_params);
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back',params),self.sid ,self.realm, table_name));
@@ -969,16 +931,13 @@
                       <script><![CDATA[
                   declare dav_res_id  integer;
                   declare root_value  varchar;
-      --       dbg_obj_print('Tree before bind in create mode',self.column_create_buff );
                     ]]></script>
                     </v:before-data-bind>
         <v:on-post>
                       <script><![CDATA[
                   declare dav_res_id  integer;
                   declare root_value  varchar;
-         -- dbg_obj_print('Tree in update mode.Before update',self.column_create_buff );
       control.vc_put_value_to_element();
-         -- dbg_obj_print('Tree in update mode.After update',self.column_create_buff );
 
                     ]]></script>
         </v:on-post>
@@ -1143,7 +1102,6 @@
 
          objs := xml_tree_doc(self.current_table);
          path := sprintf('/table/column[@name=\'%s\']', column_name);
-        dbg_obj_print('Column to remove',  xpath_eval(path,objs,0) );
         self.current_table := XMLUpdate(xml_tree_doc(self.current_table),path, NULL);
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
@@ -1182,13 +1140,11 @@
               declare path, table_name, column_name  varchar;
         declare tmp_arr any;
         declare i, len integer;
-         dbg_obj_print('Point 0');
             table_name := get_keyword('table_name', params);
         if ( get_keyword('reload_entry', params) is null ) {
           path := '/table/pk/field';
 
           tmp_arr := xpath_eval(path,xml_tree_doc(self.current_table),0);
-          dbg_obj_print('Point ', tmp_arr);
           self.primary_key := vector();
           i := 0;
           len := length(tmp_arr);
@@ -1198,7 +1154,6 @@
             i := i +1;
           }
         }
-        dbg_obj_print('Point X', xpath_eval('/table/pk',xml_tree_doc(self.current_table)) );
        } ]]></script>
                     </v:before-data-bind>
             </vm:events>
@@ -1229,7 +1184,6 @@
           --objs := xml_tree_doc(self.current_table);
           objs := xpath_eval('/table',xml_tree_doc(self.current_table));
           path := sprintf('/table/pk/field',table_name);
-          dbg_obj_print('PATH', path);
           cols:= xpath_eval(path,objs,0);
 
           if (len > 0) { -- update pk
@@ -1247,7 +1201,6 @@
         XMLAppendChildren ( pk_tree, field);
               i:= i +1;
              }
-             dbg_obj_print ('Constructed PK ', pk_tree ,'Flag', cols , 'Table ', objs);
              if (length( cols) = 0 ) {
                 XMLAppendChildren (objs,   pk_tree);
           self.current_table := objs;
@@ -1259,7 +1212,6 @@
               self.current_table := XMLUpdate(objs,'/table/pk', NULL);
           }
 
-          dbg_obj_print('Pk is set to ', self.current_table);
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
           return;
@@ -1267,20 +1219,16 @@
           if (get_keyword('primary_key_remove_command',params) is not null) {
           pk_name := get_keyword('primary_keys_columns_control', params);
           if (pk_name is not null) {
-             dbg_obj_print('Point 1');
              tmp_array := vector();
              i := 0;
              len :=  length(self.primary_key);
              while (i < len) {
-              dbg_obj_print('Point 2');
               tmp_pk := aref(self.primary_key,i);
-        dbg_obj_print('Point 3');
               if (tmp_pk  <> pk_name)
           tmp_array := vector_concat(tmp_array,vector( tmp_pk) );
               i:= i +1;
              }
              self.primary_key :=  tmp_array;
-             dbg_obj_print('Pk Array in rem fu', self.primary_key);
           }
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: xddl-tables.vspx?reload_entry=1&mode=primary_key_dialog&back=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
@@ -1560,7 +1508,6 @@
        } else  if ( get_keyword('mode', params) = 'create')
           self.current_table := xpath_eval('/table', xml_tree_doc( self.current_table));
 
---dbg_obj_print('Mode ', get_keyword('mode', params), 'Table in Create mode',  self.current_table);
          ]]></script>
                     </v:before-data-bind>
             </vm:events>
@@ -1579,7 +1526,6 @@
           table_name := get_keyword('create_table_name_control', params);
 
           if (get_keyword('create_cancel_command',params) is not null) {
-                dbg_obj_print('Here 555');
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
           return;
@@ -1603,7 +1549,6 @@
 
 
           if (get_keyword('create_column_command',params) is not null) {
-          --dbg_obj_print('Here 3');
                 --XMLAddAttribute(self.current_table, 2, 'name', table_name );
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: xddl-tables.vspx?back=create&mode=column_create&table_name=%s&sid=%s&realm=%s\r\n',table_name, self.sid ,self.realm));
@@ -1663,7 +1608,7 @@
         <vm:attrs xhtml_style="width: 200px;"  list-document="--xml_tree_doc(self.objects)" list-match="'/tables/table'" list-key-path="@name" list-value-path="@name"/>
               <vm:events>
                 <v:before-data-bind>
-                  <script><![CDATA[ dbg_obj_print(null);
+                  <script><![CDATA[ 
         ]]></script>
                 </v:before-data-bind>
               </vm:events>
@@ -1675,7 +1620,6 @@
     <?vsp
       { declare table_name varchar;
         table_name := get_keyword('table_name', control.vc_page.vc_event.ve_params);
-        dbg_obj_print('Table ',get_keyword('table_name', control.vc_page.vc_event.ve_params));
 
         if (self.current_table is not null and (get_keyword('mode', control.vc_page.vc_event.ve_params) = 'create')) {
            declare objs xml_tree;
@@ -1686,7 +1630,6 @@
            objs := xml_tree_doc(self.current_table);
 
      cols:= xpath_eval('/table/column',self.current_table,0);
-     dbg_obj_print('Result !!!!!' , self.current_table , cols, 'Len ', length(cols) );
      len := length(cols);
      i := 0;
       http('<table border="1" cellspacing="0" cellpadding="0" width="100%"><caption><b>Columns</b></caption>');
@@ -1735,9 +1678,6 @@
       http('</tr>');
 
        i := 0;
---       dbg_obj_print('Result !!!!!' , cols, 'Len ', length(cols) ); --xddl_get(null)
-
-
 
       while (i < len) {
         pk_column_name := xpath_eval('./@col',aref(cols,i));
@@ -1778,9 +1718,7 @@
 
         http(sprintf('<tr><td>&nbsp;</td><td>%s</td><td>On Update:%s</td><td>On Delete:%s</td><td  align="left"><a href="%s">Modify</a></td> </tr>',ref_table_name, update_rule , delete_rule, action_anchor  ));
         --http('<tr><td colspan="2">Column Name</td><td colspan="2">Reference Column Name</td></tr>');
-        dbg_obj_print('FK tree............... ', aref(cols,i));
         refs := xpath_eval('./reference', aref(cols,i),0  );
-        dbg_obj_print('Ref tree............... ', refs);
         len2 := length(refs);
         i2 := 0;
         while (i2 < len2) {
@@ -1890,7 +1828,6 @@
                       <script><![CDATA[
           if (get_keyword('mode', control.vc_page.vc_event.ve_params) = 'foreign_key_edit' ) {
               declare path, table_name, ref_table_name , column_name  varchar;
-         dbg_obj_print('Point 0');
             table_name := get_keyword('table_name', params);
           ref_table_name := get_keyword('ref_table_name', params);
           column_name := get_keyword('column_name', params);
@@ -1900,7 +1837,6 @@
           self.foreign_key := xpath_eval(path,xml_tree_doc(self.current_table));
                 XMLAddAttribute(self.foreign_key, 2, 'ref_table', ref_table_name );
 
-          dbg_obj_print('Point FK', self.foreign_key);
         } else
            self.foreign_key := xml_tree_doc('<reference col="" ref_col="" ref_table="" />');
           }
@@ -1940,23 +1876,19 @@
                 if (get_keyword('foreign_key_apply_command',params) is not null) {
               new_ref_table_name := xpath_eval('/reference/@ref_table',xml_tree_doc(self.foreign_key));
               -- XMLReplace(self.foreign_key, xquery_eval('/reference/@ref_table', self.foreign_key), NULL );
-        -- dbg_obj_print('Apply foreign key changes', self.foreign_key );
 
                 if ( get_keyword('what', params) = 'edit' ) {
-              dbg_obj_print('Edit fk.');
         if ( new_ref_table_name = ref_table_name) {
           path := sprintf('/table/fk[@ref_table=\'%s\']/reference[@col=\'%s\']', ref_table_name, column_name);
           self.current_table := XMLUpdate(xml_tree_doc(self.current_table),path, xml_tree_doc(self.foreign_key));
         } else {
             objs := xpath_eval('/table',xml_tree_doc(self.current_table));
             if ( xpath_eval(sprintf('/table/fk[@ref_table=\'%s\']', new_ref_table_name) , objs) is null ) {
-              dbg_obj_print('New REF table is not present.Create new instance of fk');
               tmp_tree := xpath_eval('/fk',  xml_tree_doc (sprintf('<fk ref_table="%s"/>', new_ref_table_name)) );
               XMLAppendChildren(tmp_tree, self.foreign_key);
 
               XMLAppendChildren(objs, tmp_tree);
             }  else {
-               dbg_obj_print('New REF table IS  present.Append reference ti it');
                tmp_tree := xpath_eval(sprintf('/table/fk[@ref_table=\'%s\']', new_ref_table_name) , objs );
                XMLAppendChildren(tmp_tree, self.foreign_key);
             }
@@ -1971,11 +1903,9 @@
                path := sprintf('/table/fk[@ref_table=\'%s\']', ref_table_name);
                objs := XMLUpdate(objs,path, NULL);
             }
-            --dbg_obj_print('New fk node created', objs, tmp_tree,'OLD' ,cols, length(cols));
             self.current_table := objs;
         }
           } else if ( get_keyword('what', params) = 'create' ) {
-             dbg_obj_print('Create fk.');
                    XMLAddAttribute(self.foreign_key, 2, 'col', column_name );
              objs := xpath_eval('/table',xml_tree_doc(self.current_table));
              tmp_tree :=       xpath_eval(sprintf('/table/fk[@ref_table=\'%s\']', new_ref_table_name ),objs );
@@ -1989,7 +1919,6 @@
               --XMLAppendChildren(objs, tmp_tree);
              }
              self.current_table := objs;
-             dbg_obj_print('Create fk. found reference', tmp_tree);
           }
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: xddl-tables.vspx?mode=%s&sid=%s&realm=%s&table_name=%s\r\n', get_keyword('back', params),self.sid ,self.realm, table_name));
@@ -2031,7 +1960,6 @@
       table_name := get_keyword('table_name', params);
       t_obj := xpath_eval('/tables/table',self.objects,0);
       len := length(t_obj);
-      --dbg_obj_print('All tables',len, t_obj);
       i:=0;
       (control as vspx_select_list).vsl_items := vector();
       (control as vspx_select_list).vsl_item_values := vector();
@@ -2082,7 +2010,6 @@
       path := sprintf('/tables/table[@name=\'%s\']/column',table_name);
       t_obj := xpath_eval(path,self.objects,0);
       len := length(t_obj);
-      dbg_obj_print('All columns in FK',len, t_obj);
       i:=0;
       (control as vspx_select_list).vsl_items := vector();
       (control as vspx_select_list).vsl_item_values := vector();
@@ -2129,13 +2056,11 @@
               declare path, table_name, column_name  varchar;
         declare tmp_arr any;
         declare i, len integer;
-         dbg_obj_print('Point 0');
             table_name := get_keyword('table_name', params);
         if ( get_keyword('reload_entry', params) is null ) {
           path := '/table/pk/field';
 
           tmp_arr := xpath_eval(path,xml_tree_doc(self.current_table),0);
-          dbg_obj_print('Point ', tmp_arr);
           self.primary_key := vector();
           i := 0;
           len := length(tmp_arr);
@@ -2145,7 +2070,6 @@
             i := i +1;
           }
         }
-        dbg_obj_print('Point X', xpath_eval('/table/pk',xml_tree_doc(self.current_table)) );
        } ]]></script>
                     </v:before-data-bind>
             </vm:events>
@@ -2348,7 +2272,6 @@
       path := sprintf('/tables/table[@name=\'%s\']/column',table_name);
       t_obj := xpath_eval('/table/column',xml_tree_doc(self.current_table),0);
       len := length(t_obj);
-      dbg_obj_print('All columns in FK',len, t_obj);
       i:=0;
       (control as vspx_select_list).vsl_items := vector();
       (control as vspx_select_list).vsl_item_values := vector();
@@ -2406,7 +2329,6 @@
 
          objs := xml_tree_doc(self.current_table);
          path := sprintf('/table/fk[@ref_table=\'%s\']/reference[@col=\'%s\']', ref_table_name,  column_name);
-        --dbg_obj_print('Column to remove',  xpath_eval(path,objs,0) );
         self.current_table := XMLUpdate(xml_tree_doc(self.current_table),path, NULL);
         path := sprintf('/table/fk[@ref_table=\'%s\']/reference', ref_table_name);
             cols := vector();
@@ -2464,7 +2386,6 @@
           if (res is not null and length(res) > 0) {
             declare exit handler for sqlstate '*'
         {
-          dbg_obj_print ('Error', __SQL_MESSAGE);
           err_msg := sprintf(' Execution Error: %s', __SQL_MESSAGE);
 
           http_request_status ('HTTP/1.1 302 Found');
@@ -2472,7 +2393,6 @@
                 return;
         };
         err_sqlstate := '00000';
-        dbg_obj_print ('Execute this', res);
         exec (res, err_sqlstate, err_msg, vector(),100, m_dta, xq_res);
         if ('00000' <> err_sqlstate)    {
           http_request_status ('HTTP/1.1 302 Found');
@@ -2481,7 +2401,6 @@
         }
 
          }
-          dbg_obj_print('Exec result', err_sqlstate, err_msg, m_dta, xq_res);
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: xddl-tables.vspx?sid=%s&realm=%s\r\n', self.sid ,self.realm));
           return;
@@ -2680,7 +2599,6 @@
                     <vm:events>
                       <v:after-data-bind>
                         <v:script><![CDATA[
-                        dbg_obj_print('Context ',  get_keyword('context', self.vc_page.vc_event.ve_params));
 
                       control.vc_data_bound := 1;
               ]]></v:script>
@@ -2810,7 +2728,6 @@
         declare exit handler for sqlstate '*'
         {
           self.wrong_entry := sprintf(' Error. DAV resource %s has  no valid  xml  format.', load_path);
-          dbg_obj_print('NONE XML FILE');
 
           http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: xddl-tables.vspx?mode=xddl_load&sid=%s&realm=%s\r\n',self.sid ,self.realm));

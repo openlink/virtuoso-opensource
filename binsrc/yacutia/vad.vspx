@@ -82,7 +82,6 @@
 		    }
 		  else
 		    {
---		      dbg_obj_print(path, (select length (RES_CONTENT) FROM WS.WS.SYS_DAV_RES WHERE RES_FULL_PATH = path));
 		      self.upl_file := path;
 		    }
 	        }
@@ -471,7 +470,6 @@
                       {
 		          path := self.upl_file;
 			  commit work;
---			  dbg_obj_print(path, coalesce ((select length (RES_CONTENT) FROM WS.WS.SYS_DAV_RES WHERE RES_FULL_PATH = path), 'Not found'));
                       }
 		      else
 		        {
@@ -495,7 +493,6 @@
                       self.vc_is_valid := 0;
                       return;
                     }
-                    --dbg_obj_print((select RES_NAME FROM WS.WS.SYS_DAV_RES WHERE RES_ID = ret));
 		    self.vc_redirect (sprintf ('vad_install.vspx?path=%U&mode=%d',
 		       path, case when mode = 2 then 0 else 1 end));
                   ]]>

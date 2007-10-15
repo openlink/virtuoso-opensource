@@ -177,9 +177,6 @@
           <v:on-init>
             <v:script>
               <![CDATA[
-  --dbg_printf ('DAV_BROWSER: params:');
-  --dbg_obj_print (self.vc_page.vc_event.ve_params);
-
   self.show_details := atoi (get_keyword ('details_dropdown', self.vc_page.vc_event.ve_params, '0'));
 
   if (get_keyword ('list_type', self.vc_page.vc_event.ve_params) is not null)
@@ -211,8 +208,6 @@
 
       brs := get_keyword ('browse_type', self.vc_page.vc_event.ve_params, '');
 
-      --dbg_printf ('browse_type in params: %s', brs);
-
       if (brs = 'col')
         {
           self.browse_type := 1;
@@ -225,7 +220,6 @@
         }
       else if (brs = 'standalone')
         {
-          --dbg_printf ('setting browse_type to 2');
           self.browse_type := 2;
           self.dir_select := 0;
         }
@@ -3311,7 +3305,6 @@ else
     }
 
 
-  --dbg_obj_print ('item', self.dir_select, self.browse_type);
   if ((control.vc_parent as vspx_row_template).te_rowset[0] = 0 and (self.dir_select = 0 or self.dir_select = 2))
     {
       if (self.browse_type = 2)

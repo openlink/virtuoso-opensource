@@ -73,8 +73,6 @@
   <vm:rawheader caption="Business Entity Create">
    <td>
     <?vsp
-      dbg_obj_print('point 0');
-
       if ( get_keyword('page', control.vc_page.vc_event.ve_params) ='entity' ) 
         http('Specify the Business parameters');
       if (  get_keyword('page', control.vc_page.vc_event.ve_params) ='service')     
@@ -110,8 +108,6 @@
         else if (get_keyword('owner', params) = 'businessService')
           http(' for service');
       }
-      dbg_obj_print('point 001');
-
      ?>
    </td>
   </vm:rawheader>
@@ -325,7 +321,6 @@
       <v:on-post>
        <script><![CDATA[
                  declare uuid_value, stmt   varchar;
-                  dbg_obj_print( 'Service creation for business(1) with name(2) and owner(3)',
                   get_keyword('business_key', params), 
                   get_keyword('service_name', params), 
                   get_keyword('service_owner', params)                  
@@ -339,7 +334,6 @@
                       where  BS_SERVICE_KEY = uuid_value;
                     } else  if ( get_keyword('mode', params) ='create' ) {
                       uuid_value := uuid();
-                      dbg_obj_print('DO creation service');
                       insert into  UDDI..BUSINESS_SERVICE ( BS_BUSINESS_KEY, BS_SERVICE_KEY, BS_NAME,  BS_OWNER ,  BS_CREATED,  BS_CHANGED) 
                       values (
                       get_keyword('business_key', params), uuid_value, get_keyword('service_name', params), get_keyword('service_owner', params),
@@ -969,7 +963,6 @@
                     } else if (get_keyword('mode', params) ='create') {
                       declare uuid_value varchar;
                       uuid_value := uuid();                                     
-                      dbg_obj_print('Description for key(1) and owner(2) ',
         get_keyword('uuid_key', params) ,
         get_keyword('owner', params)                      
                       );
@@ -1020,7 +1013,6 @@
                   if ( get_keyword('mode', params) ='edit'  and get_keyword('uuid_key', params)  is not null  and get_keyword('page', params) ='description') {
                     select UD_DESC into value  from UDDI..DESCRIPTION  where UD_DESCRIPTION_KEY  = get_keyword('uuid_key', params);
                     control.ufl_value := value;
-                    dbg_obj_print('DESC', get_keyword('uuid_key', params));
                   }
                    ]]></v:script>
         </v:before-data-bind>
@@ -1454,7 +1446,6 @@
        <script><![CDATA[
                 { 
                   if (get_keyword('binding_url_save', params) is not null) {
-                    dbg_obj_print('Binding mode ',  get_keyword('mode', params));
                     if ( get_keyword('mode', params) ='edit'  and get_keyword('binding_key', params) is not null) {
                       update  UDDI..BINDING_TEMPLATE  set
                       BT_ACCESS_POINT=get_keyword('binding_url_value', params),
@@ -1464,8 +1455,6 @@
                     } else if (get_keyword('mode', params) ='create' ) {                  
                       declare uuid_value varchar;
                       uuid_value := uuid();
-                      dbg_obj_print('Binding URL create ', self.binding_service_owner
-                      );
                       insert into UDDI..BINDING_TEMPLATE  (BT_BINDING_KEY,    BT_SERVICE_KEY, BT_ACCESS_POINT, BT_URL_TYPE, BT_OWNER,  BT_CREATED,  BT_CHANGED ) 
                         values ( uuid_value, self.binding_service_owner , get_keyword('binding_url_value', params), get_keyword('binding_url_use_type', params),'',now(), now());
                     }
@@ -1668,7 +1657,6 @@
                 { 
                   if (get_keyword('binding_redirect_service_save', params) is not null) {
                     if ( get_keyword('mode', params) ='edit'  and get_keyword('business_key', params) is not null) {
-                    dbg_obj_print('BINDING MODE', get_keyword('mode', params) );
                       update  UDDI..BINDING_TEMPLATE  set
                       BT_HOSTING_REDIRECTOR = get_keyword('binding_redirect_service', params),
                       BT_OWNER = ''
@@ -1804,7 +1792,6 @@
                 { 
                   if (get_keyword('binding_instance_info_save', params) is not null) {
                     if ( get_keyword('mode', params) ='edit'  and get_keyword('instance_key', params) is not null) {
-                    dbg_obj_print('BINDING MODE', get_keyword('mode', params) );
                       update  UDDI..INSTANCE_DETAIL  set
                       ID_TMODEL_KEY =get_keyword('binding_instance_model', params),  
                       ID_PARMS = get_keyword('binding_instance_info_value', params)
@@ -1846,7 +1833,6 @@
                   (control as vspx_select_list).vsl_items:= vector();
                   (control as vspx_select_list).vsl_item_values:= vector();
                   (control as vspx_select_list).vsl_selected_inx :=0;
-                  dbg_obj_print('INSTANCE');
                   if ( get_keyword('mode', params) ='edit'  and get_keyword('instance_key', params)  is not null and get_keyword('page', params) ='instance_info') {
                     select ID_TMODEL_KEY  into tm_key  from UDDI..INSTANCE_DETAIL  where ID_KEY = get_keyword('instance_key', params);
                   }                 

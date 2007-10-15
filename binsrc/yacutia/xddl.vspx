@@ -34,7 +34,6 @@
  <v:on-init>
 	<script><![CDATA[
     declare res varchar;
-    dbg_obj_print('On Init XDDL');
     self.column_types := vector();
 
     self.column_types := vector_concat(self.column_types,  vector(189,'integer'));
@@ -69,8 +68,6 @@
     self.actions := vector_concat(self.actions,  vector('set null','Set NULL'));
     self.actions := vector_concat(self.actions,  vector('cascade','Cascade'));
     self.actions := vector_concat(self.actions,  vector('set default','Set Default'));
-
---    dbg_obj_print('Vector ', self.column_types);
 
     self.column_edit_buff := xpath_eval('/column', xtree_doc('<column/>'));
     self.column_create_buff := xpath_eval('/column', xtree_doc('<column/>'));
@@ -236,7 +233,6 @@
 			<script><![CDATA[
 		       declare t_obj, t_orig xml_tree;
 		       declare len, i, len2, i2, f  integer;
---		dbg_obj_print('OBJECTS', self.objects );
 
 		if (get_keyword('init',params) is not null and get_keyword('init',params) = 'xddl')			{
 		     self.page := null;
@@ -270,7 +266,6 @@
 		    if ( self.table_editor_page = '3' ) { -- now we need to transfer pk cols from vector into current table xml tree.
 				   self.current_table := xddl_attach_pk_xml_tree (self.primary_key, self.current_table,
 											  self.key_is_unique, self.key_is_clustered,self.key_is_oid );
-          dbg_obj_print('PK was attached', self.current_table);
 				} else if ( self.table_editor_page = '4' ) { -- now we need to transfer fk cols from vector into current table xml tree.
 				    declare i, len integer;
 				    len := length( self.foreign_key_columns);
@@ -285,7 +280,6 @@
             }
 
 				 self.current_table := xddl_attach_fk_xml_tree(self.foreign_key_columns, self.current_table );
-				 dbg_obj_print('FK was attached', self.current_table);
 				}
 			}
 		  self.table_editor_page := get_keyword('table_editor_page',params);
@@ -314,9 +308,6 @@
     if ( get_keyword('procedure_name', params) is not null)
 		  self.table_name := get_keyword('procedure_name', params);
 
---     dbg_obj_print('FORM Button', e.ve_button);
-  --   dbg_obj_print('OUR PARAMS',params);
-
 
 --			  if (self.objects is null) {
 --			   self.xddl_source_type := 0;
@@ -324,22 +315,16 @@
 --				} else
 			   		self.objects := xml_tree_doc(self.objects);
 
---				dbg_obj_print('All Tables', self.objects);
-
 --			  if (self.views is null) {
 --					self.views := xpath_eval('/views', xml_tree_doc('<views/>'));
 --				} else
 			   		self.views := xml_tree_doc(self.views);
-
---				dbg_obj_print('All views', self.views);
-
 
 --			  if (self.procedures is null) {
 --						self.procedures :=  xpath_eval('/procedures', xml_tree_doc('<procedures/>'));
 --				} else
 			   		self.procedures := xml_tree_doc(self.procedures);
 
---			dbg_obj_print('All procedures', self.procedures);
 
 				if (self.drop_list is null)
 					self.drop_list := vector();
@@ -381,8 +366,6 @@
 			   i:= i + 1;
 			}
 
-
---dbg_obj_print('CHECKPOINT-1',vector(vector('callret',182,0,256,1,0,1,0,0,0,0,0 )));
 
 		     ]]></script>
 		 </v:before-data-bind>
@@ -665,7 +648,6 @@
         mask_len := length(self.tables_browse_mask);
         t_obj := xpath_eval('/tables/table',self.objects,0); -- xddl_get(null)
         len := length(t_obj);
-        --dbg_obj_print('All tables',len, t_obj);
         i:=0;
         while (i < len) {
             declare name, drop_flag varchar;
@@ -835,7 +817,6 @@
         mask_len := length(self.views_browse_mask);
         t_obj := xpath_eval('/views/view',self.views,0);
         len := length(t_obj);
-        --dbg_obj_print('All tables',len, t_obj);
         i:=0;
         while (i < len) {
             declare name, drop_flag varchar;
@@ -1017,7 +998,6 @@
         mask_len := length(self.procs_browse_mask);
         t_obj := xpath_eval('/procedures/procedure',self.procedures,0);
         len := length(t_obj);
-        --dbg_obj_print('All tables',len, t_obj);
         i:=0;
         while (i < len) {
             declare name, drop_flag varchar;
@@ -1075,7 +1055,6 @@
               	self.page_to_go_back := '1';
               else
               self.page_to_go_back := self.page;
-              dbg_obj_print('page back', self.page_to_go_back);
             if ( get_keyword('common_load_command', params) is not null ) {
 	    self.mode := 'xddl_load';
 	    self.vc_data_bind(e);
@@ -1105,22 +1084,18 @@
 			    declare objs any;
 			    declare i, n, tid  integer;
 		          declare difference, obj xml_tree;
-			    dbg_obj_print('BASE', xddl_get_base());
 			    objs :=   xpath_eval ( '/tables/table',xml_tree_doc(self.objects), 0);
 				n := length(objs);
 				i := 0;
 				self.statements :='';
 				while (i < n) {
 					obj := aref(objs,i);
---					dbg_obj_print('Object ==', obj);
 					table_name :=  cast ( xpath_eval('./@name',obj) as varchar);
 					table_ident :=  cast ( xpath_eval('./@ident',obj) as varchar);
 					if ( exists ( select 1 from db.dba.xddl_tables where T_NAME = table_name) )  {
 
 					   select T_IDENT into tid from DB.DBA.XDDL_TABLES  where T_NAME = table_name ;
---					   dbg_obj_print('Object ID =', sprintf('%d',tid));
 					   if (sprintf('%d',tid) <> table_ident) {
-					      dbg_obj_print('Table has already been modified since you loaded the xddl file by some other parties', sprintf('%d',tid), table_ident);
 						self.mode := 'exec_xddl_denied';
 						self.table_name :=  table_name;
 						self.vc_data_bind(e);
@@ -1129,14 +1104,12 @@
 					    	return;
 					   }
 				         difference := xddl_diff(xddl_get_base(),obj);
-				         dbg_obj_print('Difference', difference);
 				       } else  difference := xml_cut(obj);
 				    res := xddl_to_ddl(xddl_get_base(), xml_tree_doc(difference));
 				    self.statements := concat(self.statements, res);
 
 				  i := i + 1;
 				}
-			    dbg_obj_print('Exec', self.statements);
 
 			    res := xddl_to_ddl(xddl_get_base(),self.views);
 			    self.statements := concat(self.statements, '\n', res);
@@ -1216,7 +1189,6 @@
 		 <v:before-data-bind>
 			<script><![CDATA[
 				declare table_name, column_name, path  varchar;
-									dbg_obj_print('CHECKPOINT-2');
 
 		     if ( ( self.mode = 'table_edit') and ( get_keyword('entry', params)  is not null)  ) {
 		         if ( self.kind = 'edit') {
@@ -1228,8 +1200,6 @@
 				}
 			 } else if ( self.mode = 'table_edit')
 					self.current_table := xpath_eval('/table', xml_tree_doc( self.current_table));
-
---			if ( self.mode = 'table_edit') dbg_obj_print('ENTERED IN TABLE EDITOR WITH THE TABLE ==========',self.current_table);
 
 			if ( ( self.mode = 'table_edit') and ( get_keyword('column_name', params)  is not null) and   ( get_keyword('what', params) = 'column_edit')  ) {
 			        table_name := get_keyword('table_name', control.vc_page.vc_event.ve_params);
@@ -1352,7 +1322,6 @@ Here is the tabs
 						<v:text name="edit_table_name" >
 						 <v:before-data-bind>
 							<script><![CDATA[
-							  dbg_obj_print('CHECKPOINT-3');
 
 				        if (self.mode = 'table_edit'  and self.kind = 'edit') {
 							control.ufl_value := 	cast ( xpath_eval('/table/@name',self.current_table) as varchar);
@@ -1366,7 +1335,6 @@ Here is the tabs
 						 <v:on-post>
 							<script><![CDATA[
 					control.vc_put_value_to_element();
-					dbg_obj_print('SAVE_TABLE_NAME===',control.ufl_value);
                     ]]></script>
 						 </v:on-post>
 						</v:text>
@@ -1384,7 +1352,6 @@ Here is the tabs
 						    declare objs any;
 								declare i, len integer;
 								declare val varchar;
-								dbg_obj_print ('KIND', self.kind, self.table_name);
 								objs :=  xpath_eval('/tables/table/@name', self.objects, 0);
 								len := length (objs);
 								i := 0;
@@ -1518,7 +1485,6 @@ Here is the tabs
 				   tmp :=  self.type_name ;
 				   self.column_edit_buff := xml_cut(prev_instance);
 --					 xpath_eval('/column',xml_tree_doc(sprintf('<column name="" type="" prec="" identified_by="" collation="" identity=""><default_value>%s</default_value></column>', def_value )) );
-					 dbg_obj_print('!!!!!!!!!!!!now before update', self.column_edit_buff);
 			      if (  column_oname <> column_name and  prev_instance  is not null ) {
 				      self.mode := 'column_exist';
 				      self.column_name := column_name;
@@ -1540,7 +1506,6 @@ Here is the tabs
  			        path := sprintf('/table/column[@name=\'%s\']', column_oname);
 			        self.current_table := XMLUpdate(xml_tree_doc(self.current_table),path, self.column_edit_buff);
 
---			       dbg_obj_print('Key box value', get_keyword('key_control',params));
 
 			       if ( get_keyword('key_control',params) is not null  )  { -- pk checkbox is checked
 			           if (column_type <> '225' and  -- nvarchar
@@ -1579,7 +1544,6 @@ Here is the tabs
 					}
 				   }
 			       } else { -- pk checkbox is unchecked. do we have pk for initial   column's  name?
-			            dbg_obj_print('Key box is unchecked');
 			            path := sprintf ('/table/pk/field[@col=\'%s\']',  column_oname );
 						if ( xpath_eval(path, self.current_table) is not null  ) {  -- there  is a pk for old column, kill it!
 			      	    		declare n integer;
@@ -1594,7 +1558,6 @@ Here is the tabs
 			        self.ds.vc_data_bind (e);
 							self.ds.ds_current_row := null;
 
-			       dbg_obj_print('Update in Edit mode - Table',table_name, 'Column ' , column_name, 'Xml Tree' , self.column_edit_buff , self.current_table, objs);
 			 }
 		  }
 		    ]]></script>
@@ -1613,7 +1576,6 @@ Here is the tabs
 		<v:before-data-bind>
 		 <script><![CDATA[
 		 declare column_name  varchar;
-		 dbg_obj_print('Stop here', e.ve_is_post );
 		 column_name := cast ( xpath_eval('./@name',  (control.vc_parent.vc_parent.vc_parent as vspx_data_set).ds_current_row.te_rowset) as varchar );
 		if ( xpath_eval(sprintf('/table/pk/field[@col = \'%s\']/@col',column_name ),(control.vc_parent.vc_parent.vc_parent as vspx_data_set).ds_current_row.te_rowset) = column_name ) {
 		     control.ufl_selected := 1;
@@ -1629,7 +1591,6 @@ Here is the tabs
 		<v:before-data-bind>
 		 <script><![CDATA[
 			 declare name varchar;
-			 dbg_obj_print('CHECKPOINT-4');
 
 			 name := cast ( xpath_eval('./@name',  (control.vc_parent.vc_parent.vc_parent as vspx_data_set).ds_current_row.te_rowset) as varchar );
 			 control.ufl_value := name;
@@ -1662,7 +1623,6 @@ Here is the tabs
 		self.type_name := aref((control as vspx_select_list).vsl_items, (control as vspx_select_list).vsl_selected_inx);
 		control.ufl_value := aref((control as vspx_select_list).vsl_item_values, (control as vspx_select_list).vsl_selected_inx);
 		control.vs_set_selected();
-		dbg_obj_print('Selected index ', (control as vspx_select_list).vsl_selected_inx);
 		 } ]]></script>
 		</v:before-data-bind>
 		<v:on-post>
@@ -1802,7 +1762,6 @@ Here is the tabs
         i := 0;
 		identified_value := cast ( xpath_eval('./@identified_by',  (control.vc_parent.vc_parent.vc_parent.vc_parent as vspx_data_set).ds_current_row.te_rowset) as varchar );
 		col_name := cast ( xpath_eval('./@name',  (control.vc_parent.vc_parent.vc_parent.vc_parent as vspx_data_set).ds_current_row.te_rowset) as varchar );
-		dbg_obj_print('==============!!!!!!!!!!!==========', col_name, identified_value,'   ' , self.full_advanced_mode);
 		(control as vspx_select_list).vsl_items :=  vector_concat ((control as vspx_select_list).vsl_items, vector('None') );
 		(control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector('xsi:nil') );
 
@@ -1863,7 +1822,6 @@ Here is the tabs
 									 control.ufl_value:= '';
 									 i := 0;
 									 len := length(self.primary_key);
-									 dbg_obj_print ('KEY LABEL---', self.primary_key);
 									 while (i < len) {
 									   if (col_name = aref(self.primary_key, i) )
 										   control.ufl_value := '*';
@@ -1923,7 +1881,6 @@ Here is the tabs
 			          		declare column_name, path varchar;
 			          		column_name :=  cast ( xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset) as varchar);
 					    path := sprintf('/table/column[@name=\'%s\']',column_name);
-						dbg_obj_print ('DELETE ROW ====', column_name, path);
 
 					    self.current_table:=  XMLUpdate(self.current_table, path,  null);
 					      self.ds.vc_data_bind (e);
@@ -1967,7 +1924,6 @@ Here is the tabs
 						<v:before-render>
 						 <script><![CDATA[
 							control.vc_enabled := case when (self.ds.ds_current_row is not null) then 0 else 1 end;
-							dbg_obj_print('Add form, dataset current row',case when (self.ds.ds_current_row is not null) then 'NOT NULL' else 'NULL' end );
 						]]></script>
 						</v:before-render>
 						<v:on-post>
@@ -1978,14 +1934,11 @@ Here is the tabs
 			    table_name := get_keyword('edit_table_name', params);
 			    column_name := get_keyword('add_name_control', params);
 			    column_type := get_keyword('add_type_type', params);
-			dbg_obj_print('ADD COL ====', table_name, column_name);
 			    if (get_keyword('add_advanced_button',params) is not null ) {
-					         dbg_obj_print('BEFORE ADVANCED ---------- MODE', self.full_advanced_mode);
 					          if ( self.full_advanced_mode  = 0)
 										   self.full_advanced_mode  := 1;
 									  else
 										   self.full_advanced_mode  := 0;
-								dbg_obj_print('AFTER ADVANCED ---------- MODE', self.full_advanced_mode);
 								self.vc_data_bind(e);
 								return;
 		      } else if (get_keyword('add_button',params) is not null) {
@@ -2024,7 +1977,6 @@ Here is the tabs
 				    XMLAddAttribute(self.column_create_buff, 2, 'nullable', case when ( get_keyword('add_nullable_control', params) is null) then '0' else '1' end );
 				    XMLAddAttribute(self.column_create_buff, 2, 'identity', case when (get_keyword('add_identity_control', params) is null) then '0' else '1' end );
 
-						dbg_obj_print ('Column composed', self.column_create_buff, default_value);
 			      objs := xpath_eval('/table',xml_tree_doc(self.current_table));
 			      XMLAppendChildren(objs, self.column_create_buff);
 			      self.current_table := objs;
@@ -2048,12 +2000,10 @@ Here is the tabs
 						        n := 	xpath_eval('count(/table/pk/field)', self.current_table);
 				       	    objs :=  xpath_eval('/field', xml_tree_doc(sprintf('<field ord="%d" col="%s"/>', n, column_name) ));
 					          prev_instance  :=  xpath_eval('/table/pk',self.current_table);
-					          dbg_obj_print ('PK keys trees  ',   prev_instance , objs );
 					          XMLAppendChildren(prev_instance  , objs);
 					     }
 				     }
 			     }
-			     dbg_obj_print('Exit  Tree',self.column_create_buff, 'Table to add to',  self.current_table );
 			     self.ds.vc_data_bind (e);
 			     return;
 			 }
@@ -2101,7 +2051,6 @@ Here is the tabs
 								 </v:on-post>
 								 <v:before-data-bind>
 									<script><![CDATA[
-		  dbg_obj_print('CHECKPOINT-5');
 												      if ( self.mode = 'table_edit' ) {
 													    declare i, len integer;
 													    declare id varchar;
@@ -2120,7 +2069,6 @@ Here is the tabs
 															   i:= i + 2;
 														}
 														 self.type_name := aref((control as vspx_select_list).vsl_items, (control as vspx_select_list).vsl_selected_inx);
-														 dbg_obj_print('Selected index ', (control as vspx_select_list).vsl_selected_inx);
 												    } ]]></script>
 								 </v:before-data-bind>
 								 <v:on-post>
@@ -2325,9 +2273,7 @@ Here is the tabs
 
 
 			        difference := xddl_diff(xddl_get_base(), self.current_table);
-			        dbg_obj_print('Difference', difference);
 			        res := xddl_to_ddl(xddl_get_base(), xml_tree_doc(difference));
-			        dbg_obj_print('Exec', res);
 			        self.statements := res;
 				      self.mode := 'preview_xddl_table';
 				      self.table_name := table_name;
@@ -2376,7 +2322,6 @@ Here is the tabs
 			      declare  check_errors any;
 					  check_errors := vector();
 					  result :=  xddl_check_constraints_validation (self.current_table, self.sid , check_errors);
-					  dbg_obj_print('CHECK RESULT', check_errors);
 					  if (result < 0) {
 					    self.exec_errors := check_errors;
 					    self.mode := 'xddl_constraint_error';
@@ -2385,7 +2330,6 @@ Here is the tabs
 					  }
 
 	               self.exec_errors := xddl_execute_statements(self.current_table, self.statements );
-	               dbg_obj_print('ERRORS ==', self.exec_errors);
 	               if (length(self.exec_errors) = 0) {
 	                     self.objects := xddl_attach_table_xml_tree(self.current_table, self.kind, self.objects);
                        self.mode := null;
@@ -2428,7 +2372,6 @@ Here is the tabs
                 table_name :=  cast ( xpath_eval('/table/@name',self.current_table) as varchar);
 							  XMLAddAttribute(self.current_table, 2, 'parent', self.parent_table );
 					}
-					dbg_obj_print('Save ===', self.current_table );
 
 	        self.wrong_entry := null;
 	        if ( self.kind ='create' ) {
@@ -2444,7 +2387,6 @@ Here is the tabs
 			      declare  check_errors any;
 					  check_errors := vector();
 					  result :=  xddl_check_constraints_validation (self.current_table, self.sid, check_errors);
-					  dbg_obj_print('CHECK RESULT', check_errors);
 					  if (result < 0) {
 					    self.exec_errors := check_errors;
 					    self.mode := 'xddl_constraint_error';
@@ -2627,7 +2569,6 @@ Here is the tabs
 			          		declare constr_name, path varchar;
 			          		constr_name :=  cast ( xpath_eval('@name',(control.vc_parent as vspx_row_template).te_rowset) as varchar);
 					    path := sprintf('/table/constraint[@name=\'%s\']',constr_name);
-						dbg_obj_print ('DELETE ROW ====', constr_name, path);
 
 					    self.current_table:=  XMLUpdate(self.current_table, path,  null);
 					      self.ds_constr.vc_data_bind (e);
@@ -2646,7 +2587,6 @@ Here is the tabs
 						<v:before-render>
 						 <script><![CDATA[
 							control.vc_enabled := case when (self.ds_constr.ds_current_row is not null) then 0 else 1 end;
-							--dbg_obj_print('Add form, dataset current row',case when (self.ds_constr.ds_current_row is not null) then 'NOT NULL' else 'NULL' end );
 						]]></script>
 						</v:before-render>
 						<v:on-post>
@@ -2662,7 +2602,6 @@ Here is the tabs
 			      XMLAppendChildren(objs, constr);
 			      self.current_table := objs;
 
-					dbg_obj_print('Constraint ADDED ---', self.current_table);
 
 						self.ds_constr.vc_data_bind (e);
             return;
@@ -2751,9 +2690,7 @@ Here is the tabs
 
 
 			        difference := xddl_diff(xddl_get_base(), self.current_table);
-			        dbg_obj_print('Input table', self.current_table, 'Difference', difference);
 			        res := xddl_to_ddl(xddl_get_base(), xml_tree_doc(difference));
-			        dbg_obj_print('Exec', res);
 			        self.statements := res;
 				      self.mode := 'preview_xddl_table';
 				      self.table_name := table_name;
@@ -2802,7 +2739,6 @@ Here is the tabs
 			      declare  check_errors any;
 					  check_errors := vector();
 					  result :=  xddl_check_constraints_validation (self.current_table, self.sid, check_errors);
-					  dbg_obj_print('CHECK RESULT', check_errors);
 					  if (result < 0) {
 					    self.exec_errors := check_errors;
 					    self.mode := 'xddl_constraint_error';
@@ -2811,7 +2747,6 @@ Here is the tabs
 					  }
 
 	               self.exec_errors := xddl_execute_statements(self.current_table, self.statements );
-	               dbg_obj_print('ERRORS ==', self.exec_errors);
 	               if (length(self.exec_errors) = 0) {
 	                     self.objects := xddl_attach_table_xml_tree(self.current_table, self.kind, self.objects);
                        self.mode := null;
@@ -2850,7 +2785,6 @@ Here is the tabs
           } else
                 table_name :=  cast ( xpath_eval('/table/@name',self.current_table) as varchar);
 
-					dbg_obj_print('Save ===', self.current_table );
 
 	        self.wrong_entry := null;
 	        if ( self.kind ='create' ) {
@@ -2867,7 +2801,6 @@ Here is the tabs
 			      declare  check_errors any;
 					  check_errors := vector();
 					  result :=  xddl_check_constraints_validation (self.current_table, self.sid, check_errors);
-					  dbg_obj_print('CHECK RESULT', check_errors);
 					  if (result < 0) {
 					    self.exec_errors := check_errors;
 					    self.mode := 'xddl_constraint_error';
@@ -2909,12 +2842,10 @@ Here is the tabs
 		<vm:events>
 		 <v:before-data-bind>
 			<script><![CDATA[
-			    dbg_obj_print('CHECKPOINT-Primary Key template', self.table_editor_page );
 		      if (self.mode = 'table_edit' and self.table_editor_page = '3') {
 		         declare path, table_name, column_name  varchar;
 			       declare tmp_arr any;
 			       declare i, len integer;
-			       dbg_obj_print('Point 0');
   			     table_name := self.table_name;
 
 			       if ( get_keyword('reload_entry', params) is null) {
@@ -2935,7 +2866,6 @@ Here is the tabs
 			             i := i +1;
 			         }
 			       }
-			       dbg_obj_print('Point X', xpath_eval('/table/pk',xml_tree_doc(self.current_table)), self.primary_key );
 			 }
 
        ]]></script>
@@ -2988,7 +2918,6 @@ Here is the tabs
 					         XMLAppendChildren ( pk_tree, field);
 			             i:= i +1;
 			           }
-			           dbg_obj_print ('Constructed PK ', pk_tree ,'Flag', cols , 'Table ', objs);
 			       if (length( cols) = 0 ) {
 			          XMLAppendChildren (objs,   pk_tree);
 				  	    self.current_table := objs;
@@ -3000,7 +2929,6 @@ Here is the tabs
 			        self.current_table := XMLUpdate(objs,'/table/pk', NULL);
 			    }
 
-			       dbg_obj_print('Pk is set to ', self.current_table);
 					   -- here we need to put other stuff - review, save, create
 
  			       self.table_editor_page := '1';
@@ -3011,20 +2939,16 @@ Here is the tabs
 		      if (get_keyword('primary_key_remove_command',params) is not null) {
 			    pk_name := get_keyword('primary_keys_columns_control', params);
 			    if (pk_name is not null) {
-			       dbg_obj_print('Point 1');
 			       tmp_array := vector();
 			       i := 0;
 			       len :=  length(self.primary_key);
 			       while (i < len) {
-			        dbg_obj_print('Point 2');
 			        tmp_pk := aref(self.primary_key,i);
-				dbg_obj_print('Point 3');
 			        if (tmp_pk  <> pk_name)
 				  tmp_array := vector_concat(tmp_array,vector( tmp_pk) );
 			        i:= i +1;
 			       }
 			       self.primary_key :=  tmp_array;
-			       dbg_obj_print('Pk Array in rem fu', self.primary_key);
 			    }
 					self.vc_data_bind(e);
 			    return;
@@ -3230,14 +3154,12 @@ Here is the tabs
 					 if (column_name <> '_IDN') {
               (control as vspx_select_list).vsl_items :=  vector_concat ((control as vspx_select_list).vsl_items, vector(column_name) );
               (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector(column_name));
-					     dbg_obj_print('PK selected ', column_name , get_keyword('primary_keys_columns_control', params) );
 					    if ( get_keyword('primary_keys_columns_control', params) = column_name )
 					       control.ufl_value := column_name;
 					 }
 			   i:= i +1;
 			}
   		    control.vs_set_selected();
-					dbg_obj_print('Params', (control as vspx_select_list).vsl_selected_inx);
 		     }
 		    ]]></script>
 				</v:after-data-bind>
@@ -3343,9 +3265,7 @@ Here is the tabs
 
 
 			        difference := xddl_diff(xddl_get_base(), self.current_table);
-			        dbg_obj_print('Difference', difference);
 			        res := xddl_to_ddl(xddl_get_base(), xml_tree_doc(difference));
-			        dbg_obj_print('Exec', res);
 			        self.statements := res;
 				      self.mode := 'preview_xddl_table';
 				      self.table_name := table_name;
@@ -3397,7 +3317,6 @@ Here is the tabs
 			      declare  check_errors any;
 					  check_errors := vector();
 					  result :=  xddl_check_constraints_validation (self.current_table, self.sid, check_errors);
-					  dbg_obj_print('CHECK RESULT', check_errors);
 					  if (result < 0) {
 					    self.exec_errors := check_errors;
 					    self.mode := 'xddl_constraint_error';
@@ -3406,7 +3325,6 @@ Here is the tabs
 					  }
 
 	               self.exec_errors := xddl_execute_statements(self.current_table, self.statements );
-	               dbg_obj_print('ERRORS ==', self.exec_errors);
 	               if (length(self.exec_errors) = 0) {
 	                     self.objects := xddl_attach_table_xml_tree(self.current_table, self.kind, self.objects);
                        self.mode := null;
@@ -3449,7 +3367,6 @@ Here is the tabs
           } else
                 table_name :=  cast ( xpath_eval('/table/@name',self.current_table) as varchar);
 
-					dbg_obj_print('Save ===', self.current_table );
 
 	        self.wrong_entry := null;
 	        if ( self.kind ='create' ) {
@@ -3465,7 +3382,6 @@ Here is the tabs
 			      declare  check_errors any;
 					  check_errors := vector();
 					  result :=  xddl_check_constraints_validation (self.current_table, self.sid,  check_errors);
-					  dbg_obj_print('CHECK RESULT', check_errors);
 					  if (result < 0) {
 					    self.exec_errors := check_errors;
 					    self.mode := 'xddl_constraint_error';
@@ -3514,7 +3430,6 @@ Here is the tabs
 			    self.wrong_entry := null;
 			    path := '//reference';
 			    tmp_arr := xpath_eval(path,xml_tree_doc(self.current_table),0);
-			    dbg_obj_print('Point FK list ', tmp_arr);
 			    self.foreign_key_columns := vector();
 			    i := 0;
 			    len := length(tmp_arr);
@@ -3532,7 +3447,6 @@ Here is the tabs
 			     }
 
 			  }
-			  dbg_obj_print('Point FK vector', self.foreign_key_columns);
 			 } ]]></script>
 		 </v:before-data-bind>
 		</vm:events>
@@ -3566,7 +3480,6 @@ Here is the tabs
 			     		    self.reference_table_value :=  aref(self.foreign_key_columns,i+2);
 				        i:= i +3;
 				       }
-			  	     dbg_obj_print('FOUND REFERENCE TABLE',  self.reference_table_value);
 			      }
 						self.vc_data_bind(e);
 			      return;
@@ -3826,12 +3739,10 @@ Here is the tabs
 				 <v:after-data-bind>
 					<script><![CDATA[
 		        if (self.mode = 'table_edit' and  self.table_editor_page ='4'  ) {
-			     dbg_obj_print ('REFERENCE TABLE', self.reference_table_value);
 
 						    declare objs any;
 								declare i, len integer;
 								declare val varchar;
-								dbg_obj_print ('KIND', self.kind, self.table_name);
 								objs :=  xpath_eval('/tables/table/@name', self.objects, 0);
 								len := length (objs);
 								i := 0;
@@ -4016,9 +3927,7 @@ Here is the tabs
 
 
 			        difference := xddl_diff(xddl_get_base(), self.current_table);
-			        dbg_obj_print('Difference', difference);
 			        res := xddl_to_ddl(xddl_get_base(), xml_tree_doc(difference));
-			        dbg_obj_print('Exec', res);
 			        self.statements := res;
 				      self.mode := 'preview_xddl_table';
 				      self.table_name := table_name;
@@ -4068,7 +3977,6 @@ Here is the tabs
 			      declare  check_errors any;
 					  check_errors := vector();
 					  result :=  xddl_check_constraints_validation (self.current_table, self.sid,  check_errors);
-					  dbg_obj_print('CHECK RESULT', check_errors);
 					  if (result < 0) {
 					    self.exec_errors := check_errors;
 					    self.mode := 'xddl_constraint_error';
@@ -4077,7 +3985,6 @@ Here is the tabs
 					  }
 
 	               self.exec_errors := xddl_execute_statements(self.current_table, self.statements );
-	               dbg_obj_print('ERRORS ==', self.exec_errors);
 	               if (length(self.exec_errors) = 0) {
 	                     self.objects := xddl_attach_table_xml_tree(self.current_table, self.kind, self.objects);
                        self.mode := null;
@@ -4117,7 +4024,6 @@ Here is the tabs
           } else
                 table_name :=  cast ( xpath_eval('/table/@name',self.current_table) as varchar);
 
-					dbg_obj_print('Save ===', self.current_table );
 
 	        self.wrong_entry := null;
 	        if ( self.kind ='create' ) {
@@ -4133,7 +4039,6 @@ Here is the tabs
 			      declare  check_errors any;
 					  check_errors := vector();
 					  result :=  xddl_check_constraints_validation (self.current_table, self.sid,  check_errors);
-					  dbg_obj_print('CHECK RESULT', check_errors);
 					  if (result < 0) {
 					    self.exec_errors := check_errors;
 					    self.mode := 'xddl_constraint_error';
@@ -4242,11 +4147,8 @@ Here is the tabs
 			    return;
 		      }
 		      if (get_keyword('xddl_view_apply_command',params) is not null) {
-					  dbg_obj_print('VIEW CHANGED 1', xpath_eval(sprintf('/views/view[@name=\'%s\']', view_name ),  self.views) ,view_name );
 		        self.views :=  XMLUpdate(xml_tree_doc(self.views),sprintf('/views/view[@name=\'%s\']/text/text()', view_name ),  get_keyword('xddl_view_code_area',params)   );
-						dbg_obj_print('VIEW CHANGED 2', xpath_eval(sprintf('/views/view[@name=\'%s\']', view_name ), self.views) ,view_name );
 		     	  XMLAddAttribute(xpath_eval(sprintf('/views/view[@name=\'%s\']', view_name ), self.views), 2, 'mode', 'changed' );
-				dbg_obj_print('VIEW CHANGED', xpath_eval(sprintf('/views/view[@name=\'%s\']', view_name ), self.views) );
 
 		      self.mode := null;
 		      self.page := '2';
@@ -4853,7 +4755,6 @@ Here is the tabs
 				declare exit handler for sqlstate '*'
 				{
 					self.wrong_entry := sprintf(' Error. DAV resource %s has  no valid  xml  format.', load_path);
-					dbg_obj_print('NONE XML FILE');
 
 					http_request_status ('HTTP/1.1 302 Found');
 					http_header (sprintf('Location: xddl.vspx?mode=xddl_load&sid=%s&realm=%s\r\n',self.sid ,self.realm));
@@ -5197,13 +5098,11 @@ Here is the tabs
 			err_sqlstate := '00000';
 			res := get_keyword('xddl_statements_area',params);
 			res := trim(res);
-			dbg_obj_print ('Execute this', res);
 			self.exec_errors := vector();
 			if (res is not null and length(res) > 0) {
 			   flag := 1;
 			   while(flag = 1 and length(res) > 0) {
 			      pos := locate(';',res);
-			      dbg_obj_print('POsition is ', pos, length(res));
 			      if (pos > 0) {
 			        statement := substring(res, 1,  pos -1);
 				      if (locate(';', substring(res, pos + 1, length(res) - pos)) = 0 )
@@ -5214,10 +5113,8 @@ Here is the tabs
 			         statement := res;
 				       flag := 0;
 			      }
-			      dbg_obj_print('EXECUTE this ', statement);
 
 			      declare exit handler for sqlstate '*' {
-				      dbg_obj_print ('Error', __SQL_MESSAGE);
 				       err_msg := sprintf(' Execution Error: %s', __SQL_MESSAGE);
 				       self.exec_errors := vector_concat( self.exec_errors, vector(statement, err_msg));
 			      };
@@ -5228,7 +5125,6 @@ Here is the tabs
 			      }
 			   }
 			}
-			dbg_obj_print('Exec result', err_sqlstate, err_msg, m_dta, xq_res);
 			if (length(self.exec_errors) = 0 ) {
 		      self.mode := null;
 		      self.page := self.page_to_go_back;
@@ -5411,10 +5307,7 @@ Here is the tabs
                 if (get_keyword('exec_xddl_denied_update_command',params) ) {
 	                 declare obj xml_tree;
 	                     obj := xml_cut( xpath_eval(sprintf('/tables/table[@name = \'%s\']',table_name),  xddl_get_tables(sprintf('/table[@name = \'%s\']',table_name)) ) );
---				  dbg_obj_print('FOLLOWING table is loaded', obj);
---				  dbg_obj_print('FOLLOWING table is current',  xpath_eval(sprintf('/tables/table[@name = \'%s\']',table_name), self.objects ));
                  			self.objects := XMLUpdate(self.objects,sprintf('/tables/table[@name = \'%s\']',table_name), obj);
---				  dbg_obj_print('FOLLOWING table is updated',  xpath_eval(sprintf('/tables/table[@name = \'%s\']',table_name), self.objects ) );
                 }
 		      self.mode := null;
 		      self.page := self.page_to_go_back;
@@ -5522,7 +5415,6 @@ Here is the tabs
 		<v:before-data-bind>
 		 <script><![CDATA[
 		    if (self.mode = 'xddl_chooser' ) {
-						dbg_obj_print('Chooser------', self.mode,
 						self.chooser_browse_tables,
 						self.chooser_browse_views,
 						self.chooser_browse_procedures );
@@ -5546,7 +5438,6 @@ Here is the tabs
               self.chooser_schema := '%';
               self.chooser_mask := '%';
             }
-							dbg_obj_print('Filter Set',self.chooser_catalog, self.chooser_schema, self.chooser_mask);
 
             self.chooser_browse_tables :=  self.tables_en.ufl_selected;
             self.chooser_browse_views :=  self.views_en.ufl_selected;
@@ -5664,15 +5555,11 @@ Show Procedures
 		 <v:before-data-bind>
 			<script><![CDATA[
 			  control.ds_parameters := vector (self.chooser_catalog, self.chooser_schema, self.chooser_mask,  self.chooser_browse_tables, self.chooser_catalog, self.chooser_schema, self.chooser_mask, self.chooser_browse_views, self.chooser_catalog, self.chooser_schema, self.chooser_mask,  self.chooser_browse_procedures );
-        dbg_obj_print('DataSource before data bind ', self.chooser_catalog, self.chooser_schema );
-				dbg_obj_print('DataSource parameters ', control.ds_parameters );
 	    ]]></script>
 		 </v:before-data-bind>
 
 		 <v:after-data-bind>
 			<script><![CDATA[
-			dbg_obj_print('DataSource parameters ', control.ds_parameters );
-	-- dbg_obj_print('DataSource after data bind ', control.ds_rows_offs , control.ds_nrows , self.pages_data);
 		declare i, len integer;
 		declare d_vec any;
 		self.cur_page := control.ds_rows_offs / control.ds_nrows;
@@ -5682,7 +5569,6 @@ Show Procedures
 			if (self.cur_page =0 and ( length(self.pages_data) = 0) ) {
 			self.page_data := vector();
 			d_vec := control.ds_row_data;
-   		dbg_obj_print('First entry', d_vec);
 
 			len := length (d_vec);
 			i := 0;
@@ -5700,7 +5586,6 @@ Show Procedures
 
 			self.page_data := vector();
 			d_vec := control.ds_row_data;
-			dbg_obj_print('second entry', d_vec);
 			len := length (d_vec);
 			i := 0;
 			if (self.cur_page > ( length(self.pages_data) -1)  ) {
@@ -5718,10 +5603,6 @@ Show Procedures
 
 			self.datasource_entry :=0;
 		}
---		dbg_obj_print('---------------------------');
---		dbg_obj_print('Dataset' , self.cur_page, self.pages_data, 'cur PAGE ', self.page_data );
---		dbg_obj_print('---------------------------');
-		dbg_obj_print('Fetched', self.rows_fetched);
 
 	]]></script>
 		 </v:after-data-bind>
@@ -5768,7 +5649,6 @@ Show Procedures
 							o_state := aref(t_vec, n + 2);
 
 							if  (o_state = 1) {
-								--dbg_obj_print('Object== ', o_name, o_type);
 								if (o_type = 'T'  ) {
 									if (xpath_eval(sprintf('/tables/table[@name = \'%s\']',o_name), self.objects) is null ) {
 										obj := xddl_get_tables(sprintf('/table[@name = \'%s\']',o_name));
@@ -5796,7 +5676,6 @@ Show Procedures
 						}
 				 		i := i + 1;
 					}
-					dbg_obj_print('Existing objects --', self.chosen_existing_objects);
 					if (length(self.chosen_existing_objects) > 0) {
 		      self.mode := 'xddl_chooser_exists';
 		      self.vc_data_bind(e);
@@ -5839,7 +5718,6 @@ Show Procedures
 						}
 						self.pages_data := vector_concat(self.pages_data,  vector (self.page_data) );
 
-						--dbg_obj_print('Initialized = ', cnt + n_pages* 20 );
 						self.chooser_ds.vc_data_bind (e);
 				}
 				]]></script>
@@ -5911,7 +5789,6 @@ Show Procedures
 						<script><![CDATA[
 						 if ( self.mode = 'xddl_chooser' ) {
 							   declare flag_check integer;
-								 --	dbg_obj_print('Render', self.cur_page, length(self.pages_data) );
 								 if (length(self.pages_data) > 0) {
 									flag_check := aref( aref(self.pages_data, self.cur_page), (control.vc_parent as vspx_row_template).te_ctr*3 + 2);
 									if ( flag_check = 0) {
@@ -5994,7 +5871,6 @@ Show Procedures
             declare i, len integer;
             i := 0;
             len := length(self.chosen_existing_objects);
-            dbg_obj_print('Exts---------', len);
             http('<table><tr><td colspan="2">The following database objects are present in edit buffer:</td></tr>');
             while (i < len) {
               http('<tr><td>');

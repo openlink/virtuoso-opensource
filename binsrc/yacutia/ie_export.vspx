@@ -60,7 +60,6 @@
     </v:template>
     <v:template name="error_temp2" type="simple" enabled="-- equ(self.sql_stt, '')">
       <v:on-init>
-	dbg_obj_print (self.sql_stt, self.p_mode);
       </v:on-init>
   <v:template name="mode_temp1" type="simple" enabled="-- equ(self.p_mode, '1')">
       <v:form name="form1" type="simple" method="POST" action="ie.vspx?page=2">
@@ -268,7 +267,6 @@
                                           "PUMP"."DBA"."RETRIEVE_TABLES_VIA_PLSQL"(self.fqual, self.fuser, self.fname, 2)
                                             );
 
-                    dbg_obj_print('dbp_result', self.dbp_result);
                     self.p_mode := '2';
                   ]]></v:script>
                 </v:on-post>

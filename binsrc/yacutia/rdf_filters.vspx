@@ -30,7 +30,7 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
- <vm:pagetitle>RDF Mappers</vm:pagetitle>
+ <vm:pagetitle>RDF Cartridges</vm:pagetitle>
  <vm:pagewrapper>
     <vm:variables>
       <v:variable name="del_item" default="null" type="int" param-name="del"/>
@@ -38,13 +38,48 @@
       <v:variable name="step" default="0" type="int" persist="0"/>
     </vm:variables>
   <vm:menu>
-   <vm:menuitem value="RDF Mappers"/>
+   <vm:menuitem value="RDF Cartridges"/>
   </vm:menu>
-  <vm:header caption="RDF Mappers"/>
+  <vm:header caption="RDF Cartridges"/>
   <vm:pagebody>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
+		<!-- tab -->
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+                        <td class="page_tab_selected" align="center" nowrap="1">
+                          RDF Cartridges
+		        </td>
+			<?vsp if (check_package('rdf_mappers')) { ?>
+                        <td class="page_tab" align="center" nowrap="1">
+                          <v:url name="url1" value="GRDDL Mappings" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
+		        </td>
+                        <?vsp } ?>
+                        <td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td width="100%" >
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+		<!-- tab -->
             <table cellpadding='10' cellspacing='0' border='0' width='100%'>
               <tr>
 		  <td>
@@ -233,7 +268,7 @@ if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
 		      <v:item name="HTTP protocol" value="HTTP"/>
 		  </v:select-list><br />
 
-		  <label for="pl1">PL Function name</label>
+		  <label for="pl1">Cartridge Name</label>
 		  <v:text name="pl1" value="" xhtml_size="110" xhtml_id="pl1" error-glyph="*">
 		  </v:text><br />
 
@@ -292,7 +327,6 @@ opts := trim(self.opts1.ufl_value);
 opts := replace (opts, '\r', '\n');
 opts := replace (opts, '\n\n', '\n');
 opts := rtrim (opts, '\n');
---dbg_obj_print ('before',opts);
 if (length (opts))
   {
     opts := split_and_decode (opts, 0, '\0\0\n=');
@@ -357,6 +391,14 @@ self.maps.vc_data_bind (e);
                 </td>
               </tr>
             </table>
+	  <!-- end tab  -->
+      </td>
+  </tr>
+  </table>
+      </td>
+  </tr>
+  </table>
+		<!-- end tab -->
           </td>
         </tr>
       </table>

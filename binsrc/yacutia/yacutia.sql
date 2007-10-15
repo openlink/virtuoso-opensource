@@ -430,12 +430,13 @@ create procedure adm_menu_tree ()
   '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
      <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
    </node>',
-case when check_package('rdf_mappers') then
+case when 0 and check_package('rdf_mappers') then
   '<node name="GRDDL Mappings" url="sparql_filters.vspx"  id="190" tip="GRDDL " allowed="yacutia_message">
      <node name="GRDDL Mappings" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>' else '' end,
-   '<node name="RDF Mappers" url="rdf_filters.vspx"  id="191" tip="RDF Mappers " allowed="yacutia_message">
-     <node name="RDF Mappers" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
+   '<node name="RDF Cartridges" url="rdf_filters.vspx"  id="191" tip="RDF Mappers " allowed="yacutia_message">
+     <node name="RDF Cartridges" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
+     <node name="GRDDL Mappings" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>',
 '</node>
  <node name="NNTP" url="msg_news_conf.vspx"  id="157" tip="Mail and news messaging" allowed="yacutia_message">',
@@ -730,8 +731,6 @@ y_sql_user_password_check (in name varchar, in pass varchar)
   whenever not found goto nfu;
   select pwd_magic_calc (U_NAME, U_PASSWORD, 1), U_LOGIN_TIME into pass1, ltm from SYS_USERS where U_NAME = name and
       U_SQL_ENABLE = 1 and U_IS_ROLE = 0;
-
-  --dbg_obj_print ('vspx_nonce', nonce, ' digest:' , pass,' calc: ', md5 (nonce||pass1));
 
   if (length (nonce) and md5 (nonce||pass1) = pass)
     rc := 1;
@@ -1195,8 +1194,6 @@ adm_lt_getRPKeys2 (in dsn varchar,
     {
       declare exit handler for SQLSTATE '*'
         goto next;
---dbg_printf ('Calling sql_primary_keys:\ndsn: %s, tbl_qual: %s, tbl_user: %s, tbl_name: %s',
---            dsn, tbl_qual, tbl_user, tbl_name);
       pkeys := sql_primary_keys (dsn, tbl_qual, tbl_user, tbl_name);
     };
 next:
@@ -1240,7 +1237,6 @@ next:
       pkey_curr := aref (pkeys, idx);
 	       if (inx_name is null)
 	         inx_name := pkey_curr[5];
-	       --dbg_obj_print (inx_name, pkey_curr[5]);
 	       if (inx_name <> pkey_curr[5])
 	         goto pk_end;
       pkey_col := aref (pkey_curr, 8);
@@ -1256,7 +1252,6 @@ next:
     pkeys_len := 0;
   }
     }
-  --dbg_obj_print (my_pkeys);
   return my_pkeys;
 }
 ;
@@ -1316,21 +1311,10 @@ vdb_link_tables (in pref any,
       _r_tbl := aref (aref (tables, i), 0);
       _l_tbl := aref (aref (tables, i), 1);
 
-      --dbg_printf ('i: %d', i);
-      --dbg_printf ('table #%d:%s.%s.%s', i+1, _r_tbl[0], _r_tbl[1], _r_tbl[2]);
-
       tbl_key := aref (keys, i);
 
-      --dbg_obj_print ('tbl_key:', tbl_key);
 
       if (length (tbl_key) = 0) tbl_key := NULL;
-
---          {
---            dbg_printf ('No keys defined');
---            err_messages := vector_concat (err_messages,
---                                           vector ('Primary key definition is required.'));
---            goto error;
---          }
 
       tbl_qual := aref (_r_tbl, 0);
       tbl_user := aref (_r_tbl, 1);
@@ -1340,9 +1324,6 @@ vdb_link_tables (in pref any,
       n_qual := get_keyword (sprintf ('%s_catalog_%d', pref, i), params, '');
       n_user := get_keyword (sprintf ('%s_schema_%d', pref, i), params, '');
       n_name := get_keyword (sprintf ('%s_name_%d', pref, i), params, '');
-
-      --dbg_printf ('local  :%s.%s.%s', n_qual, n_user, n_name);
-      --dbg_obj_print (n_qual,n_user,n_name, rname);
 
       if (n_qual = '' or n_user = '' or n_name = '')
         {
@@ -1360,8 +1341,6 @@ vdb_link_tables (in pref any,
       sql_stt := '00000';
       sql_stt1 := '00000';
       sql_msg := '';
-
-      --dbg_printf ('Attaching.');
 
       exec ('DB.DBA.vd_attach_view (?, ?, ?, ?, ?, ?, 1)',
               sql_stt,
@@ -1431,8 +1410,6 @@ vdb_link_procedures (in params any,
         stmt := sprintf ('attach procedure "%I"."%I" (', o, n);
 
       pars := aref (procs, j + 6);
-
-      --dbg_obj_print ('PARS', pars);
 
       declare br integer;
 
@@ -1514,7 +1491,6 @@ vdb_link_procedures (in params any,
         {
           st := '00000';
           exec (stmt, st, msg);
-          --dbg_obj_print('REMOTE PROCEDURE attach', stmt);
         }
 
       if (st <> '00000')
@@ -2469,7 +2445,6 @@ db.dba.dav_browse_proc1 (in path varchar,
 
       if (search_type = 0)
 	{
-	  --dbg_obj_print ('case 1');
 	  exec (concat ('select * from Y_DAV_DIR where path = ? and recursive = ? and auth_uid = ? ', ord),
 	     stat, msg, vector (path, 1, cur_user), 0, mdt, dirlist);
 	  -- old behaviour
@@ -2477,10 +2452,8 @@ db.dba.dav_browse_proc1 (in path varchar,
 	}
       else
 	{
-	  --dbg_obj_print ('case 2');
 	  exec (concat ('select * from Y_DAV_DIR where path = ? and recursive = ? and auth_uid = ? ', ord),
 	     stat, msg, vector (path, 0, cur_user), 0, mdt, dirlist);
-	  --dbg_obj_print (dirlist);
 	  -- old behaviour
           -- dirlist := YACUTIA_DAV_DIR_LIST (path, 0, cur_user);
 	}
@@ -3899,7 +3872,6 @@ dav_check_permissions (in user_name varchar,
       if (dav_folder_owner = user_id)
         {
        ; -- You are owner of this folder
-          --dbg_obj_print('You are owner of this folder');
 
           i:= 0;
 
@@ -3924,7 +3896,6 @@ dav_check_permissions (in user_name varchar,
       if (dav_folder_group = g_id)
         {
     ; -- you are member if group, to which this folder belongs.
-          --dbg_obj_print('you are member if group, to which this folder belongs.');
 
           i:= 0;
 
@@ -3951,7 +3922,6 @@ dav_check_permissions (in user_name varchar,
                    where GI_SUPER=user_id and GI_SUB = dav_folder_group ))
         {
       ; --  group, to which folder belongs , is granted to you
-          --dbg_obj_print('  group, to which folder belongs , is granted to you');
 
           i:= 0;
 
@@ -3974,7 +3944,6 @@ dav_check_permissions (in user_name varchar,
             return 1;
         }
     -- You are among others
-      --dbg_obj_print('You are among others');
 
       i:= 0;
 
@@ -4065,9 +4034,6 @@ get_sql_tables (in dsn varchar,
   cat_list := vector ();
   sch_list := vector ();
 
-  --dbg_printf ('get_sql_tables: \ndsn: %s\ncat: %s\nsch: %s\nmsk: %s\ntpe: %s\n',
-  --            dsn, cat, sch, table_mask, obj_type);
-
   if (cat ='%' or sch = '%')
     {
        key_list := sql_tables (dsn, null, null, null, null);
@@ -4090,8 +4056,6 @@ get_sql_tables (in dsn varchar,
   else
     cat_list := vector_concat (cat_list, vector(cat));
 
---  dbg_obj_print (cat_list);
-
   if (sch = '%')
     {
       i := 0; len :=  length (key_list);
@@ -4106,8 +4070,6 @@ get_sql_tables (in dsn varchar,
     }
   else
     sch_list := vector_concat (sch_list, vector (sch));
-
---  dbg_obj_print (sch_list);
 
    -- now  fetch all records
 
@@ -4128,7 +4090,6 @@ get_sql_tables (in dsn varchar,
          {
 	   declare tbls any;
            c_sch := aref (sch_list, j);
-           --dbg_printf ('extracting from schema: %s', c_sch);
 	   if (c_cat = '%')
 	     c_cat := null;
 	   tbls := sql_tables (dsn, c_cat, c_sch, null, obj_type);
@@ -4150,7 +4111,6 @@ get_sql_tables (in dsn varchar,
          }
        i:= i + 1;
      }
---   dbg_obj_print (tables_list);
    return tables_list;
 }
 ;
@@ -4633,7 +4593,6 @@ create procedure www_tree (in path any)
       declare hp_opts, url_rew any;
 
       hp_opts := deserialize (HP_OPTIONS);
-      --dbg_obj_print (hp_opts);
       if (not isarray (hp_opts))
 	hp_opts := vector ();
 
@@ -4924,7 +4883,6 @@ create procedure y_execute_xq (in q any, in root any, in base any, in url any, i
   ses := string_output ();
   foreach (any elm in res) do
     {
-      --dbg_obj_print (xml_tree_doc_media_type (elm));
       if (isentity (elm))
         {
 	  xml_tree_doc_set_output (elm, 'xml');

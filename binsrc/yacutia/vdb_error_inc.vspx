@@ -41,7 +41,6 @@
         <v:button action="simple" name="OK" value="OK">
     <v:on-post>
       <v:script><![CDATA[
-      dbg_obj_print(sprintf('return path: %s',self.return_path));
 --      http_request_status ('HTTP/1.1 302 Found');
 --      http_header (sprintf('Location: %s\r\n', self.return_path));
       self.sql_stt := '';

@@ -66,7 +66,6 @@
    <v:template name="editor_template" type="simple" condition="(get_keyword('mode', control.vc_page.vc_event.ve_params) is null ) ">
     <v:before-data-bind>
         <v:script><![CDATA[ -- here we need to check the file type (xml/text - by its content analysis)
-            dbg_obj_print('BEFORE BIND TEMPLATE', self.load_from_mode);
             if (self.load_from_type ='xml') {
           	    self.xml_source_tree := null;
              	     if (self.load_from_mode='1') {
@@ -133,9 +132,6 @@
           return;
       }
                inifile_array := vector();
-               -- dbg_obj_print('DataBASE ARRAY ', self.Database_array);
-               -- dbg_obj_print('Parameters ARRAY ', self.Parameters_array);
-
                inifile_array := vector_concat(inifile_array , vector('Database', self.Database_array));
                inifile_array := vector_concat(inifile_array , vector('Parameters', self.Parameters_array));
                inifile_array := vector_concat(inifile_array , vector('HTTPServer', self.HTTPServer_array));
@@ -146,7 +142,6 @@
 
                 -- here done
                  self.inifile_array := inifile_array;
-                 -- dbg_obj_print('RESULT ',  self.inifile_array );
 
       if (get_keyword('saveas', params) is not null) {
                   http_request_status ('HTTP/1.1 302 Found');
@@ -159,8 +154,6 @@
           return;
       }
       if (get_keyword('revert', params) is not null) {
-                 dbg_obj_print( 'REVERT' );
-
                   http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: inifile.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page', params), self.sid ,self.realm));
           return;
@@ -285,7 +278,6 @@
     <v:after-data-bind>
         <v:script><![CDATA[ -- here we need to assign the file name to be loaded from  and check the file type (xml/text be its contnt analysis)
         if (get_keyword('softSubmit', params) is not null) {
-          dbg_obj_print('HERE WE WILL REDIRECT', get_keyword('softSubmit', params));
                   http_request_status ('HTTP/1.1 302 Found');
           http_header (sprintf('Location: inifile.vspx?what=redirect&page=%s&sid=%s&realm=%s\r\n', get_keyword('softSubmit', params), self.sid ,self.realm));
           return;
@@ -320,7 +312,7 @@
 
             {
               declare exit handler for sqlstate '*'
-                {   dbg_obj_print('RAW TEXT file', from_file);
+                {
                   if (cfg_item_value (from_file  ,'Database' ,'DatabaseFile' ) is not null)  {
                     self.load_from_file :=  from_file;
                               self.load_from_mode := from_mode;
@@ -335,7 +327,6 @@
                     return;
                   }
                 };
-                dbg_obj_print('CHECK THE FILE');
                   xml_tree := xtree_doc (file_to_string (from_file));
             }
 
@@ -349,7 +340,6 @@
                 };
                   xpath_result:= cast ( xpath_eval('/inifile/section/@name',xml_tree) as varchar);
             }
-            dbg_obj_print('HERE IS OK', xpath_result );
               self.load_from_file :=  from_file;
                         self.load_from_mode := from_mode;
               if (  xpath_result  is not null  )
@@ -369,20 +359,17 @@
               http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
               return;
              }
-             dbg_obj_print('LOADING FROM FILE',from_file);
 
             select blob_to_string (RES_CONTENT) into xml_file from WS.WS.SYS_DAV_RES where RES_FULL_PATH = from_file;
             {
               declare exit handler for sqlstate '*'
                 {
                     self.error_message:= sprintf(' from dav. DAV resource %s has  no valid  xml  format.', from_file);
-                    dbg_obj_print('NONE XML FILE');
 
                             http_request_status ('HTTP/1.1 302 Found');
                     http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
                     return;
                 };
-                dbg_obj_print('CHECK THE FILE');
 
                 xml_tree := xtree_doc (xml_file );
 
@@ -393,14 +380,12 @@
                 {
 
                   self.error_message:= sprintf(' from dav. DAV resource %s has  no valid  xml format.',from_file);
-                  dbg_obj_print('XPATH ERROR');
 
                           http_request_status ('HTTP/1.1 302 Found');
                   http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
                   return;
                 };
                   xpath_result:= cast ( xpath_eval('/inifile/section/@name',xml_tree) as varchar);
-                dbg_obj_print(' DONE CHECK');
 
             }
             if (xpath_result  is not null  )  {
@@ -408,7 +393,6 @@
                         self.load_from_mode := from_mode;
                 self.load_from_type := 'xml';
              } else {
-                dbg_obj_print(' WRONG XML FORMAT');
                   self.error_message:= sprintf(' from dav. DAV resource %s has  no valid  xml format.',from_file);
                           http_request_status ('HTTP/1.1 302 Found');
                   http_header (sprintf('Location: inifile.vspx?mode=error&what=load&section=%s&sid=%s&realm=%s\r\n',get_keyword('section', params), self.sid ,self.realm));
@@ -502,22 +486,17 @@
                         pars := aref(self.inifile_array, i +1);
 
                         parcnt := length(pars);
-                        -- dbg_obj_print('First',section_name, pars);
                          par_i := 0;
                          par_buf := '';
                          while (parcnt > par_i) {
                           parameter_name := aref(pars, par_i);
                           if (aref(pars, par_i +1) = 0) {
-                            -- dbg_obj_print('text1');
                             parameter_value := aref(pars, par_i +2);
-                            -- dbg_obj_print('text2');
                           } else if (aref(pars, par_i +1) = 1) {
                             declare n, num integer;
 
                             tmp_vec := aref(pars, par_i +2);
-                            -- dbg_obj_print('text3', tmp_vec);
                             num :=  length(tmp_vec);
-                            -- dbg_obj_print('Second');
 
                             n := 0;
                             tmp_buf := '';
@@ -546,14 +525,11 @@
                         xml_file := concat(xml_file, section_buf);
                         i := i +2;
                       }
-                      dbg_obj_print(xml_file);
-                      dbg_obj_print('\n',  txt_file );
                       if (  get_keyword('save_dst', params) = '1') {
                         declare file_name varchar;
                         self.load_from_mode :='1';
                         file_name := get_keyword('file_dst', params);
                         self.load_from_file := file_name;
-                        dbg_obj_print( file_name );
                         if (file_name is not null and file_name <> '') {
                           if (self.load_from_type='text')
                             string_to_file( file_name , txt_file ,-2);
@@ -565,7 +541,6 @@
                         self.load_from_mode :='2';
                         file_name := get_keyword('dav_dst', params);
                         self.load_from_file := file_name;
-                        dbg_obj_print( file_name );
                         if (file_name is not null and file_name <> '') {
                           if (self.load_from_type='text')
                             DAV_RES_UPLOAD (file_name , txt_file , 'text/xml','111000001R', 'dav', 'dav','dav','dav');
@@ -655,7 +630,6 @@
                       declare pars, tmp_vec any;
                       declare txt_file, xml_file, section_buf, par_buf, tmp_buf, file_type varchar;
                       cnt := length (self.inifile_array);
-                      dbg_obj_print( 'Save 0 ' );
                       i := 0;
                       xml_file := '';
                       txt_file := '';
@@ -667,16 +641,13 @@
                         section_buf := concat(section_buf,  section_name) ;
                         section_buf := concat(section_buf,'">\n');
                         pars := aref(self.inifile_array, i +1);
-                        dbg_obj_print( 'Save 1 ' );
                         parcnt := length(pars);
 
                          par_i := 0;
                          par_buf := '';
                          while (parcnt > par_i) {
                           parameter_name := aref(pars, par_i);
-				dbg_obj_print( 'Save 2 mode  ', parameter_name ,'  flag  ' ,   aref(pars, par_i +1));
                           if (aref(pars, par_i +1) = 0) {
-                            dbg_obj_print( 'Save 2a  ' );
                             parameter_value := aref(pars, par_i +2);
 
                           } else if (aref(pars, par_i +1) = 1) {
@@ -685,8 +656,6 @@
                             tmp_vec := aref(pars, par_i +2);
 
                             num :=  length(tmp_vec);
-
-                        	dbg_obj_print( 'Save 2b  ' );
 
                             n := 0;
 
@@ -701,9 +670,7 @@
                             }
                             parameter_value := tmp_buf;
                           }
-                           dbg_obj_print( 'Save 211  ', parameter_name, '  ',  parameter_value);
                           txt_file := concat(txt_file, parameter_name , '=' ,parameter_value, '\n');
-                          dbg_obj_print( 'Save 21  ' );
 
                           par_buf := concat(par_buf, '\t<parameter name="');
                         par_buf := concat(par_buf, parameter_name ,'" value="') ;
@@ -712,20 +679,14 @@
                          }
                         txt_file := concat(txt_file, '\n');
 
-                         dbg_obj_print( 'Save 22 ' );
 
                          section_buf := concat(section_buf,par_buf);
-                         dbg_obj_print( 'Save 23 ' );
 
                         section_buf := concat(section_buf,'</section>\n');
-                        dbg_obj_print( 'Save 24 ' );
 
                         xml_file := concat(xml_file, section_buf);
-                        dbg_obj_print( 'Save 3 ' );
                         i := i +2;
                       }
-                      dbg_obj_print(xml_file);
-                      dbg_obj_print('\n',  txt_file );
 
                       if (  self.load_from_mode ='1') {
                         declare file_name varchar;
@@ -861,7 +822,6 @@
 <xsl:variable name="default" select="@default"/>
 
               <![CDATA[
-                   -- dbg_obj_print(']]><xsl:value-of select="$section_name"/><![CDATA[' ,']]><xsl:value-of select="$parname"/><![CDATA[' );
 
               ]]>
 <xsl:choose>
@@ -878,9 +838,7 @@
 
                     if (var is null or ( var is not null and  length(var) = 0) ) {
                           var := ']]><xsl:value-of select="$default"/><![CDATA[';
-	                   dbg_obj_print('load DEFAULT value  ', var );
-                    } else
-                          dbg_obj_print('load GET PARS ',virtuoso_ini_path() ,']]><xsl:value-of select="$section_name"/><![CDATA[' ,']]><xsl:value-of select="$parname"/><![CDATA[', var );
+                    }
 
                    datavector := self.]]><xsl:value-of select="$section_name"/><![CDATA[_array;
                    if ( datavector is null) {
@@ -920,8 +878,6 @@
 
 		      parameter := ']]><xsl:value-of select="$parname"/><![CDATA[';
 
-                   dbg_obj_print('RADIO',']]><xsl:value-of select="$section_name"/><![CDATA[' ,']]><xsl:value-of select="$parname"/><![CDATA[', var );
-
        	        datavector := self.]]><xsl:value-of select="$section_name"/><![CDATA[_array;
              		 if ( datavector is null) {
                     		 datavector := vector(parameter, 0, var);
@@ -944,7 +900,6 @@
 		                      }
                       }
                       self.]]><xsl:value-of select="$section_name"/><![CDATA[_array := datavector ;
-  			dbg_obj_print('End RADIO', datavector );
 }         ]]>
    </xsl:when>
   <xsl:when test="control[@type='checkbox']">
@@ -978,10 +933,8 @@
 			                  tmp := trim(substring(var, prev, cur - prev));
 			                  prev:= pos;
 			                  check_items := vector_concat(check_items, vector(tmp) );
-			                  -- dbg_obj_print('CHECKED ', tmp);
              			  }
              			  check_items_len := length(check_items);
-             			  -- dbg_obj_print('CHECKED ', check_items);
                     }
 
          ]]>
@@ -1056,9 +1009,7 @@
                    }
                     if (var is null or ( var is not null and  length(var) = 0) ) {
                           var := ']]><xsl:value-of select="$default"/><![CDATA[';
-	                   dbg_obj_print('load DEFAULT value  ', var );
-                    } else
-                          dbg_obj_print('load GET PARS ',virtuoso_ini_path() ,']]><xsl:value-of select="$section_name"/><![CDATA[' ,']]><xsl:value-of select="$parname"/><![CDATA[', var );
+                    }
 
                    datavector := self.]]><xsl:value-of select="$section_name"/><![CDATA[_array;
                    if ( datavector is null) {
@@ -1113,7 +1064,6 @@
                  declare var  varchar;
                  if (get_keyword('mode', control.vc_page.vc_event.ve_params)  is null) {
                   var := cfg_item_value (concat(virtuoso_ini_path()) ,']]><xsl:value-of select="$section_name"/><![CDATA[' ,']]><xsl:value-of select="$parname"/><![CDATA[' );
-                  dbg_obj_print('CHECK DEFAULT value', var);
          if (var is null or ( var is not null and  length(var) = 0) )
                    http('<span class="AttentionText">(default)</span>');
       }
@@ -1167,9 +1117,7 @@
 
              } else  if (get_keyword(controlname,params) is not null ) {
                    control.ufl_value := get_keyword(controlname,params);
-                   -- dbg_obj_print('POST for  ', controlname,  control.ufl_value);
                    control.vc_data_bound := 1;
-	            --  dbg_obj_print ('VALUE SET', ']]><xsl:value-of select="{concat($section_name,'_' ,$parname)}"/><![CDATA[' , control.ufl_value);
                    datavector := self.]]><xsl:value-of select="$section_name"/><![CDATA[_array;
                    if ( datavector is null) {
                     	datavector := vector(parameter, control.ufl_value);
@@ -1236,7 +1184,6 @@
 
 		                    	    control.vc_data_bound := 1;
 		             		           par_found := 1;
-		             		           dbg_obj_print('RADIO ', controlname, control.ufl_selected );
              			         }
 		                      i := i +3;
 	                    }
@@ -1440,9 +1387,7 @@
 
              } else  if (get_keyword(controlname,params) is not null ) {
                    control.ufl_value := get_keyword(controlname,params);
-                   -- dbg_obj_print('POST for  ', controlname,  control.ufl_value);
                    control.vc_data_bound := 1;
-	            --  dbg_obj_print ('VALUE SET', ']]><xsl:value-of select="{concat($section_name,'_' ,$parname)}"/><![CDATA[' , control.ufl_value);
                    datavector := self.]]><xsl:value-of select="$section_name"/><![CDATA[_array;
                    if ( datavector is null) {
                     	datavector := vector(parameter, control.ufl_value);

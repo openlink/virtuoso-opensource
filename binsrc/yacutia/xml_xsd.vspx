@@ -31,7 +31,6 @@
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <v:on-init>
     <script><![CDATA[
-    dbg_obj_print('On Init');
   ]]></script>
   </v:on-init>
   <vm:pagetitle>XML Schema Validation</vm:pagetitle>
@@ -95,7 +94,6 @@
                 {
                   declare result,doc_base, doc, xml_schema,xml_doc, valid_declaration, folders_message  varchar;
 		 if (get_keyword('b_execute',params) is not null)  {
-                  dbg_obj_print('PROCESS XML Schema Validation');
                   doc_base := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:';
                   doc := get_keyword('doc_path',params);
                   xml_schema := get_keyword('schema_path',params);
@@ -115,7 +113,6 @@
                        goto try_again;
                     }
 
-		  dbg_obj_print('Here come------------------');
                   valid_declaration := concat('Validation=',get_keyword('Validation',params));
                   valid_declaration := concat(valid_declaration,' AttrCompletion=',get_keyword('AttrCompletion',params));
                   valid_declaration := concat(valid_declaration,' AttrMisFormat=',get_keyword('AttrMisFormat',params));
@@ -151,7 +148,6 @@
                       };
 
                       if (doc= '' or not exists(select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = doc))     {
-                        dbg_obj_print ('Error at content request found');
                         self.validation_result:= 'Xml Document does not exist.';
                            self.xml_valid_page_mode := 'result';
 			   self.xml_valid_result := 'error';
@@ -162,7 +158,6 @@
                     }
                       declare exit handler for sqlstate '*'
                       {
-                        dbg_obj_print ('Error at validation', __SQL_MESSAGE);
                            self.validation_result:= sprintf('Error at validation: %s', __SQL_MESSAGE);
                            self.xml_valid_page_mode := 'result';
 			   self.xml_valid_result := 'error';
@@ -171,7 +166,6 @@
                       };
                   result := xml_validate_schema (xml_doc , 0, xml_schema, 'UTF-8', 'x-any',valid_declaration);
 
-                  dbg_obj_print('RESULT FOR ',valid_declaration, ' IS ', result);
                   self.validation_result := result;
                   if (result = '') {
                            self.xml_valid_page_mode := 'result';
@@ -767,7 +761,6 @@
                          }
                       }
 
-		      -- dbg_obj_print('************To save config file', self.validation_result, xml_tree_doc(self.validation_result));
 		      result := DAV_RES_UPLOAD (save_path, self.validation_result, 'text/xml','110100100R', 'dav', 'dav','dav','dav');
                       self.xml_valid_page_mode := null;
 		      self.vc_data_bind(e);

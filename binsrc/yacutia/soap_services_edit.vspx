@@ -1818,7 +1818,6 @@
 				if (length (descr))
 				  {
             				    DAV_PROP_REMOVE (sp, 'xml-sql-description', 'dav', dav_pwd);
-            				    dbg_obj_print(DAV_PROP_SET_INT (sp, 'xml-sql-description', descr, 'dav', null, 0));
 		                    exis := coalesce (DAV_PROP_GET (sp, 'xml-soap-method', 'dav', dav_pwd), '');
 				    if (isstring (exis) and __proc_exists (exis) is not null)
 				      {

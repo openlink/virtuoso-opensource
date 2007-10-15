@@ -141,7 +141,6 @@
                         s := (control.vc_parent as vspx_row_template).te_rowset[0];
 			a := (control.vc_parent as vspx_row_template).te_rowset[1];
                         _stat := '00000';
-                        dbg_obj_print(s, a);
                         exec(sprintf('DB.DBA.SUB_SCHEDULE(''%s'', ''%s'', 0)', s, a), _stat, _msg);
                         if (_stat <> '00000')
                           self.error_str := concat(self.error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
@@ -251,7 +250,6 @@
           <tr>
             <td>
               <?vsp
-                dbg_obj_print(self.error_str);
                 http(self.error_str);
                 self.error_str := '';
               ?>

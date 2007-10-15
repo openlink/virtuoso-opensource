@@ -110,16 +110,9 @@
 	    <![CDATA[
 declare params any;
 params := e.ve_params;
-dbg_printf ('*** VDB: vdb_dsn_main_template (before-data-bind)');
-dbg_printf ('self.page: %d', self.page);
-
-if (e.ve_button) dbg_printf ('Submit came from %s', e.ve_button.vc_name);
 
               if (self.dsn_list is null)
                 {
-
-dbg_printf ('  dsn_list is null, generating');
-
                   declare dsns, dsnsu, profile any;
                   declare  dsn, dsnd,  drv, page, driver, host varchar;
                   declare len, idx, con_state, n, sz integer;
@@ -357,9 +350,6 @@ dbg_printf ('  dsn_list is null, generating');
               declare n, len, p, p1 integer;
               declare ds_name varchar;
 
-dbg_printf ('*** VDB: vdb_dsn_main_template before-render');
-dbg_printf ('self.page: %d', self.page);
-
               self.linked_objects := vector ();
 
               if (self.res_current_dsn = '%')
@@ -545,7 +535,6 @@ dbg_printf ('self.page: %d', self.page);
             <v:on-post>
               <v:script>
                 <![CDATA[
-dbg_printf ('Linked resources filter form on-post');
     self.res_current_dsn := get_keyword ('res_dsn_list_control', params);
     self.res_name_mask :=  get_keyword ('res_mask_of_name', params);
     if (get_keyword ('res_tables_en', params) is not null)
@@ -561,7 +550,6 @@ dbg_printf ('Linked resources filter form on-post');
       self.res_procs_flag := 1;
     else
       self.res_procs_flag := 0;
-dbg_printf ('flags now: tbls: %d, views: %d, procs: %d', self.res_tables_flag, self.res_views_flag, self.res_procs_flag);
                 ]]>
               </v:script>
             </v:on-post>
@@ -791,8 +779,6 @@ return;
             <table class="listing">
               <tr class="listing_head_row">
                 <?vsp
---dbg_printf ('OK. We''re rendering the linked objects list');
---dbg_printf ('flags now: tbls: %d, views: %d, procs: %d', self.res_tables_flag, self.res_views_flag, self.res_procs_flag);
                 if (length (self.linked_objects) > 0)
 		http ('<th><INPUT type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>All</th><th>Type</th><th>Local name</th><th>DSN</th><th>Remote name</th><th> </th>');
                 else
@@ -919,12 +905,6 @@ else
         <v:before-data-bind>
           <v:script>
             <![CDATA[
-dbg_printf ('In vdb_dsn_resources_template');
-dbg_printf ('self.page: %d', self.page);
-dbg_printf ('\tcurrent_dsn: %s', self.current_dsn);
-dbg_printf ('\tcurrent_catalog: %s', self.current_catalog);
-dbg_printf ('\tcurrent_schema: %s', self.current_schema);
-
 declare exit handler for sqlstate '*'
   {
                   self.vc_error_message := sprintf ('%s',__SQL_MESSAGE);
@@ -962,7 +942,6 @@ declare exit handler for sqlstate '*'
                     {
                       if  (self.page_back = 0)
                         {
-dbg_printf ('Setting page to -1');
                           self.page := -1;
                           self.vc_data_bind (e);
                           return;
@@ -1154,10 +1133,6 @@ if (self.page = 0)
       declare i, len, n, sz, is_found integer;
       declare v varchar;
 
-dbg_printf ('Generating catalog list');
-dbg_printf ('Current catalog: %s', self.current_catalog);
-dbg_printf ('Current schema:  %s', self.current_schema);
-
       control.vsl_items := vector ('All');
       control.vsl_item_values:= vector ('%');
       control.vsl_selected_inx := 0;
@@ -1191,8 +1166,6 @@ dbg_printf ('Current schema:  %s', self.current_schema);
                                             <v:before-data-bind>
                                               <v:script>
                                                 <![CDATA[
-dbg_printf ('in schema-list before-data-bind');
-
   if (self.page = 0 and self.current_dsn is not null)
     {
       declare key_list any;
@@ -1336,7 +1309,6 @@ dbg_printf ('in schema-list before-data-bind');
           if (get_keyword ('link_all_tables', params) is null)
             {
               _param := get_keyword (sprintf ('cbu_%d', i), self.vc_page.vc_event.ve_params, '');
-dbg_printf ('_param: %s', _param);
               if (_param <> '')
                 _data := deserialize (decode_base64 (_param));
               else
@@ -1828,8 +1800,6 @@ if (self.page = 1)
                               self.vc_data_bind(e);
                               return;
                             };
---dbg_printf ('Calling vd_remote_data_source with dsn: %s, login: %s, pwd: %s',
---            dsn_name, self.ds_login, ds_pwdn);
 
                           vd_remote_data_source (dsn_name, '', self.ds_login, ds_pwdn);
                         }
@@ -1887,7 +1857,6 @@ if (self.page = 1)
             declare i, n, j, k integer;
             declare objects any;
             declare ds_name varchar;
-	    --dbg_obj_print (self.to_unlink_objects);
             n := length(self.to_unlink_objects);
             i := 0;
             while (i < n)
@@ -2066,8 +2035,6 @@ declare cols, tmp_vec any;
 declare col_name, col_type, col_mode varchar;
 declare _r_tbl, _l_tbl any;
 declare pref any;
-
---dbg_obj_print (self.s_views);
 
 len := length (self.s_tables);
 vlen := length (self.s_views);
@@ -2334,8 +2301,6 @@ vdb_link_tables ('v',
                  self.s_views,
                  self.pks_v,
                  errs);
-
-dbg_obj_print (errs);
 
 if (length (errs))
   {

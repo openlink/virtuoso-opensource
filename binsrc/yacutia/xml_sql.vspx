@@ -248,7 +248,6 @@ will be removed permanently.
 				       self.owner.vs_set_selected ();
 				       self."group".ufl_value := gname;
 				       self."group".vs_set_selected ();
-				       --dbg_obj_print (uname, self.owner.vsl_items, self.owner.vsl_selected_inx);
 
 				       self.save_path.ufl_value := pat;
 				       self.replace_existing.ufl_selected := 1;
@@ -816,7 +815,6 @@ will be removed permanently.
 						     r_node );
 
 
-			       dbg_obj_print (query_text);
 			       query_text := sprintf('select xquery_eval (%s, xtree_doc (\'<q/>\'), 0)',
 				  WS.WS.STR_SQL_APOS (query_text) );
 				 err_sqlstate := '00000';
@@ -832,7 +830,6 @@ will be removed permanently.
 				   signal (err_sqlstate, err_msg);
 				 }
 
-			       -- dbg_obj_print ('RES-ULT',  aref (aref (xquery_eval_result, 0),0) );
 
 			       st := string_output ();
 

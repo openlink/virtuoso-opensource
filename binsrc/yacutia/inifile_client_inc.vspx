@@ -36,7 +36,6 @@
 		  declare src_xml, src_xslt,res, path  varchar;
 		  declare xml_tree,xslt_tree,pars, xml_tree_doc any;
 		  declare vspx any;
-                dbg_obj_print(&#39;Begin&#39;);
 
 		  if (self.vc_is_valid = 0 ) return;
  		  rel_path:=&#39;/&#39;;
@@ -54,7 +53,6 @@
                 tmp_value:=&#39;&#39;;
                 res_xml := &#39;&lt;section name=&quot;Client&quot;&gt;&#39;;
                 while (n &lt; len) {
-                  dbg_obj_print(aref(params,n), aref(params,n+1));
                   if (tmp = aref(params,n)) {
                     if (length(tmp_value) &gt; 0)
                         tmp_value:= concat(tmp_value,&#39;, &#39;);
@@ -238,7 +236,6 @@
 				  	   tree := xtree_doc (file_to_string (path));
 			                value:= &#39;1&#39;;
      			                var := cast ( xpath_eval(&#39;/inifile/section[@name=&#39;&#39;Client&#39;&#39;]/parameter[@name=&#39;&#39;SQL_NO_CHAR_C_ESCAPE&#39;&#39;]/@value&#39;,tree) as varchar);
-				          --  dbg_obj_print(concat(&#39;Name is &#39;, control.vc_name, &#39; Control value is=|&#39; ,control.ufl_value , &#39;|   Value = |&#39;,sprintf(&#39;%s&#39;,var),&#39;|&#39;));
 				          control.ufl_selected:= 0;
      			                if (length(var) &gt; 0 ) {
 						   pos:=1;
@@ -253,7 +250,6 @@
 							}
 						      tmp := trim(substring(var, prev, cur - prev));
 						      prev:= pos;
-							-- dbg_obj_print(tmp);
 	 			                   if (tmp = value)
 						                  control.ufl_selected:= 1;
 						   }
@@ -290,7 +286,6 @@
 				  	   tree := xtree_doc (file_to_string (path));
 			                value:= &#39;1&#39;;
      			                var := cast ( xpath_eval(&#39;/inifile/section[@name=&#39;&#39;Client&#39;&#39;]/parameter[@name=&#39;&#39;SQL_UTF8_EXECS&#39;&#39;]/@value&#39;,tree) as varchar);
-				          --  dbg_obj_print(concat(&#39;Name is &#39;, control.vc_name, &#39; Control value is=|&#39; ,control.ufl_value , &#39;|   Value = |&#39;,sprintf(&#39;%s&#39;,var),&#39;|&#39;));
 				          control.ufl_selected:= 0;
      			                if (length(var) &gt; 0 ) {
 						   pos:=1;
@@ -305,7 +300,6 @@
 							}
 						      tmp := trim(substring(var, prev, cur - prev));
 						      prev:= pos;
-							-- dbg_obj_print(tmp);
 	 			                   if (tmp = value)
 						                  control.ufl_selected:= 1;
 						   }
@@ -342,7 +336,6 @@
 				  	   tree := xtree_doc (file_to_string (path));
 			                value:= &#39;1&#39;;
      			                var := cast ( xpath_eval(&#39;/inifile/section[@name=&#39;&#39;Client&#39;&#39;]/parameter[@name=&#39;&#39;SQL_BINARY_TIMESTAMP&#39;&#39;]/@value&#39;,tree) as varchar);
-				          --  dbg_obj_print(concat(&#39;Name is &#39;, control.vc_name, &#39; Control value is=|&#39; ,control.ufl_value , &#39;|   Value = |&#39;,sprintf(&#39;%s&#39;,var),&#39;|&#39;));
 				          control.ufl_selected:= 0;
      			                if (length(var) &gt; 0 ) {
 						   pos:=1;
@@ -357,7 +350,6 @@
 							}
 						      tmp := trim(substring(var, prev, cur - prev));
 						      prev:= pos;
-							-- dbg_obj_print(tmp);
 	 			                   if (tmp = value)
 						                  control.ufl_selected:= 1;
 						   }
@@ -394,7 +386,6 @@
 				  	   tree := xtree_doc (file_to_string (path));
 			                value:= &#39;1&#39;;
      			                var := cast ( xpath_eval(&#39;/inifile/section[@name=&#39;&#39;Client&#39;&#39;]/parameter[@name=&#39;&#39;SQL_NO_SYSTEM_TABLES&#39;&#39;]/@value&#39;,tree) as varchar);
-				          --  dbg_obj_print(concat(&#39;Name is &#39;, control.vc_name, &#39; Control value is=|&#39; ,control.ufl_value , &#39;|   Value = |&#39;,sprintf(&#39;%s&#39;,var),&#39;|&#39;));
 				          control.ufl_selected:= 0;
      			                if (length(var) &gt; 0 ) {
 						   pos:=1;
@@ -409,7 +400,6 @@
 							}
 						      tmp := trim(substring(var, prev, cur - prev));
 						      prev:= pos;
-							-- dbg_obj_print(tmp);
 	 			                   if (tmp = value)
 						                  control.ufl_selected:= 1;
 						   }
@@ -444,7 +434,6 @@
 				                path:= concat(get_ini_location(),&#39;inifile.xml&#39;);
 					  	   tree := xtree_doc (file_to_string (path));
 				                var := cast ( xpath_eval(&#39;/inifile/section[@name=&#39;&#39;Client&#39;&#39;]/parameter[@name=&#39;&#39;SQL_ENCRYPTION_ON_PASSWORD&#39;&#39;]/@value&#39;,tree) as varchar);
-				                dbg_obj_print(concat(&#39;Name is &#39;, control.vc_name, &#39; Control value is=/&#39; ,control.ufl_value , &#39;/   Value = /&#39;, var,&#39;/&#39;));
 			       	         if (control.ufl_value = var )
 			             		     control.ufl_selected:= 1;
 				                 else
@@ -471,7 +460,6 @@
 				                path:= concat(get_ini_location(),&#39;inifile.xml&#39;);
 					  	   tree := xtree_doc (file_to_string (path));
 				                var := cast ( xpath_eval(&#39;/inifile/section[@name=&#39;&#39;Client&#39;&#39;]/parameter[@name=&#39;&#39;SQL_ENCRYPTION_ON_PASSWORD&#39;&#39;]/@value&#39;,tree) as varchar);
-				                dbg_obj_print(concat(&#39;Name is &#39;, control.vc_name, &#39; Control value is=/&#39; ,control.ufl_value , &#39;/   Value = /&#39;, var,&#39;/&#39;));
 			       	         if (control.ufl_value = var )
 			             		     control.ufl_selected:= 1;
 				                 else
@@ -498,7 +486,6 @@
 				                path:= concat(get_ini_location(),&#39;inifile.xml&#39;);
 					  	   tree := xtree_doc (file_to_string (path));
 				                var := cast ( xpath_eval(&#39;/inifile/section[@name=&#39;&#39;Client&#39;&#39;]/parameter[@name=&#39;&#39;SQL_ENCRYPTION_ON_PASSWORD&#39;&#39;]/@value&#39;,tree) as varchar);
-				                dbg_obj_print(concat(&#39;Name is &#39;, control.vc_name, &#39; Control value is=/&#39; ,control.ufl_value , &#39;/   Value = /&#39;, var,&#39;/&#39;));
 			       	         if (control.ufl_value = var )
 			             		     control.ufl_selected:= 1;
 				                 else

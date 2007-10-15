@@ -35,7 +35,6 @@
                   declare xsl_sheet, xml_src, src_xslt, rel_path, xml_file, xsl_file, save_path  varchar;
                   declare xml_tree, xslt_tree, pars,  xml_tree_doc, ses, res  any;
                   declare n, len, result  integer;
-                  dbg_obj_print('POST ', params);
                   if (get_keyword('save',params) is null) return;
                   xsl_sheet := get_keyword('xsl_sheet',params);
                   xml_src := get_keyword('xml_src',params);
@@ -52,7 +51,6 @@
                     http_header(sprintf('Location: xslt_result.vspx?result=error&error=%s&sid=%s&realm=%s\r\n','Stylesheet file was not  specified.',self.sid ,self.realm));
                     return;
                   }
-                  dbg_obj_print('XSLT', get_keyword('save_mode',params));
                   rel_path:='/';
                   len:= length(path)-1;
                   n:=0;

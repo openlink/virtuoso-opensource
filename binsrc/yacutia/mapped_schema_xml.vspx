@@ -146,7 +146,6 @@
           select blob_to_string(RES_CONTENT) into self.schema_text  from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path;
     self.schema_state := 1;
     self.schema_saved := 0;
-    dbg_obj_print(self.schema_text);
     self.schema_loaded_from := path;
        }
              http_request_status ('HTTP/1.1 302 Found');

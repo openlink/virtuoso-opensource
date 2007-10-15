@@ -46,7 +46,6 @@
 		  declare src_xml, src_xslt,res, path  varchar;
 		  declare xml_tree,xslt_tree,pars, xml_tree_doc any;
 		  declare vspx any;
-                dbg_obj_print('Begin');
                 		  
 		  if (self.vc_is_valid = 0 ) return;
  		  rel_path:='/';
@@ -64,7 +63,6 @@
                 tmp_value:='';
                 res_xml := '<section name="]]><xsl:value-of select="$section_name"/><![CDATA[">';
                 while (n < len) {
-                  dbg_obj_print(aref(params,n), aref(params,n+1));
                   if (tmp = aref(params,n)) {
                     if (length(tmp_value) > 0)
                         tmp_value:= concat(tmp_value,', ');
@@ -192,7 +190,6 @@
 				                path:= concat(get_ini_location(),'inifile.xml');
 					  	   tree := xtree_doc (file_to_string (path));			 
 				                var := cast ( xpath_eval('/inifile/section[@name='']]><xsl:value-of select="$section_name"/><![CDATA['']/parameter[@name='']]><xsl:value-of select="$parname"/><![CDATA['']/@value',tree) as varchar);
-				                dbg_obj_print(concat('Name is ', control.vc_name, ' Control value is=/' ,control.ufl_value , '/   Value = /', var,'/'));
 			       	         if (control.ufl_value = var )
 			             		     control.ufl_selected:= 1;
 				                 else
@@ -229,7 +226,6 @@
 				  	   tree := xtree_doc (file_to_string (path));			 
 			                value:= ']]><xsl:value-of select="@value"/><![CDATA[';
      			                var := cast ( xpath_eval('/inifile/section[@name='']]><xsl:value-of select="$section_name"/><![CDATA['']/parameter[@name='']]><xsl:value-of select="$parname"/><![CDATA['']/@value',tree) as varchar);
-				          --  dbg_obj_print(concat('Name is ', control.vc_name, ' Control value is=|' ,control.ufl_value , '|   Value = |',sprintf('%s',var),'|'));
 				          control.ufl_selected:= 0;
      			                if (length(var) > 0 ) {
 						   pos:=1;
@@ -244,7 +240,6 @@
 							}
 						      tmp := trim(substring(var, prev, cur - prev));
 						      prev:= pos;
-							-- dbg_obj_print(tmp);
 	 			                   if (tmp = value) 
 						                  control.ufl_selected:= 1;						      
 						   }			             		  

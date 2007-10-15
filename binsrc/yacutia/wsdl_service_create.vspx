@@ -107,17 +107,14 @@
                           declare item, state, msg, m_dta, res varchar;
                           state := '00000';
                           pos1 := strrchr(self.file_name, '/');
-                          dbg_obj_print(pos1);
                           where_to_go := substring(self.file_name, 1, pos1);
                           resname := substring(self.file_name, pos1 + 2, length(self.file_name) - pos1);
 
-                          dbg_obj_print(resname);
                           if (where_to_go <> '/')
                             where_to_go := WS.WS.EXPAND_URL(WS.WS.COL_PATH (current_col_id), where_to_go);
                           if (where_to_go not like '%/')
                             where_to_go := concat (where_to_go, '/');
                           select COL_ID into current_col_id from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH(COL_ID) = where_to_go;
-                          dbg_obj_print( current_col_id);
                           exec('insert into WS.WS.SYS_DAV_RES(RES_COL, RES_CONTENT, RES_CR_TIME, RES_FULL_PATH,
                             RES_GROUP, RES_ID, RES_MOD_TIME, RES_NAME, RES_OWNER, RES_PERMS, RES_TYPE)
                             values(?, ?, now(), ?, ?, ?, now (), ?, ?, ?, ?)', state, msg,

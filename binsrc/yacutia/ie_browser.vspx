@@ -51,7 +51,6 @@
       self.curpath := get_keyword('dump_path', params, '');
     else if( self.curpath = '')
       self.curpath := self.rootdir;
-    dbg_obj_print('params', params);
   ?>
   </v:before_render>
 
@@ -75,7 +74,6 @@
                  <?vsp
                    i:=0;
                    n:=length(dirs);
-                   --dbg_obj_print('i', i, 'n', n, 'dirs', dirs);
                    while( i < n ) {
                       http(sprintf( '<option value="%s"%s>%s</option>',
                                     dirs[i],
@@ -95,7 +93,6 @@
                    dirs := "PUMP"."DBA"."DBPUMP_CHOICE_RSCHEMA"(self.curpath);
                    i:=0;
                    n:=length(dirs);
-                   --dbg_obj_print('i', i, 'n', n, 'dirs', dirs);
                    while( i < n ) {
                       http(sprintf('<option value="%s">%s</option>', dirs[i], dirs[i+1]) );
                       i := i + 2;

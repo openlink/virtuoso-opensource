@@ -229,8 +229,6 @@ declare col_name, col_type, col_mode varchar;
 declare _r_tbl, _l_tbl any;
 declare pref any;
 
---dbg_obj_print (self.s_views);
-
 len := length (self.s_tables);
 vlen := length (self.s_views);
 i := 0;

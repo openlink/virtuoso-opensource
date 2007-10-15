@@ -98,7 +98,6 @@
             declare i, n, j, k integer;
             declare objects any;
             declare ds_name varchar;
-	    --dbg_obj_print (self.to_unlink_objects);
             n := length(self.to_unlink_objects);
             i := 0;
             while (i < n)

@@ -84,11 +84,9 @@
         ?>
       </v:before_render>
       <?vsp
-        dbg_obj_print( sprintf('temp1 "%s"', self.sql_stt) );
       ?>
       <v:template name="error_temp1" type="simple" condition="self.sql_stt <> ''">
         <?vsp
-          dbg_obj_print('error_form called');
         ?>
         <v:include url="vdb_error_inc.vspx"/>
       </v:template>
@@ -179,15 +177,12 @@
                     <v:on-post>
                       <v:script>
                         <![CDATA[
-                          dbg_obj_print('list');
                           self.ds_name := get_keyword('ds_names', self.vc_page.vc_event.ve_params, '');
                           self.ds_login := get_keyword('user_name', self.vc_page.vc_event.ve_params, '');
                           self.ds_pwd := get_keyword('new_pass', self.vc_page.vc_event.ve_params, '');
                           if (self.ds_name is null or self.ds_name = '')
                             return;
-                          dbg_obj_print('Huy:', self.ds_name, self.ds_login, self.ds_pwd);
                           exec('vd_remote_data_source(?,?,?,?)', self.sql_stt, self.sql_msg, vector(self.ds_name, '', self.ds_login, self.ds_pwd));
-                          dbg_obj_print('list1');
                           if ('' = self.sql_stt)
                           {
                             self.p_mode := '2';
@@ -197,13 +192,9 @@
                             self.sh_st:= case get_keyword('cb_show_stables', self.vc_page.vc_event.ve_params) when 'on' then 1 else 0 end;
                             self.sh_v := case get_keyword('cb_show_views', self.vc_page.vc_event.ve_params) when 'on' then 1 else 0 end;
                             self.sh_p := case get_keyword('cb_show_procs', self.vc_page.vc_event.ve_params) when 'on' then 1 else 0 end;
-                            dbg_obj_print('params : ', params);
-                            dbg_obj_print('exec success');
-                            dbg_obj_print('page view_state on post: ', self.vc_view_state);
                           }
                           else
                           {
-                            dbg_obj_print('exec failed', self.sql_stt);
                             http_request_status('HTTP/1.1 302 Found');
                             http_header(sprintf('Location: %U\r\n', self.return_path));
                           }
@@ -344,7 +335,6 @@
                     <v:on-post>
                       <v:script>
                         <![CDATA[
-                          dbg_obj_print('params :', self.vc_page.vc_event.ve_params);
                           declare n, i integer;
                           declare _data any;
                           declare _param varchar;
@@ -360,7 +350,6 @@
                               if (_param <> '')
                               {
                                 _data := deserialize(decode_base64(_param));
-                                dbg_obj_print('_data', _data);
                                 self.s_tables := vector_concat( self.s_tables, vector(_data) );
                                 self.pks_t := vector_concat(self.pks_t, vector(adm_lt_getRPKeys2(self.ds_name, _data[0], _data[1], _data[2])));
                               }
@@ -379,7 +368,6 @@
                               if (_param <> '')
                               {
                                 _data := deserialize(decode_base64(_param));
-                                dbg_obj_print('_data', _data);
                                 self.s_stables := vector_concat( self.s_stables, vector(_data) );
                                 self.pks_st := vector_concat(self.pks_st, vector(adm_lt_getRPKeys2(self.ds_name, _data[0], _data[1], _data[2])));
                               }
@@ -397,7 +385,6 @@
                               _param := get_keyword(sprintf('cbv_%d',i), self.vc_page.vc_event.ve_params,'');
                               if( _param <> '' ) {
                                 _data := deserialize(decode_base64(_param));
-                                dbg_obj_print('_data', _data);
                                 self.s_views := vector_concat(self.s_views, vector(_data));
                                 self.pks_v := vector_concat(self.pks_v, vector(adm_lt_getRPKeys2(self.ds_name, _data[0], _data[1], _data[2])));
                               }
@@ -415,7 +402,6 @@
                               if (_param <> '')
                               {
                                 _data := deserialize(decode_base64(_param));
-                                dbg_obj_print('_data', _data);
                                 self.s_procs := vector_concat( self.s_procs, vector(_data) );
                               }
                               i := i+1;
@@ -425,10 +411,6 @@
                           self.s_msgs := vector();
                           self.v_msgs := vector();
                           self.p_msgs := vector();
-                          dbg_obj_print('s_tables : ', self.s_tables);
-                          dbg_obj_print('s_stables : ', self.s_stables);
-                          dbg_obj_print('s_views : ', self.s_views);
-                          dbg_obj_print('s_procs : ', self.s_procs);
                           self.p_mode := '3';
                         ]]>
                       </v:script>
@@ -445,7 +427,6 @@
           ?>
           <v:form name="link_form" type="simple" method="POST" action="--self.return_path">
             <?vsp
-              dbg_obj_print ('page view_state in LINK_FORM render: ', self.vc_view_state);
               declare type1, type2 any;
               type1 := vector('INTEGER','NUMERIC','DECIMAL','DOUBLE PRECISION','REAL','CHAR','CHARACTER','VARCHAR', 'NVARCHAR','ANY','NCHAR','SMALLINT','FLOAT','DATETIME','DATE','TIME','BINARY');
               type2 := vector( '*none*', '', 'xsd:string', 'http://www.w3.org/2001/XMLSchema:string', 'xsd:int', 'http://www.w3.org/2001/XMLSchema:int', 'xsd:float','http://www.w3.org/2001/XMLSchema:float', 'xsd:double','http://www.w3.org/2001/XMLSchema:double', 'xsd:decimal','http://www.w3.org/2001/XMLSchema:decimal', 'xsd:dateTime', 'http://www.w3.org/2001/XMLSchema:dateTime', 'void', '__VOID__');
@@ -463,7 +444,6 @@
               }
               dbms := upper (get_keyword (17, infos, ''));
               driv := upper (get_keyword (6, infos, ''));
-              --dbg_obj_print (dbms, driv);
               declare n, i, _deni integer;
               declare tblv any;
               declare tbl_qual, tbl_user, tbl_name, _den varchar;
@@ -704,7 +684,6 @@
                   {
                     declare stype, sprec, sscale any;
                     declare type, prec, scale, ty, nam any;
-                    --dbg_obj_print (cols[j]);
                     stype := cols[j][5];
                     sprec := cols[j][7];
                     sscale := cols[j][10];
@@ -723,7 +702,6 @@
                     }
                     wrapit := 'checked';
                     nam := SYS_ALFANUM_NAME (cols[j][3]);
-                    --dbg_obj_print (cols[j][17], cols[j][3], dv_type_title (type), prec, scale, cols[j][4]);
                     if (cols[j][4] <> 5 and length (cols[j]) > 16 and cols[j][17] <= l)
                     {
                       aset (ncols, cols[j][17] - 1, vector( ty, nam, dv_type_title(type) ));
@@ -868,7 +846,6 @@ next_j:;
           }
           i := i + 1;
      }
-     dbg_obj_print('s_procs with ncols', self.s_procs);
 ?>
     </table>
 <?vsp
@@ -887,37 +864,27 @@ next_j:;
               </v:button>
               <v:button action="simple" name="link2" value="Link">
                 <v:on-post><v:script><![CDATA[
-                    dbg_obj_print('params :', self.vc_page.vc_event.ve_params);
 
                     declare err_tables, err_messages, err_pks any;
 
                     err_tables := vector(); err_messages := vector(); err_pks := vector();
                     vdb_link_tables( 't', self.vc_page.vc_event.ve_params, self.ds_name, self.s_tables, self.pks_t, err_tables, err_pks, err_messages );
-                    dbg_obj_print('0');
                     self.s_tables := err_tables; self.t_msgs := err_messages; self.pks_t := err_pks;
-                    dbg_obj_print('1');
                     err_tables := vector(); err_messages := vector(); err_pks := vector();
-                    dbg_obj_print('11');
                     return;
                     vdb_link_tables( 's', self.vc_page.vc_event.ve_params, self.ds_name, self.s_stables, self.pks_st, err_tables, err_pks, err_messages );
-                    dbg_obj_print('111');
                     self.s_stables := err_tables; self.s_msgs := err_messages; self.pks_st := err_pks;
-                    dbg_obj_print('2');
                     err_tables := vector(); err_messages := vector(); err_pks := vector();
                     vdb_link_tables( 'v', self.vc_page.vc_event.ve_params, self.ds_name, self.s_views, self.pks_v, err_tables, err_pks, err_messages );
                     self.s_views := err_tables; self.v_msgs := err_messages; self.pks_v := err_pks;
-                    dbg_obj_print('3');
-                    dbg_obj_print('aa');
                     err_tables := vector(); err_messages := vector(); err_pks := vector();
                     vdb_link_procedures( self.vc_page.vc_event.ve_params, self.ds_name, self.s_procs, err_tables, err_messages );
                     self.s_procs := err_tables; self.p_msgs := err_messages;
 
-                    dbg_obj_print('bb');
                     if( length(self.s_tables) + length(self.s_stables) + length(self.s_views) + length(self.s_procs) = 0 )
                       self.p_mode := '1';
                     else
                       self.p_mode := '3'; -- stay on the same screen to show and fix errors
-                    dbg_obj_print('cc');
                 ]]></v:script></v:on-post>
               </v:button>
       <!--/td></tr-->

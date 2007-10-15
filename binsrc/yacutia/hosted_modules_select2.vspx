@@ -64,10 +64,8 @@
                 http('<table border="1" cellpadding="3" cellspacing="0" class="SubAction"');
                 http('<tr>');
                 http('<th>Class</th><th>Module Name</th><th>Status</th></tr>');
-                dbg_obj_print(control.vc_page.vc_event.ve_params);
                 while (idx < (length (control.vc_page.vc_event.ve_params) - 2))
                 {
-                  dbg_obj_print('aaaaaa', control.vc_page.vc_event.ve_params[idx]);
                   if (control.vc_page.vc_event.ve_params[idx] = 'cb')
                   {
                     fl := 1;

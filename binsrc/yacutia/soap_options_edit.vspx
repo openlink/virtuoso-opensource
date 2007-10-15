@@ -61,7 +61,6 @@
                         self.referer := subseq(self.vc_event.ve_lines[i],9);
                     i := i + 1;
                 }
-                dbg_obj_print('referer', self.referer);
                 self.edit_host := get_keyword('_host', self.vc_page.vc_event.ve_params, self.edit_host);
                 self.edit_port := get_keyword('_port', self.vc_page.vc_event.ve_params, self.edit_port);
                 self.edit_httphost := get_keyword('_httphost', self.vc_page.vc_event.ve_params, self.edit_httphost);
@@ -230,7 +229,6 @@
                                       }
                                       i:= i+2;
                                     }
-                                    dbg_obj_print('GRANT LIST', self.roles_grant_list);
                                     control.vc_parent.vc_find_control('sl_exposed_procedures').vc_data_bind(e);
                                   ]]>
                                 </v:on-post>
@@ -246,7 +244,6 @@
                                     declare cnt, i, size, indx , flag_ integer;
                                     declare roles any;
                                     roles := vector();
-                                    dbg_obj_print('Revoke');
                                     cnt := length(self.roles_grant_list);
                                     size:= length(params);
                                     i:=0;
@@ -329,7 +326,6 @@
                   <v:on-post>
                     <v:script>
                       <![CDATA[
-                      dbg_obj_print('cancel');
                       http_request_status ('HTTP/1.1 302 Found');
                         if( self.referer <> '' )
                           http_header (sprintf('Location: %s', self.referer));
@@ -395,13 +391,10 @@
                             _vspuser, _soapuser, _security, _sesvars, self.soap_opt,
                             _auth_opt, _global_opts, _defdir));
 
-                      dbg_obj_print( st, msg );
                       if (msg <> '') {
                         self._errmsg := msg;
                       }
                       else {
-                        dbg_obj_print( 'success');
-
                         if( not isnull(self.soapuser) ) {
                           declare inx integer;
                           inx := 0;

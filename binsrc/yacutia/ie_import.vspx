@@ -63,7 +63,6 @@
         <v:button action="simple" name="OK1" value="OK">
     <v:on-post>
       <v:script><![CDATA[
-      dbg_obj_print(sprintf('return path: %s',self.return_path));
       self.sql_stt := '';
       self.sql_msg := '';
       return;
@@ -151,7 +150,6 @@
                                           self.chuser
                                             );
 
-                    dbg_obj_print('dbp_result', self.dbp_result);
                     self.p_mode := '2';
                   ]]></v:script>
                 </v:on-post>

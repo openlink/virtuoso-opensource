@@ -98,7 +98,6 @@
           if (patha is null)
             patha := vector ('.');
           self.backup_patha := patha;
-          -- dbg_obj_print (self.prefix);
           if (self.p_mode = '2')
             {
               declare _header, _line varchar;

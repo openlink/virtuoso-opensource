@@ -207,7 +207,6 @@
                         rollback work;
                         return;
                       };
-		      --dbg_obj_print (domain,ip,path);
                       VHOST_DEFINE(
                         vhost=>domain,
                         lhost=>ip,

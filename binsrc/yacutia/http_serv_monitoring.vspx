@@ -109,7 +109,6 @@
     <v:script>
      <![CDATA[
 --        XXX REMOVE XXX NOT WORK !!!
-          dbg_obj_print ('in v:on-post sel_in');
      ]]>
     </v:script>
   </v:data-bind>
@@ -137,10 +136,6 @@
        grid := control.vc_parent.vc_find_control ('dg');
        grid.vc_data_bind (e);
 
---     dbg_obj_print ('self =', self.col_sel);
---     dbg_obj_print ('sl ', sl.vsl_item_values);
---     dbg_obj_print ('Radio ', self.radio_sel);
-
      ]]>
     </v:script>
   </v:on-post>
@@ -164,7 +159,6 @@
      <![CDATA[
 --        XXX Fix this. !!!
           self.log_file_name := 'http05082002.log';
-          dbg_obj_print ('in v:on-post sel_in');
      ]]>
     </v:script>
   </v:before-data-bind>

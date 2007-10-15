@@ -528,7 +528,6 @@
       self.vc_error_message := 'Execute error occurred.';
       self.vc_error_message := self.vc_error_message || ' SQL State: ' || __SQL_STATE || '. Message: ' || __SQL_MESSAGE;
       self.vc_is_valid := 0;
---dbg_obj_print( 'Error_exec:', __SQL_STATE, __SQL_MESSAGE );
       return;
     };
   self.sql_text := self.isql_c_text_.ufl_value;
@@ -539,8 +538,6 @@
   else
     self.rs_length := 0;
     self.isql_c.isql_maxrows := self.rs_length;
---dbg_obj_print (self.isql_c_isolation_.ufl_value);
---dbg_vspx_control (self.isql_c);
     self.isql_c.isql_user := '';
     if (self.adv_mode = 1)
       {

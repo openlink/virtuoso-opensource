@@ -165,8 +165,6 @@
                 <![CDATA[
 			  declare params any;
 			  params := self.vc_event.ve_params;
-                          --dbg_obj_print('params', self.vc_event.ve_params);
-                          --dbg_obj_print('caps', self.user_caps);
         declare mtd, dta any;
         declare dg int;
         declare priv_grant, priv_revoke varchar;

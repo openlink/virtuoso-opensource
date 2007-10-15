@@ -445,7 +445,6 @@
                                      declare txt, stat, msg varchar;
                                      stat := '00000';
                                      txt := 'drop trigger ' || name_part((control.vc_parent as vspx_row_template).te_rowset[0], 2);
-                                     dbg_obj_print('dropt',txt);
                                      commit work;
                                      __set_user_id (connection_get ('vspx_user'), 1);
                                      exec (txt, stat, msg);

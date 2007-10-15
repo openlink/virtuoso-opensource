@@ -174,7 +174,6 @@
 		if (exists(select 1 from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = self.ename))
 		  {
                     update DB.DBA.SYS_SCHEDULED_EVENT set SE_START = start_str, SE_INTERVAL = inter where SE_NAME = self.ename;
-		    dbg_obj_print ('upd', inter, self.ename, row_count ());
 		  }
                 else
                   insert into SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL) values(self.ename, start_str, inter, concat('WS.WS.SERV_QUEUE_TOP(\'',self.host,'\',\'',self.root,'\', 1, 0, null, null)'));

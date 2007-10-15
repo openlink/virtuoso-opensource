@@ -624,7 +624,6 @@
                 <script><![CDATA[
                 { 
                   if (get_keyword('binding_remove', params) is not null) {
-                    dbg_obj_print('binding REMOVE',get_keyword('binding_key', params));
                       delete from UDDI..INSTANCE_DETAIL 
                       where ID_BINDING_KEY = get_keyword('binding_key', params);
                       delete from UDDI..DESCRIPTION  
@@ -671,7 +670,6 @@
                 <script><![CDATA[
                 { 
                   if (get_keyword('instance_remove', params) is not null) {
-                    dbg_obj_print('INSTANCE REMOVE',get_keyword('instance_key', params));
                       delete from UDDI..INSTANCE_DETAIL 
                       where ID_KEY = get_keyword('instance_key', params);                     
                   }                          

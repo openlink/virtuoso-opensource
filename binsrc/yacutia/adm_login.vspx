@@ -51,7 +51,6 @@
 	sid := get_keyword ('sid', cookies);
 	if (length (sid))
 	  {
-	    --dbg_obj_print ('sid', sid);
 	    declare pars any;
 	    pars := e.ve_params;
 	    pars := vector_concat (pars, vector ('sid', sid, 'realm', 'virtuoso_admin'));

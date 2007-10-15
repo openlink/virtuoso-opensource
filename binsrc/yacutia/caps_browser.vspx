@@ -263,8 +263,6 @@
 		    i := 0;
 		    l := length(user_caps);
                     while( i < l ) {
-		    --dbg_obj_print (user_caps[i]);
-                     --dbg_obj_print('bit_and(1, user_caps[i][2])',bit_and(1, user_caps[i][2]));
                 ?>
 		<tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
                   <td align="left" nowrap="1">
@@ -360,8 +358,6 @@
 			  declare user_caps, params any;
 			  user_caps := self.user_caps;
 			  params := self.vc_event.ve_params;
-                          --dbg_obj_print('params', self.vc_event.ve_params);
-                          --dbg_obj_print('caps', self.user_caps);
 			  i := 0;
 			  l := length (user_caps);
                           while( i < l ) {
