@@ -3694,7 +3694,10 @@ soap_server (int soap_version, caddr_t method_fld, dk_session_t *ses, caddr_t *x
 	{
 	  if (!*uddi_action)
 	    {
-	      snprintf (szFullProcName, sizeof (szFullProcName), "%s.%s.%s", usr_qual, usr_own, szMethod);
+	      if (szMethod)
+	        snprintf (szFullProcName, sizeof (szFullProcName), "%s.%s.%s", usr_qual, usr_own, szMethod);
+	      else /* will make error below */
+		snprintf (szFullProcName, sizeof (szFullProcName), "%s.%s.(null)", usr_qual, usr_own);
 	      if (CM_UPPER == case_mode)
 		sqlp_upcase (szFullProcName);
 	    }
