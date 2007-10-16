@@ -1,0 +1,61 @@
+.oat_winms_container {
+	border: 1px solid #000;
+	background-color: #fff;
+	overflow: hidden;
+}
+
+.oat_winms_content {
+	padding: 2px;
+	position: relative;
+}
+
+.oat_winms_title {
+	font: menu;
+	height: 16px;
+	background-color: #0000a0;
+	border-bottom: 1px solid #000;
+	position: relative;
+}
+
+.oat_winms_caption {
+	color: white;
+	font-weight: bold;
+	margin-left: 2px;
+}
+
+.oat_winms_status {
+	height: 16px;
+	position: relative;
+}
+
+.oat_winms_close_b, .oat_winms_min_b, .oat_winms_max_b {
+	float: right;
+	width: 16px;
+	height: 14px;
+	margin-left: 2px;
+	margin-top: 1px;
+	cursor: pointer;
+}
+
+.oat_winms_resize_b {
+	width: 10px;
+	height: 10px;
+	position: absolute;
+	bottom: 2px;
+	right: 2px;
+	background-image: url("../images/MsWin_resize.gif");
+	background-repeat: no-repeat;
+	background-position: bottom right;
+}
+
+.oat_winms_close_b {
+	background-image: url("../images/MsWin_close.png");
+}
+
+.oat_winms_min_b {
+	background-image: url("../images/MsWin_minimize.png");
+}
+
+.oat_winms_max_b {
+	background-image: url("../images/MsWin_maximize.png");
+}

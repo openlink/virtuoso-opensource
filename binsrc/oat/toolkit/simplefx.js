@@ -77,6 +77,7 @@ OAT.SimpleFX = {
 		var options = {
 			corners:[1,1,1,1], /* CW from LT */
 			color:"auto",
+			borderColor:"auto",
 			backgroundColor:"auto",
 			antialias:1,
 			size:10
@@ -84,16 +85,18 @@ OAT.SimpleFX = {
 		for (var p in optObj) { options[p] = optObj[p]; }
 		var elm = $(something);
 		if (OAT.Dom.style(elm,"position") == "static") { elm.style.position = "relative"; }
-		
 		/* calculate colors */
 		var getBG = function(e) {
 			var ee = $(e);
 			if (!ee || ee == document) { return "#fff"; }
+			if (ee.nodeType!=1) /* ie fix */
+				if (ee.parentNode) { getBG(ee.parentNode); }
+				else { return '#fff'; }
 			var bg = OAT.Dom.style(ee,"backgroundColor");
-			if (bg != "transparent") { return bg; }
+			if (bg != "transparent") return bg;
 			return getBG(ee.parentNode);
 		}
-		if (options.color == "auto") { options.color = getBG(elm); }
+		if (options.color == "auto") { options.color = getBG(elm) ? getBG(elm) : '#fff'; } /* opera fix */
 		if (options.backgroundColor == "auto") { options.backgroundColor = getBG(elm.parentNode); }
 		/* aacolor */
 		var c1 = OAT.Dom.color(options.color);
@@ -103,7 +106,6 @@ OAT.SimpleFX = {
 		aac.push(parseInt((c1[1]+c2[1])/2));
 		aac.push(parseInt((c1[2]+c2[2])/2));
 		var aacolor = "rgb("+aac.join(",")+")";
-		
 		/* prepare margins */
 		var margins = [];
 		var t = [];
@@ -148,6 +150,7 @@ OAT.SimpleFX = {
 				}
 				top.appendChild(d);
 			}
+			top.firstChild.style.backgroundColor = options.borderColor;
 			(elm.firstChild ? elm.insertBefore(top,elm.firstChild) : elm.appendChild(top));
 		}
 		if (options.corners[2] || options.corners[3]) {
@@ -182,6 +185,7 @@ OAT.SimpleFX = {
 				}
 				bottom.appendChild(d);
 			}
+			bottom.lastChild.style.backgroundColor = options.borderColor;
 			elm.appendChild(bottom);
 		}
 

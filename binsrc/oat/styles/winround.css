@@ -1,0 +1,61 @@
+.oat_winround_container {
+	border: 1px solid #666666;
+	background-color: #ffffff;
+}
+
+.oat_winround_content {
+	padding: 2px;
+	position: relative;
+	top: -5px;
+}
+
+.oat_winround_title {
+	font: menu;
+	height: 19px;
+	position: relative;
+	top: -5px;
+	text-align: center;
+}
+
+.oat_winround_caption {
+	color: #333333;
+	font-weight: bold;
+	position: relative;
+	top: 3px;
+}
+
+.oat_winround_status {
+	height: 16px;
+	position: relative;
+}
+
+.oat_winround_blankSpace {
+	height: 100%;
+	position: relative;
+}
+
+.oat_winround_close_b {
+	float: right;
+	width: 14px;
+	height: 13px;
+	cursor: pointer;
+	position: relative;
+	right: 3px;
+	top: 3px;
+}
+
+.oat_winround_resize_b {
+	width: 10px;
+	height: 10px;
+	position: absolute;
+	bottom: -3px;
+	right: 3px;
+	z-index: 2;
+	background-image: url("../images/MacWin_resize.gif");
+	background-repeat: no-repeat;	/* ie hack */
+	background-position: bottom right;	/* ie hack */
+}
+
+.oat_winround_close_b {
+	background-image: url("../images/RectWin_close.gif");
+}

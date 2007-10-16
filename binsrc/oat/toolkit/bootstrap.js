@@ -65,7 +65,8 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	rssreader:"xml",
 	notify:"animation",
 	slidebar:"animation",
-	fresnel:"xml"
+	fresnel:"xml",
+	win:"simplefx"
 }
 
 OAT.Loader.Files = { /* only those whose names differ */

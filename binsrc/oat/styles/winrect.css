@@ -1,0 +1,59 @@
+.oat_winrect_container {
+	border: 1px solid #666666;
+	background-color: #ffffff;
+	overflow: hidden;
+}
+
+.oat_winrect_content {
+	padding: 2px;
+	position: relative;
+}
+
+.oat_winrect_title {
+	font: menu;
+	height: 19px;
+	position: relative;
+	text-align: center;
+}
+
+.oat_winrect_caption {
+	color: #333333;
+	font-weight: bold;
+	position: relative;
+	top: 3px;
+}
+
+.oat_winrect_status {
+	height: 16px;
+	position: relative;
+}
+
+.oat_winrect_blankSpace {
+	height: 100%;
+	position: relative;
+}
+
+.oat_winrect_close_b {
+	float: right;
+	width: 14px;
+	height: 13px;
+	cursor: pointer;
+	position: relative;
+	right: 3px;
+	top: 3px;
+}
+
+.oat_winrect_resize_b {
+	width: 10px;
+	height: 10px;
+	position: absolute;
+	bottom: 2px;
+	right: 2px;
+	background-image: url("../images/MacWin_resize.gif");
+	background-repeat: no-repeat;	/* ie hack */
+	background-position: bottom right;	/* ie hack */
+}
+
+.oat_winrect_close_b {
+	background-image: url("../images/RectWin_close.gif");
+}

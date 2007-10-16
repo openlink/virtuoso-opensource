@@ -1,0 +1,120 @@
+.oat_winmac_container {
+	border-width: 0px 0px 1px 0px;
+	border-style: solid;
+	border-color: #aaaaaa;
+	background-color: #fff;
+	overflow: hidden;
+}
+
+.oat_winmac_content {
+	padding: 2px;
+	position: relative;
+	border-width: 0px 1px 0px 1px;
+	border-style: solid;
+	border-color: #aaaaaa;
+}
+
+.oat_winmac_title {
+	font: menu;
+	height: 23px;
+	background-color: #888888;
+	background-image: url("../images/MacWin_top.gif");
+	position: relative;
+	text-align: center;
+	margin-left: 8px;
+	margin-right: 8px;
+}
+
+.oat_winmac_caption {
+	color: #333333;
+	font-weight: bold;
+	position: relative;
+	top: 6px;
+}
+
+.oat_winmac_status {
+	height: 16px;
+	position: relative;
+	border-width: 0px 1px 0px 1px;
+	border-style: solid;
+	border-color: #aaaaaa;
+}
+
+.oat_winmac_blankSpace {
+	height: 100%;
+	position: relative;
+	border-width: 0px 1px 0px 1px;
+	border-style: solid;
+	border-color: #aaaaaa;
+}
+
+.oat_winmac_close_b, .oat_winmac_min_b, .oat_winmac_max_b {
+	float: left;
+	width: 13px;
+	height: 13px;
+	margin-left: 2px;
+	cursor: pointer;
+	position: relative;
+	left: -12px;
+	top: 6px;
+}
+
+.oat_winmac_resize_b {
+	width: 10px;
+	height: 10px;
+	position: absolute;
+	bottom: 2px;
+	right: 2px;
+	background-image: url("../images/MacWin_resize.gif");
+	background-repeat: no-repeat;	/* ie hack */
+	background-position: bottom right;	/* ie hack */
+}
+
+.oat_winmac_leftCorner {
+	float: left;
+	width: 8px;
+	height: 23px;
+	position: relative;
+	left: -8px;
+	/*position: absolute;
+	bottom: 2px;
+	right: 2px;*/
+	background-image: url("../images/MacWin_lt.gif");
+}
+
+.oat_winmac_rightCorner {
+	float: right;
+	width: 8px;
+	height: 23px;
+	position: relative;
+	right: -8px;
+	/*position: absolute;
+	bottom: 2px;
+	right: 2px;*/
+	background-image: url("../images/MacWin_rt.gif");
+}
+
+.oat_winmac_close_b {
+	background-image: url("../images/MacWin_close.gif");
+}
+
+.oat_winmac_min_b {
+	background-image: url("../images/MacWin_minimize.gif");
+}
+
+.oat_winmac_max_b {
+	background-image: url("../images/MacWin_maximize.gif");
+}
+
+
+.oat_winmac_close_b:hover {
+	background-image: url("../images/MacWin_close_hover.gif");
+}
+
+.oat_winmac_min_b:hover {
+	background-image: url("../images/MacWin_minimize_hover.gif");
+}
+
+.oat_winmac_max_b:hover {
+	background-image: url("../images/MacWin_maximize_hover.gif");
+}
