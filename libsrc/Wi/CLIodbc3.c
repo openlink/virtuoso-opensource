@@ -1459,6 +1459,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	*((SQLULEN *) ValuePtr) = bRowDesc ? desc->d_stmt->stmt_rowset_size : desc->d_stmt->stmt_parm_rows;
       else
 	return (SQL_ERROR);
+      if (ValuePtr)
+	*((SQLSMALLINT *) ValuePtr) = 0;
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLUINTEGER);
 
