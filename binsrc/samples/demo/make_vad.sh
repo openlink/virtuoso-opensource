@@ -205,6 +205,7 @@ directory_init() {
   mkdir vad
   mkdir vad/data
   mkdir vad/data/demo
+  mkdir vad/data/demo/Thalia
   mkdir vad/data/demo/interop3
   mkdir vad/data/demo/interop3/wsdl
   mkdir vad/data/demo/interop3/wsdl/r4
@@ -251,6 +252,7 @@ directory_init() {
   cp -f EMP7                                                    vad/data/demo/sql
   cp -f EMP8                                                    vad/data/demo/sql
   cp -f EMP9                                                    vad/data/demo/sql
+  cp -f thalia_test/* 											vad/data/demo/Thalia
   cp -f $HOME/docsrc/xmlsource/*                                vad/data/demo/docsrc
   cp -f $HOME/docsrc/xmlsource/DocBook/*                        vad/data/demo/docsrc/DocBook
   cp -f $HOME/docsrc/xmlsource/DocBook/ent/*                    vad/data/demo/docsrc/DocBook/ent
@@ -271,8 +273,8 @@ directory_init() {
   cp -f $HOME/binsrc/tutorial/rdfview/rd_v_1/rd_v_1.sql         vad/data/demo/sql
   cp -f sql_rdf.sql                                             vad/data/demo/sql
   cp -f test_thalia.sql                                         vad/data/demo/sql
-  cp -f rdf_thalia.sql                                          vad/data/demo/sql
-  cp -f virt_thalia.sql                                         vad/data/demo/sql
+  cp -f thalia_sql_to_rdf_views_generation.sql                  vad/data/demo/sql
+  cp -f virtuoso_sql_schema_generation.sql                      vad/data/demo/sql
   cp -f countries_vad.sql                                       vad/data/demo/sql
   cp -f art_vad.sql                                             vad/data/demo/sql
   cp -f uninst.sql                                              vad/data/demo/sql
@@ -418,6 +420,7 @@ sticker_init() {
   echo "      VAD.DBA.VAD_DAV_MOVE('/DAV/VAD/demo/docsrc/', '/DAV/docsrc/');" >> $STICKER
   echo "      VAD.DBA.VAD_DAV_MOVE('/DAV/VAD/demo/images/', '/DAV/images/');" >> $STICKER
   echo "      VAD.DBA.VAD_DAV_MOVE('/DAV/VAD/demo/interop3/', '/DAV/interop3/');" >> $STICKER
+  echo "      VAD.DBA.VAD_DAV_MOVE('/DAV/VAD/demo/Thalia/', '/DAV/Thalia/');" >> $STICKER
   echo "      VAD.DBA.VAD_DAV_MOVE('/DAV/VAD/demo/releasenotes/', '/DAV/releasenotes/');" >> $STICKER
   echo "      VAD.DBA.VAD_DAV_MOVE('/DAV/VAD/demo/sample_data/', '/DAV/sample_data/');" >> $STICKER
   echo "      VAD.DBA.VAD_DAV_MOVE('/DAV/VAD/demo/stylesheets/', '/DAV/stylesheets/');" >> $STICKER
@@ -449,8 +452,8 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/drop_petshop.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/rd_v_1.sql', 1, 'report', 1);" >> $STICKER  
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/virt_thalia.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/rdf_thalia.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/virtuoso_sql_schema_generation.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/thalia_sql_to_rdf_views_generation.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/load_ontology_dav.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
@@ -503,6 +506,10 @@ sticker_init() {
   for file in `find interop3/* -type f -o -type l | grep -v '/CVS'`
   do
     echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  done
+  for file in `find Thalia/* -type f | grep -v '/CVS'`
+  do
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
   cd ../../..
   IFS="$oldIFS"
