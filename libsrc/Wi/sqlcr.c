@@ -603,6 +603,7 @@ sqlc_cursor (sql_comp_t * sc, ST ** ptree, int cr_type)
       tree = sqlc_union_dt_wrap (tree);
       *ptree = tree;
     }
+  sqlc_top_select_dt (sc, tree);
   sql_stmt_comp (sc, ptree);
   tree = *ptree;
 
