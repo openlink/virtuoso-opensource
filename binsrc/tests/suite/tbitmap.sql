@@ -195,3 +195,20 @@ echo both ": ins at end of one less than full array 2\n";
 select count (*) from tb where k1 = 100;
 echo both $if $equ $last[1] 513 "PASSED" "***FAILED";
 echo both ": rows w k1 100\n";
+
+
+-- delete on bitmap index
+drop table bmdel;
+create table bmdel (id1 int, id2 int, id3 int, primary key (id1, id2, id3));
+create bitmap index bminx on bmdel (id3, id1, id2);
+insert into bmdel values (1,1,1);
+insert into bmdel values (2,5,1);
+insert into bmdel values (3,3,1);
+select * from bmdel;
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both " table with bitmap contains " $rowcnt " rows\n";
+delete from bmdel where id3 = 1;
+select * from bmdel;
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+echo both " after delete on bitmap index table contains " $rowcnt " rows\n";
+

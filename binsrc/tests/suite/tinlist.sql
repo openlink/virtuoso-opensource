@@ -64,3 +64,39 @@ select * from tin table option (index tinidx) where id3 in (3, 4, 5);
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": id1 IN on secondary index \n";
 
+DROP TABLE BB_topics;
+DROP TABLE BB_topics_posted;
+DROP TABLE BB_topics_track;
+
+CREATE TABLE BB_topics (
+	topic_id INTEGER,
+	forum_id INTEGER,
+	topic_type INTEGER,
+	PRIMARY KEY (topic_id)
+);
+
+CREATE TABLE BB_topics_posted (
+	user_id INTEGER,
+	topic_id INTEGER,
+	topic_posted INTEGER,
+	PRIMARY KEY (user_id, topic_id)
+);
+
+CREATE TABLE BB_topics_track (
+	user_id INTEGER,
+	topic_id INTEGER,
+	forum_id INTEGER,
+	PRIMARY KEY (user_id, topic_id)
+);
+
+insert into BB_topics (topic_id, forum_id, topic_type) values (3, 6, 0);
+insert into BB_topics_posted (user_id, topic_id, topic_posted) values (2, 3, 1);
+insert into BB_topics_track (user_id, topic_id, forum_id) values (-1, -1, -1);
+
+SELECT t.forum_id, t.topic_type FROM BB_topics t
+  LEFT JOIN BB_topics_posted tp ON (tp.topic_id = t.topic_id AND tp.user_id = 2)
+  LEFT JOIN BB_topics_track tt ON (tt.topic_id = t.topic_id AND tt.user_id = 2)
+  WHERE (t.forum_id IN (6, 0) AND t.topic_type in (2,3));
+
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+echo both ": IN on non-key columns in after test \n";
