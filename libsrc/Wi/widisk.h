@@ -398,10 +398,10 @@ struct log_segment_s
   };
 
 
-#if defined (WINDOWS) | defined (WINNT)
+#if defined (WINDOWS) || defined (WINNT)
 # define OPEN_FLAGS	O_RDWR | O_CREAT | O_BINARY
 # define OPEN_FLAGS_RO	O_RDONLY | O_BINARY
-# define fd_open(N,M)	_open (N,M)
+# define fd_open(N,M)	_open (N, M, 0600)
 
 # define fd_close(fd,n) \
 { \
