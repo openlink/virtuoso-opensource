@@ -181,7 +181,7 @@ where
  and COL_ID = KP_COL
 ;
 
-grant select on INFORMATION_SCHEMA.TABLES to public
+grant select on INFORMATION_SCHEMA.COLUMNS to public
 ;
 
 --!AWK UPGRADE TABLE INFORMATION_SCHEMA.SCHEMATA do_it_every_time
