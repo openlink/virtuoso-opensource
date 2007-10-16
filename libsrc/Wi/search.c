@@ -2066,6 +2066,9 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 
 next_row:
 
+      if (it->itc_insert_key && it->itc_insert_key->key_is_bitmap)
+	it->itc_bp.bp_new_on_row = 1;
+
       if (it->itc_desc_order)
 	{
 	  itc_prev_entry (it, *buf_ret);

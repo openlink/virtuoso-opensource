@@ -1823,9 +1823,17 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	}
       if (!itc->itc_bp.bp_is_pos_valid)
 	{
-	  pl_set_at_bit ((placeholder_t *) itc, itc->itc_row_data + off, bm_len, bm_start, itc->itc_bp.bp_value, itc->itc_desc_order);
+	  if (itc->itc_bp.bp_new_on_row)
+	    {
+	      itc->itc_bp.bp_at_end = 1; /* this will call next case bellow */
+	    }
+	  else
+	    {
+	      pl_set_at_bit ((placeholder_t *) itc, itc->itc_row_data + off, bm_len, 
+		  bm_start, itc->itc_bp.bp_value, itc->itc_desc_order);
 	  if (itc->itc_bp.bp_at_end)
 	    return DVC_LESS; /* no more bits above / below the value, get the next row */
+	}
 	}
       if (itc->itc_bp.bp_at_end)
 	{
@@ -1930,7 +1938,7 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		  inx++;
 		}
 	      END_DO_SET();
-	      itc->itc_bp.bp_new_on_row = 0;
+	      /*itc->itc_bp.bp_new_on_row = 0;*/
 	    }
 	  if (ks->ks_local_test
 	      && !code_vec_run_no_catch (ks->ks_local_test, itc))
@@ -1951,6 +1959,7 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		goto next_bit;
 	    }
 	}
+      itc->itc_bp.bp_new_on_row = 0;
       KEY_TOUCH (itc->itc_insert_key);
       if (!ks || !ks->ks_is_last)
 	return DVC_MATCH;
