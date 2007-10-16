@@ -2081,6 +2081,7 @@ sqlo_merge_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set
 		  && pred != pred2
 		  && pred->_.bin.op == pred2->_.bin.op
 		  && pred->_.bin.op != BOP_LIKE
+		  && pred->_.bin.left->dfe_type == DFE_COLUMN
 		  && pred->_.bin.left == pred2->_.bin.left)
 		{
 		  t_set_push (&merged_with, (void*) pred2);
@@ -2115,10 +2116,13 @@ sqlo_merge_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set
 
 #define dfe_is_upper(dfe) (dfe->_.bin.op == BOP_LT || dfe->_.bin.op == BOP_LTE)
 
+int do_sqlo_in_list = 1;
 
 df_elt_t **
 sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
 {
+  if (!do_sqlo_in_list)
+    return NULL;
   if (DFE_BOP_PRED == pred->dfe_type && BOP_LT == pred->_.bin.op &&
     DFE_CONST == pred->_.bin.left->dfe_type && !unbox ((ccaddr_t)(pred->_.bin.left->dfe_tree)) &&
     DFE_CALL == pred->_.bin.right->dfe_type && pred->_.bin.right->_.call.func_name &&
@@ -2550,7 +2554,7 @@ sqlo_like_range (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_
     return;
   if (DFE_CONST == pred->_.bin.right->dfe_type
       && DV_STRINGP (pred->_.bin.right->dfe_tree)
-      && strchr ("_?*%[", ((char*)pred->_.bin.right->dfe_tree)[0]))
+      && strchr ("_?*\%[", ((char*)pred->_.bin.right->dfe_tree)[0])) 
     return;
   DO_SET (dbe_key_t *, key, &tb->tb_keys)
     {
@@ -2571,6 +2575,41 @@ sqlo_like_range (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_
   t_set_push (col_preds, (void*) sqlo_df (so, tree));
 }
 
+void 
+sqlo_in_place_in_pred (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t *col_preds, dk_set_t *after_preds)
+{
+  dbe_key_t * key = tb_dfe->_.table.key;
+  int part_no = 0;
+  df_elt_t ** in_list;
+  dk_set_t to_move = NULL;
+
+  if (!key)
+    return;
+  DO_SET (df_elt_t *, pred, col_preds)
+    {
+      if (NULL == (in_list = sqlo_in_list (pred, NULL, NULL)))
+	continue;
+      part_no = 0;
+      DO_SET (dbe_column_t *, col, &key->key_parts)
+	{
+	  if (in_list[0]->_.col.col == col)
+	    goto next_pred;
+	  part_no++;
+	  if (part_no >= key->key_n_significant)
+	    break;
+	}
+      END_DO_SET ();
+      t_set_push (&to_move, (void*) pred);
+next_pred:;
+    }
+  END_DO_SET ();
+  DO_SET (df_elt_t *, pred, &to_move)
+    {
+      t_set_push (after_preds, (void*) pred);
+      t_set_delete (col_preds, (void*) pred);
+    }
+  END_DO_SET ();
+}
 
 void
 sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
@@ -2705,6 +2744,7 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
     }
   END_DO_SET ();
   sqlo_choose_index (so, tb_dfe, merged_col_preds, &after_preds);
+  sqlo_in_place_in_pred (so, tb_dfe, &merged_col_preds, &after_preds);
   sqlo_tb_order (so, tb_dfe, merged_col_preds);
   if (after_preds)
     {
