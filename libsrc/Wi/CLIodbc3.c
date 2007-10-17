@@ -1459,11 +1459,8 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
 	*((SQLULEN *) ValuePtr) = bRowDesc ? desc->d_stmt->stmt_rowset_size : desc->d_stmt->stmt_parm_rows;
       else
 	return (SQL_ERROR);
-      if (ValuePtr)
-	*((SQLSMALLINT *) ValuePtr) = 0;
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLUINTEGER);
-
       return (SQL_SUCCESS);
 
     case SQL_DESC_ARRAY_STATUS_PTR:
@@ -2350,13 +2347,12 @@ virtodbc__SQLGetDescField (SQLHDESC descriptorHandle,
     case SQL_DESC_UNSIGNED:
       if (RecNumber > desc_count)
 	return (SQL_NO_DATA_FOUND);
-
       if (bAppDesc)
 	return (SQL_ERROR);
-
+      if (ValuePtr)
+	*((SQLSMALLINT *) ValuePtr) = 0;
       if (StringLengthPtr)
 	*StringLengthPtr = sizeof (SQLSMALLINT);
-
       break;
 
     default:
