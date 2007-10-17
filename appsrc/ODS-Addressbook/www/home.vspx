@@ -54,8 +54,6 @@
               self.v_lName := names [length (names) - 1];
           }
         } else {
-        self.abAction := 'edit';
-        if (self.account_role in ('public', 'guest'))
           self.abAction := 'view';
       }
       }
@@ -414,6 +412,12 @@
           self.abLabels := cast (get_keyword ('tbLabels', self.settings, '1') as integer);
           self.abChars := cast (get_keyword ('chars', self.settings, '60') as integer);
 
+          if (get_keyword ('tab', e.ve_params, '') = 'shared') {
+            self.abScope := 'MySharedContacts';
+            self.abAction := 'browse';
+            self.abTag := '';
+          }
+            
           self.mode_test();
         ]]>
       </v:before-data-bind>
@@ -450,7 +454,9 @@
 
                   if (cmd = 'create') {
                     self.abAction := cmd;
+
                     self.v_id := -1;
+                  self.v_kind := 0;
                     self.v_tags := '';
                     self.v_name := '';
                     self.v_title := '';
@@ -1241,7 +1247,7 @@
 
             <div class="new-form-header">
               <div style="float: left; padding-top: 3px;">
-                <v:label format="%s" value="--initcap(self.abAction) || ' Contact'" />
+                <v:label format="%s" value="--initcap(self.abAction) || case when (self.abAction = 'view') then case when (self.v_kind = 1) then ' Organization' else ' Person' end else ' Contact' end" />
               </div>
               <vm:if test="self.abAction <> 'view'">
                 <div style="float: right;">
@@ -1265,15 +1271,15 @@
             </div>
             <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
             <v:text name="dirty_force_global" xhtml_id="dirty_force_global" type="hidden" value="--get_keyword ('dirty_force_global', self.vc_event.ve_params, 'false')"/>
-            <div id="c1">
+            <div id="a" class="c1">
               <div class="tabs">
-                <vm:tabCaption tab="1" tabs="4" caption="Main" />&nbsp;
-                <vm:tabCaption tab="2" tabs="4" caption="Contact"/>&nbsp;
-                <vm:tabCaption tab="3" tabs="4" caption="Home"/>&nbsp;
-                <vm:tabCaption tab="4" tabs="4" caption="Business"/>&nbsp;
+                &nbsp;<vm:tabCaption tab="a" tabsCount="4" tabNo="0" caption="Main" />
+                &nbsp;<vm:tabCaption tab="a" tabsCount="4" tabNo="1" caption="Contact" />
+                &nbsp;<vm:tabCaption tab="a" tabsCount="4" tabNo="2" caption="Home" />
+                &nbsp;<vm:tabCaption tab="a" tabsCount="4" tabNo="3" caption="Business" />
               </div>
               <div class="contents">
-                <div id="1" class="tabContent" style="display: none;">
+                <div id="a_content_0" class="tabContent" style="display: none;">
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
@@ -1452,7 +1458,7 @@
                     </vm:if>
                   </table>
                 </div>
-                <div id="2" class="tabContent" style="display: none;">
+                <div id="a_content_1" class="tabContent" style="display: none;">
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
@@ -1533,7 +1539,7 @@
                     </tr>
                   </table>
                 </div>
-                <div id="3" class="tabContent" style="display: none;">
+                <div id="a_content_2" class="tabContent" style="display: none;">
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
@@ -1541,7 +1547,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:data-list name="ab_hCountry" sql="select '' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" auto-submit="1" >
+                          <v:data-list name="ab_hCountry" xhtml_id="ab_hCountry" sql="select '' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'ab_hCountry\', \'ab_hState\');" >
                    		    <v:after-data-bind>
       		                  <![CDATA[
       		                    if (e.ve_initiator = control) {
@@ -1570,7 +1576,7 @@
                       </th>
       		            <td>
                         <vm:if test="self.abAction <> 'view'">
-      		              <v:data-list name="ab_hState" value="--self.v_hState" sql="select * from WA_PROVINCE where WP_COUNTRY = self.ab_hCountry.ufl_value" key-column="WP_PROVINCE" value-column="WP_PROVINCE" />
+                          <v:data-list name="ab_hState" xhtml_id="ab_hState" value="--self.v_hState" sql="select * from WA_PROVINCE where WP_COUNTRY = self.ab_hCountry.ufl_value" key-column="WP_PROVINCE" value-column="WP_PROVINCE" />
                         </vm:if>
                         <?vsp self.viewField (self.v_hState); ?>
                       </td>
@@ -1755,7 +1761,7 @@
                     </tr>
                   </table>
                 </div>
-                <div id="4" class="tabContent" style="display: none;">
+                <div id="a_content_3" class="tabContent" style="display: none;">
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
@@ -1763,7 +1769,7 @@
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:data-list name="ab_bCountry" sql="select '' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" auto-submit="1" >
+                          <v:data-list name="ab_bCountry" xhtml_id="ab_bCountry" sql="select '' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'ab_bCountry\', \'ab_bState\');" >
                    		    <v:after-data-bind>
       		                  <![CDATA[
       		                    if (e.ve_initiator = control) {
@@ -1792,7 +1798,7 @@
                       </th>
       		            <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:data-list name="ab_bState" value="--self.v_bState" sql="select * from WA_PROVINCE where WP_COUNTRY = self.ab_bCountry.ufl_value" key-column="WP_PROVINCE" value-column="WP_PROVINCE" />
+                          <v:data-list name="ab_bState" xhtml_id="ab_bState" value="--self.v_bState" sql="select * from WA_PROVINCE where WP_COUNTRY = self.ab_bCountry.ufl_value" key-column="WP_PROVINCE" value-column="WP_PROVINCE" />
                         </vm:if>
                         <?vsp self.viewField (self.v_bState); ?>
                       </td>
@@ -2058,7 +2064,7 @@
                     if (not self.v_kind) {
                     if (not is_empty_or_null (self.ab_birthday.ufl_value)) {
 			                declare exit handler for sqlstate '*' {
-			                  self.vc_error_message := sprintf ('An invalid birth date (%s) is specified', tmp);
+                          self.vc_error_message := sprintf ('An invalid birth date (%s) is specified', self.ab_birthday.ufl_value);
 			                  self.vc_is_valid := 0;
            			        return;
 			                };
@@ -2198,7 +2204,6 @@
             <script>
               <![CDATA[
                 changeType($('ab_kind'));
-                initTab(4, 1);
               ]]>
             </script>
           </v:template>

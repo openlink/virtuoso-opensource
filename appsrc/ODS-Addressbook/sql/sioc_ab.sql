@@ -329,6 +329,7 @@ create procedure contact_insert (
   inout tags varchar)
 {
   declare iri, iri2, temp_iri varchar;
+	declare person_iri varchar;
 
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
@@ -356,6 +357,8 @@ create procedure contact_insert (
     ods_sioc_post (graph_iri, iri, sc_iri, creator_iri, name, created, updated, AB.WA.contact_url (domain_id, contact_id));
     ods_sioc_tags (graph_iri, iri, tags);
 
+		person_iri := person_iri (creator_iri);
+
     -- FOAF Data Space
 		if (kind = 1) {
 		  -- Organization
@@ -363,7 +366,7 @@ create procedure contact_insert (
   		
   		DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, sioc_iri ('scope_of'), r_iri);
   		DB.DBA.RDF_QUAD_URI   (graph_iri, r_iri, sioc_iri ('function_of'), iri);
-  		DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, foaf_iri ('knows'), iri);
+  		DB.DBA.RDF_QUAD_URI   (graph_iri, person_iri, foaf_iri ('knows'), iri);
   		if (not DB.DBA.is_empty_or_null (bMail))
   			DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), bMail);
   		if (not DB.DBA.is_empty_or_null (bWeb))
@@ -382,10 +385,12 @@ create procedure contact_insert (
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
     DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, sioc_iri ('scope_of'), r_iri);
     DB.DBA.RDF_QUAD_URI   (graph_iri, r_iri, sioc_iri ('function_of'), iri);
-    DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, foaf_iri ('knows'), iri);
+  		DB.DBA.RDF_QUAD_URI   (graph_iri, person_iri, foaf_iri ('knows'), iri);
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('nick'), name);
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), firstName);
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), lastName);
+		if (not DB.DBA.is_empty_or_null (fullName))
+		  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), fullName);
     if (not DB.DBA.is_empty_or_null (gender))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
     if (not DB.DBA.is_empty_or_null (icq))
@@ -852,7 +857,7 @@ create procedure sioc.DBA.rdf_addressbook_view_str ()
 		'
 			# Contact
 			sioc:addressbook_contact_iri (DB.DBA.ODS_ADDRESSBOOK_CONTACTS.U_NAME, DB.DBA.ODS_ADDRESSBOOK_CONTACTS.WAI_NAME, DB.DBA.ODS_ADDRESSBOOK_CONTACTS.P_ID)
-				a foaf:Person option (EXCLUSIVE) ;
+				a foaf:Person ;
 				dc:title P_NAME ;
 				dct:created P_CREATED ;
 				dct:modified P_UPDATED ;
@@ -938,7 +943,7 @@ create procedure sioc.DBA.rdf_addressbook_view_str_maps ()
       '
       # AddressBook
       ods:addressbook_contact (addressbook_contacts.U_NAME, addressbook_contacts.WAI_NAME, addressbook_contacts.P_ID)
-        a foaf:Person option (EXCLUSIVE) ;
+        a foaf:Person ;
         dc:title addressbook_contacts.P_NAME ;
         dct:created addressbook_contacts.P_CREATED ;
        	dct:modified addressbook_contacts.P_UPDATED ;

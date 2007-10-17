@@ -35,6 +35,7 @@ VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
 
 -- Tables
 AB.WA.exec_no_error('DROP TABLE AB.WA.GRANTS');
+AB.WA.exec_no_error('DROP TABLE AB.WA.ANNOTATIONS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.PERSONS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.TAGS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.SETTINGS');
@@ -44,7 +45,7 @@ AB.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'AddressBook\'');
 AB.WA.exec_no_error('drop type wa_AddressBook');
 
 -- Views
-AB.WA.exec_no_error('drop view SN..TAGS_VIEW');
+AB.WA.exec_no_error('drop view AB..TAGS_VIEW');
 
 -- Registry
 registry_remove ('ab_path');

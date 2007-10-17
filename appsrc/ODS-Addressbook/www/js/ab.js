@@ -254,43 +254,28 @@ function sortSelect(box) {
 
 // ---------------------------------------------------------------------------
 //
-function showTab(tab, tabs)
+function showTab(tabs, tabsCount, tabNo)
 {
-  for (var i = 1; i <= tabs; i++) {
-    var div = document.getElementById(i);
-    if (div != null) {
-      var divTab = document.getElementById('tab_'+i);
-      if (i == tab) {
-        var divNo = document.getElementById('tabNo');
-        divNo.value = tab;
-        div.style.visibility = 'visible';
-        div.style.display = 'block';
-        if (divTab != null) {
-          divTab.className = "tab activeTab";
-          divTab.blur();
-        };
-      } else {
-        div.style.visibility = 'hidden';
-        div.style.display = 'none';
-        if (divTab != null)
-          divTab.className = "tab";
+  if ($(tabs)) {
+    for (var i = 0; i < tabsCount; i++) {
+      var l = $(tabs+'_tab_'+i);      // tab labels
+      var c = $(tabs+'_content_'+i);  // tab contents
+      if (i == tabNo) {
+        if ($('tabNo'))
+          $('tabNo').value = tabNo;
+        if (c) {
+          OAT.Dom.show(c);
       }
+        OAT.Dom.addClass(l, "activeTab");
+        l.blur();
+      } else {
+        if (c) {
+          OAT.Dom.hide(c);
     }
+        OAT.Dom.removeClass(l, "activeTab");
   }
 }
-
-// ---------------------------------------------------------------------------
-//
-function initTab(tabs, defaultNo)
-{
-  var divNo = document.getElementById('tabNo');
-  var tab = defaultNo;
-  if (divNo != null) {
-    var divTab = document.getElementById('tab_'+divNo.value);
-    if (divTab != null)
-      tab = divNo.value;
   }
-  showTab(tab, tabs);
 }
 
 // ---------------------------------------------------------------------------
@@ -544,11 +529,11 @@ function changeType (obj)
 {
   showTab(1, 4); 
   if (obj.value != "1") {
-    OAT.Dom.show ('tab_2');
-    OAT.Dom.show ('tab_3');
+    OAT.Dom.show ('a_tab_1');
+    OAT.Dom.show ('a_tab_2');
   } else {
-    OAT.Dom.hide ('tab_2');
-    OAT.Dom.hide ('tab_3');
+    OAT.Dom.hide ('a_tab_1');
+    OAT.Dom.hide ('a_tab_2');
 }
 	var trNodes = document.getElementsByTagName("tr");
 
@@ -564,3 +549,65 @@ function changeType (obj)
 
 }
 
+function hasError(root) {
+	if (!root) {
+    // executingEnd();
+		alert('No data!');
+		return true;
+	}
+
+	/* error */
+	var error = root.getElementsByTagName('error')[0];
+  if (error) {
+	  var code = error.getElementsByTagName('code')[0];
+    if (OAT.Xml.textValue(code) != 'OK') {
+	    var message = error.getElementsByTagName('message')[0];
+      if (message)
+        alert (OAT.Xml.textValue(message));
+  		return true;
+    }
+  }
+  return false;
+}
+
+function updateState(countryName, stateName, stateValue)
+{
+  var obj = $(stateName);
+  obj.innerHTML = "";
+
+  if ($v(countryName) != '') {
+    var wsdl = "/ods_services/services.wsdl";
+    var serviceName = "ODS_USER_LIST";
+
+    var inputObject = {
+    	ODS_USER_LIST:{
+        pSid:document.forms['F1'].elements['sid'].value,
+        pRealm:document.forms['F1'].elements['realm'].value,
+        pList:'Province',
+        pParam:$v(countryName)
+    	}
+    }
+  	var x = function(xml) {
+  	  listCallback(xml, obj, stateValue);
+  	}
+  	OAT.WS.invoke(wsdl, serviceName, x, inputObject);
+  }
+}
+
+function listCallback (result, obj, objValue) {
+  var xml = OAT.Xml.createXmlDoc(result.ODS_USER_LISTResponse.CallReturn);
+	var root = xml.documentElement;
+	if (!hasError(root)) {
+    /* options */
+  	var items = root.getElementsByTagName("item");
+  	if (items.length) {
+			obj.options[0] = new Option('', '');
+  		for (var i=1; i<=items.length; i++) {
+  		  o = new Option(OAT.Xml.textValue(items[i-1]), OAT.Xml.textValue(items[i-1]));
+  			obj.options[i] = o;
+  		}
+  		if (objValue != null)
+  		  obj.value = objValue;
+  	}
+	}
+}
