@@ -465,7 +465,7 @@
                   tClass := '';
                   if (self.pTag = T_TAG)
                     tClass := 'nolink_a';
-                  http (sprintf ('<a href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span class="%s" style="%s">%s</span></a> ', T_TAG, T_TAG, tClass, tStyle, T_TAG));
+                  http (sprintf ('<a id="t_tag_%s" href="#" onclick="javascript: myTags(\'%s\');" name="pt_tag_%s"><span class="%s" style="%s">%s</span></a> ', T_TAG, T_TAG, T_TAG, tClass, tStyle, T_TAG));
                 }
               }
             ?>

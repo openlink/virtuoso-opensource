@@ -394,7 +394,7 @@ create procedure sioc.DBA.rdf_polls_view_str_maps ()
   return
       '
 	    # Polls
-	    ods:polls_post (polls_posts.U_NAME, polls_posts.WAI_NAME, polls_posts.P_ID)
+	ods:polls_post (polls_posts.U_NAME, polls_posts.WAI_NAME, polls_posts.P_ID) a sioc:Item ;
         dc:title polls_posts.P_NAME;
         dct:created polls_posts.P_CREATED ;
     	  dct:modified polls_posts.P_UPDATED ;
