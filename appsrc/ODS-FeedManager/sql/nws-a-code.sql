@@ -6644,3 +6644,24 @@ create procedure ENEWS.WA.subscription_create (
 _next:;
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.update_imageUri ()
+{
+  declare id, data, imageUri any;
+
+  if (registry_get ('news_table_version') = '1')
+    return;
+  for (select EF_ID, EF_DATA from ENEWS.WA.FEED) do {
+    id := EF_ID;
+    imageUri := ENEWS.WA.xml_get('imageUrl', EF_DATA);
+    update ENEWS.WA.FEED
+       set EF_IMAGE_URI = imageUri
+     where EF_ID = id;
+  }
+}
+;
+ENEWS.WA.update_imageUri();
+
+registry_set ('news_table_version', '1');

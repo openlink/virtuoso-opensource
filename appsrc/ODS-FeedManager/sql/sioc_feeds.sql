@@ -246,6 +246,8 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
     DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('parent_of'), iri);
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_container'), m_iri);
       DB.DBA.RDF_QUAD_URI (graph_iri, m_iri, sioc_iri ('container_of'), iri);
+      if (length (EF_TITLE))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), EF_TITLE);
     cnt := cnt + 1;
       if (mod (cnt, 500) = 0) {
 	commit work;
@@ -856,7 +858,7 @@ create procedure sioc.DBA.rdf_feeds_view_str ()
       '
 
 	# Feeds
-        sioc:feed_iri (DB.DBA.ODS_FEED_FEED_DOMAIN.EF_ID) a atom:Feed option (EXCLUSIVE) ;
+        sioc:feed_iri (DB.DBA.ODS_FEED_FEED_DOMAIN.EF_ID) a atom:Feed ;
         sioc:link sioc:proxy_iri (EF_URI) ;
 	atom:link sioc:proxy_iri (EF_URI) ;
 	atom:title EF_TITLE ;
@@ -968,6 +970,7 @@ create procedure sioc.DBA.rdf_subscriptions_view_str_maps ()
       # Feeds
 	    ods:feed (feed_domain.EF_ID)
 	      a atom:Feed ;
+            rdfs:label feed_domain.EF_TITLE ;
   	    sioc:link ods:proxy (feed_domain.EF_URI) ;
   	    atom:link ods:proxy (feed_domain.EF_URI) ;
   	    atom:title feed_domain.EF_TITLE ;
@@ -1028,6 +1031,7 @@ create procedure sioc.DBA.rdf_subscriptions_view_str_maps ()
 	    ods:feed (feed_posts.EFI_FEED_ID) sioc:container_of ods:feed_item (feed_posts.EFI_FEED_ID, feed_posts.EFI_ID) .
 
 	    ods:feed_item_text (feed_posts.EFI_FEED_ID, feed_posts.EFI_ID) a atom:Content ;
+              rdfs:label feed_posts.EFI_TITLE ;
 	      atom:type "text/xhtml" ;
 	      atom:lang "en-US" ;
 	      atom:body feed_posts.EFI_DESCRIPTION .

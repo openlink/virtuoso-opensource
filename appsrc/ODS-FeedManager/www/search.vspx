@@ -511,14 +511,13 @@
       </table>
       <br />
       <v:template type="simple" enabled="--either(equ(self.v_mode, 'simple'), 0, 1)">
-       	<div id="c1">
+        <div id="s" class="c1">
       		<div class="tabs">
-      		  &nbsp;
-            <vm:tabCaption tab="1" tabs="2" caption="Criteria"/>&nbsp;
-            <vm:tabCaption tab="2" tabs="2" caption="Options"/>&nbsp;
+            &nbsp;<vm:tabCaption tab="s" tabsCount="2" tabNo="0" caption="Criteria" />
+            &nbsp;<vm:tabCaption tab="s" tabsCount="2" tabNo="1" caption="Options" />
           </div>
       		<div class="contents">
-            <div id="1" class="tabContent" style="display: none;">
+            <div id="s_content_0" class="tabContent">
               <table class="form-body" cellspacing="0">
                 <tr>
                   <th>
@@ -648,7 +647,7 @@
                 </tr>
               </table>
             </div>
-            <div id="2" class="tabContent" style="display: none;">
+            <div id="s_content_1" class="tabContent" style="display: none;">
               <table class="form-body" cellspacing="0">
                 <tr>
                   <th>

@@ -39,14 +39,15 @@
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="js/enews.js"></script>
-      <script type="text/javascript" src="js/app.js"></script>
+      <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript">
         function myInit() {
           OAT.Preferences.imagePath = '/ods/images/oat/';
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         
-          gererateAPP (generateAPPList, {});
+          if (0 == 1)
+            gererateAPP('app_area', {});
         }
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
       </script>
@@ -61,6 +62,7 @@
       http(sprintf('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s?default-graph-uri=%U&query=%U&format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml')); 
     ?>
     <form name="F1">
+      <div id="app_area">
       <input type="hidden" name="sid" id="sid" value="&lt;?V get_keyword('sid', self.vc_event.ve_params) ?>"/>
       <input type="hidden" name="realm" id="realm" value="&lt;?V get_keyword('realm', self.vc_event.ve_params) ?>"/>
       <input type="hidden" name="fid" value="&lt;?V get_keyword('fid', self.vc_event.ve_params) ?>"/>
@@ -393,6 +395,7 @@
               parent.document.forms['F1'].submit();
         ]]>
       </script>
+      </div>  
     </form>
   </body>
 </html>

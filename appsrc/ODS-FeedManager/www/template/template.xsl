@@ -151,6 +151,7 @@
     <xsl:apply-templates select="vm:init"/>
     <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
         <ods:ods-bar app_type='eNews2'/>
+      <div id="app_area">
       <div style="background-color: #fff;">
         <div style="float: left;">
           <img src="image/enewsbanner_sml.jpg" alt="ODS-Feed Manager"/>
@@ -174,13 +175,24 @@
         </v:template>
         <br style="clear: left;"/>
       </div>
-      <div style="text-align: right; padding: 0em 0.5em 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
+        <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
+          <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
+            <?vsp 
+              if (self.domain_id > 0) {
+                http (concat (ENEWS.WA.domain_name (self.domain_id), ' (', ENEWS.WA.account_fullName (ENEWS.WA.domain_owner_id (self.domain_id)), ')')); 
+              } else {
+                http ('Public Feeds'); 
+              }
+            ?>
+          </div>
+          <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
           <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
             <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
             |
       	  </v:template>
           <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>
       </div>
+        </div>  
       <v:include url="enews_login.vspx"/>
       <table id="MTB">
         <tr>
@@ -223,6 +235,7 @@
 	    <div><vm:disclaimer /></div>
     </div>
       </div> <!-- FT -->
+      </div>
     </v:form>
   </xsl:template>
 
@@ -497,15 +510,12 @@
 
   <!--=========================================================================-->
   <xsl:template match="vm:tabCaption">
-    <div class="tabLabel">
-      <xsl:attribute name="id"><xsl:value-of select="concat('tabLabel_', @tab)"/></xsl:attribute>
       <xsl:element name="v:url">
-        <xsl:attribute name="url">javascript:showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>
+      <xsl:attribute name="url">javascript: showTab(\'<xsl:value-of select="@tab" />\', <xsl:value-of select="@tabsCount" />, <xsl:value-of select="@tabNo" />);</xsl:attribute>
         <xsl:attribute name="value"><xsl:value-of select="@caption"/></xsl:attribute>
-        <xsl:attribute name="xhtml_id"><xsl:value-of select="concat('tab_', @tab)"/></xsl:attribute>
-        <xsl:attribute name="xhtml_class">tab <xsl:if test="@activeTab = @tab">activeTab</xsl:if></xsl:attribute>
+      <xsl:attribute name="xhtml_id"><xsl:value-of select="concat(@tab, '_tab_', @tabNo)" /></xsl:attribute>
+      <xsl:attribute name="xhtml_class">tab noapp</xsl:attribute>
       </xsl:element>
-    </div>
   </xsl:template>
 
   <!--=========================================================================-->

@@ -50,13 +50,13 @@
       <div class="new-form-header">
         Preferences
       </div>
-      <div id="c1">
+      <div id="p" class="c1">
         <div class="tabs">
-          <vm:tabCaption tab="1" tabs="2" caption="Main"/>&nbsp;
-          <vm:tabCaption tab="2" tabs="2" caption="Conversation"/>&nbsp;
+          &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="0" caption="Main" />
+          &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="1" caption="Conversation" />
         </div>
         <div class="contents">
-          <div id="1" class="tabContent" style="display: none;">
+          <div id="p_content_0" class="tabContent">
             <table class="form-body" cellspacing="0">
               <tr>
                 <th width="30%">
@@ -120,7 +120,7 @@
               </tr>
             </table>
           </div>
-          <div id="2" class="tabContent" style="display: none;">
+          <div id="p_content_1" class="tabContent" style="display: none;">
             <table class="form-body" cellspacing="0">
               <v:template type="simple" enabled="--either (equ (ENEWS.WA.discussion_check (), 1), 0, 1)">
                 <tr>
