@@ -54,6 +54,9 @@
     <xsl:template match="*">
 	<xsl:copy>
 	    <xsl:apply-templates select="@*" mode="attr"/>
+	    <xsl:if test="local-name () = 'a' and not @id">
+		<xsl:attribute name="id">link-<xsl:value-of select="generate-id ()"/></xsl:attribute>
+	    </xsl:if>
 	    <xsl:apply-templates />
 	</xsl:copy>
     </xsl:template>

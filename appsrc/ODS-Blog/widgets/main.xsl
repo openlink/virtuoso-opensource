@@ -851,6 +851,27 @@ else if (length (self.catid))
       <?vsp
           }
       ?>
+      <![CDATA[
+      <script type="text/javascript">
+        var toolkitPath="/ods/oat";
+        var imagePath="/ods/images/oat/";
+
+        var featureList=["ajax2", "anchor", "ghostdrag"];
+      </script>
+      <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript" src="/ods/app.js"></script>
+      <script type="text/javascript">
+        function weblog2Init() {
+          OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Anchor.imagePath = OAT.Preferences.imagePath;
+          OAT.Anchor.zIndex = 1001;
+
+	  if (<?V get_keyword ('App', self.opts, 1) ?>  == 1)
+            gererateAPP('texttd', {});
+        }
+        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, weblog2Init);
+      </script>
+      ]]>
     </head>
   </xsl:template>
 
@@ -1988,21 +2009,6 @@ window.onload = function (e)
                           else
                             http ('On del.icio.us:');
                           http (sprintf (' <a href="http://del.icio.us/tag/%U">%s</a> ', BT_TAG, BT_TAG));
-                          cinx := cinx + 1;
-                        }
-                      ?>
-                    </div>
-                    <div class="tags" >
-                      <?vsp
-                        cinx := 0;
-		      for select BT_TAG from BLOG..BLOG_POST_TAGS_STAT where postid = t_post_id
-			do
-                        {
-                          if (cinx > 0)
-                            http ('|');
-                          else
-			  http ('On de.lirio.us');
-			  http (sprintf (' <a href="http://de.lirio.us/rubric/entries/tags/%U">%s</a> ', BT_TAG, BT_TAG));
                           cinx := cinx + 1;
                         }
                       ?>
@@ -6745,6 +6751,10 @@ window.onload = function (e)
           <td/>
           <td><v:check-box name="show_tags_ckbx" xhtml_id="show_tags_ckbx" value="1" initial-checked="--get_keyword('TagGem', self.opts, 1)"/><label for="show_tags_ckbx">Show Tags</label></td>
         </tr>
+        <tr>
+          <td/>
+          <td><v:check-box name="show_app_ckbx" xhtml_id="show_app_ckbx" value="1" initial-checked="--get_keyword('App', self.opts, 1)"/><label for="show_app_ckbx">Show A++ links</label></td>
+        </tr>
 
 
         <tr><th colspan="2"><h2>Filters</h2></th></tr>
@@ -6796,6 +6806,7 @@ window.onload = function (e)
                 opts := BLOG.DBA.BLOG2_SET_OPTION('ShowXBEL', opts, self.show_xbel_ckbx.ufl_selected);
                 opts := BLOG.DBA.BLOG2_SET_OPTION('TagGem', opts, self.show_tags_ckbx.ufl_selected);
                 opts := BLOG.DBA.BLOG2_SET_OPTION('Adblock', opts, self.adds_filter.ufl_value);
+                opts := BLOG.DBA.BLOG2_SET_OPTION('App', opts, self.show_app_ckbx.ufl_selected);
                 declare _photo, match varchar;
                 _photo := trim(self.icon1.ufl_value);
                 if (length(_photo) > 0)

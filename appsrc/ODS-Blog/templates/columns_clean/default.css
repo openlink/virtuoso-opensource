@@ -1,0 +1,757 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2006 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
+
+body {
+  font-family: arial, helvetica, sans-serif;
+  color: black;
+  margin: 0;
+  padding: 0;
+  z-index: 0;
+}
+
+* {
+  font-size: 9pt;
+  color: #135193;
+}
+
+h1 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  margin-right: 3em;
+  font-size: 18pt;
+}
+
+h2.welcome-message {
+  margin-left: 20px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  margin-right: 5em;
+  font-size: 10pt;
+  color: #FFFFFF;
+}
+
+h2.blog-about {
+  font-size: 12pt;
+  font-style: italic;
+  color: #ded;
+  margin-top: 3px;
+  margin-left: 20px;
+}
+
+#login-box {
+  text-align: right;
+  margin-right: 5px;
+}
+
+#login-box div {
+  display: inline;
+}
+
+#login-box a {
+  color: #343;
+  text-decoration: underline;
+}
+
+form {
+  display: inline;
+  width: 0px;
+  padding: 0px;
+  margin: 0px;
+}
+
+div.clean {
+  position: relative;
+  background-color: #FFFFFF;
+  width: 980px;
+
+}
+
+
+div.blog-header {
+  margin: 0px;
+  background: #0075A8;
+  text-align: left;
+  width: 100%;
+  padding-bottom: 0px;
+}
+
+div.blog-header h1 {
+  margin-top: 0px;
+  margin-bottom: 0px;
+  padding-top: 10px;
+  padding-left: 20px;
+  color: #552;
+  font-size: 18pt;
+  font-family: Arial, Helvetica, sans-serif;
+  letter-spacing: 8px;
+}
+
+div.blog-header h1 a {
+  font-size: 16pt;
+}
+
+div.blog-header a {
+  text-decoration: none;
+  color: #ded;
+}
+
+div.blog-header a:hover {
+  text-decoration: underline;
+}
+
+#blog-view-switch {
+  font-size: 12pt;
+  text-align: left;
+  padding-right: 10px;
+  padding-left: 1em;
+  padding-bottom: 2px;
+  padding-top: 3px;
+  background: #85B9D2;
+  color: #FFF;
+}
+
+#blog-view-switch a {
+  padding-top: 2px;
+  padding-left: 2px;
+  padding-right: 2px;
+  padding-bottom: 4px;
+  border-top: 1px solid #CCC;
+  border-left: 1px solid #CCC;
+  border-right: 1px solid #FFF;
+  font-size: 12pt;
+  color: #FFF;
+  text-decoration: none;
+}
+
+/* XXX: Temporary until the class name is changed */
+#blog-view-switch a.blog_selected {
+  background-color: white;
+  color: #445555;
+  border-bottom: 0;
+  padding-bottom: 5px;
+}
+
+#blog-view-switch a.selected {
+  background-color: white;
+  color: #445555;
+  border-bottom: 0;
+  padding-bottom: 5px;
+}
+
+#blog-view-switch img {
+  vertical-align: middle;
+}
+
+#search-combo a {
+  border: 0;
+}
+
+
+#navbartop {
+  margin-right: 5px;
+  padding-right: 3px;
+}
+
+#navbartop * {
+  text-align: right;
+  color: darkred;
+  margin: 0px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  width: 100%;
+}
+
+/* XXX Deprecated see below */
+.button {
+  border: none;
+  padding: 2px 2px;
+  margin: 3px 0px;
+  font-weight: normal;
+  cursor: pointer;
+  color: #343;
+  background-color: transparent;
+  font-family: arial, helvetica, sans-serif;
+  text-decoration: none;
+}
+
+.button:hover {
+  color: black;
+  background-color: white;
+}
+
+/* When bug#9149 is fixed,
+Replaces .button above for commands */
+
+ul.cmds-menu {
+  padding: 0px;
+}
+
+ul.cmds-menu li {
+  padding: 0px;
+  list-style-type: none;
+}
+
+ul.cmds-menu li a {
+  text-decoration: none;
+}
+
+input.real_button {
+  border: 1px solid #252;
+  color: #343;
+  background-color: #85B9D2;
+}
+
+input.real_button:hover {
+  background-color: #ded;
+  border: 1px solid #252;
+}
+
+select {
+  border: 1px solid #343;
+  color: #343;
+  background-color: white;
+}
+
+textarea {
+  border: 1px solid #343;
+  color: #343;
+  background-color: white;
+}
+
+/* Generic block class */
+
+div.block {
+  width: 198px;
+  border: 1px solid #687;
+  background-color: #efe;
+  margin: 5px 5px;
+  text-align: left;
+  color: #135193;
+}
+
+div.block p {
+  margin: 3px;
+}
+
+div.block div {
+  margin: 3px;
+}
+
+div.block h3 {
+  border: none;
+  margin: 0px;
+  padding-left: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+/* Individual blocks */
+
+#details-block {
+  float: left;
+}
+
+#tags-block {
+  float: right;
+}
+
+#details-block a {
+  text-decoration: underline;
+}
+
+#info-calendar {
+  float: right;
+}
+
+#syndicate-block {
+  float: right;
+}
+
+#syndicate-block ul {
+  margin: 0;
+  padding: 0;
+}
+
+#syndicate-block ul li {
+  padding-left: 0px;
+  margin-left: 0px;
+  list-style-type: none;
+}
+
+#recent-block {
+  float: left;
+  font-size: 8pt;
+}
+
+#recent-block ul {
+  margin: 3px;
+  padding: 0;
+}
+
+#recent-block ul li {
+  margin-top: 4px;
+  list-style-type: none;
+}
+
+#cmds-block {
+  padding-left: 8px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+/* XXX: Needs be modified when
+ bug#9149 is fixed */
+
+#cmds-block a {
+  padding-left: 2px;
+}
+
+#cmds-block a:hover {
+  background-color: white;
+}
+
+
+#cal-block {
+  float: right;
+}
+
+#search-block {
+  float: right;
+}
+
+#sort-block {
+  float: right;
+}
+
+#categories-block {
+  float: left;
+}
+
+#translate-block {
+  float: left;
+
+}
+
+#translate-block img {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+input.button {
+  height: 17px;
+}
+
+/*
+div.nav-column {
+  position: absolute;
+  left: 0px;
+  width: 160px;
+  padding 6px;
+}
+*/
+div.content-column {
+  width: auto;
+  padding: 6px;
+  padding-left: 180px;
+  padding-right: 180px;
+  text-align: center;
+}
+
+div.info-column {
+  float: right;
+  right: 5px;
+  width: 420px;
+  background-color: #FFFFFF;
+}
+
+#calendar {
+  font-size: 80%;
+  text-align: center;
+  margin: auto;
+}
+
+#calendar td, #calendar th {
+}
+
+.calactive a {
+   color: black;
+ }
+.calnotactive a {
+   color: black;
+   text-decoration: none;
+ }
+.caltoday {
+   color: black;
+   border:1px dotted #343;
+ }
+.caltoday a {
+   color: black;
+   font-weight: bold;
+ }
+
+label.button {
+  display: block;
+  width: 100%;
+}
+
+#error {
+  color: red;
+  font-weight: bold;
+  background-color: white;
+  padding: 3px 0px;
+  margin: 2px;
+  text-align: center;
+}
+
+div.page-container {
+  text-align: left;
+  padding: 6px;
+  margin: auto;
+  float: left;
+  width: 546px;
+  background-color: #FFFFFF;
+}
+/*  padding-right: 220px;*/
+
+
+div.archive-page-container {
+  text-align: left;
+  padding: 6px;
+  margin: auto;
+}
+
+/* XXX should be renamed as post-container */
+div.message {
+  border: 1px solid #a0d0a0;
+  margin-bottom: 4px;
+  color: black;
+}
+
+div.pubdate {
+  font-size: 90%;
+  color: black;
+  margin: 3px;
+  margin-left: 20px;
+  margin-right: 20px;
+  display: block;
+  position: relative;
+  top: 0px;
+  padding: 3px;
+}
+
+/* XXX: shouldn't be a table there */
+div.pubdate table td {
+  font-size: 90%
+}
+
+span.modified-date {
+  font-size: 90%;
+}
+
+.state-mark {
+  padding-left: 6px;
+  color: darkred;
+  font-weight: normal;
+}
+
+.modified-date {
+  color: black;
+  font-weight: normal;
+}
+
+span.modified-date:before {
+  content: "[ "
+}
+
+span.modified-date:after {
+  content: " ]"
+}
+
+span.replacing {
+  margin: 0;
+  padding: 2px;
+  color: red;
+  border: 1px solid red;
+}
+
+div.date_separator {
+  font-size: 12pt;
+  border-bottom: 1px solid #343;
+}
+
+div.summary_post {
+  margin-top: 3px;
+  margin-bottom: 7px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed #343;
+}
+
+div.post {
+  margin: 5px;
+}
+
+div.post-excerpt {
+  font-size: 9pt;
+  color: #454;
+  margin-left: 5px;
+  padding-bottom: 4px;
+}
+
+div.tags {
+  font-size: 7pt;
+}
+
+div.post-title {
+  border-bottom: 1px solid #135193;
+  padding: 6px;
+  text-align: left;
+  position: relative;
+  color: black;
+  font-weight: bold;
+  font-size: 14pt;
+}
+
+span.dc-title {
+  color: black;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+div.post-content {
+  background-color: #fff;
+  color: black;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+}
+
+div.post-actions {
+  font-size: 90%;
+  background-color: #fff;
+  color: black;
+  margin: 3px;
+  margin-left: 20px;
+  margin-right: 20px;
+  padding: 3px;
+  text-align: right;
+}
+
+div.post-actions a
+{
+  font-size: 90%;
+  background-color: #85B9D2;
+  border: 1px solid #252;
+  margin-left: 3px;
+  padding-left: 2px;
+  padding-right: 2px;
+  padding-bottom: 1px;
+  padding-top: 1px;
+  text-decoration: none;
+}
+
+div.post-actions a:hover
+{
+  background-color: #ded;
+  border: 1px solid #252;
+  margin-left: 3px;
+  padding-left: 2px;
+  padding-right: 2px;
+  text-decoration: none;
+}
+
+/* Well at least this selector works with Gecko */
+
+div.post-actions a[title="Delete"]:hover {
+  background: red;
+}
+
+/* XXX: Should be renamed */
+
+div.posts-title {
+  font-size: smaller;
+  text-align: right;
+  margin-bottom: 6px;
+}
+
+div.posts-title a {
+  font-size: 90%;
+  text-decoration: none;
+}
+
+div.trackbacks-ctr {
+  font-size: 90%;
+  border: none;
+  display: block;
+  text-align: left;
+}
+
+div.tb-url {
+  font-size: 90%;
+}
+
+/* Woohoo */
+div.tb-url .url {
+  font-size: 100%;
+}
+
+div.technoratitags {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+div.pingback-title {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-size: 140%;
+  font-weight: bold;
+}
+
+div.pingback-contents {
+  background-color: #E5E5EE;
+  margin: 3px;
+  border: none;
+  display: block;
+  padding: 6px;
+  text-align: left;
+  margin-left: 24px;
+}
+
+div.referrals-ctr {
+  border: none;
+  display: block;
+  text-align: left;
+}
+
+div.comments-ctr {
+  border: none;
+  display: block;
+  text-align: left;
+  background-color: #efe;
+  padding-left: 0;
+}
+
+div.comments-ctr h2
+{
+  font-size: 12pt;
+  color: #FFFFFF;
+  background-color: #85B9D2;
+  border-bottom: 2px solid #252;
+}
+
+/* Single comment container */
+
+div.comment {
+  margin-bottom: 1.5ex;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #aba;
+}
+
+/* The comment message container */
+
+div.comment-msg-ctr {
+}
+
+/* Comment actions - delete etc */
+div.comment-actions {
+  text-align: right;
+  margin-top: 4px;
+  margin-right: 3px;
+}
+
+div.comment-actions a.cmd {
+  background-color: #85B9D2;
+  border: 1px solid #252;
+  margin-left: 3px;
+  padding-left: 2px;
+  padding-right: 2px;
+  padding-bottom: 1px;
+  padding-top: 1px;
+  text-decoration: none;
+  text-align: right;
+}
+
+div.comment-actions a.cmd:hover
+{
+  background-color: red;
+  border: 1px solid #252;
+  margin-left: 3px;
+  padding-left: 2px;
+  padding-right: 2px;
+  text-decoration: none;
+}
+
+div.comment-header {
+  margin-bottom: 0.5ex;
+}
+
+div.comment-header .comment-no {
+  font-weight: bold;
+}
+
+div.comment-header .comment-date {
+  font-style: italic;
+}
+
+div.comment-footer {
+  text-align: right;
+}
+
+table.linkblog-posts {
+  width: 100%;
+}
+
+table.linkblog_tags td {
+  padding-right: 3px;
+}
+
+th.date {
+  font-size: 12pt;
+  font-weight: normal;
+  border-bottom: 1px solid green;
+  padding-top: 10px;
+}
+
+#powered_by
+{
+  text-align: center;
+  font-size: x-small;
+}
+
+#disclaimer
+{
+  text-align: center;
+  font-size: x-small;
+}
+
+#copyright
+{
+  text-align: center;
+  font-size: x-small;
+}
+
