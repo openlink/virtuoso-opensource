@@ -1418,9 +1418,16 @@ create procedure WV.WIKI.VSPATTACHMENTVIEW (
 
   if (_attachment_name[0] = 47)
    _attachment_name := subseq (_attachment_name, 1);
+
+  declare mime_type any;
+  mime_type := xml_uri_get ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_TYPE:' || WS.WS.COL_PATH (_attachment_id_2),  _attachment_name);
+  if (isstring (mime_type) and length (mime_type) > 50)
+    mime_type := http_mime_type(_attachment_name);
+  if (not isstring (mime_type) or mime_type = '')
+    mime_type := http_mime_type(_attachment_name);
   http_rewrite ();
   http_header ('Content-Type: ' 
-	|| xml_uri_get ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_TYPE:' || WS.WS.COL_PATH (_attachment_id_2),  _attachment_name) 
+	|| mime_type
 	|| '\r\n');
   http (xml_uri_get ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || WS.WS.COL_PATH (_attachment_id_2),  _attachment_name));
 }

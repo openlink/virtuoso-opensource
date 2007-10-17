@@ -92,7 +92,6 @@
   params := vector_concat (params, _path_details);
   connection_set ('WIKIV BaseAdjust', _base_adjust);
   _attachment := coalesce (_attachment, get_keyword ('att', params));
-  
   _uid := WV.WIKI.VSPXGETUID (connection_get ('vspx_user'), _realm, _sid);
   _user := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _uid);
   connection_set('WikiUser', _user);
@@ -376,7 +375,9 @@ content:
       WV.WIKI.CHECKREADACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id);
       declare filename,mime_type varchar;
       filename := get_keyword ('filename', get_keyword ('attr-filepath', params));
-      mime_type := get_keyword ('Content-Type', get_keyword ('attr-filepath', params));
+      mime_type := get_keyword ('Content-Type', get_keyword ('attr-filepath', params), '');
+      if (mime_type = '')
+        mime_type := http_mime_type(filename);
       if (filename is not null)
 	{
 	  declare arr any;
