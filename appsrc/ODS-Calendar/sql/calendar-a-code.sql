@@ -2583,7 +2583,7 @@ create procedure CAL.WA.dashboard_get(
 
     http ('<event>', ses);
     http (sprintf ('<dt>%s</dt>', date_iso8601 (E_UPDATED)), ses);
-    http (sprintf ('<title><![CDATA[%s]]></title>', E_SUBJECT), ses);
+    http (sprintf ('<title><![CDATA[%s]]></title>', coalesce (E_SUBJECT, 'No subject')), ses);
     http (sprintf ('<link><![CDATA[%s]]></link>', E_URI), ses);
     http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
     http (sprintf ('<uid>%s</uid>', uname), ses);
@@ -2650,6 +2650,15 @@ create procedure CAL.WA.settings_weekStarts (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.settings_weekStarts2 (
+  in domain_id integeger)
+{
+  CAL.WA.settings_weekStarts (CAL.WA.settings (CAL.WA.domain_owner_id (domain_id)));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.settings_timeZone (
   in settings any)
 {
@@ -2657,6 +2666,14 @@ create procedure CAL.WA.settings_timeZone (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.settings_timeZone2 (
+  in domain_id integeger)
+{
+  return CAL.WA.settings_timeZone (CAL.WA.settings (CAL.WA.domain_owner_id (domain_id)));
+}
+;
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.settings_dateFormat (
@@ -2861,7 +2878,7 @@ create procedure CAL.WA.event_occurAtDate (
     return 0;
 
   -- deleted occurence
-  if (not isnull (strstr (eRepeatExceptions, '<' || cast (datediff ('day', eEventStart, dt) as varchar) || '>')))
+  if (not isnull (strstr (eRepeatExceptions, '<' || cast (datediff ('day', CAL.WA.dt_dateClear (eEventStart), dt) as varchar) || '>')))
     return 0;
 
   -- Every N-th day(s)
@@ -3057,12 +3074,99 @@ create procedure CAL.WA.event_nextOccur (
                                 eRepeatUntil,
                                 eRepeatExceptions,
                                 weekStarts,
-                                iInterval))
-      return dt;
+                                iInterval)) {
+      return dateadd ('day', datediff('day', eEventStart, dt), eEventStart);
+    }
     dt := dateadd ('day', iInterval, dt);
   }
 
   return null;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.event_nextReminder (
+  in dt date,
+  in eEvent integer,
+  in eEventStart datetime,
+  in eRepeat varchar,
+  in eRepeatParam1 integer,
+  in eRepeatParam2 integer,
+  in eRepeatParam3 integer,
+  in eRepeatUntil datetime,
+  in eRepeatExceptions varchar,
+  in weekStarts varchar := 'm',
+  in eReminder integer,
+  in eReminderDate datetime)
+{
+  declare nextOccur datetime;
+
+  if (eReminder = 0)
+    return null;
+  if (eEvent)
+    eEventStart := CAL.WA.dt_dateClear (eEventStart);
+  nextOccur := CAL.WA.event_nextOccur (dateadd ('second', eReminder, dt),
+                                       eEvent,
+                                       eEventStart,
+                                       eRepeat,
+                                       eRepeatParam1,
+                                       eRepeatParam2,
+                                       eRepeatParam3,
+                                       eRepeatUntil,
+                                       eRepeatExceptions,
+                                       weekStarts);
+  if (isnull (nextOccur))
+    return null;
+  if ((eReminderDate is not null) and (eReminderDate >= dateadd ('second', -eReminder, nextOccur)))
+    return null;
+  return dateadd ('second', -eReminder, nextOccur);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.event_addReminder (
+  in dt date,
+  in eID integer,
+  in eDomainID integer,
+  in event integer,
+  in eEventStart datetime,
+  in eEventEnd datetime,
+  in eRepeat varchar,
+  in eRepeatParam1 integer,
+  in eRepeatParam2 integer,
+  in eRepeatParam3 integer,
+  in eRepeatUntil datetime,
+  in eRepeatExceptions varchar,
+  in weekStarts varchar := 'm',
+  in eReminder integer,
+  in eReminderDate datetime)
+{
+  declare nextReminderDate datetime;
+
+  nextReminderDate := CAL.WA.event_nextReminder (dt,
+                                                 event,
+                                                 eEventStart,
+                                                 eRepeat,
+                                                 eRepeatParam1,
+                                                 eRepeatParam2,
+                                                 eRepeatParam3,
+                                                 eRepeatUntil,
+                                                 eRepeatExceptions,
+                                                 CAL.WA.settings_weekStarts2 (eDomainID),
+                                                 eReminder,
+                                                 eReminderDate);
+  if (nextReminderDate is not null) {
+    insert into CAL.WA.ALARMS (A_DOMAIN_ID, A_EVENT_ID, A_EVENT_OFFSET, A_ACTION, A_TRIGGER)
+      values (eDomainID, eID, 0, 0, nextReminderDate);
+  }
+  update CAl.WA.EVENTS
+     set E_REMINDER_DATE = nextReminderDate
+   where E_ID = eID
+     and E_DOMAIN_ID = eDomainID;
+
+  return nextReminderDate;
 }
 ;
 
@@ -3203,7 +3307,7 @@ create procedure CAL.WA.events_forPeriod (
           and E_KIND = 0
           and E_REPEAT <> ''
           and E_EVENT_START < dtEnd
-          and ((E_REPEAT_UNTIL is null) or (E_REPEAT_UNTIL < dtEnd))) do
+          and ((E_REPEAT_UNTIL is null) or (E_REPEAT_UNTIL >= dtStart))) do
   {
     tzEventStart := CAL.WA.event_gmt2user (E_EVENT_START, pTimezone);
     tzRepeatUntil := CAL.WA.event_gmt2user (E_REPEAT_UNTIL, pTimezone);
@@ -3268,7 +3372,7 @@ create procedure CAL.WA.task_update (
   in priority integer,
   in status varchar,
   in complete integer,
-  in notes varchar)
+  in notes varchar := '')
 {
   if (id = -1) {
     id := sequence_next ('CAL.WA.event_id');
@@ -3917,105 +4021,15 @@ create procedure CAL.WA.export_vcal (
 
 --------------------------------------------------------------------------------
 --
--- find next occurence of the event in a given period of time
---
---------------------------------------------------------------------------------
-create procedure CAL.WA.alarm_nextDate (
-  in dt date,
-  in eEventStart datetime,
-  in eEventEnd datetime,
-  in eRepeat varchar,
-  in eRepeatParam1 integer,
-  in eRepeatParam2 integer,
-  in eRepeatParam3 integer,
-  in eRepeatUntil datetime,
-  in eRepeatExceptions varchar,
-  in eRemainder integer,
-  in eRemainderDate date)
-{
-  declare dtEnd date;
-  declare iInterval integer;
-
-  if (eRemainder <= 0)
-    return null;
-
-  if (isnull (eRemainderDate) and is_empty_or_null (eRepeat))
-    return dateadd ('minute', -eRemainder, eEventStart);
-
-  if (is_empty_or_null (eRepeat))
-    return null;
-
-  if (isnull (eRemainderDate))
-    eRemainderDate := dt;
-
-  if (eRemainderDate < dt)
-    eRemainderDate := dt;
-
-  iInterval := 1;
-  dtEnd := dateadd('day', 397, dt);
-  while (dt <= dtEnd) {
-    if (CAL.WA.alarm_checkDate (dt,
-                                eEventEnd,
-                                eRepeat,
-                                eRepeatParam1,
-                                eRepeatParam2,
-                                eRepeatParam3,
-                                eRepeatUntil,
-                                eRepeatExceptions,
-                                iInterval))
-      return dt;
-    dt := dateadd ('day', iInterval, dt);
-  }
-
-  return null;
-}
-;
-
---------------------------------------------------------------------------------
---
--- check if the event is occurred on this date... and if occurred, prepare next date to check
---
---------------------------------------------------------------------------------
-create procedure CAL.WA.alarm_checkDate (
-  in dt datetime,
-  in eEventEnd datetime,
-  in eRepeat datetime,
-  in eRepeatParam1 integer,
-  in eRepeatParam2 integer,
-  in eRepeatParam3 integer,
-  in eRepeatUntil integer,
-  in eRepeatExceptions varchar,
-  in eRemainderDate datetime,
-  inout iInterval integer)
-{
-  if (dt < eRemainderDate) {
-    iInterval := datediff ('day', dt, eRemainderDate);
-    return 0;
-  }
-  if (dt > eEventEnd) {
-    iInterval := 366;
-    return 0;
-  }
-
-  if (eRepeat = 'D1') {
-    iInterval := eRepeatParam1;
-    if (mod (datediff ('day', eRemainderDate, dt), eRepeatParam1) = 0)
-      return 1;
-    return 0;
-  }
-}
-;
-
---------------------------------------------------------------------------------
---
 create procedure CAL.WA.alarm_scheduler ()
 {
   declare dt, nextReminderDate date;
-  declare eID, eDomainID, eEventStart, eEventEnd, eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil, eRepeatExceptions, eReminder, eReminderDate any;
+  declare eID, eDomainID, eEvent, eEventStart, eEventEnd, eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil, eRepeatExceptions, eReminder, eReminderDate any;
 
   dt := curdate ();
   declare cr cursor for select E_ID,
                                E_DOMAIN_ID,
+                               E_EVENT,
                                E_EVENT_START,
                                E_EVENT_END,
                                E_REPEAT,
@@ -4027,35 +4041,31 @@ create procedure CAL.WA.alarm_scheduler ()
                                E_REMINDER,
                                E_REMINDER_DATE
                           from CAL.WA.EVENTS
-                         where E_REMINDER_DATE <= dt
-                           and E_REMINDER_DATE is not null
-                           and (E_REPEAT_UNTIL is null or E_REPEAT_UNTIL <= dt)
-                           and (E_REPEAT <> '' or E_EVENT_END <= dt);
+                         where E_KIND = 0
+                           and E_REMINDER <> 0
+                           and E_REMINDER_DATE <= dt;
 
   whenever not found goto _done;
   open cr;
   while (1) {
-    fetch cr into eID, eDomainID, eEventStart, eEventEnd, eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil, eRepeatExceptions, eReminder, eReminderDate;
-    insert into CAL.WA.ALARMS (A_DOMAIN_ID, A_EVENT_ID, A_EVENT_OFFSET, A_ACTION, A_TRIGGER, A_REPEAT, A_DURATION)
-      values (eID, eDomainID, 0, 0, eReminderDate, 1, 0);
+    fetch cr into eID, eDomainID, eEvent, eEventStart, eEventEnd, eRepeat, eRepeatParam1, eRepeatParam2, eRepeatParam3, eRepeatUntil, eRepeatExceptions, eReminder, eReminderDate;
 
-    nextReminderDate := null;
-    if (not (is_empty_or_null (eRepeat) or is_empty_or_null (eReminder)))
-      nextReminderDate := CAL.WA.alarm_nextDate (dt,
+    nextReminderDate := CAL.WA.event_addReminder (CAL.WA.event_user2gmt (dt, CAL.WA.settings_timeZone2 (eDomainID)),
+                                                  eID,
+                                                  eDomainID,
+                                                  eEvent,
                                                  eEventStart,
                                                  eEventEnd,
+                                                  eEventEnd,
                                                  eRepeat,
                                                  eRepeatParam1,
                                                  eRepeatParam2,
                                                  eRepeatParam3,
                                                  eRepeatUntil,
                                                  eRepeatExceptions,
+                                                  CAL.WA.settings_weekStarts2 (eDomainID),
                                                  eReminder,
                                                  eReminderDate);
-    update CAl.WA.EVENTS
-       set E_REMINDER_DATE = nextReminderDate
-     where E_ID = eID
-       and E_DOMAIN_ID = eDomainID;
   }
 _done:;
   close cr;

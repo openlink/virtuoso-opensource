@@ -1,0 +1,91 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2007 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+
+  declare domain_id, account_id integer;
+  declare action, subAction any;
+  declare aSession any;
+
+  action := get_keyword ('a', params, '');
+  subAction := get_keyword ('sa', params, '');
+
+  aSession   := CAL.WA.session_restore (params);
+  domain_id  := cast (get_keyword('domain_id', aSession, '0') as integer);
+  account_id := cast (get_keyword('user_id', aSession, '0') as integer);
+
+  if (domain_id > 0) {
+    if (action = 'alarms') {
+      if (subAction = 'list') {
+        declare id integer;
+        declare cTimeZone, cDateFormat, cTimeFormat varchar;
+        declare cTimeNow datetime;
+        declare settings, sStream, x any;
+
+        sStream := string_output();
+        settings := CAL.WA.settings (account_id);
+        cTimeZone := CAL.WA.settings_timeZone (settings);
+        cTimeFormat := CAL.WA.settings_timeFormat (settings);
+        cDateFormat := CAL.WA.settings_dateFormat (settings);
+        cTimeNow := CAL.WA.event_user2gmt (now (), cTimeZone);
+
+        for (select A_ID          _id,
+                    A_TRIGGER     _trigger,
+                    A_SHOWN       _shown,
+                    E_SUBJECT     _subject,
+                    E_REMINDER    _reminder
+               from CAL.WA.ALARMS,
+                    CAL.WA.EVENTS
+              where A_DOMAIN_ID = domain_id
+                and A_EVENT_ID  = E_ID
+              order by A_TRIGGER) do {
+          if (datediff ('second', _trigger, cTimeNow) >= 0) {
+            if (isnull (_shown) or (datediff ('minute', _shown, cTimeNow) >= 5)) {
+              http (sprintf ('<tr id="reminderTR_%d">', _id), sStream);
+                http ('<td align="center" valign="top">', sStream);
+                  http (sprintf ('<input type="checkbox" name="cbr_item" value="%d" onclick="selectCheck(this, \'cbr_item\')" />', _id), sStream);
+                http ('</td>', sStream);
+                http ('<td nowrap="nowrap">', sStream);
+                  http (coalesce (_subject, 'No subject'), sStream);
+                http ('</td>', sStream);
+                http ('<td nowrap="nowrap">', sStream);
+                  http (CAL.WA.dt_datetimestring (CAL.WA.event_gmt2user (dateadd ('second', _reminder, _trigger), cTimeZone), cDateFormat, cTimeFormat), sStream);
+                http ('</td>', sStream);
+              http ('</tr>', sStream);
+              update CAL.WA.ALARMS set A_SHOWN = cTimeNow where A_ID = _id;
+            }
+          }
+        }
+        http (string_output_string(sStream));
+      }
+      if (subAction = 'dismiss') {
+        declare N integer;
+        declare reminders any;
+
+        reminders := split_and_decode (get_keyword ('reminders', params, ''), 0, '\0\0,');
+        for (N := 0; N < length (reminders); N := N + 1)
+          delete from CAL.WA.ALARMS where A_ID = cast (reminders[N] as integer);
+
+      }
+    }
+  }
+
+?>

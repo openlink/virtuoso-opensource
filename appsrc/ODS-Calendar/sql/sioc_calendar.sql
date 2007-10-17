@@ -27,6 +27,7 @@ create procedure calendar_event_iri (
   in domain_id varchar,
   in event_id integer)
 {
+  declare kind integer;
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
 
@@ -34,7 +35,8 @@ create procedure calendar_event_iri (
     from DB.DBA.SYS_USERS, DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
    where WAI_ID = domain_id and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = U_ID;
 
-  return sprintf ('http://%s%s/%U/calendar/%U/%d', get_cname(), get_base_path (), _member, _inst, event_id);
+  kind := coalesce ((select E_KIND from CAL.WA.EVENTS where E_ID = event_id), 0);
+  return sprintf ('http://%s%s/%U/calendar/%U/%s/%d', get_cname(), get_base_path (), _member, _inst, case when (kind = 0) then 'Event' else 'Task' end, event_id);
 }
 ;
 
@@ -564,7 +566,7 @@ create procedure sioc.DBA.rdf_calendar_view_str ()
       '
         #Event
         sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_EVENTS.U_NAME, DB.DBA.ODS_CALENDAR_EVENTS.WAI_NAME, DB.DBA.ODS_CALENDAR_EVENTS.E_ID)
-          a calendar:vevent option (EXCLUSIVE) ;
+        a calendar:vevent ;
         dc:title E_SUBJECT ;
         dct:created E_CREATED ;
        	dct:modified E_UPDATED ;
@@ -620,7 +622,7 @@ create procedure sioc.DBA.rdf_calendar_view_str ()
       
       #Task
       sioc:calendar_event_iri (DB.DBA.ODS_CALENDAR_TASKS.U_NAME, DB.DBA.ODS_CALENDAR_TASKS.WAI_NAME, DB.DBA.ODS_CALENDAR_TASKS.E_ID)
-        a calendar:vtodo option (EXCLUSIVE) ;
+        a calendar:vtodo ;
         dc:title E_SUBJECT ;
         dct:created E_CREATED ;
      	  dct:modified E_UPDATED ;
@@ -691,121 +693,121 @@ create procedure sioc.DBA.rdf_calendar_view_str_tables ()
       ;
 };
 
-create procedure sioc.DBA.rdf_calendar_str_maps ()
+create procedure sioc.DBA.rdf_calendar_view_str_maps ()
 {
   return
     '
       #Event
-      sioc:calendar_event_iri (calendar_events.U_NAME, calendar_events.WAI_NAME, calendar_events.E_ID)
-        a calendar:vevent option (EXCLUSIVE) ;
-        dc:title E_SUBJECT ;
-        dct:created E_CREATED ;
-     	  dct:modified E_UPDATED ;
-	      dc:date E_UPDATED ;
-	      dc:creator U_NAME ;
-	      sioc:link sioc:proxy_iri (E_URI) ;
-	      sioc:content E_DESCRIPTION ;
-	      sioc:has_creator sioc:user_iri (U_NAME) ;
-	      foaf:maker foaf:person_iri (U_NAME) ;
-	      rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
-	      sioc:has_container sioc:calendar_forum_iri (U_NAME, WAI_NAME)
+      ods:calendar_event (calendar_events.U_NAME, calendar_events.WAI_NAME, calendar_events.E_ID)
+        a calendar:vevent ;
+        dc:title calendar_events.E_SUBJECT ;
+        dct:created calendar_events.E_CREATED ;
+     	  dct:modified calendar_events.E_UPDATED ;
+	      dc:date calendar_events.E_UPDATED ;
+	      dc:creator calendar_events.U_NAME ;
+	      sioc:link ods:proxy (calendar_events.E_URI) ;
+	      sioc:content calendar_events.E_DESCRIPTION ;
+	      sioc:has_creator ods:user (calendar_events.U_NAME) ;
+	      foaf:maker ods:person (calendar_events.U_NAME) ;
+	      rdfs:seeAlso ods:proxy (calendar_events.SEE_ALSO) ;
+	      sioc:has_container ods:calendar_forum (calendar_events.U_NAME, calendar_events.WAI_NAME)
 	    .
 
-      sioc:calendar_forum_iri (calendar_events.U_NAME, calendar_events.WAI_NAME)
-        sioc:container_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+      ods:calendar_forum (calendar_events.U_NAME, calendar_events.WAI_NAME)
+        sioc:container_of ods:calendar_event (calendar_events.U_NAME, calendar_events.WAI_NAME, calendar_events.E_ID)
       .
 
-	    sioc:user_iri (calendar_events.U_NAME)
-	      sioc:creator_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+	    ods:user (calendar_events.U_NAME)
+	      sioc:creator_of ods:calendar_event (calendar_events.U_NAME, calendar_events.WAI_NAME, calendar_events.E_ID)
 	    .
 
     	# Event tags
-    	sioc:calendar_event_iri (calendar_tags.U_NAME, calendar_tags.WAM_INST, calendar_tags.ITEM_ID)
-    	  sioc:topic sioc:tag_iri (U_NAME, E_TAG)
+    	ods:calendar_event (calendar_tags.U_NAME, calendar_tags.WAM_INST, calendar_tags.ITEM_ID)
+    	  sioc:topic ods:tag (calendar_tags.U_NAME, calendar_tags.E_TAG)
     	.
 
-    	sioc:tag_iri (calendar_tags.U_NAME, calendar_tags.E_TAG)
+    	ods:tag (calendar_tags.U_NAME, calendar_tags.E_TAG)
     	  a skos:Concept ;
-    	  skos:prefLabel E_TAG ;
-    	  skos:isSubjectOf sioc:calendar_event_iri (U_NAME, WAM_INST, ITEM_ID)
+    	  skos:prefLabel calendar_tags.E_TAG ;
+    	  skos:isSubjectOf ods:calendar_event (calendar_tags.U_NAME, calendar_tags.WAM_INST, calendar_tags.ITEM_ID)
     	.
 
-      sioc:calendar_event_iri (calendar_events.U_NAME, calendar_events.WAI_NAME, calendar_events.E_ID)
-        a atom:Entry ;
-      	atom:title E_SUBJECT ;
-      	atom:source sioc:calendar_forum_iri (U_NAME, WAI_NAME) ;
-      	atom:author foaf:person_iri (U_NAME) ;
-        atom:published E_CREATED ;
-      	atom:updated E_UPDATED ;
-      	atom:content sioc:calendar_event_text_iri (U_NAME, WAI_NAME, E_ID)
-     	.
+	#ods:calendar_event (calendar_events.U_NAME, calendar_events.WAI_NAME, calendar_events.E_ID)
+	#a atom:Entry ;
+	#atom:title E_SUBJECT ;
+	#atom:source ods:calendar_forum (U_NAME, WAI_NAME) ;
+	#atom:author ods:person (U_NAME) ;
+	#atom:published E_CREATED ;
+	#atom:updated E_UPDATED ;
+	#atom:content ods:calendar_event_text (U_NAME, WAI_NAME, E_ID)
+	#.
 
-      sioc:calendar_event_iri (calendar_events.U_NAME, calendar_events.WAI_NAME, calendar_events.E_ID)
-        a atom:Content ;
-        atom:type "text/plain" ;
-    	  atom:lang "en-US" ;
-	      atom:body E_DESCRIPTION
-	    .
+	#ods:calendar_event (calendar_events.U_NAME, calendar_events.WAI_NAME, calendar_events.E_ID)
+	#a atom:Content ;
+	#atom:type "text/plain" ;
+	#  atom:lang "en-US" ;
+	#      atom:body E_DESCRIPTION
+	#.
 
-      sioc:calendar_forum_iri (calendar_events.U_NAME, calendar_events.WAI_NAME)
-        atom:contains sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
-      .
+	#ods:calendar_forum (calendar_events.U_NAME, calendar_events.WAI_NAME)
+	#atom:contains ods:calendar_event (U_NAME, WAI_NAME, E_ID)
+        #.
       
       #Task
-      sioc:calendar_event_iri (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME, calendar_tasks.E_ID)
-        a calendar:vtodo option (EXCLUSIVE) ;
-        dc:title E_SUBJECT ;
-        dct:created E_CREATED ;
-     	  dct:modified E_UPDATED ;
-	      dc:date E_UPDATED ;
-	      dc:creator U_NAME ;
-	      sioc:link sioc:proxy_iri (E_URI) ;
-	      sioc:content E_DESCRIPTION ;
-	      sioc:has_creator sioc:user_iri (U_NAME) ;
-	      foaf:maker foaf:person_iri (U_NAME) ;
-	      rdfs:seeAlso sioc:proxy_iri (SEE_ALSO) ;
-	      sioc:has_container sioc:calendar_forum_iri (U_NAME, WAI_NAME)
+      ods:calendar_event (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME, calendar_tasks.E_ID)
+        a calendar:vtodo ;
+        dc:title calendar_tasks.E_SUBJECT ;
+        dct:created calendar_tasks.E_CREATED ;
+     	  dct:modified calendar_tasks.E_UPDATED ;
+	      dc:date calendar_tasks.E_UPDATED ;
+	      dc:creator calendar_tasks.U_NAME ;
+	      sioc:link ods:proxy (calendar_tasks.E_URI) ;
+	      sioc:content calendar_tasks.E_DESCRIPTION ;
+	      sioc:has_creator ods:user (calendar_tasks.U_NAME) ;
+	      foaf:maker ods:person (calendar_tasks.U_NAME) ;
+	      rdfs:seeAlso ods:proxy (calendar_tasks.SEE_ALSO) ;
+	      sioc:has_container ods:calendar_forum (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME)
 	    .
 
-      sioc:calendar_forum_iri (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME)
-        sioc:container_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+      ods:calendar_forum (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME)
+        sioc:container_of ods:calendar_event (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME, calendar_tasks.E_ID)
       .
 
-	    sioc:user_iri (calendar_tasks.U_NAME)
-	      sioc:creator_of sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
+	    ods:user (calendar_tasks.U_NAME)
+	      sioc:creator_of ods:calendar_event (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME, calendar_tasks.E_ID)
 	    .
 
     	# Task tags
-    	sioc:calendar_event_iri (calendar_tags.U_NAME, calendar_tags.WAM_INST, calendar_tags.ITEM_ID)
-    	  sioc:topic sioc:tag_iri (U_NAME, E_TAG)
+    	ods:calendar_event (calendar_tags.U_NAME, calendar_tags.WAM_INST, calendar_tags.ITEM_ID)
+    	  sioc:topic ods:tag (calendar_tags.U_NAME, calendar_tags.E_TAG)
     	.
 
-    	sioc:tag_iri (calendar_tags.U_NAME, calendar_tags.E_TAG)
+    	ods:tag (calendar_tags.U_NAME, calendar_tags.E_TAG)
     	  a skos:Concept ;
-    	  skos:prefLabel E_TAG ;
-    	  skos:isSubjectOf sioc:calendar_event_iri (U_NAME, WAM_INST, ITEM_ID)
+    	  skos:prefLabel calendar_tags.E_TAG ;
+    	  skos:isSubjectOf ods:calendar_event (calendar_tags.U_NAME, calendar_tags.WAM_INST, calendar_tags.ITEM_ID)
     	.
 
-      sioc:calendar_event_iri (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME, calendar_tasks.E_ID)
-        a atom:Entry ;
-      	atom:title E_SUBJECT ;
-      	atom:source sioc:calendar_forum_iri (U_NAME, WAI_NAME) ;
-      	atom:author foaf:person_iri (U_NAME) ;
-        atom:published E_CREATED ;
-      	atom:updated E_UPDATED ;
-      	atom:content sioc:calendar_event_text_iri (U_NAME, WAI_NAME, E_ID)
-     	.
+	#ods:calendar_event (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME, calendar_tasks.E_ID)
+	#a atom:Entry ;
+	#atom:title E_SUBJECT ;
+	#atom:source ods:calendar_forum (U_NAME, WAI_NAME) ;
+	#atom:author ods:person (U_NAME) ;
+	#atom:published E_CREATED ;
+	#atom:updated E_UPDATED ;
+	#atom:content ods:calendar_event_text (U_NAME, WAI_NAME, E_ID)
+	#.
 
-      sioc:calendar_event_iri (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME, calendar_tasks.E_ID)
-        a atom:Content ;
-        atom:type "text/plain" ;
-    	  atom:lang "en-US" ;
-	      atom:body E_DESCRIPTION
-	    .
+	#ods:calendar_event (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME, calendar_tasks.E_ID)
+	#a atom:Content ;
+	#atom:type "text/plain" ;
+	#  atom:lang "en-US" ;
+	#      atom:body E_DESCRIPTION
+	#.
 
-      sioc:calendar_forum_iri (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME)
-        atom:contains sioc:calendar_event_iri (U_NAME, WAI_NAME, E_ID)
-      .
+	#ods:calendar_forum (calendar_tasks.U_NAME, calendar_tasks.WAI_NAME)
+	#atom:contains ods:calendar_event (U_NAME, WAI_NAME, E_ID)
+        #.
     '
     ;
 }

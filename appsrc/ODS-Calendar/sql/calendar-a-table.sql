@@ -141,6 +141,25 @@ CAL.WA.exec_no_error ('
   create trigger EVENTS_AI after insert on CAL.WA.EVENTS referencing new as N {
     CAL.WA.tags_update (N.E_DOMAIN_ID, \'\', N.E_TAGS);
     CAL.WA.domain_ping (N.E_DOMAIN_ID);
+    if (N.E_REMINDER <> 0) {
+      set triggers off;
+      CAL.WA.event_addReminder (CAL.WA.event_user2gmt (now (), CAL.WA.settings_timeZone2 (N.E_DOMAIN_ID)),
+                                N.E_ID,
+                                N.E_DOMAIN_ID,
+                                N.E_EVENT,
+                                N.E_EVENT_START,
+                                N.E_EVENT_END,
+                                N.E_REPEAT,
+                                N.E_REPEAT_PARAM1,
+                                N.E_REPEAT_PARAM2,
+                                N.E_REPEAT_PARAM3,
+                                N.E_REPEAT_UNTIL,
+                                N.E_REPEAT_EXCEPTIONS,
+                                CAL.WA.settings_weekStarts2 (N.E_DOMAIN_ID),
+                                N.E_REMINDER,
+                                null);
+      set triggers on;
+    }
   }
 ');
 
@@ -148,6 +167,36 @@ CAL.WA.exec_no_error ('
   create trigger EVENTS_AU after update on CAL.WA.EVENTS referencing  old as O, new as N {
     CAL.WA.tags_update (N.E_DOMAIN_ID, O.E_TAGS, N.E_TAGS);
     CAL.WA.domain_ping (N.E_DOMAIN_ID);
+    delete from CAL.WA.ALARMS where A_EVENT_ID = O.E_ID;
+
+    set triggers off;
+
+    if ((O.E_REPEAT        <> N.E_REPEAT) or
+        (O.E_REPEAT_PARAM1 <> N.E_REPEAT_PARAM1) or
+        (O.E_REPEAT_PARAM2 <> N.E_REPEAT_PARAM2) or
+        (O.E_REPEAT_PARAM3 <> N.E_REPEAT_PARAM3)) {
+      update CAL.WA.EVENTS set E_REPEAT_EXCEPTIONS = \'\' where E_ID = N.E_ID;
+    }
+
+    if (N.E_REMINDER <> 0) {
+      CAL.WA.event_addReminder (CAL.WA.event_user2gmt (now (), CAL.WA.settings_timeZone2 (N.E_DOMAIN_ID)),
+                                N.E_ID,
+                                N.E_DOMAIN_ID,
+                                N.E_EVENT,
+                                N.E_EVENT_START,
+                                N.E_EVENT_END,
+                                N.E_REPEAT,
+                                N.E_REPEAT_PARAM1,
+                                N.E_REPEAT_PARAM2,
+                                N.E_REPEAT_PARAM3,
+                                N.E_REPEAT_UNTIL,
+                                N.E_REPEAT_EXCEPTIONS,
+                                CAL.WA.settings_weekStarts2 (N.E_DOMAIN_ID),
+                                N.E_REMINDER,
+                                null);
+    }
+
+    set triggers on;
   }
 ');
 
@@ -155,6 +204,7 @@ CAL.WA.exec_no_error ('
   create trigger EVENTS_AD after delete on CAL.WA.EVENTS referencing old as O {
     CAL.WA.tags_update (O.E_DOMAIN_ID, O.E_TAGS, \'\');
     delete from CAL.WA.GRANTS where G_EVENT_ID = O.E_ID;
+    delete from CAL.WA.ALARMS where A_EVENT_ID = O.E_ID;
   }
 ');
 
@@ -267,8 +317,7 @@ CAL.WA.exec_no_error ('
     A_ACTION integer default 0,           -- 0 - Display
                                           -- 1 - Mail
     A_TRIGGER datetime,
-    A_REPEAT integer,
-    A_DURATION integer,
+    A_SHOWN datetime,
 
     constraint FK_ALARMS_01 FOREIGN KEY (A_EVENT_ID) references CAL.WA.EVENTS (E_ID) ON DELETE CASCADE,
 
@@ -276,15 +325,24 @@ CAL.WA.exec_no_error ('
   )
 ');
 
-CAL.WA.exec_no_error ('
-  create index SK_ALARMS_01 on CAL.WA.ALARMS (A_DOMAIN_ID, A_TRIGGER)
-');
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.ALARMS drop A_REPEAT', 'D', 'CAL.WA.ALARMS', 'A_REPEAT'
+);
+
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.ALARMS drop A_DURATION', 'D', 'CAL.WA.ALARMS', 'A_DURATION'
+);
+
+CAL.WA.exec_no_error (
+  'drop trigger CAL.WA.ALARMS_AU'
+);
+
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.ALARMS add A_SHOWN datetime', 'C', 'CAL.WA.ALARMS', 'A_SHOWN'
+);
 
 CAL.WA.exec_no_error ('
-  create trigger ALARMS_AU after update on CAL.WA.ALARMS referencing  old as O, new as N {
-    if (N.A_REPEAT = 0)
-      delete from CAL.WA.ALARMS where A_ID = N.A_ID;
-  }
+  create index SK_ALARMS_01 on CAL.WA.ALARMS (A_DOMAIN_ID, A_TRIGGER)
 ');
 
 -------------------------------------------------------------------------------

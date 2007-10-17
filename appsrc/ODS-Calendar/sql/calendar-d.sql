@@ -32,6 +32,8 @@ CAL.WA.uninstall ()
 
 -- Tables
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.GRANTS');
+CAL.WA.exec_no_error('DROP TABLE CAL.WA.ANNOTATIONS');
+CAL.WA.exec_no_error('DROP TABLE CAL.WA.ALARMS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.EVENTS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.TAGS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.SETTINGS');
@@ -39,6 +41,9 @@ CAL.WA.exec_no_error('DROP TABLE CAL.WA.SETTINGS');
 -- Types
 CAL.WA.exec_no_error('delete from WA_TYPES where WAT_NAME = \'Calendar\'');
 CAL.WA.exec_no_error('drop type wa_Calendar');
+
+-- Views
+CAL.WA.exec_no_error('drop view CAL..TAGS_VIEW');
 
 -- Registry
 registry_remove ('calendar_path');

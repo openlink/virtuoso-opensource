@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="sn" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<v:page name="calendar" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
   <v:method name="actionTest" arglist="">
     <![CDATA[
@@ -166,9 +166,9 @@
         appClass := 'app';  
       domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
       if (e_event = 1) {
-        http (sprintf ('<div id="e_%d_%s" class="EV %s" onclick="eEdit(this)" about="%U">%s%s<span class="EV_subject">%s%s%V</span> (%s)</div>', _id, S, appClass, SIOC..calendar_event_iri (domain_id, _id), showDelete, showAnnotate, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id)));
+        http (sprintf ('<div id="e_%d_%s" class="EV %s" onclick="eEdit(this)" about="%U">%s%s<span class="EV_subject">%s%s%V</span> %s</div>', _id, S, appClass, SIOC..calendar_event_iri (domain_id, _id), showDelete, showAnnotate, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id)));
       } else {
-        http (sprintf ('<div id="e_%d_%s" class="EV %s" onclick="eEdit(this)" about="%U">%s%s<span class="EV_time">%s-%s</span><span class="EV_subject">%s%s%V</span> (%s)</div>', _id, S, appClass, SIOC..calendar_event_iri (domain_id, _id), showDelete, showAnnotate, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id)));
+        http (sprintf ('<div id="e_%d_%s" class="EV %s" onclick="eEdit(this)" about="%U">%s%s<span class="EV_time">%s-%s</span><span class="EV_subject">%s%s%V</span> %s</div>', _id, S, appClass, SIOC..calendar_event_iri (domain_id, _id), showDelete, showAnnotate, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id)));
       }
     ]]>
   </v:method>
@@ -230,7 +230,7 @@
       if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
         appClass := 'app';  
       domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
-      http (sprintf ('<span id="e_%d" unselectable="on" href="#" onclick="javascript: eEdit(this);" class="EVL EVL_subject %s" about="%U"> %s%s%V</span> (%s)', _id, appClass, SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink(domain_id, _id)));
+      http (sprintf ('<a id="e_%d" href="javascript: eEdit(\'e_%d\');" class="EVL EVL_subject %s" about="%U" style="text-decoration: none;"> %s%s%V</a> %s', _id, _id, appClass, SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink(domain_id, _id)));
     ]]>
   </v:method>
 
@@ -252,7 +252,7 @@
 
   <v:method name="permaLink" arglist="in domain_id integer, in id integer">
     <![CDATA[
-      return sprintf('<a href="%s" title="PermaLink" alt="PermaLink"><img border="0" width="11" height="11" src="image/link.gif" /><a>', SIOC..calendar_event_iri(domain_id, id));
+      return sprintf('<a href="%s" title="PermaLink" alt="PermaLink">(<img border="0" width="11" height="11" src="image/link.gif" />)</a>', SIOC..calendar_event_iri(domain_id, id));
     ]]>
   </v:method>
 
@@ -1535,7 +1535,7 @@
                     </td>
                     <td>
                       <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
-                      <a href="#" name="e_eventStartDate_select" id="e_eventStartDate_select" onclick="cPopup.select(document.forms['F1'].e_eventStartDate, 'e_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;">
+                            <a href="#" name="e_eventStartDate_select" id="e_eventStartDate_select" onclick="cPopup.select(document.forms['F1'].e_eventStartDate, 'e_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
                       <v:select-list name="e_eventStartTime" xhtml_id="e_eventStartTime" xhtml_style="--case when self.v_event = 0 then '' else 'display: none;' end">
@@ -1569,7 +1569,7 @@
                     </td>
                     <td>
                       <v:text name="e_eventEndDate" xhtml_id="e_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
-                      <a href="#" name="e_eventEndDate_select" id="e_eventEndDate_select" onclick="cPopup.select(document.forms['F1'].e_eventEndDate, 'e_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;">
+                            <a href="#" name="e_eventEndDate_select" id="e_eventEndDate_select" onclick="cPopup.select(document.forms['F1'].e_eventEndDate, 'e_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
                       <v:select-list name="e_eventEndTime" xhtml_id="e_eventEndTime" xhtml_style="--case when self.v_event = 0 then '' else 'display: none;' end">
@@ -2103,7 +2103,7 @@
                 <vm:label for="e_repeatUntilKind_1" value="--'Until'" />
                 <xsl:call-template name="nbsp"/>
                 <v:text name="e_repeatUntil" xhtml_id="e_repeatUntil" null-value="--''" value="--CAL.WA.dt_datestring (self.v_repeatUntil, self.cDateFormat)" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeatUntilKind\', \'e_repeatUntilKind_1\');'" xhtml_class="textbox" xhtml_size="10" />
-                <a href="#" name="e_repeatUntil_select" id="e_repeatUntil_select" onclick="cPopup.select(document.forms['F1'].e_repeatUntil, 'e_repeatUntil_select', '<?V self.cDateFormat ?>'); return false;">
+                            <a href="#" name="e_repeatUntil_select" id="e_repeatUntil_select" onclick="cPopup.select(document.forms['F1'].e_repeatUntil, 'e_repeatUntil_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
               </td>
@@ -2240,34 +2240,34 @@
                 self.v_repeatParam3 := 0;
                 if (self.v_repeat = 'D1') {
                   self.v_repeatParam1 := self.e_repeat_param1_D1.ufl_value;
-                  CAL.WA.test (self.v_repeatParam1, vector('name', 'Day(s)', 'class', 'integer', 'minValue', 1));
+                  self.v_repeatParam1 := CAL.WA.test (self.v_repeatParam1, vector('name', 'Day(s)', 'class', 'integer', 'minValue', 1));
                 }
                 if (self.v_repeat = 'W1') {
                   self.v_repeatParam1 := self.e_repeat_param1_W1.ufl_value;
-                  CAL.WA.test (self.v_repeatParam1, vector('name', 'Week(s)', 'class', 'integer', 'minValue', 1));
+                  self.v_repeatParam1 := CAL.WA.test (self.v_repeatParam1, vector('name', 'Week(s)', 'class', 'integer', 'minValue', 1));
                   self.v_repeatParam2 := 0;
                   for (N := 0; N < 7; N := N + 1)
                     if (cast (get_keyword ('e_repeat_param2_W1_' || cast (N as varchar), params, '0') as integer))
                       self.v_repeatParam2 := bit_or (self.v_repeatParam2, power (2, N));
                 }
                 if (self.v_repeat = 'M1') {
-                  self.v_repeatParam1 := self.e_repeat_param1_M1.ufl_value;
-                  self.v_repeatParam2 := self.e_repeat_param2_M1.ufl_value;
+                  self.v_repeatParam1 := cast (self.e_repeat_param1_M1.ufl_value as integer);
+                  self.v_repeatParam2 := cast (self.e_repeat_param2_M1.ufl_value as integer);
                 }
                 if (self.v_repeat = 'M2') {
-                  self.v_repeatParam1 := self.e_repeat_param1_M2.ufl_value;
-                  self.v_repeatParam2 := self.e_repeat_param2_M2.ufl_value;
-                  self.v_repeatParam3 := self.e_repeat_param3_M2.ufl_value;
+                  self.v_repeatParam1 := cast (self.e_repeat_param1_M2.ufl_value as integer);
+                  self.v_repeatParam2 := cast (self.e_repeat_param2_M2.ufl_value as integer);
+                  self.v_repeatParam3 := cast (self.e_repeat_param3_M2.ufl_value as integer);
                 }
                 if (self.v_repeat = 'Y1') {
                   self.v_repeatParam1 := self.e_repeat_param1_Y1.ufl_value;
-                  CAL.WA.test (self.v_repeatParam1, vector('name', 'Year(s)', 'class', 'integer', 'minValue', 1));
+                  self.v_repeatParam1 := CAL.WA.test (self.v_repeatParam1, vector('name', 'Year(s)', 'class', 'integer', 'minValue', 1));
                   self.v_repeatParam2 := self.e_repeat_param2_Y1.ufl_value;
                 }
                 if (self.v_repeat = 'Y2') {
-                  self.v_repeatParam1 := self.e_repeat_param1_Y2.ufl_value;
-                  self.v_repeatParam2 := self.e_repeat_param2_Y2.ufl_value;
-                  self.v_repeatParam3 := self.e_repeat_param3_Y2.ufl_value;
+                  self.v_repeatParam1 := cast (self.e_repeat_param1_Y2.ufl_value as integer);
+                  self.v_repeatParam2 := cast (self.e_repeat_param2_Y2.ufl_value as integer);
+                  self.v_repeatParam3 := cast (self.e_repeat_param3_Y2.ufl_value as integer);
                 }
 
                 -- range
@@ -2282,7 +2282,7 @@
                 }
 
                 -- reminder
-                self.v_reminder := trim (self.e_reminder.ufl_value);
+                self.v_reminder := cast (trim (self.e_reminder.ufl_value) as integer);
 
                 CAL.WA.event_update (
                   self.v_id,
@@ -2398,7 +2398,7 @@
               <td>
                 <vm:if test="self.cAction <> 'view'">
                 <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
-                <a href="#" name="t_eventStartDatt_select" id="t_eventStartDatt_select" onclick="cPopup.select(document.forms['F1'].t_eventStartDate, 't_eventStartDatt_select', '<?V self.cDateFormat ?>'); return false;">
+                      <a href="#" name="t_eventStartDatt_select" id="t_eventStartDatt_select" onclick="cPopup.select(document.forms['F1'].t_eventStartDate, 't_eventStartDatt_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
                 </vm:if>
@@ -2412,7 +2412,7 @@
               <td>
                 <vm:if test="self.cAction <> 'view'">
                 <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
-                <a href="#" name="t_eventEndDatt_select" id="t_eventEndDatt_select" onclick="cPopup.select(document.forms['F1'].t_eventEndDate, 't_eventEndDatt_select', '<?V self.cDateFormat ?>'); return false;">
+                      <a href="#" name="t_eventEndDatt_select" id="t_eventEndDatt_select" onclick="cPopup.select(document.forms['F1'].t_eventEndDate, 't_eventEndDatt_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
                 </vm:if>
@@ -2864,7 +2864,7 @@
                     </v:before-render>
                   </v:radio-button>
                   <xsl:call-template name="nbsp" />
-                  <b><vm:label for="icSource_2" value="--'URI'" /></b>
+                  <b><vm:label for="icSource_2" value="--'URL'" /></b>
               </td>
             </tr>
           </table>
@@ -2929,10 +2929,10 @@
               <vm:if test="self.icSource = 2">
             <tr>
               <th width="30%">
-                    Select URI
+                    Select URL
                   </th>
                   <td>
-                    <v:text name="f_uri" value="--''" xhtml_size="40" />
+                    <v:text name="f_uri" value="--''" xhtml_size="60" />
                   </td>
                 </tr>
               </vm:if>
@@ -3013,13 +3013,13 @@
                   } else if (self.icSource = 2) {
                     self.f_uri.ufl_value := trim(self.f_uri.ufl_value);
                     if (is_empty_or_null (self.f_uri.ufl_value)) {
-                      self.vc_error_message := 'Please select correct URI address!';
+                      self.vc_error_message := 'Please select correct URL address!';
                       self.vc_is_valid := 0;
                       return;
                     }
                     content := CAL.WA.dav_content (self.f_uri.ufl_value);
                     if (isnull(content)) {
-                      self.vc_error_message := 'Bad URI source!';
+                      self.vc_error_message := 'Bad URL source!';
                       self.vc_is_valid := 0;
                       return;
                     }
@@ -3295,11 +3295,36 @@
       <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
       </div>
       
+      <div id="reminderDiv" style="display: none;">
+        <div style="height: 200px; overflow: auto;">
+          <table id="reminderTable" style="width: 100%; background-color: #FFF;" cellspacing="0">
+            <thead class="sortHeader">
+              <tr>
+                <th class="checkbox" width="1%">
+                  <input type="checkbox" name="cbr_all" value="Select All" onclick="selectAllCheckboxes2(this, 'cbr_item')" />
+                </th>
+                <th>
+                  Subject
+                </th>
+                <th width="10%">
+                  Start At
+                </th>
+              </tr>
+            </thead>
+            <tbody id="reminderBody">
+            </tbody>
+          </table>
+        </div>
+        <div class="new-form-footer">
+          <input type="button" value="Dismiss Selected" onclick="javascript: dismissReminder ('cbr_item', false);" title="Dismiss Selected" class="button" />
+          <input type="button" value="Dismiss All"      onclick="javascript: dismissReminder ('cbr_item', true);"  title="Dismiss All"      class="button" />
+        </div>
+      </div>
       <vm:if test="self.cScope in ('day', 'week', 'month')">
-        <div id="deleteDiv">
+        <div id="deleteDiv" style="display: none;">
           Are you sure that you want to delete selected item?
       	</div>
-        <div id="deleteDiv2">
+        <div id="deleteDiv2" style="display: none;">
           Do you want to delete all occurrences of the repeatble item, or just this one?<br /><br />
           <input type="radio" name="e_delete" id="e_delete_0" value="0" checked="checked" style="margin-left: 110px;" /><label for="e_delete_0">Delete this occurrence</label><br />
           <input type="radio" name="e_delete" id="e_delete_1" value="1" style="margin-left: 110px;" /><label for="e_delete_1">Delete the series</label><br />

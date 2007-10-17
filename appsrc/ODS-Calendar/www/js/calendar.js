@@ -168,6 +168,28 @@ function selectAllCheckboxes (obj, prefix) {
 }
 
 // ---------------------------------------------------------------------------
+function selectAllCheckboxes2 (obj, prefix) {
+	var inputs = document.getElementsByTagName("input");
+
+	for (var i = 0; i < inputs.length; i++) {
+	  var o = inputs[i];
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1) {
+      if (obj.value == 'Select All')
+        o.checked = true;
+      else
+        o.checked = false;
+      coloriseRow(getParent(o, 'tr'), o.checked);
+    }
+  }
+  if (obj.value == 'Select All')
+    obj.value = 'Unselect All';
+  else
+    obj.value = 'Select All';
+  obj.focus();
+}
+
+
+// ---------------------------------------------------------------------------
 function anySelected (form, txt, selectionMsq) {
   if ((form != null) && (txt != null)) {
     for (var i = 0; i < form.elements.length; i++) {
@@ -259,47 +281,19 @@ function showTab(tabs, tabsCount, tabNo)
       if (i == tabNo) {
         if ($('tabNo'))
           $('tabNo').value = tabNo;
-        c.style.visibility = 'visible';
-        c.style.display = 'block';
-        l.className = "tab activeTab";
+        if (c) {
+          OAT.Dom.show(c);
+        }
+        OAT.Dom.addClass(l, "activeTab");
         l.blur();
       } else {
-        c.style.visibility = 'hidden';
-        c.style.display = 'none';
-        l.className = "tab";
-      }
-    }
+        if (c) {
+          OAT.Dom.hide(c);
+}
+        OAT.Dom.removeClass(l, "activeTab");
   }
 }
-
-// ---------------------------------------------------------------------------
-//
-function initTab(tabs, defaultNo)
-{
-  var divNo = document.getElementById('tabNo');
-  var tab = defaultNo;
-  if (divNo != null) {
-    var divTab = document.getElementById('tab_'+divNo.value);
-    if (divTab != null)
-      tab = divNo.value;
   }
-  showTab(tab, tabs);
-}
-
-// ---------------------------------------------------------------------------
-//
-function initTabs (tabs)
-{
-  var divNo = 1;
-    divNo = $v('tabNo')
-  var tab = 1;
-  if ($('tabNo'))
-  if (divNo != null) {
-    var divTab = document.getElementById('tab_'+divNo.value);
-    if (divTab != null)
-      tab = divNo.value;
-  }
-  showTab(tab, tabs);
 }
 
 // ---------------------------------------------------------------------------
@@ -558,8 +552,11 @@ function cSelect(obj)
 // ---------------------------------------------------------------------------
 function eEdit(obj)
 {
+  if (typeof(obj) == 'string') {
+    var objID = obj;
+  } else {  
   var objID = obj.id;
-
+  }
   createHidden('F1', 'edit', objID);
   doPost ('F1', 'command');
 }
@@ -637,22 +634,19 @@ function exchangeHTML ()
 {
   var S, T;
 
-  T = 'ds_navigation';
-  S = $(T).innerHTML;
-  if (S == null || S == '') {
-    T = 'ds1_navigation';
-    S = $(T).innerHTML;
+  T = $('ds_navigation');
+  if (!T)
+    T = $('ds1_navigation');
+  if (!T)
+    T = $('ds2_navigation');
+  if (!T)
+    T = $('ds3_navigation');
+  if (T) {
+    S = $('navigation')
+    if (S)
+      S.innerHTML = T.innerHTML;
+    T.innerHTML = '';
   }
-  if (S == null || S == '') {
-    T = 'ds2_navigation';
-    S = $(T).innerHTML;
-  }
-  if (S == null || S == '') {
-    T = 'ds3_navigation';
-    S = $(T).innerHTML;
-  }
-  $('navigation').innerHTML = S;
-  $(T).innerHTML = '';
 }
 
 // ---------------------------------------------------------------------------
@@ -666,4 +660,59 @@ function checkRepetition (grpName, checkName)
         obj.checked = true;
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+function urlParam (fldName)
+{
+  var S = '';
+  var O = document.forms['F1'].elements[fldName];
+  if (O)
+    S += '&' + fldName + '=' + encodeURIComponent(O.value);
+  return S;
+}
+
+// ---------------------------------------------------------------------------
+function checkReminder()
+{
+  var cb = function(txt) {
+    setTimeout("checkReminder()", 60000);
+    if (txt != "") {
+      var reminderBody = $("reminderBody");
+      if (reminderBody) {
+        if (OAT.Dimmer.elm != reminderDialog)
+          reminderBody.innerHTML = '';
+        var xmlDoc = OAT.Xml.createXmlDoc('<root>'+txt+'</root>');
+	      var root = xmlDoc.documentElement;
+        var reminderTRs = root.getElementsByTagName('tr');
+  		  for (var i=0; i<reminderTRs.length; i++) {
+  		    var tr = reminderTRs[i];
+  		    if (!$(tr.id)) {
+            reminderBody.innerHTML += OAT.Xml.serializeXmlDoc(tr);
+          }
+  		  }
+        // reminders.innerHTML = txt;
+        coloriseTable('reminderTable');
+    	  reminderDialog.show();
+      }
+    }
+    // alert ('dode');
+  }
+  OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=list"+urlParam("sid")+urlParam("realm"), cb, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+}
+
+// ---------------------------------------------------------------------------
+function dismissReminder(prefix, mode)
+{
+	var inputs = document.getElementsByTagName("input");
+	var reminders = "";
+	for (var i = 0; i < inputs.length; i++) {
+	  var o = inputs[i];
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1) {
+      if (o.checked || mode)
+        reminders = reminders + "," + o.value;
+    }
+  }
+  OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=dismiss&reminders="+reminders+urlParam("sid")+urlParam("realm"), function(){}, {onstart:function(){}, onerror:function(){}});
+	reminderDialog.hide ();
 }
