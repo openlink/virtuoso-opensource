@@ -239,7 +239,7 @@ create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
   declare res any;
   declare top_id, descnames any;
   declare what char (1);
-  declare access varchar;
+  declare access, filt_lg varchar;
   declare ownergid, owner_uid, dn_ctr, dn_count integer;
   declare gr, u_name any;
 
@@ -266,12 +266,37 @@ create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
     {
       return vector ("RDFData_DAV_DIR_SINGLE" (top_id, what, top_davpath, auth_uid));
     }
-
-  u_name := (select p.COL_NAME from WS.WS.SYS_DAV_COL p, WS.WS.SYS_DAV_COL c where c.COL_ID = detcol_id and p.COL_ID = c.COL_PARENT);
+  gr := DAV_PROP_GET_INT (detcol_id, 'C', 'virt:rdfdata_graph', 0);
+  filt_lg := DAV_PROP_GET_INT (detcol_id, 'C', 'virt:rdfdata_lang', 0);
+  if (not isstring (gr) or length (gr) = 0)
+    {
+      u_name := (select p.COL_NAME from WS.WS.SYS_DAV_COL p, WS.WS.SYS_DAV_COL c
+      where c.COL_ID = detcol_id and p.COL_ID = c.COL_PARENT);
   gr := sioc..user_doc_iri (u_name);
---  dbg_obj_print (top_id, gr);
+    }
+  if (not isstring (filt_lg))
+    filt_lg := '';
+  if (is_http_ctx () and filt_lg = '*http*')
+    {
+      filt_lg := http_request_header (http_request_header (), 'Accept-Language', null, '');
+    }
+--  dbg_obj_print (detcol_id, gr);
   if (top_id[2] is null)
     {
+	vectorbld_acc (res,
+	    	vector (
+		   DAV_CONCAT_PATH (top_davpath, 'All') || '/',
+		   'C',
+		   0,
+		   now (),
+                   vector (UNAME'RDFData', detcol_id, -1),
+                   access,
+		   ownergid,
+		   owner_uid,
+		   now (),
+		   'dav/unix-directory',
+		   'All')
+		 );
       FOR SELECT CLS FROM (
 		    sparql
 		    select distinct ?CLS
@@ -300,6 +325,7 @@ create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
 	else
 	  tit := CLS;
         tit := replace (tit, '/', '^2f');
+        tit := replace (tit, '#', '^23');
 	--tit := sprintf ('%U', tit);
 	vectorbld_acc (res,
 	    	vector (
@@ -320,9 +346,22 @@ create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
   else if (top_id[2] is not null and length (top_id) = 4)
     {
       declare cs any;
+      declare qr, rset, mdta, h, dict, is_all any;
+
+      is_all := 0;
       cs := top_id[2];
-      FOR SELECT X,L,T,PL,CR,MOD FROM (
-	  sparql
+      cs := id_to_iri (cs);
+      if (cs = 'All')
+	{
+	  is_all := 1;
+	  cs := '?cls';
+	}
+      else
+        cs := sprintf ('<%S>', cs);
+      --dbg_obj_print (top_id[2]);
+
+      qr := sprintf ('sparql
+          define output:valmode "LONG"
 	  prefix dc: <http://purl.org/dc/elements/1.1/>
 	  prefix dct: <http://purl.org/dc/terms/>
 	  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -330,29 +369,56 @@ create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
 	  SELECT ?X ?L ?T ?PL ?CR ?MOD
 	  where
 	  {
-	    graph `iri(?:gr)`
+	    graph <%S>
 	    {
-	      ?X a `iri (?:cs)`
+	      ?X a %s
 	      optional { ?X rdfs:label ?L } .
 	      optional { ?X dc:title ?T } .
 	      optional { ?X skos:prefLabel ?PL } .
 	      optional { ?X dct:created ?CR } .
 	      optional { ?X dct:modified ?MOD } .
 	    }
-	  }
-	  ) sub do
+	  }', gr, cs);
+
+	dict := dict_new ();
+	exec (qr, null, null, vector (), 0, null, null, h);
+        while (0 = exec_next (h, null, null, rset))
 	{
-	  declare tit any;
+	  declare tit, lg any;
+	  declare X,L,T,PL,CR,MOD any;
+	  --dbg_obj_print (rset);
+	  X := rset[0];
+	  L := rset[1];
+	  T := rset[2];
+	  PL := rset[3];
+	  CR := rset[4];
+	  MOD := rset[5];
 
 	  cr := coalesce (cr, now ());
 	  mod := coalesce (mod, now ());
 	  cr := RDFData_cast_dt_silent (cr);
 	  mod := RDFData_cast_dt_silent (mod);
 	  --dbg_obj_print (cr, mod);
-	  tit := coalesce (L, T, PL, '~unnamed~');
+	  tit := coalesce (L, T, PL);
+
+	  lg := '';
+	  if (is_all)
+	    tit := 'iid';
+	  else if (tit is null)
+	    tit := '~unnamed~';
+	  else
+	    {
+	      lg := DB.DBA.RDF_LANGUAGE_OF_LONG (tit, '');
+              tit := DB.DBA.RDF_SQLVAL_OF_LONG (tit);
+	    }
+	  --dbg_obj_print (filt_lg, lg, strstr (filt_lg, lg));
+	  if (filt_lg <> '' and lg <> '' and strstr (filt_lg, lg) is null)
+	    goto next_row;
+	  if (dict_get (dict, X) = 1)
+	    goto next_row;
 	  tit := sprintf ('%s (%i).rdf', tit, iri_id_num (iri_to_id (X)));
 	  --tit := replace (sprintf ('%U', x), '/', '%252F');
-	  --dbg_obj_print (tit);
+	  --dbg_obj_print (tit, lg);
 	  vectorbld_acc (res,
 	    	vector (
 		   DAV_CONCAT_PATH (top_davpath, tit),
@@ -367,7 +433,10 @@ create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in 
 		   'application/rdf+xml',
 		   tit)
 		 );
+	  dict_put (dict, X, 1);
+	  next_row:;
 	}
+	exec_close (h);
     }
 finalize_res:
   vectorbld_final (res);
@@ -398,7 +467,8 @@ create function RDFData_std_pref (in iri varchar, in rev int := 0)
   'http://www.w3.org/2001/vcard-rdf/3.0#', 'vcard',
   'http://www.w3.org/2002/12/cal#', 'vcal',
   'http://www.w3.org/2002/07/owl#', 'owl',
-  'http://web.resource.org/cc/', 'cc'
+  'http://web.resource.org/cc/', 'cc',
+  'http://dbpedia.org/class/yago/', 'dbp'
 
   );
   if (rev)
@@ -446,7 +516,9 @@ create function "RDFData_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in
       if (url is null)
         {
 	  cl := replace (cl, '^2f', '/');
+	  cl := replace (cl, '^23', '#');
           cl_id := iri_to_id (cl);
+	  --dbg_obj_print ('cl:',cl);
 	}
       else
         {
@@ -497,14 +569,20 @@ create function "RDFData_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts a
 create function "RDFData_DAV_RES_CONTENT" (in id any, inout content any, out type varchar, in content_mode integer) returns integer
 {
   RDFData_log_message (current_proc_name ());
-  declare iri, url, qr any;
-  declare path, params, lines, ses any;
+  declare iri, url, qr, _from any;
+  declare path, params, lines, ses, gr any;
 --  dbg_obj_princ ('RDFData_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
   if (id [4] is null)
     return -20;
   type := 'application/rdf+xml';
   iri := id_to_iri (id [4]);
-  qr := sprintf ('describe <%S>', iri);
+--  dbg_obj_print (iri);
+  _from := '';
+  gr := DAV_PROP_GET_INT (id[1], 'C', 'virt:rdfdata_graph', 0);
+  if (isstring (gr) and length (gr))
+    _from := sprintf (' FROM <%s>', gr);
+
+  qr := sprintf ('describe <%S> %s', iri, _from);
   path := vector ();
   --dbg_obj_print (qr);
   params := vector ('query', qr, 'format', 'application/rdf+xml');
@@ -568,5 +646,19 @@ create function "RDFData_DAV_LIST_LOCKS" (in id any, in type char(1), in recursi
 {
   RDFData_log_message (current_proc_name ());
   return vector ();
+}
+;
+
+create procedure "RDFData_MAKE_DET_COL" (in path varchar, in gr varchar := null, in lg varchar := null)
+{
+  declare colid int;
+  colid := DAV_MAKE_DIR (path, http_dav_uid (), null, '110100100N');
+  if (colid < 0)
+    signal ('42000', 'Unable to create RDFData DET collection');
+  update WS.WS.SYS_DAV_COL set COL_DET='RDFData' where COL_ID = colid;
+  if (gr is not null)
+    DAV_PROP_SET_INT (path, 'virt:rdfdata_graph', gr, null, null, 0, 0, 0, http_dav_uid ());
+  if (lg is not null)
+    DAV_PROP_SET_INT (path, 'virt:rdfdata_lang', lg, null, null, 0, 0, 1, http_dav_uid ());
 }
 ;
