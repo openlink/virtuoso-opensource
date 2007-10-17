@@ -491,6 +491,7 @@ create procedure sioc.DBA.rdf_nntpf_view_str_maps ()
       '
 	    # NNTP
 	    ods:nntp_forum (nntp_groups.NG_NAME) a sioct:MessageBoard ;
+  	    rdfs:label nntp_groups.NG_NAME ;
 	    sioc:id nntp_groups.NG_NAME ;
 	    sioc:description nntp_groups.NG_DESC .
 
