@@ -44,29 +44,60 @@
               <table class="form-body" cellspacing="0">
                 <tr>
                   <th width="30%">
-                    <v:label for="f_rows" value="Rows per page"/>
+                  <v:label for="f_chars" value="File name display"/>
                   </th>
                   <td>
-                  <v:text name="f_rows" null-value="--''" value="--get_keyword('rows', self.settings, '10')" xhtml_class="field-short"/>
+                  <?vsp
+                    declare S varchar;
+    
+                    S := '';
+                    if (cast(get_keyword('chars', self.settings, '0') as integer) = 0)
+                      S := 'checked="checked"';
+                    http(sprintf('<input type="radio" name="r_chars" id="r_chars_0" value="0" %s />', S));
+                  ?>
+                  <xsl:call-template name="nbsp"/><vm:label for="r_chars_0" value="--'show everything'" />
                   </td>
                 </tr>
                 <tr>
-                  <th width="30%">
-                    <v:label for="f_chars" value="Limit of the resource names to"/>
-                  </th>
+                <th />
                   <td>
-                  <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_class="field-short"/> (0 = no limit)
+                  <?vsp
+                    declare S varchar;
+    
+                    S := '';
+                    if (cast(get_keyword('chars', self.settings, '0') as integer) <> 0)
+                      S := 'checked="checked"';
+                    http(sprintf('<input type="radio" name="r_chars" id="r_chars_1" value="1" %s />', S));
+                  ?>
+                  <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
+                  <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3"/>
+                  <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'characters'" /><xsl:call-template name="nbsp"/>
                   </td>
                 </tr>
                 <tr>
-                  <th width="30%"/>
+                <th />
                   <td>
                   <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.settings, '1') as integer)" />
                     <vm:label for="f_tbLabels" value="Show toolbar labels"/>
                   </td>
                 </tr>
                 <tr>
-                  <th width="30%">
+                <th>
+                  <v:label for="f_rows" value="Rows per page"/>
+                </th>
+                <td>
+                  <v:text name="f_rows" null-value="--''" value="--get_keyword('rows', self.settings, '10')" xhtml_size="3" />
+                </td>
+              </tr>
+              <tr>
+                <th />
+                <td>
+                  <v:check-box name="f_app" xhtml_id="f_app" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('app', self.settings, '0') as integer)" />
+                  <vm:label for="f_app" value="Show <a>++ links"/>
+                </td>
+              </tr>
+              <tr>
+                <th>
                     <v:label for="f_atomVersion" value="Atom File Version"/>
                   </th>
                   <td>
@@ -172,6 +203,7 @@
               self.settings := ODRIVE.WA.set_keyword('rows', self.settings, cast(cast(rows as integer) as varchar));
               self.settings := ODRIVE.WA.set_keyword('chars', self.settings, cast(cast(chars as integer) as varchar));
               self.settings := ODRIVE.WA.set_keyword('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
+              self.settings := ODRIVE.WA.set_keyword ('app', self.settings, self.f_app.ufl_selected);
               self.settings := ODRIVE.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
               self.settings := ODRIVE.WA.set_keyword('column_#2', self.settings, self.f_column_2.ufl_selected);
               self.settings := ODRIVE.WA.set_keyword('column_#3', self.settings, self.f_column_3.ufl_selected);

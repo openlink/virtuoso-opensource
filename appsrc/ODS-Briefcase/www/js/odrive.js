@@ -276,17 +276,16 @@ function showTab(tab, tabs)
       if (i == tab) {
         var divNo = document.getElementById('tabNo');
         divNo.value = tab;
-        div.style.visibility = 'visible';
-        div.style.display = 'block';
-        if (divTab != null) {
-          divTab.className = "tab activeTab";
+        OAT.Dom.show(div);
+        if (divTab) {
+          OAT.Dom.addClass(divTab, "activeTab");
           divTab.blur();
         };
       } else {
-        div.style.visibility = 'hidden';
-        div.style.display = 'none';
-        if (divTab != null)
-          divTab.className = "tab";
+        OAT.Dom.hide(div);
+        if (divTab) {
+          OAT.Dom.removeClass(divTab, "activeTab");
+        }
       }
     }
   }

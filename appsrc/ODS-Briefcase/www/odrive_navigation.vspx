@@ -27,6 +27,7 @@
   <v:variable name="nav_top" type="int" default="0"/>
   <v:variable name="nav_tip" type="varchar" default="''"/>
   <v:variable name="domain_id" type="integer" default="-1"/>
+  <v:variable name="owner_id" type="integer" default="-1"/>
   <v:variable name="account_id" type="integer" default="-1"/>
   <v:variable name="account_role" type="varchar" default="'public'"/>
   <v:variable name="settings" type="any" />
@@ -45,6 +46,7 @@
       self.sid := udt_get (self.vc_parent.vc_page, 'sid');
       self.realm := udt_get (self.vc_parent.vc_page, 'realm');
       self.domain_id := udt_get (self.vc_parent.vc_page, 'domain_id');
+      self.owner_id := udt_get (self.vc_parent.vc_page, 'owner_id');
       self.account_id := udt_get (self.vc_parent.vc_page, 'account_id');
       self.account_role := udt_get (self.vc_parent.vc_page, 'account_role');
       self.settings := udt_get (self.vc_parent.vc_page, 'settings');

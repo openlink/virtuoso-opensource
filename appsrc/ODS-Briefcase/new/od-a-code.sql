@@ -111,7 +111,7 @@ _end:
   if ((user_id = -1) and (domain_id >= 0) and (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1)))
     domain_id := -1;
 
-  if (user_id = -1)
+  if (user_id = -1) {
     if (domain_id = -1) {
       user_role := 'expire';
       user_name := 'Expire session';
@@ -132,6 +132,10 @@ _end:
         user_name := 'Public User';
       }
     }
+  } else if (domain_id <> -1) {
+    if (ODRIVE.WA.domain_owner_id (domain_id) <> user_id)
+      user_role := 'public';
+  }
 
   return vector('domain_id', domain_id,
                 'user_id',   user_id,
@@ -1278,7 +1282,16 @@ create procedure ODRIVE.WA.account_name (
 }
 ;
 
--------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.account_fullName (
+  in account_id integer)
+{
+  return coalesce((select coalesce(U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+----------------------------------------------
 --
 create procedure ODRIVE.WA.user_name(
   in u_name any,

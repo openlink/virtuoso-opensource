@@ -38,13 +38,33 @@
     <meta name="dc.title" content="<?V ODRIVE.WA.utf2wide (ODRIVE.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <![CDATA[
+      <script type="text/javascript">
+        var toolkitPath="/ods/oat";
+        var imagePath="/ods/images/oat/";
+        
+        var featureList=["ajax2", "anchor"];
+      </script>
+      <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="js/odrive.js"></script>
+      <script type="text/javascript" src="/ods/app.js"></script>
+      <script type="text/javascript">
+        function myInit() {
+          OAT.Preferences.imagePath = '/ods/images/oat/';
+          OAT.Anchor.imagePath = OAT.Preferences.imagePath;
+          OAT.Anchor.zIndex = 1001;
+        
+          if (<?V cast(get_keyword('app', self.settings, '0') as integer) ?> == 1)
+            gererateAPP('app_area', {});
+        }
+        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+      </script>
     ]]>
     <title />
   </head>
   <body>
     <v:page name="main" xmlns:v="http://www.openlinksw.com/vspx/">
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
+      <v:variable persist="0" name="owner_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
         <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
@@ -60,6 +80,7 @@
 
           aSessInfo := ODRIVE.WA.session_restore (params);
           self.domain_id := cast (get_keyword ('domain_id', aSessInfo, '-1') as integer);
+          self.owner_id := ODRIVE.WA.domain_owner_id (self.domain_id);
           self.account_id := cast (get_keyword ('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword ('user_role', aSessInfo, '');
           self.accountName := get_keyword ('user_name', aSessInfo, '');

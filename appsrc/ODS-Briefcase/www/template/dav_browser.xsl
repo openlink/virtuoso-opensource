@@ -99,7 +99,10 @@
           if (self.dir_path = '__root__')
             self.dir_path := self.dir_spath;
           if (self.dir_path = '__root__')
-            self.dir_path := ODRIVE.WA.dav_home2 (self.account_id, self.account_role);
+            self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);          
+          if ((self.owner_id <> self.account_id) and (not ODRIVE.WA.check_admin (self.account_id)))
+            if (isnull (strstr (ODRIVE.WA.dav_home2 (self.owner_id, self.account_role), self.dir_path)))
+              self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
           self.dir_spath := self.dir_path;
           self.dir_details := cast(get_keyword('list_type', self.vc_page.vc_event.ve_params, self.dir_details) as integer);
 
@@ -109,14 +112,14 @@
           if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'simple') {
             self.command_set(0, 2);
             if (self.dir_path = '')
-              self.dir_path := ODRIVE.WA.dav_home2 (self.account_id, self.account_role);
+              self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
             self.search_simple := trim(get_keyword('keywords', self.vc_page.vc_event.ve_params));
           }
 
           if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'advanced') {
             self.command_set(0, 3);
             if (self.dir_path = '')
-              self.dir_path := ODRIVE.WA.dav_home2 (self.account_id, self.account_role);
+              self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
             ODRIVE.WA.dav_dc_set_base(self.search_dc, 'path', ODRIVE.WA.odrive_real_path(self.dir_path));
             ODRIVE.WA.dav_dc_set_base(self.search_dc, 'name', trim(get_keyword('keywords', self.vc_page.vc_event.ve_params)));
           }
@@ -422,7 +425,7 @@
               return 0;
 
           if (cmd = 'up')
-            if ((self.dir_path = 'Home') or (trim(self.dir_path, '/') = trim(ODRIVE.WA.dav_home2 (self.account_id, self.account_role), '/')))
+            if ((self.dir_path = 'Home') or (trim(self.dir_path, '/') = trim(ODRIVE.WA.dav_home2 (self.owner_id, self.account_role), '/')))
               return 0;
 
           if (cmd = 'upload') {
@@ -2162,8 +2165,8 @@
                       self.vc_is_valid := 0;
                       return;
                     }
-                  if ((not ODRIVE.WA.check_admin(ODRIVE.WA.session_user_id(e.ve_params))) and isnull(strstr(tmp, ODRIVE.WA.dav_home2 (self.account_id, self.account_role)))) {
-                      self.vc_error_message := 'The path must be part of your home directory';
+                  if ((not ODRIVE.WA.check_admin (ODRIVE.WA.session_user_id (e.ve_params))) and isnull(strstr(tmp, ODRIVE.WA.dav_home2 (self.owner_id, self.account_role)))) {
+                    self.vc_error_message := 'The path must be part of your home directory or another public directoty';
                       self.vc_is_valid := 0;
                       return;
                     }
@@ -2442,13 +2445,14 @@
                             }
                             ?>
                             <td nowrap="nowrap">
-                              <v:button action="simple" style="image" value="''" text="''" format="%s" xhtml_title="--ODRIVE.WA.utf2wide((control.vc_parent as vspx_row_template).te_rowset[0])">
+                            <v:button action="simple" style="url" value="''" xhtml_title="--ODRIVE.WA.utf2wide ((control.vc_parent as vspx_row_template).te_rowset[0])">
                                 <v:before-data-bind>
                                   <![CDATA[
                                     declare rowset any;
                                     rowset := ((control.vc_parent) as vspx_row_template).te_rowset;
-                                    control.ufl_value := self.ui_image(rowset[8], rowset[1], rowset[4]);
-                                  control.bt_text := sprintf ('  %V', ODRIVE.WA.stringCut (rowset[0], self.chars));
+                                  control.ufl_value := sprintf ('<img src="%s" border="0" /> %V', self.ui_image(rowset[8], rowset[1], rowset[4]), ODRIVE.WA.stringCut (rowset[0], self.chars));
+                                  if (rowset[1] = 'R') 
+                                    control.vc_add_attribute ('id', sprintf('%V', rowset[8]));
                                   ]]>
                                 </v:before-data-bind>
                                 <v:on-post>
@@ -2490,7 +2494,7 @@
                                     foreach (any tag in tags) do {
                                       N := N + length(tag);
                                       if (N < 20)
-                                        http(sprintf('<a href="#" onclick="javascript: document.forms[''F1''].tag_hidden.value = ''%s''; doPost (''F1'', ''tag_search''); return false;" alt="Search Public Tag" title="Search Public Tag">%s</a> ', tag, tag));
+                                      http(sprintf('<a id="public_t_%s" href="#" onclick="javascript: document.forms[''F1''].tag_hidden.value = ''%s''; doPost (''F1'', ''tag_search''); return false;" alt="Search Public Tag" title="Search Public Tag">%s</a> ', tag, tag, tag));
                                       N := N + 1;
                                     }
                                   }
@@ -2500,7 +2504,7 @@
                                     foreach (any tag in tags) do {
                                       N := N + length(tag);
                                       if (N < 20)
-                                        http(sprintf('<a href="#" onclick="javascript: document.forms[''F1''].tag_hidden.value = ''#_%s''; doPost (''F1'', ''tag_search''); return false;" alt="Search Private Tag" title="Search Private Tag">%s</a> ', tag, tag));
+                                      http(sprintf('<a  id="private_t_%s" href="#" onclick="javascript: document.forms[''F1''].tag_hidden.value = ''#_%s''; doPost (''F1'', ''tag_search''); return false;" alt="Search Private Tag" title="Search Private Tag">%s</a> ', tag, tag, tag));
                                       N := N + 1;
                                     }
                                   }
@@ -3769,7 +3773,7 @@
               declare cmd any;
               cmd := get_keyword ('toolbar_hidden', e.ve_params, '');
               if (cmd = 'home') {
-                self.dir_path := ODRIVE.WA.dav_home2 (self.account_id, self.account_role);
+                self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
                 self.command_set(0, 0);
               }
               if (cmd = 'shared') {
@@ -3777,7 +3781,7 @@
                 self.command_set(0, 0);
               }
               if (cmd = 'up') {
-                if (trim(self.dir_path, '/') = trim(ODRIVE.WA.dav_home2 (self.account_id, self.account_role), '/')) {
+                if (trim(self.dir_path, '/') = trim(ODRIVE.WA.dav_home2 (self.owner_id, self.account_role), '/')) {
                   self.dir_path := '';
                 } else {
                   declare pos integer;
@@ -3856,13 +3860,18 @@
         </v:before-render>
       </v:url>
 
-      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" xhtml_title="Shared Folders" xhtml_class="toolbar">
+      <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''shared'');'" enabled="--self.toolbarEnable('shared')" xhtml_title="Shared Folders" xhtml_class="toolbar">
         <v:before-render>
           <![CDATA[
             control.ufl_value := '<img src="image/folder_violet.png" border="0" />' || self.toolbarLabel('Shared Folders');
           ]]>
         </v:before-render>
       </v:url>
+      <v:template type="simple" enabled="--case when self.toolbarEnable('shared') then 0 else 1 end">
+        <span class="toolbar">
+          <img src="image/folder_grey.png" border="0" alt="Shared Folders" /><?vsp http(self.toolbarLabel('Shared Folders'));?>
+        </span>
+      </v:template>
 
       <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''new'');'" enabled="--self.toolbarEnable('new')" xhtml_title="New Folder" xhtml_class="toolbar">
         <v:before-render>
