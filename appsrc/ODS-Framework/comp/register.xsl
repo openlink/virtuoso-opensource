@@ -468,6 +468,10 @@ self.vc_redirect (check_immediate);
 	 WA_USER_TEXT_SET(uid, u_name1||' '||self.regmail.ufl_value);
 	 wa_reg_register (uid, u_name1);
 
+	 declare _det_col_id int;
+	 _det_col_id := DB.DBA.DAV_MAKE_DIR ('/DAV/home/'||u_name1||'/RDFData/', uid, null, '110100100N');
+	 update WS.WS.SYS_DAV_COL set COL_DET = 'RDFData' where COL_ID = _det_col_id;
+
 	 if (self.oid_sig is not null)
 	   {
               if (length (self.oid_dob))

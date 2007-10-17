@@ -29,22 +29,38 @@
   <xsl:template match="vm:instance-settings">
 
       <tr>
-        <th><label for="ianame1"><?V self.instance_descr ?></label>
+        <th><label for="ianame1"><?V self.instance_descr ?>:</label>
             <?V case when self.wa_type = 'WEBLOG2' then 'name' else '' end?>
         </th>
         <td colspan="2">
           <xsl:if test="@readonly">
             <?V wa_utf8_to_wide (self.iname) ?>
           </xsl:if>
+
           <xsl:if test="not @readonly">
             <!--xsl:if test="not @edit"-->
-	      <v:text xhtml_id="ianame1" error-glyph="*" name="iname1" value="--self.iname" xhtml_style="width:250px"
-		fmt-function="wa_utf8_to_wide">
+            <?vsp
+              if (self.wa_type <> 'IM')
+              {
+            ?>
+            <v:text xhtml_id="ianame1" error-glyph="*" name="iname1" value="--self.iname" xhtml_style="width:250px" fmt-function="wa_utf8_to_wide">
 		<v:on-post>
 		  self.iname := control.ufl_value;
 		</v:on-post>
 	      </v:text>
               <?vsp
+              }
+            ?>
+
+            <?vsp
+              if (self.wa_type = 'IM')
+              {
+            ?>
+            <label><?V self.u_name ?></label>
+            <?vsp
+              }
+            ?>
+            <?vsp
                 if (self.wa_type = 'oMail')
                 {
               ?>
@@ -53,11 +69,27 @@
               <?vsp
                 }
               ?>
+            <?vsp
+              if (self.wa_type = 'IM')
+              {
+            ?>
+            @
+            <v:data-list name="idomain2" xhtml_id="idomain2" value="--self.wa_domain" list-document="--self.domains" list-match="/domains/domain" list-key-path="." list-value-path="." enabled="--equ (self.wa_type, 'IM')"/>
+            /
+            <v:text xhtml_id="ianame2" error-glyph="*" name="iname2" value="--self.iname" xhtml_style="width:250px" fmt-function="wa_utf8_to_wide">
+              <v:on-post>
+                self.iname := control.ufl_value;
+              </v:on-post>
+            </v:text>
+            <?vsp
+              }
+            ?>
+
             <!--/xsl:if-->
             <!--xsl:if test="@edit">
               <?V wa_utf8_to_wide (self.iname) ?>
               <?vsp
-                if (self.wa_type in ('oMail'))
+                if (self.wa_type in ('IM'))
                 {
               ?>
               @
@@ -77,14 +109,11 @@
        Your <?V self.instance_descr?> will be accessible by this URL: <br/>
        </th>
        <td>
-       
        <?vsp
-       
         declare domain any;
         domain:=null;
         domain:=cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-        if ((domain is null or length(domain)=0) and is_http_ctx ())
-        {
+            if ((domain is null or length(domain)=0) and is_http_ctx ()) {
             declare lines any;
             lines := http_request_header ();
             if (isarray (lines))
@@ -96,8 +125,7 @@
        <td align="right">
       <xsl:if test="not (@edit = 'yes') and not (@readonly = 'yes')">
        <?vsp
-         if (self.wa_type in ('WEBLOG2', 'oWiki', 'Community','oGallery'))
-         {
+              if (self.wa_type in ('WEBLOG2', 'oWiki', 'Community', 'oGallery')) {
        ?>
         <input type="button" name="change_url" value="Change" onclick="document.getElementById('change_defurl').style.display='block';"/>
        <?vsp
@@ -108,11 +136,8 @@
       </tr>
       </xsl:if>
       <?vsp
-        if (self.wa_type in ('WEBLOG2', 'oWiki', 'Community','oGallery'))
-        {
+      if (self.wa_type in ('WEBLOG2', 'oWiki', 'Community','oGallery')) {
       ?>
-
-
       <xsl:if test="not (@edit = 'yes')">
         <tr>
         <td></td>
@@ -133,8 +158,7 @@
                   control.vs_set_selected ();
                   ]]></v:after-data-bind>
                   <v:before-render><![CDATA[
-                  if (control.ufl_value is null)
-                    {
+                    if (control.ufl_value is null) {
                       control.ufl_value := '{Default Domain}';
 	              control.vs_set_selected ();
                     }
@@ -451,7 +475,7 @@
               <th><label for="imodel1">Member model</label></th>
               <td>
                 <?vsp
-                  if (self.wa_type in ('oDrive', 'oMail'))
+                  if (self.wa_type in ('oDrive', 'oMail', 'IM'))
                   {
                     http(sprintf('<input type="hidden" name="imodel1" id="imodel1" value="%d"/>', self.imodel));
                     http(sprintf('<label>%s</label>', (select WMM_NAME from WA_MEMBER_MODEL where WMM_ID = self.imodel)));
@@ -471,7 +495,7 @@
             </tr>
             <tr>
               <?vsp
-                if (self.wa_type in ('oMail'))
+                if (self.wa_type in ('oMail', 'IM'))
                 {
               ?>
               <th><label for="is_public1">Visible to public</label></th>
@@ -492,7 +516,7 @@
             </tr>
             <tr>
               <?vsp
-                if (self.wa_type in ('oDrive', 'oMail'))
+                if (self.wa_type in ('oDrive', 'oMail', 'IM'))
                 {
               ?>
               <th><label for="is_visible1">Visible members list</label></th>

@@ -255,7 +255,7 @@
 			  {
 			    declare dict, cnt, ses, url any;
                             url := self.foaf_url.ufl_value;
-			    dict := (sparql construct { ?s ?p ?o } where { graph ?:url { ?s ?p ?o }});
+			    dict := (sparql define input:storage "" construct { ?s ?p ?o } where { graph ?:url { ?s ?p ?o }});
 			    ses := string_output_string (DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML (dict));
 
 			    AB.WA.import_foaf (self.ab_domain, ses, '');

@@ -1651,3 +1651,82 @@ declare _res any;
 return string_output_string(_res_str);
 }
 ;
+
+create procedure DB.DBA.fbf_rdf_load_fql (
+                 in graph_iri varchar,
+                 in new_origin_uri varchar,
+                 in dest varchar,
+                 in fb_obj DB.DBA.Facebook,
+                 in fb_uid varchar,
+                 in isLogged integer)
+{
+  declare ret, xt, xd any;
+  declare url,  q, own  varchar;
+
+  SPARQL CLEAR GRAPH <graph_iri>;
+  
+  
+  own := fb_uid;
+  
+  q :=  sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, affiliations, profile_update_time, timezone, religion, birthday, sex, hometown_location, meeting_sex, meeting_for, relationship_status, significant_other_id, political, current_location, activities, interests, is_app_user, music, tv, movies, books, quotes, about_me, hs_info, education_history, work_history, notes_count, wall_count, status, has_added_app FROM user WHERE uid = %s', own);
+--  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+    ret := fb_obj.api_client.fql_query(q);
+--dbg_printf ('%s', ret);
+--  xt := xtree_doc (ret);
+  if(ret is not null)
+  {
+   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', ret, vector ('baseUri', coalesce (dest, graph_iri)));
+   xd := serialize_to_UTF8_xml (xt);
+--   dbg_printf ('%s', xd);
+   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  }
+  
+  q := sprintf ('SELECT aid, cover_pid, owner, name, created, modified, description, location, size, link FROM album WHERE owner = %s', own);
+  ret := fb_obj.api_client.fql_query(q);
+  if(ret is not null)
+  {
+
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', ret, vector ('baseUri', coalesce (dest, graph_iri)));
+    xd := serialize_to_UTF8_xml (xt);
+--    dbg_printf ('%s', xd);
+    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  }
+
+  q := sprintf ('select eid, name, tagline, nid, pic_small, pic_big, pic, host, description, event_type, event_subtype, '||
+                ' start_time, end_time, creator, update_time, location, venue from event where eid in '||
+                '(SELECT eid FROM event_member where uid = %s)', own);
+  ret := fb_obj.api_client.fql_query(q);
+  if(ret is not null)
+  {
+    xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', ret, vector ('baseUri', coalesce (dest, graph_iri)));
+    xd := serialize_to_UTF8_xml (xt);
+    DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  }
+
+  if(isLogged)
+  {
+     q := sprintf ('select uid2 from friend where uid1 = %s', own);
+     ret := fb_obj.api_client.fql_query(q);
+--     dbg_printf ('%s', ret);
+     if(ret is not null)
+     {
+        xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', ret, vector ('baseUri', coalesce (dest, graph_iri)));
+        xd := serialize_to_UTF8_xml (xt);
+--      dbg_printf ('%s', xd);
+        DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+     };
+     
+     q := sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, profile_update_time, timezone, religion, birthday, sex, current_location FROM user WHERE uid IN (select uid2 from friend where uid1 = %s)', own);
+     ret := fb_obj.api_client.fql_query(q);
+--     dbg_printf ('%s', ret);
+     if(ret is not null)
+     {
+        xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', ret, vector ('baseUri', coalesce (dest, graph_iri)));
+        xd := serialize_to_UTF8_xml (xt);
+        --dbg_printf ('%s', xd);
+        DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+     };
+  }
+  return 1;
+}
+;

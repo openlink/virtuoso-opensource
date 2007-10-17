@@ -219,6 +219,12 @@
             <vm:dash-calendar-summary/>
             <?vsp
               }
+            else if (self.app_type = 'IM')
+              {
+            ?>
+            <vm:dash-im-summary/>
+            <?vsp
+              }
             else if (self.app_type = 'nntpf')
               {
             ?>

@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC 
+  "-//W3C//DTD XHTML 1.0 Strict//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+  <title>ODS Navigation Framework</title>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <link rel="stylesheet" href="nav_framework.css" type="text/css"/>
+  <script type="text/javascript">
+    var ODSInitArray = new Array();
+
+    function init()
+    {
+
+      OAT.Loader.loadFeatures(["ajax2","xml"],function(){});
+
+      if (typeof ODSInitArray != 'undefined')
+        {
+          for (var i = 0; i < ODSInitArray.length; i++)
+            try
+            {
+                ODSInitArray[i]();
+            }
+            catch (err)
+            {
+               alert ('Error in function call: ' + err.message.toString()); // XXX add error logging
+            }
+        }
+
+     }
+
+    var featureList = ["ajax2","panelbar", "anchor", "menu", "dimmer", "animation", "tab"];
+  </script>
+  <script type="text/javascript" src="oat/loader.js"></script>
+  <script type="text/javascript" src="nav_framework.js"></script>
+ </head>
+ <body>
+    <div id="PG">
+      <div id="LT">
+        <div id="ods_logo">
+          <a href="/ods/index.html" class="img_anchor"><img class="ods_logo" src="images/odslogosml_new.png" alt="Site Home"/></a>
+        </div><!-- #ods_logo -->
+        <div id="APP_MENU_C" class="app_menu_c">
+<!--
+        <h3 id="APP_MENU_T" class="app_menu_t"><a href="javascript:void(0)">Applications</a> <a href="javascript:void(0)" class="lnk">edit</a></h3>
+-->
+        </div> <!-- #APP_MENU_C -->
+  	  </div> <!-- #LT -->
+      <div id="RT">
+        <div id="HD">
+  	      <div id="ODS_BAR">
+  	        <div class="button" style="display:none">
+  	          <a href="#" class="menu_link profile">Profile</a>&nbsp;
+  	          <a href="#" class="menu_link profile_edit shortcut">edit</a>
+  	        </div> <!-- .button -->
+  	        <div class="button" style="display:none">
+              <ul class="menu" id="communities_menu">
+  	            <li>
+  	              <div class="menu_head">
+                    <a href="communities.html">Communities</a>
+                    <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
+                  </div>
+  	              <ul class="menu_dd_1st_lvl" style="display: none;">
+  	                <li class="menu_item" id="m_c_adam"><a href="#">Amsterdam</a></li>
+                    <li class="menu_item" id="m_c_nl"><a href="#">Netherlands</a></li>
+                    <li class="menu_item" id="m_c_md"><a href="#">Mariandoro</a></li>
+                  </ul>
+                </li>
+              </ul>
+  	        </div> <!-- .button -->
+            <div class="button" style="display:none">
+              <ul class="menu" id="connections_menu">
+  	            <li>
+  	              <div class="menu_head">
+                    <a href="home.html">Connections<span class="indicator"> (232)</span></a>
+  	                <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
+                  </div>
+  	              <ul class="menu_dd_1st_lvl" style="display: none;">
+  	                <li class="menu_item"><a href="#">Status Changed</a></li>
+  	                <li class="menu_item"><a href="#">Online Now</a></li>  	              
+  	                <li class="menu_item"><a href="#">Last Added</a></li>
+                    <li class="menu_item"><a href="#">Recently Updated</a></li>
+                    <li class="menu_item"><a href="#">All Connections</a></li>
+                    <li class="menu_item"><a href="#">Find People</a></li>
+                    <li class="menu_item"><a href="#">Invite People</a></li>
+                  </ul>
+                </li>
+              </ul> <!-- #connections-menu -->
+  	        </div> <!-- .button -->
+            <div class="button" style="display:none">
+              <ul class="menu" id="messages_menu">
+                <li>
+  	              <div class="menu_head">
+                    <a href="#">Messages <span class="indicator">(2)</span></a>
+  	                <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
+                  </div>
+  	              <ul class="menu_dd_1st_lvl" style="display: none;">
+  	                <li class="menu_item"><a href="#">Message Inbox</a></li>
+                    <li class="menu_item"><a href="#">Sent Messages</a></li>
+                    <li class="menu_item"><a href="#">Notifications</a></li>
+                    <li class="menu_item"><a href="#">New message</a></li>
+                  </ul>
+                </li>
+              </ul> <!-- #messages_menu -->
+            </div> <!-- .button -->
+<!--
+            <div id="ODS_BAR_RC">
+              <a href="#">Settings</a>
+              <a href="#">Paavo Nurmi</a>
+              <a href="#">Logout</a>
+              <a href="#">Help</a>
+            </div>--> <!-- ODS_BAR_RC -->
+  	      </div> <!-- ODS_BAR -->
+        </div> <!-- HD -->
+        <IFRAME id="vspxApp" style="width:100%;height:500px;border:0px;"></IFRAME>
+  	    <div id="APP" style="display:none;">
+  	      <div id="u_profile_l">
+  	        <div id="user_info_w" class="widget user_info_w">
+  	          <div class="w_title"><h3>Yrjana Rankka</h3></div>
+  	          <div class="w_content">
+                <div class="user_img_ctr"><img class="prof_photo" alt="Yrjana Rankka" src="images/people/ghard.png"/></div>
+                <div class="gems_ctr">
+                  <div class="prof_user_gems">
+                    <div class="gem"><a href="#"><img src="images/icons/foaf.png" alt="FOAF"/></a></div>
+                    <div class="gem"><a href="#"><img src="images/icons/sioc_button.png" alt="SIOC"/></a></div>
+                    <div class="gem"><a href="#">GeoURL</a></div>
+                    <div class="gem"><a href="#"><img src="images/icons/vcard.png" alt="VCARD"/></a></div>
+                  </div>
+                </div>
+                <ul class="prof_user_commands">
+                  <li><a href="#" onclick="conn_del_dlg_show()">Delete connection</a></li>
+                  <li><a href="#">Send a message</a></li>
+                  <li><a href="#">Browse data space</a></li>
+                  <li><a href="#">Connection graph</a></li>
+                </ul>
+              </div> <!-- w_content -->
+  	        </div> <!-- .widget -->
+  	        <div id="ds_w" class="widget ds_w">
+  	          <div class="w_title"><h3>Data Space</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle"/></div></div>
+  	          <div class="w_content">
+                <ul class="ds_list">
+                  <li><a href="#"><img src="images/icons/ods_bookmarks_16.png" alt="APP" /> Bookmarks</a></li>
+                  <li><a href="#"><img src="images/icons/ods_gallery_16.png" alt="APP" />  Gallery</a></li>
+                  <li><a href="#"><img src="images/icons/ods_weblog_16.png" alt="APP" /> Weblog</a></li>
+                  <li><a href="#"><img src="images/icons/ods_calendar_16.png" alt="APP" /> Calendar</a></li>
+                </ul>
+                <div class="cmd_ctr"><a href="#">Browse</a></div>
+              </div> <!-- w_content -->
+  	        </div> <!-- .widget -->
+  	        <div id="connections_w" class="widget connections_w">
+  	          <div class="w_title"><h3>Connections (30)</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle"/></div></div>
+  	          <div class="w_content">
+                <ul class="tab_bar">
+                  <li class="sel"><a href="#">Thumbnails</a></li>
+                  <li><a href="#">Map</a></li>
+                </ul>
+                <div class="tab_deck">
+                  <div class="tab_page">
+                    <div class="conn"><img class="person_tnail" src="images/people/dipsy.jpg"/>
+                    <div class="conn_info"><a href="#">Dipsy</a></div></div>
+                    <div class="conn"><img class="person_tnail" src="images/people/po.jpg" />
+                    <div class="conn_info"><a href="#">Po</a></div></div>
+                    <div class="conn"><img class="person_tnail" src="images/people/laalaa.jpg"/>
+                    <div class="conn_info"><a href="#">Laa-Laa</a></div></div>
+                    <div class="conn"><img class="person_tnail" src="images/people/tinkywinky.jpg" />
+                    <div class="conn_info"><a href="#">Tinky-Winky</a></div></div>
+                    <div class="conn"><img class="person_tnail" src="images/people/kingsley_t.png"/>
+                    <div class="conn_info"><a href="#" id="c_a_kidehen">Kingsley Idehen</a></div></div>
+                    <div class="conn"><img class="person_tnail" src="images/people/danbri_t.png" />
+                    <div class="conn_info"><a href="#">Dan Brickley</a></div></div>
+                    <div class="conn"><img class="person_tnail" src="images/people/don_caballero_t.jpg" />
+                    <div class="conn_info"><a href="#">Don Caballero</a></div></div>
+                    <div class="conn"><img class="person_tnail" src="images/people/danja_t.png" />
+                    <div class="conn_info"><a href="#">Danny Ayers</a></div></div>
+                    <div class="conn"><img class="person_tnail" src="images/people/ivan_t.png" />
+                    <div class="conn_info"><a href="#">Ivan Herman</a></div></div>
+                    <div class="cmd_ctr"><a href="#">View All</a></div>
+                  </div> <!-- .tab_page -->
+                  <div class="tab_page">
+                  </div>
+                </div> <!-- tab_deck -->
+              </div> <!-- w_content -->
+  	        </div> <!-- .widget -->
+            <div id="groups_w" class="widget groups_w">
+  	          <div class="w_title">
+  	            <h3>Discussion Groups (30)</h3>
+  	          </div>
+  	          <div class="w_content">
+                <a href="#">Double Bassists</a>, 
+                <a href="#">RDF</a>, 
+                <a href="#">Musicians</a>, 
+                <a href="#">OpenLink Virtuoso</a>, 
+                <a href="#">Progressive Rock Aficionados</a>, 
+                <a href="#">Braintrust</a>, 
+                <a href="#">Semantic Web</a>, 
+                <a href="#">ODS Hackers</a>, 
+                <a href="#">Braintrust</a>, 
+                <a href="#">Braintrust</a>
+              </div> <!-- w_content -->
+  	        </div> <!-- .widget -->
+  	      </div> <!-- u_home_l -->
+          <div id="u_profile_r">
+            <div id="notify" class="notify_w widget">
+              <div class="w_title">
+                <h3>News feed</h3>
+                <div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle"/></div>
+              </div>
+              <div class="w_content">
+                <h3 class="date">Today</h3>
+                <ul class="msgs">
+                  <li>
+                    <img class="msg_icon person_tnail" 
+                         alt="Dipsy" 
+                         src="images/people/dipsy.jpg"/>
+                    <div class="msg">
+                      <span class="time">20:30</span>
+                      Yrjana and <a href="#">Dipsy</a> are now connected.
+                    </div>
+                      <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+                  </li>
+                  <li>
+                    <img class="msg_icon person_tnail" 
+                         alt="Tinky-Winky" 
+                         src="images/people/tinkywinky.jpg"/>
+                    <div class="msg">
+                      <span class="time">10:23</span>
+                      Yrjana and <a href="#">Tinky-Winky</a> are now connected.
+                    </div>
+                      <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+                  </li>
+                  <li style="display: none">
+                    <img class="msg_icon" alt="ODS-Mail" src="images/icons/ods_mail_16.png"/> 
+                    <div class="msg"><span class="time">10:23</span> NEW MAIL <a href="#">How are you?</a> from <a href="#">Dan Brickley</a></div>
+                      <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+                  </li>
+                  <li>
+                    <img class="msg_icon person_tnail" 
+                         alt="Po" 
+                         src="images/people/po.jpg"/>
+                    <div class="msg">
+                      <span class="time">10:00</span> Yrjana and <a href="#">Po</a> are now connected.                    </div>
+                      <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+                  </li>
+                  <li>
+                    <img class="msg_icon person_tnail" 
+                         alt="Laa-Laa" 
+                         src="images/people/laalaa.jpg"/>
+                    <div class="msg">
+                      <span class="time">09:20</span>
+                      Yrjana and <a href="#">Laa-Laa</a> are now connected.
+                    </div>
+                      <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+                  </li>
+                </ul>
+                <h3 class="date">Yesterday</h3>
+                <ul class="msgs">
+                  <li>
+                    <img class="msg_icon person_tnail" 
+                         alt="Kingsley Idehen" 
+                         src="images/people/kingsley_t.png"/>
+                  <div class="msg">
+                        <span class="time">21:23</span> Yrjana and <a href="#" id="msg_a_kidehen">Kingsley Idehen</a> are now connected.
+                      <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+                    </div>
+                  </li>
+                  <li>
+                    <img class="msg_icon" alt="ODS-Weblog" src="images/icons/ods_weblog_16.png"/> 
+                    <div class="msg"><span class="time">22:20</span> Yrjana wrote a weblog article titled <a href="#">Eh Oh!</a></div>
+                      <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+                  </li>
+                  <li>
+                    <img class="msg_icon" alt="ODS-Feeds" src="images/icons/ods_feeds_16.png"/> 
+                    <div class="msg"><span class="time">22:20</span> Yrjana published a feed <a href="#">Raw!</a></div>
+                      <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+                  </li>
+                  <li>
+                    <img class="msg_icon person_tnail" alt="Dan Brickley" src="images/people/danbri_t.png"/>
+                    <div class="msg"><span class="time">20:12</span> Yrjana and <a href="#">Dan Brickley</a> are now connected.</div>
+                      <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+                  </li>
+                  <li>
+                    <img class="msg_icon person_tnail" alt="Don Caballero" src="images/people/don_caballero_t.jpg"/>
+                    <div class="msg"><span class="time">09:10</span> Yrjana and <a href="#">Don Caballero</a> are now connected.</div>
+                                          <div class="msg_r">
+                        <img src="images/skin/default/notify_remove_btn.png" alt="Hide" width="16" height="16" />
+                      </div>
+
+                  </li>
+                </ul>
+              </div> <!-- w_content -->
+            </div> <!-- widget -->
+            <div class="widget w_contact">
+              <div class="w_title">
+                <h3>Contact Information</h3>
+                <div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle"/></div>
+              </div>
+              <div class="w_content">
+                <ul id="ct_tabs" class="tab_bar">
+                  <li id="ct_t_1"><a href="#">Home</a></li>
+                  <li id="ct_t_2"><a href="#">Business</a></li>
+                  <li id="ct_t_3"><a href="#">IM</a></li>
+                  <li id="ct_t_4"><a href="#">Map</a></li>
+                </ul>
+                <div class="tab_deck">
+                  <div id="ct_p_ctr" class="tab_page">
+                  </div>
+                  <div id="ct_p_1" class="tab_page">
+                    <div id="hcard-Yrjana-Rankka" class="vcard">
+                      <div class="vcard_l"><img src="images/people/ghard.png" alt="photo" class="photo"/></div>
+                      <div class="vcard_r">
+                        <span class="fn">Yrjana Rankka</span>
+                        <div class="org">OpenLink Software</div>
+                        <a class="email" href="mailto:ghard@zonk.net">ghard@zonk.net</a>
+                        <div class="adr">
+                          <div class="street-address">Elegaststraat 21-1</div>
+                          <span class="locality">Amsterdam</span>, 
+                          <span class="region">Noord-Holland</span>, 
+                          <span class="postal-code">1055TJ</span>
+                          <span class="country-name">The Netherlands</span>
+                        </div> <!-- adr -->
+                        <div class="tel">+31610056588</div>
+                      </div>
+                    </div>
+                  </div> <!-- tab_page -->
+                  <div id="ct_p_2" class="tab_page" style="display: none">
+                    <div class="vcard">
+                      <div class="fn org">OpenLink Software, Inc</div>
+                      <div class="adr">
+                        <div class="street-address">10 Burlington mall rd</div>
+                        <div>
+      					  <span class="locality">Burlington</span>, 
+                          <abbr class="region" title="Massachusetts">MA</abbr>
+                          <span class="postal-code">01803</span>, 
+                          <abbr class="country" title="United States of America">U.S.A.</abbr>
+                        </div>
+                      </div> <!-- .adr -->
+                    </div> <!-- .vcard -->
+                  </div> <!-- .tab_page -->
+                  <div id="ct_p_3" class="tab_page" style="display: none">
+                    <em>Skype:</em> Zonkenstein<br/>
+                    <em>ICQ:</em> 21006712<br/>
+                    <em>AIM:</em> zonkenstein<br/>
+                  </div>
+                  <div id="ct_p_4" class="tab_page" style="display: none">
+                    
+                  </div>
+                </div> <!-- .tab_deck -->                
+              </div> <!-- .w_content -->
+            </div> <!-- .widget -->
+            <div class="widget w_contact">
+              <div class="w_title">
+                <h3>Personal Information</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle"/></div>
+              </div>
+              <div class="w_content">
+                <div class="sect">
+                  <h4>Interests</h4>
+                  <p><a href="#">Computers</a>, <a href="#">Software</a>, <a href="#">Music</a>, <a href="#">Semantic Web</a></p>
+                </div>
+                <div class="sect">
+                  <h4>Music</h4>
+                  <p><a href="#">Mariandoro</a>, <a href="#">Yes</a>, <a href="#">ZZ-Top</a>, <a href="#">Leningrad</a>, <a href="#">Rush</a>, <a href="#">Queen</a>, <a href="#">Led Zeppelin</a>, <a href="#">Pixies</a>, <a href="#">Sex Pistols</a>, <a href="#">Ramones</a>, <a href="#">Tom Waits</a>, <a href="#">Birthday Party</a>, <a href="#">Terveet Kadet</a>, <a href="#">CMX</a>, <a href="#">Sielun Veljet</a>, <a href="#">Tuomari Nurmio</a>, <a href="#">Alamaailman Vasarat</a>, <a href="#">Gentle Giant</a>, <a href="#">Tasavallan Presidentti</a>, <a href="#">Absoluuttinen Nollapiste</a>, <a href="#">Miles Davis</a>, <a href="#">Charles Mingus</a></p>
+                </div>
+                <div class="sect">
+                  <h4>Other</h4>
+                  <p>This section reserved for free flow of thought.</p>
+                </div>
+              </div>
+            </div>
+          </div> <!-- #u_home_r -->
+        </div> <!-- #APP -->
+        <div id="FT">
+          <img alt="Powered by OpenLink Virtuoso" src="images/skin/default/virt_power_no_border.png"/>
+          <div id="FT_RC">
+            Copyright &copy; 2007 OpenLink Software<br/>
+            <a href="#">About</a> <a href="#">Privacy</a> <a href="#">FAQ</a> <a href="#">Developers</a>
+          </div><!-- #FT_RC -->
+        </div> <!-- #FT -->
+      </div> <!-- #RT -->
+    </div> <!-- #PG -->
+    <div id="app_create_dialog" class="ods_dialog" style="display: none;">
+      <div class="dlg_title"><h3>Blog Setup</h3></div>
+      <div class="wizard">
+        <ul class="tab_bar">
+          <li class="sel">Information</li>
+          <li>Advanced</li>
+          <li>Finish Up</li>
+        </ul> <!-- wizard_tabbar -->
+        <div class="tab_deck">
+          <div class="wizard_page">
+            <h3>Information</h3>
+            <div class="form_row"><label>Name</label><input type="text" size="25"/></div>
+            <div class="form_row"><label>Url</label><input type="text" size="25"/></div>
+          </div><!-- wizard_page -->
+          <div class="wizard_page" style="display: none">
+            <h3>Advanced</h3>
+            <div class="form_row"><label>Name</label><input type="text" size="25"/></div>
+            <div class="form_row"><label>Url</label><input type="text" size="25"/></div>
+          </div><!-- wizard_page -->
+          <div class="wizard_page" style="display: none">
+            <h3>Finishing up</h3>
+            <div class="form_row"><label>Name</label><input type="text" size="25"/></div>
+            <div class="form_row"><label>Url</label><input type="text" size="25"/></div>
+          </div><!-- wizard_page -->
+        </div> <!-- .tab_deck --> 
+        <div class="wizard_btnbar">
+          <button>Back</button>
+          <button>Continue</button>
+          <button onclick="OAT.Dimmer.hide ('app_create_dialog');">Cancel</button>
+          <button onclick="OAT.Dimmer.hide ('app_create_dialog');">Finish</button>
+        </div> <!-- wizard_btnbar -->
+      </div> <!-- wizard -->
+    </div>    
+    <div id="conn_del_confirm_dialog" class="ods_dialog" style="display: none;">
+      <div class="dlg_title"><h3>Delete connection</h3></div>
+      <div class="dlg_content">
+        <p class="dlg_msg">Are you sure you want to delete connection with Yrjana Rankka.</p>
+        <p class="dlg_explain">The user will not receive notification.</p>
+        <div class="dlg_btn_row"><button onclick="conn_del_dlg_hide()">Delete connection</button><button onclick="conn_del_dlg_hide()">Cancel</button></div>
+      </div> <!-- dlg_content -->
+    </div> <!-- #conn_del_confirm_dialog -->
+    <div id="kidehen_conn_info_bubble" class="a_bubble conn_info_bubble" style="display: none">
+      <div class="lt">
+        <img src="people/kidehen_large.jpg" alt="Kingsley Idehen" />
+      </div> <!-- .lt -->
+      <div class="rt">
+        <ul class="menu">
+          <li><a href="#">Profile</a></li>
+          <li><a href="#">Add Connection</a></li>
+          <li><a href="#">Connections (30)</a></li>
+          <li><a href="#">Browse Data Space</a></li>
+        </ul>
+      </div> <!-- .rt -->
+    </div>
+    <div id="a_tmpl_1" class="oat_anchor_bubble">
+      <div class="oat_anchor_title_ctr">
+        <h2 class="oat_anchor_title_text_ctr"></h2>
+<!--
+        <img class="oat_a_max_btn" src="skin/i/maximize_b.png" alt="maximize"/>
+        <img class="oat_a_min_btn" src="skin/i/minimize_b.png" alt="minimize"/>
+        <img class="oat_a_close_btn" src="skin/i/close_b.png" alt="close"/>
+-->
+      </div> <!-- .oat_anchor_title_ctr -->
+      <div class="oat_anchor_content">
+      <!-- Add content here -->
+      </div> <!-- oat_anchor_content" -->
+      <div class="oat_anchor_footer">
+      </div> <!-- .oat_anchor_footer -->
+    </div> <!-- #a_tmpl_1 -->
+<!--
+    <div id="loginDiv" class="login_dialog" style="display:none;">
+      <div id="loginTitle" class="dlg_title"><h3>Sign In</h3></div>
+        <div id="loginCtrl">
+        </div>
+      </div>
+    </div> <!-- #loginDiv -->
+-->
+ </body>
+</html>
+

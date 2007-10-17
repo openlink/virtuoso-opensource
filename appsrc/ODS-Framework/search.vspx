@@ -73,6 +73,7 @@
   self.have_blog := case when DB.DBA.wa_vad_check ('blog2') is null then 0 else 1 end;
   self.have_omail := case when DB.DBA.wa_vad_check ('oMail') is null then 0 else 1 end;
   self.have_bookmark := case when DB.DBA.wa_vad_check ('bookmark') is null then 0 else 1 end;
+  self.have_addressbook := case when DB.DBA.wa_vad_check ('addressbook') is null then 0 else 1 end;
 
   if (not self.have_enews)
     self.srch_news.vc_add_attribute ('disabled', '1');
@@ -84,15 +85,19 @@
     self.srch_omail.vc_add_attribute ('disabled', '1');
   if (not self.have_bookmark)
     self.srch_bookmark.vc_add_attribute ('disabled', '1');
+  if (not self.have_addressbook)
+    self.srch_addressbook.vc_add_attribute ('disabled', '1');
 
   self.max_rows.ufl_value := '100';
+
   ]]>
  </v:on-init>
  <v:after-data-bind>
   <![CDATA[
   if(self.on_type is not null)
   {
-        if(self.on_type='Community') goto _skip;
+        if (self.on_type = 'Community') 
+          goto _skip;
 
         self.srch_people.ufl_selected   := 0;
         self.srch_blogs.ufl_selected    := 0;
@@ -103,6 +108,7 @@
         self.srch_bookmark.ufl_selected := 0;
         self.srch_apps.ufl_selected     := 0;
         self.srch_nntp.ufl_selected     := 0;
+        self.srch_addressbook.ufl_selected := 0;
         
 
        if (self.on_type = 'oDrive')
@@ -119,8 +125,9 @@
            self.srch_omail.ufl_selected := 1;
        if (self.on_type = 'Bookmark')
            self.srch_bookmark.ufl_selected := 1;
+       if (self.on_type = 'AddressBook')
+           self.srch_addressbook.ufl_selected := 1;
        if (self.on_type = 'discussion' or self.on_type='nntpf')
-       {
            self.srch_nntp.ufl_selected := 1;
            if (get_keyword ('date_d_after', e.ve_params, null) is not null)
               self.date_d_after.ufl_value:=get_keyword ('date_d_after', e.ve_params);
@@ -134,7 +141,6 @@
               self.date_m_before.ufl_value:=get_keyword ('date_m_before', e.ve_params);
            if (get_keyword ('date_y_before', e.ve_params, null) is not null)
               self.date_y_before.ufl_value:=get_keyword ('date_y_before', e.ve_params);
-       }
 
      _skip:;
   }
@@ -175,7 +181,7 @@
       if (not e.ve_is_post)
 	self.do_search (e);
     }
-  else if (length (self.newest) > 0 and (self.newest in ('users','blogs','wiki','news','bookmarks')))
+  else if (length (self.newest) > 0 and (self.newest in ('users','blogs','wiki','news','bookmarks','addressbook')))
     {
       
       self.page := -1;
@@ -252,6 +258,9 @@
       self.srch_omail.ufl_selected := 0;
       self.srch_news.ufl_selected := 0;
       self.srch_bookmark.ufl_selected := 0;
+      self.srch_nntp.ufl_selected        := 0;
+      self.srch_addressbook.ufl_selected := 0;
+      
       self.sort_by_score.ufl_selected := 0;
       self.sort_by_date.ufl_selected := 1;
 
@@ -265,6 +274,10 @@
         self.srch_news.ufl_selected := 1;
       else if (self.newest = 'bookmarks' and DB.DBA.wa_vad_check ('bookmark') is not null)
         self.srch_bookmark.ufl_selected := 1;
+      else if ((self.on_type = 'discussion' or self.on_type='nntpf') and (DB.DBA.wa_vad_check ('nntpf') is not null))
+        self.srch_nntp.ufl_selected := 1;
+      else if (self.newest = 'addressbook' and DB.DBA.wa_vad_check ('addressbook') is not null)
+        self.srch_addressbook.ufl_selected := 1;
     }
 
   _max_rows := cast (self.max_rows.ufl_value as integer);
@@ -272,6 +285,7 @@
   if (length (self.sapps))
     {
       declare arr any;
+      
       arr := split_and_decode (self.sapps, 0, '\0\0,');
       self.srch_people.ufl_selected := 0;
       self.srch_blogs.ufl_selected := 0;
@@ -280,8 +294,9 @@
       self.srch_omail.ufl_selected := 0;
       self.srch_news.ufl_selected := 0;
       self.srch_bookmark.ufl_selected := 0;
-      self.srch_apps.ufl_selected := 0;
       self.srch_nntp.ufl_selected := 0;
+      self.srch_addressbook.ufl_selected := 0;
+      self.srch_apps.ufl_selected := 0;
       foreach (any app in arr) do
     {
 	   if (lower (app) = 'people')
@@ -302,7 +317,8 @@
              self.srch_bookmark.ufl_selected := 1;
        else if (lower (app) = 'discussion')
          self.srch_nntp.ufl_selected := 1;
-
+       else if (lower (app) = 'addressbook')
+         self.srch_addressbook.ufl_selected := 1;
 	}
     }
 
@@ -322,6 +338,7 @@
 	    )
            or self.srch_bookmark.ufl_selected
          or self.srch_nntp.ufl_selected
+         or self.srch_addressbook.ufl_selected
 	 )
 	{
 
@@ -379,6 +396,7 @@
 		self.srch_omail.ufl_selected,
 		self.srch_bookmark.ufl_selected,
 	    self.srch_nntp.ufl_selected,
+            self.srch_addressbook.ufl_selected,
 		self.sort_by_score.ufl_selected,
 		_max_rows,
 		self.s_tag_is_qry,
@@ -427,6 +445,8 @@
 	  self.gurl := self.gurl || 'bookmark,';
       if (self.srch_nntp.ufl_selected)
           self.gurl := self.gurl || 'discussion,';
+      if (self.srch_addressbook.ufl_selected)
+          self.gurl := self.gurl || 'addressbook,';
 
 	self.gurl := rtrim (self.gurl, ',');
         self.q_sel := self.gurl;
@@ -444,7 +464,8 @@
 	    self.srch_apps.ufl_selected and
 	    self.srch_omail.ufl_selected and
 	  self.srch_bookmark.ufl_selected and
-          self.srch_nntp.ufl_selected
+          self.srch_nntp.ufl_selected     and
+          self.srch_addressbook.ufl_selected
 	  )
 	 {
 	  self.gurl := '/dataspace/GData/';
@@ -740,6 +761,7 @@
   <vm:variable name="have_wiki" type="int" default="0"/>
   <vm:variable name="have_omail" type="int" default="0"/>
   <vm:variable name="have_bookmark" type="int" default="0"/>
+  <vm:variable name="have_addressbook" type="int" default="0"/>
   <vm:variable name="page_url" type="varchar" default="null"/>
   <vm:variable name="plate_enabled" type="int" default="0"/>
   <vm:variable name="tag_plate_enabled" type="int" default="0"/>
@@ -966,6 +988,10 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
          <td>
      <v:check-box name="srch_nntp" initial-checked="1" xhtml_tabindex="10" xhtml_id="srch_nntp"/>
      <label for="srch_nntp">Discussions</label>
+         </td>
+         <td>
+     <v:check-box name="srch_addressbook" initial-checked="--self.have_addressbook" xhtml_tabindex="13" xhtml_id="srch_addressbook"/>
+     <label for="srch_addressbook">Address Book</label>
          </td>
 	     </tr>
 	    </table>
@@ -1314,7 +1340,7 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 			    declare exit handler for not found;
 			    select blob_to_string (RES_CONTENT), RES_FULL_PATH into control.ufl_value, ppath
 			    from WS.WS.SYS_DAV_RES where RES_ID = self.sparql_rq;
-			    if (ppath not like '/DAV/home/'||self.u_name||'/SPARQL/%')
+          if (ppath not like '/DAV/home/%/SPARQL/%')
 			      control.ufl_value := '';
 			  }
 		      }
@@ -1325,12 +1351,12 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 	    <tr>
 	      <td colspan="2">
 		<span class="fm_ctl_btn">
-		  <v:template name="load_save" type="simple" condition="length (self.sid)">
 		    <v:button name="rdf_load" value="Load" action="simple">
 		      <v:on-post>
 			self.vc_redirect ('sparql_load.vspx');
 		      </v:on-post>
 		    </v:button>
+      <v:template name="load_save" type="simple" condition="length (self.sid)">
 		    <v:button name="rdf_store" value="Store" action="simple">
 		      <v:on-post>
 			if (length (self.sparql_text.ufl_value))

@@ -422,12 +422,20 @@ create procedure foaf_maker (in graph_iri varchar, in iri varchar, in full_name 
     }
 };
 
-create procedure person_iri (in iri varchar, in suff varchar := '#this')
+create procedure person_iri (in iri varchar, in suff varchar := '#this', in tp int := null)
 {
   declare arr any;
   arr := sprintf_inverse (iri, 'http://%s/dataspace/%s#this', 1);
   if (length (arr) <> 2)
     signal ('22023', sprintf ('Non-user IRI [%s] can\'t be transformed to person IRI', iri));
+
+  if (tp is null and
+      exists (select 1 from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_NAME = arr[1] and WAUI_IS_ORG = 1))
+    return sprintf ('http://%s/dataspace/organization/%s%s',arr[0],arr[1], suff);
+
+  if (tp = 1)
+    return sprintf ('http://%s/dataspace/organization/%s%s',arr[0],arr[1], suff);
+
   return sprintf ('http://%s/dataspace/person/%s%s',arr[0],arr[1], suff);
 };
 
@@ -480,6 +488,9 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   -- FOAF
   person_iri := person_iri (iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdfs_iri ('seeAlso'), concat (link, '/about.rdf'));
+  if (person_iri like '%/organization/%')
+    DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Organization'));
+  else
   DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Person'));
   DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('nick'), u_name);
   if (length (u_e_mail))
@@ -504,12 +515,15 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   -- OpenID (new)
   DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('openid'), link);
 
-  -- ATOM
-  delete_quad_sp (graph_iri, person_iri, atom_iri ('personEmail'));
-  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), atom_iri ('Person'));
-  DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, atom_iri ('personName'), u_name);
-  if (length (u_e_mail))
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, atom_iri ('personEmail'), u_e_mail);
+  -- ATOM the person here is a subclass of foaf:Person which is already the case
+  --delete_quad_sp (graph_iri, person_iri, atom_iri ('personEmail'));
+  --if (person_iri not like '%/organization/%')
+  --  {
+  --    DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), atom_iri ('Person'));
+  --    DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, atom_iri ('personName'), u_name);
+  --    if (length (u_e_mail))
+  --	DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, atom_iri ('personEmail'), u_e_mail);
+  --  }
 
 };
 
@@ -565,9 +579,11 @@ create procedure sioc_user_info (
   declare addr_iri any;
   declare giri varchar;
   declare ev_iri any;
+  declare is_person int;
 
   if (iri is null)
     return;
+  is_person := 1;
 
 --  delete_quad_sp (graph_iri, iri, sioc_iri ('first_name'));
 --  delete_quad_sp (graph_iri, iri, sioc_iri ('last_name'));
@@ -583,6 +599,8 @@ create procedure sioc_user_info (
   ev_iri := iri || '#event';
   giri := iri || '#based_near';
   iri := person_iri (in_iri);
+  if (iri like '%/organization/%')
+    is_person := 0;
 
   ods_sioc_result (iri);
 
@@ -608,12 +626,12 @@ create procedure sioc_user_info (
   delete_quad_s_or_o (graph_iri, addr_iri, addr_iri);
   delete_quad_s_or_o (graph_iri, giri, giri);
 
-  if (length (waui_first_name) and wa_user_pub_info (flags, 1))
+  if (is_person and length (waui_first_name) and wa_user_pub_info (flags, 1))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), waui_first_name);
-  if (length (waui_last_name) and wa_user_pub_info (flags, 2))
+  if (is_person and length (waui_last_name) and wa_user_pub_info (flags, 2))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), waui_last_name);
 
-  if (length (gender) and wa_user_pub_info (flags, 5))
+  if (is_person and length (gender) and wa_user_pub_info (flags, 5))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
   if (length (icq) and wa_user_pub_info (flags, 10))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('icqChatID'), icq);
@@ -643,7 +661,7 @@ create procedure sioc_user_info (
   if (wa_pub_info (photo, flags, 37))
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('depiction'), DB.DBA.WA_LINK (1, photo));
 
-  if (length (org) and length (org_page) and wa_user_pub_info (flags, 20))
+  if (is_person and length (org) and length (org_page) and wa_user_pub_info (flags, 20))
     {
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('workplaceHomepage'), org_page);
       DB.DBA.RDF_QUAD_URI (graph_iri, org_iri, rdf_iri ('type') , foaf_iri ('Organization'));
@@ -651,7 +669,7 @@ create procedure sioc_user_info (
       DB.DBA.RDF_QUAD_URI_L (graph_iri, org_iri, dc_iri ('title'), org);
     }
 
-  if (length (interests))
+  if (is_person and length (interests))
     {
       for (select interest, label from DB.DBA.WA_USER_INTERESTS (txt) (interest varchar, label varchar) P where txt = interests) do
 	{
@@ -676,7 +694,7 @@ create procedure sioc_user_info (
       DB.DBA.RDF_QUAD_URI_L (graph_iri, addr_iri, vcard_iri ('Country'), hcountry);
     }
 
-  if (wa_pub_info (resume, flags, 34))
+  if (is_person and wa_pub_info (resume, flags, 34))
     {
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, bio_iri ('olb'), resume);
     }
@@ -797,7 +815,9 @@ create procedure sioc_forum (
 
   DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), wai_name);
   -- deprecated DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('type'), DB.DBA.wa_type_to_app (wai_type_name));
-  if (wai_description is not null)
+  if (wai_description is null)
+    wai_description := wai_name;
+
     {
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('description'), wai_description);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), wai_description);
@@ -978,11 +998,11 @@ create procedure ods_sioc_post (
 	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), wikiont_iri ('Article'));
 	}
-      else if (not do_exif and not do_ann)
+      else if (not do_exif and not do_ann and not do_atom)
         DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Item'));
 
       -- literal data
-      if (title is not null)
+      if (title is not null and length (title))
 	{
         DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), title);
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), title);
@@ -1131,7 +1151,7 @@ create procedure ods_sioc_service (
     in proto varchar
     )
 {
-  if (iri is null)
+  if (iri is null or forum_iri is null)
       return;
   ods_sioc_result (iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Service'));
@@ -1869,6 +1889,25 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
       lat := N.WAUI_LAT;
       lng :=  N.WAUI_LNG;
     }
+  if (O.WAUI_IS_ORG <> N.WAUI_IS_ORG)
+    {
+      declare niri, oiri any;
+      oiri := person_iri (iri, tp=>O.WAUI_IS_ORG);
+      niri := person_iri (iri, tp=>N.WAUI_IS_ORG);
+      update_quad_s_o (graph_iri, oiri, niri);
+      if (N.WAUI_IS_ORG)
+	{
+          update DB.DBA.RDF_QUAD set O = iri_to_id (foaf_iri ('Organization')) where
+	    G = iri_to_id (graph_iri) and S = iri_to_id (niri) and P = iri_to_id (rdf_iri ('type'))
+	    and O = iri_to_id (foaf_iri ('Person'));
+	}
+      else
+	{
+          update DB.DBA.RDF_QUAD set O = iri_to_id (foaf_iri ('Person')) where
+	    G = iri_to_id (graph_iri) and S = iri_to_id (niri) and P = iri_to_id (rdf_iri ('type'))
+	    and O = iri_to_id (foaf_iri ('Organization'));
+	}
+    }
   sioc_user_info (graph_iri, iri, N.WAUI_VISIBLE, N.WAUI_FIRST_NAME, N.WAUI_LAST_NAME,
 		      N.WAUI_TITLE, null, N.WAUI_GENDER, N.WAUI_ICQ, N.WAUI_MSN, N.WAUI_AIM, N.WAUI_YAHOO,
 		      N.WAUI_BIRTHDAY, N.WAUI_BORG,
@@ -2049,9 +2088,10 @@ create trigger WA_MEMBER_SIOC_D before delete on DB.DBA.WA_MEMBER referencing ol
 
   iri :=  user_iri (O.WAM_USER);
   riri := role_iri_by_name (O.WAM_INST, O.WAM_USER);
+--  dbg_obj_print (iri, riri);
   if (iri is not null and riri is not null)
     {
-      delete_quad_so (graph_iri, iri, riri);
+      delete_quad_s_or_o (graph_iri, riri, riri);
     }
   return;
 };
@@ -2192,14 +2232,105 @@ create trigger sn_related_SIOC_D before delete on DB.DBA.sn_related referencing 
   declare _from_iri, _to_iri, graph_iri varchar;
 
   graph_iri := get_graph ();
-  _from_iri := user_iri_ent (O.snr_from);
-  _to_iri := user_iri_ent (O.snr_to);
-  delete_quad_s_p_o (graph_iri, _from_iri, sioc_iri ('knows'), _to_iri);
-  delete_quad_s_p_o (graph_iri, _to_iri, sioc_iri ('knows'), _from_iri);
+  _from_iri := person_iri (user_iri_ent (O.snr_from));
+  _to_iri := person_iri (user_iri_ent (O.snr_to));
+  delete_quad_s_p_o (graph_iri, _from_iri, foaf_iri ('knows'), _to_iri);
+  delete_quad_s_p_o (graph_iri, _to_iri, foaf_iri ('knows'), _from_iri);
   return;
 };
 
+create function std_pref (in iri varchar, in rev int := 0)
+{
+  declare v any;
+  v := vector (
+  'http://xmlns.com/foaf/0.1/', 'foaf',
+  'http://rdfs.org/sioc/ns#', 'sioc',
+  'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf',
+  'http://www.w3.org/2000/01/rdf-schema#', 'rdfs',
+  'http://www.w3.org/2003/01/geo/wgs84_pos#', 'geo',
+  'http://atomowl.org/ontologies/atomrdf#', 'aowl',
+  'http://purl.org/dc/elements/1.1/', 'dc',
+  'http://purl.org/dc/terms/', 'dct',
+  'http://www.w3.org/2004/02/skos/core#', 'skos',
+  'http://rdfs.org/sioc/types#', 'sioct',
+  'http://sw.deri.org/2005/04/wikipedia/wikiont.owl#', 'wiki',
+  'http://www.w3.org/2002/01/bookmark#', 'bm',
+  'http://www.w3.org/2003/12/exif/ns/', 'exif',
+  'http://www.w3.org/2000/10/annotation-ns#', 'ann',
+  'http://purl.org/vocab/bio/0.1/', 'bio',
+  'http://www.w3.org/2001/vcard-rdf/3.0#', 'vcard',
+  'http://www.w3.org/2002/12/cal#', 'vcal',
+  'http://www.w3.org/2002/07/owl#', 'owl',
+  'http://web.resource.org/cc/', 'cc'
 
+  );
+  if (rev)
+    {
+      declare nv, l any;
+      nv := make_array (length (v), 'any');
+      for (declare i, j int, j := 0, i := length (v) - 1; i >= 0; i := i - 2, j := j + 2)
+        {
+	   nv[j] := v[i];
+	   nv[j+1] := v[i-1];
+	}
+      return get_keyword (iri, nv, null);
+    }
+  else
+   return get_keyword (iri, v, null);
+};
+
+create procedure is_defined_by (in uname varchar, in cls varchar, in iri varchar, in lab varchar)
+{
+  declare res any;
+  declare pref, tit, tmp varchar;
+  declare pos, p1, p2, p3 int;
+  p1 := coalesce (strrchr (cls, '#'), -1);
+  p2 := coalesce (strrchr (cls, '/'), -1);
+  p3 := coalesce (strrchr (cls, ':'), -1);
+  pos := __max (p1, p2, p3);
+  if (pos > 0)
+    {
+      tit := subseq (CLS, pos + 1);
+      tmp := subseq (CLS, 0, pos + 1);
+      pref := std_pref (tmp);
+      if (pref is not null)
+	tit := pref || ':' || tit;
+      else
+        tit := cls;
+    }
+  else
+    tit := cls;
+  tit := replace (tit, '/', '^2f');
+  if (lab is null)
+    lab := '~unnamed~';
+  res := sprintf ('/DAV/home/%U/RDFData/%U/%U%%20(%d).rdf', uname, tit, lab, iri_id_num (iri_to_id (iri)));
+  return db.dba.wa_link (1, res);
+};
+
+create procedure cls_short_print (in cls varchar)
+{
+  declare res any;
+  declare pref, tit, tmp varchar;
+  declare pos, p1, p2, p3 int;
+  p1 := coalesce (strrchr (cls, '#'), -1);
+  p2 := coalesce (strrchr (cls, '/'), -1);
+  p3 := coalesce (strrchr (cls, ':'), -1);
+  pos := __max (p1, p2, p3);
+  if (pos > 0)
+    {
+      tit := subseq (CLS, pos + 1);
+      tmp := subseq (CLS, 0, pos + 1);
+      pref := std_pref (tmp);
+      if (pref is not null)
+	tit := pref || ':' || tit;
+      else
+        tit := cls;
+    }
+  else
+    tit := cls;
+  tit := replace (tit, '/', '^2f');
+  return tit;
+};
 
 create procedure rdf_head (inout ses any)
 {
@@ -2209,518 +2340,6 @@ create procedure rdf_head (inout ses any)
 create procedure rdf_tail (inout ses any)
 {
   http ('</rdf:RDF>', ses);
-};
-
-create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in inst_type varchar, in postid varchar := null,
-				   in p int := null, in fmt varchar := 'RDF/XML', in kind int := 0)
-{
-  declare state, tp, qry, msg, maxrows, metas, rset, graph, iri, offs, fmt_decl, accept, part any;
-  declare ses any;
-
---  dbg_obj_print (u_name,wai_name,inst_type,postid);
-  graph := get_graph ();
-  ses := string_output ();
-  fmt_decl := '';
-  --if (length (fmt))
-  --  fmt_decl := ' define output:format "'||fmt||'" ';
-
-  if (fmt = 'TTL')
-    accept := 'text/rdf+n3';
-  else
-    accept := '';
-
-
-  if (inst_type = 'users')
-    inst_type := null;
-
-  if (u_name is null)
-    {
-      qry := sprintf (
-      		'sparql  ' || fmt_decl ||
-		'prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> '||
-		'prefix foaf: <http://xmlns.com/foaf/0.1/> '||
-		'prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '||
-		'prefix dc: <http://purl.org/dc/elements/1.1/> '||
-		'prefix dct: <http://purl.org/dc/terms/> '||
-		'construct { '||
-		  ' <%s#group> rdf:type foaf:Group ; '||
-		  ' foaf:member ?s . '||
-		  '?s rdf:type foaf:Agent . '||
-		  '?s foaf:nick ?nick . '||
-		  '?s foaf:name ?name . '||
-		  '?s rdfs:seeAlso ?sa . ' ||
-		  --'?sa dc:format "application/rdf+xml" '||
-		  '} from <%s> '||
-		  'where { ?s rdf:type foaf:Person . '||
-		  '?s foaf:nick ?nick . '||
-		  '?s rdfs:seeAlso ?sa . '||
-		  'optional { ?s foaf:name ?name } . '||
-		  '}', graph, graph, graph, graph);
-    }
-  else if (wai_name is null and inst_type is null and postid is null)
-    {
-      iri := user_obj_iri (u_name);
-      qry := 'sparql ' || fmt_decl ||
-         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-         ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '||
-         ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
-   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
-         ' prefix dc: <http://purl.org/dc/elements/1.1/> '||
-         ' prefix dct: <http://purl.org/dc/terms/> '||
-         ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> \n' ||
-         ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> \n' ||
-	 ' prefix owl: <http://www.w3.org/2002/07/owl#> ' ||
-         ' prefix bio: <http://purl.org/vocab/bio/0.1/> \n' ;
-      if (kind = 0)
-	{
-	  part := sprintf (
-         ' CONSTRUCT { ?s ?p ?o . ?f foaf:holdsAccount ?ha . ?f rdfs:seeAlso ?sa . '||
-	     '  ?frm sioc:scope_of ?role. ?role sioc:function_of ?member. ?frm sioc:type ?ft. ?frm sioc:id ?fid . '||
-	     '  ?frm rdfs:seeAlso ?fsa . ?frm sioc:has_space ?fh .  ?role sioc:has_scope ?frm . ' ||
-	     '  ?frm sioc:has_owner ?member . ?member sioc:owner_of ?frm . } \n' ||
-         ' FROM <%s> WHERE { \n' ||
-	 '   { ?s ?p ?o . ?s sioc:id "%s" FILTER (?p != "http://www.w3.org/2000/01/rdf-schema#seeAlso" && ' ||
-	 ' 					  ?p != "http://rdfs.org/sioc/ns#creator_of") } union  \n' ||
-	 '   { ?f foaf:nick "%s" ; foaf:holdsAccount ?ha ; rdfs:seeAlso ?sa  } union  \n' ||
-	     '   { ?frm sioc:scope_of ?role . ?role sioc:function_of ?member . '||
-	     '     ?member sioc:id "%s". ?frm sioc:type ?ft; sioc:id ?fid; rdfs:seeAlso ?fsa; sioc:has_space ?fh. '||
-             '     OPTIONAL { ?frm sioc:has_owner ?member . } '||
-	 '  	 } } ',
-	 graph, u_name, u_name, u_name);
-    }
-      else if (kind = 1) -- FOAF
-    {
-	  part := sprintf (
-	  ' CONSTRUCT {
-	    ?person a foaf:Person .
-	    ?person foaf:nick "%s" .
-	    ?person foaf:mbox ?mbox .
-	    ?person foaf:mbox_sha1sum ?sha1 .
-	    ?person foaf:name ?full_name .
-	    ?person foaf:holdsAccount ?sioc_user .
-	    ?sioc_user rdfs:seeAlso ?see_also .
-	    ?sioc_user a sioc:User .
-	    ?person foaf:firstName ?fn .
-	    ?person foaf:family_name ?ln .
-	    ?person foaf:gender ?gender .
-	    ?person foaf:icqChatID ?icq .
-	    ?person foaf:msnChatID ?msn .
-	    ?person foaf:aimChatID ?aim .
-	    ?person foaf:yahooChatID ?yahoo .
-	    ?person foaf:birthday ?birthday .
-	    ?person foaf:phone ?phone .
-	    ?person foaf:based_near ?geo .
-	    ?geo ?geo_pred ?geo_subj .
-	    ?person rdfs:seeAlso ?forum_see_also .
-	    ?forum_see_also rdf:type ?f_see_also_type .
-	    ?person foaf:knows ?friend .
-	    ?friend rdfs:seeAlso ?f_see_also .
-	    ?friend foaf:nick ?f_nick .
-	    <%s/about.rdf> a foaf:PersonalProfileDocument .
-	    <%s/about.rdf> foaf:primaryTopic ?person .
-	    <%s/about.rdf> foaf:maker ?person .
-	    ?person foaf:workplaceHomepage ?wphome .
-	    ?org foaf:homepage ?wphome .
-	    ?org rdf:type foaf:Organization .
-	    ?org dc:title ?orgtit .
-	    ?person foaf:depiction ?depiction .
-	    ?person foaf:homepage ?homepage .
-	    ?person vcard:ADR ?adr .
-	    ?adr vcard:Country ?country .
-            ?adr vcard:Locality ?city .
-	    ?adr vcard:Region ?state .
-	    ?person bio:olb ?bio .
-	    ?person bio:event ?event .
-	    ?event rdf:type bio:Birth .
-	    ?event dc:date ?bdate .
-	    #?person foaf:interest ?interest .
-	    #?person bio:keywords ?keywords .
-	    #?person owl:sameAs ?same_as .
-	  }
-	  WHERE
-	  {
-	    graph <%s>
-	    {
-	      {
-	      ?person foaf:nick "%s" ;
-	      foaf:holdsAccount ?sioc_user .
-	      ?sioc_user rdfs:seeAlso ?see_also .
-	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
-	      optional {
-		  #?sioc_user sioc:has_function ?function .
-		  #?function sioc:has_scope ?forum .
-		  ?sioc_user sioc:owner_of ?forum .
-	      	?forum rdfs:seeAlso ?forum_see_also .
-	        optional { ?forum_see_also rdf:type ?f_see_also_type } .
-	      	} .
-	      optional { ?person foaf:knows ?friend . ?friend rdfs:seeAlso ?f_see_also . ?friend foaf:nick ?f_nick . } .
-	      optional { ?person foaf:name ?full_name } .
-	      optional { ?person foaf:firstName ?fn } .
-	      optional { ?person foaf:family_name ?ln } .
-	      optional { ?person foaf:gender ?gender } .
-	      optional { ?person foaf:icqChatID ?icq } .
-	      optional { ?person foaf:msnChatID ?msn } .
-	      optional { ?person foaf:aimChatID ?aim } .
-	      optional { ?person foaf:yahooChatID ?yahoo } .
-	      optional { ?person foaf:birthday ?birthday } .
-	      optional { ?person foaf:phone ?phone } .
-	      optional { ?person foaf:based_near ?geo . ?geo ?geo_pred ?geo_subj } .
-	      optional { ?person foaf:workplaceHomepage ?wphome } .
-	      optional { ?org foaf:homepage ?wphome . ?org a foaf:Organization ; dc:title ?orgtit . } .
-	      optional { ?person foaf:depiction ?depiction } .
-	      optional { ?person foaf:homepage ?homepage } .
-	      optional { ?person bio:olb ?bio } .
-              optional { ?person bio:event ?event . ?event a bio:Birth ; dc:date ?bdate } .
-	      optional { ?person vcard:ADR ?adr . ?adr vcard:Country ?country .
-	        	optional { ?adr vcard:Locality ?city } .
-			optional { ?adr vcard:Region ?state } .
-	      	       } .
-	      #optional { ?person foaf:interest ?interest } .
-	      #optional { ?person bio:keywords ?keywords } .
-	      #optional { ?person owl:sameAs ?same_as } .
-	      }
-	    }
-	  }',
-	  u_name,
-	  iri, iri, iri,
-	  graph, u_name);
-	}
-
-       qry := qry || part;
-    }
-  else if (postid is null)
-    {
-      declare triples, num any;
-      declare lim any;
-
-      if (kind = 1)
-	signal ('22023', 'FOAF is not available for ODS instance');
-
-      lim := coalesce (DB.DBA.USER_GET_OPTION (u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
-      offs := coalesce (p, 0) * lim;
-      tp := DB.DBA.wa_type_to_app (inst_type);
-
-      if (inst_type = 'discussion')
-	iri := forum_iri ('nntpf', wai_name);
-      else
-      iri := forum_iri (inst_type, wai_name);
-      if (fmt = 'RDF/XML')
-      rdf_head (ses);
-      set_user_id ('dba');
-      qry:= sprintf ('sparql
-   	  prefix sioc: <http://rdfs.org/sioc/ns#>
-	  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-	  prefix dc: <http://purl.org/dc/elements/1.1/>
-          construct
-	        {
-		  ?host sioc:space_of ?forum .
-		  ?host sioc:link ?link .
-		  ?host dc:title ?title .
-		  ?host rdf:type sioc:Space .
-	        } where
-            	{
-		  graph <%s>
-		  {
-		    ?host sioc:space_of ?forum . ?forum sioc:id "%s" .
-		    ?host sioc:link ?link . ?host dc:title ?title
-		  }
-		}', graph, wai_name
-	    );
-      rset := null;
-      maxrows := 0;
-      state := '00000';
-      msg := '';
---      dbg_printf ('%s', qry);
-      exec (qry, state, msg, vector(), maxrows, metas, rset);
---      dbg_obj_print (msg);
-      if (state = '00000')
-	{
-	  triples := rset[0][0];
-      rset := dict_list_keys (triples, 1);
-	  if (fmt = 'TTL')
-	    DB.DBA.RDF_TRIPLES_TO_TTL (rset, ses);
-	  else
-      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
-	}
-
-      qry := sprintf ('sparql
-   	  prefix sioc: <http://rdfs.org/sioc/ns#>
-	  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-	  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-	  prefix dc: <http://purl.org/dc/elements/1.1/>
-	  prefix ext: <http://rdfs.org/sioc/types#>
-          construct {
-			?forum sioc:id "%s" .
-			?forum rdf:type ?tp .
-			?forum sioc:link ?link .
-			?forum sioc:description ?descr .
-			?forum sioc:scope_of ?role .
-	    		?role sioc:function_of ?member .
-			?member rdfs:seeAlso ?see_also .
-			?forum sioc:has_space ?host .
-			?forum sioc:type ?type .
-			?forum sioc:has_service ?svc .
-			?svc sioc:service_endpoint ?endp .
-			?svc sioc:service_protocol ?proto .
-			?svc sioc:service_of ?forum .
-			?svc rdf:type sioc:Service .
-		    } where
-            	{
-		  graph <%s>
-		  {
-		    ?forum sioc:id "%s" ;
-		    rdf:type ?tp ;
-		    sioc:link ?link ;
-		    sioc:description ?descr ;
-		    sioc:has_space ?host ;
-		    sioc:type ?type ;
-		    sioc:scope_of ?role .
-		    ?role sioc:function_of ?member .
-		    ?member rdfs:seeAlso ?see_also .
-   		    optional {
-  		      ?forum sioc:has_service ?svc .
-  		      ?svc sioc:service_endpoint ?endp .
-  		      ?svc sioc:service_protocol ?proto .
-		  }
-		}
-		}', wai_name, graph, wai_name
-	    );
-      rset := null;
-      maxrows := 0;
-      state := '00000';
-      msg := '';
---      dbg_printf ('%s', qry);
-      exec (qry, state, msg, vector(), maxrows, metas, rset);
---      dbg_obj_print (msg);
-      if (state = '00000')
-	{
-	  triples := rset[0][0];
-      rset := dict_list_keys (triples, 1);
-	  if (fmt = 'TTL')
-	    DB.DBA.RDF_TRIPLES_TO_TTL (rset, ses);
-	  else
-      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
-	}
-
-      if (tp = 'subscriptions')
-	{
-      qry := sprintf ('sparql
-   	  prefix sioc: <http://rdfs.org/sioc/ns#>
-   	  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-	      prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-	      prefix dc: <http://purl.org/dc/elements/1.1/>
-              prefix dct: <http://purl.org/dc/terms/>
-          construct
-    {
-		?forum sioc:container_of ?post .
-		?post  sioc:has_container ?forum .
-		    ?forum sioc:has_parent ?pforum .
-		    ?pforum sioc:parent_of ?forum .
-		    ?post rdf:type ?post_tp .
-		    ?post rdfs:seeAlso ?post_see_also
-	   }
-	  where
-                {
-                  graph <%s>
-                  {
-			?pforum sioc:id "%s" .
-			?pforum sioc:parent_of ?forum .
-                    ?post sioc:has_container ?forum .
-			?post rdfs:seeAlso ?post_see_also .
-			?post rdf:type ?post_tp .
-			optional { ?post dct:created ?created } .
-			optional { ?post sioc:reply_of ?reply_of }
-			filter bif:isnull (?reply_of)
-		      }
-		    }
-		    order by desc (?created) limit %d offset %d
-		', graph, wai_name, lim, offs);
-	}
-      else if (tp = 'community')
-	{
-	  qry := sprintf ('sparql
-	      prefix sioc: <http://rdfs.org/sioc/ns#>
-	      prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-	      prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-	      prefix dc: <http://purl.org/dc/elements/1.1/>
-              prefix dct: <http://purl.org/dc/terms/>
-	      construct
-	       {
-		    ?forum sioc:container_of ?post .
-		    ?post  sioc:has_container ?forum .
-		    ?forum sioc:has_part ?pforum .
-		    ?pforum sioc:part_of ?forum .
-		    ?post rdf:type ?post_tp .
-		    ?post rdfs:seeAlso ?post_see_also
-	       }
-	      where
-		    {
-		      graph <%s>
-		      {
-			?pforum sioc:id "%s" .
-			?pforum sioc:part_of ?forum .
-			?post sioc:has_container ?forum .
-			?post rdfs:seeAlso ?post_see_also .
-			?post rdf:type ?post_tp .
-			optional { ?post dct:created ?created } .
-			optional { ?post sioc:reply_of ?reply_of }
-			filter bif:isnull (?reply_of)
-		      }
-		    }
-		    order by desc (?created) limit %d offset %d
-		', graph, wai_name, lim, offs);
-	}
-      else
-	{
-	  qry := sprintf ('sparql
-	      prefix sioc: <http://rdfs.org/sioc/ns#>
-	      prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-	      prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-	      prefix dc: <http://purl.org/dc/elements/1.1/>
-              prefix dct: <http://purl.org/dc/terms/>
-	      prefix foaf: <http://xmlns.com/foaf/0.1/>
-	      construct
-	       {
-		    ?forum sioc:container_of ?post .
-		    ?post  sioc:has_container ?forum .
-		    ?post rdf:type ?post_tp .
-		    ?post rdfs:seeAlso ?post_see_also
-	       }
-	      where
-		    {
-		      graph <%s>
-		      {
-			?forum sioc:id "%s" .
-			?post sioc:has_container ?forum .
-			?post rdfs:seeAlso ?post_see_also .
-			?post rdf:type ?post_tp .
-		        optional { ?post dct:created ?created } .
-			optional { ?post sioc:has_creator ?creator } .
-			optional { ?post sioc:reply_of ?reply_of }
-			filter bif:isnull (?reply_of)
-                  }
-                }
-		    order by desc (?created) limit %d offset %d
-		', graph, wai_name, lim, offs);
-	}
-      rset := null;
-      maxrows := 0;
-      state := '00000';
-      msg := '';
---      set_user_id ('dba');
---      dbg_printf ('%s', qry);
-      exec (qry, state, msg, vector(), maxrows, metas, rset);
---      dbg_obj_print (msg);
-      if (state = '00000')
-		  {
-	  triples := rset[0][0];
-      rset := dict_list_keys (triples, 1);
-	  if (fmt = 'TTL')
-	    DB.DBA.RDF_TRIPLES_TO_TTL (rset, ses);
-	  else
-      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
-	  -- seeAlso for the rest of posts
-	  if (length (rset) and fmt = 'RDF/XML')
-	    {
-	      http (sprintf ('<rdf:Description rdf:about="%s">', iri), ses);
-	      http (sprintf
-	      	('<rdfs:seeAlso xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="%s/sioc.rdf?p=%d" />',
-		    iri, coalesce (p, 0) + 1), ses);
-	      http ('</rdf:Description>', ses);
-	    }
-        }
-      if (fmt = 'RDF/XML')
-      rdf_tail (ses);
-      goto ret;
-    }
-  else -- the post
-    {
---      dbg_obj_print (u_name, inst_type, wai_name, postid);
-      if (kind = 1)
-	signal ('22023', 'FOAF is not available for posts');
-
-      if (inst_type = 'feed')
-        iri := feed_item_iri (atoi(wai_name), atoi(postid));
-      else if (inst_type = 'discussion')
-	iri := nntp_post_iri (wai_name, postid);
-      else
-      iri := post_iri (u_name, inst_type, wai_name, postid);
---      dbg_obj_print (iri, md5(iri));
-      qry := sprintf ('sparql ' || fmt_decl ||
-         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-	 ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
-   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
-         ' prefix dc: <http://purl.org/dc/elements/1.1/> '||
-         ' prefix dct: <http://purl.org/dc/terms/> '||
-	 ' prefix foaf: <http://xmlns.com/foaf/0.1/> '||
-	 ' prefix skos: <http://www.w3.org/2004/02/skos/core#> '||
-         ' construct {
-	            ?post rdf:type ?post_tp .
-	   	    ?post sioc:has_container ?forum .
-		    ?forum sioc:container_of ?post .  ?forum rdfs:seeAlso ?see_also .
-		    ?forum sioc:has_parent ?pforum . ?pforum rdfs:seeAlso ?psee_also .
-		    ?pforum sioc:parent_of ?forum .
-		    ?post dc:title ?title .
-		    ?post sioc:link ?link .
-		    ?post sioc:links_to ?links_to .
-		    ?post dct:modified ?modified .
-		    ?post dct:created ?created .
-		    ?post sioc:has_creator ?creator .
-		    ?post sioc:has_reply ?reply .
-		    ?reply sioc:reply_of ?post .
-		    ?reply rdfs:seeAlso ?reply_see_also .
-		    ?post sioc:reply_of ?reply_of .
-		    ?reply_of sioc:has_reply ?post .
-		    ?reply_of rdfs:seeAlso ?reply_of_see_also .
-		    ?post sioc:content ?content .
-		    ?post foaf:maker ?maker .
-		    ?maker rdfs:seeAlso ?maker_see_also .
-		    ?post sioc:topic ?topic . ?topic rdfs:label ?label .
-		    ?post sioc:topic ?skos_topic . ?skos_topic rdf:type skos:Concept . ?skos_topic skos:prefLabel ?skos_label .
-		    ?skos_topic skos:isSubjectOf ?post .
-		    ?creator rdfs:seeAlso ?cr_see_also .
-		    ?maker rdf:type foaf:Person .
-	 }  \n' ||
-         ' from <%s> where { \n' ||
-	 ' ?post sioc:id "%s" .
-	   ?post sioc:has_container ?forum .
-	   ?post rdf:type ?post_tp .
-	   optional { ?forum rdfs:seeAlso ?see_also . }
-	   optional { ?forum sioc:has_parent ?pforum . ?pforum rdfs:seeAlso ?psee_also . }
-	   optional { ?post dct:modified ?modified } .
-	   optional { ?post dct:created ?created } .
-	   optional { ?post sioc:links_to ?links_to } .
-	   optional { ?post sioc:link ?link } .
-	   optional { ?post sioc:has_creator ?creator . ?creator rdfs:seeAlso ?cr_see_also  . }
-	   optional { ?post sioc:has_reply ?reply .
-	     	      ?reply rdfs:seeAlso ?reply_see_also
-	   	    } .
-	   optional { ?post sioc:reply_of ?reply_of .
-	     	      ?reply_of rdfs:seeAlso ?reply_of_see_also
-	   	    } .
-	   optional { ?post dc:title ?title } .
-	   optional { ?post sioc:topic ?topic . ?topic rdfs:label ?label } .
-	   optional { ?post sioc:topic ?skos_topic . ?skos_topic skos:prefLabel ?skos_label } .
-	   optional { ?post sioc:content ?content } .
-	   optional { ?post foaf:maker ?maker . optional { ?maker rdfs:seeAlso ?maker_see_also } .
-		    optional { ?maker foaf:name ?foaf_name .  } . optional { ?maker foaf:mbox ?foaf_mbox } } .
-	 ' ||
-	 ' } ',
-	 graph, md5(iri));
-    }
-
-  maxrows := 0;
-  state := '00000';
-  --dbg_printf ('%s', qry);
-  set_user_id ('dba');
-  exec (qry, state, msg, vector(), maxrows, metas, rset);
---  dbg_obj_print (msg);
-  if (state <> '00000')
-    signal (state, msg);
-  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
-
-ret:
-  return ses;
 };
 
 create procedure ods_rdf_describe (in path varchar, in fmt varchar, in is_foaf int)
@@ -2740,18 +2359,18 @@ create procedure ods_rdf_describe (in path varchar, in fmt varchar, in is_foaf i
   set_user_id ('SPARQL');
   exec (qr, stat, msg, vector (), 0, metas, rset);
   if (stat = '00000')
-    {
+	      {
       ses := string_output ();
       DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
-    }
+	}
   else
     signal (stat, msg);
   return ses;
-}
+    }
 ;
 
 create procedure gen_cc_xml ()
-{
+		  {
   declare ses any;
   ses := string_output ();
   http ('<?xml version="1.0"?>\n', ses);
@@ -2848,11 +2467,11 @@ create procedure gen_cc_xml ()
   http ('  </cc:License>\n', ses);
   http ('</rdf:RDF>\n', ses);
   return xtree_doc (string_output_string (ses));
-}
+		  }
 ;
 
 create procedure sioct_n3 ()
-{
+	{
   declare ses any;
   ses := string_output ();
   http (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
@@ -2908,7 +2527,7 @@ create procedure sioct_n3 ()
   http ('<http://xmlns.com/foaf/0.1/Agent> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
   http ('<http://xmlns.com/foaf/0.1/Document> rdfs:subClassOf <http://rdfs.org/sioc/ns#Item> .\n', ses);
   return string_output_string (ses);
-}
+	}
 ;
 
 create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p int := 0)
@@ -2947,11 +2566,11 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   if (fmt = 'rdf')
     rdf_head (ses);
 
-  qrs := make_array (4, 'any');
+  qrs := make_array (5, 'any');
   iri := user_obj_iri (u_name);
 
   decl := 'sparql ' ||
-         ' define input:inference <' || graph || '>' ||
+         --' define input:inference <' || graph || '>' ||
          ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
          ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '||
          ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
@@ -2965,7 +2584,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   part := sprintf (
 	  ' CONSTRUCT {
-	    ?person a foaf:Person .
+	    ?person a ?type .
 	    ?person foaf:nick ?nick .
 	    ?person foaf:mbox ?mbox .
 	    ?person foaf:mbox_sha1sum ?sha1 .
@@ -2986,7 +2605,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?geo ?geo_pred ?geo_subj .
 	    ?person foaf:knows ?friend .
 	    ?friend rdfs:seeAlso ?f_see_also .
+	    ?friend rdf:type ?friend_type .
 	    ?friend foaf:nick ?f_nick .
+	    ?friend foaf:name ?f_name .
 	    <%s> a foaf:PersonalProfileDocument .
 	    <%s> foaf:primaryTopic ?person .
 	    <%s> foaf:maker ?person .
@@ -2999,16 +2620,19 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?person foaf:homepage ?homepage .
 	  }
 	  WHERE
-	  {
-	    graph <%s>
-	    {
-	      {
+            	{
+		  graph <%s>
+		  {
+	{
 	      ?person foaf:holdsAccount <%s/%s#this> ;
+	      rdf:type ?type ;
 	      foaf:nick ?nick ;
 	      foaf:holdsAccount ?sioc_user .
 	      ?sioc_user rdfs:seeAlso ?see_also .
 	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
-	      optional { ?person foaf:knows ?friend . ?friend rdfs:seeAlso ?f_see_also . ?friend foaf:nick ?f_nick . } .
+	      optional { ?person foaf:knows ?friend . ?friend rdfs:seeAlso ?f_see_also .
+			?friend foaf:nick ?f_nick . ?friend rdf:type ?friend_type .
+			optional { ?friend foaf:name ?f_name . } } .
 	      optional { ?person foaf:name ?full_name } .
 	      optional { ?person foaf:firstName ?fn } .
 	      optional { ?person foaf:family_name ?ln } .
@@ -3024,7 +2648,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?org foaf:homepage ?wphome . ?org a foaf:Organization ; dc:title ?orgtit . } .
 	      optional { ?person foaf:depiction ?depiction } .
 	      optional { ?person foaf:homepage ?homepage } .
-	      }
+	}
 	    }
 	  }',
 	  dociri, dociri, dociri, dociri,
@@ -3053,11 +2677,11 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?oa a foaf:OnlineAccount .
 	    ?oa foaf:accountServiceHomepage ?ashp .
 	    ?oa foaf:accountName ?an .
-	  }
+	   }
 	  WHERE
-	  {
-	    graph <%s>
-	    {
+                {
+                  graph <%s>
+                  {
 	      {
 	      ?person foaf:holdsAccount <%s/%s#this> ;
 	      foaf:openid ?oid .
@@ -3075,8 +2699,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional {
 		         ?oa foaf:accountServiceHomepage ?ashp ; foaf:accountName ?an
 	      	       } .
-	      }
-	    }
+		    }
+	}
 	  }', graph, graph, u_name);
 
   qry := decl || part;
@@ -3085,25 +2709,23 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   part := sprintf (
 	  ' CONSTRUCT {
-	    ?sioc_user sioc:has_function ?function .
+	    <%S> sioc:has_function ?function .
 	    ?function sioc:has_scope ?forum .
 	    ?forum a ?forum_type .
-	  }
+	    ?forum rdfs:label ?label .
+	       }
 	  WHERE
-	  {
-	    graph <%s>
-	    {
+		    {
+		      graph <%s>
+		      {
 	      {
-	       ?person foaf:holdsAccount <%s/%s#this> ;
-	       foaf:holdsAccount ?sioc_user .
-               optional {
-	 	 ?sioc_user sioc:has_function ?function .
-		 ?function sioc:has_scope ?forum .
-		 ?forum a ?forum_type
-	        } .
-	      }
-	    }
-	  }', graph, graph, u_name);
+		<%S> sioc:has_function ?function .
+		?function sioc:has_scope ?forum .
+		?forum a ?forum_type .
+		optional { ?forum rdfs:label ?label . }
+		    }
+	}
+	  }', iri, graph, iri);
 
   qry := decl || part;
   qrs [2] := qry;
@@ -3113,55 +2735,96 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   part := sprintf (
 	  ' CONSTRUCT {
-	  ?sioc_user sioc:owner_of ?container .
-	  ?container sioc:container_of ?item .
-	  ?item a ?item_type .
-	  }
+	    ?child_forum a ?forum_type .
+	    ?forum sioc:parent_of ?child_forum .
+	    ?child_forum sioc:has_parent ?forum .
+	    ?child_forum rdfs:label ?label .
+	       }
 	  WHERE
-	  {
-	    graph <%s>
-	    {
+		    {
+		      graph <%s>
+		      {
 	      {
-		?person foaf:holdsAccount <%s/%s#this> ;
-		foaf:holdsAccount ?sioc_user .
-		?sioc_user sioc:owner_of ?container .
-		?container sioc:container_of ?item .
-		?item a ?item_type .
-	      }
-	    }
-	  } LIMIT %d OFFSET %d', graph, graph, u_name, lim, offs);
+		<%S> sioc:has_function ?function .
+		?function sioc:has_scope ?forum .
+		?forum sioc:parent_of ?child_forum .
+		?child_forum a ?forum_type .
+		optional { ?child_forum rdfs:label ?label . }
+                  }
+                }
+	  }', graph, iri);
 
   qry := decl || part;
   qrs [3] := qry;
+  if (p <> 0)
+    qrs [3] := null;
+  --qrs [2] := null;
+
+  part := sprintf (
+	  ' CONSTRUCT {
+	  <%S> sioc:owner_of ?container .
+	  ?container sioc:container_of ?item .
+	  ?item a ?item_type .
+	  ?item rdfs:label ?label .
+          ?container sioc:container_of ?child_forum .
+	  ?child_forum sioc:container_of ?item1 .
+	  ?item1 a ?item_type1 .
+	  ?item1 rdfs:label ?label1 .
+	}
+	  WHERE
+		  {
+	    graph <%s>
+	    {
+    {
+		<%S> sioc:owner_of ?container .
+		optional
+		{
+		  ?container sioc:container_of ?item .
+		  ?item a ?item_type .
+		  optional { ?item rdfs:label ?label . }
+	   	    } .
+		optional
+		{
+		  ?container sioc:container_of ?child_forum .
+		  ?child_forum sioc:container_of ?item1 .
+		  ?item1 a ?item_type1 .
+		  optional { ?item1 rdfs:label ?label1 . }
+	   	    } .
+    }
+	    }
+	  } LIMIT %d OFFSET %d', iri, graph, iri, lim, offs);
+
+  qry := decl || part;
+  qrs [4] := qry;
   --qrs [3] := null;
 
 
   set_user_id ('dba');
   foreach (any q in qrs) do
     {
-      maxrows := 0;
-      state := '00000';
-      -- dbg_printf ('%s', q);
+  maxrows := 0;
+  state := '00000';
       if (q is not null)
 	{
-      exec (q, state, msg, vector(), maxrows, metas, rset);
-	  -- dbg_obj_print (msg);
-      if (state <> '00000')
-	signal (state, msg);
-      if (fmt = 'rdf')
-	{
-	  if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])))
-	    {
-	      triples := dict_list_keys (rset[0][0], 1);
-	      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+	  --dbg_printf ('%s', q);
+	  exec (q, state, msg, vector(), maxrows, metas, rset);
+--  dbg_obj_print (msg);
+  if (state <> '00000')
+    signal (state, msg);
+	  if (fmt = 'rdf')
+{
+	      if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])))
+    {
+		  triples := dict_list_keys (rset[0][0], 1);
+		  DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+    }
+}
+	  else
+{
+	      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 0);
 	    }
 	}
-      else
-	{
-	  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 0);
-        }
-    }
-    }
+}
 
   ss := string_output ();
   rdf_head (ss);
@@ -3183,6 +2846,518 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   return ses;
 }
 ;
+
+create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in inst_type varchar, in postid varchar := null,
+				   in p int := null, in fmt varchar := 'RDF/XML', in kind int := 0)
+{
+  declare state, tp, qry, msg, maxrows, metas, rset, graph, iri, offs, fmt_decl, accept, part any;
+  declare ses any;
+
+  -- dbg_obj_print (u_name,wai_name,inst_type,postid);
+  graph := get_graph ();
+  ses := string_output ();
+  fmt_decl := '';
+  --if (length (fmt))
+  --  fmt_decl := ' define output:format "'||fmt||'" ';
+
+  if (fmt = 'TTL')
+    accept := 'text/rdf+n3';
+  else
+    accept := '';
+
+
+  if (inst_type = 'users')
+    inst_type := null;
+
+  if (u_name is null)
+    {
+      qry := sprintf (
+      		'sparql  ' || fmt_decl ||
+		'prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> '||
+		'prefix foaf: <http://xmlns.com/foaf/0.1/> '||
+		'prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '||
+		'prefix dc: <http://purl.org/dc/elements/1.1/> '||
+		'prefix dct: <http://purl.org/dc/terms/> '||
+		'construct { '||
+		  ' <%s#group> rdf:type foaf:Group ; '||
+		  ' foaf:member ?s . '||
+		  '?s rdf:type foaf:Agent . '||
+		  '?s foaf:nick ?nick . '||
+		  '?s foaf:name ?name . '||
+		  '?s rdfs:seeAlso ?sa . ' ||
+		  --'?sa dc:format "application/rdf+xml" '||
+		  '} from <%s> '||
+		  'where { ?s rdf:type foaf:Person . '||
+		  '?s foaf:nick ?nick . '||
+		  '?s rdfs:seeAlso ?sa . '||
+		  'optional { ?s foaf:name ?name } . '||
+		  '}', graph, graph, graph, graph);
+    }
+  else if (wai_name is null and inst_type is null and postid is null)
+    {
+  iri := user_obj_iri (u_name);
+      qry := 'sparql ' || fmt_decl ||
+         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+         ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> '||
+         ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
+         ' prefix dc: <http://purl.org/dc/elements/1.1/> '||
+         ' prefix dct: <http://purl.org/dc/terms/> '||
+         ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> \n' ||
+         ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> \n' ||
+	 ' prefix owl: <http://www.w3.org/2002/07/owl#> ' ||
+         ' prefix bio: <http://purl.org/vocab/bio/0.1/> \n' ;
+      if (kind = 0)
+	{
+	  part := sprintf (
+	     ' CONSTRUCT { ?s ?p ?o . ?f foaf:holdsAccount ?ha . ?f rdfs:seeAlso ?sa . '||
+	     '  ?frm sioc:scope_of ?role. ?role sioc:function_of ?member. ?frm sioc:type ?ft. ?frm sioc:id ?fid . '||
+	     '  ?frm rdfs:seeAlso ?fsa . ?frm sioc:has_space ?fh .  ?role sioc:has_scope ?frm . ' ||
+	     '  ?frm sioc:has_owner ?member . ?member sioc:owner_of ?frm . } \n' ||
+	     ' FROM <%s> WHERE { \n' ||
+	     '   { ?s ?p ?o . ?s sioc:id "%s" FILTER (?p != "http://www.w3.org/2000/01/rdf-schema#seeAlso" && ' ||
+	     ' 					  ?p != "http://rdfs.org/sioc/ns#creator_of") } union  \n' ||
+	     '   { ?f foaf:nick "%s" ; foaf:holdsAccount ?ha ; rdfs:seeAlso ?sa  } union  \n' ||
+	     '   { ?frm sioc:scope_of ?role . ?role sioc:function_of ?member . '||
+	     '     ?member sioc:id "%s". ?frm sioc:type ?ft; sioc:id ?fid; rdfs:seeAlso ?fsa; sioc:has_space ?fh. '||
+             '     OPTIONAL { ?frm sioc:has_owner ?member . } '||
+	     '  	 } } ',
+	     graph, u_name, u_name, u_name);
+	}
+      else if (kind = 1) -- FOAF
+	{
+  part := sprintf (
+	  ' CONSTRUCT {
+	    ?person a foaf:Person .
+	    ?person foaf:nick "%s" .
+	    ?person foaf:mbox ?mbox .
+	    ?person foaf:mbox_sha1sum ?sha1 .
+	    ?person foaf:name ?full_name .
+	    ?person foaf:holdsAccount ?sioc_user .
+	    ?sioc_user rdfs:seeAlso ?see_also .
+	    ?sioc_user a sioc:User .
+	    ?person foaf:firstName ?fn .
+	    ?person foaf:family_name ?ln .
+	    ?person foaf:gender ?gender .
+	    ?person foaf:icqChatID ?icq .
+	    ?person foaf:msnChatID ?msn .
+	    ?person foaf:aimChatID ?aim .
+	    ?person foaf:yahooChatID ?yahoo .
+	    ?person foaf:birthday ?birthday .
+	    ?person foaf:phone ?phone .
+	    ?person foaf:based_near ?geo .
+	    ?geo ?geo_pred ?geo_subj .
+	    ?person rdfs:seeAlso ?forum_see_also .
+	    ?forum_see_also rdf:type ?f_see_also_type .
+	    ?person foaf:knows ?friend .
+	    ?friend rdfs:seeAlso ?f_see_also .
+	    ?friend foaf:nick ?f_nick .
+	    <%s/about.rdf> a foaf:PersonalProfileDocument .
+	    <%s/about.rdf> foaf:primaryTopic ?person .
+	    <%s/about.rdf> foaf:maker ?person .
+	    ?person foaf:workplaceHomepage ?wphome .
+	    ?org foaf:homepage ?wphome .
+	    ?org rdf:type foaf:Organization .
+	    ?org dc:title ?orgtit .
+	    ?person foaf:depiction ?depiction .
+	    ?person foaf:homepage ?homepage .
+	    ?person vcard:ADR ?adr .
+	    ?adr vcard:Country ?country .
+            ?adr vcard:Locality ?city .
+	    ?adr vcard:Region ?state .
+	    ?person bio:olb ?bio .
+	    ?person bio:event ?event .
+	    ?event rdf:type bio:Birth .
+	    ?event dc:date ?bdate .
+	    #?person foaf:interest ?interest .
+	    #?person bio:keywords ?keywords .
+	    #?person owl:sameAs ?same_as .
+	  }
+	  WHERE
+	  {
+	    graph <%s>
+	    {
+	      {
+	      ?person foaf:nick "%s" ;
+	      foaf:holdsAccount ?sioc_user .
+	      ?sioc_user rdfs:seeAlso ?see_also .
+	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
+	      optional {
+		  #?sioc_user sioc:has_function ?function .
+		  #?function sioc:has_scope ?forum .
+		  ?sioc_user sioc:owner_of ?forum .
+		  ?forum rdfs:seeAlso ?forum_see_also .
+		  optional { ?forum_see_also rdf:type ?f_see_also_type } .
+	      	} .
+	      optional { ?person foaf:knows ?friend . ?friend rdfs:seeAlso ?f_see_also . ?friend foaf:nick ?f_nick . } .
+	      optional { ?person foaf:name ?full_name } .
+	      optional { ?person foaf:firstName ?fn } .
+	      optional { ?person foaf:family_name ?ln } .
+	      optional { ?person foaf:gender ?gender } .
+	      optional { ?person foaf:icqChatID ?icq } .
+	      optional { ?person foaf:msnChatID ?msn } .
+	      optional { ?person foaf:aimChatID ?aim } .
+	      optional { ?person foaf:yahooChatID ?yahoo } .
+	      optional { ?person foaf:birthday ?birthday } .
+	      optional { ?person foaf:phone ?phone } .
+	      optional { ?person foaf:based_near ?geo . ?geo ?geo_pred ?geo_subj } .
+	      optional { ?person foaf:workplaceHomepage ?wphome } .
+	      optional { ?org foaf:homepage ?wphome . ?org a foaf:Organization ; dc:title ?orgtit . } .
+	      optional { ?person foaf:depiction ?depiction } .
+	      optional { ?person foaf:homepage ?homepage } .
+	      optional { ?person bio:olb ?bio  } .
+              optional { ?person bio:event ?event . ?event a bio:Birth ; dc:date ?bdate } .
+	      optional { ?person vcard:ADR ?adr . ?adr vcard:Country ?country .
+	        	optional { ?adr vcard:Locality ?city } .
+			optional { ?adr vcard:Region ?state } .
+	      	       } .
+	      #optional { ?person foaf:interest ?interest } .
+	      #optional { ?person bio:keywords ?keywords } .
+	      #optional { ?person owl:sameAs ?same_as } .
+	      }
+	    }
+	  }',
+	  u_name,
+	  iri, iri, iri,
+	  graph, u_name);
+	}
+
+       qry := qry || part;
+    }
+  else if (postid is null)
+    {
+      declare triples, num any;
+      declare lim any;
+
+      if (kind = 1)
+	signal ('22023', 'FOAF is not available for ODS instance');
+
+      lim := coalesce (DB.DBA.USER_GET_OPTION (u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
+      offs := coalesce (p, 0) * lim;
+      tp := DB.DBA.wa_type_to_app (inst_type);
+
+      if (inst_type = 'discussion')
+	iri := forum_iri ('nntpf', wai_name);
+      else
+        iri := forum_iri (inst_type, wai_name);
+      if (fmt = 'RDF/XML')
+	rdf_head (ses);
+      set_user_id ('dba');
+      qry:= sprintf ('sparql
+   	  prefix sioc: <http://rdfs.org/sioc/ns#>
+	  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	  prefix dc: <http://purl.org/dc/elements/1.1/>
+          construct
+	        {
+		  ?host sioc:space_of ?forum .
+		  ?host sioc:link ?link .
+		  ?host dc:title ?title .
+		  ?host rdf:type sioc:Space .
+	        } where
+            	{
+		  graph <%s>
+		  {
+		    ?host sioc:space_of ?forum . ?forum sioc:id "%s" .
+		    ?host sioc:link ?link . ?host dc:title ?title
+		  }
+		}', graph, wai_name
+	    );
+      rset := null;
+      maxrows := 0;
+      state := '00000';
+      msg := '';
+--      dbg_printf ('%s', qry);
+      exec (qry, state, msg, vector(), maxrows, metas, rset);
+--      dbg_obj_print (msg);
+      if (state = '00000')
+	{
+	  triples := rset[0][0];
+	  rset := dict_list_keys (triples, 1);
+	  if (fmt = 'TTL')
+	    DB.DBA.RDF_TRIPLES_TO_TTL (rset, ses);
+	  else
+	    DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
+	}
+
+      qry := sprintf ('sparql
+   	  prefix sioc: <http://rdfs.org/sioc/ns#>
+	  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+	  prefix dc: <http://purl.org/dc/elements/1.1/>
+	  prefix ext: <http://rdfs.org/sioc/types#>
+          construct {
+			?forum sioc:id "%s" .
+			?forum rdf:type ?tp .
+			?forum sioc:link ?link .
+			?forum sioc:description ?descr .
+			?forum sioc:scope_of ?role .
+	    		?role sioc:function_of ?member .
+			?member rdfs:seeAlso ?see_also .
+			?forum sioc:has_space ?host .
+			?forum sioc:type ?type .
+			?forum sioc:has_service ?svc .
+			?svc sioc:service_endpoint ?endp .
+			?svc sioc:service_protocol ?proto .
+			?svc sioc:service_of ?forum .
+			?svc rdf:type sioc:Service .
+		    } where
+            	{
+		  graph <%s>
+		  {
+		    ?forum sioc:id "%s" ;
+		    rdf:type ?tp ;
+		    sioc:link ?link ;
+		    sioc:description ?descr ;
+		    sioc:has_space ?host ;
+		    sioc:type ?type ;
+		    sioc:scope_of ?role .
+		    ?role sioc:function_of ?member .
+		    ?member rdfs:seeAlso ?see_also .
+   		    optional {
+  		      ?forum sioc:has_service ?svc .
+  		      ?svc sioc:service_endpoint ?endp .
+  		      ?svc sioc:service_protocol ?proto .
+		    }
+		  }
+		}', wai_name, graph, wai_name
+	    );
+      rset := null;
+      maxrows := 0;
+      state := '00000';
+      msg := '';
+--      dbg_printf ('%s', qry);
+      exec (qry, state, msg, vector(), maxrows, metas, rset);
+--      dbg_obj_print (msg);
+      if (state = '00000')
+	{
+	  triples := rset[0][0];
+	  rset := dict_list_keys (triples, 1);
+	  if (fmt = 'TTL')
+	    DB.DBA.RDF_TRIPLES_TO_TTL (rset, ses);
+	  else
+	    DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
+	}
+
+      if (tp = 'subscriptions')
+	{
+	  qry := sprintf ('sparql
+	      prefix sioc: <http://rdfs.org/sioc/ns#>
+	      prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	      prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+	      prefix dc: <http://purl.org/dc/elements/1.1/>
+              prefix dct: <http://purl.org/dc/terms/>
+	      construct
+	       {
+		    ?forum sioc:container_of ?post .
+		    ?post  sioc:has_container ?forum .
+		    ?forum sioc:has_parent ?pforum .
+		    ?pforum sioc:parent_of ?forum .
+		    ?post rdf:type ?post_tp .
+		    ?post rdfs:seeAlso ?post_see_also
+	       }
+	      where
+		    {
+		      graph <%s>
+		      {
+			?pforum sioc:id "%s" .
+			?pforum sioc:parent_of ?forum .
+			?post sioc:has_container ?forum .
+			?post rdfs:seeAlso ?post_see_also .
+			?post rdf:type ?post_tp .
+			optional { ?post dct:created ?created } .
+			optional { ?post sioc:reply_of ?reply_of }
+			filter bif:isnull (?reply_of)
+		      }
+		    }
+		    order by desc (?created) limit %d offset %d
+		', graph, wai_name, lim, offs);
+	  }
+      else if (tp = 'community')
+	    {
+	  qry := sprintf ('sparql
+	      prefix sioc: <http://rdfs.org/sioc/ns#>
+	      prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	      prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+	      prefix dc: <http://purl.org/dc/elements/1.1/>
+              prefix dct: <http://purl.org/dc/terms/>
+	      construct
+	      {
+		    ?forum sioc:container_of ?post .
+		    ?post  sioc:has_container ?forum .
+		    ?forum sioc:has_part ?pforum .
+		    ?pforum sioc:part_of ?forum .
+		    ?post rdf:type ?post_tp .
+		    ?post rdfs:seeAlso ?post_see_also
+	  }
+	      where
+	  {
+	    graph <%s>
+	    {
+			?pforum sioc:id "%s" .
+			?pforum sioc:part_of ?forum .
+			?post sioc:has_container ?forum .
+			?post rdfs:seeAlso ?post_see_also .
+			?post rdf:type ?post_tp .
+			optional { ?post dct:created ?created } .
+			optional { ?post sioc:reply_of ?reply_of }
+			filter bif:isnull (?reply_of)
+	      }
+	    }
+		    order by desc (?created) limit %d offset %d
+		', graph, wai_name, lim, offs);
+	  }
+      else
+	  {
+	  qry := sprintf ('sparql
+	      prefix sioc: <http://rdfs.org/sioc/ns#>
+	      prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	      prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+	      prefix dc: <http://purl.org/dc/elements/1.1/>
+              prefix dct: <http://purl.org/dc/terms/>
+	      prefix foaf: <http://xmlns.com/foaf/0.1/>
+	      construct
+	    {
+		    ?forum sioc:container_of ?post .
+		    ?post  sioc:has_container ?forum .
+		    ?post rdf:type ?post_tp .
+		    ?post rdfs:seeAlso ?post_see_also
+	       }
+	      where
+	      {
+		      graph <%s>
+		      {
+			?forum sioc:id "%s" .
+			?post sioc:has_container ?forum .
+			?post rdfs:seeAlso ?post_see_also .
+			?post rdf:type ?post_tp .
+		        optional { ?post dct:created ?created } .
+			optional { ?post sioc:has_creator ?creator } .
+			optional { ?post sioc:reply_of ?reply_of }
+			filter bif:isnull (?reply_of)
+	      }
+	    }
+		    order by desc (?created) limit %d offset %d
+		', graph, wai_name, lim, offs);
+	}
+      rset := null;
+      maxrows := 0;
+      state := '00000';
+      msg := '';
+--      set_user_id ('dba');
+--      dbg_printf ('%s', qry);
+      exec (qry, state, msg, vector(), maxrows, metas, rset);
+	  -- dbg_obj_print (msg);
+      if (state = '00000')
+	    {
+	  triples := rset[0][0];
+	  rset := dict_list_keys (triples, 1);
+	  if (fmt = 'TTL')
+	    DB.DBA.RDF_TRIPLES_TO_TTL (rset, ses);
+      else
+	    DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (rset, 0, ses);
+	  -- seeAlso for the rest of posts
+	  if (length (rset) and fmt = 'RDF/XML')
+	{
+	      http (sprintf ('<rdf:Description rdf:about="%s">', iri), ses);
+	      http (sprintf
+	      	('<rdfs:seeAlso xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="%s/sioc.rdf?p=%d" />',
+		    iri, coalesce (p, 0) + 1), ses);
+	      http ('</rdf:Description>', ses);
+        }
+    }
+      if (fmt = 'RDF/XML')
+        rdf_tail (ses);
+      goto ret;
+    }
+  else -- the post
+    {
+--      dbg_obj_print (u_name, inst_type, wai_name, postid);
+      if (kind = 1)
+	signal ('22023', 'FOAF is not available for posts');
+
+      if (inst_type = 'feed')
+        iri := feed_item_iri (atoi(wai_name), atoi(postid));
+      else if (inst_type = 'discussion')
+	iri := nntp_post_iri (wai_name, postid);
+  else
+        iri := post_iri (u_name, inst_type, wai_name, postid);
+--      dbg_obj_print (iri, md5(iri));
+      qry := sprintf ('sparql ' || fmt_decl ||
+         ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+	 ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
+   	 ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
+         ' prefix dc: <http://purl.org/dc/elements/1.1/> '||
+         ' prefix dct: <http://purl.org/dc/terms/> '||
+	 ' prefix foaf: <http://xmlns.com/foaf/0.1/> '||
+	 ' prefix skos: <http://www.w3.org/2004/02/skos/core#> '||
+         ' construct {
+	            ?post rdf:type ?post_tp .
+	   	    ?post sioc:has_container ?forum .
+		    ?forum sioc:container_of ?post .  ?forum rdfs:seeAlso ?see_also .
+		    ?forum sioc:has_parent ?pforum . ?pforum rdfs:seeAlso ?psee_also .
+		    ?pforum sioc:parent_of ?forum .
+		    ?post dc:title ?title .
+		    ?post sioc:link ?link .
+		    ?post sioc:links_to ?links_to .
+		    ?post dct:modified ?modified .
+		    ?post dct:created ?created .
+		    ?post sioc:has_creator ?creator .
+		    ?post sioc:has_reply ?reply .
+		    ?reply sioc:reply_of ?post .
+		    ?reply rdfs:seeAlso ?reply_see_also .
+		    ?post sioc:reply_of ?reply_of .
+		    ?reply_of sioc:has_reply ?post .
+		    ?reply_of rdfs:seeAlso ?reply_of_see_also .
+		    ?post sioc:content ?content .
+		    ?post foaf:maker ?maker .
+		    ?maker rdfs:seeAlso ?maker_see_also .
+		    ?post sioc:topic ?topic . ?topic rdfs:label ?label .
+		    ?post sioc:topic ?skos_topic . ?skos_topic rdf:type skos:Concept . ?skos_topic skos:prefLabel ?skos_label .
+		    ?skos_topic skos:isSubjectOf ?post .
+		    ?creator rdfs:seeAlso ?cr_see_also .
+		    ?maker rdf:type foaf:Person .
+	 }  \n' ||
+         ' from <%s> where { \n' ||
+	 ' ?post sioc:id "%s" .
+	   ?post sioc:has_container ?forum .
+	   ?post rdf:type ?post_tp .
+	   optional { ?forum rdfs:seeAlso ?see_also . }
+	   optional { ?forum sioc:has_parent ?pforum . ?pforum rdfs:seeAlso ?psee_also . }
+	   optional { ?post dct:modified ?modified } .
+	   optional { ?post dct:created ?created } .
+	   optional { ?post sioc:links_to ?links_to } .
+	   optional { ?post sioc:link ?link } .
+	   optional { ?post sioc:has_creator ?creator . ?creator rdfs:seeAlso ?cr_see_also  . }
+	   optional { ?post sioc:has_reply ?reply .
+	     	      ?reply rdfs:seeAlso ?reply_see_also
+	   	    } .
+	   optional { ?post sioc:reply_of ?reply_of .
+	     	      ?reply_of rdfs:seeAlso ?reply_of_see_also
+	   	    } .
+	   optional { ?post dc:title ?title } .
+	   optional { ?post sioc:topic ?topic . ?topic rdfs:label ?label } .
+	   optional { ?post sioc:topic ?skos_topic . ?skos_topic skos:prefLabel ?skos_label } .
+	   optional { ?post sioc:content ?content } .
+	   optional { ?post foaf:maker ?maker . optional { ?maker rdfs:seeAlso ?maker_see_also } .
+		    optional { ?maker foaf:name ?foaf_name .  } . optional { ?maker foaf:mbox ?foaf_mbox } } .
+	 ' ||
+	 ' } ',
+	 graph, md5(iri));
+    }
+
+  maxrows := 0;
+  state := '00000';
+--  dbg_printf ('%s', qry);
+  set_user_id ('dba');
+  exec (qry, state, msg, vector(), maxrows, metas, rset);
+--  dbg_obj_print (msg);
+  if (state <> '00000')
+    signal (state, msg);
+  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
+
+ret:
+  return ses;
+};
 
 ods_sioc_init ();
 

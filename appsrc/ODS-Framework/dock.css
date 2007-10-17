@@ -18,5 +18,29 @@
 
 .dock_content {
 	overflow: auto;
-	max-height: 500px;
+	max-height: 575px;
+	font-size: 12px;
+}
+.dock_header
+{
+	font-size: 12px;
+}
+.combo_button
+{
+padding: 1px 0px;
+cursor: pointer;
+font-size:12px;
+}
+.combo_button_text
+{
+text-align: center;
+padding-top: 2px;
+margin-right: 2px;
+width: 80px;
+height: 18px;
+cursor: pointer;
+background-color: #fff;
+background-image: url('images/button_back.png');
+background-repeat: no-repeat;
+font-size:12px;
 }

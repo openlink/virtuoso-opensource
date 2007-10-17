@@ -50,8 +50,30 @@
           self.iname := subseq(tmp, 0, strstr(tmp, '@'));
           self.wa_domain := subseq(tmp, strstr(tmp, '@')+1);
         }
+        if (self.wa_type in ('IM'))
+        {
+          declare tmp varchar;
+
+          tmp := self.iname;
+          tmp := subseq(tmp, strstr(tmp, '@')+1);
+          self.wa_domain := subseq(tmp, 0, strstr(tmp, '/'));
+          self.iname := subseq(tmp, strstr(tmp, '/')+1);
+        }
         self.domains := '<domains/>';
         if (self.wa_type = 'oMail')
+        {
+          declare pos integer;
+          self.domains := '';
+          for (select WD_DOMAIN from DB.DBA.WA_DOMAINS) do
+          {
+            pos := strstr(concat(WD_DOMAIN, ':'), ':');
+            self.domains := concat(self.domains, sprintf('<domain>%s</domain>', substring(WD_DOMAIN, 1, pos)));
+          }
+          if (self.domains = '')
+            signal('22024', 'No domains available.');
+          self.domains := concat('<domains>', self.domains, '</domains>');
+        }
+        if (self.wa_type = 'IM')
         {
           declare pos integer;
           self.domains := '';
@@ -144,16 +166,30 @@
 		    {
 		      inst.wa_name := concat(self.iname1.ufl_value, '@', self.idomain1.ufl_value);
 		    }
+		  else if (self.wa_type = 'IM')
+		    {
+		      declare _inst_name varchar;
+          self.iname2.ufl_value := trim (self.iname2.ufl_value);
+          _inst_name := coalesce(self.iname2.ufl_value, '');
+          if (isnull (regexp_match ('^[A-Za-z0-9_]+\$', _inst_name)))
+            {
+              self.vc_error_message := 'IM instance must be single word without special characters';
+              self.vc_is_valid := 0;
+              self.iname2.ufl_failed := 1;
+              return;
+            }
+		      inst.wa_name := concat(self.u_name, '@', self.idomain2.ufl_value, '/',self.iname2.ufl_value);
+		    }
 		  else
 		    {
 		      inst.wa_name := self.iname;
 		    }
                   inst.wa_member_model := atoi(self.imodel1.ufl_value);
-                  if (self.wa_type not in ('oMail'))
+                  if (self.wa_type not in ('oMail', 'IM'))
                   {
                     self.is_public := self.is_public1.ufl_selected;
                   }
-                  if (self.wa_type not in ('oDrive', 'oMail'))
+                  if (self.wa_type not in ('oDrive', 'oMail', 'IM'))
                   {
                     self.is_visible := self.is_visible1.ufl_selected;
                   }

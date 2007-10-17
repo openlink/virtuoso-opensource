@@ -481,7 +481,7 @@
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/group_16.png" border="0" alt="Members (application)" title="Members (application)"/>&#160;Members';
 		      if ((control.vc_parent as vspx_row_template).te_rowset[7] = 1 or
-		        (control.vc_parent as vspx_row_template).te_rowset[6] in ('oDrive', 'oMail'))
+		        (control.vc_parent as vspx_row_template).te_rowset[6] in ('oDrive', 'oMail', 'IM'))
 		        control.vc_enabled := 0;
                     ]]>
                   </v:after-data-bind>

@@ -230,6 +230,8 @@ directory_init() {
   mkdir vad/data/wa/images/icons
   mkdir vad/data/wa/images/buttons
   mkdir vad/data/wa/images/oat
+  mkdir vad/data/wa/images/skin
+  mkdir vad/data/wa/images/skin/default
   mkdir vad/data/wa/tmpl
   mkdir vad/data/wa/templates
   mkdir vad/data/wa/templates/default
@@ -247,6 +249,7 @@ directory_init() {
   cp *.css vad/data/wa
   cp *.html vad/data/wa
   cp *.sql vad/data/wa
+  cp $HOME/binsrc/dav/DET_RDFData.sql vad/data/wa
   cp *.js vad/data/wa
 #  cp $HOME/binsrc/tags/phrasematch.sql vad/data/wa
   cp comp/*.xsl vad/data/wa/comp
@@ -264,11 +267,13 @@ directory_init() {
   cp images/*.gif vad/data/wa/images
   cp images/*.jpg vad/data/wa/images
   cp images/*.png vad/data/wa/images
-#  cp $HOME/binsrc/weblog2/public/images/foaf.gif vad/data/wa/images
   cp images/app_ads/*.jpg vad/data/wa/images/app_ads
+  cp $HOME/binsrc/weblog2/public/images/foaf.gif vad/data/wa/images
   cp icons/*.gif vad/data/wa/images/icons
   #cp icons/*.jpg vad/data/wa/images/icons
   cp icons/*.png vad/data/wa/images/icons
+  cp images/skin/default/*.jpg vad/data/wa/images/skin/default
+  cp images/skin/default/*.png vad/data/wa/images/skin/default
   #cp buttons/*.gif vad/data/wa/images/buttons
   #cp buttons/*.jpg vad/data/wa/images/buttons
   #cp buttons/*.png vad/data/wa/images/buttons
@@ -326,7 +331,7 @@ sticker_init() {
   echo "	  result ('ERROR', 'The ODS Framework needs server to run in CaseMode 2, please check your INI file.'); " >> $STICKER
   echo "	  signal ('FATAL', 'The ODS Framework needs server to run in CaseMode 2, please check your INI file.'); " >> $STICKER
   echo "	}" >> $STICKER
-  echo "      if (not isstring (is_api) and cname is null) { " >> $STICKER
+  echo "      if (not isstring (is_api) and length (cname) = 0) { " >> $STICKER
   echo "	  result ('ERROR', 'The ODS Framework needs DefaultHost to be specified in URIQA INI section.'); " >> $STICKER
   echo "	  signal ('FATAL', 'The ODS Framework needs DefaultHost to be specified in URIQA INI section.'); " >> $STICKER
   echo " 	}" >> $STICKER
@@ -358,6 +363,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ldap.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/users/users_api.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/facebook.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/nav_framework_api.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/trs_export.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/foaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
   echo "      DB.DBA.DAV_PROP_SET_INT ('/DAV/VAD/wa/ufoaf.xml', 'xml-template', 'execute', http_dav_uid (), null, 0, 0, 1);" >> $STICKER
@@ -374,6 +380,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/user_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/web_svc.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER

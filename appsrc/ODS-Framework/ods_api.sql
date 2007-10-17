@@ -26,7 +26,7 @@
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_svc_rule1', 1,
   '/ods_services/search/(.*)', vector ('par'), 1,
-  '/sparql?query=prefix%%20rdfs%%3A%%20%%3Chttp%%3A//www.w3.org/2000/01/rdf-schema%%23%%3E%%20select%%20distinct%%20%%3Fu%%20%%3Ft%%20%%3Fl%%20from%%20%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E%%20where%%20%%7B%%20%%3Fu%%20a%%20%%3Ft%%20%%3B%%20rdfs%%3Alabel%%20%%3Fl%%20%%3B%%20%%3Fp%%20%%3Fo%%20.%%20filter%%20bif%%3Acontains%%20%%28%%3Fo%%2C%%20%%27%U%%27%%29%%20%%20%%7D&format=application/sparql-results%2Bxml', vector ('par'), 'DB.DBA.ODS_API_FTI_MAKE_SEARCH_STRING', null, 0, null);
+  '/sparql?query=prefix%%20rdfs%%3A%%20%%3Chttp%%3A//www.w3.org/2000/01/rdf-schema%%23%%3E%%20select%%20distinct%%20%%3Fu%%20%%3Ft%%20%%3Fl%%20from%%20%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E%%20where%%20%%7B%%20%%3Fu%%20a%%20%%3Ft%%20%%3B%%20rdfs%%3Alabel%%20%%3Fl%%20%%3B%%20%%3Fp%%20%%3Fo%%20.%%20filter%%20bif%%3Acontains%%20%%28%%3Fo%%2C%%20%%27%U%%27%%29%%20%%20%%7D%%20LIMIT%%20100&format=application/sparql-results%2Bxml', vector ('par'), 'DB.DBA.ODS_API_FTI_MAKE_SEARCH_STRING', null, 0, null);
 
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_svc_rule_list1', 1, vector ('ods_svc_rule1'));
 
@@ -39,8 +39,98 @@ create procedure DB.DBA.ODS_API_FTI_MAKE_SEARCH_STRING (in par varchar, in fmt v
 {
   declare v any;
   v := split_and_decode (val);
-  return sprintf (fmt, replace (DB.DBA.FTI_MAKE_SEARCH_STRING (v[0]), '\'', '\\\''));
+  v := regexp_replace (v[0],'<[^>]+>', '', 1, null);
+  v := regexp_replace (v,'&[^;]+;', '', 1, null);
+  --dbg_printf ('%s', v);
+  return sprintf (fmt, replace (DB.DBA.FTI_MAKE_SEARCH_STRING (v), '\'', '\\\''));
 };
+
+
+create procedure OdsIriDescribe (in iri varchar, in accept varchar := 'application/rdf+xml') __SOAP_HTTP 'text/xml'
+{
+  declare qr, stat, msg any;
+  declare rset, metas, this_iri, type_iri, label_iri, name_iri, g_iri any;
+  declare ses any;
+  declare dict, triples any;
+
+
+  qr := sprintf ('SPARQL DESCRIBE <%s> FROM <%s>', iri, sioc..get_graph ());
+  stat := '00000';
+  set_user_id ('SPARQL');
+  exec (qr, stat, msg, vector (), 0, metas, rset);
+--  accept := 'text/rdf+n3';
+  if (stat = '00000')
+    {
+      ses := string_output ();
+      if (accept <> 'text/rdf+n3')
+	{
+	  http_header ('Content-Type: application/rdf+xml; charset=UTF-8\r\n');
+	  sioc..rdf_head (ses);
+	  if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])))
+	    {
+	      triples := dict_list_keys (rset[0][0], 1);
+	      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+	    }
+	}
+      else
+	{
+	  http_header ('Content-Type: text/rdf+n3; charset=UTF-8\r\n');
+	  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 0);
+	}
+    }
+  else
+    signal (stat, msg);
+
+  this_iri := iri_to_id (iri);
+  type_iri := iri_to_id (sioc..rdf_iri ('type'));
+  label_iri := iri_to_id (sioc..rdfs_iri ('label'));
+  name_iri := iri_to_id (sioc..foaf_iri ('name'));
+  g_iri := iri_to_id (sioc..get_graph ());
+
+  dict := dict_new ();
+
+  if ((1 = length (rset)) and
+    (1 = length (rset[0])) and
+    (214 = __tag (rset[0][0])) )
+    {
+      declare triples any;
+      triples := dict_list_keys (rset[0][0], 1);
+      foreach (any tr in triples) do
+	{
+	  declare subj, obj any;
+	  subj := tr[0];
+	  obj := tr[2];
+          if (isiri_id (subj) and this_iri <> subj)
+	    {
+	      --dbg_obj_print ('subj:', subj);
+	      for select S, P, O from DB.DBA.RDF_QUAD where G = g_iri and S = subj and P in (type_iri, label_iri, name_iri)  do
+		{
+		  dict_put (dict, vector (S, P, O), 0);
+		}
+	    }
+	  else if (isiri_id (obj) and obj <> this_iri)
+	    {
+	      --dbg_obj_print ('obj:', obj);
+	      for select S, P, O from DB.DBA.RDF_QUAD where G = g_iri and S = obj and P in (type_iri, label_iri)  do
+		{
+		  dict_put (dict, vector (S, P, O), 0);
+		}
+	    }
+	}
+      triples := dict_list_keys (dict, 1);
+      if (accept = 'text/rdf+n3')
+        DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+      else
+        DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+    }
+  if (accept <> 'text/rdf+n3')
+    sioc..rdf_tail (ses);
+  http (ses);
+  return '';
+}
+;
+
+grant execute on OdsIriDescribe to GDATA_ODS;
 
 
 create procedure

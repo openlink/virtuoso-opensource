@@ -20,8 +20,8 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
--- RDF Import
-
+-- RDF Import API
+--
 create procedure rdf_import (
   in pURL varchar,
   in pMode integer := 1,
@@ -305,7 +305,9 @@ create view SIOC_SITE as select top 1
 create view SIOC_USERS as select U_ID, U_NAME, U_FULL_NAME,
 	case when length (U_E_MAIL) then U_E_MAIL else null end as E_MAIL,
 	case when length (U_E_MAIL) then sha1_digest (U_E_MAIL) else null end as E_MAIL_SHA1,
-	sioc..user_obj_iri (U_NAME) || '/sioc.rdf' as SEE_ALSO
+	sioc..user_obj_iri (U_NAME) || '/sioc.rdf' as SEE_ALSO,
+	'sioc:User' as CLS,
+	iri_id_num (iri_to_id (sioc..user_obj_iri (U_NAME))) as OBJ_IRI
 	from DB.DBA.SYS_USERS
 	where U_IS_ROLE = 0 and U_ACCOUNT_DISABLED = 0 and U_DAV_ENABLE = 1 and U_ID <> http_nobody_uid ();
 
@@ -318,7 +320,9 @@ create view SIOC_ODS_FORUMS as select
 	DB.DBA.wa_type_to_app (WAM_APP_TYPE) as APP_TYPE,
         sioc..forum_iri (WAM_APP_TYPE, WAM_INST) as LINK,
         sioc..forum_iri (WAM_APP_TYPE, WAM_INST) || '/sioc.rdf' as SEE_ALSO,
-	WAM_APP_TYPE as WAM_APP_TYPE
+	WAM_APP_TYPE as WAM_APP_TYPE,
+	sioc..cls_short_print (sioc..ods_sioc_forum_ext_type (WAM_APP_TYPE)) as CLS,
+	iri_id_num (iri_to_id (sioc..forum_iri (WAM_APP_TYPE, WAM_INST))) as OBJ_IRI
 	from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where
 	U_ID = WAM_USER and WAM_INST = WAI_NAME and WAM_MEMBER_TYPE = 1 and (WAM_IS_PUBLIC = 1 or WAI_TYPE_NAME = 'oDrive');
 
@@ -381,11 +385,15 @@ create view ODS_FOAF_PERSON as select
 	    substring (datestring(coalesce (WAUI_BIRTHDAY, now ())), 6, 5)
 	    , WAUI_VISIBLE, 6) as BIRTHDAY,
 	DB.DBA.ods_filter_uinf (WAUI_BORG, WAUI_VISIBLE, 20) as ORG,
+	U_NAME||'%23this' as LABEL,
+	U_NAME||'%23geo' as GEO_LABEL,
 	case when length (WAUI_HPHONE) and sioc..wa_user_pub_info (WAUI_VISIBLE, 18) then WAUI_HPHONE
 	when length (WAUI_HMOBILE) and sioc..wa_user_pub_info (WAUI_VISIBLE, 18) then WAUI_HMOBILE else  WAUI_BPHONE end as PHONE,
 	DB.DBA.ods_filter_uinf (WAUI_LAT, WAUI_VISIBLE, 39, '%.06f') as LAT,
 	DB.DBA.ods_filter_uinf (WAUI_LNG, WAUI_VISIBLE, 39, '%.06f') as LNG,
-	WAUI_WEBPAGE as WEBPAGE
+	WAUI_WEBPAGE as WEBPAGE,
+	'foaf:User' as CLS,
+	iri_id_num (iri_to_id (sioc..person_iri (sioc..user_obj_iri (U_NAME)))) as OBJ_IRI
 	from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS
 	where WAUI_U_ID = U_ID;
 
@@ -767,7 +775,10 @@ grant execute on sioc.DBA.user_obj_iri to SPARQL_SELECT;
 grant execute on sioc.DBA.forum_iri to SPARQL_SELECT;
 grant execute on sioc.DBA.post_iri to SPARQL_SELECT;
 grant execute on DB.DBA.ods_filter_uinf to SPARQL_SELECT;
-grant execute on sioc..wa_user_pub_info to SPARQL_SELECT;
+grant execute on sioc.DBA.wa_user_pub_info to SPARQL_SELECT;
+grant execute on sioc.DBA.ods_sioc_forum_ext_type to SPARQL_SELECT;
+grant execute on sioc..person_iri to SPARQL_SELECT;
+grant execute on sioc..cls_short_print to SPARQL_SELECT;
 
 ODS_RDF_VIEW_INIT ();
 

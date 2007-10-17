@@ -1352,7 +1352,7 @@ create procedure wa_vad_check (in pname varchar)
   nam := get_keyword (pname, vector ('blog2','Weblog','oDrive','Briefcase','enews2','Feed Manager',
   				      'oMail','Mail','bookmark','Bookmarks','oGallery','Gallery' ,
 				     'wiki','Wiki', 'wa', 'Framework','nntpf','Discussion',
-				     'polls','Polls', 'addressbook','AddressBook', 'calendar','Calendar'), null);
+				     'polls','Polls', 'addressbook','AddressBook', 'calendar','Calendar', 'IM', 'Instant Messenger'), null);
   if (nam is null)
     return vad_check_version (pname);
   else
@@ -2846,6 +2846,7 @@ wa_exec_no_error_log(
     WAUI_BORG_HOMEPAGE long varchar,  -- 20 same as BORG
     WAUI_OPENID_URL varchar,
     WAUI_FACEBOOK_ID int,
+    WAUI_IS_ORG	int default 0,
     primary key (WAUI_U_ID)
   )'
 )
@@ -2889,6 +2890,9 @@ WA_USER_INFO_WAUI_FOAF_UPGRADE ();
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_URL', 'VARCHAR');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_ID', 'INT');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_IS_ORG', 'INT default 0');
+
+update DB.DBA.WA_USER_INFO set WAUI_IS_ORG = 0 where WAUI_IS_ORG is null;
 
 wa_exec_no_error('create index WA_USER_INFO_OID on DB.DBA.WA_USER_INFO (WAUI_OPENID_URL)');
 
@@ -2907,6 +2911,7 @@ create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N 
 ;
 
 wa_exec_no_error_log ('CREATE INDEX WA_GEO ON WA_USER_INFO (WAUI_LNG, WAUI_LAT, WAUI_LATLNG_VISIBLE)');
+wa_exec_no_error_log ('CREATE INDEX WA_IS_ORG ON WA_USER_INFO (WAUI_IS_ORG, WAUI_U_ID)');
 
 wa_exec_no_error_log(
   'CREATE TABLE WA_USER_TEXT
@@ -3643,7 +3648,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
   declare _bresume, _audio, _fav_books, _fav_music, _fav_movie long varchar;
   declare _WAUI_PHOTO_URL, _interests, _org_page varchar;
   declare _WAUI_LAT, _WAUI_LNG, _WAUI_BLAT, _WAUI_BLNG real;
-  declare _WAUI_LATLNG_HBDEF integer;
+  declare _WAUI_LATLNG_HBDEF, _is_org integer;
   declare _arr15, _arr16, _arr18, _arr22, _arr23, _arr25, _arr any;
 
 
@@ -3669,7 +3674,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
          WAUI_BCAREER, WAUI_BEMPTOTAL, WAUI_BVENDOR, WAUI_BSERVICE, WAUI_BOTHER, WAUI_BNETWORK, WAUI_RESUME,
          U_E_MAIL, WAUI_PHOTO_URL, WAUI_LAT, WAUI_LNG, WAUI_BLAT, WAUI_BLNG, WAUI_LATLNG_HBDEF,
 	 WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
-	 WAUI_SEARCHABLE, WAUI_INTERESTS, WAUI_BORG_HOMEPAGE
+	 WAUI_SEARCHABLE, WAUI_INTERESTS, WAUI_BORG_HOMEPAGE, WAUI_IS_ORG
     INTO _utitle, _fname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum,
          _uicq, _uskype, _uaim, _uyahoo, _umsn,
          _haddress1, _haddress2, _hcode, _hcity, _hstate, _hcountry, _htzone, _hphone, _hmobile,
@@ -3677,7 +3682,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
          _bphone, _bmobile, _bregno, _bcareer, _bempltotal, _bvendor, _bservice, _bother, _bnetwork, _bresume,
          _email, _WAUI_PHOTO_URL, _WAUI_LAT, _WAUI_LNG, _WAUI_BLAT, _WAUI_BLNG, _WAUI_LATLNG_HBDEF,
          _audio, _fav_books, _fav_music, _fav_movie,
-	 is_search, _interests, _org_page
+	 is_search, _interests, _org_page, _is_org
     FROM WA_USER_INFO, DB.DBA.SYS_USERS  where WAUI_U_ID = U_ID  and  U_ID = ufid;
 
   declare is_friend integer;
@@ -3962,6 +3967,7 @@ create procedure WA_GET_USER_INFO (in uid integer, in ufid integer, in visb any,
   _arr [46] := _fav_movie;
   _arr [47] := _interests;
   _arr [48] := _org_page;
+  _arr [49] := _is_org;
 
   if (is_search is not null and is_search = 0)
     _data := '';
@@ -4785,7 +4791,8 @@ create procedure WA_SET_APP_URL
 	 port2 := '80';
 
        if (port1 is not null and port1 <> port2)
-         signal ('22023', 'The specified port must be same as one which is currently in use. If you are not sure which is it, just not specify the port number.');
+         signal ('22023', 'Please provide a valid PORT value. If you are not sure which it is, just not specify the port number.');
+       --  signal ('22023', 'The specified port must be same as one which is currently in use. If you are not sure which is it, just not specify the port number.');
 
        if (port1 is null)
 	 _vhost := _vhost || ':' || port2;
@@ -5000,6 +5007,8 @@ create procedure WA_GET_APP_NAME (in app varchar)
     return 'AddressBook';
   else if (app = 'calendar')
     return 'Calendar';
+  else if (app = 'IM')
+    return 'InstantMessenger';
   else
     return app;
 };
@@ -5036,6 +5045,8 @@ create procedure WA_GET_MFORM_APP_NAME (in app varchar)
     return 'AddressBooks';
   else if (app = 'Calendar')
     return 'Calendars';
+  else if (app = 'IM')
+    return 'InstantMessenger';
   else
     return app;
 };
@@ -5518,7 +5529,9 @@ create procedure wa_get_package_name (in type_name varchar)
 
              'AddressBook','AddressBook',
 
-             'Calendar','Calendar');
+             'Calendar','Calendar',
+
+             'IM','IM');
 
 return get_keyword(type_name,arr,'');   
 

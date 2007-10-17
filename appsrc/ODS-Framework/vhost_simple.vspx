@@ -339,9 +339,21 @@
 
             commit work;
           
-          dbg_obj_print('prefix',prefix,'domain',domain);
+          -- dbg_obj_print('prefix',prefix,'domain',domain);
        
           if(domain='{Default Domain}') prefix:=null;
+
+          declare exit handler for sqlstate '*'
+            {
+              if (__SQL_STATE = '22023') {
+                self.vc_is_valid := 0;
+                self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+                rollback work;
+                return;
+              }
+              resignal;
+            };
+
           WA_SET_APP_URL (id, path, prefix, domain, old_path, old_host, old_ip);
           http_request_status('HTTP/1.1 302 Found');
           http_header(sprintf('Location: vhost_simple.vspx?wai_id=%d&sid=%s&realm=%s\r\n',self.iid, self.sid , self.realm));

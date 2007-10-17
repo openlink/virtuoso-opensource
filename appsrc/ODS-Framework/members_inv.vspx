@@ -89,7 +89,7 @@
       <vm:body>
         <vm:login redirect="login.vspx"/>
         <?vsp
-          if (self.wa_type not in ('oDrive', 'oMail'))
+          if (self.wa_type not in ('oDrive', 'oMail', 'IM'))
           {
         ?>
       <input type="hidden" name="page" value="membership"/>

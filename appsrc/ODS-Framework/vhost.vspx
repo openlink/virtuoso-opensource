@@ -135,17 +135,18 @@
                     <v:data-set name="vd" scrollable="1" edit="1" nrows="-1">
                   <v:sql>
                     <![CDATA[
-		      select * from
-		      WA_MEMBER_URLS (uid)
+    		                  select *
+    		                    from WA_MEMBER_URLS (uid)
 		      (	WAI_NAME varchar,
 		      	HP_HOST varchar,
 			HP_LPATH varchar,
 			HP_LISTEN_HOST varchar,
 			IS_DEFAULT integer,
 			DEF_PAGE varchar,
-			WAI_ID int
+                        			      WAI_ID integer
 		      )
-		      WA_MEMBER_URLS_PT where uid = :usr
+                        		     WA_MEMBER_URLS_PT
+                        	 where uid = :usr
                     ]]>
                   </v:sql>
                   <v:param name="usr" value="--self.u_id" />
@@ -158,7 +159,8 @@
                   <v:column name="WAI_ID" label="WAI_ID" />
                       <vm:template type="repeat">
                         <vm:template type="browse">
-            <v:after-data-bind><![CDATA[
+                          <v:after-data-bind>
+                            <![CDATA[
           declare host, domain, lhost, arr, tmp any;
 
 	  if (not e.ve_is_post and  self.edit_inst = control.te_rowset[6]
@@ -198,13 +200,15 @@
               self.l_domain1.ufl_value := '{Default Domain}';
                                           }
                                 }
-          ]]></v:after-data-bind>
+                            ]]>
+                          </v:after-data-bind>
 		      <tr class="<?V case when self.edit_vhost = control.te_rowset[1] and self.edit_lhost = control.te_rowset[3] and self.edit_lpath = control.te_rowset[2] then 'listing_row_selected' when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
                             <td>
                               <v:label format="%s" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))" />
                               <?vsp
 			       -- unneeded duplication of info
-			       if (0) {
+                  			       if (0)
+                  			         {
                                   declare dns_host varchar;
                                   declare inst web_app;
                                   dns_host := sys_stat('st_host_name');
@@ -218,7 +222,8 @@
                             </td>
                             <td>
         <v:url format="%s" value="" url="">
-	    <v:after-data-bind><![CDATA[
+                          	    <v:after-data-bind>
+                            	    <![CDATA[
           declare url any;
           declare host, path, host1, lhost, page, pars any;
           declare inst web_app;
@@ -254,20 +259,29 @@
               bt := control.vc_parent.vc_find_control ('vd_delete');
               bt.vc_enabled := 0;
             }
-	    ]]></v:after-data-bind>
+                          	      ]]>
+                          	    </v:after-data-bind>
         </v:url>
                             </td>
                             <td>
-			      <v:url value='<img src="images/icons/edit_16.png" hspace="3" border="0"/> Edit' name="vd_edit"
+			                        <v:url value='<img src="images/icons/edit_16.png" hspace="3" border="0"/> Edit'
+			                               name="vd_edit"
 				    url="--sprintf ('vhost.vspx?inst=%d&amp;vhost=%U&amp;lhost=%U&amp;lpath=%U',
 				    	(control.vc_parent as vspx_row_template).te_rowset[6],
 				    	(control.vc_parent as vspx_row_template).te_rowset[1],
 				    	(control.vc_parent as vspx_row_template).te_rowset[3],
 					(control.vc_parent as vspx_row_template).te_rowset[2])"
-					xhtml_title="Edit" xhtml_alt="Edit"
+                       					     xhtml_title="Edit"
+                      					     xhtml_alt="Edit"
 				/>
-			      <v:button style="image" name="vd_delete" action="simple" value="images/icons/del_16.png"
-				xhtml_hspace="3" xhtml_title="Remove" xhtml_alt="Remove" text="Remove" >
+			                        <v:button style="image"
+			                                  name="vd_delete"
+			                                  action="simple"
+			                                  value="images/icons/del_16.png"
+				                                xhtml_hspace="3"
+				                                xhtml_title="Remove"
+				                                xhtml_alt="Remove"
+				                                text="Remove" >
                                 <v:on-post>
                                   <v:script>
                                     <![CDATA[
@@ -293,14 +307,11 @@
 	        <v:form name="endp_f" mthod="POST" type="simple">
 		  <fieldset>
 		      <label for="">Application</label>
-                                <v:data-list
-                                  xhtml_style="width:100"
+                    <v:data-list xhtml_style="width:100"
                                   name="l_app1"
-				  sql="select WAI_ID, WAI_NAME from WA_INSTANCE, WA_MEMBER
-				  where WAM_INST = WAI_NAME and WAM_STATUS = 1 and WAM_USER = self.u_id"
+				                         sql="select WAI_ID, WAI_NAME from WA_INSTANCE, WA_MEMBER where WAM_INST = WAI_NAME and WAM_STATUS = 1 and WAM_USER = self.u_id"
                                   key-column="WAI_ID"
-                                  value-column="WAI_NAME"
-				  >
+                                 value-column="WAI_NAME">
 				  <v:before-render>
 				if (self.edit_inst is not null)
 				  control.vc_add_attribute ('disabled', '1');
@@ -311,23 +322,19 @@
 		      <label for="">Endpoint</label>
                                 http://
                                 <v:text name="l_site1" xhtml_size="30" error-glyph="*">
-				    <v:validator name="v_site1" test="regexp" regexp="[\-0-9A-Za-z]." empty-allowed="1"
-					message="* You should provide a site prefix."/>
+				              <v:validator name="v_site1" test="regexp" regexp="[\-0-9A-Za-z]." empty-allowed="1"	message="* You should provide a site prefix."/>
 			    <v:before-render>
 				if (self.l_domain1.ufl_value = '\173Default Domain\175' or length (self.l_domain1.ufl_value) = 0)
 				  control.vc_add_attribute ('disabled', '1');
 			    </v:before-render>
 				</v:text>
-                                <v:data-list
-                                    name="l_domain1" key-column="WD_DOMAIN" value-column="WD_DOMAIN"
-				    sql="select '{Default Domain}' as WD_DOMAIN from WA_SETTINGS union all
-				    select WD_DOMAIN from WA_DOMAINS where length (WD_LISTEN_HOST)
-				    union select '{My Own Domain}' from WA_SETTINGS"
+                    <v:data-list name="l_domain1"
+                                 key-column="WD_DOMAIN"
+                                 value-column="WD_DOMAIN"
+				                         sql="select '{Default Domain}' as WD_DOMAIN from WA_SETTINGS union all select WD_DOMAIN from WA_DOMAINS where length (WD_LISTEN_HOST) union select '{My Own Domain}' from WA_SETTINGS"
 				    xhtml_onchange='javascript: toggleControl (this, "\173Default Domain\175", this.form["l_site1"])'/>
 				/
-				<v:text name="l_path1" xhtml_size="20" error-glyph="*">
-                                </v:text>
-
+				            <v:text name="l_path1" xhtml_size="20" error-glyph="*" />
 		      <br />
 	      <span class="fm_ctl_btn">
 		  <v:button name="cancel_btn" value="Cancel" action="simple" enabled="--length(self.edit_vhost)">
@@ -346,7 +353,6 @@ control.vc_enabled := 0;
 		  </v:button>
 		      <v:button name="save_btn" action="submit" value="-- case when length(self.edit_vhost) then 'Update' else 'Add' end">
 			  <v:on-post>
-			      <v:script>
 				  <![CDATA[
 				        declare app, prefix, domain, path, old_path, old_host, old_ip, id any;
 
@@ -359,38 +365,29 @@ control.vc_enabled := 0;
                                         old_path := self.edit_lpath;
                                         old_host := self.edit_vhost;
 					old_ip := self.edit_lhost;
-
 					prefix := self.l_site1.ufl_value;
 					path := self.l_path1.ufl_value;
-
 					if (strstr(prefix, 'http://') = 0)
-					  {
                                             prefix := subseq(prefix, 7);
-                                          }
 
 					domain  := get_keyword ('l_domain1', e.ve_params);
-
 					commit work;
 
 -- Error handling disabled in order to activate defaul error handling and show error on Error page - error.vspx.
 
---                                        declare exit handler for sqlstate '*'
---                                        {
---                                          self.vc_is_valid := 0;
---                                          self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
---                                          rollback work;
---                                          return;
---                                        };
-
-
-
-					WA_SET_APP_URL (id, path, prefix, domain, old_path, old_host, old_ip);
-
-                                        http_request_status('HTTP/1.1 302 Found');
-                                        http_header(sprintf('Location: vhost.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                          declare exit handler for sqlstate '*'
+                            {
+                              if (__SQL_STATE = '22023') {
+                                self.vc_is_valid := 0;
+                                self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+                                rollback work;
                                         return;
+                              }
+                              resignal;
+                            };
+					                WA_SET_APP_URL (id, path, prefix, domain, old_path, old_host, old_ip);
+	                        self.vc_redirect ('vhost.vspx');
 				  ]]>
-			      </v:script>
 			  </v:on-post>
 		      </v:button>
 		  </span>
@@ -404,7 +401,8 @@ control.vc_enabled := 0;
                   <h2>Remove Confirmation of Application Endpoint</h2>
                   <table class="data">
                     <tr>
-                      <td>Are you sure you want to remove the application endpoint
+                      <td>
+                        Are you sure you want to remove the application endpoint
                         <?vsp
                          http (wa_make_url_from_vd (self._host, self._lhost, self._path));
                         ?>
@@ -425,7 +423,6 @@ control.vc_enabled := 0;
                         </v:button>
                         <v:button action="simple" name="rem" value="Remove">
                           <v:on-post>
-                            <v:script>
                               <![CDATA[
                                 declare _host, _path, app varchar;
                                 declare inst web_app;
@@ -495,7 +492,6 @@ control.vc_enabled := 0;
                                 VHOST_REMOVE(vhost=>_host, lhost=>self._lhost, lpath=>_path);
 				self.vc_redirect ('vhost.vspx');
                               ]]>
-                            </v:script>
                           </v:on-post>
                         </v:button>
                       </td>

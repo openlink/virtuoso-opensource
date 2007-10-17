@@ -752,9 +752,20 @@ function ods_bar_state_set (state)
 }
 
 var OATWaitCount = 0;
+var inFrame=0;
+if(top.location.href!=window.location.href)
+{
+    inFrame=1;
+    ODSInitArray.push(function(){OAT.Dom.hide('FT');});
+}
 
 function odsbarSafeInit()
 {
+      if(inFrame)
+      {
+         return;
+      }
+      
       if (typeof (OAT) != 'undefined')
         {
           ods_bar_state_set (read_cookie ('odsbar_state'));
@@ -871,7 +882,8 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
 --                     vector ('nntpf','Discussion'),
                      vector ('Polls','Polls'),
                      vector ('AddressBook','AddressBook'),
-                     vector ('Calendar','Calendar')
+                     vector ('Calendar','Calendar'),
+                     vector ('IM','IM')
                     );
       arr_notlogged := vector (
                                vector ('Community', 'Community'),
@@ -1081,7 +1093,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
        </vm:if>
 
 
-       <vm:if test=" (length(self.sid) > 0) AND self.odsbar_app_type<>'oMail' AND self.odsbar_app_type<>'nntpf' ">
+       <vm:if test=" (length(self.sid) > 0) AND self.odsbar_app_type<>'oMail' AND self.odsbar_app_type<>'nntpf' AND self.odsbar_app_type<>'IM'">
        <li>
        <v:url name="slice_all" url="--sprintf ('%sapp_inst.vspx?app=%s&amp;ufname=%V',self.odsbar_ods_gpath, self.odsbar_app_type, coalesce(self.odsbar_fname,''))"
           value="--'All '||WA_GET_MFORM_APP_NAME(self.odsbar_app_type)"

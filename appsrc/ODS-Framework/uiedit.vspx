@@ -51,6 +51,49 @@ function getFileName(form, from, to)
   fname = S.substr(N,S.length);
   to.value = fname;
 }
+
+function swPersHide ()
+{
+  var lb = document.getElementById ('lb_1');
+  if (lb != null)
+    lb.innerHTML = 'Organization Webpage';
+  for (i = 1; i <= 20; i++)
+    {
+      var elm = document.getElementById ('pers_'+i);
+      if (elm != null)
+        elm.style.display = "none";
+    }
+}
+
+function swPersShow ()
+{
+  var lb = document.getElementById ('lb_1');
+  if (lb != null)
+    lb.innerHTML = 'Personal Webpage';
+  for (i = 1; i <= 20; i++)
+    {
+      var elm = document.getElementById ('pers_'+i);
+      if (elm != null)
+        elm.style.display = "";
+    }
+}
+
+function swOrg (cb)
+{
+  if (cb.checked == true)
+    swPersHide ();
+  else
+    swPersShow ();
+}
+
+window.onload = function swOrgInit ()
+{
+  if (<?V self.is_org ?>)
+    swPersHide ();
+  else
+    swPersShow ();
+}
+
 ]]></script>
         <vm:login redirect="index.vspx"/>
 
@@ -104,8 +147,8 @@ function getFileName(form, from, to)
                                  url="--sprintf('uiedit.vspx?page=2')" 
                                  xhtml_class="tab"/>
                         </td>
-			<td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?>" 
-                            align="center">
+			<td class="<?V case when pg = 3 then 'navtab_sel' else 'navtab' end ?> initial_hidden"
+                            align="center" id="pers_1">
                           <v:url name="b_url13" 
                                  value="Home" 
                                  format="%s" 

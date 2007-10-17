@@ -39,7 +39,7 @@
           self.instance_descr := WA_GET_APP_NAME (coalesce(get_keyword('wa_name', self.vc_event.ve_params), (select WAI_TYPE_NAME from WA_INSTANCE where WAI_ID = get_keyword('wai_id', self.vc_event.ve_params)), ''));
         self.wa_type := self.wa_name;
         
-        if (self.wa_type in ('oDrive', 'oMail'))
+        if (self.wa_type in ('oDrive', 'oMail', 'IM'))
         {
           self.imodel := 1;
           self.is_public := 0;
@@ -47,6 +47,19 @@
         }
         self.domains := '<domains/>';
         if (self.wa_type = 'oMail')
+        {
+          declare pos integer;
+          self.domains := '';
+          for (select WD_DOMAIN from DB.DBA.WA_DOMAINS) do
+          {
+            pos := strstr(concat(WD_DOMAIN, ':'), ':');
+            self.domains := concat(self.domains, sprintf('<domain>%s</domain>', substring(WD_DOMAIN, 1, pos)));
+          }
+          if (self.domains = '')
+            signal('22024', 'No domains available.');
+          self.domains := concat('<domains>', self.domains, '</domains>');
+        }
+        if (self.wa_type = 'IM')
         {
           declare pos integer;
           self.domains := '';
@@ -144,9 +157,23 @@
             return;
           }
         connection_set('wiki_home', ihome);
-
+      }
+      else if (self.wa_type = 'IM')
+      {
+        declare _instance_name varchar;
+        self.iname2.ufl_value := trim (self.iname2.ufl_value);
+        _instance_name := coalesce(self.iname2.ufl_value, '');
+        if (isnull (regexp_match ('^[A-Za-z0-9_]+\$', _instance_name)))
+          {
+            self.vc_error_message := 'IM instance must be single word without special characters';
+            self.vc_is_valid := 0;
+            self.iname2.ufl_failed := 1;
+            return;
+          }
       }
       _len := length(coalesce(self.iname1.ufl_value, ''));
+      if (self.wa_type = 'IM')
+        _len := length(coalesce(self.iname2.ufl_value, ''));
       if (_len < 1 or _len > 55)
       {
         self.vc_error_message := 'Application name should not be empty and not longer 55 characters';
@@ -185,6 +212,19 @@
         -- update instance
         self.inst := self.inst.wa_name := tmp;
         self.inst := self.inst.wa_domain_set(self.idomain1.ufl_value);
+      }
+      else if (self.wa_type = 'IM')
+      {
+        declare tmp any;
+        tmp := concat(self.u_name, '@', self.idomain2.ufl_value, '/', self.iname2.ufl_value);
+        if (exists(select 1 from WA_INSTANCE where WAI_NAME = tmp))
+        {
+          self.vc_error_message := 'Application ''' || tmp || ''' already exists.';
+          self.vc_is_valid := 0;
+          return;
+        }
+        -- update instance
+        self.inst := self.inst.wa_name := tmp;
       }
       else
       {
@@ -329,11 +369,11 @@
         return;
       };
       id := call (h) (self.inst, connection_get ('vspx_user'));
-      if (self.wa_type not in ('oMail') and self.switch_adv = 1)
+      if (self.wa_type not in ('oMail', 'IM') and self.switch_adv = 1)
       {
         self.is_public := self.is_public1.ufl_selected;
       }
-      if (self.wa_type not in ('oDrive', 'oMail') and self.switch_adv = 1)
+      if (self.wa_type not in ('oDrive', 'oMail', 'IM') and self.switch_adv = 1)
       {
         self.is_visible := self.is_visible1.ufl_selected;
       }
@@ -532,6 +572,7 @@
 		 		   when 'eNews2' then 'Feed Manager'
 		 		   when 'oDrive' then 'Briefcase'
 		 		   when 'Bookmark' then 'Bookmarks'
+		 		   when 'IM' then 'Instant Messenger'
 				   else self.wa_type end;
 		    if (self.wa_cnt = 0)
 		      self.promo := '';
@@ -577,6 +618,19 @@
                         self.iname := substring(_iname,1,strchr(_iname,'@'));
                         self.idesc := concat(coalesce(self.u_full_name, self.u_name), '\'s ', self.instance_descr);
                       }
+                      else if (self.wa_type = 'IM')
+                      {
+                        app_suff := 'im';
+                        _domain := xpath_eval ('/domains/domain', self.domains, 0);
+                        _iname := sprintf('%s@%s/%s', self.u_name, cast(_domain[0] as varchar), app_suff);
+                        while (exists(select 1 from WA_INSTANCE where WAI_NAME = _iname))
+                        {
+                          _iname := sprintf('%s@%s/%s%d', self.u_name, cast(_domain[0] as varchar), app_suff, _cnt);
+                          _cnt := _cnt + 1;
+                        }
+                        self.iname := subseq(_iname, strstr(_iname, '/')+1);
+                        self.idesc := concat(coalesce(self.u_full_name, self.u_name), '\'s ', self.instance_descr);
+                      }
                       else
 		      {
 		        if (self.wa_type = 'oWiki')
@@ -588,8 +642,12 @@
                           _cnt := _cnt + 1;
 		          if (self.wa_type = 'oWiki')
 			    _iname := sprintf ('%s%s%d', self.u_first_name, app_suff, _cnt);
+        else {
+                if (self.wa_type = 'IM')
+                  _iname := sprintf ('%s%d', self.u_first_name, _cnt);
 			  else
 		            _iname := sprintf ('%s\'s %s (%d)', self.u_first_name, app_suff, _cnt);
+                        }
                         }
                         self.iname := _iname;
                         self.idesc := concat(coalesce(self.u_full_name, self.u_name), '\'s ', self.instance_descr);

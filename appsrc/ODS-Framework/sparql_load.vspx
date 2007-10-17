@@ -44,7 +44,9 @@
 	    <vm:navigation-new on="site"/>
 	    <vm:subnavigation-new on="site"/>
 	    <vm:body>
-	      <vm:login redirect="login.vspx"/>
+        <v:login name="load_login" realm="wa" mode="url" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+          <v:template name='inl' type='if-no-login'/>
+        </v:login>
 	      <v:form name="form1" type="simple" method="POST">
 		<table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
 		  <tr valign='top'>
@@ -98,15 +100,17 @@
 			      <th>Action</th>
 			    </tr>
 			  <?vsp
-			    declare col, ctr int;
-                            declare pwd varchar;
-			    declare rc int;
+                          declare usr, pwd varchar;
+                          declare N, col, ctr, rc integer;
+                          declare searchPath, searchRecursive, searchFilter, searchResult any;
+                          
+                          if (self.vc_authenticated) 
+                          {
 			    col := DAV_SEARCH_ID ('/DAV/home/'||self.u_name||'/SPARQL/', 'C');
 			    pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = self.u_name);
 			    if (col < 0)
 			      {
-			        col := DB.DBA.DAV_MAKE_DIR('/DAV/home/'||self.u_name||'/SPARQL/',
-			          self.u_id, http_nogroup_gid(), '110110100N');
+                              col := DB.DBA.DAV_MAKE_DIR('/DAV/home/'||self.u_name||'/SPARQL/', self.u_id, http_nogroup_gid(), '110110100N');
 			      }
 			    ctr := 0;
 			    if (self.sparql_rq_del is not null)
@@ -121,16 +125,50 @@
 				  return;
 				}
 			      }
-			    for select RES_NAME, RES_ID from WS.WS.SYS_DAV_RES where RES_COL = col and RES_NAME like '%.rq' do
+                            usr := self.u_name;
+                            searchPath := '/DAV/home/'||self.u_name||'/SPARQL/';
+                            searchRecursive := 0;
+                          } 
+                          else
+                          {
+                            usr := 'dav';
+                            pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = usr);
+                            searchPath := '/DAV/home/';
+                            searchRecursive := 1;
+                          } 
+                          searchFilter := vector (vector ('RES_NAME', 'like', '%.rq%' ), vector ('RES_TYPE', 'like', 'application/sparql-query%'));
+                          searchResult := DB.DBA.DAV_DIR_FILTER (searchPath, searchRecursive, searchFilter, usr, pwd);
+                
+                          for (N := 0; N < length (searchResult); N := N + 1) 
 			       {
-			         rc := DAV_AUTHENTICATE (RES_ID, 'R', '1__', self.u_name, pwd);
+                            if (self.vc_authenticated) {
+                              rc := DAV_AUTHENTICATE (searchResult[N][4], 'R', '1__', usr, pwd);
+                            } else {
+                              rc := searchResult[N][5][6] - ascii('0') - 1;
+                              if (rc >= 0)
+                              {
+                                if (searchResult[N][0] not like ('%/SPARQL/' || searchResult[N][10]))
+                                  rc := -1;
+                              }
+                            }
 				 if (rc >= 0)
 				   {
 			    ?>
 			    <tr class="<?V case when mod(ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
-			      <td><?V RES_NAME ?></td><td><a href="search.vspx?page=4&amp;l=1&amp;sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;rq=<?V RES_ID ?>&amp;rq_res_name=<?V RES_NAME ?>">Load</a>
-			       <a href="sparql_load.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;del=<?V RES_ID ?>">Delete</a>
-			    </td></tr>
+                          <td>
+                            <?V searchResult[N][10] ?>
+                          </td>
+                          <td>
+                            <a href="search.vspx?page=4&amp;l=1&amp;sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;rq=<?V searchResult[N][4] ?>&amp;rq_res_name=<?V searchResult[N][10] ?>">Load</a>
+                            <?vsp
+                              if (self.vc_authenticated) {
+                            ?>
+                            <a href="sparql_load.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;del=<?V searchResult[N][4] ?>">Delete</a>
+                            <?vsp
+                              }
+                            ?>
+                          </td>
+                        </tr>
 			    <?vsp
 			         ctr := ctr + 1;
 				   }
@@ -138,13 +176,17 @@
 			    if (ctr = 0)
 			      {
 			    ?>
-			    <tr><td colspan="2">Stored queries not found</td></tr>
+                        <tr>
+                           <td colspan="2">Stored queries not found</td>
+                        </tr>
 			    <tr>
 			      <td colspan="2">
 				<v:button name="cancel_bt" action="simple" value="Back">
-				  <v:on-post><![CDATA[
+                               <v:on-post>
+                                 <![CDATA[
                                   self.vc_redirect (sprintf ('search.vspx?page=4&l=1&sid=%s&realm=%s', self.sid, self.realm));
-			      ]]></v:on-post>
+                                 ]]>
+                               </v:on-post>
 				</v:button>
 			      </td>
 			    </tr>

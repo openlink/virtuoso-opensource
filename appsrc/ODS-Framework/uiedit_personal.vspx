@@ -30,6 +30,7 @@
   xmlns:vm="http://www.openlinksw.com/vspx/ods/"
   xmlns:v="http://www.openlinksw.com/vspx/">
 
+    <v:variable persist="session" name="is_org" type="int" default="0"/>
     <v:variable persist="0" name="utitle" type="varchar" default="''"/>
     <v:variable persist="0" name="ftname" type="varchar" default="''"/>
     <v:variable persist="0" name="lname" type="varchar" default="''"/>
@@ -84,11 +85,11 @@
                WAUI_MSIGNATURE, WAUI_SUMMARY,
 	       U_E_MAIL, WAUI_PHOTO_URL,
 	       WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
-	       WAUI_SEARCHABLE,WAUI_SHOWACTIVE, WAUI_INTERESTS
+	       WAUI_SEARCHABLE,WAUI_SHOWACTIVE, WAUI_INTERESTS, WAUI_IS_ORG
           INTO _utitle, _ftname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum,
 	       _email, self.photo,
 	       self.audio, self.books, self.music, self.movie,
-	       self.issearch,self.showactive, self.interests
+	       self.issearch,self.showactive, self.interests, self.is_org
           FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
 
         self.utitle := _utitle;
@@ -143,7 +144,6 @@
 	      f.value = fn.value + ' ' + ln.value;
 	    }
         }
-        
     ]]></script>
 
     <v:form name="usr_personal" type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=1">
@@ -157,6 +157,19 @@
                 </td>
               </tr>
               <tr>
+                <td class="listing_col" nowrap="1">
+		  <v:check-box name="cb_org" value="1" xhtml_id="cb_org" xhtml_onclick="javascript:swOrg(this);">
+			<v:after-data-bind>
+			    if (not e.ve_is_post)
+			      control.ufl_selected := self.is_org;
+			</v:after-data-bind>
+		  </v:check-box><![CDATA[&nbsp;]]>
+		  <label for="cb_org">Organization</label>
+                </td>
+		<th>
+		</th>
+              </tr>
+              <tr id="pers_2" class="initial_hidden">
                 <th><label for="regtitle">Title</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:select-list name="regtitle" xhtml_tabindex="1">
@@ -175,7 +188,7 @@
 		  <vm:u-prop-select name="sel_0" value="self.sav0" />
                 </td>
               </tr>
-              <tr>
+              <tr id="pers_3" class="initial_hidden">
                 <th><label for="f_name">First Name</label></th>
                 <td class="listing_col" nowrap="1">
 		    <v:text name="f_name" error-glyph="*" value="--self.ftname" xhtml_style="width:216px" xhtml_tabindex="2" fmt-function="wa_utf8_to_wide"
@@ -192,7 +205,7 @@
 		  <vm:u-prop-select name="sel_1" value="self.sav1" />
                 </td>
               </tr>
-              <tr>
+              <tr id="pers_4" class="initial_hidden">
                 <th><label for="l_name">Last Name</label></th>
                 <td class="listing_col" nowrap="1">
 		    <v:text name="l_name" error-glyph="*" value="--self.lname" xhtml_style="width:216px" xhtml_tabindex="3" fmt-function="wa_utf8_to_wide"
@@ -246,7 +259,7 @@
 		  <vm:u-prop-select name="sel_4" value="self.sav4" />
                 </td>
               </tr>
-              <tr>
+              <tr id="pers_5" class="initial_hidden">
                 <th><label for="regender">Gender</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:select-list name="regender" xhtml_tabindex="6">
@@ -263,7 +276,7 @@
 		  <vm:u-prop-select name="sel_5" value="self.sav5" />
                 </td>
               </tr>
-              <tr>
+              <tr  id="pers_6" class="initial_hidden">
                 <th><label for="regbday">Birthday</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:select-list xhtml_id="regbmonth" name="regbday" value="">
@@ -347,7 +360,7 @@
                 </td>
               </tr>
               <tr>
-                <th><label for="w_page">Personal Webpage</label></th>
+                <th><label for="w_page" id="lb_1">Personal Webpage</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:text error-glyph="*" name="w_page" value="--self.wpage"  xhtml_size="80" xhtml_tabindex="8">
 		    <v:validator test="regexp" regexp="^http://" message="Please include http://" empty-allowed="1"
@@ -366,7 +379,7 @@
 		  <vm:u-prop-select name="sel_8" value="self.sav8" />
                 </td>
               </tr>
-              <tr>
+              <tr id="pers_8" class="initial_hidden">
                 <th><label for="m_sign">Mail Signature</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:textarea name="m_sign" value="--self.msign" xhtml_rows="4" xhtml_cols="80" xhtml_tabindex="10" fmt-function="wa_utf8_to_wide" error-glyph="*">
@@ -403,7 +416,7 @@
 			</v:button>
                 </td>
 	      </tr>
-	      <tr>
+	      <tr id="pers_9" class="initial_hidden">
 		  <th><label for="e_int" title="Free text">Interests</label>
 		      <span class="explain"> (one URL per line)</span>
 		  </th>
@@ -450,21 +463,21 @@
 		</td>
 	      </tr>
 
-	      <tr>
+	      <tr id="pers_10" class="initial_hidden">
 		<th><label for="e_fbook" title="Free text">Favorite Books</label></th>
 		<td class="listing_col" nowrap="1">
 		  <v:text name="e_fbook" value="--self.books" xhtml_size="80" xhtml_tabindex="14"/>
 		  <vm:u-prop-select name="sel_44" value="self.sav44" />
 		</td>
 	      </tr>
-	      <tr>
+	      <tr id="pers_11" class="initial_hidden">
 		<th><label for="e_fmusic" title="Free text">Favorite Music</label></th>
 		<td class="listing_col" nowrap="1">
 		  <v:text name="e_fmusic" value="--self.music" xhtml_size="80" xhtml_tabindex="15"/>
 		  <vm:u-prop-select name="sel_45" value="self.sav45" />
 		</td>
 	      </tr>
-	      <tr>
+	      <tr id="pers_12" class="initial_hidden">
 		<th><label for="e_fmovie" title="Free text">Favorite Movies</label></th>
 		<td class="listing_col" nowrap="1">
 		  <v:text name="e_fmovie" value="--self.movie" xhtml_size="80" xhtml_tabindex="16"/>
@@ -592,6 +605,10 @@
 			  else
 			    dt := null;
 
+			  -- before to edit rest of fields, set the org flag
+			  self.is_org := self.cb_org.ufl_selected;
+			  update WA_USER_INFO set WAUI_IS_ORG = self.cb_org.ufl_selected where WAUI_U_ID = self.u_id;
+
 			  declare rc,rc_org, pwd1 any;
 			  pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
 			  rc := 0;
@@ -679,21 +696,35 @@
 			    WA_USER_EDIT (self.u_name, 'WAUI_AUDIO_CLIP', p_path);
 		          }
 
+			if (self.is_org)
+                          {
+			    dt := null;
+			    self.regtitle.ufl_value := null;
+			    self.f_name.ufl_value := null;
+			    self.l_name.ufl_value := null;
+			    self.regender.ufl_value := null;
+			    self.m_sign.ufl_value := null;
+			    self.e_fbook.ufl_value := null;
+			    self.e_fmusic.ufl_value := null;
+			    self.e_fmovie.ufl_value  := null;
+			  }
+
                         WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
                         WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.regtitle.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_FIRST_NAME', self.f_name.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_LAST_NAME', self.l_name.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_FULL_NAME', self.full_name.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'E_MAIL', self.regmail.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_GENDER', self.regender.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.e_foaf.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_MSIGNATURE', self.m_sign.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_SUMMARY', self.s_summ.ufl_value);
-			WA_USER_EDIT (self.u_name, 'WAUI_WEBPAGE', self.w_page.ufl_value);
-
                         WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_BOOKS', self.e_fbook.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MUSIC', self.e_fmusic.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_FAVORITE_MOVIES', self.e_fmovie.ufl_value);
+
+                        WA_USER_EDIT (self.u_name, 'WAUI_FULL_NAME', self.full_name.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'E_MAIL', self.regmail.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.e_foaf.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_SUMMARY', self.s_summ.ufl_value);
+			WA_USER_EDIT (self.u_name, 'WAUI_WEBPAGE', self.w_page.ufl_value);
+
                         WA_USER_EDIT (self.u_name, 'WAUI_SEARCHABLE', self.in_search.ufl_selected);
                         WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
                         WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.e_int.ufl_value);

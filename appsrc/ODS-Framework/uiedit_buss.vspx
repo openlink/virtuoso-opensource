@@ -159,7 +159,7 @@
 		  <vm:u-prop-select name="sel_19" value="self.sav19" />
                 </td>
               </tr>
-              <tr>
+              <tr id="pers_15" class="initial_hidden">
                 <th><label for="b_org">Organization</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:text name="b_org"
@@ -169,7 +169,7 @@
 		    <vm:u-prop-select name="sel_20" value="self.sav20" />
                 </td>
               </tr>
-              <tr>
+              <tr  id="pers_17">
                 <th><label for="b_org_page">Organization Home Page</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:text name="b_org_page"
@@ -178,7 +178,7 @@
                           xhtml_tabindex="2"/>
                 </td>
               </tr>
-              <tr>
+              <tr id="pers_16">
                 <th><label for="b_job">Job Title</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:text name="b_job"
@@ -497,7 +497,7 @@
 		  <vm:u-prop-select name="sel_32" value="self.sav32" />
                 </td>
               </tr>
-              <tr>
+              <tr id="pers_14" class="initial_hidden">
                 <th><label for="b_resume">Resume</label></th>
                 <td class="listing_col" nowrap="1">
 		    <v:textarea name="b_resume" value="--self.bresume" xhtml_rows="10" xhtml_cols="80" xhtml_tabindex="20"/>

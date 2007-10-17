@@ -36,6 +36,7 @@
   <xsl:template match="vm:home-init">
     <v:variable name="ufid" type="integer" default="0"/>
     <v:variable name="isowner" type="integer" default="0"/>
+    <v:variable name="is_org" type="integer" default="0"/>
     <v:variable name="visb" type="any" default="null"/>
     <v:variable name="arr" type="any" default="null" persist="temp"/>
     <v:variable name="friends_name" type="varchar" default="''"/>
@@ -66,7 +67,9 @@
 
         if ( self.ufid = self.u_id)
           self.isowner := 1; --user is the owner of the page.
+
         self.arr := WA_GET_USER_INFO (self.u_id, self.ufid, self.visb, self.isowner);
+          self.is_org := self.arr[49];
       ]]>
     </v:before-data-bind>
       <v:after-data-bind>
@@ -195,7 +198,7 @@
                     </colgroup>
                     <tr class="navtab_row">
                       <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>">
-                        <v:url name="b_url21" value="Personal" 
+                        <v:url name="b_url21" value="--case when self.is_org then 'Organization' else 'Personal' end"
                                format="%s" 
                                url="--sprintf('uhome.vspx?page=1&ufname=%s#uinavtab',self.fname)" 
                                xhtml_class="tab"/>
@@ -212,7 +215,8 @@
                                value="Home" 
                                format="%s" 
                                url="--sprintf('uhome.vspx?page=3&ufname=%s#uinavtab',self.fname)" 
-                               xhtml_class="tab"/>
+			       xhtml_class="tab"
+			       enabled="--equ (self.is_org, 0)"/>
                       </td>
                       <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>">
                         <v:url name="b_url14" 
@@ -275,7 +279,7 @@
 			    </tr>
 			    <?vsp } ?>
                             <tr>
-                              <th><v:label name="1gender" value="Gender:" enabled="--case when coalesce(self.arr[5],'') <> '' then 1 else 0 end"/></th>
+                              <th><v:label name="1gender" value="Gender:" enabled="--case when coalesce(self.arr[5],'') <> '' and equ (self.is_org, 0) then 1 else 0 end"/></th>
                               <td><v:label name="lgender1" value="--coalesce(self.arr[5],'')"/></td>
                             </tr>
                             <tr>

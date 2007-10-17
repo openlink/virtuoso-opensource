@@ -34,8 +34,9 @@ create procedure  DB.DBA.URL_REW_ODS_SPQ (in graph varchar, in iri varchar, in a
   iri := sprintf ('%U', iri);
   iri := replace (iri, '%3A', ':');
   iri := replace (iri, '%23', '#');
-  q := sprintf ('define input:inference <%s> DESCRIBE <%s> FROM <%s>', graph, iri, graph);
-  ret := sprintf ('/sparql?query=%U&format=%U', q, acc);
+--  q := sprintf ('define input:inference <%s> DESCRIBE <%s> FROM <%s>', graph, iri, graph);
+--  ret := sprintf ('/sparql?query=%U&format=%U', q, acc);
+  ret := sprintf ('/ods_services/Http/OdsIriDescribe?iri=%U&accept=%U', iri, acc);
   return ret;
 };
 
@@ -50,9 +51,12 @@ create procedure DB.DBA.URL_REW_ODS_USER (in par varchar, in fmt varchar, in val
     {
       graph := sioc..get_graph ();
       iri := sprintf ('%s/%U', graph, val);
-      if (val like 'person/%')
+      if (val like 'person/%' or val like 'organization/%')
 	{
+	  if (val like 'person/%')
 	  val := substring (val, 8, length (val));
+	  if (val like 'organization/%')
+	    val := substring (val, 14, length (val));
 	  ret := sprintf ('/ods/foaf.vsp?uname=%U&fmt=%U', val, acc);
 	}
       else
@@ -65,6 +69,8 @@ create procedure DB.DBA.URL_REW_ODS_USER (in par varchar, in fmt varchar, in val
 
       if (val like 'person/%')
 	val := substring (val, 8, length (val));
+      if (val like 'organization/%')
+	val := substring (val, 14, length (val));
       ret := sprintf ('/ods/uhome.vspx?page=1&ufname=%s', val);
     }
   return ret;
@@ -129,7 +135,7 @@ create procedure DB.DBA.URL_REW_ODS_GEM (in par varchar, in fmt varchar, in val 
   pos := strrchr (path, '/');
   path := subseq (path, 0, pos);
 
-  if (val = 'person')
+  if (val = 'person' or val = 'organization')
     {
       pos := strrchr (path, '/');
       val := subseq (path, pos+1, length (path));
@@ -217,7 +223,7 @@ create procedure DB.DBA.URL_REW_ODS_NNTP (in par varchar, in fmt varchar, in val
     }
   else if (par = 'post')
     {
-      ret := sprintf ('/nntpf/nntpf_disp_article.vspx?id=%U', encode_base64 (val));
+      ret := sprintf ('/nntpf/nntpf_disp_article.vspx?id=%U', encode_base64 (split_and_decode(val)[0]));
       return ret;
     }
 }
@@ -471,6 +477,8 @@ create procedure DB.DBA.URL_REW_ODS_CALENDAR (in par varchar, in fmt varchar, in
     }
   else if (par = 'params')
     {
+      val := replace (val, 'Task/', '');
+      val := replace (val, 'Event/', '');
       if (atoi (val) = 0 and val <> '0')
        	fmt := '%s';
       else
@@ -616,14 +624,15 @@ create procedure ur_ods_html_doc (in path varchar)
 -- http://cname/dataspace/person/uname
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule1', 1,
-    '/dataspace/((person/)?[^/#]*)', vector('ufname'), 1,
+    '/dataspace/((person/|organization/)?[^/#]*)', vector('ufname'), 1,
     '%s', vector('ufname'),
     'DB.DBA.URL_REW_ODS_USER');
 
 -- http://cname/dataspace/uname with Accept will do 303 to the /sparql
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule2', 1,
     '/dataspace/([^/#]*)', vector('ufname'), 1,
-    '/sparql?query=define+input%%3Ainference+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E+DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace/%U%%23this%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E&format=%U', vector('ufname', '*accept*'),
+--    '/sparql?query=define+input%%3Ainference+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E+DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace/%U%%23this%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E&format=%U', vector('ufname', '*accept*'),
+    '/ods_services/Http/OdsIriDescribe?iri=http%%3A//^{URIQADefaultHost}^/dataspace/%U%%23this&accept=%U', vector('ufname', '*accept*'),
     null,
     '(application|text)/rdf.(xml|n3|turtle|ttl)',
     0,
@@ -631,7 +640,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule2', 1,
 
 -- http://cname/dataspace/uname/app_type
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule3', 1,
-    '/dataspace/((?!person)[^/]*)/([^\\./]*)', vector('ufname', 'app'), 2,
+    '/dataspace/((?!person)(?!organization)[^/]*)/([^\\./]*)', vector('ufname', 'app'), 2,
     '/ods/app_inst.vspx?app=%s&ufname=%s&l=1', vector('app', 'ufname'),
     'DB.DBA.URL_REW_ODS_APP');
 
@@ -659,9 +668,25 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule6', 1,
     2,
     303);
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule8', 1,
+    '/dataspace/organization/([^/#]*)/?', vector('ufname'), 1,
+    '/dataspace/organization/%U/foaf.%s', vector('ufname', '*accept*'),
+    'DB.DBA.URL_REW_ODS_FOAF_EXT',
+    '(application|text)/rdf.(xml|n3|turtle|ttl)',
+    2,
+    303);
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule9', 1,
+    '/dataspace/organization/([^/]*)/page/([^/]*)/?', vector('ufname', 'page'), 1,
+    '/dataspace/organization/%U/foaf.%s?page=%s', vector('ufname', '*accept*', 'page'),
+    'DB.DBA.URL_REW_ODS_FOAF_EXT',
+    '(application|text)/rdf.(xml|n3|turtle|ttl)',
+    2,
+    303);
+
 -- http://cname/dataspace/person/uname/foaf.ext
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule7', 1,
-    '/dataspace/person/([^/]*)/foaf.(rdf|n3|ttl)', vector('ufname', 'fmt'), 1,
+    '/dataspace/(person|organization)/([^/]*)/foaf.(rdf|n3|ttl)', vector('type', 'ufname', 'fmt'), 1,
     '/ods/foaf.vsp?uname=%U&fmt=%U', vector('ufname', 'fmt'),
     null,
     null,
@@ -677,7 +702,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_post_gem_rule', 1,
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_rule1', 1,
     '/dataspace/feed/([^#]*)', vector('fid'), 1,
-    '/sparql?query=define+input%%3Ainference+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E+DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace/feed/%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E&format=%U', vector('fid', '*accept*'),
+--    '/sparql?query=define+input%%3Ainference+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E+DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace/feed/%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E&format=%U', vector('fid', '*accept*'),
+    '/ods_services/Http/OdsIriDescribe?iri=http%%3A//^{URIQADefaultHost}^/dataspace/feed/%U&accept=%U', vector('fid', '*accept*'),
     null,
     '(application|text)/rdf.(xml|n3|turtle|ttl)',
     2,
@@ -759,6 +785,25 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'ods_addressbook_rule2',
     1,
     '/dataspace/([^/]*)/addressbook/([^/]*)/(.*)',
+    vector('uname', 'instance', 'params'),
+    3,
+    '%s%s',
+    vector('instance', 'params'),
+    'DB.DBA.URL_REW_ODS_ADDRESSBOOK');
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'ods_socialnetwork_rule1',
+    1,
+    '/dataspace/([^/]*)/socialnetwork/([^/]*)',
+    vector('uname', 'instance'),
+    2,
+    '%s', vector('instance'),
+    'DB.DBA.URL_REW_ODS_ADDRESSBOOK');
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'ods_socialnetwork_rule2',
+    1,
+    '/dataspace/([^/]*)/socialnetwork/([^/]*)/(.*)',
     vector('uname', 'instance', 'params'),
     3,
     '%s%s',
@@ -879,7 +924,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_base_rule_list1', 1,
 
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_foaf_rule_list1', 1,
     	vector(
-	        'ods_rule5', 'ods_rule6', 'ods_rule7'
+	        'ods_rule5', 'ods_rule6', 'ods_rule8', 'ods_rule9', 'ods_rule7'
 	      ));
 
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_gems_rule_list1', 1,
@@ -923,7 +968,9 @@ DB.DBA.URLREWRITE_CREATE_RULELIST (
     1,
     vector (
   	 	'ods_addressbook_rule1',
-	    'ods_addressbook_rule2'
+	    'ods_addressbook_rule2',
+  	 	'ods_socialnetwork_rule1',
+	    'ods_socialnetwork_rule2'	    
 	  ));
 
 -- ODS Bookmark rules

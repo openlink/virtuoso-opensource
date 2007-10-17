@@ -24,7 +24,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-   declare sid,realm,fb_session,_err_msg varchar;
+   declare sid,realm,fb_session,_err_msg,_xml,helpertact varchar;
    declare curr_user_id,addressbook_instid,addressbook_domain_id,addressbook_cid,fb_userid,facebook_cid,_err_code,usemapping integer;
    declare fb_dba_options,mappingarr,mapping_keywords any;
    
@@ -32,10 +32,11 @@
 
    sid := get_keyword('sid',params,'');
    realm := get_keyword('realm',params,'wa');
-   
+   _xml:='';
 --   dbg_obj_print(get_keyword('mapping',params,'') );
 
 --   dbg_obj_print('###',split_and_decode(get_keyword('mapping',params,''),0,'\0\0|'));
+   
    
    mappingarr := coalesce(split_and_decode(get_keyword('mapping',params,''),0,'\0\0;'),vector());
    addressbook_instid := cast(get_keyword('instid',params,-1) as integer);
@@ -45,6 +46,8 @@
    
    fb_session := get_keyword('fb_session',params,'');
    fb_userid := cast(get_keyword('fb_userid',params,-1) as integer);
+   helpertact := get_keyword('helpertact',params,'');
+
 
    _err_code :=0; --0 - successfull update; 1 - error
    _err_msg  :='';
@@ -52,6 +55,7 @@
 --   dbg_obj_print(mappingarr);
    
    
+
    if(usemapping and length(mappingarr)>0)
    {
       mapping_keywords:=vector();
@@ -74,6 +78,7 @@
       
    }
    
+   
    if(_get_ods_fb_settings(fb_dba_options)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
    {
        _fb:= new Facebook(fb_dba_options[0], fb_dba_options[1], params,lines);
@@ -94,12 +99,6 @@
      goto _end;
    }
 
-   if(facebook_cid<1 or addressbook_cid<1)
-   {
-     _err_code :=1;
-     _err_msg  :='Incorrect syncronize contact pair.';
-     goto _end;
-   }
 
    curr_user_id:=-1;
 
@@ -118,6 +117,17 @@
 
    if(curr_user_id>0)
    {
+      _fb.set_user(fb_userid,fb_session,now());
+
+      if(helpertact='deref') goto _deref;
+      
+      if(facebook_cid<1 or addressbook_cid<1)
+      {
+        _err_code :=1;
+        _err_msg  :='Incorrect syncronize contact pair.';
+        goto _end;
+      }
+
       declare exit handler for not found {
                                           addressbook_domain_id:=-1;
                                           _err_code :=1;
@@ -129,29 +139,31 @@
       if(addressbook_domain_id>0)
       {
   
-       _fb.set_user(fb_userid,fb_session,now());
 
         declare _res any;
-       _res:=_fb.api_client.users_getInfo(facebook_cid,'name,first_name,last_name,sex,birthday,current_location,work_history');
+       _res:=_fb.api_client.users_getInfo(facebook_cid,'name,first_name,last_name,sex,birthday,current_location,work_history,hometown_location,timezone');
        if(_res is not null)
        {
          _res:=xpath_eval('/users_getInfo_response/user',_res);
          if(_res is not null)
          {
             declare _col, _val any;
-            declare _tmpval varchar;
+            declare _tmpval,_tmpcustomcol varchar;
+
             _col    :=vector();
             _val    :=vector();
             _tmpval :='';
+            _tmpcustomcol:='';
        
+            _tmpcustomcol:=get_keyword('name',mapping_keywords,'P_FULL_NAME');
             _tmpval:=trim(xpath_eval('string(name)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('full_name',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('full_name',mapping_keywords,'P_FULL_NAME')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -163,14 +175,15 @@
             }
 
        
+            _tmpcustomcol:=get_keyword('first_name',mapping_keywords,'P_FIRST_NAME');
             _tmpval:=trim(xpath_eval('string(first_name)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('first_name',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('first_name',mapping_keywords,'P_FIRST_NAME')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -181,14 +194,15 @@
             }
 
             
+            _tmpcustomcol:=get_keyword('last_name',mapping_keywords,'P_LAST_NAME');
             _tmpval:=trim(xpath_eval('string(last_name)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('last_name',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('last_name',mapping_keywords,'P_LAST_NAME')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -200,14 +214,15 @@
             }
        
 
+            _tmpcustomcol:=get_keyword('sex',mapping_keywords,'P_GENDER');
             _tmpval:=trim(xpath_eval('string(sex)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('sex',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('sex',mapping_keywords,'P_GENDER')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -218,6 +233,7 @@
             
             }
             
+            _tmpcustomcol:=get_keyword('birthday',mapping_keywords,'P_BIRTHDAY');
             _tmpval:=trim(xpath_eval('string(birthday)',_res));
             if(_tmpval<>'')
             {
@@ -234,9 +250,9 @@
        
                if(usemapping)
                {
-                 if(get_keyword('birthday',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('birthday',mapping_keywords,'P_BIRTHDAY')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     if(_col='P_BIRTHDAY')
                        _val:=vector_concat(_val,vector(_date));
                     else
@@ -251,14 +267,15 @@
             
             }
             
-            _tmpval:=trim(xpath_eval('string(current_location/city)',_res));
+            _tmpcustomcol:=get_keyword('hometown_location/city',mapping_keywords,'P_H_CITY');
+            _tmpval:=trim(xpath_eval('string(hometown_location/city)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('current_location/city',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('current_location/city',mapping_keywords,'P_H_CITY')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -270,14 +287,15 @@
             }
        
        
-            _tmpval:=trim(xpath_eval('string(current_location/state)',_res));
+            _tmpcustomcol:=get_keyword('hometown_location/state',mapping_keywords,'P_H_STATE');
+            _tmpval:=trim(xpath_eval('string(hometown_location/state)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('current_location/state',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('current_location/state',mapping_keywords,'P_H_STATE')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -287,14 +305,15 @@
             }
             }
        
-            _tmpval:=trim(xpath_eval('string(current_location/country)',_res));
+            _tmpcustomcol:=get_keyword('hometown_location/country',mapping_keywords,'P_H_COUNTRY');
+            _tmpval:=trim(xpath_eval('string(hometown_location/country)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('current_location/country',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('current_location/country',mapping_keywords,'P_H_COUNTRY')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -304,14 +323,15 @@
             }
             }
        
-            _tmpval:=trim(xpath_eval('string(current_location/zip)',_res));
+            _tmpcustomcol:=get_keyword('hometown_location/zip',mapping_keywords,'P_H_CODE');
+            _tmpval:=trim(xpath_eval('string(hometown_location/zip)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('current_location/zip',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('current_location/zip',mapping_keywords,'P_H_CODE')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -322,14 +342,15 @@
             }
        
        
+            _tmpcustomcol:=get_keyword('work_info/location/city',mapping_keywords,'P_B_CITY');
             _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/city)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('work_info/location/city',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('work_info/location/city',mapping_keywords,'P_B_CITY')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -339,14 +360,15 @@
             }
             }
        
+            _tmpcustomcol:=get_keyword('work_info/location/state',mapping_keywords,'P_B_STATE');
             _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/state)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('work_info/location/state',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('work_info/location/state',mapping_keywords,'P_B_STATE')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -356,14 +378,15 @@
             }
             }
        
+            _tmpcustomcol:=get_keyword('work_info/location/country',mapping_keywords,'P_B_COUNTRY');
             _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/country)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('work_info/location/country',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('work_info/location/country',mapping_keywords,'P_B_COUNTRY')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -373,14 +396,15 @@
             }
             }
        
+            _tmpcustomcol:=get_keyword('work_info/company_name',mapping_keywords,'P_B_ORGANIZATION');
             _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/company_name)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('work_info/location/company_name',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('work_info/location/company_name',mapping_keywords,'P_B_ORGANIZATION')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -391,14 +415,15 @@
             }
        
        
+            _tmpcustomcol:=get_keyword('work_info/position',mapping_keywords,'P_B_JOB');
             _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/position)',_res));
             if(_tmpval<>'')
             {
                if(usemapping)
                {
-                 if(get_keyword('work_info/position',mapping_keywords)<>'skip')
+                 if(_tmpcustomcol<>'skip')
                  {
-                    _col:=vector_concat(_col,vector(get_keyword('work_info/position',mapping_keywords,'P_B_JOB')));
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
                     _val:=vector_concat(_val,vector(_tmpval));
                  }
                }else
@@ -407,6 +432,68 @@
                _val:=vector_concat(_val,vector(_tmpval));
             }
             }
+
+            
+            _tmpcustomcol:=get_keyword('current_location/city',mapping_keywords);
+            _tmpval:=trim(xpath_eval('string(current_location/city)',_res));
+            if(_tmpval<>'')
+            {
+               if(usemapping)
+               {
+                 if(_tmpcustomcol<>'' and _tmpcustomcol<>'skip')
+                 {
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
+                    _val:=vector_concat(_val,vector(_tmpval));
+                 }
+               }
+
+            }
+       
+       
+            _tmpcustomcol:=get_keyword('current_location/state',mapping_keywords);
+            _tmpval:=trim(xpath_eval('string(current_location/state)',_res));
+            if(_tmpval<>'')
+            {
+               if(usemapping)
+               {
+                 if(_tmpcustomcol<>'' and _tmpcustomcol<>'skip')
+                 {
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
+                    _val:=vector_concat(_val,vector(_tmpval));
+                 }
+               }
+            }
+       
+            _tmpcustomcol:=get_keyword('current_location/country',mapping_keywords);
+            _tmpval:=trim(xpath_eval('string(current_location/country)',_res));
+            if(_tmpval<>'')
+            {
+               if(usemapping)
+               {
+                 if(_tmpcustomcol<>'' and _tmpcustomcol<>'skip')
+                 {
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
+                    _val:=vector_concat(_val,vector(_tmpval));
+                 }
+               }
+            }
+       
+            _tmpcustomcol:=get_keyword('current_location/zip',mapping_keywords);
+            _tmpval:=trim(xpath_eval('string(current_location/zip)',_res));
+            if(_tmpval<>'')
+            {
+               if(usemapping)
+               {
+                 if(_tmpcustomcol<>'' and _tmpcustomcol<>'skip')
+                 {
+                    _col:=vector_concat(_col,vector(_tmpcustomcol));
+                    _val:=vector_concat(_val,vector(_tmpval));
+                 }
+               }
+            }
+            
+            
+            
             if(length(_col)>0)
                AB.WA.contact_update3 (addressbook_cid,addressbook_domain_id,_col,_val,'');
        
@@ -425,6 +512,39 @@
         _err_msg  :='Addressbook instance invalid.';
         goto _end;
       }     
+
+      _xml:='<?xml version="1.0" encoding="UTF-8"?>\r\n'||
+      '<resp_addressbook_updatecontact>'||
+      '<res_code>'||cast(_err_code as varchar)||'</res_code>'||
+      '<err_msg>'||_err_msg||'</err_msg>'||
+      '</resp_addressbook_updatecontact>';
+      goto _end;
+
+
+-- here starts secon action of helper dereference fb friend. helpertact=deref
+_deref:;
+      --
+      declare fbp_id,fbf_profile_uri varchar;
+      fbp_id:=cast(facebook_cid as varchar);
+      fbf_profile_uri:='http://www.facebook.com/profile.php?id='||fbp_id;
+
+      if(facebook_cid = fb_userid)
+      {
+         _err_code:=DB.DBA.fbf_rdf_load_fql (fbf_profile_uri,fbf_profile_uri,null,_fb,fbp_id,1);
+      }else
+         _err_code:=DB.DBA.fbf_rdf_load_fql (fbf_profile_uri,fbf_profile_uri,null,_fb,fbp_id,0);
+
+      -- _err_code :=0; --1 - successfull;
+      _err_msg  :='';
+
+  
+      _xml:='<?xml version="1.0" encoding="UTF-8"?>\r\n'||
+      '<resp_fbp_deref>'||
+      '<res_code>'||cast(_err_code as varchar)||'</res_code>'||
+      '<err_msg>'||_err_msg||'</err_msg>'||
+      '</resp_fbp_deref>';
+      goto _end;
+
    }else
    { _err_code :=1;
      _err_msg  :='Authentication invalid.';
@@ -433,13 +553,13 @@
 
 _end:;
 
-  declare _xml varchar;
-  
+  if(length(_xml)=0)
   _xml:='<?xml version="1.0" encoding="UTF-8"?>\r\n'||
         '<resp_addressbook_updatecontact>'||
         '<res_code>'||cast(_err_code as varchar)||'</res_code>'||
         '<err_msg>'||_err_msg||'</err_msg>'||
         '</resp_addressbook_updatecontact>';
+
 
   http_rewrite();
   http_header (sprintf ('Content-type: %s\r\n', 'text/html'));

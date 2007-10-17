@@ -64,6 +64,9 @@
         <vm:if test="wa_vad_check ('Briefcase') is not null">
           <vm:dash-my-briefcase />
         </vm:if>
+        <vm:if test="wa_vad_check ('AddressBook') is not null">
+          <vm:dash-my-contacts />
+        </vm:if>
            <vm:if test="wa_vad_check ('oGallery') is not null">
                <vm:dash-my-photos />
            </vm:if>

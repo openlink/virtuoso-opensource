@@ -1244,6 +1244,72 @@
     </div> <!-- widget -->
   </xsl:template>
 
+  <xsl:template match="vm:dash-im-summary">
+    <div class="widget w_app_summary w_im_summary">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="images/icons/ods_im_16.png"
+               alt="ODS-IM icon" />
+            <span class="w_title_text"><?V WA_GET_APP_NAME ('IM') ?> Summary</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
+        </div>
+      </div>
+      <div class="w_pane content_pane">
+        <table width="100%"  border="0" cellpadding="0" cellspacing="0" class="app_summary_listing">
+          <tr>
+            <th>
+              <v:url name="im_orderby_instance"
+                     value="Instance"
+                     url="-- http_path()||'?order_by=instance&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                            '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='instance' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+                             />
+            </th>
+            <th>
+              <v:url name="im_orderby_subject"
+                     value="Item"
+                     url="-- http_path()||'?order_by=subject&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='subject' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="im_orderby_creator"
+                     value="Creator"
+                     url="-- http_path()||'?order_by=creator&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='creator' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+            <th>
+              <v:url name="im_orderby_date"
+                     value="Date"
+                     url="-- http_path()||'?order_by=date&amp;prev_order_by='||get_keyword('order_by', self.vc_event.ve_params,'')||
+                                          '&amp;order_way='||(case when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='asc' then 'desc'
+                                                               when get_keyword('order_by', self.vc_event.ve_params,'')='date' AND get_keyword('order_way', self.vc_event.ve_params,'')='desc' then 'asc'
+                                                         else 'asc' end) ||
+                                           '&amp;'||http_request_get('QUERY_STRING')"
+              />
+            </th>
+          </tr>
+          <xsl:call-template name="user-dashboard-item-extended">
+            <xsl:with-param name="app">IM</xsl:with-param>
+          </xsl:call-template>
+        </table>
+      </div> <!-- w_pane -->
+    </div> <!-- widget -->
+  </xsl:template>
+
   <xsl:template match="vm:dash-discussions-summary">
     <div class="widget w_app_summary w_news_activity">
       <div class="w_title_bar">
@@ -1740,6 +1806,98 @@
           <label for="bookmarks_app_ad_nuke">Do not show this next time</label>
           <a href="#">Dismiss</a>
     </div>
+      </div> <!-- app_ad -->
+    </vm:if>
+  </xsl:template>
+
+  <xsl:template match="vm:dash-my-contacts">
+
+<?vsp
+
+  declare has_addressbook integer;
+
+  has_addressbook := 0;
+
+  if (wa_check_package ('addressbook') and
+      exists (select 1
+                from wa_member
+                where WAM_APP_TYPE='AddressBook' and
+                      WAM_MEMBER_TYPE = 1 and
+                      WAM_USER = self.u_id))
+    has_addressbook := 1;
+
+?>
+    <vm:if test="has_addressbook">
+      <div class="widget w_my_addressbook">
+        <div class="w_title_bar">
+          <div class="w_title_text_ctr">
+            <img class="w_title_icon"
+                 src="images/icons/ods_ab_16.png"
+                 alt="ODS-AddressBook icon"/>
+            <span class="w_title_text">My Contacts</span>
+          </div>
+          <div class="w_title_btns_ctr">
+            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
+          </div>
+        </div> <!-- w_title_bar -->
+        <div class="w_pane content_pane">
+          <ul>
+            <xsl:call-template name="user-dashboard-my-item">
+              <xsl:with-param name="app">AddressBook</xsl:with-param>
+              <xsl:with-param name="noitems_msg">No contacts</xsl:with-param>
+            </xsl:call-template>
+          </ul>
+        </div> <!-- content_pane -->
+        <div class="w_footer">
+          <a href="search.vspx?newest=addressbook&l=1<?V self.login_pars ?>">More&amp;#8230;</a>
+<?vsp
+
+  declare _inst_url varchar;
+  declare q_str, rc, dta, h any;
+
+  q_str := sprintf ('select COUNT(*) CNT from AB.WA.GRANTS where G_GRANTEE_ID = %d', self.u_id);
+  rc := exec (q_str, null, null, vector (), 0, null, null, h);
+  while (0 = exec_next (h, null, null, dta))
+    exec_result (dta);
+  exec_close (h);
+
+  _inst_url := coalesce((select top 1 INST_URL
+                           from WA_USER_APP_INSTANCES
+                             where user_id = self.u_id and
+                                   app_type = 'AddressBook'),
+                        '#');
+
+  if (dta[0] = 0)
+    {
+      http ('You have no shared contacts.');
+    }
+  else
+    {
+      http (sprintf ('<a href="%s%s">You have (%d) shared contact%s.</a>',
+                     wa_expand_url (_inst_url, self.login_pars),
+                     '&tab=shared',
+                     dta[0],
+                     case when dta[0] > 1
+                       then 's'
+                       else ''
+                     end ));
+    }
+?>
+
+        </div> <!-- w_footer -->
+      </div> <!-- widget -->
+    </vm:if>
+    <vm:if test="not has_addressbook">
+      <div class="app_ad">
+        <a href="index_inst.vspx?&lt;?V 'wa_name=AddressBook&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
+          <img border="0" src="images/app_ads/ods_bann_addressbook.jpg" alt="Let us help you organize and share your contacts!" />
+        </a>
+        <div class="app_ad_ft">
+          <input type="checkbox" id="addressbook_app_ad_nuke"/>
+          <label for="addressbook_app_ad_nuke">Do not show this next time</label>
+          <a href="#">Dismiss</a>
+        </div>
       </div> <!-- app_ad -->
     </vm:if>
   </xsl:template>

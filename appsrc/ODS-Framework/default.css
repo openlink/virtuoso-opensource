@@ -253,6 +253,13 @@ div.w_pane a {
 div.w_pane a:hover {
   color: #255}
 
+div.error_msg
+{
+  background-color: #FFF;
+  color: red;
+}
+
+
 div.w_footer {
   float: left;
   clear: both;
@@ -405,6 +412,13 @@ div.w_my_bookmarks ul {
   list-style-type: none;
   padding: 0 0 0 4px;}
 
+/* My Contacts */
+
+div.w_my_addressbook {}
+div.w_my_addressbook ul {
+  font-size: 8pt;
+  list-style-type: none;
+  padding: 0 0 0 4px;}
 
 /* Feed reader */
 

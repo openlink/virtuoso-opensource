@@ -1281,11 +1281,90 @@ create function WA_SEARCH_BMK (in max_rows integer, in current_user_id integer,
 }
 ;
 
+wa_exec_no_error('
+create function WA_SEARCH_AB_GET_EXCERPT_HTML (
+  in _current_user_id integer,
+	in _P_ID int,
+	in _P_DOMAIN_ID int,
+	in _P_NAME varchar,
+	in _P_DESCRIPTION varchar,
+	in words any) returns varchar
+{
+  declare url varchar;
+  declare res varchar;
+
+  url := AB.WA.contact_url (_P_DOMAIN_ID, _P_ID);
+  res := sprintf (''<span><img src="%s" /> <a href="%s" target="_blank">%s</a> %s '', WA_SEARCH_ADD_APATH (''images/icons/ods_ab_16.png''), url, _P_NAME, _P_NAME);
+
+  res := res ||
+         ''<br />'' ||
+         left ( search_excerpt ( words, subseq (coalesce (_P_NAME, ''''), 0, 200000)), 900) ||
+         ''</span>'';
+  return res;
+}')
+;
+
+
+create function WA_SEARCH_AB (
+  in max_rows integer,
+  in current_user_id integer,
+  in str varchar,
+  in tags_str varchar,
+  in _words_vector varchar) returns varchar
+{
+  declare ret, qstr, tret  varchar;
+
+  qstr := '';
+  if (str is not null)
+    {
+      qstr := sprintf ('select a.P_ID P_ID, a.P_DOMAIN_ID P_DOMAIN_ID, a.P_NAME P_NAME, coalesce(a.P_NAME, a.P_FULL_NAME) P_DESCRIPTION, a.P_UPDATED P_UPDATED, SCORE as _SCORE from AB.WA.PERSONS a where contains (a.P_NAME, ''[__lang "x-any" __enc "UTF-8"] %s '') ', str);
+    }
+  else
+    {
+      qstr := 'select a.P_ID P_ID, a.P_DOMAIN_ID P_DOMAIN_ID, a.P_NAME P_NAME, coalesce(a.P_NAME, a.P_FULL_NAME) P_DESCRIPTION, a.P_UPDATED P_UPDATED, 0 as _SCORE from AB.WA.PERSONS a ';
+    }
+
+  tret := '';
+  if (tags_str is not null)
+    tret := sprintf (
+      '\n %s exists ( \n' ||
+      '  select 1 from AB.WA.PERSONS b \n' ||
+      '    where a.P_ID = b.P_ID and \n' ||
+      '      contains (b.P_TAGS, \n' ||
+      '        sprintf (''[__lang "x-ViDoc" __enc "UTF-8"] (%S) AND (("^UID%d") OR ("^public"))'' \n' ||
+      '          ))) \n',
+      case when str is not null then 'and' else 'where' end,
+      AB.WA.tags2search (trim (tags_str, '"')),
+      current_user_id);
+
+
+  --dbg_obj_print (qstr || ' ' || tret);
+  ret := sprintf (
+    ' select EXCERPT, TAG_TABLE_FK, _SCORE, _DATE from ( select top %d \n'
+    || '	DB.DBA.WA_SEARCH_AB_GET_EXCERPT_HTML \n'
+    || '		(%d, P_ID, P_DOMAIN_ID, P_NAME, P_DESCRIPTION, %s) AS EXCERPT, \n'
+    || '		encode_base64 (serialize (vector (''AB'', vector (P_ID, P_DOMAIN_ID)))) as TAG_TABLE_FK, \n'
+    || '		_SCORE, \n'
+    || '		P_UPDATED as _DATE \n'
+    || '     	from'
+    || '	(%s %s) ab1, \n'
+    || '	DB.DBA.WA_INSTANCE WAI \n'
+    || '	where P_DOMAIN_ID = WAI.WAI_ID and \n'
+    || '		(WAI.WAI_IS_PUBLIC > 0 OR \n'
+    || '		 	exists ( select 1 from DB.DBA.WA_MEMBER where \n'
+    || '			  	WAM_INST = WAI_NAME and WAM_USER = %d and \n'
+    || '				WAM_MEMBER_TYPE >= 1 and (WAM_EXPIRES < now () or WAM_EXPIRES is null))) \n'
+    || 'option (order)) ab2 \n',
+    max_rows, current_user_id, _words_vector, qstr, tret, current_user_id);
+  return ret;
+}
+;
 
 create procedure WA_SEARCH_CONSTRUCT_QUERY (in current_user_id integer, in qry nvarchar, in q_tags nvarchar,
 	in search_people integer, in search_news integer, in search_blogs integer, in search_wikis integer,
         in search_dav integer, in search_apps integer, in search_omail integer, in search_bmk int,
 	in search_nntp int,
+        in search_addressbook int,
 	in sort_by_score integer,
         in max_rows integer,
         in tag_is_qry int,
@@ -1363,6 +1442,12 @@ returns varchar
       if (ret <> '') ret := ret || '\n\nUNION ALL\n\n';
       ret := ret || WA_SEARCH_NNTP (max_rows, current_user_id, str, tags_str, _words_vector,date_before,date_after,newsgroups);
     }
+  if (search_addressbook)
+    {
+      if (ret <> '')
+        ret := ret || '\n\nUNION ALL\n\n';
+      ret := ret || WA_SEARCH_AB (max_rows, current_user_id, str, tags_str, _words_vector);
+    }
   if (ret <> '')
     ret := sprintf ('select top %d EXCERPT, TAG_TABLE_FK, _SCORE, _DATE from \n(\n%s ORDER BY %s desc\n) q',
        max_rows, ret, case when sort_by_score <> 0 then  '_SCORE' else '_DATE' end);
@@ -1393,6 +1478,8 @@ create procedure WA_SEARCH_ADD_TAG (
     WA_SEARCH_ADD_BMK_TAG (current_user_id, pk_array, new_tag_expr);
   else if (upd_type = 'NNTP')
     WA_SEARCH_ADD_NNTP_TAG (current_user_id, pk_array, new_tag_expr);
+  else if (upd_type = 'AB')
+    WA_SEARCH_ADD_AB_TAG (current_user_id, pk_array, new_tag_expr);
   else
     signal ('22023', sprintf ('Unknown type tag %s in WA_SEARCH_ADD_TAG', upd_type));
 }
@@ -1539,6 +1626,24 @@ create procedure WA_SEARCH_ADD_ENEWS_TAG (
   ENEWS.WA.tags_account_item (current_user_id, _item_id, _tags);
 }
 ;
+
+create procedure WA_SEARCH_ADD_AB_TAG (
+	in current_user_id integer,
+	inout pk_array any,
+	in new_tag_expr nvarchar)
+{
+  declare domain_id, addressbook_id int;
+  declare _tags any;
+
+  domain_id := pk_array [1];
+  addressbook_id := pk_array [0];
+  _tags := AB.WA.contact_tags_select (addressbook_id, domain_id);
+  if (length (_tags))
+    _tags := _tags || ',' || charset_recode (new_tag_expr, '_WIDE_', 'UTF-8');
+  else
+    _tags := charset_recode (new_tag_expr, '_WIDE_', 'UTF-8');
+  AB.WA.contact_tags_update  (addressbook_id, domain_id, _tags);
+};
 
 
 create procedure WA_SEARCH_FILL_REL_TAGS (in current_user_id integer, in tags_vector any, out data any, out meta any)
