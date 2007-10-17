@@ -613,7 +613,7 @@ create procedure sioc.DBA.rdf_bookmark_view_str ()
       '
         #Post
         sioc:bmk_post_iri (DB.DBA.ODS_BMK_POSTS.U_NAME, DB.DBA.ODS_BMK_POSTS.WAI_NAME, DB.DBA.ODS_BMK_POSTS.BD_BOOKMARK_ID)
-        a bm:Bookmark option (EXCLUSIVE) ;
+        a bm:Bookmark ;
         dc:title BD_NAME;
         dct:created BD_CREATED ;
 	dct:modified BD_LAST_UPDATE ;

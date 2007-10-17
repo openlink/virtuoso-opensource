@@ -40,14 +40,14 @@
       <div class="new-form-header" style="margin-top: 6px;">
         Preferences
       </div>
-      <div id="c1">
+      <div id="p" class="c1">
         <div class="tabs">
-          <vm:tabCaption tab="1" tabs="3" caption="Main"/>&nbsp;
-          <vm:tabCaption tab="2" tabs="3" caption="Links"/>&nbsp;
-          <vm:tabCaption tab="3" tabs="3" caption="Bookmarklet"/>
+          &nbsp;<vm:tabCaption tab="p" tabsCount="3" tabNo="0" caption="Main" />
+          &nbsp;<vm:tabCaption tab="p" tabsCount="3" tabNo="1" caption="Links" />
+          &nbsp;<vm:tabCaption tab="p" tabsCount="3" tabNo="2" caption="Bookmarklet" />
         </div>
         <div class="contents">
-          <div id="1" class="tabContent" style="display: none;">
+          <div id="p_content_0" class="tabContent" style="display: none;">
             <table class="form-body" cellspacing="0">
           <tr>
                 <th width="30%" rowspan="2" valign="top">
@@ -194,7 +194,7 @@
           </tr>
         </table>
       </div>
-          <div id="2" class="tabContent" style="display: none;">
+          <div id="p_content_1" class="tabContent" style="display: none;">
             <table class="form-body" cellspacing="0">
               <tr>
                 <th width="30%">
@@ -218,7 +218,7 @@
               </tr>
             </table>
           </div>
-          <div id="3" class="tabContent" style="display: none;">
+          <div id="p_content_2" class="tabContent" style="display: none;">
             <table class="form-body" cellspacing="0">
               <tr>
                 <td>
@@ -308,11 +308,6 @@
       	  </v:on-post>
         </v:button>
       </div>
-      <script>
-        <![CDATA[
-          initTab(3, 1);
-        ]]>
-      </script>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
