@@ -53,6 +53,7 @@ DEMO_DEPS=\
 	*.sql \
 	*.txt \
 	art.tar.gz \
+	flags.tar.gz \
 	CAT1 \
 	CAT2 \
 	CAT3 \
@@ -70,9 +71,9 @@ DEMO_DEPS=\
 	EMP7 \
 	EMP8 \
 	EMP9 \
-	flags.tar.gz \
-	make_vad.sh \
-	vad_version
+	thalia_test/*.rq \
+	vad_version \
+	make_vad.sh
 
 demo_dav.vad: make_vad.sh $(DEMO_DEPS)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
