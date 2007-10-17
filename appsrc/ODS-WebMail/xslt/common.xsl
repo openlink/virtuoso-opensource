@@ -52,11 +52,31 @@
         <title>OpenLink Software - Mail</title>
         <xsl:call-template name="links"/>
         <xsl:call-template name="css"/>
-        <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
-        <script language="JavaScript" src="/oMail/i/js/script.js"/>
+        <script type="text/javascript" src="/oMail/i/js/jslib.js"></script>
+        <script type="text/javascript" src="/oMail/i/js/script.js"></script>
+        <script type="text/javascript">
+          var toolkitPath="/ods/oat";
+          var imagePath="/ods/images/oat/";
+
+          var featureList=["ajax2", "anchor"];
+        </script>
+        <script type="text/javascript" src="/ods/oat/loader.js"></script>
+        <script type="text/javascript" src="/ods/app.js"></script>
+        <script type="text/javascript">
+          function myInit() {
+            OAT.Preferences.imagePath = '/ods/images/oat/';
+            OAT.Anchor.imagePath = OAT.Preferences.imagePath;
+            OAT.Anchor.zIndex = 1001;
+
+            if (<xsl:value-of select="//user_info/app" /> == 1)
+              gererateAPP('app_area', {});
+          }
+          OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+        </script>
       </head>
       <body>
         <xsl:value-of select="//ods/bar" disable-output-escaping="yes" />
+        <div id="app_area">
         <xsl:call-template name="header"/>
         <xsl:call-template name="nav_2"/>
         <table width="100%" cellpadding="0" cellspacing="0" id="ramka">
@@ -94,6 +114,7 @@
             </td>
           </tr>
         </table>
+        </div>
         <div id="FT">
           <div id="FT_L">
             <a href="http://www.openlinksw.com/virtuoso">
@@ -248,7 +269,11 @@
         </div>
         <br style="clear: left;"/>
       </div>
-      <div style="text-align: right; padding: 0em 0.5em 0.25em 0; border: solid #935000; border-width: 0px 0px 1px 0px;">
+      <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
+        <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
+          <xsl:value-of select="//user_info/email" /> (<xsl:value-of select="//user_info/user_fullname" />)
+        </div>
+        <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
           <xsl:call-template name="make_href">
             <xsl:with-param name="url">set_mail.vsp</xsl:with-param>
             <xsl:with-param name="label">Preferences</xsl:with-param>
@@ -258,6 +283,7 @@
             <xsl:with-param name="url">box.vsp</xsl:with-param>
             <xsl:with-param name="label">Help</xsl:with-param>
           </xsl:call-template>
+      </div>
       </div>
     </form>
   </xsl:template>
@@ -312,7 +338,7 @@
   <xsl:template name="show_name">
     <xsl:variable name="max_len">20</xsl:variable>
     <xsl:choose>
-      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 0)">
+      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 110) or (number(/page/folder_id) = 125) or (number(/page/folder_id) = 0)">
         <xsl:variable name="name" select="string(address/addres_list/from/name)"/>
         <xsl:variable name="addr" select="string(address/addres_list/from/email)"/>
       </xsl:when>
@@ -345,7 +371,7 @@
   <!-- ========================================================================== -->
   <xsl:template name="show_name_alt">
     <xsl:choose>
-      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 0)">
+      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 110) or (number(/page/folder_id) = 125) or (number(/page/folder_id) = 0)">
         <xsl:variable name="name" select="string(address/addres_list/from/name)"/>
         <xsl:variable name="addr" select="string(address/addres_list/from/email)"/>
       </xsl:when>

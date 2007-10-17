@@ -84,7 +84,7 @@
       </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 0)">
+      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 110) or (number(/page/folder_id) = 125) or (number(/page/folder_id) = 0)">
         <xsl:variable name="cell">From</xsl:variable>
       </xsl:when>
       <xsl:otherwise>
@@ -92,7 +92,7 @@
       </xsl:otherwise>
     </xsl:choose>
     <xsl:choose>
-      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 0)">
+      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 110) or (number(/page/folder_id) = 125) or (number(/page/folder_id) = 0)">
         <xsl:variable name="date_cell">Received</xsl:variable>
       </xsl:when>
       <xsl:otherwise>
@@ -251,6 +251,7 @@
       </td>
       <td>
         <a>
+          <xsl:attribute name="id"><xsl:value-of select="concat('name_', msg_id)"/></xsl:attribute>
           <xsl:attribute name="href"><xsl:value-of select="$open_url"/></xsl:attribute>
           <xsl:attribute name="title"><xsl:call-template name="show_name_alt"/></xsl:attribute>
           <xsl:call-template name="show_name"/>
@@ -258,6 +259,7 @@
       </td>
       <td>
         <a>
+          <xsl:attribute name="id"><xsl:value-of select="concat('subject_', msg_id)"/></xsl:attribute>
           <xsl:attribute name="href"><xsl:value-of select="$open_url"/></xsl:attribute>
           <xsl:attribute name="title"><xsl:value-of select="subject"/></xsl:attribute>
           <xsl:call-template name="show_subject"/>

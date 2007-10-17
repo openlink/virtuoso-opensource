@@ -86,16 +86,6 @@
         <th>To</th>
         <td>
           <xsl:apply-templates select="address/addres_list/to"/>
-          <xsl:if test="addContact != ''">
-            <xsl:call-template name="nbsp" />
-            <xsl:call-template name="make_href">
-              <xsl:with-param name="url"><xsl:value-of select="addContact" /></xsl:with-param>
-              <xsl:with-param name="label">Add contact</xsl:with-param>
-              <xsl:with-param name="title">Add contact</xsl:with-param>
-              <xsl:with-param name="params">id=-1&amp;name=<xsl:value-of select="address/addres_list/to/name" />&amp;mail=<xsl:value-of select="address/addres_list/to/email" /></xsl:with-param>
-              <xsl:with-param name="class">button2</xsl:with-param>
-            </xsl:call-template>
-          </xsl:if>
         </td>
       </tr>
       <!-- CC -->
@@ -176,21 +166,40 @@
       </xsl:if>
     </table>
   </xsl:template>
+
   <!-- ====================================================================================== -->
   <xsl:template match="address/addres_list/from | address/addres_list/to | address/addres_list/cc | address/addres_list/bcc">
+    <xsl:variable name="address">
     <xsl:choose>
-      <xsl:when test="string(name) != ''">
-        <xsl:value-of select="name"/>
-      </xsl:when>
-      <xsl:when test="string(email) != ''">
-		    &lt;<xsl:value-of select="email"/>&gt;
-      </xsl:when>
-      <xsl:otherwise>
-		    ~no address~
-      </xsl:otherwise>
-    </xsl:choose>
+        <xsl:when test="string(name) != ''"><xsl:value-of select="name" /></xsl:when>
+        <xsl:when test="string(email)!= ''">&lt;<xsl:value-of select="email" />&gt;</xsl:when>
+        <xsl:otherwise>~no address~</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:value-of select="$address" />
+    <xsl:if test="$address != '~no address~'">
+      <xsl:if test="//user_info/app = 1">
+        <xsl:call-template name="nbsp" />
+        <xsl:call-template name="make_href">
+          <xsl:with-param name="url">javascript: void(0);</xsl:with-param>
+          <xsl:with-param name="label"><xsl:value-of select="email" /></xsl:with-param>
+          <xsl:with-param name="img">/oMail/i/rdf-icon-16.gif</xsl:with-param>
+          <xsl:with-param name="id">address_<xsl:value-of select="generate-id ()"/></xsl:with-param>
+        </xsl:call-template>
+      </xsl:if>
+      <xsl:if test="//message/addContact != ''">
+        <xsl:call-template name="nbsp" />
+        <xsl:call-template name="make_href">
+          <xsl:with-param name="url"><xsl:value-of select="//message/addContact" /></xsl:with-param>
+          <xsl:with-param name="title">Add contact <xsl:value-of select="$address" /></xsl:with-param>
+          <xsl:with-param name="params">id=-1&amp;name=<xsl:value-of select="name" />&amp;mail=<xsl:value-of select="email" /></xsl:with-param>
+          <xsl:with-param name="img">/oMail/i/add_contact_16.png</xsl:with-param>
+        </xsl:call-template>
+      </xsl:if>
+    </xsl:if>
     <xsl:if test="position() != last()">,</xsl:if>
   </xsl:template>
+
   <!-- ====================================================================================== -->
   <xsl:template match="message/mbody">
     <xsl:apply-templates/>

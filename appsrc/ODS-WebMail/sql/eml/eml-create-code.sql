@@ -2188,6 +2188,9 @@ create procedure OMAIL.WA.omail_get_settings (
   if (OMAIL.WA.omail_getp('atom_version',_settings) = '')
     OMAIL.WA.omail_setparam('atom_version',_settings, '1.0');
 
+  if (OMAIL.WA.omail_getp('app', _settings) not in (0,1))
+    OMAIL.WA.omail_setparam('app', _settings, 0);
+
   if (OMAIL.WA.omail_getp('spam', _settings) not in (0,1,2,3,4,5))
     OMAIL.WA.omail_setparam('spam',_settings, 0);
 
@@ -3655,24 +3658,24 @@ create procedure OMAIL.WA.is_spam_int (
   in _level integer := 1)
 {
   declare N integer;
-  declare S, T varchar;
+  declare sql, S, T varchar;
   declare st, msg, meta, rows any;
 
-  S := 'sparql
-        PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-           ASK
-          FROM <%s>
-         WHERE {
-                 <%s> foaf:knows %s ?x.
-                 ?x <FOAF_PARAM> ?mail.
-                 FILTER (?mail = ''%s'').
-               }';  	
+  S := 'sparql \n' ||
+       'PREFIX foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+       '   ASK \n' ||
+       '  FROM <%s> \n' ||
+       ' WHERE { \n' ||
+       '         <%s> foaf:knows %s ?x. \n' ||
+       '         ?x <FOAF_PARAM> ?mail. \n' ||
+       '         FILTER (?mail = ''%s''). \n' ||
+       '       }';
   S := replace (S, '<FOAF_PARAM>', _foafParam);             
   T := '';
   for (N := 0; N < _level; N := N + 1) {
-    S := sprintf (S, SIOC..get_graph (), SIOC..user_iri (_user_id), T, _mail);
+    sql := sprintf (S, SIOC..get_graph (), SIOC..person_iri (SIOC..user_iri (_user_id)), T, _mail);
     st := '00000';
-    exec (S, st, msg, vector (), 0, meta, rows);
+    exec (sql, st, msg, vector (), 0, meta, rows);
     if (('00000' = st) and length (rows))
       return 0;
     T := T || sprintf (' ?x%d. ?x%d foaf:knows', N, N);  
@@ -4634,6 +4637,7 @@ create procedure OMAIL.WA.omail_set_mail(
 
     OMAIL.WA.omail_setparam('msg_reply', _settings, get_keyword('msg_reply', params));
     OMAIL.WA.omail_setparam('atom_version', _settings, get_keyword('atom_version', params, '1.0'));
+    OMAIL.WA.omail_setparam('app', _settings, cast(get_keyword ('app', params, '0') as integer));
     OMAIL.WA.omail_setparam('spam', _settings, cast(get_keyword ('spam', params, '0') as integer));
     OMAIL.WA.omail_setparam('conversation', _settings, cast(get_keyword('conversation', params, '0') as integer));
 
@@ -4661,6 +4665,7 @@ create procedure OMAIL.WA.omail_set_mail(
   _rs := sprintf('%s<msg_result>%d</msg_result>', _rs, OMAIL.WA.omail_getp('msg_result',_settings));
   _rs := sprintf('%s<usr_sig_inc selected="%d"><![CDATA[%s]]></usr_sig_inc>', _rs, OMAIL.WA.omail_getp('usr_sig_inc',_settings),OMAIL.WA.omail_getp('usr_sig_txt',_settings));
   _rs := sprintf('%s<atom_version>%s</atom_version>', _rs, OMAIL.WA.omail_getp('atom_version', _settings));
+  _rs := sprintf ('%s<app>%d</app>', _rs, OMAIL.WA.omail_getp('app', _settings));
   _rs := sprintf ('%s<spam>%d</spam>', _rs, OMAIL.WA.omail_getp('spam', _settings));
   _rs := sprintf('%s<conversation>%d</conversation>', _rs, OMAIL.WA.omail_getp('conversation', _settings));
   _rs := sprintf('%s<discussion>%d</discussion>', _rs, OMAIL.WA.discussion_check ());
@@ -5343,7 +5348,7 @@ create procedure OMAIL.WA.omail_write(
 
   -- Set constants  -------------------------------------------------------------------
   _sql_params  := vector(0,0,0,0,0,0);
-  _page_params := vector (0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+  _page_params := vector (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
   _sql_result1 := '';
   _sql_result2 := '';
   _faction     := '';
@@ -5503,13 +5508,14 @@ create procedure OMAIL.WA.omail_write(
   aset(_page_params,2,vector('wp',OMAIL.WA.omail_params2str(_pnames,_params,',')));
   aset(_page_params, 3, vector('user_info', OMAIL.WA.array2xml(_user_info)));
   aset(_page_params,4,vector('save_copy', get_keyword('save_copy', _settings, '1')));
-  aset (_page_params, 5, vector ('spam', get_keyword ('spam', _settings, '0')));
-  aset (_page_params, 6, vector ('conversation', get_keyword ('conversation', _settings, '0')));
-  aset (_page_params, 7, vector ('discussion', OMAIL.WA.discussion_check ()));
+  aset (_page_params, 5, vector ('app', get_keyword ('app', _settings, '0')));
+  aset (_page_params, 6, vector ('spam', get_keyword ('spam', _settings, '0')));
+  aset (_page_params, 7, vector ('conversation', get_keyword ('conversation', _settings, '0')));
+  aset (_page_params, 8, vector ('discussion', OMAIL.WA.discussion_check ()));
 
   -- If massage is saved, that we open the Draft folder in Folders tree
   if (OMAIL.WA.omail_getp('msg_id',_params) <> 0)
-    aset (_page_params, 8, vector ('folder_id', 130));
+    aset (_page_params, 9, vector ('folder_id', 130));
 
   -- XML structure-------------------------------------------------------------------
   _rs := '';
@@ -5777,7 +5783,7 @@ create procedure OMAIL.WA.omail_mails (
           optional { ?x foaf:mbox ?mbox}.
           optional { ?x foaf:mbox_sha1sum ?mbox_sha1sum}.
         }';
-	S := sprintf (S, SIOC..get_graph (), SIOC..user_iri (_user_id));
+	S := sprintf (S, SIOC..get_graph (), SIOC..person_iri (SIOC..user_iri (_user_id)));
   st := '00000';
   exec (S, st, msg, vector (), 0, meta, rows);
   if ('00000' = st) {

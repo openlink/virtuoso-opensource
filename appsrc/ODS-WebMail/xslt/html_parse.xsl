@@ -58,8 +58,10 @@
   <xsl:template match="a">
     <a>
       <xsl:if test="@href != ''">
-        <xsl:attribute name="href">redir.vsp?r=<xsl:value-of select="@href"/></xsl:attribute>
+        <xsl:attribute name="href"><xsl:value-of select="@href"/></xsl:attribute>
       </xsl:if>
+      <xsl:attribute name="target">new</xsl:attribute>
+      <xsl:attribute name="id">content_<xsl:value-of select="generate-id ()"/></xsl:attribute> 
       <xsl:call-template name="style"/>
       <xsl:apply-templates/>
     </a>

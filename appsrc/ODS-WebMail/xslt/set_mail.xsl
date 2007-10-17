@@ -66,6 +66,7 @@
     <xsl:apply-templates select="msg_result"/>
     <xsl:apply-templates select="usr_sig_inc"/>
     <xsl:apply-templates select="atom_version"/>
+    <xsl:apply-templates select="app"/>
     <xsl:apply-templates select="spam"/>
     <xsl:apply-templates select="conversation"/>
   </xsl:template>
@@ -157,6 +158,21 @@
         <textarea name="usr_sig_txt" cols="50" rows="6" onFocus="f1.usr_sig_inc[1].checked = true">
           <xsl:value-of select="."/>
         </textarea>
+      </td>
+    </tr>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="app">
+    <tr>
+      <th />
+      <td>
+        <xsl:call-template name="make_checkbox">
+          <xsl:with-param name="name">app</xsl:with-param>
+          <xsl:with-param name="id">app</xsl:with-param>
+          <xsl:with-param name="value">1</xsl:with-param>
+          <xsl:with-param name="checked"><xsl:if test=". = 1">1</xsl:if></xsl:with-param>
+        </xsl:call-template>
+        <label for="app">Show &lt;a&gt;++ links</label>
       </td>
     </tr>
   </xsl:template>
