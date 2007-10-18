@@ -4225,7 +4225,7 @@ bif_http_url (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_http_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return (bif_http_value_1 (qst, err_ret, args, "http_url", DKS_ESC_URI_RES));
+  return (bif_http_value_1 (qst, err_ret, args, "http_uri", DKS_ESC_URI_RES));
 }
 
 caddr_t
