@@ -421,7 +421,8 @@ create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
     lhost := '*sslini*';
 
   ssl_opts := NULL;
-  if (isstring (sec) and upper (sec) = 'SSL')
+  if (isstring (sec) and upper (sec) = 'SSL' and
+      not exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost))
     {
       if (not isarray (auth_opts) or '' = get_keyword ('https_cert', auth_opts, '') or
     '' = get_keyword ('https_key', auth_opts, ''))
