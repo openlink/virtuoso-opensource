@@ -22,6 +22,12 @@ create procedure DB.DBA.SPARQL_NW_RUN (in txt varchar)
 DB.DBA.exec_no_error('GRANT \"SPARQL_UPDATE\" TO \"SPARQL\"')
 ;
 
+DB.DBA.exec_no_error('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/CAT%\'')
+;
+
+DB.DBA.exec_no_error('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/EMP%\'')
+;
+
 GRANT SELECT ON "Demo"."demo"."Products" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Suppliers" TO "SPARQL";
 GRANT SELECT ON "Demo"."demo"."Shippers" TO "SPARQL";
@@ -56,12 +62,14 @@ create iri class northwind:Product   "http://^{URIQADefaultHost}^/Northwind/Prod
 create iri class northwind:Customer "http://^{URIQADefaultHost}^/Northwind/Customer/%U#this" (in customer_id varchar not null) .
 create iri class northwind:Employee "http://^{URIQADefaultHost}^/Northwind/Employee/%U%U%d#this" (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null) .
 create iri class northwind:Order "http://^{URIQADefaultHost}^/Northwind/Order/%d#this" (in order_id integer not null) .
-create iri class northwind:CustomerContact "http://^{URIQADefaultHost}^/Northwind/CustomerContact/%U#this" (in customer_id integer not null) .
+create iri class northwind:CustomerContact "http://^{URIQADefaultHost}^/Northwind/CustomerContact/%U#this" (in customer_id varchar not null) .
 create iri class northwind:OrderLine "http://^{URIQADefaultHost}^/Northwind/OrderLine/%d/%d#this" (in order_id integer not null, in product_id integer not null) .
 create iri class northwind:Province "http://^{URIQADefaultHost}^/Northwind/Province/%U/%U#this" (in country_name varchar not null, in province_name varchar not null) .
 create iri class northwind:Country "http://^{URIQADefaultHost}^/Northwind/Country/%U#this" (in country_name varchar not null) .
 create iri class northwind:Flag "http://^{URIQADefaultHost}^%s#this" (in flag_path varchar not null) .
 create iri class northwind:dbpedia_iri "http://dbpedia.org/resource/%U" (in uname varchar not null) .
+create iri class northwind:EmployeePhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/EMP%d#this" (in emp_id varchar not null) .
+create iri class northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/CAT%d#this" (in category_id varchar not null) .
 ')
 ;
 
@@ -168,7 +176,10 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         northwind:categoryName categories.CategoryName
                                 as virtrdf:Category-home_page ;
                         northwind:description categories.Description
-                                as virtrdf:Category-description .
+                                as virtrdf:Category-description ;
+			foaf:img northwind:CategoryPhoto(categories.CategoryID)
+				as virtrdf:Category-categories.CategoryPhoto .
+				
                 northwind:Shipper (shippers.ShipperID)
                         a northwind:Shipper
                                 as virtrdf:Shipper-ShipperID ;
@@ -251,7 +262,9 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         northwind:notes employees.Notes
                                 as virtrdf:Employee-notes ;
                         northwind:reportsTo northwind:Employee(employees.FirstName, employees.LastName, employees.ReportsTo) where (^{employees.}^.ReportsTo = ^{employees.}^.EmployeeID)
-                                as virtrdf:Employee-reports_to .
+                                as virtrdf:Employee-reports_to ;
+			foaf:img northwind:EmployeePhoto(employees.EmployeeID)                                                                                                      
+				as virtrdf:Employee-employees.EmployeePhoto .
 
                 northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID)
                         northwind:is_salesrep_of

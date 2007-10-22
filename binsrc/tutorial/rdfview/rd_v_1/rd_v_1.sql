@@ -53,12 +53,14 @@ create iri class tut_northwind:Product   "http://^{URIQADefaultHost}^/tutorial/N
 create iri class tut_northwind:Customer "http://^{URIQADefaultHost}^/tutorial/Northwind/Customer/%U#this" (in customer_id varchar not null) .
 create iri class tut_northwind:Employee "http://^{URIQADefaultHost}^/tutorial/Northwind/Employee/%d#this" (in employee_id integer not null) .
 create iri class tut_northwind:Order "http://^{URIQADefaultHost}^/tutorial/Northwind/Order/%d#this" (in order_id integer not null) .
-create iri class tut_northwind:CustomerContact "http://^{URIQADefaultHost}^/tutorial/Northwind/CustomerContact/%U#this" (in customer_id integer not null) .
+create iri class tut_northwind:CustomerContact "http://^{URIQADefaultHost}^/tutorial/Northwind/CustomerContact/%U#this" (in customer_id varchar not null) .
 create iri class tut_northwind:OrderLine "http://^{URIQADefaultHost}^/tutorial/Northwind/OrderLine/%d/%d#this" (in order_id integer not null, in product_id integer not null) .
 create iri class tut_northwind:Province "http://^{URIQADefaultHost}^/tutorial/Northwind/Province/%U/%U#this" (in country_name varchar not null, in province_name varchar not null) .
 create iri class tut_northwind:Country "http://^{URIQADefaultHost}^/tutorial/Northwind/Country/%U#this" (in country_name varchar not null) .
 create iri class tut_northwind:Flag "http://^{URIQADefaultHost}^%s#this" (in flag_path varchar not null) .
 create iri class tut_northwind:dbpedia_iri "http://dbpedia.org/resource/%U" (in uname varchar not null) .
+create iri class tut_northwind:EmployeePhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/EMP%d#this" (in emp_id varchar not null) .
+create iri class tut_northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/CAT%d#this" (in category_id varchar not null) .
 ')
 ;
 
@@ -165,7 +167,9 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         tut_northwind:categoryName categories.CategoryName
                                 as virtrdf:tutCategory-home_page ;
                         tut_northwind:description categories.Description
-                                as virtrdf:tutCategory-description .
+                                as virtrdf:tutCategory-description ;
+                        foaf:img tut_northwind:CategoryPhoto(categories.CategoryID)
+				as virtrdf:tutCategory-categories.CategoryPhoto .
                 tut_northwind:Shipper (shippers.ShipperID)
                         a tut_northwind:Shipper
                                 as virtrdf:tutShipper-ShipperID ;
@@ -247,7 +251,10 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         tut_northwind:notes employees.Notes
                                 as virtrdf:tutEmployee-notes ;
                         tut_northwind:reportsTo tut_northwind:Employee(employees.ReportsTo)
-                                as virtrdf:tutEmployee-reports_to .
+                                as virtrdf:tutEmployee-reports_to ;
+                        foaf:img tut_northwind:EmployeePhoto(employees.EmployeeID)
+			        as virtrdf:tutEmployee-employees.EmployeePhoto .
+
                 tut_northwind:Employee (orders.EmployeeID)
                         tut_northwind:is_salesrep_of
                 tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-is_salesrep_of .
