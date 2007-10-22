@@ -71,12 +71,12 @@
 #include <direct.h>
 #include <io.h>
 #define mkdir(p,m)	_mkdir (p)
-#define FS_DIR_MODE	0
+#define FS_DIR_MODE	0777
 #define PATH_MAX	 MAX_PATH
 #define get_cwd(p,l)	_get_cwd (p,l)
 #else
 #include <dirent.h>
-#define FS_DIR_MODE	 (S_IRWXU | S_IRWXG)
+#define FS_DIR_MODE	 (S_IRWXU | S_IRWXG | S_IRWXO)
 #endif
 
 #include "datesupp.h"

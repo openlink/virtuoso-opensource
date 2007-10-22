@@ -519,6 +519,23 @@ cfg_setup (void)
       return -1;
     }
 
+#ifndef WIN32
+  {
+    /* Do this early, before the log file is created */
+    unsigned int mask = 022;
+    char *value;
+    if (cfg_getstring (pconfig, "Parameters", "CreateMask", &value) == -1 ||
+	sscanf (value, "%o", &mask) == 0)
+      {
+	mask = 022;
+      }
+    /* Don't allow someone to create files we can't read ourselves */
+    mask &= 077;
+    if (umask (mask) == -1)
+      log_error ("Can't set umask to 0%o (%m)", mask);
+  }
+#endif
+
   savestr = fnundos (s_strdup (f_config_file));
   prefix = strrchr (savestr, '/');
   if (prefix)
@@ -1903,7 +1920,7 @@ int
 db_check_in_use (void)
 {
   /* OK, this is not fool proof, but it provides basic protection */
-  if ((lck_fd = open (c_lock_file, LCK_O_FLAGS, 0600)) == -1)
+  if ((lck_fd = open (c_lock_file, LCK_O_FLAGS, 0644)) == -1)
     {
       if (errno == EEXIST || errno == EACCES)
 	{

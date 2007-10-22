@@ -444,7 +444,7 @@ extern int c_use_o_direct;
 #endif /* FILE64 */
 #define LOG_OPEN_FLAGS OPEN_FLAGS
 
-# define fd_open(N,M)	open (N, M, 0600)
+# define fd_open(N,M)	open (N, M, 0666)
 # define fd_close(f,n)	close (f)
 # define file_set_rw(N)
 
