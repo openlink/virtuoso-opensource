@@ -269,3 +269,6 @@
 #define HAVE_ISWLOWER	1
 #define HAVE_ISWUPPER	1
 #define HAVE_CHMOD	1
+#define HAVE_STRFTIME	1
+#define HAVE_STRDUP	1
+#define HAVE_MEMMOVE	1
