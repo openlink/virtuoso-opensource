@@ -623,7 +623,7 @@ public:
   }
 
   bool
-  GetCatalogName(SQLTCHAR* buffer, SQLINTEGER length)
+  GetCatalogName(SQLTCHAR* buffer, SQLLEN length)
   {
     SQLRETURN rc;
 

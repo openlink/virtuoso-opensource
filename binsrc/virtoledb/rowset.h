@@ -206,9 +206,9 @@ public:
   // IRowset members
 
   STDMETHODIMP AddRefRows(
-    ULONG cRows,
+    DBCOUNTITEM cRows,
     const HROW rghRows[],
-    ULONG rgRefCounts[],
+    DBREFCOUNT rgRefCounts[],
     DBROWSTATUS rgRowStatus[]
   );
 
@@ -227,10 +227,10 @@ public:
   );
 
   STDMETHODIMP ReleaseRows(
-    ULONG cRows,
+    DBCOUNTITEM cRows,
     const HROW rghRows[],
     DBROWOPTIONS rgRowOptions[],
-    ULONG rgRefCounts[],
+    DBREFCOUNT rgRefCounts[],
     DBROWSTATUS rgRowStatus[]
   );
 
@@ -242,7 +242,7 @@ public:
 
   STDMETHODIMP DeleteRows(
     HCHAPTER hChapter,
-    ULONG cRows,
+    DBCOUNTITEM cRows,
     const HROW rghRows[],
     DBROWSTATUS rgRowStatus[]
   );
@@ -277,7 +277,7 @@ public:
   );
 
   STDMETHODIMP GetReferencedRowset(
-    ULONG iOrdinal,
+    DBORDINAL iOrdinal,
     REFIID riid,
     IUnknown **ppReferencedRowset
   );
@@ -294,11 +294,11 @@ public:
     HACCESSOR hAccessor,
     void* pFindValue,
     DBCOMPAREOP CompareOp,
-    ULONG cbBookmark,
+    DBBKMARK cbBookmark,
     const BYTE* pBookmark,
-    LONG lRowsOffset,
-    LONG cRows,
-    ULONG* pcRowsObtained,
+    DBROWOFFSET lRowsOffset,
+    DBROWCOUNT cRows,
+    DBCOUNTITEM* pcRowsObtained,
     HROW** prghRows
   );
 
@@ -306,9 +306,9 @@ public:
 
   STDMETHODIMP Compare(
     HCHAPTER hChapter,
-    ULONG cbBookmark1,
+    DBBKMARK cbBookmark1,
     const BYTE *pBookmark1,
-    ULONG cbBookmark2,
+    DBBKMARK cbBookmark2,
     const BYTE *pBookmark2,
     DBCOMPARE *pComparison
   );
@@ -316,18 +316,18 @@ public:
   STDMETHODIMP GetRowsAt(
     HWATCHREGION hReserved,
     HCHAPTER hChapter,
-    ULONG cbBookmark,
+    DBBKMARK cbBookmark,
     const BYTE *pBookmark,
-    LONG lRowsOffset,
-    LONG cRows,
-    ULONG *pcRowsObtained,
+    DBROWOFFSET lRowsOffset,
+    DBROWCOUNT cRows,
+    DBCOUNTITEM *pcRowsObtained,
     HROW **prghRows
   );
 
   STDMETHODIMP GetRowsByBookmark(
     HCHAPTER hChapter,
-    ULONG cRows,
-    const ULONG rgcbBookmarks[],
+    DBCOUNTITEM cRows,
+    const DBBKMARK rgcbBookmarks[],
     const BYTE *rgpBookmarks[],
     HROW rghRows[],
     DBROWSTATUS rgRowStatus[]
@@ -335,10 +335,10 @@ public:
 
   STDMETHODIMP Hash(
     HCHAPTER hChapter,
-    ULONG cBookmarks,
-    const ULONG rgcbBookmarks[],
+    DBBKMARK cBookmarks,
+    const DBBKMARK rgcbBookmarks[],
     const BYTE *rgpBookmarks[],
-    DWORD rgHashedValues[],
+    DBHASHVALUE rgHashedValues[],
     DBROWSTATUS rgBookamrkStatus[]
   );
 
@@ -380,19 +380,19 @@ public:
 
   STDMETHODIMP GetApproximatePosition(
     HCHAPTER hChapter,
-    ULONG cbBookmark,
+    DBBKMARK cbBookmark,
     const BYTE* pBookmark,
-    ULONG* pulPosition,
-    ULONG* pcRows
+    DBCOUNTITEM* pulPosition,
+    DBCOUNTITEM* pcRows
   );
 
   STDMETHODIMP GetRowsAtRatio(
     HWATCHREGION hReserved,
     HCHAPTER hChapter,
-    ULONG ulNumerator,
-    ULONG ulDenominator,
-    LONG cRows,
-    ULONG* pcRowsObtained,
+    DBCOUNTITEM ulNumerator,
+    DBCOUNTITEM ulDenominator,
+    DBROWCOUNT cRows,
+    DBCOUNTITEM* pcRowsObtained,
     HROW** prghRows
   );
 

@@ -55,8 +55,8 @@ public:
 
   HRESULT InitColumnInfo(const SQLWCHAR* pwszName, const SQLWCHAR* pwszBaseName,
 			 const SQLWCHAR* pwszTable, const SQLWCHAR* pwszSchema, const SQLWCHAR* pwszCatalog,
-			 SQLSMALLINT sql_type, SQLINTEGER field_size, SQLSMALLINT decimal_digits,
-			 SQLSMALLINT nullable, SQLINTEGER updatable, SQLINTEGER key);
+			 SQLSMALLINT sql_type, SQLUINTEGER field_size, SQLSMALLINT decimal_digits,
+			 SQLSMALLINT nullable, SQLLEN updatable, SQLLEN key);
 
   HRESULT InitBookmarkColumnInfo();
 
@@ -124,11 +124,11 @@ public:
 
   void Release();
 
-  virtual DBORDINAL
+  virtual ULONG
   GetFieldCount() const
   {
     assert(IsInitialized());
-    return m_cColumns;
+    return (ULONG)m_cColumns;
   }
 
   virtual const DataFieldInfo&
@@ -138,7 +138,7 @@ public:
   }
 
   const ColumnInfo&
-  GetColumnInfo(ULONG iColumn) const
+  GetColumnInfo(DBORDINAL iColumn) const
   {
     assert(IsInitialized());
     assert(m_rgColumnInfos != NULL);
@@ -156,7 +156,7 @@ public:
   virtual ULONG
   OrdinalToIndex(DBORDINAL ordinal) const
   {
-    return HasBookmark() ? ordinal : ordinal - 1;
+    return HasBookmark() ? (ULONG)ordinal : (ULONG)ordinal - 1;
   }
 
   virtual DBORDINAL
@@ -165,7 +165,7 @@ public:
     return HasBookmark() ? index : index + 1;
   }
 
-  virtual ULONG
+  virtual DBORDINAL
   GetHiddenColumns() const
   {
     assert(IsInitialized());
@@ -173,13 +173,13 @@ public:
   }
 
   COLUMN_STATUS
-  GetColumnStatus(char* pbRecordData, ULONG iField) const
+  GetColumnStatus(char* pbRecordData, DBORDINAL iField) const
   {
     return (COLUMN_STATUS) ((LONG*) pbRecordData)[iField];
   }
 
   void
-  SetColumnStatus(char* pbRecordData, ULONG iField, COLUMN_STATUS dwStatus) const
+  SetColumnStatus(char* pbRecordData, DBORDINAL iField, COLUMN_STATUS dwStatus) const
   {
     ((LONG*) pbRecordData)[iField] = dwStatus;
   }
@@ -194,17 +194,17 @@ protected:
   virtual ULONG
   GetExtraSize() const
   {
-    return sizeof(DBORDINAL) * GetFieldCount();
+    return (ULONG) (sizeof(DBORDINAL) * GetFieldCount());
   }
 
 private:
 
-  HRESULT InitInfo(ULONG cColumns, bool fHasBookmark);
+  HRESULT InitInfo(DBORDINAL cColumns, bool fHasBookmark);
   HRESULT InitColumn (int iColumn, Statement& stmt);
   HRESULT InitColumn (int iColumn, Schema* pSchema);
 
-  ULONG m_cColumns;
-  ULONG m_cHiddenColumns;
+  DBORDINAL m_cColumns;
+  DBORDINAL m_cHiddenColumns;
   ColumnInfo* m_rgColumnInfos;
   bool m_fHasBookmark;
 
@@ -497,7 +497,7 @@ public:
 
   virtual HRESULT ResetLongData(HROW iRecordID, DBORDINAL iFieldOrdinal);
   virtual HRESULT GetLongData(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
-			      char* pv, SQLINTEGER cb, SQLINTEGER& rcb);
+			      char* pv, DBLENGTH cb, SQLLEN& rcb);
   virtual HRESULT CreateStreamObject(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
 				     REFIID riid, IUnknown** ppUnk);
   virtual HRESULT SetDataAtExec(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
@@ -527,8 +527,8 @@ protected:
   const RowsetInfo* m_pRowsetInfo;
   AbstractRowPolicy* m_pRowPolicy;
   HROW m_hRowBase;
-  SQLUINTEGER m_cRows;
-  SQLUINTEGER m_cRowsMax;
+  DBCOUNTITEM m_cRows;
+  DBCOUNTITEM m_cRowsMax;
   SQLUINTEGER m_cRowsFetched;
   SQLUSMALLINT* m_rgRowStatus;
   SQLUINTEGER m_ulFetchBookmark;
@@ -633,7 +633,7 @@ protected:
 
 private:
 
-  HRESULT InitRowCount(LONG& cRows);
+  HRESULT InitRowCount(DBCOUNTITEM& cRows);
 
   // The interpretation of the iNextFetch position is as follows. There are rows numbered
   // from 1 to m_cTotalRows. If iNextFetch is equal to 0 then the fetch position is before
@@ -643,10 +643,10 @@ private:
   // get the second row and a backward fetch will get the first row. If iNextFetch is equal
   // to m_cTotalRows then the next fetch position is after the last row. In this position a
   // forward fetch will get the end-of-rowset and a backward fetch will get the last row.
-  LONG m_nNextFetch;
-  LONG m_cTotalRows;
-  LONG m_cRowsObtained;
-  LONG m_hNextNewRow;
+  HROW m_nNextFetch;
+  DBCOUNTITEM m_cTotalRows;
+  DBROWCOUNT m_cRowsObtained;
+  HROW m_hNextNewRow;
   bm_map_t m_bookmarks;
 };
 
@@ -657,7 +657,7 @@ public:
 
   SyntheticPolicy(RowsetInfo* pRowsetInfo, AbstractRowPolicy* pRowPolicy);
 
-  HRESULT Init(ULONG cRows);
+  HRESULT Init(DBCOUNTITEM cRows);
 
   virtual HRESULT GetNextRows(DBROWOFFSET lRowsOffset, DBROWCOUNT cRows);
   virtual DBCOUNTITEM GetRowsObtained();
@@ -675,11 +675,11 @@ private:
 
   const RowsetInfo* m_pRowsetInfo;
   AbstractRowPolicy* m_pRowPolicy;
-  LONG m_cTotalRows;
+  DBCOUNTITEM m_cTotalRows;
   bool m_fStartPos;
   bool m_fBackward;
-  LONG m_nNextFetch;
-  LONG m_cRowsObtained;
+  HROW m_nNextFetch;
+  DBROWCOUNT m_cRowsObtained;
   HROW m_hRowBase;
 };
 

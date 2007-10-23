@@ -689,21 +689,21 @@ static PropertyInfo rowset_properties[] =
 property_constraint_t RowsetPropertySet::rgConstraints[] =
 { /*                          ForwardOnly Dynamic   Keyset    Static  */
   { DBPROP_ABORTPRESERVE,	VC_FALSE, VC_ANY,   VC_ANY,   VC_ANY,	NULL },
-  { DBPROP_BOOKMARKS,		VC_ANY,	  VC_ANY,   VC_ANY,   VC_ANY,	CheckBookmarks },
+  { DBPROP_BOOKMARKS,		VC_ANY,	  VC_ANY,   VC_ANY,   VC_ANY,	&RowsetPropertySet::CheckBookmarks },
   { DBPROP_CANFETCHBACKWARDS,	VC_FALSE, VC_ANY,   VC_ANY,   VC_ANY,	NULL },
   { DBPROP_CANHOLDROWS,		VC_FALSE, VC_FALSE, VC_ANY,   VC_ANY,	NULL },
   { DBPROP_CANSCROLLBACKWARDS,	VC_FALSE, VC_ANY,   VC_ANY,   VC_ANY,	NULL },
   //{ DBPROP_CHANGEINSERTEDROWS,	VC_FALSE, VC_FALSE, VC_FALSE, VC_FALSE,	NULL },
   { DBPROP_COMMITPRESERVE,	VC_FALSE, VC_ANY,   VC_ANY,   VC_ANY,	NULL },
   { DBPROP_IMMOBILEROWS,	VC_ANY,	  VC_FALSE, VC_TRUE,  VC_ANY,	NULL },
-  { DBPROP_IRowsetChange,	VC_FALSE, VC_ANY,   VC_ANY,   VC_FALSE, CheckIRowsetChange },
+  { DBPROP_IRowsetChange,	VC_FALSE, VC_ANY,   VC_ANY,   VC_FALSE, &RowsetPropertySet::CheckIRowsetChange },
   //{ DBPROP_IRowsetFind,		VC_FALSE, VC_FALSE, VC_FALSE, VC_FALSE,	NULL },
-  { DBPROP_IRowsetLocate,	VC_FALSE, VC_FALSE, VC_ANY,   VC_ANY,	CheckIRowsetLocate },
+  { DBPROP_IRowsetLocate,	VC_FALSE, VC_FALSE, VC_ANY,   VC_ANY,	&RowsetPropertySet::CheckIRowsetLocate },
   { DBPROP_IRowsetRefresh,	VC_FALSE, VC_ANY,   VC_ANY,   VC_FALSE,	NULL },
   { DBPROP_IRowsetResynch,	VC_FALSE, VC_ANY,   VC_ANY,   VC_FALSE,	NULL },
-  { DBPROP_IRowsetScroll,	VC_FALSE, VC_FALSE, VC_ANY,   VC_ANY,	CheckIRowsetScroll },
-  { DBPROP_IRowsetUpdate,	VC_FALSE, VC_ANY,   VC_ANY,   VC_FALSE,	CheckIRowsetUpdate },
-  { DBPROP_ORDEREDBOOKMARKS,	VC_FALSE, VC_FALSE, VC_ANY,   VC_ANY,	CheckOrderedBookmarks },
+  { DBPROP_IRowsetScroll,	VC_FALSE, VC_FALSE, VC_ANY,   VC_ANY,	&RowsetPropertySet::CheckIRowsetScroll },
+  { DBPROP_IRowsetUpdate,	VC_FALSE, VC_ANY,   VC_ANY,   VC_FALSE,	&RowsetPropertySet::CheckIRowsetUpdate },
+  { DBPROP_ORDEREDBOOKMARKS,	VC_FALSE, VC_FALSE, VC_ANY,   VC_ANY,	&RowsetPropertySet::CheckOrderedBookmarks },
   { DBPROP_OTHERINSERT,		VC_TRUE,  VC_TRUE,  VC_FALSE, VC_FALSE,	NULL },
   { DBPROP_OTHERUPDATEDELETE,	VC_TRUE,  VC_TRUE,  VC_TRUE,  VC_FALSE,	NULL },
   { DBPROP_OWNINSERT,		VC_ANY,	  VC_TRUE,  VC_TRUE,  VC_ANY,	NULL },
@@ -830,6 +830,7 @@ RowsetPropertySet::CheckConstraints(const PropertyBool& prop, VARIANT_BOOL value
 
   for (int iCursorType = CURSOR_FORWARD_ONLY; iCursorType < CURSOR_TYPES; iCursorType++)
     {
+      int iConstraint;
       for (iConstraint = 0; iConstraint < cConstraints; iConstraint++)
 	{
 	  property_constraint_t* pConstraintOther = &rgConstraints[iConstraint];

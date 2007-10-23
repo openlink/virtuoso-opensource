@@ -338,7 +338,7 @@ public:
   HRESULT Init();
   void Release();
 
-  virtual DBORDINAL GetFieldCount() const = 0;
+  virtual ULONG GetFieldCount() const = 0;
   virtual const DataFieldInfo& GetFieldInfo(ULONG index) const = 0;
 
   HRESULT Optimize(ULONG iField, DBTYPE type);
@@ -373,7 +373,7 @@ public:
   virtual ULONG
   OrdinalToIndex(DBORDINAL ordinal) const
   {
-    return ordinal - 1;
+    return (ULONG) ordinal - 1;
   }
 
   virtual DBORDINAL
@@ -388,22 +388,22 @@ public:
     return pbRecordData + GetFieldInfo(iField).GetInternalOffset();
   }
 
-  LONG
+  SQLLEN
   GetFieldLength(char* pbRecordData, ULONG iField) const
   {
-    return ((LONG*) (pbRecordData + GetExtraSize()))[iField];
+    return ((SQLLEN*) (pbRecordData + GetExtraSize()))[iField];
   }
 
   void
-  SetFieldLength(char* pbRecordData, ULONG iField, LONG cbLength) const
+  SetFieldLength(char* pbRecordData, ULONG iField, SQLLEN cbLength) const
   {
-    ((LONG*) (pbRecordData + GetExtraSize()))[iField] = cbLength;
+    ((SQLLEN*) (pbRecordData + GetExtraSize()))[iField] = cbLength;
   }
 
-  LONG*
+  SQLLEN*
   GetFieldLengthPtr(char* pbRecordData, ULONG iField) const
   {
-    return ((LONG*) (pbRecordData + GetExtraSize())) + iField;
+    return ((SQLLEN*) (pbRecordData + GetExtraSize())) + iField;
   }
 
 protected:
@@ -528,7 +528,7 @@ public:
   // S_FALSE if no more data available,
   // and others (E_OUTOFMEMORY, E_FAIL) as appropriate,
   virtual HRESULT GetLongData(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
-			      char* pv, SQLINTEGER cb, SQLINTEGER& rcb) = 0;
+			      char* pv, DBLENGTH cb, SQLLEN& rcb) = 0;
 
   // The return codes are:
   // S_OK if everything's ok,
@@ -548,7 +548,7 @@ public:
 
   virtual HRESULT SetDataAtExec(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType,
 				DBCOUNTITEM iBinding) = 0;
-  virtual HRESULT GetDataAtExec(ULONG& iRecordID, DBCOUNTITEM& iBinding) = 0;
+  virtual HRESULT GetDataAtExec(HROW& iRecordID, DBCOUNTITEM& iBinding) = 0;
   virtual HRESULT PutDataAtExec(char* pv, SQLINTEGER cb) = 0;
 };
 

@@ -39,7 +39,7 @@ HRESULT
 ParameterInfo::InitParameterInfo(
   const SQLWCHAR* name,
   SQLSMALLINT sql_type,
-  SQLINTEGER field_size,
+  SQLUINTEGER field_size,
   SQLSMALLINT decimal_digits,
   SQLSMALLINT nullable,
   SQLSMALLINT param_type
@@ -139,7 +139,7 @@ ParameterInfo::InitDefaultParameterInfo(const DBBINDING& binding)
   DBTYPE type = (binding.wType & ~DBTYPE_BYREF);
 
   SQLSMALLINT sql_type = SQL_UNKNOWN_TYPE;
-  SQLINTEGER field_size = 0;
+  SQLUINTEGER field_size = 0;
   SQLSMALLINT decimal_digits = 0;
   switch (type)
     {
@@ -176,7 +176,7 @@ ParameterInfo::InitDefaultParameterInfo(const DBBINDING& binding)
 	  if (binding.wType & DBTYPE_BYREF)
 	    sql_type = SQL_LONGVARCHAR;
 	  else
-	    field_size = binding.cbMaxLen;
+	    field_size = (SQLUINTEGER)binding.cbMaxLen;
 	}
       break;
 
@@ -187,7 +187,7 @@ ParameterInfo::InitDefaultParameterInfo(const DBBINDING& binding)
 	  if (binding.wType & DBTYPE_BYREF)
 	    sql_type = SQL_WLONGVARCHAR;
 	  else
-	    field_size = binding.cbMaxLen / 2;
+	    field_size = (SQLUINTEGER)binding.cbMaxLen / 2;
 	}
       break;
 
@@ -198,7 +198,7 @@ ParameterInfo::InitDefaultParameterInfo(const DBBINDING& binding)
 	  if (binding.wType & DBTYPE_BYREF)
 	    sql_type = SQL_LONGVARBINARY;
 	  else
-	    field_size = binding.cbMaxLen;
+	    field_size = (SQLUINTEGER)binding.cbMaxLen;
 	}
       break;
 
@@ -289,7 +289,7 @@ ParameterPolicy::ReleaseStatusArray()
 }
 
 HRESULT
-ParameterPolicy::InitInfo(ULONG cParams)
+ParameterPolicy::InitInfo(DBORDINAL cParams)
 {
   HRESULT hr = DataRecordInfo::Init();
   if (FAILED(hr))
@@ -319,9 +319,9 @@ ParameterPolicy::Init(
 
   m_statement = stmt;
 
-  DBORDINAL param;
+  ULONG param;
   DBCOUNTITEM binding;
-  ULONG max_ordinal = param_info.size();
+  DBORDINAL max_ordinal = param_info.size();
   for (binding = 0; binding < cBindings; binding++)
     {
       if (max_ordinal < rgBindings[binding].iOrdinal)
@@ -358,7 +358,7 @@ ParameterPolicy::Init(
   if (FAILED(hr))
     return hr;
 
-  m_cParamSets = cParamSets;
+  m_cParamSets = (SQLUINTEGER)cParamSets;
 
   m_pbParamSets = new char[cParamSets * GetRecordSize()];
   if (m_pbParamSets == NULL)
@@ -460,7 +460,7 @@ ParameterPolicy::Init(
   if (FAILED(hr))
     return hr;
 
-  for (DBORDINAL param = 0; param < pSchema->cParams; param++)
+  for (ULONG param = 0; param < pSchema->cParams; param++)
     {
       ParameterInfo& info = m_rgFieldInfos[param];
       SchemaParam& schema_param = pSchema->rgParams[param];
@@ -510,7 +510,7 @@ ParameterPolicy::Init(
   if (m_rgParamSetStatus == NULL)
     return ErrorInfo::Set(E_OUTOFMEMORY);
 
-  for (param = 0; param < GetFieldCount(); param++)
+  for (ULONG param = 0; param < GetFieldCount(); param++)
     {
       const DataFieldInfo& info = GetFieldInfo(param);
       SchemaParam& schema_param = pSchema->rgParams[param];
@@ -591,7 +591,7 @@ ParameterPolicy::Init(
 
 HRESULT
 ParameterPolicy::SetDataAtExec(
-  ULONG iRecordID,
+  HROW iRecordID,
   DBORDINAL iFieldOrdinal,
   SQLSMALLINT wSqlCType,
   DBCOUNTITEM iBinding
@@ -628,7 +628,7 @@ ParameterPolicy::SetDataAtExec(
 }
 
 HRESULT
-ParameterPolicy::GetDataAtExec(ULONG& iRecordID, DBCOUNTITEM& iBinding)
+ParameterPolicy::GetDataAtExec(HROW& iRecordID, DBCOUNTITEM& iBinding)
 {
   LOGCALL(("ParameterPolicy::GetDataAtExec()\n"));
 
@@ -766,7 +766,7 @@ ParameterPolicy::GetParamsInfo(Statement& stmt, std::vector<ParameterInfo>& para
   for (int i = 0; i < num_params; i++)
     {
       SQLSMALLINT type, scale, nullable;
-      SQLUINTEGER precision;
+      SQLULEN precision;
       SQLRETURN rc = SQLDescribeParam(hstmt, i + 1, &type, &precision, &scale, &nullable);
       if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
 	{
@@ -807,7 +807,7 @@ ParameterPolicy::GetParamsInfo(Statement& stmt, std::vector<ParameterInfo>& para
 	}
 
       ParameterInfo& param_info = param_infos[i];
-      HRESULT hr = param_info.InitParameterInfo(param_name, type, precision, scale, nullable, param_type);
+      HRESULT hr = param_info.InitParameterInfo(param_name, type, (SQLUINTEGER)precision, scale, nullable, param_type);
       if (FAILED(hr))
 	return hr;
     }

@@ -166,7 +166,7 @@ public:
   bool IsExecuted() const;
   bool CreatesRowset() const;
   bool HasBookmark() const;
-  ULONG GetColumnCount() const;
+  DBORDINAL GetColumnCount() const;
   SQLUINTEGER GetCursorType() const;
   SQLUINTEGER GetConcurrency() const;
   bool GetUniqueRows() const;

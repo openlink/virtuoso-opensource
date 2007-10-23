@@ -38,7 +38,7 @@ class ParameterInfo : public DataFieldInfo
 public:
 
   HRESULT InitParameterInfo(const SQLWCHAR* name,
-			    SQLSMALLINT sql_type, SQLINTEGER field_size, SQLSMALLINT decimal_digits,
+			    SQLSMALLINT sql_type, SQLUINTEGER field_size, SQLSMALLINT decimal_digits,
 			    SQLSMALLINT nullable, SQLSMALLINT param_type);
 
   HRESULT InitParameterInfo(const DBPARAMBINDINFO& param_bind_info);
@@ -67,7 +67,7 @@ public:
   (
     Statement& stmt,
     const std::vector<ParameterInfo>& param_info,
-    ULONG cBindings,
+    DBCOUNTITEM cBindings,
     const DBBINDING rgBindings[],
     DB_UPARAMS cParamSets,
     DBLENGTH cbRowSize
@@ -82,11 +82,11 @@ public:
     IDataConvert* pIDataConvert
   );
 
-  virtual DBORDINAL
+  virtual ULONG
   GetFieldCount() const
   {
     assert(IsInitialized());
-    return m_cFieldInfos;
+    return (ULONG)m_cFieldInfos;
   }
 
   virtual const DataFieldInfo&
@@ -119,8 +119,8 @@ public:
     return m_pbParamSets + iParamSet * GetRecordSize();
   }
 
-  virtual HRESULT SetDataAtExec(ULONG iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType, DBCOUNTITEM iBinding);
-  virtual HRESULT GetDataAtExec(ULONG& iRecordID, DBCOUNTITEM& iBinding);
+  virtual HRESULT SetDataAtExec(HROW iRecordID, DBORDINAL iFieldOrdinal, SQLSMALLINT wSqlCType, DBCOUNTITEM iBinding);
+  virtual HRESULT GetDataAtExec(HROW& iRecordID, DBCOUNTITEM& iBinding);
   virtual HRESULT PutDataAtExec(char* pv, SQLINTEGER cb);
 
   HRESULT
@@ -148,10 +148,10 @@ public:
 
 private:
 
-  HRESULT InitInfo(ULONG cParams);
+  HRESULT InitInfo(DBORDINAL cParams);
 
   Statement m_statement;
-  ULONG m_cFieldInfos;
+  DBORDINAL m_cFieldInfos;
   ParameterInfo* m_rgFieldInfos;
   SQLUINTEGER m_cParamSets;
   SQLUINTEGER m_cParamSetsProcessed;

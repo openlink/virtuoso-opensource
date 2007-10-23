@@ -353,7 +353,7 @@ box_n_string (SQLCHAR * str, SQLLEN len)
 caddr_t
 box_n_wstring (wchar_t * str, SDWORD len)
 {
-  int bytes = (len == SQL_NTS ? (int) wcslen (str) + 1 : len + 1) * sizeof (wchar_t);
+  SQLLEN bytes = (len == SQL_NTS ? wcslen (str) + 1 : len + 1) * sizeof (wchar_t);
   caddr_t box = dk_alloc_box (bytes, DV_WIDE);
 
   memcpy (box, str, bytes - sizeof (wchar_t));

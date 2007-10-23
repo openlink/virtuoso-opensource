@@ -481,7 +481,8 @@ ConnectionPoolImpl::GetActiveSessions(LONG& value)
       return ErrorInfo::Set(E_FAIL, SQL_HANDLE_DBC, iter->hdbc);
     }
 
-  SQLINTEGER conns = 0, conns_ind = sizeof conns;
+  SQLINTEGER conns = 0;
+  SQLLEN conns_ind = sizeof conns;
 #if 0
   rc = SQLBindParameter(hstmt, 1, SQL_PARAM_OUTPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &conns, 0, &conns_ind);
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
@@ -582,7 +583,7 @@ ConnectionPoolImpl::SetCurrentCatalog(const std::string& catalog)
 	  return ErrorInfo::Set(E_FAIL, SQL_HANDLE_DBC, iter->hdbc);
 	}
     }
-  for (iter = m_free_conn_list.begin(); iter != m_free_conn_list.end(); iter++)
+  for (ConnectionIter iter = m_free_conn_list.begin(); iter != m_free_conn_list.end(); iter++)
     {
       SQLRETURN rc = SQLSetConnectAttr(iter->hdbc, SQL_ATTR_CURRENT_CATALOG,
 				       (SQLPOINTER*) m_catalog.c_str(), SQL_NTS);
@@ -1420,10 +1421,10 @@ public:
     return m_bookmark;
   }
 
-  ULONG
+  DBORDINAL
   GetColumnCount() const
   {
-    return m_column_count;
+    return (DBORDINAL)m_column_count;
   }
 
   SQLUINTEGER GetCursorType() const;
@@ -2055,7 +2056,7 @@ Statement::HasBookmark() const
   return impl->HasBookmark();
 }
 
-ULONG
+DBORDINAL
 Statement::GetColumnCount() const
 {
   assert(impl != NULL);

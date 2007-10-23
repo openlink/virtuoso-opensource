@@ -331,7 +331,7 @@ CDataObj::CreateAccessor
 #define PARAMETER_INFINITY 1024
 
       std::bitset<PARAMETER_INFINITY> set;
-      for (iBinding = 0; iBinding < cBindings; iBinding++)
+      for (ULONG iBinding = 0; iBinding < cBindings; iBinding++)
 	{
 	  if (rgBindings[iBinding].eParamIO & DBPARAMIO_INPUT)
 	    {

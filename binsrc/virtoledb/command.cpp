@@ -532,7 +532,7 @@ CCommand::InitRowsetInfo(Statement& stmt)
   if (FAILED(hr))
     return hr;
 
-  rowset_property_set->prop_HIDDENCOLUMNS.SetValue(rowset_info.GetHiddenColumns());
+  rowset_property_set->prop_HIDDENCOLUMNS.SetValue((LONG)rowset_info.GetHiddenColumns());
 
   // TODO: check if DBPROP_UNIQUEROWS and other properties are satisfied
   // and return DB_[ES]_ERRORSOCCURRED as pertinent.
@@ -607,7 +607,7 @@ CCommand::Execute
   IUnknown *pUnkOuter,
   REFIID riid,
   DBPARAMS *pParams,
-  LONG *pcRowsAffected,
+  DBROWCOUNT *pcRowsAffected,
   IUnknown **ppRowset
 )
 {

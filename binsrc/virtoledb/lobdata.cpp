@@ -154,7 +154,7 @@ CGetDataSequentialStream::Read(void* pv, ULONG cb, ULONG* pcbRead)
   if (m_status == STATUS_FINISHED)
     return S_FALSE;
 
-  LONG cbRead;
+  SQLLEN cbRead;
   if (m_status == STATUS_INITIALIZED)
     {
 #if 0
@@ -189,7 +189,7 @@ CGetDataSequentialStream::Read(void* pv, ULONG cb, ULONG* pcbRead)
     }
 
   if (pcbRead != NULL)
-    *pcbRead = cbRead;
+    *pcbRead = (ULONG)cbRead;
   return S_OK;
 }
 

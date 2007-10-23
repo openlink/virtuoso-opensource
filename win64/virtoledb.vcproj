@@ -357,6 +357,7 @@
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 				CompileAs="0"
 			/>
@@ -380,7 +381,7 @@
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl"
-				IgnoreDefaultLibraryNames="LIBCD.lib"
+				IgnoreDefaultLibraryNames="LIBCD.lib;LIBCMT.lib"
 				ModuleDefinitionFile="..\binsrc\virtoledb\virtoledb.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(ConfigurationName)/virtoledb.pdb"

@@ -61,7 +61,7 @@ struct Schema
   ULONG cRestrictions;
   ULONG ulRestrictionSupport;
   const char* szQuery;
-  ULONG cParams;
+  DBORDINAL cParams;
   SchemaParam* rgParams;
   ULONG cColumns;
   SchemaColumn* rgColumns;

@@ -717,7 +717,7 @@ DataFieldInfo::SetNativeFieldInfo (
   if (m_pDataType->IsFixed ())
     m_field_size = m_pDataType->RectifySize (bPrecision);
    else
-    m_field_size = m_pDataType->RectifySize (ulDataSize);
+    m_field_size = m_pDataType->RectifySize ((native_size_t)ulDataSize);
   m_decimal_digits = m_pDataType->RectifyDecimalDigits (bScale);
   return S_OK;
 }
@@ -824,8 +824,8 @@ DataRecordInfo::Complete (size_t /*overhead*/)
 {
   assert(m_status == STATUS_INITIALIZED);
 
-  ULONG cFieldInfos = GetFieldCount();
-  ULONG cbRunningSize = GetExtraSize() + cFieldInfos * sizeof(LONG);
+  ULONG cFieldInfos = (ULONG)GetFieldCount();
+  ULONG cbRunningSize = GetExtraSize() + cFieldInfos * sizeof(SQLLEN);
   for (ULONG i = 0; i < cFieldInfos; i++)
     {
       DataFieldInfo& field_info = const_cast<DataFieldInfo&>(GetFieldInfo(i));
@@ -1338,7 +1338,7 @@ DataTransferHandler::GetData(
 	    (int) fIsReferenceType));
 
       // Check for a null.
-      SQLINTEGER cb;
+      SQLLEN cb;
       char dummy[1];
       hr = pgd->GetLongData(iRecordID, binding.iOrdinal, wSqlCType, dummy, 0, cb);
       if (FAILED(hr))
@@ -1400,7 +1400,7 @@ DataTransferHandler::GetData(
 	    cbProviderLength -= cbProviderLength % sizeof(WCHAR);*/
 	}
 
-      ULONG cbMaxSize = 8172;
+      DBLENGTH cbMaxSize = 8172;
       char* pNewData = (char*) CoTaskMemAlloc(cbMaxSize);
       if (pNewData == NULL)
 	{
@@ -1412,7 +1412,7 @@ DataTransferHandler::GetData(
 
       for(;;)
 	{
-	  LONG cbOffset = fKeepAllData ? (cbProviderLength > (DBLENGTH) cbTerm ? (cbProviderLength - cbTerm) : 0) : 0;
+	  DBLENGTH cbOffset = fKeepAllData ? (cbProviderLength > (DBLENGTH) cbTerm ? (cbProviderLength - (DBLENGTH) cbTerm) : 0) : 0;
 	  LOG (("DataTransferHandler::GetData GetLongData () wSqlCType=%d, cbOffset=%lu, cbMaxSize=%lu\n",
 		(int) wSqlCType,
 		(unsigned long) cbOffset,
@@ -1477,7 +1477,7 @@ DataTransferHandler::GetData(
 
       if (fKeepAllData)
 	{
-	  ULONG cbNewSize = cbProviderLength + cb;
+	  DBLENGTH cbNewSize = cbProviderLength + cb;
 	  if (cbNewSize > cbMaxSize || (cbNewSize != cbMaxSize && fBypassConversion))
 	    {
 	      assert(fIsReferenceType);
@@ -1494,7 +1494,7 @@ DataTransferHandler::GetData(
 	    }
 	  if (cb > 0)
 	    {
-	      LONG cbOffset = fKeepAllData ? cbProviderLength : 0;
+	      DBLENGTH cbOffset = fKeepAllData ? cbProviderLength : 0;
 	      LOG (("DataTransferHandler::GetData () GetLongData2 wSqlCType=%d, cbProviderLength=%lu, cbMaxSize=%lu\n",
 		    (int) wSqlCType,
 		    (unsigned long) cbProviderLength,
@@ -1537,7 +1537,7 @@ DataTransferHandler::GetData(
       cbProviderLength = info.GetFieldLength(pbProviderData, iField);
 
 #if DEBUG
-      LogFieldData(binding.iOrdinal, field_info, pbProviderValue, cbProviderLength);
+      LogFieldData((ULONG)binding.iOrdinal, field_info, pbProviderValue, (LONG)cbProviderLength);
 #endif
 
       if (cbProviderLength == SQL_NULL_DATA)
@@ -1805,7 +1805,7 @@ DataTransferHandler::SetData(
 	    dwConsumerStatus = DBSTATUS_E_CANTCONVERTVALUE;
 	}
 
-      info.SetFieldLength(pbProviderData, iField, cbProviderLength);
+      info.SetFieldLength(pbProviderData, iField, (LONG)cbProviderLength);
     }
 
   if (pdwConsumerStatus != NULL)
@@ -1916,7 +1916,7 @@ DataTransferHandler::SetDataAtExec(
 	  if (dwConvertFlags & DBDATACONVERT_LENGTHFROMNTS)
 	    cbData = SQL_NTS;
 	  else
-	    cbData = cbConsumerLength;
+	    cbData = (ULONG)cbConsumerLength;
 
 	  HRESULT hr = psd->PutDataAtExec(pData, cbData);
 	  if (FAILED(hr))

@@ -455,8 +455,8 @@ CRowset::Init(
     }
   m_pRowPolicy = pColumnsRowsPolicy.GiveUp();
 
-  ULONG cColumns = pRowsetInfo->GetFieldCount();
-  ULONG cHiddenColumns = pRowsetInfo->GetHiddenColumns();
+  DBORDINAL cColumns = pRowsetInfo->GetFieldCount();
+  DBORDINAL cHiddenColumns = pRowsetInfo->GetHiddenColumns();
   for (ULONG iColumn = 0; iColumn < cColumns; iColumn++)
     {
       const ColumnInfo& column_info = pRowsetInfo->GetColumnInfo(iColumn);
@@ -522,7 +522,7 @@ CRowset::InitFinal(Schema* pSchema)
 
   /* Set all the properties according to the real cursor type. */
   rowset_property_set->RefineProperties(ulCursorType, ulConcurrency, fUniqueRows);
-  rowset_property_set->prop_HIDDENCOLUMNS.SetValue(m_info.GetHiddenColumns());
+  rowset_property_set->prop_HIDDENCOLUMNS.SetValue((LONG)m_info.GetHiddenColumns());
 
   if (rowset_property_set->prop_CANHOLDROWS.GetValue() == VARIANT_TRUE)
     m_pRowPolicy = new CanHoldRowsPolicy();
@@ -889,9 +889,9 @@ CRowset::FreeVisibleData(HROW hRow)
 
 STDMETHODIMP
 CRowset::AddRefRows(
-  ULONG cRows,
+  DBCOUNTITEM cRows,
   const HROW rghRows[],
-  ULONG rgRefCounts[],
+  DBREFCOUNT rgRefCounts[],
   DBROWSTATUS rgRowStatus[]
 )
 {
@@ -1056,10 +1056,10 @@ CRowset::GetNextRows(
 
 STDMETHODIMP
 CRowset::ReleaseRows(
-  ULONG cRows,
+  DBCOUNTITEM cRows,
   const HROW rghRows[],
   DBROWOPTIONS rgRowOptions[],
-  ULONG rgRefCounts[],
+  DBREFCOUNT rgRefCounts[],
   DBROWSTATUS rgRowStatus[]
 )
 {
@@ -1171,7 +1171,7 @@ CRowset::RestartPosition(HCHAPTER hChapter)
 STDMETHODIMP
 CRowset::DeleteRows(
   HCHAPTER hChapter,
-  ULONG cRows,
+  DBCOUNTITEM cRows,
   const HROW rghRows[],
   DBROWSTATUS rgRowStatus[]
 )
@@ -1527,7 +1527,7 @@ CRowset::SetData(HROW hRow, HACCESSOR hAccessor, void *pData)
 	  return ErrorInfo::Set(E_OUTOFMEMORY);
 	}
 
-      DBORDINAL iField;
+      ULONG iField;
       for (iField = 0; iField < m_info.GetFieldCount(); iField++)
 	rgColumns[iField] = 0;
       for (DBCOUNTITEM iBinding = 0; iBinding < accessor.GetBindingCount (); iBinding++)
@@ -1664,11 +1664,11 @@ CRowset::FindNextRow(
   HACCESSOR hAccessor,
   void* pFindValue,
   DBCOMPAREOP CompareOp,
-  ULONG cbBookmark,
+  DBBKMARK cbBookmark,
   const BYTE* pBookmark,
-  LONG lRowsOffset,
-  LONG cRows,
-  ULONG* pcRowsObtained,
+  DBROWOFFSET lRowsOffset,
+  DBROWCOUNT cRows,
+  DBCOUNTITEM* pcRowsObtained,
   HROW** prghRows
 )
 {
@@ -1741,7 +1741,7 @@ CRowset::GetProperties(
 
 STDMETHODIMP
 CRowset::GetReferencedRowset(
-  ULONG iOrdinal,
+  DBORDINAL iOrdinal,
   REFIID riid,
   IUnknown **ppReferencedRowset
 )
@@ -1794,9 +1794,9 @@ CRowset::GetSpecification(
 STDMETHODIMP
 CRowset::Compare(
   HCHAPTER hChapter,
-  ULONG cbBookmark1,
+  DBBKMARK cbBookmark1,
   const BYTE *pBookmark1,
-  ULONG cbBookmark2,
+  DBBKMARK cbBookmark2,
   const BYTE *pBookmark2,
   DBCOMPARE *pComparison
 )
@@ -1880,11 +1880,11 @@ STDMETHODIMP
 CRowset::GetRowsAt(
   HWATCHREGION hReserved,
   HCHAPTER hChapter,
-  ULONG cbBookmark,
+  DBBKMARK cbBookmark,
   const BYTE *pBookmark,
-  LONG lRowsOffset,
-  LONG cRows,
-  ULONG *pcRowsObtained,
+  DBROWOFFSET lRowsOffset,
+  DBROWCOUNT cRows,
+  DBCOUNTITEM *pcRowsObtained,
   HROW **prghRows
 )
 {
@@ -1940,7 +1940,7 @@ CRowset::GetRowsAt(
   if (FAILED(hr))
     return hr;
 
-  ULONG cRowsObtained = pPositionalPolicy->GetRowsObtained();
+  DBCOUNTITEM cRowsObtained = pPositionalPolicy->GetRowsObtained();
   if (cRowsObtained == 0)
     return hr;
 
@@ -1964,8 +1964,8 @@ CRowset::GetRowsAt(
 STDMETHODIMP
 CRowset::GetRowsByBookmark(
   HCHAPTER hChapter,
-  ULONG cRows,
-  const ULONG rgcbBookmarks[],
+  DBCOUNTITEM cRows,
+  const DBBKMARK rgcbBookmarks[],
   const BYTE *rgpBookmarks[],
   HROW rghRows[],
   DBROWSTATUS rgRowStatus[]
@@ -1998,7 +1998,7 @@ CRowset::GetRowsByBookmark(
   // SQLBulkOperations(..., SQL_FETCH_BY_BOOKMARK) is implemented.
   for (ULONG iRow = 0; iRow < cRows; iRow++)
     {
-      ULONG cbBookmark = rgcbBookmarks[iRow];
+      DBBKMARK cbBookmark = rgcbBookmarks[iRow];
       const BYTE* pBookmark = rgpBookmarks[iRow];
 
       DBROWSTATUS dwStatus = DBROWSTATUS_S_OK;
@@ -2048,10 +2048,10 @@ CRowset::GetRowsByBookmark(
 STDMETHODIMP
 CRowset::Hash(
   HCHAPTER hChapter,
-  ULONG cBookmarks,
-  const ULONG rgcbBookmarks[],
+  DBBKMARK cBookmarks,
+  const DBBKMARK rgcbBookmarks[],
   const BYTE *rgpBookmarks[],
-  DWORD rgHashedValues[],
+  DBHASHVALUE rgHashedValues[],
   DBROWSTATUS rgBookmarkStatus[]
 )
 {
@@ -2581,10 +2581,10 @@ CRowset::ResynchRows(
 STDMETHODIMP
 CRowset::GetApproximatePosition(
   HCHAPTER hChapter,
-  ULONG cbBookmark,
+  DBBKMARK cbBookmark,
   const BYTE* pBookmark,
-  ULONG* pulPosition,
-  ULONG* pcRows
+  DBCOUNTITEM* pulPosition,
+  DBCOUNTITEM* pcRows
 )
 {
   LOGCALL(("CRowset::GetApproximatePosition()\n"));
@@ -2626,8 +2626,8 @@ CRowset::GetApproximatePosition(
       ulBookmark = *(ULONG*) pBookmark;
     }
 
-  ULONG cRows = pPositionalPolicy->GetRowCount();
-  ULONG ulPosition = 0;
+  DBCOUNTITEM cRows = pPositionalPolicy->GetRowCount();
+  DBCOUNTITEM ulPosition = 0;
   if (cRows != 0)
     {
       ulPosition = pPositionalPolicy->GetPosition(fStandardBookmark, ulBookmark);
@@ -2646,10 +2646,10 @@ STDMETHODIMP
 CRowset::GetRowsAtRatio(
   HWATCHREGION hReserved,
   HCHAPTER hChapter,
-  ULONG ulNumerator,
-  ULONG ulDenominator,
-  LONG cRows,
-  ULONG* pcRowsObtained,
+  DBCOUNTITEM ulNumerator,
+  DBCOUNTITEM ulDenominator,
+  DBROWCOUNT cRows,
+  DBCOUNTITEM* pcRowsObtained,
   HROW** prghRows
 )
 {
@@ -2680,7 +2680,7 @@ CRowset::GetRowsAtRatio(
   PositionalPolicy* pPositionalPolicy = dynamic_cast<PositionalPolicy*>(m_pRowsetPolicy);
   assert(pPositionalPolicy != 0);
 
-  ULONG iPosition;
+  DBCOUNTITEM iPosition;
   if (ulNumerator == 0)
     iPosition = cRows < 0 ? 0 : 1;
   else if (ulNumerator == ulDenominator)
@@ -2691,7 +2691,7 @@ CRowset::GetRowsAtRatio(
   HRESULT hr = pPositionalPolicy->GetRowsAtPosition(true, DBBMK_FIRST, iPosition - 1, cRows);
   if (FAILED(hr))
     return hr;
-  ULONG cRowsObtained = pPositionalPolicy->GetRowsObtained();
+  DBCOUNTITEM cRowsObtained = pPositionalPolicy->GetRowsObtained();
   if (cRowsObtained == 0)
     return hr;
 

@@ -111,11 +111,11 @@ ColumnInfo::InitColumnInfo(
   const SQLWCHAR* pwszSchema,
   const SQLWCHAR* pwszCatalog,
   SQLSMALLINT sql_type,
-  SQLINTEGER field_size,
+  SQLUINTEGER field_size,
   SQLSMALLINT decimal_digits,
   SQLSMALLINT nullable,
-  SQLINTEGER updatable,
-  SQLINTEGER key
+  SQLLEN updatable,
+  SQLLEN key
 )
 {
   LOGCALL (("ColumnInfo::InitColumnInfo pwszName=%S pwszBaseName=%S SqlCType=%d\n",
@@ -242,7 +242,7 @@ RowsetInfo::Release()
 }
 
 HRESULT
-RowsetInfo::InitInfo(ULONG cColumns, bool fHasBookmark)
+RowsetInfo::InitInfo(DBORDINAL cColumns, bool fHasBookmark)
 {
   m_fHasBookmark = fHasBookmark;
 
@@ -273,14 +273,14 @@ RowsetInfo::InitColumn (int iColumn, Statement& stmt)
   SQLWCHAR wszCatalog[MAX_COLUMN_NAME_SIZE + 1];
   SQLSMALLINT cbName, cbBaseName, cbTable, cbSchema, cbCatalog;
   SQLSMALLINT wSqlType, wScale, wNullable;
-  SQLUINTEGER dwPrecision;
-  SQLINTEGER dwUpdatable, dwHidden, dwKey;
+  SQLULEN dwPrecision;
+  SQLLEN dwUpdatable, dwHidden, dwKey;
   SQLRETURN rc;
 
   HSTMT hstmt = stmt.GetHSTMT();
 
   LOGCALL (("RowsetInfo::InitColumn()\n"));
-  rc = SQLDescribeColW (hstmt, iColumn,	wszName, sizeof wszName, &cbName,
+  rc = SQLDescribeColW (hstmt, (SQLUSMALLINT) iColumn,	wszName, sizeof wszName, &cbName,
 			&wSqlType,  &dwPrecision, &wScale, &wNullable);
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
     {
@@ -347,7 +347,7 @@ RowsetInfo::InitColumn (int iColumn, Statement& stmt)
 
   return m_rgColumnInfos[OrdinalToIndex(iColumn)].InitColumnInfo (wszName, wszBaseName,
 								  wszTable, wszSchema, wszCatalog,
-								  wSqlType, dwPrecision, wScale,
+								  wSqlType, (SQLUINTEGER) dwPrecision, wScale,
 								  wNullable, dwUpdatable, dwKey);
 }
 
@@ -369,7 +369,7 @@ RowsetInfo::Init(Statement& stmt, Schema* pSchema)
 
   m_cHiddenColumns = 0;
 
-  ULONG cColumns = stmt.GetColumnCount();
+  DBORDINAL cColumns = stmt.GetColumnCount();
   HRESULT hr = InitInfo(cColumns, stmt.HasBookmark());
   if (FAILED(hr))
     return hr;
@@ -380,7 +380,7 @@ RowsetInfo::Init(Statement& stmt, Schema* pSchema)
     m_rgColumnInfos[0].InitBookmarkColumnInfo();
 
   HSTMT hstmt = stmt.GetHSTMT();
-  for (ULONG iColumn = 1; iColumn <= cColumns; iColumn++)
+  for (int iColumn = 1; iColumn <= cColumns; iColumn++)
     {
       if (pSchema == NULL
 	  || iColumn > pSchema->cColumns
@@ -425,13 +425,13 @@ RowsetInfo::Init(
   if (FAILED(hr))
     return hr;
 
-  int iColumn = 0;
+  DBORDINAL iColumn = 0;
   if (m_fHasBookmark)
     {
       m_rgColumnInfos[0].InitBookmarkColumnInfo();
       iColumn++;
     }
-  for (i = 0; i < REQUIRED_COLUMNS; i++)
+  for (int i = 0; i < REQUIRED_COLUMNS; i++)
     {
       m_rgColumnInfos[iColumn].InitMetaColumnInfo(g_rgRequiredColumns[i].pwszName,
 						  g_rgRequiredColumns[i].pdbid,
@@ -440,7 +440,7 @@ RowsetInfo::Init(
 						  g_rgRequiredColumns[i].fMaybeNull);
       iColumn++;
     }
-  for (i = 0; i < OPTIONAL_COLUMNS; i++)
+  for (int i = 0; i < OPTIONAL_COLUMNS; i++)
     {
       for (DBORDINAL iOptColumn = 0; iOptColumn < cOptColumns; iOptColumn++)
 	{
@@ -481,7 +481,7 @@ RowsetInfo::InitMetaRow(DBORDINAL iColumnOrdinal, const ColumnInfo& info, bool f
   assert(IsCompleted());
 
   DBORDINAL cColumns = GetFieldCount();
-  for (DBORDINAL iColumn = 0; iColumn < cColumns; iColumn++)
+  for (ULONG iColumn = 0; iColumn < cColumns; iColumn++)
     {
       SetColumnStatus(pbMetaData, iColumn, COLUMN_STATUS_UNCHANGED);
 
@@ -489,8 +489,8 @@ RowsetInfo::InitMetaRow(DBORDINAL iColumnOrdinal, const ColumnInfo& info, bool f
       char* pbColumnMetaData = GetFieldBuffer(pbMetaData, iColumn);
       if (IndexToOrdinal(iColumn) == 0) // this is a bookmark meta column
 	{
-	  *((LONG*) pbColumnMetaData) = iColumnOrdinal;
-	  SetFieldLength(pbMetaData, iColumn, sizeof(LONG));
+	  *((DBORDINAL*) pbColumnMetaData) = iColumnOrdinal;
+	  SetFieldLength(pbMetaData, iColumn, sizeof(SQLLEN));
 	}
       else if (DBIDEqual(metainfo.GetDBID(), &DBCOLUMN_IDNAME))
 	{
@@ -569,7 +569,7 @@ RowsetInfo::InitMetaRow(DBORDINAL iColumnOrdinal, const ColumnInfo& info, bool f
 	}
       else if (DBIDEqual(metainfo.GetDBID(), &DBCOLUMN_NUMBER))
 	{
-	  *((LONG*) pbColumnMetaData) = iColumnOrdinal;
+	  *((DBORDINAL*) pbColumnMetaData) = iColumnOrdinal;
 	  SetFieldLength(pbMetaData, iColumn, sizeof(LONG));
 	}
       else if (DBIDEqual(metainfo.GetDBID(), &DBCOLUMN_TYPE))
@@ -583,7 +583,7 @@ RowsetInfo::InitMetaRow(DBORDINAL iColumnOrdinal, const ColumnInfo& info, bool f
 	}
       else if (DBIDEqual(metainfo.GetDBID(), &DBCOLUMN_COLUMNSIZE))
 	{
-	  *((LONG*) pbColumnMetaData) = info.GetOledbSize();
+	  *((DBORDINAL*) pbColumnMetaData) = info.GetOledbSize();
 	  SetFieldLength(pbMetaData, iColumn, sizeof(LONG));
 	}
       else if (DBIDEqual(metainfo.GetDBID(), &DBCOLUMN_PRECISION))
@@ -1341,7 +1341,7 @@ RowsetPolicy::InitRow(ULONG iRow, RowData* pRowData, char* pbRowData)
 
   if (m_rgRowStatus[iRow] == SQL_ROW_ERROR)
     {
-      for (DBORDINAL iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
+      for (ULONG iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
 	{
 	  const DataFieldInfo& info = m_pRowsetInfo->GetFieldInfo(iField);
 	  m_pRowsetInfo->SetFieldLength(pbRowData, iField, 0);
@@ -1355,7 +1355,7 @@ RowsetPolicy::InitRow(ULONG iRow, RowData* pRowData, char* pbRowData)
     return hr;
 
   LOG (("RowsetPolicy::InitRow fld_count=%d\n", m_pRowsetInfo->GetFieldCount ()));
-  for (DBORDINAL iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
+  for (ULONG iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
     {
       const DataFieldInfo& info = m_pRowsetInfo->GetFieldInfo(iField);
       if (info.IsLong())
@@ -1485,8 +1485,8 @@ RowsetPolicy::GetLongData(
   DBORDINAL iFieldOrdinal,
   SQLSMALLINT wSqlCType,
   char* pv,
-  SQLINTEGER cb,
-  SQLINTEGER& rcb
+  DBLENGTH cb,
+  SQLLEN& rcb
 )
 {
   LOGCALL(("RowsetPolicy::GetLongData(field=%d, wSqlCType = %d, pv=%p, cb=%ld)\n", iFieldOrdinal, wSqlCType, pv,
@@ -1534,7 +1534,7 @@ RowsetPolicy::CreateStreamObject(
   if (FAILED(hr))
     return hr;
 
-  SQLINTEGER cb;
+  SQLLEN cb;
   char dummy[1];
   hr = GetLongData(iRecordID, iFieldOrdinal, wSqlCType, dummy, 0, cb);
   if (FAILED(hr))
@@ -1568,7 +1568,7 @@ RowsetPolicy::SetDataAtExec(
   m_pRowsetInfo->SetColumnStatus(pbRowData, iField, COLUMN_STATUS_CHANGED);
   m_pRowsetInfo->SetFieldLength(pbRowData, iField, SQL_DATA_AT_EXEC);
 
-  LONG* plColumnData = (LONG*) m_pRowsetInfo->GetFieldBuffer(pbRowData, iField);
+  DBCOUNTITEM* plColumnData = (DBCOUNTITEM*) m_pRowsetInfo->GetFieldBuffer(pbRowData, iField);
   *plColumnData = iBinding;
 
   return S_OK;
@@ -1780,7 +1780,7 @@ ForwardOnlyPolicy::SkipNextRows(DBCOUNTITEM lRowsOffset)
   HRESULT hr = S_OK;
   while (lRowsOffset > 0)
     {
-      ULONG cRowsToSkip = m_cRowsMax == 0 ? 1 : m_cRowsMax < lRowsOffset ? m_cRowsMax : lRowsOffset;
+      DBCOUNTITEM cRowsToSkip = m_cRowsMax == 0 ? 1 : m_cRowsMax < lRowsOffset ? m_cRowsMax : lRowsOffset;
 
       HRESULT hr = SetRowArraySize(cRowsToSkip);
       if (FAILED(hr))
@@ -2001,12 +2001,12 @@ ScrollablePolicy::BindColumns(char* pbRowData, SQLSETPOSIROW iPosition, bool fDe
   assert(pbRowData != NULL);
   assert(iPosition > 0);
 
-  ULONG cbOffset = m_pRowsetInfo->GetRecordSize() * (iPosition - 1);
+  ULONG cbOffset = m_pRowsetInfo->GetRecordSize() * (ULONG)(iPosition - 1);
 
   pbRowData -= cbOffset;
 
   HSTMT hstmt = m_statement.GetHSTMT();
-  for (DBORDINAL iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
+  for (ULONG iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
     {
       const DataFieldInfo& info = m_pRowsetInfo->GetFieldInfo(iField);
       COLUMN_STATUS status = m_pRowsetInfo->GetColumnStatus(pbRowData, iField);
@@ -2047,7 +2047,7 @@ ScrollablePolicy::UnbindColumns(char* pbRowData, bool fDeferred)
   LOGCALL(("ScrollablePolicy::UnbindColumns(pbData=%x, fDeferred=%d)\n", pbRowData, fDeferred));
 
   HSTMT hstmt = m_statement.GetHSTMT();
-  for (DBORDINAL iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
+  for (ULONG iField = 0; iField < m_pRowsetInfo->GetFieldCount(); iField++)
     {
       const DataFieldInfo& info = m_pRowsetInfo->GetFieldInfo(iField);
       COLUMN_STATUS status = m_pRowsetInfo->GetColumnStatus(pbRowData, iField);
@@ -2059,7 +2059,7 @@ ScrollablePolicy::UnbindColumns(char* pbRowData, bool fDeferred)
       m_pRowsetInfo->SetColumnStatus(pbRowData, iField, COLUMN_STATUS_UNCHANGED);
 
       SQLUSMALLINT iColumnOrdinal = (SQLUSMALLINT) m_pRowsetInfo->IndexToOrdinal(iField);
-      SQLRETURN rc = SQLBindCol(hstmt, (SQLSETPOSIROW)iColumnOrdinal, info.GetSqlCType(), NULL, 0, NULL);
+      SQLRETURN rc = SQLBindCol(hstmt, iColumnOrdinal, info.GetSqlCType(), NULL, 0, NULL);
       if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
 	{
 	  TRACE((__FILE__, __LINE__, "ScrollablePolicy::UnbindColumns(): SQLBindCol() failed.\n"));
@@ -2252,13 +2252,13 @@ PositionalPolicy::Init(Statement& statement)
 }
 
 HRESULT
-PositionalPolicy::InitRowCount(LONG& cRows)
+PositionalPolicy::InitRowCount(DBCOUNTITEM& cRows)
 {
   LOGCALL(("PositionalPolicy::InitRowCount()\n"));
 
   HSTMT hstmt = m_statement.GetHSTMT();
 
-  SQLINTEGER cRowsT;
+  SQLLEN cRowsT;
   SQLRETURN rc = SQLRowCount(hstmt, &cRowsT);
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
     {
@@ -2281,7 +2281,7 @@ PositionalPolicy::GetNextRows(DBROWOFFSET lRowsOffset, DBROWCOUNT cRows)
 
   // In initial position the next fetch position depends on the given offset or fetch
   // direction. Otherwise it depends on the previous fetches.
-  LONG iNextFetch;
+  DBCOUNTITEM iNextFetch;
   if (m_fStartPos)
     {
       if (lRowsOffset < 0 || lRowsOffset == 0 && cRows < 0)
@@ -2728,7 +2728,7 @@ SyntheticPolicy::SyntheticPolicy(RowsetInfo* pRowsetInfo, AbstractRowPolicy* pRo
 }
 
 HRESULT
-SyntheticPolicy::Init(ULONG cRows)
+SyntheticPolicy::Init(DBCOUNTITEM cRows)
 {
   m_cTotalRows = cRows;
   return S_OK;
@@ -2743,7 +2743,7 @@ SyntheticPolicy::GetNextRows(DBROWOFFSET lRowsOffset, DBROWCOUNT cRows)
 
   // In initial position the next fetch position depends on the given offset or fetch
   // direction. Otherwise it depends on the previous fetches.
-  LONG iNextFetch;
+  HROW iNextFetch;
   if (m_fStartPos)
     {
       if (lRowsOffset < 0 || lRowsOffset == 0 && cRows < 0)

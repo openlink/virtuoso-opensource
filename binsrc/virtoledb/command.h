@@ -199,7 +199,7 @@ public:
     IUnknown *pUnkOuter,
     REFIID riid,
     DBPARAMS *pParams,
-    LONG *pcRowsAffected,
+    DBROWCOUNT *pcRowsAffected,
     IUnknown **ppRowset
   );
 
