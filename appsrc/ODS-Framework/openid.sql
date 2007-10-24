@@ -186,6 +186,12 @@ create procedure associate
       --dbg_obj_print (sha1_sec, bin_key);
       enc_sec := xenc_xor (sha1_sec, bin_key);
 
+      if (decode_base64 (pub)[0] > 127)
+	{
+          pub := concat ('\x0', decode_base64 (pub));
+	  pub := encode_base64 (pub);
+	  pub := replace (pub, '\r\n', '');
+	}
       http (sprintf ('dh_server_public:%s\x0A', pub), ses);
       http (sprintf ('enc_mac_key:%s\x0A', enc_sec), ses);
       http ('session_type:DH-SHA1\x0A', ses);
