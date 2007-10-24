@@ -38,6 +38,10 @@
     doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
     doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 	  
+    <v:login name="wiki_login" realm="wa" mode="url">
+      <v:template name='inl' type='if-no-login'/>
+    </v:login>
+
       <v:variable name="cluster_key" type="varchar" param-name="cluster"/>
       <v:variable name="id" type="integer" default="NULL" param-name="id"/>
 
@@ -66,11 +70,19 @@
 	  }
       ]]>
     </v:on-init>
-    <v:before-data-bind><![CDATA[
+    <v:before-data-bind>
+      <![CDATA[
       self.vspx_user := coalesce ((select vs_uid from  VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
-    ]]></v:before-data-bind>
+      ]]>
+    </v:before-data-bind>
     <v:after-data-bind>
       <![CDATA[
+        if (not self.vc_authenticated) {
+          http_rewrite();
+          http_request_status ('HTTP/1.1 302 Found');
+          http_header (http_header_get() || sprintf('Location: %slogin.vspx?URL=%U\r\n', WV..ODS_LINK (self.vc_event.ve_lines), sprintf ('http://%s/wiki/resources/ops.vspx?id=%d', WV.WIKI.GET_HOST(), self.id)));
+          return;
+        }
         declare pwd varchar;
 	pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = self.vspx_user);
         if (DAV_HIDE_ERROR (DAV_AUTHENTICATE (self.topic.ti_res_id, 'R', '_1_', self.vspx_user, pwd)) is null) {
