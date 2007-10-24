@@ -1651,7 +1651,9 @@ caddr_t bif_xenc_DH_compute_key (caddr_t * qst, caddr_t * err_r, state_slot_t **
   DH *dh;
   BIGNUM *pub_key;
   size_t buf_len, len;
+  long shared_secret_len;
   caddr_t buf, ret, b64;
+  char err_buf [1024];
 
   len = xenc_decode_base64 (pub_b64, pub_b64 + box_length (pub_b64));
   pub = dk_alloc_box (len + 1, DV_STRING);
@@ -1667,14 +1669,18 @@ caddr_t bif_xenc_DH_compute_key (caddr_t * qst, caddr_t * err_r, state_slot_t **
       SQLR_NEW_KEY_ERROR (name);
     }
  
-  pub_key = BN_bin2bn ((unsigned char *)pub, box_length (pub), NULL);
+  pub_key = BN_bin2bn ((unsigned char *)pub, len, NULL);
   dh = key->xek_private_dh;  
   buf_len = DH_size (dh);
   buf = dk_alloc_box (buf_len, DV_BIN);
-  DH_compute_key ((unsigned char *)buf, pub_key, dh);
+  shared_secret_len = DH_compute_key ((unsigned char *)buf, pub_key, dh);
   BN_free (pub_key);
   mutex_leave (xenc_keys_mtx);
-
+  if (shared_secret_len < 0)
+    {
+      ERR_error_string_n (ERR_get_error(), err_buf, sizeof (err_buf));
+      sqlr_new_error ("22023", "XENCX", err_buf);
+    }
 
   b64 = dk_alloc_box (buf_len*2, DV_STRING);
   len = xenc_encode_base64 (buf, b64, buf_len);
