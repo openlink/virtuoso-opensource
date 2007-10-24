@@ -2692,6 +2692,15 @@ create procedure CAL.WA.settings_timeFormat (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.settings_showTasks (
+  in settings any)
+{
+  return cast (get_keyword ('showTasks', settings, '1') as integer);
+}
+;
+
 -----------------------------------------------------------------------------------------
 --
 -- Events
@@ -3251,6 +3260,7 @@ create procedure CAL.WA.events_forPeriod (
   in pDateStart date,
   in pDateEnd date,
   in pTimezone integer,
+  in pTaskMode varchar := 0,
   in pWeekStarts varchar := 'm')
 {
   declare dt, dtStart, dtEnd, tzDT, tzEventStart, tzRepeatUntil date;
@@ -3264,6 +3274,32 @@ create procedure CAL.WA.events_forPeriod (
   dtStart := CAL.WA.event_user2gmt (CAL.WA.dt_dateClear (pDateStart), pTimezone);
   dtEnd := CAL.WA.event_user2gmt (dateadd ('day', 1, CAL.WA.dt_dateClear (pDateEnd)), pTimezone);
 
+  if (pTaskMode) {
+    -- tasks
+    for (select E_ID,
+                E_EVENT,
+                E_SUBJECT,
+                E_EVENT_START,
+                E_EVENT_END,
+                E_REPEAT,
+                E_REMINDER
+           from CAL.WA.EVENTS
+          where E_DOMAIN_ID = domain_id
+            and E_KIND = 1
+            and E_EVENT_START <  dtEnd
+            and E_EVENT_END   >  dtStart) do
+    {
+      result (E_ID,
+              E_EVENT,
+              E_SUBJECT,
+              CAL.WA.event_gmt2user (E_EVENT_START, pTimezone),
+              CAL.WA.event_gmt2user (E_EVENT_END, pTimezone),
+              E_REPEAT,
+              null,
+              E_REMINDER);
+    }
+  }
+
   -- regular events
   for (select E_ID,
               E_EVENT,
@@ -3276,8 +3312,10 @@ create procedure CAL.WA.events_forPeriod (
         where E_DOMAIN_ID = domain_id
           and E_KIND = 0
           and (E_REPEAT = '' or E_REPEAT is null)
-          and E_EVENT_START >= dtStart
-          and E_EVENT_START <  dtEnd) do
+          and (
+                (E_EVENT = 0 and E_EVENT_START >= dtStart and E_EVENT_START <  dtEnd) or
+                (E_EVENT = 1 and E_EVENT_START <  dtEnd   and E_EVENT_END   >  dtStart)
+              )) do
   {
     result (E_ID,
             E_EVENT,
@@ -3341,18 +3379,6 @@ create procedure CAL.WA.events_forPeriod (
       dt := dateadd ('day', 1, dt);
     }
   }
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.events_forDate (
-  in domain_id integer,
-  in pDate date,
-  in pTimezone integer,
-  in pWeekStarts varchar := 'm')
-{
-  return CAL.WA.events_forPeriod (domain_id, pDate, pDate, pTimezone, pWeekStarts);
 }
 ;
 
@@ -4089,4 +4115,43 @@ create procedure CAL.WA.version_update ()
 -----------------------------------------------------------------------------------------
 --
 CAL.WA.version_update ()
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure CAL.WA.version_update2 ()
+{
+  declare cTimezone integer;
+
+  if (registry_get ('cal_tasks_version') = '1')
+    return;
+
+  for (select E_ID          _id,
+              E_DOMAIN_ID   _domain_id,
+              E_EVENT_START _start,
+              E_EVENT_END   _end
+         from CAL.WA.EVENTS
+        where E_KIND = 1) do
+  {
+    cTimezone := CAL.WA.settings_timeZone2 (_domain_id);
+    if (not isnull (_start)) {
+      _start := CAL.WA.event_gmt2user (_start, cTimezone);
+      _start := CAL.WA.dt_join (_start, CAL.WA.dt_timeEncode (12, 0));
+    }
+    if (not isnull (_end)) {
+      _end := CAL.WA.event_gmt2user (_end, cTimezone);
+      _end := CAL.WA.dt_join (_end, CAL.WA.dt_timeEncode (12, 0));
+    }
+    update CAL.WA.EVENTS
+       set E_EVENT_START = CAL.WA.event_user2gmt (_start, cTimezone),
+           E_EVENT_END = CAL.WA.event_user2gmt (_end, cTimezone)
+     where E_ID = _id;
+  }
+  registry_set ('cal_tasks_version', '1');
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+CAL.WA.version_update2 ()
 ;

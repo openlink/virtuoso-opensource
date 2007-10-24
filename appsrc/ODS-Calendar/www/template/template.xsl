@@ -313,11 +313,12 @@
 
             eventDays := vector ();
             for (select rs.*
-                   from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_repeat_offset integer, e_reminder integer) rs
+                   from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3, rs4)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_repeat_offset integer, e_reminder integer) rs
                   where rs0 = self.domain_id
                     and rs1 = self.nCalcDate (0)
                     and rs2 = self.nCalcDate (length (self.cnDays)-1)
-                    and rs3 = self.cTimeZone) do
+                    and rs3 = self.cTimeZone
+                    and rs4 = self.cShowTasks) do
             {
               eventDays := vector_concat (eventDays, vector (CAL.WA.dt_dateClear (e_start)));
             }
