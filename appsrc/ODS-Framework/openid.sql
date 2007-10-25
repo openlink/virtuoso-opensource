@@ -169,13 +169,19 @@ create procedure associate
 	  if (dh_gen is null)
 	    g := 2;
 	  else
-            g := cast (dh_gen as int);
+            g := aref(decode_base64(dh_gen), 0);
 	  xenc_key_DH_create (dh_key, g, p);
 	}
       pub := xenc_DH_get_params (dh_key, 3);
       sec := xenc_DH_compute_key (dh_key, dh_consumer_public);
+--      dbg_obj_print ('================');
+--      dbg_obj_print ('sec=',sec);
 
+      if (decode_base64 (sec)[0] > 127)
+	sha1_sec := xenc_sha1_digest ('\x0'||decode_base64 (sec));
+      else
       sha1_sec := xenc_sha1_digest (decode_base64 (sec));
+--      dbg_obj_print ('sha1_sec=',sha1_sec);
 
       bin_key := substring (decode_base64 (ss_key_data), 1, 20);
       bin_key := encode_base64 (bin_key);
@@ -239,7 +245,7 @@ create procedure checkid_immediate
       else
         delim := '?';
       login := sprintf ('%s?return_to=%U&identity=%U&assoc_handle=%U&trust_root=%U&sreg_required=%U&sreg_optional=%U&policy_url=%U',
-	    DB.DBA.wa_link(1, 'oid_login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
+	    DB.DBA.wa_link(1, 'openid_login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
 	    coalesce (sreg_required, ''), coalesce (sreg_optional, ''), coalesce (policy_url, ''));
       --dbg_obj_print (sprintf ('Location: %s?openid.mode=id_res&openid.user_setup_url=%U\r\n', return_to, login));
       http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=id_res&openid.user_setup_url=%U\r\n', return_to, delim, login));
@@ -299,7 +305,7 @@ create procedure checkid_immediate
 	}
       else
 	{
-	  if (0 and length (assoc_handle))
+	  if (length (assoc_handle))
 	    {
 	      inv := sprintf ('&openid.invalidate_handle=%U', assoc_handle);
 	    }
@@ -398,7 +404,7 @@ create procedure checkid_setup
       http_request_status ('HTTP/1.1 302 Found');
 
       login := sprintf ('%s?return_to=%U&identity=%U&assoc_handle=%U&trust_root=%U&sreg_required=%U&sreg_optional=%U&policy_url=%U',
-	    DB.DBA.wa_link(1, 'oid_login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
+	    DB.DBA.wa_link(1, 'openid_login.vspx'), return_to, _identity, coalesce (assoc_handle, ''), trust_root,
 	    coalesce (sreg_required, ''), coalesce (sreg_optional, ''), coalesce (policy_url, ''));
       http_header (http_header_get () || sprintf ('Location: %s\r\n', login));
       --http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=cancel\r\n', return_to, delim));

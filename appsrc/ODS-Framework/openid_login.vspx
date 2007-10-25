@@ -1,0 +1,234 @@
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="blog-home-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <v:variable name="login_blocked" type="varchar" default="null" persist="0"/>
+  <v:variable name="login_attempts" type="integer" default="0" persist="0" />
+  <v:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
+  <v:variable name="is_cookie_session" type="int" default="0" persist="0" param-name="noparams"/>
+  <v:variable name="login_ip" type="varchar" default="null" persist="1"/>
+  <!-- OpenID signin -->
+  <v:variable name="oid_sig" type="varchar" default="null" param-name="openid.sig" />
+  <v:variable name="oid_identity" type="varchar" default="''" param-name="openid.identity" />
+  <v:variable name="oid_assoc_handle" type="varchar" default="''" param-name="openid.assoc_handle" />
+  <v:variable name="oid_signed" type="varchar" default="''" param-name="openid.signed" />
+  <v:variable name="oid_srv" type="varchar" default="''" param-name="oid-srv" />
+  <v:variable name="_return_to" type="varchar" default="null" persist="0" param-name="return_to" />
+  <v:variable name="_identity" type="varchar" default="null" persist="0" param-name="identity" />
+  <v:variable name="_assoc_handle" type="varchar" default="null" persist="0" param-name="assoc_handle" />
+  <v:variable name="_trust_root" type="varchar" default="null" persist="0" param-name="trust_root" />
+  <v:variable name="_sreg_required" type="varchar" default="null" persist="0" param-name="sreg_required" />
+  <v:variable name="_sreg_optional" type="varchar" default="null" persist="0" param-name="sreg_optional" />
+  <v:variable name="_policy_url" type="varchar" default="null" persist="0" param-name="policy_url" />
+  <v:on-init><![CDATA[
+    declare cookie_vec, sid any;
+
+    set http_charset='UTF-8';
+
+    if (self._identity is null)
+      {
+        self.vc_redirect ('login.vspx');
+      }
+
+    cookie_vec := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
+    if (get_keyword('sid', self.vc_event.ve_params) is null and get_keyword('sid', cookie_vec) is not null
+    	and self._identity is not null)
+      {
+        declare pars, pos any;
+        pars := self.vc_event.ve_params;
+	sid := get_keyword('sid', cookie_vec);
+	pos := position ('sid', pars);
+	if (pos > 0)
+	  {
+	     pars [pos] := sid;
+	     pos := position ('realm', pars);
+	     if (pos > 0)
+	       pars[pos] := 'wa';
+	  }
+        else
+          {
+             pars := vector_concat (pars, vector ('sid', sid, 'realm', 'wa')) ;
+          }
+        self.vc_event.ve_params := pars;
+      }
+]]></v:on-init>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="openid_login.css" />
+    <title>OpenID Authentication</title>
+  </head>
+  <body>
+    <div id="PG">
+      <div id="MD">
+        <div id="login_page">
+	  <v:login name="login1" realm="wa" mode="url" user-password-check="web_user_password_check">
+          <div id="id_col">
+            <div id="site_id">
+              <p><img class="id_logo" src="images/odslogo_200.png" alt="ods logo icon" /></p>
+            </div>
+          </div>
+          <div id="form_col">
+            <h1 class="page_title">
+              <img class="openid_logo" alt="OpenID Logo" src="images/openid_trans_32.png"/> OpenID Authentication Service
+            </h1>
+	    <div id="login_form_ctr">
+	      <v:template type="if-no-login" name="login_if_no_login">
+		<h2>Please log in to
+            <?vsp
+              declare copy varchar;
+              copy := (select top 1 WS_WEB_TITLE from WA_SETTINGS);
+
+              if (copy = '' or copy is null)
+                http(sys_stat ('st_host_name'));
+              else
+                http(copy);
+            ?>
+		  </h2>
+              <div id="login_form">
+                <form> <!-- just to keep validator happy on this mockup -->
+		  <label for="login_frm_username">Member ID</label>
+		  <v:text name="username" value="" xhtml_id="login_frm_username" /><br />
+		  <label for="password">Password</label>
+		  <v:text name="password" value="" xhtml_id="login_frm_password" type="password" />
+		  <div class="login_frm_button_row">
+		    <v:button action="simple" name="login" value="Login" xhtml_id="login_frm_b_login">
+		      <v:on-post> <![CDATA[
+              declare _blocked_until any;
+	      _blocked_until := (select WAB_DISABLE_UNTIL from WA_BLOCKED_IP where WAB_IP = http_client_ip ());
+              if (_blocked_until is not null and _blocked_until > now ())
+                {
+                  self.login_blocked := 'Too many failed attempts. Try again in an hour.';
+                  return;
+                }
+
+              self.login_attempts := coalesce(self.login_attempts, 0) + 1;
+
+              if (self.login_attempts > 6)
+                {
+                  insert replacing WA_BLOCKED_IP (WAB_IP, WAB_DISABLE_UNTIL) values (http_client_ip(), dateadd('hour', 1, now()));
+                }
+]]></v:on-post>
+                <v:before-render><![CDATA[
+  if (self.login_blocked is not null)
+     control.vc_enabled := 0;
+]]></v:before-render>
+		    </v:button>
+		  </div>
+                </form>
+              </div> <!-- login_form -->
+	      <p class="login_frm_guide">You will be authenticated and transferred back to <span class="openid_client_name">
+		  <?vsp
+		  declare hf any;
+		  hf := WS.WS.PARSE_URI (self._return_to);
+		  http (hf[1]);
+		  ?>
+	      </span>.</p>
+	    </v:template>
+<?vsp
+      if (self.login_blocked is not null)
+        http(self.login_blocked);
+      else
+        {
+          if (self.login_attempts > 0)
+            {
+?>
+        <div class="login_error_ctr">
+          <p class="login_error">
+            <img class="warn_img" src="images/warn_16.png"/>
+            <span class="err_msg">Invalid member ID or password</span>
+          </p>
+        </div>
+<?vsp
+            }
+        }
+?>
+            </div> <!-- login_form_ctr -->
+          </div> <!-- form_col -->
+	  <v:template type="if-login" name="login_if_login"><?vsp
+	 OPENID..checkid_immediate (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid, 0,
+         self._sreg_required, self._sreg_optional, self._policy_url);
+	 ?></v:template>
+        <v:on-post><![CDATA[
+  declare cook_str, expire varchar;
+  if (self.vc_authenticated and length (self.sid))
+    {
+      declare expire varchar;
+      expire := sprintf (' expires=%s;', date_rfc1123 (dateadd ('hour', 1, now())));
+      cook_str := sprintf ('Set-Cookie: sid=%s;%s path=/\r\n', self.sid, expire);
+
+      if (strstr (http_header_get (), 'Set-Cookie: sid=') is null)
+        {
+          cook_str := concat (http_header_get (), cook_str);
+          http_header (cook_str);
+        }
+
+      expire := date_rfc1123 (dateadd ('hour', 1, now()));
+      cook_str := sprintf ('Set-Cookie: openid.sid=%s; expires=%s; path=/;\r\n', self.sid, expire);
+
+      if (strstr (http_header_get (), 'Set-Cookie: openid.sid=') is null)
+        {
+          cook_str := concat (http_header_get (), cook_str);
+          http_header (cook_str);
+        }
+    }
+]]></v:on-post>
+  <v:after-data-bind><![CDATA[
+  if (length (self.sid) and length (self.login_ip) and self.login_ip <> http_client_ip ())
+    {
+      delete from VSPX_SESSION where VS_SID = self.sid and VS_REALM = self.realm;
+      self.sid := null;
+      self.vc_authenticated := 0;
+      control.vl_authenticated := 0;
+      connection_vars_set (null);
+      self.vc_redirect ('login.vspx');
+      return;
+    }
+  else if (length (self.sid) and self.login_ip is null)
+    self.login_ip := http_client_ip ();
+
+    ]]></v:after-data-bind>
+      </v:login>
+	</div> <!-- login_page -->
+      </div> <!-- MD -->
+      <div id="FT">
+        <div id="FT_LC">
+          <a href="http://www.openlinksw.com/virtuoso"><img alt="Powered by OpenLink Virtuoso Universal Server" src="images/virt_power_no_border.png" border="0"/>
+          </a>
+        </div>
+        <div id="FT_RC"><a href="/ods/faq.html">FAQ</a> |
+          <a href="/ods/privacy.html">Privacy</a> |
+          <a href="/ods/rabuse.vspx">Report Abuse</a>
+          <div class="copyright">
+            Copyright &copy; 1999-2007 OpenLink Software
+          </div>
+        </div> <!-- FT_R -->
+      </div>
+    </div> <!-- PG -->
+  </body>
+</html>
+</v:page>
