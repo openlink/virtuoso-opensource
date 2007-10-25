@@ -1548,15 +1548,15 @@ caddr_t bif_xenc_key_DH_create (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
       BIGNUM *bn_p, *bn_g;
       caddr_t mod, mod_b64 = box_copy (p);
       unsigned char g_bin[1];
-      int len;
+      int p_len;
 
       g_bin[0] = (unsigned char)g;
-      len = xenc_decode_base64 (mod_b64, mod_b64 + box_length (mod_b64));
-      mod = dk_alloc_box (len, DV_BIN);
-      memcpy (mod, mod_b64, len);
+      p_len = xenc_decode_base64 (mod_b64, mod_b64 + box_length (mod_b64));
+      mod = dk_alloc_box (p_len, DV_BIN);
+      memcpy (mod, mod_b64, p_len);
 
       dh = DH_new ();
-      bn_p = BN_bin2bn ((unsigned char *)mod, box_length (mod), NULL);
+      bn_p = BN_bin2bn ((unsigned char *)mod, p_len, NULL);
       bn_g = BN_bin2bn (g_bin, 1, NULL);
       dh->p = bn_p;
       dh->g = bn_g;
@@ -1570,11 +1570,13 @@ caddr_t bif_xenc_key_DH_create (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
     }
   if (!dh)
     {
+      mutex_leave (xenc_keys_mtx);
       sqlr_new_error ("42000", "XENC11",
 		    "DH parameters generation error");
     }
   if (!dh || !DH_generate_key(dh))
     {
+      mutex_leave (xenc_keys_mtx);
       sqlr_new_error ("42000", "XENC12",
 		    "Can't generate the DH private key");
     }
@@ -5829,7 +5831,7 @@ bif_xenc_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char * text = bif_string_arg (qst, args, 0, "xenc_sha1_digest");
   dk_session_t * ses = strses_allocate ();
   caddr_t res = NULL;
-  SES_PRINT (ses, text);
+  session_buffered_write (ses, text, box_length (text) - 1);
   dsig_sha1_digest (ses, strses_length (ses), &res);
   dk_free_box (ses);
   return res;
