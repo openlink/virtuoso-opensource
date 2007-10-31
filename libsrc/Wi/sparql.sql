@@ -7715,7 +7715,7 @@ host_found:
       sc := exec_score (concat ('sparql ', full_query), state, msg);
       if ((sc/1000) > sc_max)
 	{
-	  signal ('42000', 'The execution time limit exceeded.');
+	  signal ('42000', sprintf ('The estimated execution time %d (sec) exceeds the limit of %d (sec).', sc/1000, sc_max));
 	}
     }
 
@@ -8720,7 +8720,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
   if ('soft' = get_soft)
     {
       if ((dest = graph_iri) and
-        exists (select top 1 1 from DB.DBA.RDF_QUAD
+        exists (select top 1 1 from DB.DBA.RDF_QUAD table option (index RDF_QUAD)
           where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri) ) and
         not exists (select top 1 1 from DB.DBA.SYS_HTTP_SPONGE
           where HS_LOCAL_IRI = local_iri and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE' and
