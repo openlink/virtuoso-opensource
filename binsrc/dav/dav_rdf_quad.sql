@@ -26,12 +26,6 @@ create procedure DB.DBA.RDF_DELETE_ENTIRE_GRAPH (in new_dav_graph varchar, in pa
 }
 ;
 
-alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID
-;
-
-alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID
-;
-
 create function DB.DBA.DAV_FULL_PATH_TO_IRI (in dav_iri varchar, in _str varchar) returns varchar
 {
   declare _ses any;

@@ -65,6 +65,9 @@ create table WS.WS.SYS_DAV_COL (
     COL_PERMS 		char (11),
     COL_DET		varchar,
     COL_ACL		long varbinary,
+    COL_IID 		IRI_ID,
+    COL_AUTO_VERSIONING char(1),
+    COL_FORK 		integer not null default 0,
     primary key (COL_NAME, COL_PARENT)
 )
 create index SYS_DAV_COL_PARENT_ID on WS.WS.SYS_DAV_COL (COL_PARENT)
@@ -78,6 +81,9 @@ alter table WS.WS.SYS_DAV_COL add COL_ACL long varbinary
 ;
 
 alter table WS.WS.SYS_DAV_COL modify COL_PERMS char (11)
+;
+
+alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID
 ;
 
 -- WebDAV Resource
@@ -95,6 +101,11 @@ create table WS.WS.SYS_DAV_RES (
     RES_FULL_PATH 	varchar,
     ROWGUID		varchar,
     RES_ACL		long varbinary,
+    RES_IID 		IRI_ID,
+    RES_STATUS 		varchar,
+    RES_VCR_ID 		integer,
+    RES_VCR_CO_VERSION 	integer,
+    RES_VCR_STATE 	integer,
     primary key (RES_COL, RES_NAME)
 )
 create index SYS_DAV_RES_COL_ID on WS.WS.SYS_DAV_RES (RES_COL)
@@ -109,6 +120,9 @@ alter table WS.WS.SYS_DAV_RES add RES_ACL long varbinary
 ;
 
 alter table WS.WS.SYS_DAV_RES modify RES_PERMS char (11)
+;
+
+alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID
 ;
 
 --__ddl_changed ('WS.WS.SYS_DAV_RES')
@@ -1514,7 +1528,7 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/rdf+ttl','ttl')
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/rdf+n3','n3')
 ;
 
-update WS.WS.SYS_DAV_RES_TYPES set T_EXT = T_EXT where http_mime_type_add (T_EXT, T_TYPE) is not null
+select count(*) from WS.WS.SYS_DAV_RES_TYPES where http_mime_type_add (T_EXT, T_TYPE)
 ;
 
 create procedure

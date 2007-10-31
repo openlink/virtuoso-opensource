@@ -47,6 +47,8 @@ CREATE TABLE WS.WS.SYS_DAV_RES_VERSION (
   RV_RES_TYPE VARCHAR, -- MIME content type as it was in WS.WS.SYS_DAV_RES.RES_TYPE, NULL if deleted in this version.
   RV_CR_TIME  DATETIME, -- Old creation time as it was in WS.WS.SYS_DAV_RES.RES_CR_TIME
   RV_MOD_TIME DATETIME, -- Old modification time as it was in WS.WS.SYS_DAV_RES.RES_MOD_TIME
+  RV_WHO VARCHAR,
+  RV_SIZE INTEGER NOT NULL,
   PRIMARY KEY (RV_RES_ID, RV_ID)
 )
 ;
