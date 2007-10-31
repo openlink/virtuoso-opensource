@@ -7,6 +7,7 @@
 	padding: 2px;
 	position: relative;
 	top: -5px;
+	margin-bottom: 11px;
 }
 
 .oat_winround_title {
@@ -26,7 +27,11 @@
 
 .oat_winround_status {
 	height: 16px;
-	position: relative;
+	bottom: 0px;
+	left: 2px;
+	position: absolute;
+	width: 100%;
+	font-size: 0.8em;
 }
 
 .oat_winround_blankSpace {
@@ -58,4 +63,33 @@
 
 .oat_winround_close_b {
 	background-image: url("../images/RectWin_close.gif");
+}
+
+.oat_winround_container div.oat_anchor_arrow {
+	position: absolute;
+	top: -40px;
+	left: 20px;
+	width: 30px;
+	height: 35px;
+	background-image: url("../images/RectWin_lt.gif");
+}
+.oat_winround_container div.oat_anchor_arrow_bottomright {
+	position: absolute;
+	bottom: -40px;	right: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_rb.gif");
+}
+.oat_winround_container div.oat_anchor_arrow_bottomleft {
+	position: absolute;
+	bottom: -40px;	left: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_lb.gif");
+}
+.oat_winround_container div.oat_anchor_arrow_topright {
+	position: absolute;
+	top: -40px;	right: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_rt.gif");
+}
+.oat_winround_container div.oat_anchor_arrow_topleft {
+	position: absolute;
+	top: -40px;	left: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_lt.gif");
 }

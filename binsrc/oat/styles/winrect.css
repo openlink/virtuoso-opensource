@@ -1,12 +1,12 @@
 .oat_winrect_container {
 	border: 1px solid #666666;
 	background-color: #ffffff;
-	overflow: hidden;
 }
 
 .oat_winrect_content {
 	padding: 2px;
 	position: relative;
+	margin-bottom: 16px;
 }
 
 .oat_winrect_title {
@@ -25,7 +25,11 @@
 
 .oat_winrect_status {
 	height: 16px;
-	position: relative;
+	bottom: 0px;
+	left: 2px;
+	position: absolute;
+	width: 100%;
+	font-size: 0.8em;
 }
 
 .oat_winrect_blankSpace {
@@ -56,4 +60,25 @@
 
 .oat_winrect_close_b {
 	background-image: url("../images/RectWin_close.gif");
+}
+
+.oat_winrect_container div.oat_anchor_arrow_bottomright {
+	position: absolute;
+	bottom: -35px;	right: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_rb.gif");
+}
+.oat_winrect_container div.oat_anchor_arrow_bottomleft {
+	position: absolute;
+	bottom: -35px;	left: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_lb.gif");
+}
+.oat_winrect_container div.oat_anchor_arrow_topright {
+	position: absolute;
+	top: -35px;	right: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_rt.gif");
+}
+.oat_winrect_container div.oat_anchor_arrow_topleft {
+	position: absolute;
+	top: -35px;	left: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_lt.gif");
 }

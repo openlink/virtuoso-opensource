@@ -330,7 +330,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	this.topDiv = OAT.Dom.create("div",{},"rdf_nav");
 	this.mainDiv = OAT.Dom.create("div");
 	this.description = "This module is used for navigating through all locally cached data, one resource at a time. "+
-							"Note that filters doesn't apply here, all data is displayed.";
+							"Note that filters don't apply here, all data is displayed.";
 	OAT.Dom.append([self.elm,self.topDiv,self.mainDiv]);
 
 	this.gd = new OAT.GhostDrag();
@@ -364,7 +364,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 
 	this.attach = function(elm,item) { /* attach navigation to link */
 		OAT.Dom.addClass(elm,"rdf_link");
-		OAT.Dom.attach(elm,"click",function() {
+		OAT.Dom.attach(elm,"click",function(event) {
+			/* disable default onclick event for anchor */
+			OAT.Dom.prevent(event);
 			self.history.splice(self.historyIndex+1,self.history.length-self.history.index+1); /* clear forward history */
 			self.history.push(item);
 			self.navigate(self.history.length-1);
@@ -372,7 +374,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	}
 	
 	this.dattach = function(elm,uri) { /* attach dereference to link */
-		OAT.Event.attach(elm,"click",function() {
+		OAT.Event.attach(elm,"click",function(event) {
+			/* disable default onclick event for anchor */
+			OAT.Dom.prevent(event);
 			self.waiting = true;
 			var img = OAT.Dom.create("img");
 			img.src = self.parent.options.imagePath + "Dav_throbber.gif";
@@ -403,10 +407,26 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	this.drawPredicate = function(value) { /* draw one pred's content; return ELM */
 		var content = false;
 		if (typeof(value) == "object") { /* resource */
+			var items = self.parent.store.items;
+			var dereferenced = false;
+			for(var j=0;j<items.length;j++) {
+				var item = items[j];
+				/* handle anchors to local file */
+				var baseuri = value.uri.match(/^[^#]+/)[0];
+				var basehref = item.href.match(/^[^#]+/)[0];
+				if(basehref == baseuri) { dereferenced = true; };
+			}
+
 			content = OAT.Dom.create("a");
-			content.href = "javascript:void(0)";
+			content.href = value.uri;
 			content.innerHTML = self.parent.getTitle(value);
+
+			/* dereferenced, or relative uri/blank node */
+			if(dereferenced || !value.uri.match(/^http/i)) {
 			self.attach(content,value); 
+			} else {
+				self.dattach(content,value.uri);
+			}
 		} else { /* literal */
 			var type = self.parent.getContentType(value);
 			if (type == 3) { /* image */
@@ -427,7 +447,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 				OAT.Event.attach(content,"load",ref);
 			} else if (type == 1) { /* dereferencable link */
 				content = OAT.Dom.create("a");
-				content.href = "javascript:void(0)";
+				content.href = value;
 				content.innerHTML = value;
 				self.dattach(content,value);
 			} else { /* text */
@@ -448,7 +468,6 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 						} 
 					} /* for all resources */
 					if (!done) { self.dattach(anchor,anchor.href); }
-					OAT.Dom.changeHref(anchor,"javascript:void(0)");
 				} /* for all nested anchors */
 			}
 		} /* if literal */
@@ -542,7 +561,8 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	this.drawSpotlightType = function(label,data,table) {
 		var state = (self.mlCache.find(label) == -1 ? 0 : 1);
 		var states = [" more...","less..."];
-		var count = (state ? data.length : Math.min(data.length,self.options.limit));
+		var min = Math.min(data.length,self.options.limit);
+		var count = (state ? data.length : min);
 		var tr = OAT.Dom.create("tr",{},"rdf_nav_header");
 		var trset = [];
 		self.drawSpotlightHeading(tr,label,trset,data.length);
@@ -584,14 +604,14 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 			trset.push(toggletr);
 			var td = OAT.Dom.create("td");
 			var toggle = OAT.Dom.create("span",{cursor:"pointer"});
-			toggle.innerHTML = (data.length - count) + states[state];
+			toggle.innerHTML = (state ? states[state] : (data.length - min) + states[state]);
 			OAT.Dom.append([td,toggle],[toggletr,td],[table,toggletr]);
 			OAT.Event.attach(toggle,"click",function() {
 				state = (state+1) % 2;
-				toggle.innerHTML = (state ? states[state] : (data.length - count) + states[state]);
+				toggle.innerHTML = (state ? states[state] : (data.length - min) + states[state]);
 				if (state) { /* show more */
 					self.mlCache.push(label);
-					for (var i=count;i<data.length;i++) {
+					for (var i=min;i<data.length;i++) {
 						var item = data[i];
 						var tr = createRow(item);
 						trset.splice(i,0,tr);
@@ -600,7 +620,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 				} else { /* show less */
 					var index = self.mlCache.find(label);
 					self.mlCache.splice(label,index);
-					for (var i=data.length-1;i>=count;i--) {
+					for (var i=data.length-1;i>=min;i--) {
 						OAT.Dom.unlink(trset[i]);
 						trset.splice(i,1);
 					}

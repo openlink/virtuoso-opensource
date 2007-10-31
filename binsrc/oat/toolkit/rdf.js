@@ -21,13 +21,20 @@ OAT.RDFData = {
 
 OAT.RDF = {
 	ignoredAttributes:["about","nodeID","ID","parseType"],
-	toTriples:function(xmlDoc) {
+	toTriples:function(xmlDoc,url) {
 		var triples = [];
 		var root = xmlDoc.documentElement;
 		if (!root || !root.childNodes) { return triples; }
 		var bnodePrefix = "_:" + Math.round(1000*Math.random()) + "_";
-		var idPrefix = "#";
 		var bnodeCount = 0;
+		
+		var u = url || "";
+		u = u.match(/^[^#]+/);
+		if(u)
+			u = u[0];
+		else
+			u = "";
+		var idPrefix = u + "#";
 		
 		function getAtt(obj,att) {
 			if (att in obj) { return obj[att]; }
@@ -35,26 +42,35 @@ OAT.RDF = {
 		}
 		
 		function processNode(node,isPredicateNode) {
+			/* get info about node */
 			var attribs = OAT.Xml.getLocalAttributes(node);
+			/* try to get description from node header */
 			var subj = getAtt(attribs,"about");
 			var id1 = getAtt(attribs,"nodeID");
 			var id2 = getAtt(attribs,"ID");
+			/* no subject in triplet */
 			if (!subj) { 
+				/* try construct it from ids */
 				if (id1) {
 					subj = idPrefix+id1; 
 				} else if (id2) {
 					subj = idPrefix+id2; 
 				} else {
+					/* create anonymous subject */
 					subj = bnodePrefix+bnodeCount;
 					bnodeCount++;
 				}
 			}
+			/* now we have a subject */
 			
+			/* handle literals ? */
 			if (OAT.Xml.localName(node) != "Description" && !isPredicateNode) { /* add 'type' where needed */
 				var pred = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 				var obj = node.namespaceURI + OAT.Xml.localName(node);
 				triples.push([subj,pred,obj,0]); /* 0 - literal, 1 - reference */
 			}
+
+			/* for each of our own attributes, push a reference triplet into the graph */	
 			for (var i=0;i<node.attributes.length;i++) {
 				var a = node.attributes[i];
 				var local = OAT.Xml.localName(a);
@@ -64,6 +80,8 @@ OAT.RDF = {
 					triples.push([subj,pred,obj,1]);
 				}
 			} /* for all attributes */
+
+			/* for each of our children create triplets based on their type */
 			for (var i=0;i<node.childNodes.length;i++) if (node.childNodes[i].nodeType == 1) {
 				var n = node.childNodes[i];
 				var nattribs = OAT.Xml.getLocalAttributes(n);
@@ -73,9 +91,11 @@ OAT.RDF = {
 					if (obj[0] == "#") { obj = idPrefix + obj.substring(1); }
 					triples.push([subj,pred,obj,1]);
 				} else if (getAtt(nattribs,"nodeID") != "") { /* link via id */
+					/* recurse */
 					var obj = processNode(n,true); 
 					triples.push([subj,pred,obj,1]);
 				} else if (getAtt(nattribs,"ID") != "") { /* link via id */
+					/* recurse */
 					var obj = processNode(n,true); 
 					triples.push([subj,pred,obj,1]);
 				} else {

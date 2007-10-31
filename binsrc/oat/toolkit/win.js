@@ -54,7 +54,28 @@ OAT.Win = function(optObj) {
 		self.dom.container.style.left = x+"px";
 		self.dom.container.style.top = y+"px";
 	} 
-	self.anchorTo = function(x,y) { } 
+	self.anchorTo = function(x_,y_) { /* OBSOLETE: this is now done by anchor.js */
+		var fs = OAT.Dom.getFreeSpace(x_,y_); /* [left,top] */
+		var dims = OAT.Dom.getWH(self.dom.container);
+		
+		if (fs[1]) { /* top */
+			var y = y_ - 30 - dims[1];
+		} else { /* bottom */
+			var y = y_ + 30;
+		}
+
+		if (fs[0]) { /* left */
+			var x = x_ + 20 - dims[0]; 
+		} else { /* right */
+			var x = x_ - 20;
+		}
+		
+		if (x < 0) { x = 10; }
+		if (y < 0) { y = 10; }
+		
+		self.moveTo(x,y);
+	} 
+
 	self.innerResizeTo = function(w,h) { }
 	self.outerResizeTo = function(w,h) { }
 	self.show = function() { OAT.Dom.show(self.dom.container); }
@@ -202,9 +223,7 @@ OAT.WinMAC = function(obj) { /* MacOSX-like window */
 	obj.dom.caption = OAT.Dom.create("span",{},"oat_winmac_caption");
 	obj.dom.status = OAT.Dom.create("div",{},"oat_winmac_status");
 
-	obj.dom.blankSpaceAfterResize = OAT.Dom.create("div",{},"oat_winmac_blankSpace");
-
-	OAT.Dom.append([obj.dom.container,obj.dom.title,obj.dom.content,obj.dom.status,obj.dom.blankSpaceAfterResize]);
+	OAT.Dom.append([obj.dom.container,obj.dom.title,obj.dom.content,obj.dom.status]);
 
 	obj.dom.buttons.lc = OAT.Dom.create("div",{},"oat_winmac_leftCorner");
 	OAT.Dom.append([obj.dom.title,obj.dom.buttons.lc]);
@@ -232,7 +251,7 @@ OAT.WinMAC = function(obj) { /* MacOSX-like window */
 
 	obj.outerResizeTo = function(w,h) {
 		obj.dom.container.style.width = (w ? w+"px" : "auto");
-		obj.dom.container.style.height = (h ? h+"px" : "auto");
+		obj.dom.container.style.height = (h ? (h-8)+"px" : "auto");
 	}
 	
 }

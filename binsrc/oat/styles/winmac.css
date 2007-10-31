@@ -1,28 +1,30 @@
 .oat_winmac_container {
-	border-width: 0px 0px 1px 0px;
+	margin-top: 8px;
+	border-width: 1px;
 	border-style: solid;
 	border-color: #aaaaaa;
 	background-color: #fff;
-	overflow: hidden;
 }
 
 .oat_winmac_content {
+	top: -8px;
 	padding: 2px;
 	position: relative;
-	border-width: 0px 1px 0px 1px;
-	border-style: solid;
-	border-color: #aaaaaa;
+	margin-bottom: 8px;
+	overflow: hidden;
 }
 
 .oat_winmac_title {
 	font: menu;
 	height: 23px;
+	top: -8px;
+	left: -1px;
 	background-color: #888888;
 	background-image: url("../images/MacWin_top.gif");
 	position: relative;
 	text-align: center;
 	margin-left: 8px;
-	margin-right: 8px;
+	margin-right: 5px;
 }
 
 .oat_winmac_caption {
@@ -34,18 +36,11 @@
 
 .oat_winmac_status {
 	height: 16px;
-	position: relative;
-	border-width: 0px 1px 0px 1px;
-	border-style: solid;
-	border-color: #aaaaaa;
-}
-
-.oat_winmac_blankSpace {
-	height: 100%;
-	position: relative;
-	border-width: 0px 1px 0px 1px;
-	border-style: solid;
-	border-color: #aaaaaa;
+	bottom: 0px;
+	left: 2px;
+	position: absolute;
+	width: 100%;
+	font-size: 0.8em;
 }
 
 .oat_winmac_close_b, .oat_winmac_min_b, .oat_winmac_max_b {
@@ -87,7 +82,7 @@
 	width: 8px;
 	height: 23px;
 	position: relative;
-	right: -8px;
+	right: -7px;
 	/*position: absolute;
 	bottom: 2px;
 	right: 2px;*/
@@ -117,4 +112,25 @@
 
 .oat_winmac_max_b:hover {
 	background-image: url("../images/MacWin_maximize_hover.gif");
+}
+
+.oat_winmac_container div.oat_anchor_arrow_bottomright {
+	position: absolute;
+	bottom: -35px;	right: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_rb.gif");
+}
+.oat_winmac_container div.oat_anchor_arrow_bottomleft {
+	position: absolute;
+	bottom: -35px;	left: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_lb.gif");
+}
+.oat_winmac_container div.oat_anchor_arrow_topright {
+	position: absolute;
+	top: -42px;	right: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_rt.gif");
+}
+.oat_winmac_container div.oat_anchor_arrow_topleft {
+	position: absolute;
+	top: -42px;	left: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/RectWin_lt.gif");
 }

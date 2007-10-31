@@ -17,89 +17,30 @@ OAT.AnchorData = {
 }
 
 OAT.Anchor = {
-	imagePath:OAT.Preferences.imagePath,
-	zIndex:200,
-	
-	assignedMoves:[],
-	assignedResizes:[],
-	assignedCloses:[],
-	
-	assignTemplate:function(options,node) {
-		function scanForClass(root,className) {
-			var all = [root];
-			var a = root.getElementsByTagName("*");
-			for (var i=0;i<a.length;i++) { all.push(a[i]); }
-			for (var i=0;i<all.length;i++) {
-				if (OAT.Dom.isClass(all[i],className)) { return all[i]; }
-			}
-			return false;
-		}
-		
-		var container = scanForClass(node,"oat_w_ctr");
-		var title = scanForClass(node,"oat_w_title_ctr");
-		var move = scanForClass(node,"oat_w_title_ctr");
-		var title = scanForClass(node,"oat_w_title_t_ctr");
-		var content = scanForClass(node,"oat_w_content");
-		var close = scanForClass(node,"oat_w_close_b");
-		var resize = scanForClass(node,"oat_w_resize_handle");
-		
-		if (!container) { alert("No container found for anchor window!"); }
-		if (!content) { alert("No content element found for anchor window!"); }
-		
-		options.window = {
-			div:container,
-			content:content,
-			caption:title,
-			close:function() { OAT.Dom.hide(container); },
-			resizeTo:function(w,h) { 
-				container.style.width = w+"px";
-				container.style.height = h+"px";
-			},
-			anchorTo:function(x,y) {
-				container.style.left = x+"px";
-				container.style.top = y+"px";
-			}
-		}
-		
-		if (move && !(move in OAT.Anchor.assignedMoves)) { 
-			OAT.Drag.create(move,container); 
-			OAT.Anchor.assignedMoves.push(move);
-		}
-		if (resize && !(resize in OAT.Anchor.assignedResizes)) { 
-			OAT.Resize.create(resize,container,OAT.Resize.TYPE_XY); 
-			OAT.Anchor.assignedResizes.push(resize);
-		}
-		if (close && !(close in OAT.Anchor.assignedCloses)) { 
-			OAT.Event.attach(close,"click",options.window.close);  
-			OAT.Anchor.assignedCloses.push(close);
-		}
-		container.style.position = "absolute";
-		OAT.Dom.hide(container);
-		document.body.appendChild(container);
-	},
 	
 	appendContent:function(options) {
 		if (options.content) {
 			if (typeof(options.content) == "function") { options.content = options.content(); }
 			var win = options.window;
-			win.resizeTo(options.width,options.height);
-			OAT.Dom.clear(win.content);
-			win.content.appendChild(options.content);
+			win.outerResizeTo(options.width,options.height);
+			OAT.Dom.clear(win.dom.content);
+			win.dom.content.appendChild(options.content);
 		}
 	},
 	
 	callForData:function(options,pos) {
 		var win = options.window;
-		options.status = 1; /* loading */
-		if (options.title) { win.caption.innerHTML = options.title; }
+		options.stat = 1; /* loading */
+		if (options.title) { win.dom.caption.innerHTML = options.title; }
+		if (options.status) { win.dom.status.innerHTML = options.status; }
 
 		var ds = options.datasource;
 		if (ds) { 
 			ds.connection = options.connection; 
 			var link = options.elm.innerHTML;
 			var unlinkRef = function() {
-				win.caption.innerHTML = options.elm.innerHTML;
-				if (options.title) { win.caption.innerHTML = options.title; }
+				win.dom.caption.innerHTML = options.elm.innerHTML;
+				if (options.title) { win.dom.caption.innerHTML = options.title; }
 			}
 			ds.bindRecord(unlinkRef);
 			ds.bindEmpty(unlinkRef);
@@ -120,7 +61,7 @@ OAT.Anchor = {
 				var f = false;
 				var resizeRef = function() {
 					win.resizeTo(f.totalWidth+5,f.totalHeight+5);
-					win.anchorTo(pos[0],pos[1]);
+					options.anchorTo(pos[0],pos[1]);
 				}
 				options.content = OAT.Dom.create("div");
 				var f = new OAT.Form(options.content,{onDone:resizeRef});
@@ -134,8 +75,8 @@ OAT.Anchor = {
 				var tl = new OAT.FormObject["timeline"](0,20,0); /* x,y,designMode */
 				options.content = tl.elm;
 				tl.elm.style.position = "relative";
-				tl.elm.style.width = (options.width-3)+"px";
-				tl.elm.style.height = (options.height-25)+"px";
+				tl.elm.style.width = (options.width-5)+"px";
+				tl.elm.style.height = (options.height-65)+"px";
 				tl.init();
 				/* canonic binding to output fields */
 				for (var i=0;i<tl.datasources[0].fieldSets.length;i++) {
@@ -175,28 +116,29 @@ OAT.Anchor = {
 			connection:false, /* for url fetch */
 			datasource:false, /* for url fetch */
 			content:false, /* node or function to be inserted */
+			status:false, /* window status */
 			title:false, /* window title */
-			imagePath:OAT.Anchor.imagePath,
 			result_control:"grid", /* for url fetch */
 			activation:"hover",
 			width:300,
 			height:200,
 			elm:elm, /* anchor node */
 			window:false, /* what should be displayed */
-			template:false /* node or function to be used instead of window */
+			arrow:false, /* what should be displayed */
+			type:OAT.WinData.TYPE_RECT,
+			template:false /* use with type:OAT.WinData.TYPE_TEMPLATE - see win component documentation */
 		};
 		for (var p in paramsObj) { options[p] = paramsObj[p]; }
 
-		if (options.template) { /* wants own container */
-			var node = (typeof(options.template) == "function" ? options.template() : $(options.template));
-			OAT.Anchor.assignTemplate(options,node);
-		} else if (!OAT.AnchorData.window) { /* wants window, but we don't have it yet */
-			var win = new OAT.Window({close:1,resize:1,width:options.width,height:options.height,imagePath:OAT.Anchor.imagePath,title:"Loading..."},OAT.WindowData.TYPE_RECT);
-			win.div.style.zIndex = OAT.Anchor.zIndex;
-			win.close = function() { OAT.Dom.hide(win.div); }
-			win.onclose = win.close;
-			win.close();
-			document.body.appendChild(win.div);
+		var win = new OAT.Win( {
+			visibleButtons:'cr',
+			outerWidth:options.width,
+			outerHeight:options.height,
+			title:"Loading...",
+			type:options.type,
+			status:options.status,
+			template:options.template	} );
+		win.hide();
 			function checkOver() {
 				var opts = OAT.AnchorData.active;
 				if (!opts) { return; }
@@ -207,37 +149,63 @@ OAT.Anchor = {
 				if (!opts) { return; }
 				if (opts.activation == "hover") { opts.startClose(); }
 			}
-			OAT.Dom.attach(win.div,"mouseover",checkOver);
-			OAT.Dom.attach(win.div,"mouseout",checkOut);
-			OAT.AnchorData.window = win;
-		}
-		if (!options.template) { options.window = OAT.AnchorData.window; } /* assign common window to this anchor instance */
+		OAT.Dom.attach(win.dom.container,"mouseover",checkOver);
+		OAT.Dom.attach(win.dom.container,"mouseout",checkOut);
+		var arrow = OAT.Dom.create("div",{});
+		OAT.Dom.append([win.dom.container,arrow]);
+		options.arrow = arrow;
+		options.window = OAT.AnchorData.window = win; /* assign common window to this anchor instance */
 
-		options.status = 0; /* not initialized */
+
+		options.stat = 0; /* not initialized */
 		if (!options.href && 'href' in elm) { options.href = elm.href; } /* if no oat:href provided, then try the default one */
 		if (elm.tagName.toString().toLowerCase() == "a") { OAT.Dom.changeHref(elm,options.newHref); }
 		
 		options.displayRef = function(event) {
 			var win = options.window;
-			win.close(); /* close existing window */
+			win.hide(); /* close existing window */
 			OAT.AnchorData.active = options;
-			options.endClose();
-			OAT.Dom.show(win.div);
 			var pos = OAT.Dom.eventPos(event);
 		
-			if (!options.status) { /* first time */
-				win.content.style.width = "200px";
-				win.content.style.height = "50px";
+			if (!options.stat) {
 				OAT.Anchor.callForData(options,pos); 
 			} else { 
 				OAT.Anchor.appendContent(options);
 			}
-			win.anchorTo(pos[0],pos[1]);
+			win.show();
+			options.anchorTo(pos[0],pos[1]);
+			//win.anchorTo(pos[0],pos[1]);
+		}
+		options.anchorTo = function(x_,y_) {
+			var win = options.window;
+			var fs = OAT.Dom.getFreeSpace(x_,y_); /* [left,top] */
+			var dims = OAT.Dom.getWH(win.dom.container);
+
+			if (fs[1]) { /* top */
+				var y = y_ - 35 - dims[1];
+				var className = 'bottom';
+			} else { /* bottom */
+				var y = y_ + 30;
+				var className = 'top';
+			}
+
+			if (fs[0]) { /* left */
+				var x = x_ + 10 - dims[0];
+				className += 'right';
+			} else { /* right */
+				var x = x_ - 50;
+				className += 'left';
+			}
+
+			if (x < 0) { x = 10; }
+			if (y < 0) { y = 10; }
+
+			OAT.Dom.addClass(options.arrow,"oat_anchor_arrow_"+className);
+			win.moveTo(x,y);
 		}
 		options.closeRef = function() {
 			if (options.closeFlag) {
-				options.window.close();
-				options.endClose();
+				options.window.hide();
 				OAT.AnchorData.active = false;
 			}
 		}

@@ -75,7 +75,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 				var triples = OAT.N3.toTriples(str);
 			} else {
 				var xmlDoc = OAT.Xml.createXmlDoc(str);
-				var triples = OAT.RDF.toTriples(xmlDoc);
+				var triples = OAT.RDF.toTriples(xmlDoc,url);
 			}
 			/* sanitize triples */
 			for (var i=0;i<triples.length;i++) {
@@ -157,7 +157,10 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 			if (s in conversionTable) { /* we already have this; add new property */
 				var obj = conversionTable[s];
 				var preds = obj.preds;
-				if (p in preds) { preds[p].push(o); } else { preds[p] = [o]; }
+				if (p in preds) { 
+					var values = preds[p];
+					if (values.find(o) == -1) { values.push(o); }
+				} else { preds[p] = [o]; }
 			} else { /* new resource */
 				var obj = {
 					preds:{},
@@ -182,6 +185,10 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 				if (item.enabled) { todo.push([item.triples,item.href]); }
 			}
 		} else { /* not complete - only last item */
+			for (var i=0;i<self.data.all.length;i++) {
+				var item = self.data.all[i];
+				conversionTable[item.uri] = item;
+			}
 			var item = self.items[self.items.length-1];
 			todo.push([item.triples,item.href]);
 		}
@@ -237,16 +244,17 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 					} /* for all predicates */
 				} /* uri filter */
 				
+				var ok = false;
 				if (t == OAT.RDFStoreData.FILTER_PROPERTY) {
 					for (var p in preds) {
 						var pred = preds[p];
-						if (p == filter[0]) {
+						if (p == filter[0] && !ok) {
 							if (filter[1] == "") {
 								ok = true;
 								newData.push(item);
 							} else for (var j=0;j<pred.length;j++) {
 								var value = pred[j];
-								if (value == filter[1]) {
+								if (value == filter[1] && !ok) {
 									ok = true;
 									newData.push(item);
 								} /* match! */
