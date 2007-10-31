@@ -2864,8 +2864,8 @@ create procedure sync_pars_ical_int (inout _body any)
      _body := sync_recode (cast (_body as varchar));
 
   _xml := string_output ();
-  _body := replace (_body, '\r\n', '\n');
   _body := replace (_body, '\r', '\n');
+   _body := replace (_body, '\n\n', '\n');
   parsed := split_and_decode (_body, 0, '\0\0\n');
 
 --  http (sprintf ('<BEGIN><![CDATA[VCALENDAR]]></BEGIN><VERSION><![CDATA[1.0]]></VERSION>'), _xml);
@@ -2917,6 +2917,8 @@ create procedure sync_pars_mult_cal (inout _body any)
     {
        _beg := strstr (_body, '<BEGIN');
        _beg := strstr (_body, '<BEGIN><![CDATA[VEVENT]]>');
+       if (_beg is null)
+         _beg := strstr (_body, '<BEGIN><![CDATA[VTODO]]>');
        _body := subseq (_body, _beg);
        _end := strstr (_body, '/END>');
        _old := length (trim (_body));
