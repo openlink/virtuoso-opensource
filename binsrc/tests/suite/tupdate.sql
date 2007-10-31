@@ -506,3 +506,234 @@ ECHO BOTH $IF $NEQ $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": BUG 7752: wrong max row len check STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 echo BOTH "COMPLETED: UPDATE TEST\n";
+
+echo BOTH "STARTED: keyset update tests\n";
+CONNECT;
+
+--set echo on;
+
+SET ARGV[0] 0;
+SET ARGV[1] 0;
+
+use B12964;
+
+create procedure f (in x any)
+{
+  return x + 1;
+};
+
+drop table XX;
+drop table XX_upd_log;
+
+create table XX (a integer primary key, b int);
+create table XX_upd_log (x int identity primary key, oa int, ob int, na int, nb int, dt varchar);
+
+create trigger XX_U_B before update on XX referencing old as O, new as N {
+  dbg_obj_print ('before update', O.a, N.a, N.b);
+  insert into XX_upd_log (oa,ob,na,nb,dt) values (O.a, O.b, N.a, N.b, 'bu');
+};
+
+create trigger XX_U_INST instead of update on XX referencing old as O, new as N {
+  dbg_obj_print ('instead update' , O.a, N.a, N.b);
+  insert into XX_upd_log (oa,ob,na,nb,dt) values (O.a, O.b, N.a, N.b, 'iu');
+};
+
+create trigger XX_U_A after update on XX referencing old as O, new as N {
+  dbg_obj_print ('after update' , O.a, N.a, N.b);
+  insert into XX_upd_log (oa,ob,na,nb,dt) values (O.a, O.b, N.a, N.b, 'au');
+};
+
+
+insert into XX (a) values (1);
+insert into XX (a) values (2);
+insert into XX (a) values (3);
+
+select * from XX;
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows after insert \n";
+
+
+update XX set a = a + 2 where a > 1;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": update ... where a > 1 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select * from XX where a > 3;
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows with a > 3 after update with instead of trigger \n";
+
+select * from XX_upd_log where dt = 'bu';
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
+
+select * from XX_upd_log where dt = 'iu';
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
+
+select * from XX_upd_log where dt = 'au';
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
+
+drop trigger XX_U_INST;
+delete from XX_upd_log;
+
+update XX set a = a + 2, b = f(a) where a > 1;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": update ... where a > 1 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select * from XX where a > 3;
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows with a > 3 after update w/o instead of trigger \n";
+
+select * from XX_upd_log where dt = 'bu';
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
+
+select * from XX_upd_log where dt = 'iu';
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
+
+select * from XX_upd_log where dt = 'au';
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
+
+delete from XX;
+delete from XX_upd_log;
+
+insert into XX (a) values (1);
+insert into XX (a) values (2);
+insert into XX (a) values (3);
+
+select * from XX;
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows after insert \n";
+
+create trigger XX_U_B before update on XX referencing old as O, new as N {
+  dbg_obj_print ('before update - signal', O.a, N.a, N.b);
+  insert into XX_upd_log (oa,ob,na,nb,dt) values (O.a, O.b, N.a, N.b, 'bu');
+  commit work;
+  signal ('TESTX', 'Some test signal in before trigger');
+};
+
+
+update XX set a = a + 2, b = f (a) where a > 1;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": update ... where a > 1 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select * from XX where a > 3;
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows with a > 3 after update with signal in before update trigger \n";
+
+select * from XX_upd_log where dt = 'bu';
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
+
+select * from XX_upd_log where dt = 'iu';
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
+
+select * from XX_upd_log where dt = 'au';
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
+
+drop trigger XX_U_B;
+create trigger XX_U_B before update on XX referencing old as O, new as N {
+  dbg_obj_print ('before update - recreated', O.a, N.a, N.b);
+  insert into XX_upd_log (oa,ob,na,nb,dt) values (O.a, O.b, N.a, N.b, 'bu');
+};
+
+delete from XX;
+delete from XX_upd_log;
+
+insert into XX (a) values (1);
+insert into XX (a) values (2);
+insert into XX (a) values (3);
+
+select * from XX;
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows after insert \n";
+
+create trigger XX_U_A after update on XX referencing old as O, new as N {
+  dbg_obj_print ('after update with signal' , O.a, N.a, N.b);
+  insert into XX_upd_log (oa,ob,na,nb,dt) values (O.a, O.b, N.a, N.b, 'au');
+  commit work;
+  signal ('TESTX', 'Some test signal in after trigger');
+};
+
+update XX set a = a + 2, b = f (a) where a > 1;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": update ... where a > 1 error in after trigger : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select * from XX where a > 3;
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows with a > 3 after update with signal in after update trigger \n";
+
+select * from XX_upd_log where dt = 'bu';
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
+
+select * from XX_upd_log where dt = 'iu';
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
+
+select * from XX_upd_log where dt = 'au';
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
+
+delete from XX;
+delete from XX_upd_log;
+
+create index bidx on XX (b);
+
+insert into XX (a) values (1);
+insert into XX (a) values (2);
+insert into XX (a) values (3);
+
+select * from XX;
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows after insert \n";
+
+create trigger XX_U_A after update on XX referencing old as O, new as N {
+  dbg_obj_print ('after update - recreated' , O.a, N.a, N.b);
+  insert into XX_upd_log (oa,ob,na,nb,dt) values (O.a, O.b, N.a, N.b, 'au');
+};
+
+create procedure update_in_loop ()
+{
+  for (declare i int, i := 0; i < 1000; i := i + 1)
+    {
+      update XX table option (index bidx) set a = a + 1, b = rnd (100) where b >= 0;
+    }
+};
+
+ECHO BOTH "starting update keyset in a loop with function call before cursor \n";
+update_in_loop ();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": update keyset in a loop with function call before cursor : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: keyset update tests\n";
