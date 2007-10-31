@@ -371,6 +371,7 @@ create procedure adm_menu_tree ()
       <node name="Clone Host" url="http_host_clone.vspx" id="175" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Delete Path" url="http_del_path.vspx" id="156" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="URL rewrite" url="http_url_rewrite.vspx" id="193" place="1" allowed="yacutia_http_server_management_page"/>
+      <node name="Content Negotiation" url="http_tcn.vspx" id="194" place="1" allowed="yacutia_http_server_management_page"/>
    </node>
  </node>
  <node name="XML" url="xml_sql.vspx"  id="106" tip="XML Services permit manipulation of XML data from stored and SQL sources" allowed="yacutia_xml">
@@ -5433,3 +5434,29 @@ create procedure view YAC_VAD_LIST as DB.DBA.YAC_VAD_LIST (dir, fs_type)
     (PKG_NAME varchar,  PKG_DESC varchar,  PKG_VER varchar,  PKG_DATE varchar,  PKG_INST varchar,
      PKG_NVER varchar,  PKG_NDATE  varchar,  PKG_FILE varchar, PKG_DEST int);
 
+create procedure URL_REWRITE_UPDATE_VHOST (in rulelist varchar, in lpath varchar, in vhost varchar, in lhost varchar)
+{
+  declare h_opts any;
+  declare upd_vd int;
+  h_opts := (select deserialize (HP_OPTIONS) from DB.DBA.HTTP_PATH
+  	where HP_LPATH = lpath and HP_HOST = vhost and HP_LISTEN_HOST = lhost);
+  upd_vd := 0;
+  if (not isarray (h_opts))
+    {
+      h_opts := vector ('url_rewrite', rulelist);
+      upd_vd := 1;
+    }
+  else if (not position ('url_rewrite', h_opts))
+    {
+      h_opts := vector_concat (h_opts, vector ('url_rewrite', rulelist));
+      upd_vd := 1;
+    }
+
+  if (upd_vd = 1)
+    {
+      update DB.DBA.HTTP_PATH set HP_OPTIONS = serialize (h_opts)
+	  where HP_LPATH = lpath and HP_HOST = vhost and HP_LISTEN_HOST = lhost;
+      DB.DBA.VHOST_MAP_RELOAD (vhost, lhost, lpath);
+    }
+}
+;

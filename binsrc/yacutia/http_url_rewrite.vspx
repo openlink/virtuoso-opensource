@@ -57,6 +57,40 @@
             <table cellpadding='10' cellspacing='0' border='0' width='100%'>
               <tr>
 		  <td>
+		<!-- tab -->
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+                        <td class="page_tab_selected" align="center" nowrap="1">
+                          URL rewrite rules
+		        </td>
+                        <td class="page_tab" align="center" nowrap="1">
+			  <v:url name="url1" value="Content negotiation" format="%s"
+			   url="--sprintf ('http_tcn.vspx?vhost=%U&lhost=%U&lpath=%U&rule_list=%U', self.vhost, self.lhost, self.lpath, self.rulelist)"/>
+		        </td>
+                        <td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td width="100%" >
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+		<!-- tab -->
 	  <table class="listing" rules="groups">
 	      <colgroup>
 		  <col/>
@@ -90,12 +124,13 @@
 
 if (not e.ve_is_post and self.del_item is not null)
 {
-  declare rules, cnt any;
+  declare rules, cnt, tcn any;
 
   cnt := (select count (*) from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = self.child_rulelist and URRL_MEMBER <> self.del_item);
+  tcn := (select count (*) from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = self.rulelist);
 
   DB.DBA.URLREWRITE_DROP_RULE (self.del_item, 1);
-  if (cnt = 0 and self.child_rulelist = self.rulelist)
+  if ((cnt+tcn) = 0 and self.child_rulelist = self.rulelist)
     {
       declare h_opts any;
       h_opts := (select deserialize (HP_OPTIONS) from DB.DBA.HTTP_PATH where HP_LPATH = self.lpath and HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost);
@@ -200,17 +235,6 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
 		  </v:template>
 	      </v:data-set>
 	  </table>
-	  <!--div class="fm">
-	      <v:form name="fm2" type="simple" method="POST">
-		  <fieldset>
-		      <label for="ur2">URL</label>
-		      <v:text name="ur2" xhtml_id="ur2" error-glyph="*" value="" xhtml_size="110"/>
-		      <br />
-		      <label for="rc2">Result</label>
-		      <v:text name="rc2" xhtml_id="rc2" error-glyph="*" value="" xhtml_size="110"/>
-		  </fieldset>
-	      </v:form>
-	  </div-->
 	  <v:form name="fm1" type="simple" method="POST">
 	  <div class="fm">
 	      <fieldset>
@@ -404,24 +428,8 @@ else
     DB.DBA.URLREWRITE_CREATE_RULELIST (self.child_rulelist, 1, rules);
   }
 
-h_opts := (select deserialize (HP_OPTIONS) from DB.DBA.HTTP_PATH where HP_LPATH = self.lpath and HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost);
-upd_vd := 0;
-if (not isarray (h_opts))
-  {
-    h_opts := vector ('url_rewrite', self.rulelist);
-    upd_vd := 1;
-  }
-else if (not position ('url_rewrite', h_opts))
-  {
-    h_opts := vector_concat (h_opts, vector ('url_rewrite', self.rulelist));
-    upd_vd := 1;
-  }
+URL_REWRITE_UPDATE_VHOST (self.rulelist, self.lpath, self.vhost, self.lhost);
 
-if (upd_vd = 1)
-  {
-    update DB.DBA.HTTP_PATH set HP_OPTIONS = serialize (h_opts) where HP_LPATH = self.lpath and HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost;
-    DB.DBA.VHOST_MAP_RELOAD (self.vhost, self.lhost, self.lpath);
-  }
 
 self.spat1.ufl_value := '';
 self.dest1.ufl_value := '';
@@ -454,6 +462,14 @@ self.maps.vc_data_bind (e);
                 </td>
               </tr>
             </table>
+	  <!-- end tab  -->
+      </td>
+  </tr>
+  </table>
+      </td>
+  </tr>
+  </table>
+		<!-- end tab -->
           </td>
         </tr>
       </table>

@@ -5972,11 +5972,15 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
     return 'NULL';
   else if (isinteger (v))
     return sprintf ('%d', v);
+  else if (isfloat (v) or isdouble (v))
+    return sprintf ('%f', v);
+  else if (isnumeric (v))
+    return cast (v as varchar);
   else if (__tag (v) = 193)
     {
       return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
     }
   else
-    signal ('22023', 'Unsupported type');
+    signal ('22023', sprintf('Unsupported type %d', __tag (v)));
 }
 ;

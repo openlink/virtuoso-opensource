@@ -59,6 +59,22 @@ alter table DB.DBA.URL_REWRITE_RULE add URR_HTTP_REDIRECT int
 alter table DB.DBA.URL_REWRITE_RULE add URR_HTTP_HEADERS varchar
 ;
 
+create table DB.DBA.HTTP_VARIANT_MAP (
+    VM_ID		integer identity,
+    VM_RULELIST		varchar,
+    VM_URI		varchar,
+    VM_VARIANT_URI	varchar,
+    VM_QS		float,
+    VM_TYPE		varchar,
+    VM_LANG		varchar,
+    VM_ENC		varchar,
+    VM_DESCRIPTION	long varchar,
+    VM_ALGO		int default 0,
+    primary key (VM_RULELIST, VM_URI, VM_VARIANT_URI))
+create unique index HTTP_VARIANT_MAP_ID on DB.DBA.HTTP_VARIANT_MAP (VM_ID)
+;
+
+
 create procedure DB.DBA.URLREWRITE_CREATE_RULE (
   in rule_type int,
   in rule_iri varchar,
@@ -555,11 +571,9 @@ create procedure DB.DBA.URLREWRITE_APPLY (
     (HP_LISTEN_HOST = _lhost or HP_LISTEN_HOST = _lhost_port or (HP_LISTEN_HOST = '*ini*' and _lhost_port = cfg_item_value (virtuoso_ini_path (), 'HTTPServer','ServerPort'))) and
     HP_OPTIONS is not null and deserialize (HP_OPTIONS) is not null and
     left (_lpath, length (HP_LPATH)) = HP_LPATH order by HP_LPATH desc;
-        -- dbg_obj_princ('bbb6');
   if (db_host is null and db_lhost is null and db_lpath is null)
     {
       no_rec:;
-        -- dbg_obj_princ('bbb7');
       nice_vhost_pkey := vector (null, null, null);
       target_vhost_pkey := vector (null, null, null);
       long_url := _lpath;
@@ -571,7 +585,6 @@ create procedure DB.DBA.URLREWRITE_APPLY (
     }
   else if (top_rulelist_iri is NULL)
     {
-        -- dbg_obj_princ('bbb8');
       nice_vhost_pkey := vector (db_host, db_lhost, db_lpath);
       target_vhost_pkey := vector (db_host, db_lhost, db_lpath);
       long_url := _lpath;
@@ -581,7 +594,6 @@ create procedure DB.DBA.URLREWRITE_APPLY (
         long_url := concat (long_url, '#', _frag);
       return 1;
     }
-        -- dbg_obj_princ('aaaa1');
   nice_vhost_pkey := vector (db_host, db_lhost, db_lpath);
   lines := vector ();
   return DB.DBA.URLREWRITE_APPLY_RECURSIVE (
@@ -729,7 +741,6 @@ create procedure DB.DBA.URLREWRITE_TRY_INVERSE (
                 }
               if (is_found = 0)
               {
-                -- dbg_obj_princ('aaaaaaaaaaaaaaaaaaa');
                 nice_params := vector_concat (nice_params, vector (TARGET_PARAMS_VEC[j], parts[j]) );
               }
               break_the_for2:;
@@ -807,6 +818,208 @@ create procedure DB.DBA.URLREWRITE_TRY_INVERSE (
 }
 ;
 
+create procedure DB.DBA.HTTP_VARIANT_ADD (in rulelist_uri varchar,
+	in uri varchar, in variant_uri varchar, in mime varchar,
+	in qs float := 1.0, in descrition varchar := null,
+    	in lang varchar := null, in enc varchar := null, in algo int := 1)
+{
+  declare tmp any;
+  declare mime_qs, lang_qs, enc_qs float;
+
+-- not needed as we can have TCN on empty rulelist
+--  if (not exists (select 1 from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_uri))
+--    signal ('42000', 'Rule IRI ' || rulelist_uri || ' does not exists.');
+  if (isstring (qs) or qs < 0.001)
+     signal ('22023', 'The quality factor must be float number between 1.0 and 0.001');
+
+  if (length (mime))
+    {
+      tmp := split_and_decode (mime, 0, '\0\0;=');
+      mime := tmp[0];
+    }
+  else
+    mime := null;
+  if (length (lang))
+    {
+      tmp := split_and_decode (lang, 0, '\0\0;=');
+      lang := tmp[0];
+    }
+  else
+    lang := null;
+  if (length (enc))
+    {
+      tmp := split_and_decode (enc, 0, '\0\0;=');
+      enc := tmp[0];
+    }
+  else
+    enc := null;
+  insert replacing DB.DBA.HTTP_VARIANT_MAP (VM_RULELIST,VM_URI,VM_VARIANT_URI,VM_QS, VM_TYPE,
+      VM_LANG,VM_ENC,VM_DESCRIPTION,VM_ALGO)
+      values (rulelist_uri, uri, variant_uri, qs, mime, lang, enc, descrition, algo);
+}
+;
+
+create procedure DB.DBA.HTTP_VARIANT_REMOVE (in rulelist_uri varchar, in uri varchar, in variant_uri varchar := '%')
+{
+  if (not exists (select 1 from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_uri))
+    signal ('42000', 'Rule IRI ' || rulelist_uri || ' does not exists.');
+  delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_uri and VM_URI like uri and VM_VARIANT_URI like variant_uri;
+}
+;
+
+create procedure DB.DBA.URLREWRITE_CALC_QS (in accept varchar, in s_accept varchar)
+{
+  declare arr, tmp any;
+  declare best_q float;
+  declare best_match varchar;
+  declare i, l int;
+  declare q, itm varchar;
+
+--  dbg_obj_print (current_proc_name ());
+  if (s_accept is null or s_accept = '*')
+    return 1;
+  arr := split_and_decode (accept, 0, '\0\0,;');
+--  dbg_obj_print (arr);
+  best_q := 0;
+  l := length (arr);
+  for (i := 0; i < l; i := i + 2)
+    {
+      itm := arr[i];
+--      dbg_obj_print (s_accept, itm);
+      if (s_accept like itm)
+	{
+	  q := arr[i+1];
+	  if (q is null)
+	    q := 1.0;
+	  else
+	    {
+	      tmp := split_and_decode (q, 0, '\0\0=');
+	      if (length (tmp) = 2)
+		q := atof (tmp[1]);
+	      else
+		q := 1.0;
+	    }
+	  if (best_q < q)
+	    {
+	      best_q := q;
+	    }
+	}
+    }
+  return best_q;
+}
+;
+
+create procedure DB.DBA.HTTP_URLREWRITE_TCN_LIST (inout li any)
+{
+  http ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">\n');
+  http ('<html><head>\n');
+  http ('<title>300 Multiple Choices</title>\n');
+  http ('</head><body>\n');
+  http ('<h1>Multiple Choices</h1>\n');
+  http ('Available variants:');
+  http ('<ul>\n');
+  http (li);
+  http ('</ul>\n</body></html>');
+}
+;
+
+
+create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout path varchar, inout lines any,
+    out http_code any, out http_headers any)
+{
+
+  declare mime, lang, enc, cset varchar;
+  declare rel_uri any;
+  declare tmp, pos, hf, list_body any;
+  declare qs1, qs2, qs3, qs4 float;
+  declare best_q, curr float;
+  declare best_variant, algo, list varchar;
+  declare vlist, trans, guess, do_cn int;
+
+  if (path like '%/') -- a directory
+    return 0;
+  hf := WS.WS.PARSE_URI (path);
+  tmp := hf[2];
+
+  pos := strrchr (tmp, '/');
+  if (pos is not null)
+    rel_uri := subseq (path, pos + 1);
+  mime := http_request_header_full (lines, 'Accept', '*/*'); -- /* the accept header */
+  lang := http_request_header_full (lines, 'Accept-Language', '*');
+  --enc  := http_request_header_full (lines, 'Accept-Encoding', '*');
+  cset := http_request_header_full (lines, 'Accept-Charset', '*');
+  algo := http_request_header_full (lines, 'Negotiate', '*');
+  do_cn := 1;
+  vlist := trans := guess := 0;
+  if (algo = 'trans');
+    {
+      trans := 1;
+      do_cn := 0;
+    }
+  if (algo = 'vlist');
+    {
+      trans := vlist := 1;
+      do_cn := 0;
+    }
+  if (algo = 'guess-small');
+    {
+      trans := vlist := 1;
+      do_cn := 0;
+    }
+  if (atof (algo) >= 1)
+    do_cn := 1;
+  if (algo = '*')
+    vlist := trans := do_cn := 1;
+
+--  dbg_obj_print (algo, mime);
+  best_q := 0;
+  list := '';
+  list_body := '';
+  for select VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO
+  from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_uri and VM_URI = rel_uri do
+    {
+       declare alang, aenc varchar;
+       qs1 := DB.DBA.URLREWRITE_CALC_QS (mime, VM_TYPE);
+       qs2 := DB.DBA.URLREWRITE_CALC_QS (lang, VM_LANG);
+       qs3 := DB.DBA.URLREWRITE_CALC_QS (cset, VM_ENC);
+--       dbg_obj_print (VM_VARIANT_URI, ' ', qs1, ' ', qs2, ' ', qs3);
+       curr := VM_QS * qs1 * qs2 * qs3;
+       if (curr > best_q)
+	 {
+	   best_q := curr;
+	   best_variant := VM_VARIANT_URI;
+	 }
+       if (not do_cn)
+         {
+	   alang := '';
+	   aenc := '';
+	   if (VM_LANG is not null)
+	     alang := sprintf (' {language %s}', VM_LANG);
+	   if (VM_ENC is not null)
+	     aenc := sprintf (' {charset %s}', VM_ENC);
+	   list := list || sprintf ('{"%s" %f {type %s}%s%s}, ', VM_VARIANT_URI, VM_QS, VM_TYPE, alang, aenc);
+	   list_body := list_body || sprintf ('<li><a href="%V">%V</a>, type %V</li>\n',
+	   	VM_VARIANT_URI, coalesce (VM_DESCRIPTION, VM_VARIANT_URI), VM_TYPE);
+	 }
+    }
+  if (do_cn and best_q > 0)
+    {
+      http_headers := sprintf ('TCN: choice\r\nVary: negotiate,accept\r\nContent-Location: %s\r\n', best_variant);
+      path := WS.WS.EXPAND_URL (path, best_variant);
+      return 1;
+    }
+  if (not do_cn)
+    {
+      http_headers := sprintf ('TCN: list\r\nVary: negotiate,accept\r\nAlternates: %s\r\n', rtrim (list, ', '));
+      http_code := 300;
+      if (is_http_ctx ())
+        DB.DBA.HTTP_URLREWRITE_TCN_LIST (list_body);
+      return 1;
+    }
+  return 0;
+}
+;
+
 create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, in post_params any := null) returns any
 {
   declare long_url varchar;
@@ -815,8 +1028,8 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   declare top_rulelist_iri varchar;
   declare rule_iri, in_path, qstr varchar;
   declare target_vhost_pkey, hf, accept any;
-  declare result, http_redir int;
-  declare http_headers varchar;
+  declare result, http_redir, http_tcn_code, tcn_rc int;
+  declare http_headers, http_tcn_headers varchar;
 
   -- XXX: the path is just path string, no fragment no query no host
   --hf := WS.WS.PARSE_URI (path);
@@ -850,8 +1063,24 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   if (length (qstr))
     in_path := in_path || '?' || qstr;
 
+  http_tcn_headers := http_headers := null;
+  http_tcn_code := http_redir := null;
+  tcn_rc := DB.DBA.URLREWRITE_APPLY_TCN (rule_list, in_path, lines, http_tcn_code, http_tcn_headers);
+--  dbg_obj_print ('http headers', http_tcn_code, http_tcn_headers);
   result := DB.DBA.URLREWRITE_APPLY_RECURSIVE (rule_list, null, null, in_path, '', qstr, post_params, accept,
   	long_url, params, rule_iri, target_vhost_pkey, http_redir, http_headers, lines);
+
+  if (http_redir is null or http_redir = 0)
+    http_redir := http_tcn_code;
+  if (http_headers is null or http_headers = 0)
+    http_headers := http_tcn_headers;
+  else if (http_tcn_headers is not null)
+    http_headers := http_tcn_headers || http_headers;
+
+  if (tcn_rc and not length (long_url)) -- there is a TCN but no rewrite rule
+    long_url := in_path;
+
+--  dbg_obj_print (http_redir, http_headers);
   if (length (long_url) and is_http_ctx ()) -- should be result = 1
     {
       declare full_path, pars, p_full_path any;
@@ -886,14 +1115,20 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 	  http_body_read ();
 	  return 1;
 	}
-      else
+      else if (http_redir = 300) -- TCN
 	{
-	  if (isinteger (http_redir) and http_redir > 399)
+	  http_status_set (http_redir);
+	  http_body_read ();
+	  return 1;
+        }
+      else if (isinteger (http_redir) and http_redir > 399)
 	    {
 	      http_status_set (http_redir);
 	      http_body_read ();
 	      return 1;
 	    }
+      else
+        {
 	  hf := WS.WS.PARSE_URI (long_url);
 	  full_path := hf[2];
 	  pars := split_and_decode (hf[4]);
@@ -957,6 +1192,21 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
 	      http (');\n\n', ses);
 	  }
     }
+
+  for select VM_RULELIST, VM_URI, VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO
+    from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_iri do
+   {
+      http (sprintf ('DB.DBA.HTTP_VARIANT_ADD (\n%s,\n', SYS_SQL_VAL_PRINT (VM_RULELIST)), ses);
+      http (sprintf ('%s,\n', SYS_SQL_VAL_PRINT (VM_URI)), ses);
+      http (sprintf ('%s,\n', SYS_SQL_VAL_PRINT (VM_VARIANT_URI)), ses);
+      http (sprintf ('%s,\n', SYS_SQL_VAL_PRINT (VM_TYPE)), ses);
+      http (sprintf ('%s,\n', SYS_SQL_VAL_PRINT (VM_QS)), ses);
+      http (sprintf ('%s,\n', SYS_SQL_VAL_PRINT (VM_DESCRIPTION)), ses);
+      http (sprintf ('%s,\n', SYS_SQL_VAL_PRINT (VM_LANG)), ses);
+      http (sprintf ('%s,\n', SYS_SQL_VAL_PRINT (VM_ENC)), ses);
+      http (sprintf ('%s\n', SYS_SQL_VAL_PRINT (VM_ALGO)), ses);
+      http (');\n\n', ses);
+   }
 
   return string_output_string (ses);
 }

@@ -2127,7 +2127,7 @@ again:
       if (cont_type <> '' and cont_type <> 'sql/xml')
 	{
 	  if (cont_type <> 'xml/view' and cont_type <> 'xml/persistent-view')
-	    http_header (concat ('Content-Type: ', cont_type, '\r\nETag: "',server_etag,'"\r\n'));
+	    http_header (http_header_get () || concat ('Content-Type: ', cont_type, '\r\nETag: "',server_etag,'"\r\n'));
 	  else
 	    http_header (concat ('Content-Type: text/xml\r\nETag: "',server_etag,'"\r\n'));
 	}
@@ -2319,9 +2319,9 @@ end_xml:
 	          if (_xslt_sheet <> '')
 		    http_xslt (_xslt_sheet);
 		  else if (length (content) = 0)
-		    http_header (sprintf ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: %s\r\nContent-Type: %s\r\n', soap_print_box (now (), '', 1), xml_mime_type));
+		    http_header (http_header_get () || sprintf ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: %s\r\nContent-Type: %s\r\n', soap_print_box (now (), '', 1), xml_mime_type));
 		  else
-		    http_header (sprintf ('Content-Type: %s\r\nETag: "%s"\r\n', xml_mime_type, _server_etag));
+		    http_header (http_header_get () || sprintf ('Content-Type: %s\r\nETag: "%s"\r\n', xml_mime_type, _server_etag));
 		}
 	    }
 	}
