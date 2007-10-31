@@ -797,51 +797,51 @@ create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
 of being specified in 'insert into graph' clause.
        </para>
 <programlisting><![CDATA[
-sparql define input:default-graph-uri <SparqlActions> insert { <s0> <p0> <o0> };
+sparql define input:default-graph-uri <A-Named-Graph> insert { <s0> <p0> <o0> };
 ]]></programlisting>
        <para>The following two statements are equivalent but the latter may work faster, especially
 if there are many RDF views in the system or if some RDF views may contain triples for the graph
 in question. Note that neither of these two affect data that might come from RDF views.
        </para>
 <programlisting><![CDATA[
-sparql delete from graph <SparqlActions> { ?s ?p ?o } from <SparqlActions> where { ?s ?p ?o };
-sparql clear graph <SparqlActions>;
+sparql delete from graph <A-Named-Graph> { ?s ?p ?o } from <A-Named-Graph> where { ?s ?p ?o };
+sparql clear graph <A-Named-Graph>;
 ]]></programlisting>
        <para>Keywords 'insert in' and 'insert into' are interchangeable in Virtuoso for backward
 compatibility but SPARUL spec lists only 'insert into':
        </para>
 <programlisting><![CDATA[
-sparql insert in graph <SparqlActions> { <s1> <p11> <o111>, <o112> ; <p12> <o121> , <o122> };
-sparql insert into graph <SparqlActions> { <s2> <p2> <o2> };
+sparql insert into graph <A-Named-Graph> { <s1> <p11> <o111>, <o112> ; <p12> <o121> , <o122> };
+sparql insert into graph <A-Named-Graph> { <s2> <p2> <o2> };
 ]]></programlisting>
        <para>It is possible to use various expressions to calculate fields of new triples. This is
 proven to be very convenient, even if not a part of the original spec.
        </para>
 <programlisting><![CDATA[
-sparql insert into graph <SparqlActions> { `iri (bif:concat (str (?s), "new"))` <p11> ?o } where { ?s <p11> ?o };
+sparql insert into graph <A-Named-Graph> { `iri (bif:concat (str (?s), "new"))` <p11> ?o } where { ?s <p11> ?o };
 ]]></programlisting>
        <para>'Modify graph' may be used as a sort of 'update' operation.
        </para>
 <programlisting><![CDATA[
-sparql modify graph <SparqlActions> delete { ?s <p2> ?o } insert { ?s <p2new> ?o } where { ?s <p2> ?o };
-sparql delete from graph <SparqlActions> { <s2> <p2new> <o2> };
+sparql modify graph <A-Named-Graph> delete { ?s <p2> ?o } insert { ?s <p2new> ?o } where { ?s <p2> ?o };
+sparql delete from graph <A-Named-Graph> { <s2> <p2new> <o2> };
 ]]></programlisting>
        <para>The resource URL can be calculated by a string expression.</para>
 <programlisting><![CDATA[
 sparql load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf")
-   into graph <SparqlActions>;
+   into graph <A-Named-Graph>;
 ]]></programlisting>
        <para>Number of operations can be sent to a web service endpoint as a single statement and
 executed in sequence.
        </para>
 <programlisting><![CDATA[
 sparql
-  insert in graph <SparqlActions> { <s1> <p11> <o111>, <o112> ; <p12> <o121> , <o122> }
-  insert into graph <SparqlActions> { <s2> <p2> <o2> }
-  insert into graph <SparqlActions> { `iri (bif:concat (str (?s), "new"))` <p11> ?o } where { ?s <p11> ?o }
-  modify graph <SparqlActions> delete { ?s <p2> ?o } insert { ?s <p2new> ?o } where { ?s <p2> ?o }
-  delete from graph <SparqlActions> { <s2> <p2new> <o2> }
-  load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf") into graph <SparqlActions>
+  insert in graph <A-Named-Graph> { <s1> <p11> <o111>, <o112> ; <p12> <o121> , <o122> }
+  insert into graph <A-Named-Graph> { <s2> <p2> <o2> }
+  insert into graph <A-Named-Graph> { `iri (bif:concat (str (?s), "new"))` <p11> ?o } where { ?s <p11> ?o }
+  modify graph <A-Named-Graph> delete { ?s <p2> ?o } insert { ?s <p2new> ?o } where { ?s <p2> ?o }
+  delete from graph <A-Named-Graph> { <s2> <p2new> <o2> }
+  load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf") into graph <A-Named-Graph>
 ;
 ]]></programlisting>
       </sect2>
