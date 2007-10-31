@@ -682,7 +682,7 @@ node_print (data_source_t * node)
   else if (in == (qn_input_fn) update_node_input)
     {
       update_node_t *upd = (update_node_t *) node;
-      stmt_printf (("Update %s ", upd->upd_table->tb_name));
+      stmt_printf (("Update %s %s ", upd->upd_keyset ? "keyset" : "", upd->upd_table->tb_name));
       ssl_print (upd->upd_place);
       ssl_array_print (upd->upd_values);
       stmt_printf (("\n"));

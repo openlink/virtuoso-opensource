@@ -628,13 +628,12 @@ itc_free (it_cursor_t * it)
 }
 
 
-void
-plh_free (placeholder_t * pl)
+int
+plh_box_free (box_t pl)
 {
   itc_unregister ((it_cursor_t *) pl);
-  dk_free ((caddr_t) pl, sizeof (placeholder_t));
+  return 0;
 }
-
 
 placeholder_t *
 plh_copy (placeholder_t * pl)
@@ -656,7 +655,7 @@ plh_copy (placeholder_t * pl)
 placeholder_t *
 plh_landed_copy (placeholder_t * pl, buffer_desc_t * buf)
 {
-  NEW_VAR (placeholder_t, new_pl);
+  placeholder_t * new_pl = (placeholder_t *) dk_alloc_box (sizeof (placeholder_t), DV_PLACEHOLDER);
   memcpy (new_pl, pl, ITC_PLACEHOLDER_BYTES);
   new_pl->itc_type = ITC_PLACEHOLDER;
   new_pl->itc_is_registered = 0;

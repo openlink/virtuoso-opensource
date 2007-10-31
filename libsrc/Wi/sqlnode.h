@@ -643,6 +643,9 @@ typedef struct update_node_s
     state_slot_t **	upd_trigger_args;
     int			upd_hi_id;  /* key for lookup of affected hi's in the lt */
     query_t *		upd_policy_qr;
+    int 		upd_keyset; /* upd_cols intersects with the key cols of the
+    				     ts_order_ks->ks_key of the  table_source_t before the update */
+    state_slot_t *	upd_keyset_state; /* keeps an array of current pos, last pos and ht */
   } update_node_t;
 
 

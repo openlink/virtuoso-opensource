@@ -531,10 +531,8 @@ update_quick (update_node_t * upd, caddr_t * qst, it_cursor_t * cr_itc, buffer_d
   return 1;
 }
 
-
 void
-update_node_run (update_node_t * upd, caddr_t * inst,
-		 caddr_t * state)
+update_node_run_1 (update_node_t * upd, caddr_t * inst, caddr_t * state)
 {
   int any_blob = 0, main_pos_in_image;
   caddr_t row_err = NULL;
@@ -789,6 +787,214 @@ update_node_run (update_node_t * upd, caddr_t * inst,
   }
 }
 
+static void 
+update_keyset_state_set (update_node_t * upd, caddr_t * state)
+{
+  id_hash_t * sht, * vht;
+  caddr_t * upd_state;
+  long pos, last;
+  caddr_t v, n_box;
+  int inx, cnt;
+  state_slot_t ** sa[2], **slots;
+
+  /* save update node state */
+  /*fprintf (stderr, "update_keyset_state_set\n");*/
+
+  upd_state = (caddr_t *)qst_get (state, upd->upd_keyset_state);
+  if (!upd_state)
+    {
+      upd_state = (caddr_t *) dk_alloc_box_zero (3 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      upd_state[2] = (caddr_t) box_dv_dict_hashtable (1024);
+      qst_set (state, upd->upd_keyset_state, (caddr_t) upd_state);
+    }
+ 
+  pos = unbox (upd_state[0]);
+  last = unbox (upd_state[1]);
+  sht = (id_hash_t *) upd_state[2]; 
+  if (!sht)
+    GPF_T;
+
+  /* will keep upd_place, upd_values, upd_trigger_args */
+  vht = (id_hash_t *) box_dv_dict_hashtable (31);
+
+  v = qst_get (state, upd->upd_place);
+  n_box = box_num ((ptrlong)upd->upd_place->ssl_index);
+  id_hash_set (vht, (caddr_t)&n_box, (caddr_t)&v); 
+  QST_GET_V (state, upd->upd_place) = NULL;
+
+  sa[0] = upd->upd_values;
+  sa[1] = upd->upd_trigger_args;
+  
+  for (cnt = 0; cnt < 2; cnt++)
+    { 
+      slots = sa[cnt];
+      DO_BOX (state_slot_t *, sl, inx, slots)
+	{
+	  /*fprintf (stderr, "%02d idx=%d type=%d name=[%s]\n", cnt, sl->ssl_index, sl->ssl_type, sl->ssl_name);*/
+	  n_box = box_num ((ptrlong) sl->ssl_index);
+	  if (id_hash_get (vht, (caddr_t)&n_box) || sl->ssl_type >= SSL_CONSTANT)
+	    {
+	      dk_free_box (n_box);
+	      continue;
+	    }
+	  if (SSL_VARIABLE == sl->ssl_type || SSL_PARAMETER == sl->ssl_type)
+	    v = box_copy_tree (qst_get (state, sl));
+	  else
+	    {
+	      v = qst_get (state, sl);
+	      QST_GET_V (state, sl) = NULL;
+	    }
+	  id_hash_set (vht, (caddr_t)&n_box, (caddr_t)&v); 
+	}
+      END_DO_BOX;
+    }
+  last = ++pos;
+  n_box = box_num ((ptrlong) pos);
+  id_hash_set (sht, (caddr_t)&n_box, (caddr_t)&vht);
+  dk_free_box (upd_state[0]);
+  dk_free_box (upd_state[1]);
+  upd_state[0] = box_num (pos);
+  upd_state[1] = box_num (last);
+}
+
+
+static int 
+update_keyset_state_restore (update_node_t * upd, caddr_t * state, int * start)
+{
+#define UPD_SET_FROM_HT(sl) \
+    do { \
+      n_box = box_num ((ptrlong)(sl)->ssl_index); \
+      place = (caddr_t *) id_hash_get (vht, (caddr_t)&n_box); \
+      if (place) { \
+      k = place[-1]; \
+      v = *place; \
+      id_hash_remove (vht, (caddr_t)&n_box); \
+      dk_free_box (k); \
+      qst_set (state, sl, v); \
+      } \
+      dk_free_box (n_box); \
+    } while (0)
+
+  id_hash_t * sht, *vht;
+  caddr_t v, *place, k;
+  int inx, cnt;
+  state_slot_t ** sa[2], **slots;
+  caddr_t * upd_state, n_box;
+  long pos, last;
+
+  upd_state = (caddr_t *)qst_get (state, upd->upd_keyset_state);
+  if (!upd_state)
+    GPF_T;
+  pos = unbox (upd_state[0]);
+  last = unbox (upd_state[1]);
+  if (*start) /* first call of restore */
+    {
+      *start = 0;
+      pos = 0;
+    }
+  sht = (id_hash_t *) upd_state[2]; 
+  if (!sht)
+    GPF_T;
+  pos++;
+  if (pos > last) 
+    {
+      /* finished */
+      dk_free_box (upd_state[0]);
+      dk_free_box (upd_state[1]);
+      upd_state[0] = box_num (0);
+      upd_state[1] = box_num (0);
+      dk_free_box (QST_GET_V (state, upd->upd_place));
+      QST_GET_V (state, upd->upd_place) = NULL;
+      return 0;
+    }
+
+  n_box = box_num ((ptrlong) pos);
+  place = (caddr_t *) id_hash_get (sht, (caddr_t)&n_box);
+  if (!place)
+    GPF_T;
+
+  vht = (id_hash_t *)(*place);
+  k = place[-1];
+  id_hash_remove (sht, (caddr_t)&n_box);
+  dk_free_box (k);
+  dk_free_box (n_box);
+
+  /* restore update node state */
+  UPD_SET_FROM_HT (upd->upd_place);
+
+  sa[0] = upd->upd_values;
+  sa[1] = upd->upd_trigger_args;
+  
+  for (cnt = 0; cnt < 2; cnt++)
+    { 
+      slots = sa[cnt];
+      DO_BOX (state_slot_t *, sl, inx, slots)
+	{
+	  if (sl->ssl_type >= SSL_CONSTANT)
+	    continue;
+	  UPD_SET_FROM_HT (sl);
+	}
+      END_DO_BOX;
+    }
+  dk_free_box (vht);
+  dk_free_box (upd_state[0]);
+  upd_state[0] = box_num (pos);
+  return 1;
+}
+
+
+/*
+   update_node_run
+   If the  upd_keyset is set and both inst and state are
+   given, will remember the values in the ssls upd_place, upd_values,
+   upd_trigger_args.  The placeholder is taken from the ssl and the ssl is set to
+   null withouot free. QST_GET_V () = NULL.
+
+   If the node remembers states, do SRC_IN_STATE (upd, inst) = inst to mark
+   this.  This means the will be continued later.  Means the update is done
+   then.
+
+   When update_node_run is called for continue, ie inst is set and state is
+   null, do the updates.  Loop over the remembered things, put them in the
+   appropriate ssl and call the rest of update node run.  Do not copy the 
+   remembered values, just set them with qst_set.  This frees the previous value.
+*/
+
+void 
+update_node_run (update_node_t * upd, caddr_t * inst, caddr_t * state)
+{
+  if (upd->upd_keyset)
+    {
+      if (state)
+	{
+	  update_keyset_state_set (upd, state);
+	  SRC_IN_STATE ((data_source_t *)upd, inst) = inst;
+	  return;
+        }
+      else
+	{
+	  int start = 1;
+	  state = inst;
+	  SRC_IN_STATE ((data_source_t *)upd, inst) = NULL;
+	  while (update_keyset_state_restore (upd, state, &start))
+	    {
+	      /* call update_node_run_1 for each state */
+	      if (!upd->upd_trigger_args)
+		{
+		  update_node_run_1 (upd, inst, state);
+		  ROW_AUTOCOMMIT (inst);
+		}
+	      else
+		trig_wrapper (inst, upd->upd_trigger_args, upd->upd_table,
+		    TRIG_UPDATE, (data_source_t *) upd, (qn_input_fn) update_node_run_1);
+	    }
+	  return;
+	}
+    }
+  update_node_run_1 (upd, inst, state);
+  ROW_AUTOCOMMIT (inst);
+}
+
 
 void
 update_node_input (update_node_t * upd, caddr_t * inst, caddr_t * state)
@@ -800,10 +1006,9 @@ update_node_input (update_node_t * upd, caddr_t * inst, caddr_t * state)
   if (upd->upd_policy_qr)
     trig_call (upd->upd_policy_qr, inst, upd->upd_trigger_args, upd->upd_table);
 
-  if (!upd->upd_trigger_args)
+  if (!upd->upd_trigger_args || upd->upd_keyset)
     {
     update_node_run (upd, inst, state);
-      ROW_AUTOCOMMIT (inst);
     }
   else
     {

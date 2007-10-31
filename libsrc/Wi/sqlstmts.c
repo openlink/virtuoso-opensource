@@ -1084,6 +1084,38 @@ int sqlc_no_remote_pk = 0;
 	  "there are local triggers defined on the table")
 
 
+void
+sqlc_update_set_keyset (sql_comp_t * sc, table_source_t * ts)
+{
+  /* in searched update / delete, there's one table source. */
+  update_node_t * upd = sc->sc_update_keyset;
+  int part_no = 0, inx;
+  dbe_key_t * key = ts->ts_order_ks ? ts->ts_order_ks->ks_key : NULL;
+
+  if (!key || !upd)
+    {
+      sc->sc_update_keyset = NULL;
+      return;
+    }
+  DO_SET (dbe_column_t *, col, &key->key_parts)
+    {
+      DO_BOX (ptrlong, cid, inx, upd->upd_col_ids)
+	{
+	  if (cid == col->col_id)
+	    {
+	      upd->upd_keyset = 1;
+	      return;
+	    }	  
+	}
+      END_DO_BOX;
+      part_no++;
+      if (part_no >= key->key_n_significant)
+	break;
+    }
+  END_DO_SET ();
+  sc->sc_update_keyset = NULL;
+}
+
 
 void
 sqlc_update_searched (sql_comp_t * sc, ST * tree)
@@ -1153,9 +1185,18 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
       upd->upd_col_ids = col_ids;
 
       sc->sc_in_cursor_def = 1;
+      /*
+	 Note that the ssl of the upd_place is the alias ssl of the order_itc
+
+	 This must not be.  Make it so that the ts_current_of is not aliased to the
+	 ts_order_itc if we have this kind of update. Sqlcomp2.c.  Put a flag for
+	 this in sql_comp_t, set it in sqlc_update_searched.  Like this you  know
+	 when not to alias this. 
+       */
       tc_init (&tc, TRIG_UPDATE, tb,
 	  (caddr_t*) tree->_.update_src.cols, tree->_.update_src.vals, 0);
       sc->sc_is_update = 1;
+      sc->sc_update_keyset = upd;
 	sqlo_query_spec (sc, 0,
 	    (caddr_t *) tc.tc_selection,
 	    tree->_.update_src.table_exp,
@@ -1163,6 +1204,7 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
 	    &slots);
 	sc->sc_is_update = 0;
       sc->sc_in_cursor_def = 0;
+      sc->sc_update_keyset = NULL;
       if (!tc.tc_is_trigger)
 	upd->upd_values = slots;
       else
@@ -1177,6 +1219,8 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
 
       sql_node_append (&sc->sc_cc->cc_query->qr_head_node,
 	  (data_source_t *) upd);
+      if (upd->upd_keyset)
+	upd->upd_keyset_state = ssl_new_variable (sc->sc_cc, "keyset_state", DV_ARRAY_OF_POINTER);
       upd->upd_place = sqlo_co_place (sc);
       sqlc_upd_param_types (sc, upd);
       upd_optimize (sc, upd);

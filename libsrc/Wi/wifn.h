@@ -99,7 +99,9 @@ unsigned int64 key_count_estimate (dbe_key_t * key, int n_samples, int upd_col_s
 caddr_t key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new);
 int  key_rdf_lang_id (caddr_t name);
 
-void plh_free (placeholder_t * pl);
+#define plh_free(pl) dk_free_box ((box_t) (pl))
+int plh_box_free (box_t plh);
+
 placeholder_t * plh_landed_copy (placeholder_t * pl, buffer_desc_t * buf);
 placeholder_t * plh_copy (placeholder_t * pl);
 buffer_desc_t * itc_set_by_placeholder (it_cursor_t * itc, placeholder_t * pl);

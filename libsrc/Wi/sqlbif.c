@@ -12585,6 +12585,7 @@ sql_bif_init (void)
   else
   bifs_initialized = 1;
   dk_mem_hooks (DV_EXEC_CURSOR, box_non_copiable, type_lc_destroy, 0);
+  dk_mem_hooks (DV_PLACEHOLDER, box_non_copiable, plh_box_free, 0); 
 
   ssl_constant_init ();
   bif_cursors_init();

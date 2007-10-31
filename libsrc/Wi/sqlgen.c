@@ -902,7 +902,9 @@ sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
   if (tb_dfe->_.table.is_unique && !ts->ts_main_ks)
     ts->src_gen.src_input = (qn_input_fn) table_source_input_unique;
 
+  sqlc_update_set_keyset (sc, ts);
   sqlc_ts_set_no_blobs (ts);
+  if (!sc->sc_update_keyset)
   ts_alias_current_of (ts);
   table_source_om (sc->sc_cc, ts);
 

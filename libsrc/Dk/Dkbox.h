@@ -434,6 +434,7 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define DV_XPATH_QUERY 232	/*!< Query object, this is a read-only thing with reference counting */
 #define DV_RDF 246		/*!< RDF object that is SQL value + type id + language id + outline id + flag whether the sql value is full */
 #define DV_INT64 247		/*!< This tag is used in schema and serialization. int box is always int64 */
+#define DV_PLACEHOLDER 248	/* This tag keeps placeholder_t structure */
 
 
 /* Special box for wrapping memory for user-specific objects. */

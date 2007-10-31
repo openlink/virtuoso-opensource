@@ -1140,7 +1140,7 @@ ts_set_placeholder (table_source_t * ts, caddr_t * state,
 	  }
 	else
 	  {
-	    NEW_VAR (placeholder_t, pl);
+	    placeholder_t * pl = (placeholder_t *) dk_alloc_box (sizeof (placeholder_t), DV_PLACEHOLDER);
 	    memcpy (pl, itc, ITC_PLACEHOLDER_BYTES);
 	    pl->itc_type = ITC_PLACEHOLDER;
 	    itc_register ((it_cursor_t *) pl, *buf_ret);
@@ -1263,6 +1263,9 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	  ITC_IN_KNOWN_MAP (order_itc, order_itc->itc_page);
 	  itc_assert_lock (order_itc);
 #endif
+	  if (ts->ts_current_of && !ts->ts_main_ks && 
+	      !ts->ts_current_of->ssl_is_alias && !QST_GET_V (state, ts->ts_current_of))
+	    ts_set_placeholder (ts, state, order_itc, &order_buf); 
 	  itc_register (order_itc, order_buf);
 	  itc_page_leave (order_itc, order_buf);
 	  qn_record_in_state ((data_source_t *) ts, inst, state);
@@ -1279,6 +1282,9 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 #ifndef NDEBUG
 		itc_assert_lock (order_itc);
 #endif
+		if (ts->ts_current_of && !ts->ts_main_ks && 
+		    !ts->ts_current_of->ssl_is_alias && !QST_GET_V (state, ts->ts_current_of))
+		  ts_set_placeholder (ts, state, order_itc, &order_buf); 
 		itc_register (order_itc, order_buf);
 		itc_page_leave (order_itc, order_buf);
 		qn_record_in_state ((data_source_t *) ts, inst, state);
@@ -1949,7 +1955,7 @@ deref_node_input (deref_node_t * dn, caddr_t * inst, caddr_t * state)
 	  }
 	if (dn->dn_place)
 	  {
-	    NEW_VAR (placeholder_t, pl);
+	    placeholder_t * pl = (placeholder_t *) dk_alloc_box (sizeof (placeholder_t), DV_PLACEHOLDER);
 	    ITC_IN_KNOWN_MAP (ref_itc, ref_itc->itc_page);
 	    memcpy (pl, (ITC) ref_itc, ITC_PLACEHOLDER_BYTES);
 	    pl->itc_type = ITC_PLACEHOLDER;

@@ -357,8 +357,6 @@ typedef struct server_lock_s
 
 extern server_lock_t server_lock;
 
-void plh_free (placeholder_t * plh);
-
 caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...)
 #ifdef __GNUC__
 __attribute__ ((format (printf, 3, 4)))

@@ -208,6 +208,7 @@ typedef struct sql_comp_s
     state_slot_t *	sc_grouping;
     ST **		sc_groupby_set;
     int		sc_is_update;
+    update_node_t * 	sc_update_keyset;
   } sql_comp_t;
 
 #define SC_G_ID(sc) \
@@ -433,6 +434,7 @@ void sqlc_derived_order_by (sql_comp_t * sc, comp_table_t * ct);
 void sqlc_table_used (sql_comp_t * sc, dbe_table_t * tb);
 void sqlc_trig_const_params (sql_comp_t * sc, state_slot_t ** params,
     dk_set_t * code);
+void sqlc_update_set_keyset (sql_comp_t * sc, table_source_t * ts);
 
 void tc_init (trig_cols_t * tc, int event, dbe_table_t * tb, caddr_t * cols,
     ST ** vals, int add_pk);
