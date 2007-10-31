@@ -50,6 +50,7 @@
       </h1>
   </vm:rawheader>
   <vm:pagebody>
+      <vm:help id="url_rewrite" sect=""/>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
@@ -224,24 +225,33 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
 		      <v:item name="REGEX" value="1"/>
 		      <v:item name="sprintf" value="0"/>
 		  </v:select-list><br />
-		  <label for="spat1">Source pattern</label>
+		  <label for="rc1">Rule matching</label>
+		  <v:select-list name="rc1" value="0" xhtml_id="rc1" error-glyph="*">
+		      <v:item name="Normal" value="0"/>
+		      <v:item name="First matching" value="1"/>
+		      <v:item name="Last matching" value="2"/>
+		  </v:select-list>
+		  <br />
+		  <hr/>
+		  <label for="spat1">Request Path pattern</label>
 		  <v:text name="spat1" value="" xhtml_id="spat1" error-glyph="*" xhtml_size="110" default_value="--concat (rtrim (self.lpath, '/'),'/(.*)$')">
 		  </v:text><br/>
+		  <label for="ah1">Accept Header Request pattern</label>
+		  <v:text name="ah1" value="" xhtml_size="110" xhtml_id="ah1" error-glyph="*">
+		  </v:text><br />
 
-		  <label for="dest1">Destination</label>
+
+		  <hr/>
+		  <label for="dest1">Destination Path format</label>
 		  <v:text name="dest1" xhtml_id="dest1" error-glyph="*" value="" xhtml_size="110" default_value="--concat (rtrim (self.lpath, '/'), '/$1')"/>
 		  <br />
 
 
-		  <label for="pl1">PL Function</label>
+		  <label for="pl1">Destination format Conversion function</label>
 		  <v:text name="pl1" value="" xhtml_size="110" xhtml_id="pl1" error-glyph="*">
 		  </v:text><br />
 
-		  <label for="ah1">Accept Header pattern</label>
-		  <v:text name="ah1" value="" xhtml_size="110" xhtml_id="ah1" error-glyph="*">
-		  </v:text><br />
-
-		  <label for="hc1">HTTP Redirect code</label>
+		  <label for="hc1">HTTP Response Code</label>
 		  <v:select-list name="hc1" value="0" xhtml_id="hc1" error-glyph="*">
 		      <v:item name="Internal redirect" value="0"/>
 		      <v:item name="301" value="301"/>
@@ -251,17 +261,10 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
 		  </v:select-list>
 		  <br />
 
-		  <label for="hh1">HTTP Headers</label>
+		  <label for="hh1">HTTP Response Headers</label>
 		  <v:textarea name="hh1" value="" xhtml_rows="5" xhtml_cols="100" xhtml_id="hh1" error-glyph="*">
 		  </v:textarea><br />
 
-		  <label for="rc1">Rule condition</label>
-		  <v:select-list name="rc1" value="0" xhtml_id="rc1" error-glyph="*">
-		      <v:item name="Normal" value="0"/>
-		      <v:item name="First matching" value="1"/>
-		      <v:item name="Last matching" value="2"/>
-		  </v:select-list>
-		  <br />
 
 
 	      <span class="fm_ctl_btn">
