@@ -311,7 +311,32 @@ sqlc_insert_autoincrements (sql_comp_t * sc, insert_node_t * ins,
 	if (old_sl)
 	  {
 	    if (col->col_sqt.sqt_dtp != DV_TIMESTAMP)
+	      {
+		caddr_t inc_by = col->col_options ? get_keyword_int (col->col_options, "increment_by", NULL) : NULL;
+
+		snprintf (temp, sizeof (temp), "%s.%s.%s.%s", tb->tb_qualifier, tb->tb_owner,
+		    col->col_defined_in->tb_name, col->col_name);
+		seq_name = box_dv_short_string (temp);
+		args = (state_slot_t **) sc_list (3, ssl_new_constant (sc->sc_cc, seq_name), old_sl, 
+		    ssl_new_constant (sc->sc_cc, 1));
+		snext = t_sqlp_box_id_upcase ("sequence_set");
+		cv_call (code, NULL, snext, NULL, args);
+		if (inc_by)
+		  {
+		    args = (state_slot_t **) sc_list (2, ssl_new_constant (sc->sc_cc, seq_name),
+			ssl_new_constant (sc->sc_cc, inc_by));
+		    dk_free_tree (inc_by);
+		  }
+		else
+		  {
+		    args = (state_slot_t **) dk_alloc_box (sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+		    args[0] = ssl_new_constant (sc->sc_cc, seq_name);
+		  }
+		dk_free_box (seq_name);
+		snext = t_sqlp_box_id_upcase ("sequence_next");
+		cv_call (code, NULL, snext, NULL, args);
 	      goto next_col;  /* given value overrides automatic if identity column. */
+	      }
 	    /* replace the slot in values with the autoinc value */
 	    dk_set_member (ins->ins_values, old_sl)->data = (caddr_t) sl;
 	  }
