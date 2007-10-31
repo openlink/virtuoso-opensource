@@ -53,6 +53,14 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
             'URL', 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE', null, 'Amazon articles');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(http://bugs.*)|'||
+        '(http://.*/show_bug.cgi?id.*)|'||
+        '(http://.*bugzilla.*)|'||
+        '(https://bugzilla.*)|'||
+        '(https://.*bugzilla.*)',
+            'URL', 'DB.DBA.RDF_LOAD_BUGZILLA', null, 'Bugzillas');
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
     values ('(http://cgi.sandbox.ebay.com/.*&item=[A-Z0-9]*&.*)|(http://cgi.ebay.com/.*QQitemZ[A-Z0-9]*QQ.*)',
             'URL', 'DB.DBA.RDF_LOAD_EBAY_ARTICLE', null, 'eBay articles');
 
@@ -658,6 +666,28 @@ end_sp:
   return 1;
 };
 
+create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xd, xt, url, tmp, api_key, img_id, hdr, exif any;
+  declare exit handler for sqlstate '*'
+    {
+      return 0;
+    };
+  tmp := sprintf_inverse (new_origin_uri, 'http://%s/show_bug.cgi?id=%s', 0);
+  img_id := tmp[1];
+  if (img_id is null)
+    return 0;
+  url := concat(new_origin_uri, '&ctype=xml');
+  tmp := http_get (url, hdr);
+  if (hdr[0] not like 'HTTP/1._ 200 %')
+    signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+  xd := xtree_doc (tmp);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/bugzilla2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
 
 create procedure DB.DBA.RDF_LOAD_OO_DOCUMENT (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
