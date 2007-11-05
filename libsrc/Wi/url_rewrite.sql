@@ -455,6 +455,8 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
               declare parts, nice_params any;
               declare _result, accept_val varchar;
 
+	      if (registry_get ('__debug_url_rewrite') = '2')
+	        dbg_printf ('trying rule=[%s] URL=[%s]', URR_NICE_FORMAT, nice_lpath);
 	      if (length (URR_ACCEPT_PATTERN) and not length (accept_header))
 		goto next_rule;
 	      accept_val := null;
@@ -521,8 +523,8 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
 
               -- dbg_obj_princ('parts6: ', deserialize(URR_NICE_PARAMS), parts, deserialize(URR_TARGET_PARAMS), URR_TARGET_FORMAT);
               long_url := DB.DBA.URLREWRITE_SPRINTF_RESULTS (deserialize(URR_NICE_PARAMS), parts, deserialize(URR_TARGET_PARAMS), URR_TARGET_FORMAT, URR_TARGET_EXPR, accept_val, lines);
-	      if (registry_get ('__debug_url_rewrite') = '1')
-	        dbg_printf ('rule=[%s] URL=[%s]', cur_iri, long_url);
+	      if (registry_get ('__debug_url_rewrite') in ('1', '2'))
+	        dbg_printf ('MATCH rule=[%s] URL=[%s]', cur_iri, long_url);
               rule_iri := cur_iri;
 	      http_redir := URR_HTTP_REDIRECT;
 	      http_headers := URR_HTTP_HEADERS;
@@ -923,6 +925,43 @@ create procedure DB.DBA.HTTP_URLREWRITE_TCN_LIST (inout li any)
 }
 ;
 
+create procedure DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (in pattern varchar, in str varchar, in format varchar)
+{
+   declare arr, pars, ret, tmp any;
+   declare inx, len, i int;
+   declare pos int;
+
+   arr := regexp_parse (pattern, str, 0);
+   if (arr is null)
+     return NULL;
+   len := length (arr);
+   pars := make_array ((len-2)/2, 'any');
+   for (i := 0, inx := 2; inx < len; inx := inx + 2, i := i + 1)
+     {
+        if (arr[inx] < 0 or arr[inx + 1] < 0)
+	  pars[i] := null;
+        else
+	  pars[i] := subseq (str, arr[inx], arr[inx + 1]);
+     }
+   arr := regexp_parse ('(\\x24[0-9]+)', format, 0);
+   if (arr is null)
+     return format;
+   ret := '';
+   pos := 0;
+   while (arr is not null)
+     {
+       ret := ret || subseq (format, pos, arr[0]);
+       tmp := atoi(ltrim (subseq (format, arr[0], arr[1]), '\x24'));
+       if (tmp > 0 and tmp <= length (pars))
+         ret := ret || pars[tmp-1];
+       pos := arr[1];
+       arr := regexp_parse ('(\\x24[0-9]+)', format, pos);
+     }
+   if (pos > 0 and pos < length (format))
+     ret := ret || subseq (format, pos);
+   return ret;
+}
+;
 
 create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout path varchar, inout lines any,
     out http_code any, out http_headers any)
@@ -975,10 +1014,15 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   best_q := 0;
   list := '';
   list_body := '';
-  for select VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO
-  from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_uri and VM_URI = rel_uri do
+  for select VM_URI, VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO
+  from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_uri and regexp_match (VM_URI, rel_uri) is not null do
     {
-       declare alang, aenc varchar;
+       declare alang, aenc, variant varchar;
+
+       variant := DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (VM_URI, rel_uri, VM_VARIANT_URI);
+       if (variant is null)
+	 goto next_variant;
+
        qs1 := DB.DBA.URLREWRITE_CALC_QS (mime, VM_TYPE);
        qs2 := DB.DBA.URLREWRITE_CALC_QS (lang, VM_LANG);
        qs3 := DB.DBA.URLREWRITE_CALC_QS (cset, VM_ENC);
@@ -987,7 +1031,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
        if (curr > best_q)
 	 {
 	   best_q := curr;
-	   best_variant := VM_VARIANT_URI;
+	   best_variant := variant;
 	 }
        if (not do_cn)
          {
@@ -997,10 +1041,11 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
 	     alang := sprintf (' {language %s}', VM_LANG);
 	   if (VM_ENC is not null)
 	     aenc := sprintf (' {charset %s}', VM_ENC);
-	   list := list || sprintf ('{"%s" %f {type %s}%s%s}, ', VM_VARIANT_URI, VM_QS, VM_TYPE, alang, aenc);
+	   list := list || sprintf ('{"%s" %f {type %s}%s%s}, ', variant, VM_QS, VM_TYPE, alang, aenc);
 	   list_body := list_body || sprintf ('<li><a href="%V">%V</a>, type %V</li>\n',
-	   	VM_VARIANT_URI, coalesce (VM_DESCRIPTION, VM_VARIANT_URI), VM_TYPE);
+	   	variant, coalesce (VM_DESCRIPTION, variant), VM_TYPE);
 	 }
+       next_variant:;
     }
   if (do_cn and best_q > 0)
     {
@@ -1008,7 +1053,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
       path := WS.WS.EXPAND_URL (path, best_variant);
       return 1;
     }
-  if (not do_cn)
+  if (not do_cn and list <> '')
     {
       http_headers := sprintf ('TCN: list\r\nVary: negotiate,accept\r\nAlternates: %s\r\n', rtrim (list, ', '));
       http_code := 300;
@@ -1069,6 +1114,8 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 --  dbg_obj_print ('http headers', http_tcn_code, http_tcn_headers);
   result := DB.DBA.URLREWRITE_APPLY_RECURSIVE (rule_list, null, null, in_path, '', qstr, post_params, accept,
   	long_url, params, rule_iri, target_vhost_pkey, http_redir, http_headers, lines);
+  if (registry_get ('__debug_url_rewrite') in ('1', '2') and length (long_url))
+    dbg_printf ('*** RETURN rule=[%s] URL=[%s]', rule_iri, long_url);
 
   if (http_redir is null or http_redir = 0)
     http_redir := http_tcn_code;
