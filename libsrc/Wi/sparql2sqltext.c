@@ -2527,6 +2527,8 @@ ssg_rettype_of_function (spar_sqlgen_t *ssg, caddr_t name)
         return SSG_VALMODE_LONG; /* Fake but this works for use as arg of RDF_DIST_DESER_LONG */
       if (!strcmp (name, "SPECIAL::sql:RDF_DIST_DESER_LONG"))
         return SSG_VALMODE_LONG;
+      if (!strcmp (name, "SPECIAL::bif:MAX"))
+        return SSG_VALMODE_LONG;
       spar_sqlprint_error2 ("ssg_" "rettype_of_function(): unsupported SPECIAL", SSG_VALMODE_SQLVAL);
     }
   if (!strcmp (name, uname_xmlschema_ns_uri_hash_string))
@@ -2547,6 +2549,8 @@ ssg_argtype_of_function (spar_sqlgen_t *ssg, caddr_t name, int arg_idx)
         return SSG_VALMODE_LONG;
       if (!strcmp (name, "SPECIAL::sql:RDF_DIST_DESER_LONG"))
         return SSG_VALMODE_LONG; /* Fake but this works for retvals of RDF_DIST_SER_LONG */
+      if (!strcmp (name, "SPECIAL::bif:MAX"))
+        return SSG_VALMODE_LONG;
       spar_sqlprint_error2 ("ssg_" "argtype_of_function(): unsupported SPECIAL", SSG_VALMODE_SQLVAL);
     }
   return res;

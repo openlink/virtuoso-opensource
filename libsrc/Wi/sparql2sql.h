@@ -34,13 +34,14 @@ extern ptrdiff_t qm_field_constants_offsets[SPART_TRIPLE_FIELDS_COUNT];
 
 /* PART 1. EXPRESSION TERM REWRITING */
 
-#define SPAR_GPT_NODOWN		0x10	/* Don't trav children */
-#define SPAR_GPT_COMPLETED	0x20	/* Don't trav anything at all: the processing is complete */
-#define SPAR_GPT_RESCAN		0x40	/* Lists of children should be found again because they may become obsolete */
+#define SPAR_GPT_NODOWN		0x10	/* Don't trav children, i.e. do not call any callbacks for children of the current subtree */
+#define SPAR_GPT_NOOUT		0x20	/* Don't call 'out' callback for the current subtree */
+#define SPAR_GPT_COMPLETED	0x40	/* Don't trav anything at all: the processing is complete */
+#define SPAR_GPT_RESCAN		0x80	/* Lists of children should be found again because they may become obsolete during 'in' callback */
 #define SPAR_GPT_ENV_PUSH	0x01	/* Environment should be pushed. */
 
 /*! Returns combination of SPAR_GPT_... bits */
-typedef int sparp_gp_trav_cbk_t (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env);
+typedef int sparp_gp_trav_cbk_t (sparp_t *sparp, SPART *curr, sparp_trav_state_t **sts_this, void *common_env);
 
 extern int sparp_gp_trav (sparp_t *sparp, SPART *root, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
@@ -49,7 +50,7 @@ extern int sparp_gp_trav (sparp_t *sparp, SPART *root, void *common_env,
  );
 
 extern int sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
-  void **trav_env_this, void *common_env,
+  sparp_trav_state_t *sts_this, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
   sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk,
   sparp_gp_trav_cbk_t *literal_cbk

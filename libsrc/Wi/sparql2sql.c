@@ -46,7 +46,7 @@ extern "C" {
 
 int
 sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
-  void **trav_env_this, void *common_env,
+  sparp_trav_state_t *sts_this, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
   sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk,
   sparp_gp_trav_cbk_t *literal_cbk
@@ -58,9 +58,9 @@ sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
   int sub_gp_count = 0, sub_expn_count = 0, ctr;
   int tree_cat = 0;
   int in_rescan = 0;
-  void *save_trav_env_this = BADBEEF_BOX; /* To keep gcc 4.0 happy */
+  void *save_sts_this = BADBEEF_BOX; /* To keep gcc 4.0 happy */
   int retcode = 0;
-  if (trav_env_this == (sparp->sparp_trav_envs + SPARP_MAX_SYNTDEPTH))
+  if (sts_this == (sparp->sparp_stss + SPARP_MAX_SYNTDEPTH))
     spar_error (sparp, "The nesting depth of subexpressions exceed limits of SPARQL compiler");
 
 scan_for_children:
@@ -159,20 +159,20 @@ cat_recognized:
     {
     case 0:
       if (gp_in_cbk)
-	retcode = gp_in_cbk (sparp, tree, trav_env_this, common_env);
+	retcode = gp_in_cbk (sparp, tree, sts_this, common_env);
       else
         retcode = 0;
       break;
     case 1:
       if (expn_in_cbk)
-	retcode = expn_in_cbk (sparp, tree, trav_env_this, common_env);
+	retcode = expn_in_cbk (sparp, tree, sts_this, common_env);
       else
         retcode = 0;
       break;
     case 2:
       if (literal_cbk)
         {
-	  retcode = literal_cbk (sparp, tree, trav_env_this, common_env);
+	  retcode = literal_cbk (sparp, tree, sts_this, common_env);
           return retcode;
         }
       return 0;
@@ -180,13 +180,13 @@ cat_recognized:
     }
   if (retcode & SPAR_GPT_COMPLETED)
     return SPAR_GPT_COMPLETED;
+  save_sts_this = sts_this;
   if (retcode & SPAR_GPT_NODOWN)
-    return 0;
-  save_trav_env_this = trav_env_this;
+    goto end_process_children;
   if (retcode & SPAR_GPT_ENV_PUSH)
     {
-      trav_env_this++;
-      trav_env_this[0] = NULL;
+      sts_this++;
+      memset (sts_this, 0, sizeof (sparp_trav_state_t));
     }
   if (retcode & SPAR_GPT_RESCAN)
     {
@@ -197,7 +197,10 @@ cat_recognized:
 process_children:
   for (ctr = 0; ctr < sub_gp_count; ctr++)
     {
-      retcode = sparp_gp_trav_int (sparp, sub_gps[ctr], trav_env_this, common_env, gp_in_cbk, gp_out_cbk, expn_in_cbk, expn_out_cbk, literal_cbk);
+      sts_this->sts_parent = tree;
+      sts_this->sts_curr_array = sub_gps;
+      sts_this->sts_ofs_of_curr_in_array = ctr;
+      retcode = sparp_gp_trav_int (sparp, sub_gps[ctr], sts_this, common_env, gp_in_cbk, gp_out_cbk, expn_in_cbk, expn_out_cbk, literal_cbk);
       if (retcode & SPAR_GPT_COMPLETED)
         return SPAR_GPT_COMPLETED;
     }
@@ -205,22 +208,29 @@ process_children:
     {
       for (ctr = 0; ctr < sub_expn_count; ctr++)
         {
-          retcode = sparp_gp_trav_int (sparp, sub_expns[ctr], trav_env_this, common_env, gp_in_cbk, gp_out_cbk, expn_in_cbk, expn_out_cbk, literal_cbk);
+          sts_this->sts_parent = tree;
+          sts_this->sts_curr_array = sub_expns;
+          sts_this->sts_ofs_of_curr_in_array = ctr;
+          retcode = sparp_gp_trav_int (sparp, sub_expns[ctr], sts_this, common_env, gp_in_cbk, gp_out_cbk, expn_in_cbk, expn_out_cbk, literal_cbk);
           if (retcode & SPAR_GPT_COMPLETED)
             return SPAR_GPT_COMPLETED;
         }
     }
+
+end_process_children:
+  if (retcode & SPAR_GPT_NOOUT)
+    return retcode;
   switch (tree_cat)
     {
     case 0:
       if (gp_out_cbk)
-	retcode = gp_out_cbk (sparp, tree, save_trav_env_this, common_env);
+	retcode = gp_out_cbk (sparp, tree, save_sts_this, common_env);
       else
         retcode = 0;
       break;
     case 1:
       if (expn_out_cbk)
-	retcode = expn_out_cbk (sparp, tree, save_trav_env_this, common_env);
+	retcode = expn_out_cbk (sparp, tree, save_sts_this, common_env);
       else
         retcode = 0;
       break;
@@ -243,8 +253,11 @@ sparp_gp_trav (sparp_t *sparp, SPART *root, void *common_env,
     spar_internal_error (sparp, "sparp_" "gp_trav() re-entered");
   sparp->sparp_trav_running = 1;
 #endif
-  memset (sparp->sparp_trav_envs, 0, sizeof (void *) * SPARP_MAX_SYNTDEPTH);
-  res = sparp_gp_trav_int (sparp, root, sparp->sparp_trav_envs + 1, common_env, gp_in_cbk, gp_out_cbk, expn_in_cbk, expn_out_cbk, literal_cbk);
+  memset (sparp->sparp_stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+  sparp->sparp_stss[0].sts_parent = NULL;
+  sparp->sparp_stss[0].sts_curr_array = NULL;
+  sparp->sparp_stss[0].sts_ofs_of_curr_in_array = -1;
+  res = sparp_gp_trav_int (sparp, root, sparp->sparp_stss + 1, common_env, gp_in_cbk, gp_out_cbk, expn_in_cbk, expn_out_cbk, literal_cbk);
 #ifdef DEBUG
   sparp->sparp_trav_running = 0;
 #endif
@@ -255,7 +268,7 @@ sparp_gp_trav (sparp_t *sparp, SPART *root, void *common_env,
 \c trav_env_this is not used.
 \c common_env points to dk_set_t of collected distinct variable names. */
 
-int sparp_gp_trav_list_retvals (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+int sparp_gp_trav_list_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   caddr_t varname;
   if (SPAR_VARIABLE != curr->type) /* Not a variable ? -- nothing to do */
@@ -273,6 +286,39 @@ int sparp_gp_trav_list_retvals (sparp_t *sparp, SPART *curr, void **trav_env_thi
   return SPAR_GPT_NODOWN;
 }
 
+int sparp_gp_trav_list_nonaggregate_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  caddr_t varname;
+  if ((SPAR_FUNCALL == curr->type) && curr->_.funcall.agg_mode)
+    return SPAR_GPT_NODOWN;
+  if (SPAR_VARIABLE != curr->type) /* Not a variable ? -- nothing to do */
+    return SPAR_GPT_ENV_PUSH; /* To preserve sts_this->sts_curr_array and sts_this->sts_ofs_of_curr_in_array for wrapper of vars into fake MAX() */
+  varname = curr->_.var.vname;
+  if (SPART_VARNAME_IS_GLOB(varname)) /* Query run-time env or external query param ? -- not in result-set */
+    return SPAR_GPT_NODOWN;
+  DO_SET (caddr_t, listed, (dk_set_t *)(common_env))
+    {
+      if (!strcmp (listed, varname))
+        return SPAR_GPT_NODOWN;
+    }
+  END_DO_SET()
+  t_set_push ((dk_set_t *)(common_env), varname);
+  return SPAR_GPT_NODOWN;
+}
+
+int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  caddr_t varname;
+  if (SPAR_VARIABLE != curr->type) /* Not a variable ? -- nothing to do */
+    return 0;
+  varname = curr->_.var.vname;
+  if (SPART_VARNAME_IS_GLOB(varname)) /* Query run-time env or external query param ? -- not in result-set */
+    return 0;
+  sts_this->sts_curr_array[sts_this->sts_ofs_of_curr_in_array] =
+    spar_make_funcall (sparp, 1, t_box_dv_uname_string ("SPECIAL::bif:MAX"), (SPART **)t_list (1, curr));
+  return 0;
+}
+
 void
 sparp_expand_top_retvals (sparp_t *sparp)
 {
@@ -284,6 +330,8 @@ sparp_expand_top_retvals (sparp_t *sparp)
   if (IS_BOX_POINTER (old_retvals))
     {
       int ctr;
+      caddr_t retvalmode_name, formatmode_name;
+      sparp_gp_trav_cbk_t *expn_out_cbk;
       DO_BOX_FAST (SPART *, retexpn, ctr, old_retvals)
         {
           if ((SPAR_FUNCALL == SPART_TYPE (retexpn)) && retexpn->_.funcall.agg_mode)
@@ -292,13 +340,25 @@ sparp_expand_top_retvals (sparp_t *sparp)
       END_DO_BOX_FAST;
     return;
 agg_found:
+      retvalmode_name = sparp->sparp_expr->_.req_top.retvalmode_name;
+      formatmode_name = sparp->sparp_expr->_.req_top.formatmode_name;
+      if (((SELECT_L == sparp->sparp_expr->_.req_top.subtype) ||
+        (DISTINCT_L == sparp->sparp_expr->_.req_top.subtype) ) &&
+        (NULL == formatmode_name) &&
+        ((NULL == retvalmode_name) ||
+          (SSG_VALMODE_SQLVAL == ssg_find_valmode_by_name (retvalmode_name)) ) )
+        expn_out_cbk = NULL; /* For plain selects in SQL valmode there's no need in wrapping grouping vars into fake MAX */
+      else
+        expn_out_cbk = sparp_gp_trav_wrap_vars_in_max; /* In all other cases wrapping is needed to hide mismatch between grouping expns and retval expns */
       DO_BOX_FAST (SPART *, retexpn, ctr, old_retvals)
         {
-          if ((SPAR_FUNCALL == SPART_TYPE (retexpn)) && retexpn->_.funcall.agg_mode)
-            continue;
-          sparp_gp_trav (sparp, retexpn, &names,
+          sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
+          memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+          stss[1].sts_curr_array = old_retvals;
+          stss[1].sts_ofs_of_curr_in_array = ctr;
+          sparp_gp_trav_int (sparp, retexpn, stss+1, &names,
             NULL, NULL,
-            sparp_gp_trav_list_retvals, NULL,
+            sparp_gp_trav_list_nonaggregate_retvals, expn_out_cbk,
             NULL );
         }
       END_DO_BOX_FAST;
@@ -353,14 +413,14 @@ agg_found:
 \c common_env is not used. */
 
 int
-sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int fctr;
-  SPART *gp = (SPART *)(trav_env_this[-1]);
+  SPART *gp = (SPART *)(sts_this[-1].sts_env);
   switch (SPART_TYPE(curr))
     {
     case SPAR_GP:
-      trav_env_this[0] = curr;
+      sts_this[0].sts_env = curr;
       return SPAR_GPT_ENV_PUSH;
     case SPAR_TRIPLE: break;
     default: return 0;
@@ -400,9 +460,9 @@ sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, void **trav_env_this, 
 }
 
 int
-sparp_gp_trav_cu_in_expns (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_cu_in_expns (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  SPART *gp = (SPART *)(trav_env_this[-1]);
+  SPART *gp = (SPART *)(sts_this[-1].sts_env);
   sparp_equiv_t *eq;
   switch (SPART_TYPE(curr))
     {
@@ -416,7 +476,7 @@ sparp_gp_trav_cu_in_expns (sparp_t *sparp, SPART *curr, void **trav_env_this, vo
 }
 
 int
-sparp_gp_trav_cu_in_retvals (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_cu_in_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   SPART *top_gp = (SPART *)(common_env);
   sparp_equiv_t *eq;
@@ -669,7 +729,7 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
 }
 
 int
-sparp_gp_trav_restrict_by_simple_filters (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_restrict_by_simple_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int fctr;
   switch (SPART_TYPE(curr))
@@ -705,14 +765,14 @@ sparp_restrict_by_simple_filters (sparp_t *sparp)
 \c common_env is not used. */
 
 int
-sparp_gp_trav_make_common_eqs_in (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_make_common_eqs_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   switch (SPART_TYPE(curr))
     {
     case SPAR_GP:
       if (UNION_L == curr->_.gp.subtype)
         return 0;
-      trav_env_this[0] = NULL;
+      sts_this[0].sts_env = NULL;
       return SPAR_GPT_ENV_PUSH;      
     case SPAR_TRIPLE: return SPAR_GPT_NODOWN;
     default: return 0;
@@ -720,7 +780,7 @@ sparp_gp_trav_make_common_eqs_in (sparp_t *sparp, SPART *curr, void **trav_env_t
 }
 
 int
-sparp_gp_trav_make_common_eqs_out (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_make_common_eqs_out (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int eq_ctr;
   dk_set_t *local_vars, *parent_vars;
@@ -732,8 +792,8 @@ sparp_gp_trav_make_common_eqs_out (sparp_t *sparp, SPART *curr, void **trav_env_
     case SPAR_TRIPLE: return SPAR_GPT_NODOWN;
     default: return 0;
     }
-  local_vars = (dk_set_t *)trav_env_this;
-  parent_vars = (dk_set_t *)(trav_env_this-1);
+  local_vars = (dk_set_t *)(&(sts_this[0].sts_env));
+  parent_vars = (dk_set_t *)(&(sts_this[-1].sts_env));
   while (NULL != local_vars[0])
     {
       var_name = dk_set_pop (local_vars);
@@ -770,8 +830,8 @@ sparp_make_common_eqs (sparp_t *sparp)
     sparp_gp_trav_make_common_eqs_in, sparp_gp_trav_make_common_eqs_out,
     NULL, NULL,
     NULL );
-  while (NULL != sparp->sparp_trav_envs[0])
-    dk_set_pop ((dk_set_t *)(sparp->sparp_trav_envs));
+  while (NULL != sparp->sparp_stss[0].sts_env)
+    dk_set_pop ((dk_set_t *)(&(sparp->sparp_stss[0].sts_env)));
 }
 
 /* Composing aliases.
@@ -779,20 +839,20 @@ sparp_make_common_eqs (sparp_t *sparp)
 \c common_env is used in sparp_gp_trav_make_retval_aliases to pass vector of query return variables. */
 
 void
-sparp_gp_add_chain_aliases (sparp_t *sparp, SPART *inner_var, sparp_equiv_t *inner_eq, SPART **trav_stack, SPART *top_gp)
+sparp_gp_add_chain_aliases (sparp_t *sparp, SPART *inner_var, sparp_equiv_t *inner_eq, sparp_trav_state_t *sts_this, SPART *top_gp)
 {
-  SPART *parent_gp;
-  sparp_equiv_t *parent_eq;
+  sparp_trav_state_t *sts_iter = sts_this;
   sparp_equiv_t *curr_eq = inner_eq;
 #ifdef DEBUG
   if (NULL == curr_eq)
     spar_internal_error (sparp, "sparp_" "gp_add_chain_aliases () has NULL eq for inner_var");
-  if (curr_eq->e_gp != trav_stack[0])
-    spar_internal_error (sparp, "sparp_" "gp_add_chain_aliases () has eq for inner_var not equal to trav_stack[0]");
+  if (curr_eq->e_gp != sts_iter[0].sts_env)
+    spar_internal_error (sparp, "sparp_" "gp_add_chain_aliases () has eq for inner_var not equal to sts_iter[0].sts_env");
 #endif
   for (;;)
     {
-      parent_gp = trav_stack[-1];
+      sparp_equiv_t *parent_eq;
+      SPART *parent_gp = sts_iter[-1].sts_env;
       if (NULL == parent_gp)
         break;
       parent_eq = sparp_equiv_get (sparp, parent_gp, inner_var, SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_INS_CLASS);
@@ -800,12 +860,12 @@ sparp_gp_add_chain_aliases (sparp_t *sparp, SPART *inner_var, sparp_equiv_t *inn
       if (parent_gp == top_gp)
         break;
       curr_eq = parent_eq;
-      trav_stack--;
+      sts_iter--;
     }
 }
 
 int
-sparp_gp_trav_make_retval_aliases (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_make_retval_aliases (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   SPART **retvars = (SPART **)common_env;
   int retvar_ctr;
@@ -815,7 +875,7 @@ sparp_gp_trav_make_retval_aliases (sparp_t *sparp, SPART *curr, void **trav_env_
     case SPAR_TRIPLE: return SPAR_GPT_NODOWN;
     default: return 0;
     }
-  trav_env_this[0] = curr;
+  sts_this[0].sts_env = curr;
   for (retvar_ctr = BOX_ELEMENTS (retvars); retvar_ctr--; /* no step */)
     {
       SPART *curr_retvar = retvars[retvar_ctr];
@@ -825,36 +885,36 @@ sparp_gp_trav_make_retval_aliases (sparp_t *sparp, SPART *curr, void **trav_env_
         continue;
       curr_eq = sparp_equiv_get (sparp, curr, (SPART *)curr_varname, SPARP_EQUIV_GET_NAMESAKES);
       if (NULL != curr_eq)
-        sparp_gp_add_chain_aliases (sparp, curr_retvar, curr_eq, (SPART **)trav_env_this, NULL);
+        sparp_gp_add_chain_aliases (sparp, curr_retvar, curr_eq, sts_this, NULL);
     }
   return SPAR_GPT_ENV_PUSH;
 }
 
 int
-sparp_gp_trav_make_common_aliases (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_make_common_aliases (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int eq_ctr;
-  SPART **outer_gp_ptr;
+  sparp_trav_state_t *outer_gp_sts;
   switch (SPART_TYPE(curr))
     {
     case SPAR_GP: break;
     case SPAR_TRIPLE: return SPAR_GPT_NODOWN;
     default: return 0;
     }
-  trav_env_this[0] = curr;
+  sts_this[0].sts_env = curr;
   SPARP_FOREACH_GP_EQUIV(sparp,curr,eq_ctr,eq)
     {
       int var_ctr;
       for (var_ctr = eq->e_var_count; var_ctr--; /* no step */)
         {
 	  SPART *var = eq->e_vars[var_ctr];
-          for (outer_gp_ptr = (SPART **)(sparp->sparp_trav_envs+1); outer_gp_ptr < (SPART **)trav_env_this; outer_gp_ptr++)
+          for (outer_gp_sts = sparp->sparp_stss+1; outer_gp_sts < sts_this; outer_gp_sts++)
             {
-              SPART *outer_gp = outer_gp_ptr[0];
+              SPART *outer_gp = outer_gp_sts->sts_env;
 	      sparp_equiv_t *topmost_eq = sparp_equiv_get (sparp, outer_gp, var, SPARP_EQUIV_GET_NAMESAKES);
 	      if (NULL != topmost_eq)
 		{
-		  sparp_gp_add_chain_aliases (sparp, var, eq, (SPART **)trav_env_this, outer_gp);
+		  sparp_gp_add_chain_aliases (sparp, var, eq, sts_this, outer_gp);
 		  break;
 		}
             }
@@ -865,7 +925,7 @@ sparp_gp_trav_make_common_aliases (sparp_t *sparp, SPART *curr, void **trav_env_
 
 
 int
-sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int eq_ctr;
   switch (SPART_TYPE(curr))
@@ -874,7 +934,7 @@ sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, void **trav_en
     case SPAR_TRIPLE: return SPAR_GPT_NODOWN;
     default: return 0;
     }
-  trav_env_this[0] = curr;
+  sts_this[0].sts_env = curr;
   SPARP_REVFOREACH_GP_EQUIV(sparp,curr,eq_ctr,eq)
     {
       int sub_ctr;
@@ -1027,7 +1087,7 @@ sparp_restr_of_join_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *
 
 
 int
-sparp_gp_trav_eq_restr_from_connected_subvalues (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_eq_restr_from_connected_subvalues (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int eq_ctr;
   if (SPAR_GP != SPART_TYPE(curr))
@@ -1043,7 +1103,7 @@ sparp_gp_trav_eq_restr_from_connected_subvalues (sparp_t *sparp, SPART *curr, vo
 }
 
 int
-sparp_gp_trav_eq_restr_from_connected_receivers (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_eq_restr_from_connected_receivers (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   sparp_equiv_t **equivs = sparp->sparp_env->spare_equivs;
   int sub_ctr;
@@ -1095,7 +1155,7 @@ sparp_eq_restr_from_connected (sparp_t *sparp)
 /* Copying restrictions from equivalences to variables */
 
 int
-sparp_gp_trav_eq_restr_to_vars (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_eq_restr_to_vars (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int eq_ctr, var_ctr;
   switch (SPART_TYPE(curr))
@@ -1189,14 +1249,14 @@ sparp_dbg_gp_print (sparp_t *sparp, SPART *tree)
 #ifdef DEBUG
 
 static int
-sparp_gp_trav_equiv_audit_inner_vars (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_equiv_audit_inner_vars (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  SPART *gp = (SPART *)(trav_env_this[-1]);
+  SPART *gp = (SPART *)(sts_this[-1].sts_env);
   int eq_ctr;
   switch (SPART_TYPE(curr))
     {
     case SPAR_GP:
-      trav_env_this[0] = curr;
+      sts_this[0].sts_env = curr;
       SPARP_FOREACH_GP_EQUIV (sparp, curr, eq_ctr, eq)
         {
           int recv_ctr;
@@ -1228,7 +1288,7 @@ sparp_gp_trav_equiv_audit_inner_vars (sparp_t *sparp, SPART *curr, void **trav_e
 }
 
 static int
-sparp_gp_trav_equiv_audit_retvals (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_equiv_audit_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   SPART *top_gp = (SPART *)(common_env);
   sparp_equiv_t *eq;
@@ -1250,10 +1310,12 @@ static void
 sparp_equiv_audit_retvals (sparp_t *sparp)
 {
   int ctr;
-  void *trav_envs [SPARP_MAX_SYNTDEPTH];
+  sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   DO_BOX_FAST (SPART *, expn, ctr, sparp->sparp_expr->_.req_top.retvals)
     {
-      sparp_gp_trav_int (sparp, expn, trav_envs+1, sparp->sparp_expr->_.req_top.pattern,
+      memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+      stss[0].sts_ofs_of_curr_in_array = -1;
+      sparp_gp_trav_int (sparp, expn, stss+1, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
         sparp_gp_trav_equiv_audit_retvals, NULL,
         NULL );
@@ -1261,7 +1323,9 @@ sparp_equiv_audit_retvals (sparp_t *sparp)
   END_DO_BOX_FAST;
   DO_BOX_FAST (SPART *, grouping, ctr, sparp->sparp_expr->_.req_top.groupings)
     {
-      sparp_gp_trav_int (sparp, grouping, trav_envs+1, sparp->sparp_expr->_.req_top.pattern,
+      memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+      stss[0].sts_ofs_of_curr_in_array = -1;
+      sparp_gp_trav_int (sparp, grouping, stss+1, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
         sparp_gp_trav_equiv_audit_retvals, NULL,
         NULL );
@@ -1269,7 +1333,9 @@ sparp_equiv_audit_retvals (sparp_t *sparp)
   END_DO_BOX_FAST;
   DO_BOX_FAST (SPART *, oby, ctr, sparp->sparp_expr->_.req_top.order)
     {
-      sparp_gp_trav_int (sparp, oby->_.oby.expn, trav_envs+1, sparp->sparp_expr->_.req_top.pattern,
+      memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+      stss[0].sts_ofs_of_curr_in_array = -1;
+      sparp_gp_trav_int (sparp, oby->_.oby.expn, stss+1, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
         sparp_gp_trav_equiv_audit_retvals, NULL,
         NULL );
@@ -1300,10 +1366,11 @@ sparp_equiv_audit_gp (sparp_t *sparp, SPART *gp, int is_deprecated, sparp_equiv_
 static void
 sparp_equiv_audit_all (sparp_t *sparp, int flags)
 {
-  void *trav_envs [SPARP_MAX_SYNTDEPTH];
+  sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   int eq_ctr, var_ctr, recv_ctr, subv_ctr;
-  memset (trav_envs, 0, sizeof (void *) * SPARP_MAX_SYNTDEPTH);
-  sparp_gp_trav_int (sparp, sparp->sparp_expr->_.req_top.pattern, trav_envs+1, (void *)((ptrlong)flags),
+  memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+  stss[0].sts_ofs_of_curr_in_array = -1;
+  sparp_gp_trav_int (sparp, sparp->sparp_expr->_.req_top.pattern, stss+1, (void *)((ptrlong)flags),
     sparp_gp_trav_equiv_audit_inner_vars, NULL,
     sparp_gp_trav_equiv_audit_inner_vars, NULL,
     NULL );
@@ -2656,7 +2723,7 @@ sparp_equiv_loose (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_range_t *addon, in
 }
 
 
-int sparp_gp_trav_check_if_local (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+int sparp_gp_trav_check_if_local (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   if (SPAR_VARIABLE == curr->type)
     {
@@ -4024,7 +4091,7 @@ sparp_gp_attach_many_members (sparp_t *sparp, SPART *parent_gp, SPART **new_memb
   sparp_equiv_audit_all (sparp, 0);
 }
 
-int sparp_gp_detach_filter_cbk (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+int sparp_gp_detach_filter_cbk (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   if (SPAR_IS_BLANK_OR_VAR (curr))
     {
@@ -4046,7 +4113,7 @@ int sparp_gp_detach_filter_cbk (sparp_t *sparp, SPART *curr, void **trav_env_thi
 SPART *
 sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_equiv_t ***touched_equivs_ptr)
 {
-  void *trav_envs [SPARP_MAX_SYNTDEPTH];
+  sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   SPART *filt;
   SPART **old_filters = parent_gp->_.gp.filters;
   dk_set_t touched_equivs_set = NULL;
@@ -4057,7 +4124,9 @@ sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_
     spar_internal_error (sparp, "sparp_" "gp_detach_filter(): bad filter_idx");
 #endif
   filt = old_filters [filter_idx];
-  sparp_gp_trav_int (sparp, filt, trav_envs + 1, touched_equivs_set_ptr,
+  memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+  stss[0].sts_ofs_of_curr_in_array = -1;
+  sparp_gp_trav_int (sparp, filt, stss + 1, touched_equivs_set_ptr,
     NULL, NULL,
     sparp_gp_detach_filter_cbk, NULL, NULL );
   if (NULL != touched_equivs_ptr)
@@ -4070,14 +4139,16 @@ sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_
 SPART **
 sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, sparp_equiv_t ***touched_equivs_ptr)
 {
-  void *trav_envs [SPARP_MAX_SYNTDEPTH];
+  sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   SPART **filters = parent_gp->_.gp.filters;
   int filt_ctr;
   dk_set_t touched_equivs_set = NULL;
   dk_set_t *touched_equivs_set_ptr = ((NULL == touched_equivs_ptr) ? NULL : &touched_equivs_set);
   DO_BOX_FAST_REV (SPART *, filt, filt_ctr, filters)
     {
-      sparp_gp_trav_int (sparp, filt, trav_envs + 1, touched_equivs_set_ptr,
+      memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+      stss[0].sts_ofs_of_curr_in_array = -1;
+      sparp_gp_trav_int (sparp, filt, stss + 1, touched_equivs_set_ptr,
         NULL, NULL,
         sparp_gp_detach_filter_cbk, NULL, NULL );
     }
@@ -4091,7 +4162,7 @@ sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, sparp_equiv_t ***
 
 
 int
-sparp_gp_attach_filter_cbk (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_attach_filter_cbk (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   if (SPAR_IS_BLANK_OR_VAR (curr))
     {
@@ -4101,7 +4172,7 @@ sparp_gp_attach_filter_cbk (sparp_t *sparp, SPART *curr, void **trav_env_this, v
       int idx = curr->_.var.equiv_idx;
       if (SPART_BAD_EQUIV_IDX != idx)
         spar_internal_error (sparp, "sparp_" "gp_attach_filter_cbk(): attempt to attach a filter with used variable");
-      parent_gp = (SPART *)(trav_env_this [-1]);
+      parent_gp = (SPART *)(sts_this[-1].sts_env);
       curr->_.var.selid = t_box_copy (parent_gp->_.gp.selid);
       eq = sparp_equiv_get (sparp, parent_gp, curr, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_CONST_READ);
       if (NULL != touched_equivs_set_ptr)
@@ -4117,7 +4188,7 @@ sparp_gp_attach_filter_cbk (sparp_t *sparp, SPART *curr, void **trav_env_this, v
 void
 sparp_gp_attach_filter (sparp_t *sparp, SPART *parent_gp, SPART *new_filt, int insert_before_idx, sparp_equiv_t ***touched_equivs_ptr)
 {
-  void *trav_envs [SPARP_MAX_SYNTDEPTH];
+  sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   SPART **old_filters = parent_gp->_.gp.filters;
   dk_set_t touched_equivs_set = NULL;
   dk_set_t *touched_equivs_set_ptr = ((NULL == touched_equivs_ptr) ? NULL : &touched_equivs_set);
@@ -4128,9 +4199,10 @@ sparp_gp_attach_filter (sparp_t *sparp, SPART *parent_gp, SPART *new_filt, int i
     spar_internal_error (sparp, "sparp_" "gp_attach_filter(): bad insert_before_idx");
 #endif
   parent_gp->_.gp.filters = (SPART **)t_list_insert_before_nth ((caddr_t)old_filters, (caddr_t)new_filt, insert_before_idx);
-  memset (trav_envs, 0, sizeof (void *) * SPARP_MAX_SYNTDEPTH);
-  trav_envs [0] = parent_gp;
-  sparp_gp_trav_int (sparp, new_filt, trav_envs + 1, touched_equivs_set_ptr,
+  memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+  stss[0].sts_ofs_of_curr_in_array = -1;
+  stss[0].sts_env = parent_gp;
+  sparp_gp_trav_int (sparp, new_filt, stss + 1, touched_equivs_set_ptr,
     NULL, NULL,
     sparp_gp_attach_filter_cbk, NULL, NULL );
   if (NULL != touched_equivs_ptr)
@@ -4141,7 +4213,7 @@ sparp_gp_attach_filter (sparp_t *sparp, SPART *parent_gp, SPART *new_filt, int i
 void
 sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filters, int insert_before_idx, sparp_equiv_t ***touched_equivs_ptr)
 {
-  void *trav_envs [SPARP_MAX_SYNTDEPTH];
+  sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   SPART **old_filters = parent_gp->_.gp.filters;
   int filt_ctr, ins_count;
   dk_set_t touched_equivs_set = NULL;
@@ -4159,10 +4231,11 @@ sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filt
       return;
     }
   parent_gp->_.gp.filters = (SPART **)t_list_insert_many_before_nth ((caddr_t)old_filters, (caddr_t *)new_filters, ins_count, insert_before_idx);
-  memset (trav_envs, 0, sizeof (void *) * SPARP_MAX_SYNTDEPTH);
-  trav_envs [0] = parent_gp;
+  memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+  stss[0].sts_ofs_of_curr_in_array = -1;
+  stss[0].sts_env = parent_gp;
   for (filt_ctr = ins_count; filt_ctr--; /*no step*/)
-    sparp_gp_trav_int (sparp, new_filters [filt_ctr], trav_envs + 1, touched_equivs_set_ptr,
+    sparp_gp_trav_int (sparp, new_filters [filt_ctr], stss + 1, touched_equivs_set_ptr,
       NULL, NULL,
       sparp_gp_attach_filter_cbk, NULL, NULL );
   if (NULL != touched_equivs_ptr)
@@ -4256,7 +4329,7 @@ sparp_set_triple_selid_and_tabid (sparp_t *sparp, SPART *triple, caddr_t new_sel
 }
 
 int
-sparp_set_retval_selid_cbk (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_set_retval_selid_cbk (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   if (SPAR_IS_BLANK_OR_VAR (curr))
     curr->_.var.selid = t_box_copy (common_env);
@@ -4267,25 +4340,25 @@ void
 sparp_set_retval_and_order_selid (sparp_t *sparp)
 {
   int ctr;
-  void *trav_envs [SPARP_MAX_SYNTDEPTH];
+  sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   caddr_t top_gp_selid = sparp->sparp_expr->_.req_top.pattern->_.gp.selid;
   DO_BOX_FAST (SPART *, filt, ctr, sparp->sparp_expr->_.req_top.retvals)
     {
-      sparp_gp_trav_int (sparp, filt, trav_envs + 1, top_gp_selid,
+      sparp_gp_trav_int (sparp, filt, stss + 1, top_gp_selid,
         NULL, NULL,
         sparp_set_retval_selid_cbk, NULL, NULL );
     }
   END_DO_BOX_FAST;
   DO_BOX_FAST (SPART *, grouping, ctr, sparp->sparp_expr->_.req_top.groupings)
     {
-      sparp_gp_trav_int (sparp, grouping, trav_envs + 1, top_gp_selid,
+      sparp_gp_trav_int (sparp, grouping, stss + 1, top_gp_selid,
         NULL, NULL,
         sparp_set_retval_selid_cbk, NULL, NULL );
     }
   END_DO_BOX_FAST;
   DO_BOX_FAST (SPART *, oby, ctr, sparp->sparp_expr->_.req_top.order)
     {
-      sparp_gp_trav_int (sparp, oby->_.oby.expn, trav_envs + 1, top_gp_selid,
+      sparp_gp_trav_int (sparp, oby->_.oby.expn, stss + 1, top_gp_selid,
         NULL, NULL,
         sparp_set_retval_selid_cbk, NULL, NULL );
     }
@@ -4364,7 +4437,7 @@ sparp_expn_lists_are_equal (sparp_t *sparp, SPART **one, SPART **two)
 }
 
 int
-sparp_set_special_order_selid_cbk (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_set_special_order_selid_cbk (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   SPART *new_gp = (SPART *)common_env;
   if (SPAR_IS_BLANK_OR_VAR (curr))
@@ -4387,10 +4460,10 @@ void
 sparp_set_special_order_selid (sparp_t *sparp, SPART *new_gp)
 {
   int ctr;
-  void *trav_envs [SPARP_MAX_SYNTDEPTH];
+  sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   DO_BOX_FAST (SPART *, oby, ctr, sparp->sparp_expr->_.req_top.order)
     {
-      sparp_gp_trav_int (sparp, oby->_.oby.expn, trav_envs + 1, new_gp,
+      sparp_gp_trav_int (sparp, oby->_.oby.expn, stss + 1, new_gp,
         NULL, NULL,
         sparp_set_special_order_selid_cbk, NULL, NULL );
     }
@@ -4508,16 +4581,16 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
     sparp_gp_detach_member (sparp, curr, 0, NULL);
 }
 
-int sparp_gp_trav_refresh_triple_cases (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+int sparp_gp_trav_refresh_triple_cases (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   if (SPAR_TRIPLE != curr->type) /* Not a triple ? -- nothing to do */
     return 0;
   sparp_refresh_triple_cases (sparp, curr);
-  return SPAR_GPT_NODOWN;
+  return SPAR_GPT_NODOWN | SPAR_GPT_NOOUT;
 }
 
 
-int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int memb_ctr;
   if (SPAR_GP != curr->type) /* Not a gp ? -- nothing to do */
@@ -4570,7 +4643,7 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, void **trav_en
 }
 
 
-int sparp_gp_trav_detach_conflicts_out (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+int sparp_gp_trav_detach_conflicts_out (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int memb_ctr;
   if (SPAR_GP != curr->type) /* Not a gp ? -- nothing to do */
@@ -4609,7 +4682,7 @@ do_detach:
   return 0;
 }
 
-int sparp_gp_trav_1var (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+int sparp_gp_trav_1var (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   SPART **single_var_ptr = (SPART **)common_env;
   if (!SPAR_IS_BLANK_OR_VAR (curr))
@@ -4625,7 +4698,7 @@ int sparp_gp_trav_1var (sparp_t *sparp, SPART *curr, void **trav_env_this, void 
   return SPAR_GPT_NODOWN;
 }
 
-int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int filt_ctr;
   if (SPAR_GP != curr->type) /* Not a gp ? -- nothing to do */
@@ -4637,7 +4710,7 @@ int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, void **trav_env
       SPART *single_var = NULL;
       sparp_equiv_t *sv_eq;
       int subval_ctr, subval_count;
-      sparp_gp_trav_int (sparp, filt, trav_env_this, &(single_var),
+      sparp_gp_trav_int (sparp, filt, sts_this, &(single_var),
         NULL, NULL,
         sparp_gp_trav_1var, NULL, NULL);
       if (!IS_BOX_POINTER (single_var))
@@ -4740,20 +4813,20 @@ sparp_find_index_of_most_important_union (sparp_t *sparp, SPART *parent_gp)
 }
 
 int
-sparp_gp_trav_union_of_joins_in (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_union_of_joins_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   switch (SPART_TYPE(curr))
     {
     case SPAR_GP:
-      trav_env_this[0] = curr;
+      sts_this[0].sts_env = curr;
       return SPAR_GPT_ENV_PUSH;      
-    case SPAR_TRIPLE: return SPAR_GPT_NODOWN;
+    case SPAR_TRIPLE: return SPAR_GPT_NODOWN |  SPAR_GPT_NOOUT;
     default: return 0;
     }
 }
 
 int
-sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   if (SPAR_GP != curr->type)
     return 0;
@@ -4784,7 +4857,7 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, void **trav_env_t
       else
         {
           int parent_len = 1;
-          SPART *parent = (SPART *)(trav_env_this[-1]);
+          SPART *parent = (SPART *)(sts_this[-1].sts_env);
 #ifdef DEBUG
           if (SPAR_GP != SPART_TYPE (parent))
             spar_internal_error (sparp, "sparp_" "gp_trav_union_of_joins_out (): parent is not a gp");
@@ -5218,7 +5291,7 @@ sparp_try_reuse_tabid_in_join (sparp_t *sparp, SPART *curr, int base_idx)
 
 
 int
-sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, void **trav_env_this, void *common_env)
+sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int base_idx;
   if (SPAR_GP != curr->type)

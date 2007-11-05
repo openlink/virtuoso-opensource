@@ -202,6 +202,13 @@ typedef struct sparp_env_s
     int			spare_signal_void_variables;	/*!< Flag if 'Variable xxx can not be bound...' error (and the like) should be signalled. */
   } sparp_env_t;
 
+typedef struct sparp_trav_state_s {
+    SPART *sts_parent; /*!< Parent of the current state, NULL for WHERE tree */
+    SPART **sts_curr_array; /*!< Array that contains current subtree */
+    int sts_ofs_of_curr_in_array; /*!< Offset of the current subtree from sts_curr_array */
+    void *sts_env; /*!< Task-specific traverse environment data; */
+  } sparp_trav_state_t;
+
 typedef struct sparp_s {
 /* Generic environment */
   spar_query_env_t *sparp_sparqre;	/*!< External environment of the query */
@@ -239,7 +246,7 @@ typedef struct sparp_s {
   spar_lexem_t * sparp_curr_lexem_buf_fill;	/*!< Number of lexems in \c sparp_curr_lexem_buf */
 /* Environment of term rewriter of the SPARQL-to-SQL compiler */
   struct quad_storage_s	*sparp_storage;		/*!< Default storage that handles arbitrary quads of any sort plus maybe SPMJVs and relational mappings made by user, usually rdf_sys_storage */
-  void *sparp_trav_envs[SPARP_MAX_SYNTDEPTH+2];	/*!< Stack of traverse environments. [0] is fake for parent on 'where', [1] is for 'where' etc. */
+  sparp_trav_state_t sparp_stss[SPARP_MAX_SYNTDEPTH+2];	/*!< Stack of traverse states. [0] is fake for parent on 'where', [1] is for 'where' etc. */
   int sparp_cloning_serial;		/*!< The serial used for current sparp_gp_full_clone() operation */
   int sparp_rewrite_dirty;		/*!< An integer that is incremented when any optimization subroutine rewrites the tree. */
 #ifdef DEBUG
