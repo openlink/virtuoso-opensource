@@ -2135,7 +2135,7 @@ DAV_RES_UPLOAD_STRSES_INT (
 
   declare c_id integer;
  	declare is_rdf integer;
-  declare rdf_graph, rdf_sponger any;
+  declare rdf_graph, rdf_graph2, rdf_sponger any;
   declare rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path, host any;
 
   -- flag for rdf upload
@@ -2150,7 +2150,49 @@ DAV_RES_UPLOAD_STRSES_INT (
     -- get sponger parameter?
     content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = rc);
     rdf_sponger := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_sponger'), 'on');
+    if (RDF_SINK_UPLOAD (content, type, rdf_graph, rdf_sponger)) {
+      -- store RDF data in separate graph
+      rdf_graph2 := 'http://local.virt' || path;
+      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (rdf_graph2);
+      RDF_SINK_UPLOAD (content, type, rdf_graph2, rdf_sponger);
 
+      rdf_graph_resource_name := replace ( replace ( replace ( replace ( replace ( replace ( replace (rdf_graph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
+      rdf_graph_resource_path := WS.WS.COL_PATH (c_id) || rdf_graph_resource_name;
+      if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R')))) {
+        -- RDF content
+        host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+        if (host is null) {
+          host := sys_stat ('st_host_name');
+          if (server_http_port () <> '80')
+            host := host ||':'|| server_http_port ();
+        }
+        rdf_graph_resource_id := WS.WS.GETID ('R');
+        insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
+          values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
+        DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml'), null, null, 0, 0, 1);
+      }
+    }
+  }
+
+  return rc;
+
+unhappy_upload:
+  if (__SQL_STATE = 'HT507')
+    return -41;
+  if (__SQL_STATE = 'HT508')
+    return -42;
+  if (__SQL_STATE = 'HT509')
+    return -43;
+  return -29;
+}
+;
+
+create procedure RDF_SINK_UPLOAD (
+  inout content any,
+  inout type varchar,
+  inout rdf_graph varchar,
+  inout rdf_sponger varchar)
+{
     if (
          strstr (type, 'application/rdf+xml') is not null or
          strstr (type, 'application/foaf+xml') is not null
@@ -2164,7 +2206,7 @@ DAV_RES_UPLOAD_STRSES_INT (
           goto _grddl;
       }
       DB.DBA.RDF_LOAD_RDFXML (blob_to_string (content), rdf_graph, rdf_graph);
-      goto _rdf_graph_resource;
+    return 1;
     }
     if (
          strstr (type, 'text/rdf+n3') is not null or
@@ -2176,7 +2218,7 @@ DAV_RES_UPLOAD_STRSES_INT (
        )
     {
       DB.DBA.TTLP (content, rdf_graph, rdf_graph);
-      goto _rdf_graph_resource;
+    return 1;
     }
 
 _grddl:;
@@ -2214,43 +2256,12 @@ _grddl:;
 	          xrc := call (RM_HOOK) (rdf_graph, rdf_graph, null, content, aq, ps, RM_KEY, RM_OPTIONS);
 	        }
   	      if (xrc > 0)
-            goto _rdf_graph_resource;
+          return 1;
 	      }
       try_next_mapper:;
     }
     }
-
-    if (is_rdf) {
-      -- save rdf resource
-    _rdf_graph_resource:;
-      rdf_graph_resource_name := replace ( replace ( replace ( replace ( replace ( replace ( replace (rdf_graph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
-      rdf_graph_resource_path := WS.WS.COL_PATH (c_id) || rdf_graph_resource_name;
-      if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R')))) {
-        -- RDF content
-        host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-        if (host is null) {
-          host := sys_stat ('st_host_name');
-          if (server_http_port () <> '80')
-            host := host ||':'|| server_http_port ();
-        }
-          rdf_graph_resource_id := WS.WS.GETID ('R');
-        insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
-          values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
-        DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml'), null, null, 0, 0, 1);
-      }
-    }
-  }
-
-  return rc;
-
-unhappy_upload:
-  if (__SQL_STATE = 'HT507')
-    return -41;
-  if (__SQL_STATE = 'HT508')
-    return -42;
-  if (__SQL_STATE = 'HT509')
-    return -43;
-  return -29;
+  return 0;
 }
 ;
 
