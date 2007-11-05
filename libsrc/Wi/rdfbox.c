@@ -313,6 +313,42 @@ bif_rdf_box_is_storeable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   return box_num (1);
 }
 
+caddr_t
+bif_rdf_box_needs_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t rb = bif_arg (qst, args, 0, "rdf_box_needs_digest");
+  caddr_t dict = bif_arg (qst, args, 1, "rdf_box_needs_digest");
+  dtp_t rb_dtp = DV_TYPE_OF (rb);
+  switch (rb_dtp)
+    {
+    case DV_RDF:
+      {
+        rdf_box_t * rb2 = (rdf_box_t *) rb;
+        dtp_t data_dtp;
+/*        if (0 != rb2->rb_ro_id)
+          return box_num (1);
+        if ((!rb2->rb_is_complete) || rb2->rb_chksum_tail)
+          return box_num (3);*/
+        data_dtp = DV_TYPE_OF (rb2->rb_box);
+        if ((DV_STRING == data_dtp) || (DV_UNAME == data_dtp))
+          {
+/*            if ((RDF_BOX_DEFAULT_TYPE != rb2->rb_type) || (RDF_BOX_DEFAULT_LANG != rb2->rb_lang))
+              return box_num (3);*/
+            if (DV_DB_NULL != DV_TYPE_OF (dict))
+              return box_num (3);
+/*            return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb2->rb_box)) ? 0 : 3);*/
+          }
+        return box_num (0);
+      }
+    case DV_STRING: case DV_UNAME:
+      if (DV_DB_NULL != DV_TYPE_OF (dict))
+        return box_num (7);
+/*      return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb)) ? 0 : 7);*/
+      return box_num (0);
+    default:
+      return box_num (0);
+    }
+}
 
 caddr_t
 bif_rdf_box_strcmp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -845,5 +881,6 @@ rdf_box_init ()
   bif_define_typed ("rdf_box_is_complete", bif_rdf_box_is_complete, &bt_integer);
   /*bif_define_typed ("rdf_box_set_is_complete", bif_rdf_box_set_is_complete, &bt_integer);*/
   bif_define_typed ("rdf_box_is_storeable", bif_rdf_box_is_storeable, &bt_integer);
+  bif_define_typed ("rdf_box_needs_digest", bif_rdf_box_needs_digest, &bt_integer);
   bif_define_typed ("rdf_box_strcmp", bif_rdf_box_strcmp, &bt_integer);
 }
