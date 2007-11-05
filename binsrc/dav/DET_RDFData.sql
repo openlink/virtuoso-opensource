@@ -579,6 +579,30 @@ create function "RDFData_DAV_RES_CONTENT" (in id any, inout content any, out typ
 --  dbg_obj_print (iri);
   _from := '';
   gr := DAV_PROP_GET_INT (id[1], 'C', 'virt:rdfdata_graph', 0);
+  if (__proc_exists ('sioc.DBA.get_graph') is not null and gr = sioc.DBA.get_graph ())
+    {
+      -- take data from ODS graph
+      if (regexp_match ('http://([^/]*)/dataspace/(person|organization)/(.*)', iri) is not null)
+        {
+	  declare tmp, uname, pg any;
+	  declare pos int;
+	  tmp := sprintf_inverse (iri, 'http://%s/dataspace/%s/%s', 0);
+	  tmp := tmp[2];
+	  pos := coalesce (strchr (tmp, '#'), strchr (tmp, '/'));
+	  if (pos is not null)
+	    uname := subseq (tmp, 0, pos);
+          else
+	    uname := tmp;
+	  pg := http_param ('page');
+	  if (not isstring (pg))
+	    pg := '0';
+	  pg := atoi (pg);
+          ses := sioc..compose_foaf (uname, type, pg);
+	  goto ret_place2;
+	}
+      DB.DBA.OdsIriDescribe (iri, type);
+      goto ret_place;
+    }
   if (isstring (gr) and length (gr))
     _from := sprintf (' FROM <%s>', gr);
 
@@ -588,7 +612,9 @@ create function "RDFData_DAV_RES_CONTENT" (in id any, inout content any, out typ
   params := vector ('query', qr, 'format', 'application/rdf+xml');
   lines := vector ();
   WS.WS."/!sparql/" (path, params, lines);
+ret_place:
   ses := http_get_string_output (1);
+ret_place2:
   --dbg_obj_print (string_output_string (ses));
   http_rewrite ();
   if (content_mode = 1)
