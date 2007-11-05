@@ -26,6 +26,10 @@
  *  
 */
 
+#ifdef NO_GATE_DEBUG
+#undef DEBUG
+#endif
+
 #include "sqlnode.h"
 
 #define BUF_SEEMS_LEAF(buf, map) \

@@ -21,6 +21,9 @@
  *
  */
 
+#ifdef NO_AQ_DEBUG
+#undef DEBUG
+#endif
 
 #include "sqlnode.h"
 #include "sqlbif.h"
@@ -143,7 +146,7 @@ aq_request (async_queue_t * aq, aq_func_t f, caddr_t args)
   if (!aqt)
     {
       mutex_leave (aq->aq_mtx);
-      printf ("aq execution on requesting thread\n");
+      dbg_printf (("aq execution on requesting thread\n"));
       aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
       aqr->aqr_args = NULL;
       aqr->aqr_state = AQR_DONE;
