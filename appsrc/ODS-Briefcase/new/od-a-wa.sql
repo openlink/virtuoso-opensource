@@ -73,7 +73,7 @@ create procedure ODRIVE.WA.odrive_vhost()
 
   VHOST_REMOVE(lpath    => '/odrive');
 
-  USER_CREATE ('SOAPODrive', md5 (cast (now() as varchar)));
+  USER_CREATE ('SOAPODrive', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
   USER_SET_QUALIFIER ('SOAPODrive', 'DBA');
 
   VHOST_REMOVE (lpath => '/odrive/SOAP');
@@ -82,6 +82,29 @@ create procedure ODRIVE.WA.odrive_vhost()
                 ppath => '/SOAP/',
                 soap_user => 'SOAPODrive',
                 soap_opts => vector('Use', 'literal', 'XML-RPC', 'no' ));
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'rdf_sink_rule1',
+    1,
+    '/DAV/home/([^/]*)/rdf_sink/(.*)',
+    vector('user', 'resource'),
+    2,
+    '/sparql?default-graph-uri=http%%3A//local.virt/DAV/home/%U/rdf_sink/%U&query=CONSTRUCT%%20{%%3Fs%%20%%3Fp%%20%%3Fo}%%20WHERE%%20{%%3Fs%%20%%3Fp%%20%%3Fo}&format=%U',
+    vector('user', 'resource', '*accept*'),
+    null,
+    '(application/rdf.xml)|(application/foaf.xml)|(text/rdf.n3)|(text/rdf.ttl)|(application/rdf.n3)|(application/rdf.turtle)|(application/turtle)|(application/x-turtle)',
+    0,
+    303
+  );
+
+  DB.DBA.URLREWRITE_CREATE_RULELIST (
+    'rdf_sink_rule_list',
+    1,
+    vector ('rdf_sink_rule1')
+  );
+
+  VHOST_REMOVE (lpath=>'/DAV');
+  VHOST_DEFINE (lpath=>'/DAV', ppath=>'/DAV/', is_dav=>1, vsp_user=>'dba', is_brws=>1, opts=>vector ('url_rewrite', 'rdf_sink_rule_list'));
 }
 ;
 
