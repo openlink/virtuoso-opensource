@@ -1290,6 +1290,73 @@ void err_append_callstack_procname (caddr_t err, caddr_t proc_name, caddr_t file
 }
 
 
+caddr_t
+box_err_print_box (caddr_t param_value, int call_depth)
+{
+  if (call_depth > 1)
+    return box_dv_short_string ("...");
+      switch (DV_TYPE_OF (param_value))
+	{
+	case DV_STRING:
+      return box_sprintf (200, "'%.100s'%s", param_value,
+	    ( ((box_length (param_value) > 100) ||
+	      (box_length (param_value) != (strlen (param_value) + 1))) ?
+	      " (truncated)" : "") );
+        case DV_UNAME:
+      return box_sprintf (200, "UNAME'%.100s'%s", param_value,
+	    ( ((box_length (param_value) > 100) ||
+	      (box_length (param_value) != (strlen (param_value) + 1))) ?
+	      " (truncated)" : "") );
+	case DV_LONG_INT:
+      return box_sprintf (40, BOXINT_FMT, unbox (param_value));
+	case DV_DB_NULL:
+      return box_string ("NULL");
+	case DV_OBJECT:
+      return box_sprintf (500, "instance %p of %.300s", param_value, UDT_I_CLASS(param_value)->scl_name);
+        case DV_IRI_ID:
+          {
+            iri_id_t iid = unbox_iri_id (param_value);
+            if (iid >= MIN_64BIT_BNODE_IRI_ID)
+          return box_sprintf (30, "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+            else
+          return box_sprintf (30, "#i" BOXINT_FMT, (boxint)(iid));
+          }
+	case DV_REFERENCE:
+	  {
+	    caddr_t udi = udo_find_object_by_ref (param_value);
+	    if (NULL != udi)
+          return box_sprintf (500, "reference %p to instance %p of %.300s", param_value, udi, UDT_I_CLASS(udi)->scl_name);
+	    else
+          return box_sprintf (500, "reference %p to missing UDT instance", param_value);
+      }
+    case DV_RDF:
+      {
+        rdf_bigbox_t *rbb = (rdf_bigbox_t *)param_value;
+        caddr_t *printed_rb_box = box_err_print_box (rbb->rbb_base.rb_box, call_depth+1);
+        caddr_t res;
+        if (rbb->rbb_base.rb_chksum_tail)
+          {
+            caddr_t *printed_rbb_chksum = box_err_print_box (rbb->rbb_chksum, call_depth+1);
+            res = box_sprintf (500, "rdf_box (%.300s, %d, %d, %d, %d, %.50s, %d)",
+              printed_rb_box, (int)(rbb->rbb_base.rb_type), (int)(rbb->rbb_base.rb_lang),
+              (int)(rbb->rbb_base.rb_ro_id), (int)(rbb->rbb_base.rb_is_complete),
+              printed_rbb_chksum, (int)(rbb->rbb_box_dtp) );
+            dk_free_box (printed_rbb_chksum);
+          }
+        else
+          {
+            res = box_sprintf (500, "rdf_box (%.300s, %d, %d, %d, %d)",
+              printed_rb_box, (int)(rbb->rbb_base.rb_type), (int)(rbb->rbb_base.rb_lang),
+              (int)(rbb->rbb_base.rb_ro_id), (int)(rbb->rbb_base.rb_is_complete) );
+          }
+        dk_free_box (printed_rb_box);
+        return res;
+	  }
+	default:
+      return box_sprintf (100, "(%s value, tag %d)", dv_type_title (DV_TYPE_OF (param_value)), DV_TYPE_OF (param_value));
+	}
+}
+
 void err_append_callstack_param (caddr_t err, caddr_t param_name, caddr_t param_value)
 {
   if (1 >= callstack_on_exception)
@@ -1300,51 +1367,7 @@ void err_append_callstack_param (caddr_t err, caddr_t param_name, caddr_t param_
     {
       caddr_t err_msg = ERR_MESSAGE (err);
       caddr_t new_msg;
-      caddr_t param_print = NULL;
-      switch (DV_TYPE_OF (param_value))
-	{
-	case DV_STRING:
-	  param_print = box_sprintf (200, "'%.100s'%s", param_value,
-	    ( ((box_length (param_value) > 100) ||
-	      (box_length (param_value) != (strlen (param_value) + 1))) ?
-	      " (truncated)" : "") );
-	  break;
-        case DV_UNAME:
-	  param_print = box_sprintf (200, "UNAME'%.100s'%s", param_value,
-	    ( ((box_length (param_value) > 100) ||
-	      (box_length (param_value) != (strlen (param_value) + 1))) ?
-	      " (truncated)" : "") );
-	  break;
-	case DV_LONG_INT:
-	  param_print = box_sprintf (40, BOXINT_FMT, unbox (param_value));
-	  break;
-	case DV_DB_NULL:
-	  param_print = box_string ("NULL");
-	  break;
-	case DV_OBJECT:
-	  param_print = box_sprintf (500, "instance %p of %.300s", param_value, UDT_I_CLASS(param_value)->scl_name);
-	  break;
-        case DV_IRI_ID:
-          {
-            iri_id_t iid = unbox_iri_id (param_value);
-            if (iid >= MIN_64BIT_BNODE_IRI_ID)
-	      param_print = box_sprintf (30, "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
-            else
-	      param_print = box_sprintf (30, "#i" BOXINT_FMT, (boxint)(iid));
-          break;
-          }
-	case DV_REFERENCE:
-	  {
-	    caddr_t udi = udo_find_object_by_ref (param_value);
-	    if (NULL != udi)
-	      param_print = box_sprintf (500, "reference %p to instance %p of %.300s", param_value, udi, UDT_I_CLASS(udi)->scl_name);
-	    else
-	      param_print = box_sprintf (500, "reference %p to missing UDT instance", param_value);
-	  }
-	  break;
-	default:
-	  param_print = box_sprintf (100, "(%s value, tag %d)", dv_type_title (DV_TYPE_OF (param_value)), DV_TYPE_OF (param_value));
-	}
+      caddr_t param_print = box_err_print_box (param_value, 0);
       new_msg = box_sprintf (30 + box_length (err_msg) + strlen (param_name) + strlen (param_print),
 	"%s,\n  %10s => %s", err_msg, param_name, param_print );
       dk_free_box (param_print);
