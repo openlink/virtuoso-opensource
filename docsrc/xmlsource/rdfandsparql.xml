@@ -2110,7 +2110,7 @@ or related filters and predicates.
 <programlisting>
 select *
   from &lt;people&gt;
- where {?s foaf:Name ?name . ?name bif_contains "rich*" .}
+ where {?s foaf:Name ?name . ?name bif:contains "rich*" .}
 </programlisting>
 <para>would match all subjects whose <emphasis>foaf:Name</emphasis> contained a word starting with Rich.
 This would match Richard, Richie etc.
