@@ -86,7 +86,7 @@ create procedure BMK.WA.vhost()
                realm    => 'wa',
                def_page => 'bookmarks.vspx'
              );
-  USER_CREATE ('SOAP_BOOKMARK', md5 (cast (now() as varchar)));
+  USER_CREATE ('SOAP_BOOKMARK', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
   USER_SET_QUALIFIER ('SOAP_BOOKMARK', 'DBA');
 
   VHOST_REMOVE (lpath => '/dataspace/services/bookmark');

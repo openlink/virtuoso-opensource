@@ -1625,7 +1625,7 @@ create procedure BMK.WA.sfolder_create(
     if (id <> '')
       return id;
   }
-  id := cast(sequence_next ('sfolder') as varchar);
+  id := sequence_next ('sfolder');
   insert into BMK.WA.SFOLDER(SF_ID, SF_DOMAIN_ID, SF_NAME, SF_DATA)
     values(id, domain_id, name, data);
   return id;
@@ -2122,7 +2122,7 @@ create procedure BMK.WA.sioc_url (
 create procedure BMK.WA.foaf_url (
   in domain_id integer)
 {
-  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (domain_id));
+  return SIOC..person_iri (sprintf('http://%s%s/%s#this', SIOC..get_cname (), SIOC..get_base_path (), BMK.WA.domain_owner_name (domain_id)), '/about.rdf');
 }
 ;
 
