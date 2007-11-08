@@ -911,7 +911,7 @@ create procedure CAL.WA.sioc_url (
 create procedure CAL.WA.foaf_url (
   in domain_id integer)
 {
-  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (domain_id));
+  return SIOC..person_iri (sprintf('http://%s%s/%s#this', SIOC..get_cname (), SIOC..get_base_path (), CAL.WA.domain_owner_name (domain_id)), '/about.rdf');
 }
 ;
 
@@ -2564,7 +2564,7 @@ create procedure CAL.WA.dashboard_get(
   http ('<calendar-db>', ses);
   for select top 10 *
         from (select a.E_SUBJECT,
-                     CAL.WA.event_url (domain_id, E_ID) E_URI,
+                     SIOC..calendar_event_iri (domain_id, E_ID) E_URI,
                      coalesce (a.E_UPDATED, now ()) E_UPDATED
                 from CAL.WA.EVENTS a,
                      DB.DBA.WA_INSTANCE b,

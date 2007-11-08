@@ -372,7 +372,7 @@
   <v:method name="arrays4Reminder" arglist="inout x any, inout y any">
     <![CDATA[
       x := make_array (14, 'any');
-      x[0] := 'No remainder';
+      x[0] := 'No reminder';
       x[1] := '5 minutes';
       x[2] := '10 minutes';
       x[3] := '15 minutes';
@@ -491,6 +491,12 @@
                 if (cCommand <> '') {
                   if (cCommand = 'create') {
                     self.cAction := 'create';
+                    if (get_keyword ('mode', e.ve_params, 'event') = 'task') {
+                      self.cScope := 'tasks';
+                    } else {
+                      if ((self.cScope = 'tasks') or (self.cScope = 'search'))
+                        self.cScope := 'events';
+                    }
                     if (get_keyword ('onDate', e.ve_params, '') <> '')
                       self.on_date := cast (get_keyword ('onDate', e.ve_params) as integer);
                     if (get_keyword ('onTime', e.ve_params, '') <> '')
@@ -778,10 +784,10 @@
           </tr>
         </table>
         <div class="CE_container">
-          <vm:if test="(self.cScope not in ('day', 'week', 'month')) and (self.account_role not in ('public', 'guest'))">
             <table width="100%" cellspacing="0">
               <tr>
                 <td>
+                <vm:if test="(self.cScope not in ('day', 'week', 'month')) and (self.account_role not in ('public', 'guest'))">
             <vm:if test="(self.cScope <> 'search')">
             <v:button value="--'New ' || self.singleObjectName (self.cScope)" action="simple" xhtml_class="button" xhtml_style="margin-bottom: 5px;">
               <v:on-post>
@@ -805,13 +811,13 @@
                 ]]>
               </v:on-post>
             </v:button>
+                </vm:if>
                 </td>
                 <td align="right">
                   <span id="navigation"></span>
                 </td>
               </tr>
             </table>
-          </vm:if>
           <div id="content" class="CE_main">
             <vm:if test="self.cScope in ('day', 'week', 'month')">
               <table class="CE_table" cellspacing="0">

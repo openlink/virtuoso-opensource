@@ -201,6 +201,12 @@ create method wa_new_inst (in login varchar) for wa_Calendar
   -- make dir into Briefcase home
   DB.DBA.DAV_MAKE_DIR ('/DAV/home/%s/Calendar/' || login, iUserID, null, '110100000N');
 
+  declare path varchar;
+  path := sprintf ('/DAV/home/%s/Calendar (DET)/', login);
+  DB.DBA.DAV_MAKE_DIR (path, iUserID, null, '110100000N');
+  update WS.WS.SYS_DAV_COL set COL_DET = 'Calendar' where COL_ID = DAV_SEARCH_ID (path, 'C');
+
+
   -- Add a virtual directory for Calendar - public www -------------------------
   VHOST_REMOVE(lpath    => '/calendar/' || cast (iWaiID as varchar));
   VHOST_DEFINE(lpath    => '/calendar/' || cast (iWaiID as varchar),

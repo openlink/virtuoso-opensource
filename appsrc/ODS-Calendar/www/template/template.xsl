@@ -274,8 +274,14 @@
 
   <!--=========================================================================-->
   <xsl:template name="vm:event">
-    <div class="CE_new lc lc_head" onclick="javascript: cNewEvent(event);">
+    <div>
+      <div class="CE_new lc lc_head" style="float: left; padding: 3px; margin: 0 0 0.5em 0.5em;" onclick="javascript: cNewEvent(event);">
       New Event
+    </div>
+      <div class="CE_new lc lc_head" style="float: right; padding: 3px; margin: 0 0.5em 0.5em 0;" onclick="javascript: cNewTask(event);">
+        New Task
+      </div>
+      <br style="clear: both;" />
     </div>
   </xsl:template>
 

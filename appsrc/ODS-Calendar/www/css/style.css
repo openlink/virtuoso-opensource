@@ -128,6 +128,12 @@ a:hover
   width: auto;
 }
 
+.lc_none
+{
+  margin: 0 0.5em 0.5em 0.5em;
+  width: auto;
+}
+
 .lc_closer
 {
   margin-top: -0.5em;
