@@ -386,7 +386,12 @@ returns varchar
           j := j + 1;
         }
       if (position (target_params[i], nice_params))
+	{
+	  if (j < length (nice_parts))
         val := nice_parts[j];
+          else
+	    val := '';
+	}
       else if (target_params[i] = '*accept*')
         val := accept_val;
       else if (target_params[i] like '^*%^*' escape '^')
