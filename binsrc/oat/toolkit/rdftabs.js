@@ -412,8 +412,10 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 			for(var j=0;j<items.length;j++) {
 				var item = items[j];
 				/* handle anchors to local file */
-				var baseuri = value.uri.match(/^[^#]+/)[0];
-				var basehref = item.href.match(/^[^#]+/)[0];
+				var baseuri = value.uri.match(/^[^#]+/);
+				baseuri = baseuri? baseuri[0] : "";
+				var basehref = item.href.match(/^[^#]+/);
+				basehref = basehref? basehref[0] : "";
 				if(basehref == baseuri) { dereferenced = true; };
 			}
 

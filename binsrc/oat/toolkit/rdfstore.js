@@ -102,7 +102,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	this.addTriples = function(triples,href) {
 		var o = {
 			triples:triples,
-			href:href,
+			href:href || "",
 			enabled:true
 		}
 		self.items.push(o);

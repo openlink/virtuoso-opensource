@@ -30,10 +30,7 @@ OAT.RDF = {
 		
 		var u = url || "";
 		u = u.match(/^[^#]+/);
-		if(u)
-			u = u[0];
-		else
-			u = "";
+		u = u? u[0] : "";
 		var idPrefix = u + "#";
 		
 		function getAtt(obj,att) {

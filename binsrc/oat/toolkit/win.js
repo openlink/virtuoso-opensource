@@ -80,6 +80,7 @@ OAT.Win = function(optObj) {
 	self.outerResizeTo = function(w,h) { }
 	self.show = function() { OAT.Dom.show(self.dom.container); }
 	self.hide = function() { OAT.Dom.hide(self.dom.container); }
+	self.close = self.hide();
 	self.minimize = function() { }
 	self.maximize = function() { }
 	self.flip = function(side) { }

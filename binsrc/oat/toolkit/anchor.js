@@ -138,7 +138,6 @@ OAT.Anchor = {
 			type:options.type,
 			status:options.status,
 			template:options.template	} );
-		win.hide();
 			function checkOver() {
 				var opts = OAT.AnchorData.active;
 				if (!opts) { return; }
@@ -154,8 +153,11 @@ OAT.Anchor = {
 		var arrow = OAT.Dom.create("div",{});
 		OAT.Dom.append([win.dom.container,arrow]);
 		options.arrow = arrow;
-		options.window = OAT.AnchorData.window = win; /* assign common window to this anchor instance */
+		options.window = win;
 
+		win.close = function() { OAT.Dom.hide(win.dom.container); }
+		win.onclose = win.close;
+		win.close();
 
 		options.stat = 0; /* not initialized */
 		if (!options.href && 'href' in elm) { options.href = elm.href; } /* if no oat:href provided, then try the default one */
@@ -166,6 +168,7 @@ OAT.Anchor = {
 			win.hide(); /* close existing window */
 			OAT.AnchorData.active = options;
 			var pos = OAT.Dom.eventPos(event);
+			OAT.AnchorData.window = win; /* assign last opened window */
 		
 			if (!options.stat) {
 				OAT.Anchor.callForData(options,pos); 
@@ -174,7 +177,6 @@ OAT.Anchor = {
 			}
 			win.show();
 			options.anchorTo(pos[0],pos[1]);
-			//win.anchorTo(pos[0],pos[1]);
 		}
 		options.anchorTo = function(x_,y_) {
 			var win = options.window;
@@ -209,6 +211,7 @@ OAT.Anchor = {
 				OAT.AnchorData.active = false;
 			}
 		}
+		options.close = function() { options.window.hide(); }
 		options.startClose = function() {
 			options.closeFlag = 1;
 			setTimeout(options.closeRef,1000);

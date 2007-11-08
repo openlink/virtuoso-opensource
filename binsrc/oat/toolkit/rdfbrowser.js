@@ -34,7 +34,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		maxDistinctValues:100,
 		imagePath:OAT.Preferences.imagePath,
 		defaultURL:"",
-		appActivation:"click",
+		appActivation:"hover",
 		endpoint:"/sparql?query="
 	}
 	for (var p in optObj) { this.options[p] = optObj[p]; }
