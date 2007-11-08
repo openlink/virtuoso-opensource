@@ -211,27 +211,28 @@ create procedure RDFData_cast_dt_silent (in d any)
 }
 ;
 
--- TODO:
 create function "RDFData_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
 --  dbg_obj_princ ('RDFData_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
-  declare gr, u_name any;
+  declare path_parts any;
   declare access, ownergid, owner_uid any;
+  declare len int;
 
   "RDFData_ACCESS_PARAMS" (id[1], access, ownergid, owner_uid);
 
-  if (length (path) < 7)
-    return vector();
-  u_name := path[3];
-  gr := sioc..user_doc_iri (u_name);
+  if (isstring (path))
+    path_parts := split_and_decode (path, 0, '\0\0/');
+  else
+    path_parts := path;
+  len := length (path_parts);
   if (what = 'C')
-    return vector (DAV_CONCAT_PATH (path, null), 'C', 0, now (), id, access, ownergid, owner_uid, now (), 'dav/unix-directory', path[5]);
-  return vector (DAV_CONCAT_PATH (path, null), 'R', 0, now (), id, access, ownergid, owner_uid, now (), 'application/rdf+xml', path[6]);
+    return vector (DAV_CONCAT_PATH (path, ''), 'C', 0, now (), id, access, ownergid, owner_uid, now (), 'dav/unix-directory', path_parts [len - 2]);
+  return vector (DAV_CONCAT_PATH (path, ''), 'R', 0, now (), id, access, ownergid, owner_uid, now (), 'application/rdf+xml', path_parts [len - 1]);
 }
 ;
 
--- TODO:
+
 create function "RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in detcol_path varchar, in name_mask varchar, in recursive integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
@@ -486,7 +487,6 @@ create function RDFData_std_pref (in iri varchar, in rev int := 0)
    return get_keyword (iri, v, null);
 };
 
--- TODO:
 create function "RDFData_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in detcol_path varchar, inout compilation any, in recursive integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
@@ -546,9 +546,14 @@ create function "RDFData_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in
 
 create function "RDFData_DAV_SEARCH_PATH" (in id any, in what char(1)) returns any
 {
+  declare col_path varchar;
+  declare ret any;
   RDFData_log_message (current_proc_name ());
 --  dbg_obj_princ ('RDFData_DAV_SEARCH_PATH (', id, what, ')');
-  return NULL;
+  col_path := WS.WS.COL_PATH (id[1]);
+  ret := sprintf ('%s%s/iid (%d).rdf', col_path, id_to_iri (id[2]), iri_id_num (id[4]));
+--  dbg_obj_print (ret);
+  return ret;
 }
 ;
 
