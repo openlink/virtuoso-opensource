@@ -123,10 +123,10 @@ create procedure PHOTO.WA.get_gallery_folder_name(){
 create type SOAP_gallery as(
   is_own integer,
   owner_name varchar,
-  albums SOAP_album array
-
+  albums SOAP_album array,
+  settings any array
 ) __soap_type 'services.wsdl:dav_gallery'
-constructor method SOAP_gallery(is_own integer,owner_name varchar,albums any)
+constructor method SOAP_gallery(is_own integer,owner_name varchar,albums any,settings any array)
 ;
 
 
@@ -134,12 +134,16 @@ constructor method SOAP_gallery(is_own integer,owner_name varchar,albums any)
 create constructor method SOAP_gallery(
   in is_own integer,
   in owner_name varchar,
-  in albums any)
+  in albums any,
+  in settings any array
+)
 for SOAP_gallery
 {
   self.is_own := is_own;
   self.albums := albums;
+  self.settings   := settings;
   self.owner_name := owner_name;
+
 }
 ;
 --------------------------------------------------------------------------------

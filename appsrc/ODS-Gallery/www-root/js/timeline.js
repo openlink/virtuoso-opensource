@@ -8,6 +8,7 @@ var Settings = { /* user-settable */
 
 var TL = {
 		obj:false,
+		last: false,
 		scrollTo:function(event) {
 			var tl = TL.obj;
 			var dims = OAT.Dom.getWH(tl.port);
@@ -109,9 +110,9 @@ var TL = {
 			}
 			
 			var bl = OAT.Dom.create("span");
-			var last = tl.addEvent(0,new Date(),false,bl,"");
+			TL.last = tl.addEvent(0,new Date(),false,bl,"");
 			tl.draw();
-			TL.scrollTo(last);
+			TL.scrollTo(TL.last);
 		},
 		
     clear:function() {

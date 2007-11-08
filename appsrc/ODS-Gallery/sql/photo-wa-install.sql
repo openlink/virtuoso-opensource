@@ -64,7 +64,7 @@ create procedure PHOTO.WA.photo_install()
   if (isnull(strstr(sHost, '/DAV')))
     iIsDav := 0;
 
-  USER_CREATE('SOAPGallery',md5(cast(now() as varchar)));
+  USER_CREATE('SOAPGallery',md5(cast(now() as varchar)), vector ('DISABLED', 1));
   USER_SET_QUALIFIER ('SOAPGallery', 'WS');
 
 
@@ -105,6 +105,7 @@ create procedure PHOTO.WA.photo_install()
   PHOTO.WA._exec_no_error('grant execute on photo_comment TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on SOAP_external_album TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on SOAP_gallery TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_album_settings TO SOAPGallery');
   
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_attributes TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.add_comment TO SOAPGallery');
@@ -378,7 +379,8 @@ create method wa_dashboard_last_item () for wa_photo
     http(sprintf('<image id="%d">',RES_ID),ses);
     http(sprintf('<title><![CDATA[%s]]></title>',RES_NAME),ses);
     http(sprintf('<dt>%s</dt>', date_iso8601(RES_MOD_TIME)),ses);
-      http (sprintf ('<link><![CDATA[%s/#/%s/%s]]></link>', _home_url, COL_NAME, RES_NAME, RES_NAME), ses);
+--      http (sprintf ('<link><![CDATA[%s/#/%s/%s]]></link>', _home_url, COL_NAME, RES_NAME, RES_NAME), ses);
+      http (sprintf ('<link><![CDATA[/dataspace/%s/photos/%U#/%s/%s]]></link>',UserName,self.wa_name, COL_NAME, RES_NAME, RES_NAME), ses);
     http(sprintf('<from><![CDATA[%s]]></from>',Names),ses);
     http(sprintf('<uid>%s</uid>',UserName),ses);
     http('</image>',ses);

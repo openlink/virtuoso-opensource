@@ -85,6 +85,16 @@ function mapInit(){
        map.setMapType(OAT.MapData.MAP_HYB);
 
 
+       map.show = function ()
+       {
+         OAT.Dom.show(containerDiv);
+         if(map && map.markersPosArr)
+         {
+           map.obj.checkResize();
+           map.optimalPosition(map.markersPosArr);
+         }
+       };
+       
        map.findMarkerIndexByCoords = function (lat,lng)
        {
          for(var i=0;i<map.markerArr.length;i++){
@@ -125,9 +135,13 @@ function mapInit(){
          }
        };
 
+       map.markersPosArr=false;
 
        if(markersPosArr.length)
+       {
+          map.markersPosArr=markersPosArr;
           map.optimalPosition(markersPosArr);
+       }
 
      }
 

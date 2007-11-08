@@ -116,6 +116,15 @@
   if(current_instance.owner_id=current_user.user_id)
      isOwner:=1;
   
+  declare owner_fullname varchar;
+  if(isOwner)
+  {
+    owner_fullname:=coalesce(current_user.full_name,current_user.first_name||' '||current_user.last_name,current_user.auth_uid);
+  }else
+  {
+   owner_fullname:=(select coalesce(WAUI_FULL_NAME,WAUI_FIRST_NAME||' '||WAUI_LAST_NAME,current_instance.owner_name) from DB.DBA.WA_USER_INFO where WAUI_U_ID= current_instance.owner_id);
+  }
+  
   http(sprintf('<root sid="%s" realm="%s">',_sid,either(current_user.realm,'')),_xml);
   http(sprintf('<user lat="%.06f" lng="%.06f" owner="%d">',coalesce(geo_data[0],0),coalesce(geo_data[1],0),isOwner),_xml);
   http(sprintf('<full_name>%s</full_name>',current_user.full_name),_xml);
@@ -132,6 +141,7 @@
   http(sprintf('<wa_home_link>%s</wa_home_link>',wa_home_link),_xml);
   http(sprintf('<gallery_id>%d</gallery_id>',current_instance.gallery_id),_xml);
   http(sprintf('<instance_owner>%s</instance_owner>',current_instance.owner_name),_xml);
+  http(sprintf('<instance_owner_fullname>%s</instance_owner_fullname>',owner_fullname),_xml);
   http(sprintf('<instance_description>%s</instance_description>',replace(current_instance.description,'\'','&#39;')),_xml);
   http(sprintf('<map>%d</map>',1),_xml);
 

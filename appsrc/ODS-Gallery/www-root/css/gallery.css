@@ -60,7 +60,7 @@ li:hover{
 
 #head{
   background:#fff url(../i/gallerybanner_sml.jpg) no-repeat;
-  height:65px;
+  height:75px;
   border-bottom:1px solid #E2E2E2;
 
 }
@@ -72,6 +72,12 @@ li:hover{
   padding:4px;
   font-size:22px;
   display:none;
+}
+#instance_info
+{
+font-size:13px;
+margin: 10px 5px 0px 5px;
+float:left;
 }
 
 #nav {
@@ -85,7 +91,7 @@ li:hover{
 
 
 #nav ul{
-  margin:0px;
+  margin: 10px 0px 0px 0px;
   padding: 0px;
   list-style: none;
 
@@ -721,4 +727,14 @@ background-color: #85B9D2;
 p#ods_bar_sep
 {
   display:block;
+}
+#filter
+{
+  font-size:12px;
+
+}
+/* quickedit */
+.qe {
+	cursor: pointer;
+	border-bottom: 1px dotted #000;
 }

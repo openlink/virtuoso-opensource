@@ -55,6 +55,7 @@ gallery.init = function (path){
   this.slideshow      = new panel('slideshow');
   this.new_album      = new panel('new_album');
   this.edit_album     = new panel('edit_album');
+  this.edit_albumsettings = new panel('edit_album_settings');
   this.images_upload      = new panel('images_upload');
   this.tags           = new panel('tags');
   this.comments       = new panel('comments');
@@ -257,12 +258,35 @@ gallery.albums_click = function(el){
     
 
   }
+//------------------------------------------------------------------------------
+gallery.settings_tab_click = function ()
+{
+  gallery.managePanels('edit_albumsettings');
+  $('edit_album_showmap').checked = ds_albums.settings.show_map==1? true : false;
+  $('edit_album_showtimeline').checked = ds_albums.settings.show_timeline==1 ? true : false;
 
+}
 
 //------------------------------------------------------------------------------
+gallery.edit_albumsettings_action = function (){
+
+  gallery.ajax.edit_album_settings();
+
+}
+//------------------------------------------------------------------------------
+gallery.edit_albumsettings_cancel = function (){
+
+ OAT.Dom.hide('edit_album_settings');
+ gallery.managePanels('my_albums');
+
+}
+//------------------------------------------------------------------------------
+
 gallery.new_album_tab_click = function (){
 
+  if(ds_albums.settings.show_timeline==1)
   OAT.Dom.show('timeline');
+  if(ds_albums.settings.show_map==1)
   OAT.Dom.show('map');
 
   $('map').className = $('map').className.replace( "view","edit");
@@ -896,6 +920,22 @@ gallery.showAlbumsInfo = function(i){
   $('caption').innerHTML = 'Choose an album to view';
   $('preview_left').innerHTML = "";
   $('preview_right').innerHTML = "";
+//  OAT.Dom.show('filter');
+  var filter_type_options=["N/A","Year","..."];
+//  var elm=$('filter_type');
+//  OAT.QuickEdit.assign(elm, OAT.QuickEdit.SELECT, filter_type_options); 
+
+  if(!$('filter_type'))
+  {
+    var filter_type_ctrl = OAT.Dom.create("span");
+    filter_type_ctrl.setAttribute("id","filter_type");
+    filter_type_ctrl.innerHTML = "N/A";
+    filter_type_ctrl.className='qe';
+    OAT.QuickEdit.assign(filter_type_ctrl, OAT.QuickEdit.SELECT, filter_type_options);
+    
+    $('filter').appendChild(filter_type_ctrl);  
+  }
+  
   gallery.info.show();
 }
 
@@ -1499,10 +1539,28 @@ gallery.managePanels = function(action){
 
   OAT.Dom.hide('images_import');
   OAT.Dom.hide('images_export');
+  OAT.Dom.hide('filter');
+
 
   if(action == 'my_albums'){
+    if(ds_albums.settings.show_timeline==1)
+    {
     OAT.Dom.show('timeline');
-    OAT.Dom.show('map');
+        if(TL.last)
+           TL.scrollTo(TL.last);
+    }
+    else
+       OAT.Dom.hide('timeline');
+
+    if(ds_albums.settings.show_map==1)
+    {
+       if(map)
+          map.show();
+       else
+        OAT.Dom.show('map')
+    }else
+       OAT.Dom.hide('map');
+
     if(typeof(map)!='undefined')
     {
        $('map').className = $('map').className.replace( "edit","view");
@@ -1569,6 +1627,7 @@ gallery.managePanels = function(action){
   }else if(action == 'edit_album'){
       OAT.Dom.show('edit_album');
       OAT.Dom.hide('images');
+    if(ds_albums.settings.show_map==1)
     OAT.Dom.show('map');
     OAT.Dom.hide('images_upload');
 
@@ -1609,6 +1668,13 @@ gallery.managePanels = function(action){
     this.comments.hide();
 
     OAT.Dom.show('care_slideshow');
+  }else if(action=='edit_albumsettings')
+  {
+    this.hideAlbums();
+    this.info.hide();
+    this.new_album.hide();
+    this.edit_album.hide();
+    OAT.Dom.show('edit_album_settings');
   }
 }
 
@@ -1632,7 +1698,15 @@ gallery.ajax.load_albums = function(path){
     return Array(sid,gallery_id,path);
   };
   finish = function(p){
-
+    var settings={};
+    if(p.settings.length)
+    {
+      for(var i=0;i<p.settings.length;i=i+2)
+      {
+       settings[p.settings[i]]=p.settings[i+1];
+      }
+    }
+    ds_albums.settings=settings;
     ds_albums.loadList(p.albums);
     ds_albums.current.is_own = p.is_own;
     ds_albums.current.owner_name = p.owner_name;
@@ -1712,8 +1786,10 @@ gallery.ajax.new_album = function(){
 
     var r = ds_albums.list.length-1;
     var new_coll = preview_collection(ds_albums.list[r],r);
+
     gallery.albums.appendChild(new_coll);
 
+    $('myAlbumsTxt').innerHTML='My Albums ('+ds_albums.list.length+')';
     album_list = OAT.Dom.create('li');
     album_list.innerHTML = ds_albums.list[r].name.substring(0,12);
     album_list.id = "my_albums_list_"+r;
@@ -1730,6 +1806,28 @@ gallery.ajax.new_album = function(){
 
   gallery.ajax(prepare,call,finish);
   }
+
+//------------------------------------------------------------------------------
+gallery.ajax.edit_album_settings = function(){
+
+  call = proxies.SOAP.edit_album_settings;
+  prepare = function() {
+            return Array(sid,gallery_id,
+                         home_path,
+                         $('edit_album_showmap').checked ? 1: 0,
+                         $('edit_album_showtimeline').checked ? 1 : 0
+                         );
+           };
+  finish = function ()
+  {
+    ds_albums.settings.show_map=$('edit_album_showmap').checked ? 1: 0;
+    ds_albums.settings.show_timeline=$('edit_album_showtimeline').checked ? 1 : 0;
+    OAT.Dom.hide('edit_album_settings');
+    gallery.managePanels('my_albums');
+  };
+
+  gallery.ajax(prepare,call,finish);
+}
 
 //------------------------------------------------------------------------------
 gallery.ajax.edit_album = function(){
@@ -2185,3 +2283,59 @@ gallery.ajax.user_get_role = function(){
   gallery.ajax(prepare,call,finish);
 };
 
+//------------------------------------------------------------------------------
+//Overwrute Quickedit for custom purpose.
+
+OAT.QuickEdit.revert = function(elm,oldelm) {
+		if(oldelm.innerHTML != elm.value)
+		   filter_change_state(oldelm.id,elm.value)
+		oldelm.innerHTML = elm.value;
+		elm.parentNode.replaceChild(oldelm,elm);
+	}
+//------------------------------------------------------------------------------
+
+filter_change_state = function( elm_id, elm_val){
+
+
+ var filter=$('filter');
+		dd(elm_id);
+		dd(elm_val);
+		dd(filter);
+ if(elm_id=='filter_type')
+ {
+    OAT.Dom.unlink('filter_subtype');
+    if(elm_val!='N/A')
+    {
+     var filter_subtype_options= [];
+     if(elm_val=='Year')
+        filter_subtype_options = ['2000','2001','2002','2003','2004','2005','2006','2007','custom'];
+     var filter_subtype_ctrl = OAT.Dom.create("span");
+     filter_subtype_ctrl.setAttribute("id","filter_subtype");
+     filter_subtype_ctrl.innerHTML = "2000";
+     filter_subtype_ctrl.className='qe';
+     OAT.QuickEdit.assign(filter_subtype_ctrl, OAT.QuickEdit.SELECT, filter_subtype_options);
+     $('filter').appendChild(document.createTextNode('/'));  
+
+     $('filter').appendChild(filter_subtype_ctrl);  
+    }
+
+ }
+
+ if(elm_id=='filter_subtype')
+ {
+    OAT.Dom.unlink('filter_custom');
+    if(elm_val=='custom')
+    {
+      var filter_custom_ctrl = OAT.Dom.create("span");
+      filter_custom_ctrl.setAttribute("id","filter_custom");
+      filter_custom_ctrl.innerHTML = "...";
+      dd(filter_custom_ctrl);
+      filter_custom_ctrl.className='qe';
+      OAT.QuickEdit.assign(filter_custom_ctrl, OAT.QuickEdit.STRING);
+      $('filter').appendChild(document.createTextNode('/'));  
+      
+      $('filter').appendChild(filter_custom_ctrl);  
+    }
+ }
+
+}

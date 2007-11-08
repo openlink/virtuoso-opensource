@@ -64,6 +64,17 @@ create procedure PHOTO.WA.dav_browse(
     is_own := 0;
   }
 
+  declare _show_map,_show_timeline integer;
+  declare exit handler for not found{_show_map:=1;_show_timeline:=1;};
+  select SHOW_MAP,SHOW_TIMELINE into _show_map,_show_timeline from PHOTO.WA.SYS_INFO where HOME_PATH=current_gallery; 
+
+  if(_show_map is null)
+     _show_map:=1;
+  if(_show_timeline is null)
+
+     _show_timeline:=1;
+    
+  
   dirlist := DAV_DIR_LIST (current_gallery, 
                            0, 
                            current_user.auth_uid, 
@@ -162,7 +173,9 @@ create procedure PHOTO.WA.dav_browse(
   }
   ret:
   return SOAP_gallery (cast (is_own as integer),
-                       _col_user_name,result);
+                       _col_user_name,result,
+                        vector('show_map',cast(_show_map as varchar),'show_timeline',cast(_show_timeline as varchar))
+                      );
 }
 ;
 
@@ -240,6 +253,37 @@ create procedure PHOTO.WA.create_new_album(
 }
 ;
 
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.edit_album_settings(
+  in sid varchar,
+  in p_gallery_id integer,
+  in home_path varchar,
+  in _show_map integer,
+  in _show_timeline integer
+)
+returns varchar
+{
+
+  declare current_user photo_user;
+  declare auth_uid varchar;
+
+  auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
+
+  if(auth_uid = ''){
+    return vector();
+  }
+
+   declare exit handler for sqlstate '*' {goto _err;};
+   if(exists (select 1 from PHOTO.WA.SYS_INFO where OWNER_ID=current_user.user_id and HOME_PATH=home_path))
+      update PHOTO.WA.SYS_INFO set SHOW_MAP=_show_map , SHOW_TIMELINE=_show_timeline where HOME_PATH=home_path; 
+   else goto _err;
+   
+   return 'true';
+
+_err:
+   return 'false';
+}
+;
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA.edit_album(
   in sid varchar,
@@ -903,7 +947,7 @@ not_found:;
 }
 ;
 
-
+--development use grants... copy it to photo-wa-install.sql
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.dav_browse TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.create_new_album TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_album TO SOAPGallery');
@@ -914,3 +958,6 @@ not_found:;
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.tag_images TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.tag_image TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.remove_tag_image TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_album_settings TO SOAPGallery');
+  
+--  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.user_get_role TO SOAPGallery');

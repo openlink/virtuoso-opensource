@@ -60,11 +60,11 @@
         </meta>
       </xsl:if>
       <link rel="foaf" type="application/rdf+xml" title="FOAF">
-        <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/dataspace/<xsl:value-of select="root/instance_owner"/>/about.rdf</xsl:attribute>
+        <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/dataspace/person/<xsl:value-of select="root/instance_owner"/>/foaf.rdf</xsl:attribute>
         </link>
         <script type="text/javascript">
       		var toolkitPath = "/ods/oat";
-      		var featureList = ["dom","rotator","slider","xml","ajax","timeline","calendar"];
+      		var featureList = ["dom","rotator","slider","xml","ajax","timeline","calendar","quickedit"];
       	</script>
 
       	<script type="text/javascript" src="/ods/oat/loader.js"></script>
@@ -125,7 +125,9 @@
           oGallery
         </h1>
        <img src="/photos/res/i/grad_2.gif" width="0" height="45" /><br/>
+       <span id="instance_info" ><xsl:value-of select="instance_description"/> (<xsl:value-of select="instance_owner_fullname"/>)</span>       
       <div id="nav">
+        
         <ul>
           <xsl:choose>
             <xsl:when test="@sid != ''">
@@ -137,11 +139,9 @@
               <li id="new_album_tab">
                 New album
               </li>
-              <!--
               <li id="settings_tab">
                 Settings
               </li>
-              -->
               <!--
               <li id="wa">
                 <xsl:value-of select="wa_home_title"/>
@@ -180,7 +180,7 @@
         </tr>
         <tr>
         <td colspan="2">
-              <div id="map" style="display:block;with:800px;height:450px;" class="view"/>
+              <div id="map" style="display:none;with:800px;height:450px;" class="view"/>
         </td>
         </tr>
         <tr>
@@ -273,7 +273,11 @@
                 <div id="info_discription">
                 </div>
                 <h3 id="caption"></h3>
+                <div id="filter" style="display:none">
+                 Filter by: <span id="filter_subtype" class="qe"></span><span id="filter_custom" class="qe"></span>
+                </div>
               </div>
+              
               <div id="preview_nav">
                 <div id="preview_left"/>
                 <div id="preview_right">
@@ -287,6 +291,7 @@
 
             <xsl:call-template name="new_album"/>
             <xsl:call-template name="edit_album"/>
+            <xsl:call-template name="edit_album_settings"/>
 
             
             <div id="group_images">
@@ -987,10 +992,40 @@
                     </tr>
                   </tfoot>
                 </table>
-
-
               </div>
   </xsl:template>
+<!-- ======================================================================= -->
+<xsl:template name="edit_album_settings">
+  <div id="edit_album_settings" style="display:none;">
+    <table id="forma" class="box">
+      <caption>Settings</caption>
+      <tr>
+        <td><label for="edit_album_showmap">Show map</label></td>
+        <td>
+          <input type="hidden" name="edit_album_showmap_old" id="edit_album_showmap_old" value=""/>
+          <input type="checkbox" name="edit_album_showmap" id="edit_album_showmap" value=""/>
+        </td>
+      </tr>
+      <tr>
+        <td><label for="edit_album_showtimeline">Show timeline</label></td>
+        <td>
+          <input type="hidden" name="edit_album_showtimeline_old" id="edit_album_showtimeline_old" value=""/>
+          <input type="checkbox" name="edit_album_showtimeline" id="edit_album_showtimeline" value=""/>
+        </td>
+      </tr>
+        <tfoot>
+          <tr>
+            <td style="padding-top:20px;" colspan="2">
+              <button type="button" name="btn_edit_albumsettings_save" OnClick="gallery.edit_albumsettings_action()">Save</button>
+              <button type="button" name="btn_edit_albumsettings_cancel" OnClick="gallery.edit_albumsettings_cancel();">Cancel</button>
+            </td>
+          </tr>
+        </tfoot>
+    </table>
+  </div>
+</xsl:template>
+
+<!-- ======================================================================= -->
 
 <!-- ======================================================================= -->
   <xsl:template name="image_edit">

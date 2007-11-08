@@ -30,6 +30,7 @@ var dataSet = new Object();
 //------------------------------------------------------------------------------
 dataSet = function(){
   this.list = new Array();
+  this.settings = new Object();
   this.current = new Object();
   this.current.name = null;
   this.current.list = new Array();
