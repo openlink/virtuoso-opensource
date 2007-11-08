@@ -86,7 +86,7 @@ create procedure AB.WA.vhost()
                realm    => 'wa',
                def_page => 'home.vspx'
              );
-  USER_CREATE ('SOAP_ADDRESSBOOK', md5 (cast (now() as varchar)));
+  USER_CREATE ('SOAP_ADDRESSBOOK', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
   USER_SET_QUALIFIER ('SOAP_ADDRESSBOOK', 'DBA');
 
   VHOST_REMOVE (lpath => '/dataspace/services/addressbook');

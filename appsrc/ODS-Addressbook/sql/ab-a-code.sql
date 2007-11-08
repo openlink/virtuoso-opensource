@@ -950,7 +950,7 @@ create procedure AB.WA.sioc_url (
 create procedure AB.WA.foaf_url (
   in domain_id integer)
 {
-  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), AB.WA.domain_owner_name (domain_id));
+  return SIOC..person_iri (sprintf('http://%s%s/%s#this', SIOC..get_cname (), SIOC..get_base_path (), AB.WA.domain_owner_name (domain_id)), '/about.rdf');
 }
 ;
 
@@ -2241,7 +2241,7 @@ create procedure AB.WA.dashboard_get(
   http ('<ab-db>', ses);
   for select top 10 *
         from (select a.P_NAME,
-                     AB.WA.contact_url (domain_id, P_ID) P_URI,
+                     SIOC..addressbook_contact_iri (domain_id, P_ID) P_URI,
                      coalesce (a.P_UPDATED, now ()) P_UPDATED
                 from AB.WA.PERSONS a,
                      DB.DBA.WA_INSTANCE b,
@@ -2844,14 +2844,14 @@ create procedure AB.WA.import_vcard (
 
   Meta := vector
     (
-      'P_NAME',           null, 'NICKNAME/val',
+      'P_NAME',           null, 'NICKNAME/val|N/fld[1]|N/fld[2]|N/val',
       'P_TITLE',          null, 'N/fld[4]',
       'P_FIRST_NAME',     null, 'N/fld[2]',
       'P_MIDDLE_NAME',    null, 'N/fld[3]',
       'P_LAST_NAME',      null, 'N/fld[1]|N/val',
       'P_FULL_NAME',      null, 'FN/val',
       'P_BIRTHDAY',       null, 'BDAY/val',
-      'P_B_ORGANIZATION', null, 'ORG/val',
+      'P_B_ORGANIZATION', null, 'ORG/val|ORG/fld[1]',
       'P_B_JOB',          null, 'TITLE/val',
       'P_H_ADDRESS1',     vector ('*', 'P_H_ADDRESS1', 'HOME',     'P_H_ADDRESS1', 'WORK',     'P_B_ADDRESS1'),                'for \044v in ADR/fld[3] return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
       'P_H_ADDRESS2',     vector ('*', 'P_H_ADDRESS2', 'HOME',     'P_H_ADDRESS2', 'WORK',     'P_B_ADDRESS2'),                'for \044v in ADR/fld[2] return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
@@ -2859,9 +2859,9 @@ create procedure AB.WA.import_vcard (
       'P_H_CODE',         vector ('*', 'P_H_CODE',     'HOME',     'P_H_CODE',     'WORK',     'P_B_CODE'),                    'for \044v in ADR/fld[6] return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
       'P_H_STATE',        vector ('*', 'P_H_STATE',    'HOME',     'P_H_STATE',    'WORK',     'P_B_STATE'),                   'for \044v in ADR/fld[5] return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
       'P_H_COUNTRY',      vector ('*', 'P_H_COUNTRY',  'HOME',     'P_H_COUNTRY',  'WORK',     'P_B_COUNTRY'),                 'for \044v in ADR/fld[7] return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
-      'EMAIL',            vector ('*', 'P_MAIL',       'HOME',     'P_H_MAIL',     'WORK',     'P_B_MAIL',  'PREF', 'P_MAIL'), 'for \044v in EMAIL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
-      'PHONE',            vector ('*', 'P_H_PHONE',    'HOME,FAX', 'P_H_FAX',      'WORK,FAX', 'P_B_FAX',   'FAX',  'P_H_FAX', 'HOME', 'P_H_PHONE', 'WORK', 'P_B_PHONE', 'CELL', 'P_H_MOBILE'), 'for \044v in TEL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
-      'WEB',              vector ('*', 'P_WEB',        'HOME',     'P_H_WEB',      'WORK',     'P_B_WEB'),                     'for \044v in URL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))'
+      'P_MAIL',           vector ('*', 'P_MAIL',       'HOME',     'P_H_MAIL',     'WORK',     'P_B_MAIL',  'PREF', 'P_MAIL'), 'for \044v in EMAIL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
+      'P_H_PHONE',        vector ('*', 'P_H_PHONE',    'HOME,FAX', 'P_H_FAX',      'WORK,FAX', 'P_B_FAX',   'FAX',  'P_H_FAX', 'HOME', 'P_H_PHONE', 'WORK', 'P_B_PHONE', 'CELL', 'P_H_MOBILE'), 'for \044v in TEL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
+      'P_WEB',            vector ('*', 'P_WEB',        'HOME',     'P_H_WEB',      'WORK',     'P_B_WEB'),                     'for \044v in URL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))'
     );
   mLength := length (Meta);
 
@@ -2896,8 +2896,8 @@ create procedure AB.WA.import_vcard (
             }
             if (not is_empty_or_null (T)) {
               if (not isnull (Meta [N+1])) {
-                pField2 := '';
                 if (strstr (T, ' @TYPE_') <> 0) {
+                  pField2 := '';
                   for (M := 0; M < length (Meta [N+1]); M := M + 2) {
                     if ((Meta [N+1][M] = '*') and isnull (strstr (T, ' @TYPE_'))) {
                       pField2 := Meta [N+1][M+1];
@@ -3028,6 +3028,8 @@ create procedure AB.WA.import_foaf (
       }
       if (not is_empty_or_null (coalesce (Item[0][0], fullName))) {
         id := AB.WA.contact_update2 (-1, domain_id, 'P_NAME', coalesce (Item[0][0], fullName));
+	      if (Items [N][0] not like 'nodeID://%')
+	        AB.WA.contact_update2 (id, domain_id, 'P_FOAF', Items [N][0]);
         pFields := vector ();
         pValues := vector ();
         for (M := 1; M < mLength; M := M + 1) {

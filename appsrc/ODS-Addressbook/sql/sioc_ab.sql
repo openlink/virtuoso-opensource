@@ -154,7 +154,8 @@ create procedure fill_ods_addressbook_sioc (
 								P_B_WEB,
                 P_CREATED,
                 P_UPDATED,
-                P_TAGS
+								P_TAGS,
+								P_FOAF
            from DB.DBA.WA_INSTANCE,
                 DB.DBA.WA_MEMBER,
                 AB.WA.PERSONS
@@ -214,7 +215,8 @@ create procedure fill_ods_addressbook_sioc (
 											P_B_WEB,
                     P_CREATED,
                     P_UPDATED,
-                    P_TAGS);
+											P_TAGS,
+											P_FOAF);
 
 			for (select A_ID,
 									A_DOMAIN_ID,
@@ -326,7 +328,8 @@ create procedure contact_insert (
 	inout bWeb varchar,
   inout created datetime,
   inout updated datetime,
-  inout tags varchar)
+	inout tags varchar,
+	inout foaf varchar)
 {
   declare iri, iri2, temp_iri varchar;
 	declare person_iri varchar;
@@ -363,6 +366,9 @@ create procedure contact_insert (
 		if (kind = 1) {
 		  -- Organization
   		DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Organization'));
+		if (length (foaf))
+		  DB.DBA.RDF_QUAD_URI   (graph_iri, iri, owl_iri ('sameAs'), foaf);
+
   		
   		DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, sioc_iri ('scope_of'), r_iri);
   		DB.DBA.RDF_QUAD_URI   (graph_iri, r_iri, sioc_iri ('function_of'), iri);
@@ -383,6 +389,8 @@ create procedure contact_insert (
 		} else {
 		  -- Person
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
+		if (length (foaf))
+		  DB.DBA.RDF_QUAD_URI   (graph_iri, iri, owl_iri ('sameAs'), foaf);
     DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, sioc_iri ('scope_of'), r_iri);
     DB.DBA.RDF_QUAD_URI   (graph_iri, r_iri, sioc_iri ('function_of'), iri);
   		DB.DBA.RDF_QUAD_URI   (graph_iri, person_iri, foaf_iri ('knows'), iri);
@@ -573,7 +581,8 @@ create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
 									N.P_B_WEB,
                   N.P_CREATED,
                   N.P_UPDATED,
-                  N.P_TAGS);
+									N.P_TAGS,
+									N.P_FOAF);
 }
 ;
 
@@ -629,7 +638,8 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
 									N.P_B_WEB,
                   N.P_CREATED,
                   N.P_UPDATED,
-                  N.P_TAGS);
+									N.P_TAGS,
+									N.P_FOAF);
 }
 ;
 
