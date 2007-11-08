@@ -252,7 +252,26 @@ if (0 = length (self.rulelist))
   {
     declare nrule int;
     nrule := (select count(distinct (URRL_LIST)) from URL_REWRITE_RULE_LIST where URRL_LIST like 'http_rule_list_%');
-    self.rulelist := sprintf ('http_rule_list_%d', nrule+1);
+    while (1)
+     {
+       declare dummy int;
+       whenever not found goto finish_cnt;
+       nrule := nrule + 1;
+       self.rulelist := sprintf ('http_rule_list_%d', nrule);
+       select 1 into dummy from URL_REWRITE_RULE_LIST where URRL_LIST = self.rulelist;
+     }
+    finish_cnt:;
+
+    while (1)
+     {
+       declare dummy int;
+       whenever not found goto finish_cnt2;
+       self.rulelist := sprintf ('http_rule_list_%d', nrule);
+       select 1 into dummy from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = self.rulelist;
+       nrule := nrule + 1;
+     }
+    finish_cnt2:;
+
     DB.DBA.URLREWRITE_CREATE_RULELIST (self.rulelist, 1, vector ());
     URL_REWRITE_UPDATE_VHOST (self.rulelist, self.lpath, self.vhost, self.lhost);
   }
