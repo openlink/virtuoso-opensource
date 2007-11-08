@@ -26,12 +26,30 @@
 #include "arith.h"
 #include "xmltree.h"
 
+#ifdef DEBUG
+#define rdf_box_audit(rb) rdf_box_audit_impl(rb)
+#define rdf_bigbox_audit(rbb) rdf_box_audit_impl(&(rbb->rbb_base))
+#else
+#define rdf_box_audit(rb)
+#define rdf_bigbox_audit(rbb)
+#endif
+
+void
+rdf_box_audit_impl (rdf_box_t * rb)
+{
+  if (0 >= rb->rb_ref_count)
+    GPF_T1("RDF box has nonpositive reference count");
+  if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
+    GPF_T1("RDF box is too incomplete");
+}
+
 void
 rb_complete (rdf_box_t * rb, lock_trx_t * lt)
 {
   static query_t * rdf_complete_qr = NULL;
   caddr_t err = NULL;
   caddr_t * pars;
+  rdf_box_audit(rb);
   if (rb->rb_is_complete)
     return; /* redundand call */
   pars = (caddr_t *) dk_alloc_box (1 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
@@ -127,6 +145,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         }
       else
         rbb->rbb_box_dtp = DV_TYPE_OF (box);
+      rdf_bigbox_audit(rbb);
       return (caddr_t) rbb;
     }
   if (is_complete && (0 == ro_id) && (RDF_BOX_DEFAULT_TYPE == type) && (RDF_BOX_DEFAULT_LANG == lang) &&
@@ -140,6 +159,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (ro_id)
     rb->rb_is_outlined = 1;
   rb->rb_is_complete = is_complete;
+  rdf_box_audit(rb);
   return (caddr_t) rb;
 }
 
@@ -149,7 +169,10 @@ bif_is_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t x = bif_arg (qst, args, 0, "is_rdf_box");
   if (DV_RDF == DV_TYPE_OF (x))
+    {
+      rdf_box_audit((rdf_box_t *)x);
     return box_num (1);
+    }
   return 0;
 }
 
@@ -163,6 +186,7 @@ bif_rdf_box_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
     sqlr_new_error ("22023", "SR014",
   "Function %s needs an rdf box as argument %d, not an arg of type %s (%d)",
   func, nth + 1, dv_type_title (dtp), dtp);
+  rdf_box_audit((rdf_box_t*) arg);
   return (rdf_box_t*) arg;
 }
 
@@ -204,6 +228,7 @@ bif_rdf_box_data (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_data");
   if (DV_RDF != DV_TYPE_OF (rb))
   return box_copy_tree (rb);
+  rdf_box_audit (rb);
   if (1 < BOX_ELEMENTS (args))
     {
       long should_be_complete = bif_long_arg (qst, args, 1, "rdf_box_data");
@@ -221,6 +246,7 @@ bif_rdf_box_data_tag (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dtp_t rb_dtp = DV_TYPE_OF (rb);
   if (DV_RDF != rb_dtp)
     return box_num (rb_dtp);
+  rdf_box_audit (rb);
   if (rb->rb_chksum_tail)
     return box_num (((rdf_bigbox_t *)rb)->rbb_box_dtp);
   return box_num (DV_TYPE_OF (rb->rb_box));
@@ -230,9 +256,12 @@ bif_rdf_box_data_tag (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_rdf_box_lang (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t rb = bif_arg (qst, args, 0, "rdf_box_lang");
+  rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_lang");
   if (DV_RDF == DV_TYPE_OF (rb))
-    return box_num (((rdf_box_t *)rb)->rb_lang);
+    {
+      rdf_box_audit (rb);
+      return box_num (rb->rb_lang);
+    }
   return box_num (RDF_BOX_DEFAULT_LANG);
 }
 
@@ -240,9 +269,12 @@ bif_rdf_box_lang (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_rdf_box_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t rb = bif_arg (qst, args, 0, "rdf_box_type");
+  rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_type");
   if (DV_RDF == DV_TYPE_OF (rb))
-    return box_num (((rdf_box_t *)rb)->rb_type);
+    {
+      rdf_box_audit (rb);
+      return box_num (rb->rb_type);
+    }
   return box_num (RDF_BOX_DEFAULT_TYPE);
 }
 
@@ -262,20 +294,23 @@ bif_rdf_box_set_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_rdf_box_chksum (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_chksum");
-  if ((DV_RDF != DV_TYPE_OF (rb)) || !rb->rb_chksum_tail)
+  rdf_bigbox_t *rbb = (rdf_bigbox_t *)bif_arg (qst, args, 0, "rdf_box_chksum");
+  if (DV_RDF != DV_TYPE_OF (rbb))
     return NEW_DB_NULL;
-  return box_copy_tree (((rdf_bigbox_t *)rb)->rbb_chksum);
+  rdf_bigbox_audit (rbb);
+  if (!rbb->rbb_base.rb_chksum_tail)
+    return NEW_DB_NULL;
+  return box_copy_tree (rbb->rbb_chksum);
 }
 
 caddr_t
 bif_rdf_box_is_complete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t rb = bif_arg (qst, args, 0, "rdf_box_is_complete");
+  rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_is_complete");
   if (DV_RDF == DV_TYPE_OF (rb))
     {
-      rdf_box_t * rb2 = (rdf_box_t *) rb;
-      return box_num (rb2->rb_is_complete);
+      rdf_box_audit (rb);
+      return box_num (rb->rb_is_complete);
     }
   return box_num (1);
 }
@@ -297,18 +332,18 @@ bif_rdf_box_set_is_complete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 caddr_t
 bif_rdf_box_is_storeable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t rb = bif_arg (qst, args, 0, "rdf_box_is_storeable");
+  rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_is_storeable");
   if (DV_RDF == DV_TYPE_OF (rb))
     {
-      rdf_box_t * rb2 = (rdf_box_t *) rb;
       dtp_t data_dtp;
-      if (0 != rb2->rb_ro_id)
+      rdf_box_audit (rb);
+      if (0 != rb->rb_ro_id)
         return box_num (1);
-      if ((!rb2->rb_is_complete) || rb2->rb_chksum_tail)
+      if ((!rb->rb_is_complete) || rb->rb_chksum_tail)
       return box_num (0);
-      data_dtp = DV_TYPE_OF (rb2->rb_box);
+      data_dtp = DV_TYPE_OF (rb->rb_box);
       if ((DV_STRING == data_dtp) || (DV_UNAME == data_dtp))
-        return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb2->rb_box)) ? 1 : 0);
+        return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb->rb_box)) ? 1 : 0);
     }
   return box_num (1);
 }
@@ -325,6 +360,7 @@ bif_rdf_box_needs_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
       {
         rdf_box_t * rb2 = (rdf_box_t *) rb;
         dtp_t data_dtp;
+        rdf_box_audit (rb2);
 /*        if (0 != rb2->rb_ro_id)
           return box_num (1);
         if ((!rb2->rb_is_complete) || rb2->rb_chksum_tail)
@@ -359,6 +395,8 @@ bif_rdf_box_strcmp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     (!rb1->rb_is_complete) || (!rb2->rb_is_complete) ||
     (!DV_STRINGP (rb1->rb_box)) || (!DV_STRINGP (rb2->rb_box)) )
     return NEW_DB_NULL;
+  rdf_box_audit (rb1);
+  rdf_box_audit (rb2);
   return box_num (strcmp (rb1->rb_box, rb2->rb_box));
 }
 
@@ -366,9 +404,12 @@ bif_rdf_box_strcmp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_rdf_box_ro_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t rb = bif_arg (qst, args, 0, "rdf_box_ro_id");
+  rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_ro_id");
   if (DV_RDF == DV_TYPE_OF (rb))
-    return box_num (((rdf_box_t*)rb)->rb_ro_id);
+    {
+      rdf_box_audit (rb);
+      return box_num (rb->rb_ro_id);
+    }
   return 0;
 }
 
@@ -432,6 +473,11 @@ rb_serialize (caddr_t x, dk_session_t * ses)
   /* dv_rdf, flags, data, ro_id, lang or type, opt chksum, opt dtp
    * flags is or of 1. outlined 2. complete 4 has lang 8 has type 0x10 chksum+dtp 0x20 if id 8 bytes */
   rdf_box_t * rb = (rdf_box_t *) x;
+  rdf_box_audit (rb);
+  if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
+    sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't serialize");
+  if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
+    sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't serialize");
   if (DKS_DB_DATA (ses))
     print_object (rb->rb_box, ses, NULL, NULL);
   else 
@@ -465,6 +511,10 @@ rb_serialize (caddr_t x, dk_session_t * ses)
           int str_len = box_length (str) - 1;
       if (rb->rb_is_complete && str_len <= RB_MAX_INLINED_CHARS)
 	flags |= RBS_COMPLETE;
+#ifdef DEBUG
+          else if (0 == rb->rb_ro_id)
+            GPF_T1 ("Unable to serialize complete but long-valued RDF box with zero ro_id");
+#endif
       session_buffered_write_char (flags, ses);
 	  if (str_len > RB_MAX_INLINED_CHARS)
 	    str_len = RB_MAX_INLINED_CHARS;
@@ -533,6 +583,9 @@ rb_deserialize (dk_session_t * ses)
     ((rdf_bigbox_t *)rb)->rbb_box_dtp = session_buffered_read_char (ses);
   if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
     sr_report_future_error (ses, "", "Both datatype id %d and language id %d are not default in DV_RDF value, can't deserialize");
+  if (!(rb->rb_is_complete) && !(rb->rb_ro_id))
+    sr_report_future_error (ses, "", "Zero ro_id in incomplete DV_RDF value, can't deserialize");
+  rdf_box_audit (rb);
   return (caddr_t) rb;
 }
 
@@ -541,6 +594,7 @@ rb_deserialize (dk_session_t * ses)
 int
 rb_free (rdf_box_t * rb)
 {
+  rdf_box_audit (rb);
   rb->rb_ref_count--;
   if (rb->rb_ref_count)
     return 1;
@@ -553,6 +607,7 @@ rb_free (rdf_box_t * rb)
 caddr_t
 rb_copy (rdf_box_t * rb)
 {
+  rdf_box_audit (rb);
   rb->rb_ref_count++;
   return (caddr_t)rb;
 }
@@ -845,6 +900,7 @@ int32
 rdf_box_hash (caddr_t box)
 {
   rdf_box_t *rb = (rdf_box_t *)box;
+  rdf_box_audit (rb);
   if ((0 != rb->rb_ro_id) && !rb->rb_is_complete)
     return rb->rb_ro_id + (rb->rb_ro_id << 16);
   return rb->rb_lang * 17 + rb->rb_type * 13 + rb->rb_is_complete * 9 +

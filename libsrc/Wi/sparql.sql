@@ -41,6 +41,14 @@ create table DB.DBA.RDF_QUAD (
 create bitmap index RDF_QUAD_OGPS on DB.DBA.RDF_QUAD (O, G, P, S)
 ;
 
+--create trigger RDF_QUAD_O_AUDIT before insert on DB.DBA.RDF_QUAD
+--{
+--  if (not rdf_box_is_storeable (O))
+--    signal ('RDFXX', 'non-storeable O');
+--}
+--;
+
+
 create table DB.DBA.RDF_URL (
   RU_IID IRI_ID not null primary key,
   RU_QNAME varchar )
@@ -153,6 +161,24 @@ create procedure DB.DBA.RDF_OBJ_RO_DIGEST_UNINDEX_HOOK (inout vtb any, inout d_i
 rdf_inf_const_init ()
 ;
 
+create procedure DB.DBA.RDF_LOAD_ALL_FT_RULES ()
+{
+  whenever sqlstate '*' goto again;
+again:
+  for (select ROFR_G as rule_g, ROFR_P as rule_p, ROFR_REASON as reason from DB.DBA.RDF_OBJ_FT_RULES) do
+    {
+      declare rule_g_iid, rule_p_iid IRI_ID;
+      rule_g_iid := case (rule_g) when '' then null else iri_to_id (rule_g, 1) end;
+      rule_p_iid := case (rule_p) when '' then null else iri_to_id (rule_p, 1) end;
+      dbg_obj_princ ('__rdf_obj_ft_rule_add (', rule_g_iid, rule_p_iid, reason, ')');
+      __rdf_obj_ft_rule_add (rule_g_iid, rule_p_iid, reason);
+    }
+}
+;
+
+DB.DBA.RDF_LOAD_ALL_FT_RULES ()
+;
+
 create procedure DB.DBA.RDF_GLOBAL_RESET ()
 {
 --  checkpoint;
@@ -177,6 +203,7 @@ create procedure DB.DBA.RDF_GLOBAL_RESET ()
 --  sequence_set ('RDF_RO_ID', 1, 0);
   sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 0);
   sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 0);
+  DB.DBA.RDF_LOAD_ALL_FT_RULES ();
   DB.DBA.TTLP (
     cast ( DB.DBA.XML_URI_GET (
         'http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl', '' ) as varchar ),
@@ -682,10 +709,18 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
     v := blob_to_string (v);
   else if (246 = __tag (v))
     {
+      need_digest := rdf_box_needs_digest (v, ro_id_dict);
+      if ((1 = need_digest) and ro_id_dict is not null)
+        dict_put (ro_id_dict, rdf_box_ro_id (v), 1);
+      if (1 >= need_digest)
+        {
+          if (rdf_box_is_storeable (v))
+            return v;
+        }
       dt_twobyte := rdf_box_type (v);
       lang_twobyte := rdf_box_lang (v);
-      if (rdf_box_is_storeable (v) and not (rdf_box_data_tag (v) in (182, 217)))
-        return v;
+--      if (rdf_box_is_storeable (v) and not (rdf_box_data_tag (v) in (182, 217)))
+--        return v;
       if (rdf_box_is_complete (v))
       v := rdf_box_data (v);
       else
@@ -693,7 +728,8 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
     }
   if (ro_id_dict is not null or dt_twobyte <> 257 or lang_twobyte <> 257)
     need_digest := 1;
-  else need_digest := 0;
+  else
+    need_digest := 0;
   if ((dt_twobyte < 257) or (lang_twobyte < 257))
     signal ('RDFXX', sprintf ('Bad datatype/lang code: DB.DBA.RDF_OBJ_ADD (%d, %s, %d, %d)', dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte, need_digest) );
   if (not isstring (v))
@@ -728,6 +764,8 @@ found_xtree:
       digest := old_digest;
       if (ro_id_dict is not null)
         dict_put (ro_id_dict, id, 1);
+      if (not (rdf_box_is_storeable (digest)))
+        signal ('RDFX2', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return digest;
       -- goto recheck;
 new_xtree:
@@ -736,6 +774,8 @@ new_xtree:
       insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG, RO_DIGEST) values (id, sum64, __xml_serialize_packed (v), digest);
       if (ro_id_dict is not null)
         dict_put (ro_id_dict, id, 1);
+      if (not (rdf_box_is_storeable (digest)))
+        signal ('RDFX3', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return digest;
       -- old_digest := null;
       -- goto recheck;
@@ -761,6 +801,8 @@ serializable_veryshort:
 found_veryshort:      
       if (ro_id_dict is not null)
         dict_put (ro_id_dict, id, 1);
+      if (not (rdf_box_is_storeable (v)))
+        signal ('RDFX4', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return v;
       -- digest := v;
       -- goto recheck;
@@ -769,6 +811,8 @@ new_veryshort:
       insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_DIGEST) values (id, v, v);
       if (ro_id_dict is not null)
         dict_put (ro_id_dict, id, 1);
+      if (not (rdf_box_is_storeable (v)))
+        signal ('RDFX5', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return v;
       -- digest := v;
       -- old_digest := null;
@@ -809,6 +853,8 @@ found_long:
         digest := old_digest;
       if (ro_id_dict is not null)
         dict_put (ro_id_dict, id, 1);
+      if (not (rdf_box_is_storeable (digest)))
+        signal ('RDFX6', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return digest;
       -- goto recheck;
 new_long:
@@ -823,6 +869,8 @@ new_long:
         }
       if (ro_id_dict is not null)
         dict_put (ro_id_dict, id, 1);
+      if (not (rdf_box_is_storeable (digest)))
+        signal ('RDFX7', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return digest;
       -- old_digest := null;
       -- goto recheck;
@@ -858,6 +906,8 @@ found_short:
         digest := old_digest;
       if (ro_id_dict is not null)
         dict_put (ro_id_dict, id, 1);
+      if (not (rdf_box_is_storeable (digest)))
+        signal ('RDFX8', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return digest;
       -- goto recheck;
 new_short:
@@ -872,6 +922,8 @@ new_short:
         }
       if (ro_id_dict is not null)
         dict_put (ro_id_dict, id, 1);
+      if (not (rdf_box_is_storeable (digest)))
+        signal ('RDFX9', 'DB.DBA.RDF_OBJ_ADD() tries to return bad digest');
       return digest;
       -- old_digest := null;
       -- goto recheck;
@@ -2717,16 +2769,33 @@ from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT, DB.DBA.RDF_FORMAT_BOOL_RESULT_AS
 create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any, in log_mode integer := null)
 {
   declare ctr, old_log_enable integer;
+  declare ro_id_dict any;
   if (not isiri_id (graph_iri))
     graph_iri := DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
   old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  ro_id_dict := null;
   for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
     {
-      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES: ', graph_iri, triples[ctr][0], triples[ctr][1], triples[ctr][2]);
+      declare p_iid, o_final any;
+      p_iid := triples[ctr][1];
+      o_final := triples[ctr][2];
+      if (isiri_id (o_final))
+        goto do_insert;
+      if (ro_id_dict is null and __rdf_obj_ft_rule_check (graph_iri, p_iid))
+        ro_id_dict := dict_new ();
+      --if (ro_id_dict is not null and (1 < rdf_box_needs_digest (o_final, ro_id_dict)))
+      if ((1 < rdf_box_needs_digest (o_final, ro_id_dict)) and ro_id_dict is not null)
+        o_final := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_final, graph_iri, p_iid, ro_id_dict);
+      else
+        o_final := DB.DBA.RDF_OBJ_OF_LONG (o_final);
+do_insert:
+      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES: ', graph_iri, triples[ctr][0], p_iid, o_final);
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-      values (graph_iri, triples[ctr][0], triples[ctr][1], DB.DBA.RDF_OBJ_OF_LONG (triples[ctr][2]));
+      values (graph_iri, triples[ctr][0], p_iid, o_final);
     }
+  if (ro_id_dict is not null)
+    DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (graph_iri, ro_id_dict);
   log_enable (old_log_enable, 1);
 }
 ;
@@ -4216,11 +4285,7 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
         {
           delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where G = graphiri_id and S = triple[0] and P = triple[1];
         }
-      foreach (any triple in lst1) do
-        {
-          -- dbg_obj_princ ('will insert ', id_to_iri (triple[0]), id_to_iri (triple[1]), triple[2]);
-          insert into DB.DBA.RDF_QUAD (G,S,P,O) values (graphiri_id, triple[0], triple[1], DB.DBA.RDF_OBJ_OF_LONG (triple[2]));
-        }
+      DB.DBA.RDF_INSERT_TRIPLES (graphiri_id, lst1);
       commit work;
       result ('00000', 'Built-in metadata were reloaded');
     }
@@ -8961,6 +9026,7 @@ create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inou
   declare old_d_id, old_d_id_2, carry_d_id, carry_d_id_2 integer;
   declare old_data, carry_data varchar;
   declare split_ctr, split_len integer;
+  declare dbg_smallest_d_id, dbg_largest_d_id, dbg_prev_d_id, dbg_prev_d_id_2 integer;
   declare split any;
   declare cr cursor for (
     select VT_D_ID, VT_D_ID_2, coalesce (VT_DATA, cast (VT_LONG_DATA as varchar)) from RDF_OBJ_RO_DIGEST_WORDS
@@ -8972,6 +9038,12 @@ create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inou
   if (0 = ro_ids_count)
     return;
   gvector_sort (new_ro_ids, 1, 0, 1);
+-- debug begin
+  dbg_smallest_d_id := new_ro_ids[0];
+  dbg_largest_d_id := new_ro_ids[length (new_ro_ids) - 1];
+  dbg_prev_d_id := 0;
+  dbg_prev_d_id_2 := 0;
+-- debug end
   commit work;
   whenever sqlstate '41000' goto retry_add;
 again:
@@ -9031,6 +9103,27 @@ no_more_olds:
       values (cast (graph_iid as varchar), carry_d_id, carry_d_id_2, carry_data);
     }
   commit work;
+-- debug begin
+  for (
+    select VT_WORD, VT_D_ID, VT_D_ID_2, coalesce (VT_DATA, cast (VT_LONG_DATA as varchar)) as vtd from RDF_OBJ_RO_DIGEST_WORDS
+    where (VT_WORD = cast (graph_iid as varchar))
+      and (VT_D_ID >= ((dbg_smallest_d_id / 10000) * 10000))
+      and (VT_D_ID_2 >= (((dbg_largest_d_id + 9999) / 10000) * 10000)) ) do
+    {
+      if (VT_D_ID > VT_D_ID_2)
+        {
+          dbg_obj_princ ('FT BUG: misordered bounds: ', VT_WORD, VT_D_ID, VT_D_ID_2);
+          -- raw_exit ();
+          ;
+        }
+      if (VT_D_ID <= dbg_prev_d_id_2)
+        {
+          dbg_obj_princ ('FT BUG: overlapping ranges: ', VT_WORD, VT_D_ID, VT_D_ID_2, '; prev is ', dbg_prev_d_id, dbg_prev_d_id_2);
+           -- raw_exit ();
+          ;
+        }
+    }
+
   return;
 retry_add:
   close cr;
@@ -9276,11 +9369,7 @@ virtrdf:DefaultQuadStorage-UserMaps
           else
           delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where G = jso_sys_g_iid and S = triple[0] and P = triple[1];
         }
-      foreach (any triple in sum_lst) do
-        {
-          -- dbg_obj_princ ('will insert ', id_to_iri (triple[0]), id_to_iri (triple[1]), triple[2]);
-          insert into DB.DBA.RDF_QUAD (G,S,P,O) values (jso_sys_g_iid, triple[0], triple[1], DB.DBA.RDF_OBJ_OF_LONG (triple[2]));
-        }
+      DB.DBA.RDF_INSERT_TRIPLES (jso_sys_g_iid, sum_lst);
     commit work;
   }
   DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH ();
@@ -9682,13 +9771,6 @@ tmpval_cur_end: ;
 
 final_qm_reload:  
   DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
-  for (select ROFR_G as rule_g, ROFR_P as rule_p, ROFR_REASON as reason from DB.DBA.RDF_OBJ_FT_RULES) do
-    {
-      declare rule_g_iid, rule_p_iid IRI_ID;
-      rule_g_iid := case (rule_g) when '' then null else iri_to_id (rule_g, 1) end;
-      rule_p_iid := case (rule_p) when '' then null else iri_to_id (rule_p, 1) end;
-      __rdf_obj_ft_rule_add (rule_g_iid, rule_p_iid, reason);
-    }
   return;
 
 describe_recovery:
