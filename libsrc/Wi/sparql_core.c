@@ -1301,10 +1301,12 @@ SPART *sparp_make_graph_precode (sparp_t *sparp, SPART *iriref, SPART **options)
     }
   else
     mixed_options = options;
-  return spar_make_funcall (sparp, 0, "sql:RDF_SPONGE_UP",
+  return spar_make_funcall (sparp, 0, "SPECIAL::bif:iri_to_id",
+    (SPART **)t_list (1,
+      spar_make_funcall (sparp, 0, "sql:RDF_SPONGE_UP",
     (SPART **)t_list (2,
        iriref,
-       spar_make_funcall (sparp, 0, "bif:vector", mixed_options) ) );
+           spar_make_funcall (sparp, 0, "bif:vector", mixed_options) ) ) ) );
 }
 
 SPART *
