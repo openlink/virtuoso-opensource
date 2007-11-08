@@ -68,8 +68,8 @@
         self.f_full_name := coalesce ((select U_FULL_NAME from SYS_USERS where U_NAME = self.fname), self.fname);
         self.fname_or_empty := self.fname;
 	declare exit handler for not found;
-	select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY
-	into visib, self.e_lat, self.e_lng, self.u_country, self.u_state, self.u_city
+	select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY, WAUI_OPENID_URL, WAUI_OPENID_SERVER
+	into visib, self.e_lat, self.e_lng, self.u_country, self.u_state, self.u_city, self.oid_url, self.oid_server
 	from WA_USER_INFO, DB.DBA.SYS_USERS where
 		WAUI_U_ID = U_ID and U_NAME =  self.fname;
 	if (length (visib) < 16 or visib[16] <> ascii ('1'))
@@ -847,6 +847,8 @@
     <v:variable name="return_url" type="varchar" persist="session" default="null" param-name="RETURL" />
     <v:variable name="fname" type="varchar" default="null" persist="pagestate" param-name="ufname" />
     <v:variable name="f_full_name" type="varchar" default="null" persist="pagestate" />
+    <v:variable name="oid_server" type="varchar" default="null" persist="pagestate" />
+    <v:variable name="oid_url" type="varchar" default="null" persist="pagestate" />
 
     <v:variable name="e_lat" type="float" default="0" persist="temp" />
     <v:variable name="e_lng" type="float" default="0" persist="temp" />
@@ -2662,7 +2664,7 @@ if (i > 0)
 	<xsl:attribute name="name">go_home_new_link</xsl:attribute>
     </xsl:if>
     <xsl:attribute name="value">--'My ' || WA_GET_APP_NAME ('Profile')</xsl:attribute>
-    <xsl:attribute name="url">--(case when self.external_home_url then coalesce (get_keyword_ucase ('ret', self.vc_event.ve_params), self.external_home_url) else sprintf ('uhome.vspx?ufname=%s', self.u_name) end)</xsl:attribute>
+    <xsl:attribute name="url">--(case when self.external_home_url then coalesce (get_keyword_ucase ('ret', self.vc_event.ve_params), self.external_home_url) else sprintf ('/dataspace/person/%s#this', self.u_name) end)</xsl:attribute>
   </v:url>
 </xsl:template>
 
@@ -2679,7 +2681,7 @@ if (i > 0)
 	<xsl:attribute name="name">go_my_home_link</xsl:attribute>
     </xsl:if>
     <xsl:attribute name="value">--'My ' || WA_GET_APP_NAME ('Profile')</xsl:attribute>
-    <xsl:attribute name="url">--(case when self.external_home_url then coalesce (get_keyword_ucase ('ret', self.vc_event.ve_params), self.external_home_url) else sprintf ('uhome.vspx?ufname=%s&amp;l=%s', self.u_name, self.topmenu_level) end)</xsl:attribute>
+    <xsl:attribute name="url">--(case when self.external_home_url then coalesce (get_keyword_ucase ('ret', self.vc_event.ve_params), self.external_home_url) else sprintf ('/dataspace/person/%s#this', self.u_name) end)</xsl:attribute>
   </v:url>
 </xsl:template>
 
@@ -2740,7 +2742,7 @@ if (i > 0)
 </xsl:template>
 
 <xsl:template match="vm:disco-ods-foaf-link">
-    <link rel="meta" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/about.rdf', self.st_host, self.fname), '+', '%2B')); ?>" />
+    <link rel="meta" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/person/%U/foaf.rdf', self.st_host, self.fname), '+', '%2B')); ?>" />
     <xsl:text>&#10;</xsl:text>
 </xsl:template>
 
@@ -2774,11 +2776,23 @@ if (i > 0)
     <?vsp } ?>
     <meta name="dc.language" content="en" scheme="rfc1766" />
 
+    <?vsp
+      if (length (self.oid_url) + length (self.oid_server))
+        {
+    ?>
+    <link rel="openid.server" title="OpenID Server" href="<?V self.oid_server ?>" />
+    <link rel="openid.delegate" title="OpenID URL" href="<?V self.oid_url ?>" />
+    <?vsp
+        }
+      else
+        {
+    ?>
     <link rel="openid.server" title="OpenID Server" href="<?V wa_link (1, '/openid') ?>" />
-
+    <?vsp
+    	}
+    ?>
     <meta http-equiv="X-XRDS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
     <meta http-equiv="X-YADIS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
-
 </xsl:template>
 
   <!--=========================================================================-->

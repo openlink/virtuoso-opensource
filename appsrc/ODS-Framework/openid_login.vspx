@@ -138,6 +138,11 @@
      control.vc_enabled := 0;
 ]]></v:before-render>
 		    </v:button>
+		    <v:button action="simple" name="cancel" value="Cancel" xhtml_id="login_frm_b_login">
+		      <v:on-post><![CDATA[
+			OPENID..cancel (self._return_to);
+			]]></v:on-post>
+		    </v:button>
 		  </div>
                 </form>
               </div> <!-- login_form -->

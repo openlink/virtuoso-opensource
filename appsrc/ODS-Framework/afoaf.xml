@@ -36,7 +36,7 @@
 	select
 			    xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
 			    	xmlattributes (
-			    	'http://'|| WA_GET_HOST ()|| '/dataspace/' || u_name || '/about.rdf'
+			    	'http://'|| WA_GET_HOST ()|| '/dataspace/person' || u_name || '/foaf.rdf'
 				as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
 	    from sn_person, sys_users, WA_USER_INFO where sne_org_id = u_id and u_id = WAUI_U_ID
 	    and sne_id = :sne
@@ -48,16 +48,16 @@
 	   xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
 	   xmlelement ('http://openlinksw.com/ods/1.0/:'|| wa_type_to_app (WAI_TYPE_NAME),
 		xmlattributes (
-			'http://'|| WA_GET_HOST ()|| '/dataspace/' ||
+			'http://'|| WA_GET_HOST ()|| '/dataspace/person/' ||
 			U_NAME || '/' || wa_type_to_app (WAI_TYPE_NAME) || '/' ||
-			wa_utf8_to_wide (WAI_NAME) || '/about.rdf'
+			wa_utf8_to_wide (WAI_NAME) || '/foaf.rdf'
 			as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:about')
 
 		,xmlelement ('http://purl.org/dc/elements/1.1/:title', wa_utf8_to_wide (WAI_NAME)),
 		xmlelement ('http://purl.org/dc/elements/1.1/:description', wa_utf8_to_wide (WAI_DESCRIPTION)),
 		xmlelement ('http://openlinksw.com/ods/1.0/:owner',  
 		      xmlattributes (
-			'http://'|| WA_GET_HOST ()|| '/dataspace/' || U_NAME || '/about.rdf'
+			'http://'|| WA_GET_HOST ()|| '/dataspace/person/' || U_NAME || '/foaf.rdf'
 			as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
 		))
 		from (select WAI_TYPE_NAME,WAI_NAME,WAI_DESCRIPTION,U_NAME from WA_MEMBER, WA_INSTANCE, sn_entity, SYS_USERS where WAM_INST = WAI_NAME and WAM_USER = U_ID and sne_name = u_name and sne_id = :sne and WAM_MEMBER_TYPE = 1 and WAI_TYPE_NAME = :atype order by 1) sub

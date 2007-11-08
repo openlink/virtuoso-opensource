@@ -89,6 +89,9 @@
               <li><vm:add-to-friends /></li>
             </vm:condition>
           </vm:condition>
+          <vm:condition test="owner">
+            <vm:addressbook-link/>
+          </vm:condition>
         </ul> <!-- button_bar -->
       </div><!-- RT -->
     </div> <!-- MD -->

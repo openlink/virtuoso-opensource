@@ -10,10 +10,10 @@
   <script type="text/javascript">
     var ODSInitArray = new Array();
 
+    var featureList = ["ajax2", "menu", "dimmer", "tab","gmaps"];
     function init()
     {
 
-      OAT.Loader.loadFeatures(["ajax2","xml"],function(){});
 
       if (typeof ODSInitArray != 'undefined')
         {
@@ -29,46 +29,53 @@
         }
 
      }
+     function widgetToggle(elm)
+     {var _divs=elm.parentNode.parentNode.parentNode.getElementsByTagName('div');
+      for(var i=0;i<_divs.length;i++)
+      {
+          if(_divs[i].className=='w_content')
+          {
+             if(_divs[i].style.display=='none')
+                OAT.Dom.show(_divs[i]);
+             else
+                OAT.Dom.hide(_divs[i]);
+          }
+      }
+     }
 
-    var featureList = ["ajax2","panelbar", "anchor", "menu", "dimmer", "animation", "tab"];
+
   </script>
   <script type="text/javascript" src="oat/loader.js"></script>
   <script type="text/javascript" src="nav_framework.js"></script>
  </head>
  <body>
+
     <div id="PG">
       <div id="LT">
         <div id="ods_logo">
           <a href="/ods/index.html" class="img_anchor"><img class="ods_logo" src="images/odslogosml_new.png" alt="Site Home"/></a>
         </div><!-- #ods_logo -->
         <div id="APP_MENU_C" class="app_menu_c">
-<!--
-        <h3 id="APP_MENU_T" class="app_menu_t"><a href="javascript:void(0)">Applications</a> <a href="javascript:void(0)" class="lnk">edit</a></h3>
--->
         </div> <!-- #APP_MENU_C -->
   	  </div> <!-- #LT -->
       <div id="RT">
         <div id="HD">
   	      <div id="ODS_BAR">
-  	        <div class="button" style="display:none">
-  	          <a href="#" class="menu_link profile">Profile</a>&nbsp;
-  	          <a href="#" class="menu_link profile_edit shortcut">edit</a>
+  	        <div class="button" id="profile_menu">
   	        </div> <!-- .button -->
   	        <div class="button" style="display:none">
               <ul class="menu" id="communities_menu">
   	            <li>
   	              <div class="menu_head">
-                    <a href="communities.html">Communities</a>
+                    <a href="javascript:void(0)">Communities</a>
                     <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div>
-  	              <ul class="menu_dd_1st_lvl" style="display: none;">
-  	                <li class="menu_item" id="m_c_adam"><a href="#">Amsterdam</a></li>
-                    <li class="menu_item" id="m_c_nl"><a href="#">Netherlands</a></li>
-                    <li class="menu_item" id="m_c_md"><a href="#">Mariandoro</a></li>
+  	              <ul class="menu_dd_1st_lvl" id="communities_menu_body">
                   </ul>
                 </li>
               </ul>
   	        </div> <!-- .button -->
+
             <div class="button" style="display:none">
               <ul class="menu" id="connections_menu">
   	            <li>
@@ -104,107 +111,73 @@
                 </li>
               </ul> <!-- #messages_menu -->
             </div> <!-- .button -->
-<!--
             <div id="ODS_BAR_RC">
-              <a href="#">Settings</a>
-              <a href="#">Paavo Nurmi</a>
-              <a href="#">Logout</a>
-              <a href="#">Help</a>
-            </div>--> <!-- ODS_BAR_RC -->
+            </div> <!-- ODS_BAR_RC -->
   	      </div> <!-- ODS_BAR -->
         </div> <!-- HD -->
-        <IFRAME id="vspxApp" style="width:100%;height:500px;border:0px;"></IFRAME>
-  	    <div id="APP" style="display:none;">
-  	      <div id="u_profile_l">
+
+  	    <div id="APP">
+          <iframe id="vspxApp" style="width:100%;height:500px;border:0px;display:none;"></iframe>
+  	      <div id="u_profile_l" style="display:none;">
   	        <div id="user_info_w" class="widget user_info_w">
-  	          <div class="w_title"><h3>Yrjana Rankka</h3></div>
+  	          <div class="w_title" id="userProfilePhotoName"><h3></h3></div>
   	          <div class="w_content">
-                <div class="user_img_ctr"><img class="prof_photo" alt="Yrjana Rankka" src="images/people/ghard.png"/></div>
+                <div class="user_img_ctr"><a href="javascript:void(0)"><img id="userProfilePhotoImg" class="prof_photo" src="images/profile.png"/></a></div>
                 <div class="gems_ctr">
-                  <div class="prof_user_gems">
-                    <div class="gem"><a href="#"><img src="images/icons/foaf.png" alt="FOAF"/></a></div>
-                    <div class="gem"><a href="#"><img src="images/icons/sioc_button.png" alt="SIOC"/></a></div>
-                    <div class="gem"><a href="#">GeoURL</a></div>
-                    <div class="gem"><a href="#"><img src="images/icons/vcard.png" alt="VCARD"/></a></div>
+                  <div class="prof_user_gems" id="profileUserGems">
+                    <div class="gem"><a href="javascript:void(0)" target="_blank"><img src="images/icons/foaf.png" alt="FOAF"/></a></div>
+                    <div class="gem"><a href="javascript:void(0)" target="_blank"><img src="images/icons/sioc_button.png" alt="SIOC"/></a></div>
+                    <div class="gem"><a href="javascript:void(0)" target="_blank"><img src="http://i.geourl.org/80x15/simple.png"/></a></div>
+                    <div class="gem"><a href="javascript:void(0)" target="_blank"><img src="images/icons/vcard.png" alt="VCARD"/></a></div>
                   </div>
                 </div>
-                <ul class="prof_user_commands">
-                  <li><a href="#" onclick="conn_del_dlg_show()">Delete connection</a></li>
-                  <li><a href="#">Send a message</a></li>
-                  <li><a href="#">Browse data space</a></li>
-                  <li><a href="#">Connection graph</a></li>
+                <ul class="prof_user_commands" style="display:none">
+                  <li><a href="javascript:void(0)" onclick="conn_del_dlg_show()">Delete connection</a></li>
+                  <li><a href="javascript:void(0)">Send a message</a></li>
+                  <li><a href="javascript:void(0)">Browse data space</a></li>
+                  <li><a href="javascript:void(0)">Connection graph</a></li>
                 </ul>
               </div> <!-- w_content -->
   	        </div> <!-- .widget -->
   	        <div id="ds_w" class="widget ds_w">
-  	          <div class="w_title"><h3>Data Space</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle"/></div></div>
+  	          <div class="w_title"><h3>Data Space</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/></div></div>
   	          <div class="w_content">
-                <ul class="ds_list">
-                  <li><a href="#"><img src="images/icons/ods_bookmarks_16.png" alt="APP" /> Bookmarks</a></li>
-                  <li><a href="#"><img src="images/icons/ods_gallery_16.png" alt="APP" />  Gallery</a></li>
-                  <li><a href="#"><img src="images/icons/ods_weblog_16.png" alt="APP" /> Weblog</a></li>
-                  <li><a href="#"><img src="images/icons/ods_calendar_16.png" alt="APP" /> Calendar</a></li>
+                <ul class="ds_list" id="ds_list">
                 </ul>
-                <div class="cmd_ctr"><a href="#">Browse</a></div>
+                <div class="cmd_ctr"><a href="javascript:void(0)">Browse</a></div>
               </div> <!-- w_content -->
   	        </div> <!-- .widget -->
   	        <div id="connections_w" class="widget connections_w">
-  	          <div class="w_title"><h3>Connections (30)</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle"/></div></div>
+  	          <div class="w_title"><h3 id="connPTitleTxt">Connections</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/></div></div>
   	          <div class="w_content">
                 <ul class="tab_bar">
-                  <li class="sel"><a href="#">Thumbnails</a></li>
-                  <li><a href="#">Map</a></li>
+                  <li class="sel" id="connT1"><a href="javascript:void(0)">Thumbnails</a></li>
+                  <li id="connT2"><a href="javascript:void(0)">Map</a></li>
                 </ul>
                 <div class="tab_deck">
-                  <div class="tab_page">
-                    <div class="conn"><img class="person_tnail" src="images/people/dipsy.jpg"/>
-                    <div class="conn_info"><a href="#">Dipsy</a></div></div>
-                    <div class="conn"><img class="person_tnail" src="images/people/po.jpg" />
-                    <div class="conn_info"><a href="#">Po</a></div></div>
-                    <div class="conn"><img class="person_tnail" src="images/people/laalaa.jpg"/>
-                    <div class="conn_info"><a href="#">Laa-Laa</a></div></div>
-                    <div class="conn"><img class="person_tnail" src="images/people/tinkywinky.jpg" />
-                    <div class="conn_info"><a href="#">Tinky-Winky</a></div></div>
-                    <div class="conn"><img class="person_tnail" src="images/people/kingsley_t.png"/>
-                    <div class="conn_info"><a href="#" id="c_a_kidehen">Kingsley Idehen</a></div></div>
-                    <div class="conn"><img class="person_tnail" src="images/people/danbri_t.png" />
-                    <div class="conn_info"><a href="#">Dan Brickley</a></div></div>
-                    <div class="conn"><img class="person_tnail" src="images/people/don_caballero_t.jpg" />
-                    <div class="conn_info"><a href="#">Don Caballero</a></div></div>
-                    <div class="conn"><img class="person_tnail" src="images/people/danja_t.png" />
-                    <div class="conn_info"><a href="#">Danny Ayers</a></div></div>
-                    <div class="conn"><img class="person_tnail" src="images/people/ivan_t.png" />
-                    <div class="conn_info"><a href="#">Ivan Herman</a></div></div>
-                    <div class="cmd_ctr"><a href="#">View All</a></div>
+                  <div  id="connPCtr" class="tab_page">
+                  </div>
+                  <div class="tab_page" id="connP1">
                   </div> <!-- .tab_page -->
-                  <div class="tab_page">
+                  <div class="tab_page" id="connP2">
+                    <div id="connP2map" style="height: 200px;"> </div>
                   </div>
                 </div> <!-- tab_deck -->
               </div> <!-- w_content -->
   	        </div> <!-- .widget -->
             <div id="groups_w" class="widget groups_w">
   	          <div class="w_title">
-  	            <h3>Discussion Groups (30)</h3>
+  	            <h3 id="discussionsTitleTxt"">Discussion Groups ()</h3>
   	          </div>
-  	          <div class="w_content">
-                <a href="#">Double Bassists</a>, 
-                <a href="#">RDF</a>, 
-                <a href="#">Musicians</a>, 
-                <a href="#">OpenLink Virtuoso</a>, 
-                <a href="#">Progressive Rock Aficionados</a>, 
-                <a href="#">Braintrust</a>, 
-                <a href="#">Semantic Web</a>, 
-                <a href="#">ODS Hackers</a>, 
-                <a href="#">Braintrust</a>, 
-                <a href="#">Braintrust</a>
+  	          <div class="w_content" id="discussionsCtr">
               </div> <!-- w_content -->
   	        </div> <!-- .widget -->
   	      </div> <!-- u_home_l -->
-          <div id="u_profile_r">
-            <div id="notify" class="notify_w widget">
+          <div id="u_profile_r" style="display:none;">
+            <div id="notify" class="notify_w widget" style="display:none">
               <div class="w_title">
                 <h3>News feed</h3>
-                <div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle"/></div>
+                <div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/></div>
               </div>
               <div class="w_content">
                 <h3 class="date">Today</h3>
@@ -311,77 +284,76 @@
             <div class="widget w_contact">
               <div class="w_title">
                 <h3>Contact Information</h3>
-                <div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle"/></div>
+                <div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/></div>
               </div>
               <div class="w_content">
-                <ul id="ct_tabs" class="tab_bar">
-                  <li id="ct_t_1"><a href="#">Home</a></li>
-                  <li id="ct_t_2"><a href="#">Business</a></li>
-                  <li id="ct_t_3"><a href="#">IM</a></li>
-                  <li id="ct_t_4"><a href="#">Map</a></li>
+                <ul class="tab_bar">
+                  <li id="ciT1"><a href="javascript:void(0)">Home</a></li>
+                  <li id="ciT2"><a href="javascript:void(0)">Business</a></li>
+                  <li id="ciT3"><a href="javascript:void(0)">IM</a></li>
+                  <li id="ciT4"><a href="javascript:void(0)">Map</a></li>
                 </ul>
                 <div class="tab_deck">
-                  <div id="ct_p_ctr" class="tab_page">
+                  <div id="ciPCtr" class="tab_page">
                   </div>
-                  <div id="ct_p_1" class="tab_page">
-                    <div id="hcard-Yrjana-Rankka" class="vcard">
-                      <div class="vcard_l"><img src="images/people/ghard.png" alt="photo" class="photo"/></div>
+                  <div id="ciP1" class="tab_page">
+                    <div  class="vcard">
+                      <div class="vcard_l"><img id="ciP1photo" src="images/profile_small.png" alt="photo" class="photo"/></div>
                       <div class="vcard_r">
-                        <span class="fn">Yrjana Rankka</span>
-                        <div class="org">OpenLink Software</div>
-                        <a class="email" href="mailto:ghard@zonk.net">ghard@zonk.net</a>
+                        <span class="fn" id="ciP1fn"></span>
+                        <div class="org" id="ciP1org"></div>
+                        <a class="email" id="ciP1email" href=""></a>
                         <div class="adr">
-                          <div class="street-address">Elegaststraat 21-1</div>
-                          <span class="locality">Amsterdam</span>, 
-                          <span class="region">Noord-Holland</span>, 
-                          <span class="postal-code">1055TJ</span>
-                          <span class="country-name">The Netherlands</span>
+                          <div class="street-address" id="ciP1address"></div>
+                          <span class="locality" id="ciP1city">,</span> 
+                          <span class="region" id="ciP1state">,</span> 
+                          <span class="postal-code" id="ciP1zip"></span>
+                          <span class="country-name" id="ciP1country"></span>
                         </div> <!-- adr -->
-                        <div class="tel">+31610056588</div>
+                        <div class="tel" id="ciP1tel"></div>
                       </div>
                     </div>
                   </div> <!-- tab_page -->
-                  <div id="ct_p_2" class="tab_page" style="display: none">
+                  <div id="ciP2" class="tab_page">
                     <div class="vcard">
-                      <div class="fn org">OpenLink Software, Inc</div>
+                      <div class="fn org" id="ciP2title"></div>
                       <div class="adr">
-                        <div class="street-address">10 Burlington mall rd</div>
-                        <div>
-      					  <span class="locality">Burlington</span>, 
-                          <abbr class="region" title="Massachusetts">MA</abbr>
-                          <span class="postal-code">01803</span>, 
-                          <abbr class="country" title="United States of America">U.S.A.</abbr>
+                        <div class="street-address" id="ciP2address"></div>
+                        <div><span class="locality" id="ciP2city">,</span> 
+                             <abbr class="region" id="ciP2state" title=""></abbr>
+                             <span class="postal-code" id="ciP2zip">,</span> 
+                             <abbr class="country" id="ciP2country" title=""></abbr>
                         </div>
                       </div> <!-- .adr -->
                     </div> <!-- .vcard -->
                   </div> <!-- .tab_page -->
-                  <div id="ct_p_3" class="tab_page" style="display: none">
+                  <div id="ciP3" class="tab_page">
                     <em>Skype:</em> Zonkenstein<br/>
                     <em>ICQ:</em> 21006712<br/>
                     <em>AIM:</em> zonkenstein<br/>
                   </div>
-                  <div id="ct_p_4" class="tab_page" style="display: none">
-                    
+                  <div id="ciP4" class="tab_page">
+                    <div id="ciP4map" style="height:300px;"></div>
                   </div>
                 </div> <!-- .tab_deck -->                
               </div> <!-- .w_content -->
             </div> <!-- .widget -->
             <div class="widget w_contact">
               <div class="w_title">
-                <h3>Personal Information</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle"/></div>
+                <h3>Personal Information</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/></div>
               </div>
               <div class="w_content">
                 <div class="sect">
                   <h4>Interests</h4>
-                  <p><a href="#">Computers</a>, <a href="#">Software</a>, <a href="#">Music</a>, <a href="#">Semantic Web</a></p>
+                  <p id="interestsCtr"></p>
                 </div>
                 <div class="sect">
                   <h4>Music</h4>
-                  <p><a href="#">Mariandoro</a>, <a href="#">Yes</a>, <a href="#">ZZ-Top</a>, <a href="#">Leningrad</a>, <a href="#">Rush</a>, <a href="#">Queen</a>, <a href="#">Led Zeppelin</a>, <a href="#">Pixies</a>, <a href="#">Sex Pistols</a>, <a href="#">Ramones</a>, <a href="#">Tom Waits</a>, <a href="#">Birthday Party</a>, <a href="#">Terveet Kadet</a>, <a href="#">CMX</a>, <a href="#">Sielun Veljet</a>, <a href="#">Tuomari Nurmio</a>, <a href="#">Alamaailman Vasarat</a>, <a href="#">Gentle Giant</a>, <a href="#">Tasavallan Presidentti</a>, <a href="#">Absoluuttinen Nollapiste</a>, <a href="#">Miles Davis</a>, <a href="#">Charles Mingus</a></p>
+                  <p id="musicCtr"></p>
                 </div>
                 <div class="sect">
                   <h4>Other</h4>
-                  <p>This section reserved for free flow of thought.</p>
+                  <p id="flowCtr">This section reserved for free flow of thought.</p>
                 </div>
               </div>
             </div>
@@ -445,7 +417,7 @@
         <ul class="menu">
           <li><a href="#">Profile</a></li>
           <li><a href="#">Add Connection</a></li>
-          <li><a href="#">Connections (30)</a></li>
+          <li><a href="#">Connections ()</a></li>
           <li><a href="#">Browse Data Space</a></li>
         </ul>
       </div> <!-- .rt -->
@@ -473,6 +445,43 @@
       </div>
     </div> <!-- #loginDiv -->
 -->
+    <div id="login_page" style="display:none">
+    <span id="loginCloseBtn">X</span>
+      <h1 class="page_title"><!--balek.zonk.net--></h1>
+      <div id="id_col">
+        <div id="site_id">
+          <img class="id_logo" src="images/odslogo_200.png" alt="ods logo icon" />
+        </div>
+      </div> <!-- id_col -->
+      <div id="form_col">
+        <div id="login_form_ctr">
+          <h2>Please identify yourself</h2>
+          <div id="login_form">
+            <ul class="tab_bar">
+              <li id="loginT1" class="tab_selected"><a href="javascript:void(0)">ODS</a></li>
+              <li id="loginT2" ><a href="javascript:void(0)">OpenID</a></li>
+            </ul>
+            <div class="tab_deck">
+              <div id="loginPCtr"></div>
+              <div id="loginP1" class="tab_page">
+                <label for="loginUserName">Member ID</label><input type="text" name="loginUserName" value="" id="loginUserName" /><br />
+                <label for="loginUserPass">Password</label><input type="password" name="loginUserPass" value="" id="loginUserPass" /><br />
+              </div>
+              <div id="loginP2" class="tab_page" style="display:none">
+                <label for="loginOpenIdUrl">OpenID URL</label><input type="text" name="loginOpenIdUrl" value="" id="loginOpenIdUrl" /><br />
+              </div>
+            </div> <!-- tab_deck -->
+            <div id="login_ctrls">
+              <input type="checkbox" name="cb_remember_me" value="1" id="login_frm_cb_remember_me" checked="1"/><label for="login_frm_cb_remember_me">Remember me</label><br />
+              <input type="button" name="loginBtn" value="Login" id="loginBtn" />
+              <input type="button" name="signupBtn" value="Sign Up!" id="signupBtn" /><br />
+            </div>
+          </div> <!-- login_form -->
+        </div> <!-- login_form_ctr -->
+       <div id="loginErrDiv"></div> 
+      </div> <!-- form_col -->
+    </div> <!-- login_page -->
+
  </body>
 </html>
 

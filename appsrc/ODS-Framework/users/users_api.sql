@@ -491,7 +491,7 @@ create procedure ODS_USER_LINKS (
 
   if (ODS_SESSION_CHECK (pSid, pRealm, pUID, pUser)) {
     ODS_ERROR_XML (sStream, 'OK', 'OK');
-    http (sprintf ('<foaf>%s</foaf>', DB.DBA.WA_LINK (1, sprintf ('/dataspace/%s/about.rdf', pUser))), sStream);
+    http (sprintf ('<foaf>%s</foaf>', DB.DBA.WA_LINK (1, sprintf ('/dataspace/person/%s/foaf.rdf', pUser))), sStream);
   } else {
     ODS_ERROR_XML (sStream, 'BAD_SESSION', 'Invalid session!');
   }

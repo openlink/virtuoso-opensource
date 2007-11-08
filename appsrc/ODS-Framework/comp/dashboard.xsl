@@ -131,7 +131,7 @@
 	      if (not length (u_full_name))
 	        u_full_name := null;
 	?>
-	            <li><a href="uhome.vspx?&lt;?V 'page=1&amp;ufname='|| nu_name ?&gt;&lt;?V self.login_pars ?&gt;"><?V wa_utf8_to_wide ( coalesce (u_full_name, nu_name) ) ?></a></li>
+              <li><a href="&lt;?V wa_expand_url('/dataspace/person/'|| nu_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide ( coalesce (u_full_name, nu_name) ) ?></a></li>
 	<?vsp
 	   }
 	?>
@@ -143,7 +143,7 @@
 	   {
 	?>
 	      <li>
-	        <a href="uhome.vspx?page=1&amp;ufname=&lt;?V nr_name ?&gt;&lt;?V self.login_pars ?&gt;"><?V wa_utf8_to_wide (coalesce (u_full_name, nr_name)) ?></a>
+          <a href="&lt;?V wa_expand_url('/dataspace/person/'|| nr_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide (coalesce (u_full_name, nr_name)) ?></a>
 	      </li>
 	<?vsp
 	   }
@@ -241,11 +241,11 @@
       <div class="w_pane content_pane"> 
       <ul>
 	<?vsp
-	for select top 10 wnw_title, wnw_link from wa_new_wiki order by wnw_row_id desc do
+  for select top 10 wnw_title, wnw_topic_id from wa_new_wiki order by wnw_row_id desc do
 	{
 	?>
 	  <li>
-            <a href="&lt;?V wa_expand_url (wnw_link, self.login_pars) ?&gt;">
+            <a href="&lt;?V wa_expand_url (SIOC..wiki_post_iri_2(wnw_topic_id), self.login_pars) ?&gt;">
               <?V wa_utf8_to_wide (wnw_title, 1, 55) ?>
             </a>
           </li>
@@ -377,7 +377,7 @@
 			   clk := '';
 			   mboxid :=  wa_user_have_mailbox (self.u_name);
 			   if (length (uname))
-			     aurl := 'uhome.vspx?ufname=' || uname;
+           aurl := '/dataspace/person/' || uname ||'#this';
 			   else if (length (email) and mboxid is not null)
 			    {
 			      aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);
@@ -547,7 +547,7 @@
          clk := '';
          mboxid :=  wa_user_have_mailbox (self.u_name);
          if (length (uname))
-           aurl := 'uhome.vspx?ufname=' || uname;
+           aurl := '/dataspace/person' || uname||'#this';
          else if (length (email) and mboxid is not null)
           {
             aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);
@@ -570,7 +570,8 @@
 
          declare inst_url_local varchar;
          inst_url_local :='not specified';
-         inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
+--         inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
+         inst_url_local:=wa_expand_url (sprintf('%s%V/%s/%U',self.odsbar_dataspace_path,uname,self.odsbar_app_dataspace,inst_name), self.odsbar_loginparams);
          inst_url_local := (case when locate('http://',inst_url_local)=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||inst_url_local;
          
          if(isDiscussions) inst_url_local := wa_expand_url (rtrim(self.odsbar_ods_gpath,'/ods/')||'/nntpf/nntpf_nthread_view.vspx?group='||cast(rows[i][7] as varchar), self.login_pars);
@@ -1547,7 +1548,7 @@
    </v:template>
       </div> <!-- pane content_pane -->
       <div class="w_footer">
-        <a href="uhome.vspx?&lt;?V 'page=1&amp;ufname='|| self.u_name || self.login_pars ?&gt;">View full profile...</a>
+        <a href="&lt;?V wa_expand_url('/dataspace/person/'|| self.u_name ||'#this', self.login_pars)?&gt;">View full profile...</a>
         <vm:user-info-edit-link title="Edit..."/>
       </div>
     </div>
@@ -1981,7 +1982,7 @@
                     WAUI_PHOTO_URL := 'images/icons/user_32.png';
         
         ?>
-            <a href="uhome.vspx?ufname=&lt;?V sne_name ?&gt;&lt;?V self.login_pars ?&gt;"><?vsp if (length (WAUI_PHOTO_URL)) {  ?>
+            <a href="&lt;?V wa_expand_url('/dataspace/person/'|| sne_name ||'#this', self.login_pars)?&gt;"><?vsp if (length (WAUI_PHOTO_URL)) {  ?>
             <img src="&lt;?V WAUI_PHOTO_URL ?&gt;" border="0" alt="Photo" width="32" hspace="3"/>
             <?vsp } ?><?V wa_utf8_to_wide (coalesce (U_FULL_NAME, sne_name)) ?></a>
             <span class="home_addr"><?V wa_utf8_to_wide (addr) ?></span>
@@ -2097,7 +2098,8 @@
               while (0 = exec_next (h, null, null, dta))
               {
                 exec_result (dta);
-                http('<li><a href="'||dta[1]||'?'||subseq(self.login_pars,1)||'" >'||dta[0]||'</a></li>');
+--              http('<li><a href="'||dta[1]||'?'||subseq(self.login_pars,1)||'" >'||dta[0]||'</a></li>');
+              http('<li><a href="'||wa_expand_url(sprintf('/dataspace/%s/community/%U',self.u_name,dta[0]),self.login_pars)||'" >'||dta[0]||'</a></li>');
               }
               exec_close (h);
           http('</ul>');
@@ -2108,7 +2110,7 @@
 	    ?>
       </div> <!-- content-pane -->
       <div class="w_footer">
-        <a href="&lt;?V 'app_inst.vspx?app=Community'||self.login_pars ?&gt;">More&amp;#8230;</a>
+        <a href="&lt;?V wa_expand_url(sprintf('/dataspace/%s/community/',self.u_name),self.login_pars) ?&gt;">More&amp;#8230;</a>
       </div> <!-- w_footer -->
     </div> <!-- widget -->
   </xsl:template>
@@ -2237,7 +2239,7 @@
                     <p>
                       <?V case when length(dta[4])>12 then substring (dta[4],1,9)||'...' else dta[4] end ?>
                       <br />
-                      <a href="uhome.vspx?&lt;?V 'page=1&amp;ufname=' || coalesce(dta[3],dta[2]) ?&gt;"><?V wa_utf8_to_wide(coalesce(dta[2],dta[3])) ?></a>
+                      <a href="&lt;?V wa_expand_url('/dataspace/person/'|| coalesce(dta[3],dta[2]) ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide(coalesce(dta[2],dta[3])) ?></a>
                       <br />
                       <?V wa_abs_date(dta[1])?>
                     </p>
@@ -2410,8 +2412,9 @@
            aurl := '';
            clk := '';
            mboxid :=  wa_user_have_mailbox (self.u_name);
+
            if (length (uname))
-             aurl := 'uhome.vspx?ufname=' || uname;
+          aurl := '/dataspace/person/' || uname||'#this';
            else if (length (email) and mboxid is not null)
             {
               aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);
@@ -2524,6 +2527,13 @@
                              case when dta[1]<> 1 then 's' else '' end));
          ?>
         
+          <ul>
+            <xsl:call-template name="user-dashboard-my-item">
+              <xsl:with-param name="app">oMail</xsl:with-param>
+              <xsl:with-param name="noitems_msg">No messages</xsl:with-param>
+            </xsl:call-template>
+          </ul>
+
         </div> <!-- content_pane -->
       </div> <!-- widget -->
          </vm:if>

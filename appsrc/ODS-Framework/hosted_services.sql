@@ -590,6 +590,16 @@ wa_exec_no_error(
 )
 ;
 
+wa_exec_no_error('create table WA_ACTIVITIES (
+     WA_ID int identity,
+     WA_U_ID int,
+     WA_SRC_ID int,
+     WA_TS timestamp,
+     WA_ACTIVITY long varchar,
+     primary key (WA_U_ID, WA_ID))'
+)
+;
+
 create method wa_id_string () for web_app
 {
   return '';
@@ -2845,6 +2855,7 @@ wa_exec_no_error_log(
     WAUI_INTERESTS long varchar,  -- 48
     WAUI_BORG_HOMEPAGE long varchar,  -- 20 same as BORG
     WAUI_OPENID_URL varchar,
+    WAUI_OPENID_SERVER varchar,
     WAUI_FACEBOOK_ID int,
     WAUI_IS_ORG	int default 0,
     primary key (WAUI_U_ID)
@@ -2888,6 +2899,7 @@ wa_exec_no_error('alter TABLE DB.DBA.WA_USER_INFO ADD WAUI_FOAF LONG VARCHAR');
 WA_USER_INFO_WAUI_FOAF_UPGRADE ();
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_URL', 'VARCHAR');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_SERVER', 'VARCHAR');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_ID', 'INT');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_IS_ORG', 'INT default 0');
@@ -5498,8 +5510,31 @@ create procedure wa_make_thumbnail(
 
 }
 ;
+create procedure wa_get_app_dataspace (in type_name varchar)
+{ declare arr any;
+-- arr is array of type key, value; key is WA_TYPE and value is dataspace extension related to this type.
+  arr:=vector('Community', 'community',
+              'oDrive', 'briefcase',
+              'WEBLOG2', 'weblog',
+              'oGallery', 'photos',
+              'eNews2', 'subscriptions',
+              'oWiki', 'wiki',
+              'oMail', 'mail',
+              'eCRM', '',
+              'Bookmark', 'bookmark',
+              'nntpf','',
+              'Polls','polls',
+              'AddressBook','addressbook',
+              'Calendar','calendar',
+              'IM','');
+
+return get_keyword(type_name,arr,'');
+
+}
+;
+
 -- this function returns the name of the package that has defined a specific WA_TYPE
--- it will make possible to check if package is installed on the system or the type is for custom applciation that do not have package-build script.
+-- it will make possible to check if package is installed on the system or the type is for custom applications that do not have package-build script.
 -- it includes only the applications  created by Openlink Software developers
 
 create procedure wa_get_package_name (in type_name varchar)
@@ -5664,5 +5699,27 @@ skip_res_count:;
 
  return _res_count;
  
+}
+;
+
+create procedure wa_users_rdf_data_det_upgrade ()
+{
+  declare det_name varchar;
+  for select U_NAME from SYS_USERS, WA_USER_INFO where U_ID = WAUI_U_ID do
+    {
+      {
+        det_name := sprintf ('/DAV/home/%s/RDFData/', U_NAME);
+	declare exit handler for sqlstate '*' {
+	  rollback work;
+	  goto next_user;
+        };
+        if (DAV_SEARCH_ID (det_name, 'C') < 0)
+          {
+	    "RDFData_MAKE_DET_COL" (det_name, NULL, NULL);
+	    commit work;
+	  }
+      }
+      next_user:;
+    }
 }
 ;

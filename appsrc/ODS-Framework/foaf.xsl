@@ -63,7 +63,7 @@
       <xsl:copy>
 	  <xsl:copy-of select="@*[local-name()!='about']"/>
 	  <xsl:if test="local-name() = 'PersonalProfileDocument'">
-	      <xsl:attribute name="rdf:about">http://<xsl:value-of select="$httpHost"/>/dataspace/<xsl:value-of select="ancestor::rdf:RDF/foaf:Person/foaf:nick"/>/about.rdf</xsl:attribute>
+	      <xsl:attribute name="rdf:about">http://<xsl:value-of select="$httpHost"/>/dataspace/person/<xsl:value-of select="ancestor::rdf:RDF/foaf:Person/foaf:nick"/>/about.rdf</xsl:attribute>
 	      <rdfs:label>
 		  <xsl:choose>
 		      <xsl:when test="ancestor::rdf:RDF/foaf:Person/foaf:name">

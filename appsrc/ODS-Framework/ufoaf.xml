@@ -140,7 +140,7 @@
 
 			    xmlelement ('http://www.w3.org/2000/01/rdf-schema#:seeAlso',
 			    	xmlattributes (
-			    	'http://'|| WA_CNAME ()|| '/dataspace/' || u_name || '/about.rdf'
+			    	'http://'|| WA_CNAME ()|| '/dataspace/person/' || u_name || '/foaf.rdf'
 			    	as 'http://www.w3.org/1999/02/22-rdf-syntax-ns#:resource'))
 
 			    ))

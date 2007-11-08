@@ -406,6 +406,13 @@ create procedure ods_graph_init ()
   return;
 };
 
+create procedure ods_is_defined_by (in graph_iri varchar, in iri varchar)
+{
+  declare df_uri any;
+  df_uri := sprintf ('http://%s/ods/data/rdf/iid%%20%%28%d%%29.rdf', get_cname(), iri_id_num (iri_to_id (iri)));
+  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('isDefinedBy'), df_uri);
+};
+
 create procedure foaf_maker (in graph_iri varchar, in iri varchar, in full_name varchar, in u_e_mail varchar)
 {
   if (not length (iri))
@@ -417,7 +424,7 @@ create procedure foaf_maker (in graph_iri varchar, in iri varchar, in full_name 
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), full_name);
   if (length (u_e_mail))
 {
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
+      DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), sha1_digest (u_e_mail));
     }
 };
@@ -466,6 +473,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   ods_sioc_result (iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('User'));
   DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), U_NAME);
+  ods_is_defined_by (graph_iri, iri);
 
   u_site_iri := user_space_iri (u_name);
   link := user_doc_iri (u_name);
@@ -487,6 +495,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
 
   -- FOAF
   person_iri := person_iri (iri);
+  ods_is_defined_by (graph_iri, person_iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdfs_iri ('seeAlso'), concat (link, '/about.rdf'));
   if (person_iri like '%/organization/%')
     DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, rdf_iri ('type'), foaf_iri ('Organization'));
@@ -495,7 +504,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('nick'), u_name);
   if (length (u_e_mail))
     {
-      DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
+      DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, foaf_iri ('mbox'), 'mailto:'||u_e_mail);
       DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, foaf_iri ('mbox_sha1sum'), sha1_digest (u_e_mail));
     }
 
@@ -812,6 +821,7 @@ create procedure sioc_forum (
   --if (sub <> clazz or wai_type_name = 'Community')
 
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sub);
+  ods_is_defined_by (graph_iri, iri);
 
   DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), wai_name);
   -- deprecated DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('type'), DB.DBA.wa_type_to_app (wai_type_name));
@@ -922,6 +932,7 @@ create procedure ods_sioc_post (
 
       --if (maker is null)
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('seeAlso'), concat (iri, '/sioc.rdf'));
+      ods_is_defined_by (graph_iri, iri);
 
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), md5 (iri));
       -- user
@@ -1803,7 +1814,7 @@ create trigger SYS_USERS_SIOC_U after update on DB.DBA.SYS_USERS referencing old
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('email_sha1'), sha1_digest (N.U_E_MAIL));
 
 	  iri := person_iri (iri);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||N.U_E_MAIL);
+	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, foaf_iri ('mbox'), 'mailto:'||N.U_E_MAIL);
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox_sha1sum'), sha1_digest (N.U_E_MAIL));
 	  if (length (N.U_FULL_NAME))
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), N.U_FULL_NAME);
@@ -2630,9 +2641,13 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      foaf:holdsAccount ?sioc_user .
 	      ?sioc_user rdfs:seeAlso ?see_also .
 	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
-	      optional { ?person foaf:knows ?friend . ?friend rdfs:seeAlso ?f_see_also .
-			?friend foaf:nick ?f_nick . ?friend rdf:type ?friend_type .
-			optional { ?friend foaf:name ?f_name . } } .
+	      optional {
+			optional { ?person foaf:knows ?friend } .
+			optional { ?friend rdfs:seeAlso ?f_see_also } .
+			optional { ?friend foaf:nick ?f_nick } .
+			optional { ?friend rdf:type ?friend_type } .
+			optional { ?friend foaf:name ?f_name . }
+	      	       } .
 	      optional { ?person foaf:name ?full_name } .
 	      optional { ?person foaf:firstName ?fn } .
 	      optional { ?person foaf:family_name ?ln } .

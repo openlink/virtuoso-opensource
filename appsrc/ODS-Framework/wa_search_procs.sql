@@ -89,12 +89,18 @@ returns varchar
       declare icon varchar;
 
       icon := sprintf (case INST_TYPE
-        when 'WEBLOG2' then 'images/icons/blog_%d.png'
-        when 'oWiki' then 'images/icons/wiki_%d.png'
-        when 'eNews2' then 'images/icons/enews_%d.png'
-        when 'oMail' then 'images/icons/mail_%d.png'
-        when 'oDrive' then 'images/icons/odrive_%d.png'
-        when 'oGallery' then 'images/icons/ogallery_%d.png'
+        when 'WEBLOG2' then 'images/icons/ods_weblog_%d.png'
+        when 'oWiki' then 'images/icons/ods_wiki_%d.png'
+        when 'eNews2' then 'images/icons/ods_feeds_%d.png'
+        when 'oMail' then 'images/icons/ods_mail_%d.png'
+        when 'oDrive' then 'images/icons/ods_briefcase_%d.png'
+        when 'oGallery' then 'images/icons/ods_gallery_%d.png'
+        when 'Bookmark' then 'images/icons/ods_bookmarks_%d.png'
+        when 'Polls' then 'images/icons/ods_poll_%d.png'
+        when 'AddressBook' then 'images/icons/ods_ab_%d.png'
+        when 'Calendar' then 'images/icons/ods_calendar_%d.png'
+        when 'IM' then 'images/icons/ods_im_%d.png'
+        when 'Community' then 'images/icons/ods_community_%d.png'
         else 'images/icons/apps_%d.png'
       end,
       case when for_search_result then 16 else 24 end);
@@ -108,7 +114,8 @@ returns varchar
         }
       else
         {
-          url := (select x.WAI_INST.wa_home_url () from WA_INSTANCE x where x.WAI_NAME = _INST_NAME);
+--          url := (select x.WAI_INST.wa_home_url () from WA_INSTANCE x where x.WAI_NAME = _INST_NAME);
+          url := '/dataspace/'||_U_NAME||'/'||db.dba.wa_get_app_dataspace(INST_TYPE)||'/'||_INST_NAME;
           amp := '?';
         }
       
@@ -197,7 +204,7 @@ create function WA_SEARCH_USER_GET_EXCERPT_HTML (
          case when _WAUI_PHOTO_URL is not null then 'user_photo_report'  else 'user_icon_report' end,
 	 WA_SEARCH_ADD_APATH (coalesce (_WAUI_PHOTO_URL, 'images/icons/user_16.png')),
 	 WA_SEARCH_ADD_APATH (
-	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('uhome.vspx?ufname=%U', _U_NAME), _user_id, '&')),
+	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/person/%U#this', _U_NAME), _user_id, '&')),
 	 _WAUI_FULL_NAME,
          icons,
 	 left (search_excerpt (words, subseq (coalesce (txt, ''), 0, 200000)), 900));
@@ -207,7 +214,7 @@ create function WA_SEARCH_USER_GET_EXCERPT_HTML (
       res := sprintf (
 	 '<div class="map_user_data"><a href="%s">%s''s Data Spaces</a><br />%s<br /><img class="%s" src="%s" alt="user_photo" border="0"/><br />%s</div>',
 	 WA_SEARCH_ADD_APATH (
-	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('uhome.vspx?ufname=%U', _U_NAME), _user_id, '&')),
+	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/person/%U#this', _U_NAME), _user_id, '&')),
 	 _WAUI_FULL_NAME,
          icons,
          case when _WAUI_PHOTO_URL is not null then 'user_photo_map' else 'icon_icon_map' end,
@@ -258,7 +265,7 @@ create function WA_SEARCH_USER_GET_EXCERPT_HTML_CUSTOMODSPATH (
          case when _WAUI_PHOTO_URL is not null then 'user_photo_report'  else 'user_icon_report' end,
 	 WA_SEARCH_ADD_APATH (coalesce (_WAUI_PHOTO_URL, 'images/icons/user_16.png')),
 	 WA_SEARCH_ADD_APATH (
-	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('uhome.vspx?ufname=%U', _U_NAME), _user_id, '&')),
+	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/person/%U#this', _U_NAME), _user_id, '&')),
 	 _WAUI_FULL_NAME,
          icons,
 	 left (search_excerpt (words, subseq (coalesce (txt, ''), 0, 200000)), 900));
@@ -268,7 +275,7 @@ create function WA_SEARCH_USER_GET_EXCERPT_HTML_CUSTOMODSPATH (
       res := sprintf (
 	 '<div class="map_user_data"><a href="%s">%s''s Data Space</a><br />%s<br /><img class="%s" src="%s" alt="user_photo" border="0"/><br />%s</div>',
 	 WA_SEARCH_ADD_APATH (
-	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('uhome.vspx?ufname=%U', _U_NAME), _user_id, '&')),
+	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/person/%U#this', _U_NAME), _user_id, '&')),
 	 _WAUI_FULL_NAME,
          icons,
          case when _WAUI_PHOTO_URL is not null then 'user_photo_map' else 'icon_icon_map' end,
@@ -722,7 +729,7 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
 	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_INSTANCE_PATH, \'#\'), _current_user_id)),
 		coalesce (_ClusterName, \'#No Title#\'),
            WA_SEARCH_ADD_APATH (
-             WA_SEARCH_ADD_SID_IF_AVAILABLE ( sprintf (\'uhome.vspx?ufname=%U\', _U_NAME), _current_user_id, \'&\')),
+                  WA_SEARCH_ADD_SID_IF_AVAILABLE ( sprintf (\'/dataspace/person/%U#this\', _U_NAME), _current_user_id, \'&\')),
            coalesce (_WAUI_FULL_NAME, \'#No Name#\'));
 
   _content := WV.WIKI.DELETE_SYSINFO_FOR (coalesce (_RES_CONTENT, \'\'));
@@ -1878,7 +1885,7 @@ create function WA_SEARCH_CONTACTS (
 	 '  U_LOGIN_TIME as _DATE, \n' ||
 	 '  WA_SEARCH_ADD_APATH ( \n' ||
          '   WA_SEARCH_ADD_SID_IF_AVAILABLE ( \n' ||
-         '    sprintf (''uhome.vspx?ufname=%%U'', U_NAME), %d, ''&'')) as _URL, \n' ||
+   '                       sprintf (''/dataspace/person/%%U#this'', U_NAME), %d, ''&'')) as _URL, \n' ||
    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
 	 '  WAUI_U_ID as _KEY_VAL \n' ||

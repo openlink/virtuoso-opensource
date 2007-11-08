@@ -31,6 +31,7 @@
 <xsl:template match="vm:ods-bar">
   <v:template name="ods_bar" type="simple" enabled="1">
     <v:variable name="odsbar_app_type" type="varchar" default="null" param-name="app" />
+    <v:variable name="odsbar_app_dataspace" type="varchar" default="null"/>
     <v:variable name="odsbar_appinst_type" type="varchar" default="null"/>
     <v:variable name="odsbar_fname" type="varchar" default="null" persist="pagestate" param-name="ufname" />
 
@@ -44,9 +45,11 @@
     <v:variable name="odsbar_show_signin" type="varchar" default="'true'"/>
 
     <v:variable name="odsbar_ods_gpath" type="varchar" default="''" />
+    <v:variable name="odsbar_dataspace_path" type="varchar" default="''" />
 
     <v:variable name="odsbar_inout_arr" type="any" default="''" />
     <v:variable name="odsbar_return_url" type="varchar" persist="session" default="null" param-name="RETURL" />
+    <v:variable name="odsbar_current_url" type="varchar" default="''"/>
       <xsl:processing-instruction name="vsp">
 
           self.odsbar_show_signin:='<xsl:value-of select="@show_signin"/>';
@@ -138,9 +141,15 @@
         --   hf:=hf||':'|| server_http_port ();
            
 	 if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
+        {
 	   self.odsbar_ods_gpath := 'http://' || hf || '/ods/';
+          self.odsbar_dataspace_path :='http://' || hf || '/dataspace/';
+        }
 	 else
+        {
            self.odsbar_ods_gpath := WA_LINK(1, '/ods/');
+          self.odsbar_dataspace_path :=WA_LINK(1, '/dataspace/');
+        }
                 
      }else
      {
@@ -148,13 +157,24 @@
        if (self.odsbar_ods_gpath is not null and strchr (self.odsbar_ods_gpath, ':') is null and server_http_port () <> '80')
        {
            self.odsbar_ods_gpath:=self.odsbar_ods_gpath||':'|| server_http_port ();
+           self.odsbar_dataspace_path :=self.odsbar_ods_gpath||':'|| server_http_port ()|| '/dataspace/';
        }
        else if(self.odsbar_ods_gpath is null)
        {
            self.odsbar_ods_gpath := WA_LINK(1, '/ods/');
+           self.odsbar_dataspace_path :=WA_LINK(1, '/dataspace/');
        }
      }        
    
+     declare _url any;
+     _url:=split_and_decode(self.vc_event.ve_lines[0],0,'\0\0 ');
+     if(length(_url)>1)
+        self.odsbar_current_url:=_url[1];
+     else
+        self.odsbar_current_url:='';
+
+     if(get_keyword ('signin_returl_params', self.vc_event.ve_params,'')<>'')
+        self.odsbar_current_url:=http_path()||'?'||get_keyword ('signin_returl_params', self.vc_event.ve_params,'');
      ]]>
 
     </v:on-init>
@@ -220,6 +240,12 @@ if(odsbarCSSloaded==0)
  cssNode.rel = 'stylesheet';
  cssNode.href = '<?V self.odsbar_ods_gpath ?>ods-bar.css';
 _head.appendChild(cssNode);
+ // we add a common OAT css here
+ cssNode = document.createElement('link');
+ cssNode.type = 'text/css';
+ cssNode.rel = 'stylesheet';
+ cssNode.href = '<?V self.odsbar_ods_gpath ?>winrect.css';
+ _head.appendChild(cssNode);
 }
 
     var ODSInitArray = new Array();
@@ -322,10 +348,7 @@ function getUrlOnEnter(e)
   <div id="ods_bar_odslogin" style="display:none;text-align:right">
     <v:url name="odsbar_odslogin_button"
            value="Sign In"
-           url="--self.odsbar_ods_gpath||'login.vspx?URL='||http_path()||
-                  (case when length(http_request_get ('QUERY_STRING'))>0 then '?'||http_request_get ('QUERY_STRING')
-                        when get_keyword ('signin_returl_params', self.vc_event.ve_params,'')<>'' then '?'||get_keyword ('signin_returl_params', self.vc_event.ve_params,'')
-                        else '' end ) "
+           url="--self.odsbar_ods_gpath||'login.vspx'||(case when length(self.odsbar_current_url)>0 then '?URL='||self.odsbar_current_url else '' end)"
            is-local="1"/>
       |
     <v:template name="odsbar_barregister"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
@@ -399,10 +422,7 @@ function getUrlOnEnter(e)
           |
               <v:url name="odsbar_login_button"
                      value="Sign In"
-                     url="--self.odsbar_ods_gpath||'login.vspx?URL='||http_path()||
-                            (case when length(http_request_get ('QUERY_STRING'))>0 then '?'||http_request_get ('QUERY_STRING')
-                                  when get_keyword ('signin_returl_params', self.vc_event.ve_params,'')<>'' then '?'||get_keyword ('signin_returl_params', self.vc_event.ve_params,'')
-                                  else '' end ) "
+                     url="--self.odsbar_ods_gpath||'login.vspx'||(case when length(self.odsbar_current_url)>0 then '?URL='||self.odsbar_current_url else '' end)"
                      is-local="1"/>
           |
               <v:template name="ods_barregister"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
@@ -425,7 +445,7 @@ function getUrlOnEnter(e)
 
               <v:url name="odsbar_userinfo_button"
                      value="--self.odsbar_u_full_name"
-                     url="--self.odsbar_ods_gpath||'uhome.vspx?ufname='||self.odsbar_u_name"
+                     url="--self.odsbar_dataspace_path||'person/'||self.odsbar_u_name||'#this'"
                      render-only="1"
                      is-local="1"
                      format="%s"
@@ -870,34 +890,34 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
 
       declare arr,arr_notlogged any;
       arr := vector (
-                     vector ('Community', 'Community'),
-                     vector ('oDrive', 'oDrive'),
-                     vector ('WEBLOG2', 'blog2'),
-                     vector ('oGallery', 'oGallery'),
-                     vector ('eNews2', 'enews2'),
-                     vector ('oWiki', 'wiki'),
-                     vector ('oMail', 'oMail'),
+                     vector ('Community', 'Community','community'),
+                     vector ('oDrive', 'oDrive','briefcase'),
+                     vector ('WEBLOG2', 'blog2','weblog'),
+                     vector ('oGallery', 'oGallery','photos'),
+                     vector ('eNews2', 'enews2','subscriptions'),
+                     vector ('oWiki', 'wiki','wiki'),
+                     vector ('oMail', 'oMail','mail'),
                      vector ('eCRM', 'eCRM'),
-                     vector ('Bookmark', 'bookmark'),
+                     vector ('Bookmark', 'bookmark','bookmark'),
 --                     vector ('nntpf','Discussion'),
-                     vector ('Polls','Polls'),
-                     vector ('AddressBook','AddressBook'),
-                     vector ('Calendar','Calendar'),
+                     vector ('Polls','Polls','polls'),
+                     vector ('AddressBook','AddressBook','addressbook'),
+                     vector ('Calendar','Calendar','calendar'),
                      vector ('IM','IM')
                     );
       arr_notlogged := vector (
-                               vector ('Community', 'Community'),
-                               vector ('oDrive', 'oDrive'),
-                               vector ('WEBLOG2', 'blog2'),
-                               vector ('oGallery', 'oGallery'),
-                               vector ('eNews2', 'enews2'),
-                               vector ('oWiki', 'wiki'),
+                               vector ('Community', 'Community','community'),
+                               vector ('oDrive', 'oDrive','briefcase'),
+                               vector ('WEBLOG2', 'blog2','weblog'),
+                               vector ('oGallery', 'oGallery','photos'),
+                               vector ('eNews2', 'enews2','subscriptions'),
+                               vector ('oWiki', 'wiki','wiki'),
                                vector ('eCRM', 'eCRM'),
-                               vector ('Bookmark', 'bookmark'),
+                               vector ('Bookmark', 'bookmark','bookmark'),
 --                               vector ('nntpf','Discussion'),
-                               vector ('Polls','Polls'),
-                               vector ('AddressBook','AddressBook'),
-                               vector ('Calendar','Calendar')
+                               vector ('Polls','Polls','polls'),
+                               vector ('AddressBook','AddressBook','addressbook'),
+                               vector ('Calendar','Calendar','calendar')
                               );
 
       declare arr_url any;
@@ -935,18 +955,19 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
                    }
                  else if (length (self.sid) > 0)
           {
-                     url_value := sprintf ('%sapp_my_inst.vspx?app=%s&ufname=%V',
-                                           self.odsbar_ods_gpath,
-                                           app[0],
-                                           coalesce (self.odsbar_fname, self.odsbar_u_name));
+                     url_value := sprintf ('%s%V/%s',
+                                           self.odsbar_dataspace_path,
+                                           coalesce (self.odsbar_fname, self.odsbar_u_name),
+                                           app[2]
+                                           );
 
                    }
                  else
           {
-                     url_value := sprintf ('%sapp_inst.vspx?app=%s&ufname=%V',
-                                           self.odsbar_ods_gpath,
-                                           app[0],
-                                           coalesce (self.odsbar_fname,self.odsbar_u_name));
+                     url_value := sprintf ('%sall/%s',
+                                           self.odsbar_dataspace_path,
+                                           app[2]
+                                           );
           }
 
           declare url_class varchar;
@@ -956,11 +977,13 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
                      get_keyword ('app_type', self.odsbar_inout_arr) is null)
                    {
               url_class := 'sel';
+                     self.odsbar_app_dataspace:=app[2];
                    }
                  else if (get_keyword ('app_type', self.odsbar_inout_arr) is not null and
                           get_keyword('app_type',self.odsbar_inout_arr) = app[0])
             {
               url_class := 'sel';
+                     self.odsbar_app_dataspace:=app[2];
             }
     ?>
         <li class="<?V url_class ?>">
@@ -1095,7 +1118,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
 
        <vm:if test=" (length(self.sid) > 0) AND self.odsbar_app_type<>'oMail' AND self.odsbar_app_type<>'nntpf' AND self.odsbar_app_type<>'IM'">
        <li>
-       <v:url name="slice_all" url="--sprintf ('%sapp_inst.vspx?app=%s&amp;ufname=%V',self.odsbar_ods_gpath, self.odsbar_app_type, coalesce(self.odsbar_fname,''))"
+       <v:url name="slice_all" url="--sprintf ('%sall/%s',self.odsbar_dataspace_path, self.odsbar_app_dataspace)"
           value="--'All '||WA_GET_MFORM_APP_NAME(self.odsbar_app_type)"
           render-only="1"
           is-local="1"
@@ -1121,24 +1144,23 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
 
         if(length(self.odsbar_fname)>0 and self.odsbar_fname<>coalesce(self.odsbar_u_name,''))
         {
-        q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL'||
+           q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL, U_NAME '||
                        ' from WA_MEMBER, WA_INSTANCE, SYS_USERS '||
                        ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WA_MEMBER.WAM_USER=SYS_USERS.U_ID and U_NAME=''%s'' and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = ''%s'' ',self.odsbar_fname,self.odsbar_app_type);
         }else if(length(self.odsbar_u_name)>0)
         {
-        q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL'||
-                       ' from WA_MEMBER, WA_INSTANCE '||
-                       ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WAM_USER=''%d'' and WAM_APP_TYPE = ''%s'' ',self.odsbar_u_id,self.odsbar_app_type);
-
+           q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL, U_NAME'||
+                          ' from WA_MEMBER, WA_INSTANCE, SYS_USERS  '||
+                          ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WA_MEMBER.WAM_USER=SYS_USERS.U_ID and WAM_USER=''%d'' and WAM_APP_TYPE = ''%s'' ',self.odsbar_u_id,self.odsbar_app_type);
         }else
         {
-        q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL'||
-                       ' from WA_MEMBER, WA_INSTANCE '||
-                       ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = ''%s'' ',self.odsbar_app_type);
+        q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL, U_NAME'||
+                       ' from WA_MEMBER, WA_INSTANCE, SYS_USERS  '||
+                       ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WA_MEMBER.WAM_USER=SYS_USERS.U_ID and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = ''%s'' ',self.odsbar_app_type);
         }
 
 
-        declare INST_URL,INST_NAME varchar;
+        declare INST_URL,INST_NAME,INST_OWNER varchar;
 
         declare state, msg, descs, rows any;
         state := '00000';
@@ -1149,11 +1171,15 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
         while (i < length(rows) and i<4)
         {
 
-          INST_URL:=coalesce(rows[i][1],'#');
+          INST_URL:=coalesce(rows[i][1],'javascript:void(0)');
           INST_NAME:=coalesce(rows[i][0],'');
+          INST_OWNER:=coalesce(rows[i][2],'');
 
 ?>
+<!--
       <li><a href="<?V (case when locate('http://',INST_URL) then '' else rtrim(self.odsbar_ods_gpath,'/ods/') end)||wa_expand_url (INST_URL, self.odsbar_loginparams) ?>"><?V wa_utf8_to_wide (INST_NAME) ?></a></li>
+-->
+      <li><a href="<?V wa_expand_url (sprintf('%s%V/%s/%U',self.odsbar_dataspace_path,INST_OWNER,self.odsbar_app_dataspace,INST_NAME), self.odsbar_loginparams) ?>"><?V wa_utf8_to_wide (INST_NAME) ?></a></li>
 <?vsp
           i := i + 1;
 

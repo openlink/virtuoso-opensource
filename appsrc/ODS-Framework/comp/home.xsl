@@ -124,7 +124,7 @@
   <!-- url="-#-sprintf ('ufoaf.xml?:sne=%d', self.sne_id)" -->
   <xsl:template match="vm:foaf-link">
       <v:url name="u2" value='<img src="images/foaf.gif" border="0" alt="FOAF" />' format="%s"
-	url="--WA_LINK (1, sprintf ('/dataspace/%s/about.rdf', case when self.isowner then self.u_name else self.fname end))"
+	url="--WA_LINK (1, sprintf ('/dataspace/person/%s/foaf.rdf', case when self.isowner then self.u_name else self.fname end))"
 	/>
   </xsl:template>
 
@@ -476,7 +476,7 @@
 				  ?>
 		                    	  <tr>
 		                    	    <td>
-						<a href="uhome.vspx?ufname=<?V sne_name ?><?V self.login_pars ?>"><?V wa_utf8_to_wide (coalesce (U_FULL_NAME, sne_name)) ?></a>
+						<a href="&lt;?V wa_expand_url('/dataspace/person/'|| sne_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide (coalesce (U_FULL_NAME, sne_name)) ?></a>
 		                    	    </td>
 					  </tr>
 				  <?vsp
@@ -715,6 +715,17 @@
     </v:url>
   </xsl:template>
 
+  <xsl:template match="vm:addressbook-link">
+    <?vsp
+      declare addressbook_id integer;
+
+      addressbook_id :=
+        (select top 1 WAI_ID from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'AddressBook' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = self.u_id);
+      if (not isnull (addressbook_id)){
+        http (sprintf ('<li><img src="images/icons/ods_ab_16.png" alt="Your AddressBook" /><a href="%s?sid=%s&realm=%s"> %V</a></li>', SIOC..addressbook_iri (AB.WA.domain_name (addressbook_id)), self.sid, self.realm, 'Your AddressBook'));
+      }
+    ?>
+  </xsl:template>
 
   <xsl:template match="v:template[@condition]">
       <xsl:processing-instruction name="vsp"> if (<xsl:value-of select="@condition"/>) { </xsl:processing-instruction>
@@ -781,7 +792,7 @@
 
 	  ?>
 	  <li>
-	      <a href="uhome.vspx?ufname=<?V sne_name ?><?V self.login_pars ?>"><?vsp if (length (WAUI_PHOTO_URL)) {  ?>
+	      <a href="&lt;?V wa_expand_url('/dataspace/person/'|| sne_name ||'#this', self.login_pars)?&gt;"><?vsp if (length (WAUI_PHOTO_URL)) {  ?>
 	      <img src="<?V WAUI_PHOTO_URL ?>" border="0" alt="Photo" width="32" hspace="3"/>
 	      <?vsp } ?><?V wa_utf8_to_wide (coalesce (U_FULL_NAME, sne_name)) ?></a>
 	      <span class="home_addr"><?V wa_utf8_to_wide (addr) ?></span>

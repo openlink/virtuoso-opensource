@@ -351,7 +351,7 @@ if (not control.vl_authenticated and length(self.oid_sig))
      goto auth_failed1;
     };
     resp := HTTP_CLIENT (url);
-    dbg_obj_print (resp);
+--    dbg_obj_print (resp);
     if (resp not like '%is_valid:%true\n%')
       goto auth_failed1;
   }

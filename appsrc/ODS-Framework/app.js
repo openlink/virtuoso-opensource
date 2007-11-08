@@ -26,6 +26,14 @@ function generateAPPAnchor(options, app)
 	var appHref = app.href;
 	var appTarget = app.target;
 	var appOnclick = app.onclick;
+  var link = app;
+  var useRDFB = options.useRDFB;
+  // If we use a separate image to make a++, then actual anchor is previous sibling
+  if (app.tagName == "IMG")
+    {
+      link = app.previousSibling;
+      appHref = link.href;
+    }
 	var genRef = function() {
 		var ul = OAT.Dom.create("div",{paddingLeft:"20px",marginLeft:"0px"});
 		
@@ -59,7 +67,7 @@ function generateAPPAnchor(options, app)
 		// rdf link
 		if (appIRI) {
     	var a = OAT.Dom.create("a");
-  	  var img = OAT.Dom.image("/ods/images/rdf-icon-16.gif");
+      var img = OAT.Dom.image("/ods/images/icons/rdf-icon-16.gif");
   	  img.style["border"] = "0px";
   	  a.appendChild(img);
   
@@ -94,27 +102,7 @@ function generateAPPAnchor(options, app)
     	  var aURL = OAT.Xml.textValue(u[i]);
     	  var aLabel = OAT.Xml.textValue(l[i]);
     	  var aType = OAT.Xml.textValue(t[i]);
-    	  var imgSrc = imgPath + "docs_16.png";
-    	  if (aType == 'http://rdfs.org/sioc/ns#User') 
-    	    imgSrc = imgPath + "user_16.png";
-    	  if (aType == 'http://rdfs.org/sioc/types#AddressBook') 
-    	    imgSrc = imgPath + "ods_ab_16.png";
-    	  if (aType == 'http://rdfs.org/sioc/types#Briefcase') 
-    	    imgSrc = imgPath + "ods_briefcase_16.png";
-    	  if (aType == 'http://rdfs.org/sioc/types#BookmarkFolder') 
-    	    imgSrc = imgPath + "ods_bookmarks_16.png";
-    	  if (aType == 'http://rdfs.org/sioc/types#Calendar') 
-    	    imgSrc = imgPath + "ods_calendar_16.png";
-    	  if (aType == 'http://rdfs.org/sioc/types#ImageGallery') 
-    	    imgSrc = imgPath + "ods_gallery_16.png";
-    	  if (aType == 'http://rdfs.org/sioc/types#SurveyCollection') 
-    	    imgSrc = imgPath + "ods_poll_16.png";
-    	  if (aType == 'http://rdfs.org/sioc/types#SubscriptionList') 
-    	    imgSrc = imgPath + "ods_feeds_16.png";
-    	  if (aType == 'http://rdfs.org/sioc/types#Weblog') 
-    	    imgSrc = imgPath + "ods_weblog_16.png";
-    	  if (aType == 'http://rdfs.org/sioc/types#Wiki') 
-    	    imgSrc = imgPath + "ods_wiki_16.png";    	    
+	var imgSrc = gererateAPP_image (aType, imgPath);
         var tp = "", sm = OAT.Dom.create("small");
         var pos = aType.lastIndexOf ('#');
         if (pos == -1) {
@@ -127,7 +115,15 @@ function generateAPPAnchor(options, app)
         }
       	var elm = OAT.Dom.create("div");
       	var a = OAT.Dom.create("a");
+        if (useRDFB == true)
+	  {
+            a.href = '/rdfbrowser/index.html?uri='+encodeURIComponent(aURL);
+	    a.target = "_blank";
+          }
+        else
+          {
   			a.href = aURL;
+          }
   			if (imgSrc != "") {
   			  var img = OAT.Dom.image(imgSrc);
   			  img.style["border"] = "0px";
@@ -145,12 +141,15 @@ function generateAPPAnchor(options, app)
 	 	}
 	 	var search;
 	 	//alert (app.childNodes[0].tagName);
-	 	if ((app.childNodes.length == 1) && (app.childNodes[0].tagName == "IMG")) {
-	 	  search = app.childNodes[0].getAttribute("alt");
-	 	} else {
-	 	  search = app.innerHTML;
+    if ((link.childNodes.length == 1) && (link.childNodes[0].tagName == "IMG"))
+      {
+	search = link.childNodes[0].getAttribute("alt");
 	 	}
-		OAT.AJAX.POST("/ods_services/search/"+escape(search), false, cb, {type:OAT.AJAX.TYPE_XML, onstart:function(){}});
+    else
+      {
+	search = link.innerHTML;
+      }
+    OAT.AJAX.GET("/ods_services/search/"+escape(search), false, cb, {type:OAT.AJAX.TYPE_XML, onstart:function(){}});
 	  return ul;
 	}
 	
@@ -168,6 +167,33 @@ function generateAPPAnchor(options, app)
   OAT.Anchor.assign(app.id, paramsObj);
 }
 	
+function gererateAPP_image (aType, imgPath)
+{
+  var imgSrc = imgPath + "docs_16.png";
+  if (aType == 'http://rdfs.org/sioc/ns#User')
+    imgSrc = imgPath + "user_16.png";
+  else if (aType == 'http://rdfs.org/sioc/types#AddressBook')
+    imgSrc = imgPath + "ods_ab_16.png";
+  else if (aType == 'http://rdfs.org/sioc/types#Briefcase')
+    imgSrc = imgPath + "ods_briefcase_16.png";
+  else if (aType == 'http://rdfs.org/sioc/types#BookmarkFolder')
+    imgSrc = imgPath + "ods_bookmarks_16.png";
+  else if (aType == 'http://rdfs.org/sioc/types#Calendar')
+    imgSrc = imgPath + "ods_calendar_16.png";
+  else if (aType == 'http://rdfs.org/sioc/types#ImageGallery')
+    imgSrc = imgPath + "ods_gallery_16.png";
+  else if (aType == 'http://rdfs.org/sioc/types#SurveyCollection')
+    imgSrc = imgPath + "ods_poll_16.png";
+  else if (aType == 'http://rdfs.org/sioc/types#SubscriptionList')
+    imgSrc = imgPath + "ods_feeds_16.png";
+  else if (aType == 'http://rdfs.org/sioc/types#Weblog')
+    imgSrc = imgPath + "ods_weblog_16.png";
+  else if (aType == 'http://rdfs.org/sioc/types#Wiki')
+    imgSrc = imgPath + "ods_wiki_16.png";
+  return imgSrc;
+}
+
+// XXX: please remove this function and patch relevant apps!
 function gererateAPP(appArea, optObj) 
 {
 	generateAPP(appArea, optObj); 
@@ -179,15 +205,33 @@ function generateAPP(appArea, optObj)
 		title: "URL",
 		width: 300,
 		height: 200,
-		appActivation: "click"
+    appActivation: "click",
+    useRDFB: false
+  }
+  for (var p in optObj)
+  {
+    options[p] = optObj[p];
 	}
-	for (var p in optObj) { options[p] = optObj[p]; }
-	
 	var appLinks = $(appArea).getElementsByTagName("a");
-	
-	for (var i = 0; i < appLinks.length; i++) {
+  for (var i = 0; i < appLinks.length; i++)
+  {
 	  var app = appLinks[i];
 	  if ((app.id) && !OAT.Dom.isClass(app, 'noapp'))
-      generateAPPAnchor (options, app);
+    {
+    	var img = OAT.Dom.image("/ods/images/icons/rdf_11.png");
+    	img.style["border"] = "0px";
+    	img.style["padding"] = "0 0 0 5px";
+    	img.id = 'app_id_' + app.id;
+    	img.hspace = '1';
+    	img.alt = "RDF";
+    	img.title = "RDF";
+    	var next = app.nextSibling;
+    	if (next != null) {
+    	  app.parentNode.insertBefore (img, next);
+    	} else {
+    	  app.parentNode.appendChild (img);
+    	}
+    	generateAPPAnchor (options, img);
+    }
 	}
 }

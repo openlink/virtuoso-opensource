@@ -1,1045 +1,313 @@
-create procedure DB.DBA.URL_REW_ODS_ACCEPT ()
+--
+--  url_rev.sql
+--
+--  $Id$
+--
+--  URL rewrite rules for ODS
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2006 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+
+-- Support functions for decoding and converting URL rewrite rule parameters
+create procedure DB.DBA.ODS_INST_HOME_PAGE (in par varchar, in fmt varchar, in val varchar)
 {
-  declare accept, ret any;
-  accept := http_request_header (http_request_header (), 'Accept');
-  if (not isstring (accept))
-    return null;
-  ret := null;
-  if (regexp_match ('(application|text)/rdf.(xml|n3|turtle|ttl)', accept) is not null)
-    {
-      if (regexp_match ('application/rdf.xml', accept) is not null)
-	{
-	  ret := 'rdf';
-	}
-      else if (regexp_match ('text/rdf.n3', accept) is not null)
-	{
-	  ret := 'n3';
-	}
-      else if (regexp_match ('application/rdf.turtle', accept) is not null or
-	    regexp_match ('application/rdf.ttl', accept) is not null)
-	{
-	  ret := 'n3';
-	}
-    }
+  declare ret any;
+  if (length (val))
+    val := split_and_decode (val)[0];
+  ret := (select WAM_HOME_PAGE from WA_MEMBER where WAM_INST = val and WAM_MEMBER_TYPE = 1);
   return ret;
-};
+}
+;
 
-create procedure  DB.DBA.URL_REW_ODS_SPQ (in graph varchar, in iri varchar, in acc varchar)
+create procedure DB.DBA.ODS_APPS_PAGE (in par varchar, in fmt varchar, in val varchar)
 {
-  declare q, ret any;
---  iri := replace (iri, '''', '%27');
---  iri := replace (iri, '<', '%3C');
---  iri := replace (iri, '>', '%3E');
---  iri := replace (iri, ' ', '%20');
-  iri := sprintf ('%U', iri);
-  iri := replace (iri, '%3A', ':');
-  iri := replace (iri, '%23', '#');
---  q := sprintf ('define input:inference <%s> DESCRIBE <%s> FROM <%s>', graph, iri, graph);
---  ret := sprintf ('/sparql?query=%U&format=%U', q, acc);
-  ret := sprintf ('/ods_services/Http/OdsIriDescribe?iri=%U&accept=%U', iri, acc);
-  return ret;
-};
-
-create procedure DB.DBA.URL_REW_ODS_USER (in par varchar, in fmt varchar, in val varchar)
-{
---  dbg_obj_print (current_proc_name ());
-  declare acc, ret any;
-  declare q, iri, graph any;
-
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
-    {
-      graph := sioc..get_graph ();
-      iri := sprintf ('%s/%U', graph, val);
-      if (val like 'person/%' or val like 'organization/%')
-	{
-	  if (val like 'person/%')
-	  val := substring (val, 8, length (val));
-	  if (val like 'organization/%')
-	    val := substring (val, 14, length (val));
-	  ret := sprintf ('/ods/foaf.vsp?uname=%U&fmt=%U', val, acc);
-	}
-      else
-      ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-    }
-  else
-    {
-      http_header (http_header_get ()||sprintf ('X-XRDS-Location: %s\r\n',
-	    DB.DBA.wa_link (1, '/dataspace/'||val||'/yadis.xrds')));
-
-      if (val like 'person/%')
-	val := substring (val, 8, length (val));
-      if (val like 'organization/%')
-	val := substring (val, 14, length (val));
-      ret := sprintf ('/ods/uhome.vspx?page=1&ufname=%s', val);
-    }
-  return ret;
-};
-
-create procedure DB.DBA.URL_REW_ODS_USER_GEM (in par varchar, in fmt varchar, in val varchar)
-{
---  dbg_obj_print (current_proc_name ());
-  declare acc, ret any;
-  declare q, iri, graph, path, is_person any;
-
-  path := http_path ();
-  if (path like '%.rdf')
-    acc := 'rdf';
-  else if (path like '%.n3')
-    acc := 'n3';
-  else if (path like '%.ttl')
-    acc := 'n3';
-  else if (path like '%/yadis.xrds')
-    acc := 'yadis';
-  else
-    acc := 'rdf';
-
-  if (acc <> 'yadis')
-    {
-      is_person := matches_like (path, '%/about.%');
-      graph := sioc..get_graph ();
-      if (is_person)
-	{
-          --iri := sprintf ('%s/person/%U', graph, val);
-	  ret := sprintf ('/ods/foaf.vsp?uname=%U&fmt=%U', val, acc);
-	}
-      else
-	{
-          iri := sprintf ('%s/%U#this', graph, val);
-      ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-    }
-    }
-  else
-    {
-      ret := sprintf ('/ods/yadis.vsp?uname=%U', val);
-    }
-  return ret;
-};
-
-create procedure DB.DBA.URL_REW_ODS_GEM (in par varchar, in fmt varchar, in val varchar)
-{
---  dbg_obj_print (current_proc_name ());
-  declare acc, ret any;
-  declare q, iri, graph, path, pos any;
-
-  path := http_path ();
-  if (path like '%.rdf')
-    acc := 'rdf';
-  else if (path like '%.n3')
-    acc := 'n3';
-  else if (path like '%.ttl')
-    acc := 'n3';
-  else
-    acc := 'rdf';
-  graph := sioc..get_graph ();
-  pos := strrchr (path, '/');
-  path := subseq (path, 0, pos);
-
-  if (val = 'person' or val = 'organization')
-    {
-      pos := strrchr (path, '/');
-      val := subseq (path, pos+1, length (path));
-      ret := sprintf ('/ods/foaf.vsp?uname=%U&fmt=%U', val, acc);
-    }
-  else
-    {
-  iri := sprintf ('http://%s%s', sioc..get_cname (), path);
-  ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-    }
-  return ret;
-};
-
-
-create procedure DB.DBA.URL_REW_ODS_APP (in par varchar, in fmt varchar, in val varchar)
-{
---  dbg_obj_print (current_proc_name (), val);
   if (par = 'app')
     return sprintf (fmt, wa_app_to_type (val));
   return sprintf (fmt, val);
-};
-
-create procedure DB.DBA.URL_REW_ODS_BLOG (in par varchar, in fmt varchar, in val varchar)
-{
---  dbg_obj_print (par, fmt, val);
---  dbg_obj_print (current_proc_name (), val);
-  declare acc, ret any;
-
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
-    {
-      if (par = 'inst')
-	{
-          declare q, iri, graph any;
-          graph := sioc..get_graph ();
-          iri := 'http://' || sioc..get_cname () || http_path ();
-          ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-          return ret;
-	}
-      else
-	return '';
-    }
-  else if (par = 'inst')
-    {
-      declare url any;
-      val := split_and_decode (val)[0];
-      url := (select WAM_HOME_PAGE from WA_MEMBER where WAM_INST = val and WAM_MEMBER_TYPE = 1);
-      if (url is not null)
-        val := url;
-      return sprintf (fmt, val);
-    }
-  else if (par = 'id' and val <> '')
-    {
-      if (atoi (val) = 0 and val <> '0')
-	fmt := '%s';
-      else
-        fmt := '?id=%s';
-      return sprintf (fmt, val);
-    }
-};
-
-create procedure DB.DBA.URL_REW_ODS_NNTP (in par varchar, in fmt varchar, in val varchar)
-{
---  dbg_obj_print (par, fmt, val);
---  dbg_obj_print (current_proc_name (), val);
-  declare acc, ret any;
-
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
-    {
-       declare q, iri, graph any;
-       graph := sioc..get_graph ();
-       iri := 'http://' || sioc..get_cname () || http_path ();
---       dbg_obj_print (iri);
-       ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-       return ret;
-    }
-  else if (par = 'grp')
-    {
-      declare gid int;
-      val := split_and_decode (val)[0];
-      gid := (select NG_GROUP from DB.DBA.NEWS_GROUPS where NG_NAME = val);
-      ret := sprintf ('/nntpf/nntpf_nthread_view.vspx?group=%d', gid);
-      return ret;
-    }
-  else if (par = 'post')
-    {
-      ret := sprintf ('/nntpf/nntpf_disp_article.vspx?id=%U', encode_base64 (split_and_decode(val)[0]));
-      return ret;
-    }
 }
 ;
 
-create procedure DB.DBA.URL_REW_ODS_XD (in par varchar, in fmt varchar, in val varchar)
+create procedure DB.DBA.ODS_DISC_GRP_ID (in par varchar, in fmt varchar, in val varchar)
 {
---  dbg_obj_print (par, fmt, val);
---  dbg_obj_print (current_proc_name (), val);
-  declare acc, ret any;
+  declare gid int;
+  if (length (val))
+    val := split_and_decode (val)[0];
+  gid := (select NG_GROUP from DB.DBA.NEWS_GROUPS where NG_NAME = val);
+  return gid;
+}
+;
 
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
+create procedure DB.DBA.ODS_DISC_ITEM_ID (in par varchar, in fmt varchar, in val varchar)
+{
+  declare id any;
+  if (length (val))
+    val := split_and_decode (val)[0];
+  id := encode_base64 (val);
+  return id;
+}
+;
+
+create procedure DB.DBA.ODS_ITEM_PAGE (in par varchar, in fmt varchar, in val varchar)
+{
+  declare ret any;
+  if (par = 'inst')
     {
-       declare q, iri, graph any;
-       graph := sioc..get_graph ();
-       iri := 'http://' || sioc..get_cname () || http_path ();
---       dbg_obj_print (iri);
-       ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-       return ret;
-    }
-  else if (par = 'inst')
-    {
-      val := split_and_decode (val)[0];
+      if (length (val))
+	val := split_and_decode (val)[0];
       ret := (select WAM_HOME_PAGE from WA_MEMBER where WAM_INST = val and WAM_MEMBER_TYPE = 1);
-      return ret;
     }
+  else -- item
+    {
+      ret := sprintf ('%s', val);
+    }
+  return sprintf (fmt, ret);
 }
 ;
 
-create procedure DB.DBA.URL_REW_ODS_WIKI (in par varchar, in fmt varchar, in val varchar)
+create procedure DB.DBA.ODS_PHOTO_ITEM_PAGE (in par varchar, in fmt varchar, in val varchar)
 {
---  dbg_obj_print (par, fmt, val);
---  dbg_obj_print (current_proc_name (), val);
-  declare acc, ret any;
+  declare id int;
+  declare col, nam, ret varchar;
 
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
+  declare exit handler for not found
     {
-       declare q, iri, graph any;
-       graph := sioc..get_graph ();
-       iri := 'http://' || sioc..get_cname () || http_path ();
---       dbg_obj_print (iri);
-       ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-       return ret;
+      signal ('22023', sprintf ('The resource %d doesn''t exists', id));
+    };
+  id := atoi(ltrim(val, '/'));
+  
+  if (par = 'uname' or par='inst')
+    {
+      ret := sprintf (fmt, val);
     }
-  else if (par = 'inst')
+  else if (par = 'item')
     {
-      declare _inst DB.DBA.web_app;
-      _inst := (select WAI_INST from WA_INSTANCE where WAI_NAME = val);
-      ret := _inst.wa_post_url (null, null, val, val);
---      dbg_obj_print ('ret', ret);
-      return ret;
-    }
-  else if (par = 'post')
-    {
-      return '/'||val;
-    }
-}
-;
-
-create procedure DB.DBA.URL_REW_ODS_PHOTO (in par varchar, in fmt varchar, in val varchar)
-{
---  dbg_obj_print (par, fmt, val);
---  dbg_obj_print (current_proc_name (), val);
-  declare acc, ret any;
-
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
-    {
-       declare q, iri, graph any;
-       graph := sioc..get_graph ();
-       iri := 'http://' || sioc..get_cname () || http_path ();
---       dbg_obj_print (iri);
-       ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-       return ret;
-    }
-  else if (par = 'inst')
-    {
-      val := split_and_decode (val)[0];
-      ret := (select WAM_HOME_PAGE from WA_MEMBER where WAM_INST = val and WAM_MEMBER_TYPE = 1);
-      return ret;
-    }
-  else if (par = 'post')
-    {
-      declare id int;
-      declare col, nam varchar;
-      declare exit handler for not found
-	{
-	  signal ('22023', sprintf ('The resource %d doesn''t exists', id));
-	};
-      id := atoi(ltrim(val, '/'));
-      select RES_FULL_PATH into nam from WS.WS.SYS_DAV_RES where RES_ID = id;
-      return nam;
-    }
-}
-;
-
-create procedure DB.DBA.URL_REW_ODS_ADDRESSBOOK (in par varchar, in fmt varchar, in val varchar)
-{
-  declare acc, ret any;
-
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
-    {
-      if (par = 'instance')
-      	{
-          declare q, iri, graph any;
-          graph := sioc..get_graph ();
-          iri := 'http://' || sioc..get_cname () || http_path ();
-          ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-          return ret;
-	      }
-      else
-	      return '';
-    }
-  else if (par = 'instance')
-    {
-      declare id, url any;
-      val := split_and_decode (val)[0];
-      id := AB.WA.domain_id (val);
-      if (id is not null) {
-        url := AB.WA.ab_url (id);
-        if (url is not null)
-          val := url;
-      }
-      return sprintf (fmt, val);
-    }
-  else if (par = 'params')
-    {
-      if (atoi (val) = 0 and val <> '0')
-       	fmt := '%s';
-      else
-        fmt := '?id=%s';
-      return sprintf (fmt, val);
-    }
-}
-;
-
-create procedure DB.DBA.URL_REW_ODS_BOOKMARK (in par varchar, in fmt varchar, in val varchar)
-{
-  declare acc, ret any;
-
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
-    {
-      if (par = 'instance')
-      	{
-          declare q, iri, graph any;
-          graph := sioc..get_graph ();
-          iri := 'http://' || sioc..get_cname () || http_path ();
-          ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-          return ret;
-	      }
-      else
-	      return '';
-    }
-  else if (par = 'instance')
-    {
-      declare id, url any;
-      val := split_and_decode (val)[0];
-      id := BMK.WA.domain_id (val);
-      if (id is not null) {
-        url := BMK.WA.bookmark_url (id);
-        if (url is not null)
-          val := url;
-      }
-      return sprintf (fmt, val);
-    }
-  else if (par = 'params')
-    {
-      if (atoi (val) = 0 and val <> '0')
-       	fmt := '%s';
-      else
-        fmt := '?id=%s';
-      return sprintf (fmt, val);
-    }
-}
-;
-
-create procedure DB.DBA.URL_REW_ODS_BRIEFCASE (in par varchar, in fmt varchar, in val varchar)
-{
-  declare acc, ret any;
-
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
-    {
-      if (par = 'instance')
-      	{
-          declare q, iri, graph any;
-          graph := sioc..get_graph ();
-          iri := 'http://' || sioc..get_cname () || http_path ();
-          ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-          return ret;
-	      }
-      else
-	      return '';
-    }
-  else if (par = 'instance')
-    {
-      declare id, url any;
-      val := split_and_decode (val)[0];
-      id := ODRIVE.WA.domain_id (val);
-      if (id is not null) {
-        url := ODRIVE.WA.odrive_url (id);
-        if (url is not null)
-          val := url;
-      }
-      return sprintf (fmt, val);
-    }
-  else if (par = 'params')
-    {
-      if (atoi (val) = 0 and val <> '0')
-       	fmt := '%s';
-      else
-        fmt := '?id=%s';
-      return sprintf (fmt, val);
-    }
-}
-;
-
-create procedure DB.DBA.URL_REW_ODS_CALENDAR (in par varchar, in fmt varchar, in val varchar)
-{
-  declare acc, ret any;
-
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
-    {
-      if (par = 'instance')
-      	{
-          declare q, iri, graph any;
-          graph := sioc..get_graph ();
-          iri := 'http://' || sioc..get_cname () || http_path ();
-          ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-          return ret;
-	      }
-      else
-	      return '';
-    }
-  else if (par = 'instance')
-    {
-      declare id, url any;
-      val := split_and_decode (val)[0];
-      id := CAL.WA.domain_id (val);
-      if (id is not null) {
-        url := CAL.WA.calendar_url (id);
-        if (url is not null)
-          val := url;
-      }
-      return sprintf (fmt, val);
-    }
-  else if (par = 'params')
-    {
-      val := replace (val, 'Task/', '');
-      val := replace (val, 'Event/', '');
-      if (atoi (val) = 0 and val <> '0')
-       	fmt := '%s';
-      else
-        fmt := '?id=%s';
-      return sprintf (fmt, val);
-    }
-}
-;
-
-create procedure DB.DBA.URL_REW_ODS_FEEDS (in par varchar, in fmt varchar, in val varchar)
-{
-  declare acc, ret any;
-
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
-    {
-      if (par = 'instance')
-      	{
-          declare q, iri, graph any;
-          graph := sioc..get_graph ();
-          iri := 'http://' || sioc..get_cname () || http_path ();
-          ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-          return ret;
-	      }
-      else
-	      return '';
-    }
-  else if (par = 'fid')
-    {
-      declare parts, url any;
-      parts := split_and_decode (val, 0, '\0\0/');
-      url := '/enews2/news.vspx?feed=' || parts[0];
-      if (length(parts) > 1)
-        url := url || '&link=' || parts[1];
-      return sprintf (fmt, url);
-    }
-  else if (par = 'instance')
-    {
-      declare id, url any;
-      val := split_and_decode (val)[0];
-      id := ENEWS.WA.domain_id (val);
-      if (id is not null) {
-        url := ENEWS.WA.enews_url (id) || 'news.vspx';
-        if (url is not null)
-          val := url;
-      }
-      return sprintf (fmt, val);
-    }
-  else if (par = 'params')
-    {
-      if (atoi (val) = 0 and val <> '0')
-       	fmt := '%s';
-      else
-        fmt := '?id=%s';
-      return sprintf (fmt, val);
-    }
-}
-;
-
-create procedure DB.DBA.URL_REW_ODS_POLLS (in par varchar, in fmt varchar, in val varchar)
-{
-  declare acc, ret any;
-
-  acc := DB.DBA.URL_REW_ODS_ACCEPT ();
-  if (acc is not null)
-    {
-      if (par = 'instance')
-      	{
-          declare q, iri, graph any;
-          graph := sioc..get_graph ();
-          iri := 'http://' || sioc..get_cname () || http_path ();
-          ret := DB.DBA.URL_REW_ODS_SPQ (graph, iri, acc);
-          return ret;
-	      }
-      else
-	      return '';
-    }
-  else if (par = 'instance')
-    {
-      declare id, url any;
-      val := split_and_decode (val)[0];
-      id := POLLS.WA.domain_id (val);
-      if (id is not null) {
-        url := POLLS.WA.polls_url (id);
-        if (url is not null)
-          val := url;
-      }
-      return sprintf (fmt, val);
-    }
-  else if (par = 'params')
-    {
-      if (atoi (val) = 0 and val <> '0')
-       	fmt := '%s';
-      else
-        fmt := '?id=%s';
-      return sprintf (fmt, val);
-    }
-}
-;
-
-create procedure DB.DBA.URL_REW_ODS_FOAF_EXT (in par varchar, in fmt varchar, in val varchar)
-{
-  if (par = '*accept*')
-    {
-      declare ext any;
-      ext := 'rdf';
-      if (val = 'text/rdf+n3')
-	ext := 'n3';
-      return sprintf (fmt, ext);
+     select RES_NAME,COL_NAME into nam, col from WS.WS.SYS_DAV_RES, WS.WS.SYS_DAV_COL where RES_COL=COL_ID and RES_ID = id;
+     ret:= '#/'||col||'/'||nam;
     }
   else
+    {
+     select RES_FULL_PATH into nam from WS.WS.SYS_DAV_RES where RES_ID = id;
+     ret:= nam;
+    }
+
+  return ret;
+}
+;
+
+create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varchar)
+{
+  declare iri, res any;
+
+  if (par = 'page')
     return sprintf (fmt, val);
+
+  iri := sioc..get_graph () ||'/'|| val;
+  -- when an about, sioc or foraf is requested, we just remove. the IRI MUST be preceding path
+  if (regexp_match ('http://([^/]*)/dataspace/(.*)/(about|sioc|foaf)\\.(rdf|n3|ttl)', iri) is not null)
+    {
+      declare pos int;
+      pos := strrchr (iri, '/');
+      iri := subseq (iri, 0, pos);
+    }
+  -- if this is a person or organization, we put #this at end if not present
+  if (regexp_match ('http://([^/]*)/dataspace/(person|organization)/(.*)', iri) is not null and
+      iri not like '%#this')
+    {
+      iri := iri || '#this';
+    }
+--  dbg_obj_print (val, iri);
+  res := sprintf ('iid (%d).rdf', iri_id_num (iri_to_id (iri)));
+  return sprintf (fmt, res);
 }
 ;
 
-create procedure ur_ods_rdf_doc (in path varchar)
-{
-  declare r any;
-  r := regexp_match ('[^/]*\x24', path);
-  return r||'#this';
-};
+--
+-- ODS IRI rewrite rules
+-- IMPORTANT: all rules are processed and last matching will win
+--
 
-create procedure ur_ods_html_doc (in path varchar)
-{
-  declare pos, r any;
-  if (path like '%/foaf.%')
-    {
-      pos := strrchr (path, '/');
-    }
-  else if (path like '%#%')
-    {
-      pos := strrchr (path, '#');
-    }
-  if (pos > 0)
-    r := subseq (path, 0, pos);
-  else
-    r := '/';
-  return r;
-};
--- ODS Rules
-
--- http://cname/dataspace/uname
--- http://cname/dataspace/person/uname
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule1', 1,
-    '/dataspace/((person/|organization/)?[^/#]*)', vector('ufname'), 1,
-    '%s', vector('ufname'),
-    'DB.DBA.URL_REW_ODS_USER');
-
--- http://cname/dataspace/uname with Accept will do 303 to the /sparql
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule2', 1,
-    '/dataspace/([^/#]*)', vector('ufname'), 1,
---    '/sparql?query=define+input%%3Ainference+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E+DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace/%U%%23this%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E&format=%U', vector('ufname', '*accept*'),
-    '/ods_services/Http/OdsIriDescribe?iri=http%%3A//^{URIQADefaultHost}^/dataspace/%U%%23this&accept=%U', vector('ufname', '*accept*'),
-    null,
-    '(application|text)/rdf.(xml|n3|turtle|ttl)',
-    0,
-    303);
-
--- http://cname/dataspace/uname/app_type
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule3', 1,
-    '/dataspace/((?!person)(?!organization)[^/]*)/([^\\./]*)', vector('ufname', 'app'), 2,
-    '/ods/app_inst.vspx?app=%s&ufname=%s&l=1', vector('app', 'ufname'),
-    'DB.DBA.URL_REW_ODS_APP');
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule4', 1,
-    '/dataspace/([^/]*)/(sioc|about|yadis)\\.(rdf|n3|ttl|xrds)', vector('ufname', 'file', 'fmt'), 3,
-    '%s', vector('ufname'),
-    'DB.DBA.URL_REW_ODS_USER_GEM');
-
--- Rules for FOAF profile
-
--- http://cname/dataspace/person/uname with Accept, do 303 to http://cname/dataspace/person/uname/foaf.ext
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule5', 1,
-    '/dataspace/person/([^/#]*)/?', vector('ufname'), 1,
-    '/dataspace/person/%U/foaf.%s', vector('ufname', '*accept*'),
-    'DB.DBA.URL_REW_ODS_FOAF_EXT',
-    '(application|text)/rdf.(xml|n3|turtle|ttl)',
+-- Person IRI as HTML
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_html', 1,
+    '/dataspace/(person/|organization/)?([^/#\\?]*)', vector('dummy', 'uname'), 1,
+    '/ods/uhome.vspx?page=1&ufname=%U', vector('uname'),
+    NULL,
+    NULL,
     2,
-    303);
+    NULL,
+    'X-XRDS-Location: yadis.xrds\r\n');
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule6', 1,
-    '/dataspace/person/([^/]*)/page/([^/]*)/?', vector('ufname', 'page'), 1,
-    '/dataspace/person/%U/foaf.%s?page=%s', vector('ufname', '*accept*', 'page'),
-    'DB.DBA.URL_REW_ODS_FOAF_EXT',
-    '(application|text)/rdf.(xml|n3|turtle|ttl)',
-    2,
-    303);
+-- Application instances page as HTML
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apps_html', 1,
+    '/dataspace/((?!person)(?!organization)(?!all)[^/]*)/([^\\./\\?]*)/?', vector('uname', 'app'), 2,
+    '/ods/app_my_inst.vspx?app=%s&ufname=%s&l=1', vector('app', 'uname'),
+    'DB.DBA.ODS_APPS_PAGE',
+    NULL,
+    2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule8', 1,
-    '/dataspace/organization/([^/#]*)/?', vector('ufname'), 1,
-    '/dataspace/organization/%U/foaf.%s', vector('ufname', '*accept*'),
-    'DB.DBA.URL_REW_ODS_FOAF_EXT',
-    '(application|text)/rdf.(xml|n3|turtle|ttl)',
-    2,
-    303);
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_all_apps_html', 1,
+    '/dataspace/all/([^\\./\\?]*)/?', vector('app'), 2,
+    '/ods/app_inst.vspx?app=%s', vector('app'),
+    'DB.DBA.ODS_APPS_PAGE',
+    NULL,
+    2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule9', 1,
-    '/dataspace/organization/([^/]*)/page/([^/]*)/?', vector('ufname', 'page'), 1,
-    '/dataspace/organization/%U/foaf.%s?page=%s', vector('ufname', '*accept*', 'page'),
-    'DB.DBA.URL_REW_ODS_FOAF_EXT',
-    '(application|text)/rdf.(xml|n3|turtle|ttl)',
-    2,
-    303);
+-- Yadis file
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_yadis', 1,
+    '/dataspace/([^/]*)/yadis.xrds', vector('uname'), 1,
+    '/ods/yadis.vsp?uname=%U', vector('uname'),
+    NULL,
+    NULL,
+    2);
 
--- http://cname/dataspace/person/uname/foaf.ext
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rule7', 1,
-    '/dataspace/(person|organization)/([^/]*)/foaf.(rdf|n3|ttl)', vector('type', 'ufname', 'fmt'), 1,
-    '/ods/foaf.vsp?uname=%U&fmt=%U', vector('ufname', 'fmt'),
-    null,
-    null,
-    2,
-    null);
+-- A feed page
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_html', 1,
+    '/dataspace/feed/([^/]*)', vector('fid'), 1,
+    '/enews2/news.vspx?feed=%U', vector('fid'),
+    NULL,
+    NULL,
+    2);
 
--- App Instance Gem
+-- Feed item page
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html', 1,
+    '/dataspace/feed/([^/]*)/([^/]*)', vector('fid', 'link'), 1,
+    '/enews2/news.vspx?feed=%U&link=%U', vector('fid', 'link'),
+    NULL,
+    NULL,
+    2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_post_gem_rule', 1,
-    '/dataspace/([^/]*)/([^/]*)/([^/]*/)?([^/]*/)?(sioc|about)\\.(rdf|n3|ttl)', vector('ufname', 'app', 'inst'), 4,
-    '%s', vector('ufname'),
-    'DB.DBA.URL_REW_ODS_GEM');
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_rule1', 1,
-    '/dataspace/feed/([^#]*)', vector('fid'), 1,
---    '/sparql?query=define+input%%3Ainference+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E+DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace/feed/%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/dataspace%%3E&format=%U', vector('fid', '*accept*'),
-    '/ods_services/Http/OdsIriDescribe?iri=http%%3A//^{URIQADefaultHost}^/dataspace/feed/%U&accept=%U', vector('fid', '*accept*'),
-    null,
-    '(application|text)/rdf.(xml|n3|turtle|ttl)',
-    2,
-    303);
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_rule2', 1,
-    '/dataspace/feed/([^#]*)', vector('fid'), 1,
-    '%s', vector('fid'),
-    'DB.DBA.URL_REW_ODS_FEEDS');
-
--- Weblog Rules
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_blog_rule1', 1,
-    '/dataspace/([^/]*)/weblog/([^/]*)', vector('ufname', 'inst'), 2,
+-- A rule returning home page for a given instance.
+-- NB: all instances have a <home url> execpt discussion
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_inst_html', 1,
+    '/dataspace/([^/]*)/(weblog|wiki|addressbook|bookmark|briefcase|calendar|community|subscriptions|photos|polls|mail)/([^/\\?]+)',
+    vector('ufname', 'app', 'inst'), 3,
     '%s', vector('inst'),
-    'DB.DBA.URL_REW_ODS_BLOG');
+    'DB.DBA.ODS_INST_HOME_PAGE',
+    NULL,
+    2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_blog_rule2', 1,
-    '/dataspace/([^/]*)/weblog/([^/]*)/([^/]*)', vector('ufname', 'inst', 'id'), 3,
-    '%s%s', vector('inst', 'id'),
-    'DB.DBA.URL_REW_ODS_BLOG');
+-- Discussion group page
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_html', 1,
+    '/dataspace/discussion/([^/\\?]*)', vector('grp'), 1,
+    '/nntpf/nntpf_nthread_view.vspx?group=%d', vector('grp'),
+    'DB.DBA.ODS_DISC_GRP_ID',
+    NULL,
+    2);
 
--- Discussion rules
+-- A rule returning home page for a given item within instance all of these having a form of <home>?id=<item id>
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_html', 1,
+    '/dataspace/([^/]*)/(weblog|addressbook|bookmark|briefcase|community|subscriptions|polls|mail)/([^/]*)/([^/\\?]*)',
+    vector('uname', 'app', 'inst', 'item'), 3,
+    '%s?id=%s', vector('inst', 'item'),
+    'DB.DBA.ODS_ITEM_PAGE',
+    NULL,
+    2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_nntp_rule1', 1,
-    '/dataspace/discussion/([^/]*)', vector('grp'), 1,
-    '%s', vector('grp'),
-    'DB.DBA.URL_REW_ODS_NNTP');
+-- Wiki item is special case
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html', 1,
+    '/dataspace/([^/]*)/wiki/([^/]*)/([^/]*)',
+    vector('uname', 'inst', 'item'), 3,
+    '%s/%s', vector('inst', 'item'),
+    'DB.DBA.ODS_ITEM_PAGE',
+    NULL,
+    2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_nntp_rule2', 1,
-    '/dataspace/discussion/([^/]*)/((?!sioc)(?!about)[^/]*)', vector('grp', 'post'), 2,
-    '%s', vector('post'),
-    'DB.DBA.URL_REW_ODS_NNTP');
+-- Photo item is special case
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_photo_item_html', 1,
+    '/dataspace/([^/]*)/photos/([^/]*)/([^/\\?]*)',
+    vector('uname', 'inst', 'item'), 3,
+    '/photos/%s/%s', vector('uname','item'),
+    'DB.DBA.ODS_PHOTO_ITEM_PAGE',
+    NULL,
+    2);
 
--- Community
+-- Calendar item is special case
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_item_html', 1,
+    '/dataspace/([^/]*)/calendar/([^/]*)/(Task|Event)/([^/\\?]*)',
+    vector('uname', 'inst', 'item_type', 'item'), 4,
+    '%s?id=%s', vector('inst', 'item'),
+    'DB.DBA.ODS_ITEM_PAGE',
+    NULL,
+    2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_xd_rule1', 1,
-    '/dataspace/([^/]*)/community/([^/]*)', vector('ufname', 'inst'), 2,
-    '%s', vector('inst'),
-    'DB.DBA.URL_REW_ODS_XD');
+-- A discussion item page
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_item_html', 1,
+    '/dataspace/discussion/([^/]*)/((?!sioc)(?!about)[^/\\?]*)', vector('grp', 'post'), 1,
+    '/nntpf/nntpf_disp_article.vspx?id=%U', vector('post'),
+    'DB.DBA.ODS_DISC_ITEM_ID',
+    NULL,
+    2);
 
--- Wiki
+-- /ods
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_main', 1,
+    '/dataspace/?\x24', vector(), 0,
+    '/ods/', vector(),
+    null,
+    null,
+    2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_rule1', 1,
-    '/dataspace/([^/]*)/wiki/([^/]*)', vector('ufname', 'inst'), 2,
-    '%s', vector('inst'),
-    'DB.DBA.URL_REW_ODS_WIKI');
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_rule2', 1,
-    '/dataspace/([^/]*)/wiki/([^/]*)/([^/]*)', vector('ufname', 'inst', 'post'), 2,
-    '%s%s', vector('inst', 'post'),
-    'DB.DBA.URL_REW_ODS_WIKI');
-
--- Gallery
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_photo_rule1', 1,
-    '/dataspace/([^/]*)/photos/([^/]*)', vector('ufname', 'inst'), 2,
-    '%s', vector('inst'),
-    'DB.DBA.URL_REW_ODS_PHOTO');
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_photo_rule2', 1,
-    '/dataspace/([^/]*)/photos/([^/]*)/([^/]*)', vector('ufname', 'inst', 'post'), 2,
-    '%s', vector('post'),
-    'DB.DBA.URL_REW_ODS_PHOTO');
-
-
--- AddressBook
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_addressbook_rule1',
-    1,
-    '/dataspace/([^/]*)/addressbook/([^/]*)',
-    vector('uname', 'instance'),
+-- RDF data rule
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
+    '/dataspace/(.*)', vector('path'), 1,
+    '/ods/data/rdf/%U', vector('path'),
+    'DB.DBA.ODS_DET_REF',
+    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)',
     2,
-    '%s', vector('instance'),
-    'DB.DBA.URL_REW_ODS_ADDRESSBOOK');
+    303);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_addressbook_rule2',
-    1,
-    '/dataspace/([^/]*)/addressbook/([^/]*)/(.*)',
-    vector('uname', 'instance', 'params'),
-    3,
-    '%s%s',
-    vector('instance', 'params'),
-    'DB.DBA.URL_REW_ODS_ADDRESSBOOK');
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_socialnetwork_rule1',
-    1,
-    '/dataspace/([^/]*)/socialnetwork/([^/]*)',
-    vector('uname', 'instance'),
+-- RDF data rule
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
+    '/dataspace/(.*)/page/([0-9]*)', vector('path', 'page'), 1,
+    '/ods/data/rdf/%U?page=%U', vector('path', 'page'),
+    'DB.DBA.ODS_DET_REF',
+    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)',
     2,
-    '%s', vector('instance'),
-    'DB.DBA.URL_REW_ODS_ADDRESSBOOK');
+    303);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_socialnetwork_rule2',
-    1,
-    '/dataspace/([^/]*)/socialnetwork/([^/]*)/(.*)',
-    vector('uname', 'instance', 'params'),
-    3,
-    '%s%s',
-    vector('instance', 'params'),
-    'DB.DBA.URL_REW_ODS_ADDRESSBOOK');
-
--- Bookmark
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_bookmark_rule1',
-    1,
-    '/dataspace/([^/]*)/bookmark/([^/]*)',
-    vector('uname', 'instance'),
+-- Rule for about, sioc, foaf etc. RDF resources
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_res', 1,
+    '/dataspace/(.*)/(about|foaf|sioc)\\.(rdf|n3|ttl|turtle)', vector('path'), 1,
+    '/ods/data/rdf/%U', vector('path'),
+    'DB.DBA.ODS_DET_REF',
+    NULL,
     2,
-    '%s', vector('instance'),
-    'DB.DBA.URL_REW_ODS_BOOKMARK');
+    303);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_bookmark_rule2',
-    1,
-    '/dataspace/([^/]*)/bookmark/([^/]*)/(.*)',
-    vector('uname', 'instance', 'params'),
-    3,
-    '%s%s',
-    vector('instance', 'params'),
-    'DB.DBA.URL_REW_ODS_BOOKMARK');
-
--- Briefcase
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_briefcase_rule1',
-    1,
-    '/dataspace/([^/]*)/briefcase/([^/]*)',
-    vector('uname', 'instance'),
-    2,
-    '%s', vector('instance'),
-    'DB.DBA.URL_REW_ODS_BRIEFCASE');
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_briefcase_rule2',
-    1,
-    '/dataspace/([^/]*)/briefcase/([^/]*)/(.*)',
-    vector('uname', 'instance', 'params'),
-    3,
-    '%s%s',
-    vector('instance', 'params'),
-    'DB.DBA.URL_REW_ODS_BRIEFCASE');
-
--- Calendar
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_calendar_rule1',
-    1,
-    '/dataspace/([^/]*)/calendar/([^/]*)',
-    vector('uname', 'instance'),
-    2,
-    '%s', vector('instance'),
-    'DB.DBA.URL_REW_ODS_CALENDAR');
-
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_calendar_rule2',
-    1,
-    '/dataspace/([^/]*)/calendar/([^/]*)/(.*)',
-    vector('uname', 'instance', 'params'),
-    3,
-    '%s%s',
-    vector('instance', 'params'),
-    'DB.DBA.URL_REW_ODS_CALENDAR');
-
--- Feeds
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_feeds_rule1',
-    1,
-    '/dataspace/([^/]*)/subscriptions/([^/]*)',
-    vector('uname', 'instance'),
-    2,
-    '%s', vector('instance'),
-    'DB.DBA.URL_REW_ODS_FEEDS');
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_feeds_rule2',
-    1,
-    '/dataspace/([^/]*)/subscriptions/([^/]*)/(.*)',
-    vector('uname', 'instance', 'params'),
-    3,
-    '%s%s',
-    vector('instance', 'params'),
-    'DB.DBA.URL_REW_ODS_FEEDS');
-
--- Polls
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_polls_rule1',
-    1,
-    '/dataspace/([^/]*)/polls/([^/]*)',
-    vector('uname', 'instance'),
-    2,
-    '%s', vector('instance'),
-    'DB.DBA.URL_REW_ODS_POLLS');
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_polls_rule2',
-    1,
-    '/dataspace/([^/]*)/polls/([^/]*)/(.*)',
-    vector('uname', 'instance', 'params'),
-    3,
-    '%s%s',
-    vector('instance', 'params'),
-    'DB.DBA.URL_REW_ODS_POLLS');
-
--- ODS Base rules
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_base_rule_list1', 1,
-    	vector(
-	        'ods_rule1', 'ods_rule2', 'ods_rule3', 'ods_rule4'
-	      ));
-
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_foaf_rule_list1', 1,
-    	vector(
-	        'ods_rule5', 'ods_rule6', 'ods_rule8', 'ods_rule9', 'ods_rule7'
-	      ));
-
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_gems_rule_list1', 1,
-    	vector(
-	        'ods_post_gem_rule'
-	      ));
-
--- ODS Blog rules
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_blog_rule_list1', 1,
-    	vector(
-	   	'ods_blog_rule1', 'ods_blog_rule2'
-	      ));
-
--- ODS Discussion rules
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_nntp_rule_list1', 1,
-    	vector(
-	   	'ods_nntp_rule1', 'ods_nntp_rule2'
-	      ));
-
--- ODS Community rules
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_xd_rule_list1', 1,
-    	vector(
-	   	'ods_xd_rule1'
-	      ));
-
--- ODS Wiki rules
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_wiki_rule_list1', 1,
-    	vector(
-	   	'ods_wiki_rule1', 'ods_wiki_rule2'
-	      ));
-
--- ODS Gallery rules
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_photo_rule_list1', 1,
-    	vector(
-	   	'ods_photo_rule1', 'ods_photo_rule2'
-	      ));
-
--- ODS AddressBook rules
-DB.DBA.URLREWRITE_CREATE_RULELIST (
-    'ods_addressbook_rule_list1',
-    1,
-    vector (
-  	 	'ods_addressbook_rule1',
-	    'ods_addressbook_rule2',
-  	 	'ods_socialnetwork_rule1',
-	    'ods_socialnetwork_rule2'	    
-	  ));
-
--- ODS Bookmark rules
-DB.DBA.URLREWRITE_CREATE_RULELIST (
-    'ods_bookmark_rule_list1',
-    1,
-    vector (
-  	 	'ods_bookmark_rule1',
-	    'ods_bookmark_rule2'
-	  ));
-
--- ODS Briefcase rules
-DB.DBA.URLREWRITE_CREATE_RULELIST (
-    'ods_briefcase_rule_list1',
-    1,
-    vector (
-  	 	'ods_briefcase_rule1',
-	    'ods_briefcase_rule2'
-	  ));
-
--- ODS Calendar rules
-DB.DBA.URLREWRITE_CREATE_RULELIST (
-    'ods_calendar_rule_list1',
-    1,
-    vector (
-  	 	'ods_calendar_rule1',
-	    'ods_calendar_rule2'
-	  ));
-
--- ODS Feeds rules
-DB.DBA.URLREWRITE_CREATE_RULELIST (
-    'ods_feeds_rule_list1',
-    1,
-    vector (
-	    'ods_feed_rule1',
-	    'ods_feed_rule2',
-  	 	'ods_feeds_rule1',
-	    'ods_feeds_rule2'
-	  ));
-
--- ODS Polls rules
-DB.DBA.URLREWRITE_CREATE_RULELIST (
-    'ods_polls_rule_list1',
-    1,
-    vector (
-  	 	'ods_polls_rule1',
-	    'ods_polls_rule2'
-	  ));
-
--- All ODS Rules
+-- All rules are processed in the order bellow.
+-- Every rule will be tried and last matching rule will win
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
     	vector(
-	    'ods_base_rule_list1',
-	  'ods_foaf_rule_list1',
-  		'ods_blog_rule_list1',
-	  	'ods_nntp_rule_list1',
-		  'ods_xd_rule_list1',
-		  'ods_wiki_rule_list1',
-		  'ods_photo_rule_list1',
-      'ods_addressbook_rule_list1',
-      'ods_bookmark_rule_list1',
-      'ods_briefcase_rule_list1',
-      'ods_calendar_rule_list1',
-      'ods_feeds_rule_list1',
-      'ods_polls_rule_list1',
-		  'ods_gems_rule_list1'
-	      ));
-
---VHOST_REMOVE (lpath=>'/dataspace');
---VHOST_DEFINE (lpath=>'/dataspace', ppath=>'/DAV/VAD/wa/', vsp_user=>'dba', is_dav=>1, def_page=>'sfront.vspx',
---    is_brws=>0, opts=>vector ('url_rewrite', 'ods_rule_list1'));
-
+	  'ods_person_html',
+	  'ods_apps_html',
+	  'ods_all_apps_html',
+	  'ods_yadis',
+	  'ods_feed_html',
+	  'ods_feed_item_html',
+	  'ods_inst_html',
+	  'ods_discussion_html',
+	  'ods_item_html',
+	  'ods_wiki_item_html',
+	  'ods_photo_item_html',
+	  'ods_cal_item_html',
+	  'ods_discussion_item_html',
+	  'ods_main',
+	  'ods_rdf',
+	  'ods_rdf_next',
+	  'ods_rdf_res'
+	  ));

@@ -128,3 +128,24 @@
 	padding: 0.5em;
 	font-size: 80%;
 }
+
+#ods_bar_odslogin {
+  font-size: 8pt;
+  margin-top: 4px;
+  color: #42abc4;
+  background-color: #fff;
+  float: right;
+  padding-right: 8px;
+}
+
+#ods_bar_odslogin img {
+  vertical-align: middle;
+  margin-left: 8px;
+}
+
+#ods_bar_odslogin a {
+  margin-left: 3px;
+  color: inherit;
+  text-decoration: none;
+}
+

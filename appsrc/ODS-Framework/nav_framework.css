@@ -175,7 +175,6 @@ span.indicator {
 }
 #u_profile_r {
 	float: right;
-	width: 550px
 }
 div.widget {
 	margin-bottom: 4px;
@@ -403,7 +402,7 @@ div.gem .gem_r {
 }
 
 .prof_user_gems .gem:hover {
-	background-color: #666666;
+	background-color: #fff;
 }
 
 ul.prof_user_commands {
@@ -576,7 +575,7 @@ img.menu_dd_handle:hover {
 
 /* Dialogs */
 
-div.ods_dialog,
+div.ods_dialog
 {
   font-size: 9pt;
   width: 350px;
@@ -599,15 +598,44 @@ div.dlg_title h3 {
   font-size: larger;
   color: #ddf}
 
+div.ods_dialog button {
+  font-weight: normal;
+  font-size: 8pt;
+  border: 1px solid #555;
+  background-color: #ddf;
+  color: #333;
+  margin: 3px}
 
-.wizard .tab_bar {
+div.ods_dialog button:hover {
+  background-color: #eef;
+}
+
+/* Generic button bar buttons (dialogs, etc.) */
+
+div.btn_bar button {
+  font-weight: normal;
+  font-size: 8pt;
+  border: 1px solid #555;
+  background-color: #ddf;
+  color: #333;
+  margin: 3px}
+
+div.btn_bar button:hover {
+  background-color: #eef;
+}
+
+div.btn_bar button.default {
+  font-weight: bold;
+}
+
+ul.tab_bar {
 	margin: 0px;
 	margin-top: 3px;
 	padding: 0px;
 	list-style-type: none;
 	border-bottom: 1px solid #333;
 }
-.wizard .tab_bar li {
+ul.tab_bar li {
 	display: inline;
 	width: 40px;
 	border: 1px solid #333;
@@ -615,12 +643,12 @@ div.dlg_title h3 {
 	background-color: #ddd;
 }
 
-.wizard ul.tab_bar .tab_selected {
+ul.tab_bar .tab_selected {
 	border-bottom: 1px solid #fff;
 	background-color: #fff;
 }
 
-.wizard .tab_bar li a {
+ul.tab_bar li a {
 	text-decoration: none;
 	color: inherit;
 	margin-left: 8px;
@@ -628,7 +656,7 @@ div.dlg_title h3 {
 	margin-top: 8px;
 }
 	
-.wizard .tab_deck {
+div.tab_deck {
 	border: 1px solid #333;
 	border-top: none;
 	background-color: #fff;
@@ -652,19 +680,6 @@ div.wizard_page label {
 div.wizard_page input {
   font-weight: normal;
   color: #333}
-
-div.wizard_btnbar button {
-  font-weight: normal;
-  font-size: 8pt;
-  border: 1px solid #555;
-  background-color: #ddf;
-  color: #333;
-  margin: 3px}
-
-div.wizard_btnbar button:hover {
-  background-color: #eef;
-}
-  
 
 /* Anchors */
 
@@ -705,7 +720,6 @@ div.conn_info_bubble ul.menu a {
   
 div.login_dialog {
   font-size: 9pt;
-  width: 300px;
   position: absolute;
   background-color: #fff;
   border: 1px solid #336;
@@ -716,14 +730,9 @@ div.login_dialog {
 div.login_dialog label
 {width: 100px;
  Float: left;
- text-align: right;
+ text-align: left;
  margin: 23px 5px 0px 0px;
  
-}
-
-div.login_dialog input
-{Float: left;
- margin:20px 0px 0px 0px;
 }
 
 
@@ -732,3 +741,179 @@ div.login_dialog input
  padding-left: 40px;
  height : 14px;
 }
+
+div.sect
+{
+padding: 0px 10px 0px 10px;
+}
+#login_page {
+  float: left;
+  clear: both;
+  width: 700px;
+  color: #5f6366;
+  background-color: #d9e9f2;
+  text-align: left;}
+#id_col { float: left; clear: left}
+#form_col { float: left; margin-bottom: 50px;}
+#login_form_ctr { 
+  margin: 20px;
+  border: 2px solid #b6d4e3;
+  background-color: #e0f0f9;
+  background-image: url(images/ods_signin_container1.png)}
+#login_form { margin: 10px;width: 300px;}
+#login_page img.id_logo { 
+  margin: 50px 50px 50px 40px}
+#login_page h1 {
+  margin-left: 50px;
+  margin-right: 6px;
+}
+#login_page h2 {
+  font-size: 10pt;
+  margin-left: 10px}
+#login_page label {
+  display: block;
+  width: 100px;
+  float: left;
+  margin: 4px 0 10px 4px}
+#login_page .tab_bar li a img { margin: 0 3px 0 0; padding: 0; vertical-align: middle}
+
+#loginUserName {  
+  display: block;
+  width: 170px;
+  float: left;
+  margin-bottom: 10px}
+
+#loginUserPass {  
+  display: block;
+  width: 170px;
+  float: left;
+  margin-bottom: 10px}
+#loginOpenIdUrl {  
+  display: block;
+  width: 170px;
+  float: left;
+  margin-bottom: 10px}
+#login_frm_cb_remember_me {
+  display: block;
+  float: left;
+  margin-top: 5px;
+  margin-bottom: 10px}
+#login_page br {
+  clear: left}
+#loginBtn  {
+  margin-left: 100px;
+  font-weight: normal;
+  font-size: 8pt;
+  border: 1px solid #555;
+  background-color: #ddf;
+  color: #333;
+  margin: 3px}
+#loginBtn:hover {
+  background-color: #eef;
+}
+#signupBtn {
+  margin-left: 100px;
+  font-weight: normal;
+  font-size: 8pt;
+  border: 1px solid #555;
+  background-color: #ddf;
+  color: #333;
+  margin: 3px}
+#signupBtn:hover {
+  background-color: #eef;
+}
+#loginCloseBtn  {
+
+float: right;
+cursor: pointer;
+color: #000;
+padding: 3px 5px 0px 0px;
+
+}
+div.login_error_ctr {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  background-color: #fff}
+p.login_error {
+  padding: 0;
+  padding-top: 5px;
+  margin-top: 10px;
+  margin: 5px;
+  width: 100%}
+p.login_error img {
+  vertical-align: middle;
+  margin-right: 3px;}
+#login_form a.pwd_recovery_url {
+  font-size: 8pt;
+  display: block;
+  margin-left: 100px;
+  margin-top: 5px;
+  color: #255}
+
+#login_form div.login_frm_button_row {
+  margin-top: 6px;
+  margin-left: 100px;
+}
+h1.page_title img.openid_logo { margin-right: 6px; }
+#login_form_ctr p.login_frm_guide { margin: 6px; }
+p.login_frm_guide span.openid_client_name { font-weight: bold; }
+
+#cb_openid {
+  margin-left: 100px;
+  float: left;
+}
+#login_form label.cb {
+  clear: none;
+  float: left;
+}
+#login_form div.openid_selector {
+  float: left;
+  width: 100%;
+}
+
+/* Error page */
+
+#err_page { 
+  float: left; clear: both;
+  width: 100%;
+  color: #5f6366;
+  background-color: #d9e9f2;
+}
+#err_page .id_col { 
+  float: left; clear: left;
+}
+#err_page .form_col { float: left; margin-bottom: 50px; width: 350px;}
+
+#err_page img.id_logo { 
+  margin: 50px 50px 50px 40px}
+#err_page h1 {
+  margin-left: 50px}
+#err_page .err_hd img {
+	vertical-align: middle;
+	margin-right: 8px;
+}
+#err_page div.err_codes {
+  color: #9bb;
+  margin-top: 25px;
+  font-size: smaller;
+  font-style: italic;
+}
+
+#err_page div.btn_bar {
+  margin-top: 10px;
+}
+
+.w_personal div.sect {
+  margin: 0 3px 0 3px;
+}
+
+.w_personal div.sect h4 {
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+	border-bottom-color: #CCDDDD;
+	margin-top: 3px;
+	margin-bottom: 5px;
+}
+#FT_L { float: left; }
+#FT_R { float: right; }

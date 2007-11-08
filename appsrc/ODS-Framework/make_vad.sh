@@ -257,6 +257,7 @@ directory_init() {
   cp $HOME/binsrc/oat/toolkit/*.js vad/data/wa/oat/.
   cp $HOME/binsrc/oat/images/*.png vad/data/wa/images/oat/.
   cp $HOME/binsrc/oat/images/*.gif vad/data/wa/images/oat/.
+  cp $HOME/binsrc/oat/styles/winrect.css vad/data/wa/.
 #  cp $HOME/binsrc/oat/toolkit/ajax.js vad/data/wa/oat/.
 #  cp $HOME/binsrc/oat/toolkit/dom.js vad/data/wa/oat/.
 #  cp $HOME/binsrc/oat/toolkit/loader.js vad/data/wa/oat/.
@@ -373,7 +374,6 @@ sticker_init() {
   echo "      vhost_remove (lpath=>'/wa');" >> $STICKER
   echo "      vhost_remove (lpath=>'/ods');" >> $STICKER
   echo "      vhost_remove (lpath=>'/ods/users');" >> $STICKER
-  #echo "      vhost_define (lpath=>'/wa',ppath=>'/DAV/VAD/wa/', is_dav=>1, vsp_user=>'dba', def_page=>'index.vspx');" >> $STICKER
   echo "      vhost_define (lpath=>'/ods',ppath=>'/DAV/VAD/wa/', is_dav=>1, vsp_user=>'dba', def_page=>'sfront.vspx');" >> $STICKER
   echo "      vhost_define (lpath=>'/ods/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sioc.sql', 1, 'report', 1);" >> $STICKER
@@ -381,6 +381,10 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/user_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/web_svc.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.\"RDFData_MAKE_DET_COL\" ('/DAV/VAD/wa/RDFData/', sioc..get_graph (), NULL);" >> $STICKER
+  echo "      DB.DBA.wa_users_rdf_data_det_upgrade ();" >> $STICKER
+  echo "      DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');" >> $STICKER 
+  echo "      DB.DBA.VHOST_DEFINE (lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>1, vsp_user=>'dba');" >> $STICKER 
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER

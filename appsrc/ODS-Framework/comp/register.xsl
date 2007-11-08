@@ -40,6 +40,7 @@
       <v:variable name="reg_number_img" type="varchar" default="null" persist="temp" />
       <v:variable name="reg_number_txt" type="varchar" default="null" persist="0" />
 
+      <v:variable name="oid_srv" type="varchar" default="null" param-name="oi_srv" />
       <v:variable name="oid_assoc_handle" type="varchar" default="null" param-name="openid.assoc_handle" />
       <v:variable name="oid_identity" type="varchar" default="''" param-name="openid.identity" />
       <v:variable name="oid_mode" type="varchar" default="null" param-name="openid.mode" />
@@ -235,6 +236,8 @@ if (oi_srv is null)
 
 if (oi_delegate is not null)
   oi_ident := oi_delegate;
+
+this_page := this_page || sprintf ('&oi_srv=%U', oi_srv);
 
 check_immediate :=
 sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U',
@@ -487,7 +490,9 @@ self.vc_redirect (check_immediate);
               if (length (self.oid_tz))
 	        WA_USER_EDIT (u_name1, 'WAUI_HTZONE', self.oid_tz);
               if (self.use_oid_url)
-	      update WA_USER_INFO set WAUI_OPENID_URL = self.oid_identity where WAUI_U_ID = uid;
+	        {
+	          update WA_USER_INFO set WAUI_OPENID_URL = self.oid_identity, WAUI_OPENID_SERVER = self.oid_srv where WAUI_U_ID = uid;
+		}
 	   }
 	 else
 	 {

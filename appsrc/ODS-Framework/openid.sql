@@ -51,6 +51,18 @@ OPENID_INIT ();
 
 create procedure yadis (in uname varchar)
 {
+  declare url, srv varchar;
+  url := db.dba.wa_link (1, '/dataspace/'||uname);
+  srv := db.dba.wa_link (1, '/openid');
+  for select WAUI_OPENID_URL, WAUI_OPENID_SERVER from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname
+    do
+      {
+	if (length (WAUI_OPENID_URL) + length (WAUI_OPENID_SERVER))
+	  {
+	    url := WAUI_OPENID_URL;
+	    srv := WAUI_OPENID_SERVER;
+	  }
+      }
   http ('<?xml version="1.0" encoding="UTF-8"?>\n');
   http ('<xrds:XRDS \n');
   http ('  xmlns:xrds="xri://\044xrds" \n');
@@ -60,8 +72,8 @@ create procedure yadis (in uname varchar)
   http ('    <Service priority="1">\n');
   http ('      <Type>http://openid.net/signon/1.0</Type>\n');
   http ('      <Type>http://openid.net/sreg/1.0</Type>\n');
-  http (sprintf ('      <URI>%s</URI>\n', db.dba.wa_link (1, '/openid')));
-  http ('      <openid:Delegate>'|| db.dba.wa_link (1, '/dataspace/'||uname)||'</openid:Delegate>\n');
+  http (sprintf ('      <URI>%V</URI>\n', srv));
+  http (sprintf ('      <openid:Delegate>%V</openid:Delegate>\n', url));
   http ('    </Service>\n');
   http ('  </XRD>\n');
   http ('</xrds:XRDS>\n');
@@ -411,6 +423,19 @@ create procedure checkid_setup
       return '';
     }
   return checkid_immediate (_identity, assoc_handle, return_to, trust_root, sid, 1, sreg_required, sreg_optional, policy_url);
+};
+
+create procedure cancel (in return_to varchar)
+{
+  declare rhf, delim any;
+  rhf := WS.WS.PARSE_URI (return_to);
+  if (rhf[4] <> '')
+    delim := '&';
+  else
+    delim := '?';
+  http_request_status ('HTTP/1.1 302 Found');
+  http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=cancel\r\n', return_to, delim));
+  return '';
 };
 
 
