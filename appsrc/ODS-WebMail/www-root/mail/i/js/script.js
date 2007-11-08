@@ -464,14 +464,14 @@ function showTab2(tab, tabs)
         div.style.visibility = 'visible';
         div.style.display = 'block';
         if (divTab != null) {
-          divTab.className = "tab activeTab";
+          divTab.className = "tab activeTab noapp";
           divTab.blur();
         };
       } else {
         div.style.visibility = 'hidden';
         div.style.display = 'none';
         if (divTab != null)
-          divTab.className = "tab";
+          divTab.className = "tab noapp";
       }
     }
   }

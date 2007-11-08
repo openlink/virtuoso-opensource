@@ -180,10 +180,10 @@
       		<div class="tabs">
       		  &nbsp;
             <div style="display: inline;" id="tabLabel_1">
-              <a href="javascript:showTab2(1, 2)" id="tab_1" class="tab" alt="Criteria" title="Criteria">Criteria</a>
+              <a href="javascript:showTab2(1, 2)" id="tab_1" class="tab noapp" alt="Criteria" title="Criteria">Criteria</a>
             </div>
             <div style="display: inline;" id="tabLabel_2">
-              <a href="javascript:showTab2(2, 2)" id="tab_2" class="tab" alt="Options" title="Options">Options</a>
+              <a href="javascript:showTab2(2, 2)" id="tab_2" class="tab noapp" alt="Options" title="Options">Options</a>
             </div>
           </div>
       		<div class="contents">

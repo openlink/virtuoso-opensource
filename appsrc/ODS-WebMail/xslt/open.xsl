@@ -172,7 +172,7 @@
     <xsl:variable name="address">
     <xsl:choose>
         <xsl:when test="string(name) != ''"><xsl:value-of select="name" /></xsl:when>
-        <xsl:when test="string(email)!= ''">&lt;<xsl:value-of select="email" />&gt;</xsl:when>
+        <xsl:when test="string(email)!= ''"><xsl:value-of select="email" /></xsl:when>
         <xsl:otherwise>~no address~</xsl:otherwise>
       </xsl:choose>
     </xsl:variable>
@@ -182,9 +182,10 @@
         <xsl:call-template name="nbsp" />
         <xsl:call-template name="make_href">
           <xsl:with-param name="url">javascript: void(0);</xsl:with-param>
-          <xsl:with-param name="label"><xsl:value-of select="email" /></xsl:with-param>
-          <xsl:with-param name="img">/oMail/i/rdf-icon-16.gif</xsl:with-param>
+          <xsl:with-param name="label"><xsl:value-of select="$address" /></xsl:with-param>
+          <xsl:with-param name="img">/ods/images/icons/rdf_11.png</xsl:with-param>
           <xsl:with-param name="id">address_<xsl:value-of select="generate-id ()"/></xsl:with-param>
+          <xsl:with-param name="style">display: none;</xsl:with-param>
         </xsl:call-template>
       </xsl:if>
       <xsl:if test="//message/addContact != ''">

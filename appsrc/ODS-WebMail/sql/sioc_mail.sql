@@ -19,16 +19,30 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-
 use sioc;
 
-create procedure mail_post_iri (in domain_id int, in user_id int, in msg_id int)
+create procedure mail_post_iri (in user_id int, in msg_id int)
 {
-  declare owner varchar;
+  declare _member, _instance varchar;
   declare exit handler for not found { return null; };
-  select U_NAME into owner from DB.DBA.SYS_USERS where U_ID = user_id;
-  return sprintf ('http://%s%s/%U/mail/%d', get_cname(), get_base_path (), owner, msg_id);
-};
+
+  select TOP 1
+         U_NAME,
+         WAI_NAME
+    into _member,
+         _instance
+    from DB.DBA.SYS_USERS,
+         DB.DBA.WA_INSTANCE,
+         DB.DBA.WA_MEMBER
+   where WAI_TYPE_NAME = 'oMail'
+     and WAI_NAME = WAM_INST
+     and WAM_MEMBER_TYPE = 1
+     and WAM_USER = U_ID
+     and U_ID = user_id;
+
+  return sprintf ('http://%s%s/%U/mail/%U/%d', get_cname(), get_base_path (), _member, _instance, msg_id);
+}
+;
 
 create procedure fill_ods_mail_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
@@ -45,7 +59,7 @@ create procedure fill_ods_mail_sioc (in graph_iri varchar, in site_iri varchar, 
 	  {
           if (do_post = 1)
             {
-              iri := mail_post_iri (DOMAIN_ID, USER_ID, MSG_ID);
+        iri := mail_post_iri (USER_ID, MSG_ID);
               DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
               DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dc_iri ('title'), SUBJECT);
               DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), DB.DBA.date_iso8601 (SND_DATE));
@@ -56,7 +70,8 @@ create procedure fill_ods_mail_sioc (in graph_iri varchar, in site_iri varchar, 
           DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
 	  }
     }
-};
+}
+;
 
 create procedure message_insert (
   inout domain_id integer,
@@ -74,7 +89,7 @@ create procedure message_insert (
   };
 
   graph_iri := get_graph ();
-  iri := mail_post_iri (domain_id, user_id, message_id);
+  iri := mail_post_iri (user_id, message_id);
   creator_iri := user_iri (user_id);
 
   do_post := 1;
@@ -92,7 +107,8 @@ create procedure message_insert (
       DB.DBA.RDF_QUAD_URI (graph_iri, c_iri, sioc_iri ('container_of'), iri);
     }
   return;
-};
+}
+;
 
 create procedure message_delete (
   in domain_id integer,
@@ -107,26 +123,30 @@ create procedure message_delete (
   };
 
   graph_iri := get_graph ();
-  iri := mail_post_iri (domain_id, user_id, message_id);
+  iri := mail_post_iri (user_id, message_id);
   delete_quad_s_or_o (graph_iri, iri, iri);
-};
+}
+;
 
 -- OMAIL..MESSAGES
 create trigger MESSAGES_SIOC_I after insert on OMAIL..MESSAGES referencing new as N
 {
   message_insert (N.DOMAIN_ID, N.USER_ID, N.MSG_ID, N.SUBJECT, N.SND_DATE);
-  };
+}
+;
 
 create trigger MESSAGES_SIOC_U after update on OMAIL..MESSAGES referencing old as O, new as N
     {
   message_delete (O.DOMAIN_ID, O.USER_ID, O.MSG_ID);
   message_insert (N.DOMAIN_ID, N.USER_ID, N.MSG_ID, N.SUBJECT, N.SND_DATE);
-};
+}
+;
 
 create trigger MESSAGES_SIOC_D before delete on OMAIL..MESSAGES referencing old as O
         {
   message_delete (O.DOMAIN_ID, O.USER_ID, O.MSG_ID);
-};
+}
+;
 
 create procedure ods_mail_sioc_init ()
 {
@@ -140,7 +160,8 @@ create procedure ods_mail_sioc_init ()
   fill_ods_mail_sioc (get_graph (), get_graph ());
   registry_set ('__ods_mail_sioc_init', sioc_version);
   return;
-};
+}
+;
 
 --OMAIL.WA.exec_no_error ('ods_mail_sioc_init ()');
 

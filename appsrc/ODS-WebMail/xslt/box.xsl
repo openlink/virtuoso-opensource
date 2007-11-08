@@ -417,6 +417,54 @@
       </tr>
     </table>
   </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="show_name">
+    <xsl:variable name="max_len">20</xsl:variable>
+    <xsl:choose>
+      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 110) or (number(/page/folder_id) = 125) or (number(/page/folder_id) = 0)">
+        <xsl:variable name="name" select="string(address/addres_list/from/name)"/>
+        <xsl:variable name="addr" select="string(address/addres_list/from/email)"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="name" select="string(address/addres_list/to/name)"/>
+        <xsl:variable name="addr" select="string(address/addres_list/to/email)"/>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:choose>
+      <xsl:when test="$name != ''">
+        <xsl:value-of select="substring($name, 1, $max_len)"/>
+        <xsl:if test="string-length($name) > $max_len">
+          <xsl:text>...</xsl:text>
+        </xsl:if>
+      </xsl:when>
+      <xsl:when test="$addr != ''">
+        <xsl:value-of select="substring($addr,1,$max_len)"/>
+        <xsl:if test="string-length($addr) > $max_len">
+          <xsl:text>...</xsl:text>
+        </xsl:if>
+      </xsl:when>
+      <xsl:otherwise>
+        ~no address~
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="show_name_alt">
+    <xsl:choose>
+      <xsl:when test="(number(/page/folder_id) = 100) or (number(/page/folder_id) = 110) or (number(/page/folder_id) = 125) or (number(/page/folder_id) = 0)">
+        <xsl:variable name="name" select="string(address/addres_list/from/name)"/>
+        <xsl:variable name="addr" select="string(address/addres_list/from/email)"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:variable name="name" select="string(address/addres_list/to/name)"/>
+        <xsl:variable name="addr" select="string(address/addres_list/to/email)"/>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:value-of select="$name"/><xsl:text> &lt;</xsl:text><xsl:value-of select="$addr"/><xsl:text>&gt;</xsl:text>
+  </xsl:template>
+
   <!-- ====================================================================================== -->
   <xsl:template name="external_action">
     <script>

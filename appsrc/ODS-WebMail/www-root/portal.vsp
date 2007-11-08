@@ -110,11 +110,11 @@ exec_start:;
         geoParams := vector('latitude', sprintf('%.2f', WAUI_LAT), 'longitude', sprintf('%.2f', WAUI_LNG));
     settings := OMAIL.WA.omail_get_settings (1, user_id, 'base_settings');
     app := OMAIL.WA.omail_getp('app', settings);
-    params := vector_concat(params, vector('user_info', vector('user_id', user_id, 'user_name', user_name, 'user_fullname', user_fullName, 'domain_id', waID, 'description', waDescription, 'email', waName, 'foaf', sprintf('%s/dataspace/%U/about.rdf', OMAIL.WA.host_url (), user_name),  'geo', geoParams, 'app', app)));
+    params := vector_concat(params, vector('user_info', vector('user_id', user_id, 'user_name', user_name, 'user_fullname', user_fullName, 'domain_id', waID, 'description', waDescription, 'email', waName, 'base_path', OMAIL.WA.omail_url (waID), 'foaf', sprintf('%s/dataspace/%U/about.rdf', OMAIL.WA.host_url (), user_name),  'geo', geoParams, 'app', app)));
     if (waPublic)
       params := vector_concat(params, vector('sioc', replace(sprintf('%s/dataspace/%U/mail/%U/sioc.rdf', OMAIL.WA.host_url (), user_name, waName), '+', '%2B')));
   } else {
-    OMAIL.WA.utl_redirect(wa_home_link || 'index.wspx');
+    OMAIL.WA.utl_redirect(wa_home_link || 'index.vspx');
     return;
   };
 

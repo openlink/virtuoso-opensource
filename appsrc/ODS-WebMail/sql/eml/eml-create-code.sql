@@ -484,7 +484,7 @@ create procedure OMAIL.WA.omail_box(
   declare _rs,_sid,_realm,_bp,_sql_result1,_sql_result2,_faction,_pnames,_ip varchar;
   declare _order,_direction,_params,_page_params any;
   declare _user_info, _settings any;
-  declare _pageSize,_user_id,_folder_id,_domain_id integer;
+  declare _pageSize, _domain_id, _user_id, _folder_id, _msg_id integer;
 
   -- SECURITY CHECK ------------------------------------------------------------------
   _sid       := get_keyword('sid',params,'');
@@ -495,6 +495,12 @@ create procedure OMAIL.WA.omail_box(
   _user_id   := get_keyword('user_id',_user_info);
   _domain_id := 1;
   _pageSize  := 10;
+
+  _msg_id    := cast (get_keyword ('id', params, '-1') as integer);
+  if (_msg_id <> -1) {
+    OMAIL.WA.utl_redirect (OMAIL.WA.omail_open_url (_sid, _realm, OMAIL.WA.domain_id2 (_user_id), _user_id, _msg_id));
+    return;
+  }
 
   -- GET SETTINGS ------------------------------
   _settings := OMAIL.WA.omail_get_settings(_domain_id, _user_id, 'base_settings');
@@ -1284,6 +1290,15 @@ create procedure OMAIL.WA.domain_id(
   in _domain_name varchar)
 {
   return (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = _domain_name);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.domain_id2 (
+  in _user_id integer)
+{
+  return (select TOP 1 WAI_ID from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'oMail' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = _user_id);
 }
 ;
 
@@ -2283,12 +2298,11 @@ create procedure OMAIL.WA.dashboard_update(
          '<mail id="%d">'||
            '<title><![CDATA[%s]]></title>'||
            '<dt>%s</dt>'||
-           '<link>/oMail/%d/open.vsp?op=%d</link>'||
+           '<link>%s</link>' ||
            '<from><![CDATA[%s]]></from>'||
            '<email><![CDATA[%s]]></email>'||
          '</mail>',
-         _msg_id, _title, OMAIL.WA.dt_iso8601 (_date), waID, _msg_id, _from, _fromEMail);
-
+         _msg_id, _title, OMAIL.WA.dt_iso8601 (_date), SIOC..mail_post_iri (_user_id, _msg_id), _from, _fromEMail);
   http (S, stream);
 
   http ('</mail-db>', stream);
