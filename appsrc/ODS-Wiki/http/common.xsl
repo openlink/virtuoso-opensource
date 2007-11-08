@@ -325,6 +325,9 @@
      <a id="users-link"
        href="{$baseadjust}{wv:ReadOnlyWikiWordLink('Main', 'WikiUsers')}">Users
      </a>
+     <a id="macros-link"
+       href="{$baseadjust}{wv:ReadOnlyWikiWordLink('Main', 'WikiMacros')}">Macros
+     </a>
      <div id="virtuoso-info">
        <ul class="left_nav">
          <li class="xtern"><a href="http://www.openlinksw.com">OpenLink Software</a></li>
@@ -797,11 +800,13 @@
           }
         }
         function todayStr() {
-          var today=new Date()
-          var y=today.getYear()+1900
-	  var m= [ "Jan" , "Feb" , "Mar" , "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Dec"][today.getMonth()]
-          var d=today.getDate()
-          var dd=d&lt;10?"0"+d:d
+          var today=new Date();
+          var y=today.getYear();
+          if (y&lt;2000)
+            y = y + 1900;
+          var m= [ "Jan" , "Feb" , "Mar" , "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Dec"][today.getMonth()];
+          var d=today.getDate();
+          var dd=d&lt;10?"0"+d:d;
 	  return dd + " " + m + " " + y;
         }
 	function currentUser()
@@ -809,7 +814,7 @@
 	  return '<xsl:value-of select="$wikiuser"/>';
 	}
         function insertDateAtCursor(field) {
-          var d=todayStr()
+          var d=todayStr();
           insertAtCursor(field, d);
         }
         function insertSign(field) {

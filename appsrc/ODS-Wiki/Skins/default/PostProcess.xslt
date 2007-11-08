@@ -159,6 +159,9 @@
           		  <li>
           		    <xsl:copy-of select="//a[@id='users-link']"/>
           		  </li>
+          		  <li>
+                  <xsl:copy-of select="//a[@id='macros-link']"/>
+                </li>
   	          </ul>
             </div> <!-- row Tools -->
           </div> <!-- head-menus -->

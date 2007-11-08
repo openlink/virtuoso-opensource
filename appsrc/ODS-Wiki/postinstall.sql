@@ -53,6 +53,7 @@ WV.WIKI.CREATEINSTANCE('Doc', http_dav_uid(), WV.Wiki.WikiAdminGId(), 0);
 sioc..fill_comments();
 WV.WIKI.PUT_NEW_FILES('Main');
 WV.WIKI.PUT_NEW_FILES('Doc',1);
+WV.WIKI.PUT_NEW_FILES('Main',1,'WikiMacros');
 WV.WIKI.PUT_NEW_FILES('Main',1,'TemplateUser');
 update WV.WIKI.DOMAIN_PATTERN_1 set DP_PATTERN = replace (DP_PATTERN, '%', 'main')  where DP_PATTERN like '%%%';
 

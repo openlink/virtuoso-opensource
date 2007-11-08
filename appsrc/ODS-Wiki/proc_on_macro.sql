@@ -1580,7 +1580,7 @@ create function WV.WIKI.INLINE_MACRO_NAME (in _cluster varchar, in _localname va
 }
 ;
   
-create function WV.WIKI.MACRO_inline (inout _data varchar, inout _context any, inout _env any)
+create function WV.WIKI.MACRO_INLINE (inout _data varchar, inout _context any, inout _env any)
 {
   if (WV.WIKI.CLUSTERPARAM (get_keyword ('ti_cluster_name', _env), 'syscalls', 2) = 2)
     return '{{{disabled}}}';
@@ -1623,16 +1623,51 @@ create function WV..PARSE_MACRONAME(in _name varchar)
 
 create procedure WV.WIKI.MACRO_MACROS(inout _data varchar, inout _context any, inout _env any)
 {
-  declare _res, _ent any;
+  declare _res, _ent, xmlMacros any;
+
   _res := xtree_doc('<div class="macro-list"/>');
   _ent := xpath_eval ('/div', _res);
 
+  declare _args any;
+  _args := WV.WIKI.PARSEMACROARGS (_data);
+  declare _prop, _description varchar;
+  _prop := WV.WIKI.GETMACROPARAM (_args, 'param', NULL);
+  if (_prop = 'description') {
+    declare sStream any;
+    sStream := string_output();
+
+    http ('<table>', sStream);
+    http ('<tr><td><h2>Macro Name</h2></td><td><h2>Description</h2></td></tr>', sStream);
+
+    xmlMacros := blob_to_string (DB.DBA.xml_uri_get ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/VAD/wiki/Root/', 'macros.xml'));
+    xmlMacros := xml_tree_doc (xmlMacros);
+
+    for select P_NAME, WV..PARSE_MACRONAME (P_NAME)[0] as _ns, WV..PARSE_MACRONAME (P_NAME)[1] as _name
+      from DB.DBA.SYS_PROCEDURES where P_NAME like 'WV.%.MACRO_%'
+      order by _ns, _name
+    do {
+      _description := xpath_eval (sprintf ('string (//macro[@id = "%s"]/description)', P_NAME), xmlMacros);
+      if (_description = '') {
+        _description := 'no description';
+      }
+      if (_ns <> 'Standard')
+        _name := _ns ||':' || _name;
+      http (sprintf ('<tr><td>%V</td><td>%V</td></tr>', _name, _description), sStream);
+    }
+    http ('</table>', sStream);
+    XMLAppendChildren(_ent, xml_tree_doc (string_output_string(sStream)));
+
+  } else {
   declare _ul, _ul_ent any;
   declare _currns varchar;
   _currns := '';
   _ul := null;
 
-  for select WV..PARSE_MACRONAME(P_NAME)[0] as _ns, WV..PARSE_MACRO(P_NAME)[1] as _name 
+    xmlMacros := blob_to_string (DB.DBA.xml_uri_get ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/VAD/wiki/Root/', 'macros.xml'));
+    --dbg_obj_print (xmlMacros);
+    xmlMacros := xml_tree_doc (xmlMacros);
+
+    for select P_NAME, WV..PARSE_MACRONAME (P_NAME)[0] as _ns, WV..PARSE_MACRONAME (P_NAME)[1] as _name
     from DB.DBA.SYS_PROCEDURES where P_NAME like 'WV.%.MACRO_%'
     order by _ns, _name
   do {
@@ -1644,10 +1679,14 @@ create procedure WV.WIKI.MACRO_MACROS(inout _data varchar, inout _context any, i
 	_ul_ent := xpath_eval('//ul', _ul);
 	_currns := _ns;
       }
-    XMLAppendChildren (_ul_ent, xtree_doc(sprintf('<li>%V</li>', _name)));
+      _description := xpath_eval (sprintf ('string (//macro[@id = "%s"]/description)', P_NAME), xmlMacros);
+      if (_description = '') {
+        _description := 'no description';
+      }
+      XMLAppendChildren (_ul_ent, xtree_doc (sprintf ('<li><div style="display:inline; width=200px;" title="%V">%V</div></li>', _description, _name)));
   }
   XMLAppendChildren(_ent, _ul);
-
+  }
   return _res;
 }
 ;

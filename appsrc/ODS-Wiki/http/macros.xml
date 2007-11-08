@@ -1,0 +1,265 @@
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<macros>
+  <macro id="WV.Wiki.MACRO_META_TOPICPARENT">
+    <name>META:TOPICPARENT</name>
+    <description>%META:TOPICPARENT{name="parent_name"}% sets the parent of the current topic. "parent_name" must be a topic of the same cluster.</description>
+    <param>name</param>
+  </macro>
+  <macro id="WV.Wiki.MACRO_META_TOPICMOVED">
+    <name>META:TOPICMOVED</name>
+    <description>not still implemented, returns space</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_META_TOPICINFO">
+    <name>META:TOPICINFO</name>
+    <description>%META:TOPICINFO{author="user_name"}% sets the parent of the current topic. "user_name" must be a valid user name.</description>
+    <param>author</param>
+  </macro>
+  <macro id="WV.Wiki.MACRO_META_FILEATTACHMENT">
+    <name>META:FILEATTACHMENT</name>
+    <description>not still implemented, returns space</description>
+  </macro>
+
+  <macro id="WV.Wiki.MACRO_ATOM_FEED">
+    <name>ATOM:FEED</name>
+    <description>Returns a link to the ATOM based XML document generated for the Changelog of the topic.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_RSS_FEED">
+    <name>RSS:FEED</name>
+    <description>Returns a link to the Changelog for the topic.</description>
+  </macro>
+    <macro id="WV.Wiki.MACRO_FEED_ATOM">
+    <name>FEED:ATOM</name>
+    <description>Returns a link to the ATOM based XML document generated for the Changelog of the topic.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_FEED_RSS">
+    <name>FEED:RSS</name>
+    <description>Returns a link to the Changelog for the topic.</description>
+  </macro>
+
+  <macro id="WV.Wiki.MACRO_CLUSTER_NAME">
+    <name>CLUSTER:NAME</name>
+    <description>Returns the name of the cluster.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_CLUSTER_DESCRIPTION">
+    <name>CLUSTER:DESCRIPTION</name>
+    <description>Returns the description of the cluster.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_CLUSTER_OWNER">
+    <name>CLUSTER:OWNER</name>
+    <description>Returns the owner of the cluster.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_CLUSTER_MEMBERS">
+    <name>CLUSTER:MEMBERS</name>
+    <description>Returns a list with the members of the cluster.</description>
+  </macro>
+
+  <macro id="WV.Wiki.MACRO_HIT_COUNTER">
+    <name>HIT:COUNTER</name>
+    <description>Hit Counter</description>
+  </macro>
+
+  <macro id="WV.Wiki.MACRO_MAIN_ABSTRACT">
+    <name>MAIN:ABSTRACT</name>
+    <description>Returns a table with links to the clusters and available operations on them.</description>
+    <param>name</param>
+  </macro>
+  <macro id="WV.Wiki.MACRO_MAIN_DASHBOARD">
+    <name>MAIN:DASHBOARD</name>
+    <description>Returns a table with links to the clusters and available operations on them.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_MAIN_TABLEOFCLUSTERS">
+    <name>MAIN:TABLEOFCLUSTERS</name>
+    <description>Returns a table with links to the clusters and their description.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_MAIN_TABLEOFUSERS">
+    <name>MAIN:TABLEOFUSERS</name>
+    <description>Returns a table with links to the users and their description.</description>
+  </macro>
+
+  <macro id="WV.Wiki.MACRO_SEMANTIC_FACTS">
+    <name>SEMANTIC:FACTS</name>
+    <description>Returns a table of the semantic objects (predicate, object, subject).</description>
+  </macro>
+
+  <macro id="WV.Wiki.MACRO_STATISTICS_POPULARTOPICS">
+    <name>STATISTICS:POPULARTOPICS</name>
+    <description>Returns a table with links to the 10 most popular topics of the current cluster.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_STATISTICS_TOPAUTHORS">
+    <name>STATISTICS:TOPAUTHORS</name>
+    <description>Returns a table with links to the 10 most popular authors.</description>
+  </macro>
+
+  <macro id="WV.Wiki.MACRO_TECHNORATI_COSMOS">
+    <name>TECHNORATI:COSMOS</name>
+    <description>Returns the result from API query to http://api.technorati.com/cosmos.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_TECHNORATI_TAG">
+    <name>TECHNORATI_TAG</name>
+    <description>Returns the result from API query to http://api.technorati.com/tag.</description>
+  </macro>
+
+  <macro id="WV.Wiki.MACRO_REFBY">
+    <name>REFBY</name>
+    <description>Returns a list of topics which have a reference to the current topic.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_CLUSTER">
+    <name>CLUSTER</name>
+    <description>Returns the name of the current cluster.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_TOPIC">
+    <name>TOPIC</name>
+    <description>Returns a link to the current topic.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_SEARCH">
+    <name>SEARCH</name>
+    <description>Returns a table with name, size, owner and date of topics according to the search criteria.Example: %SEARCH{"search"}%</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_CHANGELOG">
+    <name>CHANGELOG</name>
+    <description>%CHANGELOG{local="1" rows="10"}% returns the last 10 changes to the current cluster.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_NOW">
+    <name>NOW</name>
+    <description>Returns the time you opened the topic.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_USERS">
+    <name>USERS</name>
+    <description>Returns a list of all wiki users in an alphabetic order.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_WEB">
+    <name>WEB</name>
+    <description>Returns the name of the cluster.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_USERPROP">
+    <name>USERPROP</name>
+    <description>%USERPROP{"FULLNAME"}% returns the name of the user. %USERPROP{"EMAIL"}% returns the e-mail of the user.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_TOPPAGES">
+    <name>TOPPAGES</name>
+    <description>Returns a list of last visited topics in the current cluster.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_TOC">
+    <name>TOC</name>
+    <description>Returns a table of contents for the topic based on headings.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_UNUSEDPAGES">
+    <name>UNUSEDPAGES</name>
+    <description>Returns a list of the topics with no references to them.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_WIKIUSERNAME">
+    <name>WIKIUSERNAME</name>
+    <description>Returns the wiki name of the user.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_INCLUDE">
+    <name>INCLUDE</name>
+    <description>%INCLUDE{"myWiki.Hello"}% returns the contents of the topic myWiki.Hello.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_CATEGORY">
+    <name>CATEGORY</name>
+    <description>Returns "Category".</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_CATEGORIES">
+    <name>CATEGORIES</name>
+    <description>Returns a list of all Category topics in the current cluster.</description>
+  </macro>
+
+  <macro id="WV.Wiki.MACRO_COMMENTS">
+    <name>COMMENTS</name>
+    <description>Returns a form for posting a comment to the owner of the topic.</description>
+  </macro>
+
+  <macro id="WV.Wiki.MACRO_MACROS">
+    <name>MACROS</name>
+    <description>Returns a list of all wiki macros.</description>
+  </macro>
+
+
+  <macro id="WV.Wiki.MACRO_GLOBE">
+    <name>GLOBE</name>
+    <description>Returns GLOBE.jpg image.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_BULCR">
+    <name>BULCR</name>
+    <description>Returns BULCR.png image.</description>
+  </macro>
+  <macro id="WV.Wiki.MACRO_BULSQ">
+    <name>BULSQ</name>
+    <description>Returns BULSQ.jpg image.</description>
+  </macro>
+
+  <macro id="WV.Wiki.MACRO_CODSCOPY">
+    <name>CODSCOPY</name>
+    <description>Returns a copyright panel.</description>
+  </macro>
+
+
+  <macro id="WV.Wiki.MACRO_INLINE">
+    <name>INLINE</name>
+    <description>Returns the result of inline defined procedure.</description>
+  </macro>
+  <macro id="BLOGNAV">	            <description>for internal use</description></macro>
+  <macro id="BLOGTABS">	            <description>for internal use</description></macro>
+  <macro id="BOOKMARKTABS">	        <description>for internal use</description></macro>
+  <macro id="BRIEFCASETABS">	      <description>for internal use</description></macro>
+  <macro id="CODSCOPY">	            <description>for internal use</description></macro>
+  <macro id="CODSNAV">	            <description>for internal use</description></macro>
+  <macro id="COMMUNITYTABS">	      <description>for internal use</description></macro>
+  <macro id="DELICIOUSCATEGORIES">	<description>for internal use</description></macro>
+  <macro id="DISCUSSIONTABS">	      <description>for internal use</description></macro>
+  <macro id="DSCOPY">	              <description>for internal use</description></macro>
+  <macro id="FEEDSTABS">	          <description>for internal use</description></macro>
+  <macro id="GALLERYTABS">	        <description>for internal use</description></macro>
+  <macro id="MAILTABS">	            <description>for internal use</description></macro>
+  <macro id="OATCOPY">	            <description>for internal use</description></macro>
+  <macro id="OATNAV">	              <description>for internal use</description></macro>
+  <macro id="ODSARR">	              <description>for internal use</description></macro>
+  <macro id="ODSARRLG">	            <description>for internal use</description></macro>
+  <macro id="ODSCOPY">	            <description>for internal use</description></macro>
+  <macro id="ODSNAV">	              <description>for internal use</description></macro>
+  <macro id="ODSNEXT">	            <description>for internal use</description></macro>
+  <macro id="ODSPREV">	            <description>for internal use</description></macro>
+  <macro id="ODSSTART">	            <description>for internal use</description></macro>
+  <macro id="ODSTABS">	            <description>for internal use</description></macro>
+  <macro id="ODSTURQ">	            <description>for internal use</description></macro>
+  <macro id="RAILSODBCCOPY">	      <description>for internal use</description></macro>
+  <macro id="RAILSODBCNAV">	        <description>for internal use</description></macro>
+  <macro id="VOSCOPY">	            <description>for internal use</description></macro>
+  <macro id="VOSNAV">	              <description>for internal use</description></macro>
+  <macro id="VSCOPY">	              <description>for internal use</description></macro>
+  <macro id="VSDRKBLUE">	          <description>for internal use</description></macro>
+  <macro id="VSLTBLUE">	            <description>for internal use</description></macro>
+  <macro id="VSNAV">	              <description>for internal use</description></macro>
+  <macro id="VSREALM">	            <description>for internal use</description></macro>
+  <macro id="WIKITABS">	            <description>for internal use</description></macro>
+  <macro id="WWWCOPY">	            <description>for internal use</description></macro>
+  <macro id="WWWNAV">	              <description>for internal use</description></macro>
+  <macro id="ZGCOPY">	              <description>for internal use</description></macro>
+  <macro id="ZGNAV">	              <description>for internal use</description></macro>
+  <macro id="ZitgistCOPY">	        <description>for internal use</description></macro>
+  <macro id="ZitgistNAV">	          <description>for internal use</description></macro>
+
+
+</macros>

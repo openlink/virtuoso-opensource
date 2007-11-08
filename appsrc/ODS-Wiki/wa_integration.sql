@@ -545,18 +545,6 @@ create method wa_vhost_options () for wa_wikiv {
 }
 ;
 
-create method wa_dashboard_last_item () for wa_wikiv
-{
-  declare t_time, t_tit, t_name, t_url, t_uid any;
-
-  select top 1 WD_TIME, WD_TITLE, WD_UNAME, WD_UID, WD_URL
-	into t_time, t_tit, t_name, t_uid, t_url from WV.WIKI.DASHBOARD order by WD_TIME desc;
-
-  return WV.WIKI.MAKE_DASHBOARD_ITEM (t_time, t_tit, t_name, t_uid, t_url);
-}
-;
-
-
 create procedure WV.WIKI.MAKE_DASHBOARD_ITEM
         (in tim datetime, in title varchar, in uname varchar, in uid varchar, in url varchar, in comment varchar := '')
 {
@@ -601,7 +589,8 @@ create method wa_dashboard_last_item () for wa_wikiv {
         XMLELEMENT ('dt', WV.WIKI.DATEFORMAT (C_DATE)),
 	XMLELEMENT ('from', C_AUTHOR || case when C_EMAIL <> '' then '<' || C_EMAIL || '>' else '' end),
 	XMLELEMENT ('for-post', _topic.ti_full_name()),
-	XMLELEMENT ('url', _topic.ti_fill_url() || '#wiki' || cast (C_ID as varchar))));
+	--XMLELEMENT ('url', _topic.ti_fill_url() || '#wiki' || cast (C_ID as varchar))));
+	XMLELEMENT ('url', SIOC..wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name) || '#wiki' || cast (C_ID as varchar))));
  }	
  for select top 5 RES_MOD_TIME, TopicId 
     from WV.WIKI.TOPIC, WS.WS.SYS_DAV_RES 
@@ -620,7 +609,8 @@ create method wa_dashboard_last_item () for wa_wikiv {
 	XMLELEMENT ('from', _topic.ti_author),
 	XMLELEMENT ('dt', WV.WIKI.DATEFORMAT (RES_MOD_TIME)),
 	XMLELEMENT ('uid', _topic.ti_author),
-	XMLELEMENT ('link', _topic.ti_fill_url() || '?')));
+	--XMLELEMENT ('link', _topic.ti_fill_url() || '?')));
+	XMLELEMENT ('link', SIOC..wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name) || '?')));
  }
  return serialize_to_UTF8_xml(_doc);
 }
