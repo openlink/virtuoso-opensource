@@ -979,7 +979,7 @@ create procedure POLLS.WA.sioc_url (
 create procedure POLLS.WA.foaf_url (
   in domain_id integer)
 {
-  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), POLLS.WA.domain_owner_name (domain_id));
+  return SIOC..person_iri (sprintf('http://%s%s/%s#this', SIOC..get_cname (), SIOC..get_base_path (), POLLS.WA.domain_owner_name (domain_id)), '/about.rdf');
 }
 ;
 
@@ -2654,7 +2654,7 @@ create procedure POLLS.WA.dashboard_get(
   http ('<poll-db>', ses);
   for select top 10 *
         from (select a.P_NAME,
-                     POLLS.WA.poll_url (domain_id, P_ID) P_URI,
+                     SIOC..poll_post_iri (domain_id, P_ID) P_URI,
                      a.P_UPDATED
                 from POLLS.WA.POLL a,
                      DB.DBA.WA_INSTANCE b,

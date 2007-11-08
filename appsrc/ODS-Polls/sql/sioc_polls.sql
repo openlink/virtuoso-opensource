@@ -21,7 +21,9 @@
 --
 use sioc;
 
-create procedure poll_post_iri (in domain_id varchar, in poll_id int)
+create procedure poll_post_iri (
+  in domain_id varchar,
+  in poll_id integer)
 {
   declare _member, _inst varchar;
   declare exit handler for not found { return null; };
