@@ -50,6 +50,7 @@ create procedure COMMUNITY.SYS_COMMUNITY_EXEC(in params any, in lines any) {
   }else{
      comm_home:=http_path();
   }  
+  
   declare continue handler for NOT FOUND {
 
                                            declare httpmap_ci_home VARCHAR;
@@ -84,8 +85,6 @@ create procedure COMMUNITY.SYS_COMMUNITY_EXEC(in params any, in lines any) {
   -- determine page name
   declare page_name varchar;
   page_name := get_keyword('page', params, 'index') || '.vspx';
-  if (page_name = '.vspx') page_name := 'index.vspx';
-
 
   -- determine home_path, template_path, css_path
 
@@ -225,7 +224,6 @@ session_not_found:
 --  }
 
 
-  
   DB.DBA.vspx_dispatch(template_path, home_path, params, lines);
   return 0;
   -- errors handling

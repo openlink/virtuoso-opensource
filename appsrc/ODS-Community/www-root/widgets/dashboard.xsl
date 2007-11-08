@@ -118,8 +118,9 @@
   <xsl:template name="user-dashboard-item">
       <xsl:processing-instruction name="vsp">
           {
-          declare i int;
+          declare dataspace_url varchar;
 
+          declare i int;
           declare _foruser_id integer;
           _foruser_id:=self.user_id;
           if(self.comm_access=1) 
@@ -132,12 +133,15 @@
               where uid = _foruser_id and inst_type = '<xsl:value-of select="$app"/>' order by ts desc
        do
        {
+         
          declare aurl, mboxid, clk any;
          aurl := '';
          clk := '';
          mboxid :=  wa_user_have_mailbox (self.user_name);
          if (length (uname))
-           aurl := self.wa_home||'/uhome.vspx?ufname=' || uname;
+--           aurl := self.wa_home||'/uhome.vspx?ufname=' || uname;
+           aurl := '/dataspace/person/' || uname ||'#this';
+         
          else if (length (email) and mboxid is not null)
           {
             aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);
@@ -155,9 +159,25 @@
          else
            aurl := 'javascript:void (0)';
 
+         declare app_dataspace varchar;
+         app_dataspace:= (case when self.app_type='Community' then 'community'
+                               when self.app_type='oDrive' then 'briefcase'
+                               when self.app_type='WEBLOG2' then 'weblog'
+                               when self.app_type='oGallery' then 'photos'
+                               when self.app_type='eNews2' then 'subscriptions'
+                               when self.app_type='oWiki' then 'wiki'
+                               when self.app_type='oMail' then 'mail'
+                               when self.app_type='Bookmark' then 'bookmark'
+                               when self.app_type='Polls' then 'polls'
+                               when self.app_type='AddressBook' then 'addressbook'
+                               when self.app_type='Calendar' then 'calendar'
+                               else ''
+                          end);
+
+         dataspace_url:='/dataspace/'||uname||'/'||app_dataspace||'/'||inst_name;
          </xsl:processing-instruction>
          <tr align="left">
-            <td nowrap="nowrap"><a href="<?V wa_expand_url (url, self.login_pars) ?>"><?V coalesce (title, '*no title*') ?></a></td>
+            <td nowrap="nowrap"><a href="<?V wa_expand_url (dataspace_url, self.login_pars) ?>"><?V coalesce (title, '*no title*') ?></a></td>
             <td nowrap="nowrap">
               <a href="<?V aurl ?>" onclick="<?V clk ?>"><?V coalesce (author, '') ?></a>
             </td>
@@ -233,7 +253,7 @@
          signal (state, msg);
        
          declare i int;
-         declare inst_name,  uname, email varchar;
+         declare inst_name,inst_name_org,  uname, email varchar;
          declare title ,author,url nvarchar;
          declare ts datetime;
         
@@ -248,6 +268,7 @@
                {
                   inst_name := rows[i][0];
                }
+               inst_name_org := rows[i][0];
                 
                if (length(rows[i][1])>40)
                {
@@ -302,9 +323,26 @@
          if (not length (author) and length (uname))
            author := uname;
 
+         declare app_dataspace varchar;
+         app_dataspace:= (case when self.app_type='Community' then 'community'
+                               when self.app_type='oDrive' then 'briefcase'
+                               when self.app_type='WEBLOG2' then 'weblog'
+                               when self.app_type='oGallery' then 'photos'
+                               when self.app_type='eNews2' then 'subscriptions'
+                               when self.app_type='oWiki' then 'wiki'
+                               when self.app_type='oMail' then 'mail'
+                               when self.app_type='Bookmark' then 'bookmark'
+                               when self.app_type='Polls' then 'polls'
+                               when self.app_type='AddressBook' then 'addressbook'
+                               when self.app_type='Calendar' then 'calendar'
+                               else ''
+                          end);
+
+         
          declare inst_url_local varchar;
          inst_url_local :='not specified';
-         inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
+--         inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
+         inst_url_local:=wa_expand_url (sprintf('/dataspace/%V/%s/%U',uname,app_dataspace,inst_name_org), self.login_pars);
 
          declare insttype_from_xsl varchar;
          insttype_from_xsl:='';
@@ -314,7 +352,7 @@
 		  </xsl:processing-instruction>
         <tr align="left">
        <?vsp
-            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark' or insttype_from_xsl='oGallery')
+            if(insttype_from_xsl='WEBLOG2' or insttype_from_xsl='eNews2' or insttype_from_xsl='oWiki' or insttype_from_xsl='Bookmark' or insttype_from_xsl='oGallery'  or insttype_from_xsl='Polls' or insttype_from_xsl='AddressBook' or insttype_from_xsl='Calendar' or insttype_from_xsl='Discussions')
             {
        ?>       
 
@@ -427,7 +465,7 @@
          signal (state, msg);
        
          declare i int;
-         declare inst_name,  uname, email varchar;
+         declare inst_name,inst_name_org,  uname, email varchar;
          declare title ,author,url nvarchar;
          declare ts datetime;
         
@@ -442,6 +480,8 @@
                {
                   inst_name := rows[i][0];
                }
+                
+               inst_name_org:= rows[i][0];
                 
                if (length(rows[i][1])>40)
                {

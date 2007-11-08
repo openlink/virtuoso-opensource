@@ -156,7 +156,7 @@
                 BI_BLOG_ID = self.blogid;
               http_request_status ('HTTP/1.1 302 Found');
               http_header(sprintf(
-                'Location: index.vspx?page=index&sid=%s&realm=%s\r\n\r\n',
+                'Location: ?page=index&sid=%s&realm=%s\r\n\r\n',
                 self.sid ,
                 self.realm));
               self.template_preview_mode := NULL;
@@ -184,7 +184,7 @@
             XDI_HOME = self.xd_id;
           http_request_status ('HTTP/1.1 302 Found');
           http_header(sprintf(
-            'Location: index.vspx?page=index&sid=%s&realm=%s\r\n\r\n',
+            'Location: ?page=index&sid=%s&realm=%s\r\n\r\n',
             self.sid ,
             self.realm));
           self.template_preview_mode := NULL;

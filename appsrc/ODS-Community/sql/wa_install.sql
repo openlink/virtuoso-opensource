@@ -664,7 +664,8 @@ create method wa_dashboard_last_item () for ODS.COMMUNITY.wa_community
     http ('<comm_instance>', ses);
     http (sprintf ('<dt>%s</dt>', DB.DBA.date_iso8601 (WAI_MODIFIED)), ses);
     http (sprintf ('<title><![CDATA[%s]]></title>', WAI_NAME), ses);
-    http (sprintf ('<link>%s</link>', WAM_HOME_PAGE), ses);
+--    http (sprintf ('<link>%s</link>', WAM_HOME_PAGE), ses);
+    http (sprintf ('<link><![CDATA[/dataspace/%s/community/%U]]></link>',U_NAME,self.wa_name ), ses);
     http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
     http (sprintf ('<uid><![CDATA[%s]]></uid>', uname), ses);
     http ('</comm_instance>', ses);

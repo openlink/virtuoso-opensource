@@ -35,9 +35,9 @@
 <!-- FS include
   <xsl:include href="../../../samples/wa/comp/ods_bar.xsl"/>
 -->    
-  <xsl:include href="../../../wa/comp/ods_bar.xsl"/>
 <!-- DAV include
 -->    
+  <xsl:include href="../../../wa/comp/ods_bar.xsl"/>
 
 
 
@@ -320,7 +320,10 @@
          self.temp:='Welcome /APPROVED inst/';  
       };
 
+        if(length(self.sid)>0 and trim(self.sid)<>'')
         self.login_pars := sprintf ('&sid=%s&realm=%s', self.sid, self.realm);
+        else
+           self.login_pars := '';
 
         self.wa_home:=ODS.COMMUNITY.COMM_GET_WA_URL ();
 
@@ -339,7 +342,7 @@
   <xsl:template match="v:page[not @style and not @on-error-redirect][@name != 'error_page']">
       <xsl:copy>
     <xsl:copy-of select="@*"/>
-    <!--xsl:attribute name="on-error-redirect">index.vspx?page=errors</xsl:attribute-->
+    <!--xsl:attribute name="on-error-redirect">?page=errors</xsl:attribute-->
     <!--xsl:attribute name="xml-preamble">yes</xsl:attribute-->
     <xsl:if test="not (@on-deadlock-retry)">
     <xsl:attribute name="on-deadlock-retry">5</xsl:attribute>
@@ -352,7 +355,7 @@
   <xsl:template match="vm:header">
    <head profile="http://internetalchemy.org/2003/02/profile">
       <xsl:text>&#10;</xsl:text>
-      <link rel="foaf" type="application/rdf+xml" title="FOAF"     href="<?Vself.ur?>/dataspace/<?Vself.owner_name?>/about.rdf" />
+      <link rel="foaf" type="application/rdf+xml" title="FOAF"     href="<?Vself.ur?>/dataspace/person/<?Vself.owner_name?>/foaf.rdf" />
       <xsl:text>&#10;</xsl:text>
       <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('%s/dataspace/%U/community/%U/sioc.rdf', self.ur, self.owner_name, self.comm_wainame), '+', '%2B')); ?>" />
       <xsl:text>&#10;</xsl:text>
@@ -360,6 +363,9 @@
         declare icon varchar;
         icon := self.stock_img_loc || 'fav.ico';
         http(sprintf('<link rel=\"shortcut icon\" href=\"%s\"/>', icon));
+      
+        http(sprintf('<base href="http://%s%s" />',self.host, self.base));
+     
       ?>
       
 
@@ -916,19 +922,16 @@ c.length);
 
 
   <xsl:template match="vm:home-url">
-    <v:url name="home_url" value="Home" url="'index.vspx?page=index'"/>
+    <v:url name="home_url" value="Home" url="'?page=index'"/>
   </xsl:template>
 
   <xsl:template match="vm:settings-link">
 
-      <v:url name="settings" url="--''">
+      <v:url name="settings" url="--'?page=settings'">
               <xsl:attribute name="value">Settings</xsl:attribute>
         <v:before-render><![CDATA[
-          if (self.comm_access <> 1){
+          if (self.comm_access <> 1)
               control.vc_enabled := 0;
-          }else{
-            control.vu_url := 'index.vspx?page=settings';
-          }
         ]]></v:before-render>
       </v:url>
   </xsl:template>
@@ -941,7 +944,7 @@ c.length);
           if (self.comm_access <> 1){
               control.vc_enabled := 0;
           }else{
-            control.vu_url := 'index.vspx?page=settings_app';
+          control.vu_url := '?page=settings_app';
           }
         ]]></v:before-render>
       </v:url>
@@ -955,7 +958,7 @@ c.length);
           if (self.comm_access <> 1){
               control.vc_enabled := 0;
           }else{
-            control.vu_url := 'index.vspx?page=settings';
+            control.vu_url := '?page=settings';
           }
         ]]></v:before-render>
       </v:url>
@@ -1149,16 +1152,16 @@ c.length);
                   </colgroup>
                   <tr>
           <td class="<?V self.tab_2_lev ('1') ?>" align="center" nowrap="1">
-                        <v:url name="b_url214" value="Blog Header" format="%s" url="--'index.vspx?page=ping&ping_tab=4&blog_tab=1'" xhtml_class="button"/>
+                        <v:url name="b_url214" value="Blog Header" format="%s" url="--'?page=ping&ping_tab=4&blog_tab=1'" xhtml_class="button"/>
                       </td>
           <td class="<?V self.tab_2_lev ('2') ?>" align="center" nowrap="1">
-                        <v:url name="b_url124" value="Global Settings" format="%s" url="--'index.vspx?page=ping&ping_tab=4&blog_tab=2'" xhtml_class="button"/>
+                        <v:url name="b_url124" value="Global Settings" format="%s" url="--'?page=ping&ping_tab=4&blog_tab=2'" xhtml_class="button"/>
                       </td>
           <td class="<?V self.tab_2_lev ('3') ?>" align="center" nowrap="1">
-                        <v:url name="b_url134" value="Feed, Archive and Query Settings" format="%s" url="--'index.vspx?page=ping&ping_tab=4&blog_tab=3'" xhtml_class="button"/>
+                        <v:url name="b_url134" value="Feed, Archive and Query Settings" format="%s" url="--'?page=ping&ping_tab=4&blog_tab=3'" xhtml_class="button"/>
                       </td>
           <td class="<?V self.tab_2_lev ('4') ?>" align="center" nowrap="1">
-                        <v:url name="b_url144" value="Blog GEM Display" format="%s" url="--'index.vspx?page=ping&ping_tab=4&blog_tab=4'" xhtml_class="button"/>
+                        <v:url name="b_url144" value="Blog GEM Display" format="%s" url="--'?page=ping&ping_tab=4&blog_tab=4'" xhtml_class="button"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
                         <table cellpadding="0" cellspacing="0">
@@ -1219,19 +1222,19 @@ c.length);
                   </colgroup>
                   <tr>
       <td class="<?V self.tab_4_lev ('1') ?>" align="center" nowrap="1">
-                        <v:url value="Personal Information" format="%s" url="--'index.vspx?page=ping&ping_tab=2&profile_tab=1&author_tab=1'" xhtml_class="button"/>
+                        <v:url value="Personal Information" format="%s" url="--'?page=ping&ping_tab=2&profile_tab=1&author_tab=1'" xhtml_class="button"/>
                       </td>
           <td class="<?V self.tab_4_lev ('2') ?>" align="center" nowrap="1">
-                        <v:url value="Contact Information" format="%s" url="--'index.vspx?page=ping&ping_tab=2&profile_tab=1&author_tab=2'" xhtml_class="button"/>
+                        <v:url value="Contact Information" format="%s" url="--'?page=ping&ping_tab=2&profile_tab=1&author_tab=2'" xhtml_class="button"/>
                       </td>
           <td class="<?V self.tab_4_lev ('3') ?>" align="center" nowrap="1">
-                        <v:url value="Home Information" format="%s" url="--'index.vspx?page=ping&ping_tab=2&profile_tab=1&author_tab=3'" xhtml_class="button"/>
+                        <v:url value="Home Information" format="%s" url="--'?page=ping&ping_tab=2&profile_tab=1&author_tab=3'" xhtml_class="button"/>
                       </td>
           <td class="<?V self.tab_4_lev ('4') ?>" align="center" nowrap="1">
-                        <v:url value="Business Information" format="%s" url="--'index.vspx?page=ping&ping_tab=2&profile_tab=1&author_tab=4'" xhtml_class="button"/>
+                        <v:url value="Business Information" format="%s" url="--'?page=ping&ping_tab=2&profile_tab=1&author_tab=4'" xhtml_class="button"/>
                       </td>
           <td class="<?V self.tab_4_lev ('5') ?>" align="center" nowrap="1">
-                        <v:url value="Password Change" format="%s" url="--'index.vspx?page=ping&ping_tab=2&profile_tab=1&author_tab=5'" xhtml_class="button"/>
+                        <v:url value="Password Change" format="%s" url="--'?page=ping&ping_tab=2&profile_tab=1&author_tab=5'" xhtml_class="button"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
                         <table cellpadding="0" cellspacing="0">
@@ -1327,7 +1330,7 @@ c.length);
             CI_HOME = self.comm_home;
           http_request_status ('HTTP/1.1 302 Found');
           http_header(sprintf(
-            'Location: index.vspx?page=index&sid=%s&realm=%s\r\n\r\n',
+            'Location: ?page=index&sid=%s&realm=%s\r\n\r\n',
             self.sid ,
             self.realm));
           self.template_preview_mode := NULL;
@@ -1468,7 +1471,7 @@ c.length);
       if(self.user_name is not null)
       {
     ?>
-      | <v:url xhtml_class="button" name="login_info_logout" value="Logout" url="index.vspx?page=logout" />
+      | <v:url xhtml_class="button" name="login_info_logout" value="Logout" url="?page=logout" />
     <?vsp
 
      
@@ -1521,9 +1524,9 @@ c.length);
                       do
                        
                           {
-                            if(length(trim(u_full_name))=0) u_full_name:=null; 
+                            if(length(trim(U_FULL_NAME))=0) u_full_name:=null; 
 
-                            http(sprintf('<li><a href="%s/uhome.vspx?page=1&ufname=%s&sid=%s&realm=%s">%s</a></li>',self.wa_home, u_name, coalesce(self.sid,''), coalesce(self.realm,'wa'),u_name,wa_utf8_to_wide (coalesce (trim(u_full_name))) ));
+                            http('<li><a href="'||wa_expand_url('/dataspace/person/'||u_name||'#this',self.login_pars)||'">'||wa_utf8_to_wide (coalesce (trim(U_FULL_NAME),U_NAME))||'</a></li>');
                           }
                       ?>
                      </ul>
@@ -1559,19 +1562,20 @@ c.length);
           <td class="lftmenu1"><ul>
                       <?vsp
                       for select top 7
-                             WAM_INST, WAM_HOME_PAGE, WAM_APP_TYPE 
-                          from WA_MEMBER,WA_INSTANCE
+                             WAM_INST, WAM_HOME_PAGE, WAM_APP_TYPE, U_NAME 
+                          from WA_MEMBER,WA_INSTANCE,SYS_USERS
                           where
                                WAM_INST=WAI_NAME
                            and WAM_USER in(SELECT WAM_USER from WA_MEMBER WHERE WAM_INST=self.comm_wainame)
                            and WAM_APP_TYPE like 'WEBLOG2'
                            and WAM_IS_PUBLIC = 1
                            and WAM_MEMBER_TYPE = 1
+                           and WAM_USER=U_ID
                           ORDER BY WAI_MODIFIED DESC
                       do
                           {
                        ?>
-                       <li><a href="<?V WAM_HOME_PAGE||'?comm2blog=yes'||self.login_pars ?>"><?V wa_utf8_to_wide (WAM_INST)?></a></li>
+                       <li><a href="<?V wa_expand_url(sprintf('/dataspace/%s/weblog/%U?comm2blog=yes',U_NAME,WAM_INST), self.login_pars) ?>"><?V wa_utf8_to_wide (WAM_INST)?></a></li>
                        <?vsp
                           }
                       ?>
@@ -1605,8 +1609,8 @@ c.length);
               declare i int;
               declare q_str, rc, dta, h, curr_davres any;
               
-              q_str:='select top 7 WAM_INST, WAM_HOME_PAGE from
-                      DB.DBA.WA_MEMBER M left join DB.DBA.WA_INSTANCE I on M.WAM_INST=I.WAI_NAME
+              q_str:='select top 7 WAM_INST, WAM_HOME_PAGE, U.U_NAME from
+                      DB.DBA.WA_MEMBER M left join DB.DBA.WA_INSTANCE I on M.WAM_INST=I.WAI_NAME left join DB.DBA.SYS_USERS U on M.WAM_USER=U.U_ID 
                       where WAM_APP_TYPE = ''Community'' and WAM_STATUS = 1  and WAM_IS_PUBLIC=1 order by WAI_ID desc';
               
               rc := exec (q_str, null, null, vector (), 0, null, null, h);
@@ -1614,7 +1618,7 @@ c.length);
               {
                    exec_result (dta);
            ?>
-           <li><a href="<?V wa_expand_url (dta[1], self.login_pars) ?>"><?V coalesce (wa_utf8_to_wide (dta[0]), '*no title*') ?></a></li>
+           <li><a href="<?V wa_expand_url (sprintf('/dataspace/%s/community/%s',dta[2],dta[0]), self.login_pars) ?>"><?V coalesce (wa_utf8_to_wide (dta[0]), '*no title*') ?></a></li>
            <?vsp
                 i := i + 1;
                 }
@@ -1881,7 +1885,7 @@ c.length);
 
                <?vsp
                 if(self.page<>'index'){
-                  http('<a href="index.vspx?sid='||self.sid||'&realm='||self.realm||'">Home</a>');
+                  http('<a href="?sid='||self.sid||'&realm='||self.realm||'">Home</a>');
                 }else{
                   http('Home');
                 }
@@ -1984,7 +1988,7 @@ c.length);
               <td class="map_ctr">
                <v:url name="_map"
                         value="--'Community geo-location'" format="%s"
-                      url="--sprintf ('index.vspx?page=wa_maps', self.user_name)" />
+                        url="--sprintf ('?page=wa_maps', self.user_name)" />
             </td>
             </tr>
           </table>   
@@ -2030,12 +2034,12 @@ c.length);
               then 'page_tab_selected' else 'page_tab' end ?>"
               align="center" nowrap="1">
               <v:url name="b_url15" value="Edit Current"
-                  url="index.vspx?page=settings&amp;tmpl_tab=1"
+                  url="?page=settings&amp;tmpl_tab=1"
                   xhtml_class="button"/>
                 </td>
                 <td class="<?V case when get_keyword ('tmpl_tab', self.vc_event.ve_params, '1') = '2' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
               <v:url name="b_url16" value="Pick New"
-                  url="index.vspx?page=settings&amp;tmpl_tab=2"
+                  url="?page=settings&amp;tmpl_tab=2"
                   xhtml_class="button"/>
                 </td>
                 <td class="page_tab_empty" align="center" width="100%">&nbsp;</td>
@@ -2225,7 +2229,7 @@ c.length);
                             CI_CSS = self.templates_list.ufl_value || '/default.css'
                      where CI_COMMUNITY_ID = self.comm_wainame;
                      commit work;
-                     self.vc_redirect ('index.vspx?page=settings&tmpl_tab=1');
+                     self.vc_redirect ('?page=settings&tmpl_tab=1');
                   ]]></v:on-post>
                 </v:button>
                   </div>
@@ -2448,7 +2452,7 @@ c.length);
 	 declare sne_id int;
 	 sne_id := (select sne_id from sn_person where sne_name = self.owner_name);
 	?>
-	  <a href="<?V sprintf ('%sdataspace/%U/about.rdf', WA_LINK(1, '/'), self.owner_name)?>"  class="{local-name()}">
+	  <a href="<?V sprintf ('%sdataspace/person/%U/foaf.rdf', WA_LINK(1, '/'), self.owner_name)?>"  class="{local-name()}" target="_blank">
         <img border="0" src="<?Vself.stock_img_loc?>foaf.png" alt="FOAF" title="FOAF"/>
 
     </a>
@@ -2462,6 +2466,102 @@ c.length);
 </table>
 </xsl:template>
 
+
+<xsl:template match="vm:app-inst-leftmenu">
+
+  <table width="175" border="0" cellpadding="0" cellspacing="0" style="margin-left:10px;margin-top:10px">
+     <tr><td class="lftmenu_title">&nbsp;
+     <?vsp
+         if (self.user_id>0)
+         {
+           http(self.user_name|| '\'s ' || WA_GET_APP_NAME (self.app_type));
+         }else
+         {
+           http(WA_GET_APP_NAME (self.app_type));
+         }  
+     ?>
+      </td></tr>
+     <?vsp
+       declare i int;
+       declare _foruser_name varchar;
+       declare _foruser_id integer;
+       
+       _foruser_name:=self.user_name;
+       _foruser_id:=self.user_id;
+  
+       if(self.comm_access=1)
+       {
+         _foruser_name := self.owner_name;
+         _foruser_id   := self.owner_id;
+       }
+
+       declare app_dataspace varchar;
+       app_dataspace:= (case when self.app_type='Community' then 'community'
+                             when self.app_type='oDrive' then 'briefcase'
+                             when self.app_type='WEBLOG2' then 'weblog'
+                             when self.app_type='oGallery' then 'photos'
+                             when self.app_type='eNews2' then 'subscriptions'
+                             when self.app_type='oWiki' then 'wiki'
+                             when self.app_type='oMail' then 'mail'
+                             when self.app_type='Bookmark' then 'bookmark'
+                             when self.app_type='Polls' then 'polls'
+                             when self.app_type='AddressBook' then 'addressbook'
+                             when self.app_type='Calendar' then 'calendar'
+                             else ''
+                        end);
+
+       
+       for select * from WA_USER_APP_INSTANCES sub where
+         user_id = _foruser_id and app_type = self.app_type and fname = _foruser_name do
+       {
+     ?>
+     <tr>
+       <td class="lftmenu2">
+<!--
+         <a href="<?V wa_expand_url (INST_URL, self.login_pars) ?>"><img src="/community/public/images/go_16.gif" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?></a>
+-->
+         <a href="<?V wa_expand_url ('/dataspace/'||_foruser_name||'/'||app_dataspace||'/'||INST_NAME, self.login_pars) ?>"><img src="/community/public/images/go_16.gif" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?></a>
+       </td>
+     </tr>
+     <?vsp
+         i := i + 1;
+       }
+     ?>
+     <?vsp
+       if (length (self.sid) or
+           (length (self.sid) = 0 and i = 0 and 0 = length (self.user_name))
+          )
+         {
+            ?>
+          <tr>
+            <td class="lftmenu2">
+     	 <a href="<?V self.wa_home||'/index_inst.vspx?wa_name=' || self.app_type || self.login_pars ?>">
+     	   <img src="/community/public/images/new_16.gif" border="0" />
+     	   Create New
+     	 </a>
+           </td>
+          </tr>
+     <?vsp
+         }
+         else if (i = 0 and length (self.user_name))
+         {
+     ?>
+          <tr>
+            <td class="lftmenu2">No Instances</td>
+          </tr>
+     <?vsp
+         }
+     ?>
+      
+     <vm:if test="length (self.sid)">
+       <tr>
+         <td class="lftmenu2">
+           <v:url url="/ods/services.vspx" name="my_app" value='<img src="/community/public/images/apps_16.gif" border="0" /> My Applications' />
+         </td>
+       </tr>
+      </vm:if>
+  </table>
+</xsl:template>
 
 
 </xsl:stylesheet>
