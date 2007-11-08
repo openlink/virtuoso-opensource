@@ -276,7 +276,7 @@
         http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0" alt="FOAF export" /> FOAF</a>', ENEWS.WA.foaf_url (self.domain_id)));
 
         http ('<div style="border-top: 1px solid #7f94a5;"></div>');
-        S := sprintf ('http://%s/dataspace/%U/feeds/%U/', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (self.domain_id), ENEWS.WA.domain_name (self.domain_id));
+        S := sprintf ('http://%s/dataspace/%U/subscriptions/%U/', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (self.domain_id), ENEWS.WA.domain_name (self.domain_id));
         http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
         http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
       ?>

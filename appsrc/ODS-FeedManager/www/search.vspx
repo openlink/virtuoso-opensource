@@ -727,11 +727,6 @@
             </v:on-post>
           </v:button>
         </div>
-        <script type="text/javascript">
-          <![CDATA[
-            initTab(2, 1);
-          ]]>
-        </script>
       </v:template>
       <v:template type="simple" enabled="--either(neq(self.v_mode, 'simple'), 0, 1)">
         <div class="new-form-body">

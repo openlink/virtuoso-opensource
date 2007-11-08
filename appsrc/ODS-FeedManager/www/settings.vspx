@@ -218,11 +218,6 @@
       	  </v:on-post>
         </v:button>
       </div>
-      <script>
-        <![CDATA[
-          initTab(2, 1);
-        ]]>
-      </script>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

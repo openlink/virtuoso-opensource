@@ -2093,10 +2093,7 @@ create procedure ENEWS.WA.folder_delete(
   update ENEWS.WA.FEED_DOMAIN
      set EFD_FOLDER_ID = parent_id
    where EFD_DOMAIN_ID = domain_id
-     and EFD_FOLDER_ID = folder_id;
-
-  for (select EFO_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_PARENT_ID = folder_id) do
-    ENEWS.WA.folder_delete(domain_id, EFO_ID);
+     and ENEWS.WA.folder_path (EFD_DOMAIN_ID, EFD_FOLDER_ID) like ENEWS.WA.folder_path (domain_id, folder_id) || '%';
 
   delete from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_ID = folder_id;
 }
@@ -3109,7 +3106,7 @@ create procedure ENEWS.WA.sfolder_sql(
   if (not is_empty_or_null(tmp)) {
     tmp := cast(tmp as integer);
     if (tmp > 0)
-      ENEWS.WA.sfolder_sql_where (where2, delimiter2, sprintf('ENEWS.WA.folder_path (fd.EFD_DOMAIN_ID, fd.EFD_FOLDER_ID) like \'%s%s\'', ENEWS.WA.folder_path (domain_id, tmp), '%'));
+      ENEWS.WA.sfolder_sql_where (where2, delimiter2, sprintf('ENEWS.WA.folder_path (fd.EFD_DOMAIN_ID, fd.EFD_FOLDER_ID) like \'%s%s\'', replace (ENEWS.WA.folder_path (domain_id, tmp), '''', '\\'''), '%'));
   }
 
   tmp := ENEWS.WA.xml_get('beforeDate', data);
@@ -4006,7 +4003,7 @@ create procedure ENEWS.WA.enews_url (
 create procedure ENEWS.WA.sioc_url (
   in domain_id integer)
 {
-  return sprintf('http://%s/dataspace/%U/feeds/%U/sioc.rdf', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (domain_id), replace (ENEWS.WA.domain_name (domain_id), '+', '%2B'));
+  return sprintf('http://%s/dataspace/%U/subscriptions/%U/sioc.rdf', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (domain_id), replace (ENEWS.WA.domain_name (domain_id), '+', '%2B'));
 }
 ;
 
@@ -4015,7 +4012,7 @@ create procedure ENEWS.WA.sioc_url (
 create procedure ENEWS.WA.foaf_url (
   in domain_id integer)
 {
-  return sprintf('http://%s/dataspace/%s/about.rdf', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (domain_id));
+  return SIOC..person_iri (sprintf('http://%s%s/%s#this', SIOC..get_cname (), SIOC..get_base_path (), ENEWS.WA.domain_owner_name (domain_id)), '/about.rdf');
 }
 ;
 
@@ -6134,6 +6131,10 @@ _update:
 create procedure ENEWS.WA.nntp_fill (
   in domain_id integer)
 {
+  declare exit handler for SQLSTATE '*', not found {
+    return;
+  };
+
   declare grp, ngnext integer;
   declare nntpName varchar;
 
