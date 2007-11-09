@@ -375,6 +375,7 @@ int lt_close (lock_trx_t * lt, int fcommit);
 	if ((lt)->lt_threads != 0) \
 	  GPF_T1 ("lt_threads not 0 in increment"); \
 	(lt)->lt_threads ++; \
+	(lt)->lt_thr = THREAD_CURRENT_THREAD; \
 	LT_THREADS_REPORT (lt, "INC"); \
 	LT_ENTER_SAVE (lt); \
       } \
@@ -387,6 +388,7 @@ int lt_close (lock_trx_t * lt, int fcommit);
 	if ((lt)->lt_threads != 1) \
 	  GPF_T1 ("lt_threads not 1 in decrement"); \
 	(lt)->lt_threads --; \
+	(lt)->lt_thr = NULL; \
 	LT_THREADS_REPORT (lt, "DEC"); \
 	LT_ENTER_SAVE (lt); \
       } \
@@ -399,6 +401,7 @@ int lt_close (lock_trx_t * lt, int fcommit);
 	if ((threads) != 0 && (threads) != 1) \
 	  GPF_T1 ("lt_threads not 1 or 0 in set"); \
 	(lt)->lt_threads = (threads); \
+	(lt)->lt_thr = (threads) ? THREAD_CURRENT_THREAD : NULL; \
 	LT_THREADS_REPORT (lt, "SET"); \
 	LT_ENTER_SAVE (lt); \
       } \

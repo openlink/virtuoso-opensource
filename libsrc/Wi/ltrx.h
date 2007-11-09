@@ -161,7 +161,7 @@ typedef struct lock_trx_s
 
     dk_session_t *	lt_log;
     dk_set_t		lt_remotes;
-
+    thread_t *		lt_thr;
 
     /* all below members are considerd data area and cleared with memset in lt_cleare, saving individual ones as needed */
 #define LT_DATA_AREA_FIRST lt_locks
