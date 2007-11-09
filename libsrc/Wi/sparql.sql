@@ -170,7 +170,7 @@ again:
       declare rule_g_iid, rule_p_iid IRI_ID;
       rule_g_iid := case (rule_g) when '' then null else iri_to_id (rule_g, 1) end;
       rule_p_iid := case (rule_p) when '' then null else iri_to_id (rule_p, 1) end;
-      dbg_obj_princ ('__rdf_obj_ft_rule_add (', rule_g_iid, rule_p_iid, reason, ')');
+      -- dbg_obj_princ ('__rdf_obj_ft_rule_add (', rule_g_iid, rule_p_iid, reason, ')');
       __rdf_obj_ft_rule_add (rule_g_iid, rule_p_iid, reason);
     }
 }
