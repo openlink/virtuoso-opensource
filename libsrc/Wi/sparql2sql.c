@@ -4586,7 +4586,7 @@ int sparp_gp_trav_refresh_triple_cases (sparp_t *sparp, SPART *curr, sparp_trav_
   if (SPAR_TRIPLE != curr->type) /* Not a triple ? -- nothing to do */
     return 0;
   sparp_refresh_triple_cases (sparp, curr);
-  return SPAR_GPT_NODOWN | SPAR_GPT_NOOUT;
+  return SPAR_GPT_NODOWN /*| SPAR_GPT_NOOUT */;
 }
 
 
