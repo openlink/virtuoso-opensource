@@ -5646,6 +5646,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   else
     {
   ssg_puts ("SELECT ");
+      if (0 == varcount) ssg_puts ("TOP 1 1 as __ask_retval "); /* IvAn/Bug12961/071109 Added special case for ASK */
   for (varctr = 0; varctr < varcount; varctr++)
     {
       char buf[30];
