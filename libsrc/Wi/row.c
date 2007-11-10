@@ -963,7 +963,7 @@ box_to_double (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe_key
 
 
 caddr_t
-box_to_any (caddr_t data, caddr_t * err_ret)
+box_to_any_1 (caddr_t data, caddr_t * err_ret)
 {
   caddr_t box;
   int init, len;
@@ -1000,7 +1000,16 @@ box_to_any (caddr_t data, caddr_t * err_ret)
   return box;
 }
 
-
+caddr_t 
+box_to_any (caddr_t data, caddr_t * err_ret)
+{
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &err_ret, (PAGE_DATA_SZ+1000)))
+    {
+      *err_ret = srv_make_new_error ("42000", "SR483", "Stack Overflow");
+      return NULL;
+    }
+  return box_to_any_1 (data, err_ret);
+}
 
 
 #define V_COL_LEN(len) \
