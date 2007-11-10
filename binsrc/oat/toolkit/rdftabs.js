@@ -209,7 +209,9 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		}
 		
 		cnt.innerHTML = "There are "+count+" records ("+tcount+" triples, "+pcount+" predicates) to match selected filters. ";
-		if (count == 0) { cnt.innerHTML += "Perhaps your filters are too restrictive?"; }
+		if (count == 0) { 
+			cnt.innerHTML += "Perhaps your criteria are too restrictive? Please review your filters.";
+		}
 		OAT.Dom.append([self.pageDiv,cnt,gd,div]);
 		
 		function assign(a,page) {
@@ -789,7 +791,8 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 				self.grid.createRow(triple);
 				for (var j=0;j<triple.length;j++) {
 					var str = triple[j];
-					if (str.match(/^(http|urn|doi)/i)) { 
+					/* if j = 0, we are subject, so simplify */
+					if (str.match(/^(http|urn|doi)/i) || j == 0) { 
 						self.patchAnchor(j+1);
 					}
 				}
@@ -991,7 +994,9 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
 		function tryList() {
 			if (!self.pointListLock) { 
-				if (!self.pointList.length) { alert("Nothing displayable was found."); }
+				if (!self.pointList.length) { 
+					alert("Current data set contains nothing that could be displayed in this view mode.");
+				}
 				self.map.optimalPosition(self.pointList); 
  			} else {
 				setTimeout(tryList,500);
