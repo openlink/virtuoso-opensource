@@ -1000,6 +1000,48 @@ RDF_MAPPER_CACHE_REGISTER (in url varchar, in top_url varchar, inout hdr any,
 }
 ;
 
+create procedure DB.DBA.RDF_LOAD_OPENSOCIAL_PERSON (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare xt, xd, tmp, cnt, hdr any;
+  declare mail, pwd, auth, auth_header varchar;
+
+  mail := get_keyword ('email', opts, null);
+  pwd := get_keyword ('password', opts, null);
+  --dbg_obj_print ('DB.DBA.RDF_LOAD_OPENSOCIAL_PERSON');
+  declare exit handler for sqlstate '*'
+    {
+--      dbg_obj_print (__SQL_MESSAGE);
+      return 0;
+    };
+  auth_header := null;
+  if (length (mail) + length (pwd))
+    {
+      cnt := http_client (url=>'https://www.google.com/accounts/ClientLogin',
+	    http_method=>'POST', body=>sprintf ('Email=%U&Passwd=%U&source=OpenLink-Sponger-1&service=ot', mail, pwd));
+      if (cnt like 'Error=%')
+	return 0;
+      cnt := replace (cnt, '\r', '\n');
+      cnt := replace (cnt, '\n\n', '\n');
+      tmp := split_and_decode (cnt, 0, '\0\0\n=');
+      auth := get_keyword ('Auth', tmp);
+      if (auth is not null)
+	auth_header := 'Authorization: GoogleLogin auth='||auth;
+    }
+  cnt := RDF_HTTP_URL_GET (new_origin_uri, new_origin_uri, hdr, 'GET', auth_header);
+  --dbg_obj_print (cnt);
+  if (hdr[0] not like  'HTTP/1._ 200 %')
+    return 0;
+  xd := xtree_doc (cnt);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/ospeople2rdf.xsl', xd,
+  	vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  dbg_printf ('%s', xd);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return 1;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
 	(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     	 inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
