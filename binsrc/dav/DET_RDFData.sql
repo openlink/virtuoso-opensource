@@ -216,7 +216,7 @@ create function "RDFData_DAV_DIR_SINGLE" (in id any, in what char(0), in path an
   RDFData_log_message (current_proc_name ());
 --  dbg_obj_princ ('RDFData_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
   declare path_parts any;
-  declare access, ownergid, owner_uid any;
+  declare access, ownergid, owner_uid, mime any;
   declare len int;
 
   "RDFData_ACCESS_PARAMS" (id[1], access, ownergid, owner_uid);
@@ -228,7 +228,15 @@ create function "RDFData_DAV_DIR_SINGLE" (in id any, in what char(0), in path an
   len := length (path_parts);
   if (what = 'C')
     return vector (DAV_CONCAT_PATH (path, ''), 'C', 0, now (), id, access, ownergid, owner_uid, now (), 'dav/unix-directory', path_parts [len - 2]);
-  return vector (DAV_CONCAT_PATH (path, ''), 'R', 0, now (), id, access, ownergid, owner_uid, now (), 'application/rdf+xml', path_parts [len - 1]);
+  mime := 'application/rdf+xml';
+  if (is_http_ctx ())
+    {
+      declare lpath varchar;
+      lpath := http_path ();
+      if (lpath like '%.ttl' or lpath like '%.n3')
+        mime := 'text/rdf+n3';
+    }
+  return vector (DAV_CONCAT_PATH (path, ''), 'R', 0, now (), id, access, ownergid, owner_uid, now (), mime, path_parts [len - 1]);
 }
 ;
 
@@ -535,7 +543,7 @@ create function "RDFData_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in
     {
       declare t, arr any;
       t := path_parts[1];
-      arr := sprintf_inverse (t, '%s (%d).rdf', 1);
+      arr := sprintf_inverse (t, '%s (%d).%s', 1);
       r_id := iri_id_from_num (arr [1]);
 --      dbg_obj_print (arr, r_id);
       return vector (UNAME'RDFData', detcol_id, cl_id, owner_uid, r_id);
@@ -580,6 +588,13 @@ create function "RDFData_DAV_RES_CONTENT" (in id any, inout content any, out typ
   if (id [4] is null)
     return -20;
   type := 'application/rdf+xml';
+  if (is_http_ctx ())
+    {
+      declare lpath varchar;
+      lpath := http_path ();
+      if (lpath like '%.ttl' or lpath like '%.n3')
+        type := 'text/rdf+n3';
+    }
   iri := id_to_iri (id [4]);
 --  dbg_obj_print (iri);
   _from := '';

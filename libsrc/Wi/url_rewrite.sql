@@ -988,6 +988,8 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   pos := strrchr (tmp, '/');
   if (pos is not null)
     rel_uri := subseq (path, pos + 1);
+  if (length (rel_uri))
+    rel_uri := aref (split_and_decode (rel_uri), 0);
   mime := http_request_header_full (lines, 'Accept', '*/*'); -- /* the accept header */
   lang := http_request_header_full (lines, 'Accept-Language', '*');
   --enc  := http_request_header_full (lines, 'Accept-Encoding', '*');
@@ -1036,7 +1038,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
        if (curr > best_q)
 	 {
 	   best_q := curr;
-	   best_variant := variant;
+	   best_variant := sprintf ('%U', variant);
 	 }
        if (not do_cn)
          {
