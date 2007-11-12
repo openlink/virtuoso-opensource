@@ -2527,6 +2527,14 @@ create function WV.WIKI.RESOURCEHREF2 (in resource varchar,
   return WV.WIKI.RESOURCEHREF (resource, _base_adjust);
 }
 ;
+
+create function WV.WIKI.CLUSTERIRI (in cluster_name varchar)
+{
+  return SIOC..wiki_cluster_iri (cluster_name);
+}
+;
+
+
 create function WV.WIKI.PAIR (in _key varchar, in value varchar)
 {
   if (_key <> '' and value <> '')
@@ -2548,6 +2556,8 @@ grant execute on WV.WIKI.RESOURCEHREF to public
 ;
 grant execute on WV.WIKI.RESOURCEHREF2 to public
 ;
+grant execute on WV.WIKI.CLUSTERIRI to public
+;
 grant execute on WV.WIKI.PAIR to public
 ;
 grant execute on WV.WIKI.COLLECT_PAIRS to public
@@ -2556,6 +2566,8 @@ grant execute on WV.WIKI.COLLECT_PAIRS to public
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourceHREF', 'WV.WIKI.RESOURCEHREF')
 ;
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourceHREF2', 'WV.WIKI.RESOURCEHREF2')
+;
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ClusterIRI', 'WV.WIKI.CLUSTERIRI')
 ;
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:pair', 'WV.WIKI.PAIR')
 ;

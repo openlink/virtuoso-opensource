@@ -249,6 +249,30 @@
 		</li>
                   <li>
                     <img border="0"
+                       alt="SIOC (RDF/XML)"
+                       title="SIOC (RDF/XML)"
+                       src="{wv:ResourceHREF ('images/rdf-icon-12.png', $baseadjust)}"></img>
+                  <a>
+          		      <xsl:attribute name="href">
+          		        <xsl:value-of select="wv:ClusterIRI ($ti_cluster_name)"/>/sioc.rdf
+          		      </xsl:attribute>
+                    SIOC (RDF/XML)
+                  </a>
+                </li>
+                <li>
+                  <img border="0"
+                       alt="SIOC (N3/Turtle)"
+                       title="SIOC (N3/Turtle)"
+                       src="{wv:ResourceHREF ('images/rdf-icon-12.png', $baseadjust)}"></img>
+                  <a>
+          		      <xsl:attribute name="href">
+          		        <xsl:value-of select="wv:ClusterIRI ($ti_cluster_name)"/>/sioc.ttl
+          		      </xsl:attribute>
+                    SIOC (N3/Turtle)
+                  </a>
+                </li>
+                <li>
+                  <img border="0"
                          alt="Wiki Profile"
                          title="Wiki Profile"
                          src="{wv:ResourceHREF ('images/rdf-icon-12.png', $baseadjust)}"></img>
