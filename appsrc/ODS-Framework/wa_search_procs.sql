@@ -447,10 +447,17 @@ create function WA_SEARCH_USER (in max_rows integer, in current_user_id integer,
 }
 ;
 
-create function WA_SEARCH_NNTP_GET_EXCERPT_HTML (in url varchar, in title varchar, in content varchar, in _from varchar, in words any) returns varchar
+create function WA_SEARCH_NNTP_GET_EXCERPT_HTML (in url varchar, in title varchar, in content varchar, in _from varchar, in group_id varchar, in words any) returns varchar
 {
   declare res varchar;
   declare tree any;
+
+  declare post_id varchar;
+  post_id:= split_and_decode(url,0,'\0\0=')[1];
+  post_id:=split_and_decode(post_id,0)[0];
+  post_id:=decode_base64(post_id);
+  
+  url:=sprintf('/dataspace/discussion/%U/%U',group_id,post_id);
 
   _from := substring (_from, 8, length (_from));
   _from := replace (_from, '@', '{at}');
@@ -526,7 +533,7 @@ create function WA_SEARCH_NNTP (in max_rows integer, in current_user_id integer,
 
   ret := sprintf (
          'select top %d \n' ||
-         '  WA_SEARCH_NNTP_GET_EXCERPT_HTML (_URL, _TITLE, _CONTENT, _FROM, %s) AS EXCERPT, \n' ||
+         '  WA_SEARCH_NNTP_GET_EXCERPT_HTML (_URL, _TITLE, _CONTENT, _FROM, _ID, %s) AS EXCERPT, \n' ||
          '  encode_base64 (serialize (vector (''NNTP'', vector (_URL, _ID)))) as TAG_TABLE_FK, \n' ||
          '  _SCORE, \n' ||
          '  _DATE \n' ||
@@ -547,21 +554,30 @@ create function WA_SEARCH_BLOG_GET_EXCERPT_HTML (in _current_user_id integer,
 	in _B_BLOG_ID varchar, in _B_POST_ID varchar,
 	in words any, in _B_CONTENT varchar, in _B_TITLE varchar) returns varchar
 {
-  declare _BI_PHOTO, _BI_TITLE, _BI_HOME, _BI_HOME_PAGE varchar;
+  declare _BI_PHOTO, _BI_TITLE, _BI_HOME, _BI_HOME_PAGE, _BI_OWNER_UNAME, _BI_WAI_NAME varchar;
   declare _BI_OWNER integer;
   declare _WAUI_FULL_NAME varchar;
   declare _single_post_view_url, _blog_front_page_url varchar;
   declare res varchar;
 
-  select BI_PHOTO, BI_TITLE, BI_HOME, BI_OWNER, BI_HOME_PAGE
-     into _BI_PHOTO, _BI_TITLE, _BI_HOME, _BI_OWNER, _BI_HOME_PAGE
+  select BI_PHOTO, BI_TITLE, BI_HOME, BI_OWNER, BI_HOME_PAGE, BI_WAI_NAME
+     into _BI_PHOTO, _BI_TITLE, _BI_HOME, _BI_OWNER, _BI_HOME_PAGE, _BI_WAI_NAME
      from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = _B_BLOG_ID;
 
+  select U_NAME into _BI_OWNER_UNAME from DB.DBA.SYS_USERS where U_ID=_BI_OWNER;
+  
+--  _single_post_view_url := WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (
+--	sprintf (\'%s?id=%s\', _BI_HOME, _B_POST_ID),
+--	_current_user_id,
+--        \'&\'));
+
   _single_post_view_url := WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (
-	sprintf (\'%s?id=%s\', _BI_HOME, _B_POST_ID),
+	sprintf (\'/dataspace/%s/weblog/%s/%s\',_BI_OWNER_UNAME, _BI_WAI_NAME, _B_POST_ID),
 	_current_user_id,
         \'&\'));
-  _blog_front_page_url := WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (_BI_HOME, _current_user_id));
+        
+--  _blog_front_page_url := WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (_BI_HOME, _current_user_id));
+  _blog_front_page_url := WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf(\'/dataspace/%s/weblog/%s\',_BI_OWNER_UNAME, _BI_WAI_NAME), _current_user_id));
 
   select WAUI_FULL_NAME
      into _WAUI_FULL_NAME
@@ -876,7 +892,7 @@ create function WA_SEARCH_ENEWS_GET_EXCERPT_HTML (in _current_user_id integer, i
 
   res := sprintf (\'<span><img src="%s" /> <a href="%s">%s</a> %s \',
            WA_SEARCH_ADD_APATH (''images/icons/enews_16.png''),
-	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf (\'/enews2/news.vspx?link=%d\', _EFI_ID), _current_user_id, \'&\')), _EFI_TITLE,
+	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf (\'/dataspace/feed/%d/%d?instance=%d\',_EFI_FEED_ID, _EFI_ID,_EFI_DOMAIN_ID), _current_user_id, \'&\')), _EFI_TITLE,
 	   _EF_TITLE);
 
   res := res || \'<br />\' ||
@@ -1002,12 +1018,15 @@ create function WA_SEARCH_APP_GET_EXCERPT_HTML (
         in _WAI_HOME_URL varchar,
         in _WAI_ID integer) returns varchar
 {
+  
+  declare dataspace_url varchar;
+  dataspace_url:='/dataspace/'||WA_APP_GET_OWNER(_WAI_NAME)||'/'||wa_get_app_dataspace(_WAI_TYPE_NAME)||'/'||sprintf('%U',_WAI_NAME);
   declare res varchar;
 
   res := sprintf (
     '<span><img src="%s"/> <a href="%s">%s</a> %s ',
        WA_SEARCH_ADD_APATH ('images/icons/apps_16.png'),
-       WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WAI_HOME_URL, '#'), current_user_id)),
+       WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (dataspace_url, current_user_id)),
        _WAI_NAME,
        _WAI_TYPE_NAME);
 
@@ -1295,12 +1314,15 @@ create function WA_SEARCH_AB_GET_EXCERPT_HTML (
 	in _P_DOMAIN_ID int,
 	in _P_NAME varchar,
 	in _P_DESCRIPTION varchar,
+	in _WAI_NAME varchar,
 	in words any) returns varchar
 {
   declare url varchar;
   declare res varchar;
 
   url := AB.WA.contact_url (_P_DOMAIN_ID, _P_ID);
+  url:=sprintf(\'/dataspace/%s/addressbook/%U/%d\',WA_APP_GET_OWNER(_WAI_NAME),_WAI_NAME,_P_ID);
+
   res := sprintf (''<span><img src="%s" /> <a href="%s" target="_blank">%s</a> %s '', WA_SEARCH_ADD_APATH (''images/icons/ods_ab_16.png''), url, _P_NAME, _P_NAME);
 
   res := res ||
@@ -1349,7 +1371,7 @@ create function WA_SEARCH_AB (
   ret := sprintf (
     ' select EXCERPT, TAG_TABLE_FK, _SCORE, _DATE from ( select top %d \n'
     || '	DB.DBA.WA_SEARCH_AB_GET_EXCERPT_HTML \n'
-    || '		(%d, P_ID, P_DOMAIN_ID, P_NAME, P_DESCRIPTION, %s) AS EXCERPT, \n'
+    || '		(%d, P_ID, P_DOMAIN_ID, P_NAME, P_DESCRIPTION, WAI_NAME, %s) AS EXCERPT, \n'
     || '		encode_base64 (serialize (vector (''AB'', vector (P_ID, P_DOMAIN_ID)))) as TAG_TABLE_FK, \n'
     || '		_SCORE, \n'
     || '		P_UPDATED as _DATE \n'

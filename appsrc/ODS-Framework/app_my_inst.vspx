@@ -76,7 +76,7 @@
             </li>
           </vm:if>
         </ul>
-      <vm:if test="self.app_type<>'nntpf'">
+      <vm:if test="self.app_type<>'nntpf' and self.app_type<>'discussion'">
         <ul class="sb app_cmds_sb">
 	<?vsp
           
@@ -131,17 +131,20 @@
         <ul class="sb app_insts_sb">            
             
 <?vsp
+
 	  declare i int;
 
-	  for select * 
-                from WA_USER_APP_INSTANCES sub 
+	  for select * from WA_USER_APP_INSTANCES_DATASPACE sub
                 where user_id = self.u_id and 
                       app_type = self.app_type and 
                       fname = self.fname do
 	    {
+        declare dataspace_url varchar;
+        dataspace_url:=self.odsbar_dataspace_path||INST_OWNER||'/'||self.odsbar_app_dataspace||'/'||sprintf('%U',INST_NAME);
+--        dataspace_url:=INST_DATASPACE;
 	?>
 	      <li>
-                <a class="ods_side_button" href="<?V wa_expand_url (INST_URL, self.login_pars) ?>">
+                <a class="ods_side_button" href="<?V wa_expand_url (dataspace_url, self.login_pars) ?>">
                   <img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?>
                 </a>
               </li>
@@ -151,9 +154,9 @@
 	?>
         </ul>
       </vm:if>
-      <vm:if test="self.app_type='nntpf'">
+      <vm:if test="self.app_type='nntpf' or self.app_type='discussion'">
       <div>
-          <ul class="sb app_cmds_sb"><li><a href="<?Vrtrim(self.odsbar_ods_gpath,'/ods/')||wa_expand_url ('/nntpf/', self.login_pars)?>"><img src="images/icons/go_16.png" border="0"/> Discussions </a></li></ul>
+          <ul class="sb app_cmds_sb"><li><a href="<?Vwa_expand_url ('/dataspace/discussion', self.login_pars)?>"><img src="images/icons/go_16.png" border="0"/> Discussions </a></li></ul>
       </div>
       </vm:if>
       </div> <!-- LT_SB -->

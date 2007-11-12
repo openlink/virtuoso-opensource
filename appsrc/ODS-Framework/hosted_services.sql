@@ -4255,6 +4255,92 @@ wa_exec_no_error_log ('drop view WA_USER_APP_INSTANCES');
 wa_exec_no_error_log ('create procedure view WA_USER_APP_INSTANCES as
    WA_APP_INSTANCES (user_id, app_type, fname) (INST_NAME varchar, INST_URL varchar, INST_TYPE varchar)');
 
+create procedure WA_APP_GET_OWNER (in inst_identity any)
+{
+  declare inst_owner varchar;
+  if(isinteger(inst_identity))
+    inst_owner:=(select U_NAME from WA_MEMBER,WA_INSTANCE,SYS_USERS where WAM_INST=WAI_NAME and WAI_ID =inst_identity and WAM_MEMBER_TYPE = 1 and WAM_USER=U_ID );
+  else
+    inst_owner:=(select U_NAME from WA_MEMBER,SYS_USERS where WAM_USER=U_ID and WAM_MEMBER_TYPE = 1 and WAM_INST=inst_identity);
+
+  return inst_owner;
+}
+;
+create procedure WA_APP_INSTANCES_DATASPACE (in user_id integer, in app_type varchar default '%', in fname varchar default null)
+{
+  --declare item_name, url, ret varchar;
+  declare i, user_fid integer;
+  declare INST_NAME, INST_URL, INST_TYPE, INST_OWNER, INST_DATASPACE varchar;
+
+  declare app_dataspace varchar;
+  app_dataspace:=wa_get_app_dataspace(app_type);
+
+  i := 0;
+
+  if (app_type is null)
+   app_type := '%';
+
+  user_fid := coalesce((select U_ID from SYS_USERS where U_NAME = fname), user_id);
+
+  result_names (INST_NAME, INST_URL, INST_TYPE, INST_OWNER, INST_DATASPACE);
+
+  if (user_id is not null and user_id <> user_fid) -- user_id views user_fid app instance menu
+  {
+
+   --dbg_obj_print ('--case1');
+   for select WAM_INST as winst, WAM_HOME_PAGE as wpage, WAM_APP_TYPE
+          from WA_MEMBER
+         where WAM_IS_PUBLIC = 1
+           and WAM_APP_TYPE like app_type
+           and WAM_USER = user_fid
+           and WAM_MEMBER_TYPE = 1
+        union all
+        select WAM_INST as winst, WAM_HOME_PAGE as wpage, WAM_APP_TYPE as wpage
+          from WA_MEMBER
+          where WAM_USER = user_id
+            and WAM_STATUS = 2
+            and WAM_APP_TYPE like app_type
+            and WAM_MEMBERS_VISIBLE = 1
+            and WAM_INST NOT IN ( select WAM_INST, WAM_HOME_PAGE
+                                    from WA_MEMBER
+                                   where WAM_IS_PUBLIC = 1
+                                     and WAM_APP_TYPE like app_type
+                                     and WAM_USER = user_fid
+                                     and WAM_MEMBER_TYPE = 1)
+       order by winst
+      do
+    {
+      INST_OWNER:=WA_APP_GET_OWNER(winst);
+      INST_DATASPACE:='/dataspace/'||INST_OWNER||'/'||app_dataspace||'/'||sprintf('%U',winst);
+      result (winst, wpage, WAM_APP_TYPE, INST_OWNER, INST_DATASPACE);
+    }
+  }
+  else if (user_id is not null and user_fid = user_id) -- user_id views its own app instance menu
+  {
+    for select WAM_INST, WAM_HOME_PAGE, WAM_APP_TYPE from WA_MEMBER where WAM_USER = user_id and WAM_APP_TYPE like app_type order by WAM_INST do
+    {
+      
+      INST_OWNER:=WA_APP_GET_OWNER(WAM_INST);
+      INST_DATASPACE:='/dataspace/'||INST_OWNER||'/'||app_dataspace||'/'||sprintf('%U',WAM_INST);
+      result (WAM_INST, WAM_HOME_PAGE, WAM_APP_TYPE, INST_OWNER , INST_DATASPACE);
+    }
+  }
+  else if (user_id is null and user_fid is not null) -- nobody views user_fid app instance menu
+  {
+    for select WAM_INST, WAM_HOME_PAGE, WAM_APP_TYPE from WA_MEMBER where WAM_USER = user_fid and WAM_IS_PUBLIC = 1 and WAM_APP_TYPE like app_type order by WAM_INST do
+    {
+      INST_OWNER:=WA_APP_GET_OWNER(WAM_INST);
+      INST_DATASPACE:='/dataspace/'||INST_OWNER||'/'||app_dataspace||'/'||sprintf('%U',WAM_INST);
+      result (WAM_INST, WAM_HOME_PAGE, WAM_APP_TYPE, INST_OWNER , INST_DATASPACE);
+    };
+  }
+
+};
+
+wa_exec_no_error_log ('drop view WA_USER_APP_INSTANCES_DATASPACE');
+wa_exec_no_error_log ('create procedure view WA_USER_APP_INSTANCES_DATASPACE as
+   WA_APP_INSTANCES_DATASPACE (user_id, app_type, fname) (INST_NAME varchar, INST_URL varchar, INST_TYPE varchar, INST_OWNER varchar, INST_DATASPACE_URL varchar)');
+
 create procedure wa_set_url_t (in wai_inst any)
 {
 	declare url varchar;

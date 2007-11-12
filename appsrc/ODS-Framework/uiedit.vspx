@@ -94,6 +94,23 @@ window.onload = function swOrgInit ()
     swPersShow ();
 }
 
+
+function checkRest (form, sel)
+{
+  var i;
+  if (sel.selectedIndex == 0)
+    return;
+  for (i = 0; i < form.elements.length; i++)
+    {
+      var contr = form.elements[i];
+      if (contr != null && contr != sel && contr.type == "select-one")
+	{
+	  if (contr.selectedIndex == sel.selectedIndex)
+            contr.selectedIndex = 0;
+	}
+    }
+}
+
 ]]></script>
         <vm:login redirect="index.vspx"/>
 

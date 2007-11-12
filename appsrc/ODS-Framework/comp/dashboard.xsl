@@ -206,11 +206,11 @@
       <div class="w_pane content_pane">
       <ul>
 	<?vsp
-	for select top 10 wnn_title, wnn_link from wa_new_news order by wnn_row_id desc do
+  for select top 10 wnn_efi_id, wnn_title, wnn_link from wa_new_news order by wnn_row_id desc do
 	{
 	?>
 	  <li>
-            <a href="&lt;?V wa_expand_url (wnn_link, self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnn_title, 1, 55) ?></a>
+            <a href="&lt;?V wa_expand_url (SIOC..feed_item_iri2 (wnn_efi_id), self.login_pars) ?&gt;"><?V wa_utf8_to_wide (wnn_title, 1, 55) ?></a>
           </li>
 	<?vsp
 	}
@@ -482,7 +482,7 @@
           isDiscussions:=1;
           q_str := 'select distinct top 10 '||
                    '  NG_NAME as inst_name, FTHR_SUBJ as title, FTHR_DATE as ts, FTHR_FROM as author,'||
-                   '  concat(\'/nntpf/nntpf_nthread_view.vspx?group=\',cast(FTHR_GROUP as varchar),\'&amp;disp_artic=\',sprintf (\'%U\', FTHR_MESS_ID)) as url, '||
+                   '  sprintf(\'/dataspace/discussion/%U/%U\',NG_NAME,FTHR_MESS_ID) as url, '||
                    ' null as uname,  FTHR_FROM as email, FTHR_GROUP '||
                    'from NNFE_THR, NEWS_GROUPS '||
                    'where FTHR_GROUP=NG_GROUP '||
@@ -499,7 +499,7 @@
          signal (state, msg);
        
          declare i int;
-         declare inst_name,  uname, email varchar;
+         declare inst_name,inst_name_org,  uname, email varchar;
          declare title ,author,url nvarchar;
          declare ts datetime;
         
@@ -515,6 +515,8 @@
                inst_name := rows[i][0];
                }
                 
+               inst_name_org := rows[i][0];
+
                if (length(rows[i][1])>40)
                {
                    title := substring (rows[i][1], 1, 37)||'...';
@@ -571,10 +573,10 @@
          declare inst_url_local varchar;
          inst_url_local :='not specified';
 --         inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
-         inst_url_local:=wa_expand_url (sprintf('%s%V/%s/%U',self.odsbar_dataspace_path,uname,self.odsbar_app_dataspace,inst_name), self.odsbar_loginparams);
+         inst_url_local:=wa_expand_url (sprintf('%s%V/%s/%U',self.odsbar_dataspace_path,uname,self.odsbar_app_dataspace,inst_name_org), self.odsbar_loginparams);
          inst_url_local := (case when locate('http://',inst_url_local)=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||inst_url_local;
          
-         if(isDiscussions) inst_url_local := wa_expand_url (rtrim(self.odsbar_ods_gpath,'/ods/')||'/nntpf/nntpf_nthread_view.vspx?group='||cast(rows[i][7] as varchar), self.login_pars);
+         if(isDiscussions) inst_url_local := wa_expand_url (sprintf('/dataspace/discussion/%U',inst_name_org), self.login_pars);
 
 
          url:=(case when locate('http://',sprintf('%s',url))=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||url;

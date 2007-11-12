@@ -84,7 +84,7 @@
         (length (self.sid) = 0)
       )
    {
-     firstcolumn_wide:=20;
+     firstcolumn_wide:=25;
    } 
    
 
@@ -92,6 +92,9 @@
    <td width="<?Vcast(firstcolumn_wide as varchar)||'%'?>" valign="top">
       <table border="0" width="100%" height="100%" class="settings">
       <?vsp
+      if(self.app_type<>'nntpf' and self.app_type<>'discussion')
+       {
+
         declare i int;
         declare q_str, rc, dta, h any;
 
@@ -108,20 +111,29 @@
         }
         
 
-        declare INST_URL,INST_NAME varchar;
+        declare INST_URL,INST_NAME,INST_OWNER varchar;
 
         rc := exec (q_str, null, null, vector (), 0, null, null, h);
         while (0 = exec_next (h, null, null, dta))
         {
           exec_result (dta);
           
-          INST_URL:=coalesce(dta[1],'#');
+          INST_URL:=coalesce(dta[1],'javascript:void(0)');
+          
           INST_NAME:=coalesce(dta[0],'');
 
+          INST_OWNER:=WA_APP_GET_OWNER(dta[0]);
+          
+          declare dataspace_url varchar;
+          dataspace_url:='/dataspace/'||INST_OWNER||'/'||wa_get_app_dataspace(self.app_type)||'/'||INST_NAME;
       ?>
       <tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
         <td nowrap="nowrap">
+<!--
           <a href="<?V (case when locate('http://',INST_URL)=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||wa_expand_url (INST_URL, self.login_pars) ?>"><img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?></a>
+-->
+          <a href="<?V wa_expand_url (dataspace_url, self.login_pars) ?>"><img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?></a>
+
         </td>
       </tr>
       <?vsp
@@ -140,14 +152,15 @@
        </tr>
       <?vsp
           }
+        }
       ?>
       <?vsp
-      if(self.app_type='nntpf')
+      if(self.app_type='nntpf' or self.app_type='discussion')
        {
       ?>
        <tr>
-         <td>
-          <a href="<?Vrtrim(self.odsbar_ods_gpath,'/ods/')||wa_expand_url ('/nntpf/', self.login_pars)?>"><img src="images/icons/go_16.png" border="0"/> Discussions </a>
+         <td nowrap="nowrap">
+          <a href="<?Vrtrim(self.odsbar_ods_gpath,'/ods/')||wa_expand_url ('/dataspace/discussion', self.login_pars)?>"><img src="images/icons/go_16.png" border="0"/> Discussions</a>
         </td>
        </tr>
 
@@ -225,7 +238,7 @@
             <vm:dash-im-summary/>
             <?vsp
               }
-            else if (self.app_type = 'nntpf')
+            else if ((self.app_type = 'nntpf' or self.app_type = 'discussion') and self.sid)
               {
             ?>
             <vm:dash-discussions-summary/>

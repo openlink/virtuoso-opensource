@@ -2793,6 +2793,10 @@ if (i > 0)
     ?>
     <meta http-equiv="X-XRDS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
     <meta http-equiv="X-YADIS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
+    <link rel="alternate" type="application/atom+xml" title="Open Social" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U', self.st_host, self.fname), '+', '%2B')); ?>" />
+    <xsl:text>&#10;</xsl:text>
+    <link rel="alternate" type="application/atom+xml" title="Open Social Friends" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U/friends', self.st_host, self.fname), '+', '%2B')); ?>" />
+    <xsl:text>&#10;</xsl:text>
 </xsl:template>
 
   <!--=========================================================================-->

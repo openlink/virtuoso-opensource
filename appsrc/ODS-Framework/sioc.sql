@@ -2767,7 +2767,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 		optional { ?child_forum rdfs:label ?label . }
                   }
                 }
-	  }', graph, iri);
+	  } LIMIT %d OFFSET %d', graph, iri, lim, offs);
 
   qry := decl || part;
   qrs [3] := qry;

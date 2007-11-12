@@ -49,7 +49,7 @@ create procedure DB.DBA.ODS_DISC_GRP_ID (in par varchar, in fmt varchar, in val 
   if (length (val))
     val := split_and_decode (val)[0];
   gid := (select NG_GROUP from DB.DBA.NEWS_GROUPS where NG_NAME = val);
-  return gid;
+  return sprintf (fmt, gid);
 }
 ;
 
@@ -113,9 +113,16 @@ create procedure DB.DBA.ODS_PHOTO_ITEM_PAGE (in par varchar, in fmt varchar, in 
 create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varchar)
 {
   declare iri, res any;
-
-  if (par = 'page')
+--  dbg_obj_print (current_proc_name (), par, val);
+  if (par = 'page' or par = 'ext')
     return sprintf (fmt, val);
+  else if (par = '*accept*')
+    {
+      if (val = 'application/rdf+xml')
+	return sprintf (fmt, 'rdf');
+      else
+	return sprintf (fmt, 'n3');
+    }
 
   iri := sioc..get_graph () ||'/'|| val;
   -- when an about, sioc or foraf is requested, we just remove. the IRI MUST be preceding path
@@ -132,7 +139,7 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
       iri := iri || '#this';
     }
 --  dbg_obj_print (val, iri);
-  res := sprintf ('iid (%d).rdf', iri_id_num (iri_to_id (iri)));
+  res := sprintf ('iid (%d)', iri_id_num (iri_to_id (iri)));
   return sprintf (fmt, res);
 }
 ;
@@ -192,6 +199,14 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html', 1,
     2);
 
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html2', 1,
+    '/dataspace/feed/([^/]*)/([^/\\?]*)\\?instance=([^&]*)', vector('fid', 'link', 'instance'), 1,
+    '/enews2/%U/news.vspx?feed=%U&link=%U', vector('instance', 'fid', 'link'),
+    NULL,
+    NULL,
+    2);
+
+
 -- A rule returning home page for a given instance.
 -- NB: all instances have a <home url> execpt discussion
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_inst_html', 1,
@@ -199,6 +214,15 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_inst_html', 1,
     vector('ufname', 'app', 'inst'), 3,
     '%s', vector('inst'),
     'DB.DBA.ODS_INST_HOME_PAGE',
+    NULL,
+    2);
+
+-- Discussion home
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_home_html', 1,
+    '/dataspace/discussion', vector(), 1,
+    '/nntpf/', vector(),
+    NULL,
     NULL,
     2);
 
@@ -262,10 +286,17 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_main', 1,
     null,
     2);
 
+--DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');
+--DB.DBA.VHOST_DEFINE (lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>1, vsp_user=>'dba',
+--    opts=>vector ('url_rewrite', 'ods_rule_tcn_list'));
+--delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'ods_rule_tcn_list';
+--DB.DBA.HTTP_VARIANT_ADD ('ods_rule_tcn_list', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241).rdf', 'application/rdf+xml', 0.95);
+--DB.DBA.HTTP_VARIANT_ADD ('ods_rule_tcn_list', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241).n3', 'text/rdf+n3', 0.80);
+
 -- RDF data rule
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
     '/dataspace/(.*)', vector('path'), 1,
-    '/ods/data/rdf/%U', vector('path'),
+    '/ods/data/rdf/%U.%U', vector('path', '*accept*'),
     'DB.DBA.ODS_DET_REF',
     '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)',
     2,
@@ -274,7 +305,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
 -- RDF data rule
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
     '/dataspace/(.*)/page/([0-9]*)', vector('path', 'page'), 1,
-    '/ods/data/rdf/%U?page=%U', vector('path', 'page'),
+    '/ods/data/rdf/%U.%U?page=%U', vector('path', '*accept*', 'page'),
     'DB.DBA.ODS_DET_REF',
     '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)',
     2,
@@ -282,8 +313,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
 
 -- Rule for about, sioc, foaf etc. RDF resources
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_res', 1,
-    '/dataspace/(.*)/(about|foaf|sioc)\\.(rdf|n3|ttl|turtle)', vector('path'), 1,
-    '/ods/data/rdf/%U', vector('path'),
+    '/dataspace/(.*)/(about|foaf|sioc)\\.(.*)', vector('path', 'dummy', 'ext'), 1,
+    '/ods/data/rdf/%U.%U', vector('path', 'ext'),
     'DB.DBA.ODS_DET_REF',
     NULL,
     2,
@@ -299,7 +330,9 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_yadis',
 	  'ods_feed_html',
 	  'ods_feed_item_html',
+	  'ods_feed_item_html2',
 	  'ods_inst_html',
+	  'ods_discussion_home_html',
 	  'ods_discussion_html',
 	  'ods_item_html',
 	  'ods_wiki_item_html',

@@ -257,7 +257,7 @@ directory_init() {
   cp $HOME/binsrc/oat/toolkit/*.js vad/data/wa/oat/.
   cp $HOME/binsrc/oat/images/*.png vad/data/wa/images/oat/.
   cp $HOME/binsrc/oat/images/*.gif vad/data/wa/images/oat/.
-  cp $HOME/binsrc/oat/styles/winrect.css vad/data/wa/.
+#  cp $HOME/binsrc/oat/styles/winrect.css vad/data/wa/.
 #  cp $HOME/binsrc/oat/toolkit/ajax.js vad/data/wa/oat/.
 #  cp $HOME/binsrc/oat/toolkit/dom.js vad/data/wa/oat/.
 #  cp $HOME/binsrc/oat/toolkit/loader.js vad/data/wa/oat/.
@@ -385,6 +385,7 @@ sticker_init() {
   echo "      DB.DBA.wa_users_rdf_data_det_upgrade ();" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');" >> $STICKER 
   echo "      DB.DBA.VHOST_DEFINE (lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>1, vsp_user=>'dba');" >> $STICKER 
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/opensocial.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER

@@ -897,13 +897,12 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
                      vector ('eNews2', 'enews2','subscriptions'),
                      vector ('oWiki', 'wiki','wiki'),
                      vector ('oMail', 'oMail','mail'),
-                     vector ('eCRM', 'eCRM'),
+                     vector ('eCRM', 'eCRM', 'eCRM'),
                      vector ('Bookmark', 'bookmark','bookmark'),
---                     vector ('nntpf','Discussion'),
                      vector ('Polls','Polls','polls'),
                      vector ('AddressBook','AddressBook','addressbook'),
                      vector ('Calendar','Calendar','calendar'),
-                     vector ('IM','IM')
+                     vector ('IM','IM', 'IM')
                     );
       arr_notlogged := vector (
                                vector ('Community', 'Community','community'),
@@ -912,17 +911,16 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
                                vector ('oGallery', 'oGallery','photos'),
                                vector ('eNews2', 'enews2','subscriptions'),
                                vector ('oWiki', 'wiki','wiki'),
-                               vector ('eCRM', 'eCRM'),
+                               vector ('eCRM', 'eCRM', 'eCRM'),
                                vector ('Bookmark', 'bookmark','bookmark'),
---                               vector ('nntpf','Discussion'),
                                vector ('Polls','Polls','polls'),
                                vector ('AddressBook','AddressBook','addressbook'),
                                vector ('Calendar','Calendar','calendar')
                               );
 
       declare arr_url any;
-      arr_url := vector ('_nntpf',rtrim (self.odsbar_ods_gpath,'/ods/') || '/nntpf/'
-                          --packagename, fullurl - uses iven url of type key1,key1value,
+      arr_url := vector ('_nntpf',rtrim (self.odsbar_ods_gpath,'/ods/') || '/dataspace/discussion'
+                           --packagename, fullurl - uses even url of type key1,key1value,
                           --                                             key2,key2value
                          );
       if (length(self.sid)=0) arr :=arr_notlogged;
@@ -1107,7 +1105,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
 ?>
        <vm:if test=" self.odsbar_app_type='nntpf' ">
        <li>
-       <v:url name="gotodiscussion" url="--rtrim (self.odsbar_ods_gpath,'/ods/') || '/nntpf/'"
+       <v:url name="gotodiscussion" url="--rtrim (self.odsbar_ods_gpath,'/ods/') || '/dataspace/discussion'"
           value="--WA_GET_MFORM_APP_NAME(self.odsbar_app_type)"
           render-only="1"
           is-local="1"
@@ -1116,7 +1114,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
        </vm:if>
 
 
-       <vm:if test=" (length(self.sid) > 0) AND self.odsbar_app_type<>'oMail' AND self.odsbar_app_type<>'nntpf' AND self.odsbar_app_type<>'IM'">
+       <vm:if test=" (length(self.sid) > 0) AND self.odsbar_app_type<>'oMail' AND self.odsbar_app_type<>'nntpf' AND self.odsbar_app_type<>'discussion' AND self.odsbar_app_type<>'IM'">
        <li>
        <v:url name="slice_all" url="--sprintf ('%sall/%s',self.odsbar_dataspace_path, self.odsbar_app_dataspace)"
           value="--'All '||WA_GET_MFORM_APP_NAME(self.odsbar_app_type)"
