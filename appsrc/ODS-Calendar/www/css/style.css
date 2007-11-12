@@ -121,6 +121,7 @@ a:hover
 
 .lc
 {
+  font-size: 12px;
   background-color: #EFEFEF;
   border: 1px solid #7f94a5;
   padding: 5px;
@@ -168,6 +169,7 @@ a:hover
   -moz-user-select: none; 
   cursor: pointer; 
   text-align: center; 
+  font-size: 1em;
   font-weight: bold;
 }
 

@@ -623,20 +623,6 @@ function cNewEvent (event, onDate, onTime)
   }
 }
 
-function cNewTask (event, onDate, onTime)
-{
-  var srcNode = OAT.Event.source(event);
-  if (OAT.Dom.isClass(srcNode, 'CE_new')) {
-    if (onDate != null)
-      createHidden('F1', 'onDate', onDate);
-    if (onTime != null)
-      createHidden('F1', 'onTime', onTime);
-    createHidden('F1', 'select', 'create');
-    createHidden('F1', 'mode', 'task');
-  doPost ('F1', 'command');
-}
-}
-
 // ---------------------------------------------------------------------------
 function cExchange (command)
 {

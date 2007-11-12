@@ -275,12 +275,25 @@
   <!--=========================================================================-->
   <xsl:template name="vm:event">
     <div>
-      <div class="CE_new lc lc_head" style="float: left; padding: 3px; margin: 0 0 0.5em 0.5em;" onclick="javascript: cNewEvent(event);">
-      New Event
-    </div>
-      <div class="CE_new lc lc_head" style="float: right; padding: 3px; margin: 0 0.5em 0.5em 0;" onclick="javascript: cNewTask(event);">
-        New Task
-      </div>
+      <v:button value="New Event" action="simple" xhtml_class="button" xhtml_style="padding-left: 0; padding-right: 0; margin: 0 0 0.5em 0.5em; float: left; display: block; width: 78px;">
+        <v:on-post>
+          <![CDATA[
+            self.cAction := 'create';
+            if ((self.cScope = 'tasks') or (self.cScope = 'search'))
+              self.cScope := 'events';
+    		    self.vc_data_bind(e);
+          ]]>
+        </v:on-post>
+      </v:button>
+      <v:button value="New Task" action="simple" xhtml_class="button" xhtml_style="padding-left: 0; padding-right: 0; margin: 0 0.5em 0.5em 0; float: right; display: block; width: 78px;">
+        <v:on-post>
+          <![CDATA[
+            self.cAction := 'create';
+            self.cScope := 'tasks';
+    		    self.vc_data_bind(e);
+          ]]>
+        </v:on-post>
+      </v:button>
       <br style="clear: both;" />
     </div>
   </xsl:template>
