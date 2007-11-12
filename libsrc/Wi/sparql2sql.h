@@ -163,10 +163,10 @@ extern ccaddr_t sprintff_intersect (ccaddr_t sprintf_fmt1, ccaddr_t sprintf_fmt2
 The returned value is 0 if it's proven that \c strg1 can not be printed by \c sprintf_fmt2, nonzero otherwise. */
 extern int sprintff_like (ccaddr_t strg1, ccaddr_t sprintf_fmt2);
 
-/* Replaces every "%" in \c strg with "%%", so the result is an sprintf format string (a new DV_STRING plain or mempool box) */
+/*! Replaces every "%" in \c strg with "%%", so the result is an sprintf format string (a new DV_STRING plain or mempool box) */
 extern caddr_t sprintff_from_strg (ccaddr_t strg, int use_mem_pool);
 
-/*!< Changes fields \c rvrSprintffs and \c rvrSprintffCount of \c rvr by adding (up to) \c add_count elements of \c add_sffs */
+/*! Changes fields \c rvrSprintffs and \c rvrSprintffCount of \c rvr by adding (up to) \c add_count elements of \c add_sffs */
 extern void sparp_rvr_add_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *add_sffs, ptrlong add_count);
 extern void sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *isect_sffs, ptrlong isect_count);
 
@@ -199,7 +199,7 @@ extern void dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, rdf
 If dest is equal to SPARP_RVR_CREATE then it allocates new rvr otherwise it overwrites \c dest */
 extern rdf_val_range_t *sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *src);
 
-/*! Tries to zap \dest and then restrict it by \c datatype and/or value. */
+/*! Tries to zap \c dest and then restrict it by \c datatype and/or value. */
 extern void sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value);
 
 /*! Restricts \c dest by additional restrictions from \c addon that match the mask of \c changeable_flags */
@@ -231,7 +231,7 @@ If \c gp is not NULL the search is restricted by triples that
 are direct members of \c gp, otherwise the gp to search will be found by selid of the variable. */
 extern SPART *sparp_find_triple_of_var (sparp_t *sparp, SPART *gp, SPART *var);
 
-/*! This is like sparp_find_triple_of_var but returns triple that
+/*! This is like sparp_find_triple_of_var() but returns triple that
 contains the field whose selid, tabid, name and tr_idx matches \c var. */
 extern SPART *sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var);
 
@@ -260,7 +260,7 @@ typedef struct tc_context_s {
   int tcc_nonfiltered_cases_found;	/*!< Count of triples cases that passed tests, including cases rejected due to QUAD MAP xx { } restriction of triple */
 } tc_context_t;
 
-/*! This checks if the given \c qm may contain data that matches \c triple by itself,
+/*! This checks if the given \c qm may contain data that matches \c tcc->tcc_triple by itself,
 without its submaps and without the check of qmEmpty. */
 extern int sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm);
 
@@ -273,7 +273,7 @@ that describe an union of all elementary datasources that can store triples that
 \c required_source_type should be FROM_L or NAMED_L */
 extern triple_case_t **sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int required_source_type);
 
-/*! This calls sparp_find_triple_cases() and fills in tc_list and native_formats of triple->_.triple */
+/*! This calls sparp_find_triple_cases() and fills in \c tc_list and \c native_formats of \c triple->_.triple */
 extern void sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple);
 
 extern int sparp_expns_are_equal (sparp_t *sparp, SPART *one, SPART *two);
@@ -360,6 +360,10 @@ extern void sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPAR
 
 /*! This makes the gp and all its sub-gps unusable and marks 'deprecated' all equivs that belong to these gps. */
 extern void sparp_gp_deprecate (sparp_t *sparp, SPART *parent_gp);
+
+/*! This may turn, e.g., '10 > ?a' into '?a < 10' in order to normalize expressions before optimizations.
+No effects if called for the second time. */
+extern void sparp_rotate_comparisons_by_rank (SPART *filt);
 
 /*! This converts union of something and unions into flat union. The operation is recursive while there's some subunions.
 Equivalences are touched, of course, but who cares?

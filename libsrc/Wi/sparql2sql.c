@@ -573,6 +573,55 @@ sparp_expn_rside_rank (SPART *tree)
   return 0x20000;
 }
 
+void
+sparp_rotate_comparisons_by_rank (SPART *filt)
+{
+  switch (SPART_TYPE (filt))
+    {
+    case BOP_EQ:
+    case BOP_NEQ:
+    case BOP_LT:
+    case BOP_LTE:
+    case BOP_GT:
+    case BOP_GTE:
+      {
+        SPART *l = filt->_.bin_exp.left;
+        SPART *r = filt->_.bin_exp.right;
+        int lrrank = sparp_expn_rside_rank (l);
+        int rrrank = sparp_expn_rside_rank (r);
+        if (lrrank > rrrank)
+          {
+            filt->_.bin_exp.right = l;
+            filt->_.bin_exp.left = r;
+            switch (SPART_TYPE (filt))
+              {
+              case BOP_LT:	filt->type = BOP_GT; break;
+              case BOP_LTE:	filt->type = BOP_GTE; break;
+              case BOP_GT:	filt->type = BOP_LT; break;
+              case BOP_GTE:	filt->type = BOP_LTE; break;
+              }
+          }
+        break;
+      }
+    case SPAR_BUILT_IN_CALL:
+      if (SAMETERM_L == filt->_.builtin.btype)
+        {
+          SPART *l = filt->_.builtin.args[0];
+          SPART *r = filt->_.builtin.args[1];
+          int lrrank = sparp_expn_rside_rank (l);
+          int rrrank = sparp_expn_rside_rank (r);
+          if (lrrank > rrrank)
+            {
+              filt->_.builtin.args[0] = r;
+              filt->_.builtin.args[1] = l;
+            }
+        }
+      break;
+    default:
+      break;
+    }
+}
+
 /* For an equality in group \c curr between member of \c eq_l and expression \c r,
 the function restricts \c eq_l or even merges it with variable of other equiv.
 \returns 1 if equality is no longer needed due to merge, 0 otherwise */
@@ -620,50 +669,7 @@ int
 sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
 {
 /* We rotate comparisons before anything else */
-  switch (SPART_TYPE (filt))
-    {
-    case BOP_EQ:
-    case BOP_NEQ:
-    case BOP_LT:
-    case BOP_LTE:
-    case BOP_GT:
-    case BOP_GTE:
-      {
-        SPART *l = filt->_.bin_exp.left;
-        SPART *r = filt->_.bin_exp.right;
-        int lrrank = sparp_expn_rside_rank (l);
-        int rrrank = sparp_expn_rside_rank (r);
-        if (lrrank > rrrank)
-          {
-            filt->_.bin_exp.right = l;
-            filt->_.bin_exp.left = r;
-            switch (SPART_TYPE (filt))
-              {
-              case BOP_LT:	filt->type = BOP_GT; break;
-              case BOP_LTE:	filt->type = BOP_GTE; break;
-              case BOP_GT:	filt->type = BOP_LT; break;
-              case BOP_GTE:	filt->type = BOP_LTE; break;
-              }
-          }
-        break;
-      }
-    case SPAR_BUILT_IN_CALL:
-      if (SAMETERM_L == filt->_.builtin.btype)
-        {
-          SPART *l = filt->_.builtin.args[0];
-          SPART *r = filt->_.builtin.args[1];
-          int lrrank = sparp_expn_rside_rank (l);
-          int rrrank = sparp_expn_rside_rank (r);
-          if (lrrank > rrrank)
-            {
-              filt->_.builtin.args[0] = r;
-              filt->_.builtin.args[1] = l;
-            }
-        }
-      break;
-    default:
-      break;
-    }
+  sparp_rotate_comparisons_by_rank (filt);
 /* Now filters can be processed */
   switch (SPART_TYPE (filt))
     {
@@ -740,9 +746,16 @@ sparp_gp_trav_restrict_by_simple_filters (sparp_t *sparp, SPART *curr, sparp_tra
     default: return 0;
     }
   for (fctr = BOX_ELEMENTS (curr->_.gp.filters); fctr--; /* no step */)
-    {
+    { /* The descending order of fctr values is important -- note possible sparp_gp_detach_filter () */
       SPART *filt = curr->_.gp.filters[fctr];
-      int ret = sparp_filter_to_equiv (sparp, curr, filt);
+      int ret;
+      /*if (BOP_OR == SPART_TYPE (filt))
+        {
+          ret = sparp_optimize_BOP_OR_filter (sparp, curr, filt);
+          if (0 == ret)
+            continue;
+        }*/
+      ret = sparp_filter_to_equiv (sparp, curr, filt);
       if (0 == ret)
         continue;
       sparp_gp_detach_filter (sparp, curr, fctr, NULL);
@@ -2960,8 +2973,9 @@ ptrdiff_t qm_field_constants_offsets[4] = {
 #define SSG_QM_UNSET			0	/*!< The value is not yet calculated */
 #define SSG_QM_NO_MATCH			1	/*!< Triple matching triple pattern can not match the qm restriction, disjoint */
 #define SSG_QM_PARTIAL_MATCH		2	/*!< Triple matching triple pattern may match the qm restriction, but no warranty, common case */
-#define SSG_QM_FULL_MATCH		3	/*!< Triple matching triple pattern will also match the qm restriction, but no warranty, triple pattern is more strict than qm */
-#define SSG_QM_FULL_EXCLUSIVE_MATCH	4	/*!< SSG_QM_FULL_MATCH plus qm is exclusive so red cut and no more search for possible quad maps of lower priority */
+#define SSG_QM_APPROX_MATCH	3	/*!< Triple matching triple pattern will always match the qm restriction (so triple pattern is more strict than qm) OR var in pattern and non-constant qm value */
+#define SSG_QM_PROVEN_MATCH	4	/*!< Triple matching triple pattern will always match the qm restriction, this is strictly proven so it can be used to cut by soft exclusive */
+#define SSG_QM_MATCH_AND_CUT	9	/*!< SSG_QM_APPROX_MATCH plus qm is soft/hard exclusive so red cut and no more search for possible quad maps of lower priority */
 
 int
 sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
@@ -2995,7 +3009,7 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
           /* Check if a fixed value of a field variable is equal to the constant field of the mapping */
           if (!sparp_fixedvalues_equal (sparp, (SPART *)(eq_g->e_rvr.rvrFixedValue), (SPART *)(rvr->rvrFixedValue)))
             return SSG_QM_NO_MATCH;
-          return SSG_QM_FULL_MATCH;
+          return SSG_QM_PROVEN_MATCH;
         }
       if (NULL != rvr->rvrFixedValue)
         {
@@ -3079,7 +3093,7 @@ field_sff_isects_qmv_sff: ;
             }
         }
       if (NULL == rvr->rvrFixedValue)
-        return SSG_QM_FULL_MATCH; /* This is not quite true, but this is the matching rule for EXCLUSIVE */
+        return SSG_QM_APPROX_MATCH; /* This is not quite true, but this is the matching rule for EXCLUSIVE */
       return SSG_QM_PARTIAL_MATCH;
     }
   else if ((SPAR_LIT == field_type) || (SPAR_QNAME == field_type))
@@ -3097,7 +3111,7 @@ field_sff_isects_qmv_sff: ;
         {
           if (!sparp_fixedvalues_equal (sparp, field, (SPART *)(rvr->rvrFixedValue)))
         return SSG_QM_NO_MATCH;
-      return SSG_QM_FULL_MATCH;
+          return SSG_QM_PROVEN_MATCH;
     }
       if (NULL != qmv_or_fmt_rvr)
         {
@@ -3107,11 +3121,11 @@ field_sff_isects_qmv_sff: ;
               int ctr;
               for (ctr = qmv_or_fmt_rvr->rvrSprintffCount; ctr--; /* no step */)
                 if (sprintff_like (fv, qmv_or_fmt_rvr->rvrSprintffs[ctr]))
-                  return SSG_QM_FULL_MATCH;
+                  return SSG_QM_PROVEN_MATCH;
               return SSG_QM_NO_MATCH; /* reached if no match found */
             }
         }
-      return SSG_QM_FULL_MATCH;
+      return SSG_QM_PROVEN_MATCH;
     }
   GPF_T1("ssg_check_field_mapping_g(): field is neither variable nor literal?");
   return SSG_QM_NO_MATCH;
@@ -3139,7 +3153,7 @@ sparp_check_field_mapping_spo (sparp_t *sparp, tc_context_t *tcc, SPART *field,
         { /* Check if a fixed value of a field variable is equal to the constant field of the mapping */
           if (!sparp_fixedvalues_equal (sparp, (SPART *)(field->_.var.rvr.rvrFixedValue), (SPART *)(rvr->rvrFixedValue)))
             return SSG_QM_NO_MATCH;
-          return SSG_QM_FULL_MATCH;
+          return SSG_QM_PROVEN_MATCH;
         }
       if (NULL != qmv_or_fmt_rvr)
         {
@@ -3178,7 +3192,7 @@ field_sff_isects_qmv_sff: ;
             }
         }
       if (NULL == rvr->rvrFixedValue)
-        return SSG_QM_FULL_MATCH; /* This is not quite true, but this is the matching rule for EXCLUSIVE */
+        return SSG_QM_APPROX_MATCH; /* This is not quite true, but this is the matching rule for EXCLUSIVE */
       return SSG_QM_PARTIAL_MATCH;
     }
   else if ((SPAR_LIT == field_type) || (SPAR_QNAME == field_type))
@@ -3198,7 +3212,7 @@ field_sff_isects_qmv_sff: ;
     {
           if (!sparp_fixedvalues_equal (sparp, field, (SPART *)(rvr->rvrFixedValue)))
         return SSG_QM_NO_MATCH;
-      return SSG_QM_FULL_MATCH;
+          return SSG_QM_PROVEN_MATCH;
     }
       if ((NULL != qmv_or_fmt_rvr) && (SPART_VARR_SPRINTFF & qmv_or_fmt_rvr->rvrRestrictions))
         {
@@ -3208,11 +3222,11 @@ field_sff_isects_qmv_sff: ;
               int ctr;
               for (ctr = qmv_or_fmt_rvr->rvrSprintffCount; ctr--; /* no step */)
                 if (sprintff_like (fv, qmv_or_fmt_rvr->rvrSprintffs[ctr]))
-                  return SSG_QM_FULL_MATCH;
+                  return SSG_QM_PROVEN_MATCH;
               return SSG_QM_NO_MATCH; /* reached if no match found */
             }
         }
-      return SSG_QM_FULL_MATCH;
+      return SSG_QM_PROVEN_MATCH;
     }
   GPF_T1("ssg_check_field_mapping_spo(): field is neither variable nor literal?");
   return SSG_QM_NO_MATCH;
@@ -3303,9 +3317,12 @@ sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
         return SSG_QM_NO_MATCH;
     }
   /* The conclusion */
-  if ((SSG_QM_FULL_MATCH == g_match) && (SSG_QM_FULL_MATCH == s_match) &&
-    (SSG_QM_FULL_MATCH == p_match) && (SSG_QM_FULL_MATCH == o_match) )
-    return SSG_QM_FULL_MATCH;
+  if ((SSG_QM_PROVEN_MATCH == g_match) && (SSG_QM_PROVEN_MATCH == s_match) &&
+    (SSG_QM_PROVEN_MATCH == p_match) && (SSG_QM_PROVEN_MATCH == o_match) )
+    return SSG_QM_PROVEN_MATCH;
+  if ((SSG_QM_APPROX_MATCH <= g_match) && (SSG_QM_APPROX_MATCH <= s_match) &&
+    (SSG_QM_APPROX_MATCH <= p_match) && (SSG_QM_APPROX_MATCH <= o_match) )
+    return SSG_QM_APPROX_MATCH;
   return SSG_QM_PARTIAL_MATCH;
 }
 
@@ -3322,8 +3339,8 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
   DO_BOX_FAST (quad_map_t *, sub_qm, ctr, qm->qmUserSubMaps)
     {
       int status = sparp_qm_find_triple_cases (sparp, tcc, sub_qm, inside_allowed_qm);
-      if (SSG_QM_FULL_EXCLUSIVE_MATCH == status)
-        return SSG_QM_FULL_EXCLUSIVE_MATCH;
+      if (SSG_QM_MATCH_AND_CUT == status)
+        return SSG_QM_MATCH_AND_CUT;
     }
   END_DO_BOX_FAST;
   for (;;)
@@ -3385,8 +3402,10 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
           dk_set_push (tcc->tcc_cuts + single_fixed_fld, single_fixed_val);
         }
     }
-  if ((SSG_QM_FULL_MATCH == common_status) && (SPART_QM_EXCLUSIVE & qm->qmMatchingFlags))
-    return SSG_QM_FULL_EXCLUSIVE_MATCH;
+  if ((SSG_QM_PROVEN_MATCH == common_status) && (SPART_QM_SOFT_EXCLUSIVE & qm->qmMatchingFlags))
+    return SSG_QM_MATCH_AND_CUT;
+  if ((SSG_QM_APPROX_MATCH <= common_status) && (SPART_QM_EXCLUSIVE & qm->qmMatchingFlags))
+    return SSG_QM_MATCH_AND_CUT;
   return common_status;
 }
 
@@ -3430,14 +3449,14 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
       if (SPART_QM_EMPTY & qm->qmMatchingFlags)
         spar_internal_error (sparp, "RDF quad mapping metadata are corrupted: MJV is declared as empty; the quad storage used in the query should be configured again");
       status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm, 0);
-      if (SSG_QM_FULL_EXCLUSIVE_MATCH == status)
+      if (SSG_QM_MATCH_AND_CUT == status)
         goto full_exclusive_match_detected;
     }
   END_DO_BOX_FAST;
   DO_BOX_FAST (quad_map_t *, qm, ctr, sparp->sparp_storage->qsUserMaps)
     {
       int status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm, 0);
-      if (SSG_QM_FULL_EXCLUSIVE_MATCH == status)
+      if (SSG_QM_MATCH_AND_CUT == status)
         goto full_exclusive_match_detected;
     }
   END_DO_BOX_FAST;

@@ -5513,7 +5513,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
   declare old_actual_type varchar;
   declare tablename, qmvid_g, qmvid_s, qmvid_p, qmvid_o varchar;
   declare qmvfix_g, qmvfix_s, qmvfix_p, qmvfix_o any;
-  declare qm_exclusive, qm_empty, qm_is_default, qmusersubmapsid, atablesid, qmcondsid varchar;
+  declare qm_exclusive, qm_soft_exclusive, qm_empty, qm_is_default, qmusersubmapsid, atablesid, qmcondsid varchar;
   declare qm_order, atablectr, atablecount, condctr, condcount integer;
   -- dbg_obj_princ ('DB.DBA.RDF_QM_DEFINE_MAPPING (', storage, qmrawid, qmid, qmparentid, qmv_g, qmv_s, qmv_p, qmv_o, is_real, atables, conds, opts, ')');
   DB.DBA.RDF_QM_ASSERT_STORAGE_FLAG (storage, 1);
@@ -5556,6 +5556,10 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
     qm_is_default := 'http://www.openlinksw.com/schemas/virtrdf#SPART_QM_OK_FOR_ANY_QUAD';
   else
     qm_is_default := NULL;
+  if (get_keyword_ucase ('SOFT_EXCLUSIVE', opts))
+    qm_soft_exclusive := 'http://www.openlinksw.com/schemas/virtrdf#SPART_QM_SOFT_EXCLUSIVE';
+  else
+    qm_soft_exclusive := NULL;
   if (not is_real)
     {
       qm_empty := 'http://www.openlinksw.com/schemas/virtrdf#SPART_QM_EMPTY';
@@ -5628,6 +5632,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
           virtrdf:qmMatchingFlags `iri(?:qm_exclusive)` ;
           virtrdf:qmMatchingFlags `iri(?:qm_empty)` ;
           virtrdf:qmMatchingFlags `iri(?:qm_is_default)` ;
+        virtrdf:qmMatchingFlags `iri(?:qm_soft_exclusive)` ;
           virtrdf:qmPriorityOrder ?:qm_order .
         `iri(?:atablesid)`
           rdf:type virtrdf:array-of-QuadMapATable .

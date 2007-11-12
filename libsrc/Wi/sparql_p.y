@@ -189,6 +189,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SAMETERM_L	/*:: PUNCT_SPAR_LAST("SAMETERM") ::*/
 %token SELECT_L		/*:: PUNCT_SPAR_LAST("SELECT") ::*/
 %token SILENT_L		/*:: PUNCT_SPAR_LAST("SILENT") ::*/
+%token SOFT_L		/*:: PUNCT_SPAR_LAST("SOFT") ::*/
 %token STORAGE_L	/*:: PUNCT_SPAR_LAST("STORAGE") ::*/
 %token STR_L		/*:: PUNCT_SPAR_LAST("STR") ::*/
 %token SUBCLASS_L	/*:: PUNCT_SPAR_LAST("SUBCLASS") ::*/
@@ -1683,8 +1684,9 @@ spar_qm_option_commalist	/* ::=  QmOption ( ',' QmOption )*	*/
 		t_set_push (&($$), $3[1]); }
 	;
 
-spar_qm_option		/* [Virt]	QmOption	 ::=  'EXCLUSIVE' | ( 'ORDER' INTEGER ) | ( 'USING' PLAIN_ID )	*/
-	: EXCLUSIVE_L			{ $$ = (SPART **)t_list (2, t_box_dv_uname_string ("EXCLUSIVE"), (ptrlong)1); }
+spar_qm_option		/* [Virt]	QmOption	 ::=  ( 'SOFT'? 'EXCLUSIVE' ) | ( 'ORDER' INTEGER ) | ( 'USING' PLAIN_ID )	*/
+	: SOFT_L EXCLUSIVE_L		{ $$ = (SPART **)t_list (2, t_box_dv_uname_string ("SOFT_EXCLUSIVE"), (ptrlong)1); }
+	| EXCLUSIVE_L			{ $$ = (SPART **)t_list (2, t_box_dv_uname_string ("EXCLUSIVE"), (ptrlong)1); }
 	| ORDER_L SPARQL_INTEGER	{ $$ = (SPART **)t_list (2, t_box_dv_uname_string ("ORDER"), $2); }
 	| USING_L SPARQL_PLAIN_ID	{ $$ = (SPART **)t_list (2, t_box_dv_uname_string ("USING"), $2); }
 	;

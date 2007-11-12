@@ -16,8 +16,9 @@ JSO_CONST virtrdf SPART_VARR_CONFLICT		0x2000	--!< The variable should match con
 
 -- Flags of actions to be done in case of match of triple pattern to conditions of the quad map
 JSO_CONST virtrdf SPART_QM_EMPTY		0x0002	--!< The quad map does not contain real mapping but it's a root of tree of submaps and it can set a common 'exclusive'
-JSO_CONST virtrdf SPART_QM_EXCLUSIVE		0x0004	--!< The quad map is an almost-exclusive storage for triples whose fields match fixed fields of the map. Red cut in the pattern matching search
+JSO_CONST virtrdf SPART_QM_EXCLUSIVE		0x0004	--!< The quad map is an almost-exclusive storage for triples whose fields match fixed fields of the map. Red cut in the pattern matching search. This takes precedence over SPART_QM_SOFT_EXCLUSIVE
 JSO_CONST virtrdf SPART_QM_OK_FOR_ANY_QUAD	0x0008	--!< The quad map may contain any quad so it can be used as a default qm of the storage
+JSO_CONST virtrdf SPART_QM_SOFT_EXCLUSIVE	0x0010	--!< The quad map is either exclusive or not, discretion is made by compiler
 
 JSO_CONST virtrdf SPART_QS_NO_IMPLICIT_USER_QM	0x0001	--!< The quad storage disables user quad maps for triple patterns with unbound graph
 JSO_CONST virtrdf SPART_QS_BLOCK_DEFAULT_QM	0x0002	--!< The quad storage disables the use of default quad map and signals an error if no other qm matches

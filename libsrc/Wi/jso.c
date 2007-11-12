@@ -582,6 +582,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
   caddr_t jprop;
   ccaddr_t dt = NULL;
   caddr_t *retval;
+  caddr_t old_fld_val = NULL;
   jso_class_descr_t *cd, *fld_type_cd;
   jso_field_descr_t fldd_for_array;
   jso_field_descr_t *fldd;
@@ -767,6 +768,7 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
           fld_ptr[0] = value_rtti;
           goto make_retval; /* see below */
         }
+      old_fld_val = fld_ptr[0];
       if (uname_xmlschema_ns_uri_hash_any == dt)
         {
           if (arg_is_iri && (DV_STRING == arg_dtp))
@@ -864,6 +866,17 @@ bif_jso_set_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int do
 make_retval:
   if (NULL != fld_type_cd)
     return box_copy (((jso_rtti_t *)(fld_ptr[0]))->jrtti_inst_iri);
+/*    
+  if (IS_BOX_POINTER (fld_ptr[0]) && IS_BOX_POINTER (old_fld_val) &&
+     (DV_TYPE_OF (fld_ptr[0]) == DV_TYPE_OF (old_fld_val)) &&
+     (box_length (fld_ptr[0]) == box_length (old_fld_val)) &&
+     !memcmp (fld_ptr[0], old_fld_val, box_length (old_fld_val)) )
+     {
+       dk_free_tree (fld_ptr[0]);
+       fld_ptr[0] = old_fld_val;
+     }
+*/
+  dk_free_tree (old_fld_val);
   retval = (caddr_t *)(box_copy (fld_ptr[0]));
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (retval))
     {
