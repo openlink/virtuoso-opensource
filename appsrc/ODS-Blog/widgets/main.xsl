@@ -70,6 +70,8 @@
     <v:variable name="owner" type="varchar" default="null" persist="temp" />
     <v:variable name="address" type="varchar" default="null" persist="temp" />
     <v:variable name="owner_name" type="varchar" default="null" persist="temp" />
+    <v:variable name="owner_kind" type="varchar" default="'person'" persist="temp" />
+    <v:variable name="owner_iri" type="varchar" default="null" persist="temp" />
     <v:variable name="owner_u_id" type="int" default="null" persist="temp" />
     <v:variable name="authors" type="varchar" default="null" persist="temp" />
     <v:variable name="src_uri1" type="varchar" default="null"/>
@@ -450,8 +452,12 @@
 	self.blog_iri := sprintf ('http://%s/dataspace/%U/weblog/%U', self.chost, self.owner_name, self.inst_name);
 
 	{
+	  declare org_kind int;
 	  declare exit handler for not found;
-	  select WAUI_LAT, WAUI_LNG into self.e_lat, self.e_lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.owner_u_id;
+	  select WAUI_LAT, WAUI_LNG, WAUI_IS_ORG into self.e_lat, self.e_lng, org_kind
+	  from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.owner_u_id;
+	  if (org_kind)
+	    self.owner_kind := 'organization';
 	}
 
 	for select coalesce(U_FULL_NAME, U_NAME) as author_name
@@ -622,6 +628,8 @@ else if (length (self.catid))
 
  if (self.official_host_label = '*ini*')
    self.official_host_label := sys_stat ('st_host_name') || ':' || server_http_port ();
+
+ self.owner_iri := sprintf ('http://%s/dataspace/%s/%U', self.chost, self.owner_kind, self.owner_name);
 
  self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');
  self.vc_add_attribute ('xmlns:dc', 'http://purl.org/dc/elements/1.1/');
@@ -1191,7 +1199,7 @@ window.onload = function (e)
         Widget vm:disco-foaf-link should be placed inside vm:header only
       </xsl:message>
     </xsl:if>
-    <link rel="meta" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/about.rdf', self.chost, self.owner_name)); ?>" />
+    <link rel="meta" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (self.owner_iri || '/about.rdf'); ?>" />
     <xsl:text>&#10;</xsl:text>
     <link rel="meta" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (sprintf ('http://%s%sgems/foaf%s.xml', self.host, self.base, case when self.have_comunity_blog then '-members' else '' end)); ?>" />
 
@@ -1565,7 +1573,7 @@ window.onload = function (e)
 	 declare sne_id int;
 	 sne_id := (select sne_id from sn_person where sne_name = self.owner_name);
 	?>
-	<a href="&lt;?vsp http (sprintf ('http://%s/dataspace/%U/about.rdf', self.chost, self.owner_name)); ?>"  class="{local-name()}">
+	<a href="&lt;?vsp http (self.owner_iri || '/about.rdf'); ?>"  class="{local-name()}">
         <img border="0" alt="FOAF" title="FOAF">
 	    <xsl:call-template name="feed-image">
 		<xsl:with-param name="default">'foaf.png'</xsl:with-param>
@@ -2148,14 +2156,19 @@ window.onload = function (e)
 		    title_val := '';
                     if (1 or self.have_comunity_blog)
                     {
+		      declare auth_name, auth_iri, auth_pers_iri any;
                       declare exit handler for not found;
-                      select U_FULL_NAME, BI_E_MAIL, BI_HOME into author, email, ref1 from
+                      select U_FULL_NAME, BI_E_MAIL, BI_HOME, U_NAME into author, email, ref1, auth_name from
                         BLOG.DBA.SYS_BLOG_INFO, SYS_USERS where BI_OWNER = control.te_rowset[5] and U_ID = BI_OWNER;
                       if (author = '' or author is null)
                         author := email;
                       if (author <> '')
-                        title_val := charset_recode ('<a href="' || ref1 || '">' ||
+		        {
+			   auth_iri := sioc.DBA.user_obj_iri (auth_name);
+                           auth_pers_iri := sioc.DBA.person_iri (auth_iri);
+                           title_val := charset_recode ('<a href="' || auth_pers_iri || '">' ||
 		  	      sprintf('%V', author) || '</a>', 'UTF-8', '');
+                    }
                     }
 		    if (title_val <> '')
 		      http (title_val);
@@ -2878,7 +2891,7 @@ window.onload = function (e)
     <?vsp } ?>
     <div>
 	<v:url xhtml_class="button" name="full_profile" value="Full profile"
-	  url="--sprintf ('%s/uhome.vspx?ufname=%s', wa_link (1),  self.owner_name)"
+	  url="--self.owner_iri"
 	  render-only="1"
 	  is-local="1"
 	    />
@@ -7771,7 +7784,7 @@ window.onload = function (e)
               </xsl:if>
             </img>
 	    <b><v:url name="over_ref22" format="%s" value="View My Profile"
-	    url="--sprintf ('%s/uhome.vspx?ufname=%s', wa_link (1), self.owner_name)"
+	    url="--self.owner_iri"
 	    render-only="1"
 	    is-local="1"
 		    />
@@ -9432,7 +9445,8 @@ window.onload = function (e)
 	if (self.user_name is not null)
 	  {
       ?>
-      <v:url name="login_info_label" value="--self.user_name" url="--sprintf ('%s/uhome.vspx?ufname=%s', wa_link(1), self.user_name)" is-local="1">
+      <v:url name="login_info_label" value="--self.user_name"
+	  url="--self.owner_iri" is-local="1">
           <v:before-render>
 	    control.vu_format := get_keyword ('format_string', self.user_data, '<xsl:value-of select="@format_string"/>');
         </v:before-render>
