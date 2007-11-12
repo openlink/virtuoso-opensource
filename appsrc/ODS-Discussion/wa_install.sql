@@ -69,7 +69,7 @@ create method wa_home_url () for ODS.DISCUSSION.discussion {
 
   ods_url:=coalesce(registry_get ('wa_home_link'),'/ods');
   
-  uri := ods_url||'app_my_inst.vspx?app=nntpf'; -- as Discussion has a special developed dashboar- url to dashboard is supplied, common use should be [uri := '/my_app_url/';]
+  uri := '/dataspace/all/discussion'; -- as Discussion has a special developed dashboar- url to dashboard is supplied, common use should be [uri := '/my_app_url/';]
   
   return uri;
 }
