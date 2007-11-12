@@ -288,13 +288,7 @@ var QueryExec = function(optObj) {
 			
 				if (self.dom.select.value == "0") {
 				var value = simplified_row[index];
-					var idx = Math.max(value.lastIndexOf("/"),value.lastIndexOf("#"),value.lastIndexOf(":"));
-					var simple = value.substring(idx+1);
-					if (simple == "this") {
-						var idx1 = Math.max(value.lastIndexOf("/"));
-						var idx2 = Math.max(value.lastIndexOf("#"));
-						var simple = value.substring(idx1+1,idx2);
-					}
+					var simple = self.store.simplify(value);
 					simplified_row[index] = simple;
 				}
 			}

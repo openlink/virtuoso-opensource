@@ -165,46 +165,11 @@ iSPARQL.QBE = function () {
 
 		self.group_color_seq.reset();
 
-		self.format_set();
-
 		var table = $('qbe_dataset_list');
 		if (table.tBodies.length) { OAT.Dom.unlink(table.tBodies[0]); }
 		$('qbe_datasource_cnt').innerHTML=0;
 	}
 
-	this.format_set = function() {
-		var format = $('qbe_format');
-		OAT.Dom.clear(format);
-		for(var i = format.options.length; i >= 0; i--) { format.options[i] = null; }
-
-		var set_rdf_options = function() {
-			format.options[0] = new Option('RDF Graph','application/isparql+rdf-graph');
-			format.options[1] = new Option('N3/Turtle','text/rdf+n3');
-			format.options[2] = new Option('RDF/XML','application/rdf+xml');
-			format.selectedIndex = 0;
-		}
-
-		var type = $v("qbe_query_type");
-		if (type == 'DESCRIBE') {
-			set_rdf_options();
-			return;
-		} else if (type == 'SELECT') {
-			for (var i = 0;i < self.svgsparql.groups.length;i++)
-			if (self.svgsparql.groups[i].getType() == OAT.SVGSparqlData.GROUP_CONSTRUCT)  {
-			set_rdf_options();
-			return;
-			}
-
-			format.options[0] = new Option('Table','application/isparql+table');
-			format.options[1] = new Option('XML','application/sparql-results+xml');
-			format.options[2] = new Option('JSON','application/sparql-results+json');
-			format.options[3] = new Option('Javascript','application/javascript');
-			format.options[4] = new Option('HTML','text/html');
-			format.selectedIndex = 0;
-			return;
-		}
-	};
-	
 	/* create SVGSparql object */
 	var options = {
 	  nodeOptions:{
@@ -1310,7 +1275,6 @@ iSPARQL.QBE = function () {
 		//if (tab.selectedIndex != 0 && !tab_qbe.window) return;
 		tab.go(tab_query); 
 		$('query').value = self.QueryGenerate();
-		format_select();
 		$('default-graph-uri').value = '';
 		$('adv_sponge').value = $v('qbe_sponge');
 	}
@@ -1560,12 +1524,9 @@ iSPARQL.QBE = function () {
 		    obj.MySetType($v("qbe_group_type"));
   		  self.removeOrderBy(obj);
   		}
-  	  self.format_set();
   		self.svgsparql.selectGroup(obj);
 		}
 	}); 
-
-	OAT.Dom.attach("qbe_query_type","change", self.format_set);
 
 	/* input field for node type switching */
 	OAT.Dom.attach("qbe_edge_type","change",function() {
@@ -1913,7 +1874,6 @@ iSPARQL.QBE = function () {
 			  }
 			}
 
-			self.format_set();
 			// self.Schemas.Refresh();
 			if (!design_loaded) { self.svgsparql.reposition(); }
 			

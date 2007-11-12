@@ -111,15 +111,6 @@
 							</div>
 
 							<div> <!-- options -->
-								Output format
-								<select id="qbe_format">
-									<option value="application/isparql+table" selected="selected">Table</option>
-									<option value="application/sparql-results+xml">XML</option>
-									<option value="application/sparql-results+json">JSON</option>
-									<option value="application/javascript">Javascript</option>
-									<option value="text/html">HTML</option>
-								</select>
-
 								Max Rows
 								<select id="qbe_maxrows">
 									<option value="10">10</option>
@@ -327,6 +318,7 @@
 					</div>
 					<br/>
 					<div>
+					  <!--
 					  <label for="format" class="align">Output format</label>
 					  <select id="format">
 						<option value="application/isparql+table" selected="selected">Table</option>
@@ -335,7 +327,6 @@
 						<option value="application/javascript">Javascript</option>
 						<option value="text/html">HTML</option>
 					  </select>
-					  <!--
 					  <label for="maxrows" class="align">Max Rows</label>
 					  <select id="maxrows">
 						<option value="10">10</option>

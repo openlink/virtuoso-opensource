@@ -384,7 +384,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	}
 	
 	this.simplify = function(str) {
-		var r = str.match(/([^\/#]+)$/);
+		var r = str.match(/([^\/#]+)[\/#]?$/);
 		if (r && r[1] == "this") {
 			r = str.match(/([^\/#]+)#[^#]*$/);
 		}

@@ -596,8 +596,6 @@ iSPARQL.Advanced = function () {
 		  //$("query_form").reset();
 		  $("query").value = '';
   	  
-  	  format_select();
-  	  
       var table = $('named_graph_list');
       if (table.tBodies.length)
         OAT.Dom.unlink(table.tBodies[0]);
@@ -866,10 +864,6 @@ iSPARQL.Advanced = function () {
   self.service.img.height = "16";
   $("adv_service_div").appendChild(self.service.div);
 	
-	OAT.Dom.attach("query","blur",format_select);
-	OAT.Dom.attach("query","change",format_select);
-	OAT.Dom.attach("query","keyup",format_select);
-	OAT.Dom.attach("query","keypress",format_select);
 }
 
 iSPARQL.Common = {
@@ -945,39 +939,6 @@ function get_mime_type(res){
 	  default:
 	    return 'text/plain';
 	}
-}
-
-var last_format = 1;
-
-function format_select(){
-  var query_obg = $('query');
-  var query = query_obg.value;
-  var format = $('format');
-    
-  if ((query.match(/construct/i) || query.match(/describe/i)) && last_format == 1)
-  {
-    for(var i = format.options.length; i > 0; i--)
-      format.options[i] = null;
-    format.options[0] = new Option('RDF Graph','application/isparql+rdf-graph');
-    format.options[1] = new Option('N3/Turtle','text/rdf+n3');
-    format.options[2] = new Option('RDF/XML','application/rdf+xml');
-    format.selectedIndex = 0;
-    last_format = 2;
-  }
-
-  if ((!query.match(/construct/i) && !query.match(/describe/i)) && last_format == 2)
-  {
-    for(var i = format.options.length; i > 0; i--)
-      format.options[i] = null;
-    format.options[0] = new Option('Table','application/isparql+table');
-    format.options[1] = new Option('XML','application/sparql-results+xml');
-    format.options[2] = new Option('JSON','application/sparql-results+json');
-    format.options[3] = new Option('Javascript','application/javascript');
-    format.options[4] = new Option('HTML','text/html');
-    format.selectedIndex = 0;
-    last_format = 1;
-  }
-  
 }
 
 function prefix_insert(){
