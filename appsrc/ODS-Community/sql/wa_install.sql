@@ -619,16 +619,17 @@ create method wa_dashboard () for ODS.COMMUNITY.wa_community
            XMLAGG(XMLELEMENT('dash-row',
                              XMLATTRIBUTES('normal' as "class", ODS.COMMUNITY.COMM_DATE_FOR_HUMANS(WAI_MODIFIED) as "time", WAI_NAME as "application"),
                              XMLELEMENT('dash-data',
-                                        XMLATTRIBUTES(sprintf('<a href=\"%s">%s</a>', WAM_HOME_PAGE, WAI_NAME) as "content")
+                                        XMLATTRIBUTES(sprintf('<a href=\"%s">%s</a>', sprintf('/dataspace/%s/community/%U',U_NAME,WAI_NAME), WAI_NAME) as "content")
                               )
                             )
                  )
             from
               (
-                select top 10 WAI_NAME, WAM_HOME_PAGE,  WAI_MODIFIED
+                select top 10 WAI_NAME, WAM_HOME_PAGE,  WAI_MODIFIED, U_NAME
                 from        DB.DBA.WA_MEMBER M
                   left join DB.DBA.WA_INSTANCE I on M.WAM_INST=I.WAI_NAME
-                where WAM_APP_TYPE = 'Community' and WAM_STATUS = 1  and WAM_IS_PUBLIC=1
+                  left join DB.DBA.SYS_USERS U on U.U_ID=M.WAM_USER
+                where WAM_APP_TYPE = 'Community' and WAM_STATUS = 1  and WAM_IS_PUBLIC=1 and WAI_NAME=self.wa_name
                 order by WAI_MODIFIED desc
               
                ) T
