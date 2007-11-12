@@ -95,6 +95,10 @@
       </v:on-init>
       <v:before-data-bind>
         <![CDATA[
+          if (get_keyword ('id', self.vc_page.vc_event.ve_params, '') <> '') {
+            self.vc_redirect (sprintf ('%s/view.vsp?file=%U&mode=download', ODRIVE.WA.odrive_url (self.domain_id), DB.DBA.DAV_SEARCH_PATH (cast (get_keyword ('id', self.vc_page.vc_event.ve_params) as integer), 'R')));
+            return;
+          }
           self.dir_path := get_keyword ('dir', self.vc_page.vc_event.ve_params, self.dir_path);
           if (self.dir_path = '__root__')
             self.dir_path := self.dir_spath;

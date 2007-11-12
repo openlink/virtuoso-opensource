@@ -377,18 +377,24 @@ create method get_param (in param varchar) for wa_oDrive
 
 create method wa_dashboard_last_item () for wa_oDrive
 {
-  declare ses, vspxUser any;
+  declare ses, vspxUser, c_iri any;
   declare iUserID integer;
 
+  c_iri := SIOC..briefcase_iri (self.wa_name);
   vspxUser := connection_get ('vspx_user');
   iUserID := (select top 1 U_ID from SYS_USERS A, WA_MEMBER B where B.WAM_USER = A.U_ID and B.WAM_INST = self.wa_name and B.WAM_MEMBER_TYPE = 1);
   ses := string_output ();
 
   http ('<dav-db>', ses);
   if (isnull (vspxUser)) {
-    for (select top 10 RES_FULL_PATH, RES_MOD_TIME, RES_NAME, RES_OWNER
+    for (select top 10 RES_ID,
+                RES_FULL_PATH,
+                RES_MOD_TIME,
+                RES_NAME,
+                RES_OWNER
            from WS.WS.SYS_DAV_RES
-          where RES_OWNER = iUserID
+          where RES_FULL_PATH like '/DAV/home/%'
+            and RES_OWNER = iUserID
             and substring (RES_PERMS, 7, 1) = '1'
           order by RES_MOD_TIME desc) do {
 
@@ -401,6 +407,7 @@ create method wa_dashboard_last_item () for wa_oDrive
       http (sprintf ('<dt>%s</dt>', date_iso8601 (RES_MOD_TIME)), ses);
       http (sprintf ('<title><![CDATA[%s]]></title>', RES_NAME), ses);
       http (sprintf ('<link><![CDATA[%s]]></link>', RES_FULL_PATH), ses);
+      -- http (sprintf ('<link><![CDATA[%s]]></link>', SIOC..post_iri_ex (c_iri, RES_ID)), ses);
       http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
       http (sprintf ('<uid>%s</uid>', uname), ses);
       http ('</resource>', ses);
@@ -408,36 +415,54 @@ create method wa_dashboard_last_item () for wa_oDrive
   } else {
   for select top 10 *
         from (select *
-                from (select top 10 RES_FULL_PATH, RES_MOD_TIME, RES_NAME, RES_OWNER
+              from (select top 10 RES_ID,
+                           RES_FULL_PATH,
+                           RES_MOD_TIME,
+                           RES_NAME,
+                           RES_OWNER
                         from WS.WS.SYS_DAV_RES
                                join WS.WS.SYS_DAV_ACL_INVERSE on AI_PARENT_ID = RES_ID
                                  join WS.WS.SYS_DAV_ACL_GRANTS on GI_SUB = AI_GRANTEE_ID
-                       where AI_PARENT_TYPE = 'R'
+                     where RES_FULL_PATH like '/DAV/home/%'
+                       and AI_PARENT_TYPE = 'R'
                            and GI_SUPER = iUserID
                          and AI_FLAG = 'G'
                        order by RES_MOD_TIME desc
                      ) acl
               union
                 select *
-                  from (select top 10 RES_FULL_PATH, RES_MOD_TIME, RES_NAME, RES_OWNER
+                from (select top 10 RES_ID,
+                             RES_FULL_PATH,
+                             RES_MOD_TIME,
+                             RES_NAME,
+                             RES_OWNER
                           from WS.WS.SYS_DAV_RES
-                           where RES_OWNER = iUserID
+                       where RES_FULL_PATH like '/DAV/home/' || vspxUser || '%'
+                         and RES_OWNER = iUserID
                            and RES_PERMS like '1%'
                          order by RES_MOD_TIME desc
                      ) own
              ) sub
        order by RES_MOD_TIME desc do {
 
-    declare uname, full_name varchar;
+      declare uname, full_name, wai_name, link varchar;
 
     uname := (select coalesce (U_NAME, '') from DB.DBA.SYS_USERS where U_ID = RES_OWNER);
     full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = RES_OWNER);
 
+      wai_name := (select top 1 WAI_NAME from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'oDrive' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = RES_OWNER);
+      if (isnull (wai_name)) {
+        link := RES_FULL_PATH;
+      } else {
+        link := SIOC..post_iri_ex (SIOC..briefcase_iri (wai_name), RES_ID);
+      }
+
     http ('<resource>', ses);
     http (sprintf ('<dt>%s</dt>', date_iso8601 (RES_MOD_TIME)), ses);
-    http (sprintf ('<title><![CDATA[%s]]></title>', RES_NAME), ses);
-    http (sprintf ('<link><![CDATA[%s]]></link>', RES_FULL_PATH), ses);
-    http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
+      http (sprintf ('<title>%V</title>', RES_NAME), ses);
+      http (sprintf ('<link>%V</link>', link), ses);
+      -- http (sprintf ('<link><![CDATA[%s]]></link>', SIOC..post_iri_ex (c_iri, RES_ID)), ses);
+      http (sprintf ('<from>%V</from>', full_name), ses);
     http (sprintf ('<uid>%s</uid>', uname), ses);
     http ('</resource>', ses);
   }
