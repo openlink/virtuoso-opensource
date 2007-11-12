@@ -2104,8 +2104,11 @@ create procedure ENEWS.WA.folder_delete(
 create procedure ENEWS.WA.folder_delete_all(
   in domain_id integer)
 {
-  for (select EFO_ID from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id and EFO_PARENT_ID is null) do
-    ENEWS.WA.folder_delete(domain_id, EFO_ID);
+  update ENEWS.WA.FEED_DOMAIN
+     set EFD_FOLDER_ID = null
+   where EFD_DOMAIN_ID = domain_id;
+
+  delete from ENEWS.WA.FOLDER where EFO_DOMAIN_ID = domain_id;
 }
 ;
 
@@ -3841,7 +3844,8 @@ create procedure ENEWS.WA.make_dasboard_item (
   in uname varchar,
   in data any,
   in url varchar,
-  in id int := -1,
+  in id integer := -1,
+  in feed_id integer := -1,
   in action varchar := 'insert')
 {
   if (not __proc_exists ('DB.DBA.WA_NEW_NEWS_IN'))
@@ -3857,13 +3861,8 @@ create procedure ENEWS.WA.make_dasboard_item (
   i := 0;
   if (action = 'insert') {
     ret := sprintf (
-      '<post id="%d">'||
-        '<title><![CDATA[%s]]></title>'||
-        '<dt>%s</dt>'||
-        '<link>%V</link>'||
-        '<from><![CDATA[%s]]></from>'||
-        '<email><![CDATA[%s]]></email>'||
-      '</post>', id, ENEWS.WA.show_title(title), ENEWS.WA.dt_iso8601 (tim), url, ENEWS.WA.show_author(uname), coalesce(ENEWS.WA.process_authorEMail(data), ''));
+      '<post id="%d"><title>%V</title><dt>%s</dt><link>%V</link><from>%V</from><email>%V</email></post>',
+      id, ENEWS.WA.show_title(title), ENEWS.WA.dt_iso8601 (tim), SIOC..feed_item_iri (feed_id, id), ENEWS.WA.show_author(uname), coalesce(ENEWS.WA.process_authorEMail(data), ''));
     http (ret, ses);
     i := i + 1;
   }
@@ -3899,13 +3898,30 @@ create procedure ENEWS.WA.dashboard_get(
   in _domain_id integer,
   in _user_id   integer)
 {
-  declare ret any;
+  declare sStream any;
 
-  ret := string_output ();
-  for (select EF_DASHBOARD from ENEWS.WA.FEED, ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = EF_ID and EFD_DOMAIN_ID = _domain_id) do
-    if (EF_DASHBOARD is not null)
-      http (replace(blob_to_string (EF_DASHBOARD), '/enews2/news.vspx?link', sprintf('/enews2/%d/news.vspx?link', _domain_id)), ret);
-  return string_output_string (ret);
+  sStream := string_output ();
+
+  for (select EF_ID, EF_DASHBOARD from ENEWS.WA.FEED, ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = EF_ID and EFD_DOMAIN_ID = _domain_id) do
+    if (EF_DASHBOARD is not null) {
+      declare I, J integer;
+      declare xt, xp any;
+      declare _id, _title, _dt, _from, _email any;
+
+      xt := xtree_doc (EF_DASHBOARD);
+      xp := xpath_eval ('/feed-db/*', xt, 0);
+      http ('<feed-db>', sStream);
+      for (j := 0; j < length (xp); j := j + 1) {
+        _id    := xpath_eval ('string(@id)', xp[j]);
+        _title := xpath_eval ('string(./title)', xp[j]);
+        _dt    := xpath_eval ('string(./dt)', xp[j]);
+        _from  := xpath_eval ('string(./from)', xp[j]);
+        _email := xpath_eval ('string(./email)', xp[j]);
+        http (sprintf ('<post id="%s"><title>%V</title><dt>%s</dt><link>%V?instance=%d</link><from>%V</from><email>%V</email></post>', _id, _title, _dt, SIOC..feed_item_iri (EF_ID, cast (_id as integer)), _domain_id, _from, _email), sStream);
+      }
+      http ('</feed-db>', sStream);
+    }
+  return string_output_string (sStream);
 }
 ;
 

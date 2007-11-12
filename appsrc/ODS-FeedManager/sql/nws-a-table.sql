@@ -246,7 +246,7 @@ ENEWS.WA.exec_no_error ('
 
     -- dashboard
     update ENEWS.WA.FEED
-      set EF_DASHBOARD = ENEWS.WA.make_dasboard_item (EF_DASHBOARD, N.EFI_PUBLISH_DATE, N.EFI_TITLE, N.EFI_AUTHOR, N.EFI_DATA, sprintf(\'/enews2/news.vspx?link=%d\', N.EFI_ID), N.EFI_ID)
+       set EF_DASHBOARD = ENEWS.WA.make_dasboard_item (EF_DASHBOARD, N.EFI_PUBLISH_DATE, N.EFI_TITLE, N.EFI_AUTHOR, N.EFI_DATA, sprintf(\'/enews2/news.vspx?link=%d\', N.EFI_ID), N.EFI_ID, N.EFI_FEED_ID)
      where EF_ID = N.EFI_FEED_ID;
     if (__proc_exists (\'DB.DBA.WA_NEW_NEWS_IN\'))
       DB.DBA.WA_NEW_NEWS_IN (ENEWS.WA.show_title(N.EFI_TITLE), sprintf(\'/enews2/news.vspx?link=%d\', N.EFI_ID), N.EFI_ID);
@@ -258,7 +258,7 @@ ENEWS.WA.exec_no_error ('
 ENEWS.WA.exec_no_error('
   create trigger ENEWS_FEED_ITEM_WA_DEL after delete on ENEWS.WA.FEED_ITEM referencing old as O {
     update ENEWS.WA.FEED
-       set EF_DASHBOARD = ENEWS.WA.make_dasboard_item (EF_DASHBOARD, null, null, null, null, null, O.EFI_ID, \'delete\')
+       set EF_DASHBOARD = ENEWS.WA.make_dasboard_item (EF_DASHBOARD, null, null, null, null, null, O.EFI_ID, null, \'delete\')
    	 where EF_ID = O.EFI_FEED_ID;
     if (__proc_exists (\'DB.DBA.WA_NEW_NEWS_RM\'))
       DB.DBA.WA_NEW_NEWS_RM (O.EFI_ID);

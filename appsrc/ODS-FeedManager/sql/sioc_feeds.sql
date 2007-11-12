@@ -58,6 +58,19 @@ create procedure feed_item_iri (
 
 -------------------------------------------------------------------------------
 --
+-- this represents item in the given feed, if name changed should change in sioc.sql too
+create procedure feed_item_iri2 (
+  inout item_id integer)
+{
+  declare feed_id integer;
+
+  feed_id := (select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = item_id);
+  return sprintf ('http://%s%s/feed/%d/%d', get_cname(), get_base_path (), feed_id, item_id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- this represents comment in the given feed item
 create procedure feed_comment_iri (
   inout domain_id integer,
