@@ -626,7 +626,7 @@ create function "RDFData_DAV_RES_CONTENT" (in id any, inout content any, out typ
   if (isstring (gr) and length (gr))
     _from := sprintf (' FROM <%s>', gr);
 
-  qr := sprintf ('describe <%S> %s', iri, _from);
+  qr := sprintf ('describe <%s> %s', iri, _from);
   path := vector ();
   --dbg_obj_print (qr);
   params := vector ('query', qr, 'format', 'application/rdf+xml');
