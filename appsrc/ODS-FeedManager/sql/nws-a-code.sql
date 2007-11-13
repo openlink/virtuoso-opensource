@@ -3898,8 +3898,10 @@ create procedure ENEWS.WA.dashboard_get(
   in _domain_id integer,
   in _user_id   integer)
 {
+  declare _user_name varchar;
   declare sStream any;
 
+  _user_name := ENEWS.WA.account_name (_user_id);
   sStream := string_output ();
 
   for (select EF_ID, EF_DASHBOARD from ENEWS.WA.FEED, ENEWS.WA.FEED_DOMAIN where EFD_FEED_ID = EF_ID and EFD_DOMAIN_ID = _domain_id) do
@@ -3917,7 +3919,7 @@ create procedure ENEWS.WA.dashboard_get(
         _dt    := xpath_eval ('string(./dt)', xp[j]);
         _from  := xpath_eval ('string(./from)', xp[j]);
         _email := xpath_eval ('string(./email)', xp[j]);
-        http (sprintf ('<post id="%s"><title>%V</title><dt>%s</dt><link>%V?instance=%d</link><from>%V</from><email>%V</email></post>', _id, _title, _dt, SIOC..feed_item_iri (EF_ID, cast (_id as integer)), _domain_id, _from, _email), sStream);
+        http (sprintf ('<post id="%s"><title>%V</title><dt>%s</dt><link>%V?instance=%d</link><from>%V</from><uid>%V</uid><email>%V</email></post>', _id, _title, _dt, SIOC..feed_item_iri (EF_ID, cast (_id as integer)), _domain_id, _from, _user_name, _email), sStream);
       }
       http ('</feed-db>', sStream);
     }
