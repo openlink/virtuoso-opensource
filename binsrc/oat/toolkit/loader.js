@@ -35,7 +35,8 @@ OAT.Preferences = {
 	windowTypeOverride:0, /* do not guess window type */
 	xsltPath:"/DAV/JS/xslt/",
 	imagePath:"/DAV/JS/images/",
-	version:"08.11.2007",
+	stylePath:"/DAV/JS/styles/",
+	version:"12.11.2007",
 	httpError:1, /* show http errors */
 	allowDefaultResize:1,
 	allowDefaultDrag:1
@@ -653,6 +654,15 @@ OAT.Dom = { /* DOM common object */
 }
 
 OAT.Style = { /* Style helper */
+	include:function(file) {
+		if (!file) return;
+		var elm = OAT.Dom.create("link");
+		elm.rel = "stylesheet";
+		elm.type = "text/css";
+		elm.href = OAT.Preferences.stylePath + file;
+		document.getElementsByTagName("head")[0].appendChild(elm);
+	},
+
 	get:function(elm,property) {
 		var element = $(elm);
 		if (document.defaultView && document.defaultView.getComputedStyle) {
@@ -660,7 +670,12 @@ OAT.Style = { /* Style helper */
 			if (!cs) { return true; }
 			return cs[property];
 		} else {
-			return element.currentStyle[property];
+			try {
+				var out = element.currentStyle[property];
+			} catch (e) {
+				var out = element.getExpression(property);
+			}
+			return out;
 		} 
 	},
 	

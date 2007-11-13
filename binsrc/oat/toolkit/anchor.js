@@ -120,8 +120,8 @@ OAT.Anchor = {
 			title:false, /* window title */
 			result_control:"grid", /* for url fetch */
 			activation:"hover",
-			width:300,
-			height:200,
+			width:340,
+			height:false, /* false is 'auto' */
 			elm:elm, /* anchor node */
 			window:false, /* what should be displayed */
 			arrow:false, /* what should be displayed */

@@ -30,8 +30,8 @@ OAT.Win = function(optObj) {
 		enabledButtons:"cmMfr",
 		innerWidth:0,
 		innerHeight:0,
-		outerWidth:0,
-		outerHeight:0,
+		outerWidth:350,
+		outerHeight:false, /* false means 'auto' */
 		stackGroupBase:100,
 		type:OAT.WinData.TYPE_AUTO,
 		template:false,
@@ -181,6 +181,7 @@ OAT.WinTemplate = function(obj) {
 }
 
 OAT.WinMS = function(obj) { /* MS-like window */
+	OAT.Style.include('winms.css');
 	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winms_container");
 	obj.dom.resizeContainer = obj.dom.container;
 	obj.dom.content = OAT.Dom.create("div",{},"oat_winms_content");
@@ -217,6 +218,7 @@ OAT.WinMS = function(obj) { /* MS-like window */
 }
 
 OAT.WinMAC = function(obj) { /* MacOSX-like window */
+	OAT.Style.include('winmac.css');
 	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winmac_container");
 	obj.dom.resizeContainer = obj.dom.container;
 	obj.dom.content = OAT.Dom.create("div",{},"oat_winmac_content");
@@ -258,6 +260,7 @@ OAT.WinMAC = function(obj) { /* MacOSX-like window */
 }
 
 OAT.WinRECT = function(obj) { /* rectangular window */
+	OAT.Style.include('winrect.css');
 	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winrect_container");
 	obj.dom.resizeContainer = obj.dom.container;
 	obj.dom.content = OAT.Dom.create("div",{},"oat_winrect_content");
@@ -286,7 +289,7 @@ OAT.WinRECT = function(obj) { /* rectangular window */
 }
 
 OAT.WinROUND = function(obj) { /* rounded window */
-	
+	OAT.Style.include('winround.css');
 	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winround_container");
 	obj.dom.resizeContainer = obj.dom.container;
 	obj.dom.content = OAT.Dom.create("div",{},"oat_winround_content");
