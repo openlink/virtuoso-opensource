@@ -965,23 +965,47 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
   return (SPART **)t_list (1, descr_call);
 }
 
+int
+sparp_gp_trav_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t **sts_this, void *common_env)
+{
+  switch (SPART_TYPE (curr))
+    {
+    case SPAR_VARIABLE:
+      if (!(SPART_VARR_GLOBAL & curr->_.var.rvr.rvrRestrictions))
+        t_set_push_new_string (&(sparp->sparp_env->spare_grab.rgc_vars), t_box_dv_uname_string (curr->_.var.vname));
+      break;
+    case SPAR_QNAME:
+      t_set_push_new_string (&(sparp->sparp_env->spare_grab.rgc_consts), curr->_.lit.val);
+      break;
+    }
+  return 0;
+}
+
+void
+spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals)
+{
+  int retctr;
+  DO_BOX_FAST (SPART *, retval, retctr, retvals)
+    {
+      sparp_gp_trav (sparp, retval, NULL,
+        NULL, NULL,
+        sparp_gp_trav_add_rgc_vars_and_consts_from_retvals, NULL,
+        sparp_gp_trav_add_rgc_vars_and_consts_from_retvals );
+    }
+  END_DO_BOX_FAST;
+}
+
 SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **order, caddr_t limit, caddr_t offset)
 {
   dk_set_t src = NULL;
   sparp_env_t *env = sparp->sparp_env;
   SPART **sources;
-#if 0 /* Old version with single default graph IRI */
-  if (NULL != env->spare_default_graph_precode)
-    t_set_push (&src, spartlist (sparp, 2, FROM_L,
-        sparp_tree_full_copy (sparp, env->spare_default_graph_precode, NULL) ) );
-#else
   DO_SET(SPART *, precode, &(env->spare_default_graph_precodes))
     {
       t_set_push (&src, spartlist (sparp, 2, FROM_L, sparp_tree_full_copy (sparp, precode, NULL)));
     }
   END_DO_SET()
-#endif
   DO_SET(SPART *, precode, &(env->spare_named_graph_precodes))
     {
       t_set_push (&src, spartlist (sparp, 2, NAMED_L, sparp_tree_full_copy (sparp, precode, NULL)));
@@ -991,6 +1015,8 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   if ((0 == BOX_ELEMENTS (sources)) &&
     (NULL != (env->spare_common_sponge_options)) )
     spar_error (sparp, "Retrieval options for source graphs (e.g., '%s') may be useless if the query does not contain 'FROM' or 'FROM NAMED'", env->spare_common_sponge_options->data);
+  if (env->spare_grab.rgc_all)
+    spar_add_rgc_vars_and_consts_from_retvals (sparp, retvals);
   return spartlist (sparp, 16, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
     env->spare_output_format_name,

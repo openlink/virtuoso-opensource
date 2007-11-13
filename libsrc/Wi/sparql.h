@@ -524,6 +524,7 @@ extern void spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *g
 extern void spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top);
 extern void spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top);
 extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_t offset);
+extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **order, caddr_t limit, caddr_t offset);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options);
