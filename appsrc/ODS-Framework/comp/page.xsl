@@ -2664,7 +2664,7 @@ if (i > 0)
 	<xsl:attribute name="name">go_home_new_link</xsl:attribute>
     </xsl:if>
     <xsl:attribute name="value">--'My ' || WA_GET_APP_NAME ('Profile')</xsl:attribute>
-    <xsl:attribute name="url">--(case when self.external_home_url then coalesce (get_keyword_ucase ('ret', self.vc_event.ve_params), self.external_home_url) else sprintf ('/dataspace/person/%s#this', self.u_name) end)</xsl:attribute>
+    <xsl:attribute name="url">--(case when self.external_home_url then coalesce (get_keyword_ucase ('ret', self.vc_event.ve_params), self.external_home_url) else sprintf ('/dataspace/%s/%s#this', wa_identity_dstype(self.u_name),self.u_name) end)</xsl:attribute>
   </v:url>
 </xsl:template>
 
@@ -2681,7 +2681,7 @@ if (i > 0)
 	<xsl:attribute name="name">go_my_home_link</xsl:attribute>
     </xsl:if>
     <xsl:attribute name="value">--'My ' || WA_GET_APP_NAME ('Profile')</xsl:attribute>
-    <xsl:attribute name="url">--(case when self.external_home_url then coalesce (get_keyword_ucase ('ret', self.vc_event.ve_params), self.external_home_url) else sprintf ('/dataspace/person/%s#this', self.u_name) end)</xsl:attribute>
+    <xsl:attribute name="url">--(case when self.external_home_url then coalesce (get_keyword_ucase ('ret', self.vc_event.ve_params), self.external_home_url) else sprintf ('/dataspace/%s/%s#this', wa_identity_dstype(self.u_name),self.u_name) end)</xsl:attribute>
   </v:url>
 </xsl:template>
 
@@ -2742,7 +2742,7 @@ if (i > 0)
 </xsl:template>
 
 <xsl:template match="vm:disco-ods-foaf-link">
-    <link rel="meta" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/person/%U/foaf.rdf', self.st_host, self.fname), '+', '%2B')); ?>" />
+    <link rel="meta" type="application/rdf+xml" title="FOAF" href="&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%s/%U/foaf.rdf', self.st_host,wa_identity_dstype( self.fname), self.fname), '+', '%2B')); ?>" />
     <xsl:text>&#10;</xsl:text>
 </xsl:template>
 
@@ -2793,8 +2793,8 @@ if (i > 0)
     ?>
     <meta http-equiv="X-XRDS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
     <meta http-equiv="X-YADIS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
-    <link rel="alternate" type="application/atom+xml" title="Open Social" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U', self.st_host, self.fname), '+', '%2B')); ?>" />
-    <xsl:text>&#10;</xsl:text>
+    <!--link rel="alternate" type="application/atom+xml" title="Open Social" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U', self.st_host, self.fname), '+', '%2B')); ?>" />
+    <xsl:text>&#10;</xsl:text-->
     <link rel="alternate" type="application/atom+xml" title="Open Social Friends" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U/friends', self.st_host, self.fname), '+', '%2B')); ?>" />
     <xsl:text>&#10;</xsl:text>
 </xsl:template>

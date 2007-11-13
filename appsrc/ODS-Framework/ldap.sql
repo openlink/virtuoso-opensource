@@ -38,11 +38,26 @@ DB.DBA.wa_exec_no_error_log ('
     LS_DEFAULT integer default 0,
     LS_MAPS varchar,
 
+    constraint FK_LDAP_SERVERS FOREIGN KEY (LS_USER_ID) references DB.DBA.SYS_USERS (U_ID) ON DELETE CASCADE,
+
     primary key (LS_USER_ID, LS_NAME)
   )
 ');
 
 DB.DBA.wa_add_col ('LDAP.DBA.LDAP_SERVERS', 'LS_USER_ID', 'integer');
+
+DB.DBA.wa_exec_no_error_log ('alter table WV.WIKI.CLUSTERS add constraint "FK_LDAP_SERVERS" FOREIGN KEY (LS_USER_ID) references DB.DBA.SYS_USERS (U_ID) ON DELETE CASCADE');
+
+DB.DBA.wa_exec_no_error_log ('
+  create table LDAP_VALIDATION (
+    LV_USER_ID integer not null,
+    LV_FIELDS long varchar,
+
+    constraint FK_LDAP_VALIDATION FOREIGN KEY (LV_USER_ID) references DB.DBA.SYS_USERS (U_ID) ON DELETE CASCADE,
+
+    primary key (LV_USER_ID)
+  )
+');
 
 create procedure migrate_ldap ()
 {

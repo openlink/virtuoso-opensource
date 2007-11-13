@@ -111,6 +111,25 @@ function checkRest (form, sel)
     }
 }
 
+function selectAllCheckboxes (form, btn)
+{
+  for (var i = 0; i < form.elements.length; i = i + 1) {
+    var contr = form.elements[i];
+    if (contr != null && contr.type == "checkbox") {
+      contr.focus();
+      if (btn.value == 'Select All')
+        contr.checked = true;
+      else
+        contr.checked = false;
+    }
+  }
+  if (btn.value == 'Select All')
+    btn.value = 'Unselect All';
+  else
+    btn.value = 'Select All';
+  btn.focus();
+}
+
 ]]></script>
         <vm:login redirect="index.vspx"/>
 

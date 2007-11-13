@@ -124,7 +124,7 @@
   <!-- url="-#-sprintf ('ufoaf.xml?:sne=%d', self.sne_id)" -->
   <xsl:template match="vm:foaf-link">
       <v:url name="u2" value='<img src="images/foaf.gif" border="0" alt="FOAF" />' format="%s"
-	url="--WA_LINK (1, sprintf ('/dataspace/person/%s/foaf.rdf', case when self.isowner then self.u_name else self.fname end))"
+	url="--WA_LINK (1, sprintf ('/dataspace/%s/%s/foaf.rdf', wa_identity_dstype(case when self.isowner then self.u_name else self.fname end), case when self.isowner then self.u_name else self.fname end))"
 	/>
   </xsl:template>
 
@@ -476,7 +476,7 @@
 				  ?>
 		                    	  <tr>
 		                    	    <td>
-						<a href="&lt;?V wa_expand_url('/dataspace/person/'|| sne_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide (coalesce (U_FULL_NAME, sne_name)) ?></a>
+						<a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(sne_name)||'/'|| sne_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide (coalesce (U_FULL_NAME, sne_name)) ?></a>
 		                    	    </td>
 					  </tr>
 				  <?vsp
@@ -792,7 +792,7 @@
 
 	  ?>
 	  <li>
-	      <a href="&lt;?V wa_expand_url('/dataspace/person/'|| sne_name ||'#this', self.login_pars)?&gt;"><?vsp if (length (WAUI_PHOTO_URL)) {  ?>
+	      <a href="&lt;?V wa_expand_url('/dataspace/'||wa_identity_dstype(sne_name)||'/'|| sne_name ||'#this', self.login_pars)?&gt;"><?vsp if (length (WAUI_PHOTO_URL)) {  ?>
 	      <img src="<?V WAUI_PHOTO_URL ?>" border="0" alt="Photo" width="32" hspace="3"/>
 	      <?vsp } ?><?V wa_utf8_to_wide (coalesce (U_FULL_NAME, sne_name)) ?></a>
 	      <span class="home_addr"><?V wa_utf8_to_wide (addr) ?></span>

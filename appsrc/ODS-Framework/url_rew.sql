@@ -286,6 +286,14 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_main', 1,
     null,
     2);
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_space_html', 1,
+    '/dataspace/([^/]*)/space/?', vector('uname'), 1,
+    '/ods/myhome.vspx', vector(),
+    NULL,
+    NULL,
+    2);
+
+
 --DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');
 --DB.DBA.VHOST_DEFINE (lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>1, vsp_user=>'dba',
 --    opts=>vector ('url_rewrite', 'ods_rule_tcn_list'));
@@ -320,6 +328,13 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_res', 1,
     2,
     303);
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_error', 1,
+    '/dataspace/(.*)/error.vspx?(.*)', vector(), 0,
+    '/ods/error.vspx', vector(),
+    null,
+    null,
+    2);
+
 -- All rules are processed in the order bellow.
 -- Every rule will be tried and last matching rule will win
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
@@ -340,7 +355,9 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_cal_item_html',
 	  'ods_discussion_item_html',
 	  'ods_main',
+	  'ods_space_html',
 	  'ods_rdf',
 	  'ods_rdf_next',
-	  'ods_rdf_res'
+	  'ods_rdf_res',
+	  'ods_error'
 	  ));

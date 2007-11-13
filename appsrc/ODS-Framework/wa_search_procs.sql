@@ -109,8 +109,9 @@ returns varchar
 
       if (INST_COUNT > 1)
         {
-	  url := sprintf ('app_inst.vspx?app=%U&ufname=%U', INST_TYPE, _U_NAME);
-	  amp := '&';
+--	  url := sprintf ('app_inst.vspx?app=%U&ufname=%U', INST_TYPE, _U_NAME);
+	  url := sprintf ('/dataspace/%U/%s',_U_NAME,db.dba.wa_get_app_dataspace(INST_TYPE));
+	  amp := '?';
         }
       else
         {
@@ -204,7 +205,7 @@ create function WA_SEARCH_USER_GET_EXCERPT_HTML (
          case when _WAUI_PHOTO_URL is not null then 'user_photo_report'  else 'user_icon_report' end,
 	 WA_SEARCH_ADD_APATH (coalesce (_WAUI_PHOTO_URL, 'images/icons/user_16.png')),
 	 WA_SEARCH_ADD_APATH (
-	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/person/%U#this', _U_NAME), _user_id, '&')),
+	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/%s/%U#this',wa_identity_dstype(_U_NAME), _U_NAME), _user_id, '&')),
 	 _WAUI_FULL_NAME,
          icons,
 	 left (search_excerpt (words, subseq (coalesce (txt, ''), 0, 200000)), 900));
@@ -214,7 +215,7 @@ create function WA_SEARCH_USER_GET_EXCERPT_HTML (
       res := sprintf (
 	 '<div class="map_user_data"><a href="%s">%s''s Data Spaces</a><br />%s<br /><img class="%s" src="%s" alt="user_photo" border="0"/><br />%s</div>',
 	 WA_SEARCH_ADD_APATH (
-	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/person/%U#this', _U_NAME), _user_id, '&')),
+	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/%s/%U#this', wa_identity_dstype(_U_NAME),_U_NAME), _user_id, '&')),
 	 _WAUI_FULL_NAME,
          icons,
          case when _WAUI_PHOTO_URL is not null then 'user_photo_map' else 'icon_icon_map' end,
@@ -265,7 +266,7 @@ create function WA_SEARCH_USER_GET_EXCERPT_HTML_CUSTOMODSPATH (
          case when _WAUI_PHOTO_URL is not null then 'user_photo_report'  else 'user_icon_report' end,
 	 WA_SEARCH_ADD_APATH (coalesce (_WAUI_PHOTO_URL, 'images/icons/user_16.png')),
 	 WA_SEARCH_ADD_APATH (
-	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/person/%U#this', _U_NAME), _user_id, '&')),
+	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/%s/%U#this',wa_identity_dstype(_U_NAME), _U_NAME), _user_id, '&')),
 	 _WAUI_FULL_NAME,
          icons,
 	 left (search_excerpt (words, subseq (coalesce (txt, ''), 0, 200000)), 900));
@@ -275,7 +276,7 @@ create function WA_SEARCH_USER_GET_EXCERPT_HTML_CUSTOMODSPATH (
       res := sprintf (
 	 '<div class="map_user_data"><a href="%s">%s''s Data Space</a><br />%s<br /><img class="%s" src="%s" alt="user_photo" border="0"/><br />%s</div>',
 	 WA_SEARCH_ADD_APATH (
-	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/person/%U#this', _U_NAME), _user_id, '&')),
+	    WA_SEARCH_ADD_SID_IF_AVAILABLE (sprintf ('/dataspace/%s/%U#this', wa_identity_dstype(_U_NAME), _U_NAME), _user_id, '&')),
 	 _WAUI_FULL_NAME,
          icons,
          case when _WAUI_PHOTO_URL is not null then 'user_photo_map' else 'icon_icon_map' end,
@@ -721,7 +722,7 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
   _COL_PATH := DB.DBA.DAV_CONCAT_PATH (WS.WS.PARENT_PATH (WS.WS.HREF_TO_PATH_ARRAY (_RES_FULL_PATH)), null);
 
   _TitleText := null; _ClusterName := null; _LocalName := null;
-  select coalesce (TitleText, cast (LocalName as nvarchar)), ClusterName, LocalName, C.ClusterId
+  select coalesce (TitleText, cast (LocalName as nvarchar)), C.ClusterName, LocalName, C.ClusterId
     into _TitleText, _ClusterName, _LocalName, _ClusterId
     from WV.WIKI.TOPIC T, WV.WIKI.CLUSTERS C
     where
@@ -734,18 +735,22 @@ create function WA_SEARCH_WIKI_GET_EXCERPT_HTML (in _current_user_id integer, in
   _U_NAME := null;
   select U_NAME into _U_NAME from DB.DBA.SYS_USERS where U_ID = _RES_OWNER;
 
-  home_path := WV.WIKI.CLUSTERPARAM (_ClusterId, \'home\', \'/wiki/main\');
+--  home_path := WV.WIKI.CLUSTERPARAM (_ClusterId, \'home\', \'/wiki/main\');
+   home_path :=sprintf(\'/dataspace/%s/wiki\',_U_NAME);
+  
+--  _WIKI_PATH := sprintf (\'%s/%s/%s\', home_path, _ClusterName, _LocalName);
+  _WIKI_PATH := sprintf (\'%s/%U/%s\', home_path, _ClusterName, _LocalName);
+--  _WIKI_INSTANCE_PATH := sprintf (\'%s/%s\', home_path, _ClusterName);
+  _WIKI_INSTANCE_PATH :=sprintf (\'%s/%U\', home_path, _ClusterName);
 
-  _WIKI_PATH := sprintf (\'%s/%s/%s\', home_path, _ClusterName, _LocalName);
-  _WIKI_INSTANCE_PATH := sprintf (\'%s/%s\', home_path, _ClusterName);
   res := sprintf (\'<span><img src="%s" />Wiki <a href="%s">%s</a> <a href="%s">%s</a> <a href="%s">%s</a>\',
-           WA_SEARCH_ADD_APATH (\'images/icons/wiki_16.png\'),
+                  WA_SEARCH_ADD_APATH (\'images/icons/ods_wiki_16.png\'),
 	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_PATH, \'#\'), _current_user_id)),
 		coalesce (_TitleText, N\'#No Title#\'),
 	   WA_SEARCH_ADD_APATH (WA_SEARCH_ADD_SID_IF_AVAILABLE (coalesce (_WIKI_INSTANCE_PATH, \'#\'), _current_user_id)),
 		coalesce (_ClusterName, \'#No Title#\'),
            WA_SEARCH_ADD_APATH (
-                  WA_SEARCH_ADD_SID_IF_AVAILABLE ( sprintf (\'/dataspace/person/%U#this\', _U_NAME), _current_user_id, \'&\')),
+                  WA_SEARCH_ADD_SID_IF_AVAILABLE ( sprintf (\'/dataspace/%s/%U#this\', wa_identity_dstype(_U_NAME),_U_NAME), _current_user_id, \'&\')),
            coalesce (_WAUI_FULL_NAME, \'#No Name#\'));
 
   _content := WV.WIKI.DELETE_SYSINFO_FOR (coalesce (_RES_CONTENT, \'\'));
@@ -841,9 +846,7 @@ create function WA_SEARCH_DAV (in max_rows integer, in current_user_id integer,
          '  _DATE \n' ||
          ' from \n(\n%s\n) qry\n' ||
          ' where DAV_AUTHENTICATE (RES_ID, ''R'', ''1__'', NULL, NULL, %d) >= 0 \n',
-    max_rows * (
-	(case when search_dav <> 0 then 1 else 0 end) +
-        (case when search_wiki <> 0 then 1 else 0 end)),
+    max_rows * ((case when search_dav <> 0 then 1 else 0 end) + (case when search_wiki <> 0 then 1 else 0 end)),
     sel_col, ret, current_user_id);
 
   -- currently the sorry way to distinguish Wiki from other DAV resources
@@ -1907,7 +1910,7 @@ create function WA_SEARCH_CONTACTS (
 	 '  U_LOGIN_TIME as _DATE, \n' ||
 	 '  WA_SEARCH_ADD_APATH ( \n' ||
          '   WA_SEARCH_ADD_SID_IF_AVAILABLE ( \n' ||
-   '                       sprintf (''/dataspace/person/%%U#this'', U_NAME), %d, ''&'')) as _URL, \n' ||
+   '                       sprintf (''/dataspace/%%s/%%U#this'',wa_identity_dstype(_U_NAME), U_NAME), %d, ''&'')) as _URL, \n' ||
    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
 	 '  WAUI_U_ID as _KEY_VAL \n' ||

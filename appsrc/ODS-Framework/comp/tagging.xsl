@@ -56,7 +56,7 @@
 				 &amp;nbsp;
 				 <v:url name="lown1"
 				     value="-- sprintf ('shared by %s', (select U_NAME from SYS_USERS where U_ID = (control.vc_parent as vspx_row_template).te_rowset[2]))"
-				     url="-- sprintf ('/dataspace/person/%s#this', (select U_NAME from SYS_USERS where U_ID = (control.vc_parent as vspx_row_template).te_rowset[2]))"
+				     url="-- sprintf ('/dataspace/%s/%s#this',wa_identity_dstype((control.vc_parent as vspx_row_template).te_rowset[2]), (select U_NAME from SYS_USERS where U_ID = (control.vc_parent as vspx_row_template).te_rowset[2]))"
 				     enabled="--neq((control.vc_parent as vspx_row_template).te_rowset[2], self.u_id)" />
 			    </td>
 			    <td>

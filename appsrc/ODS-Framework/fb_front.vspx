@@ -457,6 +457,11 @@ skip_login:;
 
             if(_are_assoc=1)
             {
+              declare dataspace_url varchar;
+              dataspace_url:=sprintf('/dataspace/%U/addressbook',_user_name);
+              if(isarray(contatcst_import_res))
+                 dataspace_url:=sprintf('%s/%U',dataspace_url,(select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_ID=contatcst_import_res[4]));
+
             if(isarray(contatcst_import_res) and contatcst_import_res[0]=-1 and wa_check_package ('addressbook') and _user_id is not null)
                _html:=_html||'<br/><br/><a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=create_import',self._ods_login_params)||'">Create ODS addressbook and import Facebook contacts.</a>';
             
@@ -467,15 +472,15 @@ skip_login:;
 
             if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[1]>0)
               _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[1] as varchar)||' Facebook contact'||(case when contatcst_import_res[1]>1 then 's' else '' end)||
-                              ' that may be imported to your <a href="'||wa_expand_url('/addressbook/'||cast(contatcst_import_res[4] as varchar)||'/home.vspx',self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=import',self._ods_login_params)||'">Import</a>';
+                              ' that may be imported to your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=import',self._ods_login_params)||'">Import</a>';
 
             if(isarray(contatcst_import_res) and contatcst_import_res[0]=0 and contatcst_import_res[2]>0)
               _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contact'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
-                              ' that may be updated in your <a href="'||wa_expand_url('/addressbook/'||cast(contatcst_import_res[4] as varchar)||'/home.vspx',self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',self._ods_login_params)||'">Synchronize</a>';
+                              ' that may be updated in your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',self._ods_login_params)||'">Synchronize</a>';
 
             if(isarray(contatcst_import_res) and contatcst_import_res[0]=1 and contatcst_import_res[2]>0)
               _html:=_html||'<br/><br/>You have '||cast(contatcst_import_res[2] as varchar)||' Facebook contact'||(case when contatcst_import_res[2]>1 then 's' else '' end)||
-                              ' that may be updated in your <a href="'||wa_expand_url('/addressbook/'||cast(contatcst_import_res[4] as varchar)||'/home.vspx',self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',self._ods_login_params)||'">Synchronize</a>';
+                              ' that may be updated in your <a href="'||wa_expand_url(dataspace_url,self._ods_login_params)||'">ODS AddressBook</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=update',self._ods_login_params)||'">Synchronize</a>';
             }
             
             self._dhtml:=vector_concat(self._dhtml,vector('ods_user',_html));

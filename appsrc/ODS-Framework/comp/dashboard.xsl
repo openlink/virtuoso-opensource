@@ -131,7 +131,7 @@
 	      if (not length (u_full_name))
 	        u_full_name := null;
 	?>
-              <li><a href="&lt;?V wa_expand_url('/dataspace/person/'|| nu_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide ( coalesce (u_full_name, nu_name) ) ?></a></li>
+              <li><a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(nu_name) ||'/'|| nu_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide ( coalesce (u_full_name, nu_name) ) ?></a></li>
 	<?vsp
 	   }
 	?>
@@ -143,7 +143,7 @@
 	   {
 	?>
 	      <li>
-          <a href="&lt;?V wa_expand_url('/dataspace/person/'|| nr_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide (coalesce (u_full_name, nr_name)) ?></a>
+          <a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(nr_name) ||'/'|| nr_name ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide (coalesce (u_full_name, nr_name)) ?></a>
 	      </li>
 	<?vsp
 	   }
@@ -377,7 +377,7 @@
 			   clk := '';
 			   mboxid :=  wa_user_have_mailbox (self.u_name);
 			   if (length (uname))
-           aurl := '/dataspace/person/' || uname ||'#this';
+           aurl := '/dataspace/'||wa_identity_dstype(uname)||'/' || uname ||'#this';
 			   else if (length (email) and mboxid is not null)
 			    {
 			      aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);
@@ -549,7 +549,7 @@
          clk := '';
          mboxid :=  wa_user_have_mailbox (self.u_name);
          if (length (uname))
-           aurl := '/dataspace/person' || uname||'#this';
+           aurl := '/dataspace/'||wa_identity_dstype(uname)||'/' || uname||'#this';
          else if (length (email) and mboxid is not null)
           {
             aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);
@@ -1550,7 +1550,7 @@
    </v:template>
       </div> <!-- pane content_pane -->
       <div class="w_footer">
-        <a href="&lt;?V wa_expand_url('/dataspace/person/'|| self.u_name ||'#this', self.login_pars)?&gt;">View full profile...</a>
+        <a href="&lt;?V wa_expand_url('/dataspace/'||wa_identity_dstype(self.u_name)||'/'|| self.u_name ||'#this', self.login_pars)?&gt;">View full profile...</a>
         <vm:user-info-edit-link title="Edit..."/>
       </div>
     </div>
@@ -1984,7 +1984,7 @@
                     WAUI_PHOTO_URL := 'images/icons/user_32.png';
         
         ?>
-            <a href="&lt;?V wa_expand_url('/dataspace/person/'|| sne_name ||'#this', self.login_pars)?&gt;"><?vsp if (length (WAUI_PHOTO_URL)) {  ?>
+            <a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(sne_name)||'/'|| sne_name ||'#this', self.login_pars)?&gt;"><?vsp if (length (WAUI_PHOTO_URL)) {  ?>
             <img src="&lt;?V WAUI_PHOTO_URL ?&gt;" border="0" alt="Photo" width="32" hspace="3"/>
             <?vsp } ?><?V wa_utf8_to_wide (coalesce (U_FULL_NAME, sne_name)) ?></a>
             <span class="home_addr"><?V wa_utf8_to_wide (addr) ?></span>
@@ -2241,7 +2241,7 @@
                     <p>
                       <?V case when length(dta[4])>12 then substring (dta[4],1,9)||'...' else dta[4] end ?>
                       <br />
-                      <a href="&lt;?V wa_expand_url('/dataspace/person/'|| coalesce(dta[3],dta[2]) ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide(coalesce(dta[2],dta[3])) ?></a>
+                      <a href="&lt;?V wa_expand_url('/dataspace/'|| wa_identity_dstype(coalesce(dta[3],dta[2]))||'/'|| coalesce(dta[3],dta[2]) ||'#this', self.login_pars)?&gt;"><?V wa_utf8_to_wide(coalesce(dta[2],dta[3])) ?></a>
                       <br />
                       <?V wa_abs_date(dta[1])?>
                     </p>
@@ -2416,7 +2416,7 @@
            mboxid :=  wa_user_have_mailbox (self.u_name);
 
            if (length (uname))
-          aurl := '/dataspace/person/' || uname||'#this';
+          aurl := '/dataspace/'|| wa_identity_dstype(uname) ||'/' || uname||'#this';
            else if (length (email) and mboxid is not null)
             {
               aurl := sprintf ('/oMail/%d/write.vsp?return=F1&amp;html=0&amp;to=%s', mboxid, email);

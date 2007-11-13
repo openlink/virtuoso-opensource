@@ -5809,3 +5809,25 @@ create procedure wa_users_rdf_data_det_upgrade ()
     }
 }
 ;
+
+create procedure wa_identity_dstype (in _identity any)
+{
+  declare dsname varchar;
+  declare _is_org integer;
+  
+  if(isinteger(_identity))
+    _is_org:=(select WAUI_IS_ORG from DB.DBA.WA_USER_INFO where WAUI_U_ID=_identity);
+  else
+    _is_org:=(select WAUI_IS_ORG from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID=U_ID and U_NAME=_identity);
+
+
+  if(_is_org=1)
+     dsname:='organization';
+  else
+     dsname:='person';
+
+  return dsname;
+
+}
+;
+

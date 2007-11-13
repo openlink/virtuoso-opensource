@@ -158,7 +158,7 @@ create procedure make_href (in u varchar)
 -- NULL means no such
 create procedure user_space_iri (in _u_name varchar)
 {
-  return sprintf ('http://%s%s/%U#space', get_cname(), get_base_path (), _u_name);
+  return sprintf ('http://%s%s/%U/space#this', get_cname(), get_base_path (), _u_name);
 };
 
 
@@ -469,6 +469,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
 {
   declare u_site_iri varchar;
   declare person_iri, link varchar;
+  declare os_iri varchar;
 
   ods_sioc_result (iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('User'));
@@ -480,6 +481,11 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
 
   DB.DBA.RDF_QUAD_URI (graph_iri, u_site_iri, rdf_iri ('type'), sioc_iri ('Space'));
   DB.DBA.RDF_QUAD_URI (graph_iri, u_site_iri, sioc_iri ('link'), link);
+
+  os_iri := sprintf ('http://%s/feeds/people/%U', get_cname(), u_name);
+  ods_sioc_service (graph_iri, os_iri, iri, null, null, null, os_iri, 'OpenSocial');
+  os_iri := sprintf ('http://%s/feeds/people/%U/friends', get_cname(), u_name);
+  ods_sioc_service (graph_iri, os_iri, iri, null, null, null, os_iri, 'OpenSocial');
 
   if (full_name is not null)
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('name'), full_name);

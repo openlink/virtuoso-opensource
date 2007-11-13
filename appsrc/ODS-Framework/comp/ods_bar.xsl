@@ -445,7 +445,7 @@ function getUrlOnEnter(e)
 
               <v:url name="odsbar_userinfo_button"
                      value="--self.odsbar_u_full_name"
-                     url="--self.odsbar_dataspace_path||'person/'||self.odsbar_u_name||'#this'"
+                     url="--self.odsbar_dataspace_path||wa_identity_dstype(self.odsbar_u_name)||'/'||self.odsbar_u_name||'#this'"
                      render-only="1"
                      is-local="1"
                      format="%s"

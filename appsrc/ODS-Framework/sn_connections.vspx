@@ -88,7 +88,7 @@
 			    <td>
                       <v:url name="l1" 
                              value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[2], (control.vc_parent as vspx_row_template).te_rowset[0])"
-                             url="--sprintf ('/dataspace/person/%U#this', (control.vc_parent as vspx_row_template).te_rowset[0])"/>
+                             url="--sprintf ('/dataspace/%s/%U#this', wa_identity_dstype((control.vc_parent as vspx_row_template).te_rowset[0]),(control.vc_parent as vspx_row_template).te_rowset[0])"/>
 			    </td>
 			    <td>
                       <v:url name="u1" 
@@ -108,7 +108,7 @@
         </div><!-- LT -->
         <div id="RT">
           <v:button action="simple" style="image" name="u2" value="images/foaf.gif"
-	    url="--WA_LINK (1, sprintf ('/dataspace/person/%s/foaf.rdf', self.for_user))" />
+	    url="--WA_LINK (1, sprintf ('/dataspace/%s/%s/foaf.rdf',wa_identity_dstype(self.for_user), self.for_user))" />
 	  <!-- sprintf ('ufoaf.xml?:sne=%d', self.sne_id)" -->
 <?vsp
   if (self.fname is null or self.fname = self.u_name)
