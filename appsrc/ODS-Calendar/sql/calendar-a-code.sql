@@ -1878,9 +1878,10 @@ create procedure CAL.WA.dt_timeDecode(
 --
 create procedure CAL.WA.dt_timeEncode(
   in pHour integer,
-  in pMinute integer)
+  in pMinute integer,
+  in pSecond integer := 0)
 {
-  return stringtime (sprintf ('%d:%d', pHour, pMinute));
+  return stringtime (sprintf ('%d:%d:%d', pHour, pMinute, pSecond));
 }
 ;
 
@@ -3585,22 +3586,51 @@ create procedure CAL.WA.vcal_str2date (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.vcal_str2status (
+  in xmlItem any,
+  in xmlPath varchar)
+{
+  declare N integer;
+  declare S, V any;
+
+  V := vector ('Not Started', 'In Progress', 'Completed', 'Waiting', 'Deferred');
+  S := cast (xquery_eval (xmlPath, xmlItem, 1) as varchar);
+  for (N := 0; N < length (V); N := N + 1)
+    if (lcase (S) = lcase (V[N]))
+      return V[N];
+
+  return S;
+}
+;
+
 -----------------------------------------------------------------------------------------
 --
 create procedure CAL.WA.vcal_iso2date (
   in S varchar)
 {
+  declare hours, minutes, seconds integer;
+  declare dt datetime;
   declare V any;
 
-  V := regexp_parse ('^([0-9][0-9][0-9][0-9])(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])T([01][0-9]|[2][0-3])([0-5][0-9])([0-5][0-9])(Z)?\$', S, 0);
-  if ((length (V) <= 1) or (length (V) < 14))
+  V := regexp_parse ('^([0-9][0-9][0-9][0-9])(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])T?([01][0-9]|[2][0-3])?([0-5][0-9])?([0-5][0-9])?(Z)?\$', S, 0);
+  if (length (V) < 8)
     return null;
-  return CAL.WA.dt_encode (atoi (subseq (S, V[ 2], V[ 3])),
+  dt := CAL.WA.dt_dateEncode (atoi (subseq (S, V[2], V[3])),
                            atoi (subseq (S, V[ 4], V[ 5])),
-                           atoi (subseq (S, V[ 6], V[ 7])),
-                           atoi (subseq (S, V[ 8], V[ 9])),
-                           atoi (subseq (S, V[10], V[11])),
-                           atoi (subseq (S, V[12], V[13])));
+                              atoi (subseq (S, V[6], V[7])));
+  hours := 0;
+  if ((length (V) >= 10) and (V[8] <> -1) and (V[9] <> -1))
+    hours := atoi (subseq (S, V[8], V[9]));
+  minutes := 0;
+  if ((length (V) >= 12) and (V[10] <> -1) and (V[11] <> -1))
+    minutes := atoi (subseq (S, V[10], V[11]));
+  seconds := 0;
+  if ((length (V) >= 14) and (V[12] <> -1) and (V[13] <> -1))
+    seconds := atoi (subseq (S, V[12], V[13]));
+
+  return CAL.WA.dt_join (dt, CAL.WA.dt_timeEncode (hours, minutes, seconds));
 }
 ;
 
@@ -3848,7 +3878,7 @@ create procedure CAL.WA.import_vcal (
   in tags any)
 {
   declare N, nLength integer;
-  declare tmp, xmlData, xmlItems, itemName any;
+  declare tmp, xmlData, xmlItems, itemName, V any;
   declare id,
           subject,
           description,
@@ -3944,7 +3974,9 @@ create procedure CAL.WA.import_vcal (
         eEventStart := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/DTSTART/', N), tzDict);
         eEventEnd := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/DUE/', N), tzDict);
         priority := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/PRIORITY/val', N), xmlItem, 1) as varchar);
-        status := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/STATUS/val', N), xmlItem, 1) as varchar);
+        if (isnull (priority))
+          priority := '3';
+        status := CAL.WA.vcal_str2complete (xmlItem, sprintf ('IMC-VTODO[%d]/STATUS/val', N));
         complete := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/COMPLETE/val', N), xmlItem, 1) as varchar);
         CAL.WA.task_update
           (
