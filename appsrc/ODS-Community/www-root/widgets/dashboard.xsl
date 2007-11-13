@@ -140,7 +140,7 @@
          mboxid :=  wa_user_have_mailbox (self.user_name);
          if (length (uname))
 --           aurl := self.wa_home||'/uhome.vspx?ufname=' || uname;
-           aurl := '/dataspace/person/' || uname ||'#this';
+           aurl := '/dataspace/'||wa_identity_dstype(uname)||'/' || uname ||'#this';
          
          else if (length (email) and mboxid is not null)
           {

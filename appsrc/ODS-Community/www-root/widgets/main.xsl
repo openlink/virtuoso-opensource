@@ -355,7 +355,7 @@
   <xsl:template match="vm:header">
    <head profile="http://internetalchemy.org/2003/02/profile">
       <xsl:text>&#10;</xsl:text>
-      <link rel="foaf" type="application/rdf+xml" title="FOAF"     href="<?Vself.ur?>/dataspace/person/<?Vself.owner_name?>/foaf.rdf" />
+      <link rel="foaf" type="application/rdf+xml" title="FOAF"     href="<?V sprintf('%s/dataspace/%s/%U/foaf.rdf',self.ur,wa_identity_dstype(self.owner_name),self.owner_name) ?>" />
       <xsl:text>&#10;</xsl:text>
       <link rel="meta" type="application/rdf+xml" title="SIOC" href="&lt;?vsp http (replace (sprintf ('%s/dataspace/%U/community/%U/sioc.rdf', self.ur, self.owner_name, self.comm_wainame), '+', '%2B')); ?>" />
       <xsl:text>&#10;</xsl:text>
@@ -1526,7 +1526,7 @@ c.length);
                           {
                             if(length(trim(U_FULL_NAME))=0) u_full_name:=null; 
 
-                            http('<li><a href="'||wa_expand_url('/dataspace/person/'||u_name||'#this',self.login_pars)||'">'||wa_utf8_to_wide (coalesce (trim(U_FULL_NAME),U_NAME))||'</a></li>');
+                            http('<li><a href="'||wa_expand_url('/dataspace/'||wa_identity_dstype(u_name)||'/'||u_name||'#this',self.login_pars)||'">'||wa_utf8_to_wide (coalesce (trim(U_FULL_NAME),U_NAME))||'</a></li>');
                           }
                       ?>
                      </ul>
@@ -2452,7 +2452,7 @@ c.length);
 	 declare sne_id int;
 	 sne_id := (select sne_id from sn_person where sne_name = self.owner_name);
 	?>
-	  <a href="<?V sprintf ('%sdataspace/person/%U/foaf.rdf', WA_LINK(1, '/'), self.owner_name)?>"  class="{local-name()}" target="_blank">
+	  <a href="<?V sprintf ('%sdataspace/%s/%U/foaf.rdf', WA_LINK(1, '/'),wa_identity_dstype(self.owner_name), self.owner_name)?>"  class="{local-name()}" target="_blank">
         <img border="0" src="<?Vself.stock_img_loc?>foaf.png" alt="FOAF" title="FOAF"/>
 
     </a>
