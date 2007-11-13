@@ -53,8 +53,22 @@ WV.WIKI.CREATEINSTANCE('Doc', http_dav_uid(), WV.Wiki.WikiAdminGId(), 0);
 sioc..fill_comments();
 WV.WIKI.PUT_NEW_FILES('Main');
 WV.WIKI.PUT_NEW_FILES('Doc',1);
-WV.WIKI.PUT_NEW_FILES('Main',1,'WikiMacros');
+--WV.WIKI.PUT_NEW_FILES('Main',1,'WikiMacros');
+WV.WIKI.PUT_NEW_FILES('Main',1,'WMacros');
+
 WV.WIKI.PUT_NEW_FILES('Main',1,'TemplateUser');
 update WV.WIKI.DOMAIN_PATTERN_1 set DP_PATTERN = replace (DP_PATTERN, '%', 'main')  where DP_PATTERN like '%%%';
 
+create procedure WV.WIKI.temp ()
+{
+  declare _topic_id integer;
+  declare _content, _type any;
 
+  _topic_id := (select TopicId from WV.Wiki.CLUSTERS a, WV.Wiki.TOPIC b where a.ClusterId = b.ClusterId and a.ClusterName = 'Main' and b.LocalName = 'WMacros');
+  DB.DBA.DAV_RES_CONTENT_INT (DAV_SEARCH_ID ('/DAV/VAD/wiki/Main/Attachments/WikiMacroSources.sql', 'R'), _content, _type, 0, 0);
+  WV.WIKI.ATTACH2 (http_dav_uid(), 'WikiMacroSources.sql', _type, _topic_id, _content, '');
+}
+;
+
+WV.WIKI.temp ();
+drop procedure WV.WIKI.temp;

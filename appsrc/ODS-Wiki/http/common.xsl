@@ -326,7 +326,7 @@
        href="{$baseadjust}{wv:ReadOnlyWikiWordLink('Main', 'WikiUsers')}">Users
      </a>
      <a id="macros-link"
-       href="{$baseadjust}{wv:ReadOnlyWikiWordLink('Main', 'WikiMacros')}">Macros
+       href="{$baseadjust}{wv:ReadOnlyWikiWordLink('Main', 'WMacros')}">Macros
      </a>
      <div id="virtuoso-info">
        <ul class="left_nav">
