@@ -86,11 +86,11 @@
         <xsl:attribute name="href">javascript: alert('You are in Preview mode! Save your article first.');</xsl:attribute>
       </xsl:when>
       <xsl:when test="$linkisbad = 1">
-	<xsl:attribute name="href"><xsl:value-of select="wv:ReadOnlyWikiWordHREF($ti_cluster_name,@href,$sid,$realm, $baseadjust, '')" />?parent=<xsl:value-of select="$ti_local_name"/> </xsl:attribute>   
+  <xsl:attribute name="href"><xsl:value-of select="wv:ReadOnlyWikiWordHREF2($ti_cluster_name,@href,$sid,$realm, $baseadjust, '')" />?parent=<xsl:value-of select="$ti_local_name"/></xsl:attribute>
         <xsl:attribute name="class">wikiword</xsl:attribute>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:attribute name="href"><xsl:value-of select="wv:ReadOnlyWikiWordHREF($ti_cluster_name,@href,$sid,$realm, $baseadjust, '')" /></xsl:attribute>   
+        <xsl:attribute name="href"><xsl:value-of select="wv:ReadOnlyWikiWordHREF2($ti_cluster_name,@href,$sid,$realm, $baseadjust, '')" /></xsl:attribute>
         <xsl:attribute name="class">wikiword</xsl:attribute>
       </xsl:otherwise>
     </xsl:choose>
@@ -130,7 +130,8 @@
     <xsl:choose>
       <xsl:when test="($ti_local_name = '') or ($donotresolve = 1) or (wv:QueryWikiWordLink($ti_cluster_name, $ti_local_name) > 0) or ($sys = '1') or ($id  != '')">
         <a>
-          <xsl:attribute name="href"><xsl:value-of select="wv:ReadOnlyWikiWordHREF($ti_cluster_name,$ti_local_name, $sid, $realm, $baseadjust, string($wikiref_params))"/>
+          <xsl:attribute name="href">
+            <xsl:value-of select="wv:ReadOnlyWikiWordHREF2($ti_cluster_name,$ti_local_name, $sid, $realm, $baseadjust, string($wikiref_params))"/>
           </xsl:attribute>
           <xsl:if test="$target">
             <xsl:attribute name="target"><xsl:value-of select="$target"/></xsl:attribute>
@@ -153,7 +154,9 @@
       <xsl:otherwise>
       <xsl:copy-of select="$wikiref_cont"/>
       <a>
-        <xsl:attribute name="href"><xsl:value-of select="wv:ReadOnlyWikiWordHREF($ti_cluster_name, $ti_local_name, $sid, $realm, $baseadjust, string (wv:collect_pairs ($wikiref_params, concat ('WikiCluster=', $ti_cluster_name))))"/></xsl:attribute>?
+          <xsl:attribute name="href">
+            <xsl:value-of select="wv:ReadOnlyWikiWordHREF2($ti_cluster_name, $ti_local_name, $sid, $realm, $baseadjust, string (wv:collect_pairs ($wikiref_params, concat ('WikiCluster=', $ti_cluster_name))))"/>
+          </xsl:attribute>?
         <xsl:if test="$target">
           <xsl:attribute name="target"><xsl:value-of select="$target"/></xsl:attribute>
         </xsl:if>
@@ -166,7 +169,7 @@
   </xsl:choose>
 </xsl:template>
 <xsl:template name="back-button">
-  <form action="{wv:ReadOnlyWikiWordHREF($ti_cluster_name, $ti_local_name, $sid, $realm, $baseadjust, '')}" method="get">
+    <form action="{wv:ReadOnlyWikiWordHREF2($ti_cluster_name, $ti_local_name, $sid, $realm, $baseadjust, '')}" method="get">
     <xsl:call-template name="security_hidden_inputs"/>
     <input type="submit" name="command" value="Back to the topic"></input>
   </form>

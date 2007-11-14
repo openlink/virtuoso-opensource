@@ -1307,7 +1307,6 @@ create function WV.WIKI.READONLYWIKIWORDHREF (
   in _params any
 ) returns varchar
 { -- Converts dirty WikiLink into path of form Cluster/LocalName
-  --dbg_obj_princ ('WV.WIKI.READONLYWIKIWORDHREF: ', _params);
   declare _topic WV.WIKI.TOPICINFO;
   _topic := WV.WIKI.TOPICINFO ();
   _topic.ti_raw_name := _href;
@@ -1322,14 +1321,35 @@ create function WV.WIKI.READONLYWIKIWORDHREF (
 }
 ;
 
+create function WV.WIKI.READONLYWIKIWORDHREF2 (
+  inout _cluster_name varchar,
+  inout _topic_name varchar,
+  in _sid varchar,
+  in _realm varchar,
+  in _base_adjust varchar,
+  in _params any
+) returns varchar
+{
+  declare url_params varchar;
+  if (isstring(_params))
+    url_params :=  WV.WIKI.URL_PARAMS (_params);
+  if (url_params <> '')
+    return sprintf ('%s/%s?%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name, url_params);
+  return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
+};
+
 grant execute on WV.WIKI.READONLYWIKIWORDLINK to public
 ;
 grant execute on WV.WIKI.READONLYWIKIWORDHREF to public
+;
+grant execute on WV.WIKI.READONLYWIKIWORDHREF2 to public
 ;
 
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordLink', 'WV.WIKI.READONLYWIKIWORDLINK')
 ;
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordHREF', 'WV.WIKI.READONLYWIKIWORDHREF')
+;
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordHREF2', 'WV.WIKI.READONLYWIKIWORDHREF2')
 ;
 
 

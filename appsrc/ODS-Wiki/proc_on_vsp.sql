@@ -2516,15 +2516,15 @@ create function WV.WIKI.RESOURCEHREF (in href varchar, in _base_adjust varchar)
     return DB.DBA.WA_LINK (1, href);
 }
 ;
-create function WV.WIKI.RESOURCEHREF2 (in resource varchar, 
+create function WV.WIKI.RESOURCEHREF2 (in _resource varchar,
 	in _base_adjust varchar,
 	in _params any)
 {
   declare url_params any;
   url_params := WV.WIKI.URL_PARAMS (_params);
   if (url_params <> '')
-    return sprintf ('%s?%s', WV.WIKI.RESOURCEHREF(resource, _base_adjust), url_params);
-  return WV.WIKI.RESOURCEHREF (resource, _base_adjust);
+    return sprintf ('%s?%s', WV.WIKI.RESOURCEHREF(_resource, _base_adjust), url_params);
+  return WV.WIKI.RESOURCEHREF (_resource, _base_adjust);
 }
 ;
 
