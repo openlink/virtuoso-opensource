@@ -257,6 +257,8 @@
                 <li id="feed_rdf">RDF</li>
                 <li id="feed_xbel">XBEL</li>
                 <li id="feed_mrss">mRSS</li>
+                <li id="feed_siocxml">SIOC (RDF/XML)</li>
+                <li id="feed_siocn3turtle">SIOC (N3/Turtle)</li>
               </ul>
             </div>
           </td>
@@ -411,7 +413,8 @@
       var realm = '<xsl:value-of select="@realm"/>';
       var home_path = '<xsl:value-of select="gallery"/>';
     var home_url = '<xsl:value-of select="home_url"/>';
-    var gallery_id = '<xsl:value-of select="gallery_id"/>'
+    var gallery_id = '<xsl:value-of select="gallery_id"/>';
+    var gallery_inst_name = "<xsl:value-of select='instance' />";
     </script>
   </xsl:template>
 

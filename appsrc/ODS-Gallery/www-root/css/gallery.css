@@ -601,7 +601,7 @@ padding:0;
 #feed_atom{
   background-image:url('../i/atom-icon-16.gif') !important;
 }
-#feed_rdf{
+#feed_rdf,#feed_siocxml,#feed_siocn3turtle{
   background-image:url('../i/rdf-icon-16.gif') !important;
 }
 

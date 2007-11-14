@@ -135,7 +135,7 @@
   http('</user>',_xml);     --&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/%s/sioc.rdf', self.st_host, self.fname, wa_type_to_app (self.app_type)), '+', '%2B')); ?>
   http(sprintf('<host>%s</host>',WA_GET_HOST ()),_xml);
   http(sprintf('<app_type>photos</app_type>'),_xml);
-  http(sprintf('<instance>%s</instance>',replace(current_instance.name, ' ', '%2B')),_xml);
+  http(sprintf('<instance>%s</instance>',sprintf('%U',current_instance.name)),_xml);
   http(sprintf('<home_url>%s</home_url>',current_instance.home_url),_xml);
   http(sprintf('<wa_home_title>%s</wa_home_title>',wa_home_title),_xml);
   http(sprintf('<wa_home_link>%s</wa_home_link>',wa_home_link),_xml);

@@ -1475,6 +1475,21 @@ gallery.feed_mrss_click = function(){
 }
 
 //------------------------------------------------------------------------------
+gallery.feed_siocxml_click = function(){
+  feed_dataspace_url('sioc.rdf');
+}
+//------------------------------------------------------------------------------
+gallery.feed_siocn3turtle_click = function(){
+  feed_dataspace_url('sioc.ttl');
+}
+
+//------------------------------------------------------------------------------
+
+feed_dataspace_url = function(type){
+  window.open('http://'+document.location.host+'/dataspace/'+ds_albums.current.owner_name+'/photos/'+gallery_inst_name+'/'+type);
+}
+
+//------------------------------------------------------------------------------
 feed_url = function(type){
   var base_url;
   if(page_location.indexOf('?') > -1){
