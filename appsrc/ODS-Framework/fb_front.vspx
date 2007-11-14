@@ -516,6 +516,7 @@ function fbInitPrepare()
 {
   ods_bar_state_set('min');
   OAT.Preferences.imagePath='./images/oat/';
+  if(typeof(fbInit)!='undefined')
   OAT.Loader.loadFeatures(["dock","animation","ajax2","xml","combobutton","window","anchor","sparql"],function(){setTimeout(fbInit,80)});
   return;
 }
@@ -776,9 +777,11 @@ function derefFBP(fbCID)
                                           	activation:"hover"
                                           };
                                           var rdfObj=$('rdf_'+fbCID);
+                                          if(rdfObj)
+                                          {
                                           rdfObj.style.cursor='pointer';
                                           OAT.Anchor.assign(rdfObj,optObj);
-                                               
+                                          }
 
                                           }  
                                           function simpleUri(uri)

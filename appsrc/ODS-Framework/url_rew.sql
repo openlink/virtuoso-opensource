@@ -95,15 +95,19 @@ create procedure DB.DBA.ODS_PHOTO_ITEM_PAGE (in par varchar, in fmt varchar, in 
     {
       ret := sprintf (fmt, val);
     }
-  else if (par = 'item')
+  else if (par = 'item' and id is not null and id > 0)
     {
      select RES_NAME,COL_NAME into nam, col from WS.WS.SYS_DAV_RES, WS.WS.SYS_DAV_COL where RES_COL=COL_ID and RES_ID = id;
      ret:= '#/'||col||'/'||nam;
     }
-  else
+  else if(id>0)
     {
      select RES_FULL_PATH into nam from WS.WS.SYS_DAV_RES where RES_ID = id;
      ret:= nam;
+    }
+  else
+    {
+     ret := sprintf ('%s', val);
     }
 
   return ret;
@@ -247,8 +251,15 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_html', 1,
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html', 1,
     '/dataspace/([^/]*)/wiki/([^/]*)/([^/]*)',
     vector('uname', 'inst', 'item'), 3,
-    '%s/%s', vector('inst', 'item'),
+    '%s%s', vector('inst', 'item'),
     'DB.DBA.ODS_ITEM_PAGE',
+    NULL,
+    2);
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html2', 1,
+    '/dataspace/([^/]*)/wiki/(Main|Doc)/([^/]*)',
+    vector('uname', 'inst', 'item'), 3,
+    '/wiki/%s/%s', vector('inst', 'item'),
+    NULL,
     NULL,
     2);
 
@@ -308,7 +319,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
     'DB.DBA.ODS_DET_REF',
     '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)',
     2,
-    303);
+    null);
 
 -- RDF data rule
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
@@ -317,7 +328,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
     'DB.DBA.ODS_DET_REF',
     '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)',
     2,
-    303);
+    null);
 
 -- Rule for about, sioc, foaf etc. RDF resources
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_res', 1,
@@ -326,7 +337,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_res', 1,
     'DB.DBA.ODS_DET_REF',
     NULL,
     2,
-    303);
+    null);
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_error', 1,
     '/dataspace/(.*)/error.vspx?(.*)', vector(), 0,
@@ -351,6 +362,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_discussion_html',
 	  'ods_item_html',
 	  'ods_wiki_item_html',
+	  'ods_wiki_item_html2',
 	  'ods_photo_item_html',
 	  'ods_cal_item_html',
 	  'ods_discussion_item_html',
