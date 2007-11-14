@@ -489,7 +489,7 @@ create procedure BMK.WA.domain_update (
   BMK.WA.domain_gems_delete (domain_id, account_id, 'BM', cast(domain_id as varchar));
   BMK.WA.domain_gems_create (domain_id, account_id);
 
-  BMK.WA.sfolder_create(domain_id, 'All bookmarks', '<settings/>', 1);
+  BMK.WA.sfolder_create (domain_id, 'All bookmarks', '<settings/>');
 
   return;
 }
@@ -1615,20 +1615,20 @@ create procedure BMK.WA.sfolder_sql_where(
 create procedure BMK.WA.sfolder_create(
   in domain_id integer,
   in name varchar,
-  in data varchar,
-  in test integer := 0)
+  in data varchar)
 {
   declare id varchar;
 
-  if (test) {
-    id := coalesce((select SF_ID from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id and SF_NAME = name), '');
-    if (id <> '')
-      return id;
+  id := coalesce((select SF_ID from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id and SF_NAME = name), -1);
+  if (id = -1) {
+    insert into BMK.WA.SFOLDER (SF_DOMAIN_ID, SF_NAME, SF_DATA)
+      values(domain_id, name, data);
+  } else {
+    update BMK.WA.SFOLDER
+       set SF_DATA = data
+     where SF_ID = id;
   }
-  id := sequence_next ('sfolder');
-  insert into BMK.WA.SFOLDER(SF_ID, SF_DOMAIN_ID, SF_NAME, SF_DATA)
-    values(id, domain_id, name, data);
-  return id;
+  return (select SF_ID from BMK.WA.SFOLDER where SF_DOMAIN_ID = domain_id and SF_NAME = name);
 }
 ;
 

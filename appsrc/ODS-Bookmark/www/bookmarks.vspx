@@ -2575,7 +2575,7 @@
                     data := BMK.WA.xml2string(data);
 
                     if (self.bMode = 'Smart Folder/Create') {
-                      self.v_id := BMK.WA.sfolder_create(self.domain_id, self.v_name, data);
+                      BMK.WA.sfolder_create (self.domain_id, self.v_name, data);
                     } else {
                       BMK.WA.sfolder_update(self.domain_id, self.v_id, self.v_name, data);
                     }

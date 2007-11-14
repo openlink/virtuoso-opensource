@@ -157,9 +157,14 @@ BMK.WA.exec_no_error('
   create unique index SK_SFOLDER_01 on BMK.WA.SFOLDER(SF_DOMAIN_ID, SF_NAME)
 ');
 
+BMK.WA.exec_no_error (
+  'set_identity_column (\'BMK.WA.SFOLDER\', \'SF_ID\', %d)', 'I', 'BMK.WA.SFOLDER', 'SF_ID'
+)
+;
+
 -------------------------------------------------------------------------------
 --
--- Contains domain feeds.
+-- Conatins domain feeds.
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('
