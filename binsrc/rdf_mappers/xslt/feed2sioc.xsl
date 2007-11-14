@@ -56,7 +56,9 @@
   <rdf:RDF>
       <xsl:apply-templates/>
       <xsl:variable name="users" select="distinct (//dc:creator)"/>
+      <xsl:if test="not empty($users)">
       <xsl:apply-templates select="$users" mode="user"/>
+      </xsl:if>
       <xsl:apply-templates mode="atom"/>
   </rdf:RDF>
 </xsl:template>

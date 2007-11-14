@@ -91,6 +91,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('http://.*.wikipedia.org.*',
             'URL', 'DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE', null, 'Wikipedia');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://finance.yahoo.com/q\\?s=.*',
+            'URL', 'DB.DBA.RDF_LOAD_YAHOO_STOCK_DATA', null, 'Yahoo Finance');
+
 -- we do default http & html handler first of all
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
@@ -1036,7 +1040,7 @@ create procedure DB.DBA.RDF_LOAD_OPENSOCIAL_PERSON (in graph_iri varchar, in new
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/ospeople2rdf.xsl', xd,
   	vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
-  dbg_printf ('%s', xd);
+--  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
   return 1;
 }
@@ -1671,5 +1675,301 @@ create procedure DB.DBA.SYS_DOI_SPONGE_UP (in local_iri varchar, in get_uri varc
     {
       signal ('RDFZZ', 'This version of Virtuoso Sponger do not support "doi" IRI scheme');
     }
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_YAHOO_STOCK_DATA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare meta, tmp, content varchar;
+  declare symbol varchar;
+  declare arr any;
+
+  declare exit handler for sqlstate '*'
+    {
+--      dbg_obj_print (__SQL_MESSAGE);
+      return 0;
+    };
+--  dbg_obj_print ('DB.DBA.RDF_LOAD_YAHOO_TRAFFIC_DATA');
+  arr := sprintf_inverse (new_origin_uri, 'http://finance.yahoo.com/q?s=%s', 0);
+  symbol := arr[0];
+
+  rdfm_yq_get_quote (symbol, new_origin_uri, dest, graph_iri);
+  rdfm_yq_get_history (symbol, new_origin_uri, dest, graph_iri);
+  rdfm_yq_get_feed (symbol, new_origin_uri, dest, graph_iri);
+  rdfm_yq_get_events (symbol, new_origin_uri, dest, graph_iri);
+  rdfm_yq_get_mb (symbol, new_origin_uri, dest, graph_iri);
+  rdfm_yq_get_competitors (symbol, new_origin_uri, dest, graph_iri);
+  return 1;
+}
+;
+
+
+create procedure rdfm_yq_get_quote (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+{
+  declare arr, cnt, ses, content any;
+  declare xt, xd any;
+
+  ses := string_output ();
+  cnt := http_get (sprintf ('http://download.finance.yahoo.com/d/quotes.csv?s=%U&f=nsbavl1d1t1cpomwj1re7y&e=.csv', symbol));
+  arr := rdfm_yq_parse_csv (cnt);
+  http ('<quote stock="NASDAQ">', ses);
+  foreach (any q in arr) do
+    {
+      http_value (q[0], 'company', ses);
+      http_value (q[1], 'symbol', ses);
+      http_value (q[2], 'bid', ses);
+      http_value (q[3], 'ask', ses);
+      http_value (q[4], 'volume', ses);
+    }
+  http ('</quote>', ses);
+  content := string_output_string (ses);
+  xt := xtree_doc (content);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/yahoo_stock2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return;
+}
+;
+
+create procedure rdfm_yq_get_history (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+{
+  declare arr, cnt, ses, content any;
+  declare xt, xd any;
+
+  ses := string_output ();
+  cnt := http_get (sprintf ('http://ichart.finance.yahoo.com/table.csv?s=%U&d=10&e=13&f=2007&g=d&a=8&b=7&c=2007&ignore=.csv', symbol));
+  arr := rdfm_yq_parse_csv (cnt);
+--  dbg_obj_print (arr);
+  http (sprintf ('<history stock="NASDAQ" symbol="%V">', symbol), ses);
+  foreach (any q in arr) do
+    {
+      if (q[0] <> 'Date')
+	{
+	  http ('<hist-price>', ses);
+	  http_value (q[0], 'date', ses);
+	  http_value (q[1], 'open', ses);
+	  http_value (q[2], 'high', ses);
+	  http_value (q[3], 'low', ses);
+	  http_value (q[4], 'close', ses);
+	  http_value (q[5], 'volume', ses);
+	  http_value (q[6], 'adjclose', ses);
+	  http ('</hist-price>', ses);
+	}
+    }
+  http ('</history>', ses);
+  content := string_output_string (ses);
+  xt := xtree_doc (content);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/yahoo_stock2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xd := serialize_to_UTF8_xml (xt);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  return;
+}
+;
+
+create procedure rdfm_yq_date_cvt (in d varchar)
+{
+  declare arr any;
+  declare dt any;
+  declare exit handler for sqlstate '*'
+    {
+      return null;
+    };
+  arr := sprintf_inverse (trim (cast (d as varchar)), '%d-%s-%d', 0);
+  if (length(arr) < 3)
+    return null;
+  dt := http_string_date (sprintf ('Mon, %02d %s 20%02d 00:00:00 GMT', arr[0], arr[1], arr[2]));
+  dt := dt_set_tz (dt, 0);
+  return date_iso8601 (dt);
+}
+;
+
+create procedure rdfm_yq_get_competitors (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+{
+  declare content, iri any;
+  declare xt, xd, xp, ses any;
+  content := http_get (sprintf ('http://finance.yahoo.com/q/co?s=%U', symbol));
+  --content := file_to_string ('temp/xx');
+  xt := xtree_doc (content, 2);
+  xp := xpath_eval ('//table[tr/td/small/b[ contains (., "DIRECT COMPETITOR COMPARISON")]]/following-sibling::table[2]/tr[1]/td/table/tr[1]//a/text()', xt, 0);
+--  dbg_obj_print (xp);
+  ses := string_output ();
+  foreach (any x in xp) do
+    {
+      x := cast (x as varchar);
+      if (x <> symbol and x <> 'Industry')
+	{
+	  http (sprintf ('<http://dbpedia.org/resource/%s> <http://xbrlontology.com/ontology/finance/stock_market#hasCompetitor> <http://dbpedia.org/resource/%s> .\n', symbol, x), ses);
+	  http (sprintf ('<http://dbpedia.org/resource/%s> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> <http://finance.yahoo.com/q?s=%s> .\n', x, x), ses);
+	}
+    }
+  content := string_output_string (ses);
+--  dbg_obj_print (content);
+  TTLP (content, new_origin_uri, coalesce (dest, graph_iri));
+  return;
+}
+;
+
+create procedure rdfm_yq_get_events (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+{
+  declare content, iri any;
+  declare xt, xd, xp, ses any;
+  iri := sprintf ('http://finance.yahoo.com/q/ce?s=%U', symbol);
+  content := http_get (sprintf ('http://finance.yahoo.com/q/ce?s=%U', symbol));
+  xt := xtree_doc (content, 2);
+  xp := xpath_eval ('//table[tr/td[@class="yfnc_tablehead1" and normalize-space (.) = "Event"]]/tr', xt, 0);
+  ses := string_output ();
+  http ('<r:RDF xmlns:r="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:c="http://www.w3.org/2002/12/cal/icaltzd#">\n', ses);
+  http (sprintf ('<c:Vcalendar r:about="%V">\n', iri), ses);
+  http ('<c:prodid>-//connolly.w3.org//palmagent 0.6 (BETA)//EN</c:prodid>\n', ses);
+  http ('<c:version>2.0</c:version>\n', ses);
+  foreach (any x in xp) do
+    {
+      declare _time, _desc, _uri varchar;
+      _time := xpath_eval ('string(td[1])', x);
+      _desc := xpath_eval ('string(td[2])', x);
+      _uri :=  xpath_eval ('td[2]/a/@href', x);
+      --dbg_obj_print (_time, _desc, _uri);
+      if (length (_time) and length (_desc))
+	{
+	  _time := rdfm_yq_date_cvt (_time);
+	  if (length (_time))
+	    {
+	      http ('<c:component>\n', ses);
+	      http ('<c:Vevent>\n', ses);
+	      http (sprintf ('<c:description>%V</c:description>\n', _desc), ses);
+	      http (sprintf ('<c:dtstart r:datatype="http://www.w3.org/2001/XMLSchema#dateTime">%V</c:dtstart>\n', _time), ses);
+	      if (_uri is not null)
+		http (sprintf ('<c:url r:resource="%V"/>\n', _uri), ses);
+	      http ('</c:Vevent>\n', ses);
+	      http ('</c:component>\n', ses);
+	    }
+	}
+    }
+  http ('</c:Vcalendar>\n', ses);
+  http ('</r:RDF>\n', ses);
+  content := string_output_string (ses);
+  --dbg_printf ('%s', content);
+  DB.DBA.RDF_LOAD_RDFXML (content, new_origin_uri, coalesce (dest, graph_iri));
+  return;
+}
+;
+
+create procedure rdfm_yq_get_mb (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+{
+  declare content, hdr any;
+  declare xt, xp any;
+  content := http_get ('http://messages.finance.yahoo.com/mb/'||symbol);
+  xt := xtree_doc (content, 2);
+  xp := cast(xpath_eval ('//a[normalize-space(.) = "RSS"]/@href', xt) as varchar);
+  if (length (xp))
+    {
+      content := RDF_HTTP_URL_GET (xp, '', hdr);
+      rdfm_yq_load_feed (content, new_origin_uri, dest, graph_iri);
+    }
+}
+;
+
+create procedure rdfm_yq_load_feed (inout content any, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+{
+  declare xt, xd any;
+  xt := xtree_doc (content);
+  if (xpath_eval ('/RDF', xt) is not null and content is not null)
+    {
+      xd := content;
+      goto ins_rdf;
+    }
+  else if (xpath_eval ('/feed', xt) is not null)
+    {
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/atom2rdf.xsl', xt);
+    }
+  else if (xpath_eval ('/rss', xt) is not null)
+    {
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/rss2rdf.xsl', xt);
+    }
+  else
+    goto no_feed;
+  xd := serialize_to_UTF8_xml (xd);
+  ins_rdf:
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  no_feed:
+  return;
+}
+;
+
+create procedure rdfm_yq_get_feed (in symbol varchar, in new_origin_uri varchar, in  dest varchar, in graph_iri varchar)
+{
+  declare content, hdr any;
+  content := RDF_HTTP_URL_GET (sprintf ('http://us.rd.yahoo.com/finance/news/rss/add/*http://finance.yahoo.com/rss/SeekingAlpha?s=%U', symbol), '', hdr);
+  rdfm_yq_load_feed (content, new_origin_uri, dest, graph_iri);
+  return;
+}
+;
+
+
+create procedure rdfm_yq_parse_csv (in str varchar)
+{
+  declare ses any;
+  declare ret, line, v any;
+
+  ses := string_output ();
+  http (str, ses);
+  ret := vector ();
+  while (1)
+    {
+      line := ses_read_line (ses, 0, 0, 1);
+      if (not isstring (line))
+	goto finish;
+      line := replace (line, '\r', '\n');
+      line := replace (line, '\n\n', '\n');
+      v := rdfm_yq_parse_csv_line (line);
+--      dbg_obj_print (v);
+      ret := vector_concat (ret, vector (v));
+    }
+  finish:
+  return ret;
+}
+;
+
+create procedure rdfm_yq_parse_csv_line (inout line varchar)
+{
+  declare res any;
+  declare len, i, stat, prev int;
+  declare tmp varchar;
+
+  res := vector ();
+  len := length (line);
+  stat := 0;
+  tmp := '';
+  prev := 0;
+  for (i := 0; i < len; i := i + 1)
+    {
+      if (stat = 0 and (line[i] = ascii (',') or line[i] = ascii ('\n')))
+	{
+	  res := vector_concat (res, vector (tmp));
+	  tmp := '';
+	}
+      else if (line[i] = ascii ('"'))
+	{
+	  if (stat = 1)
+	    {
+	      stat := 0;
+	    }
+	  else if (stat = 0)
+	    {
+	      if (prev = line[i])
+	        tmp := tmp || chr (line[i]);
+              stat := 1;
+	    }
+	}
+      else if (stat)
+	tmp := tmp || chr (line[i]);
+      else if (stat = 1 and line[i] = ascii (' '))
+        tmp := tmp || ' ';
+      else if (stat = 0 and line[i] <> ascii (' '))
+        tmp := tmp || chr (line[i]);
+      prev := line[i];
+    }
+  return res;
 }
 ;
