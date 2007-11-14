@@ -2229,7 +2229,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_DATATYPE, NULL_ASNAME);
       return;
     case LIKE_L:
-      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed))
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, NULL_ASNAME);
       else
         {
@@ -2239,7 +2239,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         }
       return;
     case IN_L:
-      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed))
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, NULL_ASNAME);
       else
         {
@@ -2290,7 +2290,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
           ssg_puts ("))");
       return;
     case isBLANK_L:
-      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed))
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, NULL_ASNAME);
       else
       {
@@ -2313,14 +2313,14 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
       }
       return;
     case LANG_L:
-      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed))
+      if (SSG_VALMODE_SQLVAL != needed)
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, NULL_ASNAME);
       else
         ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_LANGUAGE, NULL_ASNAME);
       return;
     case isURI_L:
     case isIRI_L:
-      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed))
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, NULL_ASNAME);
       else
       {
@@ -2343,7 +2343,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
       }
       return;
     case isLITERAL_L:
-      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed))
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, NULL_ASNAME);
       else
       {
@@ -2453,12 +2453,12 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         }
       return;
     case LANGMATCHES_L:
-      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed))
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
         ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, NULL_ASNAME);
       else
         {
           ssg_puts (" DB.DBA.RDF_LANGMATCHES (");
-          ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+          ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_LONG, NULL_ASNAME);
           ssg_putchar (',');
           ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL, NULL_ASNAME);
           ssg_putchar (')');
@@ -2724,8 +2724,12 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
     native = ssg_expn_native_valmode (ssg, tree);
   if (SSG_VALMODE_BOOL == native)
     {
-      ssg_print_scalar_expn (ssg, tree, needed, asname);
+      if ((SSG_VALMODE_SQLVAL == needed) || (SSG_VALMODE_LONG == needed))
+        {
+          ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_BOOL, asname);
       return;
+    }
+      native = SSG_VALMODE_LONG; 
     }
   if (IS_BOX_POINTER (native))
     {
