@@ -1408,6 +1408,11 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
     }
   -- dbg_obj_princ ('content_type=', content_type, ',  _cont_len=', _cont_len);
 
+  if (content_type = 'application/sparql-query')
+    {
+      WS.WS.SPARQL_QUERY_POST (full_path, ses);
+    }
+
   rc := -28;
 
   rc := DAV_RES_UPLOAD_STRSES_INT (
@@ -2219,6 +2224,10 @@ end_xml:
               close c_xml;
 	      http (concat ('</', sxtag, '>\n'));
 	    }
+	  else if (cont_type = 'application/sparql-query')
+	    {
+	       WS.WS.SPARQL_QUERY_GET (content, path, lines);
+	    }
 	  else if (not isnull (content))
 	    {
 	      if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xper', 0)) is not null)
@@ -2333,7 +2342,7 @@ err_end:
 }
 ;
 
-
+-- /* POST method */
 create procedure WS.WS.POST (in path varchar, inout params varchar, in lines varchar)
 {
   declare _content_type any;
@@ -2346,6 +2355,10 @@ create procedure WS.WS.POST (in path varchar, inout params varchar, in lines var
      else
        signal ('37000', 'The SyncML server is not available');
    }
+  else if (_content_type = 'application/sparql-query')
+   {
+     WS.WS.PUT (path, params, lines);
+   }
   else
    {
      WS.WS.GET (path, params, lines);
@@ -2353,6 +2366,40 @@ create procedure WS.WS.POST (in path varchar, inout params varchar, in lines var
 }
 ;
 
+create procedure WS.WS.SPARQL_QUERY_POST (in path varchar, inout ses varchar)
+{
+  declare def_gr, full_qr, qr, cname any;
+  declare stat, msg any;
+  ses := http_body_read ();
+  qr := string_output_string (ses);
+  cname := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (cname is null)
+    {
+      declare tmp any;
+      tmp := sys_stat ('st_host_name');
+      if (server_http_port () <> '80')
+	tmp := tmp || ':'|| server_http_port ();
+      cname := tmp;
+    }
+  def_gr := sprintf ('http://%s%U', cname, path);
+  full_qr := sprintf ('SPARQL define input:default-graph-uri <%s> ', def_gr);
+  full_qr := full_qr || qr;
+--  dbg_obj_print (full_qr);
+  stat := '00000';
+  exec (full_qr, stat, msg);
+  if (stat <> '00000')
+    signal (stat, msg);
+  ses := sprintf ('CONSTRUCT { ?s ?p ?o } FROM <%s> WHERE { ?s ?p ?o }', def_gr);
+}
+;
+
+create procedure WS.WS.SPARQL_QUERY_GET (in content any, in path any, inout lines any)
+{
+  declare pars any;
+  pars := vector ('query', string_output_string (content));
+  WS.WS."/!sparql/" (path, pars, lines);
+}
+;
 
 --!AFTER
 create procedure WS.WS."LOCK" (in path varchar, inout params varchar, in lines varchar)
