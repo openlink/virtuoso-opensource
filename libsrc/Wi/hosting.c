@@ -545,7 +545,7 @@ bif_hosting_http_handler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     {
       if (BOX_ELEMENTS (args) > 4)
 	{
-	      head_ret = (caddr_t *) box_copy_tree ((box_t) _head_ret);
+	      head_ret = (caddr_t *) box_dv_short_string ((box_t) _head_ret);
 	  if (ssl_is_settable (args[4]))
 	    qst_set (qst, args[4], (caddr_t) head_ret);
 	  else
