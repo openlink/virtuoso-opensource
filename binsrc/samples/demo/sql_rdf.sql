@@ -50,7 +50,7 @@ drop quad map virtrdf:NorthwindDemo .
 ;
 
 DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://www.openlinksw.com/schemas/northwind#>
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -74,7 +74,7 @@ create iri class northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VAD/de
 ;
 
 DB.DBA.SPARQL_NW_RUN ('
-prefix northwind: <http://www.openlinksw.com/schemas/northwind#>
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
