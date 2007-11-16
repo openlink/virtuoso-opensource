@@ -8223,7 +8223,7 @@ create procedure DB.DBA.RDF_HTTP_MAKE_HTTP_REQ (in url varchar, in meth varchar,
   declare hf any;
   declare str any;
 
-  hf := WS.WS.PARSE_URI (url);
+  hf := rfc1808_parse_uri (url);
   str := meth || ' ' || hf[2] || case when hf[4] <> '' then '?' else '' end || hf[4] || ' HTTP/1.1\r\n' ||
   	 'Host: ' || hf[1] || '\r\n' || req;
   str := replace (str, '\r', '\n');
@@ -8865,7 +8865,7 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any)
   else
     {
       declare sch, rc any;
-      sch := WS.WS.PARSE_URI (graph_iri);
+      sch := rfc1808_parse_uri (graph_iri);
       sch := upper (sch[0]);
       if (__proc_exists ('DB.DBA.SYS_'||sch||'_SPONGE_UP') is not null)
         {

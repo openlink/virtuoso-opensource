@@ -128,7 +128,7 @@ create procedure XML_URI_RESOLVE_LIKE_GET (in base_uri varchar, in rel_uri varch
   else
     rel_uri := coalesce (cast (rel_uri as varchar), '');
 
-  s_uri := WS.WS.PARSE_URI (base_uri);
+  s_uri := rfc1808_parse_uri (base_uri);
   if (aref (s_uri, 0) = '')
     base_uri := sprintf ('http://%s', base_uri);
 --  IvAn/UriSlash/011111 This causes violations of RFC 1808 on reading compound XML documents!
@@ -213,7 +213,7 @@ create procedure XML_URI_GET (in base_uri varchar, in rel_uri varchar)
   else
     base_uri := charset_recode (base_uri, NULL, 'UTF-8');
 again:
-  s_uri := WS.WS.PARSE_URI (base_uri);
+  s_uri := rfc1808_parse_uri (base_uri);
   str := null;
   proto := aref (s_uri, 0);
 try_all:
@@ -3279,7 +3279,7 @@ nxt:;
     wsdl := soap_wsdl();
     xe := xml_tree_doc (wsdl);
     _url := {?'url'};
-    hinfo := WS.WS.PARSE_URI ({?'url'});
+    hinfo := rfc1808_parse_uri ({?'url'});
 
     if (xpath_eval (sprintf ('/definitions/binding/operation[@name="%s"]/operation[@style="document"]', {?'operation'}), xe) is null)
       {
@@ -3629,7 +3629,7 @@ DB.DBA.SOAP_WSDL_IMPORT (in url varchar, in mode_wsdl integer := 1, in wire_dump
   -- PL module generation
   mname := cast (xpath_eval ('/definitions/service/@name', wsdl, 1) as varchar);
   uri := cast (xpath_eval ('[xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"] /definitions/service/port/soap:address/@location', wsdl, 1) as varchar);
-  hinfo := WS.WS.PARSE_URI (uri);
+  hinfo := rfc1808_parse_uri (uri);
 
   stmt := concat ('CREATE MODULE ', DB.DBA.SYS_ALFANUM_NAME (mname), ' {\r\n');
   dmod := concat ('DROP MODULE ', DB.DBA.SYS_ALFANUM_NAME (mname));
@@ -5590,7 +5590,7 @@ create procedure HTTP_REQUESTED_URL ()
   so := strstr (pat, meth || ' ');
   eo := strstr (pat, ' ' || proto);
   pat := trim(subseq (pat, so + length (meth) + 1, eo), ' \r\n');
-  hf := WS.WS.PARSE_URI (pat);
+  hf := rfc1808_parse_uri (pat);
   return WS.WS.EXPAND_URL(soap_current_url (), hf[2]);
 }
 ;
@@ -5611,7 +5611,7 @@ create procedure DB.DBA.SERVICES_WSIL (in path any, in params any, in lines any)
   host := http_map_get ('vhost');
   intf := http_map_get ('lhost');
   requrl := http_requested_url ();
-  arr := WS.WS.PARSE_URI (requrl);
+  arr := rfc1808_parse_uri (requrl);
   proto := arr[0];
   rhost := arr[1];
 

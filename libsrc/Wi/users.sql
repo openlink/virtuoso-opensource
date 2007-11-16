@@ -747,7 +747,7 @@ USER_KEY_IS_FILE (in f varchar, out path varchar)
   declare hinfo any;
   if (f is null)
     return 0;
-  hinfo := WS.WS.PARSE_URI (f);
+  hinfo := rfc1808_parse_uri (f);
   if (lower(hinfo[0]) = 'file')
     {
       path := hinfo[2];

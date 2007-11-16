@@ -558,7 +558,7 @@ create procedure DB.DBA.URLREWRITE_APPLY (
   declare pos, http_redir integer;
   declare http_headers varchar;
   declare lines any;
-  elm := WS.WS.PARSE_URI (nice_url);
+  elm := rfc1808_parse_uri (nice_url);
   -- dbg_obj_princ('bbb2');
   if (elm[2] is null)
     return 0;
@@ -636,7 +636,7 @@ create procedure DB.DBA.URLREWRITE_TRY_INVERSE (
   declare elm any;
   declare _lhost, _lhost_port, _host, _lpath, _get_params, _frag varchar;
   declare pos, i, j, is_found, number_of_values, not_null integer;
-  elm := WS.WS.PARSE_URI (long_path);
+  elm := rfc1808_parse_uri (long_path);
 -- dbg_obj_princ('\r\nBegin2:', elm[2]);
   if (elm[2] is null)
     {
@@ -982,7 +982,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
 
   if (path like '%/') -- a directory
     return 0;
-  hf := WS.WS.PARSE_URI (path);
+  hf := rfc1808_parse_uri (path);
   tmp := hf[2];
 
   pos := strrchr (tmp, '/');
@@ -1084,7 +1084,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   declare http_headers, http_tcn_headers varchar;
 
   -- XXX: the path is just path string, no fragment no query no host
-  --hf := WS.WS.PARSE_URI (path);
+  --hf := rfc1808_parse_uri (path);
   long_url := null;
   in_path := rtrim (path, '/');
   if (length (in_path) = 0)
@@ -1183,7 +1183,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 	    }
       else
         {
-	  hf := WS.WS.PARSE_URI (long_url);
+	  hf := rfc1808_parse_uri (long_url);
 	  full_path := hf[2];
 	  pars := split_and_decode (hf[4]);
 	  p_full_path := http_physical_path_resolve (full_path, 1);

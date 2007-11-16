@@ -107,7 +107,7 @@ SOAP_ASYNC_CLIENT
   declare hinfo, resp, ver, skeys any;
   declare security_tp int;
 
-  hinfo := WS.WS.PARSE_URI (url);
+  hinfo := rfc1808_parse_uri (url);
   host := hinfo [1];
   if (lower (hinfo[0]) = 'https' and ticket is null)
     ticket := '1';
@@ -737,7 +737,7 @@ WS_SOAP (in path any, in params any, in lines any)
       declare hdr, body, hl, ses, hinfo varchar;
       declare hst varchar;
       send_to := cast (send_to as varchar);
-      hinfo := WS.WS.PARSE_URI (send_to);
+      hinfo := rfc1808_parse_uri (send_to);
       if (hinfo [0] = '' or hinfo [1] = '' or hinfo [2] = '' or hinfo [5] <> '')
         {
 	  db..wsrp_error (713, 'Endpoint Invalid', send_to, soap_xml);
@@ -1603,7 +1603,7 @@ XMLRPC_CALL (in uri varchar, in meth varchar, in params any, in id any := null)
       pars := vector_concat (pars, vector (sprintf ('param%d', i), params[i]));
       i := i + 1;
     }
-  hinfo := WS.WS.PARSE_URI (uri);
+  hinfo := rfc1808_parse_uri (uri);
   res := soap_call_new (hinfo[1], hinfo[2], null, meth, pars, 11, null, null, null, 32, null, null, 0, null, null, null, id);
   return res;
 }
@@ -1625,7 +1625,7 @@ SOAP12_ROUTER (in uri varchar, in this_url varchar, in header any, in body any)
   req := serialize_to_UTF8_xml (req);
   http (req, ss);
 
-  hd := WS.WS.PARSE_URI (uri);
+  hd := rfc1808_parse_uri (uri);
 
   host := hd[1];
 
