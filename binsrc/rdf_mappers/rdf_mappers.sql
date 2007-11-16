@@ -1711,7 +1711,7 @@ create procedure rdfm_yq_get_quote (in symbol varchar, in new_origin_uri varchar
   declare xt, xd any;
 
   ses := string_output ();
-  cnt := http_get (sprintf ('http://download.finance.yahoo.com/d/quotes.csv?s=%U&f=nsbavl1d1t1cpomwj1re7y&e=.csv', symbol));
+  cnt := http_get (sprintf ('http://download.finance.yahoo.com/d/quotes.csv?s=%U&f=nsbavophg&e=.csv', symbol));
   arr := rdfm_yq_parse_csv (cnt);
   http ('<quote stock="NASDAQ">', ses);
   foreach (any q in arr) do
@@ -1721,6 +1721,10 @@ create procedure rdfm_yq_get_quote (in symbol varchar, in new_origin_uri varchar
       http_value (q[2], 'bid', ses);
       http_value (q[3], 'ask', ses);
       http_value (q[4], 'volume', ses);
+      http_value (q[5], 'open', ses);
+      http_value (q[6], 'prev.close', ses);
+      http_value (q[7], 'high', ses);
+      http_value (q[8], 'low', ses);
     }
   http ('</quote>', ses);
   content := string_output_string (ses);
@@ -1893,6 +1897,7 @@ create procedure rdfm_yq_load_feed (inout content any, in new_origin_uri varchar
   xd := serialize_to_UTF8_xml (xd);
   ins_rdf:
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+  DB.DBA.RDF_LOAD_FEED_SIOC (xd, new_origin_uri, coalesce (dest, graph_iri));
   no_feed:
   return;
 }

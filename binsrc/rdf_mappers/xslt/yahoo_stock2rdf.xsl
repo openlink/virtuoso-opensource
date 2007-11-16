@@ -54,6 +54,10 @@
 	    <rdf:type rdf:resource="&stock;DailyPrice"/>
 	    <stock:bid><xsl:value-of select="bid"/></stock:bid>
 	    <stock:ask><xsl:value-of select="ask"/></stock:ask>
+	    <stock:open.price><xsl:value-of select="open"/></stock:open.price>
+	    <stock:prev.close><xsl:value-of select="prev.close"/></stock:prev.close>
+	    <stock:days-High><xsl:value-of select="high"/></stock:days-High>
+	    <stock:days-Low><xsl:value-of select="low"/></stock:days-Low>
 	    <stock:relativeToStock rdf:resource="http://finance.yahoo.com/q?s={symbol}#this"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="http://finance.yahoo.com/q?s={symbol}#this">
