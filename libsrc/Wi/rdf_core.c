@@ -1927,7 +1927,7 @@ rdf_core_init (void)
     sizeof (rdf_obj_ft_rule_hkey_t), sizeof (dk_set_t),
     rdf_obj_ft_rule_hkey_hash, rdf_obj_ft_rule_hkey_cmp );
   rdf_obj_ft_graph_rule_counts = id_hash_allocate (100,
-    sizeof (caddr_t), sizeof (ptrlong),
+    sizeof (boxint), sizeof (ptrlong),
     boxint_hash, boxint_hashcmp );
   ddl_std_proc (iri_replay, 0);
   rdf_inf_init ();
