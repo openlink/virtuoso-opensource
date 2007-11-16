@@ -41,7 +41,7 @@ drop quad map virtrdf:TutorialNorthwindDemo .
 ;
 
 DB.DBA.SPARQL_NW_RUN ('
-prefix tut_northwind: <http://www.openlinksw.com/schemas/tutorial/northwind#>
+prefix tut_northwind: <http://demo.openlinksw.com/schemas/tutorial/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -65,7 +65,7 @@ create iri class tut_northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VA
 ;
 
 DB.DBA.SPARQL_NW_RUN ('
-prefix tut_northwind: <http://www.openlinksw.com/schemas/tutorial/northwind#>
+prefix tut_northwind: <http://demo.openlinksw.com/schemas/tutorial/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
