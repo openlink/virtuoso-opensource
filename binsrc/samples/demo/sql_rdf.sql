@@ -391,7 +391,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     null,
     '(text/rdf.n3)|(application/rdf.xml)',
     0,
-    303
+    null
     );    
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
@@ -408,12 +408,27 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     303
     );
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'demo_nw_rule3',
+    1,
+    '(/[^#]*)/\x24',
+    vector('path'),
+    1,
+    '%s',
+    vector('path'),
+    null,
+    null,
+    0,
+    null
+    );
+
 DB.DBA.URLREWRITE_CREATE_RULELIST (
     'demo_nw_rule_list1',
     1,
     vector (
                 'demo_nw_rule1',
-                'demo_nw_rule2'
+                'demo_nw_rule2',
+                'demo_nw_rule3'
           ));
 
 VHOST_REMOVE (lpath=>'/Northwind');
