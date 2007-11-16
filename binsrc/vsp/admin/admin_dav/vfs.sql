@@ -140,7 +140,7 @@ check_redir:
       if (new_loc not like 'http://%')
         {
           new_loc := WS.WS.EXPAND_URL (_t_url, new_loc);
-          --_url := aref (WS.WS.PARSE_URI (new_loc), 2);
+          --_url := rfc1808_parse_uri (new_loc)[2];
         }
 
       if (new_loc like '%/' and _url not like '%/')
@@ -1508,85 +1508,7 @@ done:
 
 create procedure WS.WS.PARSE_URI (in uri varchar)
 {
-  declare _sch, _frg, _net, _qry, _param, _path, _str varchar;
-  declare c varchar;
-  declare inx, sc, ds, sl, cr, qm, len integer;
-  declare _res any;
-  _sch := ''; _net := ''; _path := '/'; _param := ''; _qry := ''; _frg := '';
-  _str := uri;
-  cr := strchr (_str, '#');
-  if (cr is not null)
-    {
-      len := length (_str);
-      if (cr + 1 < len)
-        _frg := substring (_str, cr + 2, len);
-      _str := substring (_str, 1, cr);
-    }
-  sc := strchr (_str, ':');
-  if (sc is not null)
-    {
-      len := length (_str);
-      while (inx < sc)
-	{
-           c := aref (_str, inx);
-           c := chr(c);
-	   if (c <> '+'
-	       and c <> '-'
-	       and c <> '.'
-	       and (c < '0' or c > '9')
-	       and (c < 'a' or c > 'z')
-	       and (c < 'A' or c > 'Z'))
-	     goto nxt;
-           inx := inx + 1;
-	}
-      _sch := substring (_str, 1, sc);
-      _str := substring (_str, sc + 2, len);
-    }
-nxt:
-  if (_str like '//%')
-    {
-      len := length (_str);
-      _str := substring (_str, 3, len);
-      len := len - 2;
-      sl := strchr (_str, '/');
-      if (sl is not null)
-	{
-          _net := substring (_str, 1, sl);
-	  _str := substring (_str, sl + 1, len);
-	}
-      else
-	{
-          _net := _str;
-          _path := '/';
-          goto end_parse;
-	}
-    }
-  qm := strchr (_str, '?');
-  if (qm is not null)
-    {
-      len := length (_str);
-      if (qm + 1 < len)
-        _qry := substring (_str, qm + 2, len);
-      _str := substring (_str, 1, qm);
-    }
-  sc := strchr (_str, ';');
-  if (sc is not null)
-    {
-      len := length (_str);
-      if (sc + 1 < len)
-        _param := substring (_str, sc + 2, len);
-      _str := substring (_str, 1, sc);
-    }
-  _path := _str;
-end_parse:
-  _res := make_array (6, 'any');
-  aset (_res, 0, _sch);
-  aset (_res, 1, _net);
-  aset (_res, 2, _path);
-  aset (_res, 3, _param);
-  aset (_res, 4, _qry);
-  aset (_res, 5, _frg);
-  return _res;
+  return rfc1808_parse_uri(uri);
 }
 ;
 
@@ -1628,8 +1550,8 @@ create function WS.WS.EXPAND_URL (in base varchar, in rel varchar, in output_cha
   if (not rel_was_wide)
     rel := charset_recode (rel, NULL, 'UTF-8');
 
-  ba := PARSE_URI (base);
-  ra := PARSE_URI (rel);
+  ba := rfc1808_parse_uri (base);
+  ra := rfc1808_parse_uri (rel);
 
   -- '#' at the end of base is a special case
   if (35 = aref (base, length(base) - 1) and
@@ -1776,7 +1698,7 @@ create procedure WS.WS.VFS_MAKE_ENTRY (
 	)
 {
   declare hi any;
-  hi := WS.WS.PARSE_URI (url);
+  hi := rfc1808_parse_uri (url);
   insert replacing WS.WS.VFS_SITE
      (VS_DESCR, VS_HOST, VS_URL, VS_OWN, VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_SRC, VS_DLOAD_META)
      values (hi[1], hi[1], hi[2], 2, hi[1], cast ('1990-01-01' as datetime),  'checked', follow, disallow, 'checked', get_rdf);
@@ -1794,7 +1716,7 @@ create procedure WS.WS.VFS_MAKE_ENTRY (
 create procedure WS.WS.VFS_GO (in url varchar)
 {
   declare hi any;
-  hi := WS.WS.PARSE_URI (url);
+  hi := rfc1808_parse_uri (url);
   WS.WS.SERV_QUEUE_TOP (hi[1], hi[1], 0, 0, NULL, NULL);
 }
 ;
@@ -1909,7 +1831,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
           else
 	    {
 	      declare hf any;
-	      hf := WS.WS.PARSE_URI (url);
+	      hf := rfc1808_parse_uri (url);
 	      hf[0] := '';
 	      hf[1] := '';
 	      hf[5] := '';

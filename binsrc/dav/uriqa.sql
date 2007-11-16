@@ -172,7 +172,7 @@ complete:
 create function WS.WS.URIQA_APPLY_TRIGGERS (in op varchar, inout uri varchar, inout body any, inout params varchar, inout lines varchar) returns any
 {
   declare split, err_ret any;
-  split := WS.WS.PARSE_URI (uri);
+  split := rfc1808_parse_uri (uri);
   -- dbg_obj_princ ('WS.WS.URIQA_APPLY_TRIGGERS (', op, uri, '...) has split the URI as ', split);
   declare is_final integer;
   is_final := 0;

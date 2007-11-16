@@ -2752,7 +2752,7 @@ create procedure WS.WS.COPY_OR_MOVE (in path varchar, inout params varchar, in l
   _dst_name := WS.WS.FIXPATH (_dst_name);
   _host := WS.WS.FINDPARAM (lines, 'Host:');
   _overwrite := WS.WS.FINDPARAM (lines, 'Overwrite:');
-  dst_ura := WS.WS.PARSE_URI (_dst_name);
+  dst_ura := rfc1808_parse_uri (_dst_name);
   dst_host := dst_ura[1];
   dst_host := split_and_decode (dst_host, 0, '%');
 
