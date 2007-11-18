@@ -8017,14 +8017,15 @@ create procedure DB.DBA.TTLP_EV_COMMIT_A (
 ;
 
 
-create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0, in log_mode integer := 1)
+create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0,
+				 in log_mode integer := 1, in threads integer := 3)
 {
   declare ro_id_dict, app_env, err any;
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
     ro_id_dict := dict_new ();
   else
     ro_id_dict := null;
-  app_env := vector (async_queue (3), 0, vector (log_mode, ro_id_dict));
+  app_env := vector (async_queue (threads), 0, vector (log_mode, ro_id_dict));
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
   rdf_load_turtle (strg, base, graph, flags,
