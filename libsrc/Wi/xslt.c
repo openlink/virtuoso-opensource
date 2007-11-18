@@ -3129,9 +3129,9 @@ bif_dict_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long size = 31;
   if (BOX_ELEMENTS(args))
     {
-      size = (long) bif_long_arg (qst, args, 0, "dict_new");
-      if (size > 31)
-        size = hash_nextprime (size);
+      long newsize = (long) bif_long_arg (qst, args, 0, "dict_new");
+      if (newsize > 31)
+        size = hash_nextprime (newsize);
     }
   ht = (id_hash_t *)box_dv_dict_hashtable (size);
   hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)ht);
