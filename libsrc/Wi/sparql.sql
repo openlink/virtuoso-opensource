@@ -2023,13 +2023,13 @@ create procedure DB.DBA.TTLP_EV_COMMIT (in g varchar, inout app_env any) {
 create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0)
 {
   declare ro_id_dict, app_env any;
+  if (126 = __tag (strg))
+    strg := cast (strg as varchar);
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
-    ro_id_dict := dict_new ();
+    ro_id_dict := dict_new (__max (length (strg) / 100, 100000));
   else
     ro_id_dict := null;
   app_env := vector (flags, ro_id_dict);
-  if (126 = __tag (strg))
-    strg := cast (strg as varchar);
   return rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_EV_NEW_GRAPH(?,?)',
@@ -2103,6 +2103,7 @@ create function DB.DBA.RDF_TTL2HASH (in strg varchar, in base varchar, in graph 
   res := dict_new ();
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
+  res := dict_new (length (strg) / 100);
   rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH(?,?)',
@@ -2120,7 +2121,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in gr
 {
   declare ro_id_dict, app_env any;
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
-    ro_id_dict := dict_new ();
+    ro_id_dict := dict_new (__max (length (strg) / 100, 100000));
   else
     ro_id_dict := null;
   app_env := vector (null, ro_id_dict);
@@ -2142,7 +2143,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in gr
 create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in graph varchar)
 {
   declare res any;
-  res := dict_new ();
+  res := dict_new (length (strg) / 100);
   rdf_load_rdfxml (strg, 0,
     graph,
     vector (
@@ -8021,13 +8022,13 @@ create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varc
 				 in log_mode integer := 1, in threads integer := 3)
 {
   declare ro_id_dict, app_env, err any;
+  if (126 = __tag (strg))
+    strg := cast (strg as varchar);
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
-    ro_id_dict := dict_new ();
+    ro_id_dict := dict_new (__max (length (strg) / 100, 100000));
   else
     ro_id_dict := null;
   app_env := vector (async_queue (threads), 0, vector (log_mode, ro_id_dict));
-  if (126 = __tag (strg))
-    strg := cast (strg as varchar);
   rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_EV_NEW_GRAPH (?,?)',
@@ -8047,7 +8048,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in
 {
   declare ro_id_dict, app_env, err any;
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
-    ro_id_dict := dict_new ();
+    ro_id_dict := dict_new (__max (length (strg) / 100, 100000));
   else
     ro_id_dict := null;
   app_env := vector (async_queue (3), 0, vector (log_mode, ro_id_dict));
