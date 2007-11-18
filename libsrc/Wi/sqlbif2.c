@@ -40,6 +40,7 @@
 #include "libutil.h"
 #include "sqloinv.h"
 #include "sqlver.h"
+#include "srvmultibyte.h"
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -824,7 +825,7 @@ bif_host_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #define query_end	offsets[9]
 #define fragment_begin	offsets[10]	/* fragment without starting '#' */
 #define fragment_end	offsets[11]
-#define two_slashes     offsets[12]	/* position of two slashes, zero if missing */
+#define two_slashes     offsets[12]	/* position of end of two slashes, zero if missing */
 
 /*! URI parser according RFC 1808 recommendations
 Fills in array of twelve begin and past-the end indexes of elements */
@@ -861,8 +862,8 @@ schema_done:
 /* Here we know SS Nn pp pp qQ FF  t */
   if (('/' == iri[netloc_begin]) && ('/' == iri[netloc_begin+1]))
     {
-      two_slashes = netloc_begin;
       netloc_begin += 2;
+      two_slashes = netloc_begin;
       delim = strchr (iri + netloc_begin, '/');
       if ((NULL != delim) && (delim < iri+query_end))
         {
@@ -904,19 +905,107 @@ schema_done:
 /* Here we know SS NN PP PP QQ FF  T */
 }
 
+static void
+rfc1808_parse_wide_uri (const wchar_t *iri, ptrlong *offsets)
+{
+  const wchar_t *delim;
+  schema_begin = schema_end = netloc_begin = 0;
+  fragment_end = virt_wcslen (iri);
+/* Here we know Ss nn pp pp qq fF  t */
+  delim = virt_wcschr (iri, '#');
+  if (NULL != delim)
+    {
+      query_end = delim-iri;
+      fragment_begin = delim+1-iri;
+    }
+  else
+    query_end = fragment_begin = fragment_end;
+/* Here we know Ss nn pp pp qQ FF  t */
+  delim = virt_wcschr (iri, ':');
+  if ((NULL != delim) && (delim < iri+query_end))
+    {
+      const wchar_t *scan = iri;
+      while (scan <  delim)
+        {
+          if (scan[0] & ~0x7f)
+            goto schema_done;
+          if (!isalnum (scan[0]) && (NULL == strchr ("+-.", ((char *)scan)[0])))
+            goto schema_done;
+          scan++;
+        }
+      schema_end = delim-iri;
+      netloc_begin = delim + 1 - iri;
+    }
+schema_done:
+/* Here we know SS Nn pp pp qQ FF  t */
+  if (('/' == iri[netloc_begin]) && ('/' == iri[netloc_begin+1]))
+    {
+      netloc_begin += 2;
+      two_slashes = netloc_begin;
+      delim = virt_wcschr (iri + netloc_begin, '/');
+      if ((NULL != delim) && (delim < iri+query_end))
+        {
+          netloc_end = path_begin = delim - iri;
+        }
+      else
+        {
+          netloc_end = path_begin = path_end = params_begin = params_end = query_begin = query_end;
+          return;
+        }
+    }
+  else
+    {
+      two_slashes = 0;
+      netloc_end = path_begin = netloc_begin;
+    }
+/* Here we know SS NN Pp pp qQ FF  T */
+  delim = virt_wcschr (iri + path_begin, '?');
+  if ((NULL != delim) && (delim < iri+query_end))
+    {
+      query_begin = delim + 1 - iri;
+      params_end = delim - iri;
+    }
+  else
+    {
+      params_end = query_begin = query_end;
+    }
+/* Here we know SS NN Pp pP QQ FF  T */
+  delim = virt_wcschr (iri + path_begin, ';');
+  if ((NULL != delim) && (delim < iri+params_end))
+    {
+      params_begin = delim + 1 - iri;
+      path_end = delim - iri;
+    }
+  else
+    {
+      path_end = params_begin = params_end;
+    }
+/* Here we know SS NN PP PP QQ FF  T */
+}
+
 /*! URI parser according RFC 1808 recommendations
 returns array of six past-the end indexes of elements */
 static caddr_t
 bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  ccaddr_t uri = bif_string_arg (qst, args, 0, "rfc1808_parse_uri");
+  ccaddr_t uri = bif_string_or_wide_or_uname_arg (qst, args, 0, "rfc1808_parse_uri");
+  dtp_t uri_dtp = DV_TYPE_OF (uri);
   size_t uri_len;
   ptrlong offsets[13];
   caddr_t res;
   uri_len = box_length (uri);
   if (SMALLEST_POSSIBLE_POINTER <= uri_len)
+    {
+      if (DV_WIDE == uri_dtp)
+        sqlr_new_error ("22023", "SR571", "Function rfc1808_parse_uri() got abnormally long URI as argument (%ld chars)",
+          (long)(uri_len - 1) );
+      else
     sqlr_new_error ("22023", "SR570", "Function rfc1808_parse_uri() got abnormally long URI as argument (%ld chars, '%.50s ... %50s')",
       (long)(uri_len - 1), uri, uri + uri_len - 51 );
+    }
+  if (DV_WIDE == uri_dtp)
+    rfc1808_parse_wide_uri (uri, offsets);
+  else
   rfc1808_parse_uri (uri, offsets);
   if ((1 < BOX_ELEMENTS(args)) && bif_long_arg (qst, args, 0, "rfc1808_parse_uri"))
     {
@@ -924,15 +1013,34 @@ bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       memcpy (res, offsets, 13 * sizeof (caddr_t));
       return res;
     }
+  if (DV_WIDE == uri_dtp)
+    {
+      wchar_t *wideuri = (wchar_t *)uri;
+      return list (6,
+        box_wide_char_string ((caddr_t)(wideuri + schema_begin)		, (schema_end - schema_begin) * sizeof (wchar_t)	, DV_WIDE),
+        box_wide_char_string ((caddr_t)(wideuri + netloc_begin)		, (netloc_end - netloc_begin) * sizeof (wchar_t)	, DV_WIDE),
+        (((path_end == path_begin) && (0 < two_slashes)) ?
+          box_wide_char_string ((caddr_t)(L"/"), sizeof (wchar_t), DV_WIDE) :
+          box_wide_char_string ((caddr_t)(wideuri + path_begin)		, (path_end - path_begin) * sizeof (wchar_t)		, DV_WIDE) ),
+        box_wide_char_string ((caddr_t)(wideuri + params_begin)		, (params_end - params_begin) * sizeof (wchar_t)	, DV_WIDE),
+        box_wide_char_string ((caddr_t)(wideuri + query_begin)		, (query_end - query_begin) * sizeof (wchar_t)		, DV_WIDE),
+        box_wide_char_string ((caddr_t)(wideuri + fragment_begin)	, (fragment_end - fragment_begin) * sizeof (wchar_t)	, DV_WIDE) );
+    }
+  else
+    {
+      box_t (*box_x_nchars)(const char *buf, size_t len) =
+        ((DV_UNAME == uri_dtp) ? 
+          box_dv_uname_nchars : box_dv_short_nchars );
   return list (6,
-    box_dv_short_nchars (uri + schema_begin,	schema_end - schema_begin),
-    box_dv_short_nchars (uri + netloc_begin,	netloc_end - netloc_begin),
+        box_x_nchars (uri + schema_begin	, schema_end - schema_begin),
+        box_x_nchars (uri + netloc_begin	, netloc_end - netloc_begin),
     (((path_end == path_begin) && (0 < two_slashes)) ?
-      box_dv_short_string ("/") :
-      box_dv_short_nchars (uri + path_begin,	path_end - path_begin) ),
-    box_dv_short_nchars (uri + params_begin,	params_end - params_begin),
-    box_dv_short_nchars (uri + query_begin,	query_end - query_begin),
-    box_dv_short_nchars (uri + fragment_begin,	fragment_end - fragment_begin) );
+          box_x_nchars ("/", 1) :
+          box_x_nchars (uri + path_begin	, path_end - path_begin) ),
+        box_x_nchars (uri + params_begin	, params_end - params_begin),
+        box_x_nchars (uri + query_begin		, query_end - query_begin),
+        box_x_nchars (uri + fragment_begin	, fragment_end - fragment_begin) );
+   }
 }
 
 void
