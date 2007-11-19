@@ -51,7 +51,7 @@
       <script type="text/javascript" src="/ods/app.js"></script>
   	<script type="text/javascript">
         // CalendarPopup
-        var cPopup = new CalendarPopup('cDiv');
+        var cPopup = OAT.Browser.isWebKit? new CalendarPopup(): new CalendarPopup('cDiv');
         cPopup.weekStartDay = <?V case when self.cWeekStarts = 's' then 0 else 1 end ?>;
         
         // publics
