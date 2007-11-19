@@ -3010,11 +3010,13 @@ create procedure AB.WA.import_vcard (
                     T := subseq (T, 0, M);
                 }
               }
+              if (not AB.WA.vector_contains (pFields, pField2)) {
                   pFields := vector_concat (pFields, vector (pField2));
               pValues := vector_concat (pValues, vector (T));
             }
           }
         }
+      }
       }
       AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
     }
