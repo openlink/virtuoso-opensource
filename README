@@ -57,7 +57,7 @@ installed on your system.
 
     Package   Version  From
     autoconf  2.57     http://www.gnu.org/software/autoconf/
-    automake  1.6.3    http://www.gnu.org/software/automake/
+    automake  1.7      http://www.gnu.org/software/automake/
     libtool   1.5      http://www.gnu.org/software/libtool/
     flex      2.5.4    http://www.gnu.org/software/non-gnu/flex/
     bison     1.35     http://www.gnu.org/software/bison/
