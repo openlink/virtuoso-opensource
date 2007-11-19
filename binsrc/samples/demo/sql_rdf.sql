@@ -422,14 +422,47 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     null
     );
 
+
+--VHOST_REMOVE (lpath=>'/Northwind');
+--VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', is_dav=>1, vsp_user=>'dba', is_brws=>0, opts=>vector ('url_rewrite', 'demo_nw_rule_list1'));
+
+
+DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/home/demo/', 'http://^{URIQADefaultHost}^/Northwind', NULL);
+
+
+VHOST_REMOVE (lpath=>'/Northwind/data/rdf');
+DB.DBA.VHOST_DEFINE (lpath=>'/Northwind/data/rdf', ppath=>'/DAV/home/demo/RDFData/All/', is_dav=>1, vsp_user=>'dba');
+
+-- procedure to convert path to DET resource name
+create procedure DB.DBA.NORTHWIND_DET_REF (in par varchar, in fmt varchar, in val varchar)
+{
+  declare res, iri any;
+  iri := 'http://^{URIQADefaultHost}^/Northwind' || val;
+  res := sprintf ('iid (%d).rdf', iri_id_num (iri_to_id (iri)));
+  return sprintf (fmt, res);
+}
+;
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('northwind_rdf', 1,
+    '/Northwind/(.*)', vector('path'), 1, 
+    '/Northwind/data/rdf/%U', vector('path'),
+    'DB.DBA.NORTHWIND_DET_REF',
+    'application/rdf.xml',
+    2,  
+    303);
+
 DB.DBA.URLREWRITE_CREATE_RULELIST (
     'demo_nw_rule_list1',
     1,
     vector (
                 'demo_nw_rule1',
                 'demo_nw_rule2',
-                'demo_nw_rule3'
+                'demo_nw_rule3',
+                'northwind_rdf'
           ));
 
+
 VHOST_REMOVE (lpath=>'/Northwind');
-VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', is_dav=>1, vsp_user=>'dba', is_brws=>0, opts=>vector ('url_rewrite', 'demo_nw_rule_list1'));
+DB.DBA.VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', vsp_user=>'dba', is_dav=>1, def_page=>'sfront.vspx',
+          is_brws=>0, opts=>vector ('url_rewrite', 'demo_nw_rule_list1'));
+
