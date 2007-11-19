@@ -55,27 +55,7 @@
         <title>OpenLink Software - Mail</title>
         <xsl:call-template name="links"/>
         <xsl:call-template name="css"/>
-        <script type="text/javascript" src="/oMail/i/js/jslib.js"></script>
-        <script type="text/javascript" src="/oMail/i/js/script.js"></script>
-        <script type="text/javascript">
-          var toolkitPath="/ods/oat";
-          var imagePath="/ods/images/oat/";
-
-          var featureList=["ajax2", "anchor"];
-        </script>
-        <script type="text/javascript" src="/ods/oat/loader.js"></script>
-        <script type="text/javascript" src="/ods/app.js"></script>
-        <script type="text/javascript">
-          function myInit() {
-            OAT.Preferences.imagePath = '/ods/images/oat/';
-            OAT.Anchor.imagePath = OAT.Preferences.imagePath;
-            OAT.Anchor.zIndex = 1001;
-
-            if (<xsl:value-of select="//user_info/app" /> == 1)
-              gererateAPP('app_area', {});
-          }
-          OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
-        </script>
+        <xsl:call-template name="javaScript"/>
       </head>
       <body>
         <xsl:value-of select="//ods/bar" disable-output-escaping="yes" />
@@ -158,8 +138,7 @@
         </base>
         <title>OpenLink Software - Mail</title>
         <xsl:call-template name="css"/>
-        <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
-        <script language="JavaScript" src="/oMail/i/js/script.js"/>
+        <xsl:call-template name="javaScript"/>
       </head>
       <body style="margin: 5px; font-size: 9pt;">
         <div style="padding: 0 0 0.5em 0;">
@@ -186,8 +165,7 @@
         <title>OpenLink Software - Mail</title>
         <xsl:call-template name="links"/>
         <xsl:call-template name="css"/>
-        <script language="JavaScript" src="/oMail/i/js/jslib.js"/>
-        <script language="JavaScript" src="/oMail/i/js/script.js"/>
+        <xsl:call-template name="javaScript"/>
       </head>
       <body topmargin="0" leftmargin="6" marginwidth="6" marginheight="0">
         <table width="100%" cellpadding="0" cellspacing="0" id="ramka">
@@ -238,7 +216,45 @@
   <!-- ========================================================================== -->
   <xsl:template name="css">
     <link type="text/css" media="screen" rel="stylesheet" href="/oMail/i/css/styles.css"/>
+    <link type="text/css" media="screen" rel="stylesheet" href="/oMail/i/css/webdav.css"/>
     <link type="text/css" media="print" rel="Stylesheet" href="/oMail/i/css/print.css"/>
+  </xsl:template>
+
+  <!-- ========================================================================== -->
+  <xsl:template name="javaScript">
+    <script type="text/javascript" src="/oMail/i/js/jslib.js"></script>
+    <script type="text/javascript" src="/oMail/i/js/script.js"></script>
+    <script type="text/javascript">
+      var toolkitPath="/ods/oat";
+      var imagePath="/ods/images/oat/";
+
+      var featureList=["ajax2", "anchor", "dav"];
+    </script>
+    <script type="text/javascript" src="/ods/oat/loader.js"></script>
+    <script type="text/javascript" src="/ods/app.js"></script>
+    <script type="text/javascript">
+      // WebDAV Object
+      var oWebDAV;
+
+      function myInit() {
+        // WebDAV
+        var options = { imagePath: '/ods/images/oat/',
+                        imageExt: 'png',
+                        path: '/DAV/home/<xsl:value-of select="//user_info/user_name" />/'
+                      };
+        OAT.WebDav.init(options);
+        oWebDAV = OAT.WebDav;
+
+        // a++
+        OAT.Preferences.imagePath = '/ods/images/oat/';
+        OAT.Anchor.imagePath = OAT.Preferences.imagePath;
+        OAT.Anchor.zIndex = 1001;
+
+        if (<xsl:value-of select="//user_info/app" /> == 1)
+          gererateAPP('app_area', {});
+      }
+      OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
+    </script>
   </xsl:template>
 
   <!-- ========================================================================== -->

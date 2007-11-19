@@ -62,11 +62,6 @@ EXTRA_DIST = \
 	www-root/mail/p/*.xml \
 	www-root/mail/p/*.xsl \
 	www-root/res/*.vsp \
-	www-root/res/*.vspx \
-	www-root/res/css/*.css \
-	www-root/res/image/*.png \
-	www-root/res/image/dav_browser/*.png \
-	www-root/res/template/*.xsl \
 	xslt/*.xml \
 	xslt/*.xsl \
 	xslt/export/*.xsl

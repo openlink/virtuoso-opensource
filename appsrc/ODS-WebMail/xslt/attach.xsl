@@ -63,7 +63,7 @@
         <td>
           <input type="radio" name="att_source" value="0" checked="checked"/>
           <xsl:call-template name="nbsp"/>
-          <input type="file" name="att_1" size="40" onChange="javascript: f1.att_source[0].checked = true;" onFocus="f1.att_source[0].checked = true;"/>
+          <input type="file" name="att_1" size="40" onchange="javascript: f1.att_source[0].checked = true;" onfocus="f1.att_source[0].checked = true;"/>
         </td>
       </tr>
       <tr>
@@ -73,9 +73,9 @@
         <td>
           <input type="radio" name="att_source" value="1"/>
           <xsl:call-template name="nbsp"/>
-          <input type="text" name="att_2" size="40" onFocus="f1.att_source[1].checked = true;"/>
+          <input type="text" name="att_2" id="att_2" size="40" onfocus="f1.att_source[1].checked = true;"/>
           <input type="button" name="att_2_button" value="Browse...">
-            <xsl:attribute name="onClick">javascript: f1.att_source[1].checked = true; window.source_2=document.f1['att_2']; window.open ('/oMail/res/popup_browser.vspx?sid=<xsl:value-of select="$sid"/>&amp;realm=wa&amp;source_2='+ escape (document.f1['att_2'].value)+'&amp;list_type=details&amp;path=/DAV/home/<xsl:value-of select="/page/user_info/user_name"/>/&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;retname=source_2', 'att_2_button_window', 'scrollbars=auto, resizable=yes, menubar=no, height=600, width=800')</xsl:attribute>
+            <xsl:attribute name="onclick">javascript: f1.att_source[1].checked = true; davBrowse ('att_2'); </xsl:attribute>
           </input>
         </td>
       </tr>
