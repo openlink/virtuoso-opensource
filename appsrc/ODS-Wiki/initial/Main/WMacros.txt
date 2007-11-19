@@ -1,0 +1,6 @@
+---+List of ODSWiki macros
+
+ODS Wiki macros are simply stored function/procedures in Virtuoso, the source code of the macro definitions is in the attachment.
+
+%MACROS{"description"}%
+

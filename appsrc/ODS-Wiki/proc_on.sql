@@ -1338,11 +1338,22 @@ create function WV.WIKI.READONLYWIKIWORDHREF2 (
   return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
 };
 
+create function WV.WIKI.READONLYWIKIIRI (
+  in _cluster_name varchar,
+  in _topic_name varchar
+) returns varchar
+{
+  return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
+};
+
+
 grant execute on WV.WIKI.READONLYWIKIWORDLINK to public
 ;
 grant execute on WV.WIKI.READONLYWIKIWORDHREF to public
 ;
 grant execute on WV.WIKI.READONLYWIKIWORDHREF2 to public
+;
+grant execute on WV.WIKI.READONLYWIKIIRI to public
 ;
 
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordLink', 'WV.WIKI.READONLYWIKIWORDLINK')
@@ -1350,6 +1361,8 @@ xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordLink',
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordHREF', 'WV.WIKI.READONLYWIKIWORDHREF')
 ;
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordHREF2', 'WV.WIKI.READONLYWIKIWORDHREF2')
+;
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiIRI', 'WV.WIKI.READONLYWIKIIRI')
 ;
 
 
@@ -4714,7 +4727,8 @@ create procedure RSS(in _cluster varchar, in _type varchar)
     http ('<title>',_out);
     http_value (RSS_SUBJECT(_op, _repl), null, _out);
     http ('</title>',_out);
-    http (sprintf ('<link>http://%s/wiki/%s%U/%U</link>', sioc..get_cname(), _mainp, _cluster, _topic),_out);
+    --http (sprintf ('<link>http://%s/wiki/%s%U/%U</link>', sioc..get_cname(), _mainp, _cluster, _topic),_out);
+    http (sprintf ('<link>%s</link>', WV.WIKI.READONLYWIKIIRI (_cluster, _topic)), _out);
     http ('<pubDate>',_out);
     http_value (WV.WIKI.DATEFORMAT (_dt, 'rfc1123'), null, _out);
     http ('</pubDate>',_out);

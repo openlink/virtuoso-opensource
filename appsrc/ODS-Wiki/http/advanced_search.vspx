@@ -481,7 +481,8 @@ endf:
 										<v:template name="tmp18" type="browse">
 											<tr class="search-first-col">
 												<td>
-													<?vsp http (sprintf ('<a href="%s%s">%s</a>', control.te_rowset[0],
+                                      <?vsp
+                                        http (sprintf ('<a href="%s%s">%s</a>', WV.WIKI.READONLYWIKIIRI (subseq (control.te_rowset[5], 0, strstr(control.te_rowset[5], '.')), subseq (control.te_rowset[5], strstr(control.te_rowset[5], '.') + 1)),
 													 case when (self.sid is not null and self.sid <> '')
 													   then '?sid=' || self.sid || '&realm=' || self.realm
 													   else ''

@@ -319,17 +319,17 @@
        Advanced Search
      </a>
      <xsl:if test="$sid and ($sid != '')">
-       <a id="user-settings-link" href="{wv:registry_get ('wa_home_link', '/wa/')}/uiedit.vspx?sid={$sid}&realm={$realm}">User Settings</a>
+       <a id="user-settings-link" href="{wv:registry_get ('wa_home_link', '/wa/')}uiedit.vspx?sid={$sid}&realm={$realm}">User Settings</a>
        <a id="cluster-settings-link">
 	 <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('settings.vspx',$baseadjust,vector('cluster',$ti_cluster_name, 'name', $ti_local_name, 'sid', $sid, 'realm', 'wa'))"/></xsl:attribute>		
          Cluster Settings
        </a>
      </xsl:if>
      <a id="users-link"
-       href="{$baseadjust}{wv:ReadOnlyWikiWordLink('Main', 'WikiUsers')}">Users
+       href="{wv:ReadOnlyWikiWordHREF2 ('Main', 'WikiUsers', $sid, $realm, $baseadjust, '')}">Users
      </a>
      <a id="macros-link"
-       href="{$baseadjust}{wv:ReadOnlyWikiWordLink('Main', 'WMacros')}">Macros
+       href="{wv:ReadOnlyWikiWordHREF2 ('Main', 'WMacros', $sid, $realm, $baseadjust, '')}">Macros
      </a>
      <div id="virtuoso-info">
        <ul class="left_nav">
@@ -807,7 +807,7 @@
           var y=today.getYear();
           if (y&lt;2000)
             y = y + 1900;
-          var m= [ "Jan" , "Feb" , "Mar" , "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Dec"][today.getMonth()];
+          var m= [ "Jan" , "Feb" , "Mar" , "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][today.getMonth()];
           var d=today.getDate();
           var dd=d&lt;10?"0"+d:d;
 	  return dd + " " + m + " " + y;

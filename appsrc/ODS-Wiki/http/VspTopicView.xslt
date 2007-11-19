@@ -417,7 +417,7 @@
     </li>
     <li id="wiki-nstab-talks">
 	<a id="current-topic-talks"
-	  href="#"
+          href="javascript: void(0);"
 	  title="Conversation">
 	  <xsl:attribute name="onclick">javascript: window.open('<xsl:value-of select="wv:ResourceHREF2 ('conversation.vspx',$baseadjust,vector('fid',$ti_id, 'sid', $sid, 'realm', $realm))"/>', 'conversation', 'width=700,height=650,scrollbars=yes'); return false;</xsl:attribute>
 	       Conversation

@@ -1,3 +1,0 @@
----+List of ODSWiki macros
-
-%MACROS{"description"}%
