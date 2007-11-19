@@ -224,6 +224,7 @@
 			      <vm:post-comments title="Comment Status: " format="%d Comments"><br /></vm:post-comments>
 			      <vm:post-trackbacks title="TrackBack Status: " format="%d Trackbacks"><br /></vm:post-trackbacks>
 			      <vm:post-enclosure title="Enclosure: "><br /></vm:post-enclosure>
+			      Permalink: <vm:post-link-uri /><br />
 			  </p>
 		      </div>
 		      <div class="spread_links">

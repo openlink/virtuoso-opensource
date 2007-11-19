@@ -1583,6 +1583,7 @@ create trigger BLOG_COMMENTS_NO_I after insert on BLOG_COMMENTS referencing new 
   declare is_spam, published int;
   declare mid, rfc, refs, comment_title varchar;
   declare oid_sig, oid_is_valid int;
+  declare post_iri varchar;
 
   blogid := N.BM_BLOG_ID;
   postid := N.BM_POST_ID;
@@ -1666,9 +1667,10 @@ create trigger BLOG_COMMENTS_NO_I after insert on BLOG_COMMENTS referencing new 
 
   set triggers off;
   update SYS_BLOGS set B_COMMENTS_NO = B_COMMENTS_NO + 1 where B_POST_ID = N.BM_POST_ID;
+  post_iri := sioc..blog_comment_iri (orgblogid, postid, N.BM_ID);
   update BLOG.DBA.SYS_BLOG_INFO
   set BI_LAST_UPDATE = now (),
-      BI_DASHBOARD = make_dasboard_item ('comment', N.BM_TS, title, N.BM_NAME, home||'?id='||postid, N.BM_COMMENT, BI_DASHBOARD, N.BM_ID, 'insert', null, N.BM_E_MAIL)
+      BI_DASHBOARD = make_dasboard_item ('comment', N.BM_TS, title, N.BM_NAME, post_iri, N.BM_COMMENT, BI_DASHBOARD, N.BM_ID, 'insert', null, N.BM_E_MAIL)
   where BI_BLOG_ID = orgblogid;
   set triggers on;
 
@@ -1691,6 +1693,7 @@ ret:
 create trigger BLOG_COMMENTS_NO_U after update on BLOG_COMMENTS referencing old as O, new as N
 {
   declare home, title varchar;
+  declare post_iri varchar;
   if (N.BM_IS_PUB = 1)
     {
       select BI_HOME, B_TITLE into home, title from BLOG..SYS_BLOG_INFO, BLOG..SYS_BLOGS where
@@ -1701,10 +1704,10 @@ create trigger BLOG_COMMENTS_NO_U after update on BLOG_COMMENTS referencing old 
 	{
       update SYS_BLOGS set B_COMMENTS_NO = B_COMMENTS_NO + 1 where B_POST_ID = N.BM_POST_ID;
 	}
-
+      post_iri := sioc..blog_comment_iri (N.BM_BLOG_ID, N.BM_POST_ID, N.BM_ID);
       update BLOG.DBA.SYS_BLOG_INFO
 	  set BI_LAST_UPDATE = now (),
-	      BI_DASHBOARD = make_dasboard_item ('comment', N.BM_TS, title, N.BM_NAME, home||'?id='||N.BM_POST_ID, N.BM_COMMENT, BI_DASHBOARD, N.BM_ID, 'insert', null, N.BM_E_MAIL)
+	      BI_DASHBOARD = make_dasboard_item ('comment', N.BM_TS, title, N.BM_NAME, post_iri, N.BM_COMMENT, BI_DASHBOARD, N.BM_ID, 'insert', null, N.BM_E_MAIL)
 	  where BI_BLOG_ID = N.BM_BLOG_ID;
       set triggers on;
       for select R_JOB_ID from SYS_ROUTING where R_ITEM_ID = N.BM_BLOG_ID and R_TYPE_ID in (1,2) do

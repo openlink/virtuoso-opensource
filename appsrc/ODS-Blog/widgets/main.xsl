@@ -1947,9 +1947,9 @@ window.onload = function (e)
         declare tit, url any;
         tit := control.te_rowset[9];
         tit := charset_recode (xpath_eval ('string(//*|.)', xtree_doc (tit, 2, '', 'UTF-8')), '_WIDE_', 'UTF-8');
-        url := concat('index.vspx?id=', control.te_rowset[2], self.login_pars);
+	url := concat(self.blog_iri, '/', control.te_rowset[2]);
       ?>
-      <a href="<?V url ?>"><?vsp http(tit); ?></a>
+      <v:url name="sum_post_iri" value="--tit" url="--url" render-only="1" is-local="1" format="%s"/>
     <?vsp
        }
     ?>
@@ -2072,7 +2072,12 @@ window.onload = function (e)
 
   <xsl:template match="vm:post-link">
       <xsl:call-template name="post-parts-check"/>
-      <v:url name="permalink_url" value="{@title}" format="%s" url="--concat(self.blog_iri, '/', t_post_id)" render-only="1" />
+      <v:url name="permalink_url" value="{@title}" format="%s" url="--concat(self.blog_iri, '/', t_post_id)" render-only="1" is-local="1"/>
+  </xsl:template>
+
+  <xsl:template match="vm:post-link-uri">
+      <xsl:call-template name="post-parts-check"/>
+      <v:url name="permalink_url_text" value="--concat(self.blog_iri, '/', t_post_id)" format="%s" url="--concat(self.blog_iri, '/', t_post_id)" render-only="1" is-local="1"/>
   </xsl:template>
 
   <xsl:template match="vm:post-delicious-link">
@@ -2942,12 +2947,7 @@ window.onload = function (e)
     <xsl:if test="@rows">
       <xsl:variable name="rows_count" select="@rows"/>
     </xsl:if>
-    <xsl:if test="not @redirect">
       <xsl:variable name="redirect">self.page</xsl:variable>
-    </xsl:if>
-    <xsl:if test="@redirect">
-      <xsl:variable name="redirect">'<xsl:value-of select="@redirect"/>'</xsl:variable>
-    </xsl:if>
     <ul class="last-messages">
     <xsl:processing-instruction name="vsp">
       if (self.have_comunity_blog is null)
@@ -2960,12 +2960,7 @@ window.onload = function (e)
             tit := xpath_eval('string(//*|.)', xml_tree_doc(xml_tree(tit, 2, '', 'UTF-8')), 1);
     </xsl:processing-instruction>
       <li>
-        <a>
-          <xsl:attribute name="href">
-            &lt;?vsp http('index.vspx?page=' || <xsl:value-of select="$redirect"/> || '&amp;amp;id=' || id || self.login_pars ); ?&gt;
-          </xsl:attribute>
-          <?vsp http_value (tit, null); ?>
-        </a>
+	  <v:url name="lm1" value="--tit" url="--concat (self.blog_iri, '/', id)" render-only="1" format="%s" is-local="1"/>
       </li>
       <?vsp
         }
@@ -2982,12 +2977,7 @@ window.onload = function (e)
             tit := xpath_eval ('string(//*|.)', xml_tree_doc (xml_tree (tit, 2, '', 'UTF-8')), 1);
     </xsl:processing-instruction>
       <li>
-        <a>
-          <xsl:attribute name="href">
-            &lt;?vsp http('index.vspx?page=' || <xsl:value-of select="$redirect"/> || '&amp;id=' || id || '&amp;sid=' || self.sid || '&amp;realm=' || self.realm ); ?&gt;
-          </xsl:attribute>
-          <?vsp http_value(tit, null); ?>
-        </a>
+	  <v:url name="lm2" value="--tit" url="--concat (self.blog_iri, '/', id)" render-only="1" format="%s" is-local="1"/>
       </li>
       <?vsp
         }

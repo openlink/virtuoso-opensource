@@ -3409,6 +3409,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   declare xt, ss, tags, tagstr, is_act, have_encl any;
   declare title, author, authorid, home varchar;
   declare mid, rfc, author_mail, enc_type, _wai_name varchar;
+  declare post_iri varchar;
 
   update BLOG.DBA.SYS_BLOG_ATTACHES set BA_M_BLOG_ID = N.B_BLOG_ID
   where BA_M_BLOG_ID = N.B_BLOG_ID; -- Only for timestamp
@@ -3470,6 +3471,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   select coalesce (U_FULL_NAME, U_NAME), U_NAME, U_E_MAIL into author, authorid, author_mail
       from DB.DBA.SYS_USERS where U_ID = N.B_USER_ID;
   nf:
+  post_iri := sioc..post_iri (authorid, 'weblog', _wai_name, N.B_POST_ID);
 
   if (N.B_RFC_HEADER is null)
     rfc := MAKE_POST_RFC_HEADER (mid, null, N.B_BLOG_ID, title, N.B_TS, author_mail);
@@ -3490,7 +3492,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   update BLOG.DBA.SYS_BLOG_INFO
   set BI_LAST_UPDATE = now (),
       BI_DASHBOARD =
-	  make_dasboard_item ('post', N.B_TS, title, author, home || '?id=' || N.B_POST_ID, '', BI_DASHBOARD, N.B_POST_ID,
+	  make_dasboard_item ('post', N.B_TS, title, author, post_iri, '', BI_DASHBOARD, N.B_POST_ID,
 	      'insert', authorid, null)
   where BI_BLOG_ID = N.B_BLOG_ID;
 
@@ -3508,7 +3510,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   -- WA widgets
   if (__proc_exists ('DB.DBA.WA_NEW_BLOG_IN') and N.B_STATE = 2)
     {
-      DB.DBA.WA_NEW_BLOG_IN (title, home||'?id='||N.B_POST_ID, N.B_POST_ID);
+      DB.DBA.WA_NEW_BLOG_IN (title, post_iri, N.B_POST_ID);
     }
 }
 ;
@@ -3517,6 +3519,7 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
 {
   declare xt, ss, tags, tagstr, is_act, home, author, authorid, title, have_encl, enc_type, _wai_name any;
   declare ver int;
+  declare post_iri varchar;
 
   update BLOG.DBA.SYS_BLOG_ATTACHES set BA_M_BLOG_ID = N.B_BLOG_ID where BA_M_BLOG_ID = N.B_BLOG_ID; -- Only for timestamp
 
@@ -3598,17 +3601,19 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
   select coalesce (U_FULL_NAME, U_NAME), U_NAME into author, authorid from DB.DBA.SYS_USERS where U_ID = N.B_USER_ID;
   nf:
 
+  post_iri := sioc..post_iri (authorid, 'weblog', _wai_name, N.B_POST_ID);
+
   update BLOG.DBA.SYS_BLOG_INFO set
 	BI_LAST_UPDATE = now (),
       	BI_DASHBOARD =
-	    make_dasboard_item ('post', N.B_TS, N.B_TITLE, author, home||'?id='||N.B_POST_ID, '', BI_DASHBOARD, N.B_POST_ID, 'update', authorid, null)
+	    make_dasboard_item ('post', N.B_TS, N.B_TITLE, author, post_iri, '', BI_DASHBOARD, N.B_POST_ID, 'update', authorid, null)
   where BI_BLOG_ID = N.B_BLOG_ID;
 
   ODS..APP_PING (_wai_name, title, home);
 
   if (__proc_exists ('DB.DBA.WA_NEW_BLOG_IN') and N.B_STATE = 2)
     {
-      DB.DBA.WA_NEW_BLOG_IN (N.B_TITLE, home||'?id='||N.B_POST_ID, N.B_POST_ID);
+      DB.DBA.WA_NEW_BLOG_IN (N.B_TITLE, post_iri, N.B_POST_ID);
     }
 }
 ;

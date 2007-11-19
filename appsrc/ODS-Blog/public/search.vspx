@@ -83,6 +83,10 @@
     <v:variable name="last_date" type="date" default="null" persist="temp"/>
     <v:variable name="score_ratio" type="float" defaut="1" />
     <v:variable name="s_tag_is_qry" type="int" defaut="0" param-name="tag-is-qry"/>
+    <v:variable name="blog_iri" type="varchar" default="null" persist="temp" />
+    <v:variable name="chost" type="varchar" default="''"/> <!-- CNAME of the host -->
+    <v:variable name="owner_name" type="varchar" default="null" persist="temp" />
+    <v:variable name="inst_name" type="varchar" default="null"/>
     <v:before-render>
       <![CDATA[
       if (length (self.sid) and BLOG.DBA.IS_REGULAR_FEED ())
@@ -105,6 +109,7 @@
         _cookie_vec := vsp_ua_get_cookie_vec(lines);
         self.sid := coalesce(get_keyword('sid', params), get_keyword('sid', _cookie_vec));
         self.realm := get_keyword('realm', params, 'wa');
+	self.chost := wa_cname ();
 
 	refr := http_request_header (lines, 'Referer');
 	if (refr <> 0)
@@ -131,7 +136,9 @@
     BI_KEYWORDS,
     U_FULL_NAME,
     BI_FILTER,
-    BI_HAVE_COMUNITY_BLOG
+	  BI_HAVE_COMUNITY_BLOG,
+	  U_NAME,
+	  BI_WAI_NAME
           into
           self.title,
           self.home,
@@ -145,7 +152,9 @@
     self.kwds,
     self.author,
     self.filt,
-    self.have_comunity_blog
+	  self.have_comunity_blog,
+	  self.owner_name,
+	  self.inst_name
           from BLOG.DBA.SYS_BLOG_INFO, DB.DBA.SYS_USERS
           where BI_BLOG_ID = self.blogid and U_ID = BI_OWNER
           with (prefetch 1);
@@ -162,6 +171,7 @@
           self.qt.ufl_value := self.qtype;
         }
     self.atomver := get_keyword ('AtomFeedVer', self.opts, '0.3');
+    self.blog_iri := sprintf ('http://%s/dataspace/%U/weblog/%U', self.chost, self.owner_name, self.inst_name);
       ]]>
     </v:on-init>
     <v:after-data-bind>
@@ -282,7 +292,7 @@
 
 
 	  self.hit_words := vector ();
-	  pars := vector (self.home, self.blogid, self.blogid);
+	  pars := vector (self.blog_iri, self.blogid, self.blogid);
 	  ftcond := '';
 	  if (length (self.expr.ufl_value))
 	    {
@@ -357,7 +367,7 @@
 	      twhere := sprintf (' contains (BT_TAGS, ''[__lang "x-ViDoc"] %s %s'', offband, BT_POST_ID) and BT_POST_ID = B_POST_ID and BT_BLOG_ID = BA_C_BLOG_ID and ', tag_qry, blog_cond);
 	    }
 
-	  qry := 'select top 1000 NULL, concat (?,\'?id=\', B_POST_ID), B_TITLE,
+	    qry := 'select top 1000 NULL, concat (?,\'/\', B_POST_ID), B_TITLE,
 	  	B_USER_ID, B_TS, B_MODIFIED, ' || case when ftcond = '' then '0' else  'b.SCORE' end || ', B_POST_ID, B_VER
 	    from ' || atb || ' BLOG..SYS_BLOGS b,
 	    (select BI_BLOG_ID as BA_C_BLOG_ID, BI_BLOG_ID as BA_M_BLOG_ID
@@ -865,7 +875,7 @@
                       <div class="message">
                         <div>
                           <span class="message_title">
-                            <v:url name="l6" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" url="--(control.vc_parent as vspx_row_template).te_rowset[1]" render-only="1" format="%s"/>
+                            <v:url name="l6" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" url="--(control.vc_parent as vspx_row_template).te_rowset[1]" render-only="1" format="%s" is-local="1"/>
                             <?vsp
                               if (self.sid is not null and self.realm is not null)
                               {
@@ -1001,7 +1011,7 @@
                           </td>
                           <td>
                             <v:url name="lt6" value="--BLOG..blog_utf2wide ((control.vc_parent as vspx_row_template).te_rowset[2])"
-                            url="--(control.vc_parent as vspx_row_template).te_rowset[1]" render-only="1"/>
+                            url="--(control.vc_parent as vspx_row_template).te_rowset[1]" render-only="1" is-local="1"/>
                             <?vsp
                               if (self.sid is not null and self.realm is not null)
                               {
