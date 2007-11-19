@@ -63,6 +63,7 @@ ECHO BOTH ": " $ROWCNT " resources with non-matching user id.\n";
 -- tutorial_demo user from setup_tutorial.sql
 select WS.WS.COL_PATH(COL_ID), COL_OWNER from WS.WS.SYS_DAV_COL where COL_OWNER <> http_dav_uid ()
     and COL_OWNER <> coalesce ((select U_ID from SYS_USERS where U_NAME = 'tutorial_demo'), http_dav_uid ())
+    and COL_OWNER <> coalesce ((select U_ID from SYS_USERS where U_NAME = 'demo'), http_dav_uid ())
     and COL_OWNER <> 0;
 ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
