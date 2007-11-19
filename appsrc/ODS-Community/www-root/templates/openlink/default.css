@@ -665,3 +665,9 @@ div.w_app_summary div.w_title_bar {
   clear: right;
   margin: 0 5px 0 0
  }
+
+#ods_bar_odslogin
+{
+font-family: Verdana,Arial,Helvetica,Sans-Serif;
+margin-bottom: 4px; 
+}
