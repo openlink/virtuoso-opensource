@@ -325,7 +325,8 @@ create method wa_dashboard () for wa_photo {
           XMLAGG(XMLELEMENT('dash-row',
                      XMLATTRIBUTES('normal' as "class",  PHOTO.WA.date_2_humans(RES_MOD_TIME) as "time", self.wa_name as "application"),
                      XMLELEMENT('dash-data',
-                                XMLATTRIBUTES(sprintf('<a href=\"%s%s/%s\">%s123</a>',_home_path,C.COL_NAME,RES_NAME,RES_NAME) "content")
+--                                XMLATTRIBUTES(sprintf('<a href=\"%s%s/%s\">%s</a>',_home_path,C.COL_NAME,RES_NAME,RES_NAME) "content")
+                                XMLATTRIBUTES(sprintf('<a href=\"/dataspace/%s/photos/%U#/%s/%s\">%s</a>',UserName,self.wa_name, C.COL_NAME, RES_NAME, RES_NAME) "content")
                      )
                 )
           )
@@ -380,7 +381,7 @@ create method wa_dashboard_last_item () for wa_photo
     http(sprintf('<title><![CDATA[%s]]></title>',RES_NAME),ses);
     http(sprintf('<dt>%s</dt>', date_iso8601(RES_MOD_TIME)),ses);
 --      http (sprintf ('<link><![CDATA[%s/#/%s/%s]]></link>', _home_url, COL_NAME, RES_NAME, RES_NAME), ses);
-      http (sprintf ('<link><![CDATA[/dataspace/%s/photos/%U#/%s/%s]]></link>',UserName,self.wa_name, COL_NAME, RES_NAME, RES_NAME), ses);
+      http (sprintf ('<link><![CDATA[/dataspace/%s/photos/%U#/%s/%s]]></link>',UserName,self.wa_name, COL_NAME, RES_NAME), ses);
     http(sprintf('<from><![CDATA[%s]]></from>',Names),ses);
     http(sprintf('<uid>%s</uid>',UserName),ses);
     http('</image>',ses);
