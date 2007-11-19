@@ -54,8 +54,10 @@ create procedure ensure_demo_user ()
 {
   if (exists (select 1 from SYS_USERS where U_NAME = 'demo'))
     return;
-  exec ('create user "demo"');
-  DB.DBA.user_set_qualifier ('demo', 'Demo');
+  DB.DBA.USER_CREATE ('demo', 'demo', vector ('FULL_NAME', 'Demo account', 'DAV_ENABLE', 1, 'LOGIN_QUALIFIER', 'Demo'));
+  update DB.DBA.SYS_USERS set U_GROUP = http_admin_gid () where U_NAME = 'demo';
+  DB.DBA.DAV_HOME_DIR_CREATE ('demo');
+  update DB.DBA.SYS_USERS set U_GROUP = U_ID where U_NAME = 'demo';
 };
 
 ensure_demo_user ();
