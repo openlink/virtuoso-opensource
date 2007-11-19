@@ -784,27 +784,21 @@ create procedure DB.DBA.BLOG2_GEMS_AUTH(in realm varchar) {
 ;
 
 create method wa_dashboard () for wa_blog2 {
-  declare bloghome varchar;
-  bloghome := (select BI_HOME from BLOG.DBA.SYS_BLOG_INFO where BI_BLOG_ID = self.blogid);
+  declare url varchar;
+  url := sioc..forum_iri ('weblog', self.wa_name);
   return ( select
               XMLAGG(XMLELEMENT('dash-row',
                          XMLATTRIBUTES('normal' as "class", BLOG.DBA.BLOG2_DATE_FOR_HUMANS(B_TS) as "time", self.wa_name as "application"),
                          XMLELEMENT('dash-data',
-                                    XMLATTRIBUTES(sprintf('<a href=\"%sindex.vspx?page=index&id=%s\">%s</a>', bloghome, B_POST_ID, BLOG.DBA.BLOG2_GET_TITLE (B_META, B_CONTENT)) "content", B_COMMENTS_NO "comments")
+	    XMLATTRIBUTES(sprintf('<a href=\"%s/%s\">%s</a>', url, B_POST_ID,
+		BLOG.DBA.BLOG2_GET_TITLE (B_META, B_CONTENT)) "content", B_COMMENTS_NO "comments")
                          )
                     )
               )
             from
-              (select
-                 top 10 *
-               from
-                 BLOG.DBA.SYS_BLOGS
-               where
-                 B_STATE = 2 and
-                 B_BLOG_ID = self.blogid
-               order by
-                 B_TS desc) T
-          );
+      (select top 10 * from BLOG.DBA.SYS_BLOGS where B_STATE = 2 and B_BLOG_ID = self.blogid order by B_TS desc) T);
+  notf:
+  return '';
 }
 ;
 
