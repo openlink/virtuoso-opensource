@@ -8736,6 +8736,8 @@ load_grddl:;
       else
 	val_match := null;
 
+      if (registry_get ('__sparql_mappers_debug') = '1')
+	dbg_printf ('Trying %s', RM_HOOK);
       if (isstring (val_match) and regexp_match (RM_PATTERN, val_match) is not null)
 	{
 	  if (__proc_exists (RM_HOOK) is null)
@@ -8750,6 +8752,8 @@ load_grddl:;
           if (isarray (pcols))
 	    npars := length (pcols);
 	    --!!!TBD: Carefully check what happens when dest is NULL vs dest is nonNULL, then add support for groupdest.
+          if (registry_get ('__sparql_mappers_debug') = '1')
+	    dbg_printf ('Match %s', RM_HOOK);
 	  new_opts := vector_concat (options, RM_OPTIONS);
 	  if (RM_TYPE <> 'HTTP')
 	    {
@@ -8764,6 +8768,12 @@ load_grddl:;
 	    rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, vector (req_hdr_arr, ret_hdr));
 	      else
 	        rc := call (RM_HOOK) (graph_iri, new_origin_uri, dest, ret_body, aq, ps, vector (req_hdr_arr, ret_hdr), new_opts);
+	    }
+          if (registry_get ('__sparql_mappers_debug') = '1')
+	    {
+	      dbg_printf ('Return [%d] %s', rc, RM_HOOK);
+	      if (rc < 0 or rc > 0)
+	        dbg_printf ('END of mappings');
 	    }
 	  if (rc < 0)
 	return 0;
