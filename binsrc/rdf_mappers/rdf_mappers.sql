@@ -107,6 +107,16 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 -- Every of these is called inside XHTML mapper
 --
 EXEC_STMT(
+'create table DB.DBA.OAI_SERVERS (
+    OS_ID	  integer identity,
+    OS_SERVER 	  varchar,
+    OS_URN_PATTERN varchar,
+    OS_ENABLED 	  int default 0,
+    primary key (OS_ID, OS_SERVER)
+)', 0)
+;
+
+EXEC_STMT(
 'create table DB.DBA.SYS_GRDDL_MAPPING (
     GM_NAME varchar,
     GM_PROFILE varchar,
@@ -810,6 +820,7 @@ create procedure DB.DBA.RDF_LOAD_AMAZON_ARTICLE (in graph_iri varchar, in new_or
   tmp := http_get (url, hdr);
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
+--  dbg_printf ('%s', tmp);
   xd := xtree_doc (tmp);
   xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/amazon2rdf.xsl', xd, vector ('baseUri', coalesce (dest, graph_iri)));
   xd := serialize_to_UTF8_xml (xt);
@@ -1981,5 +1992,62 @@ create procedure rdfm_yq_parse_csv_line (inout line varchar)
       prev := line[i];
     }
   return res;
+}
+;
+
+
+create procedure RDFM_IDENT_RESOLVE_INIT ()
+{
+  declare cnt, hdr, url, xt, xp, sch, delim any;
+  for select OS_ID as _id, OS_SERVER as _server from DB.DBA.OAI_SERVERS do
+    {
+      xp := sch := delim := '';
+      declare exit handler for sqlstate '*'
+	{
+	  update DB.DBA.OAI_SERVERS set OS_ENABLED = 0 where OS_ID = _id;
+	  goto try_next;
+	};
+      url := _server || '?verb=Identify';
+      commit work;
+      cnt := RDF_HTTP_URL_GET (url, _server, hdr);
+      xt := xtree_doc (cnt);
+      xp := xpath_eval ('string (/OAI-PMH/Identify/description/oai-identifier/repositoryIdentifier)', xt);
+      sch := xpath_eval ('string (/OAI-PMH/Identify/description/oai-identifier/scheme)', xt);
+      delim := xpath_eval ('string (/OAI-PMH/Identify/description/oai-identifier/delimiter)', xt);
+      if (length (xp))
+        update DB.DBA.OAI_SERVERS set OS_URN_PATTERN = sch||delim||xp, OS_ENABLED = 1 where OS_ID = _id;
+      else
+	update DB.DBA.OAI_SERVERS set OS_ENABLED = 0 where OS_ID = _id;
+      try_next:;
+--      dbg_obj_print (_server, sch||delim||xp);
+    }
+}
+;
+
+create procedure DB.DBA.SYS_OAI_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
+{
+  declare url, hdr, xt, xd, cnt any;
+  declare new_origin_uri, dest, graph_iri varchar;
+  new_origin_uri := cast (get_keyword_ucase ('get:uri', options, get_uri) as varchar);
+  graph_iri := get_uri;
+  dest := get_keyword_ucase ('get:destination', options);
+  for select OS_SERVER as _server from DB.DBA.OAI_SERVERS where get_uri like OS_URN_PATTERN || ':%' and OS_ENABLED = 1 do
+    {
+      declare exit handler for sqlstate '*'
+	{
+	  return local_iri;
+	};
+      url := sprintf ('%s?verb=GetRecord&identifier=%s&metadataPrefix=oai_dc', _server, get_uri);
+      cnt := RDF_HTTP_URL_GET (url, _server, hdr);
+      xt := xtree_doc (cnt);
+--      dbg_obj_print (cnt);
+      xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/oai2rdf.xsl', xt, vector ('baseUri', get_uri));
+      xd := serialize_to_UTF8_xml (xd);
+--      dbg_obj_print (xd);
+      if (dest is null)
+	delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+    }
+  return local_iri;
 }
 ;
