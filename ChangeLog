@@ -1,3 +1,956 @@
+2007-11-19 11:28  source
+
+	* Updated version to 5.0.3-pre4
+
+2007-11-19 11:27  source
+
+	* Set minimum version of automake to 1.7 since we need tar-ustar to
+	  deal with long path names.
+
+2007-11-19 11:16  source
+
+	* Added 'Validation' Tab at user level
+	* Added winrect.css permanently to ods-bar
+	* Fixed user briefcase icon in-active in search
+	* Fix for OAT.Preferences.stylePath general for ods bar
+	* Fixed type of url
+	* Fixed slow css loading
+	* Fixed field validation on ldap server
+
+2007-11-19 11:12  source
+
+	* Changed IRIs
+
+2007-11-19 11:09  source
+
+	* Fixed sign in css
+
+2007-11-19 11:09  source
+
+	* Fixed WebDAV Browser
+
+2007-11-19 11:08  source
+
+	* Fixed WebDAV browser
+
+2007-11-19 11:07  source
+
+	* Replaced the URLs in WIki pages with SIOC Data Space URIs
+	* Fixed date in "Insert signature"
+	* Updated areticle WMacros
+
+2007-11-19 10:58  source
+
+	* Updated version
+
+2007-11-19 10:38  source
+
+	* Added AWK_PUBLIC for WS.WS.PARSE_URI
+
+2007-11-19 10:37  source
+
+	* Added XBRL ontology for XBRL2RDF sponger
+
+2007-11-19 10:36  source
+
+	* Added XBRL sponger
+
+2007-11-19 10:34  source
+
+	* Added setting to enable debug of various rdf extractors
+
+2007-11-18 15:10  source
+
+	* Added extra checks
+
+2007-11-18 15:07  source
+
+	* Added Adaptive size of dictionary of objects for graph keyword in
+	  RDF/XML and TURTLE parsers when free-text is on
+
+2007-11-18 15:05  source
+
+	* Added extra parameter for number of worker threads
+
+2007-11-18 15:03  source
+
+	* Fixed bug in bif_rdf1808_parse_uri
+	* Added rfc1808_parse_wide_uri for wide strings
+
+2007-11-18 15:00  source
+
+	* Fix to ensure valid dictionary size on wrong argument of bif_dict_new
+
+2007-11-16 10:26  source
+
+	* Added DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT
+	* Fixed RDF_ADD_GRAPH_KEYWORD to workb etter in _MT parser
+
+2007-11-16 10:23  source
+
+	* Fixed __rdf_obj_ft_rule_count_in_graph on 32bit boxes
+
+2007-11-16 10:22  source
+
+	* Fixed loading ontology
+	* Fixed graph name to use http://demo.openlinksw.com
+
+2007-11-16 10:18  source
+
+	* Fixed 404 rule
+
+2007-11-16 10:16  source
+
+	* Replaced WS.WS.PARSE_URI with bif rdf1808_parse_uri
+
+2007-11-16 10:15  source
+
+	* Added more properties of yahoo stock
+	* Fixed feed2sioc
+
+2007-11-15 14:40  source
+
+	* Fixed old style plugins which return a string, not a box
+
+2007-11-15 14:37  source
+
+	* Fixed schema to <http://demo.openlinksw.com/schemas/northwind#>
+
+2007-11-15 14:36  source
+
+	* Changed IRIs
+
+2007-11-15 14:36  source
+
+	* Added SPARQL via DAV
+
+2007-11-15 14:04  source
+
+	* Merged from upstream project
+
+2007-11-14 21:28  source
+
+	* Updated photo item rule
+	* Replace Wiki URLs with SIOC Data Space URIs
+	* Fixed javascript errors
+	* Fixed 303 error
+
+2007-11-14 21:27  source
+
+	* Replaced WikiURLs with SIOC Data Space URIs
+
+2007-11-14 21:26  source
+
+	* Added rdf/xml and rdf/N3_turtle
+
+2007-11-14 21:26  source
+
+	* Fixed bookmark create instance problem
+
+2007-11-14 21:19  source
+
+	* Updated version
+
+2007-11-14 21:18  source
+
+	* Added sypport for Yahoo stock data mappers
+
+2007-11-14 21:17  source
+
+	* Fixes for define output:valmode "LONG" select (isblank(?o)) as ?ot ...
+	  and the like, also fix for langmatches()
+
+2007-11-13 22:18  source
+
+	* Added LDAP server FOAF generate
+	* Added fields validation to LDAP server
+	* Added person/organization procedure
+	* Update people search uri
+	* Update wiki search  uri
+	* Fixed ob-ods page to use dataspace uri
+	* Fixed site and error IRIs
+
+2007-11-13 22:15  source
+
+	* Fixed ODS IRIs
+
+2007-11-13 22:15  source
+
+	* Fixed improper import from iCal format
+
+2007-11-13 22:14  source
+
+	* Fixed person/organization dataspace
+
+2007-11-13 22:14  source
+
+	* Updated WMacros article
+
+2007-11-13 22:01  source
+
+	* Added spar_add_rgc_vars_consts_from retvals() in order to provide better
+	  sponge behaviour for:
+
+	  define input:grab-all "yes" define input:grab-depth 2 define
+	          input:grab-seealso
+	          <http://dbpedia.org/property/hasPhotoCollection> PREFIX foaf:
+	          <http://xmlns.com/foaf/0.1/> describe
+	          <http://dbpedia.org/resource/Paris>
+	          <http://dbpedia.org/resource/New_York>
+
+	  Now it can sponge IRIs from the result set.
+
+2007-11-13 22:00  source
+
+	* Added optimizations for filters that are ORs or equalities and
+	  IN predicates with same variable
+
+2007-11-13 21:59  source
+
+	* Fixed typo in format
+
+2007-11-13 21:58  source
+
+	* Merged from upstream project
+
+2007-11-12 13:55  source
+
+	* Updated version to 5.0.3-pre3
+
+2007-11-12 13:54  source
+
+	* Fixed Feed IRIs
+
+2007-11-12 13:42  source
+
+	* Added opensocial links
+	* Fixed eCRM entry
+	* Fixed discussion home changed to use dataspace
+	* Fixed dataspace uri for discussion
+	* Fixed dataspace uri for feeds and weblog search results
+	* Fixed dataspace uri for wiki
+	* Fixed a++ css
+	* Fixed feegs
+	* Fixed javascript error with LDPA servers
+	* Fixed feeds iris
+	* Updated community dashboard on my home page
+
+2007-11-12 13:37  source
+
+	* Fixed page not found errors at logout
+
+2007-11-12 13:36  source
+
+	* Added new dashboard item "My Briefcase"
+	* Fixed briefcase IRIs
+
+2007-11-12 13:34  source
+
+	* Fixed IRIs
+
+2007-11-12 13:34  source
+
+	* Fixed dataspace uri in wa_dashboard
+
+2007-11-12 13:34  source
+
+	* Added "New" hyperlink for  new task/event
+
+2007-11-12 13:33  source
+
+	* Fixed discussion home to use dataspace
+	* Added HEAD base
+
+2007-11-12 13:31  source
+
+	* Added missing graphic
+
+2007-11-12 13:30  source
+
+	* Fixed N3/Turtle RDF gem support
+
+2007-11-12 13:08  source
+
+	* Updated version of vad package
+
+2007-11-12 13:06  source
+
+	* Initial support for option (SOFT EXCLUSIVE)
+	* Initial support for PROVEN_MATCH for ssprintffs of variable and
+	  sprintffs of IRI class
+
+2007-11-12 12:30  source
+
+	* Merged from upstream project
+
+2007-11-10 00:24  source
+
+	* Added special case for ASK
+
+2007-11-10 00:23  source
+
+	* Added check for stack overflow
+
+2007-11-10 00:22  source
+
+	* Updated version
+
+2007-11-10 00:21  source
+
+	* Added initial support for opensocial mapper
+
+2007-11-10 00:20  source
+
+	* Added TTL support for DET
+
+2007-11-10 00:19  source
+
+	* Merged from upstream project
+
+2007-11-09 00:12  source
+
+	* Record the thread
+
+2007-11-09 00:12  source
+
+	* Fix for 'sparql select * where { graph ?g { ?s a ?o }}' on a database
+	  with 94 quad map patterns for rdf:type and default quad map pattern.
+
+2007-11-09 00:10  source
+
+	* Removed debug statement
+
+2007-11-08 13:24  source
+
+	* Updated version to 5.0.3-pre2
+
+2007-11-08 11:58  source
+
+	* Added the Main.WikiMacros article showing a list of all defined macros
+	* Fixed incorrect date on "Insert Signatures" with IE7
+	* Changed the IRI for Wiki application
+
+2007-11-08 11:56  source
+
+	* Fixed Not Found error on logout
+	* Fixed global ODS URI
+	* Fixed failure on importing Mac OS VCARD
+
+2007-11-08 11:54  source
+
+	* Fixed FOAF url
+	* Changed user views
+
+2007-11-08 11:53  source
+
+	* Added gallery settings
+	* Changed dashboard item uri to dataspace uri
+	* Fixed FOAF uri
+	* Fixed missing instance name and owner from header
+	* Fixed album number update
+	* Disable the users for web services
+
+2007-11-08 11:52  source
+
+	* Fixed a++ links
+	* Fixed SIOC gems failure
+	* Fixed Javascript error in Preferences
+	* Fixed FOAF url
+	* Fixed delete Feeds folder
+	* Fixed syntax error viewing Feeds folder content
+	* Fixed user views
+
+2007-11-08 11:50  source
+
+	* Updated dataspace url
+	* Small improvements
+
+2007-11-08 11:48  source
+
+	* Added DET for Calendar
+	* Added missing navigation for non-owner to Event/Tasks list
+	* Changed New Event to New Task
+	* Fixed FOAF url
+	* Fixed global ODS URI
+
+2007-11-08 11:46  source
+
+	* Added HTTP Content Negotiation for rdf_sink folder
+	* Disable the users for web services
+
+2007-11-08 11:46  source
+
+	* Added full implementation of smart folders
+	* Fixed FOAF url
+	* Removed cast to varchar from sequence
+	* Fixed return of correct file content
+	* Disable users for web services
+
+2007-11-08 11:43  source
+
+	* Fixed a++ links
+
+2007-11-08 11:42  source
+
+	* Fixed FOAF url
+	* Fixed global ODS URI
+	* Fixed sameAs from FOAF import
+	* Fixed a++ implementation
+	* Fixed user views
+
+2007-11-08 11:40  source
+
+	* Added /dataspace rewrite rule
+	* Added initial implementation of opensocial
+	* Added IRI for mbox
+	* Added link to Addressbook in user profile
+	* Added special case for photo item
+	* Added openid support for navigation framework
+	* Added canel mode for openid
+	* Changed templates for ODS common SignUp and SignIn
+	* Fixed A++ css
+	* Fixed bug with returl URL in SignIn link
+	* Fixed dataspace IRIs for Wiki
+	* Fixed ODS Webmail dashboard item empty
+	* Fixed url rewrite
+	* Fixed grant
+	* Fixed navigation framework profile and login pages
+	* Use DET to return the ODS data
+	* Removed debug prints
+	* Replaced application instance urls with dataspace url
+	* Replaced person url  with dataspace/person url
+	* Updated community dashboard on home page
+	* Updated FOAF links
+	* Updated rule for gallery items
+
+2007-11-08 10:55  source
+
+	* Updated documentation
+
+2007-11-08 10:55  source
+
+	* Fixed error in loading missing source graphs when RDF_SPONGE_UP returned
+	  varchar but the expression was like
+	  'G in (RDF_SPONGE_UP(...), RDF_SPONGE_UP(...), ...)'
+	* Added calls to iri_to_id
+
+2007-11-08 10:53  source
+
+	* Fixed reloading of RDF free-text indexing rules at server restart
+	* Fixed free-text index support in SPARUL
+
+2007-11-08 10:52  source
+
+	* Fixed bad aref
+
+2007-11-08 10:51  source
+
+	* Added box_err_print_box, so callstack dump is improved for RDF boxes
+
+2007-11-08 10:49  source
+
+	* Added checks to ensure unique rule name
+
+2007-11-08 10:48  source
+
+	* Fixed issue with HEAD
+
+2007-11-08 10:47  source
+
+	* Merged from upstream project
+
+2007-11-05 12:22  source
+
+	* Added new url rewrite rules
+	* Use DET to return the ODS data
+	* Fixed page param
+
+2007-11-05 12:22  source
+
+	* Added HTTP Content Negotiation for rdf_sink folder
+
+2007-11-05 12:21  source
+
+	* Fix for grouping variables in LONG valmode
+	* Fix for SPARQL aggregates in LONG valmode
+	* Fixed traversal functions to use stack of structures instead of
+	  stack of void pointers
+
+2007-11-05 12:19  source
+
+	* Added new url rewrite rules
+	* Use DET to return the ODS data
+
+2007-11-05 12:19  source
+
+	* Added bif_rdf_box_needs_digest
+
+2007-11-05 12:18  source
+
+	* Fixed debug messages
+
+2007-10-31 21:09  source
+
+	* Added transparent content negotiation
+
+2007-10-31 12:31  source
+
+	* Merged latest documentation fixes
+
+2007-10-31 12:30  source
+
+	* Updated version
+
+2007-10-31 12:30  source
+
+	* Fixed bug updating sequences
+
+2007-10-31 12:29  source
+
+	* Fixed recursive UPDATE bug
+
+2007-10-31 12:26  source
+
+	* Increased stack margin as it needs to call yy error
+
+2007-10-31 12:25  source
+
+	* Added better error limit message
+
+2007-10-31 12:07  source
+
+	* Fixed rewrite rule UI re i/o fields
+	* Added help
+
+2007-10-31 11:58  source
+
+	* Added tests for recursive update bug
+
+2007-10-31 11:57  source
+
+	* Added parsing of TODO items in ICAL
+
+2007-10-31 11:57  source
+
+	* Merged from upstream project
+
+2007-10-31 11:55  source
+
+	* Keep column definitions next to initial DLL statements
+	* Fixed ALTER only for upgrades; no need for alter table stmt on fresh db
+	* Added parsing of TODO statements for SYNCML
+	* Fixed CR/LF and LF/CR variants
+
+2007-10-31 11:52  source
+
+	* Added mapper for Bugzilla sites
+
+2007-10-25 11:54  source
+
+	* Added new openid page
+
+2007-10-25 11:46  source
+
+	* Fixed xenv_sha1_digest to use exact buffer length
+	* Fixed MTX unlock
+
+2007-10-24 08:11  source
+
+	* Fixed reference links
+
+2007-10-24 08:09  source
+
+	* Fixed session-management and maintenance
+
+2007-10-24 08:07  source
+
+	* Added tasks to calendar views
+
+2007-10-24 08:06  source
+
+	* Fixed bug where btowc needs 1st char to be less than 127
+
+2007-10-24 07:49  source
+
+	* Merged from upstream project
+
+2007-10-24 07:43  source
+
+	* Use the exact BN lenghth
+	* Added error reporting
+
+2007-10-23 13:14  source
+
+	* Patches for 64 bit Ole DB provider
+
+2007-10-22 13:42  source
+
+	* Fixed copyright year
+
+2007-10-22 13:40  source
+
+	* Added photos
+
+2007-10-22 13:37  source
+
+	* Added new parameter CreateMask for file/directory permissions umask
+	* Fixed default file/directory permissions
+
+2007-10-22 13:34  source
+
+	* Enable extra C library functions
+
+2007-10-18 09:37  source
+
+	* Fixed registering HTTPS endpoints
+
+2007-10-18 09:35  source
+
+	* Fixed hosting on HTTPS endpoint
+
+2007-10-18 09:35  source
+
+	* Fixed typo
+
+2007-10-18 09:01  source
+
+	* Added extra endpoint for SocialNetwork
+
+2007-10-17 20:46  source
+
+	* Removed deprecated files
+
+2007-10-17 20:39  source
+
+	* Added new navigation system
+	* Added FB friend dereferencing
+	* Added isDefinedBy
+	* Added new dashboard item "My Contacts"
+	* Added non <a>++ links with class "noapp"
+	* Added RDF det
+	* Added resources for profile page
+	* Added socialnetwork rules
+	* Added ODS application Instant Messenger
+	* Added <a>++ JS
+	* Added separate rule for creating Discussion
+	* Fixed <a>++ remove alert dialog
+	* Fixed calendar IRI
+	* Fixed discussion article rule
+	* Fixed error message text
+	* Fixed graph clear to take out sponger record
+	* Fixed double escape for \ in dump functions
+	* Fixed Org  in ods profile
+	* Fixed tab names
+	* Fixed typos
+	* Fixed uiedit
+	* Minor interface updates
+	* Minor style updates
+	* Minor css updates
+	* Show search for all scopes
+	* Update <a>++ JS - case for <img> tags
+	* Update facebook interface
+
+2007-10-17 20:31  source
+
+	* Fixed problem showing attached files and links to them
+
+2007-10-17 20:29  source
+
+	* Added <a>++ JS
+	* Added <a>++ link for sender
+	* Added <a>++ rules for mail content
+	* Fixed Spam column names
+	* Fixed spam problem
+	* Fixed trash folder view
+
+2007-10-17 20:27  source
+
+	* Added non <a>++ links with class "noapp"
+	* Fixed user view
+	* Update <a>++ links
+
+2007-10-17 20:23  source
+
+	* Added non <a>++ links with class "noapp"
+	* Fixed uninstall bug
+	* Fixed user ciew
+	* Update <a>++ links
+
+2007-10-17 20:22  source
+
+	* Added user's views in ODS
+	* Fixed path for error page
+
+2007-10-17 20:21  source
+
+	* Added name of instance under banner
+	* Added non <a>++ links with class "noapp"
+	* Added Reminder function
+	* Fixed markup error
+	* Fixed spurious "undefined" text with IE 7
+	* Fixed uninstall bug
+	* Fixed user view
+	* Hide OAT processing dialog
+	* Update <a>++ links
+	* Updated IRI for objects
+
+2007-10-17 20:19  source
+
+	* Fixed user briefcase icon
+	* Added non <a>++ links with class "noapp"
+	* Added <a>++ JS
+	* Update <a>++ links
+
+2007-10-17 20:18  source
+
+	* Fixed user view
+	* Added non <a>++ links with class "noapp"
+	* Fixed folder error
+	* Update <a>++ links
+	* Fixed uninstall problem
+
+2007-10-17 20:13  source
+
+	* Added <a>++ links in blog
+	* Added new blog template "columns_clean"
+	* Fixed error $(appArea).getElementsByTagName is not a function
+	* Fixed minor problems in common js script
+	* Removed link to de.lerio.us
+
+2007-10-17 20:10  source
+
+	* Changed user view
+	* Fixed bug wiht Person/Organization tab
+	* Added non <a>++ links with class "noapp"
+	* Added URL parameters
+	* Updated <a>++ links
+	* Removed format checking for Birthday
+	* Fixed uninstall bug
+
+2007-10-17 19:49  source
+
+	* Added lang and graph for det deployment
+	* Added lang negotiation
+	* Print IID in all folder
+	* Use graph when specified
+
+2007-10-17 19:29  source
+
+	* Added missing file
+
+2007-10-17 00:16  source
+
+	* Fixed building demo database
+
+2007-10-16 23:58  source
+
+	* Added new det function for rdfdata
+
+2007-10-16 22:56  source
+
+	* Added new Thalia demo data
+
+2007-10-16 22:53  source
+
+	* New tests for recent bitmap and IN fixes
+
+2007-10-16 22:52  source
+
+	* Fixed bug with cURL utility
+
+2007-10-16 22:23  source
+
+	* Merged from upstream project
+
+2007-10-16 21:55  source
+
+	* Updated version
+
+2007-10-16 21:55  source
+
+	* Virtuoso does not support unsigned types
+
+2007-10-16 21:51  source
+
+	* The IN list left side is constant so don't merge
+	* Moved IN after test if IN col is no-key part
+
+2007-10-16 21:50  source
+
+	* When delete on bitmap index and new row is obtained, position on the
+	  right place, start or end depending of the order
+
+2007-10-16 21:49  source
+
+	* Added extra stack overflow checks
+
+2007-10-16 21:48  source
+
+	* Fixed incorrect grant
+
+2007-10-16 21:48  source
+
+	* Encapsulate TOP in a DT so scrollable cursor will become static
+
+2007-10-16 21:47  source
+
+	* Fixewd permission of database files on Windows
+
+2007-10-15 15:18  source
+
+	* Fixed version string in usage
+
+2007-10-15 14:59  source
+
+	* Added build rules to make odbc_mail program
+
+2007-10-15 12:26  source
+
+	* Added grddl in RDF cartridges tab
+	* Removed deprecated debug messages
+
+2007-10-15 12:24  source
+
+	* Create fake procname on bad request and no method found
+
+2007-10-12 16:59  source
+
+	* Updated documentation
+
+2007-10-11 08:31  source
+
+	* Added separate http_request_header_full bif for hosting code
+
+2007-10-11 08:30  source
+
+	* Fixed buffer overflow
+
+2007-10-11 08:23  source
+
+	* Export only the hosting gate symbols
+
+2007-10-09 14:20  source
+
+	* Updated version to 5.0.3-pre1
+
+2007-10-09 14:06  source
+
+	* Added new hosting plugin for PHP
+
+2007-10-09 14:06  source
+
+	* Added support for DESCRIBE <constant> in grabber
+
+2007-10-09 14:05  source
+
+	* Added conversion of all langtags to lowercase
+
+2007-10-09 14:04  source
+
+	* Fixed proper element names from member name
+
+2007-10-09 14:00  source
+
+	* Fixed typo
+
+2007-10-09 13:59  source
+
+	* Merged from upstream project
+
+2007-10-09 13:59  source
+
+	* Merged documentatin changes
+
+2007-10-07 12:26  source
+
+	* Fixed instructions for sourceforge CVS checkout
+
+2007-10-04 10:38  source
+
+	* Added support for using URIQA default host information
+
+2007-10-04 10:06  source
+
+	* Merged latest documentation fixes
+
+2007-10-04 10:05  source
+
+	* Fixed metadata extraction for DOAP, Atom and XBRL
+
+2007-10-04 10:04  source
+
+	* Fix for hang on DIRTY_HTML parsing of <font attr1="val2" attr2=\n<para
+
+2007-10-04 10:03  source
+
+	* Fixed problem with compiler optimization in ODBC driver
+
+2007-10-04 10:00  source
+
+	* Fixed free-text index for multiple possible graphs
+	* Make string wide so http_value can convert it to UTF-8
+	* Fixed graph clear to remove the sponger record
+
+2007-10-04 09:59  source
+
+	* Added escape for \ in dump function
+
+2007-10-04 09:56  source
+
+	* Added noinherit option to http_map_get dav
+	* Added check on regular expression prior to executing it, or "*/*" will
+	  break the matching process
+
+2007-10-04 09:54  source
+
+	* Remove user if sql login disabled
+
+2007-10-04 09:54  source
+
+	* Removed check for lock if it is a leaf pointer
+
+2007-10-04 09:53  source
+
+	* Added check for stack overflow
+
+2007-10-04 09:53  source
+
+	* Fixed return type of function prototype
+
+2007-10-04 09:52  source
+
+	* Fixed problem with SQLConnect returing SQL_SUCCESS_WITH_INFO
+
+2007-10-04 09:50  source
+
+	* Fixed problem with NULL content
+
+2007-10-04 09:49  source
+
+	* Added noinherit option to http_map_get dav
+
+2007-10-04 09:47  source
+
+	* Added JSON parser tests
+
+2007-10-04 09:46  source
+
+	* Added noinherit option to http_map_get dav
+	* Fixed show SPARQL type for actual sparql endpoints prevent use of
+	  /!sparql/ without noinherit flag
+
+2007-10-04 09:40  source
+
+	* Fixed bug with char instead of integer argument
+
+2007-10-04 09:38  source
+
+	* Merged from upstream project
+
+2007-10-02 15:25  source
+
+	* Added support for building virtuoso with php5
+
 2007-09-27 11:07  source
 
 	* Updated version to 5.0.2 for final release
