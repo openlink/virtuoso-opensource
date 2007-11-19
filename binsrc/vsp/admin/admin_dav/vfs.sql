@@ -1506,6 +1506,7 @@ done:
 -- 4 - query
 -- 5 - fragment
 
+--!AWK PUBLIC
 create procedure WS.WS.PARSE_URI (in uri varchar)
 {
   return rfc1808_parse_uri(uri);
