@@ -2837,10 +2837,14 @@
                     Select WebDAV file
                   </th>
                   <td>
-                    <v:text name="f_dav" value="--''" xhtml_size="40" />
-                    <v:browse-button value="Browse..." selector="popup_browser.vspx" child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"  browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=f_dav', CAL.WA.dav_home (self.account_id))">
-                      <v:field name="f_dav" />
-                    </v:browse-button>
+                    <v:text name="f_dav" xhtml_id="f_dav" value="" xhtml_size="40" />
+                    <v:button action="browse" value="Browse...">
+                   	  <v:after-data-bind>
+                   		  <![CDATA[
+                          control.vc_add_attribute ('onclick', 'javascript: davBrowse (''f_dav'');');
+              			    ]]>
+              			  </v:after-data-bind>
+              		  </v:button>
                   </td>
                 </tr>
               </vm:if>

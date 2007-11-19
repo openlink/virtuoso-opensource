@@ -84,7 +84,7 @@ create procedure DBA.DB.addressbook_import (
 
   } else if (lcase(pContentType) = 'foaf') {
     -- foaf
-    AB.WA.import_foaf (domain_id, content, pTags, case when (lcase (pSourceType) = 'url') then 1 else 0 end);
+    AB.WA.import_foaf (domain_id, content, pTags, vector (), case when (lcase (pSourceType) = 'url') then 1 else 0 end);
 
   } else {
   	signal ('AB105', 'The content type must be vCard or FOAF.');

@@ -80,69 +80,16 @@
     ]]>
   </v:method>
 
-  <v:method name="init_options" arglist="">
-    <![CDATA[
-      self.i_Options := vector (
-        'P_NAME',           'Name',
-        'P_TITLE',          'Title',
-        'P_FIRST_NAME',     'First Name',
-        'P_MIDDLE_NAME',    'Middle Name',
-        'P_LAST_NAME',      'Last Name',
-        'P_FULL_NAME',      'Full Name',
-        'P_GENDER',         'Gender',
-        'P_BIRTHDAY',       'Birthday',
-        'P_MAIL',           'Contact - Mail',
-        'P_WEB',            'Contact - Web address',
-        'P_ICQ',            'Contact - Icq',
-        'P_SKYPE',          'Contact - Skype ID',
-        'P_AIM',            'Contact - AIM Name',
-        'P_YAHOO',          'Contact - Yahoo! ID',
-        'P_MSN',            'Contact - MSN Messenger',
-        'P_H_COUNTRY',      'Home - Country',
-        'P_H_CITY',         'Home - City',
-        'P_H_STATE',        'Home - State/Province',
-        'P_H_CODE',         'Home - Zip/Postal Code',
-        'P_H_ADDRESS1',     'Home - Address1',
-        'P_H_ADDRESS2',     'Home - Address2',
-        'P_H_TZONE',        'Home - Time Zone',
-        'P_H_LAT',          'Home - Latitude',
-        'P_H_LNG',          'Home - Longitude',
-        'P_H_PHONE',        'Home - Phone',
-        'P_H_MOBILE',       'Home - Mobile',
-        'P_H_FAX',          'Home - Fax',
-        'P_H_MAIL',         'Home - Mail',
-        'P_H_WEB',          'Home - Web address',
-        'P_B_COUNTRY',      'Business - Country',
-        'P_B_CITY',         'Business - City',
-        'P_B_STATE',        'Business - State/Province',
-        'P_B_CODE',         'Business - Zip/Postal Code',
-        'P_B_ADDRESS1',     'Business - Address1',
-        'P_B_ADDRESS2',     'Business - Address2',
-        'P_B_TZONE',        'Business - Time Zone',
-        'P_B_LAT',          'Business - Latitude',
-        'P_B_LNG',          'Business - Longitude',
-        'P_B_PHONE',        'Business - Phone',
-        'P_B_MOBILE',       'Business - Mobile',
-        'P_B_FAX',          'Business - Fax',
-        'P_B_INDUSTRY',     'Business - Industry',
-        'P_B_ORGANIZATION', 'Business - Organization',
-        'P_B_DEPARTMENT',   'Business - Department',
-        'P_B_JOB',          'Business - Job Title',
-        'P_B_MAIL',         'Business - Mail',
-        'P_B_WEB',          'Business - Web address');
-    ]]>
-  </v:method>
-
   <v:method name="render_select" arglist="inout name any">
     <![CDATA[
       declare N any;
       declare S, T any;
 
       T := '';
-      if (not isnull (self.i_lMaps))
-        for (N := 0; N < length (self.i_lMaps); N := N + 2)
-          if (self.i_lMaps[N] = name)
-            T := self.i_lMaps[N+1];
+      if (not isnull (self.i_maps))
+        for (N := 0; N < length (self.i_maps); N := N + 2)
+          if (self.i_maps[N] = name)
+            T := self.i_maps[N+1];
 
   	  http (sprintf ('<select name="sel_%s">', name));
   	  http ('<option value="skip">--</option>');
@@ -309,6 +256,21 @@
     ]]>
   </v:method>
 
+  <v:method name="resetImport" arglist="">
+    <![CDATA[
+      self.i_lName := '';
+      self.i_lHost := '';
+      self.i_lPort := '';
+      self.i_lBase_dn := '';
+      self.i_lBind_dn := '';
+      self.i_lPassword := '';
+      self.i_lMaps := null;
+      self.i_maps := null;
+      self.i_data := null;
+      self.i_validation := null;
+    ]]>
+  </v:method>
+
   <vm:pagetitle>AddressBook</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -405,6 +367,8 @@
       <v:variable persist="temp" name="i_Options" type="any" default="null" />
 
       <v:variable name="i_data" type="varchar" default="null"/>
+      <v:variable name="i_validation" type="varchar" default="null" />
+      <v:variable name="i_maps" type="any" default="null" />
     </vm:variables>
     <vm:pagebody>
       <v:before-data-bind>
@@ -549,13 +513,7 @@
                     self.i_source := -1;
                     self.i_type := -1;
                     self.v_tag := '';
-		                self.i_lName := '';
-		                self.i_lHost := '';
-		                self.i_lPort := '';
-		                self.i_lBase_dn := '';
-		                self.i_lBind_dn := '';
-		                self.i_lPassword := '';
-		                self.i_lMaps := null;
+                  self.resetImport ();
                   }
 
                   if (cmd = 'export') {
@@ -1387,7 +1345,7 @@
                       <td nowrap="1">
                         <vm:if test="self.abAction <> 'view'">
                           <v:text name="ab_birthday" xhtml_id="ab_birthday" null-value="--''" value="--AB.WA.dt_format (self.v_birthday, 'Y-M-D')" xhtml_class="textbox" xhtml_size="10" />
-                          <a href="#" name="ab_birthday_select" id="ab_birthday_select" onclick="cPopup.select(document.forms['F1'].ab_birthday, 'ab_birthday_select', 'yyyy-MM-dd'); return false;">
+                          <a href="#" name="ab_birthday_select" id="ab_birthday_select" onclick="cPopup.select(document.forms['F1'].ab_birthday, 'ab_birthday_select', 'yyyy-MM-dd'); return false;" class="noapp">
                             <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                           </a>
                         </vm:if>
@@ -2392,6 +2350,7 @@
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
+                      self.resetImport ();
 	                    self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -2422,10 +2381,14 @@
 	                      Select WebDAV file
 		                  </th>
 		                  <td>
-	                      <v:text name="f_dav" value="--''" xhtml_size="40"/>
-                        <v:browse-button value="Browse..." selector="popup_browser.vspx" child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"  browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=f_dav', AB.WA.dav_home(self.account_id))">
-                          <v:field name="f_dav" />
-	                      </v:browse-button>
+                        <v:text name="f_dav" xhtml_id="f_dav" value="" xhtml_size="40" />
+                        <v:button action="browse" value="Browse...">
+                       	  <v:after-data-bind>
+                       		  <![CDATA[
+                              control.vc_add_attribute ('onclick', 'javascript: davBrowse (''f_dav'');');
+                  			    ]]>
+                  			  </v:after-data-bind>
+                  		  </v:button>
 		                  </td>
 		                </tr>
                   </vm:if>
@@ -2462,7 +2425,7 @@
                                          LS_BASE_DN,
                                          LS_BIND_DN,
                                          LS_PASSWORD,
-                                         LS_MAPS
+                                         deserialize (LS_MAPS)
                       		          into self.i_lHost,
                       		               self.i_lPort,
                       		               self.i_lBase_dn,
@@ -2472,6 +2435,7 @@
                                     from LDAP..LDAP_SERVERS
                       		         where LS_NAME = self.i_lName
                                      and LS_USER_ID = self.account_id;
+                                  self.i_maps := self.i_lMaps;
                       		      }
                           		}
       		                    control.vs_set_selected ();
@@ -2660,6 +2624,7 @@
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
+                      self.resetImport ();
 	                    self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -2686,10 +2651,12 @@
                     declare N, M integer;
                     declare data any;
 
-                      self.init_options ();
-                    for (N := 0; N < 1; N := N + 2) {
+                      self.i_Options := LDAP..contact_fields ();
+                      for (N := 0; N < 1; N := N + 2)
+                      {
                       data := split_and_decode (self.i_data [N], 0, '\0\0,');
-              	      for (M := 0; M < length (data); M := M + 1) {
+                        for (M := 0; M < length (data); M := M + 1)
+                        {
               	  ?>
               	  <tr>
               	    <td>
@@ -2719,14 +2686,18 @@
                   <tr>
                   </tr>
                   <?vsp
-                    declare N, M integer;
+                      declare L, N, M integer;
                     declare data any;
 
-                      self.init_options ();
-                    for (N := 0; N < length (self.i_data); N := N + 2) {
-              	      if (self.i_data [N] = 'entry') {
+                      self.i_Options := LDAP..contact_fields ();
+                      for (N := 0; N < length (self.i_data); N := N + 2)
+                      {
+                        if (self.i_data [N] = 'entry')
+                        {
               	        data := self.i_data [N+1];
-              	        for (M := 0; M < length (data); M := M + 2) {
+                          if (isnull (self.i_lMaps)) {
+                            for (M := 0; M < length (data); M := M + 2)
+                            {
               	  ?>
               	  <tr>
               	    <td>
@@ -2744,6 +2715,33 @@
               	  <?vsp
                         }
                         goto _end;
+                          } else {
+                            for (M := 0; M < length (self.i_lMaps); M := M + 2)
+                            {
+                    ?>
+                    <tr>
+                      <td>
+                        <?V self.i_lMaps[M] ?>
+                      </td>
+                      <td nowrap="1">
+                        <?vsp
+                          self.render_select (self.i_lMaps[M]);
+                        ?>
+                      </td>
+                      <td>
+                        <?vsp
+                          for (L := 0; L < length (data); L := L + 2)
+                          {
+                            if (data[L] = self.i_lMaps[M])
+                              http (substring (case when isstring (data[L+1]) then data[L+1] else data[L+1][0] end, 1, 50));
+                          }
+                        ?>
+                      </td>
+                    </tr>
+                    <?vsp
+                            }
+                            goto _end;
+                          }
               	      }
                     }
                   _end:;
@@ -2762,6 +2760,7 @@
                         tmp := vector (
                           'Title',                'P_TITLE',
                           'First Name',           'P_FIRST_NAME',
+                          'Middle Name',          'P_MIDDLE_NAME',
                           'Last Name',            'P_LAST_NAME',
                           'Gender',               'P_GENDER',
                           'Birthday',             'P_BIRTHDAY',
@@ -2788,12 +2787,12 @@
                           'E-mail 3 Address',     'P_B_MAIL');
 
                         if (length (self.i_data)) {
-                          self.i_lMaps := vector ();
+                          self.i_maps := vector ();
                           data := split_and_decode (self.i_data [N], 0, '\0\0,');
                           for (N := 0; N < length (data); N := N + 1) {
                             for (M := 0; M < length (tmp); M := M + 2)
                               if (trim (data[N], '"') = tmp[M]) {
-                                self.i_lMaps := vector_concat (self.i_lMaps, vector (cast (N as varchar), tmp[M+1]));
+                                self.i_maps := vector_concat (self.i_maps, vector (cast (N as varchar), tmp[M+1]));
                                 goto _next;
                               }
                           _next:;
@@ -2802,10 +2801,14 @@
                       }
 
                       if (self.i_type = 3)
-                        self.i_lMaps := vector (
+                        if (isnull (self.i_lMaps)) {
+                          self.i_maps := vector (
                           'uid',  'P_NAME',
                           'cn',   'P_FULL_NAME',
                           'mail', 'P_MAIL');
+                        } else {
+                          self.i_maps := self.i_lMaps;
+                        }
 
                       self.vc_data_bind(e);
                     ]]>
@@ -2814,7 +2817,7 @@
                 <v:button action="simple" value="Reset" xhtml_class="form-button" xhtml_style="margin: 5px 5px 0px 0px;">
                   <v:on-post>
                     <![CDATA[
-                      self.i_lMaps := null;
+                      self.i_maps := null;
                       self.vc_data_bind(e);
                     ]]>
                   </v:on-post>
@@ -2838,10 +2841,10 @@
                       declare params any;
 
                       params := e.ve_params;
-                      self.i_lMaps := vector ();
+                      self.i_maps := vector ();
                       for (N := 0; N < length (params); N := N + 2)
                         if (params[N] like 'sel_%' and params[N+1] <> 'skip')
-	                        self.i_lMaps := vector_concat (self.i_lMaps, vector (substring (params[N], 5, length (params[N])), params[N+1]));
+                          self.i_maps := vector_concat (self.i_maps, vector (substring (params[N], 5, length (params[N])), params[N+1]));
 
                       self.abStep := '5';
                       self.vc_data_bind(e);
@@ -2852,6 +2855,7 @@
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
+                      self.resetImport ();
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -2897,6 +2901,42 @@
                       ?>
                     </td>
                   </tr>
+                  <tr>
+                    <th valign="top">
+                      Validation Fields
+                    </th>
+                    <td>
+                      <div style="height: 380px; overflow: auto;">
+                        <table cellspacing="0" style="background-color: #fff;">
+                          <?vsp
+                            declare N integer;
+                            declare data, fields any;
+
+                            data := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = self.account_id), vector());
+                            fields := LDAP..contact_fields ();
+                            for (N := 0; N < length (fields); N := N + 2) {
+                      	  ?>
+                      	  <tr>
+                      	    <td width="1%">
+                      	      <?vsp
+                                declare S varchar;
+                                S := '';
+                                if (get_keyword(fields[N], data, '') <> '')
+                                  S := 'checked="checked"';
+                                http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', S, fields[N]));
+                              ?>
+                      		  </td>
+                      		  <td >
+                      		    <?V fields[N+1] ?>
+                      		  </td>
+                          </tr>
+                      	  <?vsp
+                            }
+                          ?>
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
 	              </table>
 	            </div>
 
@@ -2914,9 +2954,8 @@
 	              <v:button action="simple" value="Import" xhtml_class="form-button">
 			            <v:on-post>
 			              <![CDATA[
-                      declare N, M, nLength, mLength, id integer;
-                      declare tmp, tmp2, t_iri, S, name, fullName any;
-                      declare data, maps, pFields, pValues any;
+                      declare N integer;
+                      declare tmp, params any;
 
                       declare exit handler for SQLSTATE '*' {
                         if (__SQL_STATE = 'TEST') {
@@ -2934,23 +2973,31 @@
                       tmp := AB.WA.vector_unique (tmp);
                       self.v_tags := AB.WA.vector2tags (tmp);
 
+                      params := e.ve_params;
+                      self.i_validation := vector ();
+                      for (N := 0; N < length (params); N := N + 4) {
+                        if (params[N] = 'cb_item')
+                          self.i_validation := vector_concat (self.i_validation, vector (params[N+1]));
+                      }
+
 			                -- vCard
                       if (self.i_type = 0)
-                        AB.WA.import_vcard (self.domain_id, self.i_data, self.v_tags);
+                        AB.WA.import_vcard (self.domain_id, self.i_data, self.v_tags, self.i_validation);
 
 			                -- FOAF
                       if (self.i_type = 1)
-                        AB.WA.import_foaf (self.domain_id, self.i_data, self.v_tags, case when (self.i_source = 2) then 1 else 0 end);
+                        AB.WA.import_foaf (self.domain_id, self.i_data, self.v_tags, self.i_validation, case when (self.i_source = 2) then 1 else 0 end);
 
 			                -- CSV
                       if (self.i_type = 2)
-                        AB.WA.import_csv (self.domain_id, self.i_data, self.v_tags, self.i_lMaps);
+                        AB.WA.import_csv (self.domain_id, self.i_data, self.v_tags, self.i_maps, self.i_validation);
 
 			                -- LDAP
                       if (self.i_type = 3)
-                        AB.WA.import_ldap (self.domain_id, self.i_data, self.v_tags, self.i_lMaps);
+                        AB.WA.import_ldap (self.domain_id, self.i_data, self.v_tags, self.i_maps, self.i_validation);
 
 	                    self.abAction := 'browse';
+                      self.resetImport ();
                       self.vc_data_bind(e);
 			               ]]>
 			             </v:on-post>
@@ -2959,6 +3006,7 @@
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
+                      self.resetImport ();
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>

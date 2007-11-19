@@ -27,7 +27,6 @@
   <xsl:variable name="page_title" select="string (//vm:pagetitle)"/>
 
   <xsl:include href="http://local.virt/DAV/VAD/wa/comp/ods_bar.xsl"/>
-  <xsl:include href="dav_browser.xsl"/>
   <xsl:include href="file_browser.xsl"/>
 
   <!--=========================================================================-->

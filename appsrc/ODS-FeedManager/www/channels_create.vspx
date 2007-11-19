@@ -234,13 +234,14 @@
                   <input type="file" name="source_1" size="70"></input>
                 </v:template>
                 <v:template type="simple" enabled="-- case when (self.v_source = 2) then 1 else 0 end">
-                  <v:text name="source_2" xhtml_size="70"/>
-                  <v:browse-button value="Browse..."
-                                   selector="popup_browser.vspx"
-                                   child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"
-                                   browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=source_2', ENEWS.WA.dav_home(self.account_id))">
-                    <v:field name="source_2" />
-                  </v:browse-button>
+                  <v:text name="source_2" xhtml_id="source_2" value="" xhtml_size="70" />
+                  <v:button action="browse" value="Browse...">
+                 	  <v:after-data-bind>
+                 		  <![CDATA[
+                        control.vc_add_attribute ('onclick', 'javascript: davBrowse (''source_2'');');
+            			    ]]>
+            			  </v:after-data-bind>
+            		  </v:button>
                 </v:template>
                 <v:template type="simple" enabled="-- case when (self.v_source = 3) then 1 else 0 end">
                   <v:text name="source_3" xhtml_size="70"/>

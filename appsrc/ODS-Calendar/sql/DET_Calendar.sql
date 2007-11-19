@@ -854,7 +854,7 @@ create function "calendar_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts 
 }
 ;
 
-create procedure CAL.WA.export_vcal (
+create procedure CAL.WA.det_export_vcal (
   in domain_id integer,
   in tz integer,
   in event_id integer)
@@ -933,7 +933,7 @@ create function "calendar_DAV_RES_CONTENT" (in id any, inout content any, out ty
 	tz := timezone(now());
 	if (id[7] is not null)
 	{
-		content := CAL.WA.export_vcal (id[4], tz, id[7]);
+        content := CAL.WA.det_export_vcal (id[4], tz, id[7]);
 	}
 endline:
 	return 0;

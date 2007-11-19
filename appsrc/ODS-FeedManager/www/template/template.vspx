@@ -43,6 +43,7 @@
       http(sprintf('<link rel="subscriptions" type="text/x-opml" title="Subscriptions" href="%s/export.vspx?output=OPML&aid=%d&did=%d" />', url, self.account_id, self.domain_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <link rel="stylesheet" href="css/webdav.css" type="text/css"/>
     <meta name="dc.description" content="<?V ENEWS.WA.utf2wide (ENEWS.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V ENEWS.WA.utf2wide (ENEWS.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
@@ -51,13 +52,25 @@
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
         
-        var featureList=["ajax2", "anchor", "ghostdrag"];
+        var featureList=["ajax2", "anchor", "ghostdrag", "dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="js/enews.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript">
+        // WebDAV Object
+        var oWebDAV;
+
         function myInit() {
+          // WebDAV
+          var options = { imagePath: '/ods/images/oat/',
+                          imageExt: 'png',
+                          path: '<?V '/DAV/home/' || self.ownerName || '/' ?>'
+                        };
+          OAT.WebDav.init(options);
+          oWebDAV = OAT.WebDav;
+
+          // a++
           OAT.Preferences.imagePath = '/ods/images/oat/';
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
@@ -80,6 +93,8 @@
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
         <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
+      <v:variable persist="0" name="owner_id" type="integer" default="null" />
+      <v:variable persist="0" name="ownerName" type="varchar" default="null" />
         <v:variable persist="0" name="settings" type="any" />
       <v:on-init>
         <![CDATA[
@@ -94,6 +109,8 @@
           self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword('user_role', aSessInfo, '');
           self.accountName := get_keyword('user_name', aSessInfo, '');
+          self.owner_id := ENEWS.WA.domain_owner_id (self.domain_id);
+          self.ownerName := ENEWS.WA.domain_owner_name (self.domain_id);
           self.settings := ENEWS.WA.settings (self.domain_id, self.account_id);
 
           self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');

@@ -33,6 +33,7 @@
       http (CAL.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <link rel="stylesheet" href="css/webdav.css" type="text/css"/>
     <meta name="dc.description" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
@@ -42,7 +43,7 @@
         var toolkitPath="/ods/oat";
         var imagePath = "/ods/images/oat/";
         
-        var featureList=["ajax2", "anchor", "dialog"];
+        var featureList=["ajax2", "anchor", "dialog", "dav"];
     </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="js/CalendarPopup.js"></script>
@@ -57,7 +58,18 @@
       	var deleteDialog;
       	var deleteDialog2;
       	
+        // WebDAV Object
+        var oWebDAV;
+
         function myInit() {
+          // WebDAV
+          var options = { imagePath: '/ods/images/oat/',
+                          imageExt: 'png',
+                          path: '<?V '/DAV/home/' || self.ownerName || '/' ?>'
+                        };
+          OAT.WebDav.init(options);
+          oWebDAV = OAT.WebDav;
+
           // <a>++
           OAT.Preferences.imagePath = '/ods/images/oat/';
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;

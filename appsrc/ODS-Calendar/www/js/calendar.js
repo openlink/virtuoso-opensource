@@ -717,3 +717,12 @@ function dismissReminder(prefix, mode)
   OAT.AJAX.POST("ajax.vsp", "a=alarms&sa=dismiss&reminders="+reminders+urlParam("sid")+urlParam("realm"), function(){}, {onstart:function(){}, onerror:function(){}});
 	reminderDialog.hide ();
 }
+
+// ---------------------------------------------------------------------------
+function davBrowse (fld)
+{
+  var options = { mode: 'browser',
+                  onConfirmClick: function(path, fname) {$(fld).value = path + fname;}
+                };
+  oWebDAV.open(options);
+}

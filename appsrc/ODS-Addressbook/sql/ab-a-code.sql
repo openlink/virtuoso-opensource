@@ -1010,8 +1010,8 @@ create procedure AB.WA.geo_url (
 --
 create procedure AB.WA.dav_content (
   inout uri varchar,
-  inout auth_uid varchar := null,
-  inout auth_pwd varchar := null)
+  in auth_uid varchar := null,
+  in auth_pwd varchar := null)
 {
   declare cont varchar;
   declare hp any;
@@ -1255,6 +1255,21 @@ create procedure AB.WA.vector_contains(
     if (value = aVector[N])
       return 1;
   return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.vector_index (
+  inout aVector any,
+  in value varchar)
+{
+  declare N integer;
+
+  for (N := 0; N < length(aVector); N := N + 1)
+    if (value = aVector[N])
+      return N;
+  return null;
 }
 ;
 
@@ -2695,6 +2710,85 @@ create procedure AB.WA.contact_update3 (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.contact_update4 (
+  in id integer,
+  in domain_id integer,
+  in pFields any,
+  in pValues any,
+  in tags varchar,
+  in validation any)
+{
+  declare N, M varchar;
+  declare S varchar;
+  declare st, msg, meta, rows, F, V any;
+
+  if (not isnull (validation) and length (validation)) {
+    S := sprintf ('select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = %d', domain_id);
+    V := vector ();
+    for (N := 0; N < length (validation); N := N + 1) {
+      M := AB.WA.vector_index (pFields, validation [N]);
+      if (not isnull (M)) {
+        if (not is_empty_or_null (pValues [M])) {
+          S := S || sprintf (' and %s = ?', pFields [M]);
+          V := vector_concat (V, vector (pValues [M]));
+        }
+      }
+    }
+    if (length (V) = length (validation)) {
+      st := '00000';
+      exec (S, st, msg, V, 0, meta, rows);
+      if ((st = '00000') and (length (rows) > 0)) {
+        V := vector ();
+        F := vector ();
+        for (N := 0; N < length (pFields); N := N + 1) {
+          if (not AB.WA.vector_contains (validation, pFields [N])) {
+            F := vector_concat (F, vector (pFields [N]));
+            V := vector_concat (V, vector (pValues [N]));
+          }
+        }
+        pFields := F;
+        pValues := V;
+
+        id := vector ();
+        for (N := 0; N < length (rows); N := N + 1)
+          id := vector_concat (id, vector (rows [N][0]));
+      }
+    }
+  }
+
+  if (isinteger (id) and (id = -1)) {
+    for (N := 0; N < length (pFields); N := N + 1)
+      if (pFields [N] = 'P_NAME') {
+        id := AB.WA.contact_update2 (id, domain_id, pFields [N], pValues [N]);
+        goto _exit;
+      }
+  _exit:;
+    if (isinteger (id) and (id = -1))
+      return 0;
+
+    V := vector ();
+    F := vector ();
+    for (N := 0; N < length (pFields); N := N + 1) {
+      if ('P_NAME' <> pFields [N]) {
+        F := vector_concat (F, vector (pFields [N]));
+        V := vector_concat (V, vector (pValues [N]));
+      }
+    }
+    pFields := F;
+    pValues := V;
+
+    id := vector (id);
+  }
+
+  for (N := 0; N < length (id); N := N + 1)
+    AB.WA.contact_update3 (id[N], domain_id, pFields, pValues, tags);
+
+  return length (id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.contact_field (
   in id integer,
   in domain_id integer,
@@ -2836,7 +2930,8 @@ create procedure AB.WA.contact_tags_update (
 create procedure AB.WA.import_vcard (
   in domain_id integer,
   in content any,
-  in tags any)
+  in tags any,
+  in validation any)
 {
   declare L, M, N, nLength, mLength, id integer;
   declare tmp, data, pFields, pValues, pField, pField2 any;
@@ -2915,19 +3010,13 @@ create procedure AB.WA.import_vcard (
                     T := subseq (T, 0, M);
                 }
               }
-              if (pField2 <> '') {
-                if (pField2 = 'P_NAME') {
-                  id := AB.WA.contact_update2 (id, domain_id, pField2, T);
-                } else {
                   pFields := vector_concat (pFields, vector (pField2));
               pValues := vector_concat (pValues, vector (T));
             }
           }
         }
       }
-        }
-      }
-      AB.WA.contact_update3 (id, domain_id, pFields, pValues, tags);
+      AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
     }
   }
 }
@@ -2939,6 +3028,7 @@ create procedure AB.WA.import_foaf (
   in domain_id integer,
   in content any,
   in tags any,
+  in validation any,
   in contentType any := 0)
 {
   declare N, M, nLength, mLength, id integer;
@@ -3027,11 +3117,12 @@ create procedure AB.WA.import_foaf (
           fullName := trim (Item[0][2] || ' ' || Item[0][3]);
       }
       if (not is_empty_or_null (coalesce (Item[0][0], fullName))) {
-        id := AB.WA.contact_update2 (-1, domain_id, 'P_NAME', coalesce (Item[0][0], fullName));
-	      if (Items [N][0] not like 'nodeID://%')
-	        AB.WA.contact_update2 (id, domain_id, 'P_FOAF', Items [N][0]);
-        pFields := vector ();
-        pValues := vector ();
+        pFields := vector ('P_NAME');
+        pValues := vector (coalesce (Item[0][0], fullName));
+	      if (Items [N][0] not like 'nodeID://%') {
+          pFields := vector_concat (pFields, vector ('P_FOAF'));
+          pValues := vector_concat (pValues, vector (Items [N][0]));
+	      }
         for (M := 1; M < mLength; M := M + 1) {
           if (Meta[M] = 'P_FULL_NAME') {
             if (not isnull (fullName)) {
@@ -3058,7 +3149,7 @@ create procedure AB.WA.import_foaf (
             }
           }
         }
-        AB.WA.contact_update3 (id, domain_id, pFields, pValues, tags);
+        AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
       }
     }
   }
@@ -3073,7 +3164,8 @@ create procedure AB.WA.import_csv (
   in domain_id integer,
   in content any,
   in tags any,
-  in maps any)
+  in maps any,
+  in validation any)
 {
   declare N, M, nLength, mLength, id integer;
   declare tmp, tmp2, data, pFields, pValues any;
@@ -3112,11 +3204,9 @@ create procedure AB.WA.import_csv (
     }
     if (name = '')
       name := fullName;
-    id := -1;
     if (name <> '') {
-      id := AB.WA.contact_update2 (id, domain_id, 'P_NAME', name);
-      pFields := vector ();
-      pValues := vector ();
+      pFields := vector ('P_NAME');
+      pValues := vector (name);
       mLength := length (data);
       for (M := 0; M < mLength; M := M + 1) {
         if (M <> nameIdx) {
@@ -3145,7 +3235,7 @@ create procedure AB.WA.import_csv (
            }
          }
       }
-      AB.WA.contact_update3 (id, domain_id, pFields, pValues, tags);
+      AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
     }
   }
 }
@@ -3157,7 +3247,8 @@ create procedure AB.WA.import_ldap (
   in domain_id integer,
   in content any,
   in tags any,
-  in maps any)
+  in maps any,
+  in validation any)
 {
   declare N, M, nLength, mLength, id integer;
   declare data, pFields, pValues any;
@@ -3167,12 +3258,6 @@ create procedure AB.WA.import_ldap (
     if (content [N] = 'entry') {
       data := content [N+1];
       mLength := length (data);
-      id := -1;
-      for (M := 0; M < mLength; M := M + 2) {
-        if (get_keyword (data[M], maps) = 'P_NAME')
-          id := AB.WA.contact_update2 (id, domain_id, 'P_NAME', case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end);
-      }
-      if (id <> -1) {
         pFields := vector ();
         pValues := vector ();
         for (M := 0; M < mLength; M := M + 2) {
@@ -3181,8 +3266,7 @@ create procedure AB.WA.import_ldap (
             pValues := vector_concat (pValues, vector (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end));
           }
         }
-        AB.WA.contact_update3 (id, domain_id, pFields, pValues, tags);
-      }
+      AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
     }
   }
 }

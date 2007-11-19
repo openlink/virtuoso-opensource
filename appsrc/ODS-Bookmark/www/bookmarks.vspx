@@ -1419,10 +1419,14 @@
 	                      Select WebDAV file
 		                  </th>
 		                  <td>
-	                      <v:text name="i_dav" value="--''" xhtml_size="40"/>
-	                      <v:browse-button value="Browse..." selector="popup_browser.vspx" child-window-options="scrollbars=auto, resizable=yes, menubar=no, height=600, width=800"  browser-options="--sprintf('list_type=details&amp;path=%s&amp;browse_type=res&amp;style_css=css/dav.css&amp;w_title=DAV Browser&amp;title=DAV Browser&amp;lang=en&amp;retname=i_dav', BMK.WA.dav_home(self.account_id))">
-	                        <v:field name="i_dav"/>
-	                      </v:browse-button>
+                        <v:text name="i_dav" xhtml_id="i_dav" value="" xhtml_size="40" />
+                        <v:button action="browse" value="Browse...">
+                       	  <v:after-data-bind>
+                       		  <![CDATA[
+                              control.vc_add_attribute ('onclick', 'javascript: davBrowse (''i_dav'');');
+                  			    ]]>
+                  			  </v:after-data-bind>
+                  		  </v:button>
 		                  </td>
 		                </tr>
                   </vm:if>
