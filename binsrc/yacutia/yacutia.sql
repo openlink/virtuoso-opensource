@@ -246,6 +246,9 @@ create procedure adm_menu_tree ()
      <node name="Remove packages" url="vad_remove_batch.vspx"  id="30" place="1" allowed="yacutia_vad_page"/>
      <node name="Select VAD source" url="vad_src.vspx"  id="30" place="1" allowed="yacutia_vad_page"/>
    </node>
+   <node name="Backup" url="db_backup.vspx"  id="79" allowed="yacutia_backup_page">
+     <node name="Backup" url="db_backup_clear.vspx" id="169" place="1" allowed="yacutia_backup_page"/>
+   </node>
    <node name="Monitor" url="logging_page.vspx"  id="33" allowed="yacutia_loging_page">
      <node name="Version &amp; License Info" url="logging.vspx"  id="34" place="1" allowed="yacutia_loging_page"/>
      <node name="DB Server Statistics" url="logging_db.vspx"  id="35" place="1"  allowed="yacutia_loging_page"/>
@@ -307,9 +310,6 @@ create procedure adm_menu_tree ()
      <node name="Load Modules" url="hosted_modules_select.vspx" id="76" place="1" allowed="yacutia_runtime_loaded_select"/>
      <node name="Load Modules" url="hosted_modules_select2.vspx" id="77" place="1" allowed="yacutia_runtime_loaded_select2"/>
      <node name="Modules Grant" url="hosted_grant.vspx" id="78" place="1" allowed="yacutia_runtime_hosted_grant"/>
-   </node>
-   <node name="Backup" url="db_backup.vspx"  id="79" allowed="yacutia_backup_page">
-     <node name="Backup" url="db_backup_clear.vspx" id="169" place="1" allowed="yacutia_backup_page"/>
    </node>
  </node>
  <node name="Replication"  url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
