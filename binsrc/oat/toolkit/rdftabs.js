@@ -452,7 +452,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 			} else if (type == 1) { /* dereferencable link */
 				content = OAT.Dom.create("a");
 				content.href = value;
-				content.innerHTML = value;
+				content.innerHTML = self.parent.store.simplify(value);
 				self.dattach(content,value);
 			} else { /* text */
 				content = OAT.Dom.create("span");
