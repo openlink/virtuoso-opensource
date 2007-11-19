@@ -121,6 +121,79 @@ _end:
   return retValue;
 }
 ;
+-------------------------------------------------------------------------------
+create procedure LDAP..contact_fields ()
+{
+  return vector (
+        'P_NAME',           'Name',
+        'P_TITLE',          'Title',
+        'P_FIRST_NAME',     'First Name',
+        'P_MIDDLE_NAME',    'Middle Name',
+        'P_LAST_NAME',      'Last Name',
+        'P_FULL_NAME',      'Full Name',
+        'P_GENDER',         'Gender',
+        'P_BIRTHDAY',       'Birthday',
+        'P_MAIL',           'Contact - Mail',
+        'P_WEB',            'Contact - Web address',
+        'P_ICQ',            'Contact - Icq',
+        'P_SKYPE',          'Contact - Skype ID',
+        'P_AIM',            'Contact - AIM Name',
+        'P_YAHOO',          'Contact - Yahoo! ID',
+        'P_MSN',            'Contact - MSN Messenger',
+        'P_H_COUNTRY',      'Home - Country',
+        'P_H_CITY',         'Home - City',
+        'P_H_STATE',        'Home - State/Province',
+        'P_H_CODE',         'Home - Zip/Postal Code',
+        'P_H_ADDRESS1',     'Home - Address1',
+        'P_H_ADDRESS2',     'Home - Address2',
+        'P_H_TZONE',        'Home - Time Zone',
+        'P_H_LAT',          'Home - Latitude',
+        'P_H_LNG',          'Home - Longitude',
+        'P_H_PHONE',        'Home - Phone',
+        'P_H_MOBILE',       'Home - Mobile',
+        'P_H_FAX',          'Home - Fax',
+        'P_H_MAIL',         'Home - Mail',
+        'P_H_WEB',          'Home - Web address',
+        'P_B_COUNTRY',      'Business - Country',
+        'P_B_CITY',         'Business - City',
+        'P_B_STATE',        'Business - State/Province',
+        'P_B_CODE',         'Business - Zip/Postal Code',
+        'P_B_ADDRESS1',     'Business - Address1',
+        'P_B_ADDRESS2',     'Business - Address2',
+        'P_B_TZONE',        'Business - Time Zone',
+        'P_B_LAT',          'Business - Latitude',
+        'P_B_LNG',          'Business - Longitude',
+        'P_B_PHONE',        'Business - Phone',
+        'P_B_MOBILE',       'Business - Mobile',
+        'P_B_FAX',          'Business - Fax',
+        'P_B_INDUSTRY',     'Business - Industry',
+        'P_B_ORGANIZATION', 'Business - Organization',
+        'P_B_DEPARTMENT',   'Business - Department',
+        'P_B_JOB',          'Business - Job Title',
+        'P_B_MAIL',         'Business - Mail',
+        'P_B_WEB',          'Business - Web address');
+};
+
+-------------------------------------------------------------------------------
+--
+create procedure LDAP..foaf_fields ()
+{
+  return vector (
+        'P_NAME',           'nick',
+        'P_TITLE',          'title',
+        'P_FIRST_NAME',     'firstName',
+        'P_LAST_NAME',      'family_name',
+        'P_FULL_NAME',      'name',
+        'P_GENDER',         'gender',
+        'P_BIRTHDAY',       'birthday',
+        'P_MAIL',           'mbox',
+        'P_WEB',            'homepage',
+        'P_ICQ',            'icqChatID',
+        'P_AIM',            'aimChatID',
+        'P_YAHOO',          'yahooChatID',
+        'P_MSN',            'msnChatID',
+        'P_H_PHONE',        'phone');
+};
 
 -------------------------------------------------------------------------------
 --

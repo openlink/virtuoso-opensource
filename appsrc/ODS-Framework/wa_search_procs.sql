@@ -126,7 +126,7 @@ returns varchar
       declare _sid varchar;
       _sid := coalesce(connection_get ('wa_sid'),'');
 
-      if( (INST_TYPE='oMail' or INST_TYPE='oDrive')
+      if( (INST_TYPE='oMail')
            and
           (_user_id = http_nobody_uid()or _sid = '')
         )
@@ -1910,7 +1910,7 @@ create function WA_SEARCH_CONTACTS (
 	 '  U_LOGIN_TIME as _DATE, \n' ||
 	 '  WA_SEARCH_ADD_APATH ( \n' ||
          '   WA_SEARCH_ADD_SID_IF_AVAILABLE ( \n' ||
-   '                       sprintf (''/dataspace/%%s/%%U#this'',wa_identity_dstype(_U_NAME), U_NAME), %d, ''&'')) as _URL, \n' ||
+   '                       sprintf (''/dataspace/%%s/%%U#this'',wa_identity_dstype(U_NAME), U_NAME), %d, ''&'')) as _URL, \n' ||
    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LAT ELSE WAUI_BLAT end as _LAT, \n' ||
    '  case when WAUI_LATLNG_HBDEF=0 THEN WAUI_LNG ELSE WAUI_BLNG end as _LNG, \n' ||
 	 '  WAUI_U_ID as _KEY_VAL \n' ||

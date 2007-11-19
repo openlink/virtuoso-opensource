@@ -29,7 +29,7 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-  <v:method name="render_select" arglist="inout name any">
+  <v:method name="render_select1" arglist="inout name any">
     <![CDATA[
   	  declare s1, s2, s3, s4 varchar;
 
@@ -47,6 +47,30 @@
   	  http ('</select>');
 	  ]]>
 	</v:method>
+
+	<v:method name="render_select" arglist="inout name any">
+    <![CDATA[
+      declare N any;
+      declare S, T any;
+
+      T := '';
+      if (not isnull (self.v_maps))
+        for (N := 0; N < length (self.v_maps); N := N + 2)
+          if (self.v_maps[N] = name)
+            T := self.v_maps[N+1];
+
+      http (sprintf ('<select name="sel_%s" onchange="checkRest (this.form, this)">', name));
+      http ('<option value="skip">--</option>');
+      for (N := 0; N < length (self.v_fields); N := N + 2) {
+        S := '';
+        if (self.v_fields[N] = T)
+          S := ' selected="selected"';
+        http (sprintf ('<option value="%s"%s>%s</option>', self.v_fields[N], S, self.v_fields[N+1]));
+      }
+      http ('</select>');
+    ]]>
+  </v:method>
+
 
   <v:method name="ldap_value" arglist="inout data any">
     <![CDATA[
@@ -89,6 +113,7 @@
   <v:variable name="v_password" type="varchar" default="''"/>
   <v:variable name="v_default" type="integer" default="0"/>
   <v:variable name="v_search" type="varchar" default="'(cn=*)'"/>
+  <v:variable persist="temp" name="v_fields" type="any" default="null"/>
   <v:variable persist="0" name="v_maps" type="any" default="null"/>
   <v:variable persist="0" name="v_data" type="any" default="null"/>
 
@@ -125,21 +150,6 @@
               if (not isnull (LDAP..ldap_default (self.u_id)))
                 self.v_default := 0;
 
-              self.vc_data_bind(e);
-            ]]>
-          </v:on-post>
-        </v:button>
-        &nbsp;
-        <v:button action="simple" style="url" value="''" xhtml_class="img_button">
-          <v:before-render>
-            <![CDATA[
-              control.ufl_value := '<img src="images/icons/go_16.png" border="0" /> Fields validation';
-            ]]>
-          </v:before-render>
-          <v:on-post>
-            <![CDATA[
-              self.v_mode := 'LDAP/validation';
-              self.v_data := null;
               self.vc_data_bind(e);
             ]]>
           </v:on-post>
@@ -308,8 +318,8 @@
           declare N, M integer;
           declare data, loginPattern, loginData, namePattern any;
 
-          loginPattern := self.ldap_pattern ('nick');
-          namePattern := self.ldap_pattern ('name');
+          loginPattern := self.ldap_pattern ('P_NAME');
+          namePattern := self.ldap_pattern ('P_FULL_NAME');
 
           for (N := 0; N < length (self.v_data); N := N + 2) {
     	      if (self.v_data [N] = 'entry') {
@@ -340,13 +350,15 @@
         <v:on-post>
           <![CDATA[
             declare N, M, L, isFounded integer;
-            declare params, data, loginPattern, loginData, sStream any;
+            declare params, data, loginPattern, loginData, sStream, foafNames any;
+            declare foafName varchar;
 
-            loginPattern := self.ldap_pattern ('nick');
+            loginPattern := self.ldap_pattern ('P_NAME');
 
             sStream := string_output();
             http ('<rdf:RDF xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">\n', sStream);
 
+            foafNames := LDAP..foaf_fields ();
             params := e.ve_params;
             for (N := 0; N < length (params); N := N + 4) {
               if (params[N] = 'cb_item') {
@@ -359,7 +371,9 @@
                     if (data[M] <> loginPattern) {
                       for (L := 0; L < length (self.v_maps); L := L + 2) {
                         if (self.v_maps [L] = data[M]) {
-                          http (sprintf ('    <foaf:%s>%V</foaf:%s>\n', self.v_maps[L+1], self.ldap_value (data[M+1]), self.v_maps[L+1]), sStream);
+                          foafName := get_keyword (self.v_maps[L+1], foafNames);
+                          if (not isnull (foafName))
+                            http (sprintf ('    <foaf:%s>%V</foaf:%s>\n', foafName, self.ldap_value (data[M+1]), foafName), sStream);
                           goto _exit3;
                         }
                       }
@@ -505,6 +519,8 @@
         <v:on-post>
           <![CDATA[
             self.v_mode := 'LDAP/browse';
+            self.v_maps := NULL;
+            self.v_data := NULL;
             self.vc_data_bind(e);
           ]]>
         </v:on-post>
@@ -512,6 +528,7 @@
     </div>
   </vm:if>
   <vm:if test="(self.v_mode in ('LDAP/add', 'LDAP/edit')) and (self.v_step = '2')">
+    <div style="height: 400px; overflow: auto;">
     <table id="ldap" class="listing" cellspacing="0">
       <tr class="listing_header_row">
         <th>LDAP Property</th>
@@ -522,6 +539,7 @@
         declare N, M integer;
         declare data any;
 
+          self.v_fields := LDAP..contact_fields ();
         for (N := 0; N < length (self.v_data); N := N + 2) {
   	      if (self.v_data [N] = 'entry') {
   	        data := self.v_data [N+1];
@@ -548,6 +566,7 @@
       _end:;
       ?>
     </table>
+    </div>
     <div class="new-form-footer">
       <v:button action="simple" value="Save" xhtml_class="form-button">
         <v:on-post>
@@ -558,8 +577,13 @@
             params := e.ve_params;
             self.v_maps := vector ();
             for (N := 0; N < length (params); N := N + 2)
-              if (params[N] like 'sel_%' and params[N+1] <> 'skip')
+              if (params[N] like 'sel_%') {
+                if (params[N+1] <> 'skip') {
                 self.v_maps := vector_concat (self.v_maps, vector (substring (params[N], 5, length (params[N])), params[N+1]));
+                } else {
+                  self.v_maps := vector_concat (self.v_maps, vector (substring (params[N], 5, length (params[N])), ''));
+                }
+              }
 
             insert replacing LDAP..LDAP_SERVERS (LS_USER_ID, LS_NAME, LS_HOST, LS_PORT, LS_BASE_DN, LS_BIND_DN, LS_PASSWORD, LS_DEFAULT, LS_MAPS)
               values (self.u_id, self.v_name, self.v_host, self.v_port, self.v_base_dn, self.v_bind_dn, self.v_password, self.v_default, serialize (self.v_maps));
@@ -571,6 +595,8 @@
                  and LS_NAME <> self.v_name;
 
             self.v_mode := 'LDAP/browse';
+            self.v_maps := NULL;
+            self.v_data := NULL;
             self.vc_data_bind(e);
           ]]>
         </v:on-post>
@@ -579,109 +605,13 @@
         <v:on-post>
           <![CDATA[
             self.v_mode := 'LDAP/browse';
+            self.v_maps := NULL;
+            self.v_data := NULL;
             self.vc_data_bind(e);
           ]]>
         </v:on-post>
       </v:button>
     </div>
   </vm:if>
-
-  <v:template type="simple" enabled="--case when (self.v_mode = 'LDAP/validation') then 1 else 0 end">
-      <v:before-data-bind>
-        <![CDATA[
-          self.v_data := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = self.u_id), vector());
-        ]]>
-      </v:before-data-bind>
-
-    <div><v:label value="Fields for validation" /></div>
-    <div style="overflow: auto;">
-      <table id="lvalidation" class="listing" cellspacing="0">
-        <tr class="listing_header_row">
-          <td width="1%">
-            <input type="checkbox" name="cb_name_all" value="Select All" onclick="selectAllCheckboxes(this.form, this)" />
-          </td>
-          <th>Field</th>
-        </tr>
-        <tr>
-          <td width="1%">
-            <?vsp
-              declare S varchar;
-              S := '';
-              if (get_keyword('nick', self.v_data, '') <> '')
-                S := 'checked="checked"';
-              http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', S, 'nick'));
-            ?>
-    		  </td>
-    		  <td>Login Name</td>
-    		</tr>
-    		<tr>
-          <td width="1%">
-            <?vsp
-              declare S varchar;
-              S := '';
-              if (get_keyword('name', self.v_data, '') <> '')
-                S := 'checked="checked"';
-              http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', S, 'name'));
-            ?>
-    		  </td>
-    		  <td>Name</td>
-    		</tr>
-    		<tr>
-          <td width="1%">
-            <?vsp
-              declare S varchar;
-              S := '';
-              if (get_keyword('mbox', self.v_data, '') <> '')
-                S := 'checked="checked"';
-              http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', S, 'mbox'));
-            ?>
-    		  </td>
-    		  <td>E-Mail</td>
-    		</tr>
-    		<tr>
-          <td width="1%">
-            <?vsp
-              declare S varchar;
-              S := '';
-              if (get_keyword('title', self.v_data, '') <> '')
-                S := 'checked="checked"';
-              http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', S, 'title'));
-            ?>
-    		  </td>
-    		  <td>Title</td>
-    		</tr>
-      </table>
-    </div>
-    <div class="new-form-footer">
-      <v:button action="simple" value="Save" xhtml_class="form-button">
-        <v:on-post>
-          <![CDATA[
-            declare N integer;
-            declare params any;
-            params := e.ve_params;
-            self.v_data := vector ();
-            for (N := 0; N < length (params); N := N + 4) {
-              if (params[N] = 'cb_item')
-                self.v_data := vector_concat (self.v_data, vector (params[N+1],'1'));
-            }
-            insert replacing LDAP..LDAP_VALIDATION (LV_USER_ID, LV_FIELDS) values (self.u_id, serialize (self.v_data));
-
-            self.v_mode := 'LDAP/browse';
-            self.v_data := null;
-            self.vc_data_bind(e);
-          ]]>
-        </v:on-post>
-      </v:button>
-      <v:button action="simple" value="Cancel" xhtml_class="form-button">
-        <v:on-post>
-          <![CDATA[
-            self.v_mode := 'LDAP/browse';
-            self.v_data := null;
-            self.vc_data_bind(e);
-          ]]>
-        </v:on-post>
-      </v:button>
-    </div>
-  </v:template>
 
 </v:page>

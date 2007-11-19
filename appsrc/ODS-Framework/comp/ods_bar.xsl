@@ -216,9 +216,14 @@ nf_uid2:;
     </v:before-data-bind>
 
 <![CDATA[
+
+<div id="odsBarCss" style="display:none">
+<?vsp http(replace(http_get (self.odsbar_ods_gpath||'ods-bar.css'),'"images/','"'||self.odsbar_ods_gpath||'images/')); ?>
+</div>
+
 <script  type="text/javascript">
 
-var _head=document.getElementsByTagName("head")[0];
+var _head=document.getElementsByTagName('head')[0];
 
 var odsbarCSSloaded=0;
 
@@ -233,19 +238,57 @@ for (var i = 0; i < _head.childNodes.length; i++)
 
 //console.debug(odsbarCSSloaded);
 
+function loadCSS(cssContainer)
+{
+  var _head=document.getElementsByTagName("head")[0];
+  var cssObj=document.getElementById(cssContainer);
+  var cssUrl='';
+  if(typeof(cssContainer)!='undefined' && cssContainer.length)
+     cssUrl=cssContainer;
+  if(cssObj!='undefined' && cssObj.innerHTML.length)
+  {
+    var cssNode = document.createElement('style');
+ cssNode.type = 'text/css';
+    cssNode.textContent =cssObj.innerHTML;
+_head.appendChild(cssNode);
+  }
+  else if(cssUrl.length)
+  {
+    var cssNode = document.createElement('link');
+ cssNode.type = 'text/css';
+ cssNode.rel = 'stylesheet';
+    cssNode.href = cssUrl;
+
+//   synch get of .css fiel by url ... if you want to control behaviour of ods-bar depending on load time.
+//
+//    var cssNode = document.createElement('style');
+//    cssNode.type = 'text/css';
+//    cssNode.textContent ='';
+//
+//		var httpReq = false;
+//		if (window.XMLHttpRequest) {
+//			httpReq = new XMLHttpRequest(); /* gecko */
+//		} else if (window.ActiveXObject) {
+//			httpReq = new ActiveXObject("Microsoft.XMLHTTP"); /* ie */
+//		} else {
+//      //			alert("XMLHTTPRequest not available!");
+//		}
+//
+//    httpReq.open('GET', cssUrl, false);
+//    httpReq.onreadystatechange = function() {cssNode.textContent=httpReq.responseText;};
+//    httpReq.send(null);
+
+ _head.appendChild(cssNode);
+}
+  return;
+}
+
 if(odsbarCSSloaded==0)
 {
- var cssNode = document.createElement('link');
- cssNode.type = 'text/css';
- cssNode.rel = 'stylesheet';
- cssNode.href = '<?V self.odsbar_ods_gpath ?>ods-bar.css';
-_head.appendChild(cssNode);
- // we add a common OAT css here
- cssNode = document.createElement('link');
- cssNode.type = 'text/css';
- cssNode.rel = 'stylesheet';
- cssNode.href = '<?V self.odsbar_ods_gpath ?>winrect.css';
- _head.appendChild(cssNode);
+   loadCSS('odsBarCss');
+//   loadCSS('<?V self.odsbar_ods_gpath ?>winrect.css');
+// loadCSS('<?V self.odsbar_ods_gpath ?>ods-bar.css');
+
 }
 
     var ODSInitArray = new Array();
@@ -257,6 +300,8 @@ if (typeof (OAT) == 'undefined')
 {
   var toolkitPath="<?V self.odsbar_ods_gpath ?>oat";
   var toolkitImagesPath="<?V self.odsbar_ods_gpath ?>images/oat";
+  
+  
   var featureList = ["dom"];
 
     var script = document.createElement("script");
@@ -270,6 +315,11 @@ if (typeof (OAT) == 'undefined')
 
    OAT.Loader.loadFeatures(["ajax","xml"],function(){}); 
     
+      OAT.Preferences.imagePath="<?V self.odsbar_ods_gpath ?>images/oat";
+      OAT.Preferences.stylePath="<?V self.odsbar_ods_gpath ?>";
+      
+      OAT.Style.include('winrect.css');
+
                                      
    if (typeof ODSInitArray != 'undefined')
    {
@@ -342,9 +392,10 @@ function getUrlOnEnter(e)
 </script>
 ]]>
 
-<!--
-    <link rel="stylesheet" type="text/css" href="<?V self.odsbar_ods_gpath ?>ods-bar.css" />
--->
+  <div id="ods_bar_loading" style="background-color:#DDEFF9;height: 62px;padding:5px 0px 0px 5px;display:none;">
+     <img src="images/oat/Ajax_throbber.gif" alt="loading..." /><span> Loading... please wait.</span>
+  </div>
+
   <div id="ods_bar_odslogin" style="display:none;text-align:right">
     <v:url name="odsbar_odslogin_button"
            value="Sign In"
@@ -814,9 +865,46 @@ function odsbarSafeInit()
 
   }
 }
-
-
 odsbarSafeInit();
+
+//function odsbarSafeShow()
+//{
+//      if(inFrame)
+//      {
+//         return;
+//      }
+//
+//      if (typeof (OAT) != 'undefined')
+//        {
+//          ods_bar_state_set (read_cookie ('odsbar_state'));
+//
+//          if (userIsLogged || notLoggedShowOdsBar)
+//            {
+//              OAT.Dom.hide('ods_bar_loading');
+//              OAT.Dom.show('HD_ODS_BAR');
+//            }
+//          else
+//            {
+//              if (notLoggedShowSignIn != 0)
+//                {
+//                  OAT.Dom.hide('ods_bar_loading');
+//                  OAT.Dom.show('ods_bar_odslogin');
+//                };
+//            }
+//        }
+//      else
+//        {
+//          OATWaitCount++;
+//
+//          if (OATWaitCount > 100)
+//            return; // alert('ods_bar.xsl: OAT is taking too long to initialize - page navigation disabled.');
+//          else
+//            setTimeout(odsbarSafeShow, 200);
+//
+//        }
+//}
+//ODSInitArray.push(odsbarSafeShow);
+
 
 </script>
 ]]>

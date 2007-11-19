@@ -219,6 +219,12 @@ function selectAllCheckboxes (form, btn)
                                  url="--sprintf('uiedit.vspx?page=9')"
                                  xhtml_class="tab"/>
                         </td>
+			            <td class="<?V case when pg = 10 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                          <v:url value="Validation"
+                                 format="%s"
+                                 url="--sprintf('uiedit.vspx?page=10')"
+                                 xhtml_class="tab"/>
+                        </td>
 			<td class="<?V case when pg = 8 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
                           <v:url value="Import"
                                  format="%s"
@@ -282,6 +288,11 @@ function selectAllCheckboxes (form, btn)
                                      type="simple"
                                      enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '9')">
                           <v:include url="uiedit_prj.vspx"/>
+                        </v:template>
+                        <v:template name="template10"
+                                     type="simple"
+                                     enabled="-- equ (get_keyword('page', self.vc_event.ve_params), '10')">
+                          <v:include url="uiedit_validation.vspx"/>
                         </v:template>
                         <v:template name="template8"
                                      type="simple"

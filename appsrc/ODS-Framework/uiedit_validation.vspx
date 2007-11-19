@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="vaidation-page"
+        xmlns:vm="http://www.openlinksw.com/vspx/ods/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        style="index.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+  <input type="hidden" name="page" value="10"/>
+
+  <div><v:label value="Fields for validation" /></div>
+  <div style="height: 400px; overflow: auto;">
+    <table id="lvalidation" class="listing" cellspacing="0">
+      <tr class="listing_header_row">
+        <td width="1%">
+          <input type="checkbox" name="cb_name_all" value="Select All" onclick="selectAllCheckboxes(this.form, this)" />
+        </td>
+        <th>Field</th>
+      </tr>
+      <?vsp
+        declare N integer;
+        declare fields, data any;
+
+        fields := LDAP..contact_fields ();
+        data := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = self.u_id), vector());
+        for (N := 0; N < length (fields); N := N + 2) {
+  	  ?>
+  	  <tr>
+  	    <td width="1%">
+  	      <?vsp
+            declare S varchar;
+            S := '';
+            if (get_keyword (fields[N], data, '') <> '')
+              S := 'checked="checked"';
+            http (sprintf ('<input type="checkbox" %s name="cb_item" value="%s"', S, fields[N]));
+          ?>
+  		  </td>
+  		  <td >
+  		    <?V fields[N+1] ?>
+  		  </td>
+      </tr>
+  	  <?vsp
+        }
+      ?>
+    </table>
+  </div>
+  <div class="new-form-footer">
+    <v:button action="simple" value="Save" xhtml_class="form-button">
+      <v:on-post>
+        <![CDATA[
+          declare N integer;
+          declare params, data any;
+
+          params := e.ve_params;
+
+          data := vector ();
+          for (N := 0; N < length (params); N := N + 4) {
+            if (params[N] = 'cb_item')
+              data := vector_concat (data, vector (params[N+1],'1'));
+          }
+          insert replacing LDAP..LDAP_VALIDATION (LV_USER_ID, LV_FIELDS) values (self.u_id, serialize (data));
+
+          self.vc_data_bind(e);
+        ]]>
+      </v:on-post>
+    </v:button>
+  </div>
+
+</v:page>

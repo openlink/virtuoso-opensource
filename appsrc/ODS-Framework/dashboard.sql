@@ -431,6 +431,7 @@ create procedure wa_expand_url (in url varchar, in pars varchar)
 {
   declare ret any;
   declare hf any;
+  url := cast (url as varchar);
   hf := WS.WS.PARSE_URI (url);
   if (pars is not null)
     pars := trim (pars, '&');
