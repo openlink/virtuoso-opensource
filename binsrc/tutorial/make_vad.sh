@@ -233,6 +233,9 @@ directory_init() {
   cp ../bpel/tests/echo/bpel.xml vad_files/vsp/tutorial/bpeldemo/echo
   cp ../bpel/tests/echo/options.xml vad_files/vsp/tutorial/bpeldemo/echo
 
+  cp -f ../dav/DET_RDFData.sql vad_files/vsp/tutorial
+
+
   cp ../bpel/tests/fi/fi.* vad_files/vsp/tutorial/bpeldemo/fi
   cp ../bpel/tests/fi/fi_wsdl.vsp vad_files/vsp/tutorial/bpeldemo/fi
   cp ../bpel/tests/fi/service.vsp vad_files/vsp/tutorial/bpeldemo/fi
@@ -355,6 +358,7 @@ sticker_init() {
   echo "    )" >> $STICKER
   echo "    ;" >> $STICKER
 	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/setup_search.sql', 1, 'report', $ISDAV);" >> $STICKER
+        echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/DET_RDFData.sql', 1, 'report', $ISDAV);" >> $STICKER
 	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/fill_search.sql', 1, 'report', $ISDAV);" >> $STICKER
 	echo "    exec('UPDATE DB.DBA.TUT_SEARCH set TS_PHPATH  = ''$BASE_PATH/tutorial/'' || TS_PATH');" >> $STICKER
   echo "    -- xqdemo -------------------" >> $STICKER

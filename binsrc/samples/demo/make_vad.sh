@@ -278,6 +278,7 @@ directory_init() {
   cp -f countries_vad.sql                                       vad/data/demo/sql
   cp -f art_vad.sql                                             vad/data/demo/sql
   cp -f uninst.sql                                              vad/data/demo/sql
+  cp -f $HOME/binsrc/dav/DET_RDFData.sql                        vad/data/demo/sql
   cp -f $HOME/binsrc/vsp/soapdemo/fishselect.sql                vad/data/demo/sql
   cp -f $HOME/binsrc/vsp/soapdemo/soap_validator.sql            vad/data/demo/sql
   cp -f $HOME/binsrc/vsp/soapdemo/interop-xsd.sql               vad/data/demo/sql
@@ -450,6 +451,7 @@ sticker_init() {
   echo "      VHOST_REMOVE (lpath=>'/PetShop');" >> $STICKER
   echo "      VHOST_DEFINE (lpath=>'/PetShop', ppath=>'/PetShop/Web/', def_page=>'Default.aspx', vsp_user=>'dba');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/drop_petshop.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/rd_v_1.sql', 1, 'report', 1);" >> $STICKER  
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/virtuoso_sql_schema_generation.sql', 1, 'report', 1);" >> $STICKER
