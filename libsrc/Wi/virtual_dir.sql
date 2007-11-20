@@ -850,7 +850,25 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
       else
         signal ('22023', 'The "force" parameter supports "rdf"');
     }
-  content := DB.DBA.RDF_HTTP_URL_GET (url, '', hdr, 'GET', req_hdr);
+  {
+    declare meth varchar;
+    declare body varchar;
+    declare pars, head any;
+    pars := http_param ();
+    head := http_request_header ();
+    meth := http_request_get ('REQUEST_METHOD');
+    body := '';
+    for (declare i, l int, i := 0, l := length (pars); i < l; i := i + 2)
+      {
+	if (pars[i] <> 'url' and pars[i] <> 'header')
+  	  body := body || sprintf ('%U=%U&', pars[i], pars[i + 1]);
+      }
+    if (length (body))
+      body := rtrim (body, '&');
+    else
+      body := null;
+    content := DB.DBA.RDF_HTTP_URL_GET (url, '', hdr, meth, req_hdr, body);
+  }
   ct := http_request_header (hdr, 'Content-Type');
   if (ct is not null)
     http_header (sprintf ('Content-Type: %s\r\n', ct));
@@ -861,7 +879,8 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
 	http_header (http_header_get () || hd);
     }
 
-  return content;
+  http (content);
+  return '';
 }
 ;
 
