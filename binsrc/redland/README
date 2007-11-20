@@ -1,0 +1,27 @@
+Installation and usage:
+
+Download and compile Redland: http://svn.librdf.org/
+
+Test compilation whit test utility utils/rdfproc:
+
+rdfproc test parse http://planetrdf.com/guide/rss.rdf
+rdfproc test print
+rdfproc test serialize ntriples
+
+This test will be use default 'hashes' storage.
+
+If this step is successfully apply diff from binsrc/redland. 
+Add attached file to librdf/librdf directory.
+
+Reconfigure:
+
+./configure --with-virtuoso=yes
+
+Test virtuoso storage whit some utility:
+
+ export RDFPROC_STORAGE_TYPE=virtuoso
+ export LD_LIBRARY_PATH=virtuoso_driver:$LD_LIBRARY_PATH
+ export ODBCINI=odbc.ini
+ 
+rdfproc test query sparql 'http://m3pe.org' 'SELECT ?p ?o WHERE { <http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage> ?p ?o }' -r xml -t "query='sparql SELECT ?o ?p WHERE {<http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage> ?p ?o }',user='dba',password='dba', dsn='1111'"
+
