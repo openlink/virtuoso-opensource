@@ -20,6 +20,44 @@
 #  
 
 
+if JDK3
+TARGETS		= virt_jena.jar
+JDK		= @ac_jdk3_path@
+JDK_FLAGS	= -Xlint -O -g:none
+JAVAC		= $(JDK)/bin/javac
+JAVAH		= $(JDK)/bin/javah
+JAVADOC		= $(JDK)/bin/javadoc
+JAR		= $(JDK)/bin/jar
+endif
+
+
+JENA_SRC= \
+	virtuoso_driver/VirtGraph.java \
+	virtuoso_driver/VirtResSetIter.java \
+	virtuoso_driver/VirtuosoQueryExecutionFactory.java \
+	virtuoso_driver/VirtuosoQueryExecution.java
+
+JENA_CLASSPATH=lib/arq.jar:lib/axis.jar:lib/iri.jar:lib/jena.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+
+all-am:	lib virt_jena.jar
+
+install-data-local:
+	-mkdir ${libdir}/jena
+	-cp virt_jena.jar ${libdir}/jena
+
+lib:
+	@test -d lib || touch virt_jena.jar
+	@echo "Please refer to README file for missing .jar files"
+
+virt_jena.jar: $(JENA_SRC)
+	-rm -rf out.driver
+	@mkdir out.driver
+	$(JAVAC) $(JDK_FLAGS) -d out.driver \
+		-classpath "$(JENA_CLASSPATH)" \
+		$(JENA_SRC)
+	$(JAR) cvf virt_jena.jar -C out.driver virtuoso
+	
+
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute

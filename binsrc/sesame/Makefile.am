@@ -20,6 +20,45 @@
 #  
 
 
+if JDK3
+TARGETS		= virt_sesame.jar
+JDK		= @ac_jdk3_path@
+JDK_FLAGS	= -Xlint -O -g:none
+JAVAC		= $(JDK)/bin/javac
+JAVAH		= $(JDK)/bin/javah
+JAVADOC		= $(JDK)/bin/javadoc
+JAR		= $(JDK)/bin/jar
+endif
+
+
+SESAME_SRC= \
+	virtuoso_driver/VirtuosoAdminListener.java \
+	virtuoso_driver/VirtuosoGraphQueryListener.java \
+	virtuoso_driver/VirtuosoQueryListener.java \
+	virtuoso_driver/VirtuosoRepository.java \
+	virtuoso_driver/VirtuosoSchemaRepository.java
+
+SESAME_CLASSPATH=lib/xercesImpl.jar:lib/log4j-1.2.12.jar:lib/commons-logging-1.1.jar:lib/concurrent.jar:lib/icu4j_3_4.jar:lib/junit.jar:lib/json.jar:lib/openrdf-model.jar:lib/iri.jar:lib/sesame.jar:lib/rio.jar:lib/openrdf-util.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+
+all-am: lib virt_sesame.jar
+
+install-data-local:
+	-mkdir ${libdir}/sesame
+	-cp virt_sesame.jar ${libdir}/sesame
+
+lib:
+	@test -d lib || touch virt_sesame.jar
+	@echo "Please refer to README file for missing .jar files"
+
+virt_sesame.jar: $(SESAME_SRC)
+	-rm -rf out.driver
+	@mkdir out.driver
+	$(JAVAC) $(JDK_FLAGS) -d out.driver \
+		-classpath "$(SESAME_CLASSPATH)" \
+		$(SESAME_SRC)
+	$(JAR) cvf virt_sesame.jar -C out.driver virtuoso
+	
+
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute

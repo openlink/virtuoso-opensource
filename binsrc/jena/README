@@ -6,12 +6,16 @@ How to build Virtuoso Jena Provider
 
 	arq.jar
 	axis.jar
-	commons-logging-1.1.jar
-	icu4j_3_4.jar
 	iri.jar
 	jena.jar
+
+* The following .jar files are needed for running the samples:
+
+	commons-logging-1.1.jar
+	icu4j_3_4.jar
 	xercesImpl.jar
 
 
 * Run the make command
-
+	
+	make virt_jena.jar

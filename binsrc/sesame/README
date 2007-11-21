@@ -21,3 +21,5 @@ How to build Virtuoso Sesame driver
 	xercesImpl.jar
 
 * Run the make command
+
+	make virt_sesame.jar
