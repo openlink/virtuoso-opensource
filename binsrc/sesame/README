@@ -1,0 +1,23 @@
+How to build Virtuoso Sesame driver
+===================================
+
+* Create a lib directory and put the following .jar file from the openrdf 
+  project in here:
+
+	commons-logging-1.1.jar
+	concurrent.jar
+	icu4j_3_4.jar
+	iri.jar
+	jena.jar
+	json.jar
+	junit.jar
+	log4j-1.2.12.jar
+	openrdf-model.jar
+	openrdf-util.jar
+	rio.jar
+	sesame.jar
+	sesame-tests.jar
+	sesame.war
+	xercesImpl.jar
+
+* Run the make command

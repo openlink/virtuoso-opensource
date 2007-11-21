@@ -1,0 +1,17 @@
+How to build Virtuoso Jena Provider
+===================================
+
+* Create a lib directory and put the following .jar file from the openrdf 
+  project in here:
+
+	arq.jar
+	axis.jar
+	commons-logging-1.1.jar
+	icu4j_3_4.jar
+	iri.jar
+	jena.jar
+	xercesImpl.jar
+
+
+* Run the make command
+

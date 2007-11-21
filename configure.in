@@ -2248,25 +2248,27 @@ AC_CONFIG_FILES([
 	libsrc/Makefile
 	binsrc/bpel/Makefile
 	binsrc/cached_resources/Makefile
+	binsrc/dav/Makefile
 	binsrc/driver/Makefile
 	binsrc/hosting/Makefile
 	binsrc/hosting/mono/Makefile
 	binsrc/hosting/mono/tests/Makefile
 	binsrc/hosting/perl/Makefile
-	binsrc/hosting/php/Makefile
 	binsrc/hosting/php4/Makefile
 	binsrc/hosting/php5/Makefile
+	binsrc/hosting/php/Makefile
 	binsrc/hosting/python/Makefile
 	binsrc/hosting/ruby/Makefile
 	binsrc/isparql/Makefile
+	binsrc/jena/Makefile
 	binsrc/maildrop/Makefile
-	binsrc/oat/Makefile
 	binsrc/mono/Makefile
+	binsrc/oat/Makefile
+	binsrc/rdf_mappers/Makefile
 	binsrc/samples/demo/Makefile
 	binsrc/samples/docbookview/Makefile
 	binsrc/samples/IBuySpy/Makefile
 	binsrc/samples/image_magick/Makefile
-	binsrc/samples/wbxml2/Makefile
 	binsrc/samples/JDBC/Makefile
 	binsrc/samples/Makefile
 	binsrc/samples/odp/Makefile
@@ -2274,14 +2276,14 @@ AC_CONFIG_FILES([
 	binsrc/samples/schemaview/Makefile
 	binsrc/samples/sparql_demo/Makefile
 	binsrc/samples/TPC-W/Makefile
+	binsrc/samples/wbxml2/Makefile
 	binsrc/samples/webapp/Makefile
 	binsrc/samples/xpath/Makefile
 	binsrc/samples/xquery/Makefile
+	binsrc/sesame/Makefile
 	binsrc/sqldoc/Makefile
 	binsrc/sync/Makefile
 	binsrc/tests/biftest/Makefile
-	binsrc/dav/Makefile
-	binsrc/rdf_mappers/Makefile
 	binsrc/tests/dotnet/Makefile
 	binsrc/tests/Makefile
 	binsrc/tests/oledb/Makefile
@@ -2299,11 +2301,11 @@ AC_CONFIG_FILES([
 	binsrc/vad/Makefile
 	binsrc/virtodbc/Makefile
 	binsrc/virtoledb/Makefile
+	binsrc/VirtuosoClient.Net/Makefile
 	binsrc/virtuoso/Makefile
 	binsrc/virtuoso_sink/Makefile
 	binsrc/vsp/Makefile
 	binsrc/vspx/Makefile
-	binsrc/VirtuosoClient.Net/Makefile
 	binsrc/ws/Makefile
 	binsrc/ws/wsrm/Makefile
 	binsrc/xddl/Makefile
@@ -2322,8 +2324,8 @@ AC_CONFIG_FILES([
 	libsrc/JDBCDriverType4/testsuite_1.2/Makefile
 	libsrc/JDBCDriverType4/testsuite_2.0/Makefile
 	libsrc/JDBCDriverType4/testsuite_3.0/Makefile
-	libsrc/JDBCDriverType4/virtuoso/Makefile
 	libsrc/JDBCDriverType4/virtuoso/jdbc2/Makefile
+	libsrc/JDBCDriverType4/virtuoso/Makefile
 	libsrc/langfunc/Makefile
 	libsrc/odbcsdk/Makefile
 	libsrc/plugin/Makefile
