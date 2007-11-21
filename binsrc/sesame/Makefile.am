@@ -28,4 +28,4 @@
 EXTRA_DIST = \
 	README \
 	virtuoso_driver/*.java \
-	virt_jena.jar
+	virt_sesame.jar
