@@ -2265,6 +2265,7 @@ AC_CONFIG_FILES([
 	binsrc/mono/Makefile
 	binsrc/oat/Makefile
 	binsrc/rdf_mappers/Makefile
+	binsrc/redland/Makefile
 	binsrc/samples/demo/Makefile
 	binsrc/samples/docbookview/Makefile
 	binsrc/samples/IBuySpy/Makefile
