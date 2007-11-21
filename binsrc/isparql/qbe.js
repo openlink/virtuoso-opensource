@@ -406,6 +406,7 @@ iSPARQL.QBE = function () {
   			data = xml;
 			break;
 			case "isparql":
+			case "ldr":
 			  var xslt = location.pathname.substring(0,location.pathname.lastIndexOf("/")) + '/xslt/dynamic-page.xsl';
 			  data += self.QueryGenerate();
     		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -1095,6 +1096,7 @@ iSPARQL.QBE = function () {
     		isDav:((goptions.login_put_type == 'http')?false:true),
     		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
     		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
+    		                  ['ldr','ldr','Dynamic Linked Data Resource',get_mime_type('ldr')],
     		                  ['xml','xml','XML Server Page',get_mime_type('xml')],
     		                  ['','*','All files','']
     		                 ],
@@ -1130,6 +1132,7 @@ iSPARQL.QBE = function () {
     		isDav:((goptions.login_put_type == 'http')?false:true),
     		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
     		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
+    		                  ['ldr','ldr','Dynamic Linked Data Resource',get_mime_type('ldr')],
     		                  ['xml','xml','XML Server Page',get_mime_type('xml')]
     		                 ],
 				callback:function(path,fname){
@@ -1571,14 +1574,6 @@ iSPARQL.QBE = function () {
 		    self.removeOrderBy(self.svgsparql.selectedGroups[i]);
 		}
 	});
-
-	/* save */
-	dialogs.qbe_save = new OAT.Dialog("Save","qbe_save_div",{width:400,modal:1});
-	dialogs.qbe_save.ok = function() {
-		self.save($v("qbe_save_name"),$v("qbe_savetype"));
-		dialogs.qbe_save.hide();
-	}
-	dialogs.qbe_save.cancel = dialogs.qbe_save.hide;
 
 	/* file name for saving */
 	var fileRef = function() {

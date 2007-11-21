@@ -19,7 +19,7 @@ OAT.Dereference = {
 			var encoded = encodeURIComponent("http://"+r[2]);
 			encoded = "/proxy?url="+encoded+"&force=rdf";
 			if (user) { encoded += "&login="+encodeURIComponent(user); }
-		} else if (url.match(/^urn:/i) || url.match(/^doi:/i)) { /* Virtuoso proxy: */
+		} else if (url.match(/^urn:/i) || url.match(/^doi:/i) || url.match(/^oai:/i)) { /* Virtuoso proxy: */
 			var encoded = encodeURIComponent(url);
 			encoded = "/proxy?url="+encoded+"&force=rdf";
 		} else {

@@ -659,6 +659,7 @@ iSPARQL.Advanced = function () {
     		isDav:((goptions.login_put_type == 'http')?false:true),
     		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
     		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
+    		                  ['ldr','ldr','Dynamic Linked Data Resource',get_mime_type('ldr')],
     		                  ['xml','xml','XML Server Page',get_mime_type('xml')],
     		                  ['','*','All files','']
     		                 ],
@@ -668,6 +669,7 @@ iSPARQL.Advanced = function () {
           //OAT.WebDav.close();
         }
       }
+      	
     	OAT.WebDav.openDialog(options);
 	}
 	
@@ -695,6 +697,7 @@ iSPARQL.Advanced = function () {
     		isDav:((goptions.login_put_type == 'http')?false:true),
     		extensionFilters:[['rq','rq','SPARQL Definitions',get_mime_type('rq')],
     		                  ['isparql','isparql','Dynamic Linked Data Page',get_mime_type('isparql')],
+    		                  ['ldr','ldr','Dynamic Linked Data Resource',get_mime_type('ldr')],
     		                  ['xml','xml','XML Server Page',get_mime_type('xml')]
     		                 ],
 				callback:function(path,fname){
@@ -794,6 +797,7 @@ iSPARQL.Advanced = function () {
 			  data += $v('query');
 			break;
 			case "isparql":
+			case "ldr":
 			  var xslt = location.pathname.substring(0,location.pathname.lastIndexOf("/")) + '/xslt/dynamic-page.xsl';
 			  data += $v('query');
     		var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -935,6 +939,7 @@ function get_mime_type(res){
   switch (ext) {
     case 'xml':
     case 'isparql':
+    case 'ldr':
 	    return 'text/xml';
 	  default:
 	    return 'text/plain';
