@@ -55,8 +55,14 @@ OAT.AJAX = {
 		var xhr = OAT.AJAX.init(url,callback,options);
 		var url_ = url;
 		/* create security cookie */
-		url_ += (url.match(/\?/) ? "&" : "?");
-		if (data) { url_ += data; }
+		if (url.match(/\?/)) { 
+			url_ += "&";
+		} else {
+			if (data || !options.noSecurityCookie) { url_ += "?"; }
+		}
+		
+		if(data) { url_ += data; }
+
 		if (!options.noSecurityCookie) {
 			url_ += "&";
 			var secure = OAT.AJAX.createCookie(); /* array of name & value */
