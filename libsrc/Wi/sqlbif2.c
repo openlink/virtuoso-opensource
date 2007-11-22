@@ -49,6 +49,29 @@
 #include <grp.h>
 #endif
 
+#ifndef NDEBUG
+extern ptrlong itc_dive_transit_call_ctr;
+extern ptrlong itc_try_land_call_ctr;
+
+static caddr_t
+bif_itc_dive_transit_call_ctr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t res = box_num (itc_dive_transit_call_ctr);
+  if ((0 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 0, "itc_dive_transit_call_ctr"))
+    itc_dive_transit_call_ctr = 0;
+  return res;
+}
+
+static caddr_t
+bif_itc_try_land_call_ctr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t res = box_num (itc_try_land_call_ctr);
+  if ((0 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 0, "itc_try_land_call_ctr"))
+    itc_try_land_call_ctr = 0;
+  return res;
+}
+
+#endif
 
 static caddr_t
 bif_ddl_read_constraints (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1048,6 +1071,10 @@ sqlbif2_init (void)
 {
   pwnam_mutex = mutex_allocate ();
   mutex_option (pwnam_mutex, "pwnam_mutex", NULL, NULL);
+#ifndef NDEBUG
+  bif_define_typed ("itc_dive_transit_call_ctr", bif_itc_dive_transit_call_ctr, &bt_integer);
+  bif_define_typed ("itc_try_land_call_ctr", bif_itc_try_land_call_ctr, &bt_integer);
+#endif
   bif_define ("__ddl_read_constraints", bif_ddl_read_constraints);
   bif_define_typed ("sys_lockdown", bif_sys_lockdown, &bt_integer);
   bif_define_typed ("__blob_handle_from_session", bif_blob_handle_from_session, &bt_blob_handle);

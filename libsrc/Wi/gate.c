@@ -524,11 +524,17 @@ itc_set_right_edge_cache (it_cursor_t * itc)
 }
 #endif
 
+#ifndef NDEBUG
+ptrlong itc_try_land_call_ctr = 0;
+#endif
 
 int
 itc_try_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   buffer_desc_t *buf = *buf_ret;
+#ifndef NDEBUG
+  itc_try_land_call_ctr++;
+#endif
   if (PA_WRITE == itc->itc_dive_mode)
     {
       itc->itc_landed = 1;
@@ -746,6 +752,9 @@ itc_fix_back_link (it_cursor_t * itc, buffer_desc_t ** buf, dp_addr_t dp_from,
 
 long tc_excl_dive;
 
+#ifndef NDEBUG
+ptrlong itc_dive_transit_call_ctr = 0;
+#endif
 
 void
 itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
@@ -762,6 +771,9 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
    *itc->itc_parent_page = itc->itc_page;
    *itc->itc_pos_on_parent = itc->itc_position;
    */
+#ifndef NDEBUG
+  itc_dive_transit_call_ctr++;
+#endif
 
   if (PA_READ != itc->itc_dive_mode)
     {
