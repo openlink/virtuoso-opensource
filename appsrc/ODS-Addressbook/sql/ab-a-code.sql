@@ -3039,12 +3039,11 @@ create procedure AB.WA.import_foaf (
   declare S, tmp_iri, name, fullName varchar;
 
   declare exit handler for sqlstate '*' {
-    -- dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
     delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (tmp_iri);
     signal ('TEST', 'Bad import source!<>');    
   };
 
-  tmp_iri := 'http://local.virt/' || cast (rnd (1000) as varchar);
+  tmp_iri := 'http://local.virt/addressbook/' || cast (rnd (1000) as varchar);
   Meta := vector
     (
       'P_NAME',
@@ -3058,7 +3057,9 @@ create procedure AB.WA.import_foaf (
       'P_MSN',
       'P_AIM',
       'P_YAHOO',
-      'P_KIND'
+      'P_KIND',
+      'P_TITLE',
+      'P_H_PHONE'
     );
   mLength := length (Meta);
 
@@ -3071,7 +3072,7 @@ create procedure AB.WA.import_foaf (
       signal (st, msg);
     
   } else {
-  DB.DBA.RDF_LOAD_RDFXML (content, '', tmp_iri);
+    DB.DBA.RDF_LOAD_RDFXML (content, tmp_iri, tmp_iri);
   }
   Items := AB.WA.ab_sparql (sprintf (' SPARQL ' ||
                                      ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
@@ -3089,11 +3090,12 @@ create procedure AB.WA.import_foaf (
          ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
          ' PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
          ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
-         ' SELECT ?P_NAME, ?P_FULL_NAME, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO, ?P_KIND ' ||
+         ' SELECT ?P_NAME, ?P_FULL_NAME, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO, ?P_KIND, ?P_TITLE, ?P_H_PHONE' ||
          ' FROM <%s> ' ||
          ' WHERE { ' ||
          '         <PERSON> rdf:type ?P_KIND .' ||
          '         OPTIONAL{ <PERSON>  foaf:nick ?P_NAME} . ' ||
+         '         OPTIONAL{ <PERSON>  foaf:title ?P_TITLE} . ' ||
          '         OPTIONAL{ <PERSON>  foaf:name ?P_FULL_NAME} . ' ||
          '         OPTIONAL{ <PERSON>  foaf:firstNname ?P_FIRST_NAME} . ' ||
          '         OPTIONAL{ <PERSON>  foaf:family_name ?P_LAST_NAME} . ' ||
@@ -3104,6 +3106,7 @@ create procedure AB.WA.import_foaf (
          '         OPTIONAL{ <PERSON>  foaf:msnChatID ?P_MSN } .' ||
          '         OPTIONAL{ <PERSON>  foaf:aimChatID ?P_AIM } .' ||
          '         OPTIONAL{ <PERSON>  foaf:yahooChatID ?P_YAHOO } .' ||
+         '         OPTIONAL{ <PERSON>  foaf:phone ?P_H_PHONE } .' ||
          '       }';
 
     S := sprintf (S, tmp_iri);
