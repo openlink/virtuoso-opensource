@@ -40,8 +40,10 @@
           self.pAction := 'edit';
         } else if (POLLS.WA.poll_enable_vote (self.v_id)) {
           self.pAction := 'vote';
-        } else if (POLLS.WA.poll_enable_result (self.v_id)) {
+        } else if (POLLS.WA.poll_enable_result (self.v_id) > 0) {
           self.pAction := 'result';
+        } else {
+          self.pAction := 'browse';
         }
       }
     ]]>
@@ -565,7 +567,12 @@
                           appClass := '';
                           if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
                             appClass := 'app';  
+
+                          if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, self.v_id)) {
                           http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, appClass, SIOC..poll_post_iri (self.domain_id, id), POLLS.WA.stringCut(title, self.pChars)));
+                          } else {
+                            http (sprintf ('<div style="float: left; font-weight: bold;">%s</div>', title));
+                          }
                             
                           actions := '';
                           if (POLLS.WA.poll_enable_vote (id))
@@ -1650,7 +1657,7 @@
 
           <v:template type="simple" enabled="--case when (self.pAction = 'result') then 1 else 0 end">
             <div class="new-form-header">
-              <v:label format="%s" value="Vote results" />
+              Vote results
             </div>
             <div class="new-form-body">
               <?vsp
@@ -1673,6 +1680,10 @@
                 }
                 if (tmp = -4) {
                   http ('<p class="vote-poll">Poll is not voted and results can not be shown. Please vote first!</p>');
+                  goto _end;
+                }
+                if (tmp = -5) {
+                  http ('<p class="vote-poll">Poll is not voted yet!</p>');
                   goto _end;
                 }
 
@@ -1701,6 +1712,8 @@
                       aCount := aCount + 1;
                       aValue := aValue + cast (A_VALUE as float);
                     }
+                    S := '0.00';
+                    if (P_VOTES <> 0)
                     S := xslt_format_number (aValue / P_VOTES, '#.00');
                     http (sprintf ('Average answers result in range [%d, %d]: <b>%s</b>', range_start, range_end, S));
                   }
@@ -1722,6 +1735,8 @@
                     for (N := 1; N <= choices; N := N + 1) {
                       answer := get_keyword (sprintf ('answer_%d', N), answers, '');
                       select count (*) into aCount from POLLS.WA.ANSWER where A_QUESTION_ID = Q_ID and A_NUMBER = N;
+                      S := '0.00';
+                      if (P_VOTES <> 0)
                       S := xslt_format_number (100.00 * aCount / P_VOTES, '#.00');
                       rLegends := rLegends || ',"' || answer || '"';
                       rPercents := rPercents || ',' || cast(aCount as varchar);

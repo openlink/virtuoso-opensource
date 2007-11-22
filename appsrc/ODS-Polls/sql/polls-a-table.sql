@@ -216,6 +216,8 @@ create procedure POLLS.WA.POLL_P_NAME_int (inout vtb any, inout d_id any, in mod
   for (select P_DOMAIN_ID, P_NAME, P_DESCRIPTION, P_TAGS from POLLS.WA.POLL where P_ID = d_id) do {
     vt_batch_feed (vtb, sprintf('^R%d', P_DOMAIN_ID), mode);
 
+    vt_batch_feed (vtb, sprintf('^UID%d', POLLS.WA.domain_owner_id (P_DOMAIN_ID)), mode);
+
     vt_batch_feed (vtb, coalesce(P_NAME, ''), mode);
 
     vt_batch_feed (vtb, coalesce(P_DESCRIPTION, ''), mode);
@@ -255,7 +257,7 @@ create procedure POLLS.WA.POLL_P_NAME_unindex_hook (inout vtb any, inout d_id an
 --
 create procedure POLLS.WA.drop_index()
 {
-  if (registry_get ('polls_index_version') <> '1') {
+  if (registry_get ('polls_index_version') <> '2') {
     POLLS.WA.exec_no_error ('drop table POLLS.WA.POLL_P_NAME_WORDS');
   }
 }
@@ -288,4 +290,4 @@ POLLS.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
-registry_set ('polls_index_version', '1');
+registry_set ('polls_index_version', '2');

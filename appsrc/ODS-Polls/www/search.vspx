@@ -86,7 +86,7 @@
       } else {
         if (self.v_own = 1)
           POLLS.WA.xml_set('MyPolls', data, 1);
-        if (self.v_shared = 1)
+        if (self.v_public = 1)
           POLLS.WA.xml_set('PublicPolls', data, 1);
       }
 
