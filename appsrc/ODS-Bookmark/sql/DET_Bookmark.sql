@@ -72,7 +72,7 @@ create function "bookmark_DAV_AUTHENTICATE" (in id any, in what char(1), in req 
     return -12;
   if (not ('100' like req))
   {
-    --dbg_obj_princ ('a_uid2 is ', auth_uid, ', id[3] is ', id[2], ' mismatch');
+    ---dbg_obj_princ ('a_uid2 is ', auth_uid, ', id[3] is ', id[2], ' mismatch');
     return -13;
   }
   if ((auth_uid <> id[2]) and (auth_uid <> http_dav_uid()))
@@ -231,7 +231,7 @@ create function "bookmark_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 	declare sub_id, folder_id, domain_id, smart_id integer;
 	declare colname, fullpath, rightcol, tag_id varchar;
 	declare maxrcvdate datetime;
-	--dbg_obj_princ ('bookmark_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
+    ----dbg_obj_princ ('bookmark_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
 	sub_id := id[3];
 	domain_id := id[4];
 	folder_id := id[5];
@@ -657,9 +657,41 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 	}
 	else if (top_id[3] = 4)
 	{
+        declare sql, state, msg, meta, rows any;
+        if (exists (select 1 from BMK.WA.SFOLDER where SF_NAME = 'All bookmarks' and SF_ID = top_id[8]))
+        {
+            for select S.SF_DOMAIN_ID as cur_domain, S.SF_DATA as cur_data
+                     from SYS_USERS A,
+                          WA_MEMBER B,
+                          WA_INSTANCE C,
+                          BMK.WA.SFOLDER S
+                    where A.U_ID = owner_uid
+                      and B.WAM_USER = A.U_ID
+                      and B.WAM_MEMBER_TYPE = 1
+                      and B.WAM_INST = C.WAI_NAME
+                      and C.WAI_TYPE_NAME = 'Bookmark'
+                      and S.SF_DOMAIN_ID = C.WAI_ID do
+            {
+                  state := '00000';
+                  sql := BMK.WA.sfolder_sql(cur_domain, owner_uid, cur_data);
+                  exec(sql, state, msg, vector(), 0, meta, rows);
+                  if (state = '00000')
+                  {
+                     foreach (any row in rows) do
+                     {
+                             res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath,
+                             "bookmark_COMPOSE_XBEL_NAME"(row[3], row[1])), 'R', 1024, row[5],
+                             vector (UNAME'bookmark', detcol_id, owner_uid, top_id[3], 0, 0, row[1], null, top_id[8]),
+                             '100000000NN', ownergid, owner_uid, row[5], 'application/xbel+xml', 
+                             "bookmark_COMPOSE_XBEL_NAME"(row[3], row[1]))));
+                     }
+                  }
+            }
+        }
+        else
+        {
 		for select SF_DATA, SF_DOMAIN_ID from BMK.WA.SFOLDER where top_id[8] = SF_ID do
 		{
-			declare sql, state, msg, meta, rows any;
 			state := '00000';
 			sql := BMK.WA.sfolder_sql(SF_DOMAIN_ID, owner_uid, SF_DATA);
 			exec(sql, state, msg, vector(), 0, meta, rows);
@@ -676,6 +708,7 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 			}
 		}
 	}
+    }
 	grand_res := vector_concat (grand_res, res);
 finalize_res:
 	return grand_res;
@@ -965,7 +998,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
 			{
 				hitlist := vector_concat (hitlist, vector (D_ID));
 			}
-			if (length (hitlist) <> 1)
+            if (length (hitlist) < 1)
 				return -1;
 			smart_id := hitlist[0];
 		  }

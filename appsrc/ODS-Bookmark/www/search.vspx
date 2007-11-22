@@ -108,11 +108,21 @@
       declare data varchar;
 
       BMK.WA.xml_set('keywords', data, self.v_keywords);
-      if (self.v_mode <> 'simple') {
+      if (self.v_mode = 'simple') {
+        BMK.WA.xml_set('myBookmarks', data, 1);
+      } else {
         BMK.WA.xml_set('expression', data, self.v_expression);
         BMK.WA.xml_set('tags', data, self.v_tags);
-        if (self.v_folder_id <> -1)
+        if (self.v_own = 1) {
+          BMK.WA.xml_set('myBookmarks', data, self.v_own);
+          if (self.v_folder_id > 0)
           BMK.WA.xml_set('folder', data, self.v_folder_id);
+      }
+        if (self.v_shared = 1) {
+          BMK.WA.xml_set('mySharedBookmarks', data, self.v_shared);
+          if (self.v_grants <> '')
+            BMK.WA.xml_set('grants', data, self.v_grants);
+        }
       }
 
       self.ds_data := vector ();
@@ -129,18 +139,12 @@
       declare sql, sqlParams, state, msg, meta, result, maxRows any;
 
       state := '00000';
-      sql := '';
-      sqlParams := vector();
-      if (self.v_shared = 1) {
-        sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql(rs0, rs1, rs2, rs3, rs4, rs5, rs6)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _CREATED datetime, _FLAG integer, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ? and rs6 = ?';
+      sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql (rs0, rs1, rs2, rs3)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _CREATED datetime, _FLAG integer, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
         maxRows := self.v_max;
         if (maxRows <> '')
           maxRows := 'TOP ' || maxRows;
         sql := replace(sql, '<MAX>', maxRows);
-        sqlParams := vector(self.domain_id, self.account_id, data, self.v_max, self.v_own, self.v_shared, self.v_grants);
-      } else if (self.v_own = 1) {
-        sql := BMK.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_max);
-      }
+      sqlParams := vector (self.domain_id, self.account_id, data, self.v_max);
       sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
       exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000') {
@@ -194,13 +198,13 @@
         tmp := concat(tmp, sprintf('&%stags=%U', prefix, self.v_tags));
       if ((cast(self.v_own as integer) = 1) and (self.v_folder_id <> -1))
         tmp := concat(tmp, sprintf('&%sfolder=%d', prefix, self.v_folder_id));
-      if (mode = 'export') {
-        if (cast(self.v_own as integer) <> 1)
+      if (cast(self.v_own as integer))
           tmp := concat(tmp, sprintf('&%sown=%s', prefix, cast(self.v_own as varchar)));
-        if (cast(self.v_shared as integer) <> 1)
+      if (cast(self.v_shared as integer))
           tmp := concat(tmp, sprintf('&%sshared=%s', prefix, cast(self.v_shared as varchar)));
         if ((cast(self.v_shared as integer) = 1) and (self.v_grants <> ''))
           tmp := concat(tmp, sprintf('&%sgrants=%U', prefix, self.v_grants));
+      if (mode = 'export') {
         if (not is_empty_or_null(self.v_max) and self.v_max <> '100')
           tmp := concat(tmp, sprintf('&%smax=%U', prefix, self.v_max));
         if (not is_empty_or_null(self.v_order) and self.v_order <> '_NAME')
@@ -438,18 +442,18 @@
                           <?vsp
                             declare S varchar;
 
+                            if (coalesce((control as vspx_row_template).te_rowset[10], -1) = -1)
+                            {
                             S := 'edit';
-                            if (coalesce((control as vspx_row_template).te_rowset[10], -1) <> -1)
-                              S := 'view';
-                            http (sprintf ('<a href="bookmarks.vspx?sid=%s&realm=%s&bd=%d&folder=%d&grant=%d" title="%s %s">%s</a>',
+                              http (sprintf ('<a href="bookmarks.vspx?sid=%s&realm=%s&bd=%d&folder=%d" title="%s %s">%s</a>',
                                            self.sid,
                                            self.realm,
                                            (control as vspx_row_template).te_rowset[1],
                                            coalesce((control as vspx_row_template).te_rowset[8], -1),
-                                           coalesce((control as vspx_row_template).te_rowset[10], -1),
                                            initcap (S),
                                            BMK.WA.utf2wide ((control as vspx_row_template).te_rowset[3]),
-                                           S));
+                                             'edit'));
+                            }
                           ?>
                         </td>
                       </tr>
@@ -624,6 +628,14 @@
               <![CDATA[
                 self.do_search (e);
                 self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Save" xhtml_class="form-button">
+            <v:on-post>
+              <![CDATA[
+                self.update_params();
+                self.vc_redirect('bookmarks.vspx?action=sfolder' || self.do_url('save', 's_'));
               ]]>
             </v:on-post>
           </v:button>

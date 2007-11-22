@@ -1408,8 +1408,9 @@ create procedure BMK.WA.folder_check_parent(
 create procedure BMK.WA.sfolder_sql(
   inout domain_id integer,
   inout account_id integer,
-  inout data varchar,
-  in maxRows varchar := '')
+  in data varchar,
+  in maxRows varchar := '',
+  in nodeType varchar := 'b')
 {
   declare S, tmp, where2, delimiter2 varchar;
 
@@ -1422,7 +1423,7 @@ create procedure BMK.WA.sfolder_sql(
       '  distinct <MAX>                    \n' ||
       '  1                                                  _TYPE, \n' ||
       '  a.BD_ID                    _ID,   \n' ||
-      '  BMK.WA.make_node(\'b\', a.BD_ID)                   _NODE, \n' ||
+      '  BMK.WA.make_node (''<NODE_TYPE>'', a.BD_ID)        _NODE, \n' ||
       '  a.BD_NAME                  _NAME, \n' ||
       '  b.B_URI                    _URI,  \n' ||
       '  a.BD_LAST_UPDATE                                   _LAST_UPDATE, \n' ||
@@ -1442,7 +1443,7 @@ create procedure BMK.WA.sfolder_sql(
       '  distinct <MAX>                    \n' ||
       '  1                                                  _TYPE, \n' ||
       '  a.BD_ID                    _ID,   \n' ||
-      '  BMK.WA.make_node(\'b\', a.BD_ID)                   _NODE, \n' ||
+      '  BMK.WA.make_node (''<NODE_TYPE>'', a.BD_ID)        _NODE, \n' ||
       '  a.BD_NAME                  _NAME, \n' ||
       '  b.B_URI                    _URI,  \n' ||
       '  a.BD_LAST_UPDATE                                   _LAST_UPDATE, \n' ||
@@ -1506,6 +1507,7 @@ create procedure BMK.WA.sfolder_sql(
   if (maxRows <> '')
     maxRows := 'TOP ' || maxRows;
   S := replace(S, '<MAX>', maxRows);
+  S := replace(S, '<NODE_TYPE>', nodeType);
   S := replace(S, '<DOMAIN_ID>', cast(domain_id as varchar));
   S := replace(S, '<ACCOUNT_ID>', cast(account_id as varchar));
   S := replace(S, '<TAGS>', '');
@@ -1523,14 +1525,11 @@ create procedure BMK.WA.sfolder_sql(
 create procedure BMK.WA.shared_sql(
   inout domain_id integer,
   inout account_id integer,
-  inout data varchar,
-  in maxRows varchar := '',
-  in own integer := 1,
-  in shared integer := 1,
-  in grants varchar := '')
+  in data any,
+  in maxRows varchar := '')
 {
-  declare N, gid, did, aid, fid, bid integer;
-  declare newData any;
+  declare N, gid, did, aid, fid, bid, own, shared integer;
+  declare grants, newData any;
   declare c0 integer;
   declare c1 integer;
   declare c2 varchar;
@@ -1547,6 +1546,9 @@ create procedure BMK.WA.shared_sql(
 
   result_names(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10);
 
+  own := cast (BMK.WA.xml_get ('myBookmarks', data, '1') as integer);
+  shared := cast (BMK.WA.xml_get ('mySharedBookmarks', data, '0') as integer);
+
   -- search in my own
   if (own = 1) {
     state := '00000';
@@ -1559,6 +1561,7 @@ create procedure BMK.WA.shared_sql(
 
   -- search in my shared
   if (shared = 1) {
+    grants := BMK.WA.xml_get ('grants', data);
     grants := split_and_decode(trim(grants, ','), 0, '\0\0,');
     for (select G_ID, G_GRANTER_ID, G_OBJECT_TYPE, G_OBJECT_ID, U_NAME from BMK.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTEE_ID = account_id and G_GRANTER_ID = U_ID order by G_GRANTER_ID) do {
       if (length(grants) and not BMK.WA.vector_contains(grants, U_NAME))
@@ -1580,7 +1583,7 @@ create procedure BMK.WA.shared_sql(
     BMK.WA.xml_set('bookmark', newData, bid);
 
     state := '00000';
-    sql := BMK.WA.sfolder_sql(did, aid, newData, maxRows);
+      sql := BMK.WA.sfolder_sql (did, aid, newData, maxRows, 'B');
     exec(sql, state, msg, vector(), 0, meta, rows);
     if (state = '00000')
       foreach (any row in rows) do {
