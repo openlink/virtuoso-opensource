@@ -60,7 +60,6 @@
     }
   pars := vector ();
 
- 
   if (self.ds_data is null)
     {
       self.ds_data := vector ();
@@ -68,28 +67,33 @@
       self.ds_rel_tags_data := vector ();
       self.ds_rel_tags_meta := vector ();
     }
+      self.have_blog := case when DB.DBA.wa_vad_check ('blog2') is null then 0 else 1 end;
   self.have_enews := case when DB.DBA.wa_vad_check ('enews2') is null then 0 else 1 end;
   self.have_wiki := case when DB.DBA.wa_vad_check ('wiki') is null then 0 else 1 end;
-  self.have_blog := case when DB.DBA.wa_vad_check ('blog2') is null then 0 else 1 end;
   self.have_omail := case when DB.DBA.wa_vad_check ('oMail') is null then 0 else 1 end;
   self.have_bookmark := case when DB.DBA.wa_vad_check ('bookmark') is null then 0 else 1 end;
+      self.have_polls := case when DB.DBA.wa_vad_check ('polls') is null then 0 else 1 end;
   self.have_addressbook := case when DB.DBA.wa_vad_check ('addressbook') is null then 0 else 1 end;
+      self.have_calendar := case when DB.DBA.wa_vad_check ('calendar') is null then 0 else 1 end;
 
+      if (not self.have_blog)
+        self.srch_blogs.vc_add_attribute ('disabled', '1');
   if (not self.have_enews)
     self.srch_news.vc_add_attribute ('disabled', '1');
   if (not self.have_wiki)
     self.srch_wikis.vc_add_attribute ('disabled', '1');
-  if (not self.have_blog)
-    self.srch_blogs.vc_add_attribute ('disabled', '1');
   if (not self.have_omail)
     self.srch_omail.vc_add_attribute ('disabled', '1');
   if (not self.have_bookmark)
     self.srch_bookmark.vc_add_attribute ('disabled', '1');
+      if (not self.have_polls)
+        self.srch_polls.vc_add_attribute ('disabled', '1');
   if (not self.have_addressbook)
     self.srch_addressbook.vc_add_attribute ('disabled', '1');
+      if (not self.have_calendar)
+        self.srch_calendar.vc_add_attribute ('disabled', '1');
 
   self.max_rows.ufl_value := '100';
-
   ]]>
  </v:on-init>
  <v:after-data-bind>
@@ -100,16 +104,18 @@
           goto _skip;
 
         self.srch_people.ufl_selected   := 0;
+        self.srch_apps.ufl_selected        := 0;
+
         self.srch_blogs.ufl_selected    := 0;
-        self.srch_wikis.ufl_selected    := 0;
         self.srch_dav.ufl_selected      := 0;
-        self.srch_omail.ufl_selected    := 0;
         self.srch_news.ufl_selected     := 0;
+        self.srch_wikis.ufl_selected       := 0;
+        self.srch_omail.ufl_selected       := 0;
         self.srch_bookmark.ufl_selected := 0;
-        self.srch_apps.ufl_selected     := 0;
-        self.srch_nntp.ufl_selected     := 0;
+        self.srch_polls.ufl_selected       := 0;
         self.srch_addressbook.ufl_selected := 0;
-        
+        self.srch_calendar.ufl_selected    := 0;
+        self.srch_nntp.ufl_selected        := 0;
 
        if (self.on_type = 'oDrive')
            self.srch_dav.ufl_selected := 1;
@@ -125,8 +131,12 @@
            self.srch_omail.ufl_selected := 1;
        if (self.on_type = 'Bookmark')
            self.srch_bookmark.ufl_selected := 1;
+        if (self.on_type = 'Polls')
+          self.srch_polls.ufl_selected := 1;
        if (self.on_type = 'AddressBook')
            self.srch_addressbook.ufl_selected := 1;
+        if (self.on_type = 'Calendar')
+          self.srch_calendar.ufl_selected := 1;
        if (self.on_type = 'discussion' or self.on_type='nntpf')
            self.srch_nntp.ufl_selected := 1;
            if (get_keyword ('date_d_after', e.ve_params, null) is not null)
@@ -145,7 +155,6 @@
      _skip:;
   }
   
-  
   self.max_rows.ufl_value := cast (case self.qry_max_rows when 0 then 100 else self.qry_max_rows end as varchar);
   self.max_rows.vc_data_bind (e);
 
@@ -159,8 +168,7 @@
         }
       self.do_users_search (e);
     }
-  else if (not (is_empty_or_null (self.qry) and
-      is_empty_or_null (self.qry_tags)))
+      else if (not (is_empty_or_null (self.qry) and is_empty_or_null (self.qry_tags)))
     {
       if (length (WA_SEARCH_CHECK_FT_QUERY (self.qry, 0)))
         {
@@ -181,9 +189,8 @@
       if (not e.ve_is_post)
 	self.do_search (e);
     }
-  else if (length (self.newest) > 0 and (self.newest in ('users','blogs','wiki','news','bookmarks','addressbook')))
+      else if (length (self.newest) > 0 and (self.newest in ('users','blogs','news','wiki','bookmarks','polls','addressbook','calendar')))
     {
-      
       self.page := -1;
       self.expr.ufl_value := self.qry;
       self.q_tags_expr.ufl_value := self.qry_tags;
@@ -195,21 +202,17 @@
         self.do_search (e);
     }
   else if (self.on_type is not null and
-           (
-             length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value)>0 OR
+               ( length(self.date_y_before.ufl_value||self.date_m_before.ufl_value||self.date_d_before.ufl_value)>0 OR
              length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value)>0
            )
           )
   {
       if (not e.ve_is_post)
         self.do_search (e);
-    
   }
-
-
-
   ]]>
  </v:after-data-bind>
+
  <v:method name="score_to_length" arglist="in s numeric">
   <![CDATA[
   s := s * self.score_ratio;
@@ -220,8 +223,10 @@
   return s;
   ]]>
  </v:method>
+
     <!-- the fti_make_search_string make ANDs -->
-    <v:method name="gdata_cat_str" arglist="inout arr any, inout ses any"><![CDATA[
+  <v:method name="gdata_cat_str" arglist="inout arr any, inout ses any">
+    <![CDATA[
       if (isarray (arr) and length (arr) = 3 and arr[0] = 1)
         {
           http ('/', ses);
@@ -238,7 +243,9 @@
           self.gdata_cat_str (elm, ses);
         }
 	return;
-    ]]></v:method>
+    ]]>
+  </v:method>
+
  <v:method name="do_search" arglist="inout e vspx_event">
   <![CDATA[
   declare query varchar;
@@ -255,11 +262,13 @@
       self.srch_blogs.ufl_selected := 0;
       self.srch_wikis.ufl_selected := 0;
       self.srch_dav.ufl_selected := 0;
-      self.srch_omail.ufl_selected := 0;
       self.srch_news.ufl_selected := 0;
+      self.srch_omail.ufl_selected       := 0;
       self.srch_bookmark.ufl_selected := 0;
-      self.srch_nntp.ufl_selected        := 0;
+      self.srch_polls.ufl_selected       := 0;
       self.srch_addressbook.ufl_selected := 0;
+      self.srch_calendar.ufl_selected    := 0;
+      self.srch_nntp.ufl_selected        := 0;
       
       self.sort_by_score.ufl_selected := 0;
       self.sort_by_date.ufl_selected := 1;
@@ -274,10 +283,14 @@
         self.srch_news.ufl_selected := 1;
       else if (self.newest = 'bookmarks' and DB.DBA.wa_vad_check ('bookmark') is not null)
         self.srch_bookmark.ufl_selected := 1;
-      else if ((self.on_type = 'discussion' or self.on_type='nntpf') and (DB.DBA.wa_vad_check ('nntpf') is not null))
-        self.srch_nntp.ufl_selected := 1;
+      else if (self.newest = 'polls' and DB.DBA.wa_vad_check ('polls') is not null)
+        self.srch_polls.ufl_selected := 1;
       else if (self.newest = 'addressbook' and DB.DBA.wa_vad_check ('addressbook') is not null)
         self.srch_addressbook.ufl_selected := 1;
+      else if (self.newest = 'calendar' and DB.DBA.wa_vad_check ('calendar') is not null)
+        self.srch_calendar.ufl_selected := 1;
+      else if ((self.on_type = 'discussion' or self.on_type='nntpf') and (DB.DBA.wa_vad_check ('nntpf') is not null))
+        self.srch_nntp.ufl_selected := 1;
     }
 
   _max_rows := cast (self.max_rows.ufl_value as integer);
@@ -288,37 +301,43 @@
       
       arr := split_and_decode (self.sapps, 0, '\0\0,');
       self.srch_people.ufl_selected := 0;
+      self.srch_apps.ufl_selected        := 0;
       self.srch_blogs.ufl_selected := 0;
-      self.srch_wikis.ufl_selected := 0;
       self.srch_dav.ufl_selected := 0;
-      self.srch_omail.ufl_selected := 0;
       self.srch_news.ufl_selected := 0;
+      self.srch_wikis.ufl_selected       := 0;
+      self.srch_omail.ufl_selected       := 0;
       self.srch_bookmark.ufl_selected := 0;
-      self.srch_nntp.ufl_selected := 0;
+      self.srch_polls.ufl_selected       := 0;
       self.srch_addressbook.ufl_selected := 0;
-      self.srch_apps.ufl_selected := 0;
+      self.srch_calendar.ufl_selected    := 0;
+      self.srch_nntp.ufl_selected        := 0;
       foreach (any app in arr) do
     {
 	   if (lower (app) = 'people')
 	     self.srch_people.ufl_selected := 1;
-	   else if (lower (app) = 'feeds')
-             self.srch_news.ufl_selected := 1;
+       else if (lower (app) = 'apps')
+         self.srch_apps.ufl_selected := 1;
 	   else if (lower (app) = 'weblog')
 	     self.srch_blogs.ufl_selected := 1;
-	   else if (lower (app) = 'wiki')
-	     self.srch_wikis.ufl_selected := 1;
 	   else if (lower (app) = 'dav')
 	     self.srch_dav.ufl_selected := 1;
+       else if (lower (app) = 'feeds')
+         self.srch_news.ufl_selected := 1;
+       else if (lower (app) = 'wiki')
+         self.srch_wikis.ufl_selected := 1;
 	   else if (lower (app) = 'mail')
 	     self.srch_omail.ufl_selected := 1;
-	   else if (lower (app) = 'apps')
-             self.srch_apps.ufl_selected := 1;
 	   else if (lower (app) = 'bookmark')
              self.srch_bookmark.ufl_selected := 1;
-       else if (lower (app) = 'discussion')
-         self.srch_nntp.ufl_selected := 1;
+       else if (lower (app) = 'polls')
+         self.srch_polls.ufl_selected := 1;
        else if (lower (app) = 'addressbook')
          self.srch_addressbook.ufl_selected := 1;
+       else if (lower (app) = 'calendar')
+         self.srch_calendar.ufl_selected := 1;
+       else if (lower (app) = 'discussion')
+         self.srch_nntp.ufl_selected := 1;
 	}
     }
 
@@ -337,8 +356,10 @@
 	      and is_empty_or_null (self.q_tags_expr.ufl_value)
 	    )
            or self.srch_bookmark.ufl_selected
-         or self.srch_nntp.ufl_selected
+         or self.srch_polls.ufl_selected
          or self.srch_addressbook.ufl_selected
+         or self.srch_calendar.ufl_selected
+         or self.srch_nntp.ufl_selected
 	 )
 	{
 
@@ -388,15 +409,17 @@
 		charset_recode (self.expr.ufl_value, http_current_charset(), '_WIDE_'),
 		charset_recode (self.q_tags_expr.ufl_value, http_current_charset (), '_WIDE_'),
 		self.srch_people.ufl_selected,
-		self.srch_news.ufl_selected,
+            self.srch_apps.ufl_selected,
 		self.srch_blogs.ufl_selected,
-		self.srch_wikis.ufl_selected,
 		self.srch_dav.ufl_selected,
-		self.srch_apps.ufl_selected,
+            self.srch_news.ufl_selected,
+            self.srch_wikis.ufl_selected,
 		self.srch_omail.ufl_selected,
 		self.srch_bookmark.ufl_selected,
-	    self.srch_nntp.ufl_selected,
+            self.srch_polls.ufl_selected,
             self.srch_addressbook.ufl_selected,
+            self.srch_calendar.ufl_selected,
+            self.srch_nntp.ufl_selected,
 		self.sort_by_score.ufl_selected,
 		_max_rows,
 		self.s_tag_is_qry,
@@ -429,24 +452,28 @@
 
 	if (self.srch_people.ufl_selected)
 	  self.gurl := self.gurl || 'people,';
-	if (self.srch_news.ufl_selected)
-	  self.gurl := self.gurl || 'feeds,';
+      if (self.srch_apps.ufl_selected)
+          self.gurl := self.gurl || 'apps,';
 	if (self.srch_blogs.ufl_selected)
 	  self.gurl := self.gurl || 'weblog,';
-	if (self.srch_wikis.ufl_selected)
-	  self.gurl := self.gurl || 'wiki,';
 	if (self.srch_dav.ufl_selected)
 	  self.gurl := self.gurl || 'dav,';
-	if (self.srch_apps.ufl_selected)
-	  self.gurl := self.gurl || 'apps,';
+      if (self.srch_news.ufl_selected)
+          self.gurl := self.gurl || 'feeds,';
+      if (self.srch_wikis.ufl_selected)
+          self.gurl := self.gurl || 'wiki,';
 	if (self.srch_omail.ufl_selected)
 	  self.gurl := self.gurl || 'mail,';
 	if (self.srch_bookmark.ufl_selected)
 	  self.gurl := self.gurl || 'bookmark,';
-      if (self.srch_nntp.ufl_selected)
-          self.gurl := self.gurl || 'discussion,';
+      if (self.srch_polls.ufl_selected)
+          self.gurl := self.gurl || 'polls,';
       if (self.srch_addressbook.ufl_selected)
           self.gurl := self.gurl || 'addressbook,';
+      if (self.srch_calendar.ufl_selected)
+          self.gurl := self.gurl || 'calendar,';
+      if (self.srch_nntp.ufl_selected)
+          self.gurl := self.gurl || 'discussion,';
 
 	self.gurl := rtrim (self.gurl, ',');
         self.q_sel := self.gurl;
@@ -464,8 +491,10 @@
 	    self.srch_apps.ufl_selected and
 	    self.srch_omail.ufl_selected and
 	  self.srch_bookmark.ufl_selected and
-          self.srch_nntp.ufl_selected     and
-          self.srch_addressbook.ufl_selected
+          self.srch_polls.ufl_selected       and
+          self.srch_addressbook.ufl_selected and
+          self.srch_calendar.ufl_selected    and
+          self.srch_nntp.ufl_selected
 	  )
 	 {
 	  self.gurl := '/dataspace/GData/';
@@ -742,11 +771,16 @@
 
  <vm:header>
   <vm:title>Search</vm:title>
-   <?vsp if (self.plate_enabled) { ?>
+    <?vsp
+      if (self.plate_enabled)
+      {
+    ?>
     <link rel="alternate" type="application/rss+xml" title="Search RSS feed (RSS 2.0)" href="<?V self.page_url ?>&amp;o=xml" />
     <link rel="alternate" type="application/atom+xml" title="Search RSS feed (Atom)" href="<?V self.page_url ?>&amp;o=atom" />
     <link rel="meta" title="RDF" type="application/rdf+xml" href="<?V self.page_url ?>&amp;o=rdf" />
-   <?vsp } ?>
+   <?vsp
+     }
+   ?>
  </vm:header>
  <vm:pagewrapper>
  
@@ -761,7 +795,9 @@
   <vm:variable name="have_wiki" type="int" default="0"/>
   <vm:variable name="have_omail" type="int" default="0"/>
   <vm:variable name="have_bookmark" type="int" default="0"/>
+   <vm:variable name="have_polls" type="int" default="0"/>
   <vm:variable name="have_addressbook" type="int" default="0"/>
+   <vm:variable name="have_calendar" type="int" default="0"/>
   <vm:variable name="page_url" type="varchar" default="null"/>
   <vm:variable name="plate_enabled" type="int" default="0"/>
   <vm:variable name="tag_plate_enabled" type="int" default="0"/>
@@ -838,8 +874,7 @@
 	 <tr>
 	   <td valign="top">
        <v:template name="search_masks" type="simple">
-	<v:template name="keyword_search_mask" type="simple"
-	   enabled="-- case self.page when 1 then 1 else 0 end">
+  <v:template name="keyword_search_mask" type="simple"  enabled="-- case self.page when 1 then 1 else 0 end">
 	 <table class="formdata">
 	  <tr>
 	    <td class="ctl_title">Keyword</td>
@@ -855,28 +890,11 @@
 <?vsp
 if(self.on_type = 'discussion' or self.on_type='nntpf')
 {
-?>    <tr>
+?>
+    <tr>
       <td class="ctl_title">Date after</td>
       <td align="left">
-         <v:text name="date_d_after" xhtml_size="--2" value="" >
-<!--
-              <v:validator name="date_validator" test="sql" message="Invalid value for date after">
-                   <![CDATA[
-                       declare date_to_check varchar;
-                       date_to_check := self.date_y_after.ufl_value||'-'||self.date_m_after.ufl_value||'-'||self.date_d_after.ufl_value;
-                       
-                       dbg_obj_print('date_to_check',date_to_check,now());
-                       if(length(self.date_y_after.ufl_value||self.date_m_after.ufl_value||self.date_d_after.ufl_value))
-                       {
-                         declare exit handler for sqlstate '*' { return 1; };
-                         stringdate(date_to_check);
-                       }
-                     return 0;
-                   ]]>
-                 </v:validator>
--->
-
-         </v:text> -
+        <v:text name="date_d_after" xhtml_size="--2" value="" /> -
          <v:text name="date_m_after" xhtml_size="--2" value="" /> -
          <v:text name="date_y_after" xhtml_size="--4" value="" /> (DD-MM-YYYY)
       </td>
@@ -892,16 +910,12 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
     <tr>
       <td class="ctl_title">Newsgroups</td>
       <td align="left">
-          <v:select-list name="availble_ngroups"
-                         xhtml_size="--5"
-                         multiple="1"
-                         value=""
-                         >
+        <v:select-list name="availble_ngroups" xhtml_size="--5" multiple="1" value="">
             <v:before-data-bind>
-            <v:script><![CDATA[
+            <![CDATA[
                   declare grp_list any;
-                  grp_list:= vector();
                   
+                grp_list:= vector();
                   for (select NG_GROUP,NG_NAME from DB.DBA.NEWS_GROUPS where ns_rest (NG_GROUP, 0) = 1 and (NG_STAT<>-1 or NG_STAT is null)) do
                         grp_list := vector_concat (grp_list, vector (NG_NAME));
                   
@@ -912,7 +926,7 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
                   }
                   else
                     control.vc_enabled:=0;
-            ]]></v:script>
+            ]]>
             </v:before-data-bind>
           </v:select-list>
       </td>
@@ -924,25 +938,20 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 	    <td class="ctl_title">Tags</td>
 	   <td align="left">
             <v:text name="q_tags_expr" value="" xhtml_class="textbox" xhtml_tabindex="2">
-             <v:validator name="q_tags_expr_validator" test="sql"
-               message="Invalid tags string entered"
-               expression="length (WA_SEARCH_CHECK_FT_QUERY (control.ufl_value, 1))">
-             </v:validator>
+          <v:validator name="q_tags_expr_validator" test="sql" message="Invalid tags string entered" expression="length (WA_SEARCH_CHECK_FT_QUERY (control.ufl_value, 1))" />
             </v:text>
            </td>
 	  </tr>
 	  <tr>
 	    <td class="ctl_title">Max results</td>
 	   <td align="left">
-	    <v:text name="max_rows" value="" xhtml_class="textbox" xhtml_tabindex="3" >
-            </v:text>
+        <v:text name="max_rows" value="" xhtml_class="textbox" xhtml_tabindex="3" />
 	   </td>
 	  </tr>
 	  <tr>
 	    <td class="ctl_title">Sort by</td>
 	   <td align="left">
-	     <v:radio-button name="sort_by_score" group-name="sort_by" value="relevance" initial-checked="1"
-	       xhtml_id="sort_by_score" />
+        <v:radio-button name="sort_by_score" group-name="sort_by" value="relevance" initial-checked="1" xhtml_id="sort_by_score" />
 	     <label for="sort_by_score">Score</label>
 	     <v:radio-button name="sort_by_date" group-name="sort_by" value="date" xhtml_id="sort_by_date"/>
 	     <label for="sort_by_date">Date Modified</label>
@@ -958,24 +967,24 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 		 <label for="srch_people">People</label>
 	       </td>
 	       <td>
-		 <v:check-box name="srch_news" initial-checked="--self.have_enews" xhtml_tabindex="5" xhtml_id="srch_news"/>
-		 <label for="srch_news">News</label>
+           <v:check-box name="srch_apps" initial-checked="1" xhtml_tabindex="9" xhtml_id="srch_apps"/>
+           <label for="srch_apps">Application descriptions</label>
 	       </td>
 	       <td>
-		 <v:check-box name="srch_blogs" initial-checked="--self.have_blog" xhtml_tabindex="6" xhtml_id="srch_blogs"/>
-		 <label for="srch_blogs">Blogs</label>
+           <v:check-box name="srch_dav" initial-checked="1" xhtml_tabindex="8" xhtml_id="srch_dav"/>
+           <label for="srch_dav">DAV</label>
 	       </td>
 	       <td>
-		 <v:check-box name="srch_wikis" initial-checked="--self.have_wiki" xhtml_tabindex="7" xhtml_id="srch_wikis"/>
-		 <label for="srch_wikis">Wikis</label>
+           <v:check-box name="srch_blogs" initial-checked="--self.have_blog" xhtml_tabindex="6" xhtml_id="srch_blogs"/>
+           <label for="srch_blogs">Weblog</label>
 	       </td>
 	       <td>
-		 <v:check-box name="srch_dav" initial-checked="1" xhtml_tabindex="8" xhtml_id="srch_dav"/>
-		 <label for="srch_dav">DAV</label>
+           <v:check-box name="srch_news" initial-checked="--self.have_enews" xhtml_tabindex="5" xhtml_id="srch_news"/>
+           <label for="srch_news">Feeds</label>
 	       </td>
 	       <td>
-		 <v:check-box name="srch_apps" initial-checked="1" xhtml_tabindex="9" xhtml_id="srch_apps"/>
-		 <label for="srch_apps">Application descriptions</label>
+           <v:check-box name="srch_wikis" initial-checked="--self.have_wiki" xhtml_tabindex="7" xhtml_id="srch_wikis"/>
+           <label for="srch_wikis">Wiki</label>
 	       </td>
 	       <td>
 		 <v:check-box name="srch_omail" initial-checked="--self.have_omail" xhtml_tabindex="10" xhtml_id="srch_omail"/>
@@ -986,12 +995,20 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 		 <label for="srch_bookmark">Bookmarks</label>
 	       </td>
          <td>
-     <v:check-box name="srch_nntp" initial-checked="1" xhtml_tabindex="10" xhtml_id="srch_nntp"/>
-     <label for="srch_nntp">Discussions</label>
+           <v:check-box name="srch_polls" initial-checked="--self.have_polls" xhtml_tabindex="13" xhtml_id="srch_polls"/>
+           <label for="srch_polls">Polls</label>
          </td>
          <td>
      <v:check-box name="srch_addressbook" initial-checked="--self.have_addressbook" xhtml_tabindex="13" xhtml_id="srch_addressbook"/>
      <label for="srch_addressbook">Address Book</label>
+         </td>
+         <td>
+           <v:check-box name="srch_calendar" initial-checked="--self.have_calendar" xhtml_tabindex="13" xhtml_id="srch_calendar"/>
+           <label for="srch_calendar">Calendar</label>
+         </td>
+         <td>
+           <v:check-box name="srch_nntp" initial-checked="1" xhtml_tabindex="10" xhtml_id="srch_nntp"/>
+           <label for="srch_nntp">Discussion</label>
          </td>
 	     </tr>
 	    </table>
@@ -1102,8 +1119,7 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 	 </table>
 	</v:template>
 
-	<v:template name="users_search_mask" type="simple"
-	    enabled="-- case self.page when 2 then 1 else 0 end">
+  <v:template name="users_search_mask" type="simple" enabled="-- case self.page when 2 then 1 else 0 end">
 	 <table>
 	  <colgroup>
 	    <col span="1" width="20%" />
@@ -1114,8 +1130,6 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 	  <tr>
 	   <td class="ctl_title">First Name</td>
 	   <td align="left"><v:text name="us_first_name" value="--get_keyword (control.vc_name, e.ve_params, '')" /></td>
-	  <!--/tr>
-	  <tr-->
 	   <td class="ctl_title">Last Name</td>
 	   <td align="left"><v:text name="us_last_name" value="--get_keyword (control.vc_name, e.ve_params, '')" /></td>
 	  </tr>
@@ -1129,8 +1143,6 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
              </v:validator>
             </v:text>
            </td>
-	  <!--/tr>
-	  <tr-->
 	   <td class="ctl_title">Tags</td>
 	   <td align="left">
             <v:text name="us_tags" value="--get_keyword (control.vc_name, e.ve_params, '')">
@@ -1150,14 +1162,12 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 	     <v:item name="Friends of Friends" value="2" />
 	    </v:select-list>
 	   </td>
-	  <!--/tr>
-	  <tr-->
 	   <td class="ctl_title">Within members of</td>
 	   <td align="left">
 	    <v:data-list name="us_within_members" value="--get_keyword (control.vc_name, e.ve_params, '')"
-		 key-column="WAI_ID" value-column="WAI_NAME_VAL"
-		 sql="
-		 select top 1 '' as WAI_ID, '<All Instances>' as WAI_NAME_VAL from DB.DBA.SYS_USERS
+                   key-column="WAI_ID"
+                   value-column="WAI_NAME_VAL"
+                   sql="select top 1 '' as WAI_ID, '<All Instances>' as WAI_NAME_VAL from DB.DBA.SYS_USERS
 		   union all
 		 select top 100 WAI_ID, WAI_NAME from DB.DBA.WA_INSTANCE WAI
 		   where WAI.WAI_IS_PUBLIC > 0 OR (self.u_id <> http_nobody_uid () and exists
@@ -1187,14 +1197,10 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
                    ]]>
                  </v:validator>
                 </v:text>
-	       <!--/td>
-	       <td-->
 		<v:select-list name="us_dist_kind" value="--get_keyword (control.vc_name, e.ve_params, '')" >
 		 <v:item name="km" value="0" />
 		 <v:item name="miles" value="1" />
 		</v:select-list>
-	       <!--/td>
-	       <td-->
 		of Lat:<![CDATA[&nbsp;]]>
 		<v:text name="us_dist_pt_lat" value="--get_keyword (control.vc_name, e.ve_params, '')" >
 		 <v:before-data-bind>
@@ -1234,8 +1240,6 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
                    ]]>
                  </v:validator>
 		</v:text>
-	       <!--/td>
-	       <td-->
 		Lng:<![CDATA[&nbsp;]]>
 		<v:text name="us_dist_pt_lng" value="--get_keyword (control.vc_name, e.ve_params, '')" >
 		 <v:validator name="us_dist_pt_lng_validator" test="sql" message="Invalid value for Longitude">
@@ -1252,9 +1256,6 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
                    ]]>
                  </v:validator>
                 </v:text>
-	       <!--/td>
-	      </tr>
-	     </table-->
 	    </td>
 	  </tr>
 	  <tr>
@@ -1267,8 +1268,6 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 	      <v:item name="Time"      value="3" />
 	    </v:select-list>
 	   </td>
-	  <!--/tr>
-	  <tr-->
 	   <td class="ctl_title">Output as</td>
 	   <td align="left">
 	    <v:select-list name="us_out_as" value="--get_keyword (control.vc_name, e.ve_params, '')">
@@ -1313,14 +1312,6 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 	 </table>
        </v:template>
 
-	<!--v:template name="template3" type="simple"
-	    enabled="-- case self.page when 3 then 1 else 0 end">
-	 <table>
-	  <tr>
-	   <td class="ctl_title">Friend</td>
-	  </tr>
-	 </table>
-	</v:template-->
 	<v:template name="rdf_search_tmpl" type="simple" enabled="-- case self.page when 4 then 1 else 0 end">
 	  <table class="formdata">
 	    <tr>
@@ -1451,13 +1442,6 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
              }
            ]]>
           </v:before-render>
-          <!--<v:template name="tmplth1" type="simple">
-           <tr style="background-color: #eeeeee;">
-            <th>No</th>
-            <th>Title</th>
-            <th>Score</th>
-           </tr>
-          </v:template>-->
           <v:template name="tmplt1" type="repeat">
            <v:template name="tmplt7" type="if-not-exists">
             <tr>

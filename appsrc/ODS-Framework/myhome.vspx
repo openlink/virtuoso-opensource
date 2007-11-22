@@ -41,6 +41,7 @@
       <vm:body>
        <vm:login redirect="myhome.vspx"/>
         <vm:dash-my-whats-new />
+        <vm:dash-my-dataspaces />
            <vm:if test="wa_vad_check ('blog2') is not null">
                <vm:dash-my-blog />
            </vm:if>

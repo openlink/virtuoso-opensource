@@ -539,6 +539,49 @@ create procedure ODS_USER_LIST (
       }
       http ('</items>', sStream);
     }
+    if (pList = 'DataSpaces') {
+      http ('<items>', sStream);
+      for (select SIOC..forum_iri (WAI_TYPE_NAME, WAI_NAME) as instance_iri, WAI_NAME
+             from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE
+            where WAM_INST = WAI_NAME and WAM_USER = pUID and U_ID = WAM_USER) do
+      {
+        http (sprintf ('<item href="%V">%V</item>', instance_iri, WAI_NAME), sStream);
+      }
+      http ('</items>', sStream);
+    }
+    if (pList = 'WebServices') {
+      declare N integer;
+      declare sql varchar;
+      declare st, msg, meta, rows any;
+
+      sql := 'sparql
+              PREFIX sioc: <http://rdfs.org/sioc/ns#>
+              PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+              SELECT ?title, ?serviceEndpoint, ?serviceProtocol
+                FROM <%s>
+               WHERE {
+                       ?forum foaf:maker <%s>.
+                       ?forum sioc:id ?title.
+                       ?forum sioc:has_service ?svc.
+                       ?svc sioc:service_endpoint ?serviceEndpoint.
+                       OPTIONAL {?svc sioc:service_protocol ?serviceProtocol}.
+                     }
+               ORDER BY ?title';
+
+      sql := sprintf (sql, SIOC..get_graph (), SIOC..person_iri (SIOC..user_iri (pUID)));
+      st := '00000';
+
+      set_user_id ('dba');
+      exec (sql, st, msg, vector (), 0, meta, rows);
+      http ('<items>', sStream);
+      if ('00000' = st) {
+        for (N := 0; N < length (rows); N := N + 1)
+        {
+          http (sprintf ('<item href="%V">%V</item>', rows[N][1], rows[N][0]), sStream);
+        }
+      }
+      http ('</items>', sStream);
+    }
   } else {
     ODS_ERROR_XML (sStream, 'BAD_SESSION', 'Invalid session!');
   }

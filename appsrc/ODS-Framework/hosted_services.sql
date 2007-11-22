@@ -596,7 +596,39 @@ wa_exec_no_error('create table WA_ACTIVITIES (
      WA_SRC_ID int,
      WA_TS timestamp,
      WA_ACTIVITY long varchar,
+     WA_ACTIVITY_TYPE varchar,
+     WA_ACTIVITY_ACTION varchar,
+     WA_OBJ_TYPE varchar,
+     WA_OBJ_URI varchar,
      primary key (WA_U_ID, WA_ID))'
+)
+;
+
+wa_add_col('DB.DBA.WA_ACTIVITIES', 'WA_ACTIVITY_TYPE', 'varchar')
+;
+wa_add_col('DB.DBA.WA_ACTIVITIES', 'WA_ACTIVITY_ACTION', 'varchar')
+;
+wa_add_col('DB.DBA.WA_ACTIVITIES', 'WA_OBJ_TYPE', 'varchar')
+;
+wa_add_col('DB.DBA.WA_ACTIVITIES', 'WA_OBJ_URI', 'varchar')
+;
+
+
+wa_exec_no_error('create table WA_ACTIVITIES_USERSET (
+     WAU_U_ID int,
+     WAU_A_ID int,
+     WAU_STATUS int,
+     primary key (WAU_U_ID, WAU_A_ID))'
+)
+;
+
+wa_exec_no_error_log(
+  'ALTER TABLE WA_ACTIVITIES_USERSET ADD FOREIGN KEY (WAU_U_ID) REFERENCES SYS_USERS (U_ID) ON DELETE CASCADE'
+)
+;
+
+wa_exec_no_error_log(
+  'ALTER TABLE WA_ACTIVITIES_USERSET ADD FOREIGN KEY (WAU_A_ID) REFERENCES WA_ACTIVITIES (WA_ID) ON DELETE CASCADE'
 )
 ;
 
@@ -1212,6 +1244,22 @@ wa_exec_no_error(
 ;
 
 create trigger WA_MEMBER_I after insert on WA_MEMBER referencing new as N {
+
+-- BEGIN Add activity 
+  declare _act,_inst_type varchar;
+  declare _inst_id integer;
+  _inst_id:=(select WAI_ID from DB.DBA.WA_INSTANCE  where WAI_NAME=N.WAM_INST);
+  if(N.WAM_APP_TYPE is not null)
+    _inst_type:=N.WAM_APP_TYPE;
+  else
+    _inst_type:=(select WAI_TYPE_NAME from DB.DBA.WA_INSTANCE  where WAI_NAME=N.WAM_INST);
+    
+
+  _act:=sprintf('<a href="%U">%s</a> added the <a href="%s" >%s</a> application',WA_USER_DATASPACE(N.WAM_USER),WA_USER_FULLNAME(N.WAM_USER),WA_APP_INSTANCE_DATASPACE(N.WAM_INST),WA_GET_APP_NAME(_inst_type));
+  OPEN_SOCIAL.DBA.add_ods_activity(N.WAM_USER,_inst_id,_act,'system','add','application',WA_APP_INSTANCE_DATASPACE(N.WAM_INST));
+
+-- END add Activity
+
   declare wa web_app;
   declare tn any;
 
@@ -1231,6 +1279,9 @@ create trigger WA_MEMBER_I after insert on WA_MEMBER referencing new as N {
     }
 
   wa.wa_notify_member_changed(N.WAM_USER, null, N.WAM_MEMBER_TYPE, null, N.WAM_DATA, null, N.WAM_STATUS);
+
+  
+  
   return;
 }
 ;
@@ -4266,6 +4317,53 @@ create procedure WA_APP_GET_OWNER (in inst_identity any)
   return inst_owner;
 }
 ;
+create procedure WA_USER_FULLNAME (in _identity any)
+{
+  declare _u_full_name varchar;
+  
+  if(isinteger(_identity))
+    _u_full_name:=(select coalesce(WAUI_FULL_NAME,trim(concat(WAUI_FIRST_NAME,' ',WAUI_LAST_NAME))) from DB.DBA.WA_USER_INFO where WAUI_U_ID=_identity);
+  else
+    _u_full_name:=(select coalesce(WAUI_FULL_NAME,trim(concat(WAUI_FIRST_NAME,' ',WAUI_LAST_NAME))) from DB.DBA.WA_USER_INFO,DB.DBA.SYS_USERS where WAUI_U_ID=U_ID and U_NAME=_identity);
+  
+  return _u_full_name;
+}
+;
+
+
+create procedure WA_APP_INSTANCE_DATASPACE (in inst_identity any)
+{
+  declare inst_dataspace,_u_name,_inst_name,_inst_type varchar;
+  
+  declare exit handler for sqlstate '*'{return '';};
+  
+  if(isinteger(inst_identity))
+    select U_NAME,WAM_INST,WAM_APP_TYPE into _u_name,_inst_name,_inst_type from WA_MEMBER,WA_INSTANCE,SYS_USERS where WAM_INST=WAI_NAME and WAI_ID =inst_identity and WAM_MEMBER_TYPE = 1 and WAM_USER=U_ID;
+  else
+    select U_NAME,WAM_INST,WAM_APP_TYPE into _u_name,_inst_name,_inst_type from WA_MEMBER,SYS_USERS where WAM_USER=U_ID and WAM_MEMBER_TYPE = 1 and WAM_INST=inst_identity;
+    
+
+  inst_dataspace:=sprintf('/dataspace/%s/%s/%U',_u_name,wa_get_app_dataspace(_inst_type),_inst_name);
+
+  return inst_dataspace;
+}
+;
+create procedure WA_USER_DATASPACE (in _identity any)
+{
+  declare _u_name varchar;
+  
+  if(isinteger(_identity))
+    _u_name:=(select U_NAME from DB.DBA.SYS_USERS where U_ID=_identity);
+  else
+    _u_name:=_identity;
+
+  declare _user_dataspace varchar;
+  _user_dataspace:=sprintf('/dataspace/%s/%s#this',wa_identity_dstype(_identity),_u_name);
+  
+  return _user_dataspace;
+}
+;
+
 create procedure WA_APP_INSTANCES_DATASPACE (in user_id integer, in app_type varchar default '%', in fname varchar default null)
 {
   --declare item_name, url, ret varchar;

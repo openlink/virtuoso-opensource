@@ -1406,6 +1406,189 @@
     </div> <!-- widget w_whats_new -->
   </xsl:template>
 
+  <xsl:template match="vm:dash-my-dataspaces">
+    <div class="widget w_my_dataspaces">
+      <div class="w_title_bar">
+        <div class="w_title_text_ctr">
+          <img class="w_title_icon"
+               src="images/icons/apps_16.png"
+               alt="ODS-Data Spaces icon"/>
+          <span class="w_title_text">My Data Spaces</span>
+        </div>
+        <div class="w_title_btns_ctr">
+          <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+          <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
+        </div>
+      </div> <!-- w_title_bar -->
+      <div class="w_pane content_pane">
+        <ul>
+          <li>
+            <a id="ds_dataspaces" href="javascript: void(0);" title="Data Spaces" class="noapp">Data Spaces</a>
+          </li>
+          <li>
+            <a id="ds_webservices" href="javascript: void(0);" title="Web Services Endponts" class="noapp">Web Services Endponts</a>
+          </li>
+        </ul>
+      </div> <!-- content_pane -->
+    </div> <!-- widget dash-my-dataspaces -->
+		<script type="text/javascript">
+		  <![CDATA[
+  			ODSInitArray.push(dataspacesPrepare);
+
+  			function dataspacesPrepare()
+  			{
+  	      OAT.Loader.loadFeatures(["ws", "anchor"], generateDSLinks);
+  			}
+
+        function hasError(root) {
+        	if (!root) {
+            // executingEnd();
+        		alert('No data!');
+        		return true;
+        	}
+
+        	/* error */
+        	var error = root.getElementsByTagName('error')[0];
+          if (error) {
+        	  var code = error.getElementsByTagName('code')[0];
+            if (OAT.Xml.textValue(code) != 'OK') {
+        	    var message = error.getElementsByTagName('message')[0];
+              if (message)
+                alert (OAT.Xml.textValue(message));
+          		return true;
+            }
+          }
+          return false;
+        }
+
+  			function generateDSContents()
+        {
+          var ul = OAT.Dom.create("div",{paddingLeft:"20px",marginLeft:"0px"});
+
+          var img = OAT.Dom.create("img");
+          img.src = OAT.Preferences.imagePath+"Ajax_throbber.gif";
+          ul.appendChild(img);
+
+          var cb = function(result)
+          {
+            OAT.Dom.unlink (ul.lastChild);
+            var xml = OAT.Xml.createXmlDoc(result.ODS_USER_LISTResponse.CallReturn);
+          	var root = xml.documentElement;
+          	if (!hasError(root))
+          	{
+              /* options */
+            	var items = root.getElementsByTagName("item");
+            	if (items.length)
+            	{
+            		for (var i=1; i<=items.length; i++)
+            		{
+	                var div = OAT.Dom.create("div");
+	                var a = OAT.Dom.create("a");
+	                a.href = items[i-1].getAttribute("href") + '?sid=' + document.forms[0].sid.value + '&realm=' + document.forms[0].realm.value;
+	                a.appendChild(OAT.Dom.text(OAT.Xml.textValue(items[i-1])));
+	                div.appendChild(a);
+	                ul.appendChild(div);
+                }
+            	}
+          	}
+          	if (ul.innerHTML == '')
+        	    ul.innerHTML = "Empty list";
+          }
+
+          var wsdl = "/ods_services/services.wsdl";
+          var serviceName = "ODS_USER_LIST";
+
+          var inputObject = {
+          	ODS_USER_LIST:{
+              pSid: document.forms[0].sid.value,
+              pRealm: document.forms[0].realm.value,
+              pList: 'DataSpaces'
+          	}
+          }
+        	OAT.WS.invoke(wsdl, serviceName, cb, inputObject);
+          return ul;
+        }
+
+  			function generateWSContents()
+        {
+          var ul = OAT.Dom.create("div",{paddingLeft:"20px",marginLeft:"0px"});
+
+          var img = OAT.Dom.create("img");
+          img.src = OAT.Preferences.imagePath+"Ajax_throbber.gif";
+          ul.appendChild(img);
+
+          var cb = function(result)
+          {
+            OAT.Dom.unlink (ul.lastChild);
+            var xml = OAT.Xml.createXmlDoc(result.ODS_USER_LISTResponse.CallReturn);
+          	var root = xml.documentElement;
+          	if (!hasError(root))
+          	{
+              /* options */
+            	var items = root.getElementsByTagName("item");
+            	if (items.length)
+            	{
+            		for (var i=1; i<=items.length; i++)
+            		{
+	                var div = OAT.Dom.create("div");
+	                var a = OAT.Dom.create("a");
+	                a.href = items[i-1].getAttribute("href") + '?sid=' + document.forms[0].sid.value + '&realm=' + document.forms[0].realm.value;
+	                a.appendChild(OAT.Dom.text(OAT.Xml.textValue(items[i-1])));
+	                div.appendChild(a);
+	                ul.appendChild(div);
+                }
+            	}
+          	}
+          	if (ul.innerHTML == '')
+        	    ul.innerHTML = "Empty list";
+          }
+
+          var wsdl = "/ods_services/services.wsdl";
+          var serviceName = "ODS_USER_LIST";
+
+          var inputObject = {
+          	ODS_USER_LIST:{
+              pSid: document.forms[0].sid.value,
+              pRealm: document.forms[0].realm.value,
+              pList: 'WebServices'
+          	}
+          }
+        	OAT.WS.invoke(wsdl, serviceName, cb, inputObject);
+          return ul;
+        }
+
+  			function generateDSLinks()
+        {
+          OAT.Preferences.stylePath = '/ods/';
+          OAT.Anchor.imagePath = '/ods/images/oat/';
+          OAT.Anchor.zIndex = 1001;
+
+          var options = {
+            title: "",
+            width: 300,
+            height: 200,
+            content: "",
+            result_control: false,
+            activation: "click"
+          }
+
+          // Data Space Links
+          var app = $('ds_dataspaces');
+          options.title = "Data Spaces";
+          options.content = generateDSContents;
+          OAT.Anchor.assign(app.id, options);
+
+          // Web Services Links
+          var app = $('ds_webservices');
+          options.title = "Web Services Endponts";
+          options.content = generateWSContents;
+          OAT.Anchor.assign(app.id, options);
+        }
+
+			]]>
+	  </script>
+  </xsl:template>
+
   <xsl:template match="vm:dash-my-profile">
     <v:variable name="ufid" type="integer" default="0"/>
     <v:variable name="isowner" type="integer" default="0"/>

@@ -324,10 +324,21 @@ create procedure activities (in userID varchar, in sourceID varchar := null, in 
     {
       sourceID := cast (sourceID as int);
       feed_act_head (userID, sourceID, ses);
+
+      if(sourceID=0)
+      {
+        for select WA_ID from DB.DBA.WA_ACTIVITIES where WA_U_ID = _u_id do
+        {
+	       serialize_act (_u_id, WA_ID, ses);
+	      }
+      }
+      else
+      {
       for select WA_ID from DB.DBA.WA_ACTIVITIES where WA_U_ID = _u_id and WA_SRC_ID = sourceID do
 	{
 	  serialize_act (_u_id, WA_ID, ses);
 	}
+	    }
       feed_tail (ses);
     }
   http_status_set (hstat);
@@ -339,3 +350,48 @@ create procedure activities (in userID varchar, in sourceID varchar := null, in 
 grant execute on OPEN_SOCIAL.DBA.people to GDATA_ODS;
 grant execute on OPEN_SOCIAL.DBA.login to GDATA_ODS;
 grant execute on OPEN_SOCIAL.DBA.activities to GDATA_ODS;
+
+create procedure add_ods_activity (
+       in userID any,
+       in sourceID any,
+       in act varchar,
+       in actTYPE varchar := null,
+       in actACTION varchar := null,
+       in objTYPE varchar := null,
+       in objURI varchar := null)
+{
+    
+    declare actID integer;
+    actID:=0;
+    
+    declare exit handler for sqlstate '*' {goto _err;};
+    
+    if(isstring(userID))
+      userID:=(select U_ID from DB.DBA.SYS_USERS where U_NAME=userID);
+    else if(isinteger(userID))
+      userID:=(select U_ID from DB.DBA.SYS_USERS where U_ID=userID);
+    else
+      goto _err;
+
+    if(isstring(sourceID))
+      sourceID:=(select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME=sourceID);
+    else if(isinteger(sourceID))
+      sourceID:=(select WAI_ID from DB.DBA.WA_INSTANCE where WAI_ID=sourceID);
+    else
+      goto _err;
+
+    if(act is null or length(act)=0 )
+       goto _err;
+
+    insert into DB.DBA.WA_ACTIVITIES (WA_U_ID, WA_SRC_ID, WA_ACTIVITY,WA_ACTIVITY_TYPE,WA_ACTIVITY_ACTION,WA_OBJ_TYPE,WA_OBJ_URI)
+         values (userID, sourceID, act, actTYPE, actACTION, objTYPE, objURI);
+         
+         
+	  actID := identity_value ();
+
+  return actID;
+  
+_err:
+  return 0;
+}
+;
