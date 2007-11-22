@@ -1298,7 +1298,7 @@ dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
 {
   unsigned char * data;
   HMAC_CTX ctx;
-  unsigned char key_data[4 * 8]; /* the length of the aes 256 larger keys will be rejected */
+  unsigned char key_data[32 * 8];
   unsigned char md [SHA_DIGEST_LENGTH + 1];
   unsigned char md64 [SHA_DIGEST_LENGTH * 2 + 1];
   unsigned int hmac_len = 0;
