@@ -1341,7 +1341,8 @@
                        E_REPEAT_PARAM2,
                        E_REPEAT_PARAM3,
                        E_REPEAT_UNTIL,
-                       E_REMINDER
+                       E_REMINDER,
+                       E_TAGS
                   into self.v_subject,
                        self.v_description,
                        self.v_location,
@@ -1354,7 +1355,8 @@
                        self.v_repeatParam2,
                        self.v_repeatParam3,
                        self.v_repeatUntil,
-                       self.v_reminder
+                       self.v_reminder,
+                       self.v_tags
                   from CAL.WA.EVENTS
                  where E_ID = self.v_id;
 
@@ -1403,14 +1405,15 @@
         </div>
         <div id="e" class="c1">
           <div class="tabs">
-            &nbsp;<vm:tabCaption tab="e" tabsCount="2" tabNo="0" caption="Main" />
-            &nbsp;<vm:tabCaption tab="e" tabsCount="2" tabNo="1" caption="Notes" />
+            &nbsp;<vm:tabCaption tab="e" tabsCount="3" tabNo="0" caption="Main" />
+            &nbsp;<vm:tabCaption tab="e" tabsCount="3" tabNo="1" caption="Repeats" />
+            &nbsp;<vm:tabCaption tab="e" tabsCount="3" tabNo="2" caption="Notes" />
           </div>
           <div class="contents">
             <div id="e_content_0" class="tabContent" style="display: none;">
               <table class="form-body" cellspacing="0">
             <tr>
-              <th width="30%">
+                  <th width="25%">
                 <v:label for="e_subject" value="Subject"/>
               </th>
               <td>
@@ -1545,7 +1548,85 @@
               </td>
             </tr>
             <tr>
-              <th valign="top">
+                  <th>
+                    <vm:label for="e_reminder" value="--'Reminder'" />
+                  </th>
+                  <td>
+                    <vm:if test="self.cAction <> 'view'">
+                      <v:select-list name="e_reminder">
+                        <v:on-init>
+                          <![CDATA[
+                            declare N integer;
+                            declare x, y any;
+
+                            self.arrays4Reminder (x, y);
+                            control.vsl_item_values := y;
+                            control.vsl_items := x;
+                            control.ufl_value := '';
+                          ]]>
+                        </v:on-init>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := self.v_reminder;
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                    </vm:if>
+                    <?vsp
+                      declare N integer;
+                      declare x, y any;
+
+                      self.arrays4Reminder (x, y);
+                      N := CAL.WA.vector_indexOf (y, self.v_reminder, 0);
+                      self.viewField (x [N]);
+                    ?>
+                  </td>
+                </tr>
+                <tr>
+                  <script type="text/javascript">
+                    function suggestTags ()
+                    {
+                      window.open ('tags.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;txt='+escape(document.F1.elements['e_subject'].value)+'&amp;txt2='+escape(document.F1.elements['e_description'].value) + '&amp;fld=e_tags', 'bookmarks_suggest_window', 'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500');
+                    }
+                  </script>
+                  <th>
+                    <v:label for="e_tags" value="Tags (comma-separated)" />
+                  </th>
+                  <td>
+                    <vm:if test="self.cAction <> 'view'">
+                      <v:text name="e_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
+                      <input type="button" value="Suggest" onclick="javascript: suggestTags();" class="button" />
+                      <input type="button" value="Clear" onclick="javascript: document.F1.elements['e_tags'].value = ''" class="button" />
+                    </vm:if>
+                    <?vsp self.viewField (self.v_tags); ?>
+                  </td>
+                </tr>
+                <vm:if test="self.cAction <> 'view'">
+                  <tr>
+                    <th>
+                      My Tags
+                    </th>
+                    <td>
+                      <?vsp
+                        declare _done integer;
+
+                        _done := 0;
+                        for (select T_TAG from CAL.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
+                          http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'e_tags\');">%s</a> ', T_TAG, T_TAG));
+                          _done := 1;
+                        }
+                        if (not _done)
+                          http ('no tags');
+                      ?>
+                    </td>
+                  </tr>
+                </vm:if>
+              </table>
+            </div>
+            <div id="e_content_1" class="tabContent" style="display: none;">
+              <table class="form-body" cellspacing="0">
+                <tr>
+                  <th width="25%" valign="top">
                 <v:label for="e_repeat" value="Repeats"/>
               </th>
               <td>
@@ -2029,44 +2110,9 @@
                 ?>
               </td>
             </tr>
-            <tr>
-              <th>
-                <vm:label for="e_reminder" value="--'Reminder'" />
-              </th>
-              <td>
-                <vm:if test="self.cAction <> 'view'">
-                <v:select-list name="e_reminder">
-                  <v:on-init>
-                    <![CDATA[
-                      declare N integer;
-                      declare x, y any;
-
-                        self.arrays4Reminder (x, y);
-                      control.vsl_item_values := y;
-                      control.vsl_items := x;
-                      control.ufl_value := '';
-                    ]]>
-                  </v:on-init>
-                  <v:before-data-bind>
-                    <![CDATA[
-                      control.ufl_value := self.v_reminder;
-                    ]]>
-                  </v:before-data-bind>
-                </v:select-list>
-                </vm:if>
-                <?vsp
-                  declare N integer;
-                  declare x, y any;
-
-                  self.arrays4Reminder (x, y);
-                  N := CAL.WA.vector_indexOf (y, self.v_reminder, 0);
-                  self.viewField (x [N]);
-                ?>
-              </td>
-            </tr>
           </table>
         </div>
-            <div id="e_content_1" class="tabContent" style="display: none;">
+            <div id="e_content_2" class="tabContent" style="display: none;">
               <table class="form-body" cellspacing="0">
                 <tr>
                   <th width="20%" valign="top">
@@ -2103,8 +2149,8 @@
           <v:button action="simple" value="--case when (self.cAction = 'create') then 'Create' else 'Update' end" enabled="--case when (self.cAction in ('create', 'edit')) then 1 else 0 end" xhtml_onclick="javascript:updateRTE(\'e_notes\')" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
-                declare N any;
-                declare params, sd, ed any;
+                declare N integer;
+                declare tmp, params, sd, ed any;
 
                 declare exit handler for SQLSTATE '*' {
                   if (__SQL_STATE = 'TEST') {
@@ -2120,10 +2166,15 @@
                 self.v_subject := trim (self.e_subject.ufl_value);
                 self.v_location := trim (self.e_location.ufl_value);
                 self.v_description := trim (self.e_description.ufl_value);
+                self.v_tags := trim (self.e_tags.ufl_value);
                 self.v_notes := trim (get_keyword ('e_notes', e.ve_params, ''));
 
                 CAL.WA.test (self.v_subject, vector('name', 'Subject', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
                 CAL.WA.test (self.v_location, vector('name', 'Location', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
+                CAL.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
+                tmp := CAL.WA.tags2vector (self.v_tags);
+                tmp := CAL.WA.vector_unique (tmp);
+                self.v_tags := CAL.WA.vector2tags (tmp);
 
                 -- event
                 declare pDate date;
@@ -2295,7 +2346,7 @@
             <div id="t_content_0" class="tabContent" style="display: none;">
               <table class="form-body" cellspacing="0">
             <tr>
-              <th width="30%">
+                  <th width="25%">
                 <v:label for="t_subject" value="Subject"/>
               </th>
               <td>

@@ -1566,6 +1566,8 @@ create procedure CAL.WA.dt_compare (
   in pDate1 datetime,
   in pDate2 datetime)
 {
+  if (isnull (pDate1) or isnull (pDate2))
+    return 0;
   if ((year (pDate1) = year (pDate2)) and (month (pDate1) = month (pDate2)) and (dayofmonth (pDate1) = dayofmonth (pDate2)))
     return 1;
   return 0;
@@ -3456,53 +3458,29 @@ create procedure CAL.WA.task_update (
 }
 ;
 
------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 --
--- Notes
+create procedure CAL.WA.calendar_tags_select (
+  in id integer,
+  in domain_id integer)
+{
+  return coalesce((select E_TAGS from CAL.WA.EVENTS where E_ID = id and E_DOMAIN_ID = domain_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
 --
------------------------------------------------------------------------------------------
-create procedure CAL.WA.note_update (
+create procedure CAL.WA.calendar_tags_update (
   in id integer,
   in domain_id integer,
-  in subject varchar,
-  in description varchar,
-  in tags varchar)
+  in tags any)
 {
-  if (id = -1) {
-    id := sequence_next ('CAL.WA.event_id');
-    insert into CAL.WA.EVENTS
-      (
-        E_ID,
-        E_DOMAIN_ID,
-        E_KIND,
-        E_SUBJECT,
-        E_DESCRIPTION,
-        E_TAGS,
-        E_CREATED,
-        E_UPDATED
-      )
-      values
-      (
-        id,
-        domain_id,
-        2,
-        subject,
-        description,
-        tags,
-        now (),
-        now ()
-      );
-  } else {
     update CAL.WA.EVENTS
-       set E_SUBJECT = subject,
-           E_DESCRIPTION = description,
-           E_TAGS = tags,
+     set E_TAGS = tags,
            E_UPDATED = now ()
      where E_ID = id and
            E_DOMAIN_ID = domain_id;
   }
-  return id;
-}
 ;
 
 -------------------------------------------------------------------------------
@@ -3976,7 +3954,7 @@ create procedure CAL.WA.import_vcal (
         priority := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/PRIORITY/val', N), xmlItem, 1) as varchar);
         if (isnull (priority))
           priority := '3';
-        status := CAL.WA.vcal_str2complete (xmlItem, sprintf ('IMC-VTODO[%d]/STATUS/val', N));
+        status := CAL.WA.vcal_str2status (xmlItem, sprintf ('IMC-VTODO[%d]/STATUS/val', N));
         complete := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/COMPLETE/val', N), xmlItem, 1) as varchar);
         CAL.WA.task_update
           (
