@@ -51,6 +51,7 @@ import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.GraphImpl;
+import org.openrdf.model.impl.ValueFactoryImpl;
 import org.openrdf.rio.RdfDocumentWriter;
 import org.openrdf.rio.n3.N3Writer;
 import org.openrdf.rio.ntriples.NTriplesWriter;
@@ -91,8 +92,8 @@ import org.openrdf.sesame.sail.SailInternalException;
 import org.openrdf.sesame.sail.SailUpdateException;
 import org.openrdf.sesame.sail.StatementIterator;
 import org.openrdf.sesame.repository.local.*;
-//import org.openrdf.sesame.sailimpl.memory.RdfRepository;
-
+import org.openrdf.sesame.sail.NamespaceIterator;
+import org.openrdf.sesame.sailimpl.memory.*;
 
 public class VirtuosoRepository implements SesameRepository
 {
@@ -114,6 +115,7 @@ public class VirtuosoRepository implements SesameRepository
     private String graphName;
 
     protected RdfRepository _expectedModel;
+    protected ValueFactory _valueFactory;
 
     protected VirtuosoRepository (String id, RdfSource rdfSource, LocalService service)
     {
@@ -337,6 +339,47 @@ public class VirtuosoRepository implements SesameRepository
 	addData (inputStream, baseURI, format, verifyData, listener);
     }
 
+    public NamespaceIterator getNamespaces()
+    {
+	System.err.println("VirtuosoRepository.java getNamespaces ()");
+	List _namespacesList = new ArrayList();
+
+
+	return new MemNamespaceIterator(_namespacesList);
+    }
+
+
+    public void addSingleStatement (Resource subj, URI pred, Value obj)
+    {
+	    String S, P, O;
+	    String exec_text;
+
+		S = subj.toString();
+		P = pred.toString();
+		O = obj.toString();
+		S = S.replaceAll("'", "''");
+		P = P.replaceAll("'", "''");
+		O = O.replaceAll("'", "''");
+
+		System.err.println ("addSingleStatement ");
+
+		exec_text ="DB.DBA.RDF_QUAD_URI ('" + this.graphName +
+		    "', '" + S +
+		    "', '" + P +
+		    "', '" + O +
+		    "')";
+
+		try
+		{
+		    java.sql.Statement stmt = connection.createStatement();
+		    stmt.executeQuery(exec_text);
+		}
+		catch(Exception e)
+		{
+		    e.printStackTrace();
+		    System.exit(-1);
+		}
+    }
 
     /* TODO */
 
@@ -652,5 +695,11 @@ public class VirtuosoRepository implements SesameRepository
 
     public void sailChanged(SailChangedEvent event)
     {
+    }
+
+    public ValueFactory getValueFactory()
+    {
+	System.err.println("VirtuosoRepository.java getValueFactory ()");
+	return new ValueFactoryImpl();
     }
 }
