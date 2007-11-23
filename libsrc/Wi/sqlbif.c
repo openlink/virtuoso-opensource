@@ -8955,8 +8955,12 @@ bif_set_qualifier (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
   client_connection_t * cli = (client_connection_t *) ((query_instance_t *)qst)->qi_client;
 
+  if (box_length (q) >= MAX_NAME_LEN)
+    {
+      dk_free_box (q);
+      sqlr_new_error ("22023", "SR484", "The qualifier cannot be longer than %d characters", MAX_NAME_LEN);
+    }
   sch_normalize_new_table_case (isp_schema (qi->qi_space), q, box_length (q), NULL, 0);
-
   semaphore_enter (parse_sem);
   dk_free_box (qi->qi_client->cli_qualifier);
   qi->qi_client->cli_qualifier = q;
@@ -10048,6 +10052,8 @@ bif_mapping_schema_changed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
     sqlr_new_error ("28000", "SQ001", "No owner user in __mapping_schema_changed for '%s'", name);
   }*/
   owner_user = sec_name_to_user ("dba");
+  if (box_length (qual) >= MAX_NAME_LEN)
+    sqlr_new_error ("22023", "SR485", "The qualifier cannot be longer than %d characters", MAX_NAME_LEN);
   cli->cli_qualifier = qual;
   cli->cli_user = owner_user;
   qr = sql_compile (text, qi->qi_client, &err, SQLC_DO_NOT_STORE_PROC);

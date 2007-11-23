@@ -753,7 +753,15 @@ cli_set_default_qual (client_connection_t * cli)
     {
       char *loc = strstr (usr->usr_data, "Q ");
       if (loc)
+	{
+	  int len;
+	  LOG_GET;
+	  len = strlen (loc + 2);
+	  if (len < MAX_NAME_LEN)
 	cli->cli_qualifier = box_dv_short_string (loc + 2);
+	  else
+	    log_error ("Client from %s is trying to set invalid qualifier of length=%d", from, len);
+	}
     }
 }
 

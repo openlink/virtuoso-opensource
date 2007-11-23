@@ -307,6 +307,20 @@ ins_call_bif (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
 
 }
 
+static void
+complete_proc_name (char * proc_name, char * complete, char * def_qual, char * def_owner)
+{
+  char q[MAX_NAME_LEN];
+  char o[MAX_NAME_LEN];
+  char n[MAX_NAME_LEN];
+  q[0] = 0;
+  o[0] = 0;
+  n[0] = 0;
+  sch_split_name (def_qual, proc_name, q, o, n);
+  if (0 == o[0])
+    strcpy_ck (o, def_owner);
+  snprintf (complete, MAX_QUAL_NAME_LEN, "%s.%s.%s", q, o, n);
+}
 
 #define CALL_SET_PN(ins, proc) \
 { \
@@ -473,7 +487,11 @@ report_error:
 	  CALL_SET_PN (ins, proc);
 	}
       if (!proc)
-	sqlr_new_error ("42001", "SR185", "Undefined procedure %s.", proc_name);
+	{
+	  char complete_proc_name_str[MAX_QUAL_NAME_LEN];
+	  complete_proc_name (proc_name, complete_proc_name_str, qi->qi_query->qr_qualifier, CLI_OWNER (qi->qi_client));  
+	  sqlr_new_error ("42001", "SR185", "Undefined procedure %s.", complete_proc_name_str);
+	}
     }
   param_len -= n_ret_param * sizeof (caddr_t);
   if (proc->qr_to_recompile)

@@ -1322,7 +1322,13 @@ sch_full_proc_name_1 (dbe_schema_t * sc, const char *ref_name, char *q_def, char
   if (q[0] == 0)
     {
       no_q = 1;
+      if (strlen (q_def) < MAX_NAME_LEN)
       strcpy_ck (q, q_def);
+      else
+	{
+	  log_error ("Trying to resolve procedure with invalid qualifier");
+	  strcpy_ck (q, "DB");
+	}
     }
   if (NULL != (dot = strchr (n, '.')))
     {
