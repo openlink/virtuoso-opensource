@@ -21,9 +21,6 @@
  *
  */
 
-
-//package virtuoso.sesame.driver;
-
 import java.io.*;
 import java.util.HashMap;
 import java.net.URL;
@@ -62,7 +59,8 @@ public class VirtuosoExample2
 	// example query
 	String query = "SELECT ?s ?p ?o from <sesame> WHERE { ?s ?p ?o }";
 
-	try {
+	try
+	{
 
 
 	    VirtuosoAdminListener _report = null;
