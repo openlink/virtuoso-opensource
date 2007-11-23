@@ -126,8 +126,6 @@ unsigned char dks_esc_bslashc[0x80] = {
    0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0 };
 
 
-#define CHARSET_WIDE (CHARSET_UTF8+1)
-
 #define OUT_TO_BUF(strg,len) \
   { \
     int _ctr, _len = (len); \

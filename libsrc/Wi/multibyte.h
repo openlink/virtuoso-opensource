@@ -37,6 +37,7 @@ typedef struct wcharset_s {
 } wcharset_t;
 
 #define CHARSET_UTF8	(((wcharset_t *)NULL)+1)
+#define CHARSET_WIDE	(((wcharset_t *)NULL)+2) /* not supported in many places, use only after duoble-check! */
 
 #define CHARSET_NAME(c,d) ((char *) (c != NULL ? \
     (((wcharset_t *)c) != CHARSET_UTF8 ? ((wcharset_t *)c)->chrs_name : "UTF-8") : d))
@@ -85,10 +86,11 @@ wchar_t *cli_box_narrow_to_wide (const char * in);
 
 size_t cli_utf8_to_narrow (wcharset_t *charset, const unsigned char *str, size_t max_len, unsigned char *dst, size_t max_narrows);
 size_t cli_narrow_to_utf8 (wcharset_t *charset, const unsigned char *_str, size_t max_narrows, unsigned char *dst, size_t max_utf8);
-wcharset_t *sch_name_to_charset (char *name);
+wcharset_t *sch_name_to_charset (const char *name);
 
 size_t wide_as_utf8_len (caddr_t _wide);
 caddr_t box_wide_string (const wchar_t *wstr);
+caddr_t box_wide_nchars (const wchar_t *wstr, size_t len);
 
 #ifdef UTF8_DEBUG
 #define ASSERT_BOX_UTF8(box) assert_box_utf8 (__FILE__, __LINE__, (box))

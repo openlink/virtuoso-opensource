@@ -836,40 +836,62 @@ bif_host_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	return NEW_DB_NULL;
 }
 
-#define schema_begin	offsets[0]	/* schema without ':' */
-#define schema_end	offsets[1]
-#define netloc_begin	offsets[2]	/* network location/login without ' */
-#define netloc_end	offsets[3]
-#define path_begin	offsets[4]	/* path with starting '/' */
-#define path_end	offsets[5]
-#define params_begin	offsets[6]	/* parameters without starting ';' */
-#define params_end	offsets[7]
-#define query_begin	offsets[8]	/* query without starting '?' */
-#define query_end	offsets[9]
-#define fragment_begin	offsets[10]	/* fragment without starting '#' */
-#define fragment_end	offsets[11]
-#define two_slashes     offsets[12]	/* position of end of two slashes, zero if missing */
+typedef struct rdf1808_split_s {
+  ptrlong schema_begin;		/* schema without ':' */
+  ptrlong schema_end;
+  ptrlong netloc_begin;		/* network location/login without ' */
+  ptrlong netloc_end;
+  ptrlong path_begin;		/* path with starting '/' */
+  ptrlong path_end;
+  ptrlong params_begin;		/* parameters without starting ';' */
+  ptrlong params_end;
+  ptrlong query_begin;		/* query without starting '?' */
+  ptrlong query_end;
+  ptrlong fragment_begin;	/* fragment without starting '#' */
+  ptrlong fragment_end;
+  ptrlong two_slashes;		/* position of end of two slashes, zero if missing */
+} rdf1808_split_t;
+
+#ifndef NDEBUG
+#define CHECK_RDF1808_SPLIT(split,uri_len) \
+  if ((0 != split.schema_begin) || \
+    (split.schema_begin > split.schema_end) || \
+    (split.schema_end > split.netloc_begin) || \
+    (split.netloc_begin > split.netloc_end) || \
+    (split.netloc_end > split.path_begin) || \
+    (split.path_begin > split.path_end) || \
+    (split.path_end > split.params_begin) || \
+    (split.params_begin > split.params_end) || \
+    (split.params_end > split.query_begin) || \
+    (split.query_begin > split.query_end) || \
+    (split.query_end > split.fragment_begin) || \
+    (split.fragment_begin > split.fragment_end) || \
+    (split.fragment_end > (uri_len)) ) \
+    GPF_T1("CHECK_RDF1808_SPLIT failed");
+#else
+#define CHECK_RDF1808_SPLIT(split,uri_len)
+#endif
 
 /*! URI parser according RFC 1808 recommendations
 Fills in array of twelve begin and past-the end indexes of elements */
 static void
-rfc1808_parse_uri (const char *iri, ptrlong *offsets)
+rfc1808_parse_uri (const char *iri, rdf1808_split_t *split_ret)
 {
   const char *delim;
-  schema_begin = schema_end = netloc_begin = 0;
-  fragment_end = strlen (iri);
+  split_ret->schema_begin = split_ret->schema_end = split_ret->netloc_begin = 0;
+  split_ret->fragment_end = strlen (iri);
 /* Here we know Ss nn pp pp qq fF  t */
   delim = strchr (iri, '#');
   if (NULL != delim)
     {
-      query_end = delim-iri;
-      fragment_begin = delim+1-iri;
+      split_ret->query_end = delim-iri;
+      split_ret->fragment_begin = delim+1-iri;
     }
   else
-    query_end = fragment_begin = fragment_end;
+    split_ret->query_end = split_ret->fragment_begin = split_ret->fragment_end;
 /* Here we know Ss nn pp pp qQ FF  t */
   delim = strchr (iri, ':');
-  if ((NULL != delim) && (delim < iri+query_end))
+  if ((NULL != delim) && (delim < iri+split_ret->query_end))
     {
       const char *scan = iri;
       while (scan <  delim)
@@ -878,74 +900,75 @@ rfc1808_parse_uri (const char *iri, ptrlong *offsets)
             goto schema_done;
           scan++;
         }
-      schema_end = delim-iri;
-      netloc_begin = delim + 1 - iri;
+      split_ret->schema_end = delim-iri;
+      split_ret->netloc_begin = delim + 1 - iri;
     }
 schema_done:
 /* Here we know SS Nn pp pp qQ FF  t */
-  if (('/' == iri[netloc_begin]) && ('/' == iri[netloc_begin+1]))
+  if (('/' == iri[split_ret->netloc_begin]) && ('/' == iri[split_ret->netloc_begin+1]))
     {
-      netloc_begin += 2;
-      two_slashes = netloc_begin;
-      delim = strchr (iri + netloc_begin, '/');
-      if ((NULL != delim) && (delim < iri+query_end))
+      split_ret->netloc_begin += 2;
+      split_ret->two_slashes = split_ret->netloc_begin;
+      delim = strchr (iri + split_ret->netloc_begin, '/');
+      if ((NULL != delim) && (delim < iri+split_ret->query_end))
         {
-          netloc_end = path_begin = delim - iri;
+          split_ret->netloc_end = split_ret->path_begin = delim - iri;
         }
       else
         {
-          netloc_end = path_begin = path_end = params_begin = params_end = query_begin = query_end;
+          split_ret->netloc_end = split_ret->path_begin = split_ret->path_end = split_ret->params_begin = split_ret->params_end = split_ret->query_begin = split_ret->query_end;
           return;
         }
     }
   else
     {
-      two_slashes = 0;
-      netloc_end = path_begin = netloc_begin;
+      split_ret->two_slashes = 0;
+      split_ret->netloc_end = split_ret->path_begin = split_ret->netloc_begin;
     }
 /* Here we know SS NN Pp pp qQ FF  T */
-  delim = strchr (iri + path_begin, '?');
-  if ((NULL != delim) && (delim < iri+query_end))
+  delim = strchr (iri + split_ret->path_begin, '?');
+  if ((NULL != delim) && (delim < iri+split_ret->query_end))
     {
-      query_begin = delim + 1 - iri;
-      params_end = delim - iri;
+      split_ret->query_begin = delim + 1 - iri;
+      split_ret->params_end = delim - iri;
     }
   else
     {
-      params_end = query_begin = query_end;
+      split_ret->params_end = split_ret->query_begin = split_ret->query_end;
     }
 /* Here we know SS NN Pp pP QQ FF  T */
-  delim = strchr (iri + path_begin, ';');
-  if ((NULL != delim) && (delim < iri+params_end))
+  delim = strchr (iri + split_ret->path_begin, ';');
+  if ((NULL != delim) && (delim < iri+split_ret->params_end))
     {
-      params_begin = delim + 1 - iri;
-      path_end = delim - iri;
+      split_ret->params_begin = delim + 1 - iri;
+      split_ret->path_end = delim - iri;
     }
   else
     {
-      path_end = params_begin = params_end;
+      split_ret->path_end = split_ret->params_begin = split_ret->params_end;
     }
 /* Here we know SS NN PP PP QQ FF  T */
+  CHECK_RDF1808_SPLIT((split_ret[0]), strlen (iri))
 }
 
 static void
-rfc1808_parse_wide_uri (const wchar_t *iri, ptrlong *offsets)
+rfc1808_parse_wide_uri (const wchar_t *iri, rdf1808_split_t *split_ret)
 {
   const wchar_t *delim;
-  schema_begin = schema_end = netloc_begin = 0;
-  fragment_end = virt_wcslen (iri);
+  split_ret->schema_begin = split_ret->schema_end = split_ret->netloc_begin = 0;
+  split_ret->fragment_end = virt_wcslen (iri);
 /* Here we know Ss nn pp pp qq fF  t */
   delim = virt_wcschr (iri, '#');
   if (NULL != delim)
     {
-      query_end = delim-iri;
-      fragment_begin = delim+1-iri;
+      split_ret->query_end = delim-iri;
+      split_ret->fragment_begin = delim+1-iri;
     }
   else
-    query_end = fragment_begin = fragment_end;
+    split_ret->query_end = split_ret->fragment_begin = split_ret->fragment_end;
 /* Here we know Ss nn pp pp qQ FF  t */
   delim = virt_wcschr (iri, ':');
-  if ((NULL != delim) && (delim < iri+query_end))
+  if ((NULL != delim) && (delim < iri+split_ret->query_end))
     {
       const wchar_t *scan = iri;
       while (scan <  delim)
@@ -956,54 +979,55 @@ rfc1808_parse_wide_uri (const wchar_t *iri, ptrlong *offsets)
             goto schema_done;
           scan++;
         }
-      schema_end = delim-iri;
-      netloc_begin = delim + 1 - iri;
+      split_ret->schema_end = delim-iri;
+      split_ret->netloc_begin = delim + 1 - iri;
     }
 schema_done:
 /* Here we know SS Nn pp pp qQ FF  t */
-  if (('/' == iri[netloc_begin]) && ('/' == iri[netloc_begin+1]))
+  if (('/' == iri[split_ret->netloc_begin]) && ('/' == iri[split_ret->netloc_begin+1]))
     {
-      netloc_begin += 2;
-      two_slashes = netloc_begin;
-      delim = virt_wcschr (iri + netloc_begin, '/');
-      if ((NULL != delim) && (delim < iri+query_end))
+      split_ret->netloc_begin += 2;
+      split_ret->two_slashes = split_ret->netloc_begin;
+      delim = virt_wcschr (iri + split_ret->netloc_begin, '/');
+      if ((NULL != delim) && (delim < iri+split_ret->query_end))
         {
-          netloc_end = path_begin = delim - iri;
+          split_ret->netloc_end = split_ret->path_begin = delim - iri;
         }
       else
         {
-          netloc_end = path_begin = path_end = params_begin = params_end = query_begin = query_end;
+          split_ret->netloc_end = split_ret->path_begin = split_ret->path_end = split_ret->params_begin = split_ret->params_end = split_ret->query_begin = split_ret->query_end;
           return;
         }
     }
   else
     {
-      two_slashes = 0;
-      netloc_end = path_begin = netloc_begin;
+      split_ret->two_slashes = 0;
+      split_ret->netloc_end = split_ret->path_begin = split_ret->netloc_begin;
     }
 /* Here we know SS NN Pp pp qQ FF  T */
-  delim = virt_wcschr (iri + path_begin, '?');
-  if ((NULL != delim) && (delim < iri+query_end))
+  delim = virt_wcschr (iri + split_ret->path_begin, '?');
+  if ((NULL != delim) && (delim < iri+split_ret->query_end))
     {
-      query_begin = delim + 1 - iri;
-      params_end = delim - iri;
+      split_ret->query_begin = delim + 1 - iri;
+      split_ret->params_end = delim - iri;
     }
   else
     {
-      params_end = query_begin = query_end;
+      split_ret->params_end = split_ret->query_begin = split_ret->query_end;
     }
 /* Here we know SS NN Pp pP QQ FF  T */
-  delim = virt_wcschr (iri + path_begin, ';');
-  if ((NULL != delim) && (delim < iri+params_end))
+  delim = virt_wcschr (iri + split_ret->path_begin, ';');
+  if ((NULL != delim) && (delim < iri+split_ret->params_end))
     {
-      params_begin = delim + 1 - iri;
-      path_end = delim - iri;
+      split_ret->params_begin = delim + 1 - iri;
+      split_ret->path_end = delim - iri;
     }
   else
     {
-      path_end = params_begin = params_end;
+      split_ret->path_end = split_ret->params_begin = split_ret->params_end;
     }
 /* Here we know SS NN PP PP QQ FF  T */
+  CHECK_RDF1808_SPLIT((split_ret[0]), virt_wcslen (iri))
 }
 
 /*! URI parser according RFC 1808 recommendations
@@ -1014,7 +1038,7 @@ bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ccaddr_t uri = bif_string_or_wide_or_uname_arg (qst, args, 0, "rfc1808_parse_uri");
   dtp_t uri_dtp = DV_TYPE_OF (uri);
   size_t uri_len;
-  ptrlong offsets[13];
+  rdf1808_split_t split;
   caddr_t res;
   uri_len = box_length (uri);
   if (SMALLEST_POSSIBLE_POINTER <= uri_len)
@@ -1027,27 +1051,27 @@ bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       (long)(uri_len - 1), uri, uri + uri_len - 51 );
     }
   if (DV_WIDE == uri_dtp)
-    rfc1808_parse_wide_uri (uri, offsets);
+    rfc1808_parse_wide_uri ((const wchar_t *)uri, &split);
   else
-  rfc1808_parse_uri (uri, offsets);
-  if ((1 < BOX_ELEMENTS(args)) && bif_long_arg (qst, args, 0, "rfc1808_parse_uri"))
+    rfc1808_parse_uri (uri, &split);
+  if ((1 < BOX_ELEMENTS(args)) && bif_long_arg (qst, args, 1, "rfc1808_parse_uri"))
     {
-      res = dk_alloc_box (DV_ARRAY_OF_POINTER, 13 * sizeof (caddr_t));
-      memcpy (res, offsets, 13 * sizeof (caddr_t));
+      res = dk_alloc_box (DV_ARRAY_OF_POINTER, sizeof (rdf1808_split_t));
+      memcpy (res, &split, 13 * sizeof (rdf1808_split_t));
       return res;
     }
   if (DV_WIDE == uri_dtp)
     {
       wchar_t *wideuri = (wchar_t *)uri;
       return list (6,
-        box_wide_char_string ((caddr_t)(wideuri + schema_begin)		, (schema_end - schema_begin) * sizeof (wchar_t)	, DV_WIDE),
-        box_wide_char_string ((caddr_t)(wideuri + netloc_begin)		, (netloc_end - netloc_begin) * sizeof (wchar_t)	, DV_WIDE),
-        (((path_end == path_begin) && (0 < two_slashes)) ?
+        box_wide_char_string ((caddr_t)(wideuri + split.schema_begin)	, (split.schema_end - split.schema_begin) * sizeof (wchar_t)	, DV_WIDE),
+        box_wide_char_string ((caddr_t)(wideuri + split.netloc_begin)	, (split.netloc_end - split.netloc_begin) * sizeof (wchar_t)	, DV_WIDE),
+        (((split.path_end == split.path_begin) && (0 < split.two_slashes)) ?
           box_wide_char_string ((caddr_t)(L"/"), sizeof (wchar_t), DV_WIDE) :
-          box_wide_char_string ((caddr_t)(wideuri + path_begin)		, (path_end - path_begin) * sizeof (wchar_t)		, DV_WIDE) ),
-        box_wide_char_string ((caddr_t)(wideuri + params_begin)		, (params_end - params_begin) * sizeof (wchar_t)	, DV_WIDE),
-        box_wide_char_string ((caddr_t)(wideuri + query_begin)		, (query_end - query_begin) * sizeof (wchar_t)		, DV_WIDE),
-        box_wide_char_string ((caddr_t)(wideuri + fragment_begin)	, (fragment_end - fragment_begin) * sizeof (wchar_t)	, DV_WIDE) );
+          box_wide_char_string ((caddr_t)(wideuri + split.path_begin)	, (split.path_end - split.path_begin) * sizeof (wchar_t)	, DV_WIDE) ),
+        box_wide_char_string ((caddr_t)(wideuri + split.params_begin)	, (split.params_end - split.params_begin) * sizeof (wchar_t)	, DV_WIDE),
+        box_wide_char_string ((caddr_t)(wideuri + split.query_begin)	, (split.query_end - split.query_begin) * sizeof (wchar_t)	, DV_WIDE),
+        box_wide_char_string ((caddr_t)(wideuri + split.fragment_begin)	, (split.fragment_end - split.fragment_begin) * sizeof (wchar_t), DV_WIDE) );
     }
   else
     {
@@ -1055,16 +1079,272 @@ bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         ((DV_UNAME == uri_dtp) ? 
           box_dv_uname_nchars : box_dv_short_nchars );
   return list (6,
-        box_x_nchars (uri + schema_begin	, schema_end - schema_begin),
-        box_x_nchars (uri + netloc_begin	, netloc_end - netloc_begin),
-    (((path_end == path_begin) && (0 < two_slashes)) ?
+        box_x_nchars (uri + split.schema_begin	, split.schema_end - split.schema_begin),
+        box_x_nchars (uri + split.netloc_begin	, split.netloc_end - split.netloc_begin),
+        (((split.path_end == split.path_begin) && (0 < split.two_slashes)) ?
           box_x_nchars ("/", 1) :
-          box_x_nchars (uri + path_begin	, path_end - path_begin) ),
-        box_x_nchars (uri + params_begin	, params_end - params_begin),
-        box_x_nchars (uri + query_begin		, query_end - query_begin),
-        box_x_nchars (uri + fragment_begin	, fragment_end - fragment_begin) );
+          box_x_nchars (uri + split.path_begin	, split.path_end - split.path_begin) ),
+        box_x_nchars (uri + split.params_begin	, split.params_end - split.params_begin),
+        box_x_nchars (uri + split.query_begin	, split.query_end - split.query_begin),
+        box_x_nchars (uri + split.fragment_begin, split.fragment_end - split.fragment_begin) );
    }
 }
+
+/*! URI expander according RFC 1808 recommendations */
+static caddr_t
+bif_rfc1808_expand_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t base_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "rfc1808_expand_uri");
+  caddr_t rel_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "rfc1808_expand_uri");
+  ccaddr_t output_cs_name = ((2 < BOX_ELEMENTS(args)) ? bif_string_or_null_arg (qst, args, 2, "rfc1808_expand_uri") : NULL);
+  caddr_t output_cs_upcase = output_cs_name ? sqlp_box_upcase (output_cs_name) : NULL;
+  const char *buffer_cs_upcase = (((NULL == output_cs_name) || strcmp (output_cs_name, "_WIDE_")) ? output_cs_name : "UTF-8");
+  const char *base_cs, *rel_cs;
+  int buf_len;
+  char *buf_tail = NULL, *buf_prev_tail = NULL;
+  dtp_t base_uri_dtp = DV_TYPE_OF (base_uri);
+  dtp_t rel_uri_dtp = DV_TYPE_OF (rel_uri);
+  caddr_t buffer = NULL, res = NULL, err = NULL;
+  int base_uri_is_temp = 0;
+  int rel_uri_is_temp = 0;
+  int buffer_is_temp = 0;
+  int res_is_new = 0;
+  rdf1808_split_t base_split, rel_split;
+  switch (base_uri_dtp)
+    {
+    case DV_WIDE: base_cs = "_WIDE_"; break;
+    case DV_UNAME: base_cs = "UTF-8"; break;
+    case DV_STRING: base_cs = NULL; break;
+    default: base_cs = buffer_cs_upcase; break;
+    }
+  switch (rel_uri_dtp)
+    {
+    case DV_WIDE: rel_cs = "_WIDE_"; break;
+    case DV_UNAME: rel_cs = "UTF-8"; break;
+    case DV_STRING: rel_cs = NULL; break;
+    default: rel_cs = buffer_cs_upcase; break;
+    }
+  if (base_cs != buffer_cs_upcase)
+    {
+      base_uri = charset_recode_from_named_to_named (base_uri, base_cs, buffer_cs_upcase, &base_uri_is_temp, &err);
+      if (err) goto res_complete; /* see below */
+    }
+  if (rel_cs != buffer_cs_upcase)
+    {
+      rel_uri = charset_recode_from_named_to_named (rel_uri, rel_cs, buffer_cs_upcase, &rel_uri_is_temp, &err);
+      if (err) goto res_complete; /* see below */
+    }
+  if ((NULL == base_uri) || ('\0' == base_uri[0]))
+    {
+      buffer = rel_uri;
+      buffer_is_temp = rel_uri_is_temp;
+      rel_uri_is_temp = 0;
+      goto buffer_ready; /* see below */
+    }
+  if ((NULL == rel_uri) || ('\0' == rel_uri[0]))
+    {
+      buffer = base_uri;
+      buffer_is_temp = base_uri_is_temp;
+      base_uri_is_temp = 0;
+      goto buffer_ready; /* see below */
+    }
+  rfc1808_parse_uri (rel_uri, &rel_split);
+  if (0 != rel_split.schema_end)
+    {
+      buffer = rel_uri;
+      buffer_is_temp = rel_uri_is_temp;
+      rel_uri_is_temp = 0;
+      goto buffer_ready; /* see below */
+    }
+  rfc1808_parse_uri (base_uri, &base_split);
+  buf_len = base_split.fragment_end + rel_split.fragment_end + 20;
+  buf_prev_tail = buf_tail = buffer = dk_alloc_box (buf_len, DV_STRING);
+  buffer_is_temp = 1;
+
+  if ((base_split.fragment_begin == base_split.fragment_end) && (base_split.query_end == base_split.fragment_begin-1))
+    {
+      if ((0 == rel_split.path_begin) && (rel_split.path_end == rel_split.fragment_end) && (NULL == strchr (rel_uri, '/')))
+        {
+          rel_split.path_end =
+          rel_split.params_begin = rel_split.params_end =
+          rel_split.query_begin = rel_split.query_end =
+          rel_split.fragment_begin = 0;
+        }
+    }
+#define TAIL_APPEND_CUT(pref,fld,prefix,prefix_len,suffix,suffix_len) \
+    { \
+      int cut_len = pref##_split.fld##_end - pref##_split.fld##_begin; \
+      if (prefix_len) \
+        { \
+          memcpy (buf_tail, prefix, prefix_len); \
+          buf_tail += prefix_len; \
+        } \
+      memcpy (buf_tail, pref##_uri + pref##_split.fld##_begin, cut_len); \
+      buf_tail += cut_len; \
+      if (suffix_len) \
+        { \
+          memcpy (buf_tail, suffix, suffix_len); \
+          buf_tail += suffix_len; \
+        } \
+      buf_prev_tail = buf_tail; \
+    }
+#ifndef NDEBUG
+#define IF_NONEMPTY_THEN_TAIL_APPEND_CUT(pref,fld,prefix,prefix_len,suffix,suffix_len) \
+  if (pref##_split.fld##_end != pref##_split.fld##_begin) \
+    { \
+      if (pref##_split.fld##_end < pref##_split.fld##_begin) \
+        GPF_T1("Ill boundaries"); \
+      if ((buf_tail < buffer) || (buf_tail > buffer + box_length (buffer) - 5)) \
+        GPF_T1("Ill buf_tail"); \
+      if (buf_tail > buffer + buf_len) \
+        GPF_T1("Dangerously big buf_tail"); \
+      if (buf_tail + prefix_len + suffix_len + pref##_split.fld##_end - pref##_split.fld##_begin > buffer + buf_len) \
+        GPF_T1("Dangerously big buf_tail forecast"); \
+      TAIL_APPEND_CUT(pref,fld,prefix,prefix_len,suffix,suffix_len) \
+   }
+#else
+#define IF_NONEMPTY_THEN_TAIL_APPEND_CUT(pref,fld,prefix,prefix_len,suffix,suffix_len) \
+  if (pref##_split.fld##_end != pref##_split.fld##_begin) \
+    TAIL_APPEND_CUT(pref,fld,prefix,prefix_len,suffix,suffix_len)
+#endif
+  IF_NONEMPTY_THEN_TAIL_APPEND_CUT(base,schema,"",0,":",1);
+
+  IF_NONEMPTY_THEN_TAIL_APPEND_CUT(rel,netloc,"//",2,"",0)
+  else
+  IF_NONEMPTY_THEN_TAIL_APPEND_CUT(base,netloc,"//",2,"",0)
+
+  if (0 == rel_split.path_end)
+    {
+      IF_NONEMPTY_THEN_TAIL_APPEND_CUT(base,path,"",0,"",0);
+    }
+  else if ((rel_split.path_begin != rel_split.path_end) && ('/' == rel_uri[rel_split.path_begin]))
+    {
+      IF_NONEMPTY_THEN_TAIL_APPEND_CUT(rel,path,"",0,"",0);
+    }
+  else if ((rel_split.path_begin == rel_split.path_end) && (0 != rel_split.path_end))
+    {
+      (buf_tail++)[0] = '/';
+      buf_prev_tail = buf_tail;
+    }
+  else
+    {
+      char *base_lastslash = base_uri + base_split.path_end;
+      int base_beg_len, rel_len;
+      char *hit;
+      while (base_lastslash > base_uri + base_split.path_begin)
+        {
+          base_lastslash--;
+          if ('/' == base_lastslash[0])
+            break;
+        }
+      base_beg_len = base_lastslash - (base_uri + base_split.path_begin);
+      if (base_beg_len > 0)
+        {
+          memcpy (buf_tail, base_uri + base_split.path_begin, base_beg_len);
+          buf_tail += base_beg_len;
+        }
+      (buf_tail++)[0] = '/';
+      rel_len = rel_split.path_end - rel_split.path_begin;
+      memcpy (buf_tail, rel_uri + rel_split.path_begin, rel_len);
+      buf_tail += rel_len;
+      if (('.' == buf_tail[-1]) && (('/' == buf_tail[-2]) || (('.' == buf_tail[-2]) && ('/' == buf_tail[-3]))))
+        (buf_tail++)[0] = '/';
+      buf_tail[0] = '\0';
+      hit = strstr (buf_prev_tail, "/./");
+      while (NULL != hit)
+        {
+          char *shft = hit;
+          while ('\0' != (shft[0] = shft[2])) shft++;
+          buf_tail -= 2;
+          hit = strstr (hit, "/./");
+        }
+      hit = strstr (buf_prev_tail, "/../");
+      while (NULL != hit)
+        {
+          char *crop_end = hit+3;
+          char *crop_begin;
+          if (hit == buf_prev_tail)
+            crop_begin = buf_prev_tail;
+          else
+            {
+              crop_begin = hit-1;
+              while ('/' != crop_begin[0]) crop_begin--;
+            }
+          hit = crop_begin;
+          while ('\0' != (crop_begin[0] = crop_end[0])) { crop_begin++; crop_end++; }
+          buf_tail -= (crop_end - crop_begin);
+          hit = strstr (hit, "/../");
+        }
+    }
+
+  IF_NONEMPTY_THEN_TAIL_APPEND_CUT(rel,params,";",1,"",0)
+  else if ((rel_split.schema_begin == rel_split.schema_end) &&
+    (rel_split.netloc_begin == rel_split.netloc_end) &&
+    (rel_split.path_begin == rel_split.path_end) )
+    {
+      IF_NONEMPTY_THEN_TAIL_APPEND_CUT(base,params,";",1,"",0);
+    }
+  IF_NONEMPTY_THEN_TAIL_APPEND_CUT(rel,query,"?",1,"",0)
+  else if ((rel_split.schema_begin == rel_split.schema_end) &&
+    (rel_split.netloc_begin == rel_split.netloc_end) &&
+    (rel_split.path_begin == rel_split.path_end) &&
+    (rel_split.params_begin == rel_split.params_end) )
+    {
+      IF_NONEMPTY_THEN_TAIL_APPEND_CUT(base,query,"?",1,"",0);
+    }
+  IF_NONEMPTY_THEN_TAIL_APPEND_CUT(rel,fragment,"#",1,"",0);
+  buf_tail[0] = '\0';
+
+buffer_ready:
+  if (NULL == buf_tail)
+    {
+      for (buf_tail = buffer; '\0' != buf_tail[0]; buf_tail++);
+    }
+  if ((buffer_cs_upcase != output_cs_upcase) &&
+    ((NULL == buffer_cs_upcase) || (NULL == output_cs_upcase) || strcmp(buffer_cs_upcase, output_cs_upcase)) )
+    {
+      caddr_t boxed_buffer = box_dv_short_nchars (buffer, buf_tail - buffer);
+      res = charset_recode_from_named_to_named (boxed_buffer, buffer_cs_upcase, output_cs_upcase, &res_is_new, &err);
+      if (res_is_new)
+        dk_free_box (boxed_buffer);
+      else
+        res_is_new = 1;
+      if (err) goto res_complete; /* see below */
+    }
+  else
+    {
+      if (NULL != buf_prev_tail)
+        {
+          res = box_dv_short_nchars (buffer, buf_tail - buffer);
+          res_is_new = 1;
+        }
+      else
+        {
+          res = buffer;
+          res_is_new = buffer_is_temp;
+          buffer_is_temp = 0;
+        }
+    }
+
+res_complete:
+  dk_free_box (output_cs_upcase);
+  if (base_uri_is_temp)
+    dk_free_box (base_uri);
+  if (rel_uri_is_temp)
+    dk_free_box (rel_uri);
+  if (buffer_is_temp)
+    dk_free_box (buffer);
+  if (NULL != err)
+    {
+      if (res_is_new)
+        dk_free_box (res);
+      sqlr_resignal (err);
+    }
+  if (res_is_new)
+    return res;
+  return box_copy (res);
+}
+;
 
 void
 sqlbif2_init (void)
@@ -1088,6 +1368,7 @@ sqlbif2_init (void)
   bif_define_typed ("__sec_uid_to_user", bif_sec_uid_to_user, &bt_varchar);
   bif_define ("current_proc_name", bif_current_proc_name);
   bif_define ("rfc1808_parse_uri", bif_rfc1808_parse_uri);
+  bif_define ("rfc1808_expand_uri", bif_rfc1808_expand_uri);
   sqls_bif_init ();
   sqlo_inv_bif_int ();
 }

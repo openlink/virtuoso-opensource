@@ -298,75 +298,63 @@ literal_as_utf8 (encoding_handler_t * enc, caddr_t literal, int len)
   return utfeight;
 }
 
-#define CHARSET_WIDE	((wcharset_t *) ((ptrlong)2))
 caddr_t
-bif_charset_recode (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
+charset_recode_from_named_to_named (caddr_t narrow, const char *cs1_uppercase, const char *cs2_uppercase, int *res_is_new_ret, caddr_t *err_ret)
 {
-  caddr_t narrow = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "charset_recode");
-  caddr_t cs1_name = bif_string_or_null_arg (qst, args, 1, "charset_recode");
-  caddr_t cs2_name = bif_string_or_null_arg (qst, args, 2, "charset_recode");
-  caddr_t cs1_uname, cs2_uname;
   wcharset_t *cs1, *cs2;
   int inx, to_free = 0, offset = 0;
   encoding_handler_t *eh_cs1 = NULL;
   caddr_t ret = NULL;
   dtp_t dtp = DV_TYPE_OF (narrow);
-  if (!narrow)
-    return NEW_DB_NULL;
+  res_is_new_ret[0] = 0;
 
-  cs1_uname = cs1_name ? sqlp_box_upcase (cs1_name) : NULL;
-  cs2_uname = cs2_name ? sqlp_box_upcase (cs2_name) : NULL;
+  cs1 = (cs1_uppercase && box_length (cs1_uppercase) > 1 ? sch_name_to_charset (cs1_uppercase) : (wcharset_t *)NULL);
+  cs2 = (cs2_uppercase && box_length (cs2_uppercase) > 1 ? sch_name_to_charset (cs2_uppercase) : (wcharset_t *)NULL);
 
-  cs1 = (cs1_name && box_length (cs1_name) > 1 ? sch_name_to_charset (cs1_uname) : (wcharset_t *)NULL);
-  cs2 = (cs2_name && box_length (cs2_name) > 1 ? sch_name_to_charset (cs2_uname) : (wcharset_t *)NULL);
-
-  if (cs1_uname && !cs1 && !strcmp (cs1_uname, "UTF-8"))
+  if (cs1_uppercase && !cs1 && !strcmp (cs1_uppercase, "UTF-8"))
     cs1 = CHARSET_UTF8;
-  if (cs2_uname && !cs2 && !strcmp (cs2_uname, "UTF-8"))
+  if (cs2_uppercase && !cs2 && !strcmp (cs2_uppercase, "UTF-8"))
     cs2 = CHARSET_UTF8;
-  if (cs1_uname && !cs1 && !strcmp (cs1_uname, "_WIDE_"))
+  if (cs1_uppercase && !cs1 && !strcmp (cs1_uppercase, "_WIDE_"))
     cs1 = CHARSET_WIDE;
-  if (cs2_uname && !cs2 && !strcmp (cs2_uname, "_WIDE_"))
+  if (cs2_uppercase && !cs2 && !strcmp (cs2_uppercase, "_WIDE_"))
     cs2 = CHARSET_WIDE;
-  dk_free_box (cs1_uname); dk_free_box (cs2_uname);
-  if (!narrow)
-    return narrow;
 
-  if (!cs1 && cs1_name && box_length (cs1_name) > 1)
+  if (!cs1 && cs1_uppercase && box_length (cs1_uppercase) > 1)
     {
-      if (!stricmp (cs1_name, "UTF-16") && box_length (narrow) > 2
+      if (!stricmp (cs1_uppercase, "UTF-16") && box_length (narrow) > 2
 	  && (unsigned char)(narrow[0]) == 0xFF && (unsigned char)(narrow[1]) == 0xFE)
 	{
           offset = 2;
 	  eh_cs1 = eh_get_handler ("UTF-16LE");
 	}
-      else if (!stricmp (cs1_name, "UTF-16") && box_length (narrow) > 2
+      else if (!stricmp (cs1_uppercase, "UTF-16") && box_length (narrow) > 2
 	  && (unsigned char)(narrow[0]) == 0xFE && (unsigned char)(narrow[1]) == 0xFF)
 	{
 	  offset = 2;
 	  eh_cs1 = eh_get_handler ("UTF-16BE");
 	}
-      else if (!stricmp (cs1_name, "UTF-16"))
-	sqlr_new_error ("2C000", "IN000", "UTF-16 specified, but no byte-order-mask is given");
+      else if (!stricmp (cs1_uppercase, "UTF-16"))
+        { err_ret[0] = srv_make_new_error ("2C000", "IN000", "UTF-16 specified, but no byte-order-mask is given"); return NULL; }
       else
-	eh_cs1 = eh_get_handler (cs1_name);
+	eh_cs1 = eh_get_handler (cs1_uppercase);
       if (!eh_cs1)
-        sqlr_new_error ("2C000", "IN007", "Charset %s not defined", cs1_name);
+        { err_ret[0] = srv_make_new_error ("2C000", "IN007", "Charset %s not defined", cs1_uppercase); return NULL; }
     }
 
-  if (!cs2 && cs2_name && box_length (cs2_name) > 1)
-    sqlr_new_error ("2C000", "IN008", "Charset %s not defined", cs2_name);
+  if (!cs2 && cs2_uppercase && box_length (cs2_uppercase) > 1)
+    sqlr_new_error ("2C000", "IN008", "Charset %s not defined", cs2_uppercase);
 
   if (!cs1)
     cs1 = default_charset;
   if (!cs2)
     cs2 = default_charset;
   if ((DV_UNAME == dtp) && (cs1 != CHARSET_UTF8))
-    sqlr_new_error ("2C000", "IN016", "Function charset_recode() got a UNAME argument and the source encoding is not UTF-8; this is illegal because UNAMEs are always UTF-8");
+    { err_ret[0] = srv_make_new_error ("2C000", "IN016", "Function got a UNAME argument and the source encoding is not UTF-8; this is illegal because UNAMEs are always UTF-8"); return NULL; }
   if (IS_WIDE_STRING_DTP (dtp) && cs1 != CHARSET_WIDE)
-    sqlr_new_error ("2C000", "IN012", "Narrow source charset specified, but the supplied string is wide");
+    { err_ret[0] = srv_make_new_error ("2C000", "IN012", "Narrow source charset specified, but the supplied string is wide"); return NULL; }
   if (IS_STRING_DTP (dtp) && cs1 == CHARSET_WIDE)
-    sqlr_new_error ("2C000", "IN013", "Wide source charset specified, but the supplied string not wide");
+    { err_ret[0] = srv_make_new_error ("2C000", "IN013", "Wide source charset specified, but the supplied string not wide"); return NULL; }
 
   if (eh_cs1)
     {
@@ -385,15 +373,21 @@ bif_charset_recode (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
 	ret = box_wide_as_utf8_char (narrow, box_length (narrow) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
       else
 	ret = box_wide_string_as_narrow (narrow, NULL, 0, cs2);
+      res_is_new_ret[0] = 1;
     }
   else if (cs1 == cs2 || !DV_STRINGP (narrow))
-    ret = box_copy (narrow);
+    {
+      ret = narrow;
+      res_is_new_ret[0] = to_free;
+      to_free = 0;
+    }
   else if (cs1 == CHARSET_UTF8)
     {
       if (cs2 == CHARSET_WIDE)
 	ret = box_utf8_as_wide_char (narrow, NULL, box_length (narrow) - 1, 0, DV_WIDE);
       else
 	ret = box_utf8_string_as_narrow (narrow, NULL, 0, cs2);
+      res_is_new_ret[0] = 1;
     }
   else
     {
@@ -408,10 +402,38 @@ bif_charset_recode (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
 	    output[inx] = WCHAR_TO_CHAR (CHAR_TO_WCHAR (output[inx], cs1), cs2);
 	  ret = output;
 	}
+      res_is_new_ret[0] = 1;
     }
   if (to_free)
     dk_free_box (narrow);
   return ret;
+}
+
+caddr_t
+bif_charset_recode (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
+{
+  caddr_t narrow = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "charset_recode");
+  caddr_t cs1_name = bif_string_or_null_arg (qst, args, 1, "charset_recode");
+  caddr_t cs2_name = bif_string_or_null_arg (qst, args, 2, "charset_recode");
+  caddr_t cs1_uname, cs2_uname, res;
+  int res_is_new = 0;
+  caddr_t err = NULL;
+  if (!narrow)
+    return NEW_DB_NULL;
+
+  cs1_uname = cs1_name ? sqlp_box_upcase (cs1_name) : NULL;
+  cs2_uname = cs2_name ? sqlp_box_upcase (cs2_name) : NULL;
+  res = charset_recode_from_named_to_named (narrow, cs1_uname, cs2_uname, &res_is_new, &err);
+  dk_free_box (cs1_uname); dk_free_box (cs2_uname);
+  if (NULL != err)
+    {
+      if (res_is_new)
+        dk_free_box (res);
+      sqlr_resignal (err);
+    }
+  if (res_is_new)
+    return res;
+  return box_copy (res);
 }
 
 caddr_t

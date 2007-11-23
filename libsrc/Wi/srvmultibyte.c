@@ -729,7 +729,7 @@ box_wide_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharset_
 
 
 wcharset_t *
-sch_name_to_charset_1 (char *o_default, char *q, char *o, char *n)
+sch_name_to_charset_1 (const char *o_default, const char *q, const char *o, const char *n)
 {
   wcharset_t *cs_found = NULL;
   int n_found = 0;
@@ -779,7 +779,7 @@ sch_name_to_charset_1 (char *o_default, char *q, char *o, char *n)
 }
 
 wcharset_t *
-sch_name_to_charset (char *name)
+sch_name_to_charset (const char *name)
 {
   if (!name || !name[0])
     return default_charset;

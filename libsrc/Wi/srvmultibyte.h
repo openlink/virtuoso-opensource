@@ -57,10 +57,12 @@ caddr_t complete_charset_name (caddr_t qi, char *cs_name);
 
 int compare_wide_to_narrow (wchar_t *wbox1, long n1, unsigned char *box2, long n2);
 
-wcharset_t *sch_name_to_charset (char *name);
+wcharset_t *sch_name_to_charset (const char *name);
 
 wchar_t * reverse_wide_string (wchar_t * str);
 caddr_t strstr_utf8_with_collation (caddr_t dv1, long n1,
 	    caddr_t dv2, long n2, caddr_t *next, collation_t *collation);
+
+extern caddr_t charset_recode_from_named_to_named (caddr_t narrow, const char *cs1_uppercase, const char *cs2_uppercase, int *res_is_new_ret, caddr_t *err_ret);
 
 #endif /* _SRVMULTIBYTE_H */
