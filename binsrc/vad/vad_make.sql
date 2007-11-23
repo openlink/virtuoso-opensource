@@ -1165,7 +1165,8 @@ failure:;
     log_message('state after you restart.');
 
     result ('', 'The installation of this VAD package has failed.');
-    result ('', 'Please delete the transaction file'||trx||'and then restart your database server.');
+    result ('', 'Please delete the transaction file '||trx);
+    result ('', 'and then restart your database server.');
     result ('', 'Note: Your database will be in its pre VAD installation state after you restart.');
 
     result ('00000', 'FATAL');
