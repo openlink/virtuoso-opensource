@@ -1592,7 +1592,7 @@ start:
       /* A read cursor landed on a leaf */
       if (!it->itc_no_bitmap && it->itc_insert_key && it->itc_insert_key->key_is_bitmap)
 	it->itc_bp.bp_just_landed = 1;
-      if (ISO_SERIALIZABLE == it->itc_isolation)
+      if ((ISO_SERIALIZABLE == it->itc_isolation)  /* IvAn: this addded according to Orri's instruction: */ && (DVC_GREATER != res))
 	{
 	  if (NO_WAIT != itc_serializable_land (it, buf_ret))
 	    goto start;
