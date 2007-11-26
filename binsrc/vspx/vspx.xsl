@@ -2731,6 +2731,11 @@ authenticated:;
     if (length (self.sid) > 0)
       http_header (cook_str);
     </xsl:if>
+    declare page_children any;
+    page_children := self.vc_children;
+    page_children[0] := null;
+    self.vc_children := page_children;
+    page_children := null;
 </xsl:template>
 
 <!--
@@ -2816,6 +2821,11 @@ re_auth:
      }
     </xsl:if>
 authenticated:;
+    declare page_children any;
+    page_children := self.vc_children;
+    page_children[0] := null;
+    self.vc_children := page_children;
+    page_children := null;
 </xsl:template>
 
 <!--
