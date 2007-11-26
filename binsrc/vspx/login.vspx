@@ -53,6 +53,7 @@
   if (self.vc_authenticated)
     {
       set_user_id (connection_get ('vspx_user'), 0);
+      set_qualifier ('DB');
     }
 ]]>
         </v:after-data-bind>
