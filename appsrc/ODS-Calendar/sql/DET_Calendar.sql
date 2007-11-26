@@ -862,7 +862,6 @@ create procedure CAL.WA.det_export_vcal (
   declare S, url, tzID, tzName varchar;
   declare sStream any;
 
-  url := sprintf ('http://%s%s/%U/calendar/%U/', SIOC.DBA.get_cname(), SIOC.DBA.get_base_path (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
   tzID := sprintf ('GMT%s%04d', case when cast (tz as integer) < 0 then '-' else '+' end,  tz);
   tzName := sprintf ('GMT %s%02d:00', case when cast (tz as integer) < 0 then '-' else '+' end,  abs(floor (tz / 60)));
 
@@ -882,6 +881,7 @@ create procedure CAL.WA.det_export_vcal (
   -- events
   for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 0 and E_ID = event_id) do {
       http ('BEGIN:VEVENT\r\n', sStream);
+    url := sprintf ('http://%s%s/%U/calendar/%U/Event/', SIOC.DBA.get_cname(), SIOC.DBA.get_base_path (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
     CAL.WA.export_vcal_line ('URL', url || cast (E_ID as varchar), sStream);
     CAL.WA.export_vcal_line ('DTSTAMP', CAL.WA.vcal_date2utc (now ()), sStream);
     CAL.WA.export_vcal_line ('CREATED', CAL.WA.vcal_date2utc (E_CREATED), sStream);
@@ -900,6 +900,7 @@ create procedure CAL.WA.det_export_vcal (
   -- tasks
   for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 1 and E_ID = event_id) do {
       http ('BEGIN:VTODO\r\n', sStream);
+    url := sprintf ('http://%s%s/%U/calendar/%U/Task/', SIOC.DBA.get_cname(), SIOC.DBA.get_base_path (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
     CAL.WA.export_vcal_line ('URL', url || cast (E_ID as varchar), sStream);
     CAL.WA.export_vcal_line ('DTSTAMP', CAL.WA.vcal_date2utc (now ()), sStream);
     CAL.WA.export_vcal_line ('CREATED', CAL.WA.vcal_date2utc (E_CREATED), sStream);
