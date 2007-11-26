@@ -461,6 +461,8 @@ typedef struct dk_mem_wrapper_s
 #define LAST_DV_DTP 220
 
 typedef int64 boxint;
+#define BOXINT_MAX 0x7fffffffffffffffL
+#define BOXINT_MIN 0x8000000000000000L
 
 #ifdef WIN32
 #define BOXINT_FMT "%I64d"

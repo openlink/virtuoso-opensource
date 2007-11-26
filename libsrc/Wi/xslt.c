@@ -1179,7 +1179,6 @@ xslt_pop_params (xparse_ctx_t * xp, xqi_binding_t *old_locals)
   while (xb != old_locals)
     {
       xqi_binding_t * next = xb->xb_next;
-      caddr_t name = xb->xb_name;
       dk_free_tree (xb->xb_value);
       dk_free ((caddr_t) xb, sizeof (xqi_binding_t));
       xb = next;
@@ -3223,7 +3222,6 @@ bif_dict_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_get", 0);
   id_hash_t *ht = hit->hit_hash;
   caddr_t key = bif_arg (qst, args, 1, "dict_get");
-  caddr_t dflt_val = ((2 < BOX_ELEMENTS (args)) ? bif_arg (qst, args, 2, "dict_get") : 0);
   caddr_t *valptr;
   caddr_t res;
   if (ht->ht_mutex)
@@ -3560,24 +3558,35 @@ gvector_qsort (caddr_t * in, caddr_t * left, int n_in, int depth, vector_sort_t 
     }
 }
 
+typedef struct dsort_itm_s {
+  boxint di_key;
+  int di_pos;
+} dsort_itm_t;
+
 caddr_t
-bif_gvector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_gvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *funname, char algo)
 {
-  caddr_t *vect = (caddr_t *)bif_array_arg (qst, args, 0, "gvector_sort");
-  ptrlong vect_elems = BOX_ELEMENTS (vect);
-  ptrlong block_elts = bif_long_range_arg (qst, args, 1, "gvector_sort", 1, 1024);
-  ptrlong key_ofs = bif_long_range_arg (qst, args, 2, "gvector_sort", 0, 1024);
-  ptrlong sort_asc = bif_long_range_arg (qst, args, 3, "gvector_sort", 0, 1);
-  caddr_t *temp;
+  caddr_t *vect = (caddr_t *)bif_array_arg (qst, args, 0, funname);
+  int vect_elems = BOX_ELEMENTS (vect);
+  int block_elts = bif_long_range_arg (qst, args, 1, funname, 1, 1024);
+  int key_ofs = bif_long_range_arg (qst, args, 2, funname, 0, 1024);
+  int sort_asc = bif_long_range_arg (qst, args, 3, funname, 0, 1);
+  int group_count;
   vector_sort_t specs;
   if (block_elts <= 0)
-    sqlr_new_error ("22023", "SR488", "Second argument of gvector_sort() should be positive integer");
+    sqlr_new_error ("22023", "SR488", "Second argument of %s() should be positive integer", funname);
   if (block_elts > MAX_VECTOR_BSORT_BLOCK)
-    sqlr_new_error ("22023", "SR488", "Second argument of gvector_sort() is greater than maximum supported block length %d", MAX_VECTOR_BSORT_BLOCK);
+    sqlr_new_error ("22023", "SR488", "Second argument of %s() is greater than maximum supported block length %d", funname, MAX_VECTOR_BSORT_BLOCK);
   if (vect_elems % block_elts != 0)
-    sqlr_new_error ("22023", "SR489", "In call of gvector_sort(), length of vector in argument #1 is not a whole multiple of argument #2");
+    sqlr_new_error ("22023", "SR489", "In call of %s(), length of vector in argument #1 is not a whole multiple of argument #2", funname);
   if ((0 > key_ofs) || (key_ofs >= block_elts))
-    sqlr_new_error ("22023", "SR490", "In call of gvector_sort(), argument #3 should be nonnegative integer that is less than argument #2");
+    sqlr_new_error ("22023", "SR490", "In call of %s(), argument #3 should be nonnegative integer that is less than argument #2", funname);
+  group_count = vect_elems / block_elts;
+  if (1 >= group_count)
+    return box_num (group_count); /* No need to sort empty or single-element vector */
+  if ('Q' == algo)
+    {
+      caddr_t *temp;
 #ifdef GVECTOR_SORT_DEBUG
   temp = (caddr_t*) dk_alloc_box_zero (box_length (vect), DV_ARRAY_OF_POINTER);
 #else
@@ -3591,14 +3600,126 @@ bif_gvector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   specs.vs_whole_vector = vect;
   specs.vs_whole_tmp = temp;
 #endif
-  gvector_qsort (vect, temp, vect_elems / block_elts, 0, &specs);
+      gvector_qsort (vect, temp, group_count, 0, &specs);
 #ifdef GVECTOR_SORT_DEBUG
   dk_check_tree (vect);
 #endif
   dk_free_box (temp);
-  return box_num (vect_elems / block_elts);
+    }
+  else /* if ('D' == algo) */
+    {
+      uint32 *offsets;
+      dsort_itm_t *src, *tgt, *swap;
+      caddr_t *vect_copy;
+      int shift, offsets_count, itm_ctr, twobyte, max_twobyte;
+      boxint minv = BOXINT_MAX, maxv = BOXINT_MIN;
+      src = (dsort_itm_t *) dk_alloc (group_count * sizeof (dsort_itm_t));
+      for (itm_ctr = group_count; itm_ctr--; /* no step */)
+        {
+          caddr_t key = vect[itm_ctr * block_elts + key_ofs];
+          dtp_t key_dtp = DV_TYPE_OF (key);
+          boxint key_val;
+          if (DV_LONG_INT == key_dtp)
+            key_val = unbox (key);
+          else if (DV_IRI_ID == key_dtp)
+            key_val = unbox_iri_id (key);
+          else
+            {
+              dk_free ((void *)src, group_count * sizeof (dsort_itm_t));
+              sqlr_new_error ("22023", "SR572",
+	        "Function %s needs IRI_IDs or integers as key elements of array, "
+		"not a value type %s (%d); position of bad key in array is %d",
+		funname, dv_type_title (key_dtp), key_dtp, itm_ctr * block_elts + key_ofs );
+            }
+          if (key_val < minv)
+            minv = key_val;
+          if (key_val > maxv)
+            maxv = key_val;
+          src[itm_ctr].di_key = key_val;
+          src[itm_ctr].di_pos = itm_ctr;
+        }
+      if ((maxv - minv) < 0L)
+        {
+          dk_free ((void *)src, group_count * sizeof (dsort_itm_t));
+          sqlr_new_error ("22023", "SR573",
+	    "Function %s has failed to sort array: the difference between greatest and smallest keys does not fit 63 bit range; consider using gvector_sort()", funname );
+        }
+      if (sort_asc)
+        {
+          for (itm_ctr = group_count; itm_ctr--; /* no step */)
+            {
+              src[itm_ctr].di_key -= minv;
+            }
+          maxv -= minv;
+        }
+      else
+        {
+          for (itm_ctr = group_count; itm_ctr--; /* no step */)
+            {
+              src[itm_ctr].di_key = maxv - src[itm_ctr].di_key;
+            }
+          maxv = maxv - minv;
+        }
+      tgt = (dsort_itm_t *) dk_alloc (group_count * sizeof (dsort_itm_t));
+      offsets_count = ((maxv >= 0x10000) ? 0x10000 : (maxv+1));
+      offsets = (uint32 *) dk_alloc (offsets_count * sizeof (uint32));
+      for (shift = 0; shift < 8 * sizeof (boxint); shift += 16)
+        {
+          if (0 == (maxv >> shift))
+            break;
+          max_twobyte = (((maxv >> shift) >= 0x10000L) ? 0x10000 : (int)((maxv >> shift)+1));
+          memset (offsets, 0, max_twobyte * sizeof (uint32));
+          for (itm_ctr = group_count; itm_ctr--; /* no step */)
+            {
+              (offsets[(src[itm_ctr].di_key >> shift) & 0xffff])++;
+            }
+          if (group_count == offsets[0])
+            continue; /* Special case to optimize sorting of array of IRI_IDs of bnodes and iri nodes */
+          for (twobyte = 1; twobyte < max_twobyte; twobyte++)
+            offsets [twobyte] += offsets [twobyte-1];
+#ifndef DEBUG
+          if (group_count != offsets [max_twobyte - 1])
+            GPF_T1 ("Bad offsets in gvector_digit_sort()");
+#endif
+          for (itm_ctr = group_count; itm_ctr--; /* no step */)
+            {
+              int ofs = --(offsets[(src[itm_ctr].di_key >> shift) & 0xffff]);
+              tgt[ofs] = src[itm_ctr];
+            }
+          swap = src;
+          src = tgt;
+          tgt = swap;
+        }
+      vect_copy = (caddr_t *)dk_alloc (vect_elems * sizeof (caddr_t));
+      memcpy (vect_copy, vect, vect_elems * sizeof (caddr_t));
+      for (itm_ctr = group_count; itm_ctr--; /* no step */)
+        {
+          memcpy (vect + itm_ctr * block_elts,
+            vect_copy + src[itm_ctr].di_pos * block_elts,
+            block_elts * sizeof (caddr_t) );
+        }
+#ifndef NDEBUG
+      dk_check_tree (vect);
+#endif
+      dk_free (src, group_count * sizeof (dsort_itm_t));
+      dk_free (tgt, group_count * sizeof (dsort_itm_t));
+      dk_free (offsets, offsets_count * sizeof (uint32));
+      dk_free (vect_copy, vect_elems * sizeof (caddr_t));
+    }
+  return box_num (group_count);
 }
 
+caddr_t
+bif_gvector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_gvector_sort_imp (qst, err_ret, args, "gvector_sort", 'Q');
+}
+
+caddr_t
+bif_gvector_digit_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_gvector_sort_imp (qst, err_ret, args, "gvector_digit_sort", 'D');
+}
 
 void
 box_dict_iterator_serialize (xml_entity_t * xe, dk_session_t * ses)
@@ -3838,5 +3959,6 @@ xslt_init (void)
   bif_define ("dict_list_keys", bif_dict_list_keys);
   bif_define ("dict_to_vector", bif_dict_to_vector);
   bif_define ("gvector_sort", bif_gvector_sort);
+  bif_define ("gvector_digit_sort", bif_gvector_digit_sort);
 }
 
