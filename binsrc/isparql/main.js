@@ -174,14 +174,6 @@ function init() {
 
 	OAT.WebDav.init({imageExt:"png"});
 	
-	/* save */
-	dialogs.save = new OAT.Dialog("Save","save_div",{width:400,modal:1});
-	dialogs.save.ok = function() {
-		self.save($v("save_name"),$v("savetype"));
-		dialogs.save.hide();
-	}
-	dialogs.save.cancel = dialogs.save.hide;
-
 	/* qbe_unsupp */
 	dialogs.qbe_unsupp = new OAT.Dialog("Unsupported","qbe_unsupported_div",{width:400,modal:1});
 	dialogs.qbe_unsupp.ok = function() {
@@ -288,13 +280,13 @@ function init() {
 	window.adv = new iSPARQL.Advanced();
 
 	var execCB = function(query) {
-		if (qbe.QueryGenerate() ==	query) { return; }
+		if (qbe.QueryGenerate() == query) { return; }
 		if (tab.selectedIndex == 0) { 
-		qbe.loadFromString(query);
+			qbe.loadFromString(query);
 		}
 		if (tab.selectedIndex == 1) {
-		$("query").value = query;
-	}
+			$("query").value = query;
+		}
 	}
 	window.qe = new QueryExec({div:"page_results",executeCallback:execCB});
 
@@ -574,7 +566,7 @@ iSPARQL.QueryExec = function(paramsObj) {
 			iSPARQL.QueryCache[params.query] = data;
 			params.callback(data);
 		}
-
+		
 		if (params.query in iSPARQL.QueryCache) {
 			params.callback(iSPARQL.QueryCache[params.query]);
 		} else {

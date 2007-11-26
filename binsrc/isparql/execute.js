@@ -285,9 +285,9 @@ var QueryExec = function(optObj) {
 				var index = header.find(v);
 				row[index] = val;
 				simplified_row[index] = self.simplifyPrefix(val);
-			
+
 				if (self.dom.select.value == "0") {
-				var value = simplified_row[index];
+					var value = simplified_row[index];
 					var simple = self.store.simplify(value);
 					simplified_row[index] = simple;
 				}
@@ -332,7 +332,7 @@ var QueryExec = function(optObj) {
 				if (r[1] == "HT404") { self.dom.result.innerHTML += ": Resource not found"; }
 				self.dom.result.innerHTML += ". Check your query and try again.";
 			} else {
-			self.dom.result.innerHTML = OAT.Xml.escape(data);
+				self.dom.result.innerHTML = OAT.Xml.escape(data);
 			}
 			self.dom.response.innerHTML = OAT.Xml.escape(data);
 		} else {
@@ -402,7 +402,7 @@ var QueryExec = function(optObj) {
 			o.query = q;
 			o.backupQuery = bq;
 			self.execute(o);
-		}
+ 		}
 	
 		var genRef = function() {
 			var ul = OAT.Dom.create("ul",{marginLeft:"20px",marginTop:"10px"});

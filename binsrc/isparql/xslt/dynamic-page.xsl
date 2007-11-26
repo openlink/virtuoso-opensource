@@ -14,7 +14,7 @@
     xmlns:i="urn:schemas-openlink-com:isparql">
     <xsl:output method="html"/>
 
-    <xsl:template match = "/">
+	<xsl:template match = "/">
       <xsl:apply-templates select="//i:ISparqlDynamicPage"/>
     </xsl:template>
 
