@@ -195,7 +195,6 @@ directory_init() {
   cp *.js vad/data/nntpf
   cp *.sql vad/data/nntpf
   cp *.vsp vad/data/nntpf
-  cp $HOME/binsrc/dav/DET_nntp.sql vad/data/nntpf
   cp comp/*.xsl vad/data/nntpf/comp
 # cp comp/*.xml vad/data/nntpf/comp
   cp images/*.png vad/data/nntpf/images
@@ -277,8 +276,6 @@ sticker_init() {
   echo "  </sql>" >> $STICKER
   echo "</ddls>" >> $STICKER
   echo "<resources>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"nntpf/DET_nntp.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER  
-
   for file in `find vad/data/nntpf -type f -print | sort`
   do
      if echo "$file" | grep -v ".vspx" >/dev/null

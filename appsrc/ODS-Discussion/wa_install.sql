@@ -63,14 +63,22 @@ create constructor method discussion (inout stream any) for ODS.DISCUSSION.discu
 ;
 
 -- This method is essention. It return the path where user will be relocated when he has clicked on application tab in ODS navigation.
-
 create method wa_home_url () for ODS.DISCUSSION.discussion {
-  declare uri,ods_url varchar;
-
+  declare uri,ods_url, vspx_user varchar;
   ods_url:=coalesce(registry_get ('wa_home_link'),'/ods');
-  
+  vspx_user:=connection_get ('vspx_user');
+  if (vspx_user is not null)
+  {
+    declare iUserID integer;
+    iUserID := (select U_ID from DB.DBA.SYS_USERS where U_NAME = vspx_user);
+    declare path, det_id varchar;
+    path := sprintf ('/DAV/home/%s/Discussion/', vspx_user);
+    DB.DBA.DAV_MAKE_DIR (path, iUserID, null, '110100000N');
+    det_id := (select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = DB.DBA.DAV_SEARCH_ID (path, 'C'));
+    if (det_id is null)
+    	update WS.WS.SYS_DAV_COL set COL_DET = 'nntp' where COL_ID = DB.DBA.DAV_SEARCH_ID (path, 'C');
+  }
   uri := '/dataspace/all/discussion'; -- as Discussion has a special developed dashboar- url to dashboard is supplied, common use should be [uri := '/my_app_url/';]
-  
   return uri;
 }
 ;
