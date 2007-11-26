@@ -831,6 +831,7 @@ else if (length (self.catid))
 
   <xsl:template match="vm:header">
    <head profile="http://gmpg.org/xfn/11 http://purl.org/NET/erdf/profile http://internetalchemy.org/2003/02/profile">
+     <link rel="stylesheet" href="/weblog/public/css/webdav.css" type="text/css"/>
       <xsl:text>&#10;</xsl:text>
       <?vsp
         declare icon varchar;
@@ -864,11 +865,14 @@ else if (length (self.catid))
         var toolkitPath="/ods/oat";
         var imagePath="/ods/images/oat/";
 
-        var featureList=["ajax2", "anchor", "ghostdrag"];
+        var featureList=["ajax2", "anchor", "ghostdrag", "dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript">
+        // WebDAV Object
+        var oWebDAV;
+
         function weblog2Init() {
           OAT.Preferences.imagePath = '/ods/images/oat/';
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
@@ -877,11 +881,37 @@ else if (length (self.catid))
 	  if (<?V get_keyword ('App', self.opts, 1) ?>  >= 1)
 	     generateAPP('texttd',
 	     	{ title:"Related links",
-		  width:300, height:200,
+		                      width:300,
+		                      height:200,
 		  appActivation:"<?V case when get_keyword ('App', self.opts, 1) = 2 then 'hover' else 'click' end ?>",
 		  useRDFB:<?V case when wa_check_package ('OAT') then 'true' else 'false' end ?>
-	        });
         }
+	                     );
+          var options = { imagePath: '/ods/images/oat/',
+                          imageExt: 'png',
+                          path: '<?V '/DAV/home/' || self.user_name || '/' ?>'
+                        };
+          OAT.WebDav.init(options);
+          oWebDAV = OAT.WebDav;
+        }
+
+        function davBrowseOpen (fld, fext)
+        {
+          var options = { mode: 'browser',
+                          onConfirmClick: function(path, fname) {$(fld).value = path + fname;},
+                          filetypes:[{ext:fext,label:" "}]
+                        };
+          oWebDAV.open(options);
+        }
+
+        function davBrowseSave (fld, f)
+        {
+          var options = { mode: 'browser',
+                          onConfirmClick: function(path, fname) {$(fld).value = path + f;}
+                        };
+          oWebDAV.open(options);
+        }
+
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, weblog2Init);
       </script>
       ]]>
@@ -8989,10 +9019,18 @@ window.onload = function (e)
       <div class="form_actions">
 	  <v:text type="hidden" value="--concat ('/DAV/home/',self.user_name,'/')" name="tmpl_home_path" />
 	  <label for="load_tmpl_dav">Load template from DAV</label><br/>
-	  <v:text name="load_tmpl_dav" xhtml_size="80" xhtml_class="textbox" />
-	  <vm:dav_browser render="popup" list_type="details" flt="yes" flt_pat="*.vspx" path="DAV/home" browse_type="res" w_title="DAV Browser" title="DAV Browser" lang="en" return_box="load_tmpl_dav">
-	      <v:field name="path" ref="tmpl_home_path" />
-	  </vm:dav_browser>
+	  <v:text name="load_tmpl_dav" xhtml_id="load_tmpl_dav" xhtml_size="80" xhtml_class="textbox" />
+	  <v:button xhtml_class="real_button" action="browse" value="Browse...">
+                       	  <v:after-data-bind>
+                       		  <![CDATA[
+                              declare fext varchar;
+                       		    fext := 'vspx';
+                       		    if (get_keyword ('tmpl_tab', e.ve_params, '1') = '5')
+                       		      fext := 'css';
+                              control.vc_add_attribute ('onclick', sprintf ('javascript: davBrowseOpen (''load_tmpl_dav'', ''%s'');', fext));
+                  			    ]]>
+                  			  </v:after-data-bind>
+                  		  </v:button>
 	  <v:button xhtml_class="real_button" value="Load" action="simple" name="load_tmpl_dav_bt">
 	      <v:on-post><![CDATA[
 		  declare cont, rc, mime, pwd any;
@@ -9024,10 +9062,26 @@ window.onload = function (e)
 	  </v:button>
 	  <br />
 	  <label for="save_tmpl_dav">Save template to DAV</label><br/>
-	  <v:text name="save_tmpl_dav" xhtml_size="80" xhtml_class="textbox" />
-	  <vm:dav_browser render="popup" list_type="details" flt="yes" flt_pat="*.vspx" path="DAV/home" browse_type="both" w_title="DAV Browser" title="DAV Browser" lang="en" return_box="save_tmpl_dav">
-	      <v:field name="path" ref="tmpl_home_path" />
-	  </vm:dav_browser>
+	  <v:text name="save_tmpl_dav" xhtml_id="save_tmpl_dav" xhtml_size="80" xhtml_class="textbox" />
+	  <v:button xhtml_class="real_button" action="browse" value="Browse...">
+                       	  <v:after-data-bind>
+                       		  <![CDATA[
+                       		    declare f varchar;
+                       		    f := '';
+                       		    if (get_keyword ('tmpl_tab', e.ve_params, '1') = '1')
+                       		      f := 'index.vspx';
+                       		    if (get_keyword ('tmpl_tab', e.ve_params, '1') = '3')
+                       		      f := 'linkblog.vspx';
+                       		    if (get_keyword ('tmpl_tab', e.ve_params, '1') = '4')
+                       		      f := 'summary.vspx';
+                       		    if (get_keyword ('tmpl_tab', e.ve_params, '1') = '6')
+                       		      f := 'archive.vspx';
+                       		    if (get_keyword ('tmpl_tab', e.ve_params, '1') = '5')
+                       		      f := 'default.css';
+                              control.vc_add_attribute ('onclick', sprintf ('javascript: davBrowseSave (''save_tmpl_dav'', ''%s'');', f));
+                  			    ]]>
+                  			  </v:after-data-bind>
+                  		  </v:button>
 	  <v:button xhtml_class="real_button" value="Save" action="simple" name="save_tmpl_dav_bt">
 	      <v:on-post><![CDATA[
 		  declare cont, rc, mime, pwd any;
