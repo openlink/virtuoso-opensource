@@ -212,7 +212,7 @@ create procedure serialize_act (in _u_id int, in act_id int, inout ses any)
   declare cname varchar;
   cname := DB.DBA.WA_CNAME ();
 --  dbg_obj_print (_u_id, act_id);
-  for select WA_ID, WA_U_ID, WA_SRC_ID, WA_TS, WA_ACTIVITY, U_NAME from DB.DBA.WA_ACTIVITIES, DB.DBA.SYS_USERS
+  for select WA_ID, WA_U_ID, WA_SRC_ID, WA_TS, WA_ACTIVITY, WA_ACTIVITY_TYPE, U_NAME from DB.DBA.WA_ACTIVITIES, DB.DBA.SYS_USERS
     where WA_U_ID = _u_id and WA_ID = act_id and WA_U_ID = U_ID do
     {
       declare url varchar;
@@ -222,10 +222,11 @@ create procedure serialize_act (in _u_id int, in act_id int, inout ses any)
       http (sprintf ('<updated>%s</updated>\n', DB.DBA.date_iso8601 (WA_TS)), ses);
       http ('<category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/activities/2007#activity"/>\n',
 	  ses);
-      http (sprintf ('<title>%s</title>\n', WA_ACTIVITY), ses);
+      http (sprintf ('<title><![CDATA[%s]]></title>\n', WA_ACTIVITY), ses);
       http (sprintf ('<link rel="self" type="application/atom+xml" href="%V"/>\n', url), ses);
       http (sprintf ('<link rel="edit" type="application/atom+xml" href="%V"/>\n', url), ses);
       http (sprintf ('<received>%s</received>\n', DB.DBA.date_iso8601 (now ())), ses);
+      http (sprintf ('<dc:type xmlns:dc="http://purl.org/dc/elements/1.1">%s</dc:type>\n', WA_ACTIVITY_TYPE), ses);
       http ('</entry>\n', ses);
     }
 }
@@ -237,7 +238,7 @@ create procedure feed_act_head (in uid varchar, in srcId int, inout ses any)
   cname := DB.DBA.WA_CNAME ();
   url := sprintf ('http://%s/activities/feeds/activities/user/%s/source/%d', cname, uid, srcId);
   fname := (select U_FULL_NAME from DB.DBA.SYS_USERS where U_NAME = uid);
-  http ('<feed xmlns="http://www.w3.org/2005/Atom" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:georss="http://www.georss.org/georss" xmlns:gd="http://schemas.google.com/g/2005">\n', ses);
+  http ('<feed xmlns="http://www.w3.org/2005/Atom" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:georss="http://www.georss.org/georss" xmlns:gd="http://schemas.google.com/g/2005" xmlns:dc="http://purl.org/dc/elements/1.1"> \n', ses);
   http (sprintf ('<id>%s</id>\n', url), ses);
   http('<category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/activities/2007#activity"/>', ses);
   http (sprintf ('<updated>%s</updated>\n', DB.DBA.date_iso8601 (now ())), ses);

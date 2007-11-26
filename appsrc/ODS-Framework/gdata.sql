@@ -474,9 +474,8 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	 http (ses);
 	 return '';
     }
-
   if (length (app) and app not in
-      ('subscriptions','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed', 'sparql', 'polls', 'addressbook', 'socialnetwork', 'calendar'))
+      ('subscriptions','weblog','wiki','briefcase','mail','bookmark', 'photos', 'community', 'discussion', 'users', 'feed','feeds', 'sparql', 'polls', 'addressbook', 'socialnetwork', 'calendar','addressbook','im'))
    {
      if (has_accept)
        {
@@ -791,7 +790,7 @@ create procedure ODS.ODS.gdata
       aarr := split_and_decode (app, 0, '\0\0,');
       foreach (any ap in aarr) do
 	{
-	  if (length (ap) and ap not in ('people','subscriptions','weblog','wiki','dav','mail','apps', 'users', 'bookmark', 'discussion'))
+	  if (length (ap) and ap not in ('people','subscriptions','weblog','wiki','dav','mail','apps', 'users', 'bookmark', 'discussion','addressbook','polls','photos','calendar','im','feeds'))
 	    {
 	      http_header ('Content-Type: text/html\r\n');
               signal ('22023', 'Invalid application domain');

@@ -591,6 +591,69 @@ create procedure userDiscussionGroups (in sid varchar:='',in realm varchar :='wa
 ;
 grant execute on userDiscussionGroups to GDATA_ODS;
 
+create procedure feedStatus (in sid varchar:='',in realm varchar :='wa') __SOAP_HTTP 'text/xml'
+{
+  declare errCode integer;
+  declare errMsg varchar;
+  declare resXml any;
+
+  resXml  := string_output ();
+  errCode := 0;
+  errMsg  := '';
+
+  declare logged_user_name varchar;
+  if(isSessionValid(sid,'wa',logged_user_name))
+  {
+    declare logged_user_id integer;
+    logged_user_id:=userid(logged_user_name);
+    for(select WAU_A_ID,WAU_STATUS from WA_ACTIVITIES_USERSET where WAU_U_ID=logged_user_id) do
+    {
+       http(sprintf('<activity id="%d" status="%d" />',WAU_A_ID,WAU_STATUS),resXml);
+    } 
+  }
+
+  if(errCode<>0)
+     httpErrXml(errCode,errMsg,'feedStatus');
+  else
+     httpResXml(resXml,'feedStatus');
+  
+  return '';
+}
+;
+
+grant execute on feedStatus to GDATA_ODS;
+
+create procedure feedStatusSet (in sid varchar:='',in realm varchar :='wa', in feedId integer, in feedStatus integer) __SOAP_HTTP 'text/xml'
+{
+  declare errCode integer;
+  declare errMsg varchar;
+  declare resXml any;
+
+  resXml  := string_output ();
+  errCode := 0;
+  errMsg  := '';
+
+  declare logged_user_name varchar;
+  if(isSessionValid(sid,'wa',logged_user_name))
+  {
+    declare logged_user_id integer;
+    logged_user_id:=userid(logged_user_name);
+    if (exists(select 1 from WA_ACTIVITIES_USERSET where WAU_U_ID=logged_user_id and WAU_A_ID=feedId))
+        update WA_ACTIVITIES_USERSET set WAU_STATUS=feedStatus where WAU_U_ID=logged_user_id and WAU_A_ID=feedId;
+    else
+        insert into WA_ACTIVITIES_USERSET(WAU_U_ID,WAU_A_ID,WAU_STATUS) values(logged_user_id,feedId,feedStatus);
+  }
+
+  if(errCode<>0)
+     httpErrXml(errCode,errMsg,'feedStatusSet');
+  else
+     httpResXml(resXml,'feedStatusSet');
+  
+  return '';
+}
+;
+grant execute on feedStatusSet to GDATA_ODS;
+
 create procedure openIdServer (in openIdUrl varchar) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
@@ -657,7 +720,6 @@ create procedure openIdCheckAuthentication (in realm varchar :='wa', in openIdUr
   errCode := 0;
   errMsg  := '';
 
-    
   declare exit handler for sqlstate '*'
   {
     errCode:=502;
@@ -676,6 +738,14 @@ create procedure openIdCheckAuthentication (in realm varchar :='wa', in openIdUr
       errMsg := 'OpenID Authentication Failed';
       goto _auth_failed;
   }
+
+  declare exit handler for not found
+  {
+    errCode:=503;
+    errMsg := 'OpenID is not registered as user identity';
+    goto _auth_failed;
+  };
+
   select U_NAME into user_name from WA_USER_INFO, SYS_USERS where WAUI_U_ID = U_ID and WAUI_OPENID_URL = openIdIdentity;
 
   declare sid varchar;
@@ -697,6 +767,7 @@ _auth_failed:
 }
 ;
 grant execute on openIdCheckAuthentication to GDATA_ODS;
+
 
 
 create procedure httpResXml(in resXml any, in request_method varchar)
@@ -784,7 +855,9 @@ create procedure constructTypePackageArr(in firstcol_type varchar :='package')
                          'oDrive'     , 'Briefcase',
                          'oGallery'   , 'Gallery',
                          'oMail'      , 'Mail',
-                         'oWiki'      , 'Wiki'
+                         'oWiki'      , 'Wiki',
+                         'IM'         , 'Instant Messenger',
+                         'eCRM'       , 'eCRM'
                          );
 
     -- PACKAGE NAME / WA_TYPE
@@ -799,8 +872,9 @@ create procedure constructTypePackageArr(in firstcol_type varchar :='package')
                          'Briefcase'    , 'oDrive'     , 
                          'Gallery'      , 'oGallery'   , 
                          'Mail'         , 'oMail'      , 
-                         'Wiki'         , 'oWiki'      
-
+                         'Wiki'             , 'oWiki'      ,
+                         'Instant Messenger', 'IM'         ,
+                         'eCRM'             , 'eCRM'
                          );
 
   if(firstcol_type='wa_types')

@@ -10,12 +10,66 @@ function eTarget(e)
 
  return el ;
 }
+function buildObjByAttributes(elm)
+{
+   var obj={};
+   for(var i=0;i<elm.attributes.length;i++)
+   {
+       obj[elm.attributes[i].nodeName]=OAT.Xml.textValue(elm.attributes[i]);
+   }
+   return obj;
+};
+
 function buildObjByChildNodes(elm)
 {
    var obj={};
    for(var i=0;i<elm.childNodes.length;i++)
    {
-     obj[elm.childNodes[i].nodeName]=OAT.Xml.textValue(elm.childNodes[i]);
+      var pName=elm.childNodes[i].nodeName;
+      var pValue=OAT.Xml.textValue(elm.childNodes[i]);
+      var pAttrib=elm.childNodes[i].attributes;
+
+     if( !(pName=='#text' && pValue=='\n') )
+     {   
+        if(typeof(obj[pName])=='undefined')
+           obj[pName]=pValue;
+        else
+        { 
+          var tmpObj=false;
+          if(!(obj[pName] instanceof Array))
+          {
+            tmpObj=obj[pName];
+            obj[pName]=new Array();
+            obj[pName].push(tmpObj);
+            obj[pName].push(pValue);
+          }else
+            obj[pName].push(pValue);
+
+        }
+         if(pAttrib.length>0)
+         {
+           var tmpVal=false;
+           if((obj[pName] instanceof Array))
+           {
+            obj[pName][(obj[pName].length-1)]={};
+            obj[pName][(obj[pName].length-1)]['value']=pValue;
+           }
+           else
+           {
+            obj[pName]={};
+            obj[pName]['value']=pValue;
+           }
+           
+           for(var k=0;k<pAttrib.length;k++)
+           {
+             if((obj[pName] instanceof Array))
+                 obj[pName][(obj[pName].length-1)]['@'+pAttrib[k].nodeName]=OAT.Xml.textValue(pAttrib[k]);
+             else
+                 obj[pName]['@'+pAttrib[k].nodeName]=OAT.Xml.textValue(pAttrib[k]);
+           }
+         }
+
+     }
    }
    return obj;
 };
@@ -28,6 +82,7 @@ ODS.Preferences = {
   dataspacePath:"/dataspace/",
   odsHome:"/ods/",
   svcEndpoint:"/ods_services/Http/",
+  activitiesEndpoint:"/activities/feeds/activities/user/",
   version:"08.10.2007"
 }
 
@@ -42,8 +97,25 @@ ODS.app = {AddressBook  : {menuName:'AddressBook',icon:'images/icons/ods_ab_16.p
            Briefcase    : {menuName:'Briefcase',icon:'images/icons/ods_briefcase_16.png',dsUrl:'#UID#/briefcase/'},
            Gallery      : {menuName:'Gallery',icon:'images/icons/ods_gallery_16.png',dsUrl:'#UID#/gallery/'},
            Mail         : {menuName:'Mail',icon:'images/icons/ods_mail_16.png',dsUrl:'#UID#/mail/'},
-           Wiki         : {menuName:'Wiki',icon:'images/icons/ods_wiki_16.png',dsUrl:'#UID#/wiki/'}
-          }
+           Wiki             : {menuName:'Wiki',icon:'images/icons/ods_wiki_16.png',dsUrl:'#UID#/wiki/'},
+           InstantMessenger : {menuName:'Instant Messenger',icon:'images/icons/ods_wiki_16.png',dsUrl:'#UID#/IM/'},
+           eCRM             : {menuName:'eCRM',icon:'images/icons/apps_16.png',dsUrl:'#UID#/ecrm/'}
+          };
+ODS.ico = {addressBook      : {alt:'AddressBook',icon:'images/icons/ods_ab_16.png'},
+           bookmarks        : {alt:'Bookmarks',icon:'images/icons/ods_bookmarks_16.png'},
+           calendar         : {alt:'Calendar',icon:'images/icons/ods_calendar_16.png'},
+           community        : {alt:'Community',icon:'images/icons/ods_community_16.png'},
+           discussion       : {alt:'Discussion',icon:'images/icons/apps_16.png'},
+           polls            : {alt:'Polls',icon:'images/icons/ods_poll_16.png'},
+           weblog           : {alt:'Weblog',icon:'images/icons/ods_weblog_16.png'},
+           feeds            : {alt:'Feed Manager',icon:'images/icons/ods_feeds_16.png'},
+           briefcase        : {alt:'Briefcase',icon:'images/icons/ods_briefcase_16.png'},
+           gallery          : {alt:'Gallery',icon:'images/icons/ods_gallery_16.png'},
+           mail             : {alt:'Mail',icon:'images/icons/ods_mail_16.png'},
+           wiki             : {alt:'Wiki',icon:'images/icons/ods_wiki_16.png'},
+           system           : {alt:'ODS',icon:'images/icons/apps_16.png'},
+           instantmessenger : {alt:'InstantMessenger',icon:'images/icons/ods_im_16.png'}
+          };
 
 
 ODS.session = function(customEndpoint){
@@ -269,7 +341,21 @@ ODS.session = function(customEndpoint){
                                              self.userName=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdCheckAuthentication_response/userName',{})[0]);
                                              self.userId=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/openIdCheckAuthentication_response/userId',{})[0]);
                                              OAT.MSG.send(self,OAT.MSG.SES_VALIDBIND,{});
+                                           }else
+                                           {
+                                             dd($('loginErrDiv'));
+//                                             $('loginErrDiv').innerHTML='';
+//                                             var warnImg=OAT.Dom.create('img',{verticalAlign:'text-bottom',paddingTop:'3px'});
+//                                             warnImg.src='images/warn_16.png';
+//                                             var errMsg=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/error_response/error_msg',{})[0]);
+//                                             
+//                                             OAT.Dom.append([$('loginErrDiv'),warnImg,OAT.Dom.text(' '+errMsg)]);
+//                                             
+//                                             nav.logIn();
+                                             return;
+                                            
                                            }
+                                            
                                             
                                        };
     OAT.AJAX.POST(self.endpoint+"openIdCheckAuthentication", data, callback, optionsSynch);
@@ -314,6 +400,7 @@ ODS.session = function(customEndpoint){
 ODS.Nav = function(navOptions) {
   var self = this;
   this.ods=ODS.Preferences.odsHome;
+  this.dataspace=ODS.Preferences.dataspacePath;
   this.leftbar=$(navOptions.leftbar);
   this.rightbar=$(navOptions.rightbar);
   this.appmenu=$(navOptions.appmenu);
@@ -481,7 +568,7 @@ ODS.Nav = function(navOptions) {
      var packageName = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/createApplication_response/application/type',{})[0]);
      var url = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/createApplication_response/application/url',{})[0]);
 
-     var menuObj=$(packageName+'_menuItem');
+     var menuObj=$(packageName.replace(' ','')+'_menuItem');
 
      var appMenuItemA=OAT.Dom.create('a',{cursor:'pointer'});
      appMenuItemA.packageName=packageName;
@@ -642,7 +729,7 @@ ODS.Nav = function(navOptions) {
 
     var aUserProfile = OAT.Dom.create("a",{cursor: 'pointer'});
     aUserProfile.id='aUserProfile'; 
-    OAT.Event.attach(aUserProfile,"click",function(){self.loadVspx(self.expandURL(self.ods+'uhome.vspx?ufname='+self.session.userName));});  
+    OAT.Event.attach(aUserProfile,"click",function(){self.loadVspx(self.expandURL(self.dataspace+'person/'+self.session.userName+'#this'));});  
     aUserProfile.innerHTML=self.session.userName; 
     
     var aLogin= OAT.Dom.create("a");
@@ -673,7 +760,6 @@ ODS.Nav = function(navOptions) {
   
   this.logIn= function ()
   {
-    
     // add later #destroy previous session and session cookie#
     self.session.start();
 
@@ -814,7 +900,6 @@ ODS.Nav = function(navOptions) {
          rWidgets[i].style.width=pRWidth-8+'px';
     }
 
-    alert
     if(!self.profile.connTab)
     {
        var connTab=new OAT.Tab('connPCtr');
@@ -886,7 +971,7 @@ ODS.Nav = function(navOptions) {
     $('userProfilePhotoImg').alt=userDisplayName;
     
     var gems=$('profileUserGems').getElementsByTagName("a");
-    gems[0].href='/dataspace/'+self.profile.userName+'/about.rdf'; // foaf
+    gems[0].href='/dataspace/person/'+self.profile.userName+'/foaf.rdf'; // foaf
     gems[1].href='/dataspace/'+self.profile.userName+'/sioc.rdf'; //sioc
     gems[2].href='http://geourl.org/near?p='+encodeURIComponent('http://'+document.location.host+'/dataspace/'+self.profile.userName); //GEOURL //http://geourl.org/near?p=http%3A//bdimitrov.lukanet.com%3A8890/dataspace/borislavdimitrov
     gems[3].href='sn_user_export.vspx?ufid='+self.profile.userId+'&ufname='+self.profile.userName;//vcard
@@ -946,6 +1031,147 @@ ODS.Nav = function(navOptions) {
       self.profile.connMap.optimalPosition(self.profile.connMap.connLocations);
       self.wait('hide');
       return;
+    }
+
+    function activitiesByAtom(atomXml)
+    {
+     var activities=new Array();
+     return activities;
+    }
+
+    
+    function buildTimeObj()
+    {
+      function pZero(val,prec)
+      {
+        if (!prec) prec = 2;
+        if(String(val).length < prec)
+          return '0'.repeat(prec - String(val).length) + String(val);
+        else 
+          return val;
+      };
+
+     var weekday=new Array(7)
+         weekday[0]="Sunday";
+         weekday[1]="Monday";
+         weekday[2]="Tuesday";
+         weekday[3]="Wednesday";
+         weekday[4]="Thursday";
+         weekday[5]="Friday";
+         weekday[6]="Saturday";
+     
+     var obj={};
+     var d=new Date();
+//     d.setFullYear(2007,0,1);
+     var titleObj=OAT.Dom.create('h3',{},'date');
+     OAT.Dom.append([titleObj,OAT.Dom.text('Today')]);
+     obj[d.getFullYear()+'-'+pZero(d.getMonth()+1)+'-'+pZero(d.getDate())]={title:'Today',titleObj:titleObj,ulObj:OAT.Dom.create('ul',{},'msgs')};
+     
+     d.setDate(d.getDate()-1);
+     var titleObj=OAT.Dom.create('h3',{},'date');
+     OAT.Dom.append([titleObj,OAT.Dom.text('Yesterday')]);
+     obj[d.getFullYear()+'-'+pZero(d.getMonth()+1)+'-'+pZero(d.getDate())]={title:'Yesterday',titleObj:titleObj,ulObj:OAT.Dom.create('ul',{},'msgs')};
+
+     for(var i=0;i<5;i++)
+     {
+       d.setDate(d.getDate()-1);
+       var titleObj=OAT.Dom.create('h3',{},'date');
+       OAT.Dom.append([titleObj,OAT.Dom.text(weekday[d.getDay()])]);
+       obj[d.getFullYear()+'-'+pZero(d.getMonth()+1)+'-'+pZero(d.getDate())]={title:weekday[d.getDay()],titleObj:titleObj,ulObj:OAT.Dom.create('ul',{},'msgs')};
+     }
+
+     var titleObj=OAT.Dom.create('h3',{},'date');
+     OAT.Dom.append([titleObj,OAT.Dom.text('Older')]);
+     obj['older']={title:'Older',titleObj:titleObj,ulObj:OAT.Dom.create('ul',{},'msgs')};
+
+    
+     return obj;
+    }
+    
+    function renderNewsFeedBlock(xmlString)
+    {
+      var actHidden=new Array;
+      self.feedStatus(function(xmlDoc){ var actOpt = OAT.Xml.xpath(xmlDoc, '/feedStatus_response/activity',{});
+                                        for(var i=0;i<actOpt.length;i++)
+                                        {
+                                          var act=buildObjByAttributes(actOpt[i]);
+                                          if(act.status==0)
+                                             actHidden.push(act.id);
+                                        }
+                                        self.wait('hide');
+                                      });
+
+      var daily=buildTimeObj();
+      var cont = $('notify_content');
+      if(!cont) return;
+      
+      var xmlDoc = OAT.Xml.createXmlDoc(OAT.Xml.removeDefaultNamespace(xmlString));
+      var entries = OAT.Xml.xpath(xmlDoc, '/feed/entry',{});
+
+
+      for(var i=0;i<entries.length;i++)
+      {
+          var entry=buildObjByChildNodes(entries[i]);
+
+//          dd(entry['dc:type'].value);
+
+          var actImg=false;
+          if( (typeof(entry['dc:type'].value)!='undefined') && (entry['dc:type'].value.length>0) && (typeof(ODS.ico[entry['dc:type'].value]) != 'undefined'))
+          {
+             actImg=OAT.Dom.create('img',{},'msg_icon');
+             actImg.alt=ODS.ico[entry['dc:type'].value].alt;
+             actImg.src=ODS.ico[entry['dc:type'].value].icon;
+          
+          };
+            
+          var feedId=entry.id.split('/');
+          feedId=feedId[feedId.length-1];
+
+          var ctrl_hide = OAT.Dom.create('img',{width:'16px',height:'16px',cursor:'pointer'});
+              ctrl_hide.src='images/skin/default/notify_remove_btn.png'
+              ctrl_hide.alt='Hide';
+          
+          ctrl_hide.feedId=feedId;
+          OAT.Event.attach(ctrl_hide,"click",function(e){ var t=eTarget(e);var feedId=t.feedId;t=t.parentNode.parentNode;
+                                                          self.feedStatusSet( feedId,0,function(){if(t.parentNode.childNodes.length==1)
+                                                                                                  {  if(t.parentNode.previousSibling.tagName=='H3')
+                                                                                                        OAT.Dom.unlink(t.parentNode.previousSibling);
+                                                                                                     OAT.Dom.unlink(t.parentNode);
+                                                                                                  }else OAT.Dom.unlink(t);
+                                                                                                  self.wait('hide');});
+                                                                                                  });  
+
+          var ctrl=OAT.Dom.create('div',{},'msg_r')
+          OAT.Dom.append([ctrl,ctrl_hide]);
+          
+          var actDiv=OAT.Dom.create('div',{},'msg');
+          actDiv.innerHTML='<span class="time">'+entry.updated.substr(11,5)+'</span> '+entry.title;
+         
+          var actLi=OAT.Dom.create('li');
+          
+          if(actImg)
+             OAT.Dom.append([actLi,actImg,actDiv,ctrl])
+          else
+             OAT.Dom.append([actLi,actDiv,ctrl])
+          
+          var actDate=entry.updated.substring(0,10);
+          
+          if(typeof(daily[actDate])=='object' && actHidden.find(feedId)==-1)
+          { 
+              OAT.Dom.append([daily[actDate].ulObj,actLi]);
+          }
+
+      }
+      
+      for(day in daily)
+      {
+        if(daily[day].ulObj.childNodes.length>0)
+        {
+         OAT.Dom.append([$('notify_content'),daily[day].titleObj,daily[day].ulObj]) 
+        }
+      }
+
+
     }
 
     function renderContactInformationBlock(xmlDoc)
@@ -1070,7 +1296,7 @@ ODS.Nav = function(navOptions) {
       
        var packageName=OAT.Xml.textValue(resXmlNodes[i]);
        packageName=packageName.replace(' ','');
-       var appOpt=ODS.app[packageName];
+       var appOpt=ODS.app[packageName.replace(' ','')];
 
        var appDataSpaceItem=OAT.Dom.create('li');
        var appDataSpaceItemA=OAT.Dom.create('a',{cursor:'pointer'});
@@ -1160,6 +1386,9 @@ ODS.Nav = function(navOptions) {
     
     self.connectionsGet(self.profile.userId,'fullName,photo,homeLocation',renderConnectionsWidget);
     self.discussionGroupsGet(self.profile.userId,renderDiscussionGroups)
+
+    OAT.AJAX.GET(ODS.Preferences.activitiesEndpoint+self.profile.userName+'/0/', false , renderNewsFeedBlock, optionsGet);
+
     self.session.usersGetInfo(self.profile.userId,'title,fullName,photo,home,homeLocation,business,businessLocation,im',function(xmlDoc3){renderContactInformationBlock(xmlDoc3);});
     self.session.usersGetInfo(self.profile.userId,'interests,music',function(xmlDoc3){renderPersonalInformationBlock(xmlDoc3);});
 
@@ -1226,10 +1455,13 @@ ODS.Nav = function(navOptions) {
    if(OAT.Dimmer.root || waitState=='hide')
    {
     if(OAT.Dimmer.root)
+    {
+//       dd(OAT.Dimmer.elm.id);
+//       if(OAT.Dimmer.elm.id == 'waitDiv');
        OAT.Dimmer.hide();
+    }
     return;
    }
-   
    var waitDiv=$('waitDiv');
    if(!waitDiv)
    {
@@ -1275,6 +1507,8 @@ ODS.Nav = function(navOptions) {
     self.wait();
     if(applicationType=='FeedManager')
        applicationType='FeedManager';
+    if(applicationType=='InstantMessenger')
+       applicationType='Instant Messenger';
        
     var data = 'sid='+self.session.sid+'&application='+encodeURIComponent(applicationType);
       
@@ -1352,6 +1586,46 @@ ODS.Nav = function(navOptions) {
                                        };
                                          
     OAT.AJAX.POST(self.session.endpoint+"userDiscussionGroups", data, callback, ajaxOptions);
+  }
+
+  this.feedStatusSet = function (feedId,feedStatus,callbackFunction){
+    
+    self.wait();
+    var data = 'sid='+self.session.sid+'&feedId='+feedId+'&feedStatus='+feedStatus;
+      
+    var callback = function(xmlString) {
+                                           var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                           if(!self.session.isErr(xmlDoc))
+                                           {
+                                             if(typeof(callbackFunction) == "function")
+                                                callbackFunction(xmlDoc);
+                                           }else
+                                           {
+                                              self.wait();
+                                           }
+                                       };
+                                         
+    OAT.AJAX.POST(self.session.endpoint+"feedStatusSet", data, callback, ajaxOptions);
+  }
+
+  this.feedStatus = function (callbackFunction){
+    
+    self.wait();
+    var data = 'sid='+self.session.sid;
+      
+    var callback = function(xmlString) {
+                                           var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                           if(!self.session.isErr(xmlDoc))
+                                           {
+                                             if(typeof(callbackFunction) == "function")
+                                                callbackFunction(xmlDoc);
+                                           }else
+                                           {
+                                              self.wait();
+                                           }
+                                       };
+                                         
+    OAT.AJAX.POST(self.session.endpoint+"feedStatus", data, callback, optionsSynch);
   }
 
   this.createCookie = function (name, value, hours)
@@ -1435,6 +1709,7 @@ var nav=false;
 
 var options=false;
 var optionsSynch=false;
+var optionsGet=false;
 
 function initNav ()
 {
@@ -1446,6 +1721,7 @@ function initNav ()
   
   
   options = {auth:OAT.AJAX.AUTH_BASIC,
+             noSecurityCookie:1,
              onerror:function(request) { dd(request.getStatus()); }
             };
   
@@ -1453,6 +1729,10 @@ function initNav ()
                   async:false,
                   onerror:function(request) { dd(request.getStatus()); }
                  };
+  optionsGet = {auth:OAT.AJAX.AUTH_NONE,
+                noSecurityCookie:1,
+                onerror:function(request) { dd(request.getStatus()); }
+               };
 
   var vpsize=OAT.Dom.getViewport();
   $('RT').style.width=vpsize[0]-168+'px';

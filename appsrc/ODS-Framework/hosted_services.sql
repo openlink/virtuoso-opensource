@@ -1255,7 +1255,7 @@ create trigger WA_MEMBER_I after insert on WA_MEMBER referencing new as N {
     _inst_type:=(select WAI_TYPE_NAME from DB.DBA.WA_INSTANCE  where WAI_NAME=N.WAM_INST);
     
 
-  _act:=sprintf('<a href="%U">%s</a> added the <a href="%s" >%s</a> application',WA_USER_DATASPACE(N.WAM_USER),WA_USER_FULLNAME(N.WAM_USER),WA_APP_INSTANCE_DATASPACE(N.WAM_INST),WA_GET_APP_NAME(_inst_type));
+  _act:=sprintf('<a href="%s">%s</a> added the <a href="%s" >%s</a> application.',WA_USER_DATASPACE(N.WAM_USER),WA_USER_FULLNAME(N.WAM_USER),WA_APP_INSTANCE_DATASPACE(N.WAM_INST),WA_GET_APP_NAME(_inst_type));
   OPEN_SOCIAL.DBA.add_ods_activity(N.WAM_USER,_inst_id,_act,'system','add','application',WA_APP_INSTANCE_DATASPACE(N.WAM_INST));
 
 -- END add Activity
@@ -5704,13 +5704,13 @@ create procedure wa_get_app_dataspace (in type_name varchar)
               'eNews2', 'subscriptions',
               'oWiki', 'wiki',
               'oMail', 'mail',
-              'eCRM', '',
+              'eCRM', 'eCRM',
               'Bookmark', 'bookmark',
               'nntpf','',
               'Polls','polls',
               'AddressBook','addressbook',
               'Calendar','calendar',
-              'IM','');
+              'IM','IM');
 
 return get_keyword(type_name,arr,'');
 
