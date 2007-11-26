@@ -866,6 +866,7 @@ new_long:
         {
           set triggers off;
               insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG) values (id, tridgell, v);
+          set triggers on;
         }
       if (ro_id_dict is not null)
         dict_put (ro_id_dict, id, 1);
@@ -919,6 +920,7 @@ new_short:
         {
           set triggers off;
               insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL) values (id, v);
+          set triggers on;
         }
       if (ro_id_dict is not null)
         dict_put (ro_id_dict, id, 1);
@@ -1111,7 +1113,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_I
           return res;
         }
     }
-  return DB.DBA.RDF_OBJ_ADD (dt_twobyte, v, lang_twobyte);
+  return DB.DBA.RDF_OBJ_ADD (dt_twobyte, v, lang_twobyte, ro_id_dict);
 }
 ;
 
@@ -7979,8 +7981,12 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_A (
   app_env[1] := aq_request (
     app_env[0], 'DB.DBA.TTLP_EV_TRIPLE_W',
     vector (g_iid, s_uri, p_uri, o_uri, app_env[2] ) );
-  if (mod (app_env[1], 4000) = 0)
+  if (mod (app_env[1], 100000) = 0)
     {
+      declare ro_id_dict any;
+      ro_id_dict := app_env[2][1];
+      if (ro_id_dict is not null)
+        DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (g_iid, ro_id_dict);
       commit work;
       aq_wait (app_env[0], app_env[1], err, 1);
       aq_wait_all (app_env[0]);
@@ -7999,8 +8005,12 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_A (
   app_env[1] := aq_request (
     app_env[0], 'DB.DBA.TTLP_EV_TRIPLE_L_W',
     vector (g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env[2] ) );
-  if (mod (app_env[1], 4000) = 0)
+  if (mod (app_env[1], 100000) = 0)
     {
+      declare ro_id_dict any;
+      ro_id_dict := app_env[2][1];
+      if (ro_id_dict is not null)
+        DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (g_iid, ro_id_dict);
       commit work;
       aq_wait (app_env[0], app_env[1], err, 1);
       aq_wait_all (app_env[0]);
@@ -8018,7 +8028,7 @@ create procedure DB.DBA.TTLP_EV_COMMIT_A (
 ;
 
 
-create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0,
+create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0,
 				 in log_mode integer := 1, in threads integer := 3)
 {
   declare ro_id_dict, app_env, err any;
@@ -8041,10 +8051,14 @@ create procedure DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varc
   commit work;
   aq_wait (app_env[0], app_env[1], err, 1);
   aq_wait_all (app_env[0]);
+  if (ro_id_dict is not null)
+    DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (graph), ro_id_dict);
+  commit work;
+  return graph;
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in graph varchar, in log_mode integer := 1)
+create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in graph varchar, in log_mode integer := 1)
 {
   declare ro_id_dict, app_env, err any;
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
@@ -8066,7 +8080,9 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in
   commit work;
   aq_wait (app_env[0], app_env[1], err, 1);
   aq_wait_all (app_env[0]);
-
+  if (ro_id_dict is not null)
+    DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (graph), ro_id_dict);
+  commit work;
   return graph;
 }
 ;
@@ -9074,7 +9090,7 @@ err:
 
 create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inout ro_id_dict any)
 {
-  declare start_vt_d_id, ro_id_offset, ro_ids_count integer;
+  declare start_vt_d_id, aligned_start_vt_d_id, uncommited_ro_id_offset, ro_id_offset, ro_ids_count integer;
   declare old_d_id, old_d_id_2, carry_d_id, carry_d_id_2 integer;
   declare old_data, carry_data varchar;
   declare split_ctr, split_len integer;
@@ -9082,14 +9098,14 @@ create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inou
   declare split any;
   declare cr cursor for (
     select VT_D_ID, VT_D_ID_2, coalesce (VT_DATA, cast (VT_LONG_DATA as varchar)) from RDF_OBJ_RO_DIGEST_WORDS
-    where (VT_WORD = cast (graph_iid as varchar)) and (VT_D_ID >= ((start_vt_d_id / 10000) * 10000)) and VT_D_ID_2 >= start_vt_d_id for update);
+    where (VT_WORD = cast (graph_iid as varchar)) and (VT_D_ID >= aligned_start_vt_d_id) and VT_D_ID_2 >= start_vt_d_id for update);
   declare new_ro_ids any;
   -- dbg_obj_princ ('DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (', graph_iid, ro_id_dict, ')');
   new_ro_ids := dict_list_keys (ro_id_dict, 2);
   ro_ids_count := length (new_ro_ids);
   if (0 = ro_ids_count)
     return;
-  gvector_sort (new_ro_ids, 1, 0, 1);
+  gvector_digit_sort (new_ro_ids, 1, 0, 1);
 -- debug begin
   dbg_smallest_d_id := new_ro_ids[0];
   dbg_largest_d_id := new_ro_ids[length (new_ro_ids) - 1];
@@ -9098,9 +9114,11 @@ create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inou
 -- debug end
   commit work;
   whenever sqlstate '41000' goto retry_add;
+  uncommited_ro_id_offset := 0;
 again:
-  ro_id_offset := 0;
-  start_vt_d_id := new_ro_ids[0];
+  ro_id_offset := uncommited_ro_id_offset;
+  start_vt_d_id := new_ro_ids[ro_id_offset];
+  aligned_start_vt_d_id := ((start_vt_d_id / 10000) * 10000);
   carry_d_id := 0;
   carry_d_id_2 := 0;
   carry_data := '';
@@ -9133,7 +9151,20 @@ next_split:
       values (cast (graph_iid as varchar), split[split_ctr][0], split[split_ctr][1], split[split_ctr][2]);
     }
   if (carry_data = '')
+    {
     commit work;
+      uncommited_ro_id_offset := ro_id_offset;
+      if (ro_id_offset >= ro_ids_count)
+        {
+          start_vt_d_id := 1024 * 65536 * 65536 * 65536; -- well, a big number
+          goto no_more_olds;
+        }
+      start_vt_d_id := new_ro_ids[uncommited_ro_id_offset];
+      aligned_start_vt_d_id := ((start_vt_d_id / 10000) * 10000);
+      close cr;
+      open cr (prefetch 1);
+    }
+  goto next_split;
 
 no_more_olds:
   split := DB.DBA.VT_COMPOSE_KEYWORD_INDEX_LINES (carry_d_id, carry_d_id_2, carry_data, null, null, null, ro_id_offset, new_ro_ids);
