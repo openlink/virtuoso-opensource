@@ -43,7 +43,7 @@ public class VirtuosoSPARQLExample1 {
 
 /*			STEP 3			*/
 /*		Select all data in virtuoso	*/
-		Query sparql = QueryFactory.create("SELECT * WHERE { GRAPH ?graph { ?s ?p ?o } }");
+		Query sparql = QueryFactory.create("SELECT * WHERE { GRAPH ?graph { ?s ?p ?o } } limit 100");
 
 /*			STEP 4			*/
 		VirtuosoQueryExecution vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
