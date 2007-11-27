@@ -25,8 +25,6 @@ package virtuoso.sesame.driver;
 
 import java.util.Map;
 
-import org.apache.log4j.Logger;
-
 import org.openrdf.model.Resource;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
