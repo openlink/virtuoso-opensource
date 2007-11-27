@@ -703,7 +703,7 @@ create procedure "RDFData_MAKE_DET_COL" (in path varchar, in gr varchar := null,
     signal ('42000', 'Unable to create RDFData DET collection');
   update WS.WS.SYS_DAV_COL set COL_DET='RDFData' where COL_ID = colid;
   if (gr is not null)
-    DAV_PROP_SET_INT (path, 'virt:rdfdata_graph', gr, null, null, 0, 0, 0, http_dav_uid ());
+    DAV_PROP_SET_INT (path, 'virt:rdfdata_graph', gr, null, null, 0, 0, 1, http_dav_uid ());
   if (lg is not null)
     DAV_PROP_SET_INT (path, 'virt:rdfdata_lang', lg, null, null, 0, 0, 1, http_dav_uid ());
 }
