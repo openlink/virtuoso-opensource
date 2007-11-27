@@ -170,6 +170,11 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutCategory-description ;
                         foaf:img tut_northwind:CategoryPhoto(categories.CategoryID)
 				as virtrdf:tutCategory-categories.CategoryPhoto .
+								
+				tut_northwind:CategoryPhoto(categories.CategoryID)
+						a tut_northwind:CategoryPhoto
+								as virtrdf:tutCategory-categories.CategoryPhotoID .
+
                 tut_northwind:Shipper (shippers.ShipperID)
                         a tut_northwind:Shipper
                                 as virtrdf:tutShipper-ShipperID ;
@@ -177,7 +182,10 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutShipper-company_name ;
                         tut_northwind:phone shippers.Phone
                                 as virtrdf:tutShipper-phone .
+
                 tut_northwind:Customer (customers.CustomerID)
+                        a  tut_northwind:Customer
+                                as virtrdf:tutCustomer-CustomerID2 ;
                         a  foaf:Organization
                                 as virtrdf:tutCustomer-CustomerID ;
                         foaf:name customers.CompanyName
@@ -211,7 +219,10 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                 tut_northwind:Country (customers.Country)
                         tut_northwind:is_country_of
                 tut_northwind:Customer (customers.CustomerID) as virtrdf:tutCustomer-is_country_of .
+
                 tut_northwind:Employee (employees.EmployeeID)
+                        a tut_northwind:Employee
+                                as virtrdf:tutEmployee-EmployeeID2 ;
                         a foaf:Person
                                 as virtrdf:tutEmployee-EmployeeID ;
                         foaf:surname employees.LastName
@@ -254,6 +265,10 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutEmployee-reports_to ;
                         foaf:img tut_northwind:EmployeePhoto(employees.EmployeeID)
 			        as virtrdf:tutEmployee-employees.EmployeePhoto .
+
+				tut_northwind:EmployeePhoto(employees.EmployeeID)
+						a tut_northwind:EmployeePhoto
+								as virtrdf:tut_Employee-employees.EmployeePhotoId .
 
                 tut_northwind:Employee (orders.EmployeeID)
                         tut_northwind:is_salesrep_of
@@ -316,6 +331,8 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutOrderLine-discount .
                 
                 tut_northwind:Country (countries.Name)
+                        a tut_northwind:Country
+                                as virtrdf:tutCountry-Type2 ;
                         a wgs:SpatialThing
                                 as virtrdf:tutCountry-Type ;
                         owl:sameAs tut_northwind:dbpedia_iri (countries.Name) ;
@@ -336,6 +353,14 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         wgs:long countries.Lng
                                 as virtrdf:tutCountry-Lng .
                 
+                tut_northwind:Flag(countries.SmallFlagDAVResourceURI)
+                        a tut_northwind:Flag
+                        as virtrdf:tutCountry-SmallFlagDAVResourceURI2 .
+
+                tut_northwind:Flag(countries.LargeFlagDAVResourceURI)
+                        a tut_northwind:Flag
+                                as virtrdf:tutCountry-LargeFlagDAVResourceURI2 .
+
                 tut_northwind:Country (countries.Name)
                         tut_northwind:has_province
                 tut_northwind:Province (provinces.CountryCode, provinces.Province) where (^{provinces.}^.CountryCode = ^{countries.}^.Code) as virtrdf:tutCountry-has_province .
