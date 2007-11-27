@@ -17,7 +17,7 @@ OAT.AnchorData = {
 }
 
 OAT.Anchor = {
-	
+		
 	appendContent:function(options) {
 		if (options.content) {
 			if (typeof(options.content) == "function") { options.content = options.content(); }
@@ -138,16 +138,16 @@ OAT.Anchor = {
 			type:options.type,
 			status:options.status,
 			template:options.template	} );
-			function checkOver() {
-				var opts = OAT.AnchorData.active;
-				if (!opts) { return; }
-				if (opts.activation == "hover") { opts.endClose(); }
-			}
-			function checkOut() {
-				var opts = OAT.AnchorData.active;
-				if (!opts) { return; }
-				if (opts.activation == "hover") { opts.startClose(); }
-			}
+		function checkOver() {
+			var opts = OAT.AnchorData.active;
+			if (!opts) { return; }
+			if (opts.activation == "hover") { opts.endClose(); }
+		}
+		function checkOut() {
+			var opts = OAT.AnchorData.active;
+			if (!opts) { return; }
+			if (opts.activation == "hover") { opts.startClose(); }
+		}
 		OAT.Dom.attach(win.dom.container,"mouseover",checkOver);
 		OAT.Dom.attach(win.dom.container,"mouseout",checkOut);
 		var arrow = OAT.Dom.create("div",{});
@@ -169,13 +169,25 @@ OAT.Anchor = {
 			OAT.AnchorData.active = options;
 			var pos = OAT.Dom.eventPos(event);
 			OAT.AnchorData.window = win; /* assign last opened window */
-		
+
 			if (!options.stat) {
-				OAT.Anchor.callForData(options,pos); 
+				OAT.Anchor.callForData(options,pos);
 			} else { 
 				OAT.Anchor.appendContent(options);
 			}
 			win.show();
+			/* adjust width and height if content overflows container depending on block or inline element inside */
+			var height = OAT.Dom.getWH(win.dom.content)[1];
+			while (OAT.Dom.getWH(win.dom.content)[1]+50 > OAT.Dom.getWH(win.dom.container)[1]) {
+				if (OAT.Dom.getWH(win.dom.container)[0] < 650)
+					win.dom.container.style.width = (OAT.Dom.getWH(win.dom.container)[0]+100)+'px';
+				if (height == OAT.Dom.getWH(win.dom.content)[1]) {
+					win.dom.container.style.width = (OAT.Dom.getWH(win.dom.container)[0]-100)+'px';
+					win.dom.container.style.height = (OAT.Dom.getWH(win.dom.content)[1]+50)+'px';
+					break;
+				}
+				height = OAT.Dom.getWH(win.dom.content)[1];
+			}
 			options.anchorTo(pos[0],pos[1]);
 		}
 		options.anchorTo = function(x_,y_) {
@@ -219,7 +231,7 @@ OAT.Anchor = {
 		options.endClose = function() {
 			options.closeFlag = 0;
 		}
-	
+
 		switch (options.activation) {
 			case "hover":
 				OAT.Dom.attach(elm,"mouseover",options.displayRef);
