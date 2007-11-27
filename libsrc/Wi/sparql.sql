@@ -179,30 +179,43 @@ again:
 DB.DBA.RDF_LOAD_ALL_FT_RULES ()
 ;
 
-create procedure DB.DBA.RDF_GLOBAL_RESET ()
+create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
 {
 --  checkpoint;
   __atomic (1);
   iri_id_cache_flush ();
   __rdf_obj_ft_rule_zap_all ();
-  delete from DB.DBA.RDF_QUAD;
-  delete from DB.DBA.RDF_URL;
-  delete from DB.DBA.RDF_IRI;
-  delete from DB.DBA.RDF_PREFIX;
---  delete from DB.DBA.RDF_OBJ;
-  delete from DB.DBA.RDF_DATATYPE;
-  delete from DB.DBA.RDF_LANGUAGE;
-  delete from DB.DBA.RDF_OBJ_FT_RULES;
-  delete from DB.DBA.RDF_OBJ_RO_DIGEST_WORDS;
   for select rs_name from sys_rdf_schema do
     rdf_inf_clear (rs_name);
   delete from sys_rdf_schema;
+  delete from DB.DBA.RDF_QUAD;
+  delete from DB.DBA.RDF_OBJ_FT_RULES;
+  if (hard)
+    {
+  delete from DB.DBA.RDF_URL;
+  delete from DB.DBA.RDF_IRI;
+  delete from DB.DBA.RDF_PREFIX;
+      delete from DB.DBA.RDF_OBJ;
+  delete from DB.DBA.RDF_DATATYPE;
+  delete from DB.DBA.RDF_LANGUAGE;
+      delete from DB.DBA.VTLOG_DB_DBA_RDF_OBJ;
+  delete from DB.DBA.RDF_OBJ_RO_DIGEST_WORDS;
   sequence_set ('RDF_URL_IID_NAMED', 1000000, 0);
   sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 0);
   sequence_set ('RDF_PREF_SEQ', 1, 0);
---  sequence_set ('RDF_RO_ID', 1, 0);
+      sequence_set ('RDF_RO_ID', 1, 0);
   sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 0);
   sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 0);
+      __atomic (0);
+      exec ('checkpoint');
+      raw_exit ();
+    }
+  sequence_set ('RDF_URL_IID_NAMED', 1000000, 1);
+  sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 0);
+  sequence_set ('RDF_PREF_SEQ', 1, 1);
+  sequence_set ('RDF_RO_ID', 1, 1);
+  sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 1);
+  sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 1);
   DB.DBA.RDF_LOAD_ALL_FT_RULES ();
   DB.DBA.TTLP (
     cast ( DB.DBA.XML_URI_GET (
@@ -7869,12 +7882,12 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_W (
   if (log_mode = 1)
     {
       declare s_iid, p_iid, o_iid IRI_ID;
-      whenever sqlstate '41000' goto again_10;
+      whenever sqlstate '40001' goto deadlock_10;
 again_10:
       s_iid := iri_to_id (s_uri, 1);
       p_iid := iri_to_id (p_uri, 1);
       o_iid := iri_to_id (o_uri, 1);
-      whenever sqlstate '41000' goto again_11;
+      whenever sqlstate '40001' goto deadlock_11;
 again_11:
       log_enable (0, 1);
   insert soft DB.DBA.RDF_QUAD (G,S,P,O)
@@ -7884,7 +7897,7 @@ again_11:
     }
   if (log_mode = 0)
     {
-      whenever sqlstate '41000' goto again_0;
+      whenever sqlstate '40001' goto deadlock_0;
 again_0:
       log_enable (0, 1);
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
@@ -7892,11 +7905,24 @@ again_0:
       commit work;
       return;
     }
-  whenever sqlstate '41000' goto again_2;
+  whenever sqlstate '40001' goto deadlock_2;
 again_2:
   insert soft DB.DBA.RDF_QUAD (G,S,P,O)
   values (g_iid, iri_to_id (s_uri, 1), iri_to_id (p_uri, 1), iri_to_id (o_uri, 1));
   commit work;
+  return;
+deadlock_10:
+  rollback work;
+  goto again_10;
+deadlock_11:
+  rollback work;
+  goto again_11;
+deadlock_0:
+  rollback work;
+  goto again_0;
+deadlock_2:
+  rollback work;
+  goto again_2;
 }
 ;
 
@@ -7926,7 +7952,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_W (
           o_val := parsed;
     }
     }
-  whenever sqlstate '41000' goto again_iid;
+  whenever sqlstate '40001' goto deadlock_iid;
 again_iid:
   if (log_mode = 0)
     log_enable (0, 1);
@@ -7936,7 +7962,7 @@ again_iid:
   p_iid := iri_to_id (p_uri, 1);
   if (isstring (o_val) or (230 = __tag (o_val)))
     {
-      whenever sqlstate '41000' goto again_o;
+      whenever sqlstate '40001' goto deadlock_o;
 again_o:
       if (isstring (o_type) or isstring (o_lang))
     {
@@ -7953,7 +7979,7 @@ again_o:
     }
   else if (246 = __tag (o_val))
     {
-      whenever sqlstate '41000' goto again_o_box;
+      whenever sqlstate '40001' goto deadlock_o_box;
 again_o_box:
       if (182 = rdf_box_data_tag (o_val) and __rdf_obj_ft_rule_check (g_iid, p_iid))
         o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257, ro_id_dict);
@@ -7961,13 +7987,26 @@ again_o_box:
         o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257);
     }
   -- dbg_obj_princ ('final o_val = ', o_val);
-  whenever sqlstate '41000' goto again_quad;
+  whenever sqlstate '40001' goto deadlock_quad;
 again_quad:
   if (log_mode <= 1)
     log_enable (0, 1);
   insert soft DB.DBA.RDF_QUAD (G,S,P,O)
   values (g_iid, s_iid, p_iid, o_val);
   commit work;
+  return;
+deadlock_iid:
+  rollback work;
+  goto again_iid;
+deadlock_o:
+  rollback work;
+  goto again_o;
+deadlock_o_box:
+  rollback work;
+  goto again_o_box;
+deadlock_quad:
+  rollback work;
+  goto again_quad;
 }
 ;
 
@@ -9090,6 +9129,37 @@ err:
 
 create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inout ro_id_dict any)
 {
+  declare ro_id_offset, ro_ids_count integer;
+  declare new_ro_ids, vtb any;
+  declare gwordump varchar;
+  declare n_w, n_ins, n_upd, n_next integer;
+  new_ro_ids := dict_list_keys (ro_id_dict, 2);
+  ro_ids_count := length (new_ro_ids);
+  if (0 = ro_ids_count)
+    return;
+  gwordump := ' ' || cast (graph_iid as varchar);
+  gwordump[0] := length (gwordump) - 1;
+  gvector_digit_sort (new_ro_ids, 1, 0, 1);
+  vtb := vt_batch (__min (__max (ro_ids_count, 31), 500000));
+  commit work;
+  whenever sqlstate '40001' goto retry_add;
+again:
+  for (ro_id_offset := 0; ro_id_offset < ro_ids_count; ro_id_offset := ro_id_offset + 1)
+    {
+      vt_batch_d_id (vtb, new_ro_ids[ro_id_offset]);
+      vt_batch_feed_wordump (vtb, gwordump, 0);
+    }
+  "DB"."DBA"."VT_BATCH_PROCESS_DB_DBA_RDF_OBJ" (vtb);
+  commit work;
+  return;
+retry_add:
+  rollback work;
+  goto again;
+}
+;
+
+create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH_OLD (in graph_iid IRI_ID, inout ro_id_dict any)
+{
   declare start_vt_d_id, aligned_start_vt_d_id, uncommited_ro_id_offset, ro_id_offset, ro_ids_count integer;
   declare old_d_id, old_d_id_2, carry_d_id, carry_d_id_2 integer;
   declare old_data, carry_data varchar;
@@ -9113,7 +9183,7 @@ create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inou
   dbg_prev_d_id_2 := 0;
 -- debug end
   commit work;
-  whenever sqlstate '41000' goto retry_add;
+  whenever sqlstate '40001' goto retry_add;
   uncommited_ro_id_offset := 0;
 again:
   ro_id_offset := uncommited_ro_id_offset;
