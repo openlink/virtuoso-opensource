@@ -333,11 +333,14 @@ create procedure contact_insert (
 {
   declare iri, iri2, temp_iri varchar;
 	declare person_iri varchar;
+	declare inst_id int;
 
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
+
+	inst_id := domain_id;
 
   if (isnull (graph_iri))
     for (select WAI_ID, WAM_USER, WAI_NAME
@@ -352,13 +355,14 @@ create procedure contact_insert (
       sc_iri := socialnetwork_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
       r_iri := role_iri (WAI_ID, WAM_USER, 'contact');
+			inst_id := WAI_ID;
     }
 
   if (not isnull (graph_iri)) {
     -- SocialNetwork
     iri := socialnetwork_contact_iri (domain_id, contact_id);
     ods_sioc_post (graph_iri, iri, sc_iri, creator_iri, name, created, updated, AB.WA.contact_url (domain_id, contact_id));
-    ods_sioc_tags (graph_iri, iri, tags);
+		scot_tags_insert (inst_id, iri, tags);
 
 		person_iri := person_iri (creator_iri);
 
@@ -368,8 +372,8 @@ create procedure contact_insert (
   		DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Organization'));
 		if (length (foaf))
 		  DB.DBA.RDF_QUAD_URI   (graph_iri, iri, owl_iri ('sameAs'), foaf);
-  		DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, sioc_iri ('scope_of'), r_iri);
-  		DB.DBA.RDF_QUAD_URI   (graph_iri, r_iri, sioc_iri ('function_of'), iri);
+
+
   		DB.DBA.RDF_QUAD_URI   (graph_iri, person_iri, foaf_iri ('knows'), iri);
   		if (not DB.DBA.is_empty_or_null (bMail))
   			DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), bMail);
@@ -389,9 +393,9 @@ create procedure contact_insert (
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
 		if (length (foaf))
 		  DB.DBA.RDF_QUAD_URI   (graph_iri, iri, owl_iri ('sameAs'), foaf);
-    DB.DBA.RDF_QUAD_URI   (graph_iri, creator_iri, sioc_iri ('scope_of'), r_iri);
-    DB.DBA.RDF_QUAD_URI   (graph_iri, r_iri, sioc_iri ('function_of'), iri);
+
   		DB.DBA.RDF_QUAD_URI   (graph_iri, person_iri, foaf_iri ('knows'), iri);
+
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('nick'), name);
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), firstName);
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), lastName);
@@ -434,7 +438,7 @@ create procedure contact_insert (
     -- AddressBook
     iri2 := addressbook_contact_iri (domain_id, contact_id);
     ods_sioc_post (graph_iri, iri2, ab_iri, creator_iri, name, created, updated, AB.WA.contact_url (domain_id, contact_id));
-    ods_sioc_tags (graph_iri, iri2, tags);
+		scot_tags_insert (inst_id, iri2, tags);
 
     -- vCard Data Space
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri2, rdf_iri ('type'), vcard_iri ('vCard'));
@@ -512,7 +516,8 @@ create procedure contact_insert (
 --
 create procedure contact_delete (
   inout contact_id integer,
-  inout domain_id integer)
+	inout domain_id integer,
+	inout tags varchar)
 {
   declare graph_iri, iri varchar;
 
@@ -523,8 +528,10 @@ create procedure contact_delete (
 
   graph_iri := get_graph ();
 	iri := socialnetwork_contact_iri (domain_id, contact_id);
+	scot_tags_delete (domain_id, iri, tags);
 	delete_quad_s_or_o (graph_iri, iri, iri);
   iri := addressbook_contact_iri (domain_id, contact_id);
+	scot_tags_delete (domain_id, iri, tags);
   delete_quad_s_or_o (graph_iri, iri, iri);
 }
 ;
@@ -588,8 +595,7 @@ create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
 --
 create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O, new as N
 {
-  contact_delete (O.P_ID,
-                  O.P_DOMAIN_ID);
+	contact_delete (O.P_ID, O.P_DOMAIN_ID, O.P_TAGS);
   contact_insert (null,
                   null,
                   null,
@@ -645,8 +651,7 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
 --
 create trigger PERSONS_SIOC_D before delete on AB.WA.PERSONS referencing old as O
 {
-  contact_delete (O.P_ID,
-                  O.P_DOMAIN_ID);
+	contact_delete (O.P_ID, O.P_DOMAIN_ID, O.P_TAGS);
 }
 ;
 
