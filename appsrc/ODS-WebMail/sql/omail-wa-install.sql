@@ -179,6 +179,11 @@ OMAIL.WA.exec_no_error(
 )
 ;
 
+OMAIL.WA.exec_no_error(
+  'alter type wa_mail add method wa_id () returns any'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 create constructor method wa_mail (inout stream any) for wa_mail
@@ -189,30 +194,37 @@ create constructor method wa_mail (inout stream any) for wa_mail
 
 -------------------------------------------------------------------------------
 --
+create method wa_id () for wa_mail
+{
+  return (select WAI_ID from WA_INSTANCE where WAI_NAME = self.wa_name);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create method wa_drop_instance () for wa_mail
 {
-  declare iUser, iWaiID, iCount any;
+  declare iUserID, iCount any;
 
-  select WAM_USER into iUser from WA_MEMBER where WAM_INST = self.wa_name;
-  select WAI_ID into iWaiID from WA_INSTANCE where WAI_NAME = self.wa_name;
+  iUserID := (select WAM_USER from WA_MEMBER where WAM_INST = self.wa_name and WAM_MEMBER_TYPE = 1);
 
   select count(WAM_USER) into iCount
     from WA_MEMBER,
          WA_INSTANCE
    where WAI_NAME = WAM_INST
      and WAI_TYPE_NAME = 'oMail'
-     and WAM_USER = iUser;
+     and WAM_USER = iUserID;
 
-    OMAIL.WA.omail_delete_user_data(iWaiID, iUser);
+  OMAIL.WA.omail_delete_user_data (self.wa_id (), iUserID);
   if (iCount = 1)
-    OMAIL.WA.omail_delete_user_data(1, iUser);
+    OMAIL.WA.omail_delete_user_data (1, iUserID);
 
-  delete from WA_MEMBER where WAM_INST = self.wa_name;
-  delete from WA_INSTANCE where WAI_NAME = self.wa_name;
   declare path, login varchar;
-	login := (select U_NAME from SYS_USERS where U_ID = iUser);
+	login := (select U_NAME from SYS_USERS where U_ID = iUserID);
 	path := sprintf('/DAV/home/%s/%s/', login, self.wa_name);
 	delete from WS.WS.SYS_DAV_COL where COL_ID = DAV_SEARCH_ID (path, 'C');
+
+  (self as web_app).wa_drop_instance ();
 }
 ;
 
@@ -220,7 +232,12 @@ create method wa_drop_instance () for wa_mail
 --
 create method wa_new_inst (in login varchar) for wa_mail
 {
-  declare iUserID, iWaiID integer;
+  declare iUserID integer;
+  declare retValue any;
+
+  iUserID := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
+  if (isnull (iUserID))
+    signal('EN001', 'not a Virtuoso WA user');
 
   if (self.wa_member_model is null)
     self.wa_member_model := 0;
@@ -228,31 +245,22 @@ create method wa_new_inst (in login varchar) for wa_mail
   insert into WA_INSTANCE (WAI_NAME, WAI_TYPE_NAME, WAI_INST, WAI_DESCRIPTION)
   	values (self.wa_name, 'oMail', self, 'Description');
 
-  select WAI_ID into iWaiID from WA_INSTANCE where WAI_NAME = self.wa_name;
+  OMAIL.WA.omail_init_user_data (1, iUserID, self.wa_name);
 
-  iUserID := (select U_ID from SYS_USERS where U_NAME = login);
+  retValue := (self as web_app).wa_new_inst (login);
 
-  set triggers off;
-  insert into WA_MEMBER(WAM_USER, WAM_INST, WAM_MEMBER_TYPE, WAM_MEMBER_SINCE,WAM_STATUS)
-  	values(iUserID, self.wa_name, 1, now(), 1);
-  set triggers on;
+  -- Create DET Folder
+  declare path varchar;
 
-  OMAIL.WA.omail_init_user_data(1, iUserID, self.wa_name);
-
-  declare pass, path varchar;
 	path := sprintf('/DAV/home/%s/%s/', login, self.wa_name);
-  pass := NULL;
-  select pwd_magic_calc (U_NAME, U_PASSWORD, 1) into pass
-    from DB.DBA.SYS_USERS
-   where U_NAME = 'dav';
   DB.DBA.DAV_MAKE_DIR (path, iUserID, null, '110100000N');
-
-  DAV_PROP_SET (path, 'virt:oMail-DomainId', '1', 'dav', pass);
-  DAV_PROP_SET (path, 'virt:oMail-UserName', login, 'dav', pass);
-  DAV_PROP_SET (path, 'virt:oMail-FolderName', 'NULL', 'dav', pass);
-  DAV_PROP_SET (path, 'virt:oMail-NameFormat', '^from^ ^subject^', 'dav', pass);
+  DAV_PROP_SET_INT (path, 'virt:oMail-DomainId', '1', null, null, 0, 0, 1);
+  DAV_PROP_SET_INT (path, 'virt:oMail-UserName', login, null, null, 0, 0, 1);
+  DAV_PROP_SET_INT (path, 'virt:oMail-FolderName', 'NULL', null, null, 0, 0, 1);
+  DAV_PROP_SET_INT (path, 'virt:oMail-NameFormat', '^from^ ^subject^', null, null, 0, 0, 1);
   update WS.WS.SYS_DAV_COL set COL_DET = 'oMail' where COL_ID = DAV_SEARCH_ID (path, 'C');
-  return iWaiID;
+
+  return retValue;
 }
 ;
 
@@ -298,10 +306,7 @@ create method wa_state_edit_form(inout stream any) for wa_mail
 --
 create method wa_home_url () for wa_mail
 {
-  declare iWaiID integer;
-
-  iWaiID := (select WAI_ID from WA_INSTANCE where WAI_NAME = self.wa_name);
-  return sprintf ('/oMail/%d/box.vsp', iWaiID);
+  return sprintf ('/oMail/%d/box.vsp', self.wa_id ());
 }
 ;
 
@@ -318,10 +323,8 @@ create method wa_domain_set (in domain varchar) for wa_mail
 --
 create method wa_front_page_as_user (inout stream any, in user_name varchar) for wa_mail
 {
-  declare iWaiID integer;
   declare sSid, sOwner varchar;
 
-  iWaiID := (select WAI_ID from WA_INSTANCE where WAI_NAME = self.wa_name);
   sOwner := (select TOP 1 U_NAME from SYS_USERS A, WA_MEMBER B where B.WAM_USER = A.U_ID and B.WAM_INST= self.wa_name and B.WAM_MEMBER_TYPE = 1);
   sSid := md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
   insert into DB.DBA.VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
@@ -344,17 +347,13 @@ create method wa_size () for wa_mail
 --
 create method wa_vhost_options () for wa_mail
 {
-  declare iWaiID integer;
-
-  iWaiID := (select WAI_ID from WA_INSTANCE where WAI_NAME = self.wa_name);
-
   return vector (
            concat(self.get_param('host'), 'www-root/portal.vsp'),  -- physical home
            'box.vsp',                                           -- default page
            'dba',                                                  -- user for execution
            0,                                                      -- directory browsing enabled (flag 0/1)
            self.get_param('isDAV'),                                -- WebDAV repository  (flag 0/1)
-           vector ('noinherit', 1, 'domain', iWaiID),              -- virtual directory options, empty is not applicable
+           vector ('noinherit', 1, 'domain', self.wa_id ()),       -- virtual directory options, empty is not applicable
            null,                                                   -- post-processing function (null is not applicable)
            null                                                    -- pre-processing (authentication) function
          );

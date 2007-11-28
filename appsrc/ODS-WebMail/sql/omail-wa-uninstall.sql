@@ -75,6 +75,9 @@ create procedure OMAIL.WA.omail_drop_procedures()
 }
 ;
 
+xpf_extension_remove ('http://www.openlinksw.com/mail/:getODSBar', 'OMAIL.WA.GET_ODS_BAR');
+xpf_extension_remove ('http://www.openlinksw.com/mail/:getCopyright', 'OMAIL.WA.get_copyright');
+
 -- dropping procedures for OMAIL
 OMAIL.WA.omail_drop_procedures();
 OMAIL.WA.exec_no_error('DROP procedure OMAIL.WA.omail_drop_procedures');
