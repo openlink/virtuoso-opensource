@@ -72,7 +72,7 @@ create procedure user_iri_by_uname (in uname varchar)
 create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
   declare iri, c_iri varchar;
-  for select c.CLUSTERID as _id, CLUSTERNAME, LOCALNAME, TITLETEXT, U_NAME, U_E_MAIL, T_OWNER_ID, T_CREATE_TIME, T_PUBLISHED, RES_CONTENT, RES_MOD_TIME
+  for select c.CLUSTERID as _id, CLUSTERNAME, LOCALNAME, TITLETEXT, U_NAME, U_E_MAIL, T_OWNER_ID, T_CREATE_TIME, T_PUBLISHED, RES_CONTENT, RES_MOD_TIME, RES_ID, U_ID, WAI_ID
     from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c, DB.DBA.WA_INSTANCE, WS.WS.SYS_DAV_RES, DB.DBA.SYS_USERS
     where c.CLUSTERID = t.CLUSTERID
       and c.CLUSTERNAME = WAI_NAME
@@ -99,6 +99,10 @@ create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, 
 			 RES_CONTENT, null, null,
 			 person_iri (cr_iri)
 			 );
+      for select DT_TAGS from WS.WS.SYS_DAV_TAG where DT_RES_ID = RES_ID and DT_U_ID = http_nobody_uid () do
+	{
+	  scot_tags_insert (WAI_ID, iri, DT_TAGS);
+	}
         }
     }
   {
@@ -143,6 +147,22 @@ create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, 
   commit work;
  }
 
+}
+;
+
+create procedure ods_wiki_sioc_tags (in path varchar, in res_id int, in owner int, in owner_name varchar, in tags any, in op varchar)
+{
+  declare iri any;
+  for select c.ClusterName as cluster_name, t.TopicId as topic_id, c.ClusterId as cluster_id,
+    t.LocalName as local_name, WAI_ID from WV.WIKI.TOPIC t, WV.Wiki.CLUSTERS c, DB.DBA.WA_INSTANCE
+    where t.ResId = res_id and t.ClusterId = c.ClusterId and c.ClusterName = WAI_NAME do
+    {
+      iri := wiki_post_iri (cluster_name, cluster_id, local_name);
+      if (op = 'U' or op = 'D')
+	scot_tags_delete (WAI_ID, iri, tags);
+      if (op = 'I' or op = 'U')
+	scot_tags_insert (WAI_ID, iri, tags);
+    }
 }
 ;
 

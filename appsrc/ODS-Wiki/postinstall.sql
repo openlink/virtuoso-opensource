@@ -65,8 +65,10 @@ create procedure WV.WIKI.temp ()
   declare _content, _type any;
 
   _topic_id := (select TopicId from WV.Wiki.CLUSTERS a, WV.Wiki.TOPIC b where a.ClusterId = b.ClusterId and a.ClusterName = 'Main' and b.LocalName = 'WMacros');
+  if (not isnull (_topic_id)) {
   DB.DBA.DAV_RES_CONTENT_INT (DAV_SEARCH_ID ('/DAV/VAD/wiki/Main/Attachments/WikiMacroSources.sql', 'R'), _content, _type, 0, 0);
   WV.WIKI.ATTACH2 (http_dav_uid(), 'WikiMacroSources.sql', _type, _topic_id, _content, '');
+}
 }
 ;
 

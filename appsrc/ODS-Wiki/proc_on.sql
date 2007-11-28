@@ -524,9 +524,9 @@ create method ti_compile_page () returns any for WV.WIKI.TOPICINFO
     foreach (any _att in xpath_eval ('//Attach/@Name', _ent, 0)) do {
       sioc..wiki_sioc_attachment (self, _att);
   }
-    sioc..ods_sioc_tags (sioc..get_graph(), 
-	sioc..wiki_post_iri (self.ti_cluster_name, self.ti_cluster_id, self.ti_local_name),
-	_categories);
+    --sioc..ods_sioc_tags (sioc..get_graph(),
+    --	sioc..wiki_post_iri (self.ti_cluster_name, self.ti_cluster_id, self.ti_local_name),
+    --	_categories);
     if (xpath_eval('//processing-instruction("ping")', _ent, 0) is not null) {
       -- WIKTOLOGY..queue_ping(sprintf ('http://%s/wiki/main/%s/%s?command=ontology', sioc..get_cname(), self.ti_cluster_name, self.ti_local_name));
       ;
