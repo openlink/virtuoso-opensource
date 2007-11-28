@@ -118,6 +118,7 @@ CAL.WA.exec_no_error ('
                                           -- Completed,
                                           -- Waiting,
                                           -- Deferred
+    E_COMPLETED datetime,
     E_CREATED datetime,
     E_UPDATED datetime,
 
@@ -127,6 +128,10 @@ CAL.WA.exec_no_error ('
 
 CAL.WA.exec_no_error (
   'alter table CAL.WA.EVENTS add E_NOTES long varchar', 'C', 'CAL.WA.EVENTS', 'E_NOTES'
+);
+
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.EVENTS add E_COMPLETED datetime', 'C', 'CAL.WA.EVENTS', 'E_COMPLETED'
 );
 
 CAL.WA.exec_no_error ('

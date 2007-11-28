@@ -24,6 +24,40 @@
 -->
 <v:page name="calendar" decor="template/template.vspx" style="template/template.xsl" fast-render="1" button-anchors="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+  <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar, in fieldName varchar, in dsOrder varchar, in dsDirection varchar">
+    <![CDATA[
+      declare altStr, directionStr, imageStr varchar;
+
+      if (dsOrder = columnName and dsDirection = 'desc') {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
+      } else if (dsOrder = columnName and dsDirection = 'asc') {
+        directionStr := 'Descending';
+        imageStr := '&nbsp;<img src="image/u.gif" border="0" alt="Up"/>';
+      } else {
+        directionStr := 'Ascending';
+        imageStr := '&nbsp;&nbsp;';
+      }
+      altStr := sprintf ('Sort Rows on %s in %s Order', titleName, directionStr);
+      http (sprintf ('<a href="#" onclick="javascript: myPost (''F1'', ''%s'', ''%s''); return false;" alt="%s" title="%s">%s%s</a>', fieldName, columnName, altStr, altStr, titleName, imageStr));
+    ]]>
+  </v:method>
+
+  <v:method name="sortChange" arglist="in columnName varchar, in dsOrder varchar, in dsDirection varchar, inout ds vspx_data_set">
+    <![CDATA[
+      if (is_empty_or_null (columnName))
+        return;
+
+      ds.vc_reset ();
+      if (udt_get (self, dsOrder) = columnName) {
+        udt_set (self, dsDirection, either (equ (udt_get (self, dsDirection), 'asc'), 'desc', 'asc'));
+      } else {
+        udt_set (self, dsDirection, 'asc');
+      }
+      udt_set (self, dsOrder, columnName);
+    ]]>
+  </v:method>
+
   <v:method name="actionTest" arglist="">
     <![CDATA[
       declare tmp, kind, params any;
@@ -410,6 +444,15 @@
       Calendar
     </vm:header>
     <vm:variables>
+      <v:variable persist="0" name="e_order" type="varchar" default="'E_EVENT_START'" />
+      <v:variable persist="0" name="e_direction" type="varchar" default="'asc'" />
+
+      <v:variable persist="0" name="t_order" type="varchar" default="'E_EVENT_START'" />
+      <v:variable persist="0" name="t_direction" type="varchar" default="'asc'" />
+
+      <v:variable persist="0" name="s_order" type="varchar" default="'E_EVENT_START'" />
+      <v:variable persist="0" name="s_direction" type="varchar" default="'asc'" />
+
       <v:variable persist="0" name="cAction" type="varchar" default="'browse'" />
       <v:variable persist="0" name="cScope" type="varchar" default="null" />
       <v:variable persist="0" name="cSearch" type="any" default="null" />
@@ -443,11 +486,8 @@
       <v:variable name="v_location" type="varchar" default="''"/>
       <v:variable name="v_event" type="integer" default="0"/>
       <v:variable name="v_eventStart" type="datetime" default="null"/>
-      <v:variable name="v_eventStart_date" type="date" default="null"/>
-      <v:variable name="v_eventStart_time" type="time" default="null"/>
       <v:variable name="v_eventEnd" type="datetime" default="null"/>
-      <v:variable name="v_eventEnd_date" type="date" default="null"/>
-      <v:variable name="v_eventEnd_time" type="time" default="null"/>
+      <v:variable name="v_completed" type="datetime" default="null" />
       <v:variable name="v_tags" type="varchar" default="''"/>
       <v:variable name="v_repeat" type="varchar" default="''"/>
       <v:variable name="v_repeatParam1" type="integer" default="0"/>
@@ -1017,7 +1057,10 @@
                   <![CDATA[
                     control.ds_nrows := CAL.WA.settings_rows (self.settings);
                     control.ds_parameters := null;
-                    control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 0 order by E_EVENT_START', self.domain_id);
+                    control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 0', self.domain_id);
+
+                    self.sortChange (get_keyword ('e_sortColumn', e.ve_params), 'e_order', 'e_direction', self.ds);
+                    control.ds_sql := sprintf ('%s order by %s %s, E_ID', control.ds_sql, self.e_order, self.e_direction);
                   ]]>
                 </v:before-data-bind>
               </v:data-source>
@@ -1033,11 +1076,14 @@
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
                           </th>
                         </vm:if>
-                        <th width="10%">
-                          Duration
+                        <th nowrap="nowrap" width="10%">
+                          <?vsp self.sortColumn ('Duration', 'E_EVENT_START', 'e_sortColumn', self.e_order, self.e_direction); ?>
                         </th>
-                        <th>
-                          Subject
+                        <th nowrap="nowrap">
+                          <?vsp self.sortColumn ('Subject', 'E_SUBJECT', 'e_sortColumn', self.e_order, self.e_direction); ?>
+                        </th>
+                        <th nowrap="nowrap" width="1%">
+                          <?vsp self.sortColumn ('Updated', 'E_UPDATED', 'e_sortColumn', self.e_order, self.e_direction); ?>
                         </th>
                         <vm:if test="self.account_role not in ('public', 'guest')">
                           <th width="1%">
@@ -1104,7 +1150,10 @@
                   <![CDATA[
                     control.ds_nrows := CAL.WA.settings_rows (self.settings);
                     control.ds_parameters := null;
-                    control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 1 order by E_EVENT_START', self.domain_id);
+                    control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 1', self.domain_id);
+
+                    self.sortChange (get_keyword ('t_sortColumn', e.ve_params), 't_order', 't_direction', self.ds1);
+                    control.ds_sql := sprintf ('%s order by %s %s, E_ID', control.ds_sql, self.t_order, self.t_direction);
                   ]]>
                 </v:before-data-bind>
               </v:data-source>
@@ -1119,20 +1168,23 @@
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
                           </th>
                         </vm:if>
-                        <th width="5%">
-                          Start
+                        <th nowrap="nowrap" width="5%">
+                          <?vsp self.sortColumn ('Start', 'E_EVENT_START', 't_sortColumn', self.t_order, self.t_direction); ?>
                         </th>
-                        <th width="5%">
-                          Due
+                        <th nowrap="nowrap" width="5%">
+                          <?vsp self.sortColumn ('Due', 'E_EVENT_END', 't_sortColumn', self.t_order, self.t_direction); ?>
                         </th>
-                        <th>
-                          Subject
+                        <th nowrap="nowrap" width="5%">
+                          <?vsp self.sortColumn ('Completed', 'E_COMPLETED', 't_sortColumn', self.t_order, self.t_direction); ?>
                         </th>
-                        <th width="3%">
-                          Status
+                        <th nowrap="nowrap">
+                          <?vsp self.sortColumn ('Subject', 'E_SUBJECT', 't_sortColumn', self.t_order, self.t_direction); ?>
                         </th>
-                        <th width="1%">
-                          Updated
+                        <th nowrap="nowrap" width="3%">
+                          <?vsp self.sortColumn ('Status', 'E_STATUS', 't_sortColumn', self.t_order, self.t_direction); ?>
+                        </th>
+                        <th nowrap="nowrap" width="1%">
+                          <?vsp self.sortColumn ('Updated', 'E_UPDATED', 't_sortColumn', self.t_order, self.t_direction); ?>
                         </th>
                         <vm:if test="self.account_role not in ('public', 'guest')">
                           <th width="1%">
@@ -1164,6 +1216,12 @@
                           <?vsp
                             self.showEventEnd ((control as vspx_row_template).te_column_value('E_EVENT'),
                                                (control as vspx_row_template).te_column_value('E_EVENT_END'));
+                          ?>
+                        </td>
+                        <td nowrap="nowrap">
+                          <?vsp
+                            self.showEventEnd ((control as vspx_row_template).te_column_value('E_EVENT'),
+                                               (control as vspx_row_template).te_column_value('E_COMPLETED'));
                           ?>
                         </td>
                         <td>
@@ -1204,7 +1262,7 @@
             </vm:if>
 
             <vm:if test="self.cScope = 'search'">
-              <v:data-source name="ds3rc" expression-type="sql" nrows="0" initial-offset="0">
+              <v:data-source name="ds2rc" expression-type="sql" nrows="0" initial-offset="0">
                 <v:before-data-bind>
                   <![CDATA[
                     control.ds_nrows := CAL.WA.settings_rows (self.settings);
@@ -1214,13 +1272,15 @@
                     } else {
                     control.ds_sql := CAL.WA.search_sql (self.domain_id, self.account_id, self.cSearch);
                     }
+                    self.sortChange (get_keyword ('s_sortColumn', e.ve_params), 's_order', 's_direction', self.ds2);
+                    control.ds_sql := sprintf ('%s order by %s %s, E_ID', control.ds_sql, self.s_order, self.s_direction);
                   ]]>
                 </v:before-data-bind>
               </v:data-source>
 
-              <v:data-set name="ds3" data-source="self.ds3rc" scrollable="1">
+              <v:data-set name="ds2" data-source="self.ds2rc" scrollable="1">
 
-                <v:template name="ds3_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                <v:template name="ds2_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                   <table id="events" style="width: 100%; background-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
@@ -1229,23 +1289,23 @@
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
                           </th>
                         </vm:if>
-                        <th width="1%">
-                          Type
+                        <th nowrap="nowrap" width="1%">
+                          <?vsp self.sortColumn ('Type', 'E_KIND', 's_sortColumn', self.s_order, self.s_direction); ?>
                         </th>
-                        <th>
-                          Item
+                        <th nowrap="nowrap">
+                          <?vsp self.sortColumn ('Item', 'E_EVENT_START', 's_sortColumn', self.s_order, self.s_direction); ?>
                         </th>
-                        <th width="1%">
-                          Updated
+                        <th nowrap="nowrap" width="1%">
+                          <?vsp self.sortColumn ('Updated', 'E_UPDATED', 's_sortColumn', self.s_order, self.s_direction); ?>
                         </th>
                       </tr>
                     </thead>
                   </table>
                 </v:template>
 
-                <v:template name="ds3_repeat" type="repeat" name-to-remove="" set-to-remove="">
+                <v:template name="ds2_repeat" type="repeat" name-to-remove="" set-to-remove="">
 
-                  <v:template name="ds3_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                  <v:template name="ds2_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
                         <vm:if test="self.account_role not in ('public', 'guest')">
@@ -1289,13 +1349,13 @@
 
                 </v:template>
 
-                <v:template name="ds3_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                <v:template name="ds2_footer" type="simple" name-to-remove="table" set-to-remove="top">
                   <table>
                   </table>
                 </v:template>
 
-                <span id="ds3_navigation">
-                  <vm:ds-navigation data-set="ds3" />
+                <span id="ds2_navigation">
+                  <vm:ds-navigation data-set="ds2" />
                 </span>
 
               </v:data-set>
@@ -2301,6 +2361,7 @@
                        E_TAGS,
                        CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone),
                        CAL.WA.event_gmt2user (E_EVENT_END, self.cTimezone),
+                       CAL.WA.event_gmt2user (E_COMPLETED, self.cTimezone),
                        E_PRIORITY,
                        E_STATUS,
                        E_COMPLETE,
@@ -2310,6 +2371,7 @@
                        self.v_tags,
                        self.v_eventStart,
                        self.v_eventEnd,
+                       self.v_completed,
                        self.v_priority,
                        self.v_status,
                        self.v_complete,
@@ -2326,10 +2388,11 @@
               self.v_description := '';
               self.v_tags := '';
               self.v_eventStart := null;
-              self.v_eventEnd := self.cDay;
+              self.v_eventEnd := null;
               self.v_priority := 3;
               self.v_status := '';
               self.v_complete := 0;
+              self.v_completed := null;
               self.v_notes := '';
             }
           ]]>
@@ -2386,6 +2449,20 @@
             </tr>
             <tr>
               <th>
+                    <v:label for="t_completed" value="Completed" />
+                  </th>
+                  <td>
+                    <vm:if test="self.cAction <> 'view'">
+                      <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                      <a href="#" name="t_completed_select" id="t_completed_select" onclick="cPopup.select(document.forms['F1'].t_completed, 't_completed_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                        <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
+                      </a>
+                    </vm:if>
+                    <?vsp self.viewField (self.v_completed); ?>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
                 <v:label for="t_priority" value="Priority"/>
               </th>
               <td>
@@ -2609,6 +2686,12 @@
                 if (self.v_eventEnd < self.v_eventStart)
                   signal ('TEST', '''Due date'' value should be greater then ''Start date'' value!<>');
 
+                self.v_completed := CAL.WA.test (trim (self.t_completed.ufl_value), vector('name', 'Task completed date', 'class', 'date-'||self.cDateFormat, 'canEmpty', 0));
+                self.v_completed := CAL.WA.dt_join (self.v_completed, CAL.WA.dt_timeEncode (12, 0));
+
+                if (self.v_completed < self.v_eventStart)
+                  signal ('TEST', '''Completed date'' value should be greater then ''Start date'' value!<>');
+
                 CAL.WA.task_update (
                   self.v_id,
                   self.domain_id,
@@ -2620,6 +2703,7 @@
                   self.v_priority,
                   self.v_status,
                   self.v_complete,
+                  self.v_completed,
                   self.v_notes
                 );
 

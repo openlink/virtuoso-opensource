@@ -20,7 +20,7 @@
 #
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.0.08"
+VERSION="1.0.09"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -228,7 +228,7 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.35.88\">" >> $STICKER
+  echo "    <versions_later package=\"1.42.00\">" >> $STICKER
   echo "      <prop name=\"Date\" value=\"2007-04-04 12:00\" />" >> $STICKER
   echo "      <prop name=\"Comment\" value=\"An incompatible version of the ODS Framework\" />" >> $STICKER
   echo "    </versions_later>" >> $STICKER

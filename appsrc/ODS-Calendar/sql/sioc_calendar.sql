@@ -96,6 +96,7 @@ create procedure fill_ods_calendar_sioc (
                 E_PRIORITY,
                 E_STATUS,
                 E_COMPLETE,
+                E_COMPLETED,
                 E_CREATED,
                 E_UPDATED,
                 E_TAGS
@@ -125,6 +126,7 @@ create procedure fill_ods_calendar_sioc (
                     E_PRIORITY,
                     E_STATUS,
                     E_COMPLETE,
+                    E_COMPLETED,
                     E_CREATED,
                     E_UPDATED,
                     E_TAGS);
@@ -177,6 +179,7 @@ create procedure event_insert (
   inout priority integer,
   inout status varchar,
   inout complete integer,
+  inout completed datetime,
   inout created datetime,
   inout updated datetime,
   inout tags varchar)
@@ -205,7 +208,7 @@ create procedure event_insert (
     iri := calendar_event_iri (domain_id, event_id);
 
     ods_sioc_post (graph_iri, iri, c_iri, creator_iri, subject, created, updated, CAL.WA.event_url (domain_id, event_id), description);
-    ods_sioc_tags (graph_iri, iri, tags);
+    scot_tags_insert (domain_id, iri, tags);
 
     if (kind = 0) {
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vevent'));
@@ -230,6 +233,8 @@ create procedure event_insert (
       DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vtodo'));
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('url'), CAL.WA.event_url (domain_id, event_id));
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('dtstamp'), CAL.WA.dt_iso8601 (now ()));
+      if (not isnull (completed))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('completed'), CAL.WA.dt_iso8601 (completed));
       if (not isnull (created))
         DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('created'), CAL.WA.dt_iso8601 (created));
       if (not isnull (updated))
@@ -256,7 +261,8 @@ create procedure event_insert (
 --
 create procedure event_delete (
   inout event_id integer,
-  inout domain_id integer)
+  inout domain_id integer,
+  inout tags varchar)
 {
   declare graph_iri, iri varchar;
 
@@ -267,6 +273,7 @@ create procedure event_delete (
 
   graph_iri := get_graph ();
   iri := calendar_event_iri (domain_id, event_id);
+  scot_tags_delete (domain_id, iri, tags);
   delete_quad_s_or_o (graph_iri, iri, iri);
 }
 ;
@@ -290,6 +297,7 @@ create trigger EVENTS_SIOC_I after insert on CAL.WA.EVENTS referencing new as N
                 N.E_PRIORITY,
                 N.E_STATUS,
                 N.E_COMPLETE,
+                N.E_COMPLETED,
                 N.E_CREATED,
                 N.E_UPDATED,
                 N.E_TAGS);
@@ -301,7 +309,7 @@ create trigger EVENTS_SIOC_I after insert on CAL.WA.EVENTS referencing new as N
 create trigger EVENTS_SIOC_U after update on CAL.WA.EVENTS referencing old as O, new as N
 {
   event_delete (O.E_ID,
-                O.E_DOMAIN_ID);
+                O.E_DOMAIN_ID, O.E_TAGS);
   event_insert (null,
                 null,
                 null,
@@ -316,6 +324,7 @@ create trigger EVENTS_SIOC_U after update on CAL.WA.EVENTS referencing old as O,
                 N.E_EVENT_END,
                 N.E_PRIORITY,
                 N.E_STATUS,
+                N.E_COMPLETED,
                 N.E_COMPLETE,
                 N.E_CREATED,
                 N.E_UPDATED,
@@ -328,7 +337,7 @@ create trigger EVENTS_SIOC_U after update on CAL.WA.EVENTS referencing old as O,
 create trigger EVENTS_SIOC_D before delete on CAL.WA.EVENTS referencing old as O
 {
   event_delete (O.E_ID,
-                O.E_DOMAIN_ID);
+                O.E_DOMAIN_ID, O.E_TAGS);
 }
 ;
 
