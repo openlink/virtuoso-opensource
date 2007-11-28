@@ -24,4 +24,5 @@ EXTRA_DIST = \
 	$(srcdir)/images/markers/*.png \
 	$(srcdir)/styles/*.css \
 	$(srcdir)/styles/hover.htc \
-	$(srcdir)/toolkit/*.js
+	$(srcdir)/toolkit/*.js \
+	$(srcdir)/xslt/*.xsl
