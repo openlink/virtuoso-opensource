@@ -218,9 +218,6 @@ public class VirtuosoRepository implements SesameRepository
 	    e.printStackTrace();
 	    System.exit(-1);
 	}
-
-	QueryResultsTableBuilder ret = new QueryResultsTableBuilder ();
-
     }
 
     public void addData (URL dataURL, String baseURI, RDFFormat format, boolean verifyData, AdminListener listener)
