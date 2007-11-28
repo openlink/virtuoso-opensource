@@ -26,7 +26,7 @@ create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar
   declare post_iri, forum_iri, creator_iri,private_tags,tags,user_pwd,cm_iri,title,content,links_to,c_link varchar;
   declare pos,dir,album,_ind,ts,modf,link, svc_iri any;
 
-  for select p.WAI_NAME as WAI_NAME, p.HOME_PATH as HOME_PATH,p.HOME_URL as HOME_URL
+  for select p.WAI_NAME as WAI_NAME, p.HOME_PATH as HOME_PATH,p.HOME_URL as HOME_URL, WAI_ID
       from PHOTO..SYS_INFO p, DB.DBA.WA_INSTANCE i
       where p.WAI_NAME = i.WAI_NAME
       and ((i.WAI_IS_PUBLIC = 1 and _wai_name is null) or p.WAI_NAME = _wai_name)
@@ -81,14 +81,7 @@ create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar
         private_tags := DB.DBA.DAV_PROP_GET(RES_FULL_PATH,':virtprivatetags',U_NAME,user_pwd);
 
         if(__tag(private_tags) <> 189){
-          sioc..ods_sioc_tags (graph_iri,post_iri,private_tags);
-          --tags := PHOTO.WA.tags2vector(private_tags);
-          --_ind := 0;
-      	  --while(_ind < length(tags)){
-    	    --  link := sprintf ('http://%s%s?tag=%s', get_cname(), HOME_URL, tags[_ind]);
-    	    --  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('topic'), tiri);
-    	    --  _ind := _ind + 1;
-    	    --}
+	  scot_tags_insert (WAI_ID, post_iri, private_tags);
     }
 	    }
     }
@@ -202,6 +195,30 @@ create trigger SYS_DAV_RES_PHOTO_SIOC_U after update on WS.WS.SYS_DAV_RES refere
 }
 ;
 
+
+create procedure ods_photo_sioc_tags (in path varchar, in res_id int, in owner int, in owner_name varchar, in tags any, in op varchar)
+{
+  declare pos int;
+  declare dir, iri, post_iri varchar;
+
+  pos := strrchr (path, '/');
+  if (pos is null)
+    return;
+  dir := subseq (path, 0, pos);
+  pos := strrchr (dir, '/');
+  dir := subseq (path, 0, pos+1);
+  for select p.WAI_NAME as WAI_NAME, i.WAI_ID as WAI_ID from PHOTO..SYS_INFO p, WS.WS.SYS_DAV_USER s, DB.DBA.WA_INSTANCE i
+    where p.HOME_PATH = dir and p.OWNER_ID = owner and s.U_ID = owner and p.WAI_NAME = i.WAI_NAME and i.WAI_IS_PUBLIC = 1 do
+    {
+      iri := photo_iri (WAI_NAME);
+      post_iri  := post_iri_ex (iri, res_id);
+      if (op = 'U' or op = 'D')
+	scot_tags_delete (WAI_ID, post_iri, tags);
+      if (op = 'I' or op = 'U')
+	scot_tags_insert (WAI_ID, post_iri, tags);
+    }
+}
+;
 
 create trigger SYS_DAV_RES_PHOTO_SIOC_D after delete on WS.WS.SYS_DAV_RES referencing old as O
 {

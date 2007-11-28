@@ -40,6 +40,16 @@ create procedure blog_comment_iri (in blog_id varchar, in post_id varchar, in ci
   return sprintf ('http://%s%s/%U/weblog/%U/%U/%d', get_cname(), get_base_path (), _member, _inst, post_id, cid);
 };
 
+create procedure ods_weblog_scot_init (in inst_id int)
+{
+  for select BT_POST_ID, BT_TAGS from BLOG.DBA.BLOG_TAG, BLOG.DBA.SYS_BLOG_INFO, DB.DBA.WA_INSTANCE
+    where BT_BLOG_ID = BI_BLOG_ID and BI_WAI_NAME = WAI_NAME and WAI_ID = inst_id do
+    {
+      scot_tags_insert (inst_id, BT_POST_ID, BT_TAGS);
+    }
+}
+;
+
 create procedure fill_ods_weblog_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
     {
   declare iri, cr_iri, blog_iri, cm_iri, tiri, maker varchar;
@@ -61,7 +71,8 @@ create procedure fill_ods_weblog_sioc (in graph_iri varchar, in site_iri varchar
     };
     l0:
 
-  for select B_BLOG_ID, B_POST_ID, BI_WAI_NAME, B_USER_ID, B_TITLE, B_TS, B_MODIFIED, BI_HOME, B_CONTENT, B_META, B_HAVE_ENCLOSURE
+  for select B_BLOG_ID, B_POST_ID, BI_WAI_NAME, B_USER_ID, B_TITLE, B_TS, B_MODIFIED, BI_HOME,
+    B_CONTENT, B_META, B_HAVE_ENCLOSURE, WAI_ID
     from BLOG..SYS_BLOGS, BLOG..SYS_BLOG_INFO, DB.DBA.WA_INSTANCE
     where B_POST_ID > _pid and B_BLOG_ID = BI_BLOG_ID and BI_WAI_NAME = WAI_NAME
     and ((WAI_IS_PUBLIC = 1 and _wai_name is null) or BI_WAI_NAME = _wai_name) do
@@ -98,14 +109,8 @@ create procedure fill_ods_weblog_sioc (in graph_iri varchar, in site_iri varchar
        }
       for select BT_TAGS from BLOG..BLOG_TAG where BT_BLOG_ID =  B_BLOG_ID and BT_POST_ID = B_POST_ID do
 	{
-	  ods_sioc_tags (graph_iri, iri, BT_TAGS);
+	  scot_tags_insert (WAI_ID, iri, BT_TAGS);
 	}
-      --for select BT_TAG from BLOG..BLOG_POST_TAGS_STAT_2 where blogid = B_BLOG_ID and postid = B_POST_ID do
-      --	{
-      --    tiri := sprintf ('http://%s%s?tag=%s', get_cname(), BI_HOME, BT_TAG);
-      --	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('topic'), tiri);
-      --	  DB.DBA.RDF_QUAD_URI_L (graph_iri, tiri, rdfs_iri ('label'), BT_TAG);
-      --	}
     cnt := cnt + 1;
     if (mod (cnt, 500) = 0)
       {
@@ -379,24 +384,10 @@ create trigger BLOG_TAG_SIOC_I after insert on BLOG..BLOG_TAG referencing new as
   };
   graph_iri := get_graph ();
   post_iri := blog_post_iri (N.BT_BLOG_ID, N.BT_POST_ID);
-  for select BI_HOME from BLOG..SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where BI_BLOG_ID = N.BT_BLOG_ID and WAI_NAME = BI_WAI_NAME and WAI_IS_PUBLIC = 1 do
-    {
-      ods_sioc_tags (graph_iri, post_iri, N.BT_TAGS);
-      if (0) -- disabled now
-    {
-      tarr := split_and_decode (N.BT_TAGS, 0, '\0\0,');
-      foreach (any elm in tarr) do
+  for select BI_HOME, WAI_ID from BLOG..SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where
+    BI_BLOG_ID = N.BT_BLOG_ID and WAI_NAME = BI_WAI_NAME and WAI_IS_PUBLIC = 1 do
 	{
-	  elm := trim(elm);
-	  elm := replace (elm, ' ', '_');
-	  if (length (elm))
-	    {
-	      iri := sprintf ('http://%s%s?tag=%s', get_cname(), BI_HOME, elm);
-	      DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, sioc_iri ('topic'), iri);
-	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), elm);
-	    }
-	}
-    }
+      scot_tags_insert (WAI_ID, post_iri, N.BT_TAGS);
     }
 };
 
@@ -409,11 +400,13 @@ create trigger BLOG_TAG_SIOC_D after delete on BLOG..BLOG_TAG referencing old as
   };
   graph_iri := get_graph ();
   post_iri := blog_post_iri (O.BT_BLOG_ID, O.BT_POST_ID);
-  ods_sioc_tags_delete (graph_iri, post_iri, O.BT_TAGS);
-  --delete_quad_sp (graph_iri, post_iri, sioc_iri ('topic'));
+  for select WAI_ID from BLOG..SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where
+    BI_BLOG_ID = O.BT_BLOG_ID and WAI_NAME = BI_WAI_NAME and WAI_IS_PUBLIC = 1 do
+    {
+      scot_tags_delete (WAI_ID, post_iri, O.BT_TAGS);
+    }
 };
 
-use DB;
 use DB;
 -- BLOG
 

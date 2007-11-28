@@ -304,7 +304,7 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
 
     -- tags
     for (select EFID_DOMAIN_ID, EFID_TAGS from ENEWS.WA.FEED_ITEM_DATA where EFID_DOMAIN_ID is not null and EFID_ITEM_ID = EFI_ID) do
-      ods_sioc_tags (graph_iri, iri, EFID_TAGS);
+	scot_tags_insert (EFID_DOMAIN_ID, iri, EFID_TAGS);
 
     -- comments
     for (select EFIC_ID, EFIC_DOMAIN_ID, EFIC_ITEM_ID, EFIC_TITLE, EFIC_COMMENT, EFIC_U_NAME, EFIC_U_MAIL, EFIC_U_URL, EFIC_LAST_UPDATE from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ITEM_ID = EFI_ID and EFIC_PARENT_ID is not null) do
@@ -487,7 +487,7 @@ create procedure feeds_tags_insert (
   iri := feed_iri (feed_id);
   post_iri := feed_item_iri (feed_id, item_id);
 
-  ods_sioc_tags (graph_iri, post_iri, tags);
+  scot_tags_insert (domain_id, post_iri, tags);
 }
 ;
 
@@ -511,7 +511,7 @@ create procedure feeds_tags_delete (
   graph_iri := get_graph ();
   select EFI_FEED_ID into feed_id from ENEWS.WA.FEED_ITEM where EFI_ID = item_id;
   post_iri := feed_item_iri (feed_id, item_id);
-  ods_sioc_tags_delete (graph_iri, post_iri, tags);
+  scot_tags_delete (domain_id, post_iri, tags);
 }
 ;
 

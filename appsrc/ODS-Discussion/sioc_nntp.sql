@@ -60,17 +60,12 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
 	    for select NNPT_TAGS, NNPT_UID from DB.DBA.NNTPF_NGROUP_POST_TAGS
 	      where NNPT_NGROUP_ID = NG_GROUP and NNPT_POST_ID = '' do
 	      {
-         ods_sioc_tags (graph_iri, firi,
-		    	              sprintf ('"^UID%d",', NNPT_UID)||
-			                  NNPT_TAGS);
+	    ods_sioc_tags (graph_iri, firi, sprintf ('"^UID%d",', NNPT_UID)|| NNPT_TAGS);
 		     t_cnt := t_cnt + 1;
 	      }
 	    if (not t_cnt)
 	      ods_sioc_tags (graph_iri, firi, null);
 
-
-
-      
       riri := nntp_role_iri (NG_NAME);
       DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('has_scope'), firi);
       DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('scope_of'), riri);
@@ -80,6 +75,7 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
 	    declare par_iri, par_id, links_to any;
             declare _NM_ID, _NM_REC_DATE, _NM_HEAD, _NM_BODY any;
 
+	    --dbg_obj_print ('grp=', NG_GROUP, ' key=', NM_KEY_ID);
 	    whenever not found goto nxt;
 	    select NM_ID, NM_REC_DATE, NM_HEAD, NM_BODY
 		into _NM_ID, _NM_REC_DATE, _NM_HEAD, _NM_BODY
@@ -103,12 +99,12 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
 --	    dbg_obj_print (iri, links_to);
 	    ods_sioc_post (graph_iri, iri, firi, null, title, _NM_REC_DATE, _NM_REC_DATE, link, _NM_BODY, null, links_to, maker_iri);
 	    t_cnt := 0;
+	    --dbg_obj_print ('grp=', NG_GROUP, ' key=', NM_KEY_ID);
 	    for select NNPT_TAGS, NNPT_UID from DB.DBA.NNTPF_NGROUP_POST_TAGS
 	      where NNPT_NGROUP_ID = NG_GROUP and NNPT_POST_ID = NM_KEY_ID do
 	      {
-		ods_sioc_tags (graph_iri, iri,
-		    	sprintf ('"^UID%d",', NNPT_UID)||
-			NNPT_TAGS);
+		ods_sioc_tags (graph_iri, iri, sprintf ('"^UID%d",', NNPT_UID)|| NNPT_TAGS);
+		scot_tags_insert (-1 * NG_GROUP, iri, NNPT_TAGS);
 		t_cnt := t_cnt + 1;
 	      }
 	    if (not t_cnt)
@@ -139,6 +135,7 @@ create procedure fill_ods_nntp_sioc (in graph_iri varchar, in site_iri varchar, 
 	   }
 	 commit work;
 	 _grp := NG_GROUP;
+	 _msg := '';
     }
   commit work;
     }
@@ -190,7 +187,7 @@ create trigger NEWS_GROUPS_SIOC_I after insert on DB.DBA.NEWS_GROUPS referencing
 	DB.DBA.RDF_QUAD_URI (graph_iri, user_iri, sioc_iri ('has_function'), riri);
       }
       
-      
+  insert into sioc.DBA.inst_tag_stats (its_inst_id) values (-1 * N.NG_GROUP);
   return;
 };
 
@@ -204,6 +201,7 @@ create trigger NEWS_GROUPS_SIOC_D after delete on DB.DBA.NEWS_GROUPS referencing
   graph_iri := get_graph ();
   iri := forum_iri ('nntpf', O.NG_NAME);
   delete_quad_s_or_o (graph_iri, iri, iri);
+  delete from sioc.DBA.inst_tag_stats where its_inst_id = (-1 * O.NG_GROUP);
   return;
 };
 
@@ -253,6 +251,7 @@ create trigger NNTPF_NGROUP_POST_TAGS_I after insert on DB.DBA.NNTPF_NGROUP_POST
   ods_sioc_tags (graph_iri, iri,
       sprintf ('"^UID%d",', N.NNPT_UID) ||
       N.NNPT_TAGS);
+  scot_tags_insert (-1 * N.NNPT_NGROUP_ID, iri, N.NNPT_TAGS);
 }
 ;
 
@@ -283,6 +282,8 @@ create trigger NNTPF_NGROUP_POST_TAGS_U after update on DB.DBA.NNTPF_NGROUP_POST
   ods_sioc_tags (graph_iri, iri,
       sprintf ('"^UID%d",', N.NNPT_UID) ||
       N.NNPT_TAGS);
+  scot_tags_delete (-1 * O.NNPT_NGROUP_ID, iri, O.NNPT_TAGS);
+  scot_tags_insert (-1 * N.NNPT_NGROUP_ID, iri, N.NNPT_TAGS);
   return;
 }
 ;
@@ -301,6 +302,7 @@ create trigger NNTPF_NGROUP_POST_TAGS_D after delete on DB.DBA.NNTPF_NGROUP_POST
   select NG_NAME into g_name from DB.DBA.NEWS_GROUPS where NG_GROUP = O.NNPT_NGROUP_ID;
   iri := nntp_post_iri (g_name, O.NNPT_POST_ID);
   ods_sioc_tags (graph_iri, iri, null);
+  scot_tags_delete (-1 * O.NNPT_NGROUP_ID, iri, O.NNPT_TAGS);
   return;
 }
 ;

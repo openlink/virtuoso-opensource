@@ -141,7 +141,7 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
       tags := DB.DBA.DAV_PROP_GET_INT (RES_ID, 'R', ':virtpublictags', 0);
       if (ODRIVE.WA.DAV_ERROR (tags))
         tags := '';
-      ods_sioc_tags (graph_iri, iri, tags);
+	scot_tags_insert (WAI_ID, iri, tags);
 
         -- SIOC data for 'application/foaf+xml' and AddressBook application
         content := RES_CONTENT;
@@ -150,6 +150,26 @@ create procedure fill_ods_briefcase_sioc (in graph_iri varchar, in site_iri varc
     }
   }
   return;
+}
+;
+
+create procedure ods_briefcase_sioc_tags (in path varchar, in res_id int, in owner int, in owner_name varchar, in tags any, in op varchar)
+{
+  declare pos int;
+  declare dir, iri, post_iri varchar;
+  if (path like '/DAV/home/%/Public/%' and path like ODRIVE.WA.odrive_dav_home(owner_name) || 'Public/%')
+    {
+      for select WAI_NAME, WAI_ID from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER
+	where WAM_INST = WAI_NAME and WAM_USER = owner and WAM_IS_PUBLIC = 1 and WAM_APP_TYPE = 'oDrive' do
+	  {
+	    iri := briefcase_iri (WAI_NAME);
+	    post_iri := post_iri_ex (iri, res_id);
+	    if (op = 'U' or op = 'D')
+	      scot_tags_delete (WAI_ID, post_iri, tags);
+	    if (op = 'I' or op = 'U')
+	      scot_tags_insert (WAI_ID, post_iri, tags);
+	  }
+    }
 }
 ;
 
@@ -182,7 +202,7 @@ create procedure briefcase_sioc_insert (
   if (path [4] <> 'Public')
     return;
 
-  for (select WAI_NAME
+  for (select WAI_NAME, WAI_ID
          from DB.DBA.WA_INSTANCE,
               DB.DBA.WA_MEMBER,
               DB.DBA.SYS_USERS
@@ -216,7 +236,7 @@ create procedure briefcase_sioc_insert (
     tags := DB.DBA.DAV_PROP_GET_INT (r_id, 'R', ':virtpublictags', 0);
     if (ODRIVE.WA.DAV_ERROR (tags))
       tags := '';
-    ods_sioc_tags (graph_iri, iri, tags);
+    scot_tags_insert (WAI_ID, iri, tags);
 
     -- SIOC data for 'application/foaf+xml' and AddressBook application
     briefcase_sioc_insert_ex (r_full_path, r_type, r_owner, path[3], r_content);

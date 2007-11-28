@@ -125,17 +125,21 @@ create procedure polls_insert (
   inout updated datetime)
 {
   declare iri any;
+  declare inst_id int;
 
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
+  inst_id := domain_id;
+
   if (isnull (graph_iri))
     for (select WAM_USER,
                 WAI_NAME,
                 coalesce(U_FULL_NAME, U_NAME) U_FULL_NAME,
-                U_E_MAIL
+                U_E_MAIL,
+		WAI_ID
          from DB.DBA.WA_INSTANCE,
                 DB.DBA.WA_MEMBER,
                 DB.DBA.SYS_USERS
@@ -147,7 +151,7 @@ create procedure polls_insert (
       graph_iri := get_graph ();
       c_iri := polls_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
-
+      inst_id := WAI_ID;
     -- maker
       foaf_maker (graph_iri, person_iri (creator_iri), U_FULL_NAME, U_E_MAIL);
     }
@@ -155,7 +159,7 @@ create procedure polls_insert (
   if (not isnull (graph_iri)) {
     iri := poll_post_iri (domain_id, poll_id);
     ods_sioc_post (graph_iri, iri, c_iri, creator_iri, name, created, updated, POLLS.WA.poll_url (domain_id, poll_id), description);
-    ods_sioc_tags (graph_iri, iri, tags);
+    scot_tags_insert (inst_id, iri, tags);
   }
   return;
 }
@@ -165,7 +169,8 @@ create procedure polls_insert (
 --
 create procedure polls_delete (
   inout poll_id integer,
-  inout domain_id integer)
+  inout domain_id integer,
+  inout tags varchar)
 {
   declare graph_iri, iri varchar;
 
@@ -176,6 +181,7 @@ create procedure polls_delete (
 
   graph_iri := get_graph ();
   iri := poll_post_iri (domain_id, poll_id);
+  scot_tags_delete (domain_id, iri, tags);
   delete_quad_s_or_o (graph_iri, iri, iri);
 }
 ;
@@ -202,7 +208,7 @@ create trigger POLLS_SIOC_I after insert on POLLS.WA.POLL referencing new as N
 create trigger POLLS_SIOC_U after update on POLLS.WA.POLL referencing old as O, new as N
 {
   polls_delete (O.P_ID,
-                O.P_DOMAIN_ID);
+                O.P_DOMAIN_ID, O.P_TAGS);
   polls_insert (null,
                 null,
                 null,
@@ -221,7 +227,7 @@ create trigger POLLS_SIOC_U after update on POLLS.WA.POLL referencing old as O, 
 create trigger POLLS_SIOC_D before delete on POLLS.WA.POLL referencing old as O
 {
   polls_delete (O.P_ID,
-                O.P_DOMAIN_ID);
+                O.P_DOMAIN_ID, O.P_TAGS);
 }
 ;
 

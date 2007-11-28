@@ -246,7 +246,7 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.35.82\">" >> $STICKER
+  echo "    <versions_later package=\"1.42.00\">" >> $STICKER
   echo "      <prop name=\"Date\" value=\"2007-04-04 12:00\" />" >> $STICKER
   echo "      <prop name=\"Comment\" value=\"An incompatible version of the ODS Framework\" />" >> $STICKER
   echo "    </versions_later>" >> $STICKER
