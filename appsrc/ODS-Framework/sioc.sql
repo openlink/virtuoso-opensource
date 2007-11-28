@@ -1097,9 +1097,11 @@ create procedure ods_sioc_post (
 
       if (content is not null and not do_exif)
 	{
-	  if (__tag (content) = 126)
-	    content := blob_to_string (content);
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('content'), content);
+	  declare ses any;
+	  ses := string_output ();
+	  http_value (content, null, ses);
+	  ses := string_output_string (ses);
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('content'), ses);
 	}
 
       if (do_ann)

@@ -224,12 +224,15 @@ directory_init() {
   mkdir vad/data/wa
   mkdir vad/data/wa/comp
   mkdir vad/data/wa/oat
+  mkdir vad/data/wa/oat/styles
+  mkdir vad/data/wa/oat/xslt
   mkdir vad/data/wa/images
   mkdir vad/data/wa/images/app_ads
   mkdir vad/data/wa/images/dav_browser
   mkdir vad/data/wa/images/icons
   mkdir vad/data/wa/images/buttons
   mkdir vad/data/wa/images/oat
+  mkdir vad/data/wa/images/oat/markers
   mkdir vad/data/wa/images/skin
   mkdir vad/data/wa/images/skin/default
   mkdir vad/data/wa/tmpl
@@ -257,6 +260,9 @@ directory_init() {
   cp $HOME/binsrc/oat/toolkit/*.js vad/data/wa/oat/.
   cp $HOME/binsrc/oat/images/*.png vad/data/wa/images/oat/.
   cp $HOME/binsrc/oat/images/*.gif vad/data/wa/images/oat/.
+  cp $HOME/binsrc/oat/images/markers/*.png vad/data/wa/images/oat/markers/.
+  cp $HOME/binsrc/oat/styles/*.css vad/data/wa/oat/styles/.
+  cp $HOME/binsrc/oat/xslt/*.xsl vad/data/wa/oat/xslt/.
 #  cp $HOME/binsrc/oat/styles/winrect.css vad/data/wa/.
 #  cp $HOME/binsrc/oat/toolkit/ajax.js vad/data/wa/oat/.
 #  cp $HOME/binsrc/oat/toolkit/dom.js vad/data/wa/oat/.

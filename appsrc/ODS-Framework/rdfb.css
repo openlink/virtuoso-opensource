@@ -1,0 +1,180 @@
+/*
+*  $id: rdfbrowser.css,v 1.6 2007/04/10 09:32:10 ondrej Exp $
+*
+*  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+*
+*  Copyright (C) 2005-2007 OpenLink Software
+*
+*  See LICENSE file for details.
+*/
+
+@import url("oat/styles/timeline.css");
+@import url("oat/styles/webdav.css");
+@import url("oat/styles/grid.css");
+@import url("oat/styles/rdftabs.css");
+/*@import url("menu.css");*/
+
+/* common */
+
+html, body {
+margin: 0; padding: 0;
+}
+
+#throbber_content {
+visibility: hidden;
+}
+
+#throbber {
+text-align: center
+}
+
+#search {
+padding: 1em;
+float: left;
+}
+
+#search img {
+vertical-align: middle;
+margin-left: 2px;
+cursor: pointer;
+}
+
+#search input {
+vertical-align: middle;
+}
+
+
+body {
+font-family: Verdana, Arial, Helvetica, sans-serif;
+font-size: 9pt;
+color: #5e6166;
+}
+
+h1 { 
+margin-top: 5px;
+margin-left: 10px}
+
+table {
+font-size: 9pt}
+
+#MD {
+margin-top: 28px;
+float: left;
+clear: both;
+width: 100%;
+background: url("images/main_bkg_grad.png");
+background-repeat: repeat-x;
+}
+
+#LT {
+float: left;
+clear: left;
+width: 69%}
+
+#RT {
+float: left;
+width: 30%;
+background: url("images/side_box_bkg_grad.png");
+background-repeat: repeat-x;
+background-color: white;
+border-left: 1px solid #d7e5ee;
+border-bottom: 1px solid #d7e5ee}
+
+#FT {
+float: left;
+clear: both;
+width: 100%;
+margin-top: 20px;
+}
+
+p.copyright {
+font-size: 8pt;
+text-align: right;
+margin-right: 10px}
+
+#browse {
+position: inherit;
+float: left;
+clear: both;
+width: 98%;
+margin-left: 10px;
+padding: 0
+}
+
+#rdf_tabs {
+float: left;
+clear: both;
+width: 100%;
+margin-left: 0px;
+margin-top: 30px;
+list-style-type: none;
+text-align: center;
+padding-bottom: 2px;
+margin-bottom: 0px;
+border-bottom: 1px solid #98bdc6}
+
+#rdf_tabs li {
+display: inline;
+padding: 2px 3px;
+margin-left: 0.5em;
+background-color: #ddeaf2;
+cursor: pointer}
+
+#rdf_tabs li.tab_selected {
+color: #fff;
+background-color: #98bdc6}
+
+#rdf_tabs.tab_signal {
+background-color: #bbb;
+}
+
+li.tab:hover {
+background-color: #ccc}
+
+#rdf_cache {
+float: left;
+clear: left;
+width: 100%;
+}
+
+
+#rdf_cache input, 
+#rdf_cache h3 {
+ display:none;
+}
+
+
+#rdf_cache input[type="text"] {
+width: 70%}
+
+#rdf_cache input {
+margin-top: 5px}
+
+#rdf_filter {
+float: left;
+clear: left;
+width: 100%;
+padding-bottom: 10px;
+background: url("images/bottom_bkg_grad.png");
+background-repeat: repeat-x;
+background-position: bottom}
+
+#rdf_filter a {
+font-size: 80%}
+
+#rdf_side {
+float: left;
+padding-left: 4px;
+padding-right: 4px;}
+
+#rdf_content {
+float: left;
+clear: both;
+width: 100%;
+_width: 95%}
+
+.rdf_categories ul, .rdf_categories li {
+margin-left: 0px;
+padding-left: 0.5em
+}
+

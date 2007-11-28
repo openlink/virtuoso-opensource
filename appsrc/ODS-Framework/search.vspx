@@ -60,6 +60,9 @@
     }
   pars := vector ();
 
+      if (get_keyword('uri', params) is not null or get_keyword('uri[]', params) is not null)
+        self.page := 5;
+
   if (self.ds_data is null)
     {
       self.ds_data := vector ();
@@ -781,6 +784,17 @@
    <?vsp
      }
    ?>
+   <?vsp
+     if (self.page = 5) {
+   ?>
+   <script type="text/javascript">
+     var defaultGraph = "<?V sioc.DBA.get_graph () ?>";
+   </script>
+   <script type="text/javascript" src="rdfb.js">;</script>
+   <link rel="stylesheet" href="rdfb.css" type="text/css" />
+   <?vsp
+     }
+   ?>
  </vm:header>
  <vm:pagewrapper>
  
@@ -856,6 +870,9 @@
 	  <td class="<?V case when pg = 4 then 'navtab_sel' else 'navtab' end ?>" align="center">
 	   <v:url name="b_url14" value="SPARQL" format="%s" url="--sprintf('search.vspx?page=4&amp;l=1')"/>
 	  </td>
+    <td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab' end ?>" align="center">
+     <v:url name="b_url15" value="RDF" format="%s" url="--sprintf('search.vspx?page=5&amp;l=1')"/>
+    </td>
 	  <td class="page_tab_empty" align="center" width="100%">
 	    <table cellpadding="0" cellspacing="0">
 	      <tr>
@@ -1376,6 +1393,37 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 	  </table>
 	</v:template>
        </v:template>
+      <v:template name="rdf_search_tmpl2" type="simple" condition="self.page = 5">
+	<!-- RDF search -->
+	<script type="text/javascript">
+	  var featureList = ["rdfbrowser","dimmer","ajax2","dialog","grid","graphsvg","map","ymaps","timeline",
+	  "menu","dialog","xml","tagcloud","fresnel"];
+	  OAT.Loader.loadFeatures(featureList, RDFBInit);
+	</script>
+	<div id="throbber">
+	  <img src="/DAV/JS/images/throbber.gif" />
+	</div>
+	<div id="throbber_content">
+	  <div id="search">
+	    <input type="text" value="" id="search_query" /><img src="images/search.gif" id="search_btn" title="Search!"/>
+	  </div>
+	  <!--h1>OpenLink RDF Browser</h1-->
+	  <![CDATA[
+	  <div id="browse" style="position:relative;">
+	    <div id="LT">
+	      <div id="rdf_cache"></div>
+	      <div id="rdf_filter"></div>
+	    </div>
+	    <div id="RT">
+	      <div id="rdf_side"></div>
+	    </div>
+	    <div id="rdf_tabs"></div>
+	    <div id="rdf_content"></div>
+	  </div>]]>
+	</div>
+	<![CDATA[<div id="placeholder"></div>]]>
+	<!-- end RDF serach -->
+      </v:template>
      </td>
    </tr>
  </table>

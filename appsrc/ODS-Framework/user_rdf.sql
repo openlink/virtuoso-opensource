@@ -81,8 +81,8 @@ sioc..ods_sioc_result ('Creating IRI classes.');
 ODS_SPARQL_QM_RUN ('prefix ods: <http://www.openlinksw.com/virtuoso/ods/>
        create iri class ods:graph "http://^{URIQADefaultHost}^/dataspace/%U" (in uname varchar not null)
 			    option (returns "http://^{URIQADefaultHost}^/dataspace/%U") .
-       create iri class ods:user "http://^{URIQADefaultHost}^/dataspace/%U#user" (in uname varchar not null)
-			    option (returns "http://^{URIQADefaultHost}^/dataspace/%U#user") .
+       create iri class ods:user "http://^{URIQADefaultHost}^/dataspace/%U#this" (in uname varchar not null)
+			    option (returns "http://^{URIQADefaultHost}^/dataspace/%U#this") .
        create iri class ods:user_group "http://^{URIQADefaultHost}^/dataspace/%U#group" (in uname varchar not null)
 			    option (returns "http://^{URIQADefaultHost}^/dataspace/%U#group") .
        create iri class ods:person "http://^{URIQADefaultHost}^/dataspace/person/%U#this" (in uname varchar not null)

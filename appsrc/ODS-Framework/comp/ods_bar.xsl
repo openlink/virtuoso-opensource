@@ -307,7 +307,7 @@ if(odsbarCSSloaded==0)
 if (typeof (OAT) == 'undefined')
 {
   var toolkitPath="<?V self.odsbar_ods_gpath ?>oat";
-  var toolkitImagesPath="<?V self.odsbar_ods_gpath ?>images/oat";
+  var toolkitImagesPath="<?V self.odsbar_ods_gpath ?>images/oat/";
   
   
   var featureList = ["dom"];
@@ -323,7 +323,7 @@ if (typeof (OAT) == 'undefined')
 
    OAT.Loader.loadFeatures(["ajax","xml"],function(){}); 
     
-      OAT.Preferences.imagePath="<?V self.odsbar_ods_gpath ?>images/oat";
+      OAT.Preferences.imagePath="<?V self.odsbar_ods_gpath ?>images/oat/";
       OAT.Preferences.stylePath="<?V self.odsbar_ods_gpath ?>";
       
       OAT.Style.include('winrect.css');

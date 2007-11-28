@@ -80,6 +80,31 @@ create procedure DB.DBA.ODS_ITEM_PAGE (in par varchar, in fmt varchar, in val va
 }
 ;
 
+create procedure DB.DBA.ODS_WIKI_ITEM_PAGE (in par varchar, in fmt varchar, in val varchar)
+{
+  declare ret any;
+  if (par = 'inst')
+  {
+    if (length (val))
+      val := split_and_decode (val)[0];
+    ret := (select WAM_HOME_PAGE from WA_MEMBER where WAM_INST = val and WAM_MEMBER_TYPE = 1);
+    if (ret like 'http://%') {
+      declare i integer;
+      ret := replace (ret, 'http://','');
+      i := strstr (ret, '/');
+      if (not isnull (i))
+        ret := subseq (ret, i);
+    }
+    ret := rtrim (ret, '/') || '/';
+  }
+  else -- item
+    {
+      ret := sprintf ('%s', val);
+    }
+  return sprintf ('%s', ret);
+}
+;
+
 create procedure DB.DBA.ODS_PHOTO_ITEM_PAGE (in par varchar, in fmt varchar, in val varchar)
 {
   declare id int;
@@ -252,14 +277,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html', 1,
     '/dataspace/([^/]*)/wiki/([^/]*)/([^/]*)',
     vector('uname', 'inst', 'item'), 3,
     '%s%s', vector('inst', 'item'),
-    'DB.DBA.ODS_ITEM_PAGE',
-    NULL,
-    2);
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html2', 1,
-    '/dataspace/([^/]*)/wiki/(Main|Doc)/([^/]*)',
-    vector('uname', 'inst', 'item'), 3,
-    '/wiki/%s/%s', vector('inst', 'item'),
-    NULL,
+    'DB.DBA.ODS_WIKI_ITEM_PAGE',
     NULL,
     2);
 
@@ -319,9 +337,9 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_space_html', 1,
 --DB.DBA.HTTP_VARIANT_ADD ('ods_rule_tcn_list', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241).rdf', 'application/rdf+xml', 0.95);
 --DB.DBA.HTTP_VARIANT_ADD ('ods_rule_tcn_list', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241).n3', 'text/rdf+n3', 0.80);
 
--- RDF data rule
+-- RDF data rules - these was returning 303
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
-    '/dataspace/(.*)', vector('path'), 1,
+    '/dataspace/([^\\?]*)', vector('path'), 1,
     '/ods/data/rdf/%U.%U', vector('path', '*accept*'),
     'DB.DBA.ODS_DET_REF',
     '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)',
@@ -339,7 +357,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
 
 -- Rule for about, sioc, foaf etc. RDF resources
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_res', 1,
-    '/dataspace/(.*)/(about|foaf|sioc)\\.(.*)', vector('path', 'dummy', 'ext'), 1,
+    '/dataspace/(.*)/(about|foaf|sioc)\\.([^\\?]*)', vector('path', 'dummy', 'ext'), 1,
     '/ods/data/rdf/%U.%U', vector('path', 'ext'),
     'DB.DBA.ODS_DET_REF',
     NULL,
@@ -369,7 +387,6 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_discussion_html',
 	  'ods_item_html',
 	  'ods_wiki_item_html',
-	  'ods_wiki_item_html2',
 	  'ods_photo_item_html',
 	  'ods_cal_item_html',
 	  'ods_discussion_item_html',
