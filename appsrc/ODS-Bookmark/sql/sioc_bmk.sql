@@ -117,6 +117,7 @@ create procedure fill_ods_bookmark_sioc (
 
     for (select WAI_NAME,
                 WAM_USER,
+		WAI_ID,
                 BD_DOMAIN_ID,
                 BD_ID,
                 BD_BOOKMARK_ID,
@@ -151,9 +152,11 @@ create procedure fill_ods_bookmark_sioc (
       bookmark_id := BD_BOOKMARK_ID;
       for (select BD_TAGS
              from BMK.WA.BOOKMARK_DATA
-            where BD_MODE = 0 and BD_OBJECT_ID = domain_id and BD_BOOKMARK_ID = bookmark_id and not DB.DBA.is_empty_or_null (BD_TAGS)) do {
+            where BD_MODE = 0 and BD_OBJECT_ID = domain_id and BD_BOOKMARK_ID = bookmark_id
+	     and length (BD_TAGS)) do
+	{
         iri := bmk_post_iri (domain_id, bookmark_id);
-	  ods_sioc_tags (graph_iri, iri, BD_TAGS);
+	  scot_tags_insert (WAI_ID, iri, BD_TAGS);
       }
 			for (select A_ID,
 									A_DOMAIN_ID,
@@ -355,7 +358,7 @@ create procedure bookmark_tags_insert (
   home := '/bookmarks/' || cast(domain_id as varchar);
   graph_iri := get_graph ();
   post_iri := bmk_post_iri (domain_id, bookmark_id);
-  ods_sioc_tags (graph_iri, post_iri, tags);
+  scot_tags_insert (domain_id, post_iri, tags);
 }
 ;
 
@@ -381,7 +384,7 @@ create procedure bookmark_tags_delete (
 
   graph_iri := get_graph ();
   post_iri := bmk_post_iri (domain_id, bookmark_id);
-  ods_sioc_tags_delete (graph_iri, post_iri, tags);
+  scot_tags_delete (domain_id, post_iri, tags);
 }
 ;
 

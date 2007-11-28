@@ -764,7 +764,7 @@ function initState ()
   xmlhttp.open("POST", URL, false);
   xmlhttp.setRequestHeader("Pragma", "no-cache");
   xmlhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-  xmlhttp.send("a=import&sa=init&id="+progressID+urlParam("sid")+urlParam("realm")+urlParam("folder_id")+urlParam("folder_name"));
+  xmlhttp.send("a=import&sa=init&id="+progressID+urlParam("sid")+urlParam("realm")+urlParam("folder_id")+urlParam("folder_name")+urlParam("tags"));
 
   createProgressBar();
   timer = setTimeout("checkState()", 1000);
@@ -839,16 +839,18 @@ function createProgressBar()
 //
 function showProgress (progressIndex)
 {
-  if (progressMax == null)
+  if (!progressMax)
     return;
 
-  if (progressIndex == null)
+  if (!progressIndex)
     progressIndex = progressMax;
 
   var idiv = window.document.getElementById("progressText");
   if (idiv)
     idiv.innerHTML = "Imported " + progressIndex + " bookmarks from " + progressMax;
-  var percentage = Math.round (progressIndex * 100 / progressMax);
+  var percentage = 100;
+  if (progressMax != 0)
+    percentage = Math.round (progressIndex * 100 / progressMax);
   var percentageText = "";
   if (percentage < 10) {
     percentageText = "&nbsp;" + percentage;
