@@ -431,7 +431,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/isparql/execute.html?query=SELECT%%20%%3Fp%%20%%3Fo%%20WHERE%%20{%%20%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E%%20%%3Fp%%20%%3Fo%%20}&endpoint=/sparql&defaultGraph=http%%3A//^{URIQADefaultHost}^/tutorial/Northwind',
+    '/rdfbrowser/index.htm?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
