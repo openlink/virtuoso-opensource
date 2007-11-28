@@ -214,7 +214,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_feed_item_html2', 1,
 -- A rule returning home page for a given instance.
 -- NB: all instances have a <home url> execpt discussion
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_inst_html', 1,
-    '/dataspace/([^/]*)/(weblog|wiki|addressbook|bookmark|briefcase|eCRM|calendar|community|subscriptions|photos|polls|mail|IM)/([^/\\?]+)',
+    '/dataspace/([^/]*)/(weblog|wiki|addressbook|socialnetwork|bookmark|briefcase|eCRM|calendar|community|subscriptions|photos|polls|mail|IM)/([^/\\?]+)',
     vector('ufname', 'app', 'inst'), 3,
     '%s', vector('inst'),
     'DB.DBA.ODS_INST_HOME_PAGE',
@@ -286,6 +286,13 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_item_html', 1,
     '/dataspace/discussion/([^/]*)/((?!sioc)(?!about)[^/\\?]*)', vector('grp', 'post'), 1,
     '/nntpf/nntpf_disp_article.vspx?id=%U', vector('post'),
     'DB.DBA.ODS_DISC_ITEM_ID',
+    NULL,
+    2);
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_blog_tag', 1,
+    '/dataspace/([^/]*)/weblog/([^/]*)/tag/([^/\\?]*)', vector('uname', 'inst', 'tag'), 3,
+    '%s?tag=%U', vector('inst', 'tag'),
+    'DB.DBA.ODS_ITEM_PAGE',
     NULL,
     2);
 
@@ -366,6 +373,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_photo_item_html',
 	  'ods_cal_item_html',
 	  'ods_discussion_item_html',
+	  'ods_blog_tag',
 	  'ods_main',
 	  'ods_space_html',
 	  'ods_rdf',

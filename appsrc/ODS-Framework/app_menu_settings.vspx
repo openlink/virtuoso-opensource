@@ -41,20 +41,26 @@
 	      <colgroup>
 		  <col/>
 		  <col/>
+  		      <col/>
 	      </colgroup>
 	      <tr class="listing_header_row">
-		  <th>Menu Item</th>
-		  <th>Label</th>
+  		      <th width="10%" nowrap="nowrap">Menu Item</th>
+  		      <th width="25%" nowrap="nowrap">Label</th>
+  		      <th>Order</th>
 	      </tr>
-	      <v:data-set name="wat" sql="select 'Profile' as WAT_NAME from WA_SETTINGS union all select 'Tags' as WAT_NAME from WA_SETTINGS union all select WAT_NAME from WA_TYPES"
-		  scrollable="1" editable="1" nrows="1000">
+  	      <v:data-set name="wat" sql="select 'Profile' as WAT_NAME, -2 as WAT_DEFAULT, -2 as WAT_USER from WA_SETTINGS union all select 'Tags' as WAT_NAME, -1 as WAT_DEFAULT, -1 as WAT_USER from WA_SETTINGS union all select rs.* from ODS.WA.wa_order_rs (rs0) (WAT_NAME varchar, WAT_DEFAULT integer, WAT_USER integer) rs where rs0 = ODS.WA.ods_apps () order by WAT_USER, WAT_DEFAULT"
+  		                scrollable="1"
+  		                editable="1"
+  		                nrows="0">
 		  <v:template name="maps_rep" type="repeat">
-		      <v:template name="maps_brows" type="browse">
+  		        <v:template name="maps_browse" type="browse">
 			  <?vsp
 			     if (control.te_ctr = 0)
 			       {
 			  ?>
-			  <tr><th colspan="2">General</th></tr>
+    			      <tr>
+    			        <th colspan="3">General</th>
+    			      </tr>
 			  <?vsp
 			       }
 			  ?>
@@ -62,7 +68,9 @@
 			     if (control.te_ctr = 2)
 			       {
 			  ?>
-			  <tr><th colspan="2">Applications</th></tr>
+       			    <tr>
+       			      <th colspan="3">Applications</th>
+       			    </tr>
 			  <?vsp
 			       }
 			  ?>
@@ -73,12 +81,13 @@
 			      <td>
 				  <v:text name="txt2"
 				      value="--wa_get_app_name ((control.vc_parent as vspx_row_template).te_rowset[0])"
-				      xhtml_size="50" cvt-function="trim" fmt-function="trim" error-glyph="*">
-				      <v:validator name="txt2len" min="1" max="20"
-					  message="The application label cannot be empty or longer than 20 characters"
-					  test="length"/>
-				      <v:on-post><![CDATA[
-
+        				          xhtml_size="50"
+        				          cvt-function="trim"
+        				          fmt-function="trim"
+        				          error-glyph="*">
+      				      <v:validator name="txt2len" min="1" max="20" message="The application label cannot be empty or longer than 20 characters" test="length"/>
+      				      <v:on-post>
+      				        <![CDATA[
 					  if (self.vc_is_valid = 0 and e.ve_button = self.save1)
 					    return;
 
@@ -92,20 +101,62 @@
 
 					  if (e.ve_button = self.save1)
 					    {
-					      registry_set ('_wa_label_'||(control.vc_parent as vspx_row_template).te_rowset[0],
-					        control.ufl_value);
+            					    registry_set ('_wa_label_'||(control.vc_parent as vspx_row_template).te_rowset[0], control.ufl_value);
 					    }
 					  else if (e.ve_button = self.cancel1)
 					    {
-					      registry_set ('_wa_label_'||(control.vc_parent as vspx_row_template).te_rowset[0],
-					        '');
-					      control.ufl_value := wa_get_app_name ((control.vc_parent as vspx_row_template).te_rowset[0]);
+            					    registry_set ('_wa_label_'||(control.vc_parent as vspx_row_template).te_rowset[0], '');
 					      self.vc_is_valid := 1;
-					      control.ufl_failed := 0;
 					    }
-				      ]]></v:on-post>
+      				        ]]>
+      				      </v:on-post>
 				  </v:text>
 			      </td>
+  			        <td>
+    			        <?vsp
+    			          if (control.te_ctr >= 2)
+    			          {
+          			  ?>
+                  <v:select-list name="order2" xhtml_id="order2">
+                    <v:on-init>
+                      <![CDATA[
+                        declare N integer;
+                        declare x any;
+
+                        x := make_array (self.wat.ds_rows_fetched-2, 'any');
+                        for (N := 0; N < self.wat.ds_rows_fetched-2; N := N + 1)
+                          x[N] := cast ((N + 1) as varchar);
+                        control.vsl_item_values := x;
+                        control.vsl_items := x;
+                        control.ufl_value := '';
+                      ]]>
+                    </v:on-init>
+                    <v:before-data-bind>
+                      <![CDATA[
+                        control.ufl_value := (control.vc_parent as vspx_row_template).te_ctr-1;
+                      ]]>
+                    </v:before-data-bind>
+      				      <v:on-post>
+      				        <![CDATA[
+            					  if (self.vc_is_valid = 0 and e.ve_button = self.save1)
+            					    return;
+
+            					  if (e.ve_button = self.save1)
+            					  {
+            					    registry_set ('_wa_order_'||(control.vc_parent as vspx_row_template).te_rowset[0], cast (control.ufl_value as varchar));
+            					  }
+            					  else if (e.ve_button = self.cancel1)
+            					  {
+            					    registry_remove ('_wa_order_'||(control.vc_parent as vspx_row_template).te_rowset[0]);
+           					      self.vc_is_valid := 1;
+            					  }
+      				        ]]>
+      				      </v:on-post>
+                  </v:select-list>
+    			        <?vsp
+    			          }
+          			  ?>
+  			        </td>
 			  </tr>
 		      </v:template>
 		  </v:template>
@@ -120,7 +171,8 @@
 			  <td colspan="3" class="listing_col_action">
 			      <span class="fm_ctl_btn">
 			      <v:button name="cancel1" value="Set Default" action="simple">
-				  <v:on-post><![CDATA[
+      	    			  <v:on-post>
+      	    			    <![CDATA[
 				      declare ds vspx_data_set;
 				      declare rw vspx_row_template;
 
@@ -133,10 +185,14 @@
 					   rw.vc_set_childs_focus (1, e);
 					   rw.vc_post (e);
 					}
-				      ]]></v:on-post>
+          					    if (self.vc_is_valid)
+                          self.vc_redirect ('app_menu_settings.vspx');
+          				    ]]>
+          				  </v:on-post>
 			      </v:button>
 			      <v:button name="save1" value="Save" action="simple">
-				  <v:on-post><![CDATA[
+          				  <v:on-post>
+          				    <![CDATA[
 				      declare ds vspx_data_set;
 				      declare rw vspx_row_template;
 
@@ -149,7 +205,10 @@
 					   rw.vc_set_childs_focus (1, e);
 					   rw.vc_post (e);
 					}
-				      ]]></v:on-post>
+          					    if (self.vc_is_valid)
+                          self.vc_redirect ('app_menu_settings.vspx');
+      				        ]]>
+      				      </v:on-post>
 			      </v:button>
 			  </span>
 		          </td>

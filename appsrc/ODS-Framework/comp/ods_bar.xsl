@@ -249,7 +249,15 @@ function loadCSS(cssContainer)
   {
     var cssNode = document.createElement('style');
  cssNode.type = 'text/css';
+    if(cssNode.styleSheet)
+    {// IE
+      cssNode.styleSheet.cssText = cssObj.innerHTML;
+    }else
+    {
     cssNode.textContent =cssObj.innerHTML;
+    };
+
+
 _head.appendChild(cssNode);
   }
   else if(cssUrl.length)
@@ -1012,6 +1020,7 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
                           --                                             key2,key2value
                          );
       if (length(self.sid)=0) arr :=arr_notlogged;
+      arr := ODS.WA.wa_order_vector (arr);
 
       foreach (any app in arr) do
         {

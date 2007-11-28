@@ -261,7 +261,7 @@ create procedure wa_type_to_app (in app varchar)
 	'nntpf',    'discussion',
 	'Polls',       'polls',
 	'AddressBook', 'addressbook',
-	'SocialNetwork', 'addressbook',
+	'SocialNetwork', 'socialnetwork',
 	'Calendar',    'calendar'
 	), app);
 };

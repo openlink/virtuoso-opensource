@@ -93,6 +93,11 @@ create procedure skos_iri (in s varchar)
   return concat ('http://www.w3.org/2004/02/skos/core#', s);
 };
 
+create procedure scot_iri (in s varchar)
+{
+  return concat ('http://scot-project.org/scot/ns#', s);
+};
+
 create procedure ext_iri (in s varchar)
 {
   return concat ('http://rdfs.org/sioc/types#', s);
@@ -1186,79 +1191,23 @@ create procedure ods_sioc_service (
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('service_protocol'), proto);
 };
 
+-- the ods_sioc_tags* is used for text indexing the NNTP data
+-- the SKOS & SCOT tags are produced by scot_tags_insert & scot_tags_delete
 create procedure ods_sioc_tags_delete (in graph_iri any, in post_iri any, in _tags any)
 {
-  declare tag_iri, arr, base, tags any;
-
   if (post_iri is null)
     return;
-
-  arr := sprintf_inverse (post_iri, graph_iri || '/%s/%s', 1);
-
-  -- briefcase is special case of IRI
-  if (arr is null)
-    arr := sprintf_inverse (post_iri, 'http://' || get_cname () || '/DAV/home/%s/%s', 1);
-
-  if (arr is null or length (arr) < 1)
-    return;
-
-  base := sprintf ('%s/%s/concept#', graph_iri, arr[0]);
-
-  tags := split_and_decode (_tags, 0, '\0\0,');
-
-  foreach (any tag in tags) do
-    {
-      tag := trim (tag);
-      tag := replace (tag, ' ', '_');
-      if (length (tag))
-	{
-	  tag_iri := base || tag;
-	  delete_quad_s_or_o (graph_iri, tag_iri, tag_iri);
-	}
-    }
+  delete_quad_sp (graph_iri, post_iri, dc_iri ('subject'));
 };
 
 create procedure ods_sioc_tags (in graph_iri any, in post_iri any, in _tags any)
 {
-  declare tag_iri, arr, base, tags any;
-
   if (post_iri is null)
     return;
-
-  arr := sprintf_inverse (post_iri, graph_iri || '/%s/%s', 1);
-
-  -- briefcase is special case of IRI
-  if (arr is null)
-    arr := sprintf_inverse (post_iri, 'http://' || get_cname () || '/DAV/home/%s/%s', 1);
-
-  if (arr is null or length (arr) < 1)
-    return;
-
-  base := sprintf ('%s/%s/concept#', graph_iri, arr[0]);
-
-  -- must be done in the trigger
-  -- delete_quad_sp (graph_iri, post_iri, dc_iri ('subject'));
   if (length (_tags))
     DB.DBA.RDF_QUAD_URI_L (graph_iri, post_iri, dc_iri ('subject'), _tags);
   else
     DB.DBA.RDF_QUAD_URI_L (graph_iri, post_iri, dc_iri ('subject'), '~none~');
-
-  tags := split_and_decode (_tags, 0, '\0\0,');
-
-  foreach (any tag in tags) do
-    {
-      tag := trim (tag);
-      tag := replace (tag, ' ', '_');
-      if (length (tag) and tag not like '"^%"')
-	{
-	  tag_iri := base || tag;
-	  ods_sioc_result (tag_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, tag_iri, rdf_iri ('type'), skos_iri ('Concept'));
-	  DB.DBA.RDF_QUAD_URI_L (graph_iri, tag_iri, skos_iri ('prefLabel'), tag);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, tag_iri, skos_iri ('isSubjectOf'), post_iri);
-	  DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, sioc_iri ('topic'), tag_iri);
-        }
-    }
 };
 
 create procedure ods_current_ver ()
@@ -1349,6 +1298,8 @@ create procedure fill_ods_sioc (in doall int := 0)
     set isolation='committed';
   ods_graph_init ();
   }
+
+  scot_tags_init ();
 
   -- init users
   {
@@ -1445,9 +1396,11 @@ create procedure fill_ods_sioc (in doall int := 0)
 		from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE
 		   where WAM_USER = U_ID and WAM_INST = WAI_NAME and ((WAI_IS_PUBLIC = 1) or (WAI_TYPE_NAME = 'oDrive')) do
 		{
-		  declare riri, firi varchar;
+		  declare riri, firi, _wai_type varchar;
+		  _wai_type := WAI_TYPE_NAME;
+		  do_social:
 		  riri := role_iri (WAI_ID, WAM_USER);
-		  firi := forum_iri (WAI_TYPE_NAME, WAI_NAME);
+		  firi := forum_iri (_wai_type, WAI_NAME);
 		  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_function'), riri);
 		  DB.DBA.RDF_QUAD_URI (graph_iri, riri, sioc_iri ('function_of'), iri);
 
@@ -1460,6 +1413,11 @@ create procedure fill_ods_sioc (in doall int := 0)
 		      DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('owner_of'), firi);
 		    }
 
+		  if (_wai_type = 'AddressBook')
+		    {
+		      _wai_type := 'SocialNetwork';
+		      goto do_social;
+		    }
 		}
 		}
 	    }
@@ -2066,10 +2024,13 @@ create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new
 	  ods_sioc_service (graph_iri, svc_iri, iri, null, 'text/xml', svc_iri||'/services.wsdl', svc_iri, 'SOAP');
 	}
     }
+  declare _wai_type varchar;
+  _wai_type := N.WAM_APP_TYPE;
 
   iri :=  user_iri (N.WAM_USER);
   riri := role_iri_by_name (N.WAM_INST, N.WAM_USER);
-  firi := forum_iri (N.WAM_APP_TYPE, N.WAM_INST);
+  do_social:
+  firi := forum_iri (_wai_type, N.WAM_INST);
   if (iri is not null and riri is not null and firi is not null and ((N.WAM_IS_PUBLIC = 1) or (N.WAM_APP_TYPE = 'oDrive')))
 {
       DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('has_function'), riri);
@@ -2082,6 +2043,11 @@ create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('owner_of'), firi);
 	}
       --DB.DBA.RDF_QUAD_URI (graph_iri, firi, sioc_iri ('has_member'), iri);
+    }
+  if (_wai_type = 'AddressBook')
+    {
+      _wai_type := 'SocialNetwork';
+      goto do_social;
     }
   return;
 };
@@ -2556,6 +2522,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   declare pers_iri varchar;
 
   -- dbg_obj_print (u_name,wai_name,inst_type,postid);
+  set http_charset='utf-8';
   graph := get_graph ();
   ses := string_output ();
 
@@ -2734,6 +2701,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?function sioc:has_scope ?forum .
 	    ?forum a ?forum_type .
 	    ?forum rdfs:label ?label .
+	    ?forum rdfs:seeAlso ?see_also .
 	       }
 	  WHERE
 		    {
@@ -2744,6 +2712,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 		?function sioc:has_scope ?forum .
 		?forum a ?forum_type .
 		optional { ?forum rdfs:label ?label . }
+		optional { ?forum rdfs:seeAlso ?see_also . }
 		    }
 	}
 	  }', iri, graph, iri);
@@ -2760,6 +2729,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?forum sioc:parent_of ?child_forum .
 	    ?child_forum sioc:has_parent ?forum .
 	    ?child_forum rdfs:label ?label .
+	    ?child_forum rdfs:seeAlso ?see_also .
 	       }
 	  WHERE
 		    {
@@ -2771,6 +2741,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 		?forum sioc:parent_of ?child_forum .
 		?child_forum a ?forum_type .
 		optional { ?child_forum rdfs:label ?label . }
+		optional { ?child_forum rdfs:seeAlso ?see_also . }
                   }
                 }
 	  } LIMIT %d OFFSET %d', graph, iri, lim, offs);
@@ -2779,7 +2750,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   qrs [3] := qry;
   if (p <> 0)
     qrs [3] := null;
-  --qrs [2] := null;
+  -- disabled now
+  qrs [3] := null;
 
   part := sprintf (
 	  ' CONSTRUCT {
@@ -2817,7 +2789,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   qry := decl || part;
   qrs [4] := qry;
-  --qrs [3] := null;
+  -- disabled now
+  qrs [4] := null;
 
 
   set_user_id ('dba');
@@ -2847,6 +2820,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	}
 }
 
+  if (0)
+    {
   ss := string_output ();
   rdf_head (ss);
   http (sprintf ('<rdf:Description rdf:about="%s">', dociri), ss);
@@ -2861,6 +2836,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
     DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
   else
     DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+    }
 
   if (fmt = 'rdf')
     rdf_tail (ses);
@@ -3380,7 +3356,6 @@ ret:
   return ses;
 };
 
-ods_sioc_init ();
 
 use DB;
 

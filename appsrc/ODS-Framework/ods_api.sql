@@ -53,7 +53,7 @@ create procedure OdsIriDescribe (in iri varchar, in accept varchar := 'applicati
   declare ses any;
   declare dict, triples any;
 
-
+  set http_charset='utf-8';
   qr := sprintf ('SPARQL DESCRIBE <%s> FROM <%s>', iri, sioc..get_graph ());
   stat := '00000';
   set_user_id ('SPARQL');

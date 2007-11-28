@@ -278,12 +278,16 @@ create procedure installedPackages (in sid varchar:='',in realm varchar :='wa') 
         for (select WAT_NAME,WAT_MAXINST from WA_TYPES) do
         {
           package_name:=get_keyword(WAT_NAME,packages,WAT_NAME);
+
           if(wa_check_package(package_name))
           {
-           declare inst_count integer;
+           declare inst_count,own_inst_count integer;
            inst_count:=0;
+           own_inst_count:=0;
 
-           inst_count:=(select WMIC_INSTCOUNT from WA_MEMBER_INSTCOUNT where WMIC_TYPE_NAME=WAT_NAME  and WMIC_UID = logged_user_id);
+--           inst_count:=(select WMIC_INSTCOUNT from WA_MEMBER_INSTCOUNT where WMIC_TYPE_NAME=WAT_NAME  and WMIC_UID = logged_user_id);
+           own_inst_count:=(select count(WAM_INST) from DB.DBA.WA_MEMBER where WAM_APP_TYPE=WAT_NAME  and  WAM_MEMBER_TYPE=1 and WAM_USER = logged_user_id);
+           inst_count:=(select count(WAM_INST) from DB.DBA.WA_MEMBER where WAM_APP_TYPE=WAT_NAME  and WAM_USER = logged_user_id);
 
            if(inst_count is null)
               inst_count:=0;
@@ -291,9 +295,13 @@ create procedure installedPackages (in sid varchar:='',in realm varchar :='wa') 
            declare defaultinst_homepage varchar;
            defaultinst_homepage:='';
            
+           
            if (inst_count>0)
            {
+            if(own_inst_count>0)
             defaultinst_homepage:=(select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_MEMBER_TYPE=1 and  WAM_APP_TYPE=WAT_NAME  and WAM_USER=logged_user_id);
+            else
+               defaultinst_homepage:=(select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_APP_TYPE=WAT_NAME  and WAM_USER=logged_user_id);
            }
            
            if(WAT_NAME='Discussion')
@@ -653,6 +661,59 @@ create procedure feedStatusSet (in sid varchar:='',in realm varchar :='wa', in f
 }
 ;
 grant execute on feedStatusSet to GDATA_ODS;
+
+create procedure userMessages (in sid varchar,in realm varchar :='wa', in msgType integer :=0) __SOAP_HTTP 'text/xml'
+{
+  declare errCode integer;
+  declare errMsg varchar;
+  declare resXml any;
+
+  resXml  := string_output ();
+  errCode := 0;
+  errMsg  := '';
+
+  declare logged_user_name varchar;
+  if(isSessionValid(sid,'wa',logged_user_name))
+  {
+        
+        if(msgType=0)
+        {
+            declare new_messages integer;
+            new_messages:=0;
+            
+            declare exit handler for sqlstate '*' {new_messages:=0;};
+            select count(WM_ID) into new_messages from DB.DBA.WA_MESSAGESES where WM_RECIPIENT_UID=userid(logged_user_name);
+            
+            http('<new_message_count>',resXml);
+            http(sprintf('%d',new_messages),resXml);
+            http('</new_message_count>',resXml);
+        
+        }else
+        {
+          for(select WM_ID,WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS
+                from DB.DBA.WA_MESSAGESES
+               where WM_SENDER_UID=userid(logged_user_name) OR WM_RECIPIENT_UID=userid(logged_user_name)) do
+          {  
+          
+            http('<message>',resXml);
+            http(sprintf('<sender id="%d">%s</sender>',WM_SENDER_UID, DB.DBA.WA_USER_FULLNAME(WM_SENDER_UID)),resXml);
+            http(sprintf('<recepient id="%d">%s</recepient>',WM_RECIPIENT_UID,DB.DBA.WA_USER_FULLNAME(WM_RECIPIENT_UID)),resXml);
+            http(sprintf('<received>%s</received>',DB.DBA.date_iso8601 (WM_TS)),resXml);
+            http('</message>',resXml);
+          
+          }
+        }
+  }
+  
+  if(errCode<>0)
+     httpErrXml(errCode,errMsg,'userMessages');
+  else
+     httpResXml(resXml,'userMessages');
+  
+  return '';
+}
+;
+grant execute on userMessages to GDATA_ODS;
 
 create procedure openIdServer (in openIdUrl varchar) __SOAP_HTTP 'text/xml'
 {

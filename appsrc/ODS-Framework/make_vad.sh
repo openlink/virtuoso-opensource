@@ -377,6 +377,7 @@ sticker_init() {
   echo "      vhost_define (lpath=>'/ods',ppath=>'/DAV/VAD/wa/', is_dav=>1, vsp_user=>'dba', def_page=>'sfront.vspx');" >> $STICKER
   echo "      vhost_define (lpath=>'/ods/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sioc.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/scot.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/user_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/web_svc.sql', 1, 'report', 1);" >> $STICKER

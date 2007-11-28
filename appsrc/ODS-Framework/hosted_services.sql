@@ -57,6 +57,23 @@ create procedure wa_exec_no_error_log(in expr varchar) {
 }
 ;
 
+create procedure wa_exec_ddl (in q varchar)
+{
+  declare lex any;
+  lex := sql_lex_analyze (q);
+  if (length (lex) > 2 and length (lex[0]) > 1 and length (lex[1]) > 1 and length (lex[2]) > 1)
+    {
+      if (lower (lex[0][1]) = 'create' and lower (lex[1][1]) = 'table')
+	{
+	  declare tb varchar;
+	  tb := complete_table_name (lex[2][1], 1);
+	  if (exists (select 1 from DB.DBA.SYS_KEYS where KEY_TABLE = tb))
+	    return;
+	}
+    }
+  DB.DBA.EXEC_STMT (q, 0);
+}
+;
 
 create procedure wa_exec_no_error(in expr varchar) {
   declare state, message, meta, result any;
@@ -629,6 +646,18 @@ wa_exec_no_error_log(
 
 wa_exec_no_error_log(
   'ALTER TABLE WA_ACTIVITIES_USERSET ADD FOREIGN KEY (WAU_A_ID) REFERENCES WA_ACTIVITIES (WA_ID) ON DELETE CASCADE'
+)
+;
+
+wa_exec_no_error('create table WA_MESSAGESES (
+     WM_ID int identity,
+     WM_SENDER_UID int,
+     WM_RECIPIENT_UID int,
+     WM_TS timestamp,
+     WM_MESSAGE long varchar,
+     WM_SENDER_MSGSTATUS int,
+     WM_RECIPIENT_MSGSTATUS int,
+     primary key (WM_SENDER_UID, WM_RECIPIENT_UID,WM_ID))'
 )
 ;
 
@@ -5929,3 +5958,67 @@ create procedure wa_identity_dstype (in _identity any)
 }
 ;
 
+create procedure ODS.WA.ods_apps ()
+{
+  return vector (
+                 vector ('Community'),
+                 vector ('oDrive'),
+                 vector ('WEBLOG2'),
+                 vector ('oGallery'),
+                 vector ('eNews2'),
+                 vector ('oWiki'),
+                 vector ('oMail'),
+                 vector ('eCRM'),
+                 vector ('Bookmark'),
+                 vector ('Polls'),
+                 vector ('AddressBook'),
+                 vector ('Calendar'),
+                 vector ('IM')
+                );
+}
+;
+
+create procedure ODS.WA.wa_order_rs (
+  in V any)
+{
+
+  declare i integer;
+  declare arr_all, tmp any;
+
+  declare c0 varchar;
+  declare c1, c2 integer;
+
+  result_names (c0, c1, c2);
+
+  i := 1;
+  foreach (any app_type in V) do {
+    for (select WAT_NAME from DB.DBA.WA_TYPES where WAT_NAME = app_type[0]) do {
+      tmp := cast (registry_get ('_wa_order_' || WAT_NAME) as integer);
+      if (tmp = 0)
+        tmp := 100;
+      result (WAT_NAME, i, tmp);
+      i := i + 1;
+    }
+  }
+}
+;
+
+create procedure ODS.WA.wa_order_vector (
+  in V any)
+{
+  declare N integer;
+  declare T any;
+
+  T := vector ();
+  for (select rs.*
+         from ODS.WA.wa_order_rs (rs0) (watName varchar, watDefault integer, watUser integer) rs
+        where rs0 = V
+        order by watUser, watDefault) do {
+    for (N := 0; N < length (V); N := N + 1) {
+      if (watName = V[N][0])
+        T := vector_concat (T, vector (V[N]));
+    }
+  }
+  return T;
+}
+;
