@@ -29,6 +29,7 @@ grant select on DB.DBA.WA_USER_INFO to GDATA_ODS;
 grant select on DB.DBA.SYS_USERS to GDATA_ODS;
 wa_exec_no_error('grant select on DB.DBA.NEWS_GROUPS to GDATA_ODS');
 wa_exec_no_error('grant select on DB.DBA.NNTPF_SUBS to GDATA_ODS');
+wa_exec_no_error('grant select on DB.DBA.WA_MESSAGES to GDATA_ODS');
 
 create procedure sessionStart (in realm varchar :='wa') __SOAP_HTTP 'text/xml'
 {
@@ -486,7 +487,7 @@ create procedure connectionsGet (in sid varchar:='',in realm varchar :='wa', in 
             }
           }
       }
-  }
+  }else return '';
 
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'connectionsGet');
@@ -587,7 +588,7 @@ create procedure userDiscussionGroups (in sid varchar:='',in realm varchar :='wa
 
       }
      }  
-  }
+  }else return '';
   
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'userDiscussionGroups');
@@ -618,7 +619,7 @@ create procedure feedStatus (in sid varchar:='',in realm varchar :='wa') __SOAP_
     {
        http(sprintf('<activity id="%d" status="%d" />',WAU_A_ID,WAU_STATUS),resXml);
     } 
-  }
+  }else return '';
 
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'feedStatus');
@@ -650,7 +651,7 @@ create procedure feedStatusSet (in sid varchar:='',in realm varchar :='wa', in f
         update WA_ACTIVITIES_USERSET set WAU_STATUS=feedStatus where WAU_U_ID=logged_user_id and WAU_A_ID=feedId;
     else
         insert into WA_ACTIVITIES_USERSET(WAU_U_ID,WAU_A_ID,WAU_STATUS) values(logged_user_id,feedId,feedStatus);
-  }
+  }else return '';
 
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'feedStatusSet');
@@ -660,6 +661,7 @@ create procedure feedStatusSet (in sid varchar:='',in realm varchar :='wa', in f
   return '';
 }
 ;
+
 grant execute on feedStatusSet to GDATA_ODS;
 
 create procedure userMessages (in sid varchar,in realm varchar :='wa', in msgType integer :=0) __SOAP_HTTP 'text/xml'
@@ -676,13 +678,16 @@ create procedure userMessages (in sid varchar,in realm varchar :='wa', in msgTyp
   if(isSessionValid(sid,'wa',logged_user_name))
   {
         
+        declare logged_useruser_id integer;
+        logged_useruser_id:=userid(logged_user_name);
+        
         if(msgType=0)
         {
             declare new_messages integer;
             new_messages:=0;
             
             declare exit handler for sqlstate '*' {new_messages:=0;};
-            select count(WM_ID) into new_messages from DB.DBA.WA_MESSAGESES where WM_RECIPIENT_UID=userid(logged_user_name);
+            select count(WM_ID) into new_messages from DB.DBA.WA_MESSAGES where WM_RECIPIENT_UID=logged_useruser_id;
             
             http('<new_message_count>',resXml);
             http(sprintf('%d',new_messages),resXml);
@@ -690,20 +695,57 @@ create procedure userMessages (in sid varchar,in realm varchar :='wa', in msgTyp
         
         }else
         {
-          for(select WM_ID,WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS
-                from DB.DBA.WA_MESSAGESES
-               where WM_SENDER_UID=userid(logged_user_name) OR WM_RECIPIENT_UID=userid(logged_user_name)) do
+          declare qry,state, msg, maxrows, metas, rset any;
+           
+          rset := null;
+          maxrows := 0;
+          state := '00000';
+          msg := '';
+
+
+          if(msgType=2)
           {  
+         	 qry := sprintf('select top 100 WM_ID,WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS
+                              from DB.DBA.WA_MESSAGES
+                             where WM_RECIPIENT_UID=%d
+                             order by WM_TS desc',logged_useruser_id);
           
+          }else if(msgType=3)
+          {
+         	 qry := sprintf('select top 100 WM_ID,WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS
+                              from DB.DBA.WA_MESSAGES
+                             where WM_SENDER_UID=%d
+                             order by WM_TS desc',logged_useruser_id);
+          }else
+          {
+         	 qry := sprintf('select top 100 WM_ID,WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS
+                              from DB.DBA.WA_MESSAGES
+                             where WM_SENDER_UID=%d OR WM_RECIPIENT_UID=%d
+                             order by WM_TS desc',logged_useruser_id,logged_useruser_id);
+          }
+            
+--          dbg_obj_print(qry);
+          exec (qry, state, msg, vector(), maxrows, metas, rset);
+--          dbg_obj_print(state,' ',msg);
+          
+          if (state = '00000' and length(rset)>0)
+          {
+            declare i integer;
+          
+            for(i:=0;i<length(rset);i:=i+1)
+            {
+--              dbg_obj_print(rset[i]);
             http('<message>',resXml);
-            http(sprintf('<sender id="%d">%s</sender>',WM_SENDER_UID, DB.DBA.WA_USER_FULLNAME(WM_SENDER_UID)),resXml);
-            http(sprintf('<recepient id="%d">%s</recepient>',WM_RECIPIENT_UID,DB.DBA.WA_USER_FULLNAME(WM_RECIPIENT_UID)),resXml);
-            http(sprintf('<received>%s</received>',DB.DBA.date_iso8601 (WM_TS)),resXml);
+              http(sprintf('<sender id="%d">%s</sender>',rset[i][1], DB.DBA.WA_USER_FULLNAME(rset[i][1])),resXml);
+              http(sprintf('<recipient id="%d">%s</recipient>',rset[i][2],DB.DBA.WA_USER_FULLNAME(rset[i][2])),resXml);
+              http(sprintf('<received>%s</received>',DB.DBA.date_iso8601 (rset[i][3])),resXml);
+              http(sprintf('<text>%s</text>',rset[i][4]),resXml);
             http('</message>',resXml);
-          
           }
         }
   }
+  }else return '';
+    
   
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'userMessages');
@@ -714,6 +756,49 @@ create procedure userMessages (in sid varchar,in realm varchar :='wa', in msgTyp
 }
 ;
 grant execute on userMessages to GDATA_ODS;
+
+create procedure userMessageSend (in sid varchar,in realm varchar :='wa', in recipientId integer ,in msg varchar, in senderId integer := -1) __SOAP_HTTP 'text/xml'
+{
+  declare errCode integer;
+  declare errMsg varchar;
+  declare resXml any;
+
+  resXml  := string_output ();
+  errCode := 0;
+  errMsg  := '';
+
+  declare logged_user_name varchar;
+  if(isSessionValid(sid,'wa',logged_user_name))
+  {
+
+     declare logged_useruser_id,sender_id integer;
+     logged_useruser_id:=userid(logged_user_name);
+     if(senderId<0)
+          sender_id:=logged_useruser_id;
+     else sender_id:=senderId;
+         
+     declare exit handler for sqlstate '*' {dbg_obj_print (__SQL_STATE, ' ', __SQL_MESSAGE);
+
+                                            errCode := 10;
+                                            errMsg  := 'Can not execute query.';
+                                            goto _err;
+                                           };
+     insert into DB.DBA.WA_MESSAGES (WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS)
+            values (sender_id,recipientId,now(),msg,0,0);
+      
+  }else return '';
+    
+_err:  
+  if(errCode<>0)
+     httpErrXml(errCode,errMsg,'userMessageSend');
+  else
+     httpResXml(resXml,'userMessageSend');
+  
+  return '';
+}
+;
+grant execute on userMessageSend to GDATA_ODS;
+
 
 create procedure openIdServer (in openIdUrl varchar) __SOAP_HTTP 'text/xml'
 {
@@ -874,6 +959,7 @@ create procedure isSessionValid(in sid varchar,in realm varchar :='wa',inout use
    set isolation = 'committed';
    
    declare _expiry datetime;
+
    whenever not found goto nf;
    
    select VS_EXPIRY,VS_UID into _expiry,user_name from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM=realm  and (datediff ('minute', VS_EXPIRY, now()) < 60) with (prefetch 1);

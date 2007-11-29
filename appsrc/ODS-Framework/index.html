@@ -80,7 +80,7 @@
               <ul class="menu" id="connections_menu">
   	            <li>
   	              <div class="menu_head">
-                    <a href="home.html">Connections<span class="indicator"> (232)</span></a>
+                    <a href="home.html">Connections <span class="indicator">(0)</span></a>
   	                <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div>
   	              <ul class="menu_dd_1st_lvl" style="display: none;">
@@ -99,14 +99,14 @@
               <ul class="menu" id="messages_menu">
                 <li>
   	              <div class="menu_head">
-                    <a href="#">Messages <span class="indicator">(2)</span></a>
+                    <a href="javascript:void(0)">Messages <span class="indicator"  id="newMsgCountSpan">(2)</span></a>
   	                <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div>
-  	              <ul class="menu_dd_1st_lvl" style="display: none;">
-  	                <li class="menu_item"><a href="#">Message Inbox</a></li>
-                    <li class="menu_item"><a href="#">Sent Messages</a></li>
-                    <li class="menu_item"><a href="#">Notifications</a></li>
-                    <li class="menu_item"><a href="#">New message</a></li>
+  	              <ul class="menu_dd_1st_lvl" id="messages_menu_items" style="display:none">
+  	                <li class="menu_item"><a href="javascript:void(0)">Message Inbox</a></li>
+                    <li class="menu_item"><a href="javascript:void(0)">Sent Messages</a></li>
+                    <li class="menu_item"><a href="javascript:void(0)">Notifications</a></li>
+                    <li class="menu_item"><a href="javascript:void(0)">New message</a></li>
                   </ul>
                 </li>
               </ul> <!-- #messages_menu -->
@@ -117,6 +117,7 @@
         </div> <!-- HD -->
 
   	    <div id="APP">
+  	      <div id="messages_div"></div>
           <iframe id="vspxApp" style="width:100%;height:500px;border:0px;display:none;"></iframe>
   	      <div id="u_profile_l" style="display:none;">
   	        <div id="user_info_w" class="widget user_info_w">

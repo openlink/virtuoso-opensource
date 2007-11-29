@@ -134,7 +134,7 @@ OAT.Dereference = {
                    var iri = "http://"+r[2];
 		   var encoded = encodeURIComponent(iri);
 		   if (defaultGraph && -1 != iri.lastIndexOf (defaultGraph))
-		     encoded = url;
+		     encoded = "/proxy?url="+encoded;
 		   else
 		     {
 		       encoded = "/proxy?url="+encoded+"&force=rdf";

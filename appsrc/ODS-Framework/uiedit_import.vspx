@@ -251,15 +251,15 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_HPHONE', self.phone);
                         WA_USER_EDIT (self.u_name, 'WAUI_LAT', self.lat_);
 			WA_USER_EDIT (self.u_name, 'WAUI_LNG', self.lng_);
-			if (self.ab_domain is not null and self.knows_cb1.ufl_selected)
-			  {
-			    declare dict, cnt, ses, url any;
-                            url := self.foaf_url.ufl_value;
-			    dict := (sparql define input:storage "" construct { ?s ?p ?o } where { graph ?:url { ?s ?p ?o }});
-			    ses := string_output_string (DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML (dict));
-
-			    AB.WA.import_foaf (self.ab_domain, ses, '');
-			  }
+			--if (self.ab_domain is not null and self.knows_cb1.ufl_selected)
+			--  {
+			--    declare dict, cnt, ses, url any;
+      --                      url := self.foaf_url.ufl_value;
+			--    dict := (sparql define input:storage "" construct { ?s ?p ?o } where { graph ?:url { ?s ?p ?o }});
+			--    ses := string_output_string (DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML (dict));
+      --
+			--    AB.WA.import_foaf (self.ab_domain, ses, '');
+			--  }
 			commit work;
 			self.vc_redirect ('uiedit.vspx?page=8');
 			]]></v:on-post>

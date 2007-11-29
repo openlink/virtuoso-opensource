@@ -230,7 +230,7 @@ skip_login:;
 
             
             
-            -- ODS autologin for ODS use that has signed in to FB but not to ODS and he has associated his ods user to facebook user
+            -- ODS autologin for ODS use that has signed in to FB but not to ODS and he has connected his ods user to facebook user
             if(_fb_user<>0 and _user_name is null)
             {
               declare exit handler for not found {_user_name:=null;_user_id:=null;};
@@ -445,14 +445,14 @@ skip_login:;
 
             if(_user_id is not null and _fb_user>0 and _are_assoc=0)
             {
-               _html:=_html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are not <a id="a_assoc_1" style="text-decoration: underline;cursor: pointer;">associated</a>.<br/> <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=assoc',self._ods_login_params)||'">Do you want to associate them?</a>';
+               _html:=_html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are not <a id="a_assoc_1" style="text-decoration: underline;cursor: pointer;">connected</a>.<br/> <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=assoc',self._ods_login_params)||'">Do you want to connect them?</a>';
            
             }else if(_user_id is not null and _fb_user<>0 and _are_assoc=1)
-               _html:=_html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are <a id="a_assoc_2" style="text-decoration: underline;cursor: pointer;">associated</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=unassoc',self._ods_login_params)||'">Un-associate?</a>';
+               _html:=_html||'<br/>'||_user_name||' and '||_fb_user_fullname||' are <a id="a_assoc_2" style="text-decoration: underline;cursor: pointer;">connected</a>. <a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?assoc=unassoc',self._ods_login_params)||'">Disconnect?</a>';
             else if(_user_id is not null and _fb_user=0)
                _html:=_html||'';
             else if(_user_id is null and _fb_user<>0)
-               _html:=_html||'<br/><a href="'||self.odsbar_ods_gpath ||'register.vspx?reguid='||lcase(replace(_fb_user_fullname,' ',''))||'&fb_id='||cast(_fb_user as varchar)||'&URL='||self.odsbar_ods_gpath ||'fb_front.vspx">Create ODS user and associate it to:'||_fb_user_fullname||'</a>';
+               _html:=_html||'<br/><a href="'||self.odsbar_ods_gpath ||'register.vspx?reguid='||lcase(replace(_fb_user_fullname,' ',''))||'&fb_id='||cast(_fb_user as varchar)||'&URL='||self.odsbar_ods_gpath ||'fb_front.vspx">Create ODS user and connect it to:'||_fb_user_fullname||'</a>';
 
 
             if(_are_assoc=1)
@@ -1426,7 +1426,7 @@ function createImportObjDock(_syncData)
    http_get ('http://www.facebook.com/logout.php',null, 'POST', 'User-Agent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)', 'confirm=1'); --,'127.0.0.1:8888'
  ?>
 
- <div style="padding:10px;">The current ODS Dataspace already has an ODS user, which is associated with the Facebook user <?Vself._fb_u_name?>.<br/> Please <a href="<?Vself._fb.get_login_url(self._fb.current_url(), self._fb.in_frame(),1)?>">login </a> as different Facebook user, or register a new one in order to associate it with the ODS user <?Vself._ods_u_name?>.</div>
+ <div style="padding:10px;">The current ODS Dataspace already has an ODS user, which is connected with the Facebook user <?Vself._fb_u_name?>.<br/> Please <a href="<?Vself._fb.get_login_url(self._fb.current_url(), self._fb.in_frame(),1)?>">login </a> as different Facebook user, or register a new one in order to connect it with the ODS user <?Vself._ods_u_name?>.</div>
  
 </v:template>
 

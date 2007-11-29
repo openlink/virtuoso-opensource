@@ -74,8 +74,10 @@ function buildObjByChildNodes(elm)
    return obj;
 };
 
-window.ODS = {};
+OAT.Preferences.imagePath="/ods/images/oat";
+OAT.Preferences.stylePath="/ods/";
 
+window.ODS = {};
 
 ODS.Preferences = {
   imagePath:"/ods/images/",
@@ -405,6 +407,7 @@ ODS.Nav = function(navOptions) {
   this.rightbar=$(navOptions.rightbar);
   this.appmenu=$(navOptions.appmenu);
   this.logindiv=false;
+  this.msgDock=false;
   this.userLogged=0;
   this.options = {
     imagePath:ODS.Preferences.imagePath
@@ -416,6 +419,7 @@ ODS.Nav = function(navOptions) {
                 userId : false,
                 connections : new Array(),
                 ciTab: false,
+                ciMap: false,
                 connTab: false,
                 set : function(profileId){ this.userName=false;
                                            this.userId = profileId;
@@ -695,6 +699,7 @@ ODS.Nav = function(navOptions) {
         OAT.Event.attach(communityMenuBodyLiA,"click",function(){self.loadVspx(self.expandURL(this.homepage));});  
         OAT.Dom.append([communityMenuBodyUl,communityMenuBodyLi],[communityMenuBodyLi,communityMenuBodyLiA]);
       }
+      $('communities_menu_body').style.zIndex=100;
 
       var communityMenu = new OAT.Menu();
       
@@ -711,13 +716,298 @@ ODS.Nav = function(navOptions) {
 //Community menu interface create END   
     
     
-//    var msg_m = new OAT.Menu();
-//    msg_m.createFromUL ("messages_menu");
+    OAT.Dom.hide($('messages_menu').parentNode);
+    function renderMessagesMenu(xmlDoc)
+    {
+      
+      msgMenuItems=$('messages_menu_items');
+      msgMenuItems.style.zIndex=101;
+      for (var i=0;i<msgMenuItems.childNodes.length;i++)
+      {
+        if(msgMenuItems.childNodes[i].nodeName=='LI')
+          OAT.Event.attach(msgMenuItems.childNodes[i],"click",function(){self.showMessages();});  
+      }
 
+      var newMsgCount = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '//userMessages_response/new_message_count',{})[0]);
+
+      $('newMsgCountSpan').innerHTML='('+newMsgCount+')';
+
+      var messagesMenu = new OAT.Menu();
+      messagesMenu.createFromUL ("messages_menu");
+      
+     OAT.Style.include('dock.css');
+
+      OAT.Dom.show($('messages_menu').parentNode);
+
+      OAT.Loader.loadFeatures(["dock"],function(){self.userMessages(1,renderMessagesInterface);setInterval(function(){self.userMessages(1,renderMessagesInterface);},7000);});
+      self.wait('hide');
+      return;
+
+    }
+
+    function renderMessagesInterface(xmlDoc)
+    {
+      var updateDock=false;
+      if(!self.msgDock)
+      {
+         self.msgDock=new OAT.Dock('messages_div',2);
+      }else
+      { 
+        updateDock=true;
+        for(var i=0; i<self.msgDock.windows.length;i++)
+        {
+            var dockTitle=self.msgDock.windows[i].options.title;
+            if(dockTitle=='Inbox' || dockTitle=='Sent' || dockTitle =='Conversation')
+            {
+             self.msgDock.windows[i].dock.removeObject(self.msgDock.windows[i]);
+             i--;
+            }
+        }
+      }
+
+      var dock = self.msgDock
+
+      var titleBGColor="#336699";
+      var titleTxtColor="#fff";
+      
+      function renderMsgNavBlock()
+      {
+        var container=OAT.Dom.create("div");
+        
+        var showSendA=OAT.Dom.create('a',{cursor: 'pointer'});
+        showSendA.blockId='sendBlock';
+        OAT.Event.attach(showSendA,"click",function(e){ var t=eTarget(e);
+                                                        if($(t.blockId)) return;
+                                                        dock.addObject(0,renderSendBlock(),{color:titleBGColor,title:'New message',titleColor:titleTxtColor});
+                                                      });  
+        
+        OAT.Dom.append([showSendA,OAT.Dom.text('New message')]);
+
+        var showInboxA=OAT.Dom.create('a',{cursor: 'pointer'});
+        showInboxA.blockId='inboxBlock';
+        OAT.Event.attach(showInboxA,"click",function(e){ var t=eTarget(e);
+                                                         if($(t.blockId)) return;
+                                                         inboxDock=false;
+                                                         inboxDock=renderInboxBlock(xmlDoc);
+                                                       });  
+        OAT.Dom.append([showInboxA,OAT.Dom.text('Inbox')]);
+
+
+        var showSentA=OAT.Dom.create('a',{cursor: 'pointer'});
+        showSentA.blockId='sentBlock';
+        OAT.Event.attach(showSentA,"click",function(e){ var t=eTarget(e);
+                                                        if($(t.blockId)) return;
+                                                        sentDock=false;
+                                                        sentDock=renderSentBlock(xmlDoc);
+                                                       });  
+        OAT.Dom.append([showSentA,OAT.Dom.text('Sent')]);
+
+        var showConversationA=OAT.Dom.create('a',{cursor: 'pointer'});
+        showConversationA.blockId='conversationBlock';
+        OAT.Event.attach(showConversationA,"click",function(e){ var t=eTarget(e);
+                                                        if($(t.blockId)) return;
+                                                        conversationDock=false;
+                                                        conversationDock=renderConversationBlock(xmlDoc);
+                                                       });  
+        OAT.Dom.append([showConversationA,OAT.Dom.text('Conversation')]);
+
+        OAT.Dom.append([container,showSendA,OAT.Dom.text(' | '),showInboxA,OAT.Dom.text(' | '),showSentA,OAT.Dom.text(' | '),showConversationA]);
+        return container;
+      }
+
+    	if(!updateDock)
+    	{
+    	  var msgNavDock = dock.addObject(0,renderMsgNavBlock(),{color:titleBGColor,title:'Show dashboard',titleColor:titleTxtColor});
+        OAT.Dom.unlink(msgNavDock.close.firstChild);
+      }
+      function renderSendBlock()
+      {
+        var container=OAT.Dom.create("div",{textAlign:'center'});
+        container.id='sendBlock';
+        
+        var _span=OAT.Dom.create('span',{cssFloat:'left',padding:'5px 0px 0px 5px'});
+        _span.innerHTML='To:';
+        var msgUserSpan=OAT.Dom.create('span',{width:'45%',cssFloat:'left',textAlign:'left',padding:'5px 0px 0px 5px'});
+        msgUserSpan.id='msgUserSpan';
+        
+        var userList = OAT.Dom.create("select",{width:'45%',cssFloat:'right',margin:'0px 3px 5px 0px'});
+        userList.id = 'userList';
+        OAT.Dom.option('&lt;Select recipient&gt;',-1,userList);
+        for (var i=0;i<self.profile.connections.length;i++)
+        {
+         for(cId in self.profile.connections[i])
+         {
+          OAT.Dom.option(self.profile.connections[i][cId],cId,userList);
+         }
+        }
+
+        OAT.Event.attach(userList,"change",function(e){ var t=eTarget(e);
+
+                                                        if(t.options[t.selectedIndex].value==-1)
+                                                           $('msgUserSpan').innerHTML='';
+                                                        else
+                                                           $('msgUserSpan').innerHTML=t.options[t.selectedIndex].text;
+                    
+                                                        $('sendBtn').sendto=t.options[t.selectedIndex].value;
+
+                                                     });
+        OAT.Event.attach(userList,"click",function(e){ userList.style.color='#000';});
+
+        var msgText=OAT.Dom.create('textarea',{width:'99%'});
+        msgText.id='msgText';
+        
+        var sendBtn=OAT.Dom.create('input');
+        sendBtn.id='sendBtn';
+        sendBtn.type='button';
+        sendBtn.sendto=-1;
+        sendBtn.value='Send';
+
+        OAT.Event.attach(sendBtn,"click",function(e){ var t=eTarget(e);
+                                                       if(t.sendto==-1)
+                                                       {
+                                                          userList.style.color='#f00';
+                                                          userList.focus();
+                                                          return;
+                                                       }
+                                                       if($('msgText').value.length==0)
+                                                       {
+                                                          $('msgText').focus();
+                                                          return;
+                                                       }
+                                                       userList.style.color='#000';
+                                                       self.userMessageSend(t.sendto,$('msgText').value,false,function(){self.userMessages(1,renderMessagesInterface);})
+                                                       
+                                                     });
+
+        
+      OAT.Dom.append([container,_span,msgUserSpan,userList,OAT.Dom.create('br'),msgText,OAT.Dom.create('br'),sendBtn]);
+
+        return container;
+      }
+
+    	if(!updateDock)
+    	{
+      	var sendDock = dock.addObject(0,renderSendBlock(),{color:titleBGColor,title:'New message',titleColor:titleTxtColor});
+      }
+      
+      function renderInboxBlock(xmlDoc)
+      {
+        var container=OAT.Dom.create("div");
+        container.id='inboxBlock';
+        var messages=OAT.Xml.xpath(xmlDoc, '//userMessages_response/message',{});
+
+        for (var i=0;i<messages.length;i++)
+        {
+           var msg=buildObjByChildNodes(messages[i]);
+           if(msg.recipient['@id']==self.session.userId)
+           {
+              var div=OAT.Dom.create('div',{},'msg');
+              div.innerHTML='<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> From: '+msg.sender.value+'</span> - '+msg.text;
+              OAT.Dom.append([container,div]);
+           }
+        }       
   
+        self.wait('hide');
 
-//    var loginfoDiv = OAT.Dom.create("div")
-//    loginfoDiv.id="ODS_BAR_RC";
+        if(inboxDock)
+        {
+           OAT.Dom.clear(inboxDock.div);
+           OAT.Dom.append([inboxDock.div,container]);   
+           return inboxDock;
+        }else
+        {
+          var newDock=dock.addObject(1,container,{color:titleBGColor,title:'Inbox',titleColor:titleTxtColor});
+          return newDock;
+        }
+      }
+
+    	var inboxDock = false;
+    	inboxDock=renderInboxBlock(xmlDoc);
+
+      function renderSentBlock(xmlDoc)
+      {
+
+        var container=OAT.Dom.create("div");
+        container.id='sentBlock';
+        var messages=OAT.Xml.xpath(xmlDoc, '//userMessages_response/message',{});
+        for (var i=0;i<messages.length;i++)
+        {
+           var msg=buildObjByChildNodes(messages[i]);
+           if(msg.sender['@id']==self.session.userId)
+           {
+              var div=OAT.Dom.create('div',{},'msg');
+              div.innerHTML='<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> To: '+msg.recipient.value+'</span> - '+msg.text;
+              OAT.Dom.append([container,div]);
+           }
+        }       
+        
+        self.wait('hide');
+        
+        if(sentDock)
+        {
+           OAT.Dom.append([sentDock.div,container]);   
+           return sentDock;
+        }else
+        {
+          var newDock=dock.addObject(1,container,{color:titleBGColor,title:'Sent',titleColor:titleTxtColor});
+          return newDock;
+        }
+      }
+
+    	var sentDock = false;
+    	sentDock=renderSentBlock(xmlDoc);
+
+      function renderConversationBlock(xmlDoc)
+      {
+
+        var container=OAT.Dom.create("div");
+        container.id='conversationBlock';
+        var messages=OAT.Xml.xpath(xmlDoc, '//userMessages_response/message',{});
+        for (var i=0;i<messages.length;i++)
+        {
+           var msg=buildObjByChildNodes(messages[i]);
+           if(msg.sender['@id']==self.session.userId)
+           {
+              var div=OAT.Dom.create('div',{},'msg');
+              div.innerHTML='<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> To: '+msg.recipient.value+'</span> - '+msg.text;
+              OAT.Dom.append([container,div]);
+           }else if(msg.recipient['@id']==self.session.userId)
+           {
+              var div=OAT.Dom.create('div',{},'msg');
+              div.innerHTML='<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> From: '+msg.sender.value+'</span> - '+msg.text;
+              OAT.Dom.append([container,div]);
+           }
+           
+        }       
+        
+        self.wait('hide');
+        
+        if(conversationDock)
+        {
+           OAT.Dom.append([conversationDock.div,container]);   
+           return conversationDock;
+        }else
+        {
+          var newDock=dock.addObject(1,container,{color:titleBGColor,title:'Conversation',titleColor:titleTxtColor});
+          return newDock;
+        }
+      }
+
+    	var conversationDock = false;
+    	conversationDock=renderConversationBlock(xmlDoc);
+
+      dock.div.style.width='100%';
+      dock.columns[0].style.width='49%';
+      dock.columns[1].style.width='49%';
+
+      self.wait('hide');
+      return;
+    }
+    
+      if(self.session.userName)
+      {
+       this.userMessages(0,renderMessagesMenu);
+      }
 
     var loginfoDiv = $('ODS_BAR_RC');
     OAT.Dom.clear(loginfoDiv);
@@ -996,7 +1286,9 @@ ODS.Nav = function(navOptions) {
 
         $('connPTitleTxt').innerHTML='Connections ('+connections.length+')';
 
-        self.profile.connections.push(OAT.Xml.textValue(connections[i].childNodes[0]));
+        var connObj={};
+        connObj[OAT.Xml.textValue(connections[i].childNodes[0])]=OAT.Xml.textValue(connections[i].childNodes[1]);
+        self.profile.connections.push(connObj);
         
         var _divC=OAT.Dom.create('div',{cursor:'pointer'},'conn');
         _divC.id='connW_'+OAT.Xml.textValue(connections[i].childNodes[0]);
@@ -1018,7 +1310,7 @@ ODS.Nav = function(navOptions) {
         {
           self.profile.connMap.addMarker(i,_lat,_lon,
                                          tnail.src,40,40,
-                                         function(marker){dd(self.profile.connMap.connData[marker.__group].id);self.profile.set(self.profile.connMap.connData[marker.__group].id) ;self.initProfile();}
+                                         function(marker){self.profile.set(self.profile.connMap.connData[marker.__group].id) ;self.initProfile();}
                                          );
    
           self.profile.connMap.connLocations.push(new Array(_lat,_lon));
@@ -1163,6 +1455,7 @@ ODS.Nav = function(navOptions) {
 
       }
       
+      OAT.Dom.clear($('notify_content'));
       for(day in daily)
       {
         if(daily[day].ulObj.childNodes.length>0)
@@ -1402,6 +1695,8 @@ ODS.Nav = function(navOptions) {
   {
      self.wait();
      OAT.Dom.hide('vspxApp');
+     OAT.Dom.hide('messages_div');
+
 //     var pL=$('u_profile_l');
 //     var pR=$('u_profile_r');
 //     var pRWidth=OAT.Dom.getWH($('APP'))[0]-OAT.Dom.getWH(pL)[0];
@@ -1422,11 +1717,22 @@ ODS.Nav = function(navOptions) {
      self.wait('hide');
   }
   
+  this.showMessages = function()
+  {
+     self.wait();
+     OAT.Dom.hide('vspxApp');
+     OAT.Dom.hide('u_profile_l');
+     OAT.Dom.hide('u_profile_r');
+     OAT.Dom.show('messages_div');
+     self.wait('hide');
+  }
+  
   this.loadVspx= function (url)
   {
      self.wait();
      OAT.Dom.hide('u_profile_l');
      OAT.Dom.hide('u_profile_r');
+     OAT.Dom.hide('messages_div');
 
      var iframe=$('vspxApp');
      OAT.Dom.show(iframe);
@@ -1627,6 +1933,51 @@ ODS.Nav = function(navOptions) {
                                          
     OAT.AJAX.POST(self.session.endpoint+"feedStatus", data, callback, optionsSynch);
   }
+
+  this.userMessages = function (msgType,callbackFunction){
+    
+//    self.wait();
+    
+    var data = 'sid='+self.session.sid+'&msgType='+msgType;
+      
+    var callback = function(xmlString) {
+                                           var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                           if(!self.session.isErr(xmlDoc))
+                                           {
+                                             if(typeof(callbackFunction) == "function")
+                                                callbackFunction(xmlDoc);
+                                           }
+//                                           else
+//                                           {
+//                                            self.wait();
+//                                           }
+                                       };
+                                         
+    OAT.AJAX.POST(self.session.endpoint+"userMessages", data, callback, ajaxOptions);
+  };
+
+  this.userMessageSend = function (recipientId,msg,senderId,callbackFunction){
+    
+    self.wait();
+    
+    var data = 'sid='+self.session.sid+'&recipientId='+recipientId+'&msg='+encodeURIComponent(msg);
+    if(typeof(senderId)!='undefined' && senderId)
+      data = data +'&senderId='+senderId;
+      
+    var callback = function(xmlString) {
+                                           var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                           if(!self.session.isErr(xmlDoc))
+                                           {
+                                             if(typeof(callbackFunction) == "function")
+                                                callbackFunction(xmlDoc);
+                                           }else
+                                           {
+                                              self.wait();
+                                           }
+                                       };
+                                         
+    OAT.AJAX.POST(self.session.endpoint+"userMessageSend", data, callback, optionsSynch);
+  };
 
   this.createCookie = function (name, value, hours)
   {

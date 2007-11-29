@@ -649,7 +649,10 @@ wa_exec_no_error_log(
 )
 ;
 
-wa_exec_no_error('create table WA_MESSAGESES (
+wa_exec_no_error('drop table WA_MESSAGESES')
+;
+
+wa_exec_no_error('create table WA_MESSAGES (
      WM_ID int identity,
      WM_SENDER_UID int,
      WM_RECIPIENT_UID int,
@@ -658,6 +661,15 @@ wa_exec_no_error('create table WA_MESSAGESES (
      WM_SENDER_MSGSTATUS int,
      WM_RECIPIENT_MSGSTATUS int,
      primary key (WM_SENDER_UID, WM_RECIPIENT_UID,WM_ID))'
+)
+;
+wa_exec_no_error_log(
+  'ALTER TABLE WA_MESSAGES ADD FOREIGN KEY (WM_SENDER_UID) REFERENCES SYS_USERS (U_ID) ON DELETE CASCADE'
+)
+;
+
+wa_exec_no_error_log(
+  'ALTER TABLE WA_MESSAGES ADD FOREIGN KEY (WM_RECIPIENT_UID) REFERENCES SYS_USERS (U_ID) ON DELETE CASCADE'
 )
 ;
 
