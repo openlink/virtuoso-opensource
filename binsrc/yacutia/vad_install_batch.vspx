@@ -138,7 +138,7 @@
 		  set_qualifier ('DB');
                   declare l integer;
                   l := length(result);
-                  if (aref(aref(result, 0), 0) = '42VAD')
+		  if (aref(aref(result, 0), 0) <> '00000')
                   {
                     res := concat(res, sprintf('%s', aref(aref(result, 0), 1)));
                   }
