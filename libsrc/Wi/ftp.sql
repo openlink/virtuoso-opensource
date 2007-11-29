@@ -1082,8 +1082,10 @@ create procedure FTP_PUT (in _server varchar, in _user varchar, in _pass varchar
 
   if (is_pasv = 0)
     FTP_LISTEN (ses, listen);
+  else
+    data_ses := ses_connect (data_addr);
 
-  FTP_COMMAND (ses, concat ('stor ', _remote), vector (150));
+  FTP_COMMAND (ses, concat ('stor ', _remote), vector (150,125));
 --FTP_COMMAND (ses, concat ('stor ', _remote), NULL);
 
   if (is_pasv = 0)
