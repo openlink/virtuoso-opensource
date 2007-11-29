@@ -1349,7 +1349,9 @@ OAT.RDFTabs.fresnel = function(parent,optObj) {
 	inp.value = self.options.defaultURL;
 	var btn = OAT.Dom.button("Load Fresnel");
 	var go = function() {
-		self.fresnel.addURL($v(inp),self.redraw);
+		if ($v(inp))
+			self.fresnel.addURL($v(inp),self.redraw);
+
 	}
 	OAT.Event.attach(btn,"click",go);
 	OAT.Event.attach(inp,"keypress",function(event) {

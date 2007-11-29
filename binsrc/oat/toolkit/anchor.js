@@ -19,12 +19,13 @@ OAT.AnchorData = {
 OAT.Anchor = {
 		
 	appendContent:function(options) {
-		if (options.content) {
+		if (options.content && options.window) {
 			if (typeof(options.content) == "function") { options.content = options.content(); }
 			var win = options.window;
-			win.outerResizeTo(options.width,options.height);
+			//win.outerResizeTo(options.width,options.height);
 			OAT.Dom.clear(win.dom.content);
 			win.dom.content.appendChild(options.content);
+			OAT.Anchor.fixSize(win);
 		}
 	},
 	
@@ -108,6 +109,32 @@ OAT.Anchor = {
 		ds.advanceRecord(0);
 	},
 
+	/** adjust width and height if content overflows container depending on block or inline element inside */
+	fixSize:function (win) {
+			/* wait to finish all ajax calls */
+			setTimeout(function(){
+				if (OAT.AJAX.requests.length) {
+					OAT.Anchor.fixSize(win);
+				} else {
+					var height = OAT.Dom.getWH(win.dom.content)[1];
+					while (OAT.Dom.getWH(win.dom.content)[1]+50 > OAT.Dom.getWH(win.dom.container)[1]) {
+						if (OAT.Dom.getWH(win.dom.container)[0] < 650)
+							win.dom.container.style.width = (OAT.Dom.getWH(win.dom.container)[0]+100)+'px';
+						if (height == OAT.Dom.getWH(win.dom.content)[1]) {
+							win.dom.container.style.width = (OAT.Dom.getWH(win.dom.container)[0]-100)+'px';
+						//	if (OAT.Dom.getWH(win.dom.content)[1] > 450) {
+						//		win.dom.content.style.height = '450px';
+						//		win.dom.content.style.overflow = 'auto';
+						//	}
+							win.dom.container.style.height = (OAT.Dom.getWH(win.dom.content)[1]+40)+'px';
+							break;
+						}
+						height = OAT.Dom.getWH(win.dom.content)[1];
+					}
+				}
+			}, 50 );
+		},
+
 	assign:function(element,paramsObj) {
 		var elm = $(element);
 		var options = {
@@ -162,7 +189,7 @@ OAT.Anchor = {
 		options.stat = 0; /* not initialized */
 		if (!options.href && 'href' in elm) { options.href = elm.href; } /* if no oat:href provided, then try the default one */
 		if (elm.tagName.toString().toLowerCase() == "a") { OAT.Dom.changeHref(elm,options.newHref); }
-		
+
 		options.displayRef = function(event) {
 			var win = options.window;
 			win.hide(); /* close existing window */
@@ -175,19 +202,8 @@ OAT.Anchor = {
 			} else { 
 				OAT.Anchor.appendContent(options);
 			}
+			OAT.Anchor.fixSize(win);
 			win.show();
-			/* adjust width and height if content overflows container depending on block or inline element inside */
-			var height = OAT.Dom.getWH(win.dom.content)[1];
-			while (OAT.Dom.getWH(win.dom.content)[1]+50 > OAT.Dom.getWH(win.dom.container)[1]) {
-				if (OAT.Dom.getWH(win.dom.container)[0] < 650)
-					win.dom.container.style.width = (OAT.Dom.getWH(win.dom.container)[0]+100)+'px';
-				if (height == OAT.Dom.getWH(win.dom.content)[1]) {
-					win.dom.container.style.width = (OAT.Dom.getWH(win.dom.container)[0]-100)+'px';
-					win.dom.container.style.height = (OAT.Dom.getWH(win.dom.content)[1]+50)+'px';
-					break;
-				}
-				height = OAT.Dom.getWH(win.dom.content)[1];
-			}
 			options.anchorTo(pos[0],pos[1]);
 		}
 		options.anchorTo = function(x_,y_) {
