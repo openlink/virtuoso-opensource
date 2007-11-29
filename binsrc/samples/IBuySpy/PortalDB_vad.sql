@@ -30,7 +30,7 @@
 create user "portal";
 DB.DBA.user_set_qualifier ('portal', 'Portal');
 DB.DBA.user_set_qualifier ('demo', 'Portal');
-set_user_id('demo', 1, 'demo');
+set_user_id('demo', 1, DB.DBA.GET_PWD_FOR_VAD('demo'));
 
 -- =============================================================
 -- create the tables

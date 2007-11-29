@@ -21,9 +21,9 @@
 --  
 --
 
-set_user_id('dba', 1, 'dba');  
+set_user_id('dba', 1, DB.DBA.GET_PWD_FOR_VAD('dba'));  
 USER_SET_OPTION ('FORI', 'DISABLED', 0);
-set_user_id('FORI', 1, 'fori');
+set_user_id('FORI', 1, DB.DBA.GET_PWD_FOR_VAD('fori'));
 
 DB.DBA.exec_no_error('DROP PROCEDURE LIST_MESSAGES');
 DB.DBA.exec_no_error('DROP PROCEDURE INSERT_MESSAGES');
@@ -520,6 +520,6 @@ CREATE PROCEDURE SESSION_SAVE ()
 }
 ;
 
-set_user_id('dba', 1, 'dba');
+set_user_id('dba', 1, DB.DBA.GET_PWD_FOR_VAD('dba'));
 USER_SET_OPTION ('FORI', 'DISABLED', 1);
 

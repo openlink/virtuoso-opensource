@@ -25,9 +25,10 @@
 -- create the Stored procs
 -- =============================================================
 
+
 DB.DBA.user_set_qualifier ('portal', 'Portal');
 DB.DBA.user_set_qualifier ('demo', 'Portal');
-set_user_id('demo', 1, 'demo');
+set_user_id('demo', 1, DB.DBA.GET_PWD_FOR_VAD('demo'));
 
 
 CREATE PROCEDURE 
@@ -451,7 +452,7 @@ ShoppingCartRemoveAbandoned ()
 }
 ;
 
-set_user_id('dba', 1, 'dba');
+set_user_id('dba', 1, DB.DBA.GET_PWD_FOR_VAD('dba'));
 
 -- =======================================================
 -- ADD SCHEDULED JOBS 

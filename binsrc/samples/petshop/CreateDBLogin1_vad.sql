@@ -21,8 +21,8 @@
 --  
 --  
 
-set_user_id('dba', 1, 'dba');
+set_user_id('dba', 1, DB.DBA.GET_PWD_FOR_VAD('dba'));
 create user "petshop";
 DB.DBA.user_set_qualifier ('petshop', 'MSPetShop');
 user_set_password ('petshop', 'password');
-set_user_id('petshop', 1, 'password');
+set_user_id('petshop', 1, DB.DBA.GET_PWD_FOR_VAD('password'));

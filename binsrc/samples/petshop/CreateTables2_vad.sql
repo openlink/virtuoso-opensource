@@ -23,7 +23,7 @@
 --RECONNECT "petshop";
 
 DB.DBA.user_set_qualifier ('petshop', 'MSPetShopOrders');
-set_user_id('petshop', 1, 'password');
+set_user_id('petshop', 1, DB.DBA.GET_PWD_FOR_VAD('password'));
 
 DB.DBA.exec_no_error('CREATE TABLE "Orders" (
         "OrderId" int IDENTITY PRIMARY KEY,

@@ -23,7 +23,7 @@
 --RECONNECT "petshop";
 
 DB.DBA.user_set_qualifier ('petshop', 'MSPetShop');
-set_user_id('petshop', 1, 'password');
+set_user_id('petshop', 1, DB.DBA.GET_PWD_FOR_VAD('password'));
 
 INSERT SOFT "SignOn" VALUES('DotNet', 'DotNet');
 INSERT SOFT "Account" VALUES('DotNet', 'yourname@yourdomain.com', 'ABC', 'XYX', 'OK', '901 San Antonio Road', 'MS UCUP02-206', 'Palo Alto', 'CA', '94303', 'USA', '555-555-5555');

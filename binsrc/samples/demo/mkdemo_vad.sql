@@ -50,6 +50,16 @@ create procedure DB.DBA.get_blob_from_dav(in filename varchar) returns any
 }
 ;
 
+create procedure DB.DBA.GET_PWD_FOR_VAD (in user_name varchar) returns varchar
+{
+  declare pwd varchar;
+  pwd := pwd_magic_calc(user_name, (select U_PWD from WS.WS.SYS_DAV_USER where U_NAME=user_name), 1);
+  if (pwd is null)
+    pwd := user_name;
+  return pwd;
+}
+;
+
 create procedure ensure_demo_user ()
 {
   if (exists (select 1 from SYS_USERS where U_NAME = 'demo'))
