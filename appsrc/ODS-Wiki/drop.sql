@@ -42,6 +42,41 @@ create procedure WV.Wiki.drop_procedures()
 }
 ;
 
+-- remove XSLT extensions
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ClusterIRI', 'WV.WIKI.CLUSTERIRI');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ClusterParam', 'WV.WIKI.CLUSTERPARAM');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:DIUCategoryLink', 'WV.WIKI.DIUCATEGORYLINK');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:DiffPrint', 'WV.WIKI.DIFFPRINT');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ExpandMacro', 'WV.WIKI.EXPANDMACRO');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:GetEnv', 'WV.WIKI.GETENV');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:GetMainTopicName', 'WV.WIKI.GETMAINTOPIC_NAME');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:NormalizeWikiWordLink', 'WV.WIKI.NORMALIZEWIKIWORDLINK');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:QueryWikiWordLink', 'WV.WIKI.QUERYWIKIWORDLINK');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiIRI', 'WV.WIKI.READONLYWIKIIRI');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordHREF', 'WV.WIKI.READONLYWIKIWORDHREF');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordHREF2', 'WV.WIKI.READONLYWIKIWORDHREF2');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordLink', 'WV.WIKI.READONLYWIKIWORDLINK');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourceHREF', 'WV.WIKI.RESOURCEHREF');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourceHREF2', 'WV.WIKI.RESOURCEHREF2');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourcePath', 'WV.WIKI.RESOURCEPATH');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:TextFormattingRules', 'WV.WIKI.TEXTFORMATTINGRULES');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:UserByEmail', 'WV.WIKI.USER_BY_EMAIL');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:atom_pub_uri', 'WV.WIKI.ATOM_PUB_URI');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:collect_pairs', 'WV.WIKI.COLLECT_PAIRS');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:email_obfuscate', 'WV.WIKI.EMAIL_OBFUSCATE');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:expandWikiText', 'WV.WIKI.EXPAND_WIKI_TEXT');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:funcall0', 'WV.WIKI.FUNCALL0');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:funcall1', 'WV.WIKI.FUNCALL1');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:funcall2', 'WV.WIKI.FUNCALL2');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:funcall3', 'WV.WIKI.FUNCALL3');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:funcall4', 'WV.WIKI.FUNCALL4');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:nnbsps', 'WV.WIKI.NNBSPS');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:pair', 'WV.WIKI.PAIR');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:params', 'WV.WIKI.PARAMS');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:registry_get', 'WV.WIKI.REGISTRY_GET');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:sioc_uri', 'WV.WIKI.SIOC_URI');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:trim', 'WV.WIKI.TRIM');
+
 wiki_uninst();
 drop procedure wiki_uninst;
 

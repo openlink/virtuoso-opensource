@@ -4219,12 +4219,17 @@ create trigger WIKI_USERS_U after update on WV.WIKI.USERS order 100 referencing 
 
 create trigger SYS_USERS_WIKI_USERS_U after update on DB.DBA.SYS_USERS order 100 referencing old as O, new as N
 {
-  if (O.U_FULL_NAME <> N.U_FULL_NAME)
-    {
+  if (N.U_FULL_NAME is null) {
+    update WV.WIKI.USERS
+         set USERNAME = WV.WIKI.USER_WIKI_NAME(N.U_NAME)
+       where USERID = N.U_ID;
+  } else {
+    if (O.U_FULL_NAME <> N.U_FULL_NAME) {
       update WV.WIKI.USERS 
 	set USERNAME = WV.WIKI.USER_WIKI_NAME(N.U_FULL_NAME) 
 	where USERID = N.U_ID;
     }
+}
 }
 ;
 

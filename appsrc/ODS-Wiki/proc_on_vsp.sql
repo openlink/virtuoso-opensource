@@ -2834,7 +2834,18 @@ create function WV.WIKI.TOPIC_URL(in source_page varchar)
   else
     _home := '/wiki';
   _clusterPath := cast (WV.WIKI.CLUSTERPARAM (_cluster_name, 'home', _home) as varchar);
-  if (_clusterPath not like 'http://%')
+
+
+  if (_clusterPath like 'http://%') {
+    declare i integer;
+    _clusterPath := replace (_clusterPath, 'http://','');
+    i := strstr (_clusterPath, '/');
+    if (not isnull (i))
+      _clusterPath := subseq (_clusterPath, i);
+  }
+  _clusterPath := rtrim (_clusterPath, '/');
+
+  --if (_clusterPath not like 'http://%')
     _clusterPath := sprintf('http://%s%s', WV.WIKI.GET_HOST(), _clusterPath);
   _clusterPath := _clusterPath || '/' || _cluster_name;
 
