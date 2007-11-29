@@ -867,6 +867,22 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
       body := rtrim (body, '&');
     else
       body := null;
+    if (req_hdr is null)
+      {
+	req_hdr := '';
+	for (declare i, l int, i := 1, l := length (head); i < l; i := i + 1)
+	  {
+	    if (lower (head[i]) not like 'host:%' and
+	      	lower (head[i]) not like 'keep-alive:%' and
+	      	lower (head[i]) not like 'connection:%')
+	      req_hdr := req_hdr || head[i];
+	  }
+	req_hdr := rtrim (req_hdr, '\n');
+	req_hdr := rtrim (req_hdr, '\r');
+	req_hdr := rtrim (req_hdr, '\n');
+	if (length (req_hdr) = 0)
+	  req_hdr := null;
+      }
     content := DB.DBA.RDF_HTTP_URL_GET (url, '', hdr, meth, req_hdr, body);
   }
   ct := http_request_header (hdr, 'Content-Type');
