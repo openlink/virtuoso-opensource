@@ -268,7 +268,7 @@ VERSION_INIT()
   done
   LANG=POSIX
   export LANG
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=600 } { cnt = cnt + $1 } END { printf "1.0%01.04f", cnt/10000 }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=700 } { cnt = cnt + $1 } END { printf "1.0%01.04f", cnt/10000 }'`
   rm -f version.tmp
       echo "$VERSION" > vad_version
   fi
