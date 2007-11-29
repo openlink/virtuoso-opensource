@@ -57,6 +57,7 @@ AB.WA.exec_no_error('
     P_FULL_NAME varchar,
     P_GENDER varchar,
     P_BIRTHDAY datetime,
+    P_IRI varchar,
     P_FOAF varchar,
     P_MAIL varchar,
     P_WEB varchar,
@@ -114,6 +115,10 @@ AB.WA.exec_no_error (
 );
 
 AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_IRI varchar', 'C', 'AB.WA.PERSONS', 'P_IRI'
+);
+
+AB.WA.exec_no_error (
   'alter table AB.WA.PERSONS add P_H_FAX varchar', 'C', 'AB.WA.PERSONS', 'P_H_FAX'
 );
 
@@ -145,6 +150,21 @@ AB.WA.exec_no_error ('
     delete from AB.WA.GRANTS where G_PERSON_ID = O.P_ID;
   }
 ');
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.table_update ()
+{
+  if (registry_get ('ab_table_update') = '1')
+    return;
+
+  update AB.WA.PERSONS set P_IRI = P_FOAF;
+  update AB.WA.PERSONS set P_FOAF = null;
+
+  registry_set ('ab_table_update', '1');
+}
+;
+AB.WA.table_update ();
 
 -------------------------------------------------------------------------------
 --
@@ -265,12 +285,13 @@ create procedure AB.WA.PERSONS_P_NAME_unindex_hook (inout vtb any, inout d_id an
 --
 create procedure AB.WA.drop_index()
 {
-  if (registry_get ('ab_index_version') <> '3') {
+  if (registry_get ('ab_index_version') = '3')
+    return;
+
     AB.WA.exec_no_error ('drop table AB.WA.PERSONS_P_NAME_WORDS');
-  }
+  registry_set ('ab_index_version', '3');
 }
 ;
-
 AB.WA.drop_index();
 
 AB.WA.exec_no_error('
@@ -364,7 +385,6 @@ AB.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
-registry_set ('ab_index_version', '3');
 
 -------------------------------------------------------------------------------
 --

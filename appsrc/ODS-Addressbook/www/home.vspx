@@ -258,6 +258,9 @@
 
   <v:method name="resetImport" arglist="">
     <![CDATA[
+      AB.WA.ab_graph_delete (self.i_iri);
+      self.i_source := -1;
+      self.i_type := -1;
       self.i_lName := '';
       self.i_lHost := '';
       self.i_lPort := '';
@@ -266,6 +269,8 @@
       self.i_lPassword := '';
       self.i_lMaps := null;
       self.i_maps := null;
+      self.i_iri := null;
+      self.i_selections := null;
       self.i_data := null;
       self.i_validation := null;
     ]]>
@@ -293,6 +298,7 @@
       <v:variable name="v_tabNo" param-name="tabNo" type="varchar" default="1"/>
 
       <v:variable persist="0" name="abStep" type="varchar" default="''" />
+      <v:variable persist="0" name="abSteps" type="any" default="null" />
       <v:variable name="v_id" type="any" default="-1" />
 
       <v:variable name="v_kind" type="integer" default="0" />
@@ -304,6 +310,7 @@
       <v:variable name="v_fullName" type="varchar" default="''" />
       <v:variable name="v_gender" type="varchar" default="''" />
       <v:variable name="v_birthday" type="date" default="null" />
+      <v:variable name="v_iri" type="varchar" default="''" />
       <v:variable name="v_foaf" type="varchar" default="''" />
 
       <v:variable name="v_mail" type="varchar" default="''" />
@@ -365,8 +372,11 @@
       <v:variable name="i_lSearch" type="varchar" default="'(cn=*)'"/>
       <v:variable name="i_lMaps" type="any" default="null"/>
       <v:variable persist="temp" name="i_Options" type="any" default="null" />
+      <v:variable persist="temp" name="i_Items" type="any" default="null" />
 
       <v:variable name="i_data" type="varchar" default="null"/>
+      <v:variable name="i_iri" type="varchar" default="null" />
+      <v:variable name="i_selections" type="any" default="null" />
       <v:variable name="i_validation" type="varchar" default="null" />
       <v:variable name="i_maps" type="any" default="null" />
     </vm:variables>
@@ -430,6 +440,7 @@
                     self.v_fullName := '';
                     self.v_gender := '';
                     self.v_birthday := null;
+                  self.v_iri := '';
                     self.v_foaf := '';
 
                     self.v_mail := '';
@@ -508,12 +519,12 @@
                   }
 
                   if (cmd = 'import') {
+                  self.resetImport ();
                     self.abAction := cmd;
                     self.abStep := '1';
-                    self.i_source := -1;
-                    self.i_type := -1;
+                  self.abSteps  := vector ();
                     self.v_tag := '';
-                  self.resetImport ();
+                  self.i_iri    := 'http://local.virt/addressbook/' || cast (rnd (1000) as varchar);
                   }
 
                   if (cmd = 'export') {
@@ -885,7 +896,8 @@
                             appClass := 'app';  
                           http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\');" title="View %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, appClass, SIOC..addressbook_contact_iri (self.domain_id, id), AB.WA.stringCut(title, self.abChars)));
                           
-                          actions := sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\');" title="View %s" class="link_ed">view</a>', id, title);
+                          actions := '';
+                          -- actions := sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\');" title="View %s" class="link_ed">view</a>', id, title);
                           if (not ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
                           actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="link_ed">edit</a>', id, title);
                           if (not ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
@@ -1105,6 +1117,7 @@
                          P_FULL_NAME,
                          P_GENDER,
                          P_BIRTHDAY,
+                         P_IRI,
                          P_FOAF,
                          P_MAIL,
                          P_WEB,
@@ -1155,6 +1168,7 @@
                          self.v_fullName,
                          self.v_gender,
                          self.v_birthday,
+                         self.v_iri,
                          self.v_foaf,
                          self.v_mail,
                          self.v_web,
@@ -1262,6 +1276,7 @@
                           <v:item name="Mrs" value="Mrs"/>
                           <v:item name="Ms" value="Ms"/>
                           <v:item name="Dr" value="Dr"/>
+                            <v:item name="Sir" value="Sir" />
                           <v:before-data-bind>
                             <![CDATA[
                               control.ufl_value := self.v_title;
@@ -1350,6 +1365,17 @@
                           </a>
                         </vm:if>
                         <?vsp self.viewField (self.v_birthday); ?>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>
+                        <v:label for="ab_foaf" value="Identity IRI" />
+                      </th>
+                      <td>
+                        <vm:if test="self.abAction <> 'view'">
+                          <v:text name="ab_iri" value="--self.v_iri" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                        </vm:if>
+                        <?vsp self.viewField (self.v_iri); ?>
                       </td>
                     </tr>
                     <tr>
@@ -2051,6 +2077,7 @@
                     self.v_fullName      := trim (self.ab_fullName.ufl_value);
                     self.v_gender        := case when self.v_kind then '' else trim (self.ab_gender.ufl_value) end;
                     self.v_birthday      := dt;
+                    self.v_iri           := trim (self.ab_iri.ufl_value);
                     self.v_foaf          := trim (self.ab_foaf.ufl_value);
                     self.v_mail          := case when self.v_kind then '' else trim (self.ab_mail.ufl_value) end;
                     self.v_web           := case when self.v_kind then '' else trim (self.ab_web.ufl_value) end;
@@ -2100,6 +2127,7 @@
                       self.v_fullName,
                       self.v_gender,
                       self.v_birthday,
+                      self.v_iri,
                       self.v_foaf,
                       self.v_mail,
                       self.v_web,
@@ -2252,6 +2280,8 @@
 	                      self.i_type := 3;
                         self.abStep := '3';
 	                    }
+
+                      AB.WA.push (self.abSteps, '1');
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -2323,7 +2353,7 @@
 	              <v:button action="simple" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-                      self.abStep := '1';
+                      self.abStep := AB.WA.pop (self.abSteps);
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -2331,9 +2361,6 @@
 	              <v:button action="simple" value="Next" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-	                    declare tmp any;
-
-	                    tmp := self.i_type;
 	                    if (self.i_type_0.ufl_selected) {
 	                      self.i_type := 0;
 	                    } else if (self.i_type_1.ufl_selected) {
@@ -2341,7 +2368,9 @@
 	                    } else if (self.i_type_2.ufl_selected) {
 	                      self.i_type := 2;
 	                    }
+
                       self.abStep := '3';
+                      AB.WA.push (self.abSteps, '2');
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -2527,12 +2556,10 @@
 	            </div>
 
 	            <div class="new-form-footer">
-	              <v:button action="simple" value="Back" xhtml_class="form-button">
+                <v:button action="simple" name="i3_back" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-                      self.abStep := '2';
-                      if (self.i_source = 3)
-                        self.abStep := '1';
+                      self.abStep := AB.WA.pop (self.abSteps);
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -2606,6 +2633,9 @@
                         self.i_data := ldap_search (host, 0, self.i_lBase_dn, self.i_lSearch, self.i_lBind_dn, self.i_lPassword);
 	                    }
 
+                      if (self.i_type = 1) {
+                        self.i_Items := AB.WA.import_foaf_content (self.i_data, case when (self.i_source = 2) then 1 else 0 end, self.i_iri);
+                      }
                       if (self.i_type = 2) {
                         self.i_data := replace (self.i_data, '\015\012', '\012');
                         self.i_data := replace (self.i_data, '\012\015', '\012');
@@ -2613,9 +2643,13 @@
                         self.i_data := replace (self.i_data, '\012 ', '');
                         self.i_data := split_and_decode (self.i_data, 0, '\0\0\n');
                       }
+
                       self.abStep := '5';
-                      if ((self.i_type = 2) or (self.i_type = 3))
+                      if (self.i_type = 0)
+                        self.abStep := '6';
+                      if (self.i_type = 1)
                         self.abStep := '4';
+                      AB.WA.push (self.abSteps, '3');
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -2634,6 +2668,123 @@
 
             <v:template type="simple" enabled="-- case when (self.abStep = '4') then 1 else 0 end">
 	            <div class="new-form-header">
+                <v:label format="%s" value="Import: Select persons" />
+              </div>
+
+              <div class="new-form-mapping">
+                <?vsp
+                  declare N integer;
+
+                  if (length (self.i_Items) = 0)
+                  {
+                ?>
+          		  No Persons
+                <?vsp
+                  } else {
+                ?>
+                <table id="foaf" class="grid" style="border-width: 0" cellspacing="0">
+                  <thead class="sortHeader">
+                    <tr>
+                      <th class="checkbox" width="1%">
+                        <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
+                      </th>
+                      <th>Name</th>
+                      <th>Mail</th>
+                      <th>Comment</th>
+                    </tr>
+                  </thead>
+                <?vsp
+                    for (N := 0; N < length (self.i_Items); N := N + 1)
+                    {
+                ?>
+              	  <tr class="<?V case when (self.i_Items[N][0] = 1) then 'tr_select' else '' end ?>">
+              		  <td width="1%">
+                      <?vsp
+                        if (self.i_Items[N][0] = 0)
+                          http (sprintf ('<input type="checkbox" name="cb_item" value="%s" onclick="selectCheck(this, \'cb_item\')" />', self.i_Items[N][1]));
+                      ?>
+              		  </td>
+              		  <td>
+                      <?V self.i_Items[N][2] ?>
+              		  </td>
+              		  <td>
+                      <?V self.i_Items[N][3] ?>
+              		  </td>
+              		  <td>
+                      <?vsp
+                        if (self.i_Items[N][0] = 1) {
+                          http ('FOAF Owner');
+                          http (sprintf ('<input type="hidden" name="cb_item" value="%s" />', self.i_Items[N][1]));
+                        }
+                      ?>
+              		  </td>
+                  </tr>
+                <?vsp
+                    }
+                ?>
+                </table>
+                <?vsp
+                  }
+                ?>
+              </div>
+              <script>
+                <![CDATA[
+                  coloriseTable('foaf');
+                ]]>
+              </script>
+
+              <div class="new-form-footer">
+                <v:button action="simple" name="i4_back" value="Back" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.abStep := AB.WA.pop (self.abSteps);
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Next" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      declare N integer;
+                      declare params any;
+
+                      params := e.ve_params;
+                      self.i_selections := vector ();
+                      for (N := 0; N < length (params); N := N + 4)
+                      {
+                        if (params[N] = 'cb_item')
+                          self.i_selections := vector_concat (self.i_selections, vector (vector (params[N+1])));
+                      }
+
+                      if (length (self.i_selections)) {
+                        self.abStep := '6';
+                        if ((self.i_type = 2) or (self.i_type = 3))
+                        {
+                          self.abStep := '5';
+                        }
+                        AB.WA.push (self.abSteps, '4');
+                      } else {
+                        self.abAction := 'browse';
+                        self.resetImport ();
+                      }
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="i4_cancel" value="Cancel" xhtml_class="form-button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.abAction := 'browse';
+                      self.resetImport ();
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </v:template>
+
+            <v:template type="simple" enabled="-- case when (self.abStep = '5') then 1 else 0 end">
+              <div class="new-form-header">
 	              <v:label format="%s" value="Import: Mapping"/>
 	            </div>
 	            <div class="new-form-mapping">
@@ -2827,9 +2978,7 @@
 	              <v:button action="simple" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-                      self.abStep := '4';
-                      if ((self.i_type = 2) or (self.i_type = 3))
-                        self.abStep := '3';
+                      self.abStep := AB.WA.pop (self.abSteps);
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -2846,12 +2995,13 @@
                         if (params[N] like 'sel_%' and params[N+1] <> 'skip')
                           self.i_maps := vector_concat (self.i_maps, vector (substring (params[N], 5, length (params[N])), params[N+1]));
 
-                      self.abStep := '5';
+                      self.abStep := '6';
+                      AB.WA.push (self.abSteps, '5');
                       self.vc_data_bind(e);
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="i4_cancel" value="Cancel" xhtml_class="form-button">
+                <v:button action="simple" name="i5_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';
@@ -2868,7 +3018,7 @@
               </script>
 	          </v:template>
 
-            <v:template type="simple" enabled="-- case when (self.abStep = '5') then 1 else 0 end">
+            <v:template type="simple" enabled="-- case when (self.abStep = '6') then 1 else 0 end">
 	            <div class="new-form-header">
 	              <v:label format="%s" value="Import: Options"/>
 	            </div>
@@ -2944,9 +3094,7 @@
 	              <v:button action="simple" value="Back" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
-                      self.abStep := '3';
-                      if ((self.i_source = 3) or (self.i_type = 2))
-                        self.abStep := '4';
+                      self.abStep := AB.WA.pop (self.abSteps);
                       self.vc_data_bind(e);
 	                  ]]>
 	                </v:on-post>
@@ -2986,7 +3134,7 @@
 
 			                -- FOAF
                       if (self.i_type = 1)
-                        AB.WA.import_foaf (self.domain_id, self.i_data, self.v_tags, self.i_validation, case when (self.i_source = 2) then 1 else 0 end);
+                        AB.WA.import_foaf (self.domain_id, self.i_data, self.v_tags, self.i_validation, 2, self.i_iri, self.i_selections);
 
 			                -- CSV
                       if (self.i_type = 2)
@@ -3002,7 +3150,7 @@
 			               ]]>
 			             </v:on-post>
 			          </v:button>
-                <v:button action="simple" name="i5_cancel" value="Cancel" xhtml_class="form-button">
+                <v:button action="simple" name="i6_cancel" value="Cancel" xhtml_class="form-button">
 	                <v:on-post>
 	                  <![CDATA[
 	                    self.abAction := 'browse';

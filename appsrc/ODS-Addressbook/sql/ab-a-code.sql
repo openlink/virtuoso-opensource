@@ -1372,6 +1372,40 @@ create procedure AB.WA.vector2rs(
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.pop (
+  inout aVector any)
+{
+  declare N integer;
+  declare retValue, V any;
+
+  retValue := null;
+
+  V := vector();
+  for (N := 0; N < length(aVector); N := N + 1)
+  {
+    retValue := aVector[N];
+    if (N <> length(aVector)-1)
+      V := vector_concat (V, vector (retValue));
+  }
+  aVector := V;
+
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.push (
+  inout aVector any,
+  in aValue any)
+{
+  aVector := vector_concat (aVector, vector (aValue));
+  return aVector;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.tagsDictionary2rs(
   inout aDictionary any)
 {
@@ -2246,6 +2280,15 @@ create procedure AB.WA.ab_sparql (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.ab_graph_delete (
+  in graph varchar)
+{
+  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.dashboard_get(
   in domain_id integer,
   in user_id integer)
@@ -2330,6 +2373,7 @@ create procedure AB.WA.contact_update (
   in fullName varchar,
   in gender varchar,
   in birthday datetime,
+  in iri varchar,
   in foaf varchar,
   in mail varchar,
   in web varchar,
@@ -2387,6 +2431,7 @@ create procedure AB.WA.contact_update (
         P_FULL_NAME,
         P_GENDER,
         P_BIRTHDAY,
+        P_IRI,
         P_FOAF,
         P_MAIL,
         P_WEB,
@@ -2443,6 +2488,7 @@ create procedure AB.WA.contact_update (
         fullName,
         gender,
         birthday,
+        iri,
         foaf,
         mail,
         web,
@@ -2498,6 +2544,7 @@ create procedure AB.WA.contact_update (
            P_FULL_NAME = fullName,
            P_GENDER = gender,
            P_BIRTHDAY = birthday,
+           P_IRI = iri,
            P_FOAF = foaf,
            P_MAIL = mail,
            P_WEB = web,
@@ -3027,23 +3074,28 @@ create procedure AB.WA.import_vcard (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.import_foaf (
-  in domain_id integer,
-  in content any,
+  inout domain_id integer,
+  inout content any,
   in tags any,
   in validation any,
-  in contentType any := 0)
+  in contentType any := 0,
+  in contentIRI varchar := null,
+  in contentItems any := null)
 {
   declare N, M, nLength, mLength, id integer;
   declare tmp, tmp2, data, pFields, pValues any;
   declare Meta, Items, Item any;
-  declare S, tmp_iri, name, fullName varchar;
+  declare S, name, fullName varchar;
 
-  declare exit handler for sqlstate '*' {
-    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (tmp_iri);
+  if (isnull (contentIRI))
+    contentIRI := 'http://local.virt/addressbook/' || cast (rnd (1000) as varchar);
+
+  declare exit handler for sqlstate '*'
+  {
+    AB.WA.ab_graph_delete (contentIRI);
     signal ('TEST', 'Bad import source!<>');    
   };
 
-  tmp_iri := 'http://local.virt/addressbook/' || cast (rnd (1000) as varchar);
   Meta := vector
     (
       'P_NAME',
@@ -3063,17 +3115,20 @@ create procedure AB.WA.import_foaf (
     );
   mLength := length (Meta);
 
-  if (contentType) {
+  if (contentType = 0)
+  {
+    DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
+  }
+  if (contentType = 1)
+  {
     declare st, msg, meta any;
   
     st := '00000';
-    exec (sprintf ('SPARQL define get:soft "soft" define get:uri "%s" SELECT * FROM <%s> WHERE { ?s ?p ?o }', content, tmp_iri), st, msg, vector (), 0, meta, items);
+    exec (sprintf ('SPARQL define get:soft "soft" define get:uri "%s" SELECT * FROM <%s> WHERE { ?s ?p ?o }', content, contentIRI), st, msg, vector (), 0, meta, items);
     if ('00000' <> st)
       signal (st, msg);
-    
-  } else {
-    DB.DBA.RDF_LOAD_RDFXML (content, tmp_iri, tmp_iri);
   }
+  if (isnull (contentItems)) {
   Items := AB.WA.ab_sparql (sprintf (' SPARQL ' ||
                                      ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
                                      ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
@@ -3083,7 +3138,11 @@ create procedure AB.WA.import_foaf (
                                      '          {?x a foaf:Person .} ' ||
                                      '          UNION ' ||
                                      '          {?x a foaf:Organization .} ' ||
-                                     '        }', tmp_iri));
+                                       '        }', contentIRI));
+  } else {
+    Items := contentItems;
+  }
+
   nLength := length (Items);
   for (N := 0; N < nLength; N := N + 1) {
     S := ' SPARQL ' ||
@@ -3109,35 +3168,49 @@ create procedure AB.WA.import_foaf (
          '         OPTIONAL{ <PERSON>  foaf:phone ?P_H_PHONE } .' ||
          '       }';
 
-    S := sprintf (S, tmp_iri);
+    S := sprintf (S, contentIRI);
     S := replace (S, '<PERSON>', '<' || Items [N][0] || '>');
     Item := AB.WA.ab_sparql (S);
 
-    if (length (Item)) {
+    if (length (Item))
+    {
       fullName := null;
-      if (not isnull (Item[0][1])) {
+      if (not isnull (Item[0][1]))
+      {
         fullName := Item[0][1];
-      } else {
+      } else
+      {
         if (not isnull (Item[0][2]) or not isnull (Item[0][3]))
           fullName := trim (Item[0][2] || ' ' || Item[0][3]);
       }
-      if (not is_empty_or_null (coalesce (Item[0][0], fullName))) {
+      if (not is_empty_or_null (coalesce (Item[0][0], fullName)))
+      {
         pFields := vector ('P_NAME');
         pValues := vector (coalesce (Item[0][0], fullName));
-	      if (Items [N][0] not like 'nodeID://%') {
-          pFields := vector_concat (pFields, vector ('P_FOAF'));
+	      if (Items [N][0] not like 'nodeID://%')
+	      {
+          pFields := vector_concat (pFields, vector ('P_IRI'));
           pValues := vector_concat (pValues, vector (Items [N][0]));
 	      }
-        for (M := 1; M < mLength; M := M + 1) {
-          if (Meta[M] = 'P_FULL_NAME') {
-            if (not isnull (fullName)) {
+	      if (content like 'http://%')
+	      {
+          pFields := vector_concat (pFields, vector ('P_FOAF'));
+          pValues := vector_concat (pValues, vector (content));
+	      }
+        for (M := 1; M < mLength; M := M + 1)
+        {
+          if (Meta[M] = 'P_FULL_NAME')
+          {
+            if (not isnull (fullName))
+            {
               pFields := vector_concat (pFields, vector (Meta[M]));
               pValues := vector_concat (pValues, vector (fullName));
             }
           } else {
             tmp := Meta[M];
             tmp2 := Item[0][M];
-            if (tmp = 'P_BIRTHDAY') {
+            if (tmp = 'P_BIRTHDAY')
+            {
               {
                 declare continue handler for sqlstate '*' {
                   tmp := '';
@@ -3145,10 +3218,12 @@ create procedure AB.WA.import_foaf (
                 tmp2 := AB.WA.dt_reformat (tmp2, 'Y-M-D');
               }
             }
-            if (tmp = 'P_KIND') {
+            if (tmp = 'P_KIND')
+            {
               tmp2 := case when (tmp2 = 'http://xmlns.com/foaf/0.1/Person') then 0 else 1 end;
             }
-            if (tmp <> '') {
+            if (tmp <> '')
+            {
               pFields := vector_concat (pFields, vector (tmp));
               pValues := vector_concat (pValues, vector (tmp2));
             }
@@ -3158,8 +3233,125 @@ create procedure AB.WA.import_foaf (
       }
     }
   }
+
 _delete:;
-  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (tmp_iri);
+  AB.WA.ab_graph_delete (contentIRI);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_foaf_content (
+  inout content any,
+  in contentType any := 0,
+  in contentIRI any := null)
+{
+  declare N, M integer;
+  declare Items, Persons any;
+  declare S, personIRI varchar;
+
+  declare exit handler for sqlstate '*'
+  {
+    Persons := vector ();
+    AB.WA.ab_graph_delete (contentIRI);
+    goto _exit;
+  };
+
+  Persons := vector ();
+  if (isnull (contentIRI))
+    contentIRI := 'http://local.virt/addressbook/' || cast (rnd (1000) as varchar);
+  AB.WA.ab_graph_delete (contentIRI);
+
+  -- store in QUAD Store
+  if (contentType)
+  {
+    declare st, msg, meta any;
+
+    st := '00000';
+    exec (sprintf ('SPARQL define get:soft "soft" define get:uri "%s" SELECT * FROM <%s> WHERE { ?s ?p ?o }', content, contentIRI), st, msg, vector (), 0, meta, items);
+    if ('00000' <> st)
+      signal (st, msg);
+
+  } else {
+    DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
+  }
+
+  Items := AB.WA.ab_sparql (sprintf (' SPARQL ' ||
+                                     ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
+                                     ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
+                                     ' SELECT ?person, ?nick, ?name, ?mbox' ||
+                                     '   FROM <%s> ' ||
+                                     '  WHERE { ' ||
+                                     '          [] a foaf:PersonalProfileDocument ;                 ' ||
+                                     '             foaf:primaryTopic ?person .                      ' ||
+                                     '          OPTIONAL { ?person foaf:nick ?nick } .              ' ||
+                                     '          OPTIONAL { ?person foaf:name ?name } .              ' ||
+                                     '          OPTIONAL { ?person foaf:mbox ?mbox } .              ' ||
+                                     '        }', contentIRI));
+  if (length (Items))
+  {
+    personIRI := Items[0][0];
+    Persons := vector_concat (Persons, vector (vector (1, personIRI,  coalesce (Items[N][2], Items[N][1]), Items[0][3])));
+    Items := AB.WA.ab_sparql (sprintf (' SPARQL ' ||
+                                       ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
+                                       ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
+                                       ' SELECT ?person, ?nick, ?name, ?mbox' ||
+                                       '   FROM <%s> ' ||
+                                       '  WHERE { ' ||
+                                       '          {                                         ' ||
+                                       '            <%s> foaf:knows ?person .               ' ||
+                                       '            ?person a foaf:Person .                 ' ||
+                                       '            OPTIONAL { ?person foaf:nick ?nick } .  ' ||
+                                       '            OPTIONAL { ?person foaf:name ?name } .  ' ||
+                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .  ' ||
+                                       '          }                                         ' ||
+                                       '          UNION ' ||
+                                       '          {                                         ' ||
+                                       '            <%s> foaf:knows ?person .               ' ||
+                                       '            ?person a foaf:Organization .           ' ||
+                                       '            OPTIONAL { ?person foaf:nick ?nick } .  ' ||
+                                       '            OPTIONAL { ?person foaf:name ?name } .  ' ||
+                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .  ' ||
+                                       '          }                                         ' ||
+                                       '        }', contentIRI, personIRI, personIRI));
+  } else {
+    Items := AB.WA.ab_sparql (sprintf (' SPARQL ' ||
+                                       ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
+                                       ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
+                                       ' SELECT ?person, ?nick, ?name, ?mbox' ||
+                                       '   FROM <%s> ' ||
+                                       '  WHERE { ' ||
+                                       '          {                                         ' ||
+                                       '            ?person a foaf:Person .                 ' ||
+                                       '            OPTIONAL { ?person foaf:nick ?nick } .  ' ||
+                                       '            OPTIONAL { ?person foaf:name ?name } .  ' ||
+                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .  ' ||
+                                       '          }                                         ' ||
+                                       '          UNION ' ||
+                                       '          {                                         ' ||
+                                       '            ?person a foaf:Organization .           ' ||
+                                       '            OPTIONAL { ?person foaf:nick ?nick } .  ' ||
+                                       '            OPTIONAL { ?person foaf:name ?name } .  ' ||
+                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .  ' ||
+                                       '          }                                         ' ||
+                                       '        }', contentIRI));
+  }
+  for (N := 0; N < length (Items); N := N + 1)
+  {
+    if (not isnull (coalesce (Items[N][2], Items[N][1])))
+    {
+      for (M := 0; M < length (Persons); M := M + 1)
+      {
+        if (Persons[M][1] = Items[N][0])
+          goto _skip;
+      }
+      Persons := vector_concat (Persons, vector (vector (0, Items[N][0], coalesce (Items[N][2], Items[N][1]), Items[N][3])));
+    _skip:;
+    }
+  }
+
+_exit:;
+  return Persons;
 }
 ;
 
@@ -3181,7 +3373,8 @@ create procedure AB.WA.import_csv (
   firstNameIdx := -1;
   lastNameIdx := -1;
   fullNameIdx := -1;
-  for (N := 0; N < length (maps); N := N + 2) {
+  for (N := 0; N < length (maps); N := N + 2)
+  {
     if (maps[N+1] = 'P_NAME')
       nameIdx := cast (maps[N] as integer);
     if (maps[N+1] = 'P_FIRST_NAME')
@@ -3192,7 +3385,8 @@ create procedure AB.WA.import_csv (
       fullNameIdx := cast (maps[N] as integer);
   }
   nLength := length (content);
-  for (N := 1; N < nLength; N := N + 1) {
+  for (N := 1; N < nLength; N := N + 1)
+  {
     data := split_and_decode (content [N], 0, '\0\0,');
     name := '';
     fullName := '';
@@ -3200,7 +3394,8 @@ create procedure AB.WA.import_csv (
       name := trim (trim (data[nameIdx], '"'));
     if ((fullNameIdx <> -1) and (fullNameIdx < length (data)))
       fullName := trim (trim (data[fullNameIdx], '"'));
-    if (fullName = '') {
+    if (fullName = '')
+    {
       if ((firstNameIdx <> -1) and (firstNameIdx < length (data)))
          fullName := trim (trim (data[firstNameIdx], '"'));
       if ((lastNameIdx <> -1) and (lastNameIdx < length (data)))
@@ -3209,22 +3404,30 @@ create procedure AB.WA.import_csv (
     }
     if (name = '')
       name := fullName;
-    if (name <> '') {
+    if (name <> '')
+    {
       pFields := vector ('P_NAME');
       pValues := vector (name);
       mLength := length (data);
-      for (M := 0; M < mLength; M := M + 1) {
-        if (M <> nameIdx) {
-          if (M = fullNameIdx) {
-            if (fullName <> '') {
+      for (M := 0; M < mLength; M := M + 1)
+      {
+        if (M <> nameIdx)
+        {
+          if (M = fullNameIdx)
+          {
+            if (fullName <> '')
+            {
                pFields := vector_concat (pFields, vector ('P_FULL_NAME'));
                pValues := vector_concat (pValues, vector (fullName));
              }
-           } else {
+          } else
+          {
              tmp := get_keyword (cast (M as varchar), maps, '');
-             if (tmp <> '') {
+            if (tmp <> '')
+            {
                tmp2 := trim (data[M], '"');
-               if (tmp = 'P_BIRTHDAY') {
+              if (tmp = 'P_BIRTHDAY')
+              {
                  {
                    declare continue handler for sqlstate '*' {
                      tmp := '';
@@ -3232,7 +3435,8 @@ create procedure AB.WA.import_csv (
                    tmp2 := AB.WA.dt_reformat (tmp2);
                  }
                }
-               if (tmp <> '') {
+              if (tmp <> '')
+              {
                  pFields := vector_concat (pFields, vector (tmp));
                  pValues := vector_concat (pValues, vector (tmp2));
                }
@@ -3259,14 +3463,18 @@ create procedure AB.WA.import_ldap (
   declare data, pFields, pValues any;
 
   nLength := length (content);
-  for (N := 0; N < nLength; N := N + 2) {
-    if (content [N] = 'entry') {
+  for (N := 0; N < nLength; N := N + 2)
+  {
+    if (content [N] = 'entry')
+    {
       data := content [N+1];
       mLength := length (data);
         pFields := vector ();
         pValues := vector ();
-        for (M := 0; M < mLength; M := M + 2) {
-          if (get_keyword (data[M], maps, '') <> '') {
+      for (M := 0; M < mLength; M := M + 2)
+      {
+        if (get_keyword (data[M], maps, '') <> '')
+        {
             pFields := vector_concat (pFields, vector (get_keyword (data[M], maps)));
             pValues := vector_concat (pValues, vector (case when isstring (data[M+1]) then data[M+1] else data[M+1][0] end));
           }
@@ -3287,7 +3495,8 @@ create procedure AB.WA.export_vcard (
   declare sStream any;
 
   sStream := string_output();
-  for (select * from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id) do {
+  for (select * from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id) do
+  {
 	  http ('BEGIN:VCARD\r\n', sStream);
 	  http ('VERSION:2.1\r\n', sStream);
 
