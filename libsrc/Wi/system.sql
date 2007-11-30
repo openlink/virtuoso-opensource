@@ -117,7 +117,7 @@ create procedure SQL_PROCEDURE_COLUMNS (
 --!AWK PUBLIC
 create procedure XML_URI_RESOLVE_LIKE_GET (in base_uri varchar, in rel_uri varchar, in output_charset varchar := null) returns any
 {
-  declare s_uri any;
+  declare res any;
   -- dbg_obj_princ ('XML_URI_RESOLVE_LIKE_GET (', base_uri, rel_uri, ')');
   if (__tag (base_uri) in (225, 226))
     base_uri := charset_recode (base_uri, '_WIDE_', 'UTF-8');
@@ -128,15 +128,9 @@ create procedure XML_URI_RESOLVE_LIKE_GET (in base_uri varchar, in rel_uri varch
   else
     rel_uri := coalesce (cast (rel_uri as varchar), '');
 
-  s_uri := rfc1808_parse_uri (base_uri);
-  if (aref (s_uri, 0) = '')
-    base_uri := sprintf ('http://%s', base_uri);
---  IvAn/UriSlash/011111 This causes violations of RFC 1808 on reading compound XML documents!
---  if (aref (base_uri, length (base_uri) - 1) <> ascii ('/'))
---    base_uri := concat (base_uri, '/');
-  base_uri := WS.WS.EXPAND_URL (base_uri, rel_uri);
-  -- dbg_obj_princ ('base_uri after WS.WS.EXPAND_URL in XML_URI_RESOLVE_LIKE_GET is ', base_uri);
-  return charset_recode (base_uri, 'UTF-8', output_charset);
+  res := rfc1808_expand_uri (base_uri, rel_uri, output_charset, 1);
+  -- dbg_obj_princ ('base_uri after WS.WS.EXPAND_URL in XML_URI_RESOLVE_LIKE_GET is ', res);
+  return res;
 }
 ;
 

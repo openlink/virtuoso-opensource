@@ -610,7 +610,6 @@ caddr_t xp_box_number (caddr_t n);
 
 typedef struct xp_node_s
 {
-  struct xp_node_s * xn_current_child;
   struct xp_node_s * xn_parent;
   caddr_t *	xn_attrs;
   dk_set_t	 xn_children;

@@ -367,7 +367,6 @@ xp_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
   memset (xn, 0, sizeof (xp_node_t));
   XP_STRSES_FLUSH (xp);
   xn->xn_xp = xp;
-  xp->xp_current->xn_current_child = xn;
   xn->xn_parent = xp->xp_current;
   xp->xp_current = xn;
   boxed_name = xp->xp_boxed_name = box_dv_uname_string (name);
@@ -390,7 +389,6 @@ xp_element_end (void *userdata, const char * name)
   children = CONS (current->xn_attrs, children);
   l = (caddr_t *) list_to_array (children);
   dk_set_push (&parent->xn_children, (void*) l);
-  parent->xn_current_child = NULL;
   xp->xp_current = parent;
   current->xn_parent = xp->xp_free_list;
   xp->xp_free_list = current;
@@ -411,7 +409,6 @@ xp_xslt_element (void *userdata,  char * name, vxml_parser_attrdata_t *attrdata)
   memset (xn, 0, sizeof (xp_node_t));
   XP_STRSES_FLUSH (xp);
   xn->xn_xp = xp;
-  xp->xp_current->xn_current_child = xn;
   xn->xn_parent = xp->xp_current;
   xp->xp_current = xn;
   boxed_name = xp->xp_boxed_name = box_dv_uname_string (name);
@@ -438,7 +435,6 @@ xp_element_srcpos (void *userdata,  char * name, vxml_parser_attrdata_t *attrdat
   memset (xn, 0, sizeof (xp_node_t));
   XP_STRSES_FLUSH (xp);
   xn->xn_xp = xp;
-  xp->xp_current->xn_current_child = xn;
   xn->xn_parent = xp->xp_current;
   xp->xp_current = xn;
   boxed_name = xp->xp_boxed_name = box_dv_uname_string (name);
@@ -488,7 +484,6 @@ xp_xslt_element_end (void *userdata, const char * name)
   children = CONS (current->xn_attrs, children);
   l = (caddr_t *) list_to_array (children);
   dk_set_push (&parent->xn_children, (void*) l);
-  parent->xn_current_child = NULL;
   xp->xp_current = parent;
   if (current->xn_namespaces && xp->xp_namespaces)
     {
@@ -620,7 +615,7 @@ xp_free (xparse_ctx_t * xp)
   dk_hash_iterator_t hit;
   caddr_t it, k;
   xp_rdf_locals_t *xrl;
-  xp_node_t * xn = xp->xp_top;
+  xp_node_t * xn;
   dk_free_box (xp->xp_id);
   dk_free_box (xp->xp_error_msg);
 #ifdef XP_TRANSLATE_HOST
@@ -631,9 +626,10 @@ xp_free (xparse_ctx_t * xp)
   dk_set_free (xp->xp_checked_functions);
 
   strses_free (xp->xp_strses);
+  xn = xp->xp_current;
   while (xn)
     {
-      xp_node_t * next = xn->xn_current_child;
+      xp_node_t * next = xn->xn_parent;
 #ifdef MALLOC_DEBUG
       dk_check_tree ((caddr_t) xn->xn_attrs);
 #endif
@@ -1465,7 +1461,6 @@ xp_element_change (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
   memset (xn, 0, sizeof (xp_node_t));
   XP_STRSES_FLUSH (xp);
   xn->xn_xp = xp;
-  xp->xp_current->xn_current_child = xn;
   xn->xn_parent = xp->xp_current;
   xp->xp_current = xn;
   boxed_name = xp->xp_boxed_name = box_dv_uname_string (name);

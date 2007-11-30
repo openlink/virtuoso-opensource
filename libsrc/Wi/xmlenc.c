@@ -72,7 +72,7 @@ extern "C" {
 #include "bif_text.h"
 
 #define XML_ELEMENT_NAME(x) \
-  ((char *)( ((x) && DV_TYPE_OF (x) == DV_ARRAY_OF_POINTER && ((caddr_t *)(x))[0] && ((caddr_t **)(x))[0][0]) ? ((caddr_t **)(x))[0][0] : NULL))
+  ((char *)( ((x) && DV_TYPE_OF (x) == DV_ARRAY_OF_POINTER && ((caddr_t *)(x))[0]) ? ((caddr_t **)(x))[0][0] : NULL))
 
 #define SQLR_NEW_KEY_ERROR(name) \
       sqlr_new_error ("42000", "XENC04", "Key name <%s> is unknown", name)
@@ -4531,7 +4531,7 @@ void xenc_build_ids_hash (caddr_t * curr, id_hash_t ** id_hash, int only_encrypt
   if (DV_TYPE_OF (curr) != DV_ARRAY_OF_POINTER)
     return;
 
-  if (!only_encrypted_data || !strcmp (XML_ELEMENT_NAME (curr), XENC_URI ":EncryptedData"))
+  if (!only_encrypted_data || !strcmp ((((caddr_t **)(curr))[0][0]), XENC_URI ":EncryptedData"))
     {
       char * Id = xml_find_attribute (curr, "Id", 0);
       if (Id)

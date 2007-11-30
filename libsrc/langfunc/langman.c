@@ -334,6 +334,7 @@ void langfunc_kernel_init (void)
   eh_load_handler (&eh__UTF16BE);
   eh_load_handler (&eh__UTF16LE);
   eh_load_handler (&eh__UTF8);
+  eh_load_handler (&eh__UTF8_QR);
   eh_load_handler (&eh__ASCII);
   eh_load_handler (&eh__ISO8859_1);
   eh_load_handler (&eh__WIDE_121);

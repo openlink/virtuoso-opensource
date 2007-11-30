@@ -27,6 +27,9 @@
 #include "rdf_mapping_jso.h"
 #include "xmlparser.h" /* for xml_read_func_t and xml_read_abend_func_t */
 
+extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int make_new, caddr_t *err_ret);
+
+
 /* Set of callback to accept the stream of RDF quads that are grouped by graph and share blank node IDs */
 
 #define TRIPLE_FEED_NEW_GRAPH	0
@@ -43,13 +46,14 @@ typedef struct triple_feed_s {
   caddr_t tf_app_env;		/*!< Environment for use by callbacks, owned by caller */
   caddr_t tf_graph_uri;		/*!< Graph uri, owned by caller */
   caddr_t tf_graph_iid;		/*!< Graph iri ID, local */
-  ccaddr_t tf_stmt_texts[COUNTOF__TRIPLE_FEED];
-  query_t *tf_queries[COUNTOF__TRIPLE_FEED];
+  const char *tf_creator;	/*!< Name of BIF that created the feed (this name is printed in diagnostics) */
+  ccaddr_t tf_cbk_names[COUNTOF__TRIPLE_FEED];
+  query_t *tf_cbk_qrs[COUNTOF__TRIPLE_FEED];
 } triple_feed_t;
 
 extern triple_feed_t *tf_alloc (void);
 extern void tf_free (triple_feed_t *tf);
-extern void tf_set_stmt_texts (triple_feed_t *tf, const char **stmt_texts, caddr_t *err_ptr);
+extern void tf_set_cbk_names (triple_feed_t *tf, const char **cbk_names);
 extern void tf_new_graph (triple_feed_t *tf);
 extern caddr_t tf_get_iid (triple_feed_t *tf, caddr_t uri);
 extern void tf_commit (triple_feed_t *tf);
@@ -93,6 +97,9 @@ typedef struct ttlp_s
   caddr_t ttlp_base_uri;	/*!< Base URI to resolve relative URIs */
   caddr_t ttlp_subj_uri;	/*!< Current subject URI, but it become object URI if ttlp_pred_is_reverse */
   caddr_t ttlp_pred_uri;	/*!< Current predicate URI */
+  caddr_t ttlp_obj;		/*!< Current object URI or value */
+  caddr_t ttlp_obj_type;	/*!< Current object type URI */
+  caddr_t ttlp_obj_lang;	/*!< Current object language mark */
   int ttlp_pred_is_reverse;	/*!< Flag if ttlp_pred_uri is used as reverse, e.g. in 'O is P of S' syntax */
   caddr_t ttlp_formula_iid;	/*!< IRI ID of the blank node of the formula ( '{ ... }' notation of N3 */
   /* feeder */
@@ -132,15 +139,15 @@ extern void ttlyyerror_impl_1 (TTLP_PARAM const char *raw_text, int yystate, sho
 
 extern ptrlong ttlp_bit_of_special_qname (caddr_t qname);
 extern caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS TTLP_PARAM caddr_t qname);
-extern caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, const char *sparyytext);
-extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS TTLP_PARAM const char *sparyytext);
+extern caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t boxed_sparyytext);
+extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS TTLP_PARAM caddr_t boxed_sparyytext);
 #ifdef MALLOC_DEBUG
 #define ttlp_expand_qname_prefix(qname) DBG_NAME (ttlp_expand_qname_prefix) (__FILE__, __LINE__, (qname))
-#define tf_bnode_iid(tf, sparyytext) DBG_NAME (tf_bnode_iid) (__FILE__, __LINE__, (tf), (sparyytext))
+#define tf_bnode_iid(tf, boxed_sparyytext) DBG_NAME (tf_bnode_iid) (__FILE__, __LINE__, (tf), (boxed_sparyytext))
 #ifdef RE_ENTRANT_TTLYY
-#define tf_formula_bnode_iid(ttlp, sparyytext) DBG_NAME (tf_formula_bnode_iid) (__FILE__, __LINE__, (ttlp), (sparyytext))
+#define tf_formula_bnode_iid(ttlp, boxed_sparyytext) DBG_NAME (tf_formula_bnode_iid) (__FILE__, __LINE__, (ttlp), (boxed_sparyytext))
 #else
-#define tf_formula_bnode_iid(sparyytext) DBG_NAME (tf_formula_bnode_iid) (__FILE__, __LINE__, (sparyytext))
+#define tf_formula_bnode_iid(boxed_sparyytext) DBG_NAME (tf_formula_bnode_iid) (__FILE__, __LINE__, (boxed_sparyytext))
 #endif
 #endif
 extern caddr_t ttlp_uri_resolve (TTLP_PARAM caddr_t qname);
@@ -160,7 +167,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
 
 extern caddr_t rdf_load_turtle (
   caddr_t str, caddr_t base_uri, caddr_t graph_uri, long flags,
-  caddr_t *stmts, caddr_t app_env,
+  ccaddr_t *cbk_names, caddr_t app_env,
   query_instance_t *qi, wcharset_t *query_charset, caddr_t *err_ret );
 
 /* Metadata about free-text index on DB.DBA.RDF_OBJ */

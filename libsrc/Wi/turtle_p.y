@@ -50,6 +50,12 @@
 #define YYDEBUG 1
 #endif
 
+#define TTLP_URI_RESOLVE_IF_NEEDED(rel) \
+  do { \
+    if ((NULL != ttlp_arg->ttlp_base_uri) && strncmp ((rel), "http://", 7)) \
+      (rel) = ttlp_uri_resolve (TTLP_ARG (rel)); \
+    } while (0)
+
 %}
 
 /* symbolic tokens */
@@ -207,8 +213,8 @@ object_list
 	;
 
 verb
-	: Q_IRI_REF	{ $$ = $1; if (NULL != ttlp_arg->ttlp_base_uri) $$ = ttlp_uri_resolve (TTLP_ARG $$); }
-	| QNAME		{ $$ = ttlp_expand_qname_prefix (TTLP_ARG $1); if (NULL != ttlp_arg->ttlp_base_uri) $$ = ttlp_uri_resolve (TTLP_ARG $$); }
+	: Q_IRI_REF	{ $$ = $1; TTLP_URI_RESOLVE_IF_NEEDED ($$); }
+	| QNAME		{ $$ = ttlp_expand_qname_prefix (TTLP_ARG $1); TTLP_URI_RESOLVE_IF_NEEDED($$); }
 	| VARIABLE	{ $$ = $1; }
 	| _AT_a_L	{ $$ = uname_rdf_ns_uri_type; }
 	| _EQ		{ $$ = box_dv_uname_string ("http://www.w3.org/2002/07/owl#sameAs"); }
@@ -226,7 +232,7 @@ verb
 		    $$ = tf_formula_bnode_iid (TTLP_ARG $1);
                   else
 		    $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1);
-		  dk_free_box ($1); }
+		}
         | _LSQBRA
 		{
 		  if (!(ttlp_arg->ttlp_flags & TTLP_VERB_MAY_BE_BLANK))
@@ -245,15 +251,15 @@ verb
 	;
 
 rev_verb
-	: _AT_is_L Q_IRI_REF _AT_of_L 	{ $$ = $2;  if (NULL != ttlp_arg->ttlp_base_uri) $$ = ttlp_uri_resolve (TTLP_ARG $$); }
-	| _AT_is_L QNAME _AT_of_L	{ $$ = ttlp_expand_qname_prefix (TTLP_ARG $2);  if (NULL != ttlp_arg->ttlp_base_uri) $$ = ttlp_uri_resolve (TTLP_ARG $$); }
+	: _AT_is_L Q_IRI_REF _AT_of_L 	{ $$ = $2; TTLP_URI_RESOLVE_IF_NEEDED($$); }
+	| _AT_is_L QNAME _AT_of_L	{ $$ = ttlp_expand_qname_prefix (TTLP_ARG $2); TTLP_URI_RESOLVE_IF_NEEDED($$); }
 	| _AT_is_L VARIABLE _AT_of_L 	{ $$ = $2; }
         | _LT_EQ	{ $$ = box_dv_uname_string ("http://www.w3.org/2000/10/swap/log#implies"); /* Note this 'double reversed' meaning :) */ }
 	;
 
 subject
-	: Q_IRI_REF	{ $$ = $1; if (NULL != ttlp_arg->ttlp_base_uri) $$ = ttlp_uri_resolve (TTLP_ARG $$); }
-	| QNAME		{ $$ = ttlp_expand_qname_prefix (TTLP_ARG $1); if (NULL != ttlp_arg->ttlp_base_uri) $$ = ttlp_uri_resolve (TTLP_ARG $$); }
+	: Q_IRI_REF	{ $$ = $1; TTLP_URI_RESOLVE_IF_NEEDED($$); }
+	| QNAME		{ $$ = ttlp_expand_qname_prefix (TTLP_ARG $1); TTLP_URI_RESOLVE_IF_NEEDED($$); }
 	| VARIABLE	{ $$ = $1; }
 	| blank		{ $$ = $1; }
 	| literal_subject
@@ -279,28 +285,87 @@ literal_subject
 object
 	: Q_IRI_REF
 		{
-		  caddr_t o = $1;
-		  if (NULL != ttlp_arg->ttlp_base_uri)
-		    o = ttlp_uri_resolve (TTLP_ARG o);
-		  ttlp_triple_and_inf (TTLP_ARG o); }
+		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = $1;
+		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_obj);
+		  ttlp_triple_and_inf (TTLP_ARG ttlp_arg->ttlp_obj);
+		 }
 	| QNAME
 		{
-		  caddr_t o = $1;
-		  o = ttlp_expand_qname_prefix (TTLP_ARG $1);
-		  if (NULL != ttlp_arg->ttlp_base_uri)
-		    o = ttlp_uri_resolve (TTLP_ARG o);
-		  ttlp_triple_and_inf (TTLP_ARG o); }
-	| VARIABLE	{ ttlp_triple_and_inf (TTLP_ARG $1); }
-	| blank		{ ttlp_triple_and_inf (TTLP_ARG $1); }
-	| true_L	{ ttlp_triple_l_and_inf (TTLP_ARG (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL); }
-	| false_L	{ ttlp_triple_l_and_inf (TTLP_ARG (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL); }
-	| TURTLE_INTEGER	{ ttlp_triple_l_and_inf (TTLP_ARG $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
-	| TURTLE_DECIMAL	{ ttlp_triple_l_and_inf (TTLP_ARG $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
-	| TURTLE_DOUBLE		{ ttlp_triple_l_and_inf (TTLP_ARG $1, uname_xmlschema_ns_uri_hash_double, NULL); }
-	| TURTLE_STRING				{ ttlp_triple_l_and_inf (TTLP_ARG $1, NULL, NULL); }
-	| TURTLE_STRING LANGTAG			{ ttlp_triple_l_and_inf (TTLP_ARG $1, NULL, $2); }
-	| TURTLE_STRING _CARET_CARET Q_IRI_REF	{ ttlp_triple_l_and_inf (TTLP_ARG $1, $3, NULL); }
-	| TURTLE_STRING _CARET_CARET QNAME	{ ttlp_triple_l_and_inf (TTLP_ARG $1, ttlp_expand_qname_prefix (TTLP_ARG $3), NULL); }
+		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = ttlp_expand_qname_prefix (TTLP_ARG $1);
+		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_obj);
+		  ttlp_triple_and_inf (TTLP_ARG ttlp_arg->ttlp_obj);
+		}
+	| VARIABLE
+		{
+		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = $1;
+		  ttlp_triple_and_inf (TTLP_ARG $1);
+		}
+	| blank
+		{
+		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = $1;
+		  ttlp_triple_and_inf (TTLP_ARG $1);
+		}
+	| true_L
+		{
+		  ttlp_triple_l_and_inf (TTLP_ARG (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL);
+		}
+	| false_L
+		{
+		  ttlp_triple_l_and_inf (TTLP_ARG (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL);
+		}
+	| TURTLE_INTEGER
+		{
+		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = $1;
+		  ttlp_triple_l_and_inf (TTLP_ARG $1, uname_xmlschema_ns_uri_hash_integer, NULL);
+		}
+	| TURTLE_DECIMAL
+		{
+		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = $1;
+		  ttlp_triple_l_and_inf (TTLP_ARG $1, uname_xmlschema_ns_uri_hash_decimal, NULL);
+		}
+	| TURTLE_DOUBLE
+		{
+		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = $1;
+		  ttlp_triple_l_and_inf (TTLP_ARG $1, uname_xmlschema_ns_uri_hash_double, NULL);
+		}
+	| TURTLE_STRING
+		{
+		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = $1;
+		  ttlp_triple_l_and_inf (TTLP_ARG $1, NULL, NULL);
+		}
+	| TURTLE_STRING LANGTAG
+		{
+		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = $1;
+		  dk_free_tree (ttlp_arg->ttlp_obj_lang);
+		  ttlp_arg->ttlp_obj_lang = $2;
+		  ttlp_triple_l_and_inf (TTLP_ARG $1, NULL, $2);
+		}
+	| TURTLE_STRING _CARET_CARET Q_IRI_REF
+		{
+		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = $1;
+		  dk_free_tree (ttlp_arg->ttlp_obj_type);
+		  ttlp_arg->ttlp_obj_type = $3;
+		  TTLP_URI_RESOLVE_IF_NEEDED (ttlp_arg->ttlp_obj_type);
+		  ttlp_triple_l_and_inf (TTLP_ARG $1, $3, NULL);
+		}
+	| TURTLE_STRING _CARET_CARET QNAME
+		{
+		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = $1;
+		  dk_free_tree (ttlp_arg->ttlp_obj_type);
+		  ttlp_arg->ttlp_obj_type = ttlp_expand_qname_prefix (TTLP_ARG $3);
+		  ttlp_triple_l_and_inf (TTLP_ARG $1, ttlp_arg->ttlp_obj_type, NULL);
+		}
 	;
 
 blank
@@ -310,7 +375,7 @@ blank
 		    $$ = tf_formula_bnode_iid (TTLP_ARG $1);
                   else
 		    $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1);
-		  dk_free_box ($1); }
+		}
 	| _LSQBRA_RSQBRA	{ $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL); }
         | _LSQBRA blank_block_subj	{ $$ = $2; }
         | _LPAR	blank_block_seq		{ $$ = $2; }
@@ -380,7 +445,7 @@ items
 		{ caddr_t next_bnode = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
                   caddr_t first_pred = ttlp_arg->ttlp_pred_uri;
 		  ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_rest;
-                  ttlp_triple_and_inf (TTLP_ARG box_copy (next_bnode));
+                  ttlp_triple_and_inf (TTLP_ARG next_bnode);
 		  ttlp_arg->ttlp_pred_uri = first_pred;
 		  dk_free_tree (ttlp_arg->ttlp_subj_uri);
                   ttlp_arg->ttlp_subj_uri = next_bnode; }

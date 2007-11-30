@@ -1930,32 +1930,28 @@ create procedure DB.DBA.RDF_QUAD_URI_L_TYPED (in g_uri varchar, in s_uri varchar
 }
 ;
 
-create procedure DB.DBA.TTLP_EV_NEW_GRAPH (in g varchar, inout app_env any) {
+create procedure DB.DBA.TTLP_EV_NEW_GRAPH (inout g varchar, inout app_env any) {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_NEW_GRAPH(', g, app_env, ')');
   ;
 }
 ;
 
-create function DB.DBA.TTLP_EV_NEW_BLANK (in g varchar, inout app_env any) returns IRI_ID {
-  declare res IRI_ID;
+create procedure DB.DBA.TTLP_EV_NEW_BLANK (inout g varchar, inout app_env any, inout res IRI_ID) {
   res := iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK'));
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_NEW_BLANK (', g, app_env, ') returns ', res);
-  return res;
 }
 ;
 
-create function DB.DBA.TTLP_EV_GET_IID (in uri varchar, in g varchar, inout app_env any) returns IRI_ID {
-  declare res IRI_ID;
+create procedure DB.DBA.TTLP_EV_GET_IID (inout uri varchar, inout g varchar, inout app_env any, inout res IRI_ID) {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_GET_IID (', uri, g, app_env, ')');
   res := DB.DBA.RDF_MAKE_IID_OF_QNAME (uri);
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_GET_IID (', uri, g, app_env, ') returns ', res);
-  return res;
 }
 ;
 
 create procedure DB.DBA.TTLP_EV_TRIPLE (
-  in g_iid IRI_ID, in s_uri varchar, in p_uri varchar,
-  in o_uri varchar,
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_uri varchar,
   inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE (', g_iid, s_uri, p_uri, o_uri, ');');
@@ -1965,10 +1961,9 @@ create procedure DB.DBA.TTLP_EV_TRIPLE (
 }
 ;
 
-
 create procedure DB.DBA.TTLP_EV_TRIPLE_L (
-  in g_iid IRI_ID, in s_uri varchar, in p_uri varchar,
-  in o_val any, in o_type varchar, in o_lang varchar,
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_val any, inout o_type varchar, inout o_lang varchar,
   inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env, ');');
@@ -1991,14 +1986,13 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
           values (g_iid, iri_to_id (s_uri, 1), p_iid, parsed);
           return;
     }
-      if (not isstring (o_lang))
-        o_lang := null;
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
       values (g_iid, iri_to_id (s_uri, 1), p_iid,
         DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (
           o_val,
           DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type),
-          o_lang, g_iid, p_iid, ro_id_dict ) );
+          case (isstring (o_lang)) when 0 then null else o_lang end,
+          g_iid, p_iid, ro_id_dict ) );
       return;
     }
   if (isstring (o_lang))
@@ -2023,7 +2017,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
 }
 ;
 
-create procedure DB.DBA.TTLP_EV_COMMIT (in g varchar, inout app_env any) {
+create procedure DB.DBA.TTLP_EV_COMMIT (inout g varchar, inout app_env any) {
   -- dbg_obj_princ ('DB.DBA.TTLP_COMMIT(', g, app_env, ')');
   declare log_mode integer;
   declare ro_id_dict any;
@@ -2047,42 +2041,38 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
   app_env := vector (flags, ro_id_dict);
   return rdf_load_turtle (strg, base, graph, flags,
     vector (
-      'DB.DBA.TTLP_EV_NEW_GRAPH(?,?)',
-      'select DB.DBA.TTLP_EV_NEW_BLANK(?,?)',
-      'select DB.DBA.TTLP_EV_GET_IID(?,?,?)',
-      'DB.DBA.TTLP_EV_TRIPLE(?, ?, ?, ?, ?)',
-      'DB.DBA.TTLP_EV_TRIPLE_L(?, ?, ?, ?,?,?, ?)',
-      'DB.DBA.TTLP_EV_COMMIT(?,?)' ),
+      'DB.DBA.TTLP_EV_NEW_GRAPH',
+      'DB.DBA.TTLP_EV_NEW_BLANK',
+      'DB.DBA.TTLP_EV_GET_IID',
+      'DB.DBA.TTLP_EV_TRIPLE',
+      'DB.DBA.TTLP_EV_TRIPLE_L',
+      'DB.DBA.TTLP_EV_COMMIT' ),
     app_env);
 }
 ;
 
-create procedure DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH (in g varchar, inout app_env any) {
+create procedure DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH (inout g varchar, inout app_env any) {
   -- dbg_obj_princ ('DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH(', g, app_env, ')');
   ;
 }
 ;
 
-create function DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK (in g varchar, inout app_env any) returns IRI_ID {
-  declare res IRI_ID;
+create procedure DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK (inout g varchar, inout app_env any, inout res IRI_ID) {
   res := iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK'));
   -- dbg_obj_princ ('DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK (', g, app_env, ') returns ', res);
-  return res;
 }
 ;
 
-create function DB.DBA.RDF_TTL2HASH_EXEC_GET_IID (in uri varchar, in g varchar, inout app_env any) returns IRI_ID {
-  declare res IRI_ID;
+create procedure DB.DBA.RDF_TTL2HASH_EXEC_GET_IID (inout uri varchar, inout g varchar, inout app_env any, inout res IRI_ID) {
   -- dbg_obj_princ ('DB.DBA.RDF_TTL2HASH_EXEC_GET_IID (', uri, g, app_env, ')');
   res := DB.DBA.RDF_MAKE_IID_OF_QNAME (uri);
   -- dbg_obj_princ ('DB.DBA.RDF_TTL2HASH_EXEC_GET_IID (', uri, g, app_env, ') returns ', res);
-  return res;
 }
 ;
 
 create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE (
-  in g_iid IRI_ID, in s_uri varchar, in p_uri varchar,
-  in o_uri varchar,
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_uri varchar,
   inout app_env any )
 {
   dict_put (app_env,
@@ -2095,8 +2085,8 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE (
 ;
 
 create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L (
-  in g_iid IRI_ID, in s_uri varchar, in p_uri varchar,
-  in o_val any, in o_type varchar, in o_lang varchar,
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_val any, inout o_type varchar, inout o_lang varchar,
   inout app_env any )
 {
   if (not isstring (o_type))
@@ -2107,7 +2097,9 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L (
     vector (
       iri_to_id (s_uri, 1),
       iri_to_id (p_uri, 1),
-      DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (o_val, o_type, o_lang) ),
+      DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (o_val,
+        case (isstring (o_type)) when 0 then null else o_type end,
+        case (isstring (o_lang)) when 0 then null else o_lang end) ),
     0 );
 }
 ;
@@ -2121,12 +2113,12 @@ create function DB.DBA.RDF_TTL2HASH (in strg varchar, in base varchar, in graph 
   res := dict_new (length (strg) / 100);
   rdf_load_turtle (strg, base, graph, flags,
     vector (
-      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH(?,?)',
-      'select DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK(?,?)',
-      'select DB.DBA.RDF_TTL2HASH_EXEC_GET_IID(?,?,?)',
-      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE(?, ?, ?, ?, ?)',
-      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L(?, ?, ?, ?,?,?, ?)',
-      'isinteger(0)' ),
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
+      '' ),
     res);
   return res;
 }
@@ -2143,12 +2135,12 @@ create procedure DB.DBA.RDF_LOAD_RDFXML (in strg varchar, in base varchar, in gr
   rdf_load_rdfxml (strg, 0,
     graph,
     vector (
-      'DB.DBA.TTLP_EV_NEW_GRAPH(?,?)',
-      'select DB.DBA.TTLP_EV_NEW_BLANK(?,?)',
-      'select DB.DBA.TTLP_EV_GET_IID(?,?,?)',
-      'DB.DBA.TTLP_EV_TRIPLE(?, ?, ?, ?, ?)',
-      'DB.DBA.TTLP_EV_TRIPLE_L(?, ?, ?, ?,?,?, ?)',
-      'DB.DBA.TTLP_EV_COMMIT(?,?)' ),
+      'DB.DBA.TTLP_EV_NEW_GRAPH',
+      'DB.DBA.TTLP_EV_NEW_BLANK',
+      'DB.DBA.TTLP_EV_GET_IID',
+      'DB.DBA.TTLP_EV_TRIPLE',
+      'DB.DBA.TTLP_EV_TRIPLE_L',
+      'DB.DBA.TTLP_EV_COMMIT' ),
     app_env,
     base );
   return graph;
@@ -2162,12 +2154,12 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
   rdf_load_rdfxml (strg, 0,
     graph,
     vector (
-      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH(?,?)',
-      'select DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK(?,?)',
-      'select DB.DBA.RDF_TTL2HASH_EXEC_GET_IID(?,?,?)',
-      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE(?,?, ?,?, ?)',
-      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L(?,?, ?,?, ?,?, ?)',
-      'isinteger(0)' ),
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
+      '' ),
     res,
     base );
   return res;
@@ -8011,8 +8003,8 @@ deadlock_quad:
 ;
 
 create procedure DB.DBA.TTLP_EV_TRIPLE_A (
-  in g_iid IRI_ID, in s_uri varchar, in p_uri varchar,
-  in o_uri varchar,
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_uri varchar,
   inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_A (', g_iid, s_uri, p_uri, o_uri, app_env, ')');
@@ -8033,10 +8025,9 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_A (
 }
 ;
 
-
 create procedure DB.DBA.TTLP_EV_TRIPLE_L_A (
-  in g_iid IRI_ID, in s_uri varchar, in p_uri varchar,
-  in o_val any, in o_type varchar, in o_lang varchar,
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_val any, inout o_type varchar, inout o_lang varchar,
   inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_A (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env, ')');
@@ -8057,9 +8048,8 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_A (
 }
 ;
 
-
 create procedure DB.DBA.TTLP_EV_COMMIT_A (
-  in graph_iri varchar, inout app_env any )
+  inout graph_iri varchar, inout app_env any )
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_COMMIT_A (', graph_iri, app_env, ')');
   DB.DBA.TTLP_EV_COMMIT (graph_iri, app_env[2]);
@@ -8080,12 +8070,12 @@ create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varch
   app_env := vector (async_queue (threads), 0, vector (log_mode, ro_id_dict));
   rdf_load_turtle (strg, base, graph, flags,
     vector (
-      'DB.DBA.TTLP_EV_NEW_GRAPH (?,?)',
-      'select DB.DBA.TTLP_EV_NEW_BLANK (?,?)',
-      'select iri_to_id(cast (? as varchar), 1), ?, ?', -- was 'select DB.DBA.TTLP_EV_GET_IID(?,?,?)',
-      'DB.DBA.TTLP_EV_TRIPLE_A (?, ?, ?, ?, ?)',
-      'DB.DBA.TTLP_EV_TRIPLE_L_A (?, ?, ?, ?,?,?, ?)',
-      'DB.DBA.TTLP_EV_COMMIT_A (?,?)' ),
+      'DB.DBA.TTLP_EV_NEW_GRAPH',
+      'DB.DBA.TTLP_EV_NEW_BLANK',
+      '!iri_to_id',
+      'DB.DBA.TTLP_EV_TRIPLE_A',
+      'DB.DBA.TTLP_EV_TRIPLE_L_A',
+      'DB.DBA.TTLP_EV_COMMIT_A' ),
     app_env);
   commit work;
   aq_wait (app_env[0], app_env[1], err, 1);
@@ -8108,12 +8098,12 @@ create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in 
   rdf_load_rdfxml (strg, 0,
     graph,
     vector (
-      'DB.DBA.TTLP_EV_NEW_GRAPH (?,?)',
-      'select DB.DBA.TTLP_EV_NEW_BLANK (?,?)',
-      'select iri_to_id (cast (? as varchar), 1), ?, ?', -- was 'select DB.DBA.TTLP_EV_GET_IID(?,?,?)',
-      'DB.DBA.TTLP_EV_TRIPLE_A (?, ?, ?, ?, ?)',
-      'DB.DBA.TTLP_EV_TRIPLE_L_A (?, ?, ?, ?,?,?, ?)',
-      'DB.DBA.TTLP_EV_COMMIT_A (?,?)' ),
+      'DB.DBA.TTLP_EV_NEW_GRAPH',
+      'DB.DBA.TTLP_EV_NEW_BLANK',
+      '!iri_to_id',
+      'DB.DBA.TTLP_EV_TRIPLE_A',
+      'DB.DBA.TTLP_EV_TRIPLE_L_A',
+      'DB.DBA.TTLP_EV_COMMIT_A' ),
     app_env,
     base );
   commit work;
@@ -9803,7 +9793,7 @@ tridgell_ok:
     fix_identifier_case (''DB.DBA.RDF_OBJ''),
     fix_identifier_case (''RO_DIGEST''),
     fix_identifier_case (''RO_ID''),
-    0, 0, vector (), 1, ''*ini*'', ''*ini*'')', stat, msg);
+    0, 0, vector (), 1, ''*ini*'', ''UTF-8-QR'')', stat, msg);
   exec ('DB.DBA.vt_batch_update (fix_identifier_case (''DB.DBA.RDF_OBJ''), ''ON'', 1)', stat, msg);
   if (isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE')))
     goto final_qm_reload;

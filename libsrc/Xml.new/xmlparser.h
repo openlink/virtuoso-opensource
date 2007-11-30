@@ -357,5 +357,51 @@ extern caddr_t xml_uri_resolve_like_get (struct query_instance_s * qi, caddr_t *
 #define XML_URI_STRING_OR_ENT 2
 extern caddr_t xml_uri_get (struct query_instance_s * qi, caddr_t *err_ret, caddr_t *options, ccaddr_t base_uri, ccaddr_t rel_uri, int mode);
 
+/* These are from sqlbif2.c */
+
+typedef struct rdf1808_split_s {
+  ptrlong schema_begin;		/* schema without ':' */
+  ptrlong schema_end;
+  ptrlong netloc_begin;		/* network location/login without ' */
+  ptrlong netloc_end;
+  ptrlong path_begin;		/* path with starting '/' */
+  ptrlong path_end;
+  ptrlong params_begin;		/* parameters without starting ';' */
+  ptrlong params_end;
+  ptrlong query_begin;		/* query without starting '?' */
+  ptrlong query_end;
+  ptrlong fragment_begin;	/* fragment without starting '#' */
+  ptrlong fragment_end;
+  ptrlong two_slashes;		/* position of end of two slashes, zero if missing */
+} rdf1808_split_t;
+
+#ifndef NDEBUG
+#define CHECK_RDF1808_SPLIT(split,uri_len) \
+  if ((0 != split.schema_begin) || \
+    (split.schema_begin > split.schema_end) || \
+    (split.schema_end > split.netloc_begin) || \
+    (split.netloc_begin > split.netloc_end) || \
+    (split.netloc_end > split.path_begin) || \
+    (split.path_begin > split.path_end) || \
+    (split.path_end > split.params_begin) || \
+    (split.params_begin > split.params_end) || \
+    (split.params_end > split.query_begin) || \
+    (split.query_begin > split.query_end) || \
+    (split.query_end > split.fragment_begin) || \
+    (split.fragment_begin > split.fragment_end) || \
+    (split.fragment_end > (uri_len)) ) \
+    GPF_T1("CHECK_RDF1808_SPLIT failed");
+#else
+#define CHECK_RDF1808_SPLIT(split,uri_len)
+#endif
+
+extern void rfc1808_parse_uri (const char *iri, rdf1808_split_t *split_ret);
+extern void rfc1808_parse_wide_uri (const wchar_t *iri, rdf1808_split_t *split_ret);
+extern caddr_t rfc1808_expand_uri (caddr_t * qst, caddr_t base_uri, caddr_t rel_uri,
+  ccaddr_t output_cs_name, int do_resolve_like_http_get,
+  ccaddr_t base_string_cs_name, /* Encoding used for base_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
+  ccaddr_t rel_string_cs_name, /* Encoding used for rel_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
+  caddr_t * err_ret );
+
 #endif /* _XML_PARSER_H */
 

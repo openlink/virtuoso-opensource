@@ -836,45 +836,9 @@ bif_host_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	return NEW_DB_NULL;
 }
 
-typedef struct rdf1808_split_s {
-  ptrlong schema_begin;		/* schema without ':' */
-  ptrlong schema_end;
-  ptrlong netloc_begin;		/* network location/login without ' */
-  ptrlong netloc_end;
-  ptrlong path_begin;		/* path with starting '/' */
-  ptrlong path_end;
-  ptrlong params_begin;		/* parameters without starting ';' */
-  ptrlong params_end;
-  ptrlong query_begin;		/* query without starting '?' */
-  ptrlong query_end;
-  ptrlong fragment_begin;	/* fragment without starting '#' */
-  ptrlong fragment_end;
-  ptrlong two_slashes;		/* position of end of two slashes, zero if missing */
-} rdf1808_split_t;
-
-#ifndef NDEBUG
-#define CHECK_RDF1808_SPLIT(split,uri_len) \
-  if ((0 != split.schema_begin) || \
-    (split.schema_begin > split.schema_end) || \
-    (split.schema_end > split.netloc_begin) || \
-    (split.netloc_begin > split.netloc_end) || \
-    (split.netloc_end > split.path_begin) || \
-    (split.path_begin > split.path_end) || \
-    (split.path_end > split.params_begin) || \
-    (split.params_begin > split.params_end) || \
-    (split.params_end > split.query_begin) || \
-    (split.query_begin > split.query_end) || \
-    (split.query_end > split.fragment_begin) || \
-    (split.fragment_begin > split.fragment_end) || \
-    (split.fragment_end > (uri_len)) ) \
-    GPF_T1("CHECK_RDF1808_SPLIT failed");
-#else
-#define CHECK_RDF1808_SPLIT(split,uri_len)
-#endif
-
 /*! URI parser according RFC 1808 recommendations
 Fills in array of twelve begin and past-the end indexes of elements */
-static void
+void
 rfc1808_parse_uri (const char *iri, rdf1808_split_t *split_ret)
 {
   const char *delim;
@@ -951,7 +915,7 @@ schema_done:
   CHECK_RDF1808_SPLIT((split_ret[0]), strlen (iri))
 }
 
-static void
+void
 rfc1808_parse_wide_uri (const wchar_t *iri, rdf1808_split_t *split_ret)
 {
   const wchar_t *delim;
@@ -1091,12 +1055,13 @@ bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 /*! URI expander according RFC 1808 recommendations */
-static caddr_t
-bif_rfc1808_expand_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+caddr_t
+rfc1808_expand_uri (caddr_t * qst, caddr_t base_uri, caddr_t rel_uri,
+  ccaddr_t output_cs_name, int do_resolve_like_http_get,
+  ccaddr_t base_string_cs_name, /* Encoding used for base_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
+  ccaddr_t rel_string_cs_name, /* Encoding used for rel_uri IFF it is a narrow string, neither DV_UNAME nor WIDE */
+  caddr_t * err_ret )
 {
-  caddr_t base_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "rfc1808_expand_uri");
-  caddr_t rel_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "rfc1808_expand_uri");
-  ccaddr_t output_cs_name = ((2 < BOX_ELEMENTS(args)) ? bif_string_or_null_arg (qst, args, 2, "rfc1808_expand_uri") : NULL);
   caddr_t output_cs_upcase = output_cs_name ? sqlp_box_upcase (output_cs_name) : NULL;
   const char *buffer_cs_upcase = (((NULL == output_cs_name) || strcmp (output_cs_name, "_WIDE_")) ? output_cs_name : "UTF-8");
   const char *base_cs, *rel_cs;
@@ -1104,35 +1069,36 @@ bif_rfc1808_expand_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *buf_tail = NULL, *buf_prev_tail = NULL;
   dtp_t base_uri_dtp = DV_TYPE_OF (base_uri);
   dtp_t rel_uri_dtp = DV_TYPE_OF (rel_uri);
-  caddr_t buffer = NULL, res = NULL, err = NULL;
+  caddr_t buffer = NULL, res = NULL;
   int base_uri_is_temp = 0;
   int rel_uri_is_temp = 0;
   int buffer_is_temp = 0;
   int res_is_new = 0;
   rdf1808_split_t base_split, rel_split;
+  err_ret[0] = NULL;
   switch (base_uri_dtp)
     {
     case DV_WIDE: base_cs = "_WIDE_"; break;
     case DV_UNAME: base_cs = "UTF-8"; break;
-    case DV_STRING: base_cs = NULL; break;
+    case DV_STRING: base_cs = base_string_cs_name; break;
     default: base_cs = buffer_cs_upcase; break;
     }
   switch (rel_uri_dtp)
     {
     case DV_WIDE: rel_cs = "_WIDE_"; break;
     case DV_UNAME: rel_cs = "UTF-8"; break;
-    case DV_STRING: rel_cs = NULL; break;
+    case DV_STRING: rel_cs = rel_string_cs_name; break;
     default: rel_cs = buffer_cs_upcase; break;
     }
-  if (base_cs != buffer_cs_upcase)
+  if ((base_cs != buffer_cs_upcase) && !((NULL != base_cs) && (NULL != buffer_cs_upcase) && !strcmp (base_cs, buffer_cs_upcase)))
     {
-      base_uri = charset_recode_from_named_to_named (base_uri, base_cs, buffer_cs_upcase, &base_uri_is_temp, &err);
-      if (err) goto res_complete; /* see below */
+      base_uri = charset_recode_from_named_to_named (base_uri, base_cs, buffer_cs_upcase, &base_uri_is_temp, err_ret);
+      if (err_ret[0]) goto res_complete; /* see below */
     }
-  if (rel_cs != buffer_cs_upcase)
+  if ((rel_cs != buffer_cs_upcase) && !((NULL != rel_cs) && (NULL != buffer_cs_upcase) && !strcmp (rel_cs, buffer_cs_upcase)))
     {
-      rel_uri = charset_recode_from_named_to_named (rel_uri, rel_cs, buffer_cs_upcase, &rel_uri_is_temp, &err);
-      if (err) goto res_complete; /* see below */
+      rel_uri = charset_recode_from_named_to_named (rel_uri, rel_cs, buffer_cs_upcase, &rel_uri_is_temp, err_ret);
+      if (err_ret[0]) goto res_complete; /* see below */
     }
   if ((NULL == base_uri) || ('\0' == base_uri[0]))
     {
@@ -1157,6 +1123,35 @@ bif_rfc1808_expand_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       goto buffer_ready; /* see below */
     }
   rfc1808_parse_uri (base_uri, &base_split);
+  if ((0 == base_split.schema_end) && (0 != base_split.path_end) && do_resolve_like_http_get)
+    {
+      caddr_t fixed_base;
+      int prefix_len = ((0 != base_split.two_slashes) ? 5 : 7);
+      buf_len = base_split.fragment_end + prefix_len;
+      fixed_base = dk_alloc_box (base_split.fragment_end + prefix_len, DV_STRING);
+      strcpy (fixed_base, ((0 != base_split.two_slashes) ? "http:" : "http://"));
+      strcpy (fixed_base+prefix_len, base_uri);
+      buffer = rfc1808_expand_uri (qst, fixed_base, rel_uri, buffer_cs_upcase, 0, buffer_cs_upcase, buffer_cs_upcase, err_ret);
+      if (NULL != err_ret[0])
+        {
+          dk_free_box (fixed_base);
+          goto res_complete;
+        }
+      if (buffer == fixed_base)
+        buffer_is_temp = 1;
+      else
+        {
+          dk_free_box (fixed_base);
+          if (buffer == rel_uri)
+            {
+              buffer_is_temp = rel_uri_is_temp;
+              rel_uri_is_temp = 0;
+            }
+          else
+            buffer_is_temp = 1;
+        }
+      goto buffer_ready;
+    }
   buf_len = base_split.fragment_end + rel_split.fragment_end + 20;
   buf_prev_tail = buf_tail = buffer = dk_alloc_box (buf_len, DV_STRING);
   buffer_is_temp = 1;
@@ -1304,12 +1299,13 @@ buffer_ready:
     ((NULL == buffer_cs_upcase) || (NULL == output_cs_upcase) || strcmp(buffer_cs_upcase, output_cs_upcase)) )
     {
       caddr_t boxed_buffer = box_dv_short_nchars (buffer, buf_tail - buffer);
-      res = charset_recode_from_named_to_named (boxed_buffer, buffer_cs_upcase, output_cs_upcase, &res_is_new, &err);
+      res = charset_recode_from_named_to_named (boxed_buffer, buffer_cs_upcase, output_cs_upcase, &res_is_new, err_ret);
       if (res_is_new)
         dk_free_box (boxed_buffer);
       else
         res_is_new = 1;
-      if (err) goto res_complete; /* see below */
+      if (err_ret[0])
+        goto res_complete; /* see below */
     }
   else
     {
@@ -1334,6 +1330,23 @@ res_complete:
     dk_free_box (rel_uri);
   if (buffer_is_temp)
     dk_free_box (buffer);
+  return res;
+}
+;
+
+/*! URI expander according RFC 1808 recommendations */
+static caddr_t
+bif_rfc1808_expand_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t base_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "rfc1808_expand_uri");
+  caddr_t rel_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "rfc1808_expand_uri");
+  ccaddr_t output_cs_name = ((2 < BOX_ELEMENTS(args)) ? bif_string_or_null_arg (qst, args, 2, "rfc1808_expand_uri") : NULL);
+  int resolve_like_http_get = ((3 < BOX_ELEMENTS(args)) ? bif_long_arg (qst, args, 3, "rfc1808_expand_uri") : 0);
+  ccaddr_t base_cs_name = ((4 < BOX_ELEMENTS(args)) ? bif_string_or_null_arg (qst, args, 4, "rfc1808_expand_uri") : NULL);
+  ccaddr_t rel_cs_name = ((5 < BOX_ELEMENTS(args)) ? bif_string_or_null_arg (qst, args, 5, "rfc1808_expand_uri") : NULL);
+  caddr_t err = NULL;
+  caddr_t res = rfc1808_expand_uri (qst, base_uri, rel_uri, output_cs_name, resolve_like_http_get, base_cs_name, rel_cs_name, &err);
+  int res_is_new = ((res != base_uri) && (res != rel_uri));
   if (NULL != err)
     {
       if (res_is_new)
@@ -1344,7 +1357,6 @@ res_complete:
     return res;
   return box_copy (res);
 }
-;
 
 void
 sqlbif2_init (void)

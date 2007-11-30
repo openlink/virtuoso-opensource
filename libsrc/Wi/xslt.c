@@ -176,7 +176,6 @@ xslt_element_start (xparse_ctx_t * xp, caddr_t name)
   memset (xn, 0, sizeof (xp_node_t));
   XP_STRSES_FLUSH (xp);
   xn->xn_xp = xp;
-  xp->xp_current->xn_current_child = xn;
   xn->xn_parent = xp->xp_current;
   xp->xp_current = xn;
   xn->xn_attrs = (caddr_t*) name;
@@ -350,7 +349,6 @@ xslt_element_end (xparse_ctx_t * xp)
     xn_indent_elt (parent, child_list);
   l = (caddr_t *) list_to_array (child_list);
   dk_set_push (&parent->xn_children, (void*) l);
-  parent->xn_current_child = NULL;
   xp->xp_current = parent;
   current->xn_parent = xp->xp_free_list;
   xp->xp_free_list = current;

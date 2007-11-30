@@ -187,7 +187,7 @@ xp_rdfxml_resolved_iid (xparse_ctx_t *xp, const char *avalue, int is_id_attr)
 
 
 caddr_t
-xp_rdfxml_bnode_iid (xparse_ctx_t *xp, const char *avalue)
+xp_rdfxml_bnode_iid (xparse_ctx_t *xp, caddr_t avalue)
 {
   caddr_t res;
   rdfxml_dbg_printf (("\nxp_rdfxml_bnode_iid (\"%s\")", avalue));
@@ -208,7 +208,7 @@ xp_rdfxml_triple (xparse_ctx_t *xp, caddr_t s, caddr_t p, caddr_t o)
   dk_check_tree (o);
 #endif
   rdfxml_dbg_printf (("\nxp_rdfxml_triple (\"%s\", \"%s\", \"%s\")", s, p, o));
-  tf_triple (xp->xp_tf, box_copy (s), box_copy (p), box_copy (o));
+  tf_triple (xp->xp_tf, s, p, o);
 }
 
 
@@ -223,7 +223,7 @@ xp_rdfxml_triple_l (xparse_ctx_t *xp, caddr_t s, caddr_t p, caddr_t o, caddr_t d
   dk_check_tree (lang);
 #endif
   rdfxml_dbg_printf (("\nxp_rdfxml_triple (\"%s\", \"%s\", \"%s\", \"%s\", \"%s\")", s, p, o, dt, lang));
-  tf_triple_l (xp->xp_tf, box_copy (s), box_copy (p), box_copy_tree (o), box_copy (dt), box_copy (lang));
+  tf_triple_l (xp->xp_tf, s, p, o, dt, lang);
 }
 
 
@@ -259,7 +259,6 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
     xp->xp_free_list = xn->xn_parent;
   memset (xn, 0, sizeof (xp_node_t));
   xn->xn_xp = xp;
-  /*xp->xp_current->xn_current_child = xn;*/
   xn->xn_parent = xp->xp_current;
   xp->xp_current = xn;
 #ifdef DEBUG
@@ -310,6 +309,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
               memcpy (full_element_name, tmp_nsuri, l1);
               strcpy (full_element_name + l1, tmp_local);
             }
+          dk_free_tree (inner->xrl_predicate);
           inner->xrl_predicate = full_element_name;
           inner->xrl_parsetype = XRL_PARSETYPE_RES_OR_LIT;
         }
@@ -349,6 +349,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
       strcpy (full_element_name + l1, tmp_local);
       if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
         {
+          dk_free_tree (inner->xrl_predicate);
           inner->xrl_predicate = full_element_name;
           inner->xrl_parsetype = XRL_PARSETYPE_RES_OR_LIT;
         }
@@ -409,7 +410,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             }
           else if (!strcmp (tmp_local, "nodeID"))
             {
-              caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, avalue);
+              caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, box_dv_short_string (avalue));
               XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:nodeID' conflicts with other attribute that set the subject");
               if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
                 {
@@ -573,6 +574,7 @@ push_inner_attr_prop:
           xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, inner->xrl_subject);
           xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
         }
+      dk_free_tree (inner->xrl_predicate);
       inner->xrl_predicate = NULL;
     }
 }
@@ -606,10 +608,11 @@ xp_rdfxml_element_end (void *userdata, const char * name)
           caddr_t tail = uname_rdf_ns_uri_nil;
           while (NULL != inner->xrl_seq_items)
             {
-              caddr_t val = dk_set_pop (&(inner->xrl_seq_items));
+              caddr_t val = (caddr_t)(inner->xrl_seq_items->data);
               caddr_t node = xp_rdfxml_bnode_iid (xp, NULL);
               xp_rdfxml_triple (xp, node, uname_rdf_ns_uri_first, val);
               xp_rdfxml_triple (xp, node, uname_rdf_ns_uri_rest, tail);
+              dk_free_tree (dk_set_pop (&(inner->xrl_seq_items)));
               tail = node;
             }
           xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, tail);
@@ -777,7 +780,7 @@ caddr_t default_rdf_dtd_config = NULL;
 void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   int omit_top_rdf, caddr_t base_uri, caddr_t graph_uri,
-  ccaddr_t *stmt_texts, caddr_t app_env,
+  ccaddr_t *cbk_names, caddr_t app_env,
   const char *enc, lang_handler_t *lh
    /*, caddr_t dtd_config, dtd_t **ret_dtd,
    id_hash_t **ret_id_cache, xml_ns_2dict_t *ret_ns_2dict*/ )
@@ -851,10 +854,11 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   tf->tf_qi = qi;
   tf->tf_graph_uri = graph_uri;
   tf->tf_app_env = app_env;
+  tf->tf_creator = "rdf_load_rdfxml";
   context.xp_tf = tf;
   QR_RESET_CTX
     {
-      tf_set_stmt_texts (tf, stmt_texts, NULL);
+      tf_set_cbk_names (tf, cbk_names);
       tf->tf_graph_iid = tf_get_iid (tf, tf->tf_graph_uri);
       tf_commit (tf);
       tf_new_graph (tf);
