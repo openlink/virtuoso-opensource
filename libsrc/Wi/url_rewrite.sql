@@ -70,10 +70,14 @@ create table DB.DBA.HTTP_VARIANT_MAP (
     VM_ENC		varchar,
     VM_DESCRIPTION	long varchar,
     VM_ALGO		int default 0,
+    VM_CONTENT_LOCATION_HOOK	varchar,
     primary key (VM_RULELIST, VM_URI, VM_VARIANT_URI))
 create unique index HTTP_VARIANT_MAP_ID on DB.DBA.HTTP_VARIANT_MAP (VM_ID)
 ;
 
+--!AFTER
+alter table DB.DBA.HTTP_VARIANT_MAP add VM_CONTENT_LOCATION_HOOK  varchar
+;
 
 create procedure DB.DBA.URLREWRITE_CREATE_RULE (
   in rule_type int,
@@ -828,7 +832,7 @@ create procedure DB.DBA.URLREWRITE_TRY_INVERSE (
 create procedure DB.DBA.HTTP_VARIANT_ADD (in rulelist_uri varchar,
 	in uri varchar, in variant_uri varchar, in mime varchar,
 	in qs float := 1.0, in descrition varchar := null,
-    	in lang varchar := null, in enc varchar := null, in algo int := 1)
+    	in lang varchar := null, in enc varchar := null, in algo int := 1, in location_hook varchar := null)
 {
   declare tmp any;
   declare mime_qs, lang_qs, enc_qs float;
@@ -861,8 +865,8 @@ create procedure DB.DBA.HTTP_VARIANT_ADD (in rulelist_uri varchar,
   else
     enc := null;
   insert replacing DB.DBA.HTTP_VARIANT_MAP (VM_RULELIST,VM_URI,VM_VARIANT_URI,VM_QS, VM_TYPE,
-      VM_LANG,VM_ENC,VM_DESCRIPTION,VM_ALGO)
-      values (rulelist_uri, uri, variant_uri, qs, mime, lang, enc, descrition, algo);
+      VM_LANG,VM_ENC,VM_DESCRIPTION,VM_ALGO, VM_CONTENT_LOCATION_HOOK)
+      values (rulelist_uri, uri, variant_uri, qs, mime, lang, enc, descrition, algo, location_hook);
 }
 ;
 
@@ -891,7 +895,7 @@ create procedure DB.DBA.URLREWRITE_CALC_QS (in accept varchar, in s_accept varch
   l := length (arr);
   for (i := 0; i < l; i := i + 2)
     {
-      itm := arr[i];
+      itm := trim(arr[i]);
 --      dbg_obj_print (s_accept, itm);
       if (s_accept like itm)
 	{
@@ -977,8 +981,9 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   declare tmp, pos, hf, list_body any;
   declare qs1, qs2, qs3, qs4 float;
   declare best_q, curr float;
-  declare best_variant, algo, list varchar;
-  declare vlist, trans, guess, do_cn int;
+  declare best_variant, algo, list, best_ct, hook varchar;
+  declare vlist, trans, guess, do_cn, best_id int;
+  declare ct, cl any;
 
   if (path like '%/') -- a directory
     return 0;
@@ -1019,9 +1024,11 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
 
 --  dbg_obj_print (algo, mime);
   best_q := 0;
+  best_ct := null;
   list := '';
   list_body := '';
-  for select VM_URI, VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO
+  best_id := 0;
+  for select VM_ID, VM_URI, VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO, VM_CONTENT_LOCATION_HOOK
   from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_uri and regexp_match (VM_URI, rel_uri) is not null do
     {
        declare alang, aenc, variant varchar;
@@ -1035,10 +1042,15 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
        qs3 := DB.DBA.URLREWRITE_CALC_QS (cset, VM_ENC);
 --       dbg_obj_print (VM_VARIANT_URI, ' ', qs1, ' ', qs2, ' ', qs3);
        curr := VM_QS * qs1 * qs2 * qs3;
+       if (registry_get ('__debug_url_rewrite') in ('1', '2'))
+	 dbg_printf ('tcn trying: %s qs1=%f qs2=%f qs3=%f qs=%f', VM_VARIANT_URI, qs1, qs2, qs3, curr);
        if (curr > best_q)
 	 {
 	   best_q := curr;
+	   best_ct := VM_TYPE;
 	   best_variant := sprintf ('%U', variant);
+	   best_id := VM_ID;
+	   hook := VM_CONTENT_LOCATION_HOOK;
 	 }
        if (not do_cn)
          {
@@ -1048,16 +1060,36 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
 	     alang := sprintf (' {language %s}', VM_LANG);
 	   if (VM_ENC is not null)
 	     aenc := sprintf (' {charset %s}', VM_ENC);
-	   list := list || sprintf ('{"%s" %f {type %s}%s%s}, ', variant, VM_QS, VM_TYPE, alang, aenc);
+	   cl := variant;
+	   if (VM_CONTENT_LOCATION_HOOK is not null and __proc_exists (VM_CONTENT_LOCATION_HOOK) is not null)
+	     cl := call (VM_CONTENT_LOCATION_HOOK) (VM_ID, variant);
+	   list := list || sprintf ('{"%s" %f {type %s}%s%s}, ', cl, VM_QS, VM_TYPE, alang, aenc);
 	   list_body := list_body || sprintf ('<li><a href="%V">%V</a>, type %V</li>\n',
-	   	variant, coalesce (VM_DESCRIPTION, variant), VM_TYPE);
+	   	cl, coalesce (VM_DESCRIPTION, cl), VM_TYPE);
 	 }
        next_variant:;
     }
   if (do_cn and best_q > 0)
     {
-      http_headers := sprintf ('TCN: choice\r\nVary: negotiate,accept\r\nContent-Location: %s\r\n', best_variant);
+      ct := '';
+      if (best_ct is not null)
+	{
+	  if (best_q > 0.999)
+	    ct := sprintf ('Content-Type: %s\r\n', best_ct);
+	  else
+	    {
+	      declare q_str varchar;
+	      q_str := rtrim (sprintf ('%f', best_q), '0');
+	      ct := sprintf ('Content-Type: %s; qs=%s\r\n', best_ct, q_str);
+	    }
+	}
+      cl := best_variant;
+      if (hook is not null and __proc_exists (hook) is not null)
+	cl := call (hook) (best_id, best_variant);
+      http_headers := sprintf ('TCN: choice\r\nVary: negotiate,accept\r\nContent-Location: %s\r\n%s', cl, ct);
       path := WS.WS.EXPAND_URL (path, best_variant);
+      if (registry_get ('__debug_url_rewrite') in ('1', '2'))
+	dbg_printf ('TCN return: %s', path);
       return 1;
     }
   if (not do_cn and list <> '')
@@ -1066,6 +1098,8 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
       http_code := 300;
       if (is_http_ctx ())
         DB.DBA.HTTP_URLREWRITE_TCN_LIST (list_body);
+      if (registry_get ('__debug_url_rewrite') in ('1', '2'))
+	dbg_printf ('TCN list');
       return 1;
     }
   return 0;
@@ -1123,6 +1157,12 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   	long_url, params, rule_iri, target_vhost_pkey, http_redir, http_headers, lines);
   if (registry_get ('__debug_url_rewrite') in ('1', '2') and length (long_url))
     dbg_printf ('*** RETURN rule=[%s] URL=[%s]', rule_iri, long_url);
+  if (not tcn_rc and length (long_url))
+    {
+      tcn_rc := DB.DBA.URLREWRITE_APPLY_TCN (rule_list, long_url, lines, http_tcn_code, http_tcn_headers);
+      if (registry_get ('__debug_url_rewrite') in ('1', '2') and tcn_rc)
+        dbg_printf ('*** TCN RETURN URL=[%s]', long_url);
+    }
 
   if (http_redir is null or http_redir = 0)
     http_redir := http_tcn_code;
