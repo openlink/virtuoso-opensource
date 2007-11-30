@@ -21,6 +21,7 @@
 --  
 --  
 
+DB.DBA.exec_no_error('drop index XT_FILE');
 DB.DBA.exec_no_error('drop table XML_TEXT_XML_TEXT_WORDS');
 DB.DBA.exec_no_error('drop table XML_TEXT');
 
