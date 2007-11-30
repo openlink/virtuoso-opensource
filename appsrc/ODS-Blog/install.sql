@@ -4680,6 +4680,18 @@ BLOG_SET_WA_OPTS (in uname varchar, inout user_opts any, inout data any, inout _
 
   --opts := BLOG.DBA.BLOG2_SET_OPTION('Biography', opts, data[34]);
 
+  if (__proc_exists ('DB.DBA.WA_USER_SVC_KEYS') is not null and isarray (opts))
+    {
+      declare keys, uid any;
+      uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+      keys := DB.DBA.WA_USER_SVC_KEYS (uid);
+      for (declare i, l int, i := 0, l := length (keys); i < l; i := i + 2)
+      {
+	opts := BLOG.DBA.BLOG2_SET_OPTION (keys[i], opts, keys[i+1]);
+      }
+    }
+  else
+    {
   opts := BLOG.DBA.BLOG2_SET_OPTION('GoogleKey', opts, get_keyword ('GoogleKey', user_opts));
   opts := BLOG.DBA.BLOG2_SET_OPTION('GoogleAdsenseID', opts, get_keyword ('GoogleAdsenseID', user_opts));
   opts := BLOG.DBA.BLOG2_SET_OPTION('AmazonKey', opts, get_keyword ('AmazonKey', user_opts));
@@ -4687,6 +4699,7 @@ BLOG_SET_WA_OPTS (in uname varchar, inout user_opts any, inout data any, inout _
   opts := BLOG.DBA.BLOG2_SET_OPTION('EbayID', opts, get_keyword ('EbayID', user_opts));
   opts := BLOG.DBA.BLOG2_SET_OPTION('AssociateID', opts, get_keyword ('AssociateID', user_opts));
   opts := BLOG.DBA.BLOG2_SET_OPTION('Vendor', opts, get_keyword ('Vendor', user_opts));
+    }
 
   photo := data[37];
   audio := data[43];
