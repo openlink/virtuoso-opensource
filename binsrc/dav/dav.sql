@@ -2132,7 +2132,14 @@ again:
       if (cont_type <> '' and cont_type <> 'sql/xml')
 	{
 	  if (cont_type <> 'xml/view' and cont_type <> 'xml/persistent-view')
-	    http_header (http_header_get () || concat ('Content-Type: ', cont_type, '\r\nETag: "',server_etag,'"\r\n'));
+	    {
+	      declare hdr_str any;
+	      hdr_str := http_header_get ();
+	      hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
+	      if (strcasestr (hdr_str, 'Content-Type:') is null)
+		hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
+	      http_header (hdr_str);
+	    }
 	  else
 	    http_header (concat ('Content-Type: text/xml\r\nETag: "',server_etag,'"\r\n'));
 	}
