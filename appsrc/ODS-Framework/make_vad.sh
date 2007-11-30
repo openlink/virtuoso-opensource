@@ -32,7 +32,7 @@ TPORT=${TPORT-8440}
 PORT=${PORT-1940}
 ISQL=${ISQL-isql}
 DSN="$HOST:$PORT"
-NEED_VERSION=05.00.3022
+NEED_VERSION=05.00.3023
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
 then

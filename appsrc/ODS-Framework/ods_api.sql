@@ -61,10 +61,13 @@ create procedure OdsIriDescribe (in iri varchar, in accept varchar := 'applicati
 --  accept := 'text/rdf+n3';
   if (stat = '00000')
     {
+      declare http_hdr varchar;
+      http_hdr := http_header_get ();
       ses := string_output ();
       if (accept <> 'text/rdf+n3')
 	{
-	  http_header ('Content-Type: application/rdf+xml; charset=UTF-8\r\n');
+	  if (strcasestr (http_hdr, 'Content-Type:') is null)
+	    http_header (http_hdr || 'Content-Type: application/rdf+xml; charset=UTF-8\r\n');
 	  sioc..rdf_head (ses);
 	  if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])))
 	    {
@@ -74,7 +77,8 @@ create procedure OdsIriDescribe (in iri varchar, in accept varchar := 'applicati
 	}
       else
 	{
-	  http_header ('Content-Type: text/rdf+n3; charset=UTF-8\r\n');
+	  if (strcasestr (http_hdr, 'Content-Type:') is null)
+	    http_header (http_hdr || 'Content-Type: text/rdf+n3; charset=UTF-8\r\n');
 	  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 0);
 	}
     }

@@ -2605,7 +2605,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   declare ses, dociri any;
   declare triples any;
   declare ss, sa_dict, lim, offs any;
-  declare pers_iri varchar;
+  declare pers_iri, http_hdr varchar;
 
   -- dbg_obj_print (u_name,wai_name,inst_type,postid);
   set http_charset='utf-8';
@@ -2631,7 +2631,9 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
   lim := coalesce (DB.DBA.USER_GET_OPTION (u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
   offs := coalesce (p, 0) * lim;
 
-  http_header (sprintf ('Content-Type: %s; charset=UTF-8\r\n', accept));
+  http_hdr := http_header_get ();
+  if (strcasestr (http_hdr, 'Content-Type:') is null)
+    http_header (http_hdr || sprintf ('Content-Type: %s; charset=UTF-8\r\n', accept));
 
   if (fmt = 'rdf')
     rdf_head (ses);

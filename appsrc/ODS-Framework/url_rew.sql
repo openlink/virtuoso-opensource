@@ -333,14 +333,32 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_space_html', 1,
 --DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');
 --DB.DBA.VHOST_DEFINE (lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>1, vsp_user=>'dba',
 --    opts=>vector ('url_rewrite', 'ods_rule_tcn_list'));
---delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'ods_rule_tcn_list';
---DB.DBA.HTTP_VARIANT_ADD ('ods_rule_tcn_list', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241).rdf', 'application/rdf+xml', 0.95);
---DB.DBA.HTTP_VARIANT_ADD ('ods_rule_tcn_list', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241).n3', 'text/rdf+n3', 0.80);
+
+create procedure DB.DBA.ODS_RDF_URI_LOC (in id int, in variant varchar)
+{
+  declare tmp, arr, r_id, iri any;
+  tmp := split_and_decode (variant);
+  tmp := tmp[0];
+  arr := sprintf_inverse (tmp, '%s (%d).%s', 1);
+  r_id := iri_id_from_num (arr [1]);
+  iri := id_to_iri (r_id);
+  --dbg_obj_print (iri);
+  if (iri like 'http://%/dataspace/person/%')
+    return 'about.'||arr[2];
+  return 'sioc.'||arr[2];
+}
+;
+
+delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'ods_rule_list1';
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241).rdf', 'application/rdf+xml', 0.95,
+    location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'iid \\(([0-9]*)\\)\x24', 'iid (\x241).n3', 'text/rdf+n3', 0.80,
+    location_hook=>'DB.DBA.ODS_RDF_URI_LOC');
 
 -- RDF data rules - these was returning 303
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
     '/dataspace/([^\\?]*)', vector('path'), 1,
-    '/ods/data/rdf/%U.%U', vector('path', '*accept*'),
+    '/ods/data/rdf/%U', vector('path'),
     'DB.DBA.ODS_DET_REF',
     '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)',
     2,
