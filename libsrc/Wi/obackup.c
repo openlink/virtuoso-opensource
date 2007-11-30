@@ -704,8 +704,7 @@ db_backup_pages (ol_backup_context_t * backup_ctx, dp_addr_t start_dp, dp_addr_t
     start_dp = 1;
   end_page = backup_ctx->octx_last_page;
 
-  log_info("Starting online backup from page %ld to %ld",
-	   start_dp, end_page);
+  log_info("Starting online backup from page %ld to %ld", start_dp, end_page);
 
   for (page_no = start_dp; page_no < end_page; page_no++)
     {
@@ -714,8 +713,11 @@ db_backup_pages (ol_backup_context_t * backup_ctx, dp_addr_t start_dp, dp_addr_t
       if (is_cp_remap_page (page_no, storage))
 	continue;
 
+#ifdef DEBUG
       if (0 == page_no%10000)
 	log_info("Backing up page %ld", page_no);
+#endif
+
       page = db_backupable_page (storage, backup_ctx->octx_cpt_remap_r, page_no, backup_ctx);
 
       if (page != -1)
@@ -857,8 +859,11 @@ try_to_restore_backup_context (ol_backup_context_t* ctx)
       ctx->octx_wr_bytes = bp_ctx.db_bp_wr_bytes;
 
       ts_str = format_timestamp (&ctx->octx_timestamp);
+
+#ifdef DEBUG
       log_info ("Found backup info - prefix[%s], ts[%s], num[%ld], diridx[%ld]",
 		ctx->octx_file_prefix, ts_str, ctx->octx_num, ctx->octx_curr_dir);
+#endif
       dk_free_box (ts_str);
 
       return 1;
@@ -1074,8 +1079,10 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   store_backup_context (ctx);
   CHECK_ERROR (ctx, error);
 
+#ifdef DEBUG
   log_info ("Backed up pages: [%ld]", ctx->octx_page_count);
   log_info ("Log = %s", wi_inst.wi_master->dbs_log_name);
+#endif
 
   LEAVE_CPT(qi->qi_trx);
 
@@ -1888,7 +1895,7 @@ char* backup_sched_get_info =
 "create procedure \"BackupSchedInfo\" () {\n"
 "  for select SE_START, SE_INTERVAL, SE_LAST_COMPLETED, SE_SQL\n"
 "   from sys_scheduled_event\n"
-"   where se_name = \'Backup Scheduled Task\'\n"
+"   where se_name = DB.DBA.BACKUP_SCHED_NAME ()\n"
 "  do {\n"
 "   return vector (SE_START, SE_INTERVAL, SE_LAST_COMPLETED, SE_SQL);\n"
 "  }\n"
@@ -1928,6 +1935,8 @@ char * backup_proc1 =
 "    backup_online (prefix, max_pages);\n"
 "  else\n"
 "    backup_online (prefix, max_pages, 0, patha);\n"
+"  if (__proc_exists ('DB.DBA.BACKUP_COMPLETED') is not null)\n"
+"    DB.DBA.BACKUP_COMPLETED ();\n"
 "  update DB.DBA.SYS_SCHEDULED_EVENT set\n"
 "    SE_SQL = sprintf ('DB.DBA.BACKUP_MAKE (\\\'%s\\\', %d, 0)', prefix, max_pages)\n"
 "   where SE_NAME = DB.DBA.BACKUP_SCHED_NAME ();\n"
