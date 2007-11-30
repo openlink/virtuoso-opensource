@@ -1004,7 +1004,10 @@ iSPARQL.QBE = function () {
 				if (JSONData.results.bindings.length > 0) {
 					var objs = JSONData.results.bindings;
 					for (var i = 0;i < objs.length; i++) { /* for each result row */
-						var uri = objs[i].g.value;
+						var g = objs[i].g;
+						if(!g) { continue; };
+
+						var uri = g.value;
 						var parts = self.getPrefixParts(uri);
 						if (!parts) { continue; }
 						var label = parts[2] || parts[0];
