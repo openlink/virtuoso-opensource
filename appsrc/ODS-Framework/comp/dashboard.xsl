@@ -1426,7 +1426,7 @@
             <a id="ds_dataspaces" href="javascript: void(0);" title="Data Spaces" class="noapp">Data Spaces</a>
           </li>
           <li>
-            <a id="ds_webservices" href="javascript: void(0);" title="Web Services Endponts" class="noapp">Web Services Endponts</a>
+            <a id="ds_webservices" href="javascript: void(0);" title="Web Services Endpoints" class="noapp">Web Services Endpoints</a>
           </li>
         </ul>
       </div> <!-- content_pane -->
@@ -1580,7 +1580,7 @@
 
           // Web Services Links
           var app = $('ds_webservices');
-          options.title = "Web Services Endponts";
+          options.title = "Web Services Endpoints";
           options.content = generateWSContents;
           OAT.Anchor.assign(app.id, options);
         }

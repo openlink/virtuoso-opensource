@@ -32,7 +32,7 @@
         <xsl:when test="@mode='private'">
           <v:expression>
             <![CDATA[
-              select WAI_ID, WAI_DESCRIPTION, WAI_INST, WAI_NAME from WA_INSTANCE
+              select WAI_ID, WAI_DESCRIPTION, WAI_INST, WAI_NAME, WAI_TYPE_NAME from WA_INSTANCE
               where (not WAI_MEMBER_MODEL = 1 and WAI_IS_PUBLIC = 1) or (? = http_dav_uid())
               order by lower (WAI_DESCRIPTION)
             ]]>
@@ -42,7 +42,7 @@
         <xsl:otherwise>
           <v:expression>
             <![CDATA[
-              select WAI_ID, WAI_DESCRIPTION, WAI_INST, WAI_NAME from WA_INSTANCE where WAI_IS_PUBLIC
+              select WAI_ID, WAI_DESCRIPTION, WAI_INST, WAI_NAME, WAI_TYPE_NAME from WA_INSTANCE where WAI_IS_PUBLIC
               order by lower (WAI_DESCRIPTION)
             ]]>
           </v:expression>
@@ -68,30 +68,14 @@
           <vm:template type="browse">
              <tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
               <td>
-                <v:button style="url" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" action="simple" name="service_enter">
+                <v:url name="ddd" value="--''" format="%s" url="#">
                   <v:after-data-bind>
-                    <v:script>
                       <![CDATA[
-                        declare _name any;
-                        _name := (control.vc_parent as vspx_row_template).te_rowset[3];
-                        control.ufl_value := _name;
+                      control.vu_url := SIOC..forum_iri ((control.vc_parent as vspx_row_template).te_rowset[4], (control.vc_parent as vspx_row_template).te_rowset[3]) || sprintf ('?sid=%s&realm=%s', self.sid, self.realm);
+                      control.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[3];
                       ]]>
-                    </v:script>
                   </v:after-data-bind>
-                  <v:on-post>
-                    <v:script>
-                    <![CDATA[
-                      declare h, id, ss any;
-                      declare inst web_app;
-                      inst := (control.vc_parent as vspx_row_template).te_rowset[2];
-                      ss := null;
-                      h := udt_implements_method(inst, 'wa_front_page');
-                      id := call (h) (inst, ss);
-                      return;
-                    ]]>
-                    </v:script>
-                  </v:on-post>
-                </v:button>
+                </v:url>
               </td>
               <td>
                 <v:label name="service_description" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>

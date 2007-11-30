@@ -73,7 +73,8 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_prj)
 				      />
 			      </td>
 			      <td>
-				  <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[3]"/>
+				  <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[3]"
+				      format="%.120s" render-only="1"/>
 
 			      </td>
 			      <td>

@@ -743,7 +743,7 @@ create procedure sioc_user_project (in graph_iri varchar, in iri varchar, in  na
 {
   declare prj_iri, pers_iri any;
 
-  prj_iri := person_prj_iri (iri, nam);
+  prj_iri := person_prj_iri (iri, sprintf ('%U', nam));
   pers_iri := person_iri (iri);
   delete_quad_s_or_o (graph_iri, prj_iri, prj_iri);
 
@@ -1329,11 +1329,12 @@ create procedure fill_ods_sioc (in doall int := 0)
 	}
       else -- sioc:User
 	{
-	  declare u_site_iri any;
+	  declare u_site_iri, person_iri any;
 	  iri := user_iri (u_id);
 	  if (iri is not null)
 	    {
 	      sioc_user (graph_iri, iri, U_NAME, U_E_MAIL, U_FULL_NAME);
+	      person_iri := person_iri (iri);
 	      u_site_iri := user_space_iri (U_NAME);
 	      -- it should be one row.
 	      for select WAUI_VISIBLE, WAUI_FIRST_NAME, WAUI_LAST_NAME, WAUI_TITLE,
@@ -1380,7 +1381,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 			);
 		  kwd := DB.DBA.WA_USER_TAG_GET (U_NAME);
 		  if (length (kwd))
-		    DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri (iri), bio_iri ('keywords'), kwd);
+		    DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, bio_iri ('keywords'), kwd);
 		  for select WUP_NAME, WUP_URL, WUP_DESC from DB.DBA.WA_USER_PROJECTS where WUP_U_ID = U_ID do
 		    {
 		      sioc_user_project (graph_iri, iri, WUP_NAME, WUP_URL, WUP_DESC);
@@ -1420,6 +1421,14 @@ create procedure fill_ods_sioc (in doall int := 0)
 		      _wai_type := 'SocialNetwork';
 		      goto do_social;
 		    }
+		}
+	      for select US_IRI, US_KEY from DB.DBA.WA_USER_SVC where US_U_ID = U_ID and length (US_IRI) do
+		{
+		  declare sas_iri any;
+		  sas_iri := sprintf ('http://%s/proxy?url=%U&force=rdf', get_cname(), US_IRI);
+		  if (length (US_KEY))
+		    sas_iri := sas_iri || sprintf ('&login=%U', U_NAME);
+		  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
 		}
 		}
 	    }
@@ -2223,6 +2232,81 @@ create trigger sn_related_SIOC_D before delete on DB.DBA.sn_related referencing 
   delete_quad_s_p_o (graph_iri, _to_iri, foaf_iri ('knows'), _from_iri);
   return;
 };
+
+create trigger WA_USER_SVC_I after insert on DB.DBA.WA_USER_SVC referencing new as N
+{
+  declare sas_iri, graph_iri, person_iri, iri, uname any;
+
+  if (not length (N.US_IRI))
+    return;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = N.US_U_ID);
+  iri := user_obj_iri (uname);
+  person_iri := person_iri (iri);
+  sas_iri := sprintf ('http://%s/proxy?url=%U&force=rdf', get_cname(), N.US_IRI);
+  if (length (N.US_KEY))
+    sas_iri := sas_iri || sprintf ('&login=%U', uname);
+  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
+}
+;
+
+create trigger WA_USER_SVC_U after update on DB.DBA.WA_USER_SVC referencing old as O, new as N
+{
+  declare sas_iri, graph_iri, person_iri, iri, uname any;
+
+  if (not length (N.US_IRI))
+    return;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = N.US_U_ID);
+  iri := user_obj_iri (uname);
+  person_iri := person_iri (iri);
+
+  if (length (O.US_IRI))
+    {
+      sas_iri := sprintf ('http://%s/proxy?url=%U&force=rdf', get_cname(), O.US_IRI);
+      if (length (O.US_KEY))
+	sas_iri := sas_iri || sprintf ('&login=%U', uname);
+	delete_quad_s_p_o (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
+    }
+
+  sas_iri := sprintf ('http://%s/proxy?url=%U&force=rdf', get_cname(), N.US_IRI);
+  if (length (N.US_KEY))
+    sas_iri := sas_iri || sprintf ('&login=%U', uname);
+  DB.DBA.RDF_QUAD_URI (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
+}
+;
+
+create trigger WA_USER_SVC_D after delete on DB.DBA.WA_USER_SVC referencing old as O
+{
+  declare sas_iri, graph_iri, person_iri, iri, uname any;
+
+  if (not length (O.US_IRI))
+    return;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = O.US_U_ID);
+  iri := user_obj_iri (uname);
+  person_iri := person_iri (iri);
+  sas_iri := sprintf ('http://%s/proxy?url=%U&force=rdf', get_cname(), O.US_IRI);
+  if (length (O.US_KEY))
+    sas_iri := sas_iri || sprintf ('&login=%U', uname);
+  delete_quad_s_p_o (graph_iri, person_iri, owl_iri ('sameAs'), sas_iri);
+}
+;
 
 create function std_pref (in iri varchar, in rev int := 0)
 {

@@ -47,7 +47,7 @@
 		  self.set_page_error (__SQL_MESSAGE);
                   return;
                 };
-                self.dss.ds_sql := 'select WAI_ID, WAI_DESCRIPTION, WAI_INST, WAI_NAME from WA_INSTANCE where WAI_IS_PUBLIC and contains (WAI_DESCRIPTION, ?) order by lower (WAI_DESCRIPTION)';
+                self.dss.ds_sql := 'select WAI_ID, WAI_DESCRIPTION, WAI_INST, WAI_NAME, WAI_TYPE_NAME from WA_INSTANCE where WAI_IS_PUBLIC and contains (WAI_DESCRIPTION, ?) order by lower (WAI_DESCRIPTION)';
                 self.dss.ds_parameters := vector ();
                 self.dss.add_parameter (ss);
                 self.dss.vc_data_bind (e);

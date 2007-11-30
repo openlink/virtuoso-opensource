@@ -673,6 +673,16 @@ wa_exec_no_error_log(
 )
 ;
 
+db.dba.wa_exec_ddl ('create table WA_USER_SVC (
+      US_ID int identity,
+      US_U_ID int,
+      US_SVC  varchar,
+      US_IRI  varchar,
+      US_KEY  varchar,
+      primary key (US_U_ID, US_SVC)
+      )'
+);
+
 create method wa_id_string () for web_app
 {
   return '';
@@ -6033,4 +6043,38 @@ create procedure ODS.WA.wa_order_vector (
   }
   return T;
 }
+;
+
+create procedure WA_USER_SVC_KEYS (in uid int)
+{
+  return (select VECTOR_AGG (US_SVC, US_KEY) from WA_USER_SVC where US_U_ID = uid and length (US_KEY));
+}
+;
+
+create procedure WA_UPGRADE_USER_SVC ()
+{
+  declare keys any;
+  if (registry_get ('__WA_UPGRADE_USER_SVC') = 'done')
+    return;
+  keys := vector ('AmazonKey','AmazonID','EbayID','FBKey','FlickrKey','GoogleAdsenseID','GoogleKey');
+  for select U_ID, U_OPTS from SYS_USERS where U_IS_ROLE = 0 and U_DAV_ENABLE = 1 do
+    {
+      declare opts any;
+      opts := deserialize (blob_to_string (U_OPTS));
+      if (length (opts))
+	{
+	  foreach (any k in keys) do
+	    {
+	      declare v any;
+	      v := get_keyword (k, opts);
+	      if (length (v))
+		insert soft WA_USER_SVC (US_U_ID, US_SVC, US_KEY) values (U_ID, k, v);
+	    }
+	}
+    }
+  registry_set ('__WA_UPGRADE_USER_SVC', 'done');
+}
+;
+
+WA_UPGRADE_USER_SVC ()
 ;
