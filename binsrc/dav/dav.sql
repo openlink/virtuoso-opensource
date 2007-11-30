@@ -2369,7 +2369,7 @@ create procedure WS.WS.POST (in path varchar, inout params varchar, in lines var
 create procedure WS.WS.SPARQL_QUERY_POST (in path varchar, inout ses varchar)
 {
   declare def_gr, full_qr, qr, cname any;
-  declare stat, msg any;
+  declare stat, msg, meta, data any;
   ses := http_body_read ();
   qr := string_output_string (ses);
   cname := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
@@ -2382,13 +2382,25 @@ create procedure WS.WS.SPARQL_QUERY_POST (in path varchar, inout ses varchar)
       cname := tmp;
     }
   def_gr := sprintf ('http://%s%U', cname, path);
+  if (lower (qr) not like 'construct %' and lower (qr) not like 'describe %')
   full_qr := sprintf ('SPARQL define input:default-graph-uri <%s> ', def_gr);
+  else
+    full_qr := 'SPARQL ';
   full_qr := full_qr || qr;
---  dbg_obj_print (full_qr);
   stat := '00000';
-  exec (full_qr, stat, msg);
+  exec (full_qr, stat, msg, vector (), 0, meta, data);
   if (stat <> '00000')
     signal (stat, msg);
+  if (length (data) > 0 and length (data[0]) and __tag (data[0][0]) = 214)
+    {
+      declare dict, triples any;
+      dict := data[0][0];
+      ses := string_output ();
+      triples := dict_list_keys (dict, 1);
+      DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+      ses := string_output_string (ses);
+      DB.DBA.TTLP (ses, '', def_gr);
+    }
   ses := sprintf ('CONSTRUCT { ?s ?p ?o } FROM <%s> WHERE { ?s ?p ?o }', def_gr);
 }
 ;
