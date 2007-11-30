@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY stock "http://xbrlontology.com/ontology/finance/stock_market#">
+<!ENTITY ifrs-gp 'http://rhizomik.net/ontologies/2007/11/ifrs-gp-2005-05-15.owl#'>
+<!ENTITY ifrs-gp-typ 'http://rhizomik.net/ontologies/2007/11/ifrs-gp-types-2005-05-15.owl#'>
+<!ENTITY link 'http://rhizomik.net/ontologies/2007/11/xbrl-linkbase-2003-12-31.owl#'>
+<!ENTITY xbrli 'http://rhizomik.net/ontologies/2007/11/xbrl-instance-2003-12-31.owl#'>
+<!ENTITY xlink 'http://rhizomik.net/ontologies/2007/11/xlink-2003-12-31.owl#'>
+<!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
+]>
+
 <!--
  -
  -  $Id$
@@ -34,9 +47,6 @@
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
   xmlns:owl="http://www.w3.org/2002/07/owl#"
-  xmlns:link="http://www.xbrl.org/2003/linkbase#"
-  xmlns:xlink="http://www.w3.org/1999/xlink#"
-  xmlns:xbrli="http://www.xbrl.org/2003/instance#"
   xmlns:mem="http://www.microsoft.com/xbrl/mem#"
   xmlns:usfr-mda="http://www.xbrl.org/us/fr/rpt/seccert/2005-02-28#"
   xmlns:usfr-ar="http://www.xbrl.org/us/fr/rpt/ar/2005-02-28#"
@@ -44,8 +54,12 @@
   xmlns:ref="http://www.xbrl.org/2004/ref#"
   xmlns:usfr-mr="http://www.xbrl.org/us/fr/rpt/mr/2005-02-28#"
   xmlns:us-gaap-ci="http://www.xbrl.org/us/fr/gaap/ci/2005-02-28#"
-  xmlns="http://www.openlinksw.com/schemas/xbrl/"
-  xmlns:msft="http://www.microsoft.com/msft/xbrl/taxonomy/2005-02-28"
+  xmlns:msft="http://www.microsoft.com/10q/industrial/msft/2005-02-28"
+  xmlns:ifrs-gp="&ifrs-gp;"
+  xmlns:stock="&stock;"
+  xmlns:ifrs-gp-typ="&ifrs-gp-typ;"
+  xmlns:link="&link;"
+  xmlns:xbrli="&xbrli;"
   version="1.0">
   
   <xsl:output method="xml" indent="yes"/>
@@ -56,28 +70,42 @@
       </rdf:RDF>
   </xsl:template>
   <xsl:template match="xbrl">
-      <xsl:apply-templates select="context"/>
-      <xsl:apply-templates select="msft:*"/>
+      <!--xsl:apply-templates select="context"/-->
+      <xsl:apply-templates select="*"/>
+      <!--xsl:apply-templates select="unit"/-->
   </xsl:template>
 
   <xsl:template match="context">
     <xsl:variable name="id" select="concat($base, '#', @id)"/>
-    <rdf:Description rdf:about="{$id}">
-        <contextRef>
-            <xsl:value-of select="@id"/>
-        </contextRef>
+    <rdf:Description rdf:ID="{$id}">
         <xsl:apply-templates select="entity"/>
         <xsl:apply-templates select="period"/>
     </rdf:Description>
   </xsl:template>
   
+  <xsl:template match="unit">
+    <xsl:variable name="id" select="concat($base, '#', @id)"/>
+    <rdf:Description rdf:ID="{$id}">
+        <xbrli:unit>
+          <xbrli:measure>
+              <xsl:value-of select="measure" />
+          </xbrli:measure>
+        </xbrli:unit>
+    </rdf:Description>
+  </xsl:template>
+  
   <xsl:template match="entity">
-    <scheme>
+    <xbrli:entity>
+      <xbrli:scheme>
         <xsl:apply-templates select="identifier"/>
-    </scheme>
-    <rdf:value>
+      </xbrli:scheme>
+      <xbrli:identifier>
         <xsl:value-of select="identifier" />
-    </rdf:value>
+      </xbrli:identifier>
+      <xbrli:segment>
+          <xsl:value-of select="segment" />
+      </xbrli:segment>
+    </xbrli:entity>
   </xsl:template>
     
   <xsl:template match="identifier">
@@ -85,49 +113,51 @@
   </xsl:template>
 
   <xsl:template match="period">
-    <period>
-        <!--xsl:apply-templates select="instant"/-->
-        <!--xsl:apply-templates select="startDate"/>
-        <xsl:apply-templates select="endDate"/-->
-    </period>
+    <xbrli:period>
+        <xsl:apply-templates select="instant"/>
+        <xsl:apply-templates select="startDate"/>
+        <xsl:apply-templates select="endDate"/>
+    </xbrli:period>
   </xsl:template>
   
   <xsl:template match="instant">
-    <instant>
+    <xbrli:instant>
         <xsl:value-of select="."/>
-    </instant>
+    </xbrli:instant>
   </xsl:template>
 
   <xsl:template match="startDate">
-    <startDate>
+    <xbrli:startDate>
         <xsl:value-of select="."/>
-    </startDate>
+    </xbrli:startDate>
   </xsl:template>
 
   <xsl:template match="endDate">
-    <endDate>
+    <xbrli:endDate>
         <xsl:value-of select="."/>
-    </endDate>
+    </xbrli:endDate>
   </xsl:template>
 
-<xsl:template match="text()|@*">
+  <!--xsl:template match="text()|@*">
   <xsl:value-of select="."/>
-</xsl:template>
+  </xsl:template-->
 
-  <xsl:template match="msft:*|usfr-mda:*">
+  <xsl:template match="msft:*|usfr-mda:*|*">
     <xsl:variable name="contextRef" select="@contextRef"/>
     <xsl:variable name="name1" select="local-name(.)"/>    
-    <rdf:Description rdf:about="{$name1}">
-        <contextRef>
+    <xsl:variable name="id" select="concat(namespace-uri(.), '#', $name1)"/>
+    <rdf:Description rdf:about="{$id}">
+        <xsl:element namespace="{$id}" name="{name()}">
+        <xbrli:contextRef>
             <xsl:value-of select="$contextRef"/>
-        </contextRef>
+        </xbrli:contextRef>
         <rdf:value>
             <xsl:value-of select="."/>
         </rdf:value>
+        </xsl:element>
     </rdf:Description>
   </xsl:template>
 
-  
 </xsl:stylesheet>
 
 
