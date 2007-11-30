@@ -631,7 +631,13 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
 try_profile:
   tmp := sprintf_inverse (graph_iri, 'http://www.facebook.com/p/%s/%s', 0);
   if (length (tmp) <> 2)
+    {
+      tmp := sprintf_inverse (graph_iri, 'http://www.facebook.com/profile.php?id=%s', 0);
+      if (length (tmp) <> 1)
     return 0;
+      own := tmp[0];
+    }
+  else
   own := tmp[1];
   q :=  sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, affiliations, profile_update_time, timezone, religion, birthday, sex, hometown_location, meeting_sex, meeting_for, relationship_status, significant_other_id, political, current_location, activities, interests, is_app_user, music, tv, movies, books, quotes, about_me, hs_info, education_history, work_history, notes_count, wall_count, status, has_added_app FROM user WHERE uid = %s', own);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
