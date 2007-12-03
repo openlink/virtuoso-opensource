@@ -20,8 +20,8 @@ OAT.RDFMini = function(div,optObj) {
 	this.options = {
 		tabs:[
 			["navigator","Navigator"],
-			["browser","Browser",{removeNS:true}],
-			["triples","Raw Triples",{}],
+			["browser","Raw Triples",{removeNS:true}],
+			["triples","Grid view",{}],
 			["svg","SVG Graph",{}],
 			["map","Yahoo Map",{provider:2}],
 			["timeline","Timeline",{}],

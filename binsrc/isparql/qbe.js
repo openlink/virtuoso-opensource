@@ -994,8 +994,8 @@ iSPARQL.QBE = function () {
 		Refresh:function(force) { /* get a list of prefixes */
 			if (self.Schemas.Unbound.state == 0 && !force) { return; }
 			var node = self.Schemas.Unbound;
-			var oldIcon = "";
-			var oldFilter = "";
+			var oldIcon = node._icon.src || "";
+			var oldFilter = node._icon.style.filter || "";
 			var callback = function(data) {
 				for (var i = node.children.length-1;i >= 0;i--) { /* clear old children */
 					node.deleteChild(node.children[i]);
@@ -1037,8 +1037,6 @@ iSPARQL.QBE = function () {
 				should_sponge:'',
 				format:'application/sparql-results+json',
 				onstart:function() {
-					var oldIcon = node._icon.src;
-					var oldFilter = node._icon.style.filter;
 					node._icon.src = OAT.Preferences.imagePath+"Dav_throbber.gif";
 					node._icon.style.filter = "";
 				},

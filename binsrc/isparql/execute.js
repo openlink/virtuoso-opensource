@@ -345,8 +345,8 @@ var QueryExec = function(optObj) {
 				var lastIndex = 0;
 				var tabs = [
 					["navigator","Navigator"],
-					["browser","Browser",{removeNS:true}],
-					["triples","Raw Triples",{}],
+					["browser","Raw Triples",{removeNS:true}],
+					["triples","Grid View",{}],
 					["svg","SVG Graph",{}],
 					["images","Images",{}],
 					["map","Yahoo Map",{provider:OAT.MapData.TYPE_Y}] 
