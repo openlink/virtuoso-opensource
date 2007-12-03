@@ -19,9 +19,9 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
+ *  
  */
-
-#include "Dk/Dkhash64.h"
+#include "../Dk/Dkhash64.h"
 #include "libutil.h"
 #include "sqlnode.h"
 #include "sqlbif.h"
@@ -1480,8 +1480,8 @@ iri_to_id (caddr_t *qst, caddr_t name, int make_new, caddr_t *err_ret)
   query_instance_t * qi = (query_instance_t *) qst;
   caddr_t box_to_delete = NULL;
   caddr_t res;
-  err_ret[0] = NULL;
   dtp_t dtp = DV_TYPE_OF (name);
+  err_ret[0] = NULL;
   switch (dtp)
     {
     case DV_DB_NULL:
