@@ -723,7 +723,7 @@ create procedure FTP_RETR (in in_str varchar, in d_addr varchar, in f_name varch
        while (len > 0)
 	{
           sub_cont := subseq (full_cont, int_res, int_res + buf_size);
-	  dbg_obj_print ('int_res = ', int_res, ' RES_CONTENT = ', length (sub_cont));
+--	  dbg_obj_print ('int_res = ', int_res, ' RES_CONTENT = ', length (sub_cont));
 
           --ses_write (string_output_string (sub_cont), data_ses);
           ses_write (cast (sub_cont as varchar), data_ses);
@@ -734,7 +734,7 @@ create procedure FTP_RETR (in in_str varchar, in d_addr varchar, in f_name varch
           scrc := ses_can_read_char ();
 	  if (scrc > 2)
             {
-              dbg_obj_print ('session can not read char: ', scrc);
+--              dbg_obj_print ('session can not read char: ', scrc);
               return;
             }
 	}
@@ -1069,7 +1069,7 @@ create procedure FTP_PUT (in _server varchar, in _user varchar, in _pass varchar
 			  in _file varchar, in _remote varchar, in is_pasv integer := 1,
 			  in dav_user varchar := NULL, in dav_pass varchar := NULL)
 {
-  declare ses, listen, data_ses any;
+  declare ses, listen, data_ses, file_ses any;
   declare data_addr any;
 
 -- Parameter check
@@ -1085,6 +1085,8 @@ create procedure FTP_PUT (in _server varchar, in _user varchar, in _pass varchar
   else
     data_ses := ses_connect (data_addr);
 
+  file_ses := FTP_FILE_SES_GET (data_addr, _file, data_ses, dav_user, dav_pass);
+  commit work;
   FTP_COMMAND (ses, concat ('stor ', _remote), vector (150,125));
 --FTP_COMMAND (ses, concat ('stor ', _remote), NULL);
 
@@ -1093,7 +1095,7 @@ create procedure FTP_PUT (in _server varchar, in _user varchar, in _pass varchar
       FTP_SES_ACCEPT (listen, data_ses);
     }
 
-  FTP_SES_SEND (data_addr, _file, data_ses, dav_user, dav_pass);
+  FTP_SES_SEND (data_addr, file_ses, data_ses, dav_user, dav_pass);
   FTP_COMMAND (ses, NULL, vector (226, 150));
   FTP_COMMAND (ses, concat ('quit'), NULL);
   ses_disconnect (ses);
@@ -1252,21 +1254,27 @@ end_read:
 }
 ;
 
-
-create procedure FTP_SES_SEND (in new_addr varchar, in _file_name varchar, inout data_ses any,
+create procedure FTP_FILE_SES_GET (in new_addr varchar, in _file_name varchar, inout data_ses any,
 			       in dav_user varchar, in dav_pass varchar)
 {
-  declare _all, _ret any;
+  declare _all any;
+  if (length (_file_name) > 7 and "LEFT" (_file_name, 7) = 'virt://')
+    _all := FTP_GET_FROM_DAV (_file_name, dav_user, dav_pass);
+  else
+    _all := file_to_string_output (_file_name);
+  return _all;
+}
+;
+
+create procedure FTP_SES_SEND (in new_addr varchar, inout _content any, inout data_ses any,
+			       in dav_user varchar, in dav_pass varchar)
+{
+  declare _ret any;
 
   if (data_ses is NULL)
     data_ses := ses_connect (new_addr);
 
-  if (length (_file_name) > 7 and "LEFT" (_file_name, 7) = 'virt://')
-    _all := FTP_GET_FROM_DAV (_file_name, dav_user, dav_pass);
-  else
-    _all := file_to_string (_file_name);
-
-  _ret := ses_write (_all, data_ses);
+  _ret := ses_write (_content, data_ses);
 
   ses_disconnect (data_ses);
   return _ret;
@@ -1615,7 +1623,8 @@ FTP_GET_FROM_DAV (in _local varchar, in dav_user varchar, in dav_pass varchar) r
    declare mime varchar;
 
    _local := subseq (_local, 6);
-   res := DAV_RES_CONTENT (_local, _content, mime, dav_user, dav_pass);
+   _content := string_output (http_strses_memory_size ());
+   res := DAV_RES_CONTENT_STRSES (_local, _content, mime, dav_user, dav_pass);
    if (DAV_HIDE_ERROR (res) is not null)
      {
        commit work;

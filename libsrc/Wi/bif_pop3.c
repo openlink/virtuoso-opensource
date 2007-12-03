@@ -417,9 +417,13 @@ bif_ses_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  bh->bh_current_page = bh->bh_page;
 	  bh->bh_position = 0;
 	}
+      else if (dtp == DV_STRING_SESSION)
+	{
+	  strses_write_out ((dk_session_t *) string, out);
+	}
       else
 	*err_ret = srv_make_new_error ("22023", "HT002",
-	    "ses_write requires string or blob as argument 1");
+	    "ses_write requires string, string_output or blob as argument 1");
     }
   FAILED
     {
