@@ -19,6 +19,7 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
+--
 
 update DB.DBA.SYS_USERS set U_HOME = '/DAV/home/dav/' where U_ID = http_dav_uid() and U_HOME is null;
 WV.WIKI.CREATEGROUP('WikiAdmin', 'WikiAdmin', 'A group of WikiV managers', 0);

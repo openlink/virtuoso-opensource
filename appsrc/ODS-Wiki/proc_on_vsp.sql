@@ -470,7 +470,7 @@ create function WV.WIKI.VSPTOPICREFERERS (
     WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report,
       _ext_params),
    _ext_params,
-   WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' )));
+   coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' ))));
 }
 ;
 
@@ -502,7 +502,7 @@ create function WV.WIKI.VSPCLUSTERINDEX (
 	   WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report,
 	   _ext_params),
 	 _ext_params,
-	 WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' )));
+	 coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' ))));
 
 }
 ;
@@ -866,6 +866,8 @@ create procedure WV.WIKI.VSPHEADER (
       _skin := WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default');
       _topic_title := _topic.ti_raw_title;
     }
+
+  _skin := coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), _skin);
 --  http ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">');
 --  http ('<html xmlns="http://www.w3.org/1999/xhtml" xmlns:i18n="http://xml.zope.org/namespaces/i18n" i18n:domain="kupu"><head>');
   http ('<html><head>');
@@ -1618,7 +1620,8 @@ create function WV.WIKI.VSPMAILVIEW (
     WV.WIKI.VSPXSLT ( 'VspMail.xslt',
       _doc,
       _ext_params),
-    _ext_params, WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' )));
+    _ext_params,
+    coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' ))));
 
 }
 ;
@@ -1964,7 +1967,7 @@ create function WV.WIKI.VSPDIFF (
 	    WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _report,
 	      _ext_params),
 	    _ext_params,
-	    WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' )));
+	    coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' ))));
     }
   return NULL;
 }
