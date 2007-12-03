@@ -213,7 +213,8 @@
 		      >
                       <v:on-init>
                         <![CDATA[
-                          if ((control.vc_parent as vspx_row_template).te_rowset[0] <> 'Framework')
+                          if ((control.vc_parent as vspx_row_template).te_rowset[0] <> 'Framework' or
+			      (control.vc_parent as vspx_row_template).te_rowset[2] is null)
                             control.vc_enabled := 0;
                         ]]>
                       </v:on-init>
