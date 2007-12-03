@@ -1260,14 +1260,14 @@ create function WA_SEARCH_BMK (in max_rows integer, in current_user_id integer,
   if (str is not null)
     {
       qstr := sprintf (
-      'select BD_BOOKMARK_ID, BD_DOMAIN_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, SCORE as _SCORE'
-      || ' from BMK.WA.BOOKMARK_DOMAIN where contains (BD_DESCRIPTION, ''[__lang "x-any" __enc "UTF-8"] %S '') ', str);
+      'select a.BD_BOOKMARK_ID, a.BD_DOMAIN_ID, a.BD_NAME, a.BD_DESCRIPTION, a.BD_UPDATED, SCORE as _SCORE'
+      || ' from BMK.WA.BOOKMARK_DOMAIN a where contains (a.BD_DESCRIPTION, ''[__lang "x-any" __enc "UTF-8"] %S '') ', str);
     }
   else if (str is null)
     {
       qstr := sprintf (
-      'select BD_BOOKMARK_ID, BD_DOMAIN_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, 0 as _SCORE \n'
-      || ' from BMK.WA.BOOKMARK_DOMAIN \n', str );
+      'select a.BD_BOOKMARK_ID, a.BD_DOMAIN_ID, a.BD_NAME, a.BD_DESCRIPTION, a.BD_UPDATED, 0 as _SCORE \n'
+      || ' from BMK.WA.BOOKMARK_DOMAIN a \n', str );
     }
 
   tret := '';
@@ -1275,13 +1275,13 @@ create function WA_SEARCH_BMK (in max_rows integer, in current_user_id integer,
   if (tags_str is not null)
     tret := sprintf (
       '\n %s exists ( \n' ||
-      '  select 1 from BMK.WA.BOOKMARK_DATA \n' ||
-      '    where \n' ||
-      '      contains (BD_TAGS, \n' ||
+      '  select 1 from BMK.WA.BOOKMARK_DOMAIN b \n' ||
+      '    where a.BD_ID = b.BD_ID and \n' ||
+      '      contains (b.BD_TAGS, \n' ||
       '        sprintf (''[__lang "x-ViDoc" __enc "UTF-8"] (%S) AND (("^UID%d") OR ("^public"))'' \n' ||
       '          ))) \n',
       case when str is not null then 'and' else 'where' end,
-      tags_str,
+      BMK.WA.tags2search (trim (tags_str, '"')),
       current_user_id);
 
   ret := sprintf (
@@ -1290,7 +1290,7 @@ create function WA_SEARCH_BMK (in max_rows integer, in current_user_id integer,
     || '		(%d, BD_BOOKMARK_ID, BD_DOMAIN_ID, BD_NAME, BD_DESCRIPTION, %s)  AS EXCERPT, \n'
     || '		encode_base64 (serialize (vector (''BMK'', vector (BD_BOOKMARK_ID, BD_DOMAIN_ID)))) as TAG_TABLE_FK, \n'
     || '		_SCORE, \n'
-    || '		BD_LAST_UPDATE as _DATE \n'
+    || '		BD_UPDATED as _DATE \n'
     || '     	from'
     || '	(%s %s) bmk1, \n'
     || '	DB.DBA.WA_INSTANCE WAI \n'

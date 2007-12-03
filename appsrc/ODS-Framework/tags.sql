@@ -379,7 +379,7 @@ create procedure wa_collect_enews_tags (in id int)
 wa_exec_no_error('
 create procedure wa_collect_bmk_tags (in id int)
 {
-   for (select BD_TAGS from BMK.WA.BOOKMARK_DATA) do
+   for (select BD_TAGS from BMK.WA.BOOKMARK_DOMAIN) do
 	wa_add_tag_to_count (BD_TAGS, id);
 }
 ');

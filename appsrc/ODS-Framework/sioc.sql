@@ -413,8 +413,17 @@ create procedure ods_graph_init ()
 
 create procedure ods_is_defined_by (in graph_iri varchar, in iri varchar)
 {
-  declare df_uri any;
-  df_uri := sprintf ('http://%s/ods/data/rdf/iid%%20%%28%d%%29.rdf', get_cname(), iri_id_num (iri_to_id (iri)));
+  declare df_uri, tmp, pos any;
+  --df_uri := sprintf ('http://%s/ods/data/rdf/iid%%20%%28%d%%29.rdf', get_cname(), iri_id_num (iri_to_id (iri)));
+  pos := strrchr (iri, '#');
+  if (pos is not null)
+    tmp := subseq (iri, pos);
+  else
+    tmp := iri;
+  if (iri like 'http://%/dataspace/person/%')
+    df_uri := tmp || '/about.rdf';
+  else
+    df_uri := tmp || '/sioc.rdf';
   DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdfs_iri ('isDefinedBy'), df_uri);
 };
 
