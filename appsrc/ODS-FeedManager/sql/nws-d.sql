@@ -107,6 +107,9 @@ create procedure ENEWS.WA.drop_procedures()
 
 -- dropping procedures for ENEWS
 ENEWS.WA.drop_procedures();
+
+xpf_extension_remove ('http://www.openlinksw.com/feeds/:getHost', 'ENEWS.WA.host_url');
+
 ENEWS.WA.exec_no_error('DROP procedure ENEWS.WA.vhost');
 ENEWS.WA.exec_no_error('DROP procedure ENEWS.WA.drop_procedures');
 
