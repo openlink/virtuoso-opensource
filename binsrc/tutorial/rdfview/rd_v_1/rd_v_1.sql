@@ -1,16 +1,5 @@
 use DB;
 
-GRANT SELECT ON "Demo"."demo"."Products" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Suppliers" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Shippers" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Categories" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Customers" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Employees" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Orders" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Order_Details" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Countries" TO "SPARQL";
-GRANT SELECT ON "Demo"."demo"."Provinces" TO "SPARQL";
-
 create procedure DB.DBA.SPARQL_NW_RUN (in txt varchar)
 {
   declare REPORT, stat, msg, sqltext varchar;
@@ -29,6 +18,26 @@ create procedure DB.DBA.SPARQL_NW_RUN (in txt varchar)
     }
 }
 ;
+
+DB.DBA.exec_no_error('GRANT \"SPARQL_UPDATE\" TO \"SPARQL\"')
+;
+
+DB.DBA.exec_no_error('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/CAT%\'')
+;
+
+DB.DBA.exec_no_error('UPDATE WS.WS.SYS_DAV_RES set RES_TYPE=\'image/jpeg\' where RES_FULL_PATH like \'/DAV/VAD/demo/sql/EMP%\'')
+;
+
+GRANT SELECT ON "Demo"."demo"."Products" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Suppliers" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Shippers" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Categories" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Customers" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Employees" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Orders" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Order_Details" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Countries" TO "SPARQL";
+GRANT SELECT ON "Demo"."demo"."Provinces" TO "SPARQL";
 
 DB.DBA.SPARQL_NW_RUN ('
 drop quad map graph iri("http://^{URIQADefaultHost}^/tutorial/Northwind") .
@@ -51,7 +60,7 @@ create iri class tut_northwind:Shipper "http://^{URIQADefaultHost}^/tutorial/Nor
 create iri class tut_northwind:Supplier "http://^{URIQADefaultHost}^/tutorial/Northwind/Supplier/%d#this" (in supplier_id integer not null) .
 create iri class tut_northwind:Product   "http://^{URIQADefaultHost}^/tutorial/Northwind/Product/%d#this" (in product_id integer not null) .
 create iri class tut_northwind:Customer "http://^{URIQADefaultHost}^/tutorial/Northwind/Customer/%U#this" (in customer_id varchar not null) .
-create iri class tut_northwind:Employee "http://^{URIQADefaultHost}^/tutorial/Northwind/Employee/%d#this" (in employee_id integer not null) .
+create iri class tut_northwind:Employee "http://^{URIQADefaultHost}^/tutorial/Northwind/Employee/%U%U%d#this" (in employee_firstname varchar not null, in employee_lastname varchar not null, in employee_id integer not null) .
 create iri class tut_northwind:Order "http://^{URIQADefaultHost}^/tutorial/Northwind/Order/%d#this" (in order_id integer not null) .
 create iri class tut_northwind:CustomerContact "http://^{URIQADefaultHost}^/tutorial/Northwind/CustomerContact/%U#this" (in customer_id varchar not null) .
 create iri class tut_northwind:OrderLine "http://^{URIQADefaultHost}^/tutorial/Northwind/OrderLine/%d/%d#this" (in order_id integer not null, in product_id integer not null) .
@@ -220,7 +229,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         tut_northwind:is_country_of
                 tut_northwind:Customer (customers.CustomerID) as virtrdf:tutCustomer-is_country_of .
 
-                tut_northwind:Employee (employees.EmployeeID)
+                tut_northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID)
                         a tut_northwind:Employee
                                 as virtrdf:tutEmployee-EmployeeID2 ;
                         a foaf:Person
@@ -261,7 +270,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                                 as virtrdf:tutEmployee-extension ;
                         tut_northwind:notes employees.Notes
                                 as virtrdf:tutEmployee-notes ;
-                        tut_northwind:reportsTo tut_northwind:Employee(employees.ReportsTo)
+                        tut_northwind:reportsTo tut_northwind:Employee(employees.FirstName, employees.LastName, employees.ReportsTo)
                                 as virtrdf:tutEmployee-reports_to ;
                         foaf:img tut_northwind:EmployeePhoto(employees.EmployeeID)
 			        as virtrdf:tutEmployee-employees.EmployeePhoto .
@@ -270,20 +279,22 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
 						a tut_northwind:EmployeePhoto
 								as virtrdf:tut_Employee-employees.EmployeePhotoId .
 
-                tut_northwind:Employee (orders.EmployeeID)
+                tut_northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID)
                         tut_northwind:is_salesrep_of
-                tut_northwind:Order (orders.OrderID) as virtrdf:tutOrder-is_salesrep_of .
+                tut_northwind:Order (orders.OrderID) where (^{orders.}^.EmployeeID = ^{employees.}^.EmployeeID) as virtrdf:tutOrder-is_salesrep_of .
+
                 tut_northwind:Country (employees.Country)
                         tut_northwind:is_country_of
-                tut_northwind:Employee (employees.EmployeeID) as virtrdf:tutEmployee-is_country_of .
+                tut_northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID) as virtrdf:tutEmployee-is_country_of .
+
                 tut_northwind:Order (orders.OrderID)
                         a tut_northwind:Order
                                 as virtrdf:tutOrder-Order ;
                         tut_northwind:has_customer tut_northwind:Customer (orders.CustomerID)
                                 as virtrdf:tutOrder-order_has_customer ;
-                        tut_northwind:has_salesrep tut_northwind:Employee (orders.EmployeeID)
+                        tut_northwind:has_salesrep tut_northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID) where (^{orders.}^.EmployeeID = ^{employees.}^.EmployeeID)
                                 as virtrdf:tutCustomer-has_salesrep ;
-                        tut_northwind:has_employee tut_northwind:Employee (orders.EmployeeID)
+                        tut_northwind:has_employee tut_northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID) where (^{orders.}^.EmployeeID = ^{employees.}^.EmployeeID)
                                 as virtrdf:tutOrder-order_has_employee ;
                         tut_northwind:orderDate orders.OrderDate
                                 as virtrdf:tutOrder-order_date ;
@@ -422,7 +433,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     null,
     '(text/rdf.n3)|(application/rdf.xml)',
     0,
-    303
+    null
     );
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
@@ -431,7 +442,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/rdfbrowser/index.htm?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
+    '/rdfbrowser/index.html?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -439,12 +450,35 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     303
     );
 
---VHOST_REMOVE (lpath=>'/tutorial/Northwind');
---VHOST_DEFINE (lpath=>'/tutorial/Northwind', ppath=>'/DAV/VAD/tutorial/rdfview/rd_v_1/', is_dav=>1, vsp_user=>'dba', is_brws=>0, opts=>vector ('url_rewrite', 'tut_nw_rule_list1'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'tut_nw_rule3',
+    1,
+    '(/[^#]*)/\x24',
+    vector('path'),
+    1,
+    '%s',
+    vector('path'),
+    null,
+    null,
+    0,
+    null
+    );
 
-DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/VAD/tutorial/rdfview/rd_v_1/', 'http://^{URIQADefaultHost}^/tutorial/Northwind', NULL);
+create procedure DB.DBA.REMOVE_TUT_DEMO_RDF_DET()
+{
+  declare colid int;
+  colid := DAV_SEARCH_ID('/DAV/VAD/tutorial/rdfview/rd_v_1/', 'C');
+  if (colid < 0)
+    return;
+  update WS.WS.SYS_DAV_COL set COL_DET=null where COL_ID = colid;
+}
+;
 
+DB.DBA.REMOVE_TUT_DEMO_RDF_DET();
 
+drop procedure DB.DBA.REMOVE_TUT_DEMO_RDF_DET;
+
+DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/VAD/tutorial/rdfview/rd_v_1/RDFData/', 'http://^{URIQADefaultHost}^/tutorial/Northwind', NULL);
 VHOST_REMOVE (lpath=>'/tutorial/Northwind/data/rdf');
 DB.DBA.VHOST_DEFINE (lpath=>'/tutorial/Northwind/data/rdf', ppath=>'/DAV/VAD/tutorial/rdfview/rd_v_1/RDFData/All/', is_dav=>1, vsp_user=>'dba');
 
@@ -473,6 +507,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST (
     vector (
                 'tut_nw_rule1',
                 'tut_nw_rule2',
+                'tut_nw_rule3',
                 'tutorial_northwind_rdf'
           ));
 

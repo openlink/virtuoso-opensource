@@ -21,6 +21,7 @@
  -  
 -->
 <init>
-        <src load_at_start="" load_to_clean=""/>
+<src load_at_start="" load_to_clean=""/>
+<src start="rd_v_1.isparql" link="rd_v_1.isparql"/>
 <deps item="iSPARQL" example="isparql_dav.vad package" type="package" />
 </init>
