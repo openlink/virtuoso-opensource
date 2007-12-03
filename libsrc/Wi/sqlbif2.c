@@ -41,6 +41,7 @@
 #include "sqloinv.h"
 #include "sqlver.h"
 #include "srvmultibyte.h"
+#include "xmlparser.h"
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
