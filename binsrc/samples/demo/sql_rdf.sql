@@ -424,7 +424,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/rdfbrowser/index.htm?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
+    '/rdfbrowser/index.html?uri=http%%3A//^{URIQADefaultHost}^%U%%23this',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -446,14 +446,21 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     null
     );
 
+create procedure DB.DBA.REMOVE_DEMO_RDF_DET()
+{
+  declare colid int;
+  colid := DAV_SEARCH_ID('/DAV/home/demo/', 'C');
+  if (colid < 0)
+    return;
+  update WS.WS.SYS_DAV_COL set COL_DET=null where COL_ID = colid;
+}
+;
 
---VHOST_REMOVE (lpath=>'/Northwind');
---VHOST_DEFINE (lpath=>'/Northwind', ppath=>'/DAV/home/demo/', is_dav=>1, vsp_user=>'dba', is_brws=>0, opts=>vector ('url_rewrite', 'demo_nw_rule_list1'));
+DB.DBA.REMOVE_DEMO_RDF_DET();
 
+drop procedure DB.DBA.REMOVE_DEMO_RDF_DET;
 
-DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/home/demo/', 'http://^{URIQADefaultHost}^/Northwind', NULL);
-
-
+DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/home/demo/RDFData/', 'http://^{URIQADefaultHost}^/Northwind', NULL);
 VHOST_REMOVE (lpath=>'/Northwind/data/rdf');
 DB.DBA.VHOST_DEFINE (lpath=>'/Northwind/data/rdf', ppath=>'/DAV/home/demo/RDFData/All/', is_dav=>1, vsp_user=>'dba');
 
