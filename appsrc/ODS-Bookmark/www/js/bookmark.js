@@ -638,10 +638,10 @@ function addCheckedTags (openerName, checkName)
 //
 function openBookmark (id)
 {
-  var c = $(id);
+  var c = $('bookmark_'+id);
   if (c) {
-    OAT.Dom.removeClass(c, 'unread');
-    OAT.Dom.addClass(c, 'read');
+    OAT.Dom.removeClass(c, 'unvisited');
+    OAT.Dom.addClass(c, 'visited');
   }
   readBookmark (id);
 }
@@ -651,10 +651,10 @@ function openBookmark (id)
 function openIFrame (id, accountID, uri)
 {
   if (accountID > 0) {
-    var c = $(id);
+    var c = $('bookmark_'+id);
     if (c) {
-      OAT.Dom.removeClass(c, 'unread');
-      OAT.Dom.addClass(c, 'read');
+      OAT.Dom.removeClass(c, 'unvisited');
+      OAT.Dom.addClass(c, 'visited');
     }
     readBookmark (id);
   }
@@ -873,17 +873,12 @@ function showProgress (progressIndex)
 function readBookmark (id)
 {
   var sid = '';
-  if (document.forms['F1'].elements['sid'])
-    sid = document.forms['F1'].elements['sid'].value;
+  if (document.forms[0].elements['sid'])
+    sid = document.forms[0].elements['sid'].value;
   var realm = '';
-  if (document.forms['F1'].elements['realm'])
-    realm = document.forms['F1'].elements['realm'].value;
-  var URL = 'ajax.vsp?sid='+sid+'&realm='+realm+'&id='+id+'&a=read';
-
-  var xmlhttp = initRequest();
-  xmlhttp.open("POST", URL, false);
-  xmlhttp.setRequestHeader("Pragma", "no-cache");
-  xmlhttp.send(null);
+  if (document.forms[0].elements['realm'])
+    realm = document.forms[0].elements['realm'].value;
+  OAT.AJAX.POST ("ajax.vsp", "sid="+sid+"&realm="+realm+"&id="+id+"&a=visited", function(){}, {onstart:function(){}, onerror:function(){}});
 }
 
 // ---------------------------------------------------------------------------

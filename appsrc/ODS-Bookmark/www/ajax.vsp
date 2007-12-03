@@ -36,9 +36,8 @@
   domain_id  := cast(get_keyword('domain_id', aSession, '0') as integer);
   account_id := cast(get_keyword('user_id', aSession, '0') as integer);
 
-  if (action = 'read') {
-    BMK.WA.bookmark_flag_set (id, account_id, 1);
-    BMK.WA.bookmark_last_visited (id, account_id);
+  if (action = 'visited') {
+    BMK.WA.bookmark_visited_set (domain_id, id, now ());
   }
 
   if (action = 'import') {

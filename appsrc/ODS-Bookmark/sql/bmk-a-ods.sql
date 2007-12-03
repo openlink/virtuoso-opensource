@@ -49,7 +49,7 @@ create function DB.DBA.wa_search_bmk_get_excerpt_html (
 
 create procedure DB.DBA.wa_collect_bmk_tags (in id integer)
 {
-  for (select BD_TAGS from BMK.WA.BOOKMARK_DATA) do
+  for (select BD_TAGS from BMK.WA.BOOKMARK_DOMAIN) do
     wa_add_tag_to_count (BD_TAGS, id);
 }
 ;

@@ -259,9 +259,9 @@ create function "bookmark_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 		else if (sub_id = 2)
 		{
 			if (maxrcvdate is null)
-				maxrcvdate := coalesce ( (select max(BD_LAST_UPDATE) from BMK.WA.BOOKMARK_DOMAIN where year(BD_LAST_UPDATE) = domain_id),
+                maxrcvdate := coalesce ( (select max(BD_UPDATED) from BMK.WA.BOOKMARK_DOMAIN where year(BD_UPDATED) = domain_id),
 					cast ('1980-01-01' as datetime));
-			colname := (select monthname(D.BD_LAST_UPDATE)
+            colname := (select monthname(D.BD_UPDATED)
 				from SYS_USERS A,
 					WA_MEMBER B,
 					WA_INSTANCE C,
@@ -272,8 +272,8 @@ create function "bookmark_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 					and B.WAM_INST = C.WAI_NAME
 					and C.WAI_TYPE_NAME = 'Bookmark'
 					and D.BD_DOMAIN_ID = C.WAI_ID
-					and month(D.BD_LAST_UPDATE) = folder_id
-					and year(D.BD_LAST_UPDATE) = domain_id);
+                    and month(D.BD_UPDATED) = folder_id
+                    and year(D.BD_UPDATED) = domain_id);
 			if (DAV_HIDE_ERROR (colname) is null)
 				return -1;
 			if (rightcol = '')
@@ -286,7 +286,7 @@ create function "bookmark_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 		if (sub_id = 1)
 		{
 			if (maxrcvdate is null)
-				maxrcvdate := coalesce ( (select max(BD_LAST_UPDATE) from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id),
+                maxrcvdate := coalesce ( (select max(BD_UPDATED) from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id),
 					cast ('1980-01-01' as datetime));
 			colname := (select "bookmark_FIXNAME"(C.WAI_NAME) as orig_name
 				from SYS_USERS A,
@@ -302,9 +302,9 @@ create function "bookmark_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 		else if (sub_id = 2)
 		{
 			if (maxrcvdate is null)
-				maxrcvdate := coalesce ( (select max(BD_LAST_UPDATE) from BMK.WA.BOOKMARK_DOMAIN where year(BD_LAST_UPDATE) = domain_id),
+                maxrcvdate := coalesce ( (select max(BD_UPDATED) from BMK.WA.BOOKMARK_DOMAIN where year(BD_UPDATED) = domain_id),
 					cast ('1980-01-01' as datetime));
-			colname := (select cast(year(D.BD_LAST_UPDATE) as varchar)
+            colname := (select cast(year(D.BD_UPDATED) as varchar)
 				from SYS_USERS A,
 					WA_MEMBER B,
 					WA_INSTANCE C,
@@ -315,7 +315,7 @@ create function "bookmark_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 					and B.WAM_INST = C.WAI_NAME
 					and C.WAI_TYPE_NAME = 'Bookmark'
 					and D.BD_DOMAIN_ID = C.WAI_ID
-					and year(D.BD_LAST_UPDATE) = domain_id);
+                    and year(D.BD_UPDATED) = domain_id);
 		}
 		if (DAV_HIDE_ERROR (colname) is null)
 			return -1;
@@ -400,13 +400,13 @@ create function "bookmark_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 			0, id[2], maxrcvdate, 'dav/unix-directory', rightcol );
 	}
 	for select "bookmark_COMPOSE_XBEL_NAME"(BD_NAME, BD_ID) as orig_mname,
-		BD_ID as m_id, BD_LAST_UPDATE
+        BD_ID as m_id, BD_UPDATED
 		from BMK.WA.BOOKMARK_DOMAIN
 		where BD_ID = id[6]
 	do
 	{
-		return vector (fullpath || orig_mname, 'R', 1024, BD_LAST_UPDATE, id, '100000000NN',
-			0, id[2], BD_LAST_UPDATE, 'application/xbel+xml', orig_mname);
+        return vector (fullpath || orig_mname, 'R', 1024, BD_UPDATED, id, '100000000NN',
+            0, id[2], BD_UPDATED, 'application/xbel+xml', orig_mname);
 	}
 	return -1;
 }
@@ -483,7 +483,7 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 		}
 		if (top_id[3] = 2 and top_id[4] = 0)  -- level of dates
 		{
-			for select distinct cast(year(D.BD_LAST_UPDATE) as varchar) as orig_name
+            for select distinct cast(year(D.BD_UPDATED) as varchar) as orig_name
 					 from SYS_USERS A,
 						  WA_MEMBER B,
 						  WA_INSTANCE C,
@@ -548,7 +548,7 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 		}
 		if (top_id[3] = 2 and top_id[4] <> 0 and top_id[5] = 0)  -- level of dates/years
 		{
-			for select distinct monthname(D.BD_LAST_UPDATE) as orig_name
+            for select distinct monthname(D.BD_UPDATED) as orig_name
 					 from SYS_USERS A,
 						  WA_MEMBER B,
 						  WA_INSTANCE C,
@@ -559,7 +559,7 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 					  and B.WAM_INST = C.WAI_NAME
 					  and C.WAI_TYPE_NAME = 'Bookmark'
 					  and D.BD_DOMAIN_ID = C.WAI_ID
-					  and year(D.BD_LAST_UPDATE) = top_id[4]
+                      and year(D.BD_UPDATED) = top_id[4]
 			do
 			{
 			    res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_name) || '/', 'C', 0, now(),
@@ -588,21 +588,21 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 	res := vector();
 	if (top_id[3] = 1)
 	{
-		for select "bookmark_COMPOSE_XBEL_NAME"(BD_NAME, BD_ID) as orig_mname, BD_ID as m_id, BD_LAST_UPDATE
+        for select "bookmark_COMPOSE_XBEL_NAME"(BD_NAME, BD_ID) as orig_mname, BD_ID as m_id, BD_UPDATED
 		from BMK.WA.BOOKMARK_DOMAIN
 		where BD_DOMAIN_ID = top_id[4] and
 			((BD_FOLDER_ID  = top_id[5] and top_id[5] <> 0) or (BD_FOLDER_ID is null and top_id[5] = 0))
 		order by 1, 2
 		do
 		{
-		  res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_mname), 'R', 1024, BD_LAST_UPDATE,
+          res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_mname), 'R', 1024, BD_UPDATED,
 			vector (UNAME'bookmark', detcol_id, owner_uid, top_id[3], top_id[4], top_id[5], m_id, null, -1),
-			'100000000NN', ownergid, owner_uid, BD_LAST_UPDATE, 'application/xbel+xml', orig_mname) ) );
+            '100000000NN', ownergid, owner_uid, BD_UPDATED, 'application/xbel+xml', orig_mname) ) );
 		}
 	}
 	else if (top_id[3] = 2)
 	{
-		for select distinct "bookmark_COMPOSE_XBEL_NAME"(BD_NAME, BD_ID) as orig_mname, BD_ID as m_id, BD_LAST_UPDATE
+        for select distinct "bookmark_COMPOSE_XBEL_NAME"(BD_NAME, BD_ID) as orig_mname, BD_ID as m_id, BD_UPDATED
 		from SYS_USERS A,
 						  WA_MEMBER B,
 						  WA_INSTANCE C,
@@ -613,31 +613,29 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 					  and B.WAM_INST = C.WAI_NAME
 					  and C.WAI_TYPE_NAME = 'Bookmark'
 					  and D.BD_DOMAIN_ID = C.WAI_ID
-					  and year(D.BD_LAST_UPDATE) = top_id[4] and month(D.BD_LAST_UPDATE) = top_id[5]
+                      and year(D.BD_UPDATED) = top_id[4] and month(D.BD_UPDATED) = top_id[5]
 		order by 1, 2
 		do
 		{
-		  res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_mname), 'R', 1024, BD_LAST_UPDATE,
+          res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_mname), 'R', 1024, BD_UPDATED,
 			vector (UNAME'bookmark', detcol_id, owner_uid, top_id[3], top_id[4], top_id[5], m_id, null, -1),
-			'100000000NN', ownergid, owner_uid, BD_LAST_UPDATE, 'application/xbel+xml', orig_mname) ) );
+            '100000000NN', ownergid, owner_uid, BD_UPDATED, 'application/xbel+xml', orig_mname) ) );
 		}
 	}
 	else if (top_id[3] = 3)
 	{
-		for select distinct "bookmark_COMPOSE_XBEL_NAME"(D.BD_NAME, D.BD_ID) as orig_mname, D.BD_ID as m_id, D.BD_LAST_UPDATE, G.BD_TAGS as tags
+        for select distinct "bookmark_COMPOSE_XBEL_NAME"(D.BD_NAME, D.BD_ID) as orig_mname, D.BD_ID as m_id, D.BD_UPDATED, D.BD_TAGS as tags
 		from SYS_USERS A,
 						  WA_MEMBER B,
 						  WA_INSTANCE C,
-						  BMK.WA.BOOKMARK_DOMAIN D,
-						  BMK.WA.BOOKMARK_DATA G
+                   BMK.WA.BOOKMARK_DOMAIN D
 					where A.U_ID = owner_uid
 					  and B.WAM_USER = A.U_ID
 					  and B.WAM_MEMBER_TYPE = 1
 					  and B.WAM_INST = C.WAI_NAME
 					  and C.WAI_TYPE_NAME = 'Bookmark'
 					  and D.BD_DOMAIN_ID = C.WAI_ID
-					  and D.BD_BOOKMARK_ID = G.BD_BOOKMARK_ID
-					  and G.BD_TAGS is not null and G.BD_TAGS <> ''
+               and D.BD_TAGS is not null and D.BD_TAGS <> ''
 		order by 1, 2
 		do
 		{
@@ -648,9 +646,9 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 				tag := trim(tag);
 				if (top_id[7] = tag)
 				{
-				  res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_mname), 'R', 1024, BD_LAST_UPDATE,
+                  res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_mname), 'R', 1024, BD_UPDATED,
 					vector (UNAME'bookmark', detcol_id, owner_uid, top_id[3], 0, 0, m_id, tag, -1),
-					'100000000NN', ownergid, owner_uid, BD_LAST_UPDATE, 'application/xbel+xml', orig_mname)));
+                    '100000000NN', ownergid, owner_uid, BD_UPDATED, 'application/xbel+xml', orig_mname)));
 				}
 			}
 		}
@@ -731,8 +729,8 @@ create procedure "bookmark_DAV_FC_PRED_METAS" (inout pred_metas any)
     'RES_GROUP_NAME',           vector ('SYS_USERS'     , 0, 'varchar'  , '(''nogroup'')'       ),
     'RES_COL_FULL_PATH',        vector ('BOOKMARK_DOMAIN'     , 0, 'varchar'  , 'concat (DAV_CONCAT_PATH (_param.detcolpath, ''bookmark''), "bookmark_FIXNAME" (WAI_NAME), ''/'')'      ),
     'RES_COL_NAME',             vector ('BOOKMARK_DOMAIN'     , 0, 'varchar'  , '"bookmark_FIXNAME" (WAI_NAME)'   ),
-    'RES_CR_TIME',              vector ('BOOKMARK_DOMAIN'     , 0, 'datetime' , 'BD_LAST_UPDATE'        ),
-    'RES_MOD_TIME',             vector ('BOOKMARK_DOMAIN'     , 0, 'datetime' , 'BD_LAST_UPDATE'  ),
+    'RES_CR_TIME',              vector ('BOOKMARK_DOMAIN'     , 0, 'datetime' , 'BD_UPDATED'        ),
+    'RES_MOD_TIME',             vector ('BOOKMARK_DOMAIN'     , 0, 'datetime' , 'BD_UPDATED'  ),
     'RES_PERMS',                vector ('BOOKMARK_DOMAIN'     , 0, 'varchar'  , '(''110000000RR'')'   ),
     'RES_CONTENT',              vector ('BOOKMARK_DOMAIN'     , 0, 'text'     , 'BD_DESCRIPTION'   ),
     'PROP_NAME',		vector ('BOOKMARK_DOMAIN'	, 0, 'varchar'	, '(''BD_DESCRIPTION'')'	),
@@ -763,14 +761,14 @@ create procedure "bookmark_DAV_FC_TABLE_METAS" (inout table_metas any)
     'SYS_USERS'   , vector (      ''      ,
                                         ''      ,
                                                 NULL            , NULL          , NULL          ),
-    'public-tags'	, vector (	'\n  inner join BMK.WA.BOOKMARK_DATA as ^{alias}^ on ((^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (^{alias}^.BD_MODE = 0)^{andpredicates}^)'	,
-					'\n  exists (select 1 from BMK.WA.BOOKMARK_DATA as ^{alias}^ where (^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (^{alias}^.BD_MODE = 0)^{andpredicates}^)'	,
+    'public-tags'     , vector ( ''           ,
+                                 ''           ,
 						'BD_TAGS'	, 'BD_TAGS'	, NULL	),
-    'private-tags'	, vector (	'\n  inner join BMK.WA.BOOKMARK_DATA as ^{alias}^ on ((^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (^{alias}^.BD_MODE = 1) and (^{alias}^.BD_OBJECT_ID = ^{uid}^)^{andpredicates}^)'	,
-					'\n  exists (select 1 from BMK.WA.BOOKMARK_DATA as ^{alias}^ where (^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (^{alias}^.BD_MODE = 1) and (^{alias}^.BD_OBJECT_ID = ^{uid}^)^{andpredicates}^)'	,
+    'private-tags'    , vector ( ''           ,
+                                 ''           ,
 						'BD_TAGS'	, 'BD_TAGS'	, NULL	),
-    'all-tags'		, vector (	'\n  inner join BMK.WA.BOOKMARK_DATA as ^{alias}^ on ((^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (((^{alias}^.BD_MODE = 1) and (^{alias}^.BD_OBJECT_ID = ^{uid}^)) or (^{alias}^.BD_MODE = 0))^{andpredicates}^)'	,
-					'\n  exists (select 1 from BMK.WA.BOOKMARK_DATA as ^{alias}^ where (^{alias}^.BD_BOOKMARK_ID = _top.BD_BOOKMARK_ID) and (((^{alias}^.BD_MODE = 1) and (^{alias}^.BD_OBJECT_ID = ^{uid}^)) or (^{alias}^.BD_MODE = 0))^{andpredicates}^)'	,
+    'all-tags'        , vector ( ''           ,
+                                 ''           ,
 						'BD_TAGS'	, 'BD_TAGS'	, NULL	),
     'fake-prop'	, vector (	'\n  inner join WS.WS.SYS_DAV_PROP as ^{alias}^ on ((^{alias}^.PROP_PARENT_ID is null) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'	,
 					'\n  exists (select 1 from WS.WS.SYS_DAV_PROP as ^{alias}^ where (^{alias}^.PROP_PARENT_ID is null) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'	,
@@ -848,9 +846,9 @@ create function "bookmark_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, 
 	}
 	execstate := '00000';
         qry_text := 'select concat (DAV_CONCAT_PATH (_param.detcolpath, ''bookmark''), ''/'', "bookmark_FIXNAME" (WAI_NAME), ''/'', "bookmark_COMPOSE_XBEL_NAME" (_top.BD_NAME, _top.BD_ID)),
-		''R'', 1024, _top.BD_LAST_UPDATE,
+        ''R'', 1024, _top.BD_UPDATED,
                 vector (UNAME_BOOKMARK(), ?, _users.U_ID, 3, _top.BD_DOMAIN_ID, _top.BD_FOLDER_ID, null, null),
-                ''110000000RR'', http_nogroup_gid(), _users.U_ID, _top.BD_LAST_UPDATE, ''application/xbel+xml'', "bookmark_COMPOSE_XBEL_NAME" (_top.BD_NAME, _top.BD_ID)
+                ''110000000RR'', http_nogroup_gid(), _users.U_ID, _top.BD_UPDATED, ''application/xbel+xml'', "bookmark_COMPOSE_XBEL_NAME" (_top.BD_NAME, _top.BD_ID)
 		from
 		(select top 1 ? as detcolpath from WS.WS.SYS_DAV_COL) as _param,
 		BMK.WA.BOOKMARK_DOMAIN as _top
@@ -941,7 +939,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
 		  }
 		  else if (sub_id = 2)
 		  {
-			for select distinct year(D.BD_LAST_UPDATE) as D_ID
+            for select distinct year(D.BD_UPDATED) as D_ID
 					 from SYS_USERS A,
 						  WA_MEMBER B,
 						  WA_INSTANCE C,
@@ -952,7 +950,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
 					  and B.WAM_INST = C.WAI_NAME
 					  and C.WAI_TYPE_NAME = 'Bookmark'
 					  and D.BD_DOMAIN_ID = C.WAI_ID
-					  and year(D.BD_LAST_UPDATE) = atoi(path_parts[ctr])
+                      and year(D.BD_UPDATED) = atoi(path_parts[ctr])
 			  do
 			  {
 				hitlist := vector_concat (hitlist, vector (D_ID));
@@ -1028,7 +1026,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
 				}
 				else if (sub_id = 2)
 				{
-					for select distinct month(D.BD_LAST_UPDATE) as D_ID
+                    for select distinct month(D.BD_UPDATED) as D_ID
 						 from SYS_USERS A,
 							  WA_MEMBER B,
 							  WA_INSTANCE C,
@@ -1039,7 +1037,7 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
 						  and B.WAM_INST = C.WAI_NAME
 						  and C.WAI_TYPE_NAME = 'Bookmark'
 						  and D.BD_DOMAIN_ID = C.WAI_ID
-						  and monthname(D.BD_LAST_UPDATE) = path_parts[ctr]
+                          and monthname(D.BD_UPDATED) = path_parts[ctr]
 				  do
 				  {
 					hitlist := vector_concat (hitlist, vector (D_ID));
@@ -1084,8 +1082,8 @@ create function "bookmark_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
 					  and B.WAM_INST = C.WAI_NAME
 					  and C.WAI_TYPE_NAME = 'Bookmark'
 					  and D.BD_DOMAIN_ID = C.WAI_ID
-					  and month(D.BD_LAST_UPDATE) = folder_id
-					  and year(D.BD_LAST_UPDATE) = domain_id
+                      and month(D.BD_UPDATED) = folder_id
+                      and year(D.BD_UPDATED) = domain_id
 					  and "bookmark_COMPOSE_XBEL_NAME" (D.BD_NAME, D.BD_ID) = path_parts[ctr]
 		do
 		{
@@ -1181,7 +1179,7 @@ create function "bookmark_DAV_RES_CONTENT" (in id any, inout content any, out ty
 		declare link, title, last_date varchar;
 		if (id[3] = 1)
 		{
-			select D.BD_NAME, cast(D.BD_LAST_UPDATE as varchar), B.B_URI into title, last_date, link
+            select D.BD_NAME, cast(D.BD_UPDATED as varchar), B.B_URI into title, last_date, link
 				from BMK.WA.BOOKMARK_DOMAIN D, BMK.WA.BOOKMARK B
 				where D.BD_DOMAIN_ID = id[4] and
 					((D.BD_FOLDER_ID  = id[5] and id[5] <> 0) or (D.BD_FOLDER_ID is null and id[5] = 0)) and
@@ -1190,7 +1188,7 @@ create function "bookmark_DAV_RES_CONTENT" (in id any, inout content any, out ty
 		}
 		else if (id[3] = 2 or id[3] = 3 or id[3] = 4)
 		{
-			select D.BD_NAME, cast(D.BD_LAST_UPDATE as varchar), B.B_URI into title, last_date, link
+            select D.BD_NAME, cast(D.BD_UPDATED as varchar), B.B_URI into title, last_date, link
 					 from BMK.WA.BOOKMARK_DOMAIN D,
 						  BMK.WA.BOOKMARK B
 					where D.BD_ID = id[6] and B.B_ID = D.BD_BOOKMARK_ID;

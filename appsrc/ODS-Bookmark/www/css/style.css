@@ -506,11 +506,11 @@ table#list thead input {
   background-color: #FFFFCC;
 }
 
-.read
+.visited
 {
 }
 
-.unread
+.unvisited
 {
   font-weight: bold;
 }

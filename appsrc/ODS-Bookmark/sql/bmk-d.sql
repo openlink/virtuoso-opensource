@@ -67,9 +67,11 @@ BMK.WA.exec_no_error('drop view BMK..TAGS_VIEW');
 registry_remove ('_bookmark_path_');
 registry_remove ('_bookmark_version_');
 registry_remove ('_bookmark_build_');
-registry_remove ('bmk_path_update');
 registry_remove ('__ods_bookmark_sioc_init');
 
+registry_remove ('bmk_table_update');
+registry_remove ('bmk_index_version');
+registry_remove ('bmk_path_update');
 
 -- Procedures
 create procedure BMK.WA.drop_procedures()

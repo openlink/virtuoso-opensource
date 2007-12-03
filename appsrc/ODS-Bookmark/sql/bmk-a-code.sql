@@ -661,11 +661,12 @@ create procedure BMK.WA.user_name(
 --
 -------------------------------------------------------------------------------
 create procedure BMK.WA.bookmark_update (
-  in id integer,
+  inout id integer,
   in domain_id integer,
   in uri any,
   in name any,
   in description any,
+  in tags any,
   in folder_id integer)
 {
   declare bookmark_id integer;
@@ -681,15 +682,16 @@ create procedure BMK.WA.bookmark_update (
   if (id = -1)
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), -1);
   if (id = -1) {
-    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_LAST_UPDATE, BD_CREATED, BD_FOLDER_ID)
-      values (domain_id, bookmark_id, name, description, now(), now(), folder_id);
+    insert into BMK.WA.BOOKMARK_DOMAIN (BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_TAGS, BD_UPDATED, BD_CREATED, BD_FOLDER_ID)
+      values (domain_id, bookmark_id, name, description, tags, now(), now(), folder_id);
     id := coalesce((select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and coalesce(BD_FOLDER_ID, 0) = coalesce(folder_id, 0) and BD_BOOKMARK_ID = bookmark_id and BD_NAME = name), -1);
   } else {
     update BMK.WA.BOOKMARK_DOMAIN
        set BD_BOOKMARK_ID = bookmark_id,
            BD_NAME = name,
            BD_DESCRIPTION = description,
-           BD_LAST_UPDATE = now(),
+           BD_TAGS = tags,
+           BD_UPDATED = now(),
            BD_FOLDER_ID = folder_id
      where BD_ID = id;
   }
@@ -707,8 +709,6 @@ create procedure BMK.WA.bookmark_delete(
 
   bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id);
   delete from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id;
-  if (not exists(select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and BD_BOOKMARK_ID = bookmark_id))
-  delete from BMK.WA.BOOKMARK_DATA where BD_MODE = 0 and BD_OBJECT_ID = domain_id and BD_BOOKMARK_ID = bookmark_id;
   if (not exists(select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_BOOKMARK_ID = bookmark_id))
     delete from BMK.WA.BOOKMARK where B_ID = bookmark_id;
   }
@@ -812,11 +812,9 @@ create procedure BMK.WA.bookmark_import_netscape(
       goto _folder;
     Q := xpath_eval('/dl/dt/a/@href', V, N);
     commit work;
-    tmp := BMK.WA.bookmark_update (-1, domain_id, cast (Q as varchar), cast (T as varchar), null, folder_id);
-    if (tags <> '') {
-      tmp := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = tmp);
-      BMK.WA.bookmark_tags (domain_id, account_id, tmp, tags, 0);
-    }
+
+    tmp := BMK.WA.bookmark_update (-1, domain_id, cast (Q as varchar), cast (T as varchar), null, tags, folder_id);
+
 	  if (not is_empty_or_null (progress_id)) {
 	    if  (cast(registry_get ('bookmark_action_' || progress_id) as varchar) = 'stop')
 	      return;
@@ -871,11 +869,9 @@ create procedure BMK.WA.bookmark_import_xbel(
     T := BMK.WA.wide2utf(xpath_eval(sprintf('string(/%s/bookmark[%d]/title/text())', tag, N), V, 1));
     D := BMK.WA.wide2utf(xpath_eval(sprintf('string(/%s/bookmark[%d]/desc/text())', tag, N), V, 1));
     commit work;
-    tmp := BMK.WA.bookmark_update (-1, domain_id, cast(Q as varchar), cast(T as varchar), D, folder_id);
-    if (tags <> '') {
-      tmp := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = tmp);
-      BMK.WA.bookmark_tags (domain_id, account_id, tmp, tags, 0);
-    }
+
+    tmp := BMK.WA.bookmark_update (-1, domain_id, cast(Q as varchar), cast(T as varchar), D, tags, folder_id);
+
 	  if (not is_empty_or_null (progress_id)) {
 	    if  (cast(registry_get ('bookmark_action_' || progress_id) as varchar) = 'stop')
 	      return;
@@ -922,8 +918,7 @@ create procedure BMK.WA.bookmark_import_delicious(
     T := BMK.WA.wide2utf(xpath_eval(sprintf('string(//post[%d]/@description)', N), V, 1));
     D := BMK.WA.wide2utf(xpath_eval(sprintf('string(//post[%d]/@extended)', N), V, 1));
     commit work;
-    tmp := BMK.WA.bookmark_update(-1, domain_id, cast(Q as varchar), cast(T as varchar), D, folder_id);
-    tmp := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = tmp);
+
     nTags := '';
     TG := cast(xpath_eval(sprintf('string(//post[%d]/@tag)', N), V, 1) as varchar);
     if (TG <> 'system:unfiled') {
@@ -933,9 +928,8 @@ create procedure BMK.WA.bookmark_import_delicious(
           nTags := concat(nTags, tag, ',');
     }
     nTags := trim(tags || ',' || nTags, ',');
-    if (nTags <> '') {
-      BMK.WA.bookmark_tags (domain_id, account_id, tmp, nTags, 0);
-    }
+    BMK.WA.bookmark_update (-1, domain_id, cast(Q as varchar), cast(T as varchar), D, nTags, folder_id);
+
 	  if (not is_empty_or_null (progress_id)) {
 	    if  (cast(registry_get ('bookmark_action_' || progress_id) as varchar) = 'stop')
 	      return;
@@ -945,14 +939,13 @@ create procedure BMK.WA.bookmark_import_delicious(
     N := N + 1;
   }
 _exit:
-  BMK.WA.tags_refresh (domain_id, account_id, 0);
   return;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-CREATE PROCEDURE BMK.WA.bookmark_export(
+create procedure BMK.WA.bookmark_export (
   in domain_id integer,
   in folder_id integer)
 {
@@ -970,7 +963,7 @@ CREATE PROCEDURE BMK.WA.bookmark_export(
 
 -------------------------------------------------------------------------------
 --
-CREATE PROCEDURE BMK.WA.bookmark_export_tmp(
+create procedure BMK.WA.bookmark_export_tmp (
   in domain_id integer,
   in folder_id any,
   inout retValue any)
@@ -1000,38 +993,14 @@ CREATE PROCEDURE BMK.WA.bookmark_export_tmp(
 -------------------------------------------------------------------------------
 create procedure BMK.WA.bookmark_tags(
   inout domain_id integer,
-  inout account_id integer,
-  inout bookmark_id integer,
-  inout tags any,
-  in mode integer := 1)
+  inout id integer,
+  inout tags any)
 {
-  if (mode)
-    BMK.WA.tags_delete (domain_id, account_id, bookmark_id);
-  if (BMK.WA.check_grants(domain_id, account_id, 'owner'))
-  if (not exists (select 1 from BMK.WA.BOOKMARK_DATA where BD_MODE = 0 and BD_OBJECT_ID = domain_id and BD_BOOKMARK_ID = bookmark_id)) {
-    insert into BMK.WA.BOOKMARK_DATA(BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID, BD_TAGS, BD_LAST_UPDATE)
-      values(0, domain_id, bookmark_id, tags, now());
-  } else {
-      update BMK.WA.BOOKMARK_DATA
-         set BD_TAGS = tags,
-             BD_LAST_UPDATE = now()
-       where BD_MODE = 0
-         and BD_OBJECT_ID = domain_id
-         and BD_BOOKMARK_ID = bookmark_id;
-  }
-  if (not exists (select 1 from BMK.WA.BOOKMARK_DATA where BD_MODE = 1 and BD_OBJECT_ID = account_id and BD_BOOKMARK_ID = bookmark_id)) {
-    insert into BMK.WA.BOOKMARK_DATA(BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID, BD_TAGS, BD_LAST_UPDATE)
-      values(1, account_id, bookmark_id, tags, now());
-  } else {
-    update BMK.WA.BOOKMARK_DATA
+  update BMK.WA.BOOKMARK_DOMAIN
        set BD_TAGS = tags,
-           BD_LAST_UPDATE = now()
-     where BD_MODE = 1
-       and BD_OBJECT_ID = account_id
-       and BD_BOOKMARK_ID = bookmark_id;
-  }
-  if (mode)
-    BMK.WA.tags_update (domain_id, account_id, bookmark_id);
+         BD_UPDATED = now()
+   where BD_DOMAIN_ID = domain_id
+     and BD_ID = id;
 }
 ;
 
@@ -1039,83 +1008,9 @@ create procedure BMK.WA.bookmark_tags(
 --
 create procedure BMK.WA.tags_select(
   inout domain_id integer,
-  inout account_id integer,
-  inout bookmark_id integer)
-{
-  declare tags varchar;
-
-  tags := (select BD_TAGS from BMK.WA.BOOKMARK_DATA where BD_MODE = 1 and BD_OBJECT_ID = account_id and BD_BOOKMARK_ID = bookmark_id);
-  if (isnull(tags))
-    tags := (select BD_TAGS from BMK.WA.BOOKMARK_DATA where BD_MODE = 0 and BD_OBJECT_ID = domain_id and BD_BOOKMARK_ID = bookmark_id);
-  return tags;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.tags_select2(
-  inout domain_id integer,
-  inout account_id integer,
   inout id integer)
 {
-  declare bookmark_id integer;
-
-  bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id);
-  return BMK.WA.tags_select (domain_id, account_id, bookmark_id);
-}
-;
-
--------------------------------------------------------------------------------
---
--- Flags
---
--------------------------------------------------------------------------------
-create procedure BMK.WA.bookmark_flag (
-  inout id integer,
-  inout account_id integer)
-{
-  return coalesce((select a.BD_READ_FLAG from BMK.WA.BOOKMARK_DATA a, BMK.WA.BOOKMARK_DOMAIN b where a.BD_MODE = 1 and a.BD_OBJECT_ID = account_id and a.BD_BOOKMARK_ID = b.BD_BOOKMARK_ID and b.BD_ID = id), 0);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.bookmark_flag_set (
-  in id integer,
-  in account_id integer,
-  in flag integer)
-{
-  declare bookmark_id integer;
-
-  bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id);
-  if (not exists (select 1 from BMK.WA.BOOKMARK_DATA where BD_MODE = 1 and BD_OBJECT_ID = account_id and BD_BOOKMARK_ID = bookmark_id)) {
-    insert into BMK.WA.BOOKMARK_DATA (BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID, BD_LAST_UPDATE, BD_READ_FLAG)
-      values(1, account_id, bookmark_id, now(), flag);
-  } else {
-    update BMK.WA.BOOKMARK_DATA
-       set BD_READ_FLAG = flag,
-           BD_LAST_UPDATE = now()
-     where BD_MODE = 1
-       and BD_OBJECT_ID = account_id
-       and BD_BOOKMARK_ID = bookmark_id;
-  }
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.folder_flag_set(
-  in id integer,
-  in account_id integer,
-  in flag integer)
-{
-  -- delete childs
-  for (select F_ID from BMK.WA.FOLDER where F_PARENT_ID = id) do
-    BMK.WA.folder_flag_set (F_ID, account_id, flag);
-
-  -- delete bookmarks
-  for (select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_FOLDER_ID = id) do
-    BMK.WA.bookmark_flag_set (BD_ID, account_id, flag);
+  return (select BD_TAGS from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and BD_ID = id);
 }
 ;
 
@@ -1124,25 +1019,41 @@ create procedure BMK.WA.folder_flag_set(
 -- Last access
 --
 -------------------------------------------------------------------------------
-create procedure BMK.WA.bookmark_last_visited (
-  inout id integer,
-  inout account_id integer)
+create procedure BMK.WA.bookmark_visited (
+  inout domain_id integer,
+  inout id integer)
 {
-  declare bookmark_id integer;
+  return (select BD_VISITED from BMK.WA.BOOKMARK_DOMAIN where BD_DOMAIN_ID = domain_id and BD_ID = id);
+}
+;
 
-  bookmark_id := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id);
-  if (not exists (select 1 from BMK.WA.BOOKMARK_DATA where BD_MODE = 1 and BD_OBJECT_ID = account_id and BD_BOOKMARK_ID = bookmark_id)) {
-    insert into BMK.WA.BOOKMARK_DATA (BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID, BD_LAST_UPDATE, BD_LAST_VISITED, BD_VISITED)
-      values(1, account_id, bookmark_id, now (), now (), 1);
-  } else {
-    update BMK.WA.BOOKMARK_DATA
-       set BD_LAST_VISITED = now (),
-           BD_VISITED = coalesce(BD_VISITED, 0) + 1,
-           BD_LAST_UPDATE = now ()
-     where BD_MODE = 1
-       and BD_OBJECT_ID = account_id
-       and BD_BOOKMARK_ID = bookmark_id;
-  }
+-------------------------------------------------------------------------------
+create procedure BMK.WA.bookmark_visited_set (
+  inout domain_id integer,
+  inout id integer,
+  inout visited datetime := null)
+{
+  update BMK.WA.BOOKMARK_DOMAIN
+     set BD_VISITED = visited
+   where BD_DOMAIN_ID = domain_id
+     and BD_ID = id;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.folder_visited_set (
+  inout domain_id integer,
+  inout id integer,
+  inout visited datetime := null)
+{
+  -- delete childs
+  for (select F_ID from BMK.WA.FOLDER where F_PARENT_ID = id) do
+    BMK.WA.folder_visited_set (domain_id, F_ID, visited);
+
+  -- delete bookmarks
+  for (select BD_ID from BMK.WA.BOOKMARK_DOMAIN where BD_FOLDER_ID = id) do
+    BMK.WA.bookmark_visited_set (domain_id, BD_ID, visited);
 }
 ;
 
@@ -1412,12 +1323,11 @@ create procedure BMK.WA.sfolder_sql(
   in maxRows varchar := '',
   in nodeType varchar := 'b')
 {
-  declare S, tmp, where2, delimiter2 varchar;
+  declare S, T, tmp, where2, delimiter2 varchar;
 
   where2 := ' \n ';
   delimiter2 := '\n and ';
 
-  if (is_empty_or_null(BMK.WA.xml_get('tags', data))) {
     S :=
       'select                              \n' ||
       '  distinct <MAX>                    \n' ||
@@ -1426,69 +1336,37 @@ create procedure BMK.WA.sfolder_sql(
       '  BMK.WA.make_node (''<NODE_TYPE>'', a.BD_ID)        _NODE, \n' ||
       '  a.BD_NAME                  _NAME, \n' ||
       '  b.B_URI                    _URI,  \n' ||
-      '  a.BD_LAST_UPDATE                                   _LAST_UPDATE, \n' ||
+    '  a.BD_VISITED                                       _VISITED, \n' ||
+    '  a.BD_UPDATED                                       _UPDATED, \n' ||
       '  a.BD_CREATED                                       _CREATED, \n' ||
-      '  coalesce(c.BD_READ_FLAG, 0)                        BD_READ_FLAG, \n' ||
       '  a.BD_FOLDER_ID                                     _FOLDER_ID,   \n' ||
       '  d.F_NAME                                           _FOLDER_NAME,  \n' ||
       '  -1                                                 _GRANT_ID  \n' ||
       'from BMK.WA.BOOKMARK_DOMAIN a       \n' ||
       '       join BMK.WA.BOOKMARK b on b.B_ID = a.BD_BOOKMARK_ID \n' ||
-      '         left join BMK.WA.BOOKMARK_DATA c on c.BD_MODE = 1 and c.BD_BOOKMARK_ID = b.B_ID and c.BD_OBJECT_ID = <ACCOUNT_ID> \n' ||
-      '           left join BMK.WA.FOLDER d on d.F_ID = a.BD_FOLDER_ID \n' ||
-      'where a.BD_DOMAIN_ID = <DOMAIN_ID> <ITEM_DESCRIPTION> <WHERE> \n';
-  } else {
-    S :=
-      'select                              \n' ||
-      '  distinct <MAX>                    \n' ||
-      '  1                                                  _TYPE, \n' ||
-      '  a.BD_ID                    _ID,   \n' ||
-      '  BMK.WA.make_node (''<NODE_TYPE>'', a.BD_ID)        _NODE, \n' ||
-      '  a.BD_NAME                  _NAME, \n' ||
-      '  b.B_URI                    _URI,  \n' ||
-      '  a.BD_LAST_UPDATE                                   _LAST_UPDATE, \n' ||
-      '  a.BD_CREATED                                       _CREATED, \n' ||
-      '  coalesce(c.BD_READ_FLAG, 0)                        BD_READ_FLAG, \n' ||
-      '  a.BD_FOLDER_ID                                     _FOLDER_ID,   \n' ||
-      '  d.F_NAME                                           _FOLDER_NAME,  \n' ||
-      '  -1                                                 _GRANT_ID  \n' ||
-      'from                                \n' ||
-      '  (select                           \n' ||
-      '    BD_BOOKMARK_ID                  \n' ||
-      '  from                              \n' ||
-      '    BMK.WA.BOOKMARK_DATA            \n' ||
-      '  where contains(BD_TAGS, \'[__lang "x-ViDoc"] <DOMAIN_TAGS>\') \n' ||
-      '                                    \n' ||
-      '  union                              \n' ||
-      '                                    \n' ||
-      '  select                            \n' ||
-      '    BD_BOOKMARK_ID                  \n' ||
-      '  from                              \n' ||
-      '    BMK.WA.BOOKMARK_DATA            \n' ||
-      '  where contains(BD_TAGS, \'[__lang "x-ViDoc"] <ACCOUNT_TAGS>\')) x \n' ||
-      '    join BMK.WA.BOOKMARK_DOMAIN a on a.BD_BOOKMARK_ID = x.BD_BOOKMARK_ID <ITEM_DESCRIPTION> \n' ||
-      '     join BMK.WA.BOOKMARK b on b.B_ID = a.BD_BOOKMARK_ID \n' ||
-      '        left join BMK.WA.BOOKMARK_DATA c on c.BD_MODE = 1 and c.BD_OBJECT_ID = <ACCOUNT_ID> and c.BD_BOOKMARK_ID = a.BD_BOOKMARK_ID \n' ||
       '        left join BMK.WA.FOLDER d on d.F_ID = a.BD_FOLDER_ID \n' ||
-      'where a.BD_DOMAIN_ID = <DOMAIN_ID> <WHERE>\n';
-  }
+    'where a.BD_DOMAIN_ID = <DOMAIN_ID> <TEXT> <WHERE> \n';
 
+  T := '';
   tmp := BMK.WA.xml_get('keywords', data);
   if (not is_empty_or_null(tmp)) {
-    S := replace(S, '<ITEM_DESCRIPTION>', sprintf('and contains(a.BD_DESCRIPTION, \'[__lang "x-ViDoc"] %s\') \n', FTI_MAKE_SEARCH_STRING(tmp)));
+    T := FTI_MAKE_SEARCH_STRING(tmp);
   } else {
     tmp := BMK.WA.xml_get('expression', data);
     if (not is_empty_or_null(tmp))
-        S := replace(S, '<ITEM_DESCRIPTION>', sprintf('and contains(a.BD_DESCRIPTION, \'[__lang "x-ViDoc"] %s\') \n', tmp));
+      T := tmp;
   }
 
   tmp := BMK.WA.xml_get('tags', data);
   if (not is_empty_or_null(tmp)) {
-    tmp := BMK.WA.tags2search(tmp);
-    S := replace(S, '<TAGS>', tmp);
-    S := replace(S, '<DOMAIN_TAGS>', sprintf('%s and "^R%s"', tmp, cast(domain_id as varchar)));
-    S := replace(S, '<ACCOUNT_TAGS>', sprintf('%s and "^UID%s"', tmp, cast(account_id as varchar)));
+    if (T = '') {
+      T := BMK.WA.tags2search (tmp);
+    } else {
+      T := T || ' and ' || BMK.WA.tags2search (tmp);
+    }
   }
+  if (T <> '')
+    S := replace(S, '<TEXT>', sprintf('and contains (a.BD_DESCRIPTION, \'[__lang "x-ViDoc"] %s\') \n', T));
 
   tmp := BMK.WA.xml_get('folder', data);
   if (not is_empty_or_null(tmp)) {
@@ -1511,9 +1389,7 @@ create procedure BMK.WA.sfolder_sql(
   S := replace(S, '<DOMAIN_ID>', cast(domain_id as varchar));
   S := replace(S, '<ACCOUNT_ID>', cast(account_id as varchar));
   S := replace(S, '<TAGS>', '');
-  S := replace(S, '<DOMAIN_TAGS>', '');
-  S := replace(S, '<ACCOUNT_TAGS>', '');
-  S := replace(S, '<ITEM_DESCRIPTION>', '');
+  S := replace(S, '<TEXT>', '');
   S := replace(S, '<WHERE>', where2);
   --dbg_obj_print(S);
   return S;
@@ -1537,7 +1413,7 @@ create procedure BMK.WA.shared_sql(
   declare c4 varchar;
   declare c5 datetime;
   declare c6 datetime;
-  declare c7 integer;
+  declare c7 datetime;
   declare c8 integer;
   declare c9 varchar;
   declare c10 integer;
@@ -1556,7 +1432,9 @@ create procedure BMK.WA.shared_sql(
     exec(sql, state, msg, vector(), 0, meta, rows);
     if (state = '00000')
       foreach (any row in rows) do
+      {
         result(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10]);
+  }
   }
 
   -- search in my shared
@@ -1745,7 +1623,7 @@ create procedure BMK.WA.tags2search(
   S := '';
   V := BMK.WA.tags2vector(tags);
   foreach (any tag in V) do
-    S := concat(S, ' ', replace (replace (trim(lcase(tag)), ' ', '_'), '+', '_'));
+    S := concat(S, ' ^T', replace (replace (trim(lcase(tag)), ' ', '_'), '+', '_'));
   return FTI_MAKE_SEARCH_STRING(trim(S, ','));
 }
 ;
@@ -1786,163 +1664,6 @@ create procedure BMK.WA.tags2unique(
   _next:;
   }
   return aResult;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.tags_agregator ()
-{
-  for (select WAI_ID, WAM_USER from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAI_NAME = WAM_INST and WAI_TYPE_NAME = 'Bookmark') do
-    BMK.WA.tags_refresh(WAI_ID, WAM_USER, 0);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.tags_refresh (
-  in domain_id integer,
-  in account_id integer,
-  in mode integer := 1)
-{
-  declare ts_count, ts_max, N integer;
-  declare ts_last_update datetime;
-  declare tags, tags_dict, tags_vector, tag_object any;
-
-  declare exit handler for not found { goto _skip; };
-
-  ts_last_update := null;
-  ts_max := 1;
-  if (mode)
-    select T_LAST_UPDATE, T_COUNT into ts_last_update, ts_max from BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_ACCOUNT_ID = account_id and T_TAG = '';
-
-_skip:
-  tags_dict := dict_new();
-  for (select
-         x.BD_TAGS
-       from
-         (select
-            coalesce(c.BD_TAGS, b.BD_TAGS) BD_TAGS
-          from
-            BMK.WA.BOOKMARK_DOMAIN a
-              left join BMK.WA.BOOKMARK_DATA b on b.BD_BOOKMARK_ID = a.BD_BOOKMARK_ID and b.BD_MODE = 0 and b.BD_OBJECT_ID = domain_id
-              left join BMK.WA.BOOKMARK_DATA c on c.BD_BOOKMARK_ID = a.BD_BOOKMARK_ID and c.BD_MODE = 1 and c.BD_OBJECT_ID = account_id
-          where a.BD_DOMAIN_ID = domain_id
-            and (ts_last_update is null or b.BD_LAST_UPDATE > ts_last_update)
-            and (ts_last_update is null or c.BD_LAST_UPDATE > ts_last_update)) x) do
-  {
-    tags := split_and_decode (BD_TAGS, 0, '\0\0,');
-    foreach (any tag in tags) do {
-      tag_object := dict_get(tags_dict, lcase(tag), vector(lcase(tag), 0));
-      tag_object[1] := tag_object[1] + 1;
-      dict_put(tags_dict, lcase(tag), tag_object);
-    }
-  }
-
-  ts_last_update := now();
-  tags_vector := dict_to_vector(tags_dict, 1);
-  if (mode) {
-    for (N := 1; N < length(tags_vector); N := N + 2) {
-      ts_count := coalesce((select T_COUNT from BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_ACCOUNT_ID = account_id and T_TAG = tags_vector[N][0]), 0);
-      insert replacing BMK.WA.TAGS(T_DOMAIN_ID, T_ACCOUNT_ID, T_LAST_UPDATE, T_TAG, T_COUNT)
-        values(domain_id, account_id, ts_last_update, tags_vector[N][0], tags_vector[N][1]+ts_count);
-      if (ts_max < tags_vector[N][1]+ts_count)
-        ts_max := tags_vector[N][1] + ts_count;
-    }
-  } else {
-    delete from BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_ACCOUNT_ID = account_id;
-    for (N := 1; N < length(tags_vector); N := N + 2) {
-      insert into BMK.WA.TAGS(T_DOMAIN_ID, T_ACCOUNT_ID, T_LAST_UPDATE, T_TAG, T_COUNT)
-        values(domain_id, account_id, ts_last_update, tags_vector[N][0], tags_vector[N][1]);
-      if (ts_max < tags_vector[N][1])
-        ts_max := tags_vector[N][1];
-    }
-  }
-  insert replacing BMK.WA.TAGS(T_DOMAIN_ID, T_ACCOUNT_ID, T_LAST_UPDATE, T_TAG, T_COUNT)
-    values(domain_id, account_id, ts_last_update, '', ts_max);
-
-  return;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.tags_delete (
-  in domain_id integer,
-  in account_id integer,
-  in bookmark_id integer)
-{
-  declare ts_count, ts_max, N integer;
-  declare tags any;
-
-  tags := vector();
-  for (select
-         x.BD_TAGS
-       from
-         (select
-            coalesce(c.BD_TAGS, b.BD_TAGS) BD_TAGS
-          from
-            BMK.WA.BOOKMARK_DOMAIN a
-              left join BMK.WA.BOOKMARK_DATA b on b.BD_BOOKMARK_ID = a.BD_BOOKMARK_ID and b.BD_MODE = 0 and b.BD_OBJECT_ID = domain_id
-              left join BMK.WA.BOOKMARK_DATA c on c.BD_BOOKMARK_ID = a.BD_BOOKMARK_ID and c.BD_MODE = 1 and c.BD_OBJECT_ID = account_id
-          where a.BD_DOMAIN_ID = domain_id
-            and a.BD_BOOKMARK_ID = bookmark_id) x) do
-  {
-    tags := split_and_decode (BD_TAGS, 0, '\0\0,');
-  }
-  for (N := 0; N < length(tags); N := N + 1) {
-    ts_count := coalesce((select T_COUNT from BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_ACCOUNT_ID = account_id and T_TAG = tags[N]), 0);
-    if (ts_count)
-      if (ts_count = 1) {
-        delete from BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_ACCOUNT_ID = account_id and T_TAG = tags[N];
-      } else {
-        insert replacing BMK.WA.TAGS (T_DOMAIN_ID, T_ACCOUNT_ID, T_LAST_UPDATE, T_TAG, T_COUNT)
-          values (domain_id, account_id, now (), tags[N], ts_count-1);
-      }
-  }
-  ts_count := coalesce((select max(T_COUNT) from BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_ACCOUNT_ID = account_id), 0);
-  insert replacing BMK.WA.TAGS (T_DOMAIN_ID, T_ACCOUNT_ID, T_LAST_UPDATE, T_TAG, T_COUNT)
-    values (domain_id, account_id, now (), '', ts_count);
-
-  return;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.tags_update (
-  in domain_id integer,
-  in account_id integer,
-  in bookmark_id integer)
-{
-  declare ts_count, ts_max, N integer;
-  declare tags any;
-
-  tags := vector();
-  for (select
-         x.BD_TAGS
-       from
-         (select
-            coalesce(c.BD_TAGS, b.BD_TAGS) BD_TAGS
-          from
-            BMK.WA.BOOKMARK_DOMAIN a
-              left join BMK.WA.BOOKMARK_DATA b on b.BD_BOOKMARK_ID = a.BD_BOOKMARK_ID and b.BD_MODE = 0 and b.BD_OBJECT_ID = domain_id
-              left join BMK.WA.BOOKMARK_DATA c on c.BD_BOOKMARK_ID = a.BD_BOOKMARK_ID and c.BD_MODE = 1 and c.BD_OBJECT_ID = account_id
-          where a.BD_DOMAIN_ID = domain_id
-            and a.BD_BOOKMARK_ID = bookmark_id) x) do
-  {
-    tags := split_and_decode (BD_TAGS, 0, '\0\0,');
-  }
-  for (N := 0; N < length(tags); N := N + 1) {
-    ts_count := coalesce((select T_COUNT from BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_ACCOUNT_ID = account_id and T_TAG = tags[N]), 0);
-    insert replacing BMK.WA.TAGS (T_DOMAIN_ID, T_ACCOUNT_ID, T_LAST_UPDATE, T_TAG, T_COUNT)
-      values (domain_id, account_id, now (), tags[N], ts_count+1);
-  }
-  ts_count := coalesce((select max(T_COUNT) from BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_ACCOUNT_ID = account_id), 0);
-  insert replacing BMK.WA.TAGS (T_DOMAIN_ID, T_ACCOUNT_ID, T_LAST_UPDATE, T_TAG, T_COUNT)
-    values (domain_id, account_id, now (), '', ts_count);
-
-  return;
 }
 ;
 
@@ -2243,13 +1964,13 @@ create procedure BMK.WA.export_rss_sqlx_int(
   http('    XMLELEMENT(\'description\', BMK.WA.utf2wide(BD_DESCRIPTION)), \n', retValue);
   http('    XMLELEMENT(\'guid\', B_ID), \n', retValue);
   http('    XMLELEMENT(\'link\', B_URI), \n', retValue);
-  http('    XMLELEMENT(\'pubDate\', BMK.WA.dt_rfc1123 (BD_LAST_UPDATE)), \n', retValue);
+  http ('    XMLELEMENT(\'pubDate\', BMK.WA.dt_rfc1123 (BD_UPDATED)), \n', retValue);
   http ('    (select XMLAGG (XMLELEMENT (\'category\', BTV_TAG)) from BMK..TAGS_VIEW where domain_id = <DOMAIN_ID> and account_id = <USER_ID> and item_id = B_ID), \n', retValue);
-  http('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', BMK.WA.dt_iso8601 (BD_LAST_UPDATE)))) \n', retValue);
+  http ('    XMLELEMENT(\'http://www.openlinksw.com/weblog/:modified\', BMK.WA.dt_iso8601 (BD_UPDATED)))) \n', retValue);
   http('from (select top 15  \n', retValue);
   http('        BD_NAME, \n', retValue);
   http('        BD_DESCRIPTION, \n', retValue);
-  http('        BD_LAST_UPDATE, \n', retValue);
+  http ('        BD_UPDATED, \n', retValue);
   http('        B_ID, \n', retValue);
   http('        B_URI \n', retValue);
   http('      from \n', retValue);
@@ -2257,7 +1978,7 @@ create procedure BMK.WA.export_rss_sqlx_int(
   http('        BMK.WA.BOOKMARK_DOMAIN \n', retValue);
   http('      where BD_BOOKMARK_ID = B_ID  \n', retValue);
   http('        and BD_DOMAIN_ID = <DOMAIN_ID> \n', retValue);
-  http('      order by BD_LAST_UPDATE desc) x \n', retValue);
+  http ('      order by BD_UPDATED desc) x \n', retValue);
   http(']]></sql:sqlx>\n', retValue);
 
   http('</channel>\n', retValue);
@@ -3052,7 +2773,7 @@ create procedure BMK.WA.dashboard_get(
   for select top 10 *
         from (select a.BD_NAME,
                      b.B_URI,
-                     a.BD_LAST_UPDATE
+                     a.BD_UPDATED
                 from BMK.WA.BOOKMARK_DOMAIN a,
                      BMK.WA.BOOKMARK b,
                      DB.DBA.WA_INSTANCE c,
@@ -3062,7 +2783,7 @@ create procedure BMK.WA.dashboard_get(
                   and d.WAM_USER = user_id
                   and d.WAM_INST = C.WAI_NAME
                   and c.WAI_ID = a.BD_DOMAIN_ID
-                order by BD_LAST_UPDATE desc
+                order by BD_UPDATED desc
              ) x do {
 
     declare uname, full_name varchar;
@@ -3071,7 +2792,7 @@ create procedure BMK.WA.dashboard_get(
     full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = user_id);
 
     http ('<bookmark>', ses);
-    http (sprintf ('<dt>%s</dt>', date_iso8601 (BD_LAST_UPDATE)), ses);
+    http (sprintf ('<dt>%s</dt>', date_iso8601 (BD_UPDATED)), ses);
     http (sprintf ('<title><![CDATA[%s]]></title>', BD_NAME), ses);
     http (sprintf ('<link><![CDATA[%s]]></link>', B_URI), ses);
     http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);

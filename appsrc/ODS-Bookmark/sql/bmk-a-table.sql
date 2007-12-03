@@ -164,7 +164,76 @@ BMK.WA.exec_no_error (
 
 -------------------------------------------------------------------------------
 --
--- Conatins domain feeds.
+BMK.WA.exec_no_error('
+  create table BMK.WA.TAGS (
+    T_DOMAIN_ID integer not null,
+    T_ACCOUNT_ID integer not null,
+    T_TAG varchar,
+    T_COUNT integer,
+    T_LAST_UPDATE datetime,
+
+    primary key (T_DOMAIN_ID, T_ACCOUNT_ID, T_TAG)
+  )
+');
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.TAGS_STATISTICS (
+  in domain_id integer,
+  in account_id integer)
+{
+  declare ts_tag varchar;
+  declare ts_count integer;
+
+  BMK.WA.tags_refresh (domain_id, account_id, 1);
+  result_names (ts_tag, ts_count);
+  for (select T_TAG, T_COUNT FROM BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_ACCOUNT_ID = account_id) do
+    result (T_TAG, T_COUNT);
+}
+;
+
+BMK.WA.exec_no_error('
+  create procedure view BMK..TAGS_STATISTICS as BMK.WA.TAGS_STATISTICS (domain_id, account_id) (TS_TAG varchar, TS_COUNT integer)
+');
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.tags_update (
+  inout domain_id integer,
+  in oTags any,
+  in nTags any)
+{
+  declare N integer;
+
+  oTags := split_and_decode (oTags, 0, '\0\0,');
+  nTags := split_and_decode (nTags, 0, '\0\0,');
+
+  foreach (any tag in oTags) do {
+    if (not BMK.WA.vector_contains (nTags, lcase (tag)))
+      update BMK.WA.TAGS
+         set T_COUNT = T_COUNT - 1
+       where T_DOMAIN_ID = domain_id
+         and T_TAG = lcase (tag)
+         and T_COUNT > 0;
+  }
+  foreach (any tag in nTags) do {
+    if (not BMK.WA.vector_contains (oTags, lcase (tag)))
+      if (exists (select 1 from BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_TAG = lcase (tag))) {
+        update BMK.WA.TAGS
+           set T_COUNT = T_COUNT + 1
+         where T_DOMAIN_ID = domain_id
+           and T_TAG = lcase (tag);
+      } else {
+        insert replacing BMK.WA.TAGS (T_DOMAIN_ID, T_ACCOUNT_ID, T_TAG, T_COUNT)
+          values (domain_id, 0, lcase (tag), 1);
+      }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+-- Conatins domain bookmarks
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('
@@ -175,8 +244,10 @@ BMK.WA.exec_no_error('
   	BD_FOLDER_ID integer,
     BD_NAME varchar,
     BD_DESCRIPTION varchar,
+    BD_TAGS varchar,
     BD_CREATED datetime,
-    BD_LAST_UPDATE datetime,
+    BD_UPDATED datetime,
+    BD_VISITED datetime,
 
     constraint FK_BOOKMARK_DOMAIN_01 FOREIGN KEY (BD_BOOKMARK_ID) references BMK.WA.BOOKMARK (B_ID) on delete cascade,
     constraint FK_BOOKMARK_DOMAIN_02 FOREIGN KEY (BD_FOLDER_ID) references BMK.WA.FOLDER (F_ID) on delete set null,
@@ -186,6 +257,18 @@ BMK.WA.exec_no_error('
 ');
 
 BMK.WA.exec_no_error(
+  'alter table BMK.WA.BOOKMARK_DOMAIN add BD_TAGS varchar', 'C', 'BMK.WA.BOOKMARK_DOMAIN', 'BD_TAGS'
+);
+
+BMK.WA.exec_no_error (
+  'alter table BMK.WA.BOOKMARK_DOMAIN add BD_UPDATED datetime', 'C', 'BMK.WA.BOOKMARK_DOMAIN', 'BD_UPDATED'
+);
+
+BMK.WA.exec_no_error (
+  'alter table BMK.WA.BOOKMARK_DOMAIN add BD_VISITED datetime', 'C', 'BMK.WA.BOOKMARK_DOMAIN', 'BD_VISITED'
+);
+
+BMK.WA.exec_no_error (
   'alter table BMK.WA.BOOKMARK_DOMAIN add BD_CREATED datetime', 'C', 'BMK.WA.BOOKMARK_DOMAIN', 'BD_CREATED'
 );
 
@@ -199,6 +282,7 @@ BMK.WA.exec_no_error('
 
 BMK.WA.exec_no_error ('
   create trigger BOOKMARK_DOMAIN_WA_AI after insert on BMK.WA.BOOKMARK_DOMAIN referencing new as N {
+    BMK.WA.tags_update (N.BD_DOMAIN_ID, \'\', N.BD_TAGS);
     BMK.WA.domain_ping (N.BD_DOMAIN_ID);
     if (__proc_exists (\'DB.DBA.WA_NEW_BOOKMARKS_IN\'))
       if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = N.BD_DOMAIN_ID and WAI_IS_PUBLIC = 1))
@@ -207,7 +291,8 @@ BMK.WA.exec_no_error ('
 ');
 
 BMK.WA.exec_no_error ('
-  create trigger BOOKMARK_DOMAIN_WA_AU after update on BMK.WA.BOOKMARK_DOMAIN referencing new as N {
+  create trigger BOOKMARK_DOMAIN_WA_AU after update on BMK.WA.BOOKMARK_DOMAIN referencing old as O, new as N  {
+    BMK.WA.tags_update (N.BD_DOMAIN_ID, O.BD_TAGS, N.BD_TAGS);
     BMK.WA.domain_ping (N.BD_DOMAIN_ID);
     if (__proc_exists (\'DB.DBA.WA_NEW_BOOKMARKS_IN\'))
       if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = N.BD_DOMAIN_ID and WAI_IS_PUBLIC = 1))
@@ -217,6 +302,7 @@ BMK.WA.exec_no_error ('
 
 BMK.WA.exec_no_error ('
   create trigger BOOKMARK_DOMAIN_WA_AD after delete on BMK.WA.BOOKMARK_DOMAIN referencing old as O {
+    BMK.WA.tags_update (O.BD_DOMAIN_ID, O.BD_TAGS, \'\');
     if (__proc_exists (\'DB.DBA.WA_NEW_BOOKMARKS_RM\'))
       DB.DBA.WA_NEW_BOOKMARKS_RM (O.BD_ID);
   }
@@ -224,38 +310,30 @@ BMK.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
--- Contains specific data for feed items and domain/user - flags, tags and etc.
---
--------------------------------------------------------------------------------
-BMK.WA.exec_no_error('
-  create table BMK.WA.BOOKMARK_DATA (
-  	BD_ID integer identity,
-  	BD_MODE integer,
-  	BD_OBJECT_ID integer,
-  	BD_BOOKMARK_ID integer not null,
-    BD_READ_FLAG integer,
-  	BD_TAGS varchar,
-    BD_LAST_UPDATE datetime,
-    BD_VISITED integer default 0,
-    BD_LAST_VISITED datetime,
+create procedure BMK.WA.table_update ()
+{
+  if (registry_get ('bmk_table_update') = '1')
+    return;
 
-    constraint FK_BOOKMARK_DATA_01 FOREIGN KEY (BD_BOOKMARK_ID) references BMK.WA.BOOKMARK (B_ID) on delete cascade,
+  declare _account_id integer;
 
-  	primary key (BD_ID)
-  )
-');
+  BMK.WA.exec_no_error ('update BMK.WA.BOOKMARK_DOMAIN set BD_UPDATED = BD_LAST_UPDATE');
 
-BMK.WA.exec_no_error (
-  'alter table BMK.WA.BOOKMARK_DATA add BD_READ_FLAG integer', 'C', 'BMK.WA.BOOKMARK_DATA', 'BD_READ_FLAG'
-);
+  delete from BMK.WA.TAGS;
+  for (select BD_ID as _id, BD_DOMAIN_ID as _domain_id, BD_BOOKMARK_ID as _bookmark_id from BMK.WA.BOOKMARK_DOMAIN) do
+  {
+    _account_id := BMK.WA.domain_owner_id (_domain_id);
+    update BMK.WA.BOOKMARK_DOMAIN set BD_TAGS = BMK.WA.tags_select (_domain_id, _account_id, _bookmark_id) where BD_ID = _id;
+
+  }
+  registry_set ('bmk_table_update', '1');
+}
+;
+BMK.WA.table_update ();
 
 BMK.WA.exec_no_error (
-  'alter table BMK.WA.BOOKMARK_DATA add BD_VISITED integer default 0', 'C', 'BMK.WA.BOOKMARK_DATA', 'BD_VISITED'
+  'alter table BMK.WA.BOOKMARK_DOMAIN drop BD_LAST_UPDATE', 'D', 'BMK.WA.BOOKMARK_DOMAIN', 'BD_LAST_UPDATE'
 );
-
-BMK.WA.exec_no_error('
-  create index SK_BOOKMARK_DATA_01 on BMK.WA.BOOKMARK_DATA(BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID)
-');
 
 -------------------------------------------------------------------------------
 --
@@ -282,39 +360,7 @@ BMK.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
-BMK.WA.exec_no_error('
-  create table BMK.WA.TAGS (
-  	T_DOMAIN_ID integer not null,
-  	T_ACCOUNT_ID integer not null,
-    T_TAG varchar,
-  	T_COUNT integer,
-    T_LAST_UPDATE datetime,
-
-    primary key (T_DOMAIN_ID, T_ACCOUNT_ID, T_TAG)
-  )
-');
-
-create procedure BMK.WA.TAGS_STATISTICS (
-  in domain_id integer,
-  in account_id integer)
-{
-  declare ts_tag varchar;
-  declare ts_count integer;
-
-  BMK.WA.tags_refresh (domain_id, account_id, 1);
-  result_names (ts_tag, ts_count);
-  for (select T_TAG, T_COUNT FROM BMK.WA.TAGS where T_DOMAIN_ID = domain_id and T_ACCOUNT_ID = account_id) do
-    result (T_TAG, T_COUNT);
-}
-;
-
-BMK.WA.exec_no_error('
-  create procedure view BMK..TAGS_STATISTICS as BMK.WA.TAGS_STATISTICS (domain_id, account_id) (TS_TAG varchar, TS_COUNT integer)
-');
-
--------------------------------------------------------------------------------
---
--- Contains settings.
+-- Conatins settings
 --
 -------------------------------------------------------------------------------
 BMK.WA.exec_no_error('
@@ -354,9 +400,17 @@ BMK.WA.exec_no_error('
 
 -------------------------------------------------------------------------------
 --
-BMK.WA.exec_no_error('
-  drop table BMK.WA.BOOKMARK_DOMAIN_BD_DESCRIPTION_WORDS
-');
+create procedure BMK.WA.drop_index ()
+{
+  if (registry_get ('bmk_index_version') = '1')
+    return;
+
+  BMK.WA.exec_no_error ('drop table BMK.WA.BOOKMARK_DOMAIN_BD_DESCRIPTION_WORDS');
+  registry_set ('bmk_index_version', '1');
+
+}
+;
+BMK.WA.drop_index ();
 
 BMK.WA.exec_no_error('
   create text index on BMK.WA.BOOKMARK_DOMAIN(BD_DESCRIPTION) with key BD_ID not insert clustered with (BD_ID) using function
@@ -382,8 +436,12 @@ create procedure BMK.WA.BOOKMARK_DOMAIN_BD_DESCRIPTION_unindex_hook (inout vtb a
 --
 create procedure BMK.WA.BOOKMARK_DOMAIN_BD_DESCRIPTION_int (inout vtb any, inout d_id any, in mode any)
 {
-  for (select BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION from BMK.WA.BOOKMARK_DOMAIN where BD_ID = d_id) do {
+  declare tags any;
+
+  for (select BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_TAGS from BMK.WA.BOOKMARK_DOMAIN where BD_ID = d_id) do {
     vt_batch_feed (vtb, sprintf('^R%d', BD_DOMAIN_ID), mode);
+
+    vt_batch_feed (vtb, sprintf('^UID%d', BMK.WA.domain_owner_id (BD_DOMAIN_ID)), mode);
 
     vt_batch_feed (vtb, coalesce(BD_NAME, ''), mode);
 
@@ -392,74 +450,22 @@ create procedure BMK.WA.BOOKMARK_DOMAIN_BD_DESCRIPTION_int (inout vtb any, inout
     if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = BD_DOMAIN_ID and WAI_TYPE_NAME = 'bookmark' and WAI_IS_PUBLIC = 1))
       vt_batch_feed (vtb, '^public', mode);
 
+    tags := split_and_decode (BD_TAGS, 0, '\0\0,');
+    foreach (any tag in tags) do  {
+      tag := concat('^T', trim(tag));
+      tag := replace (tag, ' ', '_');
+      tag := replace (tag, '+', '_');
+      vt_batch_feed (vtb, tag, mode);
+    }
+
     vt_batch_feed_offband (vtb, serialize (vector (d_id, BD_BOOKMARK_ID)), mode);
   }
   return 1;
 }
 ;
 
-BMK.WA.vt_index_BMK_WA_BOOKMARK_DOMAIN();
+BMK.WA.vt_index_BMK_WA_BOOKMARK_DOMAIN ();
 DB.DBA.vt_batch_update('BMK.WA.BOOKMARK_DOMAIN', 'off', null);
-
-BMK.WA.exec_no_error('
-  drop table BMK.WA.BOOKMARK_DATA_BD_TAGS_WORDS
-');
-
-BMK.WA.exec_no_error('
-  create text index on BMK.WA.BOOKMARK_DATA (BD_TAGS) with key BD_ID not insert clustered with (BD_ID, BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID) using function language \'x-ViDoc\'
-');
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.BOOKMARK_DATA_BD_TAGS_index_hook (inout vtb any, inout d_id any)
-{
-  return BMK.WA.BOOKMARK_DATA_BD_TAGS_int(vtb, d_id, 0);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.BOOKMARK_DATA_BD_TAGS_unindex_hook (inout vtb any, inout d_id any)
-{
-  return BMK.WA.BOOKMARK_DATA_BD_TAGS_int(vtb, d_id, 1);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.BOOKMARK_DATA_BD_TAGS_int (inout vtb any, inout d_id any, in mode any)
-{
-  declare tags any;
-
-  for (select BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID, BD_TAGS from BMK.WA.BOOKMARK_DATA where BD_ID = d_id) do {
-
-    tags := split_and_decode (BD_TAGS, 0, '\0\0,');
-    foreach (any tag in tags) do  {
-      tag := trim(tag);
-      tag := replace (tag, ' ', '_');
-      tag := replace (tag, '+', '_');
-      vt_batch_feed (vtb, tag, mode);
-    }
-
-    if (BD_MODE = 0) {
-      if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = BD_OBJECT_ID and WAI_TYPE_NAME = 'bookmark' and WAI_IS_PUBLIC = 1))
-        vt_batch_feed (vtb, '^public', mode);
-      vt_batch_feed (vtb, sprintf ('^R%d', BD_OBJECT_ID), mode);
-    } else {
-      vt_batch_feed (vtb, sprintf ('^UID%d', BD_OBJECT_ID), mode);
-    }
-
-    vt_batch_feed (vtb, sprintf ('^I%d', BD_BOOKMARK_ID), mode);
-
-    vt_batch_feed_offband (vtb, serialize (vector (d_id, BD_MODE, BD_OBJECT_ID, BD_BOOKMARK_ID)), mode);
-  }
-
-  return 1;
-}
-;
-
-BMK.WA.vt_index_BMK_WA_BOOKMARK_DATA();
-DB.DBA.vt_batch_update('BMK.WA.BOOKMARK_DATA', 'off', null);
 
 -------------------------------------------------------------------------------
 --
@@ -479,8 +485,7 @@ BMK.WA.exec_no_error('
 -------------------------------------------------------------------------------
 --
 BMK.WA.exec_no_error('
-  insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
-    values(\'BM tags aggregator\', now(), \'BMK.WA.tags_agregator()\', 1440)
+  delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = \'BM tags aggregator\'
 ')
 ;
 
@@ -509,19 +514,16 @@ BMK.WA.exec_no_error ('
 --
 create procedure BMK.WA.path_update()
 {
-  update BMK.WA.FOLDER
-     set F_PARENT_ID = -1
-   where F_PARENT_ID = 0;
-  if (registry_get ('bmk_path_update') <> '1')
-    update BMK.WA.FOLDER
-       set F_NAME = F_NAME
-     where coalesce(F_PARENT_ID, -1) = -1;
+  update BMK.WA.FOLDER set F_PARENT_ID = -1 where F_PARENT_ID = 0;
 
+  if (registry_get ('bmk_path_update') = '1')
+    return;
+
+  update BMK.WA.FOLDER set F_NAME = F_NAME where coalesce(F_PARENT_ID, -1) = -1;
+  registry_set ('bmk_path_update', '1');
 }
 ;
 BMK.WA.path_update()
-;
-registry_set ('bmk_path_update', '1')
 ;
 
 BMK.WA.exec_no_error ('
@@ -529,4 +531,5 @@ BMK.WA.exec_no_error ('
     DB.DBA.DAV_DELETE_INT (\'/DAV/VAD/Bookmarks/Import/\' || O.VS_SID, 1, null, null, 0);
   }
 ');
+BMK.WA.exec_no_error('DROP TABLE BMK.WA.BOOKMARK_DATA');
 

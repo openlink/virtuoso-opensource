@@ -57,9 +57,9 @@
     ]]>
   </v:method>
 
-  <v:method name="linkClass" arglist="inout flag any">
+  <v:method name="linkClass" arglist="inout node any">
     <![CDATA[
-      return either(equ(flag, 1), 'read', 'unread');
+      return either (isnull (BMK.WA.bookmark_visited (self.domain_id, BMK.WA.node_id (node))), 'unvisited', 'visited');
     ]]>
   </v:method>
 
@@ -139,7 +139,7 @@
       declare sql, sqlParams, state, msg, meta, result, maxRows any;
 
       state := '00000';
-      sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql (rs0, rs1, rs2, rs3)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _CREATED datetime, _FLAG integer, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
+      sql := 'select distinct <MAX> rs.* from BMK.WA.shared_sql (rs0, rs1, rs2, rs3)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _VISITED datetime, _UPDATED datetime, _CREATED datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
         maxRows := self.v_max;
         if (maxRows <> '')
           maxRows := 'TOP ' || maxRows;
@@ -157,8 +157,7 @@
 
           tags_dict := dict_new();
           for (N := 0; N < length(self.ds_data); N := N + 1) {
-            tmp := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = self.ds_data[N][1]);
-            tags := BMK.WA.tags_select(self.domain_id, self.account_id, tmp);
+            tags := BMK.WA.tags_select (self.domain_id, self.ds_data[N][1]);
             tags := split_and_decode (tags, 0, '\0\0,');
             foreach (any tag in tags) do {
               tag_object := dict_get(tags_dict, lcase(tag), vector(lcase(tag), 0));
@@ -412,7 +411,7 @@
 
                             http (sprintf('<a id="bookmark_%d" href="%s" class="%s %s" title="Full window view of \'%s\'" about="%U">%s</a>', id, uri, appClass, self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
                             
-                            tags := BMK.WA.tags_select2(self.domain_id, self.account_id, id);
+                            tags := BMK.WA.tags_select (self.domain_id, id);
                             if (not is_empty_or_null(tags)) {
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');

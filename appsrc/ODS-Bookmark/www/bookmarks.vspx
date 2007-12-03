@@ -285,12 +285,12 @@
   <v:method name="linkClass" arglist="inout node any">
     <![CDATA[
       if (lcase(BMK.WA.node_type(node)) <> 'b')
-        return 'read';
+        return 'visited';
 
       if (self.account_role in ('public', 'guest'))
-        return 'unread';
+        return 'unvisited';
 
-      return either(equ(BMK.WA.bookmark_flag (BMK.WA.node_id(node), self.account_id), 1), 'read', 'unread');
+      return either (isnull (BMK.WA.bookmark_visited (self.domain_id, BMK.WA.node_id (node))), 'unvisited', 'visited');
     ]]>
   </v:method>
 
@@ -306,6 +306,20 @@
             http (BMK.WA.utf2wide (fValue));
           }
         }
+    ]]>
+  </v:method>
+
+  <v:method name="viewTags" arglist="in fTag varchar">
+    <![CDATA[
+      declare _done integer;
+
+      _done := 0;
+      for (select T_TAG from BMK.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
+        http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'%s\');"><i>%s</i></a> ', T_TAG, fTag, T_TAG));
+        _done := 1;
+      }
+      if (not _done)
+        http ('no tags');
     ]]>
   </v:method>
 
@@ -367,6 +381,11 @@
 
           flag := get_keyword('mark', params, '');
           if (flag <> '') {
+            if (flag = 'visited') {
+              flag := now ();
+            } else {
+              flag := null;
+            }
             for (i := 0; i < length(params); i := i + 2) {
               if (params[i] = 'cb_item') {
                 declare exit handler for sqlstate '*' {
@@ -375,9 +394,9 @@
                 };
                 commit work;
                 if (lcase(BMK.WA.node_type(params[i+1])) = 'f')
-                  BMK.WA.folder_flag_set (BMK.WA.node_id(params[i+1]), self.account_id, flag);
+                  BMK.WA.folder_visited_set (self.domain_id, BMK.WA.node_id (params[i+1]), flag);
                 if (lcase(BMK.WA.node_type(params[i+1])) = 'b')
-                  BMK.WA.bookmark_flag_set (BMK.WA.node_id(params[i+1]), self.account_id, flag);
+                  BMK.WA.bookmark_visited_set (self.domain_id, BMK.WA.node_id (params[i+1]), flag);
               }
               _next:;
             }
@@ -488,7 +507,9 @@
                       if (e.ve_params[N] = 'cb_item')
                         self.bNodes := vector_concat(self.bNodes, vector(e.ve_params[N+1]));
                     }
+                    self.v_tag := '';
                   }
+
                   if (cmd = 'move') {
                     declare N integer;
 
@@ -813,23 +834,35 @@
           <vm:if test="self.bTab = 'tags'">
             <div style="margin-left:3px; margin-top:3px;">
               <?vsp
-                declare tMin, tMax integer;
+                declare _done, tMin, tMax integer;
                 declare appClass, tClass, tStyle varchar;
+
+                select max(T_COUNT),
+                       min(T_COUNT)
+                  into tMax, tMin
+                  from BMK.WA.TAGS
+                 where T_DOMAIN_ID = self.domain_id
+                   and T_COUNT > 0;
 
                 appClass := '';
                 if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
                   appClass := 'app';  
-                if (is_empty_or_null (self.bTag))
-                  self.bTag := BMK.WA.node_suffix (self.bNode);
-                select max(TS_COUNT), min(TS_COUNT) into tMax, tMin from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id;
-
-                for (select TS_TAG, TS_COUNT from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id and TS_TAG <> '' order by TS_TAG) do {
-                  tStyle := ODS.WA.tag_style(TS_COUNT, tMin, tMax);
+                _done := 0;
+                for (select T_TAG, T_COUNT
+                       from BMK.WA.TAGS
+                      where T_DOMAIN_ID = self.domain_id
+                        and T_COUNT > 0
+                      order by T_TAG) do
+                {
+                  _done := 1;
+                  tStyle := ODS.WA.tag_style(T_COUNT, tMin, tMax);
                   tClass := '';
-                    if (self.bTag = TS_TAG)
+                  if (self.bTag = T_TAG)
                     tClass := 'nolink_a';
-                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', TS_TAG, TS_TAG, TS_TAG, appClass, SIOC..bmk_tag_iri (self.account_id, TS_TAG), tClass, tStyle, TS_TAG));
+                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', BMK.WA.tag_id (T_TAG), T_TAG, T_TAG, appClass, SIOC..bmk_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
                 }
+                if (not _done)
+                  http ('no tags');
               ?>
             </div>
           </vm:if>
@@ -841,9 +874,9 @@
                 declare nodeName, image, mt, st, sv any;
 
               mt := '';
-              if (not ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared')))
-                mt := sprintf('Selected as <select name="mark" onchange="javascript: if (anySelected(this.form, \'cb_item\', \'No posts were selected to mark as \'+this.options[this.selectedIndex].text+\'.\')) {this.form.submit();} else {this.selectedIndex = 0}"><option/><option value="1">read</option><option value="0">unread</option></select>');
-              st := sprintf('View <select name="show" onchange="javascript: this.form.submit();"><option value="">all</option><option value="1">read</option><option value="0">unread</option></select>');
+                if (not ((self.account_role in ('public', 'guest')) or (self.bTab = 'shared') or ((BMK.WA.node_type (self.bNode) = 's') and (BMK.WA.node_id (self.bNode) = -1))))
+                  mt := sprintf('Selected as <select name="mark" onchange="javascript: if (anySelected(this.form, \'cb_item\', \'No posts were selected to mark as \'+this.options[this.selectedIndex].text+\'.\')) {this.form.submit();} else {this.selectedIndex = 0}"><option/><option>visited</option><option>unvisited</option></select>');
+                st := sprintf('View <select name="show" onchange="javascript: this.form.submit();"><option value="">all</option><option>visited</option><option>unvisited</option></select>');
               sv := get_keyword('show', self.vc_page.vc_event.ve_params, '');
               st := replace(st, sprintf('value="%s"', sv), sprintf('value="%s" selected="selected"', sv));
 
@@ -889,7 +922,7 @@
                   self.mode_test();
 
                   control.ds_parameters := null;
-                  control.ds_sql := 'select 0 _TYPE, F_ID _ID, \'\' _NODE, F_NAME _NAME, null _URI, null _LAST_UPDATE, null _CREATED, null BD_READ_FLAG from BMK.WA.FOLDER where 1=0';
+                    control.ds_sql := 'select 0 _TYPE, F_ID _ID, \'\' _NODE, F_NAME _NAME, null _URI, null _VISITED, null _UPDATED, null _CREATED from BMK.WA.FOLDER where 1=0';
                   tmp := control.ds_sql;
                   if (BMK.WA.node_type(self.bNode) = 'f') {
                     if (self.domain_id >= 0) {
@@ -899,9 +932,9 @@
                                                       BMK.WA.make_node(\'f\', F_ID)  _NODE,
                                               F_NAME                   _NAME,
                                               \'\'                     _URI,
-                                                        null                           _LAST_UPDATE,
-                                                        null                             _CREATED,
-                                                        null                             BD_READ_FLAG
+                                                          null                             _VISITED,
+                                                          null                             _UPDATED,
+                                                          null                             _CREATED
                                          from BMK.WA.FOLDER
                                         where F_DOMAIN_ID = <DOMAIN_ID>
                                                   and coalesce(F_PARENT_ID, -1) = <ID>
@@ -913,12 +946,11 @@
                                                         BMK.WA.make_node(\'b\', a.BD_ID) _NODE,
                                                         a.BD_NAME                        _NAME,
                                                         b.B_URI                          _URI,
-                                                        a.BD_LAST_UPDATE                 _LAST_UPDATE,
-                                                        a.BD_CREATED                     _CREATED,
-                                                        coalesce(c.BD_READ_FLAG, 0)      BD_READ_FLAG
+                                                          a.BD_VISITED                     _VISITED,
+                                                          a.BD_UPDATED                     _UPDATED,
+                                                          a.BD_CREATED                     _CREATED
                                                    from BMK.WA.BOOKMARK_DOMAIN a
                                                           join BMK.WA.BOOKMARK b on b.B_ID = a.BD_BOOKMARK_ID
-                                                            left join BMK.WA.BOOKMARK_DATA c on c.BD_MODE = 1 and c.BD_OBJECT_ID = <USER_ID> and c.BD_BOOKMARK_ID = a.BD_BOOKMARK_ID
                                                   where a.BD_DOMAIN_ID = <DOMAIN_ID>
                                                     and coalesce(a.BD_FOLDER_ID, -1) = <ID>) x
                                           where 1 = 1';
@@ -934,16 +966,16 @@
                                                         BMK.WA.make_node(\'b\', BD_ID) _NODE,
                                                         BD_NAME                         _NAME,
                                                         B_URI                          _URI,
-                                                        BD_LAST_UPDATE                 _LAST_UPDATE,
-                                                        BD_CREATED                     _CREATED,
-                                                        0                              BD_READ_FLAG
+                                                          BD_VISITED                     _VISITED,
+                                                          BD_UPDATED                     _UPDATED,
+                                                          BD_CREATED                     _CREATED
                                                    from BMK.WA.BOOKMARK_DOMAIN,
                                                         BMK.WA.BOOKMARK,
                                                         DB.DBA.WA_INSTANCE
                                                   where BD_BOOKMARK_ID = B_ID
                                                     and WAI_ID = BD_DOMAIN_ID
                                                     and WAI_IS_PUBLIC = 1
-                                                  order by BD_LAST_UPDATE desc) x
+                                                    order by BD_UPDATED desc) x
                                           where 1 = 1';
                     }
 
@@ -954,9 +986,9 @@
                                               BMK.WA.make_node(\'s\', SF_ID) _NODE,
                                               SF_NAME                  _NAME,
                                               \'\'                     _URI,
-                                              null                           _LAST_UPDATE,
-                                                      null                           _CREATED,
-                                                      null                           BD_READ_FLAG
+                                                        null                           _VISITED,
+                                                        null                           _UPDATED,
+                                                        null                           _CREATED
                                          from BMK.WA.SFOLDER
                                                 where SF_DOMAIN_ID = <DOMAIN_ID>) x
                                           where 1 = 1';
@@ -966,7 +998,7 @@
                     declare data any;
 
                     data := (select SF_DATA from BMK.WA.SFOLDER where SF_DOMAIN_ID = self.domain_id and SF_ID = BMK.WA.node_id(self.bNode));
-                      control.ds_sql := 'select distinct rs.* from BMK.WA.shared_sql (rs0, rs1, rs2)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _LAST_UPDATE datetime, _CREATED datetime, _FLAG integer, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ?';
+                      control.ds_sql := 'select distinct rs.* from BMK.WA.shared_sql (rs0, rs1, rs2)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _VISITED datetime, _UPDATED datetime, _CREATED datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ?';
                       control.add_parameter (self.domain_id);
                       control.add_parameter (self.account_id);
                       control.add_parameter (data);
@@ -985,9 +1017,9 @@
                                               BMK.WA.make_node(\'u\', U_ID)  _NODE,
                                               U_NAME                   _NAME,
                                               \'\'                     _URI,
-                                              null                           _LAST_UPDATE,
-                                                      null                           _CREATED,
-                                                      null                           BD_READ_FLAG
+                                                        null                           _VISITED,
+                                                        null                           _UPDATED,
+                                                        null                           _CREATED
                                          from BMK.WA.GRANTS,
                                               DB.DBA.SYS_USERS
                                         where G_GRANTEE_ID = <USER_ID>
@@ -1002,9 +1034,9 @@
                                                       BMK.WA.make_node(\'F\', F_ID)  _NODE,
                                                       F_NAME                   _NAME,
                                                       \'\'                     _URI,
-                                                      null                           _LAST_UPDATE,
-                                                      null                           _CREATED,
-                                                      null                           BD_READ_FLAG
+                                                        null                           _VISITED,
+                                                        null                           _UPDATED,
+                                                        null                           _CREATED
                                                  from BMK.WA.FOLDER,
                                                       BMK.WA.GRANTS
                                                 where G_OBJECT_TYPE = \'F\'
@@ -1019,13 +1051,12 @@
                                                       BMK.WA.make_node(\'B\', a.BD_ID) _NODE,
                                                       a.BD_NAME                        _NAME,
                                                       b.B_URI                          _URI,
-                                                      a.BD_LAST_UPDATE                 _LAST_UPDATE,
-                                                      a.BD_CREATED                     _CREATED,
-                                                      coalesce(c.BD_READ_FLAG, 0)      BD_READ_FLAG
+                                                        a.BD_VISITED                     _VISITED,
+                                                        a.BD_UPDATED                     _UPDATED,
+                                                        a.BD_CREATED                     _CREATED
                                                  from BMK.WA.GRANTS d,
                                                       BMK.WA.BOOKMARK_DOMAIN a
                                                         join BMK.WA.BOOKMARK b on b.B_ID = a.BD_BOOKMARK_ID
-                                                          left join BMK.WA.BOOKMARK_DATA c on c.BD_MODE = 1 and c.BD_OBJECT_ID = <USER_ID> and c.BD_BOOKMARK_ID = a.BD_BOOKMARK_ID
                                                 where d.G_OBJECT_TYPE = \'B\'
                                                   and d.G_OBJECT_ID = a.BD_ID
                                                   and d.G_GRANTER_ID = <ID>
@@ -1041,9 +1072,9 @@
                                                       BMK.WA.make_node(\'F\', F_ID)  _NODE,
                                                       F_NAME                   _NAME,
                                                       \'\'                     _URI,
-                                                      null                           _LAST_UPDATE,
-                                                      null                           _CREATED,
-                                                      null                           BD_READ_FLAG
+                                                        null                           _VISITED,
+                                                        null                           _UPDATED,
+                                                        null                           _CREATED
                                                  from BMK.WA.FOLDER
                                                 where coalesce(F_PARENT_ID, -1) = <ID>
 
@@ -1054,12 +1085,11 @@
                                                       BMK.WA.make_node(\'B\', a.BD_ID) _NODE,
                                                       a.BD_NAME                        _NAME,
                                                       b.B_URI                          _URI,
-                                                      a.BD_LAST_UPDATE                 _LAST_UPDATE,
-                                                      a.BD_CREATED                     _CREATED,
-                                                      coalesce(c.BD_READ_FLAG, 0)      BD_READ_FLAG
+                                                        a.BD_VISITED                     _VISITED,
+                                                        a.BD_UPDATED                     _UPDATED,
+                                                        a.BD_CREATED                     _CREATED
                                                  from BMK.WA.BOOKMARK_DOMAIN a
                                                         join BMK.WA.BOOKMARK b on b.B_ID = a.BD_BOOKMARK_ID
-                                                          left join BMK.WA.BOOKMARK_DATA c on c.BD_MODE = 1 and c.BD_OBJECT_ID = <USER_ID> and c.BD_BOOKMARK_ID = a.BD_BOOKMARK_ID
                                                 where coalesce(a.BD_FOLDER_ID, -1) = <ID>) x
                                           where 1 = 1';
                     control.ds_sql := replace(control.ds_sql, '<USER_ID>', cast (self.account_id as varchar));
@@ -1071,8 +1101,10 @@
                     goto _end;
 
                   flag := get_keyword('show', params, '');
-                  if (flag <> '')
-                    control.ds_sql := concat(control.ds_sql, sprintf(' and ((BD_READ_FLAG is null) or (BD_READ_FLAG = %s))', flag));
+                    if (flag = 'visited')
+                      control.ds_sql := concat(control.ds_sql, ' and (_VISITED is not null)');
+                    if (flag = 'unvisited')
+                      control.ds_sql := concat(control.ds_sql, ' and (_VISITED is null)');
 
                   self.sortChange(get_keyword('sortColumn', e.ve_params, ''));
                   control.ds_sql := concat (control.ds_sql, ' order by _TYPE, ', self.n_order, ' ', self.n_direction, ', _ID');
@@ -1104,9 +1136,9 @@
                           <?vsp self.sortColumn('Date Created', '_CREATED'); ?>
                         </th>
                         </vm:if>
-                        <vm:if test="cast(get_keyword('column_#3', self.settings, '0') as integer) = 1">
+                        <vm:if test="cast(get_keyword('column_#3', self.settings, '1') as integer) = 1">
                         <th nowrap="nowrap">
-                          <?vsp self.sortColumn('Last Update', '_LAST_UPDATE'); ?>
+                            <?vsp self.sortColumn('Last Update', '_UPDATED'); ?>
                         </th>
                         </vm:if>
                     </tr>
@@ -1199,7 +1231,7 @@
                                   style="url"
                                   value="--BMK.WA.stringCut((control.vc_parent as vspx_row_template).te_column_value('_NAME'), self.chars)"
                                   xhtml_title="--BMK.WA.utf2wide((control.vc_parent as vspx_row_template).te_column_value('_NAME'))"
-                                      xhtml_class="unread">
+                                      xhtml_class="unvisited">
                           <v:on-post>
                             <![CDATA[
                               if (not BMK.WA.vector_contains(self.bState, self.bPath))
@@ -1252,7 +1284,7 @@
                               appClass := '';
                               if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
                                 appClass := 'app';  
-                              tags := BMK.WA.tags_select2(self.domain_id, self.account_id, id);
+                                tags := BMK.WA.tags_select (self.domain_id, id);
                             if (not is_empty_or_null(tags)) {
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
@@ -1272,9 +1304,9 @@
                             <?vsp http (BMK.WA.rdfa_value (BMK.WA.dt_value((control as vspx_row_template).te_column_value('_CREATED')), 'dct:created')); ?>
                         </td>
                         </vm:if>
-                        <vm:if test="cast(get_keyword('column_#3', self.settings, '0') as integer) = 1">
+                        <vm:if test="cast(get_keyword('column_#3', self.settings, '1') as integer) = 1">
                         <td align="right" nowrap="nowrap" valign="top">
-                            <?vsp http (BMK.WA.rdfa_value (BMK.WA.dt_value((control as vspx_row_template).te_column_value('_LAST_UPDATE')), 'dct:modified')); ?>
+                            <?vsp http (BMK.WA.rdfa_value (BMK.WA.dt_value((control as vspx_row_template).te_column_value('_UPDATED')), 'dct:modified')); ?>
                         </td>
                         </vm:if>
                     <?vsp
@@ -1630,15 +1662,7 @@
 	                  </th>
 	                  <td>
 	                    <?vsp
-	                      declare _done integer;
-
-	                      _done := 0;
-	                      for (select TS_TAG from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id and TS_TAG <> '' order by TS_TAG) do {
-	                        http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'i_tag\');">%s</a> ', TS_TAG, TS_TAG));
-	                        _done := 1;
-	                      }
-	                      if (not _done)
-	                        http ('no tags');
+	                      self.viewTags ('i_tag');
 	                    ?>
 	                  </td>
 	                </tr>
@@ -1861,15 +1885,7 @@
                   </th>
                   <td>
                     <?vsp
-                      declare _done integer;
-
-                      _done := 0;
-                      for (select TS_TAG from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id and TS_TAG <> '' order by TS_TAG) do {
-                        http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'t_tag\');">%s</a> ', TS_TAG, TS_TAG));
-                        _done := 1;
-                      }
-                      if (not _done)
-                        http ('no tags');
+                      self.viewTags ('t_tag');
                     ?>
                   </td>
                 </tr>
@@ -1889,10 +1905,10 @@
                     declare tmp any;
 
                     for (N := 0; N < length(self.bNodes); N := N + 1) {
-                      tmp := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = BMK.WA.node_id(self.bNodes[N]));
-                      self.v_tags := BMK.WA.tags_select(self.domain_id, self.account_id, tmp);
+                      tmp := BMK.WA.node_id (self.bNodes[N]);
+                      self.v_tags := BMK.WA.tags_select (self.domain_id, tmp);
                       self.v_tags := BMK.WA.tags_join(self.v_tags, self.v_tag);
-                      BMK.WA.bookmark_tags(self.domain_id, self.account_id, tmp, self.v_tags);
+                      BMK.WA.bookmark_tags (self.domain_id, tmp, self.v_tags);
                     }
 
                     self.v_tag := '';
@@ -2106,11 +2122,13 @@
                          B_URI,
                          BD_NAME,
                          BD_DESCRIPTION,
+                         BD_TAGS,
                          BD_FOLDER_ID
                     into tmp,
                          self.v_uri,
                          self.v_name,
                          self.v_description,
+                         self.v_tags,
                          self.v_folder_id
                     from BMK.WA.BOOKMARK_DOMAIN,
                          BMK.WA.BOOKMARK
@@ -2118,23 +2136,18 @@
                      and BD_ID = self.v_id
                      and BD_BOOKMARK_ID = B_ID;
 
-                  self.v_tag := '';
-                  self.v_tags := BMK.WA.tags_select(self.domain_id, self.account_id, tmp);
                   self.v_folder_name := '';
                   self.v_grants := self.shareSelect (BMK.WA.make_node('b', self.v_id));
 
                   return;
                 }
 
-                if (get_keyword ('dtag', params, '') <> '')
-                  self.v_tags := BMK.WA.tag_delete(self.v_tags, cast (get_keyword ('dtag', params, '0') as integer));
-
               _end:
                 self.v_uri := get_keyword ('b_uri', params, get_keyword ('URI', params, 'http://'));
                 self.v_name := get_keyword ('b_name', params, get_keyword ('TITLE', params, ''));
                 self.v_description := get_keyword ('b_description', params, '');
                 self.v_grants := get_keyword ('b_grants', params, self.v_grants);
-                self.v_tag := get_keyword('b_tag', params, '');
+                self.v_tags := get_keyword ('b_tags', params, '');
                 self.v_folder_id := 0;
                 if (BMK.WA.node_type(self.bNode) = 'f')
                   self.v_folder_id :=BMK.WA.node_id(self.bNode);
@@ -2231,15 +2244,7 @@
                   </th>
                   <td>
                     <?vsp
-                      declare _done integer;
-
-                      _done := 0;
-                      for (select TS_TAG from BMK..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id  and TS_TAG <> '' order by TS_TAG) do {
-                        http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'b_tags\');">%s</a> ', TS_TAG, TS_TAG));
-                        _done := 1;
-                      }
-                      if (not _done)
-                        http ('no tags');
+	                      self.viewTags ('b_tags');
                     ?>
                   </td>
                 </tr>
@@ -2286,9 +2291,7 @@
                     self.v_tags := BMK.WA.vector2tags(tmp);
 
                     self.v_folder_id := BMK.WA.folder_create(self.domain_id, self.v_folder_name, self.v_folder_id);
-                    tmp := BMK.WA.bookmark_update(self.v_id, self.domain_id, self.v_uri, self.v_name, self.v_description, self.v_folder_id);
-                    tmp := (select BD_BOOKMARK_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = tmp);
-                    BMK.WA.bookmark_tags(self.domain_id, self.account_id, tmp, self.v_tags);
+                    BMK.WA.bookmark_update (self.v_id, self.domain_id, self.v_uri, self.v_name, self.v_description, self.v_tags, self.v_folder_id);
 
                     self.v_grants := trim(self.b_grants.ufl_value);
                     self.shareNode (BMK.WA.make_node('b', self.v_id), self.v_grants, 1);
