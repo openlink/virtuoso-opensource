@@ -3810,7 +3810,8 @@ create procedure AB.WA.search_sql (
   delimiter2 := '\n and ';
 
   S := '';
-  if (not is_empty_or_null(AB.WA.xml_get('MyContacts', data))) {
+  if (not is_empty_or_null(AB.WA.xml_get('MyContacts', data)))
+  {
     S := 'select                         \n' ||
          ' p.P_ID,                       \n' ||
          ' p.P_DOMAIN_ID,                \n' ||
@@ -3822,7 +3823,8 @@ create procedure AB.WA.search_sql (
          '  AB.WA.PERSONS p              \n' ||
          'where p.P_DOMAIN_ID = <DOMAIN_ID> <TEXT> <WHERE>';
   }
-  if (not is_empty_or_null(AB.WA.xml_get('MySharedContacts', data))) {
+  if (not is_empty_or_null(AB.WA.xml_get('MySharedContacts', data)))
+  {
     if (S <> '')
       S := S || '\n union \n';
     S := S ||

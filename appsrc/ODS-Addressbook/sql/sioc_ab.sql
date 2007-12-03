@@ -333,7 +333,7 @@ create procedure contact_insert (
 {
   declare iri, iri2, temp_iri varchar;
 	declare person_iri varchar;
-	declare inst_id int;
+	declare inst_id integer;
 
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
