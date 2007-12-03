@@ -253,8 +253,11 @@ create procedure CAL.WA.EVENTS_E_SUBJECT_int (inout vtb any, inout d_id any, in 
 {
   declare tags any;
 
-  for (select * from CAL.WA.EVENTS where E_ID = d_id) do {
+  for (select * from CAL.WA.EVENTS where E_ID = d_id) do
+  {
     vt_batch_feed (vtb, sprintf('^R%d', E_DOMAIN_ID), mode);
+
+    vt_batch_feed (vtb, sprintf('^UID%d', CAL.WA.domain_owner_id (E_DOMAIN_ID)), mode);
 
     vt_batch_feed (vtb, coalesce(E_SUBJECT, ''), mode);
 
@@ -268,7 +271,8 @@ create procedure CAL.WA.EVENTS_E_SUBJECT_int (inout vtb any, inout d_id any, in 
       vt_batch_feed (vtb, '^public', mode);
 
     tags := split_and_decode (E_TAGS, 0, '\0\0,');
-    foreach (any tag in tags) do  {
+    foreach (any tag in tags) do
+    {
       tag := concat('^T', trim(tag));
       tag := replace (tag, ' ', '_');
       tag := replace (tag, '+', '_');
@@ -299,12 +303,14 @@ create procedure CAL.WA.EVENTS_E_SUBJECT_unindex_hook (inout vtb any, inout d_id
 --
 create procedure CAL.WA.drop_index()
 {
-  if (registry_get ('cal_index_version') <> '2') {
+  if (registry_get ('cal_index_version') = '3')
+    return;
+
     CAL.WA.exec_no_error ('drop table CAL.WA.EVENTS_E_SUBJECT_WORDS');
-  }
+  registry_set ('cal_index_version', '3');
+
 }
 ;
-
 CAL.WA.drop_index();
 
 CAL.WA.exec_no_error ('
@@ -402,10 +408,6 @@ CAL.WA.exec_no_error ('
   create procedure view CAL..TAGS_VIEW as CAL.WA.tags_procedure (tags) (TV_TAG varchar)
 ')
 ;
-
--------------------------------------------------------------------------------
---
-registry_set ('cal_index_version', '2');
 
 -------------------------------------------------------------------------------
 --
