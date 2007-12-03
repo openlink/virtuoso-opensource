@@ -8,6 +8,8 @@ create procedure DB.DBA.LOAD_NW_ONTOLOGY_FROM_DAV()
   {
     DB.DBA.VHOST_REMOVE (lpath=>'/schemas/northwind');
     DB.DBA.VHOST_DEFINE (lpath=>'/schemas/northwind', ppath=>'/DAV/VAD/demo/sql/nw.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
+    DB.DBA.VHOST_REMOVE (lpath=>'/schemas/northwind#');
+    DB.DBA.VHOST_DEFINE (lpath=>'/schemas/northwind#', ppath=>'/DAV/VAD/demo/sql/nw.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0);
   }
 };
 
