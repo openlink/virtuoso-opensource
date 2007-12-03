@@ -370,6 +370,19 @@ ws_check_acl (ws_connection_t * ws)
   return rc;
 }
 
+#define WS_PARAM_PUSH(parts, str) \
+   do { \
+     if (strses_length (str) < MIME_POST_LIMIT) \
+       dk_set_push (parts, strses_string (str)); \
+     else \
+       { \
+	 dk_session_t * par = strses_allocate (); \
+	 strses_enable_paging (par, http_ses_size); \
+	 strses_write_out (str, par); \
+	 dk_set_push (parts, par); \
+       } \
+   } while (0)
+
 caddr_t *
 ws_read_post (dk_session_t * ses, int max,
 	      dk_session_t * str, dk_session_t * cont)
@@ -456,8 +469,7 @@ ws_read_post (dk_session_t * ses, int max,
 	  if (ch == '&')
 	    {
 	      dk_set_push (&parts, box_dv_short_string (name));
-	      dk_set_push (&parts, strses_string (str));
-
+	      WS_PARAM_PUSH (&parts, str);
 	      strses_flush (str);
 	      inx = 0;
 	      reading_name = 1;
@@ -491,7 +503,7 @@ ws_read_post (dk_session_t * ses, int max,
   if (inx)
     {
       dk_set_push (&parts, box_dv_short_string (name));
-      dk_set_push (&parts, strses_string (str));
+      WS_PARAM_PUSH (&parts, str);
     }
   else
     {
@@ -513,7 +525,7 @@ ws_read_post (dk_session_t * ses, int max,
 	  while (to_read > 0);
 	}
       dk_set_push (&parts, box_dv_short_string ("content"));
-      dk_set_push (&parts, strses_string (cont));
+      WS_PARAM_PUSH (&parts, cont);
     }
 
 
@@ -5157,7 +5169,7 @@ bif_decode_base64(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 dk_session_t *
 http_connect (char * uri, caddr_t * err_ret, caddr_t ** head_ret, caddr_t method,
-    caddr_t header, caddr_t body, caddr_t proxy)
+    caddr_t header, caddr_t body, caddr_t proxy, int strses_body)
 {
   int rc, resp_readed = 0;
   dk_set_t head = NULL;
@@ -5205,7 +5217,8 @@ http_connect (char * uri, caddr_t * err_ret, caddr_t ** head_ret, caddr_t method
   content_type = "";
   if (body != NULL)
     {
-      snprintf (len_fld, sizeof (len_fld), "Content-Length: %ld\r\n", (long)(box_length (body) - 1));
+      long body_length = (strses_body ? strses_length ((dk_session_t *) body) : (long)(box_length (body) - 1));
+      snprintf (len_fld, sizeof (len_fld), "Content-Length: %ld\r\n", body_length);
       if (method && !stricmp (method, "POST")
 	  && (!header || !nc_strstr ((unsigned char *) header, (unsigned char *) "Content-Type:")))
 	content_type = "Content-Type: application/x-www-form-urlencoded\r\n";
@@ -5296,7 +5309,12 @@ http_trace (("HTTP Request : \n%s\n", req));
     {
       session_buffered_write (ses, req, strlen (req));
       if (body != NULL)
-	session_buffered_write (ses, body, box_length (body) - 1);
+	{
+	  if (!strses_body)
+	    session_buffered_write (ses, body, box_length (body) - 1);
+	  else
+	    strses_write_out ((dk_session_t *) body, ses);
+	}
     }
 #ifdef _USE_CACHED_SES
   FAILED
@@ -5305,7 +5323,7 @@ http_trace (("HTTP Request : \n%s\n", req));
       PrpcSessionFree (ses);
       if (cached)
 	{
-	  return (http_connect (uri, err_ret, head_ret, method, header, body, proxy));
+	  return (http_connect (uri, err_ret, head_ret, method, header, body, proxy, strses_body));
 	}
       else
 	{
@@ -5347,7 +5365,7 @@ http_trace (("HTTP Request : \n%s\n", req));
       PrpcSessionFree (ses);
       if (cached)
 	{
-	  return (http_connect (uri, err_ret, head_ret, method, header, body, proxy));
+	  return (http_connect (uri, err_ret, head_ret, method, header, body, proxy, strses_body));
 	}
       else
 	{
@@ -5584,7 +5602,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_session_t * volatile ses = NULL;
   char *http_pos;
   volatile long len ;
-  int n_args = BOX_ELEMENTS (args);
+  int n_args = BOX_ELEMENTS (args), strses_body = 0;
   caddr_t method = NULL;
   caddr_t header = NULL;
   caddr_t body = NULL;
@@ -5603,7 +5621,13 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (n_args > 3)
     header = bif_string_or_null_arg (qst, args, 3, "http_get");
   if (n_args > 4)
-    body = bif_string_or_null_arg (qst, args, 4, "http_get");
+    {
+      body = bif_arg (qst, args, 4, "http_get");
+      if (DV_TYPE_OF (body) != DV_STRING_SESSION)
+        body = bif_string_or_null_arg (qst, args, 4, "http_get");
+      else
+	strses_body = 1;
+    }
   if (n_args > 5)
     proxy = bif_string_or_null_arg (qst, args, 5, "http_get");
 #ifdef DEBUG
@@ -5619,9 +5643,9 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     {
       if (proxy == NULL)
-	ses = http_connect (http_pos + 7, &err, &head, method, header, body, proxy);
+	ses = http_connect (http_pos + 7, &err, &head, method, header, body, proxy, strses_body);
       else
-	ses = http_connect (http_pos, &err, &head, method, header, body, proxy);
+	ses = http_connect (http_pos, &err, &head, method, header, body, proxy, strses_body);
     }
 
   if (err)
