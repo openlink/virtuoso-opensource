@@ -155,7 +155,8 @@ create procedure fill_ods_addressbook_sioc (
                 P_CREATED,
                 P_UPDATED,
 								P_TAGS,
-								P_FOAF
+	              P_FOAF,
+		      P_IRI
            from DB.DBA.WA_INSTANCE,
                 DB.DBA.WA_MEMBER,
                 AB.WA.PERSONS
@@ -216,7 +217,8 @@ create procedure fill_ods_addressbook_sioc (
                     P_CREATED,
                     P_UPDATED,
 											P_TAGS,
-											P_FOAF);
+		                  P_FOAF,
+				  P_IRI);
 
 			for (select A_ID,
 									A_DOMAIN_ID,
@@ -329,7 +331,8 @@ create procedure contact_insert (
   inout created datetime,
   inout updated datetime,
 	inout tags varchar,
-	inout foaf varchar)
+	inout foaf varchar,
+	inout ext_iri varchar)
 {
   declare iri, iri2, temp_iri varchar;
 	declare person_iri varchar;
@@ -360,6 +363,9 @@ create procedure contact_insert (
 
   if (not isnull (graph_iri)) {
     -- SocialNetwork
+		if (length (ext_iri))
+		  iri := ext_iri;
+	        else
     iri := socialnetwork_contact_iri (domain_id, contact_id);
     ods_sioc_post (graph_iri, iri, sc_iri, creator_iri, name, created, updated, AB.WA.contact_url (domain_id, contact_id));
 		scot_tags_insert (inst_id, iri, tags);
@@ -587,7 +593,8 @@ create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
                   N.P_CREATED,
                   N.P_UPDATED,
 									N.P_TAGS,
-									N.P_FOAF);
+									N.P_FOAF,
+									N.P_IRI);
 }
 ;
 
@@ -643,7 +650,8 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
                   N.P_CREATED,
                   N.P_UPDATED,
 									N.P_TAGS,
-									N.P_FOAF);
+									N.P_FOAF,
+									N.P_IRI);
 }
 ;
 
