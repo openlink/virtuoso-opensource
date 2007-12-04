@@ -1331,8 +1331,19 @@ create function WV.WIKI.READONLYWIKIWORDHREF2 (
 ) returns varchar
 {
   declare url_params varchar;
-  if (isstring(_params))
+  if (isstring(_params)) {
     url_params :=  WV.WIKI.URL_PARAMS (_params);
+  }
+  if (url_params = '') {
+    if (isstring(_sid) and _sid <> '')
+      url_params := 'sid=' || _sid;
+    if (isstring(_realm) and _realm <> '')
+      if (url_params <> '') {
+        url_params := url_params || '&realm=' || _realm;
+      } else {
+      url_params := 'realm=' || _realm;
+    }
+  }
   if (url_params <> '')
     return sprintf ('%s/%s?%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name, url_params);
   return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
@@ -3686,7 +3697,8 @@ xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:GetMainTopicName', 'WV
 create procedure WV.WIKI.CHANGE_WORD_IN_CLUSTER (in _cluster varchar,
   in _word varchar,
   in _new_word varchar,
-  in _auth varchar)
+  in _auth varchar,
+  out _topics any)
 {
   declare _topic WV.WIKI.TOPICINFO;
   _topic := WV.WIKI.TOPICINFO();
@@ -3699,7 +3711,7 @@ create procedure WV.WIKI.CHANGE_WORD_IN_CLUSTER (in _cluster varchar,
   _topic.ti_find_metadata_by_id();
   --dbg_obj_princ ('next: ', _topic.ti_local_name, _auth);
   
-
+  _topics := vector ();
   declare cnt int;
   cnt := 0;
   for select OrigId from WV.WIKI.LINK
@@ -3720,8 +3732,11 @@ create procedure WV.WIKI.CHANGE_WORD_IN_CLUSTER (in _cluster varchar,
       WV.WIKI.UPLOADPAGE (_r_topic.ti_col_id, _r_topic.ti_local_name || '.txt', _new_res_content,
       	_owner, 0, _auth);
 --      DB.DBA.DAV_CHECKIN_INT (_r_topic.ti_full_path(), null, null, 0);
+      _r_topic.ti_compile_page();
       cnt := cnt + 1;
+      _topics := vector_concat (_topics, vector (_r_topic.ti_local_name));
     }
+
   }
   return cnt;
 }
@@ -3737,22 +3752,20 @@ create function WV.WIKI.CHANGE_LOCALNAME (
   declare _content varchar;
   
   _content := cast (_r_topic.ti_text as varchar);
-  _new_word := WV.WIKI.QUALIFY_WORD (_orig_topic.ti_cluster_name, _new_word);
 
-  -- topic can contain non qualified word 
   -- if topics belong to one cluster
   if (_r_topic.ti_cluster_name = _orig_topic.ti_cluster_name)
     {
-      _content := WV.WIKI.REPLACE_WORD (_content, 
-      	_orig_topic.ti_local_name,
-	_new_word);
+    -- topic can contain non qualified word
+    _content := WV.WIKI.REPLACE_WORD (_content, _orig_topic.ti_local_name, _new_word);
     }
   -- and replace fully qualified words 
-  _content := WV.WIKI.REPLACE_WORD (_content,
-    _orig_topic.ti_cluster_name || '.' || _orig_topic.ti_local_name,
-    _new_word);
+  _new_word := WV.WIKI.QUALIFY_WORD (_orig_topic.ti_cluster_name, _new_word);
+  _content := WV.WIKI.REPLACE_WORD (_content, _orig_topic.ti_cluster_name || '.' || _orig_topic.ti_local_name, _new_word);
+
   if (_content <> cast (_r_topic.ti_text as varchar))
     return _content;
+
   return NULL;
 }
 ;

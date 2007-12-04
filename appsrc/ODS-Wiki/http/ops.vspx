@@ -209,11 +209,21 @@
 		
                         if (self.fix_refs.ufl_selected) {
 		         declare topics_changed int;
+                          declare topics any;
 			 topics_changed := WV.WIKI.CHANGE_WORD_IN_CLUSTER (self.topic.ti_cluster_name,
 			 	self.topic.ti_local_name,
 				_new_name,
-				self.vspx_user);
-			 self.set_message (e, sprintf ('%ld topics has been changed', topics_changed));
+                            self.vspx_user,
+                            topics);
+                          declare msg varchar;
+                          msg := sprintf ('%ld topics has been changed', topics_changed);
+                          if (not isnull (topics)) {
+                            declare n integer;
+                            for (n:=0;n<length(topics);n:=n+1) {
+                              msg := msg || (sprintf ('<br /><a href="%s">%s</a>', WV.WIKI.READONLYWIKIWORDHREF2 (self.topic.ti_cluster_name, topics[n], self.sid, self.realm,'',''), topics[n]));
+                            }
+                          }
+                          self.set_message (e, msg);
 		       }
 		     else
 			 self.set_message (e, '');
@@ -268,7 +278,9 @@
 	      <tr>
 	        <td colspan="2">
 		  <v:template name="message_tmpl" type="simple">
-		    <v:label name="message_lbl" value="--self.message"/>
+                    <?vsp
+                      http (self.message);
+                    ?>
 		  </v:template>
 		</td>
 	       </tr>
