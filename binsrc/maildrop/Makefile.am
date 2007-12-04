@@ -29,11 +29,11 @@ bin_PROGRAMS = virt_mail $(ODBCMAIL)
 
 virt_mail_SOURCES = \
 	odbc_mail.c \
-	virt_mail.vers.c
+	virt_mail_vers.c
 
-noinst_HEADERS = sysexits.h
-nodist_SOURCES	= virt_mail.vers.c odbc_mail.vers.c
-CLEANFILES	= virt_mail.vers.c odbc_mail.vers.c
+noinst_HEADERS  = sysexits.h
+BUILT_SOURCES	= virt_mail_vers.c odbc_mail_vers.c
+CLEANFILES	= virt_mail_vers.c odbc_mail_vers.c
 
 virt_mail_CFLAGS  = @VIRT_AM_CFLAGS@
 virt_mail_CFLAGS += -DUDBC 
@@ -51,14 +51,14 @@ virt_mail_LDADD = \
 	$(top_builddir)/libsrc/util/libutil.la \
 	@clntlibs@
 
-virt_mail.vers.c: $(LIBDEPS) $(MAKEVER)
-	$(MAKEVER) -o virt_mail.vers.c \
+virt_mail_vers.c: $(LIBDEPS) $(MAKEVER)
+	$(MAKEVER) -o virt_mail_vers.c \
 		 -p "OpenLink Virtuoso Mail Interface" -v 2.01 -P"Release $(VERMAJ)" -B$(VERBMAJ)$(VERBMIN)
 
 
 odbc_mail_SOURCES = \
 	odbc_mail.c \
-	odbc_mail.vers.c
+	odbc_mail_vers.c
 
 odbc_mail_CFLAGS  = @VIRT_AM_CFLAGS@
 odbc_mail_CFLAGS += -I$(top_srcdir)/libsrc
@@ -74,8 +74,8 @@ odbc_mail_LDADD = \
 	$(top_builddir)/libsrc/util/libutil.la \
 	@iodbc_LDFLAGS@ 
 
-odbc_mail.vers.c: $(LIBDEPS) $(MAKEVER)
-	$(MAKEVER) -o odbc_mail.vers.c \
+odbc_mail_vers.c: $(LIBDEPS) $(MAKEVER)
+	$(MAKEVER) -o odbc_mail_vers.c \
 		 -p "OpenLink ODBC Mail Interface" -v 2.01 -P"Release $(VERMAJ)" -B$(VERBMAJ)$(VERBMIN)
 
 

@@ -1,9 +1,12 @@
 virt_mail.vers.c
+virt_mail_vers.c
 virt_mail
 udbc_mail.vers.c
+udbc_mail_vers.c
 udbc_mail
 odbc_mail
 odbc_mail.vers.c
+odbc_mail_vers.c
 .deps
 .libs
 Makefile
