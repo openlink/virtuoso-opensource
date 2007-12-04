@@ -2,8 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="im"
-	ProjectGUID="{C152ADCC-CF7A-11DA-85E2-A4E5714C712A}"
+	Name="hosting_php"
+	ProjectGUID="{9D059C10-A1AE-11DC-AE66-B7BFA9FB648A}"
+	RootNamespace="hosting_php"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
@@ -14,7 +15,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\im"
+			IntermediateDirectory="$(ConfigurationName)\hosting_php"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="FALSE"
@@ -22,8 +23,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="..\binsrc\driver;..\libsrc\Wi;..\libsrc\langfunc;..\libsrc\Xml.new;..\libsrc\plugin;..\libsrc\Dk;..\binsrc\driver\include;..\libsrc\Xml.new;..\libsrc\util\win32;..\libsrc;openssl;.;$(IM_PATH)"
-				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;O12;NDEBUG;_USRDLL"
+				AdditionalIncludeDirectories="..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;php5;php5\main;php5\Zend;php5\ext;php5\regex;php5\TSRM;."
+				PreprocessorDefinitions="INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;_PHP;_PHP_WIN32;_ZEND_CONFIG_W32_H;PHP_WIN32;ZTS;ZEND_DEBUG=1;MSVC5;ZEND_WIN32"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="FALSE"
 				BasicRuntimeChecks="0"
@@ -31,10 +32,10 @@
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="FALSE"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="$(ConfigurationName)\im/im.pch"
-				AssemblerListingLocation="$(ConfigurationName)\im/"
-				ObjectFile="$(ConfigurationName)\im/"
-				ProgramDataBaseFileName="$(ConfigurationName)\im/"
+				PrecompiledHeaderFile="$(ConfigurationName)\hosting_php/hosting_php.pch"
+				AssemblerListingLocation="$(ConfigurationName)\hosting_php/"
+				ObjectFile="$(ConfigurationName)\hosting_php/"
+				ProgramDataBaseFileName="$(ConfigurationName)\hosting_php/"
 				BrowseInformation="0"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -44,24 +45,23 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib CORE_RL_wand_.lib CORE_RL_coders_.lib CORE_RL_magick_.lib CORE_RL_ttf_.lib CORE_RL_xlib_.lib CORE_RL_bzlib_.lib CORE_RL_zlib_.lib CORE_RL_lcms_.lib CORE_RL_tiff_.lib CORE_RL_filters_.lib CORE_RL_jpeg_.lib CORE_RL_jbig_.lib CORE_RL_jp2_.lib CORE_RL_png_.lib CORE_RL_wmf_.lib CORE_RL_libxml_.lib"
-				OutputFile="$(ConfigurationName)/im.dll"
+				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib php5ts.lib"
+				OutputFile="$(ConfigurationName)/hosting_php.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl,$(IM_PATH)"
+				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl,.\php5"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
-				ModuleDefinitionFile="..\binsrc\samples\image_magick\im.def"
+				ModuleDefinitionFile="..\binsrc\hosting\php\hosting_php.def"
 				GenerateDebugInformation="FALSE"
-				ProgramDatabaseFile="$(ConfigurationName)/im.pdb"
-				ImportLibrary="$(ConfigurationName)/im.lib"/>
+				ProgramDatabaseFile="$(ConfigurationName)/hosting_php.pdb"
+				ImportLibrary="$(ConfigurationName)/hosting_php.lib"/>
 			<Tool
 				Name="VCMIDLTool"
 				PreprocessorDefinitions=""
 				MkTypLibCompatible="TRUE"
 				SuppressStartupBanner="TRUE"
 				TargetEnvironment="1"
-				TypeLibraryName="$(ConfigurationName)/im.tlb"/>
+				TypeLibraryName="$(ConfigurationName)/hosting_php.tlb"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -87,7 +87,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\im"
+			IntermediateDirectory="$(ConfigurationName)\hosting_php"
 			ConfigurationType="2"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="FALSE"
@@ -95,18 +95,18 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\binsrc\driver,..\libsrc\Wi,..\libsrc\langfunc,..\libsrc\plugin,..\binsrc\driver\include..\libsrc\Dk,..\libsrc\util\win32,..\libsrc;..\libsrc\Xml.new;openssl,.;$(IM_PATH)"
-				PreprocessorDefinitions="_SSL;INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;O12;NDEBUG;_USRDLL"
+				AdditionalIncludeDirectories="..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;php5;php5\main;php5\Zend;php5\ext;php5\regex;php5\TSRM;."
+				PreprocessorDefinitions="INPROCESS_CLIENT;NO_DOUBLE_ALIGN;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;_PHP;_PHP_WIN32;NO_DOUBLE_ALIGN;_MBCS;WIN32;_ZEND_CONFIG_W32_H;PHP_WIN32;NO_DOUBLE_ALIGN;_MBCS;WIN32;ZTS;ZEND_DEBUG=1;MSVC5;ZEND_WIN32;NO_DOUBLE_ALIGN;_MBCS;WIN32"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="FALSE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\im/im.pch"
-				AssemblerListingLocation="$(ConfigurationName)\im/"
-				ObjectFile="$(ConfigurationName)\im/"
-				ProgramDataBaseFileName="$(ConfigurationName)\im/"
+				PrecompiledHeaderFile="$(ConfigurationName)\hosting_php/hosting_php.pch"
+				AssemblerListingLocation="$(ConfigurationName)\hosting_php/"
+				ObjectFile="$(ConfigurationName)\hosting_php/"
+				ProgramDataBaseFileName="$(ConfigurationName)\hosting_php/"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -116,24 +116,23 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib CORE_RL_wand_.lib CORE_RL_coders_.lib CORE_RL_magick_.lib CORE_RL_ttf_.lib CORE_RL_xlib_.lib CORE_RL_bzlib_.lib CORE_RL_zlib_.lib CORE_RL_lcms_.lib CORE_RL_tiff_.lib CORE_RL_filters_.lib CORE_RL_jpeg_.lib CORE_RL_jbig_.lib CORE_RL_jp2_.lib CORE_RL_png_.lib CORE_RL_wmf_.lib CORE_RL_libxml_.lib"
-				OutputFile="$(ConfigurationName)/im.dll"
+				AdditionalDependencies="dk1t.lib threadw.lib util.lib odbc32.lib odbccp32.lib ws2_32.lib libeay32.lib ssleay32.lib php5ts.lib"
+				OutputFile="$(ConfigurationName)/hosting_php.dll"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl;$(IM_PATH)"
+				AdditionalLibraryDirectories="$(ConfigurationName),.\openssl,.\php5"
 				IgnoreDefaultLibraryNames="LIBCD.lib"
-				ModuleDefinitionFile="..\binsrc\samples\image_magick\im.def"
+				ModuleDefinitionFile="..\binsrc\hosting\php\hosting_php.def"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)/im.pdb"
-				ImportLibrary="$(ConfigurationName)/im.lib"/>
+				ProgramDatabaseFile="$(ConfigurationName)/hosting_php.pdb"
+				ImportLibrary="$(ConfigurationName)/hosting_php.lib"/>
 			<Tool
 				Name="VCMIDLTool"
 				PreprocessorDefinitions=""
 				MkTypLibCompatible="TRUE"
 				SuppressStartupBanner="TRUE"
 				TargetEnvironment="1"
-				TypeLibraryName="$(ConfigurationName)/im.tlb"/>
+				TypeLibraryName="$(ConfigurationName)/hosting_php.tlb"/>
 			<Tool
 				Name="VCPostBuildEventTool"/>
 			<Tool
@@ -164,7 +163,7 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
-				RelativePath="..\binsrc\samples\image_magick\im.c">
+				RelativePath="..\binsrc\hosting\php\hosting_php.c">
 			</File>
 			<File
 				RelativePath="..\libsrc\plugin\import_gate_virtuoso.c">
@@ -173,10 +172,6 @@
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl">
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 		</Filter>
 	</Files>
 	<Globals>
