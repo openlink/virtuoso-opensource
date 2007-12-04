@@ -37,11 +37,13 @@
 */
 
 OAT.PivotData = {
-	TYPE_BASIC:[0,"Basic - 123,456"],
-	TYPE_PERCENT:[1,"Percentual - 123,456%"],
-	TYPE_SCI:[2,"Scientific - 123,456E+02"],
-	TYPE_SPACE:[3,"With space - 1 234.567"],
-	TYPE_CUSTOM:[4,"Custom"]
+	TYPE_BASIC:[0,"Basic - 1234.56"],
+	TYPE_PERCENT:[1,"Percentual - 1234.56%"],
+	TYPE_SCI:[2,"Scientific - 1234E+02"],
+	TYPE_SPACE:[3,"With space - 1 234.56"],
+	TYPE_CUSTOM:[4,"Custom"], /* function in options.customType */
+	TYPE_COMMA:[5,"With comma - 1,234.56"],
+	TYPE_CURRENCY:[6,"Currency - $ 1,234.56"] /* currency symbol in options.currencySymbol. $ is default */
 }
 
 OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,headerColIndexes,filterIndexes,dataColumnIndex,optObj) {
@@ -56,6 +58,7 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 		showColChart:0,
 		type:OAT.PivotData.TYPE_BASIC[0],
 		customType:function(data){return data;},
+		currencySymbol:"$",
 		showEmpty:1,
 		subtotals:1,
 		totals:1
@@ -888,12 +891,47 @@ OAT.Pivot = function(div,chartDiv,filterDiv,headerRow,dataRows,headerRowIndexes,
 			case OAT.PivotData.TYPE_SPACE[0]: 
 				result = value.toFixed(2); 
 				result = result.toString();
-				var l = result.length;
-				if (l > 6) { 
-					result = result.split("");
-					result.splice(l-6,0,"&nbsp;");
-					result = result.join(""); 
-				}
+				var parts = result.split('.');
+				var decPart = (parts.length > 1) ? ('.' + parts[1]) : '';
+				var len = parts[0].length;
+				var mod = len % 3;
+				var wholePart = '';
+				var delimiter = '&nbsp;';
+				if (mod > 0)
+					wholePart = parts[0].substring(0, mod);
+				for (i=mod; i<len; i+=3)
+					wholePart += (i==0 ? '' : delimiter) + parts[0].substr(i,3);
+				result = wholePart + decPart;
+			break;
+			case OAT.PivotData.TYPE_COMMA[0]: 
+				result = value.toFixed(2); 
+				result = result.toString();
+				var parts = result.split('.');
+				var decPart = (parts.length > 1) ? ('.' + parts[1]) : '';
+				var len = parts[0].length;
+				var mod = len % 3;
+				var wholePart = '';
+				var delimiter = ',';
+				if (mod > 0)
+					wholePart = parts[0].substring(0, mod);
+				for (i=mod; i<len; i+=3)
+					wholePart += (i==0 ? '' : delimiter) + parts[0].substr(i,3);
+				result = wholePart + decPart;
+			break;
+			case OAT.PivotData.TYPE_CURRENCY[0]:
+				result = value.toFixed(2); 
+				result = result.toString();
+				var parts = result.split('.');
+				var decPart = (parts.length > 1) ? ('.' + parts[1]) : '';
+				var len = parts[0].length;
+				var mod = len % 3;
+				var wholePart = '';
+				var delimiter = ',';
+				if (mod > 0)
+					wholePart = parts[0].substring(0, mod);
+				for (i=mod; i<len; i+=3)
+					wholePart += (i==0 ? '' : delimiter) + parts[0].substr(i,3);
+				result = self.options.currencySymbol+ "&nbsp;"+wholePart + decPart;
 			break;
 			case OAT.PivotData.TYPE_CUSTOM[0]: result = self.options.customType(value); break;
 		} /* switch */
