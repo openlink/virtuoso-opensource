@@ -1101,7 +1101,7 @@ lock_check_deadlock (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf)
 
   FAILCK (it);
   ASSERT_IN_TXN;
-  if (LT_PENDING != it->itc_ltrx->lt_status)
+  if (LT_PENDING != it->itc_ltrx->lt_status && LT_FREEZE != it->itc_ltrx->lt_status)
     {
       LEAVE_TXN;
       itc_bust_this_trx (it, &buf, ITC_BUST_THROW);
@@ -1149,6 +1149,7 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
   lock_check_deadlock (pl, it, buf);
   if (LT_FREEZE == lt->lt_status)
     {
+      /* printf ("lock wait freeze here\n"); */
       lt->lt_status = LT_PENDING;
       lt_resume_waiting_end (lt); /* this thread goes to wait.  lw is as good as freeze. The txn mtx is never left, so the lock will be there.  */
     }
@@ -1187,7 +1188,7 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
   ITC_MARK_LOCK_WAIT (it, time);
 
   CHECK_DK_MEM_RESERVE (it->itc_ltrx);
-  if (it->itc_ltrx->lt_status != LT_PENDING)
+  if (it->itc_ltrx->lt_status != LT_PENDING && it->itc_ltrx->lt_status != LT_FREEZE)
     {
       itc_bust_this_trx (it, NULL, ITC_BUST_THROW);
     }

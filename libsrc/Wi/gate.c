@@ -723,29 +723,57 @@ void
 itc_fix_back_link (it_cursor_t * itc, buffer_desc_t ** buf, dp_addr_t dp_from,
 		   buffer_desc_t * old_buf, dp_addr_t back_link, int was_after_wait)
 {
-#ifndef NDEBUG
-  dbg_page_map (old_buf);
-  dbg_page_map (*buf);
-#endif
+  if (itc->itc_read_waits || itc->itc_write_waits)
+    was_after_wait = 1;
+
   rdbg_printf ((
 		"Bad parent link in %ld, coming from %ld, parent link = %ld.\n",
 		(*buf)->bd_page, old_buf->bd_page, back_link));
-  log_error ("Bad parent link in %ld, coming from %ld, parent link = %ld %s.",
-	     (*buf)->bd_page, old_buf->bd_page, back_link,
-	     was_after_wait ? "unconfirmed, detected after wait" : "confirmed");
-  if (was_after_wait)
-    return;
-  if (correct_parent_links)
+  if (1 || was_after_wait)
     {
+      int was_landed = itc->itc_landed, pos;
+      buffer_desc_t * parent;
+      if (!itc->itc_landed)
+	{
+	  itc_try_land (itc, buf);
+	  if (!itc->itc_landed)
+	    {
+	      *buf = itc_reset (itc);
+    return;
+	    }
+	}
+      parent = itc_write_parent (itc, *buf);
+      if (!parent && was_landed)
+	return;
+      if (!parent)
+    {
+	  itc_page_leave (itc, *buf);
+	  *buf = itc_reset (itc);
+	  return;
+	}
+      pos = find_leaf_pointer (parent, (*buf)->bd_page, NULL, NULL);
+      if (pos <= 0)
+	{
+	  log_error ("A bad parent link has been detected by looking at the would be parent and finding no leaf pointer.  The pages follow, parent first.");
+	  dbg_page_map (parent);
+	  dbg_page_map (*buf);
+	  if (!correct_parent_links)
+	    {
+	      log_error ("Consult your documentation on how to recover from "
+			 "this situation.  Doe a crush dump and restore or try the autocorrect options in the virtuoso.ini file");
+	      GPF_T1 ("fatal consistency check failure");
+	    }
       LONG_SET ((*buf)->bd_buffer + DP_PARENT, dp_from);
       (*buf)->bd_is_dirty = 1;
       log_info ("Bad parent link corrected");
     }
-  else
+      page_leave_outside_map (parent);
+      if (!was_landed)
     {
-      log_error ("Consult your documentation on how to recover from "
-		 "this situation");
-      GPF_T1 ("fatal consistency check failure");
+	  itc_page_leave (itc, *buf);
+	  *buf = itc_reset (itc);
+	}
+      return;
     }
 }
 
@@ -1168,6 +1196,8 @@ itc_reset (it_cursor_t * it)
   it->itc_landed = 0;
   it->itc_dive_mode = PA_READ;
   it->itc_is_on_row = 0;
+  it->itc_write_waits = 0;
+  it->itc_read_waits = 0;
   it->itc_owns_page = 0;
   it->itc_nth_seq_page = 0;
   it->itc_n_lock_escalations = 0;
