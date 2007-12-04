@@ -1,6 +1,5 @@
 /*
- *  $Id$
- *
+ *  
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
@@ -20,7 +19,7 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
  *  
- */
+*/
 #include "../Dk/Dkhash64.h"
 #include "libutil.h"
 #include "sqlnode.h"
@@ -170,7 +169,6 @@ tf_set_cbk_names (triple_feed_t *tf, const char **cbk_names)
         sqlr_resignal (err);
     }
 }
-
 
 int32 tf_rnd_seed;
 
@@ -588,8 +586,8 @@ this means that <#foo> can be written :foo and using @keywords one can reduce th
           if (DV_STRING == DV_TYPE_OF (qname))
             {
 	      qname[0] = '#';
-      return qname;
-    }
+	      return qname;
+            }
           ns_uri = "#";
           ns_uri_len = 1;
           goto ns_uri_found; /* see below */
@@ -646,7 +644,7 @@ ttlp_uri_resolve (TTLP_PARAM caddr_t qname)
   caddr_t res, err = NULL;
   res = rfc1808_expand_uri ((caddr_t *)qi, ttlp_inst.ttlp_base_uri, qname, "UTF-8", 1 /* ??? */, "UTF-8", "UTF-8", &err);
   if (res != qname)
-  dk_free_box (qname);
+    dk_free_box (qname);
   if (NULL != err)
     sqlr_resignal (err);
   if (res == ttlp_inst.ttlp_base_uri)
@@ -851,7 +849,7 @@ iter_is_set:
         ttlp->ttlp_enc = &eh__ISO8859_1;
     }
   if (box_length (base_uri) > 1)
-  ttlp->ttlp_base_uri = box_copy (base_uri);
+    ttlp->ttlp_base_uri = box_copy (base_uri);
   QR_RESET_CTX
     {
       tf_set_cbk_names (tf, (const char **)cbk_names);
@@ -1111,7 +1109,6 @@ end_of_test:
 }
 #endif
 
-
 typedef struct name_id_cache_s 
 {
   dk_mutex_t *	nic_mtx;
@@ -1256,8 +1253,76 @@ tb_string_and_id_check (dbe_table_t * tb, dbe_column_t ** str_col, dbe_column_t 
   return 1;
 }
 
+#define N_IRI_SEQS 19 
+#define IRI_RANGE_SZ 10000 
 
 extern dk_mutex_t * log_write_mtx;
+
+
+boxint
+rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret)
+{
+  int rc;
+  caddr_t log_array, old_repl;
+  du_thread_t * self = THREAD_CURRENT_THREAD;
+  static caddr_t iri_seq[N_IRI_SEQS];
+  static caddr_t iri_seq_max[N_IRI_SEQS];
+  static caddr_t range_seq;
+  int nth = (((uptrlong)self) ^ (((uptrlong)self) >> 11))
+    % N_IRI_SEQS;
+  boxint id, id_max;
+  if (!range_seq)
+    {
+      int inx;
+      range_seq = box_dv_short_string ("RDF_URL_IID_NAMED");
+      for (inx = 0; inx < N_IRI_SEQS; inx++)
+	{
+	  char name[20];
+	  sprintf (name, "__IRI%d", inx);
+	  iri_seq[inx] = box_dv_short_string (name);
+	  sprintf (name, "__IRI_MAX%d", inx);
+	  iri_seq_max[inx] = box_dv_short_string (name);
+	}
+    }
+  IN_TXN;
+  id = sequence_next_inc (iri_seq[nth], INSIDE_MAP, 1);
+  id_max = sequence_set (iri_seq_max[nth], 0, SEQUENCE_GET, INSIDE_MAP);
+  if (id < id_max)
+    {
+      LEAVE_TXN;
+      *value_seq_ret = iri_seq[nth];
+      return id;
+    }
+  id = sequence_next_inc (range_seq, INSIDE_MAP, IRI_RANGE_SZ);
+  if (!id)
+    sequence_set (range_seq, IRI_RANGE_SZ, SET_ALWAYS, INSIDE_MAP);
+  sequence_set (iri_seq[nth], id + 1, SET_ALWAYS, INSIDE_MAP);
+  sequence_set (iri_seq_max[nth], id + IRI_RANGE_SZ, SET_ALWAYS, INSIDE_MAP);
+  LEAVE_TXN;
+  log_array = list (5, box_string ("DB.DBA.ID_RANGE_REPLAY (?, ?, ?, ?)"),
+		    box_dv_short_string (iri_seq[nth]), box_dv_short_string (iri_seq_max[nth]),
+		    box_num (id), box_num (id + IRI_RANGE_SZ));
+  mutex_enter (log_write_mtx);
+  old_repl = lt->lt_replicate;
+  lt->lt_replicate = REPL_LOG;
+  rc = log_text_array_sync (lt, log_array);
+  lt->lt_replicate = old_repl;
+  mutex_leave (log_write_mtx);
+  dk_free_tree (log_array);
+  if (rc != LTE_OK)
+    {
+static caddr_t details = NULL;
+      if (NULL == details)
+        details = box_dv_short_string ("while writing new IRI_ID range allocation to log file");
+/*      if (lt->lt_client != bootstrap_cli) */
+      sqlr_resignal (srv_make_trx_error (rc, details));
+    }
+
+  *value_seq_ret = iri_seq[nth];
+  return id;
+}
+
+
 
 caddr_t 
 tb_new_id_and_name (lock_trx_t * lt, it_cursor_t * itc, dbe_table_t * tb, caddr_t name, char * value_seq_name)
@@ -1266,7 +1331,8 @@ tb_new_id_and_name (lock_trx_t * lt, it_cursor_t * itc, dbe_table_t * tb, caddr_
   caddr_t log_array;
   dbe_key_t * id_key = (dbe_key_t *)(tb->tb_keys->data == tb->tb_primary_key ? tb->tb_keys->next->data : tb->tb_keys->data);
   caddr_t seq_box = box_dv_short_string (value_seq_name);
-  int64 res = sequence_next_inc (seq_box, OUTSIDE_MAP, 1);
+  int64 res = 0 == strcmp ("RDF_URL_IID_NAMED", seq_box)  
+    ? rdf_new_iri_id (lt, &value_seq_name) : sequence_next_inc (seq_box, OUTSIDE_MAP, 1);
   dbe_column_t * id_col = (dbe_column_t *)id_key->key_parts->data;
   caddr_t res_box;
   dtp_t pk_image[MAX_ROW_BYTES];
@@ -1384,7 +1450,6 @@ re_search:
   itc_free (itc);
   return iri;
 }
-
 
 int 
 iri_split (char * iri, caddr_t * pref, caddr_t * name)
@@ -1645,8 +1710,8 @@ key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
       caddr_t pref_id_box = box_num (pref_id);
       prefix = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_PREFIX", pref_id_box);
       dk_free_box (pref_id_box);
-  if (!prefix)
-    return NULL;
+      if (!prefix)
+        return NULL;
       nic_set (iri_prefix_cache, prefix, pref_id);
     }
   name = dk_alloc_box (box_length (local) + box_length (prefix) - 5, DV_STRING);
@@ -1730,8 +1795,8 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
       if (NULL != hit)
         {
           dk_free_box (txt);
-        return box_copy_tree (hit[0]);
-    }
+          return box_copy_tree (hit[0]);
+        }
     }
   BOX_AUTO (params, params_buf, sizeof (caddr_t) * 3, DV_ARRAY_OF_POINTER);
   res = NULL;
@@ -1741,7 +1806,7 @@ caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t txt)
   err = qr_exec (tf->tf_qi->qi_client, tf->tf_cbk_qrs[TRIPLE_FEED_NEW_BLANK], tf->tf_qi, NULL, NULL, NULL, (caddr_t *)params, NULL, 0);
   BOX_DONE (params, params_buf);
   if (NULL != err)
-      sqlr_resignal (err);
+    sqlr_resignal (err);
   if (NULL == txt)
     return res;
   id_hash_set (tf->tf_blank_node_ids, (caddr_t)(&txt), (caddr_t)(&res));
@@ -1758,6 +1823,16 @@ caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS TTLP_PARAM caddr_t txt)
   dk_set_pop (&(ttlp_inst.ttlp_saved_uris));
   return res;
 }
+
+
+char * range_replay =
+"create procedure ID_RANGE_REPLAY (in iri_seq varchar, in iri_seq_max varchar, in id int, in max_id int)\n"
+"{\n"
+"  sequence_set (iri_seq, id, 1);\n"
+"  sequence_set (iri_seq_max, max_id, 1);\n"
+"	sequence_set ('RDF_URL_IID_NAMED', max_id, 1);\n"
+"}";
+
 
 char * iri_replay =
 "create procedure  DB.DBA.ID_REPLAY (in tb varchar, in seq varchar, in name varchar, in id an)\n"
@@ -1879,7 +1954,7 @@ bif_rdf_obj_ft_rule_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (NULL == known_reasons_ptr[0])
     {
       ptrlong *rule_count_ptr = rdf_obj_ft_get_rule_count_ptr (g_id);
-    id_hash_remove (rdf_obj_ft_rules, (caddr_t)(&hkey));
+      id_hash_remove (rdf_obj_ft_rules, (caddr_t)(&hkey));
       rule_count_ptr[0]--;
     }
   mutex_leave (rdf_obj_ft_rules_mtx);
@@ -1995,5 +2070,6 @@ rdf_core_init (void)
     sizeof (boxint), sizeof (ptrlong),
     boxint_hash, boxint_hashcmp );
   ddl_std_proc (iri_replay, 0);
+  ddl_std_proc (range_replay, 0);
   rdf_inf_init ();
 }
