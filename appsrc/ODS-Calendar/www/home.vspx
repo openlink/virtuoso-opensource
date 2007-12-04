@@ -1511,8 +1511,8 @@
                             From
                     </td>
                     <td>
-                      <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
-                            <a href="#" name="e_eventStartDate_select" id="e_eventStartDate_select" onclick="cPopup.select(document.forms['F1'].e_eventStartDate, 'e_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                            <v:text name="e_eventStartDate" xhtml_id="e_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].e_eventStartDate, \'e_eventStartDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                            <a href="#" name="e_eventStartDate_select" id="e_eventStartDate_select" onclick="cPopup.select(document.forms[0].e_eventStartDate, 'e_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
                       <v:select-list name="e_eventStartTime" xhtml_id="e_eventStartTime" xhtml_style="--case when self.v_event = 0 then '' else 'display: none;' end">
@@ -1545,8 +1545,8 @@
                             To
                     </td>
                     <td>
-                      <v:text name="e_eventEndDate" xhtml_id="e_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
-                            <a href="#" name="e_eventEndDate_select" id="e_eventEndDate_select" onclick="cPopup.select(document.forms['F1'].e_eventEndDate, 'e_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                            <v:text name="e_eventEndDate" xhtml_id="e_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].e_eventEndDate, \'e_eventEndDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                            <a href="#" name="e_eventEndDate_select" id="e_eventEndDate_select" onclick="cPopup.select(document.forms[0].e_eventEndDate, 'e_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                       </a>
                       <v:select-list name="e_eventEndTime" xhtml_id="e_eventEndTime" xhtml_style="--case when self.v_event = 0 then '' else 'display: none;' end">
@@ -2157,8 +2157,8 @@
                 <xsl:call-template name="nbsp"/>
                 <vm:label for="e_repeatUntilKind_1" value="--'Until'" />
                 <xsl:call-template name="nbsp"/>
-                <v:text name="e_repeatUntil" xhtml_id="e_repeatUntil" null-value="--''" value="--CAL.WA.dt_datestring (self.v_repeatUntil, self.cDateFormat)" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeatUntilKind\', \'e_repeatUntilKind_1\');'" xhtml_class="textbox" xhtml_size="10" />
-                            <a href="#" name="e_repeatUntil_select" id="e_repeatUntil_select" onclick="cPopup.select(document.forms['F1'].e_repeatUntil, 'e_repeatUntil_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                            <v:text name="e_repeatUntil" xhtml_id="e_repeatUntil" null-value="--''" value="--CAL.WA.dt_datestring (self.v_repeatUntil, self.cDateFormat)" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeatUntilKind\', \'e_repeatUntilKind_1\');'" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].e_repeatUntil, \'e_repeatUntil_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                            <a href="#" name="e_repeatUntil_select" id="e_repeatUntil_select" onclick="cPopup.select(document.forms[0].e_repeatUntil, 'e_repeatUntil_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
               </td>
@@ -2388,7 +2388,7 @@
               self.v_description := '';
               self.v_tags := '';
               self.v_eventStart := null;
-              self.v_eventEnd := null;
+              self.v_eventEnd := self.cDay;
               self.v_priority := 3;
               self.v_status := '';
               self.v_complete := 0;
@@ -2425,8 +2425,8 @@
               </th>
               <td>
                 <vm:if test="self.cAction <> 'view'">
-                <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
-                      <a href="#" name="t_eventStartDatt_select" id="t_eventStartDatt_select" onclick="cPopup.select(document.forms['F1'].t_eventStartDate, 't_eventStartDatt_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                      <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_eventStartDate, \'t_eventStartDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                      <a href="#" name="t_eventStartDate_select" id="t_eventStartDate_select" onclick="cPopup.select(document.forms[0].t_eventStartDate, 't_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
                 </vm:if>
@@ -2439,8 +2439,8 @@
               </th>
               <td>
                 <vm:if test="self.cAction <> 'view'">
-                <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10"/>
-                      <a href="#" name="t_eventEndDatt_select" id="t_eventEndDatt_select" onclick="cPopup.select(document.forms['F1'].t_eventEndDate, 't_eventEndDatt_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                      <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_eventEndDate, \'t_eventEndDatt_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                      <a href="#" name="t_eventEndDatt_select" id="t_eventEndDatt_select" onclick="cPopup.select(document.forms[0].t_eventEndDate, 't_eventEndDatt_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
                 </vm:if>
@@ -2453,8 +2453,8 @@
                   </th>
                   <td>
                     <vm:if test="self.cAction <> 'view'">
-                      <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
-                      <a href="#" name="t_completed_select" id="t_completed_select" onclick="cPopup.select(document.forms['F1'].t_completed, 't_completed_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
+                      <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_completed, \'t_completed_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                      <a href="#" name="t_completed_select" id="t_completed_select" onclick="cPopup.select(document.forms[0].t_completed, 't_completed_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                       </a>
                     </vm:if>
@@ -2681,14 +2681,21 @@
                 } else {
                   self.v_eventStart := CAL.WA.dt_join (self.v_eventStart, CAL.WA.dt_timeEncode (12, 0));
                 }
-                self.v_eventEnd := CAL.WA.test (trim (self.t_eventEndDate.ufl_value), vector('name', 'Task due date', 'class', 'date-'||self.cDateFormat, 'canEmpty', 0));
+                self.v_eventEnd := CAL.WA.test (trim (self.t_eventEndDate.ufl_value), vector('name', 'Task due date', 'class', 'date-'||self.cDateFormat));
+                if (self.v_eventEnd = '') {
+                  self.v_eventEnd := null;
+                } else {
                 self.v_eventEnd := CAL.WA.dt_join (self.v_eventEnd, CAL.WA.dt_timeEncode (12, 0));
+                }
                 if (self.v_eventEnd < self.v_eventStart)
                   signal ('TEST', '''Due date'' value should be greater then ''Start date'' value!<>');
 
-                self.v_completed := CAL.WA.test (trim (self.t_completed.ufl_value), vector('name', 'Task completed date', 'class', 'date-'||self.cDateFormat, 'canEmpty', 0));
+                self.v_completed := CAL.WA.test (trim (self.t_completed.ufl_value), vector('name', 'Task completed date', 'class', 'date-'||self.cDateFormat));
+                if (self.v_completed = '') {
+                  self.v_completed := null;
+                } else {
                 self.v_completed := CAL.WA.dt_join (self.v_completed, CAL.WA.dt_timeEncode (12, 0));
-
+                }
                 if (self.v_completed < self.v_eventStart)
                   signal ('TEST', '''Completed date'' value should be greater then ''Start date'' value!<>');
 

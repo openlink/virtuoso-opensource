@@ -76,7 +76,7 @@ CAL.WA.exec_no_error ('
                                           -- 1 - PRIVATE
                                           -- 2 - CONFIDENTIAL
     E_SUBJECT varchar,
-    E_DESCRIPTION varchar,
+    E_DESCRIPTION long varchar,
     E_NOTES long varchar,
     E_LOCATION varchar,
     E_TAGS varchar,
@@ -133,6 +133,26 @@ CAL.WA.exec_no_error (
 CAL.WA.exec_no_error (
   'alter table CAL.WA.EVENTS add E_COMPLETED datetime', 'C', 'CAL.WA.EVENTS', 'E_COMPLETED'
 );
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.tmp_description_update ()
+{
+  if (registry_get ('cal_description_update') = '1')
+    return;
+
+  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS add E_TMP varchar', 'C', 'CAL.WA.EVENTS', 'E_TMP');
+  CAL.WA.exec_no_error ('update CAL.WA.EVENTS set E_TMP = E_DESCRIPTION');
+  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS drop E_DESCRIPTION', 'D', 'CAL.WA.EVENTS', 'E_DESCRIPTION');
+  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS add E_DESCRIPTION long varchar', 'C', 'CAL.WA.EVENTS', 'E_DESCRIPTION');
+  CAL.WA.exec_no_error ('update CAL.WA.EVENTS set E_DESCRIPTION = E_TMP');
+  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS drop E_TMP', 'D', 'CAL.WA.EVENTS', 'E_TMP');
+
+  registry_set ('cal_description_update', '1');
+
+}
+;
+CAL.WA.tmp_description_update();
 
 CAL.WA.exec_no_error ('
   create index SK_EVENTS_01 on CAL.WA.EVENTS (E_DOMAIN_ID, E_KIND, E_EVENT_START)
@@ -301,17 +321,17 @@ create procedure CAL.WA.EVENTS_E_SUBJECT_unindex_hook (inout vtb any, inout d_id
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.drop_index()
+create procedure CAL.WA.tmp_drop_index ()
 {
-  if (registry_get ('cal_index_version') = '3')
+  if (registry_get ('cal_index_version') = '4')
     return;
 
     CAL.WA.exec_no_error ('drop table CAL.WA.EVENTS_E_SUBJECT_WORDS');
-  registry_set ('cal_index_version', '3');
+  registry_set ('cal_index_version', '4');
 
 }
 ;
-CAL.WA.drop_index();
+CAL.WA.tmp_drop_index ();
 
 CAL.WA.exec_no_error ('
   create text index on CAL.WA.EVENTS (E_SUBJECT) with key E_ID clustered with (E_DOMAIN_ID, E_UPDATED) using function language \'x-ViDoc\'
