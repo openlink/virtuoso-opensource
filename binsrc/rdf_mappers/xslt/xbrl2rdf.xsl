@@ -86,16 +86,13 @@
   <xsl:template match="unit">
     <xsl:variable name="id" select="concat($base, '#', @id)"/>
     <rdf:Description rdf:ID="{$id}">
-        <xbrli:unit>
           <xbrli:measure>
               <xsl:value-of select="measure" />
           </xbrli:measure>
-        </xbrli:unit>
     </rdf:Description>
   </xsl:template>
   
   <xsl:template match="entity">
-    <xbrli:entity>
       <xbrli:scheme>
         <xsl:apply-templates select="identifier"/>
       </xbrli:scheme>
@@ -105,7 +102,6 @@
       <xbrli:segment>
           <xsl:value-of select="segment" />
       </xbrli:segment>
-    </xbrli:entity>
   </xsl:template>
     
   <xsl:template match="identifier">
@@ -113,11 +109,9 @@
   </xsl:template>
 
   <xsl:template match="period">
-    <xbrli:period>
         <xsl:apply-templates select="instant"/>
         <xsl:apply-templates select="startDate"/>
         <xsl:apply-templates select="endDate"/>
-    </xbrli:period>
   </xsl:template>
   
   <xsl:template match="instant">
@@ -147,14 +141,12 @@
     <xsl:variable name="name1" select="local-name(.)"/>    
     <xsl:variable name="id" select="concat(namespace-uri(.), '#', $name1)"/>
     <rdf:Description rdf:about="{$id}">
-        <xsl:element namespace="{$id}" name="{name()}">
         <xbrli:contextRef>
             <xsl:value-of select="$contextRef"/>
         </xbrli:contextRef>
         <rdf:value>
             <xsl:value-of select="."/>
         </rdf:value>
-        </xsl:element>
     </rdf:Description>
   </xsl:template>
 
