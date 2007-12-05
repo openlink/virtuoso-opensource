@@ -332,14 +332,8 @@ sparp_expand_top_retvals (sparp_t *sparp)
       int ctr;
       caddr_t retvalmode_name, formatmode_name;
       sparp_gp_trav_cbk_t *expn_out_cbk;
-      DO_BOX_FAST (SPART *, retexpn, ctr, old_retvals)
-        {
-          if ((SPAR_FUNCALL == SPART_TYPE (retexpn)) && retexpn->_.funcall.agg_mode)
-            goto agg_found; /* see below */
-        }
-      END_DO_BOX_FAST;
+      if (0 == sparp->sparp_query_uses_aggregates)
     return;
-agg_found:
       retvalmode_name = sparp->sparp_expr->_.req_top.retvalmode_name;
       formatmode_name = sparp->sparp_expr->_.req_top.formatmode_name;
       if (((SELECT_L == sparp->sparp_expr->_.req_top.subtype) ||

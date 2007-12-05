@@ -233,6 +233,8 @@ typedef struct sparp_s {
   spar_lexem_t *sparp_curr_lexem;
   spar_lexbmk_t sparp_curr_lexem_bmk;
   int sparp_in_precode_expn;		/*!< The parser reads precode-safe expression so it can not contain non-global variables */
+  int sparp_allow_aggregates_in_expn;	/*!< The parser reads result-set expressions or HAVING but not HAVING SELECT ... */
+  int sparp_query_uses_aggregates;	/*!< Nonzero if there is at least one aggregate in the query */
 /* Environment of lex */
   size_t sparp_text_ofs;
   size_t sparp_text_len;

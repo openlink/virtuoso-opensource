@@ -488,7 +488,9 @@ spar_prefix_decl	/* [4]  	PrefixDecl	  ::=  	'PREFIX' QNAME_NS Q_IRI_REF	*/
 
 spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' 'DISTINCT'? ( ( Retcol ( ','? Retcol )* ) | '*' )	*/
 			/*... DatasetClause* WhereClause SolutionModifier	*/
-	: spar_select_query_mode { spar_selid_push (sparp_arg); }
+	: spar_select_query_mode {
+		spar_selid_push (sparp_arg);
+		sparp_arg->sparp_allow_aggregates_in_expn = 1; }
 	    spar_select_rset spar_dataset_clauses_opt
             spar_where_clause spar_solution_modifier {
 		$$ = spar_make_top (sparp_arg, $1, $3, spar_selid_pop (sparp_arg),
@@ -583,7 +585,10 @@ spar_where_clause_opt	/* ::=  WhereClause?	*/
 	;
 
 spar_where_clause	/* [13]  	WhereClause	  ::=  	'WHERE'? GroupGraphPattern	*/
-	: WHERE_L _LBRA	{ spar_gp_init (sparp_arg, WHERE_L); } spar_group_gp	{ $$ = $4; }
+	: WHERE_L _LBRA	{
+		sparp_arg->sparp_allow_aggregates_in_expn = 0;
+		spar_gp_init (sparp_arg, WHERE_L); }
+	    spar_group_gp	{ $$ = $4; }
 	| _LBRA { spar_gp_init (sparp_arg, WHERE_L); } spar_group_gp		{ $$ = $3; }
 	;
 
@@ -871,9 +876,9 @@ spar_retcol_value	/* ::=  ( Var | ( '(' Expn ')' | RetAggCall ) )	*/
 	;
 
 spar_ret_agg_call	/* [Virt]	RetAggCall	 ::=  AggName '(', ( '*' | ( 'DISTINCT'? Var ) ) ')'	*/
-	: spar_agg_name spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, $2)); }
-	| spar_agg_name _STAR _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, (ptrlong)1)); }
-        | spar_agg_name DISTINCT_L spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, DISTINCT_L, $1, (SPART **)t_list (1, $3)); }
+	: spar_agg_name spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, $2)); sparp_arg->sparp_query_uses_aggregates++; }
+	| spar_agg_name _STAR _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, (ptrlong)1)); sparp_arg->sparp_query_uses_aggregates++; }
+        | spar_agg_name DISTINCT_L spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, DISTINCT_L, $1, (SPART **)t_list (1, $3)); sparp_arg->sparp_query_uses_aggregates++; }
 	;
 
 spar_agg_name	/* [Virt]	AggName	 ::=  'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'SUM'	*/
@@ -964,6 +969,12 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
         | _LPAR spar_expn _RPAR	{ $$ = $2; }	/* [58]	PrimaryExpn	 ::=  */
 			/*... BracketedExpn | BuiltInCall | IRIrefOrFunction	*/
 			/*... | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var	*/
+	| spar_ret_agg_call {
+		$$ = $1;
+		if (sparp_arg->sparp_in_precode_expn)
+		  sparyyerror ("Aggregates are not allowed in 'precode' expressions that should be calculated before the result-set of the query");
+		if (!sparp_arg->sparp_allow_aggregates_in_expn)
+		  sparyyerror ("Aggregates are allowed only in result sets"); }
 	| spar_built_in_call
 	| spar_iriref spar_arg_list_opt {	/* [55]  	IRIrefOrFunction	  ::=  	IRIref ArgList? */
                   if (NULL == $2)
