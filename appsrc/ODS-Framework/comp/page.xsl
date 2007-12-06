@@ -334,7 +334,7 @@
 
 <xsl:template match="vm:header">
   <head>
-    <base href="http://<?V self.st_host ?>/ods/"/>
+    <base href="<?V http_s()||self.st_host ?>/ods/"/>
     <?vsp
       {
         declare style varchar;

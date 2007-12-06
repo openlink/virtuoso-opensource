@@ -574,13 +574,11 @@
          inst_url_local :='not specified';
 --         inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
          inst_url_local:=wa_expand_url (sprintf('%s%V/%s/%U',self.odsbar_dataspace_path,uname,self.odsbar_app_dataspace,inst_name_org), self.odsbar_loginparams);
-         inst_url_local := (case when locate('http://',inst_url_local)=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||inst_url_local;
-         
+
+
          if(isDiscussions) inst_url_local := wa_expand_url (sprintf('/dataspace/discussion/%U',inst_name_org), self.login_pars);
 
-
-         url:=(case when locate('http://',sprintf('%s',url))=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||url;
-
+         url:=cast(url as varchar);
          
          declare insttype_from_xsl varchar;
          insttype_from_xsl:='';

@@ -6078,3 +6078,72 @@ create procedure WA_UPGRADE_USER_SVC ()
 
 WA_UPGRADE_USER_SVC ()
 ;
+
+create procedure http_s ()
+{
+  
+  if(is_https_ctx ())
+     return 'https://';
+  else
+     return 'http://';
+
+}
+;
+
+create procedure  file_dav_to_string (in file_path varchar, in dav_path varchar :='') {
+
+  declare ret any;
+
+  if (dav_path='')
+      dav_path:=file_path;
+  
+  if (http_map_get ('is_dav') = 0)
+    {
+      ret := file_to_string (http_root () || file_path);
+    }
+  else
+    {
+      ret := (select coalesce(blob_to_string(RES_CONTENT), 'Not found...')
+                from WS.WS.SYS_DAV_RES
+               where RES_FULL_PATH = '/DAV/VAD'|| dav_path);
+    }
+
+  return ret;
+}
+;
+create procedure wa_redefine_vhosts(in host_port varchar := '*sslini*', in isdav integer := 1)
+{
+  -- make_vad.sh
+  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/ods');
+  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/ods', ppath=>'/DAV/VAD/wa/', is_dav=>isdav, vsp_user=>'dba', def_page=>'sfront.vspx');
+
+  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/images/icons');
+  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/images/icons', ppath=>'/samples/wa/icons', is_dav=>isdav);
+
+  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/users');
+  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/users', ppath=>'/DAV/VAD/wa/users', is_dav=>isdav, vsp_user=>'dba');
+
+  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/data/rdf');
+  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>isdav, vsp_user=>'dba');
+  -- gdata.sql
+  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/dataspace');
+  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/dataspace', ppath=>'/DAV/VAD/wa/', vsp_user=>'dba', is_dav=>isdav, def_page=>'sfront.vspx',is_brws=>0, opts=>vector ('url_rewrite', 'ods_rule_list1'));
+  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/dataspace/GData');
+  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
+  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/openid');
+  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/openid', ppath=>'/SOAP/Http/server', soap_user=>'OpenID');
+  --ods_api.sql
+  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/ods_services');
+  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/ods_services',ppath=>'/SOAP/',soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'ods_svc_rule_list1'));
+  --opensocial.sql
+  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/feeds');
+  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/feeds', ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_ot'));
+  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/activities');
+  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/activities', ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_act'));
+
+
+  insert soft DB.DBA.HTTP_PATH(HP_HOST,HP_LISTEN_HOST,HP_LPATH,HP_PPATH,HP_STORE_AS_DAV,HP_DIR_BROWSEABLE,HP_DEFAULT,HP_SECURITY,HP_REALM,HP_AUTH_FUNC,HP_POSTPROCESS_FUNC,HP_RUN_VSP_AS,HP_RUN_SOAP_AS,HP_PERSIST_SES_VARS,HP_SOAP_OPTIONS,HP_AUTH_OPTIONS,HP_OPTIONS,HP_IS_DEFAULT_HOST)
+  select host_port,host_port,HP_LPATH,HP_PPATH,HP_STORE_AS_DAV,HP_DIR_BROWSEABLE,HP_DEFAULT,HP_SECURITY,HP_REALM,HP_AUTH_FUNC,HP_POSTPROCESS_FUNC,HP_RUN_VSP_AS,HP_RUN_SOAP_AS,HP_PERSIST_SES_VARS,HP_SOAP_OPTIONS,HP_AUTH_OPTIONS,HP_OPTIONS,HP_IS_DEFAULT_HOST from DB.DBA.HTTP_PATH where HP_HOST='*ini*' and HP_LISTEn_HOST='*ini*'
+  ;
+}
+;

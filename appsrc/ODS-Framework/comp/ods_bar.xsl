@@ -142,8 +142,8 @@
            
 	 if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/ods'))
         {
-	   self.odsbar_ods_gpath := 'http://' || hf || '/ods/';
-          self.odsbar_dataspace_path :='http://' || hf || '/dataspace/';
+          self.odsbar_ods_gpath := http_s() || hf || '/ods/';
+          self.odsbar_dataspace_path :=http_s() || hf || '/dataspace/';
         }
 	 else
         {
@@ -218,7 +218,7 @@ nf_uid2:;
 <![CDATA[
 
 <div id="odsBarCss" style="display:none">
-<?vsp http(replace(http_get (self.odsbar_ods_gpath||'ods-bar.css'),'"images/','"'||self.odsbar_ods_gpath||'images/')); ?>
+<?vsp http(replace(file_dav_to_string ('/samples/wa/ods-bar.css','/wa/ods-bar.css'),'"images/','"'||self.odsbar_ods_gpath||'images/')); ?>
 </div>
 
 <script  type="text/javascript">
