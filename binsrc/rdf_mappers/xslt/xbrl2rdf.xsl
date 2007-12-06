@@ -63,7 +63,7 @@
   version="1.0">
   
   <xsl:output method="xml" indent="yes"/>
-  <xsl:param name="base" />
+  <xsl:param name="baseUri" />
   <xsl:template match="/">
       <rdf:RDF>
 	  	<xsl:apply-templates select="xbrl"/>
@@ -76,7 +76,7 @@
   </xsl:template>
 
   <xsl:template match="context">
-    <xsl:variable name="id" select="concat($base, '#', @id)"/>
+    <xsl:variable name="id" select="concat($baseUri, '#', @id)"/>
     <rdf:Description rdf:ID="{$id}">
         <xsl:apply-templates select="entity"/>
         <xsl:apply-templates select="period"/>
@@ -84,7 +84,7 @@
   </xsl:template>
   
   <xsl:template match="unit">
-    <xsl:variable name="id" select="concat($base, '#', @id)"/>
+    <xsl:variable name="id" select="concat($baseUri, '#', @id)"/>
     <rdf:Description rdf:ID="{$id}">
           <xbrli:measure>
               <xsl:value-of select="measure" />
