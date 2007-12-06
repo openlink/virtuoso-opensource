@@ -1015,11 +1015,10 @@ sec_set_user (query_instance_t * qi, char *name, char *pass, int is_update)
 	    upd_user_qr = new_qr;
 	  PRINT_ERR(err);
 	}
-      qr_rec_exec (upd_user_qr, cli, NULL, qi, NULL, 4,
+      qr_rec_exec (upd_user_qr, cli, NULL, qi, NULL, 3,
 	  ":0", enc_pass, QRP_RAW,
-	  ":1", (ptrlong) user->usr_id, QRP_INT,
-	  ":2", (ptrlong) user->usr_g_id, QRP_INT,
-	  ":3", name, QRP_STR);
+	  ":1", (ptrlong) user->usr_g_id, QRP_INT,
+	  ":2", name, QRP_STR);
     }
   else
     {
@@ -1705,7 +1704,7 @@ sec_read_users (void)
 	  "values (?, ?, ?, ?, 0, 0, 1, case when ? = 'dba' then 1 else 0 end)", cli, &err, 0);
       PRINT_ERR(err);
 
-      upd_user_qr = sql_compile_static ("update SYS_USERS set U_PASSWORD = ?, U_ID = ?, U_GROUP = ? where U_NAME = ?",
+      upd_user_qr = sql_compile_static ("update SYS_USERS set U_PASSWORD = ?, U_GROUP = ? where U_NAME = ?",
 	  cli, &err, 0);
       PRINT_ERR(err);
 
