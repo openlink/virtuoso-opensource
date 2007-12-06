@@ -221,15 +221,43 @@ create procedure DB.DBA.XSLT_SHA1_HEX (in val varchar)
 }
 ;
 
+create procedure DB.DBA.XSLT_STR2DATE (in val varchar)
+{
+  declare ret any;
+  ret := null;
+  if (val like '[A-Za-z]* [0-9]*')
+    {
+      declare dt, pos, tmp, v any;
+      v := trim (val, '+');
+      pos := strchr (v, ' ');
+      tmp := subseq (v, 0, pos);
+      dt := trim(tmp);
+      tmp := trim (subseq (v, pos));
+      dt := 'Wee, ' || tmp || ' ' || dt || sprintf (' %d 00:00:00 GMT', year (now ()));
+      ret := http_string_date (dt, null, null);
+    }
+  else
+    ret := http_string_date (val, null, null);
+  if (ret is not null)
+    {
+      ret := dt_set_tz (ret, 0);
+      ret := date_iso8601 (ret);
+    }
+  return coalesce (ret, val);
+}
+;
+
 grant execute on DB.DBA.XSLT_REGEXP_MATCH to public;
 grant execute on DB.DBA.XSLT_SPLIT_AND_DECODE to public;
 grant execute on DB.DBA.XSLT_UNIX2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_SHA1_HEX to public;
+grant execute on DB.DBA.XSLT_STR2DATE to public;
 
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:regexp-match', 'DB.DBA.XSLT_REGEXP_MATCH');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:split-and-decode', 'DB.DBA.XSLT_SPLIT_AND_DECODE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:unix2iso-date', 'DB.DBA.XSLT_UNIX2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT_SHA1_HEX');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT_STR2DATE');
 
 --create procedure RDF_LOAD_AMAZON_ARTICLE_INIT ()
 --{

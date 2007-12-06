@@ -30,6 +30,7 @@
     xmlns:r   ="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:c   ="http://www.w3.org/2002/12/cal/icaltzd#"
     xmlns:h   ="http://www.w3.org/1999/xhtml"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:xml   ="xml"
     version="1.0"
     >
@@ -69,9 +70,24 @@
 	<xsl:if test="not($Anchor) or @id = $Anchor">
 	    <c:component>
 		<c:Vevent>
+		    <!--xsl:if test=".//*[ contains(concat(' ', @class, ' '), concat(' url '))]">
+			<xsl:for-each select=".//*[1][ contains(concat(' ', @class, ' '), concat(' url '))]">
+			    <xsl:variable name="ref">
+				<xsl:choose>
+				    <xsl:when test="@href">
+					<xsl:value-of select="@href" />
+				    </xsl:when>
+
+				    <xsl:otherwise>
+					<xsl:value-of select="normalize-space(.)" />
+				    </xsl:otherwise>
+				</xsl:choose>
+			    </xsl:variable>
+			    <xsl:attribute name="about" namespace="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><xsl:value-of select="$ref"/></xsl:attribute>
+			</xsl:for-each>
+		    </xsl:if-->
 
 		    <xsl:call-template name="cal-props" />
-
 		</c:Vevent>
 	    </c:component>
 	</xsl:if>
@@ -319,7 +335,7 @@
 
 		<xsl:variable name="when">
 		    <xsl:choose>
-			<xsl:when test="@title">
+			<xsl:when test="@title and @title != ''">
 			    <xsl:value-of select="@title">
 			    </xsl:value-of>
 			</xsl:when>
@@ -371,7 +387,7 @@
 			<xsl:attribute name="r:datatype">
 			    <xsl:value-of select='concat("&XdtNS;", "date")' />
 			</xsl:attribute>
-			<xsl:value-of select='$when' />
+			<xsl:value-of select='vi:str2date ($when)' />
 		    </xsl:otherwise>
 		</xsl:choose>
 	    </xsl:element>
