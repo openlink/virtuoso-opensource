@@ -3677,8 +3677,8 @@ create procedure CAL.WA.vcal_str2recurrence (
   if (length (V) = 0)
     return;
 
-  -- dayly rule
-  if (get_keyword ('FREQ', V) = 'DAYLY') {
+  -- daily rule
+  if (get_keyword ('FREQ', V) = 'DAILY') {
     eRepeat := 'D1';
     eRepeatParam1 := cast (get_keyword ('INTERVAL', V, '1') as integer);
   }
@@ -3741,16 +3741,16 @@ create procedure CAL.WA.vcal_recurrence2str (
     return null;
 
   S := null;
-  -- dayly rule
+  -- daily rule
   if (eRepeat = 'D1') {
-    S := 'FREQ=DAYLY';
+    S := 'FREQ=DAILY';
     S := S || ';INTERVAL=' || cast (eRepeatParam1 as varchar);
     if (not isnull (eRepeatUntil))
       S := S || ';UNTIL=' || CAL.WA.vcal_date2utc (eRepeatUntil);
   }
 
   if (eRepeat = 'D2') {
-    S := 'FREQ=DAYLY';
+    S := 'FREQ=DAILY';
     S := S || ';INTERVAL=1';
     S := S || ';BYDAY=MO,TU,WE,TH,FR';
     if (not isnull (eRepeatUntil))
