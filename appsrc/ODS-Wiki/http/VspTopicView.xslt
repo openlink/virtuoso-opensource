@@ -577,6 +577,11 @@
         </xsl:call-template>
         <xsl:text>) | </xsl:text>
         <xsl:call-template name="wikiref">
+              <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'members')"/></xsl:with-param>
+              <xsl:with-param name="wikiref_cont">Members</xsl:with-param>
+            </xsl:call-template>
+            <xsl:text> | </xsl:text>
+            <xsl:call-template name="wikiref">
           <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'index')"/></xsl:with-param>
           <xsl:with-param name="wikiref_cont">Index</xsl:with-param>
         </xsl:call-template>

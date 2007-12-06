@@ -507,6 +507,56 @@ create function WV.WIKI.VSPCLUSTERINDEX (
 }
 ;
 
+create function WV.WIKI.VSPCLUSTERMEMBERS (
+  inout path any, inout lines any,
+  inout _topic WV.WIKI.TOPICINFO,
+  in params any )
+{
+  declare _res, _ent, _xml, _cluster any;
+  declare alpha, UserName varchar;
+  _cluster := _topic.ti_cluster_name;
+
+  _res := (select VECTOR_AGG ( vector (ucase(UserName), XMLELEMENT ('li',
+         WV.WIKI.A (UserName, UserName, 'wikiword'),
+         '')))
+    from (select coalesce (UserName, WV.WIKI.USER_WIKI_NAME (U_FULL_NAME), WV.WIKI.USER_WIKI_NAME (U_NAME)) as UserName
+            from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS left join WV.WIKI.USERS on U_ID = USERID
+           where WAM_INST=_cluster and WAM_USER= U_ID) a
+    );
+
+  declare _last_char int;
+  _last_char := 0;
+
+  _xml := XMLELEMENT ('div');
+  XMLAppendChildren(_xml, XMLELEMENT ('h3', sprintf ('This is a list of all members of the cluster "%s"', _cluster)));
+  alpha := '<p>&nbsp;<a href="#A">A</a> <a href="#B">B</a> <a href="#C">C</a> <a href="#D">D</a> <a href="#E">E</a> <a href="#F">F</a> <a href="#G">G</a> <a href="#H">H</a> <a href="#I">I</a> <a href="#J">J</a> <a href="#K">K</a> <a href="#L">L</a> <a href="#M">M</a> <a href="#N">N</a> <a href="#O">O</a> <a href="#P">P</a> <a href="#Q">Q</a> <a href="#R">R</a> <a href="#S">S</a> <a href="#T">T</a> <a href="#U">U</a> <a href="#V">V</a> <a href="#W">W</a> <a href="#X">X</a> <a href="#Y">Y</a> <a href="#Z">Z</a></p>';
+  XMLAppendChildren(_xml, xml_tree_doc (alpha));
+
+  XMLAppendChildren(_xml, XMLELEMENT ('ul'));
+  _ent := xpath_eval ('/ul', _xml);
+
+  foreach (any p in _res) do {
+    if (_last_char <> p[0][0])
+      XMLAppendChildren (_ent, XMLELEMENT ('li', XMLELEMENT ('A', XMLATTRIBUTES (subseq (p[0], 0, 1) as "name"), subseq (p[0],0,1))));
+    _last_char := p[0][0];
+    XMLAppendChildren (_ent, p[1]);
+  }
+
+  declare _ext_params any;
+  _ext_params := vector_concat (_topic.ti_xslt_vector(params),
+  	vector ('donotresolve', 1));
+
+  http_value (
+    WV.WIKI.VSPXSLT ('PostProcess.xslt',
+	   WV.WIKI.VSPXSLT ( 'VspTopicReports.xslt', _xml,
+	   _ext_params),
+	 _ext_params,
+	 coalesce (get_keyword  ('skin2', params), get_keyword ('skin', params), WV.WIKI.CLUSTERPARAM ( _topic.ti_cluster_id , 'skin', 'default' ))));
+
+}
+;
+
+
 create function WV.WIKI.VSPXSLT (in _xslt_name varchar, inout _src any, inout _params any, in _skin_name varchar:=null) returns any
 {
   declare _xslt_folder varchar;

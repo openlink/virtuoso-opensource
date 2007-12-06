@@ -519,6 +519,18 @@ content:
       WV.WIKI.VSPCLUSTERINDEX (path, lines, _topic, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
       goto make_footer;
     }
+
+    if (_cmd = 'members')
+    {
+      if (not _topic.ti_id)
+        {
+          _cmd := 'edit';
+          goto content;
+        }
+      WV.WIKI.VSPCLUSTERMEMBERS (path, lines, _topic, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
+      goto make_footer;
+    }
+
   if (_cmd = 'preview')
     {
       if (get_keyword ('kupu', params) is not null)
