@@ -106,7 +106,8 @@ create procedure POLLS.WA.tags_update (
       update POLLS.WA.TAGS
          set T_COUNT = T_COUNT - 1
        where T_DOMAIN_ID = domain_id
-         and T_TAG = lcase (tag);
+         and T_TAG = lcase (tag)
+         and T_COUNT > 0;
   }
   foreach (any tag in nTags) do {
     if (not POLLS.WA.vector_contains (oTags, lcase (tag)))
@@ -213,7 +214,8 @@ create procedure POLLS.WA.POLL_P_NAME_int (inout vtb any, inout d_id any, in mod
 {
   declare tags any;
 
-  for (select P_DOMAIN_ID, P_NAME, P_DESCRIPTION, P_TAGS from POLLS.WA.POLL where P_ID = d_id) do {
+  for (select P_DOMAIN_ID, P_NAME, P_DESCRIPTION, P_TAGS from POLLS.WA.POLL where P_ID = d_id) do
+  {
     vt_batch_feed (vtb, sprintf('^R%d', P_DOMAIN_ID), mode);
 
     vt_batch_feed (vtb, sprintf('^UID%d', POLLS.WA.domain_owner_id (P_DOMAIN_ID)), mode);
@@ -226,7 +228,8 @@ create procedure POLLS.WA.POLL_P_NAME_int (inout vtb any, inout d_id any, in mod
       vt_batch_feed (vtb, '^public', mode);
 
     tags := split_and_decode (P_TAGS, 0, '\0\0,');
-    foreach (any tag in tags) do  {
+    foreach (any tag in tags) do
+    {
       tag := concat('^T', trim(tag));
       tag := replace (tag, ' ', '_');
       tag := replace (tag, '+', '_');

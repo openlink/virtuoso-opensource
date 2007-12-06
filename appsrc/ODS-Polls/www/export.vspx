@@ -115,7 +115,7 @@
               http ('</category>\n');
             }
             if (self.v_output <> 'rss') {
-              http ('<ods:modified xmlns:ods:="http://www.openlinksw.com/ods/">');
+              http ('<ods:modified xmlns:ods="http://www.openlinksw.com/ods/">');
                 http_value (POLLS.WA.dt_iso8601 (row[5]));
               http ('</ods:modified>\n');
             }
