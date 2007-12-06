@@ -458,8 +458,6 @@ function menuPopup(button, menuID)
 // ---------------------------------------------------------------------------
 //
 function createHidden(frm_name, fld_name, fld_value) {
-  var hidden;
-
   createHidden2(document, frm_name, fld_name, fld_value);
 }
 
@@ -619,9 +617,10 @@ function cSelect(obj)
 }
 
 // ---------------------------------------------------------------------------
-function eEdit(obj)
+function eEdit(obj, event)
 {
-  if (typeof(obj) == 'string') {
+  if (typeof(obj) == 'string')
+{
     var objID = obj;
   } else {  
   var objID = obj.id;
@@ -645,8 +644,10 @@ function eDelete(event, obj, onOffset)
   event.cancelBubble = true;
 
 	// delete dialog
-  if (onOffset != null) {
-  	deleteDialog2.ok = function() {
+  if (onOffset != null)
+  {
+  	deleteDialog2.ok = function()
+  	{
   		deleteDialog2.hide();
       if ($('e_delete_0').checked)
         createHidden('F1', 'onOffset', onOffset);

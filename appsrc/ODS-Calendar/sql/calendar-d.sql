@@ -49,6 +49,9 @@ CAL.WA.exec_no_error('drop view CAL..TAGS_VIEW');
 registry_remove ('calendar_path');
 registry_remove ('calendar_version');
 registry_remove ('calendar_build');
+registry_remove ('cal_note_update');
+registry_remove ('cal_description_update');
+registry_remove ('cal_index_version');
 
 -- Procedures
 create procedure CAL.WA.drop_procedures()

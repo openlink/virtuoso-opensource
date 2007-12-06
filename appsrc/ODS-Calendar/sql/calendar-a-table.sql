@@ -136,6 +136,19 @@ CAL.WA.exec_no_error (
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.tmp_note_update ()
+{
+  if (registry_get ('cal_note_update') = '1')
+    return;
+
+  delete from CAL.WA.EVENTS where E_KIND > 1;
+  registry_set ('cal_note_update', '1');
+}
+;
+CAL.WA.tmp_note_update ();
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.tmp_description_update ()
 {
   if (registry_get ('cal_description_update') = '1')

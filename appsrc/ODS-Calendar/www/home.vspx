@@ -249,7 +249,7 @@
         if (e_event = 1) {
           http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cDateFormat)));
         } else {
-          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cDateFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
+          http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cDateFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
         }
       }
     ]]>
