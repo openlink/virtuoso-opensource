@@ -1,0 +1,150 @@
+<?xml version="1.0"?>
+<!--
+ -
+  -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2007 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="export" xmlns:v="http://www.openlinksw.com/vspx/" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <v:variable name="domain_id" type="integer" default="-1" />
+  <v:variable name="account_id" type="integer" default="-1" />
+  <v:variable name="settings" type="any" />
+
+  <v:variable name="v_scope" type="varchar" param-name="scope" default="'search'"/>
+  <v:variable name="v_output" type="varchar" param-name="output" default="''"/>
+  <v:variable name="v_keywords" type="varchar" default="''" param-name="keywords"/>
+  <v:variable name="v_tags" type="varchar" default="''" param-name="tags"/>
+
+  <v:variable name="v_max" type="integer" default="'max'" param-name="15"/>
+  <v:variable name="v_order" type="varchar" default="'E_UPDATED'" param-name="order"/>
+  <v:variable name="v_direction" type="varchar" default="'asc'" param-name="direction"/>
+
+  <![CDATA[
+    <?vsp
+      declare N integer;
+      declare data, sql, sqlParams, state, msg, meta, rows, maxRows any;
+
+      set http_charset = 'UTF-8';
+      http_rewrite ();
+      http_request_status ('HTTP/1.1 200 OK');
+      http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
+
+      if (self.v_output in ('rss', 'atom', 'rdf'))
+      {
+        data := CAL.WA.session_restore (params);
+        self.domain_id := cast (get_keyword ('domain_id', data, '-1') as integer);
+        self.account_id := CAL.WA.domain_owner_id (self.domain_id);
+        self.settings := CAL.WA.settings (self.account_id);
+
+        http ('<?xml version="1.0" encoding="UTF-8"?>\n');
+        http ('<rss version="2.0">\n');
+        http ('<channel>\n');
+        for (select TOP 1 U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do
+        {
+          http ('<title>');
+            http_value (CAL.WA.utf2wide (CAL.WA.domain_name (self.domain_id)));
+          http ('</title>\n');
+          http ('<description>');
+            http_value (CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)));
+          http ('</description>\n');
+          http ('<managingEditor>');
+            http_value (U_E_MAIL);
+          http ('</managingEditor>\n');
+          http ('<pubDate>');
+            http_value (CAL.WA.dt_rfc1123 (now()));
+          http ('</pubDate>\n');
+          http ('<generator>');
+            http_value ('Virtuoso Universal Server ' || sys_stat ('st_dbms_ver'));
+          http ('</generator>\n');
+          http ('<webMaster>');
+            http_value (U_E_MAIL);
+          http ('</webMaster>\n');
+          http ('<link>');
+            http_value (SIOC..calendar_iri (CAL.WA.domain_name (self.domain_id)));
+          http ('</link>\n');
+        }
+
+        state := '00000';
+        sql := '';
+        if (self.v_scope = 'search')
+        {
+          data := null;
+          CAL.WA.xml_set('keywords', data, self.v_keywords);
+          CAL.WA.xml_set('tags', data, self.v_tags);
+          sql := CAL.WA.search_sql (self.domain_id, self.account_id, data);
+          sqlParams := vector (self.domain_id, self.account_id, data, self.v_max);
+        }
+        if (self.v_scope = 'events')
+        {
+          sql := 'select TOP 15 E_ID from CAL.WA.EVENTS where E_DOMAIN_ID = ? and E_KIND = 0';
+          sqlParams := vector (self.domain_id);
+        }
+        if (self.v_scope = 'tasks')
+        {
+          sql := 'select TOP 15 E_ID from CAL.WA.EVENTS where E_DOMAIN_ID = ? and E_KIND = 1';
+          sqlParams := vector (self.domain_id);
+        }
+        if (sql <> '')
+        {
+          sql := concat (sql, ' order by ', self.v_order, ' ', self.v_direction);
+          exec(sql, state, msg, sqlParams, 0, meta, rows);
+          for (N := 0; N < length (rows); N := N + 1)
+          {
+            for (select * from CAL.WA.EVENTS where E_ID = rows [N][0]) do
+            {
+              http ('<item>\n');
+                http ('<title>');
+                  http_value (CAL.WA.utf2wide (E_SUBJECT));
+                http ('</title>\n');
+                http ('<description>');
+                  http_value (CAL.WA.utf2wide (E_DESCRIPTION));
+                http ('</description>\n');
+                http ('<link>');
+                  http_value (SIOC..calendar_event_iri (E_DOMAIN_ID, E_ID));
+                http ('</link>\n');
+                http ('<pubDate>');
+                  http_value (CAL.WA.dt_rfc1123 (E_CREATED));
+                http ('</pubDate>\n');
+                if (self.v_output <> 'rss')
+                {
+                  http ('<ods:modified xmlns:ods="http://www.openlinksw.com/ods/">');
+                    http_value (CAL.WA.dt_iso8601 (E_UPDATED));
+                  http ('</ods:modified>\n');
+                }
+              http ('</item>\n');
+            }
+          }
+          http ('</channel>\n');
+          http ('</rss>');
+
+          if ((self.v_output = 'atom') and (CAL.WA.settings_atomVersion (self.settings) = '0.3'))
+            http_xslt (CAL.WA.xslt_full ('rss2atom03.xsl'));
+
+          if ((self.v_output = 'atom') and (CAL.WA.settings_atomVersion (self.settings) = '1.0'))
+            http_xslt (CAL.WA.xslt_full ('rss2atom.xsl'));
+
+          if (self.v_output = 'rdf')
+            http_xslt (CAL.WA.xslt_full ('rss2rdf.xsl'));
+        }
+      }
+      http_flush ();
+    ?>
+  ]]>
+</v:page>

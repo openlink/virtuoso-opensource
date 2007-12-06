@@ -384,6 +384,75 @@ function rowSelectValue(dstField, srcField, singleMode)
 
 // ---------------------------------------------------------------------------
 //
+// Menu functions
+//
+// ---------------------------------------------------------------------------
+function menuMouseIn(a, b)
+{
+  if (b != undefined) {
+    while (b.parentNode) {
+      b = b.parentNode;
+      if (b == a)
+        return true;
+    }
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+//
+function menuMouseOut(event)
+{
+  var current, related;
+
+  if (window.event) {
+    current = this;
+    related = window.event.toElement;
+  } else {
+    current = event.currentTarget;
+    related = event.relatedTarget;
+  }
+
+  if ((current != related) && !menuMouseIn(current, related))
+    current.style.visibility = "hidden";
+}
+
+// ---------------------------------------------------------------------------
+//
+function menuPopup(button, menuID)
+{
+  if (document.getElementsByTagName && !document.all)
+    document.all = document.getElementsByTagName("*");
+  if (document.all) {
+    for (var i = 0; i < document.all.length; i++) {
+      var obj = document.all[i];
+      if (obj.id.search('exportMenu') != -1) {
+        obj.style.visibility = 'hidden';
+        if (OAT.Browser.isIE) {
+          obj.onmouseout = menuMouseOut;
+        } else {
+          obj.addEventListener("mouseout", menuMouseOut, true);
+        }
+      }
+    }
+  }
+
+  button.blur();
+  var div = $(menuID);
+  if (div.style.visibility == 'visible') {
+    div.style.visibility = 'hidden';
+  } else {
+    x = button.offsetLeft;
+    y = button.offsetTop + button.offsetHeight;
+    div.style.left = x - 2 + "px";
+    div.style.top  = y - 1 + "px";
+    div.style.visibility = 'visible';
+  }
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+//
 // Hiddens functions
 //
 // ---------------------------------------------------------------------------

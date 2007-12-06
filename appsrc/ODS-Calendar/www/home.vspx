@@ -527,6 +527,24 @@
               <![CDATA[
                 declare N, cCommand, cParams, kind any;
 
+                cCommand := get_keyword ('export', e.ve_params, '');
+                if (cCommand in ('rss', 'atom', 'rdf'))
+                {
+                  declare S varchar;
+
+                  S := sprintf('export.vspx?output=%s&scope=%s', cCommand, self.cScope);
+                  if (self.cScope = 'search')
+                  {
+                    if (trim (self.s_keywords.ufl_value) <> '')
+                      S := S || '&keywords=' || trim (self.s_keywords.ufl_value);
+                    if (trim (self.s_tags.ufl_value) <> '')
+                      S := S || '&tags=' || trim (self.s_tags.ufl_value);
+                  }
+
+                  self.vc_redirect(S);
+                  return;
+                }
+
                 cCommand := get_keyword ('select', e.ve_params, '');
                 if (cCommand <> '') {
                   if (cCommand = 'create') {
@@ -664,8 +682,9 @@
               <v:on-post>
                 <![CDATA[
                   self.cSearch := null;
-                  CAL.WA.xml_set ('keywords', self.cSearch, self.s_keywords.ufl_value);
-                  CAL.WA.xml_set ('tags', self.cSearch, self.s_tags.ufl_value);
+                  CAL.WA.xml_set ('mode', self.cSearch, 'advanced');
+                  CAL.WA.xml_set ('keywords', self.cSearch, trim (self.s_keywords.ufl_value));
+                  CAL.WA.xml_set ('tags', self.cSearch, trim (self.s_tags.ufl_value));
                   self.vc_data_bind(e);
                 ]]>
               </v:on-post>
@@ -757,11 +776,14 @@
                   if (self.cScope = 'day')
                     http (sprintf ('%s %d, %d', monthname (self.cDay), dayofmonth (self.cDay), year (self.cDay)));
 
-                  if (self.cScope = 'week') {
-                    if (year (self.cStart) <> year (self.cEnd)) {
+                    if (self.cScope = 'week')
+                    {
+                      if (year (self.cStart) <> year (self.cEnd))
+                      {
                       http (sprintf ('%s %d, %d - %s %d, %d', monthname (self.cStart), dayofmonth (self.cStart), year (self.cStart), monthname (self.cEnd), dayofmonth (self.cEnd), year (self.cEnd)));
                     } else {
-                      if (month (self.cStart) <> month (self.cEnd)) {
+                        if (month (self.cStart) <> month (self.cEnd))
+                        {
                         http (sprintf ('%s %d - %s %d, %d', monthname (self.cStart), dayofmonth (self.cStart), monthname (self.cEnd), dayofmonth (self.cEnd), year (self.cEnd)));
                       } else {
                         http (sprintf ('%s %d - %d, %d', monthname (self.cStart), dayofmonth (self.cStart), dayofmonth (self.cEnd), year (self.cEnd)));
@@ -797,7 +819,8 @@
                     if (self.cScope = 'week')
                       self.cDay := dateadd ('day', 7, self.cDay);
                     if (self.cScope = 'month')
-                      if (dayofmonth (self.cDay) > CAL.WA.dt_LastDayOfMonth (dateadd ('month', 1, self.cMonth))) {
+                        if (dayofmonth (self.cDay) > CAL.WA.dt_LastDayOfMonth (dateadd ('month', 1, self.cMonth)))
+                        {
                         self.cDay := CAL.WA.dt_LastDayOfMonth (dateadd ('month', 1, self.cMonth));
                       } else {
                         self.cDay := dateadd ('month', 1, self.cDay);
@@ -829,7 +852,7 @@
                 <td>
                 <vm:if test="(self.cScope not in ('day', 'week', 'month')) and (self.account_role not in ('public', 'guest'))">
             <vm:if test="(self.cScope <> 'search')">
-            <v:button value="--'New ' || self.singleObjectName (self.cScope)" action="simple" xhtml_class="button" xhtml_style="margin-bottom: 5px;">
+                    <v:button value="--'New ' || self.singleObjectName (self.cScope)" action="simple" style="style" xhtml_class="button">
               <v:on-post>
                 <![CDATA[
                   self.cAction := 'create';
@@ -838,7 +861,7 @@
               </v:on-post>
             </v:button>
             </vm:if>
-            <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete selected items?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button" xhtml_style="margin-bottom: 5px;">
+                  <v:button value="Delete" action="simple" style="style" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete selected items?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
               <v:on-post>
                 <![CDATA[
                   declare N integer;
@@ -851,6 +874,17 @@
                 ]]>
               </v:on-post>
             </v:button>
+
+                  <div class="menuBar" id="exportBar">
+                    <input type="button" value="Gems" class="menuButton button" onmousedown="return this.blur();" onclick="return menuPopup(this, 'exportMenu');" title="<?V initcap (self.cScope) ?> Gems" />
+                    <div class="menu" id="exportMenu">
+                      <?vsp
+                        http (sprintf ('<a class="menuItem" href="javascript: void (0);" onclick="javascript: vspxPost(\'command\', \'export\', \'rss\')"  title="%s"><img src="image/rss-icon-16.gif"  border="0" alt="%s"/> %s</a>', 'RSS',  'RSS',  'RSS'));
+                        http (sprintf ('<a class="menuItem" href="javascript: void (0);" onclick="javascript: vspxPost(\'command\', \'export\', \'atom\')" title="%s"><img src="image/blue-icon-16.gif" border="0" alt="%s"/> %s</a>', 'Atom', 'Atom', 'Atom'));
+                        http (sprintf ('<a class="menuItem" href="javascript: void (0);" onclick="javascript: vspxPost(\'command\', \'export\', \'rdf\')"  title="%s"><img src="image/rdf-icon-16.gif"  border="0" alt="%s"/> %s</a>', 'RDF',  'RDF',  'RDF'));
+                      ?>
+                    </div>
+                  </div>
                 </vm:if>
                 </td>
                 <td align="right">
@@ -1120,6 +1154,9 @@
                                                    (control as vspx_row_template).te_column_value('E_REPEAT'),
                                                    (control as vspx_row_template).te_column_value('E_REMINDER'));
                           ?>
+                        </td>
+                        <td nowrap="nowrap">
+                          <v:label value="--CAL.WA.dt_datestring ((control.vc_parent as vspx_row_template).te_column_value('E_UPDATED'), self.cDateFormat)" />
                         </td>
                         <vm:if test="self.account_role not in ('public', 'guest')">
                           <td>
@@ -3364,8 +3401,10 @@
         </div>
       </vm:if>
       
+      <vm:if test="(self.cScope in ('events', 'tasks')) and (self.cAction in ('create', 'edit', 'view'))">
       <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
       </div>
+      </vm:if>
       
       <div id="reminderDiv" style="display: none;">
         <div style="height: 200px; overflow: auto;">

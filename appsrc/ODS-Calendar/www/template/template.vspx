@@ -33,6 +33,7 @@
       http (CAL.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
+    <link rel="stylesheet" href="css/menu.css" type="text/css"/>
     <link rel="stylesheet" href="css/webdav.css" type="text/css"/>
     <meta name="dc.description" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
     <meta name="dc.title" content="<?V CAL.WA.utf2wide (CAL.WA.domain_description (self.domain_id)) ?>" />
@@ -51,8 +52,7 @@
       <script type="text/javascript" src="/ods/app.js"></script>
   	<script type="text/javascript">
         // CalendarPopup
-        var cPopup = OAT.Browser.isWebKit? new CalendarPopup(): new CalendarPopup('cDiv');
-        cPopup.weekStartDay = <?V case when self.cWeekStarts = 's' then 0 else 1 end ?>;
+        var cPopup;
         
         // publics
       	var deleteDialog;
@@ -61,7 +61,15 @@
         // WebDAV Object
         var oWebDAV;
 
-        function myInit() {
+        function myInit()
+        {
+          // CalendarPopup
+          if ($('cDiv'))
+          {
+            cPopup = OAT.Browser.isWebKit? new CalendarPopup(): new CalendarPopup('cDiv');
+            cPopup.weekStartDay = <?V case when self.cWeekStarts = 's' then 0 else 1 end ?>;
+          }
+
           // WebDAV
           var options = { imagePath: '/ods/images/oat/',
                           imageExt: 'png',
@@ -79,7 +87,8 @@
             generateAPP('app_area', {});
             
           // dialogs
-          if ($('deleteDiv')) {
+          if ($('deleteDiv'))
+          {
           	deleteDialog = new OAT.Dialog("Confirm delete", "deleteDiv", {width:400, resize:0, modal:1});
             OAT.Dom.show('deleteDiv');
           }
@@ -95,7 +104,8 @@
 
           // start reminder
           setTimeout("checkReminder()", 5000)
-          if ($('reminderDiv')) {
+          if ($('reminderDiv'))
+          {
           	reminderDialog = new OAT.Dialog("Reminder", "reminderDiv", {width:400, heigth:400, resize:0, buttons:0, modal:1});
             OAT.Dom.show('reminderDiv');
           }

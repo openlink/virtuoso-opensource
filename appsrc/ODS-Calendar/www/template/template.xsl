@@ -274,25 +274,8 @@
   <!--=========================================================================-->
   <xsl:template name="vm:event">
     <div>
-      <v:button value="New Event" action="simple" xhtml_class="button" xhtml_style="padding-left: 0; padding-right: 0; margin: 0 0 0.5em 0.5em; float: left; display: block; width: 78px;">
-        <v:on-post>
-          <![CDATA[
-            self.cAction := 'create';
-            if ((self.cScope = 'tasks') or (self.cScope = 'search'))
-              self.cScope := 'events';
-    		    self.vc_data_bind(e);
-          ]]>
-        </v:on-post>
-      </v:button>
-      <v:button value="New Task" action="simple" xhtml_class="button" xhtml_style="padding-left: 0; padding-right: 0; margin: 0 0.5em 0.5em 0; float: right; display: block; width: 78px;">
-        <v:on-post>
-          <![CDATA[
-            self.cAction := 'create';
-            self.cScope := 'tasks';
-    		    self.vc_data_bind(e);
-          ]]>
-        </v:on-post>
-      </v:button>
+      <input type="button" value="New Event" onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'event');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0 0.5em 0.5em; float: left; display: block; width: 78px;"/>
+      <input type="button" value="New Task"  onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'task');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0.5em 0.5em 0; float: right; display: block; width: 78px;"/>
       <br style="clear: both;" />
     </div>
   </xsl:template>
