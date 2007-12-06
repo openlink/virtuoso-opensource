@@ -84,7 +84,7 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   dk_set_t uidl = NULL;
   caddr_t * volatile my_list = NULL;
   dk_session_t *ses = dk_session_allocate (SESCLASS_TCPIP);
-  char num[5], resp[1024];
+  char num[11], resp[1024];
   char message[16], err_text[64], err_code[6];
   char end_msg[5] = ".\x0D\x0A\x00";
   dk_session_t *msg = NULL;
@@ -148,7 +148,7 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 
   CATCH_READ_FAIL (ses)
     {
-      char next[100];
+      char next[101];
       volatile int l, br, fl;
 
       if (in)
