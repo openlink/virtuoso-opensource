@@ -489,6 +489,7 @@ retnull:
 
 create function DB.DBA.RDF_QNAME_OF_IID (in iid IRI_ID) returns varchar
 {
+  declare exit handler for sqlstate '22023' { return NULL; };
   return id_to_iri (iid);
 }
 ;
@@ -8058,7 +8059,7 @@ create procedure DB.DBA.TTLP_EV_COMMIT_A (
 
 
 create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0,
-				 in log_mode integer := 1, in threads integer := 3)
+				 in log_mode integer := 2, in threads integer := 3)
 {
   declare ro_id_dict, app_env, err any;
   if (126 = __tag (strg))
@@ -8087,14 +8088,15 @@ create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varch
 }
 ;
 
-create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in graph varchar, in log_mode integer := 1)
+create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in graph varchar,
+  in log_mode integer := 2, in threads integer := 3 )
 {
   declare ro_id_dict, app_env, err any;
   if (__rdf_obj_ft_rule_count_in_graph (iri_to_id (graph)))
     ro_id_dict := dict_new (__max (length (strg) / 100, 100000));
   else
     ro_id_dict := null;
-  app_env := vector (async_queue (3), 0, vector (log_mode, ro_id_dict));
+  app_env := vector (async_queue (threads), 0, vector (log_mode, ro_id_dict));
   rdf_load_rdfxml (strg, 0,
     graph,
     vector (
