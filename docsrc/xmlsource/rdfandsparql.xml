@@ -2855,4 +2855,38 @@ Can be found at 'http://example.com:8080/sparql_demo/' depending on the local Vi
     </para>
 </sect2>
 </sect1>
+<sect1 id="rdfperformancetuning"><title>Virtuoso RDF Performance Tuning</title>
+    <sect2 id="rdfperfgeneral"><title>General</title>
+	<para>For running with large data sets, one shuld configure the Virtuoso process to use between 2/3 to  3/5 of system RAM and to stripe storage on all available disks.  See <link linkend="VIRTINI">NumberOfBuffers</link> and <link linkend="VIRTINI">Striping</link> ini parameters.</para>
+<para> Also, if running with a large database, setting <link linkend="VIRTINI">MaxCheckpointRemap</link> to 1/4th of 
+ the database size is recommended.  This is in pages, 8K per page.</para>
+    </sect2>
+    <sect2 id="rdfperfloading"><title>Loading</title>
+	<para>There are many functions for loading RDF text, in RDF/XML and Turtle.</para>  
+	<para>For loading RDF/XML, the best way is to ssplit the data to be loaded into multiple streams and load these in parallel using <link linkend="fn_rdf_load_rdfxml"><function>rdf_load_rdfxml ()</function></link>. To avoid running out of rollback space for large files and in order to have multiple concurrent loads not interfere with each other, the row autocommit mode should be enabled.</para>
+	<para>For example, </para>
+<programlisting>
+log_enable (2); 
+-- switch row-by-row autocommit on and logging off for this session 
+db..rdf_load_rdfxml (file_to_string_output ('file.xml'), 'base_uri', 'target_graph');
+-- more files here ...
+checkpoint;
+</programlisting>
+<para>Loading a file with text like the above with isql will load the data.  Since the transaction logging is off, make a manual checkpoint at the end to ensure that data is persisted upon server restart since there is no roll forward log.</para>
+<para>If large amounts of data are to be loaded, run multiple such streams
+in parallel.  One may have for example 6 streams for 4 cores.  This
+means that if up to two thrreads wait for disk, there is still work
+for all cores.</para>
+<para>Having substantially more threads than processors or disks is not particularly useful.</para>
+<para>There exist multithreaded load functions which will load one file on multiple threads.  Experience shows that loading multiple files on one thred per file is better.</para>
+<para>For loading Turtle, some platforms may have a non-reentrant Turtle parser.  This means that only one load may run at a time.  One can try this by calling <link linkend="rdfapidataimport"><function>ttlp ()</function></link> from two sessions at the same time. If these do not execute concurrently, then the best way may be to try <link linkend="rdfapidataimport"><function>ttlp_mt</function></link> and see if this runs faster than a single threaded ttlp call.</para>
+    </sect2>
+    <sect2 id="rdfperfsparul"><title>Using SPARUL</title>
+	<para>Since SPARUL updates are generally not ment to be transactional, it is
+	    best to run these in <link linkend="fn_log_enable"><function>log_enable (2)</function></link> mode, 
+	    which commits every operation as it is done.  This prevents one from running out of rollback space.  Also for bulk updates, transactin logging can be turned off.  If so, one should do a manual checkpoint after the operation to ensure persistence across server restart since there is no roll forward log.</para>
+<para>To have a roll forward log and row by row autocommit, one may use <link linkend="fn_log_enable"><function>log_enable (3)</function></link>.  This will write constatly into the log which takes extra time.  Having no logging and doing a checkpoint when the whole work is finished is faster.</para>
+<para>Many SPARUL operations can be run in parrallel in this way.  If they are independent with respect to their input and output, they can run in parallel and row by row autocommit will ensure they do not end up waiting for each others' locks.</para>
+    </sect2>
+</sect1>
 </chapter>
