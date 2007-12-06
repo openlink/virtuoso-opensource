@@ -498,7 +498,7 @@ create procedure BMK.WA.tags_procedure (
   declare tags any;
 
   result_names (tag);
-  tags := BMK.WA.tags_select (domain_id, account_id, item_id);
+  tags := BMK.WA.tags_select (domain_id, item_id);
   tags := split_and_decode (tags, 0, '\0\0,');
   foreach (any tag in tags) do
     result (trim (tag));
