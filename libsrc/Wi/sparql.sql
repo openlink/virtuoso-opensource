@@ -4579,17 +4579,50 @@ create procedure DB.DBA.RDF_QM_ASSERT_STORAGE_IS_FLAGGED (in storage varchar)
 }
 ;
 
-create function DB.DBA.RDF_QM_GC_SUBTREE (in seed varchar) returns integer
+create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any) returns integer
 {
   declare graphiri varchar;
   declare seed_id, graphiri_id, subjs, objs any;
   declare o_to_s, s_to_o any;
+  declare subjs_of_o, objs_of_s any;
   set isolation = 'serializable';
-  -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, ')');
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, '), ', seed, '=', id_to_iri(iri_to_id(seed)));
   o_to_s := dict_new ();
   s_to_o := dict_new ();
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
   graphiri_id := DB.DBA.RDF_MAKE_IID_OF_QNAME (graphiri);
+  seed_id := DB.DBA.RDF_MAKE_IID_OF_QNAME (seed);
+  for (sparql define input:storage ""
+    define output:valmode "LONG"
+    select ?s
+    from <http://www.openlinksw.com/schemas/virtrdf#>
+    where { ?s a [] ; ?p ?:seed_id } ) do
+    {
+      -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, ') found use case ', "s");
+      goto do_full_gc;
+    }
+  vectorbld_init (objs_of_s);
+  for (sparql define input:storage ""
+    define output:valmode "LONG"
+    define sql:table-option "LOOP"
+    select ?o
+    from <http://www.openlinksw.com/schemas/virtrdf#>
+    where { ?:seed_id a [] ; ?p ?o . ?o a [] } ) do
+    {
+      vectorbld_acc (objs_of_s, "o");
+    }
+  vectorbld_final (objs_of_s);
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, ') found descendants ', objs_of_s);
+  delete from DB.DBA.RDF_QUAD where G = graphiri_id and S = seed_id;
+  commit work;
+  foreach (IRI_ID descendant in objs_of_s) do
+    {
+      DB.DBA.RDF_QM_GC_SUBTREE (descendant);
+    }
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, ') done in quick way');
+  return null;
+
+do_full_gc:
   for (sparql define input:storage ""
     define output:valmode "LONG"
     define sql:table-option "LOOP"
@@ -4597,7 +4630,6 @@ create function DB.DBA.RDF_QM_GC_SUBTREE (in seed varchar) returns integer
     from <http://www.openlinksw.com/schemas/virtrdf#>
     where { ?s a [] ; ?p ?o . ?o a [] } ) do
     {
-      declare subjs_of_o, objs_of_s any;
       -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE () caches ', "s", ' -> ', "o");
       subjs_of_o := dict_get (o_to_s, "o", NULL);
       if (subjs_of_o is null)
@@ -4610,7 +4642,6 @@ create function DB.DBA.RDF_QM_GC_SUBTREE (in seed varchar) returns integer
       else if (0 >= position ("o", objs_of_s))
         dict_put (s_to_o, "s", vector_concat (vector ("o"), objs_of_s));
     }
-  seed_id := DB.DBA.RDF_MAKE_IID_OF_QNAME (seed);
   subjs := vector (seed_id);
 again:
   vectorbld_init (objs);
