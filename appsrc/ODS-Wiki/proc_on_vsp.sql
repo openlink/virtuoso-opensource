@@ -556,6 +556,47 @@ create function WV.WIKI.VSPCLUSTERMEMBERS (
 }
 ;
 
+create function WV.WIKI.VSPTOPICRESOURCE (
+  in _resource varchar,
+  in _type varchar,
+  inout _topic WV.WIKI.TOPICINFO,
+  in params any)
+{
+  declare exit handler for not found {
+	return 0;
+  };
+  declare _base_adjust, _sid, _privatep, _tag varchar;
+  _base_adjust := get_keyword ('baseadjust', params);
+  _sid := get_keyword ('sid', params);
+
+  declare _redirect varchar;
+  if (isstring (_resource) and _resource <> '') {
+    _redirect := WV.WIKI.RESOURCEHREF2 (_resource,_base_adjust,vector('id',cast (_topic.ti_id as varchar), 'sid', _sid, 'realm', 'wa'));
+    if (_type = 'docbook' and _resource = 'export.vspx')
+      _redirect := WV.WIKI.RESOURCEHREF2 (_resource,_base_adjust,vector('id',cast (_topic.ti_id as varchar), 'type', 'docbook', 'sid', _sid, 'realm', 'wa'));
+    if (_resource = 'tag.vspx') {
+      _tag := get_keyword ('tag', params,'');
+      _privatep := get_keyword ('isprivate', params,'');
+      _redirect := WV.WIKI.RESOURCEHREF2 (_resource,_base_adjust,vector('tag', _tag, 'id',cast (_topic.ti_id as varchar), 'privatep', _privatep, 'sid', _sid, 'realm', 'wa'));
+    }
+  } else
+    _redirect := 'default';
+  if (_redirect = 'default')
+    {
+      http_rewrite ();
+      http_request_status ('HTTP/1.1 404 Resource not found');
+      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+        '<HTML><HEAD>',
+        '<TITLE>404 Not Found</TITLE>',
+        '</HEAD><BODY>', '<H1>Not Found</H1>',
+        'Resource ', http_path (), ' not found.</BODY></HTML>'));
+      return 1;
+    }
+  http_request_status ('HTTP/1.1 302 Found');
+  http_header ('Location: ' || _redirect || '\r\n');
+  return 1;
+}
+;
 
 create function WV.WIKI.VSPXSLT (in _xslt_name varchar, inout _src any, inout _params any, in _skin_name varchar:=null) returns any
 {
@@ -2517,7 +2558,6 @@ create function WV.WIKI.URL_PARAMS (in params varchar)
 
 create function WV.WIKI.URL_PARAMS_INT (in params any, inout v any)
 {
-  --dbg_obj_princ ('WV.WIKI.URL_PARAMS_INT: ', params);
   declare url_params varchar;
   declare idx int;
   idx :=0;

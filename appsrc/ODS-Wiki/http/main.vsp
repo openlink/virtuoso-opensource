@@ -531,6 +531,34 @@ content:
       goto make_footer;
     }
 
+  if (_cmd in ('maintenance', 'web', 'doc', 'revisions', 'tags', 'tag'))
+    {
+      if (not _topic.ti_id)
+        {
+          _cmd := 'edit';
+          goto content;
+        }
+      declare _vspx, _type varchar;
+      _type := '';
+      if (_cmd = 'maintenance')
+        _vspx := 'ops.vspx';
+      if (_cmd = 'web')
+        _vspx := 'export.vspx';
+      if (_cmd = 'doc') {
+        _vspx := 'export.vspx';
+        _type := 'docbook';
+      }
+      if (_cmd = 'revisions')
+        _vspx := 'history.vspx';
+      if (_cmd = 'tags')
+        _vspx := 'tags.vspx';
+      if (_cmd = 'tag')
+        _vspx := 'tag.vspx';
+
+      WV.WIKI.VSPTOPICRESOURCE (_vspx, _type, _topic, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
+      goto do_nothing;
+    }
+
   if (_cmd = 'preview')
     {
       if (get_keyword ('kupu', params) is not null)

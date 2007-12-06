@@ -593,26 +593,27 @@
           <xsl:with-param name="alt">Jump To/Create New Topic</xsl:with-param>
         </xsl:call-template>
         <xsl:text> | </xsl:text>
-        <a>
-	      <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('ops.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', 'wa'))"/></xsl:attribute>		
-          Maintenance
-        </a>
+            <xsl:call-template name="wikiref">
+              <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'maintenance')"/></xsl:with-param>
+              <xsl:with-param name="wikiref_cont">Maintenance</xsl:with-param>
+            </xsl:call-template>
         <xsl:text> | </xsl:text>
             Publish to (
-            <a>
-	      <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', 'wa'))"/></xsl:attribute>		
-	      Web
-        </a>
+            <xsl:call-template name="wikiref">
+              <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'web')"/></xsl:with-param>
+              <xsl:with-param name="wikiref_cont">Web</xsl:with-param>
+            </xsl:call-template>
 	    <xsl:text>|</xsl:text>
-        <a>
-	      <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id, 'type', 'docbook', 'sid', $sid, 'realm', 'wa'))"/></xsl:attribute>		
-	      Docbook
-        </a><xsl:text>) | </xsl:text>
+            <xsl:call-template name="wikiref">
+              <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'doc')"/></xsl:with-param>
+              <xsl:with-param name="wikiref_cont">Docbook</xsl:with-param>
+            </xsl:call-template>
+            <xsl:text>) | </xsl:text>
         <xsl:if test="$is_hist = 't'">
-          <a>
-		<xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('history.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', 'wa'))"/></xsl:attribute>		
-            Revisions:
-          </a>
+              <xsl:call-template name="wikiref">
+                <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'revisions')"/></xsl:with-param>
+                <xsl:with-param name="wikiref_cont">Revisions:</xsl:with-param>
+              </xsl:call-template>
         </xsl:if>
         <xsl:apply-templates select="//Rev">
           <xsl:sort select="@Number"
@@ -624,10 +625,10 @@
           <xsl:text>...</xsl:text>
         </xsl:if>
           <br/>
-          <a>
-	      <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('tags.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', 'wa'))"/></xsl:attribute>		
-            Tags:
-          </a>
+            <xsl:call-template name="wikiref">
+              <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'tags')"/></xsl:with-param>
+              <xsl:with-param name="wikiref_cont">Tags:</xsl:with-param>
+            </xsl:call-template>
           <i>
             <xsl:apply-templates select="//tagset[@type='public']/tag"/>
           </i>
@@ -648,10 +649,12 @@
  <xsl:param name="privatep" select="0"/>	
  <xsl:param name="sid"/>
  <xsl:param name="realm"/>
- <a>
-      <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('tag.vspx',$baseadjust,vector('tag',string(@name),'id',$ti_id,'privatep', string($privatep), 'sid', $sid, 'realm', 'wa'))"/></xsl:attribute>		
-   <xsl:value-of select="@name"/>
- </a>
+    <xsl:call-template name="wikiref">
+      <xsl:with-param name="wikiref_params">
+        <xsl:value-of select="wv:pair ('command', 'tag')"/>&amp;tag=<xsl:value-of select="@name"/>&amp;isprivate=<xsl:value-of select="string($privatep)"/>
+      </xsl:with-param>
+      <xsl:with-param name="wikiref_cont"><xsl:value-of select="@name"/></xsl:with-param>
+    </xsl:call-template>
  <xsl:if test="position()!=last()">
    <xsl:text>, </xsl:text>
  </xsl:if>
