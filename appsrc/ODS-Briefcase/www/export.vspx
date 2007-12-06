@@ -206,7 +206,7 @@
               http_value (ODRIVE.WA.dt_rfc1123 (stringdate(row[3])));
             http ('</pubDate>\n');
             if (self.v_output <> 'rss') {
-              http ('<ods:modified xmlns:ods:="http://www.openlinksw.com/ods/">');
+              http ('<ods:modified xmlns:ods="http://www.openlinksw.com/ods/">');
                 http_value (ODRIVE.WA.dt_iso8601 (stringdate(row[3])));
               http ('</ods:modified>\n');
             }
