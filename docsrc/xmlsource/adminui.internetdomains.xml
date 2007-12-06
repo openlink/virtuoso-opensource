@@ -135,6 +135,46 @@ CR-escape=yes;
   <tip><title>See Also:</title>
   <para><link linkend="virtdir">Virtual Directories</link></para></tip>
 
-	</sect2>
+  <para>For example, here are the basic steps to be performed, in order to mount FS folder to DAV:</para>
+  <para>Suppose there is a folder with name "test" in your FS and it is under the root of the ServerRoot defined in your virtuoso ini file.</para>
+  <para>Also suppose in the folder "test" there is a file index.html with simple content:</para>
+  <programlisting><![CDATA[
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>OpenLink Virtuoso Conductor Simple Test</title>
+  </head>
+  <body>
+    <table cellspacing="0" cellpadding="0" border="1" width="50%">
+      <tr>
+       <td><b>Name</b></td><td></b>State</b></td>
+      </tr>
+      <tr>
+       <td>Simple test for mounting FS to DAV</td><td>Successful.</td>
+      </tr>
+    </table>
+  </body>
+</html>
+  ]]></programlisting>
+  <para>Install the Conductor package</para>
+  <para>Go to http://host:port/conductor and login as dba user.</para>
+  <para>Go to WebDAV &amp; HTTP -> HTTP Hosts &amp; Directories.</para>
+  <figure float="1"><title>Mount FS to DAV</title>
+      <graphic fileref="ui/admvirtdir011.png"/></figure>
+  <para>For your {Default Web Site} click the link "New Directory".</para>
+  <para>Check the check-box "Type" and select from the drop-down list "Filesystem".</para>
+  <figure float="1"><title>Mount FS to DAV</title>
+      <graphic fileref="ui/admvirtdir012.png"/></figure>
+  <para>Click "Next"</para>
+  <para>In the shown form: Enter for the field "Path": mytest; Enter for the field "Physical path": /test;
+Enter for the field "Default page": index.html; Check the check-box "Allow Directory Browsing"; Leave the rest of the fields with their default values.</para>
+  <para>Click "Save Changes"</para>
+  <figure float="1"><title>Mount FS to DAV</title>
+      <graphic fileref="ui/admvirtdir013.png"/></figure>
+  <para>From your browser access the url: http://host:port/mytest/</para>
+  <para>As result the content of the index.html file will be shown:</para>
+  <figure float="1"><title>Mount FS to DAV</title>
+      <graphic fileref="ui/admvirtdir014.png"/></figure>
 
+</sect2>
 </sect1>
