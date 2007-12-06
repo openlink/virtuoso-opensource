@@ -65,6 +65,8 @@ EXTRA_DIST = \
 	templates/autumn/*.vspx \
 	templates/blue_left/*.css \
 	templates/blue_left/*.vspx \
+	templates/columns_clean/*.css \
+	templates/columns_clean/*.vspx \
 	templates/default/*.css \
 	templates/default/*.vspx \
 	templates/modern/*.css \

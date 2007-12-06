@@ -55,15 +55,18 @@ clean-local:
 # ----------------------------------------------------------------------
 EXTRA_DIST =  \
 	*.sql \
+	generate_drop_proc.sh \
 	http/*.css \
 	http/*.vsp \
 	http/*.vspx \
+	http/*.xml \
 	http/*.xsl \
 	http/*.xslt \
 	http/images/*.gif \
 	http/images/*.jpg \
 	http/images/*.png \
 	initial/Main/*.txt \
+	initial/Main/Attachments/*.sql \
 	initial/Wiki/*.txt \
 	js/*.js \
 	kupu/common/*.css \

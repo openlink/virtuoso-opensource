@@ -46,6 +46,7 @@ EXTRA_DIST = \
 	*.html \
 	*.js \
 	*.sql \
+	*.txt \
 	*.vsp \
 	*.vspx \
 	*.xml \
@@ -63,6 +64,7 @@ EXTRA_DIST = \
 	images/*.psd \
 	images/app_ads/*.jpg \
 	images/dav_browser/*.png \
+	images/skin/default/*.png \
 	make_vad.sh \
 	tmpl/SN_INV_TEMPLATE \
 	tmpl/WS_APPROVE_BY_USER_TEMPLATE \
@@ -79,6 +81,7 @@ EXTRA_DIST = \
 	users/*.html \
 	users/*.php \
 	users/*.sql \
+	users/*.txt \
 	users/*.vsp \
 	users/css/*.css \
 	users/js/*.js \
