@@ -4579,7 +4579,7 @@ create procedure DB.DBA.RDF_QM_ASSERT_STORAGE_IS_FLAGGED (in storage varchar)
 }
 ;
 
-create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any) returns integer
+create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any, in quick_gc_only integer := 0) returns integer
 {
   declare graphiri varchar;
   declare seed_id, graphiri_id, subjs, objs any;
@@ -4599,6 +4599,8 @@ create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any) returns integer
     where { ?s a [] ; ?p ?:seed_id } ) do
     {
       -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, ') found use case ', "s");
+      if (quick_gc_only)
+        return "s";
       goto do_full_gc;
     }
   vectorbld_init (objs_of_s);
@@ -4617,7 +4619,7 @@ create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any) returns integer
   commit work;
   foreach (IRI_ID descendant in objs_of_s) do
     {
-      DB.DBA.RDF_QM_GC_SUBTREE (descendant);
+      DB.DBA.RDF_QM_GC_SUBTREE (descendant, 1);
     }
   -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE (', seed, ') done in quick way');
   return null;
