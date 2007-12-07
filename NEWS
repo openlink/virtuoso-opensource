@@ -1,6 +1,6 @@
 December 07, 2007, V5.0.3:
   * Database Engine
-     - Added HTTP Content Negotiation for rdf_sink folder
+     - Added transparent HTTP Content Negotiation
      - Added improvements for deadlock handling
      - Added new PHP hosting module to replace old virtuoso-php-t server
      - Added stored procedure hook DB.DBA.BACKUP_COMPLETED
@@ -16,13 +16,16 @@ December 07, 2007, V5.0.3:
      - Small bugfixes
 
   * SPARQL and RDF
-     - Added functions for running stats on rdf loading
+     - Added support for SPARQL update via HTTP GET/PUT in WebDAV
      - Added Jena, Sesame and Redland interfaces
+     - Added Biblionthology for Amazon cartridge
      - Added OAI cartridge
+     - Added XBRL cartridge
+     - Added Yahoo finance cartridge
      - Added support for option (SOFT EXCLUSIVE)
      - Added support for PROVEN_MATCH
-     - Added XBRL ontology and sponger
      - Added adaptive dictionary of objects for graph keywords
+     - Added functions for running stats on rdf loading
      - Fixed SPARQL describe and construct in post
      - Improved speed of RDF loading
      - Improved support for aggregate expressions
