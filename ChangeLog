@@ -1,3 +1,698 @@
+2007-12-07 14:50  source
+
+	* Fixed isDefinedBy iri
+
+2007-12-07 12:02  source
+
+	* Added more fast garbage collection
+
+2007-12-06 23:48  source
+
+	* Updated version to 5.0.3-rc8
+
+2007-12-06 23:47  source
+
+	* Fixed https support for ODS
+
+2007-12-06 23:47  source
+
+	* Replaced URLS like '/wiki/resources' in TopicView with URIs
+
+2007-12-06 23:46  source
+
+	* Fixed error in search page for notes objects
+
+2007-12-06 19:58  source
+
+	* Accelerated version of DB.DBA.RDF_QM_GC_SUBTREE().
+
+2007-12-06 19:57  source
+
+	* Update documentation
+
+2007-12-06 14:07  source
+
+	* Extra files to distribute
+
+2007-12-06 13:19  source
+
+	* Fixed bug removed possibility of updating U_id
+
+2007-12-06 13:18  source
+
+	* Fixed buffer overflow
+
+2007-12-06 11:10  source
+
+	* Updated version to 5.0.3-rc7
+
+2007-12-06 11:09  source
+
+	* Fixed repeat rules import
+	* Added missing images
+
+2007-12-06 11:05  source
+
+	* Merged from upstream project
+
+2007-12-06 11:05  source
+
+	* Fixed xsl param
+
+2007-12-06 11:05  source
+
+	* Changed default behaviour of _MT routines. Now they will log everything
+	  and autocommit.
+	* Added aq thread count as a parameter.
+
+2007-12-06 00:39  source
+
+	* Added support for cluster members
+
+2007-12-06 00:38  source
+
+	* Fixed problems with due date, completed date and description fields
+
+2007-12-06 00:37  source
+
+	* Fixed tag problem
+	* Fixed atom gems problem
+
+2007-12-06 00:36  source
+
+	* Fixed atom gems problem
+
+2007-12-06 00:35  source
+
+	* Fixed search gems problem
+
+2007-12-06 00:35  source
+
+	* Fixed problem with atom gems
+
+2007-12-06 00:28  source
+
+	* Merged documentation changes
+
+2007-12-06 00:28  source
+
+	* Fixed date format support
+
+2007-12-06 00:26  source
+
+	* Catch the 100 error in vad code, otherwise the thing exits w/o an error
+	  and leaving a server lock. Most dangrous is when it's done in bootstrap,
+	  the bootstrap cli hold the lock and any other client which trying to do
+	  vad_install will wait forever.
+
+2007-12-05 09:48  source
+
+	* Updated version to 5.0.3-rc6
+
+2007-12-05 09:35  source
+
+	* Updated version of vad package
+
+2007-12-05 09:14  source
+
+	* Fixed additional fields in xbrl sponger
+
+2007-12-05 09:10  source
+
+	* Added improved support for aggregate expressions
+
+2007-12-04 20:07  source
+
+	* For bad parent link, spurious detection possible if the page one comes
+	  from split while in the child and before the back link check. Task switch
+	  can do this, not only waiting for the child. So then actually land on
+	  the page and get the parent and checjk the actual link with both wired.
+	  If bad, stop or fix, else no message and containue as is or reset the
+	  seek if not landed. For locks, when there is checkpoint freeze, the
+	  condition could result in rollback instead of freeze if detected just
+	  before deadlock check or right after lock wait ended. So must consider
+	  the freeze case specially.
+
+2007-12-04 20:03  source
+
+	* Fixed showing mini-calendar when clicking on date
+
+2007-12-04 20:02  source
+
+	* Fixed use of IRI
+
+2007-12-04 20:02  source
+
+	* Extend Wiki 'Maintenance - [n] topics have been changes' to add a list
+	  of these topics
+	* Fixed bug in "Fix rederences on all pages' in RenameTopic
+
+2007-12-04 19:30  source
+
+	* Merged from upstream project
+
+2007-12-04 17:49  source
+
+	* Allocate iri ids from a range that is selected based on the thread.
+	  Makes distributed inserts when loading rdf and less waiting
+
+2007-12-04 12:21  source
+
+	* Fixed build issues on Win64
+
+2007-12-04 12:03  source
+
+	* Fixed automake warnings
+
+2007-12-04 11:19  source
+
+	* Fixed building on Win32
+
+2007-12-04 11:18  source
+
+	* Fixed building on Win32
+	* Added support for hosting_php.dll plugin
+	* Removed build support for deprecated virtuoso-odbc-php* executables
+
+2007-12-03 16:07  source
+
+	* Updated version to 5.0.3-rc5
+
+2007-12-03 15:49  source
+
+	* Added xml2 library
+
+2007-12-03 15:29  source
+
+	* Removed deprecated virtuoso-php4-t and virtuoso-php5-t executables
+	  in favor of new hosting_php.so plugin
+
+2007-12-03 14:55  source
+
+	* Disable configure button on Framework if it has not been loaded yet
+
+2007-12-03 14:54  source
+
+	* Merged from upstream project
+
+2007-12-03 14:52  source
+
+	* Fixed pop and ftp protocol to allow large file transfers
+
+2007-12-03 13:48  source
+
+	* Updated version to 5.0.3-rc4
+
+2007-12-03 13:45  source
+
+	* Fixed adding tags to bookmarks
+	* Fixed isDefinedBy to go to rdf resources
+
+2007-12-03 13:44  source
+
+	* Fixed skin
+
+2007-12-03 13:43  source
+
+	* Fixed uninstall problem
+
+2007-12-03 13:42  source
+
+	* Fixed ODS search for Calendar items
+
+2007-12-03 13:42  source
+
+	* Fixed bug adding tags to bookmark
+
+2007-12-03 13:41  source
+
+	* Fixed SIOC data
+
+2007-12-03 13:32  source
+
+	* Fixed url rewrite rules and tutorial option page
+
+2007-12-03 13:32  source
+
+	* Fixed URL rules and rdf DET rule
+
+2007-12-03 13:30  source
+
+	* Fixed http_get to accept string session as argument body
+
+2007-12-03 07:50  source
+
+	* Fixed missing include
+
+2007-12-03 07:36  source
+
+	* Fixed C compiler problem with variable declaration
+
+2007-12-03 07:34  source
+
+	* Added functions for running stats on rdf loading
+
+2007-12-03 07:31  source
+
+	* Fixed virtual directory for schema loading
+
+2007-11-30 19:56  source
+
+	* Updated version of vad package
+
+2007-11-30 19:54  source
+
+	* Added check for stored procedure hook DB.DBA.BACKUP_COMPLETED
+	* Removed log messages from normal build
+	* Use function instead of hardcoding task name
+
+2007-11-30 19:39  source
+
+	* Fixed XBRL mapper
+
+2007-11-30 19:38  source
+
+	* Added TCN rules in ODS
+
+2007-11-30 19:37  source
+
+	* Updated to 3023
+
+2007-11-30 19:36  source
+
+	* Accelerated RDF loader
+
+2007-11-30 19:34  source
+
+	* Fixed TCN rules in ODS
+
+2007-11-30 09:55  source
+
+	* Updated version to 5.0.3-rc3
+
+2007-11-30 09:54  source
+
+	* Fixed wrong links in "search for application"
+	* Fixed spaces in IRI
+	* Fixed sameAs urls for services
+
+2007-11-30 09:41  source
+
+	* Remove old index
+
+2007-11-30 09:40  source
+
+	* Fixed sameAs urls for services
+
+2007-11-30 09:39  source
+
+	* Fixed typo
+
+2007-11-30 09:38  source
+
+	* Fixed SPARQL describe and construct in post
+
+2007-11-30 09:11  source
+
+	* Merged from upstream project
+
+2007-11-29 15:54  source
+
+	* Fixed ftp session problems with IIS
+
+2007-11-29 15:40  source
+
+	* Added messages functionality
+	* Added new proxy feature
+	* Changed "associate" to "connect"
+	* Fixed Addressbook UI check/select all boxes for persons contacts
+	* Fixed navigation framework
+	* Updated table wa_messages
+
+2007-11-29 15:37  source
+
+	* Fixed bug in trigger SYS_USERS_WUKU_USERS_U
+	* Fixed "back to the topic" button on some wiki pages
+	* Deregister extentions on uninstall
+
+2007-11-29 15:36  source
+
+	* Fixed UI check/select all boxes for contact
+
+2007-11-29 15:07  source
+
+	* Updated vad version
+
+2007-11-29 15:06  source
+
+	* Increased version number
+
+2007-11-29 15:06  source
+
+	* Fixed error handling when loading vad packages
+
+2007-11-29 15:05  source
+
+	* Fixed set_user_id for all vad
+
+2007-11-29 15:02  source
+
+	* Updated version to 3022
+
+2007-11-29 15:01  source
+
+	* Changed proxy to send headers
+
+2007-11-28 15:18  source
+
+	* Updated version to 5.0.3-rc2
+
+2007-11-28 15:17  source
+
+	* Added xslt directory from OAT tree to framework installation
+	* Added RDF search
+	* Fixed #this conv.
+	* Fixed uri params
+	* Fixed rewrite rule for Wiki
+	* Fixed content escape
+
+2007-11-28 14:33  source
+
+	* Merged from upstream project
+
+2007-11-28 12:05  source
+
+	* Added VD for OWL onology
+	* Fixed URL rewriter rules for rdfbrowser
+
+2007-11-28 12:03  source
+
+	* Fixed URL rewriter rule for tutoral
+	* Create VD for ontology file
+
+2007-11-28 10:37  source
+
+	* Added feature to reorder tabs on the main navigation bar
+	* Added SCOT tags
+	* Added table for ods messaging
+	* Moved social network container to sioc_forum & relevant triggers
+	* Use UTF-8 for RDF serialization
+	* Fixed minor IE7 incompatibility
+	* Fixed application menu
+	* Fixed eCRM URL
+
+2007-11-28 10:34  source
+
+	* Added SCOT tags
+	* Fixed install bug
+
+2007-11-28 10:33  source
+
+	* Fixed incorrect set triggers off in omail install
+	* Removed extentions in uninstall phase
+
+2007-11-28 10:29  source
+
+	* Added SCOT tags
+	* Fixed import and order by
+
+2007-11-28 10:28  source
+
+	* Added SCOT tags
+
+2007-11-28 10:27  source
+
+	* Added SCOT tags
+	* Fixed missing tag values
+
+2007-11-28 10:27  source
+
+	* Moved social network container to the sioc_forum function
+	* Added SCOT tags
+
+2007-11-28 09:56  source
+
+	* Rebuild .jar file
+
+2007-11-28 09:54  source
+
+	* Removed unused variable
+
+2007-11-28 09:54  source
+
+	* Added VirtuosoStatementIterator
+
+2007-11-27 12:32  source
+
+	* Merged from upstream project
+
+2007-11-27 12:22  source
+
+	* Added additional concepts for RDF Views
+
+2007-11-27 12:20  source
+
+	* Rebuild driver
+
+2007-11-27 12:20  source
+
+	* Limit resultset size
+
+2007-11-27 11:21  source
+
+	* Removed logging
+
+2007-11-27 11:20  source
+
+	* Replace the graph
+
+2007-11-27 11:17  source
+
+	* Added additional instances
+
+2007-11-27 11:16  source
+
+	* Added improvements for deadlock handling
+	* Fixed DB.DBA.RDF_GLOBAL_RESET
+
+2007-11-26 15:10  source
+
+	* Fixed bug in login that caused methods to execute twice
+
+2007-11-26 15:10  source
+
+	* Set default qualifier
+
+2007-11-26 10:48  source
+
+	* Updated version of vad package
+
+2007-11-26 10:47  source
+
+	* Merged from upstream project
+
+2007-11-26 10:38  source
+
+	* Updated version to 5.0.3-rc1
+
+2007-11-26 10:36  source
+
+	* Fixed eCRM URL
+	* Added eCRM and IM to application rules
+	* Updated navigation framework and activities
+	* Added news feed block
+	* Added trigger for "application added" activity
+	* Added support for ods activity type to opensocial
+	* Fixed application domain id
+
+2007-11-26 10:34  source
+
+	* Added DET
+
+2007-11-26 10:33  source
+
+	* Fixed URLS for Tasks and Events
+
+2007-11-26 10:33  source
+
+	* Replaced old WebDav browser with the new OAT WebDav browser
+
+2007-11-26 10:04  source
+
+	* Added bif_gvector_digit_sort()
+	* Fixed free-text index transaction size
+
+2007-11-26 10:02  source
+
+	* Added bif_gvector_digit_sort()
+
+2007-11-23 21:51  source
+
+	* Fixed bug with zero itc_position
+
+2007-11-23 21:51  source
+
+	* Prevent GPF with long qualifiers
+
+2007-11-23 21:49  source
+
+	* Added bif_rfc1808_expand_uri()
+
+2007-11-23 21:48  source
+
+	* Fixed sesame UI
+	* Removed debugging code
+
+2007-11-23 21:47  source
+
+	* Fixed white space
+
+2007-11-23 21:45  source
+
+	* Split text in two lines for readability
+
+2007-11-22 22:53  source
+
+	* Updated version to 5.0.3-pre7
+
+2007-11-22 22:52  source
+
+	* Fixed ODS search missing scope
+	* Fixed not encoded sing in return URL
+	* Fixed missing prefix to add_ods_activity
+	* Changed extracting all activities for username
+	* Fixed ODS home page; Data Space URI's and Web services Endpoints info
+
+2007-11-22 22:50  source
+
+	* Fixed Bookmarks Search for save in smart folders
+
+2007-11-22 22:49  source
+
+	* Fixed ODS seach missing scope
+
+2007-11-22 22:48  source
+
+	* Fixed ODS search missing scope
+	* Fixed Calendar import failure
+	* Added Calendar Events tags
+
+2007-11-22 22:48  source
+
+	* Fixed bug in import of RDF file
+
+2007-11-22 22:30  source
+
+	* Added debugging bif_itc_dive_transit_call_ctr() and
+	  bif_itc_try_land_call_ctr().
+
+2007-11-22 22:30  source
+
+	* Added room for 2048 byte keys
+
+2007-11-22 22:26  source
+
+	* Changed INSERT INTO in INSERT SOFT
+
+2007-11-22 22:25  source
+
+	* Merged from upstream project
+
+2007-11-21 13:37  source
+
+	* Merged from upstream project
+
+2007-11-21 12:56  source
+
+	* Added proper build rules for building .jar files
+
+2007-11-21 11:26  source
+
+	* Updated version to 5.0.3-pre6
+
+2007-11-21 11:26  source
+
+	* Added redland to distribution
+
+2007-11-21 11:18  source
+
+	* Fixed typo
+
+2007-11-21 11:10  source
+
+	* Added jena and sesame code to distribution
+
+2007-11-21 11:07  source
+
+	* Fixed namespace
+	* Added comments
+	* Fixed connect string
+
+2007-11-20 12:21  source
+
+	* Added RDF driver source for Jena, Sesame and RedLand
+
+2007-11-20 12:15  source
+
+	* Fixed POST support
+
+2007-11-20 12:13  source
+
+	* Fixed RDF DET script calling
+
+2007-11-19 23:15  source
+
+	* Updated version to 5.0.3-pre5
+
+2007-11-19 23:14  source
+
+	* Fixed wa_dashboard method
+
+2007-11-19 23:13  source
+
+	* Fixed css relating to ods-bar sign-in, sign-up
+
+2007-11-19 23:13  source
+
+	* Fixed mini-calendars
+
+2007-11-19 23:12  source
+
+	* Fixed dashboard to use new IRI
+
+2007-11-19 23:12  source
+
+	* Fixed import validation
+
+2007-11-19 20:51  source
+
+	* Added DAV property to demo account
+
+2007-11-19 20:50  source
+
+	* Added OAI cartridge
+	* Fixed bibo owl
+
+2007-11-19 20:49  source
+
+	* Moved backup tab to system admin pages
+
+2007-11-19 13:38  source
+
+	* Addditional rule for RDF DET
+
+2007-11-19 13:37  source
+
+	* Merged from upstream project
+
+2007-11-19 13:33  source
+
+	* Fixed additional rule for RDF DET
+
+2007-11-19 13:33  source
+
+	* Added DAV property to  demo account
+
 2007-11-19 11:28  source
 
 	* Updated version to 5.0.3-pre4
@@ -865,10 +1560,6 @@
 
 	* Fixed instructions for sourceforge CVS checkout
 
-2007-10-04 10:38  source
-
-	* Added support for using URIQA default host information
-
 2007-10-04 10:06  source
 
 	* Merged latest documentation fixes
@@ -1135,15 +1826,6 @@
 
 	* Merged from upstream project
 
-2007-09-24 10:49  source
-
-	* Fixed building php4
-	* Added support for DAV virtual dirs
-
-2007-09-24 10:48  source
-
-	* Fixed small typo
-
 2007-09-23 20:27  source
 
 	* Fixed make check
@@ -1162,11 +1844,6 @@
 2007-09-23 17:28  source
 
 	* Increased line length
-
-2007-09-22 14:17  source
-
-	* Fixed make dist
-	* Small cleanups
 
 2007-09-21 20:09  source
 
@@ -1198,10 +1875,6 @@
 
 	* Added libxml.m4 so we can still create configure even if box does not have
 	  libxml2 installed
-
-2007-09-21 15:15  source
-
-	* Added support for hosting PHP programs in DAV
 
 2007-09-21 13:41  source
 
@@ -2764,14 +3437,6 @@
 2007-05-31 12:28  source
 
 	* Updated version to 5.0.1 for final release
-
-2007-05-31 12:18  source
-
-	* Fixed typo
-
-2007-05-31 12:15  source
-
-	* Fixed building php4/php5 hosting
 
 2007-05-31 11:53  source
 
@@ -6097,10 +6762,6 @@
 	* Added information on optional components/libraries
 	* Fixed layout
 
-2006-11-20 21:23  source
-
-	* Fixed spelling
-
 2006-11-07 20:49  source
 
 	* Fixed spelling
@@ -6130,10 +6791,6 @@
 2006-10-27 18:45  source
 
 	* Set version to 4.5.6 for final release
-
-2006-10-27 16:43  source
-
-	* Fixed library ordering for PHP5 build
 
 2006-10-27 16:10  source
 
@@ -7611,14 +8268,6 @@
 
 	* Fixed typo in tool detection
 
-2006-08-10 08:32  source
-
-	* Fixed GPF when using php interpreter outside of the http context
-
-2006-08-10 07:58  source
-
-	* Register key hosting variables in PHP
-
 2006-08-08 16:53  source
 
 	* Updated version to 4.5.4 for final release
@@ -7693,10 +8342,6 @@
 2006-08-07 22:39  source
 
 	* Fixed bug with missing aliases in DAV_DIR_FILTER()
-
-2006-08-07 21:58  source
-
-	* Removed non-existing test files
 
 2006-08-07 20:46  source
 
