@@ -417,7 +417,7 @@ create procedure ods_is_defined_by (in graph_iri varchar, in iri varchar)
   --df_uri := sprintf ('http://%s/ods/data/rdf/iid%%20%%28%d%%29.rdf', get_cname(), iri_id_num (iri_to_id (iri)));
   pos := strrchr (iri, '#');
   if (pos is not null)
-    tmp := subseq (iri, pos);
+    tmp := subseq (iri, 0, pos);
   else
     tmp := iri;
   if (iri like 'http://%/dataspace/person/%')
