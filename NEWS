@@ -1,3 +1,52 @@
+December 07, 2007, V5.0.3:
+  * Database Engine
+     - Added HTTP Content Negotiation for rdf_sink folder
+     - Added improvements for deadlock handling
+     - Added new PHP hosting module to replace old virtuoso-php-t server
+     - Added stored procedure hook DB.DBA.BACKUP_COMPLETED
+     - Fixed 64 bit Ole DB provider
+     - Fixed bug in updating U_id
+     - Fixed bug updating sequences
+     - Fixed free-text index transaction size
+     - Fixed pop and ftp protocol to allow large file transfers
+     - Fixed problem with page freezing/splitting
+     - Fixed recursive UPDATE bug
+     - Fixed TOP in a DT so scrollable cursor will become static
+     - Fixed url rewrite rules
+     - Small bugfixes
+
+  * SPARQL and RDF
+     - Added functions for running stats on rdf loading
+     - Added Jena, Sesame and Redland interfaces
+     - Added OAI cartridge
+     - Added support for option (SOFT EXCLUSIVE)
+     - Added support for PROVEN_MATCH
+     - Added XBRL ontology and sponger
+     - Added adaptive dictionary of objects for graph keywords
+     - Fixed SPARQL describe and construct in post
+     - Improved speed of RDF loading
+     - Improved support for aggregate expressions
+     - Use UTF-8 for RDF serialization
+     - Various speedups for SPARQL 
+
+  * ODS Applications
+     - Added a++ links
+     - Added feature to reorder tabs on the main navigation bar
+     - Added HTTPS support to ODS
+     - Added LDAP to FOAF support
+     - Added news feed block
+     - Added SCOT tags
+     - Added support for ods activity type to opensocial
+     - Added table for ods messaging
+     - Added trigger for "application added" activity
+     - Fixed and extended search
+     - Fixed problems with vad loader
+     - Fixed problem with atom gems
+     - Moved social network container to sioc_forum & relevant triggers
+     - Replaced URLs with SIOC Data Space URIs
+     - Small bugfixes and enhancements
+
+
 September 27, 2007, V5.0.2:
   * Enhanced database engine
 	- Added support for 64bit bigint
