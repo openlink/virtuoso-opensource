@@ -364,14 +364,6 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         wgs:long countries.Lng
                                 as virtrdf:Country-Lng .
 
-                northwind:Flag(countries.SmallFlagDAVResourceURI)
-                        a northwind:Flag
-                        as virtrdf:Country-SmallFlagDAVResourceURI2 .
-
-                northwind:Flag(countries.LargeFlagDAVResourceURI)
-                        a northwind:Flag
-                                as virtrdf:Country-LargeFlagDAVResourceURI2 .
-
                 northwind:Country (countries.Name)
                         northwind:has_province
                 northwind:Province (provinces.CountryCode, provinces.Province) where (^{provinces.}^.CountryCode = ^{countries.}^.Code) as virtrdf:Country-has_province .
