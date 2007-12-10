@@ -4797,7 +4797,7 @@ create method vc_render_<xsl:value-of select="$vspx_local_class_name" /> (inout 
   </script>
   </xsl:if>
 
-  <xsl:if test="//v:button[@action='simple'][@style = 'image'] or //v:button[@action='simple'][@style = 'url']">
+  <xsl:if test="//v:button[@style = 'image'] or //v:button[@style = 'url']">
   <script type="text/javascript">
   function doPost (frm_name, name)
     {
