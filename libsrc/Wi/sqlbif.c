@@ -2598,6 +2598,8 @@ bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   }
 
   sizeof_char = haveWides ? sizeof (wchar_t) : sizeof (char);
+  if (((len + 1) * sizeof_char) > 10000000)
+    sqlr_new_error ("22023", "SR578", "The expected result length of string concatenation is too large (%ld bytes)", (long)((len + 1) * sizeof_char));
   if (NULL == (res = dk_try_alloc_box ((len + 1) * sizeof_char, (dtp_t)(haveWides ? DV_WIDE : DV_LONG_STRING))))
     qi_signal_if_trx_error (qi);
 
