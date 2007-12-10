@@ -41,15 +41,18 @@
       <v:variable name="allow_change_str" type="varchar" default="'@@hidden@@'" persist="1"/>
       <v:variable name="allow_change" type="int" default="0"/>
       <v:variable name="source_page" type="varchar"/>
-      <v:on-init><![CDATA[
+  <v:on-init>
+    <![CDATA[
 	declare _topic WV.WIKI.TOPICINFO;
 	_topic := WV.WIKI.TOPICINFO();
 	_topic.ti_id := self.id;
 	_topic.ti_find_metadata_by_id();	
 	self.source_page := WV.WIKI.READONLYWIKIWORDLINK (_topic.ti_cluster_name,_topic.ti_local_name);
 	self.topic := _topic;
-      ]]></v:on-init>
-      <v:after-data-bind><![CDATA[
+    ]]>
+  </v:on-init>
+  <v:after-data-bind>
+    <![CDATA[
 	if (self.vspx_user = 'WikiGuest')
 	  {
 	    self.allow_change := 0;
@@ -64,8 +67,10 @@
 	-- self.ds.vc_data_bind(e);
 	-- self.ds2.vc_data_bind(e);
         self.t1.vc_data_bind(e);
-      ]]></v:after-data-bind>
-      <v:before-data-bind><![CDATA[
+    ]]>
+  </v:after-data-bind>
+  <v:before-data-bind>
+    <![CDATA[
         self.login.vc_data_bind(e);
 	self.uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.vspx_user);
 	self.nobody_uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = 'nobody');
@@ -77,22 +82,28 @@
 	    self.pubtags := xpath_eval ('//tagset[@type="public"]/tag/@name', _tags, 0);
 	    self.privtags := xpath_eval ('//tagset[@type="private"]/tag/@name', _tags, 0);
 	  }	    
-    ]]></v:before-data-bind>
-      <v:method name="set_tags" arglist="in uid int, in tags_str varchar"><![CDATA[
+    ]]>
+  </v:before-data-bind>
+  <v:method name="set_tags" arglist="in uid int, in tags_str varchar">
+    <![CDATA[
          declare _res int;
 	 _res := WV.WIKI.GETLOCK (self.topic.ti_full_path(), self.vspx_user);
 	 -- dbg_obj_print ('lock: ', _res);
 	 connection_get ('vspx_user', self.vspx_user);
 	 DAV_TAG_SET (self.topic.ti_res_id, 'R', uid, tags_str);
+      WV.WIKI.RELEASELOCK (self.topic.ti_full_path(), self.vspx_user);
       ]]>
       </v:method>
-      <v:method name="delete_tag" arglist="inout e vspx_event, in tagname varchar"><![CDATA[
+  <v:method name="delete_tag" arglist="inout e vspx_event, in tagname varchar">
+    <![CDATA[
 	 self.vc_redirect(sprintf ('rename.vspx?topic=%ld', self.topic.ti_id));
       ]]>
       </v:method>
       <vm:page title="Tags">
       <vm:body>
-	  <div class="wiki-error"><v:error-summary/></div>
+      <div class="wiki-error">
+        <v:error-summary/>
+      </div>
 	    <v:label name="topic_name" value="--self.topic.ti_cluster_name || '.' || self.topic.ti_local_name"/>
 	      <table class="wikitable" width="70%">
 	        <tr bgcolor="#DFFFDF">
@@ -126,7 +137,8 @@
 		    <v:label name="public_tagsp_l" value="Public" enabled="--self.allow_change"/>
 		    <v:check-box name="public_tagsp" value="1" initial-checked="1" enabled="--self.allow_change"/>
 		    <v:button name="add" value="Add" action="simple" xhtml_disabled="--self.allow_change_str">
-		      <v:on-post><![CDATA[
+                  <v:on-post>
+                    <![CDATA[
 		        declare exit handler for sqlstate '42WV9' {
 			  self.vc_error_message := regexp_match('[^\n]*',__SQL_MESSAGE);
 			  self.vc_is_valid := 0;
@@ -162,7 +174,8 @@
 			    self.set_tags(_target_uid, WV.WIKI.STRJOIN(',',_new_tags));
 			    self.vc_redirect (sprintf ('tags.vspx?id=%ld', self.topic.ti_id));
 			  }
-		      ]]></v:on-post>
+                    ]]>
+                  </v:on-post>
 		    </v:button>
 		    <vm:back-button/>
 		  </td>

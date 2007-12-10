@@ -74,10 +74,15 @@ wiki_exec_no_error (
   MainGroupId		integer not null,	-- Group Id to use as DAV owner group for pages created by the user.
   SecurityCmt		long varchar,		-- User description, esp. security policy for the group - for admins only.
   DefaultPermission	varchar,
+
   constraint "User_InGroup2" foreign key (MainGroupId) references WV.WIKI.GROUPS (GroupId) on update set null on delete set null,
-  constraint "User_InSysUsers"  foreign key (UserId) references DB.DBA.SYS_USERS (U_ID) on update set null on delete cascade,
+  -- constraint "User_InSysUsers"  foreign key (UserId) references DB.DBA.SYS_USERS (U_ID) on update set null on delete cascade,
   primary key (UserId)
 )')
+;
+
+wiki_exec_no_error (
+  'alter table WV.WIKI.USERS drop constraint "User_InSysUsers"' )
 ;
 
 -- Membership of Wiki users in Wiki groups
