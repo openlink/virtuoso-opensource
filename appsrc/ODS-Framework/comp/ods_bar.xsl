@@ -218,7 +218,7 @@ nf_uid2:;
 <![CDATA[
 
 <div id="odsBarCss" style="display:none">
-<?vsp http(replace(file_dav_to_string ('/samples/wa/ods-bar.css','/wa/ods-bar.css'),'"images/','"'||self.odsbar_ods_gpath||'images/')); ?>
+<?vsp http(ods_bar_css(self.odsbar_ods_gpath||'images/')); ?>
 </div>
 
 <script  type="text/javascript">

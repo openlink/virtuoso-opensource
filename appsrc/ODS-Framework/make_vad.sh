@@ -380,6 +380,10 @@ sticker_init() {
   echo "      vhost_remove (lpath=>'/wa');" >> $STICKER
   echo "      vhost_remove (lpath=>'/ods');" >> $STICKER
   echo "      vhost_remove (lpath=>'/ods/users');" >> $STICKER
+  echo "      vhost_remove (lpath=>'/javascript/users');" >> $STICKER
+  echo "      vhost_remove (lpath=>'/php/users');" >> $STICKER
+  echo "      vhost_remove (lpath=>'/jsp/users');" >> $STICKER
+  echo "      vhost_remove (lpath=>'/ruby/users');" >> $STICKER
   echo "      vhost_define (lpath=>'/ods',ppath=>'/DAV/VAD/wa/', is_dav=>1, vsp_user=>'dba', def_page=>'sfront.vspx');" >> $STICKER
   echo "      vhost_define (lpath=>'/ods/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba');" >> $STICKER
   echo "      vhost_define (lpath=>'/javascript/users', ppath=>'/DAV/VAD/wa/users', is_dav=>1, vsp_user=>'dba', def_page=>'users.html');" >> $STICKER

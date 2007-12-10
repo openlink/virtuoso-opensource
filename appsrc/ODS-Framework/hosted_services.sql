@@ -6051,6 +6051,18 @@ create procedure WA_USER_SVC_KEYS (in uid int)
 }
 ;
 
+create procedure WA_USER_GET_SVC_KEY (in uname varchar, in k varchar)
+{
+  declare res any;
+  res := null;
+  declare exit handler for not found {
+    return null;
+  };
+  select US_KEY into res from DB.DBA.WA_USER_SVC, DB.DBA.SYS_USERS where U_NAME = uname and US_SVC = k;
+  return res;
+}
+;
+
 create procedure WA_UPGRADE_USER_SVC ()
 {
   declare keys any;
@@ -6111,6 +6123,21 @@ create procedure  file_dav_to_string (in file_path varchar, in dav_path varchar 
   return ret;
 }
 ;
+
+create procedure  ods_bar_css (in img_path varchar) {
+
+  declare css_txt varchar;  
+
+  css_txt := (select coalesce(blob_to_string(RES_CONTENT), 'Not found...')
+                from WS.WS.SYS_DAV_RES
+               where RES_FULL_PATH = '/DAV/VAD/wa/ods-bar.css');
+  
+  css_txt:=replace(css_txt,'"images/','"'||img_path);
+
+  return css_txt;
+}
+;
+
 create procedure wa_redefine_vhosts(in host_port varchar := '*sslini*', in isdav integer := 1)
 {
   -- make_vad.sh
