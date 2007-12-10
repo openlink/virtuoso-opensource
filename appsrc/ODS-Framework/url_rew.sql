@@ -142,7 +142,7 @@ create procedure DB.DBA.ODS_PHOTO_ITEM_PAGE (in par varchar, in fmt varchar, in 
 create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varchar)
 {
   declare iri, res any;
---  dbg_obj_print (current_proc_name (), par, val);
+  dbg_obj_print (current_proc_name (), par, val);
   if (par = 'page' or par = 'ext')
     return sprintf (fmt, val);
   else if (par = '*accept*')
@@ -154,7 +154,7 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
     }
 
   iri := sioc..get_graph () ||'/'|| val;
-  -- when an about, sioc or foraf is requested, we just remove. the IRI MUST be preceding path
+  -- when an about, sioc or foaf is requested, we just remove. the IRI MUST be preceding path
   if (regexp_match ('http://([^/]*)/dataspace/(.*)/(about|sioc|foaf)\\.(rdf|n3|ttl)', iri) is not null)
     {
       declare pos int;
@@ -164,6 +164,13 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
   -- if this is a person or organization, we put #this at end if not present
   if (regexp_match ('http://([^/]*)/dataspace/(person|organization)/(.*)', iri) is not null and
       iri not like '%#this')
+    {
+      iri := iri || '#this';
+    }
+  -- space also have #this
+  if ((regexp_match ('http://([^/]*)/dataspace/([^/]*)\x24', iri) is not null
+      or regexp_match ('http://([^/]*)/dataspace/([^/]*)/space\x24', iri) is not null)
+      and iri not like '%#this')
     {
       iri := iri || '#this';
     }
