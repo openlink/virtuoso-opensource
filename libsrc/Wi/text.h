@@ -28,9 +28,8 @@
 
 #include "sqlnode.h"
 
-typedef union d_id_u {
+typedef struct d_id_u {
   dtp_t	id[32];
-  int64 num;
 } d_id_t;
 
 
@@ -196,15 +195,15 @@ struct search_stream_s
 
 typedef struct search_stream_s search_stream_t;
 
-#define D_AT_END(d) ((d)->num == 0)
-#define D_INITIAL(d)  ((d)->num == (int64)(0xFFFFFFFFFFFFfe30LL))
-#define D_PRESET(d)  ((d)->num == (int64)(0xFFFFFFFFFFFFfe20LL))
-#define D_NEXT(d)  ((d)->num == (int64)(0xFFFFFFFFFFFFfe10LL))
+#define D_AT_END(d) (D_ID_NUM_REF(&(d)->id[0]) == 0)
+#define D_INITIAL(d)  (D_ID_NUM_REF(&(d)->id[0]) == (int64)(0xFFFFFFFFFFFFfe30LL))
+#define D_PRESET(d)  (D_ID_NUM_REF(&(d)->id[0]) == (int64)(0xFFFFFFFFFFFFfe20LL))
+#define D_NEXT(d)  (D_ID_NUM_REF(&(d)->id[0]) == (int64)(0xFFFFFFFFFFFFfe10LL))
 
-#define D_SET_AT_END(d) ((d)->num = 0)
-#define D_SET_INITIAL(d)  ((d)->num = (int64)(0xFFFFFFFFFFFFfe30LL))
-#define D_SET_PRESET(d)  ((d)->num = (int64)(0xFFFFFFFFFFFFfe20LL))
-#define D_SET_NEXT(d)  ((d)->num = (int64)(0xFFFFFFFFFFFFfe10LL))
+#define D_SET_AT_END(d) do { D_ID_NUM_SET(&(d)->id[0], 0); } while (0)
+#define D_SET_INITIAL(d)  do { D_ID_NUM_SET(&(d)->id[0], (int64)(0xFFFFFFFFFFFFfe30LL)); } while (0)
+#define D_SET_PRESET(d)  do { D_ID_NUM_SET(&(d)->id[0], (int64)(0xFFFFFFFFFFFFfe20LL)); } while (0)
+#define D_SET_NEXT(d)  do { D_ID_NUM_SET(&(d)->id[0], (int64)(0xFFFFFFFFFFFFfe10LL)); } while (0)
 
 #define D_ID_RESERVED_LEN(l) (((dtp_t) l) > 0xfb)
 
