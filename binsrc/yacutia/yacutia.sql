@@ -5351,16 +5351,20 @@ create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
 	 {
 
 	   declare st, rc int;
-	   declare continue handler for sqlstate '*';
+	   declare exit handler for sqlstate '*' {
+	     goto next_pkg;
+	   };
 
 	   pisdav := 0;
            if (f like '%_dav.vad')
              pisdav := 1;
 
 	   st := msec_time ();
+	   rc := 0;
+	   pname := null;
 	   rc := VAD.DBA.VAD_TEST_READ (vaddir||f, pname, pver, pfull, pdate, fs_type);
-
-           if (rc)
+	   next_pkg:;
+           if (pname is not null)
            nlist := vector_concat (nlist, vector (pname, vector (pver, pdate, f)));
 	 }
     }

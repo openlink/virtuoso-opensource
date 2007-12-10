@@ -331,23 +331,36 @@
 	<div>
 	    <v:button name="instg1" value="Install/Upgrade" action="simple">
 		<v:on-post><![CDATA[
-		    declare i, l, do_ods int;
+		    declare i, l, do_ods, add_blog int;
 		    declare packs, pars, tmp any;
 		    packs := vector ();
 		    pars := e.ve_params;
 		    l := length (pars);
-		    do_ods := 0;
+		    do_ods := 0; add_blog := 0;
 		    for (i := 0; i < l; i := i + 2)
 		       {
 			 if (pars[i] = 'cb1' or pars[i] = 'cb2')
 			   {
 			     tmp := get_keyword ('f_'||pars[i+1], pars);
-			     if (tmp is not null and tmp not like 'ods_framework%.vad')
+                             if (tmp is not null and tmp like 'ods_feedmanager%.vad' or tmp like 'ods_blog%.vad')
+			       add_blog := 1;
+			     if (tmp is not null and tmp not like 'ods_framework%.vad' and tmp not like 'ods_blog%.vad')
 			       packs := vector_concat (packs, vector (tmp));
 			     if (do_ods = 0 and tmp like 'ods_%.vad')
 			       do_ods := 1;
 			   }
 		       }
+		    if (add_blog = 1)
+                      {
+		        for (i := 0; i < l; i := i + 2)
+			 {
+			     if (pars[i] like 'f_%' and pars[i+1] like 'ods_blog%.vad')
+				{
+				  packs := vector_concat (vector (pars[i+1]), packs);
+				  i := l;
+				}
+			 }
+		      }
 		    if (do_ods = 1)
                       {
 		        for (i := 0; i < l; i := i + 2)
