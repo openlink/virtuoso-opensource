@@ -267,7 +267,7 @@
     }
   ?>
   <body>
-    <form name="page_form" method="post">
+    <form name="page_form" method="post" action="users.php">
       <input type="hidden" name="sid" id="sid" value="<?php print($_sid); ?>" />
       <input type="hidden" name="realm" id="realm" value="<?php print($_realm); ?>" />
       <input type="hidden" name="form" id="form" value="<?php print($_form); ?>" />

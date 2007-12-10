@@ -16,7 +16,7 @@ The goal of the project is to port *.vsp user's pages to the following programmi
 ---+++AJAX Implementation
 
    1. The page name is 'users.html'
-   1. The Endpoint URL is http://[host]:[port]/ods/users/users.html
+   1. The endpoint URL is http://[host]:[port]/javascript/users/users.html. The alternate URL is http://[host]:[port]/ods/users/users.html
    1. Configuration:
      1. Start the Virtuoso executive
      1. Install the ods_framework_dav.vad package.
@@ -26,7 +26,7 @@ The goal of the project is to port *.vsp user's pages to the following programmi
 
    1. PHP: The supported version of PHP is 5, so you should use Virtuoso php5 executive.
    1. The page name is 'users.php'.
-   1. The Endpoint URL is http://[host]:[port]/ods/users/users.php
+   1. The endpoint URL is http://[host]:[port]/php/users/users.php. The alternate URL is http://[host]:[port]/ods/users/users.php
    1. Configuration:
       1. Start Virtuoso executive
       1. Install the ods_framework_dav.vad package
@@ -47,7 +47,7 @@ Note: you should have the users.jsp and users_dsn.jsp (created after installatio
 
    1. The implementation uses Java version 1.5 (version 5), so you should run the corresponding Virtuoso executive. You need also to have installed Tomcat version 5.5.x.
    1. The page name is 'users.jsp'.
-   1. The Endpoint URL is http://[host]:[port]/ods/users/jsp/users.jsp
+   1. The Endpoint URL is http://[host]:[port]/jsp/users/users.jsp
    1. Configuration
       1. Start Virtuoso executive
       1. Install Tomcat
@@ -69,11 +69,11 @@ Note: you should have the users.jsp and users_dsn.jsp (created after installatio
          1. Go to http://[host]:[port]/conductor
          1. Login as dba user.
          1. Go to "WebDAV & HTTP"->"HTTP Hosts & Directories" tab.
-         1. For {Default Web Site} click the "New Directory" link.
+         1. If directory link '/jsp/users' exists update it with properties described below or click the "New Directory" link.
          1. Click the "Type" radio-box and select from the drop-down list the value "Proxy server".
          1. Click "Next".
          1. In the shown form:
-            1. For field "Virtual directory path" enter the value: /ods/users/jsp
+            1. For field "Virtual directory path" enter the value: /jsp/users
             1. For field "Proxy to" enter the value: http://[Tomcat Host]:[Tomcat Port]/users/jsp
             1. For "VSP User" select from the drop-down list: dba
          1. Click the "Save changes" button.
@@ -81,8 +81,11 @@ Note: you should have the users.jsp and users_dsn.jsp (created after installatio
       1. Files 'users.jsp' and 'users_dsn.jsp' must downloaded into local file system.
       1. If some database parameters are changed after installation file 'users_dsn.jsp' must be updated. Go to your physical location of the 'users_dsn.jsp' file and set the correct values for the connection to the database:
 
-conn = DriverManager.getConnection("jdbc:virtuoso://[host]:[SQL Server port]", "dba", "dba");
+<%
+  String $_dsn = "jdbc:virtuoso://[host]:[SQL Server port]";
+  String $_user = "dba";
+  String $_pass = "dba";
+%>
 
       1. Install the ods_framework_dav.vad package.
-      1. Go to http://[host]:[port]/ods/users/jsp/users.jsp.
-
+      1. Go to http://[host]:[port]/jsp/users/users.jsp.

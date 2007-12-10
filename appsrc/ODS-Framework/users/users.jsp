@@ -155,7 +155,8 @@
 
     try
     {
-	    conn = getConnection();
+	    Class.forName("virtuoso.jdbc3.Driver");
+      conn = DriverManager.getConnection($_dsn, $_user, $_pass);
       if ($_form.equals("login"))
       {
         if (request.getParameter("lf_login") != null)
