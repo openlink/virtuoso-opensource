@@ -161,11 +161,11 @@ create method wa_join_approve (in login varchar) for wa_wikiv {
 
 create method wa_new_inst (in login varchar) for wa_wikiv {
   declare exit handler for sqlstate '*' {
-  	  dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
+  	  -- dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
   	  resignal;
   };
   declare exit handler for not found {
-  	  dbg_obj_print ('nf');
+  	  -- dbg_obj_print ('nf');
   	  resignal;
   };
   declare _home varchar;
@@ -421,7 +421,7 @@ create trigger WIKI_WA_INSTANCE_U after update on DB.DBA.WA_INSTANCE referencing
   if (N.WAI_IS_PUBLIC = 1)
     {
 	declare exit handler for sqlstate '*' {
-		dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+		-- dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
 		return;
 	};
 	DB.DBA.USER_GRANT_ROLE ('WikiGuest', N.WAI_NAME || 'Readers');
