@@ -3382,7 +3382,7 @@
                   values(self.account_id, serialize (self.settings));
                 commit work;
 
-                CAL.WA.domain_gems_create (self.domain_id, self.account_id);
+                --CAL.WA.domain_gems_create (self.domain_id, self.account_id);
 
                 self.initData ();
                 self.cAction := 'browse';

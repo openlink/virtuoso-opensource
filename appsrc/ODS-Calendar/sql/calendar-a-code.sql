@@ -410,7 +410,7 @@ create procedure CAL.WA.domain_gems_create (
 
   read_perm := '110100100N';
   exec_perm := '111101101N';
-  home := home || 'Calendar/';
+  home := home || 'Calendar/Gems';
   DB.DBA.DAV_MAKE_DIR (home, account_id, null, read_perm);
 
   home := home || CAL.WA.domain_gems_name(domain_id) || '/';
@@ -501,8 +501,14 @@ create procedure CAL.WA.domain_update (
   inout account_id integer)
 {
   CAL.WA.domain_gems_delete (domain_id, account_id, 'Calendar');
-  CAL.WA.domain_gems_create (domain_id, account_id);
-
+  --CAL.WA.domain_gems_create (domain_id, account_id);
+  declare home, path varchar;
+  home := CAL.WA.dav_home (account_id);
+  path := home || 'Calendar/';
+  DB.DBA.DAV_DELETE_INT (path || 'Calendar.rss', 1, null, null, 0);
+  DB.DBA.DAV_DELETE_INT (path || 'Calendar.atom', 1, null, null, 0);
+  DB.DBA.DAV_DELETE_INT (path || 'Calendar.rdf', 1, null, null, 0);
+  delete from WS.WS.SYS_DAV_COL where COL_ID = DAV_SEARCH_ID (home || 'Calendar DET/', 'C');
   return 1;
 }
 ;
@@ -558,7 +564,7 @@ create procedure CAL.WA.domain_name (
 create procedure CAL.WA.domain_gems_name (
   in domain_id integer)
 {
-  return concat(CAL.WA.domain_name(domain_id), '_Gems');
+  return concat(CAL.WA.domain_name(domain_id), '/Gems');
 }
 ;
 

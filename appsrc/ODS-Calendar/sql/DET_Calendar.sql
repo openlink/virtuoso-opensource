@@ -297,6 +297,8 @@ create function "calendar_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 			colname := 'Tasks';
 		else if (kind_id = 2)
 			colname := 'Date';
+        else if (kind_id = 3)
+            colname := 'Gems';
 		if (DAV_HIDE_ERROR (colname) is null)
 			return -1;
 		if (rightcol = '')
@@ -332,6 +334,17 @@ create function "calendar_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 			return -1;
 		return vector (fullpath, 'C', 0, maxrcvdate, id, '100000000NN', 0, id[2], maxrcvdate, 'dav/unix-directory', rightcol );
 	}
+    if (kind_id = 3 and 'R' = what)
+    {
+		if (id[7] = -1)
+			return vector (fullpath || 'Calendar.rss', 'R', 1024, now(), id, '100000000NN', 0, id[2], now(), 'text/xml', 'Calendar.rss');
+		if (id[7] = -2)
+			return vector (fullpath || 'Calendar.atom', 'R', 1024, now(), id, '100000000NN', 0, id[2], now(), 'text/xml', 'Calendar.atom');
+		if (id[7] = -3)
+			return vector (fullpath || 'Calendar.rdf', 'R', 1024, now(), id, '100000000NN', 0, id[2], now(), 'text/xml', 'Calendar.rdf');
+    }
+    else
+	{
 	for select "calendar_COMPOSE_ICS_NAME"(E_ID, E_SUBJECT, E_EVENT_START, E_EVENT_END) as orig_mname,
 		E_UPDATED
 		from CAL.WA.EVENTS
@@ -339,6 +352,7 @@ create function "calendar_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 	do
 	{
 		return vector (fullpath || orig_mname, 'R', 1024, E_UPDATED, id, '100000000NN', 0, id[2], E_UPDATED, 'text/calendar', orig_mname);
+	}
 	}
 	return -1;
 }
@@ -364,13 +378,9 @@ create function "calendar_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 	month_id := 0;
 	grand_res := vector();
 	if ('C' = what and 1 = length(path_parts))
-	{
 		top_id := vector (UNAME'calendar', detcol_id, owner_uid, -1, 0, 0, 0, 0, 0); -- may be a fake id because top_id[4] may be NULL
-	}
 	else
-	{
 		top_id := "calendar_DAV_SEARCH_ID_IMPL" (detcol_id, path_parts, what, kind_id, owner_uid, domain_id, year_id, month_id);
-	}
 	if (DAV_HIDE_ERROR (top_id) is null)
 		return vector();
 	top_davpath := DAV_CONCAT_PATH (detcol_path, path_parts);
@@ -406,12 +416,12 @@ create function "calendar_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 			declare cur varchar;
 			declare i integer;
 			i := 0;
-			subs := vector('Events', 'Tasks', 'Date');
-			for (i := 0; i < 3; i := i + 1)
+            subs := vector('Events', 'Tasks', 'Date', 'Gems');
+            for (i := 0; i < 4; i := i + 1)
 			{
 				cur := cast(subs[i] as varchar);
 				res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, cur) || '/', 'C', 0, now(),
-					vector (UNAME'calendar', detcol_id, owner_uid, -1, -1, 0, 0, 0, 0),
+                    vector (UNAME'calendar', detcol_id, owner_uid, i, top_id[4], 0, 0, 0, 0),
 					'100000000NN', ownergid, owner_uid, now(), 'dav/unix-directory', cur) ) );
 			}
 			return res;
@@ -500,6 +510,19 @@ create function "calendar_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 			'100000000NN', ownergid, owner_uid, E_UPDATED, 'text/calendar', orig_mname) ) );
 		}
 	}
+    --- level of gems
+    else if (top_id[3] = 3)
+    {
+          res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, 'Calendar.rss'), 'R', 1024, now(),
+            vector (UNAME'calendar', detcol_id, owner_uid, top_id[3], top_id[4], top_id[5], top_id[6], -1, 0),
+            '100000000NN', ownergid, owner_uid, now(), 'text/xml', 'Calendar.rss') ) );
+          res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, 'Calendar.atom'), 'R', 1024, now(),
+            vector (UNAME'calendar', detcol_id, owner_uid, top_id[3], top_id[4], top_id[5], top_id[6], -2, 0),
+            '100000000NN', ownergid, owner_uid, now(), 'text/xml', 'Calendar.atom') ) );
+          res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, 'Calendar.rdf'), 'R', 1024, now(),
+            vector (UNAME'calendar', detcol_id, owner_uid, top_id[3], top_id[4], top_id[5], top_id[6], -3, 0),
+            '100000000NN', ownergid, owner_uid, now(), 'text/xml', 'Calendar.rdf') ) );
+    }
 	grand_res := vector_concat (grand_res, res);
 finalize_res:
 	return grand_res;
@@ -722,7 +745,9 @@ create function "calendar_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
 				kind_id := 0;
 			else if (equ(path_parts[1], 'Tasks'))
 				kind_id := 1;
-			if ((kind_id = 1 or kind_id = 0) and len > 2)
+            else if (equ(path_parts[1], 'Gems'))
+                kind_id := 3;
+            if ((kind_id = 1 or kind_id = 0 or kind_id = 3) and len > 2)
 				return -1;
 			if (kind_id = 2 and len > 4)
 				return -1;
@@ -778,9 +803,7 @@ create function "calendar_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
 		ctr := ctr + 1;
 	}
 	if ('C' = what)
-	{
 		return vector (UNAME'calendar', detcol_id, owner_uid, kind_id, domain_id, year_id, month_id, 0, 0);
-	}
 	hitlist := vector ();
 	if (kind_id = 0 or kind_id = 1)
 	{
@@ -792,6 +815,15 @@ create function "calendar_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts a
 			hitlist := vector_concat (hitlist, vector (E_ID));
 		}
 	}
+    else if (kind_id = 3)
+    {
+		if ('Calendar.rss' = path_parts[ctr])
+			hitlist := vector_concat (hitlist, vector (-1));
+		if ('Calendar.atom' = path_parts[ctr])
+			hitlist := vector_concat (hitlist, vector (-2));
+		if ('Calendar.rdf' = path_parts[ctr])
+			hitlist := vector_concat (hitlist, vector (-3));
+    }
 	else if (kind_id = 2)
 	{
 		for select distinct D.E_ID as D_ID
@@ -922,12 +954,104 @@ create procedure CAL.WA.det_export_vcal (
 }
 ;
 
+create procedure CAL.WA.export_rss_sqlx_for_det (
+  in domain_id integer,
+  in account_id integer)
+{
+  declare retValue any;
+  declare qry_text any;
+  retValue := string_output ();
+
+  http ('<?xml version ="1.0" encoding="UTF-8"?>\n', retValue);
+  http ('<rss version="2.0">\n', retValue);
+  http ('<channel>\n', retValue);
+
+  qry_text := (select 
+   XMLELEMENT('title', CAL.WA.utf2wide(CAL.WA.domain_name (domain_id))), 
+   XMLELEMENT('description', CAL.WA.utf2wide(CAL.WA.domain_description (domain_id))), 
+   XMLELEMENT('managingEditor', U_E_MAIL), 
+   XMLELEMENT('pubDate', CAL.WA.dt_rfc1123(now ())), 
+   XMLELEMENT('generator', 'Virtuoso Universal Server ' || sys_stat('st_dbms_ver')), 
+   XMLELEMENT('webMaster', U_E_MAIL), 
+   XMLELEMENT('link', CAL.WA.calendar_url (domain_id)) 
+  from DB.DBA.SYS_USERS where U_ID = account_id);
+
+  http (serialize_to_UTF8_xml(qry_text), retValue);
+  
+  qry_text := (select 
+   XMLAGG(XMLELEMENT('item', 
+     XMLELEMENT('title', CAL.WA.utf2wide (E_SUBJECT)), 
+     XMLELEMENT('description', CAL.WA.utf2wide (E_DESCRIPTION)), 
+     XMLELEMENT('guid', E_ID), 
+     XMLELEMENT('link', CAL.WA.event_url (domain_id, E_ID)), 
+     XMLELEMENT('pubDate', CAL.WA.dt_rfc1123 (E_UPDATED)), 
+     (select XMLAGG (XMLELEMENT ('category', TV_TAG)) from CAL..TAGS_VIEW where tags = E_TAGS), 
+     XMLELEMENT('http://www.openlinksw.com/weblog/:modified', CAL.WA.dt_iso8601 (E_UPDATED)))) 
+ from (select top 15  
+         E_SUBJECT, 
+         E_DESCRIPTION, 
+         E_UPDATED, 
+         E_TAGS, 
+         E_ID 
+       from 
+         CAL.WA.EVENTS 
+       where E_DOMAIN_ID = domain_id 
+       order by E_UPDATED desc) x );
+       
+  http (serialize_to_UTF8_xml(qry_text), retValue);
+
+  http ('</channel>\n', retValue);
+  http ('</rss>\n', retValue);
+
+  retValue := string_output_string (retValue);
+  return retValue;
+}
+;
+
+create procedure CAL.WA.export_atom_sqlx_for_det (
+  in domain_id integer,
+  in account_id integer)
+{
+  declare xml_entity, xsltTemplate any;
+  xsltTemplate := CAL.WA.xslt_full ('rss2atom03.xsl');
+  if (CAL.WA.settings_atomVersion (CAL.WA.settings (account_id)) = '1.0')
+    xsltTemplate := CAL.WA.xslt_full ('rss2atom.xsl');
+  
+  xml_entity := xtree_doc(CAL.WA.export_rss_sqlx_for_det (domain_id, account_id));
+    
+  xml_entity := xslt(xsltTemplate, xml_entity);
+  return serialize_to_UTF8_xml(xml_entity);
+}
+;
+
+create procedure CAL.WA.export_rdf_sqlx_for_det (
+  in domain_id integer,
+  in account_id integer)
+{
+	declare xml_entity, xsltTemplate any;
+	xsltTemplate := CAL.WA.xslt_full ('rss2rdf.xsl');	
+	xml_entity := xtree_doc(CAL.WA.export_rss_sqlx_for_det (domain_id, account_id));
+	xml_entity := xslt(xsltTemplate, xml_entity);
+	return serialize_to_UTF8_xml(xml_entity);
+}
+;
 
 --| When DAV_RES_CONTENT or DAV_RES_COPY_INT or DAV_RES_MOVE_INT calls DET function, authentication is made.
 --| If content_mode is 1 then content is a valid output stream before the call.
 create function "calendar_DAV_RES_CONTENT" (in id any, inout content any, out type varchar, in content_mode integer) returns integer
 {
 	--dbg_obj_princ ('calendar_DAV_RES_CONTENT (', id, ', content, type, ', content_mode, ')');
+    if (id[7] < 0)
+    {
+		type := 'text/xml';
+		if (id[7] = -1)
+			content := CAL.WA.export_rss_sqlx_for_det (id[4], id[2]);
+		if (id[7] = -2)
+			content := CAL.WA.export_atom_sqlx_for_det (id[4], id[2]);
+		if (id[7] = -3)
+			content := CAL.WA.export_rdf_sqlx_for_det (id[4], id[2]);
+		return 0;
+    }
 	declare tz integer;
     type := 'text/calendar';
 	whenever not found goto endline;

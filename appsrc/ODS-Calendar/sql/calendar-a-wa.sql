@@ -202,10 +202,14 @@ create method wa_new_inst (in login varchar) for wa_Calendar
   DB.DBA.DAV_MAKE_DIR ('/DAV/home/%s/Calendar/' || login, iUserID, null, '110100000N');
 
   declare path varchar;
-  path := sprintf ('/DAV/home/%s/Calendar (DET)/', login);
-  DB.DBA.DAV_MAKE_DIR (path, iUserID, null, '110100000N');
-  update WS.WS.SYS_DAV_COL set COL_DET = 'Calendar' where COL_ID = DAV_SEARCH_ID (path, 'C');
+  path := sprintf ('/DAV/home/%s/Calendar/', login);
+  DB.DBA.DAV_DELETE_INT (path || 'Calendar.rss', 1, null, null, 0);
+  DB.DBA.DAV_DELETE_INT (path || 'Calendar.atom', 1, null, null, 0);
+  DB.DBA.DAV_DELETE_INT (path || 'Calendar.rdf', 1, null, null, 0);
 
+  DB.DBA.DAV_MAKE_DIR (path, iUserID, null, '110100000N');
+  delete from WS.WS.SYS_DAV_COL where COL_ID = DAV_SEARCH_ID (sprintf ('/DAV/home/%s/Calendar DET/', login), 'C');
+  update WS.WS.SYS_DAV_COL set COL_DET = 'Calendar' where COL_ID = DAV_SEARCH_ID (path, 'C');
 
   -- Add a virtual directory for Calendar - public www -------------------------
   VHOST_REMOVE(lpath    => '/calendar/' || cast (iWaiID as varchar));
