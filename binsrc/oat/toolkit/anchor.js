@@ -122,10 +122,11 @@ OAT.Anchor = {
 							win.dom.container.style.width = (OAT.Dom.getWH(win.dom.container)[0]+100)+'px';
 						if (height == OAT.Dom.getWH(win.dom.content)[1]) {
 							win.dom.container.style.width = (OAT.Dom.getWH(win.dom.container)[0]-100)+'px';
-						//	if (OAT.Dom.getWH(win.dom.content)[1] > 450) {
-						//		win.dom.content.style.height = '450px';
-						//		win.dom.content.style.overflow = 'auto';
-						//	}
+							/* now adding scrollbar when too large window */
+							if (OAT.Dom.getWH(win.dom.content)[1] > 300) {
+								win.dom.content.style.height = '300px';
+								win.dom.content.style.overflow = 'auto';
+							}
 							win.dom.container.style.height = (OAT.Dom.getWH(win.dom.content)[1]+40)+'px';
 							break;
 						}

@@ -11,27 +11,60 @@
 	OAT.Notify.send(content, optObj);
 */
 
-OAT.Notify = {
-	container:false,
-	update:function() {
+OAT.Notify = function(parentDiv,optObj) {
+	var self = this;
+	this.options = {
+		x:-1,
+		y:-1
+	}
+
+	for (var p in optObj) { self.options[p] = optObj[p]; }
+
+	this.parentDiv = parentDiv || document.body;
+	this.container = false; 
+	this.cx = 0;
+	this.cy = 0;
+
+	
+	this.update = function() {
 		var scroll = OAT.Dom.getScroll();
 		var dims = OAT.Dom.getViewport();
-		with (OAT.Notify.container.style) {
-			right = (-scroll[0])+"px";
-			top = scroll[1]+"px";
+		with (self.container.style) {
+			left = (self.cx + scroll[0]) + "px";
+			top = (self.cy + scroll[1]) + "px";
 		}
-	},
-	createContainer:function() {
-		var c = OAT.Dom.create("div",{position:"fixed",top:"0px",right:"0px"});
-		document.body.appendChild(c);
-		OAT.Notify.container = c;
+	}
+	
+	this.createContainer = function(width,height) {
+		var pos = OAT.Dom.getLT(self.parentDiv);
+		var dim = OAT.Dom.getWH(self.parentDiv);
+
+		if(self.options.x == -1) { 
+			self.cx = Math.round( pos[0] + (dim[0] - width ) / 2 ); 
+		} else { 
+			self.cx = pos[0] + self.options.x; 
+		}
+		
+		if(self.options.y == -1) { 
+			self.cy = Math.round( pos[1] + (dim[1] - height) / 2 ); 
+		} else { 
+			self.cy = pos[1] + self.options.y; 
+		}
+		
+		var c = OAT.Dom.create("div",{position:"fixed", top: self.cy + "px", left: self.cx + "px"});
+		self.container = c;
+		self.parentDiv.appendChild(c);
+
+
 		if (OAT.Browser.isIE6) { 
 			c.style.position = "absolute"; 
-			OAT.Notify.update();
+			OAT.Event.attach(window,'resize',self.update); 
+			OAT.Event.attach(window,'scroll',self.update); 
+			self.update();
 		} 
-	},
-	send:function(content, optObj) {
-		if (!OAT.Notify.container) { OAT.Notify.createContainer(); }
+		} 
+
+	this.send = function(content, optObj) {
 		var options = {
 			image:false, /* url */
 			padding:"2px", /* of container */
@@ -46,6 +79,8 @@ OAT.Notify = {
 			height:50
 		}
 		for (var p in optObj) { options[p] = optObj[p]; }
+		
+		if (!self.container) { self.createContainer(options.width,options.height); }
 		
 		var c = $(content);
 		if (!c) { 
@@ -87,7 +122,7 @@ OAT.Notify = {
 		});
 		
 		var start = function() {
-			OAT.Notify.container.appendChild(div);
+			self.container.appendChild(div);
 			if (options.delayIn) { 
 				aAppear.start(); 
 			} else { 
@@ -101,9 +136,7 @@ OAT.Notify = {
 		
 		start();
 	}
-}
-if (OAT.Browser.isIE6) { 
-	OAT.Event.attach(window,'resize',OAT.Notify.update); 
-	OAT.Event.attach(window,'scroll',OAT.Notify.update); 
+
+		
 }
 OAT.Loader.featureLoaded("notify");
