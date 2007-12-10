@@ -1015,8 +1015,6 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   if ((0 == BOX_ELEMENTS (sources)) &&
     (NULL != (env->spare_common_sponge_options)) )
     spar_error (sparp, "Retrieval options for source graphs (e.g., '%s') may be useless if the query does not contain 'FROM' or 'FROM NAMED'", env->spare_common_sponge_options->data);
-  if (env->spare_grab.rgc_all)
-    spar_add_rgc_vars_and_consts_from_retvals (sparp, retvals);
   return spartlist (sparp, 16, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
     env->spare_output_format_name,

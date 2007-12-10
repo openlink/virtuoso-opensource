@@ -5505,6 +5505,8 @@ sparp_rewrite_all (sparp_t *sparp)
   if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (root))
     return;
   sparp_expand_top_retvals (sparp);
+  if (sparp->sparp_env->spare_grab.rgc_all)
+    spar_add_rgc_vars_and_consts_from_retvals (sparp, sparp->sparp_expr->_.req_top.retvals);
   sparp->sparp_expr->_.req_top.expanded_orig_retvals = t_box_copy (sparp->sparp_expr->_.req_top.retvals);
 /* Unlike spar_retvals_of_construct() that can be called during parsing,
 spar_retvals_of_describe() should wait for obtaining all variables and then
