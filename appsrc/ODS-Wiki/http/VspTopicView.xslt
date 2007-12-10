@@ -473,11 +473,9 @@
           </div>
 	  </span>
 	  <span id="top-mod-by">
-	    <xsl:call-template name="wikiref">
-	      <xsl:with-param name="ti_cluster_name">Main</xsl:with-param>
-	      <xsl:with-param name="ti_local_name"><xsl:value-of select="$ti_author"/></xsl:with-param>
-	      <xsl:with-param name="wikiref_cont"><xsl:value-of select="$ti_author"/></xsl:with-param>
-	    </xsl:call-template>
+            <a href="{wv:AuthorIRI ($ti_author_id)}?sid={$sid}&amp;realm={$realm}">
+              <xsl:value-of select="wv:AuthorName ($ti_author_id)"/>
+            </a>
         </span>
 	  <span id="top-mod-time"><xsl:value-of select="wv:funcall2('WV.WIKI.MOD_TIME', $ti_res_id, $ti_rev_id)"/></span>
       </div>

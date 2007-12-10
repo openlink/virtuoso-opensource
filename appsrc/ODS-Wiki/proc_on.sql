@@ -296,6 +296,7 @@ create method ti_run_lexer (in _env any) returns varchar for WV.WIKI.TOPICINFO
   WV..LEXER (self.ti_cluster_id, _lexer, _lexer_name);
   _lexer_name := cast (call (_lexer_name) () as varchar);
   if (_env is null) _env := vector();
+--  dbg_obj_print (_lexer);
   _res := call (_lexer) (_text || '\r\n', 
   	coalesce (self.ti_cluster_name, 'Main'),
 	coalesce (self.ti_local_name, 'WelcomeVisitors'),
@@ -1195,7 +1196,6 @@ create trigger "Wiki_TopicTextDelete" before delete on WS.WS.SYS_DAV_RES order 1
   WV.WIKI.DELETE_INLINE_MACRO_FUNCS_1 (_topic);
   for select P_NAME from DB.DBA.SYS_PROCEDURES 
     where P_NAME like WV.WIKI.INLINE_MACRO_NAME (_topic.ti_cluster_name, _topic.ti_local_name, null) do {
---    dbg_obj_print (P_NAME);
     exec ('drop procedure ' || P_NAME);
   }
   skip: ;
@@ -2890,8 +2890,6 @@ create procedure WV.WIKI.DELICIOUSPUBLISH (in _topic_id int, in _category_names 
 }
 ;
 
--- parameter="value" -> vector (parameter, value)
--- do not signal error, assume string is OK
 create function WV.WIKI.PARSEPARAM (in arg varchar) returns any
 {
   declare _res any;

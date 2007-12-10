@@ -97,6 +97,7 @@ create function WV.WIKI.VSPTOPICVIEW (
   in params any)
   returns varchar
 {
+--  dbg_obj_print (params);
 --  dbg_obj_print (_topic);
   declare _uid int;
   declare _base_adjust, _command varchar;
@@ -193,6 +194,7 @@ ins:
   _xhtml := 
     WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _xhtml,
       _ext_params);
+--  dbg_obj_princ ('----------------------');
   if (_command = 'xmlraw')
     {
       http_rewrite ();
@@ -2627,6 +2629,25 @@ create function WV.WIKI.CLUSTERIRI (in cluster_name varchar)
 }
 ;
 
+create function WV.WIKI.AUTHORIRI (in author_id integer)
+{
+  if ((author_id is null) or (author_id < 0))
+    return '';
+  if (not exists (select 1 from DB.DBA.SYS_USERS where U_ID = author_id))
+    return '';
+  return SIOC..person_iri (SIOC..user_iri (author_id));
+}
+;
+
+create function WV.WIKI.AUTHORNAME (in author_id integer)
+{
+  if ((author_id is null) or (author_id < 0))
+    return 'Unknown';
+  if (not exists (select 1 from DB.DBA.SYS_USERS where U_ID = author_id))
+    return 'Unknown';
+  return (select coalesce (U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_ID = author_id);
+}
+;
 
 create function WV.WIKI.PAIR (in _key varchar, in value varchar)
 {
@@ -2651,6 +2672,10 @@ grant execute on WV.WIKI.RESOURCEHREF2 to public
 ;
 grant execute on WV.WIKI.CLUSTERIRI to public
 ;
+grant execute on WV.WIKI.AUTHORIRI to public
+;
+grant execute on WV.WIKI.AUTHORNAME to public
+;
 grant execute on WV.WIKI.PAIR to public
 ;
 grant execute on WV.WIKI.COLLECT_PAIRS to public
@@ -2661,6 +2686,10 @@ xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourceHREF', 'WV.WIK
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourceHREF2', 'WV.WIKI.RESOURCEHREF2')
 ;
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ClusterIRI', 'WV.WIKI.CLUSTERIRI')
+;
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:AuthorIRI', 'WV.WIKI.AUTHORIRI')
+;
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:AuthorName', 'WV.WIKI.AUTHORNAME')
 ;
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:pair', 'WV.WIKI.PAIR')
 ;
