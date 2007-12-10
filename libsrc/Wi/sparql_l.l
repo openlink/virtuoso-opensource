@@ -475,6 +475,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{S}{A}{M}{E}{T}{E}{R}{M}	{ return SAMETERM_L	; }
 <SPARQL>{S}{E}{L}{E}{C}{T}		{ return SELECT_L	; }
 <SPARQL>{S}{I}{L}{E}{N}{T}		{ return SILENT_L	; }
+<SPARQL>{S}{O}{F}{T}			{ return SOFT_L		; }
 <SPARQL>{S}{T}{O}{R}{A}{G}{E}		{ return STORAGE_L	; }
 <SPARQL>{S}{T}{R}			{ return STR_L		; }
 <SPARQL>{S}{U}{B}{C}{L}{A}{S}{S}	{ return SUBCLASS_L	; }
