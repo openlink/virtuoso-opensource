@@ -239,7 +239,7 @@ ODS_SPARQL_QM_RUN (
       where (^{roles.}^.U_NAME = ^{users.}^.U_NAME)
 
     {
-	create virtrdf:ODS_DS as graph ods:graph (users.U_NAME) #option (exclusive)
+	create virtrdf:ODS_DS as graph ods:graph (users.U_NAME) option (soft exclusive)
 	  {
 	    ods:user (users.U_NAME) a sioc:User ;
         sioc:id users.U_NAME ;
@@ -342,7 +342,7 @@ create procedure DB.DBA.ODS_GET_APP_USER_RDF_VIEW_QM (in fl int)
 	    from DB.DBA.SIOC_USERS as users ' ||
             call (p_name2) () ||
 	    '{
-	       create virtrdf:ODS_DS-'||suffix||' as graph ods:graph (users.U_NAME) #option (exclusive)
+	       create virtrdf:ODS_DS-'||suffix||' as graph ods:graph (users.U_NAME) option (soft exclusive)
 	        {
 	          '|| call (p_name) () ||'
 	        } .
@@ -359,7 +359,7 @@ create procedure DB.DBA.ODS_GET_APP_USER_RDF_VIEW_QM (in fl int)
 	  from DB.DBA.SIOC_USERS as users '||
 	  call ('sioc.DBA.rdf_nntpf_view_str_tables') () ||
       '{
-	  create virtrdf:ODS_DS-nntpf as graph ods:graph (users.U_NAME) #option (exclusive)
+	  create virtrdf:ODS_DS-nntpf as graph ods:graph (users.U_NAME) option (soft exclusive)
  	   {
 	     '|| call ('sioc.DBA.rdf_nntpf_view_str_maps') () ||'
 	   } .
