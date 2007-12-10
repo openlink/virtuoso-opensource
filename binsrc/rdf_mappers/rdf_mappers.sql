@@ -600,6 +600,8 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
   if (acc is not null)
     {
       tmp := DB.DBA.USER_GET_OPTION (acc, 'FBKey');
+      if (tmp is null and __proc_exists ('DB.DBA.WA_USER_GET_SVC_KEY') is not null)
+	tmp := DB.DBA.WA_USER_GET_SVC_KEY (acc, 'FBKey');
       if (tmp is not null)
 	{
 	  tmp := replace (tmp, '\r', '\n');
@@ -657,8 +659,8 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
   goto end_sp;
 
 try_profile:
-  tmp := sprintf_inverse (graph_iri, 'http://www.facebook.com/p/%s/%s', 0);
-  if (length (tmp) <> 2)
+  tmp := sprintf_inverse (graph_iri, 'http://www.facebook.com/%s/%s/%s', 0);
+  if (length (tmp) <> 3)
     {
       tmp := sprintf_inverse (graph_iri, 'http://www.facebook.com/profile.php?id=%s', 0);
       if (length (tmp) <> 1)
@@ -666,7 +668,7 @@ try_profile:
       own := tmp[0];
     }
   else
-  own := tmp[1];
+    own := tmp[2];
   q :=  sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, affiliations, profile_update_time, timezone, religion, birthday, sex, hometown_location, meeting_sex, meeting_for, relationship_status, significant_other_id, political, current_location, activities, interests, is_app_user, music, tv, movies, books, quotes, about_me, hs_info, education_history, work_history, notes_count, wall_count, status, has_added_app FROM user WHERE uid = %s', own);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   --dbg_printf ('%s', ret);
