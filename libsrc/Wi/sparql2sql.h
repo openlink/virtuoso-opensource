@@ -19,8 +19,8 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- */
-
+ *  
+*/
 #ifndef __SPARQL2SQL_H
 #define __SPARQL2SQL_H
 #include "sparql.h"
@@ -247,10 +247,18 @@ extern quad_storage_t *sparp_find_storage_by_name (ccaddr_t name);
 /*! This searches for quad map by its name. */
 extern quad_map_t *sparp_find_quad_map_by_name (ccaddr_t name);
 
+#define SSG_QM_UNSET		0	/*!< The value is not yet calculated */
+#define SSG_QM_NO_MATCH		1	/*!< Triple matching triple pattern can not match the qm restriction, disjoint */
+#define SSG_QM_PARTIAL_MATCH	2	/*!< Triple matching triple pattern may match the qm restriction, but no warranty, common case */
+#define SSG_QM_APPROX_MATCH	3	/*!< Triple matching triple pattern will always match the qm restriction (so triple pattern is more strict than qm) OR var in pattern and non-constant qm value */
+#define SSG_QM_PROVEN_MATCH	4	/*!< Triple matching triple pattern will always match the qm restriction, this is strictly proven so it can be used to cut by soft exclusive */
+#define SSG_QM_MATCH_AND_CUT	5	/*!< SSG_QM_APPROX_MATCH plus qm is soft/hard exclusive so red cut and no more search for possible quad maps of lower priority */
+
 typedef struct tc_context_s {
   SPART *tcc_triple;		/*!< Triple pattern in question */
+  int tcc_check_source_graphs;	/*!< Nonzero if \c tcc_sources contains nonzero number of graphs of appropriate sort (FROM_L or NAMED_L) so it forms the restriction that should be checked */
   SPART **tcc_sources;		/*!< Source graphs that can be used */
-  int tcc_required_source_type;	/*!< NAMED_L or FROM_L, to indicate that the search is among named or unnamed sources */
+  uint32 *tcc_source_invalidation_masks;	/*!< String of integers, nonzero means that the source graph with same index in \c tcc_sourcess has failed some restriction at some level of nested quad maps. 0x1 is for global restriction by type, 0x2 is for RDF views etc.  */
   quad_storage_t *tcc_qs;	/*!< Quad storage in question */
   quad_map_t *tcc_top_allowed_qm;	/*!< Top qm that is allowed, if it is specified in the triple */
   void *tcc_last_qmvs [SPART_TRIPLE_FIELDS_COUNT];	/*!< Pointers to recently checked QMVs or constants. QMVs tend to repeat in sequences. */
@@ -262,11 +270,12 @@ typedef struct tc_context_s {
 
 /*! This checks if the given \c qm may contain data that matches \c tcc->tcc_triple by itself,
 without its submaps and without the check of qmEmpty. */
-extern int sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm);
+extern int sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, int invalidation_level);
 
-/*! The function fills in the \c tc_set_ret[0] with triple cases of all matching quad mappings (\c qm, submaps of \c qm and al subsubmaps recursively
+/*! The function fills in the \c tc_set_ret[0] with triple cases of all matching quad mappings
+(\c qm, submaps of \c qm and al subsubmaps recursively
 that match and not empty and not after the first (empty or nonempty) full match. */
-extern int sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, int inside_allowed_qm);
+extern int sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, int inside_allowed_qm, int invalidation_level);
 
 /*! This returns a mempool-allocated vector of quad maps
 that describe an union of all elementary datasources that can store triples that match a pattern.

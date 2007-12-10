@@ -3066,6 +3066,78 @@ sparp_find_quad_map_by_name (ccaddr_t name)
   return NULL;
 }
 
+int
+rvr_sprintffs_like (SPART *value, rdf_val_range_t *rvr)
+{
+  int ctr;
+#ifdef DEBUG
+  if (!(SPART_VARR_SPRINTFF & rvr->rvrRestrictions))
+    GPF_T1 ("Invalid call of rvr_sprintffs_like()");
+#endif
+  for (ctr = rvr->rvrSprintffCount; ctr--; /* no step */)
+    {
+      if (sprintff_like (value, rvr->rvrSprintffs[ctr]))
+        return 1+ctr;
+    }
+  return 0;
+}
+
+int
+sparp_check_field_mapping_of_cvalue (sparp_t *sparp, SPART *cvalue, rdf_val_range_t *qmv_or_fmt_rvr, rdf_val_range_t *rvr)
+{
+  if ((NULL != rvr) && (NULL != rvr->rvrFixedValue))
+    {
+      if (!sparp_fixedvalues_equal (sparp, cvalue, (SPART *)(rvr->rvrFixedValue)))
+        return SSG_QM_NO_MATCH;
+      return SSG_QM_PROVEN_MATCH;
+    }
+  if (NULL != qmv_or_fmt_rvr)
+    {
+      if (SPART_VARR_SPRINTFF & qmv_or_fmt_rvr->rvrRestrictions)
+        {
+          if (!rvr_sprintffs_like (cvalue, qmv_or_fmt_rvr))
+            return SSG_QM_NO_MATCH;
+        }
+      if (SPART_VARR_FIXED & qmv_or_fmt_rvr->rvrRestrictions)
+        {
+          if (!sparp_fixedvalues_equal (sparp, cvalue, (SPART *)(qmv_or_fmt_rvr->rvrFixedValue)))
+            return SSG_QM_NO_MATCH;
+          return SSG_QM_PROVEN_MATCH;
+        }
+    }
+  return SSG_QM_APPROX_MATCH;
+}
+
+int
+sparp_check_mapping_of_sources (sparp_t *sparp, tc_context_t *tcc,
+  rdf_val_range_t *qmv_or_fmt_rvr, rdf_val_range_t *rvr, int invalidation_level )
+{
+  int min_match = 0xFFFF;
+  int source_ctr;
+#ifdef DEBUG
+  if (!(tcc->tcc_check_source_graphs))
+    GPF_T1("Bad invocation of sparp_check_mapping_of_sources()");
+#endif
+  DO_BOX_FAST (SPART *, source, source_ctr, tcc->tcc_sources)
+    {
+      int chk_res;
+      if (tcc->tcc_source_invalidation_masks[source_ctr])
+        continue;
+      chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *)(source->_.alias.arg->_.lit.val), qmv_or_fmt_rvr, rvr);
+      if (SSG_QM_NO_MATCH != chk_res)
+        {
+          if (chk_res < min_match)
+            min_match = chk_res;
+        }
+      else
+        tcc->tcc_source_invalidation_masks[source_ctr] |= (1 << invalidation_level);
+    }
+  END_DO_BOX_FAST;
+  if (0xFFFF == min_match)
+    return SSG_QM_NO_MATCH;
+  return min_match;
+}
+
 ptrdiff_t qm_field_map_offsets[4] = {
   JSO_FIELD_OFFSET(quad_map_t,qmGraphMap),
   JSO_FIELD_OFFSET(quad_map_t,qmSubjectMap),
@@ -3078,17 +3150,11 @@ ptrdiff_t qm_field_constants_offsets[4] = {
   JSO_FIELD_OFFSET(quad_map_t,qmPredicateRange.rvrFixedValue),
   JSO_FIELD_OFFSET(quad_map_t,qmObjectRange.rvrFixedValue) };
 
-#define SSG_QM_UNSET			0	/*!< The value is not yet calculated */
-#define SSG_QM_NO_MATCH			1	/*!< Triple matching triple pattern can not match the qm restriction, disjoint */
-#define SSG_QM_PARTIAL_MATCH		2	/*!< Triple matching triple pattern may match the qm restriction, but no warranty, common case */
-#define SSG_QM_APPROX_MATCH	3	/*!< Triple matching triple pattern will always match the qm restriction (so triple pattern is more strict than qm) OR var in pattern and non-constant qm value */
-#define SSG_QM_PROVEN_MATCH	4	/*!< Triple matching triple pattern will always match the qm restriction, this is strictly proven so it can be used to cut by soft exclusive */
-#define SSG_QM_MATCH_AND_CUT	9	/*!< SSG_QM_APPROX_MATCH plus qm is soft/hard exclusive so red cut and no more search for possible quad maps of lower priority */
-
 int
 sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
-  quad_map_t *qm, qm_value_t *qmv, rdf_val_range_t *rvr)
+  quad_map_t *qm, qm_value_t *qmv, rdf_val_range_t *rvr, int invalidation_level )
 {
+  int source_ctr;
   rdf_val_range_t *qmv_or_fmt_rvr = NULL;
   ptrlong field_type = SPART_TYPE (field);
   if (NULL != qmv)
@@ -3101,11 +3167,33 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
             qmv_or_fmt_rvr = &(qmv->qmvFormat->qmfValRange);
         }
     }
+  DO_BOX_FAST (SPART *, source, source_ctr, tcc->tcc_sources)
+    {
+      tcc->tcc_source_invalidation_masks[source_ctr] &= (1 << invalidation_level) - 1;
+    }
+  END_DO_BOX_FAST;
+  if (tcc->tcc_check_source_graphs)
+    {
+      int chk_res = sparp_check_mapping_of_sources (sparp, tcc, qmv_or_fmt_rvr, rvr, invalidation_level);
+      if (SSG_QM_NO_MATCH == chk_res)
+        return SSG_QM_NO_MATCH;
+    }
+  if (!tcc->tcc_check_source_graphs && (tcc->tcc_qs->qsMatchingFlags & SPART_QS_NO_IMPLICIT_USER_QM) &&
+    (SPAR_BLANK_NODE_LABEL == SPART_TYPE (field)) )
+    return SSG_QM_NO_MATCH;
+
   if ((SPAR_BLANK_NODE_LABEL == field_type) || (SPAR_VARIABLE == field_type))
     {
-      if ((NULL != rvr->rvrFixedValue) && (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions))
+      if (tcc->tcc_check_source_graphs)
+        {
+          int chk_res = sparp_check_mapping_of_sources (sparp, tcc, &(field->_.var.rvr), NULL, invalidation_level);
+          if (SSG_QM_NO_MATCH == chk_res)
+            return SSG_QM_NO_MATCH;
+        }
+      if (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions)
         {
           sparp_equiv_t *eq_g = sparp->sparp_env->spare_equivs[field->_.var.equiv_idx];
+          int chk_res;
           if (DV_UNAME != DV_TYPE_OF (eq_g->e_rvr.rvrFixedValue))
             { /* This would be very strange failure */
 #ifdef DEBUG
@@ -3114,58 +3202,12 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
               return SSG_QM_NO_MATCH;
 #endif
             }
-          /* Check if a fixed value of a field variable is equal to the constant field of the mapping */
-          if (!sparp_fixedvalues_equal (sparp, (SPART *)(eq_g->e_rvr.rvrFixedValue), (SPART *)(rvr->rvrFixedValue)))
-            return SSG_QM_NO_MATCH;
-          return SSG_QM_PROVEN_MATCH;
-        }
-      if (NULL != rvr->rvrFixedValue)
-        {
-          int source_ctr;
-          int checked_sources_count = 0;
-          int source_found = 0;
-          DO_BOX_FAST (SPART *, source, source_ctr, tcc->tcc_sources)
-        {
-          if (tcc->tcc_required_source_type != SPART_TYPE(source))
-            continue;
-          checked_sources_count++;
-          if (!strcmp (source->_.lit.val, rvr->rvrFixedValue))
-            {
-              source_found = 1;
-              break;
-            }
-        }
-      END_DO_BOX_FAST;
-      if (!source_found)
-        {
-          if (0 != checked_sources_count)
-            return SSG_QM_NO_MATCH;
-          if ((tcc->tcc_qs->qsMatchingFlags & SPART_QS_NO_IMPLICIT_USER_QM) &&
-            (SPAR_BLANK_NODE_LABEL == SPART_TYPE (field)) )
-            return SSG_QM_NO_MATCH;
-          return SSG_QM_PARTIAL_MATCH;
-        }
+          chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *)(eq_g->e_rvr.rvrFixedValue), qmv_or_fmt_rvr, rvr);
+          return chk_res;
         }
       if (NULL != qmv_or_fmt_rvr)
         {
-          int source_ctr;
-          int checked_sources_count = 0;
-          DO_BOX_FAST (SPART *, source, source_ctr, tcc->tcc_sources)
-            {
-              int ctr;
-              if (tcc->tcc_required_source_type != SPART_TYPE(source))
-                continue;
-              checked_sources_count++;
-
-              for (ctr = qmv_or_fmt_rvr->rvrSprintffCount; ctr--; /* no step */)
-                if (sprintff_like (source->_.lit.val, qmv_or_fmt_rvr->rvrSprintffs[ctr]))
-                  goto source_matches_qmv_sff; /* see below */
-            }
-          END_DO_BOX_FAST;
-          if (0 != checked_sources_count)
-            return SSG_QM_NO_MATCH;
-
-source_matches_qmv_sff:
+#if 0
           if (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions)
             { /* Check if a fixed value of a field variable matches to one of sffs of the mapping value */
               caddr_t fv = rvr_string_fixedvalue (&(field->_.var.rvr));
@@ -3179,6 +3221,7 @@ source_matches_qmv_sff:
 fixed_field_matches_qmv_sff: ;
                 }
             }
+#endif
           if (SPART_VARR_SPRINTFF & field->_.var.rvr.rvrRestrictions)
             { /* Check if either of formats of a field variable matches to one of sffs of the mapping value */
               int fld_ctr, qmv_ctr;
@@ -3206,6 +3249,7 @@ field_sff_isects_qmv_sff: ;
     }
   else if ((SPAR_LIT == field_type) || (SPAR_QNAME == field_type))
     {
+      int chk_res;
       caddr_t eff_val = SPAR_LIT_OR_QNAME_VAL (field);
       if (DV_UNAME != DV_TYPE_OF (eff_val))
         { /* This would be very-very strange failure */
@@ -3215,25 +3259,17 @@ field_sff_isects_qmv_sff: ;
           return SSG_QM_NO_MATCH;
 #endif
         }
-      if (NULL != rvr->rvrFixedValue)
+      if (tcc->tcc_check_source_graphs)
         {
-          if (!sparp_fixedvalues_equal (sparp, field, (SPART *)(rvr->rvrFixedValue)))
+          rdf_val_range_t fake_rvr;
+          fake_rvr.rvrRestrictions = SPART_VARR_FIXED;
+          fake_rvr.rvrFixedValue = eff_val;
+          chk_res = sparp_check_mapping_of_sources (sparp, tcc, NULL, &fake_rvr, invalidation_level);
+          if (SSG_QM_NO_MATCH == chk_res)
         return SSG_QM_NO_MATCH;
-          return SSG_QM_PROVEN_MATCH;
-    }
-      if (NULL != qmv_or_fmt_rvr)
-        {
-          caddr_t fv = SPAR_LIT_OR_QNAME_VAL (field);
-          if ((NULL != fv) && IS_STRING_DTP (DV_TYPE_OF (fv)))
-            {
-              int ctr;
-              for (ctr = qmv_or_fmt_rvr->rvrSprintffCount; ctr--; /* no step */)
-                if (sprintff_like (fv, qmv_or_fmt_rvr->rvrSprintffs[ctr]))
-                  return SSG_QM_PROVEN_MATCH;
-              return SSG_QM_NO_MATCH; /* reached if no match found */
             }
-        }
-      return SSG_QM_PROVEN_MATCH;
+      chk_res = sparp_check_field_mapping_of_cvalue (sparp, eff_val, qmv_or_fmt_rvr, rvr);
+      return chk_res;
     }
   GPF_T1("ssg_check_field_mapping_g(): field is neither variable nor literal?");
   return SSG_QM_NO_MATCH;
@@ -3341,7 +3377,7 @@ field_sff_isects_qmv_sff: ;
 }
 
 int
-sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
+sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, int invalidation_level)
 {
   SPART *src_g = tcc->tcc_triple->_.triple.tr_graph;
   SPART *src_s = tcc->tcc_triple->_.triple.tr_subject;
@@ -3391,7 +3427,7 @@ sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
   /* Check of graph */
   if (SSG_QM_UNSET == g_match)
     {
-      g_match = sparp_check_field_mapping_g (sparp, tcc, src_g, qm, qm->qmGraphMap, &(qm->qmGraphRange));
+      g_match = sparp_check_field_mapping_g (sparp, tcc, src_g, qm, qm->qmGraphMap, &(qm->qmGraphRange), invalidation_level);
       if (NULL != qm->qmGraphMap)
     {
           tcc->tcc_last_qmvs [SPART_TRIPLE_GRAPH_IDX] = qm->qmGraphMap;
@@ -3435,18 +3471,18 @@ sparp_check_triple_case (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm)
 }
 
 int
-sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, int inside_allowed_qm)
+sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, int inside_allowed_qm, int invalidation_level)
 {
   int ctr, fld_ctr, single_fixed_fld = -1;
   int qm_is_a_good_case = 0;
-  int common_status = sparp_check_triple_case (sparp, tcc, qm);
+  int common_status = sparp_check_triple_case (sparp, tcc, qm, invalidation_level);
   if (SSG_QM_NO_MATCH == common_status)
     return SSG_QM_NO_MATCH;
   if ((NULL == tcc->tcc_top_allowed_qm) || (qm == tcc->tcc_top_allowed_qm))
     inside_allowed_qm = 1;
   DO_BOX_FAST (quad_map_t *, sub_qm, ctr, qm->qmUserSubMaps)
     {
-      int status = sparp_qm_find_triple_cases (sparp, tcc, sub_qm, inside_allowed_qm);
+      int status = sparp_qm_find_triple_cases (sparp, tcc, sub_qm, inside_allowed_qm, invalidation_level+1);
       if (SSG_QM_MATCH_AND_CUT == status)
         return SSG_QM_MATCH_AND_CUT;
     }
@@ -3520,7 +3556,7 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
 triple_case_t **
 sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int required_source_type)
 {
-  int ctr, fld_ctr;
+  int ctr, fld_ctr, source_ctr;
   triple_case_t **res_list;
   tc_context_t tmp_tcc;
   if (NULL == sparp->sparp_storage)
@@ -3531,9 +3567,20 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
     }
   memset (&tmp_tcc, 0, sizeof (tc_context_t));
   tmp_tcc.tcc_triple = triple;
-  tmp_tcc.tcc_sources = sources;
-  tmp_tcc.tcc_required_source_type = required_source_type;
   tmp_tcc.tcc_qs = sparp->sparp_storage;
+  tmp_tcc.tcc_sources = sources;
+  tmp_tcc.tcc_source_invalidation_masks = (uint32 *)t_alloc_box (sizeof (uint32) * BOX_ELEMENTS (sources), DV_BIN);
+  DO_BOX_FAST (SPART *, source, source_ctr, tmp_tcc.tcc_sources)
+    {
+      if (required_source_type == SPART_TYPE(source))
+        {
+          tmp_tcc.tcc_check_source_graphs++;
+          tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0;
+        }
+      else
+        tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0x1;
+    }
+  END_DO_BOX_FAST;
   if (((caddr_t)DEFAULT_L) == triple->_.triple.qm_iri)
     {
       if (NULL == sparp->sparp_storage->qsDefaultMap)
@@ -3556,20 +3603,20 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
         spar_internal_error (sparp, "RDF quad mapping metadata are corrupted: MJV has submaps; the quad storage used in the query should be configured again");
       if (SPART_QM_EMPTY & qm->qmMatchingFlags)
         spar_internal_error (sparp, "RDF quad mapping metadata are corrupted: MJV is declared as empty; the quad storage used in the query should be configured again");
-      status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm, 0);
+      status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm, 0, 1);
       if (SSG_QM_MATCH_AND_CUT == status)
         goto full_exclusive_match_detected;
     }
   END_DO_BOX_FAST;
   DO_BOX_FAST (quad_map_t *, qm, ctr, sparp->sparp_storage->qsUserMaps)
     {
-      int status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm, 0);
+      int status = sparp_qm_find_triple_cases (sparp, &tmp_tcc, qm, 0, 1);
       if (SSG_QM_MATCH_AND_CUT == status)
         goto full_exclusive_match_detected;
     }
   END_DO_BOX_FAST;
   if (NULL != sparp->sparp_storage->qsDefaultMap)
-    sparp_qm_find_triple_cases (sparp, &tmp_tcc, sparp->sparp_storage->qsDefaultMap, 0);
+    sparp_qm_find_triple_cases (sparp, &tmp_tcc, sparp->sparp_storage->qsDefaultMap, 0, 1);
 
 full_exclusive_match_detected:
 #if 0
