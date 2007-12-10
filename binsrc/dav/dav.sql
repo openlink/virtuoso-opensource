@@ -1360,7 +1360,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
   declare _cont_len integer;
   declare temp varchar;
   declare full_path, _perms, _vsp, uname, upwd varchar;
-  declare _u_id, _g_id, _is_xper integer;
+  declare _u_id, _g_id, _is_xper, is_sparql integer;
   declare p_name, p_text, p_comm, stat, msg, p_inc, p_root, inc_name, inc_cont, str, location varchar;
   declare ses any;
   --set isolation = 'serializable';
@@ -1378,6 +1378,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
   _vsp := aref (path, length (path) - 1);
   _u_id := null;
   _g_id := null;
+  is_sparql := 0;
   _col_parent_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'P'));
   if (_col_parent_id is not null)
     {
@@ -1411,6 +1412,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
   if (content_type = 'application/sparql-query')
     {
       WS.WS.SPARQL_QUERY_POST (full_path, ses);
+      is_sparql := 1;
     }
 
   rc := -28;
@@ -1425,7 +1427,10 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
     {
       commit work;
       http_request_status ('HTTP/1.1 201 Created');
-      http( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+      if (is_sparql = 1)
+	http_header ('MS-Author-Via: SPARQL\r\n');
+      else
+	http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
 	    '<HTML><HEAD>',
 	    '<TITLE>201 Created</TITLE>',
 	    '</HEAD><BODY>', '<H1>Created</H1>',
