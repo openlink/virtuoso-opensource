@@ -367,20 +367,26 @@ create procedure contact_insert (
 		  iri := ext_iri;
 	        else
     iri := socialnetwork_contact_iri (domain_id, contact_id);
-    ods_sioc_post (graph_iri, iri, sc_iri, creator_iri, name, created, updated, AB.WA.contact_url (domain_id, contact_id));
+		--ods_sioc_post (graph_iri, iri, sc_iri, creator_iri, name, created, updated, AB.WA.contact_url (domain_id, contact_id));
 		scot_tags_insert (inst_id, iri, tags);
 
 		person_iri := person_iri (creator_iri);
 
     -- FOAF Data Space
+  		DB.DBA.RDF_QUAD_URI   (graph_iri, person_iri, foaf_iri ('knows'), iri);
+  		DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('nick'), name);
+		if (length (fullName))
+		  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), fullName);
+		if (0 and length (foaf))
+		  DB.DBA.RDF_QUAD_URI   (graph_iri, iri, owl_iri ('sameAs'), foaf);
+		DB.DBA.RDF_QUAD_URI   (graph_iri, sc_iri, sioc_iri ('container_of'), iri);
+		DB.DBA.RDF_QUAD_URI   (graph_iri, iri, sioc_iri ('has_container'), sc_iri);
+
 		if (kind = 1) {
 		  -- Organization
   		DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Organization'));
-		if (length (foaf))
-		  DB.DBA.RDF_QUAD_URI   (graph_iri, iri, owl_iri ('sameAs'), foaf);
 
 
-  		DB.DBA.RDF_QUAD_URI   (graph_iri, person_iri, foaf_iri ('knows'), iri);
   		if (not DB.DBA.is_empty_or_null (bMail))
   			DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('mbox'), bMail);
   		if (not DB.DBA.is_empty_or_null (bWeb))
@@ -397,16 +403,9 @@ create procedure contact_insert (
 		} else {
 		  -- Person
     DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Person'));
-		if (length (foaf))
-		  DB.DBA.RDF_QUAD_URI   (graph_iri, iri, owl_iri ('sameAs'), foaf);
 
-  		DB.DBA.RDF_QUAD_URI   (graph_iri, person_iri, foaf_iri ('knows'), iri);
-
-    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('nick'), name);
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('firstName'), firstName);
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('family_name'), lastName);
-		if (not DB.DBA.is_empty_or_null (fullName))
-		  DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('name'), fullName);
     if (not DB.DBA.is_empty_or_null (gender))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, foaf_iri ('gender'), gender);
     if (not DB.DBA.is_empty_or_null (icq))
