@@ -6070,7 +6070,7 @@ create procedure WA_USER_GET_SVC_KEY (in uname varchar, in k varchar)
   declare exit handler for not found {
     return null;
   };
-  select US_KEY into res from DB.DBA.WA_USER_SVC, DB.DBA.SYS_USERS where U_NAME = uname and US_SVC = k;
+  select US_KEY into res from DB.DBA.WA_USER_SVC, DB.DBA.SYS_USERS where U_NAME = uname and US_SVC = k and U_ID = US_U_ID;
   return res;
 }
 ;
