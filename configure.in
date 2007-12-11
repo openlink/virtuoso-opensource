@@ -669,7 +669,7 @@ AC_SUBST(CCOPT)
 #                                                                        #
 ##########################################################################
 AC_ARG_ENABLE(krb, [dnl
-AC_HELP_STRING([--enable-krb], [enable Kerberos extension])
+AC_HELP_STRING([--enable-krb(=DIR)], [enable Kerberos extension])
 AC_HELP_STRING([--disable-krb], [disable Kerberos extension (default)])dnl
 ], [
      case "${enableval}" in
@@ -1045,7 +1045,7 @@ fi
 
 with_php4="no"
 AC_ARG_ENABLE(php4, [dnl
-AC_HELP_STRING([--enable-php4], [enable PHP 4.x extension])
+AC_HELP_STRING([--enable-php4(=DIR)], [enable PHP 4.x extension])
 AC_HELP_STRING([--disable-php4], [disable PHP 4.x extension (default)])dnl
 ], [
      case "${enableval}" in
@@ -1115,7 +1115,7 @@ AC_SUBST(php4_LDFLAGS)
 
 with_php5="no"
 AC_ARG_ENABLE(php5, [dnl
-AC_HELP_STRING([--enable-php5], [enable PHP 5.x extension])
+AC_HELP_STRING([--enable-php5(=DIR)], [enable PHP 5.x extension])
 AC_HELP_STRING([--disable-php5], [disable PHP 5.x extension (default)])dnl
 ], [
      case "${enableval}" in
