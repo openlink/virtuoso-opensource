@@ -1,4 +1,4 @@
-December 07, 2007, V5.0.3:
+December 11, 2007, V5.0.3:
   * Database Engine
      - Added transparent HTTP Content Negotiation
      - Added improvements for deadlock handling
@@ -14,7 +14,6 @@ December 07, 2007, V5.0.3:
      - Fixed TOP in a DT so scrollable cursor will become static
      - Fixed url rewrite rules
      - Small bugfixes
-
   * SPARQL and RDF
      - Added support for SPARQL update via HTTP GET/PUT in WebDAV
      - Added Jena, Sesame and Redland interfaces
@@ -31,7 +30,6 @@ December 07, 2007, V5.0.3:
      - Improved support for aggregate expressions
      - Use UTF-8 for RDF serialization
      - Various speedups for SPARQL 
-
   * ODS Applications
      - Added a++ links
      - Added feature to reorder tabs on the main navigation bar

@@ -1,3 +1,152 @@
+2007-12-11 14:44  source
+
+	* By default we need to use tar-ustar since some filenames are larger
+	  than 99 chars, but this is a problem for older versions of automake.
+	  So we just document how the user can change the configure.in file.
+
+2007-12-11 14:05  source
+
+	* Fixed missing relation
+
+2007-12-11 13:47  source
+
+	* Fixed configure options and checks for --with-jdk*
+	* Removed --enable-jdbc option
+
+2007-12-11 13:43  source
+
+	* Fixed configure --help information
+
+2007-12-11 13:41  source
+
+	* Updated version of vad package
+
+2007-12-11 13:08  source
+
+	* Fixed qualifier in opensocial
+	* Fixed bio namespace
+	* Moved a++ logic to User Settings level
+
+2007-12-11 13:05  source
+
+	* Fixed date for all bookmarks smart folder
+	* Fixed bug in advanced search
+	* Moved a++ logic to User Settings level
+
+2007-12-11 13:04  source
+
+	* Moved a++ logic to User Settings level
+
+2007-12-11 13:03  source
+
+	* Fixed name & nick
+	* Fixed bug in foaf dield
+	* Moved a++ logic to User Settings level
+
+2007-12-11 10:21  source
+
+	* Merged from upstream project
+
+2007-12-11 10:03  source
+
+	* Removed deprecated VD for DET
+
+2007-12-10 21:19  source
+
+	* Changed author link in "Modified by"
+	* Removed debug code
+
+2007-12-10 21:14  source
+
+	* Fixed space iri and user iri to use #this
+
+2007-12-10 21:10  source
+
+	* Added dav post for sparql
+
+2007-12-10 14:56  source
+
+	* Removed debugging code
+
+2007-12-10 14:55  source
+
+	* Added new virtual paths for ODS users
+	* Fixed bug in ods bar using fs
+	* Fixed bug in facebook mapper
+
+2007-12-10 14:54  source
+
+	* Fixed removing old DAV folders
+	* Fixed Calendar DET, shows Gems etc
+
+2007-12-10 14:48  source
+
+	* Fixed bug in Facebook mapper
+
+2007-12-10 14:45  source
+
+	* Fixed calling order
+
+2007-12-10 14:44  source
+
+	* When id is 0 the mostsignificant bits for 'num' may becomes a
+	  non-zero. Therefore we set the number as it's a d_id in network order, so
+	  we don't use num at all
+
+2007-12-10 10:42  source
+
+	* Updated version to 5.0.3-rc9
+
+2007-12-10 10:42  source
+
+	* Fixed countries
+
+2007-12-10 10:40  source
+
+	* Fixed exposure of doPost function
+
+2007-12-10 10:39  source
+
+	* Updated vad version
+
+2007-12-10 10:35  source
+
+	* Fixed vad install bugs
+
+2007-12-10 10:09  source
+
+	* Fixed wiki trigger preventing users update
+	* Fixed unable to delete wiki article
+
+2007-12-10 10:08  source
+
+	* Added new virtual paths
+
+2007-12-10 09:52  source
+
+	* Added use of soft exclusive
+
+2007-12-10 09:04  source
+
+	* Merged from upstream project
+
+2007-12-10 09:02  source
+
+	* Added check of quad map values for applicability of a given triple
+	  pattern, graph field
+
+2007-12-10 09:01  source
+
+	* Added SOFT_L
+
+2007-12-10 09:00  source
+
+	* Added overflow protection to bif_concat
+
+2007-12-07 17:50  source
+
+	* Added extra settings
+
 2007-12-07 14:50  source
 
 	* Fixed isDefinedBy iri
