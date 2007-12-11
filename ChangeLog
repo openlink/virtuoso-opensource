@@ -1,3 +1,23 @@
+2007-12-11 16:59  source
+
+	* Updated version to 5.0.3 for final release
+
+2007-12-11 15:42  source
+
+	* Fixed problem with fql mapper
+
+2007-12-11 15:24  source
+
+	* Fixed broken make clean rule
+
+2007-12-11 15:19  source
+
+	* Added missing files to distribution
+
+2007-12-11 14:51  source
+
+	* Updated version to 5.0.3-rc10
+
 2007-12-11 14:44  source
 
 	* By default we need to use tar-ustar since some filenames are larger
