@@ -69,7 +69,8 @@ create procedure serialize_user (in uid varchar, inout ses any, in auth int)
       http (sprintf ('<title>%V</title>\n', U_FULL_NAME), ses);
       if (length (WAUI_PHOTO_URL) and is_visible (WAUI_VISIBLE, 37, auth))
       http (sprintf ('<link rel="thumbnail" type="image/*" href="%s"/>\n', WAUI_PHOTO_URL), ses);
-      http (sprintf ('<link rel="alternate" type="text/html" href="http://%s/dataspace/%s/%U"/>\n', cname, wa_identity_dstype(uid),uid), ses);
+      http (sprintf ('<link rel="alternate" type="text/html" href="http://%s/dataspace/%s/%U"/>\n', cname,
+	    DB.DBA.wa_identity_dstype(uid),uid), ses);
       http (sprintf ('<link rel="self" type="application/atom+xml" href="http://%s/feeds/people/%U"/>\n', cname, uid), ses);
       http (sprintf ('<georss:where>\n'), ses);
       http (sprintf ('<gml:Point xmlns:gml="http://www.opengis.net/gml">\n'), ses);
@@ -226,6 +227,7 @@ create procedure serialize_act (in _u_id int, in act_id int, inout ses any)
       http (sprintf ('<link rel="self" type="application/atom+xml" href="%V"/>\n', url), ses);
       http (sprintf ('<link rel="edit" type="application/atom+xml" href="%V"/>\n', url), ses);
       http (sprintf ('<received>%s</received>\n', DB.DBA.date_iso8601 (now ())), ses);
+      if (length (WA_ACTIVITY_TYPE))
       http (sprintf ('<dc:type xmlns:dc="http://purl.org/dc/elements/1.1">%s</dc:type>\n', WA_ACTIVITY_TYPE), ses);
       http ('</entry>\n', ses);
     }

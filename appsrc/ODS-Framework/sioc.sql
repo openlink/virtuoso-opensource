@@ -125,7 +125,7 @@ create procedure ann_iri (in s varchar)
 
 create procedure bio_iri (in s varchar)
 {
-  return concat ('http://purl.org/vocab/bio/0.1/', s);
+  return concat ('http://vocab.org/bio/0.1/', s);
 };
 
 create procedure vcard_iri (in s varchar)
@@ -2335,7 +2335,7 @@ create function std_pref (in iri varchar, in rev int := 0)
   'http://www.w3.org/2002/01/bookmark#', 'bm',
   'http://www.w3.org/2003/12/exif/ns/', 'exif',
   'http://www.w3.org/2000/10/annotation-ns#', 'ann',
-  'http://purl.org/vocab/bio/0.1/', 'bio',
+  'http://vocab.org/bio/0.1/', 'bio',
   'http://www.w3.org/2001/vcard-rdf/3.0#', 'vcard',
   'http://www.w3.org/2002/12/cal#', 'vcal',
   'http://www.w3.org/2002/07/owl#', 'owl',
@@ -2661,7 +2661,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
          ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> \n' ||
          ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> \n' ||
 	 ' prefix owl: <http://www.w3.org/2002/07/owl#> ' ||
-         ' prefix bio: <http://purl.org/vocab/bio/0.1/> \n' ;
+         ' prefix bio: <http://vocab.org/bio/0.1/> \n' ;
 
   part := sprintf (
 	  ' CONSTRUCT {
@@ -3000,7 +3000,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
          ' prefix atom: <http://atomowl.org/ontologies/atomrdf#> \n' ||
          ' prefix vcard: <http://www.w3.org/2001/vcard-rdf/3.0#> \n' ||
 	 ' prefix owl: <http://www.w3.org/2002/07/owl#> ' ||
-         ' prefix bio: <http://purl.org/vocab/bio/0.1/> \n' ;
+         ' prefix bio: <http://vocab.org/bio/0.1/> \n' ;
       if (kind = 0)
 	{
 	  part := sprintf (

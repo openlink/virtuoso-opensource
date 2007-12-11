@@ -51,6 +51,7 @@
     <v:variable persist="0" name="issearch" type="int" default="1"/>
     <v:variable persist="0" name="showactive" type="int" default="1"/>
     <v:variable persist="0" name="interests" type="varchar" default="''"/>
+    <v:variable persist="0" name="appEnable" type="integer" default="1"/>
 
     <v:variable name="sav0" type="varchar" default="'1'" />
     <v:variable name="sav1" type="varchar" default="'1'" />
@@ -85,11 +86,11 @@
                WAUI_MSIGNATURE, WAUI_SUMMARY,
 	       U_E_MAIL, WAUI_PHOTO_URL,
 	       WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
-	       WAUI_SEARCHABLE,WAUI_SHOWACTIVE, WAUI_INTERESTS, WAUI_IS_ORG
+	       WAUI_SEARCHABLE,WAUI_SHOWACTIVE, WAUI_INTERESTS, WAUI_IS_ORG, WAUI_APP_ENABLE
           INTO _utitle, _ftname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum,
 	       _email, self.photo,
 	       self.audio, self.books, self.music, self.movie,
-	       self.issearch,self.showactive, self.interests, self.is_org
+	       self.issearch,self.showactive, self.interests, self.is_org, self.appEnable
           FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
 
         self.utitle := _utitle;
@@ -548,6 +549,16 @@
           </td>
 	      </tr>
         <tr>
+          <td colspan="2">
+            <v:check-box name="app_enable" value="--self.appEnable" xhtml_id="app_enable" >
+             <v:after-data-bind>
+               control.ufl_selected := self.appEnable;
+             </v:after-data-bind>
+            </v:check-box>
+            <label for="app_enable">Show &amp;lt;a&amp;gt;++ links</label>
+          </td>
+	      </tr>
+        <tr>
                 <td colspan="2" class="ctrl">
 		      <span class="fm_ctl_btn">
 			<v:button name="bt_cncl_1" value="Cancel" action="simple">
@@ -728,6 +739,8 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_SEARCHABLE', self.in_search.ufl_selected);
                         WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
                         WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.e_int.ufl_value);
+                        WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', self.app_enable.ufl_selected);
+
 
                         -- change user_text data
                         declare _pdata long varchar;
