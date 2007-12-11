@@ -878,12 +878,12 @@ else if (length (self.catid))
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
 
-	  if (<?V get_keyword ('App', self.opts, 1) ?>  >= 1)
+	        if (<?V DB.DBA.WA_USER_APP_ENABLE (self.user_id) ?>  >= 1)
 	     generateAPP('texttd',
 	     	{ title:"Related links",
 		                      width:300,
 		                      height:200,
-		  appActivation:"<?V case when get_keyword ('App', self.opts, 1) = 2 then 'hover' else 'click' end ?>",
+		                      appActivation:"<?V case when DB.DBA.WA_USER_APP_ENABLE (self.user_id) = 2 then 'hover' else 'click' end ?>",
 		  useRDFB:<?V case when wa_check_package ('OAT') then 'true' else 'false' end ?>
         }
 	                     );
@@ -6789,21 +6789,6 @@ window.onload = function (e)
           <td/>
           <td><v:check-box name="show_tags_ckbx" xhtml_id="show_tags_ckbx" value="1" initial-checked="--get_keyword('TagGem', self.opts, 1)"/><label for="show_tags_ckbx">Show Tags</label></td>
         </tr>
-        <tr>
-          <td/>
-	  <td><label for="show_app_sel">Show A++ links</label>
-            <v:select-list xhtml_class="select" name="show_app_sel" xhtml_id="show_app_sel">
-              <v:item value="0" name="disabled"/>
-              <v:item value="1" name="click"/>
-              <v:item value="2" name="hover"/>
-              <v:before-data-bind>
-                control.ufl_value := get_keyword('App', self.opts, 1);
-              </v:before-data-bind>
-            </v:select-list>
-	</td>
-        </tr>
-
-
         <tr><th colspan="2"><h2>Filters</h2></th></tr>
         <tr>
           <td><label for="xsl_filter">XSL-T Filter for Posts</label></td>
@@ -6853,7 +6838,6 @@ window.onload = function (e)
                 opts := BLOG.DBA.BLOG2_SET_OPTION('ShowXBEL', opts, self.show_xbel_ckbx.ufl_selected);
                 opts := BLOG.DBA.BLOG2_SET_OPTION('TagGem', opts, self.show_tags_ckbx.ufl_selected);
                 opts := BLOG.DBA.BLOG2_SET_OPTION('Adblock', opts, self.adds_filter.ufl_value);
-                opts := BLOG.DBA.BLOG2_SET_OPTION('App', opts, atoi (self.show_app_sel.ufl_value));
                 declare _photo, match varchar;
                 _photo := trim(self.icon1.ufl_value);
                 if (length(_photo) > 0)
