@@ -19,11 +19,7 @@
 #  
 #  
 
-if WITH_JDBC
-JDBC_SUBDIR = JDBCDriverType4
-endif
-
-SUBDIRS = util zlib odbcsdk Dk Thread langfunc Wi plugin Tidy Xml.new $(JDBC_SUBDIR)
+SUBDIRS = util zlib odbcsdk Dk Thread langfunc Wi plugin Tidy Xml.new JDBCDriverType4
 
 noinst_HEADERS = Dk.h libutil.h
 

@@ -19,43 +19,37 @@
 #  
 #  
 
-if WITH_JDBC
-
 if JDK1
-JDK1_TARGETS = virtjdbc.jar
-JDK1_TESTDIR = testsuite_1.2
+JDK1_TARGETS = jdk1-target
 endif
 
 if JDK2
-JDK2_TARGETS = virtjdbc2.jar virtjdbc2ssl.jar
-JDK2_TESTDIR = testsuite_2.0
+JDK2_TARGETS = jdk2-target
 endif
 
 if JDK3
-JDK3_TARGETS = virtjdbc3.jar virtjdbc3ssl.jar
-JDK3_TESTDIR = testsuite_3.0
+JDK3_TARGETS = jdk3-target
 endif
 
-endif # WITH_JDBC
 
-SUBDIRS	= . virtuoso $(JDK1_TESTDIR) $(JDK2_TESTDIR) $(JDK3_TESTDIR) 
+SUBDIRS	= . virtuoso testsuite_1.2 testsuite_2.0 testsuite_3.0
 
 
 all-am: $(JDK1_TARGETS) $(JDK2_TARGETS) $(JDK3_TARGETS)
 
-virtjdbc.jar:
+.PHONY: jdk1-target
+jdk1-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std1
 
-virtjdbc2.jar:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std2
 
-virtjdbc2ssl.jar:
+.PHONY: jdk2-target
+jdk2-target:
+	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std2
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl2
 
-virtjdbc3.jar:
+.PHONY: jdk3-target
+jdk3-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std3
-
-virtjdbc3ssl.jar:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl3
 
 install-data-local:
