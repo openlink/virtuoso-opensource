@@ -90,13 +90,6 @@
                 </td>
               </tr>
               <tr>
-                <th />
-                <td>
-                  <v:check-box name="f_app" xhtml_id="f_app" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('app', self.settings, '0') as integer)" />
-                  <vm:label for="f_app" value="Show <a>++ links"/>
-                </td>
-              </tr>
-              <tr>
                 <th>
                     <v:label for="f_atomVersion" value="Atom File Version"/>
                   </th>
@@ -203,7 +196,6 @@
               self.settings := ODRIVE.WA.set_keyword('rows', self.settings, cast(cast(rows as integer) as varchar));
               self.settings := ODRIVE.WA.set_keyword('chars', self.settings, cast(cast(chars as integer) as varchar));
               self.settings := ODRIVE.WA.set_keyword('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
-              self.settings := ODRIVE.WA.set_keyword ('app', self.settings, self.f_app.ufl_selected);
               self.settings := ODRIVE.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
               self.settings := ODRIVE.WA.set_keyword('column_#2', self.settings, self.f_column_2.ufl_selected);
               self.settings := ODRIVE.WA.set_keyword('column_#3', self.settings, self.f_column_3.ufl_selected);

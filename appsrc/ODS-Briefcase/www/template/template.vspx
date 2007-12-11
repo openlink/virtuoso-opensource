@@ -84,7 +84,7 @@
           self.account_id := cast (get_keyword ('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword ('user_role', aSessInfo, '');
           self.accountName := get_keyword ('user_name', aSessInfo, '');
-          self.settings := ODRIVE.WA.settings (self.account_id);
+          self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), ODRIVE.WA.settings (self.account_id));
         ]]>
       </v:on-init>
 

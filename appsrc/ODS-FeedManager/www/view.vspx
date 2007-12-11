@@ -89,7 +89,7 @@
         item_id := atoi(get_keyword('fid', self.vc_event.ve_params));
         mode := get_keyword('m', self.vc_event.ve_params, 'channel');
         account_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id);
-        settings := ENEWS.WA.settings (domain_id, account_id);
+          settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (account_id)), ENEWS.WA.settings (domain_id, account_id));
         appClass := '';
         if (cast(get_keyword('app', settings, '0') as integer) = 1)
           appClass := 'app';  

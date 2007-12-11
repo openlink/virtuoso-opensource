@@ -81,13 +81,6 @@
                 </td>
               </tr>
               <tr>
-                <th />
-                <td>
-                  <v:check-box name="f_app" xhtml_id="f_app" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('app', self.settings, '0') as integer)" />
-                  <vm:label for="f_app" value="Show <a>++ links"/>
-                </td>
-              </tr>
-              <tr>
                 <th rowspan="2" valign="top">
                   <v:label value="Auto-refresh at login"/>
                 </th>
@@ -187,7 +180,6 @@
               self.settings := ENEWS.WA.set_keyword('updateBlogs', self.settings, self.f_updateBlogs.ufl_selected);
               self.settings := ENEWS.WA.set_keyword('feedIcons', self.settings, self.f_feedIcons.ufl_selected);
               self.settings := ENEWS.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
-              self.settings := ENEWS.WA.set_keyword ('app', self.settings, self.f_app.ufl_selected);
 
               conv := cast(get_keyword('conv', self.v_conversation, '0') as integer);
               f_conv := cast (get_keyword ('f_conv', params, '0') as integer);

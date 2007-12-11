@@ -80,13 +80,6 @@
             </td>
           </tr>
           <tr>
-            <th />
-            <td>
-              <v:check-box name="f_app" xhtml_id="f_app" is-boolean="1" true-value="1" false-value="0" value="--cast (get_keyword ('app', self.settings, '0') as integer)" />
-              <vm:label for="f_app" value="Show <a>++ links"/>
-            </td>
-          </tr>
-          <tr>
             <th>
               Atom File Version
             </th>
@@ -110,8 +103,10 @@
             <![CDATA[
               declare rows, chars any;
 
-              declare exit handler for SQLSTATE '*' {
-                if (__SQL_STATE = 'TEST') {
+              declare exit handler for SQLSTATE '*'
+              {
+                if (__SQL_STATE = 'TEST')
+                {
                   self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
                   self.vc_is_valid := 0;
                   return;
@@ -130,7 +125,6 @@
               self.settings := POLLS.WA.set_keyword('chars', self.settings, cast(cast(chars as integer) as varchar));
               self.settings := POLLS.WA.set_keyword('rows', self.settings, cast(cast(rows as integer) as varchar));
               self.settings := POLLS.WA.set_keyword('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
-              self.settings := POLLS.WA.set_keyword ('app', self.settings, self.f_app.ufl_selected);
               self.settings := POLLS.WA.set_keyword('atomVersion', self.settings, self.f_atomVersion.ufl_value);
 
               insert replacing POLLS.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.settings));

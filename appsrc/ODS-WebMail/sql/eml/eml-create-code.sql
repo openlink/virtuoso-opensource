@@ -2203,9 +2203,6 @@ create procedure OMAIL.WA.omail_get_settings (
   if (OMAIL.WA.omail_getp('atom_version',_settings) = '')
     OMAIL.WA.omail_setparam('atom_version',_settings, '1.0');
 
-  if (OMAIL.WA.omail_getp('app', _settings) not in (0,1))
-    OMAIL.WA.omail_setparam('app', _settings, 0);
-
   if (OMAIL.WA.omail_getp('spam', _settings) not in (0,1,2,3,4,5))
     OMAIL.WA.omail_setparam('spam',_settings, 0);
 
@@ -2214,6 +2211,9 @@ create procedure OMAIL.WA.omail_get_settings (
 
   OMAIL.WA.omail_setparam ('discussion', _settings, OMAIL.WA.discussion_check ());
   OMAIL.WA.omail_setparam('update_flag', _settings, 0);
+
+  _settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (_user_id)), _settings);
+
   return _settings;
 }
 ;
@@ -4651,7 +4651,6 @@ create procedure OMAIL.WA.omail_set_mail(
 
     OMAIL.WA.omail_setparam('msg_reply', _settings, get_keyword('msg_reply', params));
     OMAIL.WA.omail_setparam('atom_version', _settings, get_keyword('atom_version', params, '1.0'));
-    OMAIL.WA.omail_setparam('app', _settings, cast(get_keyword ('app', params, '0') as integer));
     OMAIL.WA.omail_setparam('spam', _settings, cast(get_keyword ('spam', params, '0') as integer));
     OMAIL.WA.omail_setparam('conversation', _settings, cast(get_keyword('conversation', params, '0') as integer));
 
@@ -4679,7 +4678,6 @@ create procedure OMAIL.WA.omail_set_mail(
   _rs := sprintf('%s<msg_result>%d</msg_result>', _rs, OMAIL.WA.omail_getp('msg_result',_settings));
   _rs := sprintf('%s<usr_sig_inc selected="%d"><![CDATA[%s]]></usr_sig_inc>', _rs, OMAIL.WA.omail_getp('usr_sig_inc',_settings),OMAIL.WA.omail_getp('usr_sig_txt',_settings));
   _rs := sprintf('%s<atom_version>%s</atom_version>', _rs, OMAIL.WA.omail_getp('atom_version', _settings));
-  _rs := sprintf ('%s<app>%d</app>', _rs, OMAIL.WA.omail_getp('app', _settings));
   _rs := sprintf ('%s<spam>%d</spam>', _rs, OMAIL.WA.omail_getp('spam', _settings));
   _rs := sprintf('%s<conversation>%d</conversation>', _rs, OMAIL.WA.omail_getp('conversation', _settings));
   _rs := sprintf('%s<discussion>%d</discussion>', _rs, OMAIL.WA.discussion_check ());

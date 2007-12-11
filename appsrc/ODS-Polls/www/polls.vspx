@@ -568,7 +568,7 @@
                           if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
                             appClass := 'app';  
 
-                          if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, self.v_id)) {
+                          if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, id)) {
                           http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, appClass, SIOC..poll_post_iri (self.domain_id, id), POLLS.WA.stringCut(title, self.pChars)));
                           } else {
                             http (sprintf ('<div style="float: left; font-weight: bold;">%s</div>', title));

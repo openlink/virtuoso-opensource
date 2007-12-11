@@ -3207,13 +3207,6 @@
                   </td>
                 </tr>
                 <tr>
-                  <th />
-                  <td>
-                    <v:check-box name="s_app" xhtml_id="f_app" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('app', self.settings, '0') as integer)" />
-                    <vm:label for="s_app" value="Show <a>++ links"/>
-                  </td>
-                </tr>
-                <tr>
                   <th>
                     Atom File Version
                   </th>
@@ -3232,8 +3225,8 @@
                 <tr>
                   <th />
                   <td>
-                    <v:check-box name="s_showTasks" xhtml_id="f_showTasks" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('showTasks', self.settings, '1') as integer)" />
-                    <vm:label for="s_app" value="Show tasks in Calendar"/>
+                    <v:check-box name="s_showTasks" xhtml_id="s_showTasks" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('showTasks', self.settings, '1') as integer)" />
+                    <vm:label for="s_showTasks" value="Show tasks in Calendar"/>
                   </td>
                 </tr>
               </table>
@@ -3369,7 +3362,6 @@
 
                 self.settings := CAL.WA.set_keyword ('chars', self.settings, cast(cast(chars as integer) as varchar));
                 self.settings := CAL.WA.set_keyword ('rows', self.settings, cast(cast(rows as integer) as varchar));
-                self.settings := CAL.WA.set_keyword ('app', self.settings, self.s_app.ufl_selected);
                 self.settings := CAL.WA.set_keyword ('atomVersion', self.settings, self.s_atomVersion.ufl_value);
                 self.settings := CAL.WA.set_keyword ('defaultView', self.settings, self.s_defaultView.ufl_value);
                 self.settings := CAL.WA.set_keyword ('weekStarts', self.settings, self.s_weekStarts.ufl_value);
