@@ -115,7 +115,8 @@
 	<xsl:apply-templates select="fb:current_location"/>
     </xsl:template>
     <xsl:template match="fb:user[not contains ($baseUri, fb:uid)]">
-	<foaf:Person rdf:about="#{fb:uid}">
+	<xsl:variable name="user_iri">http://www.facebook.com/p/<xsl:value-of select="fb:first_name"/>_<xsl:value-of select="fb:last_name"/>/<xsl:value-of select="fb:uid"/></xsl:variable>
+	<foaf:Person rdf:about="{$user_iri}">
 	    <fb:uid><xsl:value-of select="fb:uid"/></fb:uid>
 	    <foaf:name><xsl:value-of select="fb:name"/></foaf:name>
 	    <foaf:firstName><xsl:value-of select="fb:first_name"/></foaf:firstName>
@@ -132,6 +133,9 @@
 	    </xsl:if>
 	    <foaf:knows rdf:resource="{$baseUri}"/>
 	</foaf:Person>
+	<rdf:Description rdf:about="{$baseUri}">
+	    <foaf:knows rdf:resource="{$user_iri}"/>
+	</rdf:Description>
     </xsl:template>
     <xsl:template match="fb:current_location">
 	<vcard:ADR rdf:about="{$baseUri}#current_location">

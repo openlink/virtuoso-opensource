@@ -697,14 +697,14 @@ try_profile:
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 
-  q := sprintf ('select uid2 from friend where uid1 = %s', own);
-  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
+--  q := sprintf ('select uid2 from friend where uid1 = %s', own);
+--  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   --dbg_printf ('%s', ret);
-  xt := xtree_doc (ret);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
-  xd := serialize_to_UTF8_xml (xt);
+--  xt := xtree_doc (ret);
+--  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+--  xd := serialize_to_UTF8_xml (xt);
   --dbg_printf ('%s', xd);
-  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+--  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 
   q := sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, profile_update_time, timezone, religion, birthday, sex, current_location FROM user WHERE uid IN (select uid2 from friend where uid1 = %s)', own);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
