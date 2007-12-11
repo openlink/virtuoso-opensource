@@ -96,7 +96,7 @@ OAT.Menu = function() {
 
 	var self = this;
 	this.closeFilter = "*"; /* by default, clicking any element closes menu */
-	this.noCloseFilter = ""; /* by default, there are no 'deaf' elements */
+	this.noCloseFilter = ""; /* by default, there are no 'deaf' elements (separators) */
 	
 	var downRef = function(event) {
 		var src = OAT.Dom.source(event);
