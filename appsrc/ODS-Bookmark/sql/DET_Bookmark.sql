@@ -44,6 +44,19 @@ create function "bookmark_COMPOSE_XBEL_NAME" (in title varchar, in id integer) r
 }
 ;
 
+create function "bookmark_COMPOSE_FOLDERS_PATH" (in domain_id_ integer, in bd_id_ integer)
+{
+    declare folder_id integer;
+    declare folder_path varchar;
+    folder_id := (select BD_FOLDER_ID from BMK.WA.BOOKMARK_DOMAIN where BD_ID = bd_id_ and BD_DOMAIN_ID =  domain_id_);
+    if (folder_id is null)
+        return '';
+    else
+       folder_path := (select F_PATH from BMK.WA.FOLDER where F_ID = folder_id);
+    return folder_path;
+}
+;
+
 create function "bookmark_ACCESS_PARAMS" (in detcol_id any, out access varchar, out gid integer, out uid integer)
 {
   declare access_tmp varchar;
@@ -231,7 +244,7 @@ create function "bookmark_DAV_DIR_SINGLE" (in id any, in what char(0), in path a
 	declare sub_id, folder_id, domain_id, smart_id integer;
 	declare colname, fullpath, rightcol, tag_id varchar;
 	declare maxrcvdate datetime;
-    ----dbg_obj_princ ('bookmark_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
+    --dbg_obj_princ ('bookmark_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
 	sub_id := id[3];
 	domain_id := id[4];
 	folder_id := id[5];
@@ -678,7 +691,7 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
                      foreach (any row in rows) do
                      {
                              res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath,
-                             "bookmark_COMPOSE_XBEL_NAME"(row[3], row[1])), 'R', 1024, row[5],
+                             "bookmark_COMPOSE_XBEL_NAME"(row[3], row[1])), 'R', 1024, row[6],
                              vector (UNAME'bookmark', detcol_id, owner_uid, top_id[3], 0, 0, row[1], null, top_id[8]),
                              '100000000NN', ownergid, owner_uid, row[5], 'application/xbel+xml', 
                              "bookmark_COMPOSE_XBEL_NAME"(row[3], row[1]))));
@@ -698,7 +711,7 @@ create function "bookmark_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in
 			foreach (any row in rows) do
 			{
 			        res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath,
-					"bookmark_COMPOSE_XBEL_NAME"(row[3], row[1])), 'R', 1024, row[5],
+                          "bookmark_COMPOSE_XBEL_NAME"(row[3], row[1])), 'R', 1024, row[6],
 					vector (UNAME'bookmark', detcol_id, owner_uid, top_id[3], 0, 0, row[1], null, top_id[8]),
 					'100000000NN', ownergid, owner_uid, row[5], 'application/xbel+xml', 
 					"bookmark_COMPOSE_XBEL_NAME"(row[3], row[1]))));
@@ -845,7 +858,7 @@ create function "bookmark_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, 
 	  compilation := vector_concat (compilation, vector (cond_key, condtext));
 	}
 	execstate := '00000';
-        qry_text := 'select concat (DAV_CONCAT_PATH (_param.detcolpath, ''bookmark''), ''/'', "bookmark_FIXNAME" (WAI_NAME), ''/'', "bookmark_COMPOSE_XBEL_NAME" (_top.BD_NAME, _top.BD_ID)),
+    qry_text := 'select concat (DAV_CONCAT_PATH (_param.detcolpath, ''bookmark''), ''/'', "bookmark_FIXNAME" (WAI_NAME), "bookmark_COMPOSE_FOLDERS_PATH" (_top.BD_DOMAIN_ID, _top.BD_ID), ''/'', "bookmark_COMPOSE_XBEL_NAME" (_top.BD_NAME, _top.BD_ID)),
         ''R'', 1024, _top.BD_UPDATED,
                 vector (UNAME_BOOKMARK(), ?, _users.U_ID, 3, _top.BD_DOMAIN_ID, _top.BD_FOLDER_ID, null, null),
                 ''110000000RR'', http_nogroup_gid(), _users.U_ID, _top.BD_UPDATED, ''application/xbel+xml'', "bookmark_COMPOSE_XBEL_NAME" (_top.BD_NAME, _top.BD_ID)
