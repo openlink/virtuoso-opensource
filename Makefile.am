@@ -19,7 +19,7 @@
 #  
 #  
 
-AUTOMAKE_OPTIONS	= gnu 1.7
+AUTOMAKE_OPTIONS	= gnu
 
 SUBDIRS = . docsrc libsrc binsrc appsrc
 

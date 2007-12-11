@@ -72,6 +72,10 @@ use one of the following commands:
   * make --version
   * openssl version
 
+If you have an older version than automake version 1.9 you may need to
+edit the configure.in script around line 47 using the examples provided
+for each version.
+
 
 Diskspace Requirements
 ======================

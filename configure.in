@@ -36,7 +36,17 @@ AC_INIT([Virtuoso Open Source Edition],
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
 AC_CONFIG_AUX_DIR([binsrc/config])
 AM_CONFIG_HEADER([libsrc/Dk/config.h])
-AM_INIT_AUTOMAKE([tar-ustar])
+
+dnl
+dnl You may need to change the next macro for older versions of automake:
+dnl
+dnl	AM_INIT_AUTOMAKE([1.6])
+dnl	AM_INIT_AUTOMAKE([1.7])
+dnl	AM_INIT_AUTOMAKE([1.8])
+dnl	AM_INIT_AUTOMAKE([1.9 tar-ustar])
+dnl
+AM_INIT_AUTOMAKE([1.9 tar-ustar])
+
 AM_MAINTAINER_MODE
 
 
