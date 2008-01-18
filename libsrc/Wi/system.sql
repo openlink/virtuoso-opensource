@@ -2868,6 +2868,12 @@ create procedure DB.DBA.HTTP_CLIENT (
 
   if (cert_file is null and url like 'https://%')
     cert_file := '1';
+  if (http_headers is not null)
+    {
+      http_headers := rtrim (http_headers, '\r\n');
+      if (length (http_headers))
+        http_headers := http_headers || '\r\n';
+    }
   return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, null, timeout);
 }
 ;
@@ -2889,6 +2895,12 @@ create procedure DB.DBA.HTTP_CLIENT_EXT (
 
   if (cert_file is null and url like 'https://%')
     cert_file := '1';
+  if (http_headers is not null)
+    {
+      http_headers := rtrim (http_headers, '\r\n');
+      if (length (http_headers))
+        http_headers := http_headers || '\r\n';
+    }
   return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, headers, timeout);
 }
 ;
