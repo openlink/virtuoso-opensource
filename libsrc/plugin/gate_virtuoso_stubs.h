@@ -33,3 +33,4 @@ EXE_EXPORT (void *	, dbg_malloc, (const char *file, u_int line, size_t size));
 EXE_EXPORT (void *	, dbg_calloc, (const char *file, u_int line, size_t num, size_t size));
 EXE_EXPORT (void	, dbg_free, (const char *file, u_int line, void *data));
 EXE_EXPORT (char *	, dbg_strdup, (const char *file, u_int line, const char *str));
+EXE_EXPORT (void *	, dbg_realloc, (const char *file, u_int line, void *old, size_t size));
