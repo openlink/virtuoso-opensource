@@ -45,6 +45,11 @@
 #include <openssl/x509.h>
 #include <openssl/rand.h>
 
+#if defined (SHA256_DIGEST_LENGTH)
+#define SHA256_ENABLE
+#endif
+
+
 #include "libutil.h"
 #include "soap.h"
 
@@ -134,12 +139,15 @@ typedef enum {
 #define DSIG_RSA_URI		"http://www.w3.org/2000/09/xmldsig#rsa"
 #define XENC_TRIPLEDES_ALGO	"http://www.w3.org/2001/04/xmlenc#tripledes-cbc"
 #define DSIG_SHA1_ALGO		"http://www.w3.org/2000/09/xmldsig#sha1"
+#define DSIG_SHA256_ALGO	"http://www.w3.org/2000/09/xmldsig#sha256"
 
 #define DSIG_RSA_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#rsa-sha1"
 #define DSIG_DSA_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#dsa-sha1"
 #define DSIG_DH_SHA1_ALGO	"http://www.w3.org/2000/09/xmldsig#dh-sha1"
+#define DSIG_DH_SHA256_ALGO	"http://www.w3.org/2000/09/xmldsig#dh-sha256"
 
 #define DSIG_HMAC_SHA1_ALGO  	"http://www.w3.org/2000/09/xmldsig#hmac-sha1"
+#define DSIG_HMAC_SHA256_ALGO  	"http://www.w3.org/2000/09/xmldsig#hmac-sha256"
 
 /* transforms */
 #define DSIG_ENVELOPED_SIGNATURE_ALGO	"http://www.w3.org/2000/09/xmldsig#enveloped-signature"

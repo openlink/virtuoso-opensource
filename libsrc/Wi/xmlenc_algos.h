@@ -53,6 +53,13 @@ int (*dsig_canon_2_f) (query_instance_t * qi, caddr_t *  doc_tree, caddr_t * sig
 int dsig_dh_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out);
 int dsig_dh_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t digest);
 
+#ifdef SHA256_ENABLE
+int dsig_sha256_digest (dk_session_t * ses_in, long len, caddr_t * digest_out);
+int dsig_hmac_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out);
+int dsig_dh_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out);
+int dsig_dh_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t digest);
+#endif
+
 int xml_canonicalize (query_instance_t * qi, caddr_t * doc_tree, caddr_t * siginfo_tree,
 	id_hash_t * nss, dk_session_t * ses_out);
 

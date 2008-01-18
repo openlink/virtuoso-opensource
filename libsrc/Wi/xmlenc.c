@@ -2329,6 +2329,42 @@ caddr_t bif_xenc_key_raw_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** a
   return box_dv_short_string (k->xek_name);
 }
 
+static
+caddr_t bif_xenc_key_raw_rand_create (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
+{
+  caddr_t name = bif_key_name_arg (qst, args, 0, "xenc_key_RAW_rand_create");
+  int len = (int) bif_long_arg (qst, args, 1, "xenc_key_RAW_rand_create");
+  xenc_key_t * k;
+  int rc, len_b64;
+  unsigned char buf[4096];
+  caddr_t key_data;
+
+  if (len < 1 || len > sizeof (buf))
+    len = sizeof (buf);
+  rc = RAND_bytes(buf, len);
+
+  if (rc <= 0)
+    sqlr_new_error ("42000", "XENC14", "Cannot generate key data");
+
+  mutex_enter (xenc_keys_mtx);
+  k = xenc_key_create (name, XENC_BASE64_ALGO, DSIG_HMAC_SHA1_ALGO,  0);
+
+  if (NULL == k)
+    {
+      mutex_leave (xenc_keys_mtx);
+      SQLR_NEW_KEY_EXIST_ERROR (name);
+    }
+
+  key_data = dk_alloc_box (len, DV_STRING);
+  memcpy (key_data, buf, len);
+
+  k->ki.raw.k = key_data;
+  k->ki.raw.bits = len * 8;
+
+  mutex_leave (xenc_keys_mtx);
+  return box_dv_short_string (k->xek_name);
+}
+
 static caddr_t
 bif_xenc_get_key_identifier (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
@@ -2417,6 +2453,10 @@ caddr_t bif_xenc_key_serialize (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
       else
 	len = i2d_DSAPublicKey (k->xek_dsa, NULL) + 20;
     }
+  else if (k->xek_type == DSIG_KEY_RAW)
+    {
+      len = k->ki.raw.bits / 8;
+    }
   else
     return NEW_DB_NULL;
 
@@ -2446,6 +2486,10 @@ caddr_t bif_xenc_key_serialize (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
 	len = i2d_DSAPrivateKey (k->xek_dsa, &p);
       else
 	len = i2d_DSAPublicKey (k->xek_dsa, &p);
+    }
+  else if (k->xek_type == DSIG_KEY_RAW)
+    {
+      memcpy (in_buf, k->ki.raw.k, len);
     }
   else
     GPF_T;
@@ -5837,6 +5881,39 @@ bif_xenc_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+#ifdef SHA256_ENABLE
+static caddr_t
+bif_xenc_sha256_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * text = bif_string_arg (qst, args, 0, "xenc_sha256_digest");
+  dk_session_t * ses = strses_allocate ();
+  caddr_t res = NULL;
+  session_buffered_write (ses, text, box_length (text) - 1);
+  dsig_sha256_digest (ses, strses_length (ses), &res);
+  dk_free_box (ses);
+  return res;
+}
+
+static caddr_t
+bif_xenc_hmac_sha256_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * text = bif_string_arg (qst, args, 0, "xenc_hmac_sha256_digest");
+  caddr_t name = bif_string_arg (qst, args, 1, "xenc_hmac_sha256_digest");
+  xenc_key_t * key = xenc_get_key_by_name (name, 1);
+  dk_session_t * ses = strses_allocate ();
+  caddr_t res = NULL;
+  int rc = 0;
+
+  SES_PRINT (ses, text);
+  rc = dsig_hmac_sha256_digest (ses, strses_length (ses), key, &res);
+  dk_free_box (ses);
+  if (0 == rc)
+    sqlr_new_error ("42000", "XENC36", "Could not make HMAC-SHA256 digest");
+
+  return res;
+}
+#endif
+
 
 static caddr_t
 bif_xenc_hmac_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -5956,6 +6033,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_key_RSA_read", bif_xenc_key_rsa_read);
   bif_define ("xenc_key_DSA_read", bif_xenc_key_dsa_read);
   bif_define ("xenc_key_RAW_read", bif_xenc_key_raw_read);
+  bif_define ("xenc_key_RAW_rand_create", bif_xenc_key_raw_rand_create);
   bif_define ("xenc_key_serialize", bif_xenc_key_serialize);
   bif_define ("xenc_X509_certificate_serialize", bif_xenc_x509_cert_serialize);
   bif_define ("xenc_set_primary_key", bif_xenc_set_primary_key);
@@ -5981,7 +6059,10 @@ void bif_xmlenc_init ()
   bif_define ("X509_get_subject", bif_x509_get_subject);
   bif_define ("xenc_sha1_digest", bif_xenc_sha1_digest);
   bif_define ("xenc_hmac_sha1_digest", bif_xenc_hmac_sha1_digest);
-
+#ifdef SHA256_ENABLE  
+  bif_define ("xenc_sha256_digest", bif_xenc_sha256_digest);
+  bif_define ("xenc_hmac_sha256_digest", bif_xenc_hmac_sha256_digest);
+#endif
   bif_define ("xenc_key_DH_create", bif_xenc_key_DH_create);
   bif_define ("xenc_DH_get_params", bif_xenc_DH_get_params);
   bif_define ("xenc_DH_compute_key", bif_xenc_DH_compute_key);
