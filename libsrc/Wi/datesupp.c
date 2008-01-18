@@ -296,9 +296,9 @@ dt_now (caddr_t dt)
 #if defined(HAVE_GMTIME_R)
   struct tm result;
 
-  tm = *gmtime_r (&tim, &result);
+  tm = *(struct tm *)gmtime_r (&tim, &result);
 #else  
-  tm = *gmtime (&tim);
+  tm = *(struct tm *)gmtime (&tim);
 #endif  
   day = date2num (tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
   DT_SET_DAY (dt, day);
@@ -327,9 +327,9 @@ time_t_to_dt (time_t tim, long fraction, char *dt)
   long day;
 #if defined(HAVE_GMTIME_R)
   struct tm result;
-  struct tm tm = *gmtime_r (&tim, &result);
+  struct tm tm = *(struct tm *)gmtime_r (&tim, &result);
 #else  
-  struct tm tm = *gmtime (&tim);
+  struct tm tm = *(struct tm *)gmtime (&tim);
 #endif
   day = date2num (tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
   DT_SET_DAY (dt, day);
@@ -581,9 +581,9 @@ dt_init ()
   tim = time (NULL);
   ltm = *localtime (&tim);
 #if defined(HAVE_GMTIME_R)
-  gtm = *gmtime_r (&tim, &result);
+  gtm = *(struct tm *)gmtime_r (&tim, &result);
 #else 
-  gtm = *gmtime (&tim);
+  gtm = *(struct tm *)gmtime (&tim);
 #endif  
   lt = mktime (&ltm);
   gt = mktime (&gtm);
