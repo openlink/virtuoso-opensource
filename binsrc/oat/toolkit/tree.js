@@ -409,7 +409,6 @@ OAT.TreeNode = function(li,ul,parent,root) {
 	}
 	
 	this.updateStyle = function() { /* adjust icon contents as needed */
-		var iconName = "leaf";
 		var signName = "blank";
 		if (self.ul) { /* unless specified otherwise, all non-leaf nodes are expanded */
 			if (self._icon) { self._icon.style.cursor = "pointer"; }
@@ -430,11 +429,12 @@ OAT.TreeNode = function(li,ul,parent,root) {
 				OAT.Dom.addClass(self.ul,"tree_ul_collapsed");
 			}
 			if (self.selected) {
-				iconName = "node-expanded";
+				var iconName = self.ul.getAttribute('expandedImg') ? self.ul.getAttribute('expandedImg') : "node-expanded";
 			} else {
-				iconName = "node-collapsed";
+				var iconName = self.ul.getAttribute('collapsedImg') ? self.ul.getAttribute('collapsedImg') : "node-collapsed";
 			}
 		} else {
+			var iconName = self.li.getAttribute('leafImg') ? self.li.getAttribute('leafImg') : "leaf";
 			if (self._icon) { self._icon.style.cursor = ""; }
 			if (self._sign) { self._sign.style.cursor = ""; }
 		}
@@ -471,7 +471,14 @@ OAT.TreeNode = function(li,ul,parent,root) {
 	this.applyImage = function(img,name) {
 		if (!img) { return; }
 		var o = self.options;
-		var path = o.imagePath + "Tree_" + (o.imagePrefix=="" ? "" : o.imagePrefix+"_") + name + "." + o.ext;
+		var sub = name.substr(name.length-4);
+		if ( name.substr(0,1)=="/" || name.substr(0,5)=="http:" || name.substr(0.6)=="https:") {
+			var path = name; /* absolute path, full filename */
+		} else if (sub==".png" || sub==".gif" || sub==".jpg" || name.substr(name.length-5)==".jpeg") {
+			var path = o.imagePath + name; /* relative path, full filename */
+		} else  {
+			var path = o.imagePath + "Tree_" + (o.imagePrefix=="" ? "" : o.imagePrefix+"_") + name + "." + o.ext; /* default path, generated filename */
+		}
 		var pathB = o.imagePath + "Blank.gif";
 		OAT.Dom.imageSrc(img,path,pathB);
 	}

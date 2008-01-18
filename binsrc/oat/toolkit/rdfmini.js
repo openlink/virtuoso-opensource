@@ -87,7 +87,9 @@ OAT.RDFMini = function(div,optObj) {
 		self.searchInput = inp;
 		
 		if (!self.options.tabs.length) {
-			alert("No visualizations available!");
+			var note = new OAT.Notify();
+			var msg = "No visualizations available!";
+			note.send(msg);
 			return;
 		}
 		if (self.options.tabs.length > 1) {

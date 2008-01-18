@@ -36,7 +36,7 @@ OAT.Preferences = {
 	xsltPath:"/DAV/JS/xslt/",
 	imagePath:"/DAV/JS/images/",
 	stylePath:"/DAV/JS/styles/",
-	version:"10.12.2007",
+	version:"07.01.2008",
 	httpError:1, /* show http errors */
 	allowDefaultResize:1,
 	allowDefaultDrag:1
@@ -56,11 +56,16 @@ function $(something) {
 	return elm;
 }
 
-function $$(something) {
-	var e = $(something);
-	if (!e) return false;
-	if (!("value" in e)) return false;
-	return e.value;
+function $$(className, root) {
+	var e = root || document;
+	var elms = e.getElementsByTagName("*");
+	var matches = [];
+
+	if (OAT.Dom.isClass(e,className)) { matches.push(e); }
+	for(var i=0;i<elms.length;i++) {
+		if(OAT.Dom.isClass(elms[i],className)) { matches.push(elms[i]); }
+	}
+	return matches;
 }
 
 function $v(something) {
@@ -78,9 +83,8 @@ Array.prototype.copy = function() {
 }
 
 Array.prototype.find = function(str) {
-	var index = -1;
-	for (var i=0;i<this.length;i++) if (this[i] == str) { index = i; }
-	return index;
+	for (var i=0;i<this.length;i++) if (this[i] == str) { return i; }
+	return -1;
 }
 
 Array.prototype.append = function(arr) {
@@ -186,7 +190,9 @@ OAT.Dom = { /* DOM common object */
 	},
 	
 	image:function(src,srcBlank,w,h) {
-		var elm = OAT.Dom.create("img",{width:w+"px",height:h+"px"});
+		w = (w ? w+'px' : 'auto');
+		h = (h ? h+'px' : 'auto');
+		var elm = OAT.Dom.create("img",{width:w,height:h});
 		OAT.Dom.imageSrc(elm,src,srcBlank);
 		return elm;
 	},
@@ -195,8 +201,9 @@ OAT.Dom = { /* DOM common object */
 		var elm = $(element);
 		var png = !!src.toLowerCase().match(/png$/);
 		if (png && OAT.Browser.isIE) {
+			if (!srcBlank) srcBlank = OAT.Preferences.imagePath + 'Blank.gif';
 			elm.src = srcBlank;
-			elm.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+src+"', sizingMethod='crop')";
+			elm.style.filter = "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='"+src+"', sizingMethod='image')";
 		} else {
 			elm.src = src;
 		}
@@ -326,13 +333,16 @@ OAT.Dom = { /* DOM common object */
 	},
 	
 	isKonqueror:function() { return (navigator.userAgent.match(/konqueror/i) ? true : false); },
+	isKHTML:function() { return (navigator.userAgent.match(/khtml/i) ? true : false); },
 	isIE:function() { return (document.attachEvent && !document.addEventListener ? true : false); },
 	isIE7:function() { return (navigator.userAgent.match(/msie 7/i) ? true : false); },
 	isIE6:function() { return (OAT.Dom.isIE() && !OAT.Dom.isIE7()); },
-	isGecko:function() { return (document.addEventListener ? true : false);	},
+	isGecko:function() { return ( (!OAT.Dom.isKHTML() && navigator.userAgent.match(/Gecko/i)) ? true : false ); },
 	isOpera:function() { return (navigator.userAgent.match(/Opera/) ? true : false); },
 	isWebKit:function() { return (navigator.userAgent.match(/AppleWebKit/) ? true : false); },
 	isMac:function() { return (navigator.platform.toString().match(/mac/i) ? true : false);	},
+	isLinux:function() { return (navigator.platform.toString().match(/linux/i) ? true : false);	},
+	isWindows:function() { return (navigator.userAgent.toString().match(/windows/i) ? true : false);	},
 	
 	color:function(str) {
 		var hex2dec = function(hex) {	return parseInt(hex,16); }
@@ -715,8 +725,11 @@ OAT.Browser = { /* Browser helper */
 	isGecko:OAT.Dom.isGecko(),
 	isOpera:OAT.Dom.isOpera(),
 	isKonqueror:OAT.Dom.isKonqueror(),
+	isKHTML:OAT.Dom.isKHTML(),
 	isWebKit:OAT.Dom.isWebKit(),
-	isMac:OAT.Dom.isMac()
+	isMac:OAT.Dom.isMac(),
+	isLinux:OAT.Dom.isLinux(),
+	isWindows:OAT.Dom.isWindows()
 }
 
 OAT.Event = { /* Event helper */

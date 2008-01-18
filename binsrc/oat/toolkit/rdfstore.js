@@ -361,7 +361,7 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 	
 	this.getTitle = function(item) {
 		var result = item.uri;
-		var props = ["name","label","title","summary","prefLabel"];
+		var props = ["name","nick","label","title","summary","prefLabel"];
 		var preds = item.preds;
 		for (var p in preds) {
 			var simple = self.simplify(p);

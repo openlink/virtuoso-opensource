@@ -822,8 +822,14 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 		var triples = [];
 		var cnt = self.parent.data.triples.length;
 		if (cnt > self.options.limit) { 
-			alert("There are more than "+self.options.limit+" triples. Such amount would greatly slow down your computer, "+
-					"so I am going to display only first "+self.options.limit+".");
+			var note = new OAT.Notify();
+			var msg = "There are more than "
+						+ self.options.limit
+						+ " triples. Such amount would greatly slow down your computer, " 
+						+ "so I displayed only first "
+						+ self.options.limit
+						+ "."
+			note.send(msg,{delayIn:10,width:350,height:50,timeout:3000});
 			cnt = self.options.limit;
 		}
 		
@@ -995,7 +1001,9 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		function tryList() {
 			if (!self.pointListLock) { 
 				if (!self.pointList.length) { 
-					alert("Current data set contains nothing that could be displayed in this view mode.");
+					var note = new OAT.Notify();
+					var msg = "Current data set contains nothing that could be displayed on the map.";
+					note.send(msg);
 				}
 				self.map.optimalPosition(self.pointList); 
  			} else {
@@ -1098,8 +1106,15 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 			OAT.Dom.append([content,ball,t]);
 			self.tl.addEvent(ouri,start,end,content,"#ddd");
 		}
+
 		self.tl.draw();
 		self.tl.slider.slideTo(0,1);
+
+		if (!uris.length) { 
+			var note = new OAT.Notify();
+			var msg = "Current data set contains nothing that could be displayed on the timeline.";
+			note.send(msg);
+		}
 	}
 }
 

@@ -16,7 +16,8 @@ OAT.WinData = {
 	TYPE_MS:1,
 	TYPE_MAC:2,
 	TYPE_ROUND:3,
-	TYPE_RECT:4
+	TYPE_RECT:4,
+	TYPE_ODS:5
 }
 
 OAT.Win = function(optObj) {
@@ -95,6 +96,7 @@ OAT.Win = function(optObj) {
 	if (self.options.type == OAT.WinData.TYPE_MAC) { OAT.WinMAC(self); }
 	if (self.options.type == OAT.WinData.TYPE_RECT) { OAT.WinRECT(self); }
 	if (self.options.type == OAT.WinData.TYPE_ROUND) { OAT.WinROUND(self); }
+	if (self.options.type == OAT.WinData.TYPE_ODS) { OAT.WinODS(self); }
 
 	/* assign events */
 	if (self.options.enabledButtons.indexOf("m") != -1 && self.dom.buttons.m) {
@@ -310,6 +312,36 @@ OAT.WinROUND = function(obj) { /* rounded window */
 
 	OAT.Dom.append([obj.dom.title,obj.dom.caption]);
 	OAT.SimpleFX.roundDiv(obj.dom.container,{backgroundColor:'#000',antialias:1,borderColor:'#666'});
+
+	obj.outerResizeTo = function(w,h) {
+		obj.dom.container.style.width = (w ? w+"px" : "auto");
+		obj.dom.container.style.height = (h ? h+"px" : "auto");
+	}
+	
+}
+
+OAT.WinODS = function(obj) { /* rounded window */
+	OAT.Style.include('winods.css');
+	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winods_container");
+	obj.dom.resizeContainer = obj.dom.container;
+	obj.dom.content = OAT.Dom.create("div",{},"oat_winods_content");
+	obj.dom.title = OAT.Dom.create("div",{},"oat_winods_title");
+	obj.dom.caption = OAT.Dom.create("span",{},"oat_winods_caption");
+	obj.dom.status = OAT.Dom.create("div",{},"oat_winods_status");
+
+	OAT.Dom.append([obj.dom.container,obj.dom.title,obj.dom.content,obj.dom.status]);
+
+	if (obj.options.visibleButtons.indexOf("c") != -1) {
+		obj.dom.buttons.c = OAT.Dom.create("div",{},"oat_winods_close_b");
+		OAT.Dom.append([obj.dom.title,obj.dom.buttons.c]);
+	}
+	if (obj.options.visibleButtons.indexOf("r") != -1) {
+		obj.dom.buttons.r = OAT.Dom.create("div",{},"oat_winods_resize_b");
+		OAT.Dom.append([obj.dom.container,obj.dom.buttons.r]);
+	}
+
+	OAT.Dom.append([obj.dom.title,obj.dom.caption]);
+	//OAT.SimpleFX.roundDiv(obj.dom.container,{backgroundColor:'#000',antialias:1,borderColor:'#666'});
 
 	obj.outerResizeTo = function(w,h) {
 		obj.dom.container.style.width = (w ? w+"px" : "auto");

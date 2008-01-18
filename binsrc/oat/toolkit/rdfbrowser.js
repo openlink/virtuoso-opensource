@@ -306,7 +306,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Attributes";
+			a.innerHTML = "Data Link";
 			a.href = "javascript:void(0)";
 			var start1 = self.throbberReplace(a);
 			OAT.Dom.attach(a,"click",function() {
@@ -318,7 +318,7 @@ OAT.RDFBrowser = function(div,optObj) {
 
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Attributes - replace storage";
+			a.innerHTML = "Data Link - replace storage";
 			a.href = "javascript:void(0)";
 			var start2 = self.throbberReplace(a);
 			OAT.Dom.attach(a,"click",function() {
@@ -334,7 +334,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "Attributes - permalink";
+			a.innerHTML = "Data Link - permalink";
 			var root = window.location.toString().match(/^[^#]+/)[0];
 			a.href = root+"#"+encodeURIComponent(href);
 			list.push(a);
@@ -368,7 +368,7 @@ OAT.RDFBrowser = function(div,optObj) {
 
 		if (!(disabledActions & OAT.RDFData.DISABLE_HTML)) {
 			var a = OAT.Dom.create("a");
-			a.innerHTML = "(X)HTML Page Open";
+			a.innerHTML = "Document Link";
 			a.href = href;
 			list.push(a);
 		}
@@ -379,7 +379,7 @@ OAT.RDFBrowser = function(div,optObj) {
 		var list = [];
 		if (!(disabledActions & OAT.RDFData.DISABLE_DEREFERENCE)) {
 			var img1 = OAT.Dom.create("img",{paddingLeft:"3px",cursor:"pointer"});
-			img1.title = "Attributes";
+			img1.title = "Data Link";
 			img1.src = self.options.imagePath + "RDF_rdf.png";
 			var start = self.throbberReplace(img1,true);
 			OAT.Dom.attach(img1,"click",function() {
@@ -394,7 +394,7 @@ OAT.RDFBrowser = function(div,optObj) {
 			var a = OAT.Dom.create("a",{paddingLeft:"3px"});
 			var img2 = OAT.Dom.create("img",{border:"none"});
 			img2.src = self.options.imagePath + "RDF_xhtml.gif";
-			a.title = "(X)HTML Page Open";
+			a.title = "Document Link";
 			a.appendChild(img2);
 			a.target = "_blank";
 			a.href = href;

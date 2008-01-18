@@ -16,10 +16,11 @@
 OAT.WebDav = {
 	cache:{}, /* visited directories and their content */
 	window:false, /* window object */
+	connectDialog:false, /* connection dialog */
 	dom:{}, /* shortcuts to various dom elements: path, file, ext, ok, cancel */
 	options: { /* defaults */
-		user:'',
-		pass:'',
+		user:false,
+		pass:false,
 		path:'/DAV/', /* where are we now */
 		file:'', /* preselected filename */
 		extension:false, /* preselected extension */
@@ -36,20 +37,33 @@ OAT.WebDav = {
 	},
 	displayMode:0, /* details / icons */
 	mode:0, /* open / save */
+	connected:false,
 	
 /* basic api */
 	
 	openDialog:function(optObj) { /* open in browse file mode */
 		this.dom.ok.value = "Open";
 		this.mode = 0;
-		this.commonDialog(optObj);
+		this.applyOptions(optObj);
+
+		if(!this.connected) {
+			this.connectDialog.show();
+		} else {
+			this.commonDialog();
+		}
 		OAT.Dom.hide("dav_permissions");
 	},
 	
 	saveDialog:function(optObj) { /* open in save file mode */
 		this.dom.ok.value = "Save";
 		this.mode = 1;
-		this.commonDialog(optObj);
+		this.applyOptions(optObj);
+
+		if(!this.connected) {
+			this.connectDialog.show();
+		} else {
+			this.commonDialog();
+		}
 		
 		var state = [1,1,0,1,0,0,1,0,0];
 		this.dom.perms[2].disabled = true;
@@ -322,6 +336,90 @@ OAT.WebDav = {
 		OAT.Dom.append([line_1,label_1,this.dom.file,this.dom.ok]);
 		OAT.Dom.append([line_2,label_2,this.dom.ext,this.dom.cancel]);
 		
+		/* connection dialog */
+		var connectDiv = OAT.Dom.create("div");
+		var ct = OAT.Dom.create("table");
+		var ctbody = OAT.Dom.create("tbody");
+
+		var ctrow_user = OAT.Dom.create("tr");
+		var ctd_user = OAT.Dom.create("td");
+		var ctd_user_label = OAT.Dom.create("td");
+		ctd_user_label.innerHTML = "Username: ";
+
+		var ctrow_pass = OAT.Dom.create("tr");
+		var ctd_pass = OAT.Dom.create("td");
+		var ctd_pass_label = OAT.Dom.create("td");
+		ctd_pass_label.innerHTML = "Password: ";
+
+		var ctrow_conntype = OAT.Dom.create("tr");
+		var ctd_conntype = OAT.Dom.create("td");
+		var ctd_conntype_label = OAT.Dom.create("td");
+		ctd_conntype_label.innerHTML = "Web Server type: "; 
+
+		var user = OAT.Dom.create("input");
+	 	user.setAttribute("type","text");
+		user.id = "user";
+		user.name = "user";
+		user.value = "demo";
+
+		var pass = OAT.Dom.create("input");
+	 	pass.setAttribute("type","password");
+		pass.id = "pass";
+		pass.name = "pass";
+		pass.value = "demo";
+
+		var conntype = OAT.Dom.create("select");
+		conntype.id = "login_put_type";
+		var conntype_basic = OAT.Dom.create("option");
+		conntype_basic.value = "0";
+		conntype_basic.innerHTML = "HTTP - Basic";
+		var conntype_dav = OAT.Dom.create("option");
+		conntype_dav.value = "1";
+		conntype_dav.innerHTML = "HTTP - WebDAV";
+		conntype_dav.selected = "selected";
+		
+		OAT.Dom.append([conntype,conntype_basic,conntype_dav]);
+
+		OAT.Dom.append([connectDiv,ct]);
+		OAT.Dom.append([ct,ctbody]);
+
+		OAT.Dom.append([ctbody,ctrow_user,ctrow_pass,ctrow_conntype]);
+		OAT.Dom.append([ctrow_user,ctd_user_label,ctd_user]);
+		OAT.Dom.append([ctd_user,user]);
+
+		OAT.Dom.append([ctrow_pass,ctd_pass_label,ctd_pass]);
+		OAT.Dom.append([ctd_pass,pass]);
+
+		OAT.Dom.append([ctrow_conntype,ctd_conntype_label,ctd_conntype]);
+		OAT.Dom.append([ctd_conntype,conntype]);
+
+		var cdialog = new OAT.Dialog("Connection Setup",connectDiv,{width:400,modal:1,buttons:1});
+		cdialog.ok = function() {
+			with(OAT.WebDav.options) {
+				user = $v("user");
+				pass = $v("pass");
+				isDav = ($v("login_put_type") == "1");
+				path = "/DAV/home/" + user + "/";
+			}
+			cdialog.hide();
+			OAT.WebDav.connected = true;
+			OAT.WebDav.commonDialog();
+		}
+		
+		cdialog.cancel = function() {
+			cdialog.hide();
+		}
+
+		this.connectDialog = cdialog;
+
+		/* check whether already connected */
+		with(this.options) {
+			if(user !== false && pass !== false) {
+				path = "/DAV/home/" + user + "/";
+				this.connected = true;
+			}
+		}
+		
 		/* permissions */
 		this.initPermissions(bottom);
 		OAT.Dom.append([bottom,line_1,line_2]);
@@ -332,7 +430,7 @@ OAT.WebDav = {
 		var ul = OAT.Dom.create("ul",{whiteSpace:"nowrap"});
 		main_tree.appendChild(ul);
 		this.tree.assign(ul,true);
-		this.treeSyncDir("/DAV/","/DAV");
+		this.treeSyncDir(this.options.path);
 
 		this.attachEvents();
 	},
@@ -727,8 +825,7 @@ OAT.WebDav = {
 		for (var p in optObj) { this.options[p] = optObj[p]; }
 	},
 	
-	commonDialog:function(optObj) { /* common phase for both dialog types */
-		this.applyOptions(optObj);
+	commonDialog:function() { /* common phase for both dialog types */
 		var allContained = false;
 		for (var i=0;i<this.options.extensionFilters.length;i++) {
 			var filter = this.options.extensionFilters[i];
@@ -750,6 +847,7 @@ OAT.WebDav = {
 			var file = prompt(info,this.options.path+this.options.file);
 			if (!file) { return; }
 			var r = file.match(/^(.*)([^\/]+)$/);
+			if (!r) { return; }
 			this.useFile(r[1],r[2]);
 			return;
 		}
