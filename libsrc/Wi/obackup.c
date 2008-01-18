@@ -1734,7 +1734,7 @@ insert_page (ol_backup_context_t* ctx, dp_addr_t page_dp)
   return 0;
 }
 
-void restore_from_files (const char* prefix)
+int restore_from_files (const char* prefix)
 {
   ol_backup_context_t * ctx;
   int count = 0;
@@ -1749,7 +1749,7 @@ void restore_from_files (const char* prefix)
     {
       /* report error */
       log_error ("Could not restore database using prefix %s", prefix);
-      return;
+      return -1;
     }
   log_info ("Begin to restore with file prefix %s", ctx->octx_file_prefix);
 
@@ -1773,7 +1773,7 @@ void restore_from_files (const char* prefix)
 	    {
 	      log_error ("Failed to restore from %s file after %ld pages", ctx->octx_curr_file, count);
 	      backup_context_free (ctx);
-	      return ;
+	      return -1;
 	    }
 	  else
 	    {
@@ -1790,7 +1790,7 @@ void restore_from_files (const char* prefix)
 	    {
 	      log_error ("Aborting");
 	      backup_context_free (ctx);
-	      return;
+	      return -1;
 	    }
 
 	  count++;
@@ -1811,6 +1811,8 @@ void restore_from_files (const char* prefix)
   log_info ("End of restoring from backup, %ld pages", count);
 
   backup_context_free (ctx);
+
+  return 0;
 }
 
 long dbs_count_incbackup_pages (dbe_storage_t * dbs);

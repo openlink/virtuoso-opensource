@@ -2522,6 +2522,7 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int safety = 0;
 #ifndef WIN32
   pid_t child_pid;
+  int status;
 #endif
   struct stat st;
 
@@ -2680,12 +2681,19 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (0 == child_pid)
     {
+      for (ctr = 3; ctr < 128; ctr++)
+	close (ctr);
       retcode = execv (full_exe_name, exe_args);
       _exit (retcode);
     }
   for (;;)
     {
-      retcode = waitpid (child_pid, &retcode, 0);
+      if (!wait)
+	{
+	  retcode = status = 0;
+	  break;
+	}
+      retcode = waitpid (child_pid, &status, 0);
       if ((-1 != retcode) || (EINTR != errno))
 	break;
     }
@@ -2727,6 +2735,7 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      virt_strerror (errcode), exe_name, wait);
 	}
     }
+  retcode = WIFEXITED (status) ? WEXITSTATUS (status) : -1;
   mutex_leave (run_executable_mtx);
 #endif
   return box_num (retcode);
