@@ -130,8 +130,8 @@ It can own some data under \c data_begin, and other bricks may reference to it.
 To count uses of brick's data buffer, \c data_refctr is used.
 Pointers \c beg and \c end delimits visible area in some buffer. */
 struct brick_s {
-  char *		end;		/*<! Pointer past last byte of visible part of data. Should be the first field, for efficiency */
-  char *		beg;		/*<! Pointer to the first byte of visible part of data */
+  utf8char *		end;		/*<! Pointer past last byte of visible part of data. Should be the first field, for efficiency */
+  utf8char *		beg;		/*<! Pointer to the first byte of visible part of data */
   struct brick_s *	next;		/*<! Pointer to the next brick in the chain. */
   struct brick_s *	prev;		/*<! Pointer to previous brick in the chain. */
   char *		data_begin;	/*<! Pointer to the first byte of data, owned by this brick */
@@ -143,7 +143,7 @@ struct brick_s {
 typedef struct brick_s brick_t;
 
 struct buf_ptr_s {
-  char		* ptr;
+  utf8char	* ptr;
   brick_t	* buf;
 };
 
