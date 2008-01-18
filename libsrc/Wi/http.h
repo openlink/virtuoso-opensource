@@ -122,6 +122,7 @@ typedef struct ws_connection_s
     wcharset_t *	ws_charset;
     int			ws_ignore_disconnect;
     caddr_t 		ws_store_in_cache;     /* the url to be cached */
+    int			ws_proxy_request;
 #ifdef _SSL    
     SSL_CTX *		ws_ssl_ctx;
 #endif    
