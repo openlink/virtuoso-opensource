@@ -1253,6 +1253,7 @@ ws_path_and_params (ws_connection_t * ws)
   ws_set_phy_path (ws, is_dir, NULL);
 #endif
 
+  ws->ws_proxy_request = (ws->ws_p_path_string ? (0 == strnicmp (ws->ws_p_path_string, "http://", 7)) : 0);
   is_proxy_request = (ws->ws_p_path_string ?
       ((0 == strnicmp (ws->ws_p_path_string, "http://", 7)) ||
       (1 == is_http_handler (ws->ws_p_path_string))) : 0);
@@ -2746,7 +2747,14 @@ request_do_again:
   LEAVE_TXN;
 
 
-  if(http_ses_trap)
+#ifdef _IMSG
+  if (http_ses_trap &&
+      (!pop3_port || ws->ws_port != pop3_port) &&
+      (!nntp_port || ws->ws_port != nntp_port) &&
+      (!ftp_port || ws->ws_port != ftp_port))
+#else
+  if (http_ses_trap)
+#endif
     {
     /* --ches-- */
     char *uri_begin;
@@ -2942,10 +2950,10 @@ run_in_dav:
     {
       if (!strstr (path1, "INLINEFILE"))
 #ifdef VIRTUAL_DIR
-	if (ws->ws_p_path_string && box_length (ws->ws_p_path_string) < sizeof (p_name) - 10)
+	if (!ws->ws_proxy_request && ws->ws_p_path_string && box_length (ws->ws_p_path_string) < sizeof (p_name) - 10)
 	  snprintf (p_name, sizeof (p_name), "%s.%s.%s", ws_usr_qual (ws, 0), WS_USER_NAME (ws),  ws->ws_p_path_string);
 #else
-	if (ws->ws_path_string && box_length (ws->ws_path_string) < sizeof (p_name) - 10)
+	if (!ws->ws_proxy_request && ws->ws_path_string && box_length (ws->ws_path_string) < sizeof (p_name) - 10)
 	  snprintf (p_name, sizeof (p_name), "WS.WS.%s", ws->ws_path_string);
 #endif
 	else
@@ -6028,7 +6036,7 @@ bif_ses_can_read_char (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_http_request_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *) qst;
+  query_instance_t * qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args);
   caddr_t *lines = (caddr_t *) ((n_args > 0) ? bif_array_arg (qst, args, 0, "http_request_header") : NULL);
   caddr_t name = ((n_args > 1) ? bif_string_arg (qst, args, 1, "http_request_header") : NULL);
@@ -6054,8 +6062,8 @@ bif_http_request_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_http_request_header_full (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *szMe = "http_request_header_full";
-  query_instance_t *qi = (query_instance_t *) qst;
+  char * szMe = "http_request_header_full";
+  query_instance_t * qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args);
   caddr_t *lines = (caddr_t *) ((n_args > 0) ? bif_array_arg (qst, args, 0, szMe) : NULL);
   caddr_t name = ((n_args > 1) ? bif_string_arg (qst, args, 1, szMe) : NULL);
