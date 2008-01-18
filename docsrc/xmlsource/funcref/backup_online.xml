@@ -108,7 +108,7 @@
   </refsect1>
   <refsect1 id="examples_backup_online">
     <title>Examples</title>
-    <example id="ex_backup_online"><title>Performing an online backup</title>
+    <example id="ex_fnbackup_online"><title>Performing an online backup</title>
       <para>If there are 2010 new pages in the checkpoint space and user invokes:</para>
       <screen><![CDATA[
 "backup_online ('dump-20021010_#', 500);"
@@ -127,6 +127,18 @@ dump-20011010_#5.bp
       <para>The first 4 files will each  contain 500 8K pages.  The actual length 
       of the files will vary due to varying compression ratio. </para>
     </example>
+
+	  <example id="ex_fnanonlinebackuprestore"><title>Restoring an Online Backup</title>
+	  <para>The following command could be used to restore the database from the 
+		backup files created:</para>
+		  <programlisting><![CDATA[
+			virtuoso-iodbc-t +restore-backup dump-20011010_#
+		]]></programlisting>
+	  <para>or:</para>
+		  <programlisting><![CDATA[
+			virtuoso-odbc-t.exe +restore-backup dump-20011010_#
+		]]></programlisting>
+	  </example>
   </refsect1>
   <refsect1 id="seealso_backup_online">
     <title>See Also</title>

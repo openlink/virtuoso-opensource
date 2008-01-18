@@ -24,7 +24,7 @@
 <refentry id="fn_rdf_restore_metadata">
   <refmeta>
     <refentrytitle>DB.DBA.RDF_RESTORE_METADATA</refentrytitle>
-    <refmiscinfo>admin</refmiscinfo>
+    <refmiscinfo>rdf</refmiscinfo>
   </refmeta>
   <refnamediv>
     <refname>DB.DBA.RDF_RESTORE_METADATA</refname>

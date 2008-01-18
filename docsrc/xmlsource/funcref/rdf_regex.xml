@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_rdf_regex">
+  <refmeta>
+    <refentrytitle>DB.DBA.RDF_REGEX</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.RDF_REGEX</refname>
+    <refpurpose>Returns 1 if string s matches pattern p, 0 otherwise.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_regex">
+      <funcprototype id="fproto_rdf_regex">
+        <funcdef><function>DB.DBA.RDF_REGEX</function></funcdef>
+	<paramdef>in <parameter>s</parameter> varchar</paramdef>
+	<paramdef>in <parameter>p</parameter> varchar</paramdef>
+	<paramdef>in <parameter>call</parameter> varchar := null</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_regex">
+    <title>Description</title>
+    <para>Returns 1 if string s matches pattern p, 0 otherwise</para>
+  </refsect1>
+  <refsect1 id="params_rdf_regex">
+    <title>Parameters</title>
+    <refsect2><title>s</title>
+      <para>source string to check.</para>
+    </refsect2>
+    <refsect2><title>p</title>
+      <para>regular expression pattern string.</para>
+    </refsect2>
+    <refsect2><title>coll</title>
+      <para>unused for now (modes are not yet implemented).</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_rdf_regex"><title>Return Types</title>
+    <para>integer</para>
+  </refsect1>
+<!--
+  <refsect1 id="errors_rdf_regex">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+-->
+  <refsect1 id="examples_rdf_regex">
+   <title>Examples</title>
+    <example id="ex_rdf_regex"><title></title>
+     <para></para>
+<screen><![CDATA[
+SQL>SELECT DISTINCT DB.DBA.RDF_QNAME_OF_IID ( /*retval[*/  "s-1-1-t0"."S" /* R */ /*]retval*/ ) AS /*tmpl*/ "R"
+FROM DB.DBA.RDF_QUAD AS "s-1-1-t0"
+WHERE /* filter */
+    DB.DBA.RDF_REGEX ( DB.DBA.RDF_QNAME_OF_IID ( /*retval[*/  "s-1-1-t0"."S" /* R */ /*]retval*/ ), 'http://example.org/' )
+OPTION (QUIETCAST)
+VARCHAR
+_______________________________________________________________________________
+
+http://example.org/ns#y3
+http://example.org/things#xp2
+http://example.org/ns#a
+http://example.org/book/book1
+http://example.org/books#book1
+http://example.org/books#book2
+http://example.org/books#book4
+http://example.org/books#book3
+http://example.org/book/book2
+http://example.org/ns#x2
+http://example.org/things#xp1
+http://example.org/ns#x3
+http://example.org/things#xt1
+http://example.org/ns#y1
+http://example.org/ns#y2
+13 Rows. -- 30 msec.
+]]></screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_rdf_regex">
+    <title>See Also</title>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_rdf_triples_to_rdf_xml_text"><function>DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT</function></link></para>
+    <para><link linkend="fn_sparql_rexec"><function>DB.DBA.SPARQL_REXEC</function></link></para>
+    <para><link linkend="fn_sparql_rexec_to_array"><function>DB.DBA.SPARQL_REXEC_TO_ARRAY</function></link></para>
+    <para><link linkend="fn_sparql_rexec_with_meta"><function>DB.DBA.SPARQL_REXEC_WITH_META</function></link></para>
+  </refsect1>
+</refentry>

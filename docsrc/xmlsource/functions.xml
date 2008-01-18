@@ -62,6 +62,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 <!--    <keyword id="object">Object</keyword>-->
     <keyword id="repl">Replication</keyword>
     <keyword id="rmt">Remote SQL Data Source</keyword>
+    <keyword id="rdf">RDF data</keyword>
     <keyword id="soap">SOAP</keyword>
     <keyword id="sql">SQL</keyword>
 <!--    <keyword id="stream">Stream</keyword>-->
@@ -158,8 +159,14 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 
 &randomize; &rclose; &regexp_match; &regexp_parse; &regexp_substr;
 &rdf_audit_metadata; &rdf_backup_metadata;
-<!-- TBD: &rdf_load_rdfxml; &rdf_load_turtle; -->
-&rdf_restore_metadata;
+<!-- TBD: &rdf_load_turtle; -->
+&rdf_restore_metadata;&rdf_load_rdfxml_mt;&rdf_load_rdfxml;&ttlp;&ttlp_mt;
+&rdf_triples_to_rdf_xml_text;&rdf_triples_to_ttl;
+
+
+&sparql_eval;&sparql_eval_to_array;&sparql_rexec;&sparql_rexec_to_array;
+&sparql_rexec_with_meta;&rdf_regex;&rdf_langmatches;
+&rdf_ttl2hash;&rdf_quad_uri;&rdf_quad_uri_l;&rdf_quad_uri_l_typed;
 
 &regexp_replace; &regexp_instr; &regexp_like;
 &registry_get; &registry_get_all; &registry_name_is_protected; &registry_set;

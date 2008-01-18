@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_rdf_langmatches">
+  <refmeta>
+    <refentrytitle>DB.DBA.RDF_LANGMATCHES</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.RDF_LANGMATCHES</refname>
+    <refpurpose>Returns 1 if language identifier r matches lang pattern t.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_langmatches">
+      <funcprototype id="fproto_rdf_langmatches">
+        <funcdef><function>DB.DBA.RDF_LANGMATCHES</function></funcdef>
+	<paramdef>in <parameter>r</parameter> varchar</paramdef>
+	<paramdef>in <parameter>t</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_langmatches">
+    <title>Description</title>
+    <para>Returns 1 if language identifier r matches lang pattern t</para>
+  </refsect1>
+  <refsect1 id="params_rdf_langmatches">
+    <title>Parameters</title>
+    <refsect2><title>r</title>
+      <para>language identifies (string or NULL).</para>
+    </refsect2>
+    <refsect2><title>t</title>
+      <para>language pattern (exact name, first two letters or '*').</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_rdf_langmatches"><title>Return Types</title>
+    <para>integer</para>
+  </refsect1>
+<!--
+  <refsect1 id="errors_rdf_langmatches">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+-->
+  <refsect1 id="examples_rdf_langmatches">
+   <title>Examples</title>
+    <example id="ex_rdf_langmatches"><title></title>
+     <para></para>
+<screen><![CDATA[
+SQL>SELECT DB.DBA.RDF_QNAME_OF_IID ( /*retval[*/  "s-4-1-t0"."P" /* p */ /*]retval*/ ) AS /*tmpl*/ "p",
+    DB.DBA.RDF_SQLVAL_OF_OBJ ( /*retval[*/  "s-4-1-t0"."O" /* v */ /*]retval*/ ) AS /*tmpl*/ "v"
+FROM DB.DBA.RDF_QUAD AS "s-4-1-t0"
+WHERE /* field equal to URI ref */
+    "s-4-1-t0"."S" = DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE ( 'http://example.org/#x' )
+    AND /* filter */
+    not ( DB.DBA.RDF_LANGMATCHES ( DB.DBA.RDF_LANGUAGE_OF_OBJ ( /*retval[*/  "s-4-1-t0"."O" /* v */ /*]retval*/ ), '*' ))
+OPTION (QUIETCAST)
+VARCHAR
+_______________________________________________________________________________
+
+http://example.org/data/y
+http://example.org/data/x
+http://example.org/a
+3 Rows. -- 20 msec.
+]]></screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_rdf_langmatches">
+    <title>See Also</title>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_rdf_triples_to_rdf_xml_text"><function>DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT</function></link></para>
+    <para><link linkend="fn_sparql_rexec"><function>DB.DBA.SPARQL_REXEC</function></link></para>
+    <para><link linkend="fn_sparql_rexec_to_array"><function>DB.DBA.SPARQL_REXEC_TO_ARRAY</function></link></para>
+    <para><link linkend="fn_sparql_rexec_with_meta"><function>DB.DBA.SPARQL_REXEC_WITH_META</function></link></para>
+    <para><link linkend="fn_rdf_regex"><function>DB.DBA.RDF_REGEX</function></link></para>
+  </refsect1>
+</refentry>

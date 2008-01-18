@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_sparql_eval_to_array">
+  <refmeta>
+    <refentrytitle>DB.DBA.SPARQL_EVAL_TO_ARRAY</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.SPARQL_EVAL_TO_ARRAY</refname>
+    <refpurpose>Local execution of SPARQL via SPARQL protocol, produces a vector of vectors of SQL values.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_sparql_eval_to_array">
+      <funcprototype id="fproto_sparql_eval_to_array">
+        <funcdef><function>DB.DBA.SPARQL_EVAL_TO_ARRAY</function></funcdef>
+	<paramdef>in <parameter>query</parameter> varchar</paramdef>
+	<paramdef>in <parameter>dflt_graph</parameter> varchar</paramdef>
+	<paramdef>in <parameter>maxrows</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_sparql_eval_to_array">
+    <title>Description</title>
+    <para>Local execution of SPARQL via SPARQL protocol, produces a result set of SQL values.</para>
+  </refsect1>
+  <refsect1 id="params_sparql_eval_to_array">
+    <title>Parameters</title>
+    <refsect2><title>query</title>
+      <para>text of SPARQL query to execute.</para>
+    </refsect2>
+    <refsect2><title>dflt_graph</title>
+      <para>default graph IRI, if not NULL then this overrides what is specified in query</para>
+    </refsect2>
+    <refsect2><title>maxrows</title>
+      <para>limit on numbers of rows that should be returned.</para>
+    </refsect2>
+
+  </refsect1>
+  <refsect1 id="ret_sparql_eval_to_array"><title>Return Types</title>
+    <para>any</para>
+  </refsect1>
+<!--
+  <refsect1 id="errors_sparql_eval_to_array">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+-->
+  <refsect1 id="examples_sparql_eval_to_array">
+   <title>Examples</title>
+    <example id="ex_sparql_eval_to_array"><title></title>
+      <para></para>
+      <screen><![CDATA[
+SQL> select DB.DBA.SPARQL_EVAL_TO_ARRAY('SELECT * WHERE {?s ?p ?o}','http://example/bookStore' ,2);
+callret
+VARCHAR
+_______________________________________________________________________________
+
+vector(0x00ae6874,0x00ae6844)
+
+1 Rows. -- 10 msec.
+]]></screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_sparql_eval_to_array">
+    <title>See Also</title>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_rdf_triples_to_rdf_xml_text"><function>DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT</function></link></para>
+    <para><link linkend="fn_sparql_eval"><function>DB.DBA.SPARQL_EVAL</function></link></para>
+  </refsect1>
+</refentry>

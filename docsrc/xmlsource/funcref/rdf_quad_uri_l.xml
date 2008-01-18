@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_rdf_quad_uri_l">
+  <refmeta>
+    <refentrytitle>DB.DBA.RDF_QUAD_URI_L</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.RDF_QUAD_URI_L</refname>
+    <refpurpose>Performs simple insertion of a quad where object is a literal value in 'SQL valmode'.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_quad_uri_l">
+      <funcprototype id="fproto_rdf_quad_uri_l">
+        <funcdef><function>DB.DBA.RDF_QUAD_URI_L</function></funcdef>
+	<paramdef>in <parameter>g_uri</parameter> varchar</paramdef>
+	<paramdef>in <parameter>s_uri</parameter> varchar</paramdef>
+	<paramdef>in <parameter>p_uri</parameter> varchar</paramdef>
+	<paramdef>in <parameter>o_lit</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_quad_uri_l">
+    <title>Description</title>
+    <para>Performs simple insertion of a quad where object is a literal value in 'SQL valmode'. The arguments g_uri, s_uri and p_uri should be IRI strings or IRI_IDs. All string arguments should be in UTF-8 encoding, otherwise they will be stored but are not queriable via SPARQL.</para>
+  </refsect1>
+  <refsect1 id="params_rdf_quad_uri_l">
+    <title>Parameters</title>
+    <refsect2><title>g_uri</title>
+      <para>graph uri IRI string or IRI_ID</para>
+    </refsect2>
+    <refsect2><title>s_uri</title>
+      <para>subject IRI string or IRI_ID</para>
+    </refsect2>
+    <refsect2><title>p_uri</title>
+      <para>predicate IRI string or IRI_ID</para>
+    </refsect2>
+    <refsect2><title>o_uri</title>
+      <para>string, number or datetime, NULL is not allowed</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_rdf_quad_uri_l"><title>Return Types</title>
+    <para>any</para>
+  </refsect1>
+<!--
+  <refsect1 id="errors_rdf_quad_uri_l">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+-->
+  <refsect1 id="examples_rdf_quad_uri_l">
+   <title>Examples</title>
+    <example id="ex_rdf_quad_uri_l"><title></title>
+     <para></para>
+<screen><![CDATA[
+SQL>DB.DBA.RDF_QUAD_URI_L ('g_many', 's1', 'p_some', 'z016,g_many,s1,p_some');
+
+Done. -- 0 msec.
+]]></screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_rdf_quad_uri_l">
+    <title>See Also</title>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_rdf_triples_to_rdf_xml_text"><function>DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT</function></link></para>
+    <para><link linkend="fn_sparql_rexec"><function>DB.DBA.SPARQL_REXEC</function></link></para>
+    <para><link linkend="fn_sparql_rexec_to_array"><function>DB.DBA.SPARQL_REXEC_TO_ARRAY</function></link></para>
+    <para><link linkend="fn_sparql_rexec_with_meta"><function>DB.DBA.SPARQL_REXEC_WITH_META</function></link></para>
+    <para><link linkend="fn_rdf_quad_uri"><function>DB.DBA.RDF_QUAD_URI</function></link></para>
+    <para><link linkend="fn_rdf_quad_uri_l_typed"><function>DB.DBA.RDF_QUAD_URI_L_TYPED</function></link></para>
+    <para><link linkend="fn_rdf_ttl2hash"><function>DB.DBA.RDF_TTL2HASH</function></link></para>
+  </refsect1>
+</refentry>

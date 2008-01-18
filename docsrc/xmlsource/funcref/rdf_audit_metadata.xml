@@ -24,7 +24,7 @@
 <refentry id="fn_rdf_audit_metadata">
   <refmeta>
     <refentrytitle>DB.DBA.RDF_AUDIT_METADATA</refentrytitle>
-    <refmiscinfo>admin</refmiscinfo>
+    <refmiscinfo>rdf</refmiscinfo>
   </refmeta>
   <refnamediv>
     <refname>DB.DBA.RDF_AUDIT_METADATA</refname>

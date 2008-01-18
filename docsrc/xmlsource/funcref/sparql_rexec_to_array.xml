@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_sparql_rexec_to_array">
+  <refmeta>
+    <refentrytitle>DB.DBA.SPARQL_REXEC_TO_ARRAY</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.SPARQL_REXEC_TO_ARRAY</refname>
+    <refpurpose>Remote execution of SPARQL via SPARQL protocol, produces a vector of vectors of SQL value.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_sparql_rexec_to_array">
+      <funcprototype id="fproto_sparql_rexec_to_array">
+        <funcdef><function>DB.DBA.SPARQL_REXEC_TO_ARRAY</function></funcdef>
+	<paramdef>in <parameter>service </parameter> varchar</paramdef>
+	<paramdef>in <parameter>query</parameter> varchar</paramdef>
+	<paramdef>in <parameter>dflt_graph</parameter> varchar</paramdef>
+	<paramdef>in <parameter>named_graphs</parameter> any</paramdef>
+	<paramdef>in <parameter>req_hdr</parameter> any</paramdef>
+	<paramdef>in <parameter>maxrows</parameter> integer</paramdef>
+	<paramdef>in <parameter>bnode_dict</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_sparql_rexec_to_array">
+    <title>Description</title>
+    <para>Remote execution of SPARQL via SPARQL protocol, produces a vector of vectors of SQL value.</para>
+  </refsect1>
+  <refsect1 id="params_sparql_rexec_to_array">
+    <title>Parameters</title>
+    <refsect2><title>service</title>
+      <para>service URI to call via HTTP.</para>
+    </refsect2>
+    <refsect2><title>query</title>
+      <para>text of SPARQL query to execute.</para>
+    </refsect2>
+    <refsect2><title>dflt_graph</title>
+      <para>default graph IRI, if not NULL then this overrides what is specified in query</para>
+    </refsect2>
+    <refsect2><title>named_graphs</title>
+      <para>vector of named graph IRIs, if not NULL then this overrides what is specified in query</para>
+    </refsect2>
+    <refsect2><title>req_hdr</title>
+      <para>additional HTTP header lines that should be passed to the service; 'Host: ...' is most popular.</para>
+    </refsect2>
+    <refsect2><title>maxrows</title>
+      <para>limit on numbers of rows that should be returned.</para>
+    </refsect2>
+    <refsect2><title>bnode_dict</title>
+      <para>dictionary of bnode ID references.</para>
+    </refsect2>
+
+  </refsect1>
+  <refsect1 id="ret_sparql_rexec_to_array"><title>Return Types</title>
+    <para>any</para>
+  </refsect1>
+<!--
+  <refsect1 id="errors_sparql_rexec_to_array">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+
+  <refsect1 id="examples_sparql_rexec_to_array">
+   <title>Examples</title>
+    <example id="ex_sparql_rexec_to_array"><title></title>
+      <para></para>
+<screen><![CDATA[
+]]>
+</screen>
+    </example>
+  </refsect1>
+-->
+  <refsect1 id="seealso_sparql_rexec_to_array">
+    <title>See Also</title>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_rdf_triples_to_rdf_xml_text"><function>DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT</function></link></para>
+    <para><link linkend="fn_sparql_rexec"><function>DB.DBA.SPARQL_REXEC</function></link></para>
+  </refsect1>
+</refentry>

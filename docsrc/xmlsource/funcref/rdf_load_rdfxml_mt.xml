@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_rdf_load_rdfxml_mt">
+  <refmeta>
+    <refentrytitle>DB.DBA.RDF_LOAD_RDFXML_MT</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.RDF_LOAD_RDFXML_MT</refname>
+    <refpurpose>Parses the content of large RDF/XML text as a sequence of separate RDF triples.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_load_rdfxml_mt">
+      <funcprototype id="fproto_rdf_load_rdfxml_mt">
+        <funcdef><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></funcdef>
+	<paramdef>in <parameter>strg</parameter> varchar</paramdef>
+	<paramdef>in <parameter>base</parameter> varchar</paramdef>
+        <paramdef>in <parameter>graph</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_load_rdfxml_mt">
+    <title>Description</title>
+    <para>For loading large resources when transactional integrity is not important (loading of a single resource may take more than one transaction).</para>
+  </refsect1>
+  <refsect1 id="params_rdf_load_rdfxml_mt">
+    <title>Parameters</title>
+    <refsect2><title>strg</title>
+      <para>text of the resource.</para>
+    </refsect2>
+    <refsect2><title>base</title>
+      <para>base IRI to resolve relative IRIs to absolute.</para>
+    </refsect2>
+    <refsect2><title>graph</title>
+      <para>target graph IRI, parsed triples will appear in that graph.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_rdf_load_rdfxml_mt"><title>Return Types</title>
+    <para>The return value is not specified and may be changed in future versions.</para>
+  </refsect1>
+<!--  <refsect1 id="errors_rdf_load_rdfxml_mt">
+    <title>Errors</title>
+    <para>This function can generate the following errors:</para>
+    <errorcode></errorcode>
+  </refsect1>
+  <refsect1 id="examples_rdf_load_rdfxml_mt">
+    <title>Examples</title>
+    <example id="ex_rdf_load_rdfxml_mt"><title></title>
+      <para></para>
+      <screen><![CDATA[
+]]>
+</screen>
+    </example>
+  </refsect1>-->
+  <refsect1 id="examples_rdf_load_rdfxml_mt">
+    <title>Examples</title>
+    <example id="ex_rdf_load_rdfxml_mt"><title></title>
+      <para>The following example demonstrates importing data from the rdf resource with URI: http://www.w3.org/People/Berners-Lee/card</para>
+      <screen><![CDATA[
+SQL>create procedure MY_LOAD_FILE (in full_uri varchar, in in_resultset integer := 0)
+{
+  declare REPORT varchar;
+  declare graph_uri, dattext varchar;
+  declare app_env any;
+  app_env := null;
+  whenever sqlstate '*' goto err_rep;
+  if (not in_resultset)
+    result_names (REPORT);
+  dattext := cast (XML_URI_GET_AND_CACHE (full_uri) as varchar);
+  MY_SPARQL_REPORT (sprintf ('Downloading %s: %d bytes',
+      full_uri, length (dattext) ) );
+  graph_uri := full_uri;
+  delete from RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_uri);
+  DB.DBA.RDF_LOAD_RDFXML_MT (dattext, full_uri, graph_uri);
+  return graph_uri;
+err_rep:
+  result (sprintf ('%s: %s', __SQL_STATE, __SQL_MESSAGE));
+  return graph_uri;
+}
+;
+
+Done. -- 0 msec.
+
+SQL>create procedure MY_SPARQL_REPORT(in strg varchar)
+{
+  if (__tag(strg) <> 182)
+    strg := cast (strg as varchar) || sprintf (' -- not a string, tag=%d', __tag(strg));
+  strg := replace (strg, SPARQL_DAV_DATA_URI(), '\044{SPARQL_DAV_DATA_URI()}');
+  strg := replace (strg, SPARQL_DAV_DATA_PATH(), '\044{SPARQL_DAV_DATA_PATH()}');
+  strg := replace (strg, SPARQL_FILE_DATA_ROOT(), '\044{SPARQL_FILE_DATA_ROOT()}');
+  result (strg);
+}
+;
+
+Done. -- 0 msec.
+
+SQL> MY_LOAD_FILE('http://www.w3.org/People/Berners-Lee/card');
+REPORT
+VARCHAR
+_______________________________________________________________________________
+
+Downloading http://www.w3.org/People/Berners-Lee/card: 17773 bytes
+
+1 Rows. -- 4046 msec.
+
+SQL>sparql
+select *
+from <http://www.w3.org/People/Berners-Lee/card>
+where {?s ?p ?o} ;
+
+s                                             p                                               o
+VARCHAR                                       VARCHAR                                         VARCHAR
+__________________________________________________________________________________________________________
+
+http://bblfish.net/people/henry/card#me       http://xmlns.com/foaf/0.1/name                  Henry Story
+http://www.w3.org/People/Berners-Lee/card#i   http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://xmlns.com/foaf/0.1/Person
+http://www.w3.org/People/Berners-Lee/card#i   http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://www.w3.org/2000/10/swap/pim/contact#Male
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/nick                  TimBL
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/nick                  timbl
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/mbox                  mailto:timbl@w3.org
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/mbox_sha1sum          965c47c5a70db7407210cef6e4e6f5374a525c5c
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/knows                 http://bblfish.net/people/henry/card#me
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/knows                 http://hometown.aol.com/chbussler/foaf/chbussler.foaf#me
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/knows                 http://danbri.org/foaf#danbri
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/knows                 http://norman.walsh.name/knows/who#norman-walsh
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/knows                 http://www.aaronsw.com/about.xrdf#aaronsw
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/knows                 http://www.ivan-herman.net/foaf.rdf#me
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/knows                 http://www.w3.org/People/Berners-Lee/card#amy
+http://www.w3.org/People/Berners-Lee/card#i   http://xmlns.com/foaf/0.1/knows                 http://dig.csail.mit.edu/People/RRS
+..........
+]]>
+</screen>
+    </example>
+  </refsect1>
+
+  <refsect1 id="seealso_rdf_load_rdfxml_mt">
+    <title>See Also</title>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP_MT</function></link></para>
+  </refsect1>
+</refentry>

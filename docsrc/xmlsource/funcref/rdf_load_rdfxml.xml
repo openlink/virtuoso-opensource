@@ -23,25 +23,25 @@
 -->
 <refentry id="fn_rdf_load_rdfxml">
   <refmeta>
-    <refentrytitle>rdf_load_rdfxml</refentrytitle>
+    <refentrytitle>DB.DBA.RDF_LOAD_RDFXML</refentrytitle>
     <refmiscinfo>rdf</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>rdf_load_rdfxml</refname>
-    <refpurpose>Parses the content of RDF/XML text as a sequence of separate RDF triples</refpurpose>
+    <refname>DB.DBA.RDF_LOAD_RDFXML</refname>
+    <refpurpose>Parses the content of RDF/XML text as a sequence of separate RDF triples.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_rdf_load_rdfxml">
       <funcprototype id="fproto_rdf_load_rdfxml">
-        <funcdef><function>rdf_load_rdfxml</function></funcdef>
-	<paramdef><parameter>rdfxml_text</parameter> varchar</paramdef>
-	<paramdef><parameter>omt_top_rdf</parameter> integer</paramdef>
-	<paramdef><parameter>graph_uri</parameter> varchar</paramdef>
-	<paramdef><parameter>stmt_texts</parameter> vector of varchars</paramdef>
+        <funcdef><function>DB.DBA.RDF_LOAD_RDFXML</function></funcdef>
+	<paramdef>in <parameter>rdfxml_text</parameter> varchar</paramdef>
+	<paramdef>in <parameter>omt_top_rdf</parameter> integer</paramdef>
+	<paramdef>in <parameter>graph_uri</parameter> varchar</paramdef>
+	<!--<paramdef><parameter>stmt_texts</parameter> vector of varchars</paramdef>
 	<paramdef><parameter>app_env</parameter> any</paramdef>
 	<paramdef><optional><parameter>base_uri</parameter> varchar</optional></paramdef>
 	<paramdef><optional><parameter>encoding</parameter> varchar</optional></paramdef>
-	<paramdef><optional><parameter>language</parameter> varchar</optional></paramdef>
+	<paramdef><optional><parameter>language</parameter> varchar</optional></paramdef>-->
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -51,34 +51,42 @@
   </refsect1>
   <refsect1 id="params_rdf_load_rdfxml">
     <title>Parameters</title>
-    <refsect2><title></title>
-      <para></para>
+    <refsect2><title>rdfxml_text</title>
+      <para>text of and XML document</para>
+    </refsect2>
+    <refsect2><title>omt_top_rdf</title>
+      <para>base IRI to resolve relative IRIs</para>
+    </refsect2>
+    <refsect2><title>graph_uri</title>
+      <para>the IRI of destination graph</para>
     </refsect2>
   </refsect1>
   <refsect1 id="ret_rdf_load_rdfxml"><title>Return Types</title>
-    <para></para>
+    <para>The return value is not specified and may be changed in future versions.</para>
   </refsect1>
-  <refsect1 id="errors_rdf_load_rdfxml">
+<!--  <refsect1 id="errors_rdf_load_rdfxml">
     <title>Errors</title>
-
-<!-- In case of non-function-specific errors, i.e. only common
-     parameter errors are signalled, comment out the table below 
-     otherwise add the unique error values as individual errorcodes -->
-
     <para>This function can generate the following errors:</para>
     <errorcode></errorcode>
   </refsect1>
+-->
   <refsect1 id="examples_rdf_load_rdfxml">
     <title>Examples</title>
     <example id="ex_rdf_load_rdfxml"><title></title>
       <para></para>
       <screen><![CDATA[
+sparql drop graph <http://www.biopax.org/prototype#sample-closure>;
+DB.DBA.RDF_LOAD_RDFXML (file_to_string ('MatInf-for-Alan/Reactome_109581.owl'), '', 'http://www.biopax.org/prototype#sample');
 ]]>
 </screen>
     </example>
   </refsect1>
   <refsect1 id="seealso_rdf_load_rdfxml">
     <title>See Also</title>
-    <para><link linkend="fn_XXX"><function>XXX</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_rdf_ttlp"><function>DB.DBA.TTLP_MT</function></link></para>
   </refsect1>
 </refentry>

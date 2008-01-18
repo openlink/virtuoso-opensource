@@ -1356,7 +1356,33 @@ Section <link linkend="rdfandsparql">RDF Database and SPARQL</link> contains det
 	</para>
     </formalpara>
 </listitem>
+<listitem id="ini_SPARQL_ImmutableGraphs">
+    <formalpara>
+	<title>ImmutableGraphs = URI</title>
+	<para>
+         IRI of graphs over which the sponger not to be able able to write.
+	</para>
+    </formalpara>
+</listitem>
+<listitem id="ini_SPARQL_PingService">
+    <formalpara>
+	<title>PingService = URI</title>
+	<para>
+        IRI of notification service to which the sponger results will be send.
+	</para>
+    </formalpara>
+</listitem>
+<listitem id="ini_SPARQL_DefaultQuery">
+    <formalpara>
+	<title>DefaultQuery = SPARQL Query</title>
+	<para>
+        Default SPARQL Query.
+	</para>
+    </formalpara>
+</listitem>
 			</itemizedlist>
+<para>The SPARQL INI can be get as RDF via http://cname/sparql?ini service.</para>
+
 		</sect4>
 		
 		<sect4 id="ini_Replication">
