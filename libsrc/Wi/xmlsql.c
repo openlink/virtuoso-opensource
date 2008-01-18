@@ -4860,7 +4860,7 @@ xs_stmts_exec (query_instance_t * qi, caddr_t *err_ret, xmlsql_ugram_t * xs,
   caddr_t stmt_id;
   srv_stmt_t * sst;
 
-  xs_idn = id_str_hash_create (101);
+  xs_idn = id_hash_allocate  (101, sizeof (void *), sizeof (boxint), strhash, strhashcmp);
   if (!variables)
     xs_var = xs_parms (var, parms);
   else
