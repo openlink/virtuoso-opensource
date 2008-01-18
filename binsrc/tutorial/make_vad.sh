@@ -342,6 +342,9 @@ sticker_init() {
 #  echo "</dependencies>" >> $STICKER
   echo "<ddls>" >> $STICKER
   echo "  <sql purpose=\"pre-install\">" >> $STICKER
+  echo "    <![CDATA[" >> $STICKER
+  echo "    update WS.WS.SYS_DAV_COL set COL_DET=null where COL_ID = DAV_SEARCH_ID('/DAV/VAD/tutorial/rdfview/rd_v_1/', 'C');" >> $STICKER
+  echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\">" >> $STICKER
   echo "    <![CDATA[" >> $STICKER

@@ -1152,7 +1152,7 @@
               fhost := split_and_decode (fhost, 0, ':=:');
               where_to_run := cast (xpath_eval (sprintf ('/init/src[@start = ''%s'']/@link', sources [i]), start_view, 1) as varchar);
 
-              furl := WS.WS.PARSE_URI (where_to_run);
+              furl := WS.WS.PARSE_URI (coalesce (where_to_run, ''));
               if (furl[0] <> '' and furl[1] <> '')
               {
                 declare nhostp varchar;

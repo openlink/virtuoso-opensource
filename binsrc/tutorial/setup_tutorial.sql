@@ -324,19 +324,3 @@ create procedure tut_generate_tomcat_url (in tut_name any, in lines any)
   return '';
 }
 ;
-
-create procedure DB.DBA.REMOVE_TUT_DEMO_RDF_DET()
-{
-  declare colid int;
-  colid := DAV_SEARCH_ID('/DAV/VAD/tutorial/rdfview/rd_v_1/', 'C');
-  if (colid < 0)
-    return;
-  update WS.WS.SYS_DAV_COL set COL_DET=null where COL_ID = colid;
-}
-;
-
-DB.DBA.REMOVE_TUT_DEMO_RDF_DET()
-;
-
-drop procedure DB.DBA.REMOVE_TUT_DEMO_RDF_DET
-;

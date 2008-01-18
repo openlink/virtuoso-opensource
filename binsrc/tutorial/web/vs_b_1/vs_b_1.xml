@@ -36,6 +36,9 @@
 <para>It is necessary to complete the configuration of the executable directory before any of the subsequent
 tutorials  will function. It is therefore important to follow these steps carefully before trying to run the
 vs_b_1.vsp file.</para>
+<para>The example demonstrated here creates an executable directory depending on either tutorial_dav.vad package was installled
+(i.e. the tutorials are in the DAV repository) or the tutorial_filesystem.dav package ( the tutorials have FS location.)
+</para>
 
 <para>These tutorials are designed for use on an OpenLink Virtuoso V3.0 VDBMS. Earlier versions will not work.</para>
 
@@ -55,21 +58,50 @@ vs_b_1.vsp file.</para>
 </refsect1>
 
 <refsect1 id="VS-B-1c">
+<title>Check tutorials type and path of installation (DAV or FS)</title>
+<orderedlist>
+  <listitem>Go to "Database" tab and then go to the "Interactive SQL" tab.</listitem>
+  <listitem>Enter in the text area the following:
+<programlisting>
+select TUTORIAL_VDIR_DIR();
+</programlisting>
+  </listitem>
+  <listitem>Click the "Execute" button.</listitem>
+  <listitem>The found result will be the tutorials Path location.</listitem>
+  <listitem>Click the button "Return".</listitem>
+  <listitem>Enter in the text area the following:
+<programlisting>
+select TUTORIAL_IS_DAV();
+</programlisting>
+  </listitem>
+  <listitem>Click the "Execute" button.</listitem>
+  <listitem>The returned result will be the tutorials Type location:
+1 - tutorials are installed in DAV, or
+0 - tutorials are installed in the local FS.</listitem>
+</orderedlist>
+</refsect1>
+
+<refsect1 id="VS-B-1d">
 <title>Allow VSP files to be run by vspdemo user with directory browsing allowed</title>
 <orderedlist>
   <listitem>Go to "WebDAV &amp; HTTP" tab and then go to the "HTTP Hosts &amp; Directories" tab.</listitem>
   <listitem>From the given list of HTTP Hosts click the icon in front of the Interface value.</listitem>
   <listitem>Click the "Add new directory" link.</listitem>
-  <listitem>Choose the "File System" type and press the button "Next>>".</listitem>
-  <listitem>Enter "/vs_b_1" for Path, "/tutorial/web/" for physical path, select "vspdemo" for the VSP user, select "Allow Directory Browsing" checkbox and then press the "Save Changes" button.</listitem>
+  <listitem>If tutorials Type location is FS, then choose the "File System" type and press the button
+"Next>>"; If tutorials Type location is DAV, then choose the "WebDAV domain" type and press the
+button "Next>>".
+  </listitem>
+  <listitem>Enter "/vs_b_1" for Path,
+Enter the tutorials Path location with "/tutorial/web/" at the end for physical path (for ex. /vad/vsp/tutorial/web/ or /DAV/VAD/tutorial/web/),
+select "vspdemo" for the VSP user,
+select "Allow Directory Browsing" checkbox and then press the "Save Changes" button.</listitem>
 </orderedlist>
-<para>To test the new directory: enter the "http://your_host:your_http_port/vs_b_1" in browser. For example
+<para>To test the new directory: enter the "http://host:port/vs_b_1" in browser. For example
 http://localhost:8889 as the URL. If all is ok, the content of the web
 tutorial directory is shown.</para>
-
 </refsect1>
 
-<refsect1 id="VS-B-1d">
+<refsect1 id="VS-B-1e">
 <title>Equivalent SQL commands to achieve executable directory</title>
 <orderedlist>
   <listitem>Connect to the Virtuoso server via ISQL utility as DBA user.</listitem>
@@ -80,8 +112,9 @@ SQL&gt; user_set_qualifier ('vspdemo', 'vspdemo');
   </programlisting></listitem>
   <listitem><para>Create the virtual directory with user for execution "vspdemo"</para>
   <programlisting>
+SQL&gt; VHOST_REMOVE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/vs_b_1');
 SQL&gt; vhost_define (vhost=&gt;'*ini*',lhost=&gt;'*ini*',lpath=&gt;'/vs_b_1',
-     ppath=&gt;'/tutorial/web/',vsp_user=&gt;'vspdemo', is_brws=>1);
+     ppath=&gt;TUTORIAL_VDIR_DIR() || '/tutorial/web/',vsp_user=&gt;'vspdemo', is_brws=>1, is_dav=>TUTORIAL_IS_DAV());
   </programlisting></listitem>
 </orderedlist>
 </refsect1>
