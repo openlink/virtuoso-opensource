@@ -48,7 +48,7 @@ echo both ": 13 triples in g inft\n";
 
 
 
-select id_to_iri (a.s) from rdf_quad a table option (with 'inft'), rdf_quad b table option (with 'inft ')
+select id_to_iri (a.s) from rdf_quad a table option (with 'inft'), rdf_quad b table option (with 'inft')
 where a.g = iri_to_id ('inft', 0) and b.g = iri_to_id ('inft', 0)
 	and a.o = iri_to_id ('c1', 0) and b.o = iri_to_id ('c1', 0)
 	and a.p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0)

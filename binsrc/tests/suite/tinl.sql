@@ -22,7 +22,7 @@ explain ('select count (*) from t1 a, t1 b where a.row_no between 100 and 110 an
 explain ('select count (*) from t1 a, t1 b, t1 c, t1 d, t1 e, t1 f, t1 g, t1 h where a.row_no <20 and b.row_no < 19 and c.row_no < 18 and d.row_no < 17 and e.row_no  < 16 and f.row_no < 15 and g.row_no < 14 and h.row_no < 13', -5);
 
 
-select count (*) from t1 a, t1 b, t1 c where a..string1 = b.string 2 and c.row_no in (select row_no from t1 s where  s.string1 = a.string1 and s.fi2  = b.fi2);
+select count (*) from t1 a, t1 b, t1 c where a.string1 = b.string2 and c.row_no in (select row_no from t1 s where  s.string1 = a.string1 and s.fi2  = b.fi2);
 
 explain  ('select count (*) from t1 a, t1 b, t1 c where a..string1 = b.string 2 and c.row_no in (select row_no from t1 s where  s.string1 = a.string1 and s.fi2  = b.fi2)');
 
