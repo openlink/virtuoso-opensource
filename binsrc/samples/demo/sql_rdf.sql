@@ -10,12 +10,12 @@ create procedure DB.DBA.SPARQL_NW_RUN (in txt varchar)
   msg := '';
   rowset := null;
   exec (sqltext, stat, msg, vector (), 1000, metas, rowset);
-  result ('STATE=' || stat || ': ' || msg);
-  if (rowset is not null)
-    {
-      foreach (any r in rowset) do
-        result (r[0] || ': ' || r[1]);
-    }
+  --result ('STATE=' || stat || ': ' || msg);
+  --if (__tag(rowset) = 193)
+  --{
+  --  foreach (any r in rowset) do
+  --    result (r[0] || ': ' || r[1]);
+  --}
 }
 ;
 
@@ -49,9 +49,237 @@ drop quad map virtrdf:NorthwindDemo .
 ')
 ;
 
+create function DB.DBA.NORTHWIND_ID_TO_IRI(in _prefix varchar,in _id varchar)
+{
+  declare iri, uriqa_host any;
+  uriqa_host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+  iri := 'http://' || uriqa_host || '/Northwind/' || _prefix || '/' || _id || '#this';
+  return sprintf ('http://%s/DAV/home/demo/RDFData/All/iid%%20(%d).rdf', uriqa_host, iri_id_num (iri_to_id (iri)));
+}
+;
+
+create function DB.DBA.NORTHWIND_IRI_TO_ID(in _iri varchar)
+{
+    declare parts any;
+    parts := sprintf_inverse (_iri, 'http://%s/DAV/home/demo/RDFData/All/iid (%d).rdf', 1 );
+    if (parts is not null)
+    {
+        declare uriqa_host, iri any;
+        uriqa_host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+        if (parts[0] = uriqa_host)
+        {
+            iri := id_to_iri(iri_id_from_num(parts[1]));
+            parts := sprintf_inverse (iri, 'http://%s/Northwind/%s/%s#this', 1 );
+            if (parts[0] = uriqa_host)
+            {
+                return parts[2];
+            }
+        }
+    }
+    return NULL;
+}
+;
+
+create function DB.DBA.CATEGORY_IRI (in _id integer) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('Category', cast(_id as varchar));
+}
+;
+
+create function DB.DBA.CATEGORY_IRI_INVERSE (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
+};
+
+create function DB.DBA.SHIPPER_IRI (in _id integer) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('Shipper', cast(_id as varchar));
+}
+;
+
+create function DB.DBA.SHIPPER_IRI_INVERSE (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
+};
+
+create function DB.DBA.SUPPLIER_IRI (in _id integer) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('Supplier', cast(_id as varchar));
+}
+;
+
+create function DB.DBA.SUPPLIER_IRI_INVERSE (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
+};
+
+create function DB.DBA.PRODUCT_IRI (in _id integer) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('Product', cast(_id as varchar));
+}
+;
+
+create function DB.DBA.PRODUCT_IRI_INVERSE (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
+};
+
+create function DB.DBA.CUSTOMER_IRI (in _id varchar) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('Customer', _id);
+}
+;
+
+create function DB.DBA.CUSTOMER_IRI_INVERSE (in _iri varchar) returns varchar
+{
+    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
+};
+
+create function DB.DBA.EMPLOYEE_IRI (in _id integer) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('Employee', cast(_id as varchar));
+}
+;
+
+create function DB.DBA.EMPLOYEE_IRI_INVERSE (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
+};
+
+create function DB.DBA.ORDER_IRI (in _id integer) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('Order', cast(_id as varchar));
+}
+;
+
+create function DB.DBA.ORDER_IRI_INVERSE (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
+};
+
+create function DB.DBA.CUSTOMERCONTACT_IRI (in _id integer) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('CustomerContact', cast(_id as varchar));
+}
+;
+
+create function DB.DBA.CUSTOMERCONTACT_IRI_INVERSE (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
+};
+
+create function DB.DBA.ORDERLINE_IRI (in _id1 integer, in _id2 integer) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('OrderLine', sprintf('%d/%d', _id1, _id2));
+}
+;
+
+create function DB.DBA.ORDERLINE_IRI_INV_1 (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
+};
+
+create function DB.DBA.ORDERLINE_IRI_INV_2 (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
+};
+
+
+create function DB.DBA.PROVINCE_IRI (in _id1 varchar, in _id2 varchar) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('Province', sprintf('%s/%s', _id1, _id2));
+}
+;
+
+create function DB.DBA.PROVINCE_IRI_INV_1 (in _iri varchar) returns varchar
+{
+    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
+};
+
+create function DB.DBA.PROVINCE_IRI_INV_2 (in _iri varchar) returns varchar
+{
+    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
+};
+
+create function DB.DBA.COUNTRY_IRI (in _id varchar) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('Country', _id);
+}
+;
+
+create function DB.DBA.COUNTRY_IRI_INVERSE (in _iri varchar) returns varchar
+{
+    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
+};
+
+create function DB.DBA.FLAG_IRI (in _id varchar) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('Flag', _id);
+}
+;
+
+create function DB.DBA.FLAG_IRI_INVERSE (in _iri varchar) returns varchar
+{
+    return DB.DBA.NORTHWIND_IRI_TO_ID(_iri);
+};
+
+create function DB.DBA.EMPLOYEEPHOTO_IRI (in _id integer) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('EmployeePhoto', cast(_id as varchar));
+}
+;
+
+create function DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
+};
+
+create function DB.DBA.CATEGORYPHOTO_IRI (in _id integer) returns varchar
+{
+    return NORTHWIND_ID_TO_IRI('CategoryPhoto', cast(_id as varchar));
+}
+;
+
+create function DB.DBA.CATEGORYPHOTO_IRI_INVERSE (in _iri varchar) returns integer
+{
+    return atoi(DB.DBA.NORTHWIND_IRI_TO_ID(_iri));
+};
+
+grant execute on DB.DBA.CATEGORY_IRI to "SPARQL";
+grant execute on DB.DBA.CATEGORY_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.SHIPPER_IRI to "SPARQL";
+grant execute on DB.DBA.SHIPPER_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.SUPPLIER_IRI to "SPARQL";
+grant execute on DB.DBA.SUPPLIER_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.PRODUCT_IRI to "SPARQL";
+grant execute on DB.DBA.PRODUCT_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.CUSTOMER_IRI to "SPARQL";
+grant execute on DB.DBA.CUSTOMER_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.EMPLOYEE_IRI to "SPARQL";
+grant execute on DB.DBA.EMPLOYEE_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.ORDER_IRI to "SPARQL";
+grant execute on DB.DBA.ORDER_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.CUSTOMERCONTACT_IRI to "SPARQL";
+grant execute on DB.DBA.CUSTOMERCONTACT_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.ORDERLINE_IRI to "SPARQL";
+grant execute on DB.DBA.ORDERLINE_IRI_INV_1 to "SPARQL";
+grant execute on DB.DBA.ORDERLINE_IRI_INV_2 to "SPARQL";
+grant execute on DB.DBA.PROVINCE_IRI to "SPARQL";
+grant execute on DB.DBA.PROVINCE_IRI_INV_1 to "SPARQL";
+grant execute on DB.DBA.PROVINCE_IRI_INV_2 to "SPARQL";
+grant execute on DB.DBA.COUNTRY_IRI to "SPARQL";
+grant execute on DB.DBA.COUNTRY_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.FLAG_IRI to "SPARQL";
+grant execute on DB.DBA.FLAG_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.EMPLOYEEPHOTO_IRI to "SPARQL";
+grant execute on DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE to "SPARQL";
+grant execute on DB.DBA.CATEGORYPHOTO_IRI to "SPARQL";
+grant execute on DB.DBA.CATEGORYPHOTO_IRI_INVERSE to "SPARQL";
+
 DB.DBA.SPARQL_NW_RUN ('
 prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix owl: <http://www.w3.org/2002/07/owl#>
@@ -66,16 +294,188 @@ create iri class northwind:CustomerContact "http://^{URIQADefaultHost}^/Northwin
 create iri class northwind:OrderLine "http://^{URIQADefaultHost}^/Northwind/OrderLine/%d/%d#this" (in order_id integer not null, in product_id integer not null) .
 create iri class northwind:Province "http://^{URIQADefaultHost}^/Northwind/Province/%U/%U#this" (in country_name varchar not null, in province_name varchar not null) .
 create iri class northwind:Country "http://^{URIQADefaultHost}^/Northwind/Country/%U#this" (in country_name varchar not null) .
-create iri class northwind:Flag "http://^{URIQADefaultHost}^%s#this" (in flag_path varchar not null) .
+create iri class northwind:Flag "http://^{URIQADefaultHost}^%U#this" (in flag_path varchar not null) .
 create iri class northwind:dbpedia_iri "http://dbpedia.org/resource/%U" (in uname varchar not null) .
 create iri class northwind:EmployeePhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/EMP%d#this" (in emp_id varchar not null) .
 create iri class northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VAD/demo/sql/CAT%d#this" (in category_id varchar not null) .
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:category_iri using
+    function DB.DBA.CATEGORY_IRI (in customer_id integer) returns varchar,
+    function DB.DBA.CATEGORY_IRI_INVERSE (in customer_iri varchar) returns integer.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:shipper_iri using
+    function DB.DBA.SHIPPER_IRI (in customer_id integer) returns varchar,
+    function DB.DBA.SHIPPER_IRI_INVERSE (in customer_iri varchar) returns integer.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:supplier_iri using
+    function DB.DBA.SUPPLIER_IRI (in customer_id varchar) returns varchar,
+    function DB.DBA.SUPPLIER_IRI_INVERSE (in customer_iri varchar) returns varchar.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:product_iri using
+    function DB.DBA.PRODUCT_IRI (in customer_id integer) returns varchar,
+    function DB.DBA.PRODUCT_IRI_INVERSE (in customer_iri varchar) returns integer.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:customer_iri using
+    function DB.DBA.CUSTOMER_IRI (in customer_id varchar) returns varchar,
+    function DB.DBA.CUSTOMER_IRI_INVERSE (in customer_iri varchar) returns varchar.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:employee_iri using
+    function DB.DBA.EMPLOYEE_IRI (in customer_id integer) returns varchar,
+    function DB.DBA.EMPLOYEE_IRI_INVERSE (in customer_iri varchar) returns integer.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:order_iri using
+    function DB.DBA.ORDER_IRI (in customer_id integer) returns varchar,
+    function DB.DBA.ORDER_IRI_INVERSE (in customer_iri varchar) returns integer.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:customercontact_iri using
+    function DB.DBA.CUSTOMERCONTACT_IRI (in customer_id varchar) returns varchar,
+    function DB.DBA.CUSTOMERCONTACT_IRI_INVERSE (in customer_iri varchar) returns varchar.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:orderline_iri using
+    function DB.DBA.ORDERLINE_IRI (in customer_id integer, in customer_id2 integer) returns varchar,
+    function DB.DBA.ORDERLINE_IRI_INV_1 (in customer_iri varchar) returns integer,
+    function DB.DBA.ORDERLINE_IRI_INV_2 (in customer_iri varchar) returns integer.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:province_iri using
+    function DB.DBA.PROVINCE_IRI (in customer_id varchar, in customer_id2 varchar) returns varchar,
+    function DB.DBA.PROVINCE_IRI_INV_1 (in customer_iri varchar) returns varchar,
+    function DB.DBA.PROVINCE_IRI_INV_2 (in customer_iri varchar) returns varchar.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:country_iri using
+    function DB.DBA.COUNTRY_IRI (in customer_id varchar) returns varchar,
+    function DB.DBA.COUNTRY_IRI_INVERSE (in customer_iri varchar) returns varchar.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:employeephoto_iri using
+    function DB.DBA.EMPLOYEEPHOTO_IRI (in customer_id integer) returns varchar,
+    function DB.DBA.EMPLOYEEPHOTO_IRI_INVERSE (in customer_iri varchar) returns integer.
+');
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:categoryphoto_iri using
+    function DB.DBA.CATEGORYPHOTO_IRI (in customer_id integer) returns varchar,
+    function DB.DBA.CATEGORYPHOTO_IRI_INVERSE (in customer_iri varchar) returns integer.
 ')
 ;
 
 DB.DBA.SPARQL_NW_RUN ('
 prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+create iri class northwind:flag_iri using
+    function DB.DBA.FLAG_IRI (in customer_id varchar) returns varchar,
+    function DB.DBA.FLAG_IRI_INVERSE (in customer_iri varchar) returns varchar.
+')
+;
+
+DB.DBA.SPARQL_NW_RUN ('
+prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
+prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -101,6 +501,7 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                 northwind:CustomerContact (customers.CustomerID)
                         a foaf:Person
                                 as virtrdf:CustomerContact-foaf_Person .
+
                 northwind:CustomerContact (customers.CustomerID)
                         a northwind:CustomerContact
                                 as virtrdf:CustomerContact-CustomerContact;
@@ -111,10 +512,14 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         northwind:is_contact_at northwind:Customer (customers.CustomerID)
                                 as virtrdf:CustomerContact-is_contact_at ;
                         northwind:country northwind:Country (customers.Country)
-                                as virtrdf:CustomerContact-country .
+                                as virtrdf:CustomerContact-country ;
+                        rdfs:isDefinedBy northwind:customercontact_iri (customers.CustomerID) ;
+                        rdfs:isDefinedBy northwind:CustomerContact (customers.CustomerID) .
+
                 northwind:Country (customers.Country)
                         northwind:is_country_of
                 northwind:CustomerContact (customers.CustomerID) as virtrdf:CustomerContact-is_country_of .
+
                 northwind:Product (products.ProductID)
                         a northwind:Product
                                 as virtrdf:Product-ProductID ;
@@ -135,11 +540,16 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         northwind:reorderLevel products.ReorderLevel
                                 as virtrdf:Product-reorder_level ;
                         northwind:discontinued products.Discontinued
-                                as virtrdf:Product-discontinued .
+                                as virtrdf:Product-discontinued ;
+                        rdfs:isDefinedBy northwind:product_iri (products.ProductID) ;
+                        rdfs:isDefinedBy northwind:Product (products.ProductID) .
+
                 northwind:Category (products.CategoryID)
                         northwind:category_of northwind:Product (products.ProductID) as virtrdf:Product-category_of .
+
                 northwind:Supplier (products.SupplierID)
                         northwind:supplier_of northwind:Product (products.ProductID) as virtrdf:Product-supplier_of .
+
                 northwind:Supplier (suppliers.SupplierID)
                         a northwind:Supplier
                                 as virtrdf:Supplier-SupplierID ;
@@ -166,10 +576,14 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         northwind:fax suppliers.Fax
                                 as virtrdf:Supplier-fax ;
                         northwind:homePage suppliers.HomePage
-                                as virtrdf:Supplier-home_page .
+                                as virtrdf:Supplier-home_page ;
+                        rdfs:isDefinedBy northwind:supplier_iri (suppliers.SupplierID) ;
+                        rdfs:isDefinedBy northwind:Supplier (suppliers.SupplierID) .
+
                 northwind:Country (suppliers.Country)
                         northwind:is_country_of
                 northwind:Supplier (suppliers.SupplierID) as virtrdf:Supplier-is_country_of .
+
                 northwind:Category (categories.CategoryID)
                         a northwind:Category
                                 as virtrdf:Category-CategoryID ;
@@ -178,11 +592,15 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         northwind:description categories.Description
                                 as virtrdf:Category-description ;
 			foaf:img northwind:CategoryPhoto(categories.CategoryID)
-				as virtrdf:Category-categories.CategoryPhoto .
+                                as virtrdf:Category-categories.CategoryPhoto ;
+                        rdfs:isDefinedBy northwind:category_iri (categories.CategoryID) ;
+                        rdfs:isDefinedBy northwind:Category (categories.CategoryID) .
 				
 				northwind:CategoryPhoto(categories.CategoryID)
 						a northwind:CategoryPhoto
-								as virtrdf:Category-categories.CategoryPhotoID .
+                                as virtrdf:Category-categories.CategoryPhotoID ;
+                        rdfs:isDefinedBy northwind:categoryphoto_iri (categories.CategoryID) ;
+                        rdfs:isDefinedBy northwind:CategoryPhoto(categories.CategoryID) .
 
                 northwind:Shipper (shippers.ShipperID)
                         a northwind:Shipper
@@ -190,7 +608,9 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         northwind:companyName shippers.CompanyName
                                 as virtrdf:Shipper-company_name ;
                         northwind:phone shippers.Phone
-                                as virtrdf:Shipper-phone .
+                                as virtrdf:Shipper-phone ;
+                        rdfs:isDefinedBy northwind:shipper_iri (shippers.ShipperID) ;
+                        rdfs:isDefinedBy northwind:Shipper (shippers.ShipperID) .
 
                 northwind:Customer (customers.CustomerID)
                         a  northwind:Customer
@@ -224,7 +644,10 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         northwind:phone customers.Phone
                                 as virtrdf:Customer-phone ;
                         northwind:fax customers.Fax
-                                as virtrdf:Customer-fax .
+                                as virtrdf:Customer-fax ;
+                        rdfs:isDefinedBy northwind:customer_iri (customers.CustomerID) ;
+                        rdfs:isDefinedBy northwind:Customer (customers.CustomerID) .
+
                 northwind:Country (customers.Country)
                         northwind:is_country_of
                 northwind:Customer (customers.CustomerID) as virtrdf:Customer-is_country_of .
@@ -273,11 +696,15 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         northwind:reportsTo northwind:Employee(employees.FirstName, employees.LastName, employees.ReportsTo) where (^{employees.}^.ReportsTo = ^{employees.}^.EmployeeID)
                                 as virtrdf:Employee-reports_to ;
 			foaf:img northwind:EmployeePhoto(employees.EmployeeID)                                                                                                      
-				as virtrdf:Employee-employees.EmployeePhoto .
+                                as virtrdf:Employee-employees.EmployeePhoto ;
+                        rdfs:isDefinedBy northwind:employee_iri (employees.EmployeeID) ;
+                        rdfs:isDefinedBy northwind:Employee (employees.FirstName, employees.LastName, employees.EmployeeID) .
 
 				northwind:EmployeePhoto(employees.EmployeeID)
 						a northwind:EmployeePhoto
-								as virtrdf:Employee-employees.EmployeePhotoId .
+                                as virtrdf:Employee-employees.EmployeePhotoId ;
+                        rdfs:isDefinedBy northwind:employeephoto_iri (employees.EmployeeID) ;
+                        rdfs:isDefinedBy northwind:EmployeePhoto (employees.EmployeeID) .                        
 
                 northwind:Employee (employees.FirstName, employees.LastName, orders.EmployeeID)
                         northwind:is_salesrep_of
@@ -319,7 +746,9 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         northwind:shipPostal_code orders.ShipPostalCode
                                 as virtrdf:Order-ship_postal_code ;
                         northwind:shipCountry northwind:Country(orders.ShipCountry)
-                                as virtrdf:ship_country .
+                                as virtrdf:ship_country ;
+                        rdfs:isDefinedBy northwind:order_iri (orders.OrderID) ;
+                        rdfs:isDefinedBy northwind:Order (orders.OrderID) .
 
                 northwind:Customer (orders.CustomerID)
                         northwind:has_order northwind:Order (orders.OrderID) as virtrdf:Order-has_order .
@@ -339,7 +768,9 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         northwind:quantity order_lines.Quantity
                                 as virtrdf:OrderLine-quantity ;
                         northwind:discount order_lines.Discount
-                                as virtrdf:OrderLine-discount .
+                                as virtrdf:OrderLine-discount ;
+                        rdfs:isDefinedBy northwind:orderline_iri (order_lines.OrderID, order_lines.ProductID) ;
+                        rdfs:isDefinedBy northwind:OrderLine (order_lines.OrderID, order_lines.ProductID) .
                                 
                 northwind:Country (countries.Name)
                         a northwind:Country
@@ -362,18 +793,24 @@ where (^{orders.}^.ShipCountry = ^{countries.}^.Name)
                         wgs:lat countries.Lat
                                 as virtrdf:Country-Lat ;
                         wgs:long countries.Lng
-                                as virtrdf:Country-Lng .
+                                as virtrdf:Country-Lng ;
+                        rdfs:isDefinedBy northwind:country_iri (countries.Name) ;
+                        rdfs:isDefinedBy northwind:Country (countries.Name) .
 
                 northwind:Country (countries.Name)
                         northwind:has_province
                 northwind:Province (provinces.CountryCode, provinces.Province) where (^{provinces.}^.CountryCode = ^{countries.}^.Code) as virtrdf:Country-has_province .
+
                 northwind:Province (provinces.CountryCode, provinces.Province)
                         a northwind:Province
                                 as virtrdf:Province-Provinces ;
                         northwind:has_country_code provinces.CountryCode
                                 as virtrdf:has_country_code ;
                         northwind:provinceName provinces.Province
-                                as virtrdf:Province-ProvinceName .
+                                as virtrdf:Province-ProvinceName ;
+                        rdfs:isDefinedBy northwind:province_iri (provinces.CountryCode, provinces.Province) ;
+                        rdfs:isDefinedBy northwind:Province (provinces.CountryCode, provinces.Province) .
+
                 northwind:Province (provinces.CountryCode, provinces.Province)
                         northwind:is_province_of
                 northwind:Country (countries.Name) where  (^{countries.}^.Code = ^{provinces.}^.CountryCode) as virtrdf:Province-country_of .
@@ -452,15 +889,29 @@ DB.DBA.REMOVE_DEMO_RDF_DET();
 
 drop procedure DB.DBA.REMOVE_DEMO_RDF_DET;
 
-DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/home/demo/RDFData/', 'http://^{URIQADefaultHost}^/Northwind', NULL);
-VHOST_REMOVE (lpath=>'/Northwind/data/rdf');
-DB.DBA.VHOST_DEFINE (lpath=>'/Northwind/data/rdf', ppath=>'/DAV/home/demo/RDFData/All/', is_dav=>1, vsp_user=>'dba');
+create procedure DB.DBA.NORTHWIND_MAKE_RDF_DET()
+{
+    declare uriqa_str varchar;
+    uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+    uriqa_str := 'http://' || uriqa_str || '/Northwind';
+    DB.DBA."RDFData_MAKE_DET_COL" ('/DAV/home/demo/RDFData/', uriqa_str, NULL);
+    VHOST_REMOVE (lpath=>'/Northwind/data/rdf');
+    DB.DBA.VHOST_DEFINE (lpath=>'/Northwind/data/rdf', ppath=>'/DAV/home/demo/RDFData/All/', is_dav=>1, vsp_user=>'dba');
+}
+;
+
+DB.DBA.NORTHWIND_MAKE_RDF_DET();
+
+drop procedure DB.DBA.NORTHWIND_MAKE_RDF_DET;
 
 -- procedure to convert path to DET resource name
 create procedure DB.DBA.NORTHWIND_DET_REF (in par varchar, in fmt varchar, in val varchar)
 {
   declare res, iri any;
-  iri := 'http://^{URIQADefaultHost}^/Northwind' || val;
+  declare uriqa_str varchar;
+  uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+  uriqa_str := 'http://' || uriqa_str || '/Northwind';
+  iri := uriqa_str || val;
   res := sprintf ('iid (%d).rdf', iri_id_num (iri_to_id (iri)));
   return sprintf (fmt, res);
 }

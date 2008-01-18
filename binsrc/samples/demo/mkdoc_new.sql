@@ -100,8 +100,8 @@ create function MKDOC_SAVE_HTML (inout _name varchar, inout _content varchar, in
   http_value (_content, null, _ses);
   _name := cast (_name as varchar);
   _fname := concat(_path, '/', _name, '.html');
-  _strg := string_output_string(_ses);
-  string_to_file (_fname, _strg, -2);
+  --_strg := string_output_string(_ses);
+  string_to_file (_fname, _ses, -2);
   if (0 and exists (select 1 from WS.WS.SYS_DAV_COL where COL_NAME='docsrc' and COL_PARENT=1))
     {
       select COL_ID into _colid from WS.WS.SYS_DAV_COL where COL_NAME='docsrc' and COL_PARENT=1;
@@ -111,9 +111,9 @@ create function MKDOC_SAVE_HTML (inout _name varchar, inout _content varchar, in
 	(http_dav_uid (), http_dav_uid () + 1, _colid, http_mime_type('q.html'), now(), now(), '110100100', WS.WS.getid ('R'),
 	 concat (_name, '.html'),
 	 concat ('/DAV/docsrc/', _name, '.html'),
-	 _strg);
+	 _ses);
     }
-  return sprintf ('%d bytes were written to file ''%s''.', length (_strg), _fname);
+  return sprintf ('%d bytes were written to file ''%s''.', length (_ses), _fname);
 }
 ;
 

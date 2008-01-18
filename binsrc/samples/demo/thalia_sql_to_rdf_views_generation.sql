@@ -10,12 +10,12 @@ create procedure DB.DBA.SPARQL_THALIA_RUN (in txt varchar)
   msg := '';
   rowset := null;
   exec (sqltext, stat, msg, vector (), 1000, metas, rowset);
-  result ('STATE=' || stat || ': ' || msg);
-  if (rowset is not null)
-    {
-      foreach (any r in rowset) do
-        result (r[0] || ': ' || r[1]);
-    }
+  --result ('STATE=' || stat || ': ' || msg);
+  --if (rowset is not null)
+  --  {
+  --    foreach (any r in rowset) do
+  --      result (r[0] || ': ' || r[1]);
+  --  }
 }
 ;
 
