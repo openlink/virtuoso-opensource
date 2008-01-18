@@ -1781,7 +1781,7 @@ create function "DAV_EXTRACT_RDF_text/directory" (in orig_res_name varchar, inou
   else
     doc := IMC_TO_XML (content);
   doc := xml_tree_doc (doc);
-  -- dbg_obj_princ ('doc is ', doc);
+  --dbg_obj_princ ('doc is ', doc);
   diritems := xpath_eval ('/*', doc, 0);
   foreach (any diritm in diritems) do
     {
@@ -1843,6 +1843,15 @@ create function "DAV_EXTRACT_RDF_text/directory" (in orig_res_name varchar, inou
               'http://www.openlinksw.com/schemas/ICS#CATEGORIES', 'IMC-VEVENT/CATEGORIES/val', null,
               'http://www.openlinksw.com/schemas/ICS#ATTENDEE', 'IMC-VEVENT/ATTENDEE/val', null,
               'http://www.openlinksw.com/schemas/ICS#ORGANIZER', 'IMC-VEVENT/ORGANIZER/val', null );
+          }
+          else if ((length (diritems) = 1) and (xpath_eval('count (IMC-VTODO)', diritm) > 0))
+          {
+            metas := vector (
+              'http://www.openlinksw.com/schemas/ICS#SUMMARY', 'IMC-VTODO/SUMMARY/val', null,
+              'http://www.openlinksw.com/schemas/ICS#LOCATION', 'IMC-VTODO/LOCATION/val', null,
+              'http://www.openlinksw.com/schemas/ICS#CATEGORIES', 'IMC-VTODO/CATEGORIES/val', null,
+              'http://www.openlinksw.com/schemas/ICS#ATTENDEE', 'IMC-VTODO/ATTENDEE/val', null,
+              'http://www.openlinksw.com/schemas/ICS#ORGANIZER', 'IMC-VTODO/ORGANIZER/val', null);
           }
           else
           {
