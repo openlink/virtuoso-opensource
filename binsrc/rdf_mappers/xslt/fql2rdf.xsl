@@ -48,6 +48,7 @@
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri" />
+    <xsl:param name="login" />
     <xsl:template match="/">
 	<rdf:RDF>
 	    <xsl:apply-templates/>
@@ -78,7 +79,7 @@
 	    <xsl:apply-templates select="fb:album"/>
     </xsl:template>
     <xsl:template match="fb:album">
-	<sioct:ImageGallery rdf:about="{fb:link}#album">
+	<sioct:ImageGallery rdf:about="{vi:proxyIRI (fb:link, $login)}">
 	    <fb:aid><xsl:value-of select="fb:aid"/></fb:aid>
 	    <dc:title><xsl:value-of select="fb:name"/></dc:title>
 	    <dct:created><xsl:value-of select="vi:unix2iso-date (fb:created)"/></dct:created>
@@ -90,7 +91,7 @@
 	</sioct:ImageGallery>
 	<xsl:if test="not contains ($baseUri, '&amp;')">
 	    <foaf:Person rdf:about="{$baseUri}">
-		<sioc:owner_of rdf:resource="{fb:link}#album"/>
+		<sioc:owner_of rdf:resource="{vi:proxyIRI (fb:link, $login)}"/>
 	    </foaf:Person>
 	</xsl:if>
     </xsl:template>
@@ -115,7 +116,8 @@
 	<xsl:apply-templates select="fb:current_location"/>
     </xsl:template>
     <xsl:template match="fb:user[not contains ($baseUri, fb:uid)]">
-	<xsl:variable name="user_iri">http://www.facebook.com/p/<xsl:value-of select="fb:first_name"/>_<xsl:value-of select="fb:last_name"/>/<xsl:value-of select="fb:uid"/></xsl:variable>
+	<xsl:variable name="tmp">http://www.facebook.com/p/<xsl:value-of select="fb:first_name"/>_<xsl:value-of select="fb:last_name"/>/<xsl:value-of select="fb:uid"/></xsl:variable>
+	<xsl:variable name="user_iri" select="vi:proxyIRI ($tmp, $login)"/>
 	<foaf:Person rdf:about="{$user_iri}">
 	    <fb:uid><xsl:value-of select="fb:uid"/></fb:uid>
 	    <foaf:name><xsl:value-of select="fb:name"/></foaf:name>

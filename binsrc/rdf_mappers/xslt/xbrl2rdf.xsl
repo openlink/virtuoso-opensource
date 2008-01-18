@@ -55,6 +55,8 @@
   xmlns:usfr-mr="http://www.xbrl.org/us/fr/rpt/mr/2005-02-28#"
   xmlns:us-gaap-ci="http://www.xbrl.org/us/fr/gaap/ci/2005-02-28#"
   xmlns:msft="http://www.microsoft.com/10q/industrial/msft/2005-02-28"
+  xmlns:virt="http://www.openlinksw.com/virtuoso/xslt"
+  xmlns:virt-xbrl="http://demo.openlinksw.com/schemas/xbrl#"
   xmlns:ifrs-gp="&ifrs-gp;"
   xmlns:stock="&stock;"
   xmlns:ifrs-gp-typ="&ifrs-gp-typ;"
@@ -64,6 +66,9 @@
   
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="baseUri" />
+
+  <xsl:variable name="ns">http://demo.openlinksw.com/schemas/xbrl#</xsl:variable>
+
   <xsl:template match="/">
       <rdf:RDF>
 	  	<xsl:apply-templates select="xbrl"/>
@@ -76,7 +81,7 @@
   </xsl:template>
 
   <xsl:template match="context">
-    <xsl:variable name="id" select="concat($baseUri, '#', @id)"/>
+    <xsl:variable name="id" select="@id"/>
     <rdf:Description rdf:ID="{$id}">
         <xsl:apply-templates select="entity"/>
         <xsl:apply-templates select="period"/>
@@ -84,24 +89,24 @@
   </xsl:template>
   
   <xsl:template match="unit">
-    <xsl:variable name="id" select="concat($baseUri, '#', @id)"/>
+    <xsl:variable name="id" select="@id"/>
     <rdf:Description rdf:ID="{$id}">
-          <xbrli:measure>
+          <virt-xbrl:measure>
               <xsl:value-of select="measure" />
-          </xbrli:measure>
+          </virt-xbrl:measure>
     </rdf:Description>
   </xsl:template>
   
   <xsl:template match="entity">
-      <xbrli:scheme>
+      <virt-xbrl:scheme>
         <xsl:apply-templates select="identifier"/>
-      </xbrli:scheme>
-      <xbrli:identifier>
+      </virt-xbrl:scheme>
+      <virt-xbrl:identifier>
         <xsl:value-of select="identifier" />
-      </xbrli:identifier>
-      <xbrli:segment>
+      </virt-xbrl:identifier>
+      <virt-xbrl:segment>
           <xsl:value-of select="segment" />
-      </xbrli:segment>
+      </virt-xbrl:segment>
   </xsl:template>
     
   <xsl:template match="identifier">
@@ -115,28 +120,28 @@
   </xsl:template>
   
   <xsl:template match="instant">
-    <xbrli:instant>
+    <virt-xbrl:instant>
         <xsl:value-of select="."/>
-    </xbrli:instant>
+    </virt-xbrl:instant>
   </xsl:template>
 
   <xsl:template match="startDate">
-    <xbrli:startDate>
+    <virt-xbrl:startDate>
         <xsl:value-of select="."/>
-    </xbrli:startDate>
+    </virt-xbrl:startDate>
   </xsl:template>
 
   <xsl:template match="endDate">
-    <xbrli:endDate>
+    <virt-xbrl:endDate>
         <xsl:value-of select="."/>
-    </xbrli:endDate>
+    </virt-xbrl:endDate>
   </xsl:template>
 
   <!--xsl:template match="text()|@*">
   <xsl:value-of select="."/>
   </xsl:template-->
 
-  <xsl:template match="msft:*|usfr-mda:*|*">
+  <!--xsl:template match="msft:*|usfr-mda:*|*">
     <xsl:variable name="contextRef" select="@contextRef"/>
     <xsl:variable name="name1" select="local-name(.)"/>    
     <xsl:variable name="id" select="concat(namespace-uri(.), '#', $name1)"/>
@@ -148,6 +153,18 @@
             <xsl:value-of select="."/>
         </rdf:value>
     </rdf:Description>
+  </xsl:template-->
+
+  <xsl:template match="*">
+    <xsl:variable name="canonicalname" select="virt:xbrl_canonical_name(local-name(.))" />
+    <xsl:variable name="contextRef" select="@contextRef"/>
+    <xsl:if test="$canonicalname">
+      <rdf:Description rdf:ID="{$contextRef}">
+        <xsl:element namespace="{$ns}" name="{$canonicalname}" >
+            <xsl:value-of select="."/>
+        </xsl:element>
+      </rdf:Description>
+    </xsl:if>
   </xsl:template>
 
 </xsl:stylesheet>

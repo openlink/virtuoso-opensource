@@ -33,6 +33,8 @@ update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = '(http://.*amazon.[^/]+/gp/produc
 	    '(http://.*amazon.[^/]+/exec/obidos/tg/detail/-/[^/]+/.*)'
 	where RM_HOOK = 'DB.DBA.RDF_LOAD_AMAZON_ARTICLE';
 
+update DB.DBA.SYS_RDF_MAPPERS set RM_PATTERN = 'http[s]*://www.facebook.com/.*' where RM_HOOK = 'DB.DBA.RDF_LOAD_FQL';
+
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
     values ('.*', 'HTTP', 'DB.DBA.RDF_LOAD_HTTP_SESSION', null, 'HTTP in RDF', 0);
 
@@ -76,7 +78,7 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('.+\.ics\$', 'URL', 'DB.DBA.RDF_LOAD_ICAL', null, 'iCalendar');
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
-    values ('http://www.facebook.com/.*',
+    values ('http[s]*://www.facebook.com/.*',
             'URL', 'DB.DBA.RDF_LOAD_FQL', null, 'FaceBook', vector ('secret', '', 'session', ''));
 
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS)
@@ -247,17 +249,41 @@ create procedure DB.DBA.XSLT_STR2DATE (in val varchar)
 }
 ;
 
+create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar, in login varchar)
+{
+  declare cname any;
+  declare ret any;
+  declare default_host varchar;
+  default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (default_host is not null)
+    cname := default_host;
+  else
+    {
+      cname := sys_stat ('st_host_name');
+      if (server_http_port () <> '80')
+	cname := cname ||':'|| server_http_port ();
+    }
+  if (length (login))
+    ret := sprintf ('http://%s/proxy?url=%U&force=rdf&login=%U', cname, uri, login);
+  else
+    ret := sprintf ('http://%s/proxy?url=%U&force=rdf', cname, uri);
+  return ret;
+}
+;
+
 grant execute on DB.DBA.XSLT_REGEXP_MATCH to public;
 grant execute on DB.DBA.XSLT_SPLIT_AND_DECODE to public;
 grant execute on DB.DBA.XSLT_UNIX2ISO_DATE to public;
 grant execute on DB.DBA.XSLT_SHA1_HEX to public;
 grant execute on DB.DBA.XSLT_STR2DATE to public;
+grant execute on DB.DBA.RDF_SPONGE_PROXY_IRI to public;
 
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:regexp-match', 'DB.DBA.XSLT_REGEXP_MATCH');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:split-and-decode', 'DB.DBA.XSLT_SPLIT_AND_DECODE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:unix2iso-date', 'DB.DBA.XSLT_UNIX2ISO_DATE');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:sha1_hex', 'DB.DBA.XSLT_SHA1_HEX');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:str2date', 'DB.DBA.XSLT_STR2DATE');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:proxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI');
 
 --create procedure RDF_LOAD_AMAZON_ARTICLE_INIT ()
 --{
@@ -599,9 +625,11 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
   api_key := null;
   if (acc is not null)
     {
-      tmp := DB.DBA.USER_GET_OPTION (acc, 'FBKey');
-      if (tmp is null and __proc_exists ('DB.DBA.WA_USER_GET_SVC_KEY') is not null)
+      tmp := null;
+      if (__proc_exists ('DB.DBA.WA_USER_GET_SVC_KEY') is not null)
 	tmp := DB.DBA.WA_USER_GET_SVC_KEY (acc, 'FBKey');
+      if (tmp is null)
+	tmp := DB.DBA.USER_GET_OPTION (acc, 'FBKey');
       if (tmp is not null)
 	{
 	  tmp := replace (tmp, '\r', '\n');
@@ -623,6 +651,8 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
     return 0;
 
   own := ''; pid := '';
+  if (acc is null)
+    acc := '';
 
   tmp := sprintf_inverse (graph_iri, 'http://www.facebook.com/album.php?aid=%s&l=%s&id=%s', 0);
   if (length (tmp) = 3)
@@ -643,7 +673,7 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
   'WHERE aid in (select aid from album where owner = %s and strpos (link, "aid=%s&") > 0)', own, aid);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   xt := xtree_doc (ret);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -652,7 +682,7 @@ create procedure DB.DBA.RDF_LOAD_FQL (in graph_iri varchar, in new_origin_uri va
   'WHERE owner = %s and strpos (link, "aid=%s&") > 0', own, aid);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   xt := xtree_doc (ret);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -673,7 +703,7 @@ try_profile:
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   --dbg_printf ('%s', ret);
   xt := xtree_doc (ret);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -682,7 +712,7 @@ try_profile:
   'WHERE owner = %s', own);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   xt := xtree_doc (ret);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -692,25 +722,25 @@ try_profile:
   '(SELECT eid FROM event_member where uid = %s)', own);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   xt := xtree_doc (ret);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
 --  dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 
 --  q := sprintf ('select uid2 from friend where uid1 = %s', own);
 --  ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
-  --dbg_printf ('%s', ret);
+--  dbg_printf ('%s', ret);
 --  xt := xtree_doc (ret);
 --  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
 --  xd := serialize_to_UTF8_xml (xt);
-  --dbg_printf ('%s', xd);
+--  dbg_printf ('%s', xd);
 --  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
 
   q := sprintf ('SELECT uid, first_name, last_name, name, pic_small, pic_big, pic_square, pic, profile_update_time, timezone, religion, birthday, sex, current_location FROM user WHERE uid IN (select uid2 from friend where uid1 = %s)', own);
   ret := DB.DBA.FQL_CALL (q, api_key, ses_id, secret);
   --dbg_printf ('%s', ret);
   xt := xtree_doc (ret);
-  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri)));
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/fql2rdf.xsl', xt, vector ('baseUri', coalesce (dest, graph_iri), 'login', acc));
   xd := serialize_to_UTF8_xml (xt);
   --dbg_printf ('%s', xd);
   DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
@@ -2086,4 +2116,38 @@ create procedure DB.DBA.SYS_OAI_SPONGE_UP (in local_iri varchar, in get_uri varc
     }
   return local_iri;
 }
+;
+
+create procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
+{
+  declare content1, urihost varchar;
+  urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+  for select cast (RES_CONTENT as varchar) as content1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/ontologies/xbrl/%.owl' do
+  {
+    DB.DBA.RDF_LOAD_RDFXML (content1, 'http://demo.openlinksw.com/schemas/xbrl#', 'http://demo.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/');
+  }
+}
+;
+
+DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
+;
+
+drop procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES
+;
+
+create procedure DB.DBA.GET_XBRL_CANONICAL_NAME(in elem varchar) returns varchar
+{
+    declare cur varchar;
+    cur := 'http://demo.openlinksw.com/schemas/xbrl#' || elem;
+    if (exists (sparql ask from <http://demo.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> {`iri(?:cur)` a rdf:Property } ) )
+        return elem;
+    else
+        return NULL;
+}
+;
+
+grant execute on DB.DBA.GET_XBRL_CANONICAL_NAME to public
+;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_NAME'), 0)
 ;
