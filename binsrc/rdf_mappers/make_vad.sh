@@ -144,9 +144,12 @@ directory_init() {
   mkdir vad/vsp
   mkdir vad/vsp/rdf_mappers
   mkdir vad/vsp/rdf_mappers/xslt/
+  mkdir vad/vsp/rdf_mappers/ontologies/
+  mkdir vad/vsp/rdf_mappers/ontologies/xbrl/
 
   cp *.sql vad/code/rdf_mappers
   cp xslt/*.xsl vad/vsp/rdf_mappers/xslt/
+  cp ontologies/xbrl/*.owl vad/vsp/rdf_mappers/ontologies/xbrl/
 
 }
 
@@ -273,6 +276,10 @@ fi
       echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
 
+  for file in `find ontologies/xbrl -type f -print | grep -v CVS | sort`
+  do
+      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  done
 
   echo "</resources>" >> $STICKER
   echo "<registry>" >> $STICKER
