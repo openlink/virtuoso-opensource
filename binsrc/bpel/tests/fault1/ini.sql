@@ -103,7 +103,7 @@ BPEL.BPEL.wsdl_process_remote ('test',
 ECHO BOTH $IF $EQU $STATE OK  "PASSED:" "***FAILED:";
 ECHO BOTH " faultHTCLI script configuration status:" $STATE "\n";
 
-update BPEL.BPEL.partner_link_init set bpl_endpoint = 'http://noserver/nowhere' 
+update BPEL.BPEL.partner_link_init set bpl_endpoint = sprintf ('http://localhost:%d/nowhere', atoi(server_http_port())+5)
 	where bpl_script = (select bs_id from BPEL.BPEL.script where
 				bs_uri like '%HTCLI.bpel');
 ECHO BOTH $IF $EQU $STATE OK  "PASSED:" "***FAILED:";
@@ -215,7 +215,8 @@ delete from DB.DBA.while_test_table;
 BPEL.BPEL.set_backup_endpoint_by_name ('file:/While.bpel', 'IncrementService', 'http://localhost:' || '$U{http_port_two}' || '/increment'); 
 ECHO BOTH $IF $EQU $STATE OK "PASSED:" "***FAILED:";
 ECHO BOTH " While: setting backup endpoint state: " $STATE "\n";
-update BPEL.BPEL.partner_link_init set bpl_endpoint = 'http://noserver/nowhere'  where bpl_endpoint like '%increment' and bpl_script = 3;
+  update BPEL.BPEL.partner_link_init set bpl_endpoint = sprintf ('http://localhost:%d/nowhere', atoi(server_http_port())+5)
+where bpl_endpoint like '%increment' and bpl_script = 3;
 
 select db.dba.soap_client (direction=>1, soap_action=>'initiate', style=>1, url=>concat ('http://localhost:', server_http_port(), '/BPELGUI/bpel.vsp?script=file:/While.bpel'), operation =>'initiate', parameters =>  vector ('par1', xtree_doc ('<value>2</value>')));
 ECHO BOTH $IF $EQU $STATE OK "PASSED:" "***FAILED:";
