@@ -225,6 +225,10 @@
 
 	              model := self.t_model.ufl_value;
 
+		      -- Add /dataspace etc.
+		      if (__proc_exists ('DB.DBA.ods_define_common_vd') is not null)
+		        DB.DBA.ods_define_common_vd (domain, ip);
+
 	              insert replacing DB.DBA.WA_DOMAINS (WD_HOST, WD_LISTEN_HOST, WD_LPATH, WD_DOMAIN, WD_MODEL)
 		         values (domain, ip, path, top_domain, model);
 

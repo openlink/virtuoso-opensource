@@ -5194,6 +5194,7 @@ create procedure y_sprintf_to_reg (in fmt varchar, in in_list any, in o_list any
       pc := regexp_match ('%[sdU]', fmt, 1);
       inx := inx + 1;
     }
+  cp_fmt := replace (cp_fmt, '%%', '%');
   return cp_fmt;
 };
 
@@ -5204,6 +5205,7 @@ create procedure y_reg_to_sprintf (in fmt varchar, out in_list any, out o_list a
   declare inx, pos, _from, _to, res, _left, _right, par, fchar any;
 
   cp_fmt := fmt;
+  cp_fmt := replace (cp_fmt, '%', '%%');
   pc := regexp_match ('(\\x24[sdU]?[0-9]+)|(\\x24accept)', fmt, 1);
   inx := 0;
 

@@ -140,7 +140,7 @@ LOG()
 
 START_SERVER()
 {
-  timeout=60
+  timeout=120
 
   ECHO "Starting Virtuoso server ..."
   if [ "z$HOST_OS" != "z" ] 
