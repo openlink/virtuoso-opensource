@@ -186,11 +186,15 @@ void dk_mutex_init (dk_mutex_t * mtx, int type);
 void dk_mutex_destroy (dk_mutex_t * mtx);
 EXE_EXPORT (void, mutex_free, (dk_mutex_t *mtx));
 EXE_EXPORT (int, mutex_enter, (dk_mutex_t *mtx));
+EXE_EXPORT (void, mutex_leave, (dk_mutex_t *mtx));
+
 #ifdef MTX_DEBUG
 int mutex_enter_dbg (int ln, const char * file, dk_mutex_t *mtx);
+void mutex_leave_dbg (int ln, const char * file, dk_mutex_t *mtx);
 #ifndef _USRDLL
 #ifndef EXPORT_GATE
 #define mutex_enter(m) mutex_enter_dbg (__LINE__, __FILE__, m)
+#define mutex_leave(m) mutex_leave_dbg (__LINE__, __FILE__, m)
 #endif
 #endif
 #endif
@@ -201,7 +205,6 @@ void mutex_option (dk_mutex_t * mtx, char * name, mtx_entry_check_t ck, void * c
 #define mutex_option(mtx,name,ck,cd) do { ; } while (0)
 #endif
 int mutex_try_enter (dk_mutex_t *mtx);
-EXE_EXPORT (void, mutex_leave, (dk_mutex_t *mtx));
 void mutex_stat (void);
 
 spinlock_t * spinlock_allocate (void);

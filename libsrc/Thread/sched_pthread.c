@@ -971,6 +971,7 @@ semaphore_leave (semaphore_t *sem)
 #ifdef SEM_DEBUG
     {
       int inx;
+      if (304 == ln && sem->sem_entry_count) GPF_T1 ("should have 0 count when signalling clrg_wait");
       for (inx = MAX_SEM_ENT - 1; inx > 0; inx--)
 	{
 	  sem->sem_last_left_line[inx] = sem->sem_last_left_line[inx - 1];
@@ -1343,6 +1344,15 @@ mutex_enter (dk_mutex_t * mtx)
 {
   return (mutex_enter_dbg (__LINE__, __FILE__, mtx));
 }
+
+#undef mutex_leave
+
+void
+mutex_leave (dk_mutex_t * mtx)
+{
+  mutex_leave_dbg (__LINE__, __FILE__, mtx);
+}
+
 #endif
 
 
@@ -1375,12 +1385,19 @@ mutex_try_enter (dk_mutex_t *mtx)
 }
 
 
+#ifdef MTX_DEBUG
+void
+mutex_leave_dbg (int ln, const char * file, dk_mutex_t *mtx)
+#else
 void
 mutex_leave (dk_mutex_t *mtx)
+#endif
 {
 #ifdef MTX_DEBUG
   assert (mtx->mtx_owner == thread_current ());
   mtx->mtx_owner = NULL;
+  mtx->mtx_leave_line = ln;
+  mtx->mtx_leave_file = file;
 #endif
 #if HAVE_SPINLOCK 
   if (MUTEX_TYPE_SPIN == mtx->mtx_type)

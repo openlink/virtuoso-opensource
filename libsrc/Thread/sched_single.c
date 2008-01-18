@@ -293,9 +293,13 @@ mutex_try_enter (dk_mutex_t *mtx)
   return 1;
 }
 
-
+#ifdef MTX_DEBUG
+void
+mutex_leave_dbg (int ln, const char * file, dk_mutex_t *mtx)
+#else
 void
 mutex_leave (dk_mutex_t *mtx)
+#endif
 {
 }
 
