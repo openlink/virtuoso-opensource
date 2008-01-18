@@ -20,7 +20,7 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2007-08-26 0002' ;
+  virtrdf:version '2008-01-17 0001' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -40,7 +40,9 @@ bif:xquery_contains virtrdf:isSpecialPredicate bif:xquery_contains .
     rdfdf:sql-varchar-uri-fn ,			rdfdf:sql-varchar-uri-fn-nullable ,
     rdfdf:sql-integer-uri-fn ,			rdfdf:sql-integer-uri-fn-nullable ,
     rdfdf:sql-varchar-literal-fn ,		rdfdf:sql-varchar-literal-fn-nullable ,
-    rdfdf:sql-integer-literal-fn ,		rdfdf:sql-integer-literal-fn-nullable
+    rdfdf:sql-integer-literal-fn ,		rdfdf:sql-integer-literal-fn-nullable ,
+    virtrdf:DefaultQuadStorage ,		virtrdf:DefaultQuadStorage-UserMaps ,
+    virtrdf:DefaultQuadMap
 .
 
 rdfdf:default-iid
@@ -177,6 +179,8 @@ rdfdf:default
 # Misc
   virtrdf:qmfIsBijection 1;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
   virtrdf:qmfIsStable 1;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
+  virtrdf:qmfIsSubformatOfLongWhenEqToSql 1;
+  virtrdf:qmfIsSubformatOfLongWhenRef 1;
   virtrdf:qmfCmpFuncName "DB.DBA.RDF_OBJ_CMP";					# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
   virtrdf:qmfTypeminTmpl " DB.DBA.RDF_TYPEMIN_OF_OBJ (^{tree}^)";		# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
   virtrdf:qmfTypemaxTmpl " DB.DBA.RDF_TYPEMAX_OF_OBJ (^{tree}^)";		# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
@@ -473,7 +477,7 @@ rdfdf:sql-integer
   virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#integer";	# STRING OPTIONAL Datatype of stored values, if fixed
 #  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
@@ -493,7 +497,7 @@ rdfdf:sql-integer-nullable
   virtrdf:inheritFrom rdfdf:sql-integer;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfName "sql-integer-nullable";
   virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfSuperFormats rdfdf:sql-integer-nullable-SuperFormats
@@ -584,7 +588,7 @@ rdfdf:sql-doubleprecision
   virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#double";	# STRING OPTIONAL Datatype of stored values, if fixed
 #  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
@@ -604,7 +608,7 @@ rdfdf:sql-doubleprecision-nullable
   virtrdf:inheritFrom rdfdf:sql-doubleprecision;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfName "sql-doubleprecision-nullable";
   virtrdf:qmfSuperFormats rdfdf:sql-doubleprecision-nullable-SuperFormats
 .
@@ -645,13 +649,13 @@ rdfdf:sql-date
   virtrdf:qmfIsStable 1;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfIsSubformatOfLong 1;						# INTEGER REQUIRED Nonzero if the format is subformat of LONG valmode
   virtrdf:qmfCmpFuncName "DB.DBA.RDF_OBJ_CMP";					# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
-  virtrdf:qmfTypeminTmpl " 0001-01-01";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
-  virtrdf:qmfTypemaxTmpl " 3000-12-31";						# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
+  virtrdf:qmfTypeminTmpl " cast ('0001-01-01' as date)";			# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
+  virtrdf:qmfTypemaxTmpl " cast ('3000-12-31' as date)";			# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
   virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#date";	# STRING OPTIONAL Datatype of stored values, if fixed
 #  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
@@ -673,7 +677,7 @@ rdfdf:sql-date-nullable
   virtrdf:inheritFrom rdfdf:sql-date;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfName "sql-date-nullable";
   virtrdf:qmfIidOfShortTmpl " DB.DBA.RDF_MAKE_IID_OF_QNAME (sprintf_or_null (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfSuperFormats rdfdf:sql-date-nullable-SuperFormats
@@ -716,13 +720,13 @@ rdfdf:sql-datetime
   virtrdf:qmfIsStable 1;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfIsSubformatOfLong 1;						# INTEGER REQUIRED Nonzero if the format is subformat of LONG valmode
   virtrdf:qmfCmpFuncName "DB.DBA.RDF_OBJ_CMP";					# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
-  virtrdf:qmfTypeminTmpl " 0001-01-01";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
-  virtrdf:qmfTypemaxTmpl " 3000-12-31";						# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
+  virtrdf:qmfTypeminTmpl " cast ('0001-01-01' as datetime)";			# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
+  virtrdf:qmfTypemaxTmpl " cast ('3000-12-31' as datetime)";			# STRING REQUIRED Template of expn that returns the biggest possible value of the type of value of arg
 # Metadata about values that can be stored in this field
   virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#datetime";	# STRING OPTIONAL Datatype of stored values, if fixed
 #  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
@@ -742,7 +746,7 @@ rdfdf:sql-datetime-nullable
   virtrdf:inheritFrom rdfdf:sql-datetime;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfName "sql-datetime-nullable";
   virtrdf:qmfSuperFormats rdfdf:sql-datetime-nullable-SuperFormats
 .
