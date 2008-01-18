@@ -709,13 +709,7 @@ retry_rdf_boxes: \
   if (DV_LONG_INT == dtp1 && dtp1 == dtp2) \
     goto int_case; \
   if (dtp1 == DV_DB_NULL || dtp2 == DV_DB_NULL) \
-    { \
-      if (target) \
-	qst_set_bin_string (qst, target, NULL, 0, DV_DB_NULL); \
-      else \
-	return (dk_alloc_box (0, DV_DB_NULL)); \
-      return NULL; \
-    } \
+    goto null_result; \
   if (n_coerce ((caddr_t) & dn1, (caddr_t) & dn2, \
 	  dtp1, dtp2, &res_dtp)) \
     { \
@@ -756,9 +750,17 @@ retry_rdf_boxes: \
             box2 = ((rdf_box_t *)(box2))->rb_box; \
           goto retry_rdf_boxes; \
         } \
-    sqlr_new_error ("22003", "SR087", "Non numeric arguments to arithmetic operation."); \
+      if (((query_instance_t *)qst)->qi_query->qr_no_cast_error) \
+        goto null_result; \
+      sqlr_new_error ("22003", "SR087", "Non numeric argument(s) to arithmetic operation."); \
     } \
+null_result: \
+  if (target) \
+    { \
+      qst_set_bin_string (qst, target, NULL, 0, DV_DB_NULL); \
   return NULL; \
+    } \
+  return (dk_alloc_box (0, DV_DB_NULL)); \
 }
 
 /* equal to ARTM_BIN_FUNC (box_mod, %, numeric_modulo, 1) with some extensions */
@@ -772,13 +774,7 @@ retry_rdf_boxes:
   NUM_TO_MEM (dn1, dtp1, box1);
   NUM_TO_MEM (dn2, dtp2, box2);
   if (dtp1 == DV_DB_NULL || dtp2 == DV_DB_NULL)
-    {
-      if (target)
-	qst_set_bin_string (qst, target, NULL, 0, DV_DB_NULL);
-      else
-	return (dk_alloc_box (0, DV_DB_NULL));
-      return NULL;
-    }
+    goto null_result; \
   if (n_coerce ((caddr_t) & dn1, (caddr_t) & dn2,
 	  dtp1, dtp2, &res_dtp))
     {
@@ -818,9 +814,17 @@ retry_rdf_boxes:
             box2 = ((rdf_box_t *)(box2))->rb_box;
           goto retry_rdf_boxes;
         }
+      if (((query_instance_t *)qst)->qi_query->qr_no_cast_error)
+        goto null_result; /* see below */
       sqlr_new_error ("22003", "SR087", "Non numeric arguments to arithmetic operation modulo");
     }
-  return NULL;
+null_result: \
+  if (target) \
+    { \
+      qst_set_bin_string (qst, target, NULL, 0, DV_DB_NULL); \
+      return NULL; \
+    } \
+  return (dk_alloc_box (0, DV_DB_NULL)); \
 }
 
 ARTM_BIN_FUNC (box_add, +, numeric_add, 0)
