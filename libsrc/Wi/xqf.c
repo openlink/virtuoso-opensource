@@ -506,31 +506,32 @@ xqf_duration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 }
 
 
-#define DTFLAG_YY	1
-#define DTFLAG_MM	2
-#define DTFLAG_DD	4
-#define DTFLAG_HH	8
-#define DTFLAG_MIN	16
-#define DTFLAG_SS	32
-#define DTFLAG_ZH	64
-#define DTFLAG_ZM	128
+#define DTFLAG_YY	0x1
+#define DTFLAG_MM	0x2
+#define DTFLAG_DD	0x4
+#define DTFLAG_HH	0x8
+#define DTFLAG_MIN	0x10
+#define DTFLAG_SS	0x20
+#define DTFLAG_SF	0x40
+#define DTFLAG_ZH	0x80
+#define DTFLAG_ZM	0x100
 
 static int
 __get_iso_date ( const char *str, char *dt, int dtflags, const char *ctor_name )
 {
   int tzsign = 0, res_flags = 0, tzmin = dt_local_tz;
   const char *tail, *group_end;
-  int fld_values[8];
-  static int fld_min_values[8] =	{ 1	, 1	, 1	, 0	, 0	, 0	, 0	, 0	};
-  static int fld_max_values[8] =	{ 9999	, 12	, 31	, 23	, 59	, 61	, 14	, 59	};
-  static int fld_max_lengths[8] =	{ 4	, 2	, 2	, 2	, 2	, 2	, 2	, 2	};
-  static int delms[8] =			{ '-'	, '-'	, 'T'	, ':'	, ':'	, '\0'	, ':'	, '\0'	};
-  static const char *names[8] =	{"year"	,"month","day"	,"hour"	,"minute","second","TZ hour","TZ minute"};
+  int fld_values[9];
+  static int fld_min_values[9] =	{ 1	, 1	, 1	, 0	, 0	, 0	, 0	, 0	, 0	};
+  static int fld_max_values[9] =	{ 9999	, 12	, 31	, 23	, 59	, 61	, 999999, 14	, 59	};
+  static int fld_max_lengths[9] =	{ 4	, 2	, 2	, 2	, 2	, 2	, -1	, 2	, 2	};
+  static int delms[9] =			{ '-'	, '-'	, 'T'	, ':'	, ':'	, '\0', '\0'	, ':'	, '\0'	};
+  static const char *names[9] =	{"year"	,"month","day"	,"hour"	,"minute","second","fraction","TZ hour","TZ minute"};
   static int days_in_months[12] = { 31, -1, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
   int fld_idx;
   tail = group_end = str;
-  memcpy (fld_values, fld_min_values, 8 * sizeof (int));
-  for (fld_idx = 0; fld_idx < 8; fld_idx++)
+  memcpy (fld_values, fld_min_values, 9 * sizeof (int));
+  for (fld_idx = 0; fld_idx < 9; fld_idx++)
     {
       int fld_flag = (1 << fld_idx);
       int fldlen, fld_maxlen, fld_value;
@@ -553,6 +554,8 @@ __get_iso_date ( const char *str, char *dt, int dtflags, const char *ctor_name )
       if (fldlen == fld_maxlen)
         goto field_length_checked; /* see below */
       if ((DTFLAG_YY == fld_flag) && (fldlen < fld_maxlen))
+        goto field_length_checked; /* see below */
+      if ((DTFLAG_SF == fld_flag) && (fldlen > 0))
         goto field_length_checked; /* see below */
       if ((DTFLAG_YY == fld_flag) && (8 == fldlen))
         {
@@ -582,7 +585,20 @@ __get_iso_date ( const char *str, char *dt, int dtflags, const char *ctor_name )
       sqlr_new_error ("42001", "XPQ??", "Incorrect %s field length in %s constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
 
 field_length_checked:
-      fld_values[fld_idx] = fld_value = atoi (tail);
+      if (DTFLAG_SF == fld_flag)
+        {
+          int mult = 100000;
+          int cctr;
+          fld_value = 0;
+          for (cctr = 0; ((cctr < 6) && (cctr < fldlen)); cctr++)
+            {
+              fld_value += (tail[cctr] - '0') * mult;
+              mult /= 10;
+            }
+        }
+      else
+        fld_value = atoi (tail);
+      fld_values[fld_idx] = fld_value;
       res_flags |= fld_flag;
 
       expected_delimiter = delms[fld_idx];
@@ -590,8 +606,12 @@ field_length_checked:
         goto field_delim_checked; /* see below */
       if ('\0' == group_end[0])
         goto field_delim_checked; /* see below */
-      if (NULL != strchr ("+-Z",group_end[0]))
+      if (NULL == strchr ("+-Z",group_end[0]))
         {
+          if ((DTFLAG_SS == fld_flag) && ('.' == group_end[0]))
+            goto field_delim_checked; /* see below */
+          sqlr_new_error ("42001", "XPQ??", "Incorrect %s delimiter in %s constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
+        }
           if ('Z' == group_end[0])
             {
               if ('\0' != group_end[1])
@@ -599,14 +619,15 @@ field_length_checked:
               tzmin = 0;
             }
           if (DTFLAG_SS == fld_flag)
-            goto field_delim_checked; /* see below */
-          if ((DTFLAG_DD == fld_flag) && (!(dtflags & (DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS))))
             {
-              fld_idx += 3;
+          fld_idx++;
               goto field_delim_checked; /* see below */
             }
+      if ((DTFLAG_DD == fld_flag) && (!(dtflags & (DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF))))
+        {
+          fld_idx += 4;
+          goto field_delim_checked; /* see below */
         }
-      sqlr_new_error ("42001", "XPQ??", "Incorrect %s delimiter in %s constructor:\"%.300s\"", names[fld_idx], ctor_name, str);
 
 field_delim_checked:
 
@@ -621,7 +642,7 @@ field_delim_checked:
     }
   if ('\0' != tail[0])
     sqlr_new_error ("42001", "XPQ??", "Extra symbols (%.200s) after the end of data in '%s' constructor :\"%.300s\"", group_end, ctor_name, str);
-  for (fld_idx = 0; fld_idx < 8; fld_idx++)
+  for (fld_idx = 0; fld_idx < 9; fld_idx++)
     {
       int fld_flag = (1 << fld_idx);
       int fld_value = fld_values[fld_idx];
@@ -639,13 +660,13 @@ field_delim_checked:
 	    sqlr_new_error ("42001", "XPQ??", "Too many days in %s constructor:\"%.300s\"", ctor_name, str);          
         }
     }
-  tzmin += (60 * fld_values[6]) + fld_values[7];
+  tzmin += (60 * fld_values[7]) + fld_values[8];
   if (tzsign)
     tzmin *= -1;
   dt_from_parts (dt,
     fld_values[0], fld_values[1], fld_values[2],
     fld_values[3], fld_values[4], fld_values[5],
-    0, tzmin );
+    fld_values[6], tzmin );
   return res_flags;
 }
 
@@ -658,12 +679,12 @@ field_delim_checked:
 #define XQ_MONTHDAY	6
 #define XQ_MONTH	7
 #define XQ_DAY		8
-#define XQ_DTLAST	100
+#define XQ_DTLAST	9
 
 static void
 __datetime_from_string (caddr_t *n, const char *str, int do_what)
 {
-  int flags[] = {0xff, 0xc7, 0xf8, 0xc3, 0xc1, 0xc6, 0xc2, 0xc4,
+  int flags[] = {0x1ff, 0x187, 0x1f8, 0x183, 0x181, 0x186, 0x182, 0x184,
 		};
   int types[] = { DT_TYPE_DATETIME, DT_TYPE_DATE, DT_TYPE_TIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME };
   const char *names[] = {	"dateTime",
@@ -676,10 +697,9 @@ __datetime_from_string (caddr_t *n, const char *str, int do_what)
 				"gDay",
   };
   assert (do_what >0 && do_what <= XQ_DTLAST);
-
   *n = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
   if (__get_iso_date (str, *n, flags[do_what - 1], names[do_what - 1]) < 0)
-    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor:\"%s\"", str);
+    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in datetime/duration constructor:\"%s\"", str);
   DT_SET_DT_TYPE (*n, types[do_what - 1]);
 
 }
