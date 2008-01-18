@@ -3719,6 +3719,166 @@ bif_gvector_digit_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return bif_gvector_sort_imp (qst, err_ret, args, "gvector_digit_sort", 'D');
 }
 
+caddr_t
+bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *funname, char algo)
+{
+  caddr_t *vect = (caddr_t *)bif_array_arg (qst, args, 0, funname);
+  int vect_elems = BOX_ELEMENTS (vect);
+  int key_ofs = bif_long_range_arg (qst, args, 1, funname, 0, 1024);
+  int sort_asc = bif_long_range_arg (qst, args, 2, funname, 0, 1);
+  vector_sort_t specs;
+  if (1 >= vect_elems)
+    return box_num (vect_elems); /* No need to sort empty or single-element vector */
+  if ('Q' == algo)
+    {
+      caddr_t *temp;
+#ifdef GVECTOR_SORT_DEBUG
+      temp = (caddr_t*) dk_alloc_box_zero (box_length (vect), DV_ARRAY_OF_POINTER);
+#else
+      temp = (caddr_t*) dk_alloc_box (box_length (vect), DV_ARRAY_OF_POINTER);
+#endif
+      specs.vs_block_elts = 1;
+      specs.vs_block_size = sizeof (caddr_t);
+      specs.vs_key_ofs = key_ofs;
+      specs.vs_sort_asc = sort_asc;
+#ifdef GVECTOR_SORT_DEBUG
+      specs.vs_whole_vector = vect;
+      specs.vs_whole_tmp = temp;
+#endif
+      GPF_T1("rowvector_qsort is not yet implemented");
+      /*rowvector_qsort (vect, temp, vect_elems, 0, &specs); */
+#ifdef GVECTOR_SORT_DEBUG
+      dk_check_tree (vect);
+#endif
+      dk_free_box (temp);
+    }
+  else /* if ('D' == algo) */
+    {
+      uint32 *offsets;
+      dsort_itm_t *src, *tgt, *swap;
+      caddr_t *vect_copy;
+      int shift, offsets_count, itm_ctr, twobyte, max_twobyte;
+      boxint minv = BOXINT_MAX, maxv = BOXINT_MIN;
+      boxint key_val;
+      src = (dsort_itm_t *) dk_alloc (vect_elems * sizeof (dsort_itm_t));
+      for (itm_ctr = vect_elems; itm_ctr--; /* no step */)
+        {
+          caddr_t *row = (caddr_t *)(vect[itm_ctr]);
+          caddr_t key;
+          dtp_t key_dtp;
+          if (DV_ARRAY_OF_POINTER != DV_TYPE_OF(row))
+            {
+              dk_free ((void *)src, vect_elems * sizeof (dsort_itm_t));
+              sqlr_new_error ("22023", "SR572",
+	        "Function %s needs vector of vectors, "
+		"found a value type %s (%d); index of bad item in array is %d",
+		funname, dv_type_title (key_dtp), key_dtp, itm_ctr );
+            }
+          if (BOX_ELEMENTS(row) <= key_ofs)
+            {
+              dk_free ((void *)src, vect_elems * sizeof (dsort_itm_t));
+              sqlr_new_error ("22023", "SR572",
+	        "Function %s needs vector of vectors, each item should be at least %d values long "
+		"found an item of length %d; index of bad item in array is %d",
+		funname, key_ofs+1, BOX_ELEMENTS(row), itm_ctr );
+            }
+          key = row[key_ofs];
+          key_dtp = DV_TYPE_OF (key);
+          if (DV_LONG_INT == key_dtp)
+            key_val = unbox (key);
+          else if (DV_IRI_ID == key_dtp)
+            key_val = unbox_iri_id (key);
+          else
+            {
+              dk_free ((void *)src, vect_elems * sizeof (dsort_itm_t));
+              sqlr_new_error ("22023", "SR572",
+	        "Function %s needs IRI_IDs or integers as key elements of array, "
+		"not a value type %s (%d); index of bad item in array is %d",
+		funname, dv_type_title (key_dtp), key_dtp, itm_ctr );
+            }
+          if (key_val < minv)
+            minv = key_val;
+          if (key_val > maxv)
+            maxv = key_val;
+          src[itm_ctr].di_key = key_val;
+          src[itm_ctr].di_pos = itm_ctr;
+        }
+      if ((maxv - minv) < 0L)
+        {
+          dk_free ((void *)src, vect_elems * sizeof (dsort_itm_t));
+          sqlr_new_error ("22023", "SR573",
+	    "Function %s has failed to sort array: the difference between greatest and smallest keys does not fit 63 bit range"
+            /*"; consider using rowvector_sort()"*/, funname );
+        }
+      if (sort_asc)
+        {
+          for (itm_ctr = vect_elems; itm_ctr--; /* no step */)
+            {
+              src[itm_ctr].di_key -= minv;
+            }
+          maxv -= minv;
+        }
+      else
+        {
+          for (itm_ctr = vect_elems; itm_ctr--; /* no step */)
+            {
+              src[itm_ctr].di_key = maxv - src[itm_ctr].di_key;
+            }
+          maxv = maxv - minv;
+        }
+      tgt = (dsort_itm_t *) dk_alloc (vect_elems * sizeof (dsort_itm_t));
+      offsets_count = ((maxv >= 0x10000) ? 0x10000 : (maxv+1));
+      offsets = (uint32 *) dk_alloc (offsets_count * sizeof (uint32));
+      for (shift = 0; shift < 8 * sizeof (boxint); shift += 16)
+        {
+          if (0 == (maxv >> shift))
+            break;
+          max_twobyte = (((maxv >> shift) >= 0x10000L) ? 0x10000 : (int)((maxv >> shift)+1));
+          memset (offsets, 0, max_twobyte * sizeof (uint32));
+          for (itm_ctr = vect_elems; itm_ctr--; /* no step */)
+            {
+              (offsets[(src[itm_ctr].di_key >> shift) & 0xffff])++;
+            }
+          if (vect_elems == offsets[0])
+            continue; /* Special case to optimize sorting of array of IRI_IDs of bnodes and iri nodes */
+          for (twobyte = 1; twobyte < max_twobyte; twobyte++)
+            offsets [twobyte] += offsets [twobyte-1];
+#ifndef DEBUG
+          if (vect_elems != offsets [max_twobyte - 1])
+            GPF_T1 ("Bad offsets in rowvector_digit_sort()");
+#endif
+          for (itm_ctr = vect_elems; itm_ctr--; /* no step */)
+            {
+              int ofs = --(offsets[(src[itm_ctr].di_key >> shift) & 0xffff]);
+              tgt[ofs] = src[itm_ctr];
+            }
+          swap = src;
+          src = tgt;
+          tgt = swap;
+        }
+      vect_copy = (caddr_t *)dk_alloc (vect_elems * sizeof (caddr_t));
+      memcpy (vect_copy, vect, vect_elems * sizeof (caddr_t));
+      for (itm_ctr = vect_elems; itm_ctr--; /* no step */)
+        {
+          vect[itm_ctr] = vect_copy[src[itm_ctr].di_pos];
+        }
+#ifndef NDEBUG
+      dk_check_tree (vect);
+#endif
+      dk_free (src, vect_elems * sizeof (dsort_itm_t));
+      dk_free (tgt, vect_elems * sizeof (dsort_itm_t));
+      dk_free (offsets, offsets_count * sizeof (uint32));
+      dk_free (vect_copy, vect_elems * sizeof (caddr_t));
+    }
+  return box_num (vect_elems);
+}
+
+caddr_t
+bif_rowvector_digit_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rowvector_sort_imp (qst, err_ret, args, "rowvector_digit_sort", 'D');
+}
+
 void
 box_dict_iterator_serialize (xml_entity_t * xe, dk_session_t * ses)
 {
@@ -3958,5 +4118,6 @@ xslt_init (void)
   bif_define ("dict_to_vector", bif_dict_to_vector);
   bif_define ("gvector_sort", bif_gvector_sort);
   bif_define ("gvector_digit_sort", bif_gvector_digit_sort);
+  bif_define ("rowvector_digit_sort", bif_rowvector_digit_sort);
 }
 
