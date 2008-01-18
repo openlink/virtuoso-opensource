@@ -293,11 +293,11 @@ bif_date_diff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   TIMESTAMP_STRUCT ts2;
   /* BELOW OVERFLOWS on 32 bit long.  Numbers used for computing difference,
    * hence this works when difference below 2**21 = 34 years */
-  long s1 = DT_DAY (dt1) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
-  long s2 = DT_DAY (dt2) * 24 * 60 * 60 + DT_HOUR (dt2) * 60 * 60 + DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
+  long s1 = (long)DT_DAY (dt1) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
+  long s2 = (long)DT_DAY (dt2) * 24 * 60 * 60 + DT_HOUR (dt2) * 60 * 60 + DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
 
   if (0 == stricmp (unit, "day"))
-    return box_num (DT_DAY (dt2) - DT_DAY (dt1));
+    return box_num ((boxint)DT_DAY (dt2) - (boxint)DT_DAY (dt1));
 
   if (0 == stricmp (unit, "hour"))
     return box_num ((s2 - s1) / (60 * 60));
@@ -312,10 +312,10 @@ bif_date_diff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dt_to_timestamp_struct (dt1, &ts1);
 
   if (0 == stricmp (unit, "month"))
-    return box_num ((ts2.year * 12 + ts2.month) - (ts1.year * 12 + ts1.month));
+    return box_num ((boxint)(ts2.year * 12 + ts2.month) - (boxint)(ts1.year * 12 + ts1.month));
 
   if (0 == stricmp (unit, "year"))
-    return box_num (ts2.year - ts1.year);
+    return box_num ((boxint)ts2.year - (boxint)ts1.year);
 
   if (0 == stricmp (unit, "millisecond"))
     return box_num ((s2 - s1) * 1000 + (ts2.fraction / 1000 - ts1.fraction / 1000));
@@ -370,12 +370,12 @@ bif_timestampdiff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   TIMESTAMP_STRUCT ts2;
   /* BELOW OVERFLOWS on 32 bit long.  Numbers used for computing difference,
    * hence this works when difference below 2**21 = 34 years */
-  long s1 = DT_DAY (dt1) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
-  long s2 = DT_DAY (dt2) * 24 * 60 * 60 + DT_HOUR (dt2) * 60 * 60 + DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
+  long s1 = (long)DT_DAY (dt1) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
+  long s2 = (long)DT_DAY (dt2) * 24 * 60 * 60 + DT_HOUR (dt2) * 60 * 60 + DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
   char *unit = interval_odbc_to_text (long_unit, "timestampdiff");
 
   if (0 == stricmp (unit, "day"))
-    return box_num (DT_DAY (dt2) - DT_DAY (dt1));
+    return box_num ((boxint)DT_DAY (dt2) - (boxint)DT_DAY (dt1));
 
   if (0 == stricmp (unit, "hour"))
     return box_num ((s2 - s1) / (60 * 60));
@@ -390,10 +390,10 @@ bif_timestampdiff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dt_to_timestamp_struct (dt1, &ts1);
 
   if (0 == stricmp (unit, "month"))
-    return box_num ((ts2.year * 12 + ts2.month) - (ts1.year * 12 + ts1.month));
+    return box_num ((boxint)(ts2.year * 12 + ts2.month) - (boxint)(ts1.year * 12 + ts1.month));
 
   if (0 == stricmp (unit, "year"))
-    return box_num (ts2.year - ts1.year);
+    return box_num ((boxint)ts2.year - (boxint)ts1.year);
 
   sqlr_new_error ("22015", "DT004", "Bad interval in timestampdiff: %s.", unit);
   return NULL;
