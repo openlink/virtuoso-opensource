@@ -213,8 +213,8 @@ struct df_elt_s
       bitf_t text_only:1;
       bitf_t is_xcontains:1;
       bitf_t is_locus_first:1;
-      bitf_t gb_status;
-      bitf_t hash_role;
+      bitf_t is_leaf:1;
+      bitf_t hash_role:3;
       /* XPATH & FT members */
       df_elt_t         *text_pred;
       df_elt_t         *xpath_pred;

@@ -417,6 +417,8 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	  return IOP_AT_END;
 	}
 	  inxop_set_iob (iop, itc, buf, qst);
+	  itc_register  (itc, buf);
+	  itc_page_leave (itc, buf);
 	  return DVC_MATCH;
 	}
     }

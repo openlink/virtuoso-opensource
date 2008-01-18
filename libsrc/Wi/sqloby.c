@@ -337,6 +337,8 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
   int is_pk_inx = 0, is_txt_inx = 0;
 
   /* dbe_key_t * prev_key = tb_dfe->_.table.key; */
+  if (DFE_TABLE != tb_dfe->dfe_type)
+    return 0;
   if (!from_ot->ot_oby_ots)
     return 0;
   if (!sqlo_is_seq_in_oby_order (so, from_ot->ot_work_dfe->_.sub.first, tb_dfe))

@@ -433,6 +433,8 @@ sqlo_scenario_summary (df_elt_t * dfe, float cost)
 	    sqlo_print ((" group_by "));
 	  break;
 	}
+      if (elt->dfe_next)
+	sqlo_print ((", "));
     }
   sqlo_print (("\n"));
 }

@@ -404,7 +404,7 @@ sqlo_prepare_inx_int_preds (sqlo_t * so)
   op_table_t * ot = so->so_this_dt;
   DO_SET (df_elt_t *, tb_dfe, &ot->ot_from_dfes)
     {
-      if (DFE_TABLE == tb_dfe->dfe_type && !tb_dfe->dfe_is_placed)
+      if (DFE_TABLE == tb_dfe->dfe_type && !tb_dfe->dfe_is_placed && !tb_dfe->_.table.is_leaf)
 	sqlo_tb_inx_int_preds (so, tb_dfe);
     }
   END_DO_SET();
@@ -453,7 +453,7 @@ sqlo_opts_inx_int (caddr_t * opts)
 {
   int inx, len;
   if (!opts)
-    return 0;
+    return 1;
   len = BOX_ELEMENTS (opts);
   for (inx = 0; inx < len; inx += 2)
     {
@@ -529,6 +529,7 @@ sqlo_place_inx_int_join (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t group,
       DO_SET (df_elt_t *, cp, &dio->dio_table->_.table.col_preds)
 	{
 	  cp->dfe_is_placed = DFE_PLACED;
+	      t_set_pushnew (&dio->dio_table->_.table.all_preds, (void*)cp);
 	  sqlo_place_exp (so, tb_dfe, cp->_.bin.right);
 	}
       END_DO_SET();
@@ -552,6 +553,8 @@ sqlo_place_inx_int_join (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t group,
 	t_set_push (&all_preds, (void*) pred);
     }
   END_DO_SET();
+  /* special thing.  Add the preds that join the branches of the inx int join to all preds of the first tb dfe cause if not, these are marked placed but never unplaced when the inx int join is unplaced, hence the rest of the compilation will proceed with these preds missing and produce an incorrect result. */
+  tb_dfe->_.table.all_preds = t_set_union (all_preds, tb_dfe->_.table.all_preds);
   *after_preds = all_preds;
 }
 
