@@ -413,7 +413,7 @@
           <div class="polls_left_sub1">
             <?vsp
               declare tMin, tMax integer;
-              declare appClass, tClass, tStyle varchar;
+              declare tClass, tStyle varchar;
 
               if (self.pMode = 'MyPolls') {
                 select max(T_COUNT),
@@ -423,9 +423,6 @@
                  where T_DOMAIN_ID = self.domain_id
                    and T_COUNT > 0;
 
-                appClass := '';
-                if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                  appClass := 'app';  
                 for (select T_TAG, T_COUNT
                        from POLLS.WA.TAGS
                       where T_DOMAIN_ID = self.domain_id
@@ -436,7 +433,7 @@
                   tClass := '';
                   if (self.pTag = T_TAG)
                     tClass := 'nolink_a';
-                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', POLLS.WA.tag_id(T_TAG), T_TAG, T_TAG, appClass, SIOC..poll_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
+                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', POLLS.WA.tag_id(T_TAG), T_TAG, T_TAG, 'app', SIOC..poll_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
                 }
               }
               if (self.pMode = 'PublicPolls') {
@@ -557,19 +554,15 @@
                       <td valign="top">
                         <?vsp
                           declare N, id, did integer;
-                          declare appClass, title, actions, tags any;
+                          declare title, actions, tags any;
 
                           id := (control as vspx_row_template).te_column_value('P_ID');
                           did := (control as vspx_row_template).te_column_value('P_DOMAIN_ID');
                           title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
 
-                          appClass := '';
-                          if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                            appClass := 'app';  
-
                           if (POLLS.WA.poll_enable_edit (self.domain_id, self.account_role, id)) {
-                          http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, appClass, SIOC..poll_post_iri (self.domain_id, id), POLLS.WA.stringCut(title, self.pChars)));
+                            http (sprintf ('<div style="float: left; font-weight: bold;"><a id="poll_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'edit\', \'pt_value\', \'%d\');" title="Edit %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, 'app', SIOC..poll_post_iri (self.domain_id, id), POLLS.WA.stringCut(title, self.pChars)));
                           } else {
                             http (sprintf ('<div style="float: left; font-weight: bold;">%s</div>', title));
                           }
@@ -604,7 +597,7 @@
                             http ('<br style="clear: both;" /><i>Tags: ');
                             tags := split_and_decode (tags, 0, '\0\0,');
                             for (N := 0; N < length(tags); N := N + 1) {
-                              http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, POLLS.WA.tag_id (tags[N]), tags[N], tags[N], appClass, SIOC..poll_tag_iri (self.account_id, tags[N]), tags[N]));
+                              http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, POLLS.WA.tag_id (tags[N]), tags[N], tags[N], 'app', SIOC..poll_tag_iri (self.account_id, tags[N]), tags[N]));
                               if (N <> length(tags)-1)
                                 http (' | ');
                             }

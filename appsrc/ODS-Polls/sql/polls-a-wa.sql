@@ -77,14 +77,29 @@ create procedure POLLS.WA.vhost()
   iIsDav := 1;
   if (isnull(strstr(sHost, '/DAV')))
     iIsDav := 0;
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'ods_rule_polls',
+    1,
+    '/polls',
+    vector (),
+    0,
+    '/dataspace/all/polls',
+    vector (),
+    NULL,
+    NULL,
+    2,
+    303
+  );
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rulelist_polls', 1, vector ('ods_rule_polls'));
+
   VHOST_REMOVE(lpath    => '/polls');
   VHOST_DEFINE(lpath    => '/polls',
-               ppath    => concat(sHost, 'www/'),
-               is_dav   => iIsDav,
+               ppath    => '/DAV/VAD/wa/',
+               is_dav   => 1,
                is_brws  => 0,
                vsp_user => 'dba',
-               realm    => 'wa',
-               def_page => 'polls.vspx'
+               opts     => vector ('url_rewrite', 'ods_rulelist_polls')
              );
 }
 ;
@@ -131,6 +146,16 @@ POLLS.WA.exec_no_error('
     method wa_vhost_options () returns any,
     method get_param (in param varchar) returns any
 '
+)
+;
+
+POLLS.WA.exec_no_error (
+  'alter type wa_polls add overriding method wa_addition_urls () returns any'
+)
+;
+
+POLLS.WA.exec_no_error (
+  'alter type wa_polls add overriding method wa_update_instance (in oldValues any, in newValues any) returns any'
 )
 ;
 
@@ -199,10 +224,6 @@ create method wa_new_inst (in login varchar) for wa_polls
   select WAI_ID into iWaiID from WA_INSTANCE where WAI_NAME = self.wa_name;
   self.PollsID := cast(iWaiID as varchar);
   update WA_INSTANCE set WAI_INST = self where WAI_ID = iWaiID;
-
-  declare path varchar;
-  path := sprintf ('/DAV/home/%s/Polls/', login);
-  DB.DBA.DAV_MAKE_DIR (path, iUserID, null, '110100000N');
 
   -- Add a virtual directory for Polls - public www -------------------------
   VHOST_REMOVE(lpath    => concat('/polls/', self.PollsID));
@@ -350,5 +371,31 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_polls
   userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
 
   return concat(POLLS.WA.dav_url2(domainID, userID), 'Polls.rdf');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_addition_urls () for wa_polls
+{
+  return vector (
+    vector (null, null, '/polls', '/DAV/VAD/wa/', 1, 0, null, null, null, null, 'dba', null, null, 0, null, null, vector ('url_rewrite', 'ods_rulelist_polls'), 0)
+  );
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_update_instance (in oldValues any, in newValues any) for wa_polls
+{
+  declare domainID, ownerID integer;
+
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = newValues[0]);
+  ownerID := (select WAM_USER from WA_MEMBER B where WAM_INST = oldValues[0] and WAM_MEMBER_TYPE = 1);
+
+  POLLS.WA.domain_gems_delete (domainID, ownerID, 'Polls', oldValues[0] || '_Gems');
+  POLLS.WA.domain_gems_create (domainID, ownerID);
+
+  return (self as web_app).wa_update_instance (oldValues, newValues);
 }
 ;

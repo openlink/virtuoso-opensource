@@ -311,26 +311,20 @@
                         <td valign="top">
                           <?vsp
                             declare N, id, domain_id integer;
-                            declare appClass, title, title2, tags any;
+                            declare title, title2, tags any;
 
                             id := (control as vspx_row_template).te_rowset[0];
                             domain_id := (control as vspx_row_template).te_rowset[1];
                             title := (control as vspx_row_template).te_rowset[2];
                             title2 := POLLS.WA.stringCut (title, self.pChars);
-                            appClass := '';
-                            if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                              appClass := 'app';  
-                            http (sprintf ('<a id="poll_%d" href="%s" title="%s" class="%s" about="%U">%s</a>', id, POLLS.WA.poll_url (domain_id, id) || sprintf('&sid=%s&realm=%s', self.sid, self.realm), title, appClass, SIOC..poll_post_iri (domain_id, id), title2));
+                            http (sprintf ('<a id="poll_%d" href="%s" title="%s" class="%s" about="%U">%s</a>', id, POLLS.WA.poll_url (domain_id, id) || sprintf('&sid=%s&realm=%s', self.sid, self.realm), title, 'app', SIOC..poll_post_iri (domain_id, id), title2));
 
                             tags := (control as vspx_row_template).te_rowset[3];
                             if (not is_empty_or_null(tags)) {
-                              appClass := '';
-                              if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                                appClass := 'app';  
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
                               for (N := 0; N < length(tags); N := N + 1) {
-                                http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, tags[N], tags[N], tags[N], appClass, SIOC..poll_tag_iri (self.account_id, tags[N]), tags[N]));
+                                http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, tags[N], tags[N], tags[N], 'app', SIOC..poll_tag_iri (self.account_id, tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
                               }
@@ -367,18 +361,15 @@
               <div style="margin-left:3px; margin-top:3px;">
                 <?vsp
                   declare N, tLength, tMax, tMin integer;
-                  declare appClass, tStyle varchar;
+                  declare tStyle varchar;
 
-                  appClass := '';
-                  if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                    appClass := 'app';  
                   tLength := length(self.ds_tags);
                   if (tLength > 2) {
                     tMin := self.ds_tags[0][1];
                     tMax := self.ds_tags[1][1];
                     for (N := 2; N < tLength; N := N + 1) {
                       tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
-                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], appClass, SIOC..poll_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
+                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], 'app', SIOC..poll_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
                     }
                   } else {
                     http ('no tags');

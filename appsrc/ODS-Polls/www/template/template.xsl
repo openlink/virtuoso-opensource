@@ -149,10 +149,10 @@
     <xsl:apply-templates select="vm:init"/>
     <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='Polls'/>
-      <div id="app_area">
+      <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
         <div style="float: left;">
-          <v:url value="--''" format="%s" url="--sprintf ('%spolls.vspx?sid=%s&realm=%s', POLLS.WA.polls_url (self.domain_id), self.sid, self.realm)" xhtml_title="Polls Home">
+            <v:url value="--''" format="%s" url="--POLLS.WA.domain_sioc_url (self.domain_id, self.sid, self.realm)" xhtml_title="Polls Home">
             <v:before-render>
               <![CDATA[
                 control.ufl_value := '<img src="image/pollsbanner_sml.jpg" border="0" alt="Polls Home" />';
@@ -181,13 +181,7 @@
       </div>
         <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
           <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
-            <?vsp 
-              if (self.domain_id > 0) {
-                http (concat (POLLS.WA.domain_name (self.domain_id), ' (', POLLS.WA.account_fullName (POLLS.WA.domain_owner_id (self.domain_id)), ')')); 
-              } else {
-                http ('Public Polls'); 
-              }
-            ?>
+            <?vsp http (POLLS.WA.banner_links (self.domain_id, self.sid, self.realm)); ?>
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
         <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">

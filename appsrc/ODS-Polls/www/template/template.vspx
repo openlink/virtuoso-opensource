@@ -52,8 +52,8 @@
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         
-          if (<?V cast(get_keyword('app', self.settings, '0') as integer) ?> == 1)
-            gererateAPP('app_area', {});
+          if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
+            gererateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
             
       		// init tabs
           showTab('s', 2, 0);
@@ -85,8 +85,8 @@
           self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword('user_role', aSessInfo, '');
           self.accountName := get_keyword('user_name', aSessInfo, '');
-          self.owner_id := BMK.WA.domain_owner_id (self.domain_id);
-          self.ownerName := BMK.WA.domain_owner_name (self.domain_id);
+          self.owner_id := POLLS.WA.domain_owner_id (self.domain_id);
+          self.ownerName := POLLS.WA.domain_owner_name (self.domain_id);
           self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), POLLS.WA.settings (self.account_id));
         ]]>
       </v:on-init>

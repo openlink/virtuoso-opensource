@@ -323,6 +323,33 @@ create procedure POLLS.WA.xslt_full(
 
 -------------------------------------------------------------------------------
 --
+create procedure POLLS.WA.url_fix (
+  in S varchar,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare T varchar;
+
+  T := '&';
+  if (isnull (strchr (S, '?')))
+  {
+  T := '?';
+  }
+  if (not is_empty_or_null (sid))
+  {
+    S := S || T || 'sid=' || sid;
+    T := '&';
+  }
+  if (not is_empty_or_null (realm))
+  {
+    S := S || T || 'realm=' || realm;
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure POLLS.WA.export_rss_sqlx_int(
   in domain_id integer,
   in account_id integer)
@@ -556,6 +583,9 @@ create procedure POLLS.WA.domain_owner_name (
 create procedure POLLS.WA.domain_delete (
   in domain_id integer)
 {
+  delete from POLLS.WA.POLL where P_DOMAIN_ID = domain_id;
+  delete from POLLS.WA.TAGS where T_DOMAIN_ID = domain_id;
+
   VHOST_REMOVE(lpath => concat('/polls/', cast(domain_id as varchar)));
   return 1;
 }
@@ -614,6 +644,20 @@ create procedure POLLS.WA.domain_ping (
   for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do {
     ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), POLLS.WA.sioc_url (domain_id));
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.domain_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U/polls/%U', DB.DBA.wa_cname (), POLLS.WA.domain_owner_name (domain_id), POLLS.WA.domain_name (domain_id));
+  return POLLS.WA.url_fix (S, sid, realm);
 }
 ;
 
@@ -686,6 +730,20 @@ create procedure POLLS.WA.account_fullName (
   in account_id integer)
 {
   return coalesce((select coalesce(U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.account_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), POLLS.WA.domain_owner_name (domain_id));
+  return POLLS.WA.url_fix (S, sid, realm);
 }
 ;
 
@@ -1032,6 +1090,27 @@ create procedure POLLS.WA.geo_url (
     if ((not isnull(WAUI_LNG)) and (not isnull(WAUI_LAT)))
       return sprintf('\n    <meta name="ICBM" content="%.2f, %.2f"><meta name="DC.title" content="%s">', WAUI_LNG, WAUI_LAT, POLLS.WA.domain_name (domain_id));
   return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.banner_links (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  if (domain_id <= 0)
+    return 'Public Polls';
+
+  return sprintf ('<a href="%s" title="%s">%s</a> (<a href="%s" title="%s">%s</a>)',
+                  POLLS.WA.domain_sioc_url (domain_id, sid, realm),
+                  POLLS.WA.domain_name (domain_id),
+                  POLLS.WA.domain_name (domain_id),
+                  POLLS.WA.account_sioc_url (domain_id, sid, realm),
+                  POLLS.WA.account_fullName (POLLS.WA.domain_owner_id (domain_id)),
+                  POLLS.WA.account_fullName (POLLS.WA.domain_owner_id (domain_id))
+                 );
 }
 ;
 

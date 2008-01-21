@@ -218,7 +218,7 @@ create procedure POLLS.WA.POLL_P_NAME_int (inout vtb any, inout d_id any, in mod
   {
     vt_batch_feed (vtb, sprintf('^R%d', P_DOMAIN_ID), mode);
 
-    vt_batch_feed (vtb, sprintf('^UID%d', POLLS.WA.domain_owner_id (P_DOMAIN_ID)), mode);
+    vt_batch_feed (vtb, sprintf('^UID%d', coalesce (POLLS.WA.domain_owner_id (P_DOMAIN_ID), 0)), mode);
 
     vt_batch_feed (vtb, coalesce(P_NAME, ''), mode);
 
