@@ -4818,8 +4818,7 @@ http_request (char * host, caddr_t * req, caddr_t * body, caddr_t * err_ret,
 
 
 void
-http_proxy_header (ws_connection_t * ws, caddr_t * head,
-		    int len)
+http_proxy_header (ws_connection_t * ws, caddr_t * head, int len)
 {
   int len_done = 0;
   int inx;
@@ -4924,38 +4923,9 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 
   CATCH_WRITE_FAIL (ws->ws_session)
     {
-      int bytes = ses->dks_in_fill - ses->dks_in_read;
-      /*      if (len != -1)*/
       http_proxy_header (ws, head, 0);
-      /*      if (len == -1)
-	      {
-	      http_proxy_header (ws, head, strses_length (ws->ws_strses));
-	      } */
       if (strstr (req [0], "HEAD "))  /* If HEAD method do not send body */
-	len = -1;
-
-      if (len != -1 || close) /* If have content length or connection should be closed by peer */
-	{
-	  session_buffered_write (ws->ws_session, ses->dks_in_buffer + ses->dks_in_read,
-	      bytes);
-	  if (len != -1) len -= bytes;
-
-	  for (;;)
-	    {
-	      if (0 == len)
-		break;
-	      bytes = dks_next_buffer (ses);
-	      if (len != -1)
-		len -= MIN (bytes, len);
-	      if (!bytes)
-		{
-		  if (len != -1)
-		    error = 1;
-		  break;
-		}
-	      session_buffered_write (ws->ws_session, ses->dks_in_buffer, bytes);
-	    }
-	}
+	;
       else if (chunked) /* If have chunked encoding */
 	{
 	  char line [4096];
@@ -4966,9 +4936,9 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 	      for (;;)
 		{
 		  readed = dks_read_line (ses, line, sizeof (line));
-		  if (1 != sscanf (line,"%lx", (&icnk)))
+		  if (1 != sscanf (line,"%lx", (&icnk))) /* no chunk header */
 		    break;
-		  if (!icnk && readed)
+		  if (!icnk && readed) /* chunk trailer (last) */
 		    break;
 		  session_buffered_write (ws->ws_session, line, readed);
 		  while (icnk > 0)
@@ -4983,7 +4953,29 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 		}
 	    }
 	  END_READ_FAIL (ses);
-	  session_buffered_write (ws->ws_session, "\r\n0\r\n", 5); /* Write last zero chunk */
+	  session_buffered_write (ws->ws_session, "0\r\n\r\n", 5); /* Write last zero chunk */
+	}
+      else if (len != -1 || close) /* If have content length or connection should be closed by peer */
+	{
+	  char tmp [4096];
+	  int to_read = len, to_read_len = sizeof (tmp), readed = 0;
+
+	  CATCH_READ_FAIL (ses)
+	    {
+	      do
+		{
+		  if (len > 0 && to_read < to_read_len)
+		    to_read_len = to_read;
+		  readed = session_buffered_read (ses, tmp, to_read_len);
+		  if (readed < 1)
+		    break;
+		  session_buffered_write (ws->ws_session, tmp, readed);
+		  if (len > 0)
+		    to_read -= readed;
+		}
+	      while (close || to_read > 0);
+	    }
+	  END_READ_FAIL (ses);
 	}
       session_flush (ws->ws_session);
     }
