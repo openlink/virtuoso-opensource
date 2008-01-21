@@ -4586,7 +4586,7 @@ create procedure DB.DBA.RDF_QM_CHANGE_OPT (in cmdlist any)
       http (')', exectext);
       STATE := '00000';
       warnings := exec (string_output_string (exectext), STATE, MESSAGE, arglist, md, rs);
-      dbg_obj_princ ('warnings = ', warnings);
+      -- dbg_obj_princ ('warnings = ', warnings);
       if (193 = __tag (warnings))
         {
           foreach (any warning in warnings) do
