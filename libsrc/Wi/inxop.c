@@ -395,6 +395,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 		  itc_page_leave (itc, buf);
 		  return IOP_AT_END;
 		}
+	      inxop_set_iob (iop, itc, buf, qst);
 	    }
 	      if (DVC_GREATER == rc)
 		{

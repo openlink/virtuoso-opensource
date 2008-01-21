@@ -1094,6 +1094,7 @@ itc_init_bm_search (it_cursor_t * itc)
   int n_specs = 0;
   dbe_key_t * key = itc->itc_insert_key;
   search_spec_t * bm_spec = NULL;
+  memset (&itc->itc_bp, 0, sizeof (itc->itc_bp));
   itc->itc_bm_inx_spec = null_ksp;
   while (sp)
     {
@@ -1319,6 +1320,7 @@ pl_ce_set (placeholder_t * itc, db_buf_t ce, short ce_len, bitno_t bm_start, bit
 	inx--;
       itc->itc_bp.bp_value = ce_start + SA_REF (arr, inx);
       itc->itc_bp.bp_pos_in_ce = inx;
+      itc->itc_bp.bp_ce_type = CE_ARRAY;
       return DVC_LESS;
     }
   else
@@ -1462,6 +1464,7 @@ pl_set_at_bit (placeholder_t * pl, db_buf_t bm, short bm_len, bitno_t bm_start, 
 	  prev_ce = ce;
 	  ce += ce_len;
 	}
+      pl->itc_bp.bp_ce_offset = prev_ce - bm;
       pl_ce_set (pl, prev_ce, CE_LENGTH (prev_ce), bm_start, BITNO_MAX, 0);
       return;
     }
@@ -1501,6 +1504,7 @@ pl_set_at_bit (placeholder_t * pl, db_buf_t bm, short bm_len, bitno_t bm_start, 
 		  pl->itc_bp.bp_at_end = 1;
 		  return;
 		}
+	      pl->itc_bp.bp_ce_offset = ce - bm;
 	      pl_ce_set (pl, ce, CE_LENGTH (ce), bm_start, BITNO_MIN, 1);
 	      return;
 	    }
