@@ -343,7 +343,7 @@ function dd(txt){
     </xsl:template>
     <xsl:template match="vm:geo-link">
       <?vsp
-        if (self.e_lat is not null and self.e_lng is not null) {
+        if ( 1=0 and self.e_lat is not null and self.e_lng is not null) {
       ?>
 	<div>
 	    <a href="http://geourl.org/near?p=<?U sprintf ('http://%s/nntpf', self.host) ?>" class="{local-name()}">

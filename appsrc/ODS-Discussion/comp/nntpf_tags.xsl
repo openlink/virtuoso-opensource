@@ -37,7 +37,7 @@
                {
                ?>
                <input type="text" id="new_tag" style="width:140px"/>
-               <a href="javascript:void(0)" onClick="doTag( $$('curr_ngroup'),$$('curr_post'),$$('new_tag'),'add'); return false"><img src="images/add_10.png" alt="Add Tag" title="Add Tag" border="0" /></a>
+               <a href="javascript:void(0)" onClick="doTag( $v('curr_ngroup'),$v('curr_post'),$v('new_tag'),'add'); return false"><img src="images/add_10.png" alt="Add Tag" title="Add Tag" border="0" /></a>
                <?vsp
                }else
                {
@@ -101,7 +101,7 @@
                  if(!isAdminTag)
                  {
               listHTML=listHTML+
-                            '<a href="javascript:void(0)" onclick="doTag( $$(\'curr_ngroup\'),$$(\'curr_post\'),\''+tagsArr[i]+'\',\'del\'); return false"><img src="images/del_10.png" alt="Delete Tag" title="Delete Tag" border="0"/></a>';
+                            '<a href="javascript:void(0)" onclick="doTag( $v(\'curr_ngroup\'),$v(\'curr_post\'),\''+tagsArr[i]+'\',\'del\'); return false"><img src="images/del_10.png" alt="Delete Tag" title="Delete Tag" border="0"/></a>';
                  }
               <?vsp
                }
@@ -117,7 +117,7 @@
             else
             {
             listHTML='<a href="javascript:void(0)" onClick="showTag(\''+res+'\');" title="Show items with tag '+res+'"><b>'+res+'</b></a>'+
-                     '<a href="javascript:void(0)" onclick="doTag( $$(\'curr_ngroup\'),$$(\'curr_post\'),\''+res+'\',\'del\'); return false"><img src="images/del_10.png" alt="Delete Tag" title="Delete Tag" border="0"/></a>';
+                     '<a href="javascript:void(0)" onclick="doTag( $v(\'curr_ngroup\'),$v(\'curr_post\'),\''+res+'\',\'del\'); return false"><img src="images/del_10.png" alt="Delete Tag" title="Delete Tag" border="0"/></a>';
             }
            }
            $('tagslist_div').innerHTML=listHTML;
@@ -127,7 +127,7 @@
     
     function tagsInit()
     { 
-     genTagsList($$('curr_ngroup'),$$('curr_post'));
+     genTagsList($v('curr_ngroup'),$v('curr_post'));
      
 
                if(typeof($('show_tagsblock'))!='undefined' && $('show_tagsblock').value==1)

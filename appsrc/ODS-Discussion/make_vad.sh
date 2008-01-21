@@ -153,7 +153,7 @@ do_command_safe () {
       LOG "PASSED: $command"
     fi
   fi
-  rm "${LOGFILE}.tmp" 2>/dev/null
+  $myrm -f "${LOGFILE}.tmp" 2>/dev/null
 }
 
 do_command() {
@@ -172,14 +172,15 @@ do_command() {
 }
 
 directory_clean() {
-  $myrm -r vad 2>/dev/null
-  $myrm vad.* 2>/dev/null
-  $myrm make_vad.log 2>/dev/null
-  $myrm virtuoso.db 2>/dev/null
-  $myrm virtuoso.trx 2>/dev/null
-  $myrm virtuoso.tdb 2>/dev/null
-  $myrm virtuoso.log 2>/dev/null
-  $myrm virtuoso.ini 2>/dev/null
+  $myrm -f -r vad 2>/dev/null
+  $myrm -f vad.* 2>/dev/null
+  $myrm -f make_nntpf_vad.log 2>/dev/null
+  $myrm -f make_nntpf_vad.xml 2>/dev/null
+  $myrm -f virtuoso.db 2>/dev/null
+  $myrm -f virtuoso.trx 2>/dev/null
+  $myrm -f virtuoso.tdb 2>/dev/null
+  $myrm -f virtuoso.log 2>/dev/null
+  $myrm -f virtuoso.ini 2>/dev/null
 }
 
 directory_init() {
