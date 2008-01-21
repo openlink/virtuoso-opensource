@@ -515,6 +515,8 @@ SPART *
 spar_make_topmost_qm_sql (sparp_t *sparp)
 {
   dk_set_t *acc_ptr = &(sparp->sparp_env->spare_acc_qm_sqls);
+  SPART **ops;
+  int ctr;
   t_set_push (acc_ptr,
     spar_make_qm_sql (sparp, "DB.DBA.RDF_QM_APPLY_CHANGES",
       (SPART **)t_list (2,
@@ -523,10 +525,34 @@ spar_make_topmost_qm_sql (sparp_t *sparp)
         spar_make_vector_qm_sql (sparp, 
           (SPART **)t_revlist_to_array (sparp->sparp_env->spare_qm_affected_jso_iris)) ),
       NULL ) );
+  ops = (SPART **)t_revlist_to_array (acc_ptr[0]);
+  DO_BOX_FAST (SPART *, op, ctr, ops)
+    {
+      if (SPAR_QM_SQL_FUNCALL != SPART_TYPE (op))
+        goto generic_change; /* see below */
+    }
+  END_DO_BOX_FAST;
+  DO_BOX_FAST (SPART *, op, ctr, ops)
+    {
+      SPART *fixed = spar_make_vector_qm_sql (sparp, op->_.qm_sql_funcall.fixed);
+      SPART **arlst;
+      if (NULL == op->_.qm_sql_funcall.named)
+        arlst = (SPART **)t_list (2, op->_.qm_sql_funcall.fname, fixed);
+      else
+        arlst = (SPART **)t_list (3, op->_.qm_sql_funcall.fname, fixed,
+          spar_make_vector_qm_sql (sparp, op->_.qm_sql_funcall.named) );
+      ops[ctr] = spar_make_vector_qm_sql (sparp, arlst);
+    }
+  END_DO_BOX_FAST;
+  return spar_make_qm_sql (sparp, "DB.DBA.RDF_QM_CHANGE_OPT",
+    (SPART **)t_list (1,
+      spar_make_vector_qm_sql (sparp, ops) ),
+    NULL );
+
+generic_change:
   return spar_make_qm_sql (sparp, "DB.DBA.RDF_QM_CHANGE",
     (SPART **)t_list (1,
-      spar_make_vector_qm_sql (sparp, 
-        (SPART **)t_revlist_to_array (acc_ptr[0]) ) ),
+      spar_make_vector_qm_sql (sparp, ops) ),
     NULL );
 }
 

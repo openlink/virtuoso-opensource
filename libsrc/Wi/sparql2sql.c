@@ -19,8 +19,8 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
- */
-
+ *  
+*/
 #include "sparql2sql.h"
 #include "sqlparext.h"
 #include "arith.h"
@@ -145,6 +145,13 @@ scan_for_children:
         fields[0] = tree->_.bin_exp.left;
         break;
       }
+    case ORDER_L:
+      {
+        sub_expns = fields;
+	sub_expn_count = 1;
+        fields[0] = tree->_.oby.expn;
+        break;
+      }
     default:
       {
         spar_error (sparp, "Internal SPARQL compiler error: unsupported subexpression type %d", tree->type);
@@ -264,14 +271,36 @@ sparp_gp_trav (sparp_t *sparp, SPART *root, void *common_env,
   return (res & SPAR_GPT_COMPLETED);
 }
 
+void
+sparp_gp_localtrav_treelist (sparp_t *sparp, SPART **treelist,
+  void *init_stack_env, void *common_env,
+  sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk,
+  sparp_gp_trav_cbk_t *literal_cbk
+ )
+{
+  int ctr;
+  sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
+  memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+  stss[0].sts_env = init_stack_env;
+  stss[1].sts_curr_array = treelist;
+  DO_BOX_FAST (SPART *, tree, ctr, treelist)
+    {
+      stss[1].sts_ofs_of_curr_in_array = ctr;
+      sparp_gp_trav_int (sparp, tree, stss+1, common_env,
+        gp_in_cbk, gp_out_cbk, expn_in_cbk, expn_out_cbk, literal_cbk );
+    }
+  END_DO_BOX_FAST;
+}
+
 /* Composing list of retvals instead of '*'.
 \c trav_env_this is not used.
 \c common_env points to dk_set_t of collected distinct variable names. */
-
-int sparp_gp_trav_list_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+int
+sparp_gp_trav_list_expn_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   caddr_t varname;
-  if (SPAR_VARIABLE != curr->type) /* Not a variable ? -- nothing to do */
+  if (SPAR_VARIABLE != curr->type)
     return 0;
   varname = curr->_.var.vname;
   if (SPART_VARNAME_IS_GLOB(varname)) /* Query run-time env or external query param ? -- not in result-set */
@@ -284,6 +313,40 @@ int sparp_gp_trav_list_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
   END_DO_SET()
   t_set_push ((dk_set_t *)(common_env), varname);
   return SPAR_GPT_NODOWN;
+}
+
+int
+sparp_gp_trav_list_subquery_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  int ctr;
+  if (SPAR_GP != curr->type)
+    return 0;
+  if (SELECT_L != curr->_.gp.subtype)
+    return 0;
+  DO_BOX_FAST (SPART *, retval, ctr, curr->_.gp.subquery->_.req_top.retvals)
+    {
+      caddr_t name;
+      switch (SPART_TYPE (retval))
+        {
+          case SPAR_VARIABLE: name = retval->_.var.vname; break;
+          case SPAR_ALIAS: name = retval->_.alias.aname; break;
+          default: name = NULL;
+        }
+      if (NULL == name)
+        goto ignore_retval_name; /* see below */
+      if (SPART_VARNAME_IS_GLOB(name))
+        goto ignore_retval_name; /* see below */
+      DO_SET (caddr_t, listed, (dk_set_t *)(common_env))
+        {
+          if (!strcmp (listed, name))
+            goto ignore_retval_name; /* see below */
+        }
+      END_DO_SET()
+      t_set_push ((dk_set_t *)(common_env), name);
+ignore_retval_name: ;
+    }
+  END_DO_BOX_FAST;
+  return 0;
 }
 
 int sparp_gp_trav_list_nonaggregate_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
@@ -306,56 +369,32 @@ int sparp_gp_trav_list_nonaggregate_retvals (sparp_t *sparp, SPART *curr, sparp_
   return SPAR_GPT_NODOWN;
 }
 
-int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
-{
-  caddr_t varname;
-  if (SPAR_VARIABLE != curr->type) /* Not a variable ? -- nothing to do */
-    return 0;
-  varname = curr->_.var.vname;
-  if (SPART_VARNAME_IS_GLOB(varname)) /* Query run-time env or external query param ? -- not in result-set */
-    return 0;
-  sts_this->sts_curr_array[sts_this->sts_ofs_of_curr_in_array] =
-    spar_make_funcall (sparp, 1, t_box_dv_uname_string ("SPECIAL::bif:MAX"), (SPART **)t_list (1, curr));
-  return 0;
-}
-
 void
-sparp_expand_top_retvals (sparp_t *sparp)
+sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars)
 {
   sparp_env_t *env = sparp->sparp_env;
-  caddr_t retselid = sparp->sparp_expr->_.req_top.retselid;
+  caddr_t retselid = query->_.req_top.retselid;
   dk_set_t names = NULL;
   dk_set_t new_vars = NULL;
-  SPART **old_retvals = sparp->sparp_expr->_.req_top.retvals;
-  if (IS_BOX_POINTER (old_retvals))
+  SPART **retvals = query->_.req_top.retvals;
+  if (IS_BOX_POINTER (retvals))
     {
-      int ctr;
-      caddr_t retvalmode_name, formatmode_name;
-      sparp_gp_trav_cbk_t *expn_out_cbk;
+      if (safely_copy_all_vars)
+        query->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, retvals, query->_.req_top.pattern); /* No clonig equivs here but no equivs at this moment at all */
+      else
+        query->_.req_top.orig_retvals = t_box_copy (retvals);
       if (0 == sparp->sparp_query_uses_aggregates)
     return;
-      retvalmode_name = sparp->sparp_expr->_.req_top.retvalmode_name;
-      formatmode_name = sparp->sparp_expr->_.req_top.formatmode_name;
-      if (((SELECT_L == sparp->sparp_expr->_.req_top.subtype) ||
-        (DISTINCT_L == sparp->sparp_expr->_.req_top.subtype) ) &&
-        (NULL == formatmode_name) &&
-        ((NULL == retvalmode_name) ||
-          (SSG_VALMODE_SQLVAL == ssg_find_valmode_by_name (retvalmode_name)) ) )
-        expn_out_cbk = NULL; /* For plain selects in SQL valmode there's no need in wrapping grouping vars into fake MAX */
-      else
-        expn_out_cbk = sparp_gp_trav_wrap_vars_in_max; /* In all other cases wrapping is needed to hide mismatch between grouping expns and retval expns */
-      DO_BOX_FAST (SPART *, retexpn, ctr, old_retvals)
-        {
-          sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
-          memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
-          stss[1].sts_curr_array = old_retvals;
-          stss[1].sts_ofs_of_curr_in_array = ctr;
-          sparp_gp_trav_int (sparp, retexpn, stss+1, &names,
+      sparp_gp_localtrav_treelist (sparp, retvals,
+        NULL, &names,
             NULL, NULL,
-            sparp_gp_trav_list_nonaggregate_retvals, expn_out_cbk,
+        sparp_gp_trav_list_nonaggregate_retvals, NULL,
+        NULL );
+      sparp_gp_localtrav_treelist (sparp, query->_.req_top.order,
+        NULL, &names,
+        NULL, NULL,
+        sparp_gp_trav_list_nonaggregate_retvals, NULL,
             NULL );
-        }
-      END_DO_BOX_FAST;
       t_set_push (&(env->spare_selids), retselid);
       while (NULL != names)
         {
@@ -364,13 +403,17 @@ sparp_expand_top_retvals (sparp_t *sparp)
           t_set_push (&new_vars, var);
         }  
       t_set_pop (&(env->spare_selids));
-      sparp->sparp_expr->_.req_top.groupings = (SPART **)t_revlist_to_array (new_vars);
+      query->_.req_top.groupings = (SPART **)t_revlist_to_array (new_vars);
       return;
     }
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, &names,
-    NULL, NULL,
-    sparp_gp_trav_list_retvals, NULL,
+  {
+    sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
+    memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+    sparp_gp_trav_int (sparp, query->_.req_top.pattern, stss+1, &names,
+      sparp_gp_trav_list_subquery_retvals, NULL,
+      sparp_gp_trav_list_expn_retvals, NULL,
     NULL );
+  }
   t_set_push (&(env->spare_selids), retselid);
   while (NULL != names)
     {
@@ -379,16 +422,21 @@ sparp_expand_top_retvals (sparp_t *sparp)
       t_set_push (&new_vars, var);
     }  
   t_set_pop (&(env->spare_selids));
-  if ((SPART **)_STAR == old_retvals)
+  if ((SPART **)_STAR == retvals)
     {
       if (NULL == new_vars)
         {
           if (env->spare_signal_void_variables)
             spar_error (sparp, "The list of return values contains '*' but the pattern does not contain variables");
           else
-            t_set_push (&new_vars, spartlist (sparp, 3, SPAR_ALIAS, t_box_num (1), t_box_dv_short_string ("_star_fake")));
+            t_set_push (&new_vars, spartlist (sparp, 4, SPAR_ALIAS,
+              t_box_num (1), t_box_dv_short_string ("_star_fake"), SSG_VALMODE_AUTO ) );
         }
-      sparp->sparp_expr->_.req_top.retvals = (SPART **)t_list_to_array (new_vars);
+      query->_.req_top.retvals = retvals = (SPART **)t_list_to_array (new_vars);
+      if (safely_copy_all_vars)
+        query->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, retvals, query->_.req_top.pattern); /* No clonig equivs here but no equivs at this moment at all */
+      else
+        query->_.req_top.orig_retvals = t_box_copy (retvals);
     }
 /*  else if ((SPART **)COUNT_L == old_retvals)
     {
@@ -399,6 +447,52 @@ sparp_expand_top_retvals (sparp_t *sparp)
     }*/
   else
     spar_internal_error (sparp, "sparp_" "expand_top_retvals () failed to process special result-set");
+}
+
+int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  caddr_t varname;
+  ssg_valmode_t native;
+  if ((SPAR_FUNCALL == curr->type) && curr->_.funcall.agg_mode)
+    return SPAR_GPT_NODOWN;
+  if (SPAR_VARIABLE != curr->type) /* Not a variable ? -- nothing to do */
+    return SPAR_GPT_ENV_PUSH; /* To preserve sts_this->sts_curr_array and sts_this->sts_ofs_of_curr_in_array for wrapper of vars into fake MAX() */
+  varname = curr->_.var.vname;
+  if (SPART_VARNAME_IS_GLOB(varname)) /* Query run-time env or external query param ? -- not in result-set */
+    return SPAR_GPT_NODOWN;
+  native = sparp_expn_native_valmode (sparp, curr);
+  if (IS_BOX_POINTER (native) && native->qmfIsBijection)
+    return SPAR_GPT_NODOWN;
+  sts_this->sts_curr_array[sts_this->sts_ofs_of_curr_in_array] =
+    spartlist (sparp, 4, SPAR_ALIAS,
+      spar_make_funcall (sparp, 1, t_box_dv_uname_string ("SPECIAL::bif:MAX"), (SPART **)t_list (1, curr)),
+      varname, SSG_VALMODE_AUTO );
+  return SPAR_GPT_NODOWN;
+}
+
+void
+sparp_wpar_retvars_in_max (sparp_t *sparp, SPART *query)
+{
+  sparp_env_t *env = sparp->sparp_env;
+  caddr_t retselid = query->_.req_top.retselid;
+  SPART **retvals = query->_.req_top.retvals;
+  int ctr;
+  caddr_t retvalmode_name, formatmode_name;
+  if (0 == sparp->sparp_query_uses_aggregates)
+    return;
+  retvalmode_name = query->_.req_top.retvalmode_name;
+  formatmode_name = query->_.req_top.formatmode_name;
+  if (((SELECT_L == query->_.req_top.subtype) ||
+    (DISTINCT_L == query->_.req_top.subtype) ) &&
+    (NULL == formatmode_name) &&
+    ((NULL == retvalmode_name) ||
+    (SSG_VALMODE_SQLVAL == ssg_find_valmode_by_name (retvalmode_name)) ) )
+  return;
+  sparp_gp_localtrav_treelist (sparp, retvals,
+    NULL, NULL,
+    NULL, NULL,
+    sparp_gp_trav_wrap_vars_in_max, NULL,
+    NULL );
 }
 
 
@@ -415,6 +509,39 @@ sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *st
     {
     case SPAR_GP:
       sts_this[0].sts_env = curr;
+      if ((SELECT_L == curr->_.gp.subtype) && (0 == curr->_.gp.equiv_count))
+        {
+          int ctr;
+          sparp_t *sub_sparp = t_box_copy ((caddr_t)sparp);
+          sub_sparp->sparp_expr = curr->_.gp.subquery;
+          sub_sparp->sparp_env = curr->_.gp.subquery->_.req_top.shared_spare;
+          sparp_rewrite_all (sub_sparp, 1);
+          sparp->sparp_equivs = sub_sparp->sparp_equivs;
+          sparp->sparp_equiv_count = sub_sparp->sparp_equiv_count;
+          sparp->sparp_cloning_serial = sub_sparp->sparp_cloning_serial;
+          DO_BOX_FAST (SPART *, retval, ctr, curr->_.gp.subquery->_.req_top.orig_retvals)
+            {
+              caddr_t name;
+              switch (SPART_TYPE (retval))
+                {
+                  case SPAR_VARIABLE:
+                    name = retval->_.var.vname;
+                    curr->_.gp.subquery->_.req_top.orig_retvals[ctr] = 
+                      retval = spartlist (sparp, 4, SPAR_ALIAS, retval, name, SSG_VALMODE_AUTO);
+                    break;
+                  case SPAR_ALIAS:
+                    name = retval->_.alias.aname; break;
+                  default: name = NULL;
+                }
+              if (NULL == name)
+                goto ignore_retval_name; /* see below */
+              if (SPART_VARNAME_IS_GLOB(name))
+                goto ignore_retval_name; /* see below */
+              sparp_equiv_get (sparp, curr, (SPART *)name, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_SUBQUERY_USE);
+ignore_retval_name: ;
+            }
+          END_DO_BOX_FAST;
+        }
       return SPAR_GPT_ENV_PUSH;
     case SPAR_TRIPLE: break;
     default: return 0;
@@ -499,6 +626,14 @@ sparp_count_usages (sparp_t *sparp)
     sparp_gp_trav_cu_in_triples, NULL,
     sparp_gp_trav_cu_in_expns, NULL,
     NULL );
+  DO_BOX_FAST (SPART *, expn, ctr, sparp->sparp_expr->_.req_top.orig_retvals)
+    {
+      sparp_gp_trav (sparp, expn, sparp->sparp_expr->_.req_top.pattern,
+        NULL, NULL,
+        sparp_gp_trav_cu_in_retvals, NULL,
+        NULL );
+    }
+  END_DO_BOX_FAST;
   DO_BOX_FAST (SPART *, expn, ctr, sparp->sparp_expr->_.req_top.retvals)
     {
       sparp_gp_trav (sparp, expn, sparp->sparp_expr->_.req_top.pattern,
@@ -633,7 +768,7 @@ sparp_optimize_BOP_OR_filter_walk_lvar (SPART *lvar, so_BOP_OR_filter_ctx_t *ctx
     ctx->bofc_var_sample = lvar;
   else if (strcmp (ctx->bofc_var_sample->_.var.vname, lvar->_.var.vname))
     {
-      ctx->bofc_var_sample = (ptrlong)1;
+      ctx->bofc_var_sample = (SPART *)((ptrlong)1);
       return 1; /* for optimization, there should be _same_ variable at left */
     }
   return 0;
@@ -722,7 +857,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *curr, SPART *filt)
     new_rvr.rvrRestrictions |= SPART_VARR_IS_REF | SPART_VARR_IS_IRI;
   new_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL | SPART_VARR_SPRINTFF;
   new_rvr.rvrSprintffCount = dk_set_length (ctx.bofc_strings);
-  new_rvr.rvrSprintffs = t_alloc_box (DV_ARRAY_OF_POINTER, new_rvr.rvrSprintffCount * sizeof(caddr_t));
+  new_rvr.rvrSprintffs = (caddr_t *)t_alloc_box (DV_ARRAY_OF_POINTER, new_rvr.rvrSprintffCount * sizeof(caddr_t));
   for (sff_ctr = new_rvr.rvrSprintffCount; sff_ctr--; /* no step */)
     new_rvr.rvrSprintffs[sff_ctr] = sprintff_from_strg (dk_set_pop (&(ctx.bofc_strings)), 1);
   sparp_equiv_tighten (sparp, eq_l, &new_rvr, ~0);
@@ -737,6 +872,11 @@ int
 spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r)
 {
   int ret = 0;
+  ptrlong tree_restr_bits = sparp_restr_bits_of_expn (sparp, r);
+  eq_l->e_rvr.rvrRestrictions |= (tree_restr_bits & (
+    SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK |
+    SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
+    SPART_VARR_NOT_NULL | SPART_VARR_ALWAYS_NULL ) );
   switch (SPART_TYPE (r))
     {
     case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
@@ -785,11 +925,46 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
       {
         SPART *l = filt->_.bin_exp.left;
         SPART *r = filt->_.bin_exp.right;
-        if (SPAR_IS_BLANK_OR_VAR (l))
+        switch (SPART_TYPE (l))
+          {
+          case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
           {
 		sparp_equiv_t *eq_l = sparp_equiv_get (sparp, curr, l, 0);
             return spar_var_eq_to_equiv (sparp, curr, eq_l, r);
 	      }
+          case SPAR_QNAME:
+            {
+              caddr_t lval = l->_.lit.val;
+              if ((SPAR_BUILT_IN_CALL == SPART_TYPE (r)) &&
+                (DATATYPE_L == r->_.builtin.btype) )
+                {
+                  SPART *rarg1 = r->_.builtin.args[0];
+	          if (SPAR_IS_BLANK_OR_VAR (rarg1))
+                    {
+                      sparp_equiv_t *rarg1_eq = sparp_equiv_get (sparp, curr, rarg1, 0);
+                      rarg1_eq->e_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL;
+                      if (
+                        (lval == uname_xmlschema_ns_uri_hash_boolean) ||
+                        (lval == uname_xmlschema_ns_uri_hash_string) )
+                        {
+                          rarg1_eq->e_rvr.rvrRestrictions |= SPART_VARR_IS_LIT;
+                        }
+                      else if (
+                        (lval == uname_xmlschema_ns_uri_hash_date) ||
+                        (lval == uname_xmlschema_ns_uri_hash_dateTime) ||
+                        (lval == uname_xmlschema_ns_uri_hash_decimal) ||
+                        (lval == uname_xmlschema_ns_uri_hash_double) ||
+                        (lval == uname_xmlschema_ns_uri_hash_float) ||
+                        (lval == uname_xmlschema_ns_uri_hash_integer) ||
+                        (lval == uname_xmlschema_ns_uri_hash_time) )
+                        {
+                          rarg1_eq->e_rvr.rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
+                        }
+                    }
+                  return 0;
+                }
+            }
+          }
         break;
      }
     case BOP_NOT: break;
@@ -927,6 +1102,7 @@ sparp_gp_trav_make_common_eqs_out (sparp_t *sparp, SPART *curr, sparp_trav_state
     }
   SPARP_FOREACH_GP_EQUIV(sparp,curr,eq_ctr,eq)
     {
+#if 0
       int var_ctr;
       for (var_ctr = eq->e_var_count; var_ctr--; /* no step */)
         {
@@ -937,6 +1113,17 @@ sparp_gp_trav_make_common_eqs_out (sparp_t *sparp, SPART *curr, sparp_trav_state
           if (-1 == dk_set_position_of_string (vars_to_propagate, var_name))
 	    dk_set_push (&vars_to_propagate, var_name);
         }
+#else
+      int varname_ctr;
+      DO_BOX_FAST (caddr_t, vname, varname_ctr, eq->e_varnames)
+        {
+          if (SPART_VARNAME_IS_GLOB (vname))
+            continue;
+          if (-1 == dk_set_position_of_string (vars_to_propagate, vname))
+	    dk_set_push (&vars_to_propagate, vname);
+        }
+      END_DO_BOX_FAST;
+#endif
     } END_SPARP_FOREACH_GP_EQUIV;
   while (NULL != vars_to_propagate)
     dk_set_push (parent_vars, dk_set_pop (&vars_to_propagate));
@@ -1025,6 +1212,7 @@ sparp_gp_trav_make_common_aliases (sparp_t *sparp, SPART *curr, sparp_trav_state
   sts_this[0].sts_env = curr;
   SPARP_FOREACH_GP_EQUIV(sparp,curr,eq_ctr,eq)
     {
+#if 0
       int var_ctr;
       for (var_ctr = eq->e_var_count; var_ctr--; /* no step */)
         {
@@ -1040,6 +1228,23 @@ sparp_gp_trav_make_common_aliases (sparp_t *sparp, SPART *curr, sparp_trav_state
 		}
             }
         }
+#else
+      int varname_ctr;
+      DO_BOX_FAST (caddr_t, vname, varname_ctr, eq->e_varnames)
+        {
+          for (outer_gp_sts = sparp->sparp_stss+1; outer_gp_sts < sts_this; outer_gp_sts++)
+            {
+              SPART *outer_gp = outer_gp_sts->sts_env;
+	      sparp_equiv_t *topmost_eq = sparp_equiv_get (sparp, outer_gp, vname, SPARP_EQUIV_GET_NAMESAKES);
+	      if (NULL != topmost_eq)
+		{
+		  sparp_gp_add_chain_aliases (sparp, vname, eq, sts_this, outer_gp);
+		  break;
+		}
+            }
+        }
+      END_DO_BOX_FAST;
+#endif
     } END_SPARP_FOREACH_GP_EQUIV;
   return SPAR_GPT_ENV_PUSH;
 }
@@ -1062,6 +1267,7 @@ sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, sparp_trav_sta
       if (
         (0 != eq->e_const_reads) ||
         (0 != eq->e_gspo_uses) ||
+        (0 != eq->e_subquery_uses) ||
         (0 != BOX_ELEMENTS_INT_0 (eq->e_receiver_idxs)) ||
         (1 < BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs)) ||
         (0 != eq->e_var_count) ||
@@ -1103,13 +1309,13 @@ void
 sparp_remove_redundant_connections (sparp_t *sparp)
 {
   SPART *top_pattern = sparp->sparp_expr->_.req_top.pattern;
-  sparp_equiv_t **equivs = sparp->sparp_env->spare_equivs;
+  sparp_equiv_t **equivs = sparp->sparp_equivs;
   int eq_ctr;
   sparp_gp_trav (sparp, top_pattern, NULL,
     sparp_gp_trav_remove_unused_aliases, NULL,
     NULL, NULL,
     NULL );
-  for (eq_ctr = sparp->sparp_env->spare_equiv_count; eq_ctr--; /*no step*/)
+  for (eq_ctr = sparp->sparp_equiv_count; eq_ctr--; /*no step*/)
     {
       sparp_equiv_t *eq = equivs[eq_ctr];
       int sub_ctr;
@@ -1142,9 +1348,39 @@ sparp_remove_redundant_connections (sparp_t *sparp)
 /* Copying restrictions from equivalences to variables */
 
 void
+sparp_restr_of_select_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *eq)
+{
+  int retvalctr;
+  SPART *gp = eq->e_gp;
+  caddr_t vname = eq->e_varnames[0];
+  SPART *sub_expn;
+  DO_BOX_FAST (SPART *, retval, retvalctr, gp->_.gp.subquery->_.req_top.orig_retvals)
+    {
+      if ((SPAR_ALIAS != SPART_TYPE (retval)) || strcmp (retval->_.alias.aname, vname))
+        continue;
+      sub_expn = retval->_.alias.arg;
+      if (SPAR_IS_BLANK_OR_VAR(sub_expn))
+        {
+          sparp_equiv_t *eq_sub = sparp_equiv_get (sparp, gp->_.gp.subquery->_.req_top.pattern, sub_expn, 0);
+          sparp_equiv_merge (sparp, eq, eq_sub);
+        }
+      else
+        {
+          ptrlong restr_bits = sparp_restr_bits_of_expn (sparp, sub_expn);
+          eq->e_rvr.rvrRestrictions |= restr_bits & (
+            SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK |
+            SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
+            SPART_VARR_NOT_NULL | SPART_VARR_ALWAYS_NULL );
+        }
+      break;
+    }
+  END_DO_BOX_FAST;
+}
+
+void
 sparp_restr_of_union_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *eq)
 {
-  sparp_equiv_t **equivs = sparp->sparp_env->spare_equivs;
+  sparp_equiv_t **equivs = sparp->sparp_equivs;
   int sub_ctr, varname_ctr;
   int nice_sub_count = 0;
   dk_set_t common_vars = NULL;
@@ -1194,13 +1430,20 @@ sparp_restr_of_union_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t 
 void
 sparp_restr_of_join_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *eq)
 {
-  sparp_equiv_t **equivs = sparp->sparp_env->spare_equivs;
+  sparp_equiv_t **equivs = sparp->sparp_equivs;
   int sub_ctr;
   DO_BOX_FAST (ptrlong, sub_eq_idx, sub_ctr, eq->e_subvalue_idxs)
     {
       sparp_equiv_t *sub_eq = equivs[sub_eq_idx];
       SPART *sub_gp = sub_eq->e_gp;
-      if (OPTIONAL_L != sub_gp->_.gp.subtype)
+      if (OPTIONAL_L == sub_gp->_.gp.subtype)
+        {
+          if ((1 == BOX_ELEMENTS (eq->e_subvalue_idxs)) &&
+            (0 == BOX_ELEMENTS_0 (eq->e_receiver_idxs)) &&
+            (0 == eq->e_gspo_uses) && (0 == eq->e_subquery_uses) )
+            sparp_rvr_tighten (sparp, &(eq->e_rvr), &(sub_eq->e_rvr), ~SPART_VARR_NOT_NULL);
+        }
+      else
         sparp_rvr_tighten (sparp, &(eq->e_rvr), &(sub_eq->e_rvr), ~0);
     }
   END_DO_BOX_FAST;
@@ -1215,10 +1458,12 @@ sparp_gp_trav_eq_restr_from_connected_subvalues (sparp_t *sparp, SPART *curr, sp
     return 0;
   SPARP_FOREACH_GP_EQUIV(sparp,curr,eq_ctr,eq)
     {
-      if (UNION_L == curr->_.gp.subtype)
-        sparp_restr_of_union_eq_from_connected_subvalues (sparp, eq);
-      else
-        sparp_restr_of_join_eq_from_connected_subvalues (sparp, eq);
+      switch (curr->_.gp.subtype)
+        {
+        case SELECT_L: sparp_restr_of_select_eq_from_connected_subvalues (sparp, eq); break;
+        case UNION_L: sparp_restr_of_union_eq_from_connected_subvalues (sparp, eq); break;
+        default: sparp_restr_of_join_eq_from_connected_subvalues (sparp, eq); break;
+        }
     } END_SPARP_FOREACH_GP_EQUIV;
   return 0;
 }
@@ -1226,7 +1471,7 @@ sparp_gp_trav_eq_restr_from_connected_subvalues (sparp_t *sparp, SPART *curr, sp
 int
 sparp_gp_trav_eq_restr_from_connected_receivers (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_equiv_t **equivs = sparp->sparp_env->spare_equivs;
+  sparp_equiv_t **equivs = sparp->sparp_equivs;
   int sub_ctr;
   int eq_ctr;
   switch (SPART_TYPE(curr))
@@ -1248,7 +1493,7 @@ sparp_gp_trav_eq_restr_from_connected_receivers (sparp_t *sparp, SPART *curr, sp
              SPART_VARR_IS_BLANK | SPART_VARR_IS_IRI |
              SPART_VARR_IS_LIT | SPART_VARR_IS_REF |
              SPART_VARR_TYPED | SPART_VARR_FIXED |
-             SPART_VARR_SPRINTFF );
+             SPART_VARR_SPRINTFF | SPART_VARR_LONG_EQ_SQL );
          if (UNION_L != sub_gp->_.gp.subtype)
            changeable |= SPART_VARR_NOT_NULL;
          sparp_equiv_tighten (sparp, sub_eq, &(eq->e_rvr), changeable);
@@ -1353,9 +1598,9 @@ sparp_dbg_gp_print (sparp_t *sparp, SPART *tree)
   SPARP_FOREACH_GP_EQUIV(sparp,tree,eq_ctr,eq)
     {
       int varname_count, varname_ctr;
-      spar_dbg_printf ((" ( %d subv, %d recv, %d pso, %d const:",
+      spar_dbg_printf ((" ( %d subv, %d recv, %d gspo, %d const, %d subq:",
       BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
-        (int)(eq->e_gspo_uses), (int)(eq->e_const_reads) ));
+        (int)(eq->e_gspo_uses), (int)(eq->e_const_reads), (int)(eq->e_subquery_uses) ));
       varname_count = BOX_ELEMENTS (eq->e_varnames);
       for (varname_ctr = 0; varname_ctr < varname_count; varname_ctr++)
         {
@@ -1496,7 +1741,7 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
     sparp_gp_trav_equiv_audit_inner_vars, NULL,
     NULL );
   sparp_equiv_audit_retvals (sparp);
-  for (eq_ctr = sparp->sparp_env->spare_equiv_count; eq_ctr--; /*no step*/)
+  for (eq_ctr = sparp->sparp_equiv_count; eq_ctr--; /*no step*/)
     {
       sparp_equiv_t *eq = SPARP_EQUIV (sparp, eq_ctr);
       SPART *gp;
@@ -1567,7 +1812,7 @@ recv_of_subv_ok: ;
           END_DO_BOX_FAST_REV;
         }
 #if 0
-      if ((0 == eq->e_gspo_uses) &&
+      if ((0 == eq->e_gspo_uses) && (0 == eq->e_subquery_uses) &&
         (0 == BOX_ELEMENTS_0 (eq->e_subvalue_idxs)) &&
         !(eq->e_rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_GLOBAL)) &&
         ((0 != eq->e_const_reads) ||
@@ -1592,8 +1837,8 @@ sparp_audit_mem (sparp_t *sparp)
 sparp_equiv_t *
 sparp_equiv_alloc (sparp_t *sparp)
 {
-  ptrlong eqcount = sparp->sparp_env->spare_equiv_count;
-  sparp_equiv_t **eqs = sparp->sparp_env->spare_equivs;
+  ptrlong eqcount = sparp->sparp_equiv_count;
+  sparp_equiv_t **eqs = sparp->sparp_equivs;
   sparp_equiv_t *res;
   if (eqcount >= 0x10000)
     {
@@ -1614,14 +1859,14 @@ sparp_equiv_alloc (sparp_t *sparp)
       if (NULL != eqs)
         memset (eqs, -1, box_length (eqs));
 #endif
-      sparp->sparp_expr->_.req_top.equivs = sparp->sparp_env->spare_equivs = eqs = new_eqs;
+      sparp->sparp_equivs = eqs = new_eqs;
     }
   res->e_own_idx = eqcount;
 #ifdef DEBUG
   res->e_clone_idx = (SPART_BAD_EQUIV_IDX-1);
 #endif
   eqs[eqcount++] = res;
-  sparp->sparp_expr->_.req_top.equiv_count = sparp->sparp_env->spare_equiv_count = eqcount;
+  sparp->sparp_equiv_count = eqcount;
   return res;
 }  
 
@@ -1708,11 +1953,15 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
         curr_eq->e_gspo_uses++;
       if (SPARP_EQUIV_ADD_CONST_READ & flags)
         curr_eq->e_const_reads++;
+      if (SPARP_EQUIV_ADD_SUBQUERY_USE & flags)
+        spar_internal_error (sparp, "SPARP_EQUIV_INS_VARIABLE conflicts with SPARP_EQUIV_ADD_SUBQUERY_USE");
     }
   else
     {
       curr_eq->e_vars = (SPART **)t_list (1, NULL);
       curr_eq->e_var_count = 0;
+      if (SPARP_EQUIV_ADD_SUBQUERY_USE & flags)
+        curr_eq->e_subquery_uses++;
     }
 #ifdef SPARQL_DEBUG
   sparp_dbg_gp_print (sparp, haystack_gp);
@@ -1967,7 +2216,7 @@ sparp_equiv_remove_var (sparp_t *sparp, sparp_equiv_t *eq, SPART *var)
       if (SPART_BAD_EQUIV_IDX == eq_idx)
         return;
 #ifdef DEBUG
-      if (eq_idx >= sparp->sparp_env->spare_equiv_count)
+      if (eq_idx >= sparp->sparp_equiv_count)
         spar_internal_error (sparp, "sparp_" "equiv_remove_var(): eq_idx is too big");
 #endif
       eq = SPARP_EQUIV (sparp, eq_idx);
@@ -2018,18 +2267,39 @@ sparp_equiv_clone (sparp_t *sparp, sparp_equiv_t *orig, SPART *cloned_gp)
   tgt->e_vars = (SPART **)t_alloc_box (box_length (orig->e_vars), DV_ARRAY_OF_POINTER); /* no real copying of e_vars */
   /* no copying for e_var_count */
   /* no copying for e_gspo_uses */
-  /* no copying for ptrlong e_const_reads;	/ *!< Number of constant-read uses in filters and in 'graph' of members */
+  /* no copying for e_const_reads */
+  tgt->e_subquery_uses = orig->e_subquery_uses;
   sparp_rvr_copy (sparp, &(tgt->e_rvr), &(orig->e_rvr));
-  /* no copying for e_subvalue_idxs;	/ *!< Subselects where values of these variables come from */
-  /* no copying for e_receiver_idxs;	/ *!< Aliases of surrounding query where values of variables from this equiv are used */
-  /* no copying for e_clone_idx;	/ *!< Index of the current clone of the equiv */
-  /* no copying for e_cloning_serial;	/ *!< The serial used when e_clone_idx is set, should be equal to sparp_cloning_serial */
+  /* no copying for e_subvalue_idxs */
+  /* no copying for e_receiver_idxs */
+  /* no copying for e_clone_idx */
+  /* no copying for e_cloning_serial */
 #ifdef DEBUG
-  /* no copying for e_dbg_saved_gp;	/ *!< e_gp that is boxed as ptrlong, to same the pointer after e_gp is set to NULL */
+  /* no copying for e_dbg_saved_gp */
 #endif
   /* Add more lines here when more fields added to struct sparp_equiv_s. */
   return tgt;
 }
+
+#if 0
+sparp_equiv_t *
+sparp_equiv_exact_copy (sparp_t *sparp, sparp_equiv_t *orig)
+{
+  sparp_equiv_t *tgt;
+  if (orig->e_cloning_serial == sparp->sparp_cloning_serial)
+    spar_internal_error (sparp, "sparp_" "equiv_clone(): can't make second clone of equiv during same gp cloning");
+  tgt = (sparp_equiv_t *)t_alloc_box (sizeof (sparp_equiv_t), DV_ARRAY_OF_POINTER);
+  memcpy (tgt, orig, sizeof (sparp_equiv_t));
+  /* no real copying of e_gp */
+  tgt->e_varnames = (caddr_t *)t_full_box_copy_tree ((caddr_t)(orig->e_varnames));
+  tgt->e_vars = (SPART **)t_alloc_box (box_length (orig->e_vars), DV_ARRAY_OF_POINTER); /* no real copying of e_vars */
+  sparp_rvr_copy (sparp, &(tgt->e_rvr), &(orig->e_rvr));
+  tgt->e_subvalue_idxs = (caddr_t *)t_full_box_copy_tree ((caddr_t)(orig->e_subvalue_idxs));
+  tgt->e_receiver_idxs = (caddr_t *)t_full_box_copy_tree ((caddr_t)(orig->e_receiver_idxs));
+  /* Check if more lines are needed here when more fields added to struct sparp_equiv_s. */
+  return tgt;
+}
+#endif
 
 int
 sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *pri, ccaddr_t datatype, SPART *value)
@@ -2053,6 +2323,7 @@ void sparp_equiv_remove (sparp_t *sparp, sparp_equiv_t *eq)
   if (
     (0 != eq->e_const_reads) ||
     (0 != eq->e_gspo_uses) ||
+    (0 != eq->e_subquery_uses) ||
     (0 != eq->e_var_count) ||
     (0 != BOX_ELEMENTS_INT_0 (eq->e_receiver_idxs)) ||
     (0 != BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs)) ||
@@ -2072,7 +2343,7 @@ void sparp_equiv_remove (sparp_t *sparp, sparp_equiv_t *eq)
   spar_internal_error (sparp, "sparp_" "equiv_remove (): failed to remove eq from its gp");
 
 found_in_gp:
-  sparp->sparp_env->spare_equivs[eq_own_idx] = NULL;
+  sparp->sparp_equivs[eq_own_idx] = NULL;
   eq_gp->_.gp.equiv_count = len;
 }
 
@@ -2109,6 +2380,8 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
     }
 #endif
   if ((pri->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED) && (sec->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED))
+    return SPARP_EQUIV_MERGE_ROLLBACK;
+  if ((0 != pri->e_subquery_uses) || (0 != sec->e_subquery_uses))
     return SPARP_EQUIV_MERGE_ROLLBACK;
   ret = sparp_equiv_restrict_by_constant (sparp, pri, sec->e_rvr.rvrDatatype, (SPART *)(sec->e_rvr.rvrFixedValue));
   if (SPARP_EQUIV_MERGE_ROLLBACK == ret)
@@ -2875,7 +3148,6 @@ sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree)
 void
 sparp_rewrite_basic (sparp_t *sparp)
 {
-  SPART *root = sparp->sparp_expr;
   sparp_audit_mem (sparp);
   sparp_count_usages (sparp);
   sparp_audit_mem (sparp);
@@ -2886,8 +3158,6 @@ sparp_rewrite_basic (sparp_t *sparp)
   sparp_eq_restr_from_connected (sparp);
   sparp_eq_restr_to_vars (sparp);
   sparp_remove_redundant_connections (sparp);
-  root->_.req_top.equivs = sparp->sparp_env->spare_equivs;
-  root->_.req_top.equiv_count = sparp->sparp_env->spare_equiv_count;
   sparp_audit_mem (sparp);
 }
 
@@ -3017,6 +3287,8 @@ SPART *sparp_find_gp_by_eq_idx_int (sparp_t *sparp, SPART *gp, ptrlong eq_idx)
       if (NULL != res)
         return res;
     }
+  if (SELECT_L == gp->_.gp.subtype)
+    return sparp_find_gp_by_eq_idx_int (sparp, gp->_.gp.subquery->_.req_top.pattern, eq_idx);
   return 0;
 }
 
@@ -3025,9 +3297,9 @@ SPART *sparp_find_gp_by_eq_idx (sparp_t *sparp, ptrlong eq_idx)
 #ifdef DEBUG
   if (SPART_BAD_EQUIV_IDX == eq_idx)
     spar_internal_error (sparp, "sparp_" "find_gp_by_eq_idx(): bad eq_idx");
-  if (eq_idx >= sparp->sparp_env->spare_equiv_count)
+  if (eq_idx >= sparp->sparp_equiv_count)
     spar_internal_error (sparp, "sparp_" "find_gp_by_eq_idx(): eq_idx is too big");
-  if (NULL == sparp->sparp_env->spare_equivs [eq_idx])
+  if (NULL == sparp->sparp_equivs [eq_idx])
     spar_internal_error (sparp, "sparp_" "find_gp_by_eq_idx(): eq_idx of merged and disabled equiv");
 #endif
   return sparp_find_gp_by_eq_idx_int (sparp, sparp->sparp_expr->_.req_top.pattern, eq_idx);
@@ -3067,7 +3339,7 @@ sparp_find_quad_map_by_name (ccaddr_t name)
 }
 
 int
-rvr_sprintffs_like (SPART *value, rdf_val_range_t *rvr)
+rvr_sprintffs_like (caddr_t value, rdf_val_range_t *rvr)
 {
   int ctr;
 #ifdef DEBUG
@@ -3167,21 +3439,18 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
             qmv_or_fmt_rvr = &(qmv->qmvFormat->qmfValRange);
         }
     }
-  DO_BOX_FAST (SPART *, source, source_ctr, tcc->tcc_sources)
-    {
+  for (source_ctr = BOX_ELEMENTS_0 (tcc->tcc_sources); source_ctr--; /* no step */)
       tcc->tcc_source_invalidation_masks[source_ctr] &= (1 << invalidation_level) - 1;
-    }
-  END_DO_BOX_FAST;
   if (tcc->tcc_check_source_graphs)
     {
       int chk_res = sparp_check_mapping_of_sources (sparp, tcc, qmv_or_fmt_rvr, rvr, invalidation_level);
       if (SSG_QM_NO_MATCH == chk_res)
         return SSG_QM_NO_MATCH;
     }
-  if (!tcc->tcc_check_source_graphs && (tcc->tcc_qs->qsMatchingFlags & SPART_QS_NO_IMPLICIT_USER_QM) &&
+  if (!tcc->tcc_check_source_graphs && (qm != tcc->tcc_qs->qsDefaultMap) &&
+    (tcc->tcc_qs->qsMatchingFlags & SPART_QS_NO_IMPLICIT_USER_QM) &&
     (SPAR_BLANK_NODE_LABEL == SPART_TYPE (field)) )
     return SSG_QM_NO_MATCH;
-
   if ((SPAR_BLANK_NODE_LABEL == field_type) || (SPAR_VARIABLE == field_type))
     {
       if (tcc->tcc_check_source_graphs)
@@ -3192,7 +3461,7 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
         }
       if (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions)
         {
-          sparp_equiv_t *eq_g = sparp->sparp_env->spare_equivs[field->_.var.equiv_idx];
+          sparp_equiv_t *eq_g = sparp->sparp_equivs[field->_.var.equiv_idx];
           int chk_res;
           if (DV_UNAME != DV_TYPE_OF (eq_g->e_rvr.rvrFixedValue))
             { /* This would be very strange failure */
@@ -3205,9 +3474,8 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
           chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *)(eq_g->e_rvr.rvrFixedValue), qmv_or_fmt_rvr, rvr);
           return chk_res;
         }
-      if (NULL != qmv_or_fmt_rvr)
+      if ((NULL != qmv_or_fmt_rvr) && (SPART_VARR_SPRINTFF & qmv_or_fmt_rvr->rvrRestrictions))
         {
-#if 0
           if (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions)
             { /* Check if a fixed value of a field variable matches to one of sffs of the mapping value */
               caddr_t fv = rvr_string_fixedvalue (&(field->_.var.rvr));
@@ -3221,7 +3489,6 @@ sparp_check_field_mapping_g (sparp_t *sparp, tc_context_t *tcc, SPART *field,
 fixed_field_matches_qmv_sff: ;
                 }
             }
-#endif
           if (SPART_VARR_SPRINTFF & field->_.var.rvr.rvrRestrictions)
             { /* Check if either of formats of a field variable matches to one of sffs of the mapping value */
               int fld_ctr, qmv_ctr;
@@ -3299,7 +3566,7 @@ sparp_check_field_mapping_spo (sparp_t *sparp, tc_context_t *tcc, SPART *field,
             return SSG_QM_NO_MATCH;
           return SSG_QM_PROVEN_MATCH;
         }
-      if (NULL != qmv_or_fmt_rvr)
+      if ((NULL != qmv_or_fmt_rvr) && (SPART_VARR_SPRINTFF & qmv_or_fmt_rvr->rvrRestrictions))
         {
           if (SPART_VARR_FIXED & field->_.var.rvr.rvrRestrictions)
             { /* Check if a fixed value of a field variable matches to one of sffs of the mapping value */
@@ -3664,6 +3931,15 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
   required_source_type = ((SPAR_VARIABLE == SPART_TYPE(graph)) ? NAMED_L : FROM_L);
   new_cases = sparp_find_triple_cases (sparp, triple, sources, required_source_type);
   new_cases_count = BOX_ELEMENTS (new_cases);
+  if ((NULL == triple->_.triple.tc_list) &&
+    (0 == new_cases_count) &&
+    sparp->sparp_env->spare_signal_void_variables )
+    spar_error (sparp, "No one quad map pattern is suitable for GRAPH %s { %s %s %s } triple at line %d",
+      spar_dbg_string_of_triple_field (sparp, graph),
+      spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_subject),
+      spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_predicate),
+      spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_object),
+      triple->srcline );
   for (field_ctr = SPART_TRIPLE_FIELDS_COUNT; field_ctr--; /*no step*/)
     {
       ssg_valmode_t field_valmode = SSG_VALMODE_AUTO;
@@ -3754,11 +4030,13 @@ void sparp_jso_validate_format (sparp_t *sparp, ssg_valmode_t fmt)
     spar_internal_error (sparp, "sparp_jso_validate_format(): custom format does not have JSO RTTI");
 }
 
+#if 0
 void ssg_jso_validate_format (spar_sqlgen_t *ssg, ssg_valmode_t fmt)
 {
   if (!sparp_valmode_is_correct (fmt))
     spar_sqlprint_error ("ssg_jso_validate_format(): custom format does not have JSO RTTI");
 }
+#endif
 
 SPART *
 sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk_set_t *touched_equivs_set_ptr)
@@ -3841,10 +4119,10 @@ sparp_clone_id (sparp_t *sparp, caddr_t orig_name)
       sprintf (buf + 20, "X%c%c%c%c-c%d",
         'A' + (hash & 0x10), 'A' + ((hash >> 4) & 0x10),
         'A' + ((hash >> 8) & 0x10), 'A' + ((hash >> 12) & 0x10),
-        sparp->sparp_cloning_serial );
+        (int)(sparp->sparp_cloning_serial) );
     }
   else
-    sprintf (buf, "%s-c%d", orig_name, sparp->sparp_cloning_serial);
+    sprintf (buf, "%s-c%d", orig_name, (int)(sparp->sparp_cloning_serial));
   return t_box_dv_short_string (buf);
 }
 
@@ -3858,6 +4136,10 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
   SPART *tgt;
   switch (SPART_TYPE (orig))
     {
+    case SPAR_ALIAS:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.alias.arg = sparp_tree_full_clone_int (sparp, orig->_.alias.arg, parent_gp);
+      return tgt;
     case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       eq_idx = orig->_.var.equiv_idx;
@@ -3909,6 +4191,8 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
           if (SPART_BAD_EQUIV_IDX == eq_idx)
             spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): bad equiv idx in list of gp.equiv_indexes");
           eq = SPARP_EQUIV (sparp, eq_idx);
+          if (orig != eq->e_gp)
+            spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): orig != e_gp");
           cloned_eq = sparp_equiv_clone (sparp, eq, tgt);
           tgt->_.gp.equiv_indexes [eq_ctr] = cloned_eq->e_own_idx;
           if (NULL != parent_gp)
@@ -3947,6 +4231,8 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
           tgt->_.gp.members [memb_ctr] = sparp_tree_full_clone_int (sparp, memb, orig);
         }
       END_DO_BOX_FAST_REV;
+      if (NULL != orig->_.gp.subquery)
+          tgt->_.gp.subquery = sparp_tree_full_clone_int (sparp, orig->_.gp.subquery, orig);
       tgt->_.gp.selid = sparp_clone_id (sparp, orig->_.gp.selid);
       for (eq_ctr = 0; eq_ctr < orig->_.gp.equiv_count; eq_ctr++)
         {
@@ -3995,7 +4281,18 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.funcall.argtrees = sparp_treelist_full_clone_int (sparp, orig->_.funcall.argtrees, parent_gp);
       return tgt;
     case SPAR_REQ_TOP:
-      spar_error (sparp, "Internal SPARQL compiler error: can not clone TOP of request");
+      {
+        SPART *orig_pattern = orig->_.req_top.pattern;
+        tgt = (SPART *)t_box_copy ((caddr_t) orig);
+        tgt->_.req_top.pattern = sparp_tree_full_clone_int (sparp, orig->_.req_top.pattern, parent_gp); /* Should be before everything else to clone equivs */
+        tgt->_.req_top.retvals = sparp_treelist_full_clone_int (sparp, orig->_.req_top.retvals, orig_pattern);
+        tgt->_.req_top.orig_retvals = sparp_treelist_full_clone_int (sparp, orig->_.req_top.orig_retvals, orig_pattern);
+        tgt->_.req_top.expanded_orig_retvals = sparp_treelist_full_clone_int (sparp, orig->_.req_top.expanded_orig_retvals, orig_pattern);
+        /* !!! TBD something with retselid :) */
+        tgt->_.req_top.groupings = sparp_treelist_full_clone_int (sparp, orig->_.req_top.groupings, orig_pattern);
+        tgt->_.req_top.order = sparp_treelist_full_clone_int (sparp, orig->_.req_top.order, orig_pattern);
+        return tgt;
+      }
     case BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
@@ -4006,6 +4303,10 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.bin_exp.left = sparp_tree_full_clone_int (sparp, orig->_.bin_exp.left, parent_gp);
       if (NULL != orig->_.bin_exp.right)
         tgt->_.bin_exp.right = sparp_tree_full_clone_int (sparp, orig->_.bin_exp.right, parent_gp);
+      return tgt;
+    case ORDER_L:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.oby.expn = sparp_tree_full_clone_int (sparp, orig->_.oby.expn, parent_gp);
       return tgt;
     case SPAR_QM_SQL_FUNCALL:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
@@ -4065,6 +4366,11 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
   SPART *tgt;
   switch (SPART_TYPE (orig))
     {
+    case SPAR_ALIAS:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.alias.aname = t_box_copy (orig->_.alias.aname);
+      tgt->_.alias.arg = sparp_tree_full_copy (sparp, orig->_.alias.arg, parent_gp);
+      return tgt;
     case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       eq_idx = orig->_.var.equiv_idx;
@@ -4101,8 +4407,11 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.funcall.argtrees = sparp_treelist_full_copy (sparp, orig->_.funcall.argtrees, parent_gp);
       return tgt;
     case SPAR_REQ_TOP:
+      if (0 != sparp->sparp_equiv_count)
+        spar_internal_error (sparp, "sparp_tree_full_copy() is used to copy req_top with nonzero equiv_count");
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.req_top.retvals = sparp_treelist_full_copy (sparp, orig->_.req_top.retvals, parent_gp);
+      tgt->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, orig->_.req_top.orig_retvals, parent_gp);
       tgt->_.req_top.expanded_orig_retvals = sparp_treelist_full_copy (sparp, orig->_.req_top.expanded_orig_retvals, parent_gp);
       tgt->_.req_top.sources = sparp_treelist_full_copy (sparp, orig->_.req_top.sources, parent_gp);
       tgt->_.req_top.pattern = sparp_tree_full_copy (sparp, orig->_.req_top.pattern, parent_gp);
@@ -4110,7 +4419,6 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.req_top.order = sparp_treelist_full_copy (sparp, orig->_.req_top.order, parent_gp);
       tgt->_.req_top.limit = t_box_copy (orig->_.req_top.limit);
       tgt->_.req_top.offset = t_box_copy (orig->_.req_top.offset);
-      tgt->_.req_top.equivs = (sparp_equiv_t **)t_box_copy ((caddr_t) orig->_.req_top.equivs);
       return tgt;
     case BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
@@ -4128,11 +4436,6 @@ sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.qm_sql_funcall.fname = t_box_copy (orig->_.qm_sql_funcall.fname);
       tgt->_.qm_sql_funcall.fixed = sparp_treelist_full_copy (sparp, orig->_.qm_sql_funcall.fixed, parent_gp);
       tgt->_.qm_sql_funcall.named = sparp_treelist_full_copy (sparp, orig->_.qm_sql_funcall.named, parent_gp);
-      return tgt;
-    case SPAR_ALIAS:
-      tgt = (SPART *)t_box_copy ((caddr_t) orig);
-      tgt->_.alias.aname = t_box_copy (orig->_.alias.aname);
-      tgt->_.alias.arg = sparp_tree_full_copy (sparp, orig->_.alias.arg, parent_gp);
       return tgt;
 /* Add more cases right above this line when introducing more SPAR_nnn constants */
     default: break; /* No need to copy names and literals because we will never change them in-place. */
@@ -4714,10 +5017,11 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple)
 SPART *
 sparp_new_empty_gp (sparp_t *sparp, ptrlong subtype, ptrlong srcline)
 {
-  SPART *res = spartlist (sparp, 7,
+  SPART *res = spartlist (sparp, 8,
     SPAR_GP, subtype,
     t_list (0),
     t_list (0),
+    NULL,
     spar_mkid (sparp, "s"),
     NULL, (ptrlong)(0) );
   res->srcline = t_box_num (srcline);
@@ -4926,7 +5230,7 @@ int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_stat
 int
 sparp_calc_importance_of_eq (sparp_t *sparp, sparp_equiv_t *eq)
 {
-  int res = 4 * eq->e_gspo_uses + 2 * eq->e_const_reads + 2 * BOX_ELEMENTS_0 (eq->e_receiver_idxs);
+  int res = 16 * eq->e_subquery_uses + 4 * eq->e_gspo_uses + 2 * eq->e_const_reads + 2 * BOX_ELEMENTS_0 (eq->e_receiver_idxs);
   if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
     res *= 4;
   if (SPART_VARR_TYPED & eq->e_rvr.rvrRestrictions)
@@ -5498,15 +5802,17 @@ sparp_gp_trav_reuse_tabids (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts
 
 
 void
-sparp_rewrite_all (sparp_t *sparp)
+sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals)
 {
   rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_grab);
   SPART *root = sparp->sparp_expr;
   if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (root))
     return;
-  sparp_expand_top_retvals (sparp);
   if (sparp->sparp_env->spare_grab.rgc_all)
     spar_add_rgc_vars_and_consts_from_retvals (sparp, sparp->sparp_expr->_.req_top.retvals);
+  if (safely_copy_retvals)
+    sparp->sparp_expr->_.req_top.expanded_orig_retvals = sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, sparp->sparp_expr->_.req_top.pattern);
+  else
   sparp->sparp_expr->_.req_top.expanded_orig_retvals = t_box_copy (sparp->sparp_expr->_.req_top.retvals);
 /* Unlike spar_retvals_of_construct() that can be called during parsing,
 spar_retvals_of_describe() should wait for obtaining all variables and then
@@ -5531,17 +5837,17 @@ sparp_rewrite_qm (sparp_t *sparp)
 {
   sparp_equiv_t **equivs;
   int equiv_ctr, equiv_count;
-  int opt_ctr = 0;
+  int retval_ctr, opt_ctr = 0;
   SPART *root = sparp->sparp_expr;
   sparp_rewrite_basic (sparp);
-  equivs = root->_.req_top.equivs;
-  equiv_count = root->_.req_top.equiv_count;
+  equivs = sparp->sparp_equivs;
+  equiv_count = sparp->sparp_equiv_count;
   for (equiv_ctr = equiv_count; equiv_ctr--; /* no step */)
     {
       sparp_equiv_t *eq = equivs[equiv_ctr];
       if (NULL == eq)
         continue;
-      if ((0 == eq->e_gspo_uses) &&
+      if ((0 == eq->e_gspo_uses) && (0 == eq->e_subquery_uses) &&
         (0 == BOX_ELEMENTS_0 (eq->e_subvalue_idxs)) &&
 	((0 != eq->e_const_reads) || (0 != BOX_ELEMENTS_0 (eq->e_subvalue_idxs))) &&
         !(eq->e_rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_GLOBAL)) )
@@ -5614,6 +5920,8 @@ again:
       spar_internal_error (sparp, "SPARQL optimizer performed 10 rounds of query rewriting, this looks like endless loop. Please rephrase the query.");
     }
 
+  sparp_wpar_retvars_in_max (sparp, sparp->sparp_expr);
+
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     NULL, sparp_gp_trav_reuse_tabids,
     NULL, NULL,
@@ -5629,8 +5937,8 @@ again:
       spar_optimize_retvals_of_modify (sparp, root);
       break;
     }
-  equivs = root->_.req_top.equivs = sparp->sparp_env->spare_equivs;
-  equiv_count = root->_.req_top.equiv_count = sparp->sparp_env->spare_equiv_count;
+  equivs = sparp->sparp_equivs;
+  equiv_count = sparp->sparp_equiv_count;
   for (equiv_ctr = equiv_count; equiv_ctr--; /* no step */)
     {
       sparp_equiv_t *eq = equivs[equiv_ctr];
@@ -5638,7 +5946,7 @@ again:
         continue;
       if (eq->e_deprecated)
         continue;
-      if ((0 == eq->e_gspo_uses) &&
+      if ((0 == eq->e_gspo_uses) && (0 == eq->e_subquery_uses) &&
         (0 == BOX_ELEMENTS_0 (eq->e_subvalue_idxs)) &&
 	((0 != eq->e_const_reads) || (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs))) &&
         !(eq->e_rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_GLOBAL)) )
@@ -5654,8 +5962,39 @@ again:
 #ifdef DEBUG
       equivs[equiv_ctr]->e_dbg_saved_gp = (SPART **)t_box_num ((ptrlong)(equivs[equiv_ctr]->e_gp));
 #endif
+/*
       equivs[equiv_ctr]->e_gp = NULL;
+*/
     }
+  DO_BOX_FAST (SPART *, retval, retval_ctr, root->_.req_top.retvals)
+    {
+      caddr_t name;
+      int retval_type = SPART_TYPE (retval);
+      if (SPAR_VARIABLE == retval_type)
+        name = retval->_.var.vname;
+      else if (SPAR_ALIAS == retval_type)
+        name = retval->_.alias.aname;
+      else
+        continue;
+      if (!strchr (name, '>'))
+        continue;
+      DO_SET (spar_propvariable_t *, pv, &(sparp->sparp_propvars))
+        {
+          const char *optext;
+          if (strcmp (pv->sparpv_obj_var_name, name))
+            continue;
+          optext = ((_PLUS_GT == pv->sparpv_op) ? "+>" : "*>");
+          if (pv->sparpv_obj_altered)
+            spar_error (sparp, "The name of a result-set column for variable ?%.200s %s %s?%.200s%s %s; please specify some alias.",
+              pv->sparpv_subj_var->_.var.vname, optext,
+              ((Q_IRI_REF == pv->sparpv_verb_lexem_type) ? "<" : ""), pv->sparpv_verb_lexem_text,
+              ((Q_IRI_REF == pv->sparpv_verb_lexem_type) ? ">" : ""),
+              ((pv->sparpv_obj_altered & 0x2) ? "may cause subtle coding errors" : "is too long") );
+          break;
+        }
+      END_DO_SET();
+    }
+  END_DO_BOX_FAST;
 }
 
 
@@ -5700,6 +6039,7 @@ sparp_rewrite_grab (sparp_t *sparp)
 /* Making subqueries: seed */
   sub_sparps[0] = sparp_of_seed = sparp_clone_for_variant (sparp);
   sparp_of_seed->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
+  sparp_of_seed->sparp_expr->_.req_top.shared_spare = sparp_of_seed->sparp_env;
   sparp_of_seed->sparp_expr->_.req_top.subtype = SELECT_L;
   sparp_of_seed->sparp_expr->_.req_top.retvals = grab_retvals;
   sparp_of_seed->sparp_expr->_.req_top.retvalmode_name = t_box_string ("LONG");
@@ -5714,6 +6054,7 @@ sparp_rewrite_grab (sparp_t *sparp)
 /* Making subqueries: iter */
   sub_sparps[1] = sparp_of_iter = sparp_clone_for_variant (sparp_of_seed);
   sparp_of_iter->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp_of_seed->sparp_expr, NULL);
+  sparp_of_iter->sparp_expr->_.req_top.shared_spare = sparp_of_iter->sparp_env;
   sparp_of_iter->sparp_env->spare_globals_are_numbered = 1;
   sparp_of_iter->sparp_env->spare_global_num_offset = 1;
   sparp_of_iter->sparp_env->spare_grab.rgc_sa_graphs = env->spare_grab.rgc_sa_graphs;
@@ -5724,6 +6065,7 @@ sparp_rewrite_grab (sparp_t *sparp)
 /* Making subqueries: final */
   sub_sparps[2] = sparp_of_final = sparp_clone_for_variant (sparp);
   sparp_of_final->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
+  sparp_of_final->sparp_expr->_.req_top.shared_spare = sparp_of_final->sparp_env;
   sparp_of_final->sparp_env->spare_globals_are_numbered = 1;
   sparp_of_final->sparp_env->spare_global_num_offset = 0;
 /*!!! TBD: relax graph conditions in sparp_of_final */

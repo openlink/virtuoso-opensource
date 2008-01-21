@@ -400,9 +400,11 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>"-"		{ return _MINUS		; }
 <SPARQL>"!="		{ return _NOT_EQ	; }
 <SPARQL>"+"		{ return _PLUS		; }
+<SPARQL>"+>"		{ return _PLUS_GT	; }
 <SPARQL>";"		{ return _SEMI		; }
 <SPARQL>"/"		{ return _SLASH		; }
 <SPARQL>"*"		{ return _STAR		; }
+<SPARQL>"*>"		{ return _STAR_GT	; }
 
 	/* Keyword punctuators */
 
@@ -471,6 +473,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?{SPAR_SQLNAME}("."{SPAR_SQLNAME})?)
 <SPARQL>{P}{R}{E}{F}{I}{X}		{ return PREFIX_L	; }
 <SPARQL>{Q}{U}{A}{D}			{ return QUAD_L		; }
 <SPARQL>{R}{E}{G}{E}{X}			{ return REGEX_L	; }
+<SPARQL>{R}{E}{D}{U}{C}{E}{D}		{ return REDUCED_L	; }
 <SPARQL>{R}{E}{T}{U}{R}{N}{S}		{ return RETURNS_L	; }
 <SPARQL>{S}{A}{M}{E}{T}{E}{R}{M}	{ return SAMETERM_L	; }
 <SPARQL>{S}{E}{L}{E}{C}{T}		{ return SELECT_L	; }

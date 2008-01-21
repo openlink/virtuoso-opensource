@@ -54,8 +54,8 @@ extern "C" {
 int
 sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fields, SPART **where_fields)
 {
-  sparp_equiv_t **top_eqs = sparp->sparp_expr->_.req_top.equivs;
-  int top_eq_count = sparp->sparp_expr->_.req_top.equiv_count;
+  sparp_equiv_t **top_eqs = sparp->sparp_equivs;
+  int top_eq_count = sparp->sparp_equiv_count;
   SPART *top_gp = sparp->sparp_expr->_.req_top.pattern;
   int fld_ctr;
   for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /*no step*/)

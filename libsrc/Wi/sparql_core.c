@@ -146,6 +146,28 @@ spar_source_place (sparp_t *sparp, char *raw_text)
   return t_box_dv_short_string (buf);
 }
 
+caddr_t
+spar_dbg_string_of_triple_field (sparp_t *sparp, SPART *fld)
+{
+  switch (SPART_TYPE (fld))
+    {
+    case SPAR_BLANK_NODE_LABEL: return t_box_sprintf (210, "_:%.200s", fld->_.var.vname);
+    case SPAR_VARIABLE: return t_box_sprintf (210, "?%.200s", fld->_.var.vname);
+    case SPAR_QNAME: return t_box_sprintf (210, "<%.200s>", fld->_.lit.val);
+    case SPAR_LIT:
+      if (NULL != fld->_.lit.language)
+        return t_box_sprintf (410, "\"%.200s\"@%.200s", fld->_.lit.val, fld->_.lit.language);
+      if (NULL == fld->_.lit.datatype)
+        return t_box_sprintf (210, "\"%.200s\"", fld->_.lit.val);
+      if (
+        (uname_xmlschema_ns_uri_hash_integer == fld->_.lit.datatype) ||
+        (uname_xmlschema_ns_uri_hash_decimal == fld->_.lit.datatype) ||
+        (uname_xmlschema_ns_uri_hash_double == fld->_.lit.datatype) )
+        return t_box_sprintf (210, "%.200s", fld->_.lit.val);
+      return t_box_sprintf (410, "\"%.200s\"^^<%.200s>", fld->_.lit.val, fld->_.lit.datatype);
+    default: return t_box_dv_short_string ("...");
+    }
+}
 
 void
 sparyyerror_impl (sparp_t *sparp, char *raw_text, const char *strg)
@@ -225,7 +247,8 @@ void spar_error (sparp_t *sparp, const char *format, ...)
   va_end (ap);
 }
 
-void spar_internal_error (sparp_t *sparp, const char *msg)
+void
+spar_internal_error (sparp_t *sparp, const char *msg)
 {
 #if 0
   FILE *core_reason1;
@@ -663,13 +686,22 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
   spar_error (sparp, "Unsupported parameter '%.30s' in 'define'", param);
 }
 
-void
+caddr_t
 spar_selid_push (sparp_t *sparp)
 {
   caddr_t selid = spar_mkid (sparp, "s");
   t_set_push (&(sparp->sparp_env->spare_selids), selid );
   spar_dbg_printf (("spar_selid_push () pushes %s\n", selid));
+  return selid;
 }
+
+caddr_t
+spar_selid_push_reused (sparp_t *sparp, caddr_t selid)
+{
+  t_set_push (&(sparp->sparp_env->spare_selids), selid );
+  spar_dbg_printf (("spar_selid_push_reused () pushes %s\n", selid));
+}
+
 
 caddr_t spar_selid_pop (sparp_t *sparp)
 {
@@ -688,6 +720,8 @@ void spar_gp_init (sparp_t *sparp, ptrlong subtype)
   t_set_push (&(env->spare_acc_filters), NULL);
   t_set_push (&(env->spare_context_gp_subtypes), (caddr_t)subtype);
   t_set_push (&(env->spare_good_graph_varname_sets), env->spare_good_graph_varnames);
+  if (WHERE_L != subtype)
+    t_set_push (&(sparp->sparp_env->spare_propvar_sets), NULL); /* For WHERE_L it's done at beginning of the result-set. */
 }
 
 void spar_gp_replace_selid (sparp_t *sparp, dk_set_t membs, caddr_t old_selid, caddr_t new_selid)
@@ -714,16 +748,41 @@ void spar_gp_replace_selid (sparp_t *sparp, dk_set_t membs, caddr_t old_selid, c
   END_DO_SET ()
 }
 
-SPART * spar_gp_finalize (sparp_t *sparp)
+SPART *
+spar_gp_finalize (sparp_t *sparp)
 {
   sparp_env_t *env = sparp->sparp_env;
   caddr_t orig_selid = env->spare_selids->data;
-  dk_set_t req_membs = (dk_set_t) t_set_pop (&(env->spare_acc_req_triples));
-  dk_set_t opt_membs = (dk_set_t) t_set_pop (&(env->spare_acc_opt_triples));
-  dk_set_t filts = (dk_set_t) t_set_pop (&(env->spare_acc_filters));
-  ptrlong subtype = (ptrlong)((void *)t_set_pop (&(env->spare_context_gp_subtypes)));
+  dk_set_t propvars = (dk_set_t) t_set_pop (&(env->spare_propvar_sets));
+  dk_set_t req_membs;
+  dk_set_t opt_membs;
+  dk_set_t filts;
+  ptrlong subtype;
   SPART *res;
   spar_dbg_printf (("spar_gp_finalize (..., %ld)\n", (long)subtype));
+/* Create triple patterns for distinct '+>' propvars and OPTIONAL triple patterns for distinct '*>' propvars */
+  DO_SET (spar_propvariable_t *, pv, &propvars)
+    {
+      if (_STAR_GT == pv->sparpv_op)
+        spar_gp_init (sparp, OPTIONAL_L);
+      spar_gp_add_triple_or_special_filter (sparp, NULL,
+          spar_make_variable (sparp, pv->sparpv_subj_var->_.var.vname),
+          pv->sparpv_verb_qname,
+          spar_make_variable (sparp, pv->sparpv_obj_var_name),
+          NULL, NULL );
+      if (_STAR_GT == pv->sparpv_op)
+        {
+          SPART *pv_gp;
+          pv_gp = spar_gp_finalize (sparp);
+          t_set_push (((dk_set_t *)(&(env->spare_acc_req_triples->data))) /* not &req_membs */, pv_gp);
+        }
+    }
+  END_DO_SET();
+/* Pop the rest of the environment and adjust graph varnames */
+  req_membs = (dk_set_t) t_set_pop (&(env->spare_acc_req_triples));
+  opt_membs = (dk_set_t) t_set_pop (&(env->spare_acc_opt_triples));
+  filts = (dk_set_t) t_set_pop (&(env->spare_acc_filters));
+  subtype = (ptrlong)((void *)t_set_pop (&(env->spare_context_gp_subtypes)));
   env->spare_good_graph_bmk = t_set_pop (&(env->spare_good_graph_varname_sets));
 /* The following 'if' does not mention UNIONs because UNIONs are handled right in .y file
    For OPTIONAL GP we roll back spare_good_graph_vars at bookmarked level
@@ -760,15 +819,26 @@ SPART * spar_gp_finalize (sparp_t *sparp)
       t_set_push (&opt_membs, last_opt);
     }
 /* Plain composing of SPAR_GP tree node */
-  res = spartlist (sparp, 7,
+  res = spartlist (sparp, 8,
     SPAR_GP, subtype,
     /* opt members are at the first place in NCONC because there's a reverse in t_revlist_to_array */
     t_revlist_to_array (t_NCONC (opt_membs, req_membs)),
     t_revlist_to_array (filts),
+    NULL,
     orig_selid,
     NULL, (ptrlong)(0) );
   spar_selid_pop (sparp);
   return res;
+}
+
+SPART *
+spar_gp_finalize_with_subquery (sparp_t *sparp, SPART *subquery)
+{
+  SPART *gp;
+  gp = spar_gp_finalize (sparp);
+  gp->_.gp.subquery = subquery;
+  gp->_.gp.subtype = SELECT_L;
+  return gp;
 }
 
 void spar_gp_add_member (sparp_t *sparp, SPART *memb)
@@ -900,6 +970,100 @@ spar_gp_add_filter_for_named_graph (sparp_t *sparp)
   spar_gp_add_filter_for_graph (sparp, graph_expn, env->spare_named_graph_precodes, 0);
 }
 
+SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qname, int verb_lexem_type, caddr_t verb_lexem_text)
+{
+  int lvar_blen, verb_qname_blen;
+  caddr_t new_key;
+  dk_set_t *tail;
+  spar_propvariable_t *curr_pv = NULL;
+  const char *optext = ((_PLUS_GT == opcode) ? "+>" : "*>");
+  caddr_t *spec_pred_names = jso_triple_get_objs (
+    (caddr_t *)(sparp->sparp_sparqre->sparqre_qi),
+    verb_qname->_.lit.val,
+    uname_virtrdf_ns_uri_isSpecialPredicate );
+  if (0 != BOX_ELEMENTS (spec_pred_names))
+    spar_error (sparp, "?%.200s %s ?%.200s is not allowed because it uses special predicate name", lvar->_.var.vname, optext, verb_lexem_text);
+  if (NULL == sparp->sparp_env->spare_propvar_sets)
+    spar_error (sparp, "?%.200s %s ?%.200s is used in illegal context", lvar->_.var.vname, optext, verb_lexem_text);
+
+  lvar_blen = box_length (lvar->_.var.vname);
+  verb_qname_blen = box_length (verb_qname->_.lit.val);
+  new_key = t_alloc_box (lvar_blen + verb_qname_blen + 1, DV_STRING);
+  memcpy (new_key, lvar->_.var.vname, lvar_blen);
+  memcpy (new_key + lvar_blen - 1, optext, 2);
+  memcpy (new_key + lvar_blen + 1, verb_qname->_.lit.val, verb_qname_blen);
+  DO_SET (spar_propvariable_t *, prev, &(sparp->sparp_propvars))
+    {
+      if (strcmp (prev->sparpv_key, new_key))
+        continue;
+      if ((prev->sparpv_verb_lexem_type != verb_lexem_type) ||
+        strcmp (prev->sparpv_verb_lexem_text, verb_lexem_text) )
+        spar_error ("Variables ?%.200s %s %s?%.200s%s and ?%.200s %s %s?%.200s%s are written different ways but may mean the same; remove this ambiguity",
+        lvar->_.var.vname, optext,
+        ((Q_IRI_REF == verb_lexem_type) ? "<" : ""), verb_lexem_text,
+        ((Q_IRI_REF == verb_lexem_type) ? ">" : ""),
+        prev->sparpv_subj_var->_.var.vname, optext,
+        ((Q_IRI_REF == prev->sparpv_verb_lexem_type) ? "<" : ""), prev->sparpv_verb_lexem_text,
+        ((Q_IRI_REF == prev->sparpv_verb_lexem_type) ? ">" : "") );
+      curr_pv = prev;
+      break;
+    }
+  END_DO_SET();
+  if (NULL == curr_pv)
+    {
+      curr_pv = t_alloc (sizeof (spar_propvariable_t));
+      curr_pv->sparpv_subj_var = lvar;
+      curr_pv->sparpv_op = opcode;
+      curr_pv->sparpv_verb_qname = verb_qname;
+      curr_pv->sparpv_verb_lexem_type = verb_lexem_type;
+      curr_pv->sparpv_verb_lexem_text = verb_lexem_text;
+      curr_pv->sparpv_key = new_key;
+      /* Composing readable and short name for the generated variable */
+      if (lvar_blen + strlen (verb_lexem_text) + ((Q_IRI_REF == verb_lexem_type) ? 2 : 0) < 30)
+        {
+          curr_pv->sparpv_obj_var_name = t_box_sprintf (40, "%s%s%s%s%s",
+            lvar->_.var.vname, optext,
+            ((Q_IRI_REF == verb_lexem_type) ? "<" : ""), verb_lexem_text,
+            ((Q_IRI_REF == verb_lexem_type) ? ">" : "") );
+          curr_pv->sparpv_obj_altered = 0;
+        }
+      else
+        {
+          char buf[20];
+          sprintf (buf, "!pv!%d", (sparp->sparp_unictr)++);
+          if (strlen(buf) + strlen (verb_lexem_text) + ((Q_IRI_REF == verb_lexem_type) ? 2 : 0) < 30)
+            curr_pv->sparpv_obj_var_name = t_box_sprintf (40, "%s%s%s%s%s",
+              buf, optext,
+              ((Q_IRI_REF == verb_lexem_type) ? "<" : ""), verb_lexem_text,
+              ((Q_IRI_REF == verb_lexem_type) ? ">" : "") );
+          else
+            curr_pv->sparpv_obj_var_name = t_box_sprintf (40, "%s%s!%d",
+              buf, optext, (sparp->sparp_unictr)++ );
+            curr_pv->sparpv_obj_altered = 0x1;
+        }
+      if (':' == curr_pv->sparpv_obj_var_name[0])
+        {
+          curr_pv->sparpv_obj_var_name[0] = '!';
+          curr_pv->sparpv_obj_altered |= 0x2;
+        }
+      t_set_push (&(sparp->sparp_propvars), curr_pv);
+      goto not_found_in_local_set; /* see below */ /* No need to search because this is the first occurence at all */
+    }
+  DO_SET (spar_propvariable_t *, prev, &(sparp->sparp_env->spare_propvar_sets->data))
+    {
+      if (strcmp (prev->sparpv_key, new_key))
+        continue;
+      goto in_local_set; /* see below */
+    }
+  END_DO_SET();
+
+not_found_in_local_set:
+  t_set_push (&(sparp->sparp_env->spare_propvar_sets->data), curr_pv);
+
+in_local_set:
+  return spar_make_variable (sparp, curr_pv->sparpv_obj_var_name);
+}
+
 SPART **
 spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_t offset)
 {
@@ -960,7 +1124,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, caddr_t limit, caddr_
         spar_make_funcall (sparp, 0, "bif:vector", NULL) ) ); /*!!!TBD describe options will come here */
   if (need_limofs_trick)
     return (SPART **)t_list (2, descr_call,
-      spartlist (sparp, 3, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1")) );
+      spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1"), SSG_VALMODE_AUTO) );
   else
   return (SPART **)t_list (1, descr_call);
 }
@@ -1019,9 +1183,9 @@ SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
     env->spare_output_valmode_name,
     env->spare_output_format_name,
     t_box_copy (env->spare_storage_name),
-    retvals, NULL /* expanded_orig_retvals */, retselid,
+    retvals, NULL /* orig_retvals */, NULL /* expanded_orig_retvals */, retselid,
     sources, pattern, NULL, order,
-    limit, offset, NULL, (ptrlong)(0) );
+    limit, offset, env );
 }
 
 
@@ -1386,7 +1550,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
   action_sqls = (SPART **)t_alloc_box (action_count * sizeof (SPART *), DV_ARRAY_OF_POINTER);
   sparp->sparp_env->spare_output_format_name = NULL;
   sparp->sparp_env->spare_output_valmode_name = NULL;
-  if (0 != sparp->sparp_env->spare_equiv_count)
+  if (NULL != sparp->sparp_expr)
     spar_internal_error (sparp, "spar_" "make_topmost_sparul_sql() is called after start of some tree rewrite");
   DO_BOX_FAST (SPART *, action, action_ctr, actions)
     {
@@ -1394,7 +1558,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
       sql_comp_t sc;
       caddr_t action_sql;
       sparp->sparp_expr = action;
-      sparp_rewrite_all (sparp);
+      sparp_rewrite_all (sparp, 0 /* no cloning -- no need in safely_copy_retvals */);
   /*xt_check (sparp, sparp->sparp_expr);*/
 #ifndef NDEBUG
       t_check_tree (sparp->sparp_expr);
@@ -1413,7 +1577,6 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
       strses_free (ssg.ssg_out);
       action_sqls [action_ctr] = spartlist (sparp, 4, SPAR_LIT, action_sql, NULL, NULL);
       sparp->sparp_expr = NULL;
-      sparp->sparp_env->spare_equiv_count = 0;
     }
   END_DO_BOX_FAST;
   sparp->sparp_env->spare_output_format_name = saved_format_name;
@@ -1836,6 +1999,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      SES_PRINT (ses, buf);
 	      spart_dump (tree->_.alias.arg, ses, indent+2, "VALUE", 0);
 	      spart_dump (tree->_.alias.aname, ses, indent+2, "ALIAS NAME", 0);
+		/* _.alias.native is temp so it is not printed */
 	      break;
 	    }
 	  case SPAR_BLANK_NODE_LABEL:
@@ -1936,6 +2100,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      spart_dump (tree->_.req_top.order, ses, indent+2, "ORDER", -1);
 	      spart_dump ((void *)(tree->_.req_top.limit), ses, indent+2, "LIMIT", 0);
 	      spart_dump ((void *)(tree->_.req_top.offset), ses, indent+2, "OFFSET", 0);
+#if 0
 	      sprintf (buf, "\nEQUIVS:");
 	      SES_PRINT (ses, buf);
               eq_count = tree->_.req_top.equiv_count;
@@ -1953,10 +2118,10 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	              SES_PRINT (ses, buf);
                       continue;
                     }
-	          sprintf (buf, "#%d: %s( %d subv, %d recv, %d gspo, %d const:", eq_ctr,
+	          sprintf (buf, "#%d: %s( %d subv, %d recv, %d gspo, %d const, %d subq:", eq_ctr,
                     (eq->e_deprecated ? "deprecated " : ""),
 		    BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
-	            (int)(eq->e_gspo_uses), (int)(eq->e_const_reads) );
+	            (int)(eq->e_gspo_uses), (int)(eq->e_const_reads), (int)(eq->e_subquery_uses) );
 	          SES_PRINT (ses, buf);
 		  varname_count = BOX_ELEMENTS (eq->e_varnames);
 		  for (varname_ctr = 0; varname_ctr < varname_count; varname_ctr++)
@@ -1974,6 +2139,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
                   SES_PRINT (ses, ";"); spart_dump_rvr (ses, &(eq->e_rvr));
 		  SES_PRINT (ses, ")");
                 }
+#endif
 	      break;
 	    }
 	  case SPAR_VARIABLE:
@@ -2217,7 +2383,7 @@ sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre)
     {
       /* Bug 4566: sparpyyrestart (NULL); */
       sparyyparse (sparp);
-      sparp_rewrite_all (sparp);
+      sparp_rewrite_all (sparp, 0 /* top is never cloned, hence zero safely_copy_retvals */);
     }
   QR_RESET_CODE
     {
@@ -2235,9 +2401,6 @@ sparp_t * sparp_query_parse (char * str, spar_query_env_t *sparqre)
   return sparp;
 }
 
-extern sparp_t *
-sparp_clone_for_variant (sparp_t *sparp)
-{
 #define ENV_COPY(field) env_copy->field = env->field
 #define ENV_BOX_COPY(field) env_copy->field = t_box_copy (env->field)
 #define ENV_SPART_COPY(field) env_copy->field = (SPART *)t_box_copy_tree ((caddr_t)(env->field))
@@ -2248,6 +2411,10 @@ sparp_clone_for_variant (sparp_t *sparp)
       iter->data = t_box_copy_tree ((caddr_t)opt); \
     } \
   END_DO_SET()
+
+sparp_t *
+sparp_clone_for_variant (sparp_t *sparp)
+{
   s_node_t *iter;
   sparp_env_t *env = sparp->sparp_env;
   t_NEW_VAR (sparp_t, sparp_copy);
@@ -2257,15 +2424,12 @@ sparp_clone_for_variant (sparp_t *sparp)
   ENV_BOX_COPY (spare_output_valmode_name);
   ENV_BOX_COPY (spare_output_format_name);
   ENV_BOX_COPY (spare_storage_name);
+  ENV_COPY(spare_parent_env);
 #if 0 /* These will be used when libraries of inference rules are introduced. */
-    struct sparp_env_s *spare_parent_env;		/*!< Pointer to parent env */
     id_hash_t *		spare_fundefs;			/*!< In-scope function definitions */
     id_hash_t *		spare_vars;			/*!< Known variables as keys, equivs as values */
     id_hash_t *		spare_global_bindings;		/*!< Dictionary of global bindings, varnames as keys, default value expns as values. DV_DB_NULL box for no expn! */
 #endif
-  if (0 != env->spare_equiv_count)
-    spar_internal_error (sparp, "sparp_" "clone_for_variant(): can't clone when equivs are built");
-  /*... thus no copy for spare_equivs and spare_equiv_count */
   /* No copy for spare_grab_vars */
   ENV_SET_COPY (spare_common_sponge_options);
   ENV_SET_COPY (spare_default_graph_precodes);
@@ -2276,6 +2440,89 @@ sparp_clone_for_variant (sparp_t *sparp)
   ENV_SET_COPY (spare_sql_select_options);
   ENV_SET_COPY (spare_global_var_names);
   return sparp_copy;
+}
+
+void
+spar_env_push (sparp_t *sparp)
+{
+  sparp_env_t *env = sparp->sparp_env;
+  t_NEW_VARZ (sparp_env_t, env_copy);
+  ENV_COPY (spare_start_lineno);
+  ENV_COPY (spare_param_counter_ptr);
+  ENV_COPY (spare_namespace_prefixes);
+  ENV_COPY (spare_namespace_prefixes_outer);
+  ENV_COPY (spare_base_uri);
+  env_copy->spare_output_valmode_name = t_box_dv_short_string ("AUTO");
+  ENV_COPY (spare_storage_name);
+  ENV_COPY (spare_inference_name);
+  ENV_COPY (spare_use_same_as);
+#if 0 /* These will be used when libraries of inference rules are introduced. Don't forget to patch sparp_clone_for_variant()! */
+    id_hash_t *		spare_fundefs;			/*!< In-scope function definitions */
+    id_hash_t *		spare_vars;			/*!< Known variables as keys, equivs as values */
+    id_hash_t *		spare_global_bindings;		/*!< Dictionary of global bindings, varnames as keys, default value expns as values. DV_DB_NULL box for no expn! */
+#endif
+  ENV_COPY (spare_grab);
+  ENV_COPY (spare_common_sponge_options);
+  ENV_COPY (spare_default_graph_precodes);
+  ENV_COPY (spare_default_graphs_locked);
+  ENV_COPY (spare_named_graph_precodes);
+  ENV_COPY (spare_named_graphs_locked);
+  ENV_COPY (spare_common_sql_table_options);
+  /* no copy for spare_groupings */
+  ENV_COPY (spare_sql_select_options);
+  /* no copy for spare_context_qms */
+  ENV_COPY (spare_context_qms);
+  if ((NULL != env_copy->spare_context_qms) && ((SPART *)((ptrlong)_STAR) != env_copy->spare_context_qms->data))
+    spar_error (sparp, "Subqueries are not allowed inside QUAD MAP group patterns other than 'QUAD MAP * {...}'");
+  ENV_COPY (spare_context_graphs);
+  /* no copy for spare_context_subjects */
+  /* no copy for spare_context_predicates */
+  /* no copy for spare_context_objects */
+  /* no copy for spare_context_gp_subtypes */
+  /* no copy for spare_acc_req_triples */
+  /* no copy for spare_acc_opt_triples */
+  /* no copy for spare_acc_filters */
+  ENV_COPY (spare_good_graph_varnames);
+  ENV_COPY (spare_good_graph_varname_sets);
+  ENV_COPY (spare_good_graph_bmk);
+  /* no copy for spare_selids */
+  ENV_COPY (spare_global_var_names);
+  ENV_COPY (spare_globals_are_numbered);
+  ENV_COPY (spare_global_num_offset);
+  /* no copy for spare_acc_qm_sqls */
+  /* no copy for spare_qm_default_table */
+  /* no copy for spare_qm_current_table_alias */
+  /* no copy for spare_qm_parent_tables_of_aliases */
+  /* no copy for spare_qm_parent_aliases_of_aliases */
+  /* no copy for spare_qm_descendants_of_aliases */
+  /* no copy for spare_qm_ft_indexes_of_columns */
+  /* no copy for spare_qm_where_conditions */
+  /* no copy for spare_qm_locals */
+  /* no copy for spare_qm_affected_jso_iris */
+  /* no copy for spare_qm_deleted */
+  /* no copy for spare_sparul_log_mode */
+  ENV_COPY (spare_signal_void_variables);
+
+  env_copy->spare_parent_env = env;
+  sparp->sparp_env = env_copy;
+}
+
+#undef ENV_COPY
+#undef ENV_BOX_COPY
+#undef ENV_SPART_COPY
+#undef ENV_SET_COPY
+
+void
+spar_env_pop (sparp_t *sparp)
+{
+  sparp_env_t *env = sparp->sparp_env;
+  sparp_env_t *parent = env->spare_parent_env;
+#ifndef NDEBUG
+  if (NULL == parent)
+    GPF_T1("Misplaced call of spar_env_pop()");
+#endif
+  parent->spare_global_var_names = env->spare_global_var_names;
+  sparp->sparp_env = parent;
 }
 
 extern void sparp_delete_clone (sparp_t *sparp);
