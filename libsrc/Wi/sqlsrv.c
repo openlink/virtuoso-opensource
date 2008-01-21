@@ -2876,6 +2876,18 @@ sf_sql_get_data_ac (long dp_from, long how_much, long starting_at, long bh_key_i
   blob_handle_t * bh = bh_alloc (bh_tag);
   dbe_key_t *key;
 
+  if (KI_TEMP == bh_key_id)
+    {
+      caddr_t err;
+      err = srv_make_new_error ("37000", "SR486", "Ask data from client RPC is not supported for BLOB stored into the temp space");
+      DKST_RPC_DONE (client);
+      PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
+      dk_free_tree (err);
+      bh_free (bh);
+      session_flush (client);
+      return;
+    }
+
   bh->bh_page = dp_from;
   bh->bh_current_page = dp_from;
   bh->bh_dir_page = page_dir;
