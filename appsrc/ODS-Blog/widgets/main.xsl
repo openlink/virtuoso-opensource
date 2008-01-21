@@ -878,12 +878,12 @@ else if (length (self.catid))
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
 
-	        if (<?V DB.DBA.WA_USER_APP_ENABLE (self.user_id) ?>  >= 1)
+	        if (<?V DB.DBA.WA_USER_APP_ENABLE (self.owner_u_id) ?>  >= 1)
 	     generateAPP('texttd',
 	     	{ title:"Related links",
 		                      width:300,
 		                      height:200,
-		                      appActivation:"<?V case when DB.DBA.WA_USER_APP_ENABLE (self.user_id) = 2 then 'hover' else 'click' end ?>",
+		                      appActivation:"<?V case when DB.DBA.WA_USER_APP_ENABLE (self.owner_u_id) = 2 then 'hover' else 'click' end ?>",
 		  useRDFB:<?V case when wa_check_package ('OAT') then 'true' else 'false' end ?>
         }
 	                     );
@@ -1454,11 +1454,11 @@ window.onload = function (e)
   </xsl:template>
 
   <xsl:template match="vm:geo-link">
-    <div>
+    <!--div>
 	<a href="http://geourl.org/near?p=<?U sprintf ('http://%s%s', self.host, self.base) ?>" class="{local-name()}">
 	<xsl:apply-templates />
       </a>
-    </div>
+    </div-->
   </xsl:template>
 
   <xsl:template match="vm:rdf-link">
@@ -7536,7 +7536,7 @@ window.onload = function (e)
                         <v:url name="b_url1222" value="Comment Settings" format="%s" url="--'index.vspx?page=ping&ping_tab=3&site_tab=2'" xhtml_class="button"/>
                       </td>
 		      <td class="<?V self.tab_5_lev ('4') ?>" align="center" nowrap="1">
-                        <v:url name="b_url1242" value="Conversation" url="--'index.vspx?page=ping&ping_tab=3&site_tab=4'" xhtml_class="button"/>
+                        <v:url name="b_url1242" value="Discussion" url="--'index.vspx?page=ping&ping_tab=3&site_tab=4'" xhtml_class="button"/>
                       </td>
 		      <td class="<?V self.tab_5_lev ('3') ?>" align="center" nowrap="1">
                         <v:url name="b_url1232" value="Comments Management" format="%s" url="--'index.vspx?page=ping&ping_tab=3&site_tab=3'" xhtml_class="button"/>
@@ -7566,10 +7566,10 @@ window.onload = function (e)
 		      <v:template name="template_page422" type="simple" instantiate="-- equ(get_keyword('site_tab', control.vc_page.vc_event.ve_params), '4')">
 			  <input type="hidden" name="ping_tab" value="<?V get_keyword('ping_tab', control.vc_page.vc_event.ve_params, '4') ?>"/>
 			  <input type="hidden" name="site_tab" value="<?V get_keyword('site_tab', control.vc_page.vc_event.ve_params, '1') ?>"/>
-			  <h2>Conversation</h2>
+			  <h2>Discussion</h2>
 			  <div>
 				<v:check-box name="cb_conv" value="1" xhtml_id="cb_conv" initial-checked="--self.conv"/>
-				<label for="cb_conv">Enable conversation on this blog</label><br />
+				<label for="cb_conv">Enable discussion on this blog</label><br />
 				<v:check-box name="cb_conv_init" value="1" xhtml_id="cb_conv_init" initial-checked="1"/>
 				<label for="cb_conv_init">Initialize the news group with existing posts</label>
 				<br />

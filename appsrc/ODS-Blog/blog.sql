@@ -2201,6 +2201,7 @@ procedure "blogger_auth" (in req "blogRequest")
       whenever not found goto nfpost;
       select BI_HOME, BI_OWNER, BI_BLOG_ID into home, own, bid from SYS_BLOG_INFO, SYS_BLOGS
       where B_POST_ID = req.postId and BI_BLOG_ID = B_BLOG_ID with (prefetch 1);
+		  req.blogid := bid;
       nfpost:;
     }
               if (own is not null)
@@ -2664,7 +2665,7 @@ returns varchar
   else
     {
       declare cnt, title any;
-      declare pings any;
+      declare pings, cats any;
       req.postId := cast (sequence_next ('blogger.postid') as varchar);
       if (req.postId = '0') -- start from 1
         req.postId := cast (sequence_next ('blogger.postid') as varchar);
@@ -2675,11 +2676,22 @@ returns varchar
       struct.userid := req.user_name;
       cnt := blog_wide2utf (struct.description);
       pings := struct.mt_tb_ping_urls;
+      cats := struct.categories;
       --struct.mt_tb_ping_urls := null;
       struct.description := null;
 
       if (length (trim (cnt)) = 0)
         signal ('22023', 'Empty posts are not allowed');
+
+      foreach (varchar cat in cats) do
+	{
+	  declare category_id int;
+	  whenever not found goto nextcat;
+	  select MTC_ID into category_id from MTYPE_CATEGORIES where MTC_NAME = cat and MTC_BLOG_ID = req.blogid;
+	  insert replacing MTYPE_BLOG_CATEGORY (MTB_CID , MTB_POST_ID, MTB_BLOG_ID, MTB_PRIMARY)
+	      values (category_id, struct.postId, req.blogid, 0);
+	  nextcat:;
+	}
 
       title := BLOG_GET_TITLE (struct, cnt);
       insert into SYS_BLOGS (B_APPKEY, B_BLOG_ID, B_CONTENT, B_POST_ID, B_USER_ID, B_TS, B_META, B_STATE, B_TITLE)
@@ -2720,7 +2732,7 @@ returns smallint
     call ('editPost_' || req.appkey) (req);
   else
     {
-      declare cnt, ts, userid, pings any;
+      declare cnt, ts, userid, pings, cats any;
       whenever not found goto nf;
       select B_TS, B_USER_ID into ts, userid from SYS_BLOGS where B_POST_ID = req.postId;
       struct.postid := req.postId;
@@ -2732,6 +2744,17 @@ returns smallint
       struct.description := null;
       if (length (trim (cnt)) = 0)
         signal ('22023', 'Empty posts are not allowed');
+      cats := struct.categories;
+      delete from MTYPE_BLOG_CATEGORY where MTB_BLOG_ID = req.blogid and MTB_POST_ID = req.postId;
+      foreach (varchar cat in cats) do
+	{
+	  declare category_id int;
+	  whenever not found goto nextcat;
+	  select MTC_ID into category_id from MTYPE_CATEGORIES where MTC_NAME = cat and MTC_BLOG_ID = req.blogid;
+	  insert replacing MTYPE_BLOG_CATEGORY (MTB_CID , MTB_POST_ID, MTB_BLOG_ID, MTB_PRIMARY)
+	      values (category_id, struct.postId, req.blogid, 0);
+	  nextcat:;
+	}
       update SYS_BLOGS
         set B_CONTENT = cnt, B_META = struct, B_STATE = req.publish
         where B_POST_ID = req.postId;
@@ -2908,6 +2931,8 @@ returns any
       res.dateCreated := dt;
       res.title := blog_utf2wide (res.title);
       res.description := blog_utf2wide (blob_to_string (content));
+      res.categories := (select DB..vector_agg(MTC_NAME) from MTYPE_BLOG_CATEGORY, MTYPE_CATEGORIES
+      	where MTB_BLOG_ID = MTC_BLOG_ID and MTC_ID = MTB_CID and MTB_POST_ID = req.postId);
     }
   return res;
 nf:
@@ -2960,6 +2985,8 @@ procedure "metaWeblog.getRecentPosts" (
          res.dateCreated := B_TS;
          res.title := blog_utf2wide (res.title);
          res.description := blog_utf2wide (blob_to_string (B_CONTENT));
+	 res.categories := (select DB..vector_agg(MTC_NAME) from MTYPE_BLOG_CATEGORY, MTYPE_CATEGORIES
+	 where MTB_BLOG_ID = MTC_BLOG_ID and MTC_ID = MTB_CID and MTB_POST_ID = B_POST_ID);
 
 	 -- cludge for enclosures
 	 if (udt_is_available ('DB.DBA.MWeblogPost'))
