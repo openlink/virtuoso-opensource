@@ -422,16 +422,13 @@
                         </td>
                         <td>
                           <?vsp
-                            declare url, class, appClass, appIri, title varchar;
+                            declare url, class, appIri, title varchar;
                             
                             title := (control as vspx_row_template).te_rowset[1];
                             url := (control as vspx_row_template).te_rowset[4];
                             class := self.linkClass((control as vspx_row_template).te_rowset[9]);
-                            appClass := '';
-                            if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                              appClass := 'app';  
                             appIri := SIOC..feed_item_iri ((control as vspx_row_template).te_rowset[6], (control as vspx_row_template).te_rowset[0]);  
-                            http (sprintf ('<a id="s_item_%d" href="%s" target="_blank" class="%s %s" about="%U" title="%s">%s</a>', (control as vspx_row_template).te_rowset[0], url, class, appClass, appIri, ENEWS.WA.utf2wide(title), title));
+                            http (sprintf ('<a id="s_item_%d" href="%s" target="_blank" class="%s %s" about="%U" title="%s">%s</a>', (control as vspx_row_template).te_rowset[0], url, class, 'app', appIri, ENEWS.WA.utf2wide(title), title));
                           ?>  
                           <v:template type="simple" enabled="-- case when ((self.v_type = 'text') and is_empty_or_null(self.v_keywords) and is_empty_or_null(self.v_expression)) then 0 else 1 end">
                             <br /><i style="padding-left: 20px;"><v:label value="--ENEWS.WA.feed_excerpt(((control.vc_parent).vc_parent as vspx_row_template).te_rowset[0], self.v_keywords, self.v_expression)" format="%s"/></i>
@@ -443,15 +440,12 @@
                         <v:template type="simple" enabled="-- case when (self.v_group = 0) then 1 else 0 end;">
                           <td>
                             <?vsp
-                              declare url, appClass, appIri, title varchar;
+                              declare url, appIri, title varchar;
                               
                               title := (control.vc_parent as vspx_row_template).te_rowset[8];
                               url := sprintf('channels_update.vspx?id=%d&sid=%s&realm=%s', (control.vc_parent as vspx_row_template).te_rowset[6], self.sid, self.realm);
-                              appClass := '';
-                              if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                                appClass := 'app';  
                               appIri := SIOC..feed_iri ((control.vc_parent as vspx_row_template).te_rowset[6]);  
-                              http (sprintf ('<a id="s_feed_%d" href="%s" class="%s" about="%U" title="%s">%s</a>', (control.vc_parent as vspx_row_template).te_rowset[6], url, appClass, appIri, ENEWS.WA.utf2wide(title), title));
+                              http (sprintf ('<a id="s_feed_%d" href="%s" class="%s" about="%U" title="%s">%s</a>', (control.vc_parent as vspx_row_template).te_rowset[6], url, 'app', appIri, ENEWS.WA.utf2wide(title), title));
                             ?>  
                           </td>
                         </v:template>
@@ -487,18 +481,15 @@
               <div style="margin-left:3px; margin-top:3px;">
                 <?vsp
                   declare N, tLength, tMax, tMin integer;
-                  declare appClass, tStyle varchar;
+                  declare tStyle varchar;
 
-                  appClass := '';
-                  if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                    appClass := 'app';  
                   tLength := length(self.ds_tags);
                   if (tLength > 2) {
                     tMin := self.ds_tags[0][1];
                     tMax := self.ds_tags[1][1];
                     for (N := 2; N < tLength; N := N + 1) {
                       tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
-                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], appClass, SIOC..addressbook_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
+                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], 'app', SIOC..addressbook_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
                   }
                   } else {
                     http ('no tags');

@@ -84,7 +84,8 @@ create procedure ENEWS.WA.vhost()
   if (isnull(strstr(sHost, '/DAV')))
     iIsDav := 0;
   VHOST_REMOVE(lpath    => '/enews2');
-  VHOST_DEFINE(lpath    => '/enews2',
+  VHOST_REMOVE(lpath    => '/subscriptions');
+  VHOST_DEFINE(lpath    => '/subscriptions',
                ppath    => concat(sHost, 'www/'),
                is_dav   => iIsDav,
                is_brws  => 0,
@@ -170,6 +171,11 @@ ENEWS.WA.exec_no_error (
 )
 ;
 
+ENEWS.WA.exec_no_error (
+  'alter type wa_eNews2 add overriding method wa_update_instance (in oldValues any, in newValues any) returns any'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 -- wa_eNews2 methods
@@ -216,25 +222,20 @@ create method wa_notify_member_changed(in account int, in otype int, in ntype in
 --
 create method wa_new_inst (in login varchar) for wa_eNews2
 {
-  declare
-    iUserID,
-    iWaiID integer;
+  declare ownerID, domainID integer;
 
-  iUserID := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
-  if (isnull(iUserID))
-    signal('EN001', 'not a Virtuoso WA user');
-
+  ownerID := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
   if (self.wa_member_model is null)
     self.wa_member_model := 0;
 
-  self.owner := iUserID;
+  self.owner := ownerID;
 
   insert into WA_INSTANCE (WAI_NAME, WAI_TYPE_NAME, WAI_INST, WAI_DESCRIPTION)
   	values (self.wa_name, 'eNews2', self, 'Description');
 
-  select WAI_ID into iWaiID from WA_INSTANCE where WAI_NAME = self.wa_name;
-  self.eNewsID := cast(iWaiID as varchar);
-  update WA_INSTANCE set WAI_INST = self where WAI_ID = iWaiID;
+  select WAI_ID into domainID from WA_INSTANCE where WAI_NAME = self.wa_name;
+  self.eNewsID := cast(domainID as varchar);
+  update WA_INSTANCE set WAI_INST = self where WAI_ID = domainID;
 
   -- Add a virtual directory for eNews - public www -------------------------
   VHOST_REMOVE(lpath    => concat('/enews2/', self.eNewsID));
@@ -248,7 +249,7 @@ create method wa_new_inst (in login varchar) for wa_eNews2
                opts     => vector ('domain', self.eNewsID)
              );
 
-  ENEWS.WA.domain_update (iWaiID, iUserID);
+  ENEWS.WA.domain_update (domainID, ownerID);
 
   return (self as web_app).wa_new_inst(login);
 }
@@ -373,12 +374,12 @@ create method get_param (in param varchar) for wa_eNews2
 --
 create method wa_dashboard_last_item () for wa_eNews2
 {
-  declare domainID, userID integer;
+  declare domainID, ownerID integer;
 
   domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
+  ownerID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
 
-  return ENEWS.WA.dashboard_get(domainID, userID);
+  return ENEWS.WA.dashboard_get (domainID, ownerID);
 }
 ;
 
@@ -386,11 +387,29 @@ create method wa_dashboard_last_item () for wa_eNews2
 --
 create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_eNews2
 {
-  declare domainID, userID integer;
+  declare domainID, ownerID integer;
 
   domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
-  userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
+  ownerID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
 
-  return concat(ENEWS.WA.dav_url2(domainID, userID), 'OFM.rdf');
+  return concat(ENEWS.WA.dav_url2 (domainID, ownerID), 'OFM.rdf');
+}
+;
+
+
+-------------------------------------------------------------------------------
+--
+create method wa_update_instance (in oldValues any, in newValues any) for wa_eNews2
+{
+  declare domainID, ownerID integer;
+
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = newValues[0]);
+  ownerID := (select WAM_USER from WA_MEMBER B where WAM_INST = oldValues[0] and WAM_MEMBER_TYPE = 1);
+
+  ENEWS.WA.domain_gems_delete (domainID, ownerID, oldValues[0] || '_Gems');
+  ENEWS.WA.domain_gems_create (domainID, ownerID);
+  ENEWS.WA.nntp_update (domainID, ENEWS.WA.domain_nntp_name2 (oldValues[0], ENEWS.WA.account_name (ownerID)), ENEWS.WA.domain_nntp_name2 (newValues[0], ENEWS.WA.account_name (ownerID)));
+
+  return (self as web_app).wa_update_instance (oldValues, newValues);
 }
 ;

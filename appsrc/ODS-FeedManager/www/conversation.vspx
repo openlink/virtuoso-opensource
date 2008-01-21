@@ -27,7 +27,8 @@
         <![CDATA[
           declare title any;
 
-          if (isnull(self.v_pid)) {
+      if (isnull(self.v_pid))
+      {
             select EFI_TITLE into title from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid;
           } else {
             select EFIC_TITLE into title from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ID = self.v_pid;
@@ -40,7 +41,8 @@
         <![CDATA[
           declare comment any;
 
-          if (isnull(self.v_pid)) {
+      if (isnull(self.v_pid))
+      {
             select EFI_TITLE into comment from ENEWS.WA.FEED_ITEM where EFI_ID = self.v_fid;
           } else {
             select EFIC_COMMENT into comment from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ID = self.v_pid;
@@ -49,7 +51,7 @@
         ]]>
       </v:method>
 
-  <vm:pagetitle>Conversation page</vm:pagetitle>
+  <vm:pagetitle>Discussion page</vm:pagetitle>
       <vm:popup_page_wrapper>
         <vm:variables>
           <v:variable persist="0" name="v_mode" type="varchar" default="'show'"/>
@@ -62,7 +64,7 @@
         </vm:variables>
     <vm:pagebody>
           <div class="new-form-header">
-            Conversation
+        Discussion
           </div>
           <div class="new-form-body">
             <table cellspacing="0">
@@ -90,7 +92,8 @@
                 </td>
               </tr>
           <?vsp
-            if (exists (select 1 from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is not null)) {
+            if (exists (select 1 from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is not null))
+            {
           ?>
               <tr>
                 <td>
@@ -140,7 +143,6 @@
                                                        d_name);
 	                           comment:=comment||'<br/>';
 	                         }
-                           
 	                         idx := idx + 1;
                         }
                       	?>
@@ -286,10 +288,12 @@
                                 mail := trim(self.f_mail.ufl_value);
                             url := trim(self.openid_url.ufl_value);
 
-                                if (isnull(self.v_pid)) {
+                            if (isnull(self.v_pid))
+                            {
                                   -- get root comment;
                                   self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.v_did and EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is null);
-                              if (isnull(self.v_pid)) {
+                              if (isnull(self.v_pid))
+                              {
                                 ENEWS.WA.nntp_root (self.v_did, self.v_fid);
                                 self.v_pid := (select EFIC_ID from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = self.v_did and EFIC_ITEM_ID = self.v_fid and EFIC_PARENT_ID is null);
                               }

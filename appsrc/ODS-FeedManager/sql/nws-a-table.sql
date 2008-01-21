@@ -920,21 +920,7 @@ ENEWS.WA.exec_no_error ('
   create text index on ENEWS.WA.FEED_ITEM_COMMENT (EFIC_COMMENT) with key EFIC_ID clustered with (EFIC_DOMAIN_ID, EFIC_ITEM_ID) using function language \'x-ViDoc\'
 ');
 
--------------------------------------------------------------------------------
---
-ENEWS.WA.exec_no_error('
-  create trigger WA_MEMBER_AU_ENEWS AFTER UPDATE ON DB.DBA.WA_MEMBER order 10 referencing old as O, new as N {
-    declare domain_id, account_id integer;
-
-    if ((O.WAM_INST <> N.WAM_INST) and (N.WAM_MEMBER_TYPE = 1)) {
-      account_id := N.WAM_USER;
-      domain_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = N.WAM_INST);
-      ENEWS.WA.domain_gems_delete(domain_id, account_id, \'OFM\', O.WAM_INST || \'_Gems\');
-      ENEWS.WA.domain_gems_create(domain_id, account_id);
-      ENEWS.WA.nntp_update (domain_id, O.WAM_INST, null, null);
-    }
-  }
-');
+ENEWS.WA.exec_no_error ('drop trigger WA_MEMBER_AU_ENEWS');
 
 -------------------------------------------------------------------------------
 --

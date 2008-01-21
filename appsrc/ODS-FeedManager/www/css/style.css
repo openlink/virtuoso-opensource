@@ -500,7 +500,7 @@ table#list thead input {
 }
 .pane_right2
 {
-  width: 19.6%;
+  width: 19.55%;
   height: 100%;
   float: right;
   overflow: auto;
@@ -1023,6 +1023,20 @@ div.tabLabel {
 div.tabContent {
   font-size: 1em;
   padding: 6px;
+}
+
+span.tab {
+  color: #000;
+  font-weight: bold;
+  background-color: #FFF;
+  border: 1px solid #000;
+  border-bottom-width: 0px;
+  border-color: #7f94a5;
+  padding: 2px 10px 2px 10px;
+  position: relative;
+  text-decoration: none;
+  top: 2px;
+  z-index: 100;
 }
 
 a.remove

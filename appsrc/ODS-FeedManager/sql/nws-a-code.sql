@@ -484,8 +484,8 @@ create procedure ENEWS.WA.domain_gems_create (
 create procedure ENEWS.WA.domain_gems_delete(
   in domain_id integer,
   in account_id integer,
-  in appName varchar := 'Feed Subscriptions',
-  in appGems varchar := null)
+  in appName varchar := null,
+  in appGems varchar := 'OFM')
 {
   declare tmp, davHome, home, path varchar;
 
@@ -493,31 +493,37 @@ create procedure ENEWS.WA.domain_gems_delete(
   if (isnull(davHome))
     return;
 
-  if (isnull(appGems))
-    appGems := ENEWS.WA.domain_gems_name(domain_id);
-  home := davHome || appName || '/' || appGems || '/';
+  if (isnull (appName))
+    appName := ENEWS.WA.domain_gems_name (domain_id);
 
-  path := home || appName || '.rss';
+  home := davHome || ENEWS.WA.domain_gems_folder() || '/';
+
+  path := home || appName || '/' || appGems || '.rss';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.rdf';
+  path := home || appName || '/' || appGems || '.rdf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.atom';
+  path := home || appName || '/' || appGems || '.atom';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.ocs';
+  path := home || appName || '/' || appGems || '.ocs';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.opml';
+  path := home || appName || '/' || appGems || '.opml';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.foaf';
+  path := home || appName || '/' || appGems || '.foaf';
+  DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
+  path := home || appName || '/' || appGems || '.comment';
+  DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
+  path := home || appName || '/' || appGems || '.podcast';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
   declare auth_uid integrer;
 
   auth_uid := http_dav_uid();
-  tmp := DB.DBA.DAV_DIR_LIST_INT (home, 0, '%', null, null, auth_uid);
-  if (not isinteger(tmp) and not length(tmp))
-    DB.DBA.DAV_DELETE_INT (home, 1, null, null, 0);
 
-  home := davHome || appName || '/';
+  path := home || appName || '/';
+  tmp := DB.DBA.DAV_DIR_LIST_INT (path, 0, '%', null, null, auth_uid);
+  if (not isinteger(tmp) and not length(tmp))
+    DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
+
   tmp := DB.DBA.DAV_DIR_LIST_INT (home, 0, '%', null, null, auth_uid);
   if (not isinteger(tmp) and (length(tmp) = 1) and (tmp[0][10] = 'channels'))
     DB.DBA.DAV_DELETE_INT (home || 'channels/', 1, null, null, 0);
@@ -567,7 +573,7 @@ create procedure ENEWS.WA.domain_delete (
   for (select WAM_USER from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'eNews2' and WAI_ID = domain_id) do
     ENEWS.WA.account_delete (domain_id, WAM_USER);
 
-  ENEWS.WA.nntp_update (domain_id, null, 1, 0);
+  ENEWS.WA.nntp_update (domain_id, null, null, 1, 0);
 
   VHOST_REMOVE(lpath => concat('/enews2/', cast(domain_id as varchar)));
   return 1;
@@ -614,7 +620,7 @@ create procedure ENEWS.WA.domain_gems_folder ()
 create procedure ENEWS.WA.domain_gems_name (
   in domain_id integer)
 {
-  return concat(ENEWS.WA.domain_name(domain_id), '_Gems');
+  return ENEWS.WA.domain_name (domain_id) || '_Gems';
 }
 ;
 
@@ -623,7 +629,17 @@ create procedure ENEWS.WA.domain_gems_name (
 create procedure ENEWS.WA.domain_nntp_name (
   in domain_id integer)
 {
-  return sprintf ('ods.feeds.%s.%U', ENEWS.WA.domain_owner_name (domain_id), ENEWS.WA.string2nntp (ENEWS.WA.domain_name (domain_id)));
+  return ENEWS.WA.domain_nntp_name2 (ENEWS.WA.domain_name (domain_id), ENEWS.WA.domain_owner_name (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.domain_nntp_name2 (
+  in domain_name varchar,
+  in owner_name varchar)
+{
+  return sprintf ('ods.feeds.%s.%U', owner_name, ENEWS.WA.string2nntp (domain_name));
 }
 ;
 
@@ -644,6 +660,20 @@ create procedure ENEWS.WA.domain_ping (
   for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do {
     ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), ENEWS.WA.sioc_url (domain_id));
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.domain_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U/subscriptions/%U', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (domain_id), ENEWS.WA.domain_name (domain_id));
+  return ENEWS.WA.url_fix (S, sid, realm);
 }
 ;
 
@@ -716,6 +746,20 @@ create procedure ENEWS.WA.account_mail(
   in account_id integer)
 {
   return coalesce((select U_E_MAIL from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.account_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (domain_id));
+  return ENEWS.WA.url_fix (S, sid, realm);
 }
 ;
 
@@ -3154,7 +3198,8 @@ create procedure ENEWS.WA.sfolder_sql_where(
   inout delimiter varchar,
   in criteria varchar)
 {
-  if (criteria <> '') {
+  if (criteria <> '')
+  {
     if (where2 = '')
       where2 := 'where ';
     where2 := concat(where2, delimiter, criteria);
@@ -4078,6 +4123,27 @@ create procedure ENEWS.WA.geo_url (
 
 -------------------------------------------------------------------------------
 --
+create procedure ENEWS.WA.banner_links (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  if (domain_id <= 0)
+    return 'Public Feeds';
+
+  return sprintf ('<a href="%s" title="%s">%s</a> (<a href="%s" title="%s">%s</a>)',
+                  ENEWS.WA.domain_sioc_url (domain_id, sid, realm),
+                  ENEWS.WA.domain_name (domain_id),
+                  ENEWS.WA.domain_name (domain_id),
+                  ENEWS.WA.account_sioc_url (domain_id, sid, realm),
+                  ENEWS.WA.account_fullName (ENEWS.WA.domain_owner_id (domain_id)),
+                  ENEWS.WA.account_fullName (ENEWS.WA.domain_owner_id (domain_id))
+                 );
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ENEWS.WA.xslt_root()
 {
   declare sHost varchar;
@@ -4097,6 +4163,29 @@ create procedure ENEWS.WA.xslt_full(
   in xslt_file varchar)
 {
   return concat(ENEWS.WA.xslt_root(), xslt_file);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ENEWS.WA.url_fix (
+  in S varchar,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare T varchar;
+
+  T := '?';
+  if (not is_empty_or_null (sid))
+  {
+    S := S || T || 'sid=' || sid;
+    T := '&';
+  }
+  if (not is_empty_or_null (realm))
+  {
+    S := S || T || 'realm=' || realm;
+  }
+  return S;
 }
 ;
 
@@ -4475,7 +4564,7 @@ create procedure ENEWS.WA.export_foaf_sqlx(
   retValue :=  replace(retValue, '<USER_ID>', cast(account_id as varchar));
   retValue :=  replace(retValue, '<DOMAIN_ID>', cast(domain_id as varchar));
   retValue := replace (retValue, 'sql:xsl=""', sprintf('sql:xsl="%s"', ENEWS.WA.xslt_full ('foaf.xsl')));
-  --dbg_obj_print(account_id, domain_id, retValue);
+
   return retValue;
 }
 ;
@@ -6103,44 +6192,44 @@ create procedure ENEWS.WA.nntp_update_item (
 create procedure ENEWS.WA.nntp_update (
   in domain_id integer,
   in oInstance varchar,
-  in oConversation integer,
-  in nConversation integer)
+  in nInstance varchar,
+  in oConversation integer := null,
+  in nConversation integer := null)
 {
   declare nntpGroup integer;
-  declare nInstance, nDescription varchar;
-
-  if (isnull(nConversation))
-    goto _update;
-
-  if (nConversation = 0 and oConversation = 0)
-    return;
+  declare nDescription varchar;
 
   if (isnull(oInstance))
     oInstance := ENEWS.WA.domain_nntp_name (domain_id);
+
+  if (isnull (nInstance))
   nInstance := ENEWS.WA.domain_nntp_name (domain_id);
 
-  if (oConversation = 1 and nConversation = 0) {
-    nntpGroup := (select NG_GROUP from DB.DBA.NEWS_GROUPS where NG_NAME = oInstance);
-    delete from DB.DBA.NEWS_MULTI_MSG where NM_GROUP = nntpGroup;
-    delete from DB.DBA.NEWS_GROUPS where NG_NAME = oInstance;
+  nDescription := ENEWS.WA.domain_description (domain_id);
+
+  if (isnull (nConversation))
+  {
+    update DB.DBA.NEWS_GROUPS
+      set NG_POST = 1,
+          NG_NAME = nInstance,
+          NG_DESC = nDescription
+    where NG_NAME = oInstance;
     return;
   }
 
-  nDescription := ENEWS.WA.domain_description(domain_id);
-  if (oConversation = 0 and nConversation = 1) {
+  if (oConversation = 1 and nConversation = 0)
+  {
+    nntpGroup := (select NG_GROUP from DB.DBA.NEWS_GROUPS where NG_NAME = oInstance);
+    delete from DB.DBA.NEWS_MULTI_MSG where NM_GROUP = nntpGroup;
+    delete from DB.DBA.NEWS_GROUPS where NG_NAME = oInstance;
+  }
+  else if (oConversation = 0 and nConversation = 1)
+  {
     declare exit handler for sqlstate '*' { return; };
 
     insert into DB.DBA.NEWS_GROUPS (NG_NEXT_NUM, NG_NAME, NG_DESC, NG_SERVER, NG_POST, NG_UP_TIME, NG_CREAT, NG_UP_INT, NG_PASS, NG_UP_MESS, NG_NUM, NG_FIRST, NG_LAST, NG_LAST_OUT, NG_CLEAR_INT, NG_TYPE)
       values (0, nInstance, nDescription, null, 1, now(), now(), 30, 0, 0, 0, 0, 0, 0, 120, 'OFM');
-    return;
   }
-
-_update:
-  update DB.DBA.NEWS_GROUPS
-     set NG_POST = 1,
-         NG_NAME = nInstance,
-         NG_DESC = nDescription
-   where NG_NAME = oInstance;
 }
 ;
 
@@ -6165,7 +6254,8 @@ create procedure ENEWS.WA.nntp_fill (
   if (ngnext < 1)
     ngnext := 1;
 
-  for (select EFIC_RFC_ID as rfc_id from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = domain_id) do {
+  for (select EFIC_RFC_ID as rfc_id from ENEWS.WA.FEED_ITEM_COMMENT where EFIC_DOMAIN_ID = domain_id) do
+  {
 	  insert soft DB.DBA.NEWS_MULTI_MSG (NM_KEY_ID, NM_GROUP, NM_NUM_GROUP) values (rfc_id, grp, ngnext);
 	  ngnext := ngnext + 1;
   }
@@ -6188,7 +6278,8 @@ create procedure ENEWS.WA.mail_address_split (
 
   person := '';
   pos := strchr (author, '<');
-  if (pos is not NULL) {
+  if (pos is not NULL)
+  {
     person := "LEFT" (author, pos);
     email := subseq (author, pos, length (author));
     email := replace (email, '<', '');
@@ -6196,7 +6287,8 @@ create procedure ENEWS.WA.mail_address_split (
     person := trim (replace (person, '"', ''));
   } else {
     pos := strchr (author, '(');
-    if (pos is not NULL) {
+    if (pos is not NULL)
+    {
 	    email := trim ("LEFT" (author, pos));
 	    person :=  subseq (author, pos, length (author));
 	    person := replace (person, '(', '');
@@ -6505,18 +6597,22 @@ create procedure ENEWS.WA.news_comment_upgrade ()
   if (registry_get ('news_comment_upgrade') = '1')
     return;
 
-  for (select * from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'eNews2') do {
+  for (select * from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'eNews2') do
+  {
     domain_id := WAI_ID;
     nntpName  := WAI_NAME;
     nntpGroup := (select NG_GROUP from DB.DBA.NEWS_GROUPS where NG_NAME = nntpName);
-    if (not isnull (nntpGroup)) {
+    if (not isnull (nntpGroup))
+    {
       isConversation := cast (get_keyword('conv', ENEWS.WA.settings (domain_id, -1), '0') as integer);
-      if (isConversation = 0) {
+      if (isConversation = 0)
+      {
         delete from DB.DBA.NEWS_MULTI_MSG where NM_GROUP = nntpGroup;
         delete from DB.DBA.NEWS_GROUPS where NG_NAME = nntpName;
         delete from ENEWS.WA.FEED_ITEM_COMMENT where DOMAIN_ID = domain_id;
       } else {
-        if (not exists (select 1 from DB.DBA.NEWS_GROUPS where NG_NAME = ENEWS.WA.domain_nntp_name (domain_id))) {
+        if (not exists (select 1 from DB.DBA.NEWS_GROUPS where NG_NAME = ENEWS.WA.domain_nntp_name (domain_id)))
+        {
           update DB.DBA.NEWS_GROUPS
              set NG_NAME = ENEWS.WA.domain_nntp_name (domain_id)
            where NG_GROUP = nntpGroup;
@@ -6651,10 +6747,10 @@ create procedure ENEWS.WA.subscription_create (
   if (channels[0] <> 'channel')
     signal ('FM103', 'Bad subscription source!');
   feed_id := ENEWS.WA.channel_create (channels[1]);
-  --dbg_obj_print ( domain_id, feed_id, get_keyword ('title', channels[1]), null, '', 0);
   ENEWS.WA.channel_domain (-1, domain_id, feed_id, get_keyword ('title', channels[1]), null, '', 0);
   commit work;
-  if (not ENEWS.WA.channel_feeds (feed_id)) {
+  if (not ENEWS.WA.channel_feeds (feed_id))
+  {
     declare continue handler for sqlstate '*' {
       goto _next;
     };

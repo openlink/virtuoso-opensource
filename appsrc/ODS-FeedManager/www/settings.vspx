@@ -53,7 +53,7 @@
       <div id="p" class="c1">
         <div class="tabs">
           &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="0" caption="Main" />
-          &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="1" caption="Conversation" />
+          &nbsp;<vm:tabCaption tab="p" tabsCount="2" tabNo="1" caption="Discussion" />
         </div>
         <div class="contents">
           <div id="p_content_0" class="tabContent">
@@ -118,7 +118,7 @@
               <v:template type="simple" enabled="--either (equ (ENEWS.WA.discussion_check (), 1), 0, 1)">
                 <tr>
                   <td class="error_text" colspan="2">
-                    <b>The Conversation feature is disabled. You need to install the ODS Discussion package in order to use it.</b>
+                    <b>The Discussion feature is disabled. You need to install the ODS Discussion package in order to use it.</b>
                   </td>
                 </tr>
               </v:template>
@@ -136,7 +136,7 @@
           				    T := 'checked';
                     http (sprintf ('<input type="checkbox" name="f_conv" value="1" %s %s />', T, S));
                   ?>
-          				<vm:label for="f_conv" value="Enable conversation on this instance" />
+          				<vm:label for="f_conv" value="Enable discussions on this instance" />
                 </td>
               </tr>
               <tr>
@@ -168,7 +168,8 @@
 
               params := self.vc_page.vc_event.ve_params;
               tmp := trim(self.f_rows.ufl_value);
-              if (not ENEWS.WA.validate('integer', tmp) or (cast(tmp as integer) < 5) or (cast(tmp as integer) > 1000)) {
+              if (not ENEWS.WA.validate('integer', tmp) or (cast(tmp as integer) < 5) or (cast(tmp as integer) > 1000))
+              {
                 self.vc_error_message := 'The parameter ''Rows per page'' must be integer in range [5, 1000].';
              		self.vc_is_valid := 0;
           		  return;
@@ -192,8 +193,9 @@
               commit work;
 
               ENEWS.WA.domain_gems_create(self.domain_id, self.account_id);
-          		if (ENEWS.WA.discussion_check ()) {
-    					  ENEWS.WA.nntp_update (self.domain_id, null, conv, f_conv);
+          		if (ENEWS.WA.discussion_check ())
+          		{
+    					  ENEWS.WA.nntp_update (self.domain_id, null, null, conv, f_conv);
          				if (f_conv and f_conv_init)
   					    ENEWS.WA.nntp_fill (self.domain_id);
     					}

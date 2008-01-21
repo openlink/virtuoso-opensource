@@ -150,10 +150,16 @@
     <xsl:apply-templates select="vm:init"/>
     <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
         <ods:ods-bar app_type='eNews2'/>
-      <div id="app_area">
+      <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
         <div style="float: left;">
-          <img src="image/enewsbanner_sml.jpg" alt="ODS-Feed Manager"/>
+            <v:url value="--''" format="%s" url="--ENEWS.WA.domain_sioc_url (self.domain_id, self.sid, self.realm)" xhtml_title="FeedsManager Home">
+              <v:before-render>
+                <![CDATA[
+                  control.ufl_value := '<img src="image/enewsbanner_sml.jpg" border="0" alt="FeedsManager Home"/>';
+                ]]>
+              </v:before-render>
+            </v:url>
         </div>
         <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
           <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
@@ -176,13 +182,7 @@
       </div>
         <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
           <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
-            <?vsp 
-              if (self.domain_id > 0) {
-                http (concat (ENEWS.WA.domain_name (self.domain_id), ' (', ENEWS.WA.account_fullName (ENEWS.WA.domain_owner_id (self.domain_id)), ')')); 
-              } else {
-                http ('Public Feeds'); 
-              }
-            ?>
+            <?vsp http (ENEWS.WA.banner_links (self.domain_id, self.sid, self.realm)); ?>
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
           <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">

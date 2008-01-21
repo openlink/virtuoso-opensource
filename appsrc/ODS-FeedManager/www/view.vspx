@@ -79,7 +79,7 @@
         }
 
         declare i, mail_domain_id, domain_id, account_id, feed_id, item_id, tag_id integer;
-        declare tag, tags, tagError, mode, account_name, gems, appClass varchar;
+          declare tag, tags, tagError, mode, account_name, gems varchar;
         declare sid, realm, settings, data any;
 
         sid := get_keyword('sid', self.vc_event.ve_params, '');
@@ -90,9 +90,6 @@
         mode := get_keyword('m', self.vc_event.ve_params, 'channel');
         account_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id);
           settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (account_id)), ENEWS.WA.settings (domain_id, account_id));
-        appClass := '';
-        if (cast(get_keyword('app', settings, '0') as integer) = 1)
-          appClass := 'app';  
 
         gems := '<a href="http://technorati.com/cosmos/search.html?url=<URL>" target="_ARNW_"><img border="0" src="image/gems/technorati.gif"></a>&nbsp;' ||
                 '<a href="http://del.icio.us/post?url=<URL>" target="_ARNW_"><img border="0" src="image/gems/delicious.gif"></a>&nbsp;' ||
@@ -126,12 +123,12 @@
             if (isnull(EFI_LINK)) {
               lt := sprintf('%s', EFI_TITLE);
             } else {
-              lt := sprintf('<a id="v_item_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EFI_ID, EFI_LINK, EFI_TITLE, appClass, SIOC..feed_item_iri (EF_ID, EFI_ID), EFI_TITLE);
+                lt := sprintf('<a id="v_item_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EFI_ID, EFI_LINK, EFI_TITLE, 'app', SIOC..feed_item_iri (EF_ID, EFI_ID), EFI_TITLE);
             }
             if (isnull(EF_HOME_URI)) {
               ut := sprintf('%s', EFD_TITLE);
             } else {
-              ut := sprintf('<a id="v_feed_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EF_ID, EF_URI, EFD_TITLE, appClass, SIOC..feed_iri (EF_ID), EFD_TITLE);
+                ut := sprintf('<a id="v_feed_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EF_ID, EF_URI, EFD_TITLE, 'app', SIOC..feed_iri (EF_ID), EFD_TITLE);
             }
             en := ENEWS.WA.feed_enclosure(EFI_ID);
             if (isnull(en)) {
@@ -221,12 +218,12 @@
             if (isnull(EFI_LINK)) {
               lt := sprintf('%s', EFI_TITLE);
             } else {
-              lt := sprintf('<a id="v_item_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EFI_ID, EFI_LINK, EFI_TITLE, appClass, SIOC..feed_item_iri (EF_ID, EFI_ID), EFI_TITLE);
+                lt := sprintf('<a id="v_item_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EFI_ID, EFI_LINK, EFI_TITLE, 'app', SIOC..feed_item_iri (EF_ID, EFI_ID), EFI_TITLE);
             }
             if (isnull(EF_HOME_URI)) {
               ut := sprintf('%s', EFD_TITLE);
             } else {
-              ut := sprintf('<a id="v_feed_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EF_ID, EF_URI, EFD_TITLE, appClass, SIOC..feed_iri (EF_ID), EFD_TITLE);
+                ut := sprintf('<a id="v_feed_%d" target="_blank" href="%s" title="%s" class="%s" about="%U">%s</a>', EF_ID, EF_URI, EFD_TITLE, 'app', SIOC..feed_iri (EF_ID), EFD_TITLE);
             }
             en := ENEWS.WA.feed_enclosure(EFI_ID);
             if (isnull(en)) {
@@ -257,10 +254,10 @@
             if (not isnull(EFI_COMMENT_API))
               ct := sprintf(' | <a href="#" onclick="javascript: window.open(\'blog.vspx?sid=%s&realm=%s&mode=comment&did=%d&aid=%d&fid=%d\', \'\', \'width=640,height=450\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Comment This', 'Comment');
 
-            -- Conversation
+              -- Discussion
             if (ENEWS.WA.discussion_check ())
             if (ENEWS.WA.conversation_enable(domain_id))
-                cv := sprintf(' | <a href="#" onclick="javascript: window.open(\'conversation.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Conversation', 'Conversation');
+                  cv := sprintf(' | <a href="#" onclick="javascript: window.open(\'conversation.vspx?sid=%s&realm=%s&did=%d&aid=%d&fid=%d\', \'\', \'width=700,height=650,scrollbars=yes\'); return false;" title="%s">%s</a>', sid, realm, domain_id, account_id, EFI_ID, 'Discussion', 'Discussion');
 
             -- Annotation
             if (account_id >= 0)
@@ -291,7 +288,7 @@
             tags := ENEWS.WA.tags_account_item_select(domain_id, account_id, item_id);
             tags := ENEWS.WA.tags2vector (tags);
             for (i := 0; i < length(tags); i := i + 1) {
-              tt := tt || sprintf(', <a id="v_tag_%s" href="#" onclick="javascript: showTag(\'%s\');" title="Show items with tag %s" class="%s" about="%U"><b>%s</b></a>', tags[i], tags[i], tags[i], appClass, SIOC..feeds_tag_iri (account_id, tags[i]), tags[i]);             
+                tt := tt || sprintf(', <a id="v_tag_%s" href="#" onclick="javascript: showTag(\'%s\');" title="Show items with tag %s" class="%s" about="%U"><b>%s</b></a>', tags[i], tags[i], tags[i], 'app', SIOC..feeds_tag_iri (account_id, tags[i]), tags[i]);
               if (account_id >= 0)
                 tt := tt || sprintf(' <a href="#" onclick="javascript: myPost(\'F1\', \'dtag\', \'%d\'); return false"><img src="image/del_16.png" border="0" alt="Delete Tag" title="Delete Tag" /></a>', i);
             }

@@ -330,6 +330,7 @@
       
       <v:template type="simple" enabled="--either(equ(self.account_role, 'public'), 0, 1)">
         <div class="tabs">
+          <div style="float: left;">
           <div class="tabLabel">
             <v:button action="simple" style="url" value="Feeds" xhtml_class="--either(equ(self.fTab, 'feeds'), 'tab activeTab2', 'tab tab2')" xhtml_alt="Feeds">
             <v:on-post>
@@ -359,6 +360,20 @@
             </v:on-post>
           </v:button>
         </div>
+        </div>
+        <?vsp
+          if (ENEWS.WA.settings_favourites (self.settings))
+          {
+        ?>
+          <div style="float: right;">
+            <div>
+              <span class="tab">Favourites</span>
+            </div>
+          </div>
+        <?vsp
+          }
+        ?>
+          <br style="clear: both;"/>
         </div>
       </v:template>
 
@@ -416,15 +431,12 @@
             }
             if (self.fTab = 'tags') {
                 declare tMin, tMax integer;
-              declare appClass, tClass, tStyle varchar;
+              declare tClass, tStyle varchar;
 
                 if (is_empty_or_null(self.fTag))
                   self.fTag := ENEWS.WA.node_suffix(self.fNode);
                 select max(TS_COUNT), min(TS_COUNT) into tMax, tMin from ENEWS..TAGS_STATISTICS where domain_id = self.domain_id and account_id = self.account_id;
 
-              appClass := '';
-              if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                appClass := 'app';  
               for (select TS_TAG, TS_COUNT 
                      from ENEWS..TAGS_STATISTICS 
                     where domain_id = self.domain_id 
@@ -435,7 +447,7 @@
                   tClass := '';
                     if (self.fTag = TS_TAG)
                     tClass := 'nolink_a';
-                http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', ENEWS.WA.tag_id(TS_TAG), TS_TAG, TS_TAG, appClass, SIOC..feeds_tag_iri (self.account_id, TS_TAG), tClass, tStyle, TS_TAG));
+                http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', ENEWS.WA.tag_id(TS_TAG), TS_TAG, TS_TAG, 'app', SIOC..feeds_tag_iri (self.account_id, TS_TAG), tClass, tStyle, TS_TAG));
                 }
             }
           ?>
@@ -547,7 +559,7 @@
           <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
             <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                 <?vsp
-                  declare mt, st, sv, sButtons, T varchar;
+                  declare mt, st, sv, sButtons, T, S varchar;
                   declare data, node_type, node_id, appParams any;
 
                   node_id := ENEWS.WA.node_id (self.fNode);
@@ -607,7 +619,7 @@
                           where EF_ID = node_id) do {
                           
                       appParams := '';
-                      if ((cast(get_keyword('app', self.settings, '0') as integer) = 1) and (node_type in ('c', 'f', 's')))
+                      if ((cast (get_keyword ('app', self.settings, '0') as integer)) and (node_type in ('c', 'f', 's')))
                         appParams := sprintf ('id="feed2_%d" class="app" about="%U"', node_id, SIOC..feed_iri (node_id));
                          
                       http (sprintf('<div id="channel_header"><div id="channel_header_left"><a %s href="%s" target="_blank" alt="Feed %s" title="Feed %s"><img src="%s" border="0"/> %s</a></div><div id="channel_header_right">&nbsp;%s</div><br style="clear: left;"/></div>', appParams, EF_HOME_URI, EF_TITLE, EF_TITLE, ENEWS.WA.channel_image (self.settings, EF_IMAGE_URI, EF_ICON_URI, 'image/docs_16.gif'), ENEWS.WA.rdfa_value (EF_TITLE, 'dc:title'), sButtons));
@@ -627,14 +639,18 @@
                           where EFD_ID = node_id) do {
                           
                       appParams := '';
-                      if ((cast(get_keyword('app', self.settings, '0') as integer) = 1) and (node_type in ('c', 'f', 's')))
+                      if ((cast (get_keyword ('app', self.settings, '0') as integer)) and (node_type in ('c', 'f', 's')))
                         appParams := sprintf ('id="feed2_%d" class="app" about="%U"', EF_ID, SIOC..feed_iri (EF_ID));
                           
                       if (sButtons <> '')
                         sButtons := ' | ' || sButtons;
+                      S := sprintf ('<a %s href="%s" target="_blank" alt="Feed %s" title="Feed %s"><img src="%s" border="0"/> %s</a>', appParams, EF_HOME_URI, EFD_TITLE, EFD_TITLE, ENEWS.WA.channel_image (self.settings, EF_IMAGE_URI, EF_ICON_URI, 'image/docs_16.gif'), ENEWS.WA.rdfa_value (EFD_TITLE, 'dc:title'));
                       if (ENEWS.WA.settings_favourites(self.settings))
+                      {
+                        S := sprintf ('<span id="pt_node2_c#%d" class="dragable">%s</span>', node_id, S);
                         T := sprintf('<a href="javascript: addFavourite(''%s'');" alt="Add to Favourites" title="Add to Favourites"><img src="image/add_16.png" border="0"/></a>',self.fNode);
-                      http (sprintf('<div id="channel_header"><div id="channel_header_left"><a %s href="%s" target="_blank" alt="Feed %s" title="Feed %s"><img src="%s" border="0"/> %s</a></div><div id="channel_header_right">%s <a href="#" onclick="javascript: loadIFrameURL(''%U'');" alt="Validate" title="Validate"><img src="image/green-icon-16.gif" border="0"/></a> <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><br style="clear: both;"/></div>', appParams, EF_HOME_URI, EFD_TITLE, EFD_TITLE, ENEWS.WA.channel_image (self.settings, EF_IMAGE_URI, EF_ICON_URI, 'image/docs_16.gif'), ENEWS.WA.rdfa_value (EFD_TITLE, 'dc:title'), T, EF_URI, self.fNode, sButtons));
+                      }
+                      http (sprintf ('<div id="channel_header"><div id="channel_header_left">%s</div><div id="channel_header_right">%s <a href="#" onclick="javascript: loadIFrameURL(''%U'');" alt="Validate" title="Validate"><img src="image/green-icon-16.gif" border="0"/></a> <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><br style="clear: both;"/></div>', S, T, EF_URI, self.fNode, sButtons));
                       http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> | %s | %s</div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EF_LAST_UPDATE), 'dct:modified'), mt, st));
                     }
 
@@ -674,9 +690,13 @@
                             and EW_DOMAIN_ID = self.domain_id) do {
                       if (sButtons <> '')
                         sButtons := ' | ' || sButtons;
+                      S := sprintf ('<a href="weblog.vspx?sid=%s&realm=%s&id=%d&mode=update_blog" alt="Blog %s" title="Blog %s"><img src="image/ods_weblog_16.png" border="0"/> %s</a>', self.sid, self.realm, EB_ID, EB_NAME, EB_NAME, ENEWS.WA.rdfa_value (EB_NAME, 'dc:title'));
                       if (ENEWS.WA.settings_favourites(self.settings))
+                      {
+                        S := sprintf ('<span id="pt_node2_b#%d" class="dragable">%s</span>', node_id, S);
                         T := sprintf('<a href="javascript: addFavourite(''%s'');" alt="Add to Favourites" title="Add to Favourites"><img src="image/add_16.png" border="0"/></a>',self.fNode);
-                      http (sprintf('<div id="channel_header"><div id="channel_header_left"><a href="weblog.vspx?sid=%s&realm=%s&id=%d&mode=update_blog" alt="Blog %s" title="Blog %s"><img src="image/ods_weblog_16.png" border="0"/> %s</a></div><div id="channel_header_right">%s <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><br style="clear: left;"/></div>', self.sid, self.realm, EB_ID, EB_NAME, EB_NAME, ENEWS.WA.rdfa_value (EB_NAME, 'dc:title'), T, self.fNode, sButtons));
+                      }
+                      http (sprintf ('<div id="channel_header"><div id="channel_header_left">%s</div><div id="channel_header_right">%s <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><br style="clear: left;"/></div>', S, T, self.fNode, sButtons));
                       http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> | %s | %s </div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EB_LAST_UPDATE), 'dct:modified'), mt, st));
                     }
 
@@ -763,20 +783,17 @@
                     <td>
                         <?vsp
                           declare id, feed_id integer;
-                          declare title, href, appClass, appIri varchar;
+                          declare title, href, appIri varchar;
                           
                           id := (control as vspx_row_template).te_column_value('EFI_ID');
                           title := (control as vspx_row_template).te_column_value('EFI_TITLE');
                           href := sprintf('javascript: loadIFrame(\'%d\', \'%d\', \'%d\', null, \'%s\');', id, self.domain_id, self.account_id, ENEWS.WA.node_type (self.fNode));
                           
-                          appClass := '';
                           appIri := '';
-                          if ((cast(get_keyword('app', self.settings, '0') as integer) = 1) and (ENEWS.WA.node_type (self.fNode) in ('c', 'f', 's'))) {
-                            appClass := 'app';  
+                          if (ENEWS.WA.node_type (self.fNode) in ('c', 'f', 's'))
                             appIri := sprintf (' about="%U"', SIOC..feed_item_iri ((select EFI_FEED_ID from ENEWS.WA.FEED_ITEM where EFI_ID = id), id));
-                          }  
                           
-                          http (sprintf('<a id="feed_%d" href="%s" title="%s" class="%s %s" %s>%s</a>', id, href, title, appClass, self.linkClass ((control as vspx_row_template).te_column_value('EFID_READ_FLAG')), appIri, ENEWS.WA.rdfa_value (title, 'dc:title')));
+                          http (sprintf ('<a id="feed_%d" href="%s" title="%s" class="%s %s" %s>%s</a>', id, href, title, 'app', self.linkClass ((control as vspx_row_template).te_column_value('EFID_READ_FLAG')), appIri, ENEWS.WA.rdfa_value (title, 'dc:title')));
                         ?>
                     </td>
                       <v:template type="simple" enabled="--case when (ENEWS.WA.node_type (self.fNode) = 'f') then 1 else 0 end">
@@ -812,7 +829,8 @@
           </div>
         </div>
         <?vsp
-          if (ENEWS.WA.settings_favourites(self.settings)) {
+          if (ENEWS.WA.settings_favourites (self.settings))
+          {
         ?>
         <div class="pane_right2" id="pane_right2">
       </div>

@@ -75,12 +75,43 @@
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         
-          if (<?V cast(get_keyword('app', self.settings, '0') as integer) ?> == 1)
-            gererateAPP('app_area', {});
+          if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
+            gererateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
             
       		// init tabs
           showTab('p', 2, 0);
           showTab('s', 2, 0);
+
+      		// favorites
+          var favourites = $('pane_right2');
+          if (favourites)
+          {
+            var gd = new OAT.GhostDrag();
+
+            var dummyReference = function(){};
+            var successReference = function(node)
+            {
+              return function(target,x,y) {addFavourite(node);}
+            }
+            gd.addTarget(favourites);
+            nodes = document.getElementsByTagName('span');
+            if (nodes)
+              for (var i = 0; i < nodes.length; i++)
+              {
+                if (nodes[i].id)
+                {
+                  var id = nodes[i].id;
+                  if (id.indexOf('pt_node_') != -1)
+                  {
+                    gd.addSource(nodes[i], dummyReference, successReference(id.replace('pt_node_','')));
+                  }
+                  else if (id.indexOf('pt_node2_') != -1)
+                  {
+                    gd.addSource(nodes[i], dummyReference, successReference(id.replace('pt_node2_','')));
+                  }
+                }
+              }
+          }
         }
         OAT.MSG.attach(OAT,OAT.MSG.OAT_LOAD,myInit);
       </script>
