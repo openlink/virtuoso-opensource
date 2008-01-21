@@ -1,0 +1,95 @@
+.oat_winods_container {
+	font-family: Arial, sans-serif;
+	border: 2px solid #b6d4e3;
+	background-color: #e3f2fa;
+}
+
+.oat_winods_content {
+	padding: 2px;
+	font-size: 90%;
+	position: relative;
+	margin-bottom: 16px;
+	background-color: #e3f2fa;
+	background-image: url("../images/WinODS_contentbg.png");
+	background-repeat: repeat-x;
+}
+
+.oat_winods_title {
+	padding-top: 2px;
+	padding-left: 5px;
+	font-size: 14px;
+	height: 20px;
+	background-color: #0000a0;
+	position: relative;
+	background-image: url("../images/WinODS_titlebg.png");
+}
+
+.oat_winods_caption {
+	color: #ffffff;
+	font-weight: bold;
+	margin-left: 2px;
+}
+
+.oat_winods_status {
+	height: 16px;
+	bottom: 0px;
+	position: absolute;
+	width: 100%;
+	font-size: 0.8em;
+	background-color: #85b9d2;
+	color: #444444;
+}
+
+.oat_winods_close_b, .oat_winods_min_b, .oat_winods_max_b {
+	float: right;
+	width: 15px;
+	height: 14px;
+	margin-right: 3px;
+	margin-top: 2px;
+	cursor: pointer;
+}
+
+.oat_winods_resize_b {
+	width: 10px;
+	height: 10px;
+	position: absolute;
+	bottom: 2px;
+	right: 2px;
+	background-image: url("../images/MsWin_resize.gif");
+	background-repeat: no-repeat;
+	background-position: bottom right;
+}
+
+.oat_winods_close_b {
+	background-image: url("../images/WinODS_close.png");
+	_background-repeat: repeat-x;
+}
+
+.oat_winods_min_b {
+	background-image: url("../images/WinODS_minimize.gif");
+}
+
+.oat_winods_max_b {
+	background-image: url("../images/WinODS_maximize.gif");
+}
+
+.oat_winods_container div.oat_anchor_arrow_bottomright {
+	position: absolute;
+	bottom: -35px;	right: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/WinODS_rb.gif");
+}
+.oat_winods_container div.oat_anchor_arrow_bottomleft {
+	position: absolute;
+	bottom: -35px;	left: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/WinODS_lb.gif");
+}
+.oat_winods_container div.oat_anchor_arrow_topright {
+	position: absolute;
+	top: -35px;	right: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/WinODS_rt.gif");
+}
+.oat_winods_container div.oat_anchor_arrow_topleft {
+	position: absolute;
+	top: -36px;	left: 20px;	width: 30px;	height: 35px;
+	background-image: url("../images/WinODS_lt.gif");
+}
