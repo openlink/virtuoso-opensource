@@ -1099,7 +1099,7 @@
                       </td>
                     </tr>
                   </v:template>
-                  <v:template type="simple" enabled="-- case when ((self.dav_type = 'C') or (self.command_mode <> 10)) then 1 else 0 end">
+                <v:template type="simple" enabled="-- case when (((self.dav_type = 'C') and (self.dav_detType <> 'Versioning')) or (self.command_mode <> 10)) then 1 else 0 end">
                     <xsl:call-template name="autoVersion">
                       <xsl:with-param name="id" select="'davRow_version'"/>
                     </xsl:call-template>
@@ -1112,8 +1112,11 @@
                       <td>
                         <select name="dav_det" onchange="javascript: updateLabel(this.options[this.selectedIndex].value);" disabled="disabled">
                           <?vsp
-                            if (self.command_mode = 1) {
+                          if (self.command_mode = 1)
+                          {
                               http(self.option_prepare('ResFilter',  'Smart Folder',                  'ResFilter'));
+                          } else if ((self.command_mode = 10) and (self.dav_detType = 'Versioning')) {
+                            http (self.option_prepare('Versioning',       'Version Control Folder',        self.dav_detType));
                             } else {
                               http(self.option_prepare('',           'Normal',                        self.dav_detType));
                               http(self.option_prepare('ResFilter',  'Smart Folder',                  self.dav_detType));
@@ -1122,7 +1125,6 @@
                               http(self.option_prepare('HostFs',     'Host File System Folder Link',  self.dav_detType));
                               http(self.option_prepare('oMail',      'Mail Folders Link',             self.dav_detType));
                               http(self.option_prepare('News3',      'OFM Subscriptions',             self.dav_detType));
-                              http(self.option_prepare('Versioning', 'Version Control Folder',        self.dav_detType));
                             http(self.option_prepare('rdfSink',    'RDF Upload Folder',             self.dav_detType));
                             }
                           ?>
@@ -2160,16 +2162,19 @@
               <v:on-post>
                 <![CDATA[
                   self.path.ufl_value := ODRIVE.WA.path_show(self.path.ufl_value);
-                  if (not ODRIVE.WA.path_is_shortcut(self.path.ufl_value)) {
+                if (not ODRIVE.WA.path_is_shortcut (self.path.ufl_value))
+                {
                     declare tmp any;
 
                     tmp := ODRIVE.WA.odrive_real_path(self.path.ufl_value);
-                    if (ODRIVE.WA.DAV_ERROR(DB.DBA.DAV_SEARCH_ID(tmp, 'C'))) {
+                  if (ODRIVE.WA.DAV_ERROR(DB.DBA.DAV_SEARCH_ID(tmp, 'C')))
+                  {
                       self.vc_error_message := concat('Can not find the folder with name ', ODRIVE.WA.odrive_refine_path(self.path.ufl_value));
                       self.vc_is_valid := 0;
                       return;
                     }
-                  if ((not ODRIVE.WA.check_admin (ODRIVE.WA.session_user_id (e.ve_params))) and isnull(strstr(tmp, ODRIVE.WA.dav_home2 (self.owner_id, self.account_role)))) {
+                  if ((not ODRIVE.WA.check_admin (ODRIVE.WA.session_user_id (e.ve_params))) and isnull(strstr(tmp, ODRIVE.WA.dav_home2 (self.owner_id, self.account_role))))
+                  {
                     self.vc_error_message := 'The path must be part of your home directory or another public directoty';
                       self.vc_is_valid := 0;
                       return;
@@ -2263,7 +2268,8 @@
                 control.add_parameter(self.dir_path);
                 control.add_parameter(self.dir_select);
                 control.add_parameter(self.command_mode);
-                if (self.command_mode = 1) {
+              if (self.command_mode = 1)
+              {
                   control.add_parameter(self.search_filter);
                 } if (self.command_mode = 2) {
                   control.add_parameter(self.search_simple);
@@ -2297,10 +2303,12 @@
                     declare tag_object, tags, tags_dict any;
 
                     tags_dict := dict_new();
-                    for (N := 0; N < length(result); N := N + 1) {
+                  for (N := 0; N < length(result); N := N + 1)
+                  {
                       tags := ODRIVE.WA.DAV_PROP_GET(result[N][8], ':virtpublictags', '');
                       tags := split_and_decode (tags, 0, '\0\0,');
-                      foreach (any tag in tags) do {
+                    foreach (any tag in tags) do
+                    {
                         tag_object := dict_get(tags_dict, lcase(tag), vector(lcase(tag), 0, ''));
                         tag_object[1] := tag_object[1] + 1;
                         dict_put(tags_dict, lcase(tag), tag_object);
@@ -2354,7 +2362,8 @@
             <div style="padding-bottom: 5px;">
               <?vsp
         			  http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0" /> RSS</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
-                if (ODRIVE.WA.odrive_settings_atomVersion(self.vc_page.vc_event.ve_params) = '1.0') {
+              if (ODRIVE.WA.odrive_settings_atomVersion(self.vc_page.vc_event.ve_params) = '1.0')
+              {
         			    http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0" /> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
         			  } else {
         			    http(sprintf('<a href="export.vspx?sid=%s&realm=%s&output=atom03%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3" /> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
@@ -2372,7 +2381,8 @@
                   <v:data-set name="ds_items" data-source="self.dsrc_items" scrollable="1">
                     <v:after-data-bind>
                       <![CDATA[
-                        if (self.vc_is_valid = 0) {
+                      if (self.vc_is_valid = 0)
+                      {
                           control.ds_row_data := vector();
                           control.ds_rows_fetched := 0;
                           control.ds_rows_total := 0;
@@ -2384,7 +2394,8 @@
                         <thead class="sortHeader">
                             <tr>
                               <?vsp
-                                if ((self.dir_select = 0) and (self.dir_path <> '')) {
+                            if ((self.dir_select = 0) and (self.dir_path <> ''))
+                            {
                               http('<th class="checkbox" width="1%">');
                                 http('<input type="checkbox" name="selectall" value="Select All" onClick="selectAllCheckboxes (this, \'CB_\', true)" title="Select All" />');
                                   http('</th>');
@@ -2427,7 +2438,8 @@
                               dir_column := self.getColumn(self.dir_grouping);
                               tmp := (control.vc_parent as vspx_row_template).te_column_value(dir_column[1]);
 
-                              if (is_empty_or_null(self.dir_groupName) or (self.dir_groupName <> tmp)) {
+                            if (is_empty_or_null(self.dir_groupName) or (self.dir_groupName <> tmp))
+                            {
                             ?>
                             <tr>
                               <td colspan="11">
@@ -2461,14 +2473,16 @@
                                 </v:before-data-bind>
                                 <v:on-post>
                                   <![CDATA[
-                                    if (ODRIVE.WA.odrive_permission((control.vc_parent as vspx_row_template).te_rowset[8]) = '') {
+                                  if (ODRIVE.WA.odrive_permission ((control.vc_parent as vspx_row_template).te_rowset[8]) = '')
+                                  {
                                       self.vc_error_message := 'You have not rights to read this folder/file!';
                                       self.vc_is_valid := 0;
                                       self.vc_data_bind(e);
                                       return;
                                     }
 
-                                    if ((control.vc_parent as vspx_row_template).te_rowset[1] = 'C') {
+                                  if ((control.vc_parent as vspx_row_template).te_rowset[1] = 'C')
+                                  {
                                       if (self.dir_path <> '')
                                       self.dir_path := rtrim (self.dir_path, '/') || '/';
                                     self.dir_path := self.dir_path || (control.vc_parent as vspx_row_template).te_rowset[0];

@@ -73,6 +73,29 @@ create procedure ODRIVE.WA.odrive_vhost()
 
   VHOST_REMOVE(lpath    => '/odrive');
 
+  VHOST_REMOVE(lpath    => '/briefcase');
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'ods_rule_briefcase',
+    1,
+    '/briefcase',
+    vector (),
+    0,
+    '/dataspace/all/briefcase',
+    vector (),
+    NULL,
+    NULL,
+    2,
+    303
+  );
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rulelist_briefcase', 1, vector ('ods_rule_briefcase'));
+  VHOST_DEFINE(lpath    => '/briefcase',
+               ppath    => '/DAV/VAD/wa/',
+               is_dav   => 1,
+               is_brws  => 0,
+               vsp_user => 'dba',
+               opts     => vector ('url_rewrite', 'ods_rulelist_briefcase')
+             );
+
   USER_CREATE ('SOAPODrive', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
   USER_SET_QUALIFIER ('SOAPODrive', 'DBA');
 

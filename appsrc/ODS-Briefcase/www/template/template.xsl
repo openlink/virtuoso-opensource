@@ -133,10 +133,16 @@
     <xsl:apply-templates select="vm:init"/>
     <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='oDrive'/>
-      <div id="app_area">
+      <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
         <div style="float: left;">
-          <img src="image/drivebanner_sml.jpg" border="0"/>
+            <v:url value="--''" format="%s" url="--ODRIVE.WA.domain_sioc_url (self.domain_id, self.sid, self.realm)" xhtml_title="Briefcase Home">
+              <v:before-render>
+                <![CDATA[
+                  control.ufl_value := '<img src="image/drivebanner_sml.jpg" border="0" alt="Briefcase Home" />';
+                ]]>
+              </v:before-render>
+            </v:url>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
           <v:text name="keywords" value="" xhtml_onkeypress="return submitEnter(\'F1\', \'GO\', event)"/>
@@ -157,13 +163,7 @@
       </div>
         <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
           <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
-            <?vsp 
-              if (self.domain_id > 0) {
-                http (concat (ODRIVE.WA.domain_name (self.domain_id), ' (', ODRIVE.WA.account_fullName (self.owner_id), ')')); 
-              } else {
-                http ('Public Briefcase'); 
-              }
-            ?>
+            <?vsp http (ODRIVE.WA.banner_links (self.domain_id, self.sid, self.realm)); ?>
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
         <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">

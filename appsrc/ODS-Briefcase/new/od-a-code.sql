@@ -421,6 +421,29 @@ create procedure ODRIVE.WA.xslt_full(
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.url_fix (
+  in S varchar,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare T varchar;
+
+  T := '?';
+  if (not is_empty_or_null (sid))
+  {
+    S := S || T || 'sid=' || sid;
+    T := '&';
+  }
+  if (not is_empty_or_null (realm))
+  {
+    S := S || T || 'realm=' || realm;
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 -- Date / Time functions
 --
 -------------------------------------------------------------------------------
@@ -986,8 +1009,8 @@ create procedure ODRIVE.WA.odrive_proc(
 
   result_names(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);
 
-  path := trim(path);
-  if (is_empty_or_null(path)) {
+  if (is_empty_or_null(path))
+  {
     dirList := ODRIVE.WA.odrive_shortcuts();
     for (i := 0; i < length(dirList); i := i + 2)
       result(dirList[i], 'C', 0, '', '', '', '', '', concat('/', dirList[i], '/'));
@@ -1260,6 +1283,20 @@ create procedure ODRIVE.WA.domain_ping (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.domain_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U/briefcase/%U', DB.DBA.wa_cname (), ODRIVE.WA.domain_owner_name (domain_id), ODRIVE.WA.domain_name (domain_id));
+  return ODRIVE.WA.url_fix (S, sid, realm);
+}
+;
+
 -----------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.account() returns varchar
@@ -1288,6 +1325,20 @@ create procedure ODRIVE.WA.account_fullName (
   in account_id integer)
 {
   return coalesce((select coalesce(U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.account_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), ODRIVE.WA.domain_owner_name (domain_id));
+  return ODRIVE.WA.url_fix (S, sid, realm);
 }
 ;
 
@@ -1434,6 +1485,27 @@ create procedure ODRIVE.WA.geo_url (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.banner_links (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  if (domain_id <= 0)
+    return 'Public Briefcase';
+
+  return sprintf ('<a href="%s" title="%s">%s</a> (<a href="%s" title="%s">%s</a>)',
+                  ODRIVE.WA.domain_sioc_url (domain_id, sid, realm),
+                  ODRIVE.WA.domain_name (domain_id),
+                  ODRIVE.WA.domain_name (domain_id),
+                  ODRIVE.WA.account_sioc_url (domain_id, sid, realm),
+                  ODRIVE.WA.account_fullName (ODRIVE.WA.domain_owner_id (domain_id)),
+                  ODRIVE.WA.account_fullName (ODRIVE.WA.domain_owner_id (domain_id))
+                 );
+}
+;
+
 -----------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.odrive_dav_home(
@@ -1533,8 +1605,10 @@ create procedure ODRIVE.WA.odrive_real_path_int(
 
   parts := split_and_decode (ODRIVE.WA.odrive_refine_path(path), 0, '\0\0/');
   clearParts := vector();
-  for (N := 0; N < length(parts); N := N + 1) {
-    part := trim(parts[N]);
+  for (N := 0; N < length (parts); N := N + 1)
+  {
+    part := trim (parts[N], '"');
+    --part := parts[N];
     if (length(clearParts) = 0)
       part := ODRIVE.WA.odrive_shortcut_path(parts, N, showType, pathType);
     if (length(clearParts) = 1)
@@ -2151,28 +2225,29 @@ create procedure ODRIVE.WA.DAV_GET_INFO(
 --
 create procedure ODRIVE.WA.DAV_SET_VERSIONING_CONTROL(
   in path varchar,
-  in vvc varchar,
   in autoVersion varchar,
   in auth_name varchar := NULL,
   in auth_pwd varchar := NULL)
 {
-  declare retValue any;
   declare permissions, uname, gname varchar;
+  declare retValue any;
 
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
-  if (autoVersion = '') {
+  if (autoVersion = '')
+  {
     update WS.WS.SYS_DAV_COL set COL_AUTO_VERSIONING = null where COL_ID = DAV_SEARCH_ID (path, 'C');
-    DB.DBA.DAV_PROP_REMOVE(path, 'virt:Versioning-History', auth_name, auth_pwd);
     return 0;
-  } else {
+  }
+
     permissions := DB.DBA.DAV_PROP_GET(path, ':virtpermissions', auth_name, auth_pwd);
     uname := DB.DBA.DAV_PROP_GET(path, ':virtowneruid', auth_name, auth_pwd);
     gname := DB.DBA.DAV_PROP_GET(path, ':virtownergid', auth_name, auth_pwd);
     DB.DBA.DAV_COL_CREATE (concat(path, 'VVC/'), permissions, uname, gname, auth_name, auth_pwd);
     DB.DBA.DAV_COL_CREATE (concat(path, 'Attic/'), permissions, uname, gname, auth_name, auth_pwd);
     DB.DBA.DAV_PROP_SET (concat(path, 'VVC/'), 'virt:Versioning-Attic', concat(path, 'Attic/'), auth_name, auth_pwd);
-    return DB.DBA.DAV_SET_VERSIONING_CONTROL (path, concat(path, 'VVC/'), autoVersion, auth_name, auth_pwd);
-  }
+  retValue := DB.DBA.DAV_SET_VERSIONING_CONTROL (path, concat(path, 'VVC/'), autoVersion, auth_name, auth_pwd);
+
+  return retValue;
 }
 ;
 
@@ -2393,11 +2468,13 @@ create procedure ODRIVE.WA.DAV_SET_AUTOVERSION (
   declare retValue any;
 
   retValue := 0;
-  if (ODRIVE.WA.DAV_ERROR(DB.DBA.DAV_SEARCH_ID (path, 'R'))) {
-    retValue := ODRIVE.WA.DAV_SET_VERSIONING_CONTROL(path, null, value);
+  if (ODRIVE.WA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
+  {
+    retValue := ODRIVE.WA.DAV_SET_VERSIONING_CONTROL (path, value);
   } else {
     value := ODRIVE.WA.auto_version_full(value);
-    if (value = '') {
+    if (value = '')
+    {
       retValue := ODRIVE.WA.DAV_PROP_REMOVE(path, 'DAV:auto-version');
     } else {
       if (not ODRIVE.WA.DAV_GET_VERSION_CONTROL(path))
@@ -2582,6 +2659,8 @@ create procedure ODRIVE.WA.DAV_GET (
     if (isnull (detType) and (ODRIVE.WA.DAV_GET (resource, 'type') = 'C')) {
       if (ODRIVE.WA.DAV_PROP_GET (resource[0], 'virt:rdf_graph', '') <> '')
         detType := 'rdfSink';
+      if (ODRIVE.WA.DAV_PROP_GET (resource[0], 'virt:Versioning-History', '') <> '')
+        detType := 'UnderVersioning';
     }  
     return detType;
   }
