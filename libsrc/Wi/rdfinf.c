@@ -884,7 +884,7 @@ sqlg_leading_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts,
   df_elt_t ** in_list;
   rdf_inf_pre_node_t * ri;
   if (!sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_SAME_AS))
-    /*return */ ;
+    return;
   if (!g_dfe)
     sqlc_new_error (so->so_sc->sc_cc, "42000", "RDFSA", "Same-as expansion not allowed if graph not specified");
   ri = sqlg_rdf_inf_node (so->so_sc);
