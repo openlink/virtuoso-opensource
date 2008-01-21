@@ -225,7 +225,7 @@ function coloriseRow(obj, checked) {
 }
 
 // ---------------------------------------------------------------------------
-function trim(sString, sChar) {
+function myTrim(sString, sChar) {
   if (sChar == null)
     sChar = ' ';
 
@@ -369,9 +369,9 @@ function rowSelectValue(dstField, srcField, singleMode)
   if (singleMode) {
     dstField.value = srcField.value;
   } else {
-    dstField.value = trim(dstField.value);
-    dstField.value = trim(dstField.value, ',');
-    dstField.value = trim(dstField.value);
+    dstField.value = myTrim(dstField.value);
+    dstField.value = myTrim(dstField.value, ',');
+    dstField.value = myTrim(dstField.value);
     if (dstField.value.indexOf(srcField.value) == -1) {
       if (dstField.value == '') {
         dstField.value = srcField.value;
@@ -493,9 +493,9 @@ function updateChecked (obj, objName)
 {
   var objForm = obj.form;
   coloriseRow(getParent(obj, 'tr'), obj.checked);
-  objForm.s1.value = trim(objForm.s1.value);
-  objForm.s1.value = trim(objForm.s1.value, ',');
-  objForm.s1.value = trim(objForm.s1.value);
+  objForm.s1.value = myTrim(objForm.s1.value);
+  objForm.s1.value = myTrim(objForm.s1.value, ',');
+  objForm.s1.value = myTrim(objForm.s1.value);
   objForm.s1.value = objForm.s1.value + ',';
   for (var i = 0; i < objForm.elements.length; i = i + 1) {
     var obj = objForm.elements[i];
@@ -508,7 +508,7 @@ function updateChecked (obj, objName)
       }
     }
   }
-  objForm.s1.value = trim(objForm.s1.value, ',');
+  objForm.s1.value = myTrim(objForm.s1.value, ',');
 }
 
 // ---------------------------------------------------------------------------
@@ -565,18 +565,22 @@ function addChecked (form, txt, selectionMsq)
 function addTag(tag, objName)
 {
   var obj = document.F1.elements[objName];
-  obj.value = trim(obj.value);
-  obj.value = trim(obj.value, ',');
-  obj.value = trim(obj.value);
+  obj.value = myTrim(obj.value);
+  obj.value = myTrim(obj.value, ',');
+  obj.value = myTrim(obj.value);
+  obj.value = myTrim(obj.value, ',');
   obj.value = (obj.value).replace('  ', ' ');
   obj.value = (obj.value).replace(' ,', ',');
   obj.value = obj.value + ',';
-  if (obj.value.indexOf(tag+',') == -1) {
+  if (obj.value.indexOf(tag+',') == -1)
+  {
     obj.value = obj.value + tag + ',';
   } else {
     obj.value = (obj.value).replace(tag+',', '');
   }
-  obj.value = trim(obj.value, ',');
+  obj.value = myTrim(obj.value);
+  obj.value = myTrim(obj.value, ',');
+  obj.value = myTrim(obj.value);
 }
 
 // ---------------------------------------------------------------------------
@@ -587,9 +591,9 @@ function addCheckedTags (openerName, checkName)
     var objForm = document.F1;
     var objOpener = window.opener.document.F1.elements[document.F1.elements[openerName].value];
 
-    objOpener.value = trim(objOpener.value);
-    objOpener.value = trim(objOpener.value, ',');
-    objOpener.value = trim(objOpener.value);
+    objOpener.value = myTrim(objOpener.value);
+    objOpener.value = myTrim(objOpener.value, ',');
+    objOpener.value = myTrim(objOpener.value);
     objOpener.value = objOpener.value + ',';
     for (var i = 0; i < objForm.elements.length; i = i + 1) {
       var obj = objForm.elements[i];
@@ -602,7 +606,7 @@ function addCheckedTags (openerName, checkName)
         }
       }
     }
-    objOpener.value = trim(objOpener.value, ',');
+    objOpener.value = myTrim(objOpener.value, ',');
   }
   window.close();
 }
@@ -795,4 +799,10 @@ function davBrowse (fld)
                   onConfirmClick: function(path, fname) {$(fld).value = path + fname;}
                 };
   oWebDAV.open(options);
+}
+
+// ---------------------------------------------------------------------------
+function changeComplete ()
+{
+  return;
 }

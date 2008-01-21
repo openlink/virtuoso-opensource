@@ -29,7 +29,10 @@
     <?vsp
       http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s" />', CAL.WA.foaf_url (self.account_id)));
       if (CAL.WA.domain_is_public (self.domain_id))
+      {
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', CAL.WA.sioc_url (self.domain_id)));
+      }
+      http (sprintf('\n    <link rel="alternate" type="application/atomserv+xml" title="%V" href="%s/intro" />', CAL.WA.domain_name (self.domain_id), CAL.WA.atom_lpath2 (self.domain_id)));
       http (CAL.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
@@ -83,8 +86,8 @@
           OAT.Anchor.imagePath = OAT.Preferences.imagePath;
           OAT.Anchor.zIndex = 1001;
         
-          if (<?V cast(get_keyword('app', self.settings, '0') as integer) ?> == 1)
-            generateAPP('app_area', {});
+          if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
+            gererateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
             
           // dialogs
           if ($('deleteDiv'))
@@ -92,7 +95,8 @@
           	deleteDialog = new OAT.Dialog("Confirm delete", "deleteDiv", {width:400, resize:0, modal:1});
             OAT.Dom.show('deleteDiv');
           }
-          if ($('deleteDiv2')) {
+          if ($('deleteDiv2'))
+          {
           	deleteDialog2 = new OAT.Dialog("Confirm delete", "deleteDiv2", {width:400, resize:0, modal:1});
             OAT.Dom.show('deleteDiv2');
           }
@@ -103,6 +107,8 @@
           showTab('s', 2, 0);
 
           // start reminder
+          if (<?V self.owner_id ?> == <?V self.account_id ?>)
+          {
           setTimeout("checkReminder()", 5000)
           if ($('reminderDiv'))
           {
@@ -110,20 +116,27 @@
             OAT.Dom.show('reminderDiv');
           }
         }
+        }
         
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
         
-    		function getWindowHeight() {
+    		function getWindowHeight()
+    		{
     			var windowHeight = 0;
-    			if (typeof(window.innerHeight) == 'number') {
+    			if (typeof(window.innerHeight) == 'number')
+    			{
     				windowHeight = window.innerHeight;
     			}
-    			else {
-    				if (document.documentElement && document.documentElement.clientHeight) {
+    			else
+    			{
+    				if (document.documentElement && document.documentElement.clientHeight)
+    				{
     					windowHeight = document.documentElement.clientHeight;
     				}
-    				else {
-    					if (document.body && document.body.clientHeight) {
+    				else
+    				{
+    					if (document.body && document.body.clientHeight)
+    					{
     						windowHeight = document.body.clientHeight;
     					}
     				}
@@ -131,24 +144,23 @@
     			return windowHeight;
     		}
     		
-    		function setFooter() {
-    			if (document.getElementById) {
+    		function setFooter()
+    		{
+    			if (document.getElementById)
+    			{
     				var windowHeight = getWindowHeight();
-    				if (windowHeight > 0) {
+    				if (windowHeight > 0)
+    				{
     					var footerElement = document.getElementById('FT');
     					var footerHeight  = footerElement.offsetHeight;
     					if (document.getElementById('content'))
-                document.getElementById('content').style.height = (windowHeight - footerHeight - 220) + 'px';
+                document.getElementById('content').style.height = (windowHeight - footerHeight - 225) + 'px';
     				}
     			}
     		}
     		
-    		window.onload = function() {
-    			setFooter();
-    		}
-    		window.onresize = function() {
-    			setFooter();
-    		}
+    		window.onload = function() {setFooter();};
+    		window.onresize = function() {setFooter();}
   	</script>
     ]]>
     <title></title>
@@ -177,16 +189,18 @@
           self.accountName := get_keyword('user_name', aSessInfo, '');
           self.owner_id := CAL.WA.domain_owner_id (self.domain_id);
           self.ownerName := CAL.WA.domain_owner_name (self.domain_id);
-          self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), CAL.WA.settings (self.account_id));
+          self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), CAL.WA.settings (self.owner_id));
         ]]>
       </v:on-init>
 
       <v:after-data-bind>
         <![CDATA[
-          if (CAL.WA.frozen_check(self.domain_id)) {
+          if (CAL.WA.frozen_check(self.domain_id))
+          {
             declare freeze_page varchar;
             freeze_page := CAL.WA.frozen_page(self.domain_id);
-            if (freeze_page is null or freeze_page = '' or freeze_page = 'default') {
+            if (freeze_page is null or freeze_page = '' or freeze_page = 'default')
+            {
               http_rewrite ();
               http_request_status ('HTTP/1.1 404 Not found');
               http (sprintf('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><head><TITLE>404 Not Found</TITLE></HEAD><body><H1>Not Found</H1>Resource %s not found.</BODY></HTML>', http_path (CAL.WA.page_name())));

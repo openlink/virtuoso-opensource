@@ -63,6 +63,24 @@ create procedure CAL.WA.exec_no_error(in expr varchar, in execType varchar := ''
 
 ------------------------------------------------------------------------------
 --
+create procedure CAL.WA.atom_lpath (
+  in domain_id integer)
+{
+  return sprintf ('/calendar/%d/atom-pub', domain_id);
+}
+;
+
+------------------------------------------------------------------------------
+--
+create procedure CAL.WA.atom_lpath2 (
+  in domain_id integer)
+{
+  return CAL.WA.domain_sioc_url (domain_id) || '/atom-pub';
+}
+;
+
+------------------------------------------------------------------------------
+--
 create procedure CAL.WA.vhost()
 {
   declare
@@ -78,14 +96,36 @@ create procedure CAL.WA.vhost()
   if (isnull(strstr(sHost, '/DAV')))
     iIsDav := 0;
   VHOST_REMOVE(lpath    => '/calendar');
-  -- VHOST_DEFINE(lpath    => '/calendar',
-  --              ppath    => concat(sHost, 'www/'),
-  --              is_dav   => iIsDav,
-  --              is_brws  => 0,
-  --              vsp_user => 'dba',
-  --              realm    => 'wa',
-  --              def_page => 'home.vspx'
-  --            );
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'ods_rule_calendar',
+    1,
+    '/calendar',
+    vector (),
+    0,
+    '/dataspace/all/calendar',
+    vector (),
+    NULL,
+    NULL,
+    2,
+    303
+  );
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rulelist_calendar', 1, vector ('ods_rule_calendar'));
+  VHOST_DEFINE(lpath    => '/calendar',
+               ppath    => '/DAV/VAD/wa/',
+               is_dav   => 1,
+               is_brws  => 0,
+               vsp_user => 'dba',
+               opts     => vector ('url_rewrite', 'ods_rulelist_calendar')
+             );
+
+  USER_CREATE ('SOAP_CALENDAR', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
+  USER_SET_QUALIFIER ('SOAP_CALENDAR', 'DBA');
+  VHOST_REMOVE (lpath     => '/calendar/atom-pub');
+  VHOST_DEFINE (lpath     => '/calendar/atom-pub',
+                ppath     => '/SOAP/Http/gdata',
+                soap_user => 'SOAP_CALENDAR',
+                opts      => vector ('atom-pub', 1)
+               );
 }
 ;
 
@@ -131,6 +171,16 @@ CAL.WA.exec_no_error('
 )
 ;
 
+CAL.WA.exec_no_error (
+  'alter type wa_Calendar add overriding method wa_addition_urls () returns any'
+)
+;
+
+CAL.WA.exec_no_error (
+  'alter type wa_Calendar add overriding method wa_update_instance (in oldValues any, in newValues any) returns any'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 -- wa_Calendar methods
@@ -155,11 +205,7 @@ create method wa_id () for wa_Calendar
 --
 create method wa_drop_instance () for wa_Calendar
 {
-  declare iWaiID integer;
-
-  iWaiID := self.wa_id ();
-  CAL.WA.domain_delete (iWaiID);
-  VHOST_REMOVE (lpath => '/calendar/' || cast (iWaiID as varchar));
+  CAL.WA.domain_delete (self.wa_id ());
   (self as web_app).wa_drop_instance ();
 }
 ;
@@ -181,9 +227,8 @@ create method wa_notify_member_changed(in account int, in otype int, in ntype in
 --
 create method wa_new_inst (in login varchar) for wa_Calendar
 {
-  declare
-    iUserID,
-    iWaiID integer;
+  declare iUserID, iWaiID integer;
+  declare retValue any;
 
   iUserID := (select U_ID from DB.DBA.SYS_USERS where U_NAME = login);
   if (isnull (iUserID))
@@ -197,19 +242,6 @@ create method wa_new_inst (in login varchar) for wa_Calendar
 
   select WAI_ID into iWaiID from WA_INSTANCE where WAI_NAME = self.wa_name;
   iWaiID := self.wa_id ();
-
-  -- make dir into Briefcase home
-  DB.DBA.DAV_MAKE_DIR ('/DAV/home/%s/Calendar/' || login, iUserID, null, '110100000N');
-
-  declare path varchar;
-  path := sprintf ('/DAV/home/%s/Calendar/', login);
-  DB.DBA.DAV_DELETE_INT (path || 'Calendar.rss', 1, null, null, 0);
-  DB.DBA.DAV_DELETE_INT (path || 'Calendar.atom', 1, null, null, 0);
-  DB.DBA.DAV_DELETE_INT (path || 'Calendar.rdf', 1, null, null, 0);
-
-  DB.DBA.DAV_MAKE_DIR (path, iUserID, null, '110100000N');
-  delete from WS.WS.SYS_DAV_COL where COL_ID = DAV_SEARCH_ID (sprintf ('/DAV/home/%s/Calendar DET/', login), 'C');
-  update WS.WS.SYS_DAV_COL set COL_DET = 'Calendar' where COL_ID = DAV_SEARCH_ID (path, 'C');
 
   -- Add a virtual directory for Calendar - public www -------------------------
   VHOST_REMOVE(lpath    => '/calendar/' || cast (iWaiID as varchar));
@@ -225,7 +257,17 @@ create method wa_new_inst (in login varchar) for wa_Calendar
              );
 
   CAL.WA.domain_update (iWaiID, iUserID);
-  return (self as web_app).wa_new_inst(login);
+  retValue := (self as web_app).wa_new_inst(login);
+
+  --  SIOC service
+  declare  graph_iri, iri, c_iri varchar;
+
+  graph_iri := SIOC..get_graph ();
+	c_iri := SIOC..calendar_iri (self.wa_name);
+  iri := sprintf ('http://%s%s/%U/calendar/%U/atom-pub', SIOC..get_cname(), SIOC..get_base_path (), login, self.wa_name);
+  SIOC..ods_sioc_service (graph_iri, iri, c_iri, null, null, null, iri, 'Atom');
+
+  return retValue;
 }
 ;
 
@@ -322,11 +364,14 @@ create method get_param (in param varchar) for wa_Calendar
   declare retValue any;
 
   retValue := null;
-  if (param = 'host') {
+  if (param = 'host')
+  {
     retValue := registry_get('calendar_path');
     if (cast(retValue as varchar) = '0')
       retValue := '/apps/Calendar/';
-  } if (param = 'isDAV') {
+  }
+  if (param = 'isDAV')
+  {
     retValue := 1;
     if (isnull(strstr(self.get_param('host'), '/DAV')))
       retValue := 0;
@@ -357,5 +402,32 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_Calendar
   userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
 
   return concat(CAL.WA.dav_url2(domainID, userID), 'Calendar.rdf');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_addition_urls () for wa_Calendar
+{
+  return vector (
+    vector (null, null, '/calendar',          '/DAV/VAD/wa/',     1, 0, null, null, null, null, 'dba', null, null, 0, null, null, vector ('url_rewrite', 'ods_rulelist_calendar'), 0),
+    vector (null, null, '/calendar/atom-pub', '/SOAP/Http/gdata', 0, 0, null, null, null, null,  null, 'SOAP_CALENDAR', null, 1, vector ('atom-pub', 1), null, null, 0)
+  );
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_update_instance (in oldValues any, in newValues any) for wa_Calendar
+{
+  declare domainID, ownerID integer;
+
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = newValues[0]);
+  ownerID := (select WAM_USER from WA_MEMBER B where WAM_INST = oldValues[0] and WAM_MEMBER_TYPE = 1);
+
+  CAL.WA.domain_gems_delete (domainID, ownerID, 'Calendar Gems', oldValues[0]);
+  CAL.WA.domain_gems_create (domainID, ownerID);
+
+  return (self as web_app).wa_update_instance (oldValues, newValues);
 }
 ;

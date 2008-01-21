@@ -149,10 +149,10 @@
     <xsl:apply-templates select="vm:init"/>
     <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='Calendar'/>
-      <div id="app_area">
+      <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
         <div style="float: left;">
-          <v:url value="--''" format="%s" url="--sprintf ('%shome.vspx?sid=%s&realm=%s', CAL.WA.calendar_url (self.domain_id), self.sid, self.realm)" xhtml_title="Calendar Home">
+            <v:url value="--''" format="%s" url="--CAL.WA.domain_sioc_url (self.domain_id, self.sid, self.realm)" xhtml_title="Calendar Home">
             <v:before-render>
               <![CDATA[
                 control.ufl_value := '<img src="image/calendarbanner_sml.jpg" border="0" alt="Calendar Home" />';
@@ -203,13 +203,7 @@
       </div>
         <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
           <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
-            <?vsp 
-              if (self.domain_id > 0) {
-                http (concat (CAL.WA.domain_name (self.domain_id), ' (', CAL.WA.account_fullName (CAL.WA.domain_owner_id (self.domain_id)), ')')); 
-              } else {
-                http ('Public Calendar'); 
-              }
-            ?>
+            <?vsp http (CAL.WA.banner_links (self.domain_id, self.sid, self.realm)); ?>
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
         <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
@@ -217,6 +211,7 @@
             <v:on-post>
               <![CDATA[
                 self.cAction := 'settings';
+                    self.cSubAction := '';
                 self.vc_data_bind (e);
               ]]>
             </v:on-post>
@@ -432,6 +427,17 @@
   <xsl:template match="vm:ds-navigation">
     &lt;?vsp
       {
+        declare n_start, n_end, n_total integer;
+
+        n_total := control.ds_data_source.ds_total_rows;
+        n_start := control.ds_data_source.ds_rows_offs + 1;
+        n_end   := n_start + control.ds_data_source.ds_rows_fetched - 1;
+        if (n_end > n_total)
+          n_end := n_total;
+
+        if (n_total)
+          http (sprintf ('%d - %d of %d', n_start, n_end, n_total));
+
         declare _prev, _next, _last, _first vspx_button;
         declare d_prev, d_next, d_last, d_first integer;
 
@@ -441,7 +447,9 @@
         _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
         _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
 
-        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)) {
+        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled))
+        {
+          http (' | ');
         if (_first is not null and not _first.vc_enabled)
           d_first := 1;
 
@@ -457,24 +465,24 @@
     ?&gt;
     <?vsp
       if (d_first)
-        http ('<img src="image/first_16.gif" alt="First" title="First" border="0" />&nbsp;');
+        http ('<img src="/ods/images/skin/pager/p_first_gr.png" alt="First Page" title="First Page" border="0" />first&nbsp;');
     ?>
-    <v:button name="{@data-set}_first" action="simple" style="image" value="image/first_16.gif" xhtml_alt="First" text="&amp;nbsp;"/>
+    <v:button name="{@data-set}_first" action="simple" style="image" value="/ods/images/skin/pager/p_first.png" xhtml_alt="First" text="first&amp;nbsp;" />
     <?vsp
       if (d_prev)
-        http ('<img src="image/previous_16.gif" alt="Previous" title="Previous" border="0" />&nbsp;');
+        http ('<img src="/ods/images/skin/pager/p_prev_gr.png" alt="Previous Page" title="Previous Page" border="0" />prev&nbsp;');
     ?>
-    <v:button name="{@data-set}_prev" action="simple" style="image" value="image/previous_16.gif" xhtml_alt="Previous" text="&amp;nbsp;"/>
+    <v:button name="{@data-set}_prev" action="simple" style="image" value="/ods/images/skin/pager/p_prev.png" xhtml_alt="Previous" text="prev&amp;nbsp;" />
     <?vsp
       if (d_next)
-        http ('<img src="image/next_16.gif" alt="Next" title="Next" border="0" />&nbsp;');
+        http ('<img src="/ods/images/skin/pager/p_next_gr.png" alt="Next Page" title="Next Page" border="0" />next&nbsp;');
     ?>
-    <v:button name="{@data-set}_next" action="simple" style="image" value="image/next_16.gif" xhtml_alt="Next" text="&amp;nbsp;"/>
+    <v:button name="{@data-set}_next" action="simple" style="image" value="/ods/images/skin/pager/p_next.png" xhtml_alt="Next" text="next&amp;nbsp;" />
     <?vsp
       if (d_last)
-        http ('<img src="image/last_16.gif" alt="Last" title="Last" border="0" />');
+        http ('<img src="/ods/images/skin/pager/p_last_gr.png" alt="Last Page" title="Last Page" border="0" />last');
     ?>
-    <v:button name="{@data-set}_last" action="simple" style="image" value="image/last_16.gif" xhtml_alt="Last" text="&amp;nbsp;"/>
+    <v:button name="{@data-set}_last" action="simple" style="image" value="/ods/images/skin/pager/p_last.png" xhtml_alt="Last" text="last" />
     <?vsp
       }
     ?>

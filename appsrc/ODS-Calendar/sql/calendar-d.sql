@@ -31,6 +31,9 @@ CAL.WA.uninstall ()
 ;
 
 -- Tables
+CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM_LOG');
+CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM_EVENT');
+CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.GRANTS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.ANNOTATIONS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.ALARMS');

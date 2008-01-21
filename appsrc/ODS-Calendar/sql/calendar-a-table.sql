@@ -20,6 +20,19 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+-----------------------------------------------------------------------------------------
+--
+create procedure CAL.WA.upstream_event_update (
+  in domain_id integer,
+  in event_id integer,
+  in event_uid varchar,
+  in event_tags varchar,
+  in action varchar)
+{
+  return;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 -- Sequences
@@ -68,6 +81,7 @@ CAL.WA.exec_no_error ('
 CAL.WA.exec_no_error ('
   create table CAL.WA.EVENTS (
     E_ID integer not null,
+    E_UID varchar,
     E_DOMAIN_ID integer not null,
     E_KIND integer default 0,             -- 0 - Event
                                           -- 1 - Task
@@ -127,6 +141,10 @@ CAL.WA.exec_no_error ('
 ');
 
 CAL.WA.exec_no_error (
+  'alter table CAL.WA.EVENTS add E_UID varchar', 'C', 'CAL.WA.EVENTS', 'E_UID'
+);
+
+CAL.WA.exec_no_error (
   'alter table CAL.WA.EVENTS add E_NOTES long varchar', 'C', 'CAL.WA.EVENTS', 'E_NOTES'
 );
 
@@ -176,10 +194,22 @@ CAL.WA.exec_no_error ('
 ');
 
 CAL.WA.exec_no_error ('
+  create index SK_EVENTS_03 on CAL.WA.EVENTS (E_UID)
+');
+
+CAL.WA.exec_no_error ('
   create trigger EVENTS_AI after insert on CAL.WA.EVENTS referencing new as N {
+    if (isnull (N.E_UID))
+    {
+      set triggers off;
+      N.E_UID := sprintf (\'%s@%s\', uuid (), sys_stat (\'st_host_name\'));
+      update CAL.WA.EVENTS set E_UID = N.E_UID where E_ID = N.E_ID;
+      set triggers on;
+    }
     CAL.WA.tags_update (N.E_DOMAIN_ID, \'\', N.E_TAGS);
     CAL.WA.domain_ping (N.E_DOMAIN_ID);
-    if (N.E_REMINDER <> 0) {
+    if (N.E_REMINDER <> 0)
+    {
       set triggers off;
       CAL.WA.event_addReminder (CAL.WA.event_user2gmt (now (), CAL.WA.settings_timeZone2 (N.E_DOMAIN_ID)),
                                 N.E_ID,
@@ -198,11 +228,20 @@ CAL.WA.exec_no_error ('
                                 null);
       set triggers on;
     }
+
+    CAL.WA.upstream_event_update (N.E_DOMAIN_ID, N.E_ID, N.E_UID, N.E_TAGS, \'I\');
   }
 ');
 
 CAL.WA.exec_no_error ('
   create trigger EVENTS_AU after update on CAL.WA.EVENTS referencing  old as O, new as N {
+    if (isnull (N.E_UID))
+    {
+      set triggers off;
+      N.E_UID := sprintf (\'%s@%s\', uuid (), sys_stat (\'st_host_name\'));
+      update CAL.WA.EVENTS set E_UID = N.E_UID where E_ID = N.E_ID;
+      set triggers on;
+    }
     CAL.WA.tags_update (N.E_DOMAIN_ID, O.E_TAGS, N.E_TAGS);
     CAL.WA.domain_ping (N.E_DOMAIN_ID);
     delete from CAL.WA.ALARMS where A_EVENT_ID = O.E_ID;
@@ -212,11 +251,13 @@ CAL.WA.exec_no_error ('
     if ((O.E_REPEAT        <> N.E_REPEAT) or
         (O.E_REPEAT_PARAM1 <> N.E_REPEAT_PARAM1) or
         (O.E_REPEAT_PARAM2 <> N.E_REPEAT_PARAM2) or
-        (O.E_REPEAT_PARAM3 <> N.E_REPEAT_PARAM3)) {
+        (O.E_REPEAT_PARAM3 <> N.E_REPEAT_PARAM3))
+    {
       update CAL.WA.EVENTS set E_REPEAT_EXCEPTIONS = \'\' where E_ID = N.E_ID;
     }
 
-    if (N.E_REMINDER <> 0) {
+    if (N.E_REMINDER <> 0)
+    {
       CAL.WA.event_addReminder (CAL.WA.event_user2gmt (now (), CAL.WA.settings_timeZone2 (N.E_DOMAIN_ID)),
                                 N.E_ID,
                                 N.E_DOMAIN_ID,
@@ -233,8 +274,9 @@ CAL.WA.exec_no_error ('
                                 N.E_REMINDER,
                                 null);
     }
-
     set triggers on;
+
+    CAL.WA.upstream_event_update (N.E_DOMAIN_ID, N.E_ID, N.E_UID, N.E_TAGS, \'U\');
   }
 ');
 
@@ -243,6 +285,8 @@ CAL.WA.exec_no_error ('
     CAL.WA.tags_update (O.E_DOMAIN_ID, O.E_TAGS, \'\');
     delete from CAL.WA.GRANTS where G_EVENT_ID = O.E_ID;
     delete from CAL.WA.ALARMS where A_EVENT_ID = O.E_ID;
+
+    CAL.WA.upstream_event_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_TAGS, \'D\');
   }
 ');
 
@@ -258,16 +302,19 @@ create procedure CAL.WA.tags_update (
   oTags := split_and_decode (oTags, 0, '\0\0,');
   nTags := split_and_decode (nTags, 0, '\0\0,');
 
-  foreach (any tag in oTags) do {
+  foreach (any tag in oTags) do
+  {
     if (not CAL.WA.vector_contains (nTags, lcase (tag)))
       update CAL.WA.TAGS
          set T_COUNT = T_COUNT - 1
        where T_DOMAIN_ID = domain_id
          and T_TAG = lcase (tag);
   }
-  foreach (any tag in nTags) do {
+  foreach (any tag in nTags) do
+  {
     if (not CAL.WA.vector_contains (oTags, lcase (tag)))
-      if (exists (select 1 from CAL.WA.TAGS where T_DOMAIN_ID = domain_id and T_TAG = lcase (tag))) {
+      if (exists (select 1 from CAL.WA.TAGS where T_DOMAIN_ID = domain_id and T_TAG = lcase (tag)))
+      {
         update CAL.WA.TAGS
            set T_COUNT = T_COUNT + 1
          where T_DOMAIN_ID = domain_id
@@ -290,7 +337,7 @@ create procedure CAL.WA.EVENTS_E_SUBJECT_int (inout vtb any, inout d_id any, in 
   {
     vt_batch_feed (vtb, sprintf('^R%d', E_DOMAIN_ID), mode);
 
-    vt_batch_feed (vtb, sprintf('^UID%d', CAL.WA.domain_owner_id (E_DOMAIN_ID)), mode);
+    vt_batch_feed (vtb, sprintf('^UID%d', coalesce (CAL.WA.domain_owner_id (E_DOMAIN_ID), 0)), mode);
 
     vt_batch_feed (vtb, coalesce(E_SUBJECT, ''), mode);
 
@@ -340,8 +387,8 @@ create procedure CAL.WA.tmp_drop_index ()
     return;
 
     CAL.WA.exec_no_error ('drop table CAL.WA.EVENTS_E_SUBJECT_WORDS');
-  registry_set ('cal_index_version', '4');
 
+  registry_set ('cal_index_version', '4');
 }
 ;
 CAL.WA.tmp_drop_index ();
@@ -349,6 +396,20 @@ CAL.WA.tmp_drop_index ();
 CAL.WA.exec_no_error ('
   create text index on CAL.WA.EVENTS (E_SUBJECT) with key E_ID clustered with (E_DOMAIN_ID, E_UPDATED) using function language \'x-ViDoc\'
 ');
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.tmp_uid_update ()
+{
+  if (registry_get ('cal_uid_update') = '1')
+    return;
+
+  update CAL.WA.EVENTS set E_UID = sprintf ('%s@%s', uuid (), sys_stat ('st_host_name')) where E_UID is null;
+
+  registry_set ('cal_uid_update', '1');
+}
+;
+CAL.WA.tmp_uid_update ();
 
 -------------------------------------------------------------------------------
 --
@@ -449,3 +510,72 @@ CAL.WA.exec_no_error ('
     values(\'Calendar Alarm Scheduler\', now(), \'CAL.WA.alarm_scheduler ()\', 30)
 ')
 ;
+
+-------------------------------------------------------------------------------
+--
+--  Upstreams
+--
+-------------------------------------------------------------------------------
+CAL.WA.exec_no_error ('
+  create table CAL.WA.UPSTREAM (
+    U_ID integer identity,
+    U_DOMAIN_ID integer,
+    U_NAME varchar,
+    U_URI varchar,
+    U_USER varchar,
+    U_PASSWORD varchar,
+    U_INCLUDE varchar,
+    U_EXCLUDE varchar,
+
+    primary key (U_ID)
+  )
+');
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  create table CAL.WA.UPSTREAM_EVENT (
+    UE_ID integer identity,
+    UE_UPSTREAM_ID integer,
+    UE_EVENT_ID integer,
+    UE_EVENT_UID varchar,
+    UE_ACTION char (1),           -- I - insert, U - update, D - delete
+    UE_STATUS integer default 0,  -- 1 - sent
+
+    constraint FK_UPSTREAM_EVENT_01 FOREIGN KEY (UE_UPSTREAM_ID) references CAL.WA.UPSTREAM (U_ID) on delete cascade,
+
+    primary key (UE_ID)
+  )
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_UPSTREAM_EVENT_01 on CAL.WA.UPSTREAM_EVENT (UE_UPSTREAM_ID, UE_EVENT_ID)
+');
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  create table CAL.WA.UPSTREAM_LOG (
+    UL_ID integer identity,
+	  UL_UPSTREAM_ID integer,
+	  UL_DT datetime not null,
+	  UL_MESSAGE varchar not null,
+
+	  constraint FK_UPSTREAM_LOG_01 foreign key (UL_UPSTREAM_ID) references CAL.WA.UPSTREAM (U_ID) on delete cascade,
+
+    primary key (UL_ID)
+  )
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_UPSTREAM_LOG_01 on CAL.WA.UPSTREAM_LOG (UL_UPSTREAM_ID, UL_DT)
+');
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
+    values(\'Calendar Upstream Scheduler\', now(), \'CAL.WA.upstream_scheduler ()\', 10)
+')
+;
+

@@ -66,7 +66,7 @@ create procedure fill_ods_calendar_sioc (
   in _wai_name varchar := null)
 {
   declare id, deadl, cnt integer;
-  declare c_iri, creator_iri varchar;
+  declare c_iri, creator_iri, iri varchar;
 
   {
     id := -1;
@@ -77,9 +77,9 @@ create procedure fill_ods_calendar_sioc (
 	      resignal;
       rollback work;
       deadl := deadl - 1;
-      goto l0;
+      goto L0;
     };
-  l0:
+  L0:
 
     for (select WAI_ID,
                 WAI_NAME,
@@ -157,6 +157,38 @@ create procedure fill_ods_calendar_sioc (
       }
     }
     commit work;
+
+		id := -1;
+		deadl := 3;
+		cnt := 0;
+		declare exit handler for sqlstate '40001'
+		{
+			if (deadl <= 0)
+				resignal;
+			rollback work;
+			deadl := deadl - 1;
+			goto L1;
+		};
+	L1:
+		for (select WAI_ID,
+								WAI_NAME
+					 from DB.DBA.WA_INSTANCE
+					where ((WAI_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+					  and WAI_TYPE_NAME = 'Calendar'
+					  and WAI_ID > id
+					order by WAI_ID) do
+		{
+			c_iri := calendar_iri (WAI_NAME);
+      iri := sprintf ('http://%s%s/%U/calendar/%U/atom-pub', get_cname(), get_base_path (), CAL.WA.domain_owner_name (WAI_ID), WAI_NAME);
+      ods_sioc_service (graph_iri, iri, c_iri, null, null, null, iri, 'Atom');
+			cnt := cnt + 1;
+			if (mod (cnt, 500) = 0)
+			{
+				commit work;
+				id := WAI_ID;
+			}
+    }
+		commit work;
   }
 }
 ;
