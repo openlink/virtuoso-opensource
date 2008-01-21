@@ -1500,6 +1500,9 @@ feed_url = function(type){
     base_url = page_location;
   }
 
+  base_url= base_url.substr(base_url.length-1)=='/' ? base_url : base_url+'/';
+
+
   if(ds_albums.current.name != null){
     current_album = '?'+ds_albums.current.name;
   }else{
