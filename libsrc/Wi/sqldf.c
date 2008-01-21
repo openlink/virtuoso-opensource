@@ -4644,9 +4644,11 @@ sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set
   arr = (df_elt_t **) dk_set_to_array (dk_set_nreverse (res)); /* reverse to preserve order among items of equal score, stable sort */
   buf_bsort ((buffer_desc_t**) arr, BOX_ELEMENTS (arr), (sort_key_func_t) df_pred_score_key);
   res = NULL;
-  DO_BOX (df_elt_t *, dfe, inx, arr)
+  DO_BOX (dk_set_t, elt, inx, arr)
     {
-      t_set_push (&res, (void*) dfe);
+      df_elt_t * dfe = (df_elt_t *)elt->data;
+      dfe->dfe_unit = 0;
+      t_set_push (&res, (void*) elt);
     }
   END_DO_BOX;
   dk_free_box ((caddr_t) arr);

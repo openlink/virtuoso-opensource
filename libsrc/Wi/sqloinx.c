@@ -469,12 +469,43 @@ sqlo_opts_inx_int (caddr_t * opts)
 
 
 void
+inx_int_add (dk_set_t * group_ret, df_inx_op_t * ins_dio)
+{
+  /* add in order of asc cardinality */
+  dk_set_t *prev = group_ret;
+  dk_set_t list = *group_ret;
+  float ov;
+  if (0 == ins_dio->dio_table->dfe_unit)
+    {
+      ins_dio->dio_table->dfe_locus = LOC_LOCAL; /* always local since inx int not done otherwise but set here cause cost func does not use a sample if not set */
+      dfe_table_cost (ins_dio->dio_table, &ins_dio->dio_table->dfe_unit, &ins_dio->dio_table->dfe_arity, &ov, 1);
+    }
+  while (list)
+    {
+      df_inx_op_t * dio = (df_inx_op_t *)list->data;
+      if (ins_dio->dio_table->dfe_arity < dio->dio_table->dfe_arity)
+	{
+	  t_set_push (prev, (void*)ins_dio);
+	  return;
+	}
+      prev = &list->next;
+      list = list->next;
+    }
+  t_set_push (prev, (void*)ins_dio);
+}
+
+
+int inx_int_join = 1;
+
+void
 sqlo_try_inx_int_joins (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * group_ret, float * best_group)
 {
   /* the key of tb_dfe is non-unq and begins with eqs and coers all cols */
   op_table_t * ot = so->so_this_dt;
   int n_eqs;
   dk_set_t group = NULL;
+  if (!inx_int_join)
+    return;
   if (tb_dfe->_.table.is_unique
       || tb_dfe->_.table.ot->ot_rds)
     return;
@@ -497,8 +528,7 @@ sqlo_try_inx_int_joins (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * group_ret, fl
 	    {
 	      if (!group)
 		t_set_push (&group, (void*) df_inx_op (tb_dfe, tb_dfe->_.table.key, NULL));
-	      t_set_push (&group, (void*) df_inx_op (joined, joined->_.table.key, NULL));
-
+	      inx_int_add (&group, df_inx_op (joined, joined->_.table.key, NULL));
 	    }
 	}
     }
