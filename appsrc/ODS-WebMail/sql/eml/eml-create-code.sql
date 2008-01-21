@@ -1349,6 +1349,75 @@ create procedure OMAIL.WA.domain_owner_name (
 
 -------------------------------------------------------------------------------
 --
+create procedure OMAIL.WA.domain_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U/mail/%U', DB.DBA.wa_cname (), OMAIL.WA.domain_owner_name (domain_id), OMAIL.WA.domain_name (domain_id));
+  return OMAIL.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.account_fullName (
+  in account_id integer)
+{
+  return coalesce((select coalesce(U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.account_mail(
+  in account_id integer)
+{
+  return coalesce((select U_E_MAIL from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.account_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), OMAIL.WA.domain_owner_name (domain_id));
+  return OMAIL.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.url_fix (
+  in S varchar,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare T varchar;
+
+  T := '?';
+  if (not is_empty_or_null (sid))
+  {
+    S := S || T || 'sid=' || sid;
+    T := '&';
+  }
+  if (not is_empty_or_null (realm))
+  {
+    S := S || T || 'realm=' || realm;
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure OMAIL.WA.omail_delete_message(
   in _domain_id integer,
   in _user_id   integer,
@@ -2377,6 +2446,27 @@ create procedure OMAIL.WA.omail_url (
   in _domain_id integer)
 {
   return concat(OMAIL.WA.host_url(), '/oMail/', cast(_domain_id as varchar), '/');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.banner_links (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  if (domain_id <= 0)
+    return 'Public Mails';
+
+  return sprintf ('<a href="%s" title="%s">%s</a> (<a href="%s" title="%s">%s</a>)',
+                  OMAIL.WA.domain_sioc_url (domain_id, sid, realm),
+                  OMAIL.WA.domain_name (domain_id),
+                  OMAIL.WA.domain_name (domain_id),
+                  OMAIL.WA.account_sioc_url (domain_id, sid, realm),
+                  OMAIL.WA.account_fullName (OMAIL.WA.domain_owner_id (domain_id)),
+                  OMAIL.WA.account_fullName (OMAIL.WA.domain_owner_id (domain_id))
+                 );
 }
 ;
 

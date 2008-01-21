@@ -178,7 +178,7 @@
     </xsl:variable>
     <xsl:value-of select="$address" />
     <xsl:if test="$address != '~no address~'">
-      <xsl:if test="//user_info/app = 1">
+      <xsl:if test="//user_info/app > 0">
         <xsl:call-template name="nbsp" />
         <xsl:call-template name="make_href">
           <xsl:with-param name="url">javascript: void(0);</xsl:with-param>

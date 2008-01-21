@@ -251,7 +251,9 @@
         OAT.Anchor.zIndex = 1001;
 
         if (<xsl:value-of select="//user_info/app" /> == 1)
-          gererateAPP('app_area', {});
+          gererateAPP('app_area', {appActivation: "click"});
+        if (<xsl:value-of select="//user_info/app" /> == 2)
+          gererateAPP('app_area', {appActivation: "hover"});
       }
       OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
     </script>
@@ -273,7 +275,11 @@
       <xsl:call-template name="hid_sid"/>
       <div style="background-color: #fff;">
         <div style="float: left;">
-          <img src="/oMail/i/omailbanner_sml.jpg"/>
+          <xsl:call-template name="make_href">
+            <xsl:with-param name="url"><xsl:value-of select="//user_info/domain_path" /></xsl:with-param>
+            <xsl:with-param name="title">Mail Home</xsl:with-param>
+            <xsl:with-param name="img">/oMail/i/omailbanner_sml.jpg</xsl:with-param>
+          </xsl:call-template>
         </div>
         <div style="float: right; text-align: right; padding-right: 0.5em; padding-top: 20px;">
           <input type="text" name="q" value=""/>
@@ -296,7 +302,7 @@
       </div>
       <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
         <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
-          <xsl:value-of select="//user_info/email" /> (<xsl:value-of select="//user_info/user_fullname" />)
+          <xsl:value-of select="//user_info/banner" disable-output-escaping="yes" />
         </div>
         <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
           <xsl:call-template name="make_href">

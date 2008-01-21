@@ -23,14 +23,16 @@
 
   declare errorCount, N integer;
   declare waID, waPublic, user_id integer;
+  declare sid, realm varchar;
   declare wa_home_title, wa_home_link, user_name, user_fullName, procName, procID, S varchar;
   declare hParams, hLines, vOptions, geoParams, settings, app any;
 
   declare exit handler for sqlstate '90001' { OMAIL.WA.utl_doredirect(__sql_message); return;};
   declare exit handler for sqlstate '90005' { return; }; --download
   declare exit handler for sqlstate '42001' { http('404'); return;}; --not found
-  declare exit handler for sqlstate 'TEST'  {
-    OMAIL.WA.utl_doredirect(sprintf('err.vsp?sid=%s&realm=%s&err=%s&msg=%U', get_keyword('sid', params, ''), get_keyword('realm', params, ''), __SQL_STATE, OMAIL.WA.test_clear(__SQL_MESSAGE)));
+  declare exit handler for sqlstate 'TEST'
+  {
+    OMAIL.WA.utl_doredirect(sprintf('err.vsp?sid=%s&realm=%s&err=%s&msg=%U', sid, realm, __SQL_STATE, OMAIL.WA.test_clear(__SQL_MESSAGE)));
     return;
   };
   declare exit handler for SQLSTATE '40001' {
@@ -43,6 +45,9 @@
 
   set ISOLATION = 'Committed';
   set http_charset = 'utf-8';
+
+  sid := get_keyword('sid', params, '');
+  realm := get_keyword('realm', params, '');
 
 exec_start:;
 
@@ -58,7 +63,8 @@ exec_start:;
     waID := get_keyword('domain', vOptions);
   if (isnull(waID) and (length(path) = 3))
     waID := atoi(path[1]);
-  if (not isnull(waID)) {
+  if (not isnull(waID))
+  {
     declare waName, waDescription varchar;
 
     declare continue handler for NOT FOUND goto system_error;
@@ -72,11 +78,13 @@ exec_start:;
     procID   := procName[0];
     procName := concat('OMAIL.WA.omail_',procID);
 
-    if (OMAIL.WA.frozen_check(waID, get_keyword('sid', params, ''))) {
+    if (OMAIL.WA.frozen_check(waID, sid))
+    {
       declare freeze_page varchar;
 
       freeze_page := OMAIL.WA.frozen_page(waID);
-      if (freeze_page is null or freeze_page = '' or freeze_page = 'default') {
+      if (freeze_page is null or freeze_page = '' or freeze_page = 'default')
+      {
         http_rewrite ();
         http_request_status ('HTTP/1.1 404 Not found');
         http (sprintf('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><head><TITLE>404 Not Found</TITLE></HEAD><body><H1>Not Found</H1>Resource %s not found.</BODY></HTML>', http_path (path[N])));
@@ -100,9 +108,9 @@ exec_start:;
            user_fullName
       FROM VSPX_SESSION,
            SYS_USERS
-     WHERE VS_SID   = get_keyword('sid', params, '')
-       AND VS_UID   = U_NAME
-       AND VS_REALM = get_keyword('realm', params, '');
+     WHERE VS_SID   = sid
+       AND VS_REALM = realm
+       AND VS_UID   = U_NAME;
 
     geoParams := vector();
     for (select WAUI_LAT, WAUI_LNG from WA_USER_INFO where WAUI_U_ID = user_id) do
@@ -110,17 +118,29 @@ exec_start:;
         geoParams := vector('latitude', sprintf('%.2f', WAUI_LAT), 'longitude', sprintf('%.2f', WAUI_LNG));
     settings := OMAIL.WA.omail_get_settings (1, user_id, 'base_settings');
     app := OMAIL.WA.omail_getp('app', settings);
-    params := vector_concat(params, vector('user_info', vector('user_id', user_id, 'user_name', user_name, 'user_fullname', user_fullName, 'domain_id', waID, 'description', waDescription, 'email', waName, 'base_path', OMAIL.WA.omail_url (waID), 'foaf', sprintf('%s/dataspace/%U/about.rdf', OMAIL.WA.host_url (), user_name),  'geo', geoParams, 'app', app)));
+    params := vector_concat(params, vector('user_info', vector('user_id',       user_id,
+                                                               'user_name',     user_name,
+                                                               'user_fullname', user_fullName,
+                                                               'domain_id',     waID,
+                                                               'domain_path',   OMAIL.WA.domain_sioc_url (waID),
+                                                               'description',   waDescription,
+                                                               'email',         waName,
+                                                               'base_path',     OMAIL.WA.omail_url (waID),
+                                                               'foaf',          sprintf ('%s/dataspace/%U/about.rdf', OMAIL.WA.host_url (), user_name),
+                                                               'geo',           geoParams,
+                                                               'app',           app,
+                                                               'banner',        '<![CDATA[' || OMAIL.WA.banner_links (waID, sid, realm) || ']]>')));
     if (waPublic)
       params := vector_concat(params, vector('sioc', replace(sprintf('%s/dataspace/%U/mail/%U/sioc.rdf', OMAIL.WA.host_url (), user_name, waName), '+', '%2B')));
   } else {
-    if (get_keyword('logout', params, '')) {
-      OMAIL.WA.utl_redirect(wa_home_link || sprintf ('?logout=true&sid=%s&realm=%s', get_keyword('sid', params, ''), get_keyword('realm', params, '')));
+    if (get_keyword('logout', params, ''))
+    {
+      OMAIL.WA.utl_redirect(wa_home_link || sprintf ('?logout=true&sid=%s&realm=%s', sid, realm));
     } else {
     OMAIL.WA.utl_redirect(wa_home_link || 'index.vspx');
     }
     return;
-  };
+  }
 
   declare _page_mode, _xml varchar;
 
