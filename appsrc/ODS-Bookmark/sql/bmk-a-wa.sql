@@ -165,6 +165,16 @@ BMK.WA.exec_no_error (
 )
 ;
 
+BMK.WA.exec_no_error (
+  'alter type wa_bookmark add overriding method wa_addition_urls () returns any'
+)
+;
+
+BMK.WA.exec_no_error (
+  'alter type wa_bookmark add overriding method wa_update_instance (in oldValues any, in newValues any) returns any'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 -- wa_bookmark methods
@@ -190,7 +200,6 @@ create method wa_id_string() for wa_bookmark
 create method wa_drop_instance () for wa_bookmark
 {
   BMK.WA.domain_delete(self.BookmarkID);
-  VHOST_REMOVE(lpath => concat('/bookmark/', self.BookmarkID));
   (self as web_app).wa_drop_instance();
 }
 ;
@@ -357,7 +366,8 @@ create method get_param (in param varchar) for wa_bookmark
   declare retValue any;
 
   retValue := null;
-  if (param = 'host') {
+  if (param = 'host')
+  {
     retValue := registry_get('_bookmark_path_');
     if (cast(retValue as varchar) = '0')
       retValue := '/apps/bookmark/';
@@ -392,5 +402,32 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_bookmark
   userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
 
   return concat(BMK.WA.dav_url2(domainID, userID), 'BM.rdf');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_addition_urls () for wa_bookmark
+{
+  return vector (
+    vector (null, null, '/bookmark', self.get_param ('host')||'www/', self.get_param ('isDAV'), 0, 'bookmarks.vspx', null, 'wa', null, 'dba', null, null, 0, null, null, null, 0),
+    vector (null, null, '/dataspace/services/bookmark',     '/SOAP/', 0,                        0,             null, null, null, null,  null, 'SOAP_BOOKMARK', null, 1, vector('Use', 'literal', 'XML-RPC', 'no' ), null, null, 0)
+  );
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_update_instance (in oldValues any, in newValues any) for wa_bookmark
+{
+  declare domainID, ownerID integer;
+
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = newValues[0]);
+  ownerID := (select WAM_USER from WA_MEMBER B where WAM_INST = oldValues[0] and WAM_MEMBER_TYPE = 1);
+
+  BMK.WA.domain_gems_delete (domainID, ownerID, 'BM', oldValues[0] || '_Gems');
+  BMK.WA.domain_gems_create (domainID, ownerID);
+
+  return (self as web_app).wa_update_instance (oldValues, newValues);
 }
 ;

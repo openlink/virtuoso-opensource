@@ -835,7 +835,7 @@
             <div style="margin-left:3px; margin-top:3px;">
               <?vsp
                 declare _done, tMin, tMax integer;
-                declare appClass, tClass, tStyle varchar;
+                declare tClass, tStyle varchar;
 
                 select max(T_COUNT),
                        min(T_COUNT)
@@ -844,9 +844,6 @@
                  where T_DOMAIN_ID = self.domain_id
                    and T_COUNT > 0;
 
-                appClass := '';
-                if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                  appClass := 'app';  
                 _done := 0;
                 for (select T_TAG, T_COUNT
                        from BMK.WA.TAGS
@@ -859,7 +856,7 @@
                   tClass := '';
                   if (self.bTag = T_TAG)
                     tClass := 'nolink_a';
-                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', BMK.WA.tag_id (T_TAG), T_TAG, T_TAG, appClass, SIOC..bmk_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
+                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', BMK.WA.tag_id (T_TAG), T_TAG, T_TAG, 'app', SIOC..bmk_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
                 }
                 if (not _done)
                   http ('no tags');
@@ -1204,7 +1201,7 @@
                           <?vsp
                             if (lcase(BMK.WA.node_type((control as vspx_row_template).te_column_value('_NODE'))) = 'b') {
                               declare id, domain_id integer;
-                              declare node, target, uri, onclick, appClass, title, title2 varchar;
+                              declare node, target, uri, onclick, title, title2 varchar;
 
                               node := (control as vspx_row_template).te_column_value('_NODE');
                               id := BMK.WA.node_id (node);
@@ -1215,14 +1212,11 @@
                               onclick := '';
                               if (self.account_id > 0)
                                 onclick := sprintf ('onclick="javascript: openBookmark (\'%d\');"', id);
-                              appClass := '';
-                              if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                                appClass := 'app';  
                               if (cast(get_keyword ('panes', self.settings, '0') as integer) = 0) {
                                 target := case when (cast(get_keyword ('bookmarkOpen', self.settings, '0') as integer) = 0) then '_blank' else '_self' end;
-                                http (sprintf('<a id="bookmark_%d" href="%s" target="%s" %s class="%s %s" title="Full window view of \'%s\'" about="%U">%s</a>', id, uri, target, onclick, appClass, self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
+                                http (sprintf('<a id="bookmark_%d" href="%s" target="%s" %s class="%s %s" title="Full window view of \'%s\'" about="%U">%s</a>', id, uri, target, onclick, 'app', self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
                               } else {
-                                http (sprintf('<a id="bookmark_%d" href="javascript: openIFrame (\'%d\', \'%d\', \'%U\');" class="%s %s" title="3-Pane view of \'%s\'" about="%U">%s</a>', id, id, self.account_id, uri, appClass, self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
+                                http (sprintf('<a id="bookmark_%d" href="javascript: openIFrame (\'%d\', \'%d\', \'%U\');" class="%s %s" title="3-Pane view of \'%s\'" about="%U">%s</a>', id, id, self.account_id, uri, 'app', self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
                               }
                             }
                           ?>
@@ -1245,7 +1239,7 @@
                           </vm:if>
                         <?vsp
                           declare N integer;
-                            declare actions, node, id, uri, onclick, appClass, title, target, tags any;
+                            declare actions, node, id, uri, onclick, title, target, tags any;
 
                           node := (control as vspx_row_template).te_column_value('_NODE');
                             id := BMK.WA.node_id (node);
@@ -1281,15 +1275,12 @@
                             http (actions);
 
                           if (BMK.WA.node_type(node) = 'b') {
-                              appClass := '';
-                              if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                                appClass := 'app';  
                                 tags := BMK.WA.tags_select (self.domain_id, id);
                             if (not is_empty_or_null(tags)) {
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
                               for (N := 0; N < length(tags); N := N + 1) {
-                                  http(sprintf('<a id="tag_%d_%s" href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s" class="%s" about="%U">%s</a>', id, tags[N], BMK.WA.bookmark_url(self.domain_id), self.sid, self.realm, tags[N], appClass, SIOC..bmk_tag_iri (self.account_id, tags[N]), tags[N]));
+                                    http(sprintf('<a id="tag_%d_%s" href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s" class="%s" about="%U">%s</a>', id, tags[N], BMK.WA.bookmark_url(self.domain_id), self.sid, self.realm, tags[N], 'app', SIOC..bmk_tag_iri (self.account_id, tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
                               }

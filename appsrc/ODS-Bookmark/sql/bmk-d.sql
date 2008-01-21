@@ -42,7 +42,7 @@ VHOST_REMOVE (lpath => '/dataspace/services/bookmark');
 BMK.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'BM tags aggregator\'');
 
 -- Triggers
-BMK.WA.exec_no_error('DROP TDRIGGER WA_MEMBER_AU_BMK');
+BMK.WA.exec_no_error('DROP TRIGGER WA_MEMBER_AU_BMK');
 
 -- Tables
 BMK.WA.exec_no_error('DROP VIEW  BMK.DBA.TAGS_STATISTICS');

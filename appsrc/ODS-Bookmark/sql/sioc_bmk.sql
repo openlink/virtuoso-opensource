@@ -197,6 +197,7 @@ create procedure fill_ods_bookmark_sioc (
 					 from DB.DBA.WA_INSTANCE
 					where ((WAI_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
 					  and WAI_TYPE_NAME = 'Bookmark'
+					  and WAI_ID > id
 					order by WAI_ID) do
 		{
 			c_iri := bmk_iri (WAI_NAME);

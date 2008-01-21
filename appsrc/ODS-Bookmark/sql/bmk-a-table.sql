@@ -441,7 +441,7 @@ create procedure BMK.WA.BOOKMARK_DOMAIN_BD_DESCRIPTION_int (inout vtb any, inout
   for (select BD_DOMAIN_ID, BD_BOOKMARK_ID, BD_NAME, BD_DESCRIPTION, BD_TAGS from BMK.WA.BOOKMARK_DOMAIN where BD_ID = d_id) do {
     vt_batch_feed (vtb, sprintf('^R%d', BD_DOMAIN_ID), mode);
 
-    vt_batch_feed (vtb, sprintf('^UID%d', BMK.WA.domain_owner_id (BD_DOMAIN_ID)), mode);
+    vt_batch_feed (vtb, sprintf('^UID%d', coalesce (BMK.WA.domain_owner_id (BD_DOMAIN_ID), 0)), mode);
 
     vt_batch_feed (vtb, coalesce(BD_NAME, ''), mode);
 
@@ -469,18 +469,7 @@ DB.DBA.vt_batch_update('BMK.WA.BOOKMARK_DOMAIN', 'off', null);
 
 -------------------------------------------------------------------------------
 --
-BMK.WA.exec_no_error('
-  create trigger WA_MEMBER_AU_BMK AFTER UPDATE ON DB.DBA.WA_MEMBER order 20 referencing old as O, new as N {
-    declare domain_id, account_id integer;
-
-    if ((O.WAM_INST <> N.WAM_INST) and (N.WAM_MEMBER_TYPE = 1)) {
-      account_id := N.WAM_USER;
-      domain_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = N.WAM_INST);
-      BMK.WA.domain_gems_delete(domain_id, account_id, \'BM\', O.WAM_INST || \'_Gems\');
-      BMK.WA.domain_gems_create(domain_id, account_id);
-    }
-  }
-');
+BMK.WA.exec_no_error ('drop trigger WA_MEMBER_AU_BMK');
 
 -------------------------------------------------------------------------------
 --

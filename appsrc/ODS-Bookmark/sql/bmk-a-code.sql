@@ -437,11 +437,14 @@ create procedure BMK.WA.domain_gems_create (
 --
 create procedure BMK.WA.domain_gems_delete(
   in domain_id integer,
-  in account_id integer,
+  in account_id integer := null,
   in appName varchar := 'BM',
   in appGems varchar := null)
 {
   declare tmp, home, path varchar;
+
+  if (isnull (account_id))
+    account_id := AB.WA.domain_owner_id (domain_id);
 
   home := BMK.WA.dav_home(account_id);
   if (isnull(home))
@@ -500,11 +503,12 @@ create procedure BMK.WA.domain_update (
 create procedure BMK.WA.domain_delete (
   in domain_id integer)
 {
-  DECLARE CONTINUE HANDLER FOR SQLSTATE '*' {return 0; };
+  declare continue handler for SQLSTATE '*' {return 0; };
 
   BMK.WA.folder_delete_all(domain_id);
   DELETE FROM BMK.WA.SFOLDER         WHERE SF_DOMAIN_ID = domain_id;
   DELETE FROM BMK.WA.BOOKMARK_DOMAIN WHERE BD_DOMAIN_ID = domain_id;
+  DELETE FROM BMK.WA.TAGS            WHERE T_DOMAIN_ID = domain_id;
 
   for (select WAM_USER from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'Bookmark' and WAI_ID = domain_id) do
     BMK.WA.account_delete (domain_id, WAM_USER);
@@ -567,6 +571,20 @@ create procedure BMK.WA.domain_ping (
 	return;
   for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do
     ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), BMK.WA.sioc_url (domain_id));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.domain_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U/bookmark/%U', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (domain_id), BMK.WA.domain_name (domain_id));
+  return BMK.WA.url_fix (S, sid, realm);
 }
 ;
 
@@ -640,6 +658,20 @@ create procedure BMK.WA.account_fullName (
   in account_id integer)
 {
   return coalesce((select coalesce(U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.account_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), BMK.WA.domain_owner_name (domain_id));
+  return BMK.WA.url_fix (S, sid, realm);
 }
 ;
 
@@ -1865,6 +1897,27 @@ create procedure BMK.WA.geo_url (
 
 -------------------------------------------------------------------------------
 --
+create procedure BMK.WA.banner_links (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  if (domain_id <= 0)
+    return 'Public Bookmarks';
+
+  return sprintf ('<a href="%s" title="%s">%s</a> (<a href="%s" title="%s">%s</a>)',
+                  BMK.WA.domain_sioc_url (domain_id, sid, realm),
+                  BMK.WA.domain_name (domain_id),
+                  BMK.WA.domain_name (domain_id),
+                  BMK.WA.account_sioc_url (domain_id, sid, realm),
+                  BMK.WA.account_fullName (BMK.WA.domain_owner_id (domain_id)),
+                  BMK.WA.account_fullName (BMK.WA.domain_owner_id (domain_id))
+                 );
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure BMK.WA.dav_content (
   in uri varchar,
   in auth_uid varchar := null,
@@ -1928,6 +1981,29 @@ create procedure BMK.WA.xslt_full(
   in xslt_file varchar)
 {
   return concat(BMK.WA.xslt_root(), xslt_file);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.url_fix (
+  in S varchar,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare T varchar;
+
+  T := '?';
+  if (not is_empty_or_null (sid))
+  {
+    S := S || T || 'sid=' || sid;
+    T := '&';
+  }
+  if (not is_empty_or_null (realm))
+  {
+    S := S || T || 'realm=' || realm;
+  }
+  return S;
 }
 ;
 

@@ -396,7 +396,7 @@
                         <td valign="top">
                           <?vsp
                             declare N, id, domain_id, account_id integer;
-                            declare node, tags, target, uri, onclick, appClass, title, title2 varchar;
+                            declare node, tags, target, uri, onclick, title, title2 varchar;
 
                             node := (control as vspx_row_template).te_rowset[2];
                             id := BMK.WA.node_id (node);
@@ -405,18 +405,15 @@
                             uri := (control as vspx_row_template).te_rowset[4];
                             title := (control as vspx_row_template).te_rowset[3];
                             title2 := BMK.WA.rdfa_value (title, 'dc:title');
-                            appClass := '';
-                            if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                              appClass := 'app';  
 
-                            http (sprintf('<a id="bookmark_%d" href="%s" class="%s %s" title="Full window view of \'%s\'" about="%U">%s</a>', id, uri, appClass, self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
+                            http (sprintf('<a id="bookmark_%d" href="%s" class="%s %s" title="Full window view of \'%s\'" about="%U">%s</a>', id, uri, 'app', self.linkClass(node), title, SIOC..bmk_post_iri(domain_id, id), title2));
                             
                             tags := BMK.WA.tags_select (self.domain_id, id);
                             if (not is_empty_or_null(tags)) {
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
                               for (N := 0; N < length(tags); N := N + 1) {
-                                http(sprintf('<a id="tag_%d_%s" href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s" class="%s" about="%U">%s</a>', id, tags[N], BMK.WA.bookmark_url(domain_id), self.sid, self.realm, tags[N], appClass, SIOC..bmk_tag_iri (account_id, tags[N]), tags[N]));
+                                http(sprintf('<a id="tag_%d_%s" href="%s/bookmarks.vspx?sid=%s&realm=%s&tag=%s" class="%s" about="%U">%s</a>', id, tags[N], BMK.WA.bookmark_url(domain_id), self.sid, self.realm, tags[N], 'app', SIOC..bmk_tag_iri (account_id, tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
                               }
@@ -484,18 +481,15 @@
               <div style="margin-left:3px; margin-top:3px;">
                 <?vsp
                   declare N, tLength, tMax, tMin integer;
-                  declare appClass, tStyle varchar;
+                  declare tStyle varchar;
 
-                  appClass := '';
-                  if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                    appClass := 'app';  
                   tLength := length(self.ds_tags);
                   if (tLength > 2) {
                     tMin := self.ds_tags[0][1];
                     tMax := self.ds_tags[1][1];
                     for (N := 2; N < tLength; N := N + 1) {
                       tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
-                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], appClass, SIOC..bmk_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
+                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], 'app', SIOC..bmk_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
                   }
                   } else {
                     http ('no tags');

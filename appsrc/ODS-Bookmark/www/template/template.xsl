@@ -136,10 +136,10 @@
     <xsl:apply-templates select="vm:init"/>
     <v:form name="F1" method="POST" type="simple" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='Bookmark'/>
-      <div id="app_area">
+      <div id="app_area" style="clear: right;">
       <div style="background-color: #fff;">
         <div style="float: left;">
-          <v:url value="--''" format="%s" url="--sprintf ('%sbookmarks.vspx?sid=%s&realm=%s', BMK.WA.bookmark_url (self.domain_id), self.sid, self.realm)" xhtml_title="Calendar Home">
+            <v:url value="--''" format="%s" url="--BMK.WA.domain_sioc_url (self.domain_id, self.sid, self.realm)" xhtml_title="Calendar Home">
             <v:before-render>
               <![CDATA[
                 control.ufl_value := '<img src="image/bmkbanner_sml.jpg" border="0" alt="Booknark Home" />';
@@ -168,13 +168,7 @@
       </div>
         <div style="border: solid #935000; border-width: 0px 0px 1px 0px;">
           <div style="float: left; padding-left: 0.5em; padding-bottom: 0.25em;">
-            <?vsp 
-              if (self.domain_id > 0) {
-                http (concat (BMK.WA.domain_name (self.domain_id), ' (', BMK.WA.account_fullName (BMK.WA.domain_owner_id (self.domain_id)), ')')); 
-              } else {
-                http ('Public Bookmarks'); 
-              }
-            ?>
+            <?vsp http (BMK.WA.banner_links (self.domain_id, self.sid, self.realm)); ?>
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
           <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
