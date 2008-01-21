@@ -205,7 +205,7 @@
 <xsl:template match="ATTACHMENTS">
   <xsl:param name="preview_mode"/>
   <xsl:if test="($preview_mode != '1') and (//Attach)">
-    <table width="100%" class="wiki_nav_container">
+      <table id="attachments_table" width="100%" class="wiki_nav_container">
       <tr>
         <th align="left">Attachment</th>
         <th align="left">Type</th>
@@ -294,7 +294,7 @@
          </form>
        </xsl:otherwise>
      </xsl:choose>
-     <form id="search-form" name="search" action="{wv:ResourcePath ('advanced_search.vspx', $baseadjust)}" method="GET">
+     <form id="search-form" name="search" action="{wv:ResourceHREF2 ('advanced_search.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', 'wa', 'stype', '1'))}" method="GET">
        <xsl:call-template name="security_hidden_inputs"/>
        <input type="hidden" name="cluster" value="{$ti_cluster_name}"></input>
        <input type="hidden" name="name" value="{$ti_local_name}"></input>
@@ -302,7 +302,8 @@
        <input type="hidden" name="scope" value="{$ti_cluster_name}"></input>
        <input type="hidden" name="sid" value="{$sid}"></input>
        <input type="hidden" name="realm" value="wa"></input>
-       <input type="textare" name="q" size="24">
+       <input type="hidden" name="stype" value="1"></input>
+       <input type="textarea" name="q" size="24">
          <xsl:attribute name="value">Search</xsl:attribute>
          <xsl:attribute name="onFocus">
            <![CDATA[
@@ -310,6 +311,9 @@
              ]]>
          </xsl:attribute>
        </input>
+       <a href="javascript: void(0);" onclick="document.search.submit();">
+         Go
+       </a>
      </form>
      <a id="advanced-search-link">
        <xsl:variable name="link" select="wv:ReadOnlyWikiWordLink($ti_cluster_name, $ti_local_name)"/>

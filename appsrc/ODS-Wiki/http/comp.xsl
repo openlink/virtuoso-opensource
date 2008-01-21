@@ -124,8 +124,8 @@
       </td>
     </tr>
   </xsl:template>
-  <xsl:template match="vm:page">
 
+  <xsl:template match="vm:page">
     <v:variable name="cluster" type="int"/>
     <v:variable name="cluster_name" type="varchar" default="'Main'" param-name="cluster"/>
     <v:on-init>
@@ -340,29 +340,16 @@
     </v:data-set>
   </xsl:template>
 
-
-  <xsl:template match="vm:main-topic">
-    <v:form name="main_topic_form" type="simple" method="POST">
-    <v:button name="main_topic_redirect_btn" value="Back to the topic" xhtml_title="Cancel" xhtml_alt="Cancel" style="url" action="simple">
-      <v:on-post>
-	<![CDATA[
-	    self.vc_redirect(WV..CLUSTER_URL(self.cluster_name));
-		 return;
-          ]]>
-        </v:on-post>
-    </v:button>
-    </v:form>
-  </xsl:template>
 	<xsl:template match="vm:wiki-login">
 		<v:template name="login" type="simple">
-			<v:before-data-bind><![CDATA[
-			  self.vspx_user := coalesce((select vs_uid from
-                 			VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
-        ]]></v:before-data-bind>
+      <v:before-data-bind>
+        <![CDATA[
+          self.vspx_user := coalesce((select vs_uid from VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
+        ]]>
+      </v:before-data-bind>
 			<v:form name="login_form" method="POST" type="simple">
 				<div class="login22" style="display: none">
-					<?vsp if (not exists (select * from
-                 			VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm))                 
+          <?vsp if (not exists (select * from VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm))
             {
 			  ?>
 					<img src="images/lock_16.png" alt="User is not authenticated" title="User is not authenticated"/>
@@ -406,8 +393,7 @@
   <xsl:template match="vm:wiki-emb-login">
     <v:template name="login" type="simple">
       <v:before-data-bind><![CDATA[
-        self.vspx_user := coalesce((select vs_uid from
-	VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
+        self.vspx_user := coalesce((select vs_uid from VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
       ]]></v:before-data-bind>
       <div class="login">
 	<?vsp if (not exists (select * from
@@ -486,7 +472,7 @@
         <xsl:template match="vm:back-button">
           <v:button xhtml_class="real_button" action="simple" value="Back to the Topic" xhtml_title="Cancel" xhtml_alt="Cancel">
             <v:on-post><![CDATA[   
-              self.vc_redirect(WV.WIKI.TOPIC_URL(self.source_page));
+        self.vc_redirect(WV.WIKI.topic_uri (self.source_page));
             ]]></v:on-post>
           </v:button>
         </xsl:template>
@@ -495,13 +481,18 @@
             <v:on-post><![CDATA[
               self.vc_redirect ('../main/' || self.source_page);
               return;
-            ]]>
-          </v:on-post>
+      ]]></v:on-post>
         </v:button>
       </xsl:template>
+
       <xsl:template match="vm:close-popup-link">
 	<div style="padding: 0 0 0.5em 0;">
-	  <a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="images/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+      <a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();">
+        <img src="images/close_16.png" border="0" alt="Close" title="Close" />
+        &amp;nbsp;Close
+      </a>
 	</div>
       </xsl:template>
+
+
 </xsl:stylesheet>

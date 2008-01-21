@@ -21,11 +21,20 @@
 --  
 --  
 create procedure WV.WIKI.SILENT_EXEC (in code varchar) { whenever sqlstate '*' goto cont; exec (code); commit work; return; cont: rollback work; };
+create procedure WV.WIKI.USERROLE_DROP (in _role varchar)
+{
+  if ((_role is not null) and (_role <> ''))
+  {
+    if (exists (select 1 from  SYS_USERS where U_NAME = _role and U_IS_ROLE = 1))
+	    DB.DBA.USER_ROLE_DROP(_role);
+  }
+};
+
 -- WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiAdmin\')');
 -- WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_DROP (\'WikiUser\')');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_CREATE (\'WikiAdmin\', 1)');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_ROLE_CREATE (\'WikiUser\', 1)');
-
+WV.WIKI.SILENT_EXEC('drop trigger WV.Wiki.WIKI_USERS_U');
 WV.WIKI.SILENT_EXEC ('DB.DBA.USER_CREATE (\'Wiki\', uuid() , vector (\'LOGIN_QUALIFIER\', \'WV\', \'DISABLED\', 1, \'SQL_ENABLE\', 1, \'DAV_ENABLE\', 0))');
 grant all privileges to "Wiki";
 DB.DBA.USER_SET_OPTION ('Wiki', 'SQL_ENABLE', 1);
@@ -42,5 +51,4 @@ WV.WIKI.SILENT_EXEC ('DB.DBA.USER_SET_QUALIFIER (\'Wiki\', \'WV\')');
 DB.DBA.VHOST_REMOVE(lpath=>'/wiki/resources');
 DB.DBA.VHOST_REMOVE(vhost=>sioc..get_cname(), lpath=>'/wiki/resources');
 DB.DBA.VHOST_DEFINE(is_dav=>1, lpath=>'/wiki/resources/', ppath=>'/DAV/VAD/wiki/Root/', vsp_user=>'Wiki', opts=>vector('executable','yes'));
-DB.DBA.VHOST_DEFINE(is_dav=>1, vhost=>sioc..get_cname(), lpath=>'/wiki/resources/', ppath=>'/DAV/VAD/wiki/Root/', vsp_user=>'Wiki', opts=>vector('executable','yes'));
 

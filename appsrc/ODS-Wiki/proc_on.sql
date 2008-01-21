@@ -293,7 +293,8 @@ create method ti_run_lexer (in _env any) returns varchar for WV.WIKI.TOPICINFO
   else
     _text := cast (self.ti_text as varchar);
   declare _res, _lexer, _lexer_name varchar;
-  WV..LEXER (self.ti_cluster_id, _lexer, _lexer_name);
+  WV.DBA.LEXER (coalesce ((select ClusterName from Wv.WIKI.CLUSTERS where ClusterId = self.ti_cluster_id), 'Main'), _lexer, _lexer_name);
+  --WV..LEXER (self.ti_cluster_id, _lexer, _lexer_name);
   _lexer_name := cast (call (_lexer_name) () as varchar);
   if (_env is null) _env := vector();
 --  dbg_obj_print (_lexer);
@@ -1011,8 +1012,8 @@ create trigger "Wiki_ClusterDeleteContent" before delete on WV.WIKI.CLUSTERS ref
   delete from WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and (WAI_INST as wa_wikiv).cluster_id = O.ClusterId;
   delete from WV.WIKI.CLUSTERSETTINGS where ClusterId = O.ClusterId;
   delete from WA_MEMBER where WAM_APP_TYPE = 'oWiki' and WAM_INST = O.ClusterName;
-  DB.DBA.USER_ROLE_DROP(O.ClusterName || 'Readers');
-  DB.DBA.USER_ROLE_DROP(O.ClusterName || 'Writers');
+  WV.WIKI.USERROLE_DROP(O.ClusterName || 'Readers');
+  WV.WIKI.USERROLE_DROP(O.ClusterName || 'Writers');
   DB.DBA.VHOST_REMOVE(lpath=>'/wiki/' || O.ClusterName);
 }
 ;
@@ -1266,7 +1267,36 @@ create trigger "Wiki_AttachmentDelete" before delete on WS.WS.SYS_DAV_RES order 
 }
 ;
 
--- Rendering routines
+wiki_exec_no_error ('drop trigger DB.DBA.Wiki_TopicTextSparql_AI')
+;
+wiki_exec_no_error ('drop trigger DB.DBA.Wiki_TopicTextSparql_AU')
+;
+create trigger "Wiki_TopicTextSparql_AI" after insert on WS.WS.SYS_DAV_RES order 999 referencing new as N
+{
+  if (N.RES_TYPE <> 'application/sparql-query')
+    return;
+
+  if (not exists (select 1 from WV.WIKI.CLUSTERS where ColID = N.RES_COL))
+    return;
+
+  WV.WIKI.TopicTextSparql (N.RES_COL, N.RES_FULL_PATH, N.RES_OWNER);
+}
+;
+
+create trigger "Wiki_TopicTextSparql_AU" after update on WS.WS.SYS_DAV_RES order 999 referencing new as N
+{
+  if (N.RES_TYPE <> 'application/sparql-query')
+    return;
+
+  if (not exists (select 1 from WV.WIKI.CLUSTERS where ColID = N.RES_COL))
+    return;
+
+  WV.WIKI.TopicTextSparql (N.RES_COL, N.RES_FULL_PATH, N.RES_OWNER);
+}
+;
+
+
+-- Renreding routines
 
 create function WV.WIKI.NORMALIZEWIKIWORDLINK (
   inout _default_cluster varchar, inout _href varchar) returns varchar
@@ -1344,9 +1374,13 @@ create function WV.WIKI.READONLYWIKIWORDHREF2 (
       url_params := 'realm=' || _realm;
     }
   }
+--  if (url_params <> '')
+--    return sprintf ('%s/%s?%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name, url_params);
+--  return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
   if (url_params <> '')
-    return sprintf ('%s/%s?%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name, url_params);
-  return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
+    return sprintf ('%s/%s?%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name, url_params);
+  return sprintf ('%s/%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name);
+
 };
 
 create function WV.WIKI.READONLYWIKIIRI (
@@ -1354,8 +1388,168 @@ create function WV.WIKI.READONLYWIKIIRI (
   in _topic_name varchar
 ) returns varchar
 {
-  return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
+--  return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
+  return sprintf ('%s/%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name);
 };
+
+create procedure WV.WIKI.wiki_cluster_uri (in cluster_name varchar)
+{
+  cluster_name := cast (cluster_name as varchar);
+  declare owner varchar;
+  owner := WV.WIKI.CLUSTERPARAM (cluster_name, 'creator');
+  return sprintf ('http://%s%s/%U/wiki/%U', WV.WIKI.http_name (), SIOC..get_base_path (), owner, cluster_name);
+}
+;
+
+create procedure WV.WIKI.wiki_post_uri (in cluster_name varchar, in cluster_id int, in localname varchar)
+{
+  cluster_name := cast (cluster_name as varchar);
+  declare owner varchar;
+  owner := WV.WIKI.CLUSTERPARAM (cluster_id, 'creator');
+  return sprintf ('http://%s%s/%U/wiki/%U/%U', WV.WIKI.http_name (), SIOC..get_base_path (), owner, cluster_name, localname);
+}
+;
+
+create procedure WV.Wiki.WIKI_APLUSCALENDAR(
+in user_id integer)
+{
+    declare S, T any;
+    declare app integer;
+    app := DB.DBA.WA_USER_APP_ENABLE (user_id);
+    S :=
+        '\n<link rel="stylesheet" href="/ods/winrect.css" type="text/css"></link>' ||
+        '\n<script type="text/javascript">                                       ' ||
+        '\n  // OAT                                                              ' ||
+        '\n  var toolkitPath="/ods/oat";                                         ' ||
+        '\n  var imagePath="/ods/images/oat/";                                   ' ||
+        '\n  var featureList=["ajax2","anchor"];                                 ' ||
+        '\n</script>                                                             ' ||
+        '\n<script type="text/javascript" src="/ods/oat/loader.js"></script>     ' ||
+        '\n<script type="text/javascript" src="/ods/app.js"></script>            ' ||
+        '\n<script type="text/javascript" src="js/CalendarPopup.js"></script>    ' ||
+        '\n<script type="text/javascript">                                       ' ||
+        '\n  // CalendarPopup                                                    ' ||
+        '\n  var cPopup;                                                         ' ||
+        '\n  function wikiInit()                                                 ' ||
+        '\n  {                                                                   ' ||
+        '\n    // CalendarPopup                                                  ' ||
+        '\n    if (\$("cDiv"))                                                   ' ||
+        '\n    {                                                                 ' ||
+        '\n      cPopup = OAT.Browser.isWebKit? new CalendarPopup(): new CalendarPopup("cDiv");  ' ||
+        '\n      cPopup.weekStartDay = <?V case when self.cWeekStarts = "s" then 0 else 1 end ?>;' ||
+        '\n    }                                                                 ' ||
+        '\n    OAT.Preferences.imagePath = "/ods/images/oat/";                   ' ||
+        '\n    OAT.Anchor.imagePath = OAT.Preferences.imagePath;                 ' ||
+        '\n    OAT.Anchor.zIndex = 1001;                                         ' ||
+        '\n    if (%d > 0) {                                                     ' ||
+        '\n      var e = \$("attachments_table");                                ' ||
+        '\n      if (e)                                                          ' ||
+        '\n      {                                                               ' ||
+        '\n        var appLinks = e.getElementsByTagName("a");                   ' ||
+        '\n        for (var i = 0; i < appLinks.length; i++)                     ' ||
+        '\n        {                                                             ' ||
+        '\n          var app = appLinks[i];                                      ' ||
+        '\n          OAT.Dom.addClass (app, "noapp");                            ' ||
+        '\n        }                                                             ' ||
+        '\n      }                                                               ' ||
+        '\n      var e = \$("content");                                          ' ||
+        '\n      if (e)                                                          ' ||
+        '\n      {                                                               ' ||
+        '\n        var appLinks = e.getElementsByTagName("a");                   ' ||
+        '\n        for (var i = 0; i < appLinks.length; i++)                     ' ||
+        '\n        {                                                             ' ||
+        '\n          var app = appLinks[i];                                      ' ||
+        '\n          var search;                                                 ' ||
+        '\n          if (!app.id)                                                ' ||
+        '\n          {                                                           ' ||
+        '\n            if ((app.childNodes.length == 1) && (app.childNodes[0].tagName == "IMG")) ' ||
+        '\n            {                                                         ' ||
+        '\n          	   search = app.childNodes[0].getAttribute("alt");         ' ||
+        '\n            }                                                         ' ||
+        '\n            else                                                      ' ||
+        '\n            {                                                         ' ||
+        '\n         	   search = app.innerHTML;                                 ' ||
+        '\n            }                                                         ' ||
+        '\n            if (search && (search.length > 1))                        ' ||
+        '\n              app.id = "link_" + i;                                   ' ||
+        '\n          }                                                           ' ||
+        '\n        }                                                             ' ||
+        '\n      generateAPP("content", {title:"Related links", appActivation: "%s", useRDFB: %s});     ' ||
+        '\n      }                                                               ' ||
+        '\n    }                                                                 ' ||
+        '\n  }                                                                   ' ||
+        '\n  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, wikiInit);                    ' ||
+        '\n</script>                                                             ';
+
+  return sprintf (S, app, case when app = 2 then 'hover' else 'click' end, case when wa_check_package ('OAT') then 'true' else 'false' end);
+}
+;
+
+create procedure WV.Wiki.WIKI_APLUSLINK(
+in user_id integer)
+{
+    declare S, T any;
+    declare app integer;
+    app := DB.DBA.WA_USER_APP_ENABLE (user_id);
+    S :=
+        '\n<link rel="stylesheet" href="/ods/winrect.css" type="text/css"></link>' ||
+        '\n<script type="text/javascript">                                       ' ||
+        '\n  // OAT                                                              ' ||
+        '\n  var toolkitPath="/ods/oat";                                         ' ||
+        '\n  var imagePath="/ods/images/oat/";                                   ' ||
+        '\n  var featureList=["ajax2","anchor"];                                 ' ||
+        '\n</script>                                                             ' ||
+        '\n<script type="text/javascript" src="/ods/oat/loader.js"></script>     ' ||
+        '\n<script type="text/javascript" src="/ods/app.js"></script>            ' ||
+        '\n<script type="text/javascript">                                       ' ||
+        '\n  function wikiInit()                                                 ' ||
+        '\n  {                                                                   ' ||
+        '\n    OAT.Preferences.imagePath = "/ods/images/oat/";                   ' ||
+        '\n    OAT.Anchor.imagePath = OAT.Preferences.imagePath;                 ' ||
+        '\n    OAT.Anchor.zIndex = 1001;                                         ' ||
+        '\n    if (%d > 0) {                                                     ' ||
+        '\n      var e = \$("attachments_table");                                ' ||
+        '\n      if (e)                                                          ' ||
+        '\n      {                                                               ' ||
+        '\n        var appLinks = e.getElementsByTagName("a");                   ' ||
+        '\n        for (var i = 0; i < appLinks.length; i++)                     ' ||
+        '\n        {                                                             ' ||
+        '\n          var app = appLinks[i];                                      ' ||
+        '\n          OAT.Dom.addClass (app, "noapp");                            ' ||
+        '\n        }                                                             ' ||
+        '\n      }                                                               ' ||
+        '\n      var e = \$("content");                                          ' ||
+        '\n      if (e)                                                          ' ||
+        '\n      {                                                               ' ||
+        '\n        var appLinks = e.getElementsByTagName("a");                   ' ||
+        '\n        for (var i = 0; i < appLinks.length; i++)                     ' ||
+        '\n        {                                                             ' ||
+        '\n          var app = appLinks[i];                                      ' ||
+        '\n          var search;                                                 ' ||
+        '\n          if (!app.id)                                                ' ||
+        '\n          {                                                           ' ||
+        '\n            if ((app.childNodes.length == 1) && (app.childNodes[0].tagName == "IMG")) ' ||
+        '\n            {                                                         ' ||
+        '\n          	   search = app.childNodes[0].getAttribute("alt");         ' ||
+        '\n            }                                                         ' ||
+        '\n            else                                                      ' ||
+        '\n            {                                                         ' ||
+        '\n         	   search = app.innerHTML;                                 ' ||
+        '\n            }                                                         ' ||
+        '\n            if (search && (search.length > 1))                        ' ||
+        '\n              app.id = "link_" + i;                                   ' ||
+        '\n          }                                                           ' ||
+        '\n        }                                                             ' ||
+        '\n      generateAPP("content", {title:"Related links", appActivation: "%s", useRDFB: %s});     ' ||
+        '\n      }                                                               ' ||
+        '\n    }                                                                 ' ||
+        '\n  }                                                                   ' ||
+        '\n  OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, wikiInit);                    ' ||
+        '\n</script>                                                             ';
+
+  return sprintf (S, app, case when app = 2 then 'hover' else 'click' end, case when wa_check_package ('OAT') then 'true' else 'false' end);
+}
+;
 
 
 grant execute on WV.WIKI.READONLYWIKIWORDLINK to public
@@ -1366,6 +1560,8 @@ grant execute on WV.WIKI.READONLYWIKIWORDHREF2 to public
 ;
 grant execute on WV.WIKI.READONLYWIKIIRI to public
 ;
+grant execute on WV.Wiki.WIKI_APLUSLINK to public
+;
 
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordLink', 'WV.WIKI.READONLYWIKIWORDLINK')
 ;
@@ -1375,7 +1571,8 @@ xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordHREF2'
 ;
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiIRI', 'WV.WIKI.READONLYWIKIIRI')
 ;
-
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:WikiAplusLink', 'WV.Wiki.WIKI_APLUSLINK')
+;
 
 create function WV.WIKI.QUERYWIKIWORDLINK (
   inout _default_cluster varchar, inout _href varchar) returns varchar
@@ -4223,7 +4420,7 @@ create trigger WIKI_USERS_U after update on WV.WIKI.USERS order 100 referencing 
     {
       _topic.ti_fill_cluster_by_id();
       _topic.ti_find_metadata_by_id();
-      WV.WIKI.RENAMETOPIC (_topic, N.USERNAME, _topic.ti_cluster_id, WV.WIKI.USER_WIKI_NAME (N.USERNAME));
+      WV.WIKI.RENAMETOPIC2 (_topic, N.USERNAME, _topic.ti_cluster_id, WV.WIKI.USER_WIKI_NAME (N.USERNAME));
     }
 }
 ;
@@ -4303,6 +4500,17 @@ create procedure WV.WIKI.SANITY_CHECK()
      {
         delete from DB.DBA.WA_INSTANCE where WAI_NAME = _name and WAI_TYPE_NAME = 'oWiki';
      }
+
+  declare wiki_guest_id integer;
+  wiki_guest_id := coalesce ((select U_ID from SYS_USERS where U_NAME = 'WikiGuest'),0);
+
+  for select WAI_NAME  as _name from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and WAI_IS_PUBLIC < 1
+  do
+  {
+    if (exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g
+                         where g.U_NAME = _name || 'Readers' and gi_super = wiki_guest_id and gi_grant = g.u_id))
+	    DB.DBA.USER_REVOKE_ROLE ('WikiGuest', _name || 'Readers');
+  }
   for select WAM_INST as _name from DB.DBA.WA_MEMBER 
     where WAM_APP_TYPE = 'oWiki' 
     and not exists (select 1 from WV.WIKI.CLUSTERS where CLUSTERNAME = WAM_INST)
@@ -4310,6 +4518,77 @@ create procedure WV.WIKI.SANITY_CHECK()
     {
        delete from DB.DBA.WA_MEMBER where WAM_INST = _name and WAM_APP_TYPE = 'oWiki';
     }
+  if (1=1)
+  {
+    declare exit handler for sqlstate '*' {
+		-- dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+		goto _next3;
+	  };
+
+    for select WAI_NAME  as _cluster_name from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oWiki'
+    do
+    {
+      for select gi_super as _user from  SYS_ROLE_GRANTS, SYS_USERS g
+                         where g.U_NAME = _cluster_name || 'Readers' and gi_grant = g.u_id
+      do
+      {
+        if ((_user <> wiki_guest_id) and
+            (not exists (select 1 from DB.DBA.WA_MEMBER
+                                 where WAM_INST = _cluster_name and WAM_USER = _user and WAM_STATUS = 2 and WAM_MEMBER_TYPE = 3)) )
+        {
+          declare _user_name varchar;
+          _user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _user);
+          DB.DBA.USER_REVOKE_ROLE (_user_name, _cluster_name || 'Readers');
+        }
+      }
+      for select gi_super as _user from  SYS_ROLE_GRANTS, SYS_USERS g
+                         where g.U_NAME = _cluster_name || 'Writers' and gi_grant = g.u_id
+      do
+      {
+        if (not exists (select 1 from DB.DBA.WA_MEMBER
+                                 where WAM_INST = _cluster_name and WAM_USER = _user and WAM_STATUS <= 2 and WAM_MEMBER_TYPE in (1,2)))
+        {
+          declare _user_name varchar;
+          _user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _user);
+          DB.DBA.USER_REVOKE_ROLE (_user_name, _cluster_name || 'Writers');
+        }
+      }
+      for select WAM_USER as _user, WAM_STATUS as _status, WAM_MEMBER_TYPE as _type
+            from DB.DBA.WA_MEMBER where WAM_APP_TYPE = 'oWiki' and WAM_INST = _cluster_name
+      do
+      {
+        declare _role, _role_revoke varchar;
+        if (_type in (1,2) and _status <= 2) -- author
+        {
+          _role := _cluster_name || 'Writers';
+          _role_revoke := _cluster_name || 'Readers';
+        }
+        else if (_type = 3 and _status = 2) -- reader
+        {
+          _role := _cluster_name || 'Readers';
+          _role_revoke := _cluster_name || 'Writers';
+        }
+        else
+          goto _next2;
+
+        declare _user_name varchar;
+        _user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _user);
+
+        if (not exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g
+                         where g.U_NAME = _role and gi_super = _user and gi_grant = g.u_id))
+        {
+          DB.DBA.USER_GRANT_ROLE (_user_name, _role);
+        }
+        if (exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g
+                         where g.U_NAME = _role_revoke and gi_super = _user and gi_grant = g.u_id))
+        {
+          DB.DBA.USER_REVOKE_ROLE (_user_name, _role_revoke);
+        }
+        _next2:;
+      }
+    }
+  }
+  _next3:;
   set triggers on;
   declare vtb any;
   for select RES_ID, RES_FULL_PATH from WS.WS.SYS_DAV_RES 
@@ -4322,9 +4601,6 @@ create procedure WV.WIKI.SANITY_CHECK()
     vt_batch_feed (vtb, 'DE3A857A5FFB11DA923AF0924C194AED', 1);
     WS.WS.VT_BATCH_PROCESS_WS_WS_SYS_DAV_RES (vtb);
   }
-  for select CLUSTERNAME from WV.WIKI.CLUSTERS c
-      where not exists (select 1 from WV.WIKI.CLUSTERSETTINGS s where s.CLUSTERID = c.CLUSTERID and PARAMNAME = 'atom-pub') do
-    WV..ATOM_PUB_VHOST_DEFINE (CLUSTERNAME);
   for select WAI_NAME from DB.DBA.WA_INSTANCE
     where WAI_TYPE_NAME = 'oWiki'
     and WAI_IS_PUBLIC = 1
@@ -4591,8 +4867,8 @@ create procedure HIST_ENTRIES(in _cluster varchar := null)
   
   if (_cluster is null) {
     for select top (MAX_LOG_ENTRIES()) H_OP, H_VER, H_CLUSTER, H_TOPIC, H_WHO, H_DT
-	from HIST 
-	where H_IS_PUBLIC = 1
+  from HIST, CLUSTERS
+  where H_CLUSTER = ClusterName and H_IS_PUBLIC = 1
 	order by H_DT desc do {
      vectorbld_acc (vect_res, vector (
       H_CLUSTER
@@ -4605,7 +4881,7 @@ create procedure HIST_ENTRIES(in _cluster varchar := null)
     }
   } else {
     for select H_OP, H_VER, H_CLUSTER, H_TOPIC, H_WHO, H_DT
-	from HIST where H_CLUSTER = _cluster order by H_DT desc do {
+  from HIST, CLUSTERS where H_CLUSTER = _cluster and H_CLUSTER = ClusterName order by H_DT desc do {
      vectorbld_acc (vect_res, vector (
       H_CLUSTER
       ,H_TOPIC
@@ -4674,7 +4950,6 @@ create function RSS_CONTENT(in _op varchar, in _replacements any)
 create procedure RSS(in _cluster varchar, in _type varchar)
 {
   declare author, author_email varchar;
-  
   author:=WV.WIKI.CLUSTERPARAM( coalesce(_cluster, 'Main'), 'creator');
   author_email:=(select U_E_MAIL from DB.DBA.SYS_USERS where U_NAME = author);
   declare _out any;
@@ -4749,13 +5024,7 @@ create procedure RSS(in _cluster varchar, in _type varchar)
     http_value (WV.WIKI.DATEFORMAT (_dt, 'rfc1123'), null, _out);
     http ('</pubDate>',_out);
     http ('<description>', _out);
-
-        
-
-
     http_value (RSS_CONTENT (_op, _repl), null, _out);
-
-
     http('</description>', _out);
     http('</item>', _out);
   }
@@ -4818,5 +5087,65 @@ create procedure WV..WIKI_PROFILE(in _cluster_name varchar, in _type varchar)
 }
 ;
 
+create procedure WV.WIKI.TopicTextSparql (
+  in _res_col integer,
+  in _res_full_path varchar,
+  in _res_owner integer)
+{
+  declare exit handler for sqlstate '*' {
+  --dbg_obj_print ('TopicTextSparql:', __SQL_STATE, __SQL_MESSAGE);
+  return '';
+  };
+  declare N, clusterId integer;
+  declare st, msg, meta, data any;
+  declare S, cname, gname, topicIRI, clusterIRI, topicName, clusterName, content varchar;
+
+  cname := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  if (cname is null)
+  {
+    declare tmp any;
+    tmp := sys_stat ('st_host_name');
+    if (server_http_port () <> '80')
+      tmp := tmp || ':'|| server_http_port ();
+    cname := tmp;
+  }
+  gname := sprintf ('http://%s%U', cname, _res_full_path);
+  select ClusterName, ClusterId into clusterName, clusterId from WV.WIKI.CLUSTERS where ColID = _res_col;
+  clusterIRI := SIOC..wiki_cluster_iri (clusterName);
+
+  S := 'sparql
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX sioc: <http://rdfs.org/sioc/ns#>
+        SELECT ?post, ?content
+        FROM <%s>
+        WHERE {
+                <%s> sioc:container_of ?post .
+                ?post sioc:content ?content.
+              }';
+
+  S := sprintf (S, gname, clusterIRI);
+
+  st := '00000';
+  exec (S, st, msg, vector (), 0, meta, data);
+  if (st = '00000')
+  {
+    if ( not exists (select 1 from DB.DBA.WA_MEMBER where WAM_USER = _res_owner and WAM_INST = clusterName))
+      _res_owner := (select U_ID from DB.DBA.SYS_USERS where U_NAME = WV.WIKI.CLUSTERPARAM (clusterId, 'creator', 'dav'));
+    for (N := 0; N < length (data); N := N + 1)
+    {
+      topicIRI := data[N][0];
+      if (topicIRI like clusterIRI || '%')
+      {
+        topicName := trim (replace (topicIRI, clusterIRI, ''), '/') || '.txt';
+        content := data[N][1];
+        WV.WIKI.UPLOADPAGE (_res_col, topicName, content, WV.WIKI.CLUSTERPARAM (clusterId, 'creator', 'dav'), clusterId, (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _res_owner));
+      }
+    }
+  }
+}
+;
+
+
 use DB
 ;
+

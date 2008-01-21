@@ -35,7 +35,7 @@
     <link rel="stylesheet" href="common.css" type="text/css"/>
     <link rel="stylesheet" href="Skins/default/default.css" type="text/css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
-    <title>Conversation page</title>
+    <title>Discussion page</title>
   </head>
   <vm:empty-body onload="javascript:setPaths ('/ods/images/', '/ods/');">
     <script type="text/javascript" src="/ods/openid.js"> </script>
@@ -101,7 +101,7 @@
           <v:text name="oid_sig" value="" type="hidden" xhtml_id="oid_sig" />
 	  <vm:close-popup-link/>
           <div class="new-form-header">
-            Conversation
+            Discussion
           </div>
           <div class="new-form-body">
             <table cellspacing="0">

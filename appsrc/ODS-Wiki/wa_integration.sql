@@ -140,7 +140,7 @@ create method wa_drop_instance () for wa_wikiv {
   WV.WIKI.DROPCLUSTERUPSTREAM (self.cluster_id);
   WV.WIKI.DROPCLUSTERCONTENT (self.cluster_id);
   WV.WIKI.DELETECLUSTER (self.cluster_id);
-  delete from WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and (WAI_INST as wa_wikiv).cluster_id = self.cluster_id;
+  delete from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and (WAI_INST as wa_wikiv).cluster_id = self.cluster_id;
 }
 ;
 
@@ -182,19 +182,16 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
   declare _owner_id any;
   _owner_id := (select U_ID from SYS_USERS where U_NAME = login);
 
-  -- add user into WikiUser group if hi steel is not member
-  if(not exists (select 1 from SYS_ROLE_GRANTS where GI_SUPER = _owner_id and GI_GRANT = _group_id)) {
+  -- add user into WikiUser group if he still is not a member
+  if(not exists (select 1 from SYS_ROLE_GRANTS where GI_SUPER = _owner_id and GI_GRANT = _group_id))
+  {
     DB.DBA.USER_GRANT_ROLE(login, 'WikiUser', 1);
   }
 
-  if (not exists (select * from WV.WIKI.USERS, DB.DBA.SYS_USERS 
-		where UserId = U_ID 
-		and U_NAME = login))
+  if (not exists (select 1 from WV.WIKI.USERS, DB.DBA.SYS_USERS where UserId = U_ID and U_NAME = login))
+  {
 	WV.WIKI.CREATEUSER(login, _full_name, 'WikiUser', '', 1);
-  
-  -- determine count of WikiCluster where user is owner
-  declare _num integer;
-  _num := (select count(*) from WS.WS.SYS_DAV_COL, WV.WIKI.CLUSTERS where ColId = COL_ID and COL_OWNER = _owner_id);
+  }
   
   -- calculate new cluster name
   declare _cluster_name varchar;
@@ -203,7 +200,8 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
     signal ('WIKI02', 'Cluster "' || self.wa_name || '" exists already');
   _cluster_name := self.wa_name;
   
-  if(self.wa_member_model is null) {
+  if (self.wa_member_model is null)
+  {
     self.wa_member_model := 0;
   }
   connection_set ('WikiMemberModel', self.wa_member_model);
@@ -217,11 +215,11 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
 
   -- determine instance name
   declare inst_name varchar;
-  if(self.wa_name is null) {
+  if (self.wa_name is null)
+  {
     inst_name := sprintf ('Wiki_%s' , _cluster_name);
     self.wa_name := inst_name;
-  }
-  else {
+  } else {
     inst_name := self.wa_name;
   }
 
@@ -231,22 +229,23 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
   -- finishing
   declare _wai_id any;
   self.owner := _owner_id;
-  insert into WA_INSTANCE (WAI_NAME, WAI_TYPE_NAME, WAI_INST, WAI_DESCRIPTION)
+  insert into DB.DBA.WA_INSTANCE (WAI_NAME, WAI_TYPE_NAME, WAI_INST, WAI_DESCRIPTION)
   	values (inst_name, 'oWiki', self, '');
 --  insert into WA_MEMBER (WAM_USER, WAM_INST, WAM_MEMBER_TYPE) values (_owner_id, inst_name, 1);
 --  _wai_id := (select WAI_ID from WA_INSTANCE where WAI_NAME = inst_name);
 
   if (_home is not null)
     {
-      declare _base, _resources varchar;
+    declare _base varchar;
+
       _base := registry_get('WIKI BASE');
-      _resources := registry_get('WIKI RESOURCES');
-      if (not isstring(_base)) { _base := _home ; }      
-      if (not isstring(_resources)) { _resources := _home  || '/resources'; }      
+    if (not isstring (_base))
+    {
+      _base := _home ;
+    }
       WV.WIKI.SETCLUSTERPARAM (_cluster_name, 'home', _base);
     }
   
-  WV..ATOM_PUB_VHOST_DEFINE (_cluster_name);
   declare _id int;
   _id := (self as web_app).wa_new_inst(login);
 
@@ -273,7 +272,8 @@ create method wa_front_page (inout stream any) for wa_wikiv
   declare sid varchar;  
   sid := connection_get ('wa_sid');
 
-  if (connection_get('vspx_user') is null) {
+  if (connection_get('vspx_user') is null)
+  {
 	  http_request_status ('HTTP/1.1 302 Found');
 	  http_header (sprintf('Location: %s\r\n', self.wa_home_url()));
   } else {
@@ -283,7 +283,8 @@ create method wa_front_page (inout stream any) for wa_wikiv
 }
 ;
 
-create method wa_state_posted (in post any, inout stream any) for wa_wikiv {
+create method wa_state_posted (in post any, inout stream any) for wa_wikiv
+{
   declare login varchar;
   login := connection_get ('vspx_user');
   if (get_keyword ('save_new', post) is not null) {
@@ -295,23 +296,33 @@ create method wa_state_posted (in post any, inout stream any) for wa_wikiv {
 }
 ;
 
-create method wa_home_url () for wa_wikiv {
+create method wa_home_url () for wa_wikiv
+{
  declare _home, _cluster varchar;
+
  _home := WV.WIKI.CLUSTERPARAM (self.cluster_id, 'home');
  _cluster := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = self.cluster_id);
  if (_home is null)
-   return WV..CLUSTER_URL(_cluster);
+  {
+    _home := (select DP_PATTERN from WV.WIKI.DOMAIN_PATTERN_1 where DP_HOST = '%' and DP_CLUSTER = self.cluster_id);
+    if (_home is null){
+      if (exists (select 1 from WV.WIKI.DOMAIN_PATTERN_1 where DP_HOST = '%' and DP_PATTERN = '/wiki/main'))
+        return sprintf('http://%s/wiki/main/%U', sioc..get_cname(), _cluster);
+      return sprintf('http://%s/wiki/%U', sioc..get_cname(), _cluster);
+    }
+  }
  return _home || '/' ||  WV.WIKI.READONLYWIKIWORDLINK (_cluster, '');
-
 }
 ;
 
-create method wa_private_url () for wa_wikiv {
+create method wa_private_url () for wa_wikiv
+{
   return self.wa_home_url();
 }
 ;
 
-create method wa_periodic_activity () for wa_wikiv {
+create method wa_periodic_activity () for wa_wikiv
+{
   return;
 }
 ;
@@ -332,19 +343,20 @@ create method wa_https_supported () for wa_wikiv
 
 create trigger WIKI_WA_MEMBERSHIP after update  on DB.DBA.WA_MEMBER order 100 referencing new as N, old as O
 {
-  declare _cluster_id varchar;
+  if (N.WAM_APP_TYPE <> 'oWiki')
+    return;
+  declare _cluster_id integer;
   _cluster_id := (select (wai_inst as wa_wikiv).cluster_id from DB.DBA.WA_INSTANCE where WAI_NAME = N.WAM_INST and WAI_TYPE_NAME = 'oWiki');
   if (_cluster_id is null)
     return;
   declare _user varchar;
-  if (not exists (select * from WV.WIKI.USERS where UserId = N.WAM_USER))
+  if (not exists (select 1 from WV.WIKI.USERS where UserId = N.WAM_USER))
     {
       declare _group_id any;
       _group_id := (select U_ID from SYS_USERS where U_NAME = 'WikiUser');
 
       declare _full_name varchar;
-      select coalesce (U_FULL_NAME, U_NAME), U_NAME into
-	_full_name, _user
+    select coalesce (U_FULL_NAME, U_NAME), U_NAME into _full_name, _user
 	from DB.DBA.SYS_USERS where U_ID = N.WAM_USER;
       if(not exists (select 1 from SYS_ROLE_GRANTS where GI_SUPER = N.WAM_USER and GI_GRANT = _group_id)) {
 	DB.DBA.USER_GRANT_ROLE(_user, 'WikiUser', 1);
@@ -357,25 +369,40 @@ create trigger WIKI_WA_MEMBERSHIP after update  on DB.DBA.WA_MEMBER order 100 re
   _cluster_name := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = _cluster_id);
   if (_cluster_name is null)
     return;
-  declare _role varchar;
-  if (N.WAM_MEMBER_TYPE in (1,2)) -- author
+  declare _role, _role_revoke varchar;
+  if (N.WAM_MEMBER_TYPE in (1,2) and N.WAM_STATUS <= 2) -- author
+  {
     _role := _cluster_name || 'Writers';
-  else if (N.WAM_MEMBER_TYPE = 3) -- reader
+    _role_revoke := _cluster_name || 'Readers';
+  }
+  else if (N.WAM_MEMBER_TYPE = 3 and N.WAM_STATUS = 2) -- reader
+  {
     _role := _cluster_name || 'Readers';
+    _role_revoke := _cluster_name || 'Writers';
+  }
   else
     signal ('WK001', 'Such membership is not supported ' || cast (N.WAM_MEMBER_TYPE as varchar));
   if (not exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g 
 	where g.U_NAME = _role and gi_super = N.WAM_USER and gi_grant = g.u_id))
+  {
     DB.DBA.USER_GRANT_ROLE (_user, _role);
+}
+  if (exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g
+                   where g.U_NAME = _role_revoke and gi_super = N.WAM_USER and gi_grant = g.u_id))
+  {
+    DB.DBA.USER_REVOKE_ROLE (_user, _role_revoke);
+  }
 }
 ;
   
 create trigger WIKI_WA_MEMBERSHIP_OPEN after insert on DB.DBA.WA_MEMBER order 100 referencing new as N
 {
-  declare _cluster_id varchar;
   --dbg_obj_princ ('WIKI_WA_MEMBERSHIP_OPEN: ', N.WAM_STATUS);
-  if (N.WAM_STATUS <> 3)
+  if (N.WAM_APP_TYPE <> 'oWiki')
     return;
+  if (N.WAM_STATUS <> 2)
+    return;
+   declare _cluster_id integer;
   _cluster_id := (select (wai_inst as wa_wikiv).cluster_id from DB.DBA.WA_INSTANCE where WAI_NAME = N.WAM_INST and WAI_TYPE_NAME = 'oWiki');
   if (_cluster_id is null)
     return;
@@ -400,16 +427,62 @@ create trigger WIKI_WA_MEMBERSHIP_OPEN after insert on DB.DBA.WA_MEMBER order 10
     _user := (select U_NAME from DB.DBA.SYS_USERS where U_ID = N.WAM_USER);
   declare _cluster_name varchar;
   _cluster_name := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = _cluster_id);
-  declare _role varchar;
-  if (N.WAM_MEMBER_TYPE in (1,2)) -- owner
+
+  declare _role, _role_revoke varchar;
+  if (N.WAM_MEMBER_TYPE in (1,2) and N.WAM_STATUS <= 2) -- author
+  {
     _role := _cluster_name || 'Writers';
-  else if (N.WAM_MEMBER_TYPE = 3) -- member
+    _role_revoke := _cluster_name || 'Readers';
+  }
+  else if (N.WAM_MEMBER_TYPE = 3 and N.WAM_STATUS = 2) -- reader
+  {
     _role := _cluster_name || 'Readers';
+    _role_revoke := _cluster_name || 'Writers';
+  }
   else
     signal ('WK001', 'Such membership is not supported ' || cast (N.WAM_MEMBER_TYPE as varchar) );
   if (not exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g 
 	where g.U_NAME = _role and gi_super = N.WAM_USER and gi_grant = g.u_id))
+  {
   DB.DBA.USER_GRANT_ROLE (_user, _role);
+}
+  if (exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g
+                   where g.U_NAME = _role_revoke and gi_super = N.WAM_USER and gi_grant = g.u_id))
+  {
+    DB.DBA.USER_REVOKE_ROLE (_user, _role_revoke);
+  }
+}
+;
+
+create trigger WIKI_WA_MEMBERSHIP_CLOSE after delete on DB.DBA.WA_MEMBER order 100 referencing old as O
+{
+  -- dbg_obj_princ ('WIKI_WA_MEMBERSHIP_OPEN: ', O.WAM_STATUS);
+  if (O.WAM_APP_TYPE <> 'oWiki')
+    return;
+  if (O.WAM_STATUS > 2)
+    return;
+   declare _cluster_id integer;
+  _cluster_id := (select (wai_inst as wa_wikiv).cluster_id from DB.DBA.WA_INSTANCE where WAI_NAME = O.WAM_INST and WAI_TYPE_NAME = 'oWiki');
+  if (_cluster_id is null)
+    return;
+  -- dbg_obj_princ ('WIKI_WA_MEMBERSHIP_OPEN: cl', _cluster_id);
+  declare _user varchar;
+  _user := (select U_NAME from DB.DBA.SYS_USERS where U_ID = O.WAM_USER);
+  declare _cluster_name varchar;
+  _cluster_name := (select ClusterName from WV.WIKI.CLUSTERS where ClusterId = _cluster_id);
+
+  declare _role_revoke varchar;
+  if (O.WAM_MEMBER_TYPE in (1,2)) -- author
+    _role_revoke := _cluster_name || 'Writers';
+  else if (O.WAM_MEMBER_TYPE = 3) -- reader
+    _role_revoke := _cluster_name || 'Readers';
+  else
+    return;
+  if (exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g
+                   where g.U_NAME = _role_revoke and gi_super = O.WAM_USER and gi_grant = g.u_id))
+  {
+    DB.DBA.USER_REVOKE_ROLE (_user, _role_revoke);
+  }
 }
 ;
   
@@ -417,8 +490,8 @@ create trigger WIKI_WA_INSTANCE_U after update on DB.DBA.WA_INSTANCE referencing
 {
   if (N.WAI_TYPE_NAME <> 'oWiki')
     return;  
-  declare _cluster_id int;
-  if (N.WAI_IS_PUBLIC = 1)
+
+  if (N.WAI_IS_PUBLIC >= 1)
     {
 	declare exit handler for sqlstate '*' {
 		-- dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
@@ -426,6 +499,14 @@ create trigger WIKI_WA_INSTANCE_U after update on DB.DBA.WA_INSTANCE referencing
 	};
 	DB.DBA.USER_GRANT_ROLE ('WikiGuest', N.WAI_NAME || 'Readers');
     }
+  if (N.WAI_IS_PUBLIC < 1)
+  {
+    declare exit handler for sqlstate '*' {
+      -- dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+      return;
+    };
+    DB.DBA.USER_REVOKE_ROLE ('WikiGuest', N.WAI_NAME || 'Readers');
+  }
 }
 ;
 
@@ -448,9 +529,7 @@ create method wa_front_page_as_user (inout stream any, in user_name varchar) for
   owner := (select U_NAME from DB.DBA.SYS_USERS where U_ID = self.owner);
   sid := md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
   insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
-    values ('wa', sid, owner,
-	    serialize ( vector ( 'vspx_user', owner ) ),
-	    now());
+    values ('wa', sid, owner, serialize ( vector ( 'vspx_user', owner )), now());
   http_request_status ('HTTP/1.1 302 Found');
   http_header(sprintf('Location: %s?sid=%s&realm=wa\r\n', self.wa_home_url(), sid));
 }
@@ -462,8 +541,14 @@ create method app_id () for wa_wikiv
 }
 ;
   
-create method wa_addition_urls () for wa_wikiv {
-  return null;
+create method wa_addition_urls () for wa_wikiv
+{
+  return vector (
+    vector (null, null, '/wiki/resources', '/DAV/VAD/wiki/Root/', 1, 0, null, null, null, null, 'Wiki', null, null, 0, null, null, null, 0),
+    vector (null, null, '/wiki', '/DAV/VAD/wiki/Root/main.vsp', 1, 0, null, null, null, null, 'Wiki', null, null, 0, null, null, vector ('noinherit', 1, 'executable', 'yes'), 0),
+    vector (null, null, '/wiki/main', '/DAV/VAD/wiki/Root/main.vsp', 1, 0, null, null, null, null, 'Wiki', null, null, 0, null, null, vector ('noinherit', 1, 'executable', 'yes'), 0),
+    vector (null, null, '/wiki/Atom', '/SOAP/Http/gdata', 0, 0, null, null, null, null,  null, 'Wiki', null, 1, vector ('atom-pub', 1), null, null, 0)
+  );
 }
 ;
 
@@ -481,6 +566,7 @@ create method wa_addition_instance_urls (in _lpath varchar) for wa_wikiv
 
   insert replacing WV.WIKI.DOMAIN_PATTERN_1 (DP_HOST, DP_PATTERN, DP_CLUSTER) 
 	values (_vhost, WV.WIKI.CANONICAL_PATH(_lpath, 3), self.cluster_id);
+  return null;
   if (_vhost <> '%')
     {
       WV.WIKI.SETCLUSTERPARAM (self.cluster_id, 'home', 'http://' || _vhost || WV.WIKI.CANONICAL_PATH(_lpath, 0));
@@ -590,7 +676,8 @@ create method wa_dashboard_last_item () for wa_wikiv {
 	XMLELEMENT ('from', C_AUTHOR || case when C_EMAIL <> '' then '<' || C_EMAIL || '>' else '' end),
 	XMLELEMENT ('for-post', _topic.ti_full_name()),
 	--XMLELEMENT ('url', _topic.ti_fill_url() || '#wiki' || cast (C_ID as varchar))));
-	XMLELEMENT ('url', SIOC..wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name) || '#wiki' || cast (C_ID as varchar))));
+  --XMLELEMENT ('url', SIOC..wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name) || '#wiki' || cast (C_ID as varchar))));
+  XMLELEMENT ('url', WV.WIKI.wiki_post_uri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name) || '#wiki' || cast (C_ID as varchar))));
  }	
  for select top 5 RES_MOD_TIME, TopicId 
     from WV.WIKI.TOPIC, WS.WS.SYS_DAV_RES 
@@ -610,7 +697,8 @@ create method wa_dashboard_last_item () for wa_wikiv {
 	XMLELEMENT ('dt', WV.WIKI.DATEFORMAT (RES_MOD_TIME)),
 	XMLELEMENT ('uid', _topic.ti_author),
 	--XMLELEMENT ('link', _topic.ti_fill_url() || '?')));
-	XMLELEMENT ('link', SIOC..wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name) || '?')));
+  --XMLELEMENT ('link', SIOC..wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name) || '?')));
+  XMLELEMENT ('link', WV.WIKI.wiki_post_uri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name) || '?')));
  }
  return serialize_to_UTF8_xml(_doc);
 }
@@ -631,7 +719,8 @@ create procedure WV.WIKI.ERROR (in err_code int, in signal_err int)
 }
 ;
 
-create procedure WV.WIKI.CREATEINSTANCE (in cluster_name varchar,
+create procedure WV.WIKI.CREATEINSTANCE (
+  in cluster_name varchar,
   in _owner int,
   in _group int,
   in signal_err int := 1)
@@ -658,7 +747,7 @@ create procedure WV.WIKI.CREATEINSTANCE (in cluster_name varchar,
   else 
     return;
 
-  update WA_INSTANCE
+  update DB.DBA.WA_INSTANCE
     set WAI_MEMBER_MODEL = 2,
       WAI_IS_PUBLIC = 1,
       WAI_MEMBERS_VISIBLE = 1,

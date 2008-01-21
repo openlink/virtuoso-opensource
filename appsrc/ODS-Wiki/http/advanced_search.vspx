@@ -42,6 +42,7 @@
 			<v:variable name="s_tag" type="varchar" default="null" param-name="tags"/>
 			<v:variable name="upar" type="varchar" default="''" persist="temp"/>
 			<v:variable name="qry" type="varchar" default="null" param-name="q"/>
+    <v:variable name="stype" type="integer" default="0" param-name="stype"/>
 			<v:variable name="sqry" type="varchar" default="null" param-name="output"/>
 			<v:variable name="clusters" type="any" default="null"/>
 			<v:variable name="output" type="varchar" default="'text'"/>
@@ -54,30 +55,28 @@
 			<v:variable name="cluster_key" type="varchar" param-name="cluster"/>
 			<v:variable name="cluster" type="varchar" default="'Main'" persist="1"/>
 			<v:variable name="vspx_user" type="varchar" default="'WikiGuest'" persist="1"/>
-			<v:on-init><![CDATA[
+    <v:on-init>
+      <![CDATA[
         declare cookie_vec any;
         cookie_vec := DB.DBA.vsp_ua_get_cookie_vec(lines);
         self.sid := coalesce(coalesce (get_keyword('sid', cookie_vec), get_keyword ('sid', params)), '');
         self.realm := 'wa';
         self.ds_data := vector ();
         self.ds_meta := vector ();
-        self.clusters := (select XMLELEMENT ('clusters',
-											XMLAGG (
-											  XMLELEMENT ('cluster',
-                                     WAI_NAME ) ) )
+        self.clusters := (select XMLELEMENT ('clusters', XMLAGG (XMLELEMENT ('cluster', WAI_NAME )))
                                       from WA_INSTANCE where WAI_TYPE_NAME = 'oWiki' and WAI_IS_PUBLIC);
         declare ent any;
         ent := xpath_eval ('/clusters', self.clusters);
-        XMLAppendChildren (ent, 
-           XMLELEMENT ('cluster', '**all public**'));
-	if (get_keyword ('search', params) is null)	
-	  {
+        XMLAppendChildren (ent, XMLELEMENT ('cluster', '**all public**'));
+        if (get_keyword ('search', params) is null) {
 	    self.scope := null;
 	  }
         return;
-      ]]></v:on-init>
-			<v:method name="run_search" arglist="inout e vspx_event"><![CDATA[
+      ]]>
+    </v:on-init>
 				
+    <v:method name="run_search" arglist="inout e vspx_event">
+      <![CDATA[
         declare xmldoc, ses, arr, res, qes any;
         declare i, l, max1 int;
         declare url any;
@@ -99,13 +98,10 @@
 	declare res any;
 	vectorbld_init(res);
 
-        --dbg_obj_print ('scope=', self.scope);
-	if (self.scope is not null)
-	  {
+        if (self.scope is not null) {
 	    self.cluster_1.ufl_value := WV.WIKI.TRIM_EX (self.scope);
 	  }
 
-	
 	if (self.sqry is not null)
 	  {
 	    d1 := self.d_before;
@@ -125,27 +121,35 @@
 	    catw := trim (self.catw.ufl_value);
 	    tagw := trim (self.tagw.ufl_value);
 	  }
-	if (length (self.dataad.ufl_value))
+        if (length (self.t_sinceDate.ufl_value))
 	  {
-	    declare exit handler for sqlstate '22007'
+          self.t_sinceDate.ufl_value := trim (self.t_sinceDate.ufl_value);
+          if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])\$', self.t_sinceDate.ufl_value)))
 	    {
 	      self.vc_is_valid := 0;
-	      self.vc_error_message := 'Please specify correct date for "Updated since".';
+            self.vc_error_message := 'Please specify correct date for "Updated from".';
 	      return;
-	    };
-	    d1 := stringdate (self.dataay.ufl_value||'-'||self.dataam.ufl_value||'-'||self.dataad.ufl_value);
-	    self.upar := self.upar||sprintf ('&from=%s-%s-%s',self.dataay.ufl_value,self.dataam.ufl_value, self.dataad.ufl_value);
 	  }
-	if (length (self.databd.ufl_value))
+          d1 := stringdate (self.t_sinceDate.ufl_value);
+          self.upar := self.upar||sprintf ('&from=%s',self.t_sinceDate.ufl_value);
+        }
+        if (length (self.t_beforeDate.ufl_value))
 	  {
-	    declare exit handler for sqlstate '22007'
+          self.t_beforeDate.ufl_value := trim (self.t_beforeDate.ufl_value);
+          if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])\$', self.t_beforeDate.ufl_value)))
 	    {
 	      self.vc_is_valid := 0;
-	      self.vc_error_message := 'Please specify correct date for "Updated before".';
+            self.vc_error_message := 'Please specify correct date for "Updated to".';
+            return;
+          }
+          d2 := stringdate (self.t_beforeDate.ufl_value);
+          if ((d1 is not null) and (d1 > d2))
+          {
+            self.vc_is_valid := 0;
+            self.vc_error_message := 'Date for "Updated to" should be greater then date for "Updated from".';
 	      return;
-	    };
-	    d2 := stringdate (self.databy.ufl_value||'-'||self.databm.ufl_value||'-'||self.databd.ufl_value);
-	    self.upar := self.upar||sprintf ('&to=%s-%s-%s',self.databy.ufl_value,self.databm.ufl_value, self.databd.ufl_value);
+          }
+          self.upar := self.upar||sprintf ('&to=%s',self.t_beforeDate.ufl_value);
 	  }
 	if (length (catw))
 	  self.upar := self.upar||sprintf ('&cat=%U',catw);
@@ -159,6 +163,59 @@
   declare search_word varchar;
   search_word := WV.WIKI.TRIM (self.expr.ufl_value);
   
+        declare _search_name varchar;
+        _search_name := search_word;
+
+        if (self.stype = 2)
+          goto topic_search;
+
+        if (self.stype = 1)
+        {
+          if ((search_word is not null) and WV.WIKI.ISWIKIWORD (search_word))
+          {
+            declare exit handler for sqlstate '*' {
+              self.stype := 0;
+              goto _freetext_search;
+            };
+            declare exit handler for not found {
+              --dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+              self.stype := 0;
+              goto _freetext_search;
+            };
+
+            declare _current_cluster_name, _current_topic_name, _cluster_name, _topic_name varchar;
+            declare _current_cluster_id, _cluster_id integer;
+
+            _current_cluster_name := subseq (self.source_page, 0, strstr (self.source_page, '/'));
+            _current_cluster_id := (select ClusterId from WV.WIKI.CLUSTERS where ClusterName = _current_cluster_name);
+
+            _topic_name := (select coalesce( LocalName, LocalName2) from WV.WIKI.TOPIC where (LocalName = _search_name or LocalName2 = _search_name) and ClusterId = _current_cluster_id);
+
+            declare topics_count integer;
+            topics_count := 0;
+            topics_count := (select count (*) from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c
+                                             where (t.LocalName = _search_name or t.LocalName2 = _search_name)
+                                               and t.ClusterId = c.ClusterId
+                                               and WV.WIKI.member_of_cluster (self.vspx_user, c.ClusterName));
+            if (topics_count = 0)
+            {
+              return WV.WIKI.redirect (WV.WIKI.wiki_cluster_uri (_current_cluster_name)|| '/' || coalesce (_topic_name, _search_name), self.sid, self.realm);
+            }
+            if (topics_count = 1)
+            {
+              select c.ClusterName, coalesce( LocalName, LocalName2) into _cluster_name, _topic_name
+                from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c
+               where (t.LocalName = _search_name or t.LocalName2 = _search_name) and t.ClusterId = c.ClusterId and WV.WIKI.member_of_cluster (self.vspx_user, c.ClusterName);
+              return WV.WIKI.redirect (WV.WIKI.wiki_cluster_uri (_cluster_name)|| '/' || _topic_name, self.sid, self.realm);
+            }
+
+            goto topic_search;
+          } else {
+            self.stype := 0;
+          }
+        }
+
+_freetext_search:
   self.upar := self.upar || sprintf ('&q=%U', search_word);
 
   declare exp1,exp varchar;
@@ -168,9 +225,7 @@
   tagw := WV.WIKI.TRIM_EX (coalesce (tagw, ''));
   search_word := WV.WIKI.TRIM_EX (search_word);
   if (catw <> '')
-    search_word := WV.WIKI.TRIM_EX(search_word || ' ' 
-      || WV.WIKI.STRJOIN (' AND ', 
-          WV.WIKI.ADDCATEGORY_PREFIX (split_and_decode (catw, 0, '\0\0 '))));	 
+          search_word := WV.WIKI.TRIM_EX(search_word || ' ' || WV.WIKI.STRJOIN (' AND ', WV.WIKI.ADDCATEGORY_PREFIX (split_and_decode (catw, 0, '\0\0 '))));
 
  if (tagw <> '')
    {        
@@ -178,12 +233,8 @@
        exp1 := null;
      else
        exp1 := search_word;
-     search_word := WV.WIKI.ADD_SYSINFO_VECT (exp1, 
-	    WV.WIKI.FLATTEN (WV.WIKI.ZIP ('tag', 
-	      WV.WIKI.VECTOR_DROP_NOISE_WORDS(
-	        WV.WIKI.VECTOR_CONCAT_UNIQ (
-		  vector(),
-		  WV.WIKI.TRIM_EX(split_and_decode (WV.WIKI.TRIM_EX(tagw), 0, '\0\0,')))))), 1)	;
+          search_word := WV.WIKI.ADD_SYSINFO_VECT (exp1, WV.WIKI.FLATTEN (WV.WIKI.ZIP ('tag', WV.WIKI.VECTOR_DROP_NOISE_WORDS(
+                WV.WIKI.VECTOR_CONCAT_UNIQ (vector(), WV.WIKI.TRIM_EX(split_and_decode (WV.WIKI.TRIM_EX(tagw), 0, '\0\0,')))))), 1)   ;
    }
 
   search_word := WV.WIKI.PARSE_SEARCH_STR (search_word);
@@ -206,20 +257,39 @@
        }
      n := n + 2;
    }
+
+topic_search:
 	declare cr_text, cr_len_text varchar;
 	declare cr_params any;
 	
 	vectorbld_init(cr_params);
+        if (self.stype > 0)
+        {
+          cr_text := 'select ' || case when s_off <> ''
+                             then 'top (' || cast (s_off as varchar) || ',' || cast (self.rowcnt as varchar) || ')'
+                             else '' end
+               || ' RES_ID, RES_OWNER, RES_NAME, length (RES_CONTENT) as RES_LEN, RES_CR_TIME as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH, RES_MOD_TIME as RES_MOD_TIME_STR'
+               || '   from WS.WS.SYS_DAV_RES'
+               || '  where RES_ID in (select t.ResId from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c'
+               || '                    where (t.LocalName = \'' || _search_name || '\' or t.LocalName2 = \'' ||_search_name || '\')'
+               || '                      and t.ClusterId = c.ClusterId '
+               || '                      and WV.WIKI.member_of_cluster (\'' || self.vspx_user || '\', c.ClusterName))';
+        } else
 	cr_text := 'select ' || case when s_off <> '' 
 	                          then 'top (' || cast (s_off as varchar) || ',' || cast (self.rowcnt as varchar) || ')'
 	                          else '' end
-	            || ' RES_ID, RES_OWNER, RES_NAME, length (RES_CONTENT) as RES_LEN, RES_CR_TIME as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH, RES_MOD_TIME as RES_MOD_TIME_STR
-                            from WS.WS.SYS_DAV_RES
-                            where
-                             contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?))';
-	cr_len_text := 'select count (*) from WS.WS.SYS_DAV_RES
-                            where
-                             contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?))';
+               || ' RES_ID, RES_OWNER, RES_NAME, length (RES_CONTENT) as RES_LEN, RES_CR_TIME as RES_CR_TIME_STR,RES_PERMS, RES_FULL_PATH, RES_MOD_TIME as RES_MOD_TIME_STR'
+               || '   from WS.WS.SYS_DAV_RES'
+               || '  where contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?))';
+
+        if (self.stype > 0)
+        {
+          cr_len_text := 'select count (*) from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c'
+               || '                    where (t.LocalName = \'' || _search_name || '\' or t.LocalName2 = \'' ||_search_name || '\')'
+               || '                      and t.ClusterId = c.ClusterId '
+               || '                      and WV.WIKI.member_of_cluster (\'' || self.vspx_user || '\', c.ClusterName)';
+        } else
+          cr_len_text := 'select count (*) from WS.WS.SYS_DAV_RES where contains (RES_CONTENT, concat (''[__lang "x-ViDoc"] '',?))';
 	
 	declare exit handler for sqlstate '37000' {
 	  self.ds_data := vector ();
@@ -235,18 +305,22 @@
 	declare _idx any;
 	_idx := 0;
 	declare _res_id, _u_name, _res_name, _res_len, _cr_time, _mod_time, _perms, _full_path any;
+
+        if (self.stype = 0)
+        {
 	declare _cluster_search int;
 	_cluster_search := case when self.cluster_1.ufl_value = '**all public**' then 0 else 1 end;
 	self.upar := self.upar || sprintf ('&scope=%U&sort_by_1=%U', self.cluster_1.ufl_value, self.sortby.ufl_value);
-	self.upar := self.upar || '&sid=' || self.sid;
-	self.upar := self.upar || '&realm=' || self.realm;
 	
 	if (_cluster_search)
 	  exp1 := WV.WIKI.ADD_SYSINFO (exp1, 'cluster', self.cluster_1.ufl_value, 1);
 	else -- needed to distinguish wiki topic from text files
 	  exp1 := WV.WIKI.ADD_SYSINFO (exp1, 'cluster', '', 1);
+        }
+
+        self.upar := self.upar || '&sid=' || self.sid;
+        self.upar := self.upar || '&realm=' || self.realm;
 	  
---	dbg_obj_print (exp1);  
 	vectorbld_acc (cr_params, exp1);
 	declare add_cr_text varchar;
 	add_cr_text := '';
@@ -269,7 +343,6 @@
 
 	cr_text := cr_text || add_cr_text;
 	cr_len_text := cr_len_text || add_cr_text;	
-	
 	self.ds_len := 0;
 	whenever not found goto endf;
 	
@@ -305,13 +378,15 @@
       link := WV.WIKI.MAKELINKFROMRES (_res_id, self.base);
       if (href is not null)
         {
-        
+            declare _text varchar;
+            _text := '';
+            if (self.stype = 0)
+            {
           declare _text_ses varchar;
           _text_ses := string_output ();
-          declare _text varchar;
           http_value(blob_to_string ((select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = _res_id)), NULL, _text_ses);
           _text := coalesce (search_excerpt (hit_words,  WV.WIKI.DELETE_SYSINFO_FOR (string_output_string (_text_ses), null), 200000, 90, 200, 'b', 1), '');
-          
+            }
           vectorbld_acc (res, vector (
 	     	  		link,
 	      		  	WV.WIKI.PRINTLENGTH(_res_len),
@@ -325,7 +400,6 @@
 	     }
 	 }
 
-	
 endf:
 	vectorbld_final (res);
 	self.ds_data := res;
@@ -348,13 +422,15 @@ endf:
 	self.button_next.vc_data_bind (e);
 	
 	self.result_in_formats.vc_data_bind (e);
-	
-  ]]></v:method>
-			<v:before-data-bind><![CDATA[
-      self.vspx_user := coalesce((select vs_uid from
-                 			VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
-    ]]></v:before-data-bind>
-			<v:after-data-bind><![CDATA[
+      ]]>
+    </v:method>
+    <v:before-data-bind>
+      <![CDATA[
+        self.vspx_user := coalesce((select vs_uid from VSPX_SESSION where vs_sid = self.sid and vs_realm = self.realm), 'WikiGuest');
+      ]]>
+    </v:before-data-bind>
+    <v:after-data-bind>
+      <![CDATA[
     	   if (self.cluster_key is not null)
     	     self.cluster := self.cluster_key;
         self.login.vc_data_bind(e);
@@ -363,7 +439,8 @@ endf:
         self.expr.ufl_value := WV.WIKI.TRIM (self.qry);
         if (not e.ve_is_post)
           self.run_search (e);
-    ]]></v:after-data-bind>
+      ]]>
+    </v:after-data-bind>
 			<vm:body>
 					<v:form type="simple" method="POST" action="advanced_search.vspx">
 						<div class="advanced-search">
@@ -383,6 +460,33 @@ endf:
 										</td>
 									</tr>
 									<tr>
+                    <td nowrap="nowarap">
+                      <v:radio-button name="stype_0" xhtml_id="stype_0" group-name="stype" value="0" auto-submit="1">
+                        <v:before-render>
+                          <![CDATA[
+                            control.ufl_selected := equ (self.stype, 0);
+                          ]]>
+                        </v:before-render>
+			                </v:radio-button>
+                      <xsl:call-template name="nbsp" />
+                      <b><label for="stype_0">Free-text Search</label></b>
+                    </td>
+                    <td nowrap="nowarap">
+                      <v:radio-button name="stype_1" xhtml_id="stype_1" group-name="stype" value="2" auto-submit="1">
+                        <v:before-render>
+                          <![CDATA[
+                            control.ufl_selected := gt (self.stype, 0);
+                          ]]>
+                        </v:before-render>
+                      </v:radio-button>
+                      <xsl:call-template name="nbsp" />
+                      <b><label for="stype_1">Topic Search</label></b>
+                    </td>
+            	</tr>
+            	<?vsp if (self.stype = 0)
+            	  {
+            	?>
+                <tr>
 										<th>Clusters:</th>
 										<td>
 											<v:data-list name="cluster_1" xhtml_id="cluster" value="--self.s_cluster" list-document="--self.clusters" list-match="/clusters/cluster" list-key-path="." list-value-path="."/>
@@ -400,20 +504,30 @@ endf:
 											<v:text name="tagw" value="" xhtml_size="20" xhtml_class="textbox" xhtml_disabled="@@hidden@@"/>
 										</td>
 									</tr>
+
+              <tr>
+                <th>Updated:</th>
+              </tr>
 									<tr>
-										<th>Updated since</th>
+                <th>
+                  <v:label for="t_sinceDate" value="&nbsp;&nbsp;&nbsp;&nbsp;From: " />
+                </th>
 										<td>
-											<v:text name="dataay" value="" xhtml_size="4" xhtml_class="textbox"/> -
-         <v:text name="dataam" value="" xhtml_size="2" xhtml_class="textbox"/> -
-	 <v:text name="dataad" value="" xhtml_size="2" xhtml_class="textbox"/> (YYYY-MM-DD)
+                  <v:text name="t_sinceDate" xhtml_id="t_sinceDate" xhtml_onclick="cPopup.select(\$(\'t_sinceDate\'), \'t_sinceDate_select\', \'yyyy-MM-dd\')" xhtml_size="12" />
+                  <a href="#" name="t_sinceDate_select" id="t_sinceDate_select" onclick="cPopup.select($('t_sinceDate'), 't_sinceDate_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                    <img border="0" title="pick" alt="pick" src="images/pick_calendar.gif" />
+                  </a>
         </td>
 									</tr>
 									<tr>
-										<th>Updated before</th>
+                <th>
+                  <v:label for="t_beforeDate" value="&nbsp;&nbsp;&nbsp;&nbsp;To: " />
+                </th>
 										<td>
-											<v:text name="databy" value="" xhtml_size="4" xhtml_class="textbox"/> -
-         <v:text name="databm" value="" xhtml_size="2" xhtml_class="textbox"/> -
-	 <v:text name="databd" value="" xhtml_size="2" xhtml_class="textbox"/> (YYYY-MM-DD)
+                  <v:text name="t_beforeDate" xhtml_id="t_beforeDate" xhtml_onclick="cPopup.select(\$(\'t_beforeDate\'), \'t_beforeDate_select\', \'yyyy-MM-dd\')" xhtml_size="12" />
+                  <a href="#" name="t_beforeDate_select" id="t_beforeDate_select" onclick="cPopup.select($('t_beforeDate'), 't_beforeDate_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                    <img border="0" title="pick" alt="pick" src="images/pick_calendar.gif" />
+                  </a>
         </td>
 									</tr>
 									<tr>
@@ -422,6 +536,9 @@ endf:
 											<v:data-list name="sortby" xhtml_id="sortby" value="--self.sort_by" list-document="--XMLELEMENT('sortby', XMLELEMENT ('type', 'More Relevant First'), XMLELEMENT ('type', 'More Recent First'))" list-match="/sortby/type" list-key-path="." list-value-path="."/>
 										</td>
 									</tr>
+            	<?vsp
+            	  }
+            	?>
 									<v:template type="simple">
 										<tr>
 											<td colspan="2">
@@ -444,6 +561,11 @@ endf:
 										</td>
 									</tr>
 								</table>
+              <vm:if test="(self.cAction <> 'view')">
+                <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
+                </div>
+              </vm:if>
+
 							</v:template>
 							<h2>
 								<v:label name="ct1" value="--self.result_str" format="%s"/>
@@ -463,11 +585,12 @@ endf:
 									</div>
 							</v:template>
 							<v:data-set name="ds" data="--self.ds_data" meta="--self.ds_meta" nrows="100" scrollable="1" instantiate="-- case when self.ds_len > 0 then 1 else 0 end">
-								<div class="report">Search result for <span>
+              <div class="report">Search result for
+                <span>
 										<v:label name="report_name" value="--self.expr.ufl_value"/>
 									</span>
 								</div>
-								<table class="search-result">
+              <table id="content" class="search-result">
 									<tr>
 										<th align="left" width="20%">Name</th>
 										<th align="left" width="10%">Size</th>
@@ -486,7 +609,8 @@ endf:
 													 case when (self.sid is not null and self.sid <> '')
 													   then '?sid=' || self.sid || '&realm=' || self.realm
 													   else ''
-													 end, control.te_rowset[5] )); ?>
+                          end, control.te_rowset[5] ));
+                        ?>
 												</td>
 												<td>
 													<?vsp http (control.te_rowset[1]); ?>
@@ -585,8 +709,9 @@ endf:
 	  http_xslt (WV.WIKI.WA_PPATH_URL ('rss2atom.xsl'));
         return;
       }
-   ]]>?&gt;
+      ]]>
+    ?&gt;
   </v:page>
-<?vsp WV.WIKI.VSPFOOTER (path,params,lines);
-
+<?vsp
+  WV.WIKI.VSPFOOTER (path,params,lines);
 ?>

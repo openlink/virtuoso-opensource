@@ -204,6 +204,7 @@ create procedure wiki_sioc_post_links_to (inout _topic WV.WIKI.TOPICINFO, inout 
   declare tgt_uri, iri varchar;
   iri := sioc..wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name);
   tgt_uri := sioc..wiki_post_iri (_tgt.ti_cluster_name, _tgt.ti_cluster_id, _tgt.ti_local_name);
+  tgt_uri := DB.DBA.RDF_MAKE_IID_OF_QNAME (tgt_uri);
   if (tgt_uri is not null)
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('links_to'), tgt_uri);
 }
@@ -216,6 +217,7 @@ create procedure wiki_sioc_post_links_to_2 (inout _topic WV.WIKI.TOPICINFO, in t
 
   declare iri varchar;
   iri := sioc..wiki_post_iri (_topic.ti_cluster_name, _topic.ti_cluster_id, _topic.ti_local_name);
+  tgt_uri := DB.DBA.RDF_MAKE_IID_OF_QNAME (tgt_uri);
   if (tgt_uri is not null)
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc..sioc_iri ('links_to'), tgt_uri);
 }

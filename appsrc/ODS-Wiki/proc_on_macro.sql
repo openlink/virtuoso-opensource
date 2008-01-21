@@ -1534,7 +1534,7 @@ create function WV.WIKI.MACRO_USERS (inout _data varchar, inout _context any, in
 
   foreach (any p in _res) do {
     if (_last_char <> p[0][0])
-      XMLAppendChildren (_ent, XMLELEMENT ('li', XMLELEMENT ('A', XMLATTRIBUTES (subseq (p[0], 0, 1) as "name"), subseq (p[0],0,1))));
+      XMLAppendChildren (_ent, XMLELEMENT ('li', XMLELEMENT ('A', XMLATTRIBUTES (subseq (p[0], 0, 1) as "name", 'noapp' as "class"), subseq (p[0],0,1))));
     _last_char := p[0][0];
     XMLAppendChildren (_ent, p[1]);
   }

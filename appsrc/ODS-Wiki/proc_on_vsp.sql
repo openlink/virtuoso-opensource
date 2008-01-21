@@ -20,6 +20,32 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 
+-------------------------------------------------------------------------------
+--
+create procedure WV.WIKI.redirect (
+  in url varchar,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare T varchar;
+
+  T := '&';
+  if (isnull (strchr (url, '?')))
+    T := '?';
+  if (not is_empty_or_null (sid))
+  {
+    url := url || T || 'sid=' || sid;
+    T := '&';
+  }
+  if (not is_empty_or_null (realm))
+  {
+    url := url || T || 'realm=' || realm;
+  }
+  http_request_status ('HTTP/1.1 302 Found');
+  http_header (concat (http_header_get (), 'Location: ',url,'\r\n'));
+}
+;
+
 create function WV.WIKI.GET_COMMAND (in params any)
 {
   return coalesce (get_keyword ('xmlraw', params), get_keyword ('command', params), 'wiki');
@@ -95,9 +121,9 @@ create function WV.WIKI.VSPTOPICVIEW (
   inout path any, inout lines any,
   inout _topic WV.WIKI.TOPICINFO,
   in params any)
-  returns varchar
+  returns integer
 {
---  dbg_obj_print (params);
+--  dbg_obj_print ('ot WV.WIKI.VSPTOPICVIEW, uid: ', get_keyword ('uid', params));
 --  dbg_obj_print (_topic);
   declare _uid int;
   declare _base_adjust, _command varchar;
@@ -114,13 +140,15 @@ create function WV.WIKI.VSPTOPICVIEW (
 	_main_topic := WV.WIKI.GET_MAINTOPIC ('Main');
 	if (_topic.ti_id = _main_topic.ti_id) -- already index page of Main cluster
 	  resignal;
-	WV.WIKI.VSPTOPICVIEW (
-	      path, lines,
-	      _main_topic,
-	      params);
+      WV.WIKI.VSPTOPICVIEW (path, lines, _main_topic, params);
       }
     else
-      resignal;
+    {
+      http_rewrite();
+      WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=null'));
+      return;
+      --resignal;
+    }
   }
   ;
   whenever sqlstate '22005' goto wrong_rev;
@@ -129,12 +157,10 @@ create function WV.WIKI.VSPTOPICVIEW (
   if (0)
     {
       wrong_rev: 
- 	--dbg_obj_print (200);
         _topic.ti_rev_id := 0;
     }
   _topic.ti_find_metadata_by_id ();
   _topic.ti_base_adjust := _base_adjust;
-  --dbg_obj_print (_topic.ti_rev_id);
   
   _is_hist := '';
   if (0 < DB.DBA.DAV_SEARCH_ID ( DB.DBA.DAV_SEARCH_PATH (_topic.ti_col_id, 'C') ||
@@ -146,14 +172,12 @@ create function WV.WIKI.VSPTOPICVIEW (
   _topic.ti_curuser_wikiname := coalesce ((select UserName from WV.WIKI.USERS where UserId=_uid), '?');
   _topic.ti_curuser_username := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID=_uid), '?');
   _topic.ti_base_adjust := _base_adjust;
-  --dbg_obj_print (params);
-  --dbg_obj_print (_topic);
+
   declare _xhtml varchar;
   WV.WIKI.CHECKREADACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id);
   
   declare _cnt int;
-  declare cr cursor for select Cnt from WV.WIKI.HITCOUNTER
-    where TopicId = _topic.ti_id for update;
+  declare cr cursor for select Cnt from WV.WIKI.HITCOUNTER where TopicId = _topic.ti_id for update;
   whenever not found goto ins;
   open cr (prefetch 1);
   fetch cr into _cnt;
@@ -188,13 +212,9 @@ ins:
 --  _ext_params := vector_concat (_ext_params, vector ('tree_content', _tree_content));
 
   _xhtml := _topic.ti_get_entity(null, 1);
---  dbg_obj_princ ('>>>>>>' ,_xhtml);
---  dbg_obj_princ ('[[[', _ext_params);
+
   if (_command not in ('docbook'))
-  _xhtml := 
-    WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _xhtml,
-      _ext_params);
---  dbg_obj_princ ('----------------------');
+   _xhtml := WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _xhtml, _ext_params);
   if (_command = 'xmlraw')
     {
       http_rewrite ();
@@ -234,11 +254,8 @@ ins:
   _ext_params := vector_concat (_ext_params, vector ('ods-bar', _ods_bar));
   http_rewrite ();
   http_header ('Content-Type: text/html; charset=UTF-8\r\n');
---  dbg_obj_princ ('> ', _base_adjust); 
-  _xhtml :=
-    WV.WIKI.VSPXSLT ( 'PostProcess.xslt', _xhtml,
-      vector_concat (_ext_params),
-      _skin );
+  http (WV.Wiki.WIKI_APLUSLINK (_uid));
+  _xhtml :=  WV.WIKI.VSPXSLT ( 'PostProcess.xslt', _xhtml, vector_concat (_ext_params), _skin );
   http_header ('Content-Type: text/html; charset=UTF-8\r\n');
   if (WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'email-obfuscate') is not null)
   http_value (_xhtml);
@@ -514,16 +531,16 @@ create function WV.WIKI.VSPCLUSTERMEMBERS (
   inout _topic WV.WIKI.TOPICINFO,
   in params any )
 {
+  declare N integer;
   declare _res, _ent, _xml, _cluster any;
-  declare alpha, UserName varchar;
+  declare alpha, tmp varchar;
+
   _cluster := _topic.ti_cluster_name;
 
-  _res := (select VECTOR_AGG ( vector (ucase(UserName), XMLELEMENT ('li',
-         WV.WIKI.A (UserName, UserName, 'wikiword'),
-         '')))
-    from (select coalesce (UserName, WV.WIKI.USER_WIKI_NAME (U_FULL_NAME), WV.WIKI.USER_WIKI_NAME (U_NAME)) as UserName
+  _res := (select VECTOR_AGG ( vector (ucase(_UserName), XMLELEMENT ('li', WV.WIKI.A (WV.WIKI.AUTHORIRI (U_ID, params), _UserName, ''), ' ',  WV.WIKI.A (_UserName, XMLELEMENT ('img',XMLATTRIBUTES ('/ods/images/icons/ods_wiki_16.png' as "src", '0' as "border")), 'wikiword'))))
+             from (select coalesce (UserName, WV.WIKI.USER_WIKI_NAME (U_FULL_NAME), WV.WIKI.USER_WIKI_NAME (U_NAME)) as _UserName, U_ID
             from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS left join WV.WIKI.USERS on U_ID = USERID
-           where WAM_INST=_cluster and WAM_USER= U_ID) a
+                   where WAM_INST=_cluster and WAM_USER= U_ID order by 1) a
     );
 
   declare _last_char int;
@@ -531,7 +548,14 @@ create function WV.WIKI.VSPCLUSTERMEMBERS (
 
   _xml := XMLELEMENT ('div');
   XMLAppendChildren(_xml, XMLELEMENT ('h3', sprintf ('This is a list of all members of the cluster "%s"', _cluster)));
-  alpha := '<p>&nbsp;<a href="#A">A</a> <a href="#B">B</a> <a href="#C">C</a> <a href="#D">D</a> <a href="#E">E</a> <a href="#F">F</a> <a href="#G">G</a> <a href="#H">H</a> <a href="#I">I</a> <a href="#J">J</a> <a href="#K">K</a> <a href="#L">L</a> <a href="#M">M</a> <a href="#N">N</a> <a href="#O">O</a> <a href="#P">P</a> <a href="#Q">Q</a> <a href="#R">R</a> <a href="#S">S</a> <a href="#T">T</a> <a href="#U">U</a> <a href="#V">V</a> <a href="#W">W</a> <a href="#X">X</a> <a href="#Y">Y</a> <a href="#Z">Z</a></p>';
+
+  tmp := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  alpha := '<p>';
+  for ( N := 0; N < length (tmp); N := N + 1)
+  {
+    alpha := alpha || sprintf (' <a href="#%s" class="noapp">%s</a>', chr (tmp[N]), chr (tmp[N]));
+  }
+  alpha := alpha || '</p>';
   XMLAppendChildren(_xml, xml_tree_doc (alpha));
 
   XMLAppendChildren(_xml, XMLELEMENT ('ul'));
@@ -539,7 +563,7 @@ create function WV.WIKI.VSPCLUSTERMEMBERS (
 
   foreach (any p in _res) do {
     if (_last_char <> p[0][0])
-      XMLAppendChildren (_ent, XMLELEMENT ('li', XMLELEMENT ('A', XMLATTRIBUTES (subseq (p[0], 0, 1) as "name"), subseq (p[0],0,1))));
+      XMLAppendChildren (_ent, XMLELEMENT ('li', XMLELEMENT ('A', XMLATTRIBUTES (subseq (p[0], 0, 1) as "name", 'noapp' as "class"), subseq (p[0],0,1))));
     _last_char := p[0][0];
     XMLAppendChildren (_ent, p[1]);
   }
@@ -990,8 +1014,23 @@ create procedure WV.WIKI.VSPHEADER (
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (ATOM)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=atom"></link>\n');
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (RDF)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=rdf"></link>\n');
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (WIKI_PROFILE)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=wiki_profile"></link>\n');
+
+    declare uName varchar;
+    uName := coalesce ((select vs_uid from  VSPX_SESSION where vs_sid = get_keyword ('sid', params) and vs_realm = get_keyword ('realm', params)), 'WikiGuest');
+    declare S any;
+    S := WV.Wiki.WIKI_APLUSLINK ((select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uName));
+    http (S);
+  }
+  if (topic_or_title = 'Advanced Search')
+  {
+    declare uName varchar;
+    uName := coalesce ((select vs_uid from  VSPX_SESSION where vs_sid = get_keyword ('sid', params) and vs_realm = get_keyword ('realm', params)), 'WikiGuest');
+    declare S any;
+    S := WV.Wiki.WIKI_APLUSCALENDAR ((select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uName));
+    http (S);
     }
-  if (topic_or_title = 'Settings') {
+  if (topic_or_title = 'Settings')
+  {
     http ('<script type="text/javascript">\n');
     http ('  // OAT\n');
     http ('  var toolkitPath="/ods/oat";\n');
@@ -1035,7 +1074,7 @@ create procedure WV.WIKI.VSPHEADER (
       http ('</head>');
       http ('<body onload="kupu = startKupu()">');
     }
-  else
+else if (topic_or_title <> 'Settings')
     {
       http ('</head>');
       http ('<body>');
@@ -1350,7 +1389,7 @@ nf:
            _startofs := 2;
            goto next2;
          }
---      dbg_obj_princ (_jpath);
+      --dbg_obj_print (_jpath);
       if ( (_jpath not like 'wiki/main/%') and
 	   (_jpath <>  'wiki/Atom/') )
         WV.WIKI.APPSIGNAL (11002, 'Path &url; to resource must start from "/wiki/main/"', vector('url', http_path()));
@@ -1366,7 +1405,7 @@ whenever not found default;
     }
   if (_startofs < length (path))
     {
-      _base_adjust := '../';
+      _base_adjust := '/dataspace/'||WV.WIKI.CLUSTERPARAM (default_cluster, 'creator','dav')||'/wiki/';
       _local_name := path[_startofs];
       _startofs := _startofs + 1;
     }
@@ -1677,6 +1716,8 @@ create function WV.WIKI.DATEFORMAT (in dt datetime, in _type varchar:=NULL) retu
     return soap_print_box (dt, '', 1);
   else if (_type = 'iso8601')
     return soap_print_box (dt, '', 0);
+  else if (_type = 'local')
+    return substring (datestring (dt_set_tz (dt, timezone (now ()))), 1, 19);
 }
 ;
 
@@ -1978,7 +2019,8 @@ xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourcePath', 'WV.WIK
 create function WV.WIKI.TEXTFORMATTINGRULES (in _cluster_id int, in _base_adjust varchar)
 {
    declare _lexer_name, _lexer varchar;
-   WV..LEXER (_cluster_id, _lexer, _lexer_name);
+  --WV.DBA.LEXER (_cluster_id, _lexer, _lexer_name);
+  WV.DBA.LEXER (coalesce ((select ClusterName from Wv.WIKI.CLUSTERS where ClusterId = _cluster_id), 'Main'), _lexer, _lexer_name);
   declare _topic WV.WIKI.TOPICINFO;
   _topic := WV.WIKI.TOPICINFO ();
   _topic.ti_raw_title := 'Doc.' || call (_lexer_name)() || 'RulesExcerpt';
@@ -2494,6 +2536,24 @@ create function WV.WIKI.OWNER_OF_CLUSTER (in _user varchar, in _cluster_id int, 
 }
 ;
 
+create function WV.WIKI.member_of_cluster (in _user varchar, in _cluster_name varchar)
+{
+  if (exists (select 1 from DB.DBA.WA_INSTANCE
+               where WAI_NAME = _cluster_name
+                 and WAI_TYPE_NAME = 'oWiki'
+                 and WAI_IS_PUBLIC = 1))
+    return 1;
+  if (exists (select 1 from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER
+               where U_NAME = _user
+                 and WAM_USER = U_ID
+                 and WAM_INST = _cluster_name
+                 and WAM_MEMBER_TYPE <= 3
+                 and WAM_STATUS <= 2))
+    return 1;
+  return 0;
+}
+;
+
 create function WV.WIKI.DEFAULTENDPOINT (in _cluster_id int)
 {
   return '';
@@ -2623,19 +2683,54 @@ create function WV.WIKI.RESOURCEHREF2 (in _resource varchar,
 }
 ;
 
+create procedure WV.WIKI.http_name ()
+{
+  if (is_http_ctx ())
+    {
+      declare vh, lh, hf, lines any;
+      lines := http_request_header ();
+      vh := http_map_get ('vhost');
+      lh := http_map_get ('lhost');
+      hf := http_request_header (lines, 'Host');
+      if (hf is not null)
+        return hf;
+      else
+        return sioc..get_cname();
+    }
+  else
+    return sys_stat ('st_host_name') ||':'|| server_http_port ();
+
+};
+
 create function WV.WIKI.CLUSTERIRI (in cluster_name varchar)
 {
   return SIOC..wiki_cluster_iri (cluster_name);
 }
 ;
 
-create function WV.WIKI.AUTHORIRI (in author_id integer)
+create function WV.WIKI.AUTHORIRI (in author_id integer, in params any := null)
 {
   if ((author_id is null) or (author_id < 0))
     return '';
-  if (not exists (select 1 from DB.DBA.SYS_USERS where U_ID = author_id))
+  declare author_name varchar;
+  author_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = author_id);
+  if (author_name is null)
     return '';
-  return SIOC..person_iri (SIOC..user_iri (author_id));
+--  if (SIOC..user_iri (author_id) is null)
+--    return '';
+  declare S varchar;
+  S := '';
+  if (params is not null) {
+    if (get_keyword ('sid', params,'') <> '')
+      S := 'sid=' || get_keyword ('sid', params);
+    if (get_keyword ('realm', params,'') <> '')
+      S := S || '&realm=' || get_keyword ('realm', params);
+    S := trim (S, '&');
+    if (S <> '')
+      S := '?' || S;
+  }
+--  return SIOC..person_iri (SIOC..user_iri (author_id)) || S;
+  return sprintf ('http://%s%s/person/%U#this', WV.WIKI.http_name (), SIOC..get_base_path (), author_name) || S;
 }
 ;
 
@@ -2774,6 +2869,14 @@ create function WV.WIKI.MOD_TIME (in _res_id int, in _rev_id int)
 }
 ;
 
+create function WV.WIKI.MOD_TIME_LOCAL (in _res_id int, in _rev_id int)
+{
+  _rev_id := cast (_rev_id as int);
+  if (_rev_id is not null and _rev_id <> 0)
+    return coalesce ( (select WV.WIKI.DATEFORMAT (RV_MOD_TIME, 'local') from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = _res_id and RV_ID =_rev_id), '');
+  return coalesce ( (select WV.WIKI.DATEFORMAT (RES_MOD_TIME, 'local') from WS.WS.SYS_DAV_RES where RES_ID = _res_id), '');
+}
+;
 
 create function WV.WIKI.WA_PPATH_URL (in resource varchar)
 {
@@ -2924,22 +3027,6 @@ create function WV.WIKI.USER_PARAMS (in _params any, in _user varchar, inout _to
 }
 ;
 
-create function WV..CLUSTER_URL(in _cluster varchar)
-{
-  if (exists (select 1 from WV.WIKI.DOMAIN_PATTERN_1 where DP_HOST = '%' and DP_PATTERN = '/wiki/main'))
-    return sprintf('http://%s/wiki/main/%U', sioc..get_cname(), _cluster);
-  return sprintf('http://%s/wiki/%U', sioc..get_cname(), _cluster);
-}
-;
---create function WV..TOPIC_URL(in _topic varchar)
---{
---  if (exists (select 1 from WV.WIKI.DOMAIN_PATTERN_1 where DP_HOST = '%' and DP_PATTERN = '/wiki/main'))
---    return sprintf('http://%s/wiki/main/%s', sioc..get_cname(), _topic);
---  return sprintf('http://%s/wiki/%s', sioc..get_cname(), _topic);
---
---}
---;
-
 create function WV.WIKI.TOPIC_URL(in source_page varchar)
 {
   declare _cluster_name, _topic_name, _clusterPath, _home varchar;
@@ -2979,6 +3066,40 @@ create function WV.WIKI.TOPIC_URL(in source_page varchar)
   return _clusterPath || '/' || _topic_name;
 }
 ;
+
+create procedure WV.WIKI.topic_uri (in source_page varchar)
+{
+  declare _cluster_name, _topic_name, _clusterPath varchar;
+  declare _V any;
+  _V := split_and_decode (source_page, 0, '\0\0/');
+  _cluster_name := '';
+  if (length (_V) > 0)
+    _cluster_name := _V[0];
+  if (_cluster_name = '')
+    return 'http://' || WV.WIKI.GET_HOST();
+  _clusterPath := WV.WIKI.wiki_cluster_uri (_cluster_name);
+  _topic_name := '';
+  if (length (_V) > 1)
+    _topic_name := _V[1];
+  if (_topic_name = '')
+    return _clusterPath;
+  return _clusterPath || '/' || _topic_name;
+}
+;
+
+create procedure WV.WIKI.post_topic_uri (in _topicid int)
+{
+  declare _inst, _localname, _owner varchar;
+  declare _cid int;
+  declare exit handler for not found { return null; };
+  select top 1 ClusterName, c.ClusterId, Localname into _inst, _cid, _localname
+     from WV..CLUSTERS c, WV..TOPIC t
+    where c.ClusterId = t.ClusterId and t.TopicId = _topicid;
+  _owner := WV.WIKI.CLUSTERPARAM (_cid, 'creator', 'dav');
+  return sprintf ('http://%s%s/%U/wiki/%U/%U', WV.WIKI.http_name (), SIOC..get_base_path (), _owner, _inst, _localname);
+}
+;
+
 
 create function WV..ODS_LINK(inout lines any)
 {

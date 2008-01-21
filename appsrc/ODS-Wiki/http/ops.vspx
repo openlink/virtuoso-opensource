@@ -38,10 +38,6 @@
     doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
     doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 	  
-    <v:login name="wiki_login" realm="wa" mode="url">
-      <v:template name='inl' type='if-no-login'/>
-    </v:login>
-
       <v:variable name="cluster_key" type="varchar" param-name="cluster"/>
       <v:variable name="id" type="integer" default="NULL" param-name="id"/>
 
@@ -106,6 +102,10 @@
 	  <div class="wiki-error"><v:error-summary/></div>
 	    <v:label name="topic_name" value="--self.source_page"/>
 	    <v:form type="simple" method="POST">
+          <v:login name="wiki_login" realm="wa" mode="url">
+            <v:template name='inl' type='if-no-login'/>
+          </v:login>
+
 	     <v:template name="topic_info" type="simple">
 	      <table>
 	        <tr bgcolor="#DFFFDF">

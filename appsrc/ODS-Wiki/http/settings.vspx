@@ -130,9 +130,21 @@
         self.defval := (select vector ('id', UP_ID, 'name', UP_NAME, 'uri', UP_URI, 'user', UP_USER, 'passwd', UP_PASSWD, 'rcluster', UP_RCLUSTER) from WV..UPSTREAM where UP_ID = self.streamid);
 	    ]]>
   </v:before-data-bind>
-
-  <vm:body>
-    <v:form name="common_setting" type="simple" method="POST">
+  <v:after-data-bind>
+    <![CDATA[
+      if (not self.vc_authenticated) {
+        http_rewrite();
+        http_request_status ('HTTP/1.1 302 Found');
+        http_header (http_header_get() || sprintf('Location: %slogin.vspx?URL=%U\r\n', WV..ODS_LINK (self.vc_event.ve_lines), sprintf ('http://%s/wiki/resources/settings.vspx?cluster=%s&name=%s', WV.WIKI.GET_HOST(), self.cluster_name,self.topic_name)));
+        return;
+      }
+    ]]>
+  </v:after-data-bind>
+  <vm:body vm_onunload="checkPageLeave (document.forms['common_setting'])">
+    <v:form name="common_setting" type="simple" method="POST" xhtml_onsubmit="sflag=true;">
+      <v:login name="wiki_login" realm="wa" mode="url">
+        <v:template name='inl' type='if-no-login'/>
+      </v:login>
       <v:template name="form_tmpl" type="simple">
         <v:text type="hidden" name="tabNo" value="--self.v_tabNo" xhtml_id="tabNo" />
         <v:text type="hidden" name="name" value="--self.name.ufl_value" />
@@ -171,7 +183,7 @@
                         <th>Index Page:</th>
 		      <td>
 		        <v:template name="index_page_tmpl" type="simple">
-			 <v:text error-glyph="*" name="index_page_name" value="--self.index_page">
+                            <v:text error-glyph="*" name="index_page_name" value="--self.index_page" xhtml_class="save1">
 			  <v:validator test="regexp" regexp='[A-Z][a-z]*[A-Z][A-Za-z0-9]*' message="Index page must be WikiWord"/>
 			 </v:text>
 			</v:template>
@@ -185,19 +197,19 @@
                       <tr>
                         <th>Primary Skin:</th>
                         <td>
-                          <v:data-list name="wiki_skin" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'skin', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="."/>
+                          <v:data-list name="wiki_skin" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'skin', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="." xhtml_class="save1" />
                         </td>
                       </tr>
                       <tr>
                         <th>Secondary Skin:</th>
                         <td>
-                          <v:data-list name="wiki_skin_2" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'skin2', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="." xhtml_title=" used when host matches the regular expression below "/>
+                          <v:data-list name="wiki_skin_2" value="--&quot;WV&quot;.&quot;Wiki&quot;.&quot;ClusterParam&quot; (self.cluster_name, 'skin2', 'default')" list-document="--self.skins" list-match="/skins/skin" list-key-path="." list-value-path="." xhtml_title=" used when host matches the regular expression below " xhtml_class="save1" />
                         </td>
                       </tr>
                       <tr>
                         <th>VHost Regular Expression:</th>
                         <td>
-                          <v:text name="skin2_vhost_regexp_text" value="--self.skin2_vhost_regexp" xhtml_title=" if host matches this expression Secondary Skin is used "/>
+                          <v:text name="skin2_vhost_regexp_text" value="--self.skin2_vhost_regexp" xhtml_title=" if host matches this expression Secondary Skin is used " xhtml_class="save1"/>
                         </td>
                       </tr>
                       <tr>
@@ -208,12 +220,12 @@
                       <tr>
                         <th>Compatibility:</th>
                         <td>
-                          <v:data-list name="wiki_plugin" value="--WV.Wiki.ClusterParam (self.cluster_name, 'plugin', 'oWiki')" list-document="--self.plugins" list-match="/plugins/plugin" list-key-path="@name" list-value-path="@id"/>
+                          <v:data-list name="wiki_plugin" value="--WV.Wiki.ClusterParam (self.cluster_name, 'plugin', 'oWiki')" list-document="--self.plugins" list-match="/plugins/plugin" list-key-path="@name" list-value-path="@id" xhtml_class="save1"/>
                         </td>
                       </tr>
                       <tr>
                         <td align="left" colspan="2">
-                          <v:button name="save" action="simple" value="Save Changes" xhtml_disabled="--self.enabled">
+                          <v:button name="save1" action="simple" value="Save Changes" xhtml_disabled="--self.enabled">
                           <v:on-post>
                             <![CDATA[
                                 if (not self.vc_is_valid)
@@ -247,18 +259,18 @@
                       <tr>
                         <th valign="top" align="left">New Topic:</th>
             <td>
-                          <v:textarea name="new_topic_template_text" xhtml_rows="10" xhtml_cols="70" value="--self.new_topic_template"/>
+                          <v:textarea name="new_topic_template_text" xhtml_rows="10" xhtml_cols="70" value="--self.new_topic_template" xhtml_class="save2" />
                         </td>
                       </tr>
                     <tr>
                         <th valign="top" align="left">New Category:</th>
                       <td>
-                          <v:textarea name="new_category_template_text" xhtml_rows="10" xhtml_cols="70" value="--self.new_category_template"/>
+                          <v:textarea name="new_category_template_text" xhtml_rows="10" xhtml_cols="70" value="--self.new_category_template" xhtml_class="save2" />
                         </td>
                       </tr>
                       <tr>
                         <td align="left" colspan="2">
-                          <v:button action="simple" value="Save Changes" xhtml_disabled="--self.enabled">
+                          <v:button name="save2" action="simple" value="Save Changes" xhtml_disabled="--self.enabled">
                           <v:on-post>
                             <![CDATA[
                                 WV.WIKI.SETCLUSTERPARAM (self.cluster_name, 'new-topic-template', self.new_topic_template_text.ufl_value);
@@ -287,7 +299,7 @@
                             S := '';
                             if (self.delicious_enable = 1)
                               S := 'checked="checked"';
-                            http(sprintf('<input type="checkbox" name="cls3_delicioustoggle" id="cls3_delicioustoggle" value="1" %s onclick="deliciousToggle (this)"/>', S));
+                            http(sprintf('<input type="checkbox" name="cls3_delicioustoggle" id="cls3_delicioustoggle" value="1" %s onclick="deliciousToggle (this)" class="save3" />', S));
                           ?>
                           <vm:label for="cls3_delicioustoggle" value="Toggle Integration"/>
                         </td>
@@ -295,20 +307,19 @@
                       <tr id="delicious1">
                         <th>User Name:</th>
                         <td align="left">
-                          <v:text name="delicious_user" format="%s" value="--WV.Wiki.ClusterParam (self.cluster_name, 'delicious_user', '')" >
-                          </v:text>
+                          <v:text name="delicious_user" format="%s" value="--WV.Wiki.ClusterParam (self.cluster_name, 'delicious_user', '')" xhtml_class="save3" />
                         </td>
                       </tr>
                       <tr id="delicious2">
                         <th>Password: <br/>(leave it empty to keep old password)</th>
                         <td align="left">
-                          <v:text type="password" name="delicious_passwd" />
+                          <v:text type="password" name="delicious_passwd" xhtml_class="save3" />
                         </td>
                       </tr>
                       <tr id="delicious3">
                         <th>Minimum of update interval: <br/>(in minutes)</th>
                         <td align="left">
-                          <v:text name="delicious_update_interval" value="--WV.Wiki.ClusterParam (self.cluster_name, 'delicious_update_interval', 600)/60" >
+                          <v:text name="delicious_update_interval" value="--WV.Wiki.ClusterParam (self.cluster_name, 'delicious_update_interval', 600)/60" xhtml_class="save3">
                             <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat="client"/>
                             <v:validator test="value" min="10" max="999999" empty-allowed="0" message="number greater than 10 and less than 999999 is expected" runat="client"/>
                           </v:text>
@@ -334,7 +345,7 @@
                               S := '';
                               if (self.webmail_enable = 1)
                                 S := 'checked="checked"';
-                              http(sprintf('<input type="checkbox" name="cls3_webmailtoggle" id="cls3_webmailtoggle" value="1" %s onclick="webmailToggle (this)"/>', S));
+                              http(sprintf('<input type="checkbox" name="cls3_webmailtoggle" id="cls3_webmailtoggle" value="1" %s onclick="webmailToggle (this)" class="save3" />', S));
                             ?>
                             <vm:label for="cls3_webmailtoggle" value="Toggle integration"/>
                           </td>
@@ -342,7 +353,7 @@
                         <tr id="webmail1">
                           <th>E-mail Domain:</th>
 	    <td>
-                            <v:data-list name="webmail_domains" value="--WV.Wiki.ClusterParam (self.cluster_name, 'webmail_domain', 'domain.com')" list-document="--self.domains" list-match="/domains/domain" list-key-path="." list-value-path="." />
+                            <v:data-list name="webmail_domains" value="--WV.Wiki.ClusterParam (self.cluster_name, 'webmail_domain', 'domain.com')" list-document="--self.domains" list-match="/domains/domain" list-key-path="." list-value-path="." xhtml_class="save3" />
                           </td>
                         </tr>
                       </v:template>
@@ -361,7 +372,7 @@
                     <tr>
                         <th>E-mail Obfuscation:</th>
 		      <td>
-                          <v:data-list name="email_obfuscation" value="--WV.Wiki.ClusterParam (self.cluster_name, 'email-obfuscate', 'NONE')" list-document="--self.email_obfuscation_types" list-match="/email_obfuscation_types/type" list-key-path="." list-value-path="."/>
+                          <v:data-list name="email_obfuscation" value="--WV.Wiki.ClusterParam (self.cluster_name, 'email-obfuscate', 'NONE')" list-document="--self.email_obfuscation_types" list-match="/email_obfuscation_types/type" list-key-path="." list-value-path="." xhtml_class="save3" />
 		      </td>
                     </tr>
                       <tr>
@@ -372,14 +383,14 @@
 	  <tr>
                         <th>API key (32 characters long):</th>
 	    <td>
-                          <v:text error-glyph="*" name="technorati_api_key_f" value="--self.technorati_api_key" xhtml_size="40">
+                          <v:text error-glyph="*" name="technorati_api_key_f" value="--self.technorati_api_key" xhtml_size="40" xhtml_class="save3">
                             <v:validator test="regexp" regexp="^[a-z0-9]{32}$|^[ ]*$" message="API key is expected" runat="client"/>
                           </v:text>
                         </td>
                       </tr>
 		    <tr>
                         <td colspan="2">
-                          <h2>Conversation (NNTP Integration)</h2>
+                          <h2>Discussion (NNTP Integration)</h2>
 		      </td>
                     </tr>
                       <v:template type="simple" enabled="--case when WV.WIKI.DISCUSSION_CHECK ()=1 then 1 else 0 end">
@@ -390,16 +401,16 @@
                             S := '';
                             if (self.conv_enable = 1)
                               S := 'checked="checked"';
-                            http(sprintf('<input type="checkbox" name="cls3_conversationtoggle" id="cls3_conversationtoggle" value="1" %s />', S));
+                            http (sprintf ('<input type="checkbox" name="cls3_conversationtoggle" id="cls3_conversationtoggle" value="1" %s class="save3" />', S));
                           ?>
-                          <vm:label for="cls3_conversationtoggle" value="Toggle Conversation (NNTP Integration)"/>
+                          <vm:label for="cls3_conversationtoggle" value="Toggle Discussion (NNTP Integration)"/>
                         </td>
                     	</tr>
                       </v:template>
                       <v:template type="simple" enabled="--case when WV.WIKI.DISCUSSION_CHECK ()=0 then 1 else 0 end">
                         <tr>
                           <td colspan="2">
-                            Conversation feature is disabled.<br/>You need to install ODS Discussion package in order to use it.
+                            Discussion feature is disabled.<br/>You need to install ODS Discussion package in order to use it.
 		      </td>
 		    </tr>
                       </v:template>
@@ -410,7 +421,7 @@
                       </tr>
                       <tr>
                         <td align="left" colspan="2">
-                          <v:button action="simple" value="Save Changes" xhtml_disabled="--self.enabled">
+                          <v:button name="save3" action="simple" value="Save Changes" xhtml_disabled="--self.enabled">
                             <v:on-post>
                               <![CDATA[
                                 if (not self.vc_is_valid)
@@ -485,7 +496,7 @@
                                     <v:label name="l_upstream_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
                                   </td>
                                   <td nowrap="nowrap" >
-                                    <v:button value="Edit" action="simple">
+                                    <v:button value="Edit" action="simple" xhtml_disabled="--self.enabled">
                                       <v:on-post>
                                         <![CDATA[
                                           self.streamid := (control.vc_parent as vspx_row_template).te_rowset[1];
@@ -494,7 +505,7 @@
                                         ]]>
                                       </v:on-post>
                                     </v:button>
-                                    <v:button value="Delete" action="simple" xhtml_onclick="javascript: return (confirm (\'If you really want to delete the upstream, click OK.\'));">
+                                    <v:button value="Delete" action="simple" xhtml_onclick="javascript: return (confirm (\'If you really want to delete the upstream, click OK.\'));" xhtml_disabled="--self.enabled">
                                       <v:on-post>
                                         <![CDATA[
                                           delete from WV..UPSTREAM where UP_ID = (control.vc_parent as vspx_row_template).te_rowset[1];
@@ -520,39 +531,39 @@
                    <tr>
                                 <th>Name:</th>
                       <td>
-                                  <v:text name="upstream_name" value="--get_keyword ('name', self.defval, '')" xhtml_title=" if you change the name in edit mode, a new upstream will be added!" />
+                                  <v:text name="upstream_name" value="--get_keyword ('name', self.defval, '')" xhtml_title=" if you change the name in edit mode, a new upstream will be added!" xhtml_class="save4" />
                       </td>
                    </tr>
                               <tr>
                                 <th>URL:</th>
-                                <td><v:text name="upstream_url" value="--get_keyword ('uri', self.defval, '')" /></td>
+                                <td>
+                                  <v:text name="upstream_url" value="--get_keyword ('uri', self.defval, '')" xhtml_class="save4" />
+                                </td>
                               </tr>
                               <tr>
                                 <th>User:</th>
-                                <td><v:text name="upstream_user" value="--get_keyword ('user', self.defval, '')"/></td>
+                                <td>
+                                  <v:text name="upstream_user" value="--get_keyword ('user', self.defval, '')" xhtml_class="save4"/>
+                                </td>
                               </tr>
                               <tr>
                                 <th>Password:</th>
-                                <td><v:text name="upstream_password" type="password" value="--get_keyword ('passwd', self.defval, '')"/></td>
-                              </tr>
-                              <!--
-                                  <tr>
-                                    <th>target cluster</th>
-                                    <td><v:text name="upstream_cluster" value="--get_keyword ('rcluster', self.defval, '')"/></td>
+                                <td>
+                                  <v:text name="upstream_password" type="password" value="--get_keyword ('passwd', self.defval, '')" xhtml_class="save4" />
+                                </td>
                                   </tr>
-                              -->
                               <v:hidden name="id2" value="--get_keyword('id', self.defval)"/>
                               <tr>
                                 <td colspan="2">
                                   &nbsp;
                                   <br/>
-                                  <v:check-box name="initial_insert"  xhtml_id="initial_insert"/>
+                                  <v:check-box name="initial_insert"  xhtml_id="initial_insert" xhtml_class="save4" />
                                   <label for="initial_insert">Make full cluster upstream first</label>
 	    </td>
 	  </tr>
                               <tr>
                                 <td align="left" colspan="2">
-                                  <v:button action="simple" value="Add/Update Upstream">
+                                  <v:button name="save4" action="simple" value="Add/Update Upstream" xhtml_disabled="--self.enabled">
 			  <v:on-post>
                             <![CDATA[
                                         declare upid int;
@@ -654,7 +665,7 @@
                             S := '';
                             if (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'syscalls', 2) = 1)
                               S := 'checked="checked"';
-                            http(sprintf('<input type="checkbox" name="cls5_inlinemacros" id="cls5_inlinemacros" value="1" %s />', S));
+                            http(sprintf('<input type="checkbox" name="cls5_inlinemacros" id="cls5_inlinemacros" value="1" %s class="save5" />', S));
                           ?>
                           <vm:label for="cls5_inlinemacros" value="Inline Macros"/>
                         </td>
@@ -666,7 +677,7 @@
                             S := '';
                             if (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'qwiki', 2) = 2)
                               S := 'checked="checked"';
-                            http(sprintf('<input type="checkbox" name="cls5_interlinks" id="cls5_interlinks" value="2" %s />', S));
+                            http(sprintf('<input type="checkbox" name="cls5_interlinks" id="cls5_interlinks" value="2" %s class="save5" />', S));
                           ?>
                           <vm:label for="cls5_interlinks" value="Inter Cluster Autolinks"/>
                         </td>
@@ -675,7 +686,7 @@
                         <td align="left" colspan="2">
                           &nbsp;
                     	    <br/>
-                          <v:button action="simple" value="Save Changes" xhtml_disabled="--self.enabled">
+                          <v:button name="save5" action="simple" value="Save Changes" xhtml_disabled="--self.enabled">
                  <v:on-post>
                    <![CDATA[
                                 if (WV.WIKI.CLUSTERPARAM (self.cluster_name, 'creator', '--') = self.vspx_user)

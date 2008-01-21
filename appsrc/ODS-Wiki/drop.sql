@@ -43,8 +43,11 @@ create procedure WV.Wiki.drop_procedures()
 ;
 
 -- remove XSLT extensions
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:AuthorIRI', 'WV.WIKI.AUTHORIRI');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:AuthorName', 'WV.WIKI.AUTHORNAME');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ClusterIRI', 'WV.WIKI.CLUSTERIRI');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ClusterParam', 'WV.WIKI.CLUSTERPARAM');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:WikiAplusLink', 'WV.Wiki.WIKI_APLUSLINK');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:DIUCategoryLink', 'WV.WIKI.DIUCATEGORYLINK');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:DiffPrint', 'WV.WIKI.DIFFPRINT');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ExpandMacro', 'WV.WIKI.EXPANDMACRO');
@@ -101,9 +104,15 @@ WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextInsertMeta');
 WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextInsertPerms');
 WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextUpdate');
 WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextUpdatePerms');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextSparql_AI');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextSparql_AU');
+WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.Wiki_TopicTextSparql_AI');
+WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.Wiki_TopicTextSparql_AU');
 WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.SYS_USERS_WIKI_USERS_U');
 WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_MEMBERSHIP');
 WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_MEMBERSHIP_OPEN');
+WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_MEMBERSHIP_CLOSE');
+WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_INSTANCE');
 WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_INSTANCE_U');
 WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_INSTANCE_D');
 
@@ -138,6 +147,9 @@ WV.WIKI.SILENT_EXEC('drop table WV.WIKI.MEMBERSHIP');
 WV.WIKI.SILENT_EXEC('drop table WV.WIKI.USERS');
 WV.WIKI.SILENT_EXEC('drop table WV.WIKI.GROUPS');
 
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextSparql_AI');
+WV.WIKI.SILENT_EXEC('drop trigger WS.WS.Wiki_TopicTextSparql_AU');
+
 WV.WIKI.SILENT_EXEC ('delete from WA_TYPES where WAT_NAME = \'oWiki\' or WAT_NAME=\'WIKIV\'');
 WV.WIKI.SILENT_EXEC ('drop type wa_wikiv');
 
@@ -151,6 +163,8 @@ WV.WIKI.SILENT_EXEC('drop procedure DB.DBA.WA_SEARCH_WIKI_GET_EXCERPT_HTML');
 DB.DBA.VHOST_REMOVE(lpath=>'/wiki');
 DB.DBA.VHOST_REMOVE(lpath=>'/wiki/Main');
 DB.DBA.VHOST_REMOVE(lpath=>'/wiki/Doc');
+DB.DBA.VHOST_REMOVE(lpath=>'/wiki/resources');
+DB.DBA.VHOST_REMOVE(lpath=>'/wiki/Atom');
 DB.DBA.VHOST_REMOVE(lpath=>'/wikix');
 DB.DBA.VHOST_REMOVE(lpath=>'/wiki/wikix');
 DB.DBA.VHOST_REMOVE(lpath=>'/wikiview');

@@ -75,7 +75,7 @@ create procedure WV.WIKI.EXPORT_ATTACHMENT (
           attachments_path || file_name,
 	  1,
 	  '110100100R',
-	  auth, grp, auth, passwd);
+    auth, grp, 'dav', (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav'));
   if (DAV_HIDE_ERROR(res) is null)
     signal ('WV201', 'Can not copy ' || source_path || ' to ' || attachments_path || file_name || ' : ' || DB.DBA.DAV_PERROR (res));
 }
@@ -230,4 +230,3 @@ create function WV.WIKI.FORMATTER_DOCBOOK (inout _topic WV.WIKI.TOPICINFO,
 }
 ;
 
-	

@@ -21,9 +21,8 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
--- ODS.BAR._EXEC('oWiki',params, lines);
-
 {
+  --dbg_obj_print ('main.vsp', path);
   set http_charset='UTF-8';
   declare _uid integer;
   declare _sid, _realm, _user varchar;
@@ -40,25 +39,27 @@
     {
       delete from DB.DBA.VSPX_SESSION where vs_sid = {?'sid'} and vs_realm = coalesce({?'realm'}, 'wa');
       commit work;
-      http_request_status ('HTTP/1.1 302 Found');
-      http_header (sprintf('Location: %s?lastop=Logout\r\n', http_path()));
+      WV.WIKI.redirect (sprintf('%s?lastop=Logout', http_path()));
+--      http_request_status ('HTTP/1.1 302 Found');
+--      http_header (sprintf('Location: %s?lastop=Logout\r\n', http_path()));
       return;
     }
   -- Google sometimes generates URL with multiply '/' 
-  if (length(lines) and strstr (coalesce (lines[0], ''), '//'))
-    {
-       http_request_status ('HTTP/1.1 302 Found');
-       http_header (http_header_get() || sprintf('Location: %s\r\n', http_path()));
-       return;
-    }
+--  dbg_obj_print ('01', lines[0], http_path());
+--  if (length(lines) and strstr (coalesce (lines[0], ''), '//'))
+--    {
+--      WV.WIKI.redirect (http_path());
+--      return;
+--    }
   cookie_vec := DB.DBA.vspx_get_cookie_vec(lines);
 
   -- Set cookie when user came from different domain
-  if ({?'sid'} is not null and {?'sid'} <> '')
+  if (not DB.DBA.is_empty_or_null (get_keyword ('sid', params)) and DB.DBA.is_empty_or_null (get_keyword ('sid', cookie_vec)))
     {
-       http_header (http_header_get() || sprintf ('Set-Cookie: sid=%s; path=/\r\n', {?'sid'}));
-       http_request_status ('HTTP/1.1 302 Found');
-       http_header (http_header_get() || sprintf('Location: %s?%s\r\n', http_path(), WV.WIKI.BUILD_PARAMS (WV.WIKI.DROP_PARAM(params, 'sid'))));
+      http_header (http_header_get() || sprintf ('Set-Cookie: sid=%s; path=/\r\n', get_keyword ('sid', params)));
+      WV.WIKI.redirect (sprintf('%s?%s', http_path(), WV.WIKI.BUILD_PARAMS (WV.WIKI.DROP_PARAM(params, 'sid'))));
+--      http_request_status ('HTTP/1.1 302 Found');
+--      http_header (http_header_get() || sprintf('Location: %s?%s\r\n', http_path(), WV.WIKI.BUILD_PARAMS (WV.WIKI.DROP_PARAM(params, 'sid'))));
        return;
     }
     
@@ -97,8 +98,7 @@
   connection_set('WikiUser', _user);
   if (_user = 'WikiGuest')
     params := WV.WIKI.VECTOR_DROP_KEYWORD (
-	WV.WIKI.VECTOR_DROP_KEYWORD (params, 'sid'),
-	'realm');
+  WV.WIKI.VECTOR_DROP_KEYWORD (params, 'sid'), 'realm');
 
   _cmd :=  {?'command'};
   if (_cmd is not null)
@@ -181,6 +181,7 @@ major_exit_handler:
 	    }
 	  if (__SQL_STATE = 'WVRLD')
 	    {
+        --???WV.WIKI.redirect ();
 	      http_request_status ('HTTP/1.1 302 Found');
         http_header (sprintf('Location: ?%V\r\n', _sid, _realm, __SQL_MESSAGE));
 	      return;
@@ -326,8 +327,9 @@ cont:
 	if (_user <> 'WikiGuest')
 	  goto major_exit_handler;
   	http_rewrite();
-        http_request_status ('HTTP/1.1 302 Found');
-        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || sprintf ('?command=save&text=%U', _text)));
+        WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || sprintf ('?command=save&text=%U', _text)));
+--        http_request_status ('HTTP/1.1 302 Found');
+--        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || sprintf ('?command=save&text=%U', _text)));
         return;
       };
 
@@ -403,8 +405,9 @@ content:
 	if (_user <> 'WikiGuest')
 	  goto major_exit_handler;
   	http_rewrite();
-        http_request_status ('HTTP/1.1 302 Found');
-        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=attach'));
+        WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=attach'));
+--        http_request_status ('HTTP/1.1 302 Found');
+--        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=attach'));
         return;
       };
 	WV.WIKI.VSPTOPICATTACH (path, lines, _topic,
@@ -458,8 +461,9 @@ content:
 	if (_user <> 'WikiGuest')
 	  goto major_exit_handler;
   	http_rewrite();
-        http_request_status ('HTTP/1.1 302 Found');
-        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=edit&' || _parent));
+        WV.WIKI.redirect (sprintf ('%s/login.vspx?URL=%U', WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=edit&' || _parent));
+--        http_request_status ('HTTP/1.1 302 Found');
+--        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=edit&' || _parent));
         return;
       };
       declare _filename varchar;
@@ -485,8 +489,9 @@ content:
       if (_user <> 'WikiGuest')
         goto major_exit_handler;
       http_rewrite();
-      http_request_status ('HTTP/1.1 302 Found');
-      http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=upstream_now&' || _parent));
+      WV.WIKI.redirect (sprintf('%s/login.vspx?URL=%U', WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=upstream_now&' || _parent));
+--      http_request_status ('HTTP/1.1 302 Found');
+--      http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=upstream_now&' || _parent));
       return;
     };
     declare _filename varchar;

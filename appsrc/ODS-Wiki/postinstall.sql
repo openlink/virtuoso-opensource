@@ -34,16 +34,7 @@ wiki_exec_no_error ('DB.DBA.USER_GRANT_ROLE (\'WikiGuest\', \'MainReaders\')');
 wiki_exec_no_error ('DB.DBA.USER_GRANT_ROLE (\'WikiGuest\', \'DocReaders\')');
 wiki_exec_no_error ('WV.WIKI.ADD_USER (\'dav\', \'Main\')');
 wiki_exec_no_error ('WV.WIKI.ADD_USER (\'dav\', \'Doc\')');
-SET TRIGGERS OFF;
---WV.WIKI.UPDATEGRANTS ('Main');
---WV.WIKI.UPDATEGRANTS ('Doc');
---WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL ('Main', DB.DBA.DAV_SEARCH_ID ('/DAV/VAD/wiki/Main/', 'C'), 'C');
---WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL ('Doc', DB.DBA.DAV_SEARCH_ID ('/DAV/VAD/wiki/Doc/', 'C'), 'C');
---update WV.WIKI.TOPIC set T_PUBLISHED = 0 where T_PUBLISHED is null;
---update WV.WIKI.COMMENT set C_PUBLISHED = 0 where C_PUBLISHED is null;
-SET TRIGGERS ON;
 
---WV.WIKI.FIX_PERMISSIONS();
 WV.WIKI.SET_AUTOVERSION();
 WV.WIKI.STALE_ALL_XSLTS();
 WV.WIKI.CREATE_ALL_USERS_PAGES();
@@ -54,7 +45,7 @@ WV.WIKI.CREATEINSTANCE('Doc', http_dav_uid(), WV.Wiki.WikiAdminGId(), 0);
 sioc..fill_comments();
 WV.WIKI.PUT_NEW_FILES('Main');
 WV.WIKI.PUT_NEW_FILES('Doc',1);
---WV.WIKI.PUT_NEW_FILES('Main',1,'WikiMacros');
+WV.WIKI.PUT_NEW_FILES('Main',1,'WikiUsers');
 WV.WIKI.PUT_NEW_FILES('Main',1,'WMacros');
 
 WV.WIKI.PUT_NEW_FILES('Main',1,'TemplateUser');

@@ -32,7 +32,8 @@
 
   <xsl:output
     method="html"
-   encoding="UTF-8" />
+   encoding="UTF-8"
+   indent="yes"/>
   <!-- new clean stylesheet (ghard)-->
   <xsl:include href="../../common.xsl"/>
   <xsl:template match="/">
@@ -74,6 +75,9 @@
       <link rel="service.post" 
             type="application/x.atom+xml"
 	      href="{wv:atom_pub_uri($ti_cluster_name)}"/>
+      <link rel="alternate"
+            type="application/atomserv+xml"
+            href="{wv:atom_pub_uri($ti_cluster_name)}/intro"/>
 
     </head>
       <body>
