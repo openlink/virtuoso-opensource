@@ -2425,7 +2425,7 @@ c.length);
  <table> 
   <tr>
    <td>
-    <vm:if test="self.has_geolatlng and exists(select 1 from ODS..APP_PING_REG,ODS..SVC_HOST where SH_ID=AP_HOST_ID and SH_URL like 'http://geourl.org%' and AP_WAI_ID=self.comm_id)">
+    <vm:if test=" 1=0 and self.has_geolatlng and exists(select 1 from ODS..APP_PING_REG,ODS..SVC_HOST where SH_ID=AP_HOST_ID and SH_URL like 'http://geourl.org%' and AP_WAI_ID=self.comm_id)">
 
     <a href="http://geourl.org/near/?p=<?Vself.ur||self.comm_home?>" target="_blank">
       <img alt="GeoURL" border="0">
