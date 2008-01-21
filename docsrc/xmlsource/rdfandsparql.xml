@@ -1046,11 +1046,30 @@ Other <emphasis>get:...</emphasis> parameters are useless without this one.</lis
   <listitem><emphasis>get:uri</emphasis> is the IRI to retrieve if it is not equal to the IRI of the <emphasis>from</emphasis> clause.
 These can be used if data should be retrieved from a mirror, not from original resource location or in any other case when the destination graph IRI differs from the location of the resource.</listitem>
 <programlisting><![CDATA[
-sparql
-define get:uri "http://myhost2"
+SQL>sparql
+define get:uri "http://myopenlink.net/dataspace/person/kidehen"
 select ?id
-from named <http://myhost/user1.ttl>
-where { graph ?g { ?id a ?o } };
+from named <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
+where { graph ?g { ?id a ?o } }
+limit 10;
+
+id
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1231
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1231
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1243
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1243
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
+
+10 Rows. -- 10 msec.
+
 ]]></programlisting>
   <listitem><emphasis>get:method</emphasis> is the HTTP method that should be used to retrieve the resource, supported methods are &quot;GET&quot; for plain HTTP and &quot;MGET&quot; for URIQA web service endpoint.
 By default, &quot;MGET&quot; is used for IRIs that end with &quot;/&quot; and &quot;GET&quot; for everything else.</listitem>
@@ -1058,20 +1077,58 @@ By default, &quot;MGET&quot; is used for IRIs that end with &quot;/&quot; and &q
 The value is an positive integer (number of seconds). Virtuoso reads HTTP headers and uses &quot;Date&quot;, &quot;ETag&quot;, &quot;Expires&quot;, &quot;Last-Modified&quot;, &quot;Cache-Control&quot; and &quot;Pragma: no-cache&quot; fields to calculate when the resource should be reloaded, this value can become smaller due to <emphasis>get:refresh</emphasis> but can not be incremented.</listitem>
 <programlisting><![CDATA[
 sparql
-define get:refresh 3600
+define get:refresh "3600"
 select ?id
-from named <http://myhost/user1.ttl>
-where { graph ?g { ?id a ?o } };
+from named <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
+where { graph ?g { ?id a ?o } }
+limit 10;
+
+id
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1231
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1231
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1243
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1243
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
+
+10 Rows. -- 10 msec.
+
 ]]></programlisting>
   <listitem><emphasis>get:proxy</emphasis> address of the proxy server, as &quot;host:port&quot; string, if direct download is impossible; the default is to not use proxy.</listitem>
 <programlisting><![CDATA[
 sparql
-define get:proxy "proxy.server.com:8080"
+define get:proxy "www.openlinksw.com:80"
 define get:method "GET"
 define get:soft "soft"
 select ?id
-from named <http://myhost/user2.ttl>
-where { graph ?g { ?id a ?o } };
+from named <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
+where { graph ?g { ?id a ?o } }
+limit 10;
+
+id
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1231
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1231
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1243
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1243
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
+
+10 Rows. -- 10 msec.
+SQL> limit 10;
 ]]></programlisting>
 
 <!--
@@ -1085,19 +1142,56 @@ The following two queries will work identically:
 <programlisting><![CDATA[
 sparql
 select ?id
-from named <http://myhost/user1.ttl>
+from named <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
   option (get:soft "soft", get:method "GET")
-from named <http://myhost/user2.ttl>
+from named <http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/sioc.ttl>
   option (get:soft "soft", get:method "GET")
-where { graph ?g { ?id a ?o } };
+where { graph ?g { ?id a ?o } }
+limit 10;
 
+id
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/dataspace/person/oerling#this
+http://www.openlinksw.com/mt-tb
+http://www.openlinksw.com/RPC2
+http://www.openlinksw.com/dataspace/oerling#this
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/958
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/958
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/949
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/949
+
+10 Rows. -- 862 msec.
+]]></programlisting>
+<programlisting><![CDATA[
 sparql
 define get:method "GET"
 define get:soft "soft"
 select ?id
-from named <http://myhost/user1.ttl>
-from named <http://myhost/user2.ttl>
-where { graph ?g { ?id a ?o } };
+from named <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
+from named <http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/sioc.ttl>
+where { graph ?g { ?id a ?o } }
+limit 10;
+
+id
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/dataspace/person/oerling#this
+http://www.openlinksw.com/mt-tb
+http://www.openlinksw.com/RPC2
+http://www.openlinksw.com/dataspace/oerling#this
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/958
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/958
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/949
+http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/949
+
+10 Rows. -- 10 msec.
 ]]></programlisting>
 <para>
 It can make text shorter and it is especially useful when the query text comes from client but the parameter should have a fixed value due to security reasons:
@@ -1122,30 +1216,80 @@ The query should find as many users as it is possible and return their names and
 If all data about all users were loaded into the database, the query could be quite simple:
 </para>
 <programlisting><![CDATA[
-sparql select ?id ?fullname ?email
-where {
-    graph ?g {
-        ?id a <Person> ;
-          <FullName> ?fullname ;
-          <EMail> ?email .
-      } };
+SQL>sparql
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+select ?id ?firstname ?nick
+where
+  {
+    graph ?g
+      {
+        ?id rdf:type foaf:Person.
+        ?id foaf:firstName ?firstname.
+        ?id foaf:knows ?fn .
+        ?fn foaf:nick ?nick.
+      }
+   }
+limit 10;
+
+id                                                      firstname  nick
+VARCHAR                                                 VARCHAR    VARCHAR
+_______________________________________________________________________________
+
+http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda    sdmonroe
+http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda    kidehen{at}openlinksw.com
+http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda    alexmidd
+http://myopenlink.net/dataspace/person/abm#this         Alan       kidehen{at}openlinksw.com
+http://myopenlink.net/dataspace/person/igods#this       Cameron    kidehen{at}openlinksw.com
+http://myopenlink.net/dataspace/person/goern#this       Christoph  captsolo
+http://myopenlink.net/dataspace/person/dangrig#this     Dan        rickbruner
+http://myopenlink.net/dataspace/person/dangrig#this     Dan        sdmonroe
+http://myopenlink.net/dataspace/person/dangrig#this     Dan        lszczepa
+http://myopenlink.net/dataspace/person/dangrig#this     Dan        kidehen
+
+10 Rows. -- 80 msec.
 ]]></programlisting>
 <para>
 It is possible to enable IRI dereferencing in such a way that all appropriate resources are loaded during the query execution even if names of some of them are not known a priori.
 </para>
 <programlisting><![CDATA[
-sparql
+SQL>sparql
   define input:grab-var "?more"
   define input:grab-depth 10
   define input:grab-limit 100
-  define input:grab-base-iri "http://myhost/"
-select ?id ?fullname ?email
+  define input:grab-base "http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300"
+  prefix foaf: <http://xmlns.com/foaf/0.1/>
+  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+select ?id ?firstname ?nick
 where {
     graph ?g {
-        ?id a <Person> ;
-          <FullName> ?fullname ;
-          <EMail> ?email .
-	optional { ?id <SeeAlso> ?more } } };
+               ?id rdf:type foaf:Person.
+               ?id foaf:firstName ?firstname.
+               ?id foaf:knows ?fn .
+               ?fn foaf:nick ?nick.
+               optional { ?id rdfs:SeeAlso ?more }
+            }
+}
+limit 10;
+
+id                                                         firstname  nick
+VARCHAR                                                    VARCHAR    VARCHAR
+_______________________________________________________________________________
+
+http://myopenlink.net/dataspace/person/ghard#this          Yrj+?n+?   kidehen
+http://inamidst.com/sbp/foaf#Sean                          Sean       d8uv
+http://myopenlink.net/dataspace/person/dangrig#this        Dan        rickbruner
+http://myopenlink.net/dataspace/person/dangrig#this        Dan        sdmonroe
+http://myopenlink.net/dataspace/person/dangrig#this        Dan        lszczepa
+http://myopenlink.net/dataspace/person/dangrig#this        Dan        kidehen
+http://captsolo.net/semweb/foaf-captsolo.rdf#Uldis_Bojars  Uldis      mortenf
+http://captsolo.net/semweb/foaf-captsolo.rdf#Uldis_Bojars  Uldis      danja
+http://captsolo.net/semweb/foaf-captsolo.rdf#Uldis_Bojars  Uldis      zool
+http://myopenlink.net/dataspace/person/rickbruner#this     Rick       dangrig
+
+10 Rows. -- 530 msec.
+
 ]]></programlisting>
 <para>
 The IRI dereferencing is controlled by the following pragmas:
@@ -1160,31 +1304,77 @@ It is not an error if values of different variables result in same IRI or a vari
 This pragma can be used more than once to specify many IRIs.
 The typical use of this pragma is querying a set of related resources when only one &quot;root&quot; resource IRI is known but even that resource is not loaded.</listitem>
 <programlisting><![CDATA[
-sparql
+SQL>sparql
   define input:storage ""
-  define input:grab-iri <http/myhost/user1.ttl>
+  define input:grab-iri <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
   define input:grab-var "id"
   define input:grab-depth 10
-  define input:grab-base "htp://myhost/"
+  define input:grab-limit 100
+  define input:grab-base "http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300"
 select ?id
-where { graph ?g { ?id a ?o } };
+where { graph ?g { ?id a ?o } }
+limit 10;
+
+id
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/virtrdf-data-formats#default-iid
+http://www.openlinksw.com/virtrdf-data-formats#default-iid-nullable
+http://www.openlinksw.com/virtrdf-data-formats#default-iid-nonblank
+http://www.openlinksw.com/virtrdf-data-formats#default-iid-nonblank-nullable
+http://www.openlinksw.com/virtrdf-data-formats#default
+http://www.openlinksw.com/virtrdf-data-formats#default-nullable
+http://www.openlinksw.com/virtrdf-data-formats#sql-varchar
+http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-nullable
+http://www.openlinksw.com/virtrdf-data-formats#sql-longvarchar
+http://www.openlinksw.com/virtrdf-data-formats#sql-longvarchar-nullable
+
+10 Rows. -- 530 msec.
+
 ]]></programlisting>
   <listitem><emphasis>input:grab-all</emphasis> is the simplest possible way to enable the feature but the resulting performance can be very bad.
 It turns all variables and IRI constants in all graph, subject and object fields of all triple patterns of the query into values for
 <emphasis>input:grab-var</emphasis> and <emphasis>input:grab-iri</emphasis>,
 so the SPARQL processor will dereference everything what might be related to the text of the query.</listitem>
 <programlisting><![CDATA[
-sparql
+SQL>sparql
   define input:grab-all "yes"
   define input:grab-depth 10
   define input:grab-limit 100
-  define input:grab-base-iri "http://myhost/"
-select ?id ?firstname ?email
-where {
-    graph ?g {
-        ?id a <Person> ;
-          <FirstName> ?firstname ;
-          <EMail> ?email . } };
+  define input:grab-base "http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300"
+  prefix foaf: <http://xmlns.com/foaf/0.1/>
+  prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+select ?id ?firstname ?nick
+where
+  {
+    graph ?g
+     {
+       ?id rdf:type foaf:Person.
+       ?id foaf:firstName ?firstname.
+       ?id foaf:knows ?fn .
+       ?fn foaf:nick ?nick.
+     }
+  }
+limit 10;
+
+id                                                      firstname   nick
+VARCHAR                                                 VARCHAR     VARCHAR
+____________________________________________________________________
+
+http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda     sdmonroe
+http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda     kidehen{at}openlinksw.com
+http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda     alexmidd
+http://myopenlink.net/dataspace/person/abm#this         Alan        kidehen{at}openlinksw.com
+http://myopenlink.net/dataspace/person/igods#this       Cameron     kidehen{at}openlinksw.com
+http://myopenlink.net/dataspace/person/goern#this       Christoph   captsolo
+http://myopenlink.net/dataspace/person/dangrig#this     Dan         rickbruner
+http://myopenlink.net/dataspace/person/dangrig#this     Dan         sdmonroe
+http://myopenlink.net/dataspace/person/dangrig#this     Dan         lszczepa
+http://myopenlink.net/dataspace/person/dangrig#this     Dan         kidehen
+
+10 Rows. -- 660 msec.
+
 ]]></programlisting>
   <listitem><emphasis>input:grab-seealso</emphasis> (and synonym <emphasis>input:grab-follow-predicate</emphasis>) specifies an IRI of an predicate similar to foaf:seeAlso.
 Predicates of that sort suggest location of resources that contain more data about predicate subject.
@@ -1196,16 +1386,41 @@ depend on execution plan and they may change from run to run.
 This pragma can be used more than once to specify many IRIs, but this feature is costly.
 Every additional predicate may result in significant number of lookups in the RDF storage, affecting total execution time.</listitem>
 <programlisting><![CDATA[
-sparql
-  define input:grab-iri <http://myhost/user1.ttl>
+SQL>sparql
+  define input:grab-iri <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
   define input:grab-var "id"
   define input:grab-depth 10
-  define input:grab-base "http://myhost/"
-  define input:grab-seealso <ex://SeeAlso>
+  define input:grab-limit 100
+  define input:grab-base "http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300"
+  define input:grab-seealso <foaf:maker>
+    prefix foaf: <http://xmlns.com/foaf/0.1/>
 select ?id
-where {
-    graph ?g {
-        ?id a <ex://Person> } };
+where
+  {
+    graph ?g
+      {
+        ?id a foaf:Person .
+      }
+  }
+limit 10;
+
+id
+VARCHAR
+_______________________________________________________________________________
+
+mailto:somebody@example.domain
+http://localhost:8895/dataspace/person/dav#this
+http://localhost:8895/dataspace/person/dba#this
+mailto:2@F.D
+http://localhost:8895/dataspace/person/test1#this
+http://www.openlinksw.com/blog/~kidehen/gems/rss.xml#Kingsley%20Uyi%20Idehen
+http://art.weblogsinc.com/rss.xml#
+http://digitalmusic.weblogsinc.com/rss.xml#
+http://partners.userland.com/nytrss/books.xml#
+http://partners.userland.com/nytrss/arts.xml#
+
+10 Rows. -- 105 msec.
+
 ]]></programlisting>
   <listitem><emphasis>input:grab-limit</emphasis> should be an integer that is a maximum allowed number of resource retrievals.
 The default value is pretty big (few millions of documents) so it is strongly recommended to set smaller value.
@@ -1220,14 +1435,40 @@ The default value is 1, so the SPARQL processor will retrieve only resources exp
 </listitem>
   <listitem><emphasis>input:grab-base</emphasis> specifies a base IRI used to convert relative IRIs into absolute. The default is an empty string.</listitem>
 <programlisting><![CDATA[
-sparql
+SQL>sparql
+  define input:grab-depth 10
+  define input:grab-limit 100
   define input:grab-var "more"
-  define input:grab-base "http://myhost/"
+  define input:grab-base "http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300"
+  prefix foaf: <http://xmlns.com/foaf/0.1/>
 select ?id
-where {
-    graph ?g {
-        ?id a <ex://Person>
-	optional { ?id <ex://SeeAlso> ?more } } };
+where
+  {
+    graph ?g
+     {
+       ?id a foaf:Person .
+       optional { ?id foaf:maker ?more }
+     }
+  }
+limit 10;
+
+id
+VARCHAR
+_______________________________________________________________________________
+
+mailto:somebody@example.domain
+http://localhost:8895/dataspace/person/dav#this
+http://localhost:8895/dataspace/person/dba#this
+mailto:2@F.D
+http://localhost:8895/dataspace/person/test1#this
+http://www.openlinksw.com/blog/~kidehen/gems/rss.xml#Kingsley%20Uyi%20Idehen
+http://art.weblogsinc.com/rss.xml#
+http://digitalmusic.weblogsinc.com/rss.xml#
+http://partners.userland.com/nytrss/books.xml#
+http://partners.userland.com/nytrss/arts.xml#
+
+10 Rows. -- 115 msec.
+
 ]]></programlisting>
   <listitem><emphasis>input:grab-resolver</emphasis> is a name of procedure that resolve IRIs and determines the HTTP method of retrieval.
 The default is name of <emphasis>DB.DBA.RDF_GRAB_RESOLVER_DEFAULT()</emphasis> procedure that is described below.
