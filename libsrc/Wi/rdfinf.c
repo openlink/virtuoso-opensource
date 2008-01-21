@@ -980,7 +980,7 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
   /* if the dfe is from rdf_quad and inference si on, recoggnize which  combinmation of spo is fixed and add the inf nodes before or after.  Works for table source and hash source  */
   dk_set_t col_preds;
   caddr_t ctx_name = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE);
-  rdf_inf_ctx_t * ctx, **place;
+  rdf_inf_ctx_t * ctx, **place, *sas_ctx;
   rdf_inf_pre_node_t * sas_s = NULL, * sas_o = NULL, * sas_p = NULL;
   caddr_t const_s = NULL, const_p = NULL, const_o = NULL;
   df_elt_t * g_dfe = NULL, * s_dfe = NULL, * p_dfe = NULL, * o_dfe = NULL;
@@ -998,11 +998,14 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
     return;
   ctx_name = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE);
   place = ctx_name ? (rdf_inf_ctx_t**)id_hash_get (rdf_name_to_ric, (caddr_t)&ctx_name) : NULL;
-  if (!place)
-    place = sqlg_rdf_inf_same_as_opt (tb_dfe);
-  if (!place)
+  sas_ctx = sqlg_rdf_inf_same_as_opt (tb_dfe);
+  if (!ctx_name && !sas_ctx)
     return;
-  ctx = *place;
+  if (ctx_name && !place)
+    {
+      sqlc_new_error (tb_dfe->dfe_sqlo->so_sc->sc_cc, "42000", "RDF..", "Inference context %s does not exist", ctx_name);
+    }
+  ctx = place ? *place : sas_ctx;
   col_preds = tb_dfe->_.table.col_preds;
   DO_SET (df_elt_t *, cp, &col_preds)
     {
