@@ -63,6 +63,8 @@ create procedure AB.WA.exec_no_error(in expr varchar, in execType varchar := '',
 
 ------------------------------------------------------------------------------
 --
+------------------------------------------------------------------------------
+--
 create procedure AB.WA.vhost()
 {
   declare
@@ -77,14 +79,29 @@ create procedure AB.WA.vhost()
   iIsDav := 1;
   if (isnull (strstr(sHost, '/DAV')))
     iIsDav := 0;
+
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'ods_rule_addressbook',
+    1,
+    '/addressbook',
+    vector (),
+    0,
+    '/dataspace/all/addressbook',
+    vector (),
+    NULL,
+    NULL,
+    2,
+    303
+  );
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rulelist_addressbook', 1, vector ('ods_rule_addressbook'));
+
   VHOST_REMOVE(lpath    => '/addressbook');
   VHOST_DEFINE(lpath    => '/addressbook',
-               ppath    => concat(sHost, 'www/'),
-               is_dav   => iIsDav,
+               ppath    => '/DAV/VAD/wa/',
+               is_dav   => 1,
                is_brws  => 0,
                vsp_user => 'dba',
-               realm    => 'wa',
-               def_page => 'home.vspx'
+               opts     => vector ('url_rewrite', 'ods_rulelist_addressbook')
              );
   USER_CREATE ('SOAP_ADDRESSBOOK', md5 (cast (now() as varchar)), vector ('DISABLED', 1));
   USER_SET_QUALIFIER ('SOAP_ADDRESSBOOK', 'DBA');
@@ -138,6 +155,16 @@ AB.WA.exec_no_error('
 )
 ;
 
+AB.WA.exec_no_error (
+  'alter type wa_AddressBook add overriding method wa_addition_urls () returns any'
+)
+;
+
+AB.WA.exec_no_error (
+  'alter type wa_AddressBook add overriding method wa_update_instance (in oldValues any, in newValues any) returns any'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 -- wa_AddressBook methods
@@ -162,11 +189,7 @@ create method wa_id () for wa_AddressBook
 --
 create method wa_drop_instance () for wa_AddressBook
 {
-  declare iWaiID integer;
-
-  iWaiID := self.wa_id ();
-  AB.WA.domain_delete (iWaiID);
-  VHOST_REMOVE (lpath => '/addressbook/' || cast (iWaiID as varchar));
+  AB.WA.domain_delete (self.wa_id ());
   (self as web_app).wa_drop_instance ();
 }
 ;
@@ -202,9 +225,6 @@ create method wa_new_inst (in login varchar) for wa_AddressBook
   insert into WA_INSTANCE (WAI_NAME, WAI_TYPE_NAME, WAI_INST, WAI_DESCRIPTION)
     values (self.wa_name, 'AddressBook', self, 'Description');
   iWaiID := self.wa_id ();
-
-  -- make dir into Briefcase home
-  DB.DBA.DAV_MAKE_DIR ('/DAV/home/%s/AddressBook/' || login, iUserID, null, '110100000N');
 
   -- Add a virtual directory for AddressBook - public www -------------------------
   VHOST_REMOVE(lpath    => '/addressbook/' || cast (iWaiID as varchar));
@@ -362,5 +382,32 @@ create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_AddressBook
   userID := (select WAM_USER from WA_MEMBER B where WAM_INST= self.wa_name and WAM_MEMBER_TYPE = 1);
 
   return concat(AB.WA.dav_url2(domainID, userID), 'AddressBook.rdf');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_addition_urls () for wa_AddressBook
+{
+  return vector (
+    vector (null, null, '/addressbook',                    '/DAV/VAD/wa/', 1, 0, null, null, null, null, 'dba', null, null, 0, null, null, vector ('url_rewrite', 'ods_rulelist_addressbook'), 0),
+    vector (null, null, '/dataspace/services/addressbook', '/SOAP/',       0, 0, null, null, null, null,  null, 'SOAP_ADDRESSBOOK', null, 1, vector('Use', 'literal', 'XML-RPC', 'no' ), null, null, 0)
+  );
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_update_instance (in oldValues any, in newValues any) for wa_AddressBook
+{
+  declare domainID, ownerID integer;
+
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = newValues[0]);
+  ownerID := (select WAM_USER from WA_MEMBER B where WAM_INST = oldValues[0] and WAM_MEMBER_TYPE = 1);
+
+  AB.WA.domain_gems_delete (domainID, ownerID, 'AddressBook', oldValues[0] || '_Gems');
+  AB.WA.domain_gems_create (domainID, ownerID);
+
+  return (self as web_app).wa_update_instance (oldValues, newValues);
 }
 ;

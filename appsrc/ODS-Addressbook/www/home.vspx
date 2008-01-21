@@ -34,14 +34,18 @@
         self.ds.vc_reset();
       self.abTag := lcase(get_keyword ('tag', params, ''));
       self.abContact := get_keyword ('id', params, '');
-      if (self.abContact <> '') {
+      if (self.abContact <> '')
+      {
         self.v_id := cast (self.abContact as integer);
-        if (self.v_id = -1) {
-          if (self.account_role not in ('public', 'guest')) {
+        if (self.v_id = -1)
+        {
+          if (self.account_role not in ('public', 'guest'))
+          {
             self.abAction := 'create';
             self.v_name := trim (get_keyword ('name', params, ''));
             self.v_mail := trim (get_keyword ('mail', params, ''));
-            if ((self.v_name = '') and (self.v_mail <> '')) {
+            if ((self.v_name = '') and (self.v_mail <> ''))
+            {
               pos := strchr (self.v_mail, '@');
               if (pos is not null)
                 self.v_name := left (self.v_mail, pos);
@@ -414,7 +418,8 @@
                   declare cmd any;
 
                   cmd := get_keyword ('tbHidden', e.ve_params, '');
-                  if (cmd = 'MyContacts') {
+                if (cmd = 'MyContacts')
+                {
                     self.abScope := cmd;
                     self.abAction := 'browse';
                     self.abTag := '';
@@ -710,7 +715,7 @@
             <?vsp
               if (self.abScope = 'MyContacts') {
                 declare _done, tMin, tMax integer;
-                declare appClass, tClass, tStyle varchar;
+                declare tClass, tStyle varchar;
 
                 select max(T_COUNT),
                        min(T_COUNT)
@@ -719,9 +724,6 @@
                  where T_DOMAIN_ID = self.domain_id
                    and T_COUNT > 0;
 
-                appClass := '';
-                if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                  appClass := 'app';  
                 _done := 0;  
                 for (select T_TAG, T_COUNT
                        from AB.WA.TAGS
@@ -734,7 +736,7 @@
                   tClass := '';
                   if (self.abTag = T_TAG)
                     tClass := 'nolink_a';
-                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', AB.WA.tag_id(T_TAG), T_TAG, T_TAG, appClass, SIOC..addressbook_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
+                  http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', AB.WA.tag_id(T_TAG), T_TAG, T_TAG, 'app', SIOC..addressbook_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
                 }
                 if (not _done)
                   http ('no tags');
@@ -783,7 +785,8 @@
 
                   self.mode_test();
 
-                  if (self.abScope = 'MyContacts') {
+                  if (self.abScope = 'MyContacts')
+                  {
                     AB.WA.xml_set('MyContacts', data, 1);
                   if (not is_empty_or_null (self.abTag))
                     AB.WA.xml_set('tags', data, self.abTag);
@@ -879,7 +882,7 @@
                       <td valign="top">
                         <?vsp
                           declare N, id, did integer;
-                          declare appClass, title, actions, tags, appClass any;
+                          declare title, actions, tags any;
 
                           if ((self.abScope = 'MySharedContacts') and (AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) = -1)) {
                             http (sprintf ('<div style="float: left; font-weight: bold;">%s</div>', AB.WA.stringCut((control as vspx_row_template).te_column_value('P_NAME'), self.abChars)));
@@ -891,10 +894,7 @@
                           title := (control as vspx_row_template).te_column_value('P_NAME');
                           tags := (control as vspx_row_template).te_column_value('P_TAGS');
 
-                          appClass := '';
-                          if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                            appClass := 'app';  
-                          http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\');" title="View %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, appClass, SIOC..addressbook_contact_iri (self.domain_id, id), AB.WA.stringCut(title, self.abChars)));
+                          http (sprintf ('<div style="float: left; font-weight: bold;"><a id="ab_%d" href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\');" title="View %s" class="%s link_ed" about="%U">%s</a></div>', id, id, title, 'app', SIOC..addressbook_contact_iri (self.domain_id, id), AB.WA.stringCut(title, self.abChars)));
                           
                           actions := '';
                           -- actions := sprintf ('<a href="javascript: vspxPost (\'pt_browse\', \'pt_action\', \'view\', \'pt_value\', \'%d\');" title="View %s" class="link_ed">view</a>', id, title);
@@ -903,7 +903,7 @@
                           if (not ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
                             actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="#" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="link_ed">annotate</a>', self.sid, self.realm, id, self.domain_id, self.account_id, title);
                           if (not ((self.account_role in ('public', 'guest')) or (self.abScope = 'MySharedContacts')))
-                          actions := actions || either(equ(actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="javascript: if (confirm (\'Are you sure that you want to delete this item?\')) vspxPost (\'pt_browse\', \'pt_action\', \'delete\', \'pt_value\', \'%d\'); " title="Delete %s" class="link_ed">delete</a>', id, title);
+                            actions := actions || either (equ (actions, ''), '', '&nbsp|&nbsp') || sprintf ('<a href="#" onclick="javascript: window.open (\'invite.vspx?sid=%s&realm=%s&oid=%d\', \'addressbook_inbite_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Invite %s" class="link_ed">invite</a>', self.sid, self.realm, id, title);
 
                           http ('<div style="float: right; text-align: right; padding-right: 0.3em;">');
                           http (actions);
@@ -913,7 +913,7 @@
                             http ('<br style="clear: both;" /><i>Tags: ');
                             tags := split_and_decode (tags, 0, '\0\0,');
                             for (N := 0; N < length(tags); N := N + 1) {
-                              http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, AB.WA.tag_id (tags[N]), tags[N], tags[N], appClass, SIOC..addressbook_tag_iri (self.account_id, tags[N]), tags[N]));
+                              http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, AB.WA.tag_id (tags[N]), tags[N], tags[N], 'app', SIOC..addressbook_tag_iri (self.account_id, tags[N]), tags[N]));
                               if (N <> length(tags)-1)
                                 http (' | ');
                             }
@@ -2178,7 +2178,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" name="ab_cancel" value="Cancel" html_class="form-button">
+              <v:button action="simple" name="ab_cancel" value="Cancel" xhtml_class="form-button">
                 <v:on-post>
                   <![CDATA[
                     self.abAction := 'browse';
@@ -2691,6 +2691,7 @@
                       <th>Name</th>
                       <th>Mail</th>
                       <th>Comment</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                 <?vsp
@@ -2716,6 +2717,12 @@
                           http ('FOAF Owner');
                           http (sprintf ('<input type="hidden" name="cb_item" value="%s" />', self.i_Items[N][1]));
                         }
+                      ?>
+              		  </td>
+              		  <td>
+                      <?vsp
+                        if (not is_empty_or_null (self.i_Items[N][3]))
+                          http (sprintf ('<a href="#" onclick="javascript: window.open (\'invite.vspx?sid=%s&realm=%s&name=%U&mail=%U\', \'addressbook_inbite_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Invite %s" class="link_ed">invite</a>', self.sid, self.realm, self.i_Items[N][2], self.i_Items[N][3], self.i_Items[N][2]));
                       ?>
               		  </td>
                   </tr>

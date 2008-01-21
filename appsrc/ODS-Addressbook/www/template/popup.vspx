@@ -38,6 +38,8 @@
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_role" type="varchar" default="'public'"/>
         <v:variable persist="0" name="accountName" type="varchar" default="'Public User'"/>
+        <v:variable persist="0" name="owner_id" type="integer" default="null" />
+        <v:variable persist="0" name="ownerName" type="varchar" default="null" />
         <v:variable persist="0" name="settings" type="any" />
       </vm:variables>
       <v:on-init>
@@ -53,6 +55,8 @@
           self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
           self.account_role := get_keyword('user_role', aSessInfo, '');
           self.accountName := get_keyword('user_name', aSessInfo, '');
+          self.owner_id := AB.WA.domain_owner_id (self.domain_id);
+          self.ownerName := AB.WA.domain_owner_name (self.domain_id);
           self.settings := AB.WA.settings(self.account_id);
         ]]>
       </v:on-init>

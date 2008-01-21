@@ -144,7 +144,8 @@
         tmp := concat(tmp, sprintf('&%sexpression=%U', prefix, self.v_expression));
       if (not is_empty_or_null(self.v_tags))
         tmp := concat(tmp, sprintf('&%stags=%U', prefix, self.v_tags));
-      if (mode = 'export') {
+      if (mode = 'export')
+      {
         if (cast(self.v_own as integer) <> 1)
           tmp := concat(tmp, sprintf('&%sown=%s', prefix, cast(self.v_own as varchar)));
         if (cast(self.v_shared as integer) <> 1)
@@ -219,7 +220,8 @@
           self.v_keywords := trim (get_keyword ('a_keywords', params, get_keyword ('s_keywords', params, get_keyword ('keywords', params, ''))));
           self.v_expression := trim (get_keyword ('f_expression', params, get_keyword ('type', params, self.v_expression)));
           self.v_tags := trim (get_keyword ('f_tags', params, get_keyword ('tags', params, self.v_tags)));
-          if (get_keyword ('tag', params, '') <> '') {
+          if (get_keyword ('tag', params, '') <> '')
+          {
             if (is_empty_or_null(self.v_tags))
               self.v_tags := '';
             self.v_tags := concat(self.v_tags, ', ', get_keyword ('tag', params));
@@ -240,7 +242,8 @@
       </v:before-data-bind>
       <v:on-post>
         <![CDATA[
-          if (e.ve_button = control) {
+          if (e.ve_button = control)
+          {
             self.a_keywords.ufl_value := '';
             self.f_expression.ufl_value := '';
             self.ds_data := vector ();
@@ -272,7 +275,8 @@
         <div style="padding-bottom: 5px;">
           <?vsp
             http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
-            if (AB.WA.settings_atomVersion(self.settings) = '1.0') {
+            if (AB.WA.settings_atomVersion(self.settings) = '1.0')
+            {
               http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
             } else {
               http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom03%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
@@ -320,26 +324,21 @@
                         <td valign="top">
                           <?vsp
                             declare N, id, domain_id integer;
-                            declare appClass, title, title2, tags any;
+                            declare title, title2, tags any;
 
                             id := (control as vspx_row_template).te_rowset[0];
                             domain_id := (control as vspx_row_template).te_rowset[1];
                             title := (control as vspx_row_template).te_rowset[2];
                             title2 := AB.WA.stringCut (title, self.pChars);
-                            appClass := '';
-                            if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                              appClass := 'app';  
-                            http (sprintf ('<a id="ab_%d" href="%s" title="%s" class="%s" about="%U">%s</a>', id, AB.WA.contact_url (domain_id, id) || sprintf('&sid=%s&realm=%s', self.sid, self.realm), title, appClass, SIOC..addressbook_contact_iri (domain_id, id), title2));
+                            http (sprintf ('<a id="ab_%d" href="%s" title="%s" class="%s" about="%U">%s</a>', id, AB.WA.url_fix (AB.WA.contact_url (domain_id, id), self.sid, self.realm), title, 'app', SIOC..addressbook_contact_iri (domain_id, id), title2));
                             
                             tags := (control as vspx_row_template).te_rowset[3];
-                            if (not is_empty_or_null (tags)) {
-                              appClass := '';
-                              if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                                appClass := 'app';  
+                            if (not is_empty_or_null (tags))
+                            {
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
                               for (N := 0; N < length(tags); N := N + 1) {
-                                http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, tags[N], tags[N], tags[N], appClass, SIOC..addressbook_tag_iri (self.account_id, tags[N]), tags[N]));
+                                http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, tags[N], tags[N], tags[N], 'app', SIOC..addressbook_tag_iri (self.account_id, tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
                               }
@@ -376,18 +375,17 @@
               <div style="margin-left:3px; margin-top:3px;">
                 <?vsp
                   declare N, tLength, tMax, tMin integer;
-                  declare appClass, tStyle varchar;
+                  declare tStyle varchar;
 
-                  appClass := '';
-                  if (cast(get_keyword('app', self.settings, '0') as integer) = 1)
-                    appClass := 'app';  
                   tLength := length(self.ds_tags);
-                  if (tLength > 2) {
+                  if (tLength > 2)
+                  {
                     tMin := self.ds_tags[0][1];
                     tMax := self.ds_tags[1][1];
-                    for (N := 2; N < tLength; N := N + 1) {
+                    for (N := 2; N < tLength; N := N + 1)
+                    {
                       tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
-                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], appClass, SIOC..addressbook_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
+                      http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], 'app', SIOC..addressbook_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
                     }
                   } else {
                     http ('no tags');

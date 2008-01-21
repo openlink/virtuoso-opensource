@@ -20,7 +20,7 @@
 #
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.2.20"
+VERSION="1.2.23"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -54,17 +54,6 @@ else
   RM="rm -f"
 fi
 
-if [ "z$SERVER" = "z" ]  
-then
-    if [ "x$HOST_OS" != "x" ]
-    then
-	SERVER=virtuoso-odbc-t.exe
-    else
-	SERVER=virtuoso
-    fi
-fi
-
-
 rm -rf vad
 
 . $HOME/binsrc/tests/suite/test_fn.sh
@@ -84,11 +73,11 @@ virtuoso_start() {
   starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
   timeout=600
   $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ] 
+  if [ "x$HOST_OS" != "x" ]
   then
-      "$SERVER" +foreground &
+    $BUILD/../bin/virtuoso-odbc-t +foreground &
   else
-      "$SERVER" +wait
+    virtuoso #+wait
   fi
   stat="true"
   while true
@@ -121,7 +110,7 @@ do_command_safe () {
   shift
   shift
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if [ "x$HOST_OS" != "x" -a "z$BUILD" != "z" ]
+  if [ "x$HOST_OS" != "x" ]
         then
           $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
         else
@@ -223,8 +212,8 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.42.00\">" >> $STICKER
-  echo "      <prop name=\"Date\" value=\"2007-04-04 12:00\" />" >> $STICKER
+  echo "    <versions_later package=\"1.43.45\">" >> $STICKER
+  echo "      <prop name=\"Date\" value=\"2008-01-20 12:00\" />" >> $STICKER
   echo "      <prop name=\"Comment\" value=\"An incompatible version of the ODS Framework\" />" >> $STICKER
   echo "    </versions_later>" >> $STICKER
   echo "  </require>" >> $STICKER

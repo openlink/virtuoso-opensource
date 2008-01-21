@@ -353,16 +353,22 @@ AB.WA.exec_no_error('
   create index SK_GRANTS_02 on AB.WA.GRANTS (G_GRANTEE_ID, G_PERSON_ID)
 ');
 
+AB.WA.exec_no_error('
+  alter table AB.WA.GRANTS add constraint FK_AB_GRANTS_01 FOREIGN KEY (G_PERSON_ID) references AB.WA.PERSONS (P_ID) on delete cascade
+');
+
 create procedure AB.WA.grants_update ()
 {
-  if (registry_get ('ab_grants_update') <> '1') {
+  if (registry_get ('ab_grants_update') = '2')
+    return;
+
     delete from AB.WA.GRANTS where not exists (select 1 from AB.WA.PERSONS where P_ID = G_PERSON_ID);
-  }
+
+  registry_set ('ab_grants_update', '2');
 }
 ;
 
 AB.WA.grants_update ();
-registry_set ('ab_grants_update', '1');
 
 -------------------------------------------------------------------------------
 --

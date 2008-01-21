@@ -323,6 +323,33 @@ create procedure AB.WA.xslt_full(
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.url_fix (
+  in S varchar,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare T varchar;
+
+  T := '&';
+  if (isnull (strchr (S, '?')))
+  {
+  T := '?';
+  }
+  if (not is_empty_or_null (sid))
+  {
+    S := S || T || 'sid=' || sid;
+    T := '&';
+  }
+  if (not is_empty_or_null (realm))
+  {
+    S := S || T || 'realm=' || realm;
+  }
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.export_rss_sqlx_int (
   in domain_id integer,
   in account_id integer)
@@ -480,29 +507,29 @@ create procedure AB.WA.domain_gems_create (
 --
 create procedure AB.WA.domain_gems_delete (
   in domain_id integer,
-  in account_id integer,
+  in account_id integer := null,
   in appName varchar := 'AddressBook',
   in appGems varchar := null)
 {
   declare tmp, home, path varchar;
 
+  if (isnull (account_id))
+    account_id := AB.WA.domain_owner_id (domain_id);
+
   home := AB.WA.dav_home (account_id);
   if (isnull (home))
     return;
+  home := home || 'AddressBook/';
 
   if (isnull (appGems))
     appGems := AB.WA.domain_gems_name (domain_id);
-  home := home || appName || '/' || appGems || '/';
+  home := home || appGems || '/';
 
   path := home || appName || '.rss';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
   path := home || appName || '.rdf';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
   path := home || appName || '.atom';
-  DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.ocs';
-  DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
-  path := home || appName || '.opml';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
   declare auth_uid, auth_pwd varchar;
@@ -556,7 +583,13 @@ create procedure AB.WA.domain_owner_name (
 create procedure AB.WA.domain_delete (
   in domain_id integer)
 {
+  delete from AB.WA.PERSONS where P_DOMAIN_ID = domain_id;
+  delete from AB.WA.TAGS where T_DOMAIN_ID = domain_id;
+
+  AB.WA.domain_gems_delete (domain_id);
+
   VHOST_REMOVE(lpath => concat('/addressbook/', cast (domain_id as varchar)));
+
   return 1;
 }
 ;
@@ -614,6 +647,20 @@ create procedure AB.WA.domain_ping (
   for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do {
     ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), AB.WA.sioc_url (domain_id));
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.domain_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U/addressbook/%U', DB.DBA.wa_cname (), AB.WA.domain_owner_name (domain_id), AB.WA.domain_name (domain_id));
+  return AB.WA.url_fix (S, sid, realm);
 }
 ;
 
@@ -696,6 +743,20 @@ create procedure AB.WA.account_mail(
   in account_id integer)
 {
   return coalesce((select U_E_MAIL from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.account_sioc_url (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  declare S varchar;
+
+  S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), AB.WA.domain_owner_name (domain_id));
+  return AB.WA.url_fix (S, sid, realm);
 }
 ;
 
@@ -1003,6 +1064,27 @@ create procedure AB.WA.geo_url (
     if ((not isnull (WAUI_LNG)) and (not isnull (WAUI_LAT)))
       return sprintf ('\n    <meta name="ICBM" content="%.2f, %.2f"><meta name="DC.title" content="%s">', WAUI_LNG, WAUI_LAT, AB.WA.domain_name (domain_id));
   return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.banner_links (
+  in domain_id integer,
+  in sid varchar := null,
+  in realm varchar := null)
+{
+  if (domain_id <= 0)
+    return 'Public AddressBook';
+
+  return sprintf ('<a href="%s" title="%s">%s</a> (<a href="%s" title="%s">%s</a>)',
+                  AB.WA.domain_sioc_url (domain_id, sid, realm),
+                  AB.WA.domain_name (domain_id),
+                  AB.WA.domain_name (domain_id),
+                  AB.WA.account_sioc_url (domain_id, sid, realm),
+                  AB.WA.account_fullName (AB.WA.domain_owner_id (domain_id)),
+                  AB.WA.account_fullName (AB.WA.domain_owner_id (domain_id))
+                 );
 }
 ;
 
