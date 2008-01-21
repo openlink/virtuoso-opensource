@@ -119,6 +119,7 @@
 
 %type<box> blank
 %type<box> blank_block_subj
+%type<box> blank_block_subj_tail
 %type<box> blank_block_seq
 %type<box> blank_block_formula
 %type<box> subject
@@ -293,6 +294,7 @@ object
 	| QNAME
 		{
 		  dk_free_tree (ttlp_arg->ttlp_obj);
+		  ttlp_arg->ttlp_obj = NULL; /* to avoid double free in case of error in ttlp_expand_qname_prefix */
 		  ttlp_arg->ttlp_obj = ttlp_expand_qname_prefix (TTLP_ARG $1);
 		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_obj);
 		  ttlp_triple_and_inf (TTLP_ARG ttlp_arg->ttlp_obj);
@@ -363,6 +365,7 @@ object
 		  dk_free_tree (ttlp_arg->ttlp_obj);
 		  ttlp_arg->ttlp_obj = $1;
 		  dk_free_tree (ttlp_arg->ttlp_obj_type);
+		  ttlp_arg->ttlp_obj_type = NULL; /* to avoid double free in case of error in ttlp_expand_qname_prefix */
 		  ttlp_arg->ttlp_obj_type = ttlp_expand_qname_prefix (TTLP_ARG $3);
 		  ttlp_triple_l_and_inf (TTLP_ARG $1, ttlp_arg->ttlp_obj_type, NULL);
 		}
@@ -389,7 +392,17 @@ blank_block_subj
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_subj_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
 		  ttlp_arg->ttlp_pred_uri = NULL; }
-		predicate_object_list semicolon_opt _RSQBRA
+	  blank_block_subj_tail { $$ = $2; }
+	;
+
+blank_block_subj_tail
+        : predicate_object_list semicolon_opt _RSQBRA
+		{ $$ = ttlp_arg->ttlp_subj_uri;
+		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
+		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
+		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
+                  ttlp_arg->ttlp_pred_is_reverse = (ptrlong)dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); }
+	| _RSQBRA
 		{ $$ = ttlp_arg->ttlp_subj_uri;
 		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
