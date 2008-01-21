@@ -1212,11 +1212,17 @@ _get_ods_fb_settings (out fb_settings any)
    
    declare dba_options,fb_dba_options any;
    
+   dba_options:='';
    declare exit handler for sqlstate '*' {return 0;};
-   select deserialize (blob_to_string(U_OPTS)) into dba_options from SYS_USERS where U_NAME = 'dba';
-   if(get_keyword('FBKey',dba_options,null)is not null)
+     
+   dba_options:= (select US_KEY from WA_USER_SVC where US_U_ID =0 and US_SVC='FBKey');
+--   select deserialize (blob_to_string(U_OPTS)) into dba_options from SYS_USERS where U_NAME = 'dba';
+
+   
+
+   if(length(dba_options) >0)
    {
-     fb_dba_options:=replace(get_keyword('FBKey',dba_options),'\r\n','&');
+     fb_dba_options:=replace(dba_options,'\r\n','&');
      fb_dba_options:=replace(fb_dba_options,'\n','&');
      fb_dba_options:=split_and_decode(fb_dba_options);
    };

@@ -90,14 +90,19 @@ where
 
 create procedure wa_sn_user_ent_set ()
 {
-  if (registry_get ('__wa_sn_user_ent_set_done') = 'done')
+  if (registry_get ('__wa_sn_user_ent_set_done') = 'done_2')
     return;
   for select U_NAME, U_ID from SYS_USERS where U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and U_NAME <> 'nobody' do
     {
       if (not exists (select 1 from sn_person where sne_name = U_NAME))
         insert soft sn_person (sne_name, sne_org_id) values (U_NAME, U_ID);
     }
-  registry_set ('__wa_sn_user_ent_set_done', 'done');
+    
+  insert soft sn_source (sns_id,sns_name) values (1,'ODS');
+  
+  update DB.DBA.sn_related set snr_source=1;
+  
+  registry_set ('__wa_sn_user_ent_set_done', 'done_2');
 };
 
 wa_sn_user_ent_set ();

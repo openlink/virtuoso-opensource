@@ -123,8 +123,8 @@ function selectAllCheckboxes (form, btn, txt)
 			    declare ent any;
 			    while ((ent := adm_next_keyword ('cb1', e.ve_params, inx)) <> 0)
 			      {
-			        insert soft sn_related (snr_from, snr_to, snr_since, snr_serial)
-					values (ent, self.sne_id, now(), 0);
+			        insert soft sn_related (snr_from, snr_to, snr_since, snr_serial, snr_source)
+					values (ent, self.sne_id, now(), 0,1);
 			        delete from sn_invitation where
 			           sni_from = ent and sni_to = self.u_e_mail;
 			      }

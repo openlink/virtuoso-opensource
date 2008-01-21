@@ -401,7 +401,7 @@ function getUrlOnEnter(e)
 ]]>
 
   <div id="ods_bar_loading" style="background-color:#DDEFF9;height: 62px;padding:5px 0px 0px 5px;display:none;">
-     <img src="images/oat/Ajax_throbber.gif" alt="loading..." /><span> Loading... please wait.</span>
+     <img src="/ods/images/oat/Ajax_throbber.gif" alt="loading..." /><span> Loading... please wait.</span>
   </div>
 
   <div id="ods_bar_odslogin" style="display:none;text-align:right">
@@ -1274,7 +1274,7 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
 <!--
       <li><a href="<?V (case when locate('http://',INST_URL) then '' else rtrim(self.odsbar_ods_gpath,'/ods/') end)||wa_expand_url (INST_URL, self.odsbar_loginparams) ?>"><?V wa_utf8_to_wide (INST_NAME) ?></a></li>
 -->
-      <li><a href="<?V wa_expand_url (sprintf('%s%V/%s/%U',self.odsbar_dataspace_path,INST_OWNER,self.odsbar_app_dataspace,INST_NAME), self.odsbar_loginparams) ?>"><?V wa_utf8_to_wide (INST_NAME) ?></a></li>
+      <li><a href="<?vsp http(wa_expand_url (sprintf('%s%V/%s/%s',self.odsbar_dataspace_path,INST_OWNER,self.odsbar_app_dataspace,INST_NAME), self.odsbar_loginparams)); ?>"><?V wa_utf8_to_wide (INST_NAME) ?></a></li>
 <?vsp
           i := i + 1;
 

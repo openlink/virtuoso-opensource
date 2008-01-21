@@ -63,7 +63,7 @@
         <vm:user-details />
         <vm:user-friends />
 			  <vm:condition test="exists-map-key">
-          <div id="user_map" class="user_map"/>
+          <div id="user_map" class="user_map"><span></span></div>
 			  </vm:condition>
       </div> <!-- LT -->
       <div id="RT">
@@ -71,7 +71,9 @@
           <li><vm:foaf-link /></li>
           <li><vm:vcard-link /></li>
           <li><vm:sioc-link /></li>
+<!--
           <li><vm:geo-link /></li>
+-->
 			      <vm:condition test="owner">
             <li><img src="images/icons/edit_16.png" alt="Edit" />
               <vm:user-info-edit-link title="Edit your profile"/></li>

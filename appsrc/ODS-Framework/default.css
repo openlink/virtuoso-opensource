@@ -522,6 +522,14 @@ div.w_my_photos ul {
   padding: 0;
   list-style-type: none}
 
+/* My Calendar */
+
+div.w_my_calendar {}
+div.w_my_calendar ul {
+  font-size: 8pt;
+  list-style-type: none;
+  padding: 0 0 0 4px;}
+
 /* (transient) Message widget */
 
 div.w_message .content_pane { 

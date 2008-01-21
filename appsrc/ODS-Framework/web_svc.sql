@@ -268,3 +268,45 @@ create aggregate WA_APP_PING_TGT_AGG (in _val varchar) returns varchar
 
 insert soft "DB"."DBA"."SYS_SCHEDULED_EVENT" (SE_INTERVAL, SE_LAST_COMPLETED, SE_NAME, SE_SQL, SE_START)
   values (10, NULL, 'ODS NOTIFICATIONS', 'ODS.DBA.SVC_PROCESS_PINGS()', now());
+
+
+create procedure ODS.DBA.apml (in uname int)
+{
+  declare ses, dt, srv, uid any;
+  set isolation='uncomitted';
+  srv := WA_CNAME ();
+  ses := string_output ();
+  dt := DB.DBA.date_iso8601 (dt_set_tz (curdatetime (), 0));
+  uid := -1;
+  http ('<APML xmlns="http://www.apml.org/apml-0.6" version="0.6" >\n', ses);
+  http ('<Head>\n', ses);
+  for select U_ID, U_E_MAIL, U_FULL_NAME from DB.DBA.SYS_USERS where U_NAME = uname do
+    {
+      uid := U_ID;
+      http (sprintf ('<Title>%V</Title>\n', U_FULL_NAME), ses);
+      http (sprintf ('<UserEmail>%V</UserEmail>\n', U_E_MAIL), ses);
+    }
+  http (sprintf ('<DateCreated>%s</DateCreated>\n', dt), ses);
+  http ('</Head>\n', ses);
+  http ('<Body>\n', ses);
+  for select WAM_INST, WAI_ID from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE
+    where WAM_INST = WAI_NAME and WAM_USER = uid and WAM_MEMBER_TYPE = 1 do
+    {
+      http (sprintf ('<Profile name="%V">\n', WAM_INST), ses);
+      http ('<ImplicitData>\n', ses);
+      http ('<Concepts>\n', ses);
+      for select ts_tag, (ts_afreq*100/its_tag_cnt)/100.00 as freq from sioc..tag_stat, sioc..inst_tag_stats
+	where its_inst_id = ts_inst_id and ts_inst_id = WAI_ID do
+	  {
+	    http (sprintf ('<Concept key="%V" value="%f" from="%s" updated="%s" />\n',
+		  ts_tag, freq, srv, dt), ses);
+	  }
+      http ('</Concepts>\n', ses);
+      http ('</ImplicitData>\n', ses);
+      http ('</Profile>\n', ses);
+    }
+  http ('</Body>\n', ses);
+  http ('</APML>', ses);
+  return string_output_string (ses);
+}
+;

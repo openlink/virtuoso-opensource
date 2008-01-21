@@ -215,13 +215,18 @@
   if (not self.vc_is_valid)
     {
 ?>
-<div class="error_msg"><?vsp self.vc_error_summary (); ?></div>
+<div class="error_msg" id="page_error_msg"><?vsp self.vc_error_summary (); ?></div>
 <?vsp
     }
   else if (self.ok_msg is not null)
     {
 ?>
 <div class=""><?V self.ok_msg ?></div>
+<?vsp
+    }else
+    {
+?>
+<div class="error_msg" id="page_error_msg" style="display:none;padding: 0px 0px 0px 5px;">&nbsp;</div>
 <?vsp
     }
 ?>
@@ -2793,6 +2798,7 @@ if (i > 0)
     ?>
     <meta http-equiv="X-XRDS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
     <meta http-equiv="X-YADIS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
+    <link rel="meta" type="application/xml+apml" title="APML 0.6" href="<?V wa_link (1, '/dataspace/'||self.fname||'/apml.xml') ?>"/>
     <!--link rel="alternate" type="application/atom+xml" title="Open Social" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U', self.st_host, self.fname), '+', '%2B')); ?>" />
     <xsl:text>&#10;</xsl:text-->
     <link rel="alternate" type="application/atom+xml" title="Open Social Friends" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U/friends', self.st_host, self.fname), '+', '%2B')); ?>" />

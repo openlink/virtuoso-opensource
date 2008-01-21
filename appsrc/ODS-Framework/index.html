@@ -10,7 +10,7 @@
   <script type="text/javascript">
     var ODSInitArray = new Array();
 
-    var featureList = ["ajax2", "menu", "dimmer", "tab","gmaps"];
+    var featureList = ["ajax2", "menu", "dimmer", "tab","gmaps","instant"];
     function init()
     {
 
@@ -29,6 +29,7 @@
         }
 
      }
+
      function widgetToggle(elm)
      {var _divs=elm.parentNode.parentNode.parentNode.getElementsByTagName('div');
       for(var i=0;i<_divs.length;i++)
@@ -55,6 +56,10 @@
         <div id="ods_logo">
           <a href="/ods/index.html" class="img_anchor"><img class="ods_logo" src="images/odslogosml_new.png" alt="Site Home"/></a>
         </div><!-- #ods_logo -->
+        <div id="SEARCH_C">
+          <input id="search_textbox" type="text" size="10" value="" name="search_textbox"/>
+          <img id="search_img" alt="search icon" src="images/search.png" onclick="this.callback()" />
+        </div>
         <div id="APP_MENU_C" class="app_menu_c">
         </div> <!-- #APP_MENU_C -->
   	  </div> <!-- #LT -->
@@ -80,17 +85,20 @@
               <ul class="menu" id="connections_menu">
   	            <li>
   	              <div class="menu_head">
-                    <a href="home.html">Connections <span class="indicator">(0)</span></a>
+                    <a href="javascript:void(0)">Connections <span class="indicator" id="connectionsCountSpan">(0)</span></a>
   	                <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div>
-  	              <ul class="menu_dd_1st_lvl" style="display: none;">
-  	                <li class="menu_item"><a href="#">Status Changed</a></li>
-  	                <li class="menu_item"><a href="#">Online Now</a></li>  	              
-  	                <li class="menu_item"><a href="#">Last Added</a></li>
-                    <li class="menu_item"><a href="#">Recently Updated</a></li>
-                    <li class="menu_item"><a href="#">All Connections</a></li>
-                    <li class="menu_item"><a href="#">Find People</a></li>
-                    <li class="menu_item"><a href="#">Invite People</a></li>
+  	              <ul class="menu_dd_1st_lvl" style="display: none;" id="connections_menu_items">
+  	                <li class="menu_item"><a href="javascript:void(0)">Online Now</a></li>  	              
+  	                <li class="menu_item"><a href="javascript:void(0)">Status Updates</a></li>
+  	                <li class="menu_separator"></li>
+  	                <li class="menu_item"><a href="javascript:void(0)">Recently Added</a></li>
+                    <li class="menu_item"><a href="javascript:void(0)">Recently Updated</a></li>
+                    <li class="menu_item"><a href="javascript:void(0)">All Connections</a></li>
+  	                <li class="menu_separator"></li>
+                    <li class="menu_item"><a href="javascript:void(0)">Invitations</a></li>
+  	                <li class="menu_separator"></li>
+                    <li class="menu_item"><a href="javascript:nav.loadVspx(nav.expandURL(nav.ods+'search.vspx?page=2'))">Find People</a></li>
                   </ul>
                 </li>
               </ul> <!-- #connections-menu -->
@@ -103,10 +111,11 @@
   	                <img alt="V" class="menu_dd_handle" src="images/menu_dd_handle.png"/>
                   </div>
   	              <ul class="menu_dd_1st_lvl" id="messages_menu_items" style="display:none">
-  	                <li class="menu_item"><a href="javascript:void(0)">Message Inbox</a></li>
-                    <li class="menu_item"><a href="javascript:void(0)">Sent Messages</a></li>
-                    <li class="menu_item"><a href="javascript:void(0)">Notifications</a></li>
-                    <li class="menu_item"><a href="javascript:void(0)">New message</a></li>
+  	                <li class="menu_item" id="mi_inbox"><a href="javascript:void(0)">Message Inbox</a></li>
+                    <li class="menu_item" id="mi_sent"><a href="javascript:void(0)">Sent Messages</a></li>
+                    <li class="menu_item" id="mi_notification"><a href="javascript:void(0)">Notifications</a></li>
+  	                <li class="menu_separator"></li>
+                    <li class="menu_item" id="mi_new_message"><a href="javascript:void(0)">New message</a></li>
                   </ul>
                 </li>
               </ul> <!-- #messages_menu -->
@@ -117,8 +126,41 @@
         </div> <!-- HD -->
 
   	    <div id="APP">
-  	      <div id="messages_div"></div>
+   	      <!-- Messages interface start-->
+  	      <div id="messages_div" style="display: none">
+            <div id="messages_tab_interface" >
+              <div class="widget w_contact">
+                <div class="w_content">
+                  <ul class="tab_bar">
+                    <li id="msgT1"><a href="javascript:void(0)">Inbox</a></li>
+                    <li id="msgT2"><a href="javascript:void(0)">Sent</a></li>
+                    <li id="msgT3"><a href="javascript:void(0)">Conversation</a></li>
+                    <li id="msgT4"><a href="javascript:void(0)">Notifications</a></li>
+                    <li id="msgT5"><a href="javascript:void(0)">New Message</a></li>
+                  </ul>
+                  <div class="tab_deck">
+                    <div id="msgPCtr" class="tab_page">
+                    </div>
+                    <div id="msgP1" class="tab_page">
+                    </div> <!-- tab_page -->
+                    <div id="msgP2" class="tab_page">
+                    </div> <!-- tab_page -->
+                    <div id="msgP3" class="tab_page">
+                    </div> <!-- tab_page -->
+                    <div id="msgP4" class="tab_page">
+                    </div> <!-- tab_page -->
+                    <div id="msgP5" class="tab_page">
+                    </div> <!-- tab_page -->
+                  </div>
+                </div>
+              </div>
+            </div>
+  	      </div>
+   	      <!-- Messages interface end-->
+  	      
           <iframe id="vspxApp" style="width:100%;height:500px;border:0px;display:none;"></iframe>
+
+  	      <!-- Profile Page start-->
   	      <div id="u_profile_l" style="display:none;">
   	        <div id="user_info_w" class="widget user_info_w">
   	          <div class="w_title" id="userProfilePhotoName"><h3></h3></div>
@@ -128,13 +170,12 @@
                   <div class="prof_user_gems" id="profileUserGems">
                     <div class="gem"><a href="javascript:void(0)" target="_blank"><img src="images/icons/foaf.png" alt="FOAF"/></a></div>
                     <div class="gem"><a href="javascript:void(0)" target="_blank"><img src="images/icons/sioc_button.png" alt="SIOC"/></a></div>
-                    <div class="gem"><a href="javascript:void(0)" target="_blank"><img src="http://i.geourl.org/80x15/simple.png"/></a></div>
                     <div class="gem"><a href="javascript:void(0)" target="_blank"><img src="images/icons/vcard.png" alt="VCARD"/></a></div>
                   </div>
                 </div>
-                <ul class="prof_user_commands" style="display:none">
-                  <li><a href="javascript:void(0)" onclick="conn_del_dlg_show()">Delete connection</a></li>
-                  <li><a href="javascript:void(0)">Send a message</a></li>
+                <ul class="prof_user_commands" id="profile_user_actions" style="display:none;">
+                  <li><a href="javascript:void(0)" id="profileConnAction">Connection/Disconnect</a></li>
+                  <li><a href="javascript:void(0)" id="profileSendMsg">Send a message</a></li>
                   <li><a href="javascript:void(0)">Browse data space</a></li>
                   <li><a href="javascript:void(0)">Connection graph</a></li>
                 </ul>
@@ -291,11 +332,344 @@
               </div>
             </div>
           </div> <!-- #u_home_r -->
+          
+   	      <!-- Profile Page end-->
+   	      <!-- Connections Page start-->
+          <div id="contacts_interface" style="display:none;">
+            <div class="widget w_contact">
+              <div class="w_content">
+                <ul class="tab_bar">
+                  <li id="csiT1"><a href="javascript:void(0)">Connections List</a></li>
+                  <li id="csiT2"><a href="javascript:void(0)">Status Updates</a></li>
+                </ul>
+                <div class="tab_deck">
+                  <div id="cisPCtr" class="tab_page">
+                  </div>
+                  <div id="cisP1" class="tab_page">
+                    &nbsp;&nbsp;Show&nbsp;<select id="connections_filter_select" onchange="dd('');">
+                         <option value="0" selected>All Friends</option>
+                         <option value="1">Recently Updated</option>
+                         <option value="3">Recently Added</option>
+                         <option value="5">Online Now</option></select>
+                    
+                    <div id="connections_list" style="text-align:center">
+                    </div>
+                    <div id="connectionsTemplate" style="display:none;">
+                    <table border="0" cellspacing="0" width="98%">
+                    <tr><td class="image" style="width:150px;"><img src="#connImgSRC#" alt=""  class="" style="width:100px;height:125px;cursor:pointer"/></td>
+                        <td class="info">
+                         <table border="0" cellpadding="0" cellspacing="0" width="98%"><tr>
+                          <td class="label name" style="width:100px">Name:</td><td class="name" style="text-align:left; padding-left:5px"><span style="cursor:pointer">#connProfileFullName#</span> </td>
+                         </tr></table>
+                        </td>
+                        <td class="actions" style="width:120px;text-align:left;">
+                          <a id="#sendMsg#" style="cursor:pointer;text-decoration:underline;">Send Message</a><br>
+                          <a id="#viewConnections#" style="cursor:pointer;text-decoration:underline;">View Connections</a><br>
+                          <a id="#doConnection#" style="cursor:pointer;text-decoration:underline;">Connection/Disconnect</a>
+                       </td>
+                    </tr></table>
+                    </div>
+                    
+                  </div> <!-- tab_page -->
+                  <div id="cisP2" class="tab_page">
+                  </div> <!-- tab_page -->
+                </div>
+              </div>
+            </div>
+          </div>
+   	      <!-- Connections Page end-->
+
+  	      <!-- Invitation Page start-->
+          <div id="invitations_C" style="display:none;">
+            <h1><img src="images/odslogo_200x25.png" style="padding-top:5px"><br/>Welcome to <span id="ivitaitons_connection_full_name_1"></span>'s network</h1>
+            <div class="profile">
+              <img src="images/profile_small.png" width="105px" alt="" id="ivitaitons_connection_photo">
+              <p>This is a personal invitation from <span id="ivitaitons_connection_full_name_2"></span>. <!-- You currently have 2 degrees of separation. --></p>
+              <ul class="profile">
+                <li><span class="label">City</span> <span class="value" id="ivitaitons_connection_city">Amsterdam</span></li>
+                <li><span class="label">Country</span> <span class="value" id="ivitaitons_connection_country">Netherlands</span></li>
+                <li><span class="label">Connections</span> <span class="value" id="ivitaitons_connection_conncount"></span></li>
+<!--                <li><span class="label">Connection path</span> <span class="value"><a href="#">Kingsley</a>&gt;<a href="#">Yrjänä</a></span></li> -->
+                 
+              </ul>
+            </div>
+            <div class="actions">
+              <h2>What now?</h2>
+              <p>Have a look and decide if you want to connect with <span id="ivitaitons_connection_full_name_3"></span>. People directly connected have access to more information about each other.</p>
+              <ul>
+                <li><a href="javascript:void(0)" id="ivitaitons_connection_profileA">View <span id="ivitaitons_connection_full_name_4"></span>'s Profile</a></li>
+                <li><a href="javascript:void(0)" id="ivitaitons_connection_acceptA">Accept invitation and add <span id="ivitaitons_connection_full_name_5"></span> in your network.</a></li>
+                <li><a href="javascript:void(0)" id="ivitaitons_connection_rejectA">Reject invitation.</a></li>
+              </ul>
+              <p class="info"><img class="" alt="info" src="images/info.png"> It is usually a good idea to connect only with people you know or share interest with.</p>
+            </div>
+            <div class="explanation">
+              <h2>Why this message?</h2>
+              <p>This message is part of myopenlink.net social network connection process and was sent because Yrjänä found <a href="javascript:void(0)" id="ivitaitons_connection_ownprofileA">your profile</a>
+          and asked to connect with you directly. If you choose to ignore this message, the invitation will expire automatically within 7 days. During
+          this period you can always accept or reject the invitation by signing in to myopenlink.net and navigating to the incoming invitations page.</p>
+             <p>If you choose to reject the invitation, you can also choose to block this user from sending any invitations to you in the future.</p>
+<!--             
+             <p>You may also turn off email notifications such as this by visiting your <a href="javascript:void(0)">profile settings</a></p>
+-->
+            </div>
+          </div>
+  	      <!-- Invitation Page end-->
+
+  	      <!-- General search start-->
+
+          <div id="generalSearch_C" style="display:none">
+                    <div class="app_cmd_row"/>
+                    <div class="search_params_box">
+                      <div class="lt">
+                        <h2>Search</h2>
+                        <input type="text" id="search_textbox_searchC" /> <button id="search_button_searchC" onclick="this.callback()">Search</button><br/>
+                        <a href="javascript:void(0)" onclick="this.callback();"id="advanced_search_searchC">Advanced search...</a><br/>
+                      </div> <!-- .lt -->
+                      <!--div id="search_focus_window">
+                        <h3>Search focus <button>Reset</button></h3>
+                        <ul id="search_selector" style="" class="oat_tree" style="display:none">
+                          <li>People...
+                            <ul>
+                              <li><input type="checkbox" id="cb_13" /><label for="cb_13">My Connections</label></li>
+                              <li><input type="checkbox" id="cb_14" /><label for="cb_14">My Contacts</label></li>
+                            </ul>
+                          </li>
+                          <li><input type="checkbox" id="cb_2"/><label for="cb_2">Places</label></li>
+                          <li><input type="checkbox" id="cb_3"/><label for="cb_3">Photos</label></li>
+                          <li><input type="checkbox" id="cb_4"/><label for="cb_4">Things</label></li>
+                          <li>By Application...
+                            <ul>
+                              <li><input type="checkbox" id="cb_5" /><label for="cb_5">Weblog</label></li>
+                              <li><input type="checkbox" id="cb_6" /><label for="cb_6">Briefcase</label></li>
+                              <li><input type="checkbox" id="cb_7" /><label for="cb_7">Gallery</label></li>
+                              <li><input type="checkbox" id="cb_8" /><label for="cb_8">Calendar</label></li>
+                              <li><input type="checkbox" id="cb_9" /><label for="cb_9">Mail</label></li>
+                              <li><input type="checkbox" id="cb_10" /><label for="cb_10">Feeds</label></li>
+                              <li><input type="checkbox" id="cb_11" /><label for="cb_11">Polls</label></li>
+                              <li><input type="checkbox" id="cb_12" /><label for="cb_12">Addresses</label></li>
+                            </ul>
+                          </li>
+                        </ul>
+                      </div--> <!-- rt -->
+                    </div> <!-- .search_params_box -->
+         	          <div style="width:100%">
+                    <ul class="tab_bar">
+                      <li id="searcT1"><a href="javascript:void(0)">Listing</a></li>
+                      <li id="searcT2"><a href="javascript:void(0)">Map</a></li>
+                    </ul>
+                    <div id="searchPCtr" class="tab_page tab_deck"></div>
+                    <div id="searchP1" class="tab_page">
+                      <div id="search_lst" class="tab_page">
+                        <div class="paged_listing">
+                          <div class="search_lst_view_params">
+                            <label for="search_lst_sort" class="inline_select">View</label> 
+                            <select id="search_lst_sort">
+                              <option value="sort_order=desc">By Date, Newest First</option>
+                              <option value="sort_order=asc">By Date, Oldest First</option>
+                              <option value="sort_by_score=1&sort_order=asc">By Score, Ascending</option>
+                              <option value="sort_by_score=1&sort_order=desc">By Score, Descending</option>
+                            </select>
+                            <label for="search_focus_sel" class="inline_select">Focus on</label>
+                            <select id="search_focus_sel" onChange="this.callback()">
+                              <option value="on_all">Everything</option>
+                              <option value="on_people">People</option>
+                              <option value="on_wikis">Wikis</option>
+                              <option value="on_blogs">Weblogs</option>
+                              <option value="on_news">Feeds</option>
+                              <option value="on_bookmark">Bookmarks</option>
+                              <option value="on_omail">Mail</option>
+                              <option value="on_polls">Polls</option>
+                              <option value="on_addressbook">AddressBook</option>
+                              <option value="on_calendar">Calendar</option>
+                              <option value="on_nntp">Discussion</option>
+                              <option value="on_apps">Application descriptions</option>
+                              <option value="on_dav">DAV</option>
+                              <option value="on_advanced">Advanced...</option>
+                            </select>
+                            <a href="javascript: void(0)" onclick="this.callback();" id="toggleSelect">Toggle select</a> 
+                            <a href="javascript:void(0)"  onclick="this.callback();"  id="tagSelectedToggle">Tag selected...</a> 
+                            <img src="images/icons/rss-icon-12.png" alt="RSS" id="searchPermalinkImg" style="cursor:pointer"/> <a href="javascript:void(0)" id="searchPermalinkA">Permalinks...</a>
+                          </div>
+                          <div class="pager" style="text-align:left;display:none;" id="search_focus_advanced">
+                              <input id="cb_people" type="checkbox" tabindex="4" checked="checked" value="on_people" name="cb_people"/><label for="cb_people">People</label>
+                              <input id="cb_apps" type="checkbox" tabindex="9" checked="checked" value="on_apps" name="cb_apps"/><label for="cb_apps">Application descriptions</label>
+                              <input id="cb_dav" type="checkbox" tabindex="8" checked="checked" value="on_dav" name="cb_dav"/><label for="cb_dav">DAV</label>
+                              <input id="cb_blogs" type="checkbox" tabindex="6" checked="checked" value="on_blogs" name="cb_blogs"/><label for="cb_blogs">Weblog</label>
+                              <input id="cb_news" type="checkbox" tabindex="5" checked="checked" value="on_news" name="cb_news"/><label for="cb_news">Feeds</label>
+                              <input id="cb_wikis" type="checkbox" tabindex="7" checked="checked" value="on_wikis" name="cb_wikis"/><label for="cb_wikis">Wiki</label>
+                              <input id="cb_omail" type="checkbox" tabindex="10" checked="checked" value="on_omail" name="cb_omail"/><label for="cb_omail">Mail</label>
+                              <input id="cb_bookmark" type="checkbox" tabindex="11" checked="checked" value="on_bookmark" name="cb_bookmark"/><label for="cb_bookmark">Bookmarks</label>
+                              <input id="cb_polls" type="checkbox" tabindex="13" checked="checked" value="on_polls" name="cb_polls"/><label for="cb_polls">Polls</label>
+                              <input id="cb_addressbook" type="checkbox" tabindex="14" checked="checked" value="on_addressbook" name="cb_addressbook"/><label for="cb_addressbook">AddressBook</label>
+                              <input id="cb_calendar" type="checkbox"tabindex="15" checked="checked" value="on_calendar" name="cb_calendar"/><label for="cb_calendar">Calendar</label>
+                              <input id="cb_nntp" type="checkbox" tabindex="12" checked="checked" value="on_nntp" name="cb_nntp"/><label for="cb_nntp">Discussion</label>
+                          </div>            
+                          <div class="pager" style="text-align:left;display:none;" id="do_tag_block">
+                            <input id="tagsInput" type="text" style="width: 200px;margin:2px 0px 0px 5px" onkeyup="this.doTagToggle()" onfocus="this.doTagToggle()">
+                            <img title="Add Tag" alt="Add Tag" src="images/icons/add_16_gr.png"  style="vertical-align:text-bottom;border:0px;" onclick="this.callback()" id="do_tag">
+                          </div>
+                          <div class="pager" style="text-align:left;display:none;" id="search_gems_block">
+                              <a rel="xml" href="javascript:void(0)"><img border="0" title="rss" alt="rss" src="images/orange-icon-16.gif"/> RSS</a>
+                              <a rel="atom" href="javascript:void(0)"><img border="0" title="atom" alt="atom" src="images/blue-icon-16.gif"/> Atom</a>
+                              <a rel="rdf" href="javascript:void(0)"><img border="0" title="rdf" alt="rdf" src="images/rdf-icon-16.gif"/> RDF</a>
+                              <a rel="xbel" href="javascript:void(0)"><img border="0" title="xbel" alt="xbel" src="images/blue-icon-16.gif"/> XBEL</a>
+                              <a rel="opensearch" href="javascript:void(0)"><img border="0" title="opensearch" alt="rss" src="images/blue-icon-16.gif"/> OpenSearch</a>
+                              <a rel="gdata" href="javascript:void(0)"><img border="0" title="GData" alt="GData" src="images/blue-icon-16.gif"/> GData</a>
+                         </div>
+                          <div class="pager" id="top_pager">Results 0: 
+                            <span><img src="images/skin/pager/p_first_gr.png" alt="First page"/>first</span>
+                            <span><img src="images/skin/pager/p_prev_gr.png" alt="Previous page"/>prev</span>
+                            <span><img src="images/skin/pager/p_next_gr.png" alt="Next page"/>next</span>
+                            <span><img src="images/skin/pager/p_last_gr.png" alt="Last page"/>last</span>
+                          </div> <!-- pager -->
+                          <ul class="search_listing" id="search_listing">
+                            <li><div class="hit person"></div></li>
+
+<!--
+                            <li>
+                              <div class="hit person">
+                                <input type="checkbox" class="sel_ckb"/>
+                                <div class="person_box">
+                                  <img alt="Kingsley" src="i/people/kingsley_t.png" class="person_tnail"/><br/>
+                                  <div class="conn_info"><a href="#">Kingsley</a></div>
+                                </div>
+                                <div class="person_summary_ctr vcard">
+                                  <h4 class="fn">Kingsley <span class="n">Idehen</span></h4>
+                                  <div class="adr">
+                                    <span class="locality">Lexington</span>, <span class="state">MA</span>, <span class="country">USA</span>
+                                  </div>
+                                </div>
+                                <div class="cmds"><button>Write Message</button><button>Delete Connection</button></div>
+                              </div>
+                            </li>
+                            <li>
+                              <div class="hit wiki_article">
+                                <input type="checkbox" class="sel_ckb"/>
+                                <div class="hit_ctr">
+                                  <img src="images/icons/ods_wiki_16.png" class="app_icon"/>
+                                  <h4><a href="#">ODS Menu Spec Revision 0.9</a></h4>
+                                  <p class="excerpt">"ODS Menu system revision was needed to improve control flow and accessibility of the ODS system and to facilitate modern interface using AJAX techniques and the OpenLink Ajax Toolkit. The aims..." <a href="="#"">More...</a></p>
+                                  <div class="props">
+                                    Updated <span class="date">Yesterday</span> by <a href="#">Yrjänä Rankka</a><br/>                        
+                                  </div>
+                                </div>
+                              </div>
+                            </li>
+                            <li>
+                              <div class="hit message">
+                                <input type="checkbox" class="sel_ckb"/>
+                                <div class="person_box">
+                                  <img alt="Dipsy" src="i/people/dipsy.jpg" class="person_tnail"/><br/>
+                                  <div class="conn_info"><a href="#">Dipsy</a></div>
+                                </div>
+                                <div class="msg_summary">
+                                  <h4><a href="#">New OAT demo page</a></h4>
+                                  <p class="excerpt">"All, See <a href="http://oat.openlinksw.com">OAT demo</a> and tell me what to do with it? I'm Uh-Ohing all over the place but it won't do me any..." <a href="="#"">More...</a></p>
+                                  <div class="props">
+                                    Received <span class="date">Yesterday at 12:32</span>                      
+                                  </div>
+                                  <div class="cmds"><button>Reply</button><button>Forward</button></div>
+                                </div>
+                              </div>
+                            </li>
+-->          
+                          </ul>
+                          <div class="pager" id="bottom_pager">Results 0: 
+                            <span><img src="images/skin/pager/p_first_gr.png" alt="First page"/>first</span>
+                            <span><img src="images/skin/pager/p_prev_gr.png" alt="Previous page"/>prev</span>
+                            <span><img src="images/skin/pager/p_next_gr.png" alt="Next page"/>next</span>
+                            <span><img src="images/skin/pager/p_last_gr.png" alt="Last page"/>last</span>
+                          </div> <!-- pager -->
+          
+                        </div>
+                      </div> <!-- .tab_page -->
+                      </div> <!-- .tab_page --> 
+                     <div id="searchP2" class="tab_page"><div id="searchMap"></div></div>
+                    </div> <!-- .tab_deck -->
+                </div>          
+                    <div id="connectionsSearch_C" style="display:none;">
+                    <table>
+                        <colgroup>
+                          <col width="20%" span="1"/>
+                          <col width="10%" span="1"/>
+                          <col width="20%" span="1"/>
+                          <col width="70%" span="1"/>
+                        </colgroup>
+                        <tbody><tr>
+                         <td class="ctl_title">First Name</td>
+                         <td align="left"><input type="text" value="" name="us_first_name"/></td>
+                         <td class="ctl_title">Last Name</td>
+                         <td align="left"><input type="text" value="" name="us_last_name"/></td>
+                        </tr>
+                        <tr>
+                         <td class="ctl_title">Keywords</td>
+                         <td align="left">
+                                <input type="text" value="borislav" name="us_keywords"/>
+                               </td>
+                         <td class="ctl_title">Tags</td>
+                         <td align="left">
+                                <input type="text" value="" name="us_tags"/>
+                               </td>
+                        </tr>
+                        <tr>
+                          <td class="ctl_title">Within</td>
+                         <td align="left">
+                          <select name="us_within_friends"><option selected="selected" value="0">All</option><option value="1">Friends</option><option value="2">Friends of Friends</option></select>
+                         </td>
+                         <td class="ctl_title">Within members of</td>
+                         <td align="left">
+                          <select name="us_within_members"><option selected="selected" value=""><All Instances></option><option value="4">1234's AddressBook</option><option value="7">Borislav Dimitrov's AddressBook</option><option value="9">Borislav Dimitrov's Feed Manager</option><option value="10">Borislav Dimitrov's Gallery</option><option value="52">Borislav Dimitrov's Instant Messenger</option><option value="66">Borislav Dimitrov's Mail</option><option value="16">Borislav Dimitrov's Polls</option><option value="12">Borislav's Bookmarks</option><option value="13">Borislav's Briefcase</option><option value="8">Borislav's Community</option><option value="45">Borislav's Community of Sofia</option><option value="46">Borislav's Feeds</option><option value="11">Borislav's Weblog</option><option value="19">BorislavWiki</option><option value="47">BorislavWiki2</option><option value="1">Community blog</option><option value="3">Doc</option><option value="2">Main</option><option value="5">Rosen Dimitrov's AddressBook</option><option value="6">Rosen Dimitrov's Bookmarks</option><option value="14">Rossen's Weblog</option><option value="17">bdimitrov1's Community</option><option value="15">borislavdimitrov's AddressBook</option><option value="22">org's Community</option><option value="23">org's Gallery</option></select>
+                         </td>
+                        </tr>
+                        <tr>
+                         <td class="ctl_title">Within Distance</td>
+                          <td align="left" colspan="3">
+                           
+                        <input type="text" value="" name="us_dist_km"/>
+                        <select name="us_dist_kind"><option selected="selected" value="0">km</option><option value="1">miles</option></select>
+                        of Lat: 
+                        <input type="text" value="" name="us_dist_pt_lat"/>
+                        Lng: 
+                        <input type="text" value="" name="us_dist_pt_lng"/>
+                        </td>
+                        </tr>
+                        <tr>
+                         <td class="ctl_title">Order by</td>
+                         <td align="left">
+                          <select name="us_oby"><option selected="selected" value="0">Name</option><option value="1">Relevance</option><option value="2">Distance</option><option value="3">Time</option></select>
+                         </td>
+                         <td class="ctl_title">Output as</td>
+                         <td align="left">
+                          <select name="us_out_as"><option value="Report">Report</option><option selected="selected" value="Map">Map</option></select>
+                         </td>
+                        </tr>
+                        <tr>
+                         <td class="ctl_title">Max rows</td>
+                         <td align="left">
+                          <input type="text" value="100" name="us_max_rows"/>
+                         </td>
+                        </tr>
+                        <tr>
+                         <td> </td>
+                         <td colspan="3">
+                          <span class="fm_ctl_btn">
+                           <input type="submit" value="Search" name="user_search"/>
+                          </span>
+                         </td>
+                        </tr>
+                       </tbody>
+                     </table>
+                    </div><!-- connectionsSearch_C -->   
+          
+          </div><!-- generalSearch_C -->   
+  	      <!-- General search end-->
+
         </div> <!-- #APP -->
         <div id="FT">
           <img alt="Powered by OpenLink Virtuoso" src="images/skin/default/virt_power_no_border.png"/>
           <div id="FT_RC">
-            Copyright &copy; 2007 OpenLink Software<br/>
+            Copyright &copy; 2008 OpenLink Software<br/>
             <a href="#">About</a> <a href="#">Privacy</a> <a href="#">FAQ</a> <a href="#">Developers</a>
           </div><!-- #FT_RC -->
         </div> <!-- #FT -->
@@ -370,14 +744,7 @@
       <div class="oat_anchor_footer">
       </div> <!-- .oat_anchor_footer -->
     </div> <!-- #a_tmpl_1 -->
-<!--
-    <div id="loginDiv" class="login_dialog" style="display:none;">
-      <div id="loginTitle" class="dlg_title"><h3>Sign In</h3></div>
-        <div id="loginCtrl">
-        </div>
-      </div>
-    </div> <!-- #loginDiv -->
--->
+
     <div id="login_page" style="display:none">
     <span id="loginCloseBtn">X</span>
       <h1 class="page_title"><!--balek.zonk.net--></h1>
@@ -389,7 +756,7 @@
       <div id="form_col">
         <div id="login_form_ctr">
           <h2>Please identify yourself</h2>
-          <div id="login_form">
+          <div id="login_form" style="padding: 10px 0px 0px 0px;">
             <ul class="tab_bar">
               <li id="loginT1" class="tab_selected"><a href="javascript:void(0)">ODS</a></li>
               <li id="loginT2" ><a href="javascript:void(0)">OpenID</a></li>
@@ -414,6 +781,10 @@
        <div id="loginErrDiv"></div> 
       </div> <!-- form_col -->
     </div> <!-- login_page -->
+
+
+
+
 
  </body>
 </html>

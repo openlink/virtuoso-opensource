@@ -557,14 +557,14 @@ create procedure ODS_USER_LIST (
       sql := 'sparql
               PREFIX sioc: <http://rdfs.org/sioc/ns#>
               PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-              SELECT ?title, ?serviceEndpoint, ?serviceProtocol
+              SELECT ?title, ?service_definition
                 FROM <%s>
                WHERE {
                        ?forum foaf:maker <%s>.
                        ?forum sioc:id ?title.
                        ?forum sioc:has_service ?svc.
-                       ?svc sioc:service_endpoint ?serviceEndpoint.
-                       OPTIONAL {?svc sioc:service_protocol ?serviceProtocol}.
+                       ?svc sioc:service_definition ?service_definition.
+                       ?svc sioc:service_protocol "SOAP".
                      }
                ORDER BY ?title';
 

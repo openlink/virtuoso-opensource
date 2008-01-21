@@ -80,6 +80,21 @@ create procedure DB.DBA.ODS_ITEM_PAGE (in par varchar, in fmt varchar, in val va
 }
 ;
 
+create procedure DB.DBA.ODS_ATOM_PAGE (in par varchar, in fmt varchar, in val varchar)
+{
+  declare ret any;
+  if (par = 'inst')
+  {
+    if (length (val))
+      val := split_and_decode (val)[0];
+    ret := cast ((select WAI_ID from WA_INSTANCE where WAI_NAME = val) as varchar);
+  } else {
+    ret := sprintf ('%s', val);
+  }
+  return sprintf (fmt, ret);
+}
+;
+
 create procedure DB.DBA.ODS_WIKI_ITEM_PAGE (in par varchar, in fmt varchar, in val varchar)
 {
   declare ret any;
@@ -132,6 +147,7 @@ create procedure DB.DBA.ODS_PHOTO_ITEM_PAGE (in par varchar, in fmt varchar, in 
     }
   else
     {
+     --dbg_obj_print('val',val);
      ret := sprintf ('%s', val);
     }
 
@@ -139,10 +155,29 @@ create procedure DB.DBA.ODS_PHOTO_ITEM_PAGE (in par varchar, in fmt varchar, in 
 }
 ;
 
+create procedure DB.DBA.ODS_PHOTO_GEMS_PAGE (in par varchar, in fmt varchar, in val varchar)
+{
+
+  declare ret any;
+  if (par = 'inst')
+    {
+     if (length (val))
+      val := split_and_decode (val)[0];
+      ret := (select WAM_HOME_PAGE from WA_MEMBER where WAM_INST = val and WAM_MEMBER_TYPE = 1);
+    }
+  else -- item
+    {
+      ret := sprintf ('%s', val);
+    }
+  return sprintf (fmt, ret);
+
+}
+;
+
 create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varchar)
 {
   declare iri, res any;
-  dbg_obj_print (current_proc_name (), par, val);
+--  dbg_obj_print (current_proc_name (), par, val);
   if (par = 'page' or par = 'ext')
     return sprintf (fmt, val);
   else if (par = '*accept*')
@@ -195,6 +230,14 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_html', 1,
     NULL,
     'X-XRDS-Location: yadis.xrds\r\n');
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_yadis', 1,
+    '/dataspace/(person/|organization/)?([^/#\\?]*)', vector('dummy', 'uname'), 1,
+    '/ods/yadis.vsp?uname=%U', vector('uname'),
+    NULL,
+    'application/xrds.xml',
+    2,
+    NULL);
+
 -- Application instances page as HTML
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apps_html', 1,
     '/dataspace/((?!person)(?!organization)(?!all)[^/]*)/([^\\./\\?]*)/?', vector('uname', 'app'), 2,
@@ -214,6 +257,14 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_all_apps_html', 1,
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_yadis', 1,
     '/dataspace/([^/]*)/yadis.xrds', vector('uname'), 1,
     '/ods/yadis.vsp?uname=%U', vector('uname'),
+    NULL,
+    NULL,
+    2);
+
+-- APML file
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apml', 1,
+    '/dataspace/([^/]*)/apml.xml', vector('uname'), 1,
+    '/ods/apml.vsp?uname=%U', vector('uname'),
     NULL,
     NULL,
     2);
@@ -288,6 +339,15 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html', 1,
     NULL,
     2);
 
+-- Wiki atop-pub is special case
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_atom_html', 1,
+    '/dataspace/([^/]*)/wiki/([^/]*)/atom-pub([^\\?]*)',
+    vector('uname', 'inst', 'action'), 3,
+    '/wiki/Atom/%s%s', vector('inst', 'action'),
+    'DB.DBA.ODS_ATOM_PAGE',
+    NULL,
+    2);
+
 -- Photo item is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_photo_item_html', 1,
     '/dataspace/([^/]*)/photos/([^/]*)/([^/\\?]*)',
@@ -296,6 +356,14 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_photo_item_html', 1,
     'DB.DBA.ODS_PHOTO_ITEM_PAGE',
     NULL,
     2);
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_photo_gems_html', 1,
+    '/dataspace/([^/]*)/photos/([^/]*)/(([^/\\?]*)\\.(xml|rdf|ttl))', -- .xml .rdf .ttl --(?!\.xml)|(?!\.rdf)|(?!\.ttl)
+    vector('uname', 'inst', 'item'), 3,
+    '%s%s', vector('inst','item'),
+    'DB.DBA.ODS_PHOTO_GEMS_PAGE',
+    NULL,
+    2);
+
 
 -- Calendar item is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_item_html', 1,
@@ -303,6 +371,15 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_item_html', 1,
     vector('uname', 'inst', 'item_type', 'item'), 4,
     '%s?id=%s', vector('inst', 'item'),
     'DB.DBA.ODS_ITEM_PAGE',
+    NULL,
+    2);
+
+-- Calendar atop-pub is special case
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_atom_html', 1,
+    '/dataspace/([^/]*)/calendar/([^/]*)/atom-pub([^\\?]*)',
+    vector('uname', 'inst', 'action'), 3,
+    '/calendar/atom-pub/%s%s', vector('inst', 'action'),
+    'DB.DBA.ODS_ATOM_PAGE',
     NULL,
     2);
 
@@ -401,9 +478,11 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_error', 1,
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
     	vector(
 	  'ods_person_html',
+	  'ods_person_yadis',
 	  'ods_apps_html',
 	  'ods_all_apps_html',
 	  'ods_yadis',
+	  'ods_apml',
 	  'ods_feed_html',
 	  'ods_feed_item_html',
 	  'ods_feed_item_html2',
@@ -412,8 +491,11 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_discussion_html',
 	  'ods_item_html',
 	  'ods_wiki_item_html',
+	  'ods_wiki_atom_html',
 	  'ods_photo_item_html',
+	  'ods_photo_gems_html',
 	  'ods_cal_item_html',
+	  'ods_cal_atom_html',
 	  'ods_discussion_item_html',
 	  'ods_blog_tag',
 	  'ods_main',

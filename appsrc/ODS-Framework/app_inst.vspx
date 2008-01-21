@@ -125,14 +125,13 @@
           INST_OWNER:=WA_APP_GET_OWNER(dta[0]);
           
           declare dataspace_url varchar;
-          dataspace_url:='/dataspace/'||INST_OWNER||'/'||wa_get_app_dataspace(self.app_type)||'/'||INST_NAME;
+
+          dataspace_url:=sprintf('/dataspace/%U/%s/%s',INST_OWNER,wa_get_app_dataspace(self.app_type),INST_NAME);
+          
       ?>
       <tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
         <td nowrap="nowrap">
-<!--
-          <a href="<?V (case when locate('http://',INST_URL)=0 then rtrim(self.odsbar_ods_gpath,'/ods/') else '' end)||wa_expand_url (INST_URL, self.login_pars) ?>"><img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?></a>
--->
-          <a href="<?V wa_expand_url (dataspace_url, self.login_pars) ?>"><img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?></a>
+          <a href="<?vsp http(wa_expand_url (dataspace_url, self.login_pars)); ?>"><img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?></a>
 
         </td>
       </tr>

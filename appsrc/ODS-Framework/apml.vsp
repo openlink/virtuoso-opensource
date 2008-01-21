@@ -1,0 +1,4 @@
+<?vsp
+  http_header ('Content-Type: application/xml+apml; charset=UTF-8\r\n');
+  http (ODS.DBA.apml ({?'uname'}));
+?>

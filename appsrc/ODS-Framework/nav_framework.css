@@ -410,6 +410,7 @@ ul.prof_user_commands {
 	width: 197px;
 	list-style-type: none;
 	border: 1px solid #333;
+	margin: 5px 0px 5px 0px;
 	float: left;
 	clear: both;}
 	
@@ -641,11 +642,19 @@ ul.tab_bar li {
 	border: 1px solid #333;
 	border-bottom: none;
 	background-color: #ddd;
+  padding-left: 4px;
+  padding-right: 4px;
+
 }
 
 ul.tab_bar .tab_selected {
+	margin: 0px;
+	margin-top: 3px;
+	padding: 0px;
 	border-bottom: 1px solid #fff;
 	background-color: #fff;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
 ul.tab_bar li a {
@@ -653,7 +662,6 @@ ul.tab_bar li a {
 	color: inherit;
 	margin-left: 8px;
 	margin-right: 8px;
-	margin-top: 8px;
 }
 	
 div.tab_deck {
@@ -750,6 +758,7 @@ padding: 0px 10px 0px 10px;
   float: left;
   clear: both;
   width: 700px;
+  height: 300px;
   color: #5f6366;
   background-color: #d9e9f2;
   text-align: left;}
@@ -917,3 +926,234 @@ p.login_frm_guide span.openid_client_name { font-weight: bold; }
 }
 #FT_L { float: left; }
 #FT_R { float: right; }
+
+
+#messages_tab_interface
+{
+padding: 5px;
+}
+
+li.menu_separator
+{
+height:10px;
+}
+#contacts_interface
+{
+}
+div.msg_item
+{
+overflow:auto;
+width:100%;
+border-bottom: 1px dotted #DDDDDD;
+}
+
+#SEARCH_C
+{
+padding: 5px 0px 5px 3px;
+}
+#search_img
+{
+	cursor: pointer;
+	
+}
+#search_textbox
+{
+width:120px;
+
+}
+/* Invitations Interface */
+
+#invitations_C {background-color: #e8f2f7}
+#invitations_C h1 { font-size: 16px; background-color: #fff; display: block width: 100%; padding: 5px; color: #334; margin-bottom: 0;}
+#invitations_C h2 { font-size: 14px; color: #334}
+#invitations_C h3 {}
+#invitations_C div.profile { background-color: #f1f8fd; padding: 5px; border: solid 1px #8fbed0; margin-bottom: 5px;overflow:auto;}
+#invitations_C div.profile img { float: left; padding-right: 5px;cursor:pointer; }
+#invitations_C div.profile p { margin-top: 0;}
+#invitations_C div.actions { background-color: #f1f8fd; padding: 5px; border: solid 1px #8fbed0; margin-bottom: 5px;}
+#invitations_C p.info { color: green; background-color: #eee; padding: 5px;}
+#invitations_C p.info img { vertical-align: middle; }
+#invitations_C ul.profile {padding: 5px; list-style-type: none;}
+#invitations_C span.label { display: block; float: left; font-weight: bolder; width: 10em}
+#invitations_C div.explanation { background-color: #f1f8fd; padding: 5px; border: solid 1px #8fbed0; margin-bottom: 5px;}
+#invitations_C div.footer { font-size: 8px; background-color: #adcedf; height: 30px; padding: 5px; }
+#invitations_C div.footer img { border: 0; padding: 3px; display: block; float: left; } 
+#invitations_C div.footer p { float: left; padding: 0; margin: 0;}
+
+/* Paged Listing */
+
+div.paged_listing {
+  width: 100%;}
+
+div.paged_listing view_params {
+  float: left;
+  clear: left;}
+  
+div.pager {
+  color: #666666;
+  text-align: right;}
+  
+div.pager a {
+
+}
+
+div.pager a:hover {
+  background-color: #333333;
+  color: #FFFFFF}
+
+/* Messages listings */
+
+#generalSearch_C button {
+  font-size: 9pt;
+  background-color: #339999;
+  color: #FFFFFF;
+  border: 2px solid #666666}
+  
+#generalSearch_C button:hover {
+  background-color: #FFFFFF;
+  color: #339999;
+  border: 2px solid #339999;}
+
+ul.mbox_listing {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  float: left;
+  clear: left;
+  border-bottom: 3px solid #666;
+}
+
+ul.mbox_listing li { clear: left;}
+
+div.mbox_item {
+  width: 100%;
+  border-top: 1px solid #666;
+  margin-top: 2px;}
+  
+div.mbox_item div.conn {
+  margin-top: 2px;
+  float: left;
+  clear: left;}
+
+div.mbox_item div.conn div.conn_info { 
+  clear: left; 
+  text-align: center;}
+  
+div.mbox_msg_summary_ctr {
+  float: left;
+}
+
+div.mbox_msg_summary_ctr h3 {
+  color: #666;
+  padding: 0;
+  margin-top: 2px;
+  margin-bottom: 4px;}
+
+div.mbox_msg_summary_ctr div.msg_props {
+  margin-top: 3px;
+  margin-bottom: 0;
+}
+
+div.msg_summary_cmds button {
+  margin-left: 5px;
+  margin-top: 3px;
+  margin-right: 3px;
+}
+
+div.msg_summary_cmds { float: right;}
+
+/* Search page */
+
+ul.search_listing { list-style-type: none; margin: 0; padding: 0}
+
+ul.search_listing li { clear: left;}
+
+ul.search_listing div.hit {
+  float: left;
+  width: 100%;
+  border-top: 1px solid #666;
+  margin-top: 3px;
+  clear: both;
+}
+
+ul.search_listing .hit .hit_ctr {
+  margin: 3px;
+}
+
+ul.search_listing div.hit h4 {
+  margin-left: 3px;
+  margin-top: 3px;
+  margin-bottom: 3px;}
+  
+ul.search_listing div.hit input.sel_ckb { float: left;}
+
+ul.search_listing div.hit img.app_icon { float: left;}
+
+ul.search_listing div.person_box {
+  margin-top: 2px;
+  margin-left: 3px;
+  float: left}
+  
+ul.search_listing div.conn_info {
+  float: left; 
+  clear: left}
+
+ul.search_listing div.person div.person_summary_ctl { float: left; margin-left: 5px;}
+.person_summary_ctr h4 { font-size: inherit; font-weight: bold; margin-top: 2px; margin-bottom: 3px;}
+
+ul.search_listing .hit .cmds {
+  float: right;}
+
+ul.search_listing .cmds button { margin-left: 3px;}
+
+ul.search_listing div.person div.person_box div.conn_info { 
+  clear: left; 
+  text-align: center;}
+  
+div.mbox_msg_summary_ctr {
+  float: left;
+}
+
+div.search_params_box { float: left; width: 100%; margin-bottom: 10px;}
+div.search_params_box .lt { float: left; clear: left; margin-left: 5px}
+div.search_params_box .rt { float: left; margin-left: 10px; }
+
+div.search_params_box h2 {
+  margin: 0px;
+  padding: 0px}
+  
+/* Pagers */
+
+div.pager {
+  width: 100%;
+  float: left;
+  clear: both;
+  margin-top: 5px;
+  padding-top: 3px;
+  border-top: 1px solid #666;
+}
+
+div.pager a { text-decoration: none; margin-left: 3px; margin-right: 3px;}
+div.pager a img { margin-right: 3px;}
+div.pager a:hover { text-decoration: underline; color: #3366FF; background: white; }
+
+div.pager span { text-decoration: none; margin-left: 3px; margin-right: 3px;}
+div.pager span img { margin-right: 3px;}
+div.pager span:hover { background: white; }
+
+
+#PG #RT #APP  #search_res_tabs #search_lst .paged_listing .search_lst_view_params { margin-left: 3px; }
+#generalSearch_C , #search_res_tabs , #search_lst .paged_listing .search_lst_view_params { margin-left: 3px; }
+
+#searchMap
+{
+text-align:center;
+margin:5px 5px 5px 5px;
+height: 400px;
+}
+
+div.map_user_data
+{
+  width:200px;
+  overflow:hidden;
+}

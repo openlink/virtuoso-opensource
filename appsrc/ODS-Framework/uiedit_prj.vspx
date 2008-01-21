@@ -100,17 +100,18 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_prj)
 	  </table>
 	  <div class="fm">
 	      <fieldset>
-		  <label for="prj_name">Project</label>
-		  <v:text name="prj_name" value="" xhtml_id="prj_name" xhtml_size="50" error-glyph="*">
-		      <v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Project name can not be empty"/>
-		  </v:text>
-		  <br/>
 		  <label for="prj_url">URL</label>
 		  <v:text name="prj_url" value="" xhtml_id="prj_url" xhtml_size="50"/>
 		  <br />
-		  <label for="prj_desc">Description</label>
+		  <label for="prj_name">Project*</label>
+		  <v:text name="prj_name" value="" xhtml_id="prj_name" xhtml_size="50" error-glyph="*">
+		      <!--v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Project name can not be empty"/-->
+		  </v:text>
+		  <br/>
+		  <label for="prj_desc">Description*</label>
 		  <v:textarea name="prj_desc" value="" xhtml_id="prj_desc" xhtml_rows="5" xhtml_cols="50"/>
 		  <br />
+		  <label>Note: The fields designated with '*' will be fetched from the source document if empty</label>
 	      <span class="fm_ctl_btn">
 		  <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_prj),0)">
 		      <v:on-post>
@@ -124,16 +125,47 @@ control.vc_enabled := 0;
 		  </v:button>
 		  <v:button name="save1" value="--case when self.edit_prj is null then 'Add' else 'Update' end" action="simple">
 		      <v:on-post><![CDATA[
+declare xt, xp, tmp, descr, iri, name, url varchar;
+declare stat, msg, dta, mdta any;
+
 if (not self.vc_is_valid)
   return;
 
+url := self.prj_url.ufl_value;
+descr := self.prj_desc.ufl_value;
+name := self.prj_name.ufl_value;
+iri := null;
+tmp := uuid ();
+
+if (length (name) = 0)
+{
+  declare exit handler for sqlstate '*'
+  {
+    exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
+    goto nexts;
+  };
+  exec (sprintf ('sparql load "%s" into graph <%s>', url, tmp));
+  exec (sprintf ('sparql prefix doap: <http://usefulinc.com/ns/doap#>
+       select ?P ?N ?D from <%s> where { ?P a doap:Project ; doap:name ?N ; doap:description ?D . }', tmp),
+       stat, msg, vector (), 0, mdta, dta);
+  if (length (dta) and length (dta[0]) > 2)
+    {
+      iri := dta[0][0];
+      name := dta[0][1];
+      descr := dta[0][2];
+    }
+  exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
+}
+
+nexts:;
+
 if (self.edit_prj is null)
   {
-    insert into WA_USER_PROJECTS (WUP_U_ID,WUP_NAME,WUP_URL,WUP_DESC) values (self.u_id, self.prj_name.ufl_value, self.prj_url.ufl_value, self.prj_desc.ufl_value);
+    insert into WA_USER_PROJECTS (WUP_U_ID,WUP_NAME,WUP_URL,WUP_DESC, WUP_IRI) values (self.u_id, name, url, descr, iri);
   }
 else
   {
-    update WA_USER_PROJECTS set WUP_NAME = self.prj_name.ufl_value, WUP_URL = self.prj_url.ufl_value, WUP_DESC = self.prj_desc.ufl_value where WUP_ID = self.edit_prj;
+    update WA_USER_PROJECTS set WUP_NAME = name, WUP_URL = url, WUP_DESC = descr, WUP_IRI = iri where WUP_ID = self.edit_prj;
   }
 
 self.edit_prj := null;

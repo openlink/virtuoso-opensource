@@ -10,6 +10,24 @@ function eTarget(e)
 
  return el ;
 }
+
+function onEnterDown(e)
+{
+      if(!e) return;
+
+      var keycode = (window.event) ? window.event.keyCode : e.which;
+
+      if (keycode == 13)
+      {
+          var t=eTarget(e);
+          if(typeof(t.callback) == "function")
+             t.callback(e);
+          return false;
+      }
+      else
+        return true;
+}
+
 function buildObjByAttributes(elm)
 {
    var obj={};
@@ -74,7 +92,30 @@ function buildObjByChildNodes(elm)
    return obj;
 };
 
-OAT.Preferences.imagePath="/ods/images/oat";
+function replaceChild(newElm,oldElm)
+{
+   if(typeof(newElm)=='undefined' || typeof(oldElm)=='undefined' || typeof(oldElm.parentNode)=='undefined') return;
+
+   OAT.Dom.hide(oldElm);
+   oldElm.parentNode.insertBefore(newElm, oldElm);
+   OAT.Dom.unlink(oldElm);
+    
+   return;
+}
+
+function inverseSelected(parentDiv)
+{
+  if(typeof(parentDiv)=='undefined') return;
+  
+  var inputCtrls=parentDiv.getElementsByTagName('input');
+  
+  for(var i=0; i<inputCtrls.length;i++)
+  {
+    if(inputCtrls[i].type=='checkbox')
+       inputCtrls[i].checked= inputCtrls[i].checked ? false : true;
+  } 
+}
+OAT.Preferences.imagePath="/ods/images/oat/";
 OAT.Preferences.stylePath="/ods/";
 
 window.ODS = {};
@@ -85,7 +126,7 @@ ODS.Preferences = {
   odsHome:"/ods/",
   svcEndpoint:"/ods_services/Http/",
   activitiesEndpoint:"/activities/feeds/activities/user/",
-  version:"08.10.2007"
+  version:"11.01.2008"
 }
 
 ODS.app = {AddressBook  : {menuName:'AddressBook',icon:'images/icons/ods_ab_16.png',dsUrl:'#UID#/addressbook/'},
@@ -119,7 +160,199 @@ ODS.ico = {addressBook      : {alt:'AddressBook',icon:'images/icons/ods_ab_16.pn
            instantmessenger : {alt:'InstantMessenger',icon:'images/icons/ods_im_16.png'}
           };
 
+ODS.paginator = function(iSet,containerTop,containerBottom,callback,customItemsPerPage){
 
+    var self=this;
+
+		this.elmTop    = $(containerTop);
+		this.elmBottom = $(containerBottom);
+
+		if (!self.elmTop && !self.elmBottom) return;
+
+    this.totalItems   = iSet.length;
+    this.pages        = false;
+    this.currentPage  = false;
+    this.startIndex   = false;
+    this.endIndex     = false;
+    this.iSet         = iSet;
+    this.currenISet   = new Array();
+    this.idTop        = typeof(self.elmTop.id)!='undefined' ? self.elmTop.id : 'pagerTop';
+    this.idBottom     = typeof(self.elmBottom.id)!='undefined' ? self.elmBottom.id : 'pagerBottom';
+
+    this.itemsPerPage = 5;
+    if(typeof(customItemsPerPage)=='number')
+    {
+      this.itemsPerPage=customItemsPerPage;
+    }else if(typeof(customItemsPerPage)!='undefined' && !isNaN(parseInt(customItemsPerPage,10)))
+    {
+      this.itemsPerPage=parseInt(customItemsPerPage,10);
+    }
+    
+    this.first         = function()
+                        {
+                          if(self.currentPage==1 ) return;
+
+                          self.go(1);                        
+                        };
+    this.last          = function()
+                        {
+                          if(self.currentPage==(self.pages) ) return;
+
+                          self.go(self.pages);                        
+                        };
+    this.prev         = function()
+                        {
+                          if(self.currentPage==1) return;
+
+                          self.go(self.currentPage - 1);                        
+                        };
+    this.next         = function()
+                        {
+                          if(self.currentPage==(self.pages)) return;
+
+                          self.go(self.currentPage + 1);                        
+                        };
+
+    this.go           = function(pageNum)
+                        {
+                          if( typeof(pageNum)!='number' || pageNum<0) return;
+ 
+                          if( this.totalItems==0)
+                          {
+                            self.pages        = false;
+                            self.currentPage  = false;
+                            self.startIndex   = false;
+                            self.endIndex     = false;
+                          }else if( self.totalItems<=self.itemsPerPage)
+                          {
+                            self.pages        = 1;
+                            self.currentPage  = 1;
+                            self.startIndex   = 1;
+                            self.endIndex     = self.totalItems;
+                          }else
+                          {
+                            self.pages=Math.ceil(self.totalItems/self.itemsPerPage);
+                            
+                            var startIndex=pageNum*self.itemsPerPage-(self.itemsPerPage-1);
+                            if (startIndex>this.totalItems) startIndex=this.totalItems;
+                            
+                            var endIndex=startIndex+(self.itemsPerPage-1);
+                            if (endIndex>this.totalItems) endIndex=this.totalItems;
+                            
+                            self.startIndex=startIndex;
+                            self.endIndex=endIndex;
+                            
+                            self.currenISet=new Array();
+                            var i=0;
+                            for(var idx=startIndex;idx<=endIndex;idx++)
+                            {
+                              self.currenISet[i]=self.iSet[idx];
+                              i++;
+                            }
+                            
+                            self.currentPage=pageNum;
+                          }
+                          
+                          
+                          if(self.elmTop)
+                          {
+                            var newElmTop=self.paginatorCtrl(self.idTop);
+                            replaceChild(newElmTop,self.elmTop)
+                            self.elmTop=newElmTop;
+                          }
+                          
+                          if(self.elmBottom)
+                          {
+                            var newElmBottom=self.paginatorCtrl(self.idBottom);
+                            replaceChild(newElmBottom,self.elmBottom)
+                            self.elmBottom=newElmBottom;
+
+                          }
+                          
+                          if(typeof(callback)=='function')
+                             callback(self);
+                          
+                        };
+   this.paginatorCtrl = function (divId)
+   {
+      var settings = { first     : {txt:'first',txtAlt:'First page',imgE:'p_first.png',imgD:'p_first_gr.png'},
+                       prev      : {txt:'prev',txtAlt:'Previous page',imgE:'p_prev.png',imgD:'p_prev_gr.png'},
+                       next      : {txt:'next',txtAlt:'Next page',imgE:'p_next.png',imgD:'p_next_gr.png'},
+                       last      : {txt:'last',txtAlt:'Last page',imgE:'p_last.png',imgD:'p_last_gr.png'},
+                       skinBase  : 'images/skin/pager/'
+                     };
+
+      function elmCtrl(elmType,disabled)
+      {
+         
+         if(typeof(settings[elmType])=='undefined') return false;
+
+         var isD=0;
+         if(typeof(disabled)!=undefined && disabled==1)
+             isD=1;
+         
+         var elmA=false;
+
+         if(isD)
+         {
+            elmA=OAT.Dom.create('a');
+            var elmImg=OAT.Dom.create('img');
+            elmImg.src=settings.skinBase+settings[elmType].imgD;
+            elmImg.alt=settings[elmType].txtAlt;
+         }else
+         {
+            elmA=OAT.Dom.create('a',{cursor:'pointer'});
+            elmA.action=elmType;
+            OAT.Event.attach(elmA,"click",function(e){var t=eTarget(e);self[t.action]();});  
+            var elmImg=OAT.Dom.create('img');
+            elmImg.action=elmType;
+            elmImg.src=settings.skinBase+settings[elmType].imgE;
+            elmImg.alt=settings[elmType].txtAlt;
+
+         }
+
+         OAT.Dom.append([elmA,elmImg,OAT.Dom.text(settings[elmType].txt)]);
+         
+         return elmA;
+     }
+      
+      var pagerDiv=OAT.Dom.create('div',{},'pager');
+      pagerDiv.id=divId;
+      pagerDiv.paginator=self;
+      
+      
+      if(self.totalItems>1)
+      {
+        var resultsTxt='Results '+self.startIndex+' - '+self.endIndex+' of '+self.totalItems +':';
+      }else
+        var resultsTxt='Results 0';
+
+      var firstA=elmCtrl('first',1);
+      var prevA=elmCtrl('prev',1);
+      var nextA=elmCtrl('next',1);
+      var lastA=elmCtrl('last',1);
+
+      if(self.pages>1)
+      {
+        if(self.currentPage>1)
+        {
+           firstA=elmCtrl('first');
+           prevA=elmCtrl('prev');
+        }
+        if(self.currentPage<self.pages)
+        {
+          nextA=elmCtrl('next');
+          lastA=elmCtrl('last');
+        }
+      }
+
+      OAT.Dom.append([pagerDiv,OAT.Dom.text(resultsTxt),firstA,prevA,nextA,lastA]);
+
+      return pagerDiv;
+   }
+
+   this.first();
+}
 ODS.session = function(customEndpoint){
 
   var self=this;
@@ -128,6 +361,9 @@ ODS.session = function(customEndpoint){
   this.realm='wa';
   this.userName=false;
   this.userId=false;
+  this.connections   = false;
+  this.connectionsId = false;
+
   this.endpoint=ODS.Preferences.svcEndpoint;
   this.openId={server:false,
                delegate:false,
@@ -139,8 +375,6 @@ ODS.session = function(customEndpoint){
   
   if(typeof(customEndpoint)!='undefined' && length(customEndpoint))
      this.endpoint=customEndpoint;
-
-      
   this.start=function(){
        
       var data = '';
@@ -161,24 +395,28 @@ ODS.session = function(customEndpoint){
 
   this.validate=function(){
     
+    function showLoginErr(errMsg)
+    {
+        if(typeof(nav.showLoginErr) == "function")
+    {
+          if(typeof(errMsg)!='undefined')
+             nav.showLoginErr(errMsg);
+          else
+             nav.showLoginErr();
+        }
+        else if(typeof(errMsg)!='undefined')
+           alert(errMsg);
+      return;
+    }
+
     if($('loginDiv').loginTab.selectedIndex==0)                                       
     {
-    function showLoginErr()
-    {
-      $('loginErrDiv').innerHTML='';
-      var warnImg=OAT.Dom.create('img',{verticalAlign:'text-bottom',paddingTop:'3px'});
-      warnImg.src='images/warn_16.png';
-      OAT.Dom.append([$('loginErrDiv'),warnImg,OAT.Dom.text(' Invalid Member ID or Password')]);
-      return;
-
-    }
        if($('loginUserName').value.length==0 || $('loginUserPass').value.length==0)
     {
       showLoginErr();
       return;
     }
 
-    $('loginErrDiv').innerHTML='';
     
        var data = 'sid='+self.sid+'&realm=wa&userName='+$('loginUserName').value+'&authStr='+OAT.Crypto.sha(self.sid+$('loginUserName').value+$('loginUserPass').value);
       
@@ -191,12 +429,12 @@ ODS.session = function(customEndpoint){
                                              self.userName=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/userName',{})[0]);
                                                 self.userId=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/userId',{})[0]);
                                              
+                                                $('loginErrDiv').innerHTML='';
                                              //resXmlNodes = OAT.Xml.xpath(xmlDoc, '/sessionStart_response/userName',{});
                                              OAT.MSG.send(self,OAT.MSG.SES_VALIDBIND,{});
                                            }else
                                            {
-                                              showLoginErr();
-                                              return;
+                                                 OAT.MSG.send(self,OAT.MSG.SES_INVALID,{retryLogIn:true});
                                            }
                                             
                                        };
@@ -205,17 +443,6 @@ ODS.session = function(customEndpoint){
        OAT.AJAX.POST(self.endpoint+"sessionValidate", data, callback, optionsSynch);
     }else
     {
-       function showLoginErr(errMsg)
-       {
-         if(typeof(errMsg)=='undefined')
-            errMsg=' Invalid OpenID URL';
-         $('loginErrDiv').innerHTML='';
-         var warnImg=OAT.Dom.create('img',{verticalAlign:'text-bottom',paddingTop:'3px'});
-         warnImg.src='images/warn_16.png';
-         OAT.Dom.append([$('loginErrDiv'),warnImg,OAT.Dom.text(errMsg)]);
-         return;
-                                         
-  }
        if($('loginOpenIdUrl').value.length==0)
        {
          showLoginErr();
@@ -253,7 +480,9 @@ ODS.session = function(customEndpoint){
                                                 document.location=checkImmediate;
                                               }else
                                               {
-                                                 showLoginErr();
+                                                 nav.wait('hide');
+                                                 showLoginErr('Invalid OpenID URL');
+                                                 nav.logIn();
                                                  return;
                                               }
                                                
@@ -263,7 +492,6 @@ ODS.session = function(customEndpoint){
 
        OAT.AJAX.POST(self.endpoint+"openIdServer", data, callback, optionsSynch);
 
-       
     }
   }
 
@@ -280,6 +508,11 @@ ODS.session = function(customEndpoint){
                                              self.userName=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/userName',{})[0]);
                                              self.userId=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/userId',{})[0]);
                                              OAT.MSG.send(self,OAT.MSG.SES_VALIDBIND,{});
+                                           }else
+                                           {
+                                             self.sid=false;
+                                             OAT.MSG.send(self,OAT.MSG.SES_INVALID,{});
+                                             
                                            }
                                             
                                        };
@@ -297,11 +530,10 @@ ODS.session = function(customEndpoint){
                                            
                                            if(!self.isErr(xmlDoc))
                                            {
-                                             //resXmlNodes = OAT.Xml.xpath(xmlDoc, '/sessionStart_response/session',{});
                                              self.sid=false;
                                              self.userName=false;
                                              self.userId=false;
-                                             OAT.MSG.send(self,OAT.MSG.SES_INVALID,{});
+                                             OAT.MSG.send(self,OAT.MSG.SES_INVALID,{sessionEnd:true});
                                            }
                                        };
                                          
@@ -390,10 +622,51 @@ ODS.session = function(customEndpoint){
        var errCode=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/error_response/error_code',{})[0]);
        var errMsg=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/error_response/error_msg',{})[0]);
        dd('ERROR - msg: '+errMsg+' code: '+errCode);
+       return 1;
     }else
        return 0;
     
     return 1;
+  };
+  
+  this.connectionAdd = function (connectionId,connectionFullName)
+  {
+    var connection = {};
+    connection[connectionId]=connectionFullName;
+    self.connections.push(connection);
+    self.connectionsId.push(connectionId);
+  };
+
+  this.connectionRemove = function(connectionId)
+  {
+    var arrPos=self.connectionsId.find(connectionId);
+    
+    if(arrPos>-1)
+    {
+      var newArr = new Array();
+      newArr=newArr.concat(self.connectionsId.slice(0,arrPos));
+      newArr=newArr.concat(self.connectionsId.slice(arrPos+1,self.connectionsId.length));
+
+      self.connectionsId=newArr;
+
+      for (var i=0;i<self.connections.length;i++)
+      {
+           var done=false;
+           for(connId in self.connections[i])
+           {
+            if(connId==connectionId)
+            {
+               var newArr=new Array();
+               newArr=newArr.concat(self.connections.slice(0,i));
+               newArr=newArr.concat(self.connections.slice(i+1,self.connections.length));
+             
+               self.connections=newArr;
+               done=true;
+            }
+           };
+           if(done) break;
+      }
+    }
   };
   
 
@@ -403,6 +676,7 @@ ODS.Nav = function(navOptions) {
   var self = this;
   this.ods=ODS.Preferences.odsHome;
   this.dataspace=ODS.Preferences.dataspacePath;
+  this.uriqaDefaultHost=false;
   this.leftbar=$(navOptions.leftbar);
   this.rightbar=$(navOptions.rightbar);
   this.appmenu=$(navOptions.appmenu);
@@ -412,45 +686,123 @@ ODS.Nav = function(navOptions) {
   this.options = {
     imagePath:ODS.Preferences.imagePath
   };
-  
+  this.ui={};
+//  this.defaultAction=false;
 
   this.session= new ODS.session();
   this.profile={userName :false,
                 userId : false,
+                userFullName : false,
                 connections : new Array(),
                 ciTab: false,
                 ciMap: false,
                 connTab: false,
+                msgTab       : false,
+                show         : false,
                 set : function(profileId){ this.userName=false;
                                            this.userId = profileId;
+                                           userFullName = false;
                                            this.connections = new Array();
                                          }
                 
                };
+  this.connections={userId : false,
+                    show   : false
+                   };            
+  this.searchObj ={qStr : false,
+                   map  : false,
+                   tab  : false
+                  };
+             
                
+  OAT.MSG.attach(self.session,OAT.MSG.SES_TOKEN_RECEIVED,function(){OAT.Event.attach($('loginBtn'),"click",self.session.validate);
+                                                                    $('loginUserPass').tokenReceived=true;
+                                                                    $('loginOpenIdUrl').tokenReceived=true;
+                                                                   });
+  OAT.MSG.attach(self.session,OAT.MSG.SES_VALIDBIND,
+                 function()
+                 {
+                   self.createCookie('sid',self.session.sid,1);
+                   self.userLogged=1;
+                   self.session.usersGetInfo(self.session.userId,'fullName',function(xmlDoc){self.setLoggedUserInfo(xmlDoc);});
+                   self.initProfile();
+                   self.initLeftBar();
+                   self.initRightBar();
+                   self.initAppMenu();
+                   
+                   self.connections.userId=self.session.userId;
+                   
+//                   if(self.defaultAction)
+//                   {
+//                       self.defaultAction(); 
+//                       self.defaultAction=false;
+//                   }      
     
+                   OAT.MSG.send(self.session,OAT.MSG.SES_VALIDATION_END,{sessionValid:1});
+                 }
+                );
 
-//  var session= new ODS.session();
+  OAT.MSG.attach(self.session,OAT.MSG.SES_INVALID,
+                 function(src, msg, event)
+                 {
+                   self.createCookie('sid','',1);
 
+                   if(typeof(event.retryLogIn)!='undefined' && event.retryLogIn==true)
+                   {
+                      nav.wait('hide');
+                      self.showLoginErr();
+                      self.logIn();
+                      return;
+                   }else if(typeof(event.sessionEnd)!='undefined' && event.sessionEnd==true)                                                                                    
+                   {
+                      document.location.hash='';
+                      document.location.href='index.html';
 
-  OAT.MSG.attach(self.session,OAT.MSG.SES_TOKEN_RECEIVED,function(){OAT.Event.attach($('loginBtn'),"click",self.session.validate);});
-  OAT.MSG.attach(self.session,OAT.MSG.SES_VALIDBIND,function(){self.swithToLogged();});
-  OAT.MSG.attach(self.session,OAT.MSG.SES_INVALID,function(){self.swithToNotLogged();});
+                   }else
+                     OAT.MSG.send(self.session,OAT.MSG.SES_VALIDATION_END,{sessionValid:0});
   
+                 }
+                );
   
+  OAT.MSG.attach(self.session,OAT.MSG.SES_VALIDATION_END,
+                 function(src, msg, event)
+                 {
+                  if(document.location.hash.length>0)
+                  {
+                    defaultAction=document.location.hash;
   
-  this.swithToLogged = function()
+                    if(defaultAction=='#invitations')
   {
-    //sravniavam sas sesiata to cookies. i proveriavam 
-    self.createCookie('sid',self.session.sid,1);
-    self.userLogged=1;
-    self.session.usersGetInfo(self.session.userId,'fullName',function(xmlDoc){self.setLoggedUserInfo(xmlDoc);});
-    this.initProfile();
-    this.initLeftBar();
-    this.initRightBar();
-    this.initAppMenu();
-    OAT.Dimmer.hide();
+                       if(self.session.userName)
+                       {
+                          self.invitationsGet('fullName,photo,home',self.renderInvitations);
+                          document.location.href=document.location.href.split('#')[0]+'#';
+                       }
+                       else
+                          self.logIn();
+                    
   }  
+                    else
+                       self.loadVspx(self.expandURL(self.ods+'sfront.vspx'));
+                  
+                  }else
+                      self.loadVspx(self.expandURL(self.ods+'sfront.vspx'));
+
+
+                 }
+
+                );
+  
+  OAT.MSG.attach(self,OAT.MSG.PROFILE_UPDATED,function(){if(self.profile.show)
+                                                            self.showProfile();
+                                                            self.profile.show=false;
+                                                        });
+  
+  OAT.MSG.attach(self,OAT.MSG.CONNECTIONS_UPDATED,function(){if(self.connections.show)
+                                                                self.showConnections();
+                                                                self.connections.show=false;                                                                
+                                                            });
+
 
   this.setLoggedUserInfo = function(xmlDoc)
   {
@@ -464,20 +816,6 @@ ODS.Nav = function(navOptions) {
   };
 
   
-  this.swithToNotLogged = function()
-  {
-   self.userLogged=0;
-   self.createCookie('sid','',1);
-   document.location.search='';
-//   self.loadVspx(self.ods+'sfront.vspx');
-//   this.initProfile();
-//   this.initLeftBar();
-//   this.initRightBar();
-//   this.initAppMenu();
-   
-   
-  }  
-
   
   this.initAppMenu = function ()
   {
@@ -495,7 +833,7 @@ ODS.Nav = function(navOptions) {
     appTitleEditA.innerHTML='edit';
     OAT.Event.attach(appTitleEditA,"click",function(){self.loadVspx(self.expandURL(self.ods+'services.vspx'));});  
 
-    OAT.Dom.append([rootDiv,appTitle],[appTitle,appTitleApplicationA,appTitleEditA]); 
+    OAT.Dom.append([rootDiv,appTitle],[appTitle,appTitleApplicationA,OAT.Dom.text(' '),appTitleEditA]); 
 
     var ulApp=OAT.Dom.create("ul");
     ulApp.id='APP_MENU';
@@ -524,7 +862,12 @@ ODS.Nav = function(navOptions) {
 
        var packageName=OAT.Xml.textValue(resXmlNodes[i]);
        packageName=packageName.replace(' ','');
-       var appOpt=ODS.app[packageName];
+       
+       var appOpt={};
+       if(typeof(ODS.app[packageName])!='undefined')
+           appOpt=ODS.app[packageName];
+       else
+          appOpt={menuName:packageName,icon:'images/icons/apps_16.png',dsUrl:'#UID#/'+packageName+'/'};
 
      var appMenuItem=OAT.Dom.create('li');
        var appMenuItemA=OAT.Dom.create('a',{cursor:'pointer'});
@@ -638,9 +981,15 @@ ODS.Nav = function(navOptions) {
        OAT.Dom.clear($('profile_menu'));
        var profileMenuAProfile=OAT.Dom.create('a',{cursor:'pointer',paddingRight:'3px'},'menu_link profile');
        profileMenuAProfile.innerHTML='Profile';
-       OAT.Event.attach(profileMenuAProfile,"click",self.showProfile);  
-//       OAT.Event.attach(profileMenuAProfile,"click",function(){self.showProfile});  
-
+       OAT.Event.attach(profileMenuAProfile,"click",function(){ 
+                                                                if(self.session.userId!=self.profile.userId)
+                                                                {
+                                                                   self.profile.show=true; 
+                                                                   self.profile.set(self.session.userId);
+                                                                   self.initProfile();
+                                                                }else
+                                                                   self.showProfile();
+                                                              });  
 
        var profileMenuAProfileEdit=OAT.Dom.create('a',{cursor:'pointer'},'menu_link profile_edit shortcut');
        profileMenuAProfileEdit.innerHTML='edit';
@@ -664,8 +1013,10 @@ ODS.Nav = function(navOptions) {
       
       OAT.Dom.clear(communityMenuBodyUl);
 
-      if(typeof($('communities_menu').isInstalled)=='indefined' || $('communities_menu').isInstalled==false)
+      var packageInstalled = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '//userCommunities_response/community_package',{})[0]);
+      if(packageInstalled==0)
       {
+
          OAT.Dom.hide($('communities_menu'));
          return;
       }
@@ -676,32 +1027,37 @@ ODS.Nav = function(navOptions) {
       {
         var communityMenuBodyLi=OAT.Dom.create('li',{},'menu_item');
         var communityMenuBodyLiA=OAT.Dom.create('a',{cursor:'pointer'});
+        
         communityMenuBodyLiA.innerHTML=OAT.Xml.textValue(communities[i].childNodes[0]);
         communityMenuBodyLiA.homepage=OAT.Xml.textValue(communities[i].childNodes[1]);
-        OAT.Event.attach(communityMenuBodyLiA,"click",function(){self.loadVspx(self.expandURL(this.homepage));});  
+        OAT.Event.attach(communityMenuBodyLiA,"click",function(e){var t=eTarget(e);self.loadVspx(self.expandURL(t.homepage));});  
         OAT.Dom.append([communityMenuBodyUl,communityMenuBodyLi],[communityMenuBodyLi,communityMenuBodyLiA]);
       }
       
 
       if(self.session.userName)
       {
+        var communityMenuBodyLi=OAT.Dom.create('li',{},'menu_separator');
+        OAT.Dom.append([communityMenuBodyUl,communityMenuBodyLi]);
+
         var communityMenuBodyLi=OAT.Dom.create('li',{},'menu_item');
         var communityMenuBodyLiA=OAT.Dom.create('a',{cursor:'pointer'});
         communityMenuBodyLiA.innerHTML='Join community now';
         communityMenuBodyLiA.homepage='search.vspx?apps=apps&q=Community';
-        OAT.Event.attach(communityMenuBodyLiA,"click",function(){self.loadVspx(self.expandURL(this.homepage));});  
+        OAT.Event.attach(communityMenuBodyLiA,"click",function(e){var t=eTarget(e);self.loadVspx(self.expandURL(t.homepage));});  
         OAT.Dom.append([communityMenuBodyUl,communityMenuBodyLi],[communityMenuBodyLi,communityMenuBodyLiA]);
 
         var communityMenuBodyLi=OAT.Dom.create('li',{},'menu_item');
         var communityMenuBodyLiA=OAT.Dom.create('a',{cursor:'pointer'});
         communityMenuBodyLiA.innerHTML='Create new community';
         communityMenuBodyLiA.homepage='index_inst.vspx?wa_name=Community';
-        OAT.Event.attach(communityMenuBodyLiA,"click",function(){self.loadVspx(self.expandURL(this.homepage));});  
+        OAT.Event.attach(communityMenuBodyLiA,"click",function(e){var t=eTarget(e);self.loadVspx(self.expandURL(t.homepage));});  
         OAT.Dom.append([communityMenuBodyUl,communityMenuBodyLi],[communityMenuBodyLi,communityMenuBodyLiA]);
       }
       $('communities_menu_body').style.zIndex=100;
 
       var communityMenu = new OAT.Menu();
+      communityMenu.noCloseFilter='menu_separator';
       
       communityMenu.createFromUL ("communities_menu");
       
@@ -725,7 +1081,18 @@ ODS.Nav = function(navOptions) {
       for (var i=0;i<msgMenuItems.childNodes.length;i++)
       {
         if(msgMenuItems.childNodes[i].nodeName=='LI')
-          OAT.Event.attach(msgMenuItems.childNodes[i],"click",function(){self.showMessages();});  
+        {
+          if(msgMenuItems.childNodes[i].id=='mi_inbox')
+            OAT.Event.attach(msgMenuItems.childNodes[i],"click",function(){ self.profile.msgTab.go(0);self.showMessages();});  
+          else if (msgMenuItems.childNodes[i].id=='mi_sent')
+            OAT.Event.attach(msgMenuItems.childNodes[i],"click",function(){ self.profile.msgTab.go(1);self.showMessages();});  
+          else if (msgMenuItems.childNodes[i].id=='mi_notification')
+            OAT.Event.attach(msgMenuItems.childNodes[i],"click",function(){ self.profile.msgTab.go(3);self.showMessages();});  
+          else if (msgMenuItems.childNodes[i].id=='mi_new_message')
+            OAT.Event.attach(msgMenuItems.childNodes[i],"click",function(){ self.profile.msgTab.go(4);self.showMessages();});  
+//          else  
+//            OAT.Event.attach(msgMenuItems.childNodes[i],"click",function(){self.showMessages();});  
+        }
       }
 
       var newMsgCount = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '//userMessages_response/new_message_count',{})[0]);
@@ -733,13 +1100,17 @@ ODS.Nav = function(navOptions) {
       $('newMsgCountSpan').innerHTML='('+newMsgCount+')';
 
       var messagesMenu = new OAT.Menu();
+      messagesMenu.noCloseFilter='menu_separator';
+
       messagesMenu.createFromUL ("messages_menu");
       
      OAT.Style.include('dock.css');
 
       OAT.Dom.show($('messages_menu').parentNode);
 
-      OAT.Loader.loadFeatures(["dock"],function(){self.userMessages(1,renderMessagesInterface);setInterval(function(){self.userMessages(1,renderMessagesInterface);},7000);});
+      OAT.Loader.loadFeatures(["dock"],function(){self.userMessages(1,renderMessagesInterface);
+//                                                  setInterval(function(){self.userMessages(1,renderMessagesInterface);},10000);
+                                                 });
       self.wait('hide');
       return;
 
@@ -747,6 +1118,31 @@ ODS.Nav = function(navOptions) {
 
     function renderMessagesInterface(xmlDoc)
     {
+
+
+      if(!self.profile.msgTab)
+      {
+         var msgTab=new OAT.Tab('msgPCtr');
+         msgTab.add('msgT1','msgP1');
+         msgTab.add("msgT2","msgP2");
+         msgTab.add('msgT3','msgP3');
+         msgTab.add("msgT4","msgP4");
+         msgTab.add("msgT5","msgP5");
+         msgTab.go(0);
+  
+         self.profile.msgTab=msgTab;
+      }
+      
+      OAT.Event.attach('msgT1',"click",function(){ self.userMessages(2,renderInboxBlock); });    
+      OAT.Event.attach('msgT2',"click",function(){ self.userMessages(3,renderSentBlock); });    
+      OAT.Event.attach('msgT3',"click",function(){ self.userMessages(1,renderConversationBlock); });    
+     
+//      OAT.Dom.clear($('msgP5'));
+      if(!$('sendBlock'))
+         OAT.Dom.append([$('msgP5'),renderSendBlock()]);
+      $('sendBlock').style.width=OAT.Dom.getWH($('APP'))[0]-6+'px';
+
+
       var updateDock=false;
       if(!self.msgDock)
       {
@@ -766,6 +1162,11 @@ ODS.Nav = function(navOptions) {
       }
 
       var dock = self.msgDock
+
+      // hide dock control for now
+      OAT.Dom.hide(dock.columns[0]);
+      OAT.Dom.hide(dock.columns[1]);
+      // remove these lines to show dock control.
 
       var titleBGColor="#336699";
       var titleTxtColor="#fff";
@@ -820,6 +1221,7 @@ ODS.Nav = function(navOptions) {
     	  var msgNavDock = dock.addObject(0,renderMsgNavBlock(),{color:titleBGColor,title:'Show dashboard',titleColor:titleTxtColor});
         OAT.Dom.unlink(msgNavDock.close.firstChild);
       }
+      
       function renderSendBlock()
       {
         var container=OAT.Dom.create("div",{textAlign:'center'});
@@ -833,11 +1235,11 @@ ODS.Nav = function(navOptions) {
         var userList = OAT.Dom.create("select",{width:'45%',cssFloat:'right',margin:'0px 3px 5px 0px'});
         userList.id = 'userList';
         OAT.Dom.option('&lt;Select recipient&gt;',-1,userList);
-        for (var i=0;i<self.profile.connections.length;i++)
+        for (var i=0;i<self.session.connections.length;i++)
         {
-         for(cId in self.profile.connections[i])
+         for(cId in self.session.connections[i])
          {
-          OAT.Dom.option(self.profile.connections[i][cId],cId,userList);
+          OAT.Dom.option(self.session.connections[i][cId],cId,userList);
          }
         }
 
@@ -856,13 +1258,17 @@ ODS.Nav = function(navOptions) {
         var msgText=OAT.Dom.create('textarea',{width:'99%'});
         msgText.id='msgText';
         
+        
+        
         var sendBtn=OAT.Dom.create('input');
         sendBtn.id='sendBtn';
         sendBtn.type='button';
         sendBtn.sendto=-1;
         sendBtn.value='Send';
 
+
         OAT.Event.attach(sendBtn,"click",function(e){ var t=eTarget(e);
+
                                                        if(t.sendto==-1)
                                                        {
                                                           userList.style.color='#f00';
@@ -875,12 +1281,17 @@ ODS.Nav = function(navOptions) {
                                                           return;
                                                        }
                                                        userList.style.color='#000';
+                                               
                                                        self.userMessageSend(t.sendto,$('msgText').value,false,function(){self.userMessages(1,renderMessagesInterface);})
                                                        
                                                      });
 
+        var msgSentTxt=OAT.Dom.create('span',{color:'green',cssFloat:'right',padding:'0px 5px 0px 0px',display:'none',marginTop:'-18px'});
+        msgSentTxt.id='msgSentTxt';
+        msgSentTxt.innerHTML=" Message sent! ";
+
         
-      OAT.Dom.append([container,_span,msgUserSpan,userList,OAT.Dom.create('br'),msgText,OAT.Dom.create('br'),sendBtn]);
+      OAT.Dom.append([container,_span,msgUserSpan,userList,OAT.Dom.create('br'),msgText,OAT.Dom.create('br'),sendBtn,msgSentTxt]);
 
         return container;
       }
@@ -894,6 +1305,10 @@ ODS.Nav = function(navOptions) {
       {
         var container=OAT.Dom.create("div");
         container.id='inboxBlock';
+ 
+        var containerTab=OAT.Dom.create("div");
+        containerTab.id='inboxTab';
+
         var messages=OAT.Xml.xpath(xmlDoc, '//userMessages_response/message',{});
 
         for (var i=0;i<messages.length;i++)
@@ -901,12 +1316,30 @@ ODS.Nav = function(navOptions) {
            var msg=buildObjByChildNodes(messages[i]);
            if(msg.recipient['@id']==self.session.userId)
            {
-              var div=OAT.Dom.create('div',{},'msg');
+              var div=OAT.Dom.create('div',{overflow:'auto',width:'100%', borderBottom:'1px dotted #DDDDDD'},'msg');
               div.innerHTML='<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> From: '+msg.sender.value+'</span> - '+msg.text;
+
+              var divC=OAT.Dom.create('div',{},'msg_item');
+              divC.innerHTML='<img style="width:16px;height:16px;cursor:pointer;float:right;" src="images/skin/default/notify_remove_btn.png">'+
+                             '<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> From: '+msg.sender.value+'</span> - '+msg.text;
+              
+              ctrl_hide=divC.getElementsByTagName('img')[0];
+              ctrl_hide.msgId=msg.id;
+              OAT.Event.attach(ctrl_hide,"click",function(e){ var t=eTarget(e); self.userMessageStatusSet(t.msgId,-1,function(){OAT.Dom.unlink(t.parentNode);
+                                                                                                                                var msgCount=$('newMsgCountSpan').innerHTML.substring(1,$('newMsgCountSpan').innerHTML.length-1);
+                                                                                                                                $('newMsgCountSpan').innerHTML='('+(msgCount-1)+')';
+                                                                                                                                self.wait('hide');
+                                                                                                                               }
+                                                                                                          );});
+            
               OAT.Dom.append([container,div]);
+              OAT.Dom.append([containerTab,divC]);
            }
         }       
   
+        OAT.Dom.clear($('msgP1'));
+        OAT.Dom.append([$('msgP1'),containerTab]);
+
         self.wait('hide');
 
         if(inboxDock)
@@ -929,6 +1362,10 @@ ODS.Nav = function(navOptions) {
 
         var container=OAT.Dom.create("div");
         container.id='sentBlock';
+
+        var containerTab=OAT.Dom.create("div");
+        containerTab.id='sentTab';
+
         var messages=OAT.Xml.xpath(xmlDoc, '//userMessages_response/message',{});
         for (var i=0;i<messages.length;i++)
         {
@@ -937,11 +1374,29 @@ ODS.Nav = function(navOptions) {
            {
               var div=OAT.Dom.create('div',{},'msg');
               div.innerHTML='<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> To: '+msg.recipient.value+'</span> - '+msg.text;
+        
+              var divC=OAT.Dom.create('div',{},'msg_item');
+              divC.innerHTML='<img style="width:16px;height:16px;cursor:pointer;float:right;" src="images/skin/default/notify_remove_btn.png">'+
+                             '<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> To: '+msg.recipient.value+'</span> - '+msg.text;
+
+              ctrl_hide=divC.getElementsByTagName('img')[0];
+              ctrl_hide.msgId=msg.id;
+              OAT.Event.attach(ctrl_hide,"click",function(e){ var t=eTarget(e); self.userMessageStatusSet(t.msgId,-1,function(){OAT.Dom.unlink(t.parentNode);
+        self.wait('hide');
+                                                                                                                               }
+                                                                                                          );});
+
               OAT.Dom.append([container,div]);
+              OAT.Dom.append([containerTab,divC]);
+              
            }
         }       
         
+        OAT.Dom.clear($('msgP2'));
+        OAT.Dom.append([$('msgP2'),containerTab]);
+
         self.wait('hide');
+        
         
         if(sentDock)
         {
@@ -962,6 +1417,10 @@ ODS.Nav = function(navOptions) {
 
         var container=OAT.Dom.create("div");
         container.id='conversationBlock';
+
+        var containerTab=OAT.Dom.create("div");
+        containerTab.id='conversationTab';
+
         var messages=OAT.Xml.xpath(xmlDoc, '//userMessages_response/message',{});
         for (var i=0;i<messages.length;i++)
         {
@@ -970,16 +1429,37 @@ ODS.Nav = function(navOptions) {
            {
               var div=OAT.Dom.create('div',{},'msg');
               div.innerHTML='<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> To: '+msg.recipient.value+'</span> - '+msg.text;
+              var divC=OAT.Dom.create('div',{},'msg_item');
+              divC.innerHTML='<img style="width:16px;height:16px;cursor:pointer;float:right;" src="images/skin/default/notify_remove_btn.png">'+
+                             '<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> To: '+msg.recipient.value+'</span> - '+msg.text;
+
+              ctrl_hide=divC.getElementsByTagName('img')[0];
+              ctrl_hide.msgId=msg.id;
+              OAT.Event.attach(ctrl_hide,"click",function(e){ var t=eTarget(e); self.userMessageStatusSet(t.msgId,-1,function(){OAT.Dom.unlink(t.parentNode);
+                                                                                                                                self.wait('hide');
+                                                                                                                               }
+                                                                                                          );});
+
               OAT.Dom.append([container,div]);
+              OAT.Dom.append([containerTab,divC]);
+
            }else if(msg.recipient['@id']==self.session.userId)
            {
               var div=OAT.Dom.create('div',{},'msg');
               div.innerHTML='<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> From: '+msg.sender.value+'</span> - '+msg.text;
+              var divC=OAT.Dom.create('div',{},'msg_item');
+              divC.innerHTML='<img style="width:16px;height:16px;cursor:pointer;float:right;" src="images/skin/default/notify_remove_btn.png">'+
+                             '<span class="time">'+msg.received.substr(0,10)+' '+msg.received.substr(11,5)+'</span><span style="font-style:italic"> From: '+msg.sender.value+'</span> - '+msg.text;
+
               OAT.Dom.append([container,div]);
+              OAT.Dom.append([containerTab,divC]);
            }
            
         }       
         
+        OAT.Dom.clear($('msgP3'));
+        OAT.Dom.append([$('msgP3'),containerTab]);
+
         self.wait('hide');
         
         if(conversationDock)
@@ -1008,6 +1488,56 @@ ODS.Nav = function(navOptions) {
       {
        this.userMessages(0,renderMessagesMenu);
       }
+
+
+      function renderConnectionsMenu()
+      {
+        
+        
+        var connectionsMenu = new OAT.Menu();
+        connectionsMenu.noCloseFilter='menu_separator';
+        connectionsMenu.createFromUL ("connections_menu");
+        
+       connMenuItems=$('connections_menu_items');
+       connMenuItems.style.zIndex=101;
+       for (var i=0;i<connMenuItems.childNodes.length;i++)
+       {
+        if(connMenuItems.childNodes[i].nodeName=='LI'
+           &&
+           connMenuItems.childNodes[i].className!='menu_separator'
+           &&
+           connMenuItems.childNodes[i].innerHTML.indexOf('loadVspx')==-1
+          )
+          {
+           if( connMenuItems.childNodes[i].innerHTML.indexOf('Invitations')!=-1)
+              OAT.Event.attach(connMenuItems.childNodes[i],"click",function(){self.invitationsGet('fullName,photo,home',self.renderInvitations)});
+           else
+              OAT.Event.attach(connMenuItems.childNodes[i],"click",function(){self.connections.show=true;
+                                                                          self.connections.userId=self.session.userId;
+                                                                          self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface)
+                                                                         });  
+          }
+       }                                                                  
+                                                                          
+     
+     
+        OAT.Dom.show($('connections_menu').parentNode);
+
+        var connInterfaceTab=new OAT.Tab('cisPCtr');
+        connInterfaceTab.add('csiT1','cisP1');
+        connInterfaceTab.add("csiT2","cisP2");
+        connInterfaceTab.go(0);
+     
+     
+      }
+  
+      if(self.session.userName)
+      {
+       
+       renderConnectionsMenu();
+      }
+      
+
 
     var loginfoDiv = $('ODS_BAR_RC');
     OAT.Dom.clear(loginfoDiv);
@@ -1048,6 +1578,521 @@ ODS.Nav = function(navOptions) {
   
   }
   
+  this.getSearchOptions = function (searchBoxObj)
+  { 
+    var searchQ = false;
+  
+    if(searchBoxObj && searchBoxObj.value && searchBoxObj.value.trim()!='')
+    {
+       searchQ='q='+encodeURIComponent(searchBoxObj.value.trim());
+       if($('search_lst_sort') && $('search_lst_sort').value)
+          searchQ+='&'+$('search_lst_sort').value;
+       if($('search_focus_sel') && $('search_focus_sel').value)
+       {
+
+         if($('search_focus_sel').value!='' && $('search_focus_sel').value!='on_advanced')
+            searchQ+='&'+$('search_focus_sel').value+'=1';
+         else if($('search_focus_sel').value!='' && $('search_focus_sel').value=='on_advanced' && typeof($('search_focus_advanced'))!='undefined')
+         {
+
+            var advancedFocusCB=$('search_focus_advanced').getElementsByTagName('input');
+            for(var i=0; i<advancedFocusCB.length;i++)
+            {
+              if(advancedFocusCB[i].type=='checkbox' && advancedFocusCB[i].checked)
+                searchQ+='&'+advancedFocusCB[i].value+'=1';
+            }
+        } 
+       }
+       
+    }
+    return searchQ;
+  }
+
+  this.initSearch = function()
+  {
+        
+        function modifySearchOptions(xmlDoc)
+        {
+//          dd(xmlDoc);
+           
+          var searchVal2Pack = {on_wikis       : 'Wiki',
+                                on_blogs       : 'Weblog',
+                                on_news        : 'Feed Manager',
+                                on_bookmark    : 'Bookmarks',
+                                on_omail       : 'Mail',
+                                on_polls       : 'Polls',
+                                on_addressbook : 'AddressBook',
+                                on_calendar    : 'Calendar',
+                                on_nntp        : 'Discussion',
+                                on_community   : 'Community',
+                                on_photos      : 'Gallery'
+                               }
+
+          if($('search_lst_sort'))
+          {
+           var searchFocusOptions=$('search_focus_sel').options;
+
+            for(var i=0;i<searchFocusOptions.length;i++)
+            {
+                if(typeof(searchVal2Pack[searchFocusOptions[i].value])!='undefined')
+                {   
+
+                 var pack=  OAT.Xml.xpath(xmlDoc, "//installedPackages_response/application[text()='"+searchVal2Pack[searchFocusOptions[i].value]+"']",{})[0];
+                 if(typeof(pack)!='undefined')
+                 {
+                   var att=buildObjByAttributes(pack);
+                   if(typeof(att.maxinstances)!='undefined' && att.maxinstances=='0')
+                      $('search_focus_sel').remove(i);
+                   
+                 }else
+                  $('search_focus_sel').remove(i);
+                }
+            }
+          }
+          
+          if($('search_focus_advanced'))
+          {
+            var advancedFocusCB=$('search_focus_advanced').getElementsByTagName('input');
+            for(var i=0;i<advancedFocusCB.length;i++)
+            {
+              if(advancedFocusCB[i].type=='checkbox')
+              {
+                if(typeof(searchVal2Pack[advancedFocusCB[i].value])!='undefined')
+                {   
+
+                 var pack=  OAT.Xml.xpath(xmlDoc, "//installedPackages_response/application[text()='"+searchVal2Pack[advancedFocusCB[i].value]+"']",{})[0];
+                 if(typeof(pack)!='undefined')
+                 {
+
+                   var att=buildObjByAttributes(pack);
+                   if(typeof(att.maxinstances)!='undefined' && att.maxinstances=='0')
+          {
+                     advancedFocusCB[i].checked=false;
+                     advancedFocusCB[i].disabled=true;
+                   }
+                   
+                 }else
+           { 
+                   advancedFocusCB[i].checked=false;
+                   advancedFocusCB[i].disabled=true;
+                 }
+           }
+          }
+        }
+          }
+           
+        }
+
+        self.installedPackages(modifySearchOptions);
+        
+        self.searchObj.tab=new OAT.Tab('searchPCtr');
+        self.searchObj.tab.add('searcT1','searchP1');
+        self.searchObj.tab.add('searcT2','searchP2');
+        self.searchObj.tab.go(0);
+        
+        
+        
+        OAT.Event.attach('searcT2',"click",function(){self.searchObj.map.obj.checkResize();
+                                                      if($v('search_textbox_searchC')=='')
+                                                          self.searchContacts('',self.renderSearchResultsMap);
+
+                                                     });
+
+        var mapOpt = {
+                      fix:OAT.MapData.FIX_ROUND1,
+    	                fixDistance:20,
+    	                fixEpsilon:0.5
+                     }                 
+
+        
+
+        self.searchObj.map = new OAT.Map('searchMap',OAT.MapData.TYPE_G,mapOpt);
+        self.searchObj.map.centerAndZoom(0,0,8); /* africa, middle zoom */
+        self.searchObj.map.obj.addControl(new GSmallMapControl());
+        self.searchObj.map.setMapType(OAT.MapData.MAP_ORTO); /* aerial */
+        self.searchObj.map.removeAllMarkers = function(){ var totalCount=this.markerArr.length;
+                                                          for (var i=0;i<totalCount;i++)
+                                                               this.removeMarker(this.markerArr[0]);
+                                                        };
+        self.searchObj.map.ref = function(mapObj,infoDiv){ return function(marker){
+                                                                                   mapObj.closeWindow();
+                                                                                   mapObj.openWindow(marker,infoDiv);
+                                                                                  }
+                                                             
+                                                 };
+
+        if($('search_textbox_searchC'))
+        {  $('search_textbox_searchC').callback=function(e){
+                                                    var t=eTarget(e);
+
+                                                    if(t && t.value && t.value.length<2)
+                                                    {
+                                                     self.dimmerMsg('Invalid keyword string entered.');
+                                                     return;
+                                                    }
+
+                                                    if(t && t.value && t.value.length>0)
+                                                    {
+                                                       self.search(self.getSearchOptions(t),self.renderSearchResults);
+                                                       self.searchContacts('keywords='+t.value,self.renderSearchResultsMap);
+                                                    
+                                                    }
+                                                    else if(self.searchObj.tab.selectedIndex==1)
+                                                    {
+                                                     self.searchContacts('',self.renderSearchResultsMap);
+                                                    }
+                                                      
+                                                    
+                                                };
+           OAT.Event.attach($('search_textbox_searchC'),"keypress",onEnterDown);  
+        };
+        OAT.Event.attach($('search_textbox_searchC'),"keypress",onEnterDown);  
+        
+        if($('search_button_searchC'))
+        {  $('search_button_searchC').callback=function(){
+                                                  var t=$('search_textbox_searchC');
+
+                                                  if(t && t.value && t.value.length<2)
+                                                  {
+                                                     self.dimmerMsg('Invalid keyword string entered.');
+                                                     return;
+                                                  }
+
+                                                  if(t && t.value && t.value.length>0)
+                                                  {
+                                                     self.search(self.getSearchOptions(t),self.renderSearchResults);
+                                                     self.searchContacts('keywords='+t.value,self.renderSearchResultsMap);
+                                                  
+                                                  }
+                                                  else if(self.searchObj.tab.selectedIndex==1)
+                                                  {
+                                                   self.searchContacts('',self.renderSearchResultsMap);
+                                                  }
+                                                };
+        }
+        
+
+        if($('toggleSelect'))
+           $('toggleSelect').callback=function(){inverseSelected($('search_listing'))};
+           
+        if($('search_focus_sel'))
+           $('search_focus_sel').callback=function(){if(this[this.selectedIndex].value=='on_advanced')
+                                                        OAT.Dom.show($('search_focus_advanced'));
+                                                     else OAT.Dom.hide($('search_focus_advanced'));
+                                                }
+        $('search_focus_sel').callback();
+        if($('advanced_search_searchC'))
+           $('advanced_search_searchC').callback=function(){
+                                                            var t=$('search_textbox_searchC');
+                                                            if(t && t.value && t.value.length>0)
+                                                                nav.loadVspx(nav.expandURL(nav.ods+'search.vspx?q='+encodeURIComponent(t.value.trim())));
+                                                            else
+                                                                nav.loadVspx(nav.expandURL(nav.ods+'search.vspx'));
+                                                           }
+        
+        if($('tagSelectedToggle'))
+        {
+          $('tagSelectedToggle').divId='do_tag_block';
+           $('tagSelectedToggle').callback=function(){
+                                                       if($(this.divId))
+                                                       {
+                                                        if($(this.divId).style.display=='none')
+                                                           OAT.Dom.show($(this.divId));
+                                                        else
+                                                           OAT.Dom.hide($(this.divId));
+                                                       }
+                                                       return;
+                                                     }
+        
+        }
+        if($('tagsInput'))
+        {
+           $('tagsInput').doTagToggle=function(){
+                                                      var img=this.parentNode.getElementsByTagName("img")[0];
+                                                      if(!self.session.userId || 
+                                                         this.value.length==0 ||
+                                                         typeof($('top_pager').paginator)=='undefined' || 
+                                                         (typeof($('top_pager').paginator)!='undefined' && $('top_pager').paginator.totalCount==0)
+                                                        )
+                                                      {
+                                                       
+                                                       img.action=false;
+                                                       img.style.cursor='';
+                                                       if(img.src!='images/icons/add_16_gr.png')
+                                                          img.src='images/icons/add_16_gr.png';
+                                                      }else
+                                                      {
+                                                       img.action='tag';
+                                                       img.style.cursor='pointer';
+                                                       if(img.src!='images/icons/add_16.png')
+                                                          img.src='images/icons/add_16.png';
+                                                      }
+                                                      return;
+                                                }
+        
+  }
+
+        if($('do_tag'))
+        {
+           $('do_tag').callback=function(){  if(typeof(this.action)!='undefined' && this.action=='tag')
+                                             {
+                                               var tagStr=$('tagsInput').value.trim();
+                                               var tagObjStr='';
+                                               
+                                               if(tagStr!='')
+                                               {
+                                                 var i=0;
+                                                 var inps=$('search_listing').getElementsByTagName('input');
+
+                                                 for(var k=0;k<inps.length;k++)
+                                                 {
+                                                   if(inps[k].type=='checkbox' && inps[k].checked)
+                                                   {
+                                                      tagObjStr+='&obj'+i+'='+inps[k].value;
+                                                      i++;
+                                                   }
+                                                 }
+                                                 
+                                               }
+                                               
+                                               if(tagStr.length>0 && tagObjStr.length>0)
+                                                  self.tagSearchResult('tagStr='+tagStr+tagObjStr,function(){self.wait('hide');});
+                                                
+                                             }
+                                             return;
+                                       }
+        
+        }
+
+        var permaInstant = new OAT.Instant($('search_gems_block'));
+        permaInstant.createHandle($('searchPermalinkA'));
+        permaInstant.createHandle($('searchPermalinkImg'));
+        
+  
+  
+        function gemHref(gemType)
+        {
+          if(typeof(gemType)=='undefined') return;
+          
+          var q=$('search_textbox_searchC').value+'';
+
+          var onStr='';
+          
+          if($('search_focus_sel') && $('search_focus_sel').value)
+          {
+   
+            var allSearchOpts='';
+            var selectedSearchOpts='';
+
+            var searchVal2Gems = {on_people      : 'people',
+                                  on_apps        : 'apps',
+                                  on_dav         : 'dav',                                                
+                                  on_wikis       : 'wiki',
+                                  on_blogs       : 'weblog',
+                                  on_news        : 'feeds',
+                                  on_bookmark    : 'bookmark',
+                                  on_omail       : 'mail',
+                                  on_polls       : 'polls',
+                                  on_addressbook : 'addressbook',
+                                  on_calendar    : 'calendar',
+                                  on_nntp        : 'discussion',
+                                  on_community   : 'community',
+                                  on_photos      : 'gallery'
+                                 }
+            
+            var advancedFocusCB=$('search_focus_advanced').getElementsByTagName('input');
+            if(typeof($('search_focus_advanced'))!='undefined')
+            {
+               for(var i=0; i<advancedFocusCB.length;i++)
+               {
+                 if(advancedFocusCB[i].type=='checkbox' && advancedFocusCB[i].checked && typeof(searchVal2Gems[advancedFocusCB[i].value])!='undefined')
+                 {
+                   var optStr=searchVal2Gems[advancedFocusCB[i].value]
+                   
+                   if(!advancedFocusCB[i].disabled)
+                      allSearchOpts += (i==advancedFocusCB.length-1) ? optStr : optStr+',';
+                   if(advancedFocusCB[i].checked)
+                      selectedSearchOpts += (i==advancedFocusCB.length-1) ? optStr : optStr+',';
+                 }
+               }
+            }
+
+            if($('search_focus_sel').value=='on_all')
+                 onStr=allSearchOpts;
+            else if($('search_focus_sel').value=='on_advanced')
+                 onStr=selectedSearchOpts;
+            else if($('search_focus_sel').value!='' && typeof(searchVal2Gems[advancedFocusCB[i].value])!='undefined')
+                 onStr=searchVal2Gems[advancedFocusCB[i].value];
+          
+          }
+          
+          var gHref=false;
+          if(gemType=='gdata')
+          {
+//             dd('/dataspace/GData/people,apps,weblog,dav,feeds,wiki,mail,bookmark,polls,addressbook,discussion/?q=tester&sid=f21bca9b6bd68a3db8b86a64a0170654&realm=wa');
+             gHref=self.expandURL('/dataspace/GData/'+onStr+'/?q='+q);
+          }
+          else
+          {
+//             dd('search.vspx?q=tester&q_tags=&r=100&s=1&apps=people,apps,weblog,dav,feeds,wiki,mail,bookmark,polls,addressbook,discussion&o=xml&sid=f21bca9b6bd68a3db8b86a64a0170654&realm=wa');
+             gHref=self.expandURL('search.vspx?q='+q+'&q_tags=&r=100&s=1&apps='+onStr+'&o='+gemType);
+          }
+        
+           return gHref;
+        }
+
+        if($('search_gems_block'))
+        {
+           var gems=$('search_gems_block').getElementsByTagName('a');
+           
+           for(var i=0;i<gems.length;i++)
+           {
+              OAT.Dom.attach()
+              OAT.Dom.attach(gems[i],"click",function(e) {var t=eTarget(e);
+                                                          var gemUrl=gemHref(t.rel);
+                                                          if(gemUrl.length)
+                                                             window.open(gemUrl);
+                                                         });
+           }
+        }
+        
+
+
+
+  }
+  
+  this.renderSearchResultsMap = function(xmlDoc)
+  {
+     self.wait('hide');
+     self.searchObj.map.removeAllMarkers();
+
+     var mapResults=OAT.Xml.xpath(xmlDoc, '//searchContacts_response/search_result',{});
+     self.searchObj.map.geoCoordArr=new Array();
+     
+     
+     for (var i=0;i<mapResults.length;i++)
+     {
+        var result=buildObjByChildNodes(mapResults[i]);
+        
+        var htmlDiv=OAT.Dom.create('div');
+        htmlDiv.innerHTML=result.html;
+        self.searchObj.map.addMarker(result.uid,result.latitude,result.longitude,
+                            false,false,false,
+                            self.searchObj.map.ref(self.searchObj.map,htmlDiv)
+              );
+       self.searchObj.map.geoCoordArr.push(new Array(result.latitude,result.longitude));
+        
+     }
+      self.searchObj.map.optimalPosition(self.searchObj.map.geoCoordArr);
+
+  }
+
+  this.renderSearchResults = function(xmlDoc)
+  {
+    if(typeof($('search_focus_sel').callback)=='function')
+       $('search_focus_sel').callback();
+
+    OAT.Dom.clear($('search_listing'));
+    if($('search_textbox_searchC').value.length>0)
+       $('search_textbox').value='';
+    
+    var results=OAT.Xml.xpath(xmlDoc, '//search_response/search_result',{});
+    
+    var resultsPagination= new ODS.paginator(results,$('top_pager'),$('bottom_pager'),renderResultsPage);
+
+    function renderResultsPage(paginationCtrl)
+    {
+     OAT.Dom.clear($('search_listing'));
+
+     if(paginationCtrl.startIndex && paginationCtrl.endIndex)
+     {
+       for (var i=paginationCtrl.startIndex;i<=paginationCtrl.endIndex;i++)
+       {
+         var result=buildObjByChildNodes(paginationCtrl.iSet[i-1]);
+         result.date=new Date(result.date);
+       
+         var resultLi=OAT.Dom.create('li');
+         var resultCB=OAT.Dom.create('input',{},'sel_ckb')
+         resultCB.type='checkbox';
+         resultCB.checked=true;
+         resultCB.value=result.tag_table_fk;
+         
+         var resultDiv=OAT.Dom.create('div',{},'hit');
+       
+         var resultInnerDiv=OAT.Dom.create('div',{},'hit_ctr');
+         resultInnerDiv.innerHTML=result.html;
+         
+         OAT.Dom.append([$('search_listing'),resultLi],[resultLi,resultDiv],[resultDiv,resultCB,resultInnerDiv]);
+       }
+     }
+    }
+
+    if(resultsPagination.totalItems==0)
+    {
+      var resultLi=OAT.Dom.create('li');
+      resultLi.innerHTML='<div class="hit" style="padding:10px 0px 5px 0px;">&nbsp;Your search - <b>'+$('search_textbox_searchC').value+'</b> - did not match any documents.</div>';
+      OAT.Dom.append([$('search_listing'),resultLi]);
+
+    }
+    
+        
+    self.showSearch()
+    self.wait('hide');
+
+  };
+  
+  this.renderInvitations = function(xmlDoc)
+  {
+    var invitations=OAT.Xml.xpath(xmlDoc, '//invitationsGet_response/invitation',{});
+
+    if (invitations.length>0)
+    { 
+      var fullName=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '//invitationsGet_response/invitation/fullName',{})[0]);
+      var invUserID=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '//invitationsGet_response/invitation/uid',{})[0]);
+      
+      function showInvProfile()
+      {
+        self.wait();
+        self.profile.show=true; 
+        self.profile.set(invUserID);
+        self.initProfile();
+      }
+
+      function showLoggedUserProfile()
+      {
+        self.wait();
+        self.profile.show=true; 
+        self.profile.set(self.session.userID);
+        self.initProfile();
+      }
+      
+      OAT.Event.attach($('ivitaitons_connection_photo'),"click",showInvProfile);  
+      OAT.Event.attach($('ivitaitons_connection_profileA'),"click",showInvProfile);  
+      OAT.Event.attach($('ivitaitons_connection_ownprofileA'),"click",showLoggedUserProfile);  
+
+
+      $('ivitaitons_connection_full_name_1').innerHTML=fullName;
+      $('ivitaitons_connection_full_name_2').innerHTML=fullName;
+      $('ivitaitons_connection_full_name_3').innerHTML=fullName;
+      $('ivitaitons_connection_full_name_4').innerHTML=fullName;
+      $('ivitaitons_connection_full_name_5').innerHTML=fullName;
+
+      $('ivitaitons_connection_photo').alt=fullName;
+      $('ivitaitons_connection_photo').src=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '//invitationsGet_response/invitation/photo',{})[0])
+
+      $('ivitaitons_connection_city').innerHTML=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '//invitationsGet_response/invitation/home/city',{})[0]);
+      $('ivitaitons_connection_country').innerHTML=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '//invitationsGet_response/invitation/home/country',{})[0]);
+      $('ivitaitons_connection_conncount').innerHTML=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '//invitationsGet_response/invitation/connections/count',{})[0]);
+
+      OAT.Event.attach($('ivitaitons_connection_acceptA'),"click",function(){self.connectionSet(invUserID,2,function(){self.invitationsGet('fullName,photo,home',self.renderInvitations);})} );  
+      OAT.Event.attach($('ivitaitons_connection_rejectA'),"click",function(){self.connectionSet(invUserID,3,function(){self.invitationsGet('fullName,photo,home',self.renderInvitations);})} );  
+
+      self.showInvitations();
+    }else
+    {
+      self.dimmerMsg('You have no new invitations.', function(){ self.connections.show=true;self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface); });
+    }
+  }
   this.logIn= function ()
   {
     // add later #destroy previous session and session cookie#
@@ -1055,7 +2100,6 @@ ODS.Nav = function(navOptions) {
 
 
     var loginDiv=$('loginDiv');
-    
     if(!self.logindiv)
     {
         var loginDiv=OAT.Dom.create('div',{},'login_dialog');
@@ -1064,13 +2108,58 @@ ODS.Nav = function(navOptions) {
         
         var loginTab=new OAT.Tab('loginPCtr');
         loginTab.add('loginT1','loginP1');
-        loginTab.add("loginT2","loginP2");
+        loginTab.add('loginT2','loginP2');
         loginTab.go(0);
         
+        OAT.Event.attach('loginT1',"click",function(){$('loginErrDiv').innerHTML='';if(!OAT.Dom.isIE()) $('loginUserName').focus();});  
+        OAT.Event.attach('loginT2',"click",function(){$('loginErrDiv').innerHTML='';if(!OAT.Dom.isIE()) $('loginOpenIdUrl').focus();});  
        
         OAT.Event.attach($('loginCloseBtn'),"click",OAT.Dimmer.hide);  
 
-       OAT.Event.attach($('signupBtn'),"click",function(){OAT.Dimmer.hide();self.loadVspx(self.expandURL(self.ods+'register.vspx'));});  
+        OAT.Event.attach($('signupBtn'),"click",function(){self.session.sid=false;OAT.Dimmer.hide();self.loadVspx(self.expandURL(self.ods+'register.vspx'));});  
+        
+        if($('loginUserName'))
+        {
+           $('loginUserName').callback=function(){if($('loginUserPass')) $('loginUserPass').focus(); return;}
+           OAT.Event.attach($('loginUserName'),"keypress",onEnterDown);  
+
+        }
+
+        if($('loginUserPass'))
+        {
+           $('loginUserPass').tokenReceived=false;
+           $('loginUserPass').callback=function(){
+                                                  if(this.tokenReceived)
+                                                  {
+                                                    self.session.validate();
+                                                  }else
+                                                  {
+                                                   if($('loginErrDiv').innerHTML.indexOf('Please wait ...')==-1)
+                                                      $('loginErrDiv').innerHTML='<img src="images/warn_16.png" style="vertical-align: text-bottom; padding: 3px 3px 0px 0px;" >Please wait ...';
+                                                   setTimeout(function(){$('loginUserPass').callback()},500);
+                                                  }
+                                                 }  
+           OAT.Event.attach($('loginUserPass'),"keypress",onEnterDown);  
+
+        }
+
+
+        if($('loginOpenIdUrl'))
+        {
+           $('loginOpenIdUrl').tokenReceived=false;
+           $('loginOpenIdUrl').callback=function(){
+                                                  if(this.tokenReceived)
+                                                  {
+                                                    self.session.validate();
+                                                  }else
+                                                  {
+                                                   if($('loginErrDiv').innerHTML.indexOf('Please wait ...')==-1)
+                                                      $('loginErrDiv').innerHTML='<img src="images/warn_16.png" style="vertical-align: text-bottom; padding: 3px 3px 0px 0px;" >Please wait ...';
+                                                   setTimeout(function(){$('loginOpenIdUrl').callback()},500);
+                                                  }
+                                                 }  
+           OAT.Event.attach($('loginOpenIdUrl'),"keypress",onEnterDown);  
+        }
 
         OAT.Dom.append([loginDiv,$('login_page')]);
        
@@ -1128,7 +2217,7 @@ ODS.Nav = function(navOptions) {
        var signupBtn=OAT.Dom.create('input',{margin:'20px 5px 20px 5px'});
        signupBtn.type='button';
        signupBtn.value = 'Sign Up!';
-       OAT.Event.attach(signupBtn,"click",function(){OAT.Dimmer.hide;self.loadVspx(self.expandURL(self.ods+'register.vspx'));});  
+       OAT.Event.attach(signupBtn,"click",function(){self.session.sid=false;OAT.Dimmer.hide;self.loadVspx(self.expandURL(self.ods+'register.vspx'));});  
       
        OAT.Dom.append([document.body,loginDiv],
                       [loginDiv,titleDiv,errDiv,ctrlDiv],
@@ -1153,9 +2242,163 @@ ODS.Nav = function(navOptions) {
       $('loginOpenIdUrl').style.marginLeft='105px';
     }
     
-    
     $('loginUserName').focus();
     
+  }
+
+  this.showLoginErr=function(errMsg)
+  {
+    if(typeof(errMsg)=='undefined')
+    {
+      if($('loginDiv').loginTab.selectedIndex==1)
+          errMsg='Invalid OpenID URL';
+      else
+          errMsg='Invalid Member ID or Password';
+    }
+    OAT.Dom.clear('loginErrDiv');
+    var warnImg=OAT.Dom.create('img',{verticalAlign:'text-bottom',padding:'3px 3px 0px 0px'});
+    warnImg.src='images/warn_16.png';
+    OAT.Dom.append([$('loginErrDiv'),warnImg,OAT.Dom.text(errMsg)]);
+    return;
+  
+  }
+
+
+  this.updateConnectionsInterface = function (xmlDoc)
+  {
+    var connections = OAT.Xml.xpath(xmlDoc, '//connectionsGet_response/user',{});
+    var invitations = OAT.Xml.xpath(xmlDoc, '//connectionsGet_response/user/invited',{});
+
+// START render connection Interface 
+        if(self.session.userId==self.connections.userId)
+           $('connectionsCountSpan').innerHTML='('+(connections.length-invitations.length)+')';
+
+        
+        OAT.Dom.clear($('connections_list'));
+        var templateHtml= $('connectionsTemplate').innerHTML;
+        for(var i=0;i<connections.length;i++)
+        {
+          
+          var conn=buildObjByChildNodes(connections[i]);
+          
+          var arrPos = -1;
+          if(self.session.connectionsId)
+            arrPos=self.session.connectionsId.find(conn.uid);
+          
+          if(self.session.userId==self.connections.userId && arrPos==-1 )
+             self.session.connectionAdd(conn.uid,conn.fullName);
+          
+          var connHTML=templateHtml;
+
+          connHTML=connHTML.replace('#connImgSRC#',conn.photo.length>0 ? conn.photo : 'images/profile.png');
+          connHTML=connHTML.replace('#connProfileFullName#',conn.fullName);
+          connHTML=connHTML.replace('#sendMsg#','sendMsg_'+conn.uid);
+          connHTML=connHTML.replace('#viewConnections#','viewConnections_'+conn.uid);
+          connHTML=connHTML.replace('#doConnection#','doConnection_'+conn.uid);
+          
+          var divSize=(OAT.Dom.getWH($('RT'))[0]-20) +'px';
+          
+          var div=OAT.Dom.create('div',{width:divSize,border:'1px solid',margin:'5px'});
+          div.uid=conn.uid;
+          div.innerHTML=connHTML;
+          
+          var elm=div.getElementsByTagName("img")[0];
+          elm.uid=conn.uid;
+          OAT.Dom.attach(elm,"click",function(e) {var t=eTarget(e);self.profile.show=true;self.profile.set(t.uid) ;self.initProfile();});
+
+          var elm=div.getElementsByTagName("span")[0];
+          elm.uid=conn.uid;
+          OAT.Dom.attach(elm,"click",function(e) {var t=eTarget(e);self.profile.show=true;self.profile.set(t.uid) ;self.initProfile();});
+          
+          OAT.Dom.append([$('connections_list'),div]);
+
+
+          var elm=$('sendMsg_'+conn.uid);
+          elm.uid=conn.uid;
+          if(conn.uid==self.session.userId)
+             OAT.Dom.unlink(elm);
+          else 
+          {
+            OAT.Event.attach(elm,"click",function(e){var t=eTarget(e);
+                                                     self.ui.newMsgWin(t,t.uid);
+                                                    });
+          };
+          
+          
+          var elm=$('viewConnections_'+conn.uid);
+          elm.uid=conn.uid;
+          OAT.Event.attach(elm,"click",function(e){
+                                                   var t=eTarget(e);
+                                                   self.connections.show=true;
+                                                   self.connections.userId=t.uid;
+                                                   self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface)
+                                                 });  
+
+          var elm=$('doConnection_'+conn.uid);
+
+          
+          var elmParent=elm.parentNode;
+
+          OAT.Dom.unlink(elm);
+          
+          var elm=OAT.Dom.create('a',{cursor:'pointer',textDecoration:'underline'});
+          elm.id="'doConnection_'+conn.uid";
+          elm.uid=conn.uid;
+          elm.fullName=conn.fullName;
+          
+          if(self.session.connectionsId.find(conn.uid) > -1 && typeof(conn.invited)=='undefined')
+          {
+             elm.innerHTML='Disconnect';
+             
+             OAT.Dom.attach(elm,"click",function(e) {var t=eTarget(e);
+                                                     self.connectionSet(t.uid,0,function(){self.session.connectionRemove(t.uid);
+                                                                                           self.initProfile();
+                                                                                           self.connections.show=true;
+                                                                                           self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                                                           
+                                                                                          }
+                                                                        )
+                                                     });
+          }else if(self.session.connectionsId.find(conn.uid) > -1 && typeof(conn.invited)!='undefined' && conn.invited==1)
+          {
+             elm.innerHTML='Withdraw invitation';
+             
+             OAT.Dom.attach(elm,"click",function(e) {var t=eTarget(e);
+                                                     self.connectionSet(t.uid,4,function(){self.session.connectionRemove(t.uid);
+                                                                                           self.initProfile();
+                                                                                           self.connections.show=true;
+                                                                                           self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                                                          }
+                                                                        )
+                                                     });
+
+          }else if(self.session.userId!=conn.uid)
+          {
+             elm.innerHTML='Connect';
+             OAT.Dom.attach(elm,"click",function(e) {var t=eTarget(e);
+                                                    self.connectionSet(t.uid,1,function(){  
+                                                                                            self.session.connectionAdd(t.uid,t.fullName);
+                                                                                            self.connections.show=true;
+                                                                                            self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                                                         }
+                                                                      )
+                                                     });
+          }
+          
+//          if(typeof(elmParent)!='undefined')
+             OAT.Dom.append([elmParent,elm]);
+
+        }
+
+
+
+//          OAT.Event.attach(connMenuItems.childNodes[i],"click",function(){self.connections.show=true;
+//                                                                          self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface)
+//                                                                         });  
+
+        OAT.MSG.send(self,OAT.MSG.CONNECTIONS_UPDATED,{});
+
+// END render connection Interface 
 
   }
   
@@ -1250,6 +2493,7 @@ ODS.Nav = function(navOptions) {
     self.profile.userName=userProfileName;
     
     var userDisplayName=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/fullName',{})[0]);
+    self.profile.userFullName=userDisplayName;
     var userProfilePhoto=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/photo',{})[0]);
 
     if(userDisplayName=='')
@@ -1261,12 +2505,62 @@ ODS.Nav = function(navOptions) {
     $('userProfilePhotoImg').alt=userDisplayName;
     
     var gems=$('profileUserGems').getElementsByTagName("a");
-    gems[0].href='/dataspace/person/'+self.profile.userName+'/foaf.rdf'; // foaf
-    gems[1].href='/dataspace/'+self.profile.userName+'/sioc.rdf'; //sioc
-    gems[2].href='http://geourl.org/near?p='+encodeURIComponent('http://'+document.location.host+'/dataspace/'+self.profile.userName); //GEOURL //http://geourl.org/near?p=http%3A//bdimitrov.lukanet.com%3A8890/dataspace/borislavdimitrov
-    gems[3].href='sn_user_export.vspx?ufid='+self.profile.userId+'&ufname='+self.profile.userName;//vcard
+    gems[0].href=self.odsLink()+'/dataspace/person/'+self.profile.userName+'/foaf.rdf'; // foaf
+    gems[1].href=self.odsLink()+'/dataspace/'+self.profile.userName+'/sioc.rdf'; //sioc
+//    gems[2].href='http://geourl.org/near?p='+encodeURIComponent('http://'+document.location.host+'/dataspace/'+self.profile.userName); //GEOURL //http://geourl.org/near?p=http%3A//bdimitrov.lukanet.com%3A8890/dataspace/borislavdimitrov
+    gems[2].href=self.odsLink()+self.ods+'sn_user_export.vspx?ufid='+self.profile.userId+'&ufname='+self.profile.userName;//vcard
     
+    function renderProfileUserActions()
+    {
+     
+      OAT.Dom.show($('profile_user_actions'));
+    
+      var msgA=$('profileSendMsg');
+      if(self.session.userId==self.profile.userId)
+         OAT.Dom.hide(msgA);
+      else       
+      {
+         OAT.Dom.show(msgA);
+         OAT.Dom.attach(msgA,"click",function() {self.ui.newMsgWin(msgA,self.profile.userId);});
+      }
 
+      var connA=$('profileConnAction');
+      if(self.session.userId==self.profile.userId)
+         OAT.Dom.hide(connA);
+      else       
+      {
+         var connLi=connA.parentNode;
+         OAT.Dom.unlink(connA);
+         
+         var connA=OAT.Dom.create('a',{cursor:'pointer'});
+         connA.id="profileConnAction";
+         
+         if(self.session.connectionsId.find(self.profile.userId) > -1)
+         {
+            connA.innerHTML='Disconnect';
+            OAT.Dom.attach(connA,"click",function() {self.connectionSet(self.profile.userId,0,function(){self.session.connectionRemove(self.profile.userId);
+                                                                                                         self.initProfile();
+                                                                                                        }
+                                                                       )
+                                                    });
+         }else
+         {
+            connA.innerHTML='Connect';
+            OAT.Dom.attach(connA,"click",function() {self.connectionSet(self.profile.userId,1,function(){//self.session.connectionAdd(self.profile.userId,self.profile.userFullName);
+                                                                                                         self.initProfile();
+                                                                                                        }
+                                                                       )
+                                                    });
+         }
+         
+         OAT.Dom.append([connLi,connA]);
+      }
+
+
+
+    }
+    
+    renderProfileUserActions();
 
     function renderConnectionsWidget(xmlDoc)
     {
@@ -1276,30 +2570,42 @@ ODS.Nav = function(navOptions) {
 
       function attachClick(elm, connId)
       {
-        OAT.Dom.attach(elm,"click",function() {self.profile.set(connId) ;self.initProfile();});
+        OAT.Dom.attach(elm,"click",function() {self.profile.show=true; self.profile.set(connId) ;self.initProfile();});
       };
 
       var connections = OAT.Xml.xpath(xmlDoc, '//connectionsGet_response/user',{});
 
+      var invitations = OAT.Xml.xpath(xmlDoc, '//connectionsGet_response/user/invited',{});
+
+
+      $('connPTitleTxt').innerHTML='Connections ('+(connections.length-invitations.length)+')';
+
+      var connectionsArr= new Array();
+
       for(var i=0;i<connections.length;i++)
       {
 
-        $('connPTitleTxt').innerHTML='Connections ('+connections.length+')';
+        var connObj=buildObjByChildNodes(connections[i]);
 
-        var connObj={};
-        connObj[OAT.Xml.textValue(connections[i].childNodes[0])]=OAT.Xml.textValue(connections[i].childNodes[1]);
-        self.profile.connections.push(connObj);
+        if(typeof(connObj.invited)=='undefined' )
+        {
+           
+           var connProfileObj={};
+           connProfileObj[connObj.uid]=connObj.fullName;
+
+           self.profile.connections.push(connProfileObj);
+           connectionsArr.push(connObj.uid);
         
         var _divC=OAT.Dom.create('div',{cursor:'pointer'},'conn');
-        _divC.id='connW_'+OAT.Xml.textValue(connections[i].childNodes[0]);
-//        _divC.profileId=OAT.Xml.textValue(connections[i].childNodes[0]);
-        attachClick(_divC,OAT.Xml.textValue(connections[i].childNodes[0]));
+
+           _divC.id='connW_'+connObj.uid;
+           attachClick(_divC,connObj.uid);
         
         var tnail=OAT.Dom.create('img',{width:'40px',height:'40px'});
-        tnail.src= (OAT.Xml.textValue(connections[i].childNodes[2]) ? OAT.Xml.textValue(connections[i].childNodes[2]) : 'images/profile_small.png');
+           tnail.src= (connObj.photo.length>0 ? connObj.photo : 'images/profile_small.png');
         var _divCI=OAT.Dom.create('div',{},'conn_info');
         var cNameA=OAT.Dom.create('a',{cursor:'pointer'});
-        cNameA.innerHTML=OAT.Xml.textValue(connections[i].childNodes[1]);
+           cNameA.innerHTML=connObj.fullName;
        
         OAT.Dom.append([connTP,_divC],[_divC,tnail,_divCI],[_divCI,cNameA]);
         
@@ -1310,16 +2616,24 @@ ODS.Nav = function(navOptions) {
         {
           self.profile.connMap.addMarker(i,_lat,_lon,
                                          tnail.src,40,40,
-                                         function(marker){self.profile.set(self.profile.connMap.connData[marker.__group].id) ;self.initProfile();}
+                                            function(marker){self.profile.show=true;self.profile.set(self.profile.connMap.connData[marker.__group].id) ;self.initProfile();}
                                          );
    
           self.profile.connMap.connLocations.push(new Array(_lat,_lon));
-          self.profile.connMap.connData[i]={id    : OAT.Xml.textValue(connections[i].childNodes[0]),
+             self.profile.connMap.connData[i]={id    : connObj.uid,
                                             name  : cNameA.innerHTML,
                                             photo : tnail.src}
         
         }
       }
+      }
+
+      if(self.session.userId==self.profile.userId)
+      {
+        self.session.connections=self.profile.connections;
+        self.session.connectionsId=connectionsArr;
+      }
+
       self.profile.connMap.optimalPosition(self.profile.connMap.connLocations);
       self.wait('hide');
       return;
@@ -1405,10 +2719,9 @@ ODS.Nav = function(navOptions) {
       {
           var entry=buildObjByChildNodes(entries[i]);
 
-//          dd(entry['dc:type'].value);
 
           var actImg=false;
-          if( (typeof(entry['dc:type'].value)!='undefined') && (entry['dc:type'].value.length>0) && (typeof(ODS.ico[entry['dc:type'].value]) != 'undefined'))
+          if( (typeof(entry['dc:type'])!='undefined') && (typeof(entry['dc:type'].value)!='undefined') && (entry['dc:type'].value.length>0) && (typeof(ODS.ico[entry['dc:type'].value]) != 'undefined'))
           {
              actImg=OAT.Dom.create('img',{},'msg_icon');
              actImg.alt=ODS.ico[entry['dc:type'].value].alt;
@@ -1451,7 +2764,8 @@ ODS.Nav = function(navOptions) {
           if(typeof(daily[actDate])=='object' && actHidden.find(feedId)==-1)
           { 
               OAT.Dom.append([daily[actDate].ulObj,actLi]);
-          }
+          }else
+              OAT.Dom.append([daily['older'].ulObj,actLi]);
 
       }
       
@@ -1470,7 +2784,9 @@ ODS.Nav = function(navOptions) {
     function renderContactInformationBlock(xmlDoc)
     {
         var titledFullname = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/title',{})[0])+' '+OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/fullName',{})[0]);
+
         var photo = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/photo',{})[0]);
+        if(photo.length<1) photo = 'images/profile_small.png';
         var _home = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/home',{});
         var _business = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/organization',{});
         var _im = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/im',{})[0];
@@ -1589,7 +2905,12 @@ ODS.Nav = function(navOptions) {
       
        var packageName=OAT.Xml.textValue(resXmlNodes[i]);
        packageName=packageName.replace(' ','');
-       var appOpt=ODS.app[packageName.replace(' ','')];
+       
+       var appOpt={};
+       if(typeof(ODS.app[packageName])!='undefined')
+           appOpt=ODS.app[packageName];
+       else
+          appOpt={menuName:packageName,icon:'images/icons/apps_16.png',dsUrl:'#UID#/'+packageName+'/'};
 
        var appDataSpaceItem=OAT.Dom.create('li');
        var appDataSpaceItemA=OAT.Dom.create('a',{cursor:'pointer'});
@@ -1677,7 +2998,10 @@ ODS.Nav = function(navOptions) {
 
     self.installedPackages(renderDataspaceUl);
     
-    self.connectionsGet(self.profile.userId,'fullName,photo,homeLocation',renderConnectionsWidget);
+    self.connectionsGet(self.profile.userId,'fullName,photo,homeLocation',function(xmlDocRet){renderConnectionsWidget(xmlDocRet);
+                                                                                              if(self.session.userId==self.profile.userId)
+                                                                                                 self.updateConnectionsInterface(xmlDocRet);
+                                                                                             });
     self.discussionGroupsGet(self.profile.userId,renderDiscussionGroups)
 
     OAT.AJAX.GET(ODS.Preferences.activitiesEndpoint+self.profile.userName+'/0/', false , renderNewsFeedBlock, optionsGet);
@@ -1685,8 +3009,11 @@ ODS.Nav = function(navOptions) {
     self.session.usersGetInfo(self.profile.userId,'title,fullName,photo,home,homeLocation,business,businessLocation,im',function(xmlDoc3){renderContactInformationBlock(xmlDoc3);});
     self.session.usersGetInfo(self.profile.userId,'interests,music',function(xmlDoc3){renderPersonalInformationBlock(xmlDoc3);});
 
-    if(self.session.userId!=self.profile.userId)
-       self.showProfile();
+
+     OAT.MSG.send(self,OAT.MSG.PROFILE_UPDATED,{});
+
+     //if(self.session.userId!=self.profile.userId)
+     //   self.showProfile();
     
 
   }
@@ -1696,21 +3023,9 @@ ODS.Nav = function(navOptions) {
      self.wait();
      OAT.Dom.hide('vspxApp');
      OAT.Dom.hide('messages_div');
-
-//     var pL=$('u_profile_l');
-//     var pR=$('u_profile_r');
-//     var pRWidth=OAT.Dom.getWH($('APP'))[0]-OAT.Dom.getWH(pL)[0];
-//     pR.style.width=pRWidth+'px';
-//     var rWidgets=pR.getElementsByTagName("div");
-//     for(var i=0;i<rWidgets.length;i++)
-//     {
-//       if(OAT.Dom.isClass(rWidgets[i],'widget'))
-//          rWidgets[i].style.width=pRWidth-6+'px';
-//       
-//       if(OAT.Dom.isClass(rWidgets[i],'tab_deck'))
-//          rWidgets[i].style.width=pRWidth-8+'px';
-//     }
-
+     OAT.Dom.hide('contacts_interface');
+     OAT.Dom.hide('invitations_C');
+     OAT.Dom.hide('generalSearch_C');
 
      OAT.Dom.show('u_profile_l');
      OAT.Dom.show('u_profile_r');
@@ -1723,7 +3038,60 @@ ODS.Nav = function(navOptions) {
      OAT.Dom.hide('vspxApp');
      OAT.Dom.hide('u_profile_l');
      OAT.Dom.hide('u_profile_r');
+     OAT.Dom.hide('contacts_interface');
+     OAT.Dom.hide('invitations_C');
+     OAT.Dom.hide('generalSearch_C');
+     
      OAT.Dom.show('messages_div');
+
+
+     self.wait('hide');
+  }
+
+  this.showConnections = function()
+  {
+     self.wait();
+     OAT.Dom.hide('vspxApp');
+     OAT.Dom.hide('u_profile_l');
+     OAT.Dom.hide('u_profile_r');
+     OAT.Dom.hide('messages_div');
+     OAT.Dom.hide('invitations_C');
+     OAT.Dom.hide('generalSearch_C');
+    
+     OAT.Dom.show('contacts_interface');
+
+     self.wait('hide');
+  }
+  
+
+  this.showInvitations = function()
+  {
+     self.wait();
+     OAT.Dom.hide('vspxApp');
+     OAT.Dom.hide('u_profile_l');
+     OAT.Dom.hide('u_profile_r');
+     OAT.Dom.hide('messages_div');
+     OAT.Dom.hide('contacts_interface');
+     OAT.Dom.hide('generalSearch_C');
+
+     OAT.Dom.show('invitations_C');
+
+
+     self.wait('hide');
+  }
+  
+  this.showSearch = function()
+  {
+     self.wait();
+     OAT.Dom.hide('vspxApp');
+     OAT.Dom.hide('u_profile_l');
+     OAT.Dom.hide('u_profile_r');
+     OAT.Dom.hide('messages_div');
+     OAT.Dom.hide('contacts_interface');
+     OAT.Dom.hide('invitations_C');
+
+     OAT.Dom.show('generalSearch_C');
+
      self.wait('hide');
   }
   
@@ -1733,6 +3101,9 @@ ODS.Nav = function(navOptions) {
      OAT.Dom.hide('u_profile_l');
      OAT.Dom.hide('u_profile_r');
      OAT.Dom.hide('messages_div');
+     OAT.Dom.hide('contacts_interface');
+     OAT.Dom.hide('invitations_C');
+     OAT.Dom.hide('generalSearch_C');
 
      var iframe=$('vspxApp');
      OAT.Dom.show(iframe);
@@ -1758,12 +3129,13 @@ ODS.Nav = function(navOptions) {
   this.wait= function (waitState)
   {
    
+   if($('loginDiv') && $('loginDiv').style.display!='none') return; //checks if login is show.. so login disables wait div
+   if($('dimmerMsg') && $('dimmerMsg').style.display!='none') return; //checks if dimmer message is shown.
+   
    if(OAT.Dimmer.root || waitState=='hide')
    {
     if(OAT.Dimmer.root)
     {
-//       dd(OAT.Dimmer.elm.id);
-//       if(OAT.Dimmer.elm.id == 'waitDiv');
        OAT.Dimmer.hide();
     }
     return;
@@ -1786,6 +3158,27 @@ ODS.Nav = function(navOptions) {
 
   }
   
+  this.dimmerMsg = function (msg,callback)
+  {
+      var div=OAT.Dom.create('div',{background: '#FFF',cursor:'pointer',padding:'10px'})
+      div.innerHTML=''+msg;
+      div.id='dimmerMsg';
+      if(typeof(callback) == "function")
+      {
+       OAT.Event.attach(div,"click",function(){OAT.Dimmer.hide();callback()});  
+      }
+      else
+       OAT.Event.attach(div,"click",function(){OAT.Dimmer.hide();});  
+
+      OAT.Dimmer.hide();
+      OAT.Dimmer.show(div,{popup:true});
+      OAT.Dom.center(div,1,1);
+      
+      if(typeof(callback) == "function")
+         OAT.Dom.attach(OAT.Dimmer.root,"click",callback);
+
+
+  }
 
   var ajaxOptions = {auth:OAT.AJAX.AUTH_BASIC,
                      onerror:function(request) { dd(request.getStatus()); }
@@ -1853,6 +3246,28 @@ ODS.Nav = function(navOptions) {
     OAT.AJAX.POST(self.session.endpoint+"userCommunities", data, callback, ajaxOptions);
   }
 
+//
+  this.invitationsGet = function (extraFields,callbackFunction){
+    
+    self.wait();
+    var data = 'sid='+self.session.sid+'&extraFields='+encodeURIComponent(extraFields);
+      
+    var callback = function(xmlString) {
+                                           var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                           if(!self.session.isErr(xmlDoc))
+                                           {
+                                             if(typeof(callbackFunction) == "function")
+                                                callbackFunction(xmlDoc);
+                                           }else
+                                           {
+                                              self.wait();
+                                           }
+                                       };
+                                         
+    OAT.AJAX.POST(self.session.endpoint+"invitationsGet", data, callback, ajaxOptions);
+  }
+
+
   this.connectionsGet = function (userId,extraFields,callbackFunction){
     
     self.wait();
@@ -1872,6 +3287,28 @@ ODS.Nav = function(navOptions) {
                                          
     OAT.AJAX.POST(self.session.endpoint+"connectionsGet", data, callback, ajaxOptions);
   }
+  this.connectionSet = function (connectionId,action,callbackFunction){
+    
+    //action invite 1,confirm 2, disconnect 0
+    
+    self.wait();
+    var data = 'sid='+self.session.sid+'&connectionId='+connectionId+'&action='+action;
+      
+    var callback = function(xmlString) {
+                                           var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                           if(!self.session.isErr(xmlDoc))
+                                           {
+                                             if(typeof(callbackFunction) == "function")
+                                                callbackFunction(xmlDoc);
+                                           }else
+                                           {
+                                              self.wait();
+                                           }
+                                       };
+                                         
+    OAT.AJAX.POST(self.session.endpoint+"connectionSet", data, callback, ajaxOptions);
+  }
+
 
 
   this.discussionGroupsGet = function (userId,callbackFunction){
@@ -1956,8 +3393,8 @@ ODS.Nav = function(navOptions) {
     OAT.AJAX.POST(self.session.endpoint+"userMessages", data, callback, ajaxOptions);
   };
 
-  this.userMessageSend = function (recipientId,msg,senderId,callbackFunction){
-    
+  this.userMessageSend=function(recipientId,msg,senderId,callbackFunction)
+   {
     self.wait();
     
     var data = 'sid='+self.session.sid+'&recipientId='+recipientId+'&msg='+encodeURIComponent(msg);
@@ -1968,6 +3405,15 @@ ODS.Nav = function(navOptions) {
                                            var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
                                            if(!self.session.isErr(xmlDoc))
                                            {
+                                              var respObj=buildObjByAttributes(OAT.Xml.xpath(xmlDoc, '/userMessageSend_response/message',{})[0])
+   
+                                              if(respObj.status==1)
+                                              {
+                                               OAT.Dom.show($('msgSentTxt'));
+                                               setTimeout(function(){OAT.Dom.hide($('msgSentTxt'))}, 3000);
+                                               OAT.Dom.show($('msgSentTxtWin'));
+                                               setTimeout(function(){OAT.Dom.hide($('msgSentTxtWin'))}, 3000);
+                                              }
                                              if(typeof(callbackFunction) == "function")
                                                 callbackFunction(xmlDoc);
                                            }else
@@ -1979,6 +3425,233 @@ ODS.Nav = function(navOptions) {
     OAT.AJAX.POST(self.session.endpoint+"userMessageSend", data, callback, optionsSynch);
   };
 
+  this.userMessageStatusSet=function(msgId,msgStatus,callbackFunction)
+   {
+      self.wait();
+    
+      var data = 'sid='+self.session.sid+'&msgId='+msgId+'&msgStatus='+msgStatus;
+       
+      var callback = function(xmlString) {
+                                            var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                            if(!self.session.isErr(xmlDoc))
+                                            {
+                                              if(typeof(callbackFunction) == "function")
+                                                 callbackFunction(xmlDoc);
+                                            }else
+                                            {
+                                               self.wait();
+                                            }
+                                        };
+                                          
+      OAT.AJAX.POST(self.session.endpoint+"userMessageStatusSet", data, callback, ajaxOptions);
+   };
+
+   this.search=function(searchParamsStr,callbackFunction)
+   {
+      self.wait();
+    
+      var data = 'sid='+self.session.sid+'&searchParams='+encodeURIComponent(searchParamsStr);
+       
+      var callback = function(xmlString) {
+                                            var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                            if(!self.session.isErr(xmlDoc))
+                                            {
+                                              if(typeof(callbackFunction) == "function")
+                                                 callbackFunction(xmlDoc);
+                                            }else
+                                            {
+                                               self.wait();
+                                            }
+                                        };
+                                          
+      OAT.AJAX.POST(self.session.endpoint+"search", data, callback, optionsSynch);
+   };
+
+   this.searchContacts=function(searchParamsStr,callbackFunction)
+   {
+      self.wait();
+    
+      var data = 'sid='+self.session.sid+'&searchParams='+encodeURIComponent(searchParamsStr);
+       
+      var callback = function(xmlString) {
+                                            var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                            if(!self.session.isErr(xmlDoc))
+                                            {
+                                              if(typeof(callbackFunction) == "function")
+                                                 callbackFunction(xmlDoc);
+                                            }else
+                                            {
+                                               self.wait();
+                                            }
+                                        };
+                                          
+      OAT.AJAX.POST(self.session.endpoint+"searchContacts", data, callback, optionsSynch);
+   };
+
+   this.tagSearchResult=function(tagParamsStr,callbackFunction)
+   {
+      self.wait();
+    
+      var data = 'sid='+self.session.sid+'&tagParams='+encodeURIComponent(tagParamsStr);
+       
+      var callback = function(xmlString) {
+                                            var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                            if(!self.session.isErr(xmlDoc))
+                                            {
+                                              if(typeof(callbackFunction) == "function")
+                                                 callbackFunction(xmlDoc);
+                                            }else
+                                            {
+                                               self.wait();
+                                            }
+                                        };
+                                          
+      OAT.AJAX.POST(self.session.endpoint+"tagSearchResult", data, callback, ajaxOptions);
+   };
+
+
+   this.serverSettings=function()
+   {
+      var data = '';
+       
+      var callback = function(xmlString) {
+                                            var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                            if(!self.session.isErr(xmlDoc))
+                                            {
+                                               if(!self.uriqaDefaultHost)
+                                                   self.uriqaDefaultHost=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/serverSettings_response/uriqaDefaultHost',{})[0]);
+                                            }
+                                        };
+                                          
+      OAT.AJAX.POST(self.session.endpoint+"serverSettings", data, callback, ajaxOptions);
+   };
+
+   this.ui=
+   {
+    newMsgWin:function(anchorObj,sendToUid)
+    {
+      if($('sendBlockWin'))
+         OAT.Dom.unlink($('sendBlockWin').parentNode.parentNode); 
+      
+      var msgWin = self.ui.newWindow({close:1,resize:1,width:400,height:140,title:'New Message'},OAT.WindowData.TYPE_RECT);
+//      msgWin.div.className = "errorWin";
+      
+      var div=self.ui.renderSendBlock(sendToUid)
+      
+      OAT.Dom.show(msgWin.div);
+      OAT.Dom.clear(msgWin.content);
+      OAT.Dom.append([msgWin.content,div]);
+
+      var pos = OAT.Dom.position(anchorObj);
+      var size = OAT.Dom.getWH(anchorObj);
+      if(isNaN(size[0])) size[0]=0;
+
+      msgWin.anchorTo(pos[0]+size[0]-5,pos[1]);
+   },
+    newWindow:function(options,type,parent)
+    {
+     if (!parent) parent = document.body;
+     if (!type)   type = 0;
+     var win = new OAT.Window(options,type);
+     win.onclose = function() { OAT.Dom.hide(win.div); }
+ //  l.addLayer(win.div);
+ //  win.resize._Resize_movers[0][2] = function(x,y){return x < 150 || y < 50;}
+     var keyPress = function(event) {
+      if (event.keyCode == 27) { win.onclose(); }
+     }
+     OAT.Dom.attach(win.div,"keypress",keyPress);
+     OAT.Dom.append([parent,win.div]);
+     return win;
+    },
+    
+
+   renderSendBlock:function (sendToUid)
+   {
+        if (typeof(sendToUid)=='undefined')
+            var sendToUid=-1;
+            
+        var selectedUid=false;
+            
+        var container=OAT.Dom.create("div",{textAlign:'center'});
+        container.id='sendBlockWin';
+        
+        var _span=OAT.Dom.create('span',{cssFloat:'left',padding:'5px 0px 0px 5px'});
+        _span.innerHTML='To:';
+        var msgUserSpan=OAT.Dom.create('span',{width:'45%',cssFloat:'left',textAlign:'left',padding:'5px 0px 0px 5px'});
+        msgUserSpan.id='msgUserSpanWin';
+        
+        var userList = OAT.Dom.create("select",{width:'45%',cssFloat:'right',margin:'0px 3px 5px 0px'});
+        userList.id = 'userListWin';
+        OAT.Dom.option('&lt;Select recipient&gt;',-1,userList);
+        for (var i=0;i<self.session.connections.length;i++)
+        {
+         for(cId in self.session.connections[i])
+         {
+          OAT.Dom.option(self.session.connections[i][cId],cId,userList);
+          
+          if(cId==sendToUid)
+          {
+             userList.selectedIndex=userList.options.length-1;
+             msgUserSpan.innerHTML=self.session.connections[i][cId];
+             selectedUid=cId;
+          } 
+         }
+        }
+
+        OAT.Event.attach(userList,"change",function(e){ var t=eTarget(e);
+                                                        if(t.options[t.selectedIndex].value==-1)
+                                                           $('msgUserSpanWin').innerHTML='';
+                                                        else
+                                                           $('msgUserSpanWin').innerHTML=t.options[t.selectedIndex].text;
+                    
+                                                        $('sendBtnWin').sendto=t.options[t.selectedIndex].value;
+
+                                                     });
+        OAT.Event.attach(userList,"click",function(e){ userList.style.color='#000';});
+
+        var msgText=OAT.Dom.create('textarea',{width:'97%'});
+        msgText.id='msgTextWin';
+        
+        
+        
+        var sendBtn=OAT.Dom.create('input');
+        sendBtn.id='sendBtnWin';
+        sendBtn.type='button';
+        if(!selectedUid)
+            sendBtn.sendto=-1;
+        else sendBtn.sendto=selectedUid;
+        sendBtn.value='Send';
+
+        OAT.Event.attach(sendBtn,"click",function(e){ var t=eTarget(e);
+
+                                                       if(t.sendto==-1)
+                                                       {
+                                                          userList.style.color='#f00';
+                                                          userList.focus();
+                                                          return;
+                                                       }
+                                                       if($('msgTextWin').value.length==0)
+                                                       {
+                                                          $('msgTextWin').focus();
+                                                          return;
+                                                       }
+                                                       userList.style.color='#000';
+                                               
+                                                       self.userMessageSend(t.sendto,$('msgTextWin').value,false,function(){self.wait('hide');})
+                                                       
+                                                     });
+
+        var msgSentTxt=OAT.Dom.create('span',{color:'green',cssFloat:'right',padding:'0px 5px 0px 0px',display:'none',marginTop:'-18px'});
+        msgSentTxt.id='msgSentTxtWin';
+        msgSentTxt.innerHTML=" Message sent! ";
+
+        
+      OAT.Dom.append([container,_span,msgUserSpan,userList,OAT.Dom.create('br'),msgText,OAT.Dom.create('br'),sendBtn,msgSentTxt]);
+
+        return container;
+   }
+  } //end ui
+  
   this.createCookie = function (name, value, hours)
   {
     if (hours)
@@ -2006,45 +3679,130 @@ ODS.Nav = function(navOptions) {
 
     return false;
   }
-  
-  
-  var uriParams=OAT.Dom.uriParams();
-    
-  if(typeof(uriParams.sid)!='undefined' && uriParams.sid!='')
+  this.odsLink = function(extPath)
   {
-    self.session.sid=uriParams.sid;
-    self.session.validateSid();
+    var odsLink = '';
+    var odsHost = self.uriqaDefaultHost ? self.uriqaDefaultHost :document.location.host;
+    
+    if(typeof(extPath)!='undefined')
+       odsLink=document.location.protocol+'//'+odsHost+extPath;
+    else
+       odsLink=document.location.protocol+'//'+odsHost;
+  
+    return odsLink;
   }
-
+  
+  self.serverSettings()
+  var uriParams=OAT.Dom.uriParams();
+  var cookieSid=this.readCookie('sid');
   
   if(!self.session.sid && typeof(uriParams['openid.signed'])!='undefined' && uriParams['openid.signed']!='')
   {
-    self.session.openId.server=uriParams['oid-srv']
+    self.session.openId.server=uriParams['oid-srv'];
     self.session.openId.sig=uriParams['openid.sig'];
-    self.session.openId.identity=uriParams['openid.identity']
-    self.session.openId.assoc_handle=uriParams['openid.assoc_handle']
-    self.session.openId.signed=uriParams['openid.signed']
-
-    self.session.openIdVerify()
-  }
-
-  var cookieSid=this.readCookie('sid');
-  if(!self.session.sid && cookieSid)
+    self.session.openId.identity=uriParams['openid.identity'];
+    self.session.openId.assoc_handle=uriParams['openid.assoc_handle'];
+    self.session.openId.signed=uriParams['openid.signed'];
+    
+    self.session.openIdVerify();
+  }else if(typeof(uriParams.sid)!='undefined' && uriParams.sid!='')
+  {
+    self.session.sid=uriParams.sid;
+    self.session.validateSid();
+  }else if(!self.session.sid && cookieSid)
   {
     self.session.sid=cookieSid;
     self.session.validateSid();
+  }else
+  {
+    OAT.MSG.send(self.session,OAT.MSG.SES_VALIDATION_END,{sessionValid:0});
+  };
+ 
+  OAT.Event.attach($('vspxApp'),"load",function(){self.wait('hide');});  
+  OAT.Event.attach($('vspxApp'),"load",function(){
+                                                   if(!self.session.sid)
+                                                   {                                                  
+                                                      var getParams= OAT.Dom.isIE() ? $('vspxApp').contentWindow.location.href : $('vspxApp').contentDocument.location.search;
+                                                     
+                                                      if(getParams.indexOf('sid=')>-1)
+                                                      {
+                                                       var iframeSid=getParams.substring(getParams.indexOf('sid=')+4,getParams.length);
+                                                       iframeSid=iframeSid.substring(0,iframeSid.indexOf('&'));
+                                                       
+                                                        self.session.sid=iframeSid;
+                                                        self.session.validateSid();
+                                                      }
+                                                   }
+  }
+                  );
+
+  if($('search_textbox'))
+  {  $('search_textbox').callback=function(e){
+                                               if($('search_lst_sort'))
+                                                  $('search_lst_sort').selectedIndex=0;
+                                               if($('search_focus_sel'))
+                                                  $('search_focus_sel').selectedIndex=0;
+  
+                                              var t=eTarget(e);
+
+                                              if(t && t.value && t.value.length<2)
+  {
+                                               self.dimmerMsg('Invalid keyword string entered.');
+                                               return;
+                                              }
+
+                                              if(t && t.value && t.value.length>0)
+                                              {
+//                                                nav.loadVspx(nav.expandURL(nav.ods+'search.vspx?q='+encodeURIComponent(t.value.trim())));
+
+                                                 $('search_textbox_searchC').value=t.value;
+                                                 self.search('q='+encodeURIComponent(t.value.trim())+'&on_all=1',self.renderSearchResults);
+
+  }
+                                          };
+     OAT.Event.attach($('search_textbox'),"keypress",onEnterDown);  
+  };
+  OAT.Event.attach($('search_textbox'),"keypress",onEnterDown);  
+
+  if($('search_img'))
+  {  $('search_img').callback=function(){
+                                            if($('search_lst_sort'))
+                                               $('search_lst_sort').selectedIndex=0;
+                                            if($('search_focus_sel'))
+                                               $('search_focus_sel').selectedIndex=0;
+
+                                            var t=$('search_textbox');
+
+                                            if(t && t.value && t.value.length<2)
+  {
+                                               self.dimmerMsg('Invalid keyword string entered.');
+                                               return;
   }
     
+//                                            if(t && t.value && t.value.length>0)
+//                                                nav.loadVspx(nav.expandURL(nav.ods+'search.vspx?q='+encodeURIComponent(t.value.trim())));
+//                                            else
+//                                                nav.loadVspx(nav.expandURL(nav.ods+'search.vspx'));
+
+                                            if(t && t.value && t.value.length>0)
+                                            {
+
+                                               $('search_textbox_searchC').value=t.value;
+                                               self.search('q='+encodeURIComponent(t.value.trim())+'&on_all=1',self.renderSearchResults);
+                                            }
+                                            else
+                                                self.showSearch();
      
   
-  OAT.Event.attach($('vspxApp'),"load",function(){self.wait('hide');});  
+
+                                          };
+  };
   
   
   this.initLeftBar();
   this.initRightBar()
   this.initAppMenu();
-  this.loadVspx(self.expandURL(self.ods+'sfront.vspx'));
-
+  this.initSearch();
 
 
 }  
@@ -2069,6 +3827,9 @@ function initNav ()
   OAT.MSG.SES_VALID          = 31;
   OAT.MSG.SES_VALIDBIND      = 32;
   OAT.MSG.SES_INVALID        = 33;
+  OAT.MSG.SES_VALIDATION_END  = 34;
+  OAT.MSG.PROFILE_UPDATED     = 51;
+  OAT.MSG.CONNECTIONS_UPDATED = 52;
   
   
   options = {auth:OAT.AJAX.AUTH_BASIC,

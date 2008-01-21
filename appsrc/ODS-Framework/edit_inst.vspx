@@ -134,7 +134,6 @@
         <vm:login redirect="index.vspx"/>
         <div class="box">
           <v:form type="simple" method="POST" name="eform1">
-	    <!--h2>Application Settings</h2-->
 	     <table  class="ctl_grp">
 	       <vm:instance-settings edit="yes"/>
 	       <tr>
@@ -182,7 +181,8 @@
 		    }
 		  else
 		    {
-		      inst.wa_name := self.iname;
+                    		    --inst.wa_name := self.iname1.ufl_value;
+                    		    ;
 		    }
                   inst.wa_member_model := atoi(self.imodel1.ufl_value);
                   if (self.wa_type not in ('oMail', 'IM'))

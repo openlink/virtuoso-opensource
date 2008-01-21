@@ -235,6 +235,7 @@ directory_init() {
   mkdir vad/data/wa/images/oat/markers
   mkdir vad/data/wa/images/skin
   mkdir vad/data/wa/images/skin/default
+  mkdir vad/data/wa/images/skin/pager
   mkdir vad/data/wa/tmpl
   mkdir vad/data/wa/templates
   mkdir vad/data/wa/templates/default
@@ -281,6 +282,7 @@ directory_init() {
   cp icons/*.png vad/data/wa/images/icons
   cp images/skin/default/*.jpg vad/data/wa/images/skin/default
   cp images/skin/default/*.png vad/data/wa/images/skin/default
+  cp images/skin/pager/*.png vad/data/wa/images/skin/pager
   #cp buttons/*.gif vad/data/wa/images/buttons
   #cp buttons/*.jpg vad/data/wa/images/buttons
   #cp buttons/*.png vad/data/wa/images/buttons
@@ -308,7 +310,7 @@ sticker_init() {
   echo "  <name package=\"Framework\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Framework\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1999-2007 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1999-2008 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER

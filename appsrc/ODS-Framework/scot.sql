@@ -116,8 +116,12 @@ create procedure scot_tags_insert (in inst_id int, in post_iri any, in tags varc
   tags_exp := tags_expr (tags);
   if (tag_cnt > 1)
     {
+      commit work;
+      {
+        declare exit handler for sqlstate '37000' { rollback work; return; };
       tc_id := (select tcs_id from tag_coocurrence_stats where
       contains (tcs_tags_stats, tags_exp) and tcs_inst_id = inst_id and tcs_tags_cnt = tag_cnt);
+      }
       if (tc_id is null)
 	{
 	  insert into tag_coocurrence_stats (tcs_inst_id, tcs_tags_cnt, tcs_tags_stats, tcs_afreq) values
@@ -133,10 +137,15 @@ create procedure scot_tags_insert (in inst_id int, in post_iri any, in tags varc
       update tag_stat set ts_afreq = ts_afreq + 1 where ts_inst_id = inst_id and ts_tag = tag;
       if (row_count () = 0)
         insert into tag_stat (ts_inst_id, ts_tag, ts_afreq) values (inst_id, tag, 1);
+      commit work;
+      declare continue handler for sqlstate '37000' { rollback work; goto next_tag; };
+      {
       for select tcs_id from tag_coocurrence_stats where contains (tcs_tags_stats, '"'||tag||'"') and tcs_inst_id = inst_id do
 	{
 	  insert soft tag_coocurrence (tc_inst_id, tc_id, tc_tag) values (inst_id, tcs_id, tag);
 	}
+    }
+next_tag: ;
     }
 
   total_tags := (select count(*) from tag_stat where ts_inst_id = inst_id);
@@ -172,8 +181,12 @@ create procedure scot_tags_delete (in inst_id int, in post_iri any, in tags varc
   tags_exp := tags_expr (tags);
   if (tag_cnt > 1)
     {
+      commit work;
+      {
+        declare exit handler for sqlstate '37000' { rollback work; return; };
       tc_id := (select tcs_id from tag_coocurrence_stats where
       contains (tcs_tags_stats, tags_exp) and tcs_inst_id = inst_id and tcs_tags_cnt = tag_cnt);
+      }
       if (tc_id is not null)
 	{
 	  update tag_coocurrence_stats set tcs_afreq = tcs_afreq - 1 where tcs_inst_id = inst_id and tcs_id = tc_id;

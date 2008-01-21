@@ -45,6 +45,7 @@
   <v:variable name="_sreg_required" type="varchar" default="null" persist="0" param-name="sreg_required" />
   <v:variable name="_sreg_optional" type="varchar" default="null" persist="0" param-name="sreg_optional" />
   <v:variable name="_policy_url" type="varchar" default="null" persist="0" param-name="policy_url" />
+  <v:variable name="_ver" type="varchar" default="1" persist="0" param-name="ver" />
   <v:on-init><![CDATA[
     declare cookie_vec, sid any;
 
@@ -140,7 +141,7 @@
 		    </v:button>
 		    <v:button action="simple" name="cancel" value="Cancel" xhtml_id="login_frm_b_login">
 		      <v:on-post><![CDATA[
-			OPENID..cancel (self._return_to);
+			OPENID..cancel (self._ver, self._return_to);
 			]]></v:on-post>
 		    </v:button>
 		  </div>
@@ -175,7 +176,7 @@
             </div> <!-- login_form_ctr -->
           </div> <!-- form_col -->
 	  <v:template type="if-login" name="login_if_login"><?vsp
-	 OPENID..checkid_immediate (self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid, 0,
+	 OPENID..checkid_immediate (self._ver, self._identity, self._assoc_handle, self._return_to, self._trust_root, self.sid, 0,
          self._sreg_required, self._sreg_optional, self._policy_url);
 	 ?></v:template>
         <v:on-post><![CDATA[
@@ -229,7 +230,7 @@
           <a href="/ods/privacy.html">Privacy</a> |
           <a href="/ods/rabuse.vspx">Report Abuse</a>
           <div class="copyright">
-            Copyright &copy; 1999-2007 OpenLink Software
+            Copyright &copy; 1999-2008 OpenLink Software
           </div>
         </div> <!-- FT_R -->
       </div>

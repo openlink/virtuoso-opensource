@@ -748,15 +748,19 @@ create procedure sioc_user_info (
 
 };
 
-create procedure sioc_user_project (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar, in descr varchar)
+create procedure sioc_user_project (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar, in descr varchar, in piri varchar := null)
 {
   declare prj_iri, pers_iri any;
 
+  if (piri is null)
   prj_iri := person_prj_iri (iri, sprintf ('%U', nam));
+  else
+    prj_iri := piri;
   pers_iri := person_iri (iri);
   delete_quad_s_or_o (graph_iri, prj_iri, prj_iri);
 
-  DB.DBA.RDF_QUAD_URI (graph_iri, pers_iri, foaf_iri ('project'), prj_iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, pers_iri, foaf_iri ('made'), prj_iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, prj_iri, foaf_iri ('maker'), pers_iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, prj_iri, dc_iri ('identifier'), url);
   DB.DBA.RDF_QUAD_URI_L (graph_iri, prj_iri, dc_iri ('title'), nam);
   DB.DBA.RDF_QUAD_URI_L (graph_iri, prj_iri, dc_iri ('description'), descr);
@@ -1151,7 +1155,7 @@ create procedure ods_sioc_post (
 	      noexif:;
 	    }
 	}
-
+commit work;
       return;
 };
 
@@ -1200,6 +1204,7 @@ create procedure ods_sioc_service (
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('service_endpoint'), endpoint);
   if (proto is not null)
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('service_protocol'), proto);
+  commit work;
 };
 
 -- the ods_sioc_tags* is used for text indexing the NNTP data
@@ -1391,9 +1396,9 @@ create procedure fill_ods_sioc (in doall int := 0)
 		  kwd := DB.DBA.WA_USER_TAG_GET (U_NAME);
 		  if (length (kwd))
 		    DB.DBA.RDF_QUAD_URI_L (graph_iri, person_iri, bio_iri ('keywords'), kwd);
-		  for select WUP_NAME, WUP_URL, WUP_DESC from DB.DBA.WA_USER_PROJECTS where WUP_U_ID = U_ID do
+		  for select WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI from DB.DBA.WA_USER_PROJECTS where WUP_U_ID = U_ID do
 		    {
-		      sioc_user_project (graph_iri, iri, WUP_NAME, WUP_URL, WUP_DESC);
+		      sioc_user_project (graph_iri, iri, WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI);
 		    }
 		  for select WUO_NAME, WUO_URL from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = U_ID do
 		    {
@@ -1638,6 +1643,7 @@ create procedure fill_ods_dav_sioc (in graph_iri varchar, in site_iri varchar)
 	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('created'), (RES_CR_TIME));
 	      DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, dcterms_iri ('modified') , (RES_MOD_TIME));
 	    }
+         commit work;
       }
 };
 
@@ -1860,7 +1866,7 @@ create trigger WA_USER_INFO_SIOC_I after insert on DB.DBA.WA_USER_INFO referenci
 
 create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referencing old as O, new as N
     {
-  declare iri, graph_iri, u_site_iri, uname, del_iri varchar;
+  declare iri, graph_iri, u_site_iri, uname, niri, del_iri varchar;
   declare lat, lng real;
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
@@ -1884,11 +1890,11 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
       lat := N.WAUI_LAT;
       lng :=  N.WAUI_LNG;
     }
+  niri := person_iri (iri, tp=>N.WAUI_IS_ORG);
   if (O.WAUI_IS_ORG <> N.WAUI_IS_ORG)
     {
-      declare niri, oiri any;
+      declare oiri any;
       oiri := person_iri (iri, tp=>O.WAUI_IS_ORG);
-      niri := person_iri (iri, tp=>N.WAUI_IS_ORG);
       update_quad_s_o (graph_iri, oiri, niri);
       if (N.WAUI_IS_ORG)
 	{
@@ -1921,6 +1927,14 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
 			N.WAUI_FOAF,
 			N.WAUI_LATLNG_HBDEF
 			);
+  for select US_IRI, US_KEY from DB.DBA.WA_USER_SVC where US_U_ID = N.WAUI_U_ID and length (US_IRI) do
+    {
+      declare sas_iri any;
+      sas_iri := sprintf ('http://%s/proxy?url=%U&force=rdf', get_cname(), US_IRI);
+      if (length (US_KEY))
+	sas_iri := sas_iri || sprintf ('&login=%U', uname);
+	DB.DBA.RDF_QUAD_URI (graph_iri, niri, owl_iri ('sameAs'), sas_iri);
+    }
   if (length (O.WAUI_SKYPE))
     {
       del_iri := person_ola_iri (iri, O.WAUI_SKYPE);
@@ -1941,7 +1955,7 @@ create trigger WA_USER_PROJECT_SIOC_I after insert on DB.DBA.WA_USER_PROJECTS re
 
   graph_iri := get_graph ();
   iri := user_iri (N.WUP_U_ID);
-  sioc_user_project (graph_iri, iri, N.WUP_NAME, N.WUP_URL, N.WUP_DESC);
+  sioc_user_project (graph_iri, iri, N.WUP_NAME, N.WUP_URL, N.WUP_DESC, N.WUP_IRI);
 };
 
 create trigger WA_USER_PROJECT_SIOC_U after update on DB.DBA.WA_USER_PROJECTS referencing old as O, new as N
@@ -1956,7 +1970,7 @@ create trigger WA_USER_PROJECT_SIOC_U after update on DB.DBA.WA_USER_PROJECTS re
   iri := user_iri (N.WUP_U_ID);
   opiri := person_prj_iri (iri, O.WUP_NAME);
   delete_quad_s_or_o (graph_iri, opiri, opiri);
-  sioc_user_project (graph_iri, iri, N.WUP_NAME, N.WUP_URL, N.WUP_DESC);
+  sioc_user_project (graph_iri, iri, N.WUP_NAME, N.WUP_URL, N.WUP_DESC, N.WUP_IRI);
 };
 
 create trigger WA_USER_PROJECT_SIOC_D after delete on DB.DBA.WA_USER_PROJECTS referencing old as O
@@ -2794,8 +2808,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   part := sprintf (
 	  ' CONSTRUCT {
-	    <%S> sioc:has_function ?function .
-	    ?function sioc:has_scope ?forum .
+	    <%S> foaf:made ?forum .
+	    ?forum foaf:maker <%S> .
 	    ?forum a ?forum_type .
 	    ?forum rdfs:label ?label .
 	    ?forum rdfs:seeAlso ?see_also .
@@ -2805,14 +2819,13 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 		      graph <%s>
 		      {
 	      {
-		<%S> sioc:has_function ?function .
-		?function sioc:has_scope ?forum .
+		<%S> foaf:made ?forum .
 		?forum a ?forum_type .
 		optional { ?forum rdfs:label ?label . }
 		optional { ?forum rdfs:seeAlso ?see_also . }
 		    }
 	}
-	  }', iri, graph, iri);
+	  }', pers_iri, pers_iri, graph, pers_iri);
 
   qry := decl || part;
   qrs [2] := qry;
@@ -2833,15 +2846,14 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 		      graph <%s>
 		      {
 	      {
-		<%S> sioc:has_function ?function .
-		?function sioc:has_scope ?forum .
+		<%S> foaf:made ?forum .
 		?forum sioc:parent_of ?child_forum .
 		?child_forum a ?forum_type .
 		optional { ?child_forum rdfs:label ?label . }
 		optional { ?child_forum rdfs:seeAlso ?see_also . }
                   }
                 }
-	  } LIMIT %d OFFSET %d', graph, iri, lim, offs);
+	  } LIMIT %d OFFSET %d', graph, pers_iri, lim, offs);
 
   qry := decl || part;
   qrs [3] := qry;

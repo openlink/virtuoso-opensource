@@ -38,7 +38,8 @@ function generateAPPAnchor(options, app)
 		var ul = OAT.Dom.create("div",{paddingLeft:"20px",marginLeft:"0px"});
 		
 		// html link
-		if (appHref != "javascript: void(0);") {
+    if (appHref != "javascript: void(0);")
+    {
   	var a = OAT.Dom.create("a");
 
 	  var img = OAT.Dom.image("/ods/images/icons/web_16.png");
@@ -48,15 +49,11 @@ function generateAPPAnchor(options, app)
   	a.appendChild(OAT.Dom.text(" Web page"));
   	a.href = appHref;
   	a.target = appTarget;
-  	if (appOnclick) {
-    	OAT.Dom.attach(a, "click", function(e) {
-    				OAT.AnchorData.window.close();
-    				appOnclick(e);
-    			}); 	
+      if (appOnclick)
+      {
+	      OAT.Dom.attach(a, "click", function(e) {OAT.AnchorData.window.close(); appOnclick(e);});
     } else {
-    	OAT.Dom.attach(a, "click", function(e) {
-    				OAT.AnchorData.window.close();
-    			}); 	
+	      OAT.Dom.attach(a, "click", function(e) {OAT.AnchorData.window.close();});
     }			
     
 		var elm = OAT.Dom.create("div");
@@ -65,7 +62,8 @@ function generateAPPAnchor(options, app)
   	}
 		
 		// rdf link
-		if (appIRI) {
+    if (appIRI)
+    {
     	var a = OAT.Dom.create("a");
       var img = OAT.Dom.image("/ods/images/icons/rdf-icon-16.gif");
   	  img.style["border"] = "0px";
@@ -74,15 +72,14 @@ function generateAPPAnchor(options, app)
     	a.appendChild(OAT.Dom.text(" Data Link (RDF)"));
     	a.href = $v('sparqlUrl').replace('_RDF_', appIRI);
     	a.target = appTarget;
-    	OAT.Dom.attach(a, "click", function() {
-    				OAT.AnchorData.window.close();
-    			}); 	
+      OAT.Dom.attach(a, "click", function() {OAT.AnchorData.window.close();});
   		var elm = OAT.Dom.create("div");
   		elm.appendChild(a);
   		ul.appendChild(elm);
 		}
 
-		if (ul.innerHTML != "") {
+    if (ul.innerHTML != "")
+    {
   	var elm = OAT.Dom.create("hr");
   	ul.appendChild(elm);
   	}
@@ -98,17 +95,21 @@ function generateAPPAnchor(options, app)
       var u = OAT.Xml.xpath(xmlDoc, "//R:results/R:result/R:binding[@name=\"u\"]", ns);
       var t = OAT.Xml.xpath(xmlDoc, "//R:results/R:result/R:binding[@name=\"t\"]", ns);
       var l = OAT.Xml.xpath(xmlDoc, "//R:results/R:result/R:binding[@name=\"l\"]", ns);
-    	for (var i=0; i<u.length; i++) {
+
+      for (var i=0; i<u.length; i++)
+      {
     	  var aURL = OAT.Xml.textValue(u[i]);
     	  var aLabel = OAT.Xml.textValue(l[i]);
     	  var aType = OAT.Xml.textValue(t[i]);
 	var imgSrc = gererateAPP_image (aType, imgPath);
         var tp = "", sm = OAT.Dom.create("small");
         var pos = aType.lastIndexOf ('#');
-        if (pos == -1) {
+      	if (pos == -1)
+      	{
           aType.lastIndexOf ('/');
         }
-        if (pos != -1) {
+      	if (pos != -1)
+      	{
           tp = aType.substring (pos+1);
           tp = ' ('+tp+')';
 	        sm.appendChild(OAT.Dom.text(tp));
@@ -124,7 +125,8 @@ function generateAPPAnchor(options, app)
           {
   			a.href = aURL;
           }
-  			if (imgSrc != "") {
+      	if (imgSrc != "")
+      	{
   			  var img = OAT.Dom.image(imgSrc);
   			  img.style["border"] = "0px";
     		  a.appendChild(img);
@@ -135,7 +137,8 @@ function generateAPPAnchor(options, app)
     		elm.appendChild(a);
     		ul.appendChild(elm);
      	}
-  		if (ul.innerHTML == "") {
+      if (ul.innerHTML == "")
+      {
     	  ul.innerHTML = "Empty list";
     	}
 	 	}
@@ -149,7 +152,7 @@ function generateAPPAnchor(options, app)
       {
 	search = link.innerHTML;
       }
-    OAT.AJAX.GET("/ods_services/search/"+escape(search), false, cb, {type:OAT.AJAX.TYPE_XML, onstart:function(){}});
+    OAT.AJAX.GET("/ods_services/search/"+escape(search), false, cb, {type:OAT.AJAX.TYPE_XML, onstart:function(){}, onerror:function(){OAT.Dom.unlink(ul.lastChild);}});
 	  return ul;
 	}
 	
@@ -216,7 +219,7 @@ function generateAPP(appArea, optObj)
   for (var i = 0; i < appLinks.length; i++)
   {
 	  var app = appLinks[i];
-	  if ((app.id) && !OAT.Dom.isClass(app, 'noapp'))
+    if ((app.id) && (app.href || app.onclick) && !OAT.Dom.isClass(app, 'noapp'))
     {
     	var img = OAT.Dom.image("/ods/images/icons/rdf_11.png");
     	img.style["border"] = "0px";
@@ -226,7 +229,8 @@ function generateAPP(appArea, optObj)
     	img.alt = "RDF";
     	img.title = "RDF";
     	var next = app.nextSibling;
-    	if (next != null) {
+    	if (next != null)
+    	{
     	  app.parentNode.insertBefore (img, next);
     	} else {
     	  app.parentNode.appendChild (img);

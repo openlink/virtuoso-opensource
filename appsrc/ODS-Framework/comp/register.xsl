@@ -172,9 +172,14 @@ try_next:
 	    function showhideLogin (cb)
 	    {
               if (cb.checked)
+       {
 	        OAT.Dom.hide ('login_info');
-	      else
+	        OAT.Dom.hide ('signup_span');
+	     }else
+	     {
 	        OAT.Dom.show ('login_info');
+	        OAT.Dom.show ('signup_span');
+	     }
 	    }
             // -->
           ]]>
@@ -358,7 +363,7 @@ self.vc_redirect (check_immediate);
         </tr>
         <tr>
 	 <td colspan="2"  class="ctrl">
-	  <span class="fm_ctl_btn">
+	  <span class="fm_ctl_btn" style="<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>" id="signup_span">
             <v:button action="simple" name="regb1" value="Sign Up">
 	    </v:button>
 	   </span>

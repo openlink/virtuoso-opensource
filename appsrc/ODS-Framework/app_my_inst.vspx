@@ -1,4 +1,3 @@
-<?xml version="1.0"?>
 <!--
  -
  -  $Id$
@@ -140,11 +139,14 @@
                       fname = self.fname do
 	    {
         declare dataspace_url varchar;
-        dataspace_url:=self.odsbar_dataspace_path||INST_OWNER||'/'||self.odsbar_app_dataspace||'/'||sprintf('%U',INST_NAME);
+
+
+        dataspace_url:=sprintf('%s%U/%s/%s',self.odsbar_dataspace_path,INST_OWNER,self.odsbar_app_dataspace,INST_NAME);
+
 --        dataspace_url:=INST_DATASPACE;
 	?>
 	      <li>
-                <a class="ods_side_button" href="<?V wa_expand_url (dataspace_url, self.login_pars) ?>">
+                <a class="ods_side_button" href="<?vsp http(wa_expand_url (dataspace_url, self.login_pars)); ?>">
                   <img src="images/icons/go_16.png" border="0"/> <?V wa_utf8_to_wide (INST_NAME) ?>
                 </a>
               </li>

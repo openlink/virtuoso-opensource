@@ -599,8 +599,8 @@ function ajaxUpdate(abID,odsCID,fbCID,dockObj,mappingStr)
   var data='sid=<?Vself.sid?>&'+
   	       'realm=<?Vself.realm?>&'+
   	       'instid='+abID+'&'+
-  	       'fb_userid=<?Vself._fb._user?>&'+
-  	       'fb_session=<?Vself._fb.api_client.session_key?>&'+
+  	       'fb_userid=<?V(case when self._fb is not null then self._fb._user else '' end)?>&'+
+  	       'fb_session=<?V(case when self._fb is not null then self._fb.api_client.session_key else '' end)?>&'+
   	       'fb_cid='+fbCID+'&'+
   	       'ods_cid='+odsCID;
  if(mappingStr.length>0)
@@ -651,8 +651,8 @@ function ajaxUpdateAdvanced(abID,odsCID,fbCID,dockObj,mappingStr,totalCount,pbUn
   var data='sid=<?Vself.sid?>&'+
   	       'realm=<?Vself.realm?>&'+
   	       'instid='+abID+'&'+
-  	       'fb_userid=<?Vself._fb._user?>&'+
-  	       'fb_session=<?Vself._fb.api_client.session_key?>&'+
+  	       'fb_userid=<?V(case when self._fb is not null then self._fb._user else '' end)?>&'+
+  	       'fb_session=<?V(case when self._fb is not null then self._fb.api_client.session_key else '' end)?>&'+
   	       'fb_cid='+fbCID+'&'+
   	       'ods_cid='+odsCID+'&'+
   	       'usemapping=1&'+
@@ -700,8 +700,8 @@ function derefFBP(fbCID)
   var data='helpertact=deref&'+
            'sid=<?Vself.sid?>&'+
   	       'realm=<?Vself.realm?>&'+
-  	       'fb_userid=<?Vself._fb._user?>&'+
-  	       'fb_session=<?Vself._fb.api_client.session_key?>&'+
+  	       'fb_userid=<?V(case when self._fb is not null then self._fb._user else '' end)?>&'+
+  	       'fb_session=<?V(case when self._fb is not null then self._fb.api_client.session_key else '' end)?>&'+
   	       'fb_cid='+fbCID;
   
   var options = {

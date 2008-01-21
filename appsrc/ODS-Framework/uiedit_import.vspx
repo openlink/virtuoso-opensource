@@ -28,6 +28,37 @@
         style="index.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
 	doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+  <v:method name="ldap2_value" arglist="inout data any">
+    <![CDATA[
+      return case when isstring (data) then data else data[0] end;
+	  ]]>
+	</v:method>
+
+  <v:method name="ldap2_pattern" arglist="in maps any, in pattern any">
+    <![CDATA[
+      declare N integer;
+
+      for (N := 0; N < length (maps); N := N + 2)
+        if (maps [N+1] = pattern)
+          return maps [N];
+
+      return '';
+	  ]]>
+	</v:method>
+
+  <v:method name="ldap2_data" arglist="inout data any, in pattern any">
+    <![CDATA[
+      declare M integer;
+
+      for (M := 0; M < length (data); M := M + 2)
+        if (data[M] = pattern)
+          return self.ldap2_value (data[M+1]);
+
+      return null;
+	  ]]>
+	</v:method>
+
 	<v:variable name="title_" type="varchar" default="null" />
 	<v:variable name="name_" type="varchar" default="null" />
 	<v:variable name="firstName" type="varchar" default="null" />
@@ -46,23 +77,70 @@
 	<v:variable name="phone" type="varchar" default="null" />
 	<v:variable name="show_data" type="int" default="0" />
 	<v:variable name="ab_domain" type="int" default="null" />
+
+  <v:variable name="i_source" type="any" default="-1" />
+  <v:variable name="i_lName" type="varchar" default="''" />
+
 	<v:form type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=8">
 	    <v:before-data-bind>
 		self.ab_domain := (select top 1 WAI_ID from WA_MEMBER, WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = self.u_id and WAM_APP_TYPE = 'AddressBook' and WAM_MEMBER_TYPE = 1);
 	    </v:before-data-bind>
 	    <input type="hidden" name="page" value="8"/>
+
 	    <div>
 		<fieldset>
-		    <label for="foaf_url">FOAF URL</label>
-		    <v:text name="foaf_url" xhtml_id="foaf_url" value="" xhtml_size="70"/><br/>
+        <table cellspacing="0">
+          <tr>
+            <td nowrap="nowarap">
+              <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0">
+                <v:before-render>
+                  <![CDATA[
+                    control.ufl_selected := either (lte(self.i_source, 0), 1, 0);
+                  ]]>
+                </v:before-render>
+              </v:radio-button>
+              <xsl:call-template name="nbsp" />
+              <b><label for="i_source_0">FOAF URL</label></b>
+            </td>
+            <td>
+              <v:text name="foaf_url" xhtml_id="foaf_url" value="" xhtml_onfocus="javascript: document.forms[0].i_source[0].checked=true;" xhtml_size="70"/>
+            </td>
+          </tr>
+          <tr>
+            <td nowrap="nowarap">
+              <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1">
+                <v:before-render>
+                  <![CDATA[
+                    control.ufl_selected := either (equ(self.i_source, 1), 1, 0);
+                  ]]>
+                </v:before-render>
+              </v:radio-button>
+              <xsl:call-template name="nbsp" />
+              <b><label for="i_source_1">LDAP Server</label></b>
+            </td>
+            <td>
+              <v:data-list name="f_lName"
+                           value="--self.i_lName"
+                           key-column="LS_NAME"
+                           value-column="LS_NAME"
+                           sql="select '' as LS_NAME from SYS_USERS where U_ID = 0 union all select LS_NAME from LDAP..LDAP_SERVERS where LS_USER_ID = self.u_id"
+                           xhtml_onfocus="javascript: document.forms[0].i_source[1].checked=true;" />
+            </td>
+          </tr>
+        </table>
+        <br/>
 		    <v:button action="simple" name="bt_imp" value="Import" enabled="--equ(self.show_data, 0)">
 			<v:on-post><![CDATA[
-			    declare url, cnt any;
-
-			    url := self.foaf_url.ufl_value;
-
 			    self.show_data := 0;
 			    commit work;
+
+            if (self.i_source_0.ufl_selected)
+            {
+              self.i_source := 0;
+
+              declare url any;
+
+              url := self.foaf_url.ufl_value;
 
 			    declare exit handler for sqlstate '*'
 			    {
@@ -70,17 +148,31 @@
 			      self.vc_error_message := 'Invalid FOAF URL.';
 			    };
 
-			    exec (sprintf ('sparql define get:soft "soft" select * from <%S> where { ?s ?p ?o }', url),
-			    	null, null, vector (), 0);
+              exec (sprintf ('sparql define get:soft "soft" select * from <%S> where { ?s ?p ?o }', url), null, null, vector (), 0);
 
 			    for select * from
 			     (sparql
 			      prefix foaf: <http://xmlns.com/foaf/0.1/>
  			      prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-				  select ?title ?name ?firstName ?givenname ?family_name ?mbox ?gender ?birthday ?lat ?lng
-				  ?icqChatID ?msnChatID ?aimChatID ?yahooChatID ?workplaceHomepage ?homepage ?phone
-			      where { graph ?:url {
-
+                  select ?title
+                         ?name
+                         ?firstName
+                         ?givenname
+                         ?family_name
+                         ?mbox
+                         ?gender
+                         ?birthday
+                         ?lat
+                         ?lng
+                         ?icqChatID
+                         ?msnChatID
+                         ?aimChatID
+                         ?yahooChatID
+                         ?workplaceHomepage
+                         ?homepage
+                         ?phone
+                   where {graph ?:url
+                           {
 			        [] a foaf:PersonalProfileDocument ;
 				foaf:primaryTopic ?person .
 				optional { ?person foaf:name ?name } .
@@ -100,8 +192,9 @@
 				optional { ?person foaf:workplaceHomepage ?workplaceHomepage } .
 				optional { ?person foaf:homepage ?homepage } .
 				optional { ?person foaf:phone ?phone } .
-
-			      }}) sub
+                           }
+                         }
+                 ) sub
 			     do
 			      {
       				self.title_ := title;
@@ -124,15 +217,89 @@
 				if (phone like 'tel:%')
 				  phone := substring (phone, 5, length (phone));
 				self.phone := phone;
+
 				self.show_data := 1;
+
+                goto _exit1;
 			      }
+            _exit1:;
 			    if (self.show_data = 0)
                               {
 			        self.vc_is_valid := 0;
 				self.vc_error_message := 'The specified URL doesn\'t contains personal FOAF profile.';
+              } else {
+                control.vc_data_bind (e);
+              }
+            }
+            if (self.i_source_1.ufl_selected)
+            {
+              self.i_source := 1;
+
+              declare N integer;
+              declare tmp, data, i_lHost, i_lPort, i_lBase_dn, i_lBind_dn, i_lPassword, i_lMaps, i_lSearch, i_lData any;
+
+              self.i_lName := self.f_lName.ufl_value;
+              if (self.i_lName <> '')
+              {
+                select LS_HOST,
+                       LS_PORT,
+                       LS_BASE_DN,
+                       LS_BIND_DN,
+                       LS_PASSWORD,
+                       deserialize (LS_MAPS)
+                  into i_lHost,
+                       i_lPort,
+                       i_lBase_dn,
+                       i_lBind_dn,
+                       i_lPassword,
+                       i_lMaps
+                  from LDAP..LDAP_SERVERS
+                 where LS_NAME = self.i_lName
+                   and LS_USER_ID = self.u_id;
+
+                connection_set ('LDAP_VERSION', 2);
+                tmp := split_and_decode (i_lBind_dn, 0, '\0\0\,');
+                i_lSearch := '(cn=*)';
+                if (length (tmp) > 0)
+                  i_lSearch := tmp[0];
+
+                i_lData := ldap_search ('ldap://' || i_lHost || ':' || i_lPort, 0, i_lBase_dn, i_lSearch, i_lBind_dn, i_lPassword);
+                for (N := 0; N < length (i_lData); N := N + 2)
+                {
+          	      if (i_lData [N] = 'entry')
+          	      {
+          	        data := i_lData [N+1];
+                    self.title_ := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_TITLE'));
+                    self.name_ := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_FULL_NAME'));
+                    self.firstName := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_FIRST_NAME'));;
+                    self.family_name := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_LAST_NAME'));;
+                    self.mbox := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_MAIL'));;
+                    self.gender_ := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_GENDER'));;
+                    self.lat_ := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_H_LAT'));;
+                    self.lng_ := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_H_LNG'));;
+                    self.icqChatID := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_ICQ'));;
+                    self.msnChatID := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_MSN'));;
+                    self.aimChatID := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_AIM'));;
+                    self.yahooChatID := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_YAHOO'));;
+                    self.workplaceHomepage := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_B_WEB'));;
+                    self.homepage := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_WEB'));;
+                    self.phone := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_H_PHONE'));;
+
+                    self.show_data := 1;
+
+                    goto _exit2;
 			      }
-			    else
+                }
+              }
+            _exit2:;
+              if (self.show_data = 0)
+              {
+                self.vc_is_valid := 0;
+                self.vc_error_message := 'The specified LDAP server doesn\'t contains personal data.';
+              } else {
 			      control.vc_data_bind (e);
+              }
+            }
 			    ]]></v:on-post>
 		    </v:button>
 		</fieldset>
@@ -168,7 +335,7 @@
 		</v:template>
 		    <v:template type="simple" condition="length (self.gender_)">
 		    <tr>
-			<td>gender</td>
+            <td>Gender</td>
 			<td><?V self.gender_ ?></td>
 		    </tr>
 		</v:template>
@@ -227,9 +394,6 @@
 		    </tr>
 		</v:template>
 	       </table>
-                <v:template type="simple" condition="self.ab_domain is not null">
-		    <v:check-box name="knows_cb1" value="1" xhtml_id="knows_cb1"/><label for="knows_cb1">Import known persons as contacts in Address book</label><br/>
-		</v:template>
 		<v:button action="simple" name="bt_imp2" value="Save">
 		    <v:on-post><![CDATA[
 			--WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
@@ -251,15 +415,7 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_HPHONE', self.phone);
                         WA_USER_EDIT (self.u_name, 'WAUI_LAT', self.lat_);
 			WA_USER_EDIT (self.u_name, 'WAUI_LNG', self.lng_);
-			--if (self.ab_domain is not null and self.knows_cb1.ufl_selected)
-			--  {
-			--    declare dict, cnt, ses, url any;
-      --                      url := self.foaf_url.ufl_value;
-			--    dict := (sparql define input:storage "" construct { ?s ?p ?o } where { graph ?:url { ?s ?p ?o }});
-			--    ses := string_output_string (DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML (dict));
-      --
-			--    AB.WA.import_foaf (self.ab_domain, ses, '');
-			--  }
+
 			commit work;
 			self.vc_redirect ('uiedit.vspx?page=8');
 			]]></v:on-post>

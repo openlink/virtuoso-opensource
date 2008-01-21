@@ -137,6 +137,7 @@ wa_exec_no_error('alter type web_app add method wa_size () returns int');
 wa_exec_no_error('alter type web_app add method wa_front_page_as_user (in stream any, in user_name varchar) returns any');
 wa_exec_no_error('alter type web_app add method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar');
 wa_exec_no_error('alter type web_app add method wa_post_url (in vhost varchar, in lhost varchar, in inst_name varchar, in post any) returns varchar');
+wa_exec_no_error('alter type web_app add method wa_update_instance (in oldValues any, in newValues any) returns any');
 
 wa_exec_no_error_log(
   'CREATE TABLE WA_INDUSTRY
@@ -1194,13 +1195,28 @@ create method wa_new_inst (in login varchar) for web_app
 }
 ;
 
-create method wa_new_instance_url () for web_app{
+create method wa_new_instance_url () for web_app
+{
   return 'new_inst.vspx';
 }
 ;
 
-create method wa_edit_instance_url () for web_app{
+create method wa_edit_instance_url () for web_app
+{
   return 'edit_inst.vspx';
+}
+;
+
+--
+-- oldValues - vector with old instance fields values
+-- newValues - vector with new instance fields values
+--
+--       [0] - instance name (WA_NAME)
+--       [1] - instance type (WAI_IS_PUBLIC)
+--
+create method wa_update_instance (in oldValues any, in newValues any) for web_app
+{
+  return;
 }
 ;
 
@@ -1306,7 +1322,7 @@ create trigger WA_MEMBER_I after insert on WA_MEMBER referencing new as N {
     _inst_type:=(select WAI_TYPE_NAME from DB.DBA.WA_INSTANCE  where WAI_NAME=N.WAM_INST);
     
 
-  _act:=sprintf('<a href="%s">%s</a> added the <a href="%s" >%s</a> application.',WA_USER_DATASPACE(N.WAM_USER),WA_USER_FULLNAME(N.WAM_USER),WA_APP_INSTANCE_DATASPACE(N.WAM_INST),WA_GET_APP_NAME(_inst_type));
+  _act:=sprintf('<a href="http://%s">%s</a> added the <a href="http://%s" >%s</a> application.',WA_CNAME ()||WA_USER_DATASPACE(N.WAM_USER),WA_USER_FULLNAME(N.WAM_USER),WA_CNAME ()||WA_APP_INSTANCE_DATASPACE(N.WAM_INST),WA_GET_APP_NAME(_inst_type));
   OPEN_SOCIAL.DBA.add_ods_activity(N.WAM_USER,_inst_id,_act,'system','add','application',WA_APP_INSTANCE_DATASPACE(N.WAM_INST));
 
 -- END add Activity
@@ -1363,18 +1379,32 @@ create trigger WA_INSTANCE_U after update on WA_INSTANCE referencing old as O, n
 {
   declare wa web_app;
 
-  update DB.DBA.WA_MEMBER set
-      WAM_IS_PUBLIC = N.WAI_IS_PUBLIC,
+  update DB.DBA.WA_MEMBER
+     set WAM_IS_PUBLIC = N.WAI_IS_PUBLIC,
       WAM_MEMBERS_VISIBLE = N.WAI_MEMBERS_VISIBLE,
       WAM_HOME_PAGE = wa_set_url_t (N.WAI_INST),
       WAM_APP_TYPE = wa_get_type_from_name (WAM_INST)
       where WAM_INST = N.WAI_NAME;
 
+  if (
+      (O.WAI_NAME <> N.WAI_NAME) or
+      (O.WAI_IS_PUBLIC <> N.WAI_IS_PUBLIC) or
+      (O.WAI_MEMBERS_VISIBLE <> N.WAI_MEMBERS_VISIBLE)
+     )
+  {
+	  declare wa web_app;
+	  declare m any;
+
+    wa := N.WAI_INST;
+    m := udt_implements_method (wa, fix_identifier_case ('wa_update_instance'));
+    if (m)
+	    call (m) (wa, vector (O.WAI_NAME, O.WAI_IS_PUBLIC), vector (N.WAI_NAME, N.WAI_IS_PUBLIC));
+  }
   if (O.WAI_NAME <> N.WAI_NAME)
     {
       wa := N.WAI_INST;
       wa.wa_name := N.WAI_NAME;
-      --  dbg_obj_print (wa);
+
       set triggers off;
       update WA_INSTANCE set WAI_INST = wa where WAI_NAME = N.WAI_NAME;
       update WA_INVITATIONS set WI_INSTANCE = N.WAI_NAME where WI_INSTANCE = O.WAI_NAME;
@@ -1398,8 +1428,8 @@ create trigger WA_MEMBER_D after delete on WA_MEMBER
 
 create trigger WA_MEMBER_I_DOINSTCOUNT after insert on WA_MEMBER referencing new as N
 {
-  if (N.WAM_MEMBER_TYPE = 1){
-
+  if (N.WAM_MEMBER_TYPE = 1)
+  {
     declare _inst_type varchar;
     declare _inst_count integer;
     declare exit handler for not found {
@@ -1711,7 +1741,7 @@ create procedure INIT_SERVER_SETTINGS ()
   cnt := (select count(*) from WA_SETTINGS);
   if (cnt = 1)
   {
-    update WA_SETTINGS set WS_COPYRIGHT='Copyright &copy; 1999-2007 OpenLink Software';
+    update WA_SETTINGS set WS_COPYRIGHT='Copyright &copy; 1999-2008 OpenLink Software';
     return;
   }
   else if (cnt > 1)
@@ -1720,7 +1750,7 @@ create procedure INIT_SERVER_SETTINGS ()
       fr := (select top 1 WS_ID from WA_SETTINGS);
       delete from WA_SETTINGS where WS_ID > fr;
 
-      update WA_SETTINGS set WS_COPYRIGHT='Copyright &copy; 1999-2007 OpenLink Software';
+      update WA_SETTINGS set WS_COPYRIGHT='Copyright &copy; 1999-2008 OpenLink Software';
 
     }
   else
@@ -1752,7 +1782,7 @@ create procedure INIT_SERVER_SETTINGS ()
 	      '',
 	      'Enter your Member ID and Password',
 	      '',
-	      'Copyright &copy; 1999-2007 OpenLink Software',
+	      'Copyright &copy; 1999-2008 OpenLink Software',
 	      '',
 	      sys_stat ('st_host_name')
 	      );
@@ -2960,7 +2990,7 @@ wa_exec_no_error_log(
     WAUI_OPENID_SERVER varchar,
     WAUI_FACEBOOK_ID int,
     WAUI_IS_ORG	int default 0,
-    WAUI_APP_ENABLE	int default 1,
+    WAUI_APP_ENABLE	int default 0,
 
     primary key (WAUI_U_ID)
   )'
@@ -3007,11 +3037,11 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_SERVER', 'VARCHAR');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_ID', 'INT');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_IS_ORG', 'INT default 0');
-wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_APP_ENABLE', 'INT default 1');
-
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_APP_ENABLE', 'INT default 0');
 
 update DB.DBA.WA_USER_INFO set WAUI_IS_ORG = 0 where WAUI_IS_ORG is null;
-update DB.DBA.WA_USER_INFO set WAUI_APP_ENABLE = 1 where WAUI_APP_ENABLE is null;
+alter table DB.DBA.WA_USER_INFO modify column WAUI_APP_ENABLE integer default 0;
+update DB.DBA.WA_USER_INFO set WAUI_APP_ENABLE = 0 where WAUI_APP_ENABLE is null;
 
 wa_exec_no_error('create index WA_USER_INFO_OID on DB.DBA.WA_USER_INFO (WAUI_OPENID_URL)');
 
@@ -3078,10 +3108,12 @@ wa_exec_no_error_log(
       WUP_URL varchar,
       WUP_DESC long varchar,
       WUP_PUBLIC int default 0,
+      WUP_IRI varchar,
       primary key (WUP_U_ID, WUP_ID)
       )'
 )
 ;
+wa_add_col ('DB.DBA.WA_USER_PROJECTS', 'WUP_IRI', 'varchar');
 
 wa_exec_no_error_log(
     'CREATE TABLE WA_USER_OL_ACCOUNTS (
@@ -3600,8 +3632,9 @@ create procedure WA_USER_INTERESTS (in txt any)
 
 create procedure WA_USER_APP_ENABLE (in user_id integer)
 {
-  return coalesce ((select WAUI_APP_ENABLE from WA_USER_INFO WHERE WAUI_U_ID = user_id), 1);
-};
+  return coalesce ((select WAUI_APP_ENABLE from WA_USER_INFO WHERE WAUI_U_ID = user_id), 0);
+}
+;
 
 create procedure WA_USER_TAG_SET (in owner_uid any, in tagee_uid integer, in tags varchar)
 {
@@ -6150,39 +6183,77 @@ create procedure  ods_bar_css (in img_path varchar) {
 }
 ;
 
+create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in isdav int := 1)
+{
+  -- common access point
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods',
+      ppath=>'/DAV/VAD/wa/', is_dav=>isdav, vsp_user=>'dba', def_page=>'sfront.vspx');
+
+  -- new interface
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/users');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/users',
+      ppath=>'/DAV/VAD/wa/users', is_dav=>isdav, vsp_user=>'dba');
+
+  -- RDF folder
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/data/rdf');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/data/rdf',
+      ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>isdav, vsp_user=>'dba');
+
+  -- gdata.sql
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace',
+      ppath=>'/DAV/VAD/wa/', vsp_user=>'dba', is_dav=>isdav, def_page=>'sfront.vspx',is_brws=>0,
+      opts=>vector ('url_rewrite', 'ods_rule_list1'));
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace/GData');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/dataspace/GData',
+      ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/openid');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/openid',
+      ppath=>'/SOAP/Http/server', soap_user=>'OpenID');
+  --ods_api.sql
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods_services');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods_services',
+      ppath=>'/SOAP/',soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'ods_svc_rule_list1'));
+  --opensocial.sql
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/feeds');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/feeds',
+      ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_ot'));
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/activities');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/activities',
+      ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_act'));
+  return;
+}
+;
+
+-- !!! not so common to use same host_port for vhost & listener value, see above for common case.
+-- !!! FIXME: the insert/select would not bring up the values in memory so this would work after restart only,
+---           and in addition this will copy EVERYTHING from A to B including any system related directories be patient!
 create procedure wa_redefine_vhosts(in host_port varchar := '*sslini*', in isdav integer := 1)
 {
-  -- make_vad.sh
-  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/ods');
-  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/ods', ppath=>'/DAV/VAD/wa/', is_dav=>isdav, vsp_user=>'dba', def_page=>'sfront.vspx');
 
-  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/images/icons');
-  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/images/icons', ppath=>'/samples/wa/icons', is_dav=>isdav);
-
-  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/users');
-  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/users', ppath=>'/DAV/VAD/wa/users', is_dav=>isdav, vsp_user=>'dba');
-
-  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/data/rdf');
-  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>isdav, vsp_user=>'dba');
-  -- gdata.sql
-  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/dataspace');
-  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/dataspace', ppath=>'/DAV/VAD/wa/', vsp_user=>'dba', is_dav=>isdav, def_page=>'sfront.vspx',is_brws=>0, opts=>vector ('url_rewrite', 'ods_rule_list1'));
-  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/dataspace/GData');
-  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/dataspace/GData', ppath=>'/SOAP/Http/gdata', soap_user=>'GDATA_ODS');
-  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/openid');
-  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/openid', ppath=>'/SOAP/Http/server', soap_user=>'OpenID');
-  --ods_api.sql
-  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/ods_services');
-  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/ods_services',ppath=>'/SOAP/',soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'ods_svc_rule_list1'));
-  --opensocial.sql
-  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/feeds');
-  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/feeds', ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_ot'));
-  DB.DBA.VHOST_REMOVE (vhost=>host_port,lhost=>host_port,lpath=>'/activities');
-  DB.DBA.VHOST_DEFINE (vhost=>host_port,lhost=>host_port,lpath=>'/activities', ppath=>'/SOAP/Http', soap_user=>'GDATA_ODS', opts=>vector ('url_rewrite', 'os_rule_list_act'));
-
+  ods_define_common_vd (host_port, host_port, isdav);
 
   insert soft DB.DBA.HTTP_PATH(HP_HOST,HP_LISTEN_HOST,HP_LPATH,HP_PPATH,HP_STORE_AS_DAV,HP_DIR_BROWSEABLE,HP_DEFAULT,HP_SECURITY,HP_REALM,HP_AUTH_FUNC,HP_POSTPROCESS_FUNC,HP_RUN_VSP_AS,HP_RUN_SOAP_AS,HP_PERSIST_SES_VARS,HP_SOAP_OPTIONS,HP_AUTH_OPTIONS,HP_OPTIONS,HP_IS_DEFAULT_HOST)
   select host_port,host_port,HP_LPATH,HP_PPATH,HP_STORE_AS_DAV,HP_DIR_BROWSEABLE,HP_DEFAULT,HP_SECURITY,HP_REALM,HP_AUTH_FUNC,HP_POSTPROCESS_FUNC,HP_RUN_VSP_AS,HP_RUN_SOAP_AS,HP_PERSIST_SES_VARS,HP_SOAP_OPTIONS,HP_AUTH_OPTIONS,HP_OPTIONS,HP_IS_DEFAULT_HOST from DB.DBA.HTTP_PATH where HP_HOST='*ini*' and HP_LISTEn_HOST='*ini*'
   ;
 }
 ;
+
+
+create procedure ODS_USER_IDENTIY_URLS (in uname varchar)
+{
+  declare rset, mdta, h any;
+  exec (sprintf ('select Y from (sparql
+  	prefix foaf: <http://xmlns.com/foaf/0.1/>
+  	prefix owl: <http://www.w3.org/2002/07/owl#>
+  	select ?Y from <%s> where { [] foaf:nick "%s" ; <http://www.w3.org/2002/07/owl#sameAs> ?Y }) sub',
+	sioc..get_graph (), uname), null, null, vector (), 0, mdta, null, h);
+  exec_result_names (mdta[0]);
+  while (0 = exec_next (h, null, null, rset))
+    {
+      exec_result (rset);
+    }
+}
+;
+

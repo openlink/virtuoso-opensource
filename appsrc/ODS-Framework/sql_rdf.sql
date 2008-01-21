@@ -53,7 +53,7 @@ create procedure rdf_import (
       }
     }
     -- RDF
-    pFolder := pFolder || replace ( replace ( replace ( replace ( replace ( replace ( replace (pUrl, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
+    pFolder := pFolder || replace ( replace ( replace ( replace ( replace ( replace ( replace (pUrl, '/', '_'), chr(92), '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
     DB.DBA.DAV_DELETE_INT (pFolder, 1, null, null, 0);
 
     content := '';
@@ -153,7 +153,7 @@ create procedure rdf_import_ext (
       }
     }
     -- RDF
-    pFolder := pFolder || replace ( replace ( replace ( replace ( replace ( replace ( replace (pGraph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
+    pFolder := pFolder || replace ( replace ( replace ( replace ( replace ( replace ( replace (pGraph, '/', '_'), chr(92), '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
     DB.DBA.DAV_DELETE_INT (pFolder, 1, null, null, 0);
 
     content := '';
@@ -261,6 +261,22 @@ create procedure ODS_SPARQL_QM_RUN (in txt varchar, in sig int := 1, in fl int :
   declare metas, rowset any;
   if (fl)
    result_names (REPORT);
+  txt := '
+    prefix sioc: <http://rdfs.org/sioc/ns#>
+    prefix sioct: <http://rdfs.org/sioc/types#>
+    prefix atom: <http://atomowl.org/ontologies/atomrdf#>
+    prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    prefix foaf: <http://xmlns.com/foaf/0.1/>
+    prefix dc: <http://purl.org/dc/elements/1.1/>
+    prefix dct: <http://purl.org/dc/terms/>
+    prefix skos: <http://www.w3.org/2004/02/skos/core#>
+    prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+    prefix bm: <http://www.w3.org/2002/01/bookmark#>
+    prefix exif: <http://www.w3.org/2003/12/exif/ns/>
+    prefix ann: <http://www.w3.org/2000/10/annotation-ns#>
+    prefix wikiont: <http://sw.deri.org/2005/04/wikipedia/wikiont.owl#>
+    prefix calendar: <http://www.w3.org/2002/12/cal#>
+' || txt;
   -- dbg_printf ('%s', txt);
   -- string_to_file ('ods_sparql_qm_run.sql', '\nSPARQL ' || txt || '\n;\n', -1);
   sqltext := string_output_string (sparql_to_sql_text (txt));
@@ -276,7 +292,7 @@ create procedure ODS_SPARQL_QM_RUN (in txt varchar, in sig int := 1, in fl int :
   if (fl)
     {
       result ('STATE=' || stat || ': ' || msg);
-      if (rowset is not null)
+      if (193 = __tag (rowset))
 	{
 	  foreach (any r in rowset) do
 	    result (r[0] || ': ' || r[1]);
@@ -441,10 +457,6 @@ ODS_SPARQL_QM_RUN ('
     sioc..ods_sioc_result ('Creating IRI classes.');
 
 ODS_SPARQL_QM_RUN ('
-prefix sioc: <http://rdfs.org/sioc/ns#>
-prefix atom: <http://atomowl.org/ontologies/atomrdf#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-    #create iri class sioc:iri "%s" (in url varchar not null) .
     create iri class sioc:proxy_iri "http://^{URIQADefaultHost}^/proxy/%U" (in url varchar not null) .
 create iri class sioc:default_site "http://^{URIQADefaultHost}^/dataspace%U" (in dummy varchar not null) .
 create iri class sioc:user_iri "http://^{URIQADefaultHost}^/dataspace/%U" (in uname varchar not null) .
@@ -543,29 +555,11 @@ create iri class sioc:blog_comment_iri "http://^{URIQADefaultHost}^/dataspace/%U
 
     commit work;
     sioc..ods_sioc_result ('Creating the virtrdf:ODSDataspace storage.');
+    ODS_CREATE_APP_RDF_VIEWS ();
 ODS_SPARQL_QM_RUN ('
-prefix sioc: <http://rdfs.org/sioc/ns#>
-    prefix sioct: <http://rdfs.org/sioc/types#>
-prefix atom: <http://atomowl.org/ontologies/atomrdf#>
-prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-prefix foaf: <http://xmlns.com/foaf/0.1/>
-prefix dc: <http://purl.org/dc/elements/1.1/>
-prefix dct: <http://purl.org/dc/terms/>
-prefix skos: <http://www.w3.org/2004/02/skos/core#>
-prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-    prefix bm: <http://www.w3.org/2002/01/bookmark#>
-    prefix exif: <http://www.w3.org/2003/12/exif/ns/>
-    prefix ann: <http://www.w3.org/2000/10/annotation-ns#>
-    prefix wikiont: <http://sw.deri.org/2005/04/wikipedia/wikiont.owl#>
-    prefix calendar: <http://www.w3.org/2002/12/cal#>
     alter quad storage virtrdf:DefaultQuadStorage
     #  alter quad storage virtrdf:ODS
   {
-
-	    '
-	    ||
-	    ODS_GET_APP_RDF_VIEWS () ||
-	    '
 	create virtrdf:ODSDataspace as graph iri ("http://^{URIQADefaultHost}^/dataspace_v") option (exclusive)
 	  {
 
@@ -728,10 +722,11 @@ prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
 }
 ;
 
-create procedure ODS_GET_APP_RDF_VIEWS ()
+-- 'Compose the apps graphs
+
+create procedure ODS_CREATE_APP_RDF_VIEWS ()
 {
-  declare ret, tmp any;
-  ret := '';
+  declare tmp any;
   for select DB.DBA.wa_type_to_app (WAT_NAME) as suffix from DB.DBA.WA_TYPES do
     {
       declare p_name varchar;
@@ -739,22 +734,24 @@ create procedure ODS_GET_APP_RDF_VIEWS ()
       if (__proc_exists (p_name))
 	  {
 	    tmp := call (p_name) ();
-	    ret := ret || '\n'
-	    || 'create virtrdf:ODSDataspace-' || suffix
-	    || ' as graph iri ("http://^{URIQADefaultHost}^/dataspace_v") { \n'
-	    || tmp
-	    || '\n} . \n';
+            ODS_SPARQL_QM_RUN ('
+alter quad storage virtrdf:DefaultQuadStorage
+#alter quad storage virtrdf:ODS
+  {
+    create virtrdf:ODSDataspace-' || suffix || ' as graph iri ("http://^{URIQADefaultHost}^/dataspace_v") {
+    '|| tmp || '\n} }' );
 	  }
     }
   if (__proc_exists ('sioc.DBA.rdf_nntpf_view_str'))
     {
       tmp := sioc.DBA.rdf_nntpf_view_str ();
-      ret := ret || '\n'
-      || 'create virtrdf:ODSDataspace-discussion as graph iri ("http://^{URIQADefaultHost}^/dataspace_v") { \n'
-      || tmp
-      || '\n} . \n';
+            ODS_SPARQL_QM_RUN ('
+alter quad storage virtrdf:DefaultQuadStorage
+#alter quad storage virtrdf:ODS
+  {
+    create virtrdf:ODSDataspace-discussion as graph iri ("http://^{URIQADefaultHost}^/dataspace_v") {
+    ' || tmp || '\n} }' );
     }
-  return ret;
 };
 
 

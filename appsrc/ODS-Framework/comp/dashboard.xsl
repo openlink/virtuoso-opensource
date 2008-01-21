@@ -245,7 +245,7 @@
 	{
 	?>
 	  <li>
-            <a href="&lt;?V wa_expand_url (SIOC..wiki_post_iri_2(wnw_topic_id), self.login_pars) ?&gt;">
+            <a href="&lt;?V wa_expand_url (WV.WIKI.post_topic_uri (wnw_topic_id), self.login_pars) ?&gt;">
               <?V wa_utf8_to_wide (wnw_title, 1, 55) ?>
             </a>
           </li>
@@ -573,7 +573,7 @@
          declare inst_url_local varchar;
          inst_url_local :='not specified';
 --         inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
-         inst_url_local:=wa_expand_url (sprintf('%s%V/%s/%U',self.odsbar_dataspace_path,uname,self.odsbar_app_dataspace,inst_name_org), self.odsbar_loginparams);
+         inst_url_local:=wa_expand_url (sprintf('%s%V/%s/%s',self.odsbar_dataspace_path,uname,self.odsbar_app_dataspace,inst_name_org), self.odsbar_loginparams);
 
 
          if(isDiscussions) inst_url_local := wa_expand_url (sprintf('/dataspace/discussion/%U',inst_name_org), self.login_pars);
@@ -598,7 +598,7 @@
                  {
        ?>
          
-         <a href="&lt;?V inst_url_local ?&gt;"> <?V wa_utf8_to_wide(inst_name) ?> </a>
+         <a href="&lt;?vsp http(inst_url_local); ?&gt;"> <?V wa_utf8_to_wide(inst_name) ?> </a>
          
        <?vsp
                  }else http(inst_url_local);
@@ -1424,7 +1424,7 @@
             <a id="ds_dataspaces" href="javascript: void(0);" title="Data Spaces" class="noapp">Data Spaces</a>
           </li>
           <li>
-            <a id="ds_webservices" href="javascript: void(0);" title="Web Services Endpoints" class="noapp">Web Services Endpoints</a>
+            <a id="ds_webservices" href="javascript: void(0);" title="Web Services" class="noapp">Web Services</a>
           </li>
         </ul>
       </div> <!-- content_pane -->
@@ -1578,7 +1578,7 @@
 
           // Web Services Links
           var app = $('ds_webservices');
-          options.title = "Web Services Endpoints";
+          options.title = "Web Services";
           options.content = generateWSContents;
           OAT.Anchor.assign(app.id, options);
         }
@@ -2358,7 +2358,7 @@
                     {
                     curr_davres:=dta[0];
 
-          declare photo_href,gallery_davhome_foldername,_home_url,q_str varchar;
+          declare photo_href,gallery_davhome_foldername,_home_url,_inst_name,q_str varchar;
           declare gallery_path_arr any;
           gallery_path_arr:=split_and_decode(dta[0],0,'\0\0/');
 
@@ -2368,7 +2368,7 @@
           {
            gallery_davhome_foldername:='/'||gallery_path_arr[1]||'/'||gallery_path_arr[2]||'/'||gallery_path_arr[3]||'/'||gallery_path_arr[4]||'/';
            
-           q_str:='select HOME_URL from PHOTO.WA.SYS_INFO where HOME_PATH=\''||gallery_davhome_foldername||'\'';
+           q_str:='select HOME_URL,WAI_NAME from PHOTO.WA.SYS_INFO where HOME_PATH=\''||gallery_davhome_foldername||'\'';
 
            
            declare state, msg, descs, rows any;
@@ -2376,12 +2376,17 @@
            exec (q_str, state, msg, vector (), 1, descs, rows);
 
            if (state = '00000')
+           {
                _home_url:=rows[0][0];
+               _inst_name:=rows[0][1];
+           }
            else
                goto _skip;
            
                      
-           photo_href:=' href="'||_home_url||'/?'||subseq(self.login_pars,1)||'#'||'/'||gallery_path_arr[5]||'/'||gallery_path_arr[6]||'" target="_blank" ';
+--           photo_href:=' href="'||_home_url||'/?'||subseq(self.login_pars,1)||'#'||'/'||gallery_path_arr[5]||'/'||gallery_path_arr[6]||'" target="_blank" ';
+           photo_href:= sprintf(' href="/dataspace/%s/photos/%U#/%s/%s" target="_blank" ',self.u_name,_inst_name, gallery_path_arr[5], gallery_path_arr[6]);
+
           }
 
           _skip:;
@@ -2403,7 +2408,7 @@
             }
           }
 
-          photo_href:='<a '||photo_href||' > <img src="'||
+          photo_href:='<a '||wa_expand_url (photo_href,self.login_pars)||' > <img src="'||
                            self.odsbar_ods_gpath||'image.vsp?'||subseq(self.login_pars,1)||'&amp;image_id='||cast(dta[5] as varchar)||'&amp;width='|| cast(new_img_size_arr[0] as varchar) ||'&amp;height='||cast(new_img_size_arr[1] as varchar)||'"' ||
                            ' width="'||cast(new_img_size_arr[0] as varchar)||'" height="'||cast(new_img_size_arr[1] as varchar)||'" border="0" class="photoborder" alt="'||gallery_path_arr[6]||'"/></a>';
 
@@ -2847,8 +2852,57 @@
     </vm:if>
   </xsl:template>
 
+  <xsl:template match="vm:dash-my-calendar">
+    <?vsp
+      declare has_calendar integer;
 
+      has_calendar := 0;
+
+      if (wa_check_package ('calendar') and
+          exists (select 1
+                    from wa_member
+                   where WAM_APP_TYPE='Calendar' and
+                         WAM_MEMBER_TYPE = 1 and
+                         WAM_USER = self.u_id))
+        has_calendar := 1;
+    ?>
+    <vm:if test="has_calendar">
+      <div class="widget w_my_calendar">
+        <div class="w_title_bar">
+          <div class="w_title_text_ctr">
+            <img class="w_title_icon" src="images/icons/ods_calendar_16.png" alt="ODS-Calendar icon"/>
+            <span class="w_title_text">My Calendar</span>
+          </div>
+          <div class="w_title_btns_ctr">
+            <a class="minimize_btn" href="#"><img src="i/w_btn_minimize.png" alt="minimize icon"/></a>
+            <a class="close_btn" href="#"><img src="i/w_btn_close.png" alt="close icon"/></a>
+          </div>
+        </div> <!-- w_title_bar -->
+        <div class="w_pane content_pane">
+          <ul>
+            <xsl:call-template name="user-dashboard-my-item">
+              <xsl:with-param name="app">Calendar</xsl:with-param>
+              <xsl:with-param name="noitems_msg">No events/tasks</xsl:with-param>
+            </xsl:call-template>
+          </ul>
+        </div> <!-- content_pane -->
+        <div class="w_footer">
+          <a href="search.vspx?newest=calendar&l=1<?V self.login_pars ?>">More&amp;#8230;</a>
+        </div>
+      </div>
+    </vm:if>
+    <vm:if test="not has_calendar">
+      <div class="app_ad">
+        <a href="index_inst.vspx?&lt;?V 'wa_name=Calendar&amp;fr=promo' || '&amp;' || trim (self.login_pars, '&amp;') ?&gt;">
+          <img border="0" src="images/app_ads/ods_bann_calendar.jpg" alt="Let us help you organize your events!" />
+        </a>
+        <div class="app_ad_ft">
+          <input type="checkbox" id="calendar_app_ad_nuke"/>
+          <label for="calendar_app_ad_nuke">Do not show this next time</label>
+          <a href="#">Dismiss</a>
+        </div>
+      </div> <!-- app_ad -->
+    </vm:if>
+  </xsl:template>
 
 </xsl:stylesheet>
-
-

@@ -141,7 +141,7 @@
 
   <xsl:template match="vm:geo-link">
     <?vsp
-    if (self.e_lat is not null and self.e_lng is not null) {
+    if ( 1=0 and self.e_lat is not null and self.e_lng is not null) {
     ?>
       <v:url name="u1" value='<img src="http://i.geourl.org/80x15/simple.png" border="0" alt="GeoURL" />' format="%s"
 	  url="--sprintf ('http://geourl.org/near?p=%U', WA_LINK (1, sprintf ('/dataspace/%s', self.fname)))" xhtml_target="_blank"/>
@@ -305,24 +305,15 @@
 			      <td>
 				  <?vsp
 				    {
-                                      declare urls any;
-				      urls := coalesce(self.arr[8],'');
-				      if (length (urls))
-				        {
-					  declare arr any;
-                                          urls := replace (urls, '\r', '\n');
-                                          urls := replace (urls, '\n\n', '\n');
-
-					  arr := split_and_decode (urls, 0, '\0\0\n');
-					  foreach (any u in arr) do {
-					   if (length (trim (u))) {
+				    for select Y from DB.DBA.ODS_USER_IDENTIY_URLS (uname) (Y varchar) sub
+				    	where uname = self.fname
+				    	do
+				      {
 					  ?>
-					  <a href="<?V u ?>" target="_blank"><?V u ?></a>
+					  <a href="<?V Y ?>" target="_blank"><?V Y ?></a>
 					  <?vsp
 					   }
 					  }
-					}
-				    }
 				  ?>
 			      </td>
                             </tr>

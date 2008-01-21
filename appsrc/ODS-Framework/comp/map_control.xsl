@@ -203,6 +203,21 @@ function ref(_map,user_dshtml){
 
 function mapInit(){
      
+    if (window._apiKey=='0' && window.YMAPPID!='0')
+    {    
+        var defaultMapType='yahoo';
+        var alternativeMapType='google';
+    }else
+    {
+        var defaultMapType='google';
+        var alternativeMapType='yahoo';
+    }
+    
+    var containerDiv=$(']]><xsl:value-of select="@div_id" /><![CDATA[');
+     
+    if(containerDiv)
+     {
+
      var changeMapServiceTo='<?V get_keyword('switchmapto', self.vc_event.ve_params,'') ?>';
      
      var providerType=OAT.MapData.TYPE_G;
@@ -211,12 +226,6 @@ function mapInit(){
      };
       
      
-//     var containerDiv=document.getElementById(']]><xsl:value-of select="@div_id" /><![CDATA[');
-     var containerDiv=$(']]><xsl:value-of select="@div_id" /><![CDATA[');
-     
-     if(containerDiv)
-     {
-      
       var mapOptObj = {
 	                     fix:OAT.MapData.FIX_ROUND1,
 	                     fixDistance:20,
@@ -229,24 +238,41 @@ function mapInit(){
        commonMapObj.setMapType(OAT.MapData.MAP_HYB);
        <?vsp http(string_output_string(rendered_javascript)); ?>
      }else{
-//        alert('Please define a div container for the map control.');
-        return;
+        return;  //        alert('Please define a div container for the map control.');
      };
   
       var mappingServiceSwitch=OAT.Dom.create("a");
   
-      var nonLoginParams = getNonLoginParamsStr();
-      if (nonLoginParams)
-          nonLoginParams='&'+nonLoginParams;
 
-      if(changeMapServiceTo=='yahoo'){
-         mappingServiceSwitch.href = '<?vsp http(http_path()||'?switchmapto=google'||self.login_pars); ?>'+nonLoginParams;
+      var hrefParams = '';
+      
+      if(window._apiKey!='0' && window.YMAPPID!='0')
+      {
+          var pArr=OAT.Dom.uriParams();
+          if(typeof(pArr.switchmapto)!='undefined')
+          { 
+             if(changeMapServiceTo==defaultMapType || changeMapServiceTo=='')
+                pArr.switchmapto = alternativeMapType;
+             else
+                pArr.switchmapto = defaultMapType;
+          }else
+            pArr['switchmapto'] = alternativeMapType;
+            
+          var i=0;
+          for(p in pArr)
+          {    
+            hrefParams += i==0 ? '?'+p+'='+pArr[p] : '&'+p+'='+pArr[p];
+            i++;
+          }
+
+         mappingServiceSwitch.href = document.location.protocol+'//'+document.location.host+document.location.pathname+hrefParams;
+      
+         if(changeMapServiceTo=='yahoo')
          mappingServiceSwitch.innerHTML='Use Google Mapping Service';
-         containerDiv.parentNode.appendChild(mappingServiceSwitch);
-      }else if( changeMapServiceTo!='YAHOO' && window.YMAPPID!=0){
-         mappingServiceSwitch.href = '<?vsp http(http_path()||'?switchmapto=yahoo'||self.login_pars); ?>'+nonLoginParams;
+         else if( changeMapServiceTo!='yahoo' && window.YMAPPID!=0)
          mappingServiceSwitch.innerHTML='Use Yahoo Mapping Service';
-         containerDiv.parentNode.appendChild(mappingServiceSwitch);
+      
+         OAT.Dom.append([containerDiv.parentNode,mappingServiceSwitch])
   
 }
 

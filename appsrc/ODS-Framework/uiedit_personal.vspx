@@ -51,7 +51,7 @@
     <v:variable persist="0" name="issearch" type="int" default="1"/>
     <v:variable persist="0" name="showactive" type="int" default="1"/>
     <v:variable persist="0" name="interests" type="varchar" default="''"/>
-    <v:variable persist="0" name="appEnable" type="integer" default="1"/>
+    <v:variable persist="0" name="appEnable" type="integer" default="0"/>
 
     <v:variable name="sav0" type="varchar" default="'1'" />
     <v:variable name="sav1" type="varchar" default="'1'" />
@@ -71,6 +71,8 @@
     <v:variable name="sav45" type="varchar" default="'1'" />
     <v:variable name="sav46" type="varchar" default="'1'" />
     <v:variable name="sav48" type="varchar" default="'1'" />
+
+    <v:variable name="previe_path" type="varchar" default="''" />
 
     <v:before-data-bind>
       <![CDATA[
@@ -417,7 +419,7 @@
 			</v:button>
                 </td>
 	      </tr>
-	      <tr id="pers_9" class="initial_hidden">
+	      <tr>
 		  <th><label for="e_int" title="Free text">Interests</label>
 		      <span class="explain"> (one URL per line)</span>
 		  </th>
@@ -438,6 +440,8 @@
 			}
 			function interestsPrepare1 ()
 			{
+			    OAT.Dom.clear($('interests_div'));
+
 			    var grid = new OAT.Grid("interests_div",0,0);
                             var txt = document.getElementById ("e_int");
                             var arr = txt.value.split ("\n");
@@ -490,7 +494,89 @@
                 <th><label for="up_photo">Upload Photo</label></th>
                 <td class="listing_col" nowrap="1">
 		    <input name="up_photo" type="file" value="" xhtml_size="80" xhtml_tabindex="17"
-			onblur="javascript: getFileName(this.form, this, this.form.s_photo);" />
+			   onblur='javascript:getFileName(this.form, this, this.form.s_photo);'/>
+
+         			<v:button name="bt_preview_1" value="Preview" action="simple">
+      			  <v:on-post>
+              <![CDATA[
+			          if (get_keyword ('up_photo', e.ve_params, '') <> '')
+			          {
+			            declare dir, p_path, p_ext any;
+			            dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/images/';
+			            p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
+  		            p_path := dir||'preview_img.'||p_ext[length(p_ext)-1];
+
+    		            if (p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) in ('jpg','png','gif'))
+		                {
+                     
+          			  declare rc, pwd1 any;
+          			  pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
+          			  rc := 0;
+
+			            rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
+			            rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params),
+			            '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+
+
+
+		            if (rc < 0)
+		            {
+		                self.vc_is_valid := 0;
+		                self.vc_error_message := DAV_PERROR (rc);
+		            }else
+		              self.previe_path:=p_path;
+		                 
+		                }else
+                    {
+		                 self.vc_is_valid := 0;
+		                 self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
+     			           self.previe_path:='';
+
+			              }
+
+
+			        }
+
+              ]]>
+      			  </v:on-post>
+              </v:button>
+                <script type="text/javascript"><![CDATA[
+                var previeImgPath='<?Vself.previe_path?>';
+                if(previeImgPath.length>0)
+                {
+                  OAT.Loader.loadFeatures(["dimmer"],showPrevieImg);
+                }
+
+                function showPrevieImg()
+                {
+                  var div=OAT.Dom.create('div',{position:'relative',textAlign:'center'});
+
+                  OAT.Event.attach(div,"click",OAT.Dimmer.hide);
+
+                  var img=OAT.Dom.create('img',{display:'block'});
+                  img.src=previeImgPath;
+                  OAT.Event.attach(div,"load",function(){OAT.Dom.center(div,1,1);});
+
+                  OAT.Dom.append([div,img]);
+                  OAT.Dimmer.show(div,{popup:true});
+                  function centerImg()
+                  {
+                    if(img.complete)
+                    {
+                      OAT.Dom.center(div,1,1);
+                      clearTimeout(centerImgE);
+
+                    }
+                  }
+
+                  var centerImgE=setInterval(centerImg,50);
+
+
+//                  setTimeout(function(){;OAT.Dom.center(div,1,1)},200);
+
+                };
+
+                ]]></script>
                 </td>
               </tr>
               <tr>
@@ -527,6 +613,26 @@
                   </td>
               </tr>
               <tr>
+          <th>
+            <label for="app_enable">Show &amp;lt;a&amp;gt;++ links</label>
+          </th>
+          <td>
+            <v:select-list xhtml_class="select" name="app_enable" xhtml_id="app_enable">
+              <v:item value="0" name="disabled"/>
+              <v:item value="1" name="click"/>
+              <v:item value="2" name="hover"/>
+              <v:before-data-bind>
+                <v:script>
+                  <![CDATA[
+                    control.ufl_value := cast (self.appEnable as varchar);
+                    control.vc_data_bound := 1;
+                  ]]>
+                </v:script>
+              </v:before-data-bind>
+            </v:select-list>
+          </td>
+	      </tr>
+          <tr>
                 <td colspan="2">
 		    <v:check-box name="in_search" value="1" xhtml_id="in_search" >
 			<v:after-data-bind>
@@ -549,16 +655,6 @@
           </td>
 	      </tr>
         <tr>
-          <td colspan="2">
-            <v:check-box name="app_enable" value="--self.appEnable" xhtml_id="app_enable" >
-             <v:after-data-bind>
-               control.ufl_selected := self.appEnable;
-             </v:after-data-bind>
-            </v:check-box>
-            <label for="app_enable">Show &amp;lt;a&amp;gt;++ links</label>
-          </td>
-	      </tr>
-        <tr>
                 <td colspan="2" class="ctrl">
 		      <span class="fm_ctl_btn">
 			<v:button name="bt_cncl_1" value="Cancel" action="simple">
@@ -566,9 +662,10 @@
 			    self.vc_redirect (sprintf ('uhome.vspx?ufname=%U&amp;l=1', self.u_name));
 			  </v:on-post>
 			</v:button>
-                  <v:button name="user_sset_personal" value="Save" action="simple" xhtml_tabindex="21">
+            <v:button name="user_sset_personal" value="Save" action="simple" xhtml_tabindex="21" xhtml_id="user_sset_personal" xhtml_onclick="return mailIsValid() ? true : false ;">
                     <v:on-post>
                       <![CDATA[
+
                         if (exists(select 1 from SYS_USERS where U_E_MAIL=self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
                     	  {
                           self.vc_error_message := 'This e-mail address is already registered.';
@@ -625,7 +722,22 @@
 			  rc := 0;
 			  rc_org :=0;
 
-			  if (get_keyword ('up_photo', e.ve_params, '') <> '')
+
+        declare p_ext any;
+        p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
+
+			  if(p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) not in ('jpg','png','gif'))
+        {
+                    self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
+                    self.vc_is_valid := 0;
+                    self.previe_path:='';
+
+        }
+
+
+        if (self.vc_is_valid = 0) return;
+			  
+			  if (get_keyword ('up_photo', e.ve_params, '') <> '' OR  (self.previe_path<>'' and self.s_photo.ufl_value<>''))
 			  {
 			    declare dir, p_path, p_path_org any;
 			    dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/images/';
@@ -643,11 +755,22 @@
 	                        end;
 
 			    rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
+
+
+          if(get_keyword ('up_photo', e.ve_params, '') <> '')
+          {
 			    rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params),
 			    '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
 
 			    rc_org := DAV_RES_UPLOAD (p_path_org, get_keyword ('up_photo', e.ve_params),
 			    '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+          }else if(self.previe_path<>'' and self.s_photo.ufl_value<>'')
+          {
+	         rc:=DB.DBA.DAV_COPY(self.previe_path, dir||self.s_photo.ufl_value,1, '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+           self.previe_path:='';
+
+          }
+
 
 			    if (rc < 0 or rc_org < 0)
 			      {
@@ -682,7 +805,13 @@
 			      }
         }
 			    WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', p_path);
+		    }else
+		    {
+          WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', '');
 		          }
+
+
+
 
 			if (get_keyword ('up_audio', e.ve_params, '') <> '')
 			  {
@@ -739,7 +868,7 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_SEARCHABLE', self.in_search.ufl_selected);
                         WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
                         WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.e_int.ufl_value);
-                        WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', self.app_enable.ufl_selected);
+                        WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
 
 
                         -- change user_text data
@@ -749,6 +878,32 @@
                       ]]>
                     </v:on-post>
 		</v:button>
+   <script type="text/javascript"><![CDATA[
+
+    function mailIsValid()
+    {
+      var regmail=$('regmail');
+      var regex =/^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+
+      if (regmail.value.length==0 || regmail.value.length>40)
+      {
+        $('page_error_msg').innerHTML=' E-mail address cannot be empty or longer then 40 chars';
+
+        OAT.Dom.show($('page_error_msg'));
+        regmail.focus();
+        return false;
+      }else if(!regex.test(regmail.value))
+      {
+        $('page_error_msg').innerHTML=' Invalid E-mail address';
+
+        OAT.Dom.show($('page_error_msg'));
+        regmail.focus();
+        return false;
+      }
+      return true;
+    }
+   ]]></script>
+
 	    </span>
                 </td>
               </tr>
