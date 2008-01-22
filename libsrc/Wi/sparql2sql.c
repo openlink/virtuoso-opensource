@@ -226,7 +226,7 @@ process_children:
 
 end_process_children:
   if (retcode & SPAR_GPT_NOOUT)
-    return retcode;
+    return (retcode & SPAR_GPT_COMPLETED);
   switch (tree_cat)
     {
     case 0:
@@ -4758,7 +4758,11 @@ sparp_flatten_union (sparp_t *sparp, SPART *parent_gp)
   for (memb_ctr = BOX_ELEMENTS (parent_gp->_.gp.members); memb_ctr--; /*no step*/)
     {
       SPART *memb = parent_gp->_.gp.members [memb_ctr];
-      if ((SPAR_GP == SPART_TYPE (memb)) && (UNION_L == memb->_.gp.subtype))
+      if ((SPAR_GP == SPART_TYPE (memb)) &&
+        ((UNION_L == memb->_.gp.subtype) ||
+         ((0 == memb->_.gp.subtype) &&
+           (1 == BOX_ELEMENTS (memb->_.gp.members)) &&
+           (SPAR_GP == SPART_TYPE (memb->_.gp.members[0])) ) ) )
         {
           int sub_count = BOX_ELEMENTS (memb->_.gp.members);
           int sub_ctr;
@@ -4771,6 +4775,43 @@ sparp_flatten_union (sparp_t *sparp, SPART *parent_gp)
               if (0 != memb_filters_count)
                 sparp_gp_attach_many_filters (sparp, sub_memb, sparp_treelist_full_copy (sparp, memb_filters, NULL), 0, NULL);
             }
+          memb_ctr += sub_count;
+          sparp_gp_detach_member (sparp, parent_gp, memb_ctr, NULL);
+        }
+    }
+}
+
+
+void
+sparp_flatten_join (sparp_t *sparp, SPART *parent_gp)
+{
+  int memb_ctr;
+#ifdef DEBUG
+  if (SPAR_GP != SPART_TYPE (parent_gp))
+    spar_internal_error (sparp, "sparp_" "flatten_join(): parent_gp is not a GP");
+  if ((0 != parent_gp->_.gp.subtype) && (WHERE_L != parent_gp->_.gp.subtype))
+    spar_internal_error (sparp, "sparp_" "flatten_join(): parent_gp is not a join");
+#endif
+  for (memb_ctr = BOX_ELEMENTS (parent_gp->_.gp.members); memb_ctr--; /*no step*/)
+    {
+      SPART *memb = parent_gp->_.gp.members [memb_ctr];
+      if ((SPAR_GP == SPART_TYPE (memb)) &&
+        (((0 == memb->_.gp.subtype) &&
+           (1 <= BOX_ELEMENTS (memb->_.gp.members)) ) ||
+         ((UNION_L == memb->_.gp.subtype) &&
+           (1 == BOX_ELEMENTS (memb->_.gp.members)) ) ) )
+        {
+          int sub_count = BOX_ELEMENTS (memb->_.gp.members);
+          int sub_ctr;
+          SPART **memb_filters = sparp_gp_detach_all_filters (sparp, memb, NULL);
+          int memb_filters_count = BOX_ELEMENTS_0 (memb_filters);
+          for (sub_ctr = sub_count; sub_ctr--; /* no step */)
+            {
+              SPART *sub_memb = sparp_gp_detach_member (sparp, memb, sub_ctr, NULL);
+              sparp_gp_attach_member (sparp, parent_gp, sub_memb, memb_ctr, NULL);
+            }
+          if (0 != memb_filters_count)
+            sparp_gp_attach_many_filters (sparp, parent_gp, sparp_treelist_full_copy (sparp, memb_filters, NULL), 0, NULL);
           memb_ctr += sub_count;
           sparp_gp_detach_member (sparp, parent_gp, memb_ctr, NULL);
         }
@@ -5117,6 +5158,8 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
   END_DO_BOX_FAST_REV;
   if (UNION_L == curr->_.gp.subtype)
     sparp_flatten_union (sparp, curr);
+  else
+    sparp_flatten_join (sparp, curr);
   return 0;
 }
 
@@ -5157,6 +5200,8 @@ do_detach:
   END_DO_BOX_FAST_REV;
   if (UNION_L == curr->_.gp.subtype)
     sparp_flatten_union (sparp, curr);
+  else
+    sparp_flatten_join (sparp, curr);
   return 0;
 }
 

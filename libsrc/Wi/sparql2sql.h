@@ -392,10 +392,19 @@ extern void sparp_gp_deprecate (sparp_t *sparp, SPART *parent_gp);
 No effects if called for the second time. */
 extern void sparp_rotate_comparisons_by_rank (SPART *filt);
 
-/*! This converts union of something and unions into flat union. The operation is recursive while there's some subunions.
+/*! This converts union of something and unions into flat union.
+Any single-item subjoin of one GP is treated as union.
+The changed part is changed again while there are some subunions but unchanged part is not visited recursively.
 Equivalences are touched, of course, but who cares?
 !!!TBD: support of filters in the union GP, this is GPF now. */
 extern void sparp_flatten_union (sparp_t *sparp, SPART *parent_gp);
+
+/*! This converts join of something and inner joins.
+Any single-item subunion is treated as join.
+The changed part is changed again while there are some subjoins but unchanged part is not visited recursively.
+Equivalences are touched, of course, but who cares?
+!!!TBD: support of filters in the union GP, this is GPF now. */
+extern void sparp_flatten_join (sparp_t *sparp, SPART *parent_gp);
 
 /*! If a gp is group of non-optional triples and each triple has exactly one possible quad map then the function returns vector of tabids of triples.
 In addition, if the \c expected_triples_count argument is nonnegative then number of triples in group should be equal to that argument.
@@ -453,6 +462,8 @@ extern ssg_valmode_t ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t
 extern ssg_valmode_t ssg_largest_intersect_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
 extern ssg_valmode_t ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
 extern int ssg_valmode_is_subformat_of (ssg_valmode_t m1, ssg_valmode_t m2);
+extern ssg_valmode_t ssg_find_nullable_superformat (sparp_t *sparp, ssg_valmode_t fmt);
+
 
 extern qm_format_t *qm_format_default_iri_ref;
 extern qm_format_t *qm_format_default_ref;
