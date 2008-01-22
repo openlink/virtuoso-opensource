@@ -142,8 +142,8 @@ echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
 echo both ": fs fp go join fs fp go with  sparql\n";
 
 sparql define input:inference  'inft' select * from <inft> where { ?s ?p <c1> . ?s ?p1 <ic2p1> option (inference 'none') . };
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both ": fs fp go join fs fp go with  sparql inf none\n";
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": fs fp go join fs fp go with  sparql inf none STATE=" $state " MESSAGE=" $message "\n" ;
 
 sparql  select * from <inft> where { ?s ?p <c1> option (inference 'inft') . ?s ?p1 <ic2p1> . };
 echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
@@ -209,17 +209,17 @@ ttlp (' @prefix owl: <http://www.w3.org/2002/07/owl#> .
 
 rdfs_rule_set ('sas-p', 'sas-p');
 
-sparql define input:inference 'sas-p'
+sparql define input:inference 'sas-p' define input:same-as "yes"
 select * from <sas-p> where { ?s <p0> ?o };
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": same-as for super property\n";
 
-sparql define input:inference 'sas-p'
+sparql define input:inference 'sas-p' define input:same-as "yes"
 select * from <sas-p> where { ?s <p1> ?o };
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": same-as for property\n";
 
-sparql define input:inference 'sas-p'
+sparql define input:inference 'sas-p' define input:same-as "yes"
 select * from <sas-p> where { ?s <sas-p1> ?o };
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": same-as for sameAs property\n";
