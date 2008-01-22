@@ -2259,10 +2259,39 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
                 }
             }
           END_DO_BOX_FAST;
+              if (SSG_VALMODE_LONG == op_fmt)
+                {
+                  DO_BOX_FAST (SPART *, argN, argctr, tree->_.builtin.args)
+                    {
+                      ssg_valmode_t argN_native;
+                      argN_native = sparp_expn_native_valmode (ssg->ssg_sparp, argN);
+                      if ((SSG_VALMODE_SQLVAL == argN_native) || (SSG_VALMODE_BOOL == argN_native))
+                        continue;
+                      if (IS_BOX_POINTER (argN_native) &&
+                        ((argN_native->qmfIsSubformatOfLong &&
+                            (SPART_VARR_LONG_EQ_SQL & argN_native->qmfValRange.rvrRestrictions ) ) ||
+                           !strcmp (argN_native->qmfSqlvalOfShortTmpl, " ^{tree}^") ) )
+                        continue;
+                      if ((IS_BOX_POINTER (argN_native) &&
+                        argN_native->qmfIsSubformatOfLong) ||
+                        (SSG_VALMODE_LONG == argN_native) )
+                        {
+                          ptrlong rbits = sparp_restr_bits_of_expn (ssg->ssg_sparp, argN);
+                          if (SPART_VARR_LONG_EQ_SQL & rbits)
+                            continue;
+                        }
+                      goto IN_cant_use_SQLVAL; /* see below */
+                    }
+                  END_DO_BOX_FAST;
+                  op_fmt = SSG_VALMODE_SQLVAL;
+                  goto IN_op_fnt_found; /* see below */
+IN_cant_use_SQLVAL: ;
+                }
             }
           else 
             op_fmt = SSG_VALMODE_LONG;
         }
+IN_op_fnt_found:
       switch (BOX_ELEMENTS (tree->_.builtin.args))
         {
         case 0: ssg_puts (/*top_filter_op ? " (1=2)" :*/ " 0"); return;
