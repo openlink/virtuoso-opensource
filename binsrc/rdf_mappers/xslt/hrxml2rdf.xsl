@@ -62,6 +62,9 @@
   </xsl:template>
 
   <xsl:template match="StructuredXMLResume">
+	<cv:cvDescription>
+		<xsl:value-of select="ExecutiveSummary"/>  
+	</cv:cvDescription>
     <cv:aboutPerson>
         <cv:Person>
             <v:n>
@@ -96,6 +99,72 @@
             </v:organization-name>
         </cv:Person>
     </cv:aboutPerson>
+    <cv:hasTarget>
+		<cv:Target>
+			<cv:targetJobDescription>
+				<xsl:value-of select="Objective"/>
+			</cv:targetJobDescription>
+		</cv:Target>
+    </cv:hasTarget>    
+    <cv:hasWorkHistory>
+        <cv:WorkHistory>
+			<cv:employedIn>
+				<cv:Company>
+					<cv:Name>
+						<xsl:value-of select="EmploymentHistory/EmployerOrg/EmployerOrgName"/>
+					</cv:Name>
+					<cv:Locality>
+						<xsl:value-of select="EmploymentHistory/EmployerOrg/EmployerContactInfo/LocationSummary"/>
+					</cv:Locality>
+					<cv:Notes>
+						<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/OrgName/OrganizationName"/>
+					</cv:Notes>
+				</cv:Company>
+			</cv:employedIn>
+			<cv:startDate>
+				<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/StartDate/YearMonth"/>
+			</cv:startDate>
+			<cv:endDate>
+				<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/EndDate/YearMonth"/>
+			</cv:endDate>
+			<cv:jobTitle>
+				<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/Title"/>
+			</cv:jobTitle>
+			<cv:jobDescription>
+				<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/Description"/>
+			</cv:jobDescription>
+			<cv:jobType>
+				<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/@positionType"/>
+			</cv:jobType>
+        </cv:WorkHistory>
+    </cv:hasWorkHistory>
+    
+    <cv:hasEducation>
+		<cv:Education>
+			<cv:studiedIn>
+				<cv:EducationalOrg>
+					<cv:Name>
+						<xsl:value-of select="EducationHistory/SchoolOrInstitution/School/SchoolName"/>
+					</cv:Name>
+					<cv:URL>
+						<xsl:value-of select="EducationHistory/SchoolOrInstitution/School/InternetDomainName"/>
+					</cv:URL>
+				</cv:EducationalOrg>
+			</cv:studiedIn>			
+			<cv:eduGradDate>
+				<xsl:value-of select="EducationHistory/SchoolOrInstitution/Degree/DegreeDate/YearMonth"/>
+			</cv:eduGradDate>
+			<cv:eduMajor>
+				<xsl:value-of select="EducationHistory/SchoolOrInstitution/Degree/DegreeMajor/Name"/>
+			</cv:eduMajor>
+			<cv:eduMinor>
+				<xsl:value-of select="EducationHistory/SchoolOrInstitution/Degree/DegreeMinor/Name"/>
+			</cv:eduMinor>
+			<cv:eduDescription>
+				<xsl:value-of select="EducationHistory/SchoolOrInstitution/Degree/Comments"/>
+			</cv:eduDescription>
+		</cv:Education>    
+    </cv:hasEducation>
   </xsl:template>
 
 </xsl:stylesheet>
