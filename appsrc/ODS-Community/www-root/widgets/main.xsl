@@ -780,36 +780,37 @@ c.length);
     </xsl:if>
     <link href="<?vsp http(sprintf('%s', get_keyword('css_name', params))); ?>" rel="stylesheet" type="text/css" media="screen" title="<?vsp declare cur varchar; cur := get_keyword('css_name', params); http(subseq(cur, strrchr(cur, '/') + 1, strrchr(cur, '.'))); ?>"/>
     <?vsp
-      declare cur_template, cur_css, cur_home varchar;
-      cur_template := self.current_template;
-      cur_css := self.current_css;
-      cur_home := self.current_home;
-      
-      if (cur_template is null or cur_template = '')
-        cur_template := '/community/www-root/templates/openlink';
-      if (cur_css is null or cur_css = '')
-        cur_css := '/community/www-root/templates/openlink/default.css';
-      
-      declare cur, cur_title varchar;
-
-
-      for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_FULL_PATH like cur_template || '/*.css' and RES_FULL_PATH <> cur_css) do
-      {
-        if (RES_FULL_PATH like '/community/www-root/templates/%')
-        {
-          cur := subseq(RES_FULL_PATH, length('/community/www-root/templates/'));
-          cur := '/community/templates/' || cur;
-          cur_title := subseq(cur, strrchr(cur, '/') + 1, strrchr(cur, '.'));
-        }
-        else
-        {
-          cur := left(cur_template, strrchr(cur_template, '/'));
-          cur := replace(RES_FULL_PATH, cur, cur_home || 'templates');
-          cur_title := subseq(cur, strrchr(cur, '/') + 1, strrchr(cur, '.'));;
-        }
-        if (cur is not null and cur_title is not null and cur <> '' and cur_title <> '')
-          http(sprintf('<link rel="alternate stylesheet" title="%s" href="%s" type="text/css" media="screen" />', cur_title, cur));
-      }
+     ;
+--      declare cur_template, cur_css, cur_home varchar;
+--      cur_template := self.current_template;
+--      cur_css := self.current_css;
+--      cur_home := self.current_home;
+--      
+--      if (cur_template is null or cur_template = '')
+--        cur_template := '/community/www-root/templates/openlink';
+--      if (cur_css is null or cur_css = '')
+--        cur_css := '/community/www-root/templates/openlink/default.css';
+--      
+--      declare cur, cur_title varchar;
+--
+--
+--      for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_FULL_PATH like cur_template || '/*.css' and RES_FULL_PATH <> cur_css) do
+--      {
+--        if (RES_FULL_PATH like '/community/www-root/templates/%')
+--        {
+--          cur := subseq(RES_FULL_PATH, length('/community/www-root/templates/'));
+--          cur := '/community/templates/' || cur;
+--          cur_title := subseq(cur, strrchr(cur, '/') + 1, strrchr(cur, '.'));
+--        }
+--        else
+--        {
+--          cur := left(cur_template, strrchr(cur_template, '/'));
+--          cur := replace(RES_FULL_PATH, cur, cur_home || 'templates');
+--          cur_title := subseq(cur, strrchr(cur, '/') + 1, strrchr(cur, '.'));;
+--        }
+--        if (cur is not null and cur_title is not null and cur <> '' and cur_title <> '')
+--          http(sprintf('<link rel="alternate stylesheet" title="%s" href="%s" type="text/css" media="screen" />', cur_title, cur));
+--      }
     ?>
   </xsl:template>
 
