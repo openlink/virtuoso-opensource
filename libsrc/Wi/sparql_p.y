@@ -1009,8 +1009,12 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 	| spar_expn _SLASH spar_expn	{ SPAR_BIN_OP ($$, BOP_DIV, $1, $3); }
 	| _BANG spar_expn {		/* [51]	UnaryExpn	 ::=   ('!'|'+'|'-')? PrimaryExpn */
 		SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
-	| _PLUS	spar_expn	%prec UPLUS	{ SPAR_BIN_OP ($$, BOP_PLUS, box_num_nonull (0), $2); }
-	| _MINUS spar_expn	%prec UMINUS	{ SPAR_BIN_OP ($$, BOP_MINUS, box_num_nonull (0), $2); }
+	| _PLUS	spar_expn	%prec UPLUS	{
+		SPAR_BIN_OP ($$, BOP_PLUS,
+		  spartlist (sparp_arg, 4, SPAR_LIT, t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL), $2); }
+	| _MINUS spar_expn	%prec UMINUS	{
+		SPAR_BIN_OP ($$, BOP_MINUS,
+		  spartlist (sparp_arg, 4, SPAR_LIT, t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL), $2); }
         | _LPAR spar_expn _RPAR	{ $$ = $2; }	/* [58]	PrimaryExpn	 ::=  */
 			/*... BracketedExpn | BuiltInCall | IRIrefOrFunction	*/
 			/*... | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var	*/

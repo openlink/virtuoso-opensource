@@ -135,7 +135,7 @@ create procedure DB.DBA.RDF_OBJ_RO_DIGEST_INDEX_HOOK (inout vtb any, inout d_id 
   for (select RO_LONG, RO_VAL, RO_DIGEST
     from DB.DBA.RDF_OBJ where RO_ID=d_id and RO_DIGEST is not null) do
     {
-      if (230 = rdf_box_data_tag (RO_DIGEST))
+      if (__tag of XML = rdf_box_data_tag (RO_DIGEST))
         vt_batch_feed (vtb, xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 0);
       else
         vt_batch_feed (vtb, coalesce (RO_LONG, RO_VAL), 0);
@@ -149,7 +149,7 @@ create procedure DB.DBA.RDF_OBJ_RO_DIGEST_UNINDEX_HOOK (inout vtb any, inout d_i
   for (select RO_LONG, RO_VAL, RO_DIGEST
     from DB.DBA.RDF_OBJ where RO_ID=d_id and RO_DIGEST is not null) do
     {
-      if (230 = rdf_box_data_tag (RO_DIGEST))
+      if (__tag of XML = rdf_box_data_tag (RO_DIGEST))
         vt_batch_feed (vtb, xml_tree_doc (__xml_deserialize_packed (RO_LONG)), 1);
       else
         vt_batch_feed (vtb, coalesce (RO_LONG, RO_VAL), 1);
@@ -475,7 +475,7 @@ create function DB.DBA.RDF_MAKE_IID_OF_LONG (in qname any) returns IRI_ID
     return qname;
   if (not isstring (qname))
     {
-      if (246 = __tag (qname) and rdf_box_is_complete (qname))
+      if (__tag of rdf_box = __tag (qname) and rdf_box_is_complete (qname))
         qname := rdf_box_data (qname, 1);
       else
         qname := DB.DBA.RDF_STRSQLVAL_OF_LONG (qname);
@@ -487,16 +487,15 @@ retnull:
 }
 ;
 
-create function DB.DBA.RDF_QNAME_OF_IID (in iid IRI_ID) returns varchar
+create function DB.DBA.RDF_QNAME_OF_IID (in iid IRI_ID) returns varchar -- DEPRECATED
 {
-  declare exit handler for sqlstate '22023' { return NULL; };
-  return id_to_iri (iid);
+  return id_to_iri_nosignal (iid);
 }
 ;
 
 create function DB.DBA.RDF_MAKE_GRAPH_IIDS_OF_QNAMES (in qnames any) returns any
 {
-  if (193 <> __tag (qnames))
+  if (__tag of vector <> __tag (qnames))
     return vector ();
   declare res_acc any;
   vectorbld_init (res_acc);
@@ -549,7 +548,7 @@ mknew_ser:
     res := sequence_next ('RDF_DATATYPE_TWOBYTE');
   insert into DB.DBA.RDF_DATATYPE
     (RDT_IID, RDT_TWOBYTE, RDT_QNAME)
-  values (iid, res, DB.DBA.RDF_QNAME_OF_IID (iid));
+  values (iid, res, id_to_iri (iid));
   return res;
 }
 ;
@@ -592,7 +591,7 @@ create function DB.DBA.RQ_LONG_OF_O (in o_col any) returns any
   declare v2 any;
       declare id int;
   id := rdf_box_ro_id (o_col);
-  if (230 = rdf_box_data_tag (o_col))
+  if (__tag of XML = rdf_box_data_tag (o_col))
     v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
   else
       v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
@@ -605,14 +604,14 @@ create function DB.DBA.RQ_LONG_OF_O (in o_col any) returns any
 
 create procedure DB.DBA.RDF_BOX_COMPLETE (inout o_col any)
 {
-  if (246 <> __tag (o_col))
+  if (__tag of rdf_box <> __tag (o_col))
     return;
   if (rdf_box_is_complete (o_col))
     return;
   declare id int;
   declare v2 any;
   id := rdf_box_ro_id (o_col);
-  if (230 = rdf_box_data_tag (o_col))
+  if (__tag of XML = rdf_box_data_tag (o_col))
     v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
   else
     v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
@@ -634,14 +633,14 @@ create function DB.DBA.RQ_SQLVAL_OF_O (in o_col any) returns any
         signal ('RDFXX', 'Wrong iid in DB.DBA.RQ_SQLVAL_OF_O()');
       return res;
     }
-  if (246 <> __tag (o_col))
+  if (__tag of rdf_box <> __tag (o_col))
     return o_col;
   if (rdf_box_is_complete (o_col))
     return rdf_box_data (o_col);
       declare id int;
   declare v2 any;
   id := rdf_box_ro_id (o_col);
-  if (230 = rdf_box_data_tag (o_col))
+  if (__tag of XML = rdf_box_data_tag (o_col))
     v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
   else
       v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
@@ -663,11 +662,11 @@ create function DB.DBA.RQ_BOOL_OF_O (in o_col any) returns any
         return 1;
       return 0;
     }
-  if (246 = __tag (o_col))
+  if (__tag of rdf_box = __tag (o_col))
     {
   declare twobyte integer;
   declare dtqname any;
-      if (182 <> rdf_box_data_tag (o_col))
+      if (__tag of varchar <> rdf_box_data_tag (o_col))
         {
           whenever sqlstate '*' goto retnull;
           return neq (rdf_box_data (o_col), 0.0);
@@ -721,7 +720,7 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
   -- dbg_obj_princ ('DB.DBA.RDF_OBJ_ADD (', dt_twobyte, v, lang_twobyte, case (isnull (ro_id_dict)) when 1 then '/*no_ft*/' else '/*want_ft*/' end,')');
   if (126 = __tag (v))
     v := blob_to_string (v);
-  else if (246 = __tag (v))
+  else if (__tag of rdf_box = __tag (v))
     {
       need_digest := rdf_box_needs_digest (v, ro_id_dict);
       if ((1 = need_digest) and ro_id_dict is not null)
@@ -733,7 +732,7 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
         }
       dt_twobyte := rdf_box_type (v);
       lang_twobyte := rdf_box_lang (v);
---      if (rdf_box_is_storeable (v) and not (rdf_box_data_tag (v) in (182, 217)))
+--      if (rdf_box_is_storeable (v) and not (rdf_box_data_tag (v) in (__tag of varchar, 217)))
 --        return v;
       if (rdf_box_is_complete (v))
       v := rdf_box_data (v);
@@ -749,7 +748,7 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
   if (not isstring (v))
     {
       declare sum64 varchar;
-      if (230 <> __tag (v))
+      if (__tag of XML <> __tag (v))
         signal ('RDFXX', sprintf ('Bad call: DB.DBA.RDF_OBJ_ADD (%d, %s, %d, %d)', dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte, need_digest) );
       sum64 := xtree_sum64 (v);
       whenever not found goto serializable_xtree;
@@ -759,7 +758,7 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
       where RO_VAL = sum64
       and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
       and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
-      and rdf_box_data_tag (RO_DIGEST) = 230;
+      and rdf_box_data_tag (RO_DIGEST) = __tag of XML;
       --!TBD ... and paranoid check
       
       goto found_xtree;
@@ -770,7 +769,7 @@ serializable_xtree:
         select RO_ID, RO_DIGEST from DB.DBA.RDF_OBJ table option (index RO_VAL) where RO_VAL = sum64
         and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
         and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
-      and rdf_box_data_tag (RO_DIGEST) = 230;
+      and rdf_box_data_tag (RO_DIGEST) = __tag of XML;
       --!TBD ... and paranoid check
       open id_cr (exclusive);
       fetch id_cr into id, old_digest;
@@ -996,14 +995,14 @@ create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
     v := blob_to_string (v);
   if (not (isstring (v)))
     {
-      if (230 <> __tag (v))
+      if (__tag of XML <> __tag (v))
         return v;
       sum64 := xtree_sum64 (v);
       return (select RO_DIGEST from DB.DBA.RDF_OBJ table option (index RO_VAL)
         where RO_VAL = sum64
         and equ (dt_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_type (RO_DIGEST) else 257 end)
         and equ (lang_twobyte, case (isnull (RO_DIGEST)) when 0 then rdf_box_lang (RO_DIGEST) else 257 end)
-        and rdf_box_data_tag (RO_DIGEST) = 230
+        and rdf_box_data_tag (RO_DIGEST) = __tag of XML
         --!TBD ... and paranoid check
         );
     }
@@ -1037,9 +1036,9 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (in v any) returns any
 {
   declare t int;
   t := __tag (v);
-  if (not t in (126, 182, 217, 225, 230, 246))
+  if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML, __tag of rdf_box))
     return v;
-  if (225 = t)
+  if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (t in (126, 217))
     v := cast (v as varchar);
@@ -1051,9 +1050,9 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in 
 {
   declare t int;
   t := __tag (v);
-  if (not t in (126, 182, 217, 225, 230, 246))
+  if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML, __tag of rdf_box))
     return v;
-  if (225 = t)
+  if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (t in (126, 217))
     v := cast (v as varchar);
@@ -1078,9 +1077,9 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, 
 {
   declare t, dt_twobyte, lang_twobyte int;
   t := __tag (v);
-  if (not t in (126, 182, 217, 225, 230))
+  if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML))
     signal ('RDFXX', 'DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL() accepts only string representations of typed values');
-  if (225 = t)
+  if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t or 126 = t)
     v := cast (v as varchar);
@@ -1100,9 +1099,9 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_I
 {
   declare t, dt_twobyte, lang_twobyte int;
   t := __tag (v);
-  if (not t in (126, 182, 217, 225, 230))
+  if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML))
     signal ('RDFXX', 'DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL() accepts only string representations of typed values');
-  if (225 = t)
+  if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t or 126 = t)
     v := cast (v as varchar);
@@ -1140,7 +1139,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
       if (parsed is not null)
         {
-          if (246 = __tag (parsed))
+          if (__tag of rdf_box = __tag (parsed))
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type)));
           return parsed;
@@ -1161,14 +1160,14 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
 
 create function DB.DBA.RDF_LONG_OF_OBJ (in shortobj any) returns any
 {
-  if (246 <> __tag (shortobj))
+  if (__tag of rdf_box <> __tag (shortobj))
     return shortobj;
   if (not rdf_box_is_complete (shortobj))
     {
       declare id integer;
       declare v2 any;
       id := rdf_box_ro_id (shortobj);
-      if (230 = rdf_box_data_tag (shortobj))
+      if (__tag of XML = rdf_box_data_tag (shortobj))
         v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
       else
       v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
@@ -1184,7 +1183,7 @@ create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := 
 {
   declare twobyte integer;
   declare res any;
-  if (246 <> __tag (shortobj))
+  if (__tag of rdf_box <> __tag (shortobj))
     {
       if (isiri_id (shortobj))
         return null;
@@ -1207,7 +1206,7 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any, in dflt varchar := 
 {
   declare twobyte integer;
   declare res varchar;
-  if (246 <> __tag (shortobj))
+  if (__tag of rdf_box <> __tag (shortobj))
     return case (isiri_id (shortobj)) when 0 then dflt else null end;
   twobyte := rdf_box_lang (shortobj);
   if (257 = twobyte)
@@ -1233,14 +1232,14 @@ create function DB.DBA.RDF_SQLVAL_OF_OBJ (in shortobj any) returns any
             signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_SQLVAL_OF_OBJ()');
           return res;
         }
-  if (246 <> __tag (shortobj))
+  if (__tag of rdf_box <> __tag (shortobj))
     return shortobj;
   if (rdf_box_is_complete (shortobj))
     return rdf_box_data (shortobj);
       declare id int;
   declare v2 any;
   id := rdf_box_ro_id (shortobj);
-  if (230 = rdf_box_data_tag (shortobj))
+  if (__tag of XML = rdf_box_data_tag (shortobj))
     v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
   else
       v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
@@ -1261,7 +1260,7 @@ create function DB.DBA.RDF_BOOL_OF_OBJ (in shortobj any) returns any
         return 1;
       return 0;
     }
-  if (246 <> __tag (shortobj))
+  if (__tag of rdf_box <> __tag (shortobj))
     {
       if (shortobj is null)
         return null;
@@ -1286,7 +1285,7 @@ badtype:
 }
 ;
 
-create function DB.DBA.RDF_QNAME_OF_OBJ (in shortobj any) returns varchar
+create function DB.DBA.RDF_QNAME_OF_OBJ (in shortobj any) returns varchar -- DEPRECATED
 {
   if (isiri_id (shortobj))
     {
@@ -1313,23 +1312,23 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any)
         signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_STRSQLVAL_OF_OBJ()');
       return res;
     }
-  if (246 <> __tag (shortobj))
+  if (__tag of rdf_box <> __tag (shortobj))
     {
-      if (211 = __tag (shortobj))
+      if (__tag of datetime = __tag (shortobj))
         {
           declare vc varchar;
           vc := cast (shortobj as varchar); --!!!TBD: replace with proper serialization
           return replace (vc, ' ', 'T');
         }
-      if (225 =  __tag (shortobj))
+      if (__tag of nvarchar =  __tag (shortobj))
         return charset_recode (shortobj, '_WIDE_', 'UTF-8');
       return cast (shortobj as varchar);
     }
   if (rdf_box_is_complete (shortobj))
     {
-      if (182 = rdf_box_data_tag (shortobj))
+      if (__tag of varchar = rdf_box_data_tag (shortobj))
     return rdf_box_data (shortobj);
-      if (211 = rdf_box_data_tag (shortobj))
+      if (__tag of datetime = rdf_box_data_tag (shortobj))
         {
           declare vc varchar;
           vc := cast (rdf_box_data (shortobj) as varchar); --!!!TBD: replace with proper serialization
@@ -1340,7 +1339,7 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any)
       declare id int;
   declare v2 any;
   id := rdf_box_ro_id (shortobj);
-  if (230 = rdf_box_data_tag (shortobj))
+  if (__tag of XML = rdf_box_data_tag (shortobj))
     v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
   else
       v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
@@ -1354,7 +1353,7 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any)
 
 create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
 {
-  if (246 <> __tag(longobj))
+  if (__tag of rdf_box <> __tag(longobj))
     return longobj;
   if (rdf_box_is_storeable (longobj))
     return longobj;
@@ -1366,9 +1365,9 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any
 {
   declare t int;
   t := __tag (v);
-  if (not t in (182, 217, 225))
+  if (not t in (__tag of varchar, 217, __tag of nvarchar))
     return v;
-  if (225 = t)
+  if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (t in (126, 217))
     v := cast (v as varchar);
@@ -1384,10 +1383,10 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
   declare t int;
   declare res any;
   t := __tag (v);
---  if (not t in (126, 182, 217, 225, 230))
-  if (position (t, vector (126, 182, 217, 225, 230)))
+--  if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML))
+  if (position (t, vector (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
     return v;
-  if (225 = t)
+  if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t or 126 = t)
     v := cast (v as varchar);
@@ -1402,13 +1401,13 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
   declare t, dt_twobyte, lang_twobyte int;
   declare res any;
   t := __tag (v);
---  if (not t in (182, 217, 225, 230))
+--  if (not t in (__tag of varchar, 217, __tag of nvarchar, __tag of XML))
 --    signal ('RDFXX', 'DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL() accepts only string representations of typed values');
-  if (225 = t)
+  if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (217 = t)
     v := cast (v as varchar);
-  if (182 <> __tag (v))
+  if (__tag of varchar <> __tag (v))
     {
       declare xsdt IRI_ID;
       if (lang is not null)
@@ -1440,7 +1439,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
       if (parsed is not null)
         {
-          if (246 = __tag (parsed))
+          if (__tag of rdf_box = __tag (parsed))
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type)));
           return parsed;
@@ -1468,14 +1467,14 @@ create function DB.DBA.RDF_SQLVAL_OF_LONG (in longobj any) returns any
             signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_SQLVAL_OF_LONG()');
           return res;
         }
-  if (246 <> __tag (longobj))
+  if (__tag of rdf_box <> __tag (longobj))
     return longobj;
   if (rdf_box_is_complete (longobj))
     return rdf_box_data (longobj);
   declare id integer;
   declare v2 any;
   id := rdf_box_ro_id (longobj);
-  if (230 = rdf_box_data_tag (longobj))
+  if (__tag of XML = rdf_box_data_tag (longobj))
     v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
   else
   v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
@@ -1496,7 +1495,7 @@ create function DB.DBA.RDF_BOOL_OF_LONG (in longobj any) returns any
         return 1;
       return 0;
     }
-  if (246 <> __tag (longobj))
+  if (__tag of rdf_box <> __tag (longobj))
     {
       if (longobj is null)
         return null;
@@ -1520,7 +1519,7 @@ badtype:
 
 create function DB.DBA.RDF_DATATYPE_OF_LONG (in longobj any, in dflt any := UNAME'http://www.w3.org/2001/XMLSchema#string') returns any
 {
-  if (246 = __tag (longobj))
+  if (__tag of rdf_box = __tag (longobj))
     {
       declare twobyte integer;
       declare res varchar;
@@ -1542,7 +1541,7 @@ badtype:
 
 create function DB.DBA.RDF_DATATYPE_IRI_OF_LONG (in longobj any, in dflt any := UNAME'http://www.w3.org/2001/XMLSchema#string') returns any
 {
-  if (246 = __tag (longobj))
+  if (__tag of rdf_box = __tag (longobj))
     {
       declare twobyte integer;
       declare res varchar;
@@ -1564,7 +1563,7 @@ badtype:
 
 create function DB.DBA.RDF_LANGUAGE_OF_LONG (in longobj any, in dflt varchar := '') returns any
 {
-  if (246 = __tag (longobj))
+  if (__tag of rdf_box = __tag (longobj))
     {
       declare twobyte integer;
       declare res varchar;
@@ -1585,19 +1584,19 @@ badlang:
 create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any)
 {
   declare t, len integer;
-  if (246 = __tag (longobj))
+  if (__tag of rdf_box = __tag (longobj))
     {
       if (rdf_box_is_complete (longobj))
         {
-          if (182 = rdf_box_data_tag (longobj))
+          if (__tag of varchar = rdf_box_data_tag (longobj))
         return rdf_box_data (longobj);
-          if (211 = rdf_box_data_tag (longobj))
+          if (__tag of datetime = rdf_box_data_tag (longobj))
             {
               declare vc varchar;
               vc := cast (rdf_box_data (longobj) as varchar); --!!!TBD: replace with proper serialization
               return replace (vc, ' ', 'T');
             }
-          if (230 = rdf_box_data_tag (longobj))
+          if (__tag of XML = rdf_box_data_tag (longobj))
             {
               return serialize_to_UTF8_xml (rdf_box_data (longobj));
             }
@@ -1606,7 +1605,7 @@ create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any)
       declare id integer;
       declare v2 any;
       id := rdf_box_ro_id (longobj);
-      if (230 = rdf_box_data_tag (longobj))
+      if (__tag of XML = rdf_box_data_tag (longobj))
         {
         v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
           rdf_box_set_data (longobj, v2, 1);
@@ -1628,15 +1627,15 @@ create function DB.DBA.RDF_STRSQLVAL_OF_LONG (in longobj any)
         signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_STRSQLVAL_OF_LONG()');
       return res;
     }
-  if (211 = __tag (longobj))
+  if (__tag of datetime = __tag (longobj))
     {
       declare vc varchar;
       vc := cast (longobj as varchar); --!!!TBD: replace with proper serialization
       return replace (vc, ' ', 'T');
     }
-  if (225 = __tag (longobj))
+  if (__tag of nvarchar = __tag (longobj))
     return charset_recode (longobj, '_WIDE_', 'UTF-8');
-  if (230 = __tag (longobj))
+  if (__tag of XML = __tag (longobj))
     {
       return serialize_to_UTF8_xml (longobj);
     }
@@ -1649,7 +1648,7 @@ create function DB.DBA.RDF_DATATYPE_OF_SQLVAL (in v any,
   in strg_datatype any := UNAME'http://www.w3.org/2001/XMLSchema#string',
   in default_res any := NULL) returns any
 {
-  if (246 = __tag (v))
+  if (__tag of rdf_box = __tag (v))
     {
       declare twobyte integer;
       declare res varchar;
@@ -1671,9 +1670,9 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v any) returns any
 {
   declare t int;
   t := __tag (v);
-  if (not t in (126, 182, 217, 225))
+  if (not t in (126, __tag of varchar, 217, __tag of nvarchar))
     return v;
-  if (225 = t)
+  if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
   else if (t in (126, 217))
     v := cast (v as varchar);
@@ -1688,7 +1687,7 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v any) returns any
 create function DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (in sqlval any)
 {
   declare t, len integer;
-  if (246 = __tag (sqlval))
+  if (__tag of rdf_box = __tag (sqlval))
     {
       signal ('RDFXX', 'Long object in DB.DBA.RDF_STRSQLVAL_OF_SQLVAL()');
     }
@@ -1701,13 +1700,13 @@ create function DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (in sqlval any)
         signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_STRSQLVAL_OF_SQLVAL()');
       return res;
     }
-  if (211 = __tag (sqlval))
+  if (__tag of datetime = __tag (sqlval))
     {
       declare vc varchar;
       vc := cast (sqlval as varchar); --!!!TBD: replace with proper serialization
       return replace (vc, ' ', 'T');
     }
-  if (225 = __tag (sqlval))
+  if (__tag of nvarchar = __tag (sqlval))
     return charset_recode (sqlval, '_WIDE_', 'UTF-8');
   return cast (sqlval as varchar);
 }
@@ -1719,7 +1718,7 @@ create function DB.DBA.RDF_LANGUAGE_OF_SQLVAL (in v any, in dflt varchar := '') 
   declare t int;
   return case (isiri_id (v)) when 0 then dflt else null end;
 --  t := __tag (v);
---  if (not t in (182, 217, 225))
+--  if (not t in (__tag of varchar, 217, __tag of nvarchar))
 --    return NULL;
 --  return NULL; -- !!!TBD: uncomment this and make a support for UTF8 'language name' codepoint plane
 }
@@ -1769,7 +1768,7 @@ create function DB.DBA."http://www.w3.org/2001/XMLSchema#boolean" (in strg any) 
 --!AWK PUBLIC
 create function DB.DBA."http://www.w3.org/2001/XMLSchema#date" (in strg any) returns date
 {
-  if (211 = __tag (strg))
+  if (__tag of datetime = __tag (strg))
     return strg;
   whenever sqlstate '*' goto ret_null;
   if (isstring (strg))
@@ -1783,7 +1782,7 @@ ret_null:
 --!AWK PUBLIC
 create function DB.DBA."http://www.w3.org/2001/XMLSchema#dateTime" (in strg any) returns datetime
 {
-  if (211 = __tag (strg))
+  if (__tag of datetime = __tag (strg))
     return strg;
   whenever sqlstate '*' goto ret_null;
   if (isstring (strg))
@@ -1827,7 +1826,7 @@ ret_null:
 --!AWK PUBLIC
 create function DB.DBA."http://www.w3.org/2001/XMLSchema#time" (in strg any) returns time
 {
-  if (211 = __tag (strg))
+  if (__tag of datetime = __tag (strg))
     return strg;
   whenever sqlstate '*' goto ret_null;
   if (isstring (strg))
@@ -1844,9 +1843,9 @@ create function DB.DBA."http://www.w3.org/2001/XMLSchema#string" (in strg any) r
   whenever sqlstate '*' goto ret_null;
   declare t, dt_twobyte, lang_twobyte int;
   t := __tag (strg);
-  if (225 = t)
+  if (__tag of nvarchar = t)
     strg := charset_recode (strg, '_WIDE_', 'UTF-8');
-  else if (182 <> t)
+  else if (__tag of varchar <> t)
     strg := cast (strg as varchar);
   return DB.DBA.RDF_OBJ_ADD (
     DB.DBA.RDF_TWOBYTE_OF_DATATYPE ('http://www.w3.org/2001/XMLSchema#string'),
@@ -1990,7 +1989,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
       if (parsed is not null)
         {
-          if (246 = __tag (parsed))
+          if (__tag of rdf_box = __tag (parsed))
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type)));
           insert soft DB.DBA.RDF_QUAD (G,S,P,O)
@@ -2013,7 +2012,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
         DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (o_val, NULL, o_lang, g_iid, p_iid, ro_id_dict) );
       return;
     }
-  if (isstring (o_val) or (230 = __tag (o_val)))
+  if (isstring (o_val) or (__tag of XML = __tag (o_val)))
     {
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
       values (g_iid, iri_to_id (s_uri, 1), p_iid,
@@ -2204,23 +2203,23 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
 	      http ('> ', ses);
             }
         }
-  else if (246 = __tag (obj))
+  else if (__tag of rdf_box = __tag (obj))
         {
           http ('"', ses);
-      if (182 = rdf_box_data_tag (obj))
+      if (__tag of varchar = rdf_box_data_tag (obj))
         {
           if (rdf_box_is_complete (obj))
       http_escape (rdf_box_data (obj), 11, ses, 1, 1);
           else
             http_escape (DB.DBA.RDF_SQLVAL_OF_LONG (obj), 11, ses, 1, 1);
         }
-      else if (211 = rdf_box_data_tag (obj))
+      else if (__tag of datetime = rdf_box_data_tag (obj))
         {
           declare vc varchar;
            vc := cast (rdf_box_data (obj) as varchar); --!!!TBD: replace with proper serialization
            http_escape (replace (vc, ' ', 'T'), 11, ses, 1, 1);
         }
-      else if (230 = rdf_box_data_tag (obj))
+      else if (__tag of XML = rdf_box_data_tag (obj))
         {
           if (rdf_box_is_complete (obj))
             http_escape (serialize_to_UTF8_xml (rdf_box_data (obj)), 11, ses, 1, 1);
@@ -2246,7 +2245,7 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
 	  else
         http ('" ', ses);
         }
-      else if (182 = __tag (obj))
+  else if (__tag of varchar = __tag (obj))
         {
           http ('"', ses);
           http_escape (obj, 11, ses, 1, 1);
@@ -2498,7 +2497,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
               http (' rdf:resource="', ses); http_value (res, 0, ses); http ('"/>', ses);
             }
         }
-      else if (246 = __tag (obj))
+      else if (__tag of rdf_box = __tag (obj))
         {
           declare dat any;
           if (257 <> rdf_box_type (obj))
@@ -2515,7 +2514,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
           dat := rdf_box_data (obj);
           else
             dat := DB.DBA.RDF_SQLVAL_OF_LONG (obj);
-          if (230 = __tag (dat))
+          if (__tag of XML = __tag (dat))
             {
               http (' rdf:parseType="Literal">', ses);
               http_value (dat, 0, ses);
@@ -2526,13 +2525,13 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
 	      declare tmp any;
               http ('>', ses);
 	      tmp := DB.DBA.RDF_STRSQLVAL_OF_LONG (obj);
-	      if (182 = __tag (tmp))
+	      if (__tag of varchar = __tag (tmp))
 		tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
               http_value (tmp, 0, ses);
               http ('</', ses); http (pred_tagname, ses); http ('>', ses);
             }
         }
-      else if (182 = __tag (obj))
+      else if (__tag of varchar = __tag (obj))
         {
           http ('>', ses);
 	  obj := charset_recode (obj, 'UTF-8', '_WIDE_');
@@ -2865,13 +2864,13 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any, in
       if ((1 < rdf_box_needs_digest (o_final, ro_id_dict)) and ro_id_dict is not null)
         {
         o_final := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_final, graph_iri, p_iid, ro_id_dict);
-          if ((246 = __tag (o_final)) and not rdf_box_is_storeable (o_final))
+          if ((__tag of rdf_box = __tag (o_final)) and not rdf_box_is_storeable (o_final))
             dbg_obj_princ ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT', o_orig);
         }
       else
         {
         o_final := DB.DBA.RDF_OBJ_OF_LONG (o_final);
-          if ((246 = __tag (o_final)) and not rdf_box_is_storeable (o_final))
+          if ((__tag of rdf_box = __tag (o_final)) and not rdf_box_is_storeable (o_final))
             dbg_obj_princ ('OBLOM', 'Bad O after RDF_OBJ_OF_LONG', o_orig);
         }
 do_insert:
@@ -3060,7 +3059,7 @@ create function DB.DBA.SPARQL_INSERT_DICT_CONTENT (in graph_iri any, in triples_
   declare ins_count integer;
   triples := dict_list_keys (triples_dict, 1);
   ins_count := 0;
-  if (193 = __tag (graph_iri))
+  if (__tag of vector = __tag (graph_iri))
     {
       ins_count := graph_iri[2]; -- 2, not 1
       graph_iri := graph_iri[0]; -- the last op.
@@ -3079,7 +3078,7 @@ create function DB.DBA.SPARQL_DELETE_DICT_CONTENT (in graph_iri any, in triples_
   declare del_count integer;
   triples := dict_list_keys (triples_dict, 1);
   del_count := 0;
-  if (193 = __tag (graph_iri))
+  if (__tag of vector = __tag (graph_iri))
     {
       del_count := graph_iri[1];
       graph_iri := graph_iri[0]; -- the last op.
@@ -3097,7 +3096,7 @@ create function DB.DBA.SPARQL_MODIFY_BY_DICT_CONTENTS (in graph_iri any, in del_
   declare del_count, ins_count integer;
   del_count := 0;
   ins_count := 0;
-  if (193 = __tag (graph_iri))
+  if (__tag of vector = __tag (graph_iri))
     {
       del_count := graph_iri[1];
       ins_count := graph_iri[2];
@@ -3537,11 +3536,11 @@ create function DB.DBA.RDF_TYPEMIN_OF_OBJ (in obj any) returns any
   if (obj is null)
     return NULL;
   tag := __tag (obj);
-  if (tag in (189, 191, 219))
+  if (tag in (__tag of integer, __tag of double precision, __tag of numeric))
     return -3.40282347e+38;
-  if (tag = 211)
+  if (tag = __tag of datetime)
     return cast ('0101-01-01' as datetime);
-  if (tag = 246)
+  if (tag = __tag of rdf_box)
     return rdf_box ('', rdf_box_type (obj), 257, 0, 1);
   return NULL; -- Nothing else can be compared hence no min.
 }
@@ -3553,11 +3552,11 @@ create function DB.DBA.RDF_TYPEMAX_OF_OBJ (in obj any) returns any
   if (obj is null)
     return NULL;
   tag := __tag (obj);
-  if (tag in (189, 191, 219))
+  if (tag in (__tag of integer, __tag of double precision, __tag of numeric))
     return 3.40282347e+38;
-  if (tag = 211)
+  if (tag = __tag of datetime)
     return cast ('9999-12-30' as datetime);
-  if (tag = 246)
+  if (tag = __tag of rdf_box)
     return rdf_box ('\377\377\377\377\377\377', rdf_box_type (obj), 257, 0, 1);
   return NULL; -- Nothing else can be compared hence no max.
 }
@@ -3576,9 +3575,9 @@ create function DB.DBA.RDF_OBJ_CMP (in obj1 any, in obj2 any) returns integer
     return NULL;
   tag1 := __tag (obj1);
   tag2 := __tag (obj2);
-  if (tag1 = 246)
+  if (tag1 = __tag of rdf_box)
     {
-      if (tag2 = 246)
+      if (tag2 = __tag of rdf_box)
         {
           if (obj1 = obj2)
             return 0;
@@ -3589,7 +3588,7 @@ create function DB.DBA.RDF_OBJ_CMP (in obj1 any, in obj2 any) returns integer
               declare id1 integer;
               declare full1 varchar;
               id1 := rdf_box_ro_id (obj1);
-              if (230 = rdf_box_data_tag (obj1))
+              if (__tag of XML = rdf_box_data_tag (obj1))
                 return null;
           full1 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id1);
           if (full1 is null)
@@ -3601,7 +3600,7 @@ create function DB.DBA.RDF_OBJ_CMP (in obj1 any, in obj2 any) returns integer
               declare id2 integer;
               declare full2 varchar;
               id2 := rdf_box_ro_id (obj2);
-              if (230 = rdf_box_data_tag (obj2))
+              if (__tag of XML = rdf_box_data_tag (obj2))
                 return null;
           full2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id2);
           if (full2 is null)
@@ -3612,9 +3611,9 @@ create function DB.DBA.RDF_OBJ_CMP (in obj1 any, in obj2 any) returns integer
         }
        return null;
      }
-  if (tag1 in (189, 191, 219))
+  if (tag1 in (__tag of integer, __tag of double precision, __tag of numeric))
     {
-      if (tag2 in (189, 191, 219))
+      if (tag2 in (__tag of integer, __tag of double precision, __tag of numeric))
         {
           if (obj1 <> obj2)
             {
@@ -3626,9 +3625,9 @@ create function DB.DBA.RDF_OBJ_CMP (in obj1 any, in obj2 any) returns integer
         }
       return null;
     }
-  if (tag1 = 211)
+  if (tag1 = __tag of datetime)
     {
-      if (tag2 = 211)
+      if (tag2 = __tag of datetime)
         {
           if (obj1 <> obj2)
             {
@@ -3651,15 +3650,15 @@ create function DB.DBA.RDF_LONG_CMP (in long1 any, in long2 any) returns integer
     return NULL;
   tag1 := __tag (long1);
   tag2 := __tag (long2);
-  if (tag1 = 246)
+  if (tag1 = __tag of rdf_box)
     {
-      if (tag2 = 246)
+      if (tag2 = __tag of rdf_box)
         return rdf_box_strcmp (long1, long2);
        return null;
      }
-  if (tag1 in (189, 191, 219))
+  if (tag1 in (__tag of integer, __tag of double precision, __tag of numeric))
     {
-      if (tag2 in (189, 191, 219))
+      if (tag2 in (__tag of integer, __tag of double precision, __tag of numeric))
         {
           if (long1 <> long2)
             {
@@ -3671,9 +3670,9 @@ create function DB.DBA.RDF_LONG_CMP (in long1 any, in long2 any) returns integer
         }
       return null;
     }
-  if (tag1 = 211)
+  if (tag1 = __tag of datetime)
     {
-      if (tag2 = 211)
+      if (tag2 = __tag of datetime)
         {
           if (long1 <> long2)
             {
@@ -3695,7 +3694,7 @@ create function DB.DBA.RDF_DIST_SER_LONG (in val any) returns any
 {
       if (not (isstring (val)))
     {
-      if (246 = __tag (val))
+      if (__tag of rdf_box = __tag (val))
         {
 	  if (rdf_box_is_storeable (val))
 	    return serialize (val);
@@ -3722,7 +3721,7 @@ create function DB.DBA.RDF_DIST_DESER_LONG (in strg any) returns any
     return strg;
   declare res any;
   res := deserialize (strg);
-  if (193 <> __tag (res))
+  if (__tag of vector <> __tag (res))
     return res;
   return rdf_box (res[0], res[1], res[2], 0, res[3]);
 }
@@ -3772,7 +3771,7 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
         graph ?:jgraph { ?:dest_iid virtrdf:inheritFrom ?src_iid } } ) do
     {
       declare srcinst varchar;
-      srcinst := DB.DBA.RDF_QNAME_OF_IID ("src_iid");
+      srcinst := id_to_iri_nosignal ("src_iid");
       if (baseinst is null)
         {
           if (not exists (sparql
@@ -3836,7 +3835,7 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
           ask where { graph ?:jgraph { ?:"t00"."pred" virtrdf:loadAs virtrdf:jsoTriple } } )
       ) do
     {
-      "pred" := DB.DBA.RDF_QNAME_OF_IID ("pred");
+      "pred" := id_to_iri ("pred");
       if (DB.DBA.RDF_LANGUAGE_OF_LONG ("predval", null) is not null)
         signal ('22023', 'JSO_MAKE_INHERITANCE does not support language marks on objects');
       if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type' = "pred")
@@ -3920,7 +3919,7 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
           ask where { graph ?:jgraph_iid { ?:"t00"."p" virtrdf:loadAs virtrdf:jsoTriple } } )
       ) do
     {
-      "p" := DB.DBA.RDF_QNAME_OF_IID ("p");
+      "p" := id_to_iri ("p");
       if (DB.DBA.RDF_LANGUAGE_OF_LONG ("o", null) is not null)
         signal ('22023', 'JSO_LOAD_INSTANCE does not support language marks on objects');
       if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type' = "p")
@@ -3951,8 +3950,8 @@ create procedure JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances a
   instances := (
     select vector_agg (
       vector (
-        DB.DBA.RDF_QNAME_OF_IID ("jclass"),
-        DB.DBA.RDF_QNAME_OF_IID ("jinst"),
+        id_to_iri ("jclass"),
+        id_to_iri ("jinst"),
         coalesce ("s", "jinst") ) )
     from ( sparql
       define output:valmode "LONG"
@@ -4087,7 +4086,7 @@ create function JSO_DUMP_FLD (in v any, inout ses any)
     JSO_DUMP_IRI (id_to_iri (v), ses);
   else if (v_tag = 203)
     http (jso_dbg_dump_rtti (v), ses);
-  else if (v_tag = 182)
+  else if (v_tag = __tag of varchar)
     {
       http ('"', ses);
       http_escape (v, 11, ses, 1, 1);
@@ -4095,7 +4094,7 @@ create function JSO_DUMP_FLD (in v any, inout ses any)
     }
   else if (isinteger (v))
     http_value (v, 0, ses);
-  else if (v_tag = 246)
+  else if (v_tag = __tag of rdf_box)
     DB.DBA.RDF_LONG_TO_TTL (v, ses);
   else
     {
@@ -4587,7 +4586,7 @@ create procedure DB.DBA.RDF_QM_CHANGE_OPT (in cmdlist any)
       STATE := '00000';
       warnings := exec (string_output_string (exectext), STATE, MESSAGE, arglist, md, rs);
       -- dbg_obj_princ ('warnings = ', warnings);
-      if (193 = __tag (warnings))
+      if (__tag of vector = __tag (warnings))
         {
           foreach (any warning in warnings) do
             result (warning[0], warning[1]);
@@ -4794,12 +4793,12 @@ again:
   vectorbld_init (objs);
   foreach (IRI_ID nod in subjs) do
     {
-      -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE () tries to delete ', nod, DB.DBA.RDF_QNAME_OF_IID (nod));
+      -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE () tries to delete ', nod, id_to_iri_nosignal (nod));
       declare subjs_of_nod, objs_of_nod any;
       subjs_of_nod := dict_get (o_to_s, nod, NULL);
       if (subjs_of_nod is not null)
     {
-          -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE () does not delete ', nod, DB.DBA.RDF_QNAME_OF_IID (nod), ': side links ', subjs_of_nod);
+          -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE () does not delete ', nod, id_to_iri_nosignal (nod), ': side links ', subjs_of_nod);
           if (nod = seed_id)
             return subjs_of_nod[0];
           goto nop_nod; -- see below;
@@ -4820,14 +4819,14 @@ again:
             subjs_of_sub := vector_concat (subseq (subjs_of_sub, 0, nod_pos - 1), subseq (subjs_of_sub, nod_pos));
           if (0 = length (subjs_of_sub))
             {
-              -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE () condemns ', sub, DB.DBA.RDF_QNAME_OF_IID (sub));
+              -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE () condemns ', sub, id_to_iri_nosignal (sub));
               dict_remove (o_to_s, sub);
               vectorbld_acc (objs, sub);
             }
           else
             {
               dict_put (o_to_s, sub, subjs_of_sub);
-              -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE () stores subjects ', subjs_of_sub, ' for not condemned ', sub, DB.DBA.RDF_QNAME_OF_IID (sub));
+              -- dbg_obj_princ ('DB.DBA.RDF_QM_GC_SUBTREE () stores subjects ', subjs_of_sub, ' for not condemned ', sub, id_to_iri_nosignal (sub));
             }
         }
 nop_nod: ;
@@ -5015,7 +5014,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
           declare old_descr, new_descr any;
           tmpname := uuid();
           { declare exit handler for sqlstate '*' {
-              signal ('22023', 'Can not change IRI class <' || classiri || '> because it is used by other quad map objects, e.g., <' || DB.DBA.RDF_QNAME_OF_IID (side_s) || '>; moreover, the new declaration may be invalid.'); };
+              signal ('22023', 'Can not change IRI class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>; moreover, the new declaration may be invalid.'); };
             DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (tmpname, iritmpl, arglist, options, classiri);
           }
           old_descr := DB.DBA.RDF_QM_CBD_OF_IRI_CLASS(classiri);
@@ -5027,7 +5026,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
               where { `iri(?:tmpname)` ?p ?o };
               return vector (vector ('00000', 'Previous definition of IRI class <' || classiri || '> is identical to the new one, not touched'));
             }
-          signal ('22023', 'Can not change iri class <' || classiri || '> because it is used by other quad map objects, e.g., <' || DB.DBA.RDF_QNAME_OF_IID (side_s) || '>');
+          signal ('22023', 'Can not change iri class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>');
         }
       res := vector (vector ('00000', 'Previous definition of IRI class <' || classiri || '> has been dropped'));
     }
@@ -5146,7 +5145,7 @@ fheaders is, say,
           declare old_descr, new_descr any;
           tmpname := uuid();
           { declare exit handler for sqlstate '*' {
-              signal ('22023', 'Can not change IRI class <' || classiri || '> because it is used by other quad map objects, e.g., <' || DB.DBA.RDF_QNAME_OF_IID (side_s) || '>; moreover, the new declaration may be invalid.'); };
+              signal ('22023', 'Can not change IRI class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>; moreover, the new declaration may be invalid.'); };
             DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS (tmpname, fheaders, options, classiri);
           }
           old_descr := DB.DBA.RDF_QM_CBD_OF_IRI_CLASS(classiri);
@@ -5158,7 +5157,7 @@ fheaders is, say,
               where { `iri(?:tmpname)` ?p ?o };
               return vector (vector ('00000', 'Previous definition of IRI class <' || classiri || '> is identical to the new one, not touched'));
             }
-        signal ('22023', 'Can not change class <' || classiri || '> because it is used by other quad map objects, e.g., <' || DB.DBA.RDF_QNAME_OF_IID (side_s) || '>');
+            signal ('22023', 'Can not change class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>');
         }
       res := vector (vector ('00000', 'Previous definition of class <' || classiri || '> has been dropped'));
     }
@@ -5277,7 +5276,7 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
           declare old_descr, new_descr any;
           tmpname := uuid();
           { declare exit handler for sqlstate '*' {
-              signal ('22023', 'Can not change IRI class <' || classiri || '> because it is used by other quad map objects, e.g., <' || DB.DBA.RDF_QNAME_OF_IID (side_s) || '>; moreover, the new declaration may be invalid.'); };
+              signal ('22023', 'Can not change IRI class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>; moreover, the new declaration may be invalid.'); };
             DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FUNCTIONS (tmpname, fheaders, options, classiri);
           }
           old_descr := DB.DBA.RDF_QM_CBD_OF_IRI_CLASS(classiri);
@@ -5289,7 +5288,7 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
               where { `iri(?:tmpname)` ?p ?o };
               return vector (vector ('00000', 'Previous definition of literal class <' || classiri || '> is identical to the new one, not touched'));
             }
-        signal ('22023', 'Can not change class <' || classiri || '> because it is used by other quad map objects, e.g., <' || DB.DBA.RDF_QNAME_OF_IID (side_s) || '>');
+          signal ('22023', 'Can not change class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>');
         }
       res := vector (vector ('00000', 'Previous definition of class <' || classiri || '> has been dropped'));
     }
@@ -5431,7 +5430,7 @@ create function DB.DBA.RDF_QM_DROP_CLASS (in classiri varchar) returns any
       declare side_s IRI_ID;
       side_s := DB.DBA.RDF_QM_GC_SUBTREE (classiri);
       if (side_s is not null)
-        signal ('22023', 'Can not drop class <' || classiri || '> because it is used by other quad map objects, e.g., <' || DB.DBA.RDF_QNAME_OF_IID (side_s) || '>');
+        signal ('22023', 'Can not drop class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>');
     }
   return vector (vector ('00000', 'Previous definition of class <' || classiri || '> has been dropped'));
 }
@@ -5677,18 +5676,18 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
       select COL_DTP, coalesce (COL_NULLABLE, 1) into coldtp, colnullable
       from DB.DBA.SYS_COLS where "TABLE" = sqlcols[0][0] and "COLUMN" = sqlcols[0][2];
       coltype := case (coldtp)
-        when 125 then 'longvarchar'
-        when 128 then 'datetime' -- timestamp
-        when 129 then 'date'
-        when 131 then 'longvarbinary'
+        when __tag of long varchar then 'longvarchar'
+        when __tag of timestamp then 'datetime' -- timestamp
+        when __tag of date then 'date'
+        when __tag of long varbinary then 'longvarbinary'
         when 188 then 'integer'
-        when 189 then 'integer'
-        when 182 then 'varchar'
-        when 190 then 'doubleprecision' -- actually single precision float
-        when 191 then 'doubleprecision'
+        when __tag of integer then 'integer'
+        when __tag of varchar then 'varchar'
+        when __tag of real then 'doubleprecision' -- actually single precision float
+        when __tag of double precision then 'doubleprecision'
         when 192 then 'varchar' -- actually character
-        when 211 then 'datetime'
-        when 219 then 'doubleprecision' -- actually numeric
+        when __tag of datetime then 'datetime'
+        when __tag of numeric then 'doubleprecision' -- actually numeric
         else NULL end;
       if (coltype is null)
         signal ('22023', 'The datatype of column "' || sqlcols[0][2] ||
@@ -5821,14 +5820,14 @@ create procedure DB.DBA.RDF_QM_NORMALIZE_QMV (
 {
   -- dbg_obj_princ ('DB.DBA.RDF_QM_NORMALIZE_QMV (', qmv, ' ..., ..., ', can_be_literal, fldname, ')');
   qmvid := qmvfix := NULL;
-  if ((193 = __tag (qmv)) and (5 = length (qmv)))
+  if ((__tag of vector = __tag (qmv)) and (5 = length (qmv)))
     qmvid := DB.DBA.RDF_QM_DEFINE_MAP_VALUE (qmv, fldname, tablename);
   else if (217 = __tag (qmv))
       qmvfix := DB.DBA.RDF_MAKE_IID_OF_QNAME (qmv);
   else if (qmv is not null and not can_be_literal)
     signal ('22023', sprintf ('Quad map declaration can not specify a literal (non-IRI) constant for its %s (tag %d, length %d)',
       fldname, __tag (qmv), length (qmv) ) );
-  else if (193 = __tag (qmv))
+  else if (__tag of vector = __tag (qmv))
     signal ('22023', sprintf ('Quad map declaration contains constant %s of unsupported type (tag %d, length %d)',
       fldname, __tag (qmv), length (qmv) ) );
   else
@@ -6237,7 +6236,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
     {
       if (val >= min_bnode_iri_id ())
         return 0;
-      val := DB.DBA.RDF_QNAME_OF_IID (val);
+      val := id_to_iri (val);
     }
   if (217 = __tag (val))
     val := cast (val as varchar);
@@ -6962,7 +6961,7 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
 	  sql_val := DB.DBA.RDF_SQLVAL_OF_LONG (_val);
 	  if (isentity (sql_val))
 	    is_xml_lit := 1;
-	  if (__tag (sql_val) = 182) -- UTF-8 value kept in a DV_STRING box
+	  if (__tag (sql_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
 	    sql_val := charset_recode (sql_val, 'UTF-8', '_WIDE_');
 	  if (is_xml_lit) http ('<![CDATA[', ses);
 	  http_value (sql_val, 0, ses);
@@ -7194,9 +7193,9 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
           http('\n    <td>', ses);
           if (isiri_id (val))
             {
-              http_escape (DB.DBA.RDF_QNAME_OF_IID (val), esc_mode, ses, 0, 1);
+              http_escape (id_to_iri (val), esc_mode, ses, 0, 1);
             }
-          else if (182 = __tag (val))
+          else if (__tag of varchar = __tag (val))
 			{
               http_escape (val, esc_mode, ses, 1, 1);
 			}
@@ -7204,7 +7203,7 @@ create procedure SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, inout meta
 	    {
               http_escape (cast (val as varchar), esc_mode, ses, 1, 1);
 	    }
-	  else if (230 = rdf_box_data_tag (val)) -- string output
+	  else if (__tag of XML = rdf_box_data_tag (val)) -- string output
 	    {
               http (DB.DBA.RDF_STRSQLVAL_OF_LONG (val), ses);
 	    }
@@ -7267,10 +7266,10 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
               else
                 {
                   http ('"type": "uri", "value": "', ses);
-                  http_escape (DB.DBA.RDF_QNAME_OF_IID (val), 11, ses, 0, 1);
+                  http_escape (id_to_iri (val), 11, ses, 0, 1);
                 }
             }
-          else if (246 = __tag (val))
+          else if (__tag of rdf_box = __tag (val))
             {
               declare res varchar;
               declare dat, typ any;
@@ -7308,7 +7307,7 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
                 http ('"type": "literal", "value": "', ses);
               http_escape (dat, 11, ses, 1, 1);
             }
-          else if (182 = __tag (val))
+          else if (__tag of varchar = __tag (val))
             {
               http ('"type": "literal", "value": "', ses);
               http_escape (val, 11, ses, 1, 1);
@@ -8225,7 +8224,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_W (
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
       if (parsed is not null)
         {
-          if (246 = __tag (parsed))
+          if (__tag of rdf_box = __tag (parsed))
             {
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (DB.DBA.RDF_MAKE_IID_OF_QNAME (o_type)));
@@ -8242,7 +8241,7 @@ again_iid:
     log_enable (1, 1);
   s_iid := iri_to_id (s_uri, 1);
   p_iid := iri_to_id (p_uri, 1);
-  if (isstring (o_val) or (230 = __tag (o_val)))
+  if (isstring (o_val) or (__tag of XML = __tag (o_val)))
     {
       whenever sqlstate '40001' goto deadlock_o;
 again_o:
@@ -8259,11 +8258,11 @@ again_o:
       else
         o_val := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_val, g_iid, p_iid, ro_id_dict);
     }
-  else if (246 = __tag (o_val))
+  else if (__tag of rdf_box = __tag (o_val))
     {
       whenever sqlstate '40001' goto deadlock_o_box;
 again_o_box:
-      if (182 = rdf_box_data_tag (o_val) and __rdf_obj_ft_rule_check (g_iid, p_iid))
+      if (__tag of varchar = rdf_box_data_tag (o_val) and __rdf_obj_ft_rule_check (g_iid, p_iid))
         o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257, ro_id_dict);
       else if (not rdf_box_is_storeable (o_val))
         o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257);
@@ -8322,7 +8321,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_A (
 {
   -- dbg_obj_princ ('DB.DBA.TTLP_EV_TRIPLE_L_A (', g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env, ')');
   declare err any;
-  if (230 = __tag (o_val))
+  if (__tag of XML = __tag (o_val))
     {
       DB.DBA.TTLP_EV_TRIPLE_L_W (g_iid, s_uri, p_uri, o_val, o_type, o_lang, app_env[2]);
       return;
@@ -9768,7 +9767,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2008-01-17 0001'
+                virtrdf:version '2008-01-22 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -9848,7 +9847,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_IID_OF_LONG to SPARQL_SELECT',
-    'grant execute on DB.DBA.RDF_QNAME_OF_IID to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_QNAME_OF_IID to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_MAKE_GRAPH_IIDS_OF_QNAMES to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TWOBYTE_OF_DATATYPE to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TWOBYTE_OF_LANGUAGE to SPARQL_SELECT',
@@ -9869,7 +9868,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_LANGUAGE_OF_OBJ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_SQLVAL_OF_OBJ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_BOOL_OF_OBJ to SPARQL_SELECT',
-    'grant execute on DB.DBA.RDF_QNAME_OF_OBJ to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_QNAME_OF_OBJ to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_STRSQLVAL_OF_OBJ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_OBJ_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_OBJ_OF_SQLVAL to SPARQL_SELECT',
@@ -10110,7 +10109,7 @@ tridgell_ok:
   if (exists (select top 1 1 from DB.DBA.SYS_COLS
     where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
     and "COLUMN" = fix_identifier_case ('RO_DIGEST')
-    and COL_DTP = 182 ))
+    and COL_DTP = __tag of varchar ))
     {
       exec ('drop index RO_DIGEST', stat, msg);
       exec ('alter table DB.DBA.RDF_OBJ drop RO_DIGEST', stat, msg);

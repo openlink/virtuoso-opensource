@@ -1746,6 +1746,30 @@ bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_id_to_iri_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  caddr_t iid_box;
+  iri_id_t iid;
+  caddr_t iri;
+  iid_box = bif_arg (qst, args, 0, "id_to_iri_nosignal");
+  if (DV_IRI_ID != DV_TYPE_OF (iid_box))
+    return NEW_DB_NULL;
+  iid = unbox_iri_id (iid_box);
+  if (iid >= min_bnode_iri_id ())
+    {
+      if (iid >= MIN_64BIT_BNODE_IRI_ID)
+        return box_sprintf (30, "nodeID://b" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+      else
+        return box_sprintf (30, "nodeID://" BOXINT_FMT, (boxint)(iid));
+    }
+  iri = key_id_to_iri (qi, iid);
+  if (!iri)
+    return NEW_DB_NULL;
+  return iri;
+}
+
+caddr_t
 bif_iri_id_cache_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
@@ -2046,6 +2070,8 @@ rdf_core_init (void)
   bif_set_uses_index (bif_iri_to_id);
   bif_define ("id_to_iri", bif_id_to_iri);
   bif_set_uses_index (bif_id_to_iri);
+  bif_define ("id_to_iri_nosignal", bif_id_to_iri_nosignal);
+  bif_set_uses_index (bif_id_to_iri_nosignal);
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
   bif_define ("iri_id_cache_flush", bif_iri_id_cache_flush);
   bif_define ("__rdf_obj_ft_rule_add", bif_rdf_obj_ft_rule_add);

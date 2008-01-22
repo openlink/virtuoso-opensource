@@ -76,7 +76,7 @@ void rdf_ds_load_all (void)
   qmf->qmfName = box_dv_short_string ("default-iid-nonblank");
   qmf->qmfShortTmpl = box_dv_short_string (" ^{alias-dot}^^{column}^");
   qmf->qmfLongTmpl = box_dv_short_string (" /* LONG: */ ^{alias-dot}^^{column}^");
-  qmf->qmfSqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_QNAME_OF_IID (^{alias-dot}^^{column}^)");
+  qmf->qmfSqlvalTmpl = box_dv_short_string (" id_to_iri (^{alias-dot}^^{column}^)");
   qmf->qmfBoolTmpl = box_dv_short_string (" NULL");
   qmf->qmfIsrefOfShortTmpl = box_dv_short_string (" 1");
   qmf->qmfIsuriOfShortTmpl = box_dv_short_string (" (^{tree}^ < min_bnode_iri_id ())");
@@ -87,11 +87,11 @@ void rdf_ds_load_all (void)
   qmf->qmfLongOfShortTmpl = box_dv_short_string (" ^{tree}^ ");
   qmf->qmfDatatypeOfShortTmpl = box_dv_short_string (" 'http://www.w3.org/2001/XMLSchema#anyURI'");
   qmf->qmfLanguageOfShortTmpl = box_dv_short_string (" NULL");
-  qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_QNAME_OF_IID (^{tree}^)");
+  qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
   qmf->qmfBoolOfShortTmpl = box_dv_short_string (" NULL");
   qmf->qmfIidOfShortTmpl = box_dv_short_string (" ^{tree}^");
-  qmf->qmfUriOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_QNAME_OF_IID (^{tree}^)");
-  qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_QNAME_OF_IID (^{tree}^)");
+  qmf->qmfUriOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
+  qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
   qmf->qmfShortOfTypedsqlvalTmpl = box_dv_short_string (" NULL");
   qmf->qmfShortOfSqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (^{tree}^)");
   qmf->qmfShortOfLongTmpl = box_dv_short_string (" /* SHORT of LONG: */ ^{tree}^");
@@ -131,7 +131,7 @@ void rdf_ds_load_all (void)
   qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_SQLVAL_OF_OBJ (^{tree}^)");
   qmf->qmfBoolOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_BOOL_OF_OBJ (^{tree}^)");
   qmf->qmfIidOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_IID_OF_LONG (DB.DBA.RDF_LONG_OF_OBJ (^{tree}^))");
-  qmf->qmfUriOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_QNAME_OF_OBJ (^{tree}^)");
+  qmf->qmfUriOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
   qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_STRSQLVAL_OF_OBJ (^{tree}^)");
   qmf->qmfShortOfTypedsqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (^{sqlval-of-tree}^, DB.DBA.RDF_MAKE_IID_OF_QNAME(^{datatype-of-tree}^), ^{language-of-tree}^)");
   qmf->qmfShortOfSqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_OBJ_OF_SQLVAL (^{tree}^)");
@@ -1203,7 +1203,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
            sparp_restr_bits_of_expn (sparp, tree->_.bin_exp.right) &
            SPART_VARR_NOT_NULL ) );
     case SPAR_LIT:
-      return sparp_restr_bits_of_dtp (DV_TYPE_OF (tree->_.lit.val));
+      return sparp_restr_bits_of_dtp ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree)) ? DV_TYPE_OF (tree->_.lit.val) : DV_TYPE_OF (tree));
     case SPAR_QNAME:
     /*case SPAR_QNAME_NS:*/
       return SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL ;
@@ -4941,18 +4941,18 @@ fld_restrictions_may_vary:
   for (breakup_ctr = 0; breakup_ctr <= /* not '<' */ breakup_shift; breakup_ctr++)
     {
       SPART *mcase = gp->_.gp.members [first_mcase_idx + breakup_ctr];
+      int rflags = retval_flags;
+      if (0 == breakup_ctr)
+        rflags |= SSG_RETVAL_USES_ALIAS;
       ssg_newline (0);
       ssg_puts ("(");
       ssg->ssg_indent++;
-      for (tc = triples_count; tc--; /* no step */)
+      for (tc = 0; tc < triples_count; tc++)
         {
           SPART *mcase_triple = mcase->_.gp.members [tc];
-          int rflags = retval_flags;
-          if (0 == breakup_ctr)
-            rflags |= SSG_RETVAL_USES_ALIAS;
           all_triples_of_mcases[tc][breakup_ctr] = mcase_triple;
-          ssg_print_retval_list (ssg, mcase, retlist, BOX_ELEMENTS_INT (retlist), rflags, gp, needed);
         }
+      ssg_print_retval_list (ssg, mcase, retlist, BOX_ELEMENTS_INT (retlist), rflags, gp, needed);
       save_where_l_printed = ssg->ssg_where_l_printed;
       save_where_l_text = ssg->ssg_where_l_text;
       ssg->ssg_where_l_printed = 0;
@@ -4978,9 +4978,15 @@ fld_restrictions_may_vary:
   ssg_newline (0);
   ssg_puts ("FROM");
   ssg->ssg_indent++;
-  for (tc = triples_count; tc--; /* no step */)
+  for (tc = 0; tc < triples_count; tc++)
+    {
+      if (0 != tc)
+        {
+          ssg_puts (", /* table list of next triple starts here */ ");
+          ssg_newline (0);
+        }
     ssg_print_fake_self_join_subexp (ssg, first_mcase, all_triples_of_mcases[tc], 1 + breakup_shift, 1 /* = inside breakup */, common_fld_restrictions_bitmasks[tc]);
-  /*ssg_print_table_exp (ssg, first_mcase, first_mcase->_.gp.members, 1, 1);*/ /* PASS 1, printing what's in FROM */
+    }
   ssg->ssg_indent--;
   save_where_l_printed = ssg->ssg_where_l_printed;
   save_where_l_text = ssg->ssg_where_l_text;

@@ -546,6 +546,7 @@
 %token <box> MODIFIES INPUT CALLED ADA C COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
 %token <box> __SOAP_DOC __SOAP_DOCW __SOAP_HEADER __SOAP_HTTP __SOAP_NAME __SOAP_TYPE __SOAP_XML_TYPE __SOAP_FAULT __SOAP_DIME_ENC __SOAP_ENC_MIME __SOAP_OPTIONS FOREACH POSITION_L
 %token ARE REF STATIC_L SPECIFIC DYNAMIC COLUMN START_L
+%token __TAG_L RDF_BOX_L VECTOR_L
 
 %nonassoc AS
 %nonassoc DOUBLE_COLON
@@ -787,6 +788,9 @@ identifier
 	| UNCOMMITTED_L { $$ = t_sqlp_box_id_upcase ($1); }
 	| REPEATABLE_L { $$ = t_sqlp_box_id_upcase ($1); }
 	| SERIALIZABLE_L { $$ = t_sqlp_box_id_upcase ($1); }
+	| __TAG_L { $$ = t_sqlp_box_id_upcase ("__tag"); }
+	| RDF_BOX_L { $$ = t_sqlp_box_id_upcase (yytext); }
+	| VECTOR_L { $$ = t_sqlp_box_id_upcase (yytext); }
 	;
 
 opt_with_data
@@ -2726,6 +2730,10 @@ literal
 	| BINARYNUM
 	| IRI_LIT
 	| NULLX		{ $$ = (caddr_t) t_NULLCONST; }
+	| __TAG_L OF data_type { $$ = ((caddr_t *)$3)[0]; }
+	| __TAG_L OF XML { $$ = DV_XML_ENTITY; }
+	| __TAG_L OF RDF_BOX_L { $$ = DV_RDF; }
+	| __TAG_L OF VECTOR_L { $$ = DV_ARRAY_OF_POINTER; }
 	;
 
 signed_literal

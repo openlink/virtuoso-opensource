@@ -4789,17 +4789,20 @@ sparp_flatten_join (sparp_t *sparp, SPART *parent_gp)
 #ifdef DEBUG
   if (SPAR_GP != SPART_TYPE (parent_gp))
     spar_internal_error (sparp, "sparp_" "flatten_join(): parent_gp is not a GP");
-  if ((0 != parent_gp->_.gp.subtype) && (WHERE_L != parent_gp->_.gp.subtype))
+  if ((UNION_L == parent_gp->_.gp.subtype) || (SELECT_L == parent_gp->_.gp.subtype))
     spar_internal_error (sparp, "sparp_" "flatten_join(): parent_gp is not a join");
 #endif
   for (memb_ctr = BOX_ELEMENTS (parent_gp->_.gp.members); memb_ctr--; /*no step*/)
     {
       SPART *memb = parent_gp->_.gp.members [memb_ctr];
-      if ((SPAR_GP == SPART_TYPE (memb)) &&
-        (((0 == memb->_.gp.subtype) &&
+      if (SPAR_GP != SPART_TYPE (memb))
+        continue;
+      if (OPTIONAL_L == memb->_.gp.subtype)
+        break; /* No optimizations at left of LEFT OUTER JOIN. */
+      if (((0 == memb->_.gp.subtype) &&
            (1 <= BOX_ELEMENTS (memb->_.gp.members)) ) ||
          ((UNION_L == memb->_.gp.subtype) &&
-           (1 == BOX_ELEMENTS (memb->_.gp.members)) ) ) )
+          (1 == BOX_ELEMENTS (memb->_.gp.members)) ) )
         {
           int sub_count = BOX_ELEMENTS (memb->_.gp.members);
           int sub_ctr;
@@ -5158,7 +5161,7 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
   END_DO_BOX_FAST_REV;
   if (UNION_L == curr->_.gp.subtype)
     sparp_flatten_union (sparp, curr);
-  else
+  else if (SELECT_L != curr->_.gp.subtype)
     sparp_flatten_join (sparp, curr);
   return 0;
 }
@@ -5200,7 +5203,7 @@ do_detach:
   END_DO_BOX_FAST_REV;
   if (UNION_L == curr->_.gp.subtype)
     sparp_flatten_union (sparp, curr);
-  else
+  else if (SELECT_L != curr->_.gp.subtype)
     sparp_flatten_join (sparp, curr);
   return 0;
 }
