@@ -2808,8 +2808,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 
   part := sprintf (
 	  ' CONSTRUCT {
-	    <%S> foaf:made ?forum .
-	    ?forum foaf:maker <%S> .
+	    ?maker foaf:made ?forum .
+	    ?forum foaf:maker ?maker .
 	    ?forum a ?forum_type .
 	    ?forum rdfs:label ?label .
 	    ?forum rdfs:seeAlso ?see_also .
@@ -2819,13 +2819,15 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 		      graph <%s>
 		      {
 	      {
-		<%S> foaf:made ?forum .
+                <%S> sioc:has_function ?function .
+                ?function sioc:has_scope ?forum .
 		?forum a ?forum_type .
+		?forum foaf:maker ?maker .
 		optional { ?forum rdfs:label ?label . }
 		optional { ?forum rdfs:seeAlso ?see_also . }
 		    }
 	}
-	  }', pers_iri, pers_iri, graph, pers_iri);
+	  }', graph, iri);
 
   qry := decl || part;
   qrs [2] := qry;
@@ -2846,14 +2848,15 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 		      graph <%s>
 		      {
 	      {
-		<%S> foaf:made ?forum .
+                <%S> sioc:has_function ?function .
+                ?function sioc:has_scope ?forum .
 		?forum sioc:parent_of ?child_forum .
 		?child_forum a ?forum_type .
 		optional { ?child_forum rdfs:label ?label . }
 		optional { ?child_forum rdfs:seeAlso ?see_also . }
                   }
                 }
-	  } LIMIT %d OFFSET %d', graph, pers_iri, lim, offs);
+	  } LIMIT %d OFFSET %d', graph, iri, lim, offs);
 
   qry := decl || part;
   qrs [3] := qry;

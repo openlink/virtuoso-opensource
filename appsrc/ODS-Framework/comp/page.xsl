@@ -67,7 +67,8 @@
         declare visib varchar;
         self.f_full_name := coalesce ((select U_FULL_NAME from SYS_USERS where U_NAME = self.fname), self.fname);
         self.fname_or_empty := self.fname;
-	declare exit handler for not found;
+	
+	declare exit handler for not found{visib:='';};
 	select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY, WAUI_OPENID_URL, WAUI_OPENID_SERVER
 	into visib, self.e_lat, self.e_lng, self.u_country, self.u_state, self.u_city, self.oid_url, self.oid_server
 	from WA_USER_INFO, DB.DBA.SYS_USERS where
