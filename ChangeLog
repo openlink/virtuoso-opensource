@@ -1,3 +1,444 @@
+2008-01-22 20:40  source
+
+	* Updated version to 5.0.4-pre2
+
+2008-01-22 20:20  source
+
+	* Fixed bad "not found" handler in WA_USER_INFO
+	* Fixed maker only for spaces
+
+2008-01-22 20:19  source
+
+	* Fixed incorrect css path
+
+2008-01-22 20:17  source
+
+	* Fixed correct event/task details on permalink
+
+2008-01-22 20:15  source
+
+	* Fixed marsedit behaviour
+
+2008-01-22 20:07  source
+
+	* Added convenient syntax for dtp_t bytes in SQL test: __TAG OF data_type
+	* Added id_to_iri_nosignal
+	* Fixed sparp_flatten_join() for joins with OPTIONAL_L members
+	* Fixed printing breakups on triples with reused tabids
+	* Fixed restriction bits of unary plus and unary minus expressions
+
+2008-01-22 19:46  source
+
+	* Fixed testing same-as
+
+2008-01-22 19:45  source
+
+	* Added additional fields
+
+2008-01-22 19:45  source
+
+	* Added id_to_iri_nosignal()
+
+2008-01-22 16:23  source
+
+	* Merged from upstream project
+
+2008-01-22 11:41  source
+
+	* Fixed check same_as to use query option
+
+2008-01-22 11:41  source
+
+	* Added valmode optimization for IN operator
+
+2008-01-22 11:40  source
+
+	* Added sparp_flatten_join()
+	* Improved sparp_flatten_union()
+	* Fixed traverse when out handlers are disabled
+
+2008-01-21 15:47  source
+
+	* Added error messages for incompatible image types
+	* Added new instance method: wa_update_instance
+	* Added openid 2.0, ampl based on tags
+	* Added foaf:made
+	* Added YADIS CN rule
+	* Added navigation framework
+	* Added new pager resources
+	* Changed RDF tab to RDF browser
+	* Fixed automatic login on new registration
+	* Fixed dataspace link with UTF-8 special characters
+	* Fixed getting settings for facebook
+	* Fixed IE compatibility
+	* Fixed calendar upstreamin
+	* Fixed SPARQL code generation in smaller parts
+	* Fixed sameAs
+	* Fixed wiki atom upstreaming url errors
+	* Fixed table qualifiers where appropriate
+	* Fixed URLS for Calendar upstream
+	* Fixed Wiki URIs
+	* Fixed Calendar instances access on myopenlink.net
+	* Moved procedure namespace from DB.DBA to ODS
+	* Fixed blog api categories
+	* Fixed a++ default value
+	* Fixed bug in editing interests
+	* Fixed gems for Atom, RSS, RDF,  XBEL and mRSS
+	* Fixed handling of weird result set from exec()
+	* Fixed incorrect url of applications in user balloon in map control
+	* Fixed OAT map control
+	* Fixed show list of ldap servers to select which one to use
+	* Fixed gallery dashboard, use dataspace links for images
+	* Removed geourl
+	* Removed debug prints
+
+2008-01-21 15:35  source
+
+	* Added search of topics to Wiki Search
+	* Added DAV trigger on POST SPARQL INSERT/UPDATE
+	* Added login to "Export" in "Web" and "Docbook"
+	* Added public user to enable add/update upstreams
+	* Fixed bug creating WikiWord
+	* Fixed Wiki atom upstreaming url error
+	* Fixed ask to save changes in wiki cluster settings tab
+	* Fixed problems with VD
+	* Fixed Wiki URIs
+	* Fixed Wiki vad problem on myopenlink
+	* Fixed grant access rights adding member to wiki
+	* Fixed 'Private' mode
+	* Fixed bug in Wiki page "Members" when "WikiGuest" is a member of the cluster
+	* Fixed handling of calendar date in Wiki search
+	* Fixed bug in "Modified by"
+	* Fixed Timezone in Wiki and Webmail
+	* Fixed wiki date format mask and calendar
+	* Fixed gems failure in "site changes"
+	* Fixed problems in wiki a++ links
+	* Fixed conversation to Discussion
+	* Fixed uninstall problem with obsolete trigger
+	* Fixed uninstalll problem with xpf extentions
+
+2008-01-21 15:25  source
+
+	* Added new instance method: wa_update_instance
+	* Changed text with links under banner
+	* Fixed conversation to discussion
+	* Moved a++ logic to User Settings level
+
+2008-01-21 15:24  source
+
+	* Added new instance method: wa_update_instance
+	* Added URL rewrite rules /polls
+	* Changed text with links under banner
+	* Moved a++ logic to User Settings Level
+
+2008-01-21 15:23  source
+
+	* Fixed gems for Atom, RSS, RDF, XBEL and mRSS
+
+2008-01-21 15:22  source
+
+	* Added new instance method: wa_update_instance
+	* Added URL rewrite rules /subscriptions
+	* Fixed uninstall errors
+	* Changed text with links under banner
+	* Fixed drag-and-drop feedsname from 2nd tab
+	* Fixed conversation to discussion
+	* Moved a++ logic to User Settings level
+
+2008-01-21 15:21  source
+
+	* Updated to latest OAT API
+	* Removed geourl
+
+2008-01-21 15:20  source
+
+	* Removed geourl
+
+2008-01-21 15:18  source
+
+	* Added new instance method: wa_update_instance
+	* Added URL rewrite rules /calendar
+	* Added calendar services
+	* Added calendar alarms scope
+	* Fixed view page for Tasks/Events
+	* Fixed bad labels and titles
+	* Fixed calendar upstreaming bugs
+	* Fixed txt with links under banner
+	* Fixed customize selection of grid fields
+	* Fixed showing active tasks only
+	* Fixed paging parameter
+	* Fixed permalink does not show correct event/tasks details
+	* Fixed removing old DET folders and folder for gems during update
+	* Moved a++ logic to User Settings Level
+
+2008-01-21 15:14  source
+
+	* Added new instance method: wa_update_instance
+	* Added URL rewrite rules /briefcase
+	* Changed text with links under banner
+	* Fixed DETs for Bookmark folders/smart folders
+	* Fixed rdf_sink (VVC) folder error
+	* Moved a++ logic to User Settings Level
+
+2008-01-21 15:12  source
+
+	* Added new instance method: wa_update_instance
+	* Fixed uninstall errors
+	* Changed text with links under banner
+	* Fixed SIOC data update
+	* Fixed typo in title
+	* Removed debug info
+	* Moved a++ logic to User Settings Level
+
+2008-01-21 15:09  source
+
+	* Fixed a++ links for unlogged users
+	* Fixed categories
+	* Fixed label Conversation to Discussion
+	* Fixed ODS vhost config to create /dataspace
+	* Disabled geourl as service doesn't respond
+
+2008-01-21 15:08  source
+
+	* Added new instance method: wa_update_instance
+	* Added URL rewrite rule /addressbook
+	* Added gray icon for new contact
+	* Fixed bugs in view contact when not logged in
+	* Fixed invite contacts to ODS dataspace
+	* Fixed name and nick
+	* Fixed title text
+	* Moved a++ logic to User Settings level
+
+2008-01-21 14:16  source
+
+	* Removed debug code
+
+2008-01-21 13:17  source
+
+	* Added HR-XML Resume RDF mapper
+
+2008-01-21 12:49  source
+
+	* Updated version
+
+2008-01-21 12:48  source
+
+	* Merged from upstream project
+
+2008-01-21 12:25  source
+
+	* In inx int join, sort the tables lowest card first else it's no gain in
+	  lubm. Also reset dfe_unit after using this for sorting what to try next
+
+2008-01-21 12:24  source
+
+	* Fixed no inf ctr error message
+	* Fixed "same as" is not always on if inf is on, must be enabled separately
+
+2008-01-21 11:20  source
+
+	* Updated version to 5.0.4-pre1
+
+2008-01-21 11:19  source
+
+	* Added labels
+
+2008-01-21 11:19  source
+
+	* Merged latest documentation
+
+2008-01-21 11:17  source
+
+	* Added basic SPARQL BI support
+	* Added +> and *> operator in SPARUL BI extensions
+	* Added support for aggregates in ORDER BY expressions
+	* Added improved diagnostics of non-mappable triple patterns using new
+	  spar_dbg_string_of_triple_field() diagnostic output function.
+	* Added optimization for comparison operations when LONG_EQ_SQL
+	* Added SPARQL optimization: result restriction bits for expressions,
+	  SPART_VARR_LONG_EQ_SQL
+	* Added optimization for native SQL values in
+	  DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL
+	* Added smarter creation of IRI classes: A redefinition of a class that
+	  is identical to the previous definition is no longer reported as error
+	  even if the class is in use.
+	* Added stub for REDUCED
+	* Added support for XML entities in _MT parser
+	* Fixed code generation for queries with detected but not fully eliminated
+	  conflicts
+	* Fixed bug in processing of queries without default graph
+	* Fixed composing objects from rdf_boxes in functions that expect SQL values
+	  as arguments
+	* Fixed loading RDF views: better auto-recovery, better audit
+	* Fixed XML replies in protocol; addded XML preamble
+	* Fixed RDF_FT_RULE_ADD ('', '', ...)
+	* Fixed IN operator
+	* Fixed compilation of select * from <http://example.com/tpcd> where
+	  { ?r tpcd:name ?nam . filter (?nam = 'EUROPE') }
+	* Fixed division bug
+	* Updated version of virtdrf-data-formats.ttl
+	* Fixed bugs found while converting Q1 and Q2 of TPC-D into SPARQL on mapped
+	  data
+
+2008-01-21 11:05  source
+
+	* Fixed double free in case of 'undefined namespace prefix' error on
+	  object or object type IRI
+	* Relaxed syntax for '[]' bnode, now can be '[ whitespace ]' where
+	  '[ pred_obj_list ]' is allowed
+
+2008-01-21 10:59  source
+
+	* Added temporary patch to avoid gpf
+
+2008-01-21 10:58  source
+
+	* Fixed problem with "same as" which was not on by default
+
+2008-01-21 10:54  source
+
+	* Fixed bug in proxy with chunked & head
+
+2008-01-21 10:54  source
+
+	* In bm inx int: when getting new row, set the iobb. Clear itc_bp's
+	  flags when resetting.  When finding in an array ce, remember the pos in
+	  ce and the ce's offset.
+
+2008-01-18 16:36  source
+
+	* Added dbg_realloc for malloc debug support
+
+2008-01-18 16:34  source
+
+	* Fixed compiler errors on HP/UX
+
+2008-01-18 14:26  source
+
+	* Fixed proxy failures
+
+2008-01-18 14:24  source
+
+	* In join order, try the one with most connections to placed stuff
+	  first. Recognize leaves, i.e. lookups that depend on placed and on which
+	  no unplaced depends. Place them as a unit, most restrictive first, do
+	  not do all permutations. Fix the disable of inx int and fix placing and
+	  unplacing of inxc int. Fix the missing leave of the page when doing
+	  next bm row on bm inx int. Fix the rdf inf ctx retrieval for inx ints.
+
+2008-01-18 14:22  source
+
+	* Added support for fraction of seconds in __get_iso_date()
+
+2008-01-18 14:21  source
+
+	* Removed extra call to serialize
+
+2008-01-18 14:20  source
+
+	* Added bif_rowvector_digit_sort
+
+2008-01-18 14:19  source
+
+	* Added extra CRLF at end of http header
+
+2008-01-18 14:17  source
+
+	* Fixed hang with ftp server
+	* Fixed problem with connect in pasv mode
+
+2008-01-18 14:16  source
+
+	* Fixed restore status check
+	* Fixed wait and exit status of child process
+	* Fixed filedesciptors in child process
+
+2008-01-18 14:14  source
+
+	* Fixed hash length as data is int64
+
+2008-01-18 14:12  source
+
+	* Fixed compiler warnings on HP/UX
+
+2008-01-18 14:11  source
+
+	* Added cast DT_DATE to long where appropriate
+	* Added cast to boxint, prevent unsigned int cast
+
+2008-01-18 14:10  source
+
+	* Fixed proxy failures
+	* Avoid messages when session recording is enabled but nntp, pop3 or ftp
+	  is used
+
+2008-01-18 14:09  source
+
+	* Use QUIETCAST to disable 'non-arithmetic arguments' error message
+
+2008-01-18 14:07  source
+
+	* Added support for SHA256
+
+2008-01-18 14:03  source
+
+	* Added more MTX debug code
+
+2008-01-18 14:02  source
+
+	* Updated documentation
+
+2008-01-18 13:57  source
+
+	* Use non-existing port for test
+
+2008-01-18 13:56  source
+
+	* Added isDefinedby and RDF DET
+	* Fixed building pdf file
+	* Fixed Northwind RDF views
+
+2008-01-18 13:54  source
+
+	* Added virtrdf:item triples for default quad storage
+	* Fixed expressions for typemin/typemax of date and dateTime
+	* Fixed result restriction bits for expressions, SPART_VARR_LONG_EQ_SQL
+
+2008-01-18 13:52  source
+
+	* Fixed typos
+
+2008-01-18 13:51  source
+
+	* Fixed ODS vhost config to create /dataspace
+	* Fixed blog api category
+	* Fixed double escape for %%
+
+2008-01-18 13:49  source
+
+	* Fixed todo items for calendar metadata extraction
+
+2008-01-18 13:47  source
+
+	* Removed deprecated VD for DET
+	* Fixed url rewrite rules and tutorial option page
+	* Small tutorial fixes
+
+2008-01-18 13:45  source
+
+	* Merged from upstream project
+
+2008-01-18 13:44  source
+
+	* Added https spongers
+	* Updated xbrl sponger
+	* Fixed proxy in facebook uris
+	* Fixed key order
+
+2008-01-18 13:41  source
+
+	* Added Ontologies for XBRL
+
 2007-12-11 16:59  source
 
 	* Updated version to 5.0.3 for final release
