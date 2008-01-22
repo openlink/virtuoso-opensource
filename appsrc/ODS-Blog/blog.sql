@@ -2732,9 +2732,9 @@ returns smallint
     call ('editPost_' || req.appkey) (req);
   else
     {
-      declare cnt, ts, userid, pings, cats any;
+      declare cnt, ts, userid, pings, cats, pub any;
       whenever not found goto nf;
-      select B_TS, B_USER_ID into ts, userid from SYS_BLOGS where B_POST_ID = req.postId;
+      select B_TS, B_USER_ID, B_STATE into ts, userid, pub from SYS_BLOGS where B_POST_ID = req.postId;
       struct.postid := req.postId;
       struct.userid := (select U_NAME from "DB"."DBA"."SYS_USERS" where U_ID = userid);
       struct.dateCreated := ts;
@@ -2745,7 +2745,11 @@ returns smallint
       if (length (trim (cnt)) = 0)
         signal ('22023', 'Empty posts are not allowed');
       cats := struct.categories;
+      --dbg_obj_print (cats, req.publish);
+      if (pub = 2 or req.publish = 1)
+	{
       delete from MTYPE_BLOG_CATEGORY where MTB_BLOG_ID = req.blogid and MTB_POST_ID = req.postId;
+	}
       foreach (varchar cat in cats) do
 	{
 	  declare category_id int;
@@ -4001,7 +4005,7 @@ create procedure
       categoryId := get_keyword ('categoryId', cat);
       isPrimary := get_keyword ('isPrimary', cat);
       whenever not found goto nextcat;
-      select MTC_NAME into cat_name from MTYPE_CATEGORIES where MTC_ID = categoryId;
+      select MTC_NAME into cat_name from MTYPE_CATEGORIES where MTC_ID = categoryId and MTC_BLOG_ID = blogId;
 
       insert replacing MTYPE_BLOG_CATEGORY (MTB_CID , MTB_POST_ID, MTB_BLOG_ID, MTB_PRIMARY)
        values (categoryId, postid, blogId, isPrimary);
@@ -4035,7 +4039,7 @@ create procedure
   ret := vector ();
   for select MTB_CID, MTC_NAME, coalesce (MTB_PRIMARY, 0) as MTB_PRIMARY from BLOG..MTYPE_BLOG_CATEGORY,
     BLOG..MTYPE_CATEGORIES where
-      MTB_POST_ID = postid and MTB_CID = MTC_ID do {
+      MTB_POST_ID = postid and MTB_CID = MTC_ID and MTC_BLOG_ID = MTB_BLOG_ID  do {
         post := soap_box_structure ('categoryName', MTC_NAME, 'categoryId', MTB_CID,
                                     'isPrimary', soap_boolean (MTB_PRIMARY));
         ret := vector_concat (ret, vector (post));
