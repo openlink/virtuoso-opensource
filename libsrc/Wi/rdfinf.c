@@ -862,6 +862,30 @@ sqlg_trailing_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source
 }
 
 
+rdf_inf_ctx_t ** 
+sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
+{
+  df_elt_t * dfe = tb_dfe;
+  static rdf_inf_ctx_t * ctx;
+  if (!ctx)
+    {
+      ctx = (rdf_inf_ctx_t *) dk_alloc (sizeof (rdf_inf_ctx_t));
+      memset (ctx, 0, sizeof (rdf_inf_ctx_t));
+      ctx->ric_name = box_dv_short_string ("dummy");
+      ctx->ric_iri_to_sub = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+    }
+  do
+    {
+      if (dfe->dfe_type == DFE_DT && sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_SAME_AS))
+	{
+	  return &ctx;
+	}
+      dfe = dfe->dfe_super;
+    } 
+  while (dfe);
+  return NULL;
+}
+
 
 #define LEADING_SUBCLASS \
   sqlg_leading_subclass_inf (tb_dfe->dfe_sqlo, q_head, ts, p_dfe, const_p, o_dfe, const_o, ctx, tb_dfe, inxop_inx, sas_o)
@@ -883,7 +907,7 @@ sqlg_leading_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts,
 {
   df_elt_t ** in_list;
   rdf_inf_pre_node_t * ri;
-  if (!sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_SAME_AS))
+  if (!sqlg_rdf_inf_same_as_opt (tb_dfe))
     return;
   if (!g_dfe)
     sqlc_new_error (so->so_sc->sc_cc, "42000", "RDFSA", "Same-as expansion not allowed if graph not specified");
@@ -946,30 +970,6 @@ dfe_iri_const (df_elt_t * dfe)
   name = sqlo_iri_constant_name (dfe->dfe_tree);
   if (name)
     return key_name_to_iri_id (NULL, name, 0);
-  return NULL;
-}
-
-rdf_inf_ctx_t ** 
-sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
-{
-  df_elt_t * dfe = tb_dfe;
-  static rdf_inf_ctx_t * ctx;
-  if (!ctx)
-    {
-      ctx = (rdf_inf_ctx_t *) dk_alloc (sizeof (rdf_inf_ctx_t));
-      memset (ctx, 0, sizeof (rdf_inf_ctx_t));
-      ctx->ric_name = box_dv_short_string ("dummy");
-      ctx->ric_iri_to_sub = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-    }
-  do
-    {
-      if (dfe->dfe_type == DFE_DT && sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_SAME_AS))
-	{
-	  return &ctx;
-	}
-      dfe = dfe->dfe_super;
-    } 
-  while (dfe);
   return NULL;
 }
 
