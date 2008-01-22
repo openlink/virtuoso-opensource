@@ -19,6 +19,7 @@ window.defaultPrefixes = [{"label":'atom', "uri":'http://atomowl.org/ontologies/
 						 {"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
 						 {"label":'sioc', "uri":'http://rdfs.org/sioc/ns#'},
 						 {"label":'ibis', "uri":'http://purl.org/ibis#'},
+						 {"label":'scot', "uri":'http://scot-project.org/scot/ns'},
 						 {"label":'ical', "uri":'http://www.w3.org/2002/12/cal/icaltzd#'},
 						 {"label":'mo', "uri":'http://purl.org/ontology/mo/'},
 						 {"label":'annotation', "uri":'http://www.w3.org/2000/10/annotation-ns#'},
@@ -72,7 +73,7 @@ var QueryExec = function(optObj) {
 	
 	this.init = function() {
 		this.dom.result = OAT.Dom.create("div");
-		this.dom.request = OAT.Dom.create("pre"); 
+		this.dom.request = OAT.Dom.create("div"); 
 		this.dom.response = OAT.Dom.create("pre");
 		this.dom.query = OAT.Dom.create("pre");
 		this.dom.select = OAT.Dom.create("select");
@@ -318,10 +319,18 @@ var QueryExec = function(optObj) {
 		
 		if (self.options.executeCallback) { self.options.executeCallback(opts.query); }
 		
-		self.dom.request.innerHTML = "";
+		var a = OAT.Dom.create("a");
+		a.innerHTML = "Query URI";
+		a.href = opts.endpoint + "?" + request;
+		a.target = "_blank";
+		OAT.Dom.append([self.dom.request,a]);
+
 		var r = decodeURIComponent(request);
 		var parts = r.split("&");
-		for (var i=0;i<parts.length;i++) { self.dom.request.innerHTML += OAT.Xml.escape(parts[i])+"\n"; }
+		var req = OAT.Dom.create("pre");
+		OAT.Dom.append([self.dom.request,req]);
+
+		for (var i=0;i<parts.length;i++) { req.innerHTML += OAT.Xml.escape(parts[i])+"\n"; }
 		self.dom.query.innerHTML = OAT.Xml.escape(opts.query);
 
 		if (wasError) {

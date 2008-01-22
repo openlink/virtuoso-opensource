@@ -422,7 +422,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 			}
 
 			content = OAT.Dom.create("a");
-			content.href = value.uri;
+			content.href = "?uri=" + encodeURIComponent(value.uri);
 			content.innerHTML = self.parent.getTitle(value);
 
 			/* dereferenced, or relative uri/blank node */
