@@ -2854,7 +2854,7 @@
               </th>
               <td>
                 <vm:if test="self.cAction <> 'view'">
-                      <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_eventEndDate, \'t_eventEndDatt_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
+                      <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_eventEndDate, \'t_eventEndDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
                       <a href="#" name="t_eventEndDate_select" id="t_eventEndDate_select" onclick="cPopup.select(document.forms[0].t_eventEndDate, 't_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
