@@ -165,6 +165,87 @@
 			</cv:eduDescription>
 		</cv:Education>    
     </cv:hasEducation>
+    
+    <cv:hasCourse>
+        <cv:Course>
+            <cv:organizedBy>
+                <cv:Organization>
+                    <cv:Name>
+                        <xsl:value-of select="LicensesAndCertifications/LicenseOrCertification/IssuingAuthority"/>
+                    </cv:Name>
+                </cv:Organization>
+            </cv:organizedBy>
+            <cv:courseStartDate>
+                <xsl:value-of select="LicensesAndCertifications/LicenseOrCertification/EffectiveDate/ValidFrom"/>
+            </cv:courseStartDate>
+            <cv:courseFinishDate>
+                <xsl:value-of select="LicensesAndCertifications/LicenseOrCertification/EffectiveDate/ValidTo"/>
+            </cv:courseFinishDate>
+            <cv:courseTitle>
+                <xsl:value-of select="LicensesAndCertifications/LicenseOrCertification/Name"/>
+            </cv:courseTitle>
+            <cv:courseDescription>
+                <xsl:value-of select="LicensesAndCertifications/LicenseOrCertification/Description"/>
+            </cv:courseDescription>
+        </cv:Course>    
+    </cv:hasCourse>
+
+    <cv:hasSkill>
+        <cv:Skill>
+            <cv:skillName>
+                <xsl:value-of select="Qualifications/Competency/@name"/>
+            </cv:skillName>
+            <cv:skillLastUsed>
+                <xsl:value-of select="Qualifications/Competency/Competency/CompetencyEvidence/@lastUsed"/>
+            </cv:skillLastUsed>
+            <cv:skillYearsExperience>
+                <xsl:value-of select="Qualifications/Competency/Competency/CompetencyEvidence/@dateOfIncident"/>
+            </cv:skillYearsExperience>
+            <cv:skillLevel>
+                <xsl:value-of select="Qualifications/Competency/Competency/CompetencyEvidence/NumericValue"/>
+            </cv:skillLevel>
+        </cv:Skill>
+        <cv:LanguageSkill>
+            <cv:skillName>
+                <xsl:value-of select="Languages/Language/LanguageCode"/>
+            </cv:skillName>
+            <cv:lngSkillLevelReading>
+                <xsl:value-of select="Languages/Language/Read"/>
+            </cv:lngSkillLevelReading>
+            <cv:lngSkillLevelWritten>
+                <xsl:value-of select="Languages/Language/Write"/>
+            </cv:lngSkillLevelWritten>
+            <cv:skillLevel>
+                <xsl:value-of select="Languages/Language/Speak"/>
+            </cv:skillLevel>
+        </cv:LanguageSkill>
+    </cv:hasSkill>
+
+    <cv:hasRefernece>
+        <cv:Refernece>
+            <cv:referenceBy>                    
+                <cv:Person>
+                    <v:n>
+                      <xsl:value-of select="References/Reference/PersonName/FormattedName"/>  
+                    </v:n>
+                    <v:title>
+                      <xsl:value-of select="References/Reference/PositionTitle"/>  
+                    </v:title>
+                    <v:tel>
+                      <xsl:value-of select="References/Reference/ContactMethod/Telephone/FormattedNumber"/>  
+                    </v:tel>
+                    <v:email>
+                      <xsl:value-of select="References/Reference/ContactMethod/InternetEmailAddress"/>  
+                    </v:email>
+                    <v:note>
+                      <xsl:value-of select="References/Reference/Comments"/>  
+                    </v:note>
+                </cv:Person>
+            </cv:referenceBy>
+        </cv:Refernece>
+    </cv:hasRefernece>
+    
+    
   </xsl:template>
 
 </xsl:stylesheet>
