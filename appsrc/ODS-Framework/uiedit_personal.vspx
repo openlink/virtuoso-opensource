@@ -506,7 +506,7 @@
 			            p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
   		            p_path := dir||'preview_img.'||p_ext[length(p_ext)-1];
 
-    		            if (p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) in ('jpg','png','gif'))
+    		            if (p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) in ('jpg','png','gif'))
 		                {
                      
           			  declare rc, pwd1 any;
@@ -726,7 +726,7 @@
         declare p_ext any;
         p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
 
-			  if(p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) not in ('jpg','png','gif'))
+                  if(p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) not in ('jpg','png','gif'))
         {
                     self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
                     self.vc_is_valid := 0;
