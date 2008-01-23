@@ -1,5 +1,5 @@
 --
---  atom.sql
+--  upstream.sql
 --
 --  $Id$
 --

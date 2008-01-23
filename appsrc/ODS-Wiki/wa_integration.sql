@@ -195,7 +195,7 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
   
   -- calculate new cluster name
   declare _cluster_name varchar;
---  _cluster_name := sprintf('oWiki_%s_%d', login, _num + 1);
+
   if (exists (select * from WV.WIKI.CLUSTERS where ClusterName = self.wa_name))
     signal ('WIKI02', 'Cluster "' || self.wa_name || '" exists already');
   _cluster_name := self.wa_name;

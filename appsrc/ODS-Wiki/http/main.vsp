@@ -132,7 +132,6 @@ again:
       _topic.ti_local_name := _local_name;
       _topic.ti_find_id_by_local_name();
       _topic.ti_find_metadata_by_id ();
---      _topic.ti_http_debug_print('info about current topic');
     }
   if (_topic.ti_res_id = 0)
     {
@@ -220,7 +219,6 @@ error_report:
 cont:
   if ({?'goto_title'} is not null)
 	WV.WIKI.CHECKWIKIWORD (_title);
---  dbg_obj_princ (_topic);
 
   -- later make real error check...
   if (_topic.ti_col_id = 0)
@@ -589,10 +587,7 @@ content:
       goto make_footer;
     }
 	
-
-
 create_or_view:
---  _topic.ti_http_debug_print('info about current topic');
   if (_topic.ti_id = 0)
     {
       declare exit handler for sqlstate '42WV9' {
