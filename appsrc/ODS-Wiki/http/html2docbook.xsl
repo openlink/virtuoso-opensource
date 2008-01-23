@@ -146,7 +146,7 @@
     </table>
   </xsl:template>
 
-  <xsl:template match="xhtml:tbody">
+  <xsl:template match="xhtml:tbody|xhtml:span|xhtml:nop|xhtml:code|xhtml:dl">
     <xsl:apply-templates />
   </xsl:template>
 
@@ -156,11 +156,7 @@
     </row>
   </xsl:template>
 
-  <xsl:template match="xhtml:th|xhtml:br|xhtml:font|xhtml:form|//xhtml:style" />
-
-  <xsl:template match="xhtml:span">
-    <xsl:apply-templates />
-  </xsl:template>
+  <xsl:template match="xhtml:th|xhtml:br|xhtml:hr|xhtml:hide|xhtml:script|xhtml:small|xhtml:font|xhtml:form|//xhtml:style" />
 
   <xsl:template match="xhtml:img">
     <figure>
