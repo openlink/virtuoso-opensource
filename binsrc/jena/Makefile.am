@@ -42,8 +42,8 @@ JENA_CLASSPATH=lib/arq.jar:lib/axis.jar:lib/iri.jar:lib/jena.jar:$(top_srcdir)/l
 all-am:	lib virt_jena.jar
 
 install-data-local:
-	-mkdir ${libdir}/jena
-	-cp virt_jena.jar ${libdir}/jena
+	-mkdir "$(DESTDIR)${libdir}/jena"
+	-cp virt_jena.jar "$(DESTDIR)${libdir}/jena"
 
 lib:
 	@test -d lib || touch virt_jena.jar

@@ -43,8 +43,8 @@ SESAME_CLASSPATH=lib/xercesImpl.jar:lib/log4j-1.2.12.jar:lib/commons-logging-1.1
 all-am: lib virt_sesame.jar
 
 install-data-local:
-	-mkdir ${libdir}/sesame
-	-cp virt_sesame.jar ${libdir}/sesame
+	-mkdir "$(DESTDIR)${libdir}/sesame"
+	-cp virt_sesame.jar "$(DESTDIR)${libdir}/sesame"
 
 lib:
 	@test -d lib || touch virt_sesame.jar
