@@ -54,7 +54,19 @@ wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_USER_GET_EXCERPT_HTML to GDA
 wa_exec_no_error('grant execute on DB.DBA.wa_identity_dstype to GDATA_ODS');
 wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_ADD_SID_IF_AVAILABLE to GDATA_ODS');
 wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_ADD_APATH to GDATA_ODS');
-
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_CALENDAR_GET_EXCERPT_HTML to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_BLOG_GET_EXCERPT_HTML to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_ENEWS_GET_EXCERPT_HTML to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_OMAIL_AGG_init to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_OMAIL_AGG_acc to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_OMAIL_AGG_final to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_OMAIL_GET_EXCERPT_HTML to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_DAV_OR_WIKI_GET_EXCERPT_HTML to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_BMK_GET_EXCERPT_HTML to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_POLLS_GET_EXCERPT_HTML to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_AB_GET_EXCERPT_HTML to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_AB_GET_EXCERPT_HTML to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_APP_GET_EXCERPT_HTML to GDATA_ODS');
 
 
 
