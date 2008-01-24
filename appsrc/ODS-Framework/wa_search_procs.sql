@@ -661,7 +661,7 @@ create function WA_SEARCH_BLOG (in max_rows integer, in current_user_id integer,
 
   ret := sprintf (
          'select top %d \n' ||
-         '  WA_SEARCH_BLOG_GET_EXCERPT_HTML (%d, B_BLOG_ID, B_POST_ID, %s, B_CONTENT, B_TITLE) AS EXCERPT, \n' ||
+         '  DB.DBA.WA_SEARCH_BLOG_GET_EXCERPT_HTML (%d, B_BLOG_ID, B_POST_ID, %s, B_CONTENT, B_TITLE) AS EXCERPT, \n' ||
          '  encode_base64 (serialize (vector (''BLOG'', vector (B_BLOG_ID, B_POST_ID)))) as TAG_TABLE_FK, \n' ||
          '  _SCORE, \n' ||
          '  _DATE \n' ||
@@ -969,7 +969,7 @@ create function WA_SEARCH_ENEWS (in max_rows integer, in current_user_id integer
   ret := sprintf (
          'select EXCERPT, TAG_TABLE_FK, _SCORE, _DATE from (' ||
          'select top %d \n' ||
-         '  WA_SEARCH_ENEWS_GET_EXCERPT_HTML (%d, EFI_ID, EFI_FEED_ID, EFD_DOMAIN_ID, %s) AS EXCERPT, \n' ||
+         '  DB.DBA.WA_SEARCH_ENEWS_GET_EXCERPT_HTML (%d, EFI_ID, EFI_FEED_ID, EFD_DOMAIN_ID, %s) AS EXCERPT, \n' ||
          '  encode_base64 (serialize (vector (''ENEWS'', vector (EFI_ID, EFD_DOMAIN_ID)))) as TAG_TABLE_FK, \n' ||
          '  _SCORE, \n' ||
          '  _DATE \n' ||
@@ -1059,12 +1059,12 @@ create function WA_SEARCH_APP (in max_rows integer, in current_user_id integer,
     {
       ret := sprintf (
 	     'select top %d \n' ||
-	     '  WA_SEARCH_APP_GET_EXCERPT_HTML (%d, %s, WAI_NAME, WAI_DESCRIPTION, \n' ||
-	     '         WAI_TYPE_NAME, DB.DBA.WA_INSTANCE.WAI_INST.wa_home_url (), WAI_ID) AS EXCERPT, \n' ||
+	     '  DB.DBA.WA_SEARCH_APP_GET_EXCERPT_HTML (%d, %s, WAI_NAME, WAI_DESCRIPTION, \n' ||
+	     '         WAI_TYPE_NAME, WAM_HOME_PAGE, WAI_ID) AS EXCERPT, \n' ||
 	     '  encode_base64 (serialize (vector (''APP''))) as TAG_TABLE_FK, \n' ||
 	     '  0 as _SCORE, \n' ||
 	     '  WAI_MODIFIED as _DATE\n' ||
-	     ' from DB.DBA.WA_INSTANCE\n' ||
+	     ' from DB.DBA.WA_INSTANCE join  DB.DBA.WA_MEMBER on (WAM_INST = WAI_NAME)\n' ||
 	     ' where \n' ||
 	     '    WAI_IS_PUBLIC > 0 OR \n' ||
 	     '    exists (\n' ||
@@ -1080,12 +1080,12 @@ create function WA_SEARCH_APP (in max_rows integer, in current_user_id integer,
     {
       ret := sprintf (
 	     'select top %d \n' ||
-	     '  WA_SEARCH_APP_GET_EXCERPT_HTML (%d, %s, WAI_NAME, WAI_DESCRIPTION, \n' ||
-	     '         WAI_TYPE_NAME, DB.DBA.WA_INSTANCE.WAI_INST.wa_home_url (), WAI_ID) AS EXCERPT, \n' ||
+	     '  DB.DBA.WA_SEARCH_APP_GET_EXCERPT_HTML (%d, %s, WAI_NAME, WAI_DESCRIPTION, \n' ||
+	     '         WAI_TYPE_NAME, WAM_HOME_PAGE, WAI_ID) AS EXCERPT, \n' ||
 	     '  encode_base64 (serialize (vector (''APP''))) as TAG_TABLE_FK, \n' ||
 	     '  SCORE as _SCORE, \n' ||
 	     '  WAI_MODIFIED as _DATE\n' ||
-	     ' from DB.DBA.WA_INSTANCE\n' ||
+	     ' from DB.DBA.WA_INSTANCE join  DB.DBA.WA_MEMBER on (WAM_INST = WAI_NAME) \n' ||
 	     ' where \n' ||
 	     '  contains (WAI_DESCRIPTION, ''[__lang "x-ViDoc" __enc "UTF-8"] %S'') \n' ||
 	     '  and (\n' ||
@@ -1175,7 +1175,7 @@ create function WA_SEARCH_OMAIL (in max_rows integer, in current_user_id integer
     {
       ret := sprintf (
 	     'select top %d \n' ||
-	     '  WA_SEARCH_OMAIL_GET_EXCERPT_HTML (q.USER_ID, %s, \n' ||
+	     '  DB.DBA.WA_SEARCH_OMAIL_GET_EXCERPT_HTML (q.USER_ID, %s, \n' ||
 	     '     q.MSG_ID, q.DOMAIN_ID, _TDATA, M.SUBJECT, M.FOLDER_ID) AS EXCERPT, \n' ||
 	     '  encode_base64 (serialize (vector (''OMAIL''))) as TAG_TABLE_FK, \n' ||
 	     '  _SCORE, \n' ||
@@ -1198,7 +1198,7 @@ create function WA_SEARCH_OMAIL (in max_rows integer, in current_user_id integer
     {
       ret := sprintf (
 	     'select top %d \n' ||
-	     '  WA_SEARCH_OMAIL_GET_EXCERPT_HTML (q.USER_ID, %s, \n' ||
+	     '  DB.DBA.WA_SEARCH_OMAIL_GET_EXCERPT_HTML (q.USER_ID, %s, \n' ||
 	     '     q.MSG_ID, q.DOMAIN_ID, _TDATA, M.SUBJECT, M.FOLDER_ID) AS EXCERPT, \n' ||
 	     '  encode_base64 (serialize (vector (''OMAIL''))) as TAG_TABLE_FK, \n' ||
 	     '  _SCORE, \n' ||
