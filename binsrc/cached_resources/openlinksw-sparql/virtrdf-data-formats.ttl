@@ -214,7 +214,7 @@ rdfdf:default-nullable
 rdfdf:default-nullable-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
 .
-        
+
 rdfdf:sql-varchar
   rdf:type virtrdf:QuadMapFormat;
   virtrdf:qmfName "sql-varchar";
@@ -302,7 +302,7 @@ rdfdf:sql-longvarchar-nullable
   virtrdf:qmfSuperFormats rdfdf:sql-longvarchar-nullable-SuperFormats
 .
 
-rdfdf:sql-longvarchar-nullable-SuperFormats  
+rdfdf:sql-longvarchar-nullable-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
 .
 
@@ -368,7 +368,7 @@ rdfdf:sql-longvarbinary-nullable
 rdfdf:sql-longvarbinary-nullable-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
 .
-  
+
 rdfdf:sql-varchar-uri
   rdf:type virtrdf:QuadMapFormat;
   virtrdf:qmfName "sql-varchar-uri";
@@ -800,7 +800,7 @@ rdfdf:multipart-uri
   virtrdf:qmfSuperFormats rdfdf:multipart-uri-SuperFormats
 .
 
-rdfdf:multipart-uri-SuperFormats  
+rdfdf:multipart-uri-SuperFormats
       rdf:type virtrdf:array-of-QuadMapFormat;
       rdf:_1 rdfdf:multipart-uri-nullable;
 .
@@ -870,7 +870,7 @@ rdfdf:multipart-uri-fn-nullable
   virtrdf:qmfSuperFormats rdfdf:multipart-uri-fn-nullable-SuperFormats
 .
 
-rdfdf:multipart-uri-fn-nullable-SuperFormats  
+rdfdf:multipart-uri-fn-nullable-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
 .
 
@@ -918,7 +918,7 @@ rdfdf:multipart-literal-fn-nullable
   virtrdf:qmfSuperFormats rdfdf:multipart-literal-fn-nullable-SuperFormats
 .
 
-rdfdf:multipart-literal-fn-nullable-SuperFormats  
+rdfdf:multipart-literal-fn-nullable-SuperFormats
   rdf:type virtrdf:array-of-QuadMapFormat;
 .
 
@@ -1141,7 +1141,7 @@ virtrdf:DefaultQuadMap
   virtrdf:qmMatchingFlags virtrdf:SPART_QM_OK_FOR_ANY_QUAD;
 .
 
-virtrdf:DefaultQuadMap-G      
+virtrdf:DefaultQuadMap-G
       rdf:type virtrdf:QuadMapValue;
       virtrdf:qmvTableName "DB.DBA.RDF_QUAD";
   virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
@@ -1150,18 +1150,18 @@ virtrdf:DefaultQuadMap-G
   virtrdf:qmvColumnsFormKey 0;
 .
 
-virtrdf:DefaultQuadMap-G-cols      
+virtrdf:DefaultQuadMap-G-cols
           rdf:type virtrdf:array-of-QuadMapColumn;
   rdf:_1 virtrdf:DefaultQuadMap-G-col-G;
 .
 
-virtrdf:DefaultQuadMap-G-col-G  
+virtrdf:DefaultQuadMap-G-col-G
               rdf:type virtrdf:QuadMapColumn;
   virtrdf:qmvcAlias "!pquad";
               virtrdf:qmvcColumnName "G";
 .
-    
-virtrdf:DefaultQuadMap-S  
+
+virtrdf:DefaultQuadMap-S
       rdf:type virtrdf:QuadMapValue;
       virtrdf:qmvTableName "DB.DBA.RDF_QUAD";
   virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
@@ -1181,7 +1181,7 @@ virtrdf:DefaultQuadMap-S-col-S
               virtrdf:qmvcColumnName "S";
 .
 
-virtrdf:DefaultQuadMap-P  
+virtrdf:DefaultQuadMap-P
       rdf:type virtrdf:QuadMapValue;
       virtrdf:qmvTableName "DB.DBA.RDF_QUAD";
   virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
@@ -1195,13 +1195,13 @@ virtrdf:DefaultQuadMap-P-cols
   rdf:_1 virtrdf:DefaultQuadMap-P-col-P;
 .
 
-virtrdf:DefaultQuadMap-P-col-P  
+virtrdf:DefaultQuadMap-P-col-P
               rdf:type virtrdf:QuadMapColumn;
   virtrdf:qmvcAlias "!pquad";
               virtrdf:qmvcColumnName "P";
 .
 
-virtrdf:DefaultQuadMap-O  
+virtrdf:DefaultQuadMap-O
       rdf:type virtrdf:QuadMapValue;
       virtrdf:qmvTableName "DB.DBA.RDF_QUAD";
   virtrdf:qmvATables virtrdf:DefaultQuadMap-atables;
