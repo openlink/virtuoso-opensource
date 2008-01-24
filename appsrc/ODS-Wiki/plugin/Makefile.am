@@ -21,6 +21,8 @@
 
 hosting_LTLIBRARIES = wikiv.la mediawiki.la creolewiki.la
 
+LTFLAGS	= -module -avoid-version -export-dynamic -no-undefined
+
 wikiv_la_SOURCES = \
 	wikiv.c \
 	maclex.c \
@@ -37,7 +39,7 @@ wikiv_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin
 wikiv_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib
 
 wikiv_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
-wikiv_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols wikiv.exp
+wikiv_la_LDFLAGS = $(LTFLAGS) -export-symbols wikiv.exp
 
 mediawiki_la_SOURCES = \
 	mediawiki.c \
@@ -55,12 +57,12 @@ mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin
 mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib
 
 mediawiki_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
-mediawiki_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols mediawiki.exp
+mediawiki_la_LDFLAGS = $(LTFLAGS) -export-symbols mediawiki.exp
 
 creolewiki_la_SOURCES = \
 	creolewiki.c \
-	media_maclex.c \
-	media_wikilex.c \
+	creole_maclex.c \
+	creole_wikilex.c \
 	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
 
 creolewiki_la_CFLAGS  = @VIRT_AM_CFLAGS@
@@ -73,7 +75,7 @@ creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin
 creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc/zlib
 
 creolewiki_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
-creolewiki_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols creolewiki.exp
+creolewiki_la_LDFLAGS = $(LTFLAGS) -export-symbols creolewiki.exp
 
 BUILT_SOURCES = \
 	maclex.c wikilex.c \
