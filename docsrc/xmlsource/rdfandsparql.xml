@@ -1496,6 +1496,100 @@ DB.DBA.RDF_GRAB_RESOLVER_DEFAULT (
   out get_method varchar ) -- the HTTP method to use, should be "GET" or "MGET".
 ]]></programlisting>
 </sect2>
+<sect2 id="rdfiridereferencingexamples"><title>Examples of other Web Resolvers</title>
+<para>Example of <emphasis>LSIDs</emphasis>: A scientific name from UBio</para>
+<programlisting><![CDATA[
+SQL>sparql
+define get:soft "soft"
+select *
+from <urn:lsid:ubio.org:namebank:11815>
+where { ?s ?p ?o }
+limit 5;
+
+s                                 p                                           o
+VARCHAR                           VARCHAR                                     VARCHAR
+_______________________________________________________________________________
+
+urn:lsid:ubio.org:namebank:11815  http://purl.org/dc/elements/1.1/title       Pternistis leucoscepus
+urn:lsid:ubio.org:namebank:11815  http://purl.org/dc/elements/1.1/subject     Pternistis leucoscepus (Gray, GR) 1867
+urn:lsid:ubio.org:namebank:11815  http://purl.org/dc/elements/1.1/identifier  urn:lsid:ubio.org:namebank:11815
+urn:lsid:ubio.org:namebank:11815  http://purl.org/dc/elements/1.1/creator     http://www.ubio.org
+urn:lsid:ubio.org:namebank:11815  http://purl.org/dc/elements/1.1/type        Scientific Name
+
+5 Rows. -- 741 msec.
+]]></programlisting>
+<para>Example of <emphasis>LSIDs</emphasis>: A segment of the human genome from GDB</para>
+<programlisting><![CDATA[
+SQL>sparql
+define get:soft "soft"
+select *
+from <urn:lsid:gdb.org:GenomicSegment:GDB132938>
+where { ?s ?p ?o }
+limit 5;
+
+s                                          p                                                     o
+VARCHAR                                    VARCHAR                                               VARCHAR
+_______________________________________________________________________________
+
+urn:lsid:gdb.org:GenomicSegment:GDB132938  urn:lsid:gdb.org:DBObject-predicates:accessionID      GDB:132938
+urn:lsid:gdb.org:GenomicSegment:GDB132938  http://www.ibm.com/LSID/2004/RDF/#lsidLink            urn:lsid:gdb.org:DBObject:GDB132938
+urn:lsid:gdb.org:GenomicSegment:GDB132938  urn:lsid:gdb.org:DBObject-predicates:objectClass      DBObject
+urn:lsid:gdb.org:GenomicSegment:GDB132938  urn:lsid:gdb.org:DBObject-predicates:displayName      D20S95
+urn:lsid:gdb.org:GenomicSegment:GDB132938  urn:lsid:gdb.org:GenomicSegment-predicates:variantsQ  nodeID://1000027961
+
+5 Rows. -- 822 msec.
+]]></programlisting>
+<para>Example of <emphasis>OAI</emphasis>: an institutional / departmental repository.</para>
+<programlisting><![CDATA[
+SQL>sparql
+define get:soft "soft"
+select *
+from <oai:etheses.bham.ac.uk:23>
+where { ?s ?p ?o }
+limit 5;
+
+s                           p                                           o
+VARCHAR                     VARCHAR                                     VARCHAR
+_____________________________________________________________________________
+
+oai:etheses.bham.ac.uk:23   http://purl.org/dc/elements/1.1/title       A study of the role of ATM mutations in the pathogenesis of B-cell chronic lymphocytic leukaemia
+oai:etheses.bham.ac.uk:23   http://purl.org/dc/elements/1.1/date        2007-07
+oai:etheses.bham.ac.uk:23   http://purl.org/dc/elements/1.1/subject     RC0254 Neoplasms. Tumors. Oncology (including Cancer)
+oai:etheses.bham.ac.uk:23   http://purl.org/dc/elements/1.1/identifier  Austen, Belinda (2007) A study of the role of ATM mutations in the pathogenesis of B-cell chronic lymphocytic leukaemia. Ph.D. thesis, University of Birmingham.
+oai:etheses.bham.ac.uk:23   http://purl.org/dc/elements/1.1/identifier  http://etheses.bham.ac.uk/23/1/Austen07PhD.pdf
+
+5 Rows. -- 461 msec.
+]]></programlisting>
+<para>Example of <emphasis>DOI</emphasis></para>
+<para>In order to execute correctly queries with doi resolver you need to have:</para>
+<itemizedlist>
+<listitem>the handle.dll file accessible from your system. For ex. you can put it in the Virtuoso bin folder where the rest of the server components are.</listitem>
+<listitem>in your Virtuoso database ini file in section Plugins added the hslookup.dll file, which location should be in the plugins folder under your Virtuoso server installation. For ex:
+<programlisting>
+[Plugins]
+LoadPath = ./plugin
+...
+Load6    = plain,hslookup
+]]></programlisting>
+</listitem>
+</itemizedlist>
+<programlisting><![CDATA[
+SQL>sparql
+define get:soft "soft"
+select *
+from <doi:10.1045/march99-bunker>
+where { ?s ?p ?o } ;
+
+s                                                      p                                                 o
+VARCHAR                                                VARCHAR                                           VARCHAR
+_______________________________________________________________________________
+
+http://www.dlib.org/dlib/march99/bunker/03bunker.html  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://www.openlinksw.com/schemas/XHTML#
+http://www.dlib.org/dlib/march99/bunker/03bunker.html  http://www.openlinksw.com/schemas/XHTML#title     Collaboration as a Key to Digital Library Development: High Performance Image Management at the University of Washington
+
+2 Rows. -- 12388 msec.
+]]></programlisting>
+</sect2>
 </sect1>
 <sect1 id="rdfviews"><title>RDF Views -- Mapping Relational Data to RDF</title>
 <para>
