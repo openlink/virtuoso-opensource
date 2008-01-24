@@ -450,4 +450,14 @@ virtuoso_shutdown
 chmod 644 ods_blog_dav.vad
 #chmod 644 virtuoso.trx
 #directory_clean
-BANNER "FINISHED PACKAGING BLOG VAD"
+
+CHECK_LOG
+RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
+if test $STATUS -eq 0
+then
+	$myrm -f *.vad
+	exit 1
+fi
+
+BANNER "COMPLETED VAD PACKAGING"
+exit 0

@@ -389,5 +389,13 @@ chmod 644 ods_bookmark_dav.vad
 chmod 644 ods_bookmark_filesystem.vad
 directory_clean
 
-echo 'Successful create'
+CHECK_LOG
+RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
+if test $STATUS -eq 0
+then
+	$myrm -f *.vad
+	exit 1
+fi
 
+BANNER "COMPLETED VAD PACKAGING"
+exit 0

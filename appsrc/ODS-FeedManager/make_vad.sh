@@ -406,5 +406,13 @@ chmod 644 $VAD_DAV
 chmod 644 $VAD_FS
 directory_clean
 
-echo 'Successful create'
+CHECK_LOG
+RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
+if test $STATUS -eq 0
+then
+	$myrm -f *.vad
+	exit 1
+fi
 
+BANNER "COMPLETED VAD PACKAGING"
+exit 0

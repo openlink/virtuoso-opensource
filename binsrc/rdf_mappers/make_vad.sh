@@ -388,5 +388,12 @@ chmod 644 $VAD_NAME_DEVEL
 chmod 644 $VAD_NAME_RELEASE
 
 CHECK_LOG
-BANNER "COMPLETED VAD PACKAGING"
+RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
+if test $STATUS -eq 0
+then
+	$myrm -f *.vad
+	exit 1
+fi
 
+BANNER "COMPLETED VAD PACKAGING"
+exit 0
