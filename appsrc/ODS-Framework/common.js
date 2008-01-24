@@ -89,6 +89,9 @@ function checkPageLeave (form)
       if (form.elements[i] != null)
         {
           var ctrl = form.elements[i];
+ 
+          if(typeof(ctrl.type)!='undefined')
+          {
           if (ctrl.type.indexOf ('select') != -1)
             {
               var j, selections = 0;
@@ -125,6 +128,7 @@ function checkPageLeave (form)
               break;
             }
         }
+    }
     }
 
   dirty_force_global=document.getElementById('dirty_force_global');

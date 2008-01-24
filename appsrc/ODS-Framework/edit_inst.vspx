@@ -158,13 +158,39 @@
                     self.vc_is_valid := 0;
                     goto err;
                   }
+
                   declare inst web_app;
+
 		  inst := self.inst;
 		  -- We don't edit the instance name
+                          self.iname1.ufl_value := trim (self.iname1.ufl_value);
+                          
 		  if (self.wa_type = 'oMail')
 		    {
 		      inst.wa_name := concat(self.iname1.ufl_value, '@', self.idomain1.ufl_value);
 		    }
+                          else if (self.wa_type = 'oWiki')
+                          {
+                            declare _instance_name varchar;
+                            _instance_name := coalesce(self.iname1.ufl_value, '');
+                            if (regexp_match ('[A-Za-z0-9_]+', _instance_name) <> _instance_name)
+                            {
+                              self.vc_error_message := 'Wiki instance must be single word without special characters';
+                              self.vc_is_valid := 0;
+                              self.iname1.ufl_failed := 1;
+                              return;
+                            }
+                            declare _len any;
+                            _len := length(coalesce(self.iname1.ufl_value, ''));
+                            if (_len < 1 or _len > 55)
+                            {
+                              self.vc_error_message := 'Application name should not be empty and not longer 55 characters';
+                              self.vc_is_valid := 0;
+                              self.iname1.ufl_failed := 1;
+                              return;
+                            }
+                            --inst.wa_name := self.iname1.ufl_value;
+                          }
 		  else if (self.wa_type = 'IM')
 		    {
 		      declare _inst_name varchar;

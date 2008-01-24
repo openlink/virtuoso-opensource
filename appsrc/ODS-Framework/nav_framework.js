@@ -126,7 +126,7 @@ ODS.Preferences = {
   odsHome:"/ods/",
   svcEndpoint:"/ods_services/Http/",
   activitiesEndpoint:"/activities/feeds/activities/user/",
-  version:"11.01.2008"
+  version:"24.01.2008-1.21"
 }
 
 ODS.app = {AddressBook  : {menuName:'AddressBook',icon:'images/icons/ods_ab_16.png',dsUrl:'#UID#/addressbook/'},
@@ -982,13 +982,13 @@ ODS.Nav = function(navOptions) {
        var profileMenuAProfile=OAT.Dom.create('a',{cursor:'pointer',paddingRight:'3px'},'menu_link profile');
        profileMenuAProfile.innerHTML='Profile';
        OAT.Event.attach(profileMenuAProfile,"click",function(){ 
-                                                                if(self.session.userId!=self.profile.userId)
-                                                                {
+//                                                                if(self.session.userId!=self.profile.userId)
+//                                                                {
                                                                    self.profile.show=true; 
                                                                    self.profile.set(self.session.userId);
                                                                    self.initProfile();
-                                                                }else
-                                                                   self.showProfile();
+//                                                                }else
+//                                                                   self.showProfile();
                                                               });  
 
        var profileMenuAProfileEdit=OAT.Dom.create('a',{cursor:'pointer'},'menu_link profile_edit shortcut');
@@ -1921,8 +1921,8 @@ ODS.Nav = function(navOptions) {
                  onStr=allSearchOpts;
             else if($('search_focus_sel').value=='on_advanced')
                  onStr=selectedSearchOpts;
-            else if($('search_focus_sel').value!='' && typeof(searchVal2Gems[advancedFocusCB[i].value])!='undefined')
-                 onStr=searchVal2Gems[advancedFocusCB[i].value];
+            else if($('search_focus_sel').value!='' && typeof(searchVal2Gems[$('search_focus_sel').value])!='undefined')
+                 onStr=searchVal2Gems[$('search_focus_sel').value];
           
           }
           
