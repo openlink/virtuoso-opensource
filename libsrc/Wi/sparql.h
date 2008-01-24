@@ -46,8 +46,6 @@ extern "C" {
 #define spar_dbg_printf(x)
 #endif
 
-extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
-
 /*! Number of NULLs should match number of fields in rdf_val_range_t */
 #define SPART_RVR_LIST_OF_NULLS NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 

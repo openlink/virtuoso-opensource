@@ -25,6 +25,7 @@
 #include "sqlbif.h"
 #include "arith.h"
 #include "xmltree.h"
+#include "rdf_core.h"
 
 #ifdef DEBUG
 #define rdf_box_audit(rb) rdf_box_audit_impl(rb)
@@ -43,23 +44,61 @@ rdf_box_audit_impl (rdf_box_t * rb)
     GPF_T1("RDF box is too incomplete");
 }
 
+
 void
-rb_complete (rdf_box_t * rb, lock_trx_t * lt)
+rb_complete (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t * */ caller_qi_v)
 {
-  static query_t * rdf_complete_qr = NULL;
-  caddr_t err = NULL;
-  caddr_t * pars;
-  rdf_box_audit(rb);
+  static query_t *rdf_box_qry_complete_xml = NULL;
+  static query_t *rdf_box_qry_complete_text = NULL;
+  query_instance_t *caller_qi = caller_qi_v;
+  caddr_t err;
+  local_cursor_t *lc;
+  dtp_t value_dtp = ((rb->rb_chksum_tail) ? (((rdf_bigbox_t *)rb)->rbb_box_dtp) : DV_TYPE_OF (rb->rb_box));
+#ifdef DEBUG
   if (rb->rb_is_complete)
-    return; /* redundand call */
-  pars = (caddr_t *) dk_alloc_box (1 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  if (NULL == rdf_complete_qr)
-    rdf_complete_qr = sql_compile ("DB.DBA.RDF_BOX_COMPLETE (?)", bootstrap_cli, &err, SQLC_DEFAULT);
-  pars[0] = rb_copy (rb);
-  err = qr_exec (lt->lt_client, rdf_complete_qr, CALLER_LOCAL, NULL, NULL, NULL, pars, NULL, 0);
-  dk_free_box ((box_t) pars);
-  if (err)
+    GPF_T1("rb_" "complete(): redundand call");
+#endif
+  if (NULL == rdf_box_qry_complete_xml)
+    {
+      rdf_box_qry_complete_xml = sql_compile_static (
+        "select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = ?",
+        bootstrap_cli, NULL, SQLC_DEFAULT );
+      rdf_box_qry_complete_text = sql_compile_static (
+        "select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = ?",
+        bootstrap_cli, NULL, SQLC_DEFAULT );
+    }
+  err = qr_rec_exec (
+    (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml : rdf_box_qry_complete_text),
+    lt->lt_client, &lc, caller_qi, NULL, 1,
+      ":0", box_num(rb->rb_ro_id), QRP_RAW );
+  if (NULL != err)
+    {
+      if (CALLER_LOCAL != caller_qi)
+        sqlr_resignal (err);
+      dk_free_tree (err);
+      return;
+    }
+  if (lc_next (lc))
+    {
+      caddr_t val = lc_nth_col (lc, 0);
+      if (rb->rb_chksum_tail && (DV_TYPE_OF (val) != ((rdf_bigbox_t *)rb)->rbb_box_dtp))
+        sqlr_new_error ("22023", "SR579", "The type %ld of value retrieved from DB.DBA.RDF_OBJ with RO_ID = " BOXINT_FMT " is not equal to preset type %ld of RDF box",
+          (long)DV_TYPE_OF (val), (boxint)(rb->rb_ro_id), ((long)(((rdf_bigbox_t *)rb)->rbb_box_dtp)) );
+      dk_free_tree (rb->rb_box);
+      rb->rb_box = box_copy_tree (val);
+      rb->rb_is_complete = 1;
+    }
+  err = lc->lc_error;
+  lc_free (lc);
+  if (NULL != err)
+    {
+      if (CALLER_LOCAL != caller_qi)
+        sqlr_resignal (err);
     dk_free_tree (err);
+      return;
+    }
+  if ((!rb->rb_is_complete) && (CALLER_LOCAL != caller_qi))
+    sqlr_new_error ("22023", "SR580", "RDF box refers to row with RO_ID = " BOXINT_FMT " of table DB.DBA.RDF_OBJ, but no such row in the table", (boxint)(rb->rb_ro_id) );
 }
 
 rdf_box_t *
@@ -333,7 +372,8 @@ caddr_t
 bif_rdf_box_is_storeable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   rdf_box_t *rb = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_box_is_storeable");
-  if (DV_RDF == DV_TYPE_OF (rb))
+  dtp_t rb_dtp = DV_TYPE_OF (rb);
+  if (DV_RDF == rb_dtp)
     {
       dtp_t data_dtp;
       rdf_box_audit (rb);
@@ -345,6 +385,8 @@ bif_rdf_box_is_storeable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
       if ((DV_STRING == data_dtp) || (DV_UNAME == data_dtp))
         return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb->rb_box)) ? 1 : 0);
     }
+  if ((DV_STRING == rb_dtp) || (DV_UNAME == rb_dtp))
+    return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length ((caddr_t)(rb))) ? 1 : 0);
   return box_num (1);
 }
 
@@ -352,8 +394,15 @@ caddr_t
 bif_rdf_box_needs_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t rb = bif_arg (qst, args, 0, "rdf_box_needs_digest");
-  caddr_t dict = bif_arg (qst, args, 1, "rdf_box_needs_digest");
+  dtp_t dict_dtp;
   dtp_t rb_dtp = DV_TYPE_OF (rb);
+  if (1 < BOX_ELEMENTS (args))
+    {
+      caddr_t dict = bif_arg (qst, args, 1, "rdf_box_needs_digest");
+      dict_dtp = DV_TYPE_OF (dict);
+    }
+  else
+    dict_dtp = DV_DB_NULL;
   switch (rb_dtp)
     {
     case DV_RDF:
@@ -361,26 +410,23 @@ bif_rdf_box_needs_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
         rdf_box_t * rb2 = (rdf_box_t *) rb;
         dtp_t data_dtp;
         rdf_box_audit (rb2);
-/*        if (0 != rb2->rb_ro_id)
-          return box_num (1);
-        if ((!rb2->rb_is_complete) || rb2->rb_chksum_tail)
-          return box_num (3);*/
         data_dtp = DV_TYPE_OF (rb2->rb_box);
         if ((DV_STRING == data_dtp) || (DV_UNAME == data_dtp))
           {
-/*            if ((RDF_BOX_DEFAULT_TYPE != rb2->rb_type) || (RDF_BOX_DEFAULT_LANG != rb2->rb_lang))
-              return box_num (3);*/
-            if (DV_DB_NULL != DV_TYPE_OF (dict))
+            if (DV_DB_NULL != dict_dtp)
               return box_num (3);
-/*            return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb2->rb_box)) ? 0 : 3);*/
+            if ((RDF_BOX_DEFAULT_TYPE != rb2->rb_type) || (RDF_BOX_DEFAULT_LANG != rb2->rb_lang))
+              return box_num (3);
+            return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb2->rb_box)) ? 0 : 1);
           }
         return box_num (0);
       }
     case DV_STRING: case DV_UNAME:
-      if (DV_DB_NULL != DV_TYPE_OF (dict))
+      if (DV_DB_NULL != dict_dtp)
         return box_num (7);
-/*      return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb)) ? 0 : 7);*/
-      return box_num (0);
+      return box_num (((RB_MAX_INLINED_CHARS + 1) >= box_length (rb)) ? 0 : 1);
+    case DV_XML_ENTITY:
+        return box_num (7);
     default:
       return box_num (0);
     }
@@ -915,6 +961,74 @@ rdf_box_hash_cmp (caddr_t a1, caddr_t a2)
   return (DVC_MATCH == rdf_box_compare (a1, a2)) ? 1 : 0;
 }
 
+caddr_t
+bif_rdf_long_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t shortobj = bif_arg (qst, args, 0, "__rdf_long_of_obj");
+  rdf_box_t *rb;
+  query_instance_t * qi = (query_instance_t *) qst;
+  if (DV_RDF != DV_TYPE_OF (shortobj))
+    return box_copy_tree (shortobj);
+  rb = (rdf_box_t *)shortobj;
+  if (!rb->rb_is_complete)
+    rb_complete (rb, qi->qi_trx, qi);
+  rb->rb_ref_count++;
+  return shortobj;
+}
+
+caddr_t
+bif_rdf_box_make_complete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t shortobj = bif_arg (qst, args, 0, "__rdf_box_make_complete");
+  rdf_box_t *rb;
+  query_instance_t * qi = (query_instance_t *) qst;
+  if (DV_RDF != DV_TYPE_OF (shortobj))
+    return box_num (0);
+  rb = (rdf_box_t *)shortobj;
+  if (rb->rb_is_complete)
+    return box_num (0);
+  rb_complete (rb, qi->qi_trx, qi);
+  return box_num (1);
+}
+
+caddr_t
+bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t shortobj = bif_arg (qst, args, 0, "__rdf_sqlval_of_obj");
+  dtp_t so_dtp = DV_TYPE_OF (shortobj);
+  rdf_box_t *rb;
+  query_instance_t * qi = (query_instance_t *) qst;
+  if (DV_RDF != so_dtp)
+    {
+      if ((DV_IRI_ID == so_dtp) || (DV_IRI_ID_8 == so_dtp))
+        {
+          caddr_t iri;
+          iri_id_t iid = unbox_iri_id (shortobj);
+          if (min_bnode_iri_id () <= iid)
+            return BNODE_IID_TO_LABEL(iid);
+          iri = key_id_to_iri (qi, iid);
+          if (NULL == iri)
+            sqlr_new_error ("RDFXX", ".....", "IRI ID " BOXINT_FMT " does not match any known IRI in __rdf_sqlval_of_obj()",
+              (boxint)iid );
+          return iri;
+        }
+      return box_copy_tree (shortobj);
+    }
+  rb = (rdf_box_t *)shortobj;
+  if (!rb->rb_is_complete)
+    rb_complete (rb, qi->qi_trx, qi);
+  return box_copy_tree (rb->rb_box);
+}
+
+caddr_t
+bif_rq_iid_of_o (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t shortobj = bif_arg (qst, args, 0, "__rq_iid_of_o");
+  dtp_t so_dtp = DV_TYPE_OF (shortobj);
+  if ((DV_IRI_ID == so_dtp) || (DV_IRI_ID_8 == so_dtp))
+    return box_copy_tree (shortobj);
+  return NEW_DB_NULL;
+}
 
 void
 rdf_box_init ()
@@ -939,4 +1053,11 @@ rdf_box_init ()
   bif_define_typed ("rdf_box_is_storeable", bif_rdf_box_is_storeable, &bt_integer);
   bif_define_typed ("rdf_box_needs_digest", bif_rdf_box_needs_digest, &bt_integer);
   bif_define_typed ("rdf_box_strcmp", bif_rdf_box_strcmp, &bt_integer);
+  bif_define_typed ("__rdf_long_of_obj", bif_rdf_long_of_obj, &bt_any);
+  bif_set_uses_index (bif_rdf_long_of_obj);
+  bif_define_typed ("__rdf_box_make_complete", bif_rdf_box_make_complete, &bt_integer);
+  bif_set_uses_index (bif_rdf_box_make_complete);
+  bif_define_typed ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, &bt_any);
+  bif_set_uses_index (bif_rdf_sqlval_of_obj);
+  bif_define_typed ("__rq_iid_of_o", bif_rq_iid_of_o, &bt_any);
 }

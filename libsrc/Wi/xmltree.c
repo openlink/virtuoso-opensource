@@ -7720,7 +7720,7 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
           if (DV_XML_ENTITY != rbb->rbb_box_dtp)
             return NULL;
           if (! rbb->rbb_base.rb_is_complete)
-            rb_complete (&(rbb->rbb_base), qi->qi_trx);
+            rb_complete (&(rbb->rbb_base), qi->qi_trx, qi);
           if (DV_XML_ENTITY == DV_TYPE_OF (rbb->rbb_base.rb_box))
             return box_copy_tree (rbb->rbb_base.rb_box);
           val = rbb->rbb_base.rb_box;

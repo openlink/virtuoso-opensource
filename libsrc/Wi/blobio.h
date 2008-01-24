@@ -156,14 +156,14 @@ int bh_read_ahead (struct lock_trx_s *lt, blob_handle_t * bh, unsigned from, uns
 int rbs_length (db_buf_t rbs);
 
 extern caddr_t rb_copy (rdf_box_t * rb);
-extern void rb_complete (rdf_box_t * rb, struct lock_trx_s * lt);
+extern void rb_complete (rdf_box_t * rb, struct lock_trx_s * lt, void * /*actually query_instance_t * */ caller_qi);
 
 #define RDF_POP(dtp, data, lt)			\
 { \
   if (DV_RDF == dtp) \
     {\
       if (! ((rdf_box_t*)data)->rb_is_complete) \
-	rb_complete (data, lt); \
+	rb_complete (data, lt, CALLER_LOCAL); \
 	data = ((rdf_box_t *)data)->rb_box; \
     } \
 }

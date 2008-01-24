@@ -584,70 +584,21 @@ mknew_ser:
 -----
 -- Conversions from and to _table fields_ in short representation
 
-create function DB.DBA.RQ_LONG_OF_O (in o_col any) returns any
+create function DB.DBA.RQ_LONG_OF_O (in o_col any) returns any -- DEPRECATED
 {
-  if (rdf_box_is_complete (o_col))
-    return o_col;
-  declare v2 any;
-      declare id int;
-  id := rdf_box_ro_id (o_col);
-  if (__tag of XML = rdf_box_data_tag (o_col))
-    v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
-  else
-      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
-      if (v2 is null)
-        signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RQ_LONG_OF_O, bad id %d', id));
-  rdf_box_set_data (o_col, v2, 1);
-  return o_col;
+  return __rdf_long_of_obj (o_col);
 }
 ;
 
-create procedure DB.DBA.RDF_BOX_COMPLETE (inout o_col any)
+create procedure DB.DBA.RDF_BOX_COMPLETE (inout o_col any) -- DEPRECATED
 {
-  if (__tag of rdf_box <> __tag (o_col))
-    return;
-  if (rdf_box_is_complete (o_col))
-    return;
-  declare id int;
-  declare v2 any;
-  id := rdf_box_ro_id (o_col);
-  if (__tag of XML = rdf_box_data_tag (o_col))
-    v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
-  else
-    v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
-  if (v2 is null)
-    signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_BOX_COMPLETE, bad id %d', id));
-  rdf_box_set_data (o_col, v2, 1);
+  __rdf_box_make_complete (o_col);
 }
 ;
 
-create function DB.DBA.RQ_SQLVAL_OF_O (in o_col any) returns any
+create function DB.DBA.RQ_SQLVAL_OF_O (in o_col any) returns any -- DEPRECATED
 {
-  declare t, len integer;
-  declare r any;
-  if (isiri_id (o_col))
-    {
-      declare res varchar;
-      res := id_to_iri (o_col);
-      if (res is null)
-        signal ('RDFXX', 'Wrong iid in DB.DBA.RQ_SQLVAL_OF_O()');
-      return res;
-    }
-  if (__tag of rdf_box <> __tag (o_col))
-    return o_col;
-  if (rdf_box_is_complete (o_col))
-    return rdf_box_data (o_col);
-      declare id int;
-  declare v2 any;
-  id := rdf_box_ro_id (o_col);
-  if (__tag of XML = rdf_box_data_tag (o_col))
-    v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
-  else
-      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
-      if (v2 is null)
-        signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RQ_SQLVAL_OF_O, bad id %d', id));
-  rdf_box_set_data (o_col, v2, 1);
-      return v2;
+  return __rdf_sqlval_of_obj (o_col);
 }
 ;
 
@@ -694,15 +645,13 @@ retnull:
 }
 ;
 
-create function DB.DBA.RQ_IID_OF_O (in shortobj any) returns IRI_ID
+create function DB.DBA.RQ_IID_OF_O (in shortobj any) returns IRI_ID -- DEPRECATED
 {
-  if (not isiri_id (shortobj))
-    return NULL;
-  return shortobj;
+  return id_to_iri_nosignal (shortobj);
 }
 ;
 
-create function DB.DBA.RQ_O_IS_LIT (in shortobj any) returns integer
+create function DB.DBA.RQ_O_IS_LIT (in shortobj any) returns integer -- DEPRECATED
 {
   if (isiri_id (shortobj))
     return 0;
@@ -720,36 +669,39 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
   -- dbg_obj_princ ('DB.DBA.RDF_OBJ_ADD (', dt_twobyte, v, lang_twobyte, case (isnull (ro_id_dict)) when 1 then '/*no_ft*/' else '/*want_ft*/' end,')');
   if (126 = __tag (v))
     v := blob_to_string (v);
-  else if (__tag of rdf_box = __tag (v))
-    {
       need_digest := rdf_box_needs_digest (v, ro_id_dict);
-      if ((1 = need_digest) and ro_id_dict is not null)
-        dict_put (ro_id_dict, rdf_box_ro_id (v), 1);
-      if (1 >= need_digest)
+  if (__tag of rdf_box = __tag (v))
         {
-          if (rdf_box_is_storeable (v))
+      if (0 = need_digest)
+        return v;
+      if (1 = need_digest)
+        {
+          if (0 <> rdf_box_ro_id (v))
             return v;
         }
       dt_twobyte := rdf_box_type (v);
       lang_twobyte := rdf_box_lang (v);
---      if (rdf_box_is_storeable (v) and not (rdf_box_data_tag (v) in (__tag of varchar, 217)))
---        return v;
-      if (rdf_box_is_complete (v))
-      v := rdf_box_data (v);
-      else
-        v := DB.DBA.RDF_SQLVAL_OF_OBJ (v);
+      v := __rdf_sqlval_of_obj (v);
     }
-  if (ro_id_dict is not null or dt_twobyte <> 257 or lang_twobyte <> 257)
-    need_digest := 1;
   else
-    need_digest := 0;
-  if ((dt_twobyte < 257) or (lang_twobyte < 257))
-    signal ('RDFXX', sprintf ('Bad datatype/lang code: DB.DBA.RDF_OBJ_ADD (%d, %s, %d, %d)', dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte, need_digest) );
+    {
+      if (dt_twobyte <> 257 or lang_twobyte <> 257)
+        need_digest := 3;
+      else if (0 = need_digest)
+        return v;
+      if (dt_twobyte < 257)
+        signal ('RDFXX', sprintf ('Bad datatype code: DB.DBA.RDF_OBJ_ADD (%d, %s, %d)',
+          dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte) );
+      if (lang_twobyte < 257)
+        signal ('RDFXX', sprintf ('Bad lang code: DB.DBA.RDF_OBJ_ADD (%d, %s, %d)',
+          dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte) );
+    }
   if (not isstring (v))
     {
       declare sum64 varchar;
       if (__tag of XML <> __tag (v))
-        signal ('RDFXX', sprintf ('Bad call: DB.DBA.RDF_OBJ_ADD (%d, %s, %d, %d)', dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte, need_digest) );
+        signal ('RDFXX', sprintf ('Bad call: DB.DBA.RDF_OBJ_ADD (%d, %s, %d)',
+          dt_twobyte, "LEFT" (cast (v as varchar), 100), lang_twobyte) );
       sum64 := xtree_sum64 (v);
       whenever not found goto serializable_xtree;
       set isolation='committed';
@@ -795,7 +747,7 @@ new_xtree:
     }
   if ((dt_twobyte = 257) and (lang_twobyte = 257) and (length (v) <= 20))
     {
-      if (not need_digest)
+      if (1 >= need_digest)
         return v;
       whenever not found goto serializable_veryshort;
       set isolation='committed';
@@ -859,7 +811,7 @@ found_long:
       if (old_digest is null)
         {
           digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
-          if (need_digest)
+          if (1 < need_digest)
             update DB.DBA.RDF_OBJ set RO_DIGEST = digest where RO_ID = id;
         }
       else
@@ -873,7 +825,7 @@ found_long:
 new_long:
               id := sequence_next ('RDF_RO_ID');
       digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
-      if (need_digest)
+      if (1 < need_digest)
         insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG, RO_DIGEST) values (id, tridgell, v, digest);
       else
         {
@@ -913,7 +865,7 @@ found_short:
       if (old_digest is null)
         {
           digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
-          if (need_digest)
+          if (1 < need_digest)
             update DB.DBA.RDF_OBJ set RO_DIGEST = digest where RO_ID = id;
         }
       else
@@ -927,7 +879,7 @@ found_short:
 new_short:
               id := sequence_next ('RDF_RO_ID');
       digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
-      if (need_digest)
+      if (1 < need_digest)
         insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_DIGEST) values (id, v, digest);
       else
         {
@@ -1158,24 +1110,9 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
 }
 ;
 
-create function DB.DBA.RDF_LONG_OF_OBJ (in shortobj any) returns any
+create function DB.DBA.RDF_LONG_OF_OBJ (in shortobj any) returns any -- DEPRECATED
 {
-  if (__tag of rdf_box <> __tag (shortobj))
-    return shortobj;
-  if (not rdf_box_is_complete (shortobj))
-    {
-      declare id integer;
-      declare v2 any;
-      id := rdf_box_ro_id (shortobj);
-      if (__tag of XML = rdf_box_data_tag (shortobj))
-        v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
-      else
-      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
-      if (v2 is null)
-        signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_LONG_OF_OBJ, bad id %d', id));
-      rdf_box_set_data (shortobj, v2, 1);
-    }
-  return shortobj;
+  return __rdf_long_of_obj (shortobj);
 }
 ;
 
@@ -1220,33 +1157,9 @@ badtype:
 }
 ;
 
-create function DB.DBA.RDF_SQLVAL_OF_OBJ (in shortobj any) returns any
+create function DB.DBA.RDF_SQLVAL_OF_OBJ (in shortobj any) returns any -- DEPRECATED
 {
-  declare t, len integer;
-  declare r any;
-  if (isiri_id (shortobj))
-    {
-      declare res varchar;
-            res := id_to_iri (shortobj);
-          if (res is null)
-            signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_SQLVAL_OF_OBJ()');
-          return res;
-        }
-  if (__tag of rdf_box <> __tag (shortobj))
-    return shortobj;
-  if (rdf_box_is_complete (shortobj))
-    return rdf_box_data (shortobj);
-      declare id int;
-  declare v2 any;
-  id := rdf_box_ro_id (shortobj);
-  if (__tag of XML = rdf_box_data_tag (shortobj))
-    v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
-  else
-      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
-      if (v2 is null)
-    signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_SQLVAL_OF_OBJ, bad id %d', id));
-  rdf_box_set_data (shortobj, v2, 1);
-      return v2;
+  return __rdf_sqlval_of_obj (shortobj);
 }
 ;
 
@@ -1287,16 +1200,7 @@ badtype:
 
 create function DB.DBA.RDF_QNAME_OF_OBJ (in shortobj any) returns varchar -- DEPRECATED
 {
-  if (isiri_id (shortobj))
-    {
-          declare res varchar;
-            res := id_to_iri (shortobj, 0);
---          res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = shortobj));
-          if (res is null)
-            signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_QNAME_OF_OBJ()');
-          return res;
-        }
-  return NULL;
+  return id_to_iri_nosignal (shortobj);
 }
 ;
 
@@ -1324,8 +1228,7 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any)
         return charset_recode (shortobj, '_WIDE_', 'UTF-8');
       return cast (shortobj as varchar);
     }
-  if (rdf_box_is_complete (shortobj))
-    {
+  __rdf_box_make_complete (shortobj);
       if (__tag of varchar = rdf_box_data_tag (shortobj))
     return rdf_box_data (shortobj);
       if (__tag of datetime = rdf_box_data_tag (shortobj))
@@ -1335,18 +1238,6 @@ create function DB.DBA.RDF_STRSQLVAL_OF_OBJ (in shortobj any)
           return replace (vc, ' ', 'T');
         }
       return cast (rdf_box_data (shortobj) as varchar);
-    }
-      declare id int;
-  declare v2 any;
-  id := rdf_box_ro_id (shortobj);
-  if (__tag of XML = rdf_box_data_tag (shortobj))
-    v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
-  else
-      v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
-      if (v2 is null)
-        signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_STRSQLVAL_OF_OBJ, bad id %d', id));
-  rdf_box_set_data (shortobj, v2, 1);
-      return v2;
 }
 ;
 
@@ -1355,7 +1246,7 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
 {
   if (__tag of rdf_box <> __tag(longobj))
     return longobj;
-  if (rdf_box_is_storeable (longobj))
+  if (0 = rdf_box_needs_digest (longobj))
     return longobj;
   return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
 }
@@ -1384,7 +1275,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
   declare res any;
   t := __tag (v);
 --  if (not t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML))
-  if (position (t, vector (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
+  if (0 = position (t, vector (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
     return v;
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
@@ -1455,33 +1346,9 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
 }
 ;
 
-create function DB.DBA.RDF_SQLVAL_OF_LONG (in longobj any) returns any
+create function DB.DBA.RDF_SQLVAL_OF_LONG (in longobj any) returns any -- DEPRECATED
 {
-  -- dbg_obj_princ ('DB.DBA.RDF_SQLVAL_OF_LONG (', longobj, ', tag ', __tag (longobj));
-  if (isiri_id (longobj))
-    {
-          declare res varchar;
-          res := id_to_iri (longobj);
---          res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = longobj));
-          if (res is null)
-            signal ('RDFXX', 'Wrong iid in DB.DBA.RDF_SQLVAL_OF_LONG()');
-          return res;
-        }
-  if (__tag of rdf_box <> __tag (longobj))
-    return longobj;
-  if (rdf_box_is_complete (longobj))
-    return rdf_box_data (longobj);
-  declare id integer;
-  declare v2 any;
-  id := rdf_box_ro_id (longobj);
-  if (__tag of XML = rdf_box_data_tag (longobj))
-    v2 := (select xml_tree_doc (__xml_deserialize_packed (RO_LONG)) from DB.DBA.RDF_OBJ where RO_ID = id);
-  else
-  v2 := (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end from DB.DBA.RDF_OBJ where RO_ID = id);
-      if (v2 is null)
-    signal ('RDFXX', sprintf ('Integrity violation in DB.DBA.RDF_SQLVAL_OF_LONG, bad id %d', id));
-  rdf_box_set_data (longobj, v2, 1);
-      return v2;
+  return __rdf_sqlval_of_obj (longobj);
 }
 ;
 
@@ -2207,12 +2074,7 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
         {
           http ('"', ses);
       if (__tag of varchar = rdf_box_data_tag (obj))
-        {
-          if (rdf_box_is_complete (obj))
-      http_escape (rdf_box_data (obj), 11, ses, 1, 1);
-          else
-            http_escape (DB.DBA.RDF_SQLVAL_OF_LONG (obj), 11, ses, 1, 1);
-        }
+        http_escape (__rdf_sqlval_of_obj (obj), 11, ses, 1, 1);
       else if (__tag of datetime = rdf_box_data_tag (obj))
         {
           declare vc varchar;
@@ -2220,14 +2082,9 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
            http_escape (replace (vc, ' ', 'T'), 11, ses, 1, 1);
         }
       else if (__tag of XML = rdf_box_data_tag (obj))
-        {
-          if (rdf_box_is_complete (obj))
-            http_escape (serialize_to_UTF8_xml (rdf_box_data (obj)), 11, ses, 1, 1);
-          else
-            http_escape (serialize_to_UTF8_xml (DB.DBA.RDF_SQLVAL_OF_LONG (obj)), 11, ses, 1, 1);
-        }
+        http_escape (serialize_to_UTF8_xml (__rdf_sqlval_of_obj (obj)), 11, ses, 1, 1);
       else
-        http_escape (cast (rdf_box_data (obj) as varchar), 11, ses, 1, 1);
+        http_escape (cast (__rdf_sqlval_of_obj (obj) as varchar), 11, ses, 1, 1);
       if (257 <> rdf_box_type (obj))
             {
           res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
@@ -2510,10 +2367,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
               res := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
               http (' xml:lang="', ses); http_value (res, 0, ses); http ('"', ses);
             }
-          if (rdf_box_is_complete (obj))
-          dat := rdf_box_data (obj);
-          else
-            dat := DB.DBA.RDF_SQLVAL_OF_LONG (obj);
+          dat := __rdf_sqlval_of_obj (obj);
           if (__tag of XML = __tag (dat))
             {
               http (' rdf:parseType="Literal">', ses);
@@ -2854,24 +2708,31 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, in triples any, in
   for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
     {
       declare p_iid, o_orig, o_final any;
+      declare need_digest integer;
       p_iid := triples[ctr][1];
       o_final := o_orig := triples[ctr][2];
       if (isiri_id (o_final))
         goto do_insert;
       if (ro_id_dict is null and __rdf_obj_ft_rule_check (graph_iri, p_iid))
         ro_id_dict := dict_new ();
-      --if (ro_id_dict is not null and (1 < rdf_box_needs_digest (o_final, ro_id_dict)))
-      if ((1 < rdf_box_needs_digest (o_final, ro_id_dict)) and ro_id_dict is not null)
+      need_digest := rdf_box_needs_digest (o_final, ro_id_dict);
+      if (1 < need_digest)
         {
         o_final := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_final, graph_iri, p_iid, ro_id_dict);
-          if ((__tag of rdf_box = __tag (o_final)) and not rdf_box_is_storeable (o_final))
-            dbg_obj_princ ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT', o_orig);
+          if (not rdf_box_is_storeable (o_final))
+            {
+              dbg_obj_princ ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT', o_orig, '=>', o_final);
+              signal ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT');
         }
-      else
+        }
+      else --if (1 = need_digest)
         {
         o_final := DB.DBA.RDF_OBJ_OF_LONG (o_final);
-          if ((__tag of rdf_box = __tag (o_final)) and not rdf_box_is_storeable (o_final))
-            dbg_obj_princ ('OBLOM', 'Bad O after RDF_OBJ_OF_LONG', o_orig);
+          if (not rdf_box_is_storeable (o_final))
+            {
+              dbg_obj_princ ('OBLOM', 'Bad O after RDF_OBJ_OF_LONG', o_orig, '=>', o_final);
+              signal ('OBLOM', 'Bad O after MAKE_OBJ_OF_SQLVAL_FT');
+            }
         }
 do_insert:
       -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES: ', graph_iri, triples[ctr][0], p_iid, o_final);
@@ -3502,14 +3363,14 @@ describe_physical_subjects:
           for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
             {
               -- dbg_obj_princ ('found ', subj, p1, ' in ', graph);
-              dict_put (res, vector (subj, p1, DB.DBA.RDF_LONG_OF_OBJ (obj1)), 0);
+              dict_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 0);
 --              if (isiri_id (obj1))
 --                {
 --                  for (select P as p2, O as obj2
 --                    from DB.DBA.RDF_QUAD
 --                    where G = graph and S = obj1 and not (isiri_id (O)) ) do
 --                    {
---                      dict_put (dict, vector (obj1, p2, DB.DBA.RDF_LONG_OF_OBJ (obj2)), 0);
+--                      dict_put (dict, vector (obj1, p2, __rdf_long_of_obj (obj2)), 0);
 --                    }
 --                }
             }
@@ -3848,7 +3709,7 @@ create function JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar, in ro
         ;
       else if (dict_get (noinherits, "pred", baseinst) = baseinst) -- trick here, instead of (dict_get (noinherits, pred, null) is null) that does not handle inheritance of booleans properly.
         {
-          jso_set (class, rootinst, "pred", DB.DBA.RDF_SQLVAL_OF_LONG ("predval"), isiri_id ("predval"));
+          jso_set (class, rootinst, "pred", __rdf_sqlval_of_obj ("predval"), isiri_id ("predval"));
           dict_put (noinherits, "pred", baseinst);
         }
     }
@@ -3924,7 +3785,7 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
         signal ('22023', 'JSO_LOAD_INSTANCE does not support language marks on objects');
       if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type' = "p")
         {
-	  if (DB.DBA.RDF_SQLVAL_OF_LONG ("o") <> jclass)
+	  if (__rdf_sqlval_of_obj ("o") <> jclass)
             signal ('22023', 'JSO_LOAD_INSTANCE has found that the object <' || jinst || '> has multiple type declarations');
 	}
       else if ('http://www.w3.org/1999/02/22-rdf-syntax-ns#name' = "p")
@@ -3935,7 +3796,7 @@ create function JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, in delet
         ;
       else
         {
-          jso_set (jclass, jinst, "p", DB.DBA.RDF_SQLVAL_OF_LONG ("o"), isiri_id ("o"));
+          jso_set (jclass, jinst, "p", __rdf_sqlval_of_obj ("o"), isiri_id ("o"));
           dict_put (noinherits, "p", jinst);
         }
     }
@@ -4208,7 +4069,7 @@ create function DB.DBA.JSO_FILTERED_PROPLIST (in only_custom integer := 0, in lo
           if (217 = __tag (o))
             o_long := DB.DBA.RDF_MAKE_IID_OF_QNAME (o);
           else
-            o_long := DB.DBA.RDF_LONG_OF_OBJ (DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (o));
+            o_long := __rdf_long_of_obj (DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (o));
           -- dbg_obj_princ ('key sample: ', vector (obj_long, p_long, o_long));
       if (only_custom)
         {
@@ -7273,10 +7134,7 @@ create procedure SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas any, inou
             {
               declare res varchar;
               declare dat, typ any;
-              if (rdf_box_is_complete (val))
-              dat := rdf_box_data (val);
-              else
-		dat := DB.DBA.RDF_SQLVAL_OF_LONG (val);
+              dat := __rdf_sqlval_of_obj (val);
               typ := rdf_box_type (val);
               if (not isstring (dat))
                 {
@@ -8264,7 +8122,7 @@ again_o:
 again_o_box:
       if (__tag of varchar = rdf_box_data_tag (o_val) and __rdf_obj_ft_rule_check (g_iid, p_iid))
         o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257, ro_id_dict);
-      else if (not rdf_box_is_storeable (o_val))
+      else if (0 < rdf_box_needs_digest (o_val))
         o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257);
     }
   -- dbg_obj_princ ('final o_val = ', o_val);
@@ -9767,7 +9625,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   if (not exists (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-                virtrdf:version '2008-01-22 0001'
+                virtrdf:version '2008-01-23 0001'
             } } ) )
     {
       declare txt1, txt2 varchar;
@@ -9851,11 +9709,11 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_MAKE_GRAPH_IIDS_OF_QNAMES to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TWOBYTE_OF_DATATYPE to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TWOBYTE_OF_LANGUAGE to SPARQL_SELECT',
-    'grant execute on DB.DBA.RQ_LONG_OF_O to SPARQL_SELECT',
-    'grant execute on DB.DBA.RQ_SQLVAL_OF_O to SPARQL_SELECT',
+    'grant execute on DB.DBA.RQ_LONG_OF_O to SPARQL_SELECT', -- DEPRECATED
+    'grant execute on DB.DBA.RQ_SQLVAL_OF_O to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_BOOL_OF_O to SPARQL_SELECT',
-    'grant execute on DB.DBA.RQ_IID_OF_O to SPARQL_SELECT',
-    'grant execute on DB.DBA.RQ_O_IS_LIT to SPARQL_SELECT',
+    'grant execute on DB.DBA.RQ_IID_OF_O to SPARQL_SELECT', -- DEPRECATED
+    'grant execute on DB.DBA.RQ_O_IS_LIT to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_OBJ_ADD to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FIND_RO_DIGEST to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL to SPARQL_SELECT',
@@ -9863,10 +9721,10 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS to SPARQL_SELECT',
-    'grant execute on DB.DBA.RDF_LONG_OF_OBJ to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_LONG_OF_OBJ to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_DATATYPE_OF_OBJ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_LANGUAGE_OF_OBJ to SPARQL_SELECT',
-    'grant execute on DB.DBA.RDF_SQLVAL_OF_OBJ to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_SQLVAL_OF_OBJ to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_BOOL_OF_OBJ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_QNAME_OF_OBJ to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_STRSQLVAL_OF_OBJ to SPARQL_SELECT',
@@ -9875,7 +9733,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_MAKE_LONG_OF_SQLVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS to SPARQL_SELECT',
-    'grant execute on DB.DBA.RDF_SQLVAL_OF_LONG to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_SQLVAL_OF_LONG to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_BOOL_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_DATATYPE_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_DATATYPE_IRI_OF_LONG to SPARQL_SELECT',

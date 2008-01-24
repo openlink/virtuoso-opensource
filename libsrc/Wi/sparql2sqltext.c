@@ -118,19 +118,19 @@ void rdf_ds_load_all (void)
   qmf = qm_format_default = dk_alloc_box_zero (sizeof (qm_format_t), DV_ARRAY_OF_POINTER);
   qmf->qmfName = box_dv_short_string ("default");
   qmf->qmfShortTmpl = box_dv_short_string (" ^{alias-dot}^^{column}^");
-  qmf->qmfLongTmpl = box_dv_short_string (" DB.DBA.RQ_LONG_OF_O (^{alias-dot}^^{column}^)");
-  qmf->qmfSqlvalTmpl = box_dv_short_string (" DB.DBA.RQ_SQLVAL_OF_O (^{alias-dot}^^{column}^)");
+  qmf->qmfLongTmpl = box_dv_short_string (" __rdf_long_of_obj /*o*/ (^{alias-dot}^^{column}^)");
+  qmf->qmfSqlvalTmpl = box_dv_short_string (" __rdf_sqlval_of_obj /*o*/ (^{alias-dot}^^{column}^)");
   qmf->qmfBoolTmpl = box_dv_short_string (" DB.DBA.RQ_BOOL_OF_O (^{alias-dot}^^{column}^)");
   qmf->qmfIsrefOfShortTmpl = box_dv_short_string (" isiri_id (^{tree}^)");
   qmf->qmfIsuriOfShortTmpl = box_dv_short_string (" is_named_iri_id (^{tree}^)");
   qmf->qmfIsblankOfShortTmpl = box_dv_short_string (" is_bnode_iri_id (^{tree}^)");
-  qmf->qmfIslitOfShortTmpl = box_dv_short_string (" DB.DBA.RQ_O_IS_LIT (^{tree}^)");
-  qmf->qmfLongOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_LONG_OF_OBJ (^{tree}^)");
+  qmf->qmfIslitOfShortTmpl = box_dv_short_string (" (1 - isiri_id (^{tree}^))");
+  qmf->qmfLongOfShortTmpl = box_dv_short_string (" __rdf_long_of_obj (^{tree}^)");
   qmf->qmfDatatypeOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_DATATYPE_OF_OBJ (^{tree}^)");
   qmf->qmfLanguageOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_LANGUAGE_OF_OBJ (^{tree}^)");
-  qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_SQLVAL_OF_OBJ (^{tree}^)");
+  qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" __rdf_sqlval_of_obj (^{tree}^)");
   qmf->qmfBoolOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_BOOL_OF_OBJ (^{tree}^)");
-  qmf->qmfIidOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_IID_OF_LONG (DB.DBA.RDF_LONG_OF_OBJ (^{tree}^))");
+  qmf->qmfIidOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_IID_OF_LONG (__rdf_long_of_obj (^{tree}^))");
   qmf->qmfUriOfShortTmpl = box_dv_short_string (" id_to_iri (^{tree}^)");
   qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_STRSQLVAL_OF_OBJ (^{tree}^)");
   qmf->qmfShortOfTypedsqlvalTmpl = box_dv_short_string (" DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (^{sqlval-of-tree}^, DB.DBA.RDF_MAKE_IID_OF_QNAME(^{datatype-of-tree}^), ^{language-of-tree}^)");
@@ -1291,7 +1291,7 @@ ssg_print_box_as_sqlval (spar_sqlgen_t *ssg, caddr_t box, int allow_uname)
   caddr_t tmpbuf;
   int buffill = 0;
   dtp_t dtp = DV_TYPE_OF (box);
-  buflen = 20 + (IS_BOX_POINTER(box) ? box_length (box) * 3 : 20);
+  buflen = 20 + (IS_BOX_POINTER(box) ? box_length (box) * 3 : 25);
   BOX_AUTO (tmpbuf, smallbuf, buflen, DV_STRING);
   ssg_putchar (' ');
   switch (dtp)
@@ -1324,6 +1324,18 @@ ssg_print_box_as_sqlval (spar_sqlgen_t *ssg, caddr_t box, int allow_uname)
     case DV_WIDE:
       ssg_puts ("N");
       sqlc_wide_string_literal (tmpbuf, buflen, &buffill, (wchar_t *) box);
+      break;
+    case DV_SINGLE_FLOAT:
+      if (1.0 > ((2 - 1.41484755040568800000e+16) + 1.41484755040568800000e+16))
+        spar_error (ssg->ssg_sparp, "Platform-specific error: this build of Virtuoso does not supports literals of type %s due to rounding errors in math functions", dv_type_title (dtp));
+      buffill = sprintf (tmpbuf, "cast (%lg", (double)(unbox_float (box)));
+      if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+        {
+          strcpy (tmpbuf+buffill, ".0");
+          buffill += 2;
+        }
+      strcpy (tmpbuf+buffill, " as float)");
+      buffill += 10;
       break;
     case DV_DOUBLE_FLOAT:
       buffill = sprintf (tmpbuf, "%lg", unbox_double (box));
@@ -2759,7 +2771,7 @@ const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
     }
   else if (SSG_VALMODE_SQLVAL == needed)
     {
-      if (SSG_VALMODE_LONG	== native)	return " DB.DBA.RDF_SQLVAL_OF_LONG (^{tree}^)";
+      if (SSG_VALMODE_LONG	== native)	return " __rdf_sqlval_of_obj /*l*/ (^{tree}^)";
       if (SSG_VALMODE_SQLVAL	== native)	return " ^{tree}^";
     }
   else if (SSG_VALMODE_DATATYPE == needed)
@@ -4238,7 +4250,7 @@ void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, s
           }
             if ((SSG_VALMODE_SQLVAL == needed) && (SSG_VALMODE_LONG == native))
           {
-                ssg_puts (" DB.DBA.RDF_SQLVAL_OF_LONG (");
+                ssg_puts (" __rdf_sqlval_of_obj /*l*/ (");
                 ssg_print_retval_simple_expn (ssg, gp, tree, SSG_VALMODE_LONG, NULL_ASNAME);
                 ssg_puts (")");
                 goto print_asname;

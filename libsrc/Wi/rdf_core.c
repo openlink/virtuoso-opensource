@@ -1732,13 +1732,8 @@ bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t iri;
   if (0L == iid)
     return NEW_DB_NULL;
-  if (iid >= min_bnode_iri_id ())
-    {
-      if (iid >= MIN_64BIT_BNODE_IRI_ID)
-        return box_sprintf (30, "nodeID://b" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
-      else
-        return box_sprintf (30, "nodeID://" BOXINT_FMT, (boxint)(iid));
-    }
+  if (min_bnode_iri_id () <= iid)
+    return BNODE_IID_TO_LABEL(iid);
   iri = key_id_to_iri (qi, iid);
   if (!iri)
     return NEW_DB_NULL;
@@ -1756,13 +1751,8 @@ bif_id_to_iri_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (DV_IRI_ID != DV_TYPE_OF (iid_box))
     return NEW_DB_NULL;
   iid = unbox_iri_id (iid_box);
-  if (iid >= min_bnode_iri_id ())
-    {
-      if (iid >= MIN_64BIT_BNODE_IRI_ID)
-        return box_sprintf (30, "nodeID://b" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
-      else
-        return box_sprintf (30, "nodeID://" BOXINT_FMT, (boxint)(iid));
-    }
+  if (min_bnode_iri_id () <= iid)
+    return BNODE_IID_TO_LABEL(iid);
   iri = key_id_to_iri (qi, iid);
   if (!iri)
     return NEW_DB_NULL;
