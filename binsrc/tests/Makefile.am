@@ -19,7 +19,7 @@
 #  
 #  
 
-SUBDIRS = . biftest suite dotnet tpcrun oledb oracle_tpcc rdf wb
+SUBDIRS = . biftest suite dotnet tpcrun oledb oracle_tpcc rdf wb lubm
 
 MAKEVER = $(SHELL) $(top_srcdir)/bin/makever
 
@@ -29,7 +29,7 @@ if WITH_IODBC
 endif
 
 bin_PROGRAMS = isql isqlw inifile $(IODBC_PROGS) 
-noinst_PROGRAMS = M2 paramstats ins blobs blobs2 blobnulls cursor scroll tpcc dbdump urlsimu mail_virt tkset testlock smtpsend getdata burstoff setcurs b3078 virtdriver $(NOINST_IODBC_PROGS) runbg
+noinst_PROGRAMS = M2 paramstats ins blobs blobs2 blobnulls cursor scroll tpcc dbdump urlsimu mail_virt tkset testlock smtpsend getdata burstoff setcurs b3078 virtdriver $(NOINST_IODBC_PROGS) runbg lubm-cli
 noinst_HEADERS = butils.h isql_tchar.h odbcinc.h odbcuti.h timeacct.h tpcc.h
 
 AM_CFLAGS  = @VIRT_AM_CFLAGS@ 
@@ -121,6 +121,9 @@ tkset_LDADD = $(client_libs)
 getdata_LDADD = $(client_libs)
 
 burstoff_LDADD = $(client_libs)
+
+lubm_cli_SOURCES = lubm-cli.c time.c
+lubm_cli_LDADD = $(client_libs)
 
 iODBC_CFLAGS=-DUNIX_ODBC -DODBC_ONLY -DDSN_TRANSLATION
 
