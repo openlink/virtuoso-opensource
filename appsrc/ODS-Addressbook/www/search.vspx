@@ -75,15 +75,20 @@
       if (self.v_mode <> 'simple') {
         AB.WA.xml_set('expression', data, self.v_expression);
         AB.WA.xml_set('tags', data, self.v_tags);
+        if ((self.v_own = 1) and (self.v_category > 0))
+          AB.WA.xml_set('category', data, self.v_category);
       }
-      if (length(xpath_eval('//entry', data, 0)) = 0) {
-        if (e.ve_is_post or (self.v_mode = 'simple')) {
+      if (length(xpath_eval('//entry', data, 0)) = 0)
+      {
+        if (e.ve_is_post or (self.v_mode = 'simple'))
+        {
           self.vc_error_message := 'Empty search criteria.';
           self.vc_is_valid := 0;
         }
         return;
       }
-      if (self.v_mode = 'simple') {
+      if (self.v_mode = 'simple')
+      {
         AB.WA.xml_set('MyContacts', data, 1);
       } else {
         if (self.v_own = 1)
@@ -194,6 +199,7 @@
       <v:variable name="v_expression" type="varchar" default="''"/>
       <v:variable name="v_tags" type="varchar" default="''"/>
       <v:variable name="v_own" type="integer" default="1"/>
+      <v:variable name="v_category" type="integer" default="0"/>
       <v:variable name="v_shared" type="integer" default="0"/>
 
       <v:variable name="v_output" type="varchar" default="'html'"/>
@@ -229,6 +235,8 @@
             self.v_tags := AB.WA.tags2unique(self.v_tags);
             self.v_tags := AB.WA.vector2tags(self.v_tags);
           }
+          self.v_category := cast (get_keyword ('f_category', params, get_keyword ('category', params, self.v_category)) as integer);
+
           -- options
           if (not (self.account_role in ('public', 'guest')) and not isnull (get_keyword ('f_tags', params)))
             self.v_own := cast (get_keyword ('f_own', params, '0') as integer);
@@ -273,6 +281,7 @@
           ]]>
         </v:before-render>
         <div style="padding-bottom: 5px;">
+          <div style="float: left; padding-top: 3px;">
           <?vsp
             http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
             if (AB.WA.settings_atomVersion(self.settings) = '1.0')
@@ -284,6 +293,11 @@
             http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rdf%s"><img src="image/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0"/> RDF</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
           ?>
         </div>
+          <div style="float: right;">
+            <span id="navigation"></span>
+          </div>
+        </div>
+        <br style="clear: both;" />
       </v:template>
       <table cellspacing="0" cellpadding="0" width="100%" >
         <tr>
@@ -337,7 +351,8 @@
                             {
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
-                              for (N := 0; N < length(tags); N := N + 1) {
+                              for (N := 0; N < length(tags); N := N + 1)
+                              {
                                 http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, tags[N], tags[N], tags[N], 'app', SIOC..addressbook_tag_iri (self.account_id, tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
@@ -354,18 +369,17 @@
 
                 <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
                   <table>
-                    <tr>
-                      <td align="center" colspan="1">
-                        <vm:ds-navigation data-set="ds"/>
-                      </td>
-                    </tr>
                   </table>
                 </v:template>
 
+                <span id="ds_navigation">
+                  <vm:ds-navigation data-set="ds" />
+                </span>
               </v:data-set>
               <script type="text/javascript">
                 <![CDATA[
                   coloriseTable('search');
+                  exchangeHTML();
                 ]]>
               </script>
             </td>
@@ -430,14 +444,22 @@
                     <v:text name="f_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
                   </td>
                 </tr>
-                <vm:if test="(self.account_role <> 'public') and (self.account_role <> 'shared')">
+                <vm:if test="not (self.account_role in ('public', 'shared'))">
                   <tr>
                     <th/>
                     <td>
                       <?vsp
-                        http(sprintf('<input type="checkbox" name="f_own" id="f_own" value="1" %s />', case when (self.v_own = 1) then 'checked="checked"' else '' end));
+                        http(sprintf('<input type="checkbox" name="f_own" id="f_own" value="1" %s onclick="javascript: changeState(this, \'f_category\');" />', case when (self.v_own = 1) then 'checked="checked"' else '' end));
                       ?>
                       <b><vm:label for="f_own" value="Search in my contacts"/></b>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <vm:label for="f_category" value="Search with category"/>
+                    </th>
+                    <td>
+                      <v:data-list name="f_category" xhtml_id="f_category" value="--self.v_category" sql="select -1 as C_ID, ' Select category ... ' as C_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select C_ID, C_NAME from AB.WA.CATEGORIES where C_DOMAIN_ID = self.domain_id order by C_NAME" key-column="C_ID" value-column="C_NAME" xhtml_class="select"/>
                     </td>
                   </tr>
                 </vm:if>
@@ -511,6 +533,11 @@
             </v:on-post>
           </v:button>
         </div>
+        <script type="text/javascript">
+          <![CDATA[
+            changeState(document.F1.elements['f_own'], 'f_category');
+          ]]>
+        </script>
       </vm:if>
       <vm:if test="self.v_mode = 'simple'">
         <div class="new-form-body">

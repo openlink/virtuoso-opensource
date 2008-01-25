@@ -584,6 +584,7 @@ create procedure AB.WA.domain_delete (
   in domain_id integer)
 {
   delete from AB.WA.PERSONS where P_DOMAIN_ID = domain_id;
+  delete from AB.WA.CATEGORIES where C_DOMAIN_ID = domain_id;
   delete from AB.WA.TAGS where T_DOMAIN_ID = domain_id;
 
   AB.WA.domain_gems_delete (domain_id);
@@ -644,7 +645,8 @@ create procedure AB.WA.domain_is_public (
 create procedure AB.WA.domain_ping (
   in domain_id integer)
 {
-  for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do {
+  for (select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and WAI_IS_PUBLIC = 1) do
+  {
     ODS..APP_PING (WAI_NAME, coalesce (WAI_DESCRIPTION, WAI_NAME), AB.WA.sioc_url (domain_id));
   }
 }
@@ -709,7 +711,8 @@ create procedure AB.WA.account_delete(
      and WAI_TYPE_NAME = 'AddressBook'
      and WAM_USER = account_id;
 
-  if (iCount = 0) {
+  if (iCount = 0)
+  {
     delete from AB.WA.SETTINGS where S_ACCOUNT_ID = account_id;
     delete from AB.WA.GRANTS where G_GRANTER_ID = account_id or G_GRANTEE_ID = account_id;
   }
@@ -777,9 +780,9 @@ create procedure AB.WA.user_name(
 create procedure AB.WA.tag_prepare(
   inout tag varchar)
 {
-  if (not is_empty_or_null(tag)) {
-    tag := trim(tag);
-    tag := replace (tag, '  ', ' ');
+  if (not is_empty_or_null(tag))
+  {
+    tag := replace (trim (tag), '  ', ' ');
   }
   return tag;
 }
@@ -1098,7 +1101,8 @@ create procedure AB.WA.dav_content (
   declare cont varchar;
   declare hp any;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     --dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
     return null;
   };
@@ -1117,7 +1121,8 @@ _again:
   oldUri := newUri;
   commit work;
   cont := http_get (newUri, resHdr, 'GET', reqHdr);
-  if (resHdr[0] like 'HTTP/1._ 30_ %') {
+  if (resHdr[0] like 'HTTP/1._ 30_ %')
+  {
     newUri := http_request_header (resHdr, 'Location');
     newUri := WS.WS.EXPAND_URL (oldUri, newUri);
     if (N > 15)
@@ -1142,7 +1147,8 @@ create procedure AB.WA.xml_set(
   declare aEntity any;
 
   {
-    declare exit handler for SQLSTATE '*' {
+    declare exit handler for SQLSTATE '*'
+    {
       pXml := xtree_doc('<?xml version="1.0" encoding="UTF-8"?><settings />');
       goto _skip;
     };
@@ -1189,7 +1195,8 @@ create procedure AB.WA.string2xml (
   in content varchar,
   in mode integer := 0)
 {
-  if (mode = 0) {
+  if (mode = 0)
+  {
     declare exit handler for sqlstate '*' { goto _html; };
     return xml_tree_doc (xml_tree (content, 0));
   }
@@ -1229,8 +1236,10 @@ create procedure AB.WA.utfClear(
   declare retValue varchar;
 
   retValue := '';
-  for (N := 0; N < length(S); N := N + 1) {
-    if (S[N] <= 31) {
+  for (N := 0; N < length(S); N := N + 1)
+  {
+    if (S[N] <= 31)
+    {
       retValue := concat(retValue, '?');
     } else {
       retValue := concat(retValue, chr(S[N]));
@@ -1291,8 +1300,10 @@ create procedure AB.WA.vector_unique(
   declare N, M integer;
 
   aResult := vector();
-  for (N := 0; N < length(aVector); N := N + 1) {
-    if ((minLength = 0) or (length(aVector[N]) >= minLength)) {
+  for (N := 0; N < length(aVector); N := N + 1)
+  {
+    if ((minLength = 0) or (length(aVector[N]) >= minLength))
+    {
       for (M := 0; M < length(aResult); M := M + 1)
         if (trim(aResult[M]) = trim(aVector[N]))
           goto _next;
@@ -1424,7 +1435,8 @@ create procedure AB.WA.vector2str(
   declare N integer;
 
   aResult := '';
-  for (N := 0; N < length(aVector); N := N + 1) {
+  for (N := 0; N < length(aVector); N := N + 1)
+  {
     tmp := trim(aVector[N]);
     if (strchr (tmp, ' ') is not null)
       tmp := concat('''', tmp, '''');
@@ -1512,7 +1524,8 @@ create procedure AB.WA.vector2src(
   declare aResult any;
 
   aResult := 'vector(';
-  for (N := 0; N < length(aVector); N := N + 1) {
+  for (N := 0; N < length(aVector); N := N + 1)
+  {
     if (N = 0)
       aResult := concat(aResult, '''', trim(aVector[N]), '''');
     if (N <> 0)
@@ -1576,7 +1589,8 @@ create procedure AB.WA.ab_tree2(
 
   node_id := AB.WA.node_id(node);
   node_type := AB.WA.node_type(node);
-  if (node_type = 'r') {
+  if (node_type = 'r')
+  {
     if (node_id = 2)
       return vector('Shared Contacts By', AB.WA.make_node ('u', -1), AB.WA.make_path(path, 'u', -1));
   }
@@ -2348,12 +2362,12 @@ create procedure AB.WA.validate_tags (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.ab_sparql (
-  in sql varchar)
+  in S varchar)
 {
   declare st, msg, meta, rows any;
 
   st := '00000';
-  exec (sql, st, msg, vector (), 0, meta, rows);
+  exec (S, st, msg, vector (), 0, meta, rows);
   if ('00000' = st)
     return rows;
   return vector ();
@@ -2365,7 +2379,15 @@ create procedure AB.WA.ab_sparql (
 create procedure AB.WA.ab_graph_delete (
   in graph varchar)
 {
-  delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph);
+  AB.WA.ab_sparql (sprintf ('SPARQL clear graph <%s>', graph));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.ab_graph_create ()
+{
+  return 'http://local.virt/addressbook/' || cast (rnd (1000) as varchar);
 }
 ;
 
@@ -2446,6 +2468,7 @@ create procedure AB.WA.settings_atomVersion (
 create procedure AB.WA.contact_update (
   in id integer,
   in domain_id integer,
+  in category_id integer,
   in kind integer,
   in name varchar,
   in title varchar,
@@ -2498,12 +2521,14 @@ create procedure AB.WA.contact_update (
   in bWeb varchar,
   in tags varchar)
 {
-  if (id = -1) {
+  if (id = -1)
+  {
     id := sequence_next ('AB.WA.contact_id');
     insert into AB.WA.PERSONS
       (
         P_ID,
         P_DOMAIN_ID,
+        P_CATEGORY_ID,
         P_KIND,
         P_NAME,
         P_TITLE,
@@ -2561,6 +2586,7 @@ create procedure AB.WA.contact_update (
       values (
         id,
         domain_id,
+        category_id,
         kind,
         name,
         title,
@@ -2617,7 +2643,8 @@ create procedure AB.WA.contact_update (
       );
   } else {
     update AB.WA.PERSONS
-       set P_KIND = kind,
+       set P_CATEGORY_ID = category_id,
+           P_KIND = kind,
            P_NAME = name,
            P_TITLE = title,
            P_FIRST_NAME = fName,
@@ -2822,7 +2849,8 @@ create procedure AB.WA.contact_update3 (
   declare S varchar;
   declare st, msg, meta, rows any;
 
-  if (tags <> '') {
+  if (tags <> '')
+  {
     pFields := vector_concat (pFields, vector ('P_TAGS'));
     pValues := vector_concat (pValues, vector (tags));
   }
@@ -2830,7 +2858,8 @@ create procedure AB.WA.contact_update3 (
   for (N := 0; N < length (pFields); N := N + 1)
     S := S || ', ' || pFields[N] || ' = ?';
   S := trim (S, ',');
-  if (S <> '') {
+  if (S <> '')
+  {
     S := 'update AB.WA.PERSONS set ' || S || ' where P_ID = ' || cast (id as varchar);
     exec (S, st, msg, pValues, 0, meta, rows);
   }
@@ -2851,22 +2880,28 @@ create procedure AB.WA.contact_update4 (
   declare S varchar;
   declare st, msg, meta, rows, F, V any;
 
-  if (not isnull (validation) and length (validation)) {
+  if (not isnull (validation) and length (validation))
+  {
     S := sprintf ('select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = %d', domain_id);
     V := vector ();
-    for (N := 0; N < length (validation); N := N + 1) {
+    for (N := 0; N < length (validation); N := N + 1)
+    {
       M := AB.WA.vector_index (pFields, validation [N]);
-      if (not isnull (M)) {
-        if (not is_empty_or_null (pValues [M])) {
+      if (not isnull (M))
+      {
+        if (not is_empty_or_null (pValues [M]))
+        {
           S := S || sprintf (' and %s = ?', pFields [M]);
           V := vector_concat (V, vector (pValues [M]));
         }
       }
     }
-    if (length (V) = length (validation)) {
+    if (length (V) = length (validation))
+    {
       st := '00000';
       exec (S, st, msg, V, 0, meta, rows);
-      if ((st = '00000') and (length (rows) > 0)) {
+      if ((st = '00000') and (length (rows) > 0))
+      {
         V := vector ();
         F := vector ();
         for (N := 0; N < length (pFields); N := N + 1) {
@@ -2885,9 +2920,11 @@ create procedure AB.WA.contact_update4 (
     }
   }
 
-  if (isinteger (id) and (id = -1)) {
+  if (isinteger (id) and (id = -1))
+  {
     for (N := 0; N < length (pFields); N := N + 1)
-      if (pFields [N] = 'P_NAME') {
+      if (pFields [N] = 'P_NAME')
+      {
         id := AB.WA.contact_update2 (id, domain_id, pFields [N], pValues [N]);
         goto _exit;
       }
@@ -3090,40 +3127,53 @@ create procedure AB.WA.import_vcard (
   mLength := length (Meta);
 
   -- using DAV parser
-  if (not isstring (content)) {
+  if (not isstring (content))
+  {
     xmlData := DB.DBA.IMC_TO_XML (cast (content as varchar));
   } else {
     xmlData := DB.DBA.IMC_TO_XML (content);
   }
   xmlData := xml_tree_doc (xmlData);
   xmlItems := xpath_eval ('/*', xmlData, 0);
-  foreach (any xmlItem in xmlItems) do  {
+  foreach (any xmlItem in xmlItems) do
+  {
     itemName := xpath_eval ('name(.)', xmlItem);
-    if (itemName = 'IMC-VCARD') {
+    if (itemName = 'IMC-VCARD')
+    {
       id := -1;
       pFields := vector ();
       pValues := vector ();
-      for (N := 0; N < mLength; N := N + 3) {
+      for (N := 0; N < mLength; N := N + 3)
+      {
         pField := Meta [N];
         tmp := xquery_eval (Meta [N+2], xmlItem, 0);
-        foreach (any T in tmp) do {
+        foreach (any T in tmp) do
+        {
           T := cast (T as varchar);
-          if (not is_empty_or_null (T)) {
+          if (not is_empty_or_null (T))
+          {
             pField2 := pField;
-            if (pField2 = 'P_BIRTHDAY') {
+            if (pField2 = 'P_BIRTHDAY')
+            {
               {
-                declare continue handler for sqlstate '*' {
+                declare continue handler for sqlstate '*'
+              {
                   T := '';
                 };
                 T := AB.WA.dt_reformat (T, 'YMD');
               }
             }
-            if (not is_empty_or_null (T)) {
-              if (not isnull (Meta [N+1])) {
-                if (strstr (T, ' @TYPE_') <> 0) {
+            if (not is_empty_or_null (T))
+            {
+              if (not isnull (Meta [N+1]))
+              {
+                if (strstr (T, ' @TYPE_') <> 0)
+                {
                   pField2 := '';
-                  for (M := 0; M < length (Meta [N+1]); M := M + 2) {
-                    if ((Meta [N+1][M] = '*') and isnull (strstr (T, ' @TYPE_'))) {
+                  for (M := 0; M < length (Meta [N+1]); M := M + 2)
+                  {
+                    if ((Meta [N+1][M] = '*') and isnull (strstr (T, ' @TYPE_')))
+                    {
                       pField2 := Meta [N+1][M+1];
             } else {
                       V := split_and_decode (Meta [N+1][M], 0, '\0\0,');
@@ -3139,7 +3189,8 @@ create procedure AB.WA.import_vcard (
                     T := subseq (T, 0, M);
                 }
               }
-              if (not AB.WA.vector_contains (pFields, pField2)) {
+              if (not AB.WA.vector_contains (pFields, pField2))
+              {
                   pFields := vector_concat (pFields, vector (pField2));
               pValues := vector_concat (pValues, vector (T));
             }
@@ -3162,15 +3213,18 @@ create procedure AB.WA.import_foaf (
   in validation any,
   in contentType any := 0,
   in contentIRI varchar := null,
-  in contentItems any := null)
+  in contentItems any := null,
+  in contentDepth any := 0,
+  in contentLimit any := 100,
+  in contentFollow any := 'foaf:knows')
 {
   declare N, M, nLength, mLength, id integer;
   declare tmp, tmp2, data, pFields, pValues any;
   declare Meta, Items, Item any;
-  declare S, name, fullName varchar;
+  declare S, T, name, fullName varchar;
 
   if (isnull (contentIRI))
-    contentIRI := 'http://local.virt/addressbook/' || cast (rnd (1000) as varchar);
+    contentIRI := AB.WA.ab_graph_create ();
 
   declare exit handler for sqlstate '*'
   {
@@ -3205,28 +3259,34 @@ create procedure AB.WA.import_foaf (
   {
     declare st, msg, meta any;
   
+    T := '';
+    if (contentDepth)
+      T := sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI);
+    S := sprintf ('SPARQL\n%s  define get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', T, content, contentIRI);
     st := '00000';
-    exec (sprintf ('SPARQL define get:soft "soft" define get:uri "%s" SELECT * FROM <%s> WHERE { ?s ?p ?o }', content, contentIRI), st, msg, vector (), 0, meta, items);
+    exec (S, st, msg, vector (), 0, meta, items);
     if ('00000' <> st)
       signal (st, msg);
   }
-  if (isnull (contentItems)) {
-  Items := AB.WA.ab_sparql (sprintf (' SPARQL ' ||
-                                     ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
-                                     ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
-                                     ' SELECT ?x ' ||
-                                     '   FROM <%s> ' ||
-                                     '  WHERE { ' ||
-                                     '          {?x a foaf:Person .} ' ||
-                                     '          UNION ' ||
-                                     '          {?x a foaf:Organization .} ' ||
+  if (isnull (contentItems))
+  {
+    Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
+                                       ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                                       ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
+                                       ' SELECT ?x                                                 \n' ||
+                                       '   FROM <%s>                                               \n' ||
+                                       '  WHERE {                                                  \n' ||
+                                       '          {?x a foaf:Person .}                             \n' ||
+                                       '          UNION                                            \n' ||
+                                       '          {?x a foaf:Organization .}                       \n' ||
                                        '        }', contentIRI));
   } else {
     Items := contentItems;
   }
 
   nLength := length (Items);
-  for (N := 0; N < nLength; N := N + 1) {
+  for (N := 0; N < nLength; N := N + 1)
+  {
     S := ' SPARQL ' ||
          ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
          ' PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
@@ -3304,6 +3364,10 @@ create procedure AB.WA.import_foaf (
             {
               tmp2 := case when (tmp2 = 'http://xmlns.com/foaf/0.1/Person') then 0 else 1 end;
             }
+            if (tmp = 'P_MAIL')
+            {
+              tmp2 := replace (tmp2, 'mailto:', '');
+            }
             if (tmp <> '')
             {
               pFields := vector_concat (pFields, vector (tmp));
@@ -3326,11 +3390,14 @@ _delete:;
 create procedure AB.WA.import_foaf_content (
   inout content any,
   in contentType any := 0,
-  in contentIRI any := null)
+  in contentIRI any := null,
+  in contentDepth any := 0,
+  in contentLimit any := 100,
+  in contentFollow any := 'foaf:knows')
 {
   declare N, M integer;
-  declare Items, Persons any;
-  declare S, personIRI varchar;
+  declare tmp, Items, Persons any;
+  declare S, T, personIRI varchar;
 
   declare exit handler for sqlstate '*'
   {
@@ -3341,7 +3408,7 @@ create procedure AB.WA.import_foaf_content (
 
   Persons := vector ();
   if (isnull (contentIRI))
-    contentIRI := 'http://local.virt/addressbook/' || cast (rnd (1000) as varchar);
+    contentIRI := AB.WA.ab_graph_create ();
   AB.WA.ab_graph_delete (contentIRI);
 
   -- store in QUAD Store
@@ -3349,73 +3416,77 @@ create procedure AB.WA.import_foaf_content (
   {
     declare st, msg, meta any;
 
+    T := '';
+    if (contentDepth)
+      T := sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI);
+    S := sprintf ('SPARQL\n%s  define get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', T, content, contentIRI);
     st := '00000';
-    exec (sprintf ('SPARQL define get:soft "soft" define get:uri "%s" SELECT * FROM <%s> WHERE { ?s ?p ?o }', content, contentIRI), st, msg, vector (), 0, meta, items);
+    exec (S, st, msg, vector (), 0, meta, items);
     if ('00000' <> st)
       signal (st, msg);
-
   } else {
     DB.DBA.RDF_LOAD_RDFXML (content, contentIRI, contentIRI);
   }
 
-  Items := AB.WA.ab_sparql (sprintf (' SPARQL ' ||
-                                     ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
-                                     ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
-                                     ' SELECT ?person, ?nick, ?name, ?mbox' ||
-                                     '   FROM <%s> ' ||
-                                     '  WHERE { ' ||
-                                     '          [] a foaf:PersonalProfileDocument ;                 ' ||
-                                     '             foaf:primaryTopic ?person .                      ' ||
-                                     '          OPTIONAL { ?person foaf:nick ?nick } .              ' ||
-                                     '          OPTIONAL { ?person foaf:name ?name } .              ' ||
-                                     '          OPTIONAL { ?person foaf:mbox ?mbox } .              ' ||
+  Items := AB.WA.ab_sparql (sprintf (' SPARQL \n' ||
+                                     ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                                     ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
+                                     ' SELECT ?person, ?nick, ?name, ?mbox                       \n' ||
+                                     '   FROM <%s>                                               \n' ||
+                                     '  WHERE {                                                  \n' ||
+                                     '          [] a foaf:PersonalProfileDocument ;              \n' ||
+                                     '             foaf:primaryTopic ?person .                   \n' ||
+                                     '          OPTIONAL { ?person foaf:nick ?nick } .           \n' ||
+                                     '          OPTIONAL { ?person foaf:name ?name } .           \n' ||
+                                     '          OPTIONAL { ?person foaf:mbox ?mbox } .           \n' ||
                                      '        }', contentIRI));
   if (length (Items))
   {
     personIRI := Items[0][0];
-    Persons := vector_concat (Persons, vector (vector (1, personIRI,  coalesce (Items[N][2], Items[N][1]), Items[0][3])));
-    Items := AB.WA.ab_sparql (sprintf (' SPARQL ' ||
-                                       ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
-                                       ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
-                                       ' SELECT ?person, ?nick, ?name, ?mbox' ||
-                                       '   FROM <%s> ' ||
-                                       '  WHERE { ' ||
-                                       '          {                                         ' ||
-                                       '            <%s> foaf:knows ?person .               ' ||
-                                       '            ?person a foaf:Person .                 ' ||
-                                       '            OPTIONAL { ?person foaf:nick ?nick } .  ' ||
-                                       '            OPTIONAL { ?person foaf:name ?name } .  ' ||
-                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .  ' ||
-                                       '          }                                         ' ||
-                                       '          UNION ' ||
-                                       '          {                                         ' ||
-                                       '            <%s> foaf:knows ?person .               ' ||
-                                       '            ?person a foaf:Organization .           ' ||
-                                       '            OPTIONAL { ?person foaf:nick ?nick } .  ' ||
-                                       '            OPTIONAL { ?person foaf:name ?name } .  ' ||
-                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .  ' ||
-                                       '          }                                         ' ||
+    tmp := replace (Items[N][3], 'mailto:', '');
+    Persons := vector_concat (Persons, vector (vector (1, personIRI,  coalesce (Items[N][2], Items[N][1]), tmp)));
+    Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
+                                       ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                                       ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
+                                       ' SELECT ?person, ?nick, ?name, ?mbox                       \n' ||
+                                       '   FROM <%s>                                               \n' ||
+                                       '  WHERE {                                                  \n' ||
+                                       '          {                                                \n' ||
+                                       '            <%s> foaf:knows ?person .                      \n' ||
+                                       '            ?person a foaf:Person .                        \n' ||
+                                       '            OPTIONAL { ?person foaf:nick ?nick } .         \n' ||
+                                       '            OPTIONAL { ?person foaf:name ?name } .         \n' ||
+                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .         \n' ||
+                                       '          }                                                \n' ||
+                                       '          UNION                                            \n' ||
+                                       '          {                                                \n' ||
+                                       '            <%s> foaf:knows ?person .                      \n' ||
+                                       '            ?person a foaf:Organization .                  \n' ||
+                                       '            OPTIONAL { ?person foaf:nick ?nick } .         \n' ||
+                                       '            OPTIONAL { ?person foaf:name ?name } .         \n' ||
+                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .         \n' ||
+                                       '          }                                                \n' ||
                                        '        }', contentIRI, personIRI, personIRI));
   } else {
-    Items := AB.WA.ab_sparql (sprintf (' SPARQL ' ||
-                                       ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
-                                       ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
-                                       ' SELECT ?person, ?nick, ?name, ?mbox' ||
-                                       '   FROM <%s> ' ||
-                                       '  WHERE { ' ||
-                                       '          {                                         ' ||
-                                       '            ?person a foaf:Person .                 ' ||
-                                       '            OPTIONAL { ?person foaf:nick ?nick } .  ' ||
-                                       '            OPTIONAL { ?person foaf:name ?name } .  ' ||
-                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .  ' ||
-                                       '          }                                         ' ||
-                                       '          UNION ' ||
-                                       '          {                                         ' ||
-                                       '            ?person a foaf:Organization .           ' ||
-                                       '            OPTIONAL { ?person foaf:nick ?nick } .  ' ||
-                                       '            OPTIONAL { ?person foaf:name ?name } .  ' ||
-                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .  ' ||
-                                       '          }                                         ' ||
+    Items := AB.WA.ab_sparql (sprintf (' SPARQL                                                    \n' ||
+                                       ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
+                                       ' PREFIX foaf: <http://xmlns.com/foaf/0.1/>                 \n' ||
+                                       ' SELECT ?person, ?nick, ?name, ?mbox                       \n' ||
+                                       '   FROM <%s>                                               \n' ||
+                                       '  WHERE {                                                  \n' ||
+                                       '          {                                                \n' ||
+                                       '            ?person a foaf:Person .                        \n' ||
+                                       '            OPTIONAL { ?person foaf:nick ?nick } .         \n' ||
+                                       '            OPTIONAL { ?person foaf:name ?name } .         \n' ||
+                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .         \n' ||
+                                       '          }                                                \n' ||
+                                       '          UNION                                            \n' ||
+                                       '          {                                                \n' ||
+                                       '            ?person a foaf:Organization .                  \n' ||
+                                       '            OPTIONAL { ?person foaf:nick ?nick } .         \n' ||
+                                       '            OPTIONAL { ?person foaf:name ?name } .         \n' ||
+                                       '            OPTIONAL { ?person foaf:mbox ?mbox } .         \n' ||
+                                       '          }                                                \n' ||
                                        '        }', contentIRI));
   }
   for (N := 0; N < length (Items); N := N + 1)
@@ -3427,7 +3498,8 @@ create procedure AB.WA.import_foaf_content (
         if (Persons[M][1] = Items[N][0])
           goto _skip;
       }
-      Persons := vector_concat (Persons, vector (vector (0, Items[N][0], coalesce (Items[N][2], Items[N][1]), Items[N][3])));
+      tmp := replace (Items[N][3], 'mailto:', '');
+      Persons := vector_concat (Persons, vector (vector (0, Items[N][0], coalesce (Items[N][2], Items[N][1]), tmp)));
     _skip:;
     }
   }
@@ -3704,7 +3776,8 @@ create procedure AB.WA.export_csv (
   declare S varchar;
 
   S := '';
-  for (select * from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id) do {
+  for (select * from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id) do
+  {
     S := sprintf
            (
             '"%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s","%s"\r\n',
@@ -3856,9 +3929,12 @@ create procedure AB.WA.export_foaf (
 
 	S := sprintf (S, SIOC..get_graph ());
   T := '';
-	if (not isnull (ids)) {
-	  foreach (any id in ids) do {
-	    if (T = '') {
+	if (not isnull (ids))
+	{
+	  foreach (any id in ids) do
+	  {
+	    if (T = '')
+	    {
 	      T := sprintf ('(?person = <%s>)', SIOC..socialnetwork_contact_iri (domain_id, cast (id as integer)));
 	    } else {
 	      T := T || ' || ' || sprintf ('(?person = <%s>)', SIOC..socialnetwork_contact_iri (domain_id, cast (id as integer)));
@@ -3928,7 +4004,8 @@ create procedure AB.WA.search_sql (
 
   T := '';
   tmp := AB.WA.xml_get('keywords', data);
-  if (not is_empty_or_null(tmp)) {
+  if (not is_empty_or_null(tmp))
+  {
     T := FTI_MAKE_SEARCH_STRING(tmp);
   } else {
     tmp := AB.WA.xml_get('expression', data);
@@ -3937,8 +4014,10 @@ create procedure AB.WA.search_sql (
   }
 
   tmp := AB.WA.xml_get('tags', data);
-  if (not is_empty_or_null(tmp)) {
-    if (T = '') {
+  if (not is_empty_or_null(tmp))
+  {
+    if (T = '')
+    {
       T := AB.WA.tags2search (tmp);
     } else {
       T := T || ' and ' || AB.WA.tags2search (tmp);
@@ -3946,6 +4025,12 @@ create procedure AB.WA.search_sql (
   }
   if (T <> '')
     S := replace(S, '<TEXT>', sprintf('and contains(p.P_NAME, \'[__lang "x-ViDoc"] %s\') \n', T));
+
+  tmp := AB.WA.xml_get('category', data);
+  if (not is_empty_or_null(tmp))
+  {
+    where2 := ' and P_CATEGORY_ID = ' || tmp;
+  }
 
   if (maxRows <> '')
     maxRows := 'TOP ' || maxRows;
@@ -3958,6 +4043,29 @@ create procedure AB.WA.search_sql (
 
   --dbg_obj_print(S);
   return S;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure AB.WA.category_update (
+  in domain_id integer,
+  in name varchar)
+{
+  declare id integer;
+
+  name := trim (name);
+  if (is_empty_or_null (name))
+    return null;
+
+  id := (select C_ID from AB.WA.CATEGORIES where C_DOMAIN_ID = domain_id and C_NAME = name);
+  if (is_empty_or_null (id))
+  {
+    id := sequence_next ('AB.WA.category_id');
+    insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME)
+      values (id, domain_id, name);
+  }
+  return id;
 }
 ;
 

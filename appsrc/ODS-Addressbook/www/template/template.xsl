@@ -185,7 +185,15 @@
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
         <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
-          <v:url url="settings.vspx" value="Preferences" xhtml_title="Preferences"/>
+              <v:button action="simple" style="url" value="Preferences" xhtml_title="Preferences">
+                <v:on-post>
+                  <![CDATA[
+                    self.abAction := 'settings';
+                    self.abSubAction := '';
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
           |
         </v:template>
         <v:button action="simple" style="url" value="Help" xhtml_alt="Help"/>
@@ -195,12 +203,6 @@
       <table id="MTB">
         <tr>
           <!-- Navigation left column -->
-          <v:template type="simple" enabled="--either(gt(self.domain_id, 0), 1, 0)">
-            <td id="LC">
-              <xsl:call-template name="vm:formats"/>
-            </td>
-          </v:template>
-          <!-- Navigation right column -->
           <td id="RC">
             <v:template type="simple" condition="not self.vc_is_valid">
               <div class="error">
@@ -232,42 +234,29 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template name="vm:formats">
-    <div class="left_container">
-    <?vsp
-      declare exit handler for not found;
-
-        declare S varchar;
-      declare lat, lng any;
-
-      select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.account_id;
-        if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id)) {
-          http (sprintf('<a href="http://geourl.org/near?p=%U" title="GeoURL link" alt="GeoURL link" class="gems"><img src="http://i.geourl.org/geourl.png" border="0"/></a>', AB.WA.ab_url (self.domain_id)));
-          http ('<div style="border-top: 1px solid #7f94a5;"></div>');
-        }
-
-        S := AB.WA.dav_url (self.domain_id);
-        http (sprintf('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
-        http (sprintf('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'ATOM', 'Atom'));
-        http (sprintf('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF', 'RDF'));
-
-        http ('<div style="border-top: 1px solid #7f94a5;"></div>');
-        http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0" alt="FOAF export" /> FOAF</a>', AB.WA.foaf_url (self.domain_id)));
-
-        http ('<div style="border-top: 1px solid #7f94a5;"></div>');
-        S := sprintf ('http://%s/dataspace/%U/addressbook/%U/', DB.DBA.wa_cname (), AB.WA.domain_owner_name (self.domain_id), AB.WA.domain_name (self.domain_id));
-        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
-        http (sprintf('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
-      ?>
-    </div>
-  </xsl:template>
-
-  <!--=========================================================================-->
   <xsl:template match="vm:ds-navigation">
     &lt;?vsp
       {
+        declare n_start, n_end, n_total integer;
+
+        if (isnull (control.ds_data_source))
+        {
+          n_total := control.ds_rows_total;
+          n_start := control.ds_rows_offs + 1;
+          n_end   := n_start + control.ds_nrows - 1;
+        } else {
+          n_total := control.ds_data_source.ds_total_rows;
+          n_start := control.ds_data_source.ds_rows_offs + 1;
+          n_end   := n_start + control.ds_data_source.ds_rows_fetched - 1;
+        }
+        if (n_end > n_total)
+          n_end := n_total;
+
+        if (n_total)
+          http (sprintf ('%d - %d of %d', n_start, n_end, n_total));
+
         declare _prev, _next, _last, _first vspx_button;
-        declare d_prev, d_next, d_last, d_first int;
+        declare d_prev, d_next, d_last, d_first integer;
 
         d_prev := d_next := d_last := d_first := 0;
         _first := control.vc_find_control ('<xsl:value-of select="@data-set"/>_first');
@@ -275,7 +264,9 @@
         _next := control.vc_find_control ('<xsl:value-of select="@data-set"/>_next');
         _prev := control.vc_find_control ('<xsl:value-of select="@data-set"/>_prev');
 
-        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled)) {
+        if (not (_next is not null and not _next.vc_enabled and _prev is not null and not _prev.vc_enabled))
+        {
+          http (' | ');
         if (_first is not null and not _first.vc_enabled)
           d_first := 1;
 
@@ -289,51 +280,29 @@
           d_last := 1;
         }
     ?&gt;
-    <xsl:if test="not(@type) or @type = 'set'">
     <?vsp
       if (d_first)
-        http ('<img src="image/first_16.gif" alt="First" title="First" border="0" /> First');
+        http ('<img src="/ods/images/skin/pager/p_first_gr.png" alt="First Page" title="First Page" border="0" />first&nbsp;');
     ?>
-    <v:button name="{@data-set}_first" action="simple" style="image" value="image/first_16.gif" xhtml_alt="First" text="&amp;nbsp;First"/>
-    </xsl:if>
+    <v:button name="{@data-set}_first" action="simple" style="image" value="/ods/images/skin/pager/p_first.png" xhtml_alt="First" text="first&amp;nbsp;" />
     <?vsp
-      if (d_first or _first.vc_enabled)
-        http ('&nbsp;');
       if (d_prev)
-        http ('<img src="image/previous_16.gif" alt="Previous" title="Previous" border="0" /> Previous');
+        http ('<img src="/ods/images/skin/pager/p_prev_gr.png" alt="Previous Page" title="Previous Page" border="0" />prev&nbsp;');
     ?>
-    <v:button name="{@data-set}_prev" action="simple" style="image" value="image/previous_16.gif" xhtml_alt="Previous" text="&amp;nbsp;Previous"/>
+    <v:button name="{@data-set}_prev" action="simple" style="image" value="/ods/images/skin/pager/p_prev.png" xhtml_alt="Previous" text="prev&amp;nbsp;" />
     <?vsp
-      if (d_prev or _prev.vc_enabled)
-        http ('&nbsp;');
       if (d_next)
-        http ('<img src="image/next_16.gif" alt="Next" title="Next" border="0" /> Next');
+        http ('<img src="/ods/images/skin/pager/p_next_gr.png" alt="Next Page" title="Next Page" border="0" />next&nbsp;');
     ?>
-    <v:button name="{@data-set}_next" action="simple" style="image" value="image/next_16.gif" xhtml_alt="Next" text="&amp;nbsp;Next"/>
-    <xsl:if test="not(@type) or @type = 'set'">
+    <v:button name="{@data-set}_next" action="simple" style="image" value="/ods/images/skin/pager/p_next.png" xhtml_alt="Next" text="next&amp;nbsp;" />
     <?vsp
-      if (d_next or _next.vc_enabled)
-        http ('&nbsp;');
       if (d_last)
-        http ('<img src="image/last_16.gif" alt="Last" title="Last" border="0" /> Last');
+        http ('<img src="/ods/images/skin/pager/p_last_gr.png" alt="Last Page" title="Last Page" border="0" />last');
     ?>
-    <v:button name="{@data-set}_last" action="simple" style="image" value="image/last_16.gif" xhtml_alt="Last" text="&amp;nbsp;Last"/>
-    </xsl:if>
+    <v:button name="{@data-set}_last" action="simple" style="image" value="/ods/images/skin/pager/p_last.png" xhtml_alt="Last" text="last" />
     <?vsp
       }
     ?>
-  </xsl:template>
-
-  <!--=========================================================================-->
-  <xsl:template name="vm:links">
-    <div class="left_container">
-      <ul class="left_navigation">
-        <li><a href="/doc/docs.vsp" target="_empty" alt="Documentation" title="Documentation">Documentation</a></li>
-        <li><a href="/tutorial/index.vsp" target="_empty" alt="Tutorials" title="Tutorials">Tutorials</a></li>
-        <li><a href="http://www.openlinksw.com" alt="OpenLink Software" title="OpenLink Software">OpenLink Software</a></li>
-        <li><a href="http://www.openlinksw.com/virtuoso" alt="Virtuoso Web Site" title="Virtuoso Web Site">Virtuoso Web Site</a></li>
-      </ul>
-    </div>
   </xsl:template>
 
   <!--=========================================================================-->

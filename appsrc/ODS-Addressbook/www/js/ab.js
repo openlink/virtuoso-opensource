@@ -27,16 +27,22 @@ function myPost(frm_name, fld_name, fld_value)
 }
 
 // ---------------------------------------------------------------------------
-function myTags(fld_value)
+function myTags(fValue)
 {
-  createHidden('F1', 'tag', fld_value);
-  doPost ('F1', 'pt_tags');
+  vspxPost('pt_browse', 'pt_action', 'tags', 'pt_value', fValue);
+}
+
+// ---------------------------------------------------------------------------
+function myCategory(fValue)
+{
+  vspxPost('pt_browse', 'pt_action', 'category', 'pt_value', fValue);
 }
 
 // ---------------------------------------------------------------------------
 function vspxPost(fButton, fName, fValue, f2Name, f2Value)
 {
   createHidden('F1', fName, fValue);
+  if (f2Name)
   createHidden('F1', f2Name, f2Value);
   doPost ('F1', fButton);
 }
@@ -496,7 +502,6 @@ function addTag(tag, objName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function addCheckedTags (openerName, checkName)
 {
   if (window.opener.document.F1.elements[document.F1.elements[openerName].value]) {
@@ -524,7 +529,6 @@ function addCheckedTags (openerName, checkName)
 }
 
 // ---------------------------------------------------------------------------
-//
 function changeType (obj)
 {
   showTab(1, 4); 
@@ -549,6 +553,7 @@ function changeType (obj)
 
 }
 
+// ---------------------------------------------------------------------------
 function hasError(root) {
 	if (!root) {
     // executingEnd();
@@ -570,6 +575,7 @@ function hasError(root) {
   return false;
 }
 
+// ---------------------------------------------------------------------------
 function updateState(countryName, stateName, stateValue)
 {
   var obj = $(stateName);
@@ -594,15 +600,20 @@ function updateState(countryName, stateName, stateValue)
   }
 }
 
-function listCallback (result, obj, objValue) {
+// ---------------------------------------------------------------------------
+function listCallback (result, obj, objValue)
+{
   var xml = OAT.Xml.createXmlDoc(result.ODS_USER_LISTResponse.CallReturn);
 	var root = xml.documentElement;
-	if (!hasError(root)) {
+	if (!hasError(root))
+	{
     /* options */
   	var items = root.getElementsByTagName("item");
-  	if (items.length) {
+  	if (items.length)
+  	{
 			obj.options[0] = new Option('', '');
-  		for (var i=1; i<=items.length; i++) {
+  		for (var i=1; i<=items.length; i++)
+  		{
   		  o = new Option(OAT.Xml.textValue(items[i-1]), OAT.Xml.textValue(items[i-1]));
   			obj.options[i] = o;
   		}
@@ -620,3 +631,35 @@ function davBrowse (fld)
                 };
   oWebDAV.open(options);
 }
+
+// ---------------------------------------------------------------------------
+function changeState (obj, fName)
+{
+  if (obj)
+  {
+    if (obj.type == "checkbox" && obj.checked)
+    {
+      document.F1.elements[fName].disabled = false;
+    } else {
+      document.F1.elements[fName].disabled = true;
+    }
+  } else {
+    document.F1.elements[fName].disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+function exchangeHTML ()
+{
+  var S, T;
+
+  T = $('ds_navigation');
+  if (T)
+  {
+    S = $('navigation')
+    if (S)
+      S.innerHTML = T.innerHTML;
+    T.innerHTML = '';
+  }
+}
+

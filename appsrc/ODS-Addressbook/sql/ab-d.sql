@@ -22,7 +22,8 @@
 
 create procedure AB.WA.uninstall ()
 {
-  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'AddressBook' do {
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'AddressBook' do
+  {
     (WAI_INST as DB.DBA.wa_AddressBook).wa_drop_instance();
   }
 }
@@ -37,6 +38,7 @@ VHOST_REMOVE (lpath => '/dataspace/services/addressbook');
 AB.WA.exec_no_error('DROP TABLE AB.WA.GRANTS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.ANNOTATIONS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.PERSONS');
+AB.WA.exec_no_error('DROP TABLE AB.WA.CATEGORIES');
 AB.WA.exec_no_error('DROP TABLE AB.WA.TAGS');
 AB.WA.exec_no_error('DROP TABLE AB.WA.SETTINGS');
 
@@ -57,7 +59,8 @@ registry_remove ('__ods_addressbook_sioc_init');
 -- Procedures
 create procedure AB.WA.drop_procedures()
 {
-  for (select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'AB.WA.%') do {
+  for (select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'AB.WA.%') do
+  {
     if (P_NAME not in ('AB.WA.exec_no_error', 'AB.WA.drop_procedures'))
       AB.WA.exec_no_error(sprintf('drop procedure %s', P_NAME));
   }

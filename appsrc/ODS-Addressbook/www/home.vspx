@@ -30,9 +30,6 @@
       declare params, names any;
 
       params := self.vc_page.vc_event.ve_params;
-      if (self.abTag <> lcase(get_keyword ('tag', params, '')))
-        self.ds.vc_reset();
-      self.abTag := lcase(get_keyword ('tag', params, ''));
       self.abContact := get_keyword ('id', params, '');
       if (self.abContact <> '')
       {
@@ -97,7 +94,8 @@
 
   	  http (sprintf ('<select name="sel_%s">', name));
   	  http ('<option value="skip">--</option>');
-      for (N := 0; N < length (self.i_Options); N := N + 2) {
+      for (N := 0; N < length (self.i_Options); N := N + 2)
+      {
         S := '';
         if (self.i_Options[N] = T)
           S := ' selected="selected"';
@@ -110,10 +108,12 @@
   <v:method name="viewField" arglist="inout fValue any">
     <![CDATA[
        if (self.abAction = 'view')
-         if (is_empty_or_null (fValue)) {
-           http ('-');
+         if (is_empty_or_null (fValue))
+         {
+           http ('&nbsp;');
          } else {
-           if (internal_type (fValue) = 211) {
+           if (internal_type (fValue) = 211)
+           {
              http (left (cast (fValue as varchar), 10));
            } else {
              http (AB.WA.utf2wide (fValue));
@@ -148,7 +148,8 @@
     _next:;
       tmp := '';
       nodes := split_and_decode (trim(self.abPath, '/'), 0, '\0\0/');
-      for (N := 0; N < length (nodes) - 1; N := N + 1) {
+      for (N := 0; N < length (nodes) - 1; N := N + 1)
+      {
         tmp := concat(tmp, '/', nodes[N]);
         if (not AB.WA.vector_contains (self.abState, tmp))
           self.abState := vector_concat (self.abState, vector(tmp));
@@ -190,7 +191,8 @@
           image2 := 'user_16.png';
 
         class := 'nolink_b';
-        if (nodes[N+2] = self.abPath) {
+        if (nodes[N+2] = self.abPath)
+        {
           class := 'nolink_a';
           self.abName := nodes[N];
         }
@@ -217,11 +219,13 @@
       grants := replace(grants, ',,', ',');
       grants := trim(grants, ',', '');
       grants := grants || ',';
-      for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_PERSON_ID = person_id and G_GRANTEE_ID = U_ID) do {
+      for (select U_ID, U_NAME from AB.WA.GRANTS, DB.DBA.SYS_USERS where G_GRANTER_ID = self.account_id and G_PERSON_ID = person_id and G_GRANTEE_ID = U_ID) do
+      {
         name := U_NAME;
         id := U_ID;
         pos := strstr(grants, name || ',');
-        if (isnull(pos)) {
+        if (isnull (pos))
+        {
           if (override)
             delete from AB.WA.GRANTS where G_GRANTER_ID = self.account_id and G_GRANTEE_ID = id and G_PERSON_ID = person_id;
         } else {
@@ -229,7 +233,8 @@
         }
       }
       V := split_and_decode(trim(grants, ','), 0, '\0\0,');
-      for (N := 0; N < length(V); N := N + 1) {
+      for (N := 0; N < length (V); N := N + 1)
+      {
         id := (select U_ID from SYS_USERS where U_NAME = V[N]);
         if (not isnull(id))
           insert into AB.WA.GRANTS (G_GRANTER_ID, G_GRANTEE_ID, G_PERSON_ID)
@@ -251,7 +256,8 @@
 
   <v:method name="contactUpdate" arglist="inout person_id integer, inout pFields any, inout pValues any">
     <![CDATA[
-     if (self.v_tags <> '') {
+     if (self.v_tags <> '')
+     {
        pFields := vector_concat (pFields, vector ('P_TAGS'));
        pValues := vector_concat (pValues, vector (self.v_tags));
      }
@@ -274,9 +280,29 @@
       self.i_lMaps := null;
       self.i_maps := null;
       self.i_iri := null;
-      self.i_selections := null;
+      self.i_contentItems := null;
+      self.i_contentDepth := 0;
+      self.i_contentDepth := 100;
+      self.i_contentFollow := null;
       self.i_data := null;
       self.i_validation := null;
+    ]]>
+  </v:method>
+
+  <v:method name="myTags" arglist="in fieldName varchar">
+    <![CDATA[
+      if ((select count (*) from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG))
+      {
+        http ('<tr>');
+        http ('<th valign="top">My Tags</th>');
+          http ('<td>');
+            for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do
+            {
+              http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'%s\');">%s</a> ', T_TAG, fieldName, T_TAG));
+            }
+          http ('</td>');
+        http ('</tr>');
+      }
     ]]>
   </v:method>
 
@@ -289,7 +315,8 @@
       <v:variable persist="0" name="abSelected" type="any" default="null" />
       <v:variable persist="0" name="abScope" type="varchar" default="'MyContacts'" />
       <v:variable persist="0" name="abAction" type="varchar" default="'browse'" />
-      <v:variable persist="0" name="abTag" type="varchar" default="null" />
+      <v:variable persist="0" name="abSubAction" type="varchar" default="''" />
+      <v:variable persist="0" name="abValue" type="varchar" default="null" />
       <v:variable persist="temp" name="abContact" type="any" default="''" />
 
       <v:variable persist="0" name="abName" type="varchar" default="''"/>
@@ -365,6 +392,9 @@
       <v:variable name="v_grants" type="any" default="null"/>
       <v:variable name="v_override" type="integer" default="1"/>
 
+      <v:variable name="v_category_id" type="integer" default="null" />
+      <v:variable name="v_category_name" type="integer" default="null" />
+
       <v:variable name="i_source" type="any" default="-1"/>
       <v:variable name="i_type" type="any" default="-1"/>
       <v:variable name="i_lName" type="varchar" default="''"/>
@@ -380,7 +410,10 @@
 
       <v:variable name="i_data" type="varchar" default="null"/>
       <v:variable name="i_iri" type="varchar" default="null" />
-      <v:variable name="i_selections" type="any" default="null" />
+      <v:variable name="i_contentItems" type="any" default="null" />
+      <v:variable name="i_contentDepth" type="integer" default="0" />
+      <v:variable name="i_contentLimit" type="integer" default="100" />
+      <v:variable name="i_contentFollow" type="any" default="null" />
       <v:variable name="i_validation" type="varchar" default="null" />
       <v:variable name="i_maps" type="any" default="null" />
     </vm:variables>
@@ -390,10 +423,12 @@
           self.abLabels := cast (get_keyword ('tbLabels', self.settings, '1') as integer);
           self.abChars := cast (get_keyword ('chars', self.settings, '60') as integer);
 
-          if (get_keyword ('tab', e.ve_params, '') = 'shared') {
+          if (get_keyword ('tab', e.ve_params, '') = 'shared')
+          {
             self.abScope := 'MySharedContacts';
             self.abAction := 'browse';
-            self.abTag := '';
+            self.abSubAction := '';
+            self.abValue := '';
           }
             
           self.mode_test();
@@ -404,9 +439,10 @@
         
         sparqlUrl := 'http://' || SIOC..get_cname () || '/sparql';
         graphIri := SIOC..get_graph ();
-        http(sprintf('<input type="hidden" id="sparqlUrl" name="sparqlUrl" value="%s?default-graph-uri=%U&query=%U&format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml')); 
+        http (sprintf ('<input type="hidden" name="sparqlUrl" id="sparqlUrl" value="%s?default-graph-uri=%U&query=%U&format=%U"/>', sparqlUrl, graphIri, 'DESCRIBE <_RDF_>', 'application/sparql-results+xml'));
+        http (         '<input type="hidden" name="tbHidden" id="tbHidden" value="" />');
+        http (sprintf ('<input type="hidden" name="abSubAction" id="abSubAction" value="%s" />', self.abSubAction));
       ?>
-        <?vsp http ('<input type="hidden" name="tbHidden" value="" />'); ?>
         <?vsp
           if (0)
           {
@@ -422,16 +458,18 @@
                 {
                     self.abScope := cmd;
                     self.abAction := 'browse';
-                    self.abTag := '';
+                  self.abSubAction := '';
+                  self.abValue := '';
                   }
-
-                  if (cmd = 'MySharedContacts') {
+                if (cmd = 'MySharedContacts')
+                {
                     self.abScope := cmd;
                     self.abAction := 'browse';
-                    self.abTag := '';
+                  self.abSubAction := '';
+                  self.abValue := '';
                   }
-
-                  if (cmd = 'create') {
+                if (cmd = 'create')
+                {
                     self.abAction := cmd;
 
                     self.v_id := -1;
@@ -491,51 +529,58 @@
                     self.v_bDepartment := '';
                     self.v_bJob := '';
                     self.v_grants := '';
-                  }
 
-                  if (cmd = 'tag') {
+                  self.v_category_id := null;
+                  self.v_category_name := null;
+                }
+                if (cmd = 'tag')
+                {
                     self.abAction := cmd;
                     self.abSelected := vector();
-                    for (N := 0; N < length(e.ve_params); N := N + 4) {
+                  for (N := 0; N < length(e.ve_params); N := N + 4)
+                  {
                       if (e.ve_params[N] = 'cb_item')
                         self.abSelected := vector_concat(self.abSelected, vector(e.ve_params[N+1]));
                     }
                   }
-
-                  if (cmd = 'grants') {
+                if (cmd = 'grants')
+                {
                     self.v_grants := '';
                     self.abAction := cmd;
                     self.abSelected := vector();
-                    for (N := 0; N < length(e.ve_params); N := N + 4) {
+                  for (N := 0; N < length(e.ve_params); N := N + 4)
+                  {
                       if (e.ve_params[N] = 'cb_item')
                         self.abSelected := vector_concat(self.abSelected, vector(e.ve_params[N+1]));
                     }
                   }
-
-                  if (cmd = 'delete') {
+                if (cmd = 'delete')
+                {
                     declare id integer;
 
-                    for (N := 0; N < length(e.ve_params); N := N + 4) {
-                      if (e.ve_params[N] = 'cb_item') {
+                  for (N := 0; N < length(e.ve_params); N := N + 4)
+                  {
+                    if (e.ve_params[N] = 'cb_item')
+                    {
                         id := cast(e.ve_params[N+1] as integer);
                         AB.WA.contact_delete(id, self.domain_id);
                       }
                     }
                   }
-
-                  if (cmd = 'import') {
+                if (cmd = 'import')
+                {
                   self.resetImport ();
                     self.abAction := cmd;
                     self.abStep := '1';
                   self.abSteps  := vector ();
                     self.v_tag := '';
-                  self.i_iri    := 'http://local.virt/addressbook/' || cast (rnd (1000) as varchar);
                   }
-
-                  if (cmd = 'export') {
+                if (cmd = 'export')
+                {
                     self.abAction := cmd;
                     self.abSelected := vector();
-                    for (N := 0; N < length(e.ve_params); N := N + 4) {
+                  for (N := 0; N < length(e.ve_params); N := N + 4)
+                  {
                       if (e.ve_params[N] = 'cb_item')
                         self.abSelected := vector_concat(self.abSelected, vector(e.ve_params[N+1]));
                     }
@@ -653,12 +698,12 @@
         </div>
         <div style="clear: both;" />
 
+      <vm:if test="self.abAction <> 'settings'">
       <div class="ab_main">
         <?vsp
           if (0)
           {
         ?>
-            <v:button name="pt_tags" action="simple" style="url" value="Submit" />
             <v:button name="pt_browse" action="simple" style="url" value="Submit">
               <v:on-post>
                 <![CDATA[
@@ -667,11 +712,14 @@
                   -- touggle
                   path := get_keyword ('pt_path', e.ve_params, '');
                   node := get_keyword ('pt_toggle', e.ve_params, get_keyword ('pt_node', e.ve_params, ''));
-                  if (node <> '') {
-                    if (AB.WA.vector_contains (self.abState, path)) {
+                  if (node <> '')
+                  {
+                    if (AB.WA.vector_contains (self.abState, path))
+                    {
                       if (get_keyword ('pt_toggle', e.ve_params, '') <> '')
                         self.abState := AB.WA.vector_cut (self.abState, path);
-                      if (self.abPath like concat (path, '%')) {
+                      if (self.abPath like concat (path, '%'))
+                      {
                         self.abNode := node;
                         self.abPath := path;
                       }
@@ -683,7 +731,8 @@
 
                   -- node
                   node := get_keyword ('pt_node', e.ve_params, '');
-                  if (node <> '') {
+                  if (node <> '')
+                  {
                     self.abAction := 'browse';
                     self.abNode := node;
                     self.abPath := path;
@@ -691,16 +740,34 @@
 
                   -- action
                   action := get_keyword ('pt_action', e.ve_params, '');
-                  if (action <> '') {
+                  if (action <> '')
+                  {
+                    if (action = 'delete')
+                    {
                     self.v_id := cast(get_keyword ('pt_value', e.ve_params, '0') as integer);
-                    if (action = 'delete') {
                       AB.WA.contact_delete (self.v_id, self.domain_id);
                     }
-                    if (action = 'edit') {
+                    if (action = 'edit')
+                    {
+                      self.v_id := cast(get_keyword ('pt_value', e.ve_params, '0') as integer);
                       self.abAction := action;
                     }
-                    if (action = 'view') {
+                    if (action = 'view')
+                    {
+                      self.v_id := cast(get_keyword ('pt_value', e.ve_params, '0') as integer);
                       self.abAction := action;
+                    }
+                    if (action = 'tags')
+                    {
+                      self.abAction := 'browse';
+                      self.abSubAction := action;
+                      self.abValue := lcase (get_keyword ('pt_value', e.ve_params, ''));
+                    }
+                    if (action = 'category')
+                    {
+                      self.abAction := 'browse';
+                      self.abSubAction := action;
+                      self.abValue := lcase (get_keyword ('pt_value', e.ve_params, ''));
                     }
                   }
                   self.vc_data_bind (e);
@@ -711,9 +778,68 @@
           }
         ?>
         <div class="ab_left">
-          <div class="ab_left_sub1">
+            <div id="panelbar">
+              <vm:if test="self.domain_id > 0">
+                <div id="pb_1">Gems</div>
+                <div id="pc_1" style="display: none;">
+                  <div class="left_container">
+                    <?vsp
+                      declare exit handler for not found;
+
+                      declare S varchar;
+                      declare lat, lng any;
+
+                      select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.account_id;
+                      if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id))
+                      {
+                        http (sprintf('<a href="http://geourl.org/near?p=%U" title="GeoURL link" alt="GeoURL link" class="gems"><img src="http://i.geourl.org/geourl.png" border="0"/></a>', AB.WA.ab_url (self.domain_id)));
+                        http ('<div style="border-top: 1px solid #7f94a5;"></div>');
+                      }
+
+                      S := AB.WA.dav_url (self.domain_id);
+                      http (sprintf ('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rss-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rss', 'RSS', 'RSS', 'RSS', 'RSS'));
+                      http (sprintf ('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'ATOM', 'Atom'));
+                      http (sprintf ('<a href="%sAddressBook.%s" target="_blank" title="%s export" alt="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF', 'RDF'));
+
+                      http ('<div style="border-top: 1px solid #7f94a5;"></div>');
+                      http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0" alt="FOAF export" /> FOAF</a>', AB.WA.foaf_url (self.domain_id)));
+
+                      http ('<div style="border-top: 1px solid #7f94a5;"></div>');
+                      S := sprintf ('http://%s/dataspace/%U/addressbook/%U/', DB.DBA.wa_cname (), AB.WA.domain_owner_name (self.domain_id), AB.WA.domain_name (self.domain_id));
+                      http (sprintf ('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)', 'SIOC (RDF/XML)'));
+                      http (sprintf ('<a href="%ssioc.%s" title="%s" alt="%s" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'ttl', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)', 'SIOC (N3/Turtle)'));
+                    ?>
+                  </div>
+                </div>
+                <vm:if test="self.abScope = 'MyContacts'">
+                  <div id="pb_2">Categories</div>
+                  <div id="pc_2" style="display: none;">
+                    <div class="left_container">
+                      <?vsp
+                        http ('<a id="c_0" href="javascript: myCategory(\'0\');" class="gems">All Categories</a>');
+                        for (select C_ID, C_NAME from AB.WA.CATEGORIES where C_DOMAIN_ID = self.domain_id order by C_NAME) do
+                        {
+                          http (sprintf ('<a id="c_%d" href="javascript: myCategory(\'%d\');" class="gems">%s</a>', C_ID, C_ID, C_NAME));
+                        }
+                      ?>
+                    </div>
+                  </div>
+                </vm:if>
+              </vm:if>
+              <div id="pb_3">
+              <?vsp
+                if (self.abScope = 'MyContacts')
+                {
+                  http ('Tags');
+                } else {
+                  http ('Shared Contacts');
+                }
+              ?>
+              </div>
+              <div id="pc_3" style="display: none;">
             <?vsp
-              if (self.abScope = 'MyContacts') {
+                if (self.abScope = 'MyContacts')
+                {
                 declare _done, tMin, tMax integer;
                 declare tClass, tStyle varchar;
 
@@ -734,17 +860,20 @@
                   _done := 1;  
                   tStyle := ODS.WA.tag_style(T_COUNT, tMin, tMax);
                   tClass := '';
-                  if (self.abTag = T_TAG)
+                    if ((self.abSubaction = 'tags') and (self.abValue = T_TAG))
                     tClass := 'nolink_a';
                   http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span class="%s" style="%s">%s</span></a> ', AB.WA.tag_id(T_TAG), T_TAG, T_TAG, 'app', SIOC..addressbook_tag_iri (self.account_id, T_TAG), tClass, tStyle, T_TAG));
                 }
-                if (not _done)
-                  http ('no tags');
               }
               if (self.abScope = 'MySharedContacts')
+                {
                 self.showTree(1, self.domain_id, self.account_id, AB.WA.make_node('r', 2), '');
+                }
             ?>
           </div>
+
+            </div>
+
         </div>
         <div class="ab_right">
           <v:template type="simple" enabled="--case when (self.abAction = 'browse') then 1 else 0 end">
@@ -754,14 +883,29 @@
               self.mode_test();
 
               image := '';
-              if (self.abScope = 'MyContacts') {
+                if (self.abScope = 'MyContacts')
+                {
                 nodeName := 'My Contacts';
-                if (not is_empty_or_null(self.abTag)) {
+                  if (self.abSubaction = 'tags')
+                  {
+                    if (not is_empty_or_null(self.abValue))
+                    {
                   image := 'tag_16.png';
-                  nodeName := nodeName || ', Tag: ' || self.abTag;
+                      nodeName := nodeName || ', Tag: ' || self.abValue;
+                    }
+                  }
+                  if (self.abSubaction = 'category')
+                  {
+                    if (is_empty_or_null (cast (self.abValue as integer)))
+                    {
+                      nodeName := nodeName || ': All categories';
+                    } else {
+                      nodeName := nodeName || ', Category: ' || (select C_NAME from AB.WA.CATEGORIES where C_ID = cast (self.abValue as integer));
                 }
               }
-              if (self.abScope = 'MySharedContacts') {
+                }
+                if (self.abScope = 'MySharedContacts')
+                {
                 image := 'group_16.png';
                 if ((AB.WA.node_type (self.abNode) = 'u') and (AB.WA.node_id (self.abNode) >= 0))
                   image := 'user_16.png';
@@ -772,11 +916,13 @@
               if (image <> '')
                 image := sprintf ('<img src="image/%s" border="0" alt="" /> ', image);
 
-              if (not is_empty_or_null(nodeName)) {
                 http('<div id="ab_header">');
-                http(sprintf('%s%s', image, nodeName));
-                http('</div>');
+                if (not is_empty_or_null(nodeName))
+                {
+                  http(sprintf('<div style="float: left">%s%s</div>', image, nodeName));
               }
+                http ('<div style="float: right"><span id="navigation"></span></div>');
+                http('</div>');
             ?>
             <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
               <v:before-data-bind>
@@ -788,11 +934,22 @@
                   if (self.abScope = 'MyContacts')
                   {
                     AB.WA.xml_set('MyContacts', data, 1);
-                  if (not is_empty_or_null (self.abTag))
-                    AB.WA.xml_set('tags', data, self.abTag);
+                      if (self.abSubAction = 'tags')
+                      {
+                        if (not is_empty_or_null (self.abValue))
+                          AB.WA.xml_set('tags', data, self.abValue);
+                      }
+                      if (self.abSubAction = 'category')
+                      {
+                        if (not is_empty_or_null (cast (self.abValue as integer)))
+                          AB.WA.xml_set('category', data, self.abValue);
+                      }
                     control.ds_sql := AB.WA.search_sql (self.domain_id, self.account_id, data);
-                  } else if (self.abScope = 'MySharedContacts') {
-                    if ((AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) = -1)) {
+                    }
+                    else if (self.abScope = 'MySharedContacts')
+                    {
+                      if ((AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) = -1))
+                      {
                       control.ds_sql := 'select *
                                            from (select distinct
                                                         U_ID                           P_ID,
@@ -807,7 +964,9 @@
                                                     and G_GRANTER_ID = U_ID) x
                                             where 1 = 1';
                       control.ds_sql := replace(control.ds_sql, '<USER_ID>', cast (self.account_id as varchar));
-                    } else if ((AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) >= 0)) {
+                      }
+                      else if ((AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) >= 0))
+                      {
                       control.ds_sql := 'select *
                                            from (select a.P_ID                          P_ID,
                                                         AB.WA.make_node(\'p\', a.P_ID)  P_NODE,
@@ -830,6 +989,9 @@
                   control.ds_parameters := vector ();
                 ]]>
               </v:before-data-bind>
+                <v:after-data-bind>
+                  control.ds_make_statistic ();
+                </v:after-data-bind>
             </v:data-source>
 
             <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
@@ -884,7 +1046,8 @@
                           declare N, id, did integer;
                           declare title, actions, tags any;
 
-                          if ((self.abScope = 'MySharedContacts') and (AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) = -1)) {
+                            if ((self.abScope = 'MySharedContacts') and (AB.WA.node_type(self.abNode) = 'u') and (AB.WA.node_id(self.abNode) = -1))
+                            {
                             http (sprintf ('<div style="float: left; font-weight: bold;">%s</div>', AB.WA.stringCut((control as vspx_row_template).te_column_value('P_NAME'), self.abChars)));
                             goto _skip;
                           }
@@ -909,10 +1072,12 @@
                           http (actions);
                           http ('</div>');
 
-                          if (not is_empty_or_null(tags)) {
+                            if (not is_empty_or_null(tags))
+                            {
                             http ('<br style="clear: both;" /><i>Tags: ');
                             tags := split_and_decode (tags, 0, '\0\0,');
-                            for (N := 0; N < length(tags); N := N + 1) {
+                              for (N := 0; N < length(tags); N := N + 1)
+                              {
                               http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, AB.WA.tag_id (tags[N]), tags[N], tags[N], 'app', SIOC..addressbook_tag_iri (self.account_id, tags[N]), tags[N]));
                               if (N <> length(tags)-1)
                                 http (' | ');
@@ -930,21 +1095,21 @@
 
               <v:template name="ds_footer" type="simple" name-to-remove="table" set-to-remove="top">
                 <table>
-                  <tr align="center">
-                    <td align="center" colspan="2">
-                      <vm:ds-navigation data-set="ds"/>
-                    </td>
-                  </tr>
                 </table>
               </v:template>
 
+                <span id="ds_navigation">
+                  <vm:ds-navigation data-set="ds" />
+                </span>
             </v:data-set>
             <script type="text/javascript">
               <![CDATA[
                 coloriseTable('contacts');
+                  exchangeHTML();
 
                 var objForm = document.forms['F1'];
-                for (var i = 0; i < objForm.elements.length; i++) {
+                  for (var i = 0; i < objForm.elements.length; i++)
+                  {
                   var o = objForm.elements[i];
                   if (o != null && o.type == 'checkbox' && !o.disabled && o.name.indexOf ('cb_item') != -1)
                     coloriseRow(getParent(o, 'tr'), o.checked);
@@ -968,24 +1133,7 @@
                     <v:text name="t_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60" />
                   </td>
                 </tr>
-                <tr>
-                  <th>
-                    My Tags
-                  </th>
-                  <td>
-                    <?vsp
-                      declare _done integer;
-
-                      _done := 0;
-                      for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
-                        http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'t_tag\');"><i>%s</i></a> ', T_TAG, T_TAG));
-                        _done := 1;
-                      }
-                      if (not _done)
-                        http ('no tags');
-                    ?>
-                  </td>
-                </tr>
+                  <?vsp self.myTags ('t_tag'); ?>
               </table>
             </div>
             <div class="new-form-footer">
@@ -993,14 +1141,16 @@
                 <v:on-post>
                   <![CDATA[
                     self.v_tag := AB.WA.tag_prepare(self.t_tag.ufl_value);
-                    if (not AB.WA.validate_tags(self.v_tag)) {
-                      self.vc_is_valid := 0;
+                      if (not AB.WA.validate_tags(self.v_tag))
+                      {
                       self.vc_error_message := 'The expression is not valid tag(s).';
+                        self.vc_is_valid := 0;
                       return;
                     }
                     declare N integer;
 
-                    for (N := 0; N < length(self.abSelected); N := N + 1) {
+                      for (N := 0; N < length(self.abSelected); N := N + 1)
+                      {
                       self.v_tags := AB.WA.contact_tags_select(self.abSelected[N], self.domain_id);
                       self.v_tags := AB.WA.tags_join(self.v_tags, self.v_tag);
                       AB.WA.contact_tags_update (self.abSelected[N], self.domain_id, self.v_tags);
@@ -1038,8 +1188,10 @@
                     declare name varchar;
 
                     control.ufl_value := 'Sharings for ';
-                    for (N := 0; N < length(self.abSelected); N := N + 1) {
-                      if (length (control.ufl_value) < 60) {
+                      for (N := 0; N < length(self.abSelected); N := N + 1)
+                      {
+                        if (length (control.ufl_value) < 60)
+                        {
                         name := '''' || (select P_NAME from AB.WA.PERSONS where P_ID = self.abSelected[N]) || '''';
                         if (N <> 0)
                           name := ', ' || name;
@@ -1104,10 +1256,13 @@
               <![CDATA[
                 declare params any;
 
+                  declare exit handler for not found goto _end;
+
                 params := self.vc_page.vc_event.ve_params;
                 if (isnull (get_keyword ('ab_name', params)))
                   self.v_tabNo := '1';
-                if (((self.abAction = 'edit') or (self.abAction = 'view')) and isnull (get_keyword ('ab_name', params))) {
+                  if ((self.abAction in ('edit', 'view')) and isnull (get_keyword ('ab_name', params)))
+                  {
                   select coalesce (P_KIND, 0),
                          P_NAME,
                          P_TITLE,
@@ -1158,7 +1313,9 @@
                          P_B_JOB,
                          P_B_MAIL,
                          P_B_WEB,
-                         P_TAGS
+                           P_TAGS,
+                           C_ID,
+                           C_NAME
                     into self.v_kind,
                          self.v_name,
                          self.v_title,
@@ -1209,11 +1366,15 @@
                          self.v_bJob,
                          self.v_bMail,
                          self.v_bWeb,
-                         self.v_tags
+                           self.v_tags,
+                           self.v_category_id,
+                           self.v_category_name
                     from AB.WA.PERSONS
+                             left join AB.WA.CATEGORIES on C_ID = P_CATEGORY_ID
                    where P_ID = self.v_id;
                   self.v_grants := self.shareSelect (self.v_id);
                 }
+                _end:;
               ]]>
             </v:before-data-bind>
 
@@ -1402,6 +1563,36 @@
                       </tr>
                     </vm:if>
                     <tr>
+                        <th>
+                          <v:label for="ab_category" value="Category" />
+                        </th>
+                        <td id="td_cc">
+                          <vm:if test="self.abAction <> 'view'">
+                            <![CDATA[
+                              <script type="text/javascript">
+                                function categoryCombo ()
+                                {
+                                  var cc = new OAT.Combolist([], "<?V coalesce (self.v_category_name, '') ?>");
+                                  cc.input.name = "ab_category_name";
+                                  cc.input.id = "ab_category_name";
+                                  cc.input.size = "60";
+                                  $("td_cc").appendChild(cc.div);
+                                  cc.addOption("");
+                                  <?vsp
+                                    for (select C_NAME from AB.WA.CATEGORIES where C_DOMAIN_ID = self.domain_id order by C_NAME) do
+                                    {
+                                      http (sprintf ('cc.addOption("%s");', C_NAME));
+                                    }
+                                  ?>
+                                }
+                                OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, categoryCombo);
+                               </script>
+                            ]]>
+                          </vm:if>
+                          <?vsp self.viewField (self.v_category_name); ?>
+                        </td>
+                      </tr>
+                      <tr>
                       <script type="text/javascript">
                         function suggestTags ()
                         {
@@ -1421,24 +1612,7 @@
                       </td>
                     </tr>
                     <vm:if test="self.abAction <> 'view'">
-                    <tr>
-                      <th>
-                        My Tags
-                      </th>
-                      <td>
-                        <?vsp
-                          declare _done integer;
-
-                          _done := 0;
-                            for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
-                              http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'ab_tags\');">%s</a> ', T_TAG, T_TAG));
-                            _done := 1;
-                          }
-                          if (not _done)
-                            http ('no tags');
-                        ?>
-                      </td>
-                    </tr>
+                        <?vsp self.myTags ('ab_tags'); ?>
                     </vm:if>
                   </table>
                 </div>
@@ -1534,14 +1708,16 @@
                           <v:data-list name="ab_hCountry" xhtml_id="ab_hCountry" sql="select '' as WC_NAME from WA_COUNTRY union select WC_NAME from WA_COUNTRY" key-column="WC_NAME" value-column="WC_NAME" xhtml_onchange="javascript: updateState(\'ab_hCountry\', \'ab_hState\');" >
                    		    <v:after-data-bind>
       		                  <![CDATA[
-      		                    if (e.ve_initiator = control) {
+                                  if (e.ve_initiator = control)
+                                  {
                     		        control.ufl_value := get_keyword (control.vc_get_name(), e.ve_params);
                           			self.v_hState := null;
                          			  self.ab_hState.vc_data_bind (e);
                           		} else {
       		                      control.ufl_value := self.v_hCountry;
                           		}
-      		                    if (is_empty_or_null (self.v_hLat) and is_empty_or_null (self.v_hLng) and (not e.ve_is_post or e.ve_initiator = control)) {
+                                  if (is_empty_or_null (self.v_hLat) and is_empty_or_null (self.v_hLng) and (not e.ve_is_post or e.ve_initiator = control))
+                                  {
       		                      whenever not found goto _end;
       		                      select WC_LAT, WC_LNG into self.v_hLat, self.v_hLng from WA_COUNTRY where WC_NAME = control.ufl_value;
       		                    _end:;
@@ -2045,9 +2221,12 @@
                     declare dt datetime;
 
   	                dt := null;
-                    if (not self.v_kind) {
-                    if (not is_empty_or_null (self.ab_birthday.ufl_value)) {
-			                declare exit handler for sqlstate '*' {
+                      if (not self.v_kind)
+                      {
+                        if (not is_empty_or_null (self.ab_birthday.ufl_value))
+                        {
+                          declare exit handler for sqlstate '*'
+                          {
                           self.vc_error_message := sprintf ('An invalid birth date (%s) is specified', self.ab_birthday.ufl_value);
 			                  self.vc_is_valid := 0;
            			        return;
@@ -2058,15 +2237,18 @@
 
                 		self.v_hLat := null;
                 		self.v_hLng := null;
-                    if (not self.v_kind) {
-			              if (length (self.ab_hLat.ufl_value) and length (self.ab_hLng.ufl_value)) {
+                      if (not self.v_kind)
+                      {
+                        if (length (self.ab_hLat.ufl_value) and length (self.ab_hLng.ufl_value))
+                        {
           			      self.v_hLat := atof (self.ab_hLat.ufl_value);
           			      self.v_hLng := atof (self.ab_hLng.ufl_value);
 			              }
                     }
                 		self.v_bLat := null;
                 		self.v_bLng := null;
-			              if (length (self.ab_bLat.ufl_value) and length (self.ab_bLng.ufl_value)) {
+                      if (length (self.ab_bLat.ufl_value) and length (self.ab_bLng.ufl_value))
+                      {
           			      self.v_bLat := atof (self.ab_bLat.ufl_value);
           			      self.v_bLng := atof (self.ab_bLng.ufl_value);
 			              }
@@ -2115,9 +2297,13 @@
                     self.v_bMail         := trim (self.ab_bMail.ufl_value);
                     self.v_bWeb          := trim (self.ab_bWeb.ufl_value);
 
-                    self.v_id := AB.WA.contact_update (
+                      self.v_category_id   := AB.WA.category_update (self.domain_id, get_keyword ('ab_category_name', e.ve_params));
+
+                      self.v_id := AB.WA.contact_update
+                      (
                       self.v_id,
                       self.domain_id,
+                        self.v_category_id,
                       self.v_kind,
                       self.v_name,
                       self.v_title,
@@ -2269,13 +2455,20 @@
 
                       self.abStep := '2';
 	                    tmp := self.i_source;
-	                    if (self.i_source_0.ufl_selected) {
+                        if (self.i_source_0.ufl_selected)
+                        {
 	                      self.i_source := 0;
-	                    } else if (self.i_source_1.ufl_selected) {
+                        }
+                        else if (self.i_source_1.ufl_selected)
+                        {
 	                      self.i_source := 1;
-	                    } else if (self.i_source_2.ufl_selected) {
+                        }
+                        else if (self.i_source_2.ufl_selected)
+                        {
 	                      self.i_source := 2;
-                      } else if (self.i_source_3.ufl_selected) {
+                        }
+                        else if (self.i_source_3.ufl_selected)
+                        {
                         self.i_source := 3;
 	                      self.i_type := 3;
                         self.abStep := '3';
@@ -2363,9 +2556,13 @@
 	                  <![CDATA[
 	                    if (self.i_type_0.ufl_selected) {
 	                      self.i_type := 0;
-	                    } else if (self.i_type_1.ufl_selected) {
+                        }
+                        else if (self.i_type_1.ufl_selected)
+                        {
 	                      self.i_type := 1;
-	                    } else if (self.i_type_2.ufl_selected) {
+                        }
+                        else if (self.i_type_2.ufl_selected)
+                        {
 	                      self.i_type := 2;
 	                    }
 
@@ -2430,6 +2627,53 @@
                         <v:text name="f_uri" value="--''" xhtml_size="60" />
                       </td>
                     </tr>
+                      <vm:if test="self.i_type = 1">
+                        <tr>
+                          <th>
+                            Grab Depth
+                          </th>
+                          <td>
+                            <v:select-list name="i_depth">
+                              <v:item value="0" name="0" />
+                              <v:item value="1" name="1" />
+                              <v:item value="2" name="2" />
+                              <v:before-data-bind>
+                                <![CDATA[
+                                  control.ufl_value := self.i_contentDepth;
+                                  control.vc_data_bound := 1;
+                                ]]>
+                              </v:before-data-bind>
+                            </v:select-list>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th>
+                            Grab Limit
+                          </th>
+                          <td>
+                            <v:text name="i_limit" value="--self.i_contentLimit" xhtml_size="3" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <th>
+                            Grab Follow Predicate
+                          </th>
+                          <td>
+                            <v:select-list name="i_follow">
+                              <v:item value="http://xmlns.com/foaf/0.1/knows" name="foaf:knows" />
+                              <v:item value="http://www.w3.org/2002/07/owl#sameAs" name="owl:sameAs" />
+                              <v:item value="http://www.w3.org/2000/01/rdf-schema#seeAlso" name="rdfs:seeAlso" />
+                              <v:item value="http://www.w3.org/2000/01/rdf-schema#isDefineBy" name="rdfs:isDefineBy" />
+                              <v:before-data-bind>
+                                <![CDATA[
+                                  control.ufl_value := self.i_contentFollow;
+                                  control.vc_data_bound := 1;
+                                ]]>
+                              </v:before-data-bind>
+                            </v:select-list>
+                          </td>
+                        </tr>
+                      </vm:if>
                   </vm:if>
                   <vm:if test="self.i_source = 3">
                     <tr>
@@ -2445,10 +2689,12 @@
               		                   auto-submit="1">
                    		    <v:after-data-bind>
       		                  <![CDATA[
-      		                    if (e.ve_initiator = control) {
+                                if (e.ve_initiator = control)
+                                {
                     		        self.i_lName := get_keyword (control.vc_get_name(), e.ve_params);
                     		        control.ufl_value := self.i_lName;
-                      	        if (self.i_lName <> '') {
+                                  if (self.i_lName <> '')
+                                  {
                       		        select LS_HOST,
                                          LS_PORT,
                                          LS_BASE_DN,
@@ -2580,36 +2826,54 @@
 
 	                    if (self.i_source = 0) {
 	                      self.i_data := trim(get_keyword ('f_file', self.vc_page.vc_event.ve_params, ''));
-	                      if (is_empty_or_null (self.i_data)) {
+                          if (is_empty_or_null (self.i_data))
+                          {
 	                        self.vc_error_message := 'Please select file from your local file system!';
 	                        self.vc_is_valid := 0;
 	                        return;
 	                      }
 
-	                    } else if (self.i_source = 1) {
+                        }
+                        else if (self.i_source = 1)
+                        {
 	                      self.f_dav.ufl_value := trim(self.f_dav.ufl_value);
-	                      if (self.f_dav.ufl_value not like (AB.WA.dav_home (self.account_id) || '%')) {
+                          if (self.f_dav.ufl_value not like (AB.WA.dav_home (self.account_id) || '%'))
+                          {
 	                        self.vc_error_message := sprintf('Please select file from your WebDAV home directory ''%s''!', AB.WA.dav_home (self.account_id));
 	                        self.vc_is_valid := 0;
 	                        return;
 	                      }
                         self.i_data := AB.WA.dav_content (AB.WA.host_url () || self.f_dav.ufl_value);
-	                      if (isnull(self.i_data)) {
+                          if (isnull(self.i_data))
+                          {
 	                        self.vc_error_message := 'Bad import source!';
 	                        self.vc_is_valid := 0;
 	                        return;
 	                      }
 
-	                    } else if (self.i_source = 2) {
+                        }
+                        else if (self.i_source = 2)
+                        {
                         self.f_uri.ufl_value := trim(self.f_uri.ufl_value);
-                        if (is_empty_or_null (self.f_uri.ufl_value)) {
+                          if (is_empty_or_null (self.f_uri.ufl_value))
+                          {
                           self.vc_error_message := 'Please select correct URL address!';
                           self.vc_is_valid := 0;
                           return;
                         }
+                          if (self.i_type = 1)
+                          {
+                            AB.WA.test (self.i_limit.ufl_value, vector('name', 'Grab Limit', 'class', 'integer', 'minValue', 1, 'maxValue', 100));
+                            self.i_contentDepth := atoi (self.i_depth.ufl_value);
+                            self.i_contentLimit := atoi (self.i_limit.ufl_value);
+                            self.i_contentFollow := self.i_follow.ufl_value;
+                          }
+
                         self.i_data := self.f_uri.ufl_value;
                         
-                      } else if (self.i_source = 3) {
+                        }
+                        else if (self.i_source = 3)
+                        {
                         self.i_lName := trim (self.f_lName.ufl_value);
                         self.i_lHost := trim (self.f_lHost.ufl_value);
                         self.i_lPort := trim (self.f_lPort.ufl_value);
@@ -2633,10 +2897,14 @@
                         self.i_data := ldap_search (host, 0, self.i_lBase_dn, self.i_lSearch, self.i_lBind_dn, self.i_lPassword);
 	                    }
 
-                      if (self.i_type = 1) {
-                        self.i_Items := AB.WA.import_foaf_content (self.i_data, case when (self.i_source = 2) then 1 else 0 end, self.i_iri);
+                        if (self.i_type = 1)
+                        {
+                          AB.WA.ab_graph_delete (self.i_iri);
+                          self.i_iri := AB.WA.ab_graph_create ();
+                          self.i_Items := AB.WA.import_foaf_content (self.i_data, case when (self.i_source = 2) then 1 else 0 end, self.i_iri, self.i_contentDepth, self.i_contentLimit, self.i_contentFollow);
                       }
-                      if (self.i_type = 2) {
+                        if (self.i_type = 2)
+                        {
                         self.i_data := replace (self.i_data, '\015\012', '\012');
                         self.i_data := replace (self.i_data, '\012\015', '\012');
                         self.i_data := replace (self.i_data, '\015', '\012');
@@ -2756,14 +3024,15 @@
                       declare params any;
 
                       params := e.ve_params;
-                      self.i_selections := vector ();
+                        self.i_contentItems := vector ();
                       for (N := 0; N < length (params); N := N + 4)
                       {
                         if (params[N] = 'cb_item')
-                          self.i_selections := vector_concat (self.i_selections, vector (vector (params[N+1])));
+                            self.i_contentItems := vector_concat (self.i_contentItems, vector (vector (params[N+1])));
                       }
 
-                      if (length (self.i_selections)) {
+                        if (length (self.i_contentItems))
+                        {
                         self.abStep := '6';
                         if ((self.i_type = 2) or (self.i_type = 3))
                         {
@@ -2944,12 +3213,15 @@
                           'E-mail 2 Address',     'P_H_MAIL',
                           'E-mail 3 Address',     'P_B_MAIL');
 
-                        if (length (self.i_data)) {
+                          if (length (self.i_data))
+                          {
                           self.i_maps := vector ();
                           data := split_and_decode (self.i_data [N], 0, '\0\0,');
-                          for (N := 0; N < length (data); N := N + 1) {
+                            for (N := 0; N < length (data); N := N + 1)
+                            {
                             for (M := 0; M < length (tmp); M := M + 2)
-                              if (trim (data[N], '"') = tmp[M]) {
+                                if (trim (data[N], '"') = tmp[M])
+                                {
                                 self.i_maps := vector_concat (self.i_maps, vector (cast (N as varchar), tmp[M+1]));
                                 goto _next;
                               }
@@ -3040,24 +3312,7 @@
                       <v:text name="i_tags" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60" />
 	                  </td>
 	                </tr>
-                  <tr>
-                    <th>
-                      My Tags
-                    </th>
-                    <td>
-                      <?vsp
-                        declare _done integer;
-
-                        _done := 0;
-                        for (select T_TAG from AB.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do {
-                          http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'i_tags\');"><i>%s</i></a> ', T_TAG, T_TAG));
-                          _done := 1;
-                        }
-                        if (not _done)
-                          http ('no tags');
-                      ?>
-                    </td>
-                  </tr>
+                    <?vsp self.myTags ('i_tags'); ?>
                   <tr>
                     <th valign="top">
                       Validation Fields
@@ -3071,7 +3326,8 @@
 
                             data := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = self.account_id), vector());
                             fields := LDAP..contact_fields ();
-                            for (N := 0; N < length (fields); N := N + 2) {
+                              for (N := 0; N < length (fields); N := N + 2)
+                              {
                       	  ?>
                       	  <tr>
                       	    <td width="1%">
@@ -3130,7 +3386,8 @@
 
                       params := e.ve_params;
                       self.i_validation := vector ();
-                      for (N := 0; N < length (params); N := N + 4) {
+                        for (N := 0; N < length (params); N := N + 4)
+                        {
                         if (params[N] = 'cb_item')
                           self.i_validation := vector_concat (self.i_validation, vector (params[N+1]));
                       }
@@ -3141,7 +3398,7 @@
 
 			                -- FOAF
                       if (self.i_type = 1)
-                        AB.WA.import_foaf (self.domain_id, self.i_data, self.v_tags, self.i_validation, 2, self.i_iri, self.i_selections);
+                          AB.WA.import_foaf (self.domain_id, self.i_data, self.v_tags, self.i_validation, 2, self.i_iri, self.i_contentItems, self.i_contentDepth, self.i_contentLimit, self.i_contentFollow);
 
 			                -- CSV
                       if (self.i_type = 2)
@@ -3220,9 +3477,11 @@
                     http_header ('Content-Type: application/x-download\r\n');
                     http_header (sprintf ('Content-Disposition: inline; filename="%s"\r\n', self.e_file.ufl_value));
 
-                    if (get_keyword ('e_format', params) = 'vCard') {
+                      if (get_keyword ('e_format', params) = 'vCard')
+                      {
                       -- vCard
-                      if (length (self.abSelected)) {
+                        if (length (self.abSelected))
+                        {
                         foreach (any id in self.abSelected) do
                           http (AB.WA.export_vcard (cast (id as integer), self.domain_id));
                       } else {
@@ -3230,18 +3489,24 @@
                           http (AB.WA.export_vcard (P_ID, self.domain_id));
                       }
 
-                    } else if (get_keyword ('e_format', params) = 'FOAF') {
+                      }
+                      else if (get_keyword ('e_format', params) = 'FOAF')
+                      {
                       -- foaf
-                      if (length (self.abSelected)) {
+                        if (length (self.abSelected))
+                        {
                         http (AB.WA.export_foaf (self.abSelected, self.domain_id));
                       } else {
                         http (AB.WA.export_foaf (null, self.domain_id));
                       }
 
-                    } else if (get_keyword ('e_format', params) = 'csv') {
+                      }
+                      else if (get_keyword ('e_format', params) = 'csv')
+                      {
                       -- CSV
                       http (AB.WA.export_csv_head ());
-                      if (length (self.abSelected)) {
+                        if (length (self.abSelected))
+                        {
                         foreach (any id in self.abSelected) do
                           http (AB.WA.export_csv (cast (id as integer), self.domain_id));
                       } else {
@@ -3268,9 +3533,351 @@
             </div>
 
           </v:template>
-
+          </div>
         </div>
+      </vm:if>
+
+      <vm:if test="self.abAction = 'settings'">
+        <div class="new-form-header" style="margin-top: 6px;">
+          Preferences
+        </div>
+        <table width="100%" class="new-form-body" cellspacing="0">
+          <tr style="min-height: 200px;">
+            <td width="1%" valign="top" style="padding-right: 5px; border-right: solid 1px; border-color: #7f94a5;">
+              <v:button action="simple" value="Settings" xhtml_class="button" xhtml_style="width: 200px;">
+                <v:on-post>
+                  <![CDATA[
+                    self.abSubAction := '';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <br />
+              <v:button action="simple" value="Categories" xhtml_class="button" xhtml_style="width: 200px;">
+                <v:on-post>
+                  <![CDATA[
+                    self.abSubAction := 'categoriesBrowse';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+              <v:button action="simple" value="Back" xhtml_class="button" xhtml_style="width: 200px;">
+                <v:on-post>
+                  <![CDATA[
+                    self.abAction := 'browse';
+                    self.abSubAction := '';
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </td>
+            <td valign="top" style="padding-left: 5px;">
+              <vm:if test="self.abSubAction =''">
+                <div class="new-form-header" style="margin-top: 6px;">
+                  Settings
       </div>
+                <table class="form-body" cellspacing="0">
+                  <tr>
+                    <th width="30%">
+                      <v:label for="f_chars" value="Contact name display"/>
+                    </th>
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (cast(get_keyword('chars', self.settings, '0') as integer) = 0)
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="r_chars" id="r_chars_0" value="0" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp"/><vm:label for="r_chars_0" value="--'show everything'" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th />
+                    <td>
+                      <?vsp
+                        declare S varchar;
+
+                        S := '';
+                        if (cast(get_keyword('chars', self.settings, '0') as integer) <> 0)
+                          S := 'checked="checked"';
+                        http(sprintf('<input type="radio" name="r_chars" id="r_chars_1" value="1" %s />', S));
+                      ?>
+                      <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
+                      <v:text name="f_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3"/>
+                      <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'characters'" /><xsl:call-template name="nbsp"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th width="30%"/>
+                    <td>
+                      <v:check-box name="f_tbLabels" xhtml_id="f_tbLabels" is-boolean="1" true-value="1" false-value="0" value="--cast(get_keyword('tbLabels', self.settings, '1') as integer)" />
+                      <vm:label for="f_tbLabels" value="Show toolbar labels"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <v:label for="f_rows" value="Rows per page"/>
+                    </th>
+                    <td>
+                      <v:text name="f_rows" value="--get_keyword('rows', self.settings, '10')" xhtml_size="3"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      Atom File Version
+                    </th>
+                    <td>
+                      <v:select-list name="f_atomVersion">
+                        <v:item value="0.3" name="0.3"/>
+                        <v:item value="1.0" name="1.0"/>
+                        <v:before-data-bind>
+                          <![CDATA[
+                            control.ufl_value := get_keyword('atomVersion', self.settings, '1.0');
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                    </td>
+                  </tr>
+                </table>
+                <div class="new-form-footer">
+                  <v:button action="simple" value="Save" xhtml_class="form-button">
+                    <v:on-post>
+                      <![CDATA[
+                        declare rows, chars any;
+
+                        declare exit handler for SQLSTATE '*' {
+                          if (__SQL_STATE = 'TEST') {
+                            self.vc_error_message := AB.WA.test_clear(__SQL_MESSAGE);
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                          resignal;
+                        };
+
+                        rows := trim(self.f_rows.ufl_value);
+                        chars := trim(self.f_chars.ufl_value);
+                        if (get_keyword ('r_chars', self.vc_page.vc_event.ve_params, '-1') = '0')
+                          chars := '0';
+
+                        AB.WA.test (rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
+                        AB.WA.test (chars, vector('name', 'Max name length', 'class', 'integer', 'type', 'integer', 'minValue', 0, 'maxValue', 1000));
+
+                        self.settings := AB.WA.set_keyword ('chars', self.settings, cast(cast(chars as integer) as varchar));
+                        self.settings := AB.WA.set_keyword ('rows', self.settings, cast(cast(rows as integer) as varchar));
+                        self.settings := AB.WA.set_keyword ('tbLabels', self.settings, self.f_tbLabels.ufl_selected);
+                        self.settings := AB.WA.set_keyword ('atomVersion', self.settings, self.f_atomVersion.ufl_value);
+
+                        insert replacing AB.WA.SETTINGS(S_ACCOUNT_ID, S_DATA) values(self.account_id, serialize(self.settings));
+                        commit work;
+
+                        AB.WA.domain_gems_create(self.domain_id, self.account_id);
+
+                        self.vc_redirect('home.vspx');
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button action="simple" value="Clear" xhtml_class="form-button">
+                    <v:on-post>
+                      <![CDATA[
+                        delete from AB.WA.SETTINGS where S_ACCOUNT_ID = self.account_id;
+
+                        self.vc_redirect('settings.vspx');
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button action="simple" value="Cancel" xhtml_class="form-button">
+                    <v:on-post>
+                      <![CDATA[
+                        self.vc_redirect('home.vspx');
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </div>
+              </vm:if>
+              <vm:if test="self.abSubAction = 'categoriesBrowse'">
+                <v:button value="--'New Category'" action="simple" xhtml_class="button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.abSubAction := 'categoryCreate';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected items?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                  <v:on-post>
+                    <![CDATA[
+                      declare N integer;
+
+                      for (N := 0; N < length(e.ve_params); N := N + 4)
+                        if (e.ve_params[N] = 'cb_item')
+                          delete from AB.WA.CATEGORIES where C_ID = cast (e.ve_params[N+1] as integer);
+
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:data-set name="ds_categories" sql="select * from AB.WA.CATEGORIES where C_DOMAIN_ID = :p0 order by C_NAME" nrows="0" scrollable="1">
+                  <v:param name="p0" value="--self.domain_id" />
+
+                  <v:template name="ds_categories_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                    <table id="categoriesTable" style="width: 100%; background-color: #FFF;" cellspacing="0">
+                      <thead class="sortHeader">
+                        <tr>
+                          <th class="checkbox" width="1%">
+                            <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
+                          </th>
+                          <th style="text-align: left;">Name</th>
+                          <th style="text-align: left;" width="5%">Action</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </v:template>
+                  <v:template name="ds_categories_repeat" type="repeat">
+
+                    <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                      <table>
+                        <tr align="center">
+                          <td colspan="3">No categories</td>
+                        </tr>
+                      </table>
+                    </v:template>
+
+                    <v:template name="ds_categories_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                      <table>
+                        <tr>
+                          <td align="center" valign="top">
+                            <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('C_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
+                          </td>
+                          <td nowrap="nowrap">
+                            <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('C_NAME')" />
+                          </td>
+                          <td nowrap="nowrap">
+                            <v:button value="Edit" action="simple" xhtml_class="button">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.v_id := (control.vc_parent as vspx_row_template).te_column_value('C_ID');
+                                  self.abSubAction := 'categoryUpdate';
+                                  self.vc_data_bind(e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
+                      </table>
+                    </v:template>
+
+                  </v:template>
+
+                  <v:template type="simple" name-to-remove="table" set-to-remove="top">
+                    <table>
+                    </table>
+                  </v:template>
+
+                </v:data-set>
+                <script type="text/javascript">
+                  <![CDATA[
+                    coloriseTable('categoriesTable');
+                  ]]>
+                </script>
+              </vm:if>
+              <vm:if test="self.abSubAction in ('categoryCreate', 'categoryUpdate')">
+                <v:before-data-bind>
+                  <![CDATA[
+                    declare params any;
+                    params := self.vc_page.vc_event.ve_params;
+
+                    if (isnull (get_keyword ('su_name', params)))
+                    {
+                      declare exit handler for not found goto _end;
+
+                      if (self.abSubAction = 'categoryUpdate')
+                      {
+                        declare tmp any;
+
+                        select C_NAME
+                          into self.v_name
+                          from AB.WA.CATEGORIES
+                         where C_ID = self.v_id;
+
+                         return;
+                      }
+                    _end:;
+
+                      self.v_name := '';
+                    }
+                  ]]>
+                </v:before-data-bind>
+                <div class="new-form-header">
+                  <v:label value="--case when self.abSubAction = 'categoryCreate' then 'Create category' else 'Update category' end"/>
+                </div>
+                <table class="new-form-body" cellspacing="0">
+                  <tr>
+                    <th width="30%">
+                      Name
+                    </th>
+                    <td>
+                      <v:text name="c_name" value="--self.v_name" xhtml_size="60" />
+                    </td>
+                  </tr>
+                </table>
+                <div class="new-form-footer">
+                  <v:button action="simple" value="--case when self.abSubAction = 'categoryCreate' then 'Create' else 'Update' end" name="s1u_save" xhtml_class="form-button">
+                    <v:on-post>
+                      <![CDATA[
+                        declare exit handler for SQLSTATE '*'
+                        {
+                          if (__SQL_STATE = 'TEST')
+                          {
+                            self.vc_error_message := AB.WA.test_clear(__SQL_MESSAGE);
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                          if (__SQL_STATE = '23000')
+                          {
+                            rollback work;
+                            self.vc_error_message := 'A category with same name already exists, please specify unique category name.';
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                          resignal;
+                        };
+
+                        self.v_name := trim (self.c_name.ufl_value);
+                        AB.WA.test (self.v_name, vector('name', 'Category Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 50));
+
+                        if (self.abSubAction = 'categoryCreate')
+                        {
+                          self.v_id := sequence_next ('AB.WA.category_id');
+                          insert into AB.WA.CATEGORIES (C_ID, C_DOMAIN_ID, C_NAME)
+                            values (self.v_id, self.domain_id, self.v_name);
+                        } else {
+                          update AB.WA.CATEGORIES
+                             set C_NAME = self.v_name
+                           where C_ID = self.v_id;
+                        }
+
+                        self.abSubAction := 'categoriesBrowse';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button action="simple" value="Cancel" name="s1u_cancel" xhtml_class="form-button">
+                    <v:on-post>
+                      <![CDATA[
+                        self.abSubAction := 'categoriesBrowse';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </div>
+              </vm:if>
+            </td>
+          </tr>
+        </table>
+      </vm:if>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

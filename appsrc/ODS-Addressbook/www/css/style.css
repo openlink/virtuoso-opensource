@@ -119,31 +119,18 @@ a:hover
   background-color: #b0cde4;
 }
 
-.left_container
-{
-  background-color: #EFEFEF;
-  border: 1px solid #7f94a5;
-  padding: 5px;
-  margin: 0 0.5em 0.5em 0.5em;
-  width: auto;
-}
-
-.left_container div, .left_container a
+a.gems
 {
   display: block;
   padding: 3px;
   margin: 3px;
-}
-
-.left_container a
-{
   text-decoration: none;
 }
 
-.left_container a:hover
+a.gems:hover
 {
   color: black;
-  background: #99b3c5;
+  background: #bce;
 }
 
 .navigator_info
@@ -354,7 +341,7 @@ table#list thead input {
 
 .ab_left
 {
-  width: 33.3%;
+  width: 30.3%;
   float: left;
 }
 
@@ -396,7 +383,7 @@ table#list thead input {
 
 .ab_right
 {
-  width: 66.3%;
+  width: 69.3%;
   min-height: 500px;
   float: right;
   border: solid #7f94a5;
@@ -406,6 +393,7 @@ table#list thead input {
 #ab_header
 {
   font-size: 1em;
+  height: 16px;
   padding: 3px;
   background-color: #EFEFEF;
   border: solid #7f94a5;
@@ -474,7 +462,8 @@ table#list thead input {
   text-decoration: none;
 }
 
-input.button {
+input.button
+{
   margin: .2em 0 .1em 0;
   font-size: .8em;
   font-family: verdana, sans-serif;
@@ -737,7 +726,7 @@ thead.sortHeader tr
 }
 
 /* make the TH elements pretty */
-thead.sortHeader th
+thead.sortHeader tr th
 {
   font-size: 1em;
   font-weight: bold;
@@ -747,7 +736,7 @@ thead.sortHeader th
   border-width: 0px 1px 1px 0px;
 }
 
-thead.sortHeader th.checkbox
+thead.sortHeader tr th.checkbox
 {
   text-align: center;
   padding: 0;
@@ -1007,3 +996,59 @@ td.cpDayColumnHeader
 {
  color: #808080;
 }
+
+/*-------------- panelbar -----------------*/
+
+.panelbar
+{
+  width: 100%;
+  height: 500px;
+	border: 1px solid #7f94a5;
+}
+
+.panelbar_option
+{
+	font-weight: bold;
+	padding: 3px;
+	height: 16px;
+	background-color: #efefef;
+	cursor: pointer;
+}
+
+div.panelbar_option:hover
+{
+	background-color: #bce;
+}
+
+.panelbar_option_upper {
+	border-bottom: 1px solid #7f94a5;
+}
+
+.panelbar_option_lower {
+	border-top: 1px solid #7f94a5;
+}
+
+.panelbar_option_selected
+{
+	font-weight: bold;
+}
+
+.panelbar_content {
+	height: 430px;
+	background-color: #fff;
+  overflow: auto;
+}
+
+.combo_list_list {
+  background-color: white;
+  border: 1px solid black;
+  padding: 5px 10px 5px 10px;
+  height: 100px;
+  overflow: auto;
+}
+
+.combo_list_option:hover {
+  background-color: #bce;
+  color: white;
+}
+

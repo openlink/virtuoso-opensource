@@ -30,6 +30,11 @@ AB.WA.exec_no_error (
 )
 ;
 
+AB.WA.exec_no_error (
+  'sequence_set (\'AB.WA.category_id\', %d, 0)', 'S', 'AB.WA.CATEGORIES', 'C_ID'
+)
+;
+
 -------------------------------------------------------------------------------
 --
 AB.WA.exec_no_error('
@@ -45,9 +50,27 @@ AB.WA.exec_no_error('
 -------------------------------------------------------------------------------
 --
 AB.WA.exec_no_error('
+  create table AB.WA.CATEGORIES (
+    C_ID integer not null,
+    C_DOMAIN_ID integer not null,
+    C_NAME varchar,
+    C_COUNT integer,
+
+    primary key (C_ID)
+  )
+');
+
+AB.WA.exec_no_error('
+  create unique index SK_CATEGORIES_01 on AB.WA.CATEGORIES (C_DOMAIN_ID, C_NAME)
+');
+
+-------------------------------------------------------------------------------
+--
+AB.WA.exec_no_error('
   create table AB.WA.PERSONS (
     P_ID integer not null,
     P_DOMAIN_ID integer not null,
+    P_CATEGORY_ID integer,
     P_KIND integer,
     P_NAME varchar not null,
     P_TITLE varchar,
@@ -107,6 +130,10 @@ AB.WA.exec_no_error('
 ');
 
 AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add P_CATEGORY_ID integer', 'C', 'AB.WA.PERSONS', 'P_CATEGORY_ID'
+);
+
+AB.WA.exec_no_error (
   'alter table AB.WA.PERSONS add P_KIND integer', 'C', 'AB.WA.PERSONS', 'P_KIND'
 );
 
@@ -128,6 +155,10 @@ AB.WA.exec_no_error (
 
 AB.WA.exec_no_error (
   'alter table AB.WA.PERSONS add P_B_DEPARTMENT varchar', 'C', 'AB.WA.PERSONS', 'P_B_DEPARTMENT'
+);
+
+AB.WA.exec_no_error (
+  'alter table AB.WA.PERSONS add constraint FK_PERSONS_01 FOREIGN KEY (P_CATEGORY_ID) references AB.WA.CATEGORIES (C_ID) on delete set null'
 );
 
 AB.WA.exec_no_error ('
@@ -206,7 +237,8 @@ create procedure AB.WA.PERSONS_P_NAME_int (inout vtb any, inout d_id any, in mod
 {
   declare tags any;
 
-  for (select * from AB.WA.PERSONS where P_ID = d_id) do {
+  for (select * from AB.WA.PERSONS where P_ID = d_id) do
+  {
     vt_batch_feed (vtb, sprintf('^R%d', P_DOMAIN_ID), mode);
 
     vt_batch_feed (vtb, coalesce(P_NAME, ''), mode);
@@ -254,7 +286,8 @@ create procedure AB.WA.PERSONS_P_NAME_int (inout vtb any, inout d_id any, in mod
       vt_batch_feed (vtb, '^public', mode);
 
     tags := split_and_decode (P_TAGS, 0, '\0\0,');
-    foreach (any tag in tags) do  {
+    foreach (any tag in tags) do
+    {
       tag := concat('^T', trim(tag));
       tag := replace (tag, ' ', '_');
       tag := replace (tag, '+', '_');
