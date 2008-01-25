@@ -708,6 +708,28 @@ print_int64 (boxint n, dk_session_t *session)
 #endif
 }
 
+void
+print_int64_no_tag (boxint n, dk_session_t *session)
+{
+  union {
+    int64 n64;
+    struct {
+      int32 n1;
+      int32 n2;
+    } n32;
+  } num;
+  num.n64 = n;
+#if WORDS_BIGENDIAN
+  print_long (num.n32.n1, session);
+  print_long (num.n32.n2, session);
+#else
+  print_long (num.n32.n2, session);
+  print_long (num.n32.n1, session);
+#endif
+}
+
+
+
 ses_write_func int64_serialize_client_f;
 
 void

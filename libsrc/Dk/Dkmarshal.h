@@ -47,6 +47,7 @@ void *scan_session (dk_session_t *session);
 void *scan_session_boxing (dk_session_t *session);
 void print_long (long l, dk_session_t *session);
 void print_int64 (boxint n, dk_session_t *session);
+void print_int64_no_tag (boxint n, dk_session_t *session);
 void print_int (boxint n, dk_session_t *session);
 void print_float (float f, dk_session_t *session);
 void print_double (double v, dk_session_t *session);
