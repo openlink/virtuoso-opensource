@@ -2956,6 +2956,68 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 }
 ;
 
+create procedure ods_sioc_obj_describe (in u_name varchar, in fmt varchar := 'n3', in p int := 0)
+{
+  declare iri, graph, ses any;
+  declare qrs, stat, msg, accept, pref any;
+  declare rset, metas any;
+  declare triples any;
+
+--  dbg_obj_print (u_name, fmt);
+  set http_charset='utf-8';
+  if (fmt = 'text/rdf+n3')
+    fmt := 'n3';
+  else if (fmt = 'application/rdf+xml')
+    fmt := 'rdf';
+  if (fmt not in ('n3', 'ttl', 'rdf'))
+    fmt := 'rdf';
+
+  if (fmt = 'n3' or fmt = 'ttl')
+    accept := 'text/rdf+n3';
+  else
+    accept := 'application/rdf+xml';
+  graph := get_graph ();
+  ses := string_output ();
+  iri := user_obj_iri (u_name);
+  qrs := vector (0,0);
+  pref := 'sparql prefix sioc: <http://rdfs.org/sioc/ns#> prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> ';
+  qrs[0] := sprintf ('CONSTRUCT { <%s> ?p ?o . ?o a ?t . ?o rdfs:label ?l . ?o rdfs:seeAlso ?sa . } '||
+	  ' FROM <%s> WHERE { <%s> ?p ?o . optional { ?o a ?t } . optional { ?o rdfs:label ?l } . optional { ?o rdfs:seeAlso ?sa } '||
+	  ' filter (?p != sioc:creator_of) }', iri, get_graph (), iri);
+  qrs[1] := sprintf ('CONSTRUCT { ?s ?p <%s> . ?s a ?t . ?s rdfs:label ?l . ?s rdfs:seeAlso ?sa . } '||
+	  ' FROM <%s> WHERE { ?s ?p <%s> . optional { ?s a ?t } . optional { ?s rdfs:label ?l } . optional { ?s rdfs:seeAlso ?sa } '||
+	  ' filter (?p != sioc:has_creator) }', iri, get_graph (), iri);
+
+  if (fmt = 'rdf')
+    rdf_head (ses);
+  set_user_id ('dba');
+  foreach (any qr in qrs) do
+    {
+      qr := pref || qr;
+--      dbg_printf ('%s', qr);
+      stat := '00000';
+      exec (qr, stat, msg, vector (), 0, metas, rset);
+      if (stat <> '00000')
+	signal (stat, msg);
+      if (fmt = 'rdf')
+	{
+	  if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])))
+	    {
+	      triples := dict_list_keys (rset[0][0], 1);
+	      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+	    }
+	}
+      else
+	{
+	  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 0);
+	}
+    }
+  if (fmt = 'rdf')
+    rdf_tail (ses);
+  return ses;
+}
+;
+
 create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in inst_type varchar, in postid varchar := null,
 				   in p int := null, in fmt varchar := 'RDF/XML', in kind int := 0)
 {
