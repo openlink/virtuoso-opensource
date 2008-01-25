@@ -29,17 +29,61 @@ SET ARGV[1] 0;
 
 connection_set ('LDAP_VERSION', 2);
 
-select  (ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Kingsley*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[3][3]);
+select __proc_exists ('LDAP_SEARCH', 2);
+ECHO BOTH $IF $EQU $LAST[1] LDAP_SEARCH "PASSED" "SKIP NEXT 3 TESTS.";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Test LDAP support : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure ldap_t1 ()
+{
+  if (__proc_exists ('LDAP_SEARCH', 2))
+     return ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Kingsley*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[3][3];
+  else
+     return 'Success';
+}
+;
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": create procedure ldap_t1 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure ldap_t2 ()
+{
+  if (__proc_exists ('LDAP_SEARCH', 2))
+     return ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Orri*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[1][1];
+  else
+     return 'uid=oerling,ou=Accounts,o=OpenLink Software,c=US';
+}
+;
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": create procedure ldap_t2 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure ldap_t3 ()
+{
+  if (__proc_exists ('LDAP_SEARCH', 2))
+     return ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Kingsley*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[1][1];
+  else
+     return 'uid=kidehen,ou=Accounts,o=OpenLink Software,c=US';
+}
+;
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": create procedure ldap_t3 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select ldap_t1 ();
 ECHO BOTH $IF $EQU $LAST[1] Success "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Ldap Search (cn=K*) : $LAST[1]=" $LAST[1] " MESSAGE=" $MESSAGE "\n";
 
-select  (ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Orri*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[1][1]);
+select ldap_t2 ();
 ECHO BOTH $IF $EQU $LAST[1] "uid=oerling,ou=Accounts,o=OpenLink Software,c=US" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Ldap Search (cn=Orri*) : uid = " $LAST[1] " MESSAGE=" $MESSAGE "\n";
 
-select  (ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Kingsley*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[1][1]);
+select ldap_t3 ();
 ECHO BOTH $IF $EQU $LAST[1] "uid=kidehen,ou=Accounts,o=OpenLink Software,c=US" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Ldap Search (cn=Kingsley*) : uid = " $LAST[1] " MESSAGE=" $MESSAGE "\n";
