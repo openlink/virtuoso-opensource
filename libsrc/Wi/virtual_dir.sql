@@ -807,6 +807,21 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
     {
       if (lower (force) = 'rdf')
 	{
+	  declare params, defs any;
+	  params := http_param ();
+	  defs := '';
+	  for (declare i,l int, i := 0, l := length (params); i < l; i := i + 2)
+	    {
+	      if (params[i] like 'sparql_%')
+		{
+		  declare nam varchar;
+		  nam := subseq (params[i], 7);
+		  if (nam in ('input:grab-depth', 'input:grab-limit', 'sql:log-enable', 'sql:signal-void-variables'))
+		    defs := defs || ' define '||nam||' '||params[i+1]||' ';
+		  else
+		    defs := defs || ' define '||nam||' "'||params[i+1]||'" ';
+		}
+	    }
 	  set http_charset='utf-8';
           accept := '';
 	  if (header is not null and length (header))
@@ -826,7 +841,8 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
 	  else
 	    login := '';
 	  set_user_id ('SPARQL');
-          exec (sprintf ('sparql %s define get:soft "%s" CONSTRUCT { ?s ?p ?o } FROM <%s> WHERE { ?s ?p ?o }', login, get, url),
+          exec (sprintf ('sparql %s %s define get:soft "%s" CONSTRUCT { ?s ?p ?o } FROM <%s> WHERE { ?s ?p ?o }',
+		defs, login, get, url),
 	    stat, msg, vector (), 0, metas, rset);
 	  if (stat <> '00000')
 	    signal (stat, msg);
