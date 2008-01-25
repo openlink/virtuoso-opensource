@@ -92,6 +92,12 @@ wa_exec_no_error(
 )
 ;
 
+wa_exec_no_error(
+  'alter type wa_wikiv add overriding method wa_update_instance (in oldValues any, in newValues any) returns any'
+)
+;
+
+
 insert soft WA_TYPES(WAT_NAME, WAT_DESCRIPTION, WAT_TYPE, WAT_REALM) values ('oWiki', 'oWiki', 'db.dba.wa_wikiv', 'wikiv')
 ;
 
@@ -245,6 +251,26 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
     }
       WV.WIKI.SETCLUSTERPARAM (_cluster_name, 'home', _base);
     }
+  declare is_public any;
+  is_public := (select WAI_IS_PUBLIC from WA_INSTANCE where WAI_NAME = inst_name);
+  if ((is_public >= 1) and 
+      (not exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g, SYS_USERS l
+                    where g.U_NAME = inst_name || 'Readers'
+							        and l.U_NAME = 'WikiGuest'
+							        and gi_super = l.U_ID
+							        and gi_grant = g.u_id)))
+  {
+	  DB.DBA.USER_GRANT_ROLE ('WikiGuest', inst_name || 'Readers');
+  }
+  if ((is_public < 1) and 
+      (exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g, SYS_USERS l
+                where g.U_NAME = inst_name || 'Readers'
+					        and l.U_NAME = 'WikiGuest'
+					        and gi_super = l.U_ID
+					        and gi_grant = g.u_id)))
+  {
+    DB.DBA.USER_REVOKE_ROLE ('WikiGuest', inst_name || 'Readers');
+  }
   
   declare _id int;
   _id := (self as web_app).wa_new_inst(login);
@@ -392,6 +418,10 @@ create trigger WIKI_WA_MEMBERSHIP after update  on DB.DBA.WA_MEMBER order 100 re
   {
     DB.DBA.USER_REVOKE_ROLE (_user, _role_revoke);
   }
+  if (N.WAM_INST <> O.WAM_INST)
+  {
+    update DB.DBA.WA_MEMBER set WAM_HOME_PAGE = replace	(N.WAM_HOME_PAGE, O.WAM_INST, N.WAM_INST) where WAM_INST = N.WAM_INST;
+  }
 }
 ;
   
@@ -485,42 +515,8 @@ create trigger WIKI_WA_MEMBERSHIP_CLOSE after delete on DB.DBA.WA_MEMBER order 1
   }
 }
 ;
-  
-create trigger WIKI_WA_INSTANCE_U after update on DB.DBA.WA_INSTANCE referencing new as N
-{
-  if (N.WAI_TYPE_NAME <> 'oWiki')
-    return;  
-
-  if (N.WAI_IS_PUBLIC >= 1)
-    {
-	declare exit handler for sqlstate '*' {
-		-- dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
-		return;
-	};
-	DB.DBA.USER_GRANT_ROLE ('WikiGuest', N.WAI_NAME || 'Readers');
-    }
-  if (N.WAI_IS_PUBLIC < 1)
-  {
-    declare exit handler for sqlstate '*' {
-      -- dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
-      return;
-    };
-    DB.DBA.USER_REVOKE_ROLE ('WikiGuest', N.WAI_NAME || 'Readers');
-  }
-}
-;
-
-
-create trigger WIKI_WA_INSTANCE_D before delete on DB.DBA.WA_INSTANCE referencing old as O
-{
-  if (O.WAI_TYPE_NAME <> 'oWiki')
-    return;
-  declare _lpath varchar;
-  _lpath := WV.WIKI.CLUSTERPARAM (O.WAI_NAME, 'atom-pub');
-  if (_lpath is not null)
-     DB.DBA.VHOST_REMOVE (lpath=>_lpath);
-}
-;
+WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_INSTANCE_U');
+WV.WIKI.SILENT_EXEC('drop trigger DB.DBA.WIKI_WA_INSTANCE_D');
 
 create method wa_front_page_as_user (inout stream any, in user_name varchar) for wa_wikiv
 {
@@ -762,8 +758,9 @@ create procedure WV.WIKI.CREATEINSTANCE (
 
 create method wa_rdf_url (in vhost varchar, in lhost varchar) for wa_wikiv
 {
---  dbg_obj_princ (full_path, ' => ', pattern, ' ', _host);
+  -- dbg_aobj_princ (full_path, ' => ', pattern, ' ', _host);
   declare _cluster_name varchar;
+
   _cluster_name := (select CLUSTERNAME from WV.WIKI.CLUSTERS where CLUSTERID = self.cluster_id);
   return sprintf ('/wiki/resources/gems.vsp?type=rdf&cluster=%U', _cluster_name);
 }
@@ -778,3 +775,45 @@ create method wa_post_url (in vhost varchar, in lhost varchar, in inst_name varc
 }
 ;
 
+create method wa_update_instance (in oldValues any, in newValues any) for wa_wikiv
+{
+  if (newValues[0] <> oldValues[0])
+  {
+    declare owner, home, srcPath, dstPath varchar;
+
+    owner := (select U_NAME from DB.DBA.SYS_USERS A, DB.DBA.WA_MEMBER B where U_ID = WAM_USER and WAM_INST = oldValues[0] and WAM_MEMBER_TYPE = 1);
+    home := DB.DBA.DAV_HOME_DIR(owner);
+    srcPath := home || 'wiki/' || oldValues[0]||'/';
+    dstPath := home || 'wiki/' || newValues[0]||'/';
+    DB.DBA.DAV_MOVE_INT (srcPath, dstPath, 1, null, null, 0);
+
+    update WV.WIKI.CLUSTERS
+       set ClusterName = newValues[0]
+     where ClusterName = oldValues[0];
+
+    WV.WIKI.CREATEROLES (newValues[0]);
+    WV.WIKI.USERROLE_DROP (oldValues[0]||'Readers');
+    WV.WIKI.USERROLE_DROP (oldValues[0]||'Writers');
+  }
+
+  if ((newValues[1] >= 1) and 
+      (not exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g, SYS_USERS l
+                    where g.U_NAME = newValues[0] || 'Readers'
+							        and l.U_NAME = 'WikiGuest'
+							        and gi_super = l.U_ID
+							        and gi_grant = g.u_id)))
+  {
+	  DB.DBA.USER_GRANT_ROLE ('WikiGuest', newValues[0] || 'Readers');
+  }
+  if ((newValues[1] < 1) and 
+      (exists (select 1 from  SYS_ROLE_GRANTS, SYS_USERS g, SYS_USERS l
+                where g.U_NAME = newValues[0] || 'Readers'
+					        and l.U_NAME = 'WikiGuest'
+					        and gi_super = l.U_ID
+					        and gi_grant = g.u_id)))
+  {
+    DB.DBA.USER_REVOKE_ROLE ('WikiGuest', newValues[0] || 'Readers');
+  }
+  return (self as web_app).wa_update_instance (oldValues, newValues);
+}
+;
