@@ -332,7 +332,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_html', 1,
 
 -- Wiki item is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html', 1,
-    '/dataspace/([^/]*)/wiki/([^/]*)/([^/]*)',
+    '/dataspace/([^/]*)/wiki/([^/]*)/([^\\?]*)',
     vector('uname', 'inst', 'item'), 3,
     '%s%s', vector('inst', 'item'),
     'DB.DBA.ODS_WIKI_ITEM_PAGE',

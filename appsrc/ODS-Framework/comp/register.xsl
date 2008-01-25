@@ -99,6 +99,7 @@
 	      }
 	  }
 
+    
 	  -- OpenID
 	  if (self.oid_mode is not null and self.oid_sig is null)
 	    {
@@ -144,127 +145,48 @@ try_next:
      
     </v:template>
     <v:template name="registration"  type="simple" enabled="--coalesce ((select top 1 WS_REGISTER from WA_SETTINGS), 0)">
-        <script type="text/javascript">
-          <![CDATA[
-            <!--
-            function getFirstName()
-            {
-              var F = document.forms['page_form'].regfirstname.value;
-              var N = document.forms['page_form'].regname.value;
-              if (!N.length)
-              {
-                document.forms['page_form'].regname.value = F;
-              }
-            }
-            function getLastName()
-            {
-              var F = document.forms['page_form'].regfirstname.value;
-              var L = document.forms['page_form'].reglastname.value;
-              var N = document.forms['page_form'].regname.value;
-              if (!N.length)
-                document.forms['page_form'].regname.value = F + ' ' + L;
-              else if (N.length > 0 )
-              {
-                if (N = F)
-                  document.forms['page_form'].regname.value = N + ' ' + L;
-              }
-            }
-	    function showhideLogin (cb)
-	    {
-              if (cb.checked)
-       {
-	        OAT.Dom.hide ('login_info');
-	        OAT.Dom.hide ('signup_span');
-	     }else
-	     {
-	        OAT.Dom.show ('login_info');
-	        OAT.Dom.show ('signup_span');
-	     }
-	    }
-            // -->
-          ]]>
-        </script>
+
+    <div>
+    <div class="login_tabactive" id="tabODS" onclick="loginTabToggle(this);">ODS</div>
+    <div class="login_tab" id="tabOpenID" onclick="loginTabToggle(this);">OpenID</div>
+    </div>
+    <br/>    
+    <div class="login_tabdeck"><!--container div start-->
+    
+    <div id="login_openid" style="height: 150px;<?V case when self.use_oid_url = 1 then '' else 'display:none;' end ?>">
+
       <table>
         <tr>
 	    <th><label for="reguid">Register using OpenID</label></th>
 	    <td>
-		<img src="images/login-bg.gif" alt="openID"/>
-		<v:form method="POST" name="openid_frm" type="simple">
-		    <v:text  xhtml_id="openid_url" name="openid_url" value="" xhtml_size="70"
+    <img src="images/login-bg.gif" alt="openID"  class="login_openid" />
+        <v:text  xhtml_id="openid_url" name="openid_url" value="" xhtml_size="65"
 			default_value="--self.oid_identity"/>
-		    <v:button action="simple" name="openid_bt" value="Authenticate">
-			<v:on-post><![CDATA[
-declare hdr, xt, uoid, is_agreed any;
-declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate varchar;
+       <input type="hidden" id="uoid" name="uoid" value="<?Vself.use_oid_url?>"/>
 
-host := http_request_header (e.ve_lines, 'Host');
+<!--
 
-uoid := atoi(get_keyword ('uoid', e.ve_params, '0'));
-is_agreed := atoi(get_keyword ('is_agreed', e.ve_params, '0'));
-
-if (uoid and not is_agreed)
-  {
-    self.vc_error_message := 'You have not agreed to the Terms of Service.';
-    self.vc_is_valid := 0;
-    return;
-  }
-
-this_page := 'http://' || host || http_path () || sprintf ('?uoid=%d', uoid);
-trust_root := 'http://' || host;
-
-declare exit handler for sqlstate '*'
-{
-  self.vc_is_valid := 0;
-  self.vc_error_message := 'Invalid OpenID URL';
-  return;
-};
-
-url := self.openid_url.ufl_value;
-oi_ident := url;
-again:
-hdr := null;
-cnt := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>hdr);
-if (hdr [0] like 'HTTP/1._ 30_ %')
-  {
-    declare loc any;
-    loc := http_request_header (hdr, 'Location', null, null);
-    url := WS.WS.EXPAND_URL (url, loc);
-    oi_ident := url;
-    goto again;
-  }
-xt := xtree_doc (cnt, 2);
-oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
-oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
-
-if (oi_srv is null)
-  signal ('22023', 'Cannot locate OpenID server');
-
-if (oi_delegate is not null)
-  oi_ident := oi_delegate;
-
-this_page := this_page || sprintf ('&oi_srv=%U', oi_srv);
-
-check_immediate :=
-sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U',
-        oi_srv, oi_ident, this_page, trust_root);
-check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U',
-	'email,fullname,nickname,dob,gender,postcode,country,timezone');
-
-self.vc_redirect (check_immediate);
+    <v:form method="POST" name="openid_frm" type="simple">
+        <v:button action="simple" name="openid_bt" value="Authenticate">
+      <v:on-post><![CDATA[
 			    ]]></v:on-post>
 		    </v:button><br/>
-		    <v:check-box name="uoid" xhtml_id="uoid" value="1" xhtml_onclick="javascript:showhideLogin(this)"
-			initial-checked="--self.use_oid_url">
+
+
+        <v:check-box name="uoid" xhtml_id="uoid" value="1" initial-checked="--self.use_oid_url" xhtml_style="display:none;">
 			<v:after-data-bind>
 			    control.ufl_selected := atoi(get_keyword ('uoid', e.ve_params, '0'));
 			</v:after-data-bind>
 		    </v:check-box>
 		    <label for="uoid">Do not create password, I want to use my OpenID URL to login</label>
 		</v:form>
+-->
 	    </td>
 	</tr>
     </table>
-    <div id="login_info" style="<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>">
+    </div>
+    
+    <div id="login_info" style="height: 150px;<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>">
       <table>
         <tr>
           <th><label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
@@ -363,7 +285,7 @@ self.vc_redirect (check_immediate);
         </tr>
         <tr>
 	 <td colspan="2"  class="ctrl">
-	  <span class="fm_ctl_btn" style="<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>" id="signup_span">
+    <span class="fm_ctl_btn"  id="signup_span">
             <v:button action="simple" name="regb1" value="Sign Up">
 	    </v:button>
 	   </span>
@@ -371,8 +293,87 @@ self.vc_redirect (check_immediate);
         </tr>
         <input type="hidden" name="ret" value="<?=get_keyword_ucase ('ret', self.vc_page.vc_event.ve_params, '')?>" />
       </table>
+      </div><!--container div end-->
+        <script type="text/javascript">
+          <![CDATA[
+            <!--
+            function getFirstName()
+            {
+              var F = document.forms['page_form'].regfirstname.value;
+              var N = document.forms['page_form'].regname.value;
+              if (!N.length)
+              {
+                document.forms['page_form'].regname.value = F;
+              }
+            }
+            function getLastName()
+            {
+              var F = document.forms['page_form'].regfirstname.value;
+              var L = document.forms['page_form'].reglastname.value;
+              var N = document.forms['page_form'].regname.value;
+              if (!N.length)
+                document.forms['page_form'].regname.value = F + ' ' + L;
+              else if (N.length > 0 )
+              {
+                if (N = F)
+                  document.forms['page_form'].regname.value = N + ' ' + L;
+              }
+            }
+      function showhideLogin (cb)
+      {
+       if (cb.checked)
+       {
+          OAT.Dom.hide ('login_info');
+          OAT.Dom.hide ('signup_span');
+       }else
+       {
+          OAT.Dom.show ('login_info');
+          OAT.Dom.show ('signup_span');
+       }
+      }
+
+      function loginTabToggle(tabObj)
+      {
+        
+        if(tabObj.id=='tabOpenID')
+        {
+           $('tabOpenID').className='login_tabactive';
+           $('tabODS').className='login_tab';
+           OAT.Dom.hide($('login_info'));
+           OAT.Dom.show($('login_openid'));
+           $('uoid').value=1;
+        }else
+        {
+           $('uoid').value=0;
+
+           $('tabOpenID').className='login_tab';
+           $('tabODS').className='login_tabactive';
+
+           OAT.Dom.hide($('login_openid'));
+           OAT.Dom.show($('login_info'));
+
+        }
+        
+      }
+      
+      var activeTab=<?Vself.use_oid_url?>+0;
+      if(activeTab==1)
+         loginTabToggle($('tabOpenID'));
+      else
+         loginTabToggle($('tabODS'));
+
+            // -->
+
+          ]]>
+        </script>
+
       <v:on-post>
         <![CDATA[
+
+if(self.use_oid_url=0 or
+   (self.oid_mode = 'id_res' and self.oid_sig is not null and self.use_oid_url)
+  )
+{
 	 declare u_name1, dom_reg varchar;
          declare country, city, lat, lng, xt, xp, uoid, is_agr any;
 
@@ -648,6 +649,70 @@ self.vc_redirect (check_immediate);
            ds := self.vc_find_descendant_control('ds_users');
            if(ds is not null) ds.vc_data_bind(e);
          }
+}
+else
+{
+--openid post
+declare hdr, xt, uoid, is_agreed any;
+declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate varchar;
+
+host := http_request_header (e.ve_lines, 'Host');
+
+uoid := atoi(get_keyword ('uoid', e.ve_params, '0'));
+is_agreed := atoi(get_keyword ('is_agreed', e.ve_params, '0'));
+
+if (uoid and not is_agreed)
+  {
+    self.vc_error_message := 'You have not agreed to the Terms of Service.';
+    self.vc_is_valid := 0;
+    return;
+  }
+
+this_page := 'http://' || host || http_path () || sprintf ('?uoid=%d', uoid);
+trust_root := 'http://' || host;
+
+declare exit handler for sqlstate '*'
+{
+  self.vc_is_valid := 0;
+  self.vc_error_message := 'Invalid OpenID URL';
+  return;
+};
+
+url := self.openid_url.ufl_value;
+oi_ident := url;
+again:
+hdr := null;
+cnt := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>hdr);
+if (hdr [0] like 'HTTP/1._ 30_ %')
+  {
+    declare loc any;
+    loc := http_request_header (hdr, 'Location', null, null);
+    url := WS.WS.EXPAND_URL (url, loc);
+    oi_ident := url;
+    goto again;
+  }
+xt := xtree_doc (cnt, 2);
+oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
+oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+
+if (oi_srv is null)
+  signal ('22023', 'Cannot locate OpenID server');
+
+if (oi_delegate is not null)
+  oi_ident := oi_delegate;
+
+this_page := this_page || sprintf ('&oi_srv=%U', oi_srv);
+
+check_immediate :=
+sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U',
+        oi_srv, oi_ident, this_page, trust_root);
+check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U',
+  'email,fullname,nickname,dob,gender,postcode,country,timezone');
+
+self.vc_redirect (check_immediate);
+
+}
+   
       ]]>
       </v:on-post>
      </v:template>

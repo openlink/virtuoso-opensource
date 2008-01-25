@@ -257,6 +257,7 @@ div.error_msg
 {
   background-color: #FFF;
   color: red;
+  padding-left:5px;
 }
 
 
@@ -667,6 +668,47 @@ p.login_error img {
   margin-left: 100px;
   margin-top: 5px;
   color: #255}
+
+div.login_tab
+{
+width:100px;
+float: left;
+cursor:pointer;
+text-align: center;
+background: #85B9D2;
+border: 1px solid;
+padding: 2px;
+margin: 2px 2px 0px 2px;
+}
+
+div.login_tabactive
+{
+width:100px;
+float: left;
+cursor:pointer;
+text-align: center;
+border: 1px solid;
+border-bottom-color:#E3EFF5;
+padding: 2px;
+margin: 2px 2px 0px 2px;
+
+}
+div.login_tabdeck
+{
+clear:both;
+float:left;
+border: 1px solid ;
+padding:10px 4px 4px 4px;
+margin: -1px 0px 0px 2px;
+width: 580px;
+height: 200px;
+}
+img.login_openid
+{
+margin-right:5px;
+vertical-align:text-bottom;
+}
+
 
 /* ugly table-based tabs deck */
 

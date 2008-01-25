@@ -43,6 +43,7 @@ wa_exec_no_error('grant select on CAL.WA.EVENTS to GDATA_ODS');
 wa_exec_no_error('grant select on DB.DBA.RDF_QUAD to GDATA_ODS');
 wa_exec_no_error('grant select on DB.DBA.RDF_OBJ to GDATA_ODS');
 wa_exec_no_error('grant select on WV.Wiki.CLUSTERS to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_WIKI_GET_EXCERPT_HTML to GDATA_ODS');
 wa_exec_no_error('grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE to GDATA_ODS');
 wa_exec_no_error('grant execute on DB.DBA.RDF_SQLVAL_OF_OBJ to GDATA_ODS');
 wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_USER_GET_EXCERPT_HTML to GDATA_ODS');
@@ -1469,6 +1470,8 @@ create procedure search (in sid varchar:='',in realm varchar :='wa', in searchPa
       for(i:=0;i<length(rset);i:=i+1)
       {
         declare date_str varchar;
+        date_str:='';
+        if( rset[i][3] is not null)
         date_str:=sprintf('%02d %02d,%04d',month(rset[i][3]),dayofmonth(rset[i][3]),year(rset[i][3]));
         http('<search_result>',resXml);
         http(sprintf('<html ><![CDATA[%s]]></html>',rset[i][0]),resXml);
