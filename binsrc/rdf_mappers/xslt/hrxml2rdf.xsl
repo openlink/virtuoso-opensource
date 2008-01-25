@@ -65,11 +65,14 @@
 	<cv:cvDescription>
 		<xsl:value-of select="ExecutiveSummary"/>  
 	</cv:cvDescription>
+
+    <xsl:if test="ContactInfo">
     <cv:aboutPerson>
         <cv:Person>
             <v:n>
               <xsl:value-of select="ContactInfo/PersonName/FormattedName"/>  
             </v:n>
+            <xsl:if test="ContactInfo/ContactMethod">
             <v:tel>
               <xsl:value-of select="ContactInfo/ContactMethod/Telephone/FormattedNumber"/>  
             </v:tel>
@@ -97,8 +100,12 @@
             <v:organization-name>
               <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/Recipient/OrganizationName"/>
             </v:organization-name>
+            </xsl:if>
         </cv:Person>
     </cv:aboutPerson>
+    </xsl:if>
+
+    <xsl:if test="Objective">
     <cv:hasTarget>
 		<cv:Target>
 			<cv:targetJobDescription>
@@ -106,145 +113,168 @@
 			</cv:targetJobDescription>
 		</cv:Target>
     </cv:hasTarget>    
+    </xsl:if>
+
+    <xsl:if test="EmploymentHistory">
     <cv:hasWorkHistory>
+        <xsl:for-each select="EmploymentHistory/EmployerOrg">
         <cv:WorkHistory>
 			<cv:employedIn>
 				<cv:Company>
 					<cv:Name>
-						<xsl:value-of select="EmploymentHistory/EmployerOrg/EmployerOrgName"/>
+                        <xsl:value-of select="EmployerOrgName"/>
 					</cv:Name>
 					<cv:Locality>
-						<xsl:value-of select="EmploymentHistory/EmployerOrg/EmployerContactInfo/LocationSummary"/>
+                        <xsl:value-of select="EmployerContactInfo/LocationSummary"/>
 					</cv:Locality>
 					<cv:Notes>
-						<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/OrgName/OrganizationName"/>
+                        <xsl:value-of select="PositionHistory/OrgName/OrganizationName"/>
 					</cv:Notes>
 				</cv:Company>
 			</cv:employedIn>
 			<cv:startDate>
-				<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/StartDate/YearMonth"/>
+                <xsl:value-of select="PositionHistory/StartDate/YearMonth"/>
 			</cv:startDate>
 			<cv:endDate>
-				<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/EndDate/YearMonth"/>
+                <xsl:value-of select="PositionHistory/EndDate/YearMonth"/>
 			</cv:endDate>
 			<cv:jobTitle>
-				<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/Title"/>
+                <xsl:value-of select="PositionHistory/Title"/>
 			</cv:jobTitle>
 			<cv:jobDescription>
-				<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/Description"/>
+                <xsl:value-of select="PositionHistory/Description"/>
 			</cv:jobDescription>
 			<cv:jobType>
-				<xsl:value-of select="EmploymentHistory/EmployerOrg/PositionHistory/@positionType"/>
+                <xsl:value-of select="PositionHistory/@positionType"/>
 			</cv:jobType>
         </cv:WorkHistory>
+        </xsl:for-each>
     </cv:hasWorkHistory>
+    </xsl:if>
     
+    <xsl:if test="EducationHistory">
     <cv:hasEducation>
+        <xsl:for-each select="EducationHistory/SchoolOrInstitution">
 		<cv:Education>
 			<cv:studiedIn>
 				<cv:EducationalOrg>
 					<cv:Name>
-						<xsl:value-of select="EducationHistory/SchoolOrInstitution/School/SchoolName"/>
+                        <xsl:value-of select="School/SchoolName"/>
 					</cv:Name>
 					<cv:URL>
-						<xsl:value-of select="EducationHistory/SchoolOrInstitution/School/InternetDomainName"/>
+                        <xsl:value-of select="School/InternetDomainName"/>
 					</cv:URL>
 				</cv:EducationalOrg>
 			</cv:studiedIn>			
 			<cv:eduGradDate>
-				<xsl:value-of select="EducationHistory/SchoolOrInstitution/Degree/DegreeDate/YearMonth"/>
+                <xsl:value-of select="Degree/DegreeDate/YearMonth"/>
 			</cv:eduGradDate>
 			<cv:eduMajor>
-				<xsl:value-of select="EducationHistory/SchoolOrInstitution/Degree/DegreeMajor/Name"/>
+                <xsl:value-of select="Degree/DegreeMajor/Name"/>
 			</cv:eduMajor>
 			<cv:eduMinor>
-				<xsl:value-of select="EducationHistory/SchoolOrInstitution/Degree/DegreeMinor/Name"/>
+                <xsl:value-of select="Degree/DegreeMinor/Name"/>
 			</cv:eduMinor>
 			<cv:eduDescription>
-				<xsl:value-of select="EducationHistory/SchoolOrInstitution/Degree/Comments"/>
+                <xsl:value-of select="Degree/Comments"/>
 			</cv:eduDescription>
 		</cv:Education>    
+        </xsl:for-each>
     </cv:hasEducation>
+    </xsl:if>
     
+    <xsl:if test="LicensesAndCertifications">
     <cv:hasCourse>
+        <xsl:for-each select="LicensesAndCertifications/LicenseOrCertification">
         <cv:Course>
             <cv:organizedBy>
                 <cv:Organization>
                     <cv:Name>
-                        <xsl:value-of select="LicensesAndCertifications/LicenseOrCertification/IssuingAuthority"/>
+                        <xsl:value-of select="IssuingAuthority"/>
                     </cv:Name>
                 </cv:Organization>
             </cv:organizedBy>
             <cv:courseStartDate>
-                <xsl:value-of select="LicensesAndCertifications/LicenseOrCertification/EffectiveDate/ValidFrom"/>
+                <xsl:value-of select="EffectiveDate/ValidFrom"/>
             </cv:courseStartDate>
             <cv:courseFinishDate>
-                <xsl:value-of select="LicensesAndCertifications/LicenseOrCertification/EffectiveDate/ValidTo"/>
+                <xsl:value-of select="EffectiveDate/ValidTo"/>
             </cv:courseFinishDate>
             <cv:courseTitle>
-                <xsl:value-of select="LicensesAndCertifications/LicenseOrCertification/Name"/>
+                <xsl:value-of select="Name"/>
             </cv:courseTitle>
             <cv:courseDescription>
-                <xsl:value-of select="LicensesAndCertifications/LicenseOrCertification/Description"/>
+                <xsl:value-of select="Description"/>
             </cv:courseDescription>
         </cv:Course>    
+        </xsl:for-each>
     </cv:hasCourse>
+    </xsl:if>
 
+    <xsl:if test="Qualifications or Languages">
     <cv:hasSkill>
+        <xsl:for-each select="Qualifications/Competency">
         <cv:Skill>
             <cv:skillName>
-                <xsl:value-of select="Qualifications/Competency/@name"/>
+                <xsl:value-of select="@name"/>
             </cv:skillName>
             <cv:skillLastUsed>
-                <xsl:value-of select="Qualifications/Competency/Competency/CompetencyEvidence/@lastUsed"/>
+                <xsl:value-of select="Competency/CompetencyEvidence/@lastUsed"/>
             </cv:skillLastUsed>
             <cv:skillYearsExperience>
-                <xsl:value-of select="Qualifications/Competency/Competency/CompetencyEvidence/@dateOfIncident"/>
+                <xsl:value-of select="Competency/CompetencyEvidence/@dateOfIncident"/>
             </cv:skillYearsExperience>
             <cv:skillLevel>
-                <xsl:value-of select="Qualifications/Competency/Competency/CompetencyEvidence/NumericValue"/>
+                <xsl:value-of select="Competency/CompetencyEvidence/NumericValue"/>
             </cv:skillLevel>
         </cv:Skill>
+        </xsl:for-each>
+        <xsl:for-each select="Languages/Language">
         <cv:LanguageSkill>
             <cv:skillName>
-                <xsl:value-of select="Languages/Language/LanguageCode"/>
+                <xsl:value-of select="LanguageCode"/>
             </cv:skillName>
             <cv:lngSkillLevelReading>
-                <xsl:value-of select="Languages/Language/Read"/>
+                <xsl:value-of select="Read"/>
             </cv:lngSkillLevelReading>
             <cv:lngSkillLevelWritten>
-                <xsl:value-of select="Languages/Language/Write"/>
+                <xsl:value-of select="Write"/>
             </cv:lngSkillLevelWritten>
             <cv:skillLevel>
-                <xsl:value-of select="Languages/Language/Speak"/>
+                <xsl:value-of select="Speak"/>
             </cv:skillLevel>
         </cv:LanguageSkill>
+        </xsl:for-each>
     </cv:hasSkill>
+    </xsl:if>
 
+    <xsl:if test="References/Reference">
     <cv:hasRefernece>
+        <xsl:for-each select="References/Reference">
         <cv:Refernece>
             <cv:referenceBy>                    
                 <cv:Person>
                     <v:n>
-                      <xsl:value-of select="References/Reference/PersonName/FormattedName"/>  
+                      <xsl:value-of select="PersonName/FormattedName"/>  
                     </v:n>
                     <v:title>
-                      <xsl:value-of select="References/Reference/PositionTitle"/>  
+                      <xsl:value-of select="PositionTitle"/>  
                     </v:title>
                     <v:tel>
-                      <xsl:value-of select="References/Reference/ContactMethod/Telephone/FormattedNumber"/>  
+                      <xsl:value-of select="ContactMethod/Telephone/FormattedNumber"/>  
                     </v:tel>
                     <v:email>
-                      <xsl:value-of select="References/Reference/ContactMethod/InternetEmailAddress"/>  
+                      <xsl:value-of select="ContactMethod/InternetEmailAddress"/>  
                     </v:email>
                     <v:note>
-                      <xsl:value-of select="References/Reference/Comments"/>  
+                      <xsl:value-of select="Comments"/>  
                     </v:note>
                 </cv:Person>
             </cv:referenceBy>
         </cv:Refernece>
+        </xsl:for-each>
     </cv:hasRefernece>
-    
+    </xsl:if>
     
   </xsl:template>
 
