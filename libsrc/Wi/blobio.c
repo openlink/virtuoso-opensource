@@ -539,12 +539,12 @@ box_read_iri_id (dk_session_t * ses, dtp_t dtp)
   iri_id_t l, h = 0;
   if (DV_IRI_ID == dtp)
     {
-      l = read_long (ses);
+      l = (unsigned int32)read_long (ses);
     }
   else
     {
-      h = read_long (ses);
-      l = read_long (ses);
+      h = (unsigned int32)read_long (ses);
+      l = (unsigned int32)read_long (ses);
     }
   return (void*) box_iri_id (h << 32 | l);
 }
