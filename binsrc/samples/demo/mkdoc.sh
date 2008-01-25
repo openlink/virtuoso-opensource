@@ -616,5 +616,14 @@ BREAK
 
 BANNER "COMPLETED DOCUMENTATION demo (mkdoc.sh)"
 CHECK_LOG
+RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
+if test $STATUS -eq 0
+then
+	$myrm -f "$VAD_NAME_RELEASE"
+	exit 1
+fi
 
+BANNER "COMPLETED VAD PACKAGING"
 directory_clean
+
+exit 0

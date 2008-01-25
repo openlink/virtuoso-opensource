@@ -418,6 +418,12 @@ chmod 644 demo.db
 #  Show final results of run
 #
 CHECK_LOG
+RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
+if test $STATUS -eq 0
+then
+	exit 1
+fi
+
 BANNER "COMPLETED DEMO DATABASE (mkdemo.sh)"
 
 exit 0
