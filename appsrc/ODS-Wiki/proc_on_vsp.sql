@@ -2536,24 +2536,6 @@ create function WV.WIKI.OWNER_OF_CLUSTER (in _user varchar, in _cluster_id int, 
 }
 ;
 
-create function WV.WIKI.member_of_cluster (in _user varchar, in _cluster_name varchar)
-{
-  if (exists (select 1 from DB.DBA.WA_INSTANCE
-               where WAI_NAME = _cluster_name
-                 and WAI_TYPE_NAME = 'oWiki'
-                 and WAI_IS_PUBLIC = 1))
-    return 1;
-  if (exists (select 1 from DB.DBA.SYS_USERS, DB.DBA.WA_MEMBER
-               where U_NAME = _user
-                 and WAM_USER = U_ID
-                 and WAM_INST = _cluster_name
-                 and WAM_MEMBER_TYPE <= 3
-                 and WAM_STATUS <= 2))
-    return 1;
-  return 0;
-}
-;
-
 create function WV.WIKI.DEFAULTENDPOINT (in _cluster_id int)
 {
   return '';
@@ -2643,6 +2625,7 @@ create function WV.WIKI.URL_PARAMS_INT (in params any, inout v any)
   url_params := '';
   if (length (v) > 0)
     url_params := url_params || WV.WIKI.STRJOIN ('&', v);
+--dbg_obj_print ('url_params ', url_params);
   return url_params;
 }
 ;
@@ -2660,6 +2643,7 @@ create function WV.WIKI.RESOURCEHREF (in href varchar, in _base_adjust varchar)
       vh := http_map_get ('vhost');
       lh := http_map_get ('lhost');
       hf := http_request_header (lines, 'Host');
+   --dbg_obj_print ('vh: ', vh, '  lh: ', lh,'  hf: ', hf);
       if (hf is not null and exists (select 1 from HTTP_PATH where HP_HOST = vh and HP_LISTEN_HOST = lh and HP_LPATH = '/wiki/resources'))
         return 'http://' || hf || '/wiki/resources/' || href;
       else
@@ -3083,7 +3067,7 @@ create procedure WV.WIKI.topic_uri (in source_page varchar)
     _topic_name := _V[1];
   if (_topic_name = '')
     return _clusterPath;
-  return _clusterPath || '/' || _topic_name;
+  return _clusterPath || _topic_name;
 }
 ;
 

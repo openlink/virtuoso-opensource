@@ -1378,8 +1378,8 @@ create function WV.WIKI.READONLYWIKIWORDHREF2 (
 --    return sprintf ('%s/%s?%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name, url_params);
 --  return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
   if (url_params <> '')
-    return sprintf ('%s/%s?%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name, url_params);
-  return sprintf ('%s/%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name);
+    return sprintf ('%s%s?%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name, url_params);
+  return sprintf ('%s%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name);
 
 };
 
@@ -1389,7 +1389,7 @@ create function WV.WIKI.READONLYWIKIIRI (
 ) returns varchar
 {
 --  return sprintf ('%s/%s', SIOC..wiki_cluster_iri (_cluster_name), _topic_name);
-  return sprintf ('%s/%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name);
+  return sprintf ('%s%s', WV.WIKI.wiki_cluster_uri (_cluster_name), _topic_name);
 };
 
 create procedure WV.WIKI.wiki_cluster_uri (in cluster_name varchar)
@@ -1397,7 +1397,7 @@ create procedure WV.WIKI.wiki_cluster_uri (in cluster_name varchar)
   cluster_name := cast (cluster_name as varchar);
   declare owner varchar;
   owner := WV.WIKI.CLUSTERPARAM (cluster_name, 'creator');
-  return sprintf ('http://%s%s/%U/wiki/%U', WV.WIKI.http_name (), SIOC..get_base_path (), owner, cluster_name);
+  return sprintf ('http://%s%s/%U/wiki/%U/', WV.WIKI.http_name (), SIOC..get_base_path (), owner, cluster_name);
 }
 ;
 
@@ -1562,6 +1562,8 @@ grant execute on WV.WIKI.READONLYWIKIIRI to public
 ;
 grant execute on WV.Wiki.WIKI_APLUSLINK to public
 ;
+grant execute on WV.WIKI.wiki_cluster_uri to public
+;
 
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordLink', 'WV.WIKI.READONLYWIKIWORDLINK')
 ;
@@ -1572,6 +1574,8 @@ xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWordHREF2'
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiIRI', 'WV.WIKI.READONLYWIKIIRI')
 ;
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:WikiAplusLink', 'WV.Wiki.WIKI_APLUSLINK')
+;
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:WikiClusterURI', 'WV.WIKI.wiki_cluster_uri')
 ;
 
 create function WV.WIKI.QUERYWIKIWORDLINK (
@@ -3251,6 +3255,7 @@ create procedure WV.WIKI.ADDLINK (in _topic WV.WIKI.TOPICINFO,
 	  _link  := '<a href="%ATTACHURLPATH%/' || _filename || '" style="wikiautogen">' || _filename  || '</a>';
   else
 	  _link  := '<img src="%ATTACHURLPATH%/' || _filename || '" style="wikiautogen"/>';
+    
   declare _path, _user varchar;
   _path :=DB.DBA.DAV_SEARCH_PATH (_topic.ti_res_id, 'R');
   _user := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _uid);

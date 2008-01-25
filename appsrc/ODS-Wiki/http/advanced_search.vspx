@@ -199,14 +199,14 @@
                                                and WV.WIKI.member_of_cluster (self.vspx_user, c.ClusterName));
             if (topics_count = 0)
             {
-              return WV.WIKI.redirect (WV.WIKI.wiki_cluster_uri (_current_cluster_name)|| '/' || coalesce (_topic_name, _search_name), self.sid, self.realm);
+              return WV.WIKI.redirect (WV.WIKI.wiki_cluster_uri (_current_cluster_name) || coalesce (_topic_name, _search_name), self.sid, self.realm);
             }
             if (topics_count = 1)
             {
               select c.ClusterName, coalesce( LocalName, LocalName2) into _cluster_name, _topic_name
                 from WV.WIKI.TOPIC t, WV.WIKI.CLUSTERS c
                where (t.LocalName = _search_name or t.LocalName2 = _search_name) and t.ClusterId = c.ClusterId and WV.WIKI.member_of_cluster (self.vspx_user, c.ClusterName);
-              return WV.WIKI.redirect (WV.WIKI.wiki_cluster_uri (_cluster_name)|| '/' || _topic_name, self.sid, self.realm);
+              return WV.WIKI.redirect (WV.WIKI.wiki_cluster_uri (_cluster_name) || _topic_name, self.sid, self.realm);
             }
 
             goto topic_search;

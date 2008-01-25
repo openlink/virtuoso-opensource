@@ -62,6 +62,7 @@ xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ReadOnlyWikiWor
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourceHREF', 'WV.WIKI.RESOURCEHREF');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourceHREF2', 'WV.WIKI.RESOURCEHREF2');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourcePath', 'WV.WIKI.RESOURCEPATH');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:WikiClusterURI', 'WV.WIKI.wiki_cluster_uri');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:TextFormattingRules', 'WV.WIKI.TEXTFORMATTINGRULES');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:UserByEmail', 'WV.WIKI.USER_BY_EMAIL');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:atom_pub_uri', 'WV.WIKI.ATOM_PUB_URI');
