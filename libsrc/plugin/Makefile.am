@@ -107,5 +107,12 @@ CLEANFILES	= $(generated_code)
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	gen_all_gates.sh gen_gate.sh msdtc_plugin.c msdtc_sample.def \
+	export_plugin_lang25.c \
+	export_plugin_msdtc.c \
+	gen_all_gates.sh \
+	gen_gate.sh \
+	import_plugin_lang25.c \
+	import_plugin_msdtc.c \
+	msdtc_plugin.c \
+	msdtc_sample.def \
 	plugin_win32.c

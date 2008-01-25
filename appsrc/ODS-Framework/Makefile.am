@@ -65,6 +65,7 @@ EXTRA_DIST = \
 	images/app_ads/*.jpg \
 	images/dav_browser/*.png \
 	images/skin/default/*.png \
+	images/skin/pager/*.png \
 	make_vad.sh \
 	tmpl/SN_INV_TEMPLATE \
 	tmpl/WS_APPROVE_BY_USER_TEMPLATE \
