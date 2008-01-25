@@ -620,6 +620,25 @@ create function "RDFData_DAV_RES_CONTENT" (in id any, inout content any, out typ
           ses := sioc..compose_foaf (uname, type, pg);
 	  goto ret_place2;
 	}
+      else if (regexp_match ('http://([^/]*)/dataspace/([^/]*)(#this|/sioc.rdf|/sioc.n3)?\x24', iri) is not null
+	  and __proc_exists ('sioc.DBA.ods_sioc_obj_describe') is not null)
+	{
+	  declare tmp, uname, pg any;
+	  declare pos int;
+	  tmp := sprintf_inverse (iri, 'http://%s/dataspace/%s', 0);
+	  tmp := tmp[1];
+	  pos := coalesce (strchr (tmp, '#'), strchr (tmp, '/'));
+	  if (pos is not null)
+	    uname := subseq (tmp, 0, pos);
+          else
+	    uname := tmp;
+	  pg := http_param ('page');
+	  if (not isstring (pg))
+	    pg := '0';
+	  pg := atoi (pg);
+          ses := sioc..ods_sioc_obj_describe (uname, type, pg);
+	  goto ret_place2;
+	}
       DB.DBA.OdsIriDescribe (iri, type);
       goto ret_place;
     }
