@@ -14,9 +14,9 @@
 OAT.Dereference = {
 	go:function(url,callback,optObj) {
 		if (url.match(/^http/i)) { /* Virtuoso proxy: */
-			var r = url.match(/^http:\/\/([^@\/]+@)?(.*)/);
-			var user = (r[1] ? r[1].substring(0,r[1].length-1) : false);
-			var encoded = encodeURIComponent("http://"+r[2]);
+			var r = url.match(/^(http[s]?:\/\/)([^@\/]+@)?(.*)/);
+			var user = (r[2] ? r[2].substring(0,r[2].length-1) : false);
+			var encoded = encodeURIComponent(r[1] + r[3]);
 			encoded = "/proxy?url="+encoded+"&force=rdf";
 			if (user) { encoded += "&login="+encodeURIComponent(user); }
 			if (url.match(/\.n3$/)) { encoded += "&output-format=n3"; }
