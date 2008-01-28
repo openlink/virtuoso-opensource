@@ -139,6 +139,12 @@ PHOTO.WA._exec_no_error(
 )
 ;
 
+PHOTO.WA._exec_no_error(
+'
+  alter type wa_photo add overriding method wa_update_instance (in oldValues any, in newValues any) returns any
+'
+)
+;
 
 -------------------------------------------------------------------------------
 PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_class_details () returns any');
@@ -174,6 +180,12 @@ create method wa_new_inst (in login varchar) for wa_photo
   PHOTO.WA.photo_init_user_data(iWaiID,self.wa_name,login);
 
   return (self as web_app).wa_new_inst(login);
+};
+
+-------------------------------------------------------------------------------
+create method wa_update_instance (in oldValues any, in newValues any) for wa_photo
+{
+  return (self as web_app).wa_update_instance (oldValues, newValues);
 };
 
 -------------------------------------------------------------------------------
@@ -301,7 +313,6 @@ create method wa_addition_urls () for wa_photo
   return
     vector(
         vector(null, null, '/photos/res', sHost || 'www-root/', 1, 0, null, null, null, null, 'dba', null, null, 1, null, null, null, 0),
-        vector(null, null, '/ods', registry_get('_wa_path_') || '', 1, 0, null, null, null, null, 'dba', null, null, 1, null, null, null, 0),
         vector(null, null, '/photos/SOAP', '/SOAP/', 0, 0, null, null, null, null, null, 'SOAPGallery', null, 1, vector('Use','literal','XML-RPC', 'yes'), null, null, 0)
     );
   
