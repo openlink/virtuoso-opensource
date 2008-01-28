@@ -444,7 +444,7 @@ create procedure BMK.WA.domain_gems_delete(
   declare tmp, home, path varchar;
 
   if (isnull (account_id))
-    account_id := AB.WA.domain_owner_id (domain_id);
+    account_id := BMK.WA.domain_owner_id (domain_id);
 
   home := BMK.WA.dav_home(account_id);
   if (isnull(home))

@@ -108,17 +108,20 @@
       declare data varchar;
 
       BMK.WA.xml_set('keywords', data, self.v_keywords);
-      if (self.v_mode = 'simple') {
+      if (self.v_mode = 'simple')
+      {
         BMK.WA.xml_set('myBookmarks', data, 1);
       } else {
         BMK.WA.xml_set('expression', data, self.v_expression);
         BMK.WA.xml_set('tags', data, self.v_tags);
-        if (self.v_own = 1) {
+        if (self.v_own = 1)
+        {
           BMK.WA.xml_set('myBookmarks', data, self.v_own);
           if (self.v_folder_id > 0)
           BMK.WA.xml_set('folder', data, self.v_folder_id);
       }
-        if (self.v_shared = 1) {
+        if (self.v_shared = 1)
+        {
           BMK.WA.xml_set('mySharedBookmarks', data, self.v_shared);
           if (self.v_grants <> '')
             BMK.WA.xml_set('grants', data, self.v_grants);
