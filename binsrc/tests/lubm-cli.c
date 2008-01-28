@@ -40,6 +40,42 @@ timer_account_t ta_qr[14];
 #define ARRAY_SIZE 3
 
 int
+LUBM_Errors (char *where)
+{
+  unsigned char buf[250];
+  unsigned char sqlstate[15];
+
+  /*
+   *  Get statement errors
+   */
+  while (SQLError (henv, hdbc, hstmt, sqlstate, NULL,
+	buf, sizeof(buf), NULL) == SQL_SUCCESS)
+    {
+      fprintf (stdout, "%s ||%s, SQLSTATE=%s\n", where, buf, sqlstate);
+    }
+
+  /*
+   *  Get connection errors
+   */
+  while (SQLError (henv, hdbc, SQL_NULL_HSTMT, sqlstate, NULL,
+	buf, sizeof(buf), NULL) == SQL_SUCCESS)
+    {
+      fprintf (stdout, "%s ||%s, SQLSTATE=%s\n", where, buf, sqlstate);
+    }
+
+  /*
+   *  Get environmental errors
+   */
+  while (SQLError (henv, SQL_NULL_HDBC, SQL_NULL_HSTMT, sqlstate, NULL,
+	buf, sizeof(buf), NULL) == SQL_SUCCESS)
+    {
+      fprintf (stdout, "%s ||%s, SQLSTATE=%s\n", where, buf, sqlstate);
+    }
+
+  return -1;
+}
+
+int
 LUBM_Connect (char *dsn, char *usr, char *pwd)
 {
   SQLRETURN  retcode;
@@ -55,6 +91,11 @@ LUBM_Connect (char *dsn, char *usr, char *pwd)
 	{
 	  /* Allocate connection handle */
 	  retcode = SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc);
+	  if (SQLSetConnectOption(hdbc, SQL_ATTR_TXN_ISOLATION, (SQLULEN)SQL_TXN_READ_COMMITTED) == SQL_ERROR)
+	    {
+	      LUBM_Errors ("SQLSetConnectOption[SQL_ATTR_TXN_ISOLATION]");
+	      exit (-1);
+	    }
 
 	  if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO)
 	    {
@@ -98,42 +139,6 @@ LUBM_Disconnect (void)
   return 0;
 }
 
-
-int
-LUBM_Errors (char *where)
-{
-  unsigned char buf[250];
-  unsigned char sqlstate[15];
-
-  /*
-   *  Get statement errors
-   */
-  while (SQLError (henv, hdbc, hstmt, sqlstate, NULL,
-	buf, sizeof(buf), NULL) == SQL_SUCCESS)
-    {
-      fprintf (stdout, "%s ||%s, SQLSTATE=%s\n", where, buf, sqlstate);
-    }
-
-  /*
-   *  Get connection errors
-   */
-  while (SQLError (henv, hdbc, SQL_NULL_HSTMT, sqlstate, NULL,
-	buf, sizeof(buf), NULL) == SQL_SUCCESS)
-    {
-      fprintf (stdout, "%s ||%s, SQLSTATE=%s\n", where, buf, sqlstate);
-    }
-
-  /*
-   *  Get environmental errors
-   */
-  while (SQLError (henv, SQL_NULL_HDBC, SQL_NULL_HSTMT, sqlstate, NULL,
-	buf, sizeof(buf), NULL) == SQL_SUCCESS)
-    {
-      fprintf (stdout, "%s ||%s, SQLSTATE=%s\n", where, buf, sqlstate);
-    }
-
-  return -1;
-}
 
 
 int
