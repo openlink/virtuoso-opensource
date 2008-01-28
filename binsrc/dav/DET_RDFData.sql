@@ -601,11 +601,17 @@ create function "RDFData_DAV_RES_CONTENT" (in id any, inout content any, out typ
   gr := DAV_PROP_GET_INT (id[1], 'C', 'virt:rdfdata_graph', 0);
   if (__proc_exists ('sioc.DBA.get_graph') is not null and gr = sioc.DBA.get_graph ())
     {
+      declare pg any;
+      declare tmp, uname any;
+      declare pos int;
+      pg := http_param ('page');
+      if (not isstring (pg))
+	pg := '0';
+      pg := atoi (pg);
+
       -- take data from ODS graph
       if (regexp_match ('http://([^/]*)/dataspace/(person|organization)/(.*)', iri) is not null)
         {
-	  declare tmp, uname, pg any;
-	  declare pos int;
 	  tmp := sprintf_inverse (iri, 'http://%s/dataspace/%s/%s', 0);
 	  tmp := tmp[2];
 	  pos := coalesce (strchr (tmp, '#'), strchr (tmp, '/'));
@@ -613,18 +619,12 @@ create function "RDFData_DAV_RES_CONTENT" (in id any, inout content any, out typ
 	    uname := subseq (tmp, 0, pos);
           else
 	    uname := tmp;
-	  pg := http_param ('page');
-	  if (not isstring (pg))
-	    pg := '0';
-	  pg := atoi (pg);
           ses := sioc..compose_foaf (uname, type, pg);
 	  goto ret_place2;
 	}
       else if (regexp_match ('http://([^/]*)/dataspace/([^/]*)(#this|/sioc.rdf|/sioc.n3)?\x24', iri) is not null
 	  and __proc_exists ('sioc.DBA.ods_sioc_obj_describe') is not null)
 	{
-	  declare tmp, uname, pg any;
-	  declare pos int;
 	  tmp := sprintf_inverse (iri, 'http://%s/dataspace/%s', 0);
 	  tmp := tmp[1];
 	  pos := coalesce (strchr (tmp, '#'), strchr (tmp, '/'));
@@ -632,15 +632,19 @@ create function "RDFData_DAV_RES_CONTENT" (in id any, inout content any, out typ
 	    uname := subseq (tmp, 0, pos);
           else
 	    uname := tmp;
-	  pg := http_param ('page');
-	  if (not isstring (pg))
-	    pg := '0';
-	  pg := atoi (pg);
           ses := sioc..ods_sioc_obj_describe (uname, type, pg);
 	  goto ret_place2;
 	}
+      if (__proc_exists ('sioc.DBA.ods_sioc_container_obj_describe') is not null)
+	{
+	  ses := sioc..ods_sioc_container_obj_describe (iri, type, pg);
+	  goto ret_place2;
+	}
+      else
+	{
       DB.DBA.OdsIriDescribe (iri, type);
       goto ret_place;
+    }
     }
   if (isstring (gr) and length (gr))
     _from := sprintf (' FROM <%s>', gr);
