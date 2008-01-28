@@ -27,14 +27,6 @@
 #include "xmltree.h"
 #include "rdf_core.h"
 
-#ifdef DEBUG
-#define rdf_box_audit(rb) rdf_box_audit_impl(rb)
-#define rdf_bigbox_audit(rbb) rdf_box_audit_impl(&(rbb->rbb_base))
-#else
-#define rdf_box_audit(rb)
-#define rdf_bigbox_audit(rbb)
-#endif
-
 void
 rdf_box_audit_impl (rdf_box_t * rb)
 {

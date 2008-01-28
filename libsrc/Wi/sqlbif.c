@@ -30,142 +30,6 @@
    NEVER write bif functions that return the same boxed argument
    that they got as an argument. The result will be a crash after
    a while, when that same box is free'ed twice!
-
-   CHANGES -- Beginning from 15.JAN.1997
-
-   15.JAN.1997 AK  Made sure that the server won't bomb out any more
-   if the user gives nonsensible date-time values
-   for the date conversion functions.
-   I.e. now we check that the return value of localtime
-   is not a null pointer.
-   Changed in functions bif_date_string, bif_date_add
-   and bif_date_diff the following lines:
-
-   memcpy (& tm, localtime (& tv.tv_sec), sizeof (tm));
-   to these:  tm = localtime (& tv.tv_sec);
-   And changed each:       struct tm tm;
-   to the corresponding pointer definition:  struct tm *tm;
-   And replaced element references like:   tm.tm_year
-   with corresponding pointer references: tm->tm_year
-
-   Modified also functions aset (now returns the modified
-   array or string instead of the stored element),
-   subseq (allows also empty substrings).
-
-   Added a new argument fetching function
-   bif_long_or_char_arg (for the internal use only)
-   and functions bif_strchr and bif_iszero to be
-   used by the user.
-
-   16.JAN.1997 AK  Corrected few bugs I created yesterday.
-   Modified aset to return back the element
-   it gets, not the modified array or string
-   (See the note above to see why.)
-   Corrected few bugs in date conversion functions.
-   Added functions bif_strrchr and bif_chr
-
-   dbg_printf and dbg_obj_print now print out one
-   newline ('\n') after everything else, so that
-   the debugger's life shall be less harsh.
-   (As there are now easy way how user could insert
-   newline into the control string of dbg_printf)
-
-   17.JAN.1997 AK  Added functions bif_strstr, bif_nc_strstr,
-   bif_matches_like and bif_either
-
-   20.JAN.1997 AK  Added functions bif_isnull, bif_dv_to_sql_type
-   and bif_dv_type_title for the needs of a
-   new version of SQLColumns in sqlext.c
-
-   30.JAN.1997 AK  Modified bif_length so that it now returns zero
-   for NULL instead of generating an error.
-   Also returns the length of LONG VARCHAR's which it will
-   find from their DV_BLOB_HANDLE header (bh_length).
-
-   Added also the functions bif_internal_type (mainly
-   for debugging), bif_isblob_handle, bif_isinteger
-   and bif_isstring
-
-   22-FEB-1997 AK  A wholly new revision, with a monton of new functions
-   and improvements to the old ones. See file funref.doc
-   for more results.
-   Also, the following old functions has now been renamed
-
-   isblob_handle -> isblob
-
-   and the following new aliases has been defined, with
-   the old name still working
-
-   get_timestamp -> now
-   concatenate -> concat
-   dv_to_sql_type -> internal_to_sql_type
-   dv_type_title -> internal_type_name
-
-
-   04-MAR-1997 AK  Changed first argument of get_keyword from string
-   to anything, so anything can be used as keywords,
-   including numbers.
-
-   10-MAR-1997 AK  Changed desc -> cd_precision to 64 from old 8
-   in function bif_result_names, so that gettypeinfo
-   will return its type names untruncated to JDBC test.
-   (Maximum is "DOUBLE PRECISION" 16 characters.)
-
-   11-MAR-1997 AK  In version synced with OUI's one this is replaced again,
-   by assigning desc -> cd_precision to sl -> ssl_prec
-   bif_sprintf taken from OUI's version, made few
-   fixes to it also.
-
-   22-MAR-1997 AK  Added function stringtime, and alias   t   for it,
-   as well as aliases   d   and   ts   for stringdate.
-   For the needs of lazy implementation of ODBC brace
-   escaped date/time literals like {d '2038-01-18'}
-   etc. See sql2.y for the kludgy way how they have
-   been implemented.
-
-   Mar 28 97  oui   lvector, fvector, dvector, make_array, bif_float_arg, bif_double_arg
-
-
-   Apr 13 97 oui row_identity, row_deref, raw_exit
-   May 25 97 - oui use tm_isdst = -1 before mktime
-
-   29-OCT-1997 AK  Added functions
-   bif_curdate, bif_locate, bif_position
-   ODBC "System functions" ifnull, dbname, username
-   and modified old ones
-   ltrim, rtrim, trim, strchr, strrchr, strstr, nc_strstr,
-   matches_like, lcase, ucase, initcap, right, left,
-   repeat and concat to use
-   a new function bif_string_or_null_arg instead
-   of an old big_string_arg, so when their
-   first (and sometimes second) argument is SQL NULL
-   instead of a string, the same kind of NULL will
-   be returned.
-   The exception is concat, which will just skip
-   all NULL's which are its arguments, effectively
-   like they were empty strings ""'s.
-
-   bif_disconnect (disconnect_user) modified so that
-   if given NULL argument, then disconnects all
-   other users than the one who issued that function
-   call.
-
-   01-04.NOV.97 AK  Other improvements. Most of the timedate functions.
-   Most of the floating point functions like sin, sqrt.
-   get_keyword and a new position function made more
-   generic in regard to their arguments: may be now
-   vector type, also long, double, float.
-
-   New function one_of_these for implementing IN predicate.
-   make_array corrected.
-
-   NOTE: at least week() and dayofyear() are still buggy.
-
-   29-NOV-1997  AK  Added bif_replace(src_str,from_str,to_str[,max_n])
-
-   04-DEC-1997  AK  Added bif_split_and_decode(src_str[,0/1/2[,alt_seps])
-   first for the needs of GLOW-programming, later for
-   any generic purpose.
  */
 
 #include "sqlnode.h"
@@ -214,6 +78,7 @@ extern "C" {
 #include "msdtc.h"
 #include "sqlcstate.h"
 #include "virtpwd.h"
+#include "rdf_core.h"
 
 #define box_bool(n) ((caddr_t)((ptrlong)((n) ? 1 : 0)))
 
@@ -7887,6 +7752,20 @@ box_cast (caddr_t * qst, caddr_t data, ST * dtp, dtp_t arg_dtp)
     return (dk_alloc_box (0, DV_DB_NULL));
   if (!ARRAYP (dtp) || 0 == BOX_ELEMENTS (dtp))
     sqlr_new_error ("22023", "SR066", "Unsupported case in CONVERT (%s -> <unknown type>)", dv_type_title(arg_dtp));
+  if (DV_RDF == arg_dtp)
+    {
+      rdf_box_t *rb = (rdf_box_t *)data;
+      rdf_box_audit(rb);
+      if (DV_RDF == dtp->type)
+        {
+          rb->rb_ref_count++;
+          return data;
+        }
+      if (0 == rb->rb_is_complete)
+        sqlr_new_error ("22023", "SR066", "Unsupported case in CONVERT (incomplete RDF box -> %s)", dv_type_title((int) (dtp->type)));
+      data = rb->rb_box; /*!!! TBD: I18N: This turns UTF-8 RDF boxed string into plain DV_STRING w/o charset recode */
+      arg_dtp = DV_TYPE_OF (data);
+    }
   switch (dtp->type)
     {
       case DV_STRING: goto do_long_string;
@@ -13222,10 +13101,3 @@ void bpel_init ()
   ddl_ensure_table ("do this always", bpel_check_proc);
   ddl_ensure_table ("do this always", bpel_run_check_proc);
 }
-
-/* This should stay the last part of the file */
-#define YY_INPUT(buf, res, max) \
-  res = yy_string_input (buf, max);
-
-#define SCN3SPLIT
-#include "../../libsrc/Wi/scn3split.c"

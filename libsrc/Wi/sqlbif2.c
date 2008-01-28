@@ -1385,3 +1385,11 @@ sqlbif2_init (void)
   sqls_bif_init ();
   sqlo_inv_bif_int ();
 }
+
+
+/* This should stay the last part of the file */
+#define YY_INPUT(buf, res, max) \
+  res = yy_string_input (buf, max);
+
+#define SCN3SPLIT
+#include "scn3split.c"
