@@ -1779,7 +1779,7 @@ lt_free_rb (lock_trx_t * lt)
 	  rbe = next;
 	}
     }
-  if (lt->lt_rb_hash->ht_actual_size > 120)
+  if (lt->lt_rb_hash->ht_actual_size > 140)
     {
       hash_table_free (lt->lt_rb_hash);
       lt->lt_rb_hash = hash_table_allocate (101);
