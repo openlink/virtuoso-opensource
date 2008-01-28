@@ -1,3 +1,27 @@
+2008-01-28 09:48  source
+
+	* Updated version to 5.0.4-rc1
+
+2008-01-28 09:47  source
+
+	* Added box_cast for RDF_BOX source values
+
+2008-01-28 09:45  source
+
+	* Added transaction isolation
+
+2008-01-28 09:44  source
+
+	* Fixed sioc split
+
+2008-01-28 09:43  source
+
+	* Fixed check for missing ontology file
+
+2008-01-25 15:51  source
+
+	* Fixed whitespace
+
 2008-01-25 13:43  source
 
 	* Updated version to 5.0.4-pre7
