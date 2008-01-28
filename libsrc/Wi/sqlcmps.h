@@ -209,6 +209,7 @@ typedef struct sql_comp_s
     ST **		sc_groupby_set;
     int		sc_is_update;
     update_node_t * 	sc_update_keyset;
+    id_hash_t *	sc_sample_cache;
   } sql_comp_t;
 
 #define SC_G_ID(sc) \

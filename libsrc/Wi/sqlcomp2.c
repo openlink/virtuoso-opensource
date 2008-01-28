@@ -1085,6 +1085,18 @@ sc_free (sql_comp_t * sc)
     }
   END_DO_SET();
   dk_set_free (sc->sc_jt_preds); */
+  if (sc->sc_sample_cache)
+    {
+      id_hash_iterator_t hit;
+      caddr_t * pid, *pnum;
+      id_hash_iterator (&hit, sc->sc_sample_cache);
+      while (hit_next (&hit, (caddr_t *)&pid, (caddr_t *)&pnum))
+	{
+	  dk_free_tree (*pid);
+	  dk_free_box (*pnum);
+	}
+      id_hash_free (sc->sc_sample_cache);
+    }
 }
 
 query_t *

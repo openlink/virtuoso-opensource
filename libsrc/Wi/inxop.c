@@ -88,6 +88,7 @@ itc_near_random (it_cursor_t * itc, placeholder_t * pl, buffer_desc_t ** buf_ret
 	{
 	  itc->itc_page = pl->itc_page;
 	}
+      itc->itc_is_on_row = 0;
       itc->itc_landed = 0;
       if (is_asc)
 	{

@@ -345,6 +345,9 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
 	{
 	  if (left_col->col_n_distinct > 0)
 	    {
+	      if (DV_ANY == left_col->col_sqt.sqt_dtp)
+		*a1 = 1; /* in rdf, sometimes a type check isiri_id becomes a like.  It is always true.  Almost needless test. */
+	      else
 	      *a1 = MIN (5.0 / left_col->col_n_distinct, 0.8);
 	    }
 	  else
@@ -833,9 +836,32 @@ dfe_const_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key,
 }
 
 
+caddr_t 
+itc_sample_cache_key (it_cursor_t * itc)
+{
+  int inx;
+  int64 conds = 0;
+  caddr_t * box = (caddr_t*) dk_alloc_box (sizeof (caddr_t) * (2 + itc->itc_search_par_fill), DV_ARRAY_OF_POINTER);
+  search_spec_t * sp;
+  box[0] = box_num (itc->itc_insert_key->key_id);
+  for (sp = itc->itc_key_spec.ksp_spec_array; sp; sp = sp->sp_next)
+    {
+      conds= (conds << 3) | sp->sp_min_op;
+      if (CMP_NONE != sp->sp_max_op)
+	conds = (conds << 3) | sp->sp_max_op;
+    }
+  box[1] = box_num (conds);
+  for (inx = 0; inx < itc->itc_search_par_fill; inx++)
+    box[inx + 2] = box_copy_tree (itc->itc_search_params[inx]);
+  return (caddr_t) box;
+}
+
+
 int64
 sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts)
 {
+  sqlo_t * so = NULL;
+  caddr_t sc_key = NULL, num, *place;
   int64 res, tb_count;
   buffer_desc_t * buf;
   it_cursor_t itc_auto;
@@ -859,16 +885,35 @@ sqlo_inx_sample_1 (dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int 
 	  itc_free (itc);
 	  return KS_CAST_NULL == res ? 0 : -1;
 	}
+      if (!so)
+	so = lowers[inx] ? lowers[inx]->dfe_sqlo : uppers[inx]->dfe_sqlo;
       *prev_sp = &specs[inx];
       prev_sp = &specs[inx].sp_next;
     }
-
+  sc_key = itc_sample_cache_key (itc);
+  if (so->so_sc->sc_sample_cache)
+    place = (caddr_t*) id_hash_get (so->so_sc->sc_sample_cache, (caddr_t) &sc_key);
+  else 
+    {
+      so->so_sc->sc_sample_cache = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+      place = NULL;
+    }
+  if (place)
+    {
+      dk_free_tree (sc_key);
+      itc_free (itc);
+      return unbox (*place);
+    }
   itc->itc_random_search = RANDOM_SEARCH_ON; /* disable use of root cache by itc_reset */
   buf = itc_reset (itc);
   itc->itc_random_search = RANDOM_SEARCH_OFF;
   res = itc_sample (itc, &buf);
   itc_page_leave (itc, buf);
   itc_free (itc);
+  num = box_num (res);
+  if (so->so_sc->sc_sample_cache)
+    id_hash_set (so->so_sc->sc_sample_cache, (caddr_t)&sc_key, (caddr_t)&num);
+
   tb_count = dbe_key_count (key->key_table->tb_primary_key);
   return MIN (tb_count, res);
 }

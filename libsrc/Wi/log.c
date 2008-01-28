@@ -345,6 +345,7 @@ log_commit (lock_trx_t * lt)
 
   if (!DKSESSTAT_ISSET (log_ses, SST_OK))
     {
+      log_ses->dks_out_fill = 0; /* clear maybe unflushed */
       FTRUNCATE (tcpses_get_fd (log_ses->dks_session), prev_length);
       log_error ("Out of disk space for log");
       LT_ERROR_DETAIL_SET (lt, box_dv_short_string ("Out of disk space for log"));

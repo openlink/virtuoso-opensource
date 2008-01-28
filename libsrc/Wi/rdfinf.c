@@ -604,7 +604,7 @@ void
 sp_list_replace_ssl (search_spec_t * sp, state_slot_t * old, state_slot_t * new, int col_id)
 {
   for (sp = sp; sp; sp = sp->sp_next)
-    if (sp->sp_min_ssl == old && (!col_id || sp->sp_cl.cl_col_id == col_id))
+    if (CMP_EQ == sp->sp_min_op && sp->sp_min_ssl == old && (!col_id || sp->sp_cl.cl_col_id == col_id))
       sp->sp_min_ssl = new;
 }
 
@@ -1011,6 +1011,8 @@ sqlg_rdf_inf_1 (df_elt_t * tb_dfe, data_source_t * ts, data_source_t ** q_head, 
     {
       df_elt_t ** g_in_list = sqlo_in_list (cp, NULL, NULL);
       dbe_column_t * col = g_in_list ? g_in_list[0]->_.col.col : cp->_.bin.left->_.col.col;
+      if (BOP_EQ != cp->_.bin.op)
+	continue;
       if (g_in_list && col->col_name[0] != 'G')
 	continue;
       switch (col->col_name[0])

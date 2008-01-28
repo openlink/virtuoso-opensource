@@ -2541,6 +2541,38 @@ sqlo_col_inverse  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * co
 }
 
 
+int
+st_is_call (ST * tree, char * f, int n_args)
+{
+  if (ST_P (tree, CALL_STMT) && DV_STRINGP (tree->_.call.name) && 0 == stricmp (f, tree->_.call.name)
+      && BOX_ELEMENTS (tree->_.call.params) == n_args)
+    return 1;
+  return 0;
+}
+
+int enable_iri_like = 1;
+
+int
+sqlo_col_dtp_func  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_preds)
+{
+  /* if 1 = isiri_id (col) and col is an any, then make this into a like */
+  static char iri_like[] = {'T', DV_IRI_ID, 0};
+  df_elt_t * col;
+  ST * tree;
+  if (!enable_iri_like || DFE_BOP != pred->dfe_type || BOP_NOT != pred->_.bin.op)
+    return 0;
+  pred = pred->_.bin.left;
+  if (DFE_BOP_PRED != pred->dfe_type || BOP_EQ != pred->_.bin.op
+      || 0 != unbox (pred->_.bin.left->dfe_tree) || !st_is_call (pred->_.bin.right->dfe_tree, "isiri_id", 1))
+    return 0;
+  col = pred->_.bin.right->_.call.args[0];
+  if (DFE_COLUMN != col->dfe_type || DV_ANY != col->_.col.col->col_sqt.sqt_dtp)
+    return 0;
+  BIN_OP (tree, BOP_LIKE, col->dfe_tree, t_box_dv_short_string (iri_like));
+  dk_set_push (col_preds, sqlo_df (so, tree));
+  return 1;
+}
+
 
 void
 sqlo_like_range (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_preds)
@@ -2699,6 +2731,8 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
 	      t_set_push (&after_preds, pred);
 	    }
 	}
+      else if (sqlo_col_dtp_func (so, tb_dfe, pred, &col_preds))
+	; /* no action, preds added by func if true */
       else
 	t_set_push (&after_preds, pred);
       pred->dfe_is_placed = DFE_PLACED;

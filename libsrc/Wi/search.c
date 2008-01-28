@@ -724,6 +724,19 @@ dv_composite_cmp (db_buf_t dv1, db_buf_t dv2, collation_t * coll)
 }
 
 
+dtp_t 
+dv_base_type (dtp_t dtp)
+{
+  switch (dtp)
+    {
+    case DV_IRI_ID_8: return DV_IRI_ID;
+    case DV_SHORT_INT: return DV_LONG_INT;
+    case DV_SHORT_STRING_SERIAL: return DV_STRING;
+    default: return dtp;
+    }
+}
+
+
 int
 dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
 {
@@ -1131,6 +1144,19 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation)
 
 
 int
+itc_like_any_check (it_cursor_t * itc, db_buf_t dv1, int len1, db_buf_t pattern)
+{
+  /* for any type columns, like O in rdf, have a special pattern set for type check.  'T<dtp>' where dtp is the DV tag */
+  /* since the col is any the pattern is cast to any, meaning it has a dv string and len in places 0 and 1.  T and the dtp in places 2 and 3 */
+  if (box_length_inline (pattern) != 5 || pattern[2] != 'T')
+    return DVC_LESS;
+  if (len1 >= 1 && dv_base_type (dv1[0]) == pattern[3])
+    return DVC_MATCH;
+  return DVC_LESS;
+}
+
+
+int
 itc_like_compare (it_cursor_t * itc, caddr_t pattern, search_spec_t * spec)
 {
   char temp[MAX_ROW_BYTES];
@@ -1142,6 +1168,8 @@ itc_like_compare (it_cursor_t * itc, caddr_t pattern, search_spec_t * spec)
   ITC_COL (itc, spec->sp_cl, off, len1);
   dv1 = itc->itc_row_data + off;
   dtp1 = spec->sp_cl.cl_sqt.sqt_dtp;
+  if (DV_ANY == dtp1 && DV_STRING == dtp2)
+    return itc_like_any_check (itc, dv1, len1, pattern);
 
   if (dtp2 != DV_SHORT_STRING && dtp2 != DV_LONG_STRING && dtp2 != DV_WIDE && dtp2 != DV_LONG_WIDE )
     return DVC_LESS;

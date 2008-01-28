@@ -3328,6 +3328,7 @@ lt_kill_waiting_trx (lock_trx_t *lt, int lt_error)
       lt_log_debug (("killing other trx %p (status %d) because of %d on thread %p",
 	  lt, lt->lt_status, lt_error, THREAD_CURRENT_THREAD));
       lt->lt_error = lt_error;
+      if (LT_DELTA_ROLLED_BACK != lt->lt_status)
       lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
     }
 }
