@@ -1170,11 +1170,14 @@ nic_name_id (name_id_cache_t * nic, char * name)
 caddr_t 
 nic_id_name (name_id_cache_t * nic, boxint id)
 {
+  caddr_t ret;
   boxint r;
   mutex_enter (nic->nic_mtx);
   gethash_64 (r, id, nic->nic_id_to_name);
+  ret = r ? box_copy ((caddr_t) (ptrlong)r) : NULL;
+  /* read the value inside the mtx because cache replacement may del it before the copy is made if not in the mtx */
   mutex_leave(nic->nic_mtx);
-  return r ? box_copy ((caddr_t) (ptrlong)r) : NULL;
+  return ret;
 }
 
 name_id_cache_t *
