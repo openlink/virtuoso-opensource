@@ -50,7 +50,7 @@
     <html>
     <head>	
 	<title><xsl:value-of select="$ti_cluster_name"/>.<xsl:value-of select="$ti_local_name"/></title>
-      <base href="{wv:WikiClusterURI ($ti_cluster_name)}" />
+      <base href="{wv:WikiClusterURI ($ti_cluster_name)}{$ti_local_name}" />
       <link rel="stylesheet" 
             href="{wv:ResourceHREF('Skins/default/default.css', $baseadjust)}" 
             type="text/css"></link>

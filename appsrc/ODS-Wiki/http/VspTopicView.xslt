@@ -588,7 +588,7 @@
         <xsl:call-template name="wikiref">
           <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'attach')"/></xsl:with-param>
           <xsl:with-param name="wikiref_cont">Attach</xsl:with-param>
-          <xsl:with-param name="alt">Jump To/Create New Topic</xsl:with-param>
+              <xsl:with-param name="alt">Attach</xsl:with-param>
         </xsl:call-template>
         <xsl:text> | </xsl:text>
             <a>
@@ -596,6 +596,12 @@
               Maintenance
             </a>
         <xsl:text> | </xsl:text>
+            <xsl:call-template name="wikiref">
+              <xsl:with-param name="wikiref_params"><xsl:value-of select="wv:pair('command', 'export_rdf')"/></xsl:with-param>
+              <xsl:with-param name="wikiref_cont">Export RDF/XML</xsl:with-param>
+              <xsl:with-param name="alt">Export RDF/XML</xsl:with-param>
+            </xsl:call-template>          
+            <xsl:text> | </xsl:text>
             Publish to (
             <a>
               <xsl:attribute name="href"><xsl:value-of select="wv:ResourceHREF2 ('export.vspx',$baseadjust,vector('id',$ti_id, 'sid', $sid, 'realm', 'wa'))"/></xsl:attribute>

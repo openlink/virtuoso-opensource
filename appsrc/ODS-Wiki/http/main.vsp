@@ -370,6 +370,15 @@ content:
       WV.WIKI.VSPDIFF (path,lines,_topic, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
       goto make_footer;
     }
+  else if (_cmd = 'export_rdf')
+  {
+  	WV.WIKI.redirect (sprintf ('/sparql?default-graph-uri=%U&query=%U&format=%U', 
+  	                           sioc..get_graph (), 
+  	                           sprintf ('describe <%s>', sioc..wiki_post_iri_2 (_topic.ti_id)),
+  	                           'text/html'
+  	                 ));
+  	return;
+  }
   else if (_cmd = 'do_attach')
     {
       WV.WIKI.CHECKREADACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id);
