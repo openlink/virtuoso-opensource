@@ -2153,5 +2153,5 @@ create procedure DB.DBA.GET_XBRL_CANONICAL_NAME(in elem varchar) returns varchar
 grant execute on DB.DBA.GET_XBRL_CANONICAL_NAME to public
 ;
 
-xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_NAME'), 0)
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_NAME'))
 ;
