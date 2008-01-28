@@ -1185,7 +1185,8 @@ create procedure ods_sioc_service (
     in fmt varchar,
     in wsdl varchar,
     in endpoint varchar,
-    in proto varchar
+    in proto varchar,
+    in descr varchar := null
     )
 {
   if (iri is null or forum_iri is null)
@@ -1204,6 +1205,8 @@ create procedure ods_sioc_service (
     DB.DBA.RDF_QUAD_URI (graph_iri, iri, sioc_iri ('service_endpoint'), endpoint);
   if (proto is not null)
     DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, sioc_iri ('service_protocol'), proto);
+  if (descr is not null or proto is not null)
+    DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, rdfs_iri ('label'), coalesce (descr, proto));
   commit work;
 };
 
@@ -2961,7 +2964,7 @@ create procedure ods_sioc_obj_describe (in u_name varchar, in fmt varchar := 'n3
   declare iri, graph, ses any;
   declare qrs, stat, msg, accept, pref any;
   declare rset, metas any;
-  declare triples any;
+  declare triples, maybe_more any;
 
 --  dbg_obj_print (u_name, fmt);
   set http_charset='utf-8';
@@ -2999,18 +3002,147 @@ create procedure ods_sioc_obj_describe (in u_name varchar, in fmt varchar := 'n3
       exec (qr, stat, msg, vector (), 0, metas, rset);
       if (stat <> '00000')
 	signal (stat, msg);
+      ods_sioc_print_rset (iri, rset, ses, fmt, maybe_more);
+    }
       if (fmt = 'rdf')
+    rdf_tail (ses);
+  return ses;
+}
+;
+
+create procedure ods_sioc_print_rset (in iri any, inout rset any, inout ses any, inout fmt any, inout maybe_more int)
 	{
+  declare triples any;
+  declare this_iri, type_iri, label_iri, g_iri, dict, sa_iri any;
+
+  triples := null;
 	  if ((1 = length (rset)) and (1 = length (rset[0])) and (214 = __tag (rset[0][0])))
 	    {
-	      triples := dict_list_keys (rset[0][0], 1);
-	      DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+      this_iri := iri_to_id (iri);
+      type_iri := iri_to_id (sioc..rdf_iri ('type'));
+      label_iri := iri_to_id (sioc..rdfs_iri ('label'));
+      sa_iri := iri_to_id (sioc..rdfs_iri ('seeAlso'));
+      g_iri := iri_to_id (sioc..get_graph ());
+      dict := rset[0][0];
+      triples := dict_list_keys (dict, 0);
+      if (length (triples) = 0)
+	maybe_more := 0;
+      foreach (any tr in triples) do
+	{
+	  declare subj, obj any;
+	  subj := tr[0];
+	  obj := tr[2];
+	  if (isiri_id (subj) and this_iri <> subj)
+	    {
+	      for select S, P, O from DB.DBA.RDF_QUAD where G = g_iri and S = subj and P in (type_iri, label_iri, sa_iri)
+		do
+		  {
+		    dict_put (dict, vector (S, P, O), 0);
+		  }
+	    }
+	  else if (isiri_id (obj) and obj <> this_iri)
+	    {
+	      for select S, P, O from DB.DBA.RDF_QUAD where G = g_iri and S = obj and P in (type_iri, label_iri, sa_iri)
+		do
+		  {
+		    dict_put (dict, vector (S, P, O), 0);
+		  }
 	    }
 	}
+	triples := dict_list_keys (dict, 0);
+    }
+  if (length (triples))
+    {
+      if (fmt = 'rdf')
+	DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
       else
+	DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+    }
+};
+
+create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar := 'n3', in p int := 0)
 	{
-	  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 0);
+  declare graph, ses any;
+  declare qrs, stat, msg, accept, pref any;
+  declare rset, metas any;
+  declare triples any;
+  declare lim, offs, maybe_more int;
+
+--  dbg_obj_print (u_name, fmt);
+  set http_charset='utf-8';
+  maybe_more := 1;
+  if (fmt = 'text/rdf+n3')
+    fmt := 'n3';
+  else if (fmt = 'application/rdf+xml')
+    fmt := 'rdf';
+  if (fmt not in ('n3', 'ttl', 'rdf'))
+    fmt := 'rdf';
+
+  if (fmt = 'n3' or fmt = 'ttl')
+    accept := 'text/rdf+n3';
+  else
+    accept := 'application/rdf+xml';
+  graph := get_graph ();
+  ses := string_output ();
+  lim := 20;--coalesce (DB.DBA.USER_GET_OPTION (u_name, 'SIOC_POSTS_QUERY_LIMIT'), 10);
+  offs := coalesce (p, 0) * lim;
+  qrs := vector (0,0,0);
+  pref := 'sparql prefix sioc: <http://rdfs.org/sioc/ns#> prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dct: <http://purl.org/dc/terms/> prefix atom: <http://atomowl.org/ontologies/atomrdf#> ';
+  if (offs = 0)
+    {
+      qrs[0] := sprintf ('CONSTRUCT { <%s> ?p ?o . } '||
+      ' FROM <%s> WHERE { <%s> ?p ?o . filter (?p != sioc:container_of && ?p != atom:entry && ?p != atom:contains) }',
+      iri, get_graph (), iri);
+      qrs[1] := sprintf ('CONSTRUCT { ?s ?p <%s> . } '||
+      ' FROM <%s> WHERE { ?s ?p <%s> . filter (?p != sioc:has_container && ?p != atom:source ) }',
+      iri, get_graph (), iri);
+    }
+  qrs[2] := sprintf (
+    'CONSTRUCT { <%s> sioc:container_of ?o . ?o sioc:has_container <%s> . ?o a ?t . ?o rdfs:label ?l . ?o rdfs:seeAlso ?sa . } '||
+    ' FROM <%s> WHERE { <%s> sioc:container_of ?o . optional { ?o a ?t } . optional { ?o rdfs:label ?l } . '||
+    ' optional { ?o rdfs:seeAlso ?sa } . optional { ?o dct:created ?cr } } order by desc (?cr) LIMIT %d OFFSET %d',
+    iri, iri, get_graph (), iri, lim, offs);
+
+  if (fmt = 'rdf')
+    rdf_head (ses);
+  set_user_id ('dba');
+
+  foreach (any qr in qrs) do
+    {
+      if (qr <> 0)
+	{
+	  qr := pref || qr;
+--          dbg_printf ('%s', qr);
+	  stat := '00000';
+	  exec (qr, stat, msg, vector (), 0, metas, rset);
+	  if (stat <> '00000')
+	    signal (stat, msg);
+
+	  ods_sioc_print_rset (iri, rset, ses, fmt, maybe_more);
 	}
+	}
+  if (maybe_more)
+    {
+      declare ss, sa_dict any;
+      ss := string_output ();
+      rdf_head (ss);
+      http (sprintf ('<rdf:Description rdf:about="%s">', iri), ss);
+      http (sprintf ('<rdfs:seeAlso xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="%s/page/%d" />',
+       iri, coalesce (p, 0) + 1), ss);
+      http ('</rdf:Description>', ss);
+
+      http (sprintf ('<rdf:Description rdf:about="%s/page/%d">', iri, coalesce (p, 0) + 1), ss);
+      http (sprintf ('<rdfs:label>page %d</rdfs:label>', coalesce (p, 0) + 1), ss);
+      http ('</rdf:Description>', ss);
+
+      rdf_tail (ss);
+      ss := string_output_string (ss);
+      sa_dict := DB.DBA.RDF_RDFXML_TO_DICT (ss, iri, graph);
+      triples := dict_list_keys (sa_dict, 1);
+      if (fmt = 'rdf')
+	DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 0, ses);
+      else
+	DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
     }
   if (fmt = 'rdf')
     rdf_tail (ses);

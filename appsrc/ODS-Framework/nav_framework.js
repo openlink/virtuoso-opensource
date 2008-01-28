@@ -1562,6 +1562,10 @@ ODS.Nav = function(navOptions) {
     aLogout.innerHTML='Logout'; 
     OAT.Event.attach(aLogout,"click",self.session.end);  
     
+    var aSignUp= OAT.Dom.create("a",{cursor: 'pointer'});
+    OAT.Event.attach(aSignUp,"click",function(){self.loadVspx(self.ods+'register.vspx');});  
+    aSignUp.innerHTML='Sign Up'; 
+
     var aHelp= OAT.Dom.create("a");
     aHelp.target="_blank";
     aHelp.href=self.expandURL(self.ods+'help.vspx');
@@ -1574,7 +1578,7 @@ ODS.Nav = function(navOptions) {
                       [loginfoDiv,aSettings,aUserProfile,aLogout,aHelp])
     else
        OAT.Dom.append([rootDiv,loginfoDiv],
-                      [loginfoDiv,aLogin,aHelp])
+                      [loginfoDiv,aLogin,aSignUp,aHelp])
   
   }
   

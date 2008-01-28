@@ -47,7 +47,6 @@ wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_WIKI_GET_EXCERPT_HTML to GDA
 wa_exec_no_error('grant execute on DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE to GDATA_ODS');
 wa_exec_no_error('grant execute on DB.DBA.RDF_SQLVAL_OF_OBJ to GDATA_ODS');
 wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_USER_GET_EXCERPT_HTML to GDATA_ODS');
-wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_DAV_OR_WIKI_GET_EXCERPT_HTML to GDATA_ODS');
 wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_USER_GET_EXCERPT_HTML to GDATA_ODS');
 wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_NNTP_GET_EXCERPT_HTML to GDATA_ODS');
 wa_exec_no_error('grant execute on DB.DBA.WA_SEARCH_DAV_GET_EXCERPT_HTML to GDATA_ODS');
@@ -1321,7 +1320,7 @@ create procedure openIdCheckAuthentication (in realm varchar :='wa', in openIdUr
 
   declare sid varchar;
   sid := DB.DBA.vspx_sid_generate ();
-  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (sid, realm, user_name, now ());
+  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_STATE) values (sid, realm, user_name, now (),serialize ( vector ( 'vspx_user', user_name)));
 
   http('<session>'||sid||'</session>',resXml);
   http('<userName>'||user_name||'</userName>',resXml);
@@ -1461,6 +1460,9 @@ create procedure search (in sid varchar:='',in realm varchar :='wa', in searchPa
   {
     sql_state := '00000';
 
+    set_qualifier ('DB');
+    set_user_id ('dba');
+
     exec (query, sql_state, sql_msg, vector (), 0, meta, rset);
   
     if (sql_state = '00000' and length(rset)>0)
@@ -1488,6 +1490,8 @@ create procedure search (in sid varchar:='',in realm varchar :='wa', in searchPa
 --        dbg_obj_print(sql_state, sql_msg);
     
     }
+    set_qualifier ('ODS');
+
 
   }
  
