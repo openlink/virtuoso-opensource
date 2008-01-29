@@ -1520,8 +1520,8 @@
                       </th>
                       <td nowrap="1">
                         <vm:if test="self.abAction <> 'view'">
-                          <v:text name="ab_birthday" xhtml_id="ab_birthday" null-value="--''" value="--AB.WA.dt_format (self.v_birthday, 'Y-M-D')" xhtml_class="textbox" xhtml_size="10" />
-                          <a href="#" name="ab_birthday_select" id="ab_birthday_select" onclick="cPopup.select(document.forms['F1'].ab_birthday, 'ab_birthday_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                            <v:text name="ab_birthday" xhtml_id="ab_birthday" null-value="--''" value="--AB.WA.dt_format (self.v_birthday, 'Y-M-D')" xhtml_onclick="javascript: cPopup.select ($(\'ab_birthday\'), \'ab_birthday_select\', \'yyyy-MM-dd\');" xhtml_class="textbox" xhtml_size="10" />
+                            <a href="#" name="ab_birthday_select" id="ab_birthday_select" onclick="cPopup.select ($('ab_birthday'), 'ab_birthday_select', 'yyyy-MM-dd'); return false;" class="noapp">
                             <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                           </a>
                         </vm:if>

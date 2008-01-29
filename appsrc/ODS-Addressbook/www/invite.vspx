@@ -95,6 +95,7 @@
           				      content := WA_GET_EMAIL_TEMPLATE ('WS_INV_TEMPLATE');
                         content := WA_MAIL_TEMPLATES (content, instance, '', '%url%');
                         content := replace(content, '%user%', self.v_fullName);
+                        content := replace (content, 'a Address', 'an Address');
 
                 		    control.ufl_value := content;
                 		  }
