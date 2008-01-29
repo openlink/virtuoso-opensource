@@ -3025,7 +3025,8 @@ create procedure ENEWS.WA.sfolder_sql(
   if (not is_empty_or_null(tmp))
     C := 'join ENEWS.WA.FEED_ITEM_COMMENT fic on fic.EFIC_ITEM_ID = fi.EFI_ID and fic.EFIC_DOMAIN_ID = <DOMAIN_ID> <COMMENT_DESCRIPTION>';
 
-  if (is_empty_or_null(ENEWS.WA.xml_get('tags', data))) {
+  if (is_empty_or_null(ENEWS.WA.xml_get('tags', data)))
+  {
     S :=
       'select \n' ||
       '  fi.EFI_ID, \n' ||
@@ -3111,7 +3112,8 @@ create procedure ENEWS.WA.sfolder_sql(
       '          join ENEWS.WA.FEED_DOMAIN fd on fd.EFD_FEED_ID = f.EF_ID \n' ||
       '             <CONVERSATION> \n' ||
       'where fd.EFD_DOMAIN_ID = <DOMAIN_ID> <WHERE>\n';
-    if (C = '') {
+    if (C = '')
+    {
       S := sprintf('select distinct <MAX> z.* \n from (%s) z ', replace (S, '<CONVERSATION>', ''));
     } else {
       S := sprintf('select distinct <MAX> z.* from (%s union all %s) z ', replace (S, '<CONVERSATION>', ''), replace (replace (S, '<CONVERSATION>', C), '<ITEM_DESCRIPTION>', ''));
@@ -3119,22 +3121,28 @@ create procedure ENEWS.WA.sfolder_sql(
   }
 
   tmp := ENEWS.WA.xml_get('keywords', data);
-  if (not is_empty_or_null(tmp) and (mode = 'text')) {
+  if (not is_empty_or_null(tmp) and (mode = 'text'))
+  {
     S := replace(S, '<ITEM_DESCRIPTION>', sprintf('and contains(fi.EFI_DESCRIPTION, \'[__lang "x-ViDoc"] %s\') \n', FTI_MAKE_SEARCH_STRING(tmp)));
     if (C <> '')
       S := replace(S, '<COMMENT_DESCRIPTION>', sprintf('and contains(fic.EFIC_COMMENT, \'[__lang "x-ViDoc"] %s\') \n', FTI_MAKE_SEARCH_STRING(tmp)));
   } else {
     tmp := ENEWS.WA.xml_get('expression', data);
     if (not is_empty_or_null(tmp))
-      if (mode = 'text') {
+      if (mode = 'text')
+      {
         S := replace(S, '<ITEM_DESCRIPTION>', sprintf('and contains(fi.EFI_DESCRIPTION, \'[__lang "x-ViDoc"] %s\') \n', tmp));
         if (C <> '')
           S := replace(S, '<COMMENT_DESCRIPTION>', sprintf('and contains(fic.EFIC_COMMENT, \'[__lang "x-ViDoc"] %s\') \n', tmp));
-      } else if (mode = 'xpath') {
+      }
+      else if (mode = 'xpath')
+      {
         S := replace(S, '<ITEM_DESCRIPTION>', sprintf('and xpath_eval (\'%s\', fi.EFI_DESCRIPTION, 1) \n', replace(tmp, '''', '\\''')));
         if (C <> '')
           S := replace(S, '<COMMENT_DESCRIPTION>', sprintf('and xpath_eval (\'%s\', fic.EFIC_COMMENT, 1) \n', replace(tmp, '''', '\\''')));
-      } else if (mode = 'xquery') {
+      }
+      else if (mode = 'xquery')
+      {
         S := replace(S, '<ITEM_DESCRIPTION>', sprintf('and xquery_eval (\'%s\', fi.EFI_DESCRIPTION) \n', replace(tmp, '''', '\\''')));
         if (C <> '')
           S := replace(S, '<COMMENT_DESCRIPTION>', sprintf('and xquery_eval (\'%s\', fic.EFIC_COMMENT) \n', replace(tmp, '''', '\\''')));
@@ -3142,7 +3150,8 @@ create procedure ENEWS.WA.sfolder_sql(
   }
 
   tmp := ENEWS.WA.xml_get('tags', data);
-  if (not is_empty_or_null(tmp)) {
+  if (not is_empty_or_null(tmp))
+  {
     tmp := ENEWS.WA.tags2search(tmp);
     S := replace(S, '<TAGS>', tmp);
     S := replace(S, '<DOMAIN_TAGS>', sprintf('%s and "^R%s"', tmp, cast(domain_id as varchar)));
@@ -3150,7 +3159,8 @@ create procedure ENEWS.WA.sfolder_sql(
   }
 
   tmp := ENEWS.WA.xml_get('folder', data);
-  if (not is_empty_or_null(tmp)) {
+  if (not is_empty_or_null(tmp))
+  {
     tmp := cast(tmp as integer);
     if (tmp > 0)
       ENEWS.WA.sfolder_sql_where (where2, delimiter2, sprintf('ENEWS.WA.folder_path (fd.EFD_DOMAIN_ID, fd.EFD_FOLDER_ID) like \'%s%s\'', replace (ENEWS.WA.folder_path (domain_id, tmp), '''', '\\'''), '%'));
@@ -3158,11 +3168,11 @@ create procedure ENEWS.WA.sfolder_sql(
 
   tmp := ENEWS.WA.xml_get('beforeDate', data);
   if (not is_empty_or_null(tmp))
-    ENEWS.WA.sfolder_sql_where(where2, delimiter2, sprintf('fi.EFI_PUBLISH_DATE <= stringdate(\'%s\') \n', ENEWS.WA.dt_reformat(tmp, 'D.M.Y', 'Y-M-D')));
+    ENEWS.WA.sfolder_sql_where(where2, delimiter2, sprintf('fi.EFI_PUBLISH_DATE <= stringdate(\'%s\') \n', tmp));
 
   tmp := ENEWS.WA.xml_get('afterDate', data);
   if (not is_empty_or_null(tmp))
-    ENEWS.WA.sfolder_sql_where(where2, delimiter2, sprintf('fi.EFI_PUBLISH_DATE >= stringdate(\'%s\') \n', ENEWS.WA.dt_reformat(tmp, 'D.M.Y', 'Y-M-D')));
+    ENEWS.WA.sfolder_sql_where (where2, delimiter2, sprintf('fi.EFI_PUBLISH_DATE >= stringdate(\'%s\') \n', tmp));
 
   tmp := ENEWS.WA.xml_get('read', data);
   if (tmp = 'r+')
@@ -5315,7 +5325,7 @@ create procedure ENEWS.WA.dt_value(
     pDefault := now();
   if (isnull(pDate))
     pDate := pDefault;
-  pDate := ENEWS.WA.dt_gmt2user(pDate, pUser);
+  --pDate := ENEWS.WA.dt_gmt2user(pDate, pUser);
   if (ENEWS.WA.dt_format(pDate, 'D.M.Y') = ENEWS.WA.dt_format(now(), 'D.M.Y'))
     return concat('today ', ENEWS.WA.dt_format(pDate, 'H:N'));
   return ENEWS.WA.dt_format(pDate, 'D.M.Y H:N');
@@ -5437,21 +5447,23 @@ create procedure ENEWS.WA.dt_deformat(
   d := 0;
   m := 0;
   y := 0;
-  while (N <= length(pFormat)) {
+  while (N <= length (pFormat))
+  {
     ch := upper(substring(pFormat, N, 1));
     if (ch = 'M')
       m := ENEWS.WA.dt_deformat_tmp(pString, I);
     if (ch = 'D')
       d := ENEWS.WA.dt_deformat_tmp(pString, I);
-    if (ch = 'Y') {
+    if (ch = 'Y')
+    {
       y := ENEWS.WA.dt_deformat_tmp(pString, I);
       if (y < 50)
         y := 2000 + y;
       if (y < 100)
         y := 1900 + y;
-    };
+    }
     N := N + 1;
-  };
+  }
   return stringdate(concat(cast(m as varchar), '.', cast(d as varchar), '.', cast(y as varchar)));
 }
 ;
@@ -5462,11 +5474,11 @@ create procedure ENEWS.WA.dt_deformat_tmp(
   in S varchar,
   inout N varchar)
 {
-  declare
-    V any;
+  declare V any;
 
   V := regexp_parse('[0-9]+', S, N);
-  if (length(V) > 1) {
+  if (length (V) > 1)
+  {
     N := aref(V,1);
     return atoi(subseq(S, aref(V, 0), aref(V,1)));
   };
@@ -5537,8 +5549,6 @@ create procedure ENEWS.WA.data (
 create procedure ENEWS.WA.test_clear (
   in S any)
 {
-  declare N integer;
-
   return substring(S, 1, coalesce(strstr(S, '<>'), length(S)));
 }
 ;
@@ -5551,13 +5561,16 @@ create procedure ENEWS.WA.test (
 {
   declare valueType, valueClass, valueName, valueMessage, tmp any;
 
-  declare exit handler for SQLSTATE '*' {
+  declare exit handler for SQLSTATE '*'
+  {
     if (not is_empty_or_null(valueMessage))
       signal ('TEST', valueMessage);
     if (__SQL_STATE = 'EMPTY')
       signal ('TEST', sprintf('Field ''%s'' cannot be empty!<>', valueName));
-    if (__SQL_STATE = 'CLASS') {
-      if (valueType in ('free-text', 'tags')) {
+    if (__SQL_STATE = 'CLASS')
+    {
+      if (valueType in ('free-text', 'tags'))
+      {
         signal ('TEST', sprintf('Field ''%s'' contains invalid characters or noise words!<>', valueName));
       } else {
       signal ('TEST', sprintf('Field ''%s'' contains invalid characters!<>', valueName));
@@ -5586,22 +5599,30 @@ create procedure ENEWS.WA.test (
   valueName := get_keyword('name', params, 'Field');
   valueMessage := get_keyword('message', params, '');
   tmp := get_keyword('canEmpty', params);
-  if (isnull(tmp)) {
-    if (not isnull(get_keyword('minValue', params))) {
+  if (isnull (tmp))
+  {
+    if (not isnull (get_keyword ('minValue', params)))
+    {
       tmp := 0;
-    } else if (get_keyword('minLength', params, 0) <> 0) {
+    }
+    else if (get_keyword ('minLength', params, 0) <> 0)
+    {
       tmp := 0;
     }
   }
-  if (not isnull(tmp) and (tmp = 0) and is_empty_or_null(value)) {
+  if (not isnull (tmp) and (tmp = 0) and is_empty_or_null(value))
+  {
     signal('EMPTY', '');
-  } else if (is_empty_or_null(value)) {
+  }
+  else if (is_empty_or_null(value))
+  {
     return value;
   }
 
   value := ENEWS.WA.validate2 (valueClass, value);
 
-  if (valueType = 'integer') {
+  if (valueType = 'integer')
+  {
     tmp := get_keyword('minValue', params);
     if ((not isnull(tmp)) and (value < tmp))
       signal('MIN', cast(tmp as varchar));
@@ -5610,7 +5631,9 @@ create procedure ENEWS.WA.test (
     if (not isnull(tmp) and (value > tmp))
       signal('MAX', cast(tmp as varchar));
 
-  } else if (valueType = 'float') {
+  }
+  else if (valueType = 'float')
+  {
     tmp := get_keyword('minValue', params);
     if (not isnull(tmp) and (value < tmp))
       signal('MIN', cast(tmp as varchar));
@@ -5619,7 +5642,9 @@ create procedure ENEWS.WA.test (
     if (not isnull(tmp) and (value > tmp))
       signal('MAX', cast(tmp as varchar));
 
-  } else if (valueType = 'varchar') {
+  }
+  else if (valueType = 'varchar')
+  {
     tmp := get_keyword('minLength', params);
     if (not isnull(tmp) and (length(ENEWS.WA.utf2wide(value)) < tmp))
       signal('MINLENGTH', cast(tmp as varchar));

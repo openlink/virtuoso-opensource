@@ -1697,8 +1697,7 @@ create procedure POLLS.WA.dt_date (
 {
   if (isnull(pDate))
     return pDate;
-  pDate := POLLS.WA.dt_gmt2user(pDate, pUser);
-  return POLLS.WA.dt_format(pDate, 'D.M.Y');
+  return POLLS.WA.dt_format (pDate, 'Y-M-D');
 }
 ;
 
@@ -2206,6 +2205,18 @@ create procedure POLLS.WA.validate_tags (
     if (not POLLS.WA.validate_tag(V[N]))
       return 0;
   return 1;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure POLLS.WA.checkedAttribute (
+  in checkedValue integer,
+  in compareValue integer := 1)
+{
+  if (checkedValue = compareValue)
+    return 'checked="checked"';
+  return '';
 }
 ;
 

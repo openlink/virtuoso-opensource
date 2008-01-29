@@ -55,9 +55,14 @@
         var featureList=["ajax2", "anchor", "ghostdrag", "dav"];
       </script>
       <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript" src="js/CalendarPopup.js"></script>
       <script type="text/javascript" src="js/enews.js"></script>
       <script type="text/javascript" src="/ods/app.js"></script>
       <script type="text/javascript">
+        // CalendarPopup
+        var cPopup = new CalendarPopup('cDiv');
+        cPopup.isShowYearNavigation = true;
+
         // WebDAV Object
         var oWebDAV;
 
@@ -119,6 +124,8 @@
     <title></title>
   </head>
   <body>
+    <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
+    </div>
     <v:page name="template" xmlns:v="http://www.openlinksw.com/vspx/">
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
@@ -159,7 +166,8 @@
           if (ENEWS.WA.frozen_check(self.domain_id)) {
             declare freeze_page varchar;
             freeze_page := ENEWS.WA.frozen_page(self.domain_id);
-            if (freeze_page is null or freeze_page = '' or freeze_page = 'default') {
+            if (freeze_page is null or freeze_page = '' or freeze_page = 'default')
+            {
               http_rewrite ();
               http_request_status ('HTTP/1.1 404 Not found');
               http (sprintf('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><head><TITLE>404 Not Found</TITLE></HEAD><body><H1>Not Found</H1>Resource %s not found.</BODY></HTML>', http_path (ENEWS.WA.page_name())));

@@ -150,7 +150,8 @@
           ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'modifyDate12', get_keyword('ts_modifyDate12', self.vc_page.vc_event.ve_params, ''));
           ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'modifyDate21', get_keyword('ts_modifyDate21', self.vc_page.vc_event.ve_params, ''));
           ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'modifyDate22', get_keyword('ts_modifyDate22', self.vc_page.vc_event.ve_params, ''));
-          if (not self.noTags) {
+          if (not self.noTags)
+          {
             ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'publicTags11', get_keyword('ts_publicTags11', self.vc_page.vc_event.ve_params, 'contains_tags'));
           ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'publicTags12', get_keyword('ts_publicTags12', self.vc_page.vc_event.ve_params, ''));
             ODRIVE.WA.dav_dc_set_advanced(self.search_dc, 'privateTags11', get_keyword('ts_privateTags11', self.vc_page.vc_event.ve_params, 'contains_tags'));
@@ -164,16 +165,22 @@
           params := self.vc_page.vc_event.ve_params;
           rValue := 1;
           N := 0;
-          while (N < length(params)) {
-            if (params[N] like 'ts_vmd_action%') {
-              if (params[N+1] = 'delete') {
+          while (N < length(params))
+          {
+            if (params[N] like 'ts_vmd_action%')
+            {
+              if (params[N+1] = 'delete')
+              {
                 aParams := split_and_decode(params[N], 0, '\0$0');
                 ODRIVE.WA.dav_dc_cut(self.search_dc, 'metadata', trim(aParams[1]));
               }
-            } else if (params[N] like 'ts_vmd_condition%') {
+            }
+            else if (params[N] like 'ts_vmd_condition%')
+            {
               aParams := split_and_decode(params[N], 0, '\0$0');
               suffix := sprintf('$0%s$0', trim(aParams[1]));
-              if (get_keyword('ts_vmd_action' || suffix, params, '') <> 'delete') {
+              if (get_keyword('ts_vmd_action' || suffix, params, '') <> 'delete')
+              {
                 mType := get_keyword('ts_vmd_type' || suffix, params, '');
                 mSchema := get_keyword('ts_vmd_schema' || suffix, params, '');
                 mProperty := get_keyword('ts_vmd_property' || suffix, params, '');
@@ -908,7 +915,8 @@
                 <![CDATA[
                   declare retValue integer;
                   retValue := ODRIVE.WA.DAV_RES_UPLOAD(self.dav_vector[0], self.dav_vector[1], self.dav_vector[2], self.dav_vector[3], self.dav_vector[4], self.dav_vector[5]);
-                  if (ODRIVE.WA.DAV_ERROR(retValue)) {
+                if (ODRIVE.WA.DAV_ERROR(retValue))
+                {
                     self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
                     self.vc_is_valid := 0;
                     self.vc_data_bind(e);
@@ -939,10 +947,12 @@
               self.dav_propEnable := self.dav_enable;
               if (isnull(get_keyword('dav_group', self.vc_page.vc_event.ve_params)) and (self.command_mode <> 1))
                 self.search_dc := ODRIVE.WA.dav_dc_xml();
-              if (self.command_mode = 10) {
+            if (self.command_mode = 10)
+            {
                 self.dav_enable := ODRIVE.WA.det_action_enable(self.dav_path, 'edit');
                 self.dav_item := ODRIVE.WA.DAV_INIT(self.dav_path);
-                if (ODRIVE.WA.DAV_ERROR(self.dav_item)) {
+              if (ODRIVE.WA.DAV_ERROR(self.dav_item))
+              {
                   self.command_pop(null);
                   self.vc_data_bind(e);
                   return;
@@ -951,7 +961,9 @@
                 if (self.dav_propEnable)
                   if (not isnull(DB.DBA.DAV_HIDE_ERROR(DB.DBA.DAV_PROP_GET_INT (ODRIVE.WA.DAV_GET (self.dav_item, 'id'), 'R', 'DAV:checked-in', 0))))
                     self.dav_propEnable := 0;
-              } else if (self.command_mode = 5) {
+            }
+            else if (self.command_mode = 5)
+            {
               self.dav_item := ODRIVE.WA.DAV_INIT_RESOURCE (self.dir_path);
               } else {
               self.dav_item := ODRIVE.WA.DAV_INIT_COLLECTION (self.dir_path);
@@ -962,11 +974,14 @@
               self.dav_detType := get_keyword('dav_det', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET(self.dav_item, 'detType'));
               if (isnull(get_keyword('dav_group', self.vc_page.vc_event.ve_params)))
                 self.dav_acl := ODRIVE.WA.DAV_GET(self.dav_item, 'acl');
-              if (self.command_mode = 10) {
-                if (isnull(get_keyword('dav_group', self.vc_page.vc_event.ve_params))) {
+            if (self.command_mode = 10)
+            {
+              if (isnull(get_keyword('dav_group', self.vc_page.vc_event.ve_params)))
+              {
                   self.dav_tags := '';
                   self.dav_tags2 := '';
-                  if (self.dav_type = 'R') {
+                if (self.dav_type = 'R')
+                {
                     self.dav_tags := ODRIVE.WA.DAV_GET(self.dav_item, 'privatetags');
                     self.dav_tags2 := ODRIVE.WA.DAV_GET(self.dav_item, 'publictags');
                   }
@@ -985,7 +1000,8 @@
           <v:label format="%V">:
               <v:before-data-bind>
                 <![CDATA[
-                  if (self.command_mode = 10) {
+                if (self.command_mode = 10)
+                {
                     control.ufl_value := concat('Properties of ', self.source);
                   } else {
                     if (self.command_mode = 5)
@@ -1238,7 +1254,8 @@
                                   declare tag varchar;
 
                                   tag := ODRIVE.WA.tag_prepare(self.f_tag2.ufl_value);
-                                  if (not ODRIVE.WA.validate_tags(tag)) {
+                                if (not ODRIVE.WA.validate_tags(tag))
+                                {
                                     self.vc_is_valid := 0;
                                     self.vc_error_message := 'The expression is not valid tag.';
                                     return;
@@ -1281,7 +1298,8 @@
                                   declare tag varchar;
 
                                   tag := ODRIVE.WA.tag_prepare(self.f_tag.ufl_value);
-                                  if (not ODRIVE.WA.validate_tags(tag)) {
+                                if (not ODRIVE.WA.validate_tags(tag))
+                                {
                                     self.vc_is_valid := 0;
                                     self.vc_error_message := 'The expression is not valid tag.';
                                     return;
@@ -1298,9 +1316,11 @@
                             declare tags any;
 
                             tmp := 1;
-                            if (isstring(self.dav_tags)) {
+                          if (isstring(self.dav_tags))
+                          {
                               tags := split_and_decode (self.dav_tags, 0, '\0\0,');
-                              foreach (any tag in tags) do {
+                            foreach (any tag in tags) do
+                            {
                                 tmp := 0;
                                 http(sprintf(', <a href="#" onclick="javascript: document.forms[''F1''].f_tag_hidden.value = ''%s''; doPost (''F1'', ''f_tag_search''); return false;" alt="Search Private Tag" title="Search Private Tag"><b>%s</b></a>', tag, tag));
                                 http(sprintf(' <a href="#" onclick="javascript: document.forms[''F1''].f_tag_hidden.value = ''%s''; doPost (''F1'', ''f_tag_delete''); return false;"><img src="image/del_16.png" border="0" alt="Delete Private Tag" title="Delete Private Tag" /></a>', tag));
@@ -1355,12 +1375,14 @@
                                           pname := trim(get_keyword('custom_name', params, ''));
                                           if (pname = '')
                                             pname := get_keyword('xml_name', e.ve_params, '');
-                                          if ((pname = '') or (not self.property_right(pname))) {
+                                        if ((pname = '') or (not self.property_right(pname)))
+                                        {
                                             self.vc_error_message := 'Property name is empty or prefix is not allowed!';
                                             self.vc_is_valid := 0;
                                             return;
                                           }
-                                          if (not isinteger(ODRIVE.WA.DAV_PROP_GET(self.dav_path, pname))) {
+                                        if (not isinteger(ODRIVE.WA.DAV_PROP_GET(self.dav_path, pname)))
+                                        {
                                             self.vc_error_message := sprintf('The property "%s" of "%s" already exists.\nYou may first delete existing and next add new property with same name.', pname, self.source);
                                             self.vc_is_valid := 0;
                                             return;
@@ -1373,7 +1395,8 @@
                                             endser:;
                                           }
                                           retValue := ODRIVE.WA.DAV_PROP_SET(self.dav_path, pname, pvalue);
-                                          if (ODRIVE.WA.DAV_ERROR(retValue)) {
+                                        if (ODRIVE.WA.DAV_ERROR(retValue))
+                                        {
                                             self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
                                             self.vc_is_valid := 0;
                                             return;
@@ -1650,9 +1673,11 @@
                 declare i integer;
                 declare item any;
                 i := 0;
-                while (i < length(self.item_array)) {
+              while (i < length(self.item_array))
+              {
                   item := ODRIVE.WA.DAV_INIT(self.item_array[i]);
-                  if (not ODRIVE.WA.DAV_ERROR(item)) {
+                if (not ODRIVE.WA.DAV_ERROR(item))
+                {
               ?>
               <tr>
                 <td><?vsp http(sprintf('<img src="%s" alt="%s" />', self.ui_image(ODRIVE.WA.DAV_GET(item, 'fullPath'), ODRIVE.WA.DAV_GET(item, 'type'), ODRIVE.WA.DAV_GET(item, 'mimeType')), self.ui_alt(ODRIVE.WA.DAV_GET(item, 'name'), ODRIVE.WA.DAV_GET(item, 'type'))));
@@ -3165,12 +3190,13 @@
           <td>
             <?vsp
               self.search_condition('ts_createDate11', vector('', '=', '&lt;', '&lt;=', '&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate11'), '');
-              http(sprintf('<input type="text" name="ts_createDate12" value="%s" disabled="disabled" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate12')));
-            ?> and
-            <?vsp
+              http (sprintf ('<input type="text" name="ts_createDate12" id="ts_createDate12" value="%s" disabled="disabled" onclick="javascript: cPopup.select ($(\'ts_createDate12\'), \'ts_createDate12_select\', \'yyyy-MM-dd\');" size="10"/>', ODRIVE.WA.dav_dc_get (self.search_dc, 'advanced', 'createDate12')));
+              http ('<a href="#" name="ts_createDate12_select" id="ts_createDate12_select" onclick="cPopup.select ($(\'ts_createDate12\'), \'ts_createDate12_select\', \'yyyy-MM-dd\'); return false;" class="noapp" disabled="disabled"><img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" /></a>');
+              http (' and ');
               self.search_condition('ts_createDate21', vector('', '&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate21'), '');
-              http(sprintf('<input type="text" name="ts_createDate22" value="%s" disabled="disabled" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'createDate22')));
-            ?> (yyyy-mm-dd)
+              http (sprintf ('<input type="text" name="ts_createDate22" id="ts_createDate22" value="%s" disabled="disabled" onclick="javascript: cPopup.select ($(\'ts_createDate22\'), \'ts_createDate22_select\', \'yyyy-MM-dd\');" size="10"/>', ODRIVE.WA.dav_dc_get (self.search_dc, 'advanced', 'createDate22')));
+              http ('<a href="#" name="ts_createDate22_select" id="ts_createDate22_select" onclick="cPopup.select ($(\'ts_createDate22\'), \'ts_createDate22_select\', \'yyyy-MM-dd\'); return false;" class="noapp" disabled="disabled"><img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" /></a>');
+            ?>
           </td>
         </tr>
         <tr>
@@ -3180,12 +3206,13 @@
           <td>
             <?vsp
               self.search_condition('ts_modifyDate11', vector('', '=', '&lt;', '&lt;=', '&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate11'), '');
-              http(sprintf('<input type="text" name="ts_modifyDate12" value="%s" disabled="disabled" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate12')));
-            ?> and
-            <?vsp
+              http (sprintf ('<input type="text" name="ts_modifyDate12" id="ts_modifyDate12" value="%s" disabled="disabled" onclick="javascript: cPopup.select ($(\'ts_modifyDate12\'), \'ts_modifyDate12_select\', \'yyyy-MM-dd\');" size="10"/>', ODRIVE.WA.dav_dc_get (self.search_dc, 'advanced', 'modifyDate12')));
+              http ('<a href="#" name="ts_modifyDate12_select" id="ts_modifyDate12_select" onclick="cPopup.select ($(\'ts_modifyDate12\'), \'ts_modifyDate12_select\', \'yyyy-MM-dd\'); return false;" class="noapp" disabled="disabled"><img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" /></a>');
+              http (' and ');
               self.search_condition('ts_modifyDate21', vector('', '&gt;', '&gt;='), ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate21'), '');
-              http(sprintf('<input type="text" name="ts_modifyDate22" value="%s" disabled="disabled" />', ODRIVE.WA.dav_dc_get(self.search_dc, 'advanced', 'modifyDate22')));
-            ?> (yyyy-mm-dd)
+              http (sprintf ('<input type="text" name="ts_modifyDate22" id="ts_modifyDate22" value="%s" disabled="disabled" onclick="javascript: cPopup.select ($(\'ts_modifyDate22\'), \'ts_modifyDate22_select\', \'yyyy-MM-dd\');" size="10"/>', ODRIVE.WA.dav_dc_get (self.search_dc, 'advanced', 'modifyDate22')));
+              http ('<a href="#" name="ts_modifyDate22_select" id="ts_modifyDate22_select" onclick="cPopup.select ($(\'ts_modifyDate22\'), \'ts_modifyDate22_select\', \'yyyy-MM-dd\'); return false;" class="noapp" disabled="disabled"><img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" /></a>');
+            ?>
           </td>
         </tr>
         <tr>
@@ -3226,7 +3253,8 @@
 
             params := self.vc_page.vc_event.ve_params;
             suffix := get_keyword('ts_vmd_suffix', params);
-            if (self.vmdType <> get_keyword('ts_vmd_type' || suffix, params)) {
+            if (self.vmdType <> get_keyword('ts_vmd_type' || suffix, params))
+            {
               self.vmdSchema := null;
             } else {
               self.vmdSchema := get_keyword('ts_vmd_schema' || suffix, params);
@@ -3264,7 +3292,8 @@
             declare suffix varchar;
 
             N := 0;
-            for (select rs.* from ODRIVE.WA.dav_dc_metadata_rs(rs0)(c0 integer, c1 varchar, c2 varchar, c3 varchar, c4 varchar, c5 varchar, c6 varchar) rs where rs0 = self.search_dc order by c0) do {
+            for (select rs.* from ODRIVE.WA.dav_dc_metadata_rs(rs0)(c0 integer, c1 varchar, c2 varchar, c3 varchar, c4 varchar, c5 varchar, c6 varchar) rs where rs0 = self.search_dc order by c0) do
+            {
               if (N < c0)
                 N := c0;
 
@@ -3308,7 +3337,8 @@
               http('</td>');
                http('<td>');
                 http(sprintf('<select name="ts_vmd_schema%s" onchange="javascript: myPost(''F1'', ''ts_vmd_action%s'', ''reload''); return false;" disabled="disabled" class="field-max">', suffix, suffix));
-                 if (self.vmdType = 'RDF') {
+                if (self.vmdType = 'RDF')
+                {
                   declare exit handler for sqlstate '*' { goto _skip; };
                   for (select RS_URI, RS_CATNAME from WS.WS.SYS_RDF_SCHEMAS order by RS_CATNAME) do
                     http(self.option_prepare(RS_URI, RS_CATNAME, self.vmdSchema));
@@ -3319,7 +3349,8 @@
                  http('</select>');
               http('</td>');
                http('<td>');
-                 if (self.vmdType = 'RDF') {
+                if (self.vmdType = 'RDF')
+                {
                   http(sprintf('<select name="ts_vmd_property%s" disabled="disabled" class="field-max">', suffix));
                    for (select c0, c1 from ODRIVE.WA.dav_rdf_schema_properties_short_rs(rs0)(c0 varchar, c1 varchar) rs where rs0 = self.vmdSchema order by c1) do
                      http(self.option_prepare(c0, c1, ''));
@@ -3424,12 +3455,14 @@
                   <![CDATA[
                     declare retValue any;
 
-                    if (ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl')) {
+                    if (ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'))
+                    {
                       retValue := ODRIVE.WA.DAV_REMOVE_VERSION_CONTROL (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
                     } else {
                       retValue := ODRIVE.WA.DAV_VERSION_CONTROL (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
                     }
-                    if (ODRIVE.WA.DAV_ERROR(retValue)) {
+                    if (ODRIVE.WA.DAV_ERROR(retValue))
+                    {
                       self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
                       self.vc_is_valid := 0;
                       return;
@@ -3454,7 +3487,8 @@
                     declare retValue any;
 
                     retValue := ODRIVE.WA.DAV_LOCK (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
-                    if (ODRIVE.WA.DAV_ERROR(retValue)) {
+                    if (ODRIVE.WA.DAV_ERROR(retValue))
+                    {
                       self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
                       self.vc_is_valid := 0;
                       return;
@@ -3506,7 +3540,8 @@
                     declare retValue any;
 
                     retValue := ODRIVE.WA.DAV_CHECKOUT (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
-                    if (ODRIVE.WA.DAV_ERROR(retValue)) {
+                    if (ODRIVE.WA.DAV_ERROR(retValue))
+                    {
                       self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
                       self.vc_is_valid := 0;
                       return;
@@ -3551,7 +3586,8 @@
                     declare path varchar;
 
                     path := ODRIVE.WA.DAV_GET_VERSION_ROOT(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
-                    if (ODRIVE.WA.odrive_permission(path) = '') {
+                    if (ODRIVE.WA.odrive_permission(path) = '')
+                    {
                       self.vc_error_message := 'You have not rights to read this folder/file!';
                       self.vc_is_valid := 0;
                       self.vc_data_bind(e);
@@ -3604,7 +3640,8 @@
                                 declare path varchar;
 
                                 path := (control.vc_parent as vspx_row_template).te_column_value('c0');
-                                if (ODRIVE.WA.odrive_permission(path) = '') {
+                                if (ODRIVE.WA.odrive_permission(path) = '')
+                                {
                                   self.vc_error_message := 'You have not rights to read this folder/file!';
                                   self.vc_is_valid := 0;
                                   self.vc_data_bind(e);
@@ -3646,7 +3683,8 @@
                                 declare retValue any;
 
                                 retValue := ODRIVE.WA.DAV_DELETE((control.vc_parent as vspx_row_template).te_column_value('c0'));
-                                if (ODRIVE.WA.DAV_ERROR(retValue)) {
+                                if (ODRIVE.WA.DAV_ERROR(retValue))
+                                {
                                   self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
                                   self.vc_is_valid := 0;
                                   return;

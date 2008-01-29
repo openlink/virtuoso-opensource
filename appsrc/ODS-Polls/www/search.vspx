@@ -70,18 +70,22 @@
       self.ds_tags := vector ();
 
       POLLS.WA.xml_set('keywords', data, self.v_keywords);
-      if (self.v_mode <> 'simple') {
+      if (self.v_mode <> 'simple')
+      {
         POLLS.WA.xml_set('expression', data, self.v_expression);
         POLLS.WA.xml_set('tags', data, self.v_tags);
       }
-      if (length(xpath_eval('//entry', data, 0)) = 0) {
-        if (e.ve_is_post or (self.v_mode = 'simple')) {
+      if (length(xpath_eval('//entry', data, 0)) = 0)
+      {
+        if (e.ve_is_post or (self.v_mode = 'simple'))
+        {
           self.vc_error_message := 'Empty search criteria.';
           self.vc_is_valid := 0;
         }
         return;
       }
-      if (self.v_mode = 'simple') {
+      if (self.v_mode = 'simple')
+      {
         POLLS.WA.xml_set('MyPolls', data, 1);
       } else {
         if (self.v_own = 1)
@@ -96,18 +100,22 @@
       sqlParams := vector();
       sql := POLLS.WA.search_sql (self.domain_id, self.account_id, data);
       exec(sql, state, msg, sqlParams, 0, meta, result);
-      if (state = '00000') {
+      if (state = '00000')
+      {
         self.ds_data := result;
         self.ds_meta := meta;
 
-        if (self.f_cloud.ufl_selected = 1) {
+        if (self.f_cloud.ufl_selected = 1)
+        {
           declare N, minCnt, maxCnt integer;
           declare tag_object, tags, tags_dict any;
 
           tags_dict := dict_new();
-          for (N := 0; N < length(self.ds_data); N := N + 1) {
+          for (N := 0; N < length(self.ds_data); N := N + 1)
+          {
             tags := split_and_decode (self.ds_data[N][3], 0, '\0\0,');
-            foreach (any tag in tags) do {
+            foreach (any tag in tags) do
+            {
               tag_object := dict_get(tags_dict, lcase(tag), vector(lcase(tag), 0));
               tag_object[1] := tag_object[1] + 1;
               dict_put(tags_dict, lcase(tag), tag_object);
@@ -116,7 +124,8 @@
 
           maxCnt := 1;
           minCnt := 1000000;
-          for (select p.* from POLLS.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do {
+          for (select p.* from POLLS.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do
+          {
             self.ds_tags := vector_concat(self.ds_tags, vector(vector(tag, cnt)));
             if (cnt > maxCnt)
               maxCnt := cnt;
@@ -142,7 +151,8 @@
         tmp := concat(tmp, sprintf('&%sexpression=%U', prefix, self.v_expression));
       if (not is_empty_or_null(self.v_tags))
         tmp := concat(tmp, sprintf('&%stags=%U', prefix, self.v_tags));
-      if (mode = 'export') {
+      if (mode = 'export')
+      {
         if (cast(self.v_own as integer) <> 1)
           tmp := concat(tmp, sprintf('&%sown=%s', prefix, cast(self.v_own as varchar)));
         if (cast(self.v_public as integer) <> 1)
@@ -161,7 +171,8 @@
 
   <v:on-init>
     <![CDATA[
-      if (self.ds_data is null) {
+      if (self.ds_data is null)
+      {
         self.ds_data := vector ();
         self.ds_meta := vector ();
         self.ds_tags := vector ();
@@ -216,7 +227,8 @@
           self.v_keywords := trim(get_keyword('a_keywords', self.vc_page.vc_event.ve_params, get_keyword('s_keywords', self.vc_page.vc_event.ve_params, get_keyword('keywords', self.vc_page.vc_event.ve_params, ''))));
           self.v_expression := trim(get_keyword('f_expression', self.vc_page.vc_event.ve_params, get_keyword('type', self.vc_page.vc_event.ve_params, self.v_expression)));
           self.v_tags := trim(get_keyword('f_tags', self.vc_page.vc_event.ve_params, get_keyword('tags', self.vc_page.vc_event.ve_params, self.v_tags)));
-          if (get_keyword('tag', self.vc_page.vc_event.ve_params, '') <> '') {
+          if (get_keyword('tag', self.vc_page.vc_event.ve_params, '') <> '')
+          {
             if (is_empty_or_null(self.v_tags))
               self.v_tags := '';
             self.v_tags := concat(self.v_tags, ', ', get_keyword('tag', self.vc_page.vc_event.ve_params));
@@ -269,7 +281,8 @@
         <div style="padding-bottom: 5px;">
           <?vsp
             http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
-            if (POLLS.WA.settings_atomVersion(self.account_id) = '1.0') {
+            if (POLLS.WA.settings_atomVersion(self.account_id) = '1.0')
+            {
               http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
             } else {
               http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom03%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
@@ -320,10 +333,12 @@
                             http (sprintf ('<a id="poll_%d" href="%s" title="%s" class="%s" about="%U">%s</a>', id, POLLS.WA.poll_url (domain_id, id) || sprintf('&sid=%s&realm=%s', self.sid, self.realm), title, 'app', SIOC..poll_post_iri (domain_id, id), title2));
 
                             tags := (control as vspx_row_template).te_rowset[3];
-                            if (not is_empty_or_null(tags)) {
+                            if (not is_empty_or_null (tags))
+                            {
                               http('<br /><i>Tags: ');
                               tags := split_and_decode (tags, 0, '\0\0,');
-                              for (N := 0; N < length(tags); N := N + 1) {
+                              for (N := 0; N < length(tags); N := N + 1)
+                              {
                                 http (sprintf ('<a id="tag_%d_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U">%s</a> ', id, tags[N], tags[N], tags[N], 'app', SIOC..poll_tag_iri (self.account_id, tags[N]), tags[N]));
                                 if (N <> length(tags)-1)
                                   http(' | ');
@@ -364,10 +379,12 @@
                   declare tStyle varchar;
 
                   tLength := length(self.ds_tags);
-                  if (tLength > 2) {
+                  if (tLength > 2)
+                  {
                     tMin := self.ds_tags[0][1];
                     tMax := self.ds_tags[1][1];
-                    for (N := 2; N < tLength; N := N + 1) {
+                    for (N := 2; N < tLength; N := N + 1)
+                    {
                       tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
                       http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], 'app', SIOC..poll_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
                     }

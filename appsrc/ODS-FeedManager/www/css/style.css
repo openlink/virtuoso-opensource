@@ -1178,3 +1178,50 @@ div.comment-button
   padding-top: 5px;
   border-top: 1px #cccccc solid;
 }
+
+/* Popup Calendar */
+.cpYearNavigation,.cpMonthNavigation
+{
+ background-color: #C0C0C0;
+ color: #000000;
+ font-weight: bold;
+ text-align: center;
+ text-decoration: none;
+ vertical-align: middle;
+}
+
+.cpDayColumnHeader, .cpYearNavigation,.cpMonthNavigation,.cpCurrentMonthDate,.cpCurrentMonthDateDisabled,.cpOtherMonthDate,.cpOtherMonthDateDisabled,.cpCurrentDate,.cpCurrentDateDisabled,.cpTodayText,.cpTodayTextDisabled,.cpText
+{
+ font-family: arial;
+ font-size: 8pt;
+}
+
+td.cpDayColumnHeader
+{
+ border: solid thin #C0C0C0;
+ border-width: 0px 0px 1px 0px;
+ text-align: right;
+}
+
+.cpCurrentMonthDate, .cpOtherMonthDate, .cpCurrentDate
+{
+ text-align: right;
+ text-decoration: none;
+}
+
+.cpCurrentMonthDateDisabled, .cpOtherMonthDateDisabled, .cpCurrentDateDisabled
+{
+ color: #D0D0D0;
+ text-align: right;
+ text-decoration: line-through;
+}
+
+.cpCurrentMonthDate, .cpCurrentDate
+{
+ color: #000000;
+}
+
+.cpOtherMonthDate
+{
+ color: #808080;
+}

@@ -125,7 +125,8 @@
       self.update_params();
 
       ENEWS.WA.test(self.v_keywords, vector('name', 'Keywords', 'class', 'free-text'));
-      if (self.v_mode <> 'simple') {
+      if (self.v_mode <> 'simple')
+      {
         if (self.v_type = 'text')
           ENEWS.WA.test(self.v_expression, vector('name', 'Expression', 'class', 'free-text-expression'));
         ENEWS.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
@@ -137,7 +138,8 @@
       declare data varchar;
 
       ENEWS.WA.xml_set('keywords', data, self.v_keywords);
-      if (self.v_mode <> 'simple') {
+      if (self.v_mode <> 'simple')
+      {
         ENEWS.WA.xml_set('expression', data, self.v_expression);
         ENEWS.WA.xml_set('conversation', data, self.v_conversation);
         ENEWS.WA.xml_set('tags', data, self.v_tags);
@@ -149,8 +151,10 @@
 
       self.ds_data := vector ();
       self.ds_tags := vector ();
-      if (length(xpath_eval('//entry', data, 0)) = 0) {
-        if (e.ve_is_post or (self.v_mode = 'simple')) {
+      if (length(xpath_eval('//entry', data, 0)) = 0)
+      {
+        if (e.ve_is_post or (self.v_mode = 'simple'))
+        {
           self.vc_error_message := 'Empty search criteria.';
           self.vc_is_valid := 0;
         }
@@ -160,7 +164,8 @@
       declare sql, state, msg, meta, result any;
 
   	  sql := ENEWS.WA.sfolder_sql(self.domain_id, self.account_id, data, self.v_type, self.v_max);
-  	  if (self.v_group = 0) {
+      if (self.v_group = 0)
+      {
         sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
       } else {
         sql := concat(sql, 'order by EFD_TITLE, ', self.v_order, ' ', self.v_direction);
@@ -168,18 +173,22 @@
 
       state := '00000';
       exec(sql, state, msg, vector(), 0, meta, result);
-      if (state = '00000') {
+      if (state = '00000')
+      {
         self.ds_data := result;
 
-        if (self.f_cloud.ufl_selected = 1) {
+        if (self.f_cloud.ufl_selected = 1)
+        {
           declare N, minCnt, maxCnt integer;
           declare tag_object, tags, tags_dict any;
 
           tags_dict := dict_new();
-          for (N := 0; N < length(self.ds_data); N := N + 1) {
+          for (N := 0; N < length(self.ds_data); N := N + 1)
+          {
             tags := ENEWS.WA.tags_account_item_select(self.domain_id, self.account_id, self.ds_data[N][0]);
             tags := split_and_decode (tags, 0, '\0\0,');
-            foreach (any tag in tags) do {
+            foreach (any tag in tags) do
+            {
               tag_object := dict_get(tags_dict, lcase(tag), vector(lcase(tag), 0));
               tag_object[1] := tag_object[1] + 1;
               dict_put(tags_dict, lcase(tag), tag_object);
@@ -187,7 +196,8 @@
           }
           maxCnt := 1;
           minCnt := 1000000;
-          for (select p.* from ENEWS.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do {
+          for (select p.* from ENEWS.WA.tagsDictionary2rs(p0)(tag varchar, cnt integer) p where p0 = tags_dict order by tag) do
+          {
             self.ds_tags := vector_concat(self.ds_tags, vector(vector(tag, cnt)));
             if (cnt > maxCnt)
               maxCnt := cnt;
@@ -220,7 +230,8 @@
         tmp := concat(tmp, sprintf('&%safter=%U', prefix, self.v_after));
       if (not is_empty_or_null(self.v_before))
         tmp := concat(tmp, sprintf('&%sbefore=%U', prefix, self.v_before));
-      if (mode = 'export') {
+      if (mode = 'export')
+      {
         if (not is_empty_or_null(self.v_type) and self.v_type <> 'text')
           tmp := concat(tmp, sprintf('&%stype=%U', prefix, self.v_type));
         if (not is_empty_or_null(self.v_max) and self.v_max <> '100')
@@ -237,7 +248,8 @@
 
   <v:on-init>
     <![CDATA[
-      if (self.ds_data is null) {
+      if (self.ds_data is null)
+      {
         self.ds_data := vector ();
         self.ds_meta := vector ();
         self.ds_tags := vector ();
@@ -296,7 +308,8 @@
 
           tmp := self.example.vc_find_control(self.f_type.ufl_value||'_help');
           self.example.tb_active := tmp;
-          if (e.ve_button = control) {
+          if (e.ve_button = control)
+          {
             self.a_keywords.ufl_value := '';
             self.f_expression.ufl_value := '';
             self.ds_data := vector ();
@@ -329,7 +342,8 @@
           <?vsp
             self.update_params();
     			  http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=rss%s" class="gems"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0"/> RSS</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
-            if (ENEWS.WA.settings_atomVersion (self.settings) = '1.0') {
+            if (ENEWS.WA.settings_atomVersion (self.settings) = '1.0')
+            {
     			    http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom10%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
     			  } else {
     			    http(sprintf('<a href="export.vspx?did=%d&aid=%d&output=atom03%s" class="gems"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3"/> Atom</a>&nbsp;&nbsp;', self.domain_id , self.account_id, self.do_url('export', '')));
@@ -484,10 +498,12 @@
                   declare tStyle varchar;
 
                   tLength := length(self.ds_tags);
-                  if (tLength > 2) {
+                  if (tLength > 2)
+                  {
                     tMin := self.ds_tags[0][1];
                     tMax := self.ds_tags[1][1];
-                    for (N := 2; N < tLength; N := N + 1) {
+                    for (N := 2; N < tLength; N := N + 1)
+                    {
                       tStyle := ODS.WA.tag_style(self.ds_tags[N][1], tMin, tMax);
                       http (sprintf ('<a id="t_tag_%s" name="pt_tag_%s" href="javascript: myTags(\'%s\');" class="%s" about="%U"><span style="%s">%s</span></a> ', self.ds_tags[N][0], self.ds_tags[N][0], self.ds_tags[N][0], 'app', SIOC..addressbook_tag_iri (self.account_id, self.ds_tags[N][0]), tStyle, self.ds_tags[N][0]));
                   }
@@ -623,8 +639,10 @@
                     <v:label for="f_after" value="Date after"/>
                   </th>
                   <td>
-                    <v:text name="f_after" value="--self.v_after" xhtml_class="textbox" xhtml_size="20%"/>
-                    <xsl:call-template name="nbsp"/> (dd.mm.yyyy)
+                    <v:text name="f_after" xhtml_id="f_after" null-value="--''" value="--self.v_after" xhtml_onclick="javascript: cPopup.select ($(\'f_after\'), \'f_after_select\', \'yyyy-MM-dd\');" xhtml_size="10" />
+                    <a href="#" name="f_after_select" id="f_after_select" onclick="cPopup.select ($('f_after'), 'f_after_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                      <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
+                    </a>
                   </td>
                 </tr>
                 <tr>
@@ -632,8 +650,10 @@
                     <v:label for="f_before" value="Date before"/>
                   </th>
                   <td>
-                    <v:text name="f_before" value="--self.v_before" xhtml_class="textbox" xhtml_size="20%"/>
-                    <xsl:call-template name="nbsp"/> (dd.mm.yyyy)
+                    <v:text name="f_before" xhtml_id="f_before" null-value="--''" value="--self.v_before" xhtml_onclick="javascript: cPopup.select ($(\'f_before\'), \'f_before_select\', \'yyyy-MM-dd\');" xhtml_size="10" />
+                    <a href="#" name="f_before_select" id="f_before_select" onclick="cPopup.select ($('f_before'), 'f_before_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                      <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
+                    </a>
                   </td>
                 </tr>
               </table>

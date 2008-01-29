@@ -182,6 +182,23 @@
     ]]>
   </v:method>
 
+  <v:method name="myTags" arglist="in fieldName varchar">
+    <![CDATA[
+      if ((select count (*) from POLLS.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> ''))
+      {
+        http ('<tr>');
+        http ('<th valign="top">My Tags</th>');
+          http ('<td>');
+            for (select T_TAG from POLLS.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_COUNT > 0 and T_TAG <> '' order by T_TAG) do
+            {
+              http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'%s\');">%s</a> ', T_TAG, fieldName, T_TAG));
+            }
+          http ('</td>');
+        http ('</tr>');
+      }
+    ]]>
+  </v:method>
+
   <vm:pagetitle>Polls</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -651,24 +668,7 @@
                     <v:text name="t_tag" null-value="''" value="--self.v_tag" xhtml_class="textbox" xhtml_size="60" />
                   </td>
                 </tr>
-                <tr>
-                  <th>
-                    My Tags
-                  </th>
-                  <td>
-                    <?vsp
-                      declare _done integer;
-
-                      _done := 0;
-                      for (select T_TAG from POLLS.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_TAG <> '' order by T_TAG) do {
-                        http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'t_tag\');"><i>%s</i></a> ', T_TAG, T_TAG));
-                        _done := 1;
-                      }
-                      if (not _done)
-                        http ('no tags');
-                    ?>
-                  </td>
-                </tr>
+                <?vsp self.myTags ('t_tag'); ?>
               </table>
             </div>
             <div class="new-form-footer">
@@ -900,24 +900,7 @@
                       <input type="button" value="Clear" onClick="javascript: document.F1.elements['p_tags'].value = ''" class="button" />
                     </td>
                   </tr>
-                  <tr>
-                    <th>
-                      My Tags
-                    </th>
-                    <td>
-                      <?vsp
-                        declare _done integer;
-
-                        _done := 0;
-                        for (select T_TAG from POLLS.WA.TAGS where T_DOMAIN_ID = self.domain_id and T_TAG <> '' order by T_TAG) do {
-                          http (sprintf ('<a href="#" onclick="javascript: addTag(\'%s\', \'p_tags\');"><i>%s</i></a> ', T_TAG, T_TAG));
-                          _done := 1;
-                        }
-                        if (not _done)
-                          http ('no tags');
-                      ?>
-                    </td>
-                  </tr>
+                  <?vsp self.myTags ('p_tags'); ?>
                   <tr>
                     <th valign="top" rowspan="3">
                       Results
@@ -945,12 +928,7 @@
                     </th>
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_multi_vote = 0)
-                          S := 'checked="checked"';
-                        http (sprintf ('<input type="radio" name="p_multi_vote" id="p_multi_vote_0" value="0" %s />', S));
+                        http (sprintf ('<input type="radio" name="p_multi_vote" id="p_multi_vote_0" value="0" %s />', POLLS.WA.checkedAttribute (self.v_multi_vote, 0)));
                       ?>
                       <xsl:call-template name="nbsp" /><vm:label for="p_multi_vote_0" value="--'User can vote only once'" />
                     </td>
@@ -958,12 +936,7 @@
                   <tr>
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_multi_vote = 1)
-                          S := 'checked="checked"';
-                        http (sprintf ('<input type="radio" name="p_multi_vote" id="p_multi_vote_1" value="1" %s />', S));
+                        http (sprintf ('<input type="radio" name="p_multi_vote" id="p_multi_vote_1" value="1" %s />', POLLS.WA.checkedAttribute (self.v_multi_vote)));
                       ?>
                       <xsl:call-template name="nbsp" /><vm:label for="p_multi_vote_1" value="--'User can vote multiple times'" />
                     </td>
@@ -974,12 +947,7 @@
                     </th>
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_date_start_mode = 0)
-                          S := 'checked="checked"';
-                        http (sprintf ('<input type="radio" name="p_date_start_mode" id="p_date_start_mode_0" value="0" %s />', S));
+                        http (sprintf ('<input type="radio" name="p_date_start_mode" id="p_date_start_mode_0" value="0" %s />', POLLS.WA.checkedAttribute (self.v_date_start_mode, 0)));
                       ?>
                       <xsl:call-template name="nbsp" /><vm:label for="p_date_start_mode_0" value="--'Manually'" />
                     </td>
@@ -988,15 +956,13 @@
                     <th />
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_date_start_mode = 1)
-                          S := 'checked="checked"';
-                        http (sprintf ('<input type="radio" name="p_date_start_mode" id="p_date_start_mode_1" value="1" %s />', S));
+                        http (sprintf ('<input type="radio" name="p_date_start_mode" id="p_date_start_mode_1" value="1" %s />', POLLS.WA.checkedAttribute (self.v_date_start_mode)));
                       ?>
-                      <xsl:call-template name="nbsp" /><vm:label for="p_date_start_mode_1" value="--'Automatically at'" /><xsl:call-template name="nbsp" />
-                      <v:text name="p_date_start" null-value="--''" value="--self.v_date_start" xhtml_size="10" />
+                      <vm:label for="p_date_start_mode_1" value="--' Automatically at '" />
+                      <v:text name="p_date_start" xhtml_id="p_date_start" null-value="--''" value="--self.v_date_start" xhtml_onclick="javascript: cPopup.select ($(\'p_date_start\'), \'p_date_start_select\', \'yyyy-MM-dd\');" xhtml_size="10" />
+                      <a href="#" name="p_date_start_select" id="p_date_start_select" onclick="cPopup.select ($('p_date_start'), 'p_date_start_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                        <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
+                      </a>
                     </td>
                   </tr>
                   <tr>
@@ -1005,12 +971,7 @@
                     </th>
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_date_end_mode = 0)
-                          S := 'checked="checked"';
-                        http (sprintf ('<input type="radio" name="p_date_end_mode" id="p_date_end_mode_0" value="0" %s />', S));
+                        http (sprintf ('<input type="radio" name="p_date_end_mode" id="p_date_end_mode_0" value="0" %s />', POLLS.WA.checkedAttribute (self.v_date_end_mode, 0)));
                       ?>
                       <xsl:call-template name="nbsp" /><vm:label for="p_date_end_mode_0" value="--'Manually'" />
                     </td>
@@ -1019,15 +980,13 @@
                     <th />
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_date_end_mode = 1)
-                          S := 'checked="checked"';
-                        http (sprintf ('<input type="radio" name="p_date_end_mode" id="p_date_end_mode_1" value="1" %s />', S));
+                        http (sprintf ('<input type="radio" name="p_date_end_mode" id="p_date_end_mode_1" value="1" %s />', POLLS.WA.checkedAttribute (self.v_date_end_mode)));
                       ?>
-                      <xsl:call-template name="nbsp" /><vm:label for="p_date_end_mode_1" value="--'Automatically at'" /><xsl:call-template name="nbsp" />
-                      <v:text name="p_date_end" null-value="--''" value="--self.v_date_end" xhtml_size="10" />
+                      <vm:label for="p_date_end_mode_1" value="--' Automatically at '" />
+                      <v:text name="p_date_end" xhtml_id="p_date_end" null-value="--''" value="--self.v_date_end" xhtml_onclick="javascript: cPopup.select ($(\'p_date_end\'), \'p_date_end_select\', \'yyyy-MM-dd\');" xhtml_size="10" />
+                      <a href="#" name="p_date_end_select" id="p_date_end_select" onclick="cPopup.select ($('p_date_end'), 'p_date_end_select', 'yyyy-MM-dd'); return false;" class="noapp">
+                        <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
+                      </a>
                     </td>
                   </tr>
                 </table>
@@ -1074,7 +1033,8 @@
                         POLLS.WA.test(self.v_date_end, vector('name', 'Vote opening date', 'class', 'date2', 'type', 'date'));
 
                       self.v_number := 1;
-                      if (self.v_mode = 'S') {
+                      if (self.v_mode = 'S')
+                      {
                         declare qParams any;
 
                         qParams := self.qGet ();
@@ -1117,7 +1077,8 @@
                                 control.vsl_items := vector ();
                                 control.vsl_item_values := vector ();
 
-                                for (N := 0; N < length (self.v_questions); N := N + 1) {
+                                for (N := 0; N < length (self.v_questions); N := N + 1)
+                                {
                                   control.vsl_items := vector_concat (control.vsl_items, vector (sprintf('%d', N+1)));
                                   control.vsl_item_values := vector_concat (control.vsl_item_values, vector (sprintf('%d', N+1)));
                                 }
@@ -1132,7 +1093,8 @@
                             <![CDATA[
                               declare id integer;
 
-                              declare exit handler for SQLSTATE '*' {
+                              declare exit handler for SQLSTATE '*'
+                              {
                                 if (__SQL_STATE = 'TEST') {
                                   self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
                                   self.vc_is_valid := 0;
@@ -1142,7 +1104,8 @@
                               };
                               self.qPrepare ();
                               self.v_number := length (self.v_questions) + 1;
-                              if (length (self.v_deleted)) {
+                              if (length (self.v_deleted))
+                              {
                                 id := self.v_deleted [length(self.v_deleted)-1];
                                 self.v_deleted := POLLS.WA.vector_cut (self.v_deleted, id);
                                 self.qSet (vector(vector ('$id', id)));
@@ -1391,8 +1354,10 @@
                       declare N, M integer;
                       declare qParams, qAnswers any;
 
-                      declare exit handler for SQLSTATE '*' {
-                        if (__SQL_STATE = 'TEST') {
+                      declare exit handler for SQLSTATE '*'
+                      {
+                        if (__SQL_STATE = 'TEST')
+                        {
                           self.vc_error_message := POLLS.WA.test_clear(__SQL_MESSAGE);
                           self.vc_is_valid := 0;
                           return;
@@ -1402,7 +1367,8 @@
 
                       self.qPrepare ();
 
-                      if (self.v_date_start_mode = 0) {
+                      if (self.v_date_start_mode = 0)
+                      {
                         self.v_date_start := null;
                       } else {
                         self.v_date_start := POLLS.WA.dt_deformat (self.v_date_start);
@@ -1426,10 +1392,12 @@
                                                          self.v_mode
                                                         );
 
-                      for (N := 0; N < length (self.v_questions); N := N + 1) {
+                      for (N := 0; N < length (self.v_questions); N := N + 1)
+                      {
                         qParams := self.v_questions [N];
                         qAnswers := vector ();
-                        for (M := 0; M < length (qParams); M := M + 2) {
+                        for (M := 0; M < length (qParams); M := M + 2)
+                        {
                           if ((qParams[M] not like '$%') and (qParams[M+1] <> ''))
                             qAnswers := vector_concat (qAnswers, vector (qParams[M], qParams[M+1]));
                         }
@@ -1480,13 +1448,15 @@
                   declare qType, qText, qRequired any;
                   declare range_start, range_end, range_decimals any;
 
-                  for (M := 0; M < length (self.v_questions); M := M + 1) {
+                  for (M := 0; M < length (self.v_questions); M := M + 1)
+                  {
                     question := self.v_questions [M];
                     qType := get_keyword ('$type', question, 'M');
                     qText :=  get_keyword ('$text', question, '');
                     qRequired := cast (get_keyword ('$required', question, '1') as integer);
 
-                    if (qType = 'N') {
+                    if (qType = 'N')
+                    {
                       range_start := cast (get_keyword ('range_start', question, '0') as float);
                       range_end := cast (get_keyword ('range_end', question, '0') as float);
                       range_decimals := cast (get_keyword ('range_decimals', question, '0') as integer);
@@ -1511,10 +1481,13 @@
                       allowed := cast (get_keyword ('allowed', question, '2') as integer);
                       http (sprintf ('<input type="hidden" name="choices_%d" value="%d" />', M, choices));
                       http (sprintf ('<input type="hidden" name="allowed_%d" value="%d" />', M, allowed));
-                      for (N := 1; N <= choices; N := N + 1) {
+                      for (N := 1; N <= choices; N := N + 1)
+                      {
                         answer := get_keyword (sprintf ('answer_%d', N), question, '');
-                        if (answer <> '') {
-                          if (allowed <> 1) {
+                        if (answer <> '')
+                        {
+                          if (allowed <> 1)
+                          {
                             http (sprintf ('<input type="checkbox" name="answer_%d_%d" id="answer_%d_%d" value="1" onclick="checkChoices (this)" /> <label for="answer_%d_%d">%s</label><br />', N, M, N, M, N, M, answer));
                           } else {
                             http (sprintf ('<input type="radio" name="answer_%d" id="answer_%d_%d" value="%d" /> <label for="answer_%d_%d">%s</label><br />', M, N, M, N, N, M, answer));
@@ -1552,10 +1525,12 @@
                 declare range_start, range_end, range_decimals any;
                 declare N, choices, allowed, answer any;
 
-                for (select * from POLLS.WA.QUESTION where Q_POLL_ID = self.v_id order by Q_ID) do {
+                for (select * from POLLS.WA.QUESTION where Q_POLL_ID = self.v_id order by Q_ID) do
+                {
                   answers := deserialize (Q_ANSWER);
 
-                  if (Q_TYPE = 'N') {
+                  if (Q_TYPE = 'N')
+                  {
                     range_start := cast (get_keyword ('range_start', answers, '0') as float);
                     range_end := cast (get_keyword ('range_end', answers, '0') as float);
                     range_decimals := cast (get_keyword ('range_decimals', answers, '0') as integer);
@@ -1572,18 +1547,23 @@
                   http (sprintf ('<input type="hidden" name="id_%d" value="%d" />', Q_ID, Q_ID));
                   http (sprintf ('<input type="hidden" name="type_%d" value="%s" />', Q_ID, Q_TYPE));
                   http (sprintf ('<input type="hidden" name="required_%d" value="%d" />', Q_ID, Q_REQUIRED));
-                  if (Q_TYPE = 'N') {
+                  if (Q_TYPE = 'N')
+                  {
                     http (sprintf ('<input type="hidden" name="range_start_%d" value="%d" />', Q_ID, range_start));
                     http (sprintf ('<input type="hidden" name="range_end_%d" value="%d" />', Q_ID, range_end));
                     http (sprintf ('<input type="hidden" name="range_decimals_%d" value="%d" />', Q_ID, range_decimals));
-                  } else if (Q_TYPE = 'M') {
+                  }
+                  else if (Q_TYPE = 'M')
+                  {
                     choices := cast (get_keyword ('choices', answers, '1') as integer);
                     allowed := cast (get_keyword ('allowed', answers, '2') as integer);
                     http (sprintf ('<input type="hidden" name="choices_%d" value="%d" />', Q_ID, choices));
                     http (sprintf ('<input type="hidden" name="allowed_%d" value="%d" />', Q_ID, allowed));
-                    for (N := 1; N <= choices; N := N + 1) {
+                    for (N := 1; N <= choices; N := N + 1)
+                    {
                       answer := get_keyword (sprintf ('answer_%d', N), answers, '');
-                      if (answer <> '') {
+                      if (answer <> '')
+                      {
                         if (allowed <> 1) {
                           http (sprintf ('<input type="checkbox" name="answer_%d_%d" id="answer_%d_%d" value="1" onclick="checkChoices (this)" /> <label for="answer_%d_%d">%s</label><br />', N, Q_ID, N, Q_ID, N, Q_ID, answer));
                         } else {
@@ -1615,11 +1595,14 @@
                         answer := trim(get_keyword ('answer_'||cast (Q_ID as varchar), params, ''));
                         POLLS.WA.answer_insert (vote_id, question_id, 1, answer);
                       }
-                      if (Q_TYPE = 'M') {
+                      if (Q_TYPE = 'M')
+                      {
                         choices := cast (get_keyword ('choices_'||cast (Q_ID as varchar), params, '0') as integer);
                         allowed := cast (get_keyword ('allowed_'||cast (Q_ID as varchar), params, '0') as integer);
-                        if (allowed <> 1) {
-                          for (N := 1; N <= choices; N := N + 1) {
+                        if (allowed <> 1)
+                        {
+                          for (N := 1; N <= choices; N := N + 1)
+                          {
                             answer := trim(get_keyword ('answer_'||cast (N as varchar)||'_'||cast (Q_ID as varchar), params, ''));
                             if (answer <> '')
                               POLLS.WA.answer_insert (vote_id, question_id, N, answer);
@@ -1659,29 +1642,35 @@
                 declare rChart, rLegends, rPercents, rFlag any;
 
                 tmp := POLLS.WA.poll_enable_result (self.v_id);
-                if (tmp = -1) {
+                if (tmp = -1)
+                {
                   http ('<p class="vote-poll">Poll is not activated and results can not be shown</p>');
                   goto _end;
                 }
-                if (tmp = -2) {
+                if (tmp = -2)
+                {
                   http ('<p class="vote-poll">Poll is closed, user is not voted and results can not be shown!</p>');
                   goto _end;
                 }
-                if (tmp = -3) {
+                if (tmp = -3)
+                {
                   http ('<p class="vote-poll">Poll is not closed and results can not be shown</p>');
                   goto _end;
                 }
-                if (tmp = -4) {
+                if (tmp = -4)
+                {
                   http ('<p class="vote-poll">Poll is not voted and results can not be shown. Please vote first!</p>');
                   goto _end;
                 }
-                if (tmp = -5) {
+                if (tmp = -5)
+                {
                   http ('<p class="vote-poll">Poll is not voted yet!</p>');
                   goto _end;
                 }
 
                 Q := 0;
-                for (select P_NAME, P_MODE, P_VOTES, Q.* from POLLS.WA.QUESTION Q, POLLS.WA.POLL P where Q.Q_POLL_ID = self.v_id and Q.Q_POLL_ID = P.P_ID order by Q.Q_ID) do {
+                for (select P_NAME, P_MODE, P_VOTES, Q.* from POLLS.WA.QUESTION Q, POLLS.WA.POLL P where Q.Q_POLL_ID = self.v_id and Q.Q_POLL_ID = P.P_ID order by Q.Q_ID) do
+                {
                   Q := Q + 1;
                   if ((P_MODE = 'M') and (Q = 1))
                     http (sprintf ('<p class="vote-poll">%s <i style="font-size: 0.8em; font-weight: normal;">(%d vote(s))</i></p>', P_NAME, P_VOTES));
@@ -1692,7 +1681,8 @@
                   answers := deserialize (Q_ANSWER);
 
                   http ('<p class="vote-answer">');
-                  if (Q_TYPE = 'N') {
+                  if (Q_TYPE = 'N')
+                  {
                     declare range_start, range_end, range_decimals any;
 
                     range_start := cast (get_keyword ('range_start', answers, '0') as float);
@@ -1710,7 +1700,8 @@
                     S := xslt_format_number (aValue / P_VOTES, '#.00');
                     http (sprintf ('Average answers result in range [%d, %d]: <b>%s</b>', range_start, range_end, S));
                   }
-                  if (Q_TYPE = 'M') {
+                  if (Q_TYPE = 'M')
+                  {
                     declare choices, allowed, answer any;
 
                     rChart := 'bar';
@@ -1725,7 +1716,8 @@
                     http ('<th>No</th><th>Answer</th><th>Votes</th><th>Percent</th>');
                     http ('</tr>');
                     http ('</thead>');
-                    for (N := 1; N <= choices; N := N + 1) {
+                    for (N := 1; N <= choices; N := N + 1)
+                    {
                       answer := get_keyword (sprintf ('answer_%d', N), answers, '');
                       select count (*) into aCount from POLLS.WA.ANSWER where A_QUESTION_ID = Q_ID and A_NUMBER = N;
                       S := '0.00';
@@ -1742,10 +1734,12 @@
                     if (choices > 5)
                       pHeight := pHeight + (choices - 5) * 33;
                   }
-                  if ((Q_TYPE = 'M') and (rFlag <> 0)) {
+                  if ((Q_TYPE = 'M') and (rFlag <> 0))
+                  {
                     rLegends := trim (rLegends, ',');
                     rPercents := trim (rPercents, ',');
-                    if (rChart = 'bar') {
+                    if (rChart = 'bar')
+                    {
                       http (         '<div class="chart_content">');
                       http (sprintf ('<div id="bar_content_%d" style="height: 200px; width: 100%s;"></div>', Q_ID, '%'));
                       http (         '</div>');
@@ -1756,7 +1750,8 @@
                       http (         '  chart.draw();');
                       http (         '</script>');
                     }
-                    if (rChart = 'pie') {
+                    if (rChart = 'pie')
+                    {
                       http (         '<div class="chart_content">');
                       http (sprintf ('<div id="pie_content_%d" style="height: %dpx; width: 100%s;"></div>', Q_ID, pHeight, '%'));
                       http (         '</div>');

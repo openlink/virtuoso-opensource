@@ -47,11 +47,14 @@
       http_request_status ('HTTP/1.1 200 OK');
       http_header ('Content-Type: text/xml; charset=UTF-8\r\n');
 
-      if (self.v_output = 'OPML') {
+      if (self.v_output = 'OPML')
+      {
         http(ENEWS.WA.xml2string(ENEWS.WA.export_opml_xml(self.domain_id, self.account_id)));
         goto _end;
 
-      } else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
+      }
+      else if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10'))
+      {
         declare data, sql, state, msg, meta, result any;
 
         ENEWS.WA.xml_set('keywords', data, self.v_keywords);
@@ -73,11 +76,13 @@
         if (state <> '00000')
           goto _error;
 
-        if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10')) {
+        if (self.v_output in ('rss', 'rdf', 'xbel', 'atom03', 'atom10'))
+        {
           http ('<?xml version="1.0" encoding="UTF-8"?>\n');
           http ('<rss version="2.0">\n');
           http ('<channel>\n');
-          for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do {
+          for (select U_NAME, U_FULL_NAME, U_E_MAIL from DB.DBA.SYS_USERS where U_ID = self.account_id) do
+          {
             http ('<title>');
               http_value (ENEWS.WA.domain_name(self.domain_id));
             http ('</title>\n');
@@ -100,7 +105,8 @@
               http_value (ENEWS.WA.enews_url(self.domain_id));
             http ('</link>\n');
           }
-          foreach (any row in result) do {
+          foreach (any row in result) do
+          {
             http ('<item>\n');
               http ('<title>');
                 http_value (row[1]);
@@ -117,7 +123,8 @@
               http ('<pubDate>');
                 http_value (ENEWS.WA.dt_rfc1123 (row[3]));
               http ('</pubDate>\n');
-              if (self.v_output <> 'rss') {
+              if (self.v_output <> 'rss')
+              {
                 http ('<ods:modified xmlns:ods="http://www.openlinksw.com/ods/">');
                   http_value (ENEWS.WA.dt_iso8601 (row[3]));
                 http ('</ods:modified>\n');
