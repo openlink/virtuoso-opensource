@@ -282,7 +282,7 @@ inxop_iob_next (inx_op_t * iop, it_cursor_t * itc, inxop_bm_t * iob, int op, cad
   switch (op)
     {
     case IOP_TARGET:
-      target = unbox_iri_int64 (itc->itc_search_params[itc->itc_search_par_fill - 1]);
+      target = unbox_iri_int64 (itc->itc_search_params[itc->itc_insert_key->key_n_significant - 1]);
       if (target < iob->iob_start || target >=  iob->iob_end + CE_N_VALUES)
 	return IOP_READ_INDEX;
       pl_set_at_bit ((placeholder_t *) itc, iob->iob_bm, iob->iob_bm_len, iob->iob_start, target, 0);

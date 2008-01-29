@@ -123,6 +123,21 @@ ins_type_to_artm_name (char type)
 
 
 void
+sqlc_call_ret_name (ST * tree, char * func_name, state_slot_t * ssl)
+{
+  caddr_t name = sqlo_iri_constant_name  (tree);
+  if (DV_STRINGP (name))
+    {
+      caddr_t pref, local ;
+      iri_split (name, &pref, &local);
+      dk_free_box (pref);
+      dk_free_box (ssl->ssl_name);
+      ssl->ssl_name = local;
+    }
+}
+
+
+void
 sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
 {
   caddr_t * kwds = NULL;
@@ -182,6 +197,7 @@ sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
   else
     fun_name = func;
 
+  sqlc_call_ret_name (tree, fun_name, ret);
   if (fun_name && !fun_udt_name && !bif_find (fun_name))
     {
 

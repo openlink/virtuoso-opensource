@@ -747,6 +747,19 @@ sqlg_outer_post_filter (table_source_t * ts, df_elt_t * tb_dfe, state_slot_t * a
 }
 
 
+char *
+ssl_inf_name (df_elt_t * dfe)
+{
+  static char name[30];
+  state_slot_t * ssl = dfe ? dfe->dfe_ssl : NULL;
+  if (!ssl || !ssl->ssl_name)
+    return "inferred";
+  snprintf (name, sizeof (name), "i-%s", ssl->ssl_name);
+  name[sizeof (name) - 1] = 0;
+  return name;
+}
+
+
 void
 sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t * ts, df_elt_t * p_dfe, caddr_t p_const, df_elt_t * o_dfe, caddr_t o_iri,
 			   rdf_inf_ctx_t * ctx, df_elt_t * tb_dfe, int inxop_inx, rdf_inf_pre_node_t * sas_o)
@@ -759,7 +772,7 @@ sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t *
   ri = sqlg_rdf_inf_node (so->so_sc);
   qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
   ri->ri_mode = RI_SUBCLASS;
-  ri->ri_output = ssl_new_variable (o_dfe->dfe_sqlo->so_sc->sc_cc, "inferred", DV_IRI_ID);
+  ri->ri_output = ssl_new_variable (o_dfe->dfe_sqlo->so_sc->sc_cc, ssl_inf_name (o_dfe), DV_IRI_ID);
 
   if (sas_o)
     ri->ri_o = sas_o->ri_output;
@@ -820,7 +833,7 @@ sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_
   ri = sqlg_rdf_inf_node (so->so_sc);
   qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
   ri->ri_mode = RI_SUBPROPERTY;
-  ri->ri_output = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "inferred", DV_IRI_ID);
+  ri->ri_output = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, ssl_inf_name (p_dfe), DV_IRI_ID);
 
   if (sas_p)
     ri->ri_p = sas_p->ri_output;
@@ -915,7 +928,7 @@ sqlg_leading_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts,
   *ri_ret = ri;
   qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
   ri->ri_mode = mode;
-  ri->ri_output = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, "inferred", DV_IRI_ID);
+  ri->ri_output = ssl_new_variable (tb_dfe->dfe_sqlo->so_sc->sc_cc, ssl_inf_name (RI_SAME_AS_P == mode ? p_dfe : RI_SAME_AS_O == mode ? o_dfe : s_dfe), DV_IRI_ID);
   if ((in_list = sqlo_in_list (g_dfe, NULL, NULL)))
     {
       int n = BOX_ELEMENTS (in_list) - 1, ginx;
