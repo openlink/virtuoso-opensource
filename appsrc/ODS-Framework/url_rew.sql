@@ -59,7 +59,7 @@ create procedure DB.DBA.ODS_DISC_ITEM_ID (in par varchar, in fmt varchar, in val
   if (length (val))
     val := split_and_decode (val)[0];
   id := encode_base64 (val);
-  return id;
+  return sprintf (fmt, id);
 }
 ;
 
