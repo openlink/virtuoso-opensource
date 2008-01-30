@@ -7,7 +7,7 @@
   clear: both;
   color: #444;
   font-size: 9pt;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Gill Sans", Arial, Helvetica, sans-serif;
   background-color: #ddeff9}
 
 #ods_bar ul {
@@ -53,7 +53,7 @@
   background-color: #85b9d2}
 
 #ods_bar_top_cmds {
-  font-size: 8pt;
+  font-size: smaller;
   margin-top: 4px;
   color: #42abc4;
   background-color: #fff;
@@ -130,7 +130,7 @@
 }
 
 #ods_bar_odslogin {
-  font-size: 8pt;
+  font-size: 7.5pt;
   margin-top: 4px;
   color: #42abc4;
   background-color: #fff;
