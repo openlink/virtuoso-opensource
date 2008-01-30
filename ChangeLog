@@ -1,3 +1,129 @@
+2008-01-30 15:35  source
+
+	* Updated version to 5.0.4-rc5
+
+2008-01-30 15:34  source
+
+	* Merged from upstream project
+
+2008-01-30 15:31  source
+
+	* Changed style of ods bar
+
+2008-01-30 15:29  source
+
+	* Fixed ods bar style
+
+2008-01-30 15:25  source
+
+	* Adjusted inx int cost model calculations
+
+2008-01-30 12:02  source
+
+	* Updated version to 5.0.4-rc4
+
+2008-01-30 11:58  source
+
+	* Fixed signal errors when lock or upload failed
+	* Fixed signal if render failed
+	* Fixed check result from proc_exists
+
+2008-01-30 11:58  source
+
+	* Fixed behaviour of nav buttons
+
+2008-01-30 11:57  source
+
+	* Fixed missing format string
+
+2008-01-30 11:57  source
+
+	* Added ws_update_instance method
+
+2008-01-30 00:04  source
+
+	* Added feeds update interval at server-side level
+
+2008-01-29 15:10  source
+
+	* Updated version to 5.0.4-rc3
+
+2008-01-29 15:08  source
+
+	* FIxed due date popup calendar JS error
+
+2008-01-29 15:08  source
+
+	* Added popup calendar
+
+2008-01-29 15:07  source
+
+	* Added popup calendar for birthday field
+
+2008-01-29 14:58  source
+
+	* Updated copyright to 2008
+
+2008-01-29 14:53  source
+
+	* Updated version number of executable
+
+2008-01-29 14:50  source
+
+	* Fixed problem with inxop bm bad if extra search params supplied, as in
+	  the case of likes etc other non inx conds. do not count on search par fill
+	  to know the target.
+	* Fixed iri names to iri valued ssl and their entailed
+
+2008-01-28 22:47  source
+
+	* Updated version to 5.0.4-rc2
+
+2008-01-28 22:43  source
+
+	* Added support for export RDF/XML
+	* Fixed broken inline links to the attached files in Wiki topics
+
+2008-01-28 22:41  source
+
+	* Fixed wa_addition_urls method
+
+2008-01-28 22:41  source
+
+	* Added sign up link to new navigation
+	* Fixed correct vspx_user set after openid login
+	* Fixed search - dba rights when search is executed
+
+2008-01-28 22:39  source
+
+	* Fixed bad function reference
+
+2008-01-28 22:35  source
+
+	* Merged from upstream project
+
+2008-01-28 22:33  source
+
+	* Fixed cache compile samples
+	* Fixed using like of any to do the is iri test
+	* Fixed no kill of delta rolled back
+
+2008-01-28 22:31  source
+
+	* Fixed iri id cache read integrity
+
+2008-01-28 22:31  source
+
+	* Fixed reuse of rb has when not resized
+
+2008-01-28 22:29  source
+
+	* Fixed missing function prototype
+
+2008-01-28 22:26  source
+
+	* Fixed xpf function
+
 2008-01-28 09:48  source
 
 	* Updated version to 5.0.4-rc1
