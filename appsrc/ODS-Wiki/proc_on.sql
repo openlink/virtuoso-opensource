@@ -284,7 +284,8 @@ create method ti_run_lexer (in _env any) returns varchar for WV.WIKI.TOPICINFO
 {
   declare exit handler for sqlstate '*' {
     --dbg_obj_print ('lexer:', __SQL_STATE, __SQL_MESSAGE);
-    return '';
+    --return '';
+    resignal;
   }
   ;
   declare _text varchar;
@@ -2021,6 +2022,7 @@ create procedure WV.WIKI.CREATECLUSTER (in _cname varchar, in _src_col integer, 
   declare _uname, _gname, _home varchar;
   declare _wikiuname, _wikigname varchar;
   declare _parent, _main, _histcol, _xmlcol, _attachcol integer;
+  declare _res int;
 -- Preparing user name
   _uname := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _owner and U_IS_ROLE = 0), NULL);
   if (_uname is null)
@@ -2118,7 +2120,7 @@ next:
 	NULL,
 	NULL);
     WV.WIKI.GETLOCK (_full_path, 'dav');
-    WV.WIKI.UPLOADPAGE (_col_id, _name, blob_to_string (_content) || ' ',
+    _res := WV.WIKI.UPLOADPAGE (_col_id, _name, blob_to_string (_content) || ' ',
        _uname, _cluster_id, 'dav');
 --    DB.DBA.DAV_CHECKIN_INT (_full_path, null, null, 0);
     WV.WIKI.RELEASELOCK (_full_path, 'dav');
@@ -2187,6 +2189,8 @@ create procedure WV.WIKI.UPLOADPAGE (
   	, AuthorId = user_id
      where ResId = _res_id;
      
+  if (_res_id < 0)
+    WV.WIKI.APPSIGNAL (11001, 'Cannot upload content at &path;', vector ('path', _path));
    --dbg_obj_princ ('perms=', _perms, ' res= ', _res_id);
   return _res_id;
 }
@@ -2756,7 +2760,7 @@ create function WV.WIKI.GET_LOCKTOKEN (in res_id int)
 create function WV.WIKI.GETLOCK (in _path varchar, in _uname varchar) returns integer
 {
   -- while DAV_LOCK does not work...
-  declare _token varchar;
+  declare _token, op_token varchar;
   declare _res_id int;
   _res_id := DAV_SEARCH_ID (_path, 'R');
   _token := (select Token from WV.WIKI.LOCKTOKEN
@@ -2764,19 +2768,28 @@ create function WV.WIKI.GETLOCK (in _path varchar, in _uname varchar) returns in
   declare _type varchar;
   declare _res int;
   _type := 'R';
-  if ( 0 < (_res := DB.DBA.DAV_IS_LOCKED_INT (_res_id, _type, _token) ))
-    return _res;
-  _token := DB.DBA.DAV_LOCK (_path, 'R', 'R', null, _uname, null, null, WV.WIKI.LOCKEXPIRATION() , _uname,
+--  if (0 < (_res := DB.DBA.DAV_IS_LOCKED_INT (_res_id, _type, _token)))
+--    {
+--      dbg_printf ('locked by owner (OK)');
+--      return _res;
+--    }
+  if (_token is not null)
+    op_token := '(<opaquelocktoken:'||_token||'>)';
+  else
+    op_token := null;
+  _token := DB.DBA.DAV_LOCK (_path, 'R', 'X', _token,
+  	_uname, op_token, null, WV.WIKI.LOCKEXPIRATION() , _uname,
 	(select pwd_magic_calc(U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = _uname));
   if (isstring (_token))
     {
+      --dbg_printf ('lock OK', _token);
       insert replacing WV.WIKI.LOCKTOKEN (UserName, ResPath, Token)
         values (_uname, _path, _token);
       return 0;
     }
-  if (_token = -35)
-    return 0; -- already locked.
-  return _token;
+  --dbg_printf ('lock FAILED');
+  WV.WIKI.APPSIGNAL (11001, 'Cannot set lock on &path;', vector ('path', _path));
+  return 1;
 }
 ;
 
@@ -3259,8 +3272,7 @@ create procedure WV.WIKI.ADDLINK (in _topic WV.WIKI.TOPICINFO,
   declare _path, _user varchar;
   _path :=DB.DBA.DAV_SEARCH_PATH (_topic.ti_res_id, 'R');
   _user := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _uid);
-  if (0 < WV.WIKI.GETLOCK (_path, _user))
-    WV.WIKI.APPSIGNAL (11001, 'The resource &path; is locked', vector ('path', _path));
+  WV.WIKI.GETLOCK (_path, _user);
   connection_set ('HTTP_CLI_UID', _user);
   DB.DBA.DAV_RES_UPLOAD (_path,
 		cast (_topic.ti_text as varchar) || '\n   * ' || _link , 
@@ -4220,7 +4232,7 @@ create procedure WV.WIKI.UPDATE_TAG_SYSINFO (in _res_id int, in _tags varchar)
 
       declare _owner_login varchar;
       _owner_login := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _owner);
-      res := WV.WIKI.GETLOCK (_full_path, _owner_login);
+      WV.WIKI.GETLOCK (_full_path, _owner_login);
       --dbg_obj_princ ('lock: ', DAV_PERROR (res));
       res := WV.WIKI.UPLOADPAGE (_col_id, _topic_file_name, 
       	WV.WIKI.ADD_SYSINFO_VECT (_content, 

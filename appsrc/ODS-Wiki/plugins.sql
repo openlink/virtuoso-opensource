@@ -48,7 +48,7 @@ create procedure LEXER (in _cluster_name varchar, out _lexer varchar, out _lexer
   _lexer_name := WV.WIKI.CLUSTERPARAM (_cluster_name, 'plugin');
   _lexer := PLUGIN_BY_ID (_lexer_name);
   _lexer_name := NAME_BY_ID (_lexer_name);
-  if (not __proc_exists (_lexer, 2))
+  if (__proc_exists (_lexer, 2) is null)
     { 
     _lexer := PLUGIN_BY_ID (null);
       _lexer_name := NAME_BY_ID (null);
