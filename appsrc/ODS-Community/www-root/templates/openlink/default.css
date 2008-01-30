@@ -668,7 +668,7 @@ div.w_app_summary div.w_title_bar {
 
 #ods_bar_odslogin
 {
-font-family: Arial,Helvetica,Sans-Serif;
+font-family: "Gill Sans",Arial,Helvetica,sans-serif;
 margin-bottom: 4px; 
-font-size: 8pt;
+font-size: smaller;
 }
