@@ -998,30 +998,43 @@ dfe_hash_fill_unit (df_elt_t * dfe, float arity)
 float 
 sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, float * arity_ret)
 {
-  /* the cost of an inx int is  min near cost of the cheapest term  times the number of terms. 
-   * We prefer orders of terms from lowest to highest card.  Hence the zap with cf which is a weight that is highest for first term.*/
+  /* Complicated.  Cost of inx int is the cost of the smallest term times no of terms.
+   * card is the card of the term with the least card times product of theselectivities of the rest.  The selectivity is the arity/count of the table */
+  int smallest_term = -1, inx;
   float cf = 0;
-  int nth_term = 1; /* starts at 1, is a denominator */
+  int nth_term = 0;
   dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
-  dbe_key_t * prev_key = tb_dfe->_.table.key;
   int n_inx = dk_set_length (group);
-  float arity, ov, cost, min = -1, total_cost, p_cost, p_arity;
-  float n_rows = dbe_key_count (tb_dfe->_.table.ot->ot_table->tb_primary_key);
-  float selectivity = 1;
+  float arity[10], ov, cost[10], min = -1, total_cost, p_cost, p_arity, min_rows = -1, a;
+  float n_rows[10];
   DO_SET (df_inx_op_t *, dio, &group)
     {
+      dbe_key_t * prev_key = dio->dio_table->_.table.key;
       dbe_key_t * key = dio->dio_key;
-      tb_dfe->_.table.key = key;
-      dfe_table_cost (tb_dfe, &cost, &arity, &ov, 1);
-      selectivity = selectivity * (arity / n_rows);
-      if (-1 == min ||   cost < min)
-	min = cost;
-      cf = cf + log (arity) * ROW_SKIP_COST * 0.1 * (1.0 / nth_term);
+      n_rows[nth_term] = dbe_key_count (dio->dio_table->_.table.ot->ot_table->tb_primary_key);
+      dio->dio_table->_.table.key = key;
+      dfe_table_cost (tb_dfe, &cost[nth_term], &arity[nth_term], &ov, 1);
+      if (-1 == smallest_term || min_rows > n_rows[nth_term])
+	{
+	  smallest_term = nth_term;
+	  min_rows = n_rows[nth_term];
+	}
+      if (-1 == min ||   cost[nth_term] < min)
+	min = cost[nth_term];
+      cf = cf + log (arity[nth_term]) * ROW_SKIP_COST * 0.1;
+      dio->dio_table->_.table.key = prev_key;
       nth_term++;
+      if (nth_term > 10)
+	break;
     }
   END_DO_SET();
-  tb_dfe->_.table.key = prev_key;
-  *arity_ret = n_rows * selectivity;
+  a = arity[smallest_term];
+  for (inx = 0; inx < nth_term; inx++)
+    {
+      if (inx != smallest_term)
+	a *= arity[inx];
+    }
+  *arity_ret = a;
   /* must get the main row? If cols refd that are not in any of the inxes. */
   DO_SET (dbe_column_t *, col, &tb_dfe->_.table.ot->ot_table_refd_cols)
     {
@@ -1039,8 +1052,7 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
   return cf + (n_inx * min * 0.7);
  get_main_row:
   min = min * n_inx * 0.7;
-  arity = n_rows * selectivity;
-  total_cost = min + (arity * 
+  total_cost = min + (*arity_ret *
 	  (dbe_key_unit_cost (tb->tb_primary_key) 
 	   + dbe_key_row_cost (tb->tb_primary_key, NULL)));
     
@@ -1054,12 +1066,11 @@ sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, 
 	}
       END_DO_SET();
       sqlo_pred_unit (pred, NULL, &p_cost, &p_arity);
-      arity *= p_arity;
-      total_cost += p_cost * arity;
+      (*arity_ret) *= p_arity;
+      total_cost += p_cost * *arity_ret;
     next_pred: ;
     }
   END_DO_SET();
-  *arity_ret = arity;
   return cf + total_cost;
 }
 
