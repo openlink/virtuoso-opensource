@@ -33,13 +33,17 @@ OMAIL.WA.drop_nntp ()
 
 create procedure OMAIL.WA.uninstall ()
 {
-  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'oMail' do {
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'oMail' do
+  {
     (WAI_INST as DB.DBA.wa_mail).wa_drop_instance();
   }
 }
 ;
 OMAIL.WA.uninstall ()
 ;
+
+-- Scheduler
+OMAIL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'WebMail External POP3 Scheduler\'');
 
 -- Tables
 OMAIL.WA.exec_no_error('DROP TABLE OMAIL.WA.MSG_PARTS_TDATA_WORDS');
@@ -68,7 +72,8 @@ OMAIL.WA.exec_no_error('drop type wa_mail');
 -- Procedures
 create procedure OMAIL.WA.omail_drop_procedures()
 {
-  for (select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'OMAIL.WA.%') do {
+  for (select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'OMAIL.WA.%') do
+  {
     if (P_NAME not in ('OMAIL.WA.exec_no_error', 'OMAIL.WA.omail_drop_procedures'))
       OMAIL.WA.exec_no_error(sprintf('drop procedure %s', P_NAME));
   }

@@ -613,3 +613,12 @@ DB.DBA.vt_batch_update('OMAIL.WA.MSG_PARTS', 'off', null)
 --
 registry_set ('mail_index_version', '1')
 ;
+
+-------------------------------------------------------------------------------
+--
+OMAIL.WA.exec_no_error ('
+  insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
+    values(\'WebMail External POP3 Scheduler\', now(), \'OMAIL.WA.omail_ch_pop3_acc_schedule ()\', 10)
+')
+;
+
