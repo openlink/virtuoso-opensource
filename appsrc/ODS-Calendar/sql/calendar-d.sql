@@ -22,13 +22,18 @@
 
 create procedure CAL.WA.uninstall ()
 {
-  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Calendar' do {
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Calendar' do
+  {
     (WAI_INST as DB.DBA.wa_Calendar).wa_drop_instance();
   }
 }
 ;
 CAL.WA.uninstall ()
 ;
+
+-- Scheduler
+CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Alarm Scheduler\'');
+CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Upstream Scheduler\'');
 
 -- Tables
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM_LOG');
@@ -59,7 +64,8 @@ registry_remove ('cal_index_version');
 -- Procedures
 create procedure CAL.WA.drop_procedures()
 {
-  for (select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'CAL.WA.%') do {
+  for (select P_NAME from DB.DBA.SYS_PROCEDURES where P_NAME like 'CAL.WA.%') do
+  {
     if (P_NAME not in ('CAL.WA.exec_no_error', 'CAL.WA.drop_procedures'))
       CAL.WA.exec_no_error(sprintf('drop procedure %s', P_NAME));
   }
