@@ -80,6 +80,9 @@ OAT.RDFStore = function(tripleChangeCallback,optObj) {
 			/* sanitize triples */
 			for (var i=0;i<triples.length;i++) {
 				var t = triples[i];
+				t[2] = t[2].replace(/&amp;/gi,'&');
+				t[2] = t[2].replace(/&gt;/gi,'>');
+				t[2] = t[2].replace(/&lt;/gi,'<');
 				t[2] = t[2].replace(/<script[^>]*>/gi,'');
 			}
 			self.addTriples(triples,url);

@@ -20,10 +20,12 @@ OAT.Dereference = {
 			encoded = "/proxy?url="+encoded+"&force=rdf";
 			if (user) { encoded += "&login="+encodeURIComponent(user); }
 			if (url.match(/\.n3$/)) { encoded += "&output-format=n3"; }
+			if (url.match(/\.ttl$/)) { encoded += "&output-format=ttl"; }
 		} else if (url.match(/^urn:/i) || url.match(/^doi:/i) || url.match(/^oai:/i)) { /* Virtuoso proxy: */
 			var encoded = encodeURIComponent(url);
 			encoded = "/proxy?url="+encoded+"&force=rdf";
 			if (url.match(/\.n3$/)) { encoded += "&output-format=n3"; }
+			if (url.match(/\.ttl$/)) { encoded += "&output-format=ttl"; }
 		} else {
 			var encoded = url;
 		}
