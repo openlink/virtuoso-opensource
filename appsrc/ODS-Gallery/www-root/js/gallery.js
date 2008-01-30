@@ -205,7 +205,8 @@ gallery.setCurrentByName = function(current_name){
 
 //------------------------------------------------------------------------------
 gallery.closePanels = function(){
-
+  OAT.Dom.hide('edit_album_settings');
+  OAT.Dom.hide('new_album');
 }
 
 
@@ -216,6 +217,9 @@ gallery.albums_click = function(el){
   OAT.Dom.hide('timeline');
   OAT.Dom.hide('map');
 
+  gallery.closePanels();
+  gallery.nav.tabs(1);
+  
   gallery.setCurrent(current_id);
   //ajax.Start(gallery_load_images,current_id);
   gallery.ajax.load_images(current_id);
@@ -264,7 +268,7 @@ gallery.settings_tab_click = function ()
   gallery.managePanels('edit_albumsettings');
   $('edit_album_showmap').checked = ds_albums.settings.show_map==1? true : false;
   $('edit_album_showtimeline').checked = ds_albums.settings.show_timeline==1 ? true : false;
-
+  gallery.nav.tabs(3);
 }
 
 //------------------------------------------------------------------------------
@@ -277,8 +281,8 @@ gallery.edit_albumsettings_action = function (){
 gallery.edit_albumsettings_cancel = function (){
 
  OAT.Dom.hide('edit_album_settings');
+ gallery.nav.tabs(1);
  gallery.managePanels('my_albums');
-
 }
 //------------------------------------------------------------------------------
 
@@ -1028,7 +1032,8 @@ gallery.hideAlbums = function(){
 //------------------------------------------------------------------------------
 gallery.my_albums_tab_click = function (){
   path_set_folder('');
-  gallery.managePanels('my_albums')
+  gallery.managePanels('my_albums');
+  gallery.nav.tabs(1);
 }
 
 //------------------------------------------------------------------------------
@@ -1559,6 +1564,7 @@ gallery.managePanels = function(action){
   OAT.Dom.hide('images_export');
   OAT.Dom.hide('filter');
 
+  gallery.closePanels();
 
   if(action == 'my_albums'){
     if(ds_albums.settings.show_timeline==1)
@@ -1589,6 +1595,7 @@ gallery.managePanels = function(action){
     gallery.albums.show();
     gallery.showAlbumsInfo();
     gallery.albums_list.show();
+    gallery.albums.tabs(1);
     if(isOwner != ''){
       gallery.albums_man.show();
       OAT.Dom.show('new_album_tab');
@@ -1664,6 +1671,7 @@ gallery.managePanels = function(action){
     this.tags.hide();
 
     OAT.Dom.hide('care_edit_album');
+    OAT.Dom.hide('care_view_album');
     OAT.Dom.show('care_my_albums');
 
     OAT.Dom.show('new_album');
@@ -1689,9 +1697,14 @@ gallery.managePanels = function(action){
   }else if(action=='edit_albumsettings')
   {
     this.hideAlbums();
+    this.images.hide();
     this.info.hide();
     this.new_album.hide();
     this.edit_album.hide();
+    OAT.Dom.hide('care_edit_album');
+    OAT.Dom.hide('care_my_albums');
+    OAT.Dom.hide('care_view_album');
+
     OAT.Dom.show('edit_album_settings');
   }
 }
