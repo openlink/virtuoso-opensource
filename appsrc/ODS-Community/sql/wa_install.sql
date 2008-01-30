@@ -77,6 +77,8 @@ COMMUNITY.exec_no_error('alter type ODS..wa_community add overriding method wa_d
 COMMUNITY.exec_no_error('alter type ODS..wa_community add overriding method apply_custom_settings (in template_path varchar, in logoimg_path varchar, in welcomeimg_path varchar) returns any')
 ;
 
+COMMUNITY.exec_no_error('alter type ODS..wa_community add overriding method wa_update_instance (in oldValues any, in newValues any) returns any')
+;
 
 
 create constructor method wa_community (inout stream any) for wa_community {
@@ -673,7 +675,28 @@ create method wa_dashboard_last_item () for ODS.COMMUNITY.wa_community
   }
   http ('</comm-db>', ses);
   return string_output_string (ses);
-};
+}
+;
+
+create method wa_update_instance (in oldValues any, in newValues any) for ODS.COMMUNITY.wa_community
+{
+  declare o_wa_name, n_wa_name varchar;
+  declare o_is_public, n_is_public integer;
+  
+  o_wa_name:=oldValues[0];
+  n_wa_name:=newValues[0];
+  o_is_public:=oldValues[1];
+  n_is_public:=newValues[1];
+
+  set triggers off;       --triggers are off because of strange behavior -record is still referred with the old value even if it is after update. FK violation.
+   update ODS.COMMUNITY.SYS_COMMUNITY_INFO set CI_TITLE=n_wa_name where CI_COMMUNITY_ID=o_wa_name;
+  set triggers on;
+
+  return (self as DB.DBA.web_app).wa_update_instance (oldValues, newValues);
+}
+;
+
+
 create method apply_custom_settings ( in template_path varchar, in logoimg_path varchar, in welcomeimg_path varchar) for ODS.COMMUNITY.wa_community
 {
   
@@ -723,3 +746,6 @@ create method apply_custom_settings ( in template_path varchar, in logoimg_path 
   return;
 };
 
+
+USE "DBA"
+;
