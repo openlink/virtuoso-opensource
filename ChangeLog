@@ -1,3 +1,23 @@
+2008-01-30 20:55  source
+
+	* Updated version to 5.0.4-rc6
+
+2008-01-30 20:55  source
+
+	* Fixed minor css problem
+
+2008-01-30 20:55  source
+
+	* Fixed bad html generation
+
+2008-01-30 20:54  source
+
+	* Fixed auto check for new emails
+
+2008-01-30 20:53  source
+
+	* Fixed uninstall problem with scheduled actions
+
 2008-01-30 15:35  source
 
 	* Updated version to 5.0.4-rc5
