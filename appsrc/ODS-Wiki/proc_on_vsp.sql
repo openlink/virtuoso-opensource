@@ -248,13 +248,13 @@ ins:
     ODS.BAR._EXEC(null,vector_concat (params, vector ('explicit-host', 1)), lines);
   else
     ODS.BAR._EXEC(null,params, lines);
-  declare _ods_bar any;
+  declare _ods_bar, _app_js any;
   _ods_bar := http_get_string_output();
   _ods_bar := xtree_doc(_ods_bar, 2);
-  _ext_params := vector_concat (_ext_params, vector ('ods-bar', _ods_bar));
+  _app_js := xtree_doc (WV.Wiki.WIKI_APLUSLINK (_uid), 0);
+  _ext_params := vector_concat (_ext_params, vector ('ods-bar', _ods_bar, 'ods-app', _app_js));
   http_rewrite ();
   http_header ('Content-Type: text/html; charset=UTF-8\r\n');
-  http (WV.Wiki.WIKI_APLUSLINK (_uid));
   _xhtml :=  WV.WIKI.VSPXSLT ( 'PostProcess.xslt', _xhtml, vector_concat (_ext_params), _skin );
   http_header ('Content-Type: text/html; charset=UTF-8\r\n');
   if (WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'email-obfuscate') is not null)

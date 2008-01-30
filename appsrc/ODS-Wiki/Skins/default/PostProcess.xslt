@@ -42,6 +42,7 @@
     <xsl:param name="sid"/>
     <xsl:param name="realm"/>
   <xsl:param name="ods-bar"/>
+    <xsl:param name="ods-app"/>
     <xsl:param name="tree"/>
     <xsl:param name="tree_content"/>
     <xsl:param name="command"/>
@@ -80,6 +81,7 @@
             type="application/atomserv+xml"
             href="{wv:atom_pub_uri($ti_cluster_name)}/intro"/>
 
+	<xsl:copy-of select="$ods-app"/>
     </head>
       <body>
 	<div id="page">
