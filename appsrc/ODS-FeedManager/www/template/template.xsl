@@ -221,9 +221,7 @@
       <div id="FT">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
-            <img alt="Powered by OpenLink Virtuoso Universal Server" 
-                 src="image/virt_power_no_border.png" 
-                 border="0" />
+              <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />
           </a>
     </div>
         <div id="FT_R">

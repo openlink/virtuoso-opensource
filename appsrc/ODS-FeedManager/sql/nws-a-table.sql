@@ -659,7 +659,7 @@ ENEWS.WA.exec_no_error (
 );
 
 ENEWS.WA.exec_no_error('
-  create unique index SK_BLOG_01 on ENEWS.WA.BLOG(EB_WEBLOG_ID, EB_NAME)
+  drop index SK_BLOG_01 ENEWS.WA.BLOG
 ');
 
 ENEWS.WA.exec_no_error('

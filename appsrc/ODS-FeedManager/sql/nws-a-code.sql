@@ -672,7 +672,12 @@ create procedure ENEWS.WA.domain_sioc_url (
 {
   declare S varchar;
 
+  if (domain_id < 0)
+  {
+    S := sprintf ('http://%s/subscriptions', DB.DBA.wa_cname ());
+  } else {
   S := sprintf ('http://%s/dataspace/%U/subscriptions/%U', DB.DBA.wa_cname (), ENEWS.WA.domain_owner_name (domain_id), ENEWS.WA.domain_name (domain_id));
+  }
   return ENEWS.WA.url_fix (S, sid, realm);
 }
 ;
@@ -784,6 +789,18 @@ create procedure ENEWS.WA.feeds_agregator (
   declare id, days, rc, err integer;
   declare bm any;
   declare dt datetime;
+  declare p, f, u any;
+
+  p := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'dayly');
+  f := coalesce ((select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS), 1);
+  u := case p
+         when 'daily' then 1440
+         when 'weekly' then 10080
+         when 'monthly' then 43200
+         when 'yearly' then 525600
+         else 1440
+       end;
+  u := u / f;
 
   dt := now();
   declare cr static cursor for select EF_ID,
@@ -791,7 +808,7 @@ create procedure ENEWS.WA.feeds_agregator (
                                       EF_STORE_DAYS,
                                       EF_TAG
                                  from ENEWS.WA.FEED
-                                where (EF_LAST_UPDATE is null or dateadd('minute', EF_UPDATE, EF_LAST_UPDATE) < dt)
+                                where (EF_LAST_UPDATE is null or dateadd('minute', u, EF_LAST_UPDATE) < dt)
                                   and EF_ERROR_LOG is null;
 
   if (rs)
@@ -2517,9 +2534,11 @@ create procedure ENEWS.WA.weblog_tree(
 
   retValue := string_output ();
   http ('<node>', retValue);
-  for (select EW_ID, EW_NAME from ENEWS.WA.WEBLOG where EW_DOMAIN_ID = domain_id order by EW_NAME) do {
+  for (select EW_ID, EW_NAME from ENEWS.WA.WEBLOG where EW_DOMAIN_ID = domain_id order by EW_NAME) do
+  {
     http (sprintf ('<node name="%V" id="w#%d">', EW_NAME, EW_ID), retValue);
-    for (select EB_ID, EB_NAME from ENEWS.WA.BLOG where EB_WEBLOG_ID = EW_ID order by EB_NAME) do {
+    for (select EB_ID, EB_NAME from ENEWS.WA.BLOG where EB_WEBLOG_ID = EW_ID order by EB_NAME) do
+    {
       http (sprintf ('<node name="%V" id="b#%d"/>', EB_NAME, EB_ID), retValue);
     }
     http ('</node>', retValue);
@@ -2623,7 +2642,8 @@ create procedure ENEWS.WA.blog_create(
   in name varchar,
   in uri varchar)
 {
-  if (exists(select 1 from ENEWS.WA.BLOG where EB_WEBLOG_ID = weblog_id and EB_BLOGID = blogId)) {
+  if (exists(select 1 from ENEWS.WA.BLOG where EB_WEBLOG_ID = weblog_id and EB_BLOGID = blogId))
+  {
     update ENEWS.WA.BLOG
        set EB_NAME = name,
            EB_URI = uri
@@ -2791,12 +2811,24 @@ create procedure ENEWS.WA.blogs_agregator ()
   declare id, days, rc, err integer;
   declare bm any;
   declare dt datetime;
+  declare p, f, u any;
+
+  p := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'dayly');
+  f := coalesce ((select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS), 1);
+  u := case p
+         when 'daily' then 1440
+         when 'weekly' then 10080
+         when 'monthly' then 43200
+         when 'yearly' then 525600
+         else 1440
+       end;
+  u := u / f;
 
   dt := now();
   declare cr static cursor for select EB_ID,
                                       EB_STORE_DAYS
                                  from ENEWS.WA.BLOG
-                                where (EB_LAST_UPDATE is null or dateadd('minute', EB_UPDATE, EB_LAST_UPDATE) < dt)
+                                where (EB_LAST_UPDATE is null or dateadd('minute', u, EB_LAST_UPDATE) < dt)
                                   and EB_ERROR_LOG is null;
 
   bm := null;

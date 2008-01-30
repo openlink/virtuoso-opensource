@@ -2057,6 +2057,98 @@ if (i > 0)
       </tr>
     </table>
   </v:form>
+  <v:form type="simple" name="form2" method="POST">
+    <table class="ctl_grp">
+      <tr>
+        <th>
+          <h3>Set feeds update interval</h3>
+        </th>
+        <th>
+          Update period
+        </th>
+        <td>
+          <v:select-list name="s_update_period">
+            <v:item name="dayly" value="dayly" />
+            <v:item name="weekly" value="weekly" />
+            <v:item name="monthly" value="monthly" />
+            <v:item name="yearly" value="yearly" />
+            <v:before-data-bind>
+              control.ufl_value := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'dayly');
+            </v:before-data-bind>
+          </v:select-list>
+        </td>
+        <td>
+          <v:button name="set2" action="simple" value="Set">
+            <v:on-post>
+              <v:script>
+                <![CDATA[
+                  declare u, p, f any;
+
+                  if (not (wa_user_is_dba (self.u_name, self.u_group)))
+                  {
+                    control.vc_parent.vc_error_message := 'Only admin user can change global settings';
+                    self.vc_is_valid := 0;
+                    return;
+                  }
+                  f := atoi (self.s_update_frequency.ufl_value);
+                  if ((f < 1) or (f > 8))
+                  {
+                    self.s_update_frequency.vc_error_message := 'Please, enter correct update frequency value in range [1, 8]!';
+                    self.vc_is_valid := 0;
+                    return;
+                  }
+
+                  p := lower (coalesce (self.s_update_period.ufl_value, 'daily'));
+                  u := case p
+                         when 'daily' then 1440
+                         when 'weekly' then 10080
+                         when 'monthly' then 43200
+                         when 'yearly' then 525600
+                         else 1440
+                       end;
+                  u := u / f;
+                  if (u < 180)
+                  {
+                    self.s_update_frequency.vc_error_message := 'Result update interval must be greater than 3 hours. Please, correct update period or/and update frequency values.';
+                    self.vc_is_valid := 0;
+                    return;
+                  }
+                  update WA_SETTINGS
+                     set WS_FEEDS_UPDATE_PERIOD = self.s_update_period.ufl_value;
+                  if (row_count() = 0)
+                  {
+                    insert into WA_SETTINGS (WS_FEEDS_UPDATE_PERIOD)
+                      values (self.s_update_period.ufl_value);
+                  }
+                  update WA_SETTINGS
+                     set WS_FEEDS_UPDATE_FREQ = f;
+                  if (row_count() = 0)
+                  {
+                    insert into WA_SETTINGS (WS_FEEDS_UPDATE_FREQ)
+                      values (f);
+                  }
+                ]]>
+              </v:script>
+            </v:on-post>
+          </v:button>
+        </td>
+      </tr>
+      <tr>
+        <th />
+        <th>
+          Update frequency
+        </th>
+        <td>
+          <v:text name="s_update_frequency" xhtml_class="textbox" xhtml_size="3">
+            <v:before-data-bind>
+              control.ufl_value := cast (coalesce ((select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS), 1) as varchar);
+            </v:before-data-bind>
+          </v:text>
+        </td>
+        <td />
+      </tr>
+    </table>
+  </v:form>
   <v:form type="simple" name="ssetdoma" method="POST">
     <table class="ctl_grp">
       <tr>

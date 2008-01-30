@@ -142,6 +142,10 @@
               <v:text name="f_home" null-value="--''" value="--self.v_home" xhtml_class="textbox" xhtml_size="70%"/>
             </td>
           </tr>
+          <?vsp
+          if (0)
+          {
+          ?>
           <tr>
             <th>
               <v:label for="f_update_period" value="Update period"/>
@@ -163,6 +167,9 @@
               <v:text name="f_update_frequency" null-value="--''" value="--self.v_update_frequency" xhtml_class="textbox" xhtml_size="5"/>
             </td>
           </tr>
+          <?vsp
+          }
+          ?>
           <v:template type="simple" enabled="--case when (ENEWS.WA.check_admin(self.account_id) = 1) then 1 else 0 end">
             <tr>
               <th>
@@ -185,7 +192,8 @@
                     declare tag_id integer;
 
                     self.v_tag := ENEWS.WA.tag_prepare(self.f_tag.ufl_value);
-  			        if (not ENEWS.WA.validate_tags(self.v_tag)) {
+                    if (not ENEWS.WA.validate_tags(self.v_tag))
+                    {
   			          self.vc_is_valid := 0;
   			          self.vc_error_message := 'The expression is not valid tag.';
   			          return;
@@ -201,7 +209,8 @@
                 declare tags any;
 
                 tags := ENEWS.WA.tags2vector(self.v_tags);
-                for (i := 0; i < length(tags); i := i + 1) {
+                for (i := 0; i < length(tags); i := i + 1)
+                {
                   http(sprintf(', %s ', tags[i]));
                   http(sprintf('<a href="#" onclick="javascript: myPost(\'F1\', \'dtag\', \'%d\'); return false"><img src="image/del_16.png" border="0" alt="Delete Tag" title="Delete Tag" /></a>', i));
                 }
@@ -240,33 +249,40 @@
                 home := trim(self.f_home.ufl_value);
 
               self.f_title.ufl_value := trim(self.f_title.ufl_value);
-              self.f_update_frequency.ufl_value := trim(self.f_update_frequency.ufl_value);
+              self.f_update_frequency.ufl_value := trim (cast (self.f_update_frequency.ufl_value as varchar));
               self.f_store_days.ufl_value := trim(self.f_store_days.ufl_value);
-              if (is_empty_or_null(self.f_title.ufl_value)) {
+              if (is_empty_or_null(self.f_title.ufl_value))
+              {
                 self.vc_error_message := 'Please, enter correct title name.';
              		self.vc_is_valid := 0;
           		  return;
               }
-              if ((not ENEWS.WA.validate('integer', self.f_update_frequency.ufl_value, 0)) or (atoi(self.f_update_frequency.ufl_value) < 1) or (atoi(self.f_update_frequency.ufl_value) > 8)) {
+              if ((not ENEWS.WA.validate('integer', self.f_update_frequency.ufl_value, 0)) or (atoi(self.f_update_frequency.ufl_value) < 1) or (atoi(self.f_update_frequency.ufl_value) > 8))
+              {
                 self.vc_error_message := 'Please, enter correct update frequency value in range [1, 8]!';
              		self.vc_is_valid := 0;
           		  return;
               }
-              if (self.calc_period(self.f_update_period.ufl_value, atoi(self.f_update_frequency.ufl_value)) < 180) {
+              if (self.calc_period(self.f_update_period.ufl_value, atoi(self.f_update_frequency.ufl_value)) < 180)
+              {
                 self.vc_error_message := 'Result update interval must be greater than 3 hours. Please, correct update period or/and update frequency values.';
              		self.vc_is_valid := 0;
           		  return;
               }
-              if (ENEWS.WA.check_admin(self.account_id)) {
-                if ((not ENEWS.WA.validate('integer', self.f_store_days.ufl_value, 0)) or (atoi(self.f_store_days.ufl_value) < 1)) {
+              if (ENEWS.WA.check_admin(self.account_id))
+              {
+                if ((not ENEWS.WA.validate('integer', self.f_store_days.ufl_value, 0)) or (atoi(self.f_store_days.ufl_value) < 1))
+                {
                   self.vc_error_message := 'Please, enter correct store days value!';
                		self.vc_is_valid := 0;
             		  return;
                 }
               }
               self.v_folder_name := trim(self.f_folder_name.ufl_value);
-              if (self.v_folder_name <> '') {
-                if (not ENEWS.WA.folder_check_name(self.v_folder_name, 1)) {
+              if (self.v_folder_name <> '')
+              {
+                if (not ENEWS.WA.folder_check_name(self.v_folder_name, 1))
+                {
                   self.vc_error_message := 'Please, enter other folder name. This name contains bad characters.';
                		self.vc_is_valid := 0;
             		  return;
@@ -279,7 +295,8 @@
                  set EF_UPDATE_PERIOD = self.f_update_period.ufl_value,
                      EF_UPDATE_FREQ = atoi(self.f_update_frequency.ufl_value)
                where EF_ID = self.v_feed_id;
-              if (ENEWS.WA.check_admin(self.account_id)) {
+              if (ENEWS.WA.check_admin(self.account_id))
+              {
                 update ENEWS.WA.FEED
                    set EF_TITLE = self.f_title.ufl_value,
                        EF_HOME_URI = home,
@@ -291,10 +308,13 @@
               ENEWS.WA.channel_domain (self.v_id, self.domain_id, self.v_feed_id, self.f_title.ufl_value, self.v_tags, self.v_folder_name, trim(self.f_folder_id.ufl_value));
 
               -- directory
-              if (ENEWS.WA.check_admin(self.account_id)) {
+              if (ENEWS.WA.check_admin(self.account_id))
+              {
                 self.v_directory_name := trim(self.f_directory_name.ufl_value);
-                if (self.v_directory_name <> '') {
-                  if (not ENEWS.WA.directory_check_name(self.v_directory_name, 1)) {
+                if (self.v_directory_name <> '')
+                {
+                  if (not ENEWS.WA.directory_check_name(self.v_directory_name, 1))
+                  {
                     self.vc_error_message := 'Please, enter other directory name. This name contains bad characters.';
                  		self.vc_is_valid := 0;
               		  return;

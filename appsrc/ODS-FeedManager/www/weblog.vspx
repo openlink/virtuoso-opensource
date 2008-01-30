@@ -82,10 +82,12 @@
     <vm:pagebody>
     	<v:on-post>
         <![CDATA[
-      	  if (e.ve_button is not null)  {
+          if (e.ve_button is not null)
+          {
       	    declare btn vspx_button;
       	    btn := null;
-      	    if (e.ve_button.vc_name = 'wt_toggle') {
+            if (e.ve_button.vc_name = 'wt_toggle')
+            {
       	      btn := e.ve_button;
       	    } else if (e.ve_button.vc_name = 'wt_leaf_url') {
       	      btn := e.ve_button;
@@ -139,7 +141,8 @@
                         declare S varchar;
 
                         S := (control as vspx_tree_node).tn_value;
-                        if ((control as vspx_tree_node).tn_is_leaf) {
+                        if ((control as vspx_tree_node).tn_is_leaf)
+                        {
                           http (sprintf('<img src="image/folder_empty_16.png"/>&nbsp;<span style="font-size: 1em; font-weight: bold;">%s</span>', S));
                         } else {
                           http (sprintf('<a href="#" onclick="javascript: clickNode2(this); return false;" alt="%s" title="%s" class="nolink3">%s</a>', S, S, S));
@@ -202,14 +205,17 @@
                   <v:button value="refresh" action="simple" xhtml_onclick="return confirm(\'Are you sure that you want to refresh all weblogs?\');" xhtml_class="button" xhtml_alt="Refresh all weblogs">
                     <v:on-post>
                       <![CDATA[
-                        for (select EW_ID from ENEWS.WA.WEBLOG where EW_DOMAIN_ID = self.domain_id) do {
+                        for (select EW_ID from ENEWS.WA.WEBLOG where EW_DOMAIN_ID = self.domain_id) do
+                        {
                           declare exit handler for sqlstate '*' {
                             rollback work;
                             goto _weblog;
                           };
                  	        ENEWS.WA.weblog_refresh(EW_ID);
-                          for (select EB_ID from ENEWS.WA.BLOG where EB_WEBLOG_ID = EW_ID) do {
-                            declare exit handler for sqlstate '*' {
+                          for (select EB_ID from ENEWS.WA.BLOG where EB_WEBLOG_ID = EW_ID) do
+                          {
+                            declare exit handler for sqlstate '*'
+                            {
                               rollback work;
                               goto _blog;
                             };
@@ -233,7 +239,8 @@
           <![CDATA[
       	    declare exit handler for not found goto _end;
 
-            if (isnull(get_keyword('f_name', self.vc_page.vc_event.ve_params))) {
+            if (isnull(get_keyword('f_name', self.vc_page.vc_event.ve_params)))
+            {
          			select EW_NAME,
                      EW_API,
                      EW_URI,
@@ -339,8 +346,10 @@
               <![CDATA[
                 declare tmp any;
 
-                declare exit handler for SQLSTATE '*' {
-                  if (__SQL_STATE = 'TEST') {
+                declare exit handler for SQLSTATE '*'
+                {
+                  if (__SQL_STATE = 'TEST')
+                  {
                     self.vc_error_message := ENEWS.WA.test_clear(__SQL_MESSAGE);
                     self.vc_is_valid := 0;
                     return;
@@ -398,7 +407,8 @@
           <![CDATA[
       	    declare exit handler for not found goto _end;
 
-            if (isnull(get_keyword('f_name', self.vc_page.vc_event.ve_params))) {
+            if (isnull(get_keyword('f_name', self.vc_page.vc_event.ve_params)))
+            {
          			select EB_NAME,
                      EB_LIMIT,
                      EB_UPDATE_PERIOD,
@@ -445,6 +455,10 @@
                 <v:text name="f_limit" null-value="--''" value="--self.v_limit" xhtml_size="10"/>
               </td>
             </tr>
+            <?vsp
+            if (0)
+            {
+            ?>
             <tr>
               <th>
                 <v:label for="f_update_period" value="Update period"/>
@@ -466,6 +480,9 @@
                 <v:text name="f_update_frequency" null-value="--''" value="--self.v_update_frequency" xhtml_class="textbox" xhtml_size="10"/>
               </td>
             </tr>
+            <?vsp
+            }
+            ?>
             <tr>
               <th>
                 <v:label for="f_store_days" value="Store days"/>
@@ -482,8 +499,10 @@
               <![CDATA[
                 declare tmp any;
 
-                declare exit handler for SQLSTATE '*' {
-                  if (__SQL_STATE = 'TEST') {
+                declare exit handler for SQLSTATE '*'
+                {
+                  if (__SQL_STATE = 'TEST')
+                  {
                     self.vc_error_message := ENEWS.WA.test_clear(__SQL_MESSAGE);
                  		self.vc_is_valid := 0;
               		  return;
@@ -493,7 +512,7 @@
 
                 self.v_limit := trim(self.f_limit.ufl_value);
                 self.v_update_period := trim(self.f_update_period.ufl_value);
-                self.v_update_frequency := trim(self.f_update_frequency.ufl_value);
+                self.v_update_frequency := trim (cast (self.f_update_frequency.ufl_value as varchar));
                 self.v_store_days := trim(self.f_store_days.ufl_value);
 
                 ENEWS.WA.test(self.v_limit, vector('name', 'Number of posts', 'class', 'integer', 'type', 'integer', 'minValue', 1, 'maxValue', 20));
@@ -525,7 +544,8 @@
         </div>
       </v:template>
       <?vsp
-        if (self.wt_bookmark is not null) {
+        if (self.wt_bookmark is not null)
+        {
           http ('\n<script type="text/javascript">\n');
           http (sprintf ('if (!OAT.Browser.isOpera) location.hash = "%s";\n', self.wt_bookmark));
           http ('</script>\n');

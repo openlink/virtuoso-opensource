@@ -501,13 +501,16 @@ wa_member_doinstcount()
 
 
 wa_exec_no_error_log(
-'create table WA_INVITATIONS (
+'create table WA_INVITATIONS
+ (
     WI_U_ID     int,		-- U_ID
     WI_TO_MAIL  varchar,	-- email
     WI_INSTANCE varchar,	-- WAI_NAME
     WI_SID      varchar,	-- VS_SID
     WI_STATUS   varchar,	-- pending, or rejected
-    primary key (WI_U_ID, WI_TO_MAIL, WI_INSTANCE))');
+   primary key (WI_U_ID, WI_TO_MAIL, WI_INSTANCE)
+  )
+');
 
 wa_exec_no_error_log(
 'create unique index WA_INVITATIONS_SID on WA_INVITATIONS (WI_SID)'
@@ -534,8 +537,8 @@ wa_exec_no_error(
   WS_COPYRIGHT varchar,
   WS_DISCLAIMER varchar,
   WS_DEFAULT_MAIL_DOMAIN varchar
-  )'
 )
+')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_SHOW_SYSTEM_ERRORS', 'integer')
@@ -581,6 +584,12 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_VERIFY_TIP', 'int')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_UNIQUE_MAIL', 'int default 0')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_PERIOD', 'varchar default \'hourly\'')
+;
+
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_FREQ', 'integer default 1')
 ;
 
 wa_exec_no_error(
