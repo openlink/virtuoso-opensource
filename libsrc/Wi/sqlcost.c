@@ -1103,6 +1103,28 @@ pred_const_rhs (df_elt_t * pred)
   return 0;
 }
 
+float
+arity_scale (float ar)
+{
+
+  /*For whom hath ears to hear, listen: Cards of tables like rdf quad
+    with full match are too small, like 1e-7 because 1/(product of
+    n_distinct of all cols) is good only if all combinations exist and
+    they never do.  So, when a card falls under 1, slow down its fall.
+    Else after a few tables float underflows and we get no distinction
+    between good and bad plans because they both get execd 0 times.  So when
+    card goes under 1, scale it between 1 and 0.1.  Increasing
+    mapping, less stays less but logarithmically slowed down.  Ad hoc
+    formula */ 
+
+  float l;
+  if (ar > 1) 
+    return ar;
+  l = log (10/ar) / log (10);
+  return  0.1 + (0.9 * (1 / l));
+}
+
+
 void
 dfe_table_cost_1 (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, int inx_only)
 {
@@ -1232,6 +1254,7 @@ dfe_table_cost_1 (df_elt_t * dfe, float * u1, float * a1, float * overhead_ret, 
       dfe->_.table.is_arity_sure = inx_const_fill;
     no_sample: ;
     }
+  inx_arity = arity_scale (inx_arity);
   dfe->_.table.is_unique = unique;
   if (key->key_is_bitmap)
     inx_cost *= 0.9; /* tree usually a bit less deep and anyway better working set. */
