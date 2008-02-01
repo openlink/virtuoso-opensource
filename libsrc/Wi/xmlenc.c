@@ -2365,6 +2365,51 @@ caddr_t bif_xenc_key_raw_rand_create (caddr_t * qst, caddr_t * err_r, state_slot
   return box_dv_short_string (k->xek_name);
 }
 
+static
+caddr_t bif_xenc_rand_bytes (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
+{
+  int len = (int) bif_long_arg (qst, args, 0, "xenc_rand_bytes");
+  int mode = (int) bif_long_arg (qst, args, 1, "xenc_rand_bytes");
+  int rc, i;
+  unsigned char buf[4096], tmp[3];
+  caddr_t ret;
+
+  if (len < 1 || len > sizeof (buf))
+    len = sizeof (buf);
+  rc = RAND_bytes(buf, len);
+
+  if (rc <= 0)
+    sqlr_new_error ("42000", "XENC14", "Cannot generate key data");
+
+  if (1 == mode) /* HEX */
+    {
+      ret = dk_alloc_box (len * 2 + 1, DV_SHORT_STRING);
+      ret[0] = 0;
+      for (i = 0; i < len; i++)
+	{
+	  snprintf (tmp, sizeof (tmp), "%02x", (unsigned char) buf[i]);
+	  strcat_box_ck (ret, tmp);
+	}	 
+      ret[2 * len] = 0; 
+    }
+  else if (2 == mode) /* base64 */
+    {
+      caddr_t b64;
+      int b64_len;
+      b64 = dk_alloc_box (len * 2, DV_BIN);
+      b64_len = xenc_encode_base64 (buf, b64, len);
+      ret = dk_alloc_box (b64_len + 1, DV_STRING);
+      memcpy (ret, b64, b64_len);
+      dk_free_box (b64);
+    }
+  else
+    { /* RAW */
+      ret = dk_alloc_box (len, DV_BIN);
+      memcpy (ret, buf, len);
+    }
+  return ret; 
+}
+
 static caddr_t
 bif_xenc_get_key_identifier (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
@@ -6034,6 +6079,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_key_DSA_read", bif_xenc_key_dsa_read);
   bif_define ("xenc_key_RAW_read", bif_xenc_key_raw_read);
   bif_define ("xenc_key_RAW_rand_create", bif_xenc_key_raw_rand_create);
+  bif_define ("xenc_rand_bytes", bif_xenc_rand_bytes);
   bif_define ("xenc_key_serialize", bif_xenc_key_serialize);
   bif_define ("xenc_X509_certificate_serialize", bif_xenc_x509_cert_serialize);
   bif_define ("xenc_set_primary_key", bif_xenc_set_primary_key);
