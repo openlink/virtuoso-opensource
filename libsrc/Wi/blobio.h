@@ -28,7 +28,7 @@
 #define _BLOBIO_H
 
 #include "widisk.h"
-
+#include "widv.h"
 #include "multibyte.h"
 
 struct blob_state_s
@@ -126,8 +126,7 @@ typedef struct blob_layout_s blob_layout_t;
 void bh_free (blob_handle_t * bh);
 
 caddr_t  box_iri_id (int64 n);
-
-
+void iri_id_write (iri_id_t *iid, dk_session_t * ses);
 
 void blobio_init (void);
 caddr_t datetime_serialize (caddr_t dt, dk_session_t * out);
