@@ -837,6 +837,32 @@ bif_host_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	return NEW_DB_NULL;
 }
 
+boxint
+zorder_index (ptrlong x, ptrlong y)
+{
+  int64 res;
+  x = ((x & 0x00000000FFFF0000) << 16) | (x & 0x000000000000FFFF);
+  x = ((x & 0x0000FF00FF00FF00) <<  8) | (x & 0x000000FF00FF00FF);
+  x = ((x & 0x00F0F0F0F0F0F0F0) <<  4) | (x & 0x000F0F0F0F0F0F0F);
+  x = ((x & 0x0CCCCCCCCCCCCCCC) <<  2) | (x & 0x0333333333333333);
+  x = ((x & 0xAAAAAAAAAAAAAAAA) <<  1) | (x & 0x5555555555555555);
+  y = ((y & 0x00000000FFFF0000) << 16) | (y & 0x000000000000FFFF);
+  y = ((y & 0x0000FF00FF00FF00) <<  8) | (y & 0x000000FF00FF00FF);
+  y = ((y & 0x00F0F0F0F0F0F0F0) <<  4) | (y & 0x000F0F0F0F0F0F0F);
+  y = ((y & 0x0CCCCCCCCCCCCCCC) <<  2) | (y & 0x0333333333333333);
+  y = ((y & 0xAAAAAAAAAAAAAAAA) <<  1) | (y & 0x5555555555555555);
+  return (y << 1) | x;
+}
+
+static caddr_t
+bif_zorder_index (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  ptrlong x = bif_long_range_arg (qst, args, 0, "zorder_index", -2020000000, 202000000);
+  ptrlong y = bif_long_range_arg (qst, args, 1, "zorder_index", -2020000000, 202000000);
+  boxint res = zorder_index (x, y);
+  return box_num (res);
+}
+
 /*! URI parser according RFC 1808 recommendations
 Fills in array of twelve begin and past-the end indexes of elements */
 void
@@ -1380,6 +1406,7 @@ sqlbif2_init (void)
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);
   bif_define_typed ("__sec_uid_to_user", bif_sec_uid_to_user, &bt_varchar);
   bif_define ("current_proc_name", bif_current_proc_name);
+  bif_define ("zorder_index", bif_zorder_index);
   bif_define ("rfc1808_parse_uri", bif_rfc1808_parse_uri);
   bif_define ("rfc1808_expand_uri", bif_rfc1808_expand_uri);
   sqls_bif_init ();
