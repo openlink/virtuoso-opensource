@@ -316,17 +316,19 @@ create procedure PHOTO.WA.save_meta_data_trigger(
     return;  
   }  
   PHOTO.WA.save_meta_data_general(_res_id,_content,result);
-};
+}
+;
 
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA.save_meta_data_web(
   in _res_id integer,
-  out result any
-){
+  out result any)
+{
   declare _content any;
   select blob_to_string (RES_CONTENT) into _content from WS.WS.SYS_DAV_RES where RES_ID= _res_id;
   PHOTO.WA.save_meta_data_general(_res_id,_content,result);
-};
+}
+;
 
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA.get_meta_data(
@@ -406,7 +408,5 @@ create procedure PHOTO.WA.fill_exif_data(){
       }  
     }
   }   
-
-};
-
-PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_attributes TO SOAPGallery');
+}
+;

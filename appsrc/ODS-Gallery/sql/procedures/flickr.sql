@@ -66,8 +66,8 @@ create procedure PHOTO.WA.flickr_execure(
 
 create procedure PHOTO.WA.flickr_upload(
   in params varchar,
-  in content any
-){
+  in content any)
+{
   declare page,body,boundary,i,headers,boundary_head any;
 
   PHOTO.WA.flickr_sign(params);
@@ -95,8 +95,7 @@ create procedure PHOTO.WA.make_post(
   in boundary varchar,
   in param_name varchar,
   in param_value varchar,
-  in param_extra  varchar := ''
-  )
+  in param_extra  varchar := '')
 {
 
   http(boundary,stream);
@@ -442,9 +441,5 @@ returns  integer array
     i := i + 1;
   }
   return res_ids;
-};
-
-PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_login_link TO SOAPGallery');
-PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_get_photos_list TO SOAPGallery');
-PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_save_photos TO SOAPGallery');
-PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_send_photos TO SOAPGallery');
+}
+;

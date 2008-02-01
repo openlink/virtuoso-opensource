@@ -64,17 +64,17 @@
         </link>
         <script type="text/javascript">
       		var toolkitPath = "/ods/oat";
-      		var featureList = ["dom","rotator","slider","xml","ajax","timeline","calendar","quickedit"];
+      		var featureList = ["dom","rotator","slider","xml","ajax","timeline","calendar","quickedit","ajax2","ws","anchor"];
       	</script>
-
       	<script type="text/javascript" src="/ods/oat/loader.js"></script>
-        <script type="text/javascript" language="JavaScript" src="/photos/res/js/ajax.js"></script>
-        <script type="text/javascript" language="JavaScript" src="/photos/res/js/dataset.js"></script>
-        <script type="text/javascript" language="JavaScript" src="/photos/res/js/ui.js"></script>
-        <script type="text/javascript" language="JavaScript" src="/photos/res/js/gallery.js"></script>
-        <script type="text/javascript" language="JavaScript" src="/photos/res/js/timeline.js"></script>
-        <script type="text/javascript" language="JavaScript" src="/photos/res/js/map.js"></script>
-        <script type="text/javascript" language="JavaScript" src="/photos/res/js/calendar.js"></script>
+      	<script type="text/javascript" src="/ods/app.js"></script>
+        <script type="text/javascript" src="/photos/res/js/ajax.js"></script>
+        <script type="text/javascript" src="/photos/res/js/dataset.js"></script>
+        <script type="text/javascript" src="/photos/res/js/ui.js"></script>
+        <script type="text/javascript" src="/photos/res/js/gallery.js"></script>
+        <script type="text/javascript" src="/photos/res/js/timeline.js"></script>
+        <script type="text/javascript" src="/photos/res/js/map.js"></script>
+        <script type="text/javascript" src="/photos/res/js/calendar.js"></script>
         <script type="text/javascript" language="JavaScript" src="/photos/res/proxy.vsp"></script>
         <link rel="stylesheet" href="/photos/res/css/gallery.css" type="text/css"/>
         <link rel="stylesheet" href="/photos/res/css/winclassic.css" type="text/css"/>
@@ -127,13 +127,12 @@
        <img src="/photos/res/i/grad_2.gif" width="0" height="45" /><br/>
        <span id="instance_info" ><xsl:value-of select="instance_description"/> (<xsl:value-of select="instance_owner_fullname"/>)</span>       
       <div id="nav">
-        
         <ul>
           <xsl:choose>
             <xsl:when test="@sid != ''">
               <li id="hello">
               </li>
-              <li id="my_albums_tab">
+              <li id="my_albums_tab" class="on">
                 My albums
               </li>
               <li id="new_album_tab">
@@ -180,7 +179,7 @@
         </tr>
         <tr>
         <td colspan="2">
-              <div id="map" style="display:none;with:800px;height:450px;" class="view"/>
+          <div id="map" style="display:none;width:800px;height:450px;" class="view"/>
         </td>
         </tr>
         <tr>
@@ -415,6 +414,8 @@
     var home_url = '<xsl:value-of select="home_url"/>';
     var gallery_id = '<xsl:value-of select="gallery_id"/>';
     var gallery_inst_name = "<xsl:value-of select='instance' />";
+    var aplus = <xsl:value-of select='aplus' />;
+    var aplus_id = 0;
     </script>
   </xsl:template>
 

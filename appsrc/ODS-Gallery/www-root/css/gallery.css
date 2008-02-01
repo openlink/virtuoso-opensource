@@ -642,7 +642,7 @@ padding:0;
 
 .rotator { /* long div with images */
 	position: absolute;
-	leftZ: -100px; /* set for 2nd image */
+	left: -100px; /* set for 2nd image */
 	width: 5000px;
 	text-align:left;
 }
@@ -654,7 +654,7 @@ padding:0;
 	height: 20px;
 	background:#e1e1e1;
 	border:1px solid #ccc;
-	backgroundZ-image: url("../i/sliderbg.gif");
+	background-image: url("../i/sliderbg.gif");
 }
 
 #slider_btn {
@@ -665,7 +665,7 @@ padding:0;
 	background:#bbb;
 	border-left:1px solid #999;
 	border-right:1px solid #999;
-	backgroundZ-image: url("../i/slider.gif");
+	background-image: url("../i/slider.gif");
 	cursor: w-resize;
 }
 

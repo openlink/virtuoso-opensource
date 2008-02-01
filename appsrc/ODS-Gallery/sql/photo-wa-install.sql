@@ -49,13 +49,10 @@ PHOTO.WA._exec_no_error(
 -------------------------------------------------------------------------------
 create procedure PHOTO.WA.photo_install()
 {
-  declare
-    iIsDav integer;
-  declare
-    sHost varchar;
+  declare iIsDav integer;
+  declare sHost varchar;
 
   sHost := registry_get('_oGallery_path_');
-
   if (cast(sHost as varchar) = '0')
     sHost := '/apps/oGallery/';
 
@@ -95,34 +92,44 @@ create procedure PHOTO.WA.photo_install()
                 soap_user=>'SOAPGallery',
                 soap_opts => vector('Use','literal','XML-RPC','no' ));
 
+  -- comments.sql
+  PHOTO.WA._exec_no_error('grant execute on photo_comment TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.add_comment TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.remove_comment TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_comment TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_comments TO SOAPGallery');
 
+  -- dav_api.sql
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.dav_browse TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.create_new_album TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_album TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on SOAP_album TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on image_ids TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on photo_exif TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on photo_comment TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on SOAP_external_album TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on SOAP_gallery TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_album_settings TO SOAPGallery');
-  
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_attributes TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.add_comment TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_comments TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.thumbnail_album TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_image TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.dav_delete TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_image TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_image TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.tag_images TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.tag_image TO SOAPGallery');
-
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.remove_tag_image TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_album_settings TO SOAPGallery');
+
+  -- flickr.sql
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_login_link TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_get_photos_list TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_save_photos TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.flickr_send_photos TO SOAPGallery');
   
-};
+  -- images.sql
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_attributes TO SOAPGallery');
+
+  -- types.sql
+  PHOTO.WA._exec_no_error('grant execute on image_ids TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on photo_exif TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on photo_comment TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on SOAP_album TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on SOAP_external_album TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on SOAP_gallery TO SOAPGallery');
+}
+;
 
 -------------------------------------------------------------------------------
 PHOTO.WA._exec_no_error(
@@ -161,6 +168,18 @@ create constructor method wa_photo (inout stream any) for wa_photo
 };
 
 -------------------------------------------------------------------------------
+create procedure PHOTO.WA.photo_sioc_services(in inst_name varchar)
+{
+  --  SIOC service
+  declare  graph_iri, iri, photo_iri varchar;
+  graph_iri := SIOC..get_graph ();
+  iri := sprintf ('http://%s/photos/SOAP', SIOC..get_cname());
+  photo_iri := SIOC..photo_iri (inst_name);
+  SIOC..ods_sioc_service (graph_iri, iri, photo_iri, null, 'text/xml', iri||'/services.wsdl', iri, 'SOAP');
+}
+;
+
+-------------------------------------------------------------------------------
 create method wa_new_inst (in login varchar) for wa_photo
 {
   declare
@@ -179,12 +198,20 @@ create method wa_new_inst (in login varchar) for wa_photo
 
   PHOTO.WA.photo_init_user_data(iWaiID,self.wa_name,login);
 
-  return (self as web_app).wa_new_inst(login);
+  declare retValue any;
+  retValue := (self as web_app).wa_new_inst(login);
+
+  if (coalesce((select WAI_IS_PUBLIC from WA_INSTANCE where WAI_NAME = self.wa_name),0) = 1)
+    PHOTO.WA.photo_sioc_services (self.wa_name);
+
+  return retValue;
 };
 
 -------------------------------------------------------------------------------
 create method wa_update_instance (in oldValues any, in newValues any) for wa_photo
 {
+  if (newValues[1] = 1)
+    PHOTO.WA.photo_sioc_services (newValues[0]);
   return (self as web_app).wa_update_instance (oldValues, newValues);
 };
 
@@ -401,22 +428,6 @@ create method wa_dashboard_last_item () for wa_photo
 
   return string_output_string (ses);
 };
-
-create procedure ods_gallery_sioc_init ()
-{
-  if (registry_get ('__ods_sioc_init') <> 'done2')
-    return;
-
-  if (registry_get ('__ods_bookmark_sioc_init') = 'done2')
-    return;
-
-  fill_ods_photo_sioc(get_graph (), get_graph ());
-
-  registry_set ('__ods_gallery_sioc_init', 'done2');
-  return;
-};
-
-PHOTO.WA._exec_no_error('ods_gallery_sioc_init()');
 
 PHOTO.WA._exec_no_error('PHOTO.WA.fill_exif_data()');
 

@@ -627,8 +627,11 @@ gallery.showImagesInside = function (){
   $('path_album_name').innerHTML = ds_albums.current.name;
   $('path_image_name').innerHTML = "";
   $('caption').innerHTML = 'Choose an image to view';
+  
+  gallery.prepare_aplus('info_discription');
   gallery.info.show();
 
+  
     for(var r=0;r<ds_current_album.list.length;r++){
     new_coll = preview_image(r);
       this.images.appendChild(new_coll);
@@ -685,6 +688,8 @@ gallery.showImage = function(i){
   $('path_album_name').innerHTML = ds_albums.current.name + ' > ';
   $('path_image_name').innerHTML = current_image.name;
   $('caption').innerHTML = current_image.description;
+  
+  gallery.prepare_aplus('info_discription');
   gallery.managePanels('showImage');
   gallery.hideSlideShow();
 
@@ -735,7 +740,9 @@ gallery.addComment = function(comment){
   var user = document.createElement('h3');
 
 	comment_block.setAttribute("id",'comment_'+comment.comment_id);
-  comment_block.appendChild(document.createTextNode(comment.text));
+  //comment_block.appendChild(document.createTextNode(comment.text));
+
+  comment_block.innerHTML = comment.text;
 
   var del_img = OAT.Dom.create("img");
   del_img.style.cursor="pointer";
@@ -939,7 +946,7 @@ gallery.showAlbumsInfo = function(i){
     
     $('filter').appendChild(filter_type_ctrl);  
   }
-  
+  gallery.prepare_aplus('info_discription');
   gallery.info.show();
 }
 
@@ -1558,6 +1565,41 @@ gallery.link_images_export_click = function(){
 }
 
 //------------------------------------------------------------------------------
+gallery.prepare_aplus = function(panel){
+	
+	if (aplus == 0)
+	  return;
+	OAT.Preferences.imagePath = '/ods/images/oat/';
+  OAT.Anchor.imagePath = OAT.Preferences.imagePath;
+  OAT.Anchor.zIndex = 1001;
+  var e = $(panel);                                          
+  if (e)                                                          
+  {                                                               
+    var appLinks = e.getElementsByTagName("a");                   
+    for (var i = 0; i < appLinks.length; i++)                     
+    {                                                             
+      var app = appLinks[i];                                      
+      var search;                                                 
+      if (!app.id)                                                
+      {                                                           
+        if ((app.childNodes.length == 1) && (app.childNodes[0].tagName == "IMG")) 
+        {                                                         
+    	     search = app.childNodes[0].getAttribute("alt");         
+        }                                                         
+        else                                                      
+        {                                                         
+   	      search = app.innerHTML;                                 
+        }                                                         
+        if (search && (search.length > 1))                        
+          app.id = 'aplus_' +getAplusId();                                   
+	    }                                                           
+	  }                                                             
+  generateAPP(panel, {title:"Related links", appActivation: aplus==1?'click':'hover'});
+//generateAPP("content", {title:"Related links", appActivation: "%s", useRDFB: %s});     
+	}                                                                 
+}
+
+//------------------------------------------------------------------------------
 gallery.managePanels = function(action){
 
   OAT.Dom.hide('images_import');
@@ -1760,6 +1802,9 @@ gallery.ajax.load_albums = function(path){
       $('my_albums_list').appendChild(album_list);
     };
     
+    //gallery.prepare_aplus('my_albums_list');
+    //gallery.prepare_aplus('albums');
+    //gallery.prepare_aplus('wrapper');
     
     gallery.managePanels('my_albums');
     $('myAlbumsTxt').innerHTML='My Albums ('+ds_albums.list.length+')';
@@ -2030,9 +2075,11 @@ gallery.ajax.image_get_comments = function(id){
     if(comments == null){
       return;
 }
-    for(var i = 0;i<comments.length;i++){
+    for(var i = 0;i<comments.length;i++) 
+    {
       gallery.addComment(comments[i]);
     }
+    gallery.prepare_aplus('comments_list');  
   }
   gallery.ajax(prepare,call,finish);
 };

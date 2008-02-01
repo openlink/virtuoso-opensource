@@ -517,12 +517,3 @@ for photo_instance
   self.description  := _description;
 }
 ;
-
-
---------------------------------------------------------------------------------
-  PHOTO.WA._exec_no_error('grant execute on image_ids TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on photo_exif TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on photo_comment TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on SOAP_album TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on SOAP_external_album TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on SOAP_gallery TO SOAPGallery');

@@ -622,3 +622,19 @@ grant execute on sioc.DBA.gallery_post_url to SPARQL_SELECT;
 
 -- END PHOTO
 ODS_RDF_VIEW_INIT ();
+
+create procedure ods_gallery_sioc_init ()
+{
+  if (registry_get ('__ods_sioc_init') <> 'done2')
+    return;
+
+  if (registry_get ('__ods_gallery_sioc_init') = 'done2')
+    return;
+
+  fill_ods_photos_sioc(get_graph (), get_graph ());
+
+  registry_set ('__ods_gallery_sioc_init', 'done2');
+  return;
+};
+
+--PHOTO.WA._exec_no_error('ods_gallery_sioc_init()');

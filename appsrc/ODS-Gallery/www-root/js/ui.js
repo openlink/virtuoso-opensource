@@ -329,13 +329,16 @@ function makeLi(title,id,url,cclass){
 
 //------------------------------------------------------------------------------
 function makeHref(url,title){
-  a = document.createElement('a')
-  a.setAttribute('href',url)
-  a.appendChild(title)
+  a = document.createElement('a');
+  a.setAttribute('href',url);
+  //a.id = 'aplus_'+getAplusId();
+  a.appendChild(title);
   return a;
 }
 
-
+function getAplusId(){
+	return aplus_id++;
+}
 //------------------------------------------------------------------------------
 function sdate2obj(sdate){
   var gdate = new Object();
