@@ -48,7 +48,7 @@ int
 sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
   sparp_trav_state_t *sts_this, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
-  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
   sparp_gp_trav_cbk_t *literal_cbk
  )
 {
@@ -152,6 +152,13 @@ scan_for_children:
         fields[0] = tree->_.oby.expn;
         break;
       }
+    case SELECT_L:
+      {
+        if (expn_subq_cbk)
+          {
+          }
+        return 0;
+      }
     default:
       {
         spar_error (sparp, "Internal SPARQL compiler error: unsupported subexpression type %d", tree->type);
@@ -207,18 +214,26 @@ process_children:
       sts_this->sts_parent = tree;
       sts_this->sts_curr_array = sub_gps;
       sts_this->sts_ofs_of_curr_in_array = ctr;
-      retcode = sparp_gp_trav_int (sparp, sub_gps[ctr], sts_this, common_env, gp_in_cbk, gp_out_cbk, expn_in_cbk, expn_out_cbk, literal_cbk);
+      retcode = sparp_gp_trav_int (sparp, sub_gps[ctr], sts_this, common_env,
+        gp_in_cbk, gp_out_cbk,
+        expn_in_cbk, expn_out_cbk, expn_subq_cbk,
+        literal_cbk );
       if (retcode & SPAR_GPT_COMPLETED)
         return SPAR_GPT_COMPLETED;
     }
-  if (sub_expn_count && ((NULL != expn_in_cbk) || (NULL != expn_out_cbk) || (NULL != literal_cbk)))
+  if (sub_expn_count && (
+      (NULL != expn_in_cbk) || (NULL != expn_out_cbk) || (NULL != expn_subq_cbk) ||
+      (NULL != literal_cbk) ) )
     {
       for (ctr = 0; ctr < sub_expn_count; ctr++)
         {
           sts_this->sts_parent = tree;
           sts_this->sts_curr_array = sub_expns;
           sts_this->sts_ofs_of_curr_in_array = ctr;
-          retcode = sparp_gp_trav_int (sparp, sub_expns[ctr], sts_this, common_env, gp_in_cbk, gp_out_cbk, expn_in_cbk, expn_out_cbk, literal_cbk);
+          retcode = sparp_gp_trav_int (sparp, sub_expns[ctr], sts_this, common_env,
+            gp_in_cbk, gp_out_cbk,
+            expn_in_cbk, expn_out_cbk, expn_subq_cbk,
+            literal_cbk );
           if (retcode & SPAR_GPT_COMPLETED)
             return SPAR_GPT_COMPLETED;
         }
@@ -250,32 +265,59 @@ end_process_children:
 int
 sparp_gp_trav (sparp_t *sparp, SPART *root, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
-  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
   sparp_gp_trav_cbk_t *literal_cbk
  )
 {
   int res;
-#ifdef DEBUG
   if (sparp->sparp_trav_running)
     spar_internal_error (sparp, "sparp_" "gp_trav() re-entered");
   sparp->sparp_trav_running = 1;
-#endif
   memset (sparp->sparp_stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
   sparp->sparp_stss[0].sts_parent = NULL;
   sparp->sparp_stss[0].sts_curr_array = NULL;
   sparp->sparp_stss[0].sts_ofs_of_curr_in_array = -1;
-  res = sparp_gp_trav_int (sparp, root, sparp->sparp_stss + 1, common_env, gp_in_cbk, gp_out_cbk, expn_in_cbk, expn_out_cbk, literal_cbk);
-#ifdef DEBUG
+  res = sparp_gp_trav_int (sparp, root, sparp->sparp_stss + 1, common_env,
+    gp_in_cbk, gp_out_cbk,
+    expn_in_cbk, expn_out_cbk, expn_subq_cbk,
+    literal_cbk );
   sparp->sparp_trav_running = 0;
-#endif
   return (res & SPAR_GPT_COMPLETED);
+}
+
+void sparp_gp_trav_suspend (sparp_t *sparp)
+{
+  sparp_env_t *env = sparp->sparp_env;
+  if (env->spare_gp_trav_is_saved)
+    spar_internal_error (sparp, "sparp_" "gp_trav_suspend() is called twice for same spare");
+  if (!sparp->sparp_trav_running)
+    spar_internal_error (sparp, "sparp_" "gp_trav_suspend() outside sparp_ " "gp_trav()");
+  memcpy (env->spare_saved_stss, sparp->sparp_stss, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+  env->spare_gp_trav_is_saved = 1;
+#ifdef DEBUG
+  memset (sparp->sparp_stss, 0xbb, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+#endif
+  sparp->sparp_trav_running = 0;
+}
+
+void sparp_gp_trav_resume (sparp_t *sparp)
+{
+  sparp_env_t *env = sparp->sparp_env;
+  if (!env->spare_gp_trav_is_saved)
+    spar_internal_error (sparp, "sparp_" "gp_trav_resume() is called without sparp_" "gp_trav_suspend()");
+  memcpy (sparp->sparp_stss, env->spare_saved_stss, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+  sparp->sparp_trav_running = 1;
+#ifdef DEBUG
+  memset (env->spare_saved_stss, 0xbb, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
+#endif
+  env->spare_gp_trav_is_saved = 0;
 }
 
 void
 sparp_gp_localtrav_treelist (sparp_t *sparp, SPART **treelist,
   void *init_stack_env, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
-  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
   sparp_gp_trav_cbk_t *literal_cbk
  )
 {
@@ -288,7 +330,9 @@ sparp_gp_localtrav_treelist (sparp_t *sparp, SPART **treelist,
     {
       stss[1].sts_ofs_of_curr_in_array = ctr;
       sparp_gp_trav_int (sparp, tree, stss+1, common_env,
-        gp_in_cbk, gp_out_cbk, expn_in_cbk, expn_out_cbk, literal_cbk );
+        gp_in_cbk, gp_out_cbk,
+        expn_in_cbk, expn_out_cbk, expn_subq_cbk,
+        literal_cbk );
     }
   END_DO_BOX_FAST;
 }
@@ -388,12 +432,12 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
       sparp_gp_localtrav_treelist (sparp, retvals,
         NULL, &names,
             NULL, NULL,
-        sparp_gp_trav_list_nonaggregate_retvals, NULL,
+        sparp_gp_trav_list_nonaggregate_retvals, NULL, NULL,
         NULL );
       sparp_gp_localtrav_treelist (sparp, query->_.req_top.order,
         NULL, &names,
         NULL, NULL,
-        sparp_gp_trav_list_nonaggregate_retvals, NULL,
+        sparp_gp_trav_list_nonaggregate_retvals, NULL, NULL,
             NULL );
       t_set_push (&(env->spare_selids), retselid);
       while (NULL != names)
@@ -411,7 +455,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
     memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
     sparp_gp_trav_int (sparp, query->_.req_top.pattern, stss+1, &names,
       sparp_gp_trav_list_subquery_retvals, NULL,
-      sparp_gp_trav_list_expn_retvals, NULL,
+      sparp_gp_trav_list_expn_retvals, NULL, NULL,
     NULL );
   }
   t_set_push (&(env->spare_selids), retselid);
@@ -491,7 +535,7 @@ sparp_wpar_retvars_in_max (sparp_t *sparp, SPART *query)
   sparp_gp_localtrav_treelist (sparp, retvals,
     NULL, NULL,
     NULL, NULL,
-    sparp_gp_trav_wrap_vars_in_max, NULL,
+    sparp_gp_trav_wrap_vars_in_max, NULL, NULL,
     NULL );
 }
 
@@ -512,10 +556,13 @@ sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *st
       if ((SELECT_L == curr->_.gp.subtype) && (0 == curr->_.gp.equiv_count))
         {
           int ctr;
-          sparp_t *sub_sparp = t_box_copy ((caddr_t)sparp);
+          sparp_t *sub_sparp;
+          sparp_gp_trav_suspend (sparp);
+          sub_sparp = t_box_copy ((caddr_t)sparp);
           sub_sparp->sparp_expr = curr->_.gp.subquery;
           sub_sparp->sparp_env = curr->_.gp.subquery->_.req_top.shared_spare;
           sparp_rewrite_all (sub_sparp, 1);
+          sparp_gp_trav_resume (sparp);
           sparp->sparp_equivs = sub_sparp->sparp_equivs;
           sparp->sparp_equiv_count = sub_sparp->sparp_equiv_count;
           sparp->sparp_cloning_serial = sub_sparp->sparp_cloning_serial;
@@ -624,13 +671,13 @@ sparp_count_usages (sparp_t *sparp)
   int ctr;
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_cu_in_triples, NULL,
-    sparp_gp_trav_cu_in_expns, NULL,
+    sparp_gp_trav_cu_in_expns, NULL, NULL,
     NULL );
   DO_BOX_FAST (SPART *, expn, ctr, sparp->sparp_expr->_.req_top.orig_retvals)
     {
       sparp_gp_trav (sparp, expn, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
-        sparp_gp_trav_cu_in_retvals, NULL,
+        sparp_gp_trav_cu_in_retvals, NULL, NULL,
         NULL );
     }
   END_DO_BOX_FAST;
@@ -638,7 +685,7 @@ sparp_count_usages (sparp_t *sparp)
     {
       sparp_gp_trav (sparp, expn, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
-        sparp_gp_trav_cu_in_retvals, NULL,
+        sparp_gp_trav_cu_in_retvals, NULL, NULL,
         NULL );
     }
   END_DO_BOX_FAST;
@@ -646,7 +693,7 @@ sparp_count_usages (sparp_t *sparp)
     {
       sparp_gp_trav (sparp, grouping, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
-        sparp_gp_trav_cu_in_retvals, NULL,
+        sparp_gp_trav_cu_in_retvals, NULL, NULL,
         NULL );
     }
   END_DO_BOX_FAST;
@@ -654,7 +701,7 @@ sparp_count_usages (sparp_t *sparp)
     {
       sparp_gp_trav (sparp, oby->_.oby.expn, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
-        sparp_gp_trav_cu_in_retvals, NULL,
+        sparp_gp_trav_cu_in_retvals, NULL, NULL,
         NULL );
     }
   END_DO_BOX_FAST;
@@ -1051,7 +1098,7 @@ sparp_restrict_by_simple_filters (sparp_t *sparp)
 {
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_restrict_by_simple_filters, NULL,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
 }
 
@@ -1136,7 +1183,7 @@ sparp_make_common_eqs (sparp_t *sparp)
 {
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_make_common_eqs_in, sparp_gp_trav_make_common_eqs_out,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
   while (NULL != sparp->sparp_stss[0].sts_env)
     dk_set_pop ((dk_set_t *)(&(sparp->sparp_stss[0].sts_env)));
@@ -1193,7 +1240,11 @@ sparp_gp_trav_make_retval_aliases (sparp_t *sparp, SPART *curr, sparp_trav_state
         continue;
       curr_eq = sparp_equiv_get (sparp, curr, (SPART *)curr_varname, SPARP_EQUIV_GET_NAMESAKES);
       if (NULL != curr_eq)
+        {
+          if (SPAR_ALIAS == SPART_TYPE(curr_retvar))
+            curr_retvar = curr_retvar->_.alias.arg;
         sparp_gp_add_chain_aliases (sparp, curr_retvar, curr_eq, sts_this, NULL);
+    }
     }
   return SPAR_GPT_ENV_PUSH;
 }
@@ -1293,15 +1344,15 @@ sparp_make_aliases (sparp_t *sparp)
   /*int retvar_ctr;*/
   sparp_gp_trav (sparp, top_pattern, retvars,
     sparp_gp_trav_make_retval_aliases, NULL,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
   sparp_gp_trav (sparp, top_pattern, NULL,
     sparp_gp_trav_make_common_aliases, NULL,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
   sparp_gp_trav (sparp, top_pattern, NULL,
     sparp_gp_trav_remove_unused_aliases, NULL,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
 }
 
@@ -1313,7 +1364,7 @@ sparp_remove_redundant_connections (sparp_t *sparp)
   int eq_ctr;
   sparp_gp_trav (sparp, top_pattern, NULL,
     sparp_gp_trav_remove_unused_aliases, NULL,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
   for (eq_ctr = sparp->sparp_equiv_count; eq_ctr--; /*no step*/)
     {
@@ -1341,7 +1392,7 @@ sparp_remove_redundant_connections (sparp_t *sparp)
     }
   sparp_gp_trav (sparp, top_pattern, NULL,
     sparp_gp_trav_remove_unused_aliases, NULL,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
 }
 
@@ -1362,7 +1413,8 @@ sparp_restr_of_select_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t
       if (SPAR_IS_BLANK_OR_VAR(sub_expn))
         {
           sparp_equiv_t *eq_sub = sparp_equiv_get (sparp, gp->_.gp.subquery->_.req_top.pattern, sub_expn, 0);
-          sparp_equiv_merge (sparp, eq, eq_sub);
+          sparp_rvr_tighten (sparp, &(eq->e_rvr), &(eq_sub->e_rvr), ~0);
+          /* !!!TBD: sparp_rvr_tighten (sparp, eq, eq_sub, 1); */
         }
       else
         {
@@ -1510,11 +1562,11 @@ sparp_eq_restr_from_connected (sparp_t *sparp)
   /*sparp_env_t *env = sparp->sparp_env;*/
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     NULL, sparp_gp_trav_eq_restr_from_connected_subvalues,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_eq_restr_from_connected_receivers, NULL,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
 }
 
@@ -1554,7 +1606,7 @@ sparp_eq_restr_to_vars (sparp_t *sparp)
   /*sparp_env_t *env = sparp->sparp_env;*/
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_eq_restr_to_vars, NULL,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
 }
 
@@ -1683,7 +1735,7 @@ sparp_equiv_audit_retvals (sparp_t *sparp)
       stss[0].sts_ofs_of_curr_in_array = -1;
       sparp_gp_trav_int (sparp, expn, stss+1, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
-        sparp_gp_trav_equiv_audit_retvals, NULL,
+        sparp_gp_trav_equiv_audit_retvals, NULL, NULL,
         NULL );
     }
   END_DO_BOX_FAST;
@@ -1693,7 +1745,7 @@ sparp_equiv_audit_retvals (sparp_t *sparp)
       stss[0].sts_ofs_of_curr_in_array = -1;
       sparp_gp_trav_int (sparp, grouping, stss+1, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
-        sparp_gp_trav_equiv_audit_retvals, NULL,
+        sparp_gp_trav_equiv_audit_retvals, NULL, NULL,
         NULL );
     }
   END_DO_BOX_FAST;
@@ -1703,7 +1755,7 @@ sparp_equiv_audit_retvals (sparp_t *sparp)
       stss[0].sts_ofs_of_curr_in_array = -1;
       sparp_gp_trav_int (sparp, oby->_.oby.expn, stss+1, sparp->sparp_expr->_.req_top.pattern,
         NULL, NULL,
-        sparp_gp_trav_equiv_audit_retvals, NULL,
+        sparp_gp_trav_equiv_audit_retvals, NULL, NULL,
         NULL );
     }
   END_DO_BOX_FAST;
@@ -1738,7 +1790,7 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
   stss[0].sts_ofs_of_curr_in_array = -1;
   sparp_gp_trav_int (sparp, sparp->sparp_expr->_.req_top.pattern, stss+1, (void *)((ptrlong)flags),
     sparp_gp_trav_equiv_audit_inner_vars, NULL,
-    sparp_gp_trav_equiv_audit_inner_vars, NULL,
+    sparp_gp_trav_equiv_audit_inner_vars, NULL, NULL,
     NULL );
   sparp_equiv_audit_retvals (sparp);
   for (eq_ctr = sparp->sparp_equiv_count; eq_ctr--; /*no step*/)
@@ -3138,7 +3190,7 @@ sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree)
   ptrlong has_locals = 0;
   sparp_gp_trav (sparp, tree, &has_locals,
     NULL, NULL,
-    sparp_gp_trav_check_if_local, NULL,
+    sparp_gp_trav_check_if_local, NULL, NULL,
     NULL );
   return !has_locals;
 }
@@ -4011,7 +4063,9 @@ int sparp_valmode_is_correct (ssg_valmode_t fmt)
   jso_rtti_t *rtti;
   if (!IS_BOX_POINTER (fmt))
     return 1;
-  if ((qm_format_default_iri_ref == fmt) || (qm_format_default_ref == fmt) || (qm_format_default == fmt))
+  if ((qm_format_default_iri_ref == fmt) || (qm_format_default_iri_ref_nullable == fmt) ||
+    (qm_format_default_ref == fmt) || (qm_format_default_ref_nullable == fmt) ||
+    (qm_format_default == fmt) || (qm_format_default_nullable == fmt) )
     return 2;
   rtti = gethash (fmt, jso_rttis_of_structs);
   if ((NULL != rtti) && (fmt == rtti->jrtti_self))
@@ -4605,7 +4659,8 @@ sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_
   stss[0].sts_ofs_of_curr_in_array = -1;
   sparp_gp_trav_int (sparp, filt, stss + 1, touched_equivs_set_ptr,
     NULL, NULL,
-    sparp_gp_detach_filter_cbk, NULL, NULL );
+    sparp_gp_detach_filter_cbk, NULL, NULL,
+    NULL );
   if (NULL != touched_equivs_ptr)
     touched_equivs_ptr[0] = (sparp_equiv_t **)(t_revlist_to_array (touched_equivs_set));
   parent_gp->_.gp.filters = (SPART **)t_list_remove_nth ((caddr_t)old_filters, filter_idx);
@@ -4627,7 +4682,8 @@ sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, sparp_equiv_t ***
       stss[0].sts_ofs_of_curr_in_array = -1;
       sparp_gp_trav_int (sparp, filt, stss + 1, touched_equivs_set_ptr,
         NULL, NULL,
-        sparp_gp_detach_filter_cbk, NULL, NULL );
+        sparp_gp_detach_filter_cbk, NULL, NULL,
+        NULL );
     }
   END_DO_BOX_FAST_REV;
   if (NULL != touched_equivs_ptr)
@@ -4681,7 +4737,8 @@ sparp_gp_attach_filter (sparp_t *sparp, SPART *parent_gp, SPART *new_filt, int i
   stss[0].sts_env = parent_gp;
   sparp_gp_trav_int (sparp, new_filt, stss + 1, touched_equivs_set_ptr,
     NULL, NULL,
-    sparp_gp_attach_filter_cbk, NULL, NULL );
+    sparp_gp_attach_filter_cbk, NULL, NULL,
+    NULL );
   if (NULL != touched_equivs_ptr)
     touched_equivs_ptr[0] = (sparp_equiv_t **)(t_revlist_to_array (touched_equivs_set));
   sparp_equiv_audit_all (sparp, 0);
@@ -4714,7 +4771,8 @@ sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filt
   for (filt_ctr = ins_count; filt_ctr--; /*no step*/)
     sparp_gp_trav_int (sparp, new_filters [filt_ctr], stss + 1, touched_equivs_set_ptr,
       NULL, NULL,
-      sparp_gp_attach_filter_cbk, NULL, NULL );
+      sparp_gp_attach_filter_cbk, NULL, NULL,
+      NULL );
   if (NULL != touched_equivs_ptr)
     touched_equivs_ptr[0] = (sparp_equiv_t **)(t_revlist_to_array (touched_equivs_set));
   sparp_equiv_audit_all (sparp, 0);
@@ -4849,6 +4907,8 @@ sparp_set_triple_selid_and_tabid (sparp_t *sparp, SPART *triple, caddr_t new_sel
   triple->_.triple.tabid = t_box_copy (new_tabid);
 }
 
+
+#if 0
 int
 sparp_set_retval_selid_cbk (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -4867,25 +4927,28 @@ sparp_set_retval_and_order_selid (sparp_t *sparp)
     {
       sparp_gp_trav_int (sparp, filt, stss + 1, top_gp_selid,
         NULL, NULL,
-        sparp_set_retval_selid_cbk, NULL, NULL );
+        sparp_set_retval_selid_cbk, NULL, NULL,
+        NULL );
     }
   END_DO_BOX_FAST;
   DO_BOX_FAST (SPART *, grouping, ctr, sparp->sparp_expr->_.req_top.groupings)
     {
       sparp_gp_trav_int (sparp, grouping, stss + 1, top_gp_selid,
         NULL, NULL,
-        sparp_set_retval_selid_cbk, NULL, NULL );
+        sparp_set_retval_selid_cbk, NULL, NULL,
+        NULL );
     }
   END_DO_BOX_FAST;
   DO_BOX_FAST (SPART *, oby, ctr, sparp->sparp_expr->_.req_top.order)
     {
       sparp_gp_trav_int (sparp, oby->_.oby.expn, stss + 1, top_gp_selid,
         NULL, NULL,
-        sparp_set_retval_selid_cbk, NULL, NULL );
+        sparp_set_retval_selid_cbk, NULL, NULL,
+        NULL );
     }
   END_DO_BOX_FAST;
 }
-
+#endif
 
 int
 sparp_expns_are_equal (sparp_t *sparp, SPART *one, SPART *two)
@@ -4957,6 +5020,7 @@ sparp_expn_lists_are_equal (sparp_t *sparp, SPART **one, SPART **two)
   return 1;
 }
 
+#if 0
 int
 sparp_set_special_order_selid_cbk (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -4986,10 +5050,12 @@ sparp_set_special_order_selid (sparp_t *sparp, SPART *new_gp)
     {
       sparp_gp_trav_int (sparp, oby->_.oby.expn, stss + 1, new_gp,
         NULL, NULL,
-        sparp_set_special_order_selid_cbk, NULL, NULL );
+        sparp_set_special_order_selid_cbk, NULL, NULL,
+        NULL );
     }
   END_DO_BOX_FAST;
 }
+#endif
 
 SPART **
 sparp_make_qm_cases (sparp_t *sparp, SPART *triple)
@@ -5238,7 +5304,8 @@ int sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_stat
       int subval_ctr, subval_count;
       sparp_gp_trav_int (sparp, filt, sts_this, &(single_var),
         NULL, NULL,
-        sparp_gp_trav_1var, NULL, NULL);
+        sparp_gp_trav_1var, NULL, NULL,
+        NULL );
       if (!IS_BOX_POINTER (single_var))
         continue;
       sv_eq = SPARP_EQUIV(sparp, single_var->_.var.equiv_idx);
@@ -5911,7 +5978,7 @@ sparp_rewrite_qm (sparp_t *sparp)
 /* Building qm_list for every triple in the tree. */
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_refresh_triple_cases, NULL,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
   sparp_rewrite_basic (sparp);
@@ -5923,7 +5990,7 @@ again:
 /* Converting to GP_UNION of every triple such that many quad maps contains triples that matches the mapping pattern */
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_refresh_triple_cases, sparp_gp_trav_multiqm_to_unions,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
   sparp_rewrite_basic (sparp);
@@ -5931,20 +5998,20 @@ again:
 /* Converting join with a union into a union of joins with parts of union */
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     sparp_gp_trav_union_of_joins_in, sparp_gp_trav_union_of_joins_out,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
   sparp_rewrite_basic (sparp);
 /* Removal of gps that can not produce results */
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     NULL, sparp_gp_trav_detach_conflicts_out,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
   sparp_rewrite_basic (sparp);
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     NULL, sparp_gp_trav_detach_conflicts_out,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
   sparp_rewrite_basic (sparp);
@@ -5953,7 +6020,7 @@ again:
     {
       sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
         sparp_gp_trav_localize_filters, NULL,
-        NULL, NULL,
+        NULL, NULL, NULL,
         NULL );
       sparp_equiv_audit_all (sparp, 0);
       sparp_rewrite_basic (sparp);
@@ -5972,7 +6039,7 @@ again:
 
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     NULL, sparp_gp_trav_reuse_tabids,
-    NULL, NULL,
+    NULL, NULL, NULL,
     NULL );
 
 /* Final processing: */

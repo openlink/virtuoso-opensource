@@ -45,7 +45,7 @@ typedef int sparp_gp_trav_cbk_t (sparp_t *sparp, SPART *curr, sparp_trav_state_t
 
 extern int sparp_gp_trav (sparp_t *sparp, SPART *root, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
-  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
   sparp_gp_trav_cbk_t *literal_cbk
  );
 
@@ -53,14 +53,14 @@ extern void
 sparp_gp_localtrav_treelist (sparp_t *sparp, SPART **treelist,
   void *init_stack_env, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
-  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
   sparp_gp_trav_cbk_t *literal_cbk
  );
 
 extern int sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
   sparp_trav_state_t *sts_this, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
-  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
   sparp_gp_trav_cbk_t *literal_cbk
  );
 
@@ -462,12 +462,15 @@ extern ssg_valmode_t ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t
 extern ssg_valmode_t ssg_largest_intersect_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
 extern ssg_valmode_t ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
 extern int ssg_valmode_is_subformat_of (ssg_valmode_t m1, ssg_valmode_t m2);
-extern ssg_valmode_t ssg_find_nullable_superformat (sparp_t *sparp, ssg_valmode_t fmt);
+extern ssg_valmode_t ssg_find_nullable_superformat (ssg_valmode_t fmt);
 
 
 extern qm_format_t *qm_format_default_iri_ref;
 extern qm_format_t *qm_format_default_ref;
 extern qm_format_t *qm_format_default;
+extern qm_format_t *qm_format_default_iri_ref_nullable;
+extern qm_format_t *qm_format_default_ref_nullable;
+extern qm_format_t *qm_format_default_nullable;
 extern qm_value_t *qm_default_values[SPART_TRIPLE_FIELDS_COUNT];
 extern quad_map_t *qm_default;
 extern triple_case_t *tc_default;
@@ -571,6 +574,7 @@ extern void ssg_print_global_param (spar_sqlgen_t *ssg, caddr_t vname, ssg_valmo
 extern void ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, ssg_valmode_t native, const char *asname);
 extern void ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, const char *asname);
 extern void ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree);
+extern void ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const char *asname);
 extern void ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree);
 
 #define SSG_RETVAL_USES_ALIAS			0x01	/*!< Return value can be printed in form 'expn AS alias' if alias name is not NULL */
@@ -584,6 +588,7 @@ extern void ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree);
 #define SSG_RETVAL_TOPMOST			0x100
 #define SSG_RETVAL_NAME_INSTEAD_OF_TREE		0x200
 #define SSG_RETVAL_DIST_SER_LONG		0x400	/*!< Use DB.DBA.RDF_DIST_SER_LONG wrapper to let DISTINCT work with formatters. */
+#define SSG_RETVAL_OPTIONAL_MAKES_NULLABLE	0x800   /*!< Return value should be printed as nullable because it comes from, say, OPTIONAL sub-gp */
 /* descend = 0 -- at level, can descend. 1 -- at sublevel, can't descend, -1 -- at level, can't descend */
 extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
   sparp_equiv_t *eq, int flags, ssg_valmode_t needed, const char *asname );

@@ -150,6 +150,13 @@ typedef struct rdf_grab_config_s {
     caddr_t		rgc_loader_name;	/*!< Name of function that actually load the resource */
 } rdf_grab_config_t;
 
+typedef struct sparp_trav_state_s {
+    SPART *sts_parent; /*!< Parent of the current state, NULL for WHERE tree */
+    SPART **sts_curr_array; /*!< Array that contains current subtree */
+    int sts_ofs_of_curr_in_array; /*!< Offset of the current subtree from sts_curr_array */
+    void *sts_env; /*!< Task-specific traverse environment data; */
+  } sparp_trav_state_t;
+
 /* When a new field is added here, please check whether it should be added to sparp_clone_for_variant () */
 typedef struct sparp_env_s
   {
@@ -210,14 +217,9 @@ typedef struct sparp_env_s
     dk_set_t		spare_qm_deleted;		/*!< Backstack of deleted JS objects, class IRI pushed first, instance IRI pushed after so it's above) */
     caddr_t		spare_sparul_log_mode;		/*!< log_mode argument of SPARQL_MODIFY_BY_DICT_CONTENTS() and similar procedures; if set then it's a boxed integer or boxed zero */
     int			spare_signal_void_variables;	/*!< Flag if 'Variable xxx can not be bound...' error (and the like) should be signalled. */
+    sparp_trav_state_t spare_saved_stss[SPARP_MAX_SYNTDEPTH+2];	/*!< Saved state of \c sparp_stss, used when a subquery is entered */
+    int spare_gp_trav_is_saved;	/*!< Flags whether \c spare_saved_stss is in use, i.e. \c sparp_gp_trav_suspend() has been called but sparp_gep_trav_resume() is not */
   } sparp_env_t;
-
-typedef struct sparp_trav_state_s {
-    SPART *sts_parent; /*!< Parent of the current state, NULL for WHERE tree */
-    SPART **sts_curr_array; /*!< Array that contains current subtree */
-    int sts_ofs_of_curr_in_array; /*!< Offset of the current subtree from sts_curr_array */
-    void *sts_env; /*!< Task-specific traverse environment data; */
-  } sparp_trav_state_t;
 
 typedef struct sparp_s {
 /* Generic environment */
@@ -264,9 +266,7 @@ typedef struct sparp_s {
   ptrlong sparp_cloning_serial;		/*!< The serial used for current \c sparp_gp_full_clone() operation */
   sparp_trav_state_t sparp_stss[SPARP_MAX_SYNTDEPTH+2];	/*!< Stack of traverse states. [0] is fake for parent on 'where', [1] is for 'where' etc. */
   int sparp_rewrite_dirty;		/*!< An integer that is incremented when any optimization subroutine rewrites the tree. */
-#ifdef DEBUG
   int sparp_trav_running;		/*!< Flags that some traverse is in progress, in order to GPF if traverse procedure re-enters */
-#endif
   caddr_t *sparp_sprintff_isect_buf;	/*!< Temporary buffer to calculate intersections of value ranges; solely for sparp_rvr_intersect_sprintffs() */
 } sparp_t;
 
@@ -440,6 +440,7 @@ typedef struct spar_tree_s
         rdf_val_range_t rvr;
         SPART *gp;
         SPART *triple;
+        ptrlong optional_makes_nullable;
       } retval;
     struct {
       ptrlong direction;

@@ -1153,7 +1153,7 @@ spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals)
     {
       sparp_gp_trav (sparp, retval, NULL,
         NULL, NULL,
-        sparp_gp_trav_add_rgc_vars_and_consts_from_retvals, NULL,
+        sparp_gp_trav_add_rgc_vars_and_consts_from_retvals, NULL, NULL,
         sparp_gp_trav_add_rgc_vars_and_consts_from_retvals );
     }
   END_DO_BOX_FAST;

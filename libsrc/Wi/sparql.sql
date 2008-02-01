@@ -4833,6 +4833,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   iritmpl := DB.DBA.RDF_QM_MACROEXPAND_TEMPLATE (iritmpl);
   sprintffsid := classiri || '--Sprintffs';
   superformatsid := classiri || '--SuperFormats';
+  res := vector ();
   foreach (any arg in arglist) do
     if (UNAME'in' <> arg[0])
       signal ('22023', 'Only "in" parameters are now supported in argument lists of class formats, "' || arg[0] || '" is not supported in CREATE IRI CLASS <' || classiri || '>' );
@@ -4844,12 +4845,9 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
       for (argctr := 0; (argctr < arglist_len) and isnotnull; argctr := argctr + 1)
         {
           if (not (coalesce (arglist[argctr][3], 0)))
-            {
-              basetype := basetype || '-nullable';
               isnotnull := 0;
             }
         }
-    }
   else /* arglist is 1 item long */
     {
       basetype := lower (arglist[0][2]);
@@ -4857,14 +4855,26 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
         signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '>' );
       basetype := 'sql-' || basetype || '-uri';
       if (not (coalesce (arglist[0][3], 0)))
-        {
-          basetype := basetype || '-nullable';
           isnotnull := 0;
         }
-    }
+  if (not isnotnull)
+    basetype := basetype || '-nullable';
   basetypeiri := 'http://www.openlinksw.com/virtrdf-data-formats#' || basetype;
   if (origclassiri is null)
+    {
+      if (isnotnull and (arglist_len > 0))
+        {
+          declare arglist_copy any;
+          if (classiri like '%-nullable')
+            signal ('22023', 'The name of non-nullable IRI class in CREATE IRI CLASS <' || classiri || '> is misleading' );
+          arglist_copy := arglist;
+          for (argctr := 0; (argctr < arglist_len); argctr := argctr + 1)
+            arglist_copy[argctr][3] := 0;
+          res := vector_concat (res,
+            DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (classiri || '-nullable', iritmpl, arglist_copy, options, NULL) );
+        }
     origclassiri := classiri;
+    }
   if (DB.DBA.RDF_QM_ASSERT_JSO_TYPE (classiri, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat', 1))
     {
       declare side_s IRI_ID;
@@ -4889,7 +4899,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
             }
           signal ('22023', 'Can not change iri class <' || classiri || '> because it is used by other quad map objects, e.g., <' || id_to_iri_nosignal (side_s) || '>');
         }
-      res := vector (vector ('00000', 'Previous definition of IRI class <' || classiri || '> has been dropped'));
+      res := vector_concat (res, vector (vector ('00000', 'Previous definition of IRI class <' || classiri || '> has been dropped')));
     }
   else
     res := vector ();
@@ -4925,7 +4935,9 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
       insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
           `iri(?:classiri)`
             virtrdf:qmfValRange-rvrRestrictions
-              virtrdf:SPART_VARR_NOT_NULL };
+              virtrdf:SPART_VARR_NOT_NULL .
+          `iri(?:superformatsid)`
+            rdf:_1 `iri(bif:concat (?:classiri, "-nullable"))` };
         }
   for (sff_ctr := 0; sff_ctr < sff_count; sff_ctr := sff_ctr + 1)
     {
@@ -4938,7 +4950,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
           `iri(?:sprintffsid)`
             `iri (bif:sprintf ("%s%d", str (rdf:_), ?:sff_ctr+1))` ?:sff };
     }
-  return vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ')')));
+  return vector_concat (res, vector_concat (res, vector (vector ('00000', 'IRI class <' || classiri || '> has been defined (inherited from rdfdf:' || basetype || ')'))));
 }
 ;
 

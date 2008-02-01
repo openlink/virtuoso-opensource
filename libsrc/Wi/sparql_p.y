@@ -1018,6 +1018,37 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
         | _LPAR spar_expn _RPAR	{ $$ = $2; }	/* [58]	PrimaryExpn	 ::=  */
 			/*... BracketedExpn | BuiltInCall | IRIrefOrFunction	*/
 			/*... | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var	*/
+	| _LPAR ASK_L {
+		spar_env_push (sparp_arg);
+		spar_selid_push (sparp_arg);
+                t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
+            spar_dataset_clauses_opt
+	    spar_where_clause
+	    _RPAR {
+		SPART *subselect_top;
+		caddr_t where_gp;
+		where_gp = spar_gp_finalize (sparp_arg);
+		subselect_top = spar_make_top (sparp_arg, ASK_L, (SPART **)t_list(0), spar_selid_pop (sparp_arg),
+		  where_gp, NULL, t_box_num(1), t_box_num(0) );
+		spar_env_pop (sparp_arg);
+		$$ = spar_gp_finalize_with_subquery (sparp_arg, subselect_top); }
+	| _LPAR spar_select_query_mode {
+		spar_env_push (sparp_arg);
+		spar_selid_push (sparp_arg);
+                t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
+		sparp_arg->sparp_allow_aggregates_in_expn = 1; }
+	    spar_select_rset spar_dataset_clauses_opt
+            spar_where_clause spar_solution_modifier
+	    _RPAR {
+		SPART *subselect_top;
+		caddr_t where_gp;
+		where_gp = spar_gp_finalize (sparp_arg);
+		subselect_top = spar_make_top (sparp_arg,
+		  $2, $4, spar_selid_pop (sparp_arg), where_gp, 
+		  (SPART **)($7[0]), (caddr_t)($7[1]), (caddr_t)($7[2]) );
+		sparp_expand_top_retvals (sparp_arg, subselect_top, 1 /* safely_copy_all_vars */);
+		spar_env_pop (sparp_arg);
+		$$ = spar_gp_finalize_with_subquery (sparp_arg, subselect_top); }
 	| spar_ret_agg_call {
 		$$ = $1;
 		if (sparp_arg->sparp_in_precode_expn)
