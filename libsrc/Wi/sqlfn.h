@@ -877,6 +877,10 @@ int sec_col_check (dbe_column_t * col, oid_t group, oid_t user, int op);
 /* disk.c */
 void buf_bsort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key);
 
+#ifdef DEBUG
+extern void qi_check_stack (query_instance_t *qi, void *addr, ptrlong margin);
+#define QI_CHECK_STACK(qi,addr,margin) qi_check_stack (qi, addr, margin)
+#else
 #define QI_CHECK_STACK(qi, addr, margin) \
   if (THR_IS_STACK_OVERFLOW (qi->qi_thread, addr, margin)) \
     sqlr_new_error ("42000", "SR178", "Stack overflow (stack size is %ld, more than %ld is in use)", (long)(qi->qi_thread->thr_stack_size), (long)(qi->qi_thread->thr_stack_size - margin)); \
@@ -885,8 +889,7 @@ void buf_bsort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key);
       SET_DK_MEM_RESERVE_STATE(qi->qi_trx); \
       qi_signal_if_trx_error (qi); \
     }
-
-
+#endif
 
 #define DEL_STACK_MARGIN (2*PAGE_SZ + 200 * sizeof (caddr_t))
 #define UPD_STACK_MARGIN (3*PAGE_SZ + 1000 * sizeof (caddr_t))

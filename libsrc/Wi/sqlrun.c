@@ -3411,3 +3411,17 @@ lc_take_or_copy_nth_col (local_cursor_t * lc, int n)
   else
     return (box_copy_tree (sel_out_get (out_copy, n, ssl)));
 }
+
+#ifdef DEBUG
+void
+qi_check_stack (query_instance_t *qi, void *addr, ptrlong margin)
+{
+  if (THR_IS_STACK_OVERFLOW (qi->qi_thread, addr, margin))
+    sqlr_new_error ("42000", "SR178", "Stack overflow (stack size is %ld, more than %ld is in use)", (long)(qi->qi_thread->thr_stack_size), (long)(qi->qi_thread->thr_stack_size - margin));
+  if (DK_MEM_RESERVE)
+    {
+      SET_DK_MEM_RESERVE_STATE(qi->qi_trx);
+      qi_signal_if_trx_error (qi);
+    }
+}
+#endif
