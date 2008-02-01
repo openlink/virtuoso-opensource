@@ -476,7 +476,11 @@ typedef struct inx_op_s
   search_spec_t *	iop_ks_row_spec;
   state_slot_t **	iop_out;
   state_slot_t * 	iop_itc;
-
+  struct inx_op_s *	iop_other; /* most selective term of the inx int */
+  state_slot_t *	iop_nexts;
+  state_slot_t *	iop_target_ssl;
+  int			iop_nth_next;
+  dtp_t 		iop_target_dtp; /* dtp of the intersectable col */
   /* bitmap index */
   state_slot_t * 	iop_bitmap;
   inx_locality_t	iop_il;

@@ -766,7 +766,20 @@ sqlg_inx_op_ks_out_cols (sqlo_t * so, key_source_t * ks, df_elt_t * ks_tb_dfe, d
   END_DO_SET ();
 }
 
-
+void
+sqlg_inx_op_ssls (sqlo_t * so, inx_op_t * iop)
+{
+  key_source_t * ks = iop->iop_ks;
+  search_spec_t * sp = iop->iop_ks_full_spec.ksp_spec_array;
+  while (sp->sp_next)
+    sp = sp->sp_next;
+  iop->iop_target_ssl = sp->sp_min_ssl;
+  iop->iop_target_dtp = sp->sp_cl.cl_sqt.sqt_dtp;
+  if (iop->iop_ks->ks_key->key_is_bitmap)
+    {
+      iop->iop_bitmap = ssl_new_variable  (so->so_sc->sc_cc, "inxop f", DV_STRING);
+    }
+}
 
 
 inx_op_t *
@@ -792,17 +805,18 @@ sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * paren
 	DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
 	  {
 	    sqlg_inx_op_and_ks (so, iop, term, dio, (df_inx_op_t*) dk_set_nth (dio->dio_terms, inx));
+	    sqlg_inx_op_ssls (so, term);
+	    if (0 != inx)
+	      term->iop_other = iop->iop_terms[0];
 	  }
 	END_DO_BOX;
-
+	iop->iop_terms[0]->iop_other = iop->iop_terms[1];
 	break;
       }
     case IOP_KS:
       iop->iop_ks = sqlg_key_source_create (so, dio->dio_table, dio->dio_key);
       sqlg_inx_op_ks_out_cols (so, iop->iop_ks, dio->dio_table, tb_dfe);
       iop->iop_itc = ssl_new_itc (so->so_sc->sc_cc);
-      if (iop->iop_ks->ks_key->key_is_bitmap)
-	iop->iop_bitmap = ssl_new_variable  (so->so_sc->sc_cc, "inxop f", DV_STRING);
       break;
     }
     return iop;

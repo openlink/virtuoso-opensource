@@ -273,6 +273,95 @@ inxop_set_bm_ssl (inx_op_t * iop, it_cursor_t *itc, caddr_t * qst)
 }
 
 
+void 
+itc_set_search_param (it_cursor_t * itc, int nth, caddr_t val, dtp_t dtp)
+{
+  int inx, found = 0;
+  caddr_t err = NULL;
+  caddr_t cast_val = NULL;
+  if (DV_ANY == dtp)
+    cast_val = box_to_any  (val, &err);
+  for (inx = 0; inx < itc->itc_owned_search_par_fill; inx++)
+    {
+      if (itc->itc_search_params[nth] == itc->itc_owned_search_params[inx])
+	{
+	  dk_free_tree (itc->itc_owned_search_params[inx]);
+	  itc->itc_owned_search_params[inx] = cast_val;
+	  found = 1;
+	}
+    }
+  if (!found && cast_val)
+    {
+      ITC_OWNS_PARAM (itc, cast_val);
+      if (itc->itc_owned_search_par_fill > 10) GPF_T1 ("overflow owned params in inx int");
+    }
+  itc->itc_search_params[nth] = cast_val ? cast_val : val;
+}
+
+
+int enable_iop_other = 1;
+
+int
+inxop_bm_check_other (inx_op_t * iop, caddr_t * qst) 
+{
+  /* see if the target is in the range of the other's bm.  If it is, advance the other by one.  Compare with this.  If this other is greater than the present, put the value of the other as new target and return 1. */
+  caddr_t target_box = qst_get (qst, iop->iop_target_ssl);
+  dtp_t target_dtp = DV_TYPE_OF (target_box);
+  bitno_t target;
+  inxop_bm_t * iob;
+  it_cursor_t * itc;
+  if (!enable_iop_other)
+    return 0;
+  if (DV_IRI_ID != target_dtp && DV_LONG_INT != target_dtp)
+    return 0;
+  target = unbox_iri_int64 (target_box);
+  iob = (inxop_bm_t *)QST_GET (qst, iop->iop_other->iop_bitmap);
+
+  if (!iob || !iob->iob_is_inited || 0 == iob->iob_bm_len)
+    return 0;
+  if (target < iob->iob_start || target >= iob->iob_end + CE_N_VALUES)
+    return 0;
+  itc = (it_cursor_t *)QST_GET (qst, iop->iop_other->iop_itc);
+  if (!itc->itc_bp.bp_is_pos_valid || itc->itc_bp.bp_at_end)
+    return 0;
+
+
+  pl_next_bit ((placeholder_t *)itc, iob->iob_bm, iob->iob_bm_len, iob->iob_start, 0);
+  if (itc->itc_bp.bp_at_end)
+    return 0;
+  if (itc->itc_bp.bp_value == target)
+    return 0; /* the normal course will produce a match */
+  if (itc->itc_bp.bp_value > target)
+    {
+      /* pickthe value as the new target and loop */
+      it_cursor_t * this_itc = (it_cursor_t *)QST_GET (qst, iop->iop_itc);
+      inxop_set_bm_ssl (iop->iop_other, itc, qst);
+      itc_set_search_param (this_itc, this_itc->itc_insert_key->key_n_significant - 1, qst_get (qst, iop->iop_target_ssl), iop->iop_target_dtp);
+      return 1;
+    }
+  return 0;
+}
+
+
+int
+inxop_check_other (inx_op_t * iop, caddr_t * qst) 
+{
+  /* true if this iop must go to start because the other iop cannot match the present value.  If so
+   * this sets the new target and the op on the next iteration is always IOP_TARGET */
+  if (!iop->iop_other || !iop->iop_other->iop_bitmap)
+    return 0;
+  return inxop_bm_check_other (iop, qst);
+}
+
+
+#define INXOP_OTHER \
+  if (inxop_check_other (iop, qst))		\
+{ \
+  op = IOP_TARGET; goto start; \
+}
+
+
+
 int
 inxop_iob_next (inx_op_t * iop, it_cursor_t * itc, inxop_bm_t * iob, int op, caddr_t * qst)
 {
@@ -303,19 +392,42 @@ inxop_iob_next (inx_op_t * iop, it_cursor_t * itc, inxop_bm_t * iob, int op, cad
 }
 
 
+void bing () {printf ("bing"); }
 
+int next_ctr = 0;
+int64 prev_target;
+void 
+check_target (it_cursor_t * itc)
+{
+  int64 target = unbox_iri_int64 (itc->itc_search_params[3]);
+  if (target < prev_target) bing ();
+  prev_target = target;
+}
+
+int
 inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	       table_source_t * ts, it_cursor_t * itc)
 {
   caddr_t *qst = (caddr_t*)qi;
   int rc;
   buffer_desc_t * buf = NULL;
-  inxop_bm_t * iob = (inxop_bm_t *) QST_GET (qst, iop->iop_bitmap);
+  inxop_bm_t * iob;
+  next_ctr++;
+ start:
+  if (0 && IOP_TARGET == op)
+    check_target (itc);
+  iob = (inxop_bm_t *) QST_GET (qst, iop->iop_bitmap);
   if (iob &&  iob->iob_is_inited)
     {
       rc = inxop_iob_next (iop, itc, iob, op, qst);
       if (rc != IOP_READ_INDEX)
+	{
+	  if (IOP_NEW_VAL == rc)
+	    {
+	      INXOP_OTHER;
+	    }
 	return rc;
+    }				   
     }				   
   ITC_FAIL (itc)
     {
@@ -339,6 +451,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	    }
 	case IOP_TARGET:
 	  itc->itc_search_mode = SM_READ;
+	  itc->itc_key_spec = iop->iop_ks_full_spec; /* set here. May have looped because of checking with iop_other and the init speczs may have been the specs for next */
 	  buf = itc_reset (itc);
 	  rc = itc_search (itc, &buf);
 	  if (DVC_LESS == rc)
@@ -360,6 +473,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	      inxop_set_iob (iop, itc, buf, qst);
 	      itc_register (itc, buf);
 	      itc_page_leave (itc, buf);
+	      INXOP_OTHER;
 	      return IOP_NEW_VAL;
 	    }
 	  if (!itc->itc_bp.bp_is_pos_valid)
@@ -406,6 +520,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	      /*inxop_set_bm_ssl (iop, itc, qst); */
 		  itc_register (itc, buf);
 		  itc_page_leave (itc, buf);
+	      INXOP_OTHER;
 		  return IOP_NEW_VAL;
 		}
 	  GPF_T1 ("bm inx and target seek rc impossible");
@@ -449,7 +564,8 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
       itc = itc_create (NULL, qi->qi_trx);
       QST_SET (qst, iop->iop_itc, itc);
     }
-  
+  if (!itc->itc_search_par_fill)
+    {
   itc->itc_ks = ks;
   itc->itc_out_state = qst;
 
@@ -507,6 +623,14 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
       qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);
     }
   END_DO_SET();
+    }
+  if (IOP_TARGET == op)
+    {
+      itc->itc_key_spec = iop->iop_ks_full_spec;
+      itc_set_search_param (itc, itc->itc_insert_key->key_n_significant - 1, qst_get (itc->itc_out_state, iop->iop_target_ssl), iop->iop_target_dtp);
+    }
+  else 
+    itc->itc_key_spec = iop->iop_ks_start_spec;
 
   if (itc->itc_insert_key->key_is_bitmap)
     return inxop_bm_next (iop, qi, op, ts, itc);
@@ -634,6 +758,12 @@ inx_op_and_next (inx_op_t * iop, query_instance_t * qi,
     {
       DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
 	{
+	  it_cursor_t * itc = (it_cursor_t *)QST_GET (qst, term->iop_itc);
+	  if (itc)
+	    {
+	      itc_free_owned_params (itc);
+	      itc->itc_search_par_fill = 0;
+	    }
 	  if (term->iop_bitmap)
 	    {
 	      inxop_bm_t * iob = (inxop_bm_t *) QST_GET (qst, term->iop_bitmap);
