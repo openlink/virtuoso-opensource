@@ -925,6 +925,20 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('northwind_rdf', 1,
     2,  
     303);
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'demo_nw_rule4',
+    1,
+    '/schemas/northwind#(.*)',
+    vector('path'),
+    1,
+    '/sparql?query=DESCRIBE%20%3Chttp%3A//demo.openlinksw.com/schemas/northwind%23%U%3E%20FROM%20%3Chttp%3A//demo.openlinksw.com/schemas/NorthwindOntology/1.0/%3E',
+    vector('path'),
+    null,
+    '(text/rdf.n3)|(application/rdf.xml)',
+    0,
+    null
+    );
+
 DB.DBA.URLREWRITE_CREATE_RULELIST (
     'demo_nw_rule_list1',
     1,
@@ -932,6 +946,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST (
                 'demo_nw_rule1',
                 'demo_nw_rule2',
                 'demo_nw_rule3',
+                'demo_nw_rule4',
                 'northwind_rdf'
           ));
 
