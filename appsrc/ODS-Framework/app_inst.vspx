@@ -100,12 +100,12 @@
 
         if(length(self.fname)>0 and self.fname<>coalesce(self.u_name,''))
         {
-        q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL'||
+        q_str:=sprintf('select distinct top 11  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL'||
                        ' from WA_MEMBER, WA_INSTANCE, SYS_USERS '||
                        ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WA_MEMBER.WAM_USER=SYS_USERS.U_ID and U_NAME=''%s'' and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = ''%s'' ',self.fname,self.app_type);
         }else
           {
-        q_str:=sprintf('select distinct top 10  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL'||
+        q_str:=sprintf('select distinct top 11  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL'||
                        ' from WA_MEMBER, WA_INSTANCE '||
                        ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WAI_IS_PUBLIC=1 and WAM_APP_TYPE = ''%s'' ',self.app_type);
         }
@@ -137,8 +137,30 @@
       </tr>
       <?vsp
           i := i + 1;
+          if(i>=10)
+          {
+           declare more_link varchar;
+           if(self.odsbar_loginparams is not null and length(self.odsbar_loginparams)>0)
+               more_link:=wa_expand_url (self.odsbar_ods_gpath || 'search.vspx?apps=apps&q=' || WA_GET_APP_NAME(self.app_type), self.odsbar_loginparams);
+           else
+               more_link:= self.odsbar_ods_gpath || 'search.vspx?apps=apps&q=' || WA_GET_APP_NAME(self.app_type);
+
+           more_link:=wa_expand_url (self.odsbar_ods_gpath || 'search.vspx?apps=apps&q=' || WA_GET_APP_NAME(self.app_type), self.odsbar_loginparams);
+?>
+      <tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+        <td nowrap="nowrap">
+     <a  href="<?vsp http(more_link);?>">more...</a>
+        </td>
+      </tr>
+
+<?vsp
+            goto end_for;
+	         }
+          
 
           }
+
+end_for:	  
           exec_close (h);
         
           if (i = 0 and length (self.fname))

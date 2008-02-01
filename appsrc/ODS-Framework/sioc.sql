@@ -2055,11 +2055,6 @@ create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new
 	  svc_iri := sprintf ('http://%s%s/services/briefcase', get_cname(), get_base_path ());
 	  ods_sioc_service (graph_iri, svc_iri, iri, null, 'text/xml', svc_iri||'/services.wsdl', svc_iri, 'SOAP');
 	}
-      else if (N.WAM_APP_TYPE = 'oGallery')
-	{
-	  svc_iri := sprintf ('http://%s/photos/SOAP', get_cname());
-	  ods_sioc_service (graph_iri, svc_iri, iri, null, 'text/xml', svc_iri||'/services.wsdl', svc_iri, 'SOAP');
-	}
     }
   declare _wai_type varchar;
   _wai_type := N.WAM_APP_TYPE;

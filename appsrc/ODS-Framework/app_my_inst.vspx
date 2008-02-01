@@ -152,7 +152,18 @@
               </li>
 	<?vsp
 	    i := i + 1;
+	    if (i>=10)
+	    {
+?>
+    <li>
+     <a class="ods_side_button" href="<?vsp http(wa_expand_url (self.odsbar_ods_gpath || 'search.vspx?apps=apps&q=' || WA_GET_APP_NAME(self.app_type), self.odsbar_loginparams));?>">more...</a>
+    </li>
+
+<?vsp
+        goto end_for;
 	    }
+	    }
+end_for:	  
 	?>
         </ul>
       </vm:if>

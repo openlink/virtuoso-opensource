@@ -403,6 +403,7 @@ sticker_init() {
   echo "      DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');" >> $STICKER 
   echo "      DB.DBA.VHOST_DEFINE (lpath=>'/ods/data/rdf', ppath=>'/DAV/VAD/wa/RDFData/All/', is_dav=>1, vsp_user=>'dba');" >> $STICKER 
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/opensocial.sql', 1, 'report', 1);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/oauth.sql', 1, 'report', 1);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER

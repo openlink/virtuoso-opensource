@@ -1289,35 +1289,10 @@ if ((self.odsbar_app_type is NULL) and locate('myhome.vspx',http_path ()))
 
         if (length(rows) > 4 )
         {
-          declare search_app_type varchar;
-          
-          search_app_type:=self.odsbar_app_type;
-          search_app_type:='';
-          
-          
-          
---          if (self.odsbar_app_type=''){
---              search_app_type:='newest=users&';  
---          };
-          
-          if (self.odsbar_app_type='WEBLOG2'){
-              search_app_type:='newest=blogs&amp;';
-          };
-          
-          if (self.odsbar_app_type='oWiki'){
-              search_app_type:='newest=wiki&amp;';
-          };
-          
-          if (self.odsbar_app_type='eNews2'){
-              search_app_type:='newest=news&amp;';
-          };
-          
-          if (self.odsbar_app_type='Bookmark'){
-              search_app_type:='newest=bookmarks&amp;';
-          };
           
 ?>
-       <li><a href="<?V self.odsbar_ods_gpath||'search.vspx?' || search_app_type || self.odsbar_loginparams?>">more...</a></li>
+       <li><a href="<?vsp http(wa_expand_url (self.odsbar_ods_gpath || 'search.vspx?apps=apps&q=' || WA_GET_APP_NAME(self.odsbar_app_type), self.odsbar_loginparams)); ?>">more...</a></li>
+     
 <?vsp
         }
 
