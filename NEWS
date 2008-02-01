@@ -1,3 +1,78 @@
+February 01, 2007, V5.0.4:
+  * Database Engine
+    - Added check for backup/restore status
+    - Added file descriptors, wait and exit status for child processes
+    - Added optimizations for bitmap indexes and fixed minor bug
+    - Added LUBM testsuite
+    - Added inxop option for bitmap index
+    - Fixed 64 bit range of iri id and ro ids
+    - Fixed problems with ftp server
+    - Fixed problems with http header
+    - Fixed compiler warnings
+    - Fixed float underflow in cost model by adjusting cardinality
+    - Fixed cache compile samples
+    - Fixed using like of any to do the is iri test
+    - Fixed no kill of delta rolled back
+    - Fixed iri id cache read integrity
+    - Fixed reuse of rb has when not resized
+    - Fixed bitmaps checks to avoid needless seeks
+    - Fixed reassign all search pars before every seek
+    - Do not place funcs as early as possible, but at the place with the
+      lowest cardinality. Not on by default cause card guess not always
+      right
+    - Adjusted inx int cost model calculations
+
+  * SPARQL and RDF
+    - Added initial SPARQL BI support
+    - Added optimizations to SPARQL engine
+    - Added support for xsd:float
+    - Added XBRL ontologies
+    - Added HR-XML resume RTF mapper
+    - Added https spongers
+    - Added virtdrf:item triples for default quad storage
+    - Added convenient syntax __TAG of datatype
+    - Fixed expressions for typemin/typemax of date and dateTime
+    - Fixed result restriction bits for expressions
+    - Fixed restriction bits of unary plus and unary minus expressions
+    - Fixed double free in case of 'undefined namespace prefix' error
+    - Fixed syntax for '[]' bnode to allow '[ whitespace ]'
+    - Fixed eror messages with QUIETCAST
+    - Fixed iri names to iri valued ssl and their entailed
+    - Fixed problem with inxop bm bad if extra search params supplied, as in
+      the case of likes etc other non inx conds. do not count on search par fill
+      to know the target.
+    - Fixed BREAKUP with more than one triple per row
+    - Fixed printing non-nullable results of OPTIONAL as nullable
+    - Added draft support for sub-SELECT and sub-ASK in expressions
+    - Minor SPARQL fixes
+
+  * ODS Applications
+    - Added support for OpenID 2.0
+    - Added initial server side OAUTH support
+    - Added new ODS uris
+    - Added Calendar services
+    - Added Calendar alarm scome
+    - Added Wiki topic search
+    - Added new pager resource
+    - Added popup calendar
+    - Moved SIOC has_service etc attributes to application Gallery
+    - Fixed bad html generation
+    - Fixed auto check for new emails
+    - Fixed ODS application tab - link "More"
+    - Fixed SIOC has_service and other attribute support
+    - Fixed bug in soap on empty db
+    - Fixed Wiki atom upstreaming url error
+    - Fixed Calendar TODO metadata extraction
+    - Fixed small UI issues
+    - Fixed SIOC data
+    - Fixed rdf_sink (VVC) folders
+    - Fixed correct event/task details on permalink
+    - Fixed wiki docbook export
+    - Fixed building creolewiki
+    - Moved a++ logic to User Settings level
+    - Small bugfixes
+
+
 December 11, 2007, V5.0.3:
   * Database Engine
      - Added transparent HTTP Content Negotiation
