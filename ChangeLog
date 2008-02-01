@@ -1,3 +1,83 @@
+2008-02-01 11:24  source
+
+	* Updated version to 5.0.4-rc7
+
+2008-02-01 11:23  source
+
+	* Updated version to 05.00.3025
+
+2008-02-01 11:22  source
+
+	* Updated version
+
+2008-02-01 11:21  source
+
+	* Added initial server side oauth support
+	* Moved SIOC has_service etc attributes to application Gallery
+	* Fixed ODS application tab - link "More"
+
+2008-02-01 11:19  source
+
+	* Added a++ links
+	* Fixed SIOC has_service and other attribute support
+	* Fixed bug in soap on empty db
+
+2008-02-01 11:12  source
+
+	* Added url rewrite for ontology
+
+2008-02-01 10:39  source
+
+	* Do not place funcs as early as possible, but at the place with the
+	  lowest cardinality. Not on by default cause card guess not always
+	  right
+
+2008-02-01 10:38  source
+
+	* Added inxop option for bitmap index
+	* Check other bitmaps to avoid needless seeks
+	* Do not reassign all search pars before every seeek
+
+2008-02-01 00:07  source
+
+	* Fixed BREAKUP with more than one triple per row
+	* Fixed printing non-nullable results of OPTIONAL as nullable
+	* Added draft support for sub-SELECT and sub-ASK in expressions
+	* Minor SPARQL fixes
+
+2008-02-01 00:05  source
+
+	* Added qi_check_stack as separate function that implements QI_CHECK_STACK
+	  in DEBUG mode
+
+2008-02-01 00:04  source
+
+	* Added new function bif_xenc_rand_bytes()
+
+2008-02-01 00:03  source
+
+	* Fixed compiler warnings
+
+2008-02-01 00:03  source
+
+	* Fixed bug in error message when URI is abnormally long
+
+2008-02-01 00:02  source
+
+	* Added draft implementation of bif_zorder_index()
+
+2008-02-01 00:01  source
+
+	* Fixed warnings on duplicate declaration of terminals
+
+2008-02-01 00:00  source
+
+	* Merged from upstream project
+
+2008-01-31 09:18  source
+
+	* Fixed float underflow in cost model by adjusting cardinality
+
 2008-01-30 20:55  source
 
 	* Updated version to 5.0.4-rc6
