@@ -1110,6 +1110,38 @@ dfe_skip_exp_dfes (df_elt_t * dfe, df_elt_t ** placing_value_subqs, int n_subqs)
 }
 
 
+int enable_min_card = 0;
+
+df_elt_t *
+dfe_skip_to_min_card (df_elt_t * place, df_elt_t * super, df_elt_t * dfe)
+{
+  /* when placing a func, see if some place later in the query has lower card */
+  df_elt_t * best = place;
+  float best_arity = 1, arity = 1;
+  if (!enable_min_card)
+    return place;
+  while (place)
+    {
+      if (place == super)
+	break;
+      if (DFE_DT == place->dfe_type && !place->dfe_next)
+	break; /* if a dt is last, then we are in the process of building the dt and things from inside this dt ipso facto can't go after this dt. */
+      if (DFE_TABLE == place->dfe_type || DFE_DT == place->dfe_type)
+	{
+	  arity *= place->dfe_arity * 0.99;
+	  /* .99 so that this will prefer placing after a unique rather than before it, a unique might always not hit */
+	  if (arity < best_arity)
+	    {
+	      best_arity = arity;
+	      best = place;
+	    }
+	}
+      place = place->dfe_next;
+    }
+  return best;
+}
+
+
 int
 dfe_defines (df_elt_t * defining, df_elt_t * defd)
 {
@@ -1581,6 +1613,7 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	  {
 	    placed = dfe_latest (so, n_args, args, 1);
 	    placed = dfe_skip_exp_dfes (placed, &dfe, 1);
+	    placed = dfe_skip_to_min_card (placed, super, dfe);
 	  }
 	sqlo_place_dfe_after (so, pref_loc, placed, dfe);
 	return dfe;
