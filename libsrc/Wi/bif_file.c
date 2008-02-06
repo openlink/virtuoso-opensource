@@ -5442,7 +5442,6 @@ bif_spotlight_metadata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_vector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *)qst;
   caddr_t in_vector, out_vector;
   int inx;
   in_vector = bif_strict_array_or_null_arg (qst, args, 0, "__vector_sort");
@@ -5462,6 +5461,63 @@ bif_vector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   qsort (out_vector, BOX_ELEMENTS (out_vector), sizeof (caddr_t), str_compare);
   return out_vector;
 }
+
+caddr_t
+bif_file_rlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t fname = bif_string_arg (qst, args, 0, "file_rlo");
+  caddr_t *ret;
+  FILE *fp;
+
+  sec_check_dba ((query_instance_t *) qst, "file_rlo");
+
+  fp = fopen (fname,"r");
+
+  if (!fp)
+    sqlr_new_error ("42000", "FA003", "Can't open file (%s)", fname);
+
+  ret = (caddr_t *) dk_alloc_box (sizeof (caddr_t), DV_NUMERIC);
+  ret[0] = (caddr_t) fp;
+
+  return (caddr_t) ret;
+}
+
+
+#ifndef WIN32
+caddr_t
+bif_file_rl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *fpi = (caddr_t *)bif_arg (qst, args, 0, "file_rl");
+  long inx = (long) bif_long_arg (qst, args, 1, "file_rl");
+
+  sec_check_dba ((query_instance_t *) qst, "file_rl");
+
+  char str [8*1024];
+  FILE * fp;
+  dk_set_t line = NULL;
+  caddr_t ret = NULL;
+
+  fp = (FILE *) fpi [0];
+
+  while (!feof (fp))
+    {
+      str[0]=0;
+      fgets (str, sizeof (str), fp);
+      if (str[0])
+	dk_set_push (&line, box_dv_short_string (str));
+      inx--;
+      if (!inx)
+	goto end;
+    }
+
+end:
+
+  ret = list_to_array (dk_set_nreverse (line));
+
+  return ret;
+}
+
+#endif
 
 void
 bif_file_init (void)
@@ -5523,6 +5579,10 @@ bif_file_init (void)
   bif_define_typed ("file_mkdir", bif_sys_mkdir, &bt_integer);
   bif_define_typed ("file_mkpath", bif_sys_mkpath, &bt_integer);
   bif_define_typed ("file_dirlist", bif_sys_dirlist, &bt_any);
+#ifndef WIN32
+  bif_define_typed ("file_rl", bif_file_rl, &bt_any);
+  bif_define_typed ("file_rlo", bif_file_rlo, &bt_any);
+#endif
 #ifdef HAVE_BIF_GPF
   bif_define ("__gpf", bif_gpf);
 #endif
