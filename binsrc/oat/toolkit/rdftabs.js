@@ -1378,7 +1378,7 @@ OAT.RDFTabs.fresnel = function(parent,optObj) {
 		if (event.keyCode == 13) { go(); }
 	});
 	OAT.Dom.append([self.inputElm,OAT.Dom.text("Fresnel URI: "),inp,btn]);
-}
+	}
 }
 
 OAT.Loader.featureLoaded("rdftabs");

@@ -66,7 +66,7 @@ OAT.Loader.Dependencies = { /* dependency tree */
 	notify:"animation",
 	slidebar:"animation",
 	fresnel:"xml",
-	win:["simplefx","drag","resize","layers"],
+	win:["drag","resize","layers"],
 	dimmer:"win"
 }
 

@@ -55,31 +55,12 @@ OAT.Win = function(optObj) {
 		self.dom.container.style.left = x+"px";
 		self.dom.container.style.top = y+"px";
 	} 
-	self.anchorTo = function(x_,y_) { /* OBSOLETE: this is now done by anchor.js */
-		var fs = OAT.Dom.getFreeSpace(x_,y_); /* [left,top] */
-		var dims = OAT.Dom.getWH(self.dom.container);
-		
-		if (fs[1]) { /* top */
-			var y = y_ - 30 - dims[1];
-		} else { /* bottom */
-			var y = y_ + 30;
-		}
-
-		if (fs[0]) { /* left */
-			var x = x_ + 20 - dims[0]; 
-		} else { /* right */
-			var x = x_ - 20;
-		}
-		
-		if (x < 0) { x = 10; }
-		if (y < 0) { y = 10; }
-		
-		self.moveTo(x,y);
-	} 
-
 	self.innerResizeTo = function(w,h) { }
 	self.outerResizeTo = function(w,h) { }
-	self.show = function() { OAT.Dom.show(self.dom.container); }
+	self.show = function() { 
+		document.body.appendChild(self.dom.container);
+		OAT.Dom.show(self.dom.container);
+	}
 	self.hide = function() { OAT.Dom.hide(self.dom.container); }
 	self.close = self.hide();
 	self.minimize = function() { }
@@ -118,9 +99,6 @@ OAT.Win = function(optObj) {
 		OAT.Drag.create(self.dom.title,self.dom.container);
 	}
 	
-	/* append */
-	document.body.appendChild(self.dom.container);
-
 	/* size & title & position */
 	self.moveTo(self.options.x,self.options.y);
 	if (self.options.outerWidth || self.options.outerHeight) { self.outerResizeTo(self.options.outerWidth,self.options.outerHeight); }
@@ -292,14 +270,28 @@ OAT.WinRECT = function(obj) { /* rectangular window */
 
 OAT.WinROUND = function(obj) { /* rounded window */
 	OAT.Style.include('winround.css');
+
 	obj.dom.container = OAT.Dom.create("div",{position:"absolute"},"oat_winround_container");
 	obj.dom.resizeContainer = obj.dom.container;
+
+	obj.dom.table = OAT.Dom.create("table",{},"oat_winround_wrapper");
+	obj.dom.tr_t = OAT.Dom.create("tr",{});
+	obj.dom.td_lt = OAT.Dom.create("td",{},"oat_winround_lt");
+	obj.dom.td_t = OAT.Dom.create("td",{},"oat_winround_t");
+	obj.dom.td_rt = OAT.Dom.create("td",{},"oat_winround_rt");
+	obj.dom.tr_m = OAT.Dom.create("tr",{});
+	obj.dom.td_l = OAT.Dom.create("td",{},"oat_winround_l");
+	obj.dom.td_m = OAT.Dom.create("td",{},"oat_winround_m");
+	obj.dom.td_r = OAT.Dom.create("td",{},"oat_winround_r");
+	obj.dom.tr_b = OAT.Dom.create("tr",{});
+	obj.dom.td_lb = OAT.Dom.create("td",{},"oat_winround_lb");
+	obj.dom.td_b = OAT.Dom.create("td",{},"oat_winround_b");
+	obj.dom.td_rb = OAT.Dom.create("td",{},"oat_winround_rb");
+
 	obj.dom.content = OAT.Dom.create("div",{},"oat_winround_content");
 	obj.dom.title = OAT.Dom.create("div",{},"oat_winround_title");
 	obj.dom.caption = OAT.Dom.create("span",{},"oat_winround_caption");
 	obj.dom.status = OAT.Dom.create("div",{},"oat_winround_status");
-
-	OAT.Dom.append([obj.dom.container,obj.dom.title,obj.dom.content,obj.dom.status]);
 
 	if (obj.options.visibleButtons.indexOf("c") != -1) {
 		obj.dom.buttons.c = OAT.Dom.create("div",{},"oat_winround_close_b");
@@ -307,11 +299,30 @@ OAT.WinROUND = function(obj) { /* rounded window */
 	}
 	if (obj.options.visibleButtons.indexOf("r") != -1) {
 		obj.dom.buttons.r = OAT.Dom.create("div",{},"oat_winround_resize_b");
-		OAT.Dom.append([obj.dom.container,obj.dom.buttons.r]);
+		OAT.Dom.append([obj.dom.td_rb,obj.dom.buttons.r]);
 	}
 
 	OAT.Dom.append([obj.dom.title,obj.dom.caption]);
-	OAT.SimpleFX.roundDiv(obj.dom.container,{backgroundColor:'#000',antialias:1,borderColor:'#666'});
+
+	if (OAT.Browser.isIE) { /* IE is a lame browser - he cannot build this as Dom structure ... */
+		obj.dom.container.innerHTML = '<table class="oat_winround_wrapper"><tr><td class="oat_winround_lt"></td><td class="oat_winround_t"></td><td class="oat_winround_rt"></td></tr><tr><td class="oat_winround_l"></td><td class="oat_winround_m"></td><td class="oat_winround_r"></td></tr><tr><td class="oat_winround_lb"></td><td class="oat_winround_b"></td><td class="oat_winround_rb"></td></tr></table>';
+		obj.dom.container.childNodes[0].childNodes[0].childNodes[0].childNodes[1].appendChild(obj.dom.title);
+		obj.dom.container.childNodes[0].childNodes[0].childNodes[1].childNodes[1].appendChild(obj.dom.content);
+		obj.dom.container.childNodes[0].childNodes[0].childNodes[2].childNodes[1].appendChild(obj.dom.status);
+		obj.dom.container.childNodes[0].childNodes[0].childNodes[2].childNodes[2].appendChild(obj.dom.buttons.r);
+	} else {
+		/* create table */
+		OAT.Dom.append([obj.dom.tr_t,obj.dom.td_lt,obj.dom.td_t,obj.dom.td_rt]);
+		OAT.Dom.append([obj.dom.tr_m,obj.dom.td_l,obj.dom.td_m,obj.dom.td_r]);
+		OAT.Dom.append([obj.dom.tr_b,obj.dom.td_lb,obj.dom.td_b,obj.dom.td_rb]);
+		OAT.Dom.append([obj.dom.table,obj.dom.tr_t,obj.dom.tr_m,obj.dom.tr_b]);
+		/* put window elements into the table */
+		OAT.Dom.append([obj.dom.td_t,obj.dom.title]);
+		OAT.Dom.append([obj.dom.td_m,obj.dom.content]);
+		OAT.Dom.append([obj.dom.td_b,obj.dom.status]);
+		/* insert the table into the container*/
+		OAT.Dom.append([obj.dom.container,obj.dom.table]);
+	}
 
 	obj.outerResizeTo = function(w,h) {
 		obj.dom.container.style.width = (w ? w+"px" : "auto");
@@ -341,7 +352,6 @@ OAT.WinODS = function(obj) { /* rounded window */
 	}
 
 	OAT.Dom.append([obj.dom.title,obj.dom.caption]);
-	//OAT.SimpleFX.roundDiv(obj.dom.container,{backgroundColor:'#000',antialias:1,borderColor:'#666'});
 
 	obj.outerResizeTo = function(w,h) {
 		obj.dom.container.style.width = (w ? w+"px" : "auto");

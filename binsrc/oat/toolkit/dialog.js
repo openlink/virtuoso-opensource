@@ -27,7 +27,10 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 		imagePath:OAT.Preferences.imagePath
 	}
 	if (optObj) for (var p in optObj) { options[p] = optObj[p]; }
+	
 	var win = new OAT.Window({close:options.close, max:0, min:0, width:options.width, height:options.height, x:0, y:0, title:title,resize:options.resize,imagePath:options.imagePath});
+	OAT.Dom.hide(win.div); 
+
  	$(contentDiv).style.margin = "10px";
  	var nav = OAT.Dom.create("table",{marginTop:"1em",width:"90%",textAlign:"center"});
  	var tbody = OAT.Dom.create("tbody");
@@ -56,7 +59,6 @@ OAT.Dialog = function(title,contentDiv,optObj) {
 		this.show = function() { OAT.Dom.show(win.div); win.accomodate(); OAT.Dom.center(win.div,1,1); options.onshow(); }
 		this.hide = function() { OAT.Dom.hide(win.div); options.onhide(); }
 	}
-	OAT.Dom.hide(win.div); 
 	
 	win.onclose = this.hide;
 	this.accomodate = win.accomodate;

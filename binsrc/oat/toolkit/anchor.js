@@ -154,17 +154,20 @@ OAT.Anchor = {
 			window:false, /* what should be displayed */
 			arrow:false, /* what should be displayed */
 			type:OAT.WinData.TYPE_RECT,
+			visibleButtons:"cr",
+			enabledButtons:"cr",
 			template:false /* use with type:OAT.WinData.TYPE_TEMPLATE - see win component documentation */
 		};
 		for (var p in paramsObj) { options[p] = paramsObj[p]; }
 
 		var win = new OAT.Win( {
-			visibleButtons:'cr',
 			outerWidth:options.width,
 			outerHeight:options.height,
 			title:"Loading...",
 			type:options.type,
 			status:options.status,
+			visibleButtons:options.visibleButtons,
+			enabledButtons:options.enabledButtons,
 			template:options.template	} );
 		function checkOver() {
 			var opts = OAT.AnchorData.active;
@@ -203,9 +206,11 @@ OAT.Anchor = {
 			} else { 
 				OAT.Anchor.appendContent(options);
 			}
-			OAT.Anchor.fixSize(win);
-			win.show();
+			if (options.activation=="focus") {
+				pos = OAT.Dom.position(elm);
+			}
 			options.anchorTo(pos[0],pos[1]);
+			win.show();
 		}
 		options.anchorTo = function(x_,y_) {
 			var win = options.window;
@@ -213,7 +218,7 @@ OAT.Anchor = {
 			var dims = OAT.Dom.getWH(win.dom.container);
 
 			if (fs[1]) { /* top */
-				var y = y_ - 35 - dims[1];
+				var y = y_ - 30 - dims[1];
 				var className = 'bottom';
 			} else { /* bottom */
 				var y = y_ + 30;
@@ -221,10 +226,10 @@ OAT.Anchor = {
 			}
 
 			if (fs[0]) { /* left */
-				var x = x_ + 10 - dims[0];
+				var x = x_ + 20 - dims[0];
 				className += 'right';
 			} else { /* right */
-				var x = x_ - 50;
+				var x = x_ - 30;
 				className += 'left';
 			}
 
@@ -257,6 +262,14 @@ OAT.Anchor = {
 			case "click":
 				OAT.Dom.attach(elm,"click",options.displayRef);
 			break;
+			case "dblclick":
+				OAT.Dom.attach(elm,"dblclick",options.displayRef);			
+			break;
+			case "focus":
+				OAT.Dom.attach(elm,"focus",options.displayRef);
+				OAT.Dom.attach(elm,"blur",options.close);
+			break;
+			
 		}
 	}
 }
