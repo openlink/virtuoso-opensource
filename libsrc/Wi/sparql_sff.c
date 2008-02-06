@@ -741,13 +741,13 @@ sparp_rvr_add_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *add_sff
     {
       ccaddr_t old = rvr->rvrSprintffs [ctr];
       if (!IS_BOX_POINTER (old))
-        spar_internal_error (sparp, "RDF medatata are corrupted");
+        spar_internal_error (sparp, "RDF medatata are corrupted (sparp_rvr_add_sprintffs() #1)");
     }
   for (addctr = add_count; addctr--; /* no step */)
     {
       ccaddr_t addon = add_sffs [addctr];
       if (!IS_BOX_POINTER (addon))
-        spar_internal_error (sparp, "RDF medatata are corrupted");
+        spar_internal_error (sparp, "RDF medatata are corrupted (sparp_rvr_add_sprintffs() #2)");
       for (ctr = old_len; ctr--; /* no step */)
         {
           ccaddr_t old = rvr->rvrSprintffs [ctr];
@@ -790,7 +790,12 @@ sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *i
         {
           ccaddr_t f1 = rvr->rvrSprintffs [old_ctr];
           ccaddr_t f2 = isect_sffs [isect_ctr];
-          ccaddr_t f12 = sprintff_intersect (f1, f2, 0);
+          ccaddr_t f12;
+          if (!IS_BOX_POINTER (f1))
+            spar_internal_error (sparp, "RDF medatata are corrupted (sparp_rvr_intersect_sprintffs() #1)");
+          if (!IS_BOX_POINTER (f2))
+            spar_internal_error (sparp, "RDF medatata are corrupted (sparp_rvr_intersect_sprintffs() #2)");
+          f12 = sprintff_intersect (f1, f2, 0);
           if (NULL == f12)
             continue;
           for (res_ctr = res_count; res_ctr--; /* no_step */)
