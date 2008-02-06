@@ -62,6 +62,7 @@
   xmlns:ifrs-gp-typ="&ifrs-gp-typ;"
   xmlns:link="&link;"
   xmlns:xbrli="&xbrli;"
+  xmlns:v="http://www.openlinksw.com/xsltext/"
   version="1.0">
   
   <xsl:output method="xml" indent="yes"/>
@@ -98,13 +99,13 @@
   </xsl:template>
   
   <xsl:template match="entity">
-      <virt-xbrl:scheme>
+      <virt-xbrl:scheme rdf:datatype="&xsd;string">
         <xsl:apply-templates select="identifier"/>
       </virt-xbrl:scheme>
-      <virt-xbrl:identifier>
+      <virt-xbrl:identifier rdf:datatype="&xsd;string">
         <xsl:value-of select="identifier" />
       </virt-xbrl:identifier>
-      <virt-xbrl:segment>
+      <virt-xbrl:segment rdf:datatype="&xsd;string">
           <xsl:value-of select="segment" />
       </virt-xbrl:segment>
   </xsl:template>
@@ -120,19 +121,19 @@
   </xsl:template>
   
   <xsl:template match="instant">
-    <virt-xbrl:instant>
+    <virt-xbrl:instant rdf:datatype="&xsd;date">
         <xsl:value-of select="."/>
     </virt-xbrl:instant>
   </xsl:template>
 
   <xsl:template match="startDate">
-    <virt-xbrl:startDate>
+    <virt-xbrl:startDate rdf:datatype="&xsd;date">
         <xsl:value-of select="."/>
     </virt-xbrl:startDate>
   </xsl:template>
 
   <xsl:template match="endDate">
-    <virt-xbrl:endDate>
+    <virt-xbrl:endDate rdf:datatype="&xsd;date">
         <xsl:value-of select="."/>
     </virt-xbrl:endDate>
   </xsl:template>
@@ -159,9 +160,16 @@
     <xsl:variable name="canonicalname" select="virt:xbrl_canonical_name(local-name(.))" />
     <xsl:variable name="contextRef" select="@contextRef"/>
     <xsl:variable name="label" select="concat($ns, $canonicalname)"/>
+    <xsl:variable name="dt"/>
     <xsl:if test="$canonicalname">
       <rdf:Description rdf:ID="{$contextRef}">
         <xsl:element namespace="{$ns}" name="{$canonicalname}" >
+                  <xsl:attribute name="rdf:datatype">
+                     <xsl:choose>
+                     <xsl:when test="@decimals">&xsd;decimal</xsl:when>
+                     <xsl:otherwise>&xsd;string</xsl:otherwise>
+                     </xsl:choose>
+                  </xsl:attribute>
             <xsl:value-of select="."/>
         </xsl:element>
       </rdf:Description>
