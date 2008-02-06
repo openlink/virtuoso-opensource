@@ -226,7 +226,7 @@ hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha)
 	  SET_THR_TMP_POOL (NULL);
 	}
       else 
-	hi->hi_memcache = id_hash_allocate (MAX (sz, HI_INIT_SIZE),
+	hi->hi_memcache = id_hash_allocate (509, 
 	  sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
       id_hash_set_rehash_pct (hi->hi_memcache, 120);
     }
