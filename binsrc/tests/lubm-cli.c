@@ -349,6 +349,7 @@ endCursor:
 
 
 char * q_pref = " prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#> select * from <lubm> where ";
+char * q_count_pref = " prefix ub: <http://www.lehigh.edu/~zhp2/2004/0401/univ-bench.owl#> select count (*) from <lubm> where ";
 char * inf_pref = " define input:inference 'inft' ";
 
 char * 
@@ -666,7 +667,8 @@ void LUBM_DoOne ()
       rand_func func = qrt.func;
       char * txt = qrt.pattern;
       int n_pars = qrt.n_pars;
-
+      if (1118 == i)
+	continue;
       /*printf ("len=%d pars=%d\n", strlen (txt), n_pars);*/
 
       if (func)
@@ -729,7 +731,7 @@ void LUBM_DoOne ()
       
       if (print_result)
         printf ("Q#%d:", i+1);
-      sprintf (buf, "sparql %s %s %s", q_kind == 1 ? inf_pref : "", q_pref, tmp);
+      sprintf (buf, "sparql %s %s %s", q_kind == 1 ? inf_pref : "", 12 == i ? q_count_pref : q_pref, tmp);
       if (print_result > 1)
         printf ("%s\n", buf);
 
