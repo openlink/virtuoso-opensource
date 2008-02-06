@@ -405,6 +405,7 @@ state_slot_t * sqlc_col_ref_rec_ssl (sql_comp_t * sc, col_ref_rec_t * cr);
 void sc_free (sql_comp_t * sc);
 
 void sqlc_select_strip_as (ST** selection, caddr_t *** as_list, int keep);
+ST * sqlc_strip_as (ST * tree);
 
 void sqlc_select_as (state_slot_t ** sls, caddr_t ** as_list);
 

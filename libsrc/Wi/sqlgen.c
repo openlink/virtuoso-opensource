@@ -2355,7 +2355,7 @@ bitmap_index_box);
       DO_BOX (ST *, exp, inx, dt->_.select_stmt.selection)
 	{
 	  df_elt_t *exp_dfe;
-
+	  exp = sqlc_strip_as (exp);
 	  term_found = 0;
 	  exp_dfe = sqlo_df_elt (so, exp);
 	  if (exp_dfe && tb_dfe->_.sub.dt_out && tb_dfe->_.sub.dt_out[inx])
