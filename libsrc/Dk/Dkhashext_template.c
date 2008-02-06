@@ -37,7 +37,9 @@
      empty condition being indicated by BUCKET_OVERFLOW == -1 */
 
 #define ID_CHECK_REHASH(ht) \
-  if (ht->ht_rehash_threshold && ((uint32) ht->ht_rehash_threshold) < (uint32)((ht->ht_count * 100) / ht->ht_buckets)) \
+  if (ht->ht_rehash_threshold && \
+    (ht->ht_buckets < id_ht_max_sz) && \
+    ((uint32) ht->ht_rehash_threshold) < (uint32)((ht->ht_count * 100) / ht->ht_buckets) ) \
     DBG_HASHEXT_NAME(id_hash_rehash) (DBG_ARGS ht, ht->ht_buckets << 1)
 
 uint32 hash_nextprime (uint32 n);
@@ -287,6 +289,7 @@ DBG_HASHEXT_NAME(id_hash_copy) (DBG_PARAMS id_hash_t * to, id_hash_t * from)
 void
 DBG_HASHEXT_NAME (id_hash_rehash) (DBG_PARAMS id_hash_t *ht, id_hashed_key_t new_sz)
 {
+  long o1, o2, o3, o4, o5;
   id_hash_t ht_buffer;
   new_sz = hash_nextprime (new_sz);
 
@@ -305,6 +308,8 @@ DBG_HASHEXT_NAME (id_hash_rehash) (DBG_PARAMS id_hash_t *ht, id_hashed_key_t new
   new_sz = hash_nextprime (new_sz);
   ID_HASH_ALLOCATE_INTERNALS((&ht_buffer),new_sz,ht->ht_key_length,ht->ht_data_length,
       ht->ht_hash_func, ht->ht_cmp);
+  ht_buffer.ht_dict_refctr = ht->ht_dict_refctr;
+  ht_buffer.ht_dict_version = ht->ht_dict_version;
   ht_buffer.ht_rehash_threshold = ht->ht_rehash_threshold;
 
 #if 0 /* There's a faster way. Moreover it will works with context-sensitive cmp function */
@@ -319,8 +324,19 @@ DBG_HASHEXT_NAME (id_hash_rehash) (DBG_PARAMS id_hash_t *ht, id_hashed_key_t new
       while (hit_next (&hit, &kp, &dp))
         DBG_HASHEXT_NAME(id_hash_add_new) (DBG_ARGS &ht_buffer, kp, dp);
     } while (0);
+  o1 = ht->ht_inserts;
+  o2 = ht->ht_deletes;
+  o3 = ht->ht_overflows;
+  o4 = ht->ht_dict_refctr;
+  o5 = ht->ht_count;
   DBG_HASHEXT_NAME (id_hash_clear) (DBG_ARGS ht);
   ID_HASH_FREE_INTERNALS(ht);
-  memcpy (ht, &ht_buffer, sizeof (id_hash_t));
+  ht->ht_array = ht_buffer.ht_array;
+  ht->ht_buckets = ht_buffer.ht_buckets;
+  ht->ht_inserts = o1;
+  ht->ht_deletes = o2;
+  ht->ht_overflows = o3;
+  ht->ht_dict_refctr = o4;
+  ht->ht_count = o5;
 }
 #endif

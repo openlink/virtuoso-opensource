@@ -368,6 +368,7 @@ caddr_t DBG_NAME(box_dv_dict_hashtable) (DBG_PARAMS id_hashed_key_t buckets)
     treehash, treehashcmp );
   res->ht_dict_refctr = 0;
   res->ht_dict_version = 1;
+  res->ht_rehash_threshold = 50;
   return (caddr_t) res;
 }
 
