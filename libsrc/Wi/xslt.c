@@ -3131,6 +3131,7 @@ bif_dict_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         size = hash_nextprime (newsize);
     }
   ht = (id_hash_t *)box_dv_dict_hashtable (size);
+  ht->ht_rehash_threshold = 120;
   hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)ht);
   return (caddr_t)hit;
 }
