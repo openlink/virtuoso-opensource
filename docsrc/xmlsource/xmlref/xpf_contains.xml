@@ -41,7 +41,7 @@
   </refsynopsisdiv>
   <refsect1 id="xpf_desc_contains"><title>Description</title>
 <para>
-For two given strings, this function checks if the first string conctains the second string.
+For two given strings, this function checks if the first string contains the second string.
 If any argument is not a string, it is converted to string using rules from string() XPATH function.
 Thus if the second argument has no string value, the function returns true, because it will
 be converted to an empty string first.</para>

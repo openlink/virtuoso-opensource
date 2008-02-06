@@ -55,7 +55,7 @@
 
   <refsect1 id="desc_import_script">
     <title>Description</title>
-    <para><function>BPEL.BPEL.import_script</function>   imports a new BPEL process or refeches the content of bpel,
+    <para><function>BPEL.BPEL.import_script</function>   imports a new BPEL process or refetches the content of bpel,
         wsdl files and wsdl for partner links for a given process.
         In both cases the process is turned to mode "Edit".
         Urls of wsdl files must have absolute paths.

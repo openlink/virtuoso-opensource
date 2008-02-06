@@ -42,7 +42,7 @@
   <refsect1 id="desc_xenc_key_DSA_read">
     <title>Description</title>
     <para>
-	This function is used to import a DSA seriaized key 
+	This function is used to import a DSA serialized key 
 	into user's repository and register it with a name supplied.
     </para>
     <para>

@@ -51,14 +51,14 @@
   of entries.  Using an LDAP directory to locate something however, if you know 
   the approximate location of where it is, such as what organization and country 
   it is in, then you can do a search and return much fewer entries.  LDAP is 
-  a vendor independent open protocol.  The fact that organisations can alter it 
+  a vendor independent open protocol.  The fact that organizations can alter it 
   to their own needs is key.  Also, large companies can use it as the basis for 
   their own more complex directory servers.</para>
   <para>There are common misconceptions about the role of LDAP.  
   LDAP is not intended as a replacement for local databases.  They are not 
   built to be added and modified too easily and thus would not work in a 
   situation such as an airline reservation system.  Also, LDAP is not meant 
-  to be a replacement for DNS.  DNS is a specialised well used service on the 
+  to be a replacement for DNS.  DNS is a specialized well used service on the 
   Internet for matching IP addresses to real names.  However databases and DNS 
   and LDAP like most Internet services work very well in collaboration.</para>
   <para>Virtuoso has the ability to act as an LDAP client, using built-in 

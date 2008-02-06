@@ -451,7 +451,7 @@ mtstest.exe   +exec 0
 	     <sect3 id="MSDTCdemo1Description">
 	         <title> Description </title>
 	         <para> The demo source is <programlisting>start.c</programlisting> file in the <programlisting>&lt;VIRTUOSO_INSTALLATION_DIRECTORY&gt;\samples\odbc\MSDTCdemo1</programlisting>
-	         directory. Several highlights of the most signficant
+	         directory. Several highlights of the most significant
 	         parts of code are presented  below: </para>
 	         <programlisting>
   ITransactionDispenser *disp;
@@ -508,13 +508,13 @@ voledbtest.exe
 	     <sect3 id="MSDTCdemoDescription">
 	         <title> Description </title>
 	         <para> The demo source is <programlisting>voledbtest.cs</programlisting> file in the <programlisting>&lt;VIRTUOSO_INSTALLATION_DIRECTORY&gt;\samples\odbc\MSDTCdemo</programlisting>
-	         directory. Several highlights of the most signficant
+	         directory. Several highlights of the most significant
 	         parts of code are presented  below: </para>
 	         <programlisting>
 [TransactionAttribute(TransactionOption.Required)]	             
   	         </programlisting>
 	         <para>
-	             It is significant to set this attribute of class to enable automatic transaction initializaton.
+	             It is significant to set this attribute of class to enable automatic transaction initialization.
 	         </para>
 	         <para> Create connections to appropriate servers: </para>
 	         <programlisting>

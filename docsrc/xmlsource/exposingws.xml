@@ -25,7 +25,7 @@
 <sect1 id="expwsmodules"><title>Exposing Persistent Stored Modules as Web Services</title>
   <para>Virtuoso SQL stored procedures and functions can be exposed as SOAP services very
 simply from Virtuoso, whether they are native Virtuoso or on remote data sources. This
-powerful ability means that any database servers already existing within an organisation
+powerful ability means that any database servers already existing within an organization
 can easily become a component in an eBusiness solution using Virtuoso. All you need is
 a few simple steps that typically take mere minutes to complete:
   </para>

@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>tcpip_gethostbyaddr</refname>
-    <refpurpose>Returns fully qialified DNS name of the host associated with given IP address</refpurpose>
+    <refpurpose>Returns fully qualified DNS name of the host associated with given IP address</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_tcpip_gethostbyaddr">
@@ -50,7 +50,7 @@
     </refsect2>
   </refsect1>
   <refsect1 id="ret_tcpip_gethostbyaddr"><title>Return Types</title>
-      <para>Returns fully qialified DNS name of the host associated with 'address'. If no such 
+      <para>Returns fully qualified DNS name of the host associated with 'address'. If no such 
 	  address the return will contain same value as 'address' parameter.
   </para></refsect1>
 </refentry>

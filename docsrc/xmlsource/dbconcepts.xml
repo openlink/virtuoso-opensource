@@ -960,7 +960,7 @@ consumption, because they are always disk-based.
 	</sect2>
 	<!-- ======================================== -->
 	<!-- ======================================== -->
-<!-- This section superceeded by the new Usermodel section in admin
+<!-- This section superseded by the new Usermodel section in admin
   <sect2 id="UserGroupPriv">
 		<title>Users &amp; Group Privileges</title>
 		<para>
@@ -1050,7 +1050,7 @@ SET PASSWORD &lt;old password&gt; &lt;new password&gt;
 
 Virtuoso supports a SQL 2K compatible role based security model.  This
 is the Virtuoso 3.0 replacement for the multiple group membership
-feature in Virtuoso 2.7.  A role is a grantee in the same nemespace as
+feature in Virtuoso 2.7.  A role is a grantee in the same namespace as
 users but is itself not a user account.  Thus one cannot login as a
 role.  A role is a grantable object.  Any role or user may be granted
 an arbitrary number of roles.  The effective privileges of a role or
@@ -1112,7 +1112,7 @@ deletes the user <parameter>user</parameter> from a secondary group <parameter>g
 			<para>
 A stored procedure may perform all actions granted to the user who
 created it.  Execution privileges can be granted on procedures by
-users with dba priveleges.  A non-dba user may perform actions through stored procedures
+users with dba privileges.  A non-dba user may perform actions through stored procedures
 that it could not perform by executing individual statements.
 </para>
 			<para>
@@ -1323,7 +1323,7 @@ CREATE TABLE SYS_CHARSETS (
 );
 </programlisting>
 	<para>
-The CS_NAME and CS_ALIASES colums are SELECTable by PUBLIC.
+The CS_NAME and CS_ALIASES columns are SELECTable by PUBLIC.
 To simplify retrieval of all official and unofficial names of character
 sets, Virtuoso provides the following function:
 </para>
@@ -1506,7 +1506,7 @@ NCHAR/LONG NVARCHAR to any other type.
 	<para>
 The HTTP server appends a <screen>charset=xxxx</screen> attribute to the
 <screen>Content-Type:</screen> HTTP header field  when
-returning the HTTP header to the client.  This can be overriden by calling
+returning the HTTP header to the client.  This can be overridden by calling
 functions such as <function>http_header()</function>.
 </para>
 <para>

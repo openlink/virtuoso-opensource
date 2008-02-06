@@ -62,7 +62,7 @@
   <member><emphasis>&#39;max&#39;</emphasis>
   row with maximum value of specified column wins</member>
   <member><emphasis>&#39;min&#39;</emphasis>
-  row with minumum value of specified column wins</member>
+  row with minimum value of specified column wins</member>
   <member><emphasis>&#39;ave&#39;</emphasis>
   new value of specified column is calculated as: 
 <computeroutput>current_val = (current_val + new_val) / 2</computeroutput></member>

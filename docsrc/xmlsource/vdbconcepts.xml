@@ -176,7 +176,7 @@ ATTACH (PROCEDURE|FUNCTION) <proc_name> ([<parameter1>[,<parameter2>[...]]])
   DSN is the same as the remote procedure&apos;s DSN.</para>
   <para>The <emphasis>proc_name</emphasis> is the designation of the 
   procedure&apos;s name on the remote data source, DSN.  The remote procedure 
-  name supplied should always be fully qualified to avoid ombiguity, it may 
+  name supplied should always be fully qualified to avoid ambiguity, it may
   consist of an optional qualifier/catalog, optional owner and finally procedure 
   name, separated by dots.  This must identify exactly one procedure on the 
   remote data source.</para>
@@ -406,7 +406,7 @@ db..vd_pass_through_function ('inf10', 'substring', 'substr');
 The first argument is the name of the remote database, as used with attach table and related statements.
 If user defined functions with qualified names are involved, the names should be qualified in
 the vd_pass_through_function call also. If many qualified or unqualified forms of the name are in use,
-one should declatre the mapping for them all.
+one should declare the mapping for them all.
 </para>
 		<para>
 To verify whether this declaration takes effect, one can use explain to see the query execution plan, for example:
@@ -425,7 +425,7 @@ of the type of DBMS because different instances can have different user defined 
 		<title>Virtual Database and SQL Optimizer Statistics</title>
 		<para>
 If a query can be executed in its entirety on a single remote database, then optimizing this query
-is excluusively the business of the remote database, as it gets the whole query text.
+is exclusively the business of the remote database, as it gets the whole query text.
 Virtuoso rewrites some things and suggests a join order but these are not binding on the remote database.
 </para>
 		<para>
@@ -497,8 +497,8 @@ select * from r1..t1 a, t1 b where a.row_no = b.row_no and a.fs1 = 'value1';
 </programlisting>
 		<para>
 The compiler notices that 33333 rows will be selected from r1..t1 based on fs1. It will decide to read these
-into a hash table, causing one linnear scan of r1..t1 with relatively few round trips. Then it will read t1
-locally and select trhe rows for which there is a matching entry in the hash. This is slightly faster
+into a hash table, causing one linear scan of r1..t1 with relatively few round trips. Then it will read t1
+locally and select the rows for which there is a matching entry in the hash. This is slightly faster
 than doing 33333 random lookups of t1.  If fewer rows were selected from r1..t1, the compiler would do a
 loop join with the local t1 as the inner loop.
 </para>
@@ -542,7 +542,7 @@ an intervening table not located on r1.
         <sect2 id="VDB_ARRAYPARAMETERS">
 		<title>Use of Array Parameters</title>
 		<para>
-ODBC and other data access API's usually offer a mecahnism for executing  a single parametrized
+ODBC and other data access API's usually offer a mechanism for executing  a single parametrized
 statement multiple times with a single client-server round trip. This is usually called support of array parameters.
 </para>
 		<para>
@@ -749,8 +749,8 @@ vd_attach_table ('text', 'datafile\x0Atxt', 'test', 'a', 'b');
   primary keys and indices.  These will be used to construct a copy of the 
   table definition in Virtuoso which is then used in reference to the remote 
   data source.  At query time this information is used as much as possible.  
-  This information may need to be supplimented by calls to SQLStatistics() for 
-  further indicies or primary key informtation, as a last resort Virtuoso will 
+  This information may need to be supplemented by calls to SQLStatistics() for
+  further indicies or primary key information, as a last resort Virtuoso will
   use SQLColAttribute() to determine which columns are SQL_DESC_SEARCHABLE.  
   </para>
 	</sect2>

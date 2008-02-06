@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>dict_get</refname>
-    <refpurpose>Returns the dependant part that corresponds to the given key in the given dictionary.</refpurpose>
+    <refpurpose>Returns the dependent part that corresponds to the given key in the given dictionary.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_dict_get">
@@ -42,7 +42,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_dict_get">
     <title>Description</title>
-    <para>The function returns the dependant part that corresponds to the given key in the given dictionary.
+    <para>The function returns the dependent part that corresponds to the given key in the given dictionary.
 The function returns <parameter>default_value</parameter> if the dictionary does not contain a pair whose key is equivalent to the given one.
 When only two arguments are passed to the function the default value is integer zero.</para>
   </refsect1>
@@ -52,7 +52,7 @@ When only two arguments are passed to the function the default value is integer 
       <para>Dictionary object to search in.</para>
     </refsect2>
     <refsect2><title>key</title>
-      <para>Key whose dependant part should be found.</para>
+      <para>Key whose dependent part should be found.</para>
     </refsect2>
     <refsect2><title>default_value</title>
       <para>The default value to be returned if the key is not found in the dictionary.</para>

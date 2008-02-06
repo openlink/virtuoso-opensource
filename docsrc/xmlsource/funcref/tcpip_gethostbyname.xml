@@ -49,7 +49,7 @@
     </refsect2>
   </refsect1>
   <refsect1 id="ret_tcpip_gethostbyname"><title>Return Types</title>
-      <para>A string containing IP address of the host or emty string if not exists</para>
+      <para>A string containing IP address of the host or empty string if not exists</para>
   </refsect1>
 </refentry>
 

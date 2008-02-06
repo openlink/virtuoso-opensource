@@ -54,7 +54,7 @@
   </refsect1>
   <refsect1 id="ret_xml_tree_doc_media_type"><title>Return Types</title>
     <para>If xsl:output "media-type" specified in XSL-T sheet it's value will be 
-    returned.  If no "media-type"  is specified, the valid results dependant on 
+    returned.  If no "media-type"  is specified, the valid results dependent on 
     the &lt;xsl:output "method" attribute are:</para>
     <simplelist>
      <member>if unknown : non-string value</member>

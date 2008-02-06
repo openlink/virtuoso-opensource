@@ -44,7 +44,7 @@
     <para>
     This function is used to delete a file from file system.  
 	This function  has a silent mode, where no errors will be
-	signaled upon failure.</para>
+	signalled upon failure.</para>
   </refsect1>
   <refsect1 id="params_file_delete"><title>Parameters</title>
     <refsect2>

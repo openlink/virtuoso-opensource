@@ -85,7 +85,7 @@
   no page is specified in the incoming URL.  </para>
 
   <note><title>Note:</title>
-  <para>Virtual directories for SOAP must alway use a physical path of /SOAP/.</para>
+  <para>Virtual directories for SOAP must always use a physical path of /SOAP/.</para>
   <para>The physical path of /SOAP/ does not need to exist in the filesystem 
   under the VSP-root directory for normal SOAP operation.  If it does existing it 
   can be used to answer non-SOAP requests.  Thus, configuring the 
@@ -99,7 +99,7 @@
 
   <para>In the SOAP Options section you can publish or unpublish procedures 
   and/or templates, both native and remote to the virtual directory using 
-  the Publish/Unpublish buttons respectivily.  The SOAP Options text-area allows 
+  the Publish/Unpublish buttons respectively. The SOAP Options text-area allows
   you to specify other SOAP options such as DIME encapsulations and WS-security 
   settings.  These options are supplied as name=value pairs terminated with a semi-colon and 
   a carriage-return.  Here is an example of the options used for the 

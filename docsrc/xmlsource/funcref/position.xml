@@ -42,7 +42,7 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_position"><title>Description</title>
-    <para>position returns the one-based index for the first occurence of element within an 
+    <para>position returns the one-based index for the first occurrence of element within an 
     <type>array</type> or <type>string</type>, beginning from offset start_index and iterating with step. 
     If the second argument is a <type>string</type>, the first argument must be a string with a single character.
     If the second argument is an array of <type>any</type>, then depending of type of it's elements 
@@ -111,7 +111,7 @@ _______________________________________________________________________________
 1 Rows. -- 4 msec.
 
 SQL> select position ('a', 'babaab', 1, 2);
-                                ^--- matches 5-th as other 'a' are skiped as step is 2 chars
+                                ^--- matches 5-th as other 'a' are skipped as step is 2 chars
 callret
 INTEGER
 _______________________________________________________________________________

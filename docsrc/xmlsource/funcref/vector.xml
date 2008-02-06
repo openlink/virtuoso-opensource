@@ -65,7 +65,7 @@ dbg_obj_print (vector (1, 2.34, 'A string', atof('3.14')))
 </screen>
     </example>
     <example id="ex_vector_2"><title>Pretty-print function for vectors</title>
-      <para>The following function gets a heterogenious vector of strings, nubers and other vectors and returns a string that is an SQL expression that will return a copy of a given vector.</para>
+      <para>The following function gets a heterogeneous vector of strings, nubers and other vectors and returns a string that is an SQL expression that will return a copy of a given vector.</para>
       <screen><![CDATA[create procedure DUMP_VEC_IMPL (inout _vec any, inout _ses any)
 {
   declare _len, _ctr integer;

@@ -41,7 +41,7 @@
   <refsect1 id="xpf_desc_urlify"><title>Description</title>
     <para>The urlify() function encodes its argument string according to
 URI rules (i.e. whitespaces are replaced with plus signs and all special characters
-are replaced with '%XX' notation. This is especialy useful for stylesheets
+are replaced with '%XX' notation. This is especially useful for stylesheets
 that compose dynamic HTML documents with calculateable values of
 attributes like &lt;A HREF=...&gt;.
     </para>

@@ -57,7 +57,7 @@
 	    by calling the system function chown() with the arguments supplied.</para>
 	<para>Not all the host OSes support the concept of owner users and groups.
 	    That's why the function will not throw an SQL error if it fails.</para>
-	<para>It will return DB NULL value when the function was executed succsessfully
+	<para>It will return DB NULL value when the function was executed successfully
 	    and the error message as a string if it failed.</para>
 	<para>The function first looks up the user and group name supplied into the
 	    OS database to get the user and group IDs. it then calls the system function

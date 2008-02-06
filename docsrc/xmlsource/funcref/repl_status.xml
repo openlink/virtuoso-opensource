@@ -103,7 +103,7 @@
   TR068   37000           No such account
   -->
   <refsect1 id="examples_repl_status"><title>Example</title>
-    <example id="ex_repl_status_1"><title>Retriving the subscription status</title>
+    <example id="ex_repl_status_1"><title>Retrieving the subscription status</title>
      <para>This example shows an analogue of the REPL_STAT() function.</para>
       <screen>
 create procedure MY_REPL_STAT ()

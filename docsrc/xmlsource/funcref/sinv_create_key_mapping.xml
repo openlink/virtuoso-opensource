@@ -49,7 +49,7 @@
     <refsect2><title>part_defs</title>
       <para><![CDATA[contains an array of name/type pairs describing the parts of the
       mapping. The types are used in the MAP table as column types and the type names
-      are used in naming the referse functions (one for each part) like :
+      are used in naming the referenced functions (one for each part) like :
       <map_name>_<part_name>]]></para></refsect2>
     <refsect2><title>do_drops</title>
       <para>integer (0, 1, 2 : default value 1)</para>

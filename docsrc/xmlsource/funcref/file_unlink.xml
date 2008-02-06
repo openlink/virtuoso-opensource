@@ -42,7 +42,7 @@
   <refsect1 id="desc_file_unlink"><title>Description</title>
     <para>This function requires dba privileges.</para>
       <para>
-    This function deletes a file from the file system.  sys_unlink is a synonum of this function. 
+    This function deletes a file from the file system.  sys_unlink is a synonym of this function. 
 
       </para>
   </refsect1>
@@ -54,7 +54,7 @@
   </refsect1>
   <refsect1 id="ret_file_unlink"><title>Return Types</title>
       <para>
-	On success returns zero. Otherwise signalls an error.
+	On success returns zero. Otherwise signals an error.
   </para>
 </refsect1>
 

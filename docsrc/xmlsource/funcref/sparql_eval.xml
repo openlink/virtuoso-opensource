@@ -57,7 +57,7 @@ _______________________________________________________________________________
 
 http://example/book3  http://purl.org/dc/elements/1.1/title  Fundamentals
 http://example/book3  http://purl.org/dc/elements/1.1/date   2002-01-01T00:00:00
-http://example/book2  http://purl.org/dc/elements/1.1/title  Desing notes
+http://example/book2  http://purl.org/dc/elements/1.1/title  Design notes
 http://example/book2  http://purl.org/dc/elements/1.1/date   2001-01-01T00:00:00
 
 4 Rows. -- 30 msec.

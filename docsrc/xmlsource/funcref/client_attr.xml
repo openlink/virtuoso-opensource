@@ -42,7 +42,7 @@
     <refsect2><title>attr</title>
       <para>can by one of the following:</para>
       <simplelist>
-        <member><emphasis>client_protocol</emphasis> - returns connection protocol (HTTP/1.0, HTTP/1.1, SQL -- SQL coresponds to ODBC, JDBC, .net, OLEDB).</member>
+        <member><emphasis>client_protocol</emphasis> - returns connection protocol (HTTP/1.0, HTTP/1.1, SQL -- SQL corresponds to ODBC, JDBC, .net, OLEDB).</member>
         <member><emphasis>client_ip </emphasis> - returns the IP where the invoking connection originates. 127.0.0.1 for
           unix domain  socket or internal scheduled task, otherwise the ip of the http or sql client.</member>
         <member><emphasis>accepting_ip</emphasis> -  returns the local listener through which the call came.  If unix

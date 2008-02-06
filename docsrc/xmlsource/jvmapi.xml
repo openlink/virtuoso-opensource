@@ -196,7 +196,7 @@
 	  <member>Serializable - java.io.SerializablePermission</member>
 	</simplelist>
 
-	<para>Restricted classes are not allowed any of the above priviledges.
+	<para>Restricted classes are not allowed any of the above privileges.
 	Virtuoso returns errors that are returned by the security manager if
 	breaches in security are attempted by a hosted Java class.</para>
 
@@ -204,7 +204,7 @@
   mode.  To create Java class based user defined types that are unrestricted
   you need to use create type syntax with UNRESTRICTED keyword.  The
   <link linkend="fn_import_jar"><function>import_jar()</function></link>
-  funtion can also be used to import classes, its third optional parameter
+  function can also be used to import classes, its third optional parameter
   can be used to define the security mode.</para>
 
   <note><title>Note:</title>

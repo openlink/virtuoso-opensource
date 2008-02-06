@@ -52,7 +52,7 @@
       <para>The name of the target publication</para>
     </refsect2>
     <refsect2><title>sqltext</title>
-      <para>sql expression with unnamed paramters if needed.</para>
+      <para>sql expression with unnamed parameters if needed.</para>
     </refsect2>
     <refsect2><title>a-1 ... a-n</title>
       <para>parameter value, in order as in sqltext parameter.</para>

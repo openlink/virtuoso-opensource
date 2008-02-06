@@ -52,7 +52,7 @@ for converting source XML text directly to an XML entity.
 	</para>
 			<para>
 If the argument is an XML tree entity, the function will return it as is, so
-e.g. redundand calls of <function>xml_tree_doc</function> will have no effect.
+e.g. redundant calls of <function>xml_tree_doc</function> will have no effect.
 The only thing xml_tree_doc can alter in the returned value is base URI of
 the document entity: if <parameter>base_uri</parameter> is provided and is
 not NULL, and argument entity has no base URI set then the provided URI

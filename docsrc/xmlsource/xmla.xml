@@ -204,7 +204,7 @@ with Discover or Execute operations.</para>
   <xmla:Session xmlns:xmla="urn:schemas-microsoft-com:xml-analysis" mustUnderstand="1" SessionID="NNNNNN" />
 </SOAP-ENV:Header>
 
-- and finnaly client cancel the session:
+- and finally client cancel the session:
 <SOAP-ENV:Header>
   <xmla:EndSession xmlns:xmla="urn:schemas-microsoft-com:xml-analysis" mustUnderstand="1" SessionID="NNNNNN" />
 </SOAP-ENV:Header>
@@ -241,7 +241,7 @@ and "urn:schemas-microsoft-com:xml-analysis:Execute" for Discover and Execute op
 
  <para> If true, a bookmark element is added to each row of the result set. </para>
 
- <para> A simple request / responce is added to samples. </para>
+ <para> A simple request / response is added to samples. </para>
  
  <para> The retrieve-row-count element of the query options must be true for rowcount returning to be enabled.</para>
 

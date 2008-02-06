@@ -159,7 +159,7 @@ will use the language specified in server's configuration.</para></refsect2>
       <para>the name of the encoding that is used by default to
 index source texts.
 If the parameter is omitted or is equal to '*ini*' string, indexing routines
-will use the encondig specified by charset of the RDBMS connection that is
+will use the encoding specified by charset of the RDBMS connection that is
 in use when the index is created.</para></refsect2>
   </refsect1>
   <refsect1 id="ret"><title>Return Types</title><para></para></refsect1>

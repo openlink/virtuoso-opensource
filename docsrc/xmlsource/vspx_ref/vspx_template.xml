@@ -112,7 +112,7 @@
 <refsect1 id="desc_vspx_template">
   <title>Description</title>
   <para>
-    <function>vspx_template</function>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node represantation)</para>
+    <function>vspx_template</function>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node representation)</para>
 </refsect1>
 <refsect1 id="attrs_vspx_template">
   <title>Attributes</title>
@@ -199,7 +199,7 @@ Template for terminal nodes of the tree in v:tree (i.e. for nodes without childr
   </refsect2>
   <refsect2>
     <title>set-to-remove</title>
-    <para>This combined with name-to-remove gives posibility to remove a HTML elements from output.</para>
+    <para>This combined with name-to-remove gives possibility to remove a HTML elements from output.</para>
     <para>
          &#39;top&#39; : 
 The rendered output of the enclosing template should not contain the first opening tag whose name is equal to the value of &#39;name-to-remove&#39; attribute of the template.

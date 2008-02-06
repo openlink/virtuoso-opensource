@@ -65,8 +65,8 @@
   this function has no return value
 
   Errors:
-  TR012	37000		Can't shedule local publication
-  TR014	22023		You should specify valid user name and password for replication syncronization
+  TR012	37000		Can't schedule local publication
+  TR014	22023		You should specify valid user name and password for replication synchronization
   TR015	37000		Replication account <acct> from <server> doesn't exist
 
   -->

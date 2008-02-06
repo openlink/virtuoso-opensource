@@ -39,7 +39,7 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="xpf_desc_distinct"><title>Description</title>
-<para>The function takes a single parameter which is sequense of XML entities (nodes or values) and 
+<para>The function takes a single parameter which is sequence of XML entities (nodes or values) and 
 returns the sequence that results from removing from input sequence all but one of a set of elements 
 that are identical each other. If input sequence is the empty, the empty sequence is returned.
 </para>

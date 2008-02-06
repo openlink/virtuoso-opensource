@@ -58,7 +58,7 @@ the SYS_XPF_EXTENSIONS system table.
     </programlisting>
 
     <para>
-    The input parameters will be retreived as a strings and then will be converted to the datatype of 
+    The input parameters will be retrieved as a strings and then will be converted to the datatype of 
     the corresponding argument of the stored procedure. 
     </para>
     

@@ -41,8 +41,8 @@
   </refsynopsisdiv>
   <refsect1 id="desc_ses_write">
     <title>Description</title>
-    <para>This functin is used to write character data taken from the buffer 
-    parameter to an open TCP sesson.  Attempts to write to a close session 
+    <para>This function is used to write character data taken from the buffer 
+    parameter to an open TCP session.  Attempts to write to a close session 
     will result in an error being returned.</para>
   </refsect1>
   <refsect1 id="params_ses_write">

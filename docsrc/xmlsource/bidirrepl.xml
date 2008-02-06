@@ -305,7 +305,7 @@ create procedure items_cr(
 	resolution stops and the INSERT is replayed.
 	If the row exists then we have a "uniqueness conflict".  In this case 'I'
 	conflict resolvers are fired-up.
-	If none of the 'I' conflict resolvers were able to make a descision
+	If none of the 'I' conflict resolvers were able to make a decision
 	(return non-zero value) the default action is 'publisher wins'.</para>
 	</formalpara></listitem>
 

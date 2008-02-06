@@ -28,7 +28,7 @@
   </refmeta>
 <!-- 
 
-Paramters:
+Parameters:
 dsn - remote datasource name
 remote_name - name of remote procedure
 local name - name of PL wrapper to be created
@@ -40,7 +40,7 @@ data type - SQL datatype of parameter as string (ie.'VARCHAR', "INT' etc.)
 SOAP type - a XSD/custom datatype for SOAP/WSDL actions (if not needed, must
 be empty string ie. '')
 
-status_code - returns status code of wrapper genearation
+status_code - returns status code of wrapper generation
 error_message - returns error message if status code is different than 00000
 make_resultset - causes wrapper to be made to return result set.
 description - to add special comment to the wrapper for VSMX feature 
@@ -110,7 +110,7 @@ signal (state, msg);
     </refsect2>
     <refsect2>
 	<title>status_code</title>
-	<para>returns SQL status code of the PL wrapper genearation</para>
+	<para>returns SQL status code of the PL wrapper generation</para>
     </refsect2>
     <refsect2>
 	<title>error_message</title>

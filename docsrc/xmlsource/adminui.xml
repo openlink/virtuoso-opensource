@@ -43,7 +43,7 @@ your Virtuoso server or use one of the provided samples.
 		<graphic fileref="menu-cutout.png"/>
 	</figure>
 <para>From "System Admin" you can view and change the Conductor Dashboard, manage user accounts; scheduler;
-Virtuoso Server paramaters and Access Control Settings. You can also install /upgrade /uninstall Virtuoso
+Virtuoso Server parameter and Access Control Settings. You can also install /upgrade /uninstall Virtuoso
 packages and Monitor Virtuoso Server Statistics.
 </para>
 	<figure id="adminuisystemadmin" float="1">

@@ -692,7 +692,7 @@ isqlo &lt;enter a valid ODBC Data Source Name&gt;</programlisting>
 	</sect1>
 	<!-- ############################################################# -->
 	<sect1 id="linuxinstall">
-		<title>Virtuoso for Linux</title>
+		<title>Virtuoso for Linux (Enterprise Edition)</title>
 			<sect2 id="lindoyouwannamigrate">
 				<title>Existing Virtuoso 2.7 Users</title>
 				<para>You can migrate your existing Virtuoso servers to 3.0 using 
@@ -1049,7 +1049,7 @@ Confirm Password :
 <para>The Virtuoso servers have default WebDAV administrator usernames 
 of "dav".   The "dav" accounts have the default password of "dav".  It is 
 recommended that you alter this as soon as possibly for security.  
-The installer now provides the opertunity to do this the first time 
+The installer now provides the opportunity to do this the first time
 the server is started.</para>
 <programlisting><![CDATA[
 Please enter a replacement for the Default Database's
@@ -1154,7 +1154,7 @@ bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
 		</sect2>
 	</sect1>
 	<sect1 id="unxinstvirt">
-		<title>Virtuoso for Unix</title>
+		<title>Virtuoso for Unix (Enterprise Edition)</title>
 			<sect2 id="unixdoyouwannamigrate">
 				<title>Existing Virtuoso 2.7 Users</title>
 				<para>You can migrate your existing Virtuoso servers to 3.0 using 
@@ -1493,7 +1493,7 @@ Confirm Password :
 <para>The Virtuoso servers have default WebDAV administrator usernames 
 of "dav".   The "dav" accounts have the default password of "dav".  It is 
 recommended that you alter this as soon as possibly for security.  
-The installer now provides the opertunity to do this the first time 
+The installer now provides the opportunity to do this the first time
 the server is started.</para>
 <programlisting><![CDATA[
 Please enter a replacement for the Default Database's
@@ -1597,7 +1597,103 @@ bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
 			<link linkend="defpasschange">changing the default passwords</link>.</para>
 		</sect2>
 	</sect1>
+<sect1 id="unixpersonainstall">
+  <title>Virtuoso for Unix (Personal Edition)</title>
+  <sect2 id="unixpersonainstalldescr">
+    <title>Installation</title>
+    <para>Once the required tar file has been downloaded from the web or ftp site and
+placed in a designated installation directory the installation process is ready to
+commence. Choose or create a suitable user account to own your Virtuoso installation.
+    </para>
+    <itemizedlist>
+      <listitem>The first step is to un-tar the file to obtain the install script and
+archive file. Use the following command, replacing  with the relevant name of the file
+you downloaded:
+      </listitem>
+<programlisting><![CDATA[
+tar xvf <tar file>.tar
+]]></programlisting>
+      <listitem>
+If a license file exists place this in the same directory as installation files and it
+will be used during installation.
+      </listitem>
+      <listitem>
+If upgrading an existing Virtuoso instance ensure it is shutdown first and a backup of
+your database file is made, then run the install script using the following command:
+      </listitem>
+<programlisting><![CDATA[
+$ sh ./install.sh
 
+- Extracting Virtuoso Personal Edition v5.0
+
+- Creating default environment settings
+
+- Creating default database settings
+Installing new virtuoso.ini in $VIRTUOSO_HOME/database
+Installing new php.ini in $VIRTUOSO_HOME/database
+Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
+
+- Registering ODBC drivers
+
+- Registering .NET provider for Mono
+
+- Installing VAD packages in database (this can take some time)
+
+- Checking where license should be stored
+
+- Starting OpenLink License Manager
+
+- Checking for initial Virtuoso license
+
+- Starting Virtuoso server instance
+
+- Finalizing installation
+
+
+This concludes the first part of the installation.
+
+
+Please start a browser manually and open the following URL to finalize
+the installation process:
+
+     http://<hostname>:8890/install/
+
+
+Installation completed
+$
+]]></programlisting>
+    </itemizedlist>
+</sect2>
+<sect2 id="unixpersonainstallconfg">
+    <title>Configuration</title>
+    <itemizedlist>
+      <listitem>Once the URL above has been loaded a browser the first page can be
+used to select a license file for use with the installation if one is not already
+in place, otherwise the task can be skipped using the button provided:
+        <figure id="v50peunx00" float="1">
+          <title>License file</title>
+	  <graphic fileref="inst/v50-pe-unx-00.png"/>
+        </figure>
+      </listitem>
+      <listitem>
+It is strongly advised that the standard "dba" and "dav" user account password be
+changed using the post installation page provided:
+        <figure id="v50peunx01" float="1">
+          <title>DAV/DBA authentication Setting page</title>
+	  <graphic fileref="inst/v50-pe-unx-01.png"/>
+        </figure>
+      </listitem>
+      <listitem>The post installation page is now complete and the Virtuoso Welcome
+page is presented:
+        <figure id="v50peunx02" float="1">
+          <title>Post installation page</title>
+	  <graphic fileref="inst/v50-pe-unx-02.png"/>
+        </figure>
+      </listitem>
+    </itemizedlist>
+    <para>The installation is now ready for use.</para>
+</sect2>
+</sect1>
 <sect1 id="installmacosx"><title>Virtuoso for Mac OS X</title>
 
 			<sect2 id="macxdoyouwannamigrate">
@@ -1650,7 +1746,7 @@ bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
   <figure id="v50pe04" float="1"><title>Select Destination</title>
     <graphic fileref="mac/v50pe04.png" width="622" depth="440"/></figure>
 
-  <para>Choose to perform and Easy(default) installation or click on the &quot;customize&quot; button to perfrom a Custom installation.
+  <para>Choose to perform and Easy(default) installation or click on the &quot;customize&quot; button to perform a Custom installation.
   </para>
 
   <figure id="v50pe05" float="1"><title>Selecting the Type of Installation</title>
@@ -1730,11 +1826,11 @@ bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
   <figure id="v50pe15" float="1"><title>Configuration</title>
     <graphic fileref="mac/v50pe15.png" width="877" depth="752"/></figure>
 
-  <para>Once logged into the Condictor click on any of the &quot;Tabs&quot; along the top to Administer the various
+  <para>Once logged into the conductor click on any of the &quot;Tabs&quot; along the top to Administer the various
         features ofthe Virtuoso Universal Server installation.
   </para>
 
-  <figure id="v50pe16" float="1"><title>Various features using Condcutor Tabs</title>
+  <figure id="v50pe16" float="1"><title>Various features using Conductor Tabs</title>
     <graphic fileref="mac/v50pe16.png" width="878" depth="749"/></figure>
 
   <para>Apple scripts for starting and stopping your Virtuoso Universal Server installation are located in
@@ -1822,7 +1918,7 @@ bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
     <graphic fileref="mac/osximage30.gif" /></figure>
 
 		<para>The Options page has Database, Charset and daylight savings
-		configuration. Typically the deafults are used.</para>
+		configuration. Typically the defaults are used.</para>
 
   <figure id="macconfig31" float="1"><title>Login - Options Tab</title>
     <graphic fileref="mac/osximage31.gif" /></figure>

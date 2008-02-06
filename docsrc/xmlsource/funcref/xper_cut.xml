@@ -84,7 +84,7 @@ for select ID as _id, SERVICE as _service, ADDRESS as _address from CLIENTS do
 </programlisting>
 		<para>
 Calls of xpath_eval are outside the loop, so it is faster than retrieval of suitable form for
-every selected record.  But values of both _plain and _isdn shares the same underlaying XML document
+every selected record.  But values of both _plain and _isdn shares the same underlying XML document
 and they will be assigned many times by the 'insert' operation.  The XML document has no place to cache
 two results of cuttings, so new cutting will be done every time
 when _isdn entity is saved after _plain or _plain saved after _isdn.  To optimize, it is better to

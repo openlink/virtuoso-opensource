@@ -45,9 +45,9 @@
     be used to make a fully
     qualified table name from non-qualified or qualified one, i.e. the qualifier
     and owner will be added if they are missing.  The schema name will be
-    replaced with current qualifier on execuation, owner will be replaced
+    replaced with current qualifier on execution, owner will be replaced
     or added with name of supplied DSN name.  All non-alphanumeric characters
-    in the name will be replaced with undersore symbol.</para>
+    in the name will be replaced with underscore symbol.</para>
   </refsect1>
   <refsect1 id="params_att_local_name">
     <title>Parameters</title>
@@ -63,7 +63,7 @@
   <refsect1 id="examples_att_local_name">
     <title>Examples</title>
     <example id="ex_att_local_name"><title>Using the att_local_name() function</title>
-      <para>This simple example shows retrival of fully qualified table name.
+      <para>This simple example shows retrieval of fully qualified table name.
       using the att_local_name() function from ISQL.</para>
       <screen><![CDATA[
 SQL> select att_local_name ('Oracle', 'DEMO.EMP');

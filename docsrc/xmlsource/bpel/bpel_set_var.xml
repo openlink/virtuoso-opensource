@@ -67,7 +67,7 @@
     <para><function>BPEL.BPEL.setVariableData</function>
       <para>Sets the data selected by "query" in the part (named by
 	"part" argument) of the BPEL variable. If there is no variable
-        with such name or the query contains syntax errors or if its evaluation signals a run time error, the appropriate error is signaled.
+        with such name or the query contains syntax errors or if its evaluation signals a run time error, the appropriate error is signalled.
       </para>
       <para>This procedure may only be used in Virtuoso/PL code invoked from a BPEL process.</para>
     </para>

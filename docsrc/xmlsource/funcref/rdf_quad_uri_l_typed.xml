@@ -23,7 +23,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_rdf_quad_uri_l_typed">
     <title>Description</title>
-    <para>Performs simple insertion of a quad where object is a literal value in 'SQL valmode' and can be specified datatype and language. The arguments g_uri, s_uri and p_uri should be IRI strings or IRI_IDs. All string arguments should be in UTF-8 encoding, otherwise they will be stored but are not queriable via SPARQL.</para>
+    <para>Performs simple insertion of a quad where object is a literal value in 'SQL valmode' and can be specified datatype and language. The arguments g_uri, s_uri and p_uri should be IRI strings or IRI_IDs. All string arguments should be in UTF-8 encoding, otherwise they will be stored but are not queryable via SPARQL.</para>
   </refsect1>
   <refsect1 id="params_rdf_quad_uri_l_typed">
     <title>Parameters</title>

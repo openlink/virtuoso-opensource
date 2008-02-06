@@ -41,7 +41,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_mts_set_timeout"><title>Description</title>
     <para> sets distributed transactions timeout. 'timeout' parameter 
-	indicates amount of timoute in milliseconds. If it equals -1 then 
+	indicates amount of timeout in milliseconds. If it equals -1 then 
 	default timeout of Virtuoso transaction is used (SQL_QUERY_TIMEOUT). 
 	This function must be called directly after "SET MTS_2PC=1". The time
 	 countdown begins at moment of changing first branch.  </para>

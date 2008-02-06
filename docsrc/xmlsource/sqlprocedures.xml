@@ -356,7 +356,7 @@ A user-written procedure may signal a user defined exception with the
 signal function.
 </para>
 		<para>
-Virtuoso/PL supports PSM 96 style exception handlers.  These allow catching specific SQL states or ranges of SQL states, invoking a specific block of code when the state is signaled from within the scope of the handler.  The handler may propagate the exception to an outer handler or transfer control to any appropriate point in the containing procedure.
+Virtuoso/PL supports PSM 96 style exception handlers.  These allow catching specific SQL states or ranges of SQL states, invoking a specific block of code when the state is signalled from within the scope of the handler.  The handler may propagate the exception to an outer handler or transfer control to any appropriate point in the containing procedure.
 </para>
 		<para>
 An unhandled exception will cause the procedure where it is detected to
@@ -460,7 +460,7 @@ procedure declaration.  The names are matched case-insensitively in all case mod
 After all leading positional arguments have been bound to the matching formal parameters
 in the procedure definition, each keyword argument is bound to the parameter of the same name.
 After this all unbound formal parameters are assigned to their default values.
-If a parameter with no default remains unbound an error is signaled.  OUT and INOUT
+If a parameter with no default remains unbound an error is signalled.  OUT and INOUT
 parameters are always required, regardless of the mode of calling.
 </para>
 <para>
@@ -641,7 +641,7 @@ statement allows declaring local variables and exception handlers.
 See &apos;Scope Rules&apos; above for a description of the scope of declarations.
 </para>
 			<para>
-Labelled statements (goto targets) and declarations can only occur within
+Labeled statements (goto targets) and declarations can only occur within
 a compound statement.
 </para>
 			<tip>
@@ -1084,9 +1084,9 @@ the error state.
                         </para>
                         <para>
 If there was no error, the error state is set to 0. If the procedure was undefined, the error state is set to 2.
-If there was a SQL state signaled from the procedure called on the worker thread, the error state is set to an array
+If there was a SQL state signalled from the procedure called on the worker thread, the error state is set to an array
 of three elements: The integer 3, the SQL state string and the text of the message. If aq_wait is terminated by an external event,
-then an error indicating this is signaled and the state waited for is lost. This can only happen when all transactions are
+then an error indicating this is signalled and the state waited for is lost. This can only happen when all transactions are
 killed by shutdown or going to a single user state.
                         </para>
                         <para>
@@ -1999,7 +1999,7 @@ to that handler.
 If a statement in your Virtuoso/PL procedure raises an SQLEXCEPTION condition,
 and you have not declared a handler for the specific SQLSTATE or the
 SQLEXCEPTION condition, the server passes the exception to the calling procedure (if any).
-If the procedure call is at the top-level, then the exception is signaled to the calling
+If the procedure call is at the top-level, then the exception is signalled to the calling
 client.
 </para>
   <para>

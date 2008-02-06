@@ -65,7 +65,7 @@
 		The libvirtxa.a library could be found in tuxedo/lib directory.
 	</para>
 	<para>
-		This allows to build TP monitor with Virtuoso support (VirtTMS) and services wich could use Virtuso as resource manager.
+		This allows to build TP monitor with Virtuoso support (VirtTMS) and services which could use Virtuoso as resource manager.
 		libvirtxa.a and other libraries must be accessible by the compiler. The following command builds the VirtTMS:
 		<programlisting>
 			buildtms -o ${TUXDIR}/bin/VirtTMS -r Virtuoso
@@ -76,7 +76,7 @@
 	<title>Configuration</title>
 	<para>
 		In order to use Virtuoso as resource manager the UBB config file (Tuxedo main configuration file) must contain reference
-		to VirtTMS. The following example of UBB config file configures two services and two virtuoso servers (resouce managers)
+		to VirtTMS. The following example of UBB config file configures two services and two virtuoso servers (resource managers)
 		behind them.
 	</para>
 		<programlisting><![CDATA[*RESOURCES
@@ -200,7 +200,7 @@ VRMTEST2        PRIO=50
 <sect1 id="xaClients">
 	<title>Clients</title>
 	<para>
-		There are no special requirenments for the clients of services which use Virtuoso as resource manager.
+		There are no special requirements for the clients of services which use Virtuoso as resource manager.
 		See Tuxedo 8.x documentation
 	</para>	
 </sect1>

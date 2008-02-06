@@ -99,7 +99,7 @@ that string.
   
   <refsect2>
       <title>ext_oid</title>
-      <para>X.509 extention object identifier</para>
+      <para>X.509 extension object identifier</para>
   </refsect2>
 
   </refsect1>

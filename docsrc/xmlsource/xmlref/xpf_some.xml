@@ -58,7 +58,7 @@ In any case, temporary variable is destroyed on return.
 <para>
 This function is used in the implementation of
 &quot;SOME&quot; logical operator in XQUERY, so you will probably use that operator
-in XQUERY expessions, not the function.
+in XQUERY expressions, not the function.
 This function may be useful in XPATH expressions and in XSLT stylesheets.
 It is not a part of library of standard XQUERY 1.0 functions.
 </para>

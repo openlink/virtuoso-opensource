@@ -41,7 +41,7 @@
   <refsect1 id="desc_ses_connect">
     <title>Description</title>
     <para>This function requires dba privileges.</para>
-    <para>This function is used to estabilish a new TCP connection to the target
+    <para>This function is used to establish a new TCP connection to the target
     host.  It returns a special datatype which represents the session handle.</para>
   </refsect1>
   <refsect1 id="params_ses_connect">

@@ -67,7 +67,7 @@ Improper use of DAV locks may result in subtle application errors that are hard 
   <refsect1 id="params_dav_api_lock"><title>Parameters</title>
     <refsect2><title>path</title>
       <para>Resource or collection path.
-As usual, colelction names must end with '/' and both sorts of path strings should begin with '/'.
+As usual, collection names must end with '/' and both sorts of path strings should begin with '/'.
 If the path specifies a non-existing resource in an existing collection then a lock object is created and only lock owner can create a resource with this name in future.
 </para>
     </refsect2>
@@ -89,7 +89,7 @@ This can be also an integer, this will work as empty list of tokens.</para>
     </refsect2>
     <refsect2><title>depth</title>
       <para>This specifies the recursive depth of the lock.
-The string can be '0' to lock the specified collection only, '1' to lock the collection and its soubcollections, 'infinity' to lock the whole subtree.
+The string can be '0' to lock the specified collection only, '1' to lock the collection and its subcollections, 'infinity' to lock the whole subtree.
 When the lock is added to a resource, the value '0' is used, for obvious reason.
 If NULL is passed to the function then the effective value is 'infinity' for collection lock or '0' for resource lock.</para>
     </refsect2>

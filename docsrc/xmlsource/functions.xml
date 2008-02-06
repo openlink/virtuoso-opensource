@@ -161,7 +161,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &rdf_audit_metadata; &rdf_backup_metadata;
 <!-- TBD: &rdf_load_turtle; -->
 &rdf_restore_metadata;&rdf_load_rdfxml_mt;&rdf_load_rdfxml;&ttlp;&ttlp_mt;
-&rdf_triples_to_rdf_xml_text;&rdf_triples_to_ttl;
+&rdf_triples_to_rdf_xml_text;&rdf_triples_to_ttl;&rdf_64bit_upgrade;
 
 
 &sparql_eval;&sparql_eval_to_array;&sparql_rexec;&sparql_rexec_to_array;

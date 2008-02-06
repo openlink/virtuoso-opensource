@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>xenc_key_3DES_read</refname>
-    <refpurpose>Importing a tripple-des key into user's repository</refpurpose>
+    <refpurpose>Importing a triple-des key into user's repository</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_xenc_key_3DES_read">
@@ -42,7 +42,7 @@
   <refsect1 id="desc_xenc_key_3DES_read">
     <title>Description</title>
     <para>
-	This function is used to import a tripple-des seriaized key 
+	This function is used to import a triple-des serialized key 
 	into user's repository and register it with a name supplied.
     </para>
     <para>

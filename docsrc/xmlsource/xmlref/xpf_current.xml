@@ -43,7 +43,7 @@
 The function returns a node-set that has the current node as its only member.
 For an outermost expression (an expression not occurring within another expression),
 the current node is always the same as the context node. For an expression
-occuring within another expression, e.g. within predicate in some path,
+occurring within another expression, e.g. within predicate in some path,
 the current node is the same as the context node of the first step in the path.
 </para>
 <para>

@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>bit_shift</refname>
-    <refpurpose>Returns the result of bitwise shift opertion over two 32-bit integers.</refpurpose>
+    <refpurpose>Returns the result of bitwise shift operation over two 32-bit integers.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_bit_shift">

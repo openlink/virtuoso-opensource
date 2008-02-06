@@ -40,7 +40,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_vdd_measure_rpc_time">
     <title>Description</title>
-    <para>This function will return the estimated number of milli-seconds to 
+    <para>This function will return the estimated number of milliseconds to 
 	perform an RPC round trip on the DSN supplied.</para>
   </refsect1>
   <refsect1 id="params_vdd_measure_rpc_time">
@@ -50,7 +50,7 @@
     </refsect2>
   </refsect1>
   <refsect1 id="ret_vdd_measure_rpc_time"><title>Return Types</title>
-    <para>The length of time taken in milli-seconds as a float type.</para>
+    <para>The length of time taken in milliseconds as a float type.</para>
   </refsect1>
 <!--
 <refsect1 id="errors_vdd_measure_rpc_time">

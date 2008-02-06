@@ -326,7 +326,7 @@ fractions, time zones etc.
 		<para>
 For handling multi-part ID's like scalars there is a special data type,
 composite.  Thus, if an application specific document ID is not an integer, it must be a
-composite totalling less than 30 bytes of content divided among its members.
+composite totaling less than 30 bytes of content divided among its members.
 	</para>
 
 </sect2>
@@ -621,7 +621,7 @@ unmodified XML document in the column plus calls for additional data.
 If offband columns are declared then any call of a hook function should
 either return 0 or call <function>vt_batch_feed_offband()</function>
 before returning a non-zero value. If this condition is violated for a document
-then NULL is retured instead of correct offband value for the document without
+then NULL is returned instead of correct offband value for the document without
 signalling any error.
 	</para>
 		<para>
@@ -744,7 +744,7 @@ A special bonus for term A OR B is added if hits of subterm A are close to the h
 	</member>
 			<member>
 Score of a term like A AND NOT B is equal to the score of subterm A. The subterm B is
-used for filtering out redundand hits but it does not affect the scoring.
+used for filtering out redundant hits but it does not affect the scoring.
 	</member>
 </simplelist>
 			<para>

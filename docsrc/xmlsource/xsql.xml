@@ -81,7 +81,7 @@ Such expressions are written as text content of the XSQL directive element.
 special notation &quot;{@X}&quot; stands for the reference to the parameter value.
 This notation can be used in any place where a variable name is acceptable.
 In addition, this notation can be used inside string literals, such a literal is translated into
-a string contatenation expression; e.g., <computeroutput>&apos;text-head{@X}text-middle{@Y}text-tail&apos;</computeroutput> is converted into
+a string concatination expression; e.g., <computeroutput>&apos;text-head{@X}text-middle{@Y}text-tail&apos;</computeroutput> is converted into
 <computeroutput>concat (&apos;text-head&apos;, cast ({@X} as varchar), &apos;text-middle&apos;, cast ({@Y} as varchar), &apos;text-tail&apos;)</computeroutput>.
    </para></formalpara>
    <formalpara><title>Calculateable strings</title>
@@ -170,7 +170,7 @@ dbg_obj_print ({@X} * {@Y}, '\n');
 
 
    <sect3 id="xsql_include_param"><title>xsql:include-param</title>
-    <para>Puts the value of the spacefied page parameter into the resulting XML of the page.</para>
+    <para>Puts the value of the specified page parameter into the resulting XML of the page.</para>
     <programlisting><![CDATA[
 <xsql:include-param name="page_param_name"/>
 ]]></programlisting>

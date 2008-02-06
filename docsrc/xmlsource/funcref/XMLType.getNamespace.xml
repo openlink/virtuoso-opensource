@@ -88,7 +88,7 @@ select XMLType('<qname xmlns="http://www.example.com/"/>', 'http://www.example2.
 _______________________________________________________________________________
 http://www.example.com/
 
--- Finally, it returs NULL for fragments even if all top-level elements of
+-- Finally, it returns NULL for fragments even if all top-level elements of
 -- a fragment have identical namespace URIs.
 select XMLType('
     <z:qname xmlns:z="http://www.example.com/"/>

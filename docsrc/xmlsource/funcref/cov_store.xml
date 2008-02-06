@@ -46,7 +46,7 @@
     described in the <link linkend="pldbgplcoverage">Branch Coverage</link> section.
     By default a normal concise coverage will be produced.  If the
     <computeroutput>add_comment</computeroutput> parameter is set to 1 then the
-    coverage will inlude code excerpts contained in line entities.</para>
+    coverage will include code excerpts contained in line entities.</para>
   </refsect1>
   <refsect1 id="params_cov_store">
     <title>Parameters</title>

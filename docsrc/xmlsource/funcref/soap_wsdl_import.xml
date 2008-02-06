@@ -109,7 +109,7 @@
   </return>
  </getElementBySymbolResponse>
 
- Note: the namespaces from response are ommited for better reading.
+ Note: the namespaces from response are omitted for better reading.
 ]]>
 </screen>
     </example>

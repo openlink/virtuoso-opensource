@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>REGR_R2</refname>
-    <refpurpose>Returns the coeffient of determination (R-squared) of the regression line.</refpurpose>
+    <refpurpose>Returns the coefficient of determination (R-squared) of the regression line.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_regr_r2">

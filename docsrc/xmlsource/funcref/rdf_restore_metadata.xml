@@ -47,7 +47,7 @@ The file or graph should be previously created by
 It is usually safe to restore metadata from backup made by some previous version of Virtuoso server but
 it is good idea to call <link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function>()</link> after such restore.
 </para>
-    <para>When the procedure is executed on the server that continmues to serve user requests during the maintainance then SPARQL query compiler may interrupt query compilations or create queries that will return incomplete result sets.
+    <para>When the procedure is executed on the server that continues to serve user requests during the maintenance then SPARQL query compiler may interrupt query compilations or create queries that will return incomplete result sets.
 These queries may be cached till the end of metadata update procedure but the cache is flushed when the update is complete, so possible errors will be transient.
 If even transient errors are not appropriate then do RDF metadata update with all precautions usual for changing database schema of an application.
 </para>

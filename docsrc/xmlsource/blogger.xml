@@ -94,7 +94,7 @@ a desire to write about.  For this most part, audience is neither expected
 nor required, however comments and feedback are common place.  </para>
 
 <para>Blogs originated as a form of public diary.  Their exploitation has seen them
-as a useful tool for finding personal reviews to products, situtations or
+as a useful tool for finding personal reviews to products, situations or
 general news as guidance for their readers.  These can be viewed quicker and
 more informative than regular journalism.</para>
 
@@ -116,7 +116,7 @@ you get the same but scaled upwards for each member individually,
 and further more, centrally.  Virtuoso can generate and automatically maintain
 a blog site specially for blog collaboration within a community suitable
 for a corporate need.  All members are listed on the front page and have
-the opertunity to contribute (publish) to the main blog view.  All blogs
+the opportunity to contribute (publish) to the main blog view.  All blogs
 are fully free text searchable - a simple exploit of the Virtuoso
 free-text engine. </para>
 
@@ -130,8 +130,8 @@ RSS or XML-feed based channel or information.</para>
 
 <para>The default Virtuoso blog implementation maintains a "blog/gems" subdirectory
 for each blog account.  Within this is an RDF file and an RSS file.
-These provide direct access to the blog informations in XML.  Other
-bloggers or news syndicators can read just the site contents, appart from
+These provide direct access to the blog information in XML.  Other
+bloggers or news syndicators can read just the site contents, apart from
 the web interface that Virtuoso provides, potentially applying an
 XSLT transformations suitable to their application or circumstance, for
 example reading the blog from a PDA or mobile device.</para>
@@ -170,7 +170,7 @@ exchange of knowledge on the Web. </para>
 for each blog account.  Within this are an OCS file and an OPML file.
 Both files provide an outline or hierarchical list of RSS feeds
 linked to the blog account in these two popular formats designed for
-channel/list exchange.  The files are varibly accessible following:</para>
+channel/list exchange.  The files are variably accessible following:</para>
 
 <programlisting><![CDATA[
 http://virtserv/DAV/myaccount/blog/gems/index.ocs
@@ -196,7 +196,7 @@ wide open freedom of raw XML and the feeling of security of a
 formal vocabulary.</para>
 
 <para>The OCS RDF file is an XML of nested &lt;rdf:descriptions&gt; tags
-losely defined as follows:</para>
+loosely defined as follows:</para>
 
 <programlisting><![CDATA[
 <rdf:RDF>
@@ -289,7 +289,7 @@ http://<host:port>/DAV/<uname>/blog/
    <member><emphasis>gems/index.ocs</emphasis> - the user's channels represented in OCS format.</member>
 
    <member><emphasis>gems/rsd.xml</emphasis> - Really Simple Discovery file for the blog. This helps client software to find the services needed to read, edit, post etc.</member>
-   <member><emphasis>gems/atom.xml</emphasis> - Atom feed file. It's simialr to the RSS file but in different format.</member>
+   <member><emphasis>gems/atom.xml</emphasis> - Atom feed file. It's similar to the RSS file but in different format.</member>
    <member><emphasis>gems/backlog.xml</emphasis> - RSS v2.0 file containing all posts in user's blog.</member>
    <member><emphasis>gems/foaf.xml</emphasis> - 'Friend Of Friend' file. This is to provide in a machine-processable format, about blogger, his/she interests, location, friends etc.</member>
    <member><emphasis>gems/index.opml</emphasis> - the user's channels represented in OPML format.</member>
@@ -1662,8 +1662,8 @@ and to register a notification request.</para>
 
 <formalpara><title>Cloud notification services</title>
 <para>
-The aggregators scan for changes in an interval, but in some situations we want to know when a channel has changed immediately. Notification makes it possible to always be in sync with bandwidth conservation and unneded loops.
-This is possible to register an aggregator using a xmlStorageSystem.requestNotification function, also to make aggregator to know about such service it's parameters are exposed in &lt;cloud&gt; sub-element of &lt;channel&gt; of the RSS files. The notification works as follows: aggregator gets registered via xmlStorageSystem.requestNotification; Then if a registered link changes, the aggregator will be notifed via specified protocol and method. The aggregator needs to register itself every 24 hour, otherwise the registration will expire. For full explantion of the cloud element of RSS file see reference at "http://backend.userland.com/rss#ltcloudgtSubelementOfLtchannelgt".
+The aggregators scan for changes in an interval, but in some situations we want to know when a channel has changed immediately. Notification makes it possible to always be in sync with bandwidth conservation and unneeded loops.
+This is possible to register an aggregator using a xmlStorageSystem.requestNotification function, also to make aggregator to know about such service it's parameters are exposed in &lt;cloud&gt; sub-element of &lt;channel&gt; of the RSS files. The notification works as follows: aggregator gets registered via xmlStorageSystem.requestNotification; Then if a registered link changes, the aggregator will be notified via specified protocol and method. The aggregator needs to register itself every 24 hour, otherwise the registration will expire. For full explaination of the cloud element of RSS file see reference at "http://backend.userland.com/rss#ltcloudgtSubelementOfLtchannelgt".
 </para>
 </formalpara>
 
@@ -1705,7 +1705,7 @@ available:
 </para>
 <para>
 "Post Quotas": A maximum number of posts
-"Cummulative Post Size": A threshold that is based on a cumulative size of
+"Cumulative Post Size": A threshold that is based on a cumulative size of
 posts.
 These are settable to a user which may do a blog posts via WebDAV - User accounts UI.
 </para>
@@ -1780,7 +1780,7 @@ SQL> INSERT INTO DB.DBA.SYS_ROUTING
 Then on specified R_FREQUENCY a scheduled job will make blogger XML-RPC requests to the target server using API as specified in R_PROTOCOL_ID field.
 If target server is down the entries will be kept for next job round.
 </para>
-<para>The upstreeming feature can be extended easily to make another form of routing. The e-mail notification services in blogging is just one of them.</para>
+<para>The upstreaming feature can be extended easily to make another form of routing. The e-mail notification services in blogging is just one of them.</para>
 <para>The following shows how this feature can be triggered with simple insert command:</para>
 <programlisting>
 <![CDATA[
@@ -1959,7 +1959,7 @@ posts which blogger assign to a category for notification.
 	  will contain URLs to the post and comment API. Reply to this
 	  mail will add new comment, if mail-gateway is enabled by Web
 	  administrator.</para>
-      <para>HTML Form - this option will send an email contianing comment and
+      <para>HTML Form - this option will send an email containing comment and
 	  form, which could be used to invoke directly comment API from mail
 	  agent (if it supports posting a form)</para>
       <para>Text - this option is same as first, but uses plain text instead
@@ -2012,14 +2012,14 @@ uses the array of URLs returned to set it's local list of channels.
     sent via mobile devices and containing a images, allowing to the blog owner to decide which image
     to go to his/her blog. As an alternative post can be automatic if blogger check this option. </para>
 
-    <para>Mobile blogging (Moblog) can be coonfigured via the Virtuoso blog UI by selecting the
+    <para>Mobile blogging (Moblog) can be configured via the Virtuoso blog UI by selecting the
     Moblog link under the Configuration section as indicated in the diagram below: </para>
 
     <figure><title>Blog page</title>
       <graphic fileref="moblog.gif" width="633px" depth="513px" /></figure>
 
     <para>The Moblog configuration page enables the details of the POP3 server from
-    which messages are to be retrieved from is located  as inidcated in the diagrram below:</para>
+    which messages are to be retrieved from is located  as indicated in the diagrram below:</para>
 
     <figure><title>Blog page</title>
       <graphic fileref="moblogconfig.gif" width="633px" depth="513px" /></figure>
@@ -2042,12 +2042,12 @@ uses the array of URLs returned to set it's local list of channels.
 
     <para>Note: feeding a mail box can also be done via &quot;Mail&quot;, &quot;Get Mail with
     POP3&quot; Admin UI utility. In this case blogger authenticates in this utility, and feeds
-    it&#39;&#39;s local mailbox from some POP3 server. The consecuential actions to put a message
+    it&#39;&#39;s local mailbox from some POP3 server. The consequential actions to put a message
     as blog message are same as described above. </para>
 
     <para>As alternative to feeding via own POP3 account, Moblog message can be sent to special
     mail-gateway account. Such account can be set from Web admin only and can be used from all
-    bloggers to pass Moblog messages to their blogs. Only requirment in that case is blogger to
+    bloggers to pass Moblog messages to their blogs. Only requirement in that case is blogger to
     include &#39;&#39;@@blogId@@=[blog Id]&#39;&#39; string as a single line whenever in the
     message body. Further mail-gateway processing will detect such rule and will expose the
     message in the Moblog UI, or automatic post will be performed. </para>
@@ -2057,12 +2057,12 @@ uses the array of URLs returned to set it's local list of channels.
       <para>
 	  The Virtuoso blogging system allows to insert into a post a result from SQL, XPATH or XQuery expressions.
 	  The way this can be done is to have a SQL access enabled for the Web user making the post,
-	  so shuch blogger can insert into a post body (note that this is not available for title) a XMLTemplate.
+	  so such blogger can insert into a post body (note that this is not available for title) a XMLTemplate.
 	  (see "XML Templates" for reference)
 	  Then at the render time the template will be executed on behalf of the blogger who is made the post
 	  and result will be shown. There is no limitation how many XML Templates can be included in a single post.
 	  Please note that bloggers without SQL access cannot do such posts. Also the SQL granting rules
-	  will be applied when XML Tempalte is executed.
+	  will be applied when XML Template is executed.
       </para>
       <para>
 	  The following will render a simple table containing list of Demo.demo.Shippers table from Demo database.
@@ -2105,7 +2105,7 @@ uses the array of URLs returned to set it's local list of channels.
 	  target and refresh interval; visitors to the
 	  given blog can subscribe to the 'mailing list' for
 	  blog updates.
-	  Once visitor have subsribed, on every new post
+	  Once visitor have subscribed, on every new post
 	  an email will be sent to he/she.
 
 	  If the mail tragte is deleted, the mailing list for blog update
@@ -2121,7 +2121,7 @@ uses the array of URLs returned to set it's local list of channels.
 	  a XSL-T style-sheet which converts the RSS in WML format.
       </para>
       <para>
-	  To enable this functionality the blogger shoul enter '*wml-default*' as
+	  To enable this functionality the blogger should enter '*wml-default*' as
 	  RSSFilter option on settings page. Or if he/she has an own XSL-T
 	  filter for WML can enter its URL instead.
       </para>

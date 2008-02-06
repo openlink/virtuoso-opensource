@@ -55,7 +55,7 @@ To create two really independent dictionary objects, use <para><link linkend="fn
     <title>Parameters</title>
     <refsect2><title>size</title>
       <para>The guessed side of hashtable.
-oversstimation of the size  will result in needless  memory consumption whereas underscore leads to a bit slower insertion,
+overestimation of the size  will result in needless  memory consumption whereas underscore leads to a bit slower insertion,
 because the internal hash table will grow dynamically.
 The simplest approach is to omit the parameter at all if you don't know the number of keys to be stored.</para>
     </refsect2>

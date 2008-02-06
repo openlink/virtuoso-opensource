@@ -57,7 +57,7 @@
       <para>A string containing SOAP message</para>
     </refsect2>
     <refsect2><title>soap_version</title>
-	<para>An interger indication SOAP version (11 for v1.1, 10 for 1.0 etc)</para>
+	<para>An integer indication SOAP version (11 for v1.1, 10 for 1.0 etc)</para>
     </refsect2>
     <refsect2><title>validate_flag</title>
 	<para>Bit mask flag. See below for details.</para>
@@ -80,7 +80,7 @@
     </refsect2>
     <refsect2><title>keys</title>
 	<para>if supplied the parameter will be set with keys names used for decryption and signature verification.
-	    The strucure is as follows : vector (vector ([enc-key1],[enc-key2],...), vector ('[signing token name]', '[matching token]')). Where enc-key is a key used to decrypt the message fragment; '[signing token name]' is the temporary key used to validate the signature and '[matching token]' is the token (key) from user's space that matches the signing token.
+	    The structure is as follows : vector (vector ([enc-key1],[enc-key2],...), vector ('[signing token name]', '[matching token]')). Where enc-key is a key used to decrypt the message fragment; '[signing token name]' is the temporary key used to validate the signature and '[matching token]' is the token (key) from user's space that matches the signing token.
 	</para>
     </refsect2>
   </refsect1>

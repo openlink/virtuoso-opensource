@@ -28,7 +28,7 @@
   </refmeta> 
   <refnamediv> 
     <refname>replace()</refname> 
-    <refpurpose>Searches for an substring and replace its occurences with other substring.</refpurpose>
+    <refpurpose>Searches for an substring and replace its occurrences with other substring.</refpurpose>
   </refnamediv> 
   <refsynopsisdiv> 
     <funcsynopsis id="xpf_syn_replace"> 
@@ -42,8 +42,8 @@
   </refsynopsisdiv>
   <refsect1 id="xpf_desc_replace"><title>Description</title>
 <para>
-The function searches for all occurences of a <parameter>search_strg</parameter> in
-<parameter>txt</parameter> and replaces every occurence with <parameter>replace_strg</parameter>.
+The function searches for all occurrences of a <parameter>search_strg</parameter> in
+<parameter>txt</parameter> and replaces every occurrence with <parameter>replace_strg</parameter>.
 An error is signalled if <parameter>search_strg</parameter> is empty.
 </para>
 </refsect1>
@@ -79,7 +79,7 @@ An error is signalled if <parameter>search_strg</parameter> is empty.
   </refsect1>
   <refsect1 id="xpf_examples_replace"><title>Examples</title>
     <example id="xpf_ex_replace"><title></title>
-      <para>Replace all occurences of 'http://www.example.com/' with '/webrobot/'</para>
+      <para>Replace all occurrences of 'http://www.example.com/' with '/webrobot/'</para>
       <screen>replace(
   '&lt;A HREF="http://www.example.com/index.html"&gt;Home&lt;/A&gt;',
   'http://www.example.com/', '/webrobot/' )</screen>

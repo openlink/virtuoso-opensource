@@ -799,7 +799,7 @@ owned by a non-dba user, the supertable must be owned by the same user.</para>
       you to specify a starting value and/or step value in the table creation statement.  The syntax is:</para>
 
   <programlisting><![CDATA[
-      INDENTITY (START WITH <N>, INCREMENT BY <Y>)
+      IDENTITY (START WITH <N>, INCREMENT BY <Y>)
 ]]></programlisting>
 
 <example id="ex_identity"><title>Using the IDENTITY declaration</title>
@@ -924,7 +924,7 @@ CREATE TABLE SAMPLE (
   no primary key defined.  The default primary key (_IDN) column will not appear
   in the ODBC catalog calls <function>SQLColumns()</function>,
   <function>SQLStatistics()</function>, <function>SQLPrimaryKeys()</function>,
-  <function>SQLColumnPrivileges()</function>.  The column can be explicited
+  <function>SQLColumnPrivileges()</function>.  The column can be explicitly
   referenced in SQL statements just as any other.  The SQL "SELECT * ..."
   statement will omit the _IDN column.  The "INSERT INTO TABLE VALUES (.)"
   statement does not expect a value for the _IDN column.
@@ -1017,7 +1017,7 @@ ____________________________________________________________________
       across the database so it is very important to remember to enable foreign key
       constraint checking again afterwards.</para>
       <para>Columns can be defined as having foreign keys and a default value,
-      however, the default value must not violate the constaint at the time of
+      however, the default value must not violate the constraint at the time of
       insert or update as this will be rejected in the normal way.</para>
 
 <example id="ex_fkeysinuse"><title>Creating tables with foreign key constraints</title>
@@ -1161,7 +1161,7 @@ of the document is equal to one specified in the constraint.
 and the complexity of the schema, schema validation may be a time- and memory- consuming
 operation. An application can win a lot if every stored value is validated only once
 and avoid repeating validations on every read of the stored data, but it also may loose
-if the  validation is actually redundand (e.g. if the data  always comes from sources which produce valid content).
+if the  validation is actually redundant (e.g. if the data  always comes from sources which produce valid content).
 </para>
 <para>
 The parameter &quot;optional-dtd-configuration&quot; lets an application to specify
@@ -1672,7 +1672,7 @@ If you have to enter a NULL you can simply use the keyword NULL, as you would a 
 NULL is a special keyword you do not need to enclose it in single quotes.
 </para><para>
 You can specify the columns that you are inserting values into in the insert statement.  One
-should always specify the columns that you are inserting into incase the order of columns in
+should always specify the columns that you are inserting into, in case the order of columns in
 the database are not as expected, or you are not inserting values into every column.
 </para><para>
 If a value is not specified for a column on insert, then the default value will be used for that column.
@@ -2121,7 +2121,7 @@ select j, grouping (j), k, grouping (k), t, grouping (t), sum (i) from ROLLUP1 g
 		<programlisting>
 select j, k, t, sum (i) from TABLE1 group by rollup (j,k,t) ;
 </programlisting>
-		<para>is equivalent of cumulate result sets of:</para>
+		<para>is equivalent of accumulate result sets of:</para>
 		<programlisting>
 select j, k, t, sum (i) from TABLE1 group by j,k,t;
 select NULL, k, t, sum (i) from TABLE1 group by k,t;
@@ -2132,7 +2132,7 @@ select NULL, NULL, NULL, sum (i) from TABLE1;
 		<programlisting>
 select t,s, sum (i) from TABLE1 group by cube (t,s);
 </programlisting>
-		<para>is equivalent of cumulate result set of:</para>
+		<para>is equivalent of accumulate result set of:</para>
 		<programlisting>
 select t,s, sum (i) from TABLE1 group by t,s;
 select t,NULL, sum (i) from TABLE1 group by t;
@@ -2823,7 +2823,7 @@ into a temporary space. Processing continues from that point on as if the data c
 		<para>
 Queries involving procedure views or derived tables are subject to normal join order selection.
 For this purpose it is possible to associate a cost to a procedure used in a procedure view or derived table.  
-If the option (order) clause is given atthe end of the slect, joins  are done left to right.  If a procedure is in the leftmost
+If the option (order) clause is given atthe end of the select, joins  are done left to right.  If a procedure is in the leftmost
 position in the from it will be called once for the query, if it is in the second position it will
 be called once for every row of the leftmost table that passes selection criteria applicable
 to it and so on.
@@ -2921,7 +2921,7 @@ __cost (n1, n2,...), where each n is a literal number.
 The declaration can figure anywhere in the procedure's body as a regular statement. 
 At least one
 number is required. The first number is the one-time cost of calling
-the procedure.  The second number is the numberr of result rows that
+the procedure.  The second number is the number of result rows that
 will be produced by the call, defaulting to 1.  The numbers from third
 onwards correspond to the parameters of the procedure from left to right.  If a parameter
 is NOT given or is NOT known because of join order, then the cost of
@@ -3139,7 +3139,7 @@ grant update (&quot;Salary&quot;) on &quot;Employees&quot; to &quot;Manager&quot
 grant execute on &quot;SalesReport&quot; to &quot;Accounting&quot;;
 </programlisting>
 		</example>
-    <para><emphasis>GRANT REFERENCES</emphasis> is a priviledge required by a
+    <para><emphasis>GRANT REFERENCES</emphasis> is a privilege required by a
     user on a table so that this user can create new tables referencing such tables
     in foreign keys where he/she would otherwise be restricted.</para>
 
@@ -3288,7 +3288,7 @@ respectively.  If neither of these is specified and a union term fails without p
 result rows the error will not be visible.
 </para>
 <note><title>Note</title>
-<para>No error encountered during a best effort union will be signaled in the normal fashion.
+<para>No error encountered during a best effort union will be signalled in the normal fashion.
 </para>
 </note>
 

@@ -77,7 +77,7 @@ If <parameter>replacement1</parameter> is NULL then the attribute is removed at 
 the <parameter>replacement1</parameter>.
 </para>
 <para>
-If the result of evaluation is not an attribute entity but a entity then the highllighted node is replaced with the value of <parameter>replacement1</parameter>.
+If the result of evaluation is not an attribute entity but a entity then the highlighted node is replaced with the value of <parameter>replacement1</parameter>.
 The method of  replacement depends on the type of the replacement value.
 If <parameter>replacement1</parameter> is NULL then the highlighted node is simply removed from the result; if the node is the root or a
 single child of the root then function immediately returns NULL instead of an XML entity (because XML document can not be totally empty),
@@ -97,7 +97,7 @@ normalization will replace them with a single text node &quot;text1text2&quot;
 <para>
 Now consider the case of more than one replacement made in one function call. If more than one pair of XPATH expression and replacement is given then
 the function first finds all highlighted nodes, all together, then it performs all replacements, then it performs an normalization.
-It is very important to understand that the order of making replacements has nothin to do  with the order of pairs of parameters in the function call.
+It is very important to understand that the order of making replacements has nothing to do  with the order of pairs of parameters in the function call.
 If some highlighted node is an ancestor of some other highlighted node then the effect of the replacement of the descendant highlighted node is void:
 the descendant is replaced first; then the ancestor is replaced as a whole, no matter if some of its descendants are modified.
 If a node is the result of two different XPATH expressions (&quot;highlighted more than once&quot;), the order of parameters in the function call

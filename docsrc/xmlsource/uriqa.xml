@@ -25,13 +25,13 @@
 <para>
 Virtuoso supports the URIQA (URI Query Agent) extension of HTTP WebDAV protocol.
 URIQA adds three new methods to HTTP in order to retrieve, add and remove RDF metadata about a given subject.
-The subject is identified by its URI. If the subject is a DAV resource then URIQA will usually reuse the DAV URI of the resouce.
+The subject is identified by its URI. If the subject is a DAV resource then URIQA will usually reuse the DAV URI of the resource.
 If the subject is not a resource but something else (physical entity, imaginary thing or vocabulary item) then URIQA can
 be used to process metadata about the subject even if the subject itself can not be accessed via HTTP.</para>
 <para>
 URIQA-specific HTTP methods are called MGET (to retrieve existing metadata), MPUT (to add or update RDF triples) and
 MDELETE (to remove some or all triples). A single URIQA request usually deals with a single subject that is specified by request URI.
-The MGET responce, however, can return metadata about more than one RDF subject, e.g., the request about a book can return both
+The MGET response, however, can return metadata about more than one RDF subject, e.g., the request about a book can return both
 data about the book itself plus some data about persons who are known as authors of the book.</para>
 <para>
 In addition to URIQA-specific HTTP methods, Virtuoso implements a semantic web service interface that allows  plain HTTP clients to access metadata using
@@ -45,7 +45,7 @@ process the request. The default configuration of Virtuoso server will try three
 <simplelist>
 <member>If the URI points to a resource located at the server then the first handler returns DAV metadata of the resource.</member>
 <member>If the URI points to a resource that is outside the server, and URI is of sort 'http://...' then Virtuoso will send a URIQA web service
-request to the remote server specified in URI in hope that it will return at least something, the responce is passed to the client unchange.</member>
+request to the remote server specified in URI in hope that it will return at least something, the response is passed to the client unchange.</member>
 <member>Any other URI results in an error.</member>
 </simplelist>
 <note>
@@ -70,7 +70,7 @@ different URLs even if these URLs are equivalent for other methods. URIQA rules 
 <simplelist>
 <member>If the URIQA request header contains 'URIQA-uri' parameter line then the value of this parameter is used and any other URI data are ignored.</member>
 <member>If the URIQA request header contains 'Host' parameter line then the URL from the first line of the request is patched to contain host name specified by 'Host' parameter, no matter whether the
-original URL contains host or what host name or network iterface or port is user by client to connect to the server.</member>
+original URL contains host or what host name or network interface or port is user by client to connect to the server.</member>
 <member>If the URIQA request header does not contain 'URIQA-uri' or 'Host' line then the URL from the first line of the request is used 'as is',
 extended by host name from 'DefaultHost' URIQA configuration parameter if needed.
 </member>
@@ -101,17 +101,17 @@ MGET /foo HTTP/1.1
 </example>
 <sect3 id="uriqamget"><title>MGET Method</title>
 <para>
-MGET request contains a subject URI and the responce consists of RDF/XML representation of an RDF graph with metadata about the subject.
+MGET request contains a subject URI and the response consists of RDF/XML representation of an RDF graph with metadata about the subject.
 In many cases, the returned graph is a Concise Bounded Description of the resource or something similar, but it can be of any sort.
 </para>
 <para>
-There are  no integrity rules. E.g., if a responce for request about subject A contains some data about B
+There are  no integrity rules. E.g., if a response for request about subject A contains some data about B
 then the request about B may return same or different data, or even report that B does not exists.
-If URI refers to non-existing resource or even to a non-existing server or protocol then the responce can be an 'not found' error or
+If URI refers to non-existing resource or even to a non-existing server or protocol then the response can be an 'not found' error or
 an empty graph or even a non-empty graph, depending on the handler that processed the request.
 </para>
 <para>
-Usually MGET request consints of only subject URI specification, but it can contain any other parameters such as an authentication
+Usually MGET request consists of only subject URI specification, but it can contain any other parameters such as an authentication
 or even the HTTP request body with extra data for some particular handler.
 For Virtuoso DAV resources, MGET will need read permission on the subject resource, because the resulting RDF is retrieved from
 'http://local.virt/DAV-RDF' property of the resource.
@@ -179,7 +179,7 @@ The following request header is for MPUT
 <![CDATA[GET /uriqa?uri=http%3a%2f%2fexample%2ecom%2ffoo&method=MPUT HTTP/1.1]]>
 </programlisting>
 <para>
-The URIQA web service does not need complicated rules for URI passing because the request can not be significally changed by any proxy.
+The URIQA web service does not need complicated rules for URI passing because the request can not be significantly changed by any proxy.
 The value of the 'uri' parameter should be an absolute URI.
 </para>
 </sect2>
@@ -264,19 +264,19 @@ The third record has UH_ORDER equal to 999, and tells the server to act as URIQA
 </member>
 </simplelist>
 <para>
-Applications can add more lines to the table to handle different sorts of URIs via different applications-pecific functions. The name of function
+Applications can add more lines to the table to handle different sorts of URIs via different application specific functions. The name of function
 should begin with &quot;WS.WS.URIQA_HANDLER_&quot;, the rest is as specified by UH_HANDLER of the row. The signature of function should be
 </para>
 <programlisting>
 function WS.WS.URIQA_HANDLER_myexample (
   inout op varchar,   -- operation name, 'MGET', 'MPUT' or 'MDELETE';
   inout uri varchar,  -- request URI;
-  inout split any,    -- request URI splitted by WS.WS.PARSE_URI into parts;
+  inout split any,    -- request URI split by WS.WS.PARSE_URI into parts;
   inout body any,     -- the body of the request;
   inout params any,   -- get_keyword style vector of parameters of the request;
   inout lines any,    -- vector of lines of HTTP request header;
   inout app_env any,  -- any application-specific data from UH_HANDLER_ENV;
-  inout is_final integer -- status flag. Function sets the flag to 1 to report that the request responce is prepared.
+  inout is_final integer -- status flag. Function sets the flag to 1 to report that the request response is prepared.
   ) re0turns any	      -- returns a status vector, see below.
 </programlisting>
 <para>

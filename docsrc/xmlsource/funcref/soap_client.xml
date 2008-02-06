@@ -226,7 +226,7 @@
   -->
   <refsect1 id="ssl_soap_client"><title>Requirements for certificate files for HTTPS operation</title>
       <para>When users going to do operation with an HTTPS endpoint the
-	  following are requirments to the PKCS#12 file.
+	  following are requirements to the PKCS#12 file.
 	  The file specified in parameter 'ticket' MUST contain: valid x509 certificate,
 	  certificate chain and private key. The password for opening the private key
 	  must be specified in the 'passwd' parameter.
@@ -238,7 +238,7 @@
   <refsect1 id="examples_soap_client">
     <title>Example</title>
     <example id="ex_soap_client"><title></title>
-     <para>References: tutorial/services WS-S-2 (tripple-des),
+     <para>References: tutorial/services WS-S-2 (triple-des),
      WS-S-3 (RSA), WS-S-4 (X.509 signing)</para>
      <para>The following is an excerpt from the WS-S-2 Services tutorial
      to make encoded SOAP message with a shared key.</para>

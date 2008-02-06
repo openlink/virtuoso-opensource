@@ -31,13 +31,13 @@ describe the structure of the document and references to other XML documents.
 The XML parser of the Virtuoso Server can recognize and use most  DTD directives.
 </para>
 <para>If DTD describes the structure of the document (i.e. the allowed content of
-elements with particluar names) then the XML parser can validate the source document
+elements with particular names) then the XML parser can validate the source document
 in order to check if it matches to the rules written in the DTD.
 </para>
 <para>If a DTD describes references to external XML entities then the parser can
 build either "standalone" or "non-standalone" internal representation.
 To build a "standalone" representation, the XML parser will retrieve all external resources
-and then it will replace every occurence of every reference with a copy of the whole
+and then it will replace every occurrence of every reference with a copy of the whole
 content of the resource.
 To build a "non-standalone" representation, XML parser remembers only referencing information
 but it tends to not retrieve external documents; they can be retrieved on demand later.

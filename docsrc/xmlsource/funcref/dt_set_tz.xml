@@ -58,7 +58,7 @@
     <para>A <type>DATETIME</type> with the new timezone set</para>
   </refsect1>
 <!--  <refsect1 id="errors_dt_set_tz"><title>Errors</title>
-    <table><title>Errors signalled by <funxtion>dt_set_tz</function></title>
+    <table><title>Errors signalled by <function>dt_set_tz</function></title>
       <tgroup cols="4">
        <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
 	<tbody>

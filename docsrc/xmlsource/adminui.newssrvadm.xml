@@ -57,7 +57,7 @@ the list of available newsgroups.</para>
 	the messages fetched, view and edit the <emphasis>Properties</emphasis> of the
 	group, or <emphasis>Remove</emphasis> the group from the list. Also you can get
         previous 500 messages or to get new messages by clicking the links at the bottom
-        of the form shown bellow.</para>
+        of the form shown below.</para>
         <figure float="1"><title>Manage subscribed for Newsgroup</title>
           <graphic fileref="ui/news_adm_01c.png"/></figure>
 
@@ -95,7 +95,7 @@ the list of available newsgroups.</para>
         You can view the messages of a newsgroup either using the Conductor UI going to
 NNTP/NNTP Servers/News Server/News Group, or using the ODS Framework UI. In the second case you need to
 have the ods_framework_dav.vad package and the ods_discussion_dav.vad package installed. Then you can go
-from ODS to tab "Discussions" where will be shown the list of avaible newsgroups. Each one has shown as
+from ODS to tab "Discussions" where will be shown the list of available newsgroups. Each one has shown as
 link its name, which leads to page where are listed its messages.
         </para>
       <figure float="1"><title>View of messages in a newsgroup in ODS Discussions.</title>

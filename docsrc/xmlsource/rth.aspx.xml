@@ -178,7 +178,7 @@ of the application root.  When the assembly is available in this way the .aspx
 file does not need to contain the <computeroutput>Src=</computeroutput>
 attribute since there will be no need to compile the CodeBehind.  If the
 <computeroutput>Src=</computeroutput> attribute is specified in the .aspx file
-but the CodeBehind file is not located on the server then an error will be signaled
+but the CodeBehind file is not located on the server then an error will be signalled
 indicating that a required resource cannot be found, because the CodeBehind
 class is compiled on demand.</para>
   </sect2>
@@ -339,7 +339,7 @@ with execute permissions enabled.  The application can be tested with a Web brow
   </listitem>
 
   <listitem><formalpara><title>Add New Web Form</title>
-    <para>When the application-space has been configued on the web server
+    <para>When the application-space has been configured on the web server
     you will be returned to the main Visual Studio windows.  Now we must create our
     page.  Right-click on the project name in the Solution Explorer and
     select Add New Web Form. </para></formalpara>

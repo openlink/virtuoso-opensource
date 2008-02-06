@@ -106,7 +106,7 @@
   <para><link linkend="fn_backup_online"><function>backup_online
   <paramdef><parameter>file_prefix</parameter></paramdef>
   <paramdef><parameter>pages</parameter></paramdef>
-  <paramdef><optional><parameter>timout</parameter></optional></paramdef>
+  <paramdef><optional><parameter>timeout</parameter></optional></paramdef>
   <paramdef><optional><parameter>dirst</parameter></optional></paramdef>
   </function></link></para>
 
@@ -421,7 +421,7 @@ virtuoso +crash-dump
 </programlisting>
 			<para>
 and once the server has been started with +restore-crash-dump, with the ini setting TransactionFile set to rec1.log, 
-replay the remining log with the isql commands:
+replay the remaining log with the isql commands:
 </para>
 			<programlisting>
 
@@ -484,10 +484,10 @@ The recovery sequence is as follows:
 	virtuoso command line options).
 </para></listitem>
 <listitem><para>
-	Create a new INI file to describe the layout of the new database you'll use to temorarely fill up the restored data.
+	Create a new INI file to describe the layout of the new database you'll use to temporarily fill up the restored data.
 </para></listitem>
 <listitem><para>
-	Move the trasaction log file(s) produced in step 1 to the location required by the new INI file.
+	Move the transaction log file(s) produced in step 1 to the location required by the new INI file.
 </para></listitem>
 <listitem><para>
 	Replay the transaction log from step 1 on an empty database using the new INI file.
@@ -504,7 +504,7 @@ Virtuoso options : -c <your new ini file> +restore-crash-dump -f
 ]]></programlisting>
 </listitem>
 <listitem><para>
-	Move the trasaction log file(s) produced in step 1 to the location required by the new INI file.
+	Move the transaction log file(s) produced in step 1 to the location required by the new INI file.
 </para></listitem>
 <listitem><para>
 	Replay the transaction log from the previous step into the new db file using: </para>

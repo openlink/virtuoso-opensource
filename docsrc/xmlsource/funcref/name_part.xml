@@ -41,7 +41,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_name_part">
     <title>Description</title>
-    <para>The <function>name_part()</function> can be used to disecting parts of a three part names (string 
+    <para>The <function>name_part()</function> can be used to dissecting parts of a three part names (string 
     where items are divided by dots ".") such as table names or columns names.  The table 
     name "DB"."DBA"."SYS_USERS" contains three parts which can be extracted individually 
     using this function providing the correct index from a 0 base: 0 would return "DB", 

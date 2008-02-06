@@ -45,7 +45,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_blogger.setTemplate">
     <title>Description</title>
-    <para>This function sets the content of the specfied template.</para>
+    <para>This function sets the content of the specified template.</para>
   </refsect1>
   <refsect1 id="params_blogger.setTemplate"><title>Parameters</title>
     <refsect2><title>appkey</title>

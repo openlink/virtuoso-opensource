@@ -233,7 +233,7 @@ create procedure "DB"."DBA"."DBEV_LOGIN" (
       -- note that it uses the 'masterdba'/'masterdbapwd' to calculate it since we
       -- assume that these are the data the client supplied as user id and password
       --
-      -- The way to calcutale this is FIXED.
+      -- The way to calculate this is FIXED.
       -- The ONLY variables are the user id and the password
 
       -- START of the FIXED digest calculation sequence
@@ -242,7 +242,7 @@ create procedure "DB"."DBA"."DBEV_LOGIN" (
       md5_ctx := md5_update(md5_ctx, user_name);
       md5_ctx := md5_update(md5_ctx, pwd);
       -- the 0 parameter to the md5_final causes it to return the bytes
-      -- instead of representing it as hexidecimal characters
+      -- instead of representing it as hexadecimal characters
       my_digest := md5_final (md5_ctx, 0);
       -- END of the FIXED digest calculation sequence
 
@@ -288,7 +288,7 @@ create procedure "DB"."DBA"."DBEV_LOGIN" (
     }
   -- note that not returning value causes the Virtuoso to print an appropriate message to the log
   -- and then continue with the normal verification
-  -- same happends if the value returned is not 0, -1 or 1
+  -- same happens if the value returned is not 0, -1 or 1
 };
 ]]></programlisting>
 </example>

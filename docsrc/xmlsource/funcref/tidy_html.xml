@@ -45,7 +45,7 @@ custom version of HTML Tidy utility.
 To learn more about Tidy see http://www.w3.org/People/Raggett/tidy/ .
 Some particular combinations of errors in source HTML may cause Tidy to
 misinterpret the source so the output may be incomplete or corrupted.
-This is an  unavoidable problem, due to heruistic nature of the procedure.
+This is an  unavoidable problem, due to heuristic nature of the procedure.
  On the other hand, Tidy will process almost any HTML suitable for some
 &quot;popular&quot; browser, e.g. Internet Explorer or Netscape Navigator.
 </para></refsect1>
@@ -55,7 +55,7 @@ This is an  unavoidable problem, due to heruistic nature of the procedure.
 Source HTML text to process.
 Note that the encoding of this text must be specified in
 <parameter>tidy_config</parameter> string,
-and default encoding of session will not be mentoined by Tidy.
+and default encoding of session will not be mentioned by Tidy.
 </para>
 </refsect2>
     <refsect2><title>tidy_config</title>
@@ -221,7 +221,7 @@ options. The default is <emphasis>no</emphasis>.</para></formalpara>
 
 <formalpara><title>add-xml-pi: <emphasis>bool</emphasis>, add-xml-decl: <emphasis>bool</emphasis></title>
 
-<para>If set to <emphasis>yes</emphasis>, Tidy will add the XML declatation
+<para>If set to <emphasis>yes</emphasis>, Tidy will add the XML declaration
 when outputting XML or XHTML. The default is <emphasis>no</emphasis>. Note
 that if the input document includes an &lt;?xml?&gt; declaration
 then it will appear in the output independent of the value of
@@ -508,7 +508,7 @@ CDATA elements (similar to script).</para></formalpara>
 	    <entry><errorcode>XTID2</errorcode></entry>
 	    <entry><errorcode></errorcode></entry>
 	    <entry><errorname>HTML Tidy failed</errorname></entry>
-	    <entry>The given HTML text contains serious errors. To get detailed list of them, call tidy_list_errors with same paramaters as tidy_html.</entry>
+	    <entry>The given HTML text contains serious errors. To get detailed list of them, call tidy_list_errors with same parameters as tidy_html.</entry>
 	  </row>
 	</tbody>
       </tgroup>

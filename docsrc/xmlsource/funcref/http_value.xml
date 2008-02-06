@@ -49,7 +49,7 @@
       the string value of the XML fragment, but a serialization of the XML
       fragment as text including all the markup, i.e. elements, attributes,
       namespaces, text nodes, etc. To get the string value of an XML entity,
-      convert it to a varchat using <function>cast</function>. Casting as
+      convert it to a varchar using <function>cast</function>. Casting as
       varchar will only produce a concatenation of the text nodes in the
       XML fragment, leaving out elements, attributes, name spaces, etc.</para>
     </refsect2>

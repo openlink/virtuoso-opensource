@@ -41,8 +41,8 @@
   <refsect1 id="desc_XMLType.setSchemaValidated">
     <title>Description</title>
     <para>Every XMLType instance has a special internal &quot;is validated&quot; flag;
-The first successfull call of the member function <function>XMLType.schemaValidate()</function>
-will set this flag to 1 indicating that next such calls are redundand and should do nothing.
+The first successful call of the member function <function>XMLType.schemaValidate()</function>
+will set this flag to 1 indicating that next such calls are redundant and should do nothing.
 If a given XMLType instance is made by a procedure that guarantees the match of the result to
 an expected schema then one can set this flag without running actual validation.
 It is also possible to reset this flag to 0 in order to force the next call of <function>XMLType.schemaValidate()</function>

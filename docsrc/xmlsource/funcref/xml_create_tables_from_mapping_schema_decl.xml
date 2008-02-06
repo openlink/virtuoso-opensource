@@ -60,7 +60,7 @@
     <refsect2><title>content_language</title>
       <para>string with language tag of content of &lt;document&gt;; valid names are listed in IETF RFC 1766, default is 'x-any' (it means 'mix of words from various human languages)</para></refsect2>
   </refsect1>
-  <refsect1 id="ret"><title>Return Types</title><para>A vector containg strings</para></refsect1>
+  <refsect1 id="ret"><title>Return Types</title><para>A vector containing strings</para></refsect1>
 
   <refsect1 id="examples"><title></title>
     <example id="ex_xml_create_tables_from_mapping_schema_decl"><title>Extracting tables from mapping schema</title>

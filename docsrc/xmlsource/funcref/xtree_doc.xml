@@ -75,7 +75,7 @@ IETF RFC 1766, default is 'x-any' (it means 'mix of words from various human lan
 validator should be fully disabled.
 See <link linkend="dtd_config">Configuration Options of the DTD Validator</link> for details.</para></refsect2>
   </refsect1>
-  <refsect1 id="ret"><title>Return Types</title><para>XML entity with underlaying parse tree 
+  <refsect1 id="ret"><title>Return Types</title><para>XML entity with underlying parse tree 
 of source document; the tree will be a memory-resident structure of nested heterogeneous 
 vectors.</para></refsect1>
 <!--

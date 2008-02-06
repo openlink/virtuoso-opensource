@@ -44,7 +44,7 @@
   </refsect1>
   <refsect1 id="params_sql_driver_connect">
     <title>Parameters</title>
-    <para>As described in the SQLDriverConnect in conenction string</para>
+    <para>As described in the SQLDriverConnect in connection string</para>
   </refsect1>
   <refsect1 id="ret_sql_driver_connect"><title>Return Types</title>
     <para>Returns the SQL return code (or exception on an ODBC error).</para>

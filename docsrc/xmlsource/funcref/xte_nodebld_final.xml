@@ -42,7 +42,7 @@
   <refsect1 id="desc_xte_nodebld_final"><title>Description</title>
     <para>
     By default this function reduces all last empty items from the first argument and returns it, 
-    but supplyed a second argument 
+    but supplied a second argument 
     it also replaces the first item of the first argument by the second argument,
     but does not commit the return.
     </para>

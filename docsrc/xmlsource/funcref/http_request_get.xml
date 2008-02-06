@@ -40,7 +40,7 @@
   </refsynopsisdiv>
   <refsect1 id="params_http_request_get"><title>Parameters</title>
     <refsect2><title>variable_name</title>
-	<para> A string desiganting what to return.
+	<para> A string designating what to return.
     </para>
     <table><title>The variable_name keywords</title>
 	<tgroup cols="2">

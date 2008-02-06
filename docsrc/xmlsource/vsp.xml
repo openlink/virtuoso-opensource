@@ -294,7 +294,7 @@ http://myvirtuoso/test.vsp?arg1=1&amp;arg2=test
   <h1>Test Params</h1>
   <?vsp
   declare _arg1 integer; --   the underscore helps to differentiate from
-  declare _arg2 varchar; --   the keyword name, whereas the varliable names
+  declare _arg2 varchar; --   the keyword name, whereas the variable names
   declare _arg3 varchar; --   help use remember which is which.
 
   _arg1 := atoi(get_keyword('arg1', params));
@@ -340,8 +340,8 @@ the page output at an arbitrary point would probably result in not well formed o
 all the output up to the point of the error is discarded.
 </para>
 
-<para>If the SQL state signaled with the error is VSPRT the output
-generated up to the point where the error was signaled is sent as
+<para>If the SQL state signalled with the error is VSPRT the output
+generated up to the point where the error was signalled is sent as
 such to the user agent.  This special SQL state is useful together
 with the http_rewrite function for things like sending a redirect based
 on a condition detected in the middle of page processing.  The
@@ -553,7 +553,7 @@ it will be executed every time after processing of the active page.
 <!-- sect3 id="uainfo"><title>User Agent Information</title>
 
 getting UA info
-seting the ini file stuff
+setting the ini file stuff
 is this vsp?? cookies
 </sect3>
 -->
@@ -588,7 +588,7 @@ is this vsp?? cookies
 
   <para>It is sometimes desirable to use the HTTP 1.1 chunked encoding to send
   data to HTTP clients. Examples of such include status pages or streaming
-  applications. Note that the possiblity of using chunked encoding depends on
+  applications. Note that the possibility of using chunked encoding depends on
   external factors such as whether the client browser supports chunked
   encoding. So a server page can request turning on the chunked encoding, but should
   handle the case should it not be available.</para>

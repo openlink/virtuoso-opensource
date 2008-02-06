@@ -45,11 +45,11 @@
   
   This function has no return value
 
-  No errors are reported, always sucedded
+  No errors are reported, always succeeded
   -->
   <refsect1 id="examples_repl_sched_init"><title>Example</title>
-    <example id="ex_repl_sched_init_1"><title>Enabling a syncronization for all subscriptions</title>
-     <para>This will enable scheduled task to syncronize all defined subscriptions.</para>
+    <example id="ex_repl_sched_init_1"><title>Enabling a synchronization for all subscriptions</title>
+     <para>This will enable scheduled task to synchronize all defined subscriptions.</para>
       <screen>
 SQL> DB.DBA.REPL_SCHED_INIT ();
       </screen>

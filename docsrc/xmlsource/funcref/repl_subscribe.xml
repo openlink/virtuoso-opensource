@@ -49,7 +49,7 @@
       and to specify the local WebDAV owner for replicated WebDAV content.  
       Before making a subscription the <function>repl_server()</function> function
 	  must be called in order to define the publishing server.  After making a 
-	  subscription it becomes off-line awaiting syncronization from a scheduled 
+	  subscription it becomes off-line awaiting synchronization from a scheduled 
 	  task or call to the <function>repl_sync()</function> function.  
       Also the initial data of the subscription will be not loaded until 
       <function>repl_init_copy()</function> is called or the initial image 

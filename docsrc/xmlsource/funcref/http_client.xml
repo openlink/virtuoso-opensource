@@ -62,13 +62,13 @@
       <para>cpath to the certificate file where is stored
        x509 certificate, private key and CA certificates </para></refsect2>
     <refsect2><title>cert_pwd</title>
-      <para>password for oppening the certificate file.</para></refsect2>
+      <para>password for opening the certificate file.</para></refsect2>
   </refsect1>
   <refsect1 id="desc_http_client"><title>Description</title>
     <para>This function is used to perform HTTP operations to retrieve
 generic content and/or to perform generic operations over HTTP/HTTPS protocols.
 It also supports HTTP authentication based on username/password credentials.</para>
-    <para>If the URL is https: an no x509 certificate given then it will opearate as https client w/o client certificate.</para>
+    <para>If the URL is https: an no x509 certificate given then it will operate as https client w/o client certificate.</para>
   </refsect1>
 </refentry>
 

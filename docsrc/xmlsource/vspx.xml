@@ -94,7 +94,7 @@ regular text editor or a supporting HTML editor.</para>
  pre-processed page will be found in this file.  The file can of course refer
  to outside Virtuoso/PL code.</para>
 
- <para>The results of compilation process are stored usually in an OS dependant
+ <para>The results of compilation process are stored usually in an OS dependent
  temporary directory.  This would be the $TMPDIR for UNIXes or %TMP% for
  Windows platforms.  If these environment variables are not available it will
  be some default system specific location, such as <computeroutput>/var/tmp</computeroutput>
@@ -361,7 +361,7 @@ as (
 	be either defined using 'method' declaration inside VSPX page or
 	using page subclass defined in code-behind script(s) (see 'code-file' below).
 	To register a callback vc_add_handler (name, method_name) method must be invoked
-	in any script preceeding the handler stage.
+	in any script preceding the handler stage.
 	Parameters to the vc_add_handler are: name - name of event where callback to be executed
 	(before-data-bind, after-data-bind, on-post, before-render),
 	method_name - name of a page class method to be registered to the event.
@@ -394,7 +394,7 @@ as (
 	The VSPX form controls such as form, button, select-list, text etc.
 	can be rendered as XForms analogues using a special connection
         variable 'RenderXForms' set to true (integer 1).
-	Also XML post data comming from XFroms capable agents
+	Also XML post data coming from XForms capable agents
 	will be parsed and provided to the VSPX page methods in usual form (name/value
 	array).
 	The HTML form elements substitution to the XForms is as follows:

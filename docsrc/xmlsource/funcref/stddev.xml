@@ -41,7 +41,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_stddev">
     <title>Description</title>
-    <para>STDDEV returns standart deviation. it returns STDDEV_SAMP if the number of pairs is more than one, or NULL. </para>
+    <para>STDDEV returns standard deviation. it returns STDDEV_SAMP if the number of pairs is more than one, or NULL. </para>
   </refsect1>
   <refsect1 id="params_stddev"><title>Parameters</title>
     <refsect2><title>expr1</title>

@@ -43,7 +43,7 @@
     <para>This function provides dynamic SQL capabilities in Virtuoso PL.
     The first argument is an arbitrary SQL statement, which may contain
     parameter placeholders. The function returns as output parameters a
-    SQL state, error message and returns the estimate time cost in miliseconds.</para>
+    SQL state, error message and returns the estimate time cost in milliseconds.</para>
   </refsect1>
   <refsect1 id="params_exec_score">
     <title>Parameters</title>
@@ -58,7 +58,7 @@
     </refsect2>
   </refsect1>
   <refsect1 id="ret_exec_score"><title>Return Types</title>
-    <para>The function retuns a float number which is the calculated estimate time cost for the query execution.</para>
+    <para>The function returns a float number which is the calculated estimate time cost for the query execution.</para>
   </refsect1>
   <refsect1 id="errors_exec_score">
 <title>Errors</title>

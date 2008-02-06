@@ -50,7 +50,7 @@ The the value of found or created variable is changed to the value of
 the second argument, <parameter>var_value</parameter>.
 </para>
 <para>
-The value of the variable may be accessed like the value of any varuable created
+The value of the variable may be accessed like the value of any variable created
 by &lt;xsl:variable&gt; XSL element or FLWR operator of XQUERY.
 The same $name should be used to get the value.
 </para>

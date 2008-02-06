@@ -77,7 +77,7 @@ more, and zero or one.  Here are some examples:</para>
 </simplelist>
 
 <para>You can also use <emphasis>bounds</emphasis>, which come inside braces 
-and indicate ranges in the number of occurences: </para>
+and indicate ranges in the number of occurrences: </para>
 
 <simplelist>
   <member><computeroutput>ab{2}</computeroutput>: matches a string that has an 

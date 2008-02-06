@@ -51,7 +51,7 @@ Parameters <parameter>attr_name</parameter> and <parameter>attr_value</parameter
 can be of any types that can be casted to string.
 <parameter>attr_name</parameter> can be an attribute entity, in this case both the
 name and the value of <parameter>attr_name</parameter> attribute is used and
-<parameter>attr_value</parameter> parameter must be omited.
+<parameter>attr_value</parameter> parameter must be omitted.
 </para>
     <para>
 The <parameter>mode</parameter> specifies how to resolve duplicate attribute names, if

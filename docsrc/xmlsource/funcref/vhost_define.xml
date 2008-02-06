@@ -130,7 +130,7 @@ variables are persistent.  The default values is 0.</para>
       <para>Options for SOAP service.  The default values is NULL.
       The SOAP options are name-value pairs contained in a vector:
       i.e. vector ('name1', 'value1', ....).  The SOAP server accepts the
-      optional parameters as described in <link linkend="soapoptions">Optional parameters to the SOAP endoint</link>.</para>
+      optional parameters as described in <link linkend="soapoptions">Optional parameters to the SOAP endpoint</link>.</para>
 
     </refsect2>
     <refsect2><title><parameter>auth_opts</parameter></title>

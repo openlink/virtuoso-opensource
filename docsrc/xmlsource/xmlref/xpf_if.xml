@@ -55,7 +55,7 @@ is required argument, not optional.
 <para>
 This function is used in the implementation of
 &quot;IF&quot; control operator in XQUERY,
-so you will probably use that operator in XQUERY expessions, not the function.
+so you will probably use that operator in XQUERY expressions, not the function.
 This function may be useful in XPATH expressions and in XSLT stylesheets.
 It is not a part of library of standard XQUERY 1.0 functions.
 </para>

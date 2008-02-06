@@ -51,7 +51,7 @@ returns false (Thus it returns true when called without arguments).
 </para>
 <para>
 The name of this function is the same as name of &quot;or&quot; XPATH and XQUERY operator.
-Thus it must be surronded bu double quotes when used in XPATH or XQUERY expressions.
+Thus it must be surrounded by double quotes when used in XPATH or XQUERY expressions.
 Moreover, this function is not a part of XPATH standard, so it cannot be used if
 portability is important.
 </para>

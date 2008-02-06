@@ -40,11 +40,11 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc"><title>Description</title>
-		<para>This defines a new complex SOAP datatype (usualy array of structure) named 'name'.</para>
+		<para>This defines a new complex SOAP datatype (usually array of structure) named 'name'.</para>
     <para>The schema_string string represents definition as complexType element from XML Schema.
 The only complexContent, all and sequence elements can be used within the complexType. This means that 
-optional elements in the defined datattype are not supported as a variant of the SOAP paramter datatype.
-If the schema descritopns contains an unsuported element , the SQL error will be signalled and error message 
+optional elements in the defined datatype are not supported as a variant of the SOAP parameter datatype.
+If the schema descriptions contains an unsupported element , the SQL error will be signalled and error message 
 will explain what element is wrong.</para>
 </refsect1>
   <refsect1 id="params_">

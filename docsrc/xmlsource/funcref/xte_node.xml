@@ -44,7 +44,7 @@
   <refsect1 id="desc_xte_node"><title>Description</title>
     <para>This function returns the vector which corresponds to a XML element. The first
     parameter is a head of the element. The remaining parameters are optional. 
-    Each optional parameter either is a XML element or a string. Two or more succesive strings are 
+    Each optional parameter either is a XML element or a string. Two or more successive strings are 
     concatenated.
     </para>
   </refsect1>

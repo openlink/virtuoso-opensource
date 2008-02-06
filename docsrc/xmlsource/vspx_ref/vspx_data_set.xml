@@ -178,7 +178,7 @@ These must be fixed values, no data binding.</para>
     <para>
 A column marker for use in v:data-set.
 This element should exist for each selected column of the SQL expression of the data set.
-If this is specified uder data-set or data-grid controls, this must be the exact same columns as in SQL statement to be evaluated. If those element is ommited in data-set or data-grid, the columns will be extracted from compilation of the SQL statement.
+If this is specified uder data-set or data-grid controls, this must be the exact same columns as in SQL statement to be evaluated. If those element is omitted in data-set or data-grid, the columns will be extracted from compilation of the SQL statement.
 However, it will be always required for calls of stored procedures that return resultsets.
 </para>
   </refsect2>

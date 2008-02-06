@@ -52,7 +52,7 @@ It will be best to have one's own registered OID for that purpose.</para>
   freely from <ulink url="http://www.openssl.org/">www.openssl.org</ulink>.
   The <computeroutput>openssl.cnf</computeroutput> configuration file
   must be edited to include the new extension for sqlUserName, but first we
-  have to find the hexedecimal representation of the SQL Username.  Then
+  have to find the hexadecimal representation of the SQL Username.  Then
   you can proceed the use the openssl to create and confirm the
   certificate.  Follow the steps below:</para>
 
@@ -84,7 +84,7 @@ sqlUserName = DER:NN:NN:NN:NN:NN.....
 ]]></programlisting>
 
    <para>replacing <computeroutput>:NN:NN.....</computeroutput> with the
-   hexadecimal represantation of the username we discovered in the
+   hexadecimal representation of the username we discovered in the
    previous step.</para>
    </listitem>
 
@@ -114,7 +114,7 @@ $ openssl ca -in <req_file>
 
   <listitem><para><emphasis>Verify New Certificate</emphasis></para>
   <para>Check that the certificate contains the right SQL account name; use
-  the following command to obtain a text dump of the certifcate:</para>
+  the following command to obtain a text dump of the certificate:</para>
 
 <programlisting><![CDATA[
 openssl x509 -in <certfile> -text -noout
@@ -223,7 +223,7 @@ X509ExtensionOID	  = 2.16.840.1.NNNNNNN.1 ; the OID value, same as that used to 
   PKCS#12 or PEM format.  The certificate and private key contained may be
   generated using the steps outlined above.</para>
 
-  <para>When the Encrypt option is set to point to a cetificate file, the
+  <para>When the Encrypt option is set to point to a certificate file, the
   <emphasis>ServerCert</emphasis> option must be set to the full or
   relative path to file containing list of CA certificates in PEM format.  The content
   of this file will be used to verify server's certificate.</para>

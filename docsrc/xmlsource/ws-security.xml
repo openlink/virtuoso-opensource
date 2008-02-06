@@ -420,7 +420,7 @@ create procedure DB.DBA.WS_SOAP_ACCOUNTING ()
  are empty, so they will be filled upon output.  The most important element is
  the KeyName element.  This must contain a reference to an existing key from the
  user account space.  This key reference does not need to be the same as key
- for datas encryption, it can be a different key.  Please note that XML encoding
+ for data encryption, it can be a different key.  Please note that XML encoding
  routines will resolve the key automatically, so there is no need to specify
  how the key instance will be obtained, hence no relation to "WSS-Key" from
  SOAP options section (above).</para>

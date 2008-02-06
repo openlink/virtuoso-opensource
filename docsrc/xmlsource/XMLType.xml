@@ -38,7 +38,7 @@ etc.
 </para>
 <para>
 XMLType behaves like any user-defined type, with the only difference in type conversion rules.
-If an XML entity is passed as an argument instead of an instance of XMLType, a new instence of
+If an XML entity is passed as an argument instead of an instance of XMLType, a new instance of
 XMLType is created by a constructor that takes the entity as an argument.
 Similarly, functions that accept XML entities as arguments can also accept an instance of
 XMLType as an actual value of argument.

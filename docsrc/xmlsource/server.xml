@@ -101,8 +101,8 @@ The below table lists the most important parameters and limits for a database or
 <row><entry>Locks per transaction</entry> <entry>Depends on memory, 16b per row lock, 60b per page with at least one row lock.</entry></row>
 <row><entry>Changes per transaction</entry> <entry>Depends on memory, ini parameter allows cap on  rollback before image.</entry></row>
 <row><entry>Virtual memory></entry> <entry>Depends on OS, 64 bit pointers on 64 bit platforms</entry></row>
-<row><entry>Threads</entry> <entry>Depends on OS, ini files specifies cap for pool for SQL client and web server worker thrread pools.</entry></row>
-<row><entry>Max connections</entry> <entry>Depends on OS fdset size, at least 2048, license can set a limut</entry></row>
+<row><entry>Threads</entry> <entry>Depends on OS, ini files specifies cap for pool for SQL client and web server worker thread pools.</entry></row>
+<row><entry>Max connections</entry> <entry>Depends on OS fdset size, at least 2048, license can set a limit</entry></row>
 <row><entry>Memory per connection</entry> <entry>22K plus up to 100 cached SQL statement compilations</entry></row>
 </tbody>
 </table>
@@ -216,7 +216,7 @@ It is divided into the following sections:
 			</listitem>
 			<listitem><para>[Replication] The replication section sets the transactional replication parameters for the server. </para>
 			</listitem>
-			<listitem><para>[Mono] The Mono section contains settings pertenent to using the Virtuoso with Mono Runtime CLR support.  </para>
+			<listitem><para>[Mono] The Mono section contains settings for Virtuoso with Mono Runtime CLR support.  </para>
 			</listitem>
 			<listitem><para>[Client] Client default settings</para>
 			</listitem>
@@ -851,7 +851,7 @@ JavaVMOption5  = -Ddt5=val5
 					<formalpara>
 						<title>MaxSortedTopRows = 10000</title>
             <para>The TOP select statement clause caches in memory the rows
-			pertinentent to the result.  The number of rows allowed to be cached
+			pertinent to the result.  The number of rows allowed to be cached
 			within memory is limited by this parameter.</para>
             </formalpara>
 				</listitem>
@@ -876,7 +876,7 @@ JavaVMOption5  = -Ddt5=val5
 	<listitem id="ini_Parameters_TransactionAfterImageLimit">
 	    <formalpara>
 		<title>TransactionAfterImageLimit = N bytes default 50000000</title>
-		<para>When the roll-forward log entry of a transaction  exceeds this size, the transaction is  too large and is  marked as uncommittable. This work as upper limit otherwise infinite (transactions). The default is 50Mb . Then also note that transaction roll-back data takes about 2x of roll-forward data. Hence when the transaction roll-forward data wich is 50Mb the total transient consumption is closer to 150 Mb.
+		<para>When the roll-forward log entry of a transaction  exceeds this size, the transaction is  too large and is  marked as uncommittable. This work as upper limit otherwise infinite (transactions). The default is 50Mb . Then also note that transaction roll-back data takes about 2x of roll-forward data. Hence when the transaction roll-forward data which is 50Mb the total transient consumption is closer to 150 Mb.
 		</para>
 	    </formalpara>
 	</listitem>
@@ -1070,7 +1070,7 @@ This is a timeout in seconds before Virtuoso closes an idle HTTP 1.1 connection.
                                 <listitem id="ini_HTTPServer_HTTPLogFile">
 				<formalpara><title>HTTPLogFile = log.out</title>
 <para>If specified, Virtuoso will produce an HTTP server log file with the date
-appended to the name given in the parameter and the files extention as ".out".
+appended to the name given in the parameter and the files extension as ".out".
 The log file is rotated daily.</para>
 </formalpara>
 <para>It will contain the following information:</para>
@@ -1205,7 +1205,7 @@ active and passive connections.  This parameters sets the upper bound.</para>
 					<formalpara>
 						<title>FTPServerLogFile = ftpserver</title>
 <para>If specified Virtuoso will produce an FTP server log file with the date
-appended to the name given in the parameter and the files extention as ".log".
+appended to the name given in the parameter and the files extension as ".log".
 The log file is rotated daily.</para>
 </formalpara>
 <para>It will contain the following information:</para>
@@ -1251,7 +1251,7 @@ storage of ASPX files hosted in DAV.</para>
 				<listitem id="ini_HTTPServer_PersistentHostingModules">
 					<formalpara>
 						<title>PersistentHostingModules = [1/]0</title>
-<para>When set to "1" prevents Virtuoso from removing the plugin interpretters
+<para>When set to "1" prevents Virtuoso from removing the plugin interpreters
 from the HTTP threads after each request.  The default setting is "0".</para>
 </formalpara>
 </listitem>
@@ -1259,7 +1259,7 @@ from the HTTP threads after each request.  The default setting is "0".</para>
 <listitem id="ini_HTTPServer_HttpSessionSize">
     <formalpara>
 	<title>HttpSessionSize = size in bytes, default 10000000</title>
-	<para>The size threshold for large objects recieved by HTTP server. When this limit  is exceeded
+	<para>The size threshold for large objects received by HTTP server. When this limit  is exceeded
 	    by incoming or outgoing data, this  will be stored in a temp file, see 'TempSesDir' parameter in 'Parameters' section.
 	</para>
     </formalpara>
@@ -1649,7 +1649,7 @@ reconnecting without reporting the error, which would be setting 1.</para>
 						Once this mode is active all requests on this connection
 						will be processed in the same thread. until there is a break
 						at delay more than  'PrpcBurstTimeoutMsecs' elapces
-						between ending the last and recieving the next in same
+						between ending the last and receiving the next in same
 						connection. This break in activity return the thread to
 						the thread pool. The burst mode optimization saves thread
 						switching time and may improve performance by up to 30% in
@@ -1667,7 +1667,7 @@ reconnecting without reporting the error, which would be setting 1.</para>
 						When an RPC comes in it causes the
 						select thread to take the connection out of the select thread
 						and assign that connection to designated worker thread.
-						That thread from now on will read the data comming in from that
+						That thread from now on will read the data coming in from that
 						connection directly (not depending on the select thread to
 						detect the incoming data and wake the worker thread up).
 						That mode saves the thread switch done handling each RPC
@@ -1676,7 +1676,7 @@ reconnecting without reporting the error, which would be setting 1.</para>
 						it and returned to it's default idle state.
 						If an lengthy RPC is being processed the server will
 						switch the thread from burst mode to default mode while
-						running the RPC, so the asynchronous cancelation
+						running the RPC, so the asynchronous cancellation
 						requests can be processed.</para>
 					    <para>
 						To disable ever  going to burst mode, this  option can be set to 2
@@ -1685,8 +1685,8 @@ reconnecting without reporting the error, which would be setting 1.</para>
 				</listitem>
 				<listitem id="ini_VDB_KeepConnectionOnFixedThread">
 					<formalpara>
-					    <title>PrpcBurstTimeoutMsecs=100 (miliseconds)</title>
-					    <para>RPC burst mode timeout in miliseconds. (see above)</para>
+					    <title>PrpcBurstTimeoutMsecs=100 (milliseconds)</title>
+					    <para>RPC burst mode timeout in milliseconds. (see above)</para>
 					</formalpara>
 				    </listitem>
 				<listitem id="ini_VDB_SerializeConnect">
@@ -1700,7 +1700,7 @@ exits when there are a large number of connection requests to the VDB.  Certain 
 				<listitem id="ini_VDB_SkipDMLPrimaryKey">
 					<formalpara>
 						<title>SkipDMLPrimaryKey=0 [1|0]</title>
-						<para>This setting controlls SQL compilation (not execution) for conditions
+						<para>This setting controls SQL compilation (not execution) for conditions
             where rows in a local table are used to determine rows of a remote table
             to be deleted (e.g. delete from rmt1 where rmc1 = 12 and rmc2 in (select lc1 from lt1))
             where the remote table was linked without a Primary Key primary key
@@ -1900,7 +1900,7 @@ Encodings</link> for more details.</para>
       database to striping by dumping the contents of the database to a transaction file
       and replaying it with striping enabled.  An on-line backup made with backup_online () can be restored on a database with a different striping configuration as long as the total number of pages is no less than the number of pages of the backed up database.
 </para>
-<para>Striping can be useful for the temprary objects database if large hash join temporary spaces or such are expected.    This is enabled by the Striping setting in the Temp Database section of the ini file.
+<para>Striping can be useful for the temporary objects database if large hash join temporary spaces or such are expected.    This is enabled by the Striping setting in the Temp Database section of the ini file.
 The stripes will be declared in the TempStriping section.
 </para>
 
@@ -2340,7 +2340,7 @@ call was in progress on another thread.
 				<title>Databases</title>
 				<para>
 Thus section shows the count of pages, free pages, checkpoint remap and mapped back for the main database and the space for temporary data such as sort results and hash indices.
-The page count is the total size, the free count is the count of free pages, the  checkpoint remap is the count of pages that occupy two pages in checkpoint space instead of one, the mapped back count is the number of pages that will   return to their original place in checkpint space at the next checkpoint.  Understanding these is not necessary. 
+The page count is the total size, the free count is the count of free pages, the  checkpoint remap is the count of pages that occupy two pages in checkpoint space instead of one, the mapped back count is the number of pages that will   return to their original place in checkpoint space at the next checkpoint.  Understanding these is not necessary.
 </para>
 			</formalpara>
 			<tip>
@@ -2432,8 +2432,8 @@ SQL&gt; status();
 		</sect3>
 	</sect2>
 	<!-- ======================================== -->
-	<sect2 id="oemrelabelling">
-	<title>Re-labelling Server Executable on Win32 Platforms</title>
+	<sect2 id="oemrelabeling">
+	<title>Re-labeling Server Executable on Win32 Platforms</title>
 	<para>
 The Virtuoso Service name can be altered using the key <emphasis>Win32ServiceName</emphasis> in the
 <emphasis>Parameters</emphasis> section.  The default name is 'OpenLink Virtuoso VDBMS Server'

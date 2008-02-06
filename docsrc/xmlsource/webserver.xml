@@ -50,7 +50,7 @@
  the request should be answered:</para>
 
  <simplelist>
-  <member><emphasis>Client Host or IP Address</emphasis> - the incoming requstor is pattern matched to specify a range.</member>
+  <member><emphasis>Client Host or IP Address</emphasis> - the incoming requestor is pattern matched to specify a range.</member>
   <member><emphasis>Destination Host or IP Address</emphasis> - Destination IP/Host match, also applicable to the proxy capabilities.</member>
  </simplelist>
 
@@ -260,7 +260,7 @@ expanded to include its name, ands its contents returned.
 The same mechanism is used to determine whether a directory listing  is to be
 returned.  If a mapping is defined to have 'Browseable' set to a number greater
 than zero then the server, if a default page does not exist or is not defined,
-a directory listing will be resturned to the calling client.
+a directory listing will be returned to the calling client.
 </para>
 </sect3>
 
@@ -774,7 +774,7 @@ fe:
     }
 -- End check permissions
 
-nf: 	-- all error ceses go there, we send authentication credentials
+nf: 	-- all error cases go there, we send authentication credentials
 	-- and turn status 401 Unauthorized, and return false
   DB.DBA.vsp_auth_get (realm, '/DAV',
       md5 (datestring(now())),
@@ -1041,7 +1041,7 @@ No-Operation.</para>
     </para>
     <para>
 	The following configuration makes :
-	The Virtuoso server to listen for HTTP requests comming ONLY from localhost.
+	The Virtuoso server to listen for HTTP requests coming ONLY from localhost.
         Apache proxies the outside requests to Virtuoso HTTP server.
     </para>
     <programlisting><![CDATA[

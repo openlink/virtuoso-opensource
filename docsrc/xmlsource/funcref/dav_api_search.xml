@@ -155,7 +155,7 @@
   
   <refsect1 id="examples_dav_api_search"><title>Examples</title>
     <example id="ex_dav_api_search_1"><title>Searching in WebDAV</title>
-     <para>The example shows retrival of the resource id by given path string</para>
+     <para>The example shows retrieval of the resource id by given path string</para>
       <screen>
 SQL> select DB.DBA.DAV_SEARCH_ID ('/DAV/','c');
 callret

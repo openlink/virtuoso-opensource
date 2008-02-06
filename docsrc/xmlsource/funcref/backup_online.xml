@@ -85,7 +85,7 @@
       <para>This optional parameter must be an array of directory  names (array of strings). The
       backup files are first stored in the first directory. When  running out of disk
       any consecutive  backup files are stored in the next directory  in the list. If there are no
-      more  directories  then an  error is signaled and all  the files written by this call to backup_online are
+      more  directories  then an  error is signalled and all  the files written by this call to backup_online are
       deleted so as not to leave half made backups. </para>
     </refsect2>
   </refsect1>

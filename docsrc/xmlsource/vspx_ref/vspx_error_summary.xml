@@ -44,7 +44,7 @@
       <class>
         <screen><![CDATA[
 				
-				This control wiil not be instantiated. On it's place wiil be rendered vc_error_message of control which fails validation.
+				This control will not be instantiated. On it's place will be rendered vc_error_message of control which fails validation.
 				
 			    ]]>
         </screen>

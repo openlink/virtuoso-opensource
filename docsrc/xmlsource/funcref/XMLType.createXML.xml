@@ -48,7 +48,7 @@ If the parameter <parameter>src</parameter> is not an XML entity then it is conv
 via an internal call of <function>xtree_doc()</function> or <function>xml_tree_doc()</function>.
 A schema may be associated with an XML entity by passing its URI 
 as <parameter>schema_uri</parameter>; this schema can be used later to validate 
-the structire of the document.</para>
+the structure of the document.</para>
   </refsect1>
   <refsect1 id="params_XMLType.createXML">
     <title>Parameters</title>
@@ -60,7 +60,7 @@ the structire of the document.</para>
     </refsect2>
     <refsect2><title>validated</title>
       <para>An integer flag that indicates if the document is already validated against the
-schema of the document (this is to avoid redundand validations). The default is 0.</para>
+schema of the document (this is to avoid redundant validations). The default is 0.</para>
     </refsect2>
     <refsect2><title>wellformed</title>
       <para>This parameter is unused and is listed solely for compatibility.</para>

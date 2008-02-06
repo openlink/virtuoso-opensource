@@ -58,7 +58,7 @@
     vector containing <type>VARCHAR</type> UIDLs. The <parameter>buffer_size</parameter> constraint
     is effective here. Thus, the vector will only contain UIDLs of messages whose total message text
     length does not exceed <parameter>buffer_size</parameter> bytes. These message lengths are
-    cumulated in the order returned by the POP3 server.</para>
+    accumulated in the order returned by the POP3 server.</para>
     <para>Command &apos;delete&apos; will cause retrieved messages to be deleted from the server
     after retrieval.</para>
   </refsect1>

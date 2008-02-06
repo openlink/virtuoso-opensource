@@ -58,7 +58,7 @@
 	</para>
     </refsect2>
     <refsect2><title>password</title>
-	<para>A string with a plain text password from the users table (can be from externa LDAP server etc.)
+	<para>A string with a plain text password from the users table (can be from external LDAP server etc.)
 	</para>
     </refsect2>
     <refsect2><title>credentials</title>
@@ -104,7 +104,7 @@
   </refsect1-->
   <refsect1 id="examples_vsp_calculate_digest"><title>Examples</title>
     <example id="ex_vsp_calculate_digest"><title>A VSP page performing digest authentication</title>
-	<para>The following page check for digest authentication and returns OK if authentication suceeds,
+	<para>The following page check for digest authentication and returns OK if authentication succeeds,
 	    otherwise it asks for authentication again. 
 	</para>
       <programlisting><![CDATA[

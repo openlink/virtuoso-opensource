@@ -119,7 +119,7 @@ If unspecified, there will be no such control and the program logic is responsib
   <title>Children</title>
   <refsect2>
     <title>template</title>
-    <para>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node represantation)</para>
+    <para>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node representation)</para>
   </refsect2>
 </refsect1>
 <refsect1 id="examples_vspx_tab">

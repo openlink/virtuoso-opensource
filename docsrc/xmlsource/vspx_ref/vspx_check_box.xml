@@ -74,7 +74,7 @@
 <refsect1 id="desc_vspx_check_box">
   <title>Description</title>
   <para>
-    <function>vspx_check_box</function>is a represantation of HTML check box. Scriptable, databindable.</para>
+    <function>vspx_check_box</function>is a representation of HTML check box. Scriptable, databindable.</para>
 </refsect1>
 <refsect1 id="attrs_vspx_check_box">
   <title>Attributes</title>

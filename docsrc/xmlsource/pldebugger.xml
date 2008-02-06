@@ -106,7 +106,7 @@ Available commands:
  <computeroutput>BREAK FFFF NNN</computeroutput> and <computeroutput>BREAK FFFF</computeroutput>
  where FFFF is a name of a procedure. </para>
 
- <para>Local breakpoints will interupt execution only if there is a connected
+ <para>Local breakpoints will interrupt execution only if there is a connected
  debug session.  Global break points will cause the process to stop regardless.</para>
 
  <para>The source identification and line number output can be controlled with a
@@ -166,7 +166,7 @@ $ isql localhost:1111 dba dba -D
 Debug session established to localhost:1111
 ]]></programlisting>
 
-<para>Display the test procedures to familiourise yourself with the lines and
+<para>Display the test procedures to familiarize yourself with the lines and
 their line numbers.</para>
 
 <programlisting><![CDATA[
@@ -380,12 +380,12 @@ XSL-T processing with <function>cov_report()</function> (see below) or to
 make a snapshot of current coverage statistics.  The add_comments parameter is
 used to add a line info and count, usually it takes 1 for making the report,
 so internally it is used with add_comments equal to 0 to store the cumulative
-report in the TestCovarage file.</para>
+report in the TestCoverage file.</para>
 
 <para>The function <function>cov_report (in file varchar, in  outdir varchar)</function>
 makes the full coverage report based on the current state and writes it out.</para>
 
-<para>The report consists of a summary file called profile.prof, containing execution counts and times for individual functions, sortedf by self time as well as by time including called functions. 
+<para>The report consists of a summary file called profile.prof, containing execution counts and times for individual functions, sorted by self time as well as by time including called functions. 
 For each distinct file mentioned in loaded
 procedures there is a file called &lt;outdir&gt;/&lt;orgname&gt;.sql.cov under
 the server's working directory.  This file contains listings of all procedures

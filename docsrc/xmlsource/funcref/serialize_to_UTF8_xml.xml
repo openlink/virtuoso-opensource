@@ -54,7 +54,7 @@ otherwise it may be well-formed generic entity, i.e. it can be parsed by
 an XML parser only as a part of some other XML document.</para>
     <para>If <parameter>value</parameter> is NULL, the NULL is returned.</para>
     <para>Values of other types are first converted to VARCHAR, this
-intermediated VARCHAR is converted from current charset of client connection
+intermediate VARCHAR is converted from current charset of client connection
 to the UTF-8 and is returned.</para>
   </refsect1>
   <refsect1 id="params_serialize_to_UTF8_xml">

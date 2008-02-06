@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>round</refname>
-    <refpurpose>Returns the integer that is the nearests to the argument.</refpurpose>
+    <refpurpose>Returns the integer that is the nearest to the argument.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="xpf_syn_round">

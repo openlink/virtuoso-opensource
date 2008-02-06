@@ -65,7 +65,7 @@
     <example id="ex_xenc_key_serialize"><title>Exporting a RSA public key.</title>
 	<para>
 	    The 'ServerPrivate.pfx' is a own RSA key so we exporting public part 
-	    to supply to some party to encript data for us.
+	    to supply to some party to encrypt data for us.
 	</para>
 	<screen><![CDATA[
 SQL> select xenc_key_serialize ('ServerPrivate.pfx', 1);

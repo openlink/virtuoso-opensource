@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>sequence_remove</refname>
-    <refpurpose>Removes a requece object</refpurpose>
+    <refpurpose>Removes a sequence object</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_sequence_remove">

@@ -83,7 +83,7 @@ are detected for distributed transactions based on timeouts. Use
 setting a timeout. See MS DTC for a definition of timeouts.</para>
 </sect2>
 <sect2 id="twopc_resp"><title>Responding to Distributed Transactions</title>
-<para>In this situation a distrtibuted transaction is initiated by an ODBC
+<para>In this situation a distributed transaction is initiated by an ODBC
 client of Virtuoso. The application enlists one	or more Virtuoso hdbcs in
 an OLE/DB distributed transaction, and then works with that hdbcs and
 commits or rolls back the distributed transaction.</para>

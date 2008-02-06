@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>XMLType.existsNode</refname>
-    <refpurpose>Tests node existance having evaluated given XPATH expression.</refpurpose>
+    <refpurpose>Tests node existence having evaluated given XPATH expression.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_XMLType.existsNode">

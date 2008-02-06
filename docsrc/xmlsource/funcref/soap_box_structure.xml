@@ -58,7 +58,7 @@
 	      <para>
 	      will be represented as soap_box_structure ('varString', 'hello', 'varInt', 1234);
 
-	      futhermore value returned from soap_box_structure passed as an output parameter 
+	      furthermore value returned from soap_box_structure passed as an output parameter 
 	      to the procedure (named structname) working as SOAP method will return :
 
 	  </para>
@@ -68,7 +68,7 @@
 		  <varInt>1234</varInt> 
 	  </structName> ]]></programlisting>
 	  <para>
-	      Please note that this is a one of posibilities to express structures 
+	      Please note that this is a one of possibilities to express structures 
 	      for SOAP request/response in Virtuoso/PL. The other way to express structure is to use 
 	      User Defined Types (see SOAP &amp; WSDL section of the documentation).   
 	  </para>

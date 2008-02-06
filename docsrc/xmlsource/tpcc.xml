@@ -1104,7 +1104,7 @@ NO_ITEM:
 }
 
 --
--- ol_insert - Pasrt of New Order transaction. Insert an ORDER LINE.
+-- ol_insert - Part of New Order transaction. Insert an ORDER LINE.
 --
 -- Note use of inout parameters even though they are not modified here.
 -- This saves copying the values.

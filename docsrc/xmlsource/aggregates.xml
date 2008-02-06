@@ -45,7 +45,7 @@ the use of aggregate reduces the overhead in filling in result-set and fetching 
 <para>
 More important advantage of aggregate functions is the ability to process many groups of
 records in parallel, performing one table scan instead of many. SQL optimizer may use
-sophisticated heruistics to find the fastest way of doing a complex query with aggregates
+sophisticated heuristics to find the fastest way of doing a complex query with aggregates
 but it cannot optimize the code of a stored procedure.</para>
 <sect2 id="aggcreateaggrstmt1">
   <title>Create Aggregate Statement</title>
@@ -67,7 +67,7 @@ the declared aggregate_name as special routine similar to one used for built-in
 aggregate functions, so the call produces a single value for resultset instead of
 a separate value for every row of the resultset.</para>
 <para>
-Every occurence of the aggregate_name in a select statement
+Every occurrence of the aggregate_name in a select statement
 creates an invisible &quot;accumulator&quot; column in resultset.
 The value of &quot;accumulator&quot; is calculated by init_procedure,
 then every row of data causes a call of acc_procedure that may modify
@@ -118,7 +118,7 @@ DROP AGGREGATE aggregate_name
 </programlisting>
 <para>
 The drop aggregate statement removes the declaration of aggregate_name from SYS_PROCEDURES table
-but does not drop or change any declarations of functions prevoiusly listed in create aggregate
+but does not drop or change any declarations of functions previously listed in create aggregate
 statement.
 </para>
 <para>
@@ -351,7 +351,7 @@ _______________________________________________________________________________
 1 Rows. -- 0 msec.
 </programlisting>
 <para>The function xml_tree_doc() is used because there is no standard way to 
-print an XML tree without making a complete XML entity whose underlaying XML 
+print an XML tree without making a complete XML entity whose underlying XML 
 document consists of the given XML tree.</para>
 
 <programlisting>

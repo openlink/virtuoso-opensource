@@ -45,7 +45,7 @@
     <para> The xte_nodebld_acc() function successively adds  
     the remaining arguments to the first one.
     If the last items of the first argument and some following arguments are strings,
-    they are concatenated. All succesive strings are concatenated.
+    they are concatenated. All successive strings are concatenated.
     The value of the first item is the number of the non-empty items in the 
     returned vector. The length of the returned vector is the sum of the length 
     of the first argument and number of the remaining arguments.

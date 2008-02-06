@@ -56,7 +56,7 @@
       <para>Optional name of procedure for producing selective information.</para>
     </refsect2>
     <refsect2><title>outdir</title>
-      <para>Optional flag to control output extense.  If this flag is set to 
+      <para>Optional flag to control output existence.  If this flag is set to 
       1 then code excerpts will be contained in the output.</para>
     </refsect2>
   </refsect1>

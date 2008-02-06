@@ -161,7 +161,7 @@ SOAP_1 (response)
    <refsect1 id="examples_trace_on">
      <title>Examples</title>
      <example id="ex_trace_on"><title>Simple example</title>
-       <para>To show users loging in to the server and failed user logins</para>
+       <para>To show users logging in to the server and failed user logins</para>
 	<screen>
 SQL> trace_on ('user_log', 'failed_log');
 

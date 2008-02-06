@@ -723,7 +723,7 @@ select s_quantity from stock where s_i_id = 111 for update;
     <itemizedlist mark="bullet" spacing="compact">
       <listitem>connection string element : You may specify the default
       transaction isolation level for a given connection in it's
-      conect string (passed to the <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/odbcsqldriverconnect.asp">SQLDriverConnect ()</ulink> ODBC API). Example
+      connect string (passed to the <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/odbcsqldriverconnect.asp">SQLDriverConnect ()</ulink> ODBC API). Example
       :</listitem>
     </itemizedlist>
 <programlisting>
@@ -751,7 +751,7 @@ select s_quantity from stock where s_i_id = 111 for update;
     <para>In the VirtuosoClient.NET provider the isolation is set by the <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfsystemdataidbconnectionclassbegintransactiontopic2.asp">System.Data.IDbConnection.BeginTransaction
     Method (IsolationLevel)</ulink> function.</para>
 <programlisting>
-  System.Data.IDBTransaction trx = conn.BeginTrasnaction (System.Data.IsolationLevel.ReadCommitted)
+  System.Data.IDBTransaction trx = conn.BeginTransaction (System.Data.IsolationLevel.ReadCommitted)
 </programlisting>
 
     <para>The constants are described <ulink url="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfsystemdataisolationlevelclasstopic.asp">here</ulink></para>

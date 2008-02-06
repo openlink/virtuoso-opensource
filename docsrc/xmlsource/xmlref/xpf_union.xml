@@ -48,7 +48,7 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="xpf_desc_union"><title>Description</title><para>The function returns an unordered sequence that consists of all distinct items from all given sets.</para>
-  <para>All duplicates are removed, including duplicate occurences of same value in one sequence, thus the function works exactly as
+  <para>All duplicates are removed, including duplicate occurrences of same value in one sequence, thus the function works exactly as
 <link linkend="xpf_distinct"><function>distinct()</function></link> when only one parameter is passed.</para>
   </refsect1>
   <refsect1 id="xpf_params_union"><title>Parameters</title>

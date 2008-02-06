@@ -44,10 +44,10 @@
   <!-- 3019
   This function do not return value
 
-  No errors, always suceeded
+  No errors, always succeeded
   -->
   <refsect1 id="examples_repl_stat"><title>Example</title>
-    <example id="ex_repl_stat_1"><title>Retriving of the replication status</title>
+    <example id="ex_repl_stat_1"><title>Retrieving of the replication status</title>
      <para>This is to show status of the subscriptions. The server shows the name of publisher, account is a name of the publication account, level is a current level of the publication and stat is a current status of the publication/subscription. Note that status for local publications are shown always as OFF, it is to show only subscription status.</para>
       <screen>
 SQL> DB.DBA.REPL_STAT ();

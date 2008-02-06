@@ -55,7 +55,7 @@ database.  When tables are attached from known types of remote DBMS's,
 Virtuoso also attempts to retrieve statistics information if
 available.  
 
-The sys_stat_analyze or sys_db_stat stoerd procedures can be used to force an update of statistics, also recompiling all SQL statements or procedures depending on these statistics.  Once this is done, this overrides the automatic statistics.  The values of automatic statistics can be seen in the SYS_COL_AUTO_STAT table.
+The sys_stat_analyze or sys_db_stat stored procedures can be used to force an update of statistics, also recompiling all SQL statements or procedures depending on these statistics.  Once this is done, this overrides the automatic statistics.  The values of automatic statistics can be seen in the SYS_COL_AUTO_STAT table.
 </para>
   <para>The stored procedure:</para>
   <para><link linkend="fn_sys_stat_analyze"><function>DB.DBA.SYS_STAT_ANALYZE
@@ -383,7 +383,7 @@ select * from (select r1.k as r1_k, ... from r1, r2
   FOR specifications.</para>
 
   <para>The INDEX table option is used to control
-  witch index is choosen by the optimized SQL compiler for a given table (when you
+  witch index is chosen by the optimized SQL compiler for a given table (when you
   want to override the one chosen automatically).</para>
 
   <simplelist>
@@ -412,7 +412,7 @@ select col from t1 where t1.key in (select key from t2)
 <programlisting>
 select .... from (select distinct key from t2) f, t1 where t1.key = f.key.
 </programlisting>
-<para>This oprtimization is mostly done when there is an index on t1.key and the IN subquery selects fewer roows than the other conditions on t1 would select.</para>
+<para>This optimization is mostly done when there is an index on t1.key and the IN subquery selects fewer rows than the other conditions on t1 would select.</para>
 <para>In some cases the developer may wish to explicitly force this optimization to be made or not to be made.  This is done with the LOOP EXISTS query option, as follows:</para>
 <programlisting>
 select row_no from t1 where row_no in (select row_no from t1 where fi2 = 2) option (loop exists)
@@ -434,7 +434,7 @@ select row_no from t1 where row_no in (select row_no from t1 where fi2 = 2 optio
 
 <para>In order to correctly estimate the cost of the VDB operations overhead the optimized SQL
 compiler should have information for the time it takes to make a "round trip" - send message
-and receive responce from a given remote database.</para>
+and receive response from a given remote database.</para>
 
 <para>Virtuoso will automatically collect such information when you first attach a table from
 the remote data source.  The information will be cached in the
@@ -466,7 +466,7 @@ function will not alter the cached statistics for the datasource.</para>
 
 <!--  VDB &amp; The Optimized compiler -->
 
-<para>Before collecting statistics data by quering the (potentially very large) remote
+<para>Before collecting statistics data by querying the (potentially very large) remote
 tables the Virtuoso VDB will try to collect the statistics in various less
 resource extensive ways.</para>
 
@@ -474,23 +474,23 @@ resource extensive ways.</para>
 order to do cost based optimization are available through one of the following
 channels (in order of preference):</para>
 <simplelist>
-<member>by quering the remote DBMS statistics system tables: This will provide
+<member>by querying the remote DBMS statistics system tables: This will provide
 a varying amount  of information depending on the remote and the mapping function.</member>
 <member> through SQLStatistics() ODBC call CARDINALITY column : A platform/remote
-independant way. This will provide information for the row count only.</member>
-<member>by quering the remote table to collect various aggregate functions values
+independent way. This will provide information for the row count only.</member>
+<member>by querying the remote table to collect various aggregate functions values
 (like COUNT (*), AVG() etc) : most complete, but may be very slow for large
 remote tables.</member>
 </simplelist>
 
-<para>Unfortunately the first method  is DBMS dependant.  Therefore  some extra setup is to be done
+<para>Unfortunately the first method  is DBMS dependent.  Therefore  some extra setup is to be done
 before this can return meaningful data.  This is supported off the shelf for Oracle and Virtuoso.</para>
 <para>The <link linkend="fn_sys_stat_analyze"><function>SYS_STAT_ANALYZE()</function></link>
 Virtuoso function will do a lookup of the remote DBMS
 name and version (as returned by SQL_DBMS_NAME and SQL_DBMS_VER SQLGetInfo ()
 ODBC call) in the system table DB.DBA.SYS_STAT_VDB_MAPPERS to find a Virtuoso/PL
 stored procedure to call for that DBMS to retrieve the statistics data from the
-remote DBMS'es system tables in DBMS dependant way.</para>
+remote DBMS'es system tables in DBMS dependent way.</para>
 
 <para>The DB.DBA.SYS_STAT_VDB_MAPPERS has the following layout:</para>
 <programlisting>
@@ -604,7 +604,7 @@ returns ANY
   return NULL;
 };]]></programlisting>
 
-<para>And here are the respecitve registration INSERT statements for the above
+<para>And here are the respective registration INSERT statements for the above
 procedures:</para>
 <programlisting>
 insert soft SYS_STAT_VDB_MAPPERS (SVDM_TYPE, SVDM_PROC, SVDM_DBMS_NAME_MASK, SVDM_DBMS_VER_MASK)
@@ -621,7 +621,7 @@ views are created with SELECT granted to PUBLIC:</para>
 for the tables the user has access to.</member>
 <member>USER_COL_STAT - subset of SYS_COL_STAT (same row layout) but returns rows only
 for the user-owned tables</member>
-<member>ALL_COL_HIST - subset of SYS_COL_HIST (same row layout) but only returing data
+<member>ALL_COL_HIST - subset of SYS_COL_HIST (same row layout) but only returning data
 for the tables the user has access to.</member>
 <member>USER_COL_HIST - subset of SYS_COL_HIST (same row layout) but returns rows only
 for the user-owned tables</member>

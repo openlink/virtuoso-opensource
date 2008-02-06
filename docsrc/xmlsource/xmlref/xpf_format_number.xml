@@ -93,7 +93,7 @@ By default, the following characters are treated as special when used in the par
     </table>
 </para>
 <para>
-Note that character '¤' have a special meahing in DecimalFormat of JDK 1.1, but not in XPATH.
+Note that character '¤' have a special meaning in DecimalFormat of JDK 1.1, but not in XPATH.
 </para>
 <para>
 The format pattern string may be in a localized notation.
@@ -129,7 +129,7 @@ It is an error if the stylesheet does not contain a declaration of the decimal-f
   <refsect1 id="xpf_examples_format_number"><title>Examples</title>
     <example id="xpf_ex_format_number"><title></title>
       <para>If the XSLT stylesheet defines format 'financial' as '###,###.00####', then the following returns '123,456.789':</para>
-      <screen>format(123456.789, "fincancial")</screen>
+      <screen>format(123456.789, "financial")</screen>
     </example>
   </refsect1>
 </refentry>

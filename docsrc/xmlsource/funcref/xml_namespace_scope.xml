@@ -41,7 +41,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_xml_namespace_scope">
     <title>Description</title>
-    <para>The function returns a vector of even length that consits of all declared namespace prefixes and namespace URIs
+    <para>The function returns a vector of even length that consists of all declared namespace prefixes and namespace URIs
 from the <parameter>ent</parameter> and all its ancestors. This information is needed for processing XML documents that
 contains a mix of data and XPath expressions, such as BPEL documents.</para>
   </refsect1>
@@ -56,7 +56,7 @@ only declarations of namespace prefixes are listed; if non-zero then all declara
     </refsect2>
   </refsect1>
   <refsect1 id="ret_xml_namespace_scope"><title>Return Types</title>
-    <para>The funtion returns a vector of even length that contains narrow strings in UTF-8 encoding.</para>
+    <para>The function returns a vector of even length that contains narrow strings in UTF-8 encoding.</para>
   </refsect1>
 <!--  
   <refsect1 id="errors_xml_namespace_scope">

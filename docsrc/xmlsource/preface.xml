@@ -24,7 +24,7 @@
 	<preface id="preface">
   <title>Preface</title>
 
-    <sect1 id="docuventions"><title>Conventions</title>
+    <sect1 id="conventions"><title>Conventions</title>
 		<para>A note on the typographical conventions that have been used in this text:</para>
 
     <para>This is the normal font type used for ordinary text.</para>
@@ -35,7 +35,7 @@
 differentiated from code if required.</screen>
 
     <tip><title>This See Also:</title><para>is a tip used for cross-referencing 
-    meterial either within the documentation, or externally.</para></tip>
+    material either within the documentation, or externally.</para></tip>
 
     <note><title>This Note:</title><para>is a note used for revealing a point of 
     interest or special feature</para></note>
@@ -43,7 +43,7 @@ differentiated from code if required.</screen>
     <para>Special formatting is used to highlight <function>functions()</function> 
     and their <parameter>parameters</parameter> above the rest of the text.</para>
 
-    <para>Important keywords are <emphasis>emphasised</emphasis> using bolding 
+    <para>Important keywords are <emphasis>emphasized</emphasis> using bolding 
     (or strong character typing) and text that 
     is <important>very important and must be noticed</important> is displayed 
     in a traditional red warning color</para>

@@ -65,7 +65,7 @@ Temporary variables are destroyed on return.
 <para>
 This function is used in the implementation of
 &quot;LET&quot; control operator in XQUERY,
-so you will probably use that operator in XQUERY expessions, not the function.
+so you will probably use that operator in XQUERY expressions, not the function.
 This function may be useful in XPATH expressions and in XSLT stylesheets.
 It is not a part of library of standard XQUERY 1.0 functions.
 </para>
@@ -88,7 +88,7 @@ It is not a part of library of standard XQUERY 1.0 functions.
 	    <entry><errorcode>42000</errorcode></entry>
 	    <entry><errorcode>XPF02</errorcode></entry>
 	    <entry><errorname>Wrong number of arguments for XPATH function let(), maybe internal XQuery error</errorname></entry>
-	    <entry>The function should have odd number of arguments: even number of arguments that describe veriables plus one for the returned expression.</entry>
+	    <entry>The function should have odd number of arguments: even number of arguments that describe variables plus one for the returned expression.</entry>
 	  </row>
 	</tbody>
       </tgroup>

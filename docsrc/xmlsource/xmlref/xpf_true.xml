@@ -38,7 +38,7 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="xpf_desc_true"><title>Description</title><para>This function returns boolean contant &quot;true&quot;</para></refsect1>
+  <refsect1 id="xpf_desc_true"><title>Description</title><para>This function returns boolean constant &quot;true&quot;</para></refsect1>
   <refsect1 id="xpf_ret_true"><title>Return Types</title><para>Boolean</para></refsect1>
   <refsect1 id="xpf_seealso_true"><title>See Also</title>
     <para><link linkend="xpf_false">false</link><link linkend="xpf_boolean">boolean</link></para>

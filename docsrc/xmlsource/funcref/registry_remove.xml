@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>registry_remove</refname>
-    <refpurpose>Remove a vriable from registry</refpurpose>
+    <refpurpose>Remove a variable from registry</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_registry_remove">

@@ -49,7 +49,7 @@ take place in the background.  If the syncing process is already underway or if
 the subscriber is already in sync and connected to the publisher this function has no effect.
 If there is no connection to the publisher at the time of calling this function and the connection
 fails and an error is immediately signalled.
-To initiate a syncronization a valid SQL account must be specified.  Also the account must 
+To initiate a synchronization a valid SQL account must be specified.  Also the account must 
 have rights to the publication unless publisher DBA's account is used to connect.
 </para>
 	</refsect1>
@@ -76,7 +76,7 @@ have rights to the publication unless publisher DBA's account is used to connect
 	
 	-->
   <refsect1 id="examples_repl_sync"><title>Example</title>
-    <example id="ex_repl_sync"><title>Syncronizing a subscription</title>
+    <example id="ex_repl_sync"><title>Synchronizing a subscription</title>
      <para>The following shows requesting a sync from publisher for an existing subscription. The account for authentication is a 'repl_user' SQL account.</para>
       <screen>
 SQL> repl_sync ('demo-srv', 'demo-publication', 'repl_user', 'repl_passwd');

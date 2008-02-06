@@ -188,8 +188,8 @@ These problems are very common for any changes of the location of the database.<
       <title>Check system clock accuracy and timezone settings.</title>
       <para>If source and destination servers are located in different timezones (i.e.,
 their machines have different timezone settings),
-then errors may occur in some applications that uses datatime values with default timezones,
-because the timezone of datatime values will differ from the default (local) timezone.
+then errors may occur in some applications that uses datetime values with default timezones,
+because the timezone of datetime values will differ from the default (local) timezone.
 The time reported by the system clock may also be important if an application
 logs times of some events and expect that they are properly ordered.
 Time issues may be especially important to web applications that uses cookie variables, because
@@ -203,7 +203,7 @@ two servers (host names, ports, database user names and passwords).
 To make the migration successful, database users should have granted all privileges on their servers,
 so the use of DBA account is the best choice.
 The script will test connections to both source and destination database to check the 
-given parameteres are valid.</para>
+given parameters are valid.</para>
 <para>If the source database resides on the machine where the migration script is started,
 the script may ask whether you want to use a special temporary server instance to perform the migration.
 It will shutdown your source server but will eliminate the risk of changing the data by third parties

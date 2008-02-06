@@ -44,10 +44,10 @@
    <para>This function is used to stop receiving a replication messages from a 
    publisher server for a item or whole subscription.  It will be invoked 
    automatically when a publication is dropped.  The subscriber can also invoke 
-   this function to stop receiving replcation messages.  The existing items can be 
+   this function to stop receiving replication messages.  The existing items can be 
    dropped or not depending on the copy mode flag.  The description entries for 
    that subscription will be removed.  There is no "undo" ability.  To 
-   temproraly halt the replication messages you can use repl_disconnect().</para>
+   temporally halt the replication messages you can use repl_disconnect().</para>
 	</refsect1>
   <refsect1 id="params_"><title>Parameters</title>
     <refsect2><title>server_name</title>

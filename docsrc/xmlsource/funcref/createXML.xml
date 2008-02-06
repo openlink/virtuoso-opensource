@@ -43,7 +43,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_createXML">
     <title>Description</title>
-    <para>This function creates an XMLType instance. It works absolutely identicaly to the
+    <para>This function creates an XMLType instance. It works absolutely identically to the
 <link linkend="fn_XMLType.XMLType"><function>XMLType()</function></link> constructor and
 is provided solely for compatibility.
      </para>
@@ -58,7 +58,7 @@ is provided solely for compatibility.
     </refsect2>
     <refsect2><title>validated</title>
       <para>An integer flag that indicates if the document is already validated against the
-schema of the document (this is to avoid redundand validations). The default is 0.</para>
+schema of the document (this is to avoid redundant validations). The default is 0.</para>
     </refsect2>
     <refsect2><title>wellformed</title>
       <para>This parameter is unused and is listed solely for compatibility.</para>

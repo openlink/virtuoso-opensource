@@ -43,7 +43,7 @@
 If an instance is schema-based but the validation has already been done, the call has no effect.
 Otherwise, a schema-based instance is validated against its schema.
 If the validation fails, an error is signalled.
-If the validation is successfull then a special internal &quot;validated&quot;flag is set.</para>
+If the validation is successful then a special internal &quot;validated&quot;flag is set.</para>
   </refsect1>
   <refsect1 id="ret_XMLType.schemaValidate"><title>Return Types</title>
     <para>The function returns a string that contains a validation log if an instance 

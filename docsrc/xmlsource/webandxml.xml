@@ -54,7 +54,7 @@ A long varchar column can contain huge XML documents as special
 &quot;persistent XML entity&quot; objects. XML entities of this sort
 consume only a little amount of memory and load small portions of data from
 disk to memory on demand; an application can handle XML documents that
-are order of magnitute larger than the amount of available memory.
+are order of magnitude larger than the amount of available memory.
 <link linkend="sqlrefxmldatatype">LONG XML</link> column type is convenient
 if a column contains only valid XML documents. An application can save
 XML entities to LONG XML columns and retrieve them back without calling any
@@ -546,7 +546,7 @@ from "Demo"."demo"."Employees";
 <note>
 <title>Note:</title>
 <para>
-The second statement is more effictive than the others.
+The second statement is more effective than the others.
 </para>
 </note>
 <para>
@@ -1024,7 +1024,7 @@ successively bound to each element of the node set selected by the XPATH
 expression.  if the value is not a node set and is true, the variable will
 be once bound to this value.  The scope of the variable is the containing
 select and its value is a scalar or an XML entity.
-The <emphasis>result_var</emphasis> can be not an identifier but a NULL keyword to explicitely indicate that no query variable is required.
+The <emphasis>result_var</emphasis> can be not an identifier but a NULL keyword to explicitly indicate that no query variable is required.
 </para>
 	<para>
 The <emphasis>START_ID</emphasis> is the first allowed document ID to be selected by the
@@ -1262,7 +1262,7 @@ descendants.</para>
 	<sect2 id="xmlencoding">
 		<title>XML Processing &amp; Free Text Encoding Issues</title>
 		<para>
-XML documment may be written in a variety of encodings, and it may cause errors
+XML document may be written in a variety of encodings, and it may cause errors
 if an incorrect encoding is used for reading a document.  Most common errors
 can easily be eliminated by writing proper XML prologs in documents, but this
 is not always possible, e.g. if documents are composed by third-party
@@ -1276,7 +1276,7 @@ Not all documents may be converted to Unicode by using simple character sets.
 Some of them are stored in so-called &quot;multibyte&quot; encodings.
 It means that every letter (or ideograph) is represented as a sequence of
 one or more bytes, not by exactly one byte.  The conversion from such representation
-to Unicode and back is usually significally slower than simple transformation
+to Unicode and back is usually significantly slower than simple transformation
 via character sets, so these representations are supported by data import operations only, but not by internal RDBMS
 routines.</para>
 			<para>
@@ -1513,11 +1513,11 @@ select ID from ENC_XML_SAMPLE where
 </example>
 <note><title>Note:</title>
       <para>
-You may have free-text a expression written as a literal contant:
-e.g. if the argument of text-contains XPath function is a literal contant.
+You may have free-text a expression written as a literal constant:
+e.g. if the argument of text-contains XPath function is a literal constant.
 Be careful to not declare the __enc twice, once in the beginning of the whole
 XPath expression and then again in the beginning of the free-text expression
-contant, because words of the text expression will thus be converted twice.</para></note>
+constant, because words of the text expression will thus be converted twice.</para></note>
   </sect3>
 		</sect2>
 	</sect1>

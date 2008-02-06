@@ -75,7 +75,7 @@ off (note that HTTP authentication is different from SyncML authentication).</pa
 under a given WebDAV collection.  Every device database, such as contacts, calendar,
 usually requires that a different WebDAV collection be specified because the devices
 usually can not maintain items of different kinds with a single database.  For
-example, when synchronising the Contacts of a Nokia 9210 with the server,
+example, when synchronizing the Contacts of a Nokia 9210 with the server,
 we can specify <computeroutput>./contacts/</computeroutput>, and likewise
 for the Calendar database, <computeroutput>./calendar/</computeroutput>.
 This keeps VCARDS (contacts) and vCalendars in separate collections (folders) on

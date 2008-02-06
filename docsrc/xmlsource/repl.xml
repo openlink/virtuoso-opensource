@@ -989,17 +989,17 @@ resources as needed.
 When a table or procedure is added to a publication, the creating
 statement is added also, so that the subscribers come to create the
 table or procedure before receiving any replication operations on said
-table or procedure.  Also when the table or precedure is altered, the
+table or procedure.  Also when the table or procedure is altered, the
 altering statements are added to the publication so s to be reflected
 on all subscribers.  This can be overridden for procedures, since in
 some cases it is desirable to have a different definition on the
 subscriber.  Table constraints are also replicated, except for foreign
 key constraints with tables outside the publication, since these would
-not be meaninfgful on the subscriber, as there is no knowledge on what
+not be meaningful on the subscriber, as there is no knowledge on what
 tables may exist there outside of the ones in the publication.
 Changes to schema on subscribers are never replicated to the
 publisher, even if we had bidirectional replication.  Identity and
-timestamp columns are replicated so that the vaues on the subscriber
+timestamp columns are replicated so that the values on the subscriber
 are assigned by the publisher.
 </para>
 
@@ -1010,7 +1010,7 @@ calls and definition is reasonable, sometimes only calls are to be
 replicated if the procedure intentionally has a different definition
 in the subscriber.  This is useful for example when the subscriber
 gathers statistics or maintains a data warehouse where the storage
-schema is not identifcal with that of the publisher.  Only procedures
+schema is not identical with that of the publisher.  Only procedures
 with input parameters can be replicated.  The rationale is that
 replication is a one way stream and no return values, result sets or
 output parameters can be captured by either publisher or subscriber.
@@ -1018,7 +1018,7 @@ Procedure calls cannot be replicated bidirectionally, these go from publisher to
 </para>
 
 <para>
-Even though replication can carry schema changes, it is in no way a means of keping software installations in sync.  Many schema elements such as triggers are not covered and a software upgrade is more complex than can be represented by replication alone.
+Even though replication can carry schema changes, it is in no way a means of keeping software installations in sync.  Many schema elements such as triggers are not covered and a software upgrade is more complex than can be represented by replication alone.
 </para>
 
 </sect2>

@@ -89,7 +89,7 @@ FTPServerLogFile = ftpserver
 ]]></programlisting>
 
 <para>If specified Virtuoso will produce an FTP server log file with the date
-appended to the name given in the parameter and the files extention as ".log".
+appended to the name given in the parameter and the files extension as ".log".
 The log file is rotated daily.  It will contain the following information:</para>
 
 <para><computeroutput>ftpserverDDMMYYYY.log</computeroutput> :-</para>
@@ -159,7 +159,7 @@ DAV user.</para>
 
 <!--
  The FTP server is based on DAV api. (see dav_api.txt). The user can access all
-resorces (files), that DAV api allow.
+resources (files), that DAV api allow.
 -->
 
 <tip><title>See Also:</title>

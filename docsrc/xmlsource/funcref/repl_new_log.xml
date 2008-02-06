@@ -53,7 +53,7 @@ or replacing a datetime field in the file name.
       <para>publication account name.</para>
     </refsect2>
     <refsect2><title>file</title>
-      <para> name of file to be used for publication's transactions logging, if size exceed 1Mb limit a new file suffixed with timestamp will be oppened.</para>
+      <para> name of file to be used for publication's transactions logging, if size exceed 1Mb limit a new file suffixed with timestamp will be opened.</para>
     </refsect2>
   </refsect1>
 	<!-- 3019
@@ -61,8 +61,8 @@ or replacing a datetime field in the file name.
 	No specific errors, normal argument type checking only 
 	-->
   <refsect1 id="examples_repl_new_log"><title>Example</title>
-    <example id="ex_repl_new_log_1"><title>Openning a new replication log</title>
-     <para>This command can be issued on the publisher server to swith replication logging to the new file 'new_log_file_name.log'. Inpractice we making a publication with REPL_PUBLISH() and it opens the replication log file, so this is for maintenance only. Furthermore the replication server will switch to a new log suffixed with timestamp when current file is greater than 1,000,000 bytes.</para>
+    <example id="ex_repl_new_log_1"><title>Opening a new replication log</title>
+     <para>This command can be issued on the publisher server to swith replication logging to the new file 'new_log_file_name.log'. In practice we make a publication with REPL_PUBLISH() and it opens the replication log file, so this is for maintenance only. Furthermore the replication server will switch to a new log suffixed with timestamp when current file is greater than 1,000,000 bytes.</para>
       <screen>
 SQL> repl_new_log ('demo-publication', 'new_log_file_name.log');
       </screen>

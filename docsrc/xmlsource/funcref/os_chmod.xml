@@ -52,7 +52,7 @@
 	    by calling the system function chmod() with the arguments supplied.</para>
 	<para>Not all the host OSes support all the file modes. That's why the function
 	    will not throw an SQL error if the function fails.</para>
-	<para>It will return DB NULL value when the function was called succsessfully
+	<para>It will return DB NULL value when the function was called successfully
 	    and the error message as a string if it failed.</para>
 	<para>In most OSes the mode is a bitmask, so one would usually use the
 	    <function>file_stat</function> to get the current mode and

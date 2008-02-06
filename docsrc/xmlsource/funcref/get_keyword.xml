@@ -44,7 +44,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_get_keyword"><title>Description</title>
     <para><function>get_keyword</function> performs a case sensitive seek
-    for the occurance of
+    for the occurrence of
     <parameter>keyword</parameter> from each even position of
     <parameter>searched_array</parameter>. If found,this   returns the
  element following the occurrence of the keyword.
@@ -75,7 +75,7 @@
       in the array from which the element came gets set to 0.</para>
       <para>
 This must in some cases  be true, for example when the data being retrieved is
-not copiable, as in the case of a string output.  While the default behavior is to
+not copyable, as in the case of a string output.  While the default behavior is to
 return a copy of the element get_keyword will return the element itself and then
 set the place from which the element was retrieved to 0 if this argument is true.
 </para>

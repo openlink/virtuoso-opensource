@@ -60,12 +60,12 @@
   <refsect1 id="examples_java_new_object">
     <title>Examples</title>
     <example id="ex_java_new_object"><title>Creating new Java class instances</title>
-      <para>creates a new java.util.Date class instance and initialises it with 
+      <para>creates a new java.util.Date class instance and initializes it with 
       the current time from Virtuoso.</para>
       <programlisting><![CDATA[
 cal := java_new_object ('java.util.Date', vector ('L', msec_time()));
 ]]></programlisting>
-      <para>creates a new java.util.Date class instance and initialises it with 
+      <para>creates a new java.util.Date class instance and initializes it with 
       the current time from java VM.</para>
       <programlisting><![CDATA[
 cal := java_new_object ('java.util.Date');

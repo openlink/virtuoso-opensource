@@ -57,7 +57,7 @@ strategy.
 upon initial setup. This can be used when publication data is so large to be 
 copied via repl_init_copy() which uses VDB operations. 
 The image file(s) created by this function must be loaded on subscriber with replay() function in order 
-of their cration (if image is splitted on to a several files).</para>
+of their creation (if image is split on to a several files).</para>
   </refsect1>
 
   <refsect1 id="params_repl_pub_init_image"><title>Parameters</title>
@@ -92,11 +92,11 @@ of their cration (if image is splitted on to a several files).</para>
 SQL> DB.DBA.REPL_PUB_INIT_IMAGE ('table_publication', 'tbl_pub.log', 1000000);
       </screen>
 
-      <para>Furthermore the image can be loaded on a subscriber. Note that this comman MUST be issued on the subscriber side. Note that REPL_PUB_INIT_IMAGE() will make more files when size of the initial file is greater than 1Mb, so in that case the additional files will be named tbl_pub.log.N where N is a sequence beginning from 1 and they also need to be loaded.</para>
+      <para>Furthermore the image can be loaded on a subscriber. Note that this command MUST be issued on the subscriber side. Note that REPL_PUB_INIT_IMAGE() will make more files when size of the initial file is greater than 1Mb, so in that case the additional files will be named tbl_pub.log.N where N is a sequence beginning from 1 and they also need to be loaded.</para>
 
       <screen>
 SQL> replay 'tbl_pub.log';
-... if there a more than one image file load sequentialy ...
+... if there a more than one image file load sequentially ...
 SQL> replay 'tbl_pub.log.1';
 ...
       </screen>

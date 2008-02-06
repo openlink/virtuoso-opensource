@@ -110,7 +110,7 @@
 			    constructor method vspx_delete_button (name varchar, label varchar, parent vspx_control)
 			    ;
 
-			    -- these are represantation of varoius button types
+			    -- these are representation of various button types
 			    create type vspx_radio_button under vspx_button
 			    self as ref temporary
 			    constructor method vspx_radio_button (name varchar, parent vspx_control),
@@ -171,7 +171,7 @@
          &#39;submit&#39; : an alias of &#39;simple&#39; button, obsolete
 				</para>
     <para>
-         &#39;delete&#39; : a button for deleting a row in a data-set or data-grid controls, it is represented as a submit button with special on-post script. The delete function is perforemd based on table, key attributes. (check implementation!!)
+         &#39;delete&#39; : a button for deleting a row in a data-set or data-grid controls, it is represented as a submit button with special on-post script. The delete function is performed based on table, key attributes. (check implementation!!)
 				</para>
     <para>
          &#39;browse&#39; : a button for browsing will be originated, the function of it is to pop-up a window as specified in selector attribute. Designate client-side JavaScript generation.
@@ -181,7 +181,7 @@
          &#39;return&#39; : this button type will return a value of fileds named as specified in it&#39;s children &#39;filed&#39; elements to the parent window. The page rendering class will make client-side JavaScript code for serving it&#39;s function.
 				</para>
     <para>
-         &#39;logout&#39; : can appear only in login control, this is to perform logout functin of it.
+         &#39;logout&#39; : can appear only in login control, this is to perform logout function of it.
 				</para>
   </refsect2>
   <refsect2>
@@ -190,7 +190,7 @@
   </refsect2>
   <refsect2>
     <title>child-window-options</title>
-    <para>Options for oppening a child pop-up window.This can be used only with conjuction of action browse.</para>
+    <para>Options for opening a child pop-up window.This can be used only with conjuction of action browse.</para>
   </refsect2>
   <refsect2>
     <title>browser-current</title>
@@ -236,7 +236,7 @@ The button will be rendered as usual submit button.
   </refsect2>
   <refsect2>
     <title>not-selected-image</title>
-    <para>A second alternate image. This and above can will be only initialized. One can use them to change simultaniously the value of button (i.e. ufl_value and hance rendering).</para>
+    <para>A second alternate image. This and above can will be only initialized. One can use them to change simultaneously the value of button (i.e. ufl_value and hance rendering).</para>
   </refsect2>
   <refsect2>
     <title>selector</title>

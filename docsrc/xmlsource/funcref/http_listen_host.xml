@@ -74,7 +74,7 @@
 
   </refsect1>
   <refsect1 id="examples_http_listen_host"><title>Examples</title>
-  <example id="ex_http_listen_host"><title>Starting/stopping and state retrival of a listener</title>
+  <example id="ex_http_listen_host"><title>Starting/stopping and state retrieval of a listener</title>
   <screen><![CDATA[
 
   SQL> http_listen_host ('127.0.0.1:7780', 0);

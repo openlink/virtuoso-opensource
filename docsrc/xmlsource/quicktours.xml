@@ -628,7 +628,7 @@ processes running accurately.
 <sect1 id="qstexpwsmodules"><title>Exposing Persistent Stored Modules as Web Services</title>
   <para>Virtuoso SQL stored procedures and functions can be exposed as SOAP services very
 simply from Virtuoso, whether they are native Virtuoso or on remote data sources. This
-powerful ability means that any database servers already existing within an organisation
+powerful ability means that any database servers already existing within an organization
 can easily become a component in an eBusiness solution using Virtuoso. All you need is
 a few simple steps that typically take mere minutes to complete:
   </para>
@@ -1046,7 +1046,7 @@ at the top of this section</para></note>
 &lt;/ROW&gt;
 &lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Chang" ProductID="2"&gt;
 &lt;/ROW&gt;
-&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Guaran Fantstica" ProductID="24"&gt;
+&lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Guaran Fantastica" ProductID="24"&gt;
 &lt;/ROW&gt;
 &lt;ROW CategoryID="1" CategoryName="Beverages" ProductName="Sasquatch Ale" ProductID="34"&gt;
 &lt;/ROW&gt;
@@ -1271,7 +1271,7 @@ The definition is at the top of this section</para></note>
 	<sect1 id="vspquickstart">
 		<title>Dynamic Web Pages</title>
 
-  <para>Virtuoso provides an exstensible array or dynamic methods for creating
+  <para>Virtuoso provides an extensible array or dynamic methods for creating
   data driven web pages.  Through runtime hosting Virtuoso can directly host, store
   and drive:</para>
     <simplelist>

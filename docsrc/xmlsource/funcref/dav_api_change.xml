@@ -137,7 +137,7 @@
   </refsect1>
 
   <refsect1 id="sysprops_dav_api_change"><title>System Properties</title>
-    <para>Names of &apos;standard live propeties&apos; matches tag names used in PROPFIND response for same purposes.</para>
+    <para>Names of &apos;standard live properties&apos; matches tag names used in PROPFIND response for same purposes.</para>
     <para>Names of virtuoso-specific system properties starts with &apos;:virt&apos; substring.</para>
     <para>In the table below, &apos;Read/Write&apos; access type means that the application can try to set the property.
     This does not mean that the property can be successfully changed for any particular resource or collection.</para>
@@ -148,7 +148,7 @@
 	  <row><entry>:getlastmodified</entry><entry>Read/Write</entry><entry>datetime</entry><entry>Time of the last modification.</entry></row>
 	  <row><entry>:creationdate</entry><entry>Read/Write</entry><entry>datetime</entry><entry>Time of creation.</entry></row>
 	  <row><entry>:lastaccessed</entry><entry>Read Only</entry><entry>datetime</entry><entry>Time of the last access to the resource, may be inaccurate by a large amount.</entry></row>
-	  <row><entry>:getetag</entry><entry>Read Only</entry><entry>varchar</entry><entry>The value of 'Etag' field of responce header as reported by HEAD HTTP request.</entry></row>
+	  <row><entry>:getetag</entry><entry>Read Only</entry><entry>varchar</entry><entry>The value of 'Etag' field of response header as reported by HEAD HTTP request.</entry></row>
 	  <row><entry>:getcontenttype</entry><entry>Read/Write</entry><entry>varchar</entry><entry>MIME type of the resource (&apos;dav/unix-directory&apos; for collections).</entry></row>
 	  <row><entry>:getcontentlength</entry><entry>Read Only</entry><entry>integer</entry><entry>Resource length in bytes. 0 for collections.</entry></row>
 	  <row><entry>:resourcetype</entry><entry>Read Only</entry><entry>XML entity</entry><entry>&apos;&lt;D:collection/&gt;&apos; for collections, NULL for resources.</entry></row>

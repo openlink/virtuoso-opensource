@@ -425,7 +425,7 @@ Hello Rob, from Virtuoso
 <!--
 
 For Java :
-0) JDK or JRE needs to be instaled
+0) JDK or JRE needs to be installed
 1) jvm.dll needs to be in %PATH% , *copy* will not work !
 2) JavaClasspath (INI setting) needs to contain path to all .class .jar files which are used
 

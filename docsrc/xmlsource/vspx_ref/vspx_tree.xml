@@ -159,7 +159,7 @@ This can be of any data type, a file system path is an example.
     <title>child-function</title>
     <para>
 Given the result of the root expression, this must generate an array
-of similar elements corresponing to the children of the node in
+of similar elements corresponding to the children of the node in
 question.  This same function should be applicable to each element of
 the array it returns.  If the array is empty then the node in question
 is a leaf.  
@@ -175,7 +175,7 @@ is a leaf.
   <title>Children</title>
   <refsect2>
     <title>template</title>
-    <para>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node represantation)</para>
+    <para>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node representation)</para>
   </refsect2>
 </refsect1>
 <refsect1 id="examples_vspx_tree">

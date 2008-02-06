@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>xenc_encrypt</refname>
-    <refpurpose>Encrypt and optianally sign a SOAP message</refpurpose>
+    <refpurpose>Encrypt and optionally sign a SOAP message</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_xenc_encrypt">
@@ -48,7 +48,7 @@
   <refsect1 id="desc_xenc_encrypt">
     <title>Description</title>
     <para>
-	Encrypt SOAP message and optianally 
+	Encrypt SOAP message and optionally 
 	attach an XML signature. The keys  are 
 	retrieved from the   key store of the calling user account.
     </para>

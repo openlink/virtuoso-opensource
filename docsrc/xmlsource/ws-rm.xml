@@ -196,7 +196,7 @@ method get_call_param (name varchar) returns any,
 <para>Serializes the parameter in a form suitable for  passing to the
 SOAP_CLIENT() function. When several parameters needs to be passed to it,
 then result of those calls must be concatenated (see vector_concat())
-Importanat: set_xsd have to be called with valid ExQName, before doing
+Important: set_xsd have to be called with valid ExQName, before doing
 get_call_param call.
 </para>
 
@@ -257,7 +257,7 @@ par := s.get_call_param ('par1');
 <para>here are the contents of 'par':</para>
 <programlisting><![CDATA[
 (
-  ("par1", "http://soapinterop.org/xsd:SOAPComplexType" ), -- designates paramter par1, with type SOAPComplexType
+  ("par1", "http://soapinterop.org/xsd:SOAPComplexType" ), -- designates parameter par1, with type SOAPComplexType
   (<COMPOSITE>, "",	-- this is a marker that it's a struct
 	"varInt", 123, 	-- the members name/value pairs follows
 	"varFloat", 3.14
@@ -413,7 +413,7 @@ create type wsa_cli as
 
 <simplelist>
   <member><emphasis>mid</emphasis> - message identifier; unique across space and time</member>
-  <member><emphasis>to</emphasis> - where message travelling to</member>
+  <member><emphasis>to</emphasis> - where message traveling to</member>
   <member><emphasis>from</emphasis> - from where it's sent</member>
   <member><emphasis>action</emphasis> - WS-Addressing Action headed element</member>
   <member><emphasis>fault_to</emphasis> - where to return the fault</member>
@@ -881,7 +881,7 @@ Content-Length: 0
 
     <xsd:element name="SequenceFault" type="wsrm:SequenceFaultType"/>
 
-    <!-- *** ASSERTATIONS *** -->
+    <!-- *** ASSERTIONS *** -->
     <xsd:complexType name="InactivityTimeout_t">
 	<xsd:sequence/>
 	<xsd:attribute name="Milliseconds" type="xsd:unsignedLong" use="required"/>

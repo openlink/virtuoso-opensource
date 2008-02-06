@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>xslt_format_number</refname>
-    <refpurpose>returns formated string representation of a numeric value</refpurpose>
+    <refpurpose>returns formatted string representation of a numeric value</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_xslt_format_number">
@@ -54,7 +54,7 @@
   </refsect1>
   <refsect1 id="desc"><title>Description</title>
     <para>xslt_format_number is an function wrapper for the format-number() XSLT function.</para>
-    <para>It always uses the default formating parameters described in the XSLT standard.</para>
+    <para>It always uses the default formatting parameters described in the XSLT standard.</para>
 
   </refsect1>
   <refsect1 id="examples"><title>Examples</title>

@@ -86,7 +86,7 @@ The METHOD attribute of a FORM TAG in a VSP page can be either GET or POST.  The
 be contained completely in a URL; this can be advantageous because it permits bookmarking in browsers,
 but it also prevents form data from containing non
 
-ASCII characters such as accented leters and special symbols
+ASCII characters such as accented letters and special symbols
 and restricts the amount of form data that can be handled.  The GET method is l
 
 

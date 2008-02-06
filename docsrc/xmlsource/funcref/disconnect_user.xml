@@ -50,7 +50,7 @@
       <para>A string pattern to match users to be disconnected. SQL wildcards
       including Virtuoso extensions may be used:</para>
 	  <simplelist>
-	    <member>'smith' - discconnections user Smith's clients.</member>
+	    <member>'smith' - disconnects user Smith's clients.</member>
 		<member>'@smith' - disconnects all users whose name resembles 'smith'.</member>
 		<member>'%' - disconnects all users including the current dba session.</member>
 	  </simplelist>

@@ -826,7 +826,7 @@ call that opens the cursor.
 			</sect4>
 			<para>
 The cursor type  options should be set before preparing a statement.
-Other options may be set at any time.  The rowset and prefetch opions options should not be modified after executing a SELECT.
+Other options may be set at any time.  The rowset and prefetch options should not be modified after executing a SELECT.
 </para>
 			<sect4 id="SQLGETLASTSERIAL">
 				<title>SQL_GETLASTSERIAL</title>

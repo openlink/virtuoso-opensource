@@ -57,7 +57,7 @@
   </refsect1>
   <refsect1 id="desc_cfg_item_name"><title>Description</title>
     <para>Returns the name of the item specified by item_index
-    (begins from zero). If the index and secion name do not point
+    (begins from zero). If the index and section name do not point
     to a valid item, then zero is returned, otherwise on success the
     function returns the item name.</para>
   </refsect1>

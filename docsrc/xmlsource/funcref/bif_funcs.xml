@@ -163,7 +163,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_bif_arg"><title>Description</title>
     <para>The bif_...._arg functions are used in the Virtuoso shared object. They allow
-    customisation of the Virtuoso server.
+    customization of the Virtuoso server.
     They are written in C code, and linked with the Virtuoso shared object.</para>
     <para>The _or_null_ variants of these functions represent the SQL null
     value as a 00 pointer, even though getting the same argument with bif_arg()

@@ -286,6 +286,7 @@
 <!ENTITY rdf_triples_to_ttl                     SYSTEM  "funcref/rdf_triples_to_ttl.xml">
 <!-- ENTITY rdf_load_turtle                        SYSTEM  "funcref/rdf_load_turtle.xml" -->
 <!ENTITY rdf_restore_metadata                   SYSTEM  "funcref/rdf_restore_metadata.xml">
+<!ENTITY rdf_64bit_upgrade                      SYSTEM  "funcref/rdf_64bit_upgrade.xml">
 
 <!ENTITY sparql_eval                            SYSTEM  "funcref/sparql_eval.xml">
 <!ENTITY sparql_eval_to_array                   SYSTEM  "funcref/sparql_eval_to_array.xml">

@@ -43,7 +43,7 @@ allows you to specify the catalog or database for which queries will be run agai
 refer to a particular catalog or database.
 </para>
 		<para>
-You can import users by adding LDAP Servers(s) from the "LDAP Servers" tab, and then from the "LDAP Import" to specifiy from
+You can import users by adding LDAP Servers(s) from the "LDAP Servers" tab, and then from the "LDAP Import" to specify from
 which LDAP server the import should be done. </para>
 
     <figure float="1"><title>Users Accounts</title>
@@ -210,7 +210,7 @@ select the "Link objects" link.</para>
 
      	<sect3 id="remoteprocedures"><title>Remote Procedures</title>
 			<para>
-			In order to view the list of remote procedures, you should check the "Stored Prcoedures" check-box and click the button "Apply".
+			In order to view the list of remote procedures, you should check the "Stored Procedures" check-box and click the button "Apply".
                         As result the procedures that are already connected to
 			Virtuoso will be shown with checked check-box. You can unlink these by selecting them and pressing the
 			<emphasis>Unlink</emphasis> button.</para>
@@ -402,7 +402,7 @@ select the "Link objects" link.</para>
 
       <para><emphasis>Show Manifest</emphasis> will open a new window of the
       Dump's Manifest.  The Manifest is an xml file placed in dump's root directory
-      containing information about its content with name of creator and creationg date/time.
+      containing information about its content with name of creator and creation date/time.
       The Manifest window will display an appropriate transformation rather than raw XML.</para>
       <para><emphasis>Select</emphasis> saves the actual value of Current Dir and passes
       it to Dump Page</para>

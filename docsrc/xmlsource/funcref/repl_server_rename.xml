@@ -62,7 +62,7 @@
   42000 TR059 The current name of server cannot be altered.
   42000 TR060 The name of new server used from another publishing server.
   42000 TR061 The publication on "[new_name]" exists with the same name a on "[old_name]". The rename operation can        not be performed
-  42000 TR058 General error, publication recoreds can't be updated
+  42000 TR058 General error, publication records can't be updated
   -->
   <refsect1 id="examples_repl_server_rename"><title>Example</title>
     <example id="ex_repl_server_rename_1"><title>Renaming of the existing publisher server</title>

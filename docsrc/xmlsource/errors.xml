@@ -2060,7 +2060,7 @@
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>SR324</errorcode><errortype>08U01</errortype>
-      <errorname>Remote server has disconnected making the transaction uncommitable. Transaction has been rolled back.</errorname>
+      <errorname>Remote server has disconnected making the transaction uncommittable. Transaction has been rolled back.</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -4420,7 +4420,7 @@
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>HT058</errorcode><errortype>22023</errortype>
-      <errorname><![CDATA[Missing leadng slash in path parameter]]></errorname>
+      <errorname><![CDATA[Missing leading slash in path parameter]]></errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -5198,7 +5198,7 @@ x    </msgtext></msgmain></msg>
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>VD081</errorcode><errortype>42000</errortype>
-      <errorname>Output parameters require the use of settable resutlset variable in rexec.</errorname>
+      <errorname>Output parameters require the use of settable resultset variable in rexec.</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -5222,7 +5222,7 @@ x    </msgtext></msgmain></msg>
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>VD085</errorcode><errortype>42000</errortype>
-      <errorname><![CDATA[Can't (commit | rollback) dsn <dsn_name> because it is (not in manual commit | not transaction cappable)]]></errorname>
+      <errorname><![CDATA[Can't (commit | rollback) dsn <dsn_name> because it is (not in manual commit | not transaction capable)]]></errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -5732,7 +5732,7 @@ x    </msgtext></msgmain></msg>
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>TR058</errorcode><errortype>42000</errortype>
-      <errorname><![CDATA[General error, publication recoreds can't be updated]]></errorname>
+      <errorname><![CDATA[General error, publication records can't be updated]]></errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -6384,14 +6384,14 @@ x    </msgtext></msgmain></msg>
     <msg><msgmain><msgtext><errorcode>IB002</errorcode><errortype>42000</errortype>
       <errorname>Read of page [PAGE NUM] failed</errorname>
     </msgtext></msgmain></msg>
-    <msgexplain><para>Internal error of backup process. Possible reason - corruted database file.</para></msgexplain>
+    <msgexplain><para>Internal error of backup process. Possible reason - corrupted database file.</para></msgexplain>
   </msgentry>
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>IB001</errorcode><errortype>42000</errortype>
       <errorname>Could not compress page [PAGE NUM]</errorname>
     </msgtext></msgmain></msg>
-    <msgexplain><para>Internal error of backup process. Possible reason - corruted database file.</para></msgexplain>
+    <msgexplain><para>Internal error of backup process. Possible reason - corrupted database file.</para></msgexplain>
   </msgentry>
 
   <msgentry>
@@ -6485,7 +6485,7 @@ x    </msgtext></msgmain></msg>
 
    <msgentry>
     <msg><msgmain><msgtext><errorcode>UD005</errorcode><errortype>22023</errortype>
-      <errorname>Non-existant user defined type &lt;type&gt;</errorname>
+      <errorname>Non-existent user defined type &lt;type&gt;</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -6659,7 +6659,7 @@ x    </msgtext></msgmain></msg>
 
    <msgentry>
     <msg><msgmain><msgtext><errorcode>UD034</errorcode><errortype>42000</errortype>
-      <errorname>The object (type &lt;type&gt;) is not an isntance of &lt;type&gt;</errorname>
+      <errorname>The object (type &lt;type&gt;) is not an instance of &lt;type&gt;</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -6671,19 +6671,19 @@ x    </msgtext></msgmain></msg>
 
    <msgentry>
     <msg><msgmain><msgtext><errorcode>UD036</errorcode><errortype>42000</errortype>
-      <errorname>invalid vtable offset &lt;ofset&gt;</errorname>
+      <errorname>invalid vtable offset &lt;offset&gt;</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
    <msgentry>
     <msg><msgmain><msgtext><errorcode>UD037</errorcode><errortype>22023</errortype>
-      <errorname>The object suppled is not an instance of &lt;type&gt;</errorname>
+      <errorname>The object supplied is not an instance of &lt;type&gt;</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
    <msgentry>
     <msg><msgmain><msgtext><errorcode>UD038</errorcode><errortype>22023</errortype>
-      <errorname>The object (type &lt;type&gt;) is not an isntance of &lt;type&gt;</errorname>
+      <errorname>The object (type &lt;type&gt;) is not an instance of &lt;type&gt;</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -6719,7 +6719,7 @@ x    </msgtext></msgmain></msg>
 
    <msgentry>
     <msg><msgmain><msgtext><errorcode>UD044</errorcode><errortype>37000</errortype>
-      <errorname>Non-existant method &lt;method&gt; in dynamic method call</errorname>
+      <errorname>Non-existent method &lt;method&gt; in dynamic method call</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 

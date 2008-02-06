@@ -49,7 +49,7 @@
     <refsect2><title>raw_html</title>
       <para>Source HTML text to validate. Note that the encoding of this text
       must be specified in <parameter>tidy_config</parameter> string,
-      and default encoding of session will not be mentoined by Tidy.</para>
+      and default encoding of session will not be mentioned by Tidy.</para>
     </refsect2>
     <refsect2><title>tidy_config</title>
       <para>Configuration string, space-delimited list of options, exactly as
@@ -57,7 +57,7 @@
       Not all options of original Tidy will work, due to obvious reasons,
       unsupported options will be silently ignored, so you may read your
       favorite Tidy's configuration file by file_to_string function and
-      pass it to tidy_list_errors. For more datails, see
+      pass it to tidy_list_errors. For more details, see
       <link linkend="fn_tidy_html"><function>tidy_html</function></link>.
       </para>
     </refsect2>

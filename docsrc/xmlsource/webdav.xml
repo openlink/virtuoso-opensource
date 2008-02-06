@@ -44,7 +44,7 @@ through a Web UI.</para>
 Virtuoso DAV can store metadata about resources. These metadata are extracted from resources automatically,
 and can be edited by users. In addition, users can place public and personal &apos;tags&apos; on resources to
 categorize data according for personal needs without interference between users.
-Virtuoso DAV has a powerful and scaleable search engine that let application locate resources that match given list of criteria.
+Virtuoso DAV has a powerful and scalable search engine that let application locate resources that match given list of criteria.
 The search can process both plain DAV resources and data published by applications in virtual collections.
 Search criteria can check for resource properties, content, metadata and tags.
 </para>
@@ -127,11 +127,11 @@ Virtuoso supports two sets of predefined properties: standard DAV properties (ty
 Virtuoso-specific DAV properties (access control, tags, extensions for virtual collections.)</entry>
 </row>
 <row>
-<entry>MGET (experimantal)</entry>
+<entry>MGET (experimental)</entry>
 <entry>Retrieves RDF metadata of a document according to URIQA rules</entry>
 </row>
 <row>
-<entry>MPUT/MDELETE (experimantal)</entry>
+<entry>MPUT/MDELETE (experimental)</entry>
 <entry>Updates RDF metadata of a document according to URIQA rules and appropriate RDF Schemas</entry>
 </row>
 </tbody>
@@ -151,20 +151,20 @@ Virtuoso-specific DAV properties (access control, tags, extensions for virtual c
 <para>Any non-disabled SQL account with the U_DAV_ENABLE column set to non-zero is a valid DAV account.
 The administration user interface provides a check box for enabling DAV access and will make a default home collection etc.
 Alternately, regular SQL can be used for setting the DAV flag on.  The DAV API or protocol requests can be used for
-creating collecions and resources for the user.
+creating collections and resources for the user.
 </para>
 <para>
 Any non-disabled SQL account with the U_DAV_ENABLE column set to non-zero is a valid DAV account.
 The administration user interface provides a check box for enabling DAV access and will make a default home collection etc.
 Alternately, regular SQL can be used for setting the DAV flag on.  The DAV API or protocol requests can be used for
-creating collecions and resources for the user.
+creating collections and resources for the user.
 </para>
 <para>There is an automatically created initial DAV enabled account called "dav".  This has general administration privileges over all DAV.</para>
 <para>There are four predefined DAV accounts.</para>
 <simplelist>
 <member>User &quot;dav&quot; is the most powerful DAV account.</member>
 <member>
-DAV group &quot;administrators&quot; usually consists of &quot;dav&quot; only; membership in this group does not give any special priviledges
+DAV group &quot;administrators&quot; usually consists of &quot;dav&quot; only; membership in this group does not give any special privileges
 but this group is assigned by default to resources that are owned by &quot;dav&quot;.
 Thus group access rights to resources owned by &quot;dav&quot; can be used solely by
 users that are added to &quot;administrators&quot;.</member>
@@ -202,7 +202,7 @@ DAV_ADD_USER ('user', 'userpassword', '110100000RR', 0, '/DAV/home/user/',
   'Full User Name', 'user@example.com', 'dav', 'davpassword');
 </programlisting>
 <para>this will do almost the same but it will describe the user in more details and require no
-DBA provileges -- only DAV password. In addition, DAV_ADD_USER () can both create a new user and
+DBA privileges -- only DAV password. In addition, DAV_ADD_USER () can both create a new user and
 grant DAV permissions to an already existing SQL user.</para>
 <para>The following statement is used to grant role 'administrators' to the 'user' account.</para>
 <programlisting>
@@ -260,7 +260,7 @@ SQL> db..user_set_option ('myuser', 'DAVQuota', 5242880);
 -->
 <sect2 id="davauth">
 <title>WebDAV Authentication</title>
-<para>Virtuoso WebDAV offers two types of authentication dependant on the
+<para>Virtuoso WebDAV offers two types of authentication dependent on the
  connecting clients abilities.  These are:</para>
 <simplelist>
 <member><emphasis>Basic (Clear Text) Authentication</emphasis> - sends
@@ -304,7 +304,7 @@ SQL> db..user_set_option ('myuser', 'DAVQuota', 5242880);
  authentication in how a user's credentials are sent across the network.
  Digest authentication transmits credentials across the network as an MD5 hash,
  or message digest, where the original username and password cannot be
- deciphered from the hash.  Digest authentication reiles on the HTTP 1.1
+ deciphered from the hash.  Digest authentication relies on the HTTP 1.1
  protocol as defined in RFC 2617, which not all browsers support.</para>
 <para>The following steps outline how a client is authenticated using Digest authentication:</para>
 <figure id="figdavdigestauth" float="1">
@@ -327,7 +327,7 @@ SQL> db..user_set_option ('myuser', 'DAVQuota', 5242880);
 <para>As with conventional HTTP, the redirect reference simply responds to the client 
   with an HTTP/1.1 302 (Found) status code, redirecting the client to a different
   resource, the target specified in the redirect resource, using the 
-  <computeroutput>Location:</computeroutput> header.  This behavior is equivelent 
+  <computeroutput>Location:</computeroutput> header.  This behavior is equivalent
   to UNIX symbolic links.  A redirect reference makes it possible to
   access the target resource indirectly through any URI mapped to the redirect
   reference resource.  The integrity is not guaranteed for associated redirect
@@ -505,13 +505,13 @@ described in the URIQA section of the documentation for details on
 configuration.</para>
 
 <para>
-The automatic maintenance of the SPARQL queriable metadata can be
+The automatic maintenance of the SPARQL queryable metadata can be
 disabled and enable using the function
 DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD.  An argument of 1 enables this
 and a 0 disables this. The setting stays in effect until it is changed
 with the same function.  For new database, the feature is on by
 default.  Old databases are by default upgraded to have a SPARQL
-queriable DAV metadata graph upon startup if the URIQA default host
+queryable DAV metadata graph upon startup if the URIQA default host
 name is defined.</para>
 
 <para>
@@ -561,13 +561,13 @@ The examples above show how simple SPARQL queries can be used to retrieve inform
 </para>
 
 <para>
-The properties supported for all public readable resources are:uppotted </para>
+The properties supported for all public readable resources are:</para>
 
 <para>
 http://purl.org/dc/terms/created  - The creation date as SQL datetime.</para>
 
 <para>
-http://purl.org/dc/terms/modified  - Modifiction time as SQL datetime.</para>
+http://purl.org/dc/terms/modified  - Modification time as SQL datetime.</para>
 
 <para>
 http://www.openlinksw.com/schemas/DAV#ownerUser  - The contents of u_e_mail  in sys_users for the SQL account owning the resource.  This has the protocol prefix mailto:, as in mailto:somebody@example.com.</para>
@@ -721,7 +721,7 @@ Additional predicates may  exist as a result of resource type specific metadata 
 <sect2 id="customattofwebres">
 <title>Special Attributes of Web Resources</title>
 <para>The Virtuoso WebDAV implementation provides a set of special attributes (properties)
-  for the resources to manipulate the retrival of XML documents.  Properties can be
+  for the resources to manipulate the retrieval of XML documents.  Properties can be
   set generate dynamic content based on XML/SQL queries.   Special properties
   can also be applied to WebDAV folders for storing XML data in a special pre-parsed persistent XML format. </para>
 <para>The following special properties are supported:</para>

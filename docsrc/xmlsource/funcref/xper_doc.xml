@@ -87,7 +87,7 @@ produce a disk structure compatible with old versions of Virtuoso and will give 
 benefit in disk usage but it will disable some important optimizations in free-text
 search operations.</para></refsect2>
   </refsect1>
-  <refsect1 id="ret"><title>Return Types</title><para>XML entity with underlaying
+  <refsect1 id="ret"><title>Return Types</title><para>XML entity with underlying
 parse tree of source document; the tree will be a special sort of BLOB.</para></refsect1>
 <!--
   <refsect1 id="errors"><title>Errors</title>

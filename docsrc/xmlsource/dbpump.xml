@@ -362,13 +362,13 @@ dbpump component-name [ component-arg [ output-file-name ] ]
 		  'new_owner' - this will be used if 'change_owner' is set to 'on'
 							</listitem>
 							<listitem>
-		  'custom_qual' - integer, if not zero, the value from 'selected_qualifier' will be used as filter in preocedures and views output but not in tables filter such as tables can have foreign references across qualifiers.
+		  'custom_qual' - integer, if not zero, the value from 'selected_qualifier' will be used as filter in procedures and views output but not in tables filter such as tables can have foreign references across qualifiers.
 							</listitem>
 							<listitem>
 		  'selected_qualifier' - this will be used when 'custom_qual' is not zero
 							</listitem>
 							<listitem>
-		  'split_by' - integer, means the lenght in MB of created data and blob slice.
+		  'split_by' - integer, means the length in MB of created data and blob slice.
 							</listitem>
 						</itemizedlist>
 	  Argument N1: '*' for all or list of parameters with delimiter '@'

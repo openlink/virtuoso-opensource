@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>sys_stat_analyze</refname>
-    <refpurpose>Collects statistics on a table and its columns for use in SQL optinmization</refpurpose>
+    <refpurpose>Collects statistics on a table and its columns for use in SQL optimization</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_sys_stat_analyze">
@@ -45,7 +45,7 @@
 This function collects (or updates) column statistics for the table columns.  
 It collects minimum, maximum average and distinct values for a column and a 
 row count for the table and inserts the data into the DB.DBA.SYS_COL_STAT table.  
-It does not make historgrams for the columns.</para>
+It does not make histograms for the columns.</para>
 	<para>
 The statistics are then used by the Optimized SQL compiler. All the cached compilations are
 discarded, because some of them may compile differently in the light of the new data.

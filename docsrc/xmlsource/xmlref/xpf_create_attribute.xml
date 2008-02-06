@@ -42,7 +42,7 @@
   <refsect1 id="xpf_desc_create_attribute"><title>Description</title>
 <para>
 This is an internal XQUERY function and you will probably never need to
-call it explicitely. It is not a part of library of standard XQUERY 1.0
+call it explicitly. It is not a part of library of standard XQUERY 1.0
 functions.
 </para>
 <para>

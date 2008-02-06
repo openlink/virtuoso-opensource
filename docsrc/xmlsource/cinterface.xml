@@ -585,7 +585,7 @@ void sqlr_resignal (caddr_t err);
 An error object is a three element array of type
 <computeroutput>DV_ARRAY_OF_POINTER</computeroutput>, consisting of the number
 3, the SQL state and the message.
-The control flow in case of errors signaled inside VSEs is a longjmp to an outer context,
+The control flow in case of errors signalled inside VSEs is a longjmp to an outer context,
 typically that of the calling stored procedure or top level query.  The condition is there
 handled or sent to the next level up, ultimately to the ODBC, JDBC or Web client.
 Executing a SQL statement inside a VSE always returns and never exits the VSE by longjmp.

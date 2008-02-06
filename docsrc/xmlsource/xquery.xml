@@ -57,7 +57,7 @@ The current draft of XQuery lists 10 groups of XQuery expressions:</para>
 <listitem><para>Arithmetic, comparison and logical operators.</para></listitem>
 <listitem><para>Element constructors, which allow you to create new element nodes with specified names, lists of attributes and lists of children.</para></listitem>
 <listitem><para>FLWR (FOR-LET-WHERE-RETURN) expressions, which allow you to create variables for intermediate results and to transform sequences of items on a per-item basis.</para></listitem>
-<listitem><para>Ordered and unordered expressions to force some sorting of intermediate results or to prevent the XQuery processor from making redundand sorting.</para></listitem>
+<listitem><para>Ordered and unordered expressions to force some sorting of intermediate results or to prevent the XQuery processor from making redundant sorting.</para></listitem>
 <listitem><para>Control expressions, such as IF.</para></listitem>
 <listitem><para>Quantified expressions: SOME and EVERY.</para></listitem>
 <listitem><para>Expressions that test or modify data types.</para></listitem>
@@ -197,7 +197,7 @@ Similarly,
 <link linkend="xpf_create_pi"><function>create-pi()</function></link> mimics other XQuery direct constructors in XPath and XSLT.
 </para>
 <para>
-The XQuery specification states that when sequence of atomic values is covnerted into content of an element constructor,
+The XQuery specification states that when sequence of atomic values is converted into content of an element constructor,
 whitespace character is insertedbetween adjacent values.
 </para>
 <para>
@@ -240,7 +240,7 @@ functions are called for their side effects.
 </para>
 <para>
 A special <link linkend="xpf_xmlview">xmlview()</link> function allows
-very effecient access to SQL data from XML views.
+very efficient access to SQL data from XML views.
 </para>
 <para>
 Previous XQuery specifications used &quot;sort by&quot; instead of &quot;order by&quot;. The difference is that
@@ -250,7 +250,7 @@ that do not appear in the final result.
 E.g., an expression can collect items, &quot;order&quot; them by category and title but output only title and price.
 This was much harder in previous versions of XQuery because it was necessary to prepare an intermediate result
 that contained title and price and category, then do &quot;sort&quot; by category and title then use one more FLWR
-expression to form a result that is free from redundand data about category.
+expression to form a result that is free from redundant data about category.
 </para>
 <para>
 Nevertheless, Virtuoso supports both &quot;sort by&quot; and &quot;order by&quot;, to keep backward compatibility.

@@ -33,7 +33,7 @@ stored in the file system or in Virtuoso’s WebDAV repository.   PHP pages run in
 
 <para>
 The VSE __http_handler_php() has been implemented so that the file
-extension '.php' is recognised by Virtuoso to switch between 'normal' mode and
+extension '.php' is recognized by Virtuoso to switch between 'normal' mode and
 extension processing for PHP mode in the HTTP/WebDAV services.</para>
 
 <para>PHP (recursive acronym for "PHP: Hypertext Preprocessor") is a widely-used
@@ -129,7 +129,7 @@ modifications.</para>
 
 <note><title>Note:</title>
 <para>The PHP library used with Virtuoso must be version 4.3.1 or greater.
-From this version the PHP libary includes a serious PHP CGI vulnerability fix,
+From this version the PHP library includes a serious PHP CGI vulnerability fix,
 without which the Virtuoso server will fail to start for security reasons.</para>
 </note>
 

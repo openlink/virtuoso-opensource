@@ -27,7 +27,7 @@
 
   <para>OLE DB is an open data access technology developed and promoted by Microsoft.
   It allows for uniform data access across diverse data sources including but not
-  limited to conventional RDBMSes. Based on the COM architecture it providies very
+  limited to conventional RDBMSes. Based on the COM architecture it provides very
   flexible and exhaustive set of interfaces any database application developer might
   ever need.  At the same time, OLE DB is somewhat overcomplicated and therefore
   is rarely used directly.  In the majority of cases people use ADO(+) instead, ADO is

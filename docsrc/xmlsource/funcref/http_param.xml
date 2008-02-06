@@ -43,7 +43,7 @@
       <para>This function is used to return value of a HTML form parameter in VSP context. 
 	  It's almost like call get_keyword ('name', params) used in VSP programming. 
 	  When 'name' parameter is not supplied, the result of http_param() call will be
-	  all paramters, as they are contained in 'params' parameter of the VSP pages. 
+	  all parameters, as they are contained in 'params' parameter of the VSP pages. 
 	  This function is useful in HTTP authentication PL hook, as in this place there
 	  is no 'params' argument. 
       </para>

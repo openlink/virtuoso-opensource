@@ -83,11 +83,11 @@
 	    </row>
 	    <row>
 	      <entry>invalid-purpose</entry>
-	      <entry>Ignore invaid certificate purpose</entry>
+	      <entry>Ignore invalid certificate purpose</entry>
 	    </row>
 	    <row>
 	      <entry>unhandled-extension</entry>
-	      <entry>Ignore unhadled critical extension</entry>
+	      <entry>Ignore unhandled critical extension</entry>
 	    </row>
 	  </tbody>
         </tgroup>

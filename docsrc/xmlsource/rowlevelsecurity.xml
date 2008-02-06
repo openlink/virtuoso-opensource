@@ -24,7 +24,7 @@
 
 <sect1 id="rowlevelsecurity">
   <title>Row Level Security</title>
-    <para>Organizations often need to compartimentalize access to data.  This may be implemented at the level of physically segregating systems, building specific application  logic or within the database.
+    <para>Organizations often need to compartmentalize access to data.  This may be implemented at the level of physically segregating systems, building specific application  logic or within the database.
 </para>
     <para>Physically disconnected systems can be troublesome in an increasingly integrated corporate IS environment.  Building access rules into application logic, typically in a middle tier is possible and flexible but the protection runs the risk of being circumvented by direct access to the database, through business intelligence tools for example.</para>
     <para>For these reasons some database level security enforcement is needed in most applications.  SQL provides table and column level privileges which can be granted to users and roles.  These do not address issues where one department's data should be accessible when another department's data should not.  Such segregation within a table is usually done with views which hard-code selection criteria.  The table itself will not be granted but views to specific ranges of rows will be granted to users.</para>

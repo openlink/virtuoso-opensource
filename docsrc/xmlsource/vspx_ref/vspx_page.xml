@@ -87,10 +87,10 @@
 			    as (
 				vc_view_state any,		   -- state of all controls under page
 				vc_is_postback int,		   -- true if posted back 	
-				vc_persisted_vars any,		   -- persisted session varaibales	
+				vc_persisted_vars any,		   -- persisted session variables	
 				vc_event vspx_event,		   -- incoming event	
 				vc_is_valid int default 1,         -- set to 0 when first validator fails
-				vc_authenticated int default 0     -- is true if login control in the page suceeded
+				vc_authenticated int default 0     -- is true if login control in the page succeeded
 				) temporary self as ref
 			    ;
 

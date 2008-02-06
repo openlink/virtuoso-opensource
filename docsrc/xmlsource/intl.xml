@@ -535,7 +535,7 @@ Not all documents may be converted to Unicode by using simple character sets.
 Some of them are stored in so-called &quot;multibyte&quot; encodings.
 It means that every letter (or ideograph) is represented as a sequence of
 one or more bytes, not by exactly one byte.  The conversion from such representation
-to Unicode and back is usually significally slower than simple transformation
+to Unicode and back is usually significantly slower than simple transformation
 via character sets, so they are supported by data import operations only, but not by
 internal RDBMS routines.</para>
 			<para>
@@ -773,11 +773,11 @@ select ID from ENC_XML_SAMPLE where
 </example>
 <note><title>Note:</title>
       <para>
-You may have free-text a expression written as a literal contant:
-e.g. if the argument of text-contains XPath function is a literal contant.
+You may have free-text a expression written as a literal constant:
+e.g. if the argument of text-contains XPath function is a literal constant.
 Be careful to not declare the __enc twice, once in the beginning of the whole
 XPath expression and then again in the beginning of the free-text expression
-contant, because words of the text expression will thus be converted twice.</para></note>
+constant, because words of the text expression will thus be converted twice.</para></note>
 		</sect2>
 	</sect1>
 </chapter>

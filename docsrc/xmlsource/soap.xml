@@ -642,7 +642,7 @@ will use the default mapping described below:
   <para>Some SOAP applications need a void return as opposed to an empty return,
   from SOAP operations.  To distinguish the empty return from the void return
   a special SOAP datatype '__VOID__' has been introduced.   This will cause
-  the SOAP server to ommit the procedure return value when responding to a
+  the SOAP server to omit the procedure return value when responding to a
   SOAP request.  Also, the return message will be discarded from the
   WSDL description file.</para>
 
@@ -934,7 +934,7 @@ returns int for MyWebSvc
 ;
 
 -- Important: without grant publishing is not final as
--- user for SOAP invokation will not have permissions to instantiate the UDT nor
+-- user for SOAP invocation will not have permissions to instantiate the UDT nor
 -- to call its methods
 grant execute on MyWebSvc to SOAP_U2;
 
@@ -1178,7 +1178,7 @@ The following built-in functions are relevant in this context:
 
 	  -- note the SOAP SQL state - this is required since based on this value the
 	  -- HTTP server will not generate any additional reply if the SQL state starts with SOAP
-	  -- and this way the client will get a properly formated reply
+	  -- and this way the client will get a properly formatted reply
 	  resignal 'SOAP';
 	};
 
@@ -1203,7 +1203,7 @@ The following built-in functions are relevant in this context:
         else
 	  {
 	    -- simple signal will do as this will be cached by the handler
-          -- and formated as an SOAP error XML
+          -- and formatted as an SOAP error XML
 	    signal ('42000', concat ('Procedure ', soap_method, ' not defined'));
 	  }
 ?&gt;
@@ -1215,7 +1215,7 @@ The following built-in functions are relevant in this context:
   <para>Special PL syntax can be applied to any of the parameters (including the
   return value) in a declaration.  All of these begins with __SOAP_ prefix and
   have special meaning.   To manipulate more than the XMLSchema type
-  represantation and SOAP encoding style, extended syntax is available.  With
+  representation and SOAP encoding style, extended syntax is available.  With
   this syntax we can further override the default request/response namespace,
   name of the output elements, "soapAction" corresponding to the PL procedure
   and such.</para>
@@ -1247,7 +1247,7 @@ soap_kwd
 	| __SOAP_FAULT	/* the parameter is a message in SOAP Fault */
 	| __SOAP_DOC	/* applies to the procedure, free-form of encoding (literal) */
 	| __SOAP_XML_TYPE /*applies to the parameters, the input will be XML tree */
-	| __SOAP_DOCW		/* applies to the procedure, literal encoduing in style like RPC */
+	| __SOAP_DOCW		/* applies to the procedure, literal encoding in style like RPC */
 	| __SOAP_HTTP		/* HTTP GET/POST binding will be used */
 	;
 
@@ -1288,12 +1288,12 @@ data_type_ref
    which are used for other purposes and can be combined with other keywords.
    The __SOAP_TYPE denotes RPC style encoding, __SOAP_DOC for document literal
    (bare parameters) encoding, __SOAP_DOCW for the free-form literal (wrapped)
-   encoding.  __SOAP_HTTP is used to denote HTTP style binding insted of SOAP
+   encoding.  __SOAP_HTTP is used to denote HTTP style binding instead of SOAP
    one, in that way procedure can be called via HTTP GET/POST methods without
    SOAP XML encoding.  </para>
    <para>The following keywords are supported as extended options:</para>
    <simplelist>
-    <member><emphasis>PartName</emphasis> - changes the name of a OUT paramter
+    <member><emphasis>PartName</emphasis> - changes the name of a OUT parameter
     to the string as specified, affects WSDL generation and SOAP serialization.</member>
     <member><emphasis>RequestNamespace</emphasis> - designate namespace for
     the message in the request, affects header, fault and body WSDL declaration,
@@ -1308,7 +1308,7 @@ data_type_ref
 
    <para>The 'ARRAY' modifier to the SQL datatype is allowed  when no XML Schema datatype is
        assigned to the given parameter of the PL procedure or UDT method. In this case
-       the input and output value will be varified to confirm to the rules applicable for
+       the input and output value will be verified to confirm to the rules applicable for
        an array. Furthermore in this case an XSD definition will be added in the WSDL
        file at run time.
    </para>
@@ -1367,7 +1367,7 @@ create procedure
   <sect2 id="soapheadermessages"><title>Exposing &amp; Processing SOAP Header Messages</title>
 
   <para>The Virtuoso SOAP server can be used to process the SOAP Header
-  messages as  described in the W3C reccomendation
+  messages as  described in the W3C recommendation
   (<ulink url="http://www.w3c.org/TR/SOAP/">http://www.w3c.org/TR/SOAP</ulink>,
   SOAP Header section).  They can also be exposed in the WSDL file
   (services.wsdl) as per W3C WSDL recommendation, using the RPC style encoding.</para>
@@ -1422,7 +1422,7 @@ create procedure
     </listitem>
   <listitem>The value of the echoMeStringRequest will be passed as a parameter
   to the echoVoid procedure.</listitem>
-  <listitem>If the call to the echoVoid succeeds, and the corresopnding out
+  <listitem>If the call to the echoVoid succeeds, and the corresponding out
   parameter is supplied for the SOAP response header then it will be
   sent to the SOAP client.</listitem>
   </orderedlist>
@@ -1474,7 +1474,7 @@ Custom soap:fault messages can be generated by application logic as illustrated 
   </para>
   <example id="procsoapfault"><title>Signalling a custom SOAP Fault element</title>
   <para>Consider we need to indicate to the client that some string is not a valid input, we can use
-  the custom fault messsage mechanism as.</para>
+  the custom fault message mechanism as.</para>
   <programlisting><![CDATA[
 create procedure
 echoStringFault (in param nvarchar,
@@ -1486,7 +1486,7 @@ returns nvarchar
       http_request_status ('HTTP/1.1 500 Internal Server Error');
       -- we are setting the fault message
       part2 := param;
-      -- and instructing the SOAP server to make error 400 with text explanantion StringFault
+      -- and instructing the SOAP server to make error 400 with text explanation StringFault
       connection_set ('SOAPFault', vector ('400', 'StringFault'));
       ----------------^^^^^^^^^^
       return;
@@ -1540,7 +1540,7 @@ encoding allows the transmission of any arbitrary valid XML document instead
 SOAP/1.1 specification.  This allows us to send and receive SOAP packets that
 are more free-form ("document" style).   If you create a service that can accept
 more free-form type packets, you can employ constraints within the methods so
-that they can be independant (bare) or serialized as embedded elements within
+that they can be independent (bare) or serialized as embedded elements within
 the method's SOAP structure (wrapped parameters style).</para>
 
 <example id="ex_soapi3doclit"><title>Comparing SOAP Types</title>
@@ -1765,7 +1765,7 @@ a given SOAP endpoint, only SOAP datatypes and schema elements used for them wil
 be printed in &lt;types&gt; section.  If an undeclared datatype is used for an
 exposed procedure, the error will be printed in an XML comment where the type
 definition was expected and not found.  If an element or datatype refers to
-other (dependant) types they will also be automatically included.  For example,
+other (dependent) types they will also be automatically included.  For example,
 if we have exposed for a SOAP endpoint only the following procedure:</para>
 
 <programlisting><![CDATA[
@@ -1815,7 +1815,7 @@ data types declaration:</para>
 namespaces or a type referring to a type in another namespace, both will be defined
 and printed as a separate schema definition in the WSDL file.  Hence,
 we can define a data type in different namespace so they will live together in
-a single WSDL file.  This allows us to make more complex and flexabile
+a single WSDL file.  This allows us to make more complex and flexible
 document-centric style SOAP operations.</para>
 
 <example id="ex_mnsi3test"><title>Example from the SOAP Interop 3 Tests</title>
@@ -2138,7 +2138,7 @@ references to the attachments as per the ’WSDL Extension for SOAP in DIME' propo
     be specified for soapAction.  <emphasis>only</emphasis> - only the method
     will be specified in form #&lt;method name&gt;.</para>
   </member>
-  <member><emphasis>DIME-ENC</emphasis>: Controls DIME encapsulation on particualr
+  <member><emphasis>DIME-ENC</emphasis>: Controls DIME encapsulation on particular
   SOAP endpoint, valid values are <emphasis>no</emphasis> - (default) not enabled. <emphasis>yes</emphasis> -
   DIME encapsulation is enabled on endpoint
   </member>

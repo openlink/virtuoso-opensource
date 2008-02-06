@@ -58,7 +58,7 @@ but you will probably never use this feature.
       <para><type>VARCHAR</type> name to associate the value with.</para>
     </refsect2>
     <refsect2><title>value</title>
-      <para><parameter>value</parameter> to be stored. Must be of <type>VARCHAR</type> type. Also if needs to be stored some other datatype it needs to be serialized (see serialize and deserialize fiunctions).</para>
+      <para><parameter>value</parameter> to be stored. Must be of <type>VARCHAR</type> type. Also if needs to be stored some other datatype it needs to be serialized (see serialize and deserialize functions).</para>
     </refsect2>
     <refsect2><title>force</title>
       <para>Flag to indicate how the function should try to update protected variables.

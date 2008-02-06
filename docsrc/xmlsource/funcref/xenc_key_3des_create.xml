@@ -41,7 +41,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_xenc_key_3DES_create">
     <title>Description</title>
-    <para>Used to make a symmetric session key for tripple-des algorithm.</para>
+    <para>Used to make a symmetric session key for triple-des algorithm.</para>
   </refsect1>
   <refsect1 id="params_xenc_key_3DES_create">
     <title>Parameters</title>

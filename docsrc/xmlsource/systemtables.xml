@@ -85,7 +85,7 @@ order of columns on the row.
 		<para>
 The SYS_KEY_SUBKEY table has a row for each pair of keys where one is
 the immediate subkey of the other.
-Note that when a table is altered, the obsolete layout is marked as a subtable of the new layout of the priomary key.  Thus a select on the new primary key will also get the obsolete rows.
+Note that when a table is altered, the obsolete layout is marked as a subtable of the new layout of the primary key.  Thus a select on the new primary key will also get the obsolete rows.
 </para>
 		<para>The following SQL procedure exemplifies how the SYS_COLS, SYS_KEYS
 and SYS_KEY_PARTS tables combine. Given a table name it produces the
@@ -138,7 +138,7 @@ set of columns and the set of indices and their parts.
 <programlisting><![CDATA[create table
   SYS_USERS (
     U_ID 		integer unique,   -- unique id identifying the security object
-    U_NAME 		char (128),	  -- unique name indenitying the security object
+    U_NAME 		char (128),	  -- unique name identifying the security object
     U_IS_ROLE		integer 	default 0, -- if true it's a group
     U_FULL_NAME 	char (128),	-- for information only, name of that user or group
     U_E_MAIL 		char (128) 	default '', -- e-mail for contact
@@ -825,7 +825,7 @@ create table NEWS_ACL (
 <sect3 id="systabswsrmrecvr"><title>Receiver-Side Schema Objects</title>
 
 <para>Incoming messages table used to keep
-sucessfully received messages.  An application on receiver side can
+successfully received messages.  An application on receiver side can
 access it in order to process the messages.</para>
 
 <programlisting><![CDATA[
@@ -842,7 +842,7 @@ CREATE TABLE SYS_WSRM_IN_MESSAGE_LOG (
 ]]></programlisting>
 
 <para>Incoming sequences table; used to keep the
-sucessfully estabilished message sequence
+successfully established message sequence
 and policy to be applied to it.
 </para>
 
@@ -1012,7 +1012,7 @@ create table SYNC_SESSION
 </sect3>
 </sect2>
 <sect2 id="views_information_schema"><title>INFORMATION_SCHEMA views</title>
-    <para>The INFORMATION_SCHEMA views are described in the SQL200n standart.
+    <para>The INFORMATION_SCHEMA views are described in the SQL200n standard.
 	These views are defined in every qualifier and describe the objects in
 	that qualifier.
     </para>

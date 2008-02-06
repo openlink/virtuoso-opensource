@@ -43,7 +43,7 @@
 	searches in <link linkend="fn_http_root">http_root</link> directory.
 	If it fails parser iterates internal list of system paths and tries to
 	find required files there. The function adds new path in this list.
-	List of system paths contains one direcory item by default - 
+	List of system paths contains one directory item by default - 
 	"file://system/".
    </para>
    <para> NOTE: List of system paths is not persistent. It means that you must

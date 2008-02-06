@@ -175,7 +175,7 @@ and, moreover, the application that generates these descriptions always
 generates the same blank node id string for the same node. A reader of
 descriptions can correctly  join described subgraphs into one big
 subgraph by filling in a dictionary that contains blank node id strings
-as keys and IRI_ID's assigned to that strings as dependant data. As
+as keys and IRI_ID's assigned to that strings as dependent data. As
 soon as all readers of an application share the same dictionary of
 nodes created before, no blank node is created twice;</para>
 
@@ -214,8 +214,8 @@ It is possible to pass parameters to a  SPARQL query via a Virtuoso-specific syn
 The value of a parameter should be passed in SQL form, i.e. this should be a number or a untyped string.
 An IRI ID can be passed in all cases where an absolute IRI can, except the obvious case when the variable is an argument of a function that requires string.
 If the parameter is used in 'graph', 'subject' or 'object' position of the sparql pattern, the string parameter is converted into IRI automatically.
-In other cases, IRI string is undistinguishable from string literal, so there is a need in call of <emphasis>iri()</emphasis> built-in SPARL function, like <emphasis>iri (??)</emphasis>.
-Using this notation, any dynamic SQL client, whether ODBC, JDBC or other can execute parameterized SPARQL queries, binding parameteres just as with dynamic SQL.
+In other cases, IRI string is indistinguishable from string literal, so there is a need in call of <emphasis>iri()</emphasis> built-in SPARL function, like <emphasis>iri (??)</emphasis>.
+Using this notation, any dynamic SQL client, whether ODBC, JDBC or other can execute parameterized SPARQL queries, binding parameters just as with dynamic SQL.
 </para>
 <programlisting><![CDATA[
 SQL> create function param_passing_demo ()
@@ -661,7 +661,7 @@ create procedure DB.DBA.RDF_QUAD_URI_L_TYPED (
   in lang varchar ) -- language as string or NULL
 </programlisting>
 <para>Arguments g_uri, s_uri and p_uri of these three functions should be IRI strings or IRI_IDs.
-All string arguments should be in UTF-8 encoding, otherwise they will be stored but are not queriable via SPARQL.</para>
+All string arguments should be in UTF-8 encoding, otherwise they will be stored but are not queryable via SPARQL.</para>
 </sect3>
 <sect3 id="rdfapidataexport"><title>Data Export</title>
 <para>These two procedures serializes vector of triples into a session, in TURTLE or RDF/XML syntax.
@@ -761,7 +761,7 @@ The set of values of <emphasis>input:default-graph-uri</emphasis> has the highes
 <para>Similarly, <emphasis>define input:named-graph-uri &lt;http://example.com&gt;</emphasis> is a replacement for FROM NAMED clause</para>
 <para>
 When Virtuoso receives a SPARQL request via HTTP, the value of default graph can be set in protocol as <emphasis>default-graph-uri</emphasis> HTTP parameter.
-Multiple occurencies of this parameter are allowed. This HTTP parameter is converted into <emphasis>define input:default-graph-uri</emphasis>.
+Multiple occurrences of this parameter are allowed. This HTTP parameter is converted into <emphasis>define input:default-graph-uri</emphasis>.
 There's similar support for <emphasis>named-graph-uri</emphasis> HTTP parameter.
 For debugging purposes, graph names set in protocol are sent back in the reply header as <emphasis>X-SPARQL-default-graph: ...</emphasis> and <emphasis>X-SPARQL-named-graph: ...</emphasis> header lines, one line per graph.
 </para>
@@ -880,7 +880,10 @@ create procedure DELETE_PERSONAL_DATA (in foaf_graph varchar)
 of being specified in 'insert into graph' clause.
        </para>
 <programlisting><![CDATA[
-sparql define input:default-graph-uri <A-Named-Graph> insert { <s0> <p0> <o0> };
+sparql define input:default-graph-uri <A-Named-Graph>
+insert { <http://myopenlink.net/dataspace/Kingsley#this>
+         <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+         <http://rdfs.org/sioc/ns#User> };
 ]]></programlisting>
        <para>The following two statements are equivalent but the latter may work faster, especially
 if there are many RDF views in the system or if some RDF views may contain triples for the graph
@@ -894,20 +897,25 @@ sparql clear graph <A-Named-Graph>;
 compatibility but SPARUL spec lists only 'insert into':
        </para>
 <programlisting><![CDATA[
-sparql insert into graph <A-Named-Graph> { <s1> <p11> <o111>, <o112> ; <p12> <o121> , <o122> };
-sparql insert into graph <A-Named-Graph> { <s2> <p2> <o2> };
+sparql insert into graph <A-Named-Graph> {  <http://myopenlink.net/dataspace/Kingsley#this>
+                                            <http://rdfs.org/sioc/ns#id>
+                                            <Kingsley> };
+sparql insert into graph <A-Named-Graph> {  <http://myopenlink.net/dataspace/Caroline#this>
+                                            <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+                                            <http://rdfs.org/sioc/ns#User> };
 ]]></programlisting>
        <para>It is possible to use various expressions to calculate fields of new triples. This is
 proven to be very convenient, even if not a part of the original spec.
        </para>
 <programlisting><![CDATA[
-sparql insert into graph <A-Named-Graph> { `iri (bif:concat (str (?s), "new"))` <p11> ?o } where { ?s <p11> ?o };
+sparql insert into graph <A-Named-Graph> { ?s <http://rdfs.org/sioc/ns#id> `iri (bif:concat (str (?o), "Idehen"))` }
+where { ?s <http://rdfs.org/sioc/ns#id> ?o };
 ]]></programlisting>
        <para>'Modify graph' may be used as a sort of 'update' operation.
        </para>
 <programlisting><![CDATA[
-sparql modify graph <A-Named-Graph> delete { ?s <p2> ?o } insert { ?s <p2new> ?o } where { ?s <p2> ?o };
-sparql delete from graph <A-Named-Graph> { <s2> <p2new> <o2> };
+sparql modify graph <A-Named-Graph> delete { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o } insert { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o } where { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
+sparql delete from graph <A-Named-Graph> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
 ]]></programlisting>
        <para>The RDF information resource URI can be generated via a string expression.</para>
 <programlisting><![CDATA[
@@ -919,11 +927,16 @@ executed in sequence.
        </para>
 <programlisting><![CDATA[
 sparql
-  insert in graph <A-Named-Graph> { <s1> <p11> <o111>, <o112> ; <p12> <o121> , <o122> }
-  insert into graph <A-Named-Graph> { <s2> <p2> <o2> }
-  insert into graph <A-Named-Graph> { `iri (bif:concat (str (?s), "new"))` <p11> ?o } where { ?s <p11> ?o }
+  insert in graph <A-Named-Graph> { <http://myopenlink.net/dataspace/Kingsley#this>
+                                    <http://rdfs.org/sioc/ns#id>
+                                    <Kingsley> }
+  insert into graph <A-Named-Graph> { <http://myopenlink.net/dataspace/Caroline#this>
+                                      <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+                                      <http://rdfs.org/sioc/ns#User> }
+  insert into graph <A-Named-Graph> { ?s <http://rdfs.org/sioc/ns#id> `iri (bif:concat (str (?o), "Idehen"))` }
+              where { ?s <http://rdfs.org/sioc/ns#id> ?o };
   modify graph <A-Named-Graph> delete { ?s <p2> ?o } insert { ?s <p2new> ?o } where { ?s <p2> ?o }
-  delete from graph <A-Named-Graph> { <s2> <p2new> <o2> }
+  delete from graph <A-Named-Graph> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
   load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/inputs/SparqlDawg/data-xml/Expr1/manifest.rdf") into graph <A-Named-Graph>
 ;
 ]]></programlisting>
@@ -932,13 +945,13 @@ sparql
 <para>Adding triples to graph</para>
 <programlisting><![CDATA[
 sparql
-PREFIX dc: <http://purl.org/dc/elements/1.1/>
-INSERT INTO GRAPH <http://example/bookStore> { <http://example/book1> dc:title  "SPARQL and RDF" .
-                                               <http://example/book1> dc:date "1999-01-01T00:00:00".
-                                               <http://example/book2> dc:title  "Desing notes" .
-                                               <http://example/book2> dc:date "2001-01-01T00:00:00".
-                                               <http://example/book3> dc:title  "Fundamentals of Compiler Desing" .
-                                               <http://example/book3> dc:date "2002-01-01T00:00:00". };
+INSERT INTO GRAPH <http://BookStore.com>
+{ <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/title>  "SPARQL and RDF" .
+  <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/date> <1999-01-01T00:00:00>.
+  <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/title> "Design notes" .
+  <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/date> <2001-01-01T00:00:00>.
+  <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/title> "Fundamentals of Compiler Design" .
+  <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/date> <2002-01-01T00:00:00>. };
 ]]></programlisting>
 <para>Adding triples to graph</para>
 <programlisting><![CDATA[
@@ -947,12 +960,18 @@ INSERT INTO GRAPH <http://example/bookStore> { <http://example/book1> dc:title  
 </para>
 <programlisting><![CDATA[
 SPARQL
-PREFIX dc: <http://purl.org/dc/elements/1.1/>
-MODIFY GRAPH <http://example/bookStore>
+MODIFY GRAPH <http://BookStore.com>
 DELETE
- { <http://example/book3>  dc:title  "Fundamentals of Compiler Desing" }
+ { <http://www.w3.org/People/Connolly/#me>  <http://purl.org/dc/elements/1.1/title>  "Fundamentals of Compiler Design" }
 INSERT
- { <http://example/book3>  dc:title  "Fundamentals" };
+ { <http://www.w3.org/People/Connolly/#me>  <http://purl.org/dc/elements/1.1/title>  "Fundamentals" };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Modify <http://BookStore.com>, delete 1 and insert 1 triples -- done
+
+1 Rows. -- 20 msec.
 ]]></programlisting>
 <para>The example below has a request to delete all records of old books (with date before year 2000)
 </para>
@@ -960,14 +979,19 @@ INSERT
 sparql
 PREFIX dc:  <http://purl.org/dc/elements/1.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-DELETE FROM GRAPH <http://example/bookStore> { ?book ?p ?v }
+DELETE FROM GRAPH <http://BookStore.com> { ?book ?p ?v }
 WHERE
-  { GRAPH  <http://example/bookStore>
+  { GRAPH  <http://BookStore.com>
    { ?book dc:date ?date
      FILTER ( xsd:dateTime(?date) < xsd:dateTime("2000-01-01T00:00:00")).
     ?book ?p ?v.
    }
   };
+_______________________________________________________________________________
+
+Delete from <http://BookStore.com>, 6 triples -- done
+
+1 Rows. -- 10 msec.
 ]]></programlisting>
 <para>This snippet copies records from one named graph to another named graph based on a pattern:
 </para>
@@ -975,14 +999,21 @@ WHERE
 sparql
 PREFIX dc:  <http://purl.org/dc/elements/1.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-INSERT INTO GRAPH <http://example/bookStore2> { ?book ?p ?v }
+INSERT INTO GRAPH <http://NewBookStore.com> { ?book ?p ?v }
 WHERE
-  { GRAPH  <http://example/bookStore>
+  { GRAPH  <http://BookStore.com>
    { ?book dc:date ?date
      FILTER ( xsd:dateTime(?date) > xsd:dateTime("2000-01-01T00:00:00")).
      ?book ?p ?v.
    }
   };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <http://NewBookStore.com>, 6 triples -- done
+
+1 Rows. -- 30 msec.
 ]]></programlisting>
 <para>An example to move records from one named graph to another named graph based on a pattern:
 </para>
@@ -991,28 +1022,38 @@ sparql
 PREFIX dc:  <http://purl.org/dc/elements/1.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-INSERT INTO GRAPH <http://example/bookStore2>
+INSERT INTO GRAPH <http://NewBookStore.com>
  { ?book ?p ?v }
 WHERE
-  { GRAPH  <http://example/bookStore>
+  { GRAPH  <http://BookStore.com>
      { ?book dc:date ?date .
        FILTER ( xsd:dateTime(?date) > xsd:dateTime("2000-01-01T00:00:00")).
        ?book ?p ?v.
      }
   };
+_______________________________________________________________________________
+
+Insert into <http://NewBookStore.com>, 6 triples -- done
+
+1 Rows. -- 10 msec.
 
 sparql
 PREFIX dc:  <http://purl.org/dc/elements/1.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-DELETE FROM GRAPH <http://example/bookStore>
+DELETE FROM GRAPH <http://BookStore.com>
  { ?book ?p ?v }
 WHERE
-  { GRAPH  <http://example/bookStore>
+  { GRAPH  <http://BookStore.com>
       { ?book dc:date ?date .
         FILTER ( xsd:dateTime(?date) > xsd:dateTime("2000-01-01T00:00:00")).
         ?book ?p ?v.
       }
   };
+_______________________________________________________________________________
+
+Delete from <http://BookStore.com>, 3 triples -- done
+
+1 Rows. -- 10 msec.
 ]]></programlisting>
    </sect2>
    </sect1>
@@ -1477,7 +1518,7 @@ If other procedure is specified, the signature should match to the default one.<
 This is convenient when there's no logical difference where any given triple comes from, and changes in remote resources will only add triples but not make cached triples obsolete.
 A SPARQL query is usually faster when all graph IRIs are fixed and there are no graph group patterns with an unbound graph variable, so storing everything in one single graph is worth considering.
 </listitem>
-  <listitem><emphasis>input:grab-loader</emphasis> is a name of procedure that retrieve the resource via HTTP, parce it and store it.
+  <listitem><emphasis>input:grab-loader</emphasis> is a name of procedure that retrieve the resource via HTTP, parse it and store it.
 The default is name of <emphasis>DB.DBA.RDF_SPONGE_UP()</emphasis> procedure; this procedure also used by IRI dereferencing for FROM clauses.
 You will probably never need to write your own procedure of this sort but some Virtuoso plugins will provide ready-to-use functions that will retrieve non-RDF resources and extract their metadata as triples or
 will implement protocols other than HTTP.
@@ -1632,7 +1673,7 @@ If programmatic access to corporate IS has been available to partners or the pub
 There are reasons of performance, security, maintainability and so forth for this.
 </para><para>
 The culture of the emerging semantic web is however taking a different turn.
-Since RDF and OWL offer a mergeable and queriable model for heterogeneous data, it is more meaningful and maintainable to expose selected data for outside query than it would be with SQL.
+Since RDF and OWL offer a mergeable and queryable model for heterogeneous data, it is more meaningful and maintainable to expose selected data for outside query than it would be with SQL.
 Advances in hardware make this also less of a performance issue than it would have been in the client-server database era.
 </para><para>
 In the context of Virtuoso, since Virtuoso is originally a virtual/federated database, incorporating SPARQL to relational mapping is an evident extension of the product's mission as a multi-protocol, multi-platform connector between information systems.
@@ -1692,7 +1733,7 @@ create iri class oplsioc:user_iri "http://myhost/sys/user?id=%d"
 create iri class oplsioc:group_iri "http://myhost/sys/group?id=%d"
   (in gid integer not null) .
 create iri class oplsioc:membership_iri
-  "http://myhost/sys/membersip?super=%d&sub=%d"
+  "http://myhost/sys/membership?super=%d&sub=%d"
   (in super integer not null, in sub integer not null) .
 create iri class oplsioc:dav_iri "http://myhost%s"
   (in path varchar) .
@@ -2127,7 +2168,7 @@ It is an error to use an alias only in <emphasis>where</emphasis> clause of the 
 To detect more typos, an alias used in quad map values can not appear in <emphasis>option (using alias-name)</emphasis> clause.
 </para>
 </sect2>
-<sect2 id="rdfmetadatarecovery"><title>RDF Metadata Maintainance and Recovery</title>
+<sect2 id="rdfmetadatarecovery"><title>RDF Metadata Maintenance and Recovery</title>
    <para>
      To detect and fix automatically most popular sorts of RDF metadata corruption use <link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link>.
 It is also possible to backup RDF data by
@@ -2145,7 +2186,7 @@ It is convenient to make a backup before any modification of quad storages, quad
 <para>Also, the triple store has no specific security model. Thus access rights of the tables and stored procedures involved in the process dictate who can access these features.</para>
 <para>All triples of all graphs are stored in a single default system table called
 <emphasis>DB.DBA.RDF_QUAD</emphasis>. This will change in the next release, where a complex meta-schema system will be introduced for allowing graphs to be stored in different tables, potentially having different index structures, optionally also full text index on long object values. The meta-schema support will also make it possible to map native
- SQL tables into the RDF SPARQL-queriable space, as well as introduce finer-grained security.</para>
+ SQL tables into the RDF SPARQL-queryable space, as well as introduce finer-grained security.</para>
 <para>Hence the RDF subsystem is offered for  review but is not a productized whole. Benchmark results obtained with it are tentative and reflect a non-optimized state.</para>
 
 <para>The current implementation does not support some SPARQL features.</para>
@@ -2441,7 +2482,7 @@ In the following, the abbreviation owl:same-as is used for  the IRI http://www.w
 <para>
 If same-as traversal is enabled and a triple pattern with a given
 subject or object is being matched, all the synonyms of the S and O
-will be tried and results gfenerated for all the tried bindings of S
+will be tried and results generated for all the tried bindings of S
 and O.  The set of synonyms is generated at run time by following all
 owl:same-as triples where the IRI in question is either the subject or
 the object.  These are followed recursively from object to subject and
@@ -2478,8 +2519,8 @@ Regardless of the join order we will however get at least one IRI of the each sy
 Also when interactively navigating a graph with a browser, the same-as expansion will take all synonyms into account.
 </para>
 <para>
-For getting the complete entaiment of same-as, a forward
-chaining approach should be used, effectivelty asserting all the
+For getting the complete entailment of same-as, a forward
+chaining approach should be used, effectively asserting all the
 implied triples.
 </para>
 </sect2>
@@ -2522,82 +2563,105 @@ define input:inference "sample" select * from &lt;xx&gt; where {?s ?p ?o}
 </programlisting>
 </sect2>
 <sect2 id="rdfsparqlruleexamples"><title>Examples</title>
-<programlisting>
+<programlisting><![CDATA[
 ttlp ('
-  &lt;ic1&gt; a &lt;c1&gt; .
-  &lt;ic2&gt; a &lt;c2&gt; .
-  &lt;ic3&gt; a &lt;c3&gt; .
-  &lt;ic1&gt; &lt;p1&gt; &lt;ic1p1&gt; .
-  &lt;ic2&gt; &lt;p1&gt; &lt;ic2p1&gt;.
-  &lt;ic3&gt; &lt;p1&gt; &lt;ic3p1&gt; .
-  &lt;ic1&gt; &lt;cl2&gt; &lt;c2&gt; .
-  ', '', 'inft');
-</programlisting>
-<para>This loads a graph with some sample triples. The graph is called inft.
+   <http://localhost:8890/dataspace>  	                        <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space>.
+   <http://localhost:8890/dataspace/test2/weblog/test2tWeblog>  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/types#Weblog> .
+   <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/types#MessageBoard>.
+   <http://localhost:8890/dataspace>                            <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/ods> .
+   <http://localhost:8890/dataspace/test2/weblog/test2tWeblog>  <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/dataspace/test2/weblog/test2tWeblog>.
+   <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> .
+   ', '', 'http://mygraph.com');
+]]></programlisting>
+<para>This loads a graph with some sample triples. The graph is called http://mygraph.com.
 </para>
-<programlisting>
-ttlp (' @prefix rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
-  &lt;c2&gt; rdfs:subClassOf &lt;c1&gt; .
-  &lt;c3&gt; rdfs:subClassOf &lt;c2&gt; .
-  &lt;c5&gt; rdfs:subClassOf &lt;c4&gt; .
-  &lt;p1&gt; rdfs:subPropertyOf &lt;p0&gt; .
-  ', '', 'sc');
-</programlisting>
+<programlisting><![CDATA[
+ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+  <http://rdfs.org/sioc/ns#Space> rdfs:subClassOf <http://www.w3.org/2000/01/rdf-schema#Resource> .
+  <http://rdfs.org/sioc/ns#Container> rdfs:subClassOf <http://rdfs.org/sioc/ns#Space> .
+  <http://rdfs.org/sioc/ns#Forum> rdfs:subClassOf <http://rdfs.org/sioc/ns#Container> .
+  <http://rdfs.org/sioc/types#Weblog> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .
+  <http://rdfs.org/sioc/types#MessageBoard> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .
+  <http://rdfs.org/sioc/ns#link> rdfs:subPropertyOf <http://rdfs.org/sioc/ns> .
+  ', '', 'http://myNewgraph.com');
+]]></programlisting>
 <para>This loads a graph called sc that contains assertions about subclasses and subproperties.
 </para>
 <programlisting>
-rdfs_rule_set ('inft', 'sc');
+rdfs_rule_set ('http://mygraph.com', 'http://myNewgraph.com');
 </programlisting>
-<para>This defines the rule context inft that is initialized from the contents of graph sc.
+<para>This defines the rule context http://mygraph.com that is initialized from the contents of graph http://myNewgraph.com.
 </para>
-<programlisting>
-sparql define input:inference 'inft' select ?s from &lt;inft&gt; where {?s a &lt;c1&gt; }
-</programlisting>
-<para>This returns the instances of c1. Since c2 and c3 are subclasses of c1, instances of
-c1, c2 and c3 are all returned. This results in the subjects ic1, ic2 and ic3.
-</para>
-<programlisting>
-select id_to_iri (s)
-from rdf_quad table option (with 'inft')
-where g = iri_to_id ('inft',0)
-  and p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0)
-  and o = iri_to_id ('c1', 0);
-</programlisting>
-<para>This is the corresponding SQL query, internally generated by the SPARQL query.
+<programlisting><![CDATA[
+SQL>sparql define input:inference 'http://mygraph.com' select ?s from <http://mygraph.com> where {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space> };
+s
+VARCHAR
+_______________________________________________________________________________
 
+http://localhost:8890/dataspace/test2/weblog/test2tWeblog
+http://localhost:8890/dataspace/discussion/oWiki-test1Wiki
+http://localhost:8890/dataspace
+
+3 Rows. -- 0 msec.
+]]></programlisting>
+<para>This returns the instances of http://rdfs.org/sioc/ns#Space. Since http://rdfs.org/sioc/types#Weblog
+and http://rdfs.org/sioc/types#MessageBoard are subclasses of http://rdfs.org/sioc/ns#Space,
+instances of http://rdfs.org/sioc/ns#Space, http://rdfs.org/sioc/types#Weblog and
+http://rdfs.org/sioc/types#MessageBoard are all returned. This results in the subjects
+http://localhost:8890/dataspace, http://localhost:8890/dataspace/test2/weblog/test2tWeblog and
+http://localhost:8890/dataspace/discussion/oWiki-test1Wiki.
 </para>
-<para>Below we first look for all instances of c1 with some property set to ic2p1. We get the subject ic2 and the properties p1 and p0.
-The join involves both subclass and subproperty inference. Then we turn off the inference for the second pattern and only get the
-property p1. Then we do the same but now specify that inference should apply only to the first triple pattern.
+<programlisting><![CDATA[
+SQL>select id_to_iri (s)
+from rdf_quad table option (with 'http://mygraph.com')
+where g = iri_to_id ('http://mygraph.com',0)
+  and p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0)
+  and o = iri_to_id ('http://rdfs.org/sioc/ns#Space', 0);
+callret
+VARCHAR
+_______________________________________________________________________________
+
+http://localhost:8890/dataspace/test2/weblog/test2tWeblog
+http://localhost:8890/dataspace/discussion/oWiki-test1Wiki
+http://localhost:8890/dataspace
+
+3 Rows. -- 10 msec.
+]]></programlisting>
+<para>This is the corresponding SQL query, internally generated by the SPARQL query.</para>
+<para>Below we first look for all instances of http://rdfs.org/sioc/ns#Space with some
+property set to http://localhost:8890/dataspace/test2/weblog/test2tWeblog.
+We get the subject http://localhost:8890/dataspace/test2/weblog/test2tWeblog and the
+properties http://rdfs.org/sioc/ns#link and http://rdfs.org/sioc/ns.
+The join involves both subclass and subproperty inference. Then we turn off the inference
+for the second pattern and only get the property http://rdfs.org/sioc/ns#link. Then we do
+the same but now specify that inference should apply only to the first triple pattern.
 </para>
 <programlisting><![CDATA[
 
-SQL> sparql define input:inference  'inft' select * from <inft> where { ?s ?p <c1> . ?s ?p1 <ic2p1> . };
+SQL>sparql define input:inference  'http://mygraph.com' select * from <http://mygraph.com>
+where { ?s ?p <http://rdfs.org/sioc/ns#Space> . ?s ?p1 <http://localhost:8890/dataspace/test2/weblog/test2tWeblog> . };
+
 
 s                                                                                 p                                                                                 p1
 VARCHAR                                                                           VARCHAR                                                                           VARCHAR
-_________________________
+_______________________________________________________________________________
 
-ic2                                                                               http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   p1
-ic2                                                                               http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   p0
+http://localhost:8890/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://rdfs.org/sioc/ns#link
+http://localhost:8890/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://rdfs.org/sioc/ns
 
 2 Rows. -- 0 msec.
-SQL> sparql define input:inference  'inft' select * from <inft> where { ?s ?p <c1> . ?s ?p1 <ic2p1> option (inference 'none') . };
+
+
+SQL>sparql  select * from <http://mygraph.com>
+where { ?s ?p <http://rdfs.org/sioc/ns#Space> option (inference 'http://mygraph.com') . ?s ?p1 <http://localhost:8890/dataspace/test2/weblog/test2tWeblog> . };
+
 s                                                                                 p                                                                                 p1
 VARCHAR                                                                           VARCHAR                                                                           VARCHAR
 _______________________________________________________________________________
 
-ic2                                                                               http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   p1
+http://localhost:8890/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://rdfs.org/sioc/ns#link
 
-1 Rows. -- 0 msec.
-SQL> sparql  select * from <inft> where { ?s ?p <c1> option (inference 'inft') . ?s ?p1 <ic2p1> . };
-s                                                                                 p                                                                                 p1
-VARCHAR                                                                           VARCHAR                                                                           VARCHAR
-_______________________________________________________________________________
-
-ic2                                                                               http://www.w3.org/1999/02/22-rdf-syntax-ns#type                                   p1
-
-1 Rows. -- 0 msec.
+1 Rows. -- 10 msec.
 
 ]]></programlisting>
 </sect2>
@@ -2896,34 +2960,35 @@ select count distinct ?v1 ... ?vn
 <programlisting><![CDATA[
 sparql
 select count (*)
-  from <g>
+  from <http://mygraph.com>
  where {?s ?p ?o}
 
--- Returns the count of physical triples in g.
+-- Returns the count of physical triples in http://mygraph.com.
 ]]></programlisting>
 
 <programlisting><![CDATA[
-sparql define input:inference 'inft'
+sparql define input:inference 'http://mygraph.com'
 select ?p count (?o)
-  from <inft>
+  from <http://mygraph.com>
  where {?s ?p ?o};
 
 -- Returns the count of O's for each distinct P.
 ]]></programlisting>
 
 <programlisting><![CDATA[
-sparql define input:inference 'inft'
+sparql define input:inference 'http://mygraph.com'
 select count (?p) count (?o) count (distinct ?o)
- from <inft>
+ from <http://mygraph.com>
 where {?s ?p ?o};
 
 -- returns the count of triples, including inferred triples and the count of distinct O values.
 ]]></programlisting>
 
 <programlisting><![CDATA[
+sparql define input:inference 'http://mygraph.com'
 select count distinct ?s ?p ?o
-  from <g>
- where {?s ?p ?o}
+  from <http://mygraph.com>
+ where {?s ?p ?o};
 
 -- Returns the number of distinct bindings of ?s ?p ?o.
 ]]></programlisting>
@@ -2933,15 +2998,16 @@ select count distinct ?s ?p ?o
 </para>
 <programlisting><![CDATA[
 select count (*)
- from <g>
+ from <http://mygraph.com>
 where {?s ?p ?o}
 ]]></programlisting>
 <para>will not make inferred values since s, p, and o are actually not used. Instead,
 </para>
 <programlisting><![CDATA[
+sparql
 select count (?s) count (?p) count (?o)
- from <g>
-where {?s ?p ?o}
+ from <http://mygraph.com>
+where {?s ?p ?o};
 ]]></programlisting>
 <para>will get all the inferred triples also.
 </para>
@@ -3285,7 +3351,7 @@ WHERE
     && ! ( ?s = myfoaf:julia && ?p = rdf:type && ?o = foaf:Person))
   }
 ]]></programlisting>
-<para>Execute the GET command with the above query added as paramater with encoded value:</para>
+<para>Execute the GET command with the above query added as parameter with encoded value:</para>
 <programlisting><![CDATA[
 GET -e -s http://host:port/sparql/?query=PREFIX+rdf%3A+%3Chttp%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0D%0APREFIX+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E%0D%0APREFIX+myfoaf%3A+%3Chttp%3A%2F%2Fwww.example%2Fjose%2Ffoaf.rdf%23%3E%0D%0A%0D%0ACONSTRUCT+%7B+myfoaf%3Ajose+foaf%3Adepiction+%3Chttp%3A%2F%2Fwww.example%2Fjose%2Fjose.jpg%3E.%0D%0A++++++++++++myfoaf%3Ajose+foaf%3AschoolHomepage+%3Chttp%3A%2F%2Fwww.edu.example%2F%3E.%0D%0A++++++++++++%3Fs+%3Fp+%3Fo.%7D%0D%0AFROM+%3Chttp%3A%2F%2Fwww.w3.org%2F2001%2Fsw%2FDataAccess%2Fproto-tests%2Fdata%2Fconstruct%2Fsimple-data.rdf%3E%0D%0AWHERE+%7B+%3Fs+%3Fp+%3Fo.+myfoaf%3Ajose+foaf%3Anick+%22Jo%22.%0D%0A+++++++FILTER+%28+%21+%28%3Fs+%3D+myfoaf%3Akendall+%26%26+%3Fp+%3D+foaf%3Aknows+%26%26+%3Fo+%3D+myfoaf%3Aedd+%29%0D%0A++++++++++++++%26%26+%21+%28+%3Fs+%3D+myfoaf%3Ajulia+%26%26+%3Fp+%3D+foaf%3Ambox+%26%26+%3Fo+%3D+%3Cmailto%3Ajulia%40mail.example%3E+%29%0D%0A++++++++++%26%26+%21+%28+%3Fs+%3D+myfoaf%3Ajulia+%26%26+%3Fp+%3D+rdf%3Atype+%26%26+%3Fo+%3D+foaf%3APerson%29%29%0D%0A%7D%0D%0A&format=application%2Frdf%2Bxml
 ]]></programlisting>
@@ -3356,7 +3422,7 @@ Done
     </para>
     <para></para>
     <para>
-	lets you publish your information, both in the "pure" RDF form (for those who know how to make use of it) or to regular web pages, with the usual Longwell facetted browsing view of it 
+	lets you publish your information, both in the "pure" RDF form (for those who know how to make use of it) or to regular web pages, with the usual Longwell faceted browsing view of it
     </para>
     <para></para>
     <para></para>
@@ -3476,7 +3542,7 @@ etc ...
 </sect1>
 <sect1 id="rdfperformancetuning"><title>Virtuoso RDF Performance Tuning</title>
     <sect2 id="rdfperfgeneral"><title>General</title>
-	<para>For running with large data sets, one shuld configure the Virtuoso process to use between 2/3 to  3/5 of system RAM and to stripe storage on all available disks.  See <link linkend="VIRTINI">NumberOfBuffers</link> and <link linkend="VIRTINI">Striping</link> ini parameters.</para>
+	<para>For running with large data sets, one should configure the Virtuoso process to use between 2/3 to  3/5 of system RAM and to stripe storage on all available disks.  See <link linkend="VIRTINI">NumberOfBuffers</link> and <link linkend="VIRTINI">Striping</link> ini parameters.</para>
 <para> Also, if running with a large database, setting <link linkend="VIRTINI">MaxCheckpointRemap</link> to 1/4th of 
  the database size is recommended.  This is in pages, 8K per page.</para>
     </sect2>
@@ -3494,18 +3560,18 @@ checkpoint;
 <para>Loading a file with text like the above with isql will load the data.  Since the transaction logging is off, make a manual checkpoint at the end to ensure that data is persisted upon server restart since there is no roll forward log.</para>
 <para>If large amounts of data are to be loaded, run multiple such streams
 in parallel.  One may have for example 6 streams for 4 cores.  This
-means that if up to two thrreads wait for disk, there is still work
+means that if up to two threads wait for disk, there is still work
 for all cores.</para>
 <para>Having substantially more threads than processors or disks is not particularly useful.</para>
-<para>There exist multithreaded load functions which will load one file on multiple threads.  Experience shows that loading multiple files on one thred per file is better.</para>
+<para>There exist multithreaded load functions which will load one file on multiple threads.  Experience shows that loading multiple files on one thread per file is better.</para>
 <para>For loading Turtle, some platforms may have a non-reentrant Turtle parser.  This means that only one load may run at a time.  One can try this by calling <link linkend="rdfapidataimport"><function>ttlp ()</function></link> from two sessions at the same time. If these do not execute concurrently, then the best way may be to try <link linkend="rdfapidataimport"><function>ttlp_mt</function></link> and see if this runs faster than a single threaded ttlp call.</para>
     </sect2>
     <sect2 id="rdfperfsparul"><title>Using SPARUL</title>
 	<para>Since SPARUL updates are generally not ment to be transactional, it is
 	    best to run these in <link linkend="fn_log_enable"><function>log_enable (2)</function></link> mode, 
-	    which commits every operation as it is done.  This prevents one from running out of rollback space.  Also for bulk updates, transactin logging can be turned off.  If so, one should do a manual checkpoint after the operation to ensure persistence across server restart since there is no roll forward log.</para>
-<para>To have a roll forward log and row by row autocommit, one may use <link linkend="fn_log_enable"><function>log_enable (3)</function></link>.  This will write constatly into the log which takes extra time.  Having no logging and doing a checkpoint when the whole work is finished is faster.</para>
-<para>Many SPARUL operations can be run in parrallel in this way.  If they are independent with respect to their input and output, they can run in parallel and row by row autocommit will ensure they do not end up waiting for each others' locks.</para>
+	    which commits every operation as it is done.  This prevents one from running out of rollback space.  Also for bulk updates, transaction logging can be turned off.  If so, one should do a manual checkpoint after the operation to ensure persistence across server restart since there is no roll forward log.</para>
+<para>To have a roll forward log and row by row autocommit, one may use <link linkend="fn_log_enable"><function>log_enable (3)</function></link>.  This will write constantly into the log which takes extra time.  Having no logging and doing a checkpoint when the whole work is finished is faster.</para>
+<para>Many SPARUL operations can be run in parallel in this way.  If they are independent with respect to their input and output, they can run in parallel and row by row autocommit will ensure they do not end up waiting for each others' locks.</para>
     </sect2>
 </sect1>
 <sect1 id="rdfinsertmethods"><title>RDF Insert Methods in Virtuoso</title>
@@ -3518,7 +3584,9 @@ for all cores.</para>
         <para>Create a DAV collection and not to request for authentication set RW permissions for public. For ex. the collection path could be /DAV/xx </para>
         <para>Execute the following command:</para>
 <programlisting><![CDATA[
-curl -i -d "INSERT {<s> <p> <o>}" -H "Content-Type: application/sparql-query" http://host:port/DAV/xx/yy
+curl -i -d "INSERT {<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+<http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User>}"
+-H "Content-Type: application/sparql-query" http://localhost:8890/DAV/xx/yy
 ]]></programlisting>
         <para>The response should be:</para>
 <programlisting><![CDATA[
@@ -3531,18 +3599,23 @@ Accept-Ranges: bytes
 MS-Author-Via: SPARQL
 Content-Length: 0
 ]]></programlisting>
-        <para>As result in the DAV/xx location will be created a file with name "yy" and with the following content:</para>
+        <para>The result in the DAV/xx location will be a new WebDAV resource with name "yy" containing the following:</para>
 <itemizedlist>
 <listitem>if opened with Conductor:
 <programlisting><![CDATA[
-CONSTRUCT { ?s ?p ?o } FROM <http://host:port/DAV/xx/yy> WHERE { ?s ?p ?o }
+CONSTRUCT { ?s ?p ?o } FROM <http://localhost:8890/DAV/xx/yy> WHERE { ?s ?p ?o }
 ]]></programlisting>
 </listitem>
 <listitem>if opened with GET, then the content will be RDF representation of what was inserted into the graph, i.e.
 <programlisting><![CDATA[
 <?xml version="1.0" encoding="utf-8" ?>
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
-<rdf:Description rdf:about="s"><p rdf:resource="o"/></rdf:Description>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
+<rdf:Description
+rdf:about="http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this">
+<ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+rdf:resource="http://rdfs.org/sioc/ns#User"/>
+</rdf:Description>
 </rdf:RDF>
 ]]></programlisting>
 </listitem>
@@ -3551,7 +3624,18 @@ CONSTRUCT { ?s ?p ?o } FROM <http://host:port/DAV/xx/yy> WHERE { ?s ?p ?o }
         <para>Create a DAV collection, for ex. with name "test" for user ( for ex. demo).</para>
         <para>Execute the following command:</para>
 <programlisting><![CDATA[
-curl -i -d "INSERT IN GRAPH <http://example/testrq> { <s1> <p1> <o1> . <s2> <p2> <o2> . <s3> <p3> <o3>  } " -u "demo:demo" -H "Content-Type: application/sparql-query" http://host:port/DAV/home/demo/test/myrq
+curl -i -d "INSERT IN GRAPH <http://mygraph.com>
+{ <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
+  <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+  <http://www.w3.org/2000/01/rdf-schema#label>
+  <Kingsley Uyi Idehen> .
+  <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+  <http://rdfs.org/sioc/ns#creator_of>
+
+<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300>
+  } " -u "demo:demo" -H "Content-Type: application/sparql-query" http://localhost:8890/DAV/home/demo/test/myrq
 ]]></programlisting>
         <para>As result the response will be:</para>
 <programlisting><![CDATA[
@@ -3564,11 +3648,11 @@ Accept-Ranges: bytes
 MS-Author-Via: SPARQL
 Content-Length: 0
 ]]></programlisting>
-        <para>Now let's check the inserted triples. Go to the sparql endpoint, i.e. http://host:port/sparql and:</para>
+        <para>Now let's check the inserted triples. Go to the sparql endpoint, i.e. http://localhost:8890/sparql and:</para>
 <itemizedlist>
 <listitem>Enter for Default Graph URI:
 <programlisting><![CDATA[
-http://example/testrq
+http://mygraph.com
 ]]></programlisting>
 </listitem>
 <listitem>Enter in the Query area:
@@ -3580,9 +3664,9 @@ SELECT * WHERE {?s ?p ?o}
 <listitem>As result will be shown the inserted triples:
 <programlisting><![CDATA[
 s  	p       o
-s1 	p1 	o1
-s2 	p2 	o2
-s3 	p3 	o3
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://rdfs.org/sioc/ns#User
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://www.w3.org/2000/01/rdf-schema#label 	    Kingsley
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://rdfs.org/sioc/ns#creator_of                http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300
 ]]></programlisting>
 </listitem>
 </itemizedlist>
@@ -3642,42 +3726,61 @@ curl -T myfoaf.rdf http://demo.openlinksw.com/DAV/home/demo/rdf_sink/myfoaf.rdf 
         <para><emphasis>Example:</emphasis></para>
         <para>Execute from ISQL:</para>
 <programlisting><![CDATA[
-sparql insert in graph <http://example/load>
+sparql insert in graph <http://mygraph.com>
 {
-  <l1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User> .
-  <l1> <http://rdfs.org/sioc/ns#name> <test1> .
+  <http://myopenlink.net/dataspace/Kingsley#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
 
-  <l2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User> .
-  <l2> <http://rdfs.org/sioc/ns#name> <test2> .
+  <http://myopenlink.net/dataspace/Kingsley#this>
+  <http://rdfs.org/sioc/ns#id>
+  <Kingsley> .
 
-  <l3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User> .
-  <l3> <http://rdfs.org/sioc/ns#name> <test3> .
+  <http://myopenlink.net/dataspace/Caroline#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
 
-  <l4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User> .
-  <l4> <http://rdfs.org/sioc/ns#name> <demo> .
-};
+ <http://myopenlink.net/dataspace/Caroline#this>
+  <http://rdfs.org/sioc/ns#id>
+  <Caroline> .
+
+   <http://myopenlink.net/dataspace/Matt#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
+
+  <http://myopenlink.net/dataspace/Matt#this>
+  <http://rdfs.org/sioc/ns#id>
+  <Matt> .
+
+   <http://myopenlink.net/dataspace/demo#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
+
+  <http://myopenlink.net/dataspace/demo#this>
+  <http://rdfs.org/sioc/ns#id>
+  <demo> .};
 ]]></programlisting>
-        <para>Create DAV collection which is visible to public, for ex: http://host:port/DAV/tmp </para>
-        <para>Upload to the DAV collection the following file for ex. with name listall.rq:</para>
+        <para>Create DAV collection which is visible to public, for ex: http://localhost:8890/DAV/tmp</para>
+        <para>Upload to the DAV collection the following file for ex. with name listall.rq and with the following content:</para>
 <programlisting><![CDATA[
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX sioc: <http://rdfs.org/sioc/ns#>
 SELECT ?x ?p ?o
-FROM <http://example/load>
+FROM <http://mygraph.com>
 WHERE
   {
     ?x rdf:type sioc:User .
     ?x ?p ?o.
-    ?x sioc:name ?name .
-    FILTER REGEX(str(?name), "^test")
+    ?x sioc:id ?id .
+    FILTER REGEX(str(?id), "^King")
   }
 ORDER BY ?x
 ]]></programlisting>
         <para>Now from ISQL execute the following command:</para>
 <programlisting><![CDATA[
 sparql
-load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/tmp/listall.rq") into graph <http://example/load2>;
+load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/tmp/listall.rq") into graph <http://myNewGraph.com>;
 ]]></programlisting>
         <para>As result should be shown:</para>
 <programlisting><![CDATA[
@@ -3685,7 +3788,7 @@ callret-0
 VARCHAR
 _______________________________________________________________________________
 
-Load <http://rumi.ath.cx:8895/DAV/tmp/listall.rq> into graph <http://example/load2> -- done
+Load <http://localhost:8890/DAV/tmp/listall.rq> into graph <http://myNewGraph.com> -- done
 
 1 Rows. -- 321 msec.
 ]]></programlisting>
@@ -3697,44 +3800,44 @@ Load <http://rumi.ath.cx:8895/DAV/tmp/listall.rq> into graph <http://example/loa
 <itemizedlist>
 <listitem>Insert into graph http://example/bookStore 3 triples:
 <programlisting><![CDATA[
-sparql insert in graph <http://example/bookStore>
-{ <s1> <http://purl.org/dc/elements/1.1/date> <1999-04-01T00:00:00> .
-  <s2> <http://purl.org/dc/elements/1.1/date> <1998-05-03T00:00:00> .
-  <s3> <http://purl.org/dc/elements/1.1/date> <2001-02-08T00:00:00> };
+sparql insert in graph <http://BookStore.com>
+{ <http://www.dajobe.org/foaf.rdf#i> <http://purl.org/dc/elements/1.1/date> <1999-04-01T00:00:00> .
+  <http://www.w3.org/People/Berners-Lee/card#i> <http://purl.org/dc/elements/1.1/date> <1998-05-03T00:00:00> .
+  <http://www.w3.org/People/Connolly/#me> <http://purl.org/dc/elements/1.1/date> <2001-02-08T00:00:00> };
 ]]></programlisting>
 </listitem>
 <listitem>As result will be shown the message:
 <programlisting><![CDATA[
-Insert into <http://example/bookStore>, 3 triples -- done
+Insert into <http://BookStore.com>, 3 triples -- done
 ]]></programlisting>
 </listitem>
 <listitem>Next we will select all triples from the graph http://example/bookStore:
 <programlisting><![CDATA[
-sparql select * from <http://example/bookStore> where {?s ?p ?o};
+sparql select * from <http://BookStore.com> where {?s ?p ?o};
 ]]></programlisting>
 </listitem>
 <listitem>As result will be shown:
 <programlisting><![CDATA[
 s        p                                        o
 VARCHAR  VARCHAR                                  VARCHAR
-_______________________________________________________________________
+_______________________________________________________________________________
 
-s1       http://purl.org/dc/elements/1.1/date     1999-04-01T00:00:00
-s3       http://purl.org/dc/elements/1.1/date     2001-02-08T00:00:00
-s2       http://purl.org/dc/elements/1.1/date     1998-05-03T00:00:00
+http://www.w3.org/People/Berners-Lee/card#i    http://purl.org/dc/elements/1.1/date    1998-05-03T00:00:00
+http://www.w3.org/People/Connolly/#me          http://purl.org/dc/elements/1.1/date    2001-02-08T00:00:00
+http://www.dajobe.org/foaf.rdf#i               http://purl.org/dc/elements/1.1/date    1999-04-01T00:00:00
 
 3 Rows. -- 0 msec.
 
 ]]></programlisting>
 </listitem>
-<listitem>Now let's insert into graph another graph http://example/bookStore2 values:
+<listitem>Now let's insert into graph another http://NewBookStore.com graph's values:
 <programlisting><![CDATA[
 sparql
 PREFIX dc:  <http://purl.org/dc/elements/1.1/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-INSERT INTO GRAPH <http://example/bookStore2> { ?book ?p ?v }
+INSERT INTO GRAPH <http://NewBookStore.com> { ?book ?p ?v }
 WHERE
-  { GRAPH  <http://example/bookStore>
+  { GRAPH  <http://BookStore.com>
    { ?book dc:date ?date
      FILTER ( xsd:dateTime(?date) < xsd:dateTime("2000-01-01T00:00:00")).
      ?book ?p ?v.
@@ -3748,30 +3851,29 @@ callret-0
 VARCHAR
 _______________________________________________________________________________
 
-Insert into <http://example/bookStore2>, 2 triples -- done
-
+Insert into <http://NewBookStore.com>, 2 triples -- done
 ]]></programlisting>
 </listitem>
-<listitem>Finally we will check the triples from the graph http://example/bookStore2:
+<listitem>Finally we will check the triples from the graph NewBookStore.com:
 <programlisting><![CDATA[
-SQL> sparql select * from <http://example/bookStore2> where {?s ?p ?o};
+SQL> sparql select * from <http://NewBookStore.com> where {?s ?p ?o};
 ]]></programlisting>
 </listitem>
 <listitem>As result will be shown:
 <programlisting><![CDATA[
 s         p                                      o
 VARCHAR   VARCHAR                                VARCHAR
-_______________________________________________________________________
+_______________________________________________________________________________
 
-s1        http://purl.org/dc/elements/1.1/date   1999-04-01T00:00:00
-s2        http://purl.org/dc/elements/1.1/date   1998-05-03T00:00:00
+http://www.w3.org/People/Berners-Lee/card#i   http://purl.org/dc/elements/1.1/date   1998-05-03T00:00:00
+http://www.dajobe.org/foaf.rdf#i              http://purl.org/dc/elements/1.1/date   1999-04-01T00:00:00
 
-2 Rows. -- 20 msec.
+2 Rows. -- 10 msec.
 ]]></programlisting>
 </listitem>
 </itemizedlist>
 </sect2>
-     <sect2 id="rdfindertmethodsparqlqueryandodswiki"><title> SPARQL Insert via HTTP Post using Content-Type: application/sparql-query and ODS wiki</title>
+     <sect2 id="rdfinsertmethodsparqlqueryandodswiki"><title>SPARQL Insert via HTTP Post using Content-Type: application/sparql-query and ODS wiki</title>
         <para>With HTTP Post and ODS wiki can be written an rdf document and respectively to be performed over it INSERT/UPDATE action.</para>
         <para>You can write to a file using SIOC terms for ODS-Wiki</para>
         <para>You can check with sparql the inserted / updated triples in the Quad Store.</para>
@@ -3779,7 +3881,7 @@ s2        http://purl.org/dc/elements/1.1/date   1998-05-03T00:00:00
         <para>Suppose there is ODS user test3 with ODS password 1, which has testWiki wiki instance.</para>
         <para>Execute the following:</para>
 <programlisting><![CDATA[
-curl -i -d "INSERT {<http://host:port/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#contains> <http://host:port/dataspace/test3/wiki/testWiki/MyTest> . <http://host:port/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#has_container> <http://host:port/dataspace/test3/wiki/testWiki> . <http://host:port/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#entry> <http://host:port/dataspace/test3/wiki/testWiki/MyTest> . <http://host:port/dataspace/test3/wiki/testWiki> <http://rdfs.org/sioc/ns#container_of> <http://host:port/dataspace/test3/wiki/testWiki/MyTest> . <http://host:port/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#topic>  <http://host:port/dataspace/test3/wiki/testWiki> . <http://host:port/dataspace/test3/wiki/testWiki/MyTest> <http://atomowl.org/ontologies/atomrdf#source> <http://host:port/dataspace/test3/wiki/testWiki> . <http://host:port/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/types#Comment> . <http://host:port/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Entry> . <http://host:port/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/2000/01/rdf-schema#label> 'MyTest' .  <http://host:port/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Link> . <http://host:port/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>}" -u "test3:1" -H "Content-Type: application/sparql-query" http://host:port/DAV/home/test3/wiki/testWiki/MyTest
+curl -i -d "INSERT {<http://localhost:8890/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#contains> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#has_container> <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#entry> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki> <http://rdfs.org/sioc/ns#container_of> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#topic>  <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://atomowl.org/ontologies/atomrdf#source> <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/types#Comment> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Entry> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/2000/01/rdf-schema#label> 'MyTest' .  <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Link> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>}" -u "test3:1" -H "Content-Type: application/sparql-query" http://localhost:8890/DAV/home/test3/wiki/testWiki/MyTest
 ]]></programlisting>
         <para>As result we should have 2 files created:</para>
 <itemizedlist>
@@ -3787,33 +3889,33 @@ curl -i -d "INSERT {<http://host:port/dataspace/test3/wiki/testWiki> <http://ato
 <programlisting><![CDATA[
 <?xml version="1.0" encoding="utf-8" ?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
-<rdf:Description rdf:about="http://host:port/dataspace/test3/wiki/testWiki"><ns0pred:entry xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://host:port/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
-<rdf:Description rdf:about="http://host:port/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:label xmlns:ns0pred="http://www.w3.org/2000/01/rdf-schema#">MyTest</ns0pred:label></rdf:Description>
-<rdf:Description rdf:about="http://host:port/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Link"/></rdf:Description>
-<rdf:Description rdf:about="http://host:port/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://rdfs.org/sioc/types#Comment"/></rdf:Description>
-<rdf:Description rdf:about="http://host:port/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Entry"/></rdf:Description>
-<rdf:Description rdf:about="http://host:port/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:has_container xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://host:port/dataspace/test3/wiki/testWiki"/></rdf:Description>
-<rdf:Description rdf:about="http://host:port/dataspace/test3/wiki/testWiki"><ns0pred:container_of xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://host:port/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
-<rdf:Description rdf:about="http://host:port/dataspace/test3/wiki/testWiki"><ns0pred:contains xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://host:port/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
-<rdf:Description rdf:about="http://host:port/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:content xmlns:ns0pred="http://rdfs.org/sioc/ns#">test</ns0pred:content></rdf:Description>
-<rdf:Description rdf:about="http://host:port/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:topic xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://host:port/dataspace/test3/wiki/testWiki"/></rdf:Description>
-<rdf:Description rdf:about="http://host:port/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:source xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://host:port/dataspace/test3/wiki/testWiki"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:entry xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:label xmlns:ns0pred="http://www.w3.org/2000/01/rdf-schema#">MyTest</ns0pred:label></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Link"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://rdfs.org/sioc/types#Comment"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Entry"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:has_container xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:container_of xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:contains xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:content xmlns:ns0pred="http://rdfs.org/sioc/ns#">test</ns0pred:content></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:topic xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
+<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:source xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
 </rdf:RDF>
 ]]></programlisting>
 </listitem>
-<listitem>To the user's wiki instance will be added a new WikiWord "MyTest" with content the value of the SIOC term attribue "content":
+<listitem>To the user's wiki instance will be added a new WikiWord "MyTest" with content the value of the SIOC term attribute "content":
 <programlisting><![CDATA[
-<http://host:port/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>
+<http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>
 i.e. the content will be "test".
 ]]></programlisting>
 </listitem>
 </itemizedlist>
-        <para>Now lets check what data was inserted in the Quad Store:</para>
+        <para>Now let's check what data was inserted in the Quad Store:</para>
 <itemizedlist>
-<listitem>Go to the sparql endpoint, i.e. to http://host:port/sparql</listitem>
+<listitem>Go to the sparql endpoint, i.e. for ex. to http://localhost:8890/sparql</listitem>
 <listitem>Enter for Default Graph URI:
 <programlisting><![CDATA[
-http://host:port/DAV/home/test3/wiki/testWiki/MyTest
+http://localhost:8890/DAV/home/test3/wiki/testWiki/MyTest
 ]]></programlisting>
 </listitem>
 <listitem>Enter for Query text:
@@ -3825,20 +3927,349 @@ SELECT * WHERE {?s ?p ?o}
 <listitem>As result will be shown the inserted triples:
 <programlisting><![CDATA[
 s  	                                                p  	                                        o
-http://host:port/dataspace/test3/wiki/testWiki 	        http://rdfs.org/sioc/ns#container_of 	        http://host:port/dataspace/test3/wiki/testWiki/MyTest
-http://host:port/dataspace/test3/wiki/testWiki 	        http://atomowl.org/ontologies/atomrdf#entry 	http://host:port/dataspace/test3/wiki/testWiki/MyTest
-http://host:port/dataspace/test3/wiki/testWiki 	        http://atomowl.org/ontologies/atomrdf#contains 	http://host:port/dataspace/test3/wiki/testWiki/MyTest
-http://host:port/dataspace/test3/wiki/testWiki/MyTest 	http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://rdfs.org/sioc/types#Comment
-http://host:port/dataspace/test3/wiki/testWiki/MyTest 	http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://atomowl.org/ontologies/atomrdf#Entry
-http://host:port/dataspace/test3/wiki/testWiki/MyTest 	http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://atomowl.org/ontologies/atomrdf#Link
-http://host:port/dataspace/test3/wiki/testWiki/MyTest 	http://www.w3.org/2000/01/rdf-schema#label 	MyTest
-http://host:port/dataspace/test3/wiki/testWiki/MyTest 	http://rdfs.org/sioc/ns#has_container 	        http://host:port/dataspace/test3/wiki/testWiki
-http://host:port/dataspace/test3/wiki/testWiki/MyTest 	http://rdfs.org/sioc/ns#content 	        test
-http://host:port/dataspace/test3/wiki/testWiki/MyTest 	http://rdfs.org/sioc/ns#topic 	                http://host:port/dataspace/test3/wiki/testWiki
-http://host:port/dataspace/test3/wiki/testWiki/MyTest 	http://atomowl.org/ontologies/atomrdf#source 	http://host:port/dataspace/test3/wiki/testWiki
+http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://rdfs.org/sioc/ns#container_of 	     http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
+http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://atomowl.org/ontologies/atomrdf#entry      http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
+http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://atomowl.org/ontologies/atomrdf#contains   http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://rdfs.org/sioc/types#Comment
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://atomowl.org/ontologies/atomrdf#Entry
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://atomowl.org/ontologies/atomrdf#Link
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/2000/01/rdf-schema#label 	     MyTest
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#has_container 	     http://localhost:8890/dataspace/test3/wiki/testWiki
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#content 	             test
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#topic 	             http://localhost:8890/dataspace/test3/wiki/testWiki
+http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://atomowl.org/ontologies/atomrdf#source     http://localhost:8890/dataspace/test3/wiki/testWiki
 ]]></programlisting>
 </listitem>
 </itemizedlist>
+    </sect2>
+    <sect2 id="rdfinsertmethodwebdav">
+      <title>Using WebDAV</title>
+      <para> Example using WebDAV (mount folder to DAV and dump; if this is the rdf_sink
+the Quad Store is updated automatically, or you can load from DAV manually to quad store)</para>
+      <para><emphasis>Example:</emphasis></para>
+      <para><emphasis>Example 1: Using ODS Briefcase</emphasis></para>
+      <para>Go to your ods location, for ex. http://localhost:8890/ods</para>
+      <para>Register user, for ex. user test1</para>
+      <para>Login if not already in ods</para>
+      <para>Go to ODS ->Briefcase</para>
+      <para>Create new instance</para>
+      <para>Go to the briefcase instance by clicking its name link</para>
+      <para>Upload file in a new created folder mytest or in the rdf_sink folder with:</para>
+      <itemizedlist>
+        <listitem>checked option "RDF Store"</listitem>
+        <listitem>set RDF Graph Name, for ex. http://localhost:8890/DAV/home/test1/ of
+the current folder>/ for ex. http://localhost:8890/DAV/home/test1/mytest/ or
+http://localhost:8890/DAV/home/test1/rdf_sink/</listitem>
+        <listitem>For ex. upload the following file with name jose.rdf.</listitem>
+<programlisting><![CDATA[
+<rdf:RDF xmlns="http://www.example/jose/foaf.rdf#"
+    xmlns:foaf="http://xmlns.com/foaf/0.1/"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:myfoaf="http://www.example/jose/foaf.rdf#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+
+    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#jose">
+        <foaf:homepage rdf:resource="http://www.example/jose/"/>
+        <foaf:knows rdf:resource="http://www.example/jose/foaf.rdf#juan"/>
+        <foaf:name>Jose Jimen~ez</foaf:name>
+        <foaf:nick>Jo</foaf:nick>
+        <foaf:workplaceHomepage rdf:resource="http://www.corp.example/"/>
+    </foaf:Person>
+
+    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#juan">
+        <foaf:mbox rdf:resource="mailto:juan@mail.example"/>
+    </foaf:Person>
+
+    <foaf:Person rdf:about="http://www.example/jose/foaf.rdf#julia">
+        <foaf:mbox rdf:resource="mailto:julia@mail.example"/>
+    </foaf:Person>
+
+    <rdf:Description rdf:about="http://www.example/jose/foaf.rdf#kendall">
+
+        <foaf:knows rdf:resource="http://www.example/jose/foaf.rdf#edd"/>
+    </rdf:Description>
+</rdf:RDF>
+]]></programlisting>
+      </itemizedlist>
+      <para>Execute the following query:</para>
+<programlisting><![CDATA[
+select * from <>
+where {?s ?p ?o}
+]]></programlisting>
+      <para>As result should be shown:</para>
+<programlisting><![CDATA[
+s  	                                  p  	                                            o
+http://www.example/jose/foaf.rdf#jose 	  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Person
+http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/nick 	            Jo
+http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/name 	            Jose Jimen~ez
+http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/knows 	            http://www.example/jose/foaf.rdf#juan
+http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/homepage 	            http://www.example/jose/
+http://www.example/jose/foaf.rdf#jose 	  http://xmlns.com/foaf/0.1/workplaceHomepage 	    http://www.corp.example/
+http://www.example/jose/foaf.rdf#kendall  http://xmlns.com/foaf/0.1/knows 	            http://www.example/jose/foaf.rdf#edd
+http://www.example/jose/foaf.rdf#julia 	  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Person
+http://www.example/jose/foaf.rdf#julia 	  http://xmlns.com/foaf/0.1/mbox 	            mailto:julia@mail.example
+http://www.example/jose/foaf.rdf#juan 	  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://xmlns.com/foaf/0.1/Person
+http://www.example/jose/foaf.rdf#juan 	  http://xmlns.com/foaf/0.1/mbox 	            mailto:juan@mail.example
+]]></programlisting>
+      <para><emphasis>Example 2: Using Conductor UI</emphasis></para>
+      <para>Go to Conductor UI, for ex. at http://localhost:8890/conductor</para>
+      <para>Login as dba user</para>
+      <para>Go to WebDAV&amp;HTTP and create new folder, for ex. test</para>
+      <para>Upload in the folder test a file, for ex. the file jose.rdf from above with options:</para>
+      <itemizedlist>
+        <listitem>Destination: RDF Store</listitem>
+        <listitem>Set the RDF IRI</listitem>
+      </itemizedlist>
+    </sect2>
+    <sect2 id="rdfinsertmethodvirtuosocrawler">
+      <title>Using Virtuoso Crawler</title>
+      <para>Using Virtuoso Crawler (which includes the Sponger options so you crawl
+non-RDF but get RDF and this can go to the Quad Store)</para>
+      <para><emphasis>Example:</emphasis></para>
+      <para>Go to Conductor UI. For ex. at http://localhost:8890/conductor</para>
+      <para>Login as dba user</para>
+      <para>Go to tab WebDAV&amp;HTTP</para>
+      <para>Go to tab Content Imports</para>
+      <para>Click the "New Target" button</para>
+      <para>In the shown form:</para>
+      <itemizedlist>
+        <listitem>Enter for "Target description": Tim Berners-Lee's electronic Business Card</listitem>
+        <listitem>Enter for "Target URL": http://www.w3.org/People/Berners-Lee</listitem>
+        <listitem>Enter for "Copy to local DAV collection" for ex.: /DAV/home/demo/rdf_sink/</listitem>
+        <listitem>Choose from the list "Local resources owner": demo</listitem>
+        <listitem>Check the check.box with label "Store metadata".</listitem>
+        <listitem>Check all the check-boxes shown below the check-box "Store metadata".</listitem>
+        <listitem>Click the button "Create".
+          <figure id="rdfinsertwebdav1" float="1">
+	    <title>Using Virtuoso Crawler</title>
+	    <graphic fileref="ui/rdfinsert1.png"/>
+          </figure>
+</listitem>
+</itemizedlist>
+      <para>Click the button "Import Queues".</para>
+      <para>For "Robot target" with label "Tim Berners-Lee's electronic Business Card"
+click the start link.</para>
+      <para>As result should be shown t he number of the pages retrieved.</para>
+      <figure id="rdfinsertwebdav2" float="1">
+        <title>Using Virtuoso Crawler</title>
+	<graphic fileref="ui/rdfinsert2.png"/>
+      </figure>
+      <para>Now using the sparql endpoint with sponger option "Use only local data"
+enter for Default Graph URI: http://www.w3.org/People/Berners-Lee and execute the following query: </para>
+<programlisting><![CDATA[
+select *
+where {?s ?p ?o}
+]]></programlisting>
+      <para>As result should be shown the following triples:</para>
+<programlisting><![CDATA[
+s                                       p  	                                            o
+http://www.w3.org/People/Berners-Lee 	http://www.w3.org/1999/02/22-rdf-syntax-ns#type     http://xmlns.com/foaf/0.1/Document
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Answers for young people - Tim Berners-Lee
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Berners-Lee: Weaving the Web
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Declaration by Tim BL 28 Feb 1996 w.r.t. CDA challenge
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Errata - Berners-Lee: Weaving the Web
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Frequently asked questions by the Press - Tim BL
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Glossary - Weaving the Web - Berners-Lee
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Longer Bio for Tim Berners-Lee
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Michael Dertouzos has left us
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            The Future of the Web and Europe
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            The World Wide Web: Past, Present and Future
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            The World Wide Web: A very short personal history
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee - 3Com Founders chair
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: Disclosures
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: WWW and UU and I
+http://www.w3.org/People/Berners-Lee 	http://purl.org/dc/elements/1.1/title 	            Tim Berners-Lee: WorldWideWeb, the first Web client
+]]></programlisting>
+    </sect2>
+    <sect2 id="rdfinsertmethodsparqlqueryandsponger">
+      <title>Using SPARQL Query and Sponger (i.e. we Sponge the Resources in the FROM Clause or values for the graph-uri parameter in SPARQL protocol URLs)</title>
+      <para><emphasis>Example:</emphasis></para>
+      <para>Execute the following query: </para>
+<programlisting><![CDATA[
+sparql
+SELECT ?id
+FROM NAMED <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
+ OPTION (get:soft "soft", get:method "GET")
+WHERE { GRAPH ?g { ?id a ?o } }
+limit 10;
+]]></programlisting>
+      <para>As result will be shown the retrieved triples:</para>
+<programlisting><![CDATA[
+id
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/612
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/612
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/610
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/610
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/856
+http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/856
+
+10 Rows. -- 20 msec.
+]]></programlisting>
+    </sect2>
+    <sect2 id="rdfinsertmethodplapis">
+      <title>Using Virtuoso PL APIs</title>
+      <para><emphasis>Example:</emphasis></para>
+      <para>In the example script we implement a basic mapper which maps a text/plain mime type
+to an imaginary ontology, which extends the class Document from FOAF with properties 'txt:UniqueWords'
+and 'txt:Chars', where the prefix 'txt:' we specify as 'urn:txt:v0.0:'.</para>
+<programlisting><![CDATA[
+use DB;
+
+create procedure DB.DBA.RDF_LOAD_TXT_META
+	(
+	 in graph_iri varchar,
+	 in new_origin_uri varchar,
+	 in dest varchar,
+         inout ret_body any,
+	 inout aq any,
+	 inout ps any,
+	 inout ser_key any
+	 )
+{
+  declare words, chars int;
+  declare vtb, arr, subj, ses, str any;
+  declare ses any;
+  -- if any error we just say nothing can be done
+  declare exit handler for sqlstate '*'
+    {
+      return 0;
+    };
+  subj := coalesce (dest, new_origin_uri);
+  vtb := vt_batch ();
+  chars := length (ret_body);
+  -- using the text index procedures we get a list of words
+  vt_batch_feed (vtb, ret_body, 1);
+  arr := vt_batch_strings_array (vtb);
+  -- the list has 'word' and positions array , so we must divide by 2
+  words := length (arr) / 2;
+  ses := string_output ();
+  -- we compose a N3 literal
+  http (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://xmlns.com/foaf/0.1/Document> .\n', subj), ses);
+  http (sprintf ('<%s> <urn:txt:v0.0:UniqueWords> "%d" .\n', subj, words), ses);
+  http (sprintf ('<%s> <urn:txt:v0.0:Chars> "%d" .\n', subj, chars), ses);
+  str := string_output_string (ses);
+  -- we push the N3 text into the local store
+  DB.DBA.TTLP (str, new_origin_uri, subj);
+  return 1;
+}
+;
+
+--
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_TXT_META';
+
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('(text/plain)', 'MIME', 'DB.DBA.RDF_LOAD_TXT_META', null, 'Text Files (demo)');
+
+-- here we set order to some large number so don't break existing mappers
+update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2000 where RM_HOOK = 'DB.DBA.RDF_LOAD_TXT_META';
+]]></programlisting>
+      <para>To test the mapper we just use /sparql endpoint with option 'Retrieve remote
+RDF data for all missing source graphs' to execute:</para>
+<programlisting><![CDATA[
+select * from <http://demo.openlinksw.com:8890/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt>
+where { ?s ?p ?o }
+]]></programlisting>
+      <para>To check the results:</para>
+      <itemizedlist>
+        <listitem>Make sure the initial state of tutorial <ulink url="http://demo.openlinksw.com/tutorial/rdf/rd_s_1/rd_s_1.vsp">RD_S_1</ulink> is set.</listitem>
+        <listitem>Go to http://demo.openlinksw.com/sparql</listitem>
+        <listitem>Enter for Default Graph URI this value:</listitem>
+<programlisting><![CDATA[
+http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt
+]]></programlisting>
+        <listitem>Enter for Query text:</listitem>
+<programlisting><![CDATA[
+select *
+where {?s ?p ?o}
+]]></programlisting>
+        <listitem>Click the "Run Query" button.</listitem>
+        <listitem>As result should be shown the following triples:</listitem>
+<programlisting><![CDATA[
+s  	                                                                    p  	                                            o
+http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://xmlns.com/foaf/0.1/Document
+http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  urn:txt:v0.0:UniqueWords 	                    47
+http://localhost:80/tutorial/hosting/ho_s_30/WebCalendar/tools/summary.txt  urn:txt:v0.0:Chars 	                            625
+]]></programlisting>
+      </itemizedlist>
+      <para><emphasis>Important: Setting Sponger Permissions</emphasis></para>
+      <para>In order to allow the Sponger to update the local RDF quad store with triples
+constituting the sponged structured data, the role "SPARQL_UPDATE" must be granted to the
+account "SPARQL". This should normally be the case. If not, you must manually grant this
+permission. As with most Virtuoso DBA tasks, the Conductor provides the simplest means of
+doing this.</para>
+    </sect2>
+    <sect2 id="rdfinsertmethodsimilerdfbankapi">
+      <title>Using SIMILE RDF Bank API</title>
+      <para>Virtuoso implements the HTTP-based Semantic Bank API that enables client
+applications to post to its RDF Triple Store. This method offers an alternative to
+using Virtuoso/PL functions or WebDAV uploads as the triples-insertion mechanism.</para>
+      <para><emphasis>Example:</emphasis></para>
+      <para>From your machine go to Firefox->Tools->PiggyBank->My Semantic Bank Accounts</para>
+      <para>Add in the shown form:</para>
+      <itemizedlist>
+        <listitem>For bank: address: http://demo.openlinksw.com/bank</listitem>
+        <listitem>For account id: demo</listitem>
+        <listitem>For password: demo</listitem>
+      </itemizedlist>
+      <para>Go to http://demo.openlinksw.com/ods</para>
+      <para>Log in as user demo, password: demo</para>
+      <para>Go to the Weblog tab from the main ODS Navigation</para>
+      <para>Click on weblog instance name, for ex. "demo's Weblog".</para>
+      <para>When the weblog home page is loaded, click Alt + P.</para>
+      <para>As result is shown the "My PiggyBank" page with all the collected information
+presented in items.</para>
+      <para>For several of the items add Tags from the form "Tag" shown for each of them.</para>
+      <para>As result should be shown the message "Last updated: [here goes the date value].</para>
+      <para>You can also click "Save" and "Publish" for these items.</para>
+      <para>Go to http://demo.openlinksw.com/sparql</para>
+      <para>Enter for the "Default Graph URI" field: http://simile.org/piggybank/demo</para>
+      <para>Enter for the "Query text" text-area:</para>
+<programlisting><![CDATA[
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix sioc: <http://rdfs.org/sioc/ns#>
+select *
+from <http://simile.org/piggybank/demo>
+where {?s ?p  ?o}
+]]></programlisting>
+      <para>Click "Run Query".</para>
+      <para>As results are shown the found results.</para>
+    </sect2>
+    <sect2 id="rdfinsertmethodrdfnet">
+      <title>Using RDF NET</title>
+      <para><emphasis>Example:</emphasis></para>
+      <para>Execute the following query:</para>
+<programlisting><![CDATA[
+SQL> select DB.DBA.HTTP_RDF_NET ('sparql load
+"http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com"
+into graph <http://www.openlinksw.com/>');
+]]></programlisting>
+      <para>As result should be shown:</para>
+<programlisting><![CDATA[
+callret
+VARCHAR
+_______________________________________________________
+
+<?xml version="1.0" ?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
+xmlns="http://example.org/book/" xmlns:dc="http://purl.org/dc/elements/1.1/"
+xmlns:ns="http://example.org/ns#">
+<rdf:Description>
+<callret-0>Load <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com>
+into graph <http://www.openlinksw.com/> -- done</callret-0>
+</rdf:Description>
+</rdf:RDF>
+
+1 Rows. -- 1982 msec.
+]]></programlisting>
     </sect2>
 </sect1>
 <sect1 id="rdfstorebenchmarks"><title>RDF Store Benchmarks</title>

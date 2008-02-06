@@ -61,9 +61,9 @@
   <refsect1 id="desc_wsdl_upload">
     <title>Description</title>
     <para><function>BPEL.BPEL.getVariableData</function>
-      <para>Returns select by query exression data from part (if
+      <para>Returns select by query expression data from part (if
 	applicable) of the BPEL variable. If the variable is unknown,
-	or if the XPATH expression signals an error, the appropriate error is signaled.</para>
+	or if the XPATH expression signals an error, the appropriate error is signalled.</para>
       <para>This procedure may only be used in Virtuoso/PL code invoked from a BPEL process.</para>
     </para>
   </refsect1>

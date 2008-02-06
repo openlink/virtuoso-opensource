@@ -39,7 +39,7 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_repl_sync_all"><title>Description</title>
-<para>This function is used to syncronize all subscriptions. It make a syncronization 
+<para>This function is used to synchronize all subscriptions. It make a synchronization 
 requests to the all publisher and will return immediately after that. The status of 
 subscriptions can be tested with repl_stat() function. </para>
 	</refsect1>
@@ -47,12 +47,12 @@ subscriptions can be tested with repl_stat() function. </para>
 
 	this function has no return value
 
-	No errors, always succeded
+	No errors, always succeeded
 	
 	-->
   <refsect1 id="examples_repl_sync_all"><title>Example</title>
-    <example id="ex_repl_sync_all_1"><title>Syncronizing all subscriptions</title>
-     <para>This will start sycronization of all subscriptions.</para>
+    <example id="ex_repl_sync_all_1"><title>Synchronizing all subscriptions</title>
+     <para>This will start synchronization of all subscriptions.</para>
       <screen>
 SQL> repl_sync_all (); 
       </screen>

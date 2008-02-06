@@ -61,7 +61,7 @@ basis by calling repl_sync for each.
   -->	
   <refsect1 id="examples_repl_disconnect"><title>Example</title>
     <example id="ex_repl_disconnect_1"><title>Disconnecting from publisher server 'demo-srv'.</title>
-     <para>This is to disconnect from the publisher server 'demo-srv', the all subscritopns to this server will be disconnected.</para>
+     <para>This is to disconnect from the publisher server 'demo-srv', the all subscriptions to this server will be disconnected.</para>
       <screen>
 SQL> repl_disconnect ('demo-srv');
       </screen>

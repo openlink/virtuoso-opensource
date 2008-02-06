@@ -175,7 +175,7 @@ Note: when a digest specified as a mode the login control will only call user_pa
   <title>Children</title>
   <refsect2>
     <title>template</title>
-    <para>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node represantation)</para>
+    <para>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node representation)</para>
   </refsect2>
   <refsect2>
     <title>login-form</title>

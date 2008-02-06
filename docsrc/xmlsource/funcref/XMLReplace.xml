@@ -108,11 +108,11 @@ If the <parameter>source</parameter> is an instance of XMLType then its inner XM
 </refsect2>
 <refsect2>
 <title>locationI</title>
-<para>An XML entity that points to the node to replace. For compatibility with other mplementations, it can be NULL, a pair of arguments is silently ignored in this case.</para>
+<para>An XML entity that points to the node to replace. For compatibility with other implementations, it can be NULL, a pair of arguments is silently ignored in this case.</para>
 </refsect2>
 <refsect2>
 <title>replacementI</title>
-<para>A replacement value for XML node plinted by <parameter>locationI</parameter>; it may be NULL or XML tree entity or a string or anything else but not an persistent XML entity.</para>
+<para>A replacement value for XML node pointed by <parameter>locationI</parameter>; it may be NULL or XML tree entity or a string or anything else but not an persistent XML entity.</para>
 </refsect2>
 </refsect1>
 <refsect1 id="ret_XMLReplace">

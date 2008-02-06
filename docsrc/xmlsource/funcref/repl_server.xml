@@ -75,7 +75,7 @@ No errors signalled
 -->
   <refsect1 id="examples_repl_server"><title>Example</title>
     <example id="ex_repl_server_1"><title>Adding a new publisher server</title>
-     <para>This is to define a new publisher server in the subscriber's Database. The DSN of publisher is named 'Virtuoso 1111', so it is started on the same mashine on port 1111.</para>
+     <para>This is to define a new publisher server in the subscriber's Database. The DSN of publisher is named 'Virtuoso 1111', so it is started on the same machine on port 1111.</para>
       <screen>
 SQL> DB.DBA.REPL_SERVER ('demo-pub', 'Virtuoso 1111', '127.0.0.1:1111');
       </screen>

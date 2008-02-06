@@ -45,7 +45,7 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="xpf_desc_except"><title>Description</title><para>The function returns an unordered sequence that consits of all distinct items from the first sequence that are missing in the second sequence.</para>
+  <refsect1 id="xpf_desc_except"><title>Description</title><para>The function returns an unordered sequence that consists of all distinct items from the first sequence that are missing in the second sequence.</para>
   <para>Duplicate values from <parameter>set1</parameter> are removed, the decision whether two values duplicate each other is made according rules used by
 <link linkend="xpf_distinct"><function>distinct()</function></link> function.</para>
   </refsect1>

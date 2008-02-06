@@ -87,7 +87,7 @@
   -->
   <refsect1 id="examples_repl_pub_remove"><title>Example</title>
     <example id="ex_repl_pub_remove_1"><title>Removal of an item from publication</title>
-     <para>This will remove the table Demo.demo.Products from publication. Futrhermore issuing of the replication messages for this item will be stopped and subscriber will remove this entry from local description.</para>
+     <para>This will remove the table Demo.demo.Products from publication. Furthermore issuing of the replication messages for this item will be stopped and subscriber will remove this entry from local description.</para>
       <screen>
 SQL> DB.DBA.REPL_PUB_REMOVE ('demo-publication', 'Demo.demo.Products', 2, 1);
       </screen>

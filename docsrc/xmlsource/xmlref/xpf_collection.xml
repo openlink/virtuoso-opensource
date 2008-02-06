@@ -48,11 +48,11 @@
 	  <para>
 		  This function takes one or more collection URI's and returns the parsed documents contained in these  collections as a sequence. </para>
     <para>
-      If no uri is  specified, the function returns the sequence of the nodes in the default collection in the dynamic context. The default collection is a home DAV collection. If user does not have default DAV collection, an  error is signaled.</para>
+      If no uri is  specified, the function returns the sequence of the nodes in the default collection in the dynamic context. The default collection is a home DAV collection. If user does not have default DAV collection, an  error is signalled.</para>
     <refsect2 id="xpf_collection_types"><title>Local DAV collections</title>
       <para> 
 	Local DAV collections can be accessed either by providing "http://local.virt/DAV/" or "http://localhost:PORT/" URI. The "http://local.virt/DAV/" can be used even if the local http server is not enabled.
- The "http://localhost:PORT" URI is less efficient and takes the data over HTTP, so "http://local.virt/DAV/" is preffered.
+ The "http://localhost:PORT" URI is less efficient and takes the data over HTTP, so "http://local.virt/DAV/" is prefered.
       </para>
       <note>
 	<title>Note:</title>
@@ -121,7 +121,7 @@ virt://DB.DBA.XML_EXAMPLE.XE_ID.XE_ENTITY
       Recursive collecting is not supported for WEB collections and table collections.
     </para>
     <para>
-      Rest of optional arguments (encoding, language, dtd_config) are passed to internal XML parser. They are equal to optinal argument of <link linkend="xtree_doc">xtree_doc()</link>.
+      Rest of optional arguments (encoding, language, dtd_config) are passed to internal XML parser. They are equal to optional argument of <link linkend="xtree_doc">xtree_doc()</link>.
     </para>
     <refsect2 id="xpf_collection_auth"><title>Authentication</title>
       <para>

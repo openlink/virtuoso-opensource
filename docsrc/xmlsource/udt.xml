@@ -524,7 +524,7 @@ create static method _ADD (in a1 integer, in a2 integer)
 <sect2 id="udttypeinstances"><title>Type Instances</title>
 
 <para>Every user defined type can have zero or more instances.  Every instance knows
-it's type.  The instances are SQL values.  They are copiable.  Instances for SQL
+it's type.  The instances are SQL values.  They are copyable.  Instances for SQL
 types contain placeholders for the type's members.  Instances for non-SQL
 types contain a reference to the real instance in type's hosted environment.
 (Java VM for JAVA and the CLR virtual machine for CLR).  So copying an
@@ -1161,18 +1161,18 @@ static method observe_stat_m ()
 	becomes <computeroutput>'java_lang_System'</computeroutput></para>
 
    <para>In order to correctly map a java superclass/subclass relationship between
-   class A and class B when importing, it is nessesary to include A, B and all
+   class A and class B when importing, it is necessary to include A, B and all
    the intermediate classes in the superclass/subclass chain in a single
    <function>import_jar()</function> call.</para>
 
   <para>To implement serialization/deserialization for Java object the Virtuoso
   needs the __virt_helper Java class.  This class contains utility functions
-  implementing serialization/deserealization.  This class must be in the CLASSPATH.</para>
+  implementing serialization/deserialization.  This class must be in the CLASSPATH.</para>
 
   <para>The Java VM hosted inside the Virtuoso binary is not started at startup,
   but when first needed.  It's startup is marked by a message in the Virtuoso
   log file.  An application can control the initialization of the Java VM by
-  explicitly initializing the Java VM (preferrably on server startup) by
+  explicitly initializing the Java VM (preferably on server startup) by
   calling the VSE: <link linkend="fn_java_vm_attach"><function>java_vm_attach()</function></link></para>
   </sect3>
 
@@ -1246,7 +1246,7 @@ static method observe_stat_m ()
   page.  See the sample ASPX pages in the Virtuoso distribution.</para>
 
   <para>If the ASPX project files reside in a WebDAV directory they are copied
-  into a temporary file system directory under a special temprary directory
+  into a temporary file system directory under a special temporary directory
   (configurable by the TempASPXDir INI parameter in [HTTPServer] section of
   <link linkend="VIRTINI">virtuoso ini</link> file) before executed.  In order
   to be execute correctly from WebDAV the ASPX files should have Execute WebDAV
@@ -1259,7 +1259,7 @@ static method observe_stat_m ()
 	<para><link linkend="runtimehosting">Runtime Hosting</link></para></tip>
   </sect3>
 
-  <sect3 id="udtaspxhostexprsdeps"><title>Expressing Hosted Language Supertype/Subtype Dependancies With Virtuoso/PL User-Defined-Types</title>
+  <sect3 id="udtaspxhostexprsdeps"><title>Expressing Hosted Language Supertype/Subtype Dependencies With Virtuoso/PL User-Defined-Types</title>
 
    <para>It is also possible to represent the tree or in-part of Java or the CLR's
    superclass/subclass hierarchy with Virtuoso user defined type mappings.</para>
@@ -1312,7 +1312,7 @@ create type uses_types language java external name 'uses_types'
 select uses_types::mtd (12).mtd_g1 (10);
 ]]></programlisting>
 
-   <para>Sometimes it is not desirable or nessesary to mirror the full
+   <para>Sometimes it is not desirable or necessary to mirror the full
    supertype/subtype hierarchy from Java to Virtuoso/PL.</para>
 
    <para>For the above example only <computeroutput>sql_g2</computeroutput>
@@ -1340,7 +1340,7 @@ select uses_types::mtd (12).mtd_g1 (10);
    are, then the <computeroutput>g3</computeroutput> instance will be wrapped
    up in an <computeroutput>sql_g2</computeroutput> instance when returned.</para>
 
-   <para>Simularly, if an instance of the <computeroutput>g2_sib</computeroutput>
+   <para>Similarly, if an instance of the <computeroutput>g2_sib</computeroutput>
    is to be returned in Virtuoso/PL and <computeroutput>sql_g1</computeroutput>
    to <computeroutput>sql_g3</computeroutput> are defined, Virtuoso will wrap the
    <computeroutput>g2_sib</computeroutput> Java instance into an
@@ -1411,8 +1411,8 @@ create procedure echoSOAPStructSch (
     in sst SO_S_30 __soap_type 'services.wsdl:SOAPStruct')
 returns SO_S_30 __soap_type 'services.wsdl:SOAPStruct'
 {
-  declare procesingResult nvarchar;
-  procesingResult := sst.process_data ();
+  declare processingResult nvarchar;
+  processingResult := sst.process_data ();
   return sst;
 };
 ]]></programlisting>
@@ -1462,8 +1462,8 @@ create type SO_S_30
    <programlisting><![CDATA[
 create procedure echoSOAPStructSch (in sst SO_S_30) returns SO_S_30
 {
-  declare procesingResult nvarchar;
-  procesingResult := sst.process_data ();
+  declare processingResult nvarchar;
+  processingResult := sst.process_data ();
   return sst;
 };
 ]]></programlisting>

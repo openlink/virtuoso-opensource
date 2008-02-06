@@ -437,7 +437,7 @@ the Virtuoso server running on the same computer on port 1111:</para>
   to the TCP socket.</para>
 
     <para>Unix Domain Socket connections only work if 
-	<computeroutput>localhost</computeroutput> is explicity specified or the 
+	<computeroutput>localhost</computeroutput> is explicitly specified or the 
 	host is unspecified which defaults to a localhost connection.  
 	UD socket connections will <emphasis>not</emphasis> work to any other address 
 	such as:</para>

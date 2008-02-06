@@ -138,7 +138,7 @@
 	  sharing information about your contacts and associates.</para></formalpara>
 	  </listitem>
     <listitem><formalpara><title>RSS file version</title>
-      <para>To maximise compatibilty with existing RSS aware technologies (e.g. 
+      <para>To maximize compatibility with existing RSS aware technologies (e.g. 
 	  RSS Headline Readers and RSS Content Aggregators) a choice of RSS 
 	  formats provided for your blog posts (the system default is RSS 2.0).</para></formalpara>
 	  </listitem>
@@ -181,7 +181,7 @@
 	  Syndication Formats), and each RSS feed may or may not be a blog feed.  
 	  In cases where the feed is deemed to be a blog (you indicate this by 
 	  checking the "Is This a Blog" checkbox), it will be saved to Virtuoso's 
-	  WebDAV respository and automatically added to the blog home's 
+	  WebDAV repository and automatically added to the blog home's 
 	  "Blogroll", otherwise they will be added to the "Channelroll" section of 
 	  the blog home page - which enumerates a collection RSS based content 
 	  sources.</para></formalpara>
@@ -207,7 +207,7 @@
           <graphic fileref="ui/blog005.jpg" width="567px" depth="391px"/></figure>
 
   <para>This is how the default generated blog home page will look.  This is 
-  completely customisable via XSL's and VSPX code that is copied into your 
+  completely customizable via XSL's and VSPX code that is copied into your 
   blog directory in DAV without effecting other blogs.  You postings for the day 
   will be displayed in the centre column, you can select other days using the 
   calendar in the top right of the page.  Along the left column you have 
@@ -287,7 +287,7 @@
 	  Syndication Formats), and each RSS feed may or may not be a blog feed.  
 	  In cases where the feed is deemed to be a blog (you indicate this by 
 	  checking the "Is This a Blog" checkbox), it will be saved to Virtuoso's 
-	  WebDAV respository and automatically added to the blog home's 
+	  WebDAV repository and automatically added to the blog home's 
 	  "Blogroll", otherwise they will be added to the "Channelroll" section of 
 	  the blog home page - which enumerates a collection RSS based content 
 	  sources.</para>
@@ -330,10 +330,10 @@
 		<figure float="1"><title>Weblog UI - Community Upstreaming</title>
           <graphic fileref="ui/blog010.jpg" width="756px" depth="257px"/></figure>
 
-  <para>Upstreaming keeps your blogs synchronised amongst your various blog 
+  <para>Upstreaming keeps your blogs synchronized amongst your various blog 
   sites, should you have more than one.  This allows you to maintain all of your
   blogging centrally, and then upstream portions to appropriate servers 
-  based on whether they are private, public or for your organisation or of 
+  based on whether they are private, public or for your organization or of 
   various topics.</para>
 
   <para>Upstreaming is how you enable Virtuoso to automatically route blog 
@@ -427,7 +427,7 @@
 	  sharing information about your contacts and associates.</para></formalpara>
 	  </listitem>
     <listitem><formalpara><title>RSS file version</title>
-      <para>To maximise compatibilty with existing RSS aware technologies (e.g. 
+      <para>To maximize compatibility with existing RSS aware technologies (e.g. 
 	  RSS Headline Readers and RSS Content Aggregators) a choice of RSS 
 	  formats provided for your blog posts (the system default is RSS 2.0).</para></formalpara>
 	  </listitem>

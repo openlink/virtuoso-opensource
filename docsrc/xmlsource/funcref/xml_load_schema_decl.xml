@@ -44,7 +44,7 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc"><title>Description</title>
-	Loads given file usiing base_uri. Try to parse file of XML Schema 
+	Loads given file using base_uri. Try to parse file of XML Schema 
 	definition and check it for correctness to XML Schema specification.
   </refsect1>
   <refsect1 id="params"><title>Parameters</title>

@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>BPEL.BPEL.get_partner_links</refname>
-    <refpurpose>Retrurns a list of partner links used in the BPEL script</refpurpose>
+    <refpurpose>Returns a list of partner links used in the BPEL script</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_get_partner_links">

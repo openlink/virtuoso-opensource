@@ -99,7 +99,7 @@ Typical example is search in the collection of documents where not all documents
 <link linkend="xpf_processXQuery"><function>processXQuery()</function></link>,
 <link linkend="xpf_processXSLT"><function>processXSLT()</function></link> and
 <link linkend="xpf_processXSQL"><function>processXSLT()</function></link>.
-This is similar to the efect of &quot;declare base-uri&quot; in XQuery.
+This is similar to the effect of &quot;declare base-uri&quot; in XQuery.
 </para>
 		</formalpara>
 <!--
@@ -732,7 +732,7 @@ identifier case conversion.
 	<sect2 id="xquery_sql">
 		<title>XQUERY and XML view</title>
 		<para>
-Simalarly to XPATH, XQUERY may also  be used as a query languge for XML views.
+Similarly to XPATH, XQUERY may also  be used as a query language for XML views.
 Virtuoso offers a special case of FLWR expression for this purpose. It is possible
 to use the  <link linkend="xpf_xmlview"><function>xmlview()</function></link> function
 in FOR clause expressions for querying XML views.
@@ -968,7 +968,7 @@ select xquery_eval(&apos;&lt;document&gt;
   xtree_doc(&apos;&lt;dummy_tag/&gt;&apos;));
 </programlisting>
 <para>
-This variant requires no memory for storing $prod_set and it never fetches redundand
+This variant requires no memory for storing $prod_set and it never fetches redundant
 fields from "Demo"."demo"."Products" table but it heavily needs index for "Demo"."demo"."Products"
 on "CategoryID" field. If such index is built the last variant is about 10 times faster than the
 query in example 1. Similarly, the query in example 2 may be optimized as follows:

@@ -113,7 +113,7 @@ furthermore the vc_is_valid member of the containing page class will be reset to
   </refsect2>
   <refsect2>
     <title>max</title>
-    <para>The upper limit for value and lenght tests
+    <para>The upper limit for value and length tests
 </para>
   </refsect2>
   <refsect2>

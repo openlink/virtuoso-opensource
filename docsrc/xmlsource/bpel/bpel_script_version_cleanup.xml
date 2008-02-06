@@ -49,7 +49,7 @@
       <para>this function has no return value</para></refsect1>
   <refsect1 id="desc_script_version_cleanup">
     <title>Description</title>
-    <para><function>BPEL.BPEL.script_version_cleanup</function> Deletes all data pertaining to obsolote versions of the script for which no instances exist. Leaves a 'being edited' version intact, as well as any 'current' version.</para>
+    <para><function>BPEL.BPEL.script_version_cleanup</function> Deletes all data pertaining to obsolete versions of the script for which no instances exist. Leaves a 'being edited' version intact, as well as any 'current' version.</para>
   </refsect1>
   <refsect1 id="examples_script_version_cleanup"><title>Examples</title>
     <example id="ex_script_version_cleanup"><title>Simple example</title>

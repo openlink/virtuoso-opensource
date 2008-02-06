@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>translate</refname>
-    <refpurpose>Prforms char-by-char translation of given string</refpurpose>
+    <refpurpose>Performs char-by-char translation of given string</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="xpf_syn_translate">
@@ -103,7 +103,7 @@ corresponding characters from &quot;collation string&quot;.
     </example>
     <example id="xpf_ex_translate"><title>Sorting with collation in XSL</title>
       <para>The following &lt;xsl:sort&gt; will sort records by its titles,
-	making no difference between spaces and punctiation marks.
+	making no difference between spaces and punctuation marks.
         In addition, spaces will be normalized after
 	the collation processing.</para>
       <screen>

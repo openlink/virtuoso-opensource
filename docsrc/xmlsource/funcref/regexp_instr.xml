@@ -65,7 +65,7 @@ thus providing greater versatility. </para>
     <refsect2><title>start_position</title>
       <para>The position to begin the search from.</para></refsect2>
     <refsect2><title>occurrence</title>
-      <para>Defaulting to 1, this parameter describes how many occurrances to look for.</para></refsect2>
+      <para>Defaulting to 1, this parameter describes how many occurrences to look for.</para></refsect2>
     <refsect2><title>return_option</title>
       <para></para></refsect2>
     <refsect2><title>match_parameter</title>

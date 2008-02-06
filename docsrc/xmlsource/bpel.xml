@@ -80,7 +80,7 @@
 	  <sect3 id="bpelact_common">
 	      <title>Common attributes and elements</title>
 	      <para>
-		  Every BPEL activity accepts the following standart attributes: 'name',
+		  Every BPEL activity accepts the following standard attributes: 'name',
 		  'joinCondition' and 'suppressJoinFailure'. The 'name' attribute is an optional
 		  unique within the script NCName (as defined in the XMLSchema) identifying
 		  the activity.  The 'joinCondition' is a boolean expression which determine how
@@ -504,7 +504,7 @@ is 	           specified, the contained scopes will be compensated and
 	  BPEL.BPEL.getVariableData allow  manipulating   BPEL
 	  variables. See <ulink url="#bpelapi">SQL API</ulink> for
 	  details. </para>
-	<para>All errors occuring  during the SQL execution are
+	<para>All errors occurring  during the SQL execution are
 	  translated into  BPEL errors.
 	</para>
       </sect4>
@@ -588,7 +588,7 @@ getVariableData
 	    the next section. </para>
 	</sect5>
 	<sect5 id="bpelact_exec_java_errors"><title>Errors</title>
-	  <para>Two types of errors can be signaled:</para>
+	  <para>Two types of errors can be signalled:</para>
 	  <itemizedlist>
 	    <listitem>
 	      1. upload time exceptions
@@ -602,14 +602,14 @@ getVariableData
 	  <itemizedlist>
 	    <listitem> 1. [BPELX] The "system" call is disabled, it is
 	      needed for use java code in BPEL4WS scripts. * This
-	      error is signaled when the "AllowOSCalls" is set to 0. So
+	      error is signalled when the "AllowOSCalls" is set to 0. So
 	      the engine can not call java compiler. It One must  set this parameter in ini file to 1 and restart the
 	      server to resolve this issue.</listitem>
 	    <listitem> 2. [BPELX] Compilation  of java code for NAME
 	      failed. Try to call "javac NAME.java" for details. * The
 	      compilation of generated class for the activity has
 	      failed. Try to call the suggested operation from command
-	      prompt whith the same PATH and CLASSPATH global
+	      prompt with the same PATH and CLASSPATH global
 	      variables to see the javac output. </listitem>
 	  </itemizedlist>
 	  <para>Runtime errors not handled by java method itself are
@@ -948,9 +948,9 @@ Object getVariableData (String var_name, String part, String query)
 	    of exception the variables are kept untouched. This also
 	    means that deadlocks can not occur during C# code
 	    execution (naturally, this statement is not true if the
-	    code contains direct invokation of SQL through the
+	    code contains direct invocation of SQL through the
 	    "in-process" .NET provider).</para>
-	  <para> If the some unhandled exception occured in C# code,
+	  <para> If the some unhandled exception occurred in C# code,
 	    it will be translated to a BPEL error. See details in
 	    the next section. </para>
 	</sect5>
@@ -1192,7 +1192,7 @@ The Virtuoso BPEL implementation supports WS Security and WS Reliable Messaging.
 	  </sect3>
 	  <sect3 id="bpelprotwsrm">
 	      <title>WS-Reliable Messaging (WSRM)</title>
-	      <para>The WSRM is applicable for those parters which can be invoked asynchronously.
+	      <para>The WSRM is applicable for those partners which can be invoked asynchronously.
 		  For both inbound or outbound (from the point of view of the process)
 		  WSRM  can be enabled. The options are
 		  settable in wsOptions/delivery/in or wsOptions/delivery/out
@@ -1365,7 +1365,7 @@ Partner links can be defined at run time using the  'EndpointReference' element
 	  When a process is compiled for the first time it becomes 'current'.
    The current version of a process is the one that was most recently compiled without errors.
    Only a current version of a process can make new instances in response to receiving messages.
-   For a single process name only one version can be current at any one time.  The other compiled versions of the process are always obsolote, meaning that new instances cannot be created but that old instances may proceed and complete.
+   For a single process name only one version can be current at any one time.  The other compiled versions of the process are always obsolete, meaning that new instances cannot be created but that old instances may proceed and complete.
 
       </para>
       <para>
@@ -1514,7 +1514,7 @@ Partner links can be defined at run time using the  'EndpointReference' element
 	      count of instance creations per instance creating partner link
 	  </listitem>
 	  <listitem>
-	      count/duration/data volume of invokes per invoked syncronous partner link
+	      count/duration/data volume of invokes per invoked synchronous partner link
 	  </listitem>
 	  <listitem>
 	      count/data volume per asynchronous partner link
@@ -1985,7 +1985,7 @@ create table BPEL.BPEL.op_stat
 	 bos_op varchar,
 	 bos_n_invokes int default 0,
 	 bos_n_receives int default 0,
-	 bos_cum_wait numeric default 0, -- miliseconds total time wait at the partner link/operation
+	 bos_cum_wait numeric default 0, -- milliseconds total time wait at the partner link/operation
 	 bos_data_in numeric default 0,
 	 bos_data_out numeric default 0,
 	 bos_n_errors int default 0,
@@ -2054,11 +2054,11 @@ create table BPEL.BPEL.hosted_classes
       </para>
           <itemizedlist>
 	      <listitem>bpel.xml file contains non-absolute paths and must be
-                  changed to absolute in order the uploading to be succesfull.
+                  changed to absolute in order the uploading to be successful.
                   This is in case user uses import_script api.
 	      </listitem>
               <listitem>wsdl file contains non-absolute paths at importing other wsdl file or xsd and must be
-                  changed to absolute in order the uploading to be succesfull.
+                  changed to absolute in order the uploading to be successful.
                   This is in case user uses upload process by choosing url/file for bpel and wsdl.
 	      </listitem>
               <listitem>process name already exists. This means there is already uploaded a process with the given name.</listitem>
@@ -2162,7 +2162,7 @@ partner">
     </sect3>
     <sect3 id="bpelerrors_deadlock"><title>Deadlock Errors</title>
       <para> During concurrent execution of several BPEL scripts
-	deadlock conditions can be signaled. That is why Virtuoso BPEL
+	deadlock conditions can be signalled. That is why Virtuoso BPEL
 	engine contains implicit deadlock detection and retry
 	capability. When the deadlock is detected, the engine tries to
 	wait some time, and retry the transaction. If the number of

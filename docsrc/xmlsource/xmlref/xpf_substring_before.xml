@@ -43,8 +43,8 @@
 <para>
 If the <parameter>source_strg</parameter> does not contain <parameter>sub_strg</parameter>,
 the function returns the empty string.
-Otherwise, it finds the first occurence of <parameter>sub_strg</parameter> and returns
-the pert of <parameter>source_strg</parameter> that precedes the occurence.
+Otherwise, it finds the first occurrence of <parameter>sub_strg</parameter> and returns
+the pert of <parameter>source_strg</parameter> that precedes the occurrence.
 If any argument is not a string, it is converted to string using rules for string() XPATH function.
 </para>
 </refsect1>

@@ -35,7 +35,7 @@
 
   <para>An XML template is an XML file containing a query, optional parameters
   with default values for the query, a place to specify an XSL stylesheet, and a
-  section for specifying updatagram based syncronization metrics.  They are
+  section for specifying updatagram based synchronization metrics. They are
   meant to be executed as an XML described short-cut to an query result, an XML
   document.  The XML document returned from calling an XML template can be
   served raw, or transformed using XSLT.</para>
@@ -76,7 +76,7 @@
     <figure id="xmltemplatediagram" float="1"><title>Conceptual View of XML Templates</title>
     <graphic fileref="xmltemplatediagram.jpg"/></figure>
 
-  <para>Queries and updategrams can be parameterised.  The parameters must be
+  <para>Queries and updategrams can be parameterized. The parameters must be
   defined in the header element, which consists of zero or more param elements.
   The default value of the parameter is enclosed within the param element whose
   values are typically replaced during the execution phases.  When XML templates

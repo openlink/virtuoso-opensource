@@ -182,7 +182,7 @@ Any defaulting should take place in the v:on-post handler which is before the in
   <title>Children</title>
   <refsect2>
     <title>template</title>
-    <para>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node represantation)</para>
+    <para>The container for any optional, repeatable or otherwise grouped controls or code. The type modifier is used to specify special kind of templates (i.e. repeatable content or tree node representation)</para>
   </refsect2>
   <refsect2>
     <title>key</title>

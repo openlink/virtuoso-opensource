@@ -40,9 +40,9 @@
   </refsynopsisdiv>
   <refsect1 id="desc_mt.getTrackbackPings">
     <title>Description</title>
-    <para>This function will retrieve the list of TrackBack pings posted to a paricular post entry.  This 
+    <para>This function will retrieve the list of TrackBack pings posted to a particular post entry.  This 
 could be used to programmatically retrieve the lost of pings for one entry, then iterate through each 
-of those poings doing the same, until one has built up a graph of the web of entries referencing 
+of those pings doing the same, until one has built up a graph of the web of entries referencing 
 one another on a particular topic.</para>
   </refsect1>
   <refsect1 id="params_mt.getTrackbackPings"><title>Parameters</title>

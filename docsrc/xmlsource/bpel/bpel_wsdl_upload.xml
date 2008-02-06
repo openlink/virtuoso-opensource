@@ -50,7 +50,7 @@
 	<para><type>varchar</type> the URL to the WSDL description file.</para>
     </refsect2>
     <refsect2><title>content</title>
-	<para><type>any default null</type>  the source of the WSDL file, this can be ommitted then the
+	<para><type>any default null</type>  the source of the WSDL file, this can be omitted then the
 	    function will try downloading the source from the URL specified</para>
     </refsect2>
     <refsect2><title>pl</title>

@@ -58,7 +58,7 @@
   <refsect1 id="desc_item_value"><title>Description</title>
     <para>Return the value of an item identified
     by <parameter>item_name</parameter> and <parameter>section</parameter>
-    paramaters from the specified INI file.</para>
+    parameters from the specified INI file.</para>
   </refsect1>
   <refsect1 id="examples_item_value"><title>Examples</title>
     <example id="ex_cfg_item_value"><title>Simple examples</title>

@@ -105,7 +105,7 @@ to your .NET code.</para>
 <para>Assemblies are stored in the database and  are therefore backed-up
 and restored with the data.  Once assemblies are registered using the
 <computeroutput>CREATE ASSEMBLY</computeroutput> syntax there will be no
-further dependancy on the library file (dll or exe) itself. </para>
+further dependency on the library file (dll or exe) itself. </para>
 
 <para>You can remove assemblies using the familiar SQL DROP statement: </para>
 

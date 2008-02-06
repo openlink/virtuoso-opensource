@@ -70,7 +70,7 @@
 <refsect1 id="desc_vspx_textarea">
   <title>Description</title>
   <para>
-    <function>vspx_textarea</function>Scriptable, databindable represantation of HTML text area.</para>
+    <function>vspx_textarea</function>Scriptable, databindable representation of HTML text area.</para>
 </refsect1>
 <refsect1 id="attrs_vspx_textarea">
   <title>Attributes</title>

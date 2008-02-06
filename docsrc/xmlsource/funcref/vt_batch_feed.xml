@@ -43,7 +43,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_vt_batch_feed"><title>Description</title>
     <para>This function allows you to add words to a free text update batch.
-It can be called in sequence to feed group of documents that share a common documnt ID
+It can be called in sequence to feed group of documents that share a common document ID
 and the result is similar to the single call whose <parameter>text_or_xml</parameter>
 parameter is concatenation of documents of that group. It is even allowed to mix
 XML and non-XML documents by feeding an XML document and some text documents:
