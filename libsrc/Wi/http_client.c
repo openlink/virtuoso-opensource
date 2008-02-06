@@ -1460,6 +1460,22 @@ http_cli_std_init (char * url)
   return (ctx);
 }
 
+void
+http_cli_get_canonic_host (http_cli_ctx * ctx, char * host, size_t len)
+{
+  char * sep = NULL;
+  int port = 0;
+  strcpy_size_ck (host, ctx->hcctx_host, len);
+  sep = strrchr (host, ':');
+  if (!sep)
+    return;
+  port = atoi (sep + 1);
+  if (80 == port && !ctx->hcctx_pkcs12_file)
+    *sep = 0;
+  else if (443 == port && ctx->hcctx_pkcs12_file)
+    *sep = 0;
+}
+
 int
 http_cli_std_hdrs (http_cli_ctx * ctx)
 {
@@ -1467,7 +1483,9 @@ http_cli_std_hdrs (http_cli_ctx * ctx)
 
   if (ctx->hcctx_http_maj >= 1 && ctx->hcctx_http_min >= 1)
     {
-      snprintf (hdr_tmp, sizeof (hdr_tmp), "Host: %s\r\n", ctx->hcctx_host);
+      char host[1024];
+      http_cli_get_canonic_host (ctx, host, sizeof (host));
+      snprintf (hdr_tmp, sizeof (hdr_tmp), "Host: %s\r\n", host);
       SES_PRINT (ctx->hcctx_prv_req_hdrs, hdr_tmp);
       if (ctx->hcctx_keep_alive)
 	{
