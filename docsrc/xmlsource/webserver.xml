@@ -336,7 +336,7 @@ the  file system or  WebDAV.</para></note>
   http://sales.mycompany.com/ and http://support.mycompany.com/ respectively.</para>
 
   <para>You can place Virtuoso on another server and start integrating your
-  existing sites under this installation.  You mayuse the Visual  Server Administration
+  existing sites under this installation.  You may use the Visual  Server Administration
   Interface or choose to use the following commands via the isql interface:</para>
 
     <programlisting><![CDATA[

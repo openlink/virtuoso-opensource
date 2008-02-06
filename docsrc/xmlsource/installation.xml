@@ -1827,7 +1827,7 @@ page is presented:
     <graphic fileref="mac/v50pe15.png" width="877" depth="752"/></figure>
 
   <para>Once logged into the conductor click on any of the &quot;Tabs&quot; along the top to Administer the various
-        features ofthe Virtuoso Universal Server installation.
+        features of the Virtuoso Universal Server installation.
   </para>
 
   <figure id="v50pe16" float="1"><title>Various features using Conductor Tabs</title>

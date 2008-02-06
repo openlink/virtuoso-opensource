@@ -866,7 +866,7 @@ will have repeatable read semantics, otherwise it guarantees no repeatable read 
                                 <title>Row-by-Row Autocommit</title>
                                 <para>This transaction mode causes all DML statements to commit after
 every modified row. This is useful for single user situations where one does large batch updates on tables.
-For example, an update of every row of a multigigabyte table would be likely to run out of rollback space
+For example, an update of every row of a multi gigabyte table would be likely to run out of rollback space
 before completing. In practice, one can end up in a thrashing situation where a large transaction is in
 progress, is interrupted by a checkpoint which must temporarily roll back the changed pages, then again
 resume the transaction etc., leading to serious server unavailability. Note that normally the ini parameter

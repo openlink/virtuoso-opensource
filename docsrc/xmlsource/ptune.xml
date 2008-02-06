@@ -844,7 +844,7 @@ select s_quantity from stock where s_i_id = 111 for update;
       <listitem>deadlocks - The number of times a deadlock was signalled
       when</listitem>
     </itemizedlist>
-    attempting to wait for a lock onthis index. 
+    attempting to wait for a lock on this index. 
 
     <itemizedlist mark="bullet" spacing="compact">
       <listitem>lock_esc - The number of times a set of row locks was

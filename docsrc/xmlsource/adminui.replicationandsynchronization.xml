@@ -114,7 +114,7 @@ you will then be presented with the tables within it.</para>
 <emphasis>Add to Publication</emphasis> to add the tables and continue.</para>
 
 <para>Once returned the publication screen, the published tables will be listed.  
-Updatable publication will need conflict resolvers incase of conflicting data 
+Updatable publication will need conflict resolvers in case of conflicting data
 arriving from a subscriber.  Click on the table name to manage the resolvers 
 list.</para>
 

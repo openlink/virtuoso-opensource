@@ -4044,8 +4044,8 @@ non-RDF but get RDF and this can go to the Quad Store)</para>
 	    <title>Using Virtuoso Crawler</title>
 	    <graphic fileref="ui/rdfinsert1.png"/>
           </figure>
-</listitem>
-</itemizedlist>
+        </listitem>
+      </itemizedlist>
       <para>Click the button "Import Queues".</para>
       <para>For "Robot target" with label "Tim Berners-Lee's electronic Business Card"
 click the start link.</para>

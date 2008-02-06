@@ -53,7 +53,7 @@
     A value of 3 enables row-by-row autocommit and enables logging.
     While log on and off setting alone is reset at the end of the transaction so that one does not end up with logging disabled by accident,
     the row-by-row autocommit mode causes the setting to be permanent inside the calling connection or web request.
-    That is, for a SQL client the setting stays ineffect until changed or disconnected and for a web request it stays in effect until the request is completed.
+    That is, for a SQL client the setting stays in effect until changed or disconnected and for a web request it stays in effect until the request is completed.
     </para>
     <para>
     The function do nothing if the <parameter>bits</parameter> is NULL.

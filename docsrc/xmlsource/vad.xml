@@ -398,7 +398,7 @@ that uninstallation will be successful.  </para>
     <listitem>Drop all SQL procedures and data.  This is performed in reverse order to the install.  </listitem>
     <listitem>Run any post-uninstall SQL code.</listitem>
     <listitem>Remove documentation files explicitly marked as removable.  Usually 
-	documentation would not be deleted as part of package uninstallation incase it is 
+	documentation would not be deleted as part of package uninstallation in case it is 
 	needed e.g. if a set of documents is distributed as VAD package) </listitem>
   </itemizedlist>
   </listitem>
