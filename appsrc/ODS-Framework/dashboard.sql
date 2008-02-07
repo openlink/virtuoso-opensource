@@ -307,14 +307,29 @@ create procedure WA_USER_DASHBOARD_SP (in uid int, in inst_type varchar)
   declare h, ret any;
 
   result_names (inst_name, title, ts, author, url, uname, email);
-  for select WAM_INST, WAI_INST, WAM_HOME_PAGE from WA_MEMBER, WA_INSTANCE where WAI_NAME = WAM_INST
-    and WAM_USER = uid and WAM_APP_TYPE = inst_type do
+  for select WAM_INST,
+             WAI_INST,
+             WAM_HOME_PAGE
+        from WA_MEMBER, WA_INSTANCE
+       where WAI_NAME = WAM_INST
+         and WAM_USER = uid
+         and WAM_APP_TYPE = inst_type do
       {
+      ret := '';
 	inst := WAI_INST;
+    	h := udt_implements_method (inst, fix_identifier_case ('wa_dashboard_user_items'));
+    	if (h)
+    	  {
+    	    ret := call (h) (inst);
+    	  }
+    	else
+    	  {
 	h := udt_implements_method (inst, fix_identifier_case ('wa_dashboard_last_item'));
 	if (h)
 	  {
 	    ret := call (h) (inst);
+    	      }
+    	  }
 	    if (length (ret))
 	      {
 		declare xp any;
@@ -335,7 +350,6 @@ create procedure WA_USER_DASHBOARD_SP (in uid int, in inst_type varchar)
 		  }
 	     }
 	  }
-      }
 };
 
 

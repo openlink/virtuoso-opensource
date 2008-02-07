@@ -46,14 +46,25 @@
   <v:variable name="_sreg_optional" type="varchar" default="null" persist="0" param-name="sreg_optional" />
   <v:variable name="_policy_url" type="varchar" default="null" persist="0" param-name="policy_url" />
   <v:variable name="_ver" type="varchar" default="1" persist="0" param-name="ver" />
+  <v:variable name="_uname" type="varchar" default="null" persist="0" />
   <v:on-init><![CDATA[
     declare cookie_vec, sid any;
+    declare pos, tmp any;
 
     set http_charset='UTF-8';
 
     if (self._identity is null)
       {
         self.vc_redirect ('login.vspx');
+      }
+    if (self._uname is null)
+      {
+        tmp := rtrim (self._identity, '/');
+        pos := strrchr (tmp, '/');
+        if (pos is not null)
+          self._uname := subseq (tmp, pos + 1);
+	else
+          self.vc_redirect ('login.vspx');
       }
 
     cookie_vec := vsp_ua_get_cookie_vec(self.vc_event.ve_lines);
@@ -113,7 +124,7 @@
               <div id="login_form">
                 <form> <!-- just to keep validator happy on this mockup -->
 		  <label for="login_frm_username">Member ID</label>
-		  <v:text name="username" value="" xhtml_id="login_frm_username" /><br />
+		  <v:text name="username" type="hidden" value="--self._uname" xhtml_id="login_frm_username" /><?V self._uname ?><br />
 		  <label for="password">Password</label>
 		  <v:text name="password" value="" xhtml_id="login_frm_password" type="password" />
 		  <div class="login_frm_button_row">
@@ -204,8 +215,15 @@
     }
 ]]></v:on-post>
   <v:after-data-bind><![CDATA[
+  declare pers_iri, user_iri any;
+  if (length (self.sid) and self._uname <> connection_get ('vspx_user'))
+    {
+      goto remove_auth;
+    }
+
   if (length (self.sid) and length (self.login_ip) and self.login_ip <> http_client_ip ())
     {
+      remove_auth:
       delete from VSPX_SESSION where VS_SID = self.sid and VS_REALM = self.realm;
       self.sid := null;
       self.vc_authenticated := 0;

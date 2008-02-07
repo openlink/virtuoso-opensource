@@ -2875,7 +2875,7 @@ if (i > 0)
     <meta name="dc.language" content="en" scheme="rfc1766" />
 
     <?vsp
-      if (length (self.oid_url) + length (self.oid_server))
+      if (length (self.oid_url) and length (self.oid_server))
         {
     ?>
     <link rel="openid.server" title="OpenID Server" href="<?V self.oid_server ?>" />

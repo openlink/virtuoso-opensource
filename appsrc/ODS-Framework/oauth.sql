@@ -313,7 +313,7 @@ create procedure authorize (
 }
 ;
 
-create procedure check_authentication (in params any)
+create procedure check_authentication (in inparams any, in lines any)
 {
   declare oauth_consumer_key varchar;
   declare oauth_token varchar;
@@ -323,10 +323,31 @@ create procedure check_authentication (in params any)
   declare oauth_nonce varchar;
   declare oauth_version varchar;
 
-  declare ret, tok, sec varchar;
-  declare sid, app_sec, url, meth, params, cookie, req_sec varchar;
-  declare lines any;
+  declare ret, tok, sec, ahead, params varchar;
+  declare sid, app_sec, url, meth, cookie, req_sec varchar;
   declare app_id int;
+
+  ahead := http_request_header (lines, 'Authorization', null, null);
+  params := null;
+  if (ahead is not null)
+    {
+      declare tmp, newpars any;
+      tmp := split_and_decode (ahead, 0, '\0\0,');
+      newpars := vector ();
+      if (length (tmp) and trim(tmp[0]) like 'OAuth %')
+	{
+	  for (declare i, l int, i := 1, l := length (tmp); i < l; i := i + 1)
+	    {
+	      declare par any;
+	      par := split_and_decode (trim(tmp[0]), 0, '\0\0=');
+	      newpars := vector_concat (newpars, par);
+	    }
+	  if (length (newpars))
+	    params := newpars;
+	}
+    }
+  if (params is null)
+    params := inparams;
 
   oauth_consumer_key := get_keyword ('oauth_consumer_key', params);
   oauth_token := get_keyword ('oauth_token', params);

@@ -39,7 +39,7 @@
 		  <col/>
 	      </colgroup>
 	      <tr class="listing_header_row">
-		  <th>Project</th>
+		  <th>Made</th>
 		  <th>Description</th>
 		  <th>Action</th>
 	      </tr>
@@ -103,9 +103,9 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_prj)
 		  <label for="prj_url">URL</label>
 		  <v:text name="prj_url" value="" xhtml_id="prj_url" xhtml_size="50"/>
 		  <br />
-		  <label for="prj_name">Project*</label>
+		  <label for="prj_name">Made*</label>
 		  <v:text name="prj_name" value="" xhtml_id="prj_name" xhtml_size="50" error-glyph="*">
-		      <!--v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Project name can not be empty"/-->
+		      <!--v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Made name can not be empty"/-->
 		  </v:text>
 		  <br/>
 		  <label for="prj_desc">Description*</label>

@@ -2774,6 +2774,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?oa a foaf:OnlineAccount .
 	    ?oa foaf:accountServiceHomepage ?ashp .
 	    ?oa foaf:accountName ?an .
+	    ?person foaf:made ?made .
+	    ?made foaf:maker ?person .
 	   }
 	  WHERE
                 {
@@ -2796,6 +2798,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional {
 		         ?oa foaf:accountServiceHomepage ?ashp ; foaf:accountName ?an
 	      	       } .
+	      optional { ?person foaf:made ?made  } .
 		    }
 	}
 	  }', graph, graph, u_name);

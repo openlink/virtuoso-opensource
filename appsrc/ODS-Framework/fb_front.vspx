@@ -486,6 +486,22 @@ skip_login:;
             self._dhtml:=vector_concat(self._dhtml,vector('ods_user',_html));
           
 
+            declare validate_by_fields any;
+          
+            _html:='';
+            _html:=sprintf('var validateObj={};');
+            validate_by_fields := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = _user_id), vector());
+            declare i integer;
+            if(validate_by_fields is not null and length(validate_by_fields)>0)
+            {
+               for (i := 0; i < length (validate_by_fields); i := i + 2)
+                   _html:=sprintf('%s\nvalidateObj[''%s'']=%s ;',_html,validate_by_fields[i],coalesce(validate_by_fields[i+1],0));
+            
+            }
+            
+            self._dhtml:=vector_concat(self._dhtml,vector('validation_obj',_html));
+          
+
          } 
         ]]>
         </v:before-data-bind>
@@ -603,6 +619,7 @@ function ajaxUpdate(abID,odsCID,fbCID,dockObj,mappingStr)
   	       'fb_session=<?V(case when self._fb is not null then self._fb.api_client.session_key else '' end)?>&'+
   	       'fb_cid='+fbCID+'&'+
   	       'ods_cid='+odsCID;
+//dd(data);
  if(mappingStr.length>0)
       data=data+'&usemapping=1&'+
   	            'mapping='+mappingStr;
@@ -646,7 +663,7 @@ function ajaxUpdate(abID,odsCID,fbCID,dockObj,mappingStr)
 }
 
 
-function ajaxUpdateAdvanced(abID,odsCID,fbCID,dockObj,mappingStr,totalCount,pbUnit)
+function ajaxUpdateAdvanced(abID,odsCID,fbCID,dockObj,mappingStr,validationStr,totalCount,pbUnit)
 {
   var data='sid=<?Vself.sid?>&'+
   	       'realm=<?Vself.realm?>&'+
@@ -656,7 +673,10 @@ function ajaxUpdateAdvanced(abID,odsCID,fbCID,dockObj,mappingStr,totalCount,pbUn
   	       'fb_cid='+fbCID+'&'+
   	       'ods_cid='+odsCID+'&'+
   	       'usemapping=1&'+
-  	       'mapping='+mappingStr;
+  	       'mapping='+mappingStr+'&'+
+  	       'usevalidation=1&'+
+  	       'validation='+validationStr;
+  	       ;
   
   var options = {
   	auth:OAT.AJAX.AUTH_BASIC,
@@ -942,6 +962,42 @@ function getCustomMapping(mappingDockId)
 
 }
 
+function getCustomValidation(validationDockId)
+{
+  var resStr='';
+  var validationDock=$(validationDockId);
+  if($(validationDock.id+'_body')!=false)
+     validationDock=$(validationDock.id+'_body');
+  
+  var inputCtrls=validationDock.getElementsByTagName('input');
+  for (var i=0;i<inputCtrls.length;i++)
+  {
+      if(inputCtrls[i].type=='checkbox')
+      {
+        if(resStr.length==0)
+           resStr=inputCtrls[i].value+','+(inputCtrls[i].checked ? 1 : 0);
+        else  
+           resStr=resStr+';'+inputCtrls[i].value+','+(inputCtrls[i].checked ? 1 : 0);
+      }
+    
+  }
+ return resStr;
+
+}
+
+function inverseSelected(parentDiv)
+{
+  if(typeof(parentDiv)=='undefined') return;
+  
+  var inputCtrls=parentDiv.getElementsByTagName('input');
+  
+  for(var i=0; i<inputCtrls.length;i++)
+  {
+    if(inputCtrls[i].type=='checkbox')
+       inputCtrls[i].checked= inputCtrls[i].checked ? false : true;
+  } 
+}
+
 ]]>
 </script>
 
@@ -972,7 +1028,9 @@ function fbInit()
 
  derefFBP(<?Vself._fb._user?>);
  
+ 
  fbfStr='<?vsp http(get_keyword('fbf_jsarrstr',self._dhtml,'')); ?>';
+
  var fbfArr=fbfStr.split(',');
  
  
@@ -995,6 +1053,8 @@ function fbInit()
 var totalSyncCount=<?Vself.syncdata_arr[3]?>;
 var _syncContactsArr= <?vsp http(get_keyword('syncdata_jsarrstr',self._dhtml,'')); ?> ;
 var win_mapping=false
+
+<?vsp http(get_keyword('validation_obj',self._dhtml,'')); ?>
 
 function fbInit()
 {
@@ -1025,6 +1085,15 @@ function fbInit()
  var win_syncstatus=dockAdd('Synchronize status',OAT.Dom.getViewport()[0]*useableViewRatio-460);
  win_syncstatus.mappingDockId=win_mapping.id;
  createSyncstatusDock(win_syncstatus);
+
+ win_validation=dockAdd('Set default validation',460);
+ createValidationDock(win_validation);
+
+ win_syncstatus.validationId=win_validation.id;
+ OAT.Dom.unlink(win_validation.close.firstChild);
+ win_validation.state=0;
+ win_validation.actualizeState();
+
 
 }
 
@@ -1103,6 +1172,47 @@ function createMappingDock(dockWinObj)
   OAT.Dom.append([_parent_div,_table,_close]);
 
 }
+function createValidationDock(dockWinObj)
+{
+  var _parent_div=$(dockWinObj.id+'_body')
+  _parent_div.style.textAlign='center';
+  _parent_div.style.width='100%';
+
+ 
+ var _table=$('validationFieldsTbl');
+
+var inputCtrls=_table.getElementsByTagName('input');
+for (var i=0;i<inputCtrls.length;i++)
+{
+    if(inputCtrls[i].type=='checkbox')
+    {
+        if(typeof(validateObj[inputCtrls[i].value])!='undefined' && validateObj[inputCtrls[i].value]==1)
+           inputCtrls[i].checked=true;
+        else
+           inputCtrls[i].checked=false;
+    }
+  
+}
+
+  var toggleSelect=OAT.Dom.create('div');
+  var toggleSelectCB=OAT.Dom.create('input');
+  toggleSelectCB.type='checkbox';
+  OAT.Dom.attach(toggleSelectCB,"click",function(){inverseSelected($('validationFieldsTbl'));});
+  
+  OAT.Dom.append([toggleSelect,toggleSelectCB,OAT.Dom.text(' Toggle select')]);
+
+
+  var _close=OAT.Dom.create("input",{width:'60px'});
+  _close.type='button';
+  _close.value="Set";
+  OAT.Dom.attach(_close,"click",function(){win_validation.state=0;win_validation.actualizeState();});
+
+
+  OAT.Dom.append([_parent_div,toggleSelect,_table,_close]);
+  OAT.Dom.show(_table);
+
+
+}
 
 function UpdateAll(abID,dockObj)
 {
@@ -1114,8 +1224,12 @@ function UpdateAll(abID,dockObj)
 
   var mappingStr='';  
   mappingStr=getCustomMapping(dockObj.mappingDockId);
+  var validationStr='';
+  validationStr=getCustomValidation(dockObj.validationId);
+
+
   for(var i=0;i<totalCount;i++)
-      ajaxUpdateAdvanced(abID,_syncContactsArr[i].ods_cid,_syncContactsArr[i].fb_id,dockObj,mappingStr,totalCount,_pbUnit);
+      ajaxUpdateAdvanced(abID,_syncContactsArr[i].ods_cid,_syncContactsArr[i].fb_id,dockObj,mappingStr,validationStr,totalCount,_pbUnit);
 
 }
 
@@ -1429,6 +1543,151 @@ function createImportObjDock(_syncData)
  <div style="padding:10px;">The current ODS Dataspace already has an ODS user, which is connected with the Facebook user <?Vself._fb_u_name?>.<br/> Please <a href="<?Vself._fb.get_login_url(self._fb.current_url(), self._fb.in_frame(),1)?>">login </a> as different Facebook user, or register a new one in order to connect it with the ODS user <?Vself._ods_u_name?>.</div>
  
 </v:template>
+
+<table cellspacing="0" style="display:none;" id="validationFieldsTbl">
+  <tbody>
+  <tr><td width="1%"><input type="checkbox" value="P_NAME"/></td>
+    <td>       Name    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_TITLE"/></td>
+    <td>      Title    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_FIRST_NAME"/></td>
+    <td>      First Name    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_MIDDLE_NAME"/></td>
+    <td>      Middle Name    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_LAST_NAME"/></td>
+    <td>      Last Name    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_FULL_NAME"/></td>
+    <td>      Full Name    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_GENDER"/></td>
+    <td>      Gender    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_BIRTHDAY"/></td>
+    <td>      Birthday    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_MAIL"/></td>
+    <td>      Contact - Mail    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_WEB"/></td>
+    <td>      Contact - Web address    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_ICQ"/></td>
+    <td>      Contact - Icq    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_SKYPE"/></td>
+    <td>      Contact - Skype ID    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_AIM"/></td>
+    <td>      Contact - AIM Name    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_YAHOO"/></td>
+    <td>      Contact - Yahoo! ID    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_MSN"/></td>
+    <td>      Contact - MSN Messenger    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_COUNTRY"/></td>
+    <td>      Home - Country    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_CITY"/></td>
+    <td>      Home - City    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_STATE"/></td>
+    <td>      Home - State/Province    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_CODE"/></td>
+    <td>      Home - Zip/Postal Code    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_ADDRESS1"/></td>
+    <td>      Home - Address1    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_ADDRESS2"/></td>
+    <td>      Home - Address2    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_TZONE"/></td>
+    <td>      Home - Time Zone    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_LAT"/></td>
+    <td>      Home - Latitude    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_LNG"/></td>
+    <td>      Home - Longitude    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_PHONE"/></td>
+    <td>      Home - Phone    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_MOBILE"/></td>
+    <td>      Home - Mobile    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_FAX"/></td>
+    <td>      Home - Fax    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_MAIL"/></td>
+    <td>      Home - Mail    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_H_WEB"/></td>
+    <td>      Home - Web address    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_COUNTRY"/></td>
+    <td>      Business - Country    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_CITY"/></td>
+    <td>      Business - City    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_STATE"/></td>
+    <td>      Business - State/Province    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_CODE"/></td>
+    <td>      Business - Zip/Postal Code    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_ADDRESS1"/></td>
+    <td>      Business - Address1    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_ADDRESS2"/></td>
+    <td>      Business - Address2    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_TZONE"/></td>
+    <td>      Business - Time Zone    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_LAT"/></td>
+    <td>      Business - Latitude    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_LNG"/></td>
+    <td>      Business - Longitude    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_PHONE"/></td>
+    <td>      Business - Phone    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_MOBILE"/></td>
+    <td>      Business - Mobile    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_FAX"/></td>
+    <td>      Business - Fax    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_INDUSTRY"/></td>
+    <td>      Business - Industry    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_ORGANIZATION"/></td>
+    <td>      Business - Organization    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_DEPARTMENT"/></td>
+    <td>      Business - Department    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_JOB"/></td>
+    <td>      Business - Job Title    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_MAIL"/></td>
+    <td>      Business - Mail    </td>
+  </tr>
+  <tr><td width="1%"><input type="checkbox" value="P_B_WEB"/></td>
+    <td>      Business - Web address    </td>
+  </tr>
+</tbody></table>
 
       </vm:body>
     </vm:pagewrapper>

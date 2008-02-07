@@ -1237,6 +1237,165 @@ _get_ods_fb_settings (out fb_settings any)
 }
 ;
 
+create procedure valid_abid_by_fbid (
+                 in logged_odsuser_id integer,
+                 inout fbf_data any,
+                 in ab_domain_id integer,
+                 in validation_arr any :=null
+                 )
+{
+    declare valid_id_arr any;
+    valid_id_arr:=null;
+    
+    declare exit handler for not found{valid_id_arr:=null;};
+    declare qry,state, msg, maxrows, metas, rset any;
+    
+    rset := null;
+    maxrows := 0;
+    state := '00000';
+    msg := '';
+
+    declare validate_by_fields any;
+    
+    if(validation_arr is null)
+       validate_by_fields := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = logged_odsuser_id), vector());
+    else
+      validate_by_fields:=validation_arr;
+    
+    declare full_name,first_name,last_name varchar;
+    full_name  := trim(xpath_eval('string(name)',fbf_data));
+    first_name := trim(xpath_eval('string(first_name)',fbf_data));
+    last_name  := trim(xpath_eval('string(last_name)',fbf_data));
+
+    declare validation_sql varchar;
+    declare k integer;
+
+
+    validation_sql:='';
+    if (validate_by_fields is not null and length (validate_by_fields))
+    {
+      for (k := 0; k < length (validate_by_fields); k := k + 2)
+      {
+        declare _key varchar;
+        declare _val,_tmpval any;
+        _key:=validate_by_fields[k];
+        _val:=validate_by_fields[k+1];
+        _tmpval:='';
+
+        if(_val is not null and (_val=1 or _val='1'))
+        {
+          if(_key='P_FULL_NAME' and length(full_name)>0 )
+             validation_sql:=validation_sql||sprintf(' AND P_FULL_NAME=''%s'' ',full_name);
+          if(_key='P_FIRST_NAME' and length(first_name)>0 )
+             validation_sql:=validation_sql||sprintf(' AND P_FIRST_NAME=''%s'' ',first_name);
+          if(_key='P_MIDDLE_NAME' and length(last_name)>0 )
+             validation_sql:=validation_sql||sprintf(' AND (P_LAST_NAME=''%s'' OR P_MIDDLE_NAME=''%s'') ',last_name,last_name);
+          if(_key='P_LAST_NAME'  and length(last_name)>0 )
+             validation_sql:=validation_sql||sprintf(' AND P_LAST_NAME=''%s'' ',last_name);
+          
+          _tmpval:=trim(xpath_eval('string(sex)',fbf_data));
+          if(_key='P_GENDER' and _tmpval<>'')
+             validation_sql:=validation_sql||sprintf(' AND P_GENDER=''%s'' ',_tmpval);
+          
+          _tmpval:=trim(xpath_eval('string(hometown_location/city)',fbf_data));
+          if(_key='P_H_CITY'  and _tmpval<>'')
+             validation_sql:=validation_sql||sprintf(' AND P_H_CITY=''%s'' ',_tmpval);
+          
+          _tmpval:=trim(xpath_eval('string(hometown_location/state)',fbf_data));
+          if(_key='P_H_STATE'  and _tmpval<>'')
+             validation_sql:=validation_sql||sprintf(' AND P_H_STATE=''%s'' ',_tmpval);
+          
+          _tmpval:=trim(xpath_eval('string(hometown_location/country)',fbf_data));
+          if(_key='P_H_COUNTRY'  and _tmpval<>'')
+             validation_sql:=validation_sql||sprintf(' AND P_H_COUNTRY=''%s'' ',_tmpval);
+          _tmpval:=trim(xpath_eval('string(hometown_location/zip)',fbf_data));
+          if(_key='P_H_CODE'  and _tmpval<>'')
+             validation_sql:=validation_sql||sprintf(' AND P_H_CODE=''%s'' ',_tmpval);
+          
+          _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/city)',fbf_data));
+          if(_key='P_B_CITY'  and _tmpval<>'')
+             validation_sql:=validation_sql||sprintf(' AND P_B_CITY=''%s'' ',_tmpval);
+          
+          _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/state)',fbf_data));
+          if(_key='P_B_STATE'  and _tmpval<>'')
+             validation_sql:=validation_sql||sprintf(' AND P_B_STATE=''%s'' ',_tmpval);
+          
+          _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/location/country)',fbf_data));
+          if(_key='P_B_COUNTRY'  and _tmpval<>'')
+             validation_sql:=validation_sql||sprintf(' AND P_B_COUNTRY=''%s'' ',_tmpval);
+          
+          _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/company_name)',fbf_data));
+          if(_key='P_B_ORGANIZATION'  and _tmpval<>'')
+             validation_sql:=validation_sql||sprintf(' AND P_B_ORGANIZATION=''%s'' ',_tmpval);
+          
+          _tmpval:=trim(xpath_eval('string(work_history/work_info[1]/position)',fbf_data));
+          if(_key='P_B_JOB'  and _tmpval<>'')
+             validation_sql:=validation_sql||sprintf(' AND P_B_JOB=''%s'' ',_tmpval);
+
+          _tmpval:=cast(trim(xpath_eval('string(birthday)',fbf_data)) as varchar);
+          if(_key='P_BIRTHDAY' and _tmpval<>'')
+          {
+             declare _date_str varchar;
+             declare _arr any;
+
+             _arr:=split_and_decode(_tmpval,0,'\0\0,');
+             if(_arr is not null and length(_arr)>0)
+             {
+                _arr[0]:=split_and_decode(_arr[0],0,'\0\0 ');
+             
+             if(length(_arr)=1)
+                _date_str:=sprintf('stringdate(''1970-%d-%s'')',_get_monhtbyname(trim(_arr[0][0])),trim(_arr[0][1]));
+             else
+                _date_str:=sprintf('stringdate(''%s-%d-%s'')',trim(_arr[1]),_get_monhtbyname(trim(_arr[0][0])),trim(_arr[0][1]));
+
+
+             if(_date_str is not null and length(_date_str)>0)
+               validation_sql:=validation_sql||sprintf(' AND P_BIRTHDAY=%s ',_date_str);
+             }
+          }
+             
+        }
+
+      }
+  
+   }
+
+    if(validation_sql is null or validation_sql='')
+    {   
+       qry:=sprintf('select P_ID from AB.WA.PERSONS '||
+                    'where P_DOMAIN_ID=%d '||
+                    '   and (   (P_LAST_NAME=''%s'' and (P_MIDDLE_NAME=''%s'' or P_FIRST_NAME=''%s'')) '||
+                    '       or (P_FULL_NAME=''%s'') '||
+                    '       or (concat(trim(P_FIRST_NAME),'' '',trim(P_LAST_NAME))=''%s'') '||
+                    '       or (concat(trim(P_MIDDLE_NAME),'' '',trim(P_LAST_NAME))=''%s'') )',
+                    ab_domain_id,last_name,first_name,first_name,full_name,full_name,full_name);
+    }else
+    {
+       qry:=sprintf('select P_ID from AB.WA.PERSONS '||
+                    'where P_DOMAIN_ID=%d %s',
+                    ab_domain_id,validation_sql);
+    
+    }
+    
+
+
+    exec (qry, state, msg, vector(), maxrows, metas, rset);
+    if (state = '00000' and length(rset)>0)
+    {
+       declare idx integer;
+       for(idx:=0;idx<length(rset);idx:=idx+1)
+          valid_id_arr:=vector_concat(valid_id_arr,vector(rset[idx][0]));
+    }
+
+--    if(valid_id_arr is null)
+--          dbg_printf('%s',qry);
+
+
+    return valid_id_arr;
+    
+}
+;
+
 create procedure sync_fbf_odsab (
                  in fb_obj DB.DBA.Facebook,
                  in ods_uid integer,
@@ -1299,7 +1458,7 @@ declare _res any;
      i:=i+1;
     }
 
-    _res:=fb_obj.api_client.users_getInfo(ff_ids,'name,first_name,last_name,sex,birthday,current_location,work_history');
+    _res:=fb_obj.api_client.users_getInfo(ff_ids,'name,first_name,last_name,sex,birthday,current_location,work_history,hometown_location,timezone');
   }else
     _res_stat[0]:=-2;
 
@@ -1320,33 +1479,15 @@ declare _res any;
         
         if(ab_domain_id>0)
         {
+          
+          declare valid_abid_arr any;
+          valid_abid_arr:=valid_abid_by_fbid(ods_uid,_res[i],ab_domain_id);
+          
           declare _p_id integer;
-          _p_id:=-1;
-          
-          declare exit handler for not found{_p_id:=-1;};
-          declare qry,state, msg, maxrows, metas, rset any;
-          
-          rset := null;
-          maxrows := 0;
-          state := '00000';
-          msg := '';
-
---          qry:=sprintf('select P_ID from AB.WA.PERSONS where (P_FULL_NAME=''%s'' or P_FIRST_NAME=''%s'' or P_LAST_NAME=''%s'') and P_DOMAIN_ID=%d',full_name,first_name,last_name,ab_domain_id);
-            qry:=sprintf('select P_ID from AB.WA.PERSONS '||
-                         'where P_DOMAIN_ID=%d '||
-                         '   and (   (P_LAST_NAME=''%s'' and (P_MIDDLE_NAME=''%s'' or P_FIRST_NAME=''%s'')) '||
-                         '       or (P_FULL_NAME=''%s'') '||
-                         '       or (concat(trim(P_FIRST_NAME),'' '',trim(P_LAST_NAME))=''%s'') '||
-                         '       or (concat(trim(P_MIDDLE_NAME),'' '',trim(P_LAST_NAME))=''%s'') )',
-                         ab_domain_id,last_name,first_name,first_name,full_name,full_name,full_name);
-          
-          exec (qry, state, msg, vector(), maxrows, metas, rset);
-          if (state = '00000' and length(rset)>0)
-          {
-	            _p_id:=rset[0][0];
-	        }else 
               _p_id:=-1;
           
+          if(valid_abid_arr is not null)
+          _p_id:=valid_abid_arr[0];
 
           if (_ischeck=1)
           {
@@ -1407,7 +1548,7 @@ declare _res any;
              _val:=vector_concat(_val,vector(_date));
           }
           
-          _tmpval:=trim(xpath_eval('string(current_location/city)',_res[i]));
+          _tmpval:=trim(xpath_eval('string(hometown_location/city)',_res[i]));
           if(_tmpval<>'')
           {
              _col:=vector_concat(_col,vector('P_H_CITY'));
@@ -1415,21 +1556,21 @@ declare _res any;
           }
 
 
-          _tmpval:=trim(xpath_eval('string(current_location/state)',_res[i]));
+          _tmpval:=trim(xpath_eval('string(hometown_location/state)',_res[i]));
           if(_tmpval<>'')
           {
              _col:=vector_concat(_col,vector('P_H_STATE'));
              _val:=vector_concat(_val,vector(_tmpval));
           }
 
-          _tmpval:=trim(xpath_eval('string(current_location/country)',_res[i]));
+          _tmpval:=trim(xpath_eval('string(hometown_location/country)',_res[i]));
           if(_tmpval<>'')
           {
              _col:=vector_concat(_col,vector('P_H_COUNTRY'));
              _val:=vector_concat(_val,vector(_tmpval));
           }
 
-          _tmpval:=trim(xpath_eval('string(current_location/zip)',_res[i]));
+          _tmpval:=trim(xpath_eval('string(hometown_location/zip)',_res[i]));
           if(_tmpval<>'')
           {
              _col:=vector_concat(_col,vector('P_H_CODE'));
@@ -1480,6 +1621,7 @@ declare _res any;
                declare _np_id integer;
                _np_id:=-1;
                _np_id:=AB.WA.contact_update2 (_p_id,ab_domain_id,'P_NAME',full_name);
+
                if(_np_id>-1)
                {
                   AB.WA.contact_update3 (_np_id,ab_domain_id,_col,_val,'');
@@ -1574,7 +1716,8 @@ declare _res any;
      i:=i+1;
     }
 
-    _res:=fb_obj.api_client.users_getInfo(ff_ids,'name,first_name,last_name,sex,birthday,current_location,work_history');
+    _res:=fb_obj.api_client.users_getInfo(ff_ids,'name,first_name,last_name,sex,birthday,current_location,work_history,hometown_location,timezone');
+                                                 
   }else
     return 'REST API error';
 
@@ -1599,6 +1742,36 @@ declare _res any;
         if(ab_domain_id>0)
         {
           
+          declare addressbook_cid_arr any;
+          declare addressbook_cid_sqlstr varchar;
+          addressbook_cid_sqlstr:='';
+          
+          addressbook_cid_arr:=valid_abid_by_fbid(ods_uid,_res[i],ab_domain_id);
+
+--          dbg_obj_print(addressbook_cid_arr);
+          if(addressbook_cid_arr is not null and length(addressbook_cid_arr)>0)
+          { if(length(addressbook_cid_arr)=1)
+                addressbook_cid_sqlstr:=sprintf(' = %d',addressbook_cid_arr[0]);
+            else
+            {
+              declare m integer;
+              declare _tmp_str varchar;
+              _tmp_str:='';
+              
+              for(m:=0; m<length(addressbook_cid_arr); m:=m+1)
+              {
+                  if(m=0)
+                     _tmp_str:=sprintf('%d',addressbook_cid_arr[m]);
+                  else
+                     _tmp_str:=sprintf('%s,%d',_tmp_str,addressbook_cid_arr[m]);
+                  
+              }
+                addressbook_cid_sqlstr:=sprintf(' in  (%s)',_tmp_str);
+            
+            }
+          
+          }
+          
           declare qry,state, msg, maxrows, metas, rset any;
           
           rset := null;
@@ -1607,14 +1780,20 @@ declare _res any;
           msg := '';
 
 --          qry:=sprintf('select P_ID,P_NAME,AB.WA.contact_url (P_DOMAIN_ID,P_ID) from AB.WA.PERSONS where (P_FULL_NAME=''%s'' or P_FIRST_NAME=''%s'' or P_LAST_NAME=''%s'') and P_DOMAIN_ID=%d',full_name,first_name,last_name,ab_domain_id);
+          if(addressbook_cid_sqlstr='')
+          {
+
+          qry:=sprintf('select top 1 -1,''New contact'',P_DOMAIN_ID,-1 from AB.WA.PERSONS '||
+                       'where P_DOMAIN_ID=%d ',
+                       ab_domain_id);
+          }else
           qry:=sprintf('select P_ID,P_NAME,P_DOMAIN_ID,P_ID from AB.WA.PERSONS '||
                        'where P_DOMAIN_ID=%d '||
-                       '   and (   (P_LAST_NAME=''%s'' and (P_MIDDLE_NAME=''%s'' or P_FIRST_NAME=''%s'')) '||
-                       '       or (P_FULL_NAME=''%s'') '||
-                       '       or (concat(trim(P_FIRST_NAME),'' '',trim(P_LAST_NAME))=''%s'') '||
-                       '       or (concat(trim(P_MIDDLE_NAME),'' '',trim(P_LAST_NAME))=''%s'') )',
-                       ab_domain_id,last_name,first_name,first_name,full_name,full_name,full_name);
+                       ' and P_ID%s',
+                       ab_domain_id,addressbook_cid_sqlstr);
 
+
+--          dbg_printf(qry);
 
           exec (qry, state, msg, vector(), maxrows, metas, rset);
           if (state = '00000' and length(rset)>0)

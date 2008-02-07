@@ -25,8 +25,8 @@
 --  
 --  
    declare sid,realm,fb_session,_err_msg,_xml,helpertact varchar;
-   declare curr_user_id,addressbook_instid,addressbook_domain_id,addressbook_cid,fb_userid,facebook_cid,_err_code,usemapping integer;
-   declare fb_dba_options,mappingarr,mapping_keywords any;
+   declare curr_user_id,addressbook_instid,addressbook_domain_id,addressbook_cid,fb_userid,facebook_cid,_err_code,usemapping,usevalidation integer;
+   declare fb_dba_options,mappingarr,validationarr,mapping_keywords,validation_keywords any;
    
    declare _fb DB.DBA.Facebook;
 
@@ -39,10 +39,13 @@
    
    
    mappingarr := coalesce(split_and_decode(get_keyword('mapping',params,''),0,'\0\0;'),vector());
+   validationarr := coalesce(split_and_decode(get_keyword('validation',params,''),0,'\0\0;'),vector());
+
    addressbook_instid := cast(get_keyword('instid',params,-1) as integer);
    addressbook_cid := cast(get_keyword('ods_cid',params,-1) as integer);
    facebook_cid := cast(get_keyword('fb_cid',params,-1) as integer);
    usemapping :=  cast(get_keyword('usemapping',params,null) as integer);
+   usevalidation :=  cast(get_keyword('usevalidation',params,null) as integer);
    
    fb_session := get_keyword('fb_session',params,'');
    fb_userid := cast(get_keyword('fb_userid',params,-1) as integer);
@@ -78,6 +81,29 @@
       
    }
    
+   if(usevalidation and length(validationarr)>0)
+   {
+      validation_keywords:=vector();
+      
+      declare i,l integer;
+      
+      i := 0;
+      l := length (validationarr);
+      while (i < l)
+      {
+        declare __key, __val varchar;
+        declare _tmparr varchar;
+        _tmparr:=split_and_decode(validationarr[i],0,'\0\0,');
+        __key := _tmparr[0];
+        __val := _tmparr[1];
+        validation_keywords:=vector_concat(validation_keywords,vector(__key,__val));
+        i := i + 1;
+      }
+
+      
+   }
+
+
    
    if(_get_ods_fb_settings(fb_dba_options)) --fb_dba_options is array of type (facebook_api_key,facebook_api_secret)
    {
@@ -121,7 +147,8 @@
 
       if(helpertact='deref') goto _deref;
       
-      if(facebook_cid<1 or addressbook_cid<1)
+--      if(facebook_cid<1 or addressbook_cid<1)
+      if(facebook_cid<1)
       {
         _err_code :=1;
         _err_msg  :='Incorrect syncronize contact pair.';
@@ -138,6 +165,35 @@
  
       if(addressbook_domain_id>0)
       {
+        declare addressbook_cid_arr any;
+        addressbook_cid_arr:=vector(addressbook_cid);
+        
+        if(usevalidation and length(validationarr)>0)
+        {
+          declare _res any;
+          _res:=_fb.api_client.users_getInfo(facebook_cid,'name,first_name,last_name,sex,birthday,current_location,work_history,hometown_location,timezone');
+          _res:=xpath_eval('/users_getInfo_response/user',_res,0);
+          if(_res is not null and length(_res)>0)
+          {
+--             dbg_obj_print(validationarr);
+             
+             addressbook_cid_arr:=valid_abid_by_fbid(curr_user_id,_res[0],addressbook_domain_id,validation_keywords);
+             if(addressbook_cid_arr is null)
+                addressbook_cid:=-1;
+             if(addressbook_cid_arr is not null and length(addressbook_cid_arr)>1) -- when one or multiple addressbook contacts match one facebook contact
+             {
+                addressbook_cid:=addressbook_cid_arr[0];
+             };
+             
+          }else
+          {
+               _err_code :=1;
+               _err_msg  :='No such facebook contact.';
+               goto _end;
+          }
+        
+        }
+  
   
 
         declare _res any;
@@ -147,6 +203,12 @@
          _res:=xpath_eval('/users_getInfo_response/user',_res);
          if(_res is not null)
          {
+            declare full_name,first_name,last_name varchar;
+            full_name  := trim(xpath_eval('string(name)',_res));
+            first_name := trim(xpath_eval('string(first_name)',_res));
+            last_name  := trim(xpath_eval('string(last_name)',_res));
+
+
             declare _col, _val any;
             declare _tmpval,_tmpcustomcol varchar;
 
@@ -495,8 +557,37 @@
             
             
             if(length(_col)>0)
-               AB.WA.contact_update3 (addressbook_cid,addressbook_domain_id,_col,_val,'');
+            {
+
+              if(addressbook_cid=-1 and (addressbook_cid_arr is null or addressbook_cid_arr[0]=-1))
+              {
        
+                declare insert_addressbook_cid integer;
+                insert_addressbook_cid:=-1;
+                insert_addressbook_cid:=AB.WA.contact_update2 (-1,addressbook_domain_id,'P_NAME',coalesce(full_name,first_name||' '||last_name));
+              
+                if(insert_addressbook_cid>-1)
+                {
+                   addressbook_cid:=insert_addressbook_cid;
+                   addressbook_cid_arr:=vector(addressbook_cid);
+                }
+
+              }
+                
+              if(length(addressbook_cid_arr)=1)
+                  AB.WA.contact_update3 (addressbook_cid,addressbook_domain_id,_col,_val,''); -- keep for compatability
+              else
+              {
+
+                declare ab_cid_idx integer;
+                ab_cid_idx:=0;
+                
+                for(ab_cid_idx:=0;ab_cid_idx<length(addressbook_cid_arr);ab_cid_idx:=ab_cid_idx+1)
+                    AB.WA.contact_update3 (addressbook_cid_arr[ab_cid_idx],addressbook_domain_id,_col,_val,'');
+              }                
+            
+            
+            }
        
        
          }else
