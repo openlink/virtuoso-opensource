@@ -167,7 +167,9 @@ create procedure PHOTO.WA.date_2_humans(in d datetime) {
 ;
 
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA.redirect(in url varchar){
+create procedure PHOTO.WA.redirect(
+  in url varchar)
+{
     http_rewrite ();
     http_request_status ('HTTP/1.1 302 Found');
     http_header(sprintf('Location: %s\r\n', url));
@@ -177,7 +179,8 @@ create procedure PHOTO.WA.redirect(in url varchar){
 ;
 
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA.http_404(){
+create procedure PHOTO.WA.http_404 ()
+{
     http_rewrite ();
     http_request_status ('HTTP/1.1 404 Not Found');
     http('<h3>404 - Not found</h3>');

@@ -39,14 +39,16 @@ dataSet = function(){
 }
 
 //------------------------------------------------------------------------------
-dataSet.prototype.loadList = function(dav_lines){
+dataSet.prototype.loadList = function(dav_lines)
+{
   this.list = dav_lines;
 }
 
 //------------------------------------------------------------------------------
-dataSet.prototype.addAlbumToList = function(dav_lines){
-
-  if((typeof dav_lines == 'object') && dav_lines.id > 0){
+dataSet.prototype.addAlbumToList = function(dav_lines)
+{
+  if ((typeof dav_lines == 'object') && dav_lines.id > 0)
+  {
     this.list[this.list.length] = dav_lines;
     return true;
   }else{
@@ -55,9 +57,10 @@ dataSet.prototype.addAlbumToList = function(dav_lines){
 }
 
 //------------------------------------------------------------------------------
-dataSet.prototype.editAlbumToList = function(dav_lines){
-
-  if((typeof dav_lines == 'object') && dav_lines.id > 0){
+dataSet.prototype.editAlbumToList = function(dav_lines)
+{
+  if ((typeof dav_lines == 'object') && dav_lines.id > 0)
+  {
     this.list[this.current.index] = dav_lines;
     return true;
   }else{
@@ -66,24 +69,24 @@ dataSet.prototype.editAlbumToList = function(dav_lines){
 }
 
 //------------------------------------------------------------------------------
-dataSet.prototype.addImageToList = function(obj){
-
+dataSet.prototype.addImageToList = function(obj)
+{
   var res = this.checkNameExist(obj.name);
-  if(res != -1){
+  if (res != -1)
+  {
     // Replace old object
     this.list[res] = obj;
   }else{
     // Add new object
     this.list[this.list.length] = obj;
   }
-
 }
 
-
 //------------------------------------------------------------------------------
-dataSet.prototype.editImageInList = function(obj){
-
-  if((typeof obj == 'object')){
+dataSet.prototype.editImageInList = function(obj)
+{
+  if ((typeof obj == 'object'))
+  {
     this.list[this.current.index] = obj;
   }else{
     alert('nema');
@@ -92,11 +95,14 @@ dataSet.prototype.editImageInList = function(obj){
 }
 
 //------------------------------------------------------------------------------
-dataSet.prototype.removeImageFromList = function(ids){
-
-  for(var i=0;i<this.list.length;i++){
-    for(var x=0;x<ids.length;x++){
-      if(this.list[i].id == ids[x]){
+dataSet.prototype.removeImageFromList = function(ids)
+{
+  for(var i=0;i<this.list.length;i++)
+  {
+    for(var x=0;x<ids.length;x++)
+    {
+      if(this.list[i].id == ids[x])
+      {
         this.list.splice(i,1);
       }
     }
@@ -105,11 +111,14 @@ dataSet.prototype.removeImageFromList = function(ids){
 }
 
 //------------------------------------------------------------------------------
-dataSet.prototype.removeAlbumFromList = function(ids){
-
-  for(var i=0;i<this.list.length;i++){
-    for(var x=0;x<ids.length;x++){
-      if(this.list[i].id == ids[x]){
+dataSet.prototype.removeAlbumFromList = function(ids)
+{
+  for(var i=0;i<this.list.length;i++)
+  {
+    for(var x=0;x<ids.length;x++)
+    {
+      if(this.list[i].id == ids[x])
+      {
         this.list.splice(i,1);
         return true;
       }
@@ -119,17 +128,21 @@ dataSet.prototype.removeAlbumFromList = function(ids){
 }
 
 //------------------------------------------------------------------------------
-dataSet.prototype.checkNameExist = function (name){
-
-  for(var i=0;i < this.list.length;i++){
-    if(this.list[i].name == name) {
+dataSet.prototype.checkNameExist = function (name)
+{
+  for(var i=0;i < this.list.length;i++)
+  {
+    if(this.list[i].name == name)
+    {
       return i;
     }
   }
   return -1;
 }
+
 //------------------------------------------------------------------------------
-dataSet.prototype.setCurrent = function(current_id){
+dataSet.prototype.setCurrent = function(current_id)
+{
   this.current = this.list[current_id];
   this.current.index = current_id;
   return;

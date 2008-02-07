@@ -282,7 +282,8 @@ div#images_ctrl{
   width:96px;
   height:15px;
   overflow:hidden;
-  position:relative;
+  bottom: 0px;
+  position:absolute;
 }
 
 div#imageCaptionContainer
@@ -464,8 +465,8 @@ div#mssage{
   padding:5px;
 }
 
-.block .ramka{
-  width:580px;
+.block .ramka
+{
 }
 
 .block td{
@@ -473,7 +474,7 @@ div#mssage{
 }
 
 .block td.left{
-  width:350px;
+  width:300px;
 }
 
 .block h2{
@@ -503,7 +504,6 @@ div#mssage{
 
 #comments_list span
 {
-  color:#0000EE;
   font-size:10px;
 }
 
@@ -514,9 +514,10 @@ div#mssage{
 }
 
 
-#new_tag{
-  width:200px;
-  height:34px;
+#new_tag
+{
+  width:480px;
+  height:45px;
 }
 
 #tags_list span span
@@ -525,12 +526,10 @@ div#mssage{
   font-size:10px;
 }
 
-#new_comment{
+#comment{
   width:200px;
-  height:100px;
+  height:135px;
 }
-
-
 
 #image_info{
   float:left;

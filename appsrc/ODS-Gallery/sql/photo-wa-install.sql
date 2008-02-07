@@ -96,7 +96,8 @@ create procedure PHOTO.WA.photo_install()
   PHOTO.WA._exec_no_error('grant execute on photo_comment TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.add_comment TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.remove_comment TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_comment TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.update_comment TO SOAPGallery');
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_comment TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_comments TO SOAPGallery');
 
   -- dav_api.sql

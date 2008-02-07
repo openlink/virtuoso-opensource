@@ -469,11 +469,13 @@ create procedure PHOTO.WA.dav_upload_file(
   image_type  := get_keyword_ucase ('Content-Type', image_attrs);
   home_path   := get_keyword_ucase ('home_path', params);
 
-  if(replace_image <> ''){
+  if(replace_image <> '')
+  {
     image_name := replace_image;
   }
 
-  if(visibility = '1'){
+  if(visibility = '1')
+  {
     rights := '110100100R';
   }else{
     rights := '110000000R';
@@ -510,8 +512,7 @@ create procedure PHOTO.WA.dav_delete(
   in sid varchar,
   in p_gallery_id integer,
   in mode varchar,
-  in ids integer array
-)
+  in ids integer array)
 returns  integer array
 {
   declare path varchar;
@@ -539,24 +540,22 @@ returns  integer array
       path := DAV_SEARCH_PATH(ids[i],'C');
     };
 
-    if(cast(path as varchar) <> ''){
-
+    if(cast(path as varchar) <> '')
+    {
         if(subseq(path,length(path)-1,length(path))<>'/')
       {   
         declare res integer;
         res:=PHOTO.WA.delete_image_thumbnail(path,current_user.auth_uid,current_user.auth_pwd);
-        
       }   
-
       result := DAV_DELETE( path,
                             null,
                             current_user.auth_uid,
                             current_user.auth_pwd);
 
-      if(result > 0){
+      if (result > 0)
+      {
         res_ids := vector_concat(res_ids,vector(ids[i]));
       }
-
     }
     i := i + 1;
   }
@@ -612,15 +611,16 @@ create procedure PHOTO.WA.get_image(
     from WS.WS.SYS_DAV_RES
     where RES_ID = _res_id;
 
-
-  if(substring(_res_perms,7,1) = '1'){
+  if (substring(_res_perms,7,1) = '1')
+  {
     visibility := 1; -- public
   }else{
     visibility := 0; -- private
   }
 
   description := DAV_PROP_GET(_path,'description',current_user.auth_uid,current_user.auth_pwd);
-  if(__tag(description) <> 189){
+  if (__tag(description) <> 189)
+  {
     description := cast(description  as varchar);
   }else{
     description := '';
@@ -640,37 +640,36 @@ create procedure PHOTO.WA.edit_image(
   in old_name varchar,
   in new_name varchar,
   in description varchar,
-  in visibility integer
-  )
+  in visibility integer)
   returns SOAP_album
   {
-
   declare current_user photo_user;
   declare auth_uid,rights varchar;
   declare result SOAP_album;
   declare res integer;
 
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
-
-  if(auth_uid = ''){
+  if(auth_uid = '')
+  {
     return 0;
   }
 
-  if(visibility = 1){
+  if (visibility = 1)
+  {
     rights := '110100100R';
   }else{
     rights := '110000000R';
   }
   declare col_id interger;
 
-  if(old_name <> new_name){
+  if(old_name <> new_name)
+  {
     col_id := DAV_MOVE(concat(path,old_name),concat(path,new_name),1,current_user.auth_uid,current_user.auth_pwd);
   }
   col_id := DAV_SEARCH_ID(concat(path,new_name),'R');
 
-
-  if(col_id > 0){
-
+  if (col_id > 0)
+  {
     DAV_PROP_REMOVE(DAV_SEARCH_PATH (col_id,'R'),'description',current_user.auth_uid,current_user.auth_pwd);
     DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'R'),'description',description,current_user.auth_uid,current_user.auth_pwd);
     DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'R'),':virtpermissions',rights,current_user.auth_uid,current_user.auth_pwd);
@@ -691,8 +690,7 @@ create procedure PHOTO.WA.dav_share(
   in sid varchar,
   in p_gallery_id integer,
   in mode varchar,
-  in ids integer array
-)
+  in ids integer array)
 returns  integer array
 {
   declare path varchar;
@@ -704,33 +702,31 @@ returns  integer array
   declare res_ids any;
 
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
-
-  if(auth_uid = ''){
+  if(auth_uid = '')
+  {
     return vector();
   }
-  i := 0;
   res_ids := vector();
-
-  while(i < length(ids)){
-
-    if(mode = 'r'){
+  for (i := 0; i < length(ids); i := i + 1)
+  {
+    if(mode = 'r')
+    {
       path := DAV_SEARCH_PATH(ids[i],'R');
     }else{
       path := DAV_SEARCH_PATH(ids[i],'C');
-    };
-
-    if(cast(path as varchar) <> ''){
+    }
+    if (cast(path as varchar) <> '')
+    {
       result := DAV_DELETE( path,
                             null,
                             current_user.auth_uid,
                             current_user.auth_pwd);
-
-      if(result > 0){
+      if (result > 0)
+      {
         res_ids := vector_concat(res_ids,vector(ids[i]));
         -- TODO: Da trie i thumbcheta
       }
     }
-    i := i + 1;
   }
   return res_ids;
 }
@@ -743,8 +739,7 @@ create procedure PHOTO.WA.tag_images(
   in p_gallery_id integer,
   in home_url varchar,
   in ids integer array,
-  in tags varchar
-)
+  in tags varchar)
 returns  varchar
 {
   declare path varchar;
@@ -758,18 +753,17 @@ returns  varchar
 
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
 
-  if(auth_uid = ''){
+  if(auth_uid = '')
+  {
     return vector();
   }
   current_instance := new photo_instance(home_url);
 
-  i := 0;
-
-  while(i < length(ids)){
+  for (i := 0; i < length(ids); i := i + 1)
+  {
     path := DAV_SEARCH_PATH(ids[i],'R');
     PHOTO.WA.tag_join(current_user,path,tags);
     PHOTO.WA.sioc_tag(current_user,current_instance,path,tags);
-    i := i + 1;
   }
   return tags;
 }
@@ -781,8 +775,7 @@ create procedure PHOTO.WA.tag_image(
   in p_gallery_id integer,
   in home_url varchar,
   in id integer,
-  in tags varchar
-)
+  in tag varchar)
 returns  varchar array
 {
   declare allTags any;
@@ -792,15 +785,20 @@ returns  varchar array
   declare current_instance photo_instance;
 
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
-
-  if(auth_uid = ''){
+  if(auth_uid = '')
+  {
     return vector();
   }
   current_instance := new photo_instance(home_url);
 
+  if (not PHOTO.WA.validate_tags (tag))
+  {
+    tag := '';
+  }
   path := DAV_SEARCH_PATH(id,'R');
-  allTags := PHOTO.WA.tag_join(current_user,path,tags);
-  PHOTO.WA.sioc_tag(current_user,current_instance,path,tags);
+  allTags := PHOTO.WA.tag_join (current_user, path, tag);
+  PHOTO.WA.sioc_tag (current_user, current_instance, path, tag);
+
   return allTags;
 }
 ;
@@ -810,8 +808,7 @@ create procedure PHOTO.WA.remove_tag_image(
   in sid varchar,
   in p_gallery_id integer,
   in id integer,
-  in tag varchar
-)
+  in tag varchar)
 returns  varchar array
 {
   declare tags any;
@@ -820,8 +817,8 @@ returns  varchar array
   declare current_user photo_user;
 
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
-
-  if(auth_uid = ''){
+  if(auth_uid = '')
+  {
     return vector();
   }
 
@@ -836,12 +833,13 @@ returns  varchar array
 create procedure PHOTO.WA.tag_join(
   in current_user photo_user,
   in path varchar,
-  in new_tags varchar
-)
+  in new_tags varchar)
 returns varchar array
 {
   declare current_tags,resultTags,result,allTags any;
-  if(cast(path as varchar) <> ''){
+
+  if (cast (path as varchar) <> '')
+  {
     current_tags := DAV_PROP_GET(path,':virtprivatetags',current_user.auth_uid,current_user.auth_pwd);
     resultTags := concat(current_tags, ',', new_tags);
     resultTags := PHOTO.WA.tags2vector(resultTags);
@@ -860,12 +858,13 @@ returns varchar array
 create procedure PHOTO.WA.tag_remove(
   in current_user photo_user,
   in path varchar,
-  in tag varchar
-)
+  in tag varchar)
 returns  varchar array
 {
   declare current_tags,resultTags,result any;
-  if(cast(path as varchar) <> ''){
+
+  if (cast (path as varchar) <> '')
+  {
     current_tags := DAV_PROP_GET(path,':virtprivatetags',current_user.auth_uid,current_user.auth_pwd);
     resultTags := PHOTO.WA.tag_delete(current_tags,tag);
     DAV_PROP_REMOVE(path,':virtprivatetags',current_user.auth_uid,current_user.auth_pwd);
@@ -882,20 +881,18 @@ create procedure PHOTO.WA.sioc_tag(
   in current_user photo_user,
   in current_instance photo_instance,
   in path varchar,
-  in tags varchar
-){
+  in tags varchar)
+{
   declare iri,creator_iri,tiri,creator_iri any;
   declare _ind integer;
 
   iri := sioc.DBA.dav_res_iri (path);
   creator_iri := sioc.DBA.user_iri (current_user.user_id);
   tags := PHOTO.WA.tags2vector(tags);
-
-  _ind := 0;
-  while(_ind < length(tags)){
+  for (_ind := 0; _ind < length(tags); _ind := _ind + 1)
+  {
     tiri := sprintf ('http://%s%s?tag=%s', sioc.DBA.get_cname(), current_instance.home_url, tags[_ind]);
     DB.DBA.RDF_QUAD_URI (sioc.DBA.get_graph(), iri, sioc.DBA.sioc_iri ('topic'), tiri);
-    _ind := _ind + 1;
   }
 }
 ;
@@ -904,8 +901,8 @@ create procedure PHOTO.WA.sioc_tag(
 create procedure PHOTO.WA.sioc_content(
   in current_user photo_user,
   in path varchar,
-  in content varchar
-){
+  in content varchar)
+{
   declare iri,creator_iri,tiri,creator_iri any;
   declare _ind integer;
 
@@ -943,21 +940,5 @@ create procedure PHOTO.WA.user_get_role(
 
 not_found:;
      return 0;
-
 }
 ;
-
---development use grants... copy it to photo-wa-install.sql
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.dav_browse TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.create_new_album TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_album TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.thumbnail_album TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_image TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.dav_delete TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_image TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.tag_images TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.tag_image TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.remove_tag_image TO SOAPGallery');
-  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_album_settings TO SOAPGallery');
-  
---  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.user_get_role TO SOAPGallery');

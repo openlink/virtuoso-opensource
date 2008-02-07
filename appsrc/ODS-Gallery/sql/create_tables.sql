@@ -43,16 +43,18 @@ CREATE TABLE PHOTO.WA.SYS_INFO(
   WAI_NAME      VARCHAR NOT NULL,
   HOME_URL      VARCHAR NOT NULL,
   HOME_PATH     VARCHAR NOT NULL,
-  SHOW_MAP      INTEGER default 1,
-  SHOW_TIMELINE INTEGER default 1,
+  SHOW_MAP      INTEGER default 0,
+  SHOW_TIMELINE INTEGER default 0,
   PRIMARY KEY(GALLERY_ID))'
 )
 ;
 
-wa_add_col('PHOTO.WA.SYS_INFO', 'SHOW_MAP', 'INTEGER default 1')
+wa_add_col('PHOTO.WA.SYS_INFO', 'SHOW_MAP', 'INTEGER default 0')
 ;
-wa_add_col('PHOTO.WA.SYS_INFO', 'SHOW_TIMELINE', 'INTEGER default 1')
+wa_add_col('PHOTO.WA.SYS_INFO', 'SHOW_TIMELINE', 'INTEGER default 0')
 ;
+alter table PHOTO.WA.SYS_INFO modify column SHOW_MAP integer default 0;
+alter table PHOTO.WA.SYS_INFO modify column SHOW_TIMELINE integer default 0;
 
 PHOTO.WA._exec_no_error(
 '

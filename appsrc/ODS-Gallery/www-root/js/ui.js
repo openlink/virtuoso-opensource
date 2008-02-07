@@ -37,45 +37,43 @@ ui = function(){
   return;
 }
 
-
-
 //------------------------------------------------------------------------------
-ui.prototype.addPanel = function (name){
-
+ui.prototype.addPanel = function (name)
+{
   eval('this.'+name+ ' = new panel("'+name+'")');
-
 }
 
 //------------------------------------------------------------------------------
-ui.prototype.addScreen = function (name){
-
+ui.prototype.addScreen = function (name)
+{
   eval('this.screens.'+name+ ' = new panel("'+name+'")');
   this.screens.list[this.screens.list.length] = name;
-
 }
 
 //------------------------------------------------------------------------------
-ui.prototype.addForm = function (name){
-
+ui.prototype.addForm = function (name)
+{
   eval('this.forms.'+name+ ' = new panel("form_'+name+'")');
-
 }
 
 //------------------------------------------------------------------------------
-ui.prototype.setScreen = function(screen_name,id){
-
-  for(var i=0;i<this.screens.list.length;i++){
+ui.prototype.setScreen = function(screen_name,id)
+{
+  for(var i=0;i<this.screens.list.length;i++)
+  {
     var tobj = eval('this.screens.'+this.screens.list[i]);
     this.screens.active = screen_name;
-    if(this.screens.list[i] == screen_name){
+    if(this.screens.list[i] == screen_name)
+    {
       tobj.style.display = "";
     }else{
       tobj.style.display = "none";
     }
-  };
+  }
 
   this.url_param = Array(screen_name,id);
-  if(id){
+  if (id)
+  {
     var params = '/' + id;
   }else{
     var params = '';
@@ -84,18 +82,22 @@ ui.prototype.setScreen = function(screen_name,id){
 }
 
 //------------------------------------------------------------------------------
-ui.prototype.disable = function(){
+ui.prototype.disable = function()
+{
   this.style.MozOpacity = ".2";
 }
 
 //------------------------------------------------------------------------------
-ui.prototype.enable = function(){
+ui.prototype.enable = function()
+{
   this.style.MozOpacity = "";
 }
 
 //------------------------------------------------------------------------------
-function panel(name){
-  if(document.getElementById(name)){
+function panel(name)
+{
+  if (document.getElementById(name))
+  {
     var obj = document.getElementById(name);
   }else{
     alert('Error: nonexisting object ->'+name);
@@ -134,22 +136,22 @@ function panel(name){
     obj.tabs = function(on_id){
       var nodeId = returnIndexFirstChild(this.childNodes);
       var nodeList = returnListOfNodes(this.childNodes[nodeId].childNodes);
-      for(var i=0;i<nodeList.length;i++){
-        if(on_id == i){
+    for(var i=0;i<nodeList.length;i++)
+    {
+      if (on_id == i)
+      {
           nodeList[i].className = "on";
         }else if(nodeList[i].className == "on"){
           nodeList[i].className = "";
         }
-      };
     }
-
+  }
   return obj;
 }
 
-
 //------------------------------------------------------------------------------
-function dispach(e){
-
+function dispach(e)
+{
   if (!e) var e = window.event
   var el = (e.target) ? e.target : e.srcElement
 
@@ -163,10 +165,12 @@ function dispach(e){
   var t_id = el.id;
   var t_at = el.attributes;
 
-  while(i < 10){
+  while(i < 10)
+  {
     id = t_el.id;
 
-    if(id != ''){
+    if(id != '')
+    {
       var action = 'gallery.' + id + '_click'
 
       if(eval(action)){ //&& isEnabled(id)
@@ -175,11 +179,13 @@ function dispach(e){
 
         obj_type = el.getAttribute('type')
 
-        if(obj_type == 'v:button'){
+        if(obj_type == 'v:button')
+        {
           setActive(el);
         }
 
-        for(var i=0;i<t_at.length;i++){
+        for(var i=0;i<t_at.length;i++)
+        {
           if(t_at[i].nodeName != 'class' && t_at[i].value != 'null' && t_at[i].value != '' && t_at[i].value != 'false'){
             el.setAttribute(t_at[i].nodeName,t_at[i].value);
           }
@@ -189,18 +195,18 @@ function dispach(e){
         ok = 1;
         break;
       }else{
-        if(change_el){
+        if(change_el)
+        {
           t_id = t_el.id;
           t_at = t_el.attributes;
-
           change_el = 0;
         }
         dbg_list = ' -> ' + action + dbg_list;
       }
-
     }
 
-    if(t_el.parentNode.nodeName != 'BODY'){
+    if(t_el.parentNode.nodeName != 'BODY')
+    {
       t_el = t_el.parentNode;
     }else{
       break;
@@ -214,19 +220,22 @@ function dispach(e){
 
 
 //------------------------------------------------------------------------------
-function disable(id){
+function disable(id)
+{
   document.getElementById(id).style.MozOpacity = ".2";
   document.getElementById(id).barsy_enable = 0;
 }
 
 //------------------------------------------------------------------------------
-function enable(id){
+function enable(id)
+{
   document.getElementById(id).style.MozOpacity = "";
   document.getElementById(id).barsy_enable = 1;
 }
 
 //------------------------------------------------------------------------------
-function isEnabled(id){
+function isEnabled(id)
+{
   if(typeof document.getElementById(id).barsy_enable == 'undefined' && document.getElementById(id).className.indexOf('disabled') == -1){
     return 1;
   }else if(document.getElementById(id).barsy_enable == 1){
@@ -235,23 +244,27 @@ function isEnabled(id){
   return 0;
 }
 
-
-
 //------------------------------------------------------------------------------
-function returnIndexFirstChild(nodeList){
-  for(var i=0;i<nodeList.length;i++){
-    if(nodeList[i].nodeType == 1){
+function returnIndexFirstChild(nodeList)
+{
+  for(var i=0;i<nodeList.length;i++)
+  {
+    if(nodeList[i].nodeType == 1)
+    {
       return i;
     }
   }
 }
 
 //------------------------------------------------------------------------------
-function returnListOfNodes(nodeList){
+function returnListOfNodes(nodeList)
+{
   list = new Object();
   var x = 0;
-  for(var i=0;i<nodeList.length;i++){
-    if(nodeList[i].nodeType == 1){
+  for(var i=0;i<nodeList.length;i++)
+  {
+    if(nodeList[i].nodeType == 1)
+    {
       list[x++] = nodeList[i];
     }
   }
@@ -260,27 +273,33 @@ function returnListOfNodes(nodeList){
 }
 
 //------------------------------------------------------------------------------
-function makeImg(src,width,height,cclass,alt){
+function makeImg(src,width,height,cclass,alt)
+{
   img = document.createElement('img')
   img.setAttribute('src',src)
   img.setAttribute('border',0)
-  if(width && width != ''){
+  if(width && width != '')
+  {
     img.setAttribute('width',width)
   }
-  if(height && height != ''){
+  if(height && height != '')
+  {
     img.setAttribute('height',height)
   }
-  if(cclass && cclass != ''){
+  if(cclass && cclass != '')
+  {
     img.setAttribute('id',cclass)
   }
-  if(alt){
+  if(alt)
+  {
     img.setAttribute('title',alt)
   }
   return img;
 }
 
 //------------------------------------------------------------------------------
-function makeCheckbox(name,value){
+function makeCheckbox(name,value)
+{
   ch = document.createElement('input');
   ch.setAttribute('type','checkbox');
   ch.setAttribute('name',name);
@@ -291,26 +310,31 @@ function makeCheckbox(name,value){
 }
 
 //------------------------------------------------------------------------------
-function setLi(id,value){
-  if(document.getElementById(id)){
+function setLi(id,value)
+{
+  if(document.getElementById(id))
+  {
     li = document.getElementById(id)
     li.className = value;
   }
 }
 
 //------------------------------------------------------------------------------
-function makeUl(id){
+function makeUl(id)
+{
   ul = document.createElement('ul')
   ul.setAttribute('id',id)
   return ul;
 }
 
 //------------------------------------------------------------------------------
-function makeLi(title,id,url,cclass){
+function makeLi(title,id,url,cclass)
+{
   li = document.createElement('li')
   li.setAttribute('id',id)
 
-  if(cclass && cclass == 'on'){
+  if(cclass && cclass == 'on')
+  {
     label = document.createElement('b');
     label.appendChild(document.createTextNode(title));
   }else if(typeof title == 'object'){
@@ -318,7 +342,8 @@ function makeLi(title,id,url,cclass){
   }else{
     label = document.createTextNode(title);
   }
-  if(url && url != ''){
+  if(url && url != '')
+  {
     li.appendChild(makeHref(url,label));
   }else{
     li.appendChild(label)
@@ -328,22 +353,39 @@ function makeLi(title,id,url,cclass){
 }
 
 //------------------------------------------------------------------------------
-function makeHref(url,title){
+function makeHref(url, title)
+{
   a = document.createElement('a');
   a.setAttribute('href',url);
-  //a.id = 'aplus_'+getAplusId();
   a.appendChild(title);
+
   return a;
 }
 
-function getAplusId(){
+//------------------------------------------------------------------------------
+function makeDummyHref(title)
+{
+  var a = OAT.Dom.create("a");
+  a.href = "javascript: void(0);";
+  a.style.display = "none";
+  a.appendChild(OAT.Dom.text(title));
+
+  return a;
+}
+
+//------------------------------------------------------------------------------
+function getAplusId()
+{
 	return aplus_id++;
 }
+
 //------------------------------------------------------------------------------
-function sdate2obj(sdate){
+function sdate2obj(sdate)
+{
   var gdate = new Object();
 
-  if(!sdate || sdate == ''){
+  if(!sdate || sdate == '')
+  {
     sdate = '2000-01-01 00:00:00';
   }
   gdate.date = sdate.substring(0,sdate.indexOf('T'));
@@ -365,13 +407,16 @@ var timerID = null;
     var id,pause=0,position=0;
 
 //------------------------------------------------------------------------------
-    function stopclock (){
+function stopclock ()
+{
       if(timerRunning)
         clearTimeout(timerID);
       timerRunning=false;
     }
+
 //------------------------------------------------------------------------------
-    function showtime(){
+function showtime()
+{
       var now=new Date();
       var hours=now.getHours();
       var minutes=now.getMinutes();
@@ -385,14 +430,17 @@ var timerID = null;
       timerRunning = true;
     }
 
-    function startclock () {
+function startclock ()
+{
       stopclock();
       showtime();
     }
 
 //------------------------------------------------------------------------------
-function getId(str){
-  if(str.lastIndexOf('_') != -1){
+function getId(str)
+{
+  if (str.lastIndexOf('_') != -1)
+  {
     return Number(str.substr(str.lastIndexOf('_')+1));
   }else{
     return false;
@@ -400,12 +448,16 @@ function getId(str){
 }
 
 //------------------------------------------------------------------------------
-function strip_spaces(mystr) {
+function strip_spaces(mystr)
+{
   var newstring = "";
-  if (mystr.indexOf(' ') != -1) {
+  if (mystr.indexOf(' ') != -1)
+  {
     var string = mystr.split(' ');
-    for (var i=0;i<string.length;i++){
-      if(string[i] != ''){
+    for (var i=0;i<string.length;i++)
+    {
+      if(string[i] != '')
+      {
         newstring += ' ' + string[i];
       }
     }
@@ -417,12 +469,15 @@ function strip_spaces(mystr) {
 }
 
 //------------------------------------------------------------------------------
-function makeTable(id,caption){
+function makeTable(id,caption)
+{
   t = document.createElement('table')
-  if(id && id != ''){
+  if (id && id != '')
+  {
     t.setAttribute('id',id);
   }
-  if(caption && caption != ''){
+  if (caption && caption != '')
+  {
     c = document.createElement('caption')
     c.appendChild(document.createTextNode(caption))
     t.appendChild(c)
@@ -430,18 +485,21 @@ function makeTable(id,caption){
   return t;
 }
 
-
 //------------------------------------------------------------------------------
-function setSid(){
-  if(sid != ''){
+function setSid()
+{
+  if(sid != '')
+  {
     return 'sid='+sid+'&';
   }
   return '';
 }
 
 //------------------------------------------------------------------------------
-function dd(txt){
-  if(typeof console == 'object'){
+function dd(txt)
+{
+  if (typeof console == 'object')
+  {
     console.debug(txt);
   }
 }

@@ -22,32 +22,31 @@
 
 create procedure PHOTO.WA.add_comment(
   in sid varchar,
-  in p_gallery_id integer,
-  in comment photo_comment)
-  returns photo_comment
+  in _gallery_id integer,
+  in _resource_id integer,
+  in _text varchar) returns photo_comment
 {
-  declare auth_uid,auth_pwd,current_gallery varchar;
   declare current_user photo_user;
+  declare comment photo_comment;
 
-  auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
+  PHOTO.WA._session_user (vector('realm', 'wa','sid', sid), current_user);
 
-  --if(auth_uid = ''){
-  --  return vector();
-  --}
+  comment := new photo_comment (sequence_next('PHOTO.WA.comments'),
+                                _resource_id,
+                                now(),
+                                current_user.user_id,
+                                _text,
+                                current_user.first_name);
+  comment.modify_date := now ();
 
-  comment.comment_id := sequence_next('PHOTO.WA.comments');
-  comment.user_name := current_user.first_name;
-  comment.user_id := current_user.user_id;
-  comment.create_date := NOW();
-  comment.modify_date := NOW();
-
-  INSERT INTO PHOTO.WA.comments(COMMENT_ID,GALLERY_ID,RES_ID,CREATE_DATE,MODIFY_DATE,USER_ID,TEXT) VALUES (comment.comment_id,p_gallery_id,comment.res_id,comment.create_date,comment.modify_date,comment.user_id,comment.text);
+  insert into PHOTO.WA.comments (COMMENT_ID, GALLERY_ID, RES_ID, CREATE_DATE, MODIFY_DATE, USER_ID, TEXT)
+    values (comment.comment_id, _gallery_id, comment.res_id, comment.create_date, comment.modify_date, comment.user_id, comment.text);
 
   return comment;
 }
 ;
---------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------
 create procedure PHOTO.WA.remove_comment(
   in sid varchar,
   in _comment_id integer)
@@ -62,15 +61,13 @@ create procedure PHOTO.WA.remove_comment(
   {
      delete from PHOTO.WA.comments where COMMENT_ID=_comment_id;
      return 1;
-
   }
   return 0;
-   
 }
 ;
---------------------------------------------------------------------------------
 
-create procedure PHOTO.WA.edit_comment(
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.update_comment (
   in sid varchar,
   in _comment_id integer,
   in _text varchar)
@@ -85,16 +82,33 @@ create procedure PHOTO.WA.edit_comment(
   {
      update PHOTO.WA.comments set TEXT=_text where COMMENT_ID=_comment_id;
      return 1;
-
   }
-     
  return 0;
 }
 ;
 
 --------------------------------------------------------------------------------
+create procedure PHOTO.WA.get_comment (
+  in sid varchar,
+  in _comment_id integer)
+  returns photo_comment
+{
+  declare current_user photo_user;
 
+  PHOTO.WA._session_user (vector('realm','wa','sid',sid), current_user);
 
+  for (select RES_ID, CREATE_DATE, USER_ID, TEXT, U_NAME
+         from PHOTO.WA.COMMENTS, DB.DBA.SYS_USERS
+        where COMMENT_ID = _comment_id
+          and USER_ID = U_ID) do
+  {
+    return photo_comment (_comment_id, RES_ID, CREATE_DATE, USER_ID, TEXT, U_NAME);
+  }
+  return null;
+}
+;
+
+--------------------------------------------------------------------------------
 create procedure PHOTO.WA.get_comments(
   in sid varchar,
   in p_gallery_id integer,

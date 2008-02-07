@@ -23,20 +23,19 @@
 
 
 --------------------------------------------------------------------------------
-
-create procedure PHOTO.WA.fix_dav_list(in dirlist any){
-
+--
+create procedure PHOTO.WA.fix_dav_list(
+  in dirlist any)
+{
   declare ctr integer;
-  ctr := 0;
-  while (ctr < length(dirlist))
+
+  for (ctr := 0; ctr < length(dirlist); ctr := ctr + 1)
   {
-    if(dirlist[ctr][6] = 0){
+    if(dirlist[ctr][6] = 0)
+  {
       dirlist[ctr][6] := 0;
     }
-    ctr := ctr + 1;
-
   }
-
   return dirlist;
 }
 ;
@@ -79,7 +78,8 @@ create procedure PHOTO.WA.photo_init_user_data(
   --}
 
   next_ind   := (SELECT COUNT(*) FROM PHOTO.WA.SYS_INFO WHERE OWNER_ID = current_user.user_id);
-  if(next_ind > 0){
+  if(next_ind > 0)
+  {
     next_ind := next_ind + 1;
     next_ind   := cast(next_ind as varchar);
     next_ind := '-' || next_ind;
@@ -90,7 +90,8 @@ create procedure PHOTO.WA.photo_init_user_data(
   home_path  := sprintf('/DAV/home/%s/Gallery%s/',auth_uid,next_ind);
   app_path   := concat(sHost, 'www-root/portal/index.vsp');
 
-  if(home_url is null){
+  if (home_url is null)
+  {
     home_url:= concat('/photos/',auth_uid);
   }
 
@@ -109,7 +110,8 @@ create procedure PHOTO.WA.photo_init_user_data(
   result := PHOTO.WA.check_exist_gallery(current_user,home_path);
   col_id := PHOTO.WA.DAV_COL_CREATE(current_user,concat(home_path,'my_photos','/'),'110100100R');
 
-  if(col_id > 0){
+  if (col_id > 0)
+  {
     DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'pub_date',cast(now() as varchar),current_user.auth_uid,current_user.auth_pwd);
     DAV_PROP_SET(DAV_SEARCH_PATH (col_id,'C'),'description','Demo album',current_user.auth_uid,current_user.auth_pwd);
   }
@@ -120,7 +122,9 @@ create procedure PHOTO.WA.photo_init_user_data(
 ;
 
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA.photo_delete_user_data(in auth_uid varchar){
+create procedure PHOTO.WA.photo_delete_user_data(
+  in auth_uid varchar)
+{
   declare current_user photo_user;
 
   DELETE FROM PHOTO.WA.comments WHERE USER_ID = auth_uid;
@@ -135,20 +139,26 @@ create procedure PHOTO.WA.photo_delete_user_data(in auth_uid varchar){
 ;
 
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA.check_exist_gallery(in current_user photo_user,in home_path varchar){
+create procedure PHOTO.WA.check_exist_gallery(in current_user photo_user,in home_path varchar)
+{
   declare result integer;
   declare home_dir varchar;
 
   result := DAV_SEARCH_ID(home_path,'C');
 
-  if(result = -1){
+  if(result = -1)
+  {
     result := PHOTO.WA.DAV_COL_CREATE(current_user,home_path,'110100100R');
   }
 }
 ;
 
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA.DAV_COL_CREATE(in current_user photo_user, in path varchar,in rights varchar){
+create procedure PHOTO.WA.DAV_COL_CREATE (
+  in current_user photo_user,
+  in path varchar,
+  in rights varchar)
+{
   declare result any;
 
   result := DAV_COL_CREATE(path,rights,current_user.auth_uid,null,current_user.auth_uid,current_user.auth_pwd);
@@ -157,7 +167,10 @@ create procedure PHOTO.WA.DAV_COL_CREATE(in current_user photo_user, in path var
 ;
 
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA.DAV_SUBCOL_CREATE(in current_user photo_user, in path varchar){
+create procedure PHOTO.WA.DAV_SUBCOL_CREATE (
+  in current_user photo_user,
+  in path varchar)
+{
   declare result any;
   --path := concat(current_user.home_dir,path,'/');
   path := concat(path,'/');
@@ -165,9 +178,15 @@ create procedure PHOTO.WA.DAV_SUBCOL_CREATE(in current_user photo_user, in path 
   return result;
 }
 ;
+
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA.DAV_MOVE(in current_user photo_user, in old_path varchar,in new_path varchar){
+create procedure PHOTO.WA.DAV_MOVE (
+  in current_user photo_user,
+  in old_path varchar,
+  in new_path varchar)
+{
   declare result any;
+
   result := DAV_MOVE(old_path,new_path,0,current_user.auth_uid,current_user.auth_pwd);
   return result;
 }
@@ -215,18 +234,20 @@ create procedure PHOTO.WA._session_var_save(
     and VS_SID   = current_user.sid;
     --and VS_UID   = current_user.user_id;
   return;
-};
+}
+;
 
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA._session_var_set(
   inout current_user photo_user,
   in param any,
-  in value any
-){
+  in value any)
+{
   declare ind any;
   ind := position(param,current_user.ses_vars);
 
-  if(ind > 0){
+  if (ind > 0)
+  {
     declare tmp any;
     tmp := current_user.ses_vars;
     tmp[ind] := value;
@@ -234,43 +255,51 @@ create procedure PHOTO.WA._session_var_set(
   }else{
     current_user.ses_vars := vector_concat(current_user.ses_vars,vector(param,value));
   }
-};
+}
+;
 
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA._session_var_unset(
   inout current_user photo_user,
-  in param any
-){
+  in param any)
+{
   declare ind,i,tmp any;
   ind := position(param,current_user.ses_vars);
   i:=0;
   tmp:= vector();
-  if(ind > 0){
-    while(i < length(current_user.ses_vars)){
-      if(i <> ind-1){
+  if(ind > 0)
+  {
+    while(i < length(current_user.ses_vars))
+    {
+      if(i <> ind-1)
+      {
         tmp := vector_concat(tmp,vector(current_user.ses_vars[i],current_user.ses_vars[i+1]));
       }
       i:=i+2;
     }
     current_user.ses_vars := tmp;
   }
-};
+}
+;
 
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA._session_var_get(
   inout current_user photo_user,
-  in param any
-){
+  in param any)
+{
   return get_keyword(param,current_user.ses_vars,null);
-};
+}
+;
 
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA._user_pwd(in auth_uid varchar){
+create procedure PHOTO.WA._user_pwd(
+  in auth_uid varchar)
+{
   declare auth_pwd varchar;
 
   auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = auth_uid), '');
-
-  if (auth_pwd[0] = 0){
+  if (auth_pwd[0] = 0)
+  {
     auth_pwd := pwd_magic_calc(auth_uid, auth_pwd, 1);
   }
   return auth_pwd;
@@ -318,18 +347,16 @@ out user_data any)
    WHERE WAUI_U_ID = U_ID
      AND U_NAME = user_name;
 
-  if (user_pwd[0] = 0){
+  if (user_pwd[0] = 0)
+  {
     user_pwd := pwd_magic_calc(user_name, user_pwd, 1);
   }
-
-  if(first_name is null or first_name = ''){
-    first_name := user_name;
-  }
-
-  if(last_name is null or last_name = ''){
+  first_name := PHOTO.WA.user_name (user_name, first_name);
+  if (last_name is null or trim (last_name) = '')
+  {
     last_name := '';
   }
-
+  full_name := PHOTO.WA.user_name (user_name, full_name);
   user_data := vector(user_name,user_pwd,full_name,user_id,first_name,last_name);
   return 1;
 
@@ -340,11 +367,12 @@ out user_data any)
 
 -------------------------------------------------------------------------------
 create procedure PHOTO.WA._get_user_name(
-  in user_id varchar
-){
+  in user_id varchar)
+{
   declare user_name,user_pwd varchar;
 
-  declare exit handler for NOT FOUND {
+  declare exit handler for NOT FOUND
+  {
     return vector();
   };
 
@@ -355,17 +383,40 @@ create procedure PHOTO.WA._get_user_name(
 
   user_pwd := pwd_magic_calc(user_name, user_pwd, 1);
   return vector(user_name,user_pwd);
-};
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.user_fullName (
+  in account_id integer)
+{
+  return coalesce((select PHOTO.WA.user_name (U_NAME, U_FULL_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.user_name (
+  in u_name any,
+  in u_full_name any) returns varchar
+{
+  if (not is_empty_or_null (trim (u_full_name)))
+    return trim (u_full_name);
+  return u_name;
+}
+;
 
 -------------------------------------------------------------------------------
 create procedure get_dav_gallery(
-  in _path varchar
-){
+  in _path varchar)
+{
   -- Da vrashta obekt s instans ime
   declare _home_path varchar;
   declare _owner_id integer;
 
-  declare exit handler for NOT FOUND {
+  declare exit handler for NOT FOUND
+  {
     return '';
   };
 
@@ -384,10 +435,12 @@ create procedure get_dav_gallery(
 -- Freeze Functions
 --
 -------------------------------------------------------------------------------
-create procedure PHOTO.WA.frozen_check( in current_instance photo_instance,in current_user photo_user)
+create procedure PHOTO.WA.frozen_check(
+  in current_instance photo_instance,
+  in current_user photo_user)
 {
-
-  if (PHOTO.WA.check_admin(current_user.user_id)){
+  if (PHOTO.WA.check_admin(current_user.user_id))
+{
     return 0;
   }
   return coalesce((select WAI_IS_FROZEN from DB.DBA.WA_INSTANCE where WAI_NAME = current_instance.name), 0);
@@ -395,7 +448,8 @@ create procedure PHOTO.WA.frozen_check( in current_instance photo_instance,in cu
 ;
 
 -------------------------------------------------------------------------------
-create procedure PHOTO.WA.frozen_page(in name varchar)
+create procedure PHOTO.WA.frozen_page (
+  in name varchar)
 {
   return (select WAI_FREEZE_REDIRECT from DB.DBA.WA_INSTANCE where WAI_NAME = name);
 }
@@ -426,8 +480,8 @@ create procedure PHOTO.WA.check_admin(
 --------------------------------------------------------------------------------
 -- Fixes
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA._fix2(in COL_ID integer,in current_user photo_user,in col varchar){
-
+create procedure PHOTO.WA._fix2(in COL_ID integer,in current_user photo_user,in col varchar)
+{
   DAV_PROP_SET(concat(current_user.gallery_dir,col,'/'),':virtowneruid',current_user.user_id,'dav','dav');
 
   for(select RES_NAME from WS.WS.SYS_DAV_RES WHERE RES_COL = COL_ID)
@@ -439,30 +493,28 @@ create procedure PHOTO.WA._fix2(in COL_ID integer,in current_user photo_user,in 
 ;
 
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA._fix1(in _COL_ID integer,in current_user photo_user){
-
+create procedure PHOTO.WA._fix1(in _COL_ID integer,in current_user photo_user)
+{
   _COL_ID := DAV_SEARCH_ID(current_user.gallery_dir,'C');
 
-  for(select COL_NAME,COL_ID from WS.WS.SYS_DAV_COL WHERE COL_PARENT = _COL_ID)
-  do{
+  for(select COL_NAME,COL_ID from WS.WS.SYS_DAV_COL WHERE COL_PARENT = _COL_ID) do
+  {
     PHOTO.WA._fix2(COL_ID,current_user,COL_NAME);
   }
-
 }
 ;
 
-
-
 --------------------------------------------------------------------------------
-create procedure PHOTO.WA.fix_old_versions(){
+create procedure PHOTO.WA.fix_old_versions()
+{
   declare _user_name,_user_id,_gallery_id,_wai_name,_home_path,_home_url any;
 
-  if(registry_get('_oGallery_old_version_') > '0.1.82'){
+  if (registry_get('_oGallery_old_version_') > '0.1.82')
+  {
     return;
   }
-
-  for(SELECT WAI_NAME FROM DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'oGallery')
-  do{
+  for(SELECT WAI_NAME FROM DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'oGallery') do
+  {
       SELECT U_NAME,WAM_USER,WAI_NAME
         INTO _user_name,_user_id,_wai_name
         FROM DB.DBA.WA_MEMBER
@@ -489,9 +541,13 @@ create procedure PHOTO.WA.fix_old_versions(){
 ;
 
 -------------------------------------------------------------------------------
-create procedure PHOTO.WA.get_geo_info(in user_id integer){
+create procedure PHOTO.WA.get_geo_info (
+  in user_id integer)
+{
   declare e_lat, e_lng any;
-  if(user_id = -1){
+
+  if (user_id = -1)
+  {
     return vector(0, 0);
   }
   select WAUI_LAT, WAUI_LNG
@@ -520,7 +576,8 @@ create procedure PHOTO.WA.vector2tags(
 
   aResult := '';
   for (N := 0; N < length(aVector); N := N + 1)
-    if (N = 0) {
+    if (N = 0)
+    {
       aResult := trim(aVector[N]);
     } else {
       aResult := concat(aResult, ',', trim(aVector[N]));
@@ -531,9 +588,6 @@ create procedure PHOTO.WA.vector2tags(
 
 -------------------------------------------------------------------------------
 --
-
-
--------------------------------------------------------------------------------
 create procedure PHOTO.WA.string2vector(
   inout _str varchar,
   in separator varchar)
@@ -553,7 +607,8 @@ create procedure PHOTO.WA.vector2string(
 
   aResult := '';
   for (N := 0; N < length(aVector); N := N + 1)
-    if (N = 0) {
+    if (N = 0)
+    {
       aResult := trim(aVector[N]);
     } else {
       aResult := concat(aResult, separator , trim(aVector[N]));
@@ -576,7 +631,8 @@ create procedure PHOTO.WA.tags2unique(
   declare N, M integer;
 
   aResult := vector();
-  for (N := 0; N < length(aVector); N := N + 1) {
+  for (N := 0; N < length(aVector); N := N + 1)
+  {
     for (M := 0; M < length(aResult); M := M + 1)
       if (trim(lcase(aResult[M])) = trim(lcase(aVector[N])))
         goto _next;
@@ -584,6 +640,68 @@ create procedure PHOTO.WA.tags2unique(
   _next:;
   }
   return aResult;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.validate_freeText (
+  in S varchar)
+{
+  declare st, msg varchar;
+
+  if (upper(S) in ('AND', 'NOT', 'NEAR', 'OR'))
+    return 0;
+  if (length (S) < 2)
+    return 0;
+  if (vt_is_noise (S, 'utf-8', 'x-ViDoc'))
+    return 0;
+  st := '00000';
+  exec (sprintf ('vt_parse (\'[__lang "x-ViDoc" __enc "utf-8"] %s\')', S), st, msg, vector ());
+  if (st <> '00000')
+    return 0;
+  return 1;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.validate_tag (
+  in S varchar)
+{
+  S := replace (trim(S), '+', '_');
+  S := replace (trim(S), ' ', '_');
+  if (not PHOTO.WA.validate_freeText (S))
+    return 0;
+  if (not isnull (strstr(S, '"')))
+    return 0;
+  if (not isnull (strstr(S, '''')))
+    return 0;
+  if (length (S) < 2)
+    return 0;
+  if (length (S) > 50)
+    return 0;
+  return 1;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.validate_tags (
+  in S varchar)
+{
+  declare N integer;
+  declare V any;
+
+  V := PHOTO.WA.tags2vector(S);
+  if (is_empty_or_null(V))
+    return 0;
+  if (length(V) <> length(PHOTO.WA.tags2unique(V)))
+    return 0;
+  for (N := 0; N < length(V); N := N + 1)
+    if (not PHOTO.WA.validate_tag(V[N]))
+      return 0;
+  return 1;
 }
 ;
 

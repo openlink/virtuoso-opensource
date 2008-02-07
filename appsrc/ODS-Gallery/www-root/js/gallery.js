@@ -69,7 +69,8 @@ gallery.init = function (path){
   this.show_exif_flag = 0;
 
   gallery.current_state = Array(3);
-  if(location.hash && location.hash != '#'){
+  if (location.hash && location.hash != '#')
+  {
     gallery.current_state = location.hash.substring(1).split(':')
     page_location = location.href.substring(0,location.href.indexOf('#'))
   }
@@ -83,7 +84,8 @@ gallery.init = function (path){
 
   var SlideShow_back = function(){
     reverse = function(){
-      if(!gallery.rotator.running){
+      if (!gallery.rotator.running)
+      {
         gallery.rotator.options.type = OAT.RotatorData.TYPE_RIGHT;
         gallery.rotator.start();
         gallery.slideshow_status_update();
@@ -95,7 +97,8 @@ gallery.init = function (path){
   }
 
   var SlideShow_stop = function(){
-    if(gallery.rotator.running){
+    if (gallery.rotator.running)
+    {
       gallery.rotator.callback = function(){};
       gallery.rotator.stop();
     }else{
@@ -106,13 +109,15 @@ gallery.init = function (path){
 
   var SlideShow_next = function(){
     reverse = function(){
-      if(!gallery.rotator.running){
+      if (!gallery.rotator.running)
+      {
         gallery.rotator.options.type = OAT.RotatorData.TYPE_LEFT;
         //gallery.rotator.start();
         gallery.slideshow_status_update();
       }
     }
-    if(!gallery.rotator.running){
+    if (!gallery.rotator.running)
+    {
       gallery.rotator.options.type = OAT.RotatorData.TYPE_LEFT;
       gallery.rotator.start();
       gallery.slideshow_status_update();
@@ -140,20 +145,20 @@ gallery.init = function (path){
       gallery.slideshow_status_update();
     }
   slider.init();
-
 }
 
-
 //------------------------------------------------------------------------------
-function jump_to(){
+function jump_to()
+{
   var path  = location.hash.substring(1).split('/');
 
-  if(path.length == 1 && path.length == 2){
+  if (path.length == 1 && path.length == 2)
+  {
     // Home page - show albums
     return true;
-
   }else if(path.length == 3 && path[2] == ''){
     // Folder list - show images
+
     gallery.setCurrentByName(path[1]);
     //eval('ajax.Start(gallery_load_images,'+ds_albums.current.index+')');
     eval('gallery.ajax.load_images('+ds_albums.current.index+')');
@@ -171,8 +176,10 @@ function jump_to(){
 }
 
 //------------------------------------------------------------------------------
-function path_set_folder(path){
-  if(path != ''){
+function path_set_folder(path)
+{
+  if (path != '')
+  {
     path = '#/' + path + '/';
   }else{
     path = '#';
@@ -180,38 +187,42 @@ function path_set_folder(path){
   location.href = page_location + path;
 }
 
-
 //------------------------------------------------------------------------------
-function path_set_file(path){
+function path_set_file(path)
+{
   var folders = location.hash.substring(1,location.hash.lastIndexOf('/')+1);
 
   location.href = page_location + '#' + folders + path;
 }
 
 //------------------------------------------------------------------------------
-gallery.setCurrent = function(current_id){
+gallery.setCurrent = function(current_id)
+{
   ds_albums.setCurrent(current_id);
   ds_current_album.list.length = 0;
 }
 
 //------------------------------------------------------------------------------
-gallery.setCurrentByName = function(current_name){
+gallery.setCurrentByName = function(current_name)
+{
   var ind = ds_albums.checkNameExist(current_name);
-    if(ind > -1){
+  if (ind > -1)
+  {
     ds_albums.setCurrent(ind);
     ds_current_album.list.length = 0;
   }
 }
 
 //------------------------------------------------------------------------------
-gallery.closePanels = function(){
+gallery.closePanels = function()
+{
   OAT.Dom.hide('edit_album_settings');
   OAT.Dom.hide('new_album');
 }
 
-
 //------------------------------------------------------------------------------
-gallery.albums_click = function(el){
+gallery.albums_click = function(el)
+{
   current_id = getId(el.id);
 
   OAT.Dom.hide('timeline');
@@ -225,11 +236,11 @@ gallery.albums_click = function(el){
   gallery.ajax.load_images(current_id);
   }
 
-
 //------------------------------------------------------------------------------
-  gallery.editCollections = function (dav_lines){
-
-      if(!ds_albums.editAlbumToList(dav_lines)){
+gallery.editCollections = function (dav_lines)
+{
+  if (!ds_albums.editAlbumToList(dav_lines))
+  {
         var messages = Array();
         var id = dav_lines.id * -1;
         messages[3] = "The album '" + dav_lines.name + "' all ready exist";
@@ -257,11 +268,8 @@ gallery.albums_click = function(el){
     mapInit();
     OAT.Dom.hide('map');    
     OAT.Dom.hide('timeline');    
-
-    
-    
-
   }
+
 //------------------------------------------------------------------------------
 gallery.settings_tab_click = function ()
 {
@@ -272,22 +280,22 @@ gallery.settings_tab_click = function ()
 }
 
 //------------------------------------------------------------------------------
-gallery.edit_albumsettings_action = function (){
-
+gallery.edit_albumsettings_action = function ()
+{
   gallery.ajax.edit_album_settings();
-
 }
-//------------------------------------------------------------------------------
-gallery.edit_albumsettings_cancel = function (){
 
+//------------------------------------------------------------------------------
+gallery.edit_albumsettings_cancel = function ()
+{
  OAT.Dom.hide('edit_album_settings');
  gallery.nav.tabs(1);
  gallery.managePanels('my_albums');
 }
+
 //------------------------------------------------------------------------------
-
-gallery.new_album_tab_click = function (){
-
+gallery.new_album_tab_click = function ()
+{
   if(ds_albums.settings.show_timeline==1)
   OAT.Dom.show('timeline');
   if(ds_albums.settings.show_map==1)
@@ -321,14 +329,15 @@ gallery.new_album_tab_click = function (){
 }
 
 //------------------------------------------------------------------------------
-gallery.new_album_close_click = function(){
+gallery.new_album_close_click = function()
+{
  gallery.my_albums_tab_click();
  gallery.nav.tabs(1);
 }
 
 //------------------------------------------------------------------------------
-gallery.new_album_action = function (){
-
+gallery.new_album_action = function ()
+{
   $('new_album_name').style.background             = "#FFFFFF";
   $('new_album_lng').style.background              = "#FFFFFF";
   $('new_album_lat').style.background              = "#FFFFFF";
@@ -340,22 +349,24 @@ gallery.new_album_action = function (){
   var name = strip_spaces(document.getElementById('new_album_name').value);
   document.getElementById('new_album_name').value = name;
 
-  if(document.getElementById('new_album_name').value == ''){
+  if (document.getElementById('new_album_name').value == '')
+  {
     alert('Please, type album name.');
     document.getElementById('new_album_name').focus();
     document.getElementById('new_album_name').style.background = "#FFFF9B";
     return;
   }
   geo_regexp = new RegExp('^\\-{0,1}\\d{0,3}\\.\\d{0,6}$');
-  if( $('new_album_lng').value.length && !geo_regexp.test($('new_album_lng').value)){
-    alert('Please, fill in correct longitude value. [{-}ddd.dddddd]');
+  if ( $('new_album_lng').value.length && !geo_regexp.test($('new_album_lng').value))
+  {
+    alert('Please, fill in a correct longitude value. [{-}ddd.dddddd]');
     $('new_album_lng').focus();
     $('new_album_lng').style.background = "#FFFF9B";
     return;
   }
-
-  if( $('new_album_lat').value.length && !geo_regexp.test($('new_album_lat').value)){
-    alert('Please, fill in correct latitude value. [{-}ddd.dddddd]');
+  if ( $('new_album_lat').value.length && !geo_regexp.test($('new_album_lat').value))
+  {
+    alert('Please, fill in a correct latitude value. [{-}ddd.dddddd]');
     $('new_album_lat').focus();
     $('new_album_lat').style.background = "#FFFF9B";
     return;
@@ -397,15 +408,13 @@ gallery.new_album_action = function (){
 }
 
 //------------------------------------------------------------------------------
-gallery.new_album_name_click = function(el){
-
-}
+gallery.new_album_name_click = function(el)
+{}
 
 //------------------------------------------------------------------------------
-gallery.link_edit_album_click = function (){
-
+gallery.link_edit_album_click = function ()
+{
   gallery.managePanels('edit_album');
-
 
   $('map').className = $('map').className.replace( "view","edit");
  	map.lastGEvent =	GEvent.addListener(map.obj,"click",function(o,p){if (!p){ return; } changeAlbumMarkerPos(p);});
@@ -413,7 +422,8 @@ gallery.link_edit_album_click = function (){
   document.getElementById('edit_album_name_old').value = ds_albums.current.name;
   document.getElementById('edit_album_name').value = ds_albums.current.name;
 
-  if((typeof ds_albums.current.description) != 'undefined'){
+  if ((typeof ds_albums.current.description) != 'undefined')
+  {
     document.f1.edit_album_description.value = ds_albums.current.description;
   }
 //  var t_date = sdate2obj(ds_albums.current.pub_date);
@@ -448,12 +458,12 @@ gallery.link_edit_album_click = function (){
   if(ds_albums.current.geolocation[2]=='true')
   {   
      $('edit_album_showonmap').checked = true;
-  }else
+  } else {
      $('edit_album_showonmap').checked =  false;
+  }
 
-
-
-  if(ds_albums.current.visibility == 1){
+  if (ds_albums.current.visibility == 1)
+  {
     $('album_visibility_all').checked = true;
   }else{
     $('album_visibility_me').checked = true;
@@ -468,8 +478,8 @@ gallery.link_edit_album_click = function (){
 }
 
 //------------------------------------------------------------------------------
-gallery.edit_album_action = function (){
-
+gallery.edit_album_action = function ()
+{
   $('edit_album_name').style.background = "#FFFFFF";
   $('edit_album_lng').style.background = "#FFFFFF";
   $('edit_album_lat').style.background = "#FFFFFF";
@@ -477,23 +487,25 @@ gallery.edit_album_action = function (){
   $('edit_album_start_date_month').style.background = "#FFFFFF";
   $('edit_album_start_date_day').style.background = "#FFFFFF";
 
-  if(document.getElementById('edit_album_name').value == ''){
-    alert('Please, type album name');
+  if (document.getElementById('edit_album_name').value == '')
+  {
+    alert('Please, type album name.');
     document.getElementById('edit_album_name').focus();
     document.getElementById('edit_album_name').style.background = "#FFFF9B";
     return;
   }
   
   geo_regexp = new RegExp('^\\-{0,1}\\d{0,3}\\.\\d{0,6}$');
-  if(  $('edit_album_lng').value.length && !geo_regexp.test($('edit_album_lng').value)){
-    alert('Please, fill in correct longitude value. [{-}ddd.dddddd]');
+  if (  $('edit_album_lng').value.length && !geo_regexp.test($('edit_album_lng').value))
+  {
+    alert('Please, fill in a correct longitude value. [{-}ddd.dddddd]');
     $('edit_album_lng').focus();
     $('edit_album_lng').style.background = "#FFFF9B";
     return;
   }
 
   if( $('edit_album_lat').value.length && !geo_regexp.test($('edit_album_lat').value)){
-    alert('Please, fill in correct latitude value. [{-}ddd.dddddd]');
+    alert('Please, fill in a correct latitude value. [{-}ddd.dddddd]');
     $('edit_album_lat').focus();
     $('edit_album_lat').style.background = "#FFFF9B";
     return;
@@ -529,33 +541,35 @@ gallery.edit_album_action = function (){
   
   //ajax.Start(gallery_edit_album,'');
   
-  
   $('map').className = $('map').className.replace( "edit","view");
   GEvent.removeListener(map.lastGEvent);
   gallery.ajax.edit_album();
 }
 //------------------------------------------------------------------------------
-gallery.link_images_upload_click = function(){
+gallery.link_images_upload_click = function()
+{
   gallery.managePanels('image_upload')
   var id = returnIndexFirstChild(gallery.images_upload.childNodes)
   gallery.images_upload.childNodes[id].src=base_path+"upload.vspx?sid="+sid+"&realm=wa&album="+ds_albums.current.name;
 }
 
 //------------------------------------------------------------------------------
-gallery.images_upload_cancel = function (){
+gallery.images_upload_cancel = function ()
+{
   this.images_upload.hide();
   this.images.show();
   gallery.ajax.load_images(ds_albums.current.index);
 }
 
 //------------------------------------------------------------------------------
-gallery.images_upload_finish = function(id){
+gallery.images_upload_finish = function(id)
+{
   gallery.ajax.load_images(ds_albums.current.index);
 }
 
 //------------------------------------------------------------------------------
-gallery.edit_album_cancel = function (){
-
+gallery.edit_album_cancel = function ()
+{
   $('map').className = $('map').className.replace( "edit","view");
   GEvent.removeListener(map.lastGEvent);
   OAT.Dom.hide('map');
@@ -565,22 +579,21 @@ gallery.edit_album_cancel = function (){
   }
 //------------------------------------------------------------------------------
 
-gallery.setThumbnail= function (i){
+gallery.setThumbnail= function (i)
+{
   elm1=$('setThumb_'+ds_albums.current.thumb_id);
-  
-  
   if(elm1)
   {
     elm1.firstChild.src=base_path + 'i/orb_blank.gif'
     elm1.href='javascript:gallery.setThumbnail('+ds_albums.current.thumb_id+')';  
-  };
+  }
   
   elm2=$('setThumb_'+i);
   if(elm2)
   {
    elm2.firstChild.src=base_path + 'i/orb_selected.gif'
    elm2.href='javascript:void(0)'
-  };
+  }
   
   ds_albums.current.thumb_id=i;
 
@@ -591,11 +604,14 @@ gallery.setThumbnail= function (i){
 
 }
 //------------------------------------------------------------------------------
-gallery.showImages = function (){
+gallery.showImages = function ()
+{
   var path  = location.hash.substring(1).split('/');
-  if(path.length == 3 && path[2] != ''){
+  if (path.length == 3 && path[2] != '')
+  {
     var ind = ds_current_album.checkNameExist(path[2]);
-    if(ind > -1){
+    if (ind > -1)
+    {
       eval('gallery.showImage('+ind+')');
     }
     return false;
@@ -606,8 +622,8 @@ gallery.showImages = function (){
 }
 
 //------------------------------------------------------------------------------
-gallery.showImagesInside = function (){
-
+gallery.showImagesInside = function ()
+{
   gallery.managePanels('showImages');
 
     this.images.clear();
@@ -617,7 +633,8 @@ gallery.showImagesInside = function (){
     gallery.hideSlideShow();
 
   var txt = '';
-  if(typeof ds_albums.current.description != 'undefined'){
+  if (typeof ds_albums.current.description != 'undefined')
+  {
     txt = ds_albums.current.description + ' / ';
   }
   txt += ds_current_album.list.length+' pictures';
@@ -631,12 +648,13 @@ gallery.showImagesInside = function (){
   gallery.prepare_aplus('info_discription');
   gallery.info.show();
 
-  
-    for(var r=0;r<ds_current_album.list.length;r++){
+  for(var r=0;r<ds_current_album.list.length;r++)
+  {
     new_coll = preview_image(r);
       this.images.appendChild(new_coll);
     }
-    if(ds_current_album.list.length == 0){
+  if (ds_current_album.list.length == 0)
+  {
         block = document.createElement('div');
         block.setAttribute('id','message');
         block.appendChild(document.createTextNode('No images in this album. Click "Add images" to add new'));
@@ -647,23 +665,27 @@ gallery.showImagesInside = function (){
     var i = ds_albums.current.index;
   $('preview_left').innerHTML = "";
   $('preview_right').innerHTML = "";
-    if(i>0){
+  if (i>0)
+  {
     $('preview_left').appendChild(preview_album(ds_albums.list[i-1],i-1,'previous'));
     }
-    if(i<ds_albums.list.length-1){
+  if (i<ds_albums.list.length-1)
+  {
     $('preview_right').appendChild(preview_album(ds_albums.list[Number(i)+1],Number(i)+1,'next'));
     }
     path_set_folder(ds_albums.current.name);
 }
 
 //------------------------------------------------------------------------------
-gallery.showImage = function(i){
+gallery.showImage = function(i)
+{
   var current_image = ds_current_album.list[i];
 
     gallery.images.hide();
 
     gallery.image.innerHTML = "";
-  if(current_image.source){
+  if (current_image.source)
+  {
     src = current_image.source.replace('_t.jpg','.jpg');
   }else{
     src = current_image.path; //ds_current_album.list[i].path;
@@ -677,7 +699,8 @@ gallery.showImage = function(i){
     gallery.hideAlbums();
 
   var txt = '';
-  if(typeof ds_albums.current.description != 'undefined'){
+  if (typeof ds_albums.current.description != 'undefined')
+  {
     txt = ds_albums.current.description + ' / ';
   }
   txt += (Number(i)+Number(1)) + ' of '+ ds_current_album.list.length+' pictures';
@@ -699,50 +722,51 @@ gallery.showImage = function(i){
     //Navigation previous<->next
   $('preview_left').innerHTML = "";
   $('preview_right').innerHTML = "";
-    if(i>0){
+  if (i>0)
+  {
     $('preview_left').appendChild(preview_image(i-1,'previous'));
     }
-    if(i<ds_current_album.list.length-1){
+  if (i<ds_current_album.list.length-1)
+  {
     $('preview_right').appendChild(preview_image(Number(i)+1,'next'));
     }
 
-    document.f1.new_comment.value = '';
     gallery.comments.show();
+  gallery.comment_init();
   gallery.showTags();
+  gallery.tags_init();
 
   gallery.ajax.image_get_comments(current_image.id)
-
-
 }
 
-
 //------------------------------------------------------------------------------
-gallery.showComments = function(comments){
+gallery.showComments = function(comments)
+{
   this.comments_list.innerHTML = '';
-  if(comments == null){
+  if (comments == null)
+  {
     return;
   }
-
-  for(var i = 0;i<comments.length;i++){
+  for(var i = 0;i<comments.length;i++)
+  {
     gallery.addComment(comments[i]);
   }
 }
 
-
 //------------------------------------------------------------------------------
-gallery.addComment = function(comment){
-
-  document.f1.new_comment.value = '';
-
+gallery.addComment = function(comment)
+{
   var pub_date = sdate2obj(comment.create_date);
   var comment_block = document.createElement('div');
   var edit = document.createElement('span');
   var user = document.createElement('h3');
 
 	comment_block.setAttribute("id",'comment_'+comment.comment_id);
-  //comment_block.appendChild(document.createTextNode(comment.text));
 
-  comment_block.innerHTML = comment.text;
+  var span = document.createElement('span');
+  span.innerHTML = comment.text;
+	span.setAttribute("id", 'comment_span_'+comment.comment_id);
+  comment_block.appendChild(span);
 
   var del_img = OAT.Dom.create("img");
   del_img.style.cursor="pointer";
@@ -759,9 +783,7 @@ gallery.addComment = function(comment){
 	edit_img.setAttribute("alt",'Edit');
 	edit_img.setAttribute("title",'Edit');
   OAT.Dom.attach(edit_img,'click',gallery.edit_comment_icon_click);
-//  OAT.Dom.attach(edit_img,'click',gallery.delete_tag_click)
   
-//	edit.setAttribute("id",'commentctrl_'+comment.comment_id);
   edit.appendChild(del_img);
   edit.appendChild(document.createTextNode(' '));
   edit.appendChild(edit_img);
@@ -774,74 +796,92 @@ gallery.addComment = function(comment){
   comment_block.appendChild(user);
   
   this.comments_list.appendChild(comment_block);
+  gallery.prepare_aplus(span.id);
 }
+
 //------------------------------------------------------------------------------
-gallery.delete_comment_icon_click = function(e){
+gallery.delete_comment_icon_click = function(e)
+{
   if (!e) var e = window.event
   var el = (e.target) ? e.target : e.srcElement
 
-  if(confirm('Are you sure that you want to detele this comment?')){
+  if (confirm('Are you sure that you want to detele this comment?'))
+  {
     var comment = el.parentNode.parentNode.id;
-    dd(el.parentNode.parentNode);
+    //dd(el.parentNode.parentNode);
     var comment_id = comment.substring(comment.indexOf('_')+1,comment.length);
-   gallery.ajax.image_remove_comments(comment_id);
+    gallery.ajax.image_remove_comment(comment_id);
+    gallery.comment_init();
   }
 }
 
 //------------------------------------------------------------------------------
-gallery.edit_comment_icon_click = function(e){
-  if (!e) var e = window.event
-  var el = (e.target) ? e.target : e.srcElement
+gallery.edit_comment_icon_click = function(e)
+{
+  if (!e) var e = window.event;
+  var el = (e.target) ? e.target : e.srcElement;
+  var id = el.parentNode.parentNode.id;
+  var comment_id = id.substring(id.indexOf('_')+1, id.length)
 
-    OAT.Dom.hide('new_comment_block');
-    OAT.Dom.show('edit_comment_block');
-
-    var comment = el.parentNode.parentNode.id;
-
-    $('edit_comment').value=$(comment).firstChild.nodeValue;
-    var comment_id = comment.substring(comment.indexOf('_')+1,comment.length);
-    $('edit_comment').comment_id=comment_id;
+  call = proxies.SOAP.get_comment;
+  prepare = function() {
+    return Array(sid, comment_id)
+  }
+  finish = function(comment) {
+    if (comment != null)
+    {
+      gallery.comment_init(comment_id, comment.text);
+    }
+  }
+  gallery.ajax(prepare, call, finish);
 }
 
 //------------------------------------------------------------------------------
-gallery.showTags = function(){
+gallery.showTags = function()
+{
   gallery.tags.show();
   var tags = ds_current_album.current.private_tags
   var tags_list = $('tags_list')
   tags_list.innerHTML = '';
 
-  if(tags == null){
+  if (tags == null)
+  {
     return;
   }
-
-  for(var i = 0;i<tags.length;i++){
+  for(var i = 0; i<tags.length; i++)
+  {
     gallery.addTag(tags[i]);
   }
-  if(sid != ''){
+  if (sid != '')
+  {
     OAT.Dom.show('tags_edit');
   }
+  gallery.prepare_aplus('tags_list');
 }
 
-
 //------------------------------------------------------------------------------
-gallery.addTag = function(tag,first){
+gallery.addTag = function(tag, first)
+{
   var tags_list = $('tags_list')
   document.f1.new_tag.value = '';
 
   var div = document.createElement('span');
   var txt = document.createElement('b');
-  var edit = document.createElement('span');
-  if(tags_list.childNodes.length){
+  if (tags_list.childNodes.length)
+  {
     div.appendChild(document.createTextNode(', '));
   }else{
     div.appendChild(document.createTextNode(' '));
   }
   tags_list.appendChild(div);
   div.appendChild(txt);
-  if(sid != ''){
+  div.appendChild(makeDummyHref(tag));
+
+  if (sid != '')
+  {
+    var edit = document.createElement('span');
   div.appendChild(edit);
-  }
-  txt.appendChild(document.createTextNode(tag));
+
   var img = OAT.Dom.create("img");
   img.style.cursor="pointer";
 	img.setAttribute("src",base_path+ 'i/del_10.png');
@@ -849,27 +889,35 @@ gallery.addTag = function(tag,first){
 	img.setAttribute("title",'Delete');
 
   edit.appendChild(img);
+  }
+  txt.appendChild(document.createTextNode(tag));
   OAT.Dom.attach(edit,'click',gallery.delete_tag_click)
   }
 
 //------------------------------------------------------------------------------
-gallery.delete_tag_click = function(e){
+gallery.delete_tag_click = function(e)
+{
   if (!e) var e = window.event
   var el = (e.target) ? e.target : e.srcElement
 
-  if(confirm('Are you sure that you want to detele this tag?')){
+  if (confirm('Are you sure that you want to detele this tag?'))
+  {
     var tag = el.parentNode.parentNode.childNodes[1].innerHTML;
    gallery.ajax.image_remove_tags(ds_current_album.current.id,tag);
   }
 }
 
 //------------------------------------------------------------------------------
-gallery.tags_is_unique = function(tags,tag){
-  if(tags == null){
+gallery.tags_is_unique = function (tags, tag)
+{
+  if (tags == null)
+  {
     return 1;
   }
-  for(var i=0;i<tags.length;i++){
-    if(tags[i] == tag){
+  for (var i=0; i < tags.length; i++)
+  {
+    if (tags[i] == tag)
+    {
       return 0;
     }
   }
@@ -877,49 +925,80 @@ gallery.tags_is_unique = function(tags,tag){
 }
 
 //------------------------------------------------------------------------------
-gallery.tag_images_tab_click = function(){
-   if(gallery.images.visible == 0){
+gallery.tag_images_tab_click = function()
+{
+  if (gallery.images.visible == 0)
+  {
     return;
   }
   var ids = new Array();
-  for(var i=0;i<ds_current_album.list.length;i++){
-    if(document.getElementById('image_id_'+i).checked){
+  for(var i=0;i<ds_current_album.list.length;i++)
+  {
+    if (document.getElementById('image_id_'+i).checked)
+    {
       ids[ids.length]= document.getElementById('image_id_'+i).value;
     }
 }
-
-  if(ids.length == 0){
-    alert('Please, first select one or more pictures');
+  if (ids.length == 0)
+  {
+    alert('Please, first select one or more pictures.');
     return;
   }
   tags = prompt('Insert public tags here','Tags');
   gallery.ajax.tag_images(ids,tags);
 }
 
+//------------------------------------------------------------------------------
+gallery.tag_images_tab_finish = function()
+{}
 
 //------------------------------------------------------------------------------
-gallery.tag_images_tab_finish = function(){
-
+gallery.bnt_new_tag_cancel_click = function()
+{
+  gallery.tags_init();
   }
 
 //------------------------------------------------------------------------------
-gallery.bnt_new_tag_click = function(){
-  var new_tag = document.f1.new_tag.value
-  if(new_tag == ''){
-    alert('Please, insert at least one word for tag');
+gallery.bnt_new_tag_click = function()
+{
+  var tagsValue = document.f1.new_tag.value;
+
+  tagsValue = tagsValue.replace('\n', ' ', 'gi');
+  tagsValue = tagsValue.replace('\r', ' ', 'gi');
+  tagsValue = tagsValue.replace('\v', ' ', 'gi');
+  tagsValue = tagsValue.replace('\t', ' ', 'gi');
+  tagsValue = tagsValue.replace('\f', ' ', 'gi');
+	tagsValue = tagsValue.replace("  ", " ", "gi");
+	tagsValue = tagsValue.trim();
+  document.f1.new_tag.value = tagsValue;
+  tagsArray = tagsValue.split(",");
+  for (i=0; i<tagsArray.length; i++)
+  {
+    var tag = tagsArray[i].trim();
+    if ((tag.length < 2) || (tag.length > 50))
+    {
+      alert('Tag "'+tag+'" must contain from 2 to 50 characters. Please, remove or change it.');
     return;
   }
-  if(!gallery.tags_is_unique(ds_current_album.current.private_tags, new_tag)){
-    alert('This tag allready exists. Please, change it');
+    var re = new RegExp('^([a-zA-Z_])+([a-zA-Z0-9_\x20])*\$', 'gi');
+    if (!tag.match(re))
+    {
+      alert('Please, fill in a correct value for tag "'+tag+'".');
+      return;
+    }
+    if (!gallery.tags_is_unique (ds_current_album.current.private_tags, tag))
+    {
+      alert('Tag "'+tag+'" allready exists. Please, remove or change it.');
     return;
   }
-  gallery.ajax.image_add_tags(ds_current_album.current.id,new_tag);
+}
+  gallery.ajax.image_add_tags (ds_current_album.current.id, tagsValue);
 }
 
-
 //------------------------------------------------------------------------------
-gallery.showAlbumsInfo = function(i){
-  //if(ds_albums.current.is_own == 1){
+gallery.showAlbumsInfo = function(i)
+{
+  //if (gallery.is_own == 1){
     $('path_my_albums').innerHTML = 'My Albums';
   //}else{
   //  $('path_my_albums').innerHTML = ds_albums.current.owner_name +'\'s albums';
@@ -951,37 +1030,41 @@ gallery.showAlbumsInfo = function(i){
 }
 
 //------------------------------------------------------------------------------
-gallery.path_my_albums_click = function(){
+gallery.path_my_albums_click = function()
+{
   gallery.my_albums_tab_click();
 }
 
 //------------------------------------------------------------------------------
-gallery.path_album_name_click = function(){
+gallery.path_album_name_click = function()
+{
   gallery.link_show_images_click();
 }
 
-
 //------------------------------------------------------------------------------
-gallery.link_show_images_click = function(){
+gallery.link_show_images_click = function()
+{
   path_set_folder(ds_albums.current.name);
   gallery.showImages();
 }
 //------------------------------------------------------------------------------
-gallery.btn_slideshow_click = function(){
-
+gallery.btn_slideshow_click = function()
+{
   gallery.managePanels('images_slideshow')
   $('caption').innerHTML = 'Slideshow';
   $('preview_left').innerHTML = "";
   $('preview_right').innerHTML = "";
 
-  if(ds_current_album.list.length < 2){
+  if (ds_current_album.list.length < 2)
+  {
     gallery.showImages();
     return;
   }
 
   this.slideshow.show();
 
-      for(var i=0;i<ds_current_album.list.length;i++){
+	for (var i=0;i<ds_current_album.list.length;i++)
+	{
 		var elm = OAT.Dom.create("div",{position:"relative",width:"490px",height:"400px",cssFloat:"left",styleFloat:"left"});
 		var img = OAT.Dom.create("img");
 		img.setAttribute("src",base_path+'image.vsp?'+setSid()+'image_id='+ds_current_album.list[i].id);
@@ -994,21 +1077,21 @@ gallery.btn_slideshow_click = function(){
   return;
 }
 
-
-
-
-
 //------------------------------------------------------------------------------
-gallery.hideSlideShow = function(){
-  if(gallery.rotator){
+gallery.hideSlideShow = function()
+{
+  if (gallery.rotator)
+  {
     gallery.rotator.stop();
   }
   gallery.slideshow.hide();
 }
 
 //------------------------------------------------------------------------------
-gallery.slideshow_status_update = function(){
-  if(this.rotator.running){
+gallery.slideshow_status_update = function()
+{
+  if (this.rotator.running)
+  {
     $('label_slideshow_status').innerHTML = "Play with interval of "+(this.rotator.options.pause/1000)+" seconds";
   }else{
     $('label_slideshow_status').innerHTML = "Show is stopped";
@@ -1016,47 +1099,56 @@ gallery.slideshow_status_update = function(){
 }
 
 //------------------------------------------------------------------------------
-gallery.btn_slideshow_faster_click = function(){
-  if(pause > 1000){
+gallery.btn_slideshow_faster_click = function()
+{
+  if (pause > 1000)
+  {
     pause -= 1000;
   }
   gallery.statusSlideShow();
 }
 
 //------------------------------------------------------------------------------
-gallery.btn_slideshow_slower_click = function(){
+gallery.btn_slideshow_slower_click = function()
+{
   pause += 1000;
   gallery.statusSlideShow();
 }
 
 //------------------------------------------------------------------------------
-gallery.hideAlbums = function(){
+gallery.hideAlbums = function()
+{
   gallery.albums.hide();
   gallery.albums_list.hide();
   gallery.albums_man.hide();
 }
 
 //------------------------------------------------------------------------------
-gallery.my_albums_tab_click = function (){
+gallery.my_albums_tab_click = function ()
+{
   path_set_folder('');
   gallery.managePanels('my_albums');
   gallery.nav.tabs(1);
 }
 
 //------------------------------------------------------------------------------
-gallery.wa_click = function (){
+gallery.wa_click = function ()
+{
   location.href = wa_home_link + 'services.vspx?sid='+sid+'&realm=wa';
 }
 
 //------------------------------------------------------------------------------
-gallery.home_click = function (){
+gallery.home_click = function ()
+{
   location.href = page_location;
   setTimeout(100,function(){location.reload();})
 }
 
 //------------------------------------------------------------------------------
-gallery.link_show_exif_click = function(){
-  if(gallery.show_exif_flag == 0){
+gallery.link_show_exif_click = function()
+{
+  if (gallery.show_exif_flag == 0)
+  {
     gallery.show_exif_flag = 1;
     gallery.show_exif();
     return false;
@@ -1069,7 +1161,8 @@ gallery.link_show_exif_click = function(){
 //------------------------------------------------------------------------------
 gallery.show_exif = function(){
   gallery.image_edit.hide();
-  if(gallery.show_exif_flag == 1){
+  if (gallery.show_exif_flag == 1)
+  {
     gallery.image_info.show();
     gallery.image_info.innerHTML = 'Loading ...';
 
@@ -1078,7 +1171,8 @@ gallery.show_exif = function(){
 }
 
 //------------------------------------------------------------------------------
-gallery.link_image_edit_click = function(){
+gallery.link_image_edit_click = function()
+{
   gallery.image_info.hide();
   gallery.image_edit.show();
 
@@ -1087,7 +1181,8 @@ gallery.link_image_edit_click = function(){
   document.f1.edit_image_name_old.value = ds_current_album.current.name;
   document.f1.edit_image_path.value = ds_albums.current.fullpath;
 
-  if(ds_current_album.current.visibility == 1){
+  if (ds_current_album.current.visibility == 1)
+  {
     document.f1.image_visibility[0].checked = true
   }else{
     document.f1.image_visibility[1].checked = true;
@@ -1095,61 +1190,63 @@ gallery.link_image_edit_click = function(){
 }
 
 //------------------------------------------------------------------------------
-gallery.btn_image_edit_click = function(){
+gallery.btn_image_edit_click = function()
+{
   gallery.ajax.image_edit();
 }
 
 //------------------------------------------------------------------------------
-gallery.image_edit_finish = function(res){
+gallery.image_edit_finish = function(res)
+{}
 
-
-}
 //------------------------------------------------------------------------------
-gallery.btn_image_edit_cancel_click = function(){
+gallery.btn_image_edit_cancel_click = function()
+{
   gallery.image_edit.hide();
 }
 
-
-
-
 //------------------------------------------------------------------------------
-gallery.link_delete_images_click = function(){
-
-  if(gallery.images.visible == 0){
+gallery.link_delete_images_click = function()
+{
+  if (gallery.images.visible == 0)
+  {
     return;
   }
   var ids = new Array();
-  for(var i=0;i<ds_current_album.list.length;i++){
-    if(document.getElementById('image_id_'+i).checked){
+  for(var i=0;i<ds_current_album.list.length;i++)
+  {
+    if (document.getElementById('image_id_'+i).checked)
+    {
       ids[ids.length]= document.getElementById('image_id_'+i).value;
     }
   }
-
-  if(ids.length == 0){
+  if (ids.length == 0)
+  {
     alert('Please, first select one or more pictures');
     return;
   }
-
-  if(!confirm('Are you sure that you want to delete selected images?')){
+  if (!confirm('Are you sure that you want to delete selected images?'))
+  {
     return;
   }
   gallery.ajax.delete_images(ids);
 }
 
-
 //------------------------------------------------------------------------------
-gallery.link_delete_image_click = function(){
-
-  if(!confirm('Are you sure that you want to delete selected images?')){
+gallery.link_delete_image_click = function()
+{
+  if (!confirm('Are you sure that you want to delete selected images?'))
+  {
     return;
   }
   gallery.ajax.delete_images(Array(ds_current_album.current.id));
 }
 
-
 //------------------------------------------------------------------------------
-gallery.link_delete_album_click = function(){
-  if(!confirm('Are you sure that you want to delete current Album?')){
+gallery.link_delete_album_click = function()
+{
+  if (!confirm('Are you sure that you want to delete current Album?'))
+  {
     return;
   }
   removeAlbumMarker();
@@ -1157,62 +1254,81 @@ gallery.link_delete_album_click = function(){
 }
 
 //------------------------------------------------------------------------------
-gallery.bnt_new_comment_click = function(){
-
-  var comment = new Object();
-  comment.comment_id = '';
-  comment.create_date = '';
-  comment.user_id = '';
-  comment.user_name = '';
-  comment.modify_date = '';
-  comment.text = document.f1.new_comment.value
-  comment.res_id = ds_current_album.current.id;
-
-  gallery.ajax.image_add_comments(comment);
-}
-//------------------------------------------------------------------------------
-gallery.bnt_cancelnew_comment_click = function(){
-
-$('new_comment').value='';
+gallery.tags_init = function ()
+{
+  $('new_tag').value = '';
 }
 
 //------------------------------------------------------------------------------
-gallery.bnt_edit_comment_click = function(){
-
-var comment_new_text = $('edit_comment').value;
-var comment_id       = $('edit_comment').comment_id;
-gallery.ajax.image_edit_comments(comment_id,comment_new_text);
-}
-//------------------------------------------------------------------------------
-gallery.bnt_canceledit_comment_click = function(){
-
-OAT.Dom.hide('edit_comment_block');
-OAT.Dom.show('new_comment_block');
-//  var comment = new Object();
-//  comment.comment_id = '';
-//  comment.create_date = '';
-//  comment.user_id = '';
-//  comment.user_name = '';
-//  comment.modify_date = '';
-//  comment.text = document.f1.edit_comment.value
-//  comment.res_id = ds_current_album.current.id;
-//
-//  gallery.ajax.image_add_comments(comment);
+gallery.comment_init = function (comment_id, comment_text)
+{
+  var rte = 'comment2';
+  gallery.comment_id = comment_id;
+  if ($("chkSrc" + rte).checked)
+  {
+    $("chkSrc" + rte).checked = false;
+    toggleHTMLSrc(rte, true);
+  }
+  if (comment_id)
+  {
+    enableDesignMode(rte, comment_text, false);
+    $('comment_header').innerHTML = 'Edit Comment';
+  } else {
+    enableDesignMode(rte, '', false);
+    $('comment_header').innerHTML = 'New Comment';
+  }
 }
 
 //------------------------------------------------------------------------------
-gallery.get_image = function(id){
+gallery.comment_save_click = function()
+{
+  var rte = 'comment2';
+  if ($("chkSrc" + rte).checked)
+  {
+    $("chkSrc" + rte).checked = false;
+    toggleHTMLSrc(rte, true);
+  }
+  updateRTE(rte);
+  var obj = document.f1.elements[rte];
+  if (!(obj.value) || (obj.value == ''))
+  {
+    alert('Please, insert at least one word for a comment!');
+    return;
+  }
+  if (!gallery.comment_id)
+  {
+    var comment_text     = obj.value;
+    var comment_image_id = ds_current_album.current.id;
+
+    gallery.ajax.image_add_comment(comment_image_id, comment_text);
+  } else {
+    var comment_text = obj.value;
+    var comment_id   = gallery.comment_id;
+
+    gallery.ajax.image_update_comment (comment_id, comment_text);
+  }
+  gallery.comment_init();
+}
+
+//------------------------------------------------------------------------------
+gallery.comment_cancel_click = function()
+{
+  gallery.comment_init();
+}
+
+//------------------------------------------------------------------------------
+gallery.get_image = function(id)
+{
   gallery.ajax.load_images(ds_albums.current.index);
 }
 
-
-
 //------------------------------------------------------------------------------
-gallery.showError = function (ex){
-
+gallery.showError = function (ex)
+{
     var s = '<img src="/photos/res/i/close-24.gif" class="close_button" title="Close this panel" OnClick="gallery.error_box.hide()" />';
 
-  if (ex.constructor == String) {
+  if (ex.constructor == String)
+  {
     s = ex;
   } else {
     if ((ex.name != null) && (ex.name != ""))
@@ -1223,32 +1339,26 @@ gallery.showError = function (ex){
 
     if ((ex.description != null) && (ex.description != "") && (ex.message != ex.description))
       s += "Description:\n" + ex.description + "<br>";
-
-
-
-  } // if
-
+  }
   box = document.createElement('div');
   box.innerHTML = s ;
   gallery.error_box.clear();
   gallery.error_box.show();
   gallery.error_box.appendChild(box);
   hideWait();
-
 }
 
-
 //------------------------------------------------------------------------------
-function showPreviewNav(){
+function showPreviewNav()
+{
   div = document.createElement('div');
   div.setAttribute('id','preview_nav');
   return div;
 }
 
-
 //------------------------------------------------------------------------------
-function preview_collection(album,i){
-
+function preview_collection(album,i)
+{
   var div = document.createElement('div')
   if(album.obsolete==1)
      div.className='album_obsolete';
@@ -1498,7 +1608,7 @@ gallery.feed_siocn3turtle_click = function(){
 //------------------------------------------------------------------------------
 
 feed_dataspace_url = function(type){
-  window.open('http://'+document.location.host+'/dataspace/'+ds_albums.current.owner_name+'/photos/'+gallery_inst_name+'/'+type);
+  window.open('http://'+document.location.host+'/dataspace/'+gallery.owner_name+'/photos/'+gallery_inst_name+'/'+type);
 }
 
 //------------------------------------------------------------------------------
@@ -1632,7 +1742,7 @@ gallery.managePanels = function(action){
        $('map').className = $('map').className.replace( "edit","view");
        if(typeof(map.lastGEvent)!='undefined')
          GEvent.removeListener(map.lastGEvent);
-    };
+    }
     
     gallery.albums.show();
     gallery.showAlbumsInfo();
@@ -1765,11 +1875,12 @@ gallery.ajax = function(p_prepare,p_call,p_finish){
 }
 
 //------------------------------------------------------------------------------
-gallery.ajax.load_albums = function(path){
+gallery.ajax.load_albums = function(path)
+{
   call = proxies.SOAP.dav_browse;
   prepare = function(){
     return Array(sid,gallery_id,path);
-  };
+  }
   finish = function(p){
     var settings={};
     if(p.settings.length)
@@ -1781,10 +1892,11 @@ gallery.ajax.load_albums = function(path){
     }
     ds_albums.settings=settings;
     ds_albums.loadList(p.albums);
-    ds_albums.current.is_own = p.is_own;
-    ds_albums.current.owner_name = p.owner_name;
+    gallery.is_own = p.is_own;
+    gallery.owner_name = p.owner_name;
 
-    if(!jump_to()){
+    if (!jump_to())
+    {
        gallery.hideAlbums();
     }
     gallery.showAlbumsInfo();
@@ -1793,43 +1905,46 @@ gallery.ajax.load_albums = function(path){
     
 //    var is_owner=gallery.ajax.user_get_role();
     
-    for(var r=0;r<ds_albums.list.length;r++){
+    for (var r=0; r<ds_albums.list.length; r++)
+    {
       new_coll = preview_collection(ds_albums.list[r],r);
       gallery.albums.appendChild(new_coll);
       album_list = OAT.Dom.create('li');
       album_list.innerHTML = ds_albums.list[r].name.substring(0,12);
       album_list.id = "my_albums_list_"+r;
+      album_list.appendChild(makeDummyHref(ds_albums.list[r].name.substring(0,12)));
+
       $('my_albums_list').appendChild(album_list);
-    };
+    }
     
-    //gallery.prepare_aplus('my_albums_list');
+    gallery.prepare_aplus('my_albums_list');
     //gallery.prepare_aplus('albums');
     //gallery.prepare_aplus('wrapper');
     
     gallery.managePanels('my_albums');
     $('myAlbumsTxt').innerHTML='My Albums ('+ds_albums.list.length+')';
     TL.draw();
-
-
-  };
-
+  }
   gallery.ajax(prepare,call,finish);
-};
-
+}
 
 //------------------------------------------------------------------------------
-gallery.my_albums_list_click = function(el){
+gallery.my_albums_list_click = function(el)
+{
+  if (el.id.indexOf ("my_albums_list") != 0)
+    return;
   gallery.albums_click(el);
 }
 
 //------------------------------------------------------------------------------
-gallery.my_albums_list_more_click = function(){
+gallery.my_albums_list_more_click = function()
+{
   gallery.home_click();
 }
 
 //------------------------------------------------------------------------------
-gallery.ajax.new_album = function(){
-
+gallery.ajax.new_album = function()
+{
   call = proxies.SOAP.create_new_album;
   prepare =function() {
             if(document.f1.visibility[0].checked){
@@ -1851,7 +1966,8 @@ gallery.ajax.new_album = function(){
   finish = function(dav_lines){
     gallery.error_box.clear();
 
-    if(!ds_albums.addAlbumToList(dav_lines)){
+    if (!ds_albums.addAlbumToList(dav_lines))
+    {
       var messages = Array();
       var id = dav_lines.id * -1;
       messages[3] = "The album '" + dav_lines.name + "' already exists";
@@ -1869,13 +1985,14 @@ gallery.ajax.new_album = function(){
     album_list = OAT.Dom.create('li');
     album_list.innerHTML = ds_albums.list[r].name.substring(0,12);
     album_list.id = "my_albums_list_"+r;
+    album_list.appendChild(makeDummyHref(ds_albums.list[r].name.substring(0,12)));
     $('my_albums_list').appendChild(album_list);
+    gallery.prepare_aplus("my_albums_list_"+r);
 
     gallery.setCurrent(r);
     gallery.showImages();
     gallery.link_images_upload_click();
     gallery.new_album.hide();
-    
     
     newAlbumMarkerUpdate ();
   };
@@ -2026,7 +2143,8 @@ gallery.ajax.image_edit = function(id){
            };
   call = proxies.SOAP.edit_image;
   finish = function(res) {
-    if(res != 0){
+    if (res != 0)
+    {
       ds_current_album.editImageInList(res);
       alert('Succesfull')
       gallery.showImage(ds_current_album.current.index);
@@ -2039,155 +2157,156 @@ gallery.ajax.image_edit = function(id){
 }
 
 //------------------------------------------------------------------------------
-gallery.ajax.delete_images = function(in_ids){
-
+gallery.ajax.delete_images = function(in_ids)
+{
   call = proxies.SOAP.dav_delete;
   prepare = function() {
     return Array(sid,gallery_id,'r',in_ids)
-  };
+  }
   finish = function(out_ids) {
     if(out_ids!=null)
     {
     var list = ds_current_album.list;
-    for(var i=0;i<list.length;i++){
-      for(var x=0;x<out_ids.length;x++){
-        if(list[i].id == out_ids[x]){
+      for(var i=0;i<list.length;i++)
+      {
+        for(var x=0;x<out_ids.length;x++)
+        {
+          if (list[i].id == out_ids[x])
+          {
           list.splice(i,1);
       }
     }
   }
     gallery.showImagesInside();
     }
-  };
-
+  }
   gallery.ajax(prepare,call,finish);
 };
 
 //------------------------------------------------------------------------------
-gallery.ajax.image_get_comments = function(id){
-
+gallery.ajax.image_get_comments = function(id)
+{
   call = proxies.SOAP.get_comments;
   prepare = function() {
     return Array(sid,gallery_id,id)
-  };
+  }
   finish = function(comments){
     gallery.comments_list.innerHTML = '';
-    if(comments == null){
+    if (comments == null)
+    {
       return;
 }
     for(var i = 0;i<comments.length;i++) 
     {
       gallery.addComment(comments[i]);
     }
-    gallery.prepare_aplus('comments_list');  
   }
   gallery.ajax(prepare,call,finish);
-};
+}
 
 //------------------------------------------------------------------------------
-gallery.ajax.image_add_comments = function(comment){
-
+gallery.ajax.image_add_comment = function(image_id, comment_text)
+{
   call = proxies.SOAP.add_comment;
   prepare = function() {
-    return Array(sid,gallery_id,comment)
-  };
+    return Array(sid, gallery_id, image_id, comment_text)
+  }
   finish = function(p) {
     gallery.addComment(p)
-  };
-
+  }
   gallery.ajax(prepare,call,finish);
-};
-//------------------------------------------------------------------------------
-gallery.ajax.image_remove_comments = function(comment_id){
+}
 
+//------------------------------------------------------------------------------
+gallery.ajax.image_remove_comment = function(comment_id)
+{
   call = proxies.SOAP.remove_comment;
   prepare = function() {
     return Array(sid,comment_id)
-  };
+  }
   finish = function(p) {
       if(p==1)
       {
         OAT.Dom.unlink('comment_'+comment_id);
       }
-  };
-
+  }
   gallery.ajax(prepare,call,finish);
-};
-//------------------------------------------------------------------------------
-gallery.ajax.image_edit_comments = function(comment_id,comment_new_text){
+}
 
-  call = proxies.SOAP.edit_comment;
+//------------------------------------------------------------------------------
+gallery.ajax.image_update_comment = function(comment_id, comment_text)
+{
+  call = proxies.SOAP.update_comment;
   prepare = function() {
-    return Array(sid,comment_id,comment_new_text)
-  };
+    return Array(sid,comment_id, comment_text)
+  }
   finish = function(p) {
       if(p==1)
       {
-          $('comment_'+comment_id).firstChild.nodeValue=comment_new_text;
+      $('comment_'+comment_id).firstChild.innerHTML = comment_text;
+      gallery.prepare_aplus('comment_span_'+comment_id);
+    }
       }
-  };
-
   gallery.ajax(prepare,call,finish);
-};
+}
 
 //------------------------------------------------------------------------------
-gallery.ajax.tag_images = function(p1,p2){
-
+gallery.ajax.tag_images = function(p1,p2)
+{
   call = proxies.SOAP.tag_images;
   prepare = function() {
     return Array(sid,gallery_id,home_url,p1,p2)
-  };
+  }
   finish = function(tag){
     for(var i=0;i<ds_current_album.list.length;i++){
       $('image_id_'+i).checked = false;
       ds_current_album.list[i].private_tags[ds_current_album.list[i].private_tags.length] = tag;
     }
     alert('Done');
-  };
+  }
   gallery.ajax(prepare,call,finish);
-};
+}
 
 //------------------------------------------------------------------------------
-gallery.ajax.image_add_tags = function(image_id,new_tag){
-
+gallery.ajax.image_add_tags = function(image_id, tag)
+{
   call = proxies.SOAP.tag_image;
   prepare = function() {
-    return Array(sid,gallery_id,home_url,image_id,new_tag)
-  };
+    return Array(sid, gallery_id, home_url, image_id, tag)
+  }
   finish = function(p) {
     ds_current_album.current.private_tags = p;
     gallery.showTags()
-  };
-
+  }
   gallery.ajax(prepare,call,finish);
-};
+}
 
 //------------------------------------------------------------------------------
-gallery.ajax.image_remove_tags = function(image_id,tag){
-
+gallery.ajax.image_remove_tags = function(image_id,tag)
+{
   call = proxies.SOAP.remove_tag_image;
   prepare = function() {
     return Array(sid,gallery_id,image_id,tag);
-  };
+  }
   finish = function(p) {
     ds_current_album.current.private_tags = p;
     gallery.showTags();
-  };
-
+  }
   gallery.ajax(prepare,call,finish);
-};
+}
 
 //------------------------------------------------------------------------------
-gallery.ajax.image_get_exif = function(id){
-
+gallery.ajax.image_get_exif = function(id)
+{
   call = proxies.SOAP.get_attributes;
   prepare = function() {
     return Array(sid,gallery_id,id)
-  };
+  }
   finish = function(out_data) {
     var t = document.createElement('table');
     t.setAttribute('id','exif');
-    for(var i=0;i<out_data.length;i++){
+    for(var i=0;i<out_data.length;i++)
+    {
       var tr = t.insertRow(i);
       var td1 = tr.insertCell(0);
       var td2 = tr.insertCell(1);
@@ -2197,10 +2316,9 @@ gallery.ajax.image_get_exif = function(id){
     }
     gallery.image_info.clear();
     gallery.image_info.appendChild(t);
-  };
+  }
   gallery.ajax(prepare,call,finish);
-};
-
+}
 
 //------------------------------------------------------------------------------
 gallery.ajax.flickr_login_link = function(e){
@@ -2248,7 +2366,7 @@ gallery.ajax.flickr_login_link = function(e){
 //------------------------------------------------------------------------------
 gallery.ajax.flickr_get_photos_list = function(){
   if(gallery.flickr.status == ''){
-    alert('Please, first sing in Flickr');
+    alert('Please, first sign in Flickr!');
     return;
   }
   call = proxies.SOAP.flickr_get_photos_list;
@@ -2288,7 +2406,7 @@ gallery.ajax.flickr_save_photos = function(){
   }
 
   if(ids.length == 0){
-    alert('Please, first select one or more photos');
+    alert('Please, first select one or more photos!');
     return;
   }
 
@@ -2296,7 +2414,7 @@ gallery.ajax.flickr_save_photos = function(){
   prepare = function() {
     showWait();
     return Array(sid,ds_albums.current.id,ids);
-  };
+  }
   finish = function(out_data) {
     //OAT.Dom.show('images_import_flickr_list');
     //OAT.Dom.hide('images_import_flickr_save');
@@ -2306,25 +2424,27 @@ gallery.ajax.flickr_save_photos = function(){
     OAT.Dom.removeClass('images_import_flickr_list','link_disabled');
     gallery.ajax.load_images(ds_albums.current.index);
     return;
-  };
+  }
   gallery.ajax(prepare,call,finish);
 };
 
 //------------------------------------------------------------------------------
-gallery.ajax.flickr_send_photos = function(){
+gallery.ajax.flickr_send_photos = function()
+{
   if(gallery.flickr.status == ''){
-    alert('Please, first sing in Flickr');
+    alert('Please, first sing in Flickr!');
     return;
   }
   gallery.error_box.clear();
   var ids = new Array();
-  for(var i=0;i<ds_current_album.list.length;i++){
+  for(var i=0;i<ds_current_album.list.length;i++)
+  {
     if($('image_id_'+i).checked){
       ids[ids.length]= $('image_id_'+i).parentNode.parentNode.current_image.id;
     }
   }
   if(ids.length == 0){
-    alert('Please, first select one or more photos');
+    alert('Please, first select one or more photos!');
     return;
   }
 

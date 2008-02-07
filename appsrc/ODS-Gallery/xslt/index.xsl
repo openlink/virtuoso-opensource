@@ -77,7 +77,6 @@
         <script type="text/javascript" src="/photos/res/js/calendar.js"></script>
         <script type="text/javascript" language="JavaScript" src="/photos/res/proxy.vsp"></script>
         <link rel="stylesheet" href="/photos/res/css/gallery.css" type="text/css"/>
-        <link rel="stylesheet" href="/photos/res/css/winclassic.css" type="text/css"/>
         <link rel="stylesheet" href="/photos/res/css/timeline.css" type="text/css"/>
       </head>
         <xsl:apply-templates/>
@@ -349,11 +348,10 @@
           </div>
         </td>
           <td valign="top" class="right" id="tags_edit" style="display:none;">
-          <h2>Add new tag</h2>
-          Tag:<br/>
+            <h2>Add new tags (comma-separated)</h2>
           <textarea name="new_tag" id="new_tag"></textarea>
           <br/>
-          <button type="button" name="bnt_new_tag" id="">Cancel</button>
+            <button type="button" name="bnt_new_tag_cancel" id="bnt_new_tag_cancel">Cancel</button>
           <button type="button" name="bnt_new_tag" id="bnt_new_tag">Save</button>
         </td>
       </tr>
@@ -369,23 +367,21 @@
           </div>
         </td>
         <td valign="top" class="right">
-            <div id="new_comment_block">
-          <h2>Add new comment</h2>
-          Comment:<br/>
-          <textarea name="new_comment" id="new_comment"><xsl:call-template name="nbsp"/></textarea>
-          <br/>
-            <button type="button" name="bnt_cancelnew_comment" id="bnt_cancelnew_comment">Cancel</button>
-          <button type="button" name="bnt_new_comment" id="bnt_new_comment">Save</button>
+            <div id="comment_block">
+              <h2 id="comment_header">New comment</h2>
+              <div id="rte">
+                <script type="text/javascript" src="/photos/res/rte/js/richtext.js"></script>
+                <script type="text/javascript">
+                  initRTE("/photos/res/rte/images/", "/photos/res/rte/js/", "/photos/res/rte/css/rte.css", false);
+                </script>
+                <noscript><p><b>Javascript must be enabled to use this form.</b></p></noscript>
+                <script type="text/javascript">
+                  writeRichText('comment2', '', 480, 180, true, false);
+                </script>
             </div>
-            <div id="edit_comment_block" style="display:none;">
-            <h2>Edit comment</h2>
-            Comment:<br/>
-            <textarea name="edit_comment" id="edit_comment"><xsl:call-template name="nbsp"/></textarea>
-            <br/>
-            <button type="button" name="bnt_canceledit_comment" id="bnt_canceledit_comment">Cancel</button>
-            <button type="button" name="bnt_edit_comment" id="bnt_edit_comment">Save</button>
+              <button type="button" name="commnet_cancel" id="comment_cancel">Cancel</button>
+              <button type="button" name="comment_save" id="comment_save">Save</button>
             </div>
-
         </td>
       </tr>
     </table>
@@ -686,11 +682,8 @@
                 </tr>
                 <tfoot>
                   <tr>
-                    <td></td>
-                    <td>
+          <td colspan="2" align="center">
                         <button type="button" id="new_album_close" name="btn_new_album" >Cancel</button>
-                      </td>
-                    <td>
                       <button type="button" name="btn_new_album" OnClick="gallery.new_album_action()">Create</button>
                     </td>
                   </tr>

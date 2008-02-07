@@ -122,7 +122,7 @@
     owner_fullname:=coalesce(current_user.full_name,current_user.first_name||' '||current_user.last_name,current_user.auth_uid);
   }else
   {
-   owner_fullname:=(select coalesce(WAUI_FULL_NAME,WAUI_FIRST_NAME||' '||WAUI_LAST_NAME,current_instance.owner_name) from DB.DBA.WA_USER_INFO where WAUI_U_ID= current_instance.owner_id);
+    owner_fullname := PHOTO.WA.user_fullName (current_instance.owner_id);
   }
   
   http(sprintf('<root sid="%s" realm="%s">',_sid,either(current_user.realm,'')),_xml);

@@ -55,4 +55,8 @@ EXTRA_DIST = \
 	www-root/i/*.png \
 	www-root/js/*.js \
 	www-root/portal/*.vsp \
+	www-root/rte/css/*.css \
+	www-root/rte/images/*.gif \
+	www-root/rte/js/*.htm \
+	www-root/rte/js/*.js \
 	xslt/*.xsl
