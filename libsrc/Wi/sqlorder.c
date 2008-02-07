@@ -84,7 +84,7 @@ setp_node_free (setp_node_t * setp)
 }
 
 
-void
+setp_node_t *
 sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
     state_slot_t ** ssl_out, long nrows)
 {
@@ -99,6 +99,7 @@ sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
   setp->setp_temp_key = sqlc_new_temp_key_id (sc);
   setp_distinct_hash (sc, setp, nrows);
   sql_node_append (head, (data_source_t *) setp);
+  return setp;
 }
 
 
