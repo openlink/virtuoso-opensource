@@ -5489,15 +5489,14 @@ bif_file_rl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t *fpi = (caddr_t *)bif_arg (qst, args, 0, "file_rl");
   long inx = (long) bif_long_arg (qst, args, 1, "file_rl");
-
-  sec_check_dba ((query_instance_t *) qst, "file_rl");
-
   char str [8*1024];
   FILE * fp;
   dk_set_t line = NULL;
   caddr_t ret = NULL;
 
   fp = (FILE *) fpi [0];
+
+  sec_check_dba ((query_instance_t *) qst, "file_rl");
 
   while (!feof (fp))
     {
