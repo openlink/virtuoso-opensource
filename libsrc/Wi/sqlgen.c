@@ -2449,7 +2449,12 @@ bitmap_index_box);
 	  END_DO_SET ();
 	}
       if (SEL_IS_DISTINCT (dt))
-	sqlc_add_distinct_node (sc, head, (state_slot_t **) t_list_to_array (out_slots), (long) tb_dfe->dfe_arity);
+	{
+	  setp_node_t * dist = sqlc_add_distinct_node (sc, head, (state_slot_t **) t_list_to_array (out_slots), (long) tb_dfe->dfe_arity);
+	  /* if distinct with order by, the expressions must be done before the distint, not before the oby */
+	  dist->src_gen.src_pre_code = code_to_cv (sc, code);
+	  code = NULL;
+	}
       dt->_.select_stmt.top = NULL;
     }
   setp->src_gen.src_pre_code = code_to_cv (sc, code);

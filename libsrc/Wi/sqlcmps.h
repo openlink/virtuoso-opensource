@@ -360,7 +360,7 @@ dbe_table_t * table_ref_table (sql_comp_t * sc, ST* tref);
 
 state_slot_t * sqlc_col_ref_ssl (sql_comp_t * sc, ST* col_ref);
 
-void sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
+setp_node_t *  sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
     state_slot_t ** ssl_out, long nrows);
 
 
