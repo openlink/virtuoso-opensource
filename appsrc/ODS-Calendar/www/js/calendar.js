@@ -50,7 +50,8 @@ function toolbarPost(value)
 
 // ---------------------------------------------------------------------------
 //
-function submitEnter(myForm, myButton, e) {
+function submitEnter(myForm, myButton, e)
+{
   var keyCode;
   
   if (window.event)
@@ -98,7 +99,8 @@ function selectCheck (obj, prefix)
 function enableToolbars (objForm, prefix)
 {
   var oCount = 0;
-  for (var i = 0; i < objForm.elements.length; i++) {
+  for (var i = 0; i < objForm.elements.length; i++)
+  {
     var o = objForm.elements[i];
     if (o != null && o.type == 'checkbox' && !o.disabled && o.name.indexOf (prefix) != -1 && o.checked)
       oCount += 1;
@@ -112,8 +114,10 @@ function enableElement (id, id_gray, idFlag)
 {
   var mode = 'block';
   var element = $(id);
-  if (element) {
-    if (idFlag) {
+  if (element)
+  {
+    if (idFlag)
+    {
       element.style.display = 'block';
       mode = 'none';
     } else {
@@ -131,9 +135,11 @@ function shCell(cell)
 {
   var c = $(cell);
   var i = $(cell+'_image');
-  if ((c) && (c.style.display == "none")) {
+  if ((c) && (c.style.display == "none"))
+  {
     c.style.display = "";
-    if (i) {
+    if (i)
+    {
       i.src = "image/tr_open.gif";
       i.alt = "Close";
     }
@@ -147,11 +153,14 @@ function shCell(cell)
 }
 
 // ---------------------------------------------------------------------------
-function selectAllCheckboxes (obj, prefix) {
+function selectAllCheckboxes (obj, prefix)
+{
   var objForm = obj.form;
-  for (var i = 0; i < objForm.elements.length; i++) {
+  for (var i = 0; i < objForm.elements.length; i++)
+  {
     var o = objForm.elements[i];
-    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1) {
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1)
+    {
       if (obj.value == 'Select All')
         o.checked = true;
       else
@@ -168,12 +177,15 @@ function selectAllCheckboxes (obj, prefix) {
 }
 
 // ---------------------------------------------------------------------------
-function selectAllCheckboxes2 (obj, prefix) {
+function selectAllCheckboxes2 (obj, prefix)
+{
 	var inputs = document.getElementsByTagName("input");
 
-	for (var i = 0; i < inputs.length; i++) {
+	for (var i = 0; i < inputs.length; i++)
+	{
 	  var o = inputs[i];
-    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1) {
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1)
+    {
       if (obj.value == 'Select All')
         o.checked = true;
       else
@@ -190,9 +202,12 @@ function selectAllCheckboxes2 (obj, prefix) {
 
 
 // ---------------------------------------------------------------------------
-function anySelected (form, txt, selectionMsq) {
-  if ((form != null) && (txt != null)) {
-    for (var i = 0; i < form.elements.length; i++) {
+function anySelected (form, txt, selectionMsq)
+{
+  if ((form != null) && (txt != null))
+  {
+    for (var i = 0; i < form.elements.length; i++)
+    {
       var obj = form.elements[i];
       if (obj != null && obj.type == "checkbox" && obj.name.indexOf (txt) != -1 && obj.checked)
         return true;
@@ -205,12 +220,16 @@ function anySelected (form, txt, selectionMsq) {
 }
 
 // ---------------------------------------------------------------------------
-function coloriseTable(id) {
-  if (document.getElementsByTagName) {
+function coloriseTable(id)
+{
+  if (document.getElementsByTagName)
+  {
     var table = $(id);
-    if (table) {
+    if (table)
+    {
       var rows = table.getElementsByTagName("tr");
-      for (i = 0; i < rows.length; i++) {
+      for (i = 0; i < rows.length; i++)
+      {
         rows[i].className = rows[i].className + " tr_" + (i % 2);;
       }
     }
@@ -218,14 +237,16 @@ function coloriseTable(id) {
 }
 
 // ---------------------------------------------------------------------------
-function coloriseRow(obj, checked) {
+function coloriseRow(obj, checked)
+{
   obj.className = (obj.className).replace('tr_select', '');
   if (checked)
     obj.className = obj.className + ' ' + 'tr_select';
 }
 
 // ---------------------------------------------------------------------------
-function myTrim(sString, sChar) {
+function myTrim(sString, sChar)
+{
   if (sChar == null)
     sChar = ' ';
 
@@ -239,7 +260,8 @@ function myTrim(sString, sChar) {
 }
 
 // ---------------------------------------------------------------------------
-function showTag(tag) {
+function showTag(tag)
+{
   createHidden2(parent.document, 'F1', 'tag', tag);
   parent.document.forms['F1'].submit();
 }
@@ -251,7 +273,8 @@ function showTag(tag) {
 //   by their text (display) values
 //
 // ---------------------------------------------------------------------------
-function sortSelect(box) {
+function sortSelect(box)
+{
   var o = new Array();
   for (var i=0; i<box.options.length; i++)
     o[o.length] = new Option( box.options[i].text, box.options[i].value, box.options[i].defaultSelected, box.options[i].selected) ;
@@ -274,11 +297,14 @@ function sortSelect(box) {
 //
 function showTab(tabs, tabsCount, tabNo)
 {
-  if ($(tabs)) {
-    for (var i = 0; i < tabsCount; i++) {
+  if ($(tabs))
+  {
+    for (var i = 0; i < tabsCount; i++)
+    {
       var l = $(tabs+'_tab_'+i);      // tab labels
       var c = $(tabs+'_content_'+i);  // tab contents
-      if (i == tabNo) {
+      if (i == tabNo)
+      {
         if ($('tabNo'))
           $('tabNo').value = tabNo;
         if (c) {
@@ -287,7 +313,8 @@ function showTab(tabs, tabsCount, tabNo)
         OAT.Dom.addClass(l, "activeTab");
         l.blur();
       } else {
-        if (c) {
+        if (c)
+        {
           OAT.Dom.hide(c);
 }
         OAT.Dom.removeClass(l, "activeTab");
@@ -307,6 +334,17 @@ function windowShow(sPage, width, height)
   sPage = sPage + '&sid=' + document.forms[0].elements['sid'].value + '&realm=' + document.forms[0].elements['realm'].value;
   win = window.open(sPage, null, "width="+width+",height="+height+", top=100, left=100, scrollbars=yes, resize=yes, menubar=no");
   win.window.focus();
+}
+
+// ---------------------------------------------------------------------------
+//
+function calendarsShow(sPage, width, height)
+{
+  if ($('ss_type_0').checked)
+  {
+    sPage = sPage + '&mode=p'
+  }
+  windowShow(sPage, width, height);
 }
 
 // ---------------------------------------------------------------------------
@@ -336,13 +374,15 @@ function rowSelect(obj)
   var myRe = /^(\w+):(\w+);(.*)?/;
   var params = window.document.forms['F1'].elements['params'].value;
   var myArray;
-  while(true) {
+  while(true)
+  {
     myArray = myRe.exec(params);
     if (myArray == undefined)
       break;
     if (myArray.length > 2)
       if (window.opener.document.F1)
-        if (window.opener.document.F1.elements[myArray[1]]) {
+        if (window.opener.document.F1.elements[myArray[1]])
+        {
           if (myArray[2] == 's1')
             if (window.opener.document.F1.elements[myArray[1]])
               rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
@@ -354,7 +394,8 @@ function rowSelect(obj)
       break;
     params = '' + myArray[3];
   }
-  if (submitMode) {
+  if (submitMode)
+  {
     window.opener.createHidden('F1', 'submitting', 'yes');
     window.opener.document.F1.submit();
   }
@@ -366,14 +407,17 @@ function rowSelect(obj)
 //
 function rowSelectValue(dstField, srcField, singleMode)
 {
-  if (singleMode) {
+  if (singleMode)
+  {
     dstField.value = srcField.value;
   } else {
     dstField.value = myTrim(dstField.value);
     dstField.value = myTrim(dstField.value, ',');
     dstField.value = myTrim(dstField.value);
-    if (dstField.value.indexOf(srcField.value) == -1) {
-      if (dstField.value == '') {
+    if (dstField.value.indexOf(srcField.value) == -1)
+    {
+      if (dstField.value == '')
+      {
         dstField.value = srcField.value;
       } else {
         dstField.value = dstField.value + ',' + srcField.value;
@@ -389,8 +433,10 @@ function rowSelectValue(dstField, srcField, singleMode)
 // ---------------------------------------------------------------------------
 function menuMouseIn(a, b)
 {
-  if (b != undefined) {
-    while (b.parentNode) {
+  if (b != undefined)
+  {
+    while (b.parentNode)
+    {
       b = b.parentNode;
       if (b == a)
         return true;
@@ -405,7 +451,8 @@ function menuMouseOut(event)
 {
   var current, related;
 
-  if (window.event) {
+  if (window.event)
+  {
     current = this;
     related = window.event.toElement;
   } else {
@@ -423,12 +470,16 @@ function menuPopup(button, menuID)
 {
   if (document.getElementsByTagName && !document.all)
     document.all = document.getElementsByTagName("*");
-  if (document.all) {
-    for (var i = 0; i < document.all.length; i++) {
+  if (document.all)
+  {
+    for (var i = 0; i < document.all.length; i++)
+    {
       var obj = document.all[i];
-      if (obj.id.search('exportMenu') != -1) {
+      if (obj.id.search('exportMenu') != -1)
+      {
         obj.style.visibility = 'hidden';
-        if (OAT.Browser.isIE) {
+        if (OAT.Browser.isIE)
+        {
           obj.onmouseout = menuMouseOut;
         } else {
           obj.addEventListener("mouseout", menuMouseOut, true);
@@ -439,7 +490,8 @@ function menuPopup(button, menuID)
 
   button.blur();
   var div = $(menuID);
-  if (div.style.visibility == 'visible') {
+  if (div.style.visibility == 'visible')
+  {
     div.style.visibility = 'hidden';
   } else {
     x = button.offsetLeft;
@@ -457,18 +509,22 @@ function menuPopup(button, menuID)
 //
 // ---------------------------------------------------------------------------
 //
-function createHidden(frm_name, fld_name, fld_value) {
+function createHidden(frm_name, fld_name, fld_value)
+{
   createHidden2(document, frm_name, fld_name, fld_value);
 }
 
 // ---------------------------------------------------------------------------
 //
-function createHidden2(doc, frm_name, fld_name, fld_value) {
+function createHidden2(doc, frm_name, fld_name, fld_value)
+{
   var hidden;
 
-  if (doc.forms[frm_name]) {
+  if (doc.forms[frm_name])
+  {
     hidden = doc.forms[frm_name].elements[fld_name];
-    if (hidden == null) {
+    if (hidden == null)
+    {
       hidden = doc.createElement("input");
       hidden.setAttribute("type", "hidden");
       hidden.setAttribute("name", fld_name);
@@ -481,7 +537,8 @@ function createHidden2(doc, frm_name, fld_name, fld_value) {
 
 // ---------------------------------------------------------------------------
 //
-function changeExportName(fld_name, from, to) {
+function changeExportName(fld_name, from, to)
+{
   var obj = document.forms['F1'].elements[fld_name];
   if (obj)
     obj.value = (obj.value).replace(from, to);
@@ -497,10 +554,13 @@ function updateChecked (obj, objName)
   objForm.s1.value = myTrim(objForm.s1.value, ',');
   objForm.s1.value = myTrim(objForm.s1.value);
   objForm.s1.value = objForm.s1.value + ',';
-  for (var i = 0; i < objForm.elements.length; i = i + 1) {
+  for (var i = 0; i < objForm.elements.length; i = i + 1)
+  {
     var obj = objForm.elements[i];
-    if (obj != null && obj.type == "checkbox" && obj.name == objName) {
-      if (obj.checked) {
+    if (obj != null && obj.type == "checkbox" && obj.name == objName)
+    {
+      if (obj.checked)
+      {
         if (objForm.s1.value.indexOf(obj.value+',') == -1)
           objForm.s1.value = objForm.s1.value + obj.value+',';
       } else {
@@ -537,13 +597,15 @@ function addChecked (form, txt, selectionMsq)
   var myRe = /^(\w+):(\w+);(.*)?/;
   var params = window.document.forms['F1'].elements['params'].value;
   var myArray;
-  while(true) {
+  while(true)
+  {
     myArray = myRe.exec(params);
     if (myArray == undefined)
       break;
     if (myArray.length > 2)
       if (window.opener.document.F1)
-        if (window.opener.document.F1.elements[myArray[1]]) {
+        if (window.opener.document.F1.elements[myArray[1]])
+        {
           if (myArray[2] == 's1')
             if (window.opener.document.F1.elements[myArray[1]])
               rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
@@ -587,7 +649,8 @@ function addTag(tag, objName)
 //
 function addCheckedTags (openerName, checkName)
 {
-  if (window.opener.document.F1.elements[document.F1.elements[openerName].value]) {
+  if (window.opener.document.F1.elements[document.F1.elements[openerName].value])
+  {
     var objForm = document.F1;
     var objOpener = window.opener.document.F1.elements[document.F1.elements[openerName].value];
 
@@ -595,9 +658,11 @@ function addCheckedTags (openerName, checkName)
     objOpener.value = myTrim(objOpener.value, ',');
     objOpener.value = myTrim(objOpener.value);
     objOpener.value = objOpener.value + ',';
-    for (var i = 0; i < objForm.elements.length; i = i + 1) {
+    for (var i = 0; i < objForm.elements.length; i = i + 1)
+    {
       var obj = objForm.elements[i];
-      if (obj != null && obj.type == "checkbox" && obj.name == checkName) {
+      if (obj != null && obj.type == "checkbox" && obj.name == checkName)
+      {
         if (obj.checked) {
           if (objOpener.value.indexOf(obj.value+',') == -1)
             objOpener.value = objOpener.value + obj.value+',';
@@ -686,7 +751,8 @@ function eAnnotea(event, id, domain_id, account_id)
 function cNewEvent (event, onDate, onTime)
 {
   var srcNode = OAT.Event.source(event);
-  if (OAT.Dom.isClass(srcNode, 'CE_new')) {
+  if (OAT.Dom.isClass(srcNode, 'CE_new'))
+  {
   if (onDate != null)
     createHidden('F1', 'onDate', onDate);
   if (onTime != null)
@@ -716,7 +782,8 @@ function exchangeHTML ()
     T = $('ds2_navigation');
   if (!T)
     T = $('ds3_navigation');
-  if (T) {
+  if (T)
+  {
     S = $('navigation')
     if (S)
       S.innerHTML = T.innerHTML;
@@ -727,9 +794,11 @@ function exchangeHTML ()
 // ---------------------------------------------------------------------------
 function checkRepetition (grpName, checkName)
 {
-  for (var i = 0; i < document.forms['F1'].elements.length; i++) {
+  for (var i = 0; i < document.forms['F1'].elements.length; i++)
+  {
     var obj = document.forms['F1'].elements[i];
-    if (obj.type == "radio" && obj.name == grpName) {
+    if (obj.type == "radio" && obj.name == grpName)
+    {
       obj.checked = false;
       if (obj.id == checkName)
         obj.checked = true;
@@ -752,9 +821,11 @@ function checkReminder()
 {
   var cb = function(txt) {
     setTimeout("checkReminder()", 60000);
-    if (txt != "") {
+    if (txt != "")
+    {
       var reminderBody = $("reminderBody");
-      if (reminderBody) {
+      if (reminderBody)
+      {
         if (OAT.Dimmer.elm != reminderDialog)
           reminderBody.innerHTML = '';
         var xmlDoc = OAT.Xml.createXmlDoc('<root>'+txt+'</root>');
@@ -762,7 +833,8 @@ function checkReminder()
         var reminderTRs = root.getElementsByTagName('tr');
   		  for (var i=0; i<reminderTRs.length; i++) {
   		    var tr = reminderTRs[i];
-  		    if (!$(tr.id)) {
+  		    if (!$(tr.id))
+  		    {
             reminderBody.innerHTML += OAT.Xml.serializeXmlDoc(tr);
           }
   		  }
@@ -781,9 +853,11 @@ function dismissReminder(prefix, mode)
 {
 	var inputs = document.getElementsByTagName("input");
 	var reminders = "";
-	for (var i = 0; i < inputs.length; i++) {
+	for (var i = 0; i < inputs.length; i++)
+	{
 	  var o = inputs[i];
-    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1) {
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1)
+    {
       if (o.checked || mode)
         reminders = reminders + "," + o.value;
     }

@@ -57,24 +57,103 @@ CAL.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.tmp_update ()
+{
+  if (registry_get ('cal_grants_update') = '1')
+    return;
+
+  CAL.WA.exec_no_error('DROP TABLE CAL.WA.GRANTS');
+
+  registry_set ('cal_grants_update', '1');
+}
+;
+CAL.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
 CAL.WA.exec_no_error ('
   create table CAL.WA.GRANTS (
     G_ID integer identity,
-    G_GRANTER_ID integer not null,
-    G_GRANTEE_ID integer not null,
-    G_EVENT_ID integer not null,
+    G_DOMAIN_ID integer not null,
+    G_ACCOUNT_ID integer not null,
+    G_ENABLE integer default 1,
+    G_MODE varchar default \'R\',
 
     PRIMARY KEY (G_ID)
   )
 ');
 
 CAL.WA.exec_no_error ('
-  create index SK_GRANTS_01 on CAL.WA.GRANTS (G_GRANTER_ID, G_EVENT_ID)
+  create index SK_GRANTS_01 on CAL.WA.GRANTS (G_DOMAIN_ID)
 ');
 
 CAL.WA.exec_no_error ('
-  create index SK_GRANTS_02 on CAL.WA.GRANTS (G_GRANTEE_ID, G_EVENT_ID)
+  create index SK_GRANTS_02 on CAL.WA.GRANTS (G_ACCOUNT_ID)
 ');
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  create table CAL.WA.SHARED (
+    S_ID integer identity,
+    S_DOMAIN_ID integer not null,
+    S_GRANT_ID integer,
+    S_CALENDAR_ID integer not null,
+    S_VISIBLE integer default 1,
+    S_COLOR varchar,
+    S_OPTIONS long varchar,
+
+    constraint FK_SHARED_01 FOREIGN KEY (S_GRANT_ID) references CAL.WA.GRANTS (G_ID) ON DELETE CASCADE,
+
+    PRIMARY KEY (S_ID)
+  )
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_SHARED_01 on CAL.WA.SHARED (S_DOMAIN_ID, S_CALENDAR_ID)
+');
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.my_calendars (
+  in domain_id any,
+  in account_role varchar)
+{
+  declare calendar_id integer;
+
+  result_names (calendar_id);
+  result (domain_id);
+
+  if (account_role in ('public', 'guest'))
+    return;
+
+  for (select a.WAI_IS_PUBLIC,
+              b.S_GRANT_ID,
+              b.S_CALENDAR_ID
+         from DB.DBA.WA_INSTANCE a,
+              CAL.WA.SHARED b
+        where a.WAI_TYPE_NAME = 'Calendar'
+          and a.WAI_ID = b.S_CALENDAR_ID
+          and b.S_DOMAIN_ID = domain_id
+          and b.S_VISIBLE = 1) do
+  {
+    if (isnull (S_GRANT_ID))
+    {
+      if (WAI_IS_PUBLIC = 1)
+        result (S_CALENDAR_ID);
+    } else {
+      for (select G_ID from CAL.WA.GRANTS where G_ID = S_GRANT_ID and G_ENABLE = 1) do
+        result (S_CALENDAR_ID);
+    }
+  }
+}
+;
+
+CAL.WA.exec_no_error ('drop view CAL..MY_CALENDARS');
+CAL.WA.exec_no_error ('
+  create procedure view CAL..MY_CALENDARS as CAL.WA.my_calendars (domain_id, account_role) (CALENDAR_ID integer)
+')
+;
 
 -------------------------------------------------------------------------------
 --
@@ -85,10 +164,8 @@ CAL.WA.exec_no_error ('
     E_DOMAIN_ID integer not null,
     E_KIND integer default 0,             -- 0 - Event
                                           -- 1 - Task
-                                          -- 2 - Notes
-    E_CLASS integer default 0,            -- 0 - PUBLIC
-                                          -- 1 - PRIVATE
-                                          -- 2 - CONFIDENTIAL
+    E_PRIVACY integer default 0,          -- 0 - PRIVATE
+                                          -- 1 - PUBLIC
     E_SUBJECT varchar,
     E_DESCRIPTION long varchar,
     E_NOTES long varchar,
@@ -152,9 +229,17 @@ CAL.WA.exec_no_error (
   'alter table CAL.WA.EVENTS add E_COMPLETED datetime', 'C', 'CAL.WA.EVENTS', 'E_COMPLETED'
 );
 
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.EVENTS add E_PRIVACY integer default 0', 'C', 'CAL.WA.EVENTS', 'E_PRIVACY'
+);
+
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.EVENTS drop E_CLASS', 'D', 'CAL.WA.EVENTS', 'E_CLASS'
+);
+
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.tmp_note_update ()
+create procedure CAL.WA.tmp_update ()
 {
   if (registry_get ('cal_note_update') = '1')
     return;
@@ -163,7 +248,20 @@ create procedure CAL.WA.tmp_note_update ()
   registry_set ('cal_note_update', '1');
 }
 ;
-CAL.WA.tmp_note_update ();
+CAL.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.tmp_update ()
+{
+  if (registry_get ('cal_privacy_update') = '1')
+    return;
+
+  update CAL.WA.EVENTS set E_PRIVACY = 1;
+  registry_set ('cal_privacy_update', '1');
+}
+;
+CAL.WA.tmp_update ();
 
 -------------------------------------------------------------------------------
 --
@@ -283,7 +381,6 @@ CAL.WA.exec_no_error ('
 CAL.WA.exec_no_error ('
   create trigger EVENTS_AD after delete on CAL.WA.EVENTS referencing old as O {
     CAL.WA.tags_update (O.E_DOMAIN_ID, O.E_TAGS, \'\');
-    delete from CAL.WA.GRANTS where G_EVENT_ID = O.E_ID;
     delete from CAL.WA.ALARMS where A_EVENT_ID = O.E_ID;
 
     CAL.WA.upstream_event_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_TAGS, \'D\');
@@ -399,7 +496,7 @@ CAL.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.tmp_uid_update ()
+create procedure CAL.WA.tmp_update ()
 {
   if (registry_get ('cal_uid_update') = '1')
     return;
@@ -409,7 +506,7 @@ create procedure CAL.WA.tmp_uid_update ()
   registry_set ('cal_uid_update', '1');
 }
 ;
-CAL.WA.tmp_uid_update ();
+CAL.WA.tmp_update ();
 
 -------------------------------------------------------------------------------
 --

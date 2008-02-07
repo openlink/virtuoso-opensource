@@ -222,32 +222,7 @@
       </div>
         </div>
       <v:include url="calendar_login.vspx"/>
-      <table id="MTB">
-        <tr>
-          <!-- Navigation left column -->
-          <td id="LC">
-            <vm:if test="CAL.WA.page_name () = 'home.vspx'">
-              <vm:if test="self.account_role not in ('public', 'guest')">
-              <xsl:call-template name="vm:event"/>
-            </vm:if>
-              <xsl:call-template name="vm:calendar"/>
-              <xsl:call-template name="vm:exchange"/>
-            <xsl:call-template name="vm:formats"/>
-            </vm:if>
-          </td>
-          <!-- Navigation right column -->
-          <td id="RC">
-            <v:template type="simple" condition="not self.vc_is_valid">
-              <div class="error">
-                <p><v:error-summary/></p>
-              </div>
-            </v:template>
-            <div class="main_page_area">
               <xsl:apply-templates select="vm:pagebody" />
-            </div>
-          </td>
-        </tr>
-      </table>
       <div id="FT">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
@@ -267,7 +242,7 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template name="vm:event">
+  <xsl:template match="vm:event">
     <div>
       <input type="button" value="New Event" onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'event');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0 0.5em 0.5em; float: left; display: block; width: 78px;"/>
       <input type="button" value="New Task"  onclick="javascript: vspxPost('command', 'select', 'create', 'mode', 'task');" class="button CE_new" style="padding-left: 0; padding-right: 0; margin: 0 0.5em 0.5em 0; float: right; display: block; width: 78px;"/>
@@ -276,7 +251,7 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template name="vm:calendar">
+  <xsl:template match="vm:calendar">
     <div class="lc">
       <table cellspacing="0" cellpadding="3" style="-moz-user-select: none; cursor: pointer;" class="C_monthtable" id="c_tbl">
         <tbody>
@@ -313,7 +288,7 @@
                   where rs0 = self.domain_id
                     and rs1 = self.nCalcDate (0)
                     and rs2 = self.nCalcDate (length (self.cnDays)-1)
-                    and rs3 = self.cTimeZone
+                    and rs3 = self.account_role
                     and rs4 = self.cShowTasks) do
             {
               eventDays := vector_concat (eventDays, vector (CAL.WA.dt_dateClear (e_start)));
@@ -378,7 +353,7 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template name="vm:exchange">
+  <xsl:template match="vm:exchange">
     <div class="lc lc_head" onclick="shCell('exchange')">
       <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />Exchange
     </div>
@@ -389,7 +364,7 @@
   </xsl:template>
 
   <!--=========================================================================-->
-  <xsl:template name="vm:formats">
+  <xsl:template match="vm:formats">
     <div class="lc lc_head" onclick="shCell('gems')">
       <img id="gems_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />Calendar Gems
     </div>
@@ -429,9 +404,16 @@
       {
         declare n_start, n_end, n_total integer;
 
+        if (isnull (control.ds_data_source))
+        {
+          n_total := control.ds_rows_total;
+          n_start := control.ds_rows_offs + 1;
+          n_end   := n_start + control.ds_nrows - 1;
+        } else {
         n_total := control.ds_data_source.ds_total_rows;
         n_start := control.ds_data_source.ds_rows_offs + 1;
         n_end   := n_start + control.ds_data_source.ds_rows_fetched - 1;
+        }
         if (n_end > n_total)
           n_end := n_total;
 

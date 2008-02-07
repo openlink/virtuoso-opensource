@@ -165,6 +165,7 @@ CAL.WA.exec_no_error('
     overriding method wa_front_page_as_user(inout stream any, in user_name varchar) returns any,
     overriding method wa_rdf_url (in vhost varchar, in lhost varchar) returns varchar,
     method wa_dashboard_last_item () returns any,
+    method wa_dashboard_user_items () returns any,
     method wa_vhost_options () returns any,
     method get_param (in param varchar) returns any
 '
@@ -178,6 +179,11 @@ CAL.WA.exec_no_error (
 
 CAL.WA.exec_no_error (
   'alter type wa_Calendar add overriding method wa_update_instance (in oldValues any, in newValues any) returns any'
+)
+;
+
+CAL.WA.exec_no_error (
+  'alter type wa_Calendar add method wa_dashboard_user_items () returns any'
 )
 ;
 
@@ -388,7 +394,19 @@ create method wa_dashboard_last_item () for wa_Calendar
 
   domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
   userID := (select WAM_USER from WA_MEMBER B where WAM_INST = self.wa_name and WAM_MEMBER_TYPE = 1);
-  return CAL.WA.dashboard_get (domainID, userID);
+  return CAL.WA.dashboard_get (domainID, userID, 1);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create method wa_dashboard_user_items () for wa_Calendar
+{
+  declare domainID, userID integer;
+
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.wa_name);
+  userID := (select WAM_USER from WA_MEMBER B where WAM_INST = self.wa_name and WAM_MEMBER_TYPE = 1);
+  return CAL.WA.dashboard_get (domainID, userID, 0);
 }
 ;
 

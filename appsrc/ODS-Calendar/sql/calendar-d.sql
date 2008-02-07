@@ -40,6 +40,7 @@ CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM_LOG');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM_EVENT');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.GRANTS');
+CAL.WA.exec_no_error('DROP TABLE CAL.WA.SHARED');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.ANNOTATIONS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.ALARMS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.EVENTS');
@@ -52,12 +53,14 @@ CAL.WA.exec_no_error('drop type wa_Calendar');
 
 -- Views
 CAL.WA.exec_no_error('drop view CAL..TAGS_VIEW');
+CAL.WA.exec_no_error('drop view CAL..MY_CALENDARS');
 
 -- Registry
 registry_remove ('calendar_path');
 registry_remove ('calendar_version');
 registry_remove ('calendar_build');
 registry_remove ('cal_note_update');
+registry_remove ('cal_class_update');
 registry_remove ('cal_description_update');
 registry_remove ('cal_index_version');
 

@@ -28,7 +28,8 @@
     <![CDATA[
       declare altStr, directionStr, imageStr varchar;
 
-      if (dsOrder = columnName and dsDirection = 'desc') {
+      if (dsOrder = columnName and dsDirection = 'desc')
+      {
         directionStr := 'Ascending';
         imageStr := '&nbsp;<img src="image/d.gif" border="0" alt="Down"/>';
       } else if (dsOrder = columnName and dsDirection = 'asc') {
@@ -49,7 +50,8 @@
         return;
 
       ds.vc_reset ();
-      if (udt_get (self, dsOrder) = columnName) {
+      if (udt_get (self, dsOrder) = columnName)
+      {
         udt_set (self, dsDirection, either (equ (udt_get (self, dsDirection), 'asc'), 'desc', 'asc'));
       } else {
         udt_set (self, dsDirection, 'asc');
@@ -65,9 +67,11 @@
       params := self.vc_page.vc_event.ve_params;
 
       tmp := get_keyword ('id', params, '');
-      if (tmp <> '') {
+      if (tmp <> '')
+      {
         self.v_id := cast (tmp as integer);
-        if (self.v_id <> -1) {
+        if (self.v_id <> -1)
+        {
           self.cAction := 'edit';
           if (self.account_role in ('public', 'guest'))
             self.cAction := 'view';
@@ -80,7 +84,8 @@
       }
 
       tmp := get_keyword ('search', params, '');
-      if (tmp <> '') {
+      if (tmp <> '')
+      {
         self.cScope := 'search';
         self.cSearch := null;
         CAL.WA.xml_set ('keywords', self.cSearch, tmp);
@@ -107,7 +112,8 @@
         self.cScope := CAL.WA.settings_defaultView (self.settings);
       if (isnull (self.cDay))
         self.cDay := CAL.WA.dt_curdate (self.cTimeZone);
-      if (isnull (self.cMonth)) {
+      if (isnull (self.cMonth))
+      {
         self.cMonth := CAL.WA.dt_BeginOfMonth (self.cDay);
         self.cnMonth := self.cMonth;
       }
@@ -117,16 +123,19 @@
         self.cStart := self.cDay;
         self.cEnd := self.cDay;
       }
-      if (self.cScope = 'week') {
+      if (self.cScope = 'week')
+      {
         self.cStart := cast (CAL.WA.dt_BeginOfWeek (self.cDay, self.cWeekStarts) as date);
         self.cEnd := cast (CAL.WA.dt_EndOfWeek (self.cDay, self.cWeekStarts) as date);
       }
-      if (self.cScope = 'month') {
+      if (self.cScope = 'month')
+      {
         self.cStart := cast (CAL.WA.dt_BeginOfWeek (CAL.WA.dt_BeginOfMonth (self.cDay), self.cWeekStarts) as date);
         self.cEnd := cast (CAL.WA.dt_EndOfWeek (CAL.WA.dt_EndOfMonth (self.cDay), self.cWeekStarts) as date);
       }
       self.cDays := self.initDays (self.cMonth);
-      if (CAL.WA.dt_compare (self.cMonth, self.cnMonth)) {
+      if (CAL.WA.dt_compare (self.cMonth, self.cnMonth))
+      {
         self.cnDays := self.cDays;
       } else {
         self.cnDays := self.initDays (self.cnMonth);
@@ -153,17 +162,20 @@
 
       cDays := make_array (49, 'any');
       M := CAL.WA.dt_LastdayOfMonth (dateadd ('day', -1, cMonth));
-      for (N := dStart - 1; N >= 0 ; N := N - 1) {
+      for (N := dStart - 1; N >= 0 ; N := N - 1)
+      {
         cDays[N] := -M;
         M := M - 1;
       }
       M := 1;
-      for (N := dStart; N < dStart + mLastday; N := N + 1) {
+      for (N := dStart; N < dStart + mLastday; N := N + 1)
+      {
         cDays[N] := M;
         M := M + 1;
       }
       M := 1;
-      for (N := dStart + mLastday; N < 49; N := N + 1) {
+      for (N := dStart + mLastday; N < 49; N := N + 1)
+      {
         cDays[N] := -M;
         M := M + 1;
       }
@@ -182,32 +194,52 @@
   <v:method name="showEvent" arglist="in _id integer, in e_event integer, in e_subject varchar, in e_start datetime, in e_end datetime, in e_repeat varchar, in e_repeat_offset integer, in e_reminder integer, in e_continue varchar">
     <![CDATA[
       declare domain_id integer;
-      declare showDelete, showAnnotate, S, T varchar;
+      declare showDelete, showAnnotate, permission, color, S, T varchar;
 
         S := 'null';
         if (not isnull (e_repeat_offset))
           S := cast (e_repeat_offset as varchar);
+      color := self.showEventColor (_id);
+      permission := CAL.WA.event_permissions (_id, self.domain_id);
       showDelete := '';
-      if (self.account_role not in ('public', 'guest'))
+      if ((self.account_role not in ('public', 'guest')) and (permission = 'W'))
         showDelete :=  sprintf ('<span id="d_%d_%s" onclick="eDelete(event, this, %s)">[<span class="EV_delete">X</span>]</span> ', _id, S, S);
       showAnnotate := '';
-      if (self.account_role not in ('public', 'guest'))
+      if ((self.account_role not in ('public', 'guest')) and (permission = 'W'))
         showAnnotate := sprintf ('<img border="0" width="11" height="11" title="Annotate" alt="Annotate" src="image/ann_16.gif" onclick="eAnnotea (event, %d, %d, %d);" /> ', _id, self.domain_id, self.account_id);
       domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
       if (e_event = 1) {
-        T := sprintf ('<div id="e_%d_%s" class="EV %s" onclick="eEdit(this)" about="%U">%s%s%s<span class="EV_subject">%s%s%V</span> %s</div>', _id, S, 'app', SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id));
+        T := sprintf ('<div id="e_%d_%s" class="EV %s" %s onclick="eEdit(this)" about="%U">%s%s%s<span class="EV_subject">%s%s%V</span> %s</div>', _id, S, 'app', color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id));
       } else {
-        T := sprintf ('<div id="e_%d_%s" class="EV %s" onclick="eEdit(this)" about="%U">%s%s%s<span class="EV_time">%s-%s</span><span class="EV_subject">%s%s%V</span> %s</div>', _id, S, 'app', SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id));
+        T := sprintf ('<div id="e_%d_%s" class="EV %s" %s onclick="eEdit(this)" about="%U">%s%s%s<span class="EV_time">%s-%s</span><span class="EV_subject">%s%s%V</span> %s</div>', _id, S, 'app', color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, CAL.WA.dt_timestring (e_start), CAL.WA.dt_timestring (e_end), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id));
       }
       return T;
     ]]>
   </v:method>
 
+  <v:method name="showEventColor" arglist="in _id integer">
+    <![CDATA[
+      declare event_domain_id integer;
+
+      event_domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);
+      if (event_domain_id <> self.domain_id)
+      {
+        for (select S_COLOR from CAL.WA.SHARED where S_DOMAIN_ID = self.domain_id and S_CALENDAR_ID = event_domain_id) do
+        {
+          return sprintf ('style="background-color: %s;"', S_COLOR);
+        }
+      }
+      return '';
+    ]]>
+  </v:method>
+
   <v:method name="showEventStart" arglist="in e_event integer, in e_time datetime">
     <![CDATA[
-      if (not isnull (e_time)) {
+      if (not isnull (e_time))
+      {
         e_time := CAL.WA.event_gmt2user (e_time, self.cTimezone);
-      if (e_event = 1) {
+        if (e_event = 1)
+        {
         http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s</span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_datestring (e_time, self.cDateFormat)));
       } else {
         http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_datestring (e_time, self.cDateFormat), CAL.WA.dt_timestring (e_time, self.cTimeFormat)));
@@ -218,9 +250,11 @@
 
   <v:method name="showEventEnd" arglist="in e_event integer, in e_time datetime">
     <![CDATA[
-      if (not isnull (e_time)) {
+      if (not isnull (e_time))
+      {
         e_time := CAL.WA.event_gmt2user (e_time, self.cTimezone);
-      if (e_event = 1) {
+        if (e_event = 1)
+        {
         http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s</span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_datestring (e_time, self.cDateFormat)));
       } else {
         http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration"><span class="EVL_time">%s</span> %s</span>', CAL.WA.dt_datestring (e_time, 'Y.M.D'), CAL.WA.dt_timestring (e_time, self.cTimeFormat), CAL.WA.dt_datestring (e_time, self.cDateFormat)));
@@ -235,14 +269,17 @@
         return self.showEventEnd (e_event, e_end);
       e_start := CAL.WA.event_gmt2user (e_start, self.cTimezone);
       e_end := CAL.WA.event_gmt2user (e_end, self.cTimezone);
-      if (CAL.WA.dt_compare (e_start, e_end)) {
-        if (e_event = 1) {
+      if (CAL.WA.dt_compare (e_start, e_end))
+      {
+        if (e_event = 1)
+        {
           http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s</span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat)));
         } else {
           http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span> - <span class="EVL_time">%s</span></span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
         }
       } else {
-        if (e_event = 1) {
+        if (e_event = 1)
+        {
           http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s </span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cDateFormat)));
         } else {
           http (sprintf ('<span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span> - <span id="dt_%s" unselectable="on" onclick="eDate(this)" class="EVL EVL_duration">%s <span class="EVL_time">%s</span></span>', CAL.WA.dt_datestring (e_start, 'Y.M.D'), CAL.WA.dt_datestring (e_start, self.cDateFormat), CAL.WA.dt_timestring (e_start, self.cTimeFormat), CAL.WA.dt_datestring (e_end, 'Y.M.D'), CAL.WA.dt_datestring (e_end, self.cDateFormat), CAL.WA.dt_timestring (e_end, self.cTimeFormat)));
@@ -265,11 +302,14 @@
       declare S varchar;
 
       S := '';
-      if (e_event = 1) {
+      if (e_event = 1)
+      {
         if (CAL.WA.dt_dateClear (e_start) < CAL.WA.dt_dateClear (dt))
           S := '<img src="image/tr_close2.gif" border="0" />';
-        if (CAL.WA.dt_dateClear (e_end) > CAL.WA.dt_dateClear (dt)) {
-          if (S <> '') {
+        if (CAL.WA.dt_dateClear (e_end) > CAL.WA.dt_dateClear (dt))
+        {
+          if (S <> '')
+          {
             S := '... ';
           } else {
             S := '<img src="image/tr_close.gif" border="0" />';
@@ -388,7 +428,9 @@
 
   <v:method name="viewField" arglist="inout fValue any">
     <![CDATA[
-       if (self.cAction = 'view')
+      if (self.cAction <> 'view')
+       return;
+
          if (is_empty_or_null (fValue))
          {
            http ('&nbsp;');
@@ -404,7 +446,8 @@
 
   <v:method name="viewDescription" arglist="inout fValue any">
     <![CDATA[
-       if (self.cAction = 'view')
+      if (self.cAction <> 'view')
+        return;
          if (is_empty_or_null (fValue))
          {
            http ('&nbsp;');
@@ -464,9 +507,11 @@
       self.v_subject := '';
       self.v_description := '';
       self.v_location := '';
+      self.v_privacy := CAL.WA.domain_is_public (self.domain_id);
       self.v_tags := '';
       self.v_event := 0;
-      if (isnull (self.on_date)) {
+      if (isnull (self.on_date))
+      {
         CAL.WA.dt_dateDecode (self.cDay, pYear, pMonth, pDay);
       } else {
         CAL.WA.dt_dateDecode (self.calcDate (self.on_date), pYear, pMonth, pDay);
@@ -474,7 +519,8 @@
       if (isnull (self.on_time)) {
         CAL.WA.dt_timeDecode (CAL.WA.dt_curtime (self.cTimeZone), pHour, pMinute);
       } else {
-        if (self.on_time = -1) {
+        if (self.on_time = -1)
+        {
           self.v_event := 1;
           pHour := 12;
           pMinute := 0;
@@ -516,6 +562,7 @@
       self.v_subject := trim (self.e_subject.ufl_value);
       self.v_location := trim (self.e_location.ufl_value);
       self.v_description := trim (self.e_description.ufl_value);
+      self.v_privacy := cast (self.e_privacy.ufl_value as integer);
       self.v_tags := trim (self.e_tags.ufl_value);
       self.v_notes := trim (get_keyword ('e_notes', params, ''));
 
@@ -532,14 +579,16 @@
 
       self.v_event := cast (get_keyword ('e_event', params, '0') as integer);
       pDate := CAL.WA.test (trim (self.e_eventStartDate.ufl_value), vector('name', 'Event start date', 'class', 'date-'||self.cDateFormat));
-      if (self.v_event = 0) {
+      if (self.v_event = 0)
+      {
         pTime := CAL.WA.dt_stringtime (self.e_eventStartTime.ufl_value);
       } else {
         pTime := CAL.WA.dt_timeEncode (12, 0);
       }
       self.v_eventStart := CAL.WA.dt_join (pDate, pTime);
       pDate := CAL.WA.test (trim (self.e_eventEndDate.ufl_value), vector('name', 'Event end date', 'class', 'date-'||self.cDateFormat));
-      if (self.v_event = 0) {
+      if (self.v_event = 0)
+      {
         pTime := CAL.WA.dt_stringtime (self.e_eventEndTime.ufl_value);
       } else {
         pTime := CAL.WA.dt_timeEncode (12, 0);
@@ -553,11 +602,13 @@
       self.v_repeatParam1 := 0;
       self.v_repeatParam2 := 0;
       self.v_repeatParam3 := 0;
-      if (self.v_repeat = 'D1') {
+      if (self.v_repeat = 'D1')
+      {
         self.v_repeatParam1 := self.e_repeat_param1_D1.ufl_value;
         self.v_repeatParam1 := CAL.WA.test (self.v_repeatParam1, vector('name', 'Day(s)', 'class', 'integer', 'minValue', 1));
       }
-      if (self.v_repeat = 'W1') {
+      if (self.v_repeat = 'W1')
+      {
         self.v_repeatParam1 := self.e_repeat_param1_W1.ufl_value;
         self.v_repeatParam1 := CAL.WA.test (self.v_repeatParam1, vector('name', 'Week(s)', 'class', 'integer', 'minValue', 1));
         self.v_repeatParam2 := 0;
@@ -565,31 +616,37 @@
           if (cast (get_keyword ('e_repeat_param2_W1_' || cast (N as varchar), params, '0') as integer))
             self.v_repeatParam2 := bit_or (self.v_repeatParam2, power (2, N));
       }
-      if (self.v_repeat = 'M1') {
+      if (self.v_repeat = 'M1')
+      {
         self.v_repeatParam1 := cast (self.e_repeat_param1_M1.ufl_value as integer);
         self.v_repeatParam2 := cast (self.e_repeat_param2_M1.ufl_value as integer);
       }
-      if (self.v_repeat = 'M2') {
+      if (self.v_repeat = 'M2')
+      {
         self.v_repeatParam1 := cast (self.e_repeat_param1_M2.ufl_value as integer);
         self.v_repeatParam2 := cast (self.e_repeat_param2_M2.ufl_value as integer);
         self.v_repeatParam3 := cast (self.e_repeat_param3_M2.ufl_value as integer);
       }
-      if (self.v_repeat = 'Y1') {
+      if (self.v_repeat = 'Y1')
+      {
         self.v_repeatParam1 := self.e_repeat_param1_Y1.ufl_value;
         self.v_repeatParam1 := CAL.WA.test (self.v_repeatParam1, vector('name', 'Year(s)', 'class', 'integer', 'minValue', 1));
         self.v_repeatParam2 := self.e_repeat_param2_Y1.ufl_value;
       }
-      if (self.v_repeat = 'Y2') {
+      if (self.v_repeat = 'Y2')
+      {
         self.v_repeatParam1 := cast (self.e_repeat_param1_Y2.ufl_value as integer);
         self.v_repeatParam2 := cast (self.e_repeat_param2_Y2.ufl_value as integer);
         self.v_repeatParam3 := cast (self.e_repeat_param3_Y2.ufl_value as integer);
       }
 
       -- range
-      if (self.v_repeat = '') {
+      if (self.v_repeat = '')
+      {
         self.v_repeatUntil := null;
       } else {
-        if (cast (get_keyword ('e_repeatUntilKind', params, '0') as integer) = 1) {
+        if (cast (get_keyword ('e_repeatUntilKind', params, '0') as integer) = 1)
+        {
           self.v_repeatUntil := CAL.WA.test (trim (self.e_repeatUntil.ufl_value), vector('name', 'Range until date', 'class', 'date-'||self.cDateFormat));
         } else {
           self.v_repeatUntil := null;
@@ -606,6 +663,7 @@
         self.v_subject,
         self.v_description,
         self.v_location,
+        self.v_privacy,
         self.v_tags,
         self.v_event,
         CAL.WA.event_user2gmt (self.v_eventStart, self.cTimezone),
@@ -629,6 +687,7 @@
       self.v_id := -1;
       self.v_subject := '';
       self.v_description := '';
+      self.v_privacy := CAL.WA.domain_is_public (self.domain_id);
       self.v_tags := '';
       self.v_eventStart := null;
       self.v_eventEnd := self.cDay;
@@ -644,8 +703,10 @@
     <![CDATA[
       declare tmp, params any;
 
-      declare exit handler for SQLSTATE '*' {
-        if (__SQL_STATE = 'TEST') {
+      declare exit handler for SQLSTATE '*'
+      {
+        if (__SQL_STATE = 'TEST')
+        {
           self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
           self.vc_is_valid := 0;
           return;
@@ -660,6 +721,7 @@
       self.v_priority := cast (self.t_priority.ufl_value as integer);
       self.v_status := self.t_status.ufl_value;
       self.v_complete := cast (self.t_complete.ufl_value as integer);
+      self.v_privacy := cast (self.t_privacy.ufl_value as integer);
       self.v_tags := trim (self.t_tags.ufl_value);
       self.v_notes := trim (get_keyword ('t_notes', params, ''));
 
@@ -711,6 +773,7 @@
         self.domain_id,
         self.v_subject,
         self.v_description,
+        self.v_privacy,
         self.v_tags,
         CAL.WA.event_user2gmt (self.v_eventStart, self.cTimezone),
         CAL.WA.event_user2gmt (self.v_eventEnd, self.cTimezone),
@@ -832,6 +895,7 @@
       <v:variable name="v_eventStart" type="datetime" default="null"/>
       <v:variable name="v_eventEnd" type="datetime" default="null"/>
       <v:variable name="v_completed" type="datetime" default="null" />
+      <v:variable name="v_privacy" type="integer" default="0" />
       <v:variable name="v_tags" type="varchar" default="''"/>
       <v:variable name="v_repeat" type="varchar" default="''"/>
       <v:variable name="v_repeatParam1" type="integer" default="0"/>
@@ -844,6 +908,19 @@
       <v:variable name="v_complete" type="integer" default="0"/>
       <v:variable name="v_status" type="varchar" default="''"/>
       <v:variable name="v_notes" type="varchar" default="''" />
+
+      <v:variable name="vg_id" type="any" default="null" />
+      <v:variable name="vg_account_id" type="varchar" default="null" />
+      <v:variable name="vg_account" type="varchar" default="''" />
+      <v:variable name="vg_enable" type="integer" default="1" />
+      <v:variable name="vg_mode" type="varchar" default="'R'" />
+
+      <v:variable name="vs_id" type="any" default="null" />
+      <v:variable name="vs_calendar" type="varchar" default="''" />
+      <v:variable name="vs_grant_id" type="varchar" default="null" />
+      <v:variable name="vs_calendar_id" type="varchar" default="null" />
+      <v:variable name="vs_visible" type="varchar" default="1" />
+      <v:variable name="vs_color" type="varchar" default="'#888'" />
 
       <v:variable name="vu_id" type="any" default="-1" />
       <v:variable name="vu_name" type="varchar" default="''" />
@@ -858,6 +935,37 @@
       <v:variable name="tv_status" type="varchar" default="'All'" />
     </vm:variables>
     <vm:pagebody>
+      <table id="MTB">
+        <tr>
+          <!-- Navigation left column -->
+          <td id="LC">
+            <vm:if test="self.cAction <> 'settings'">
+              <vm:if test="self.account_role not in ('public', 'guest')">
+                <vm:event />
+              </vm:if>
+              <vm:calendar />
+              <vm:exchange />
+              <vm:formats />
+            </vm:if>
+            <vm:if test="self.cAction = 'settings'">
+              <div class="lc lc_close">
+                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'settings');" title="Settings" class="gems2">Settings</a>
+                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'upstreamBrowse');" title="Import" class="gems2">Upstreams</a>
+                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'grantBrowse');" title="Share My Calendar" class="gems2">Share My Calendar</a>
+                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'sharedBrowse');" title="Accepted Calendars" class="gems2">Accepted Calendars</a>
+                <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+                <a href="javascript: vspxPost('command', 'select', 'settings', 'mode', 'back');" title="Back" class="gems2">Back</a>
+              </div>
+            </vm:if>
+          </td>
+          <!-- Navigation right column -->
+          <td id="RC">
+            <v:template type="simple" condition="not self.vc_is_valid">
+              <div class="error">
+                <p><v:error-summary/></p>
+              </div>
+            </v:template>
+            <div class="main_page_area">
       <v:before-data-bind>
         <![CDATA[
           self.actionTest ();
@@ -879,7 +987,7 @@
           <v:button name="command" action="simple" value="Submit">
             <v:on-post>
               <![CDATA[
-                declare N, cCommand, cParams, kind any;
+                      declare N, cCommand, cMode, cPermission, cParams, kind any;
 
                 cCommand := get_keyword ('export', e.ve_params, '');
                 if (cCommand in ('rss', 'atom', 'rdf'))
@@ -900,8 +1008,10 @@
                 }
 
                 cCommand := get_keyword ('select', e.ve_params, '');
-                if (cCommand <> '') {
-                  if (cCommand = 'create') {
+                      if (cCommand <> '')
+                      {
+                        if (cCommand = 'create')
+                        {
                     self.cAction := 'create';
                     if (get_keyword ('mode', e.ve_params, 'event') = 'task')
                     {
@@ -918,15 +1028,19 @@
                       self.on_time := cast (get_keyword ('onTime', e.ve_params) as integer);
                   } else {
                     cParams := split_and_decode(cCommand, 0,'\0\0_');
-                    if (length (cParams) > 2) {
-                      if (cParams[1] = 'month') {
+                          if (length (cParams) > 2)
+                          {
+                            if (cParams[1] = 'month')
+                            {
                         if (atoi (cParams[2]) = -1)
                           self.cnMonth := dateadd ('month', -1, self.cnMonth);
                         if (atoi (cParams[2]) = 1)
                           self.cnMonth := dateadd ('month', 1, self.cnMonth);
-                        if (atoi (cParams[2]) = 0) {
+                              if (atoi (cParams[2]) = 0)
+                              {
                           if ((self.cDay < self.cnMonth) or (self.cDay > CAL.WA.dt_EndOfMonth (self.cnMonth)))
-                            if (dayofmonth (self.cDay) > CAL.WA.dt_LastDayOfMonth (self.cnMonth)) {
+                                  if (dayofmonth (self.cDay) > CAL.WA.dt_LastDayOfMonth (self.cnMonth))
+                                  {
                               self.cDay := CAL.WA.dt_EndOfMonth (self.cnMonth);
                             } else {
                               self.cDay := dateadd ('day', dayofmonth (self.cDay)-1, self.cnMonth);
@@ -936,7 +1050,8 @@
                           self.cnMonth := null;
                         }
                       }
-                      if (cParams[1] = 'day') {
+                            if (cParams[1] = 'day')
+                            {
                         self.cMonth := self.cnMonth;
                         N := atoi (cParams[2]) * 7 + atoi (cParams[3]);
                         self.cDay := self.calcDate (N);
@@ -949,12 +1064,39 @@
                       self.initData ();
                     }
                   }
+                        if (cCommand = 'settings')
+                        {
+                          cMode := get_keyword ('mode', e.ve_params, '');
+                          if (cMode = 'settings')
+                          {
+                            self.cSubAction := '';
+                          }
+                          if (cMode = 'upstreamBrowse')
+                          {
+                            self.cSubAction := cMode;
+                          }
+                          if (cMode = 'sharedBrowse')
+                          {
+                            self.cSubAction := cMode;
+                          }
+                          if (cMode = 'grantBrowse')
+                          {
+                            self.cSubAction := cMode;
+                          }
+                          if (get_keyword ('mode', e.ve_params, '') = 'back')
+                          {
+                            self.cAction := 'browse';
+                            self.cSubAction := '';
+                          }
+                        }
                 }
                 
                 cCommand := get_keyword ('date', e.ve_params, '');
-                if (cCommand <> '') {
+                      if (cCommand <> '')
+                      {
                   cParams := split_and_decode(cCommand, 0,'\0\0_');
-                  if (length (cParams) > 1) {
+                        if (length (cParams) > 1)
+                        {
                     self.cDay := stringdate (cParams [1]);
                     self.cMonth := null;
                     self.cAction := 'browse';
@@ -963,11 +1105,25 @@
                 }
 
                 cCommand := get_keyword ('edit', e.ve_params, '');
-                if (cCommand <> '') {
+                      if (cCommand <> '')
+                      {
                   cParams := split_and_decode(cCommand, 0,'\0\0_');
-                  if (length (cParams) > 1) {
+                        if (length (cParams) > 1)
+                        {
                     self.v_id := cast (cParams [1] as integer);
+                          cPermission := CAL.WA.event_permissions (self.v_id, self.domain_id);
+                          if (cPermission = 'W')
+                          {
                     self.cAction := 'edit';
+                          }
+                          else if (cPermission = 'R')
+                          {
+                            self.cAction := 'view';
+                          }
+                          else
+                          {
+                            return;
+                          }
                     if (self.account_role in ('public', 'guest'))
                       self.cAction := 'view';
                     kind := CAL.WA.event_kind (self.v_id);
@@ -979,22 +1135,34 @@
                 }
 
                 cCommand := get_keyword ('delete', e.ve_params, '');
-                if (cCommand <> '') {
+                      if (cCommand <> '')
+                      {
                   cParams := split_and_decode(cCommand, 0,'\0\0_');
                   if (length (cParams) > 1)
-                    CAL.WA.event_delete (cast (cParams [1] as integer), self.domain_id, get_keyword ('onOffset', e.ve_params));
+                        {
+                          self.v_id := cast (cParams [1] as integer);
+                          cPermission := CAL.WA.event_permissions (self.v_id, self.domain_id);
+                          if (cPermission <> 'W')
+                          {
+                            return;
+                          }
+                          CAL.WA.event_delete (self.v_id, get_keyword ('onOffset', e.ve_params));
+                        }
                 }
 
                 cCommand := get_keyword ('exchange', e.ve_params, '');
-                if (cCommand <> '') {
-                  if (cCommand = 'import') {
+                      if (cCommand <> '')
+                      {
+                        if (cCommand = 'import')
+                        {
                   self.cAction := cCommand;
                     self.icStep := '1';
                     self.icSource := -1;
                     self.icType := 0;
                     self.v_tags := '';
                   }
-                  if (cCommand = 'export') {
+                        if (cCommand = 'export')
+                        {
                     http_rewrite ();
                     http_request_status ('HTTP/1.1 200 OK');
                     http_header ('Content-Type: text/plain\r\n');
@@ -1223,14 +1391,14 @@
               </v:on-post>
             </v:button>
             </vm:if>
-                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete selected items?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                        <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete selected item(s)?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
               <v:on-post>
                 <![CDATA[
                   declare N integer;
 
                   for (N := 0; N < length(e.ve_params); N := N + 4)
                     if (e.ve_params[N] = 'cb_item')
-                      CAL.WA.event_delete(cast (e.ve_params[N+1] as integer), self.domain_id);
+                                  CAL.WA.event_delete(cast (e.ve_params[N+1] as integer));
 
           		    self.vc_data_bind(e);
                 ]]>
@@ -1301,12 +1469,14 @@
                        where rs0 = self.domain_id
                          and rs1 = self.cDay
                          and rs2 = self.cDay
-                         and rs3 = self.cTimeZone
+                                 and rs3 = self.account_role
                            and rs4 = self.cShowTasks
                          order by e_event DESC, e_start) do
                     {
-                      if (e_event = 1) {
-                      if (hasEvents = 0) {
+                            if (e_event = 1)
+                            {
+                              if (hasEvents = 0)
+                              {
                         http ('<tr class="CE_row">');
                         http ('<th class="CE_cell CE_cell_time">&nbsp;</th>');
                         http ('<td class="CE_cell">');
@@ -1318,7 +1488,8 @@
                         pStart := pHour*2 + pMinute/30;
                         CAL.WA.dt_timeDecode (e_end, pHour, pMinute);
                         pEnd := pHour*2 + pMinute/30;
-                        for (N := pStart; N < pEnd; N := N + 1) {
+                              for (N := pStart; N < pEnd; N := N + 1)
+                              {
                           S := '';
                           if ((N = pStart) and (pEnd - pStart > 1))
                             S := '<img src="image/tr_close.gif" border="0" />';
@@ -1340,7 +1511,8 @@
                           C := C || ' CE_cell_today';
                         if (self.domain_id > 0)
                           C := C || ' CE_cell_pointer';
-                    for (N := 0; N < 48; N := N + 1) {
+                          for (N := 0; N < 48; N := N + 1)
+                          {
                       http ('<tr class="CE_row">');
                         if (mod (N, 2) = 0)
                           http (sprintf ('<th class="CE_cell CE_cell_time %s" rowspan="2">%s</th>', case when (N = 46) then 'CE_cell_bottom' else '' end, CAL.WA.dt_timestring (CAL.WA.dt_timeEncode (N/2, 0), self.cTimeFormat)));
@@ -1406,7 +1578,7 @@
                                 where rs0 = self.domain_id
                                   and rs1 = dt
                                   and rs2 = dt
-                                  and rs3 = self.cTimeZone
+                                        and rs3 = self.account_role
                                   and rs4 = self.cShowTasks
                                 order by e_event DESC, e_start) do
                           {
@@ -1426,12 +1598,15 @@
                     }
                   }
 
-                  if (self.cScope = 'month') {
-                    for (N := 0; N < length (self.cDays); N := N + 1) {
+                        if (self.cScope = 'month')
+                        {
+                          for (N := 0; N < length (self.cDays); N := N + 1)
+                          {
                       W := floor (N / 7);
                       D := mod (N, 7);
                       dt := self.calcDate (N);
-                      if ((dt >= self.cStart) and (dt <= self.cEnd)) {
+                            if ((dt >= self.cStart) and (dt <= self.cEnd))
+                            {
                         if (D = 0)
                           http ('<tr class="CE_row_month">');
                         C := '';
@@ -1450,7 +1625,8 @@
                           C := C || ' C_onmonth';
                         if (self.cDays[N] < 0)
                           C := C || ' C_offmonth';
-                        if (CAL.WA.dt_isWeekDay (dt, self.cWeekStarts)) {
+                              if (CAL.WA.dt_isWeekDay (dt, self.cWeekStarts))
+                              {
                           C := C || ' C_weekday2';
                         } else {
                           C := C || ' C_weekend';
@@ -1463,7 +1639,7 @@
                               where rs0 = self.domain_id
                                 and rs1 = dt
                                 and rs2 = dt
-                                and rs3 = self.cTimeZone
+                                      and rs3 = self.account_role
                                 and rs4 = self.cShowTasks
                               order by e_event DESC, e_start) do
                         {
@@ -1484,7 +1660,7 @@
                   <![CDATA[
                     control.ds_nrows := CAL.WA.settings_rows (self.settings);
                     control.ds_parameters := null;
-                    control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 0', self.domain_id);
+                          control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 0 and E_PRIVACY >= %d', self.domain_id, case when self.account_role in ('public', 'guest') then 1 else 0 end);
 
                     self.sortChange (get_keyword ('e_sortColumn', e.ve_params), 'e_order', 'e_direction', self.ds);
                     control.ds_sql := sprintf ('%s order by %s %s, E_ID', control.ds_sql, self.e_order, self.e_direction);
@@ -1595,7 +1771,7 @@
                   <![CDATA[
                     control.ds_nrows := CAL.WA.settings_rows (self.settings);
                     control.ds_parameters := null;
-                    control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 1', self.domain_id);
+                          control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 1 and E_PRIVACY >= %d', self.domain_id, case when self.account_role in ('public', 'guest') then 1 else 0 end);
                     if (self.tv_status <> 'All')
                       control.ds_sql := control.ds_sql || sprintf (' and E_STATUS = ''%s''', self.tv_status);
 
@@ -1730,10 +1906,11 @@
                   <![CDATA[
                     control.ds_nrows := CAL.WA.settings_rows (self.settings);
                     control.ds_parameters := null;
-                    if (isnull (self.cSearch)) {
+                          if (isnull (self.cSearch))
+                          {
                       control.ds_sql := 'select * from CAL.WA.EVENTS where 1 = 0';
                     } else {
-                    control.ds_sql := CAL.WA.search_sql (self.domain_id, self.account_id, self.cSearch);
+                            control.ds_sql := CAL.WA.search_sql (self.domain_id, self.account_role, self.cSearch);
                     }
                     self.sortChange (get_keyword ('s_sortColumn', e.ve_params), 's_order', 's_direction', self.ds2);
                     control.ds_sql := sprintf ('%s order by %s %s, E_ID', control.ds_sql, self.s_order, self.s_direction);
@@ -1853,13 +2030,14 @@
             {
             declare exit handler for not found goto _end;
 
-              if (self.cAction in ('edit', 'view'))
+                    if (self.cAction = 'edit')
               {
                 declare tmp any;
 
                 select E_SUBJECT,
                        E_DESCRIPTION,
                        E_LOCATION,
+                             E_PRIVACY,
                        E_TAGS,
                        E_EVENT,
                        CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone),
@@ -1875,6 +2053,7 @@
                   into self.v_subject,
                        self.v_description,
                        self.v_location,
+                             self.v_privacy,
                        self.v_tags,
                        self.v_event,
                        self.v_eventStart,
@@ -1927,12 +2106,7 @@
                   <tr>
                     <td width="1%">
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_event = 1)
-                          S := 'checked="checked"';
-                              http(sprintf('<input type="checkbox" name="e_event" id="e_event" value="1" %s onchange="javascript: shCell(\'e_eventStartTime\'); shCell(\'e_eventEndTime\');" />', S));
+                                  http(sprintf('<input type="checkbox" name="e_event" id="e_event" value="1" %s onchange="javascript: shCell(\'e_eventStartTime\'); shCell(\'e_eventEndTime\');" />', CAL.WA.checkedAttribute (self.v_event, 1)));
                       ?>
                     </td>
                     <td nowrap="nowrap" width="1%" colspan="2">
@@ -1956,7 +2130,8 @@
                             declare x any;
 
                             x := make_array (48, 'any');
-                            for (N := 0; N < 24; N := N + 1) {
+                                      for (N := 0; N < 24; N := N + 1)
+                                      {
                               x[2*N]   := CAL.WA.dt_timestring (CAL.WA.dt_timeEncode (N, 0), self.cTimeFormat);
                               x[2*N+1] := CAL.WA.dt_timestring (CAL.WA.dt_timeEncode (N, 30), self.cTimeFormat);
                             }
@@ -2052,6 +2227,22 @@
                   </td>
                 </tr>
                 <tr>
+                        <th>
+                          <vm:label for="e_privacy" value="--'Privacy'" />
+                        </th>
+                        <td>
+                          <v:select-list name="e_privacy">
+                            <v:item value="0" name="Private" />
+                            <v:item value="1" name="Public" />
+                            <v:before-data-bind>
+                              <![CDATA[
+                                control.ufl_value := self.v_privacy;
+                              ]]>
+                            </v:before-data-bind>
+                          </v:select-list>
+                        </td>
+                      </tr>
+                      <tr>
                   <script type="text/javascript">
                     function suggestTags ()
                     {
@@ -2082,12 +2273,7 @@
                     <td />
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_repeat = '')
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_0" value="" %s />', S));
+                                  http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_0" value="" %s />', CAL.WA.checkedAttribute (self.v_repeat, '')));
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_0" value="--'No repeat'" />
@@ -2099,12 +2285,7 @@
                     </td>
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_repeat = 'D1')
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_1" value="D1" %s />', S));
+                                  http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_1" value="D1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'D1')));
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_1" value="--'Every'" />
@@ -2114,12 +2295,7 @@
                   <tr>
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_repeat = 'D2')
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_2" value="D2" %s />', S));
+                                  http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_2" value="D2" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'D2')));
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_2" value="--'Every weekday (Monday-Friday)'" />
@@ -2131,12 +2307,7 @@
                     </td>
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_repeat = 'W1')
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_3" value="W1" %s />', S));
+                                  http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_3" value="W1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'W1')));
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_3" value="--'Every'" />
@@ -2158,12 +2329,7 @@
                     </td>
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_repeat = 'M1')
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_4" value="M1" %s />', S));
+                                  http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_4" value="M1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'M1')));
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_4" value="--'Every'" />
@@ -2214,12 +2380,7 @@
                   <tr>
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_repeat = 'M2')
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_5" value="M2" %s />', S));
+                                  http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_5" value="M2" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'M2')));
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_5" value="--'Every'" />
@@ -2317,12 +2478,7 @@
                     </td>
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_repeat = 'Y1')
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_6" value="Y1" %s />', S));
+                                  http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_6" value="Y1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'Y1')));
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_6" value="--'Every'" />
@@ -2386,12 +2542,7 @@
                   <tr>
                     <td>
                       <?vsp
-                        declare S varchar;
-
-                        S := '';
-                        if (self.v_repeat = 'Y2')
-                          S := 'checked="checked"';
-                        http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_7" value="Y2" %s />', S));
+                                  http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_7" value="Y2" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'Y2')));
                       ?>
                       <xsl:call-template name="nbsp"/>
                       <vm:label for="e_repeat_7" value="--'The'" />
@@ -2620,6 +2771,7 @@
             select E_SUBJECT,
                    E_DESCRIPTION,
                    E_LOCATION,
+                         E_PRIVACY,
                    E_TAGS,
                    E_EVENT,
                    CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone),
@@ -2635,6 +2787,7 @@
               into self.v_subject,
                    self.v_description,
                    self.v_location,
+                         self.v_privacy,
                    self.v_tags,
                    self.v_event,
                    self.v_eventStart,
@@ -2656,7 +2809,19 @@
           ]]>
         </v:before-data-bind>
         <div class="new-form-header">
-          <v:label format="%s" value="--initcap (self.cAction) || ' event'" />
+                <v:label format="%s" value="">
+                  <v:before-data-bind>
+                    <![CDATA[
+                      declare event_domain_id integer;
+
+                      control.ufl_value := initcap (self.cAction) || ' event';
+
+                      event_domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = self.v_id);
+                      if (event_domain_id <> self.domain_id)
+                        control.ufl_value := control.ufl_value || sprintf (' (Calendar: %V)', CAL.WA.domain_name (event_domain_id));
+                    ]]>
+                  </v:before-data-bind>
+                </v:label>
         </div>
         <div class="new-form-body">
           <table cellspacing="0">
@@ -2775,10 +2940,12 @@
       <v:template type="simple" enabled="--case when ((self.cScope = 'tasks') and (self.cAction in ('create', 'edit'))) then 1 else 0 end">
         <v:before-data-bind>
           <![CDATA[
-            if (isnull (get_keyword ('t_subject', self.vc_page.vc_event.ve_params))) {
+                  if (isnull (get_keyword ('t_subject', self.vc_page.vc_event.ve_params)))
+                  {
               declare exit handler for not found goto _end;
 
-              if (self.cAction in ('edit', 'view')) {
+                    if (self.cAction = 'edit')
+                    {
                 declare tmp any;
 
                 select E_SUBJECT,
@@ -2828,10 +2995,7 @@
                     <v:label for="t_subject" value="Name" />
               </th>
               <td>
-                <vm:if test="self.cAction <> 'view'">
                 <v:text name="t_subject" null-value="''" value="--CAL.WA.utf2wide (self.v_subject)" xhtml_class="textbox" xhtml_size="60"/>
-                </vm:if>
-                <?vsp self.viewField (self.v_subject); ?>
               </td>
             </tr>
             <tr>
@@ -2839,13 +3003,10 @@
                 <v:label for="t_eventEndDate" value="Start Date"/>
               </th>
               <td>
-                <vm:if test="self.cAction <> 'view'">
                       <v:text name="t_eventStartDate" xhtml_id="t_eventStartDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_eventStartDate, \'t_eventStartDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
                       <a href="#" name="t_eventStartDate_select" id="t_eventStartDate_select" onclick="cPopup.select(document.forms[0].t_eventStartDate, 't_eventStartDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
-                </vm:if>
-                <?vsp self.viewField (self.v_eventStart); ?>
               </td>
             </tr>
             <tr>
@@ -2853,13 +3014,10 @@
                 <v:label for="t_eventEndDate" value="Due Date"/>
               </th>
               <td>
-                <vm:if test="self.cAction <> 'view'">
                       <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_eventEndDate, \'t_eventEndDate_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
                       <a href="#" name="t_eventEndDate_select" id="t_eventEndDate_select" onclick="cPopup.select(document.forms[0].t_eventEndDate, 't_eventEndDate_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
                 </a>
-                </vm:if>
-                <?vsp self.viewField (self.v_eventEnd); ?>
               </td>
             </tr>
             <tr>
@@ -2867,13 +3025,10 @@
                     <v:label for="t_completed" value="Completed" />
                   </th>
                   <td>
-                    <vm:if test="self.cAction <> 'view'">
                       <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_onclick="--sprintf ('cPopup.select(document.forms[0].t_completed, \'t_completed_select\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
                       <a href="#" name="t_completed_select" id="t_completed_select" onclick="cPopup.select(document.forms[0].t_completed, 't_completed_select', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                         <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif" />
                       </a>
-                    </vm:if>
-                    <?vsp self.viewField (self.v_completed); ?>
                   </td>
                 </tr>
                 <tr>
@@ -2881,7 +3036,6 @@
                 <v:label for="t_priority" value="Priority"/>
               </th>
               <td>
-                <vm:if test="self.cAction <> 'view'">
                 <v:select-list name="t_priority">
                   <v:on-init>
                     <![CDATA[
@@ -2908,8 +3062,6 @@
                     ]]>
                   </v:before-data-bind>
                 </v:select-list>
-                </vm:if>
-                    <?vsp self.viewField (self.priorityLabel (self.v_priority)); ?>
               </td>
             </tr>
             <tr>
@@ -2917,7 +3069,6 @@
                 <v:label for="t_status" value="Status"/>
               </th>
               <td>
-                <vm:if test="self.cAction <> 'view'">
                       <v:select-list name="t_status" xhtml_id="t_status" xhtml_onchange="javascript: changeComplete(); ">
                   <v:on-init>
                     <![CDATA[
@@ -2940,8 +3091,6 @@
                     ]]>
                   </v:before-data-bind>
                 </v:select-list>
-                </vm:if>
-                <?vsp self.viewField (self.v_status); ?>
               </td>
             </tr>
             <tr>
@@ -2949,7 +3098,6 @@
                 <v:label for="t_complete" value="% Complete"/>
               </th>
               <td>
-                <vm:if test="self.cAction <> 'view'">
                       <v:select-list name="t_complete" xhtml_id="t_complete" xhtml_onchange="javascript: changeComplete(); ">>
                   <v:on-init>
                     <![CDATA[
@@ -2972,8 +3120,6 @@
                     ]]>
                   </v:before-data-bind>
                 </v:select-list>
-                </vm:if>
-                <?vsp self.viewField (self.v_complete); ?>
               </td>
             </tr>
             <tr>
@@ -2981,10 +3127,23 @@
                 <v:label for="t_description" value="Description"/>
               </th>
               <td>
-                <vm:if test="self.cAction <> 'view'">
                 <v:textarea name="t_description" null-value="--''" value="--CAL.WA.utf2wide (self.v_description)" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6"/>
-                </vm:if>
-                    <?vsp self.viewDescription (self.v_description); ?>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <vm:label for="t_privacy" value="--'Privacy'" />
+                        </th>
+                        <td>
+                          <v:select-list name="t_privacy">
+                            <v:item value="0" name="Private" />
+                            <v:item value="1" name="Public" />
+                            <v:before-data-bind>
+                              <![CDATA[
+                                control.ufl_value := self.v_privacy;
+                              ]]>
+                            </v:before-data-bind>
+                          </v:select-list>
               </td>
             </tr>
             <tr>
@@ -2998,17 +3157,12 @@
                 <v:label for="t_tags" value="Tags (comma-separated)" />
               </th>
               <td>
-                <vm:if test="self.cAction <> 'view'">
                   <v:text name="t_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
                   <input type="button" value="Suggest" onclick="javascript: suggestTags();" class="button" />
                   <input type="button" value="Clear" onclick="javascript: document.F1.elements['t_tags'].value = ''" class="button" />
-                </vm:if>
-                <?vsp self.viewField (self.v_tags); ?>
               </td>
             </tr>
-            <vm:if test="self.cAction <> 'view'">
                   <?vsp self.myTags ('t_tags'); ?>
-            </vm:if>
           </table>
         </div>
             <div id="t_content_1" class="tabContent" style="display: none;">
@@ -3018,7 +3172,6 @@
                     Notes
                   </th>
                   <td>
-                    <vm:if test="self.cAction <> 'view'">
                     <?vsp
                       declare tmpString any;
                       
@@ -3039,8 +3192,6 @@
                         writeRichText('t_notes', '<?vsp http (tmpString); ?>', 500, 170, true, false);
                       </script>
                     ]]>
-                    </vm:if>
-                    <?vsp self.viewField (self.v_notes); ?>
                   </td>
                 </tr>
               </table>  
@@ -3120,7 +3271,19 @@
           ]]>
         </v:before-data-bind>
         <div class="new-form-header">
-          <v:label format="%s" value="--initcap (self.cAction) || ' task'" />
+                <v:label format="%s" value="">
+                  <v:before-data-bind>
+                    <![CDATA[
+                      declare event_domain_id integer;
+
+                      control.ufl_value := initcap (self.cAction) || ' task';
+
+                      event_domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = self.v_id);
+                      if (event_domain_id <> self.domain_id)
+                        control.ufl_value := control.ufl_value || sprintf (' (Calendar: %V)', CAL.WA.domain_name (event_domain_id));
+                    ]]>
+                  </v:before-data-bind>
+                </v:label>
         </div>
         <div class="new-form-body">
           <table class="form-body" cellspacing="0">
@@ -3276,7 +3439,8 @@
               <v:on-post>
                 <![CDATA[
                   self.icStep := '2';
-                  if (self.icSource_0.ufl_selected) {
+                        if (self.icSource_0.ufl_selected)
+                        {
                     self.icSource := 0;
                   } else if (self.icSource_1.ufl_selected) {
                     self.icSource := 1;
@@ -3367,8 +3531,10 @@
                 <![CDATA[
                   declare tmp, content any;
 
-                  declare exit handler for SQLSTATE '*' {
-                    if (__SQL_STATE = 'TEST') {
+                        declare exit handler for SQLSTATE '*'
+                        {
+                          if (__SQL_STATE = 'TEST')
+                          {
                       self.vc_error_message := CAL.WA.test_clear (__SQL_MESSAGE);
                       self.vc_is_valid := 0;
                       return;
@@ -3376,9 +3542,11 @@
                     resignal;
                   };
 
-                  if (self.icSource = 0) {
+                        if (self.icSource = 0)
+                        {
                     content := trim(get_keyword ('f_file', self.vc_page.vc_event.ve_params, ''));
-                    if (is_empty_or_null (content)) {
+                          if (is_empty_or_null (content))
+                          {
                       self.vc_error_message := 'Please select file from your local file system!';
                       self.vc_is_valid := 0;
                       return;
@@ -3386,13 +3554,15 @@
 
                   } else if (self.icSource = 1) {
                     self.f_dav.ufl_value := trim(self.f_dav.ufl_value);
-                    if (self.f_dav.ufl_value not like (CAL.WA.dav_home (self.account_id) || '%')) {
+                          if (self.f_dav.ufl_value not like (CAL.WA.dav_home (self.account_id) || '%'))
+                          {
                       self.vc_error_message := sprintf('Please select file from your WebDAV home directory ''%s''!', CAL.WA.dav_home (self.account_id));
                       self.vc_is_valid := 0;
                       return;
                     }
                     content := CAL.WA.dav_content (CAL.WA.host_url () || self.f_dav.ufl_value);
-                    if (isnull(content)) {
+                          if (isnull(content))
+                          {
                       self.vc_error_message := 'Bad import source!';
                       self.vc_is_valid := 0;
                       return;
@@ -3400,13 +3570,15 @@
 
                   } else if (self.icSource = 2) {
                     self.f_uri.ufl_value := trim(self.f_uri.ufl_value);
-                    if (is_empty_or_null (self.f_uri.ufl_value)) {
+                          if (is_empty_or_null (self.f_uri.ufl_value))
+                          {
                       self.vc_error_message := 'Please select correct URL address!';
                       self.vc_is_valid := 0;
                       return;
                     }
                     content := CAL.WA.dav_content (self.f_uri.ufl_value);
-                    if (isnull(content)) {
+                          if (isnull(content))
+                          {
                       self.vc_error_message := 'Bad URL source!';
                       self.vc_is_valid := 0;
                       return;
@@ -3443,42 +3615,56 @@
 
       <vm:if test="self.cAction = 'settings'">
         <div class="new-form-header">
-          Preferences: <v:label value="--case when self.cSubAction = '' then 'Settings' else 'Upstreams' end" />
+                <?vsp
+                  declare S, T varchar;
+
+                  S := 'Preferences: ';
+                  T := '';
+                  if (self.cSubAction = '')
+                  {
+                    T := 'Settings';
+                  }
+                  else if (self.cSubAction = 'upstreamBrowse')
+                  {
+                    T := 'Upstreams';
+                  }
+                  else if (self.cSubAction = 'upstreamCreate')
+                  {
+                    T := 'Upstreams/Create';
+                  }
+                  else if (self.cSubAction = 'upstreamUpdate')
+                  {
+                    T := 'Upstreams/Update';
+                  }
+                  else if (self.cSubAction = 'grantBrowse')
+                  {
+                    T := 'My Sharings';
+                  }
+                  else if (self.cSubAction = 'grantCreate')
+                  {
+                    T := 'My Sharings/Create';
+                  }
+                  else if (self.cSubAction = 'grantUpdate')
+                  {
+                    T := 'My Sharings/Update';
+                  }
+                  else if (self.cSubAction = 'sharedBrowse')
+                  {
+                    T := 'My Accepted Calendars';
+                  }
+                  else if (self.cSubAction = 'sharedCreate')
+                  {
+                    T := 'My Accepted Calendars/Create';
+                  }
+                  else if (self.cSubAction = 'sharedUpdate')
+                  {
+                    T := 'My Accepted Calendars/Update';
+                  }
+                  http (S || T);
+                ?>
         </div>
 
-        <table width="100%" class="new-form-body" cellspacing="0">
-          <tr style="min-height: 100px;">
-            <td width="1%" valign="top" style="padding-right: 5px; border-right: solid 1px; border-color: #7f94a5;">
-              <v:button action="simple" value="Settings" xhtml_class="button" xhtml_style="width: 100px;">
-                <v:on-post>
-                  <![CDATA[
-                    self.cSubAction := '';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <br />
-              <v:button action="simple" value="Upstreams" xhtml_class="button" xhtml_style="width: 100px;">
-                <v:on-post>
-                  <![CDATA[
-                    self.cSubAction := 'upstreamBrowse';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
-              <v:button action="simple" value="Back" xhtml_class="button" xhtml_style="width: 100px;">
-                <v:on-post>
-                  <![CDATA[
-                    self.cAction := 'browse';
-                    self.cSubAction := '';
-                    self.vc_data_bind(e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-            </td>
-            <td valign="top" style="padding-left: 5px;">
-              <vm:if test="self.cSubAction =''">
+                <v:template type="simple" enabled="--case when self.cSubAction = '' then 1 else 0 end">
         <div id="s" class="c1">
           <div class="tabs">
                     &nbsp;<vm:tabCaption tab="s" tabsCount="3" tabNo="0" caption="General" />
@@ -3714,7 +3900,8 @@
                           y := make_array (25, 'any');
                           i := -12;
                           j := 0;
-                          while (i <= 12) {
+                                    while (i <= 12)
+                                    {
                             x[j] := cast (i*60 as varchar);
                             y[j] := self.showTimeZone (i);
                             i := i + 1;
@@ -3743,8 +3930,10 @@
               <![CDATA[
                 declare rows, chars any;
 
-                declare exit handler for SQLSTATE '*' {
-                  if (__SQL_STATE = 'TEST') {
+                          declare exit handler for SQLSTATE '*'
+                          {
+                            if (__SQL_STATE = 'TEST')
+                            {
                     self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
                     self.vc_is_valid := 0;
                     return;
@@ -3796,8 +3985,9 @@
             </v:on-post>
           </v:button>
                 </div>
-              </vm:if>
-              <vm:if test="self.cSubAction = 'upstreamBrowse'">
+                </v:template>
+
+                <v:template type="simple" enabled="--case when self.cSubAction = 'upstreamBrowse' then 1 else 0 end">
                 <v:button value="--'New Upstream'" action="simple" xhtml_class="button">
             <v:on-post>
               <![CDATA[
@@ -3806,7 +3996,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected items?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
                   <v:on-post>
                     <![CDATA[
                       declare N integer;
@@ -3823,7 +4013,7 @@
                   <v:param name="p0" value="--self.domain_id" />
 
                   <v:template name="ds_upstreams_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-                    <table id="upstreamsTable" style="width: 100%; background-color: #FFF;" cellspacing="0">
+                      <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
                       <thead class="sortHeader">
                         <tr>
                           <th class="checkbox" width="1%">
@@ -3841,9 +4031,6 @@
 
                     <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both">
                       <table>
-                        <tr align="center">
-                          <td colspan="3">No upstreams</td>
-                        </tr>
                       </table>
                     </v:template>
 
@@ -3891,8 +4078,9 @@
                   </v:template>
 
                 </v:data-set>
-              </vm:if>
-              <vm:if test="self.cSubAction = 'upstreamCreate' or self.cSubAction = 'upstreamUpdate'">
+                </v:template>
+
+                <v:template type="simple" enabled="--case when self.cSubAction in ('upstreamCreate', 'upstreamUpdate') then 1 else 0 end">
                 <v:before-data-bind>
                   <![CDATA[
                     declare params any;
@@ -3900,7 +4088,7 @@
 
                     if (isnull (get_keyword ('su_name', params)))
                     {
-                      declare exit handler for not found goto _end;
+                        declare exit handler for not found goto _end3;
 
                       if (self.cSubAction = 'upstreamUpdate')
                       {
@@ -3923,7 +4111,7 @@
 
                          return;
                       }
-                    _end:;
+                      _end3:;
 
                       self.vu_name := '';
                       self.vu_uri := '';
@@ -3934,10 +4122,8 @@
                     }
                   ]]>
                 </v:before-data-bind>
-                <div class="new-form-header">
-                  <v:label value="--case when self.cSubAction = 'upstreamCreate' then 'Create Upstream' else 'Update Upstream' end"/>
-                </div>
-                <table class="new-form-body" cellspacing="0">
+                  <div class="new-form-body">
+                    <table cellspacing="0">
                   <tr>
                     <th width="30%">
                       Name
@@ -3947,7 +4133,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <th width="30%">
+                        <th>
                       URI
                     </th>
                     <td>
@@ -3955,7 +4141,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <th width="30%">
+                        <th>
                       User
                     </th>
                     <td>
@@ -3963,7 +4149,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <th width="30%">
+                        <th>
                       Password
                     </th>
                     <td>
@@ -3991,8 +4177,9 @@
                   </tr>
                   <?vsp self.myTags ('su_exclude'); ?>
                 </table>
+                  </div>
                 <div class="new-form-footer">
-                  <v:button action="simple" value="--case when self.cSubAction = 'upstreamCreate' then 'Create' else 'Update' end" name="s1u_save" xhtml_class="form-button">
+                    <v:button action="simple" value="--case when self.cSubAction = 'upstreamCreate' then 'Create' else 'Update' end" name="su_save" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
                         declare tmp, params any;
@@ -4050,7 +4237,7 @@
                       ]]>
                     </v:on-post>
                   </v:button>
-                  <v:button action="simple" value="Cancel" name="s1u_cancel" xhtml_class="form-button">
+                    <v:button action="simple" value="Cancel" name="su_cancel" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
                         self.cSubAction := 'upstreamBrowse';
@@ -4059,15 +4246,573 @@
             </v:on-post>
           </v:button>
         </div>
-      </vm:if>
+                </v:template>
+
+                <v:template type="simple" enabled="--case when self.cSubAction = 'grantBrowse' then 1 else 0 end">
+                  <v:button value="--'Share'" action="simple" xhtml_class="button">
+                    <v:on-post>
+                      <![CDATA[
+                        self.cSubAction := 'grantCreate';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                    <v:on-post>
+                      <![CDATA[
+                        declare N integer;
+
+                        for (N := 0; N < length(e.ve_params); N := N + 4)
+                          if (e.ve_params[N] = 'cb_item')
+                            delete from CAL.WA.GRANTS where G_ID = cast (e.ve_params[N+1] as integer);
+
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:data-set name="ds_grant" sql="select a.*, b.U_NAME from CAL.WA.GRANTS a, DB.DBA.SYS_USERS b where a.G_DOMAIN_ID = :p0 and a.G_ACCOUNT_ID = b.U_ID order by b.U_NAME" nrows="0" scrollable="1">
+                    <v:param name="p0" value="--self.domain_id" />
+
+                    <v:template name="ds_grant_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                      <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
+                        <thead class="sortHeader">
+                          <tr>
+                            <th class="checkbox" width="1%">
+                              <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
+                            </th>
+                            <th style="text-align: left;" nowrap="nowrap">User</th>
+                            <th style="text-align: left;" nowrap="nowrap" width="5%">Enabled/Disabled</th>
+                            <th style="text-align: left;" nowrap="nowrap" width="5%">Share Mode</th>
+                            <th style="text-align: left;" nowrap="nowrap" width="5%">Action</th>
+                          </tr>
+                        </thead>
+                      </table>
+                    </v:template>
+                    <v:template name="ds_grant_repeat" type="repeat">
+
+                      <v:template name="ds_grant_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                        <table>
+                          <tr>
+                            <td class="sheckbox">
+                              <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('G_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
+                            </td>
+                            <td nowrap="nowrap">
+                              <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('U_NAME')" />
+                            </td>
+                            <td nowrap="nowrap">
+                              <?vsp
+                                http (case when (control as vspx_row_template).te_column_value('G_ENABLE') = 1 then 'Enable' else 'Disable' end);
+                              ?>
+                            </td>
+                            <td nowrap="nowrap">
+                              <?vsp
+                                http (case when (control as vspx_row_template).te_column_value('G_MODE') = 'R' then 'Read Only' else 'Read/Write' end);
+                              ?>
+                            </td>
+                            <td nowrap="nowrap">
+                              <v:button value="Edit" action="simple" xhtml_class="button">
+                                <v:on-post>
+                                  <![CDATA[
+                                    self.vg_id := (control.vc_parent as vspx_row_template).te_column_value('G_ID');
+                                    self.cSubAction := 'grantUpdate';
+                                    self.vc_data_bind(e);
+                                  ]]>
+                                </v:on-post>
+                              </v:button>
+                            </td>
+                          </tr>
+                        </table>
+                      </v:template>
+
+                    </v:template>
+
+                    <v:template type="simple" name-to-remove="table" set-to-remove="top">
+                      <table>
+                      </table>
+                    </v:template>
+
+                  </v:data-set>
+                </v:template>
+
+                <v:template type="simple" enabled="--case when self.cSubAction in ('grantCreate', 'grantUpdate') then 1 else 0 end">
+                  <v:before-data-bind>
+                    <![CDATA[
+                      declare params any;
+                      params := self.vc_page.vc_event.ve_params;
+
+                      if (isnull (get_keyword ('sg_account', params)))
+                      {
+                        declare exit handler for not found goto _end;
+
+                        if (self.cSubAction = 'grantUpdate')
+                        {
+                          select b.U_NAME,
+                                 a.G_ENABLE,
+                                 a.G_MODE
+                            into self.vg_account,
+                                 self.vg_enable,
+                                 self.vg_mode
+                            from CAL.WA.GRANTS a,
+                                 DB.DBA.SYS_USERS b
+                           where a.G_ID = self.vg_id
+                             and a.G_ACCOUNT_ID = b.U_ID;
+
+                           return;
+                        }
+                      _end:;
+
+                        self.vg_id := null;
+                        self.vg_account_id := null;
+                        self.vg_account := '';
+                        self.vg_enable := 1;
+                        self.vg_mode := 'R';
+                      }
+                    ]]>
+                  </v:before-data-bind>
+                  <div class="new-form-body">
+                    <table cellspacing="0">
+                      <tr>
+                        <th width="30%">
+                          <v:label for="sg_account" value="User" />
+                        </th>
+                        <td>
+                          <v:text name="sg_account" null-value="--''" value="--self.vg_account" xhtml_class="textbox" />
+                          <input type="button" value="Select" onclick="javascript: windowShow('users.vspx?params=sg_account:s1;',520)" class="button" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th />
+                        <td>
+                          <?vsp
+                            http (sprintf ('<input type="checkbox" value="1" name="sg_enable" id="sg_enable" %s />', CAL.WA.checkedAttribute (self.vg_enable)));
+                          ?>
+                          <vm:label for="sg_enable" value="Enable"/>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          Share mode
+                        </th>
+                        <td>
+                          <v:select-list name="sg_mode">
+                            <v:item value="R" name="Read Only" />
+                            <v:item value="W" name="Read/Write" />
+                            <v:before-data-bind>
+                              <![CDATA[
+                                control.ufl_value := self.vg_mode;
+                              ]]>
+                            </v:before-data-bind>
+                          </v:select-list>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div class="new-form-footer">
+                    <v:button action="simple" value="--case when self.cSubAction = 'grantCreate' then 'Create' else 'Update' end" name="sg_save" xhtml_class="form-button">
+                      <v:on-post>
+                        <![CDATA[
+                          declare tmp, params any;
+
+                          declare exit handler for SQLSTATE '*'
+                          {
+                            if (__SQL_STATE = 'TEST')
+                            {
+                              self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
+                              self.vc_is_valid := 0;
+                              return;
+                            }
+                            resignal;
+                          };
+                          params := self.vc_page.vc_event.ve_params;
+
+                          self.vg_account    := trim (self.sg_account.ufl_value);
+                          self.vg_enable     := cast (get_keyword ('sg_enable', params, '0') as integer);
+                          self.vg_mode       := trim (self.sg_mode.ufl_value);
+                          self.vg_account_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.vg_account);
+                          if (isnull (self.vg_account_id))
+                          {
+                            self.vc_error_message := 'User does not exist!';
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                          if (
+                              (
+                               (self.cSubAction = 'grantCreate') and
+                               (exists (select 1 from CAL.WA.GRANTS where G_DOMAIN_ID = self.domain_id and G_ACCOUNT_ID = self.vg_account_id))
+                              ) or
+                              (
+                               (self.cSubAction = 'grantUpdate') and
+                               (exists (select 1 from CAL.WA.GRANTS where G_DOMAIN_ID = self.domain_id and G_ACCOUNT_ID = self.vg_account_id and G_ID <> self.vg_id))
+                              )
+                             )
+                          {
+                            self.vc_error_message := 'Another share for the same user already exists!';
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+
+                          if (self.cSubAction = 'grantCreate')
+                          {
+                            insert into CAL.WA.GRANTS (G_DOMAIN_ID, G_ACCOUNT_ID, G_ENABLE, G_MODE)
+                              values (self.domain_id, self.vg_account_id, self.vg_enable, self.vg_mode);
+                          } else {
+                            update CAL.WA.GRANTS
+                               set G_ACCOUNT_ID = self.vg_account_id,
+                                   G_ENABLE = self.vg_enable,
+                                   G_MODE = self.vg_mode
+                             where G_DOMAIN_ID = self.domain_id
+                               and G_ID = self.vg_id;
+                          }
+
+                          self.cSubAction := 'grantBrowse';
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" value="Cancel" name="sg_cancel" xhtml_class="form-button">
+                      <v:on-post>
+                        <![CDATA[
+                          self.cSubAction := 'grantBrowse';
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </div>
+                </v:template>
+
+                <v:template type="simple" enabled="--case when self.cSubAction = 'sharedBrowse' then 1 else 0 end">
+                  <v:button value="--'Accept'" action="simple" xhtml_class="button">
+                    <v:on-post>
+                      <![CDATA[
+                        self.cSubAction := 'sharedCreate';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                    <v:on-post>
+                      <![CDATA[
+                        declare N integer;
+
+                        for (N := 0; N < length(e.ve_params); N := N + 4)
+                          if (e.ve_params[N] = 'cb_item')
+                            delete from CAL.WA.SHARED where S_ID = cast (e.ve_params[N+1] as integer);
+
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:data-set name="ds_shared" sql="select a.*, b.WAI_NAME from CAL.WA.SHARED a, DB.DBA.WA_INSTANCE b where a.S_DOMAIN_ID = :p0 and a.S_CALENDAR_ID = b.WAI_ID order by b.WAI_NAME" nrows="0" scrollable="1">
+                    <v:param name="p0" value="--self.domain_id" />
+
+                    <v:template name="ds_shared_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                      <table id="preferences" style="width: 100%; background-color: #FFF;" cellspacing="0">
+                        <thead class="sortHeader">
+                          <tr>
+                            <th class="checkbox" width="1%">
+                              <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
+                            </th>
+                            <th style="text-align: left;">Calendar</th>
+                            <th style="text-align: left;" width="5%">Type</th>
+                            <th style="text-align: left;" width="5%">Visible</th>
+                            <th style="text-align: left;" width="5%">Mode</th>
+                            <th style="text-align: left;" width="5%">Color</th>
+                            <th style="text-align: left;" width="5%">Action</th>
+                          </tr>
+                        </thead>
+                      </table>
+                    </v:template>
+                    <v:template name="ds_shared_repeat" type="repeat">
+
+                      <v:template name="ds_shared_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                        <table>
+                          <tr>
+                            <td align="center" valign="top">
+                              <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('S_ID') ?>" onclick="selectCheck(this, 'cb_item')" />
+                            </td>
+                            <td nowrap="nowrap">
+                              <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WAI_NAME')" />
+                            </td>
+                            <td nowrap="nowrap">
+                              <?vsp
+                                http (case when isnull ((control as vspx_row_template).te_column_value('S_GRANT_ID')) then 'Public' else 'Shared' end);
+                              ?>
+                            </td>
+                            <td nowrap="nowrap">
+                              <?vsp
+                                http (case when (control as vspx_row_template).te_column_value('S_VISIBLE') = 1 then 'Yes' else 'No' end);
+                              ?>
+                            </td>
+                            <td nowrap="nowrap">
+                              <?vsp
+                                declare calendar_id integer;
+
+                                calendar_id := (control as vspx_row_template).te_column_value('S_CALENDAR_ID');
+                                for (select a.WAI_IS_PUBLIC,
+                                            b.S_GRANT_ID,
+                                            c.G_ENABLE,
+                                            c.G_MODE
+                                       from DB.DBA.WA_INSTANCE a,
+                                            CAL.WA.SHARED b
+                                              left join CAL.WA.GRANTS c on c.G_ID = b.S_GRANT_ID
+                                      where a.WAI_ID = b.S_CALENDAR_ID
+                                        and b.S_DOMAIN_ID = self.domain_id
+                                        and b.S_CALENDAR_ID = calendar_id
+                                        and b.S_VISIBLE = 1) do
+                                {
+                                  if (isnull (S_GRANT_ID))
+                                  {
+                                    if (WAI_IS_PUBLIC)
+                                    {
+                                      http ('Read Only');
+                                    } else {
+                                      http ('Disabled');
+                                    }
+                                  } else {
+                                    if (G_ENABLE)
+                                    {
+                                      if (G_MODE = 'R')
+                                      {
+                                        http ('Read Only');
+                                      } else {
+                                        http ('Read/Write');
+                                      }
+                                    } else {
+                                      http ('Disabled');
+                                    }
+                                  }
+                                }
+                              ?>
+                            </td>
+                            <td nowrap="nowrap">
+                              <?vsp
+                                http (sprintf ('<div id="ss_color_div" class="ss_color" style="background-color: %s;"></div>', (control as vspx_row_template).te_column_value('S_COLOR')));
+                              ?>
+                            </td>
+                            <td nowrap="nowrap">
+                              <v:button value="Edit" action="simple" xhtml_class="button">
+                                <v:on-post>
+                                  <![CDATA[
+                                    self.vs_id := (control.vc_parent as vspx_row_template).te_column_value('S_ID');
+                                    self.cSubAction := 'sharedUpdate';
+                                    self.vc_data_bind(e);
+                                  ]]>
+                                </v:on-post>
+                              </v:button>
             </td>
           </tr>
         </table>
+                      </v:template>
+
+                    </v:template>
+
+                    <v:template type="simple" name-to-remove="table" set-to-remove="top">
+                      <table>
+                      </table>
+                    </v:template>
+
+                  </v:data-set>
+                </v:template>
+
+                <v:template type="simple" enabled="--case when self.cSubAction in ('sharedCreate', 'sharedUpdate') then 1 else 0 end">
+                  <v:before-data-bind>
+                    <![CDATA[
+                      declare params any;
+                      params := self.vc_page.vc_event.ve_params;
+
+                      if (isnull (get_keyword ('ss_calendar', params)))
+                      {
+                        declare exit handler for not found goto _end2;
+
+                        if (self.cSubAction = 'sharedUpdate')
+                        {
+                          select b.WAI_NAME,
+                                 a.S_GRANT_ID,
+                                 a.S_CALENDAR_ID,
+                                 a.S_VISIBLE,
+                                 a.S_COLOR
+                            into self.vs_calendar,
+                                 self.vs_grant_id,
+                                 self.vs_calendar_id,
+                                 self.vs_visible,
+                                 self.vs_color
+                            from CAL.WA.SHARED a,
+                                 DB.DBA.WA_INSTANCE b
+                           where a.S_ID = self.vs_id
+                             and a.S_CALENDAR_ID = b.WAI_ID;
+
+                           return;
+                        }
+                      _end2:;
+
+                        self.cSubAction := 'sharedCreate';
+                        self.vs_id := null;
+                        self.vs_grant_id := null;
+                        self.vs_calendar_id := null;
+                        self.vs_calendar := '';
+                        self.vs_visible := 1;
+                        self.vs_color := '#888';
+                      }
+                    ]]>
+                  </v:before-data-bind>
+                  <div class="new-form-body">
+                    <table cellspacing="0">
+                      <tr>
+                        <th width="20%" valign="top">
+                          Calendar
+                        </th>
+                        <td>
+                          <?vsp
+                            http (sprintf ('<input type="radio" name="ss_type" id="ss_type_0" value="0" %s /> <label for="ss_type_0">Public</label>', case when isnull (self.vs_grant_id) then 'checked="checked"' else '' end));
+                            http ('<br />');
+                            http (sprintf ('<input type="radio" name="ss_type" id="ss_type_1" value="1" %s /> <label for="ss_type_1">Shared with Me</label>', case when not isnull (self.vs_grant_id) then 'checked="checked"' else '' end));
+                          ?>
+                        </td>
+                        <td valign="top">
+                          <v:text name="ss_calendar" value="--self.vs_calendar" xhtml_size="60" />
+                          <input type="button" value="Select" onclick="javascript: calendarsShow('calendars.vspx?params=ss_calendar:s1;',520)" class="button" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th />
+                        <td>
+                          <?vsp
+                            http (sprintf ('<input type="checkbox" value="1" name="ss_visible" id="ss_visible" %s />', CAL.WA.checkedAttribute (self.vs_visible)));
+                          ?>
+                          <vm:label for="ss_visible" value="Visible"/>
+                        </td>
+                        <td />
+                      </tr>
+                      <tr>
+                        <th>
+                          Color
+                        </th>
+                        <td colspan="2">
+                          <input type="hidden" id="ss_color" name="ss_color" value="<?V self.vs_color ?>" />
+                          <div id="ss_color_div" class="ss_color"></div>
+                        </td>
+                      </tr>
+                    </table>
+                    <script type="text/javascript">
+                      <![CDATA[
+                    		var c = new OAT.Color();
+                    		var colorRef = function(event)
+                    		{
+                    			var callback = function(color)
+                    			{
+                    			  $("ss_color").value = color;
+                    			  $("ss_color_div").style.backgroundColor = color;
+                    			}
+                    			var coords = OAT.Dom.position("ss_color_div");
+                    			c.pick(coords[0],coords[1],callback);
+                    		}
+                			  $("ss_color_div").style.backgroundColor = "<?V self.vs_color ?>";
+                    		OAT.Dom.attach("ss_color_div", "click", colorRef);
+                      ]]>
+                    </script>
+                  </div>
+                  <div class="new-form-footer">
+                    <v:button action="simple" value="--case when self.cSubAction = 'sharedCreate' then 'Accept' else 'Update' end" name="ss_save" xhtml_class="form-button">
+                      <v:on-post>
+                        <![CDATA[
+                          declare tmp, vs_type, params any;
+
+                          declare exit handler for SQLSTATE '*'
+                          {
+                            if (__SQL_STATE = 'TEST')
+                            {
+                              self.vc_error_message := CAL.WA.test_clear(__SQL_MESSAGE);
+                              self.vc_is_valid := 0;
+                              return;
+                            }
+                            resignal;
+                          };
+                          params := self.vc_page.vc_event.ve_params;
+
+                          vs_type             := get_keyword ('ss_type', params, '');
+                          self.vs_calendar    := trim (self.ss_calendar.ufl_value);
+                          self.vs_visible     := cast (get_keyword ('ss_visible', params, '0') as integer);
+                          self.vs_color       := get_keyword ('ss_color', params, '#888');
+                          self.vs_calendar_id := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = self.vs_calendar and WAI_ID <> self.domain_id);
+                          if (isnull (self.vs_calendar_id))
+                          {
+                            self.vc_error_message := 'Calendar does not exist!';
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                          if ((vs_type = '0') and not CAL.WA.domain_is_public (self.vs_calendar_id))
+                          {
+                            self.vc_error_message := 'Calendar is not public!';
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                          if (
+                              (
+                               (self.cSubAction = 'sharedCreate') and
+                               (exists (select 1 from CAL.WA.SHARED where S_DOMAIN_ID = self.domain_id and S_CALENDAR_ID = self.vs_calendar_id))
+                              )
+                              or
+                              (
+                               (self.cSubAction = 'sharedUpdate') and
+                               (exists (select 1 from CAL.WA.SHARED where S_DOMAIN_ID = self.domain_id and S_CALENDAR_ID = self.vs_calendar_id and S_ID <> self.vs_id))
+                              )
+                             )
+                          {
+                            self.vc_error_message := 'Calendar with the same name is already accepted!';
+                            self.vc_is_valid := 0;
+                            return;
+                          }
+                          if (vs_type = '0')
+                          {
+                            self.vs_grant_id := null;
+                          } else {
+                            self.vs_grant_id := (select b.G_ID from DB.DBA.WA_INSTANCE a, CAL.WA.GRANTS b where a.WAI_TYPE_NAME = 'Calendar' and a.WAI_NAME = self.vs_calendar and a.WAI_ID = b.G_DOMAIN_ID and b.G_ACCOUNT_ID = self.account_id);
+                            if (isnull (self.vs_grant_id))
+                            {
+                              self.vc_error_message := 'Calendar with this name is not shared with you!';
+                              self.vc_is_valid := 0;
+                              return;
+                            }
+                          }
+
+                          if (self.cSubAction = 'sharedCreate')
+                          {
+                            insert into CAL.WA.SHARED (S_DOMAIN_ID, S_GRANT_ID, S_CALENDAR_ID, S_VISIBLE, S_COLOR)
+                              values (self.domain_id, self.vs_grant_id, self.vs_calendar_id, self.vs_visible, self.vs_color);
+                          } else {
+                            update CAL.WA.SHARED
+                               set S_GRANT_ID = self.vs_grant_id,
+                                   S_CALENDAR_ID = self.vs_calendar_id,
+                                   S_VISIBLE = self.vs_visible,
+                                   S_COLOR = self.vs_color
+                             where S_DOMAIN_ID = self.domain_id
+                               and S_ID = self.vs_id;
+                          }
+
+                          self.cSubAction := 'sharedBrowse';
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" value="Cancel" name="ss_cancel" xhtml_class="form-button">
+                      <v:on-post>
+                        <![CDATA[
+                          self.cSubAction := 'sharedBrowse';
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </div>
+                </v:template>
+                <script type="text/javascript">
+                  <![CDATA[
+                    coloriseTable('preferences');
+                  ]]>
+                </script>
       </vm:if>
       
       <vm:if test="(self.cAction in ('create', 'edit', 'view'))">
-      <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;">
-      </div>
+                <div id="cDiv" style="position: absolute; visibility: hidden; background-color: white; z-index: 10;"></div>
       </vm:if>
       
       <div id="reminderDiv" style="display: none;">
@@ -4105,6 +4850,10 @@
           <input type="radio" name="e_delete" id="e_delete_1" value="1" style="margin-left: 110px;" /><label for="e_delete_1">Delete the series</label><br />
         </div>
       </vm:if>
+            </div>
+          </td>
+        </tr>
+      </table>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

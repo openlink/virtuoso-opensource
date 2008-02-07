@@ -574,6 +574,8 @@ create procedure CAL.WA.domain_owner_name (
 create procedure CAL.WA.domain_delete (
   in domain_id integer)
 {
+  delete from CAL.WA.GRANTS where G_DOMAIN_ID = domain_id;
+  delete from CAL.WA.SHARED where S_CALENDAR_ID = domain_id;
   delete from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id;
   delete from CAL.WA.TAGS where T_DOMAIN_ID = domain_id;
   delete from CAL.WA.UPSTREAM where U_DOMAIN_ID = domain_id;
@@ -724,7 +726,7 @@ create procedure CAL.WA.account_name (
 create procedure CAL.WA.account_fullName (
   in account_id integer)
 {
-  return coalesce((select coalesce(U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+  return coalesce((select CAL.WA.user_name (U_NAME, U_FULL_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
 }
 ;
 
@@ -758,7 +760,7 @@ create procedure CAL.WA.user_name(
   in u_full_name any) returns varchar
 {
   if (not is_empty_or_null(trim(u_full_name)))
-    return u_full_name;
+    return trim (u_full_name);
   return u_name;
 }
 ;
@@ -1959,9 +1961,9 @@ create procedure CAL.WA.dt_formatTemplate (
   if (pFormat = 'dd.MM.yyyy')
     return 'D.M.Y';
   if (pFormat = 'MM/dd/yyyy')
-    return 'M/d/Y';
+    return 'M/D/Y';
   if (pFormat = 'yyyy/MM/dd')
-    return 'Y/M/d';
+    return 'Y/M/D';
   return pFormat;
 }
 ;
@@ -2521,7 +2523,8 @@ create procedure CAL.WA.validate2 (
     return;
   };
 
-  if (propertyType = 'boolean') {
+  if (propertyType = 'boolean')
+  {
     if (propertyValue not in ('Yes', 'No'))
       goto _error;
   } else if (propertyType = 'integer') {
@@ -2549,15 +2552,15 @@ create procedure CAL.WA.validate2 (
       goto _error;
     return stringdate(CAL.WA.dt_reformat(propertyValue, 'd.m.Y', 'Y-M-D'));
   } else if (propertyType = 'date-dd.MM.yyyy') {
-    if (isnull (regexp_match('^(0[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|1[012])[- /.]((?:19|20)[0-9][0-9])\$', propertyValue)))
+    if (isnull (regexp_match('^(0[1-9]|[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|[1-9]|1[012])[- /.]((?:19|20)[0-9][0-9])\$', propertyValue)))
       goto _error;
     return CAL.WA.dt_stringdate (propertyValue, 'dd.MM.yyyy');
   } else if (propertyType = 'date-MM/dd/yyyy') {
-    if (isnull (regexp_match('^(0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])[- /.]((?:19|20)[0-9][0-9])\$', propertyValue)))
+    if (isnull (regexp_match('^(0[1-9]|[1-9]|1[012])[- /.](0[1-9]|[1-9]|[12][0-9]|3[01])[- /.]((?:19|20)[0-9][0-9])\$', propertyValue)))
       goto _error;
     return CAL.WA.dt_stringdate (propertyValue, 'MM/dd/yyyy');
   } else if (propertyType = 'date-yyyy/MM/dd') {
-    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])\$', propertyValue)))
+    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|[1-9]|1[012])[- /.](0[1-9]|[1-9]|[12][0-9]|3[01])\$', propertyValue)))
       goto _error;
     return CAL.WA.dt_stringdate (propertyValue, 'yyyy/MM/dd');
   } else if (propertyType = 'time') {
@@ -2589,56 +2592,6 @@ create procedure CAL.WA.validate2 (
 
 _error:
   signal('CLASS', propertyType);
-}
-;
-
------------------------------------------------------------------------------------------
---
-create procedure CAL.WA.validate (
-  in propertyType varchar,
-  in propertyValue varchar,
-  in propertyEmpty integer := 1)
-{
-  if (is_empty_or_null(propertyValue))
-    return propertyEmpty;
-
-  declare tmp any;
-  declare exit handler for SQLSTATE '*' {return 0;};
-
-  if (propertyType = 'boolean') {
-    if (propertyValue not in ('Yes', 'No'))
-      return 0;
-  } else if (propertyType = 'integer') {
-    if (isnull (regexp_match('^[0-9]+\$', propertyValue)))
-      return 0;
-    tmp := cast (propertyValue as integer);
-  } else if (propertyType = 'float') {
-    if (isnull (regexp_match('^[-+]?([0-9]*\.)?[0-9]+([eE][-+]?[0-9]+)?\$', propertyValue)))
-      return 0;
-    tmp := cast (propertyValue as float);
-  } else if (propertyType = 'dateTime') {
-    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01]) ([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
-      return 0;
-  } else if (propertyType = 'dateTime2') {
-    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01]) ([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
-      return 0;
-  } else if (propertyType = 'date') {
-    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])\$', propertyValue)))
-      return 0;
-  } else if (propertyType = 'date2') {
-    if (isnull (regexp_match('^(0[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|1[012])[- /.]((?:19|20)[0-9][0-9])\$', propertyValue)))
-      return 0;
-  } else if (propertyType = 'time') {
-    if (isnull (regexp_match('^([01]?[0-9]|[2][0-3])(:[0-5][0-9])?\$', propertyValue)))
-      return 0;
-  } else if (propertyType = 'folder') {
-    if (isnull (regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
-      return 0;
-  } else if (propertyType = 'uri') {
-    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_]*)?\$', propertyValue)))
-      return 0;
-  }
-  return 1;
 }
 ;
 
@@ -2725,11 +2678,24 @@ create procedure CAL.WA.validate_tags (
 }
 ;
 
+-----------------------------------------------------------------------------------------
+--
+create procedure CAL.WA.checkedAttribute (
+  in checkedValue integer,
+  in compareValue any := 1)
+{
+  if (checkedValue = compareValue)
+    return 'checked="checked"';
+  return '';
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.dashboard_get(
   in domain_id integer,
-  in user_id integer)
+  in account_id integer,
+  in privacy integer := 0)
 {
   declare ses any;
 
@@ -2743,23 +2709,19 @@ create procedure CAL.WA.dashboard_get(
                      DB.DBA.WA_INSTANCE b,
                      DB.DBA.WA_MEMBER c
                 where a.E_DOMAIN_ID = domain_id
+                 and a.E_PRIVACY >= privacy
                   and b.WAI_ID = a.E_DOMAIN_ID
                   and c.WAM_INST = b.WAI_NAME
-                  and c.WAM_USER = user_id
+                 and c.WAM_USER = account_id
                 order by a.E_UPDATED desc
-             ) x do {
-
-    declare uname, full_name varchar;
-
-    uname := (select coalesce (U_NAME, '') from DB.DBA.SYS_USERS where U_ID = user_id);
-    full_name := (select coalesce (coalesce (U_FULL_NAME, U_NAME), '') from DB.DBA.SYS_USERS where U_ID = user_id);
-
+             ) x do
+  {
     http ('<event>', ses);
     http (sprintf ('<dt>%s</dt>', date_iso8601 (E_UPDATED)), ses);
     http (sprintf ('<title><![CDATA[%s]]></title>', coalesce (E_SUBJECT, 'No subject')), ses);
     http (sprintf ('<link><![CDATA[%s]]></link>', E_URI), ses);
-    http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
-    http (sprintf ('<uid>%s</uid>', uname), ses);
+    http (sprintf ('<from><![CDATA[%s]]></from>', CAL.WA.account_fullName (account_id)), ses);
+    http (sprintf ('<uid>%s</uid>', CAL.WA.account_name (account_id)), ses);
     http ('</event>', ses);
   }
   http ('</calendar-db>', ses);
@@ -2904,6 +2866,7 @@ create procedure CAL.WA.event_update (
   in subject varchar,
   in description varchar,
   in location varchar,
+  in privacy integer,
   in tags varchar,
   in event integer,
   in eEventStart datetime,
@@ -2929,6 +2892,7 @@ create procedure CAL.WA.event_update (
         E_SUBJECT,
         E_DESCRIPTION,
         E_LOCATION,
+        E_PRIVACY,
         E_TAGS,
         E_EVENT,
         E_EVENT_START,
@@ -2951,6 +2915,7 @@ create procedure CAL.WA.event_update (
         subject,
         description,
         location,
+        privacy,
         tags,
         event,
         eEventStart,
@@ -2970,6 +2935,7 @@ create procedure CAL.WA.event_update (
        set E_SUBJECT = subject,
            E_DESCRIPTION = description,
            E_LOCATION = location,
+           E_PRIVACY = privacy,
            E_TAGS = tags,
            E_EVENT = event,
            E_EVENT_START = eEventStart,
@@ -2982,8 +2948,7 @@ create procedure CAL.WA.event_update (
            E_REMINDER = eReminder,
            E_NOTES = notes,
            E_UPDATED = updated
-     where E_ID = id and
-           E_DOMAIN_ID = domain_id;
+     where E_ID = id;
   }
   return id;
 }
@@ -2993,22 +2958,59 @@ create procedure CAL.WA.event_update (
 --
 create procedure CAL.WA.event_delete (
   in id integer,
-  in domain_id integer,
   in onOffset varchar := null)
 {
-  if (isnull (onOffset)) {
-  delete from CAL.WA.EVENTS where E_ID = id and E_DOMAIN_ID = domain_id;
+  if (isnull (onOffset))
+  {
+    delete from CAL.WA.EVENTS where E_ID = id;
   } else {
     declare eExceptions any;
 
     onOffset := '<' || cast (onOffset as varchar) || '>';
-    eExceptions := (select E_REPEAT_EXCEPTIONS from CAL.WA.EVENTS where E_ID = id and E_DOMAIN_ID = domain_id);
+    eExceptions := (select E_REPEAT_EXCEPTIONS from CAL.WA.EVENTS where E_ID = id);
     if (isnull (strstr (eExceptions, onOffset)))
       update CAL.WA.EVENTS
          set E_REPEAT_EXCEPTIONS = eExceptions || ' ' || onOffset
-       where E_ID = id and
-             E_DOMAIN_ID = domain_id;
+       where E_ID = id;
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.event_permissions (
+  in id integer,
+  in domain_id integer)
+{
+  declare event_domain_id integer;
+
+  event_domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = id);
+  if (isnull (event_domain_id))
+    return '';
+  if (event_domain_id = domain_id)
+    return 'W';
+  for (select a.WAI_IS_PUBLIC,
+              b.*,
+              c.G_ENABLE,
+              c.G_MODE
+         from DB.DBA.WA_INSTANCE a,
+              CAL.WA.SHARED b
+                left join CAL.WA.GRANTS c on c.G_ID = b.S_GRANT_ID
+        where a.WAI_ID = b.S_CALENDAR_ID
+          and b.S_DOMAIN_ID = domain_id
+          and b.S_CALENDAR_ID = event_domain_id
+          and b.S_VISIBLE = 1) do
+  {
+    if (isnull (S_GRANT_ID))
+    {
+      if (WAI_IS_PUBLIC = 1)
+        return 'R';
+    } else {
+      if (G_ENABLE)
+        return G_MODE;
+    }
+  }
+  return '';
 }
 ;
 
@@ -3372,7 +3374,8 @@ create procedure CAL.WA.event_findDay (
 
   pDay := dayofmonth (dt);
   -- last (day|weekday|weekend|m|t|w|t|f|s|s)
-  if (eRepeatParam1 = 5) {
+  if (eRepeatParam1 = 5)
+  {
     dt := CAL.WA.dt_EndOfMonth (dt);
     while (not CAL.WA.event_testDayKind (dt, eRepeatParam2))
       dt := dateadd ('day', -1, dt);
@@ -3381,17 +3384,21 @@ create procedure CAL.WA.event_findDay (
 
   dt := CAL.WA.dt_BeginOfMonth (dt);
   -- first|second|third|fourth (m|t|w|t|f|s|s)
-  if (1 <= eRepeatParam2 and eRepeatParam2 <= 7) {
+  if (1 <= eRepeatParam2 and eRepeatParam2 <= 7)
+  {
     while (not CAL.WA.event_testDayKind (dt, eRepeatParam2))
       dt := dateadd ('day', 1, dt);
     return dayofmonth (dateadd ('day', 7*(eRepeatParam1-1), dt));
   }
 
   -- first|second|third|fourth  (m|t|w|t|f|s|s) (day|weekday|weekend)
-  if (1 <= eRepeatParam1 and eRepeatParam1 <= 4) {
+  if (1 <= eRepeatParam1 and eRepeatParam1 <= 4)
+  {
     N := eRepeatParam1;
-    while (pDay >= dayofmonth (dt)) {
-      if (CAL.WA.event_testDayKind (dt, eRepeatParam2)) {
+    while (pDay >= dayofmonth (dt))
+    {
+      if (CAL.WA.event_testDayKind (dt, eRepeatParam2))
+      {
         N := N - 1;
         if (N = 0)
           return dayofmonth (dt);
@@ -3435,25 +3442,34 @@ create procedure CAL.WA.event_testDayKind (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.events_forPeriod (
-  in domain_id integer,
+  in pDomainID integer,
   in pDateStart date,
   in pDateEnd date,
-  in pTimezone integer,
-  in pTaskMode varchar := 0,
-  in pWeekStarts varchar := 'm')
+  in pAccountRole varchar := 'public',
+  in pTaskMode integer := 0)
 {
+  declare privacy, dt_offset, dtTimezone integer;
+  declare dtWeekStarts varchar;
   declare dt, dtStart, dtEnd, tzDT, tzEventStart, tzRepeatUntil date;
-  declare dt_offset integer;
 
   declare c0, c1, c6, c7 integer;
   declare c2, c5 varchar;
   declare c3, c4 datetime;
   result_names (c0, c1, c2, c3, c4, c5, c6, c7);
 
-  dtStart := CAL.WA.event_user2gmt (CAL.WA.dt_dateClear (pDateStart), pTimezone);
-  dtEnd := CAL.WA.event_user2gmt (dateadd ('day', 1, CAL.WA.dt_dateClear (pDateEnd)), pTimezone);
+  dtTimezone := CAL.WA.settings_timeZone2 (pDomainID);
+  dtWeekStarts := CAL.WA.settings_weekStarts2 (pDomainID);
+  dtStart := CAL.WA.event_user2gmt (CAL.WA.dt_dateClear (pDateStart), dtTimezone);
+  dtEnd := CAL.WA.event_user2gmt (dateadd ('day', 1, CAL.WA.dt_dateClear (pDateEnd)), dtTimezone);
 
-  if (pTaskMode) {
+  for (select CALENDAR_ID as domain_id from CAL..MY_CALENDARS where domain_id = pDomainID and account_role = pAccountRole) do
+  {
+    privacy := 1;
+    if ((domain_id = pDomainID) and (pAccountRole not in ('public', 'guest')))
+      privacy := 0;
+
+    if (pTaskMode)
+    {
     -- tasks
     for (select E_ID,
                 E_EVENT,
@@ -3464,6 +3480,7 @@ create procedure CAL.WA.events_forPeriod (
                 E_REMINDER
            from CAL.WA.EVENTS
           where E_DOMAIN_ID = domain_id
+              and E_PRIVACY >= privacy
             and E_KIND = 1
             and E_EVENT_START <  dtEnd
             and E_EVENT_END   >  dtStart) do
@@ -3471,8 +3488,8 @@ create procedure CAL.WA.events_forPeriod (
       result (E_ID,
               E_EVENT,
               E_SUBJECT,
-              CAL.WA.event_gmt2user (E_EVENT_START, pTimezone),
-              CAL.WA.event_gmt2user (E_EVENT_END, pTimezone),
+                CAL.WA.event_gmt2user (E_EVENT_START, dtTimezone),
+                CAL.WA.event_gmt2user (E_EVENT_END, dtTimezone),
               E_REPEAT,
               null,
               E_REMINDER);
@@ -3489,6 +3506,7 @@ create procedure CAL.WA.events_forPeriod (
               E_REMINDER
          from CAL.WA.EVENTS
         where E_DOMAIN_ID = domain_id
+            and E_PRIVACY >= privacy
           and E_KIND = 0
           and (E_REPEAT = '' or E_REPEAT is null)
           and (
@@ -3499,8 +3517,8 @@ create procedure CAL.WA.events_forPeriod (
     result (E_ID,
             E_EVENT,
             E_SUBJECT,
-            CAL.WA.event_gmt2user (E_EVENT_START, pTimezone),
-            CAL.WA.event_gmt2user (E_EVENT_END, pTimezone),
+              CAL.WA.event_gmt2user (E_EVENT_START, dtTimezone),
+              CAL.WA.event_gmt2user (E_EVENT_END, dtTimezone),
             E_REPEAT,
             null,
             E_REMINDER);
@@ -3521,16 +3539,18 @@ create procedure CAL.WA.events_forPeriod (
               E_REMINDER
          from CAL.WA.EVENTS
         where E_DOMAIN_ID = domain_id
+            and E_PRIVACY >= privacy
           and E_KIND = 0
           and E_REPEAT <> ''
           and E_EVENT_START < dtEnd
           and ((E_REPEAT_UNTIL is null) or (E_REPEAT_UNTIL >= dtStart))) do
   {
-    tzEventStart := CAL.WA.event_gmt2user (E_EVENT_START, pTimezone);
-    tzRepeatUntil := CAL.WA.event_gmt2user (E_REPEAT_UNTIL, pTimezone);
+      tzEventStart := CAL.WA.event_gmt2user (E_EVENT_START, dtTimezone);
+      tzRepeatUntil := CAL.WA.event_gmt2user (E_REPEAT_UNTIL, dtTimezone);
     dt := dtStart;
-    while (dt < dtEnd) {
-      tzDT := CAL.WA.event_gmt2user (dt, pTimezone);
+      while (dt < dtEnd)
+      {
+        tzDT := CAL.WA.event_gmt2user (dt, dtTimezone);
       if (CAL.WA.event_occurAtDate (tzDT,
                                     E_EVENT,
                                     tzEventStart,
@@ -3540,8 +3560,9 @@ create procedure CAL.WA.events_forPeriod (
                                     E_REPEAT_PARAM3,
                                     tzRepeatUntil,
                                     E_REPEAT_EXCEPTIONS,
-                                    pWeekStarts)) {
-        if (E_EVENT = 1) {
+                                      dtWeekStarts)) {
+          if (E_EVENT = 1)
+          {
           dt_offset := datediff ('day', dateadd ('hour', -12, E_EVENT_START), dt);
         } else {
           dt_offset := datediff ('day', E_EVENT_START, dateadd ('second', 86399, dt));
@@ -3549,8 +3570,8 @@ create procedure CAL.WA.events_forPeriod (
         result (E_ID,
                 E_EVENT,
                 E_SUBJECT,
-                CAL.WA.event_gmt2user (dateadd ('day', dt_offset, E_EVENT_START), pTimezone),
-                CAL.WA.event_gmt2user (dateadd ('day', dt_offset, E_EVENT_END), pTimezone),
+                  CAL.WA.event_gmt2user (dateadd ('day', dt_offset, E_EVENT_START), dtTimezone),
+                  CAL.WA.event_gmt2user (dateadd ('day', dt_offset, E_EVENT_END), dtTimezone),
                 E_REPEAT,
                 dt_offset,
                 E_REMINDER);
@@ -3558,6 +3579,7 @@ create procedure CAL.WA.events_forPeriod (
       dt := dateadd ('day', 1, dt);
     }
   }
+}
 }
 ;
 
@@ -3572,6 +3594,7 @@ create procedure CAL.WA.task_update (
   in domain_id integer,
   in subject varchar,
   in description varchar,
+  in privacy integer,
   in tags varchar,
   in eEventStart datetime,
   in eEventEnd datetime,
@@ -3594,6 +3617,7 @@ create procedure CAL.WA.task_update (
         E_KIND,
         E_SUBJECT,
         E_DESCRIPTION,
+        E_PRIVACY,
         E_TAGS,
         E_EVENT_START,
         E_EVENT_END,
@@ -3613,6 +3637,7 @@ create procedure CAL.WA.task_update (
         1,
         subject,
         description,
+        privacy,
         tags,
         eEventStart,
         eEventEnd,
@@ -3628,6 +3653,7 @@ create procedure CAL.WA.task_update (
     update CAL.WA.EVENTS
        set E_SUBJECT = subject,
            E_DESCRIPTION = description,
+           E_PRIVACY = privacy,
            E_TAGS = tags,
            E_EVENT_START = eEventStart,
            E_EVENT_END = eEventEnd,
@@ -3637,8 +3663,7 @@ create procedure CAL.WA.task_update (
            E_COMPLETED = completed,
            E_NOTES = notes,
            E_UPDATED = updated
-     where E_ID = id and
-           E_DOMAIN_ID = domain_id;
+     where E_ID = id;
   }
   return id;
 }
@@ -3647,10 +3672,9 @@ create procedure CAL.WA.task_update (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.calendar_tags_select (
-  in id integer,
-  in domain_id integer)
+  in id integer)
 {
-  return coalesce((select E_TAGS from CAL.WA.EVENTS where E_ID = id and E_DOMAIN_ID = domain_id), '');
+  return coalesce((select E_TAGS from CAL.WA.EVENTS where E_ID = id), '');
 }
 ;
 
@@ -3664,8 +3688,7 @@ create procedure CAL.WA.calendar_tags_update (
     update CAL.WA.EVENTS
      set E_TAGS = tags,
            E_UPDATED = now ()
-     where E_ID = id and
-           E_DOMAIN_ID = domain_id;
+   where E_ID = id;
   }
 ;
 
@@ -3676,7 +3699,7 @@ create procedure CAL.WA.calendar_tags_update (
 -------------------------------------------------------------------------------
 create procedure CAL.WA.search_sql (
   inout domain_id integer,
-  inout account_id integer,
+  inout account_role varchar,
   inout data varchar)
 {
   declare S, tmp, where2, delimiter2 varchar;
@@ -3698,7 +3721,7 @@ create procedure CAL.WA.search_sql (
        ' E_UPDATED       \n' ||
        ' from            \n' ||
        '   CAL.WA.EVENTS \n' ||
-       ' where E_DOMAIN_ID = <DOMAIN_ID> <TEXT> <TAGS> <WHERE> \n';
+       ' where E_DOMAIN_ID = <DOMAIN_ID> and E_PRIVACY = <PRIVACY> <TEXT> <TAGS> <WHERE> \n';
 
   tmp := CAL.WA.xml_get ('keywords', data);
   if (not is_empty_or_null (tmp)) {
@@ -3710,13 +3733,14 @@ create procedure CAL.WA.search_sql (
   }
 
   tmp := CAL.WA.xml_get ('tags', data);
-  if (not is_empty_or_null (tmp)) {
+  if (not is_empty_or_null (tmp))
+  {
     tmp := CAL.WA.tags2search (tmp);
     S := replace (S, '<TAGS>', sprintf ('and contains (E_SUBJECT, \'[__lang "x-ViDoc"] %s\') \n', tmp));
   }
 
   S := replace (S, '<DOMAIN_ID>', cast (domain_id as varchar));
-  S := replace (S, '<ACCOUNT_ID>', cast (account_id as varchar));
+  S := replace (S, '<PRIVACY>', case when account_role in ('public', 'guest') then '1' else '0' end);
   S := replace (S, '<TAGS>', '');
   S := replace (S, '<TEXT>', '');
   S := replace (S, '<WHERE>', where2);

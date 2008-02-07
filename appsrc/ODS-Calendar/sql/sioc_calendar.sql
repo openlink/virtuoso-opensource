@@ -106,6 +106,7 @@ create procedure fill_ods_calendar_sioc (
           where WAM_INST = WAI_NAME
             and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
             and E_DOMAIN_ID = WAI_ID
+            and E_PRIVACY = 1
           order by E_ID) do
   {
       c_iri := calendar_iri (WAI_NAME);
@@ -314,6 +315,8 @@ create procedure event_delete (
 --
 create trigger EVENTS_SIOC_I after insert on CAL.WA.EVENTS referencing new as N
 {
+  if (N.E_PRIVACY <> 1)
+    return;
   event_insert (null,
                 null,
                 null,
@@ -341,7 +344,10 @@ create trigger EVENTS_SIOC_I after insert on CAL.WA.EVENTS referencing new as N
 create trigger EVENTS_SIOC_U after update on CAL.WA.EVENTS referencing old as O, new as N
 {
   event_delete (O.E_ID,
-                O.E_DOMAIN_ID, O.E_TAGS);
+                O.E_DOMAIN_ID,
+                O.E_TAGS);
+  if (N.E_PRIVACY <> 1)
+    return;
   event_insert (null,
                 null,
                 null,
@@ -369,7 +375,8 @@ create trigger EVENTS_SIOC_U after update on CAL.WA.EVENTS referencing old as O,
 create trigger EVENTS_SIOC_D before delete on CAL.WA.EVENTS referencing old as O
 {
   event_delete (O.E_ID,
-                O.E_DOMAIN_ID, O.E_TAGS);
+                O.E_DOMAIN_ID,
+                O.E_TAGS);
 }
 ;
 

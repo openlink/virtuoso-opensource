@@ -160,8 +160,15 @@ a:hover
 
 .lc a:hover
 {
-  color: black;
+  color: blue;
   background: #99b3c5;
+}
+
+.lc a.gems2
+{
+  color: black;
+  font-weight: bold;
+  background: #b0cde4;
 }
 
 .lc_head
@@ -1352,4 +1359,11 @@ td.cpDayColumnHeader
 .cpOtherMonthDate
 {
  color: #808080;
+}
+
+.ss_color {
+	width: 60px;
+	height: 14px;
+	border: 1px solid #000;
+	cursor: pointer;
 }
