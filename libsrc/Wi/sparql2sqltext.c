@@ -2256,7 +2256,16 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
     case SAMETERM_L:
       {
         SPART *arg2 = tree->_.builtin.args[1];
-        SPART *expanded = spartlist (ssg->ssg_sparp, 3, BOP_AND,
+        SPART *expanded;
+        ptrlong arg1_restrs = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
+        ptrlong arg2_restrs = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg2);
+        if ((arg1_restrs & SPART_VARR_IS_REF) && (arg1_restrs & SPART_VARR_IS_REF))
+          {
+            expanded = spartlist (ssg->ssg_sparp, 3, BOP_EQ, arg1, arg2);
+            ssg_print_bop_bool_expn (ssg, expanded, " = ", " equ (", top_filter_op, needed);
+            return;
+          }
+        expanded = spartlist (ssg->ssg_sparp, 3, BOP_AND,
           spartlist (ssg->ssg_sparp, 3, BOP_EQ, arg1, arg2),
           spartlist (ssg->ssg_sparp, 3, BOP_AND,
             spartlist (ssg->ssg_sparp, 3, BOP_OR,
