@@ -53,8 +53,8 @@
 	-- if we have a host, we try to resolve
 	if (host is not null)
 	  {
-	    if (host not like '%:%')
-	      host := host || ':80';
+	    --if (host not like '%:%')
+	    --  host := host || ':80';
 	    lpath := null;
 	    lpath := (select top 1 HP_LPATH from HTTP_PATH where HP_HOST = host and HP_PPATH = phome);
 	    if (lpath is not null)

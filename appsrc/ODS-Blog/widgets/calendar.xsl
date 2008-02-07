@@ -1746,7 +1746,7 @@
 			    {
 			      declare tit, link any;
                               tit := xpath_eval ('@title', x);
-                              link := xpath_eval ('@href', x);
+                              link := WS.WS.EXPAND_URL (url, cast (xpath_eval ('@href', x) as varchar));
 			      res := vector_concat (res, vector (vector (tit,link, '', 0)));
 			    }
 			  self.imp_src := res;
