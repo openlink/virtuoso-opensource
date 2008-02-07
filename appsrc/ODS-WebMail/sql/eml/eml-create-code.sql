@@ -1338,7 +1338,7 @@ create procedure OMAIL.WA.domain_sioc_url (
 create procedure OMAIL.WA.account_fullName (
   in account_id integer)
 {
-  return coalesce((select coalesce(U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+  return coalesce ((select OMAIL.WA.user_name (U_NAME, U_FULL_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
 }
 ;
 
@@ -1362,6 +1362,18 @@ create procedure OMAIL.WA.account_sioc_url (
 
   S := sprintf ('http://%s/dataspace/%U', DB.DBA.wa_cname (), OMAIL.WA.domain_owner_name (domain_id));
   return OMAIL.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure OMAIL.WA.user_name (
+  in u_name any,
+  in u_full_name any) returns varchar
+{
+  if (not is_empty_or_null(trim(u_full_name)))
+    return trim (u_full_name);
+  return u_name;
 }
 ;
 

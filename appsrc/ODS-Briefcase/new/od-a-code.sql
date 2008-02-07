@@ -1315,7 +1315,7 @@ create procedure ODRIVE.WA.account() returns varchar
 create procedure ODRIVE.WA.account_name (
   in account_id integer)
 {
-  return coalesce((select coalesce(U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+  return coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id), '');
 }
 ;
 
@@ -1324,7 +1324,7 @@ create procedure ODRIVE.WA.account_name (
 create procedure ODRIVE.WA.account_fullName (
   in account_id integer)
 {
-  return coalesce((select coalesce(U_FULL_NAME, U_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+  return coalesce ((select ODRIVE.WA.user_name (U_NAME, U_FULL_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
 }
 ;
 
@@ -1349,7 +1349,7 @@ create procedure ODRIVE.WA.user_name(
   in u_full_name any) returns varchar
 {
   if (not is_empty_or_null(trim(u_full_name)))
-    return u_full_name;
+    return trim (u_full_name);
   return u_name;
 }
 ;

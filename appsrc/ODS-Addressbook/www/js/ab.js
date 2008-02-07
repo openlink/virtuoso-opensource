@@ -354,14 +354,17 @@ function rowSelect(obj)
 //
 function rowSelectValue(dstField, srcField, singleMode)
 {
-  if (singleMode) {
+  if (singleMode)
+  {
     dstField.value = srcField.value;
   } else {
     dstField.value = trim(dstField.value);
     dstField.value = trim(dstField.value, ',');
     dstField.value = trim(dstField.value);
-    if (dstField.value.indexOf(srcField.value) == -1) {
-      if (dstField.value == '') {
+    if (dstField.value.indexOf(srcField.value) == -1)
+    {
+      if (dstField.value == '')
+      {
         dstField.value = srcField.value;
       } else {
         dstField.value = dstField.value + ',' + srcField.value;
@@ -419,10 +422,13 @@ function updateChecked (obj, objName)
   objForm.s1.value = trim(objForm.s1.value, ',');
   objForm.s1.value = trim(objForm.s1.value);
   objForm.s1.value = objForm.s1.value + ',';
-  for (var i = 0; i < objForm.elements.length; i = i + 1) {
+  for (var i = 0; i < objForm.elements.length; i = i + 1)
+  {
     var obj = objForm.elements[i];
-    if (obj != null && obj.type == "checkbox" && obj.name == objName) {
-      if (obj.checked) {
+    if (obj != null && obj.type == "checkbox" && obj.name == objName)
+    {
+      if (obj.checked)
+      {
         if (objForm.s1.value.indexOf(obj.value+',') == -1)
           objForm.s1.value = objForm.s1.value + obj.value+',';
       } else {
@@ -512,10 +518,13 @@ function addCheckedTags (openerName, checkName)
     objOpener.value = trim(objOpener.value, ',');
     objOpener.value = trim(objOpener.value);
     objOpener.value = objOpener.value + ',';
-    for (var i = 0; i < objForm.elements.length; i = i + 1) {
+    for (var i = 0; i < objForm.elements.length; i = i + 1)
+    {
       var obj = objForm.elements[i];
-      if (obj != null && obj.type == "checkbox" && obj.name == checkName) {
-        if (obj.checked) {
+      if (obj != null && obj.type == "checkbox" && obj.name == checkName)
+      {
+        if (obj.checked)
+        {
           if (objOpener.value.indexOf(obj.value+',') == -1)
             objOpener.value = objOpener.value + obj.value+',';
         } else {
@@ -563,9 +572,11 @@ function hasError(root) {
 
 	/* error */
 	var error = root.getElementsByTagName('error')[0];
-  if (error) {
+  if (error)
+  {
 	  var code = error.getElementsByTagName('code')[0];
-    if (OAT.Xml.textValue(code) != 'OK') {
+    if (OAT.Xml.textValue(code) != 'OK')
+    {
 	    var message = error.getElementsByTagName('message')[0];
       if (message)
         alert (OAT.Xml.textValue(message));

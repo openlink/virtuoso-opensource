@@ -102,7 +102,7 @@ exec_start:;
 
     SELECT U_ID,
            U_NAME,
-           coalesce(U_FULL_NAME, U_NAME)
+           OMAIL.WA.user_name (U_NAME, U_FULL_NAME)
       INTO user_id,
            user_name,
            user_fullName
