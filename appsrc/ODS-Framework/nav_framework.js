@@ -700,7 +700,7 @@ ODS.Nav = function(navOptions) {
                 connections : new Array(),
                 ciTab: false,
                 ciMap: false,
-                connTab: false,
+//                connTab      : false,
                 msgTab       : false,
                 show         : false,
                 set : function(profileId){ this.userName=false;
@@ -788,9 +788,16 @@ ODS.Nav = function(navOptions) {
                     }else if(defaultAction.indexOf('#/person/')>-1 || defaultAction.indexOf('#/organization/')>-1) // should add rule for organization.
                     {
                         var profileId=document.location.href.split('#')[1];
+                        document.location.href=document.location.href.split('#')[0]+'#';
 
                         var profileType=profileId.split('/')[1];
                         profileId=profileId.split('/')[2];
+                        
+                        
+                        self.profile.show=true; 
+                        self.profile.set('/'+profileId);
+                        self.initProfile();
+//                        self.session.usersGetInfo('/'+profileId,'userName,fullName,photo',function(xmlDoc2){dd(xmlDoc2);});
                         
   }  
                     else
@@ -1044,6 +1051,11 @@ ODS.Nav = function(navOptions) {
         OAT.Dom.append([communityMenuBodyUl,communityMenuBodyLi],[communityMenuBodyLi,communityMenuBodyLiA]);
       }
       
+      if(i==0 && !self.session.userName)
+      {
+         OAT.Dom.hide($('communities_menu'));
+         return;
+      }
 
       if(self.session.userName)
       {
@@ -2489,14 +2501,15 @@ ODS.Nav = function(navOptions) {
          rWidgets[i].style.width=pRWidth-8+'px';
     }
 
-    if(!self.profile.connTab)
-    {
-       var connTab=new OAT.Tab('connPCtr');
-       connTab.add('connT1','connP1');
-       connTab.add("connT2","connP2");
-       connTab.go(0);
-       self.profile.connTab=connTab;
-    }
+//    if(!self.profile.connTab)
+//    {
+//       var connTab=new OAT.Tab('connPCtr');
+//       connTab.add('connT1','connP1');
+//       connTab.add("connT2","connP2");
+//       connTab.go(0);
+//       self.profile.connTab=connTab;
+//    }
+
 
     self.session.usersGetInfo(self.profile.userId,'userName,fullName,photo',function(xmlDoc2){self.updateProfile(xmlDoc2);});
     var mapOpt = {
@@ -2505,15 +2518,15 @@ ODS.Nav = function(navOptions) {
     	            fixEpsilon:0.5
                  }                 
 
-    self.profile.connMap = new OAT.Map('connP2map',OAT.MapData.TYPE_G,mapOpt);
-    self.profile.connMap.connLocations=new Array();
-    self.profile.connMap.connData={};
-    self.profile.connMap.centerAndZoom(0,0,8); /* africa, middle zoom */
-    self.profile.connMap.setMapType(OAT.MapData.MAP_ORTO); /* aerial */
-
-    OAT.Event.attach('connT2',"click",function(){self.profile.connMap.obj.checkResize();
-                                                 self.profile.connMap.optimalPosition(self.profile.connMap.connLocations);
-                                                });  
+//    self.profile.connMap = new OAT.Map('connP2map',OAT.MapData.TYPE_G,mapOpt);
+//    self.profile.connMap.connLocations=new Array();
+//    self.profile.connMap.connData={};
+//    self.profile.connMap.centerAndZoom(0,0,8); /* africa, middle zoom */
+//    self.profile.connMap.setMapType(OAT.MapData.MAP_ORTO); /* aerial */
+//
+//    OAT.Event.attach('connT2',"click",function(){self.profile.connMap.obj.checkResize();
+//                                                 self.profile.connMap.optimalPosition(self.profile.connMap.connLocations);
+//                                                });  
     
     if(!self.profile.ciTab)
     {
@@ -2526,20 +2539,28 @@ ODS.Nav = function(navOptions) {
        self.profile.ciTab=ciTab;
     }
 
-    self.profile.ciMap = new OAT.Map('ciP4map',OAT.MapData.TYPE_G,mapOpt);
+    self.profile.ciMap = new OAT.Map('locatorMap',OAT.MapData.TYPE_G,mapOpt);
     self.profile.ciMap.homeLocation=false;
     self.profile.ciMap.workLocation=false;
+    self.profile.ciMap.connLocations=new Array();
+    self.profile.ciMap.connData={};
     self.profile.ciMap.centerAndZoom(0,0,8); /* africa, middle zoom */
     self.profile.ciMap.obj.addControl(new GSmallMapControl());
     self.profile.ciMap.setMapType(OAT.MapData.MAP_ORTO); /* aerial */
 
-    OAT.Event.attach('ciT4',"click",function(){self.profile.ciMap.obj.checkResize();
+    
+    function expandMap()
+    {
+      self.profile.ciMap.obj.checkResize();
                                                if(self.profile.ciMap.homeLocation && self.profile.ciMap.workLocation)
                                                   self.profile.ciMap.optimalPosition(new Array(self.profile.ciMap.homeLocation,self.profile.ciMap.workLocation));
                                                else
                                                   self.profile.ciMap.centerAndZoom(50,-10,3);
-                                              });  
+    }
+    
+//    OAT.Event.attach('ciT4',"click",function(){expandMap();});  
 
+    setTimeout(function(){expandMap();},500);
 
   }
   
@@ -2572,7 +2593,7 @@ ODS.Nav = function(navOptions) {
       OAT.Dom.show($('profile_user_actions'));
     
       var msgA=$('profileSendMsg');
-      if(self.session.userId==self.profile.userId)
+      if(self.session.userId==self.profile.userId || !self.session.userId)
          OAT.Dom.hide(msgA);
       else       
       {
@@ -2591,7 +2612,8 @@ ODS.Nav = function(navOptions) {
          var connA=OAT.Dom.create('a',{cursor:'pointer'});
          connA.id="profileConnAction";
          
-         if(self.session.connectionsId.find(self.profile.userId) > -1)
+         
+         if(self.session.connectionsId && self.session.connectionsId.find(self.profile.userId) > -1)
          {
             connA.innerHTML='Disconnect';
             OAT.Dom.attach(connA,"click",function() {self.connectionSet(self.profile.userId,0,function(){self.session.connectionRemove(self.profile.userId);
@@ -2599,7 +2621,7 @@ ODS.Nav = function(navOptions) {
                                                                                                         }
                                                                        )
                                                     });
-         }else
+         }else if(self.session.connectionsId)
          {
             connA.innerHTML='Connect';
             OAT.Dom.attach(connA,"click",function() {self.connectionSet(self.profile.userId,1,function(){//self.session.connectionAdd(self.profile.userId,self.profile.userFullName);
@@ -2670,13 +2692,13 @@ ODS.Nav = function(navOptions) {
         var _lon = OAT.Xml.textValue(connections[i].childNodes[3].childNodes[1]);
         if(_lat != '' && _lon != '')
         {
-          self.profile.connMap.addMarker(i,_lat,_lon,
+             self.profile.ciMap.addMarker(i,_lat,_lon,
                                          tnail.src,40,40,
-                                            function(marker){self.profile.show=true;self.profile.set(self.profile.connMap.connData[marker.__group].id) ;self.initProfile();}
+                                            function(marker){self.profile.show=true;self.profile.set(self.profile.ciMap.connData[marker.__group].id) ;self.initProfile();}
                                          );
    
-          self.profile.connMap.connLocations.push(new Array(_lat,_lon));
-             self.profile.connMap.connData[i]={id    : connObj.uid,
+             self.profile.ciMap.connLocations.push(new Array(_lat,_lon));
+             self.profile.ciMap.connData[i]={id    : connObj.uid,
                                             name  : cNameA.innerHTML,
                                             photo : tnail.src}
         
@@ -2690,7 +2712,7 @@ ODS.Nav = function(navOptions) {
         self.session.connectionsId=connectionsArr;
       }
 
-      self.profile.connMap.optimalPosition(self.profile.connMap.connLocations);
+      self.profile.ciMap.optimalPosition(self.profile.ciMap.connLocations);
       self.wait('hide');
       return;
     }
@@ -2753,6 +2775,8 @@ ODS.Nav = function(navOptions) {
     function renderNewsFeedBlock(xmlString)
     {
       var actHidden=new Array;
+      if(self.session.sid)
+      {
       self.feedStatus(function(xmlDoc){ var actOpt = OAT.Xml.xpath(xmlDoc, '/feedStatus_response/activity',{});
                                         for(var i=0;i<actOpt.length;i++)
                                         {
@@ -2762,6 +2786,7 @@ ODS.Nav = function(navOptions) {
                                         }
                                         self.wait('hide');
                                       });
+      }
 
       var daily=buildTimeObj();
       var cont = $('notify_content');
@@ -3058,7 +3083,13 @@ ODS.Nav = function(navOptions) {
                                                                                               if(self.session.userId==self.profile.userId)
                                                                                                  self.updateConnectionsInterface(xmlDocRet);
                                                                                              });
+    if(self.session.sid)
+    {   
+       OAT.Dom.show($('groups_w'));
     self.discussionGroupsGet(self.profile.userId,renderDiscussionGroups)
+    }
+    else 
+       OAT.Dom.hide($('groups_w'));
 
     OAT.AJAX.GET(ODS.Preferences.activitiesEndpoint+self.profile.userName+'/0/', false , renderNewsFeedBlock, optionsGet);
 

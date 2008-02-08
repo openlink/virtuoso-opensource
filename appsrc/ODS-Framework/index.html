@@ -192,18 +192,22 @@
   	        <div id="connections_w" class="widget connections_w">
   	          <div class="w_title"><h3 id="connPTitleTxt">Connections</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/></div></div>
   	          <div class="w_content">
+<!--
                 <ul class="tab_bar">
                   <li class="sel" id="connT1"><a href="javascript:void(0)">Thumbnails</a></li>
                   <li id="connT2"><a href="javascript:void(0)">Map</a></li>
                 </ul>
+-->
                 <div class="tab_deck">
                   <div  id="connPCtr" class="tab_page">
                   </div>
                   <div class="tab_page" id="connP1">
                   </div> <!-- .tab_page -->
+<!--
                   <div class="tab_page" id="connP2">
                     <div id="connP2map" style="height: 200px;"> </div>
                   </div>
+-->
                 </div> <!-- tab_deck -->
               </div> <!-- w_content -->
   	        </div> <!-- .widget -->
@@ -265,7 +269,7 @@
                   <li id="ciT1"><a href="javascript:void(0)">Home</a></li>
                   <li id="ciT2"><a href="javascript:void(0)">Business</a></li>
                   <li id="ciT3"><a href="javascript:void(0)">IM</a></li>
-                  <li id="ciT4"><a href="javascript:void(0)">Map</a></li>
+                  <li id="ciT4"><a href="javascript:void(0)">Personal Information</a></li>
                 </ul>
                 <div class="tab_deck">
                   <div id="ciPCtr" class="tab_page">
@@ -302,21 +306,11 @@
                     </div> <!-- .vcard -->
                   </div> <!-- .tab_page -->
                   <div id="ciP3" class="tab_page">
-                    <em>Skype:</em> Zonkenstein<br/>
-                    <em>ICQ:</em> 21006712<br/>
-                    <em>AIM:</em> zonkenstein<br/>
+                    <em>Skype:</em> <br/>
+                    <em>ICQ:</em> <br/>
+                    <em>AIM:</em> <br/>
                   </div>
                   <div id="ciP4" class="tab_page">
-                    <div id="ciP4map" style="height:300px;"></div>
-                  </div>
-                </div> <!-- .tab_deck -->                
-              </div> <!-- .w_content -->
-            </div> <!-- .widget -->
-            <div class="widget w_contact">
-              <div class="w_title">
-                <h3>Personal Information</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/></div>
-              </div>
-              <div class="w_content">
                 <div class="sect">
                   <h4>Interests</h4>
                   <p id="interestsCtr"></p>
@@ -327,8 +321,17 @@
                 </div>
                 <div class="sect">
                   <h4>Other</h4>
-                  <p id="flowCtr">This section reserved for free flow of thought.</p>
                 </div>
+              </div>
+                </div> <!-- .tab_deck -->                
+              </div> <!-- .w_content -->
+            </div> <!-- .widget -->
+            <div class="widget w_contact">
+              <div class="w_title">
+                <h3>Locator</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/></div>
+              </div>
+              <div class="w_content">
+                <div id="locatorMap" style="height:300px;"></div>
               </div>
             </div>
           </div> <!-- #u_home_r -->
@@ -716,7 +719,8 @@
         <div class="dlg_btn_row"><button onclick="conn_del_dlg_hide()">Delete connection</button><button onclick="conn_del_dlg_hide()">Cancel</button></div>
       </div> <!-- dlg_content -->
     </div> <!-- #conn_del_confirm_dialog -->
-    <div id="kidehen_conn_info_bubble" class="a_bubble conn_info_bubble" style="display: none">
+    
+    <div id="connection_info_bubble" class="a_bubble conn_info_bubble" style="display: none">
       <div class="lt">
         <img src="people/kidehen_large.jpg" alt="Kingsley Idehen" />
       </div> <!-- .lt -->
@@ -729,6 +733,7 @@
         </ul>
       </div> <!-- .rt -->
     </div>
+    
     <div id="a_tmpl_1" class="oat_anchor_bubble">
       <div class="oat_anchor_title_ctr">
         <h2 class="oat_anchor_title_text_ctr"></h2>

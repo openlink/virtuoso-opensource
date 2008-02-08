@@ -243,7 +243,7 @@ _output:
 ;
 grant execute on sessionValidate to GDATA_ODS;
 
-create procedure usersGetInfo (in sid varchar,in realm varchar :='wa',in usersStr varchar,in fieldsStr varchar) __SOAP_HTTP 'text/xml'
+create procedure usersGetInfo (in sid varchar:='',in realm varchar :='wa',in usersStr varchar,in fieldsStr varchar) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -659,7 +659,7 @@ create procedure userinfo_xml(in metas any,in rset any, in idx integer)
 }
 ;
 
-create procedure connectionsGet (in sid varchar:='',in realm varchar :='wa', in userId integer := null, in extraFields varchar :='') __SOAP_HTTP 'text/xml'
+create procedure connectionsGet (in sid varchar:='',in realm varchar :='wa', in userId any := null, in extraFields varchar :='') __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -670,16 +670,32 @@ create procedure connectionsGet (in sid varchar:='',in realm varchar :='wa', in 
   errMsg  := '';
 
   declare logged_user_name varchar;
-  if(isSessionValid(sid,'wa',logged_user_name))
-  {
+  isSessionValid(sid,'wa',logged_user_name);
+--  if(isSessionValid(sid,'wa',logged_user_name))
+--  {
     
       declare _sneid,_sneid_logged_user integer;
       _sneid_logged_user := (select sne_id from DB.DBA.sn_person where sne_name=logged_user_name);
 
       if( userId is not null)
+      {
+          if(subseq(userId,0,1)='/')
+             userId:=username2id(subseq(userId,1));
+          else
+             userId:=cast(userId as integer);
+             
          _sneid := (select sne_id from DB.DBA.sn_person where sne_org_id=userId);
+      }
       else
          _sneid := _sneid_logged_user;
+
+      if(_sneid is null)
+      {
+        errCode := 20;
+        errMsg  := 'Social network user name does not exist.';
+        
+        goto _err;
+      }
 
       declare connections, ivited, conn_inv any;
       connections:=connections_get(_sneid);
@@ -723,7 +739,8 @@ create procedure connectionsGet (in sid varchar:='',in realm varchar :='wa', in 
             }
           }
       }
-  }else return '';
+--  }else return '';
+_err:
 
   if(errCode<>0)
      httpErrXml(errCode,errMsg,'connectionsGet');
@@ -1860,6 +1877,11 @@ create procedure constructUsersIdStr(in usersname_str varchar)
     for(i:=0; i<length(users_name); i:=i+1)
     {
         users_name[i]:=trim(users_name[i]);
+        if(subseq(users_name[i],0,1)='/' )
+        {
+         users_name[i]:=cast(coalesce(username2id(subseq(users_name[i],1)),'') as varchar);
+        }
+        
         if(users_name[i]<>'')
         {
            if(i>0)
