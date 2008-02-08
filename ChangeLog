@@ -1,3 +1,34 @@
+2008-02-08 16:52  source
+
+	* Updated version to 5.0.5-rc2
+
+2008-02-08 16:51  source
+
+	* Fixed template
+	* Fixed profile page access with direct link
+	* Fixed photo delete
+
+2008-02-08 16:45  source
+
+	* Added code sample for faster suborg materialization
+
+2008-02-08 16:44  source
+
+	* Added escape mode for error summary to allow printing html
+	* Added compatibility method
+
+2008-02-08 16:43  source
+
+	* Merged from upstream project
+
+2008-02-08 16:24  source
+
+	* Updated version to 05.00.3026
+
+2008-02-08 15:40  source
+
+	* Added commands for generating sqlwords.h on windows
+
 2008-02-08 15:18  source
 
 	* Added information on building on Mac OS X 10.5
@@ -2740,10 +2771,6 @@
 
 	* Fixed instructions for sourceforge CVS checkout
 
-2007-10-04 10:38  source
-
-	* Added support for using URIQA default host information
-
 2007-10-04 10:06  source
 
 	* Merged latest documentation fixes
@@ -3010,15 +3037,6 @@
 
 	* Merged from upstream project
 
-2007-09-24 10:49  source
-
-	* Fixed building php4
-	* Added support for DAV virtual dirs
-
-2007-09-24 10:48  source
-
-	* Fixed small typo
-
 2007-09-23 20:27  source
 
 	* Fixed make check
@@ -3037,11 +3055,6 @@
 2007-09-23 17:28  source
 
 	* Increased line length
-
-2007-09-22 14:17  source
-
-	* Fixed make dist
-	* Small cleanups
 
 2007-09-21 20:09  source
 
@@ -3073,10 +3086,6 @@
 
 	* Added libxml.m4 so we can still create configure even if box does not have
 	  libxml2 installed
-
-2007-09-21 15:15  source
-
-	* Added support for hosting PHP programs in DAV
 
 2007-09-21 13:41  source
 
@@ -4639,14 +4648,6 @@
 2007-05-31 12:28  source
 
 	* Updated version to 5.0.1 for final release
-
-2007-05-31 12:18  source
-
-	* Fixed typo
-
-2007-05-31 12:15  source
-
-	* Fixed building php4/php5 hosting
 
 2007-05-31 11:53  source
 
@@ -6706,10 +6707,6 @@
 
 2007-03-16 12:26  source
 
-	* Added support for long documents
-
-2007-03-16 12:26  source
-
 	* Added support for xsd:date and xsd_time
 	* Small bugfixes
 
@@ -7001,14 +6998,6 @@
 2007-03-14 14:13  source
 
 	* Removed argument
-
-2007-03-14 14:13  source
-
-	* Fixed support for long documents
-	* Call the dav's metadata extractor as a last chance to get meta information
-	* Added check to FLICKR about meta information of image
-	* Allow sql optimizer to figure which index to use
-	* Fixed versioning permissions
 
 2007-03-14 14:08  source
 
@@ -7568,16 +7557,6 @@
 
 	* Small enhancements to testsuite
 
-2007-01-22 14:07  source
-
-	* Fixed bug "integer instead of directory list"
-	* Various small fixes
-
-2007-01-22 14:06  source
-
-	* Added support for application/rdf+xml, application/rdf+ttl and
-	  application/rdf+n3 types
-
 2007-01-22 14:01  source
 
 	* Limit search expression to 1k to prevent DOS
@@ -7973,15 +7952,6 @@
 
 	* Changed bif name to upper case
 
-2006-11-30 13:34  source
-
-	* Added check for DB.DBA.SYNCML
-	* Use disk when handling large dav files
-
-2006-11-30 13:32  source
-
-	* Changed qname-to-iid translation
-
 2006-11-30 13:29  source
 
 	* Fixed text for sys_keys table
@@ -8002,10 +7972,6 @@
 
 	* Added information on optional components/libraries
 	* Fixed layout
-
-2006-11-20 21:23  source
-
-	* Fixed spelling
 
 2006-11-07 20:49  source
 
@@ -8036,10 +8002,6 @@
 2006-10-27 18:45  source
 
 	* Set version to 4.5.6 for final release
-
-2006-10-27 16:43  source
-
-	* Fixed library ordering for PHP5 build
 
 2006-10-27 16:10  source
 
@@ -8084,10 +8046,6 @@
 2006-10-27 11:40  source
 
 	* Set version to 4.5.6-rc1
-
-2006-10-27 11:36  source
-
-	* Fixed whitespace
 
 2006-10-27 11:35  source
 
@@ -8295,14 +8253,6 @@
 	* Fixed interdomain problem
 	* Fixed properties page url
 	* Fixed logout page
-
-2006-10-22 08:40  source
-
-	* Additional fix for inefficient CBD delete
-
-2006-10-21 22:40  source
-
-	* Speed improvements for CBD deletion
 
 2006-10-21 21:22  source
 
@@ -8874,10 +8824,6 @@
 	* Fixed autoloader to recognize graph keyword
 	* Removed alert
 
-2006-10-09 14:05  source
-
-	* Fix for MPUT/MGET
-
 2006-10-09 14:03  source
 
 	* Fix for 'SPARQL define input:default-graph-uri ...' when an IRI was
@@ -9116,6 +9062,10 @@
 
 	* Regenerated
 
+2006-09-25 14:28  source
+
+	* Cached resources may be upgraded when the server is upgraded
+
 2006-09-25 14:27  source
 
 	* Fixed GPF when casemode is not a number
@@ -9127,16 +9077,6 @@
 2006-09-25 14:25  source
 
 	* Test proc view cost declaration
-
-2006-09-25 14:23  source
-
-	* Cached resources may be upgraded when the server is upgraded
-
-2006-09-25 14:23  source
-
-	* Fix to append missing trainling slashes in IRIs
-	* Fixed retrieval of local URIAL data on queries like Get /URIQA/DAV/PUB
-	  without additional data in header
 
 2006-09-25 14:20  source
 
@@ -9191,10 +9131,6 @@
 2006-09-11 11:05  source
 
 	* Added syntax highlight for results
-
-2006-09-11 11:01  source
-
-	* Merged from upstream project
 
 2006-09-11 11:00  source
 
@@ -9365,10 +9301,6 @@
 2006-08-17 18:27  source
 
 	* Small cleanups
-
-2006-08-17 13:37  source
-
-	* Added DAV_COPY for locked-checkout
 
 2006-08-17 13:36  source
 
@@ -9547,14 +9479,6 @@
 
 	* Fixed typo in tool detection
 
-2006-08-10 08:32  source
-
-	* Fixed GPF when using php interpreter outside of the http context
-
-2006-08-10 07:58  source
-
-	* Register key hosting variables in PHP
-
 2006-08-08 16:53  source
 
 	* Updated version to 4.5.4 for final release
@@ -9594,10 +9518,6 @@
 	* Default cluster is identified by URI conversation
 	* Adjusted date format
 
-2006-08-08 11:13  source
-
-	* Fixed header and whitespace
-
 2006-08-08 11:12  source
 
 	* Fixed whitespace
@@ -9622,6 +9542,10 @@
 
 	* Added support for CREATE VIEW ... AS SPARQL SELECT
 
+2006-08-07 23:41  source
+
+	* Added new .xsl stylesheets
+
 2006-08-07 22:41  source
 
 	* Small fix to dav template
@@ -9630,17 +9554,9 @@
 
 	* Fixed bug with missing aliases in DAV_DIR_FILTER()
 
-2006-08-07 21:58  source
-
-	* Removed non-existing test files
-
 2006-08-07 20:46  source
 
 	* Minor fixes for building sql_code_dav.c
-
-2006-08-07 20:43  source
-
-	* Added new .xsl stylesheets
 
 2006-08-07 20:22  source
 
@@ -9649,10 +9565,6 @@
 2006-08-07 19:21  source
 
 	* Fixed Tags bug
-
-2006-08-07 18:20  source
-
-	* Fix for RES_TAGS in DAV_DIR_FILTER
 
 2006-08-07 18:18  source
 
@@ -9876,14 +9788,6 @@
 
 	* Added endpoint for default host
 
-2006-08-03 18:07  source
-
-	* Added DAV_GET_RES_TYPE_URI_BY_MIME_TYPE
-
-2006-08-03 18:07  source
-
-	* Fixed trailing slash
-
 2006-08-03 12:35  source
 
 	* Fixed build problem using --disable-mono and --with-iodbc in configure
@@ -9894,10 +9798,6 @@
 	* Fixed default graph default value
 	* Cleared absolute files
 	* Cleaned code
-
-2006-08-01 11:31  source
-
-	* Fixed default graph for dav to http://host/DAV
 
 2006-08-01 11:26  source
 
@@ -9990,10 +9890,6 @@
 2006-07-27 15:26  source
 
 	* Added text for Opera problem with HTTP status code 400
-
-2006-07-27 15:26  source
-
-	* New files from upstream OAT project
 
 2006-07-27 14:38  source
 
@@ -10152,10 +10048,6 @@
 
 2006-07-24 13:46  source
 
-	* Fixed debug comment
-
-2006-07-24 13:46  source
-
 	* Fixed IE bug
 
 2006-07-24 13:45  source
@@ -10218,10 +10110,6 @@
 
 	* Fixed BIF function name changed from DB.DBA.RDF_EXP_LOAD_RDFXML to
 	  DB.DBA.RDF_LOAD_RDFXML
-
-2006-07-24 07:57  source
-
-	* Merged newer version of OAT
 
 2006-07-24 07:56  source
 
@@ -10404,10 +10292,6 @@
 
 	* Updated version to 4.5.4-pre3
 
-2006-07-17 15:29  source
-
-	* Removed debug messages
-
 2006-07-17 15:20  source
 
 	* Added missing file
@@ -10551,10 +10435,6 @@
 
 	* New Dawg behaviour
 
-2006-07-14 17:30  source
-
-	* Merged patches from upstream OAT archive
-
 2006-07-14 17:27  source
 
 	* Fixed a bug in setting permisions, owners & groups in webdav
@@ -10608,10 +10488,6 @@
 2006-07-13 13:12  source
 
 	* Added Ajax version of sparql sample
-
-2006-07-13 13:08  source
-
-	* Added meta data for ODS-Gallery
 
 2006-07-13 12:30  source
 
@@ -10722,22 +10598,6 @@
 
 	* Fixed snapshot replication
 
-2006-07-13 08:17  source
-
-	* Fixed copyright headers
-
-2006-07-13 08:11  source
-
-	* Fixed dav permissions
-
-2006-07-13 08:09  source
-
-	* Added more metadata vectors
-
-2006-07-13 08:08  source
-
-	* Removed debug lines
-
 2006-07-13 07:59  source
 
 	* Fixed files content-types when loaded in DAV
@@ -10761,10 +10621,6 @@
 2006-06-27 19:22  source
 
 	* Fixed SOAP problem with InteropTestRpcEncoded
-
-2006-06-27 19:20  source
-
-	* Added meta information on bookmarks
 
 2006-06-27 19:17  source
 
@@ -10965,15 +10821,6 @@
 2006-06-23 15:10  source
 
 	* Get only last directory part
-
-2006-06-23 15:10  source
-
-	* Fixed autoversioning
-	* Added dav_version_fold_int
-
-2006-06-23 15:07  source
-
-	* Added additional meta information
 
 2006-06-23 15:00  source
 
@@ -11287,10 +11134,6 @@
 
 	* Fixed building ODS briefcase
 
-2006-05-31 13:49  source
-
-	* Removed deprecated file
-
 2006-05-31 13:48  source
 
 	* Fix for TTL output of result sets
@@ -11316,10 +11159,6 @@
 2006-05-31 13:40  source
 
 	* Updated documentation
-
-2006-05-31 13:39  source
-
-	* Additional fixes for detecting office formats
 
 2006-05-31 13:12  source
 
@@ -11497,10 +11336,6 @@
 
 	* Fixed tag names
 
-2006-05-26 11:51  source
-
-	* Fixed search on webdav properties
-
 2006-05-26 11:48  source
 
 	* Added backlink support
@@ -11564,10 +11399,6 @@
 2006-05-25 11:21  source
 
 	* Changed name to OpenLink Data Spaces
-
-2006-05-25 11:20  source
-
-	* More reliable recognition of MIME type
 
 2006-05-25 11:16  source
 
@@ -11654,19 +11485,6 @@
 	* Added XMLA testsuite
 	* Added DAV/RDF testsuite
 	* Various small fixes and cleanups
-
-2006-05-24 09:05  source
-
-	* Various small bugfixes
-
-2006-05-24 09:02  source
-
-	* Triggers are now faster because they do not result in free-text indexing
-
-2006-05-24 09:02  source
-
-	* Fix for parsing of MIME-type of RDF/XML files that have ho first-level
-	  'Description' elements.
 
 2006-05-24 08:58  source
 
@@ -11948,10 +11766,6 @@
 
 2006-04-25 14:15  source
 
-	* Merged latest version of dav
-
-2006-04-25 14:15  source
-
 	* Merged latest version of wikiv
 
 2006-04-25 14:14  source
@@ -12056,10 +11870,6 @@
 
 	* Merged latest documentation updates
 
-2006-04-18 18:37  source
-
-	* Additional functions for RDF
-
 2006-04-18 18:36  source
 
 	* Fixed call to dk_mem_hooks
@@ -12157,14 +11967,6 @@
 2006-04-13 18:25  source
 
 	* Removed bad test from testsuite
-
-2006-04-13 18:24  source
-
-	* Merged latest dav fixes
-
-2006-04-13 18:23  source
-
-	* Removed debugging statements
 
 2006-04-13 18:20  source
 
