@@ -62,7 +62,7 @@
 
   <v:method name="actionTest" arglist="">
     <![CDATA[
-      declare tmp, kind, params any;
+      declare tmp, kind, params, permissions any;
 
       params := self.vc_page.vc_event.ve_params;
 
@@ -72,9 +72,15 @@
         self.v_id := cast (tmp as integer);
         if (self.v_id <> -1)
         {
+          permissions := CAL.WA.event_permissions (self.v_id, self.domain_id, self.access_role);
+          if (permissions = 'W')
+          {
           self.cAction := 'edit';
-          if (self.account_role in ('public', 'guest'))
+          }
+          else if (permissions = 'R')
+          {
             self.cAction := 'view';
+          }
           kind := CAL.WA.event_kind (self.v_id);
           if ((kind = 'event') and (self.cScope in ('tasks', 'search')))
             self.cScope := 'events';
@@ -108,6 +114,7 @@
       self.cTimeFormat := CAL.WA.settings_timeFormat (self.settings);
       self.cDateFormat := CAL.WA.settings_dateFormat (self.settings);
       self.cShowTasks := CAL.WA.settings_showTasks (self.settings);
+      self.cPrivacy := case when self.access_role in ('public', 'guest') then 1 else 0 end;
       if (isnull (self.cScope))
         self.cScope := CAL.WA.settings_defaultView (self.settings);
       if (isnull (self.cDay))
@@ -119,7 +126,8 @@
       }
       if (isnull (self.cnMonth))
         self.cnMonth := self.cMonth;
-      if (self.cScope = 'day') {
+      if (self.cScope = 'day')
+      {
         self.cStart := self.cDay;
         self.cEnd := self.cDay;
       }
@@ -194,19 +202,19 @@
   <v:method name="showEvent" arglist="in _id integer, in e_event integer, in e_subject varchar, in e_start datetime, in e_end datetime, in e_repeat varchar, in e_repeat_offset integer, in e_reminder integer, in e_continue varchar">
     <![CDATA[
       declare domain_id integer;
-      declare showDelete, showAnnotate, permission, color, S, T varchar;
+      declare showDelete, showAnnotate, color, S, T varchar;
 
         S := 'null';
         if (not isnull (e_repeat_offset))
           S := cast (e_repeat_offset as varchar);
       color := self.showEventColor (_id);
-      permission := CAL.WA.event_permissions (_id, self.domain_id);
       showDelete := '';
-      if ((self.account_role not in ('public', 'guest')) and (permission = 'W'))
-        showDelete :=  sprintf ('<span id="d_%d_%s" onclick="eDelete(event, this, %s)">[<span class="EV_delete">X</span>]</span> ', _id, S, S);
       showAnnotate := '';
-      if ((self.account_role not in ('public', 'guest')) and (permission = 'W'))
+      if (CAL.WA.event_permissions (_id, self.domain_id, self.access_role) = 'W')
+      {
+        showDelete :=  sprintf ('<span id="d_%d_%s" onclick="eDelete(event, this, %s)">[<span class="EV_delete">X</span>]</span> ', _id, S, S);
         showAnnotate := sprintf ('<img border="0" width="11" height="11" title="Annotate" alt="Annotate" src="image/ann_16.gif" onclick="eAnnotea (event, %d, %d, %d);" /> ', _id, self.domain_id, self.account_id);
+      }
       domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
       if (e_event = 1) {
         T := sprintf ('<div id="e_%d_%s" class="EV %s" %s onclick="eEdit(this)" about="%U">%s%s%s<span class="EV_subject">%s%s%V</span> %s</div>', _id, S, 'app', color, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id));
@@ -219,17 +227,7 @@
 
   <v:method name="showEventColor" arglist="in _id integer">
     <![CDATA[
-      declare event_domain_id integer;
-
-      event_domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);
-      if (event_domain_id <> self.domain_id)
-      {
-        for (select S_COLOR from CAL.WA.SHARED where S_DOMAIN_ID = self.domain_id and S_CALENDAR_ID = event_domain_id) do
-        {
-          return sprintf ('style="background-color: %s;"', S_COLOR);
-        }
-      }
-      return '';
+      return sprintf ('style="background-color: %s;"', CAL.WA.event_color (_id, self.domain_id));
     ]]>
   </v:method>
 
@@ -562,6 +560,7 @@
       self.v_subject := trim (self.e_subject.ufl_value);
       self.v_location := trim (self.e_location.ufl_value);
       self.v_description := trim (self.e_description.ufl_value);
+      if ((self.cAction = 'create') or (CAL.WA.event_permissions (self.v_id, self.domain_id, self.access_role) = 'W'))
       self.v_privacy := cast (self.e_privacy.ufl_value as integer);
       self.v_tags := trim (self.e_tags.ufl_value);
       self.v_notes := trim (get_keyword ('e_notes', params, ''));
@@ -721,6 +720,7 @@
       self.v_priority := cast (self.t_priority.ufl_value as integer);
       self.v_status := self.t_status.ufl_value;
       self.v_complete := cast (self.t_complete.ufl_value as integer);
+      if ((self.cAction = 'create') or (CAL.WA.event_domain (self.v_id) = self.domain_id))
       self.v_privacy := cast (self.t_privacy.ufl_value as integer);
       self.v_tags := trim (self.t_tags.ufl_value);
       self.v_notes := trim (get_keyword ('t_notes', params, ''));
@@ -844,6 +844,20 @@
     ]]>
   </v:method>
 
+  <v:method name="eventHeader" arglist="in id integer, in objectName varchar">
+    <![CDATA[
+      declare event_domain_id integer;
+      declare S varchar;
+
+      S := initcap (self.cAction) || ' ' || objectName;
+      event_domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = id);
+      if (event_domain_id <> self.domain_id)
+        S := S || sprintf (' (Calendar: %V)', CAL.WA.domain_name (event_domain_id));
+
+      return S;
+    ]]>
+  </v:method>
+
   <vm:pagetitle>Calendar</vm:pagetitle>
   <vm:pagewrapper>
     <vm:header>
@@ -880,6 +894,7 @@
       <v:variable name="cTimeFormat" type="varchar" default="'e'" />
       <v:variable name="cDateFormat" type="varchar" default="'dd.MM.yyyy'" />
       <v:variable name="cShowTasks" type="integer" default="1" />
+      <v:variable name="cPrivacy" type="integer" default="0" />
 
       <v:variable name="icStep" type="varchar" default="''" />
       <v:variable name="icSource" type="any" default="-1" />
@@ -940,7 +955,7 @@
           <!-- Navigation left column -->
           <td id="LC">
             <vm:if test="self.cAction <> 'settings'">
-              <vm:if test="self.account_role not in ('public', 'guest')">
+              <vm:if test="self.access_role not in ('public', 'guest')">
                 <vm:event />
               </vm:if>
               <vm:calendar />
@@ -1111,7 +1126,7 @@
                         if (length (cParams) > 1)
                         {
                     self.v_id := cast (cParams [1] as integer);
-                          cPermission := CAL.WA.event_permissions (self.v_id, self.domain_id);
+                          cPermission := CAL.WA.event_permissions (self.v_id, self.domain_id, self.access_role);
                           if (cPermission = 'W')
                           {
                     self.cAction := 'edit';
@@ -1124,8 +1139,6 @@
                           {
                             return;
                           }
-                    if (self.account_role in ('public', 'guest'))
-                      self.cAction := 'view';
                     kind := CAL.WA.event_kind (self.v_id);
                     if ((kind = 'event') and (self.cScope in ('tasks', 'search')))
                       self.cScope := 'events';
@@ -1141,8 +1154,7 @@
                   if (length (cParams) > 1)
                         {
                           self.v_id := cast (cParams [1] as integer);
-                          cPermission := CAL.WA.event_permissions (self.v_id, self.domain_id);
-                          if (cPermission <> 'W')
+                          if (CAL.WA.event_permissions (self.v_id, self.domain_id, self.access_role) <> 'W')
                           {
                             return;
                           }
@@ -1380,7 +1392,7 @@
             <table width="100%" cellspacing="0">
               <tr>
                 <td>
-                <vm:if test="(self.cScope not in ('day', 'week', 'month')) and (self.account_role not in ('public', 'guest'))">
+                      <vm:if test="(self.cScope not in ('day', 'week', 'month')) and (self.access_role not in ('public', 'guest'))">
             <vm:if test="(self.cScope <> 'search')">
                     <v:button value="--'New ' || self.singleObjectName (self.cScope)" action="simple" xhtml_class="button">
               <v:on-post>
@@ -1391,15 +1403,20 @@
               </v:on-post>
             </v:button>
             </vm:if>
-                        <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete selected item(s)?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                        <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
               <v:on-post>
                 <![CDATA[
-                  declare N integer;
+                              declare N, id integer;
 
                   for (N := 0; N < length(e.ve_params); N := N + 4)
+                              {
                     if (e.ve_params[N] = 'cb_item')
-                                  CAL.WA.event_delete(cast (e.ve_params[N+1] as integer));
-
+                                {
+                                  id := cast (e.ve_params[N+1] as integer);
+                                  if (CAL.WA.event_permission (id, self.domain_id, self.access_role) = 'W')
+                                    CAL.WA.event_delete(id);
+                                }
+                              }
           		    self.vc_data_bind(e);
                 ]]>
               </v:on-post>
@@ -1469,7 +1486,7 @@
                        where rs0 = self.domain_id
                          and rs1 = self.cDay
                          and rs2 = self.cDay
-                                 and rs3 = self.account_role
+                                 and rs3 = self.cPrivacy
                            and rs4 = self.cShowTasks
                          order by e_event DESC, e_start) do
                     {
@@ -1517,7 +1534,7 @@
                         if (mod (N, 2) = 0)
                           http (sprintf ('<th class="CE_cell CE_cell_time %s" rowspan="2">%s</th>', case when (N = 46) then 'CE_cell_bottom' else '' end, CAL.WA.dt_timestring (CAL.WA.dt_timeEncode (N/2, 0), self.cTimeFormat)));
                         onClick := '';
-                        if ((self.domain_id > 0) and (self.account_role not in ('public', 'guest')))
+                              if ((self.domain_id > 0) and (self.access_role not in ('public', 'guest')))
                           onClick := sprintf (' onclick="javascript: cNewEvent(event, null, %d);"', N*30);
                         S := '';
                         if (length (V[N]))
@@ -1570,7 +1587,7 @@
                           if (self.domain_id > 0)
                             C := C || ' CE_cell_pointer';
                           onClick := 'javascript: void(0);';
-                          if ((self.domain_id > 0) and (self.account_role not in ('public', 'guest')))
+                                if ((self.domain_id > 0) and (self.access_role not in ('public', 'guest')))
                             onClick := sprintf (' onclick="javascript: cNewEvent(event, %d, -1);"', N);
                           hasEvents := 0;
                           for (select distinct rs.*
@@ -1578,7 +1595,7 @@
                                 where rs0 = self.domain_id
                                   and rs1 = dt
                                   and rs2 = dt
-                                        and rs3 = self.account_role
+                                        and rs3 = self.cPrivacy
                                   and rs4 = self.cShowTasks
                                 order by e_event DESC, e_start) do
                           {
@@ -1617,7 +1634,7 @@
                         if (self.domain_id > 0)
                           C := C || ' CE_cell_pointer';
                         onClick := '';
-                        if ((self.domain_id > 0) and (self.account_role not in ('public', 'guest')))
+                              if ((self.domain_id > 0) and (self.access_role not in ('public', 'guest')))
                           onClick := sprintf (' onclick="javascript: cNewEvent(event, %d, -1);"', N);
                         http (sprintf ('<td width="%s" class="CE_new CE_cell %s" %s>', '14.2857%', C, onClick));
                         C := '';
@@ -1639,7 +1656,7 @@
                               where rs0 = self.domain_id
                                 and rs1 = dt
                                 and rs2 = dt
-                                      and rs3 = self.account_role
+                                      and rs3 = self.cPrivacy
                                 and rs4 = self.cShowTasks
                               order by e_event DESC, e_start) do
                         {
@@ -1660,8 +1677,17 @@
                   <![CDATA[
                     control.ds_nrows := CAL.WA.settings_rows (self.settings);
                     control.ds_parameters := null;
-                          control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 0 and E_PRIVACY >= %d', self.domain_id, case when self.account_role in ('public', 'guest') then 1 else 0 end);
-
+                          control.ds_sql := sprintf (' select a.*                               ' ||
+                                                     '   from CAL.WA.EVENTS a,                  ' ||
+                                                     '        CAL..MY_CALENDARS b               ' ||
+                                                     '  where b.domain_id = %d                  ' ||
+                                                     '    and b.privacy = %d                    ' ||
+                                                     '    and a.E_DOMAIN_ID = b.CALENDAR_ID     ' ||
+                                                     '    and a.E_PRIVACY >= b.CALENDAR_PRIVACY ' ||
+                                                     '    and a.E_KIND = 0',
+                                                     self.domain_id,
+                                                     self.cPrivacy
+                                                    );
                     self.sortChange (get_keyword ('e_sortColumn', e.ve_params), 'e_order', 'e_direction', self.ds);
                     control.ds_sql := sprintf ('%s order by %s %s, E_ID', control.ds_sql, self.e_order, self.e_direction);
                   ]]>
@@ -1677,7 +1703,7 @@
                   <table id="events" style="width: 100%; background-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
-                        <vm:if test="self.account_role not in ('public', 'guest')">
+                              <vm:if test="self.access_role not in ('public', 'guest')">
                           <th class="checkbox" width="1%">
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
                           </th>
@@ -1691,7 +1717,7 @@
                         <?vsp self.columnHeaderShow ('event_E_LOCATION', 0, 0, 'Location', '1%', 'E_LOCATION', 'e_sortColumn', self.e_order, self.e_direction); ?>
                         <?vsp self.columnHeaderShow ('event_E_UPDATED',  1, 1, 'Updated', '1%',  'E_UPDATED',  'e_sortColumn', self.e_order, self.e_direction); ?>
                         <?vsp self.columnHeaderShow ('event_E_CREATED',  0, 1, 'Created', '1%',  'E_CREATED',  'e_sortColumn', self.e_order, self.e_direction); ?>
-                        <vm:if test="self.account_role not in ('public', 'guest')">
+                              <vm:if test="self.access_role not in ('public', 'guest')">
                           <th width="1%">
                             Action
                           </th>
@@ -1706,11 +1732,20 @@
                   <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
-                        <vm:if test="self.account_role not in ('public', 'guest')">
-                          <td align="center" valign="top">
-                            <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('E_ID') ?>" onclick="selectCheck(this, 'cb_item')"/>
-                          </td>
-                        </vm:if>
+                              <?vsp
+                                declare id integer;
+
+                                if (self.access_role not in ('public', 'guest'))
+                                {
+                                  id := (control as vspx_row_template).te_column_value('E_ID');
+                                  http (sprintf ('<td align="center" valign="top" %s>', self.showEventColor (id)));
+                                  if (CAL.WA.event_permissions (id, self.domain_id, self.access_role) = 'W')
+                                  {
+                                    http (sprintf ('<input type="checkbox" name="cb_item" value="%d" onclick="selectCheck(this, \'cb_item\')" />', id));
+                                  }
+                                  http ('</td>');
+                                }
+                              ?>
                         <td nowrap="nowrap">
                           <?vsp
                             self.showEventDuration ((control as vspx_row_template).te_column_value('E_EVENT'),
@@ -1742,7 +1777,7 @@
                             <v:label value="--CAL.WA.dt_datestring ((control.vc_parent as vspx_row_template).te_column_value('E_CREATED'), self.cDateFormat)" />
                           </td>
                         </vm:if>
-                        <vm:if test="self.account_role not in ('public', 'guest')">
+                              <vm:if test="self.access_role not in ('public', 'guest')">
                           <td>
                             <?vsp http (sprintf ('<input type="button" value="Annotate" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('E_ID'), self.domain_id, self.account_id, (control as vspx_row_template).te_column_value('E_SUBJECT'))); ?>
                           </td>
@@ -1771,9 +1806,19 @@
                   <![CDATA[
                     control.ds_nrows := CAL.WA.settings_rows (self.settings);
                     control.ds_parameters := null;
-                          control.ds_sql := sprintf ('select * from CAL.WA.EVENTS where E_DOMAIN_ID = %d and E_KIND = 1 and E_PRIVACY >= %d', self.domain_id, case when self.account_role in ('public', 'guest') then 1 else 0 end);
+                          control.ds_sql := sprintf (' select a.*                               ' ||
+                                                     '   from CAL.WA.EVENTS a,                  ' ||
+                                                     '        CAL..MY_CALENDARS b                ' ||
+                                                     '  where b.domain_id = %d                  ' ||
+                                                     '    and b.privacy = %d                    ' ||
+                                                     '    and a.E_DOMAIN_ID = b.CALENDAR_ID     ' ||
+                                                     '    and a.E_PRIVACY >= b.CALENDAR_PRIVACY ' ||
+                                                     '    and a.E_KIND = 1',
+                                                     self.domain_id,
+                                                     self.cPrivacy
+                                                    );
                     if (self.tv_status <> 'All')
-                      control.ds_sql := control.ds_sql || sprintf (' and E_STATUS = ''%s''', self.tv_status);
+                            control.ds_sql := control.ds_sql || sprintf (' where E_STATUS = ''%s''', self.tv_status);
 
 
                     self.sortChange (get_keyword ('t_sortColumn', e.ve_params), 't_order', 't_direction', self.ds1);
@@ -1790,7 +1835,7 @@
                   <table id="events" style="width: 100%; background-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
-                        <vm:if test="self.account_role not in ('public', 'guest')">
+                              <vm:if test="self.access_role not in ('public', 'guest')">
                           <th class="checkbox" width="1%">
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
                           </th>
@@ -1805,7 +1850,7 @@
                         <?vsp self.columnHeaderShow ('task_E_PRIORITY',  1, 1, 'Priority',  '1%', 'E_PRIORITY',    't_sortColumn', self.t_order, self.t_direction); ?>
                         <?vsp self.columnHeaderShow ('task_E_UPDATED',   0, 1, 'Updated',   '1%', 'E_UPDATED',     't_sortColumn', self.t_order, self.t_direction); ?>
                         <?vsp self.columnHeaderShow ('task_E_CREATED',   0, 1, 'Created',   '1%', 'E_CREATED',     't_sortColumn', self.t_order, self.t_direction); ?>
-                        <vm:if test="self.account_role not in ('public', 'guest')">
+                              <vm:if test="self.access_role not in ('public', 'guest')">
                           <th width="1%">
                             Action
                           </th>
@@ -1820,11 +1865,20 @@
                   <v:template name="ds1_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
-                        <vm:if test="self.account_role not in ('public', 'guest')">
-                          <td align="center" valign="top">
-                            <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('E_ID') ?>" onclick="selectCheck(this, 'cb_item')"/>
-                          </td>
-                        </vm:if>
+                              <?vsp
+                                declare id integer;
+
+                                if (self.access_role not in ('public', 'guest'))
+                                {
+                                  id := (control as vspx_row_template).te_column_value('E_ID');
+                                  http (sprintf ('<td align="center" valign="top" %s>', self.showEventColor (id)));
+                                  if (CAL.WA.event_permissions (id, self.domain_id, self.access_role) = 'W')
+                                  {
+                                    http (sprintf ('<input type="checkbox" name="cb_item" value="%d" onclick="selectCheck(this, \'cb_item\')" />', id));
+                                  }
+                                  http ('</td>');
+                                }
+                              ?>
                         <td>
                           <?vsp
                             self.showEventSubject ((control as vspx_row_template).te_column_value('E_ID'),
@@ -1878,7 +1932,7 @@
                             <v:label value="--CAL.WA.dt_datestring ((control.vc_parent as vspx_row_template).te_column_value('E_CREATED'), self.cDateFormat)" />
                           </td>
                         </vm:if>
-                        <vm:if test="self.account_role not in ('public', 'guest')">
+                              <vm:if test="self.access_role not in ('public', 'guest')">
                           <td>
                             <?vsp http (sprintf ('<input type="button" value="Annotate" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('E_ID'), self.domain_id, self.account_id, (control as vspx_row_template).te_column_value('E_SUBJECT'))); ?>
                           </td>
@@ -1910,7 +1964,7 @@
                           {
                       control.ds_sql := 'select * from CAL.WA.EVENTS where 1 = 0';
                     } else {
-                            control.ds_sql := CAL.WA.search_sql (self.domain_id, self.account_role, self.cSearch);
+                            control.ds_sql := CAL.WA.search_sql (self.domain_id, self.cPrivacy, self.cSearch);
                     }
                     self.sortChange (get_keyword ('s_sortColumn', e.ve_params), 's_order', 's_direction', self.ds2);
                     control.ds_sql := sprintf ('%s order by %s %s, E_ID', control.ds_sql, self.s_order, self.s_direction);
@@ -1927,7 +1981,7 @@
                   <table id="events" style="width: 100%; background-color: #FFF;" cellspacing="0">
                     <thead class="sortHeader">
                       <tr>
-                        <vm:if test="self.account_role not in ('public', 'guest')">
+                              <vm:if test="self.access_role not in ('public', 'guest')">
                           <th class="checkbox" width="1%">
                             <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')"/>
                           </th>
@@ -1951,11 +2005,20 @@
                   <v:template name="ds2_browse" type="browse" name-to-remove="table" set-to-remove="both">
                     <table>
                       <tr>
-                        <vm:if test="self.account_role not in ('public', 'guest')">
-                          <td align="center" valign="top">
-                            <input type="checkbox" name="cb_item" value="<?V (control as vspx_row_template).te_column_value('E_ID') ?>" onclick="selectCheck(this, 'cb_item')"/>
-                          </td>
-                        </vm:if>
+                              <?vsp
+                                declare id integer;
+
+                                if (self.access_role not in ('public', 'guest'))
+                                {
+                                  id := (control as vspx_row_template).te_column_value('E_ID');
+                                  http (sprintf ('<td align="center" valign="top" %s>', self.showEventColor (id)));
+                                  if (CAL.WA.event_permissions (id, self.domain_id, self.access_role) = 'W')
+                                  {
+                                    http (sprintf ('<input type="checkbox" name="cb_item" value="%d" onclick="selectCheck(this, \'cb_item\')" />', id));
+                                  }
+                                  http ('</td>');
+                                }
+                              ?>
                         <td style="padding: 0 2px 0 2px;">
                           <?vsp
                             declare tmp any;
@@ -2078,7 +2141,7 @@
           ]]>
         </v:before-data-bind>
         <div class="new-form-header">
-          <v:label format="%s" value="--initcap (self.cAction) || ' event'"/>
+                <v:label format="%s" value="--self.eventHeader (self.v_id, 'event')" />
         </div>
         <div id="e" class="c1">
           <div class="tabs">
@@ -2226,6 +2289,7 @@
                       </v:select-list>
                   </td>
                 </tr>
+                      <vm:if test="(self.cAction = 'create') or (CAL.WA.event_domain (self.v_id) = self.domain_id)">
                 <tr>
                         <th>
                           <vm:label for="e_privacy" value="--'Privacy'" />
@@ -2242,6 +2306,7 @@
                           </v:select-list>
                         </td>
                       </tr>
+                      </vm:if>
                       <tr>
                   <script type="text/javascript">
                     function suggestTags ()
@@ -2809,19 +2874,7 @@
           ]]>
         </v:before-data-bind>
         <div class="new-form-header">
-                <v:label format="%s" value="">
-                  <v:before-data-bind>
-                    <![CDATA[
-                      declare event_domain_id integer;
-
-                      control.ufl_value := initcap (self.cAction) || ' event';
-
-                      event_domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = self.v_id);
-                      if (event_domain_id <> self.domain_id)
-                        control.ufl_value := control.ufl_value || sprintf (' (Calendar: %V)', CAL.WA.domain_name (event_domain_id));
-                    ]]>
-                  </v:before-data-bind>
-                </v:label>
+                <v:label format="%s" value="--self.eventHeader (self.v_id, 'event')" />
         </div>
         <div class="new-form-body">
           <table cellspacing="0">
@@ -2980,7 +3033,7 @@
           ]]>
         </v:before-data-bind>
         <div class="new-form-header">
-          <v:label format="%s" value="--initcap (self.cAction) || ' task'"/>
+                <v:label format="%s" value="--self.eventHeader (self.v_id, 'task')" />
         </div>
         <div id="t" class="c1">
           <div class="tabs">
@@ -3130,6 +3183,7 @@
                 <v:textarea name="t_description" null-value="--''" value="--CAL.WA.utf2wide (self.v_description)" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6"/>
                         </td>
                       </tr>
+                      <vm:if test="(self.cAction = 'create') or (CAL.WA.event_domain (self.v_id) = self.domain_id)">
                       <tr>
                         <th>
                           <vm:label for="t_privacy" value="--'Privacy'" />
@@ -3146,6 +3200,7 @@
                           </v:select-list>
               </td>
             </tr>
+                      </vm:if>
             <tr>
               <script type="text/javascript">
                 function suggestTags ()
@@ -3271,19 +3326,7 @@
           ]]>
         </v:before-data-bind>
         <div class="new-form-header">
-                <v:label format="%s" value="">
-                  <v:before-data-bind>
-                    <![CDATA[
-                      declare event_domain_id integer;
-
-                      control.ufl_value := initcap (self.cAction) || ' task';
-
-                      event_domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = self.v_id);
-                      if (event_domain_id <> self.domain_id)
-                        control.ufl_value := control.ufl_value || sprintf (' (Calendar: %V)', CAL.WA.domain_name (event_domain_id));
-                    ]]>
-                  </v:before-data-bind>
-                </v:label>
+                <v:label format="%s" value="--self.eventHeader (self.v_id, 'task')" />
         </div>
         <div class="new-form-body">
           <table class="form-body" cellspacing="0">
@@ -3676,16 +3719,11 @@
               <table class="form-body" cellspacing="0">
                 <tr>
                   <th width="30%">
-                    <v:label for="s_chars" value="Contact name display"/>
+                              <v:label for="sr_chars" value="Contact name display" />
                   </th>
                   <td>
                     <?vsp
-                      declare S varchar;
-
-                      S := '';
-                      if (CAL.WA.settings_chars (self.settings) = 0)
-                        S := 'checked="checked"';
-                      http(sprintf('<input type="radio" name="s_chars" id="s_chars_0" value="0" %s />', S));
+                                http(sprintf('<input type="radio" name="sr_chars" id="sr_chars_0" value="0" %s />', CAL.WA.checkedAttribute (CAL.WA.settings_chars (self.settings), 0)));
                     ?>
                     <xsl:call-template name="nbsp"/><vm:label for="s_chars_0" value="--'show everything'" />
                   </td>
@@ -3699,7 +3737,7 @@
                       S := '';
                       if (CAL.WA.settings_chars (self.settings) <> 0)
                         S := 'checked="checked"';
-                      http(sprintf('<input type="radio" name="s_chars" id="s_chars_1" value="1" %s />', S));
+                                http(sprintf('<input type="radio" name="sr_chars" id="sr_chars_1" value="1" %s />', S));
                     ?>
                     <xsl:call-template name="nbsp"/><vm:label for="s_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
                     <v:text name="s_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3"/>
@@ -3943,7 +3981,7 @@
 
                 rows := trim(self.s_rows.ufl_value);
                 chars := trim(self.s_chars.ufl_value);
-                if (get_keyword ('s_chars', self.vc_page.vc_event.ve_params, '-1') = '0')
+                          if (get_keyword ('sr_chars', self.vc_page.vc_event.ve_params, '-1') = '0')
                   chars := '0';
 
                 CAL.WA.test(rows, vector('name', 'Rows per page', 'class', 'integer', 'type', 'integer', 'minValue', 5, 'maxValue', 1000));
@@ -3996,7 +4034,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
                   <v:on-post>
                     <![CDATA[
                       declare N integer;
@@ -4257,7 +4295,7 @@
                       ]]>
                     </v:on-post>
                   </v:button>
-                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
                         declare N integer;
@@ -4489,7 +4527,7 @@
                       ]]>
                     </v:on-post>
                   </v:button>
-                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
                         declare N integer;

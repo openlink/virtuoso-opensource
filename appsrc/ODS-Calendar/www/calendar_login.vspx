@@ -33,7 +33,7 @@
       if (page_name = 'error.vspx')
         return;
 
-      if (CAL.WA.check_grants2 (self.account_role, page_name))
+      if (CAL.WA.check_grants2 (self.access_role, page_name))
         return;
 
       declare vh, lh, hf, ods_path any;
@@ -47,7 +47,7 @@
       else
         ods_path := DB.DBA.WA_LINK (1, '/ods/');
 
-      if (self.account_role = 'expire') {
+      if (self.access_role = 'expire') {
 
         http_request_status ('HTTP/1.1 302 Found');
         http_header (sprintf('Location: %slogin.vspx?URL=%U\r\n', ods_path, HTTP_REQUESTED_URL()));;

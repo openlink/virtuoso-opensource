@@ -147,7 +147,10 @@ create procedure CAL.WA.check_admin(
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.check_grants(in domain_id integer, in user_id integer, in role_name varchar)
+create procedure CAL.WA.check_grants (
+  in domain_id integer,
+  in user_id integer,
+  in role_name varchar)
 {
   whenever not found goto _end;
 
@@ -157,7 +160,8 @@ create procedure CAL.WA.check_grants(in domain_id integer, in user_id integer, i
     return 0;
   if (role_name = 'admin')
     return 0;
-  if (role_name = 'guest') {
+  if (role_name = 'guest')
+  {
     if (exists(select 1
                  from SYS_USERS A,
                       WA_MEMBER B,
@@ -169,6 +173,7 @@ create procedure CAL.WA.check_grants(in domain_id integer, in user_id integer, i
       return 1;
   }
   if (role_name = 'owner')
+  {
     if (exists(select 1
                  from SYS_USERS A,
                       WA_MEMBER B,
@@ -179,6 +184,7 @@ create procedure CAL.WA.check_grants(in domain_id integer, in user_id integer, i
                   and B.WAM_INST = C.WAI_NAME
                   and C.WAI_ID = domain_id))
       return 1;
+  }
 _end:
   return 0;
 }
@@ -196,50 +202,42 @@ create procedure CAL.WA.check_grants2(in role_name varchar, in page_name varchar
 --
 create procedure CAL.WA.access_role(in domain_id integer, in user_id integer)
 {
-  whenever not found goto _end;
-
   if (CAL.WA.check_admin (user_id))
     return 'admin';
 
-  if (exists(select 1
+  for (select B.WAM_MEMBER_TYPE
                from SYS_USERS A,
                     WA_MEMBER B,
                     WA_INSTANCE C
               where A.U_ID = user_id
                 and B.WAM_USER = A.U_ID
-                and B.WAM_MEMBER_TYPE = 1
                 and B.WAM_INST = C.WAI_NAME
-                and C.WAI_ID = domain_id))
+          and C.WAI_ID = domain_id) do
+  {
+    if (WAM_MEMBER_TYPE = 1)
     return 'owner';
-
-  if (exists(select 1
-               from SYS_USERS A,
-                    WA_MEMBER B,
-                    WA_INSTANCE C
-              where A.U_ID = user_id
-                and B.WAM_USER = A.U_ID
-                and B.WAM_MEMBER_TYPE = 2
-                and B.WAM_INST = C.WAI_NAME
-                and C.WAI_ID = domain_id))
+    if (WAM_MEMBER_TYPE = 2)
     return 'author';
-
-  if (exists(select 1
-               from SYS_USERS A,
-                    WA_MEMBER B,
-                    WA_INSTANCE C
-              where A.U_ID = user_id
-                and B.WAM_USER = A.U_ID
-                and B.WAM_INST = C.WAI_NAME
-                and C.WAI_ID = domain_id))
     return 'reader';
-
-  if (exists(select 1
-               from SYS_USERS A
-              where A.U_ID = user_id))
+  }
+  if (exists (select 1 from SYS_USERS A where A.U_ID = user_id))
     return 'guest';
 
-_end:
   return 'public';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.access_is_write (in access_role varchar)
+{
+  if (is_empty_or_null (access_role))
+    return 0;
+  if (access_role = 'guest')
+    return 0;
+  if (access_role = 'public')
+    return 0;
+  return 1;
 }
 ;
 
@@ -2693,39 +2691,78 @@ create procedure CAL.WA.checkedAttribute (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.dashboard_get(
-  in domain_id integer,
-  in account_id integer,
-  in privacy integer := 0)
+  in _domain_id integer,
+  in _account_id integer,
+  in _privacy integer := 0)
 {
-  declare ses any;
+  declare sStream any;
 
-  ses := string_output ();
-  http ('<calendar-db>', ses);
-  for select top 10 *
+  sStream := string_output ();
+  http ('<calendar-db>', sStream);
+  if (_privacy = 1)
+  {
+    for (select top 10 *
         from (select a.E_SUBJECT,
-                     SIOC..calendar_event_iri (domain_id, E_ID) E_URI,
+                        SIOC..calendar_event_iri (_domain_id, E_ID) E_URI,
                      coalesce (a.E_UPDATED, now ()) E_UPDATED
                 from CAL.WA.EVENTS a,
                      DB.DBA.WA_INSTANCE b,
                      DB.DBA.WA_MEMBER c
-                where a.E_DOMAIN_ID = domain_id
-                 and a.E_PRIVACY >= privacy
+                  where a.E_DOMAIN_ID = _domain_id
+                    and a.E_PRIVACY >= _privacy
                   and b.WAI_ID = a.E_DOMAIN_ID
                   and c.WAM_INST = b.WAI_NAME
-                 and c.WAM_USER = account_id
+                    and c.WAM_USER = _account_id
                 order by a.E_UPDATED desc
-             ) x do
+                ) x
+        ) do
   {
-    http ('<event>', ses);
-    http (sprintf ('<dt>%s</dt>', date_iso8601 (E_UPDATED)), ses);
-    http (sprintf ('<title><![CDATA[%s]]></title>', coalesce (E_SUBJECT, 'No subject')), ses);
-    http (sprintf ('<link><![CDATA[%s]]></link>', E_URI), ses);
-    http (sprintf ('<from><![CDATA[%s]]></from>', CAL.WA.account_fullName (account_id)), ses);
-    http (sprintf ('<uid>%s</uid>', CAL.WA.account_name (account_id)), ses);
-    http ('</event>', ses);
+      CAL.WA.dashboard_item (sStream, _account_id, E_SUBJECT, E_URI, E_UPDATED);
   }
-  http ('</calendar-db>', ses);
-  return string_output_string (ses);
+  } else {
+    for (select top 10 *
+           from (select a.E_SUBJECT,
+                        SIOC..calendar_event_iri (_domain_id, a.E_ID) E_URI,
+                        coalesce (a.E_UPDATED, now ()) E_UPDATED
+                   from CAL.WA.EVENTS a,
+                        CAL..MY_CALENDARS b,
+                        DB.DBA.WA_INSTANCE c,
+                        DB.DBA.WA_MEMBER d
+                  where b.domain_id = _domain_id
+                    and b.privacy = _privacy
+                    and a.E_DOMAIN_ID = b.CALENDAR_ID
+                    and a.E_PRIVACY >= b.CALENDAR_PRIVACY
+                    and c.WAI_ID = _domain_id
+                    and d.WAM_INST = c.WAI_NAME
+                    and d.WAM_USER = _account_id
+                  order by a.E_UPDATED desc
+                ) x
+        ) do
+    {
+      CAL.WA.dashboard_item (sStream, _account_id, E_SUBJECT, E_URI, E_UPDATED);
+    }
+  }
+  http ('</calendar-db>', sStream);
+  return string_output_string (sStream);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.dashboard_item (
+  inout sStream integer,
+  in account_id integer,
+  in subject varchar,
+  in uri varchar,
+  in updated datetime)
+{
+  http ('<event>', sStream);
+  http (sprintf ('<dt>%s</dt>', date_iso8601 (updated)), sStream);
+  http (sprintf ('<title>%V</title>', coalesce (subject, 'No subject')), sStream);
+  http (sprintf ('<link>%V</link>', uri), sStream);
+  http (sprintf ('<from>%V</from>', CAL.WA.account_fullName (account_id)), sStream);
+  http (sprintf ('<uid>%s</uid>', CAL.WA.account_name (account_id)), sStream);
+  http ('</event>', sStream);
 }
 ;
 
@@ -2980,7 +3017,8 @@ create procedure CAL.WA.event_delete (
 --
 create procedure CAL.WA.event_permissions (
   in id integer,
-  in domain_id integer)
+  in domain_id integer,
+  in access_role varchar)
 {
   declare event_domain_id integer;
 
@@ -2988,7 +3026,11 @@ create procedure CAL.WA.event_permissions (
   if (isnull (event_domain_id))
     return '';
   if (event_domain_id = domain_id)
+  {
+    if (CAL.WA.access_is_write (access_role))
     return 'W';
+    return 'R';
+  }
   for (select a.WAI_IS_PUBLIC,
               b.*,
               c.G_ENABLE,
@@ -3007,7 +3049,11 @@ create procedure CAL.WA.event_permissions (
         return 'R';
     } else {
       if (G_ENABLE)
+      {
+        if (CAL.WA.access_is_write (access_role))
         return G_MODE;
+        return 'R';
+      }
     }
   }
   return '';
@@ -3439,16 +3485,43 @@ create procedure CAL.WA.event_testDayKind (
 }
 ;
 
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.event_color (
+  in id integer,
+  in domain_id integer)
+{
+  declare event_domain_id integer;
+
+  event_domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = id);
+  if (event_domain_id <> domain_id)
+  {
+    for (select S_COLOR from CAL.WA.SHARED where S_DOMAIN_ID = domain_id and S_CALENDAR_ID = event_domain_id) do
+      return S_COLOR;
+  }
+  return '#fafafa';
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.event_domain (
+  in id integer)
+{
+  return (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = id);
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.events_forPeriod (
   in pDomainID integer,
   in pDateStart date,
   in pDateEnd date,
-  in pAccountRole varchar := 'public',
+  in pPrivacy integer := 0,
   in pTaskMode integer := 0)
 {
-  declare privacy, dt_offset, dtTimezone integer;
+  declare dt_offset, dtTimezone integer;
   declare dtWeekStarts varchar;
   declare dt, dtStart, dtEnd, tzDT, tzEventStart, tzRepeatUntil date;
 
@@ -3462,28 +3535,25 @@ create procedure CAL.WA.events_forPeriod (
   dtStart := CAL.WA.event_user2gmt (CAL.WA.dt_dateClear (pDateStart), dtTimezone);
   dtEnd := CAL.WA.event_user2gmt (dateadd ('day', 1, CAL.WA.dt_dateClear (pDateEnd)), dtTimezone);
 
-  for (select CALENDAR_ID as domain_id from CAL..MY_CALENDARS where domain_id = pDomainID and account_role = pAccountRole) do
-  {
-    privacy := 1;
-    if ((domain_id = pDomainID) and (pAccountRole not in ('public', 'guest')))
-      privacy := 0;
-
     if (pTaskMode)
     {
     -- tasks
-    for (select E_ID,
-                E_EVENT,
-                E_SUBJECT,
-                E_EVENT_START,
-                E_EVENT_END,
-                E_REPEAT,
-                E_REMINDER
-           from CAL.WA.EVENTS
-          where E_DOMAIN_ID = domain_id
-              and E_PRIVACY >= privacy
-            and E_KIND = 1
-            and E_EVENT_START <  dtEnd
-            and E_EVENT_END   >  dtStart) do
+    for (select a.E_ID,
+                a.E_EVENT,
+                a.E_SUBJECT,
+                a.E_EVENT_START,
+                a.E_EVENT_END,
+                a.E_REPEAT,
+                a.E_REMINDER
+           from CAL.WA.EVENTS a,
+                CAL..MY_CALENDARS b
+          where b.domain_id = pDomainID
+            and b.privacy = pPrivacy
+            and a.E_DOMAIN_ID = b.CALENDAR_ID
+            and a.E_PRIVACY >= b.CALENDAR_PRIVACY
+            and a.E_KIND = 1
+            and a.E_EVENT_START <  dtEnd
+            and a.E_EVENT_END   >  dtStart) do
     {
       result (E_ID,
               E_EVENT,
@@ -3497,21 +3567,24 @@ create procedure CAL.WA.events_forPeriod (
   }
 
   -- regular events
-  for (select E_ID,
-              E_EVENT,
-              E_SUBJECT,
-              E_EVENT_START,
-              E_EVENT_END,
-              E_REPEAT,
-              E_REMINDER
-         from CAL.WA.EVENTS
-        where E_DOMAIN_ID = domain_id
-            and E_PRIVACY >= privacy
-          and E_KIND = 0
-          and (E_REPEAT = '' or E_REPEAT is null)
+  for (select a.E_ID,
+              a.E_EVENT,
+              a.E_SUBJECT,
+              a.E_EVENT_START,
+              a.E_EVENT_END,
+              a.E_REPEAT,
+              a.E_REMINDER
+         from CAL.WA.EVENTS a,
+              CAL..MY_CALENDARS b
+        where b.domain_id = pDomainID
+          and b.privacy = pPrivacy
+          and a.E_DOMAIN_ID = b.CALENDAR_ID
+          and a.E_PRIVACY >= b.CALENDAR_PRIVACY
+          and a.E_KIND = 0
+          and (a.E_REPEAT = '' or a.E_REPEAT is null)
           and (
-                (E_EVENT = 0 and E_EVENT_START >= dtStart and E_EVENT_START <  dtEnd) or
-                (E_EVENT = 1 and E_EVENT_START <  dtEnd   and E_EVENT_END   >  dtStart)
+                (a.E_EVENT = 0 and a.E_EVENT_START >= dtStart and a.E_EVENT_START <  dtEnd) or
+                (a.E_EVENT = 1 and a.E_EVENT_START <  dtEnd   and a.E_EVENT_END   >  dtStart)
               )) do
   {
     result (E_ID,
@@ -3525,25 +3598,28 @@ create procedure CAL.WA.events_forPeriod (
   }
 
   -- repetable events
-  for (select E_ID,
-              E_SUBJECT,
-              E_EVENT,
-              E_EVENT_START,
-              E_EVENT_END,
-              E_REPEAT,
-              E_REPEAT_PARAM1,
-              E_REPEAT_PARAM2,
-              E_REPEAT_PARAM3,
-              E_REPEAT_UNTIL,
-              E_REPEAT_EXCEPTIONS,
-              E_REMINDER
-         from CAL.WA.EVENTS
-        where E_DOMAIN_ID = domain_id
-            and E_PRIVACY >= privacy
-          and E_KIND = 0
-          and E_REPEAT <> ''
-          and E_EVENT_START < dtEnd
-          and ((E_REPEAT_UNTIL is null) or (E_REPEAT_UNTIL >= dtStart))) do
+  for (select a.E_ID,
+              a.E_SUBJECT,
+              a.E_EVENT,
+              a.E_EVENT_START,
+              a.E_EVENT_END,
+              a.E_REPEAT,
+              a.E_REPEAT_PARAM1,
+              a.E_REPEAT_PARAM2,
+              a.E_REPEAT_PARAM3,
+              a.E_REPEAT_UNTIL,
+              a.E_REPEAT_EXCEPTIONS,
+              a.E_REMINDER
+         from CAL.WA.EVENTS a,
+              CAL..MY_CALENDARS b
+        where b.domain_id = pDomainID
+          and b.privacy = pPrivacy
+          and a.E_DOMAIN_ID = b.CALENDAR_ID
+          and a.E_PRIVACY >= b.CALENDAR_PRIVACY
+          and a.E_KIND = 0
+          and a.E_REPEAT <> ''
+          and a.E_EVENT_START < dtEnd
+          and ((a.E_REPEAT_UNTIL is null) or (a.E_REPEAT_UNTIL >= dtStart))) do
   {
       tzEventStart := CAL.WA.event_gmt2user (E_EVENT_START, dtTimezone);
       tzRepeatUntil := CAL.WA.event_gmt2user (E_REPEAT_UNTIL, dtTimezone);
@@ -3579,7 +3655,6 @@ create procedure CAL.WA.events_forPeriod (
       dt := dateadd ('day', 1, dt);
     }
   }
-}
 }
 ;
 
@@ -3699,7 +3774,7 @@ create procedure CAL.WA.calendar_tags_update (
 -------------------------------------------------------------------------------
 create procedure CAL.WA.search_sql (
   inout domain_id integer,
-  inout account_role varchar,
+  inout privacy integer,
   inout data varchar)
 {
   declare S, tmp, where2, delimiter2 varchar;
@@ -3707,40 +3782,43 @@ create procedure CAL.WA.search_sql (
   where2 := ' \n ';
   delimiter2 := '\n and ';
 
-  S := ' select          \n' ||
-       ' E_ID,           \n' ||
-       ' E_DOMAIN_ID,    \n' ||
-       ' E_KIND,         \n' ||
-       ' E_SUBJECT,      \n' ||
-       ' E_EVENT,        \n' ||
-       ' E_EVENT_START,  \n' ||
-       ' E_EVENT_END,    \n' ||
-       ' E_REPEAT,       \n' ||
-       ' E_REMINDER,     \n' ||
-       ' E_CREATED,      \n' ||
-       ' E_UPDATED       \n' ||
-       ' from            \n' ||
-       '   CAL.WA.EVENTS \n' ||
-       ' where E_DOMAIN_ID = <DOMAIN_ID> and E_PRIVACY = <PRIVACY> <TEXT> <TAGS> <WHERE> \n';
+  S := 'select a.E_ID,                       \n' ||
+       '       a.E_DOMAIN_ID,                \n' ||
+       '       a.E_KIND,                     \n' ||
+       '       a.E_SUBJECT,                  \n' ||
+       '       a.E_EVENT,                    \n' ||
+       '       a.E_EVENT_START,              \n' ||
+       '       a.E_EVENT_END,                \n' ||
+       '       a.E_REPEAT,                   \n' ||
+       '       a.E_REMINDER,                 \n' ||
+       '       a.E_CREATED,                  \n' ||
+       '       a.E_UPDATED                   \n' ||
+       ' from  CAL.WA.EVENTS a,              \n' ||
+       '       CAL..MY_CALENDARS b           \n' ||
+       ' where b.domain_id = <DOMAIN_ID>     \n' ||
+       '   and b.privacy = <PRIVACY>         \n' ||
+       '   and a.E_DOMAIN_ID = b.CALENDAR_ID \n' ||
+       '   and a.E_PRIVACY >= b.CALENDAR_PRIVACY <TEXT> <TAGS> <WHERE> \n';
 
   tmp := CAL.WA.xml_get ('keywords', data);
-  if (not is_empty_or_null (tmp)) {
-    S := replace (S, '<TEXT>', sprintf('and contains (E_SUBJECT, \'[__lang "x-ViDoc"] %s\') \n', FTI_MAKE_SEARCH_STRING (tmp)));
+  if (not is_empty_or_null (tmp))
+  {
+    S := replace (S, '<TEXT>', sprintf('and contains (a.E_SUBJECT, \'[__lang "x-ViDoc"] %s\') \n', FTI_MAKE_SEARCH_STRING (tmp)));
   } else {
     tmp := CAL.WA.xml_get ('expression', data);
     if (not is_empty_or_null(tmp))
-      S := replace (S, '<TEXT>', sprintf('and contains (E_SUBJECT, \'[__lang "x-ViDoc"] %s\') \n', tmp));
+      S := replace (S, '<TEXT>', sprintf('and contains (a.E_SUBJECT, \'[__lang "x-ViDoc"] %s\') \n', tmp));
   }
 
   tmp := CAL.WA.xml_get ('tags', data);
   if (not is_empty_or_null (tmp))
   {
     tmp := CAL.WA.tags2search (tmp);
-    S := replace (S, '<TAGS>', sprintf ('and contains (E_SUBJECT, \'[__lang "x-ViDoc"] %s\') \n', tmp));
+    S := replace (S, '<TAGS>', sprintf ('and contains (a.E_SUBJECT, \'[__lang "x-ViDoc"] %s\') \n', tmp));
   }
 
   S := replace (S, '<DOMAIN_ID>', cast (domain_id as varchar));
-  S := replace (S, '<PRIVACY>', case when account_role in ('public', 'guest') then '1' else '0' end);
+  S := replace (S, '<PRIVACY>', cast (privacy as varchar));;
   S := replace (S, '<TAGS>', '');
   S := replace (S, '<TEXT>', '');
   S := replace (S, '<WHERE>', where2);

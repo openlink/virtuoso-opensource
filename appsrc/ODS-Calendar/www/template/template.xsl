@@ -206,7 +206,7 @@
             <?vsp http (CAL.WA.banner_links (self.domain_id, self.sid, self.realm)); ?>
           </div>
           <div style="text-align: right; padding-right: 0.5em; padding-bottom: 0.25em;">
-        <v:template type="simple" enabled="--case when (self.account_role in ('public', 'guest')) then 0 else 1 end">
+            <v:template type="simple" enabled="--case when (self.access_role in ('public', 'guest')) then 0 else 1 end">
           <v:button action="simple" style="url" value="Preferences" xhtml_title="Preferences">
             <v:on-post>
               <![CDATA[
@@ -288,7 +288,7 @@
                   where rs0 = self.domain_id
                     and rs1 = self.nCalcDate (0)
                     and rs2 = self.nCalcDate (length (self.cnDays)-1)
-                    and rs3 = self.account_role
+                    and rs3 = self.cPrivacy
                     and rs4 = self.cShowTasks) do
             {
               eventDays := vector_concat (eventDays, vector (CAL.WA.dt_dateClear (e_start)));

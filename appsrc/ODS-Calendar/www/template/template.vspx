@@ -169,10 +169,10 @@
     <v:page xmlns:v="http://www.openlinksw.com/vspx/">
         <v:variable persist="0" name="domain_id" type="integer" default="-1" />
         <v:variable persist="0" name="account_id" type="integer" default="-1" />
-        <v:variable persist="0" name="account_role" type="varchar" default="'public'" />
         <v:variable persist="0" name="accountName" type="varchar" default="'Public User'" />
         <v:variable persist="0" name="owner_id" type="integer" default="null" />
         <v:variable persist="0" name="ownerName" type="varchar" default="null" />
+      <v:variable persist="0" name="access_role" type="varchar" default="'public'" />
         <v:variable persist="0" name="settings" type="any" />
       <v:on-init>
         <![CDATA[
@@ -185,10 +185,10 @@
           aSessInfo := CAL.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
           self.account_id := cast(get_keyword('user_id', aSessInfo, '-1') as integer);
-          self.account_role := get_keyword('user_role', aSessInfo, '');
           self.accountName := get_keyword('user_name', aSessInfo, '');
           self.owner_id := CAL.WA.domain_owner_id (self.domain_id);
           self.ownerName := CAL.WA.domain_owner_name (self.domain_id);
+          self.access_role := get_keyword ('user_role', aSessInfo, '');
           self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), CAL.WA.settings (self.owner_id));
         ]]>
       </v:on-init>

@@ -117,21 +117,22 @@ CAL.WA.exec_no_error ('
 --
 create procedure CAL.WA.my_calendars (
   in domain_id any,
-  in account_role varchar)
+  in privacy varchar)
 {
-  declare calendar_id integer;
+  declare calendar_id, calendar_privacy integer;
 
-  result_names (calendar_id);
-  result (domain_id);
+  result_names (calendar_id, calendar_privacy);
+  result (domain_id, privacy);
 
-  if (account_role in ('public', 'guest'))
-    return;
-
+  if (not privacy)
+  {
   for (select a.WAI_IS_PUBLIC,
               b.S_GRANT_ID,
-              b.S_CALENDAR_ID
+                b.S_CALENDAR_ID,
+                c.G_ENABLE
          from DB.DBA.WA_INSTANCE a,
               CAL.WA.SHARED b
+                 left join CAL.WA.GRANTS c on c.G_ID = b.S_GRANT_ID
         where a.WAI_TYPE_NAME = 'Calendar'
           and a.WAI_ID = b.S_CALENDAR_ID
           and b.S_DOMAIN_ID = domain_id
@@ -140,10 +141,11 @@ create procedure CAL.WA.my_calendars (
     if (isnull (S_GRANT_ID))
     {
       if (WAI_IS_PUBLIC = 1)
-        result (S_CALENDAR_ID);
+          result (S_CALENDAR_ID, 1);
     } else {
-      for (select G_ID from CAL.WA.GRANTS where G_ID = S_GRANT_ID and G_ENABLE = 1) do
-        result (S_CALENDAR_ID);
+        if (G_ENABLE = 1)
+          result (S_CALENDAR_ID, 1);
+      }
     }
   }
 }
@@ -151,7 +153,7 @@ create procedure CAL.WA.my_calendars (
 
 CAL.WA.exec_no_error ('drop view CAL..MY_CALENDARS');
 CAL.WA.exec_no_error ('
-  create procedure view CAL..MY_CALENDARS as CAL.WA.my_calendars (domain_id, account_role) (CALENDAR_ID integer)
+  create procedure view CAL..MY_CALENDARS as CAL.WA.my_calendars (domain_id, privacy) (CALENDAR_ID integer, CALENDAR_PRIVACY integer)
 ')
 ;
 
