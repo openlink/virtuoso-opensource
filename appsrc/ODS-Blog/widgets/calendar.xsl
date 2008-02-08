@@ -596,33 +596,32 @@
 		</tr>
           <tr>
             <td>
-              <table width="100%">
-                <?vsp
-                  declare show_categories integer;
-                  show_categories := (select 1 from BLOG.DBA.MTYPE_CATEGORIES where MTC_BLOG_ID = self.blogid);
-		?>
-                <tr>
-		    <td><b>Trackback ping URLs</b><br/>
+		  <div class="w_content">
+		  <ul class="tab_bar">
+		      <li id="tags"><a href="javascript:void(0)">Tags</a></li>
+		      <li id="moat"><a href="javascript:void(0)">MOAT</a></li>
+		      <li id="category"><a href="javascript:void(0)">Category</a></li>
+		      <li id="trackback"><a href="javascript:void(0)">Trackback ping URLs</a></li>
+		  </ul>
+
+		<div class="tab_deck">
+		<div id="tb_cont"><![CDATA[&nbsp;]]></div>
+		<div id="tb_tab">
 			<small>You can specify multiple URLs, each on single line</small>
-		    </td>
-		    <td><b>Tags</b></td>
-		    <td><b>Category</b></td>
-                </tr>
-                <tr>
-                  <td valign="top">
                     <v:textarea name="tpurl1" value="" xhtml_rows="3" xhtml_style="width:99%"/>
                       <br/>
 		      <a href="#" onclick="getTb()">Suggest</a>
-                  </td>
-                  <td>
-                    <div style="width:99%; height:99%">
-                      <v:textarea name="post_tags" value="" xhtml_rows="3" xhtml_style="width:99%">
+		</div>
+		<div id="tb_tags">
+		    <v:textarea name="post_tags" xhtml_id="post_tags" value="" xhtml_rows="3" xhtml_style="width:99%"
+			xhtml_onblur="javascript:moat_init ()">
                         <v:after-data-bind>
                           <![CDATA[
                             if (self.editpost is not null and not e.ve_is_post)
                             {
                               whenever not found goto nf;
-                              select BT_TAGS into control.ufl_value from BLOG..BLOG_TAG where BT_BLOG_ID = self.blogid and BT_POST_ID = self.editpost;
+			      select BT_TAGS into control.ufl_value from BLOG..BLOG_TAG
+			      	where BT_BLOG_ID = self.blogid and BT_POST_ID = self.editpost;
                               nf:;
                             }
                           ]]>
@@ -633,9 +632,7 @@
 		      <![CDATA[&#160;]]>
 		      <v:url name="new_tag_rule_url" value="New Tag Rule" url="--sprintf ('%s/tags.vspx?RETURL=%U', wa_link(1), self.return_url_1)" render-only="1" is-local="1"/>
                     </div>
-                  </td>
-                  <td width="19%">
-                    <div style="width:99%; height:99%">
+                  <div id="tb_cat">
                       <select style="width:100%" name="post_cat" multiple="multiple" size="3">
                         <?vsp
                           for select MTC_ID, MTC_NAME, MTC_DEFAULT from BLOG.DBA.MTYPE_CATEGORIES where MTC_BLOG_ID = self.blogid do
@@ -657,10 +654,21 @@
                       <br/>
                       <v:url name="cr_new_cat1" value="Create Category" url="index.vspx?page=category" xhtml_target="_blank"/>
                     </div>
+		<div id="tb_moat"><![CDATA[&nbsp;]]></div>
+	    </div>
+	    </div>
+	    <![CDATA[<script type="text/javascript" src="/weblog/public/scripts/moat.js"></script>]]>
+	    <script type="text/javascript"><![CDATA[
+		var featureList = ["tab"];
+		var inst_id = <?V self.inst_id ?>;
+		var post_id = <?V coalesce (self.editpost, -1) ?>;
+
+		OAT.Loader.loadFeatures(featureList, panel_init);
+		]]></script>
                   </td>
                 </tr>
                 <tr>
-                  <td colspan="3">
+                  <td>
                     <v:url name="com_edit"
                            value="--sprintf ('Edit comments [%d]', self.comments_no)"
                            url="--sprintf ('index.vspx?page=edit_comments&amp;editid=%s', self.editpost)"
@@ -671,9 +679,6 @@
                            enabled="--gt (self.tb_no, 0)"/>
                   </td>
                 </tr>
-              </table>
-            </td>
-          </tr>
           <tr>
             <td align="right">
               <v:method name="prepare_post" arglist="in _post_state int, inout retid any">
@@ -900,6 +905,7 @@
                     id := self.editpost;
                     retid := id;
                     delete from BLOG..BLOG_TAG where BT_BLOG_ID = self.blogid and BT_POST_ID = id;
+		    delete from moat.DBA.moat_meanings where m_inst = self.inst_id and m_id = id;
                   }
                   {
                     declare cat, ix any;
@@ -916,6 +922,19 @@
 
                   if (length (tagstr))
                   {
+		    declare turi, pars any;
+                    pars := self.vc_event.ve_params;
+		    foreach (any t in alltags) do
+		      {
+                        declare idx int;
+			idx := 0;
+			while (turi := adm_next_keyword('tag_'||t, pars, idx))
+			  {
+			    if (length (turi))
+ 			      insert replacing moat.DBA.moat_meanings (m_inst, m_id, m_tag, m_uri, m_iri)
+                                 values (self.inst_id, id, t, turi, iri_to_id (sioc..blog_post_iri (self.blogid, id)));
+			  }
+		      }
                     insert replacing BLOG..BLOG_TAG (BT_BLOG_ID, BT_POST_ID, BT_TAGS) values (self.blogid, id, tagstr);
                   }
 

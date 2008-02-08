@@ -1055,3 +1055,98 @@ a.summary-xbel-link
 {
    display: none;
 }
+
+ul.tab_bar {
+	margin: 0px;
+	margin-top: 3px;
+	padding: 0px;
+	list-style-type: none;
+	border-bottom: 1px solid #333;
+}
+ul.tab_bar li {
+	display: inline;
+	width: 40px;
+	border: 1px solid #333;
+	border-bottom: none;
+	background-color: #ddd;
+  padding-left: 0px;
+  padding-right: 0px;
+
+}
+
+ul.tab_bar .tab_selected {
+	margin: 0px;
+	margin-top: 3px;
+	padding: 0px;
+	border-bottom: 1px solid #fff;
+	background-color: #fff;
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+ul.tab_bar li a {
+	text-decoration: none;
+	color: inherit;
+	margin-left: 8px;
+	margin-right: 8px;
+}
+	
+div.tab_deck {
+	border: 1px solid #333;
+	border-top: none;
+	background-color: #fff;
+	padding-top: 8px;
+	float: left;
+	clear: both;
+	width: 100%;
+}
+
+
+.w_content .tab_bar {
+	margin: 0px;
+	margin-top: 3px;
+	padding: 0px;
+	list-style-type: none;
+	border-bottom: 1px solid #333;
+}
+.w_content .tab_bar li {
+	display: inline;
+	width: 40px;
+	border: 1px solid #333;
+	border-bottom: none;
+	background-color: #ddd;
+}
+
+ul.tab_bar .tab_selected {
+	border-bottom: 1px solid #fff;
+	background-color: #fff;
+}
+
+.w_content .tab_bar li a {
+	text-decoration: none;
+	color: inherit;
+	margin-left: 8px;
+	margin-right: 8px;
+	margin-top: 8px;
+}
+	
+.tab_deck {
+	border: 1px solid #333;
+	border-top: none;
+	background-color: #fff;
+	padding-top: 8px;
+	float: left;
+	clear: both;
+	width: 100%;
+}
+
+
+a.collapsible { 
+    padding-left: 15px;
+    background: url(/weblog/public/images/expanded.gif) 5px 75% no-repeat;
+}
+    
+a.collapsed { 
+    padding-left: 15px;
+    background: url(/weblog/public/images/collapsed.gif) 5px 75% no-repeat;
+}
