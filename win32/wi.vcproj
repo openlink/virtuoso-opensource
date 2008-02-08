@@ -1253,6 +1253,31 @@ cd $(ProjectDir)
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\libsrc\Wi\sqlwords.gperf">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)
+rm -f sqlwords.h
+gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e &apos;s/char \*keyword/char *keiiyword/g&apos; &gt;sqlwords.h
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)\sqlwords.h"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)
+rm -f sqlwords.h
+gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e &apos;s/char \*keyword/char *keiiyword/g&apos; &gt;sqlwords.h
+cd $(ProjectDir)
+"
+						Outputs="$(InputDir)\sqlwords.h"/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\libsrc\Wi\turtle_l.l">
 				<FileConfiguration
 					Name="Release|Win32">

@@ -1918,7 +1918,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f json_l.c&#x0D;&#x0A;flex -8 -Pjsonyy -ojson_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f json_l.c&#x0D;&#x0A;flex -8 -Pjsonyy -ojson_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						Outputs="$(InputDir)json_l.c"
 					/>
 				</FileConfiguration>
@@ -1927,7 +1927,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f json_l.c&#x0D;&#x0A;flex -8 -Pjsonyy -ojson_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f json_l.c&#x0D;&#x0A;flex -8 -Pjsonyy -ojson_l.c $(InputPath)&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						Outputs="$(InputDir)json_l.c"
 					/>
 				</FileConfiguration>
@@ -2157,6 +2157,28 @@
 						CommandLine="&#x0D;&#x0A;cd $(InputDir)&#x0D;&#x0A;$(ProjectDir)\sqlcode.bat&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
 						AdditionalDependencies="$(InputDir)\..\..\binsrc\vspx\vspx.xsl"
 						Outputs="$(InputDir)\sql_code.c;$(InputDir)\sql_code_1.c;$(InputDir)\sql_code_ddk.c;$(InputDir)\sql_code_adm.c;$(InputDir)\sql_code_dav.c;$(InputDir)\sql_code_vad.c;$(InputDir)\sql_code_dbp.c;$(InputDir)\sql_code_uddi.c;$(InputDir)\sql_code_imsg.c;$(InputDir)\sql_code_auto.c;$(InputDir)\sql_code_2pc.c;$(InputDir)\rdf_mapping_jso.h;$(InputDir)\rdf_mapping_jso.c;$(InputDir)\rdf_mapping_jso.ttl;$(InputDir)\rdf_mapping_jso.ttl-sample"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\libsrc\Wi\sqlwords.gperf"
+				>
+				<FileConfiguration
+					Name="Release|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sqlwords.h&#x0D;&#x0A;gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e &apos;s/char \*keyword/char *keiiyword/g&apos; &gt;sqlwords.h&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)\sqlwords.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(InputDir)&#x0D;&#x0A;rm -f sqlwords.h&#x0D;&#x0A;gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e &apos;s/char \*keyword/char *keiiyword/g&apos; &gt;sqlwords.h&#x0D;&#x0A;cd $(ProjectDir)&#x0D;&#x0A;"
+						Outputs="$(InputDir)\sqlwords.h"
 					/>
 				</FileConfiguration>
 			</File>
