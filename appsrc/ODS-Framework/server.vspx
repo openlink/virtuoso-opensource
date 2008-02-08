@@ -27,6 +27,10 @@
     <vm:header>
       <vm:title>Server Settings</vm:title>
     </vm:header>
+    <v:on-init>
+      if(wa_user_is_dba (connection_get('vspx_user'),null)=0)
+         signal('22024', 'You have no DBA privileges!');
+    </v:on-init>
     <vm:pagewrapper>
       <vm:navigation on="site_settings"/>
       <vm:navigation1 on="site_settings"/>

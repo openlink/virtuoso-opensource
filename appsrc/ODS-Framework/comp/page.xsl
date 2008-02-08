@@ -1804,6 +1804,13 @@ if (i > 0)
       </td>
     </tr>
     <tr>
+     <th>MOAT server</th>
+      <td>
+	 <v:text name="t_moat_server" error-glyph="*" value="--case when isstring (registry_get ('MOAT_SERVER')) then registry_get ('MOAT_SERVER') else '' end" xhtml_size="110">
+        </v:text>
+      </td>
+    </tr>
+    <tr>
      <td colspan="2">
       <span class="fm_ctl_btn">
         <v:button name="sset2" action="simple" value="Set">
@@ -1883,6 +1890,7 @@ if (i > 0)
 		registry_set ('wa_home_link', self.t_link.ufl_value);
 		registry_set ('GOOGLE_MAPS_SITE_KEY', self.t_google_site_key.ufl_value);
 		registry_set ('WA_MAPS_SERVICE', self.t_geocoder_api.ufl_value);
+		registry_set ('MOAT_SERVER', self.t_moat_server.ufl_value);
               ]]>
             </v:script>
           </v:on-post>

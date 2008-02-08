@@ -154,17 +154,19 @@ returns varchar
       
        if( connection_get ('wa_sid') is not NULL and length(connection_get ('wa_sid'))>0)
        {
-      res := res || sprintf ('<a href="%s"><img src="%s" alt="Add to Friends" border="0" title="Add to Friends" /></a>',
+             res := res || sprintf ('<a href="%s" rel="invite#%d%s"><img src="%s" alt="Add to Friends" border="0" title="Add to Friends" /></a>',
 	           DB.DBA.WA_SEARCH_ADD_APATH (
 	             DB.DBA.WA_SEARCH_ADD_SID_IF_AVAILABLE (
 	      sprintf ('sn_make_inv.vspx?fmail=%U', _U_E_MAIL),
 	      _user_id, '&')),
+	               _WAUT_USER_ID,DB.DBA.WA_USER_FULLNAME(_WAUT_USER_ID),
 	               DB.DBA.WA_SEARCH_ADD_APATH (sprintf ('images/icons/add_user_%d.png', case when for_search_result then 16 else 24 end)));
        
        }else{
-             res := res || sprintf ('<a href="%s"><img src="%s" alt="Add to Friends" border="0" title="Add to Friends" /></a>',
+             res := res || sprintf ('<a href="%s" rel="invite#%d#%s"><img src="%s" alt="Add to Friends" border="0" title="Add to Friends" /></a>',
 	           DB.DBA.WA_SEARCH_ADD_APATH (
 	               sprintf ('login.vspx?URL=sn_make_inv.vspx?fmail=%U', _U_E_MAIL)),
+	               _WAUT_USER_ID,DB.DBA.WA_USER_FULLNAME(_WAUT_USER_ID),
 	               DB.DBA.WA_SEARCH_ADD_APATH (sprintf ('images/icons/add_user_%d.png', case when for_search_result then 16 else 24 end)));
        }
     }

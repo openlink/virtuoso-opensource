@@ -361,6 +361,7 @@ ODS.session = function(customEndpoint){
   this.realm='wa';
   this.userName=false;
   this.userId=false;
+  this.userIsDba     = false;
   this.connections   = false;
   this.connectionsId = false;
 
@@ -428,7 +429,7 @@ ODS.session = function(customEndpoint){
                                            {
                                              self.userName=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/userName',{})[0]);
                                                 self.userId=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/userId',{})[0]);
-                                             
+                                                self.userIsDba=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/dba',{})[0]);
                                                 $('loginErrDiv').innerHTML='';
                                              //resXmlNodes = OAT.Xml.xpath(xmlDoc, '/sessionStart_response/userName',{});
                                              OAT.MSG.send(self,OAT.MSG.SES_VALIDBIND,{});
@@ -507,6 +508,8 @@ ODS.session = function(customEndpoint){
                                            {
                                              self.userName=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/userName',{})[0]);
                                              self.userId=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/userId',{})[0]);
+                                             self.userIsDba=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/dba',{})[0]);
+
                                              OAT.MSG.send(self,OAT.MSG.SES_VALIDBIND,{});
                                            }else
                                            {
@@ -533,6 +536,7 @@ ODS.session = function(customEndpoint){
                                              self.sid=false;
                                              self.userName=false;
                                              self.userId=false;
+                                             self.userIsDba=false;
                                              OAT.MSG.send(self,OAT.MSG.SES_INVALID,{sessionEnd:true});
                                            }
                                        };
@@ -781,10 +785,16 @@ ODS.Nav = function(navOptions) {
                        else
                           self.logIn();
                     
+                    }else if(defaultAction.indexOf('#/person/')>-1 || defaultAction.indexOf('#/organization/')>-1) // should add rule for organization.
+                    {
+                        var profileId=document.location.href.split('#')[1];
+
+                        var profileType=profileId.split('/')[1];
+                        profileId=profileId.split('/')[2];
+                        
   }  
                     else
                        self.loadVspx(self.expandURL(self.ods+'sfront.vspx'));
-                  
                   }else
                       self.loadVspx(self.expandURL(self.ods+'sfront.vspx'));
 
@@ -1547,6 +1557,11 @@ ODS.Nav = function(navOptions) {
     OAT.Event.attach(aSettings,"click",function(){self.loadVspx(self.expandURL(self.ods+'app_settings.vspx'));});  
     aSettings.innerHTML='Settings'; 
 
+    var aSiteSettings = OAT.Dom.create("a",{cursor: 'pointer'});
+    OAT.Event.attach(aSiteSettings,"click",function(){self.loadVspx(self.expandURL(self.ods+'site_settings.vspx'));});  
+    aSiteSettings.innerHTML='Site Settings'; 
+
+
     var aUserProfile = OAT.Dom.create("a",{cursor: 'pointer'});
     aUserProfile.id='aUserProfile'; 
     OAT.Event.attach(aUserProfile,"click",function(){self.loadVspx(self.expandURL(self.dataspace+'person/'+self.session.userName+'#this'));});  
@@ -1572,7 +1587,12 @@ ODS.Nav = function(navOptions) {
        
     aHelp.innerHTML='Help'; 
 
-    if(self.userLogged)
+    
+    if(self.userLogged && self.session.userIsDba==1)
+
+       OAT.Dom.append([rootDiv,loginfoDiv],
+                      [loginfoDiv,aSettings,aSiteSettings,aUserProfile,aLogout,aHelp])
+    else if(self.userLogged && self.session.userIsDba==0)
 
        OAT.Dom.append([rootDiv,loginfoDiv],
                       [loginfoDiv,aSettings,aUserProfile,aLogout,aHelp])
@@ -1979,7 +1999,9 @@ ODS.Nav = function(navOptions) {
         var result=buildObjByChildNodes(mapResults[i]);
         
         var htmlDiv=OAT.Dom.create('div');
+        
         htmlDiv.innerHTML=result.html;
+
         self.searchObj.map.addMarker(result.uid,result.latitude,result.longitude,
                             false,false,false,
                             self.searchObj.map.ref(self.searchObj.map,htmlDiv)
@@ -2025,6 +2047,36 @@ ODS.Nav = function(navOptions) {
        
          var resultInnerDiv=OAT.Dom.create('div',{},'hit_ctr');
          resultInnerDiv.innerHTML=result.html;
+         
+        
+        if(result.html.indexOf('sn_make_inv.vspx?fmail=')>-1)
+        {
+           
+          var aElms=resultInnerDiv.getElementsByTagName('a');
+          for(var i=0;i<aElms.length;i++)
+          {
+              if(typeof(aElms[i].rel)!='undefined' && aElms[i].rel.indexOf('invite#')>-1)
+              {
+                 aElms[i].href="javascript:void(0)";
+                 aElms[i].uid=aElms[i].rel.split('#')[1];
+                 aElms[i].fullName=aElms[i].rel.split('#')[2];
+  
+                 OAT.Dom.attach(aElms[i],"click",function(e) {var t=eTarget(e);
+                                                              if(t.tagName=='IMG')
+                                                                 t=t.parentNode;
+                                                              self.connectionSet(t.uid,1,function(){  
+                                                                                            self.session.connectionAdd(t.uid,t.fullName);
+                                                                                            self.connections.show=true;
+                                                                                            self.connectionsGet(self.session.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                                                         }
+                                                                      )
+                                                     });
+              }
+           
+          }     
+        }
+
+         
          
          OAT.Dom.append([$('search_listing'),resultLi],[resultLi,resultDiv],[resultDiv,resultCB,resultInnerDiv]);
        }

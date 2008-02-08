@@ -45,6 +45,45 @@ create procedure DB.DBA.ODS_API_FTI_MAKE_SEARCH_STRING (in par varchar, in fmt v
   return sprintf (fmt, replace (DB.DBA.FTI_MAKE_SEARCH_STRING (v), '\'', '\\\''));
 };
 
+create procedure tag_meanings (in tag varchar, in inst int, in post int) __SOAP_HTTP 'text/html'
+{
+  declare cnt, url, ses, str, vec any;
+  declare arr, srv any;
+--  dbg_obj_print (tag, inst, post);
+  srv := registry_get ('MOAT_SERVER');
+  if (not isstring (srv) or not length (srv))
+    srv := 'http://tags.moat-project.org';
+  url := sprintf ('%s/tag/%U/json/light', srv, tag);
+  cnt := http_get (url);
+  arr := json_parse (cnt);
+  arr := get_keyword ('bindings',  get_keyword ('results', arr));
+  ses := string_output ();
+  str := '';
+  vec := vector ();
+  http ('{ "results": { "bindings": [ ', ses);
+  foreach (any elm in arr) do
+    {
+      declare uri any;
+      uri := get_keyword ('value', get_keyword ('uri', elm));
+      if (exists (select 1 from moat.DBA.moat_meanings where m_tag = tag and m_inst = inst and m_id = post and m_uri = uri))
+	{
+          http (sprintf ('{ "uri": { "value":"%s", "checked":true } }, ', uri), ses);
+	  vec := vector_concat (vec, vector (uri));
+	}
+      else
+        http (sprintf ('{ "uri": { "value":"%s", "checked":false } }, ', uri), ses);
+    }
+  for select m_uri from moat.DBA.moat_meanings where m_tag = tag and m_inst = inst and m_id = post
+    and 0 = position (m_uri, vec) do
+      {
+        http (sprintf ('{ "uri": { "value":"%s", "checked":true } }, ', m_uri), ses);
+      }
+  http (' null ] } }', ses);
+  return string_output_string (ses);
+}
+;
+
+grant execute on tag_meanings to GDATA_ODS;
 
 create procedure OdsIriDescribe (in iri varchar, in accept varchar := 'application/rdf+xml') __SOAP_HTTP 'text/xml'
 {

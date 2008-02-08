@@ -73,8 +73,8 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_prj)
 				      />
 			      </td>
 			      <td>
-				  <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[3]"
-				      format="%.120s" render-only="1"/>
+				  <v:label name="la1" value="--subseq ((control.vc_parent as vspx_row_template).te_rowset[3], 0, 200)"
+				      format="%120.120s" render-only="1"/>
 
 			      </td>
 			      <td>
@@ -126,7 +126,7 @@ control.vc_enabled := 0;
 		  <v:button name="save1" value="--case when self.edit_prj is null then 'Add' else 'Update' end" action="simple">
 		      <v:on-post><![CDATA[
 declare xt, xp, tmp, descr, iri, name, url varchar;
-declare stat, msg, dta, mdta any;
+declare stat, msg, dta, mdta, qrs any;
 
 if (not self.vc_is_valid)
   return;
@@ -137,23 +137,32 @@ name := self.prj_name.ufl_value;
 iri := null;
 tmp := uuid ();
 
-if (length (name) = 0)
 {
   declare exit handler for sqlstate '*'
   {
     exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
     goto nexts;
   };
+  qrs := vector (0,0);
   exec (sprintf ('sparql load "%s" into graph <%s>', url, tmp));
-  exec (sprintf ('sparql prefix doap: <http://usefulinc.com/ns/doap#>
-       select ?P ?N ?D from <%s> where { ?P a doap:Project ; doap:name ?N ; doap:description ?D . }', tmp),
-       stat, msg, vector (), 0, mdta, dta);
+
+  qrs[0] := sprintf ('sparql prefix doap: <http://usefulinc.com/ns/doap#>
+       select ?P ?N ?D from <%s> where { ?P a doap:Project ; doap:name ?N ; doap:description ?D . }', tmp);
+  qrs[1] := sprintf ('sparql prefix foaf: <http://xmlns.com/foaf/0.1/>
+       select ?P ?N ?D from <%s> where { ?P a foaf:Organization ; foaf:name ?N . optional { ?P foaf:dummy ?D . } }', tmp);
+
+  foreach (any qr in qrs) do
+    {
+      exec (qr, stat, msg, vector (), 0, mdta, dta);
   if (length (dta) and length (dta[0]) > 2)
     {
       iri := dta[0][0];
       name := dta[0][1];
-      descr := dta[0][2];
+	  descr := coalesce (dta[0][2], descr);
+	  goto _found;
+	}
     }
+  _found:
   exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
 }
 

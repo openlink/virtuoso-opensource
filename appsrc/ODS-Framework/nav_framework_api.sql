@@ -190,6 +190,8 @@ create procedure sessionValidate (in sid varchar,in realm varchar :='wa',in user
      http('<session>'||sid||'</session>',resXml);
      http('<userName>'||user_name||'</userName>',resXml);
      http('<userId>'||cast(username2id(user_name) as varchar)||'</userId>',resXml);
+     http('<dba>'||cast(is_dba(user_name) as varchar)||'</dba>',resXml);
+
      goto _output;
     }else 
      goto _authbad;
@@ -214,6 +216,7 @@ create procedure sessionValidate (in sid varchar,in realm varchar :='wa',in user
       http('<session>'||sid||'</session>',resXml);
       http('<userName>'||userName||'</userName>',resXml);
       http('<userId>'||cast(username2id(userName) as varchar)||'</userId>',resXml);
+      http('<dba>'||cast(is_dba(userName) as varchar)||'</dba>',resXml);
       goto _output;
     }else
       goto _authbad;
@@ -251,8 +254,8 @@ create procedure usersGetInfo (in sid varchar,in realm varchar :='wa',in usersSt
   errMsg  := '';
 
   declare logged_user_name varchar;
-  if(isSessionValid(sid,'wa',logged_user_name))
-  {
+--  if(isSessionValid(sid,'wa',logged_user_name))
+--  {
      declare qry,state, msg, maxrows, metas, rset any;
       
      rset := null;
@@ -268,31 +271,66 @@ create procedure usersGetInfo (in sid varchar,in realm varchar :='wa',in usersSt
 
       for(i:=0;i<length(rset);i:=i+1)
       {
-        declare node_name,section_name varchar;
+        declare node_name,node_value,section_name,cursor_username varchar;
         declare xml_sections,nodename_parts any;
         declare k integer;
 
         xml_sections:=vector();
 
         http('<user>',resXml);
+        cursor_username:='';
+        cursor_username:=cast(userid2name(rset[i][0]) as varchar);
         for(k:=0;k<length(metas[0]);k:=k+1)
         {
+
+          declare visibility_arr any;
+          declare is_friend,visibility_pos,is_visible integer;
+          
+          visibility_arr := DB.DBA.WA_USER_VISIBILITY(cursor_username);
+
+          is_visible:=0;
+
+          if(isSessionValid(sid,'wa',logged_user_name))
+          {
+            is_friend := DB.DBA.WA_USER_IS_FRIEND (username2id(logged_user_name), username2id(cursor_username));
+ 
+            visibility_pos:=visibility_posinarr(metas[0][k][0]);
+          
+            --3 private;2 friends;1 public
+            if(visibility_pos>-1)
+            {   
+               if (atoi(visibility_arr[visibility_pos]) = 1 or (atoi(visibility_arr[visibility_pos]) = 2 and is_friend))  is_visible := 1;
+            }else
+              is_visible := 1;
+          }else
+          {
+               if (atoi(visibility_arr[visibility_pos]) = 1)  is_visible := 1;
+          } 
+          
+          if(is_visible)
+             node_value:=cast(rset[i][k] as varchar);
+          else
+            node_value:='';
+
+
           node_name:=xml_nodename(metas[0][k][0]);
           nodename_parts:=split_and_decode(node_name,0,'\0\0_');
+          
+
           if(length(nodename_parts)<2)
           {
           if(node_name<>'')
-                http('<'||node_name||'>'||cast(rset[i][k] as varchar)||'</'||node_name||'>',resXml);
+                http('<'||node_name||'>'||node_value||'</'||node_name||'>',resXml);
           }else
           {
              declare pos integer;
              
              pos:=position (nodename_parts[0], xml_sections);
              if(pos>0)
-               xml_sections[pos]:=get_keyword(nodename_parts[0],xml_sections,'')||'<'||nodename_parts[1]||'>'||cast(rset[i][k] as varchar)||'</'||nodename_parts[1]||'>';
+               xml_sections[pos]:=get_keyword(nodename_parts[0],xml_sections,'')||'<'||nodename_parts[1]||'>'||node_value||'</'||nodename_parts[1]||'>';
              else
              xml_sections:=vector_concat(xml_sections,vector(nodename_parts[0],
-                                                             get_keyword(nodename_parts[0],xml_sections,'')||'<'||nodename_parts[1]||'>'||cast(rset[i][k] as varchar)||'</'||nodename_parts[1]||'>'
+                                                             get_keyword(nodename_parts[0],xml_sections,'')||'<'||nodename_parts[1]||'>'||node_value||'</'||nodename_parts[1]||'>'
                                                              ));
         }
         }
@@ -318,7 +356,7 @@ create procedure usersGetInfo (in sid varchar,in realm varchar :='wa',in usersSt
       httpErrXml(errCode,errMsg,'usersGetInfo');
      else
       httpResXml(resXml,'usersGetInfo');
-  }
+--  }
  
   return '';
 }
@@ -1862,6 +1900,12 @@ create procedure username2id(in user_name varchar)
 }
 ;
 
+create procedure userid2name(in user_id integer)
+{
+ return (select U_NAME from DB.DBA.SYS_USERS where U_ID=user_id);
+}
+;
+
 create procedure connections_get(in sneID integer)
 {
   declare res any;
@@ -1934,7 +1978,10 @@ create procedure xml_nodename(in dbfield_name varchar)
  if(dbfield_name='U_LAST_NAME')  return 'lastName';
  if(dbfield_name='U_PHOTO_URL')    return 'photo';
  if(dbfield_name='U_TITLE')        return 'title';
+ if(dbfield_name='U_GENDER')       return 'gender';
  if(dbfield_name='U_MUSIC')        return 'music';
+ if(dbfield_name='U_BOOKS')        return 'books';
+ if(dbfield_name='U_MOVIES')       return 'movies';
  if(dbfield_name='U_INTERESTS')    return 'interests';
  if(dbfield_name='H_COUNTRY')      return 'home_country';
  if(dbfield_name='H_STATE')        return 'home_state';
@@ -1954,6 +2001,7 @@ create procedure xml_nodename(in dbfield_name varchar)
  if(dbfield_name='O_ADDRESS2')     return 'organization_address2';
  if(dbfield_name='O_LAT')          return 'organization_latitude';
  if(dbfield_name='O_LNG' )         return 'organization_longitude';
+ if(dbfield_name='O_JOBPOSITION')  return 'organization_jobposition';
  if(dbfield_name='IM_ICQ')         return 'im_ICQ';
  if(dbfield_name='IM_SKYPE')       return 'im_Skype';
  if(dbfield_name='IM_AIM')         return 'im_AIM';
@@ -1965,11 +2013,53 @@ create procedure xml_nodename(in dbfield_name varchar)
 }
 ;
 
+create procedure visibility_posinarr(in dbfield_name varchar)
+{
+ if(dbfield_name='U_NAME')         return -1;
+ if(dbfield_name='U_FULL_NAME')    return 3;
+ if(dbfield_name='U_FIRST_NAME')   return 1;
+ if(dbfield_name='U_LAST_NAME')    return 2;
+ if(dbfield_name='U_PHOTO_URL')    return 37;
+ if(dbfield_name='U_TITLE')        return 0;
+ if(dbfield_name='U_GENDER')       return 5;
+ if(dbfield_name='U_MUSIC')        return 24;
+ if(dbfield_name='U_BOOKS')        return 44;
+ if(dbfield_name='U_MOVIES')       return 46;
+ if(dbfield_name='U_INTERESTS')    return 48;
+ if(dbfield_name='H_COUNTRY')      return 16;
+ if(dbfield_name='H_STATE')        return 16;
+ if(dbfield_name='H_CITY')         return 16;
+ if(dbfield_name='H_ZIPCODE')      return 15;
+ if(dbfield_name='H_ADDRESS1')     return 15;
+ if(dbfield_name='H_ADDRESS2')     return 15;
+ if(dbfield_name='H_LAT')          return 39;
+ if(dbfield_name='H_LNG' )         return 39;
+ if(dbfield_name='O_NAME')         return 20;
+ if(dbfield_name='O_URL')          return 20;
+ if(dbfield_name='O_COUNTRY')      return 23;
+ if(dbfield_name='O_STATE')        return 23;
+ if(dbfield_name='O_CITY')         return 23;
+ if(dbfield_name='O_ZIPCODE')      return 22;
+ if(dbfield_name='O_ADDRESS1')     return 22;
+ if(dbfield_name='O_ADDRESS2')     return 22;
+ if(dbfield_name='O_LAT')          return 47;
+ if(dbfield_name='O_LNG' )         return 47;
+ if(dbfield_name='O_JOBPOSITION')  return 21;
+ if(dbfield_name='IM_ICQ')         return 10;
+ if(dbfield_name='IM_SKYPE')       return 11;
+ if(dbfield_name='IM_AIM')         return 12;
+ if(dbfield_name='IM_YAHOO')       return 13;
+ if(dbfield_name='IM_MSN')         return 14;
+
+ return -1;
+}
+;
+
 create procedure constructFieldsNameStr(in fieldsname_str varchar)
 {
 
   declare correctfields_name_str varchar;
-  correctfields_name_str:='userName,fullName,firstName,lastName,photo,title,home,homeLocation,business,businessLocation,im,music,interests';
+  correctfields_name_str:='userName,fullName,firstName,lastName,photo,title,gender,home,homeLocation,business,businessLocation,businessJobPosition,im,music,interests';
 
   declare res_str varchar;
   declare fields_name any;
@@ -2001,6 +2091,8 @@ create procedure constructFieldsNameStr(in fieldsname_str varchar)
               res_str:=res_str||'I.WAUI_PHOTO_URL as U_PHOTO_URL';
            if(fields_name[i]='title')
               res_str:=res_str||'I.WAUI_TITLE as U_TITLE';
+           if(fields_name[i]='gender')
+              res_str:=res_str||'I.WAUI_GENDER as U_GENDER';
 
            if(fields_name[i]='home')
               res_str:=res_str||'I.WAUI_HCOUNTRY as H_COUNTRY,'||
@@ -2028,6 +2120,9 @@ create procedure constructFieldsNameStr(in fieldsname_str varchar)
               res_str:=res_str||'I.WAUI_BLAT as O_LAT,'||
                                 'I.WAUI_BLNG as O_LNG';
 
+           if(fields_name[i]='businessJobPosition')
+              res_str:=res_str||'I.WAUI_BJOB as O_JOBPOSITION';
+
            if(fields_name[i]='im')
               res_str:=res_str||'I.WAUI_ICQ as IM_ICQ,'||
                                 'I.WAUI_SKYPE as IM_SKYPE,'||
@@ -2038,13 +2133,14 @@ create procedure constructFieldsNameStr(in fieldsname_str varchar)
            if(fields_name[i]='music')
               res_str:=res_str||'I.WAUI_FAVORITE_MUSIC as U_MUSIC';
 
+           if(fields_name[i]='books')
+              res_str:=res_str||'I.WAUI_FAVORITE_BOOKS as U_BOOKS';
+
+           if(fields_name[i]='movies')
+              res_str:=res_str||'I.WAUI_FAVORITE_MOVIES as U_MOVIES';
+
            if(fields_name[i]='interests')
               res_str:=res_str||'I.WAUI_INTERESTS as U_INTERESTS';
-
-
-
---business
---interests 
 
         }   
     }
@@ -2125,6 +2221,25 @@ create procedure usersinfo_sql(in usersStr varchar,in fieldsStr varchar)
                fields_name_str,users_id_str);
 
   return qry;
+}
+;
+create procedure is_dba (in _identity any) returns int
+{
+
+  declare _u_group integer;
+  
+  if(isinteger(_identity))
+    _u_group:=(select U_GROUP from DB.DBA.SYS_USERS where U_ID=_identity);
+  else
+    _u_group:=(select U_GROUP from DB.DBA.SYS_USERS where U_NAME=_identity);
+
+  if (_u_group is null)
+      _u_group := -1;
+  
+  if ( _u_group=0 or _u_group = 3)
+    return 1;
+  
+  return 0;
 }
 ;
 

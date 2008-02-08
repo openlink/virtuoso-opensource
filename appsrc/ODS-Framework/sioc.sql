@@ -98,6 +98,11 @@ create procedure scot_iri (in s varchar)
   return concat ('http://scot-project.org/scot/ns#', s);
 };
 
+create procedure moat_iri (in s varchar)
+{
+  return concat ('http://moat-project.org/ns#', s);
+};
+
 create procedure ext_iri (in s varchar)
 {
   return concat ('http://rdfs.org/sioc/types#', s);
@@ -761,6 +766,7 @@ create procedure sioc_user_project (in graph_iri varchar, in iri varchar, in  na
 
   DB.DBA.RDF_QUAD_URI (graph_iri, pers_iri, foaf_iri ('made'), prj_iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, prj_iri, foaf_iri ('maker'), pers_iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, prj_iri, dc_iri ('creator'), pers_iri);
   DB.DBA.RDF_QUAD_URI (graph_iri, prj_iri, dc_iri ('identifier'), url);
   DB.DBA.RDF_QUAD_URI_L (graph_iri, prj_iri, dc_iri ('title'), nam);
   DB.DBA.RDF_QUAD_URI_L (graph_iri, prj_iri, dc_iri ('description'), descr);
@@ -1971,7 +1977,7 @@ create trigger WA_USER_PROJECT_SIOC_U after update on DB.DBA.WA_USER_PROJECTS re
 
   graph_iri := get_graph ();
   iri := user_iri (N.WUP_U_ID);
-  opiri := person_prj_iri (iri, O.WUP_NAME);
+  opiri := coalesce (O.WUP_IRI, person_prj_iri (iri, O.WUP_NAME));
   delete_quad_s_or_o (graph_iri, opiri, opiri);
   sioc_user_project (graph_iri, iri, N.WUP_NAME, N.WUP_URL, N.WUP_DESC, N.WUP_IRI);
 };
@@ -1986,7 +1992,7 @@ create trigger WA_USER_PROJECT_SIOC_D after delete on DB.DBA.WA_USER_PROJECTS re
 
   graph_iri := get_graph ();
   iri := user_iri (O.WUP_U_ID);
-  opiri := person_prj_iri (iri, O.WUP_NAME);
+  opiri := coalesce (O.WUP_IRI, person_prj_iri (iri, O.WUP_NAME));
   delete_quad_s_or_o (graph_iri, opiri, opiri);
 };
 
@@ -2798,7 +2804,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional {
 		         ?oa foaf:accountServiceHomepage ?ashp ; foaf:accountName ?an
 	      	       } .
-	      optional { ?person foaf:made ?made  } .
+	      optional { ?person foaf:made ?made . ?made dc:identifier ?ident } .
 		    }
 	}
 	  }', graph, graph, u_name);

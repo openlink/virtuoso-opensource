@@ -33,6 +33,11 @@
     <vm:header>
       <vm:title>User Accounts Administration</vm:title>
     </vm:header>
+    <v:on-init>
+      if(wa_user_is_dba (connection_get('vspx_user'),null)=0)
+         signal('22024', 'You have no DBA privileges!');
+    </v:on-init>
+
     <vm:pagewrapper>
       <vm:variable persist="0" name="account_folder_mask" type="varchar" default="'00000000000000000000000000'"/>
       <vm:variable persist="0" name="search_mask" type="varchar" default="'%'"/>

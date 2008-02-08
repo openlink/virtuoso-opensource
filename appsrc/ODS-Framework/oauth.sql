@@ -55,8 +55,11 @@ DB.DBA.wa_exec_no_error_log(
 	s_user_data any,
 	s_state int,
 	s_method varchar,
+	s_access_mode int default 1,
 	s_ip varchar,
 	primary key (s_req_key))');
+
+db.dba.wa_add_col ('OAUTH.DBA.SESSIONS', 's_access_mode', 'int default 1');
 
 create procedure app_register
 (in aname varchar, in owner int)
@@ -310,6 +313,19 @@ create procedure authorize (
   http_status_set (301);
   http_header (sprintf ('Location: %s\r\n', url));
   return '';
+}
+;
+
+create procedure check_authentication_safe (in inparams any := null, in lines any := null)
+{
+  if (inparams is null)
+    inparams := http_param ();
+  if (lines is null)
+    lines := http_request_header ();
+  declare exit handler for sqlstate '*' {
+    return 0;
+  };
+  return check_authentication (inparams, lines);
 }
 ;
 

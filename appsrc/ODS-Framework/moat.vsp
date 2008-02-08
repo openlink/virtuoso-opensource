@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?vsp
+  declare host, tag varchar;
+  tag := {?'tag'};
+  host := http_request_header (lines, 'Host');
+  set http_charset='utf-8';
+  http_header ('Content-Type: application/rdf+xml\r\n');
+?>
+<rdf:RDF
+      xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+      xmlns:moat="http://moat-project.org/ns#"
+      xmlns:foaf="http://xmlns.com/foaf/0.1/">
+<?vsp if (tag is not null) { ?>
+<moat:Tag rdf:about="http://<?V host ?>/dataspace/tag/<?V tag ?>">
+  <moat:name><![CDATA[<?vsp http (tag); ?>]]></moat:name>
+<?vsp
+  for select distinct m_uri from moat.DBA.moat_meanings where m_tag = tag do
+    {
+       ?>
+  <moat:hasMeaning>
+    <moat:Meaning>
+      <moat:meaningURI rdf:resource="<?V m_uri ?>"/>
+    </moat:Meaning>
+  </moat:hasMeaning>
+       <?vsp
+    }
+?>
+</moat:Tag>
+<?vsp } ?>
+</rdf:RDF>

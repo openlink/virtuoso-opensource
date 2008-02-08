@@ -466,6 +466,15 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_res', 1,
     2,
     null);
 
+-- Rule for moat
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_moat_res', 1,
+    '/dataspace/tag/([^/]*)\x24', vector('tag'), 1,
+    '/ods/moat.vsp?tag=%U', vector('tag'),
+    null,
+    NULL,
+    2,
+    null);
+
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_error', 1,
     '/dataspace/(.*)/error.vspx?(.*)', vector(), 0,
     '/ods/error.vspx', vector(),
@@ -503,5 +512,6 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_rdf',
 	  'ods_rdf_next',
 	  'ods_rdf_res',
+	  'ods_moat_res',
 	  'ods_error'
 	  ));

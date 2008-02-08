@@ -32,6 +32,10 @@
   <vm:header>
     <vm:title>Site Settings</vm:title>
   </vm:header>
+  <v:on-init>
+    if(wa_user_is_dba (connection_get('vspx_user'),null)=0)
+       signal('22024', 'You have no DBA privileges!');
+  </v:on-init>
   <vm:pagewrapper>
     <vm:rawheader caption="Site Settings"/>
     <vm:navigation-new on="site_settings"/>

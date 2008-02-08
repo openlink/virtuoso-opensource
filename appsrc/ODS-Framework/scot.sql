@@ -59,6 +59,20 @@ db.dba.wa_exec_ddl ('create table tag_coocurrence_stats (
 
 db.dba.wa_exec_ddl ('create text index on tag_coocurrence_stats (tcs_tags_stats) with key tcs_id');
 
+db.dba.wa_exec_ddl ('create table moat.DBA.moat_meanings
+   (
+     m_mid  integer identity,
+     m_tag  varchar,
+     m_inst int,
+     m_id   int,
+     m_iri  iri_id,
+     m_uri  varchar,
+     primary key (m_inst, m_id, m_tag, m_uri)
+)');
+
+db.dba.wa_add_col ('moat.DBA.moat_meanings', 'm_iri', 'iri_id');
+db.dba.wa_add_col ('moat.DBA.moat_meanings', 'm_mid', 'integer identity');
+
 create procedure tags_normalize (inout tags any)
 {
   declare arr any;
@@ -282,12 +296,23 @@ create procedure scot_rdf_update (in graph_iri varchar, in inst_id int, in post_
     }
   if (length (post_iri))
     {
+      declare meaning_iri varchar;
       foreach (any tag in tags) do
 	{
 	  tag_iri := inst_iri || '/tag/' || tag;
 	  DB.DBA.RDF_QUAD_URI_L (graph_iri, tag_iri, skos_iri ('prefLabel'), tag);
 	  DB.DBA.RDF_QUAD_URI (graph_iri, tag_iri, skos_iri ('isSubjectOf'), post_iri);
 	  DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, sioc_iri ('topic'), tag_iri);
+	  -- MOAT
+	  DB.DBA.RDF_QUAD_URI (graph_iri, tag_iri, rdf_iri ('type'), moat_iri ('Tag'));
+	  DB.DBA.RDF_QUAD_URI_L (graph_iri, tag_iri, moat_iri ('name'), tag);
+	  for select m_mid, m_uri from moat.DBA.moat_meanings where m_tag = tag and m_iri = iri_to_id (post_iri) do
+	   {
+	     meaning_iri := tag_iri || sprintf ('/meaning/%d', m_mid);
+	     DB.DBA.RDF_QUAD_URI (graph_iri, tag_iri, moat_iri ('hasMeaning'), meaning_iri);
+	     DB.DBA.RDF_QUAD_URI (graph_iri, meaning_iri, rdf_iri ('type'), moat_iri ('Meaning'));
+	     DB.DBA.RDF_QUAD_URI (graph_iri, meaning_iri, moat_iri ('meaningURI'), m_uri);
+	   }
 	}
     }
 }
@@ -295,7 +320,7 @@ create procedure scot_rdf_update (in graph_iri varchar, in inst_id int, in post_
 
 create procedure scot_rdf_delete (in graph_iri varchar, in inst_id int, in only_stats int := 0)
 {
-  declare inst_iri, iri any;
+  declare inst_iri, iri, meaning_iri any;
 
   declare exit handler for not found
     {
@@ -317,7 +342,14 @@ create procedure scot_rdf_delete (in graph_iri varchar, in inst_id int, in only_
       if (only_stats)
 	delete_quad_sp (sioc..get_graph (), iri, scot_iri ('ownAFrequency'));
       else
+	{
 	delete_quad_s_or_o (sioc..get_graph (), iri, iri);
+	  for select m_mid from moat.DBA.moat_meanings where m_tag = ts_tag do
+	    {
+	      meaning_iri := iri || sprintf ('/meaning/%d', m_mid);
+	      delete_quad_s_or_o (sioc..get_graph (), meaning_iri, meaning_iri);
+	    }
+	}
     }
   for select tcs_id, tcs_afreq from tag_coocurrence_stats where tcs_inst_id = inst_id do
     {
