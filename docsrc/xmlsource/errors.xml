@@ -6845,7 +6845,7 @@ x    </msgtext></msgmain></msg>
 
    <msgentry>
     <msg><msgmain><msgtext><errorcode>UD066</errorcode><errortype>42S22</errortype>
-      <errorname>Field with name &lt;name&gt; defined for type &lt;type&gt;, witch is an derived type of &lt;type&gt;</errorname>
+      <errorname>Field with name &lt;name&gt; defined for type &lt;type&gt;, which is an derived type of &lt;type&gt;</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 

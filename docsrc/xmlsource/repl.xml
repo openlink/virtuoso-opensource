@@ -739,7 +739,7 @@ CREATE TABLE SYS_SNAPSHOT_LOG (
 </programlisting>
 			<para>
 This table describes all defined snapshot replication relation logs.
-SNL_SOURCE is the base table for witch a snapshot log is defined. 
+SNL_SOURCE is the base table for which a snapshot log is defined. 
 SNL_RLOG is the name of the RLOG snapshot log auxiliary table.
 SNL_RPLOG is the name of the RPLOG snapshot log auxiliary table.
 </para>

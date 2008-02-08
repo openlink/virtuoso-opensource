@@ -898,7 +898,7 @@ JavaVMOption5  = -Ddt5=val5
 	<listitem id="ini_Parameters_RunAs">
 	    <formalpara>
 		<title>RunAs</title>
-		<para>Specifies the OS user name to witch the server will switch after opening the listen ports. Has an effect only on the operating systems that support it.
+		<para>Specifies the OS user name to which the server will switch after opening the listen ports. Has an effect only on the operating systems that support it.
 		</para>
 	    </formalpara>
 	</listitem>

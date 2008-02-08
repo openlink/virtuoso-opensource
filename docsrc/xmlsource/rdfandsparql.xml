@@ -2571,9 +2571,9 @@ ttlp ('
    <http://localhost:8890/dataspace>                            <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/ods> .
    <http://localhost:8890/dataspace/test2/weblog/test2tWeblog>  <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/dataspace/test2/weblog/test2tWeblog>.
    <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> .
-   ', '', 'http://mygraph.com');
+   ', '', 'http://example.com/datapace/test');
 ]]></programlisting>
-<para>This loads a graph with some sample triples. The graph is called http://mygraph.com.
+<para>This loads data space instance data Triples into a Named Graph: &lt;http://example.com/dataspace/test&gt;
 </para>
 <programlisting><![CDATA[
 ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -2583,17 +2583,19 @@ ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
   <http://rdfs.org/sioc/types#Weblog> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .
   <http://rdfs.org/sioc/types#MessageBoard> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .
   <http://rdfs.org/sioc/ns#link> rdfs:subPropertyOf <http://rdfs.org/sioc/ns> .
-  ', '', 'http://myNewgraph.com');
+  ', '', 'http://example.com/schema/dataspace/test');
 ]]></programlisting>
-<para>This loads a graph called sc that contains assertions about subclasses and subproperties.
+<para>This loads a Triples into a Named Graph for schema/ontology data called:
+&lt;http://example.com/schema/dataspace/test&gt; that expresses assertions
+about subclasses and subproperties.
 </para>
 <programlisting>
-rdfs_rule_set ('http://mygraph.com', 'http://myNewgraph.com');
+rdfs_rule_set ('http://example.com/dataspace/test', 'http://example.com/schema/dataspace/test');
 </programlisting>
-<para>This defines the rule context http://mygraph.com that is initialized from the contents of graph http://myNewgraph.com.
+<para>This defines the rule context http://example.com/dataspace/test that is initialized from the contents of graph http://example.com/schema/dataspace/test.
 </para>
 <programlisting><![CDATA[
-SQL>sparql define input:inference 'http://mygraph.com' select ?s from <http://mygraph.com> where {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space> };
+SQL>sparql define input:inference 'http://example.com/dataspace/test' select ?s from <http://example.com/dataspace/test> where {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space> };
 s
 VARCHAR
 _______________________________________________________________________________
@@ -2613,8 +2615,8 @@ http://localhost:8890/dataspace/discussion/oWiki-test1Wiki.
 </para>
 <programlisting><![CDATA[
 SQL>select id_to_iri (s)
-from rdf_quad table option (with 'http://mygraph.com')
-where g = iri_to_id ('http://mygraph.com',0)
+from rdf_quad table option (with 'http://example.com/dataspace/test')
+where g = iri_to_id ('http://example.com/dataspace/test',0)
   and p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0)
   and o = iri_to_id ('http://rdfs.org/sioc/ns#Space', 0);
 callret
@@ -2638,7 +2640,7 @@ the same but now specify that inference should apply only to the first triple pa
 </para>
 <programlisting><![CDATA[
 
-SQL>sparql define input:inference  'http://mygraph.com' select * from <http://mygraph.com>
+SQL>sparql define input:inference  'http://example.com/dataspace/test' select * from <http://example.com/dataspace/test>
 where { ?s ?p <http://rdfs.org/sioc/ns#Space> . ?s ?p1 <http://localhost:8890/dataspace/test2/weblog/test2tWeblog> . };
 
 
@@ -2652,8 +2654,8 @@ http://localhost:8890/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/199
 2 Rows. -- 0 msec.
 
 
-SQL>sparql  select * from <http://mygraph.com>
-where { ?s ?p <http://rdfs.org/sioc/ns#Space> option (inference 'http://mygraph.com') . ?s ?p1 <http://localhost:8890/dataspace/test2/weblog/test2tWeblog> . };
+SQL>sparql  select * from <http://example.com/dataspace/test>
+where { ?s ?p <http://rdfs.org/sioc/ns#Space> option (inference 'http://example.com/dataspace/test') . ?s ?p1 <http://localhost:8890/dataspace/test2/weblog/test2tWeblog> . };
 
 s                                                                                 p                                                                                 p1
 VARCHAR                                                                           VARCHAR                                                                           VARCHAR

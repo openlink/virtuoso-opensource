@@ -383,7 +383,7 @@ select * from (select r1.k as r1_k, ... from r1, r2
   FOR specifications.</para>
 
   <para>The INDEX table option is used to control
-  witch index is chosen by the optimized SQL compiler for a given table (when you
+  which index is chosen by the optimized SQL compiler for a given table (when you
   want to override the one chosen automatically).</para>
 
   <simplelist>
