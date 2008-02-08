@@ -24,6 +24,9 @@ Copyright (C) 1998-2006 OpenLink Software <vos.admin@openlinksw.com>
   * ......  Mac OS X 10.4 PPC 32-bit
   * ......  Mac OS X 10.4 PPC 64-bit
   * ......  Mac OS X 10.4 Universal 32-bit
+  * ......  Mac OS X 10.5 32-bit
+  * ......  Mac OS X 10.5 64-bit
+  * ......  Mac OS X 10.5 Universal
   * ......  Solaris 2.x i386 32-bit
   * ......  Solaris 2.10 Opteron 32-bit
   * ......  Solaris 2.10 Opteron 64-bit
@@ -245,8 +248,26 @@ Mac OS X 10.4 PPC 64-bit
     ./configure ...
 
 Mac OS X 10.4 Universal 32-bit
--------------------------
+------------------------------
     CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386 -mmacosx-version-min=10.4"
+    export CFLAGS
+    ./configure --disable-dependency-tracking ...
+
+Mac OS X 10.5 32-bit
+--------------------
+    CFLAGS="-O -m32 -mmacosx-version-min=10.5"
+    export CFLAGS
+    ./configure ...
+
+Mac OS X 10.5 64-bit
+--------------------
+    CFLAGS="-O -m64 -mmacosx-version-min=10.5"
+    export CFLAGS
+    ./configure ...
+
+Mac OS X 10.5 Universal 
+------------------------
+    CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.5.sdk -arch ppc -arch i386 -arch ppc64 -arch x86_64 -mmacosx-version-min=10.5"
     export CFLAGS
     ./configure --disable-dependency-tracking ...
 
