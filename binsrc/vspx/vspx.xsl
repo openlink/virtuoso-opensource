@@ -4669,7 +4669,11 @@ create method vc_rows_render_<xsl:value-of select="@name" /> (inout control <xsl
 
 <xsl:template match="v:error-summary" mode="render_all" >
    <xsl:text>&lt;?vsp self.vc_error_summary (</xsl:text>
-   <xsl:if test="@match != ''">'<xsl:value-of select="@match" />'</xsl:if>
+   <xsl:choose>
+       <xsl:when test="@escape = '0'">0</xsl:when>
+       <xsl:otherwise>1</xsl:otherwise>
+   </xsl:choose>
+   <xsl:if test="@match != ''">, '<xsl:value-of select="@match" />'</xsl:if>
    <xsl:text>); ?&gt;</xsl:text>
 </xsl:template>
 

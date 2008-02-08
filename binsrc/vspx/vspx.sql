@@ -141,7 +141,8 @@ as (
   method vc_disable_child (ct_name varchar) returns any,
   method vc_enable_child (ct_name varchar) returns any,
   method vc_error_summary () returns any,
-  method vc_error_summary (pattern varchar) returns any,
+  method vc_error_summary (esc_mode int) returns any,
+  method vc_error_summary (esc_mode int, pattern varchar) returns any,
   method vc_find_control (name varchar) returns vspx_control,  -- find a direct child by name
   method vc_find_descendant_control (name varchar) returns vspx_control,  -- find a direct child by name
   method vc_find_parent_by_name (control vspx_control, name varchar) returns vspx_control, -- find any ancestor by desired vc_name
@@ -3990,13 +3991,22 @@ end_while:
 
 create method vc_error_summary () for vspx_control
 {
+  self.vc_error_summary (1);
+}
+;
+
+create method vc_error_summary (in esc_mode int) for vspx_control
+{
   if (self.vc_page.vc_is_valid)
     return 0;
   declare i, l integer;
   if (self.vc_error_message is not null)
     {
       --dbg_obj_princ('Error summary for ', self.vc_name, ' is ', self.vc_error_message);
+      if (esc_mode)
       http_value (self.vc_error_message);
+      else
+	http (self.vc_error_message);
       return 1;
     }
   declare c any;
@@ -4006,7 +4016,7 @@ create method vc_error_summary () for vspx_control
     {
       declare chil vspx_control;
       chil := c[i];
-      if (chil is not null and chil.vc_error_summary ())
+      if (chil is not null and chil.vc_error_summary (esc_mode))
   return 1;
       i := i + 1;
     }
@@ -4014,7 +4024,7 @@ create method vc_error_summary () for vspx_control
 }
 ;
 
-create method vc_error_summary (in pattern varchar) for vspx_control
+create method vc_error_summary (in esc_mode int, in pattern varchar) for vspx_control
 {
   if (self.vc_page.vc_is_valid)
     return 0;
@@ -4024,7 +4034,10 @@ create method vc_error_summary (in pattern varchar) for vspx_control
   if (self.vc_error_message is not null and regexp_match (pattern, cname) is not null)
     {
       --dbg_obj_princ('Error summary for ', self.vc_name, ' matching ', pattern, ' is ', self.vc_error_message);
+      if (esc_mode)
       http_value (self.vc_error_message);
+      else
+	http (self.vc_error_message);
       return 1;
     }
   declare c any;
@@ -4034,7 +4047,7 @@ create method vc_error_summary (in pattern varchar) for vspx_control
     {
       declare chil vspx_control;
       chil := c[i];
-      if (chil is not null and chil.vc_error_summary (pattern))
+      if (chil is not null and chil.vc_error_summary (esc_mode, pattern))
         return 1;
       i := i + 1;
     }
