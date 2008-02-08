@@ -1,4 +1,37 @@
-February 01, 2007, V5.0.4:
+February 08, 2008, V5.0.5:
+  * Database Engine:
+    - Added support for rehashable dictionary objects
+    - Added extra checks in sparql to debug pointers in core
+    - Added support to make canonical host e.g. remove :PORT
+    - Fixed problem in code generation
+    - Fixed group by with grouping col being an exp with an AS alias
+    - Fixed expressions in select with top distinct order; must be
+      done before the distinct, not before the order by
+    - Fixed compiler warnings
+    - Fixed documentation
+
+  * SPARQL and RDF
+    - Added SVG sponger
+    - Added typed literals
+    - Added additional documentation
+
+  * ODS Applications
+    - Added support for Meaning of a Tag (MOAT)
+    - Added SOAP API for rendering
+    - Added vspx escape mode for error summary to allow printing html
+    - Added vspx compatibility method
+    - Added check for administrative privileges
+    - Added rich text editor for gallery comments
+    - Added private/public events
+    - Added calendar sharing support
+    - Fixed problems with OpenID validation
+    - Fixed profile page access with direct link
+    - Fixed photo delete
+    - Fixed missing expand url for import
+    - Fixed SIOC RDF/XML and SIOC N3 gem failure
+
+
+February 01, 2008, V5.0.4:
   * Database Engine
     - Added check for backup/restore status
     - Added file descriptors, wait and exit status for child processes
@@ -38,9 +71,9 @@ February 01, 2007, V5.0.4:
     - Fixed syntax for '[]' bnode to allow '[ whitespace ]'
     - Fixed eror messages with QUIETCAST
     - Fixed iri names to iri valued ssl and their entailed
-    - Fixed problem with inxop bm bad if extra search params supplied, as in
-      the case of likes etc other non inx conds. do not count on search par fill
-      to know the target.
+    - Fixed problem with inxop bm bad if extra search params supplied,
+      as in the case of likes etc other non inx conds. do not count on
+      search par fill to know the target.
     - Fixed BREAKUP with more than one triple per row
     - Fixed printing non-nullable results of OPTIONAL as nullable
     - Added draft support for sub-SELECT and sub-ASK in expressions
@@ -104,7 +137,7 @@ December 11, 2007, V5.0.3:
      - Improved speed of RDF loading
      - Improved support for aggregate expressions
      - Use UTF-8 for RDF serialization
-     - Various speedups for SPARQL 
+     - Various speedups for SPARQL
   * ODS Applications
      - Added a++ links
      - Added feature to reorder tabs on the main navigation bar
@@ -164,9 +197,9 @@ September 27, 2007, V5.0.2:
 	- Fixed integration with Del.ici.ous, Technocrati
 	- Many bugfixes and enhancements
   * Added Thalia and Northwind demos and tutorials
-  * Enhanced portability 
+  * Enhanced portability
 	- Added installation layouts for make install
-	- Fixed compiler warnings 
+	- Fixed compiler warnings
 	- Fixed 64bit specific problems
 	- Fixed platform specific problems
 
@@ -178,14 +211,14 @@ May 31, 2007, V5.0.1:
   * Enhanced SPARQL support
 	- Added BREAKUP
 	- Added CONSTRUCT ... LIMIT ...
-	- Significant performance optimizations 
+	- Significant performance optimizations
 	- Added QUAD MAP <...> { ... } group pattern
   * Updated documentation
   * Significant update of all ODS applications
 	- Added compliance to latest SIOC vocabulary
 	- Added calendar
 	- Added OpenID login and registration
-	- Added new SIOC subclasses to allow RDF inference 
+	- Added new SIOC subclasses to allow RDF inference
 	- Enhancements to existing applications
 	- Bug fixes
 	
@@ -263,7 +296,7 @@ October 27 2006, V4.5.6:
   * Fixed VAD_INSTALL to properly report syntax errors during installation
   * Fixed problem in virtual directory and private instances
   * Fixed building vad packages on windows
-  * Fixed building php5 hosting 
+  * Fixed building php5 hosting
   * Small changes, bugfixes and new icons for Conductor
   * Small changes and bugfixes to ODS applications
 
@@ -323,7 +356,7 @@ August 8 2006, V4.5.4:
 
 June 8 2006, V4.5.3:
   * Added OpenLink Data Spaces (ODS) application framework
-  * Added OpenLink Data Spaces (ODS) applications: 
+  * Added OpenLink Data Spaces (ODS) applications:
 	Blog, Bookmark, Briefcase, Community, Discussion,
 	FeedManager, Gallery, WebMail, Wiki
   * Added testsuites for XMLA and DAV/RDF
