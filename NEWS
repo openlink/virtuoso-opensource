@@ -1,4 +1,4 @@
-February 08, 2008, V5.0.5:
+February 11, 2008, V5.0.5:
   * Database Engine:
     - Added support for rehashable dictionary objects
     - Added extra checks in sparql to debug pointers in core
@@ -13,6 +13,7 @@ February 08, 2008, V5.0.5:
   * SPARQL and RDF
     - Added SVG sponger
     - Added typed literals
+    - Added URL rewrite rules for xbrl cartridge
     - Added additional documentation
 
   * ODS Applications
