@@ -11146,7 +11146,7 @@ window.onload = function (e)
        <div>
               <v:button xhtml_class="real_button" name="genb1" action="simple" value="Re-tag existing posts" xhtml_title="Auto Tagging" xhtml_alt="Auto Tagging">
 		<v:on-post><![CDATA[
-		declare ruls, tags, tagstr, flag, job, existing_tags any;
+		declare ruls, tags, tagstr, flag, job, existing_tags, moat_tags any;
 		job := null;
 
 		for select top 1 R_JOB_ID from BLOG..SYS_ROUTING where
@@ -11157,7 +11157,8 @@ window.onload = function (e)
 		for select B_TITLE, B_CONTENT, B_POST_ID from BLOG..SYS_BLOGS where B_BLOG_ID = self.blogid do
 		{
 		  --dbg_obj_print ('tagging:', B_TITLE);
-		  tags := tag_document (B_CONTENT, 0, ruls);
+		  tags := tag_document_with_moat (B_CONTENT, 0, ruls);
+		  moat_tags := tags;
 		  tagstr := self.tag2str (tags);
 		  if (self.cb_app_tags.ufl_selected)
 		    {
@@ -11207,6 +11208,21 @@ window.onload = function (e)
 		  flag := null;
 		  if (length (tagstr))
 		    {
+		      delete from BLOG..BLOG_TAG where BT_BLOG_ID = self.blogid and BT_POST_ID = B_POST_ID;
+		      delete from moat.DBA.moat_meanings where m_inst = self.inst_id and m_id = B_POST_ID;
+                      for (declare i, l int, i := 0, l := length (moat_tags); i < l; i := i + 2)
+		         {
+                           declare tag, arr any;
+			   tag := moat_tags[i];
+			   arr := moat_tags[i+1];
+			   foreach (any turi in arr) do
+			     {
+			       insert replacing moat.DBA.moat_meanings (m_inst, m_id, m_tag, m_uri, m_iri)
+			          values (self.inst_id, B_POST_ID, tag, turi,
+				  iri_to_id (sioc..blog_post_iri (self.blogid, B_POST_ID)));
+			     }
+		         }
+
 		      insert replacing BLOG..BLOG_TAG (BT_BLOG_ID, BT_POST_ID, BT_TAGS) values (self.blogid, B_POST_ID, tagstr);
 		      if (exists (select 1 from BLOG..SYS_BLOGS_ROUTING_LOG where RL_JOB_ID = job and RL_POST_ID = B_POST_ID))
 		        flag := 'U';
