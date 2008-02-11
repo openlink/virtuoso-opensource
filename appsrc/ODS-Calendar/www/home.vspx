@@ -1403,7 +1403,7 @@
               </v:on-post>
             </v:button>
             </vm:if>
-                        <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                        <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete the selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
               <v:on-post>
                 <![CDATA[
                               declare N, id integer;
@@ -4034,7 +4034,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete the selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
                   <v:on-post>
                     <![CDATA[
                       declare N integer;
@@ -4295,7 +4295,7 @@
                       ]]>
                     </v:on-post>
                   </v:button>
-                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete the selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
                         declare N integer;
@@ -4527,7 +4527,7 @@
                       ]]>
                     </v:on-post>
                   </v:button>
-                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete this selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
+                  <v:button value="Delete" action="simple" xhtml_onclick="--'javascript: return confirmAction(\'Are you sure that you want to delete the selected item(s)?\', document.F1, \'cb_item\', \'No items were selected for deletion.\');'" xhtml_class="button">
                     <v:on-post>
                       <![CDATA[
                         declare N integer;
@@ -4880,7 +4880,7 @@
       </div>
       <vm:if test="self.cScope in ('day', 'week', 'month')">
         <div id="deleteDiv" style="display: none;">
-          Are you sure that you want to delete selected item?
+                  Are you sure that you want to delete the selected item?
       	</div>
         <div id="deleteDiv2" style="display: none;">
           Do you want to delete all occurrences of the repeatble item, or just this one?<br /><br />
