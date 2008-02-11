@@ -1,3 +1,16 @@
+2008-02-11 12:56  source
+
+	* Updated version to 5.0.5-rc4
+
+2008-02-11 12:54  source
+
+	* Added MOAT in tag rules
+	* Fixed schedule event
+
+2008-02-11 12:53  source
+
+	* Added automatic tagging
+
 2008-02-11 09:46  source
 
 	* Updated version to 5.0.5-rc3
