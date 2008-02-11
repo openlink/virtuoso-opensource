@@ -2176,3 +2176,30 @@ grant execute on DB.DBA.GET_XBRL_CANONICAL_NAME to public
 
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_NAME'))
 ;
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE(
+'xbrl_rule1', 
+1, 
+'/schemas/xbrl#(.*)', 
+vector('path'), 
+1, 
+'/sparql?query=DESCRIBE%20%3Chttp%3A//localhost:9301/schemas/xbrl%23%U%3E%20FROM%20%3Chttp%3A//localhost:9301/schemas/RDF_Mapper_Ontology/1.0/%3E',
+vector('path'), 
+null, 
+'(text/rdf.n3)|(application/rdf.xml)', 
+0, 
+null 
+);
+
+DB.DBA.URLREWRITE_CREATE_RULELIST (
+'xbrl_rule_list1',
+1,
+vector('xbrl_rule1')
+);
+
+DB.DBA.VHOST_REMOVE (lpath=>'/schemas/xbrl#');
+DB.DBA.VHOST_REMOVE (lpath=>'/schemas/xbrl');
+
+DB.DBA.VHOST_DEFINE (lpath=>'/schemas/xbrl#', ppath=>'/DAV/VAD/rdf_mappers/ontologies/xbrl/msft2007.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0, opts=>vector ('url_rewrite', 'xbrl_rule_list1'));
+
+DB.DBA.VHOST_DEFINE (lpath=>'/schemas/xbrl', ppath=>'/DAV/VAD/rdf_mappers/ontologies/xbrl/msft2007.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0, opts=>vector ('url_rewrite', 'xbrl_rule_list1'));
