@@ -59,20 +59,6 @@ db.dba.wa_exec_ddl ('create table tag_coocurrence_stats (
 
 db.dba.wa_exec_ddl ('create text index on tag_coocurrence_stats (tcs_tags_stats) with key tcs_id');
 
-db.dba.wa_exec_ddl ('create table moat.DBA.moat_meanings
-   (
-     m_mid  integer identity,
-     m_tag  varchar,
-     m_inst int,
-     m_id   int,
-     m_iri  iri_id,
-     m_uri  varchar,
-     primary key (m_inst, m_id, m_tag, m_uri)
-)');
-
-db.dba.wa_add_col ('moat.DBA.moat_meanings', 'm_iri', 'iri_id');
-db.dba.wa_add_col ('moat.DBA.moat_meanings', 'm_mid', 'integer identity');
-
 create procedure tags_normalize (inout tags any)
 {
   declare arr any;

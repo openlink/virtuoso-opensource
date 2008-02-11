@@ -74,6 +74,33 @@ create unique index WA_TAG_REL_INX_REV on WA_TAG_REL_INX (TR_T2, TR_COUNT, TR_T1
 ')
 ;
 
+db.dba.wa_exec_ddl ('create table moat.DBA.moat_meanings
+   (
+     m_mid  integer identity,
+     m_tag  varchar,
+     m_inst int,
+     m_id   int,
+     m_iri  iri_id,
+     m_uri  varchar,
+     primary key (m_inst, m_id, m_tag, m_uri)
+)');
+
+db.dba.wa_exec_ddl ('create index moat_meanings_idx on moat.DBA.moat_meanings (m_tag, m_iri)');
+
+db.dba.wa_add_col ('moat.DBA.moat_meanings', 'm_iri', 'iri_id');
+db.dba.wa_add_col ('moat.DBA.moat_meanings', 'm_mid', 'integer identity');
+
+db.dba.wa_exec_ddl (
+'create table moat.DBA.moat_user_meanings
+  (
+    mu_id integer identity,
+    mu_tag varchar,
+    mu_trs_id int,
+    mu_url varchar,
+    primary key (mu_trs_id, mu_tag, mu_url)
+  )
+create unique index moat_user_meanings_id on moat.DBA.moat_user_meanings (mu_id)');
+
 -- A dummy table is created for holding taggable content.  Then a text trigger is created on this table.  In fact the text trigger rules will be invoked without recourse to the table or its triggers.
 
 wa_exec_no_error('create table tag_content (tc_id int identity primary key, tc_text long varchar)');
@@ -227,6 +254,72 @@ create procedure tag_html (in tags any array, in link_string varchar) returns va
   return string_output_string (s);
 }
 ;
+
+-- with moat
+create procedure tag_phrase_eval_moat (in trs_id int, in text varchar, inout tags any)
+{
+  declare ap, tag_inx, tag, moat any;
+  ap := ap_build_match_list (vector (trs_id), text, 'x-any', 0, 0);
+  --dbg_obj_print ('ap[2]:', ap[2]);
+  --dbg_obj_print ('ap[5]:', ap[5]);
+
+  foreach (any ht in ap[5]) do
+    {
+      declare pos int;
+      tag_inx := ht[2];
+      tag := ap[2][tag_inx][3];
+      pos := position (tag, tags);
+      if (not pos)
+	{
+	  moat := (select vector_agg (mu_url) from moat..moat_user_meanings where mu_tag = tag and mu_trs_id = trs_id);
+	  tags := vector_concat (tags, vector (tag, moat));
+	}
+    }
+
+  return;
+};
+
+create procedure tag_tt_eval_moat (in trs_id int, in text varchar, inout tags any)
+{
+  declare vtb, ids, invd any;
+  declare d_id, pos int;
+  declare moat any;
+
+  vtb := vt_batch (1001);
+  vt_batch_d_id (vtb, 1);
+  vt_batch_feed (vtb, text, 0);
+  invd := vt_batch_strings_array (vtb);
+  for select rs_query, rs_tag from tag_rules where rs_is_phrase <> 1 and rs_trs = trs_id do
+    {
+      ids := vt_batch_match (vtb, rs_query);
+      --dbg_obj_print ('ids=',ids, ' for=', rs_query);
+      if (length (ids))
+	{
+	  pos := position (rs_tag, tags);
+	  if (not pos)
+	    {
+	      moat := (select vector_agg (mu_url) from moat..moat_user_meanings where mu_tag = rs_tag and mu_trs_id = trs_id);
+	      tags := vector_concat (tags, vector (rs_tag, moat));
+	    }
+	}
+    }
+  return;
+};
+
+create procedure tag_document_with_moat (in text varchar, in top_n int, in rule_sets int array) returns any array
+{
+  declare tags, rc any;
+  tags := vector ();
+  foreach (any trs in rule_sets) do
+    {
+      tag_phrase_eval_moat (trs[1], blob_to_string (text), tags);
+      tag_tt_eval_moat (trs[0], text, tags);
+      if (top_n > 0 and (length (tags)/2) >= top_n)
+	goto ret;
+    }
+  ret:
+  return tags;
+};
 
 
 wa_exec_no_error('

@@ -45,11 +45,11 @@ create procedure DB.DBA.ODS_API_FTI_MAKE_SEARCH_STRING (in par varchar, in fmt v
   return sprintf (fmt, replace (DB.DBA.FTI_MAKE_SEARCH_STRING (v), '\'', '\\\''));
 };
 
-create procedure tag_meanings (in tag varchar, in inst int, in post int) __SOAP_HTTP 'text/html'
+create procedure get_tag_meanings_from_moat (in tag varchar)
 {
-  declare cnt, url, ses, str, vec any;
-  declare arr, srv any;
---  dbg_obj_print (tag, inst, post);
+  declare cnt, url any;
+  declare arr, srv, res any;
+
   srv := registry_get ('MOAT_SERVER');
   if (not isstring (srv) or not length (srv))
     srv := 'http://tags.moat-project.org';
@@ -57,14 +57,43 @@ create procedure tag_meanings (in tag varchar, in inst int, in post int) __SOAP_
   cnt := http_get (url);
   arr := json_parse (cnt);
   arr := get_keyword ('bindings',  get_keyword ('results', arr));
-  ses := string_output ();
-  str := '';
-  vec := vector ();
-  http ('{ "results": { "bindings": [ ', ses);
+  res := vector ();
   foreach (any elm in arr) do
     {
       declare uri any;
       uri := get_keyword ('value', get_keyword ('uri', elm));
+      res := vector_concat (res, vector (uri));
+    }
+  return res;
+}
+;
+
+create procedure tag_meanings (in tag varchar, in inst int, in post int) __SOAP_HTTP 'text/html'
+{
+  declare cnt, url, ses, str, vec, uid, trs any;
+  declare arr, srv any;
+--  dbg_obj_print (tag, inst, post);
+  arr := get_tag_meanings_from_moat (tag);
+  ses := string_output ();
+  str := '';
+  vec := vector ();
+  http ('{ "results": { "bindings": [ ', ses);
+  if (not exists (select 1 from moat.DBA.moat_meanings where m_tag = tag and m_inst = inst and m_id = post))
+    {
+      uid := (select U_ID from SYS_USERS, WA_MEMBER, WA_INSTANCE where U_ID = WAM_USER and WAM_INST = WAI_NAME and WAM_MEMBER_TYPE = 1 and WAI_ID = inst);
+      for select mu_url from moat.DBA.moat_user_meanings, DB.DBA.tag_user where mu_tag = tag and mu_trs_id = tu_trs
+	and tu_u_id = uid order by tu_order do
+	  {
+	    http (sprintf ('{ "uri": { "value":"%s", "checked":true } }, ', mu_url), ses);
+	    vec := vector_concat (vec, vector (mu_url));
+	  }
+    }
+  foreach (any elm in arr) do
+    {
+      declare uri any;
+      uri := elm;
+      if (0 = position (uri, vec))
+        {
       if (exists (select 1 from moat.DBA.moat_meanings where m_tag = tag and m_inst = inst and m_id = post and m_uri = uri))
 	{
           http (sprintf ('{ "uri": { "value":"%s", "checked":true } }, ', uri), ses);
@@ -72,6 +101,7 @@ create procedure tag_meanings (in tag varchar, in inst int, in post int) __SOAP_
 	}
       else
         http (sprintf ('{ "uri": { "value":"%s", "checked":false } }, ', uri), ses);
+    }
     }
   for select m_uri from moat.DBA.moat_meanings where m_tag = tag and m_inst = inst and m_id = post
     and 0 = position (m_uri, vec) do

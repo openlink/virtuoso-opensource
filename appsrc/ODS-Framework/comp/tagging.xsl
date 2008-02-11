@@ -126,6 +126,10 @@
 					self.vc_data_bind (e);
 				]]></v:on-post>
 				</v:button>
+				<![CDATA[&nbsp;]]>
+				<v:url name="moat1"
+				 url="--sprintf ('moat_ruleset_tags.vspx?trs_id=%d',
+				    (control.vc_parent as vspx_row_template).te_rowset[0])" value="MOAT" />
 			    </td>
 			</tr>
 		    </v:template>
@@ -210,6 +214,8 @@
 					self.vc_data_bind (e);
 				    </v:on-post>
 				</v:button>
+				<![CDATA[&nbsp;]]>
+				<v:url name="moat2" url="--sprintf ('moat_ruleset_tags.vspx?trs_id=%d', (control.vc_parent as vspx_row_template).te_rowset[0])" value="MOAT" />
 			    </td>
 			</tr>
 		    </v:template>
@@ -566,7 +572,8 @@ function selectAllCheckboxes (form, btn, txt)
 							vector (
 								trim(self.drult1.ufl_value),
 								trim(self.drult2.ufl_value),
-								self.drult3.ufl_selected)));
+								self.drult3.ufl_selected
+								)));
 						       self.trs_data := dt;
 
 						       self.drult1.ufl_value := '';
