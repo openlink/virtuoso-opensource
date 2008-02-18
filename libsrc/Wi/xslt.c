@@ -3780,8 +3780,8 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
               dk_free ((void *)src, vect_elems * sizeof (dsort_itm_t));
               sqlr_new_error ("22023", "SR572",
 	        "Function %s needs vector of vectors, each item should be at least %d values long "
-		"found an item of length %d; index of bad item in array is %d",
-		funname, key_ofs+1, BOX_ELEMENTS(row), itm_ctr );
+		"found an item of length %ld; index of bad item in array is %d",
+		funname, key_ofs+1, (long)(BOX_ELEMENTS(row)), itm_ctr );
             }
           key = row[key_ofs];
           key_dtp = DV_TYPE_OF (key);
