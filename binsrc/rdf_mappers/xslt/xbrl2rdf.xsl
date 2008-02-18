@@ -56,7 +56,7 @@
   xmlns:us-gaap-ci="http://www.xbrl.org/us/fr/gaap/ci/2005-02-28#"
   xmlns:msft="http://www.microsoft.com/10q/industrial/msft/2005-02-28"
   xmlns:virt="http://www.openlinksw.com/virtuoso/xslt"
-  xmlns:virt-xbrl="http://demo.openlinksw.com/schemas/xbrl#"
+  xmlns:virt-xbrl="http://demo.openlinksw.com/schemas/xbrl/"
   xmlns:ifrs-gp="&ifrs-gp;"
   xmlns:stock="&stock;"
   xmlns:ifrs-gp-typ="&ifrs-gp-typ;"
@@ -68,7 +68,7 @@
   <xsl:output method="xml" indent="yes"/>
   <xsl:param name="baseUri" />
 
-  <xsl:variable name="ns">http://demo.openlinksw.com/schemas/xbrl#</xsl:variable>
+  <xsl:variable name="ns">http://demo.openlinksw.com/schemas/xbrl/</xsl:variable>
 
   <xsl:template match="/">
       <rdf:RDF>

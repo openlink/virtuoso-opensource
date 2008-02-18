@@ -1158,13 +1158,29 @@ create procedure DB.DBA.RDF_LOAD_WIKIPEDIA_ARTICLE
 {
 
     declare get_uri, body any;
+    declare code, base any;
 
     get_uri := split_and_decode (new_origin_uri, 0, '\0\0/');
     get_uri := get_uri[length (get_uri) - 1];
+    base := get_keyword ('DBpediaBase', opts);
 
+    if (base is not null and isstring (file_stat (base)) and __proc_exists ('php_str', 2) is not null)
+      {
+	declare exit handler for sqlstate '*'
+	 {
+	   goto fallback;
+	 };
+	code := RDFMAP_DBPEDIA_EXTRACT_PHP (base, get_uri);
+        body := php_str (code);
+        DB.DBA.TTLP (body, base, coalesce (dest, graph_iri));
+        return 1;
+      }
+    else
+      {
+	fallback:;
     body := http_get ('http://dbpedia.org/data/'|| get_uri, null, 'GET', 'Accept: application/xml, */*');
-
     return DB.DBA.RDF_LOAD_RDFXML (body, new_origin_uri, coalesce (dest, graph_iri));
+      }
 }
 ;
 
@@ -2149,7 +2165,7 @@ create procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES()
   urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
   for select cast (RES_CONTENT as varchar) as content1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/rdf_mappers/ontologies/xbrl/%.owl' do
   {
-    DB.DBA.RDF_LOAD_RDFXML (content1, 'http://demo.openlinksw.com/schemas/xbrl#', 'http://demo.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/');
+    DB.DBA.RDF_LOAD_RDFXML (content1, 'http://demo.openlinksw.com/schemas/xbrl/', 'http://demo.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/');
   }
 }
 ;
@@ -2163,7 +2179,7 @@ drop procedure DB.DBA.LOAD_RDF_MAPPER_XBRL_ONTOLOGIES
 create procedure DB.DBA.GET_XBRL_CANONICAL_NAME(in elem varchar) returns varchar
 {
     declare cur varchar;
-    cur := 'http://demo.openlinksw.com/schemas/xbrl#' || elem;
+    cur := 'http://demo.openlinksw.com/schemas/xbrl/' || elem;
     if (exists (sparql ask from <http://demo.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> {`iri(?:cur)` a rdf:Property } ) )
         return elem;
     else
@@ -2177,29 +2193,53 @@ grant execute on DB.DBA.GET_XBRL_CANONICAL_NAME to public
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_name', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_NAME'))
 ;
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE(
-'xbrl_rule1', 
-1, 
-'/schemas/xbrl#(.*)', 
-vector('path'), 
-1, 
-'/sparql?query=DESCRIBE%20%3Chttp%3A//localhost:9301/schemas/xbrl%23%U%3E%20FROM%20%3Chttp%3A//localhost:9301/schemas/RDF_Mapper_Ontology/1.0/%3E',
-vector('path'), 
-null, 
-'(text/rdf.n3)|(application/rdf.xml)', 
-0, 
-null 
-);
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('xbrl_rule1', 1, '/schemas/xbrl/(.*)', vector('path'), 1,
+'/sparql?query=DESCRIBE%20%3Chttp%3A//^{URIQADefaultHost}^/schemas/xbrl/%U%3E%20FROM%20%3Chttp%3A//^{URIQADefaultHost}^/schemas/RDF_Mapper_Ontology/1.0/%3E',
+vector('path'), null, '(text/rdf.n3)|(application/rdf.xml)', 0, null);
 
-DB.DBA.URLREWRITE_CREATE_RULELIST (
-'xbrl_rule_list1',
-1,
-vector('xbrl_rule1')
-);
+DB.DBA.URLREWRITE_CREATE_RULELIST ('xbrl_rule_list1', 1, vector('xbrl_rule1'));
 
-DB.DBA.VHOST_REMOVE (lpath=>'/schemas/xbrl#');
 DB.DBA.VHOST_REMOVE (lpath=>'/schemas/xbrl');
 
-DB.DBA.VHOST_DEFINE (lpath=>'/schemas/xbrl#', ppath=>'/DAV/VAD/rdf_mappers/ontologies/xbrl/msft2007.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0, opts=>vector ('url_rewrite', 'xbrl_rule_list1'));
-
 DB.DBA.VHOST_DEFINE (lpath=>'/schemas/xbrl', ppath=>'/DAV/VAD/rdf_mappers/ontologies/xbrl/msft2007.owl', vsp_user=>'dba', is_dav=>1, is_brws=>0, opts=>vector ('url_rewrite', 'xbrl_rule_list1'));
+-- dbpedia_extract.php
+
+CREATE PROCEDURE RDFMAP_DBPEDIA_EXTRACT_PHP (in base varchar, in title varchar)
+{
+  declare ses any;
+  ses := string_output ();
+  http ('<?php\n', ses);
+  http (sprintf ('\x24basePath = "%s";\n', base), ses);
+  http (sprintf ('\x24pageTitlesEn[] = "%s";\n', title), ses);
+  http ('\n', ses);
+  http ('set_include_path (\x24basePath.\':\'.\x24basePath.\'/extractors:\'.\x24basePath.\'/destinations\');\n', ses);
+  http ('require_once \'dbpedia.php\';\n', ses);
+  http ('\n', ses);
+  http ('function __autoload(\x24class_name) {\n', ses);
+  http ('    require_once \x24class_name . \'.php\';\n', ses);
+  http ('}\n', ses);
+  http ('\n', ses);
+  http ('\x24manager = new ExtractionManager();\n', ses);
+  http ('\x24jobEnWiki = new ExtractionJob (new LiveWikipedia("en"), new ArrayObject(\x24pageTitlesEn));\n', ses);
+  http ('\n', ses);
+  http ('\x24group = new ExtractionGroup(new SimpleDumpDestination());\n', ses);
+  http ('\x24group->addExtractor(new LabelExtractor());\n', ses);
+  http ('\x24group->addExtractor(new ArticleCategoriesExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new PageLinksExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new WikipageExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new LongAbstractExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new ShortAbstractExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new PersondataExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new ChemboxExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new GeoExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new DisambiguationExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new CharacterCountExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new RedirectExtractor ());\n', ses);
+  http ('\x24group->addExtractor(new HomepageExtractor ());\n', ses);
+  http ('\x24jobEnWiki->addExtractionGroup(\x24group);\n', ses);
+  http ('\n', ses);
+  http ('\x24manager->execute(\x24jobEnWiki);\n', ses);
+  http ('?>\n', ses);
+  return string_output_string (ses);
+}
+;
