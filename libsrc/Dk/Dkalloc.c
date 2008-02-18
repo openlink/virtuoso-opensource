@@ -203,13 +203,13 @@ thr_free_alloc_cache (thread_t * thr)
       if (rc->rc_fill) \
 	{ \
 	  thing = (rc->rc_items[--(rc->rc_fill)]); \
-	thread_malloc_hits++; \
+	  HIT (thread_malloc_hits++);		   \
 	} \
       else \
 	{ \
 	  if (++rc->rc_n_empty % 1000 == 0) \
 	    _resource_adjust (rc); \
-	  thread_malloc_misses++; \
+	  HIT(thread_malloc_misses++);		\
 	} \
     } \
 }
@@ -288,6 +288,13 @@ dk_mutex_t *	mdbg_mtx;
 # define TRACE_ALLOC(stack, blk)
 # define FREE_ALLOC_TRACE(blk)
 #endif
+
+#ifdef MTX_METER /* count the alloc cache rates only in mtx meter mode */
+#define HIT(x) x
+#else
+#define HIT(x)
+#endif
+
 
 uint32 malloc_hits;
 uint32 malloc_misses;
@@ -454,11 +461,11 @@ dk_alloc (size_t c)
       if (!thing)
 	thing = resource_get_1 (memblock_set[NTH_MEMB][c_align], 1);
       if (thing)
-	malloc_hits++;
+	HIT (malloc_hits++);
       else
 	{
 	  thing = dk_alloc_reserve_malloc (ADD_END_MARK (c_align), 1);
-	  malloc_misses++;
+	  HIT(malloc_misses++);
 	}
     }
   else
