@@ -5406,6 +5406,8 @@ ssl_server_listen ()
 void
 dks_stop_burst_mode (dk_session_t *ses)
 {
+  if ( DKST_RUN == ses->dks_thread_state)
+    return;
   if (!prpc_disable_burst_mode /*&& !prpc_force_burst_mode*/)
     {
       mutex_enter (thread_mtx);
