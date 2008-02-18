@@ -652,6 +652,8 @@ start:
       hit->hit_elt = elt->next;
       return 1;
     }
+  if (!hit->hit_ht->ht_count)
+    return 0;
   for (;;)
     {
       if (hit->hit_inx >= hit->hit_ht->ht_actual_size)
