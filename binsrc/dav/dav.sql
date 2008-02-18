@@ -1339,8 +1339,8 @@ create procedure DAV_SET_HTTP_REQUEST_STATUS (in rc integer)
   if (rc = -25)	{ http_request_status ('HTTP/1.1 409 Conflict: can not create collection if a resource with same name exists');	return; }
   if (rc = -26)	{ http_request_status ('HTTP/1.1 409 Conflict: can not create resource if a collection with same name exists');	return; }
   if (rc = -24) return;
-  if (rc = -28)	{ http_request_status ('HTTP/1.1 599 Internal server error ' || __SQL_STATE);	return; }
-  if (rc = -29) { http_request_status ('HTTP/1.1 599 Internal server error ' || __SQL_STATE);	return; }
+  if (rc = -28)	{ http_request_status ('HTTP/1.1 599 Internal server error');	return; }
+  if (rc = -29) { http_request_status ('HTTP/1.1 599 Internal server error');	return; }
   if (rc = -41) { http_request_status ('HTTP/1.1 507 Insufficient storage');	return; }
   http_request_status ('HTTP/1.1 405 Method Not Allowed');
   return;
