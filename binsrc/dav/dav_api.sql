@@ -2146,22 +2146,32 @@ DAV_RES_UPLOAD_STRSES_INT (
 
   -- is rdf_sink folder?
   rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_graph');
-  if (not DB.DBA.is_empty_or_null (rdf_graph)) {
+  if (not DB.DBA.is_empty_or_null (rdf_graph))
+  {
+    declare exit handler for sqlstate '*'
+    {
+      goto _bad_content;
+    };
+
     -- get sponger parameter?
     content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = rc);
     rdf_sponger := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_sponger'), 'on');
-    if (RDF_SINK_UPLOAD (content, type, rdf_graph, rdf_sponger)) {
-      -- store RDF data in separate graph
+    -- upload into first (rdf_sink) graph
+    if (RDF_SINK_UPLOAD (content, type, rdf_graph, rdf_sponger))
+    {
+      -- store RDF data in separate (file) graph
       rdf_graph2 := 'http://local.virt' || path;
-      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (rdf_graph2);
+      SPARQL CLEAR GRAPH ?:rdf_graph2;
       RDF_SINK_UPLOAD (content, type, rdf_graph2, rdf_sponger);
 
       rdf_graph_resource_name := replace ( replace ( replace ( replace ( replace ( replace ( replace (rdf_graph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
       rdf_graph_resource_path := WS.WS.COL_PATH (c_id) || rdf_graph_resource_name;
-      if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R')))) {
+      if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R'))))
+      {
         -- RDF content
         host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-        if (host is null) {
+        if (host is null)
+        {
           host := sys_stat ('st_host_name');
           if (server_http_port () <> '80')
             host := host ||':'|| server_http_port ();
@@ -2172,8 +2182,8 @@ DAV_RES_UPLOAD_STRSES_INT (
         DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml'), null, null, 0, 0, 1);
       }
     }
+  _bad_content:;
   }
-
   return rc;
 
 unhappy_upload:
