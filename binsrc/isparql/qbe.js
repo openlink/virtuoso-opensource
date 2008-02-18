@@ -788,37 +788,25 @@ iSPARQL.QBE = function () {
 			var oldFilter = "";
 			var params = {
 				service:self.service.input.value,
-				query:'PREFIX owl: <http://www.w3.org/2002/07/owl#>' + '\n' +
-				  'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' + '\n' +
-				  'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
-				  '' + '\n' +
-				  'SELECT DISTINCT ?type ?uri ?label ?comment ?range' + '\n' +
-				((node.bound)?
-				  getFromQueryStr() +
-				  'WHERE {  ' + '\n' +
-				//              '  ?s rdf:type ?uri' + '\n' +
-				  '  { ' + '\n' +
-				  '    { ?s ?uri ?o }' + '\n' +
-				  '    union' + '\n' +
-				  '    { ?s a ?uri }' + '\n' +
-				  '  }' + '\n' +
-				  '    GRAPH <' + node.schema + '> {' + '\n' +
-				'':
-				  'FROM <' + node.schema + '>' + '\n' +
-				  'WHERE {  ' + '\n' +
-				  '        {  ' + '\n' +
-				'') + 
-				  '         ?uri rdf:type ?type .' + '\n' +
-				  '               FILTER (?type in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>)' + '\n' +
-				  '                    || ?type in (<http://www.w3.org/2002/07/owl#Class>)' + '\n' +
-				  '                    || ?type in (<http://www.w3.org/2000/01/rdf-schema#Class>)' + '\n' +
-				  '                    || ?type in (<http://www.w3.org/2002/07/owl#ObjectProperty>)' + '\n' +
-				  '                    || ?type in (<http://www.w3.org/2002/07/owl#DatatypeProperty>)' + '\n' +
-				  '                    || ?type in (<http://www.w3.org/2002/07/owl#InverseFunctionalProperty>))' + '\n' +
+				query:
+					'define get:soft "replacing" \n'+
+					'PREFIX owl: <http://www.w3.org/2002/07/owl#> \n' +
+					'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n' +
+					'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' +
+					'\n' +
+					'SELECT DISTINCT ?type ?uri ?label ?comment ?range \n' +
+					'FROM <' + node.schema + '> \n' +
+					'WHERE { \n ' +
+					'    		{\n ' +
+					'        { ?uri a ?type . FILTER (?type = <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>) } UNION\n' +
+					'        { ?uri a ?type . FILTER (?type = <http://www.w3.org/2002/07/owl#Class>) } UNION\n' +
+					'        { ?uri a ?type . FILTER (?type = <http://www.w3.org/2000/01/rdf-schema#Class>) } UNION\n' +
+					'        { ?uri a ?type . FILTER (?type = <http://www.w3.org/2002/07/owl#ObjectProperty>) } UNION\n' +
+					'        { ?uri a ?type . FILTER (?type = <http://www.w3.org/2002/07/owl#DatatypeProperty>) } UNION\n' +
+					'        { ?uri a ?type . FILTER (?type = <http://www.w3.org/2002/07/owl#InverseFunctionalProperty>) } }\n' +
 				  '         OPTIONAL { ?uri rdfs:label ?label } .' + '\n' +
 				  '         OPTIONAL { ?uri rdfs:comment ?comment } .' + '\n' +
 				  '         OPTIONAL { ?uri rdfs:range ?range } .' + '\n' +
-				  '  }' + '\n' +
 				  '}' + '\n' +
 				  'ORDER BY ?uri',
 				//default_graph_uri:node.li.uri,
@@ -846,151 +834,6 @@ iSPARQL.QBE = function () {
 			}
 			iSPARQL.QueryExec(params);
 		}, /* Schemas.Update */
-		WalkClick:function(node) { /* get in-domain-of and in-range-of; obsolete */
-		    if (node.children.length > 0) {
-		      ; //node.toggleState();
-		    } else {
-				var callback = function(data) {
-					var processed = [];
-					var JSONData = eval('(' + data + ')');
-					if (JSONData.results.bindings.length > 0) {
-						var Domains;
-						var Ranges;
-						var attr_inx = 0;
-						var objs = JSONData.results.bindings
-						for(var i = 0;i < objs.length; i++) {
-							if (node.uritype == 'class') { 
-								if (self.SchemaIsAttribute(objs[i])) {
-									nodetype = 'property_attr'; 
-								} else { nodetype = 'property_rel'; }
-							} else { var nodetype = 'class'; }
-							// The uri should be from the current schema
-							if (node.schema == objs[i].uri.value.substring(0,node.schema.length) && processed.find(objs[i].uri.value) == -1) {
-								if (objs[i].label) {
-									var label = objs[i].label.value;
-								} else {
-									var label = self.putPrefix('<' + objs[i].uri.value + '>').replace('<','').replace('>','');
-								}
-
-								if (objs[i].type && objs[i].type.value == 'http://www.w3.org/2000/01/rdf-schema#domain') {
-									if (!Domains) { 
-										Domains = node.createChild('in-domain-of',1,0); 
-										Domains.collapse();
-									}
-									var pnode = Domains;
-								} else {
-									if (!Ranges) { 
-										Ranges = node.createChild('in-range-of',1); 
-										Ranges.collapse();
-									}
-									var pnode = Ranges;
-								}
-
-								if (nodetype == 'property_attr') {
-									var leaf = pnode.createChild(label,0,attr_inx);
-									attr_inx++;
-								} else { var leaf = pnode.createChild(label,0); }
-								if (objs[i].comment) {
-									leaf.li.alt = objs[i].comment.value;
-									leaf.li.title = objs[i].comment.value;
-								}
-								leaf.uri = objs[i].uri.value;
-								leaf.uritype = nodetype;
-								leaf.schema = node.schema;
-								leaf.bound = node.bound;
-								leaf._gdElm.node = leaf;
-
-								self.svgsparql.ghostdrag.addSource(leaf._gdElm,self.Schemas.NodeDragProcess,self.Schemas.NodeDragDrop);
-
-								if (nodetype == 'class') { leaf.setImage('concept-icon-16'); }
-								else if (nodetype == 'property_attr') {	leaf.setImage('attribute-icon-16'); }
-								else { leaf.setImage('relation-icon-16'); }
-
-							}
-							processed.push(objs[i].uri.value)
-						}
-					}
-				}
-				var params = {
-					service:self.service.input.value,
-					query:'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' + '\n' +
-					'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
-					'' + '\n' +
-					'SELECT DISTINCT ?type ?uri ?label ?comment ?range' + '\n' +
-					((node.bound)?
-					getFromQueryStr() +
-					'WHERE {' + '\n' +
-					//'  ?s rdf:type ?uri' + '\n' +
-					'    { ' + '\n' +
-					'      { ?s ?uri ?o }' + '\n' +
-					'      union' + '\n' +
-					'      { ?s a ?uri }' + '\n' +
-					'    }' + '\n' +
-					'    GRAPH <' + node.schema + '> {' + '\n' +
-					'':
-					'FROM <' + node.schema + '>' + '\n' +
-					'WHERE {  ' + '\n' +
-					'        {  ' + '\n' +
-					'') + 
-					'    { ?uri rdfs:domain <' + node.uri + '> . }' + '\n' +
-					'      union' + '\n' +
-					'    { ?uri rdfs:range <' + node.uri + '> . }' + '\n' +
-					'    ?uri ?type <' + node.uri + '>' + '\n' +
-					'    OPTIONAL { ?uri rdfs:label ?label } .' + '\n' +
-					'    OPTIONAL { ?uri rdfs:comment ?comment } .' + '\n' +
-					'    OPTIONAL { ?uri rdfs:range ?range } .' + '\n' +
-					'  }' + '\n' +
-					'}' + '\n' +
-					'ORDER BY ?uri',
-					//default_graph_uri:node.li.schema,
-					default_graph_uri:'',
-					maxrows:0,
-					should_sponge:'',
-					format:'application/sparql-results+json',
-					errorHandler:function(xhr) {
-						var status = xhr.getStatus();
-						var response = xhr.getResponseText();
-						var headers = xhr.getAllResponseHeaders();
-						alert(response);
-					},
-					callback:callback
-				}
-				
-				if (node.uritype != 'class') {
-					params.query = 'PREFIX owl: <http://www.w3.org/2002/07/owl#>' + '\n' +
-					'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>' + '\n' +
-					'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
-					'' + '\n' +
-					'SELECT DISTINCT ?uri, ?label, ?comment, ?range' + '\n' +
-					((node.bound)?
-					getFromQueryStr() +
-					'WHERE {' + '\n' +
-					//              '  ?s rdf:type ?uri' + '\n' +
-					'    { ' + '\n' +
-					'      { ?s ?uri ?o }' + '\n' +
-					'      union' + '\n' +
-					'      { ?s a ?uri }' + '\n' +
-					'    }' + '\n' +
-					'    GRAPH <' + node.schema + '> {' + '\n' +
-					'':
-					'FROM <' + node.schema + '>' + '\n' +
-					'WHERE {  ' + '\n' +
-					'        {  ' + '\n' +
-					'') + 
-					'    { <' + node.uri + '> rdfs:domain ?uri . }' + '\n' +
-					'      union' + '\n' +
-					'    { <' + node.uri + '> rdfs:range ?uri . }' + '\n' +
-					'    <' + node.uri + '> ?type ?uri' + '\n' +
-					'    OPTIONAL { ?uri rdfs:label ?label } .' + '\n' +
-					'    OPTIONAL { ?uri rdfs:comment ?comment } .' + '\n' +
-					'    OPTIONAL { ?uri rdfs:range ?range } .' + '\n' +
-					'  }' + '\n' +
-					'}' + '\n' +
-					'ORDER BY ?type ?uri';
-				}
-				iSPARQL.QueryExec(params);
-			}
-		}, /* Schemas.WalkClick */
 		Refresh:function(force) { /* get a list of prefixes */
 			if (self.Schemas.Unbound.state == 0 && !force) { return; }
 			var node = self.Schemas.Unbound;
@@ -1017,21 +860,16 @@ iSPARQL.QBE = function () {
 			}
 			var params = {
 				service:self.service.input.value,
-				query:'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>' + '\n' +
-				'' + '\n' +
-				'SELECT DISTINCT ?g' + '\n' +
-				getFromQueryStr() +
-				'WHERE { ?s rdf:type ?o .' + '\n' +
-				' GRAPH ?g { ?o rdf:type ?type .' + '\n' +
-				'               FILTER (?type in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#Property>)' + '\n' +
-				'                    || ?type in (<http://www.w3.org/2002/07/owl#Class>)' + '\n' +
-				'                    || ?type in (<http://www.w3.org/2000/01/rdf-schema#Class>)' + '\n' +
-				'                    || ?type in (<http://www.w3.org/2002/07/owl#ObjectProperty>)' + '\n' +
-				'                    || ?type in (<http://www.w3.org/2002/07/owl#DatatypeProperty>)' + '\n' +
-				'                    || ?type in (<http://www.w3.org/2002/07/owl#InverseFunctionalProperty>))' + '\n' +
-				'  }' + '\n' +
-				'}' + '\n' +
-				'',
+				query:'PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n' +
+'SELECT DISTINCT ?g ' + getFromQueryStr() + '\n' +
+' WHERE { ?s a ?o .\n' +
+'    GRAPH ?g {\n' +
+'        { ?o a <http://www.w3.org/1999/02/22-rdf-syntax-ns#Property> . } UNION\n' +
+'        { ?o a <http://www.w3.org/2002/07/owl#Class> . } UNION\n' +
+'        { ?o a <http://www.w3.org/2000/01/rdf-schema#Class> . } UNION\n' +
+'        { ?o a <http://www.w3.org/2002/07/owl#ObjectProperty> . } UNION\n' +
+'        { ?o a <http://www.w3.org/2002/07/owl#DatatypeProperty> . } UNION\n' +
+'        { ?o a <http://www.w3.org/2002/07/owl#InverseFunctionalProperty> } } }',
 				//default_graph_uri:,
 				maxrows:0,
 				should_sponge:'',
@@ -1059,7 +897,7 @@ iSPARQL.QBE = function () {
 	
 	OAT.MSG.attach(self.Schemas.Tree, OAT.MSG.TREE_EXPAND, function(sender,msgcode,node) {
 		if (node.uritype) {
-			if (node.uritype == 'schema') { self.Schemas.Update(node); } else  { self.Schemas.WalkClick(node); }
+			self.Schemas.Update(node);
 		}
 		if (node == self.Schemas.Unbound) { self.Schemas.Refresh(true); }
 	});
