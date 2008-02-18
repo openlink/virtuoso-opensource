@@ -863,14 +863,14 @@ create procedure B3743(){
 
   dbg_obj_print('-========-');
   dbg_obj_print('the value alone                    :',aValue);
---  dbg_obj_print('serialized value                   :',serialize(aValue));
---  dbg_obj_print('serialized and deserialized value  :',deserialize(serialize (aValue)));
-  dbg_obj_print('result of registry_set             :',registry_set ('test',serialize(aValue)));
---  dbg_obj_print('result of registry_get             :',registry_get('test'));
-  retvalue := deserialize(registry_get ('test'));
+  dbg_obj_print('serialized value                   :',serialize(aValue));
+  dbg_obj_print('serialized and deserialized value  :',deserialize(serialize (aValue)));
+  dbg_obj_print('result of registry_set             :',registry_set ('B3743',serialize(aValue)));
+  dbg_obj_print('result of registry_get             :',registry_get ('B3743'));
+  retvalue := deserialize(registry_get ('B3743'));
   dbg_obj_print('deserialized result of registry_get:',retvalue);
 
-  if (aValue <> retvalue)
+  if (serialize(aValue) <> serialize(retvalue))
     signal ('ts001', 'registry serialized value different');
 };
 
