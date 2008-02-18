@@ -333,13 +333,6 @@ static int xpscn_NUMBER_double (void *yylval, xpp_t *xpp)
 }
 
 
-static int xpscn_XQDQ_NDQSTRING_DQ (void *yylval, xpp_t *xpp)
-{
-  xpyylval.box = box_dv_short_nchars (xpyytext+1, xpyyleng - 2);
-  return XQDQ_NDQSTRING_DQ;
-}
-
-
 %}
 
 	/* Top-level XQuery state */
