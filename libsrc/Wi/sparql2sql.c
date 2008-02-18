@@ -832,8 +832,11 @@ sparp_optimize_BOP_OR_filter_walk_rexpn (SPART *rexpn, so_BOP_OR_filter_ctx_t *c
     }
   if (SPAR_LIT == SPART_TYPE (rexpn))
     {
+      caddr_t lit_val = rexpn->_.lit.val;
+      if (!IS_STRING_DTP (DV_TYPE_OF (lit_val)))
+        return 1;
       ctx->bofc_can_be_literal++;
-      dk_set_push (&(ctx->bofc_strings), rexpn->_.lit.val);
+      dk_set_push (&(ctx->bofc_strings), lit_val);
       return 0;
     }
   return 1;
@@ -856,23 +859,23 @@ sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
         {
           int argctr;
           if (sparp_optimize_BOP_OR_filter_walk_lvar (filt->_.builtin.args[0], ctx))
-            break;
-          for (argctr = BOX_ELEMENTS (filt->_.builtin.args); 0 < argctr; argctr--)
+            goto cannot_optimize; /* see below */
+          for (argctr = BOX_ELEMENTS (filt->_.builtin.args); 0 < --argctr; /* no step */)
             {
               if (sparp_optimize_BOP_OR_filter_walk_rexpn (filt->_.builtin.args[argctr], ctx))
-                goto cannot_optimize;
+                goto cannot_optimize; /* see below */
             }
           return 0;
         }
       if (SAMETERM_L != filt->_.builtin.btype)
-        goto cannot_optimize;
+        goto cannot_optimize; /* see below */
       /* no break, try get optimization hints like it is BOP_EQ */
     case BOP_EQ: /* No break */
       sparp_rotate_comparisons_by_rank (filt);
       if (sparp_optimize_BOP_OR_filter_walk_lvar (filt->_.bin_exp.left, ctx))
-        goto cannot_optimize;
+        goto cannot_optimize; /* see below */
       if (sparp_optimize_BOP_OR_filter_walk_rexpn (filt->_.bin_exp.right, ctx))
-        goto cannot_optimize;
+        goto cannot_optimize; /* see below */
       return 0;
     default: ;
     }
