@@ -8460,12 +8460,24 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   declare get_proxy varchar;
   declare ret_dt_date, ret_dt_last_modified, ret_dt_expires datetime;
   declare ret_304_not_modified integer;
-  declare parser_rc int;
+  declare parser_rc, max_refresh int;
 
   -- dbg_obj_princ ('DB.DBA.SYS_HTTP_SPONGE_UP (', local_iri, get_uri, options, ')');
   new_origin_uri := cast (get_keyword_ucase ('get:uri', options, get_uri) as varchar);
   new_origin_login := cast (get_keyword_ucase ('get:login', options) as varchar);
   explicit_refresh := get_keyword_ucase ('get:refresh', options);
+  if (explicit_refresh is null)
+    {
+      max_refresh := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'MaxCacheExpiration');
+      if (max_refresh is not null)
+        {
+          max_refresh := atoi (max_refresh);
+	  if (max_refresh >= 0)
+	    explicit_refresh := max_refresh;
+	}
+    }
+  else if (isstring (explicit_refresh))
+    explicit_refresh := atoi (explicit_refresh);
   set isolation='serializable';
   whenever not found goto add_new_origin;
   select HS_ORIGIN_URI, HS_ORIGIN_LOGIN, HS_LAST_LOAD, HS_LAST_ETAG,
