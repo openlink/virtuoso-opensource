@@ -2259,11 +2259,19 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         SPART *expanded;
         ptrlong arg1_restrs = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
         ptrlong arg2_restrs = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg2);
-        if ((arg1_restrs & SPART_VARR_IS_REF) && (arg1_restrs & SPART_VARR_IS_REF))
+        if ((arg1_restrs & SPART_VARR_IS_REF) && (arg2_restrs & SPART_VARR_IS_REF))
           {
             expanded = spartlist (ssg->ssg_sparp, 3, BOP_EQ, arg1, arg2);
             ssg_print_bop_bool_expn (ssg, expanded, " = ", " equ (", top_filter_op, needed);
             return;
+          }
+        if ((arg1_restrs & SPART_VARR_IS_REF) || (arg2_restrs & SPART_VARR_IS_REF))
+          {
+            SPART *potential_literal = ((arg1_restrs & SPART_VARR_IS_REF) ? arg2 : arg1);
+            expanded = spartlist (ssg->ssg_sparp, 3, BOP_AND,
+              spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)isIRI_L, t_list (1, potential_literal)),
+              spartlist (ssg->ssg_sparp, 3, BOP_EQ, arg1, arg2) );
+            goto expanded_sameterm_ready; /* see below */
           }
         expanded = spartlist (ssg->ssg_sparp, 3, BOP_AND,
           spartlist (ssg->ssg_sparp, 3, BOP_EQ, arg1, arg2),
@@ -2290,6 +2298,8 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
                 spartlist (ssg->ssg_sparp, 2, BOP_NOT,
                   spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)BOUND_L, t_list (1, 
                       spartlist (ssg->ssg_sparp, 3, SPAR_BUILT_IN_CALL, (ptrlong)LANG_L, t_list (1, arg2))))) ) ) ) );
+
+expanded_sameterm_ready:
         ssg_print_bop_bool_expn (ssg, expanded, " AND ", " __and (", top_filter_op, needed);
         return;
       }
@@ -2415,7 +2425,7 @@ IN_op_fnt_found:
         else if (SSG_VALMODE_SQLVAL == arg1_native)
             ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_BLANK_REF (^{tree}^)", NULL, NULL, arg1, NULL_ASNAME);
         else
-          spar_sqlprint_error ("ssg_print_scalar_expn(): bad native type for isBLANK()");
+            spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isBLANK()");
       }
       return;
     case LANG_L:
@@ -2464,7 +2474,7 @@ IN_op_fnt_found:
         else if (SSG_VALMODE_SQLVAL == arg1_native)
             ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_URI_REF (^{tree}^)", NULL, NULL, arg1, NULL_ASNAME);
         else
-          spar_sqlprint_error ("ssg_print_scalar_expn(): bad native type for isURI()");
+            spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isURI()");
       }
       return;
     case isLITERAL_L:
@@ -2493,7 +2503,7 @@ IN_op_fnt_found:
         else if (SSG_VALMODE_SQLVAL == arg1_native)
             ssg_print_tmpl (ssg, arg1_native, " DB.DBA.RDF_IS_LITERAL (^{tree}^)", NULL, NULL, arg1, NULL_ASNAME);
         else
-          spar_sqlprint_error ("ssg_print_scalar_expn(): bad native type for isLITERAL()");
+            spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isLITERAL()");
       }
       return;
     case IRI_L:
@@ -2522,7 +2532,7 @@ IN_op_fnt_found:
             else if (SSG_VALMODE_SQLVAL == arg1_native)
               tmpl = " DB.DBA.RDF_STRSQLVAL_OF_SQLVAL (^{tree}^)";
             else
-              spar_sqlprint_error ("ssg_print_scalar_expn(): bad native type for IRI()");
+              spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for IRI()");
             ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
           }
         else if (SSG_VALMODE_LONG == needed)
@@ -2535,7 +2545,7 @@ IN_op_fnt_found:
             else if (SSG_VALMODE_SQLVAL == arg1_native)
               tmpl = " DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (^{tree}^)";
             else
-              spar_sqlprint_error ("ssg_print_scalar_expn(): bad native type for IRI()");
+              spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for IRI()");
             ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
           }
         else if (SSG_VALMODE_DATATYPE == needed)
@@ -2560,7 +2570,7 @@ IN_op_fnt_found:
             else if (SSG_VALMODE_BOOL == arg1_native)
               tmpl = " case (^{tree}^) when 0 then 'false' else 'true' end";
             else
-              spar_sqlprint_error ("ssg_print_scalar_expn(): bad native type for STR()");
+              spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for STR()");
             ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
           }
         else if (SSG_VALMODE_DATATYPE == needed)
@@ -2607,7 +2617,7 @@ IN_op_fnt_found:
         }
       return;
     default:
-      spar_sqlprint_error ("ssg_print_scalar_expn(): unsupported builtin");  
+      spar_sqlprint_error ("ssg_" "print_builtin_expn(): unsupported builtin");  
       return;
     }
 }
@@ -3237,13 +3247,10 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         }
       else if (SSG_VALMODE_LONG == needed)
         ssg_print_literal_as_long (ssg, tree);
-      else if (SSG_VALMODE_SQLVAL != needed)
-        {
-          ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, asname);
-          return;
-        }
-      else
+      else if (SSG_VALMODE_SQLVAL == needed)
         ssg_print_literal (ssg, NULL, tree);
+      else
+        ssg_print_tmpl (ssg, needed, needed->qmfShortOfUriTmpl, NULL, NULL, tree, asname);
       goto print_asname;
     case SPAR_RETVAL:
       {
@@ -4661,14 +4668,14 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, i
                           &ata_aliases, &ata_tables, &queued_row_filters );
           if (0 == BOX_ELEMENTS_0 (qmv->qmvColumns))
             continue;
-          asname = ssg_triple_retval_alias (ssg, tree, fld_ctr, 0, "(bad)");
+          asname = ssg_triple_retval_alias (ssg, tree, fld_ctr, 0, qmv->qmvColumns[0]->qmvcColumnName);
           colcode = asname;
                         if (0 <= dk_set_position_of_string (colcodes, colcode))
                           continue;
                         if (NULL != colcodes)
                           ssg_puts (", ");                        
                         ssg_print_tr_field_expn (ssg, qmv, sub_tabid, fmt, asname);
-                        t_set_push (&colcodes, colcode);
+          t_set_push (&colcodes, (caddr_t)colcode);
                       }
                     ssg_collect_aliases_tables_and_conds (qm->qmATables, qm->qmConds,
                       &ata_aliases, &ata_tables, &queued_row_filters );
@@ -4862,7 +4869,7 @@ ssg_print_triple_table_exp (spar_sqlgen_t *ssg, SPART *gp, SPART **trees, int tr
       return;
               }
 /* The rest of function is for single table of plain triples */
-  ssg_qr_uses_jso (ssg, qm, NULL);
+  ssg_qr_uses_jso (ssg, (ccaddr_t)qm, NULL);
   if (1 == pass)
     {
       ssg_putchar (' ');
