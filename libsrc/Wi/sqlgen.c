@@ -3123,6 +3123,28 @@ qn_next (data_source_t * qn)
 }
 
 
+void
+dfe_loc_ensure_out_cols (df_elt_t * dfe)
+{
+  /* if a remote table is a hash filler, it can be that its out cols are not out cols of the locus but they must be. */
+  if (DFE_TABLE != dfe->dfe_type || HR_FILL != dfe->_.table.hash_role)
+    return;
+  DO_SET (df_elt_t *, out, &dfe->_.table.out_cols)
+    {
+      DO_SET (locus_result_t *, lr, &dfe->dfe_locus->loc_results)
+	{
+	  if (box_equal (lr->lr_required->dfe_tree, out->dfe_tree))
+	    goto found;
+	}
+      END_DO_SET();
+      /* the out col was not in the results */
+      dfe_loc_result (dfe->dfe_locus, dfe->dfe_super, out);
+    found: ;
+    }
+  END_DO_SET();
+}
+
+
 query_t *
 sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 	       ST ** target_names, state_slot_t ***sel_out_ret)
@@ -3180,7 +3202,9 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 		continue;
 	      if (DFE_TABLE == dfe->dfe_type || DFE_DT == dfe->dfe_type)
 		{
-		  data_source_t * rts = sqlg_locus_rts (so, dfe, pre_code);
+		  data_source_t * rts;
+		  dfe_loc_ensure_out_cols (dfe);
+		  rts = sqlg_locus_rts (so, dfe, pre_code);
 		  t_set_push (&generated_loci, (void*) dfe->dfe_locus);
 		  pre_code = NULL;
 		  if (DFE_TABLE == dfe->dfe_type && HR_FILL == dfe->_.table.hash_role)
