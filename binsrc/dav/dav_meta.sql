@@ -181,6 +181,8 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
                 }
             }
         }
+      if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:bm="http://www.w3.org/2002/01/bookmark#"] exists (/rdf:rdf/bm:bookmark)', html_start))
+        return 'application/annotea+xml';
       if (xpath_eval ('[xmlns="http://usefulinc.com/ns/doap#"] exists (/project)', html_start) or
         xpath_eval ('[xmlns:rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://usefulinc.com/ns/doap#"] exists (/rdf:rdf/project)', html_start))
         return 'application/doap+rdf';
@@ -218,8 +220,6 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
         return 'application/rss+xml';
       if (xpath_eval ('[xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"]exists (/wsdl:definitions)', html_start))
         return 'application/wsdl+xml';
---      if (xpath_eval ('[xmlns:gd="http://schemas.google.com/g/2005"] exists (/entry)', html_start))
---        return 'application/google-kinds+xml';
       if (xpath_eval ('[xmlns="http://www.w3.org/2005/Atom" xmlns:gm="http://base.google.com/ns-metadata/1.0"] exists (/entry)', html_start))
         return 'application/google-base+xml';
       if (xpath_eval ('[xmlns:bpel="http://schemas.xmlsoap.org/ws/2003/03/business-process/"]exists (/bpel:process)', html_start))
@@ -1258,6 +1258,23 @@ errexit:
 }
 ;
 
+create function "DAV_EXTRACT_RDF_application/annotea+xml" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas, extras any;
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_application/annotea+xml (', orig_res_name, content, html_start, ')');
+  whenever sqlstate '*' goto errexit;
+  doc := xtree_doc (content, 0);
+  metas := vector (
+        'http://www.openlinksw.com/schemas/Annotea#Bookmark', 'declare namespace dc="http://purl.org/dc/elements/1.1/"; /*/*:Bookmark/@dc:title', 'Untitled',
+        'http://www.openlinksw.com/schemas/Annotea#Topic', 'declare namespace dc="http://purl.org/dc/elements/1.1/"; /*/*:Topic/@dc:title', 'Untitled'
+        );
+  extras := null;
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
+errexit:
+  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+}
+;
+
 create function "DAV_EXTRACT_RDF_application/google-kinds+xml" (in orig_res_name varchar, inout content any, inout html_start any)
 {
   declare doc, metas, extras any;
@@ -1900,7 +1917,7 @@ create function "DAV_EXTRACT_RDF_BY_METAS" (inout doc any, inout metas any, inou
 {
   declare res any;
   declare ctr, len integer;
-  --dbg_obj_princ ('DAV_EXTRACT_RDF_BY_METAS" (', doc, metas, extras, ')');
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_BY_METAS" (', doc, ')');
   xte_nodebld_init (res);
   whenever sqlstate '*' goto final;
   len := length (metas);
