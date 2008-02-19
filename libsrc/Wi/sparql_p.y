@@ -543,7 +543,9 @@ spar_describe_query	/* [7]*	DescribeQuery	 ::=  'DESCRIBE' ( VarOrIRIrefOrBackqu
 		$$ = spar_make_top (sparp_arg, DESCRIBE_L, 
                   $3,
                   spar_selid_pop (sparp_arg),
-		  where_gp, (SPART **)($6[0]), (caddr_t)($6[1]), (caddr_t)($6[2]) ); }
+		  where_gp, (SPART **)($6[0]), (caddr_t)($6[1]), (caddr_t)($6[2]) );
+		if ((SPART **)_STAR == $3)
+		  sparp_expand_top_retvals (sparp_arg, $$, 0 /* never cloned, hence 0 == safely_copy_all_vars */); }
 	;
 
 spar_describe_rset	/* ::=  ( VarOrIRIrefOrBackquoted+ | '*' )	*/

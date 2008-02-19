@@ -329,6 +329,8 @@ void sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * t
 char *artm_func_to_text (ao_func_t ao);
 const char *ammsc_name (int c);
 const char * bop_text (int bop);
+extern const char *cmp_op_text (int cmp);
+
 
 void cv_distinct (dk_set_t * code,
 		 state_slot_t * data, sql_comp_t * sc, jmp_label_t succ, jmp_label_t fail);

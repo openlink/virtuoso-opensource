@@ -3204,16 +3204,18 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
   declare rdf_type_iid IRI_ID;
   rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 1);
   res := dict_new ();
+  if (isinteger (consts))
+    return res;
   foreach (any c in consts) do
     {
       if (isiri_id (c))
         dict_put (subj_dict, c, 0);
     }
   all_subj_descs := dict_list_keys (subj_dict, 1);
-  gvector_sort (all_subj_descs, 1, 0, 0);
   all_s_count := length (all_subj_descs);
   if (0 = all_s_count)
     return res;
+  gvector_sort (all_subj_descs, 1, 0, 0);
   vectorbld_init (sorted_graphs);
   foreach (any g in graphs) do
     {
@@ -3403,6 +3405,8 @@ create function DB.DBA.RDF_TYPEMIN_OF_OBJ (in obj any) returns any
     return cast ('0101-01-01' as datetime);
   if (tag = __tag of rdf_box)
     return rdf_box ('', rdf_box_type (obj), 257, 0, 1);
+  if (tag = (__tag of varchar))
+    return '';
   return NULL; -- Nothing else can be compared hence no min.
 }
 ;
@@ -3419,6 +3423,8 @@ create function DB.DBA.RDF_TYPEMAX_OF_OBJ (in obj any) returns any
     return cast ('9999-12-30' as datetime);
   if (tag = __tag of rdf_box)
     return rdf_box ('\377\377\377\377\377\377', rdf_box_type (obj), 257, 0, 1);
+  if (tag = (__tag of varchar))
+    return '\377\377\377\377\377\377';
   return NULL; -- Nothing else can be compared hence no max.
 }
 ;
@@ -6942,6 +6948,9 @@ create procedure SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, in
 	      else
                 http ('>', ses);
 	    }
+          if (__tag of datetime = rdf_box_data_tag (_val))
+            __rdf_long_to_ttl (_val, ses);
+          else
 	  http_value (DB.DBA.RDF_SQLVAL_OF_LONG (_val), 0, ses);
           http ('</res:value></res:binding>', ses);
         }

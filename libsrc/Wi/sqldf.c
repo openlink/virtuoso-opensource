@@ -567,7 +567,7 @@ sqlo_df (sqlo_t * so, ST * tree)
       }
     case BOP_EQ: case BOP_LT: case BOP_LTE:
     case BOP_GT: case BOP_GTE: case BOP_LIKE:
-    case BOP_NULL:
+    case BOP_NEQ: case BOP_NULL:
       {
 	dfe = sqlo_new_dfe (so, DFE_BOP_PRED, tree);
 	dfe->_.bin.op = (int) tree->type;
@@ -2896,6 +2896,17 @@ sqlo_pred_contradiction (sqlo_t *so, df_elt_t *pred, int do_constant_check)
 	      (caddr_t) pred->_.bin.right->dfe_tree, NULL, NULL);
 	  switch (res)
 	    {
+	      case DVC_UNKNOWN:
+		  switch (pred->_.bin.op)
+		    {
+		      case BOP_EQ:
+		      case BOP_LT:
+		      case BOP_LTE:
+		      case BOP_GT:
+		      case BOP_GTE:
+			  return 1;
+		    }
+		  break;
 	      case DVC_LESS:
 		  switch (pred->_.bin.op)
 		    {

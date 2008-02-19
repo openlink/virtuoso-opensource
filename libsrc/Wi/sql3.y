@@ -2159,17 +2159,17 @@ scalar_exp_predicate
 comparison_predicate
 	: scalar_exp COMPARISON scalar_exp
 		{ BIN_OP ($$, $2, $1, $3);
-		  if ($$->type == BOP_NEQ)
+		  /*IvAn*/ if ($$->type == BOP_NEQ)
 		    {
 		      ST *cmp_tree = $$;
 		      $$->type = BOP_EQ;
 		      NEGATE ($$, cmp_tree);
-		    }
+		    }/* */
 		  }
 /*	| scalar_exp COMPARISON subquery
 		{
 		  if ($2 == BOP_NEQ)
-		    {
+		    
 		      ST *tmp = SUBQ_PRED (ALL_PRED, $1, $3, BOP_EQ, NULL);
 		      NEGATE ($$, tmp);
 		    }

@@ -1781,14 +1781,39 @@ again:
 		    }
 	      case IN_COMPARE:
 		    {
-		      int flag = cmp_boxes (QST_GET (qst, ins->_.cmp.left), QST_GET (qst, ins->_.cmp.right),
+		      int flag = cmp_boxes_safe (QST_GET (qst, ins->_.cmp.left), QST_GET (qst, ins->_.cmp.right),
 			  ins->_.cmp.left->ssl_sqt.sqt_collation, ins->_.cmp.right->ssl_sqt.sqt_collation);
-		      if (flag == DVC_UNKNOWN)
-			ins = INSTR_ADD_OFS (code_vec, ins->_.pred.unkn);
-		      else if (flag & (int) ins->_.cmp.op)
-			ins = INSTR_ADD_OFS (code_vec, ins->_.pred.succ);
+		      if (flag & (int) ins->_.cmp.op)
+			ins = INSTR_ADD_OFS (code_vec, ins->_.cmp.succ);
+		      else if (flag == DVC_UNKNOWN)
+			ins = INSTR_ADD_OFS (code_vec, ins->_.cmp.unkn);
 		      else
-			ins = INSTR_ADD_OFS (code_vec, ins->_.pred.fail);
+			ins = INSTR_ADD_OFS (code_vec, ins->_.cmp.fail);
+#ifdef CMP_DEBUG
+		      do {
+			  instruction_t * volatile unsafe_ins;
+			  int unsafe_flag = cmp_boxes (QST_GET (qst, prev_ins->_.cmp.left), QST_GET (qst, prev_ins->_.cmp.right),
+			    prev_ins->_.cmp.left->ssl_sqt.sqt_collation, prev_ins->_.cmp.right->ssl_sqt.sqt_collation);
+			  if (unsafe_flag == DVC_UNKNOWN)
+			    unsafe_ins = INSTR_ADD_OFS (code_vec, prev_ins->_.cmp.unkn);
+			  else if (unsafe_flag & (int) prev_ins->_.cmp.op)
+			    unsafe_ins = INSTR_ADD_OFS (code_vec, prev_ins->_.cmp.succ);
+			  else
+			    unsafe_ins = INSTR_ADD_OFS (code_vec, prev_ins->_.cmp.fail);
+			  if (ins != unsafe_ins)
+			    {
+			      fprintf (stderr, "\n%s:%d\n*** IN_COMPARE mismatch: unsafe is %d hence %s, safe is %d hence %s, cmp_op is %d,\n",
+				__FILE__, __LINE__,
+				unsafe_flag, ((unsafe_ins == INSTR_ADD_OFS (code_vec, prev_ins->_.cmp.succ)) ? "succ" : "not succ"),
+				flag, ((ins == INSTR_ADD_OFS (code_vec, prev_ins->_.cmp.succ)) ? "succ" : "not succ"),
+				(int) prev_ins->_.cmp.op );
+			      dbg_print_box (QST_GET (qst, prev_ins->_.cmp.left), stderr);
+			      fprintf (stderr, ", ");
+			      dbg_print_box (QST_GET (qst, prev_ins->_.cmp.right), stderr);
+			      fprintf (stderr, "\n");
+			    }
+			} while (0);
+#endif
 		      break;
 		    }
 	      case INS_CALL:
@@ -2105,6 +2130,8 @@ bop_comp_func (caddr_t * qst, void * _bop)
       switch (res)
 	{
 	case DVC_UNKNOWN:
+	  if (op == BOP_NEQ)
+	    return 1;
 	  return DVC_UNKNOWN;
 	case DVC_MATCH:
 	  if (op == BOP_EQ || op == BOP_LTE || op == BOP_GTE)

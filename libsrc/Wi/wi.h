@@ -100,8 +100,8 @@ typedef int (*key_cmp_t) (buffer_desc_t * buf, int pos, it_cursor_t * itc);
 #include "bitmap.h"
 
 
-#define IT_N_MAPS 64
-#define IT_N_MAPS_MASK 63
+#define IT_N_MAPS 256
+#define IT_N_MAPS_MASK 255
 
 struct it_map_s
 {
@@ -1240,14 +1240,15 @@ typedef struct ra_req_s
 
 /* comparison */
 
-/* for cmp <, <= ==, >, >= the test & 7 is true. For all else test & 7 == 0*/
-#define DVC_LESS 2
+/* for cmp <, <= ==, >, >= the test & 15 is true. For all else test & 15 == 0*/
 #define DVC_MATCH 1
+#define DVC_LESS 2
 #define DVC_GREATER 4
 #define DVC_DTP_LESS 2
 #define DVC_DTP_GREATER	4
-#define DVC_INDEX_END 8
-#define DVC_CMP_MASK 7 /* or of bits for eq, lt, gt */
+#define DVC_NOORDER 8
+#define DVC_INDEX_END 16
+#define DVC_CMP_MASK 15 /* or of bits for eq, lt, gt */
 #define DVC_UNKNOWN	64  /* comparison of SQL NULL */
 #define DVC_INVERSE(res) ((res) == DVC_LESS ? DVC_GREATER : ((res) == DVC_GREATER ? DVC_LESS : (res)))
 
@@ -1258,9 +1259,10 @@ typedef struct ra_req_s
 #define CMP_LTE 3
 #define CMP_GT 4
 #define CMP_GTE 5
-#define CMP_LIKE 8
-#define CMP_NULL 16
-#define CMP_NON_NULL 24
+#define CMP_NEQ 14
+#define CMP_LIKE 16
+#define CMP_NULL 32
+#define CMP_NON_NULL 48
 
 
 #define NUM_COMPARE(n1,n2) \

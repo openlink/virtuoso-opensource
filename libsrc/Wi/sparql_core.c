@@ -700,6 +700,7 @@ spar_selid_push_reused (sparp_t *sparp, caddr_t selid)
 {
   t_set_push (&(sparp->sparp_env->spare_selids), selid );
   spar_dbg_printf (("spar_selid_push_reused () pushes %s\n", selid));
+  return selid;
 }
 
 

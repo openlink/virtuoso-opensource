@@ -38,7 +38,9 @@ int cmp_dv_box (caddr_t dv, caddr_t box);
 
 int cmp_double (double x1, double x2, double epsilon);
 
-int cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2);
+extern int cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2);
+extern int cmp_boxes_safe (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2);
+extern int bool_bop_boxes (int bop, caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2);
 
 caddr_t box_add (caddr_t l, caddr_t r, caddr_t * qst, state_slot_t * target);
 

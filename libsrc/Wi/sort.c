@@ -63,6 +63,18 @@ setp_comp_array (setp_node_t * setp, caddr_t * qst, caddr_t * left, state_slot_t
 	  else
 	    rc = DVC_GREATER;
 	}
+      else if (DVC_NOORDER == rc)
+        rc = DVC_UNKNOWN;
+/*
+        {
+	  dtp_t dtp1 = DV_TYPE_OF (left[inx]);
+	  dtp_t dtp2 = DV_TYPE_OF (right_v);
+          if (dtp1 < dtp2)
+            rc = DVC_LESS;
+          else if (dtp1 > dtp2)
+            rc = DVC_GREATER;
+	}
+*/
       if (is_rev && ORDER_DESC == (ptrlong) is_rev->data)
 	rc = DVC_INVERSE (rc);
       if (rc != DVC_MATCH)

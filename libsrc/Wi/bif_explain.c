@@ -210,8 +210,8 @@ artm_print:
 		stmt_printf ((" DISTINCT "));
 		ssl_array_print (((hash_area_t *) in->_.pred.cmp)->ha_slots);
 	      }
-	    stmt_printf ((") then %d else %d",
-		in->_.pred.succ, in->_.pred.fail));
+	    stmt_printf ((") then %d else %d unkn %d",
+		in->_.pred.succ, in->_.pred.fail, in->_.pred.unkn));
 	    break;
 	  }
 
@@ -219,10 +219,10 @@ artm_print:
 	  {
 	    stmt_printf (("if ("));
 	    ssl_print (in->_.cmp.left);
-	    stmt_printf ((" %d ", (int) in->_.cmp.op));
+	    stmt_printf ((" %d(%s) ", (int) in->_.cmp.op, cmp_op_text (in->_.cmp.op)));
 	    ssl_print (in->_.cmp.right);
-	    stmt_printf ((") then %d else %d",
-			  in->_.cmp.succ, in->_.cmp.fail));
+	    stmt_printf ((") then %d else %d unkn %d",
+			  in->_.cmp.succ, in->_.cmp.fail, in->_.cmp.unkn));
 	    break;
 	  }
 	case INS_SUBQ:
@@ -346,7 +346,7 @@ artm_print:
 }
 
 
-static char *
+const char *
 cmp_op_text (int cmp)
 {
   switch (cmp)

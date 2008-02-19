@@ -456,7 +456,212 @@ cmp_dv_box (caddr_t dv, caddr_t box)
 
 
 int
+cmp_boxes_safe (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2)
+{
+  int inx, n1, n2;
+  NUMERIC_VAR (dn1);
+  NUMERIC_VAR (dn2);
+  dtp_t dtp1, dtp2, res_dtp;
+
+  if ((IS_BOX_POINTER (box1) && DV_RDF == box_tag (box1))  || (IS_BOX_POINTER (box2) && DV_RDF == box_tag (box2)))
+    return rdf_box_compare (box1, box2);
+
+  NUM_TO_MEM (dn1, dtp1, box1);
+  NUM_TO_MEM (dn2, dtp2, box2);
+
+  if (dtp1 == DV_DB_NULL || dtp2 == DV_DB_NULL)
+    return DVC_UNKNOWN;
+  if (n_coerce ((caddr_t) & dn1, (caddr_t) & dn2, dtp1, dtp2, &res_dtp))
+    {
+      switch (res_dtp)
+	{
+	case DV_LONG_INT:
+	  return (NUM_COMPARE (*(boxint *) &dn1, *(boxint *) &dn2));
+	case DV_SINGLE_FLOAT:
+	  return cmp_double (*(float *) &dn1, *(float *) &dn2, FLT_EPSILON);
+	case DV_DOUBLE_FLOAT:
+	  return cmp_double (*(double *) &dn1, *(double *) &dn2, DBL_EPSILON);
+	case DV_NUMERIC:
+	  return (numeric_compare_dvc ((numeric_t) &dn1, (numeric_t) &dn2));
+	}
+      GPF_T1("cmp_boxes(): unsupported datatype returned by n_coerce");
+    }
+      if (!IS_BOX_POINTER (box1) || !IS_BOX_POINTER (box2))
+	return DVC_NOORDER;
+
+      if (DV_COMPOSITE == dtp1 && DV_COMPOSITE == dtp2)
+	return (dv_composite_cmp ((db_buf_t) box1, (db_buf_t) box2, collation1));
+      if (DV_IRI_ID == dtp1 && DV_IRI_ID == dtp2)
+	return NUM_COMPARE (unbox_iri_id (box1), unbox_iri_id (box2));
+      n1 = box_length (box1);
+      n2 = box_length (box2);
+
+      if ((dtp1 == DV_DATETIME && dtp2 == DV_BIN) ||
+	(dtp2 == DV_DATETIME && dtp1 == DV_BIN))
+	dtp1 = dtp2 = DV_DATETIME;
+
+      switch (dtp1)
+	{
+	case DV_STRING:
+	  n1--;
+	  break;
+	case DV_LONG_WIDE:
+	  dtp1 = DV_WIDE;
+	case DV_WIDE:
+	  n1 = n1 / sizeof (wchar_t) - 1;
+	  break;
+	case DV_LONG_BIN:
+	  dtp1 = DV_BIN;
+	  collation1 = collation2 = NULL;
+	  break;
+#ifndef O12
+	case DV_G_REF_CLASS:
+	  dtp1 = DV_G_REF;
+	  n1 -= 4;
+	  collation1 = collation2 = NULL;
+	  break;
+#endif
+	case DV_DATETIME:
+	  dtp1 = DV_BIN;
+	  n1 = DT_COMPARE_LENGTH;
+	  collation1 = collation2 = NULL;
+	  break;
+	default:
+	  collation1 = collation2 = NULL;
+	}
+      switch (dtp2)
+	{
+	case DV_STRING:
+	  n2--;
+	  if (collation1)
+	    {
+	      if (collation2 && collation1 != collation2)
+		collation1 = default_collation;
+	    }
+	  else
+	    collation1 = collation2;
+	  break;
+	case DV_LONG_BIN:
+	  dtp2 = DV_BIN;
+	  collation1 = NULL;
+	  break;
+#ifndef O12
+	case DV_G_REF_CLASS:
+	  dtp2 = DV_G_REF;
+	  collation2 = NULL;
+	  n2 -= 4;
+	  break;
+#endif
+	case DV_DATETIME:
+	  dtp2 = DV_BIN;
+	  n2 = DT_COMPARE_LENGTH;
+	  collation1 = NULL;
+	  break;
+	case DV_LONG_WIDE:
+	  dtp2 = DV_WIDE;
+	case DV_WIDE:
+	  n2 = n2 / sizeof (wchar_t) - 1;
+	  break;
+	default:
+	  collation1 = NULL;
+	}
+
+      if (IS_WIDE_STRING_DTP (dtp1) && IS_STRING_DTP (dtp2))
+	return compare_wide_to_narrow ((wchar_t *) box1, n1, (unsigned char *) box2, n2);
+      if (IS_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
+	{
+	  int res = compare_wide_to_narrow ((wchar_t *)box2, n2, (unsigned char *) box1, n1);
+	  return (res == DVC_LESS ? DVC_GREATER :
+	      (res == DVC_GREATER ? DVC_LESS : res));
+	}
+      if (IS_WIDE_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
+	{
+          inx = 0;
+	  while (1)
+	    {
+	      if (inx == n1)	/* box1 in end? */
+		{
+		  if (inx == n2)
+		    return DVC_MATCH;  /* box2 of same length */
+		  else
+		    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
+		}
+
+	      if (inx == n2)
+		return DVC_GREATER;	/* box2 in end (but not box1) */
+
+	      if ((((wchar_t *) box1)[inx]) < (((wchar_t *) box2)[inx]))
+		return DVC_LESS;
+
+	      if ((((wchar_t *) box1)[inx]) > (((wchar_t *) box2)[inx]))
+		return DVC_GREATER;
+
+	      inx++;
+	    }
+	}
+
+  if ((IS_STRING_DTP (dtp1) && IS_STRING_DTP (dtp2)) || ((DV_BIN == dtp1) && (DV_BIN == dtp2)))
+    {
+      inx = 0;
+      if (collation1 && !collation1->co_is_wide)
+	{
+	  while (1)
+	    {
+	      if (inx == n1)	/* box1 in end? */
+		{
+		  if (inx == n2)
+		    return DVC_MATCH;  /* box2 of same length */
+		  else
+		    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
+		}
+
+	      if (inx == n2)
+		return DVC_GREATER;	/* box2 in end (but not box1) */
+
+	      if (collation1->co_table[(dtp_t) box1[inx]] < collation1->co_table[(dtp_t) box2[inx]])
+		return DVC_LESS;
+
+	      if (collation1->co_table[(dtp_t) box1[inx]] > collation1->co_table[(dtp_t) box2[inx]])
+		return DVC_GREATER;
+
+	      inx++;
+	    }
+	}
+      else
+	{
+	  while (1)
+	    {
+	      if (inx == n1)	/* box1 in end? */
+		{
+		  if (inx == n2)
+		    return DVC_MATCH;  /* box2 of same length */
+		  else
+		    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
+		}
+
+	      if (inx == n2)
+		return DVC_GREATER;	/* box2 in end (but not box1) */
+
+	      if (((dtp_t) box1[inx]) < ((dtp_t) box2[inx]))
+		return DVC_LESS;
+
+	      if (((dtp_t) box1[inx]) > ((dtp_t) box2[inx]))
+		return DVC_GREATER;
+
+	      inx++;
+	    }
+	}
+    }
+  return DVC_NOORDER;
+}
+
+#ifdef CMP_MOREDEBUG
+int
+cmp_boxes_old (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2)
+#else
+int
 cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2)
+#endif
 {
   NUMERIC_VAR (dn1);
   NUMERIC_VAR (dn2);
@@ -470,7 +675,6 @@ cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *col
 
   if (dtp1 == DV_DB_NULL || dtp2 == DV_DB_NULL)
     return DVC_UNKNOWN;
-
   if (n_coerce ((caddr_t) & dn1, (caddr_t) & dn2, dtp1, dtp2, &res_dtp))
     {
       switch (res_dtp)
@@ -656,6 +860,25 @@ cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *col
     }
   return DVC_LESS;		/* default, should not happen */
 }
+
+#ifdef CMP_MOREDEBUG
+int
+cmp_boxes (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t *collation2)
+{
+  int res_safe = cmp_boxes_safe (box1, box2, collation1, collation2);
+  int res_old = cmp_boxes_old (box1, box2, collation1, collation2);
+  if (res_safe != res_old)
+    {
+      fprintf (stderr, "\n%s:%d\n*** cmp_box error: now it is %d, safe is %d: ",
+      __FILE__, __LINE__, res_old, res_safe );
+      dbg_print_box (box1, stderr);
+      fprintf (stderr, ", ");
+      dbg_print_box (box2, stderr);
+      fprintf (stderr, "\n");
+    }
+  return res_old;
+}
+#endif
 
 typedef int (*numeric_bop_t) (numeric_t z, numeric_t x, numeric_t y);
 

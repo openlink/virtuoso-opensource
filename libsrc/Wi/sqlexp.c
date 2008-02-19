@@ -853,7 +853,7 @@ cv_compare (dk_set_t * code, int bop,
 
   switch (bop)
     {
-    case BOP_EQ: case BOP_LT: case BOP_GT: case BOP_LTE: case BOP_GTE:
+    case BOP_EQ: case BOP_LT: case BOP_GT: case BOP_LTE: case BOP_GTE: case BOP_NEQ:
       {
 	NEW_INSTR (ins, IN_COMPARE, code);
 	ins->_.cmp.succ = succ;
@@ -865,6 +865,11 @@ cv_compare (dk_set_t * code, int bop,
 	CHECK_CMP_SSL(l, bop_text (bop));
 	CHECK_CMP_SSL(r, bop_text (bop));
 	cv_bop_params (l, r, bop_text (bop));
+/*#ifdef CMP_DEBUG
+	if ((DVC_MATCH & (int)(ins->_.cmp.op)) && (unkn == succ))
+	  fprintf (stderr, "\n%s:%d:*** weird args of cv_compare(): DVC_MATCH bit contradicts with unkn == succ\n",
+	    __FILE__, __LINE__ );
+#endif*/
 	break;
       }
     default:

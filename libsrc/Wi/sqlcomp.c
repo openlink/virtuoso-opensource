@@ -657,6 +657,8 @@ bop_to_dvc (int op)
       return CMP_GT;
     case BOP_EQ:
       return CMP_EQ;
+    case BOP_NEQ:
+      return CMP_NEQ;
     case BOP_LIKE:
       return CMP_LIKE;
     case BOP_NULL:
