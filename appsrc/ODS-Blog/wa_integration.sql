@@ -272,7 +272,7 @@ create method wa_new_inst_from_old_blog(in login varchar, in old_blogid varchar)
     num := (select count(*) from BLOG.DBA.SYS_BLOG_INFO where BI_OWNER = uid);
   }
 
-  -- determine old blog phisical path in DAV
+  -- determine old blog physical path in DAV
   declare old_p_path any;
   old_p_path := (select BI_P_HOME from BLOG.DBA.SYS_BLOG_INFO where BI_BLOG_ID = old_blogid);
 
@@ -299,7 +299,7 @@ create method wa_new_inst_from_old_blog(in login varchar, in old_blogid varchar)
   insert into DB.DBA.WA_INSTANCE (WAI_NAME, WAI_TYPE_NAME, WAI_INST, WAI_DESCRIPTION)
     values (self.wa_name, 'WEBLOG2', self, descr);
 
-  -- determine new blog phisical path in DAV
+  -- determine new blog physical path in DAV
   declare new_p_path, vhosts any;
   new_p_path := (select BI_P_HOME from BLOG.DBA.SYS_BLOG_INFO where BI_BLOG_ID = self.blogid);
 
@@ -648,7 +648,7 @@ create procedure DB.DBA.BLOG2_GET_USER_ACCESS(in blogid varchar, in usr varchar,
         _real_pwd := (select pwd_magic_calc(U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_ID = _user_id);
         if(pwd <> _real_pwd) return 0;
       }
-      -- if it's registered user - check his role agains current blog
+      -- if it's registered user - check his role against current blog
       -- if several roles assigned to one user - use the best one (minimum value)
       _role := (select min(WAM_MEMBER_TYPE) from DB.DBA.WA_MEMBER
   where WAM_STATUS <= 2 and WAM_USER = _user_id and WAM_INST = _wai_name
@@ -771,7 +771,7 @@ create procedure DB.DBA.BLOG2_GEMS_AUTH(in realm varchar) {
       return 1;
     }
   }
-  vsp_auth_get('Weblog authentification',
+  vsp_auth_get('Weblog authentication',
                domain,
                md5(datestring (now ())),
                md5('IfYouWantSomethingDoneDoItYourself'),
@@ -889,7 +889,7 @@ create method wa_addition_instance_urls () for wa_blog2 {
 
 create procedure BLOG2_UPGRADE_FROM_BLOG ()
 {
-  -- collect all existings blog's ids and owner's ids
+  -- collect all existing blog's ids and owner's ids
   declare _blogs any;
 
   if (registry_get ('__BLOG2_UPGRADE_FROM_BLOG1') = 'done')
@@ -1546,11 +1546,11 @@ create procedure DB.DBA.BLOG2_MOBLOG_PROCESS_MSG(in _caller_user_name varchar, i
       if (_role is null or _role not in (1,2))
         return;
 
-      -- blog procesing starts
+      -- blog processing starts
 
     blog_processing:
 
-      -- if _post_id is determinined - create new comment to message
+      -- if _post_id is determined - create new comment to message
       if(_post_id is not null)
         goto new_comment;
       -- else - new message creation (one message for each attachment)
@@ -1587,8 +1587,8 @@ create procedure DB.DBA.BLOG2_MOBLOG_PROCESS_MSG(in _caller_user_name varchar, i
 	  _publ := 0;
 	  if (_state = 'mob-pub')
 	    {
-	        -- if auto creation of blog is allowed (even if this mail conatins comment to some post_id)
-		-- place attached recources in corresponded blog physical home and create new blog
+	        -- if auto creation of blog is allowed (even if this mail contains comment to some post_id)
+		-- place attached resources in corresponded blog physical home and create new blog
 		secret := get_keyword ('MoblogAutoSecret', _opts, '');
 		if (length (secret) = 0 or regexp_match ('([[:space:]]|^)'||secret||'([[:space:]]|\$)', subseq (_mbody, 0, 10000))
 		    is not null)

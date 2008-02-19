@@ -193,8 +193,11 @@
     <v:variable name="cm_ctr" type="int" default="0" persist="temp" />
     <v:variable name="official_host" type="varchar" default="null" persist="temp" />
     <v:variable name="official_host_label" type="varchar" default="null" persist="temp" />
-    <v:variable name="openid_sig" type="varchar" default="null" persist="temp" param-name="oid_sig"/>
-    <v:variable name="openid_key" type="varchar" default="null" persist="temp" param-name="oid_key"/>
+    <v:variable name="openid_identity" type="varchar" default="null" persist="temp" param-name="openid.identity"/>
+    <v:variable name="openid_sig" type="varchar" default="null" persist="temp" param-name="openid.sig"/>
+    <v:variable name="openid_key" type="varchar" default="null" persist="temp" param-name="openid.assoc_handle"/>
+    <v:variable name="openid_mail" type="varchar" default="null" persist="temp" param-name="openid.sreg.email"/>
+    <v:variable name="openid_name" type="varchar" default="null" persist="temp" param-name="openid.sreg.fullname"/>
     <v:variable name="blog_iri" type="varchar" default="null" persist="temp" />
 
     <!-- eRDF data -->
@@ -6685,7 +6688,7 @@ window.onload = function (e)
     </td>
     <td>
         This means spam probability rate, a float number between 0 and 1.
-        The comments having spam probability rate bellow that number
+        The comments having spam probability rate below that number
         will be published automatically, otherwise they will be queued for manual approval.
     </td>
         </tr>
@@ -8431,7 +8434,7 @@ window.onload = function (e)
 			  <v:validator test="regexp" regexp="^(-)?[0-9]+$" message="Number is expected" runat='client'/>
 		      </v:text>
                   </td>
-                  <th>Default max post retransmitions</th>
+                  <th>Default max post retransmissions</th>
                   <td>
 		      <v:text xhtml_class="textbox" name="item_retr1" value="--self.item_retr">
 			  <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat='client'/>

@@ -81,8 +81,8 @@
     <v:variable name="stock_img_loc" type="varchar" default="'/weblog/public/images/'"/>
     <v:variable name="custom_img_loc" type="varchar" default="null"/>
     <v:variable name="last_date" type="date" default="null" persist="temp"/>
-    <v:variable name="score_ratio" type="float" defaut="1" />
-    <v:variable name="s_tag_is_qry" type="int" defaut="0" param-name="tag-is-qry"/>
+    <v:variable name="score_ratio" type="float" default="1" />
+    <v:variable name="s_tag_is_qry" type="int" default="0" param-name="tag-is-qry"/>
     <v:variable name="blog_iri" type="varchar" default="null" persist="temp" />
     <v:variable name="chost" type="varchar" default="''"/> <!-- CNAME of the host -->
     <v:variable name="owner_name" type="varchar" default="null" persist="temp" />
@@ -707,7 +707,7 @@
                           <v:item value="//i" name="text in italic"/>
                           <v:item value="//p[b or i or u or s or small or big]/*" name="formatting"/>
                           <v:item value="//p[b or i or u or s or small or big]/ancestor::*" name="section with formatting"/>
-                          <v:item value="//*[@class]" name="css formated sections"/>
+                          <v:item value="//*[@class]" name="css formatted sections"/>
                           <v:item value="//table[.//tr/td]" name="tables"/>
                           <v:item value="//img[@src]" name="images"/>
                           <v:item value="//p[img[@src]]" name="sections with images"/>

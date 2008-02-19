@@ -42,10 +42,12 @@ create procedure blog_comment_iri (in blog_id varchar, in post_id varchar, in ci
 
 create procedure ods_weblog_scot_init (in inst_id int)
 {
-  for select BT_POST_ID, BT_TAGS from BLOG.DBA.BLOG_TAG, BLOG.DBA.SYS_BLOG_INFO, DB.DBA.WA_INSTANCE
+  declare iri any;
+  for select BT_BLOG_ID, BT_POST_ID, BT_TAGS from BLOG.DBA.BLOG_TAG, BLOG.DBA.SYS_BLOG_INFO, DB.DBA.WA_INSTANCE
     where BT_BLOG_ID = BI_BLOG_ID and BI_WAI_NAME = WAI_NAME and WAI_ID = inst_id do
     {
-      scot_tags_insert (inst_id, BT_POST_ID, BT_TAGS);
+      iri := blog_post_iri (BT_BLOG_ID, BT_POST_ID);
+      scot_tags_insert (inst_id, iri, BT_TAGS);
     }
 }
 ;

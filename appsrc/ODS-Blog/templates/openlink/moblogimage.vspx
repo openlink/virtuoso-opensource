@@ -38,7 +38,7 @@
     http_rewrite();
     if(_blog_access = 0) {
       http_header('Content-Type: text/plain\r\n');
-      http('You have no acces to this blog...');
+      http('You have no access to this blog...');
       goto end_block;
     }
     declare rc any;

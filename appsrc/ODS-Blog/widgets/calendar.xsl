@@ -1166,14 +1166,14 @@
 	    if (self.show_comment_input)
 	      {
 	  ?>
-	  <![CDATA[
+	  <!--[CDATA[
 	  <script type='text/javascript' src='/weblog/public/scripts/openid.js'></script>
-	  ]]>
+	  ]]-->
           <table class="postcomment" border="0">
             <tr>
               <th>Name</th>
               <td>
-                <v:text xhtml_class="textbox" name="name1" value="" xhtml_size="50" error-glyph="*" xhtml_id="name1">
+                <v:text xhtml_class="textbox" name="name1" value="--coalesce (control.ufl_value, self.openid_name)" xhtml_size="50" error-glyph="*" xhtml_id="name1">
 		    <v:validator test="length" min="2" max="120" message="No name entered" />
 		    <v:before-render>
 			control.ufl_value := BLOG..blog_utf2wide (control.ufl_value);
@@ -1185,7 +1185,8 @@
             <tr>
               <th>Email</th>
               <td>
-                <v:text xhtml_class="textbox" name="email1" value="" xhtml_size="50" error-glyph="*" xhtml_id="email1">
+		  <v:text xhtml_class="textbox" name="email1" value="--coalesce (control.ufl_value, self.openid_mail)"
+		      xhtml_size="50" error-glyph="*" xhtml_id="email1">
                   <v:validator test="regexp" regexp="[^@]+@([^\.]+.)*[^\.]+" message="Invalid e-mail address" />
                 </v:text>
               </td>
@@ -1193,21 +1194,124 @@
               </td>
             </tr>
             <tr>
-              <th>Web Site</th>
+              <th>OpenID</th>
 	      <td id='outerbox' style='padding: 0.4em; margin-left: 100px; margin-right: 100px; width: auto;' nowrap="true">
+		  <v:text name="oid_sig" value="--self.openid_sig" type="hidden" xhtml_id="oid_sig">
+		      <v:on-init><![CDATA[
+		      if (get_keyword ('openid.mode', self.vc_event.ve_params) = 'id_res')
+		        {
+                          declare rc int;
+			  declare k any;
+			  k := (select SS_KEY from OPENID..SERVER_SESSIONS where SS_HANDLE = self.openid_key);
+			  rc := openid..check_signature (http_request_get ('QUERY_STRING')||
+			  	sprintf ('&mac_key=%U', cast (k as varchar)));
+			  if (rc = 0)
+			    {
+			      self.openid_sig := null;
+			      self.vc_error_message := 'The OpenID identity verification failed.';
+			      self.vc_is_valid := 0;
+			      return;
+			    }
+			  self.openid_key := cast (k as varchar);
+                          self.openid_sig := http_request_get ('QUERY_STRING');
+			}
+		      if (get_keyword ('openid.mode', self.vc_event.ve_params) = 'cancel')
+		        {
+			  self.openid_sig := null;
+			  self.vc_error_message := 'The OpenID identity verification failed.';
+			  self.vc_is_valid := 0;
+			}
+			]]></v:on-init>
+		  </v:text>
 		  <v:text name="oid_key" value="--self.openid_key" type="hidden" xhtml_id="oid_key" />
-		  <v:text name="oid_sig" value="--self.openid_sig" type="hidden" xhtml_id="oid_sig" />
 		  <span id='img'>
-		      <img src="<?V case when length (self.openid_sig) then '/weblog/public/images/login-bg.gif' else '' end ?>"
+		      <img src="/weblog/public/images/login-bg.gif"
 			  width="16" height="16" hspace="1"
-			  style="<?V case when length (self.openid_sig) then '' else 'display: none;' end ?>" />
-		  </span>
-		  <v:text xhtml_class="textbox" name="openid_url" value="" xhtml_size="50" xhtml_id="openid_url"/>
-		  <input type='button' value='Verify' id='verify_button' onclick="javascript: onClickVerify(event);"
-		      class="textbox"
 		      />
+		  </span>
+		  <v:text xhtml_class="textbox" name="openid_url" value="--self.openid_identity"
+		      xhtml_size="50" xhtml_id="openid_url"/>
+		  <v:button value='Verify' xhtml_id='verify_button' xhtml_class="textbox" action="simple">
+		      <v:on-post><![CDATA[
+ declare url, ret, cnt, oi_srv, oi_delegate, oi_ident, this_page, xt, hdr, host, oi_mode any;
+ declare setup_url, oi_handle, trust_root, oi_sig, oi_signed, oi_key varchar;
+ declare ses, flds, check_immediate any;
+
+ host := http_request_header (lines, 'Host');
+
+ this_page := 'http://' || host || http_path () || sprintf ('?id=%s&cmf=1', self.postid);
+ trust_root := 'http://' || host;
+ oi_ident := self.openid_url.ufl_value;
+ if (oi_ident is not null)
+   {
+     url := trim(oi_ident);
+     declare exit handler for sqlstate '*'
+     {
+        self.vc_error_message := 'The URL cannot be retrieved';
+        self.vc_is_valid := 0;
+         return;
+     };
+     if (not length (url) or url not like 'http%://%')
+       {
+         self.vc_is_valid := 0;
+         self.vc_error_message := 'Invalid URL';
+         return;
+       }
+    again:
+     hdr := null;
+     cnt := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>hdr);
+
+     if (hdr [0] like 'HTTP/1._ 30_ %')
+       {
+         declare loc any;
+	 loc := http_request_header (hdr, 'Location', null, null);
+	 url := WS.WS.EXPAND_URL (url, loc);
+         oi_ident := url;
+	 goto again;
+       }
+
+     xt := xtree_doc (cnt, 2);
+
+     oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
+     oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+
+     if (oi_srv is null)
+       {
+         self.vc_is_valid := 0;
+         self.vc_error_message := 'The OpenID server cannot be located';
+         return;
+       }
+
+     if (oi_delegate is not null)
+       oi_ident := oi_delegate;
+
+     oi_handle := null;
+     oi_key := '';
+     check_immediate := sprintf ('%s?openid.mode=associate', oi_srv);
+     cnt := http_client (url=>check_immediate);
+     cnt := split_and_decode (cnt, 0, '\0\0\x0A:');
+     oi_handle := get_keyword ('assoc_handle', cnt, null);
+     oi_key := get_keyword ('mac_key', cnt, '');
+
+     insert into OPENID..SERVER_SESSIONS (SS_HANDLE, SS_KEY, SS_KEY_TYPE, SS_EXPIRY)
+     	values (oi_handle, oi_key, 'RAW', dateadd ('hour', 1, now()));
+     self.openid_key := oi_key;
+
+     check_immediate :=
+     sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U',
+    	oi_srv, oi_ident, this_page, trust_root);
+     if (length (oi_handle))
+       check_immediate := check_immediate || sprintf ('&openid.assoc_handle=%U', oi_handle);
+
+     check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U', 'email,fullname');
+     self.vc_redirect (check_immediate);
+
+   }
+			  ]]></v:on-post>
+		  </v:button>
 		  <br/>
-		  <span id='msg'></span>
+		  <span id='msg'>
+		  </span>
               </td>
               <td/>
       </tr>
@@ -1304,6 +1408,8 @@
                         return;
                       }
 
+          if (not self.vc_is_valid)
+            return;
 
           if (get_keyword ('CommentReg', self.opts, 0) = 1)
             {

@@ -1634,6 +1634,14 @@ create trigger BLOG_COMMENTS_NO_I after insert on BLOG_COMMENTS referencing new 
 	 domain := http_request_header (lines, 'Host', null, null);
     }
 
+  if (N.BM_OWN_COMMENT = 1)
+    {
+      is_spam := 0;
+      published := 1;
+      appr := 0;
+      goto own_comm;
+    }
+
   if (not isarray (opts))
     opts := vector ();
 
@@ -1664,7 +1672,7 @@ create trigger BLOG_COMMENTS_NO_I after insert on BLOG_COMMENTS referencing new 
       goto skip;
     }
 
-
+own_comm:;
   set triggers off;
   update SYS_BLOGS set B_COMMENTS_NO = B_COMMENTS_NO + 1 where B_POST_ID = N.BM_POST_ID;
   post_iri := sioc..blog_comment_iri (orgblogid, postid, N.BM_ID);
@@ -1843,11 +1851,11 @@ create trigger SYS_BLOGS_D_L after delete on SYS_BLOGS order 10
 {
   for select R_JOB_ID, R_ITEM_MAX_RETRANSMITS from SYS_ROUTING where R_ITEM_ID = B_BLOG_ID and R_TYPE_ID in (1, 3) do
   {
-    -- mark for delete if alredy sent to target
+    -- mark for delete if already sent to target
     update SYS_BLOGS_ROUTING_LOG set RL_TYPE = 'D', RL_PROCESSED = 0, RL_RETRANSMITS = R_ITEM_MAX_RETRANSMITS
     where RL_JOB_ID = R_JOB_ID and RL_POST_ID = B_POST_ID and RL_F_POST_ID is not null
     and RL_COMMENT_ID = -1;
-    -- delete if it's not alredy sent
+    -- delete if it's not already sent
     delete from SYS_BLOGS_ROUTING_LOG where RL_JOB_ID = R_JOB_ID and RL_POST_ID = B_POST_ID
     and RL_F_POST_ID is null;
   }
@@ -2992,13 +3000,13 @@ procedure "metaWeblog.getRecentPosts" (
 	 res.categories := (select DB..vector_agg(MTC_NAME) from MTYPE_BLOG_CATEGORY, MTYPE_CATEGORIES
 	 where MTB_BLOG_ID = MTC_BLOG_ID and MTC_ID = MTB_CID and MTB_POST_ID = B_POST_ID);
 
-	 -- cludge for enclosures
+	 -- kludge for enclosures
 	 if (udt_is_available ('DB.DBA.MWeblogPost'))
 	   {
 	     res.enclosure := null;
 	   }
 
-         -- cludge for zempt
+         -- kludge for zempt
 	 if (res.mt_convert_breaks = '')
 	   res.mt_convert_breaks := null;
 	 if (res.mt_excerpt = '')
@@ -3186,7 +3194,7 @@ blogger.get_Users_Blogs (in uri varchar, in req "blogRequest")
   declare ret, xe, arr any;
   declare i, l int;
   declare post any;
-  commit work; -- VERY IMPOTANT TO AVOID DEADLOCK DURING SELF CALLING !!!
+  commit work; -- VERY IMPORTANT TO AVOID DEADLOCK DURING SELF CALLING !!!
   ret := DB.DBA.XMLRPC_CALL (uri, 'blogger.getUsersBlogs',
          vector (req.appkey, req.user_name, req.passwd));
   ret := xml_tree_doc (ret);
@@ -3335,7 +3343,7 @@ xmlStorageSystem."registerUser"
   else
     {
       stat := 1;
-      msg := 'Dublicate name for user.';
+      msg := 'Duplicate name for user.';
     }
 errf:
   Result := soap_box_structure
@@ -5178,7 +5186,7 @@ create procedure ROUTING_PROCESS_JOBS()
           else
             dst := (select max(WS_SMTP) from DB.DBA.WA_SETTINGS);
         }
-	-- do the work only if max error is not reached or it's ulimited
+	-- do the work only if max error is not reached or it's unlimited
 	if (max_err > 0 or max_err = -1)
 	  {
             rc := ROUTING_PROCESS_BLOGS (job_id, proto_id, dst, dst_id, a_usr, a_pwd, item_id, tag, eid, iid, send_delete);
@@ -6571,7 +6579,7 @@ returns any __SOAP_TYPE 'http://www.openlinksw.com/virtuoso/blog/api:ArrayOfRssF
       goto retr;
     }
         else
-          signal ('.....', 'Unkonwn format');
+          signal ('.....', 'Unknown format');
       }
     -- RSS feed
     else if (xpath_eval ('/rss|/RDF/channel', xt, 1) is not null)
@@ -6930,7 +6938,7 @@ create procedure BLOG.DBA.BLOG_RSS2WML_PP ()
   ss := string_output ();
   http_value (xp, null, ss);
   stag := md5(ss);
-  -- prepare standart header
+  -- prepare standard header
   http_header (sprintf ('Content-Type: text/xml\r\nETag: %s\r\nLast-Modified: %s\r\n',
     stag, date_rfc1123 (now ())));
 

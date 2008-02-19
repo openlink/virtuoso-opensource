@@ -59,7 +59,7 @@
 	<rdf:description about="{@xmlUrl}">
 	    <dc:language>en</dc:language>
 	    <ocs:format>http://my.netscape.com/rdf/simple/0.9/</ocs:format>
-	    <ocs:updatePeriod>montly</ocs:updatePeriod>
+	    <ocs:updatePeriod>monthly</ocs:updatePeriod>
 	    <ocs:updateFrequency>1</ocs:updateFrequency>
 	</rdf:description>
     </rdf:description>

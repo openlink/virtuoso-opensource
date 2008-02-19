@@ -177,7 +177,7 @@ if (window.opener) {
 ?>
 <html><body><script>
   if (parent.location.host == location.host) 
-    parent.OpenID_general_error({err_code: "gen_error",err_text: "Unexpected error occured when estabilishing OpenID sequence."});
+    parent.OpenID_general_error({err_code: "gen_error",err_text: "Unexpected error occurred when establishing OpenID sequence."});
 </script></body></html>
 <?vsp
   }
