@@ -193,7 +193,7 @@
 	    }
 
          if(_mail_verify_on) {
-           -- determine existance default mail server
+           -- determine existence default mail server
            declare _smtp_server any;
            _smtp_server := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'DefaultMailServer');
            if(_smtp_server = 0) {

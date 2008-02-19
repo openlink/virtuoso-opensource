@@ -78,7 +78,7 @@ create method wa_home_url () for ODS.DISCUSSION.discussion {
     if (det_id is null)
     	update WS.WS.SYS_DAV_COL set COL_DET = 'nntp' where COL_ID = DB.DBA.DAV_SEARCH_ID (path, 'C');
   }
-  uri := '/dataspace/all/discussion'; -- as Discussion has a special developed dashboar- url to dashboard is supplied, common use should be [uri := '/my_app_url/';]
+  uri := '/dataspace/all/discussion'; -- as Discussion has a special developed dashboard- url to dashboard is supplied, common use should be [uri := '/my_app_url/';]
   return uri;
 }
 ;

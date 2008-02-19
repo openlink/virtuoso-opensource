@@ -520,7 +520,7 @@ function dd(txt){
         while (i < c+dc )
         {
         ?>
-        | <a href="javascript:vaoid(0)" onclick="javascript: document.forms['<?V frm_name ?>'].<?V dsname ?>_offs.value = <?V i ?>; doPost ('<?V frm_name ?>', '<?V dsname ?>_idx'); return false;"><?vsp http_value (i + 1, case when c = i then 'b' else null end); ?></a>
+        | <a href="javascript:void(0)" onclick="javascript: document.forms['<?V frm_name ?>'].<?V dsname ?>_offs.value = <?V i ?>; doPost ('<?V frm_name ?>', '<?V dsname ?>_idx'); return false;"><?vsp http_value (i + 1, case when c = i then 'b' else null end); ?></a>
         <?vsp
             i := i + 1;
          }
@@ -705,7 +705,7 @@ function dd(txt){
         while (i < c+dc )
         {
         ?>
-        | <a href="javascript:vaoid(0)" onclick="javascript: document.forms['<?V frm_name ?>'].<?V dsname ?>_offs.value = <?V i ?>; doPost ('<?V frm_name ?>', '<?V dsname ?>_idx'); return false;"><?vsp http_value (i + 1, case when c = i then 'b' else null end); ?></a>
+        | <a href="javascript:void(0)" onclick="javascript: document.forms['<?V frm_name ?>'].<?V dsname ?>_offs.value = <?V i ?>; doPost ('<?V frm_name ?>', '<?V dsname ?>_idx'); return false;"><?vsp http_value (i + 1, case when c = i then 'b' else null end); ?></a>
         <?vsp
             i := i + 1;
          }

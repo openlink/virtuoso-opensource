@@ -47,7 +47,7 @@
           <td class="menuitem">
             <v:url value="Subscriptions" format="%s" url="nntpf_subs.vspx" />
           </td>
-          <td><!-- neccessery to stretch the table --> </td>
+          <td><!-- necessary to stretch the table --> </td>
             <td>
               <v:url value="Settings" format="%s"
                      url="nntpf_odsnewsgroups_admin.vspx"
@@ -81,7 +81,7 @@
           <td class="menuitem">
             <v:url value="Subscriptions" format="%s" url="nntpf_subs.vspx" />
           </td>
-          <td><!-- neccessery to stretch the table --></td>
+          <td><!-- necessary to stretch the table --></td>
           <td>
               <v:url value="Settings" format="%s"
                      url="nntpf_odsnewsgroups_admin.vspx"
@@ -89,7 +89,7 @@
           </td>
 
         </v:template>
-           <td class="last_cell"><!-- neccessery to stretch the table --></td>
+           <td class="last_cell"><!-- necessary to stretch the table --></td>
       </tr>
     </table>
   </xsl:template>

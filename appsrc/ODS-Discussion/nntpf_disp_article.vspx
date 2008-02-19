@@ -50,8 +50,7 @@
 	  <?vsp
 	        http ('<br/><br/><table>');
 		http ('<tr><td>');
-		if (self.selected_id is NULL)
-		  self.selected_id := get_keyword ('id', self.vc_page.vc_event.ve_params);
+		  self.selected_id := coalesce(get_keyword ('id', self.vc_page.vc_event.ve_params),self.selected_id);
 		  --dbg_obj_print ('self.selected_id = ', self.selected_id);
 		  --dbg_obj_print ('decode_base64 (self.selected_id) = ', decode_base64 (self.selected_id));
 		nntpf_display_article (decode_base64 (self.selected_id), NULL, self.sid);

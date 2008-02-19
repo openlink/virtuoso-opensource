@@ -33,10 +33,10 @@
 	<v:variable name="grp" type="int" default="null" param-name="grp" />
 	<v:variable name="thr" type="varchar" default="''" param-name="thr" />
 
-	<v:variable name="grp_name" type="varchar" default="null" persit="temp" />
-	<v:variable name="thr_subj" type="varchar" default="null" persit="temp" />
-	<v:variable name="subs_type" type="varchar" default="null" persit="temp" />
-	<v:variable name="sub_e_mail" type="varchar" default="null" persit="temp" />
+	<v:variable name="grp_name" type="varchar" default="null" persist="temp" />
+	<v:variable name="thr_subj" type="varchar" default="null" persist="temp" />
+	<v:variable name="subs_type" type="varchar" default="null" persist="temp" />
+	<v:variable name="sub_e_mail" type="varchar" default="null" persist="temp" />
   <html>
     <head>
       <v:include url="virtuoso_app_links.xhtml"/>

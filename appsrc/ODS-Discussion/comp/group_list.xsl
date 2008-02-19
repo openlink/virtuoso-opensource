@@ -271,7 +271,7 @@
         _act:=get_keyword ('groups_unsubscribe', self.vc_event.ve_params,get_keyword ('groups_subscribe', self.vc_event.ve_params,''));
         
         declare i integer;
-        i:=2; --0 and 1 are allways vspx page identity 
+        i:=2; --0 and 1 are always vspx page identity 
         while(i<length(self.vc_event.ve_params)-1)
         {
           
@@ -590,7 +590,7 @@
         _act:=get_keyword ('allgroups_unsubscribe', self.vc_event.ve_params,get_keyword ('allgroups_subscribe', self.vc_event.ve_params,''));
         
         declare i integer;
-        i:=2; --0 and 1 are allways vspx page identity 
+        i:=2; --0 and 1 are always vspx page identity 
         while(i<length(self.vc_event.ve_params)-1)
         {
           
@@ -661,7 +661,7 @@
           <v:template name="allg_t1" type="simple">
             <tr class="listing_header_row">
               <th colspan="4">
-                <v:label value="'Available newsgroups for servce notification:'" format="%s" width="80"/>
+                <v:label value="'Available newsgroups for service notification:'" format="%s" width="80"/>
               </th>
             </tr>
 

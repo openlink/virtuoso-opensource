@@ -71,9 +71,9 @@
           _davBrowser.open(options);
     }
     
-    function switchElemtensByCheckbox(elmA,elmB,checkboxName)
+    function switchElementsByCheckbox(elmA,elmB,checkboxName)
     {
-      // checkbox that control visibility - first element is visible when checkbox is cheked
+      // checkbox that control visibility - first element is visible when checkbox is checked
      var _switch=document.getElementById(checkboxName);
      if(_switch.checked)
      {
@@ -280,7 +280,7 @@ if(get_keyword ('availble_groups', params, NULL) is not null)
                     else
                     {
 
-                     declare isAuthor,zeroPostNA intger;
+                     declare isAuthor,zeroPostNA integer;
                      isAuthor:=0;
                      zeroPostNA:=0;
                      

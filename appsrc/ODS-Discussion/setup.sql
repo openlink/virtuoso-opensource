@@ -1879,7 +1879,7 @@ create procedure nntpf_get_links (in message any)
 create procedure
 nntpf_thr_get_mess_details (in _nm_id varchar, in do_links int := 0)
 {
-   declare ret, temp, subj, post_date, autor, pos, host, my_host, m_body any;
+   declare ret, temp, subj, post_date, author, pos, host, my_host, m_body any;
    declare person, email, _refs, maker varchar;
    declare _u_id integer;
 
@@ -1904,20 +1904,20 @@ nntpf_thr_get_mess_details (in _nm_id varchar, in do_links int := 0)
    post_date := get_keyword ('Date', temp, '');
    host := get_keyword ('Path', temp, '');
    post_date := nntpf_get_postdate (post_date);
-   autor := get_keyword ('From', temp, 'No Sender');
-   maker := nntpf_get_sender (autor);
-   autor := replace (autor, '/', '.');
-   nntpf_decode_subj (autor);
+   author := get_keyword ('From', temp, 'No Sender');
+   maker := nntpf_get_sender (author);
+   author := replace (author, '/', '.');
+   nntpf_decode_subj (author);
    _u_id := NULL;
    _refs := get_keyword_ucase ('References', temp , NULL);
    my_host := strstr (host, registry_get ('__nntp_from_header'));
 
    person := '';
-   pos := strchr (autor, '<');
+   pos := strchr (author, '<');
    if (pos is not NULL)
       {
-         person := "LEFT" (autor, pos);
-	 email := subseq (autor, pos, length (autor));
+         person := "LEFT" (author, pos);
+	 email := subseq (author, pos, length (author));
 	 email := replace (email, '<', '');
 	 email := replace (email, '>', '');
 	 person := trim (replace (person, '"', ''));
@@ -1928,11 +1928,11 @@ nntpf_thr_get_mess_details (in _nm_id varchar, in do_links int := 0)
       }
     else
      {
-        pos := strchr (autor, '(');
+        pos := strchr (author, '(');
 	if (pos is not NULL)
 	  {
-	    email := trim ("LEFT" (autor, pos));
-	    person :=  subseq (autor, pos, length (autor));
+	    email := trim ("LEFT" (author, pos));
+	    person :=  subseq (author, pos, length (author));
 	    person := replace (person, '(', '');
 	    person := replace (person, ')', '');
 	  }
@@ -1940,7 +1940,7 @@ nntpf_thr_get_mess_details (in _nm_id varchar, in do_links int := 0)
 
 
    if (person = '')
-     person := autor;
+     person := author;
 
    aset (ret, 0, post_date);
    aset (ret, 1, subj);
