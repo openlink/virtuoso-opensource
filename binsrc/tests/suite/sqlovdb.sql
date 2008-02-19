@@ -589,7 +589,7 @@ FROM
   R1..T1 O
   inner join
     (SELECT
-      g (O.ROW_NO) as ROW_NO,
+      cast (g (O.ROW_NO) as int) as ROW_NO,
       sum(g1(O.FI3)) as Total
      FROM
          R1..T1 O
