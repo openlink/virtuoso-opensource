@@ -82,7 +82,7 @@ create procedure WV.WIKI.EXPORT_ATTACHMENT (
 ;
 	
 
---* export topic functon
+--* export topic function
 --* return topic content with all references resolved with *base_uri*
 --* applies provided *stylesheet* and stores result in specified *directory*
 create procedure WV.WIKI.EXPORT_TOPIC (

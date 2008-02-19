@@ -60,7 +60,7 @@
             title="Changelog (RSS 2.0)" 
             href="{wv:ResourceHREF(concat('gems.vsp?cluster=', $ti_cluster_name, '&amp;type=rss20'), $baseadjust)}"></link>
       <link rel="alternate" 
-            type="application/rss+xml" 
+            type="application/atom+xml"
             title="Changelog (ATOM)" 
             href="{wv:ResourceHREF(concat('gems.vsp?cluster=', $ti_cluster_name, '&amp;type=atom'), $baseadjust)}"></link>
       <link rel="alternate" 

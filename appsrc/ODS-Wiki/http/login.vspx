@@ -33,7 +33,7 @@
   <v:template type="if-no-login">
   </v:template>
   <v:template type="if-login">
-    <div clas="login_fm_ctr">
+    <div class="login_fm_ctr">
       <div class="fm">
         <div class="fm_row">
 <!--

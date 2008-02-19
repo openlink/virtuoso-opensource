@@ -162,7 +162,7 @@ create procedure WV.DBA.ATOM_ENTRY (
        in _id varchar,
        in _updated datetime,
        in _published datetime,
-       in _summary varhar,
+  in _summary varchar,
        in _text varchar
 )
 {

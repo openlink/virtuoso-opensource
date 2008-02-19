@@ -623,7 +623,7 @@ as (
     ti_base_adjust	varchar default '',	-- Relative path from current page to the root of the Wiki, to adjust relative URIs.
     ti_attach_col_id	integer default 0,	-- Id of collection of attachments that has name equal to ti_local_name
     ti_attach_col_id_2	integer default 0,	-- Id of collection of attachments that has name equal to ti_local_name_2
-    ti_env		any,			-- Environment parameters to be passed to the stylesheet that converts Wkik page from XML to HTML or whatever
+    ti_env		any,			-- Environment parameters to be passed to the stylesheet that converts wiki page from XML to HTML or whatever
     ti_e_mail		varchar default '',
     ti_url		varchar default '', -- Full URL for publishing
     ti_parent_id	integer default null, -- TopicId of parent topic

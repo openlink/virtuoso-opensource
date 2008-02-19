@@ -82,7 +82,7 @@ create function WV.WIKI.VSPTOPICCREATE (
 --      return;
 --    }
   declare _ext_params any;
-  declare _template varhar;
+  declare _template varchar;
   if (_topic.ti_local_name like 'Category%')
     _template := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'new-category-template', '');
   else
@@ -1003,7 +1003,7 @@ create procedure WV.WIKI.VSPHEADER (
     {
       _server_base := '';
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (RSS 2.0)" href="' || _server_base || 'gems.vsp?&amp;type=rss20"></link>\n');
-      http ('<link rel="alternate" type="application/rss+xml" title="Changelog (ATOM)" href="' || _server_base || 'gems.vsp?&amp;type=atom"></link>\n');
+    http ('<link rel="alternate" type="application/atom+xml" title="Changelog (ATOM)" href="' || _server_base || 'gems.vsp?&amp;type=atom"></link>\n');
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (RDF)" href="' || _server_base || 'gems.vsp?&amp;type=rdf"></link>\n');
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (WIKI_PROFILE)" href="' || _server_base || 'gems.vsp?&amp;type=wiki_profile"></link>\n');
     }
@@ -1011,7 +1011,7 @@ create procedure WV.WIKI.VSPHEADER (
     {
       _server_base := _base_adjust || '../resources/';
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (RSS 2.0)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=rss20"></link>\n');
-      http ('<link rel="alternate" type="application/rss+xml" title="Changelog (ATOM)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=atom"></link>\n');
+    http ('<link rel="alternate" type="application/atom+xml" title="Changelog (ATOM)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=atom"></link>\n');
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (RDF)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=rdf"></link>\n');
       http ('<link rel="alternate" type="application/rss+xml" title="Changelog (WIKI_PROFILE)" href="' || _server_base || 'gems.vsp?cluster=' || _topic.ti_cluster_name || '&amp;type=wiki_profile"></link>\n');
 

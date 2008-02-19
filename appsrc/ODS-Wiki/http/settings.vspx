@@ -49,7 +49,7 @@
     <v:variable name="new_category_template" type="varchar" default="''" persist="0"/>
     <v:variable name="skin2_vhost_regexp" type="varchar" default="''" persist="0"/>
     <v:variable name="sync_message" type="varchar" default="''"/>
-    <v:variable name="enabled" type="varchar" defaullt="'1'"/>
+  <v:variable name="enabled" type="varchar" default="'1'"/>
     <v:variable name="conv_enable" type="integer" persist="0"/>
     <v:variable name="source_page" type="varchar"/>
     <!-- Technorati integration -->

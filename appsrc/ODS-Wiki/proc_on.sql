@@ -1803,7 +1803,7 @@ create procedure WV.WIKI.CREATEUSER (in _sysname varchar, in _name varchar, in _
   declare _oldname varchar;
   _uid := coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = _sysname and U_IS_ROLE = 0 and U_ACCOUNT_DISABLED=0 and U_DAV_ENABLE=1), NULL);
   if (_uid is null)
-    WV.WIKI.APPSIGNAL (11001, 'System user account "&UName;" does not exist or can not be used for Wiki purposes; can not regsiter Wiki user "&UserName;"',
+    WV.WIKI.APPSIGNAL (11001, 'System user account "&UName;" does not exist or can not be used for Wiki purposes; can not register Wiki user "&UserName;"',
       vector ('UName', _sysname, 'UserName', _name) );
   if (not exists (select 1 from DB.DBA.SYS_USER_GROUP where UG_UID = _uid and UG_GID = WV.WIKI.WIKIUSERGID())
     and not exists (select 1 from DB.DBA.SYS_USERS where U_ID = _uid and U_GROUP = WV.WIKI.WIKIUSERGID()) )
@@ -4936,7 +4936,7 @@ create function RSS_SUBJECT(in _op varchar, in _replacements any)
   if (_op = 'A') 
   	return WV.WIKI.REPLACE_BULK ('{WHO} attached {VER} to {CLUSTER}.{TOPIC}', _replacements);
   else if (_op = 'a') 
-  	return WV.WIKI.REPLACE_BULK ('{WHO} deleted attchment {VER} from {CLUSTER}.{TOPIC}', _replacements);
+    return WV.WIKI.REPLACE_BULK ('{WHO} deleted attachment {VER} from {CLUSTER}.{TOPIC}', _replacements);
   else if (_op = 'N')
   	return WV.WIKI.REPLACE_BULK ('{WHO} created new article {CLUSTER}.{TOPIC}', _replacements); 
   else if (_op = 'D')
@@ -4952,7 +4952,7 @@ create function RSS_CONTENT(in _op varchar, in _replacements any)
   if (_op = 'A') 
   	return WV.WIKI.REPLACE_BULK ('<a href="{ULINK}">{WHO}</a> attached {VER} to <a href="{LINK}">{CLUSTER}.{TOPIC}</a>', _replacements);
   else if (_op = 'a') 
-  	return WV.WIKI.REPLACE_BULK ('<a href="{ULINK}">{WHO}</a> deleted attchment {VER} from <a href="{LINK}">{CLUSTER}.{TOPIC}</a>', _replacements);
+    return WV.WIKI.REPLACE_BULK ('<a href="{ULINK}">{WHO}</a> deleted attachment {VER} from <a href="{LINK}">{CLUSTER}.{TOPIC}</a>', _replacements);
   else if (_op = 'N')
   	return WV.WIKI.REPLACE_BULK ('<a href="{ULINK}">{WHO}</a> created new article <a href="{LINK}">{CLUSTER}.{TOPIC}</a>', _replacements); 
   else if (_op = 'D')

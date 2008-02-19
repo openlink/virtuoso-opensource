@@ -6,7 +6,7 @@ Visitors are encouraged to write, and almost every page has a button "Edit" at t
 
 The syntax supported by this Wiki briefly described [[Doc.TextFormattingRules][here]].
 
-*If you can read this text*, then this site is just lauched.
+*If you can read this text*, then this site is just launched.
 
 Welcome and enjoy yourself.
 
