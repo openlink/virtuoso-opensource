@@ -175,7 +175,6 @@ a:hover
 {
   -moz-user-select: none; 
   cursor: pointer; 
-  text-align: center; 
   font-size: 1em;
   font-weight: bold;
 }

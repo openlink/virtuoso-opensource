@@ -241,49 +241,73 @@ CAL.WA.exec_no_error (
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.tmp_update ()
+create procedure CAL.WA.EVENTS_E_SUBJECT_int (inout vtb any, inout d_id any, in mode any)
 {
-  if (registry_get ('cal_note_update') = '1')
-    return;
+  declare tags any;
 
-  delete from CAL.WA.EVENTS where E_KIND > 1;
-  registry_set ('cal_note_update', '1');
+  for (select * from CAL.WA.EVENTS where E_ID = d_id) do
+  {
+    vt_batch_feed (vtb, sprintf('^R%d', coalesce (E_DOMAIN_ID, 0)), mode);
+
+    vt_batch_feed (vtb, sprintf('^UID%d', coalesce (CAL.WA.domain_owner_id (E_DOMAIN_ID), 0)), mode);
+
+    vt_batch_feed (vtb, coalesce (E_SUBJECT, ''), mode);
+
+    vt_batch_feed (vtb, coalesce (E_DESCRIPTION, ''), mode);
+
+    vt_batch_feed (vtb, coalesce (E_LOCATION, ''), mode);
+
+    vt_batch_feed (vtb, coalesce (E_NOTES, ''), mode);
+
+    if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = E_DOMAIN_ID and WAI_TYPE_NAME = 'Calendar' and WAI_IS_PUBLIC = 1))
+      vt_batch_feed (vtb, '^public', mode);
+
+    tags := split_and_decode (E_TAGS, 0, '\0\0,');
+    foreach (any tag in tags) do
+    {
+      tag := concat('^T', trim (tag));
+      tag := replace (tag, ' ', '_');
+      tag := replace (tag, '+', '_');
+      vt_batch_feed (vtb, tag, mode);
+    }
+  }
+  return 1;
 }
 ;
-CAL.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.EVENTS_E_SUBJECT_index_hook (inout vtb any, inout d_id any)
+{
+  return CAL.WA.EVENTS_E_SUBJECT_int (vtb, d_id, 0);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.EVENTS_E_SUBJECT_unindex_hook (inout vtb any, inout d_id any)
+{
+  return CAL.WA.EVENTS_E_SUBJECT_int (vtb, d_id, 1);
+}
+;
 
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.tmp_update ()
 {
-  if (registry_get ('cal_privacy_update') = '1')
+  if (registry_get ('cal_index_version') = '4')
     return;
 
-  update CAL.WA.EVENTS set E_PRIVACY = 1;
-  registry_set ('cal_privacy_update', '1');
+  CAL.WA.exec_no_error ('drop table CAL.WA.EVENTS_E_SUBJECT_WORDS');
+
+  registry_set ('cal_index_version', '4');
 }
 ;
 CAL.WA.tmp_update ();
 
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.tmp_description_update ()
-{
-  if (registry_get ('cal_description_update') = '1')
-    return;
-
-  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS add E_TMP varchar', 'C', 'CAL.WA.EVENTS', 'E_TMP');
-  CAL.WA.exec_no_error ('update CAL.WA.EVENTS set E_TMP = E_DESCRIPTION');
-  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS drop E_DESCRIPTION', 'D', 'CAL.WA.EVENTS', 'E_DESCRIPTION');
-  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS add E_DESCRIPTION long varchar', 'C', 'CAL.WA.EVENTS', 'E_DESCRIPTION');
-  CAL.WA.exec_no_error ('update CAL.WA.EVENTS set E_DESCRIPTION = E_TMP');
-  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS drop E_TMP', 'D', 'CAL.WA.EVENTS', 'E_TMP');
-
-  registry_set ('cal_description_update', '1');
-
-}
-;
-CAL.WA.tmp_description_update();
+CAL.WA.exec_no_error ('
+  create text index on CAL.WA.EVENTS (E_SUBJECT) with key E_ID clustered with (E_DOMAIN_ID, E_UPDATED) using function language \'x-ViDoc\'
+');
 
 CAL.WA.exec_no_error ('
   create index SK_EVENTS_01 on CAL.WA.EVENTS (E_DOMAIN_ID, E_KIND, E_EVENT_START)
@@ -297,8 +321,11 @@ CAL.WA.exec_no_error ('
   create index SK_EVENTS_03 on CAL.WA.EVENTS (E_UID)
 ');
 
+-------------------------------------------------------------------------------
+--
 CAL.WA.exec_no_error ('
-  create trigger EVENTS_AI after insert on CAL.WA.EVENTS referencing new as N {
+  create trigger EVENTS_AI after insert on CAL.WA.EVENTS referencing new as N
+  {
     if (isnull (N.E_UID))
     {
       set triggers off;
@@ -334,7 +361,8 @@ CAL.WA.exec_no_error ('
 ');
 
 CAL.WA.exec_no_error ('
-  create trigger EVENTS_AU after update on CAL.WA.EVENTS referencing  old as O, new as N {
+  create trigger EVENTS_AU after update on CAL.WA.EVENTS referencing old as O, new as N
+  {
     if (isnull (N.E_UID))
     {
       set triggers off;
@@ -381,13 +409,62 @@ CAL.WA.exec_no_error ('
 ');
 
 CAL.WA.exec_no_error ('
-  create trigger EVENTS_AD after delete on CAL.WA.EVENTS referencing old as O {
+  create trigger EVENTS_AD after delete on CAL.WA.EVENTS referencing old as O
+  {
     CAL.WA.tags_update (O.E_DOMAIN_ID, O.E_TAGS, \'\');
     delete from CAL.WA.ALARMS where A_EVENT_ID = O.E_ID;
 
     CAL.WA.upstream_event_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_TAGS, \'D\');
   }
 ');
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.tmp_update ()
+{
+  if (registry_get ('cal_note_update') = '1')
+    return;
+
+  delete from CAL.WA.EVENTS where E_KIND > 1;
+  registry_set ('cal_note_update', '1');
+}
+;
+CAL.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.tmp_update ()
+{
+  if (registry_get ('cal_privacy_update') = '1')
+    return;
+
+  set triggers off;
+  update CAL.WA.EVENTS set E_PRIVACY = 1;
+  set triggers on;
+
+  registry_set ('cal_privacy_update', '1');
+}
+;
+CAL.WA.tmp_update ();
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.tmp_update ()
+{
+  if (registry_get ('cal_description_update') = '1')
+    return;
+
+  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS add E_TMP varchar', 'C', 'CAL.WA.EVENTS', 'E_TMP');
+  CAL.WA.exec_no_error ('update CAL.WA.EVENTS set E_TMP = E_DESCRIPTION');
+  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS drop E_DESCRIPTION', 'D', 'CAL.WA.EVENTS', 'E_DESCRIPTION');
+  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS add E_DESCRIPTION long varchar', 'C', 'CAL.WA.EVENTS', 'E_DESCRIPTION');
+  CAL.WA.exec_no_error ('update CAL.WA.EVENTS set E_DESCRIPTION = E_TMP');
+  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS drop E_TMP', 'D', 'CAL.WA.EVENTS', 'E_TMP');
+
+  registry_set ('cal_description_update', '1');
+}
+;
+CAL.WA.tmp_update();
 
 -------------------------------------------------------------------------------
 --
@@ -428,82 +505,14 @@ create procedure CAL.WA.tags_update (
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.EVENTS_E_SUBJECT_int (inout vtb any, inout d_id any, in mode any)
-{
-  declare tags any;
-
-  for (select * from CAL.WA.EVENTS where E_ID = d_id) do
-  {
-    vt_batch_feed (vtb, sprintf('^R%d', E_DOMAIN_ID), mode);
-
-    vt_batch_feed (vtb, sprintf('^UID%d', coalesce (CAL.WA.domain_owner_id (E_DOMAIN_ID), 0)), mode);
-
-    vt_batch_feed (vtb, coalesce(E_SUBJECT, ''), mode);
-
-    vt_batch_feed (vtb, coalesce (E_DESCRIPTION, ''), mode);
-
-    vt_batch_feed (vtb, coalesce (E_LOCATION, ''), mode);
-
-    vt_batch_feed (vtb, coalesce (E_NOTES, ''), mode);
-    
-    if (exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = E_DOMAIN_ID and WAI_TYPE_NAME = 'Calendar' and WAI_IS_PUBLIC = 1))
-      vt_batch_feed (vtb, '^public', mode);
-
-    tags := split_and_decode (E_TAGS, 0, '\0\0,');
-    foreach (any tag in tags) do
-    {
-      tag := concat('^T', trim(tag));
-      tag := replace (tag, ' ', '_');
-      tag := replace (tag, '+', '_');
-      vt_batch_feed (vtb, tag, mode);
-    }
-  }
-  return 1;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.EVENTS_E_SUBJECT_index_hook (inout vtb any, inout d_id any)
-{
-  return CAL.WA.EVENTS_E_SUBJECT_int (vtb, d_id, 0);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.EVENTS_E_SUBJECT_unindex_hook (inout vtb any, inout d_id any)
-{
-  return CAL.WA.EVENTS_E_SUBJECT_int (vtb, d_id, 1);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.tmp_drop_index ()
-{
-  if (registry_get ('cal_index_version') = '4')
-    return;
-
-    CAL.WA.exec_no_error ('drop table CAL.WA.EVENTS_E_SUBJECT_WORDS');
-
-  registry_set ('cal_index_version', '4');
-}
-;
-CAL.WA.tmp_drop_index ();
-
-CAL.WA.exec_no_error ('
-  create text index on CAL.WA.EVENTS (E_SUBJECT) with key E_ID clustered with (E_DOMAIN_ID, E_UPDATED) using function language \'x-ViDoc\'
-');
-
--------------------------------------------------------------------------------
---
 create procedure CAL.WA.tmp_update ()
 {
   if (registry_get ('cal_uid_update') = '1')
     return;
 
+  set triggers off;
   update CAL.WA.EVENTS set E_UID = sprintf ('%s@%s', uuid (), sys_stat ('st_host_name')) where E_UID is null;
+  set triggers on;
 
   registry_set ('cal_uid_update', '1');
 }

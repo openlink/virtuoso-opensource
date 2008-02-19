@@ -24,18 +24,16 @@
 -- Session Functions
 --
 -------------------------------------------------------------------------------
-create procedure CAL.WA.session_restore(
+create procedure CAL.WA.session_domain (
   inout params any)
 {
-  declare aPath, domain_id, user_id, user_name, user_role, sid, realm, options any;
+  declare aPath, domain_id, options any;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     domain_id := -2;
     goto _end;
   };
-
-  sid := get_keyword ('sid', params, '');
-  realm := get_keyword ('realm', params, '');
 
   options := http_map_get('options');
   if (not is_empty_or_null(options))
@@ -47,8 +45,21 @@ create procedure CAL.WA.session_restore(
   if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and domain_id <> -2))
     domain_id := -1;
 
-_end:
-  domain_id := cast (domain_id as integer);
+_end:;
+  return cast (domain_id as integer);
+}
+;
+
+create procedure CAL.WA.session_restore (
+  inout params any)
+{
+  declare domain_id, user_id, user_name, user_role, sid, realm any;
+
+  sid := get_keyword ('sid', params, '');
+  realm := get_keyword ('realm', params, '');
+
+  domain_id := CAL.WA.session_domain (params);
+
   user_id := -1;
   for (select U.U_ID,
               U.U_NAME,
@@ -67,7 +78,8 @@ _end:
     domain_id := -1;
 
   if (user_id = -1)
-    if (domain_id = -1) {
+    if (domain_id = -1)
+    {
       user_role := 'expire';
       user_name := 'Expire session';
     } else if (domain_id = -2) {
@@ -554,7 +566,7 @@ create procedure CAL.WA.domain_update (
 create procedure CAL.WA.domain_owner_id (
   inout domain_id integer)
 {
-  return (select A.WAM_USER from WA_MEMBER A, WA_INSTANCE B where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id);
+  return (select TOP 1 A.WAM_USER from WA_MEMBER A, WA_INSTANCE B where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id);
 }
 ;
 
@@ -563,7 +575,7 @@ create procedure CAL.WA.domain_owner_id (
 create procedure CAL.WA.domain_owner_name (
   inout domain_id integer)
 {
-  return (select C.U_NAME from WA_MEMBER A, WA_INSTANCE B, SYS_USERS C where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id and C.U_ID = A.WAM_USER);
+  return (select TOP 1 C.U_NAME from WA_MEMBER A, WA_INSTANCE B, SYS_USERS C where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id and C.U_ID = A.WAM_USER);
 }
 ;
 
@@ -1072,14 +1084,15 @@ create procedure CAL.WA.banner_links (
 create procedure CAL.WA.dav_content (
   inout uri varchar)
 {
-  declare cont varchar;
-  declare hp any;
-
-  declare exit handler for sqlstate '*' { return null;};
+  declare exit handler for sqlstate '*'
+  {
+    return null;
+  };
 
   declare N integer;
-  declare oldUri, newUri, reqHdr, resHdr varchar;
+  declare content, oldUri, newUri, reqHdr, resHdr varchar;
   declare auth_uid, auth_pwd varchar;
+  declare xt any;
 
   newUri := uri;
   reqHdr := null;
@@ -1090,8 +1103,9 @@ _again:
   N := N + 1;
   oldUri := newUri;
   commit work;
-  cont := http_get (newUri, resHdr, 'GET', reqHdr);
-  if (resHdr[0] like 'HTTP/1._ 30_ %') {
+  content := http_get (newUri, resHdr, 'GET', reqHdr);
+  if (resHdr[0] like 'HTTP/1._ 30_ %')
+  {
     newUri := http_request_header (resHdr, 'Location');
     newUri := WS.WS.EXPAND_URL (oldUri, newUri);
     if (N > 15)
@@ -1102,7 +1116,11 @@ _again:
   if (resHdr[0] like 'HTTP/1._ 4__ %' or resHdr[0] like 'HTTP/1._ 5__ %')
     return null;
 
-  return (cont);
+  xt := CAL.WA.string2xml (content);
+  if (xpath_eval ('/html', xt, 1) is null)
+    return content;
+  newUri := cast (xpath_eval ('/html/head/link[@rel="alternate" and @type="text/calendar"]/@href', xt, 1) as varchar);
+  return CAL.WA.dav_content (newUri);
 }
 ;
 
@@ -1397,7 +1415,7 @@ create procedure CAL.WA.vector_set (
 create procedure CAL.WA.vector_search(
   in aVector any,
   in value varchar,
-  in condition vrchar := 'AND')
+  in condition varchar := 'AND')
 {
   declare N integer;
 
@@ -2138,13 +2156,13 @@ create procedure CAL.WA.dt_isWeekDay (
 create procedure CAL.WA.dt_WeekName (
   in dt datetime,
   in weekStarts varchar := 'm',
-  in nameLenght integer := 0)
+  in nameLength integer := 0)
 {
   declare N integer;
   declare names any;
 
   N := CAL.WA.dt_WeekDay (dt, weekStarts);
-  names := CAL.WA.dt_WeekNames (weekStarts, nameLenght);
+  names := CAL.WA.dt_WeekNames (weekStarts, nameLength);
   return names [N-1];
 }
 ;
@@ -2153,7 +2171,7 @@ create procedure CAL.WA.dt_WeekName (
 --
 create procedure CAL.WA.dt_WeekNames (
   in weekStarts varchar := 'm',
-  in nameLenght integer := 0)
+  in nameLength integer := 0)
 {
   declare N integer;
   declare names any;
@@ -2163,9 +2181,9 @@ create procedure CAL.WA.dt_WeekNames (
   } else {
     names := vector ('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday ', 'Friday', 'Saturday');
   }
-  if (nameLenght <> 0)
+  if (nameLength <> 0)
     for (N := 0; N < length (names); N := N + 1)
-      aset (names, N, subseq (names[N], 0, nameLenght));
+      aset (names, N, subseq (names[N], 0, nameLength));
   return names;
 
 }
@@ -2823,7 +2841,7 @@ create procedure CAL.WA.settings_weekStarts (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.settings_weekStarts2 (
-  in domain_id integeger)
+  in domain_id integer)
 {
   CAL.WA.settings_weekStarts (CAL.WA.settings (CAL.WA.domain_owner_id (domain_id)));
 }
@@ -2841,7 +2859,7 @@ create procedure CAL.WA.settings_timeZone (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.settings_timeZone2 (
-  in domain_id integeger)
+  in domain_id integer)
 {
   return CAL.WA.settings_timeZone (CAL.WA.settings (CAL.WA.domain_owner_id (domain_id)));
 }
@@ -3113,7 +3131,7 @@ create procedure CAL.WA.event_occurAtDate (
   if (dtEnd < eEventStart)
     return 0;
 
-  -- deleted occurence
+  -- deleted occurrence
   if (not isnull (strstr (eRepeatExceptions, '<' || cast (datediff ('day', CAL.WA.dt_dateClear (eEventStart), dt) as varchar) || '>')))
     return 0;
 
@@ -3144,7 +3162,7 @@ create procedure CAL.WA.event_occurAtDate (
         return 1;
   }
 
-  -- Every X day/weekday/wekkend/... of Y-th month(s)
+  -- Every X day/weekday/weekend/... of Y-th month(s)
   if (eRepeat = 'M2') {
     if (mod (datediff ('month', eEventStart, dtEnd), eRepeatParam1) = 0)
       if (dayofmonth (dt) = CAL.WA.event_findDay (dt, eRepeatParam2, eRepeatParam3))
@@ -3157,7 +3175,7 @@ create procedure CAL.WA.event_occurAtDate (
       return 1;
   }
 
-  -- Every X day/weekday/wekkend/... of Y-th month(s)
+  -- Every X day/weekday/weekend/... of Y-th month(s)
   if (eRepeat = 'Y2') {
     if (month (dt) = eRepeatParam3)
       if (dayofmonth (dt) = CAL.WA.event_findDay (dt, eRepeatParam1, eRepeatParam2))
@@ -3228,7 +3246,7 @@ create procedure CAL.WA.event_checkDate (
         return CAL.WA.event_checkNotDeletedOccurence (dt, eEventStart, eRepeatExceptions);
   }
 
-  -- Every X day/weekday/wekkend/... of Y-th month(s)
+  -- Every X day/weekday/weekend/... of Y-th month(s)
   if (eRepeat = 'M2') {
     iInterval := eRepeatParam1;
     if (mod (datediff ('month', eEventStart, dtEnd), eRepeatParam1) = 0)
@@ -3243,7 +3261,7 @@ create procedure CAL.WA.event_checkDate (
         return CAL.WA.event_checkNotDeletedOccurence (dt, eEventStart, eRepeatExceptions);
   }
 
-  -- Every X day/weekday/wekkend/... of Y-th month(s)
+  -- Every X day/weekday/weekend/... of Y-th month(s)
   if (eRepeat = 'Y2') {
     iInterval := 365;
     if (month (dt) = eRepeatParam3)
@@ -3597,7 +3615,7 @@ create procedure CAL.WA.events_forPeriod (
             E_REMINDER);
   }
 
-  -- repetable events
+  -- repeatable events
   for (select a.E_ID,
               a.E_SUBJECT,
               a.E_EVENT,
@@ -3897,7 +3915,26 @@ create procedure CAL.WA.vcal_str2status (
     if (lcase (S) = lcase (V[N]))
       return V[N];
 
-  return S;
+  return null;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.vcal_str2privacy (
+  in xmlItem any,
+  in xmlPath varchar)
+{
+  declare N integer;
+  declare S, V any;
+
+  V := vector ('PUBLIC', 1, 'PRIVATE', 0);
+  S := cast (xquery_eval (xmlPath, xmlItem, 1) as varchar);
+  for (N := 0; N < length (V); N := N + 2)
+    if (lcase (S) = lcase (V[N]))
+      return V[N+1];
+
+  return null;
 }
 ;
 
@@ -4183,6 +4220,7 @@ create procedure CAL.WA.import_vcal (
           subject,
           description,
           location,
+          privacy,
           eventTags,
           event,
           eEventStart,
@@ -4243,6 +4281,9 @@ create procedure CAL.WA.import_vcal (
         subject := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/SUMMARY/val', N), xmlItem, 1) as varchar);
         description := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar);
         location := cast (xquery_eval (sprintf ('IMC-VEVENT[%d]/LOCATION/val', N), xmlItem, 1) as varchar);
+        privacy := CAL.WA.vcal_str2privacy (xmlItem, sprintf ('IMC-VEVENT[%d]/CLASS/val', N));
+        if (isnull (privacy))
+          privacy := CAL.WA.domain_is_public (domain_id);
         eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlItem, sprintf ('IMC-VEVENT[%d]/CATEGORIES/', N)), tags);
         eEventStart := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VEVENT[%d]/DTSTART/', N), tzDict);
         eEventEnd := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VEVENT[%d]/DTEND/', N), tzDict);
@@ -4265,6 +4306,7 @@ create procedure CAL.WA.import_vcal (
             subject,
             description,
             location,
+            privacy,
             eventTags,
             event,
             eEventStart,
@@ -4288,6 +4330,9 @@ create procedure CAL.WA.import_vcal (
         id := coalesce ((select E_ID from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_UID = uid), -1);
         subject := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/SUMMARY/val', N), xmlItem, 1) as varchar);
         description := cast (xquery_eval (sprintf ('IMC-VTODO[%d]/DESCRIPTION/val', N), xmlItem, 1) as varchar);
+        privacy := CAL.WA.vcal_str2privacy (xmlItem, sprintf ('IMC-VTODO[%d]/CLASS/val', N));
+        if (isnull (privacy))
+          privacy := CAL.WA.domain_is_public (domain_id);
         eventTags := CAL.WA.tags_join (CAL.WA.vcal_str (xmlItem, sprintf ('IMC-VTODO[%d]/CATEGORIES/', N)), tags);
         eEventStart := CAL.WA.vcal_str2date (xmlItem, sprintf ('IMC-VTODO[%d]/DTSTART/', N));
         eEventStart := CAL.WA.dt_join (eEventStart, CAL.WA.dt_timeEncode (12, 0));
@@ -4309,6 +4354,7 @@ create procedure CAL.WA.import_vcal (
             domain_id,
             subject,
             description,
+            privacy,
             eventTags,
             eEventStart,
             eEventEnd,
@@ -4389,6 +4435,7 @@ create procedure CAL.WA.export_vcal (
     CAL.WA.export_vcal_line ('RRULE', CAL.WA.vcal_recurrence2str (E_REPEAT, E_REPEAT_PARAM1, E_REPEAT_PARAM2, E_REPEAT_PARAM3, E_REPEAT_UNTIL), sStream);
     CAL.WA.export_vcal_reminder (E_REMINDER, sStream);
     CAL.WA.export_vcal_line ('NOTES', E_NOTES, sStream);
+    CAL.WA.export_vcal_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
 	  http ('END:VEVENT\r\n', sStream);
 	}
 
@@ -4410,6 +4457,7 @@ create procedure CAL.WA.export_vcal (
     CAL.WA.export_vcal_line ('PRIORITY', E_PRIORITY, sStream);
     CAL.WA.export_vcal_line ('STATUS', E_STATUS, sStream);
     CAL.WA.export_vcal_line ('NOTES', E_NOTES, sStream);
+    CAL.WA.export_vcal_line ('CLASS', case when E_PRIVACY = 1 then 'PUBLIC' else 'PRIVATE' end, sStream);
 	  http ('END:VTODO\r\n', sStream);
 	}
 

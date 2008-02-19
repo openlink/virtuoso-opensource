@@ -34,10 +34,14 @@ function myTags(fld_value)
 }
 
 // ---------------------------------------------------------------------------
-function vspxPost(fButton, fName, fValue, f2Name, f2Value)
+function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value)
 {
+  if (fName)
   createHidden('F1', fName, fValue);
+  if (f2Name)
   createHidden('F1', f2Name, f2Value);
+  if (f3Name)
+    createHidden('F1', f3Name, f3Value);
   doPost ('F1', fButton);
 }
 
@@ -345,6 +349,24 @@ function calendarsShow(sPage, width, height)
     sPage = sPage + '&mode=p'
   }
   windowShow(sPage, width, height);
+}
+
+// ---------------------------------------------------------------------------
+//
+function calendarsHelp(mode)
+{
+  var T = '';
+  if ($('ss_type_0').checked)
+  {
+    T = 'Select Public';
+  }
+  if ($('ss_type_1').checked)
+  {
+    T = 'Select Shared';
+  }
+  $('ss_type_button').value = T;
+  if (mode)
+    $('ss_calendar').value = '';
 }
 
 // ---------------------------------------------------------------------------
@@ -768,6 +790,12 @@ function cExchange (command)
 {
   createHidden('F1', 'exchange', command);
   doPost ('F1', 'command');
+}
+
+// ---------------------------------------------------------------------------
+function cCalendar(calendar_id)
+{
+  vspxPost('command', 'select', 'settings', 'mode', 'sharedUpdate', 'id', calendar_id);
 }
 
 // ---------------------------------------------------------------------------

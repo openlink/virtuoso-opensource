@@ -27,12 +27,18 @@
   <head profile="http://internetalchemy.org/2003/02/profile">
     <base href="<?V CAL.WA.host_url () || http_path () ?>" />
     <?vsp
-      http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s" />', CAL.WA.foaf_url (self.account_id)));
+      declare domainName varchar;
+
+      domainName := CAL.WA.domain_name (self.domain_id);
+      http (sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s" />', CAL.WA.foaf_url (self.domain_id)));
       if (CAL.WA.domain_is_public (self.domain_id))
       {
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', CAL.WA.sioc_url (self.domain_id)));
       }
-      http (sprintf('\n    <link rel="alternate" type="application/atomserv+xml" title="%V" href="%s/intro" />', CAL.WA.domain_name (self.domain_id), CAL.WA.atom_lpath2 (self.domain_id)));
+      http (sprintf('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, CAL.WA.dav_url (self.domain_id)||'Calendar.rss'));
+      http (sprintf('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, CAL.WA.dav_url (self.domain_id)||'Calendar.atom'));
+      http (sprintf('\n    <link rel="alternate" type="application/atomserv+xml" title="%V" href="%s/intro" />', domainName, CAL.WA.atom_lpath2 (self.domain_id)));
+      http (sprintf('\n    <link rel="alternate" type="text/calendar" title="%V" href="%s/gems/calendar.ics" />', domainName, CAL.WA.domain_sioc_url (self.domain_id)));
       http (CAL.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
@@ -87,7 +93,7 @@
           OAT.Anchor.zIndex = 1001;
         
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
-            gererateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
+            generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
             
           // dialogs
           if ($('deleteDiv'))

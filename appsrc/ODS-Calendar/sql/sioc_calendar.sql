@@ -206,6 +206,7 @@ create procedure event_insert (
   inout subject varchar,
   inout description varchar,
   inout location varchar,
+  inout privacy integer,
   inout event varchar,
   inout eventStart datetime,
   inout eventEnd datetime,
@@ -261,6 +262,8 @@ create procedure event_insert (
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('description'), description);
     if (not isnull (location))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('location'), location);
+      if (not isnull (privacy))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('class'), case when privacy = 1 then 'PUBLIC' else 'PRIVATE' end);
     }
     if (kind = 1) {
       DB.DBA.RDF_QUAD_URI   (graph_iri, iri, rdf_iri ('type'), vcal_iri ('vtodo'));
@@ -284,6 +287,8 @@ create procedure event_insert (
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('priority'), priority);
     if (not isnull (status))
       DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('status'), status);
+      if (not isnull (privacy))
+        DB.DBA.RDF_QUAD_URI_L (graph_iri, iri, vcal_iri ('class'), case when privacy = 1 then 'PUBLIC' else 'PRIVATE' end);
   }
   }
   return;
@@ -326,6 +331,7 @@ create trigger EVENTS_SIOC_I after insert on CAL.WA.EVENTS referencing new as N
                 N.E_SUBJECT,
                 N.E_DESCRIPTION,
                 N.E_LOCATION,
+                N.E_PRIVACY,
                 N.E_EVENT,
                 N.E_EVENT_START,
                 N.E_EVENT_END,
@@ -357,6 +363,7 @@ create trigger EVENTS_SIOC_U after update on CAL.WA.EVENTS referencing old as O,
                 N.E_SUBJECT,
                 N.E_DESCRIPTION,
                 N.E_LOCATION,
+                N.E_PRIVACY,
                 N.E_EVENT,
                 N.E_EVENT_START,
                 N.E_EVENT_END,

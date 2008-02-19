@@ -114,7 +114,7 @@
       self.cTimeFormat := CAL.WA.settings_timeFormat (self.settings);
       self.cDateFormat := CAL.WA.settings_dateFormat (self.settings);
       self.cShowTasks := CAL.WA.settings_showTasks (self.settings);
-      self.cPrivacy := case when self.access_role in ('public', 'guest') then 1 else 0 end;
+      self.cPrivacy := case when CAL.WA.access_is_write (self.access_role) then 0 else 1 end;
       if (isnull (self.cScope))
         self.cScope := CAL.WA.settings_defaultView (self.settings);
       if (isnull (self.cDay))
@@ -959,6 +959,7 @@
                 <vm:event />
               </vm:if>
               <vm:calendar />
+              <vm:calendars />
               <vm:exchange />
               <vm:formats />
             </vm:if>
@@ -1098,7 +1099,13 @@
                           {
                             self.cSubAction := cMode;
                           }
-                          if (get_keyword ('mode', e.ve_params, '') = 'back')
+                          if (cMode = 'sharedUpdate')
+                          {
+                            self.cAction := cCommand;
+                            self.cSubAction := cMode;
+                            self.vs_id := cast (get_keyword ('id', e.ve_params) as integer);
+                          }
+                          if (cMode = 'back')
                           {
                             self.cAction := 'browse';
                             self.cSubAction := '';
@@ -1413,7 +1420,7 @@
                     if (e.ve_params[N] = 'cb_item')
                                 {
                                   id := cast (e.ve_params[N+1] as integer);
-                                  if (CAL.WA.event_permission (id, self.domain_id, self.access_role) = 'W')
+                                  if (CAL.WA.event_permissions (id, self.domain_id, self.access_role) = 'W')
                                     CAL.WA.event_delete(id);
                                 }
                               }
@@ -3003,6 +3010,7 @@
 
                 select E_SUBJECT,
                        E_DESCRIPTION,
+                             E_PRIVACY,
                        E_TAGS,
                        CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone),
                        CAL.WA.event_gmt2user (E_EVENT_END, self.cTimezone),
@@ -3013,6 +3021,7 @@
                        blob_to_string (E_NOTES)
                   into self.v_subject,
                        self.v_description,
+                             self.v_privacy,
                        self.v_tags,
                        self.v_eventStart,
                        self.v_eventEnd,
@@ -4696,30 +4705,39 @@
                   <div class="new-form-body">
                     <table cellspacing="0">
                       <tr>
-                        <th width="20%" valign="top">
-                          Calendar
+                        <th width="30%" valign="top">
+                          Calendar type
                         </th>
-                        <td>
+                        <td width="10%" nowrap="nowrap">
                           <?vsp
-                            http (sprintf ('<input type="radio" name="ss_type" id="ss_type_0" value="0" %s /> <label for="ss_type_0">Public</label>', case when isnull (self.vs_grant_id) then 'checked="checked"' else '' end));
+                            http (sprintf ('<input type="radio" name="ss_type" id="ss_type_0" value="0" %s onchange="javascript: calendarsHelp(1);" /> <label for="ss_type_0">Public</label>', case when isnull (self.vs_grant_id) then 'checked="checked"' else '' end));
                             http ('<br />');
-                            http (sprintf ('<input type="radio" name="ss_type" id="ss_type_1" value="1" %s /> <label for="ss_type_1">Shared with Me</label>', case when not isnull (self.vs_grant_id) then 'checked="checked"' else '' end));
+                            http (sprintf ('<input type="radio" name="ss_type" id="ss_type_1" value="1" %s onchange="javascript: calendarsHelp(1);" /> <label for="ss_type_1">Shared with Me</label>', case when not isnull (self.vs_grant_id) then 'checked="checked"' else '' end));
                           ?>
                         </td>
                         <td valign="top">
-                          <v:text name="ss_calendar" value="--self.vs_calendar" xhtml_size="60" />
-                          <input type="button" value="Select" onclick="javascript: calendarsShow('calendars.vspx?params=ss_calendar:s1;',520)" class="button" />
+                          <?vsp
+                            http ('<a href="javascript: void(0);" onclick="javascript: window.open (\'help.vspx?page=proba\', \'calendar_help\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500\');">Learn more about public and shared calendars</a>');
+                          ?>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th >
+                          Calendar name
+                        </th>
+                        <td colspan="2">
+                          <v:text name="ss_calendar" xhtml_id="ss_calendar" value="--self.vs_calendar" xhtml_size="60" />
+                          <input id="ss_type_button" type="button" value="Select" onclick="javascript: calendarsShow('calendars.vspx?params=ss_calendar:s1;',520)" class="button" />
                         </td>
                       </tr>
                       <tr>
                         <th />
-                        <td>
+                        <td colspan="2">
                           <?vsp
                             http (sprintf ('<input type="checkbox" value="1" name="ss_visible" id="ss_visible" %s />', CAL.WA.checkedAttribute (self.vs_visible)));
                           ?>
                           <vm:label for="ss_visible" value="Visible"/>
                         </td>
-                        <td />
                       </tr>
                       <tr>
                         <th>
@@ -4845,6 +4863,7 @@
                 <script type="text/javascript">
                   <![CDATA[
                     coloriseTable('preferences');
+                    calendarsHelp();
                   ]]>
                 </script>
       </vm:if>
@@ -4883,7 +4902,7 @@
                   Are you sure that you want to delete the selected item?
       	</div>
         <div id="deleteDiv2" style="display: none;">
-          Do you want to delete all occurrences of the repeatble item, or just this one?<br /><br />
+                  Do you want to delete all occurrences of the repeatable item, or just this one?<br /><br />
           <input type="radio" name="e_delete" id="e_delete_0" value="0" checked="checked" style="margin-left: 110px;" /><label for="e_delete_0">Delete this occurrence</label><br />
           <input type="radio" name="e_delete" id="e_delete_1" value="1" style="margin-left: 110px;" /><label for="e_delete_1">Delete the series</label><br />
         </div>

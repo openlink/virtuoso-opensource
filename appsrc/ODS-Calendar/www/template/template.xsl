@@ -277,13 +277,14 @@
             ?>
           </tr>
           <?vsp
-            declare N, M, W, D integer;
+            declare L, L1, N, M, W, D integer;
             declare dt date;
             declare C, S varchar;
             declare eventDays any;
 
             eventDays := vector ();
-            for (select rs.*
+            for (select rs.e_start,
+                        rs.e_end
                    from CAL.WA.events_forPeriod (rs0, rs1, rs2, rs3, rs4)(e_id integer, e_event integer, e_subject varchar, e_start datetime, e_end datetime, e_repeat varchar, e_repeat_offset integer, e_reminder integer) rs
                   where rs0 = self.domain_id
                     and rs1 = self.nCalcDate (0)
@@ -291,10 +292,17 @@
                     and rs3 = self.cPrivacy
                     and rs4 = self.cShowTasks) do
             {
-              eventDays := vector_concat (eventDays, vector (CAL.WA.dt_dateClear (e_start)));
+              L := datediff ('day', e_start, e_end);
+              for (N := 0; N <= L; N := N + 1)
+              {
+                eventDays := vector_concat (eventDays, vector (dateadd ('day', N, CAL.WA.dt_dateClear (e_start))));
+              }
             }
             names := CAL.WA.dt_WeekNames (self.cWeekStarts, 1);
-            for (N := 0; N < length (self.cnDays); N := N + 1) {
+            L1 := length (eventDays);
+            L := length (self.cnDays);
+            for (N := 0; N < L; N := N + 1)
+            {
               W := floor (N / 7);
               D := mod (N, 7);
               if ((D = 0) and (W <> 0))
@@ -313,14 +321,17 @@
               if (self.cnDays[N] < 0)
                 C := C || ' C_offmonth';
               dt := self.nCalcDate (N);
-              if ((dt >= self.cStart) and (dt <= self.cEnd)) {
-                if (CAL.WA.dt_isWeekDay (dt, self.cWeekStarts)) {
+              if ((dt >= self.cStart) and (dt <= self.cEnd))
+              {
+                if (CAL.WA.dt_isWeekDay (dt, self.cWeekStarts))
+                {
                   C := C || ' C_weekday_selected';
                 } else {
                   C := C || ' C_weekend_selected';
                 }
               } else {
-                if (CAL.WA.dt_isWeekDay (dt, self.cWeekStarts)) {
+                if (CAL.WA.dt_isWeekDay (dt, self.cWeekStarts))
+                {
                   C := C || ' C_weekday';
                 } else {
                   C := C || ' C_weekend';
@@ -328,7 +339,8 @@
               }
               if (CAL.WA.dt_compare (self.cnMonth, CAL.WA.dt_BeginOfMonth (curdate ())))
                 if (CAL.WA.dt_compare (dt, curdate ()))
-                  if ((dt >= self.cStart) and (dt <= self.cEnd)) {
+                  if ((dt >= self.cStart) and (dt <= self.cEnd))
+                  {
                     C := C || ' C_today_selected';
                   } else {
                     C := C || ' C_today';
@@ -336,8 +348,10 @@
               C := trim (C, ' ');
 
               S := '';
-              for (M := 0; M < length (eventDays); M := M + 1) {
-                if (CAL.WA.dt_compare (dt, eventDays [M])) {
+              for (M := 0; M < L1; M := M + 1)
+              {
+                if (CAL.WA.dt_compare (dt, eventDays [M]))
+                {
                   S := sprintf ('style="%s"', 'font-weight: bold;');
                   goto _exit;
                 }
@@ -353,9 +367,26 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <xsl:template match="vm:calendars">
+    <vm:if test="((select count(*) from CAL.WA.SHARED where S_DOMAIN_ID = self.domain_id))">
+      <div class="lc lc_head" onclick="shCell('calendars')">
+        <img id="calendars_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Accepted Calendars
+      </div>
+      <div id="calendars" class="lc lc_closer lc_noborder" style="display: none;">
+        <?vsp
+          for (select * from CAL.WA.SHARED where S_DOMAIN_ID = self.domain_id) do
+          {
+            http (sprintf ('<a href="javascript: cCalendar(%d);" class="gems" style="background-color: %s;">%s</a>', S_ID, S_COLOR, CAL.WA.domain_name (S_CALENDAR_ID)));
+          }
+        ?>
+      </div>
+    </vm:if>
+  </xsl:template>
+
+  <!--=========================================================================-->
   <xsl:template match="vm:exchange">
     <div class="lc lc_head" onclick="shCell('exchange')">
-      <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />Exchange
+      <img id="exchange_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Exchange
     </div>
     <div id="exchange" class="lc lc_closer lc_noborder" style="display: none;">
       <a href="javascript: cExchange('import');" title="Import" class="gems"><img src="image/upld_16.png" border="0" alt="Import" /> Import</a>
@@ -366,7 +397,7 @@
   <!--=========================================================================-->
   <xsl:template match="vm:formats">
     <div class="lc lc_head" onclick="shCell('gems')">
-      <img id="gems_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />Calendar Gems
+      <img id="gems_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Calendar Gems
     </div>
     <div id="gems" class="lc lc_closer lc_noborder" style="display: none;">
       <?vsp
@@ -376,7 +407,8 @@
         declare lat, lng any;
 
         select WAUI_LAT, WAUI_LNG into lat, lng from DB.DBA.WA_USER_INFO where WAUI_U_ID = self.account_id;
-        if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id)) {
+        if (not is_empty_or_null(lat) and not is_empty_or_null (lng) and exists (select 1 from ODS..SVC_HOST, ODS..APP_PING_REG where SH_NAME = 'GeoURL' and AP_HOST_ID = SH_ID and AP_WAI_ID = self.domain_id))
+        {
           http (sprintf('<a href="http://geourl.org/near?p=%U" title="GeoURL link" class="gems"><img src="http://i.geourl.org/geourl.png" border="0"/></a>', CAL.WA.calendar_url (self.domain_id)));
           http ('<div style="border-top: 1px solid #7f94a5;"></div>');
         }
@@ -386,8 +418,6 @@
         http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" class="gems"><img src="image/blue-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'atom', 'ATOM', 'ATOM', 'Atom'));
         http (sprintf('<a href="%sCalendar.%s" target="_blank" title="%s export" class="gems"><img src="image/rdf-icon-16.gif" border="0" alt="%s export" /> %s</a>', S, 'rdf', 'RDF', 'RDF', 'RDF'));
 
-        http ('<div style="border-top: 1px solid #7f94a5;"></div>');
-        http (sprintf ('<a href="%s" target="_blank" title="FOAF export" alt="FOAF export" class="gems"><img src="image/foaf.png" border="0" alt="FOAF export" /> FOAF</a>', CAL.WA.foaf_url (self.domain_id)));
         http ('<div style="border-top: 1px solid #7f94a5;"></div>');
 
         S := sprintf ('http://%s/dataspace/%U/calendar/%U/', DB.DBA.wa_cname (), CAL.WA.domain_owner_name (self.domain_id), CAL.WA.domain_name (self.domain_id));
