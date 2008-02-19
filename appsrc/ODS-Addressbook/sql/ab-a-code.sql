@@ -1409,7 +1409,7 @@ create procedure AB.WA.vector_set (
 create procedure AB.WA.vector_search(
   in aVector any,
   in value varchar,
-  in condition vrchar := 'AND')
+  in condition varchar := 'AND')
 {
   declare N integer;
 
@@ -2705,139 +2705,6 @@ create procedure AB.WA.contact_update (
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.contact_update2 (
-  in id integer,
-  in domain_id integer,
-  in pName varchar,
-  in pValue any)
-{
-  if ((id = -1) and (pName = 'P_NAME')) {
-    id := sequence_next ('AB.WA.contact_id');
-    insert into AB.WA.PERSONS
-      (
-        P_ID,
-        P_DOMAIN_ID,
-        P_NAME,
-        P_CREATED,
-        P_UPDATED
-      )
-      values
-      (
-        id,
-        domain_id,
-        pValue,
-        now (),
-        now ()
-      );
-    return id;
-  }
-  if (id <> -1) {
-    if (pName = 'P_KIND')
-      update AB.WA.PERSONS set P_KIND = pValue where P_ID = id;
-    if (pName = 'P_NAME')
-      update AB.WA.PERSONS set P_NAME = pValue where P_ID = id;
-    if (pName = 'P_TITLE')
-      update AB.WA.PERSONS set P_TITLE = pValue where P_ID = id;
-    if (pName = 'P_FIRST_NAME')
-      update AB.WA.PERSONS set P_FIRST_NAME = pValue where P_ID = id;
-    if (pName = 'P_MIDDLE_NAME')
-      update AB.WA.PERSONS set P_MIDDLE_NAME = pValue where P_ID = id;
-    if (pName = 'P_LAST_NAME')
-      update AB.WA.PERSONS set P_LAST_NAME = pValue where P_ID = id;
-    if (pName = 'P_FULL_NAME')
-      update AB.WA.PERSONS set P_FULL_NAME = pValue where P_ID = id;
-    if (pName = 'P_GENDER')
-      update AB.WA.PERSONS set P_GENDER = pValue where P_ID = id;
-    if (pName = 'P_BIRTHDAY')
-      update AB.WA.PERSONS set P_BIRTHDAY = pValue where P_ID = id;
-    if (pName = 'P_FOAF')
-      update AB.WA.PERSONS set P_FOAF = pValue where P_ID = id;
-    if (pName = 'P_MAIL')
-      update AB.WA.PERSONS set P_MAIL = pValue where P_ID = id;
-    if (pName = 'P_WEB')
-      update AB.WA.PERSONS set P_WEB = pValue where P_ID = id;
-    if (pName = 'P_ICQ')
-      update AB.WA.PERSONS set P_ICQ = pValue where P_ID = id;
-    if (pName = 'P_SKYPE')
-      update AB.WA.PERSONS set P_SKYPE = pValue where P_ID = id;
-    if (pName = 'P_AIM')
-      update AB.WA.PERSONS set P_AIM = pValue where P_ID = id;
-    if (pName = 'P_YAHOO')
-      update AB.WA.PERSONS set P_YAHOO = pValue where P_ID = id;
-    if (pName = 'P_MSN')
-      update AB.WA.PERSONS set P_MSN = pValue where P_ID = id;
-
-    if (pName = 'P_H_ADDRESS1')
-      update AB.WA.PERSONS set P_H_ADDRESS1 = pValue where P_ID = id;
-    if (pName = 'P_H_ADDRESS2')
-      update AB.WA.PERSONS set P_H_ADDRESS2 = pValue where P_ID = id;
-    if (pName = 'P_H_CODE')
-      update AB.WA.PERSONS set P_H_CODE = pValue where P_ID = id;
-    if (pName = 'P_H_CITY')
-      update AB.WA.PERSONS set P_H_CITY = pValue where P_ID = id;
-    if (pName = 'P_H_STATE')
-      update AB.WA.PERSONS set P_H_STATE = pValue where P_ID = id;
-    if (pName = 'P_H_COUNTRY')
-      update AB.WA.PERSONS set P_H_COUNTRY = pValue where P_ID = id;
-    if (pName = 'P_H_TZONE')
-      update AB.WA.PERSONS set P_H_TZONE = pValue where P_ID = id;
-    if (pName = 'P_H_LAT')
-      update AB.WA.PERSONS set P_H_LAT = pValue where P_ID = id;
-    if (pName = 'P_H_LNG')
-      update AB.WA.PERSONS set P_H_LNG = pValue where P_ID = id;
-    if (pName = 'P_H_PHONE')
-      update AB.WA.PERSONS set P_H_PHONE = pValue where P_ID = id;
-    if (pName = 'P_H_MOBILE')
-      update AB.WA.PERSONS set P_H_MOBILE = pValue where P_ID = id;
-    if (pName = 'P_H_FAX')
-      update AB.WA.PERSONS set P_H_FAX = pValue where P_ID = id;
-    if (pName = 'P_H_MAIL')
-      update AB.WA.PERSONS set P_H_MAIL = pValue where P_ID = id;
-    if (pName = 'P_H_WEB')
-      update AB.WA.PERSONS set P_H_WEB = pValue where P_ID = id;
-
-    if (pName = 'P_B_ADDRESS1')
-      update AB.WA.PERSONS set P_B_ADDRESS1 = pValue where P_ID = id;
-    if (pName = 'P_B_ADDRESS2')
-      update AB.WA.PERSONS set P_B_ADDRESS2 = pValue where P_ID = id;
-    if (pName = 'P_B_CODE')
-      update AB.WA.PERSONS set P_B_CODE = pValue where P_ID = id;
-    if (pName = 'P_B_CITY')
-      update AB.WA.PERSONS set P_B_CITY = pValue where P_ID = id;
-    if (pName = 'P_B_STATE')
-      update AB.WA.PERSONS set P_B_STATE = pValue where P_ID = id;
-    if (pName = 'P_B_COUNTRY')
-      update AB.WA.PERSONS set P_B_COUNTRY = pValue where P_ID = id;
-    if (pName = 'P_B_TZONE')
-      update AB.WA.PERSONS set P_B_TZONE = pValue where P_ID = id;
-    if (pName = 'P_B_LAT')
-      update AB.WA.PERSONS set P_B_LAT = pValue where P_ID = id;
-    if (pName = 'P_B_LNG')
-      update AB.WA.PERSONS set P_B_LNG = pValue where P_ID = id;
-    if (pName = 'P_B_PHONE')
-      update AB.WA.PERSONS set P_B_PHONE = pValue where P_ID = id;
-    if (pName = 'P_B_MOBILE')
-      update AB.WA.PERSONS set P_B_MOBILE = pValue where P_ID = id;
-    if (pName = 'P_B_FAX')
-      update AB.WA.PERSONS set P_B_FAX = pValue where P_ID = id;
-    if (pName = 'P_B_MAIL')
-      update AB.WA.PERSONS set P_B_MAIL = pValue where P_ID = id;
-    if (pName = 'P_B_WEB')
-      update AB.WA.PERSONS set P_B_WEB = pValue where P_ID = id;
-    if (pName = 'P_B_ORGANIZATION')
-      update AB.WA.PERSONS set P_B_ORGANIZATION = pValue where P_ID = id;
-    if (pName = 'P_B_DEPARTMENT')
-      update AB.WA.PERSONS set P_B_DEPARTMENT = pValue where P_ID = id;
-    if (pName = 'P_B_JOB')
-      update AB.WA.PERSONS set P_B_JOB = pValue where P_ID = id;
-    update AB.WA.PERSONS set P_UPDATED = now () where P_ID = id;
-  }
-  return id;
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure AB.WA.contact_update3 (
   in id integer,
   in domain_id integer,
@@ -2845,22 +2712,24 @@ create procedure AB.WA.contact_update3 (
   in pValues any,
   in tags varchar)
 {
-  declare N varchar;
+  declare N, L varchar;
   declare S varchar;
   declare st, msg, meta, rows any;
 
-  if (tags <> '')
+  S := '';
+  L := length (pFields);
+  for (N := 0; N < L; N := N + 1)
   {
-    pFields := vector_concat (pFields, vector ('P_TAGS'));
-    pValues := vector_concat (pValues, vector (tags));
-  }
-  S := 'P_UPDATED = now () ';
-  for (N := 0; N < length (pFields); N := N + 1)
     S := S || ', ' || pFields[N] || ' = ?';
-  S := trim (S, ',');
+  }
+  if (trim (tags) <> '')
+  {
+    S := S || ', P_TAGS = ?';
+    pValues := vector_concat (pValues, vector (trim (tags)));
+  }
   if (S <> '')
   {
-    S := 'update AB.WA.PERSONS set ' || S || ' where P_ID = ' || cast (id as varchar);
+    S := 'update AB.WA.PERSONS set P_UPDATED = now ()' || S || ' where P_ID = ' || cast (id as varchar);
     exec (S, st, msg, pValues, 0, meta, rows);
   }
 }
@@ -2876,7 +2745,7 @@ create procedure AB.WA.contact_update4 (
   in tags varchar,
   in validation any)
 {
-  declare N, M varchar;
+  declare L, N, M varchar;
   declare S varchar;
   declare st, msg, meta, rows, F, V any;
 
@@ -2920,13 +2789,31 @@ create procedure AB.WA.contact_update4 (
     }
   }
 
+  L := length (pFields);
   if (isinteger (id) and (id = -1))
   {
-    for (N := 0; N < length (pFields); N := N + 1)
+    for (N := 0; N < L; N := N + 1)
+    {
       if (pFields [N] = 'P_NAME')
       {
-        id := AB.WA.contact_update2 (id, domain_id, pFields [N], pValues [N]);
-        goto _exit;
+        id := sequence_next ('AB.WA.contact_id');
+        insert into AB.WA.PERSONS
+          (
+            P_ID,
+            P_DOMAIN_ID,
+            P_NAME,
+            P_CREATED,
+            P_UPDATED
+          )
+          values
+          (
+            id,
+            domain_id,
+            pValues [N],
+            now (),
+            now ()
+          );
+      }
       }
   _exit:;
     if (isinteger (id) and (id = -1))
@@ -2934,8 +2821,10 @@ create procedure AB.WA.contact_update4 (
 
     V := vector ();
     F := vector ();
-    for (N := 0; N < length (pFields); N := N + 1) {
-      if ('P_NAME' <> pFields [N]) {
+    for (N := 0; N < L; N := N + 1)
+    {
+      if ('P_NAME' <> pFields [N])
+      {
         F := vector_concat (F, vector (pFields [N]));
         V := vector_concat (V, vector (pValues [N]));
       }
@@ -2947,7 +2836,9 @@ create procedure AB.WA.contact_update4 (
   }
 
   for (N := 0; N < length (id); N := N + 1)
+  {
     AB.WA.contact_update3 (id[N], domain_id, pFields, pValues, tags);
+  }
 
   return length (id);
 }
@@ -3218,24 +3109,27 @@ create procedure AB.WA.import_foaf (
   in contentLimit any := 100,
   in contentFollow any := 'foaf:knows')
 {
-  declare N, M, nLength, mLength, id integer;
+  declare N, M, pLength, mLength, iLength, id integer;
   declare tmp, tmp2, data, pFields, pValues any;
-  declare Meta, Items, Item any;
-  declare S, T, name, fullName varchar;
+  declare Meta, Persons, Person, Items any;
+  declare S, T, P, name, fullName varchar;
 
   if (isnull (contentIRI))
     contentIRI := AB.WA.ab_graph_create ();
 
   declare exit handler for sqlstate '*'
   {
+    -- dbg_obj_print (__SQL_STATE, __SQL_MESSAGE);
     AB.WA.ab_graph_delete (contentIRI);
     signal ('TEST', 'Bad import source!<>');    
   };
 
   Meta := vector
     (
+      'P_ID',
       'P_NAME',
       'P_FULL_NAME',
+      'P_KIND',
       'P_FIRST_NAME',
       'P_LAST_NAME',
       'P_BIRTHDAY',
@@ -3245,7 +3139,6 @@ create procedure AB.WA.import_foaf (
       'P_MSN',
       'P_AIM',
       'P_YAHOO',
-      'P_KIND',
       'P_TITLE',
       'P_H_PHONE'
     );
@@ -3261,10 +3154,12 @@ create procedure AB.WA.import_foaf (
   
     T := '';
     if (contentDepth)
+    {
       T := sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI);
+    }
     S := sprintf ('SPARQL\n%s  define get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', T, content, contentIRI);
     st := '00000';
-    exec (S, st, msg, vector (), 0, meta, items);
+    exec (S, st, msg, vector (), 0, meta, Items);
     if ('00000' <> st)
       signal (st, msg);
   }
@@ -3283,78 +3178,85 @@ create procedure AB.WA.import_foaf (
   } else {
     Items := contentItems;
   }
+  iLength := length (Items);
 
-  nLength := length (Items);
-  for (N := 0; N < nLength; N := N + 1)
-  {
     S := ' SPARQL ' ||
          ' PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
          ' PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> ' ||
          ' PREFIX foaf: <http://xmlns.com/foaf/0.1/> ' ||
-         ' SELECT ?P_NAME, ?P_FULL_NAME, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO, ?P_KIND, ?P_TITLE, ?P_H_PHONE' ||
+       ' SELECT ?P_ID, ?P_NAME, ?P_FULL_NAME, ?P_KIND, ?P_FIRST_NAME, ?P_LAST_NAME, ?P_BIRTHDAY, ?P_MAIL, ?P_WEB, ?P_ICQ, ?P_MSN, ?P_AIM, ?P_YAHOO, ?P_TITLE, ?P_H_PHONE' ||
          ' FROM <%s> ' ||
          ' WHERE { ' ||
-         '         <PERSON> rdf:type ?P_KIND .' ||
-         '         OPTIONAL{ <PERSON>  foaf:nick ?P_NAME} . ' ||
-         '         OPTIONAL{ <PERSON>  foaf:title ?P_TITLE} . ' ||
-         '         OPTIONAL{ <PERSON>  foaf:name ?P_FULL_NAME} . ' ||
-         '         OPTIONAL{ <PERSON>  foaf:firstNname ?P_FIRST_NAME} . ' ||
-         '         OPTIONAL{ <PERSON>  foaf:family_name ?P_LAST_NAME} . ' ||
-         '         OPTIONAL{ <PERSON>  foaf:dateOfBirth ?P_BIRTHDAY} . ' ||
-         '         OPTIONAL{ <PERSON>  foaf:mbox ?P_MAIL} . ' ||
-         '         OPTIONAL{ <PERSON>  foaf:homepage ?P_WEB} . ' ||
-         '         OPTIONAL{ <PERSON>  foaf:icqChatID ?P_ICQ } .' ||
-         '         OPTIONAL{ <PERSON>  foaf:msnChatID ?P_MSN } .' ||
-         '         OPTIONAL{ <PERSON>  foaf:aimChatID ?P_AIM } .' ||
-         '         OPTIONAL{ <PERSON>  foaf:yahooChatID ?P_YAHOO } .' ||
-         '         OPTIONAL{ <PERSON>  foaf:phone ?P_H_PHONE } .' ||
+       '         {?P_ID a foaf:Person } UNION {?P_ID a foaf:Organization } . ' ||
+       '         ?P_ID rdf:type ?P_KIND .' ||
+       '         OPTIONAL{ ?P_ID  foaf:nick ?P_NAME} . ' ||
+       '         OPTIONAL{ ?P_ID  foaf:title ?P_TITLE} . ' ||
+       '         OPTIONAL{ ?P_ID  foaf:name ?P_FULL_NAME} . ' ||
+       '         OPTIONAL{ ?P_ID  foaf:firstNname ?P_FIRST_NAME} . ' ||
+       '         OPTIONAL{ ?P_ID  foaf:family_name ?P_LAST_NAME} . ' ||
+       '         OPTIONAL{ ?P_ID  foaf:dateOfBirth ?P_BIRTHDAY} . ' ||
+       '         OPTIONAL{ ?P_ID  foaf:mbox ?P_MAIL} . ' ||
+       '         OPTIONAL{ ?P_ID  foaf:homepage ?P_WEB} . ' ||
+       '         OPTIONAL{ ?P_ID  foaf:icqChatID ?P_ICQ } .' ||
+       '         OPTIONAL{ ?P_ID  foaf:msnChatID ?P_MSN } .' ||
+       '         OPTIONAL{ ?P_ID  foaf:aimChatID ?P_AIM } .' ||
+       '         OPTIONAL{ ?P_ID  foaf:yahooChatID ?P_YAHOO } .' ||
+       '         OPTIONAL{ ?P_ID  foaf:phone ?P_H_PHONE } .' ||
          '       }';
-
-    S := sprintf (S, contentIRI);
-    S := replace (S, '<PERSON>', '<' || Items [N][0] || '>');
-    Item := AB.WA.ab_sparql (S);
-
-    if (length (Item))
+  Persons := AB.WA.ab_sparql (sprintf (S, contentIRI));
+  pLength := length (Persons);
+  P := '';
+  for (N := 0; N < pLength; N := N + 1)
     {
-      fullName := null;
-      if (not isnull (Item[0][1]))
+    Person := Persons[N];
+    if (P <> Person[0])
       {
-        fullName := Item[0][1];
-      } else
+      for (M := 0; M < iLength; M := M + 1)
       {
-        if (not isnull (Item[0][2]) or not isnull (Item[0][3]))
-          fullName := trim (Item[0][2] || ' ' || Item[0][3]);
+        if (Person[0] = Items[M][0])
+      {
+          goto _import;
+        }
       }
-      if (not is_empty_or_null (coalesce (Item[0][0], fullName)))
+      }
+    goto _next;
+
+  _import:;
+    P := Person[0];
+    name := Person[1];
+    fullName := Person[2];
+    if (isnull (fullName) and not (isnull (Person[4]) and isnull (Person[5])))
+    {
+      fullName := trim (Person[4] || ' ' || Person[5]);
+    }
+    if (not is_empty_or_null (coalesce (name, fullName)))
       {
         pFields := vector ('P_NAME');
-        pValues := vector (coalesce (Item[0][0], fullName));
-	      if (Items [N][0] not like 'nodeID://%')
+      pValues := vector (coalesce (name, fullName));
+      if (P not like 'nodeID://%')
 	      {
           pFields := vector_concat (pFields, vector ('P_IRI'));
-          pValues := vector_concat (pValues, vector (Items [N][0]));
+        pValues := vector_concat (pValues, vector (P));
 	      }
 	      if (content like 'http://%')
 	      {
           pFields := vector_concat (pFields, vector ('P_FOAF'));
           pValues := vector_concat (pValues, vector (content));
 	      }
-        for (M := 1; M < mLength; M := M + 1)
-        {
-          if (Meta[M] = 'P_FULL_NAME')
-          {
             if (not isnull (fullName))
             {
-              pFields := vector_concat (pFields, vector (Meta[M]));
+        pFields := vector_concat (pFields, vector ('P_FULL_NAME'));
               pValues := vector_concat (pValues, vector (fullName));
             }
-          } else {
+      for (M := 3; M < mLength; M := M + 1)
+      {
             tmp := Meta[M];
-            tmp2 := Item[0][M];
+        tmp2 := Person[M];
             if (tmp = 'P_BIRTHDAY')
             {
               {
-                declare continue handler for sqlstate '*' {
+            declare continue handler for sqlstate '*'
+            {
                   tmp := '';
                 };
                 tmp2 := AB.WA.dt_reformat (tmp2, 'Y-M-D');
@@ -3362,7 +3264,7 @@ create procedure AB.WA.import_foaf (
             }
             if (tmp = 'P_KIND')
             {
-              tmp2 := case when (tmp2 = 'http://xmlns.com/foaf/0.1/Person') then 0 else 1 end;
+          tmp2 := case when (tmp2 = 'http://xmlns.com/foaf/0.1/Organization') then 1 else 0 end;
             }
             if (tmp = 'P_MAIL')
             {
@@ -3374,10 +3276,9 @@ create procedure AB.WA.import_foaf (
               pValues := vector_concat (pValues, vector (tmp2));
             }
           }
-        }
         AB.WA.contact_update4 (-1, domain_id, pFields, pValues, tags, validation);
       }
-    }
+  _next:;
   }
 
 _delete:;
@@ -3421,7 +3322,7 @@ create procedure AB.WA.import_foaf_content (
       T := sprintf ('  define input:grab-depth %d\n  define input:grab-limit %d\n  define input:grab-seealso <%s>\n  define input:grab-destination <%s>\n', contentDepth, contentLimit, contentFollow, contentIRI);
     S := sprintf ('SPARQL\n%s  define get:soft "soft"\n  define get:uri "%s"\nSELECT *\n  FROM <%s>\n WHERE { ?s ?p ?o }', T, content, contentIRI);
     st := '00000';
-    exec (S, st, msg, vector (), 0, meta, items);
+    exec (S, st, msg, vector (), 0, meta, Items);
     if ('00000' <> st)
       signal (st, msg);
   } else {
@@ -3760,7 +3661,7 @@ create procedure AB.WA.export_csv_head ()
          '"Business Mobile",' ||
          '"Business Mail",' ||
          '"Business Web Page",' ||
-         '"Indistry",' ||
+         '"Industry",' ||
          '"Company",' ||
          '"Job Title",' ||
          '"Tags"\r\n';

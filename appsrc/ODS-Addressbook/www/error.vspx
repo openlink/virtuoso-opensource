@@ -34,7 +34,7 @@
     <vm:pagebody>
       <div class="form-header">
         <img class="dialog_icon" src="image/stop_16.png" alt="Stop" title="Stop"/>
-        An error has occured during processing of the "<?V self.page_name ?>" page.
+        An error has occurred during processing of the "<?V self.page_name ?>" page.
       </div>
       <div class="error" style="text-align: left;">
         <table>

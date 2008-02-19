@@ -338,7 +338,8 @@ create procedure contact_insert (
 	declare person_iri varchar;
 	declare inst_id integer;
 
-  declare exit handler for sqlstate '*' {
+	declare exit handler for sqlstate '*'
+	{
     sioc_log_message (__SQL_MESSAGE);
     return;
   };

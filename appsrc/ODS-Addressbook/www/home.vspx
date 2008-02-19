@@ -709,7 +709,7 @@
                 <![CDATA[
                   declare node, path, action any;
 
-                  -- touggle
+                  -- toggle
                   path := get_keyword ('pt_path', e.ve_params, '');
                   node := get_keyword ('pt_toggle', e.ve_params, get_keyword ('pt_node', e.ve_params, ''));
                   if (node <> '')
@@ -2648,7 +2648,7 @@
                         </tr>
                         <tr>
                           <th>
-                            Grab Limit
+                            Maximum Entity Count
                           </th>
                           <td>
                             <v:text name="i_limit" value="--self.i_contentLimit" xhtml_size="3" />
@@ -2656,7 +2656,7 @@
                         </tr>
                         <tr>
                           <th>
-                            Grab Follow Predicate
+                            Follow Property
                           </th>
                           <td>
                             <v:select-list name="i_follow">
