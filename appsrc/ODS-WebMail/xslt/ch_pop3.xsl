@@ -26,7 +26,7 @@
   <xsl:include href="common.xsl"/>
   <!-- ====================================================================================== -->
   <xsl:template match="page">
-    <script laguage="JavaScript">
+    <script language="JavaScript">
       function cdel(acc_id){
         if(confirm('Are you sure you want to delete this account ')){
           document.dacc.del_acc_id.value = acc_id;

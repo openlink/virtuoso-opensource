@@ -251,9 +251,9 @@
         OAT.Anchor.zIndex = 1001;
 
         if (<xsl:value-of select="//user_info/app" /> == 1)
-          gererateAPP('app_area', {appActivation: "click"});
+          generateAPP('app_area', {appActivation: "click"});
         if (<xsl:value-of select="//user_info/app" /> == 2)
-          gererateAPP('app_area', {appActivation: "hover"});
+          generateAPP('app_area', {appActivation: "hover"});
       }
       OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
     </script>

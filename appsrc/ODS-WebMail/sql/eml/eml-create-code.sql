@@ -531,7 +531,7 @@ create procedure OMAIL.WA.omail_box(
 
   OMAIL.WA.getOrderDirection (_order, _direction);
 
-  -- Check Params for ilegal values---------------------------------------------------
+  -- Check Params for illegal values---------------------------------------------------
   if (OMAIL.WA.omail_check_folder_id(_domain_id,_user_id, get_keyword('folder_id',_params)) = 0) {
     -- check FOLDER_ID
     OMAIL.WA.utl_redirect(sprintf('err.vsp?sid=%s&realm=%s&err=%d',_sid,_realm,1100));
@@ -4218,7 +4218,7 @@ create procedure OMAIL.WA.omail_search(
     OMAIL.WA.omail_setparam('aresults',_params,10);
   }
 
-  -- Check Params for ilegal values---------------------------------------------------
+  -- Check Params for illegal values---------------------------------------------------
   if (not OMAIL.WA.omail_check_interval(OMAIL.WA.omail_getp ('skiped',_params),0,100000))
   { -- check SKIPED
     OMAIL.WA.utl_redirect(sprintf('%s?sid=%s&realm=%s&err=%d','err.vsp',_sid,_realm,1101));
@@ -6194,7 +6194,7 @@ create procedure OMAIL.WA.omail_api_message_send_recu(
   in iLevel integer)
 {
   if (iLevel > 15)
-    signal('90002','Too deeeeep');
+    signal('90002','Too deep');
 
   declare ind integer;
   declare sRes, sNode, sValue varchar;
@@ -7672,7 +7672,7 @@ create procedure DB.DBA.MAIL_NEWS_MSG_I (
 
       {
       declare exit handler for not found{
-                                         signal ('CONVX', 'Newsgroup does not corespond to mail instance.');
+                                             signal ('CONVX', 'Newsgroup does not corresponds to mail instance.');
                                         };
       
       select  WAI_ID,WAI_NAME,WAM_USER into _domain_id,_to,_user_id from WA_INSTANCE,WA_MEMBER,NEWS_GROUPS
