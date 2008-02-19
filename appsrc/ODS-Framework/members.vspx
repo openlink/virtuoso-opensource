@@ -660,7 +660,7 @@
                 if(length(self.d_added)>0)
                 {
             ?>
-            <table class="listing" id="members" cellspacing="0" wodht="98%"> 
+            <table class="listing" id="members" cellspacing="0" width="98%">
               <tr class="listing_header_row">
                 <th> Name </th>
                 <th>Description </th>

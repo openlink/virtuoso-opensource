@@ -304,7 +304,7 @@
                 </div>
               </div>
 	      <div class="fm">
-	        <v:form name="endp_f" mthod="POST" type="simple">
+	              <v:form name="endp_f" method="POST" type="simple">
 		  <fieldset>
 		      <label for="">Application</label>
                     <v:data-list xhtml_style="width:100"
@@ -373,7 +373,7 @@ control.vc_enabled := 0;
 					domain  := get_keyword ('l_domain1', e.ve_params);
 					commit work;
 
--- Error handling disabled in order to activate defaul error handling and show error on Error page - error.vspx.
+                          -- Error handling disabled in order to activate default error handling and show error on Error page - error.vspx.
 
                           declare exit handler for sqlstate '*'
                             {

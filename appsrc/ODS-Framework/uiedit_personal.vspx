@@ -494,16 +494,23 @@
                 <th><label for="up_photo">Upload Photo</label></th>
                 <td class="listing_col" nowrap="1">
 		    <input name="up_photo" type="file" value="" xhtml_size="80" xhtml_tabindex="17"
-			   onblur='javascript:getFileName(this.form, this, this.form.s_photo);'/>
+			    onchange='getFileName(this.form, this, this.form.s_photo);'/>
 
          			<v:button name="bt_preview_1" value="Preview" action="simple">
       			  <v:on-post>
               <![CDATA[
 			          if (get_keyword ('up_photo', e.ve_params, '') <> '')
 			          {
+
 			            declare dir, p_path, p_ext any;
 			            dir := rtrim (DAV_HOME_DIR (self.u_name), '/')||'/wa/images/';
+
+--                    declare _tmp_filedata any;
+--                    _tmp_filedata:=get_keyword('attr-up_photo',e.ve_params);
+--			              p_ext := split_and_decode(get_keyword('filename',_tmp_filedata),0,'\0\0.');
+
 			            p_ext := split_and_decode(self.s_photo.ufl_value,0,'\0\0.');
+                    
   		            p_path := dir||'preview_img.'||p_ext[length(p_ext)-1];
 
     		            if (p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) in ('jpg','png','gif'))
@@ -542,10 +549,17 @@
               </v:button>
                 <script type="text/javascript"><![CDATA[
                 var previeImgPath='<?Vself.previe_path?>';
+                
+                function dimmerPreviewInit()
+                {                
                 if(previeImgPath.length>0)
                 {
                   OAT.Loader.loadFeatures(["dimmer"],showPrevieImg);
                 }
+                }
+                
+                ODSInitArray.push(dimmerPreviewInit);
+
 
                 function showPrevieImg()
                 {

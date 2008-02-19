@@ -273,7 +273,7 @@ insert soft "DB"."DBA"."SYS_SCHEDULED_EVENT" (SE_INTERVAL, SE_LAST_COMPLETED, SE
 create procedure ODS.DBA.apml (in uname int)
 {
   declare ses, dt, srv, uid any;
-  set isolation='uncomitted';
+  set isolation='uncommitted';
   srv := WA_CNAME ();
   ses := string_output ();
   dt := DB.DBA.date_iso8601 (dt_set_tz (curdatetime (), 0));

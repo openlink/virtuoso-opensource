@@ -123,7 +123,7 @@
                   if (_result = 'approved')
                     _msg := 'Your join request approved.';
                   else if (_result = 'ownerwait')
-                    _msg := 'Application owner notified about your join request. You will get e-mail message after approvement.';
+                    _msg := 'Application owner notified about your join request. You will get e-mail message after approval.';
 		  delete from VSPX_SESSION where VS_SID = self.jid and VS_REALM = 'wa';
 		  delete from WA_INVITATIONS where WI_SID = self.jid;
                   http_request_status('HTTP/1.1 302 Found');

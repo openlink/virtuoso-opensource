@@ -126,10 +126,6 @@
 					self.vc_data_bind (e);
 				]]></v:on-post>
 				</v:button>
-				<![CDATA[&nbsp;]]>
-				<v:url name="moat1"
-				 url="--sprintf ('moat_ruleset_tags.vspx?trs_id=%d',
-				    (control.vc_parent as vspx_row_template).te_rowset[0])" value="MOAT" />
 			    </td>
 			</tr>
 		    </v:template>
@@ -214,8 +210,8 @@
 					self.vc_data_bind (e);
 				    </v:on-post>
 				</v:button>
-				<![CDATA[&nbsp;]]>
-				<v:url name="moat2" url="--sprintf ('moat_ruleset_tags.vspx?trs_id=%d', (control.vc_parent as vspx_row_template).te_rowset[0])" value="MOAT" />
+				<!--[CDATA[&nbsp;]]>
+				<v:url name="moat2" url="-#-sprintf ('moat_ruleset_tags.vspx?trs_id=%d', (control.vc_parent as vspx_row_template).te_rowset[0])" value="MOAT" /-->
 			    </td>
 			</tr>
 		    </v:template>
@@ -507,6 +503,13 @@ function selectAllCheckboxes (form, btn, txt)
 							self.upd_rule (control, e, 1);
 							]]></v:on-post>
 						</v:button>
+						<v:button name="moatbt1" value="MOAT" action="simple">
+						    <v:on-post><![CDATA[
+							self.save_rule (e);
+							self.vc_redirect (sprintf ('moat_tags.vspx?trs_id=%d&edit=%U',
+							self.trs_id, (control.vc_parent as vspx_row_template).te_rowset[1]));
+							]]></v:on-post>
+						</v:button>
 					    </td>
 					</tr>
 				    </v:template>
@@ -689,8 +692,7 @@ function selectAllCheckboxes (form, btn, txt)
 				self.vc_redirect ('tags.vspx');
 			    </v:on-post>
 			</v:button>
-			<v:button action="simple" name="trs_btn" value="Save">
-			    <v:on-post><![CDATA[
+			<v:method name="save_rule" arglist="inout e vspx_event"><![CDATA[
 				declare id int;
 				if (not self.vc_is_valid)
 				  return;
@@ -751,6 +753,7 @@ function selectAllCheckboxes (form, btn, txt)
 				    values (self.trs_name.ufl_value, self.u_id, self.trs_is_public.ufl_selected,
 				      self.trs_apc_id, self.trs_aps_id);
 				    id := identity_value ();
+				    self.trs_id := id;
 				    declare ord int;
 				    ord := coalesce ((select top 1 tu_order from tag_user
 						where tu_u_id = self.u_id
@@ -785,6 +788,10 @@ function selectAllCheckboxes (form, btn, txt)
 				        tt_query_tag_content (r[0], self.u_id, '', '', serialize (vector (id, r[1], r[2])));
 				      }
 				  }
+			    ]]></v:method>
+			<v:button action="simple" name="trs_btn" value="Save">
+			    <v:on-post><![CDATA[
+				self.save_rule (e);
 				self.vc_redirect ('tags.vspx');
 				]]></v:on-post>
 			</v:button>

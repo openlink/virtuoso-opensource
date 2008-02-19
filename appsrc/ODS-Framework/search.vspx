@@ -1422,7 +1422,7 @@ if(self.on_type = 'discussion' or self.on_type='nntpf')
 	  </div>]]>
 	</div>
 	<![CDATA[<div id="placeholder"></div>]]>
-	<!-- end RDF serach -->
+	<!-- end RDF search -->
       </v:template>
      </td>
    </tr>

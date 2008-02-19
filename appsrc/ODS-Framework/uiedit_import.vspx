@@ -91,7 +91,7 @@
 		<fieldset>
         <table cellspacing="0">
           <tr>
-            <td nowrap="nowarap">
+            <td nowrap="nowrap">
               <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0">
                 <v:before-render>
                   <![CDATA[
@@ -107,7 +107,7 @@
             </td>
           </tr>
           <tr>
-            <td nowrap="nowarap">
+            <td nowrap="nowrap">
               <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1">
                 <v:before-render>
                   <![CDATA[

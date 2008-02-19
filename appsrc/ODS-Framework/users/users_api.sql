@@ -35,7 +35,7 @@ create procedure ODS_USER_XML (
   for (select * from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_ID = pUID) do {
     http ('<user>', pStream);
 
-    -- Personel
+    -- Personal
     ODS_USER_XML_ITEM ('uid',       U_ID,            pStream);
     ODS_USER_XML_ITEM ('name',      U_NAME,          pStream);
     ODS_USER_XML_ITEM ('mail',      U_E_MAIL,        pStream);
@@ -45,7 +45,7 @@ create procedure ODS_USER_XML (
     ODS_USER_XML_ITEM ('fullName',  WAUI_FULL_NAME,  pStream);
 
     if (not pShort) {
-      -- Personel
+      -- Personal
       ODS_USER_XML_ITEM ('gender',                 WAUI_GENDER,       pStream);
       if (not isnull(WAUI_BIRTHDAY)) {
         ODS_USER_XML_ITEM ('birthdayDay',          dayofmonth(WAUI_BIRTHDAY), pStream);
@@ -359,7 +359,7 @@ create procedure ODS_USER_UPDATE (
   };
 
   if (ODS_SESSION_CHECK (pSid, pRealm, pUID, pUser)) {
-    -- Personel
+    -- Personal
     WA_USER_EDIT (pUser, 'E_MAIL', pMail);
     WA_USER_EDIT (pUser, 'WAUI_TITLE', pTitle);
     WA_USER_EDIT (pUser, 'WAUI_FIRST_NAME', pFirstName);

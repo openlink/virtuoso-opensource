@@ -280,7 +280,7 @@
         </div>
         <br/>
         <div class="fm">
-          <v:form name="endp_f" mthod="POST" type="simple">
+          <v:form name="endp_f" method="POST" type="simple">
       <fieldset>
           <label for="">Endpoint: </label>http://
           <v:text name="l_site1" xhtml_size="30" error-glyph="*">

@@ -22,7 +22,7 @@
 #
 
 LOGDIR=`pwd`
-VERSION="1.00.00"  # see automatic versioning bellow "1.02.69"
+VERSION="1.00.00"  # see automatic versioning below "1.02.69"
 LOGFILE="${LOGDIR}/make_ods_vad.log"
 STICKER="${LOGDIR}/make_ods_vad.xml"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`

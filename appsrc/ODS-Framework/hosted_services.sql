@@ -992,7 +992,7 @@ create method wa_notify_member_changed (in accounter int, in otype int, in ntype
       _mail_body := WA_MAIL_TEMPLATES(_mail_body, self, _user_name, sprintf('%s/login.vspx?URL=%s/members.vspx?wai_id=%d', wa_link (1), wa_link (), _wai_id));
       _mail_body := dat || 'Subject: Application registration notification\r\nContent-Type: text/plain; charset=UTF-8\r\n' || _mail_body;
       smtp_send(_smtp_server, _user_e_mail, _owner_e_mail, _mail_body);
-      -- place request on hold and wait owner approvement
+      -- place request on hold and wait owner approval
       connection_set('join_result', 'ownerwait');
       return;
     }
@@ -1045,7 +1045,7 @@ closed:
     return;
   }
   if(ntype is not null and ostatus = 3 and nstatus = 2) {
-    -- owner's approvement after user's join request
+    -- owner's approval after user's join request
     if(not _smtp_server or length(_smtp_server) = 0) {
       signal('WA002', '%%Mail Server is not defined. Mail verification impossible.%%');
     }
@@ -1123,7 +1123,7 @@ closed:
     return;
   }
   if(ntype is not null and nstatus = 2 and ostatus = 4) {
-    -- user's approvement
+    -- user's approval
     if(_member_model in (2, 3, 4)) {
       if(not _smtp_server or length(_smtp_server) = 0) {
         signal('WA002', '%%Mail Server is not defined. Mail verification impossible.%%');
@@ -1618,12 +1618,19 @@ for xml explicit'
 create procedure WA_CNAME ()
 {
   declare default_host, ret varchar;
+  ret := connection_get ('WA_CNAME');
+  if (ret is not null)
+    return ret;
   default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
   if (default_host is not null)
-    return default_host;
+    ret := default_host;
+  else
+    {
   ret := sys_stat ('st_host_name');
   if (server_http_port () <> '80')
     ret := ret ||':'|| server_http_port ();
+    }
+  connection_set ('WA_CNAME', ret);
   return ret;
 };
 
@@ -1818,10 +1825,10 @@ create procedure WA_STATUS_NAME(in status int) {
     return 'Approved';
   }
   else if(status = 3) {
-    return 'Owner approvement pending';
+    return 'Owner approval pending';
   }
   else if(status = 4) {
-    return 'User approvement pending';
+    return 'User approval pending';
   }
   else {
     return 'Invalid status';
@@ -4427,9 +4434,9 @@ create procedure WA_USER_FULLNAME (in _identity any)
   declare _u_full_name varchar;
   
   if(isinteger(_identity))
-    _u_full_name:=(select coalesce(WAUI_FULL_NAME,trim(concat(WAUI_FIRST_NAME,' ',WAUI_LAST_NAME))) from DB.DBA.WA_USER_INFO where WAUI_U_ID=_identity);
+    _u_full_name:=(select coalesce(WAUI_FULL_NAME,trim(concat(WAUI_FIRST_NAME,' ',WAUI_LAST_NAME)),'') from DB.DBA.WA_USER_INFO where WAUI_U_ID=_identity);
   else
-    _u_full_name:=(select coalesce(WAUI_FULL_NAME,trim(concat(WAUI_FIRST_NAME,' ',WAUI_LAST_NAME))) from DB.DBA.WA_USER_INFO,DB.DBA.SYS_USERS where WAUI_U_ID=U_ID and U_NAME=_identity);
+    _u_full_name:=(select coalesce(WAUI_FULL_NAME,trim(concat(WAUI_FIRST_NAME,' ',WAUI_LAST_NAME)),_identity) from DB.DBA.WA_USER_INFO,DB.DBA.SYS_USERS where WAUI_U_ID=U_ID and U_NAME=_identity);
   
   return _u_full_name;
 }

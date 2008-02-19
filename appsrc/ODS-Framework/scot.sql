@@ -197,6 +197,8 @@ create procedure scot_tags_delete (in inst_id int, in post_iri any, in tags varc
       update tag_stat set ts_afreq = ts_afreq - 1 where ts_inst_id = inst_id and ts_tag = tag;
     }
 
+  delete from tag_coocurrence where tc_inst_id = inst_id and tc_id
+      in (select tcs_id from tag_coocurrence_stats where tcs_inst_id = inst_id and tcs_afreq <= 0);
   delete from tag_coocurrence_stats where tcs_inst_id = inst_id and tcs_afreq <= 0;
   delete from tag_stat where ts_inst_id = inst_id and ts_afreq <= 0;
 

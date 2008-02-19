@@ -1030,7 +1030,7 @@ create procedure ods_sioc_post (
 	  --DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Post'));
 	  DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), ext_iri ('MailMessage'));
 	}
-      --else if (app = 'bookmark') handled bellow
+      --else if (app = 'bookmark') handled below
       --;
       else if (app = 'briefcase')
 	DB.DBA.RDF_QUAD_URI (graph_iri, iri, rdf_iri ('type'), foaf_iri ('Document'));

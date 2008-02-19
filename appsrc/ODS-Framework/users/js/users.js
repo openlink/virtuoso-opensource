@@ -181,9 +181,9 @@ function listCallback (result, obj, objValue) {
   // executingEnd();
 }
 
-function copyList(sourceName, targerName)
+function copyList(sourceName, targetName)
 {
-  var targetObj = $(targerName);
+  var targetObj = $(targetName);
   if (targetObj.options.length == 0) {
     var sourceObj = $(sourceName);
 		for (var i=0;i<sourceObj.options.length; i++) {
@@ -570,7 +570,7 @@ function ufProfileCallback(obj) {
     if (user) {
       //copyList('pf_homeCountry', 'pf_businessCountry');
 
-      // personell
+      // personal
       fieldUpdate(user, 'mail', 'pf_mail');
       fieldUpdate(user, 'title', 'pf_title');
       fieldUpdate(user, 'firstName', 'pf_firstName');
@@ -581,7 +581,7 @@ function ufProfileCallback(obj) {
       fieldUpdate(user, 'birthdayMonth',          'pf_birthdayMonth');
       fieldUpdate(user, 'birthdayYear',           'pf_birthdayYear');
 
-      // cntact
+      // contact
       fieldUpdate(user, 'icq', 'pf_icq');
       fieldUpdate(user, 'skype', 'pf_skype');
       fieldUpdate(user, 'yahoo', 'pf_yahoo');
@@ -628,7 +628,7 @@ function ufProfileCallback(obj) {
       fieldUpdate(user, 'businessNetwork',        'pf_businessNetwork');
       fieldUpdate(user, 'businessResume',         'pf_businessResume');
 
-      // sucurity
+      // security
       fieldUpdate(user, 'securitySecretQuestion', 'pf_securitySecretQuestion');
       fieldUpdate(user, 'securitySecretAnswer',   'pf_securitySecretAnswer');
       fieldUpdate(user, 'securitySiocLimit',      'pf_securitySiocLimit');

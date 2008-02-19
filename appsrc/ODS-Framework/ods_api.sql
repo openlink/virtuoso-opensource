@@ -54,6 +54,10 @@ create procedure get_tag_meanings_from_moat (in tag varchar)
   if (not isstring (srv) or not length (srv))
     srv := 'http://tags.moat-project.org';
   url := sprintf ('%s/tag/%U/json/light', srv, tag);
+  declare exit handler for sqlstate '*'
+    {
+      return vector ();
+    };
   cnt := http_get (url);
   arr := json_parse (cnt);
   arr := get_keyword ('bindings',  get_keyword ('results', arr));

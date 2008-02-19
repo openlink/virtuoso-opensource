@@ -4,13 +4,17 @@
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
  <head>
+  <script type="text/javascript">
+  document.write('<base href="'+document.location.protocol+'//'+ document.location.host+'/ods/" />');
+  </script>
+
   <title>ODS Navigation Framework</title>
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
   <link rel="stylesheet" href="nav_framework.css" type="text/css"/>
   <script type="text/javascript">
     var ODSInitArray = new Array();
 
-    var featureList = ["ajax2", "menu", "dimmer", "tab","gmaps","instant"];
+    var featureList = ["ajax2", "menu", "dimmer", "tab","gmaps","instant","anchor"];
     function init()
     {
 
@@ -176,8 +180,8 @@
                 <ul class="prof_user_commands" id="profile_user_actions" style="display:none;">
                   <li><a href="javascript:void(0)" id="profileConnAction">Connection/Disconnect</a></li>
                   <li><a href="javascript:void(0)" id="profileSendMsg">Send a message</a></li>
-                  <li><a href="javascript:void(0)">Browse data space</a></li>
-                  <li><a href="javascript:void(0)">Connection graph</a></li>
+                  <li><a href="javascript:void(0)" id="profileBrowseDS">Browse data space</a></li>
+                  <li><a href="javascript:void(0)" id="profileBrowseCG">Connection graph</a></li>
                 </ul>
               </div> <!-- w_content -->
   	        </div> <!-- .widget -->
@@ -726,10 +730,10 @@
       </div> <!-- .lt -->
       <div class="rt">
         <ul class="menu">
-          <li><a href="#">Profile</a></li>
-          <li><a href="#">Add Connection</a></li>
-          <li><a href="#">Connections ()</a></li>
-          <li><a href="#">Browse Data Space</a></li>
+          <li><a href="javascript:void(0)">Profile</a></li>
+          <li><a href="javascript:void(0)">Add Connection / Disconnect</a></li>
+          <li><a href="javascript:void(0)">Connections</a></li>
+          <li><a href="javascript:void(0)">Browse Data Space</a></li>
         </ul>
       </div> <!-- .rt -->
     </div>

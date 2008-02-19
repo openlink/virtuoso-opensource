@@ -107,7 +107,7 @@ function UpdateTab()
 			The "Rebuild User RDF View" function will re-generate the ODS RDF view defining graph per each ODS user. <br/>
 			Warning: Depending of the data volume of this ODS installation the above may take a very long time, please be patient.
 		    </p>
-		    <v:form name="build_f" mthod="POST" type="simple">
+		    <v:form name="build_f" method="POST" type="simple">
 			<fieldset>
 			    <span class="fm_ctl_btn">
 				<v:button action="simple" name="rdf_data" value="Rebuild RDF Data">
@@ -138,7 +138,7 @@ function UpdateTab()
 		    <p>
 			Do you really want to rebuild the <?V case when self.what = 'view' then 'ODS RDF View' when self.what = 'uview' then 'ODS User RDF View' else 'ODS RDF Data' end ?>?
 		    </p>
-		    <v:form name="conf_f" mthod="POST" type="simple">
+		    <v:form name="conf_f" method="POST" type="simple">
 			<fieldset>
 			    <span class="fm_ctl_btn">
 				<v:button name="cancel_btn" value="No" action="simple">

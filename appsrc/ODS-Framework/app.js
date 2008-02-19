@@ -101,7 +101,7 @@ function generateAPPAnchor(options, app)
     	  var aURL = OAT.Xml.textValue(u[i]);
     	  var aLabel = OAT.Xml.textValue(l[i]);
     	  var aType = OAT.Xml.textValue(t[i]);
-	var imgSrc = gererateAPP_image (aType, imgPath);
+      	var imgSrc = generateAPP_image (aType, imgPath);
         var tp = "", sm = OAT.Dom.create("small");
         var pos = aType.lastIndexOf ('#');
       	if (pos == -1)
@@ -170,7 +170,7 @@ function generateAPPAnchor(options, app)
   OAT.Anchor.assign(app.id, paramsObj);
 }
 	
-function gererateAPP_image (aType, imgPath)
+function generateAPP_image (aType, imgPath)
 {
   var imgSrc = imgPath + "docs_16.png";
   if (aType == 'http://rdfs.org/sioc/ns#User')

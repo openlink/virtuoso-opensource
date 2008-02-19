@@ -147,7 +147,7 @@
                 <th><label for="sec_question">Secret question</label></th>
                 <td nowrap="nowrap">
                   <v:text error-glyph="*" name="sec_question" xhtml_id="sec_qst" value="--self.secretq">
-                    <v:validator test="length" min="0" max="800" message="Security question cannot be longer then 800 chars" empty-alowed="1" name="vv_secq1"/>
+                    <v:validator test="length" min="0" max="800" message="Security question cannot be longer then 800 chars" empty-allowed="1" name="vv_secq1"/>
 		    <v:validator test="sql" expression="length(trim(self.sec_question.ufl_value)) > 800"
 		      name="vv_secq2"
                       message="Security question cannot be longer then 800 chars"/>
@@ -177,7 +177,7 @@
                   <v:text error-glyph="*" xhtml_id="sec_answer" name="sec_answer" value="--self.secreta">
 		    <v:validator test="length" min="0" max="800" message="Security answer cannot be longer then 800 chars"
 		      name="vv_seca1"
-		      empty-alowed="1"/>
+		      empty-allowed="1"/>
                   </v:text>
                   <div style="display:inline; color:red;"><v:error-summary match="sec_answer" /></div>
                 </td>
@@ -210,7 +210,7 @@
                   <v:text error-glyph="*" xhtml_id="sioc_limit1" name="sioc_limit1" value="--self.sioc_limit" >
 		    <v:validator test="value" min="1" max="1000" message="Positive number between 1 and 1000 is required"
 		      name="vv_sioca1"
-		      empty-alowed="0"/>
+		      empty-allowed="0"/>
                   </v:text>
                   <div style="display:inline; color:red;"><v:error-summary match="sioc_limit" /></div>
                 </td>

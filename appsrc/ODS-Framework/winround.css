@@ -1,0 +1,159 @@
+.oat_winround_container {
+	padding: 0px;
+}
+
+.oat_winround_wrapper {
+	border-collapse: collapse;
+	margin: 0px;
+	width: 100%;
+}
+
+html>/**/body .oat_winround_wrapper {
+	height: 100%; /* hidden for IE6 and IE7 */
+}
+
+.oat_winround_wrapper td {
+	margin: 0px;
+	padding: 0px;
+}
+
+.oat_winround_lt {
+	width: 16px;
+	height: 16px;
+	background-image: url('images/oat/winround_lt.png');
+	background-repeat: no-repeat;
+	behavior: url('images/oat/rdfbrowser2/js/iepngfix.htc');
+}
+.oat_winround_t {
+	background-repeat: repeat-x;
+	background-position: top;
+	height: 6px;
+	background-image: url('images/oat/winround_t.png');
+	background-color: #fff;
+	vertical-align: top;
+}
+.oat_winround_rt {
+	width: 16px;
+	height: 16px;
+	background-image: url('images/oat/winround_rt.png');
+	background-repeat: no-repeat;
+	background-position: top right;
+}
+.oat_winround_l {
+	background-repeat: repeat-y;
+	background-position: left;
+	width: 6px;
+	background-image: url('images/oat/winround_l.png');
+	background-color: #fff;
+}
+.oat_winround_r {
+	background-repeat: repeat-y;
+	background-position: right;
+	width: 16px;
+	background-image: url('images/oat/winround_r.png');
+}
+.oat_winround_lb {
+	width: 16px;
+	height: 16px;
+	background-image: url('images/oat/winround_lb.png');
+	background-repeat: no-repeat;
+	background-position: bottom left;
+}
+.oat_winround_b {
+	background-repeat: repeat-x;
+	background-position: bottom;
+	height: 6px;
+	background-image: url('images/oat/winround_b.png');
+	background-color: #fff;
+	vertical-align: bottom;
+}
+.oat_winround_status {
+	position: relative;
+	bottom: 3px;
+	font-size: 8pt;
+	color: #666666;
+}
+.oat_winround_rb {
+	width: 16px;
+	height: 16px;
+	background-image: url('images/oat/winround_rb.png');
+	background-repeat: no-repeat;
+	background-position: bottom right;
+}
+.oat_winround_m {
+	vertical-align: top;
+	background-color: #fff;
+}
+.oat_winround_content {
+	position: relative;
+	top: 7px;
+	left: -1%;
+	font-size: 10pt;		
+	text-align: justify;
+	width: 101%;
+	padding-bottom: 10px;
+}
+.oat_winround_title {
+	position: relative;
+	width: 100%;
+	top: 3px;
+	font-size: 9pt;
+	text-align: center;
+	font-weight: bold;
+}
+
+.oat_winround_caption {
+	color: #333333;
+	font-weight: bold;
+	position: relative;
+	top: 3px;
+}
+
+.oat_winround_close_b {
+	float: right;
+	width: 14px;
+	height: 13px;
+	cursor: pointer;
+	position: relative;
+	right: 3px;
+	top: 3px;
+}
+
+.oat_winround_resize_b {
+	width: 10px;
+	height: 10px;
+	position: relative;
+	top: -1px;
+	_top: -5px; /* IE6 */
+ 	right: -1px;
+	z-index: 2;
+	background-image: url("images/oat/winround_resize.gif");
+	background-repeat: no-repeat;	/* ie hack */
+	background-position: bottom right;	/* ie hack */
+}
+
+.oat_winround_close_b {
+	background-image: url("images/oat/RoundWin_close.gif");
+	background-repeat: no-repeat;
+}
+
+.oat_winround_container div.oat_anchor_arrow_bottomright {
+	position: absolute;
+	bottom: -35px;	right: 20px;	width: 30px;	height: 35px;
+	background-image: url("images/oat/winround_arrow_rb.gif");
+}
+.oat_winround_container div.oat_anchor_arrow_bottomleft {
+	position: absolute;
+	bottom: -35px;	left: 20px;	width: 30px;	height: 35px;
+	background-image: url("images/oat/winround_arrow_lb.gif");
+}
+.oat_winround_container div.oat_anchor_arrow_topright {
+	position: absolute;
+	top: -35px;	right: 20px;	width: 30px;	height: 35px;
+	background-image: url("images/oat/winround_arrow_rt.gif");
+}
+.oat_winround_container div.oat_anchor_arrow_topleft {
+	position: absolute;
+	top: -35px;	left: 20px;	width: 30px;	height: 35px;
+	background-image: url("images/oat/winround_arrow_lt.gif");
+}

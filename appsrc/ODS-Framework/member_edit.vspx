@@ -86,7 +86,7 @@
              self.vc_is_valid := 0;
              declare _use_sys_errors, _sys_error, _error any;
              _sys_error := concat (__SQL_STATE,' ',__SQL_MESSAGE);
-             _error := 'Due to a transient problem in the system, your approvement could not be
+             _error := 'Due to a transient problem in the system, your approval could not be
                  processed at the moment. The system administrators have been notified. Please
                  try again later';
              _use_sys_errors := (select top 1 WS_SHOW_SYSTEM_ERRORS from WA_SETTINGS);

@@ -103,7 +103,8 @@ create procedure DB.DBA.ODS_WIKI_ITEM_PAGE (in par varchar, in fmt varchar, in v
     if (length (val))
       val := split_and_decode (val)[0];
     ret := (select WAM_HOME_PAGE from WA_MEMBER where WAM_INST = val and WAM_MEMBER_TYPE = 1);
-    if (ret like 'http://%') {
+    if (ret like 'http://%')
+    {
       declare i integer;
       ret := replace (ret, 'http://','');
       i := strstr (ret, '/');
@@ -222,8 +223,8 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
 
 -- Person IRI as HTML
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_html', 1,
-    '/dataspace/(person/|organization/)?([^/#\\?]*)', vector('dummy', 'uname'), 1,
-    '/ods/uhome.vspx?page=1&ufname=%U', vector('uname'),
+    '/dataspace/(person/|organization/)?([^/#\\?]*)', vector('type', 'uname'), 1,
+    '/ods/uhome.vspx?page=1&ufname=%U&utype=%U', vector('uname', 'type'),
     NULL,
     NULL,
     2,
@@ -231,8 +232,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_html', 1,
     'X-XRDS-Location: yadis.xrds\r\n');
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_yadis', 1,
-    '/dataspace/(person/|organization/)?([^/#\\?]*)', vector('dummy', 'uname'), 1,
-    '/ods/yadis.vsp?uname=%U', vector('uname'),
+    '/dataspace/(person/|organization/)?([^/#\\?]*)', vector('type', 'uname'), 1,
+    '/ods/yadis.vsp?uname=%U&type=%U', vector('uname', 'type'),
     NULL,
     'application/xrds.xml',
     2,
@@ -255,8 +256,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_all_apps_html', 1,
 
 -- Yadis file
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_yadis', 1,
-    '/dataspace/([^/]*)/yadis.xrds', vector('uname'), 1,
-    '/ods/yadis.vsp?uname=%U', vector('uname'),
+    '/dataspace/(person/|organization/)?([^/]*)/yadis.xrds', vector('type', 'uname'), 1,
+    '/ods/yadis.vsp?uname=%U&type=%U', vector('uname', 'type'),
     NULL,
     NULL,
     2);
@@ -383,6 +384,15 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_atom_html', 1,
     NULL,
     2);
 
+-- Calendar atop-pub is special case
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_cal_gems_html', 1,
+    '/dataspace/([^/]*)/calendar/([^/]*)/gems/([^\\?]*)',
+    vector('uname', 'inst', 'gem'), 3,
+    '/calendar/%s/gems.vsp?type=%s', vector('inst', 'gem'),
+    'DB.DBA.ODS_ATOM_PAGE',
+    NULL,
+    2);
+
 -- A discussion item page
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_item_html', 1,
     '/dataspace/discussion/([^/]*)/((?!sioc)(?!about)[^/\\?]*)', vector('grp', 'post'), 1,
@@ -505,6 +515,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_photo_gems_html',
 	  'ods_cal_item_html',
 	  'ods_cal_atom_html',
+	  'ods_cal_gems_html',
 	  'ods_discussion_item_html',
 	  'ods_blog_tag',
 	  'ods_main',

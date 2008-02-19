@@ -354,7 +354,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
 	}
 
       len := length (path);
-      -- XXX: may be bellow we should have AND has_accept
+      -- XXX: may be below we should have AND has_accept
       if (path[len-1] not like '%.rdf' and path[len-1] not like '%.ttl')
 	{
 	  cn := newres;
@@ -456,7 +456,7 @@ create procedure ODS.ODS.redirect (in p int := null)  __SOAP_HTTP 'text/html'
     }
 
   -- here it goes for all sioc or accepts rdf
-  -- the old code bellow for calling sioc..sioc_compose_xml or sioc..ods_rdf_describe
+  -- the old code below for calling sioc..sioc_compose_xml or sioc..ods_rdf_describe
   -- also the sioc..sioc_compose_xml should be cleaned
   if ((has_accept or ppath like '%/sioc.%') and not is_foaf)
     {

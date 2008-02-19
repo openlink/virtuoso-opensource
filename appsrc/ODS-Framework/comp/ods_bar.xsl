@@ -135,7 +135,7 @@
 	 lh := http_map_get ('lhost');
 	 hf := http_request_header (self.vc_event.ve_lines, 'Host');
 
-	-- The bellow is wrong, the request can be to default http port 80 ,
+	-- The below is wrong, the request can be to default http port 80 ,
 	-- therefore mixing the default http & server port is bad idea
         -- if(strchr (hf, ':') is null)
         --   hf:=hf||':'|| server_http_port ();
@@ -267,7 +267,7 @@ _head.appendChild(cssNode);
  cssNode.rel = 'stylesheet';
     cssNode.href = cssUrl;
 
-//   synch get of .css fiel by url ... if you want to control behaviour of ods-bar depending on load time.
+//   synch get of .css field by url ... if you want to control behaviour of ods-bar depending on load time.
 //
 //    var cssNode = document.createElement('style');
 //    cssNode.type = 'text/css';

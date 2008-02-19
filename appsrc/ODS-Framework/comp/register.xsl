@@ -54,6 +54,7 @@
       <v:variable name="oid_country" type="varchar" default="''" param-name="openid.sreg.country" />
       <v:variable name="oid_tz" type="varchar" default="''" param-name="openid.sreg.timezone" />
       <v:variable name="use_oid_url" type="int" default="0" param-name="uoid" persist="temp"/>
+      <v:variable name="ods_returnurl" type="varchar" default="''" param-name="RETURL"/>
     <div>
       <v:label name="regl1" value="--''" />
     </div>
@@ -153,14 +154,14 @@ try_next:
     <br/>    
     <div class="login_tabdeck"><!--container div start-->
     
-    <div id="login_openid" style="height: 150px;<?V case when self.use_oid_url = 1 then '' else 'display:none;' end ?>">
+    <div id="login_openid" style="height: 125px;<?V case when self.use_oid_url = 1 then '' else 'display:none;' end ?>">
 
-      <table>
+      <table width="100%">
         <tr>
-	    <th><label for="reguid">Register using OpenID</label></th>
+      <th width="60px"><label for="reguid">OpenID</label></th>
 	    <td>
     <img src="images/login-bg.gif" alt="openID"  class="login_openid" />
-        <v:text  xhtml_id="openid_url" name="openid_url" value="" xhtml_size="65"
+        <v:text  xhtml_id="openid_url" name="openid_url" value="" xhtml_style="width:90%"
 			default_value="--self.oid_identity"/>
        <input type="hidden" id="uoid" name="uoid" value="<?Vself.use_oid_url?>"/>
 
@@ -186,12 +187,12 @@ try_next:
     </table>
     </div>
     
-    <div id="login_info" style="height: 150px;<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>">
-      <table>
+    <div id="login_info" style="height: 125px;<?V case when self.use_oid_url = 1 then 'display:none;' else '' end ?>">
+      <table width="100%">
         <tr>
           <th><label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-	      <v:text error-glyph="?" xhtml_tabindex="1" xhtml_id="reguid" name="reguid" value="--get_keyword('reguid', params)"
+        <v:text error-glyph="?" xhtml_tabindex="1" xhtml_id="reguid" xhtml_style="width:270px" name="reguid" value="--get_keyword('reguid', params)"
 		  default_value="--self.oid_nickname">
 	      <v:validator test="length" min="1" max="20" message="Login name cannot be empty or longer then 20 chars" name="vv_reguid1"/>
 	      <v:validator test="sql" expression="length(trim(self.reguid.ufl_value)) < 1 or length(trim(self.reguid.ufl_value)) > 20" name="vv_reguid2"
@@ -205,22 +206,25 @@ try_next:
           </td>
           <td>
           </td>
+<!--
 	  <td rowspan="5">
 	    <?vsp
 	      {
-	        declare exit handler for sqlstate '*';
- 	        http_value (http_client (sprintf ('http://api.hostip.info/get_html.php?ip=%s&position=true', http_client_ip ())), 'pre');
+            ;
+--          declare exit handler for sqlstate '*';
+--          http_value (http_client (sprintf ('http://api.hostip.info/get_html.php?ip=%s&position=true', http_client_ip ())), 'pre');
               }
 	    ?>
 	    <a href="http://www.hostip.info">
 	      <img src="http://api.hostip.info/flag.php" border="0" alt="IP Address Lookup" />
 	    </a>
 	  </td>
+ -->
         </tr>
         <tr>
           <th><label for="regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-	      <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" name="regmail" value="--get_keyword ('regmail', params)"
+        <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" xhtml_style="width:270px" name="regmail" value="--get_keyword ('regmail', params)"
 		    default_value="--self.oid_email">
               <v:validator name="vv_regmail1" test="length" min="1" max="40" message="E-mail address cannot be empty or longer then 40 chars"/>
               <v:validator name="vv_regmail2" test="regexp" regexp="[^@ ]+@([^\. ]+\.)+[^\. ]+" message="Invalid E-mail address" />
@@ -232,7 +236,7 @@ try_next:
         <tr>
           <th><label for="regpwd">Password<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_tabindex="3" xhtml_id="regpwd" type="password" name="regpwd" value="">
+            <v:text error-glyph="?" xhtml_tabindex="3" xhtml_id="regpwd" xhtml_style="width:270px" type="password" name="regpwd" value="">
               <v:validator test="length" min="1" max="40" message="Password cannot be empty or longer then 40 chars"/>
             </v:text>
           </td>
@@ -242,7 +246,7 @@ try_next:
         <tr>
           <th><label for="regpwd1">Password (verify)<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
-            <v:text error-glyph="?" xhtml_tabindex="4" xhtml_id="regpwd1" type="password" name="regpwd1" value="">
+            <v:text error-glyph="?" xhtml_tabindex="4" xhtml_id="regpwd1" xhtml_style="width:270px" type="password" name="regpwd1" value="" >
               <v:validator test="sql" expression="self.regpwd.ufl_value <> self.regpwd1.ufl_value"
                 message="Password verification does not match" />
             </v:text>
@@ -252,7 +256,7 @@ try_next:
         </tr>
 	<?vsp if (self.reg_tip) { ?>
         <tr>
-	    <th><label for="regimg1">Enter the <?V case when self.im_enabled then 'number' else 'answer for the question' end ?> bellow<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
+      <th><label for="regimg1">Enter the <?V case when self.im_enabled then 'number' else 'answer for the question' end ?> below<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
           <td nowrap="nowrap">
             <v:text error-glyph="?" xhtml_tabindex="5" xhtml_id="regimg1" name="regimg1" value="">
               <v:validator test="sql" expression="self.reg_number is not null and self.reg_number <> self.regimg1.ufl_value"
@@ -437,12 +441,16 @@ if(self.use_oid_url=0 or
 
 	 if (self.use_oid_url and self.oid_sig is not null and exists (select 1 from WA_USER_INFO where WAUI_OPENID_URL = self.oid_identity))
 	   {
+                   if(length(self.ods_returnurl) and self.ods_returnurl='index.html')
+                      self.vc_redirect (sprintf('index.html#msg=%U','This OpenID identity is already registered.'));                   
              self.vc_error_message := 'This OpenID identity is already registered.';
              self.vc_is_valid := 0;
              return;
 	   }
 	 if (exists(select 1 from SYS_USERS where U_E_MAIL=self.regmail.ufl_value) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1))
 	   {
+                   if(length(self.ods_returnurl) and self.ods_returnurl='index.html')
+                      self.vc_redirect (sprintf('index.html#msg=%U','This e-mail address is already registered.'));                   
              self.vc_error_message := 'This e-mail address is already registered.';
              self.vc_is_valid := 0;
              return;
@@ -484,7 +492,12 @@ if(self.use_oid_url=0 or
 	 if (self.oid_sig is not null)
 	   {
               if (length (self.oid_dob))
-	        WA_USER_EDIT (u_name1, 'WAUI_BIRTHDAY', self.oid_dob);
+         {
+          declare tmp_date datetime;
+          tmp_date:=stringdate(self.oid_dob);
+          if(tmp_date is not null)
+          WA_USER_EDIT (u_name1, 'WAUI_BIRTHDAY', tmp_date);
+         }
               if (length (self.oid_fullname))
 	        WA_USER_EDIT (u_name1, 'WAUI_FULL_NAME', self.oid_fullname);
 	      if (length (self.oid_gender))
@@ -558,7 +571,9 @@ if(self.use_oid_url=0 or
            ('wa', sid, u_name1,
 	     serialize (vector ('vspx_user', u_name1)), dateadd ('hour', _expire, now()));
 
-         if (get_keyword_ucase ('ret', params, '') <> '')
+   if (length (self.ods_returnurl)) -- URL given by GET
+     self.ret_page := self.ods_returnurl;
+   else if (get_keyword_ucase ('ret', params, '') <> '')
            self.ret_page := get_keyword_ucase ('ret', params);
          else if (self.wa_nameR is not null)
 	   {
@@ -571,6 +586,7 @@ if(self.use_oid_url=0 or
 	   self.ret_page := self.url;
          else
            self.ret_page := 'uhome.vspx';
+   
          if (_mail_verify_on)
          {
            -- determine existing default mail server
@@ -598,9 +614,11 @@ if(self.use_oid_url=0 or
                self.vc_is_valid := 0;
                declare _use_sys_errors, _sys_error, _error any;
                _sys_error := concat (__SQL_STATE,' ',__SQL_MESSAGE);
-               _error := 'Due to a transient problem in the system, your registration could not be
-                 processed at the moment. The system administrators have been notified. Please
-                 try again later';
+               _error := 'The system is unable to complete the process due to email delivery services being disabled.'||
+                         'Please contact data space <a href="mailto:'||
+                         coalesce((select U_E_MAIL from DB.DBA.SYS_USERS where U_NAME='dav'),'')||
+                         '">administrator</a> about this problem.';
+
                _use_sys_errors := (select top 1 WS_SHOW_SYSTEM_ERRORS from WA_SETTINGS);
                if(_use_sys_errors)
                {
@@ -611,6 +629,9 @@ if(self.use_oid_url=0 or
                  self.vc_error_message := _error;
                }
                rollback work;
+               if(length(self.ods_returnurl) and self.ods_returnurl='index.html')
+                    self.vc_redirect (sprintf('index.html#msg=%U',_error));                   
+
                return;
              };
              smtp_send(_smtp_server, aadr, self.regmail.ufl_value, msg);
@@ -653,8 +674,9 @@ if(self.use_oid_url=0 or
 else
 {
 --openid post
-declare hdr, xt, uoid, is_agreed any;
+declare hdr, xt, uoid, is_agreed,ods_returnurl any;
 declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate varchar;
+declare oi2_srv varchar;
 
 host := http_request_header (e.ve_lines, 'Host');
 
@@ -669,6 +691,9 @@ if (uoid and not is_agreed)
   }
 
 this_page := 'http://' || host || http_path () || sprintf ('?uoid=%d', uoid);
+if(self.ods_returnurl is not null)
+   this_page := this_page || sprintf ('&RETURL=%s', self.ods_returnurl);
+
 trust_root := 'http://' || host;
 
 declare exit handler for sqlstate '*'
@@ -693,7 +718,11 @@ if (hdr [0] like 'HTTP/1._ 30_ %')
   }
 xt := xtree_doc (cnt, 2);
 oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
+oi2_srv := cast (xpath_eval ('//link[@rel="openid2.provider"]/@href', xt) as varchar);
 oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+
+if (oi2_srv is not null)
+  oi_srv := oi2_srv;
 
 if (oi_srv is null)
   signal ('22023', 'Cannot locate OpenID server');
@@ -703,11 +732,22 @@ if (oi_delegate is not null)
 
 this_page := this_page || sprintf ('&oi_srv=%U', oi_srv);
 
+if (oi2_srv is not null)
+  {
+     check_immediate :=
+     sprintf ('%s?openid.ns=%U&openid.ns.sreg=%U&openid.mode=checkid_setup&openid.identity=%U&openid.claimed_id=%U&openid.return_to=%U&openid.realm=%U',
+     oi_srv, OPENID..ns_v2 (), OPENID..sreg_ns_v1 (), oi_ident, oi_ident, this_page, trust_root);
+  }
+else
+  {
 check_immediate :=
 sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U',
         oi_srv, oi_ident, this_page, trust_root);
+  }
+
 check_immediate := check_immediate || sprintf ('&openid.sreg.optional=%U',
-  'email,fullname,nickname,dob,gender,postcode,country,timezone');
+  'fullname,nickname,dob,gender,postcode,country,timezone');
+check_immediate := check_immediate || sprintf ('&openid.sreg.required=%U','email,nickname');
 
 self.vc_redirect (check_immediate);
 

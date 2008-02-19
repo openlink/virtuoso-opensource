@@ -52,7 +52,7 @@
    helpertact := get_keyword('helpertact',params,'');
 
 
-   _err_code :=0; --0 - successfull update; 1 - error
+   _err_code :=0; --0 - successful update; 1 - error
    _err_msg  :='';
    
 --   dbg_obj_print(mappingarr);
@@ -151,7 +151,7 @@
       if(facebook_cid<1)
       {
         _err_code :=1;
-        _err_msg  :='Incorrect syncronize contact pair.';
+        _err_msg  :='Incorrect synchronize contact pair.';
         goto _end;
       }
 
@@ -575,7 +575,7 @@
               }
                 
               if(length(addressbook_cid_arr)=1)
-                  AB.WA.contact_update3 (addressbook_cid,addressbook_domain_id,_col,_val,''); -- keep for compatability
+                  AB.WA.contact_update3 (addressbook_cid,addressbook_domain_id,_col,_val,''); -- keep for compatibility
               else
               {
 
@@ -625,7 +625,7 @@ _deref:;
       }else
          _err_code:=DB.DBA.fbf_rdf_load_fql (fbf_profile_uri,fbf_profile_uri,null,_fb,fbp_id,0);
 
-      -- _err_code :=0; --1 - successfull;
+      -- _err_code :=0; --1 - successful;
       _err_msg  :='';
 
   

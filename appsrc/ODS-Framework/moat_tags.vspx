@@ -160,15 +160,15 @@
 	      <br/>
 	      <v:button action="simple" name="bt2" value="Cancel">
 		<v:on-post><![CDATA[
-		  self.vc_redirect ('tags.vspx');
+		  self.vc_redirect (sprintf ('edit_rule.vspx?rid=%d', self.trs_id));
 		  ]]></v:on-post>
 	      </v:button>
-	      <v:button name="dbtn" action="simple" value="Delete" enabled="--equ(isnull(self.edit_tag), 0)">
+	      <!--v:button name="dbtn" action="simple" value="Delete" enabled="-#-equ(isnull(self.edit_tag), 0)">
 		<v:on-post><![CDATA[
 		  delete from moat.DBA.moat_user_meanings where mu_tag = self.edit_tag and mu_trs_id = self.trs_id;
 		  self.vc_redirect ('tags.vspx');
 		  ]]></v:on-post>
-	      </v:button>
+	      </v:button-->
 	      <v:button action="simple" name="bt1" value="Save">
 		<v:on-post><![CDATA[
 		  declare t_name varchar;
@@ -195,7 +195,7 @@
 		      insert replacing moat.DBA.moat_user_meanings (mu_tag, mu_trs_id, mu_url)
 		        values (t_name, self.trs_id, t[0]);
 		    }
-		  self.vc_redirect ('tags.vspx');
+		  self.vc_redirect (sprintf ('edit_rule.vspx?rid=%d', self.trs_id));
 		  ]]></v:on-post>
 	      </v:button>
             </div>

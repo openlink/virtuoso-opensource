@@ -216,7 +216,7 @@
   if (not self.vc_is_valid)
     {
 ?>
-<div class="error_msg" id="page_error_msg"><?vsp self.vc_error_summary (); ?></div>
+<div class="error_msg" id="page_error_msg"><?vsp self.vc_error_summary (0); ?></div>
 <?vsp
     }
   else if (self.ok_msg is not null)
@@ -723,7 +723,7 @@
 <xsl:template match="vm:left-navigation">
   <li>
     <div width="100%" height="600">
-      <iframe name="ifrm" id="ifrm" width="100%" heigth="600" src="http://www.lenta.ru/" frameborder="0">
+      <iframe name="ifrm" id="ifrm" width="100%" height="600" src="http://www.lenta.ru/" frameborder="0">
        Sorry, your browser doesn't support iframes. A demonstration of a <a href="fluid1.html">centered fluid iframe</a> would be visible here if you were using a capable browser.
       </iframe>
     </div>
@@ -852,6 +852,7 @@
     <v:variable name="external_home_url" type="varchar" param-name="home_url" default="null" persist="session"/>
     <v:variable name="return_url" type="varchar" persist="session" default="null" param-name="RETURL" />
     <v:variable name="fname" type="varchar" default="null" persist="pagestate" param-name="ufname" />
+    <v:variable name="utype" type="varchar" default="null" persist="pagestate" param-name="utype" />
     <v:variable name="f_full_name" type="varchar" default="null" persist="pagestate" />
     <v:variable name="oid_server" type="varchar" default="null" persist="pagestate" />
     <v:variable name="oid_url" type="varchar" default="null" persist="pagestate" />
@@ -2084,12 +2085,12 @@ if (i > 0)
         </th>
         <td>
           <v:select-list name="s_update_period">
-            <v:item name="dayly" value="dayly" />
+            <v:item name="daily" value="daily" />
             <v:item name="weekly" value="weekly" />
             <v:item name="monthly" value="monthly" />
             <v:item name="yearly" value="yearly" />
             <v:before-data-bind>
-              control.ufl_value := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'dayly');
+              control.ufl_value := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'daily');
             </v:before-data-bind>
           </v:select-list>
         </td>
@@ -2904,9 +2905,12 @@ if (i > 0)
     <link rel="openid.server" title="OpenID Server" href="<?V wa_link (1, '/openid') ?>" />
     <?vsp
     	}
+    declare yadis_url any;
+    if (self.utype not in ('person/', 'organization/'))
+      self.utype := '';
     ?>
-    <meta http-equiv="X-XRDS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
-    <meta http-equiv="X-YADIS-Location" content="<?V wa_link (1, '/dataspace/'||self.fname||'/yadis.xrds') ?>" />
+    <meta http-equiv="X-XRDS-Location" content="<?V wa_link (1, '/dataspace/'||self.utype||self.fname||'/yadis.xrds') ?>" />
+    <meta http-equiv="X-YADIS-Location" content="<?V wa_link (1, '/dataspace/'|| self.utype ||self.fname||'/yadis.xrds') ?>" />
     <link rel="meta" type="application/xml+apml" title="APML 0.6" href="<?V wa_link (1, '/dataspace/'||self.fname||'/apml.xml') ?>"/>
     <!--link rel="alternate" type="application/atom+xml" title="Open Social" href="&lt;?vsp http (replace (sprintf ('http://%s/feeds/people/%U', self.st_host, self.fname), '+', '%2B')); ?>" />
     <xsl:text>&#10;</xsl:text-->

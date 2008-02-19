@@ -46,7 +46,7 @@
 	  </div>
       </v:template>
       <v:template condition="self.pageno = 2 and length (self.api_key.ufl_value)" type="simple">
-	  <h2>In the frame bellow follow instructions and when one-time access code is shown enter in the form bellow</h2>
+	  <h2>In the frame below follow instructions and when one-time access code is shown enter in the form below</h2>
 	  <iframe src="http://www.facebook.com/code_gen.php?v=1.0&api_key=<?U self.api_key.ufl_value ?>" height="480" width="800">
 	      Your browser do not support IFRAMEs
 	  </iframe>

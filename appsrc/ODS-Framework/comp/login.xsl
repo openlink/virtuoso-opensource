@@ -374,6 +374,7 @@ if (not control.vl_authenticated and length (open_id_url) and e.ve_is_post)
 {
 declare hdr, xt, uoid, is_agreed any;
 declare url, cnt, oi_ident, oi_srv, oi_delegate, host, this_page, trust_root, check_immediate varchar;
+declare oi2_srv varchar;
 
 host := http_request_header (e.ve_lines, 'Host');
 
@@ -402,7 +403,11 @@ if (hdr [0] like 'HTTP/1._ 30_ %')
   }
 xt := xtree_doc (cnt, 2);
 oi_srv := cast (xpath_eval ('//link[@rel="openid.server"]/@href', xt) as varchar);
+oi2_srv := cast (xpath_eval ('//link[@rel="openid2.provider"]/@href', xt) as varchar);
 oi_delegate := cast (xpath_eval ('//link[@rel="openid.delegate"]/@href', xt) as varchar);
+
+if (oi2_srv is not null)
+  oi_srv := oi2_srv;
 
 if (oi_srv is null)
   signal ('22023', 'Cannot locate OpenID server');
@@ -412,9 +417,18 @@ if (oi_delegate is not null)
 
 this_page := this_page || sprintf ('?oid-srv=%U', oi_srv);
 
+if (oi2_srv is not null)
+  {
+     check_immediate :=
+     sprintf ('%s?openid.ns=%U&openid.ns.sreg=%U&openid.mode=checkid_setup&openid.identity=%U&openid.claimed_id=%U&openid.return_to=%U&openid.realm=%U',
+     oi_srv, OPENID..ns_v2 (), OPENID..sreg_ns_v1 (), oi_ident, oi_ident, this_page, trust_root);
+  }
+else
+  {
 check_immediate :=
 sprintf ('%s?openid.mode=checkid_setup&openid.identity=%U&openid.return_to=%U&openid.trust_root=%U',
         oi_srv, oi_ident, this_page, trust_root);
+ }
 
 self.vc_redirect (check_immediate);
 

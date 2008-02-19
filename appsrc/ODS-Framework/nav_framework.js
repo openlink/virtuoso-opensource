@@ -581,15 +581,10 @@ ODS.session = function(customEndpoint){
                                              OAT.MSG.send(self,OAT.MSG.SES_VALIDBIND,{});
                                            }else
                                            {
-                                             dd($('loginErrDiv'));
-//                                             $('loginErrDiv').innerHTML='';
-//                                             var warnImg=OAT.Dom.create('img',{verticalAlign:'text-bottom',paddingTop:'3px'});
-//                                             warnImg.src='images/warn_16.png';
-//                                             var errMsg=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/error_response/error_msg',{})[0]);
-//                                             
-//                                             OAT.Dom.append([$('loginErrDiv'),warnImg,OAT.Dom.text(' '+errMsg)]);
-//                                             
-//                                             nav.logIn();
+//                                             var errCode=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/error_response/error_code',{})[0]);
+                                             var errMsg=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/error_response/error_msg',{})[0]);
+                                             
+                                             OAT.MSG.send(self,OAT.MSG.SES_INVALID,{retryLogIn:true,msg:errMsg});
                                              return;
                                             
                                            }
@@ -637,7 +632,15 @@ ODS.session = function(customEndpoint){
   {
     var connection = {};
     connection[connectionId]=connectionFullName;
+    
+    if(!self.connections)
+        self.connections=new Array();
+
     self.connections.push(connection);
+
+    if(!self.connectionsId)
+        self.connectionsId=new Array();
+
     self.connectionsId.push(connectionId);
   };
 
@@ -680,7 +683,9 @@ ODS.Nav = function(navOptions) {
   var self = this;
   this.ods=ODS.Preferences.odsHome;
   this.dataspace=ODS.Preferences.dataspacePath;
-  this.uriqaDefaultHost=false;
+//  this.uriqaDefaultHost=false;
+  this.serverOptions={uriqaDefaultHost:false,
+                      useRDFB:0};
   this.leftbar=$(navOptions.leftbar);
   this.rightbar=$(navOptions.rightbar);
   this.appmenu=$(navOptions.appmenu);
@@ -754,7 +759,14 @@ ODS.Nav = function(navOptions) {
                    if(typeof(event.retryLogIn)!='undefined' && event.retryLogIn==true)
                    {
                       nav.wait('hide');
+                      if(!$('loginDiv'))
+                         self.logIn();
+
+                      if(typeof(event.msg)!='undefined' && event.msg.length>0)
+                         self.showLoginErr(event.msg);
+                      else
                       self.showLoginErr();
+
                       self.logIn();
                       return;
                    }else if(typeof(event.sessionEnd)!='undefined' && event.sessionEnd==true)                                                                                    
@@ -771,6 +783,21 @@ ODS.Nav = function(navOptions) {
   OAT.MSG.attach(self.session,OAT.MSG.SES_VALIDATION_END,
                  function(src, msg, event)
                  {
+                  if(document.location.href.indexOf('/dataspace/person/')>-1 || document.location.href.indexOf('/dataspace/organization/')>-1)
+                  {
+                    var profileId=document.location.href.split('/')[5];
+                    profileId=profileId.split('#')[0];
+
+                    var profileType=profileId.split('/')[4];
+                   
+                    self.profile.show=true; 
+                    self.profile.set('/'+profileId);
+                    self.initProfile();
+
+                    return;
+                  }
+
+
                   if(document.location.hash.length>0)
                   {
                     defaultAction=document.location.hash;
@@ -785,7 +812,7 @@ ODS.Nav = function(navOptions) {
                        else
                           self.logIn();
                     
-                    }else if(defaultAction.indexOf('#/person/')>-1 || defaultAction.indexOf('#/organization/')>-1) // should add rule for organization.
+                    }else if(defaultAction.indexOf('#/person/')>-1 || defaultAction.indexOf('#/organization/')>-1)
                     {
                         var profileId=document.location.href.split('#')[1];
                         document.location.href=document.location.href.split('#')[0]+'#';
@@ -799,6 +826,13 @@ ODS.Nav = function(navOptions) {
                         self.initProfile();
 //                        self.session.usersGetInfo('/'+profileId,'userName,fullName,photo',function(xmlDoc2){dd(xmlDoc2);});
                         
+                    }else if(defaultAction.indexOf('#msg')>-1)
+                    {
+                      var msg=defaultAction.replace('#msg=','');
+                      self.dimmerMsg(msg);
+          
+                      self.loadVspx(self.expandURL(self.ods+'sfront.vspx'));
+//                      document.location.href=document.location.href.split('#')[0]+'#';
   }  
                     else
                        self.loadVspx(self.expandURL(self.ods+'sfront.vspx'));
@@ -978,7 +1012,7 @@ ODS.Nav = function(navOptions) {
 //    communityMenuUl.id='communities_menu';
 //    var communityMenuLi=OAT.Dom.create('li');
 //    var communityMenuHeadDiv=OAT.Dom.create('div',{},'menu_head');
-//    var communityMenuHeadDivA=OAT.Dom.create('a',{cusor:'pointer'});
+//    var communityMenuHeadDivA=OAT.Dom.create('a',{cursor:'pointer'});
 //    communityMenuHeadDivA.innerHTML='Communities';
 //    var communityMenuHeadDivImg=OAT.Dom.create('img',{},'menu_dd_handle');
 //    communityMenuHeadDivImg.src='images/menu_dd_handle.png'
@@ -1590,7 +1624,7 @@ ODS.Nav = function(navOptions) {
     OAT.Event.attach(aLogout,"click",self.session.end);  
     
     var aSignUp= OAT.Dom.create("a",{cursor: 'pointer'});
-    OAT.Event.attach(aSignUp,"click",function(){self.loadVspx(self.ods+'register.vspx');});  
+    OAT.Event.attach(aSignUp,"click",function(){self.loadVspx(self.ods+'register.vspx?RETURL=index.html');});  
     aSignUp.innerHTML='Sign Up'; 
 
     var aHelp= OAT.Dom.create("a");
@@ -2358,7 +2392,7 @@ ODS.Nav = function(navOptions) {
           
           var connHTML=templateHtml;
 
-          connHTML=connHTML.replace('#connImgSRC#',conn.photo.length>0 ? conn.photo : 'images/profile.png');
+          connHTML=connHTML.replace('#connImgSRC#',conn.photo.length>0 ? conn.photo : 'images/missing_profile_picture.png'); // images/profile.png
           connHTML=connHTML.replace('#connProfileFullName#',conn.fullName);
           connHTML=connHTML.replace('#sendMsg#','sendMsg_'+conn.uid);
           connHTML=connHTML.replace('#viewConnections#','viewConnections_'+conn.uid);
@@ -2399,7 +2433,7 @@ ODS.Nav = function(navOptions) {
                                                    var t=eTarget(e);
                                                    self.connections.show=true;
                                                    self.connections.userId=t.uid;
-                                                   self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface)
+                                                   self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
                                                  });  
 
           var elm=$('doConnection_'+conn.uid);
@@ -2414,7 +2448,7 @@ ODS.Nav = function(navOptions) {
           elm.uid=conn.uid;
           elm.fullName=conn.fullName;
           
-          if(self.session.connectionsId.find(conn.uid) > -1 && typeof(conn.invited)=='undefined')
+          if(self.session.connectionsId && self.session.connectionsId.find(conn.uid) > -1 && typeof(conn.invited)=='undefined')
           {
              elm.innerHTML='Disconnect';
              
@@ -2427,7 +2461,7 @@ ODS.Nav = function(navOptions) {
                                                                                           }
                                                                         )
                                                      });
-          }else if(self.session.connectionsId.find(conn.uid) > -1 && typeof(conn.invited)!='undefined' && conn.invited==1)
+          }else if(self.session.connectionsId && self.session.connectionsId.find(conn.uid) > -1 && typeof(conn.invited)!='undefined' && conn.invited==1)
           {
              elm.innerHTML='Withdraw invitation';
              
@@ -2511,7 +2545,7 @@ ODS.Nav = function(navOptions) {
 //    }
 
 
-    self.session.usersGetInfo(self.profile.userId,'userName,fullName,photo',function(xmlDoc2){self.updateProfile(xmlDoc2);});
+    self.session.usersGetInfo(self.profile.userId,'userName,fullName,photo,dataspace',function(xmlDoc2){self.updateProfile(xmlDoc2);});
     var mapOpt = {
     	            fix:OAT.MapData.FIX_ROUND1,
     	            fixDistance:20,
@@ -2573,12 +2607,14 @@ ODS.Nav = function(navOptions) {
     self.profile.userFullName=userDisplayName;
     var userProfilePhoto=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/photo',{})[0]);
 
+    var userProfileDataspace=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/dataspace',{})[0]);
+
     if(userDisplayName=='')
        userDisplayName=self.profile.userName;
 
 
     $('userProfilePhotoName').innerHTML='<h3>'+userDisplayName+'</h3>';
-    $('userProfilePhotoImg').src=userProfilePhoto ? userProfilePhoto : 'images/profile.png';
+    $('userProfilePhotoImg').src=userProfilePhoto ? userProfilePhoto : 'images/missing_profile_picture.png';
     $('userProfilePhotoImg').alt=userDisplayName;
     
     var gems=$('profileUserGems').getElementsByTagName("a");
@@ -2603,7 +2639,7 @@ ODS.Nav = function(navOptions) {
 
       var connA=$('profileConnAction');
       if(self.session.userId==self.profile.userId)
-         OAT.Dom.hide(connA);
+         OAT.Dom.hide(connA.parentNode);
       else       
       {
          var connLi=connA.parentNode;
@@ -2633,6 +2669,17 @@ ODS.Nav = function(navOptions) {
          
          OAT.Dom.append([connLi,connA]);
       }
+      var browseDS=$('profileBrowseDS');
+      if(browseDS && self.serverOptions.useRDFB==1)
+      {
+            browseDS.href = '/rdfbrowser/index.html?uri='+encodeURIComponent(document.location.protocol+'//'+self.serverOptions.uriqaDefaultHost+userProfileDataspace);
+	          browseDS.target = "_blank";
+      
+      }else
+         OAT.Dom.hide(browseDS.parentNode);
+
+//      var browseCG=$('profileBrowseCG');
+//      OAT.Dom.hide(browseCG).parentNode;
 
 
 
@@ -2648,7 +2695,95 @@ ODS.Nav = function(navOptions) {
 
       function attachClick(elm, connId)
       {
-        OAT.Dom.attach(elm,"click",function() {self.profile.show=true; self.profile.set(connId) ;self.initProfile();});
+        OAT.Dom.attach(elm,"dblclick",function() {self.profile.show=true; self.profile.set(connId) ;self.initProfile();});
+      };
+
+      function attachApp(elm, connObj)
+      {
+         var connContent=OAT.Dom.create('div');
+         connContent.innerHTML=$('connection_info_bubble').innerHTML;
+        
+         var img=connContent.getElementsByTagName('img')[0];
+         if(typeof(img)!='undefined')
+         {
+            img.src=connObj.photo;
+            img.alt=connObj.fullName;
+         }
+            
+         var links=connContent.getElementsByTagName('a');
+         
+         if(typeof(links[0])!='undefined')         
+           OAT.Dom.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
+
+         if(typeof(links[1])!='undefined')         
+         {
+
+            if(self.session.sid && self.session.userId!=connObj.uid)
+            {
+               links[1].uid=connObj.uid;
+
+               if(self.session.connectionsId && self.session.connectionsId.find(connObj.uid) > -1 && typeof(connObj.invited)=='undefined')
+               {
+                  links[1].innerHTML='Disconnect';
+                  OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);self.connectionSet(t.uid,0,function(){self.session.connectionRemove(t.uid);
+                                                                                                       self.initProfile();
+                                                                                                      }
+                                                                             )
+                                                          });
+               }else if(self.session.connectionsId && self.session.connectionsId.find(connObj.uid) > -1 && typeof(connObj.invited)!='undefined' && connObj.invited==1)
+               {
+                  links[1].innerHTML='Withdraw invitation';
+                  OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);
+                                                               self.connectionSet(t.uid,4,function(){self.session.connectionRemove(t.uid);
+                                                                                                     self.initProfile();
+                                                                                                    }
+                                                                                 )
+                                                          });
+
+               }else if(self.session.userId!=connObj.uid)
+               {
+                  links[1].innerHTML='Connect';
+                  OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);self.connectionSet(t.uid,1,function(){self.initProfile();})
+                                                          });
+               };
+            }else OAT.Dom.hide(links[1].parentNode);
+         }
+
+
+//           OAT.Dom.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
+//          }
+         if(typeof(links[2])!='undefined')         
+         {
+          links[2].uid=connObj.uid;
+          OAT.Event.attach(links[2],"click",function(e){
+                                                        var t=eTarget(e);
+                                                        self.connections.show=true;
+                                                        self.connections.userId=t.uid;
+                                                        self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                       });  
+
+         }
+         if(typeof(links[3])!='undefined' && self.serverOptions.useRDFB==1)
+         {
+            links[3].href = '/rdfbrowser/index.html?uri='+encodeURIComponent(document.location.protocol+'//'+self.serverOptions.uriqaDefaultHost+connObj.dataspace);
+	          links[3].target = "_blank";
+         }else OAT.Dom.hide(links[3].parentNode);
+         
+         
+         var obj = {
+         	          title:connObj.fullName,
+         	          content:connContent,
+         	          status:"",
+         	          result_control:false,
+         	          activation: "click",
+         	          enabledButtons : "c",
+         	          visibleButtons : "c",
+         	          type:OAT.WinData.TYPE_ROUND
+                   };
+
+			   OAT.Anchor.assign(elm,obj);
+
+//        OAT.Dom.attach(elm,"mouseover",function() {dd(555);});
       };
 
       var connections = OAT.Xml.xpath(xmlDoc, '//connectionsGet_response/user',{});
@@ -2665,7 +2800,7 @@ ODS.Nav = function(navOptions) {
 
         var connObj=buildObjByChildNodes(connections[i]);
 
-        if(typeof(connObj.invited)=='undefined' )
+        if(typeof(connObj.invited)=='undefined' || ( typeof(connObj.invited)!='undefined' && self.session.userId!=self.profile.userId))
         {
            
            var connProfileObj={};
@@ -2680,16 +2815,20 @@ ODS.Nav = function(navOptions) {
            attachClick(_divC,connObj.uid);
         
         var tnail=OAT.Dom.create('img',{width:'40px',height:'40px'});
-           tnail.src= (connObj.photo.length>0 ? connObj.photo : 'images/profile_small.png');
+           tnail.src= (connObj.photo.length>0 ? connObj.photo : 'images/missing_person_tnail.png'); // images/profile_small.png
         var _divCI=OAT.Dom.create('div',{},'conn_info');
         var cNameA=OAT.Dom.create('a',{cursor:'pointer'});
            cNameA.innerHTML=connObj.fullName;
        
         OAT.Dom.append([connTP,_divC],[_divC,tnail,_divCI],[_divCI,cNameA]);
         
+           attachApp(cNameA,connObj);
+
+           var userHome=connections[i].getElementsByTagName('home')[0];
+           
+           var _lat = OAT.Xml.textValue(userHome.childNodes[0]);
+           var _lon = OAT.Xml.textValue(userHome.childNodes[1]);
  
-        var _lat = OAT.Xml.textValue(connections[i].childNodes[3].childNodes[0]);
-        var _lon = OAT.Xml.textValue(connections[i].childNodes[3].childNodes[1]);
         if(_lat != '' && _lon != '')
         {
              self.profile.ciMap.addMarker(i,_lat,_lon,
@@ -2703,9 +2842,9 @@ ODS.Nav = function(navOptions) {
                                             photo : tnail.src}
         
         }
-      }
-      }
 
+      }
+      }
       if(self.session.userId==self.profile.userId)
       {
         self.session.connections=self.profile.connections;
@@ -2867,7 +3006,7 @@ ODS.Nav = function(navOptions) {
         var titledFullname = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/title',{})[0])+' '+OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/fullName',{})[0]);
 
         var photo = OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/photo',{})[0]);
-        if(photo.length<1) photo = 'images/profile_small.png';
+        if(photo.length<1) photo = 'images/missing_person_tnail.png';
         var _home = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/home',{});
         var _business = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/organization',{});
         var _im = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/im',{})[0];
@@ -2983,7 +3122,11 @@ ODS.Nav = function(navOptions) {
       for(var i=0;i<resXmlNodes.length;i++)
       {
        
+       var packageObj=buildObjByAttributes(resXmlNodes[i]);
       
+        
+       if(packageObj.maxinstances!='0' && packageObj.defaulturl.length>0)
+       {
        var packageName=OAT.Xml.textValue(resXmlNodes[i]);
        packageName=packageName.replace(' ','');
        
@@ -3013,7 +3156,7 @@ ODS.Nav = function(navOptions) {
                         [appDataSpaceItem,appDataSpaceItemA],
                         [appDataSpaceItemA,appDataSpaceItemImg,OAT.Dom.text(' '+appOpt.menuName)]);
        }
-       
+       }
       }
 
     }
@@ -3021,8 +3164,8 @@ ODS.Nav = function(navOptions) {
     function renderDiscussionGroups(xmlDoc)
     {
       
-      var disvussionsDiv=$('discussionsCtr');
-      OAT.Dom.clear(disvussionsDiv);
+      var discussionsDiv=$('discussionsCtr');
+      OAT.Dom.clear(discussionsDiv);
       
       var resXmlNodes = OAT.Xml.xpath(xmlDoc, '//userDiscussionGroups_response/discussionGroup',{});
       
@@ -3037,9 +3180,9 @@ ODS.Nav = function(navOptions) {
         discussionA.target='_blank';
         
         if(i==0)
-           OAT.Dom.append([disvussionsDiv,discussionA]);
+           OAT.Dom.append([discussionsDiv,discussionA]);
         else
-           OAT.Dom.append([disvussionsDiv,OAT.Dom.text(', '),discussionA]);
+           OAT.Dom.append([discussionsDiv,OAT.Dom.text(', '),discussionA]);
       }
     
       $('discussionsTitleTxt').innerHTML='Discussion Groups ('+(i)+')';
@@ -3079,7 +3222,7 @@ ODS.Nav = function(navOptions) {
 
     self.installedPackages(renderDataspaceUl);
     
-    self.connectionsGet(self.profile.userId,'fullName,photo,homeLocation',function(xmlDocRet){renderConnectionsWidget(xmlDocRet);
+    self.connectionsGet(self.profile.userId,'fullName,photo,homeLocation,dataspace',function(xmlDocRet){renderConnectionsWidget(xmlDocRet);
                                                                                               if(self.session.userId==self.profile.userId)
                                                                                                  self.updateConnectionsInterface(xmlDocRet);
                                                                                              });
@@ -3605,8 +3748,11 @@ ODS.Nav = function(navOptions) {
                                             var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
                                             if(!self.session.isErr(xmlDoc))
                                             {
-                                               if(!self.uriqaDefaultHost)
-                                                   self.uriqaDefaultHost=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/serverSettings_response/uriqaDefaultHost',{})[0]);
+                                               if(!self.serverOptions.uriqaDefaultHost)
+                                                   self.serverOptions.uriqaDefaultHost=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/serverSettings_response/uriqaDefaultHost',{})[0]);
+//                                               self.serverOptions.useRDFB=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/serverSettings_response/useRDFB',{})[0]);
+                                               if(OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/serverSettings_response/useRDFB',{})[0])=='1')
+                                                  self.serverOptions.useRDFB=1;
                                             }
                                         };
                                           
@@ -3769,7 +3915,7 @@ ODS.Nav = function(navOptions) {
   this.odsLink = function(extPath)
   {
     var odsLink = '';
-    var odsHost = self.uriqaDefaultHost ? self.uriqaDefaultHost :document.location.host;
+    var odsHost = self.serverOptions.uriqaDefaultHost ? self.serverOptions.uriqaDefaultHost :document.location.host;
     
     if(typeof(extPath)!='undefined')
        odsLink=document.location.protocol+'//'+odsHost+extPath;

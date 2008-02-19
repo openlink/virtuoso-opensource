@@ -215,7 +215,7 @@
 			  xhtml_style="width:216px; margin-right:3px;"
 			  xhtml_tabindex="8"/>
 		      </td>
-		      <td rowspan="2" valing="center">
+		      <td rowspan="2" valign="center">
 			<vm:u-prop-select name="sel_39" value="self.sav39" />
 			<v:button name="set_lat_long" action="simple" value="Set from address">
 			  <v:on-post>

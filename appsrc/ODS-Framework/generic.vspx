@@ -50,7 +50,7 @@
       declare i, l, inx any;
 
       children := self.page_form.vc_children;
-      -- keep length in sync with IN values bellow
+      -- keep length in sync with IN values below
       widgets := make_array (5, 'any');
       l := length (children);
       for (i := 0; i < l; i := i + 1)

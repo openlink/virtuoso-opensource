@@ -22,7 +22,7 @@ Below are the infrastructure components for hosted services, such as blogs,
     into the stream, present this to owner for setting the state
     wa_state_posted (in post any, inout stream),  -- process a
     post,
-    updateing state and writing a reply into the stream for web
+    updating state and writing a reply into the stream for web
     interface
     method wa_home_url () returns varchar -- e the homepage url
     of the
@@ -111,7 +111,7 @@ method may best return a link to another page.
 
 Each service instance will have a public home page.  This will,  depending
 on the type of public access show varying information.  If  the service is
-completely not public accessible then this may only show  a logun form.  For
+completely not public accessible then this may only show  a login form.  For
 owners and administrators this may show a different  content and different
 menu choices etc.  For all membership categories  except owner this will
 show a terminate membership choice which will  ask for confirmation.

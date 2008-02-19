@@ -379,8 +379,10 @@ create procedure add_ods_activity (
     if(isstring(sourceID))
       sourceID:=(select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME=sourceID);
     else if(isinteger(sourceID))
+    {
+      if(sourceID>0)
       sourceID:=(select WAI_ID from DB.DBA.WA_INSTANCE where WAI_ID=sourceID);
-    else
+    }else
       goto _err;
 
     if(act is null or length(act)=0 )
@@ -396,5 +398,82 @@ create procedure add_ods_activity (
   
 _err:
   return 0;
+}
+;
+
+
+create trigger sn_related_opensocial_I after insert on DB.DBA.sn_related referencing new as N
+{
+  declare _from_uid, _to_uid integer;
+  
+ 
+  _from_uid := (select sne_org_id from DB.DBA.sn_entity where sne_id=N.snr_from);
+  _to_uid   := (select sne_org_id from DB.DBA.sn_entity where sne_id=N.snr_to);
+  
+  if(_from_uid is not null and _to_uid is not null)
+  {
+      declare exit handler for sqlstate '*' {
+--        log_message (__SQL_MESSAGE);
+        return;
+      };
+ 
+ 
+   declare _act,_inst_type varchar;
+  
+  _act:=sprintf('<a href="http://%s">%s</a> and <a href="http://%s" >%s</a> are now connected.',
+                  DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_from_uid),DB.DBA.WA_USER_FULLNAME(_from_uid),
+                  DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_to_uid),DB.DBA.WA_USER_FULLNAME(_to_uid));
+
+  OPEN_SOCIAL.DBA.add_ods_activity(_from_uid,0,_act,'social_network','add','connection',DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_to_uid));
+
+  _act:=sprintf('<a href="http://%s">%s</a> and <a href="http://%s" >%s</a> are now connected.',
+                  DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_to_uid),DB.DBA.WA_USER_FULLNAME(_to_uid),
+                  DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_from_uid),DB.DBA.WA_USER_FULLNAME(_from_uid));
+
+  OPEN_SOCIAL.DBA.add_ods_activity(_to_uid,0,_act,'social_network','add','connection',DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_from_uid));
+
+
+  }
+
+  
+  return;
+}
+;
+
+create trigger sn_related_opensocial_D after delete on DB.DBA.sn_related referencing old as O
+{
+  declare _from_uid, _to_uid integer;
+  
+ 
+  _from_uid := (select sne_org_id from DB.DBA.sn_entity where sne_id=O.snr_from);
+  _to_uid   := (select sne_org_id from DB.DBA.sn_entity where sne_id=O.snr_to);
+  
+  if(_from_uid is not null and _to_uid is not null)
+  {
+      declare exit handler for sqlstate '*' {
+--        log_message (__SQL_MESSAGE);
+        return;
+      };
+ 
+ 
+   declare _act,_inst_type varchar;
+  
+  _act:=sprintf('<a href="http://%s">%s</a> and <a href="http://%s" >%s</a> are not connected any more.',
+                  DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_from_uid),DB.DBA.WA_USER_FULLNAME(_from_uid),
+                  DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_to_uid),DB.DBA.WA_USER_FULLNAME(_to_uid));
+
+  OPEN_SOCIAL.DBA.add_ods_activity(_from_uid,0,_act,'social_network','remove','connection',DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_to_uid));
+
+  _act:=sprintf('<a href="http://%s">%s</a> and <a href="http://%s" >%s</a> are not connected any more.',
+                  DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_to_uid),DB.DBA.WA_USER_FULLNAME(_to_uid),
+                  DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_from_uid),DB.DBA.WA_USER_FULLNAME(_from_uid));
+
+  OPEN_SOCIAL.DBA.add_ods_activity(_to_uid,0,_act,'social_network','remove','connection',DB.DBA.WA_CNAME ()||DB.DBA.WA_USER_DATASPACE(_from_uid));
+
+
+  }
+
+  
+  return;
 }
 ;

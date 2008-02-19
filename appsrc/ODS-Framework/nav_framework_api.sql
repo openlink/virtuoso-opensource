@@ -25,8 +25,9 @@ grant select on DB.DBA.SYS_USERS to GDATA_ODS;
 wa_exec_no_error('grant select on DB.DBA.NEWS_GROUPS to GDATA_ODS');
 wa_exec_no_error('grant select on DB.DBA.NNTPF_SUBS to GDATA_ODS');
 wa_exec_no_error('grant select on DB.DBA.WA_MESSAGES to GDATA_ODS');
+wa_exec_no_error('grant execute on DB.DBA.WA_USER_DATASPACE to GDATA_ODS');
 
---search permisions
+--search permissions
 wa_exec_no_error('grant select on DB.DBA.WA_USER_TEXT to GDATA_ODS');
 wa_exec_no_error('grant select on DB.DBA.sn_person to GDATA_ODS');
 wa_exec_no_error('grant select on DB.DBA.WA_INSTANCE to GDATA_ODS');
@@ -299,7 +300,10 @@ create procedure usersGetInfo (in sid varchar:='',in realm varchar :='wa',in use
             --3 private;2 friends;1 public
             if(visibility_pos>-1)
             {   
-               if (atoi(visibility_arr[visibility_pos]) = 1 or (atoi(visibility_arr[visibility_pos]) = 2 and is_friend))  is_visible := 1;
+              if (atoi(visibility_arr[visibility_pos]) = 1 or (atoi(visibility_arr[visibility_pos]) = 2 and is_friend))
+                  is_visible := 1;
+              else if(logged_user_name=cursor_username)
+                  is_visible := 1;
             }else
               is_visible := 1;
           }else
@@ -697,12 +701,12 @@ create procedure connectionsGet (in sid varchar:='',in realm varchar :='wa', in 
         goto _err;
       }
 
-      declare connections, ivited, conn_inv any;
+      declare connections, invited, conn_inv any;
       connections:=connections_get(_sneid);
-      ivited:=invited_get(logged_user_name);
+      invited:=invited_get(logged_user_name);
 
       if(username2id(logged_user_name)=userId)
-         conn_inv:=vector_concat(connections,ivited);
+         conn_inv:=vector_concat(connections,invited);
       else
          conn_inv:=connections;
       
@@ -731,12 +735,19 @@ create procedure connectionsGet (in sid varchar:='',in realm varchar :='wa', in 
                 http('<user>',resXml);
                 http('<uid>'||cast(conn_inv[i] as varchar)||'</uid>',resXml);
                 http(userinfo_xml(metas,rset,l),resXml);
-                if(position(conn_inv[i],ivited)>0)
+                if(position(conn_inv[i],invited)>0)
                    http('<invited>1</invited>',resXml);
                 
                 http('</user>',resXml);
               }
+            }else
+           {
+               ;
+--               dbg_obj_print(state, msg);
+           
             }
+
+            
           }
       }
 --  }else return '';
@@ -870,7 +881,7 @@ create procedure connectionSet (in sid varchar:='',in realm varchar :='wa', in c
         delete from DB.DBA.sn_invitation where sni_from=_sneid_user and sni_to=connection_email;
 
 
-        msg :=DB.DBA.WA_USER_FULLNAME(logged_user_name) || ' has withdrawed his invitation.';
+        msg :=DB.DBA.WA_USER_FULLNAME(logged_user_name) || ' has withdrawn his invitation.';
               
         insert into DB.DBA.WA_MESSAGES (WM_SENDER_UID,WM_RECIPIENT_UID,WM_TS,WM_MESSAGE,WM_SENDER_MSGSTATUS,WM_RECIPIENT_MSGSTATUS)
                values (username2id(logged_user_name),connectionId,now(),msg,0,0);
@@ -1367,7 +1378,7 @@ create procedure openIdCheckAuthentication (in realm varchar :='wa', in openIdUr
   declare exit handler for not found
   {
     errCode:=503;
-    errMsg := 'OpenID is not registered as user identity';
+    errMsg := 'OpenID is not registered as user identity.';
     goto _auth_failed;
   };
 
@@ -1404,6 +1415,7 @@ create procedure serverSettings () __SOAP_HTTP 'text/xml'
   errMsg  := '';
 
   http(sprintf('<uriqaDefaultHost>%s</uriqaDefaultHost>',DB.DBA.WA_CNAME()),resXml);
+  http(sprintf('<useRDFB>%d</useRDFB>', (case when DB.DBA.wa_check_package ('OAT') then 1 else 0 end)),resXml);
      
     
 _err:  
@@ -2005,6 +2017,7 @@ create procedure xml_nodename(in dbfield_name varchar)
  if(dbfield_name='U_BOOKS')        return 'books';
  if(dbfield_name='U_MOVIES')       return 'movies';
  if(dbfield_name='U_INTERESTS')    return 'interests';
+ if(dbfield_name='U_DATASPACE')    return 'dataspace';
  if(dbfield_name='H_COUNTRY')      return 'home_country';
  if(dbfield_name='H_STATE')        return 'home_state';
  if(dbfield_name='H_CITY')         return 'home_city';
@@ -2048,6 +2061,7 @@ create procedure visibility_posinarr(in dbfield_name varchar)
  if(dbfield_name='U_BOOKS')        return 44;
  if(dbfield_name='U_MOVIES')       return 46;
  if(dbfield_name='U_INTERESTS')    return 48;
+ if(dbfield_name='U_DATASPACE')    return -1;
  if(dbfield_name='H_COUNTRY')      return 16;
  if(dbfield_name='H_STATE')        return 16;
  if(dbfield_name='H_CITY')         return 16;
@@ -2081,7 +2095,7 @@ create procedure constructFieldsNameStr(in fieldsname_str varchar)
 {
 
   declare correctfields_name_str varchar;
-  correctfields_name_str:='userName,fullName,firstName,lastName,photo,title,gender,home,homeLocation,business,businessLocation,businessJobPosition,im,music,interests';
+  correctfields_name_str:='userName,fullName,firstName,lastName,photo,title,gender,home,homeLocation,business,businessLocation,businessJobPosition,im,music,interests,dataspace';
 
   declare res_str varchar;
   declare fields_name any;
@@ -2164,6 +2178,9 @@ create procedure constructFieldsNameStr(in fieldsname_str varchar)
            if(fields_name[i]='interests')
               res_str:=res_str||'I.WAUI_INTERESTS as U_INTERESTS';
 
+           if(fields_name[i]='dataspace')
+              res_str:=res_str||'DB.DBA.WA_USER_DATASPACE(U.U_NAME) as U_DATASPACE';
+
         }   
     }
   }
@@ -2238,8 +2255,8 @@ create procedure usersinfo_sql(in usersStr varchar,in fieldsStr varchar)
 --               ' where I.WAUI_U_ID=U.U_ID and U.U_ID in (%s)',
 --               fields_name_str,users_id_str);
 --  
-  qry:=sprintf('select U.U_ID,%s from DB.DBA.WA_USER_INFO I, DB.DBA.SYS_USERS U '||
-               ' where I.WAUI_U_ID=U.U_ID and U.U_ID in (%s)',
+  qry:=sprintf('select U.U_ID,%s  from DB.DBA.SYS_USERS U left join DB.DBA.WA_USER_INFO I on (U.U_ID=I.WAUI_U_ID)'||
+               ' where U.U_ID in (%s)',
                fields_name_str,users_id_str);
 
   return qry;

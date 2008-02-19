@@ -523,7 +523,7 @@ function dd(txt){
  document.getElementsByTagName("head")[0].appendChild(cssDockNode);
 
  var docColumnMinSize=235;
- var useableViewRatio=.94;
+ var usableViewRatio=.94;
 
  var ajaxSuccCallCount=0;
 ODSInitArray.push(fbInitPrepare);
@@ -561,7 +561,7 @@ function dockAdd(win_title,custom_colsize)
   win.id='dockwin_'+counter;
   win.div.id='dockwin_'+counter;
 
-  var col_px = Math.floor(OAT.Dom.getViewport()[0]*useableViewRatio/dock.columns.length);
+  var col_px = Math.floor(OAT.Dom.getViewport()[0]*usableViewRatio/dock.columns.length);
   if(col_px<docColumnMinSize) col_px=docColumnMinSize;
   
   if(typeof(custom_colsize)!='undefined' && custom_colsize>10)
@@ -641,7 +641,7 @@ function ajaxUpdate(abID,odsCID,fbCID,dockObj,mappingStr)
                                           var i=5;
                                           setInterval(function(){
                                                                  if(i>0)
-                                                                    $(dockObj.id+'_body').innerHTML='Syncronization successfull. Autoclose in '+i+' seconds';
+                                                                    $(dockObj.id+'_body').innerHTML='Synchronization successful. Autoclose in '+i+' seconds';
                                                                   else
                                                                     dockObj.dock.removeObject(dockObj);
                                                                   i--;
@@ -654,7 +654,7 @@ function ajaxUpdate(abID,odsCID,fbCID,dockObj,mappingStr)
                                         var err_msg='';
                                         if(err_msg_xml.length)
                                            err_msg = OAT.Xml.textValue(err_msg_xml[0]);
-                                        $(dockObj.id+'_body').innerHTML='Syncronization unsuccessfull due to:'+err_msg
+                                        $(dockObj.id+'_body').innerHTML='Synchronization unsuccessful due to:'+err_msg
 
                                        }
                                      };
@@ -707,7 +707,7 @@ function ajaxUpdateAdvanced(abID,odsCID,fbCID,dockObj,mappingStr,validationStr,t
                                         var err_msg='';
                                         if(err_msg_xml.length)
                                            err_msg = OAT.Xml.textValue(err_msg_xml[0]);
-                                        $(dockObj.id+'_body').innerHTML='Syncronization unsuccessfull due to:'+err_msg
+                                        $(dockObj.id+'_body').innerHTML='Synchronization unsuccessful due to:'+err_msg
 
                                        }
                                      };
@@ -863,7 +863,7 @@ function derefFBP(fbCID)
                                         var err_msg='';
                                         if(err_msg_xml.length)
                                            err_msg = OAT.Xml.textValue(err_msg_xml[0]);
-                                        $(dockObj.id+'_body').innerHTML='Syncronization unsuccessfull due to:'+err_msg
+                                        $(dockObj.id+'_body').innerHTML='Synchronization unsuccessful due to:'+err_msg
 
                                        }
                                      };
@@ -1064,7 +1064,7 @@ function fbInit()
 // dd('<?Vself.syncdata_arr[2]?>'); //new contacts count
 // dd('<?Vself.syncdata_arr[3]?>'); //update contacts count
 // dd('<?Vself.syncdata_arr[4]?>'); //total contacts count
-// dd('<?Vself.syncdata_arr[5]?>'); //addressbook instnace id
+// dd('<?Vself.syncdata_arr[5]?>'); //addressbook instance id
 
  
  dock = new OAT.Dock('fbDock',2);
@@ -1082,7 +1082,7 @@ function fbInit()
  $(win_info.id+'_body').innerHTML='<?vsp http('<a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx',self._ods_login_params)||'">Back to ODS - Facebook</a> | '); ?>' +
                                   '<?vsp http('<a href="'||self.odsbar_ods_gpath ||wa_expand_url('fb_front.vspx?import=updateadvanced',self._ods_login_params)||'">Show all contacts to synchronize</a>'); ?> | ' +
                                    '<a href="javascript:void(0)" onclick="win_mapping.state=1;win_mapping.actualizeState();">Set default mapping</a>';
- var win_syncstatus=dockAdd('Synchronize status',OAT.Dom.getViewport()[0]*useableViewRatio-460);
+ var win_syncstatus=dockAdd('Synchronize status',OAT.Dom.getViewport()[0]*usableViewRatio-460);
  win_syncstatus.mappingDockId=win_mapping.id;
  createSyncstatusDock(win_syncstatus);
 
@@ -1252,7 +1252,7 @@ var mappingWin=false;
 function fbInit()
 {
 
- var colnum=Math.floor(OAT.Dom.getViewport()[0]*useableViewRatio/docColumnMinSize);
+ var colnum=Math.floor(OAT.Dom.getViewport()[0]*usableViewRatio/docColumnMinSize);
  dock = new OAT.Dock('fbDock',colnum);
 
  var win_info=dockAdd('Action');
