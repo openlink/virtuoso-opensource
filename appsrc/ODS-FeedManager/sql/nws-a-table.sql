@@ -452,7 +452,8 @@ ENEWS.WA.exec_no_error ('
       rfc_id := ENEWS.WA.make_rfc_id (N.EFIC_ITEM_ID, N.EFIC_ID);
 
     rfc_references := \'\';
-    if (N.EFIC_PARENT_ID) {
+    if (N.EFIC_PARENT_ID)
+    {
       declare p_rfc_id, p_rfc_references any;
 
       --declare exit handler for not found;

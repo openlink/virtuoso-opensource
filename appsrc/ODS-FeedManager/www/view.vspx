@@ -47,7 +47,7 @@
           OAT.Anchor.zIndex = 1001;
         
           if (0 == 1)
-            gererateAPP('app_area', {});
+            generateAPP('app_area', {});
         }
         OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, myInit);
       </script>

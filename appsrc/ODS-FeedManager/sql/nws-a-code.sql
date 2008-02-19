@@ -515,7 +515,7 @@ create procedure ENEWS.WA.domain_gems_delete(
   path := home || appName || '/' || appGems || '.podcast';
   DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0);
 
-  declare auth_uid integrer;
+  declare auth_uid integer;
 
   auth_uid := http_dav_uid();
 
@@ -791,7 +791,7 @@ create procedure ENEWS.WA.feeds_agregator (
   declare dt datetime;
   declare p, f, u any;
 
-  p := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'dayly');
+  p := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'daily');
   f := coalesce ((select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS), 1);
   u := case p
          when 'daily' then 1440
@@ -2813,7 +2813,7 @@ create procedure ENEWS.WA.blogs_agregator ()
   declare dt datetime;
   declare p, f, u any;
 
-  p := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'dayly');
+  p := coalesce ((select top 1 WS_FEEDS_UPDATE_PERIOD from WA_SETTINGS), 'daily');
   f := coalesce ((select top 1 WS_FEEDS_UPDATE_FREQ from WA_SETTINGS), 1);
   u := case p
          when 'daily' then 1440
@@ -6368,7 +6368,8 @@ create procedure ENEWS.WA.nntp_decode_subject (
   str := replace (str, '\t', '');
 
   match := regexp_match ('=\\?[^\\?]+\\?[A-Z]\\?[^\\?]+\\?=', str);
-  while (match is not null and inx > 0) {
+  while (match is not null and inx > 0)
+  {
     declare enc, ty, dat, tmp, cp, dec any;
 
     cp := match;
@@ -6383,7 +6384,8 @@ create procedure ENEWS.WA.nntp_decode_subject (
     enc := trim (enc, '?=');
     ty := trim (tmp, '?');
 
-    if (ty = 'B') {
+    if (ty = 'B')
+    {
 	    dec := decode_base64 (match);
 	  } else if (ty = 'Q') {
 	    dec := uudecode (match, 12);
@@ -6522,7 +6524,8 @@ create procedure DB.DBA.OFM_NEWS_MSG_I (
   if (not isnull(subject))
     ENEWS.WA.nntp_decode_subject (subject);
 
-  if (contentType like 'text/%') {
+  if (contentType like 'text/%')
+  {
     declare st, en int;
     declare last any;
 
@@ -6535,14 +6538,17 @@ create procedure DB.DBA.OFM_NEWS_MSG_I (
 	      en := en - 4;
 	  }
     content := subseq (N_NM_BODY, st, en);
-    if (cset is not null and cset <> 'UTF-8')	{
+    if (cset is not null and cset <> 'UTF-8')
+    {
 	    declare exit handler for sqlstate '2C000' { goto next_1;};
 	    content := charset_recode (content, cset, 'UTF-8');
 	  }
   next_1:;
     if (contentType = 'text/plain')
 	    content := '<pre>' || content || '</pre>';
-  } else if (contentType like 'multipart/%') {
+  }
+  else if (contentType like 'multipart/%')
+  {
     declare res, best_cnt any;
 
     declare exit handler for sqlstate '*' {	signal ('CONVX', __SQL_MESSAGE);};
@@ -6551,11 +6557,14 @@ create procedure DB.DBA.OFM_NEWS_MSG_I (
 
     best_cnt := null;
     content := null;
-    foreach (any elm in res) do {
-	    if (elm[1] = 'text/html' and (content is null or best_cnt = 'text/plain')) {
+    foreach (any elm in res) do
+    {
+      if (elm[1] = 'text/html' and (content is null or best_cnt = 'text/plain'))
+      {
 	      best_cnt := 'text/html';
 	      content := elm[2];
-	      if (elm[4] = 'quoted-printable') {
+        if (elm[4] = 'quoted-printable')
+        {
 		      content := uudecode (content, 12);
 		    } else if (elm[4] = 'base64') {
 		      content := decode_base64 (content);
@@ -6569,7 +6578,8 @@ create procedure DB.DBA.OFM_NEWS_MSG_I (
   	  if (elm[1] not like 'text/%')
 	      signal ('CONVX', sprintf ('The post contains parts of type [%s] which is prohibited.', elm[1]));
 	  }
-    if (length (cset) and cset <> 'UTF-8') {
+    if (length (cset) and cset <> 'UTF-8')
+    {
 	    declare exit handler for sqlstate '2C000' { goto next_2;};
 	    content := charset_recode (content, cset, 'UTF-8');
 	  }
@@ -6578,7 +6588,8 @@ create procedure DB.DBA.OFM_NEWS_MSG_I (
     signal ('CONVX', sprintf ('The content type [%s] is not supported', contentType));
 
   rfc_header := '';
-  for (declare i int, i := 0; i < length (head); i := i + 2) {
+  for (declare i int, i := 0; i < length (head); i := i + 2)
+  {
     if (lower (head[i]) <> 'content-type' and lower (head[i]) <> 'mime-version' and lower (head[i]) <> 'boundary'  and lower (head[i]) <> 'subject')
 	    rfc_header := rfc_header || head[i] ||': ' || head[i + 1]||'\r\n';
   }
@@ -6586,7 +6597,8 @@ create procedure DB.DBA.OFM_NEWS_MSG_I (
 
   rfc_references := N_NM_REF;
 
-  if (not isnull(N_NM_REF)) {
+  if (not isnull (N_NM_REF))
+  {
     declare exit handler for not found { signal ('CONV1', 'No such article.');};
 
     parent_id := null;

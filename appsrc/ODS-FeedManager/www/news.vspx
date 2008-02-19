@@ -427,7 +427,7 @@
 
                     path := get_keyword ('pt_path', e.ve_params, '');
 
-                    -- touggle
+                    -- toggle
                       self.state_init();
                     node := get_keyword ('pt_toggle', e.ve_params, get_keyword ('pt_node', e.ve_params, ''));
                     if (node <> '')

@@ -23,24 +23,22 @@
  -
 -->
 
-<html xmlns:v="http://www.openlinksw.com/vspx/"
-      xmlns:xhtml="http://www.w3.org/1999/xhtml"
-      xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml">
   <head profile="http://internetalchemy.org/2003/02/profile">
     <base href="<?V ENEWS.WA.host_url () || http_path () ?>" />
     <?vsp
+      declare domainName varchar;
+
+      domainName := ENEWS.WA.domain_name (self.domain_id);
       http (sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s" />', ENEWS.WA.foaf_url (self.account_id)));
       if (ENEWS.WA.domain_is_public(self.domain_id))
+      {
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', ENEWS.WA.sioc_url (self.domain_id)));
+      }
+      http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, ENEWS.WA.dav_url (self.domain_id)||'OFM.rss'));
+      http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, ENEWS.WA.dav_url (self.domain_id)||'OFM.atom'));
+      http (sprintf ('\n    <link rel="subscriptions" type="text/x-opml" title="%V Subscriptions" href="%sexport.vspx?output=OPML&amp;aid=%d&amp;did=%d" />', domainName, ENEWS.WA.enews_url (self.domain_id), self.account_id, self.domain_id));
       http (ENEWS.WA.geo_url (self.domain_id, self.account_id));
-    ?>
-    <?vsp
-      declare url varchar;
-      declare N integer;
-      url := concat('http://', http_request_header (lines, 'Host'));
-      for (N := 0; N < length(path)-1; N := N + 1)
-        url := concat(url, '/', path[N]);
-      http(sprintf('<link rel="subscriptions" type="text/x-opml" title="Subscriptions" href="%s/export.vspx?output=OPML&aid=%d&did=%d" />', url, self.account_id, self.domain_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <link rel="stylesheet" href="css/webdav.css" type="text/css"/>
@@ -81,7 +79,7 @@
           OAT.Anchor.zIndex = 1001;
         
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
-            gererateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
+            generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
             
       		// init tabs
           showTab('p', 2, 0);

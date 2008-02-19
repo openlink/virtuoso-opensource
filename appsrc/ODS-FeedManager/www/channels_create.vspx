@@ -782,7 +782,7 @@
                    self.vc_is_valid := 0;
                   return;
                 }
-                declare i, l integr;
+                declare i, l integer;
                 declare feed_id varchar;
                 declare S, data, params any;
 
