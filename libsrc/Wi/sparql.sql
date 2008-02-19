@@ -9032,7 +9032,7 @@ load_grddl:;
 	    --!!!TBD: Carefully check what happens when dest is NULL vs dest is nonNULL, then add support for groupdest.
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    dbg_printf ('Match %s', RM_HOOK);
-	  new_opts := vector_concat (options, RM_OPTIONS);
+	  new_opts := vector_concat (options, RM_OPTIONS, vector ('content-type', ret_content_type));
 	  if (RM_TYPE <> 'HTTP')
 	    {
 	      if (npars = 7)
