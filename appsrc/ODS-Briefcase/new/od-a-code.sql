@@ -335,11 +335,11 @@ create procedure ODRIVE.WA.menu_tree ()
   <node     name="Groups"         url="groups.vspx"        id="2"   tip="Groups"                    allowed="admin owner">
     <node   name="21"             url="groups_update.vspx" id="21"  place="link"                    allowed="admin owner"/>
   </node>
-  <node     name="Metadata"       url="vmds.vspx"          id="3"   tip="Metadata Addministration"  allowed="admin owner">
-    <node   name="Schemas"        url="vmds.vspx"          id="31"  tip="Schema Addministration"    allowed="admin owner">
+  <node     name="Metadata"       url="vmds.vspx"          id="3"   tip="Metadata Administration"  allowed="admin owner">
+    <node   name="Schemas"        url="vmds.vspx"          id="31"  tip="Schema Administration"    allowed="admin owner">
       <node name="Schemas Update" url="vmds_update.vspx"   id="311" place="link"                    allowed="admin owner"/>
     </node>
-    <node   name="Mime Types"     url="mimes.vspx"         id="32"  tip="Mime Type Addministration" allowed="admin owner">
+    <node   name="Mime Types"     url="mimes.vspx"         id="32"  tip="Mime Type Administration" allowed="admin owner">
       <node name="Mimes Update"   url="mimes_update.vspx"  id="321" place="link"                    allowed="admin owner"/>
     </node>
   </node>
@@ -3105,7 +3105,7 @@ create procedure ODRIVE.WA.DAV_PROP_TAGS_SET (
 --
 create procedure ODRIVE.WA.DAV_RDF_PROP_GET (
   in path varchar,			      -- Path to the resource or collection
-  in single_schema varchar,		-- Name of single RDF schema to filter out redundand records or NULL to compose any number of properties.
+  in single_schema varchar,   -- Name of single RDF schema to filter out redundant records or NULL to compose any number of properties.
   in auth_name varchar := NULL,
   in auth_pwd varchar := NULL)
 {
@@ -3120,7 +3120,7 @@ create procedure ODRIVE.WA.DAV_RDF_PROP_GET (
 --
 create procedure ODRIVE.WA.DAV_RDF_PROP_SET (
   in path varchar,			      -- Path to the resource or collection
-  in single_schema varchar,		-- Name of single RDF schema to filter out redundand records or NULL to compose any number of properties.
+  in single_schema varchar,   -- Name of single RDF schema to filter out redundant records or NULL to compose any number of properties.
   in rdf any,				          -- RDF XML
   in auth_name varchar := NULL,
   in auth_pwd varchar := NULL)

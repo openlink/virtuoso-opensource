@@ -87,7 +87,7 @@
 
           if ((self.command_mode = 5) and (get_keyword('dav_destination', self.vc_page.vc_event.ve_params, '') = '1'))
           {
-            -- RDF Tripple Store
+            -- RDF Triple Store
 
             declare pos integer;
             declare is_ttl, is_xml, rdf_data, rdf_xml, rdf_name, rdf_graph any;

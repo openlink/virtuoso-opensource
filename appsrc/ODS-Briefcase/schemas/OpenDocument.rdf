@@ -11,14 +11,14 @@
     xml:base="http://www.openlinksw.com/schemas/opendocument#">
   <owl:Ontology rdf:about="urn:oasis:names:tc:opendocument:xmlns:meta:1.0">
     <rdfs:label>OpenDocument Document</rdfs:label>
-    <rdfs:comment>Items that conform to OpenDocuemnt's Metadata Classification Scheme</rdfs:comment>
+    <rdfs:comment>Items that conform to OpenDocument's Metadata Classification Scheme</rdfs:comment>
     <virtrdf:catName>OpenDocument Document</virtrdf:catName>
     <virtrdf:version>2.00</virtrdf:version>
   </owl:Ontology>
   <rdf:Description rdf:about="http://www.openlinksw.com/schemas/opendocument#">
     <dc:title>OpenDocument Document</dc:title>
     <dc:publisher>The Dublin Core Metadata InitiativeOpenLink Software</dc:publisher>
-    <dc:description>Items that conform to OpenDocuemnt's Metadata Classification Scheme</dc:description>
+    <dc:description>Items that conform to OpenDocument's Metadata Classification Scheme</dc:description>
     <dc:language>English</dc:language>
     <dcterms:requires rdf:resource="http://www.dublincore.org/documents/2000/07/11/dcmes-qualifiers/"/>
     <dc:source rdf:resource="http://www.dublincore.org/documents/2000/07/11/dcmes-qualifiers/"/>

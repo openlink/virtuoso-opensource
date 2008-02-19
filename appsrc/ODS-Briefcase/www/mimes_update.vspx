@@ -229,7 +229,7 @@
                   }
                   if (strchr(self.v_extension, '*') is not null)
                   {
-                    self.vc_error_message := 'Please, enter correct file extention (example: txt or doc)';
+                self.vc_error_message := 'Please, enter correct file extension (example: txt or doc)';
                     self.vc_is_valid := 0;
                     return;
                   }

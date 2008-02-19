@@ -1800,7 +1800,7 @@
                           <v:item name="Do not change" value="*" />
                           <v:item name="Off" value="N" />
                           <v:item name="Direct members" value="T" />
-                          <v:item name="Recurcively" value="R" />
+                        <v:item name="Recursively" value="R" />
                         </v:select-list>
                       </td>
                     </tr>
@@ -2200,7 +2200,7 @@
                     }
                   if ((not ODRIVE.WA.check_admin (ODRIVE.WA.session_user_id (e.ve_params))) and isnull(strstr(tmp, ODRIVE.WA.dav_home2 (self.owner_id, self.account_role))))
                   {
-                    self.vc_error_message := 'The path must be part of your home directory or another public directoty';
+                    self.vc_error_message := 'The path must be part of your home directory or another public directory';
                       self.vc_is_valid := 0;
                       return;
                     }
