@@ -375,6 +375,7 @@ xqi_cast (xp_instance_t * xqi, int slot, dtp_t dtp)
       else if (DV_XML_ENTITY == val_dtp)
 	xe_string_value_1 ((xml_entity_t *)val, XQI_ADDRESS (xqi, slot), DV_LONG_STRING);
       val2 = XQI_GET (xqi, slot);
+      /* !!!TBD cast DV_DATETIME to xsd:dateTime syntax etc. */
       XQI_SET (xqi, slot, box_cast ((caddr_t *) xqi->xqi_qi, val2, st_integer, DV_TYPE_OF(val2)));
       return (XQI_GET (xqi, slot));
     }

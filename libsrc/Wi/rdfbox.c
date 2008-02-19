@@ -26,6 +26,7 @@
 #include "arith.h"
 #include "xmltree.h"
 #include "rdf_core.h"
+#include "http.h" /* For DKS_ESC_XXX constants */
 
 void
 rdf_box_audit_impl (rdf_box_t * rb)
@@ -1022,6 +1023,42 @@ bif_rq_iid_of_o (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NEW_DB_NULL;
 }
 
+caddr_t
+bif_rdf_long_to_ttl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t val = bif_arg (qst, args, 0, "__rdf_long_to_ttl");
+  dk_session_t *out = bif_strses_arg (qst, args, 1, "__rdf_long_to_ttl");
+  query_instance_t *qi = (query_instance_t *)qi;
+  dtp_t val_dtp = DV_TYPE_OF (val);
+  char temp[256];
+  if (DV_RDF == val_dtp)
+    {
+      rdf_box_t *rb = (rdf_box_t *)val;
+      if (!rb->rb_is_complete)
+        rb_complete (rb, qi->qi_trx, qi);
+      val = rb->rb_box;
+      val_dtp = DV_TYPE_OF (val);
+    }
+  switch (val_dtp)
+    {
+    case DV_DATETIME:
+      dt_to_iso8601_string (val, temp, sizeof (temp));
+      session_buffered_write (out, temp, strlen (temp));
+      break;
+    case DV_STRING:
+      dks_esc_write (out, val, box_length (val) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
+      break;
+    default:
+      {
+        caddr_t tmp_utf8_box = box_cast_to_UTF8 (qst, val);
+        dks_esc_write (out, tmp_utf8_box, box_length (tmp_utf8_box) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
+        dk_free_box (tmp_utf8_box);
+        break;
+      }
+    }
+  return (ptrlong)val_dtp;
+}
+
 void
 rdf_box_init ()
 {
@@ -1051,5 +1088,7 @@ rdf_box_init ()
   bif_set_uses_index (bif_rdf_box_make_complete);
   bif_define_typed ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, &bt_any);
   bif_set_uses_index (bif_rdf_sqlval_of_obj);
+  bif_define_typed ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, &bt_any);
+  bif_set_uses_index (bif_rdf_long_to_ttl);
   bif_define_typed ("__rq_iid_of_o", bif_rq_iid_of_o, &bt_any);
 }

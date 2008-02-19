@@ -165,7 +165,13 @@ extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS TTLP_PARAM caddr_t bo
 #endif
 #endif
 extern caddr_t ttlp_uri_resolve (TTLP_PARAM caddr_t qname);
-extern caddr_t ttlp_strliteral (TTLP_PARAM const char *sparyytext, int strg_is_long, char delimiter);
+
+/* Numeric values of these constants are important, do not alter them. Theyh're used in tricky way. */
+#define TTLP_STRLITERAL_QUOT 		1
+#define TTLP_STRLITERAL_QUOT_AT		2
+#define TTLP_STRLITERAL_3QUOT 		3
+#define TTLP_STRLITERAL_3QUOT_AT	4
+extern caddr_t ttlp_strliteral (TTLP_PARAM const char *sparyytext, int mode, char delimiter);
 extern caddr_t ttl_query_lex_analyze (caddr_t str, wcharset_t *query_charset);
 
 extern void ttlp_triple_and_inf (TTLP_PARAM caddr_t o_uri);

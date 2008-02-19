@@ -2076,11 +2076,7 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
       if (__tag of varchar = rdf_box_data_tag (obj))
         http_escape (__rdf_sqlval_of_obj (obj), 11, ses, 1, 1);
       else if (__tag of datetime = rdf_box_data_tag (obj))
-        {
-          declare vc varchar;
-           vc := cast (rdf_box_data (obj) as varchar); --!!!TBD: replace with proper serialization
-           http_escape (replace (vc, ' ', 'T'), 11, ses, 1, 1);
-        }
+        __rdf_long_to_ttl (obj, ses);
       else if (__tag of XML = rdf_box_data_tag (obj))
         http_escape (serialize_to_UTF8_xml (__rdf_sqlval_of_obj (obj)), 11, ses, 1, 1);
       else
@@ -2108,6 +2104,14 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
           http_escape (obj, 11, ses, 1, 1);
           http ('" ', ses);
         }
+  else if (__tag of datetime = rdf_box_data_tag (obj))
+    {
+      http ('"', ses);
+     __rdf_long_to_ttl (obj, ses);
+      http ('"^^<', ses);
+      http_escape (cast (__xsd_type (obj) as varchar), 12, ses, 1, 1);
+      http ('> ', ses);
+    }
       else
         {
           http ('"', ses);
@@ -2374,6 +2378,14 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
               http_value (dat, 0, ses);
               http ('</', ses); http (pred_tagname, ses); http ('>', ses);
             }
+          else if (__tag of datetime = rdf_box_data_tag (obj))
+            {
+              http (' rdf:datatype="', ses);
+              http_escape (cast (__xsd_type (obj) as varchar), 12, ses, 1, 1);
+              http ('">', ses);
+              __rdf_long_to_ttl (dat, ses);
+              http ('</', ses); http (pred_tagname, ses); http ('>', ses);
+            }
           else
             {
 	      declare tmp any;
@@ -2390,6 +2402,14 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
           http ('>', ses);
 	  obj := charset_recode (obj, 'UTF-8', '_WIDE_');
           http_value (obj, 0, ses);
+          http ('</', ses); http (pred_tagname, ses); http ('>', ses);
+        }
+      else if (__tag of datetime = rdf_box_data_tag (obj))
+        {
+          http (' rdf:datatype="', ses);
+          http_escape (cast (__xsd_type (obj) as varchar), 12, ses, 1, 1);
+          http ('">', ses);
+          __rdf_long_to_ttl (obj, ses);
           http ('</', ses); http (pred_tagname, ses); http ('>', ses);
         }
       else

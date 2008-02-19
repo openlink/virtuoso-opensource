@@ -111,7 +111,13 @@ static void ttlyyerror_if_long_qname (TTLP_PARAM caddr_t box, const char *lex_ty
 
 static int ttlp_NUMBER_int (TTLP_PARAM void *yylval)
 {
-  if (strlen (ttlyytext) < 10)
+  int l = strlen (ttlyytext);
+  int has_sign = ((('-' == ttlyytext[0]) || ('+' == ttlyytext[0])) ? 1 : 0);
+  int is_negative = ('-' == ttlyytext[0]);
+  if (((10+has_sign) > l) ||
+    (((10+has_sign) == l) &&
+      (0 >= strcmp (ttlyytext + has_sign,
+          (is_negative ? "2147483648" : "2147483647") ) ) ) )
     {
       ttlyylval.box = box_num_nonull (atol (ttlyytext));
       return TURTLE_INTEGER;
@@ -300,10 +306,10 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 
 <INITIAL>['']['']['']		{ yymore(); BEGIN TURTLE_SSSQ; }
 <INITIAL>[""][""][""]		{ yymore(); BEGIN TURTLE_DDDQ; }
-<TURTLE_SSSQ>['']['']['']	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 1, '\''); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_DDDQ>[""][""][""]	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 1, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_SSSQ>['']['']['']"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 1, '\''); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_DDDQ>[""][""][""]"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 1, '\"'); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_SSSQ>['']['']['']	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, TTLP_STRLITERAL_3QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_DDDQ>[""][""][""]	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, TTLP_STRLITERAL_3QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_SSSQ>['']['']['']"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, TTLP_STRLITERAL_3QUOT_AT, '\''); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_DDDQ>[""][""][""]"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, TTLP_STRLITERAL_3QUOT_AT, '\"'); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_SSSQ>(([''](['']?))?{S_NL})		{ ttlp_inst.ttlp_lexlineno++; yymore(); }
 <TURTLE_DDDQ>(([""]([""]?))?{S_NL})		{ ttlp_inst.ttlp_lexlineno++; yymore(); }
 <TURTLE_SSSQ>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
@@ -318,10 +324,10 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 
 <INITIAL>['']		{ yymore(); BEGIN TURTLE_SQ; }
 <INITIAL>[""]		{ yymore(); BEGIN TURTLE_DQ; }
-<TURTLE_SQ>['']		{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 0, '\''); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_DQ>[""]		{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 0, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_SQ>['']"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 0, '\''); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_DQ>[""]"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, 0, '\"'); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_SQ>['']		{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, TTLP_STRLITERAL_QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_DQ>[""]		{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, TTLP_STRLITERAL_QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_SQ>['']"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, TTLP_STRLITERAL_QUOT_AT, '\''); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_DQ>[""]"@"	{ ttlyylval.box = ttlp_strliteral (TTLP_ARG ttlyytext, TTLP_STRLITERAL_QUOT_AT, '\"'); BEGIN AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_SQ>{S_NL}	{ if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_inst.ttlp_flags)) ttlyyerror ("End-of-line in a short single-quoted string"); ttlp_inst.ttlp_lexlineno++; yymore(); }
 <TURTLE_DQ>{S_NL}	{ if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_inst.ttlp_flags)) ttlyyerror ("End-of-line in a short double-quoted string"); ttlp_inst.ttlp_lexlineno++; yymore(); }
 <TURTLE_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }

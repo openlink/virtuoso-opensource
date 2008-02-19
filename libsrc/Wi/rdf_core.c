@@ -458,15 +458,16 @@ ttlyyerror_impl_1 (TTLP_PARAM const char *raw_text, int yystate, short *yyssa, s
 }
 
 
-caddr_t ttlp_strliteral (TTLP_PARAM const char *strg, int strg_is_long, char delimiter)
+caddr_t ttlp_strliteral (TTLP_PARAM const char *strg, int mode, char delimiter)
 {
   caddr_t tmp_buf;
   caddr_t res;
   const char *err_msg;
   const char *src_tail, *src_end;
   char *tgt_tail;
+  int strg_is_long = (TTLP_STRLITERAL_QUOT_AT < mode);
   src_tail = strg + (strg_is_long ? 3 : 1);
-  src_end = strg + strlen (strg) - (strg_is_long ? 3 : 1);
+  src_end = strg + strlen (strg) - mode;
   tgt_tail = tmp_buf = dk_alloc_box ((src_end - src_tail) + 1, DV_SHORT_STRING);
   while (src_tail < src_end)
     {
@@ -679,7 +680,8 @@ ttlp_triple_and_inf (TTLP_PARAM caddr_t o_uri)
   tf_triple (tf, s, p, o);
 }
 
-extern void ttlp_triple_l_and_inf (TTLP_PARAM caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
+void
+ttlp_triple_l_and_inf (TTLP_PARAM caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
 {
   triple_feed_t *tf = ttlp_inst.ttlp_tf;
   caddr_t s = ttlp_inst.ttlp_subj_uri;
