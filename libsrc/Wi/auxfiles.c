@@ -304,6 +304,7 @@ srv_client_defaults (void)
 void
 srv_client_defaults_init (void)
 {
+  caddr_t old = client_defaults;
   client_defaults = (caddr_t)
     list (16,
 	  box_string ("SQL_TXN_ISOLATION"),
@@ -323,6 +324,7 @@ srv_client_defaults_init (void)
 	  box_string ("SQL_BINARY_TIMESTAMP"),
 	  box_num (cli_binary_timestamp)
 	  );
+  dk_free_tree (old);
 }
 
 

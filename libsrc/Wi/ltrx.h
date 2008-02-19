@@ -162,10 +162,10 @@ typedef struct lock_trx_s
     dk_session_t *	lt_log;
     dk_set_t		lt_remotes;
     thread_t *		lt_thr;
-
+    dk_hash_t 		lt_lock;
+#define lt_has_locks(lt) ((lt)->lt_lock.ht_count)
     /* all below members are considerd data area and cleared with memset in lt_cleare, saving individual ones as needed */
-#define LT_DATA_AREA_FIRST lt_locks
-    dk_set_t		lt_locks;
+#define LT_DATA_AREA_FIRST lt_waits_for
     dk_set_t		lt_waits_for;
     dk_set_t		lt_waiting_for_this;
     long		lt_age;

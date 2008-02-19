@@ -551,7 +551,7 @@ trx_status_report (lock_trx_t * lt)
       if (lt->lt_status == LT_PENDING)
 	{
 	  rep_printf ("Locks: ");
-	  DO_SET (page_lock_t *, pl, &lt->lt_locks)
+	  DO_HT (page_lock_t *, pl, void *, ign, &lt->lt_lock)
 	  {
 	    it_cursor_t *waiting = pl->pl_waiting;
 	    int wait = 0;
@@ -577,7 +577,7 @@ trx_status_report (lock_trx_t * lt)
 		    pl->pl_type == PL_SHARED ? "S" : "E");
 	      }
 	  }
-	  END_DO_SET ();
+	  END_DO_HT;
 	  rep_printf ("\n");
 	}
     }

@@ -138,7 +138,7 @@ cpt_rollback (int may_freeze)
 	      /* if not running, do nothing for  cpt.  If for atomic, do nothing if no locks */
 	      if (LT_KILL_FREEZE == may_freeze)
 		break;
-	      if (!lt->lt_locks)
+	      if (!lt_has_locks (lt))
 		break;
 	    }
 	  if (lt->lt_lw_threads
@@ -1252,7 +1252,7 @@ srv_global_lock (query_instance_t * qi, int flag)
 	  server_lock.sl_count++;
 	  return;
 	}
-      if (qi->qi_trx->lt_locks)
+      if (lt_has_locks (qi->qi_trx))
 	{
 	  int rc;
 	  caddr_t err;

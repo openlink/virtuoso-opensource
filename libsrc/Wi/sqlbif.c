@@ -5813,7 +5813,7 @@ bif_disconnect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		  if (lt->lt_client == cli)
 		    if (lt != qi->qi_trx &&
 			lt->lt_status == LT_PENDING
-			&& (lt->lt_threads > 0 || lt->lt_locks))
+			&& (lt->lt_threads > 0 || lt_has_locks (lt)))
 		      {
 			LT_ERROR_DETAIL_SET (lt,
 			    box_dv_short_string ("DBA forced disconnect"));
@@ -9796,7 +9796,7 @@ bif_replay (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   char * fname = bif_string_arg (qst, args, 0, "replay");
   int fd;
-  if (qi->qi_trx->lt_locks)
+  if (lt_has_locks (qi->qi_trx))
   sqlr_new_error ("25000", "SR074", "replay must be run in a fresh transaction.");
   fd = open (fname, O_RDONLY | O_BINARY);
   if (-1 == fd)
@@ -10695,7 +10695,16 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       else if (n_args > 6 && ssl_is_settable (args[6]) && lc)
 	qst_set (qst, args[6], box_num (lc->lc_row_count));
       else
+        {
 	dk_free_tree (list_to_array (proc_resultset));
+          if (n_args > 6 && ssl_is_settable (args[6]))
+            {
+#ifdef MALLOC_DEBUG
+              dk_check_tree (qst_get (qst, args[6]));
+#endif
+	      qst_set (qst, args[6], NEW_DB_NULL);
+            }
+        }
       if (lc)
 	{
 	  err = lc->lc_error;

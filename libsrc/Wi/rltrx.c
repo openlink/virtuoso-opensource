@@ -545,13 +545,13 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl)
 	{
 	  IN_LT_LOCKS (lt);
 	  LT_CHECK_NEW_PL (lt, pl);
-	  dk_set_push (&lt->lt_locks, (void *) pl);
+	  sethash ((void*)pl, &lt->lt_lock, (void*)1);
 	  LEAVE_LT_LOCKS (lt);
 	}
       else
 	{
 	  IN_LT_LOCKS (lt);
-	dk_set_pushnew (&lt->lt_locks, (void *) pl);
+	  sethash ((void*)pl, &lt->lt_lock, (void*)1);
 	  LEAVE_LT_LOCKS (lt);
 	}
     }
@@ -565,8 +565,7 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl)
 	    return;
 	  dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) lt);
 	  IN_LT_LOCKS  (lt);
-	  LT_CHECK_NEW_PL (lt, pl);
-	  dk_set_push (&lt->lt_locks, (void *) pl);
+	  sethash ((void*)pl, &lt->lt_lock, (void*)1);
 	  LEAVE_LT_LOCKS (lt);
 	}
       else if (lt == pl->pl_owner)
@@ -576,7 +575,7 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl)
 	  pl->pl_owner = lt;
 	  IN_LT_LOCKS (lt);
 	  LT_CHECK_NEW_PL (lt, pl);
-	  dk_set_push (&lt->lt_locks, (void *) pl);
+	  sethash ((void*)pl, &lt->lt_lock, (void*)1);
 	  LEAVE_LT_LOCKS (lt);
 	}
       else
@@ -588,7 +587,7 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl)
 	  dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) lt);
 	  IN_LT_LOCKS (lt);
 	  LT_CHECK_NEW_PL (lt, pl);
-	  dk_set_push (&lt->lt_locks, (void *) pl);
+	  sethash ((void*)pl, &lt->lt_lock, (void*)1);
 	  LEAVE_LT_LOCKS (lt);
 	}
     }
@@ -1422,13 +1421,59 @@ lt_resume_waiting_end (lock_trx_t * lt)
 
 }
 
+dp_addr_t 
+pl_page_key (page_lock_t * pl)
+{
+  return pl->pl_page;
+}
+
+
+page_lock_t ** 
+lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret)
+{
+  /* If they all fit, put them there without sort.  If a lot, alloc a new array. If more than 1/4 of buffers, also sort */
+  dk_hash_t * locks = &lt->lt_lock;
+  int n_locks = locks->ht_count, fill = 0, inx;
+  page_lock_t * pl;
+  void* d;
+  dk_hash_iterator_t hit;
+  if (n_locks > max)
+    {
+      max = MIN (n_locks, 1000000);
+      arr = dk_alloc (sizeof (caddr_t) * max );
+    }
+  mutex_enter (&lt->lt_locks_mtx);
+  dk_hash_iterator (&hit, locks);
+    while (dk_hit_next (&hit, (void**)&pl, &d))
+    {
+      arr[fill++] = pl;
+      if (fill == max)
+	break;
+    }
+  if (max != n_locks)
+    {
+      for (inx = 0; inx < fill; inx++)
+	remhash ((void*)arr[inx], locks);
+    }
+  else 
+    clrhash (locks);
+  mutex_leave (&lt->lt_locks_mtx);
+  if (max > main_bufs / 4)
+    {
+      buf_sort ((buffer_desc_t *)arr, fill, (sort_key_func_t)pl_page_key);
+    }
+  *fill_ret = fill;
+  return arr;
+}
+
 
 void
 lt_transact (lock_trx_t * lt, int op)
 {
-  dk_set_t pl_set;
   it_cursor_t itc_auto;
   it_cursor_t *itc = &itc_auto;
+  page_lock_t * pl_arr_auto[100];
+  page_lock_t ** pl_arr;
   ASSERT_IN_TXN;
   if (lt->lt_threads != lt->lt_lw_threads + lt->lt_close_ack_threads + lt->lt_vdb_threads)
     {
@@ -1466,14 +1511,14 @@ lt_transact (lock_trx_t * lt, int op)
   LEAVE_TXN;
   ITC_INIT (itc, NULL, lt);
   lt_hi_transact (lt, op);
-  IN_LT_LOCKS (lt);
-  pl_set = lt->lt_locks;
   for (;;)
     {
-      lt->lt_locks = NULL;
-      LEAVE_LT_LOCKS (lt);
-      DO_SET (page_lock_t *, pl, &pl_set)
+      int n_locks, l_fill, l_inx;
+      pl_arr = lt_locks_to_array (lt, pl_arr_auto, sizeof (pl_arr_auto) / sizeof (caddr_t), &l_fill);
+      n_locks = lt->lt_lock.ht_count;
+      for (l_inx = 0; l_inx < l_fill; l_inx++)
       {
+	  page_lock_t * pl = pl_arr[l_inx];
 	itc->itc_tree = pl->pl_it;
 	if (SQL_COMMIT == op)
 	  pl_finalize_page (pl, itc);
@@ -1481,13 +1526,14 @@ lt_transact (lock_trx_t * lt, int op)
 	  pl_rollback_page (pl, itc);
 	ITC_LEAVE_MAPS (itc);
       }
-      END_DO_SET ();
-      dk_set_free (pl_set);
+      if (pl_arr != (page_lock_t**) &pl_arr_auto)
+	dk_free ((caddr_t)pl_arr, -1);
       IN_LT_LOCKS (lt);
-      pl_set = lt->lt_locks;
-      if (!pl_set)
+      if (0 == lt->lt_lock.ht_count)
 	break;
+      if (n_locks != lt->lt_lock.ht_count)
       TC (tc_split_while_committing);
+      LEAVE_LT_LOCKS (lt);
     }
   LEAVE_LT_LOCKS (lt);
   lt_free_rb (lt);

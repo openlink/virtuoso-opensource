@@ -4356,7 +4356,7 @@ bif_http_kill (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    {
 	      if (lt != qi->qi_trx &&
 		  lt->lt_status == LT_PENDING
-		  && (lt->lt_threads > 0 || lt->lt_locks)
+		  && (lt->lt_threads > 0 || lt_has_locks (lt))
 		  && !strcmp (ht_path, ws->ws_path_string)
 		  && !strcmp (ht_client, ws->ws_client_ip))
 		{

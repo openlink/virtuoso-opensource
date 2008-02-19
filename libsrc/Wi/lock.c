@@ -108,7 +108,7 @@ lt_allocate (void)
   mutex_option (&lt->lt_locks_mtx, "lt_locks", NULL, NULL);
   dk_mutex_init (&lt->lt_rb_mtx, MUTEX_TYPE_SHORT);
   mutex_option (&lt->lt_rb_mtx, "lt_rb", NULL, NULL);
-
+  hash_table_init (&lt->lt_lock, 59);
   lt->lt_rb_hash = hash_table_allocate (101);
   ASSERT_IN_TXN;
   dk_set_push (&all_trxs, (void *) lt);
@@ -137,6 +137,7 @@ lt_free (lock_trx_t * lt)
   mutex_free (lt->lt_log_mtx);
   dk_mutex_destroy (&lt->lt_locks_mtx);
   dk_mutex_destroy (&lt->lt_rb_mtx);
+  hash_table_destroy (&lt->lt_lock);
   hash_table_free (lt->lt_rb_hash);
   dk_free ((caddr_t) lt, sizeof (lock_trx_t));
 }
@@ -157,6 +158,13 @@ lt_clear (lock_trx_t * lt)
   strses_flush (lt->lt_log);
   lt->lt_log->dks_bytes_sent = 0;
   clrhash (lt->lt_rb_hash);
+  if (lt->lt_lock.ht_actual_size > 80)
+    {
+      hash_table_destroy (&lt->lt_lock);
+      hash_table_init (&lt->lt_lock, 59);
+    }
+  else if (lt->lt_lock.ht_count)
+    clrhash (&lt->lt_lock);
   if (lt->lt_waits_for || lt->lt_waiting_for_this)
     GPF_T1 ("Waits not cleared before trx clear");
 
@@ -575,7 +583,7 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
 	  lt_transact (lt, SQL_ROLLBACK);
 	}
     }
-  if (lt->lt_locks)
+  if (lt_has_locks (lt))
     {
       GPF_T1 ("posthumous lock");
       rdbg_printf (("*** Posthumous locks on T=%ld \n", TRX_NO (lt)));
@@ -889,7 +897,7 @@ lt_killall (lock_trx_t * exc)
     {
       ASSERT_IN_TXN;
       if (lt != exc && lt->lt_status == LT_PENDING
-	  && (lt->lt_threads > 0 || lt->lt_locks))
+	  && (lt->lt_threads > 0 || lt_has_locks (lt)))
 	{
 	  lt->lt_error = LTE_TIMEOUT;
 	  lt_kill_other_trx (lt, NULL, NULL, LT_KILL_ROLLBACK);
@@ -1269,14 +1277,13 @@ void
 lt_clear_pl_wait_ref (lock_trx_t * waiting, gen_lock_t * pl)
 {
   if (PL_IS_PAGE (pl))
-    if (dk_set_delete (&waiting->lt_locks, (void*) pl))
+    {
+      IN_LT_LOCKS (waiting);
+      if (remhash ((void*) pl, &waiting->lt_lock))
       {
 	TC (tc_pl_non_owner_wait_ref_deld);
-/* IvAn/0/010401 Redundant '&' removed from this line:
-	if (dk_set_member (&waiting->lt_locks, (void*) pl))
-*/
-	if (dk_set_member (waiting->lt_locks, (void*) pl))
-	  GPF_T1 ("double wait ref");
+	}
+      LEAVE_LT_LOCKS (waiting);
       }
 }
 

@@ -3400,7 +3400,7 @@ wi_open (char *mode)
   transit_list_mtx = mutex_allocate ();
   mutex_option (transit_list_mtx, "transit_list", NULL, NULL);
   db_read_cfg (NULL, mode);
-
+  srv_client_defaults_init ();
   wi_inst.wi_bps = (buffer_pool_t **) dk_alloc_box (bp_n_bps * sizeof (caddr_t), DV_CUSTOM);
   for (inx = 0; inx < bp_n_bps; inx++)
     {
