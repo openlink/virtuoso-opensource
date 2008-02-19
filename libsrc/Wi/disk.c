@@ -2437,9 +2437,19 @@ buf_sort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key)
   mutex_enter (buf_sort_mtx);
   if (!left_bufs)
     {
-      left_bufs = (buffer_desc_t **) dk_alloc (sizeof (caddr_t) * main_bufs);
+      left_bufs = (buffer_desc_t **) dk_alloc_box (sizeof (caddr_t) * main_bufs, DV_BIN);
+    }
+  if (BOX_ELEMENTS (left_bufs) < n_bufs)
+    {
+      dk_free_box ((caddr_t) left_bufs);
+      left_bufs = (buffer_desc_t **) dk_alloc_box (sizeof (caddr_t) * n_bufs, DV_BIN);
     }
   buf_qsort (bs, left_bufs, n_bufs, 0, key);
+  if (main_bufs != BOX_ELEMENTS (left_bufs))
+    {
+      dk_free_box ((caddr_t)left_bufs);
+      left_bufs = NULL;
+    }
   mutex_leave (buf_sort_mtx);
 }
 

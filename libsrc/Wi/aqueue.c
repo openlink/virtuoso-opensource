@@ -441,7 +441,7 @@ bif_aq_wait  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t val;
   if (0 != server_lock.sl_count)
     sqlr_new_error ("22023", "SR568", "Function aq_wait() can not be used inside atomic section");
-  if (qi->qi_trx->lt_locks)
+  if (lt_has_locks (qi->qi_trx))
     sqlr_new_error ("40010", "AQ003", "Not allowed to wait for AQ while holding locks");
   IO_SECT (qst);
   val = aq_wait (aq, req, &err, wait);
@@ -468,7 +468,7 @@ bif_aq_wait_all  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t * qi = (query_instance_t *) qst;
   if (0 != server_lock.sl_count)
     sqlr_new_error ("22023", "SR569", "Function aq_wait_all() can not be used inside atomic section");
-  if (qi->qi_trx->lt_locks)
+  if (lt_has_locks (qi->qi_trx))
     sqlr_new_error ("40010", "AQ003", "Not allowed to wait for AQ while holding locks");
   IO_SECT (qst);
   val = aq_wait_all (aq, &err);
