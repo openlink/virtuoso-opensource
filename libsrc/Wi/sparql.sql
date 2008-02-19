@@ -7723,9 +7723,36 @@ http('			  <br />\n');
   }
 else
   {
-http('			  <i>Security restrictions of this server does not allow you to retrieve remote RDF data.
-DBA may wish to grant "SPARQL_UPDATE" privilege to "SPARQL" account to remove the restriction.</i>\n');
-http('			  <br /><br />\n');
+declare host_ur varchar;
+      host_ur := registry_get ('URIQADefaultHost');
+
+http('			  <i>Security restrictions of this server do not allow you to retrieve remote RDF data.
+DBA may wish to grant "SPARQL_UPDATE" privilege to "SPARQL" account to remove the restriction.\n');
+http('In order to do this, please perform the following steps:</i>\n');
+http('<br />\n');
+http('1. Go to the Virtuoso Administration Conductor i.e. \n');
+if (not isstring (host_ur))
+  {
+    http('http://host:port/conductor\n');
+  }
+else
+  {
+    http(sprintf('http://%s/conductor\n',host_ur));
+  };
+
+http('<br />\n');
+http('2. Login as dba user\n');
+http('<br />\n');
+http('3. Go to System Admin->User Accounts->Roles\n');
+http('<br />\n');
+http('4. Click the link "Edit" for "SPARQL_UPDATE\n');
+http('<br />\n');
+http('5. Select from the list of available user/groups "SPARQL" and click the ">>" button so to add it to the right-positioned list.\n');
+http('<br />\n');
+http('6. Click the button "Update"\n');
+http('<br />\n');
+http('7. Access again the sparql endpoint in order to be able to retrieve remote data.\n');
+http('<br /><br />\n');
   }
 http('			  <label for="query">Query text</label>\n');
 http('			  <br />\n');
