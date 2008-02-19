@@ -652,6 +652,12 @@ cmp_boxes_safe (caddr_t box1, caddr_t box2, collation_t *collation1, collation_t
 	    }
 	}
     }
+  if ((DV_REFERENCE == dtp1) && (DV_REFERENCE == dtp2))
+    {
+      if (box1 == box2)
+	return DVC_MATCH;
+      return DVC_NOORDER;
+    }
   return DVC_NOORDER;
 }
 
