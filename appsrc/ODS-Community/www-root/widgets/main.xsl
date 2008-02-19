@@ -561,7 +561,7 @@ c.length);
   }
   return null;
 }
-// !!!! This event is dissabled due to OAT use of window.onload
+// !!!! This event is disabled due to OAT use of window.onload
 
 //window.onload = function (e)
 //{
@@ -1845,7 +1845,7 @@ c.length);
   </xsl:template>
 
   <xsl:template match="vm:banner-block">
-     <table cellspacing="0" cellpadiing="3">
+     <table cellspacing="0" cellpadding="3">
        <tr>
            <td>
               <img alt="banner" border="0">

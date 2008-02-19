@@ -91,7 +91,7 @@
               </td>
               <td id="mainarea"><br/>
 <!-- <h1>Owner applications list</h1><br/><br/> -->
-<table width="100%" border="0" cellsapcing="0" cellpadding="5" style="background:white;border: 1px solid #99B3C5;">                
+<table width="100%" border="0" cellspacing="0" cellpadding="5" style="background:white;border: 1px solid #99B3C5;">                
 <tr>
   <td>
     <h2>Owned applications</h2>
