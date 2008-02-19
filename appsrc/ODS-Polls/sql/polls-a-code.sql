@@ -1428,7 +1428,7 @@ create procedure POLLS.WA.vector_set (
 create procedure POLLS.WA.vector_search(
   in aVector any,
   in value varchar,
-  in condition vrchar := 'AND')
+  in condition varchar := 'AND')
 {
   declare N integer;
 

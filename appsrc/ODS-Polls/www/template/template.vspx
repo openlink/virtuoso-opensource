@@ -27,9 +27,16 @@
   <head profile="http://internetalchemy.org/2003/02/profile">
     <base href="<?V POLLS.WA.host_url () || http_path () ?>" />
     <?vsp
+      declare domainName varchar;
+
+      domainName := POLLS.WA.domain_name (self.domain_id);
       http(sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s" />', POLLS.WA.foaf_url (self.account_id)));
       if (POLLS.WA.domain_is_public (self.domain_id))
+      {
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', POLLS.WA.sioc_url (self.domain_id)));
+      }
+      http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, POLLS.WA.dav_url (self.domain_id)||'Polls.rss'));
+      http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, POLLS.WA.dav_url (self.domain_id)||'Polls.atom'));
       http (POLLS.WA.geo_url (self.domain_id, self.account_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
@@ -58,7 +65,7 @@
           OAT.Anchor.zIndex = 1001;
         
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
-            gererateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
+            generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
             
       		// init tabs
           showTab('s', 2, 0);
