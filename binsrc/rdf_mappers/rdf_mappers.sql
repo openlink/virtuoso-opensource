@@ -100,6 +100,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('http://finance.yahoo.com/q\\?s=.*',
             'URL', 'DB.DBA.RDF_LOAD_YAHOO_STOCK_DATA', null, 'Yahoo Finance');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION)
+    values ('http://musicbrainz.org/([^/]*)/([^\.]*)',
+            'URL', 'DB.DBA.RDF_LOAD_MBZ', null, 'Musicbrainz');
+
 -- we do default http & html handler first of all
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
@@ -2243,3 +2247,65 @@ CREATE PROCEDURE RDFMAP_DBPEDIA_EXTRACT_PHP (in base varchar, in title varchar)
   return string_output_string (ses);
 }
 ;
+
+create procedure DB.DBA.RDF_LOAD_MBZ_1 (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    in kind varchar, in id varchar, in inc varchar)
+{
+  declare uri, cnt, xt, xd, hdr any;
+  uri := sprintf ('http://musicbrainz.org/ws/1/%s/%s?type=xml&inc=%U', kind, id, inc);
+--  dbg_obj_print (uri);
+  cnt := RDF_HTTP_URL_GET (uri, '', hdr, 'GET', 'Accept: */*');
+  xt := xtree_doc (cnt);
+  xd := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/mbz2rdf.xsl', xt, vector ('baseUri', new_origin_uri));
+  xd := serialize_to_UTF8_xml (xd);
+  DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+};
+
+create procedure DB.DBA.RDF_LOAD_MBZ (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any)
+{
+  declare kind, id varchar;
+  declare tmp, incs any;
+  declare uri, cnt, hdr, inc, xd, xt varchar;
+
+  tmp := regexp_parse ('http://musicbrainz.org/([^/]*)/([^\.]+)', new_origin_uri, 0);
+  declare exit handler for sqlstate '*'
+    {
+      dbg_printf ('%s', __SQL_MESSAGE);
+      return 0;
+    };
+  if (length (tmp) < 6)
+    return 0;
+
+  kind := subseq (new_origin_uri, tmp[2], tmp[3]);
+  id :=   subseq (new_origin_uri, tmp[4], tmp[5]);
+  incs := vector ();
+  if (kind = 'artist')
+    {
+      inc := 'aliases artist-rels label-rels release-rels track-rels url-rels';
+      incs :=
+      	vector (
+	'sa-Album', 'sa-Single', 'sa-EP', 'sa-Compilation', 'sa-Soundtrack',
+	'sa-Spokenword', 'sa-Interview', 'sa-Audiobook', 'sa-Live', 'sa-Remix', 'sa-Other'
+	, 'va-Album', 'va-Single', 'va-EP', 'va-Compilation', 'va-Soundtrack',
+	'va-Spokenword', 'va-Interview', 'va-Audiobook', 'va-Live', 'va-Remix', 'va-Other'
+	);
+      --incs := vector ();
+    }
+  else if (kind = 'release')
+    inc := 'artist counts release-events discs tracks artist-rels label-rels release-rels track-rels url-rels track-level-rels labels';
+  else if (kind = 'track')
+    inc := 'artist releases puids artist-rels label-rels release-rels track-rels url-rels';
+  else if (kind = 'label')
+    inc := 'aliases artist-rels label-rels release-rels track-rels url-rels';
+  else
+    return 0;
+  if (dest is null)
+    delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (graph_iri);
+  DB.DBA.RDF_LOAD_MBZ_1 (graph_iri, new_origin_uri, dest, kind, id, inc);
+  foreach (any inc1 in incs) do
+    {
+      DB.DBA.RDF_LOAD_MBZ_1 (graph_iri, new_origin_uri, dest, kind, id, inc1);
+    }
+  return 1;
+};
