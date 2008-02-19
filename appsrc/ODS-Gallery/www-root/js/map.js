@@ -32,25 +32,22 @@ var ds_current_album = new dataSet();
 function setMapInitToOdsInitArray()
 {
   if( typeof(ODSInitArray) == 'undefined')
-     setTimeout(setMapInitToOdsInitArray,10);
-  else
   {
+    setTimeout(setMapInitToOdsInitArray,10);
+  } else {
      ODSInitArray.push(mapInitPrepare);
   }
 }
 
-setMapInitToOdsInitArray();
+//setMapInitToOdsInitArray();
 
 function mapInitPrepare()
 {
   if (typeof(window.mapInit) == "function")
     {
       OAT.Loader.loadFeatures(["gmaps"], function(){setTimeout(mapInit,60)});
-    };
-
-  return;
 }
-
+}
 
 var MAX_ZOOM_LEVEL = 15;
 var BURLINGTON_LAT = 42.490;
@@ -63,9 +60,8 @@ var markericon_width='24';
 var markericon_height='24';
 
 //------------------------------------------------------------------------------
-function mapInit(){
-
-     
+function mapInit()
+{
      markersPosArr = [];
      var providerType=OAT.MapData.TYPE_G;
      var containerDiv=$('map');
@@ -93,25 +89,25 @@ function mapInit(){
            map.obj.checkResize();
            map.optimalPosition(map.markersPosArr);
          }
-       };
+    }
        
        map.findMarkerIndexByCoords = function (lat,lng)
        {
-         for(var i=0;i<map.markerArr.length;i++){
+      for(var i=0;i<map.markerArr.length;i++)
+      {
             if(map.markerArr[i].__coords[0]==lat && map.markerArr[i].__coords[1]==lng)
                return i;
          }
-         
          return -1;
        }
 
        map.findMarkerIndexByGroup = function (groupname)
        {
-         for(var i=0;i<map.markerArr.length;i++){
+      for (var i=0; i<map.markerArr.length; i++)
+      {
             if(map.markerArr[i].__group==groupname)
                return i;
          }
-         
          return -1;
        }
 
@@ -131,29 +127,22 @@ function mapInit(){
            map.addMarker(group_index,_lat,_lng,markericon_path,markericon_width,markericon_height,ref(map,album_preview_div));
            markersPosArr.push([_lat,_lng]);
           }
-
          }
-       };
+    }
 
        map.markersPosArr=false;
-
        if(markersPosArr.length)
        {
           map.markersPosArr=markersPosArr;
           map.optimalPosition(markersPosArr);
        }
-
      }
-
-
 }
 
-
 //------------------------------------------------------------------------------
-function ref(_map,user_div){
+function ref(_map, user_div)
+{
  		return function(marker) {
-
-
 				_map.closeWindow();
         _map.openWindow(marker,user_div);
         if(marker.__group!='new');
@@ -166,15 +155,13 @@ function ref(_map,user_div){
           var _event = (ds_albums.list[marker.__group]).event;
           OAT.Dom.addClass(_event.elm,"event_active");
           TL.scrollTo( _event);
-
         }
-      };
+  }
 }
 //------------------------------------------------------------------------------
 
-function changeAlbumMarkerPos (p){
-
-  
+function changeAlbumMarkerPos (p)
+{
   if(p)
   {
    var markerIndex = map.findMarkerIndexByGroup(ds_albums.current.index);
@@ -195,14 +182,12 @@ function changeAlbumMarkerPos (p){
       map.addMarker(group_index,_lat,_lng,markericon_path,markericon_width,markericon_height,ref(map,album_preview_div));
       markersPosArr.push([_lat,_lng]);
   }
-  
 }
 
-function newAlbumMarker (p){
-  
+function newAlbumMarker (p)
+{
   if(p)
   {
-
    var markerIndex = map.findMarkerIndexByGroup('new');
     if(markerIndex>=0)
     {
@@ -217,13 +202,12 @@ function newAlbumMarker (p){
       var album_preview_div = OAT.Dom.create('div');
 
       album_preview_div.setAttribute('id','album_map_preview_new');
-      
       map.addMarker('new',_lat,_lng,markericon_path,markericon_width,markericon_height,ref(map,album_preview_div));
   }
-  
 }
 
-function newAlbumMarkerUpdate (){
+function newAlbumMarkerUpdate ()
+{
    var markerIndex = map.findMarkerIndexByGroup('new');
     if(markerIndex>=0)
     {
@@ -237,17 +221,14 @@ function newAlbumMarkerUpdate (){
        
       map.addMarker(group_index,_lat,_lng,markericon_path,markericon_width,markericon_height,ref(map,album_preview_div));
       markersPosArr.push([_lat,_lng]);
-
 }
 
-function removeAlbumMarker (){
-  
+function removeAlbumMarker ()
+{
   var markerIndex = map.findMarkerIndexByGroup(ds_albums.current.index);
   if(markerIndex>=0)
   {
     var _marker=map.markerArr[markerIndex];
     map.removeMarker(_marker);
   }
-  
 }
-

@@ -57,18 +57,18 @@ create constructor method photo_user(
 {
   declare user_data,result any;
 
-  if(auth_uid <> 'nobody'){
+  if (auth_uid <> 'nobody')
+  {
     PHOTO.WA._user_data(auth_uid,user_data);
     self.auth_uid := auth_uid;
     self.auth_pwd := user_data[1];
 
     self.home_dir := DAV_HOME_DIR(auth_uid);
-
-    if(self.home_dir = -19){
+    if (self.home_dir = -19)
+    {
       result := DAV_MAKE_DIR (concat('/DAV/home/',auth_uid,'/'), user_data[3], null, '110100100R');
       self.home_dir := DAV_SEARCH_PATH (result,'C');
-    };
-
+    }
     self.gallery_dir := concat(self.home_dir,PHOTO.WA.get_gallery_folder_name(),'/');
     self.user_id    := user_data[3];
     self.full_name  := user_data[2];
@@ -98,13 +98,14 @@ create constructor method photo_user(
 
   self.auth_uid := auth_uid;
   self.auth_pwd := PHOTO.WA._user_pwd(auth_uid);
-  if(auth_uid = 'dav'){
+  if (auth_uid = 'dav')
+  {
     self.home_dir := '/DAV/';
   }else{
     self.home_dir := DAV_HOME_DIR(auth_uid);
   }
-
-  if(__tag(self.home_dir) <> 189){
+  if (__tag(self.home_dir) <> 189)
+  {
     self.gallery_dir := concat(self.home_dir,PHOTO.WA.get_gallery_folder_name(),'/');
   }else{
     self.gallery_dir := '';
@@ -114,7 +115,8 @@ create constructor method photo_user(
 }
 ;
 
-create procedure PHOTO.WA.get_gallery_folder_name(){
+create procedure PHOTO.WA.get_gallery_folder_name()
+{
   return 'Gallery';  
 }
 ;

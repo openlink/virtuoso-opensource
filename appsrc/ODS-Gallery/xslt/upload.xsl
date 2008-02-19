@@ -42,14 +42,41 @@
     <xsl:param name="files"/>
     <tr>
       <td><xsl:value-of select="$key"/></td>
-      <td align="right">
-        <input type="file" style="width:310px">
-          <xsl:attribute name="OnChange">image_check_exist(this.value,<xsl:value-of select="$key"/>)</xsl:attribute>
+      <td>
+        <input type="radio" value="1" checked="1">
+          <xsl:attribute name="name">r_from_<xsl:value-of select="$key"/></xsl:attribute>
+          <xsl:attribute name="id">r_file_<xsl:value-of select="$key"/></xsl:attribute>
+          <xsl:attribute name="onchange">javascript: changeFrom('<xsl:value-of select="$key"/>');</xsl:attribute>
+        </input>
+        <input type="radio" value="0">
+          <xsl:attribute name="name">r_from_<xsl:value-of select="$key"/></xsl:attribute>
+          <xsl:attribute name="id">r_dav_<xsl:value-of select="$key"/></xsl:attribute>
+          <xsl:attribute name="onchange">javascript: changeFrom('<xsl:value-of select="$key"/>');</xsl:attribute>
+        </input>
+      </td>
+      <td>
+        <span>
+          <xsl:attribute name="id">s_file_<xsl:value-of select="$key"/></xsl:attribute>
+          <input type="file" size="40">
+            <xsl:attribute name="OnChange">image_check_exist(this.value,<xsl:value-of select="$key"/>,'file')</xsl:attribute>
           <xsl:attribute name="name">my_image_<xsl:value-of select="$key"/></xsl:attribute>
         </input>
         <input type="hidden" value="">
           <xsl:attribute name="name">replace_image_<xsl:value-of select="$key"/></xsl:attribute>
         </input>
+        </span>
+        <span style="display:none;">
+          <xsl:attribute name="id">s_dav_<xsl:value-of select="$key"/></xsl:attribute>
+          <input type="text" size="40" value="">
+            <xsl:attribute name="name">f_dav_<xsl:value-of select="$key"/></xsl:attribute>
+            <xsl:attribute name="id">f_dav_<xsl:value-of select="$key"/></xsl:attribute>
+            <xsl:attribute name="onblur">image_check_exist(this.value,<xsl:value-of select="$key"/>,'dav')</xsl:attribute>
+          </input>
+          <input type="button" onclick="javascript: davBrowse ('f_dav');" title="Browse..." alt="Browse..." value="Browse...">
+            <xsl:attribute name="name">b_dav_<xsl:value-of select="$key"/></xsl:attribute>
+            <xsl:attribute name="onclick">javascript: davBrowse('f_dav_<xsl:value-of select="$key"/>','<xsl:value-of select="$key"/>');</xsl:attribute>
+          </input>
+        </span>
       </td>
       <td>
         <input type="text" name="description">

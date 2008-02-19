@@ -19,61 +19,62 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-
-create trigger trigger_make_thumbnails after insert on WS.WS.SYS_DAV_RES referencing new as N{
-
-  declare exit handler for sqlstate '*' {
-    dbg_obj_print('************');
-    dbg_obj_print('error');
-    dbg_obj_print(__SQL_MESSAGE);
-    resignal;
-  };
-
-  declare parent_id,parent_name integer;
-  select COL_PARENT into parent_id from WS.WS.SYS_DAV_COL WHERE COL_ID = N.RES_COL;
-  parent_name := DAV_SEARCH_PATH(parent_id,'C');
-  declare current_user photo_user;
-  current_user := new photo_user(cast(N.RES_OWNER as integer) );
-
-  if(parent_name = current_user.gallery_dir){
-    PHOTO.WA.make_thumbnail(current_user,N.RES_ID,0);
-    PHOTO.WA.save_meta_data_trigger(N.RES_ID,N.RES_CONTENT);
-  }
-return;
-}
-;
-
-create trigger trigger_update_thumbnails after update on WS.WS.SYS_DAV_RES referencing new as N{
-
-  declare exit handler for sqlstate '*' {
-    dbg_obj_print('************');
-    dbg_obj_print('error');
-    dbg_obj_print(__SQL_MESSAGE);
-    resignal;
-  };
-
-  declare parent_id,parent_name integer;
-  select COL_PARENT into parent_id from WS.WS.SYS_DAV_COL WHERE COL_ID = N.RES_COL;
-  parent_name := DAV_SEARCH_PATH(parent_id,'C');
-  declare current_user photo_user;
-  current_user := new photo_user(cast(N.RES_OWNER as integer) );
-
-  if(parent_name = current_user.gallery_dir){
-    PHOTO.WA.make_thumbnail(current_user,N.RES_ID,0);
-    PHOTO.WA.save_meta_data_trigger(N.RES_ID,N.RES_CONTENT);
-  }
-  return;
-}
-;
-
-
-create trigger trigger_update_sys_info after update on DB.DBA.WA_INSTANCE referencing old as O, new as N
+--------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.trigger_thumbnail (
+  inout _res_id integer,
+  inout _res_col integer,
+  inout _res_owner integer,
+  inout _res_content any)
 {
-  if (udt_instance_of (O.WAI_INST, 'DB.DBA.wa_photo'))
+  declare parent_id,parent_name integer;
+
+  select COL_PARENT into parent_id from WS.WS.SYS_DAV_COL WHERE COL_ID = _res_col;
+  parent_name := DB.DBA.DAV_SEARCH_PATH (parent_id, 'C');
+  declare current_user photo_user;
+  current_user := new photo_user (cast (_res_owner as integer));
+
+  if (parent_name = current_user.gallery_dir)
+  {
+    PHOTO.WA.root_comment (parent_id, _res_id);
+    PHOTO.WA.make_thumbnail (current_user, _res_id, 0);
+    PHOTO.WA.save_meta_data_trigger (_res_id, _res_content);
+  }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create trigger trigger_make_thumbnails after insert on WS.WS.SYS_DAV_RES referencing new as N
+{
+  PHOTO.WA.trigger_thumbnail (N.RES_ID, N.RES_COL, N.RES_OWNER, N.RES_CONTENT);
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create trigger trigger_update_thumbnails after update on WS.WS.SYS_DAV_RES referencing new as N
+{
+  PHOTO.WA.trigger_thumbnail (N.RES_ID, N.RES_COL, N.RES_OWNER, N.RES_CONTENT);
+}
+;
+
+--------------------------------------------------------------------------------
+create trigger trigger_delete_thumbnails after delete on WS.WS.SYS_DAV_RES referencing old as O
+{
+  declare parent_id integer;
+  declare path, thumb_path varchar;
+
+  parent_id := (select COL_PARENT from WS.WS.SYS_DAV_COL WHERE COL_ID = O.RES_COL);
+  path := DB.DBA.DAV_SEARCH_PATH (parent_id, 'C');
+  if (exists (select 1 from PHOTO.WA.SYS_INFO where HOME_PATH = path))
     {
-      update PHOTO.WA.SYS_INFO
-         set WAI_NAME = N.WAI_NAME
-	     where GALLERY_ID = O.WAI_ID;
+    delete from PHOTO.WA.COMMENTS where RES_ID = O.RES_ID;
+
+    path := DB.DBA.DAV_SEARCH_PATH (O.RES_COL, 'C');
+    thumb_path := path || '.thumbnails/' || O.RES_NAME;
+    DB.DBA.DAV_DELETE_INT (thumb_path, 0, null, null, 0);
     }
 }
 ;
+

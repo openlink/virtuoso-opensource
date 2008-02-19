@@ -26,7 +26,7 @@
   <xsl:output method="html" indent="yes" encoding="windows-1251" doctype-public="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"/>
 
   <xsl:template match="/">
-    <html>
+  <html xmlns:foaf="http://xmlns.com/foaf/0.1/" foaf:dummy="false" xmlns:dc="http://purl.org/dc/elements/1.1/" dc:dummy="false" xmlns:dct="http://purl.org/dc/terms/" dct:dummy="false" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:dummy="false" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdfs:dummy="false" xmlns:sioct="http://rdfs.org/sioc/types#" sioct:dummy="false" xmlns:sioc="http://rdfs.org/sioc/ns#" sioc:dummy="false">
       <head profile="http://internetalchemy.org/2003/02/profile">
         <title>Photo Gallery</title>
         <link rel="meta" type="application/rdf+xml" title="SIOC" href="root/host" >
@@ -88,11 +88,10 @@
   <xsl:template match="root">
     <body>
       <xsl:apply-templates select="bar"/>
+            <br />
       <div id="wrapper">
       <div id="head">
-        <h1>
-          oGallery
-        </h1>
+          <img src="/photos/res/i/gallerybanner_sml.jpg" />
       </div>
       <div id="welcome">
         <h2>Welcome to oGallery!</h2>
@@ -117,14 +116,17 @@
    <body>
       <xsl:attribute name="onLoad">gallery.init('<xsl:value-of select="gallery"/>')</xsl:attribute>
       <xsl:apply-templates select="bar"/>
+      <div style="clear: both;"></div>
        <div id="wrapper">
       <form name="f1" style="display:inline;">
+
       <div id="head">
-        <h1>
-          oGallery
-        </h1>
-       <img src="/photos/res/i/grad_2.gif" width="0" height="45" /><br/>
-       <span id="instance_info" ><xsl:value-of select="instance_description"/> (<xsl:value-of select="instance_owner_fullname"/>)</span>       
+            <img src="/photos/res/i/gallerybanner_sml.jpg" />
+            <br />
+            <span id="instance_info" >
+              <span property="dc:title"><xsl:value-of select="instance_description"/></span>
+              (<span property="dc:creator"><xsl:value-of select="instance_owner_fullname"/></span>)
+            </span>
       <div id="nav">
         <ul>
           <xsl:choose>
@@ -140,12 +142,6 @@
               <li id="settings_tab">
                 Settings
               </li>
-              <!--
-              <li id="wa">
-                <xsl:value-of select="wa_home_title"/>
-              </li>
-              -->
-
             </xsl:when>
             <xsl:otherwise>
               <li id="home">
@@ -159,17 +155,13 @@
           <script> var wa_home_link = '<xsl:value-of select="wa_home_link"/>'</script>
         </ul>
       </div>
+      </div>
 
-      </div>
-<!--
-      <div id="grad">
-        <xsl:call-template name="nbsp"/>
-      </div>
--->
       <div id="error_box" style="display:none;">
         <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
       </div>
 
+          <div style="clear: both;"></div>
       <table cellpadding="0" cellspacing="4" id="main_container">
         <tr>
          <td colspan="2">
@@ -221,7 +213,6 @@
             <div id="care_edit_image" class="toolbar" style="display:none">
               <h3>Edit image</h3>
               <ul>
-                <li id="tag_image_tab">Tag image</li>
                 <li id="link_image_edit">Edit caption</li>
                 <li id="link_delete_image">Delete image</li>
               </ul>
@@ -250,18 +241,18 @@
             <div id="feeds" class="toolbar">
               <h3>Feeds</h3>
               <ul>
-                <li id="feed_atom">Atom 1.0</li>
-                <li id="feed_rss">RSS 2.0</li>
-                <li id="feed_rdf">RDF</li>
-                <li id="feed_xbel">XBEL</li>
-                <li id="feed_mrss">mRSS</li>
-                <li id="feed_siocxml">SIOC (RDF/XML)</li>
-                <li id="feed_siocn3turtle">SIOC (N3/Turtle)</li>
+                    <li id="feed_atom"><span class="atom-link">Atom 1.0</span></li>
+                    <li id="feed_rss"><span class="rss-link">RSS 2.0</span></li>
+                    <li id="feed_rdf"><span class="rdf-link">RDF</span></li>
+                    <li id="feed_xbel"><span class="xbel-link">XBEL</span></li>
+                    <li id="feed_mrss"><span class="podcast-link">mRSS</span></li>
+                    <li id="feed_siocxml"><span class="sioc-link">SIOC (RDF/XML)</span></li>
+                    <li id="feed_siocn3turtle"><span class="sioc-link">SIOC (N3/Turtle)</span></li>
               </ul>
             </div>
           </td>
-          <td id="right_col" valign="top">
 
+              <td id="right_col" valign="top">
             <div id="info">
               <div id="title">
                 <div id="path">
@@ -293,7 +284,6 @@
             <xsl:call-template name="edit_album"/>
             <xsl:call-template name="edit_album_settings"/>
 
-            
             <div id="group_images">
               <div id="images_upload" style="display:none;">
               <iframe width="100%" height="750" src="" border="0" frameborder="0" ></iframe>
@@ -339,10 +329,10 @@
 <!-- ========================================================================= -->
 <xsl:template name="comments">
     <div id="tags" style="display:none;" class="block">
-    <table class="ramka" cellpadding="10">
+      <table class="frame" cellpadding="10">
       <tr>
         <td valign="top" class="left">
-          <h2 class="l">Tags</h2>
+            <h2 class="ctr">Tags</h2>
           <div id="tags_list">
             Loading ...
           </div>
@@ -351,17 +341,17 @@
             <h2>Add new tags (comma-separated)</h2>
           <textarea name="new_tag" id="new_tag"></textarea>
           <br/>
-            <button type="button" name="bnt_new_tag_cancel" id="bnt_new_tag_cancel">Cancel</button>
           <button type="button" name="bnt_new_tag" id="bnt_new_tag">Save</button>
+            <button type="button" name="bnt_new_tag_cancel" id="bnt_new_tag_cancel">Cancel</button>
         </td>
       </tr>
     </table>
     </div>
     <div id="comments" style="display:none;" class="block">
-    <table class="ramka" cellpadding="10">
+      <table class="frame" cellpadding="10">
       <tr>
         <td valign="top" class="left">
-          <h2 class="l">Comments</h2>
+            <h2 class="ctr">Comments</h2>
           <div id="comments_list">
             Loading ...
           </div>
@@ -379,8 +369,8 @@
                   writeRichText('comment2', '', 480, 180, true, false);
                 </script>
             </div>
-              <button type="button" name="commnet_cancel" id="comment_cancel">Cancel</button>
               <button type="button" name="comment_save" id="comment_save">Save</button>
+              <button type="button" name="commnet_cancel" id="comment_cancel">Cancel</button>
             </div>
         </td>
       </tr>
@@ -430,73 +420,6 @@
                   <td>Description</td>
                   <td><textarea type="text" name="new_album_description" id="new_album_description"></textarea></td>
                 </tr>
-<!--
-                <tr>
-                  <td>Date</td>
-                  <td>
-                      <select name="new_album_pub_date_month" id="new_album_pub_date_month">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">10</option>
-                        <option value="11">11</option>
-                        <option value="12">12</option>
-                      </select>
-                      <xsl:text>/</xsl:text>
-                      <select name="new_album_pub_date_day" id="new_album_pub_date_day">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">10</option>
-                        <option value="11">11</option>
-                        <option value="12">12</option>
-                        <option value="13">13</option>
-                        <option value="14">14</option>
-                        <option value="15">15</option>
-                        <option value="16">16</option>
-                        <option value="17">17</option>
-                        <option value="18">18</option>
-                        <option value="19">19</option>
-                        <option value="20">20</option>
-                        <option value="21">21</option>
-                        <option value="22">22</option>
-                        <option value="23">23</option>
-                        <option value="24">24</option>
-                        <option value="25">25</option>
-                        <option value="26">26</option>
-                        <option value="27">27</option>
-                        <option value="28">28</option>
-                        <option value="29">29</option>
-                        <option value="30">30</option>
-                        <option value="31">31</option>
-                      </select>
-                      <xsl:text>/</xsl:text>
-                      <select name="new_album_pub_date_year" id="new_album_pub_date_year">
-                        <option value="2001">2001</option>
-                        <option value="2002">2002</option>
-                        <option value="2003">2003</option>
-                        <option value="2004">2004</option>
-                        <option value="2005">2005</option>
-                        <option value="2006">2006</option>
-              <option value="2007">2007</option>
-              <option value="2008">2008</option>
-              <option value="2009">2009</option>
-                      </select>
-                    </td>
-                </tr>
--->
       <tr>
         <td>Start Date</td>
         <td>
@@ -682,20 +605,11 @@
                 </tr>
                 <tfoot>
                   <tr>
-          <td colspan="2" align="center">
-                        <button type="button" id="new_album_close" name="btn_new_album" >Cancel</button>
+          <td style="padding-top:20px;" colspan="2">
                       <button type="button" name="btn_new_album" OnClick="gallery.new_album_action()">Create</button>
+            <button type="button" id="new_album_close" name="btn_new_album" >Cancel</button>
                     </td>
                   </tr>
-<!--
-        <tr>
-          <td><label for="new_album_obsolete">Obsolete</label></td>
-          <td>
-            <input type="checkbox" name="new_album_obsolete" id="edit_album_obsolete" value=""/>  
-          </td>
-        </tr>
--->
-
                 </tfoot>
               </table>
             </div>
@@ -719,74 +633,6 @@
                   <td>Description</td>
                   <td><textarea type="text" name="edit_album_description" id="edit_album_description"></textarea></td>
                 </tr>
-<!--
-                <tr>
-                  <td>Date</td>
-                  <td>
-                      <select name="edit_album_pub_date_month" id="edit_album_pub_date_month">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">10</option>
-                        <option value="11">11</option>
-                        <option value="12">12</option>
-                      </select>
-                      <xsl:text>/</xsl:text>
-                      <select name="edit_album_pub_date_day" id="edit_album_pub_date_day">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">10</option>
-                        <option value="11">11</option>
-                        <option value="12">12</option>
-                        <option value="13">13</option>
-                        <option value="14">14</option>
-                        <option value="15">15</option>
-                        <option value="16">16</option>
-                        <option value="17">17</option>
-                        <option value="18">18</option>
-                        <option value="19">19</option>
-                        <option value="20">20</option>
-                        <option value="21">21</option>
-                        <option value="22">22</option>
-                        <option value="23">23</option>
-                        <option value="24">24</option>
-                        <option value="25">25</option>
-                        <option value="26">26</option>
-                        <option value="27">27</option>
-                        <option value="28">28</option>
-                        <option value="29">29</option>
-                        <option value="30">30</option>
-                        <option value="31">31</option>
-                      </select>
-                      <xsl:text>/</xsl:text>
-                      <select name="edit_album_pub_date_year" id="edit_album_pub_date_year">
-                        <option value="2000">2000</option>
-                        <option value="2001">2001</option>
-                        <option value="2002">2002</option>
-                        <option value="2003">2003</option>
-                        <option value="2004">2004</option>
-                        <option value="2005">2005</option>
-                        <option value="2006">2006</option>
-              <option value="2007">2007</option>
-              <option value="2008">2008</option>
-              <option value="2009">2009</option>
-                      </select>
-                    </td>
-                  </tr>
--->
       <tr>
         <td>Start Date</td>
         <td>
@@ -981,8 +827,7 @@
 
                   <tfoot>
                     <tr>
-                      <td></td>
-                      <td style="padding-top:20px;">
+            <td style="padding-top:20px;" colspan="2">
               <button type="button" name="btn_edit_album_save" OnClick="gallery.edit_album_action()">Save</button>
                         <button type="button" name="btn_edit_album_cancel" OnClick="gallery.edit_album_cancel();">Cancel</button>
                       </td>
@@ -997,19 +842,52 @@
     <table id="forma" class="box">
       <caption>Settings</caption>
       <tr>
-        <td><label for="edit_album_showmap">Show map</label></td>
+        <td colspan="2">
+          <h4>Preferences</h4>
+        </td>
+      </tr>
+      <tr>
         <td>
           <input type="hidden" name="edit_album_showmap_old" id="edit_album_showmap_old" value=""/>
           <input type="checkbox" name="edit_album_showmap" id="edit_album_showmap" value=""/>
         </td>
+        <td><label for="edit_album_showmap">Show map</label></td>
       </tr>
       <tr>
-        <td><label for="edit_album_showtimeline">Show timeline</label></td>
         <td>
           <input type="hidden" name="edit_album_showtimeline_old" id="edit_album_showtimeline_old" value=""/>
           <input type="checkbox" name="edit_album_showtimeline" id="edit_album_showtimeline" value=""/>
         </td>
+        <td><label for="edit_album_showtimeline">Show timeline</label></td>
       </tr>
+      <tr>
+        <td colspan="2">
+          <h4>Discussion</h4>
+        </td>
+      </tr>
+      <xsl:if test="/root/is_discussion = 0">
+        <tr>
+          <td class="error_text" colspan="2">
+            The Discussion feature is disabled.
+            <br/>
+            You need to install the ODS Discussion package in order to use it.
+          </td>
+        </tr>
+      </xsl:if>
+      <xsl:if test="/root/is_discussion = 1">
+        <tr>
+          <td>
+            <input type="checkbox" name="edit_album_nntp" id="edit_album_nntp" value=""/>
+          </td>
+          <td><label for="edit_album_nntp">Enable discussions on this instance</label></td>
+        </tr>
+        <tr>
+          <td>
+            <input type="checkbox" name="edit_album_nntp_init" id="edit_album_nntp_init" value=""/>
+          </td>
+          <td><label for="edit_album_nntp_init">Initialize the news group with existing comments</label></td>
+        </tr>
+      </xsl:if>
         <tfoot>
           <tr>
             <td style="padding-top:20px;" colspan="2">
@@ -1021,8 +899,6 @@
     </table>
   </div>
 </xsl:template>
-
-<!-- ======================================================================= -->
 
 <!-- ======================================================================= -->
   <xsl:template name="image_edit">

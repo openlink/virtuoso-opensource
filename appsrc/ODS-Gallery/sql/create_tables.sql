@@ -22,44 +22,67 @@
 
 PHOTO.WA._exec_no_error(
 '
-CREATE TABLE PHOTO.WA.comments(
-  COMMENT_ID  INTEGER NOT NULL,
-  GALLERY_ID  INTEGER NOT NULL,
-  RES_ID      INTEGER NOT NULL,
-  CREATE_DATE DATETIME NOT NULL,
-  MODIFY_DATE DATETIME     NULL,
-  USER_ID     INTEGER  NOT NULL,
-  TEXT        varchar  NULL,
+create table PHOTO.WA.COMMENTS (
+  COMMENT_ID  integer not null,
+  PARENT_ID   integer,
+  GALLERY_ID  integer not null,
+  RES_ID      integer not null,
+  CREATE_DATE DATETIME not null,
+  MODIFY_DATE DATETIME,
+  USER_ID     integer not null,
+  TEXT        varchar,
+  RFC_ID      varchar,
+  RFC_HEADER  long varchar,
+  RFC_REFERENCES varchar default null,
 
   PRIMARY KEY(COMMENT_ID))'
 )
 ;
+wa_add_col('PHOTO.WA.COMMENTS', 'PARENT_ID', 'integer')
+;
+wa_add_col('PHOTO.WA.COMMENTS', 'RFC_ID', 'varchar')
+;
+wa_add_col('PHOTO.WA.COMMENTS', 'RFC_HEADER', 'long varchar')
+;
+wa_add_col('PHOTO.WA.COMMENTS', 'RFC_REFERENCES', 'varchar default null')
+;
 
 PHOTO.WA._exec_no_error(
 '
-CREATE TABLE PHOTO.WA.SYS_INFO(
-  GALLERY_ID    INTEGER NOT NULL,
-  OWNER_ID      INTEGER NOT NULL,
-  WAI_NAME      VARCHAR NOT NULL,
-  HOME_URL      VARCHAR NOT NULL,
-  HOME_PATH     VARCHAR NOT NULL,
-  SHOW_MAP      INTEGER default 0,
-  SHOW_TIMELINE INTEGER default 0,
+create table PHOTO.WA.SYS_INFO (
+  GALLERY_ID    integer not null,
+  OWNER_ID      integer not null,
+  WAI_NAME      VARCHAR not null,
+  HOME_URL      VARCHAR not null,
+  HOME_PATH     VARCHAR not null,
+  SHOW_MAP      integer default 0,
+  SHOW_TIMELINE integer default 0,
+  NNTP          integer default 0,
+  NNTP_INIT     integer default 0,
+
   PRIMARY KEY(GALLERY_ID))'
 )
 ;
 
-wa_add_col('PHOTO.WA.SYS_INFO', 'SHOW_MAP', 'INTEGER default 0')
+wa_add_col('PHOTO.WA.SYS_INFO', 'SHOW_MAP', 'integer default 0')
 ;
-wa_add_col('PHOTO.WA.SYS_INFO', 'SHOW_TIMELINE', 'INTEGER default 0')
+wa_add_col('PHOTO.WA.SYS_INFO', 'SHOW_TIMELINE', 'integer default 0')
 ;
 alter table PHOTO.WA.SYS_INFO modify column SHOW_MAP integer default 0;
 alter table PHOTO.WA.SYS_INFO modify column SHOW_TIMELINE integer default 0;
+wa_add_col('PHOTO.WA.SYS_INFO', 'NNTP', 'integer default 0');
+wa_add_col('PHOTO.WA.SYS_INFO', 'NNTP_INIT', 'integer default 0');
+
+update PHOTO.WA.SYS_INFO set SHOW_MAP = 0 where SHOW_MAP is null;
+update PHOTO.WA.SYS_INFO set SHOW_TIMELINE = 0 where SHOW_TIMELINE is null;
+
+update PHOTO.WA.SYS_INFO set NNTP = 0 where NNTP is null;
+update PHOTO.WA.SYS_INFO set NNTP_INIT = 0 where NNTP_INIT is null;
 
 PHOTO.WA._exec_no_error(
 '
-CREATE TABLE PHOTO.WA.EXIF_DATA(
-  RES_ID      INTEGER NOT NULL,
+create table PHOTO.WA.EXIF_DATA(
+  RES_ID      integer not null,
   EXIF_PROP   VARCHAR(255),
   EXIF_VALUE  VARCHAR(255),
   
@@ -73,12 +96,12 @@ PHOTO.WA._exec_no_error(
 ;
 
 PHOTO.WA._exec_no_error(
-'ALTER TABLE PHOTO.WA.comments ADD COLUMN GALLERY_ID INTEGER NOT NULL','C','PHOTO.WA.comments','GALLERY_ID'
+'ALTER TABLE PHOTO.WA.COMMENTS ADD COLUMN GALLERY_ID integer not null','C','PHOTO.WA.comments','GALLERY_ID'
 )
 ;
 
 PHOTO.WA._exec_no_error(
-'ALTER TABLE PHOTO.WA.comments ADD COLUMN MODIFY_DATE DATETIME','C','PHOTO.WA.comments','MODIFY_DATE'
+'ALTER TABLE PHOTO.WA.COMMENTS ADD COLUMN MODIFY_DATE DATETIME','C','PHOTO.WA.comments','MODIFY_DATE'
 )
 ;
 

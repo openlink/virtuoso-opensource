@@ -214,12 +214,16 @@ returns photo_exif array
   declare res any;
   declare exif photo_exif;
   declare ind integer;
-  if(not PHOTO.WA.get_meta_data(image_id,result)){
+
+  if (not PHOTO.WA.get_meta_data(image_id,result))
+  {
     PHOTO.WA.save_meta_data_web(image_id,result);
   }
   ind := 0;
-  while(ind < length(result)){
-    if(result[ind] <> ''){
+  while (ind < length(result))
+  {
+    if(result[ind] <> '')
+    {
       exif := photo_exif(result[ind],result[ind+1]);
       result_out := vector_concat(result_out,vector(exif));
     }
@@ -232,9 +236,8 @@ returns photo_exif array
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA.extact_meta(
   inout _content any,
-  out result_values photo_exif array
-){
-
+  out result_values photo_exif array)
+{
   declare res, attributes,parts,rowche,name,value any;
   declare ind integer;
   declare exif photo_exif;
@@ -243,7 +246,9 @@ create procedure PHOTO.WA.extact_meta(
   attributes := PHOTO.WA.get_meta_data_list();
   result_values := vector();
 
-  declare exit handler for sqlstate '*'{res:=vector();
+  declare exit handler for sqlstate '*'
+  {
+    res:=vector();
                                         goto _skip_im_action;     
                                        };
 
@@ -252,23 +257,23 @@ create procedure PHOTO.WA.extact_meta(
 
 _skip_im_action:;     
 
-
-  while(ind < length(res)){
+  while(ind < length(res))
+  {
     rowche := res[ind];
     parts := split_and_decode(rowche,1,'\0\0:');
-    if(isarray(parts) and length(parts) = 2){
+    if(isarray(parts) and length(parts) = 2)
+    {
       name := replace(parts[0],' ','');
       value := trim(parts[1]);
       value := rtrim(value,'.');
 
-      if(position(name,attributes) and not position(name,result_values)){
+      if(position(name,attributes) and not position(name,result_values))
+      {
         result_values := vector_concat(result_values,vector(name,value));
-
       }
     }
     ind := ind + 1;
   }
-  
 }
 ;
 
@@ -410,3 +415,57 @@ create procedure PHOTO.WA.fill_exif_data(){
   }   
 }
 ;
+
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.get_img_name (
+  in _res_id integer)
+{
+  declare path varchar;
+  declare parts any;
+
+  path := DB.DBA.DAV_SEARCH_PATH (_res_id, 'R');
+  if (isstring (path))
+  {
+    parts := split_and_decode (path, 0, '\0\0/');
+    return parts[length (parts)-1];
+  }
+  return '';
+}
+;
+
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.get_image_name (
+  in _res_id integer)
+{
+  declare path varchar;
+  declare parts any;
+
+  path := DB.DBA.DAV_SEARCH_PATH (_res_id, 'R');
+  if (isstring (path))
+  {
+    parts := split_and_decode (path, 0, '\0\0/');
+    return parts[length (parts)-2] || '.' || parts[length (parts)-1];
+  }
+  return '';
+}
+;
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.get_image_caption (
+  in _res_id integer)
+{
+  declare _path, _description varchar;
+
+  _path := DB.DBA.DAV_SEARCH_PATH (_res_id, 'R');
+  if (isstring (_path))
+  {
+    declare _dav_auth, _dav_pwd varchar;
+    PHOTO.WA.get_dav_auth (_dav_auth, _dav_pwd);
+    _description := trim (cast (DAV_PROP_GET(_path, 'description', _dav_auth, _dav_pwd) as varchar));
+    if ((_description = '-11') or (_description = ''))
+      _description := PHOTO.WA.get_img_name (_res_id);
+    return _description;
+  }
+  return 'no title';
+}
+;
+

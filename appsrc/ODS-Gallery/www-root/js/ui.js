@@ -150,7 +150,7 @@ function panel(name)
 }
 
 //------------------------------------------------------------------------------
-function dispach(e)
+function dispatch(e)
 {
   if (!e) var e = window.event
   var el = (e.target) ? e.target : e.srcElement

@@ -49,7 +49,7 @@ create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar
         
         user_pwd := pwd_magic_calc(U_NAME,U_PWD, 1);
 
-        -- Predictes --
+        -- Predicates --
         post_iri    := post_iri_ex (forum_iri, MAIN_RES_ID);
 	    creator_iri := user_iri (RES_OWNER);
         title       := RES_NAME;
@@ -283,7 +283,7 @@ create trigger PHOTO_COMMENTS_SIOC_I after insert on PHOTO.WA.COMMENTS referenci
       forum_iri := photo_iri (WAI_NAME);
       home      := HOME_PATH;
       _wai_name := WAI_NAME;
-      link      := gallery_post_url(HOME_URL,album || '/' || _res_name);
+      link      := gallery_post_url (HOME_URL, album, _res_name);
       c_link    := gallery_comment_url(link,N.COMMENT_ID);
   }
   post_iri  := post_iri_ex (forum_iri, _res_id);
@@ -326,7 +326,7 @@ create trigger PHOTO_COMMENTS_SIOC_U after update on PHOTO.WA.COMMENTS referenci
       forum_iri := photo_iri (WAI_NAME);
       home      := HOME_PATH;
       _wai_name := WAI_NAME;
-      link      := gallery_post_url(HOME_URL,album  || '/' || _res_name);
+      link      := gallery_post_url(HOME_URL, album, _res_name);
       c_link    := gallery_comment_url(link,N.COMMENT_ID);
     }
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = _wai_name and WAI_IS_PUBLIC = 1))
@@ -346,29 +346,22 @@ create trigger PHOTO_COMMENTS_SIOC_U after update on PHOTO.WA.COMMENTS referenci
 
 create trigger PHOTO_COMMENTS_SIOC_D after delete on PHOTO.WA.COMMENTS referencing old as O
 {
-  declare iri, graph_iri, home, post_iri, _wai_name,_home_url varchar;
-  declare cm_iri,_res_full_path,_res_name,album,link,c_link,forum_iri  varchar;
-  declare album_id,_res_id integer;
+  declare graph_iri, forum_iri, post_iri, cm_iri  varchar;
 
-  declare exit handler for sqlstate '*' {
+  declare exit handler for sqlstate '*'
+  {
     sioc_log_message (__SQL_MESSAGE);
   return;
 };
-  SELECT RES_FULL_PATH, RES_ID
-    INTO _res_full_path, _res_id
-    FROM WS.WS.SYS_DAV_RES 
-   WHERE RES_ID = O.RES_ID;
 
   graph_iri := get_graph ();
-  for SELECT OWNER_ID, WAI_NAME, HOME_PATH,HOME_URL FROM PHOTO..SYS_INFO WHERE GALLERY_ID = O.GALLERY_ID
-  do{
+  for (select WAI_NAME FROM PHOTO..SYS_INFO WHERE GALLERY_ID = O.GALLERY_ID) do
+  {
       forum_iri := photo_iri (WAI_NAME);
-      _wai_name := WAI_NAME;
-  }
-  post_iri  := post_iri_ex (forum_iri, _res_id);
+    post_iri := post_iri_ex (forum_iri, O.RES_ID);
   cm_iri    := gallery_comment_iri(post_iri,O.COMMENT_ID);
-  delete_quad_s_or_o (graph_iri, cm_iri, cm_iri);
-  return;
+    DELETE_QUAD_S_OR_O (graph_iri, cm_iri, cm_iri);
+  }
 }
 ;
 
@@ -388,8 +381,12 @@ create procedure gallery_post_iri_new(in user_id integer,in album varchar,in ima
 }
 ;
 
-create procedure gallery_post_url(in home_path varchar,in album varchar ,in image varchar){
-  return  sprintf ('http://%s%U/#%U', get_cname(), home_path,album);
+create procedure gallery_post_url (
+  in home_path varchar,
+  in album varchar,
+  in image varchar := '')
+{
+  return  sprintf ('http://%s%U/#%U/%U', get_cname(), home_path, album, image);
 }
 ;
 
@@ -437,7 +434,7 @@ create view ODS_PHOTO_POSTS as select
 		uo.U_NAME U_OWNER,
 		uo.U_PASSWORD U_PWD,
 	        um.U_NAME U_MEMBER,
-		sioc..gallery_post_url (p.HOME_URL, '/' || COL_NAME || '/' || RES_NAME, RES_NAME) as RES_LINK,
+		sioc..gallery_post_url (p.HOME_URL, COL_NAME, RES_NAME) as RES_LINK,
 		sioc..gallery_prop_get (RES_FULL_PATH, uo.U_NAME, uo.U_PASSWORD, RES_NAME) as RES_DESCRIPTION VARCHAR,
 		sioc..dav_res_iri (RES_FULL_PATH) || '/sioc.rdf' as SEE_ALSO
 		from

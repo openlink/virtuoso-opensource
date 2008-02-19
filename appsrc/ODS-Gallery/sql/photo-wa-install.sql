@@ -136,7 +136,7 @@ create procedure PHOTO.WA.photo_install()
 PHOTO.WA._exec_no_error(
 '
   create type wa_photo under web_app as (
-    gallery_id interger
+    gallery_id integer
 	)
   constructor method wa_photo(stream any),
   overriding method wa_new_inst(login varchar) returns any,
@@ -162,6 +162,7 @@ PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_dashboard(
 PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_dashboard_last_item() returns any');
 PHOTO.WA._exec_no_error('alter type wa_photo add overriding method wa_addition_urls () returns any');
 
+PHOTO.WA._exec_no_error('drop trigger DB.DBA.trigger_update_sys_info');
 -------------------------------------------------------------------------------
 create constructor method wa_photo (inout stream any) for wa_photo
 {
@@ -213,28 +214,26 @@ create method wa_update_instance (in oldValues any, in newValues any) for wa_pho
 {
   if (newValues[1] = 1)
     PHOTO.WA.photo_sioc_services (newValues[0]);
+
+  declare domainID, ownerID integer;
+  domainID := (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_NAME = newValues[0]);
+  ownerID := (select WAM_USER from WA_MEMBER B where WAM_INST = oldValues[0] and WAM_MEMBER_TYPE = 1);
+
+  PHOTO.WA.nntp_update (domainID, PHOTO.WA.domain_nntp_name2 (oldValues[0], PHOTO.WA.account_name (ownerID)), PHOTO.WA.domain_nntp_name2 (newValues[0], PHOTO.WA.account_name (ownerID)));
+
+  --PHOTO.WA.COMMENTS
+
+  update PHOTO.WA.SYS_INFO set WAI_NAME = newValues[0] where GALLERY_ID = domainID;
+
   return (self as web_app).wa_update_instance (oldValues, newValues);
 };
 
 -------------------------------------------------------------------------------
 create method wa_drop_instance () for wa_photo
 {
-  declare iUser, iCount any;
+  PHOTO.WA.instance_delete ((select WAI_ID from WA_INSTANCE where WAI_NAME = self.wa_name));
 
-  select WAM_USER into iUser from WA_MEMBER where WAM_INST = self.wa_name;
-  select count(WAM_USER) into iCount
-    from WA_MEMBER,
-         WA_INSTANCE
-   where WAI_NAME = WAM_INST
-     and WAI_TYPE_NAME = 'oGallery'
-     and WAM_USER = iUser;
-
-  if (iCount = 1){
-    PHOTO.WA.photo_delete_user_data(iUser);
-  }
   (self as web_app).wa_drop_instance();
-  --delete from WA_MEMBER where WAM_INST = self.wa_name;
-  --delete from WA_INSTANCE where WAI_NAME = self.wa_name;
 }
 ;
 
@@ -433,3 +432,78 @@ create method wa_dashboard_last_item () for wa_photo
 PHOTO.WA._exec_no_error('PHOTO.WA.fill_exif_data()');
 
 PHOTO.WA._exec_no_error('PHOTO.WA.update_gallery_foldername()');
+
+-------------------------------------------------------------------------------
+--
+-- fix tables
+--
+-------------------------------------------------------------------------------
+
+create procedure PHOTO.WA.fix_tables ()
+{
+  if (registry_get ('gallery_fix_comments') = '3')
+    return;
+
+  for (select WAI_INST from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oGallery' and WAI_ID not in (select GALLERY_ID from PHOTO.WA.SYS_INFO)) do
+  {
+    (WAI_INST as DB.DBA.wa_photo).wa_drop_instance();
+  }
+
+  delete from PHOTO.WA.COMMENTS where GALLERY_ID not in (select s.GALLERY_ID from PHOTO.WA.SYS_INFO s);
+
+  -- build nntp data for images
+  for (select GALLERY_ID as _gallery_id, HOME_PATH from PHOTO.WA.SYS_INFO) do
+  {
+    for (select COL_ID from WS.WS.SYS_DAV_COL where COL_PARENT = (DAV_SEARCH_ID (HOME_PATH, 'C'))) do
+    {
+      for (select RES_ID as _res_id from WS.WS.SYS_DAV_RES where RES_COL = COL_ID) do
+      {
+        PHOTO.WA.root_comment (_gallery_id, _res_id);
+      }
+    }
+  }
+  delete from PHOTO.WA.EXIF_DATA where RES_ID not in (select c.RES_ID from PHOTO.WA.COMMENTS c);
+
+  if (registry_get ('gallery_fix_comments') = '2')
+    goto final;
+
+  delete from PHOTO.WA.SYS_INFO where GALLERY_ID not in (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oGallery');
+  delete from PHOTO.WA.COMMENTS where GALLERY_ID not in (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oGallery');
+  for (select distinct RES_ID as _res_id from PHOTO.WA.COMMENTS) do
+  {
+    if (isnull (PHOTO.WA.resource_gallery_id (_res_id)))
+    {
+      delete from PHOTO.WA.COMMENTS where RES_ID = _res_id;
+      delete from PHOTO.WA.EXIF_DATA where RES_ID = _res_id;
+    }
+  }
+
+  for (select HP_LPATH as _lpath from DB.DBA.HTTP_PATH
+        where HP_LPATH like '/photos/%'
+          and HP_LPATH not in (select HOME_URL from PHOTO.WA.SYS_INFO)) do
+  {
+    if (_lpath not in ('/photos', '/photos/SOAP', '/photos/res'))
+    {
+      vhost_remove (lpath=> _lpath);
+    }
+  }
+
+  for (select NG_GROUP as nntpGroup from DB.DBA.NEWS_GROUPS
+        where NG_TYPE = 'GALLERY'
+          and NG_NAME not in (select WAI_NAME from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oGallery')) do
+  {
+    delete from DB.DBA.NEWS_MULTI_MSG where NM_GROUP = nntpGroup;
+    delete from DB.DBA.NEWS_GROUPS where NG_GROUP = nntpGroup;
+  }
+
+  for (select GALLERY_ID, NNTP_INIT from PHOTO.WA.SYS_INFO where NNTP = 1) do
+  {
+    PHOTO.WA.nntp_update (GALLERY_ID, null, null, 1, 0);
+  }
+  update PHOTO.WA.SYS_INFO set NNTP = 0, NNTP_INIT = 0;
+
+final: registry_set ('gallery_fix_comments', '3');
+}
+;
+PHOTO.WA.fix_tables ();
+

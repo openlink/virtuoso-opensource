@@ -31,7 +31,11 @@ create procedure PHOTO.WA._exec_no_error(in expr varchar, in execType varchar :=
 
   log_enable(1);
   if (execType = 'C') {
-    if ((select 1 from DB.DBA.SYS_COLS where "TABLE" = execTable and "COLUMN" = execColumn) = 1)
+    if (coalesce((select 1 from DB.DBA.SYS_COLS where (0=casemode_strcmp("COLUMN", execColumn)) and (0=casemode_strcmp ("TABLE", execTable))), 0))
+      return;
+  }
+  if (execType = 'D') {
+    if (not coalesce((select 1 from DB.DBA.SYS_COLS where (0=casemode_strcmp("COLUMN", execColumn)) and (0=casemode_strcmp ("TABLE", execTable))), 0))
       return;
   }
   if (execType = 'S') {

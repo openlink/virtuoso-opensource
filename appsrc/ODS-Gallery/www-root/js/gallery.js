@@ -38,7 +38,7 @@ gallery.init = function (path){
   var agentWidth=OAT.Dom.getViewport();
   
   $('wrapper').style.width=agentWidth[0]+'px';
-  $('main_container').style.width=agentWidth[0]-15+'px';
+  $('main_container').style.width=agentWidth[0]-16+'px';
   $('map').style.width=agentWidth[0]-15+'px';
   if(agentWidth[1]<800)
   $('map').style.height=350+'px';  
@@ -76,7 +76,7 @@ gallery.init = function (path){
   }
 
   gallery_path = path;
-  $("wrapper").onclick = dispach;
+  $("wrapper").onclick = dispatch;
   gallery.ajax.load_albums(gallery_path);
 
   gallery.rotator = new OAT.Rotator(505,400,{delay:1,step:2,numLeft:1,pause:1000,type:OAT.RotatorData.TYPE_LEFT},function(){});
@@ -276,6 +276,9 @@ gallery.settings_tab_click = function ()
   gallery.managePanels('edit_albumsettings');
   $('edit_album_showmap').checked = ds_albums.settings.show_map==1? true : false;
   $('edit_album_showtimeline').checked = ds_albums.settings.show_timeline==1 ? true : false;
+  $('edit_album_nntp').checked = ds_albums.settings.nntp == 1? true : false;
+  $('edit_album_nntp_init').checked = ds_albums.settings.nntp_init == 1 ? true : false;
+
   gallery.nav.tabs(3);
 }
 
@@ -283,6 +286,7 @@ gallery.settings_tab_click = function ()
 gallery.edit_albumsettings_action = function ()
 {
   gallery.ajax.edit_album_settings();
+  gallery.nav.tabs(1);
 }
 
 //------------------------------------------------------------------------------
@@ -710,7 +714,10 @@ gallery.showImage = function(i)
   $('path_pub_date').innerHTML = sdate2obj(ds_albums.current.pub_date).year + ' > ';
   $('path_album_name').innerHTML = ds_albums.current.name + ' > ';
   $('path_image_name').innerHTML = current_image.name;
-  $('caption').innerHTML = current_image.description;
+  $('caption').innerHTML = '';
+  var rdfa = rdfaValue(current_image.description, 'dc:title', 'property');
+  if (rdfa)
+    $('caption').appendChild(rdfa);
   
   gallery.prepare_aplus('info_discription');
   gallery.managePanels('showImage');
@@ -766,6 +773,7 @@ gallery.addComment = function(comment)
   var span = document.createElement('span');
   span.innerHTML = comment.text;
 	span.setAttribute("id", 'comment_span_'+comment.comment_id);
+	span.setAttribute("class", 'comment-msg');
   comment_block.appendChild(span);
 
   var del_img = OAT.Dom.create("img");
@@ -788,9 +796,15 @@ gallery.addComment = function(comment)
   edit.appendChild(document.createTextNode(' '));
   edit.appendChild(edit_img);
 
-  user.appendChild(document.createTextNode(comment.user_name));
+  var rdfa1 = rdfaValue(comment.user_name, 'comment-user', 'class');
+  if (rdfa1)
+    user.appendChild(rdfa1);
+  //user.appendChild(document.createTextNode(comment.user_name));
   user.appendChild(document.createTextNode(','));
-  user.appendChild(document.createTextNode(pub_date.day+'/'+pub_date.month+'/'+pub_date.year));
+  var rdfa2 = rdfaValue(pub_date.day+'/'+pub_date.month+'/'+pub_date.year, 'comment-date', 'class');
+  if (rdfa2)
+    user.appendChild(rdfa2);
+  //user.appendChild(document.createTextNode(pub_date.day+'/'+pub_date.month+'/'+pub_date.year));
   
   comment_block.appendChild(edit);
   comment_block.appendChild(user);
@@ -805,7 +819,7 @@ gallery.delete_comment_icon_click = function(e)
   if (!e) var e = window.event
   var el = (e.target) ? e.target : e.srcElement
 
-  if (confirm('Are you sure that you want to detele this comment?'))
+  if (confirm('Are you sure that you want to delete this comment?'))
   {
     var comment = el.parentNode.parentNode.id;
     //dd(el.parentNode.parentNode);
@@ -866,7 +880,8 @@ gallery.addTag = function(tag, first)
   document.f1.new_tag.value = '';
 
   var div = document.createElement('span');
-  var txt = document.createElement('b');
+  //var txt = document.createElement('b');
+
   if (tags_list.childNodes.length)
   {
     div.appendChild(document.createTextNode(', '));
@@ -874,7 +889,11 @@ gallery.addTag = function(tag, first)
     div.appendChild(document.createTextNode(' '));
   }
   tags_list.appendChild(div);
-  div.appendChild(txt);
+  //div.appendChild(txt);
+  var rdfa = rdfaValue(tag, 'dc:subject', 'property');
+  if (rdfa)
+    div.appendChild(rdfa);
+
   div.appendChild(makeDummyHref(tag));
 
   if (sid != '')
@@ -890,7 +909,7 @@ gallery.addTag = function(tag, first)
 
   edit.appendChild(img);
   }
-  txt.appendChild(document.createTextNode(tag));
+  //txt.appendChild(document.createTextNode(tag));
   OAT.Dom.attach(edit,'click',gallery.delete_tag_click)
   }
 
@@ -900,7 +919,7 @@ gallery.delete_tag_click = function(e)
   if (!e) var e = window.event
   var el = (e.target) ? e.target : e.srcElement
 
-  if (confirm('Are you sure that you want to detele this tag?'))
+  if (confirm('Are you sure that you want to delete this tag?'))
   {
     var tag = el.parentNode.parentNode.childNodes[1].innerHTML;
    gallery.ajax.image_remove_tags(ds_current_album.current.id,tag);
@@ -988,7 +1007,7 @@ gallery.bnt_new_tag_click = function()
     }
     if (!gallery.tags_is_unique (ds_current_album.current.private_tags, tag))
     {
-      alert('Tag "'+tag+'" allready exists. Please, remove or change it.');
+      alert('Tag "'+tag+'" already exists. Please, remove or change it.');
     return;
   }
 }
@@ -1387,7 +1406,10 @@ function preview_collection(album,i)
   div.appendChild(document.createElement('br'))
 
   if(album.name){
-    div.appendChild(document.createTextNode(album.name.substring(0,12)));
+    var rdfa = rdfaValue(album.name.substring(0,12), 'dc:title', 'property');
+    if (rdfa)
+      div.appendChild(rdfa);
+    //div.appendChild(document.createTextNode(album.name.substring(0,12)));
   }
   return div;
 }
@@ -1542,14 +1564,26 @@ function preview_image(i,mode){
 }
     
     div.appendChild(imageDiv);
-    div.appendChild(OAT.Dom.text(caption));
-
+    var rdfa = rdfaValue(caption, 'dc:title', 'property');
+    if (rdfa)
+      div.appendChild(rdfa);
 
   return div;
-
   }
 
   return imageDiv;
+}
+
+//-------------------------------------------------------------------------------
+function rdfaValue(val, property, property_name)
+{
+  if (!val || val=='')
+    return null;
+  var rdfaSpan = OAT.Dom.create("span");
+  rdfaSpan.innerHTML = val;
+  rdfaSpan.setAttribute(property_name,property);
+
+  return rdfaSpan;
 }
 
 //------------------------------------------------------------------------------
@@ -1718,42 +1752,51 @@ gallery.managePanels = function(action){
 
   gallery.closePanels();
 
-  if(action == 'my_albums'){
+  if (action == 'my_albums')
+  {
     if(ds_albums.settings.show_timeline==1)
     {
     OAT.Dom.show('timeline');
         if(TL.last)
            TL.scrollTo(TL.last);
-    }
-    else
+    } else {
        OAT.Dom.hide('timeline');
-
+    }
     if(ds_albums.settings.show_map==1)
     {
        if(map)
+      {
           map.show();
-       else
+      } else {
+        if (typeof(window.mapInitPrepare) == "function")
+        {
+          mapInitPrepare();
+        }
         OAT.Dom.show('map')
-    }else
+      }
+    } else {
        OAT.Dom.hide('map');
-
+    }
     if(typeof(map)!='undefined')
     {
        $('map').className = $('map').className.replace( "edit","view");
        if(typeof(map.lastGEvent)!='undefined')
+      {
          GEvent.removeListener(map.lastGEvent);
+    }
     }
     
     gallery.albums.show();
     gallery.showAlbumsInfo();
     gallery.albums_list.show();
     gallery.albums.tabs(1);
-    if(isOwner != ''){
+    if (isOwner != '')
+    {
       gallery.albums_man.show();
       OAT.Dom.show('new_album_tab');
-      
-    }else
+    } else {
     OAT.Dom.hide('new_album_tab');
+    }
       
     gallery.images_upload.hide();
     gallery.new_album.hide();
@@ -1769,7 +1812,8 @@ gallery.managePanels = function(action){
     OAT.Dom.hide('image_edit');
 
   }else if(action == 'showImages'){
-    if(isOwner != ''){
+    if (isOwner != '')
+    {
       OAT.Dom.show('care_edit_album');
     }
     OAT.Dom.show('care_view_album');
@@ -1783,7 +1827,8 @@ gallery.managePanels = function(action){
   }else if(action == 'showImage'){
       OAT.Dom.hide('care_edit_album');
     OAT.Dom.show('care_nav_image');
-    if(isOwner != ''){
+    if (isOwner != '')
+    {
       OAT.Dom.show('care_edit_image');
     }
       OAT.Dom.show('care_view_mode');
@@ -1805,7 +1850,9 @@ gallery.managePanels = function(action){
       OAT.Dom.show('edit_album');
       OAT.Dom.hide('images');
     if(ds_albums.settings.show_map==1)
+    {
     OAT.Dom.show('map');
+    }
     OAT.Dom.hide('images_upload');
 
   }else if(action == 'new_album'){
@@ -1844,18 +1891,23 @@ gallery.managePanels = function(action){
     this.edit_album.hide();
     //this.info.hide();
     this.comments.hide();
-
     OAT.Dom.show('care_slideshow');
-  }else if(action=='edit_albumsettings')
-  {
+
+  } else if (action=='edit_albumsettings') {
     this.hideAlbums();
     this.images.hide();
+    this.image.hide();
     this.info.hide();
     this.new_album.hide();
     this.edit_album.hide();
+    this.tags.hide();
+    this.comments.hide();
+
     OAT.Dom.hide('care_edit_album');
     OAT.Dom.hide('care_my_albums');
     OAT.Dom.hide('care_view_album');
+    OAT.Dom.hide('image_edit');
+    OAT.Dom.hide('care_edit_image');
 
     OAT.Dom.show('edit_album_settings');
   }
@@ -1910,7 +1962,11 @@ gallery.ajax.load_albums = function(path)
       new_coll = preview_collection(ds_albums.list[r],r);
       gallery.albums.appendChild(new_coll);
       album_list = OAT.Dom.create('li');
-      album_list.innerHTML = ds_albums.list[r].name.substring(0,12);
+
+      var rdfa = rdfaValue(ds_albums.list[r].name.substring(0,12), 'dc:title', 'property');
+      if (rdfa)
+        album_list.appendChild(rdfa);
+      //album_list.innerHTML = ds_albums.list[r].name.substring(0,12);
       album_list.id = "my_albums_list_"+r;
       album_list.appendChild(makeDummyHref(ds_albums.list[r].name.substring(0,12)));
 
@@ -1918,8 +1974,6 @@ gallery.ajax.load_albums = function(path)
     }
     
     gallery.prepare_aplus('my_albums_list');
-    //gallery.prepare_aplus('albums');
-    //gallery.prepare_aplus('wrapper');
     
     gallery.managePanels('my_albums');
     $('myAlbumsTxt').innerHTML='My Albums ('+ds_albums.list.length+')';
@@ -2008,13 +2062,18 @@ gallery.ajax.edit_album_settings = function(){
             return Array(sid,gallery_id,
                          home_path,
                          $('edit_album_showmap').checked ? 1: 0,
-                         $('edit_album_showtimeline').checked ? 1 : 0
+                         $('edit_album_showtimeline').checked ? 1 : 0,
+                         $('edit_album_nntp').checked ? 1: 0,
+                         $('edit_album_nntp_init').checked ? 1 : 0
                          );
            };
   finish = function ()
   {
     ds_albums.settings.show_map=$('edit_album_showmap').checked ? 1: 0;
     ds_albums.settings.show_timeline=$('edit_album_showtimeline').checked ? 1 : 0;
+    ds_albums.settings.nntp=$('edit_album_nntp').checked ? 1: 0;
+    ds_albums.settings.nntp_init=$('edit_album_nntp_init').checked ? 1 : 0;
+
     OAT.Dom.hide('edit_album_settings');
     gallery.managePanels('my_albums');
   };
@@ -2146,9 +2205,8 @@ gallery.ajax.image_edit = function(id){
     if (res != 0)
     {
       ds_current_album.editImageInList(res);
-      alert('Succesfull')
+      alert('Successful')
       gallery.showImage(ds_current_album.current.index);
-
     }else{
       alert('Problem');
     }
@@ -2482,7 +2540,7 @@ gallery.ajax.user_get_role = function(){
 };
 
 //------------------------------------------------------------------------------
-//Overwrute Quickedit for custom purpose.
+//Override Quickedit for custom purpose.
 
 OAT.QuickEdit.revert = function(elm,oldelm) {
 		if(oldelm.innerHTML != elm.value)

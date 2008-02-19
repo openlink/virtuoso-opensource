@@ -40,27 +40,28 @@
   auth_uid := PHOTO.WA._session_user(params,current_user);
 
   declare _xml,_xsl_path any;
-  if(auth_uid <> ''){
+  if (auth_uid <> '')
+  {
     _sid := current_user.sid;
   }else{
     _sid := '';
-    --PHOTO.WA.redirect(wa_home_link);
-    --return;
   }
 
   current_instance := new photo_instance();
-
-  if(isnull(current_instance.home_path)){
+  if (isnull(current_instance.home_path))
+  {
     PHOTO.WA.http_404();
     return;
   }
 
   path := PHOTO.WA.utl_parse_url(http_path());
 
-  if (PHOTO.WA.frozen_check(current_instance,current_user)) {
+  if (PHOTO.WA.frozen_check(current_instance,current_user))
+  {
     declare freeze_page varchar;
     freeze_page := PHOTO.WA.frozen_page(current_instance.name);
-    if (freeze_page is null or freeze_page = '' or freeze_page = 'default') {
+    if (freeze_page is null or freeze_page = '' or freeze_page = 'default')
+    {
       http_rewrite ();
       http_request_status ('HTTP/1.1 404 Not found');
       http (sprintf('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><HTML><head><TITLE>404 Not Found</TITLE></HEAD><body><H1>Not Found</H1>Resource %s not found.</BODY></HTML>', http_path (path[0])));
@@ -74,14 +75,13 @@
     return;
   }
 
-
-  if(length(path) > 0){
+  if (length(path) > 0)
+  {
     my_file := path[length(path)-1];
-    if(my_file = 'rss.xml' or my_file = 'atom.xml' or my_file = 'index.rdf' or my_file = 'xbel.xml' or my_file = 'mrss.xml'){
-
+    if (my_file in ('rss.xml', 'atom.xml', 'index.rdf', 'xbel.xml', 'mrss.xml'))
+    {
       _xsl := '';
       if(my_file = 'atom.xml'){
---        _xsl := 'rss2atom03.xsl';
         _xsl := 'rss2atom.xsl';
 
       }else if(my_file = 'index.rdf'){
@@ -99,7 +99,8 @@
       http_rewrite();
       http_header (sprintf ('Content-type: %s\r\n', 'text/xml'));
       http(PHOTO.WA.rss_output(current_instance,params));
-      if(_xsl <> ''){
+      if (_xsl <> '')
+      {
         http_xslt (_xsl_path);
       }
       return;
@@ -120,8 +121,7 @@
   if(isOwner)
   {
     owner_fullname:=coalesce(current_user.full_name,current_user.first_name||' '||current_user.last_name,current_user.auth_uid);
-  }else
-  {
+  } else {
     owner_fullname := PHOTO.WA.user_fullName (current_instance.owner_id);
   }
   
@@ -135,7 +135,7 @@
   http(sprintf('<host>%s</host>',WA_GET_HOST ()),_xml);
   http(sprintf('<app_type>photos</app_type>'),_xml);
   http(sprintf('<aplus>%d</aplus>',DB.DBA.WA_USER_APP_ENABLE (current_instance.owner_id)),_xml);
-  http(sprintf('<instance>%s</instance>',sprintf('%U',current_instance.name)),_xml);
+  http(sprintf('<instance>%U</instance>', current_instance.name),_xml);
   http(sprintf('<home_url>%s</home_url>',current_instance.home_url),_xml);
   http(sprintf('<wa_home_title>%s</wa_home_title>',wa_home_title),_xml);
   http(sprintf('<wa_home_link>%s</wa_home_link>',wa_home_link),_xml);
@@ -143,7 +143,8 @@
   http(sprintf('<instance_owner>%s</instance_owner>',current_instance.owner_name),_xml);
   http(sprintf('<instance_owner_fullname>%s</instance_owner_fullname>',owner_fullname),_xml);
   http(sprintf('<instance_description>%s</instance_description>',replace(current_instance.description,'\'','&#39;')),_xml);
-  http(sprintf('<map>%d</map>',1),_xml);
+  http(sprintf('<map>%d</map>',PHOTO.WA.gallery_show_map (current_instance.gallery_id)),_xml);
+  http(sprintf('<is_discussion>%d</is_discussion>', PHOTO.WA.discussion_check ()),_xml);
 
 --  if(PHOTO.WA.isDav()){
     http(sprintf('<bar><![CDATA[%s]]></bar>',ODS.BAR._EXEC('oGallery', params, lines)),_xml);

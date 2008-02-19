@@ -25,10 +25,35 @@
 <html>
   <head>
     <title>Photo Gallery</title>
-    <link href="/photos/res/css/upload.css" rel="stylesheet" type="text/css"/>
+    <link rel="stylesheet" href="/photos/res/css/upload.css" type="text/css"/>
+    <link rel="stylesheet" href="css/webdav.css" type="text/css"/>
+    <![CDATA[
+      <script type="text/javascript">
+        // OAT
+        var toolkitPath="/ods/oat";
+        var imagePath="/ods/images/oat/";
+
+        var featureList=["dav"];
+      </script>
+      <script type="text/javascript" src="/ods/oat/loader.js"></script>
+      <script type="text/javascript">
+        // WebDAV Object
+        var oWebDAV;
+
+        function fromInit() {
+          // WebDAV
+          var options = { imagePath: '/ods/images/oat/',
+                          imageExt: 'png',
+                          path: '<?V '/DAV/home/' || self.current_user.auth_uid || '/' ?>'
+                        };
+          OAT.WebDav.init(options);
+          oWebDAV = OAT.WebDav;
+        }
+        OAT.MSG.attach(OAT, OAT.MSG.OAT_LOAD, fromInit);
+      </script>
+    ]]>
   </head>
   <v:page fast-render="1" xmlns:vm="http://www.openlinksw.com/vspx/weblog/" xmlns:v="http://www.openlinksw.com/vspx/" name="photo-home-page" style="../xslt/upload.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
     <v:variable name="session_id" type="varchar" param-name="sid" default="null"/>
     <v:variable name="album" type="varchar" param-name="album" default="null"/>
     <v:variable name="current_user" type="photo_user" default="null"/>
@@ -48,8 +73,9 @@
 
       <body>
       <script>
-        function image_check_exist(path,index){
-          name = path.substring(path.lastIndexOf('\\')+1);
+        function image_check_exist(path,index,source){
+          var ch = (source == 'file')? '\\' : '/';
+          name = path.substring(path.lastIndexOf(ch)+1);
           document.f1['description_'+ index].value = name;
 
           if(window.parent.ds_current_album.checkNameExist(name) &gt; -1){
@@ -70,6 +96,28 @@
               return;
             }
           }
+        }
+
+        function changeFrom (index)
+        {
+          if (document.getElementById('r_dav_'+ index).checked)
+          {
+            OAT.Dom.hide ('s_file_'+ index);
+            OAT.Dom.show ('s_dav_'+ index);
+          }
+          if (document.getElementById('r_file_'+ index).checked)
+          {
+            OAT.Dom.hide ('s_dav_'+ index);
+            OAT.Dom.show ('s_file_'+ index);
+          }
+        }
+
+        function davBrowse (fld,index)
+        {
+          var options = { mode: 'browser',
+                          onConfirmClick: function(path, fname) {$(fld).value = path + fname; image_check_exist($(fld).value,index,'dav')}
+                        };
+          oWebDAV.open(options);
         }
       </script>
       <div id="wrapper">
@@ -94,10 +142,19 @@
                 <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
               </td>
               <td>
-                <label for="edit_album_name">Image</label>
+                <label for="edit_album_name"><b>From</b></label>
               </td>
               <td>
-                <label for="edit_album_name">Caption</label>
+                <label for="edit_album_name"><b>Image</b></label>
+              </td>
+              <td>
+                <label for="edit_album_name"><b>Caption</b></label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td colspan="3">
+                File/DAV
               </td>
             </tr>
             <vm:file_upload/>

@@ -71,7 +71,7 @@ create procedure PHOTO.WA.photo_init_user_data(
   gallery_id := wai_id;
   home_url   := connection_get('ogallery_customendpoint');
 
-  -- TODO - to check for bakslash
+  -- TODO - to check for backslash
 
   --if(strrchr(home_url,'/') <> length(home_url)){
   --  home_url   := home_url || '/';
@@ -123,18 +123,17 @@ create procedure PHOTO.WA.photo_init_user_data(
 
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA.photo_delete_user_data(
-  in auth_uid varchar)
+  in owner_id integer)
 {
   declare current_user photo_user;
 
-  DELETE FROM PHOTO.WA.comments WHERE USER_ID = auth_uid;
+  DELETE FROM PHOTO.WA.COMMENTS WHERE USER_ID = owner_id;
 
   declare home_url varchar;
-  home_url := (select HOME_URL from PHOTO.WA.SYS_INFO where OWNER_ID = auth_uid);
+  home_url := (select HOME_URL from PHOTO.WA.SYS_INFO where OWNER_ID = owner_id);
 
   VHOST_REMOVE(lpath      => home_url);
-  DELETE FROM PHOTO.WA.SYS_INFO where OWNER_ID = auth_uid;
-
+  DELETE FROM PHOTO.WA.SYS_INFO where OWNER_ID = owner_id;
 }
 ;
 
@@ -408,6 +407,24 @@ create procedure PHOTO.WA.user_name (
 ;
 
 -------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.account_name (
+  in account_id integer)
+{
+  return coalesce((select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id), '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.gallery_show_map (
+  in gallery_id integer)
+{
+  return coalesce((select SHOW_MAP from PHOTO.WA.SYS_INFO where GALLERY_ID = gallery_id), 0);
+}
+;
+
+-------------------------------------------------------------------------------
 create procedure get_dav_gallery(
   in _path varchar)
 {
@@ -531,16 +548,34 @@ create procedure PHOTO.WA.fix_old_versions()
        AND WAM_APP_TYPE = 'oGallery'
        AND WAM_USER = _user_id;
 
-    if(NOT((SELECT COUNT(GALLERY_ID) FROM PHOTO.WA.SYS_INFO WHERE WAI_NAME = _wai_name))){
+    if (NOT((SELECT COUNT(GALLERY_ID) FROM PHOTO.WA.SYS_INFO WHERE WAI_NAME = _wai_name)))
+    {
       INSERT INTO PHOTO.WA.SYS_INFO(GALLERY_ID,OWNER_ID,WAI_NAME,HOME_URL,HOME_PATH)
           VALUES(_gallery_id,_user_id,_wai_name,_home_url,_home_path);
     }
   }
-
 }
 ;
 
 -------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.resource_gallery_id (
+  in _res_id integer)
+{
+  declare _parent_id integer;
+
+  _parent_id := (select COL_PARENT
+                   from WS.WS.SYS_DAV_COL, WS.WS.SYS_DAV_RES
+                  where COL_ID = RES_COL and RES_ID = _res_id);
+  if (isnull (_parent_id))
+    return null;
+
+  return (select GALLERY_ID from PHOTO.WA.SYS_INFO where HOME_PATH = DB.DBA.DAV_SEARCH_PATH (_parent_id, 'C'));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure PHOTO.WA.get_geo_info (
   in user_id integer)
 {
@@ -559,6 +594,7 @@ create procedure PHOTO.WA.get_geo_info (
 ;
 
 -------------------------------------------------------------------------------
+--
 create procedure PHOTO.WA.tags2vector(
   inout tags varchar)
 {
@@ -805,4 +841,50 @@ PHOTO.WA._exec_no_error(
 PHOTO.WA._exec_no_error(
   'drop procedure dav_browse'
 )
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.instance_delete (
+  in instance_id integer)
+{
+  declare CONTINUE HANDLER FOR SQLSTATE '*' {return 0; };
+
+-- tables
+  for (select HOME_URL from PHOTO.WA.SYS_INFO where GALLERY_ID = instance_id) do
+  {
+    VHOST_REMOVE(lpath      => home_url);
+    for (select distinct RES_ID as _res_id from PHOTO.WA.COMMENTS where GALLERY_ID = instance_id) do
+    {
+      delete from PHOTO.WA.EXIF_DATA where RES_ID = _res_id;
+    }
+  }
+  PHOTO.WA.nntp_update (instance_id, null, null, 1, 0);
+  delete from PHOTO.WA.COMMENTS where GALLERY_ID = instance_id;
+  delete from PHOTO.WA.SYS_INFO where GALLERY_ID = instance_id;
+
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.utf2wide (
+  inout S any)
+{
+  if (isstring (S))
+    return charset_recode (S, 'UTF-8', '_WIDE_');
+  return S;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.wide2utf (
+  inout S any)
+{
+  if (iswidestring (S))
+    return charset_recode (S, '_WIDE_', 'UTF-8' );
+  return S;
+}
 ;
