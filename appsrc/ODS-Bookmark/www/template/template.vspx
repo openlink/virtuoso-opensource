@@ -27,18 +27,18 @@
   <head profile="http://internetalchemy.org/2003/02/profile">
     <base href="<?V BMK.WA.host_url () || http_path () ?>" />
     <?vsp
+      declare domainName varchar;
+
+      domainName := BMK.WA.domain_name (self.domain_id);
       http (sprintf('<link rel="foaf" type="application/rdf+xml" title="FOAF" href="%s" />', BMK.WA.foaf_url (self.account_id)));
       if (BMK.WA.domain_is_public(self.domain_id))
+      {
         http(sprintf('\n<link rel="meta" type="application/rdf+xml" title="SIOC" href="%s" />', BMK.WA.sioc_url (self.domain_id)));
+      }
+      http (sprintf ('\n    <link rel="alternate" type="application/rss+xml" title="%V RSS" href="%s" />', domainName, BMK.WA.dav_url (self.domain_id)||'BM.rss'));
+      http (sprintf ('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, BMK.WA.dav_url (self.domain_id)||'BM.atom'));
+      http (sprintf ('\n    <link rel="subscriptions" type="text/x-opml" title="%V Subscriptions" href="%sexport.vspx?output=OPML&amp;aid=%d&amp;did=%d" />', domainName, BMK.WA.bookmark_url (self.domain_id), self.account_id, self.domain_id));
       http (BMK.WA.geo_url (self.domain_id, self.account_id));
-    ?>
-    <?vsp
-      declare url varchar;
-      declare N integer;
-      url := concat('http://', http_request_header (lines, 'Host'));
-      for (N := 0; N < length(path)-1; N := N + 1)
-        url := concat(url, '/', path[N]);
-      http (sprintf ('<link rel="subscriptions" type="text/x-opml" title="Subscriptions" href="%s/export.vspx?output=OPML&amp;aid=%d&amp;did=%d" />', url, self.account_id, self.domain_id));
     ?>
     <link rel="stylesheet" href="css/style.css" type="text/css"/>
     <link rel="stylesheet" href="css/webdav.css" type="text/css"/>
@@ -73,7 +73,7 @@
           OAT.Anchor.zIndex = 1001;
         
           if (<?V cast (get_keyword ('app', self.settings, '0') as integer) ?> > 0)
-            gererateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
+            generateAPP('app_area', {appActivation: "<?V case when cast (get_keyword ('app', self.settings, '1') as integer) = 2 then 'hover' else 'click' end ?>"});
             
       		// init tabs
           showTab('p', 3, 0);

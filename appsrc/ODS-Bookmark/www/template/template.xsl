@@ -142,7 +142,7 @@
             <v:url value="--''" format="%s" url="--BMK.WA.domain_sioc_url (self.domain_id, self.sid, self.realm)" xhtml_title="Calendar Home">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/bmkbanner_sml.jpg" border="0" alt="Booknark Home" />';
+                  control.ufl_value := '<img src="image/bmkbanner_sml.jpg" border="0" alt="Bookmark Home" />';
               ]]>
             </v:before-render>
           </v:url>

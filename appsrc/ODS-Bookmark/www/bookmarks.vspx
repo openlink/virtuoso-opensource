@@ -562,7 +562,7 @@
           <v:url value="--''" format="%s" url="--'javascript: toolbarPost(''bookmarks'');'" xhtml_title="My Bookmarks" xhtml_class="toolbar">
             <v:before-render>
               <![CDATA[
-                control.ufl_value := '<img src="image/bmk_32.png" border="0" alt="My Bookmarkss" />' || self.toolbarLabel('My Bookmarks');
+                control.ufl_value := '<img src="image/bmk_32.png" border="0" alt="My Bookmarks" />' || self.toolbarLabel('My Bookmarks');
               ]]>
             </v:before-render>
           </v:url>
@@ -755,7 +755,7 @@
 
                       path := get_keyword ('pt_path', e.ve_params, '');
 
-                      -- touggle
+                  -- toggle
                   node := get_keyword ('pt_toggle', e.ve_params, get_keyword ('pt_node', e.ve_params, ''));
                       if (node <> '') {
                         if (BMK.WA.vector_contains(self.bState, path)) {
@@ -1688,7 +1688,7 @@
                     self.v_folder_id := self.i_folder_id.ufl_value;
                     self.v_folder_name := trim(self.i_folder_name.ufl_value);
                     if ((self.v_folder_name <> '') and (not BMK.WA.folder_check_name(self.v_folder_name, 1))) {
-                      self.vc_error_message := 'Please, enter other folder name. This name conatins bad characters.';
+	                      self.vc_error_message := 'Please, enter other folder name. This name contains bad characters.';
                       self.vc_is_valid := 0;
                       return;
                     }
@@ -1983,7 +1983,7 @@
                     self.v_folder_id := self.m_folder_id.ufl_value;
                     self.v_folder_name := trim(self.m_folder_name.ufl_value);
                     if ((self.v_folder_name <> '') and (not BMK.WA.folder_check_name(self.v_folder_name, 1))) {
-                      self.vc_error_message := 'Please, enter other folder name. This name conatins bad characters.';
+                      self.vc_error_message := 'Please, enter other folder name. This name contains bad characters.';
                      	self.vc_is_valid := 0;
                   		return;
                     }
@@ -2271,7 +2271,7 @@
                     self.v_folder_id := self.b_folder_id.ufl_value;
                     self.v_folder_name := trim(self.b_folder_name.ufl_value);
                     if ((self.v_folder_name <> '') and (not BMK.WA.folder_check_name(self.v_folder_name, 1))) {
-                      self.vc_error_message := 'Please, enter other folder name. This name conatins bad characters.';
+                      self.vc_error_message := 'Please, enter other folder name. This name contains bad characters.';
                      	self.vc_is_valid := 0;
                   		return;
                     }

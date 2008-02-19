@@ -2456,7 +2456,7 @@ create procedure BMK.WA.vector_cut(
 create procedure BMK.WA.vector_search(
   in aVector any,
   in value varchar,
-  in condition vrchar := 'AND')
+  in condition varchar := 'AND')
 {
   declare N integer;
 
