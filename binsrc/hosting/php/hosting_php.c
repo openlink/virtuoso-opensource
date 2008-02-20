@@ -343,7 +343,7 @@ typedef struct
     long virtuoso_logging;
   } php_virtuoso_info_struct;
 
-int php_virtuoso_info_id;
+int php_virtuoso_info_id = -1;
 #define VG(v) TSRMG(php_virtuoso_info_id, php_virtuoso_info_struct *, v)
 
 static int sapi_virtuoso_startup (sapi_module_struct *sapi_module);
@@ -578,7 +578,7 @@ sapi_virtuoso_log_message (char *message)
 {
   TSRMLS_FETCH ();
 
-  if (VG (virtuoso_logging))
+  if (-1 == php_virtuoso_info_id || VG (virtuoso_logging))
     virt_log (LOG_ERR, "%s", message);
 }
 
@@ -666,11 +666,41 @@ PHP_MINFO_FUNCTION (virtuoso)
 }
 
 
+static
+PHP_FUNCTION (getallheaders)
+{
+  vreq_t *r = ((vreq_t *) SG (server_context));
+  int i;
+
+  array_init(return_value);
+  for (i = 1; i < r->n_lines; i++)
+    {
+      char *p = strdup (r->lines[i]);
+      char *q = strchr (p, ':');
+      if (q && q[1] == ' ')
+	{
+	  char *r = strchr (q, '\r');
+	  *q = 0;
+	  if (r) *r = 0;
+	  add_assoc_string (return_value, p, q + 2, 1);
+	}
+      free (p);
+    }
+}
+
+
+static zend_function_entry virtuoso_functions[] =
+  {
+    PHP_FE (getallheaders, NULL)
+    PHP_FALIAS (apache_request_headers, getallheaders, NULL)
+    { NULL, NULL, NULL }
+  };
+
 zend_module_entry virtuoso_module_entry =
   {
     STANDARD_MODULE_HEADER,
     "Virtuoso",
-    NULL,
+    virtuoso_functions,
     PHP_MINIT (virtuoso),
     PHP_MSHUTDOWN (virtuoso),
     NULL,
