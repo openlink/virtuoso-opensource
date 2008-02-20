@@ -1485,7 +1485,36 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		  sp->sp_cl = *cl;
 		}
 	      else
-		return DVC_LESS;
+		{
+		  dbe_column_t * col = sch_id_to_column (wi_inst.wi_schema, sp->sp_cl.cl_col_id);
+		  if (col && col->col_default)
+		    {
+		      if (DVC_CMP_MASK & op)
+			{
+			  if (0 == (op & cmp_boxes (col->col_default, itc->itc_search_params[sp->sp_min], sp->sp_collation, sp->sp_collation)))
+		            return DVC_LESS;
+			}
+		      else if (op == CMP_LIKE)
+			{
+			  caddr_t v = itc->itc_search_params[sp->sp_min];
+			  int st = LIKE_ARG_CHAR, pt = LIKE_ARG_CHAR;
+			  dtp_t rtype = DV_TYPE_OF (v);
+			  dtp_t ltype = DV_TYPE_OF (col->col_default);
+			  if (DV_WIDE == rtype || DV_LONG_WIDE == rtype)
+			    pt = LIKE_ARG_WCHAR;
+			  if (DV_WIDE == ltype || DV_LONG_WIDE == ltype)
+			    st = LIKE_ARG_WCHAR;
+			  if (DVC_MATCH != cmp_like (col->col_default, v, sp->sp_collation, sp->sp_like_escape, st, pt))
+			    return DVC_LESS;
+			}
+		      if (sp->sp_max_op != CMP_NONE
+			  && (0 == (sp->sp_max_op & cmp_boxes (col->col_default, itc->itc_search_params[sp->sp_max], 
+				sp->sp_collation, sp->sp_collation))))
+			return DVC_LESS;
+		      goto next_sp;		    
+		    }
+		  return DVC_LESS;
+		}
 	    }
 
 	  if (ITC_NULL_CK (itc, sp->sp_cl))
@@ -1530,7 +1559,13 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		    {
 		      dbe_col_loc_t *cl = key_find_cl (row_key, om[inx].om_cl.cl_col_id);
 		      if (!cl)
-			qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);
+			{
+			  dbe_column_t * col = sch_id_to_column (wi_inst.wi_schema, om[inx].om_cl.cl_col_id);
+			  if (col && col->col_default)
+			    qst_set (itc->itc_out_state, ssl, box_copy_tree (col->col_default));
+			  else
+			    qst_set_bin_string (itc->itc_out_state, ssl, (db_buf_t) "", 0, DV_DB_NULL);
+			}
 		      else
 			itc_qst_set_column (itc, cl, itc->itc_out_state, ssl);
 		    }
