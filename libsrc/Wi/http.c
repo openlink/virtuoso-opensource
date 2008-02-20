@@ -4950,34 +4950,47 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 		    }
 		  readed = dks_read_line (ses, line, sizeof (line));
 		  session_buffered_write (ws->ws_session, "\r\n", 2);
+		  session_flush_1 (ws->ws_session);
 		}
 	    }
 	  END_READ_FAIL (ses);
 	  session_buffered_write (ws->ws_session, "0\r\n\r\n", 5); /* Write last zero chunk */
+	  session_flush_1 (ws->ws_session);
 	}
       else if (len != -1 || close) /* If have content length or connection should be closed by peer */
 	{
-	  char tmp [4096];
+	  char tmp [4096], c;
 	  int to_read = len, to_read_len = sizeof (tmp), readed = 0;
 
 	  CATCH_READ_FAIL (ses)
 	    {
 	      do
 		{
-		  if (len > 0 && to_read < to_read_len)
-		    to_read_len = to_read;
-		  readed = session_buffered_read (ses, tmp, to_read_len);
-		  if (readed < 1)
-		    break;
-		  session_buffered_write (ws->ws_session, tmp, readed);
-		  if (len > 0)
-		    to_read -= readed;
+		  if (len > 0)		/* Content-Length is given */
+		    {
+		      if (to_read < to_read_len)
+			to_read_len = to_read;
+		      readed = session_buffered_read (ses, tmp, to_read_len);
+		      if (readed < 1)
+			break;
+		      session_buffered_write (ws->ws_session, tmp, readed);
+		      session_flush_1 (ws->ws_session);
+		      to_read -= readed;
+		    }
+		  else			/* HTTP/1.0 goes here */
+		    {
+		      c = session_buffered_read_char (ses);
+		      session_buffered_write_char (c, ws->ws_session);
+		      readed++;
+		      if (0 == (readed % sizeof (tmp)))
+			session_flush_1 (ws->ws_session);
+		    }
 		}
 	      while (close || to_read > 0);
 	    }
 	  END_READ_FAIL (ses);
 	}
-      session_flush (ws->ws_session);
+      session_flush_1 (ws->ws_session);
     }
   FAILED
     {
