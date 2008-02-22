@@ -787,10 +787,16 @@ create procedure virt_proxy_init ()
   if (exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'PROXY'))
     return;
   DB.DBA.USER_CREATE ('PROXY', uuid(), vector ('DISABLED', 1));
-  DB.DBA.VHOST_DEFINE (lpath=>'/proxy', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY');
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_http_proxy_rule_1', 1,
+      '/proxy/([^/\?\&]*)?/?([^/\?\&:]*)/(.*)', vector ('force', 'login', 'url'), 2,
+      '/proxy?url=%U&force=%U&login=%U', vector ('url', 'force', 'login'));
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_http_proxy_rule_list1', 1, vector ('ext_http_proxy_rule_1'));
+  DB.DBA.VHOST_DEFINE (lpath=>'/proxy', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
+      opts=>vector('url_rewrite', 'ext_http_proxy_rule_list1'));
 }
 ;
 
+--!AFTER
 virt_proxy_init ()
 ;
 
@@ -799,10 +805,13 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
 {
   declare hdr, content, req_hdr any;
   declare ct any;
-  declare stat, msg, metas, accept, rset, triples, ses any;
+  declare stat, msg, metas, accept, rset, triples, ses, arr any;
   req_hdr := null;
   if (header is not null)
     req_hdr := header;
+  arr := rfc1808_parse_uri (url);
+  arr [5] := '';
+  url := DB.DBA.vspx_uri_compose (arr);
   if (force is not null)
     {
       if (lower (force) = 'rdf')
@@ -916,6 +925,7 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
 }
 ;
 
+--!AFTER
 grant execute on ext_http_proxy to PROXY
 ;
 
