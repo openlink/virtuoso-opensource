@@ -226,44 +226,32 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 
 #define STATIC_DV_NULL {0,0,0,0,0,0,0,(char)DV_DB_NULL}
 #define BOX_AUTO_OVERHEAD 8
-
-# define BOX_AUTO_TYPED(ptrtype, ptr, area, n, dtp) \
-    do { \
-	if (sizeof (area) - BOX_AUTO_OVERHEAD >= (n)) \
-	  { \
-	    ptr = (ptrtype)(((char *) area) + BOX_AUTO_OVERHEAD); \
-	    ((dtp_t *) &(area))[4] = (dtp_t) ((n) & 0xff); \
-	    ((dtp_t *) &(area))[5] = (dtp_t) ((n) >> 8); \
-	    ((dtp_t *) &(area))[6] = 0; \
-	    ((dtp_t *) &(area))[7] = (dtp_t) (dtp); \
-	  } \
-	else \
-	  ptr = (ptrtype)(dk_alloc_box (n, dtp)); \
-      } while (0)
+#define BOX_BEGIN_IN_AREA(area) (((char *) (~((ptrlong)7) & (ptrlong)(area))) + BOX_AUTO_OVERHEAD)
 
 #else /* DOUBLE_ALIGN */
 
 #define STATIC_DV_NULL {0,0,0,(char)DV_DB_NULL}
 #define BOX_AUTO_OVERHEAD 4
+#define BOX_BEGIN_IN_AREA(area) (((char *) area) + BOX_AUTO_OVERHEAD)
+
+#endif
 
 # define BOX_AUTO_TYPED(ptrtype, ptr, area, n, dtp) \
     do { \
 	if (sizeof (area) - BOX_AUTO_OVERHEAD >= (n)) \
 	  { \
-	    ptr = (ptrtype)(((char *) area) + BOX_AUTO_OVERHEAD); \
-	    ((dtp_t *) &(area))[0] = (dtp_t) ((n) & 0xff); \
-	    ((dtp_t *) &(area))[1] = (dtp_t) ((n) >> 8); \
-	    ((dtp_t *) &(area))[2] = 0; \
-	    ((dtp_t *) &(area))[3] = (dtp_t) (dtp); \
+	    ptr = (ptrtype)BOX_BEGIN_IN_AREA(area); \
+	    ((dtp_t *)ptr)[-4] = (dtp_t) ((n) & 0xff); \
+	    ((dtp_t *)ptr)[-3] = (dtp_t) ((n) >> 8); \
+	    ((dtp_t *)ptr)[-2] = 0; \
+	    ((dtp_t *)ptr)[-1] = (dtp_t) (dtp); \
 	  } \
 	else \
 	  ptr = (ptrtype)dk_alloc_box (n, dtp); \
       } while (0)
 
-#endif
-
 # define BOX_AUTO(ptr, area, n, dtp) BOX_AUTO_TYPED (caddr_t, ptr, area, n, dtp)
-# define BOX_IS_AUTO(ptr, area) ((char *)(ptr) != ((char *) &(area)) + BOX_AUTO_OVERHEAD)
+# define BOX_IS_AUTO(ptr, area) ((char *)(ptr) != BOX_BEGIN_IN_AREA(area))
 
 # define BOX_DONE(ptr, area) \
 	if (BOX_IS_AUTO(ptr, area)) \
@@ -461,8 +449,8 @@ typedef struct dk_mem_wrapper_s
 #define LAST_DV_DTP 220
 
 typedef int64 boxint;
-#define BOXINT_MAX 0x7fffffffffffffffL
-#define BOXINT_MIN 0x8000000000000000L
+#define BOXINT_MAX 0x7fffffffffffffffLL
+#define BOXINT_MIN 0x8000000000000000LL
 
 #ifdef WIN32
 #define BOXINT_FMT "%I64d"
