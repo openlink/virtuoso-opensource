@@ -4705,19 +4705,21 @@
                   <div class="new-form-body">
                     <table cellspacing="0">
                       <tr>
+                        <td colspan="2" align="center">
+                          <?vsp
+                            http ('<a href="javascript: void(0);" onclick="javascript: window.open (\'help.vspx?page=proba\', \'calendar_help\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500\');">Learn more about public and shared calendars</a><br />');
+                          ?>
+                        </td>
+                      </tr>
+                      <tr>
                         <th width="30%" valign="top">
                           Calendar type
                         </th>
-                        <td width="10%" nowrap="nowrap">
+                        <td nowrap="nowrap">
                           <?vsp
                             http (sprintf ('<input type="radio" name="ss_type" id="ss_type_0" value="0" %s onchange="javascript: calendarsHelp(1);" /> <label for="ss_type_0">Public</label>', case when isnull (self.vs_grant_id) then 'checked="checked"' else '' end));
                             http ('<br />');
-                            http (sprintf ('<input type="radio" name="ss_type" id="ss_type_1" value="1" %s onchange="javascript: calendarsHelp(1);" /> <label for="ss_type_1">Shared with Me</label>', case when not isnull (self.vs_grant_id) then 'checked="checked"' else '' end));
-                          ?>
-                        </td>
-                        <td valign="top">
-                          <?vsp
-                            http ('<a href="javascript: void(0);" onclick="javascript: window.open (\'help.vspx?page=proba\', \'calendar_help\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=420, width=500\');">Learn more about public and shared calendars</a>');
+                            http (sprintf ('<input type="radio" name="ss_type" id="ss_type_1" value="1" %s onchange="javascript: calendarsHelp(1);" /> <label for="ss_type_1">Shared to Me</label>', case when not isnull (self.vs_grant_id) then 'checked="checked"' else '' end));
                           ?>
                         </td>
                       </tr>
@@ -4725,14 +4727,14 @@
                         <th >
                           Calendar name
                         </th>
-                        <td colspan="2">
+                        <td>
                           <v:text name="ss_calendar" xhtml_id="ss_calendar" value="--self.vs_calendar" xhtml_size="60" />
                           <input id="ss_type_button" type="button" value="Select" onclick="javascript: calendarsShow('calendars.vspx?params=ss_calendar:s1;',520)" class="button" />
                         </td>
                       </tr>
                       <tr>
                         <th />
-                        <td colspan="2">
+                        <td>
                           <?vsp
                             http (sprintf ('<input type="checkbox" value="1" name="ss_visible" id="ss_visible" %s />', CAL.WA.checkedAttribute (self.vs_visible)));
                           ?>
@@ -4743,7 +4745,7 @@
                         <th>
                           Color
                         </th>
-                        <td colspan="2">
+                        <td>
                           <input type="hidden" id="ss_color" name="ss_color" value="<?V self.vs_color ?>" />
                           <div id="ss_color_div" class="ss_color"></div>
                         </td>
@@ -4825,7 +4827,7 @@
                             self.vs_grant_id := (select b.G_ID from DB.DBA.WA_INSTANCE a, CAL.WA.GRANTS b where a.WAI_TYPE_NAME = 'Calendar' and a.WAI_NAME = self.vs_calendar and a.WAI_ID = b.G_DOMAIN_ID and b.G_ACCOUNT_ID = self.account_id);
                             if (isnull (self.vs_grant_id))
                             {
-                              self.vc_error_message := 'Calendar with this name is not shared with you!';
+                              self.vc_error_message := 'Calendar with this name is not shared to you!';
                               self.vc_is_valid := 0;
                               return;
                             }

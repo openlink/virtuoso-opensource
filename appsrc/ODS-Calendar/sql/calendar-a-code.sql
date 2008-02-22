@@ -31,7 +31,7 @@ create procedure CAL.WA.session_domain (
 
   declare exit handler for sqlstate '*'
   {
-    domain_id := -2;
+    domain_id := -1;
     goto _end;
   };
 
@@ -42,7 +42,7 @@ create procedure CAL.WA.session_domain (
     aPath := split_and_decode (trim (http_path (), '/'), 0, '\0\0/');
     domain_id := cast(aPath[1] as integer);
   }
-  if (not exists(select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id and domain_id <> -2))
+  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
     domain_id := -1;
 
 _end:;
@@ -81,10 +81,7 @@ create procedure CAL.WA.session_restore (
     if (domain_id = -1)
     {
       user_role := 'expire';
-      user_name := 'Expire session';
-    } else if (domain_id = -2) {
-      user_role := 'public';
-      user_name := 'Public User';
+      user_name := 'Expire User';
     } else {
       user_role := 'guest';
       user_name := 'Guest User';
@@ -206,6 +203,8 @@ _end:
 --
 create procedure CAL.WA.check_grants2(in role_name varchar, in page_name varchar)
 {
+  if (role_name = 'expire')
+    return 0;
   return 1;
 }
 ;

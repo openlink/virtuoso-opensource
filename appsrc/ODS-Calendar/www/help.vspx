@@ -33,9 +33,14 @@
         Help
       </div>
       <div>
-        <p>The type of accepted calendar may be <b>public</b> or <b>shared to me</b>.</p>
-        <p>The <b>public</b> calendar is a calendar instance with checked <b>is public</b> property. Access to public calendars is <b>Read Only</b> and is allowed for every ODS user.</p>
-        <p>The <b>shared to me</b> calendar is a calendar instance that some user is shared to me. Access to shared calendars is <b>Read Only</b> or <b>Read/Write</b> and depends from share mode.</p>
+        <p>The type of an accepted calendar can be <b>"public"</b> or <b>"shared to me"</b>.
+        </p>
+        <p>The "public" calendar is a calendar instance with checked <b>"Visible to public"</b> property from the instance settings page.<br />
+           The access to public calendars is <b>"Read Only"</b> and is granted to every ODS user.
+        </p>
+        <p>The <b>"shared to me"</b> calendar is a calendar instance that was shared to me from another ODS user.<br />
+           The access to shared calendars can be <b>"Read Only"</b> or <b>"Read/Write"</b>, depending on the share mode type.
+        </p>
       </div>
     </vm:pagebody>
   </vm:popup_page_wrapper>
