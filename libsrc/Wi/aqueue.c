@@ -226,27 +226,34 @@ caddr_t
 aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 {
   caddr_t v, err;
+  int waited;
   dk_hash_iterator_t hit;
   ptrlong req_no;
-  aq_request_t * aqr;
- again: 
+  aq_request_t *aqr;
   mutex_enter (aq->aq_mtx);
-  dk_hash_iterator (&hit, aq->aq_requests);
-  while (dk_hit_next (&hit, (void**) &req_no, (void**)&aqr))
+  do
     {
-      if (AQR_DONE == aqr->aqr_state)
-	  continue;
-      mutex_leave (aq->aq_mtx);
-      v = aq_wait (aq, (int) req_no, &err, 1);
-      dk_free_tree (v);
-      dk_free_tree (err);
-      goto again;
+      dk_hash_iterator (&hit, aq->aq_requests);
+      waited = 0;
+      while (dk_hit_next (&hit, (void **) &req_no, (void **) &aqr))
+	{
+	  if (AQR_DONE == aqr->aqr_state)
+	    continue;
+	  mutex_leave (aq->aq_mtx);
+	  v = aq_wait (aq, (int) req_no, &err, 1);
+	  dk_free_tree (v);
+	  dk_free_tree (err);
+	  waited = 1;
+	  mutex_enter (aq->aq_mtx);
+	}
     }
+  while (waited);
+
   dk_hash_iterator (&hit, aq->aq_requests);
-  while (dk_hit_next (&hit, (void**) &req_no, (void**)&aqr))
+  while (dk_hit_next (&hit, (void **) &req_no, (void **) &aqr))
     {
       if (AQR_DONE != aqr->aqr_state)
-	GPF_T1 ("aqr supposed to bne done after all have been waited for");
+	GPF_T1 ("aqr supposed to be done after all have been waited for");
       aqr_free (aqr);
     }
   clrhash (aq->aq_requests);
