@@ -35,7 +35,7 @@
       <funcprototype id="fproto_rdf_load_rdfxml">
         <funcdef><function>DB.DBA.RDF_LOAD_RDFXML</function></funcdef>
 	<paramdef>in <parameter>rdfxml_text</parameter> varchar</paramdef>
-	<paramdef>in <parameter>omt_top_rdf</parameter> integer</paramdef>
+	<paramdef>in <parameter>omt_top_rdf</parameter> varchar</paramdef>
 	<paramdef>in <parameter>graph_uri</parameter> varchar</paramdef>
 	<!--<paramdef><parameter>stmt_texts</parameter> vector of varchars</paramdef>
 	<paramdef><parameter>app_env</parameter> any</paramdef>
