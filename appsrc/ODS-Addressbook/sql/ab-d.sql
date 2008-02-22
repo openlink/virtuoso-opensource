@@ -25,6 +25,7 @@ create procedure AB.WA.uninstall ()
   for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'AddressBook' do
   {
     (WAI_INST as DB.DBA.wa_AddressBook).wa_drop_instance();
+    commit work;
   }
 }
 ;

@@ -25,7 +25,9 @@
 create procedure OMAIL.WA.drop_nntp ()
 {
   for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oMail') do
+  {
     OMAIL.WA.nntp_update (WAI_ID, 1, 0);
+}
 }
 ;
 OMAIL.WA.drop_nntp ()
@@ -36,6 +38,7 @@ create procedure OMAIL.WA.uninstall ()
   for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'oMail' do
   {
     (WAI_INST as DB.DBA.wa_mail).wa_drop_instance();
+    commit work;
   }
 }
 ;

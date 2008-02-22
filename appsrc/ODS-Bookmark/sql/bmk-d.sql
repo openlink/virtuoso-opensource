@@ -27,8 +27,10 @@
 
 create procedure BMK.WA.uninstall ()
 {
-  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Bookmark' do {
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Bookmark' do
+  {
     (WAI_INST as DB.DBA.wa_bookmark).wa_drop_instance();
+    commit work;
   }
 }
 ;

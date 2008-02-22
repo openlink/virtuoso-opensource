@@ -22,8 +22,10 @@
 
 create procedure POLLS.WA.uninstall ()
 {
-  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Polls' do {
+  for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Polls' do
+  {
     (WAI_INST as DB.DBA.wa_Polls).wa_drop_instance();
+    commit work;
   }
 }
 ;
