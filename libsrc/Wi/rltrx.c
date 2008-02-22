@@ -643,6 +643,11 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   if (!ITC_IS_LTRX (itc)
       || (itc->itc_lock_mode == PL_SHARED && itc->itc_isolation < ISO_REPEATABLE))
     return NO_WAIT;
+  if (!SHORT_REF ((*buf_ret)->bd_buffer + itc->itc_position + IE_KEY_ID))
+    {
+      return NO_WAIT;
+      /*GPF_T1 ("cannot set lock on leaf ptr");*/
+    }
   if (pl)
     {
       if (pl->pl_page != itc->itc_page)
