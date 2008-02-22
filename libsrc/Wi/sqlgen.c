@@ -2414,6 +2414,8 @@ bitmap_index_box);
 	}
       else
 	setp->setp_top_skip = NULL;
+      ((table_source_t*)read_node)->ts_order_ks->ks_pos_in_temp = cc_new_instance_slot (sc->sc_cc);
+      read_node->src_input = sort_read_input;
       setp->setp_row_ctr = ssl_new_variable (sc->sc_cc, "rowctr", DV_LONG_INT);
       setp->setp_last_vals = (state_slot_t **) dk_set_to_array (setp->setp_keys);
       _DO_BOX (inx, setp->setp_last_vals)

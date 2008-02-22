@@ -679,6 +679,7 @@ void breakup_node_free (breakup_node_t * brk);
 
 void in_iter_input (in_iter_node_t * brk, caddr_t * inst, caddr_t * state);
 void in_iter_free (in_iter_node_t * brk);
+void sort_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state);
 
 
 void pl_source_input (pl_source_t * pls, caddr_t * inst,

@@ -319,6 +319,12 @@ setp_temp_clear (setp_node_t * setp, hash_area_t * ha, caddr_t * qst)
 #endif
   if (it)
     it_temp_free (it);
+  if (!setp)
+    return;
+  if (setp->setp_sorted)
+    qst_set (qst, setp->setp_sorted, NULL);
+  if (setp->setp_row_ctr)
+    qst_set (qst, setp->setp_row_ctr, NULL);
 }
 
 
@@ -327,7 +333,7 @@ setp_mem_sort_flush (setp_node_t * setp, caddr_t * qst)
 {
   caddr_t ** arr;
   int fill;
-  if (!setp->setp_sorted)
+  if (!setp->setp_sorted || setp->setp_top)
     return;
 #ifndef O12
   if (setp->setp_ordered_gb_out)
@@ -596,4 +602,50 @@ in_iter_free (in_iter_node_t * ii)
 {
   dk_free_box ((caddr_t) ii->ii_values);
 }
+
+
+void
+sort_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
+{
+  key_source_t * ks = ts->ts_order_ks;
+  setp_node_t * setp = ts->ts_order_ks->ks_from_setp;
+  caddr_t ** arr = (caddr_t **) qst_get (inst, setp->setp_sorted);
+  ptrlong top = unbox (qst_get (inst, setp->setp_top));
+  ptrlong skip = setp->setp_top_skip ? unbox (qst_get (inst, setp->setp_top_skip)) : 0;
+  ptrlong fill = unbox (qst_get (inst, setp->setp_row_ctr));
+  if (!arr)
+    return;
+  if (state)
+    QST_INT (inst, ks->ks_pos_in_temp) = skip;
+  for (;;)
+    {
+      int nth = QST_INT (inst, ks->ks_pos_in_temp);
+      int k_inx = 0, inx;
+      if (nth >= fill)
+	{
+	  SRC_IN_STATE ((data_source_t *)ts, inst) = NULL;
+	  return;
+	}
+      DO_BOX (state_slot_t *, ssl, inx, setp->setp_keys_box )
+	{
+	  qst_set (inst, ssl, arr[nth][k_inx]);
+	  arr[nth][k_inx] = NULL;
+	  k_inx++;
+	}
+      END_DO_BOX;
+      DO_BOX (state_slot_t *, ssl, inx, setp->setp_dependent_box)
+	{
+	  qst_set (inst, ssl, arr[nth][k_inx]);
+	  arr[nth][k_inx] = NULL;
+	  k_inx++;
+	}
+      END_DO_BOX;
+      QST_INT (inst, ks->ks_pos_in_temp) = nth + 1;
+      SRC_IN_STATE ((data_source_t*)ts, inst) = inst;
+      qn_ts_send_output ((data_source_t *)ts, inst, ts->ts_after_join_test);
+    }
+}
+
+
+
 

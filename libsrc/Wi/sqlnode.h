@@ -403,7 +403,8 @@ typedef struct key_source_s
     dk_set_t		ks_out_slots;
     out_map_t *	ks_out_map; /* inline array of dbe_col_locs for each member of ks:_out_slots for the matching key */
     state_slot_t *	ks_from_temp_tree;	/* tree of group or order temp or such */
-
+    struct setp_node_s *	ks_from_setp;
+    int			ks_pos_in_temp; /* if mem sort, pos in the sort while reading.  Inx in inst */
     int			ks_descending;	/* if reading from end to start */
     code_vec_t		ks_local_test;
     code_vec_t		ks_local_code;

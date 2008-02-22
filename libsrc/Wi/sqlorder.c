@@ -124,6 +124,7 @@ sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots,
     END_DO_SET();
     ks->ks_out_slots = out_slots;
     ks->ks_from_temp_tree = sc->sc_sort_insert_node->setp_ha->ha_tree;
+    ks->ks_from_setp = sc->sc_sort_insert_node;
     ks->ks_always_null = out_always_null;
     if (sc->sc_grouping)
       ks->ks_grouping = sc->sc_grouping;
