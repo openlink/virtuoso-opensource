@@ -104,10 +104,14 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
     values ('http://musicbrainz.org/([^/]*)/([^\.]*)',
             'URL', 'DB.DBA.RDF_LOAD_MBZ', null, 'Musicbrainz');
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
+    values ('(text/plain)|(text/xml)|(text/html)', 'MIME', 'DB.DBA.RDF_LOAD_CALAIS', null, 'Opencalais', 0);
+
 -- we do default http & html handler first of all
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 0 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 1 where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2048 where RM_HOOK = 'DB.DBA.RDF_LOAD_DAV_META';
+update DB.DBA.SYS_RDF_MAPPERS set RM_ID = 2049 where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
 update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = 1 where RM_ENABLED is null;
 
 --
@@ -1030,6 +1034,49 @@ create procedure DB.DBA.RDF_LOAD_DAV_META (in graph_iri varchar, in new_origin_u
   return 0;
 }
 ;
+
+create procedure DB.DBA.RDF_CALAIS_OPTS (in mime varchar)
+{
+  return sprintf (
+'<c:params xmlns:c="http://s.opencalais.com/1/pred/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">' ||
+'    <c:processingDirectives c:contentType="%s" c:outputFormat="xml/rdf"/>' ||
+'</c:params>', mime);
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_CALAIS (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout ser_key any, inout opts any)
+{
+  declare cnt, xt, xp, xd, mime, html_start any;
+
+  declare exit handler for sqlstate '*'
+    {
+      return 0;
+    };
+
+  if (not length (ser_key) or length (_ret_body) > 100000)
+    return 0;
+
+  mime := get_keyword ('content-type', opts);
+--  dbg_obj_print (mime);
+  if (mime is null)
+    return 0;
+  cnt := http_get ('http://api.opencalais.com/enlighten/calais.asmx/Enlighten',
+  	null, 'POST', null,
+	sprintf ('licenseID=%U&content=%U&paramsXML=%U', ser_key, _ret_body, DB.DBA.RDF_CALAIS_OPTS (mime)));
+  xt := xtree_doc (cnt, 0, '', 'UTF-8');
+  xp := xpath_eval('string(//text())', xt);
+  xd := charset_recode (xp, '_WIDE_', 'UTF-8');
+--  dbg_obj_print (xd);
+  if (xd is not null)
+    {
+      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, coalesce (dest, graph_iri));
+      return 1;
+    }
+  return 0;
+}
+;
+
 
 create procedure RDF_MAPPER_CACHE_CHECK (in url varchar, in top_url varchar, out old_etag varchar, out old_last_modified any)
 {
@@ -2198,7 +2245,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_name', fi
 ;
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('xbrl_rule1', 1, '/schemas/xbrl/(.*)', vector('path'), 1,
-'/sparql?query=DESCRIBE%20%3Chttp%3A//^{URIQADefaultHost}^/schemas/xbrl/%U%3E%20FROM%20%3Chttp%3A//^{URIQADefaultHost}^/schemas/RDF_Mapper_Ontology/1.0/%3E',
+'/sparql?query=DESCRIBE%20%3Chttp%3A//demo.openlinksw.com/schemas/xbrl/%U%3E%20FROM%20%3Chttp%3A//demo.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/%3E',
 vector('path'), null, '(text/rdf.n3)|(application/rdf.xml)', 0, null);
 
 DB.DBA.URLREWRITE_CREATE_RULELIST ('xbrl_rule_list1', 1, vector('xbrl_rule1'));
@@ -2271,7 +2318,7 @@ create procedure DB.DBA.RDF_LOAD_MBZ (in graph_iri varchar, in new_origin_uri va
   tmp := regexp_parse ('http://musicbrainz.org/([^/]*)/([^\.]+)', new_origin_uri, 0);
   declare exit handler for sqlstate '*'
     {
-      dbg_printf ('%s', __SQL_MESSAGE);
+--      dbg_printf ('%s', __SQL_MESSAGE);
       return 0;
     };
   if (length (tmp) < 6)

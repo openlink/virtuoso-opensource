@@ -49,6 +49,13 @@
   
   <xsl:output method="xml" indent="yes" omit-xml-declaration="yes"/>
 
+  <xsl:param name="baseUri"/>
+  <xsl:param name="login" />
+
+  <xsl:variable name="resourceURL">
+    <xsl:value-of select="$baseUri"/>
+  </xsl:variable>
+
   <xsl:template match="/">
       <rdf:RDF>
         <xsl:apply-templates select="Resume"/>
@@ -56,7 +63,7 @@
   </xsl:template>
 
   <xsl:template match="Resume">
-    <cv:CV>
+    <cv:CV rdf:about="{$baseUri}">
       <xsl:apply-templates select="StructuredXMLResume"/>
     </cv:CV>
   </xsl:template>
@@ -68,23 +75,28 @@
 
     <xsl:if test="ContactInfo">
     <cv:aboutPerson>
-        <cv:Person>
-            <v:n>
+        <cv:Person rdf:about="#{ContactInfo/PersonName/FormattedName}">
+            <foaf:name>
               <xsl:value-of select="ContactInfo/PersonName/FormattedName"/>  
-            </v:n>
+            </foaf:name>
             <xsl:if test="ContactInfo/ContactMethod">
-            <v:tel>
+            <foaf:phone>
               <xsl:value-of select="ContactInfo/ContactMethod/Telephone/FormattedNumber"/>  
-            </v:tel>
+            </foaf:phone>
             <v:fax>
               <xsl:value-of select="ContactInfo/ContactMethod/Fax/FormattedNumber"/>  
             </v:fax>
             <v:email>
               <xsl:value-of select="ContactInfo/ContactMethod/InternetEmailAddress"/>  
             </v:email>
-            <v:url>
+            <foaf:homepage>
               <xsl:value-of select="ContactInfo/ContactMethod/InternetWebAddress"/>  
-            </v:url>
+            </foaf:homepage>
+            <v:country-name>
+              <xsl:attribute name="rdf:resource">
+                <xsl:value-of select="concat('http://dbpedia.org/resource/', ContactInfo/ContactMethod/PostalAddress/CountryCode)"/>
+              </xsl:attribute>
+            </v:country-name>
             <v:country-name>
               <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/CountryCode"/>  
             </v:country-name>
@@ -92,10 +104,20 @@
               <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/PostalCode"/>  
             </v:postal-code>
             <v:region>
+              <xsl:attribute name="rdf:resource">
+                <xsl:value-of select="concat('http://dbpedia.org/resource/', ContactInfo/ContactMethod/PostalAddress/Region)"/>
+              </xsl:attribute>
+            </v:region>
+            <v:region>
               <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/Region"/>  
             </v:region>
             <v:locality>
               <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/Municipality"/>  
+            </v:locality>
+            <v:locality>
+              <xsl:attribute name="rdf:resource">
+                <xsl:value-of select="vi:proxyIRI(concat('http://www.geonames.org/search.html?', ContactInfo/ContactMethod/PostalAddress/Municipality), $login)"/>
+              </xsl:attribute>
             </v:locality>
             <v:organization-name>
               <xsl:value-of select="ContactInfo/ContactMethod/PostalAddress/Recipient/OrganizationName"/>
@@ -107,7 +129,7 @@
 
     <xsl:if test="Objective">
     <cv:hasTarget>
-		<cv:Target>
+        <cv:Target rdf:about="#{normalize-space(Objective)}">
 			<cv:targetJobDescription>
 				<xsl:value-of select="Objective"/>
 			</cv:targetJobDescription>
@@ -118,9 +140,9 @@
     <xsl:if test="EmploymentHistory">
     <cv:hasWorkHistory>
         <xsl:for-each select="EmploymentHistory/EmployerOrg">
-        <cv:WorkHistory>
+        <cv:WorkHistory rdf:about="#WorkHistory/{EmployerOrgName}">
 			<cv:employedIn>
-				<cv:Company>
+                <cv:Company rdf:about="#{EmployerOrgName}">
 					<cv:Name>
                         <xsl:value-of select="EmployerOrgName"/>
 					</cv:Name>
@@ -155,9 +177,9 @@
     <xsl:if test="EducationHistory">
     <cv:hasEducation>
         <xsl:for-each select="EducationHistory/SchoolOrInstitution">
-		<cv:Education>
+        <cv:Education rdf:about="#Education/{School/SchoolName}">
 			<cv:studiedIn>
-				<cv:EducationalOrg>
+                <cv:EducationalOrg rdf:about="#{School/SchoolName}">
 					<cv:Name>
                         <xsl:value-of select="School/SchoolName"/>
 					</cv:Name>
@@ -186,9 +208,9 @@
     <xsl:if test="LicensesAndCertifications">
     <cv:hasCourse>
         <xsl:for-each select="LicensesAndCertifications/LicenseOrCertification">
-        <cv:Course>
+        <cv:Course rdf:about="#Course/{Name}">
             <cv:organizedBy>
-                <cv:Organization>
+                <cv:Organization rdf:about="#{IssuingAuthority}">
                     <cv:Name>
                         <xsl:value-of select="IssuingAuthority"/>
                     </cv:Name>
@@ -212,9 +234,9 @@
     </xsl:if>
 
     <xsl:if test="Qualifications or Languages">
-    <cv:hasSkill>
         <xsl:for-each select="Qualifications/Competency">
-        <cv:Skill>
+        <cv:hasSkill>
+          <cv:Skill rdf:about="#{@name}">
             <cv:skillName>
                 <xsl:value-of select="@name"/>
             </cv:skillName>
@@ -228,9 +250,11 @@
                 <xsl:value-of select="Competency/CompetencyEvidence/NumericValue"/>
             </cv:skillLevel>
         </cv:Skill>
+        </cv:hasSkill>
         </xsl:for-each>
         <xsl:for-each select="Languages/Language">
-        <cv:LanguageSkill>
+      <cv:hasSkill>
+        <cv:LanguageSkill rdf:about="#{LanguageCode}">
             <cv:skillName>
                 <xsl:value-of select="LanguageCode"/>
             </cv:skillName>
@@ -244,16 +268,16 @@
                 <xsl:value-of select="Speak"/>
             </cv:skillLevel>
         </cv:LanguageSkill>
-        </xsl:for-each>
     </cv:hasSkill>
+    </xsl:for-each>
     </xsl:if>
 
     <xsl:if test="References/Reference">
-    <cv:hasRefernece>
+    <cv:hasReference>
         <xsl:for-each select="References/Reference">
-        <cv:Refernece>
+        <cv:Reference rdf:about="#Reference/{PersonName/FormattedName}">
             <cv:referenceBy>                    
-                <cv:Person>
+                <cv:Person rdf:about="#{PersonName/FormattedName}">
                     <v:n>
                       <xsl:value-of select="PersonName/FormattedName"/>  
                     </v:n>
@@ -271,9 +295,9 @@
                     </v:note>
                 </cv:Person>
             </cv:referenceBy>
-        </cv:Refernece>
+        </cv:Reference>
         </xsl:for-each>
-    </cv:hasRefernece>
+    </cv:hasReference>
     </xsl:if>
     
   </xsl:template>
