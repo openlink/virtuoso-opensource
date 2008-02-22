@@ -1,3 +1,339 @@
+2008-02-22 13:20  source
+
+	* Updated version to 5.0.6-pre3
+
+2008-02-22 13:19  source
+
+	* Added handling of cancel on openid authentication
+	* Changed the welcome text
+	* Fixed openid check for presence of both URL and server
+	* Fixed interface to repond to case when openid provider has not provided
+	  user nickname and email
+	* Fixed login UI to use ajax instead of synch request
+	* Fixed profile in iframe; minor Safari compatibility changes
+	* Fixed throbbers
+	* Fixed wa_expand_url when port 80 is in use
+	* Fixed delete instance removes application additional urls
+	* Fixed problems with virtual dir hostnames/domainnames
+
+2008-02-22 13:10  source
+
+	* Fixed drop instance on uninstall
+	* Fixed UI bug with IE
+	* Fixed UI bug with Safari
+
+2008-02-22 13:07  source
+
+	* Fixed gallery instance sid and realm
+	* Fixed gallery bugs
+
+2008-02-22 13:06  source
+
+	* Fixed javascript error
+	* Fixed help information
+
+2008-02-22 13:04  source
+
+	* Fixed auto-tagging
+
+2008-02-22 13:01  source
+
+	* Fixed drop instance on uninstall
+
+2008-02-22 12:43  source
+
+	* Removed putting a lock on a leaf ptr; these are never checked and can get
+	  lost in double lp insert after split
+
+2008-02-22 10:46  source
+
+	* Updated documentation
+
+2008-02-22 10:44  source
+
+	* Updated engine version
+
+2008-02-22 10:44  source
+
+	* FIxed various RDF related serialization issues
+
+2008-02-22 10:43  source
+
+	* Added key_name_to_existing_cached_iri_id()
+
+2008-02-22 10:42  source
+
+	* Fixed problem with serializable itc locking leaf pointers
+
+2008-02-22 10:41  source
+
+	* Fixed HA_DISTINCT to use new box_to_shorten_any() function to eliminate
+	  problem with long values to hash
+
+2008-02-22 10:40  source
+
+	* Added checks to not deref NIL
+
+2008-02-22 10:37  source
+
+	* Fixed proxy services
+
+2008-02-22 10:37  source
+
+	* Fixed aq_wait_all to not loop throught the ht each time it waits for a
+	  pending. Loop once and wait for each and then check if all are ready
+
+2008-02-22 10:30  source
+
+	* Fixed BOX_AUTO to make double-aligned boxes even in single-aligned buffers
+
+2008-02-22 10:28  source
+
+	* Added calais mapper
+	* Fixed empty notes in hxml2rdf
+	* Fixed xbrl use of /
+
+2008-02-22 10:26  source
+
+	* Moved xbrl.owl to ontologies/xbrl/
+
+2008-02-22 10:22  source
+
+	* Merged from upstream project
+
+2008-02-20 14:59  source
+
+	* Fixed problem with alter table add column using a default value
+
+2008-02-20 14:57  source
+
+	* Fixed core dump when php failed to initialize properly
+	* Added support for getallheaders function to mimic apache behaviour
+
+2008-02-20 11:32  source
+
+	* Fixed use char-by-char reading when contact length is unknown
+	* Fixed use session_flush_1 inside write ctx to avoid leaving ctx
+	  prematurely
+
+2008-02-19 20:57  source
+
+	* Added passing content type to mappers
+
+2008-02-19 20:57  source
+
+	* Fixed comparison of two UDTs of type reference
+
+2008-02-19 11:22  source
+
+	* Updated version to 5.0.6-pre2
+
+2008-02-19 11:21  source
+
+	* Added calendar gems rewrite rule
+	* Added a+++ to framework navigation for connections RDFB related links
+	* Added triggers for activity when users connect/disconnect
+	* Fixed user data visibility
+	* Fixed /dataspace/ url
+	* Fixed hide/show application data spaces
+	* Fixed SCOT problem
+	* Fixed JS on dimmer page preview
+	* Fixed JS in Safari for fileupload filename duplicate
+	* Fixed Yadis
+	* Fixed openid url depends of where it is accessed
+	* Fixed show error in login when openid authentication fails
+	* Fixed redirect error on mail server
+	* Fixed no escape for HTML entities in vspx error messages
+	* Fixed minor html
+	* Fixed register template to remove empty space release by uplocator
+	* Fixed birthday supplied by openid is now auto updated to created user
+	  profile
+	* Fixed openid2 login
+	* Removed registration iplocator
+	* Fixed typos
+
+2008-02-19 11:13  source
+
+	* Fixed autodiscovery links
+	* Fixed typos
+	* Removed old files
+
+2008-02-19 11:11  source
+
+	* Added autodiscovery links for RSS and Atom
+	* Fixed typos
+
+2008-02-19 11:10  source
+
+	* Added automatically generated RDF/A
+	* Added upload images from DAV
+	* Added NNTP integration
+	* Fixed delete instance and uninstall package
+	* Fixed not loading google map if the setting for map is off
+	* Fixed accessping gallery endpoint sql errors
+	* Fixed typos
+
+2008-02-19 11:06  source
+
+	* Added autodiscovery links for RSS and Atom
+	* Removed debugging info
+	* Fixed typos
+
+2008-02-19 11:06  source
+
+	* Fixed broken links for posts in discussions appl summary
+	* Fixed typos
+
+2008-02-19 11:05  source
+
+	* Fixed typos
+
+2008-02-19 11:04  source
+
+	* Added autodiscovery links for RSS and Atom
+	* Added calendar autodiscovery
+	* Added legend for accepted calendars
+	* Fixed update bug
+	* Fixed bug with mini calendar
+	* Fixed typos
+	* Removed FOAF gem
+
+2008-02-19 11:02  source
+
+	* Added support for Annotea shared bookmarks
+	* Fixed typos
+
+2008-02-19 11:02  source
+
+	* Added autodiscovery links for RSS and ATOM
+	* Fixed typos
+
+2008-02-19 11:01  source
+
+	* Added automatic tagging
+	* Fixed openid in comments
+	* Removed JS use
+	* Fixed pass iri not id
+	* Fixed typos
+
+2008-02-19 10:59  source
+
+	* Added autodiscovery links for RSS and ATOM
+	* Enhanced FOAF imports
+	* Changed labels
+	* Removed old files
+	* Fixed typos
+
+2008-02-19 10:39  source
+
+	* Updated version to 5.0.6-pre1
+
+2008-02-19 10:27  source
+
+	* Added cast around result
+
+2008-02-19 10:24  source
+
+	* Updated version to 05.00.3027
+
+2008-02-19 10:24  source
+
+	* Fixed printing datetime types and parsing of integers and strings
+
+2008-02-19 10:23  source
+
+	* Added initial support for DVC_NOORDER
+
+2008-02-19 10:08  source
+
+	* Added instructions how to grant SPARQL_UPDATE role to SPARQL
+
+2008-02-19 10:03  source
+
+	* Added hash table for locks
+
+2008-02-19 07:41  source
+
+	* Added MusicBrainz cardridge
+
+2008-02-18 09:38  source
+
+	* A locus that becomes a hash filler may miss output cols because it is
+	  placed in places where not all out cols are out cols. Depends on order
+	  of trying plans. So if it is a hash filler then make sure that the out
+	  cols are actually on the output of the locus
+
+2008-02-18 09:35  source
+
+	* Fixed comparison tests: vectors cannot be compared, only their
+	  serializations can.
+
+2008-02-18 09:33  source
+
+	* Disable alloc cache stats unless MTX_METER is defined
+
+2008-02-18 09:32  source
+
+	* Fixed looping over hit of empty hash
+
+2008-02-18 09:32  source
+
+	* Fixed entering thread mtx if not needed if ses already checked in
+	  from burst mode
+
+2008-02-18 09:13  source
+
+	* Merged from upstream project
+
+2008-02-18 09:06  source
+
+	* Added wikipedia extractor
+	* Fixed XBRL namespaces
+
+2008-02-18 09:03  source
+
+	* Added support for Annotea shared bookmarks
+
+2008-02-18 09:03  source
+
+	* Fixed bug with deleting private graphs in rdf_sink folder
+
+2008-02-18 09:02  source
+
+	* Removed checking for non-existing SQL_STATE in this context
+
+2008-02-18 08:59  source
+
+	* Added max cache ttl
+
+2008-02-18 08:58  source
+
+	* Fixed GPF in code generation for:
+	  sparql select distinct ?o where {?s ?p ?o . filter(?o=0 || ?o=1)}
+	* Fixed sparp_optimize_BOP_OR_filter_walk() at IN operator with good
+	  variable at left
+
+2008-02-18 08:56  source
+
+	* Improved SQL code generation for SAMETERM build-in when some arguments
+	  are known to be IRIs
+	* Fixed sparql generation for:
+	  select 1 where { <s> <p> ?o . filter ((?o in (<qname>)) || 1) }
+	* Fixed generation of "(bad)" aliases for columns of RDF_QUAD inside breakup
+	  FROM clause.
+
+2008-02-18 08:51  source
+
+	* Fixed parameter passing in sprintf of error reporter
+
+2008-02-18 08:50  source
+
+	* Removed unused function
+
+2008-02-18 08:49  source
+
+	* Added check for NULL when calling iri to id for effect only
+
 2008-02-11 15:36  source
 
 	* Updated version to 5.0.5 for final release
