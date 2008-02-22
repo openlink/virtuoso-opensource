@@ -102,6 +102,8 @@ EXE_EXPORT (void, bif_result_inside_bif, (int n, ...));
 
 EXE_EXPORT (caddr_t, bif_result_names, (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args));
 
+extern caddr_t print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret);
+
 const char *dv_type_title (int type);
 
 caddr_t bif_date_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);

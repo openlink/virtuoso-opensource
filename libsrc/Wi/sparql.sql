@@ -3577,7 +3577,7 @@ create function DB.DBA.RDF_LONG_CMP (in long1 any, in long2 any) returns integer
 
 
 --!AWK PUBLIC
-create function DB.DBA.RDF_DIST_SER_LONG (in val any) returns any
+create function DB.DBA.RDF_DIST_SER_LONG (in val any) returns any -- DEPRECATED
 {
       if (not (isstring (val)))
     {
@@ -3598,7 +3598,7 @@ create function DB.DBA.RDF_DIST_SER_LONG (in val any) returns any
 ;
 
 --!AWK PUBLIC
-create function DB.DBA.RDF_DIST_DESER_LONG (in strg any) returns any
+create function DB.DBA.RDF_DIST_DESER_LONG (in strg any) returns any -- DEPRECATED
 {
   if (not (isstring (strg)))
     return strg;

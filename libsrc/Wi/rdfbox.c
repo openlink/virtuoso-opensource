@@ -1027,7 +1027,7 @@ caddr_t
 bif_rdf_long_to_ttl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t val = bif_arg (qst, args, 0, "__rdf_long_to_ttl");
-  dk_session_t *out = bif_strses_arg (qst, args, 1, "__rdf_long_to_ttl");
+  dk_session_t *out = http_session_no_catch_arg (qst, args, 1, "__rdf_long_to_ttl");
   query_instance_t *qi = (query_instance_t *)qi;
   dtp_t val_dtp = DV_TYPE_OF (val);
   char temp[256];
@@ -1056,7 +1056,117 @@ bif_rdf_long_to_ttl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         break;
       }
     }
-  return (ptrlong)val_dtp;
+  return (caddr_t)((ptrlong)val_dtp);
+}
+
+caddr_t
+rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, const char *fun_name)
+{
+  dtp_t val_dtp = DV_TYPE_OF (val);
+  if (DV_STRING == val_dtp)
+    {
+      if ((1 >= box_length (val)) || !(0x80 & val[0]))
+        return box_copy (val);
+    }
+  else if (DV_RDF == val_dtp)
+    {
+      rdf_bigbox_t *rbb = (rdf_bigbox_t *)val;
+      caddr_t subbox = NULL;
+      caddr_t res;
+#define SER_VEC_SZ (5 * sizeof (caddr_t))
+      char buf [6 * sizeof (caddr_t) + BOX_AUTO_OVERHEAD];
+      caddr_t *ser_vec;
+      BOX_AUTO (ser_vec, buf, ((rbb->rbb_base.rb_chksum_tail ? 6 : 5) * sizeof (caddr_t)), DV_ARRAY_OF_POINTER);
+      subbox = rbb->rbb_base.rb_box;
+      if ((rbb->rbb_base.rb_is_complete) &&
+        (0 != rbb->rbb_base.rb_ro_id) &&
+        (DV_STRING == DV_TYPE_OF (rbb->rbb_base.rb_box)) &&
+        (1024 > box_length (rbb->rbb_base.rb_box)) )
+        {
+          subbox = box_dv_short_nchars (rbb->rbb_base.rb_box, 1023);
+        }
+      ser_vec[0] = subbox;
+      ser_vec[1] = rbb->rbb_base.rb_type;
+      ser_vec[2] = rbb->rbb_base.rb_lang;
+      if (subbox == rbb->rbb_base.rb_box)
+        {
+          ser_vec[3] = rbb->rbb_base.rb_is_complete;
+          ser_vec[4] = 0;
+        }
+      else
+        {
+          ser_vec[3] = 0;
+          ser_vec[4] = box_num (rbb->rbb_base.rb_ro_id);
+        }
+      if (rbb->rbb_base.rb_chksum_tail)
+        ser_vec[5] = rbb->rbb_chksum;
+      res = print_object_to_new_string (ser_vec, fun_name, err_ret);
+      if (subbox != rbb->rbb_base.rb_box)
+        dk_free_box (subbox);
+      BOX_DONE (ser_vec, buf);
+      return res;
+    }
+  return print_object_to_new_string (val, fun_name, err_ret);
+}
+
+caddr_t
+bif_rdf_dist_ser_long (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t val = bif_arg (qst, args, 0, "__rdf_dist_ser_long");
+  return rdf_dist_or_redu_ser_long (val, err_ret, 0, "__rdf_dist_ser_long");
+}
+
+caddr_t
+bif_rdf_redu_ser_long (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t val = bif_arg (qst, args, 0, "__rdf_redu_ser_long");
+  return rdf_dist_or_redu_ser_long (val, err_ret, 1, "__rdf_redu_ser_long");
+}
+
+caddr_t
+bif_rdf_dist_deser_long (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t ser = bif_arg (qst, args, 0, "__rdf_dist_deser_long");
+  caddr_t deser, val;
+  dtp_t ser_dtp = DV_TYPE_OF (ser);
+  int ser_len;
+  if (DV_STRING != ser_dtp)
+    return box_copy_tree (ser);
+  ser_len = box_length (ser);
+  if ((1 >= ser_len) || !(0x80 & ser[0]))
+    return box_copy (ser);
+  deser = box_deserialize_string (ser, 0);
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (deser))
+    {
+      caddr_t *vec = (caddr_t *)deser;
+      rdf_bigbox_t *rbb;
+      int vec_elems = BOX_ELEMENTS (vec);
+      switch (vec_elems)
+        {
+        case 5:
+          rbb = (rdf_bigbox_t *)rb_allocate ();
+          rbb->rbb_base.rb_chksum_tail = 0;
+          break;
+        case 6:
+          rbb = rbb_allocate ();
+          rbb->rbb_base.rb_chksum_tail = 1;
+          rbb->rbb_chksum = vec[5];
+          rbb->rbb_box_dtp = DV_TYPE_OF (vec[0]);
+          break;
+        default: sqlr_new_error ("RDFXX", ".....", "Argument of __rdf_distinct_deser_long() is not made by __rdf_distinct_ser_long()");
+        }
+      rbb->rbb_base.rb_box = vec[0];
+      rbb->rbb_base.rb_type = (short)((ptrlong)(vec[1]));
+      rbb->rbb_base.rb_lang = (short)((ptrlong)(vec[2]));
+      rbb->rbb_base.rb_is_complete = unbox (vec[3]);
+      rbb->rbb_base.rb_ro_id = unbox (vec[4]);
+      if (rbb->rbb_base.rb_ro_id)
+        rbb->rbb_base.rb_is_outlined = 1;
+      vec[0] = 0;
+      dk_free_tree (vec);
+      return (caddr_t)rbb;
+    }
+  return deser;
 }
 
 void
@@ -1091,4 +1201,9 @@ rdf_box_init ()
   bif_define_typed ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, &bt_any);
   bif_set_uses_index (bif_rdf_long_to_ttl);
   bif_define_typed ("__rq_iid_of_o", bif_rq_iid_of_o, &bt_any);
+  bif_define_typed ("__rdf_dist_ser_long", bif_rdf_dist_ser_long, &bt_varchar);
+  bif_define_typed ("__rdf_dist_deser_long", bif_rdf_dist_deser_long, &bt_any);
+  bif_define_typed ("__rdf_redu_ser_long", bif_rdf_redu_ser_long, &bt_varchar);
+  bif_define_typed ("__rdf_redu_deser_long", bif_rdf_dist_deser_long, &bt_any);
+
 }

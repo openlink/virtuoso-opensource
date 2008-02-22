@@ -9422,11 +9422,10 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-bif_serialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret)
 {
   scheduler_io_data_t iod;
   caddr_t res;
-  caddr_t xx = bif_arg (qst, args, 0, "serialize");
   dk_session_t *out = strses_allocate ();
 
   if (!SESSION_SCH_DATA (out))
@@ -9441,8 +9440,8 @@ bif_serialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       dtp_t tag = DV_TYPE_OF (xx);
       *err_ret = srv_make_new_error ("22023", "SR479",
-	  "Cannot serialize the data of type %s (%u)",
-	  dv_type_title (tag), (unsigned) tag);
+	  "Cannot serialize the data of type %s (%u) in BIF %s",
+	  dv_type_title (tag), (unsigned) tag, fun_name );
     }
   END_WRITE_FAIL (out);
   if (!STRSES_CAN_BE_STRING (out))
@@ -9456,6 +9455,13 @@ bif_serialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (res);
 }
 
+
+caddr_t
+bif_serialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t xx = bif_arg (qst, args, 0, "serialize");
+  return print_object_to_new_string (xx, "serialize", err_ret);
+}
 
 caddr_t
 bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
