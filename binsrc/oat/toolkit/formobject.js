@@ -60,7 +60,7 @@
 	object.css - array of objects:
 	{
 		name:"Color",
-		propery:"color",
+		property:"color",
 		type:"string|select|color|combo",
 		options:[1,2,3] // only for type="select" or type="combo"
 	}

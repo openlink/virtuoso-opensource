@@ -87,7 +87,7 @@ OAT.GridData = {
 						grid.header.cells[i].signalEnd();
 					}
 				}
-				if (index == -1) { return; } /* nothing signalled? wtf? */
+				if (index == -1) { return; } /* nothing signaled? wtf? */
 				
 				/* we need to move OAT.GridData.index before index */
 				var i1 = OAT.GridData.index;
@@ -364,7 +364,7 @@ OAT.Grid = function(element,optObj,allowHiding /* OBSOLETE! */) {
 
 	this.fromTable = function(something) {
 		/* backwards compatibility fix */
-			if (self.reorderNorifier) { self.options.reorderNotifier = self.reorderNotifier; }
+			if (self.reorderNotifier) { self.options.reorderNotifier = self.reorderNotifier; }
 			if (self.sortFund) { self.options.sortFunc = self.sortFunc; }
 			if (self.imagePath) { self.options.imagePath = self.imagePath; }
 		/**/

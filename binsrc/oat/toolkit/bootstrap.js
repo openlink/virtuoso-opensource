@@ -151,7 +151,7 @@ OAT.LoaderTMP = { /* second part of loader */
 					toExecute.push(OAT.Loader.loadCallbacks[i][1]);
 					done.push(i);
 				}
-			} /* if all prerequisities satisfied */
+			} /* if all prerequisites satisfied */
 		} /* for all pending callbacks */
 		
 		/* remove all executed */

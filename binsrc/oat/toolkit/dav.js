@@ -786,7 +786,7 @@ OAT.WebDav = {
 			gid:""
 		};
 		var propstat = OAT.Xml.getElementsByLocalName(node,"propstat")[0]; /* first propstat contains http/200 */
-		var prop = OAT.Xml.getElementsByLocalName(propstat,"prop")[0]; /* this contains successfull properties */
+		var prop = OAT.Xml.getElementsByLocalName(propstat,"prop")[0]; /* this contains successful properties */
 		
 		/* dir */
 		var col = OAT.Xml.getElementsByLocalName(prop,"collection");
@@ -836,7 +836,7 @@ OAT.WebDav = {
 			this.options.extensionFilters.push(f);
 		}
 		
-		if (!this.options.isDav) { /* siiiimple mode */
+		if (!this.options.isDav) { /* simple mode */
 			var info = "Please choose a file name.";
 			var f = [];
 			for (var i=0;i<this.options.extensionFilters.length;i++) {

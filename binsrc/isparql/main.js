@@ -463,7 +463,7 @@ iSPARQL.QueryExec = function(paramsObj) {
 	  		default_graph_uri:'',                   // Default graph
 	  		query:'',                               // The query itself
 	  		res_div:$('res_area'),                  // DIV where to put the results
-	  		format:'text/html',                     // Sets format to the request and process the results accordinglly.
+	  		format:'text/html',                     // Sets format to the request and process the results accordingly.
 	  		should_sponge:goptions.should_sponge,   // should-sponge param - as described in Virtuoso Docs.
 	  		maxrows:0,                              // sets maxrows params to the endpoint, 0 for nolimit /limit left to server/
 	  		proxy:goptions.proxy,                   // If the endpoint is http: ... and this is set, the request would be send to './remote.vsp'
@@ -486,9 +486,9 @@ iSPARQL.QueryExec = function(paramsObj) {
 				}
 				params.cb(data,headers,'er');
 			},
-	  		hideRequest:false,  // if true hides the request tab in the generated responce
-	  		hideResponce:false, // if true hides the responce tab in the generated responce
-	  		showQuery:false,    // if true shows the query tab in the generated responce
+	  		hideRequest:false,  // if true hides the request tab in the generated response
+	  		hideResponse:false, // if true hides the response tab in the generated response
+	  		showQuery:false,    // if true shows the query tab in the generated response
 			//RESULT PROCESSING
 	        callback:function(data,headers,param) {  // function called on result
 		    } /* callback */

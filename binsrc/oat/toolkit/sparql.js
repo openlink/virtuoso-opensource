@@ -295,7 +295,7 @@ OAT.SparqlQuery = function() {
 	      {
 	        obj.o = tmp[1];
 	        obj.otype = self.expandPrefix(tmp[2]);
-	      // or we are one of the xsd equivelents
+	      // or we are one of the xsd equivalents
 	      } else if ((tmp = o.match(/^"(.*)"$/))) {
 	        obj.o = tmp[1];
 	        obj.otype = self.expandPrefix('xsd:string');

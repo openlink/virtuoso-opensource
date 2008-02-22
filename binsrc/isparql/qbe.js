@@ -1829,7 +1829,7 @@ iSPARQL.QBE = function () {
         return grp;
 	    }
 
-		  // We now termine if we need to make pattern for the type
+		  // We now determine if we need to make pattern for the type
 		  if (node instanceof OAT.SVGSparqlNode && proc_nodes[group].find(node) == -1)
 		  {
         var t = node.getLabel(2);
@@ -1852,7 +1852,7 @@ iSPARQL.QBE = function () {
           self.optPrefix(ptr.p,used_prefixes);
           self.optPrefix(ptr.o,used_prefixes);
         }
-        // Lets see if it should be vesable?
+        // Lets see if it should be visible?
         var tmp;
         if (node.getType() == OAT.SVGSparqlData.NODE_CIRCLE && node.getVisible())
           if ((tmp = node.getLabel(1).match(/\?(.*)$/)) && sq.variables.find(tmp[1]) == -1)
@@ -1914,7 +1914,7 @@ iSPARQL.QBE = function () {
         else edge.node2.MySetLabel(1,'?o'); 
         oc++; 
       }
-      // Lets see if it is visable
+      // Lets see if it is visible
       if (edge.getVisible())
         if ((tmp = edge.getLabel(1).match(/\?(.*)$/)) && sq.variables.find(tmp[1]) == -1)
           sq.variables.push(tmp[1]);

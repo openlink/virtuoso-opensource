@@ -18,7 +18,7 @@
 		.elm - DOM node
 		.description - textual
 		.redraw() - redraw contents
-		.reset(hard) - called by parent when triple store changes. when the change is initiated by applying filteres, hard == false.
+		.reset(hard) - called by parent when triple store changes. when the change is initiated by applying filters, hard == false.
 						when the change is initiated by adding/removing URL, hard == true
 
 	2) CAN use
@@ -894,8 +894,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		for (var p in preds) {
 			var pred = preds[p];
 			var simple = self.parent.simplify(p);
-			if (self.keyProperties.find(simple) != -1) { pointResource = pred[0]; } /* this is resource containig geo coordinates */
-			if (self.locProperties.find(simple) != -1) { locValue = pred[0]; } /* this is resource containig geo coordinates */
+			if (self.keyProperties.find(simple) != -1) { pointResource = pred[0]; } /* this is resource containing geo coordinates */
+			if (self.locProperties.find(simple) != -1) { locValue = pred[0]; } /* this is resource containing geo coordinates */
 		}
 		if (!pointResource && !locValue) { return; }
 		
@@ -1255,7 +1255,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 					if (self.parent.getContentType(value) == 3) { 
 						self.addUriItem(value,item); 
 					} else {
-						var all = value.match(/http:[^'"]+\.(jpg|png|gif)/g);
+						var all = value.match(/http:[^'"]+\.(jpeg|png|gif)/gi);
 						if (all) for (var k=0;k<all.length;k++) { self.addUriItem(all[k],item); } /* for all embedded images */
 					} /* if not image */
 				} /* for all values */

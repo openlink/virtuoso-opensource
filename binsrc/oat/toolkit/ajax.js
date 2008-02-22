@@ -86,7 +86,7 @@ OAT.Ajax = {
 		OAT.Ajax.requests.push(request);
 
 		var callback_response = function() {
-			if (!request.state) { return; } /* cancelled */
+			if (!request.state) { return; } /* canceled */
 			if (xmlhttp.getReadyState() == 4) {
 
 				var headers = xmlhttp.getAllResponseHeaders();

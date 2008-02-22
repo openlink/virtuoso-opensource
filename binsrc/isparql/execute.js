@@ -18,7 +18,7 @@ window.defaultPrefixes = [{"label":'atom', "uri":'http://atomowl.org/ontologies/
 						 {"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
 						 {"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
 						 {"label":'sioc', "uri":'http://rdfs.org/sioc/ns#'},
-						 {"label":'ibis', "uri":'http://purl.org/ibis#'},
+					   /*{"label":'ibis', "uri":'http://purl.org/ibis#'},*/
 						 {"label":'scot', "uri":'http://scot-project.org/scot/ns'},
 						 {"label":'ical', "uri":'http://www.w3.org/2002/12/cal/icaltzd#'},
 						 {"label":'mo', "uri":'http://purl.org/ontology/mo/'},
@@ -57,7 +57,7 @@ var QueryExec = function(optObj) {
 		
 		endpoint:false,
 		query:false,
-		backupQuery:false, /* to be execude if original fails */
+		backupQuery:false, /* to be executed if original fails */
 		defaultGraph:false,
 		namedGraphs:[],
 		sponge:false,
@@ -199,7 +199,7 @@ var QueryExec = function(optObj) {
 		return arr.join("&");
 	}
 	
-	this.addResponse = function(request,opts,wasError,data) { /* someting arrived. maybe cache and visualize */
+	this.addResponse = function(request,opts,wasError,data) { /* something arrived. maybe cache and visualize */
 		if (OAT.AnchorData.window) { OAT.AnchorData.window.close(); }
 		if (self.isNew(opts.query)) {
 			var cache = {

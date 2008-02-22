@@ -235,7 +235,7 @@ OAT.DataSource = function(type) {
 			var data = self.dataRows[self.recordIndex];
 			OAT.MSG.send(self,OAT.MSG.DS_RECORD_ADVANCE,[data,self.recordIndex]);
 			for (var i=0;i<self.boundRecords.length;i++) {
-				/* notify all recieving objects */
+				/* notify all receiving objects */
 				self.boundRecords[i](data,self.recordIndex);
 			}
 		}

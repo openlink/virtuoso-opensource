@@ -230,7 +230,7 @@ OAT.GraphSidebar = function(graph) {
 		return obj;
 	}
 	
-	this.createResourceDR = function(resource,type) { /* create a <li> containig domain/range of a resource */
+	this.createResourceDR = function(resource,type) { /* create a <li> containing domain/range of a resource */
 		var obj = {};
 		var res = false;
 		for (var i=0;i<self.graph.data.length;i++) {

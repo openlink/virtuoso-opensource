@@ -10,7 +10,7 @@
 //
 
 function hoverRollOver() {
-	element.origClassName = element.className;	// backup origonal className
+	element.origClassName = element.className;	// backup original className
 	var tempClassStr = element.className;
 	tempClassStr += "Hover";					// convert name+'Hover' the last class name	to emulate tag.class:hover
 	tempClassStr = tempClassStr.replace(/\s/g,"Hover ");	//convert name+'Hover' the others to emulate tag.class:hover

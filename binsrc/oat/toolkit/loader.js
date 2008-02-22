@@ -36,7 +36,7 @@ OAT.Preferences = {
 	xsltPath:"/DAV/JS/xslt/",
 	imagePath:"/DAV/JS/images/",
 	stylePath:"/DAV/JS/styles/",
-	version:"04.02.2008",
+	version:"20.02.2008",
 	httpError:1, /* show http errors */
 	allowDefaultResize:1,
 	allowDefaultDrag:1
@@ -895,7 +895,7 @@ OAT.Debug = {
 	4) prepare set of files to be included
 	5) wait until all are loaded
 	(5.5) if window is loaded, load proper window type
-	6) everything is loaded and window.onload occured:
+	6) everything is loaded and window.onload occurred:
 		6a) execute window._init, if present
 		6b) start declarative scanner, if present
 		6c) execute window.init, if present
