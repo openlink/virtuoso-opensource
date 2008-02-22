@@ -52,14 +52,28 @@
 
   <xsl:template match="vm:dash-welcome">
     <div class="widget w_welcome">
-      <h3>Welcome to OpenLink Data Spaces.</h3>
-      <p>With OpenLink Data Spaces, you find the people and services you need through the people you know and trust, 
-      while you strengthen and extend your existing network.</p>
-      <p>OpenLink Data Spaces Applications let you get through your daily tasks:</p>
+      <h3>Welcome to OpenLink Data Spaces (ODS), a distributed collaborative
+application platform that provides a "Linked Data Junction Box" for Web
+protocols accessible data across a myriad of data sources.
+</h3>
+      <p>ODS provides a cost-effective route for creating and exploit presence on
+the emerging Web of Linked Data. It enables you to transparently mesh
+data across Weblogs, Shared Bookmarking, Feeds Aggregation, Photo
+Gallery, Calendars, Discussions, Content Managers, and Social Networks.
+</p>
+<p>ODS essentially provides distributed data across personal, group, and
+community data spaces that is grounded in Web Architecture. It makes
+extensive use of current and emerging standards across it's core and
+within specific functionality realms.
+</p>
+      <p>ODS Benefits include:</p>
       <ul>
-        <li>Stay up to date with latest news on subjects that interest you</li>
-        <li>Communicate with others using emails and blogs</li>
-        <li>Collaborate with authoring information on Wikis, and much more!</li>
+        <li>Platform independent solution for Data Portability via support for all major data interchange standards</li>
+        <li>Powerful solution for meshing data from a myriad of data sources across Intranets, Extranets, and the Internet</li>
+        <li>Coherent integration of Blogs, Wikis, and similar systems (native and
+external) that expose structured Linked Data</li>
+        <li>Collaborative content authoring and data generation without any
+exposure to underlying complexities of such activities</li>
       </ul>
       <!--a href="ods_tutorial.html">Learn more about OpenLink Data Spaces</a-->
     </div>

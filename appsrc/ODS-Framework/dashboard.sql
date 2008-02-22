@@ -447,9 +447,10 @@ create procedure wa_expand_url (in url varchar, in pars varchar)
   declare hf any;
   url := cast (url as varchar);
   hf := WS.WS.PARSE_URI (url);
+  
   if (pars is not null)
     pars := trim (pars, '&');
-  if (hf[0] <> '' and hf[1] <> HTTP_GET_HOST ())
+  if (hf[0] <> '' and hf[1] <> WA_GET_HOST ())
     ret := url;
   else
     ret := vspx_uri_add_parameters (url, pars);

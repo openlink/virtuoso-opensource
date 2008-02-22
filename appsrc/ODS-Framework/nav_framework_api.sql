@@ -2281,6 +2281,19 @@ create procedure is_dba (in _identity any) returns int
   return 0;
 }
 ;
+create procedure sleep (in mseconds integer)
+{
+
+  declare _c_mseconds integer;
+  _c_mseconds:=msec_time();
+
+  while(msec_time()<(_c_mseconds+mseconds))
+  {
+    ;
+  }
+  return;
+}
+;
 
 
 create procedure VSPX_EXPIRE_ANONYMOUS_SESSIONS ()

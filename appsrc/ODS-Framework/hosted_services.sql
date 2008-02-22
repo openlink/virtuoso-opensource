@@ -840,16 +840,19 @@ select
     HP_HOST not like '%ini%'and HP_HOST not like '*sslini*')
   do
 */
-for select VH_HOST as _host, VH_LISTEN_HOST as _lhost, VH_LPATH as _path, WAI_INST as _inst
+for select VH_HOST as _host, VH_LISTEN_HOST as _lhost, VH_LPATH as _path, WAI_INST as _inst, WAI_TYPE_NAME as _type
   from WA_INSTANCE, WA_VIRTUAL_HOSTS where WAI_NAME = self.wa_name and WAI_ID = VH_INST and VH_HOST not like '%ini%'
   do
   {
     declare inst web_app;
     inst := _inst;
     -- Application additional URL
-    declare len, i, ssl_port integer;
+    declare len, i, ssl_port, inst_count integer;
     declare cur_add_url, addons any;
 
+    -- Application additional URL
+    if (not exists (select 1 from WA_INSTANCE where WAI_TYPE_NAME = _type and WAI_NAME <> self.wa_name))
+    {
     addons := inst.wa_addition_urls();
     len := length(addons);
     i := 0;
@@ -861,6 +864,7 @@ for select VH_HOST as _host, VH_LISTEN_HOST as _lhost, VH_LPATH as _path, WAI_IN
         lhost=>_lhost,
         lpath=>cur_add_url[2]);
       i := i + 1;
+    }
     }
     -- Instance additional URL
     addons := inst.wa_addition_instance_urls(_path);
@@ -4968,6 +4972,53 @@ create procedure WA_LINK (in add_host int := 0, in url varchar := null)
   return ret;
 };
 
+create procedure WA_HOST_NORMALIZE (inout vhost varchar, inout lhost varchar)
+{
+  declare ssl_port, lport, varr any;
+  lhost := replace (lhost, '0.0.0.0', '');
+
+  ssl_port := coalesce (server_https_port (), '');
+  if (isstring (server_http_port ()))
+    {
+      varr := split_and_decode (
+         case
+           when vhost = '*ini*' then server_http_port ()
+           when vhost = '*sslini*' then ssl_port
+           else vhost
+         end
+       , 0, ':=:');
+      lport := split_and_decode (
+         case
+           when lhost = '*ini*' then server_http_port ()
+           when lhost = '*sslini*' then ssl_port
+           else lhost
+         end
+       , 0, ':=:');
+
+      if (__tag (varr) = 193 and length (varr) > 1)
+	vhost := varr[0];
+
+      if (__tag (lport) = 193 and length (lport) > 1)
+	lport := aref (lport, 1);
+      else if (lhost = '*ini*')
+	lport := server_http_port ();
+      else if (lhost = '*sslini*')
+	lport := ssl_port;
+      else if (atoi (lhost))
+	lport := lhost;
+      else
+	lport := '80';
+    }
+  else
+    lport := null;
+
+  if (lport = server_http_port () and lhost <> '*ini*')
+    lhost := '*ini*';
+  else if (lport = ssl_port and lhost <> '*sslini*')
+    lhost := '*sslini*';
+}
+;
+
 create procedure WA_SET_APP_URL
 	(in app_id any,
     	in lpath any,
@@ -5151,7 +5202,7 @@ create procedure WA_SET_APP_URL
 	   signal ('22023', sprintf ('No such wa domain %s', domain));
 	 };
        select WD_LISTEN_HOST into _lhost from WA_DOMAINS where
-	   WD_DOMAIN = domain;
+	   WD_DOMAIN = domain and WD_LISTEN_HOST is not null;
      }
 
    arr := split_and_decode (_lhost, 0, '\0\0:');
@@ -5182,6 +5233,7 @@ create procedure WA_SET_APP_URL
    if (old_host = _vhost and old_path = lpath and old_ip = _lhost)
      return;
 
+   WA_HOST_NORMALIZE (_vhost, _lhost);
    if (exists(select 1 from HTTP_PATH where HP_HOST= _vhost and HP_LISTEN_HOST= _lhost and HP_LPATH = lpath))
      {
        if (silent)
@@ -5262,6 +5314,9 @@ create procedure WA_SET_APP_URL
     {
       VHOST_REMOVE (lpath=>old_path, vhost=>old_host, lhost=>old_ip);
     }
+  -- Check if its not already there
+  if (not exists (select 1 from HTTP_PATH where HP_HOST = _vhost and HP_LISTEN_HOST = _lhost and HP_LPATH = lpath))
+    {
   VHOST_DEFINE (
 	  vhost=>_vhost,
 	  lhost=>_lhost,
@@ -5280,6 +5335,11 @@ create procedure WA_SET_APP_URL
     _vhost := subseq (_vhost, 0, pos);
   insert replacing WA_VIRTUAL_HOSTS (VH_INST,VH_HOST,VH_LISTEN_HOST,VH_LPATH, VH_PAGE)
       values (app_id, _vhost, _lhost, lpath, def_page);
+    }
+  else if (not silent)
+    {
+      signal ('22023', 'This URL is already used by another application, please use another domain or path');
+    }
 };
 
 

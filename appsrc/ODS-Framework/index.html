@@ -12,6 +12,19 @@
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
   <link rel="stylesheet" href="nav_framework.css" type="text/css"/>
   <script type="text/javascript">
+
+   
+   //patch for recursive profile in iframe.
+   if( (document.location.href.indexOf('/dataspace/person/')>-1 || document.location.href.indexOf('/dataspace/organization/')>-1) &&
+       (window.parent.frames.length>0)
+     )
+   {
+        if(window.parent.location.href==window.location.href)
+           window.parent.location.reload();
+        else
+           window.parent.location.href=window.location.href;
+   }
+
     var ODSInitArray = new Array();
 
     var featureList = ["ajax2", "menu", "dimmer", "tab","gmaps","instant","anchor"];
@@ -777,13 +790,16 @@
                 <label for="loginUserPass">Password</label><input type="password" name="loginUserPass" value="" id="loginUserPass" /><br />
               </div>
               <div id="loginP2" class="tab_page" style="display:none">
-                <label for="loginOpenIdUrl">OpenID URL</label><input type="text" name="loginOpenIdUrl" value="" id="loginOpenIdUrl" /><br />
+                <label for="loginOpenIdUrl">OpenID URL <img src="images/login-bg.gif" style="vertical-align:bottom;margin-left:5px;"/></label><input type="text" name="loginOpenIdUrl" value="" id="loginOpenIdUrl" /><br />
               </div>
             </div> <!-- tab_deck -->
             <div id="login_ctrls">
               <input type="checkbox" name="cb_remember_me" value="1" id="login_frm_cb_remember_me" checked="1"/><label for="login_frm_cb_remember_me">Remember me</label><br />
               <input type="button" name="loginBtn" value="Login" id="loginBtn" />
-              <input type="button" name="signupBtn" value="Sign Up!" id="signupBtn" /><br />
+              <input type="button" name="signupBtn" value="Sign Up!" id="signupBtn" />
+              <span id="loginThrobber" style="display:none">Logging in ... <img src="images/oat/throbber.gif"/></span>
+              <br/>
+              <a id="loginForgot" style="display:none">Forgot your password?</a>
             </div>
           </div> <!-- login_form -->
         </div> <!-- login_form_ctr -->

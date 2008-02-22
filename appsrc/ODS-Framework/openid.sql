@@ -64,7 +64,7 @@ create procedure yadis (in uname varchar, in tp varchar := null)
   for select WAUI_OPENID_URL, WAUI_OPENID_SERVER from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname
     do
       {
-	if (length (WAUI_OPENID_URL) + length (WAUI_OPENID_SERVER))
+	if (length (WAUI_OPENID_URL) * length (WAUI_OPENID_SERVER))
 	  {
 	    url := WAUI_OPENID_URL;
 	    srv := WAUI_OPENID_SERVER;

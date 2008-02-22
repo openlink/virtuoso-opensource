@@ -129,12 +129,40 @@ try_next:
 		  self.regpwd1.ufl_value := self.regpwd.ufl_value;
 		  self.is_agreed.ufl_selected := 1;
 
+          if(self.oid_nickname is not null and length(self.oid_nickname)>0
+             and 
+             self.oid_email is not null and length(self.oid_email)>0)
+          {
 		  self.registration.vc_focus := 1;
 		  self.vc_event.ve_is_post := 1;
 		  self.registration.vc_user_post (self.vc_event);
+          
 		  control.vc_enabled := 0;
 		  self.registration.vc_focus := 0;
 		  self.vc_event.ve_is_post := 0;
+          }else
+          {
+
+            self.vc_is_valid := 0;
+            if(self.oid_nickname is null or length(self.oid_nickname)<1)
+            self.vc_error_message := 'Your openID provider has not supplied your nickname.';
+
+            if(self.oid_email is null or length(self.oid_email)<1)
+            self.vc_error_message := 'Your openID provider has not supplied your e-mail address.';
+
+            if( (self.oid_nickname is null or length(self.oid_nickname)<1)
+                and 
+                (self.oid_email is null or length(self.oid_email)<1) )
+            self.vc_error_message := 'Your openID provider has not supplied your nickname and e-mail address.';
+
+            declare _location varchar;
+            _location:=split_and_decode(self.vc_event.ve_lines[0],0,'\0\0 ')[1];
+
+            if(self.ods_returnurl is not null and self.ods_returnurl='index.html')
+                self.vc_redirect (sprintf('index.html#fhref=%U',replace(_location,'RETURL=','OLDRETURL=')));
+
+          }
+          
                 }
 	    }
 
@@ -161,8 +189,18 @@ try_next:
       <th width="60px"><label for="reguid">OpenID</label></th>
 	    <td>
     <img src="images/login-bg.gif" alt="openID"  class="login_openid" />
-        <v:text  xhtml_id="openid_url" name="openid_url" value="" xhtml_style="width:90%"
-			default_value="--self.oid_identity"/>
+       <v:text  xhtml_id="openid_url" name="openid_url" value="" xhtml_style="width:90%" default_value="--self.oid_identity"/>
+<script type="text/javascript">
+<![CDATA[
+var is_disabled=<?V(case when self.oid_mode = 'id_res' and self.oid_sig is not null then 1 else 0 end)?>+0;
+if(is_disabled && typeof(document.getElementById('openid_url'))!='undefined')
+{
+  document.getElementById('openid_url').disabled=true;
+  document.getElementById('tabODS').style.display='none';
+}  
+]]>
+</script>
+
        <input type="hidden" id="uoid" name="uoid" value="<?Vself.use_oid_url?>"/>
 
 <!--
@@ -184,6 +222,29 @@ try_next:
 -->
 	    </td>
 	</tr>
+    <v:template name="oid_login_row"  type="simple" enabled="--(case when self.oid_sig is not null and (self.oid_nickname is null or length(self.oid_nickname)<1) then 1 else 0 end)">
+    <tr>
+      <th nowrap="1"><label for="oid_reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
+      <td nowrap="nowrap">
+        <v:text xhtml_tabindex="11" xhtml_id="oid_reguid" xhtml_style="width:270px" name="oid_reguid" value="--get_keyword('oid_reguid', params)"
+           default_value="--self.oid_nickname" xhtml_onblur="document.getElementById(''reguid'').value=this.value;">
+       </v:text>
+<!--
+       <v:text name="fb_id" type="hidden" value="--coalesce(self.fb_id.ufl_value,get_keyword('fb_id',self.vc_page.vc_event.ve_params,0))" control-udt="vspx_text" />
+-->
+     </td>
+   </tr>
+   </v:template>
+   <v:template name="oid_mail_row"  type="simple" enabled="--(case when self.oid_sig is not null and (self.oid_email is null or length(self.oid_email)<1) then 1 else 0 end)">
+   <tr>
+     <th><label for="oid_regmail">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label></th>
+     <td nowrap="nowrap">
+       <v:text xhtml_tabindex="12" xhtml_id="oid_regmail" xhtml_style="width:270px" name="oid_regmail" value="--get_keyword ('oid_regmail', params)"
+          default_value="--self.oid_email" xhtml_onblur="document.getElementById(''regmail'').value=this.value;">
+       </v:text>
+     </td>
+   </tr>
+   </v:template>
     </table>
     </div>
     
@@ -226,7 +287,11 @@ try_next:
           <td nowrap="nowrap">
         <v:text error-glyph="?" xhtml_tabindex="2" xhtml_id="regmail" xhtml_style="width:270px" name="regmail" value="--get_keyword ('regmail', params)"
 		    default_value="--self.oid_email">
+              <v:validator test="sql" expression="length(trim(self.regmail.ufl_value)) < 1 or length(trim(self.regmail.ufl_value)) > 40" name="vv_regmail1"
+                    message="E-mail address cannot be empty or longer then 40 chars" />
+<!--
               <v:validator name="vv_regmail1" test="length" min="1" max="40" message="E-mail address cannot be empty or longer then 40 chars"/>
+-->
               <v:validator name="vv_regmail2" test="regexp" regexp="[^@ ]+@([^\. ]+\.)+[^\. ]+" message="Invalid E-mail address" />
             </v:text>
           </td>
@@ -373,12 +438,12 @@ try_next:
 
       <v:on-post>
         <![CDATA[
-
-if(self.use_oid_url=0 or
-   (self.oid_mode = 'id_res' and self.oid_sig is not null and self.use_oid_url)
+if(self.use_oid_url=0
+   or  (self.oid_mode = 'id_res' and self.oid_sig is not null and self.use_oid_url)
   )
 {
-	 declare u_name1, dom_reg varchar;
+
+   declare u_name1, dom_reg,u_mail1 varchar;
          declare country, city, lat, lng, xt, xp, uoid, is_agr any;
 
 	 u_name1 := trim(self.reguid.ufl_value);
@@ -430,6 +495,22 @@ if(self.use_oid_url=0 or
            self.vc_is_valid := 0;
            return;
          }
+
+         u_mail1:=self.regmail.ufl_value;
+         if (u_mail1 is null or length(trim(u_mail1))<1 or length(trim(u_mail1))>40)
+         {
+           self.vc_error_message := 'E-mail address cannot be empty or longer then 40 chars';
+           self.vc_is_valid := 0;
+           return;
+         };
+
+         if (regexp_match ('[^@ ]+@([^\. ]+\.)+[^\. ]+',u_mail1) is null)
+         {
+           self.vc_error_message := 'Invalid E-mail address';
+           self.vc_is_valid := 0;
+           return;
+         };
+
 
 	 is_agr := self.is_agreed.ufl_selected;
          if (not(is_agr))

@@ -1,5 +1,5 @@
 function dd(txt){
-  if(typeof console == 'object'){
+  if(typeof console == 'object' && typeof console.debug == 'function'){
     console.debug(txt);
   }
 }
@@ -431,7 +431,6 @@ ODS.session = function(customEndpoint){
                                                 self.userId=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/userId',{})[0]);
                                                 self.userIsDba=OAT.Xml.textValue(OAT.Xml.xpath(xmlDoc, '/sessionValidate_response/dba',{})[0]);
                                                 $('loginErrDiv').innerHTML='';
-                                             //resXmlNodes = OAT.Xml.xpath(xmlDoc, '/sessionStart_response/userName',{});
                                              OAT.MSG.send(self,OAT.MSG.SES_VALIDBIND,{});
                                            }else
                                            {
@@ -439,9 +438,10 @@ ODS.session = function(customEndpoint){
                                            }
                                             
                                        };
-       OAT.Dimmer.hide();
-       nav.wait();
-       OAT.AJAX.POST(self.endpoint+"sessionValidate", data, callback, optionsSynch);
+//       OAT.Dimmer.hide();
+//       nav.wait();
+//       OAT.AJAX.POST(self.endpoint+"sessionValidate", data, callback, optionsSynch);
+       OAT.AJAX.POST(self.endpoint+"sessionValidate", data, callback, options);
     }else
     {
        if($('loginOpenIdUrl').value.length==0)
@@ -481,17 +481,17 @@ ODS.session = function(customEndpoint){
                                                 document.location=checkImmediate;
                                               }else
                                               {
-                                                 nav.wait('hide');
-                                                 showLoginErr('Invalid OpenID URL');
-                                                 nav.logIn();
-                                                 return;
+                                                 OAT.MSG.send(self,OAT.MSG.SES_INVALID,{retryLogIn:true});
+
+//                                                 nav.wait('hide');
+//                                                 showLoginErr('Invalid OpenID URL');
+//                                                 nav.logIn();
+//                                                 return;
                                               }
                                                
                                           };
-       OAT.Dimmer.hide();
-       nav.wait();
 
-       OAT.AJAX.POST(self.endpoint+"openIdServer", data, callback, optionsSynch);
+       OAT.AJAX.POST(self.endpoint+"openIdServer", data, callback, options);
 
     }
   }
@@ -546,6 +546,7 @@ ODS.session = function(customEndpoint){
   
   this.openIdVerify = function()
   {
+    
     var uriParams=OAT.Dom.uriParams();
     
     var url=self.openId.server+'?openid.mode=check_authentication&openid.assoc_handle='+encodeURIComponent(self.openId.assoc_handle)+
@@ -723,8 +724,20 @@ ODS.Nav = function(navOptions) {
                    tab  : false
                   };
              
+  function preValidate()
+  {
+    if($('loginBtn'))
+       $('loginBtn').disabled=true;
+    if($('signupBtn'))
+       $('signupBtn').disabled=true;
+    if($('loginCloseBtn'))
+       OAT.Dom.hide($('loginCloseBtn'));
+          
+    self.showLoginThrobber();
+    self.session.validate();
+  }
                
-  OAT.MSG.attach(self.session,OAT.MSG.SES_TOKEN_RECEIVED,function(){OAT.Event.attach($('loginBtn'),"click",self.session.validate);
+  OAT.MSG.attach(self.session,OAT.MSG.SES_TOKEN_RECEIVED,function(){OAT.Event.detach('loginBtn','click',preValidate);OAT.Event.attach('loginBtn','click',preValidate);
                                                                     $('loginUserPass').tokenReceived=true;
                                                                     $('loginOpenIdUrl').tokenReceived=true;
                                                                    });
@@ -741,12 +754,8 @@ ODS.Nav = function(navOptions) {
                    
                    self.connections.userId=self.session.userId;
                    
-//                   if(self.defaultAction)
-//                   {
-//                       self.defaultAction(); 
-//                       self.defaultAction=false;
-//                   }      
     
+                   OAT.Dimmer.hide();  
                    OAT.MSG.send(self.session,OAT.MSG.SES_VALIDATION_END,{sessionValid:1});
                  }
                 );
@@ -754,11 +763,20 @@ ODS.Nav = function(navOptions) {
   OAT.MSG.attach(self.session,OAT.MSG.SES_INVALID,
                  function(src, msg, event)
                  {
+                   self.showLoginThrobber('hide');
+                   if($('loginBtn'))
+                      $('loginBtn').disabled=false;
+                   if($('signupBtn'))
+                      $('signupBtn').disabled=false;
+                   if($('loginCloseBtn'))
+                      OAT.Dom.show($('loginCloseBtn'));
+
+                   
                    self.createCookie('sid','',1);
 
                    if(typeof(event.retryLogIn)!='undefined' && event.retryLogIn==true)
                    {
-                      nav.wait('hide');
+                      self.wait('hide');
                       if(!$('loginDiv'))
                          self.logIn();
 
@@ -783,8 +801,12 @@ ODS.Nav = function(navOptions) {
   OAT.MSG.attach(self.session,OAT.MSG.SES_VALIDATION_END,
                  function(src, msg, event)
                  {
+                   self.showLoginThrobber('hide');
+                   
+
                   if(document.location.href.indexOf('/dataspace/person/')>-1 || document.location.href.indexOf('/dataspace/organization/')>-1)
                   {
+                    
                     var profileId=document.location.href.split('/')[5];
                     profileId=profileId.split('#')[0];
 
@@ -824,7 +846,6 @@ ODS.Nav = function(navOptions) {
                         self.profile.show=true; 
                         self.profile.set('/'+profileId);
                         self.initProfile();
-//                        self.session.usersGetInfo('/'+profileId,'userName,fullName,photo',function(xmlDoc2){dd(xmlDoc2);});
                         
                     }else if(defaultAction.indexOf('#msg')>-1)
                     {
@@ -832,7 +853,12 @@ ODS.Nav = function(navOptions) {
                       self.dimmerMsg(msg);
           
                       self.loadVspx(self.expandURL(self.ods+'sfront.vspx'));
-//                      document.location.href=document.location.href.split('#')[0]+'#';
+                      document.location.href=document.location.href.split('#')[0]+'#';
+                    }else if(defaultAction.indexOf('#fhref')>-1)
+                    {
+                      var fhref=defaultAction.replace('#fhref=','');
+                      self.loadVspx(self.expandURL(fhref));
+                      document.location.href=document.location.href.split('#')[0]+'#';
   }  
                     else
                        self.loadVspx(self.expandURL(self.ods+'sfront.vspx'));
@@ -1146,8 +1172,6 @@ ODS.Nav = function(navOptions) {
             OAT.Event.attach(msgMenuItems.childNodes[i],"click",function(){ self.profile.msgTab.go(3);self.showMessages();});  
           else if (msgMenuItems.childNodes[i].id=='mi_new_message')
             OAT.Event.attach(msgMenuItems.childNodes[i],"click",function(){ self.profile.msgTab.go(4);self.showMessages();});  
-//          else  
-//            OAT.Event.attach(msgMenuItems.childNodes[i],"click",function(){self.showMessages();});  
         }
       }
 
@@ -1683,8 +1707,6 @@ ODS.Nav = function(navOptions) {
         
         function modifySearchOptions(xmlDoc)
         {
-//          dd(xmlDoc);
-           
           var searchVal2Pack = {on_wikis       : 'Wiki',
                                 on_blogs       : 'Weblog',
                                 on_news        : 'Feed Manager',
@@ -1999,12 +2021,10 @@ ODS.Nav = function(navOptions) {
           var gHref=false;
           if(gemType=='gdata')
           {
-//             dd('/dataspace/GData/people,apps,weblog,dav,feeds,wiki,mail,bookmark,polls,addressbook,discussion/?q=tester&sid=f21bca9b6bd68a3db8b86a64a0170654&realm=wa');
              gHref=self.expandURL('/dataspace/GData/'+onStr+'/?q='+q);
           }
           else
           {
-//             dd('search.vspx?q=tester&q_tags=&r=100&s=1&apps=people,apps,weblog,dav,feeds,wiki,mail,bookmark,polls,addressbook,discussion&o=xml&sid=f21bca9b6bd68a3db8b86a64a0170654&realm=wa');
              gHref=self.expandURL('search.vspx?q='+q+'&q_tags=&r=100&s=1&apps='+onStr+'&o='+gemType);
           }
         
@@ -2214,7 +2234,7 @@ ODS.Nav = function(navOptions) {
         loginTab.go(0);
         
         OAT.Event.attach('loginT1',"click",function(){$('loginErrDiv').innerHTML='';if(!OAT.Dom.isIE()) $('loginUserName').focus();});  
-        OAT.Event.attach('loginT2',"click",function(){$('loginErrDiv').innerHTML='';if(!OAT.Dom.isIE()) $('loginOpenIdUrl').focus();});  
+        OAT.Event.attach('loginT2',"click",function(){OAT.Dom.hide($('loginForgot'));$('loginErrDiv').innerHTML='';if(!OAT.Dom.isIE()) $('loginOpenIdUrl').focus();});  
        
         OAT.Event.attach($('loginCloseBtn'),"click",OAT.Dimmer.hide);  
 
@@ -2233,6 +2253,7 @@ ODS.Nav = function(navOptions) {
            $('loginUserPass').callback=function(){
                                                   if(this.tokenReceived)
                                                   {
+                                                    self.showLoginThrobber();
                                                     self.session.validate();
                                                   }else
                                                   {
@@ -2252,6 +2273,7 @@ ODS.Nav = function(navOptions) {
            $('loginOpenIdUrl').callback=function(){
                                                   if(this.tokenReceived)
                                                   {
+                                                    self.showLoginThrobber();
                                                     self.session.validate();
                                                   }else
                                                   {
@@ -2263,6 +2285,14 @@ ODS.Nav = function(navOptions) {
            OAT.Event.attach($('loginOpenIdUrl'),"keypress",onEnterDown);  
         }
 
+        
+        if($('loginForgot'))
+        {
+         OAT.Event.attach($('loginForgot'),"click",function(){OAT.Dimmer.hide();self.loadVspx(self.expandURL(self.ods+'pass_recovery.vspx?usr='+encodeURIComponent($('loginUserName').value)))});  
+        }
+
+        
+        
         OAT.Dom.append([loginDiv,$('login_page')]);
        
         self.logindiv=loginDiv;
@@ -2321,6 +2351,7 @@ ODS.Nav = function(navOptions) {
        signupBtn.value = 'Sign Up!';
        OAT.Event.attach(signupBtn,"click",function(){self.session.sid=false;OAT.Dimmer.hide;self.loadVspx(self.expandURL(self.ods+'register.vspx'));});  
       
+
        OAT.Dom.append([document.body,loginDiv],
                       [loginDiv,titleDiv,errDiv,ctrlDiv],
                       [ctrlDiv,rowA,rowB,btnDiv],
@@ -2347,9 +2378,29 @@ ODS.Nav = function(navOptions) {
     $('loginUserName').focus();
     
   }
+  this.showLoginThrobber=function(throbberState)
+  {
 
+    var throbber=$('loginThrobber');
+    
+    if(throbber.style.display!='none' || throbberState=='hide')
+    {
+      OAT.Dom.hide(throbber);
+    }else
+      OAT.Dom.show(throbber);
+
+    return;
+
+  }
   this.showLoginErr=function(errMsg)
   {
+    if($('loginBtn'))
+       $('loginBtn').disabled=false;
+    if($('signupBtn'))
+       $('signupBtn').disabled=false;
+    if($('loginCloseBtn'))
+       OAT.Dom.show($('loginCloseBtn'));
+
     if(typeof(errMsg)=='undefined')
     {
       if($('loginDiv').loginTab.selectedIndex==1)
@@ -2357,10 +2408,17 @@ ODS.Nav = function(navOptions) {
       else
           errMsg='Invalid Member ID or Password';
     }
+    
+    if($('loginDiv').loginTab.selectedIndex==0 && $('loginUserName').value.length>0)
+      OAT.Dom.show($('loginForgot'));
+     else
+      OAT.Dom.hide($('loginForgot'));
+    
     OAT.Dom.clear('loginErrDiv');
     var warnImg=OAT.Dom.create('img',{verticalAlign:'text-bottom',padding:'3px 3px 0px 0px'});
     warnImg.src='images/warn_16.png';
     OAT.Dom.append([$('loginErrDiv'),warnImg,OAT.Dom.text(errMsg)]);
+    self.showLoginThrobber('hide');
     return;
   
   }
@@ -2492,11 +2550,6 @@ ODS.Nav = function(navOptions) {
 
         }
 
-
-
-//          OAT.Event.attach(connMenuItems.childNodes[i],"click",function(){self.connections.show=true;
-//                                                                          self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface)
-//                                                                         });  
 
         OAT.MSG.send(self,OAT.MSG.CONNECTIONS_UPDATED,{});
 
@@ -2677,10 +2730,6 @@ ODS.Nav = function(navOptions) {
       
       }else
          OAT.Dom.hide(browseDS.parentNode);
-
-//      var browseCG=$('profileBrowseCG');
-//      OAT.Dom.hide(browseCG).parentNode;
-
 
 
     }
@@ -3011,10 +3060,7 @@ ODS.Nav = function(navOptions) {
         var _business = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/organization',{});
         var _im = OAT.Xml.xpath(xmlDoc, '/usersGetInfo_response/user/im',{})[0];
   
-  //       OAT.Dom.clear($('ciP1'));
-  //       OAT.Dom.clear($('ciP2'));
          OAT.Dom.clear($('ciP3'));
-  //       OAT.Dom.clear($('ciP4'));
   
         
         for(var i=0;i<_im.childNodes.length;i++)
@@ -3242,10 +3288,6 @@ ODS.Nav = function(navOptions) {
 
      OAT.MSG.send(self,OAT.MSG.PROFILE_UPDATED,{});
 
-     //if(self.session.userId!=self.profile.userId)
-     //   self.showProfile();
-    
-
   }
   
   this.showProfile = function()
@@ -3373,13 +3415,15 @@ ODS.Nav = function(navOptions) {
    var waitDiv=$('waitDiv');
    if(!waitDiv)
    {
-      waitDiv=OAT.Dom.create("div",{width:'32px',height:'32px',position: 'absolute',backgroundColor: '#fff'});
+      waitDiv=OAT.Dom.create("div",{width:'250px',height:'40px',position: 'absolute',backgroundColor: '#fff',paddingTop:'10px'});
       waitDiv.id='waitDiv';
+//      waitDiv.innerHTML="<span>Loading page... </span>";
       
-      var throbberImg=OAT.Dom.create('img');
+      var throbberImg=OAT.Dom.create('img',{verticalAlign:'middle'});
       throbberImg.src='images/oat/throbber.gif';
+      var throbberTxt=OAT.Dom.text('Loading page... ');
       
-      OAT.Dom.append([document.body,waitDiv],[waitDiv,throbberImg]);
+      OAT.Dom.append([document.body,waitDiv],[waitDiv,throbberTxt,throbberImg]);
 
    }
 
@@ -3476,7 +3520,7 @@ ODS.Nav = function(navOptions) {
     OAT.AJAX.POST(self.session.endpoint+"userCommunities", data, callback, ajaxOptions);
   }
 
-//
+
   this.invitationsGet = function (extraFields,callbackFunction){
     
     self.wait();
@@ -3603,8 +3647,6 @@ ODS.Nav = function(navOptions) {
 
   this.userMessages = function (msgType,callbackFunction){
     
-//    self.wait();
-    
     var data = 'sid='+self.session.sid+'&msgType='+msgType;
       
     var callback = function(xmlString) {
@@ -3614,10 +3656,6 @@ ODS.Nav = function(navOptions) {
                                              if(typeof(callbackFunction) == "function")
                                                 callbackFunction(xmlDoc);
                                            }
-//                                           else
-//                                           {
-//                                            self.wait();
-//                                           }
                                        };
                                          
     OAT.AJAX.POST(self.session.endpoint+"userMessages", data, callback, ajaxOptions);
@@ -3938,6 +3976,9 @@ ODS.Nav = function(navOptions) {
     self.session.openId.signed=uriParams['openid.signed'];
     
     self.session.openIdVerify();
+  }else if(!self.session.sid && typeof(uriParams['openid.mode'])!='undefined' && uriParams['openid.mode']=='cancel')
+  {
+     OAT.MSG.send(self.session,OAT.MSG.SES_INVALID,{retryLogIn:true,msg:'OpenID Authentication Failed'});
   }else if(typeof(uriParams.sid)!='undefined' && uriParams.sid!='')
   {
     self.session.sid=uriParams.sid;
@@ -3952,6 +3993,8 @@ ODS.Nav = function(navOptions) {
   };
  
   OAT.Event.attach($('vspxApp'),"load",function(){self.wait('hide');});  
+  OAT.Event.attach($('vspxApp'),"click",function(e){var t=eTarget(e);dd(t);});  
+
   OAT.Event.attach($('vspxApp'),"load",function(){
                                                    if(!self.session.sid)
                                                    {                                                  

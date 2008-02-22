@@ -860,6 +860,23 @@ p.login_error img {
   margin-top: 5px;
   color: #255}
 
+#loginThrobber {
+padding: 0px 0px 4px 82px;
+color:#999;
+}
+#loginThrobber img
+{
+ width:16px;
+ height:16px;
+ vertical-align:middle;
+}
+#loginForgot {
+  font-size: 8pt;
+  margin-left: 3px;
+  cursor: pointer;
+}  
+
+
 #login_form div.login_frm_button_row {
   margin-top: 6px;
   margin-left: 100px;
