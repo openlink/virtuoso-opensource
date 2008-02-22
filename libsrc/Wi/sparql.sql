@@ -2380,9 +2380,14 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (inout triples any, in print
             }
           else if (__tag of datetime = rdf_box_data_tag (obj))
             {
+	      if (257 = rdf_box_type (obj))
+		{
               http (' rdf:datatype="', ses);
-              http_escape (cast (__xsd_type (obj) as varchar), 12, ses, 1, 1);
+		  http_escape (cast (__xsd_type (dat) as varchar), 12, ses, 1, 1);
               http ('">', ses);
+		}
+	      else
+		http ('>', ses);
               __rdf_long_to_ttl (dat, ses);
               http ('</', ses); http (pred_tagname, ses); http ('>', ses);
             }
