@@ -264,7 +264,7 @@ create procedure DB.DBA.XSLT_STR2DATE (in val varchar)
 }
 ;
 
-create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar, in login varchar)
+create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar := '', in login varchar := '')
 {
   declare cname any;
   declare ret any;
@@ -279,9 +279,9 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI (in uri varchar, in login varchar)
 	cname := cname ||':'|| server_http_port ();
     }
   if (length (login))
-    ret := sprintf ('http://%s/proxy?url=%U&force=rdf&login=%U', cname, uri, login);
+    ret := sprintf ('http://%s/proxy/rdf/%U/%s', cname, login, uri);
   else
-    ret := sprintf ('http://%s/proxy?url=%U&force=rdf', cname, uri);
+    ret := sprintf ('http://%s/proxy/rdf/%s', cname, uri);
   return ret;
 }
 ;
@@ -772,12 +772,12 @@ create procedure DB.DBA.RDF_LOAD_BUGZILLA (in graph_iri varchar, in new_origin_u
     {
       return 0;
     };
-  tmp := sprintf_inverse (new_origin_uri, 'http://%s/show_bug.cgi?id=%s', 0);
-  img_id := tmp[1];
+  tmp := sprintf_inverse (new_origin_uri, '%s://%s/show_bug.cgi?id=%s', 0);
+  img_id := tmp[2];
   if (img_id is null)
     return 0;
   url := concat(new_origin_uri, '&ctype=xml');
-  tmp := http_get (url, hdr);
+  tmp := RDF_HTTP_URL_GET (url, url, hdr);
   if (hdr[0] not like 'HTTP/1._ 200 %')
     signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
   xd := xtree_doc (tmp);

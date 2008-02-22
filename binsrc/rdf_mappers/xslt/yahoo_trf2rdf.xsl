@@ -44,8 +44,7 @@
 
     <xsl:template match="/">
 	<rdf:RDF>
-	    <rdf:Description
-		rdf:about="{$baseUri}">
+	    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri)}">
 		<xsl:apply-templates/>
 	    </rdf:Description>
 	</rdf:RDF>
@@ -54,7 +53,7 @@
     <xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:attribute name="rdf:resource">
-		<xsl:value-of select="."/>
+		<xsl:value-of select="vi:proxyIRI (.)"/>
 	    </xsl:attribute>
 	</xsl:element>
     </xsl:template>

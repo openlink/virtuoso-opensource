@@ -30,6 +30,7 @@
     xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
     xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
     xmlns:batch="http://schemas.google.com/gdata/batch"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     version="1.0">
 
     <xsl:output method="xml" encoding="utf-8" indent="yes"/>
@@ -40,7 +41,7 @@
 	</rdf:RDF>
     </xsl:template>
     <xsl:template match="a:entry[g:*]">
-	<rdf:Description rdf:about="{link[@rel='self']/@href}">
+	<rdf:Description rdf:about="{vi:proxyIRI (link[@rel='self']/@href)}">
 	    <dc:title><xsl:value-of select="a:title"/></dc:title>
 	    <xsl:apply-templates select="g:*"/>
 	</rdf:Description>

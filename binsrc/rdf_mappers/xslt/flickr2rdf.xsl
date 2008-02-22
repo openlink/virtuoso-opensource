@@ -30,6 +30,7 @@
     xmlns:geo  ="http://www.w3.org/2003/01/geo/wgs84_pos#"
     xmlns:foaf ="http://xmlns.com/foaf/0.1/#"
     xmlns:v    ="http://www.openlinksw.com/xsltext/"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:exif ="http://www.w3.org/2003/12/exif/ns/"
     >
     <xsl:output method="xml" indent="yes"/>
@@ -67,19 +68,19 @@
 	</rdf:Description>
     </xsl:template>
     <xsl:template match="photo">
-	<rdf:Description rdf:about="{$baseUri}">
+	<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
 	    <rdf:type rdf:resource="http://www.w3.org/2003/12/exif/ns/IFD"/>
 	    <xsl:variable name="lic" select="@license"/>
 	    <dc:creator rdf:nodeID="person" />
 	    <xsl:choose>
 		<xsl:when test="$doc/licenses/license[@id=$lic and @url!='']">
-		    <dc:rights rdf:resource="{$doc/licenses/license[@id=$lic and @url!='']/@url}" />
+		    <dc:rights rdf:resource="{vi:proxyIRI($doc/licenses/license[@id=$lic and @url!='']/@url)}" />
 		</xsl:when>
 		<xsl:when test="$doc/licenses/license[@id=$lic]">
 		    <dc:rights><xsl:value-of select="$doc/licenses/license[@id=$lic]/@name"/></dc:rights>
 		</xsl:when>
 	    </xsl:choose>
-	    <rdfs:seeAlso rdf:resource="{urls/url[@type='photopage']}"/>
+	    <rdfs:seeAlso rdf:resource="{vi:proxyIRI(urls/url[@type='photopage'])}"/>
 	    <xsl:apply-templates select="*[local-name() != 'owner']"/>
 	    <xsl:for-each select="$exif/rsp/photo/exif[(@tagspace = 'TIFF' or @tagspace = 'EXIF') and not (@label like 'Tag::%')]">
 

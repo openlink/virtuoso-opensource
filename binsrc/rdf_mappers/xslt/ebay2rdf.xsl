@@ -23,6 +23,7 @@
 -->
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:ebay="urn:ebay:apis:eBLBaseComponents">
 
@@ -45,7 +46,7 @@
     <xsl:template match="/">
 	<rdf:RDF>
 	    <rdf:Description
-		rdf:about="{$resourceURL}">
+		rdf:about="{vi:proxyIRI ($resourceURL)}">
 		<xsl:apply-templates/>
 	    </rdf:Description>
 	</rdf:RDF>

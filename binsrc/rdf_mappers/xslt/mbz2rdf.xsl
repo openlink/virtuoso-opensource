@@ -32,6 +32,7 @@
 -->
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
@@ -51,13 +52,13 @@
     </xsl:template>
 
     <xsl:template match="mmd:artist[@type='Group']">
-	<mo:MusicGroup rdf:about="{$base}artist/{@id}.html">
+	<mo:MusicGroup rdf:about="{vi:proxyIRI ()}{$base}artist/{@id}.html">
 	    <foaf:name><xsl:value-of select="mmd:name"/></foaf:name>
 	    <xsl:for-each select="mmd:relation-list[@target-type='Artist']/mmd:relation/mmd:artist">
-		<mo:member rdf:resource="{$base}artist/{@id}.html"/>
+		<mo:member rdf:resource="{vi:proxyIRI ()}{$base}artist/{@id}.html"/>
 	    </xsl:for-each>
 	    <xsl:for-each select="mmd:release-list/mmd:release|mmd:relation-list[@target-type='Release']/mmd:relation/mmd:release">
-		<foaf:made rdf:resource="{$base}release/{@id}.html"/>
+		<foaf:made rdf:resource="{vi:proxyIRI ()}{$base}release/{@id}.html"/>
 	    </xsl:for-each>
 	    <xsl:for-each select="mmd:relation-list[@target-type='Url']">
 		<xsl:apply-templates mode="url-rel"/>
@@ -67,34 +68,34 @@
     </xsl:template>
 
     <xsl:template match="mmd:artist[@type='Person']">
-	<mo:MusicArtist rdf:about="{$base}artist/{@id}.html">
+	<mo:MusicArtist rdf:about="{vi:proxyIRI ()}{$base}artist/{@id}.html">
 	    <foaf:name><xsl:value-of select="mmd:name"/></foaf:name>
 	    <xsl:for-each select="mmd:release-list/mmd:release|mmd:relation-list[@target-type='Release']/mmd:relation/mmd:release">
-		<foaf:made rdf:resource="{$base}release/{@id}.html"/>
+		<foaf:made rdf:resource="{vi:proxyIRI ()}{$base}release/{@id}.html"/>
 	    </xsl:for-each>
 	</mo:MusicArtist>
 	<xsl:apply-templates />
     </xsl:template>
 
     <xsl:template match="mmd:release">
-	<mo:Record rdf:about="{$base}release/{@id}.html">
+	<mo:Record rdf:about="{vi:proxyIRI ()}{$base}release/{@id}.html">
 	    <dc:title><xsl:value-of select="mmd:title"/></dc:title>
 	    <mo:release_type rdf:resource="&mo;{translate (substring-before (@type, ' '), $uc, $lc)}"/>
 	    <mo:release_status rdf:resource="&mo;{translate (substring-after (@type, ' '), $uc, $lc)}"/>
 	    <xsl:for-each select="mmd:track-list/mmd:track">
-		<mo:track rdf:resource="{$base}track/{@id}.html"/>
+		<mo:track rdf:resource="{vi:proxyIRI ()}{$base}track/{@id}.html"/>
 	    </xsl:for-each>
 	</mo:Record>
 	<xsl:apply-templates select="mmd:track-list/mmd:track"/>
     </xsl:template>
 
     <xsl:template match="mmd:track">
-	<mo:Track rdf:about="{$base}track/{@id}.html">
+	<mo:Track rdf:about="{vi:proxyIRI ()}{$base}track/{@id}.html">
 	    <dc:title><xsl:value-of select="mmd:title"/></dc:title>
 	    <mo:track_number><xsl:value-of select="position()"/></mo:track_number>
 	    <mo:duration rdf:datatype="&xsd;integer"><xsl:value-of select="mmd:duration"/></mo:duration>
-	    <foaf:maker rdf:resource="{$base}artist/{artist/@id}.html"/>
-	    <mo:musicbrainz rdf:resource="{$base}track/{@id}.html"/>
+	    <foaf:maker rdf:resource="{vi:proxyIRI ()}{$base}artist/{artist/@id}.html"/>
+	    <mo:musicbrainz rdf:resource="{vi:proxyIRI ()}{$base}track/{@id}.html"/>
 	</mo:Track>
     </xsl:template>
 

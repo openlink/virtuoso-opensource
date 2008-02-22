@@ -23,6 +23,7 @@
 -->
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:mql="http://www.freebase.com/">
 
@@ -36,7 +37,7 @@
 	<rdf:RDF>
 	    <xsl:if test="/results/ROOT/result/*">
 	    <rdf:Description
-		rdf:about="{$baseUri}">
+		    rdf:about="{vi:proxyIRI($baseUri)}">
 		    <xsl:apply-templates select="/results/ROOT/result/*"/>
 	    </rdf:Description>
 	    </xsl:if>
@@ -46,7 +47,7 @@
     <xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:attribute name="rdf:resource">
-		<xsl:value-of select="."/>
+		<xsl:value-of select="vi:proxyIRI (.)"/>
 	    </xsl:attribute>
 	</xsl:element>
     </xsl:template>
@@ -54,7 +55,7 @@
     <xsl:template match="*[starts-with(.,'/')]">
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:attribute name="rdf:resource">
-		<xsl:value-of select="$ns"/>view<xsl:value-of select="."/>
+		<xsl:value-of select="vi:proxyIRI()"/><xsl:value-of select="$ns"/>view<xsl:value-of select="."/>
 	    </xsl:attribute>
 	</xsl:element>
     </xsl:template>

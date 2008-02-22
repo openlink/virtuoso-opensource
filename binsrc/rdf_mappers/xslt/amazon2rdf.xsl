@@ -29,6 +29,7 @@
 -->
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="&rdf;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:aws="http://soap.amazon.com/"
@@ -38,6 +39,7 @@
     <xsl:output method="xml" indent="yes" />
 
     <xsl:variable name="resourceURL">
+	<xsl:value-of select="vi:proxyIRI ()"/>
 	<xsl:text>http://www.amazon.com/exec/obidos/ASIN/</xsl:text>
 	<xsl:value-of select="//Asin"/>
     </xsl:variable>
@@ -101,7 +103,7 @@
     <xsl:template match="*[starts-with(.,'http://') or starts-with(.,'urn:')]">
 	<xsl:element namespace="{$ns}" name="{name()}">
 	    <xsl:attribute name="rdf:resource">
-		<xsl:value-of select="."/>
+		<xsl:value-of select="vi:proxyIRI (.)"/>
 	    </xsl:attribute>
 	</xsl:element>
     </xsl:template>
