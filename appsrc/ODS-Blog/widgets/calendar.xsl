@@ -610,7 +610,7 @@
 			<small>You can specify multiple URLs, each on single line</small>
                     <v:textarea name="tpurl1" value="" xhtml_rows="3" xhtml_style="width:99%"/>
                       <br/>
-		      <a href="#" onclick="getTb()">Suggest</a>
+		    <a href="javascript:void(0)" onclick="javascript:getTb()">Suggest</a>
 		</div>
 		<div id="tb_tags">
 		    <v:textarea name="post_tags" xhtml_id="post_tags" value="" xhtml_rows="3" xhtml_style="width:99%"
@@ -628,7 +628,7 @@
                         </v:after-data-bind>
                       </v:textarea>
                       <br/>
-		      <a href="#" onclick="getTags()">Suggest</a>
+		      <a href="javascript:void(0)" onclick="javascript:getTags()">Suggest</a>
 		      <![CDATA[&#160;]]>
 		      <v:url name="new_tag_rule_url" value="New Tag Rule" url="--sprintf ('%s/tags.vspx?RETURL=%U', wa_link(1), self.return_url_1)" render-only="1" is-local="1"/>
                     </div>
@@ -904,9 +904,9 @@
                       B_BLOG_ID = self.blogid;
                     id := self.editpost;
                     retid := id;
+                  }
                     delete from BLOG..BLOG_TAG where BT_BLOG_ID = self.blogid and BT_POST_ID = id;
 		    delete from moat.DBA.moat_meanings where m_inst = self.inst_id and m_id = id;
-                  }
                   {
                     declare cat, ix any;
                     ix := 0;

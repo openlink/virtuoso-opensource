@@ -3410,6 +3410,7 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   declare title, author, authorid, home varchar;
   declare mid, rfc, author_mail, enc_type, _wai_name varchar;
   declare post_iri varchar;
+  declare inst_id, auto_tag int;
 
   update BLOG.DBA.SYS_BLOG_ATTACHES set BA_M_BLOG_ID = N.B_BLOG_ID
   where BA_M_BLOG_ID = N.B_BLOG_ID; -- Only for timestamp
@@ -3419,19 +3420,17 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   else
     mid := N.B_RFC_ID;
 
+  whenever not found goto nf;
+  select BI_HOME, BI_WAI_NAME, WAI_ID, BI_AUTO_TAGGING into home, _wai_name, inst_id, auto_tag
+      from BLOG..SYS_BLOG_INFO, DB.DBA.WA_INSTANCE
+      where BI_BLOG_ID = N.B_BLOG_ID and BI_WAI_NAME = WAI_NAME;
+  select coalesce (U_FULL_NAME, U_NAME), U_NAME, U_E_MAIL into author, authorid, author_mail
+      from DB.DBA.SYS_USERS where U_ID = N.B_USER_ID;
+  nf:
 
   xt := xml_tree_doc (xml_tree (N.B_CONTENT, 2, '', 'UTF-8'));
 
-  tags := xpath_eval ('//a[@rel="tag"]/text()', xt, 0);
-  tagstr := '';
-  foreach (any t in tags) do
-    {
-      tagstr := tagstr || cast (t as varchar) || ',';
-    }
-  tagstr := rtrim (tagstr, ', ');
-  if (length (tagstr))
-    insert soft BLOG..BLOG_TAG (BT_BLOG_ID, BT_POST_ID, BT_TAGS) values (N.B_BLOG_ID, N.B_POST_ID, tagstr);
-
+  RE_TAG_POST (N.B_BLOG_ID, N.B_POST_ID, N.B_USER_ID, inst_id, N.B_CONTENT, 0, xt, null, null, auto_tag);
   BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xt);
 
   xt := xslt (BLOG2_GET_PPATH_URL ('widgets/store_post.xsl'), xt);
@@ -3466,11 +3465,6 @@ create trigger SYS_SYS_BLOGS_IN_SYS_BLOG_ATTACHES after insert on BLOG.DBA.SYS_B
   else
     have_encl := 0;
 
-  whenever not found goto nf;
-  select BI_HOME, BI_WAI_NAME into home, _wai_name from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = N.B_BLOG_ID;
-  select coalesce (U_FULL_NAME, U_NAME), U_NAME, U_E_MAIL into author, authorid, author_mail
-      from DB.DBA.SYS_USERS where U_ID = N.B_USER_ID;
-  nf:
   post_iri := sioc..post_iri (authorid, 'weblog', _wai_name, N.B_POST_ID);
 
   if (N.B_RFC_HEADER is null)
@@ -3520,23 +3514,21 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
   declare xt, ss, tags, tagstr, is_act, home, author, authorid, title, have_encl, enc_type, _wai_name any;
   declare ver int;
   declare post_iri varchar;
+  declare inst_id, auto_tag int;
 
   update BLOG.DBA.SYS_BLOG_ATTACHES set BA_M_BLOG_ID = N.B_BLOG_ID where BA_M_BLOG_ID = N.B_BLOG_ID; -- Only for timestamp
+
+  whenever not found goto nf;
+  select BI_HOME, BI_WAI_NAME, WAI_ID, BI_AUTO_TAGGING into home, _wai_name, inst_id, auto_tag
+      from BLOG..SYS_BLOG_INFO, DB.DBA.WA_INSTANCE where BI_BLOG_ID = N.B_BLOG_ID and BI_WAI_NAME = WAI_NAME;
+  select coalesce (U_FULL_NAME, U_NAME), U_NAME into author, authorid from DB.DBA.SYS_USERS where U_ID = N.B_USER_ID;
+  nf:
 
   if (is_http_ctx () and  upper(http_current_charset ()) = 'UTF-8')
     {
       xt := xml_tree_doc (xml_tree (N.B_CONTENT, 2, '', 'UTF-8'));
 
-      tags := xpath_eval ('//a[@rel="tag"]/text()', xt, 0);
-      tagstr := '';
-      foreach (any t in tags) do
-	{
-	  tagstr := tagstr || cast (t as varchar) || ',';
-	}
-      tagstr := rtrim (tagstr, ', ');
-      if (length (tagstr))
-	insert replacing BLOG..BLOG_TAG (BT_BLOG_ID, BT_POST_ID, BT_TAGS) values (N.B_BLOG_ID, N.B_POST_ID, tagstr);
-
+      RE_TAG_POST (N.B_BLOG_ID, N.B_POST_ID, N.B_USER_ID, inst_id, N.B_CONTENT, 0, xt, null, null, auto_tag);
       BLOG_ADD_LINKS (N.B_BLOG_ID, N.B_POST_ID, xt);
 
       xt := xslt (BLOG2_GET_PPATH_URL ('widgets/store_post.xsl'), xt);
@@ -3595,11 +3587,6 @@ create trigger SYS_SYS_BLOGS_UP_SYS_BLOG_ATTACHES after update on BLOG.DBA.SYS_B
 	  where B_BLOG_ID = N.B_BLOG_ID and B_POST_ID = N.B_POST_ID;
       set triggers on;
     }
-
-  whenever not found goto nf;
-  select BI_HOME, BI_WAI_NAME into home, _wai_name from BLOG..SYS_BLOG_INFO where BI_BLOG_ID = N.B_BLOG_ID;
-  select coalesce (U_FULL_NAME, U_NAME), U_NAME into author, authorid from DB.DBA.SYS_USERS where U_ID = N.B_USER_ID;
-  nf:
 
   post_iri := sioc..post_iri (authorid, 'weblog', _wai_name, N.B_POST_ID);
 

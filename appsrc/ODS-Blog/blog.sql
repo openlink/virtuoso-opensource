@@ -487,6 +487,7 @@ blog2_exec_no_error ('create table SYS_BLOG_INFO
       BI_DEL_PASS varchar,
       BI_WAI_NAME varchar,
       BI_HAVE_COMUNITY_BLOG int,
+      BI_AUTO_TAGGING int default 1,
       primary key (BI_BLOG_ID)
 )')
 ;
@@ -507,6 +508,7 @@ blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_WAI_NAME', 'varchar');
 blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_HAVE_COMUNITY_BLOG', 'int');
 blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_TB_NOTIFY', 'int');
 blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_LAST_UPDATE', 'datetime');
+blog2_add_col('BLOG.DBA.SYS_BLOG_INFO', 'BI_AUTO_TAGGING', 'int default 1');
 
 blog2_exec_no_error ('create unique index SYS_BLOG_INFO_WAI on BLOG.DBA.SYS_BLOG_INFO (BI_WAI_NAME)');
 
@@ -8219,3 +8221,115 @@ IMPORT_BLOG (in blogid varchar, in user_id int, in url varchar, in api varchar, 
     }
   return length (posts);
 };
+
+-- /* re-tagging */
+create procedure blog_tag2str (inout tags any)
+{
+  declare s any;
+  declare i int;
+
+  s := string_output ();
+  for (i := 0; i < length (tags); i := i + 2)
+  {
+    http (sprintf ('%s,', tags[i]), s);
+  }
+  return rtrim(string_output_string (s), ', ');
+}
+;
+
+create procedure RE_TAG_POST (in blogid varchar, in post_id varchar, in user_id int, in inst_id int,
+    inout content any, in keep_existing int, inout xt any, in job int := null, in rules any := null, in auto_tag int := 1)
+{
+  declare moat_tags, tags, tagstr, comp_tags, existing_tags any;
+  declare flag varchar;
+  if (rules is null)
+    rules := DB.DBA.user_tag_rules (user_id);
+  if (auto_tag)
+    {
+      tags := DB.DBA.tag_document_with_moat (content, 0, rules);
+    }
+  else
+    tags := vector ();
+  moat_tags := tags;
+  tagstr := blog_tag2str (tags);
+  if (keep_existing)
+    {
+      --dbg_obj_print ('>>>add tags');
+      existing_tags := coalesce (
+      (select BT_TAGS from BLOG..BLOG_TAG where BT_BLOG_ID = blogid and BT_POST_ID = post_id), '');
+      existing_tags := split_and_decode (existing_tags, 0, '\0\0,');
+      if (existing_tags is null)
+	existing_tags := vector ();
+
+	comp_tags := vector ();
+	foreach (any t in existing_tags) do
+	  {
+	    t := trim(lower (cast (t as varchar)));
+	    if (length(t) and not position (t, comp_tags))
+	      comp_tags := vector_concat (comp_tags, vector (t));
+	  }
+
+	foreach (any t in comp_tags) do
+	  {
+	    t := trim(lower (cast (t as varchar)));
+	    if (length (t) and not position (t, tags))
+	      tagstr := tagstr || ', ' || t;
+	  }
+	  tags := vector_concat (tags, comp_tags);
+    }
+  --dbg_obj_print ('existing_tags', existing_tags);
+  --dbg_obj_print ('tags', tags);
+    {
+      declare xp any;
+      if (xt is null)
+        xt := xtree_doc (content, 2, '', 'UTF-8');
+      xp := xpath_eval ('//a[@rel="tag"]/text()', xt, 0);
+      --dbg_obj_print  ('embedded', xp);
+      foreach (any t in xp) do
+	{
+	  t := trim(lower (cast (t as varchar)));
+	  if (length (t) and not position (t, tags))
+	    tagstr := tagstr || ', ' || t;
+	}
+    }
+
+    tagstr := trim (tagstr, ', ');
+
+    --dbg_obj_print ('tagstr',tagstr);
+
+    flag := null;
+    if (length (tagstr))
+      {
+	delete from BLOG..BLOG_TAG where BT_BLOG_ID = blogid and BT_POST_ID = post_id;
+	delete from moat.DBA.moat_meanings where m_inst = inst_id and m_id = post_id;
+	for (declare i, l int, i := 0, l := length (moat_tags); i < l; i := i + 2)
+	{
+	  declare tag, arr any;
+	  tag := moat_tags[i];
+	  arr := moat_tags[i+1];
+	  foreach (any turi in arr) do
+	    {
+	      insert replacing moat.DBA.moat_meanings (m_inst, m_id, m_tag, m_uri, m_iri)
+		  values (inst_id, post_id, tag, turi,
+		      iri_to_id (sioc..blog_post_iri (blogid, post_id)));
+	    }
+	}
+
+	insert replacing BLOG..BLOG_TAG (BT_BLOG_ID, BT_POST_ID, BT_TAGS) values (blogid, post_id, tagstr);
+	if (job is not null)
+	  {
+	    if (exists (select 1 from BLOG..SYS_BLOGS_ROUTING_LOG where RL_JOB_ID = job and RL_POST_ID = post_id))
+	      flag := 'U';
+	    else
+	      flag := 'I';
+	  }
+      }
+    else
+      {
+	if (job is not null and exists (select 1 from BLOG..SYS_BLOGS_ROUTING_LOG where RL_JOB_ID = job and RL_POST_ID = post_id))
+	  flag := 'D';
+	delete from BLOG..BLOG_TAG where BT_BLOG_ID = blogid and BT_POST_ID = post_id;
+      }
+   return flag;
+}
+;

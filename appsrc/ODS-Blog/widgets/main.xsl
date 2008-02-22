@@ -206,6 +206,7 @@
     <v:variable name="e_author" type="varchar" default="null" persist="temp" />
     <v:variable name="e_lat" type="real" default="null" persist="temp" />
     <v:variable name="e_lng" type="real" default="null" persist="temp" />
+    <v:variable name="auto_tag" type="int" default="1" persist="temp" />
 
     <!-- end -->
 
@@ -399,7 +400,8 @@
 	    BI_WAI_NAME,
 	    BI_OWNER,
 	    U_OPTS,
-	    BI_SHOW_AS_NEWS
+	    BI_SHOW_AS_NEWS,
+	    BI_AUTO_TAGGING
           into
             self.title,
             self.current_home,
@@ -432,7 +434,8 @@
 	    self.inst_name,
 	    self.owner_u_id,
 	    self.user_opts,
-	    self.conv
+	    self.conv,
+	    self.auto_tag
           from
             BLOG.DBA.SYS_BLOG_INFO,
 	    SYS_USERS,
@@ -11120,26 +11123,24 @@ window.onload = function (e)
           </tr>
         </table>
 	<?vsp } ?>
-	<!--v:check-box name="atagcb" xhtml_id="atagcb" value="1" auto-submit="1">
-	    <v:after-data-bind>
-		declare opts any;
-		opts := self.opts;
-		if (e.ve_is_post and e.ve_initiator = control)
-		  {
-		    if (get_keyword (control.vc_get_name (), e.ve_params) = '1')
-	        	opts := BLOG.DBA.BLOG2_SET_OPTION('AutoTagging', opts, 1);
-		    else
-	        	opts := BLOG.DBA.BLOG2_SET_OPTION('AutoTagging', opts, 0);
-	            update BLOG..SYS_BLOG_INFO set BI_OPTIONS = serialize (opts) where BI_BLOG_ID = self.blogid;
-		  }
-		self.opts := opts;
-		control.ufl_selected := get_keyword ('AutoTagging', self.opts, 0);
-	    </v:after-data-bind>
-	</v:check-box>
-	<label for="atagcb">Automatic Tagging</label><br/><br/-->
 	    <br />
 	    <br />
        <h2>Tagging Settings</h2>
+	<v:check-box name="atagcb" xhtml_id="atagcb" value="1" auto-submit="1">
+	    <v:after-data-bind>
+		if (e.ve_is_post and equ (e.ve_initiator, control))
+		  {
+		    if (get_keyword (control.vc_get_name (), e.ve_params) = '1')
+	              self.auto_tag := 1;
+		    else
+	              self.auto_tag := 0;
+	            update BLOG..SYS_BLOG_INFO set BI_AUTO_TAGGING = self.auto_tag where BI_BLOG_ID = self.blogid;
+		  }
+		control.ufl_selected := self.auto_tag;
+	    </v:after-data-bind>
+	</v:check-box>
+	<label for="atagcb">Automatic Tagging</label><br/><br/>
+
        <div><a href="<?V wa_link (1) ?>/tags.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;RETURL=<?U self.return_url_1 ?>">Content Tagging Settings</a></div>
        <br/>
        <div>
@@ -11149,95 +11150,17 @@ window.onload = function (e)
        <div>
               <v:button xhtml_class="real_button" name="genb1" action="simple" value="Re-tag existing posts" xhtml_title="Auto Tagging" xhtml_alt="Auto Tagging">
 		<v:on-post><![CDATA[
-		declare ruls, tags, tagstr, flag, job, existing_tags, moat_tags any;
-		job := null;
+		declare ruls, flag, job, dummy any;
+		job := null; dummy := null;
 
-		for select top 1 R_JOB_ID from BLOG..SYS_ROUTING where
-			R_ITEM_ID = self.blogid and R_TYPE_ID = 3 and R_PROTOCOL_ID = 6
-			do { job := R_JOB_ID; }
+		job := (select top 1 R_JOB_ID from BLOG..SYS_ROUTING where
+			R_ITEM_ID = self.blogid and R_TYPE_ID = 3 and R_PROTOCOL_ID = 6);
 
 	      	ruls := user_tag_rules (self.user_id);
 		for select B_TITLE, B_CONTENT, B_POST_ID from BLOG..SYS_BLOGS where B_BLOG_ID = self.blogid do
 		{
-		  --dbg_obj_print ('tagging:', B_TITLE);
-		  tags := tag_document_with_moat (B_CONTENT, 0, ruls);
-		  moat_tags := tags;
-		  tagstr := self.tag2str (tags);
-		  if (self.cb_app_tags.ufl_selected)
-		    {
-		      declare comp_tags any;
-		      --dbg_obj_print ('>>>add tags');
-		      existing_tags := coalesce (
-		        (select BT_TAGS from BLOG..BLOG_TAG where BT_BLOG_ID = self.blogid and BT_POST_ID = B_POST_ID), '');
-		      existing_tags := split_and_decode (existing_tags, 0, '\0\0,');
-		      if (existing_tags is null)
-		        existing_tags := vector ();
-
-	              comp_tags := vector ();
-		      foreach (any t in existing_tags) do
-		        {
-		          t := trim(lower (cast (t as varchar)));
-			  if (length(t) and not position (t, comp_tags))
-			    comp_tags := vector_concat (comp_tags, vector (t));
-  			}
-
-		      foreach (any t in comp_tags) do
-		        {
-		          t := trim(lower (cast (t as varchar)));
-			  if (length (t) and not position (t, tags))
-			    tagstr := tagstr || ', ' || t;
-			}
-		      tags := vector_concat (tags, comp_tags);
-	            }
-		  --dbg_obj_print ('existing_tags', existing_tags);
-		  --dbg_obj_print ('tags', tags);
-                  {
-                    declare xt, xp any;
-                    xt := xtree_doc (B_CONTENT, 2, '', 'UTF-8');
-                    xp := xpath_eval ('//a[@rel="tag"]/text()', xt, 0);
-		    --dbg_obj_print  ('embedded', xp);
-                    foreach (any t in xp) do
-		      {
-		        t := trim(lower (cast (t as varchar)));
-		        if (length (t) and not position (t, tags))
-                          tagstr := tagstr || ', ' || t;
-                      }
-                  }
-
-		  tagstr := trim (tagstr, ', ');
-
-		  --dbg_obj_print ('tagstr',tagstr);
-
-		  flag := null;
-		  if (length (tagstr))
-		    {
-		      delete from BLOG..BLOG_TAG where BT_BLOG_ID = self.blogid and BT_POST_ID = B_POST_ID;
-		      delete from moat.DBA.moat_meanings where m_inst = self.inst_id and m_id = B_POST_ID;
-                      for (declare i, l int, i := 0, l := length (moat_tags); i < l; i := i + 2)
-		         {
-                           declare tag, arr any;
-			   tag := moat_tags[i];
-			   arr := moat_tags[i+1];
-			   foreach (any turi in arr) do
-			     {
-			       insert replacing moat.DBA.moat_meanings (m_inst, m_id, m_tag, m_uri, m_iri)
-			          values (self.inst_id, B_POST_ID, tag, turi,
-				  iri_to_id (sioc..blog_post_iri (self.blogid, B_POST_ID)));
-			     }
-		         }
-
-		      insert replacing BLOG..BLOG_TAG (BT_BLOG_ID, BT_POST_ID, BT_TAGS) values (self.blogid, B_POST_ID, tagstr);
-		      if (exists (select 1 from BLOG..SYS_BLOGS_ROUTING_LOG where RL_JOB_ID = job and RL_POST_ID = B_POST_ID))
-		        flag := 'U';
-	              else
-                        flag := 'I';
-		    }
-		  else
-		    {
-		      if (exists (select 1 from BLOG..SYS_BLOGS_ROUTING_LOG where RL_JOB_ID = job and RL_POST_ID = B_POST_ID))
-		        flag := 'D';
-		      delete from BLOG..BLOG_TAG where BT_BLOG_ID = self.blogid and BT_POST_ID = B_POST_ID;
-		    }
+		  flag := BLOG.DBA.RE_TAG_POST (self.blogid, B_POST_ID, self.user_id, self.inst_id,
+ 		    B_CONTENT, self.cb_app_tags.ufl_selected, dummy, job, ruls, 1);
 		   if (job is not null and length (flag))
 		     {
 		       insert replacing BLOG..SYS_BLOGS_ROUTING_LOG (RL_JOB_ID, RL_POST_ID, RL_TYPE) values (job, B_POST_ID, flag);
