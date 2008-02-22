@@ -445,7 +445,7 @@ function addImage(rte) {
 function getOffsetTop(elm) {
 	var mOffsetTop = elm.offsetTop;
 	var mOffsetParent = elm.offsetParent;
-	var parents_up = 6; //the positioning div is 2 elements up the tree
+	var parents_up = 2; //the positioning div is 2 elements up the tree
 
 	while(parents_up > 0) {
 		mOffsetTop += mOffsetParent.offsetTop;
@@ -461,7 +461,7 @@ function getOffsetTop(elm) {
 function getOffsetLeft(elm) {
 	var mOffsetLeft = elm.offsetLeft;
 	var mOffsetParent = elm.offsetParent;
-	var parents_up = 6;
+	var parents_up = 2;
 
 	while(parents_up > 0) {
 		mOffsetLeft += mOffsetParent.offsetLeft;

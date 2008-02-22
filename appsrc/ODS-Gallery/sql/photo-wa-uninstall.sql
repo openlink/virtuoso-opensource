@@ -29,6 +29,7 @@ create procedure PHOTO.WA.uninstall ()
   for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'oGallery' do
   {
     (WAI_INST as DB.DBA.wa_photo).wa_drop_instance();
+    commit work;
   }
 }
 ;

@@ -25,23 +25,28 @@ body {
   margin: 0;
   padding: 0;
   font-family: Arial, Helvetica, sans-serif;
-  color: #333}
+  color: #333;
+}
 
-li:hover{
+li: hover
+{
   cursor:pointer;
 }
 
-#welcome{
+#welcome
+{
   border:1px solid #C0C0C0;
   padding:5px;
   margin:5px;
 }
 
-#welcome h2{
+#welcome h2
+{
   margin-top:0;
 }
 
-#wrapper {
+#wrapper
+{
 	padding: 0px;
 	margin: 2px auto;
 	width: 760px;
@@ -58,13 +63,15 @@ li:hover{
   background:#EAEAEE;
 }
 
-#head{
+#head
+{
   width: 100%;
   height: 90px;
   border-bottom:1px solid #E2E2E2;
 }
 
-#head h1 {
+#head h1
+{
   margin-top:0;
   color:#fff;
   text-align:left;
@@ -108,24 +115,24 @@ float:left;
   width:102px;
   cursor:pointer;
   background: url(../i/tab.png) no-repeat;
-
 }
 
-#nav li#hello{
+#nav li#hello
+{
   border-style:none;
   background:none;
   width:5px;
   text-align:left;
 }
 
-#nav li.on{
+#nav li.on
+{
   background:#99B3C5;
   color:#fff;
 }
 
-
-
-#grad{
+#grad
+{
   background: url(../i/grad_1.gif) repeat-x;
   font-size:15px;
 }
@@ -272,16 +279,15 @@ div.album_obsolete {
   overflow:hidden;
   position:relative;
 }
-div#images_ctrl{
+
+div#images_ctrl
+{
   border: 0px;
-  float:none;
-  text-align:center;
-  padding:3px;
-  margin:0px;
   font-size:12px;
   width:96px;
   height:15px;
   overflow:hidden;
+  left: 0px;
   bottom: 0px;
   position:absolute;
 }
@@ -324,7 +330,7 @@ div#mssage
 
 #info
 {
-  margin:0px 10px;;
+  margin-bottom: 10px;
   height:100px;
   border-bottom:1px solid #CCCCCC;
 }
@@ -384,12 +390,7 @@ div#mssage
   float:left;
 }
 
-
 #image {
-  text-align:left;
-  clear:both;
-  margin-left:10px;
-  text-align:center;
   width:500px;
   height:370px;
 }
@@ -519,55 +520,66 @@ div#mssage
   font-size:10px;
 }
 
-#comment{
+#comment
+{
   width:200px;
   height:135px;
 }
 
-#image_info{
+#image_info
+{
   float:left;
-  padding:5px;
+  padding: 12px 8px 0px 0px;
 }
 
-#exif {
+#exif
+{
 margin:0;
 padding:0;
 }
 
-#exif td{
+#exif td
+{
   font-size:12px;
   padding:2px;
   border-bottom:1px solid #e1e1e1;
 }
 
-#exif td b{
+#exif td b
+{
   width:90px;
   margin-right:2px;
   vertical-align:top;
 }
 
-#newest{
+#newest
+{
   padding:5px;
 }
 
-#newest h3{
+#newest h3
+{
   font-size:14px;
 }
 
-#forma{
+#forma
+{
   font-size:13px;
 }
 
-#forma tfoot{
+#forma tfoot
+{
   height:60px;
 }
 
-.box{
+.box
+{
   border:1px solid #C0C0C0;
   margin-left:5px;
 }
 
-.box caption{
+.box caption
+{
   text-align: left;
   font-size:14px;
   font-weight:bold;
@@ -575,35 +587,41 @@ padding:0;
   margin-left:5px;
 }
 
-
 #SlideShow_next,
-#SlideShow_stop{
+#SlideShow_stop
+{
   margin-left:30px;
 }
 
-#feeds li{
+#feeds li
+{
   background-image:url('../i/blue-icon-16.gif');
   background-repeat:no-repeat;
   padding-left:20px;
 }
 
-#feed_rss{
+#feed_rss
+{
   background-image:url('../i/rss-icon-16.gif') !important;
 }
-#feed_atom{
+
+#feed_atom
+{
   background-image:url('../i/atom-icon-16.gif') !important;
 }
-#feed_rdf,#feed_siocxml,#feed_siocn3turtle{
+
+#feed_rdf,#feed_siocxml,#feed_siocn3turtle
+{
   background-image:url('../i/rdf-icon-16.gif') !important;
 }
 
-
-#buttons{
+#buttons
+{
   width:160px;
   text-align:center;  
 }
-/*------------------ rotator ----------------- */
 
+/*------------------ rotator ----------------- */
 #rotator { /* tab content */
 	height: 800px;
 	position: relative;
@@ -639,7 +657,8 @@ padding:0;
 }
 
 /* slider */
-#sliderbg {
+#sliderbg
+{
 	position: relative;
 	width: 160px;
 	height: 20px;
@@ -674,14 +693,16 @@ padding:0;
   padding-left:45px;
 }
 
-.link{
+.link
+{
   padding:5px;
   color:#00f;
   text-decoration:underline;
   cursor:pointer;
 }
 
-.link_disabled{
+.link_disabled
+{
   padding:5px;
   color:#ccc;
   cursor:pointer;

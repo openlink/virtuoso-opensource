@@ -179,6 +179,25 @@ create procedure PHOTO.WA.redirect(
 ;
 
 --------------------------------------------------------------------------------
+create procedure PHOTO.WA.url_params(
+  in _sid varchar,
+  in _realm varchar)
+{
+  declare _url_params varchar;
+  _url_params := '';
+  if (isstring(_sid) and _sid <> '')
+    _url_params := 'sid=' || _sid;
+  if (isstring(_realm) and _realm <> '')
+    if (_url_params <> '') {
+      _url_params := _url_params || '&realm=' || _realm;
+    } else {
+      _url_params := 'realm=' || _realm;
+    }
+  return _url_params;
+}
+;
+
+--------------------------------------------------------------------------------
 create procedure PHOTO.WA.http_404 ()
 {
     http_rewrite ();
@@ -188,3 +207,23 @@ create procedure PHOTO.WA.http_404 ()
     return;
 }
 ;
+
+---------------------------------------------------------------------------------
+create procedure PHOTO.WA.http_name ()
+{
+  if (is_http_ctx ())
+    {
+      declare vh, lh, hf, lines any;
+      lines := http_request_header ();
+      vh := http_map_get ('vhost');
+      lh := http_map_get ('lhost');
+      hf := http_request_header (lines, 'Host');
+      if (hf is not null)
+        return hf;
+      else
+        return sioc..get_cname();
+    }
+  else
+    return sys_stat ('st_host_name') ||':'|| server_http_port ();
+
+};

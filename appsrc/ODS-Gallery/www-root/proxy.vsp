@@ -33,6 +33,11 @@
 
     host := http_request_header(lines, 'Host', null, 'localhost');
 
+    if (isstring (host) and strchr (host , ':') is null)
+    {
+      host := host || ':80';
+    }
+
     _xml := http_get(sprintf('http://%s/photos/SOAP/services.wsdl',host,server_http_port ()));
 
     sHost := registry_get('_oGallery_path_');

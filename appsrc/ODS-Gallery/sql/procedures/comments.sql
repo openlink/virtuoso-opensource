@@ -47,7 +47,7 @@ create procedure PHOTO.WA.root_comment (
   {
   _owner_id := PHOTO.WA.domain_owner_id (_gallery_id);
   _comment_id := sequence_next('PHOTO.WA.comments');
-
+    if (_owner_id is not null)
   insert into PHOTO.WA.COMMENTS (COMMENT_ID, GALLERY_ID, RES_ID, CREATE_DATE, MODIFY_DATE, USER_ID, TEXT)
     values (_comment_id,
             _gallery_id,

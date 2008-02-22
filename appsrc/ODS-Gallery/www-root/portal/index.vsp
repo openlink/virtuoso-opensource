@@ -21,6 +21,23 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+  declare host_port, base_path varchar;
+
+  host_port := WA_GET_HOST ();
+  if (isstring (host_port) and strchr (host_port , ':') is null)
+  {
+    host_port := host_port || ':80';
+    if (http_request_header (lines, 'User-Agent') like '%Safari%')
+    {
+      declare _url_params varchar;
+      _url_params := PHOTO.WA.url_params (get_keyword ('sid', params), get_keyword ('realm', params));
+      if (isstring(_url_params) and _url_params <> '')
+        _url_params := '?' || _url_params;
+      PHOTO.WA.redirect (sprintf ('http://%s%s%s', host_port, http_path (), _url_params));
+    }
+  }
+  base_path := 'http://'||host_port|| http_path ();
+
   declare auth_uid,_mime_type varchar;
   declare current_user photo_user;
   declare _sid,home_url varchar;
@@ -60,6 +77,7 @@
   {
     declare freeze_page varchar;
     freeze_page := PHOTO.WA.frozen_page(current_instance.name);
+    dbg_obj_print (PHOTO.WA.frozen_page(current_instance.name));
     if (freeze_page is null or freeze_page = '' or freeze_page = 'default')
     {
       http_rewrite ();
@@ -125,6 +143,14 @@
     owner_fullname := PHOTO.WA.user_fullName (current_instance.owner_id);
   }
   
+  declare host_port, base_path varchar;
+  host_port := WA_GET_HOST ();
+  if (isstring (host_port) and strchr (host_port , ':') is null)
+  {
+    host_port := host_port || ':80';
+  }
+  base_path := 'http://'||host_port|| http_path ();
+
   http(sprintf('<root sid="%s" realm="%s">',_sid,either(current_user.realm,'')),_xml);
   http(sprintf('<user lat="%.06f" lng="%.06f" owner="%d">',coalesce(geo_data[0],0),coalesce(geo_data[1],0),isOwner),_xml);
   http(sprintf('<full_name>%s</full_name>',current_user.full_name),_xml);
@@ -132,7 +158,8 @@
   http(sprintf('<last_name>%s</last_name>',current_user.last_name),_xml);
   http(sprintf('<user_name>%s</user_name>',coalesce(current_user.auth_uid,'')),_xml);
   http('</user>',_xml);     --&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/%s/sioc.rdf', self.st_host, self.fname, wa_type_to_app (self.app_type)), '+', '%2B')); ?>
-  http(sprintf('<host>%s</host>',WA_GET_HOST ()),_xml);
+  http(sprintf('<host>%s</host>',host_port),_xml);
+  http(sprintf('<base>%s</base>',base_path),_xml);
   http(sprintf('<app_type>photos</app_type>'),_xml);
   http(sprintf('<aplus>%d</aplus>',DB.DBA.WA_USER_APP_ENABLE (current_instance.owner_id)),_xml);
   http(sprintf('<instance>%U</instance>', current_instance.name),_xml);

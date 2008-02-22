@@ -28,6 +28,9 @@
   <xsl:template match="/">
   <html xmlns:foaf="http://xmlns.com/foaf/0.1/" foaf:dummy="false" xmlns:dc="http://purl.org/dc/elements/1.1/" dc:dummy="false" xmlns:dct="http://purl.org/dc/terms/" dct:dummy="false" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:dummy="false" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdfs:dummy="false" xmlns:sioct="http://rdfs.org/sioc/types#" sioct:dummy="false" xmlns:sioc="http://rdfs.org/sioc/ns#" sioc:dummy="false">
       <head profile="http://internetalchemy.org/2003/02/profile">
+      <base>
+        <xsl:attribute name="href"><xsl:value-of select="root/base"/></xsl:attribute>
+      </base>
         <title>Photo Gallery</title>
         <link rel="meta" type="application/rdf+xml" title="SIOC" href="root/host" >
           <xsl:attribute name="href">http://<xsl:value-of select="root/host"/>/dataspace/<xsl:value-of select="root/instance_owner"/>/<xsl:value-of select="root/app_type"/>/<xsl:value-of select="root/instance"/>/sioc.rdf</xsl:attribute>
@@ -361,6 +364,7 @@
               <h2 id="comment_header">New comment</h2>
               <div id="rte">
                 <script type="text/javascript" src="/photos/res/rte/js/richtext.js"></script>
+                <!-- <script type="text/javascript" src="/photos/res/rte/js/lang/en.js"></script> -->
                 <script type="text/javascript">
                   initRTE("/photos/res/rte/images/", "/photos/res/rte/js/", "/photos/res/rte/css/rte.css", false);
                 </script>

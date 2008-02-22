@@ -226,7 +226,23 @@ gallery.albums_click = function(el)
   current_id = getId(el.id);
 
   OAT.Dom.hide('timeline');
+  //OAT.Dom.hide('map');
+
+  if (ds_albums.settings.show_map == 1)
+  {
+    if (map)
+    {
+      map.show();
+    } else {
+      if (typeof(window.mapInitPrepare) == "function")
+      {
+        mapInitPrepare();
+      }
+      OAT.Dom.show('map')
+    }
+  } else {
   OAT.Dom.hide('map');
+  }
 
   gallery.closePanels();
   gallery.nav.tabs(1);
@@ -265,6 +281,7 @@ gallery.editCollections = function (dav_lines)
 
     TL.draw();
     
+  if (ds_albums.settings.show_map == 1)
     mapInit();
     OAT.Dom.hide('map');    
     OAT.Dom.hide('timeline');    
@@ -303,11 +320,12 @@ gallery.new_album_tab_click = function ()
   if(ds_albums.settings.show_timeline==1)
   OAT.Dom.show('timeline');
   if(ds_albums.settings.show_map==1)
+  {
   OAT.Dom.show('map');
 
   $('map').className = $('map').className.replace( "view","edit");
  	map.lastGEvent =	GEvent.addListener(map.obj,"click",function(o,p){if (!p){ return; } newAlbumMarker(p);});
-
+  }
   gallery.managePanels('new_album');
   $('new_album_description').value = '';
   $('new_album_name').value = '';
@@ -404,10 +422,11 @@ gallery.new_album_action = function ()
     return;
   }
 
-
+  if (ds_albums.settings.show_map == 1)
+  {
   $('map').className = $('map').className.replace( "edit","view");
   GEvent.removeListener(map.lastGEvent);
-
+  }
   gallery.ajax.new_album();
 }
 
@@ -419,10 +438,11 @@ gallery.new_album_name_click = function(el)
 gallery.link_edit_album_click = function ()
 {
   gallery.managePanels('edit_album');
-
+  if (ds_albums.settings.show_map==1)
+  {
   $('map').className = $('map').className.replace( "view","edit");
  	map.lastGEvent =	GEvent.addListener(map.obj,"click",function(o,p){if (!p){ return; } changeAlbumMarkerPos(p);});
-
+  }
   document.getElementById('edit_album_name_old').value = ds_albums.current.name;
   document.getElementById('edit_album_name').value = ds_albums.current.name;
 
@@ -544,9 +564,11 @@ gallery.edit_album_action = function ()
   }
   
   //ajax.Start(gallery_edit_album,'');
-  
+  if (ds_albums.settings.show_map == 1)
+  {
   $('map').className = $('map').className.replace( "edit","view");
   GEvent.removeListener(map.lastGEvent);
+  }
   gallery.ajax.edit_album();
 }
 //------------------------------------------------------------------------------
@@ -574,10 +596,12 @@ gallery.images_upload_finish = function(id)
 //------------------------------------------------------------------------------
 gallery.edit_album_cancel = function ()
 {
+  if (ds_albums.settings.show_map == 1)
+  {
   $('map').className = $('map').className.replace( "edit","view");
   GEvent.removeListener(map.lastGEvent);
   OAT.Dom.hide('map');
-
+  }
   this.images.show();
   this.edit_album.hide();
   }
@@ -686,6 +710,7 @@ gallery.showImage = function(i)
   var current_image = ds_current_album.list[i];
 
     gallery.images.hide();
+  gallery.hideSlideShow();
 
     gallery.image.innerHTML = "";
   if (current_image.source)
@@ -700,6 +725,7 @@ gallery.showImage = function(i)
     gallery.image.appendChild(makeImg(src));
 
     gallery.image.show();
+  gallery.image_info.hide();
     gallery.hideAlbums();
 
   var txt = '';
@@ -724,6 +750,7 @@ gallery.showImage = function(i)
   gallery.hideSlideShow();
 
     ds_current_album.setCurrent(i);
+  gallery.show_exif_flag = 0;
     gallery.show_exif();
 
     //Navigation previous<->next
@@ -1069,7 +1096,9 @@ gallery.link_show_images_click = function()
 //------------------------------------------------------------------------------
 gallery.btn_slideshow_click = function()
 {
-  gallery.managePanels('images_slideshow')
+  gallery.image_info.hide();
+  OAT.Dom.hide('link_show_exif');
+  gallery.managePanels('images_slideshow');
   $('caption').innerHTML = 'Slideshow';
   $('preview_left').innerHTML = "";
   $('preview_right').innerHTML = "";
@@ -1182,6 +1211,7 @@ gallery.show_exif = function(){
   gallery.image_edit.hide();
   if (gallery.show_exif_flag == 1)
   {
+    gallery.hideSlideShow();
     gallery.image_info.show();
     gallery.image_info.innerHTML = 'Loading ...';
 
@@ -1268,6 +1298,7 @@ gallery.link_delete_album_click = function()
   {
     return;
   }
+  if (ds_albums.settings.show_map==1)
   removeAlbumMarker();
   gallery.ajax.delete_album(ds_albums.current.id);
 }
@@ -1521,36 +1552,34 @@ function preview_image(i,mode){
   })
   imageDiv.current_image = current_image;
 
-  if(mode == 'previous'){
+  if (mode == 'previous')
+  {
     imageDiv.appendChild(makeHref('javascript:gallery.showImage("'+i+'")',makeImg(base_path + 'i/frew.gif',12,12,'move_button')))
   }
 
-  if(mode == 'next'){
+  if (mode == 'next')
+  {
     imageDiv.appendChild(makeHref('javascript:gallery.showImage("'+i+'")',makeImg(base_path + 'i/ffwd.gif',12,12,'move_button')))
   }
 
-  if(mode != 'previous' && mode != 'next'){
+  if (mode != 'previous' && mode != 'next')
+  {
     chbox = makeCheckbox('image_id_'+i,current_image.id);
     imageDiv.appendChild(document.createElement('br'));
     
-  
    var ctrlDiv=OAT.Dom.create('div');
    ctrlDiv.setAttribute('id','images_ctrl');
 
-    if(isOwner){
-      
+    if (isOwner)
+    {
       ctrlDiv.appendChild(chbox);
       
-
       thumbCtrl = makeHref('javascript:gallery.setThumbnail('+current_image.id+')',makeImg(base_path + 'i/orb_blank.gif',13,13,'setthumb_button'));
       if(current_image.id==ds_albums.current.thumb_id)
          thumbCtrl = makeHref('javascript:void(0)',makeImg(base_path + 'i/orb_selected.gif',13,13,'setthumb_button'));
 
       thumbCtrl.setAttribute('id','setThumb_'+current_image.id);
-      
-
       ctrlDiv.appendChild(thumbCtrl);
-
     }
     
     imageDiv.appendChild(ctrlDiv)
@@ -1777,7 +1806,7 @@ gallery.managePanels = function(action){
     } else {
        OAT.Dom.hide('map');
     }
-    if(typeof(map)!='undefined')
+    if ((ds_albums.settings.show_map == 1) && (typeof(map) != 'undefined'))
     {
        $('map').className = $('map').className.replace( "edit","view");
        if(typeof(map.lastGEvent)!='undefined')
@@ -1810,6 +1839,7 @@ gallery.managePanels = function(action){
     OAT.Dom.hide('care_edit_album');
     OAT.Dom.hide('care_view_album');
     OAT.Dom.hide('image_edit');
+    OAT.Dom.hide('care_slideshow');
 
   }else if(action == 'showImages'){
     if (isOwner != '')
@@ -1820,6 +1850,7 @@ gallery.managePanels = function(action){
     OAT.Dom.hide('care_view_mode');
     OAT.Dom.hide('care_nav_image');
       OAT.Dom.hide('care_edit_image');
+    OAT.Dom.hide('care_slideshow');
       gallery.comments.hide();
     gallery.tags.hide();
       gallery.image_info.hide();
@@ -1832,7 +1863,9 @@ gallery.managePanels = function(action){
       OAT.Dom.show('care_edit_image');
     }
       OAT.Dom.show('care_view_mode');
+    OAT.Dom.show('link_show_exif');
     OAT.Dom.hide('care_view_album');
+    OAT.Dom.hide('care_slideshow');
 
   }else if(action == 'images_import'){
     OAT.Dom.show('images_import');
@@ -1872,6 +1905,7 @@ gallery.managePanels = function(action){
     OAT.Dom.hide('care_edit_album');
     OAT.Dom.hide('care_view_album');
     OAT.Dom.show('care_my_albums');
+    OAT.Dom.hide('care_slideshow');
 
     OAT.Dom.show('new_album');
 
@@ -1883,6 +1917,7 @@ gallery.managePanels = function(action){
   }else if(action == 'images_slideshow'){
     OAT.Dom.show('care_nav_image');
     OAT.Dom.hide('care_view_album');
+    OAT.Dom.hide('care_edit_image');
     gallery.images.hide();
     gallery.image.hide();
     gallery.tags.hide();
@@ -1908,6 +1943,7 @@ gallery.managePanels = function(action){
     OAT.Dom.hide('care_view_album');
     OAT.Dom.hide('image_edit');
     OAT.Dom.hide('care_edit_image');
+    OAT.Dom.hide('care_slideshow');
 
     OAT.Dom.show('edit_album_settings');
   }
@@ -2048,6 +2084,7 @@ gallery.ajax.new_album = function()
     gallery.link_images_upload_click();
     gallery.new_album.hide();
     
+    if (ds_albums.settings.show_map==1)
     newAlbumMarkerUpdate ();
   };
 
@@ -2073,7 +2110,14 @@ gallery.ajax.edit_album_settings = function(){
     ds_albums.settings.show_timeline=$('edit_album_showtimeline').checked ? 1 : 0;
     ds_albums.settings.nntp=$('edit_album_nntp').checked ? 1: 0;
     ds_albums.settings.nntp_init=$('edit_album_nntp_init').checked ? 1 : 0;
-
+    if (ds_albums.settings.show_map == 1)
+    {
+      if (!map)
+        if (typeof(window.mapInitPrepare) == "function")
+        {
+          mapInitPrepare();
+        }
+    }
     OAT.Dom.hide('edit_album_settings');
     gallery.managePanels('my_albums');
   };
@@ -2205,10 +2249,7 @@ gallery.ajax.image_edit = function(id){
     if (res != 0)
     {
       ds_current_album.editImageInList(res);
-      alert('Successful')
       gallery.showImage(ds_current_album.current.index);
-    }else{
-      alert('Problem');
     }
   };
   gallery.ajax(prepare,call,finish);
@@ -2361,16 +2402,21 @@ gallery.ajax.image_get_exif = function(id)
     return Array(sid,gallery_id,id)
   }
   finish = function(out_data) {
+    var j = 0;
     var t = document.createElement('table');
     t.setAttribute('id','exif');
     for(var i=0;i<out_data.length;i++)
     {
-      var tr = t.insertRow(i);
+      // if (out_data[i].value && (out_data[i].value!='undefined'))
+      {
+        var tr = t.insertRow(j);
       var td1 = tr.insertCell(0);
       var td2 = tr.insertCell(1);
 
       td1.appendChild(document.createTextNode(out_data[i].name+': '));
       td2.appendChild(document.createTextNode(out_data[i].value!='undefined'?out_data[i].value:''));
+        j++;
+      }
     }
     gallery.image_info.clear();
     gallery.image_info.appendChild(t);

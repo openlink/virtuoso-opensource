@@ -109,8 +109,9 @@ function panel(name)
     }
 
     obj.hide = function(){
-      this.style.display="none";
-      this.visible = false;
+    OAT.Dom.hide(name);
+    //this.style.display="none";
+    //this.visible = false;
     }
 
     obj.clear = function(){

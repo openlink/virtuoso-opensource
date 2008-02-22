@@ -446,7 +446,9 @@ create procedure PHOTO.WA.fix_tables ()
 
   for (select WAI_INST from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'oGallery' and WAI_ID not in (select GALLERY_ID from PHOTO.WA.SYS_INFO)) do
   {
+    declare exit handler for sqlstate '*' {  goto _next;};
     (WAI_INST as DB.DBA.wa_photo).wa_drop_instance();
+    _next: ;
   }
 
   delete from PHOTO.WA.COMMENTS where GALLERY_ID not in (select s.GALLERY_ID from PHOTO.WA.SYS_INFO s);
