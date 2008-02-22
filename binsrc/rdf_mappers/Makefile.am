@@ -50,7 +50,6 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.owl \
 	*.sql \
 	make_vad.sh \
 	ontologies/xbrl/*.owl \
