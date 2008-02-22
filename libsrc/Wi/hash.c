@@ -590,7 +590,7 @@ key_hash_col (db_buf_t row, dbe_key_t * key, dbe_col_loc_t * cl, uint32 code, in
 /* Attention! The value produced by this function may be invalid hash for
 use in id_hash_t. */
 uint32
-key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int * var_len, collation_t * collation, dtp_t col_dtp)
+key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int * var_len, collation_t * collation, dtp_t col_dtp, int allow_shorten_any)
 {
   int inx2;
   long len;
@@ -599,14 +599,16 @@ key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int * var_len, collation_t * 
       caddr_t err = NULL;
       caddr_t any_ser;
       uint32 ret;
-
+      if (allow_shorten_any)
+        any_ser = box_to_shorten_any (box, &err);
+      else
       any_ser = box_to_any (box, &err);
       if (err)
 	sqlr_resignal (err);
       if (DV_TYPE_OF (any_ser) != DV_STRING)
 	GPF_T1 ("any disk image not a string");
 
-      ret = key_hash_box (any_ser, DV_STRING, code, var_len, collation, DV_STRING);
+      ret = key_hash_box (any_ser, DV_STRING, code, var_len, collation, DV_STRING, allow_shorten_any);
       dk_free_tree (any_ser);
       return ret;
     }
@@ -673,7 +675,7 @@ key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int * var_len, collation_t * 
 	DO_BOX (caddr_t, x, inx, arr)
 	  {
 	    int d;
-	    code = key_hash_box (x, DV_TYPE_OF (x), code, &d, collation, DV_TYPE_OF (x));
+	    code = key_hash_box (x, DV_TYPE_OF (x), code, &d, collation, DV_TYPE_OF (x), allow_shorten_any);
 	  }
 	END_DO_BOX;
 	return code;
@@ -1001,7 +1003,7 @@ check_err:
 
 
 int
-itc_ha_equal (it_cursor_t * itc, hash_area_t * ha, caddr_t * qst, db_buf_t hash_row)
+itc_ha_equal (it_cursor_t * itc, hash_area_t * ha, caddr_t * qst, db_buf_t hash_row, int allow_shorten_any)
 {
   int r_is_null, b_len = 0;
   int inx;
@@ -1033,6 +1035,9 @@ itc_ha_equal (it_cursor_t * itc, hash_area_t * ha, caddr_t * qst, db_buf_t hash_
 	      caddr_t err = NULL;
 	      caddr_t any_val;
 	      int ret;
+              if (allow_shorten_any)
+                any_val = box_to_shorten_any (value, &err);
+              else
 	      any_val = box_to_any (value, &err);
 	      if (err)
 		{
@@ -1248,7 +1253,7 @@ itc_ha_disk_find_new (it_cursor_t * itc, buffer_desc_t ** ret_buf, int * ret_pos
       code_mask = code_mask << 9;
       if ((code & 0x0E00) == code_mask)
 	{
-	  if (DVC_MATCH == itc_ha_equal (itc, ha, qst, h_buf->bd_buffer + he_pos))
+	  if (DVC_MATCH == itc_ha_equal (itc, ha, qst, h_buf->bd_buffer + he_pos, (HA_DISTINCT == ha->ha_op)))
 	    {
 	      ret_buf[0] = h_buf;
 	      ret_pos[0] = he_pos;
@@ -1407,7 +1412,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 	      dtp = DV_TYPE_OF (value);
 	    }
 	  code = key_hash_box (value, dtp, code, &var_len, ssl->ssl_sqt.sqt_collation,
-	      ha->ha_key_cols[inx].cl_sqt.sqt_dtp);
+	      ha->ha_key_cols[inx].cl_sqt.sqt_dtp, (HA_DISTINCT == ha->ha_op) );
 	  if (keys_on_stack)
 	    hmk.hmk_data[inx] = value;
 	}
@@ -1894,7 +1899,7 @@ bif_hash (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int d;
   uint32 code = HC_INIT;
   caddr_t arg = bif_arg (qst, args, 0, "hash");
-  return (box_num (key_hash_box (arg, DV_TYPE_OF (arg), code, &d, NULL, DV_TYPE_OF (arg))));
+  return (box_num (key_hash_box (arg, DV_TYPE_OF (arg), code, &d, NULL, DV_TYPE_OF (arg), 1)));
 }
 
 
@@ -1959,7 +1964,7 @@ hash_source_input_memcache (hash_source_t * hs, caddr_t * qst, caddr_t * qst_con
 		  dtp = DV_TYPE_OF (k);
 		}
 	      code = key_hash_box (k, dtp, code, &d, ha->ha_key_cols[inx].cl_sqt.sqt_collation,
-				   ha->ha_key_cols[inx].cl_sqt.sqt_dtp);
+				   ha->ha_key_cols[inx].cl_sqt.sqt_dtp, 0);
 	      hmk.hmk_data[inx] = k;
 	    }
 	  END_DO_BOX;
@@ -2125,7 +2130,7 @@ hash_source_input (hash_source_t * hs, caddr_t * qst, caddr_t * qst_cont)
 		  dtp = DV_TYPE_OF (k);
 		}
 	      code = key_hash_box (k, dtp, code, &d, ha->ha_key_cols[inx].cl_sqt.sqt_collation,
-		  ha->ha_key_cols[inx].cl_sqt.sqt_dtp);
+		  ha->ha_key_cols[inx].cl_sqt.sqt_dtp, 0);
 	    }
 	  END_DO_BOX;
 	  code &= ID_HASHED_KEY_MASK;

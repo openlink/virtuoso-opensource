@@ -1011,6 +1011,40 @@ box_to_any (caddr_t data, caddr_t * err_ret)
   return box_to_any_1 (data, err_ret);
 }
 
+caddr_t 
+box_to_shorten_any (caddr_t data, caddr_t * err_ret)
+{
+  dtp_t data_dtp = DV_TYPE_OF (data);
+  size_t data_len;
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &err_ret, (PAGE_DATA_SZ+1500)))
+    {
+      *err_ret = srv_make_new_error ("42000", "SR483", "Stack Overflow");
+      return NULL;
+    }
+#define BOX_SHORT_ANY_LIMIT (128+1+(BOX_AUTO_OVERHEAD-8))
+  if (((DV_STRING == data_dtp) || (DV_WIDE == data_dtp) || (DV_BIN == data_dtp)) &&
+    (BOX_SHORT_ANY_LIMIT < (data_len = box_length (data))) )
+    {
+      boxint tmp_buf [1+(BOX_SHORT_ANY_LIMIT + BOX_AUTO_OVERHEAD)/sizeof (boxint)];
+      caddr_t tmp, res;
+      char *data_tail = data + data_len - 1;
+      boxint hi, lo = data_len;
+#ifdef DOUBLE_ALIGN
+      while (((ptrlong)data_tail) & (sizeof(boxint)-1)) { lo += data_tail[0]; hi += lo; data_tail--; }
+      while (data_tail > data) { lo += ((boxint *)data_tail)[0]; hi += lo; data_tail -= sizeof(boxint); }
+#else
+      while (((ptrlong)data_tail) & 3) { lo += data_tail[0]; hi += lo; data_tail--; }
+      while (data_tail > data) { lo += ((uint32 *)data_tail)[0]; hi += lo; data_tail -= 4; }
+#endif
+      BOX_AUTO (tmp, tmp_buf, BOX_SHORT_ANY_LIMIT, data_dtp);
+      memcpy (tmp, data, BOX_SHORT_ANY_LIMIT-17);
+      ((boxint *)(tmp + BOX_SHORT_ANY_LIMIT-17))[0] = hi;
+      ((boxint *)(tmp + BOX_SHORT_ANY_LIMIT-9))[0] = lo;
+      tmp[BOX_SHORT_ANY_LIMIT-1] = '\0';
+      return box_to_any_1 (tmp, err_ret);
+    }
+  return box_to_any_1 (data, err_ret);
+}
 
 #define V_COL_LEN(len) \
       if ((int) (len + *v_fill) > max) \
