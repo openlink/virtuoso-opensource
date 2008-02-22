@@ -710,13 +710,13 @@
                         S := sprintf ('<span id="pt_node2_c#%d" class="dragable">%s</span>', node_id, S);
                         T := sprintf('<a href="javascript: addFavourite(''%s'');" alt="Add to Favourites" title="Add to Favourites"><img src="image/add_16.png" border="0"/></a>',self.fNode);
                       }
-                      http (sprintf ('<div id="channel_header"><div id="channel_header_left">%s</div><div id="channel_header_right">%s <a href="#" onclick="javascript: loadIFrameURL(''%U'');" alt="Validate" title="Validate"><img src="image/green-icon-16.gif" border="0"/></a> <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><br style="clear: both;"/></div>', S, T, EF_URI, self.fNode, sButtons));
+                      http (sprintf ('<div id="channel_header"><div id="channel_header_left">%s</div><div id="channel_header_right">%s <a href="#" onclick="javascript: loadIFrameURL(''%U'');" alt="Validate" title="Validate"><img src="image/green-icon-16.gif" border="0"/></a> <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><div style="clear: both;"></div></div>', S, T, EF_URI, self.fNode, sButtons));
                       http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> | %s | %s</div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EF_LAST_UPDATE), 'dct:modified'), mt, st));
                     }
 
                   if ((node_type = 'f') and (node_id = -1))
                   {
-                    http (sprintf('<div id="channel_header"><div id="channel_header_left"><img src="image/folder_16.png" border="0"/> %s</div><div id="channel_header_right">&nbsp;%s</div><br style="clear: left;"/></div>', 'Feeds', sButtons));
+                    http (sprintf ('<div id="channel_header"><div id="channel_header_left"><img src="image/folder_16.png" border="0"/> %s</div><div id="channel_header_right">&nbsp;%s</div><div style="clear: both;"></div></div>', 'Feeds', sButtons));
                     http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | %s | %s</div>', mt, st));
                   }
 
@@ -727,7 +727,7 @@
                           where EFO_ID = node_id
                             and EFO_DOMAIN_ID = self.domain_id) do
                     {
-                      http (sprintf('<div id="channel_header"><div id="channel_header_left"><a href="folders.vspx?sid=%s&realm=%s&id=%d&mode=update" alt="Folder %s" title="Folder %s"><img src="image/folder_16.png" border="0"/> %s</a></div><div id="channel_header_right">&nbsp;%s</div><br style="clear: left;"/></div>', self.sid, self.realm, EFO_ID, EFO_NAME, EFO_NAME, EFO_NAME, sButtons));
+                      http (sprintf ('<div id="channel_header"><div id="channel_header_left"><a href="folders.vspx?sid=%s&realm=%s&id=%d&mode=update" alt="Folder %s" title="Folder %s"><img src="image/folder_16.png" border="0"/> %s</a></div><div id="channel_header_right">&nbsp;%s</div><div style="clear: both;"></div></div>', self.sid, self.realm, EFO_ID, EFO_NAME, EFO_NAME, EFO_NAME, sButtons));
                       http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | %s | %s</div>', mt, st));
                     }
 
@@ -738,7 +738,7 @@
                           where ESFO_ID = node_id
                             and ESFO_DOMAIN_ID = self.domain_id) do
                     {
-                      http (sprintf('<div id="channel_header"><div id="channel_header_left"><a href="sfolders_update.vspx?sid=%s&realm=%s&id=%s" alt="Smart folder %s" title="Smart folder %s"><img src="image/sfolder_16.jpg" border="0"/> %s</a></div><div id="channel_header_right">&nbsp;%s</div><br style="clear: left;"/></div>', self.sid, self.realm, ESFO_ID, ESFO_NAME, ESFO_NAME, ESFO_NAME, sButtons));
+                      http (sprintf ('<div id="channel_header"><div id="channel_header_left"><a href="sfolders_update.vspx?sid=%s&realm=%s&id=%s" alt="Smart folder %s" title="Smart folder %s"><img src="image/sfolder_16.jpg" border="0"/> %s</a></div><div id="channel_header_right">&nbsp;%s</div><div style="clear: both;"></div></div>', self.sid, self.realm, ESFO_ID, ESFO_NAME, ESFO_NAME, ESFO_NAME, sButtons));
                       http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | %s | %s</div>', mt, st));
                     }
 
@@ -760,13 +760,13 @@
                         S := sprintf ('<span id="pt_node2_b#%d" class="dragable">%s</span>', node_id, S);
                         T := sprintf('<a href="javascript: addFavourite(''%s'');" alt="Add to Favourites" title="Add to Favourites"><img src="image/add_16.png" border="0"/></a>',self.fNode);
                       }
-                      http (sprintf ('<div id="channel_header"><div id="channel_header_left">%s</div><div id="channel_header_right">%s <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><br style="clear: left;"/></div>', S, T, self.fNode, sButtons));
+                      http (sprintf ('<div id="channel_header"><div id="channel_header_left">%s</div><div id="channel_header_right">%s <a href="#" onClick="javascript: myPost(''F1'', ''refresh'', ''%s''); return false;" alt="Refresh" title="Refresh"><img src="image/ref_16.png" border="0"/></a>%s</div><div style="clear: both;"></div></div>', S, T, self.fNode, sButtons));
                       http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | <b>Updated on</b>: <i>%s</i> | %s | %s </div>', ENEWS.WA.rdfa_value (ENEWS.WA.dt_value (EB_LAST_UPDATE), 'dct:modified'), mt, st));
                     }
 
                   if ((node_type = 't') and not is_empty_or_null(ENEWS.WA.node_suffix(self.fNode)))
                   {
-                    http (sprintf('<div id="channel_header"><div id="channel_header_left">Tag: %s</div><div id="channel_header_right">&nbsp;%s</div><br style="clear: left;"/></div>', ENEWS.WA.node_suffix(self.fNode), sButtons));
+                    http (sprintf ('<div id="channel_header"><div id="channel_header_left">Tag: %s</div><div id="channel_header_right">&nbsp;%s<div style="clear: both;"></div></div>', ENEWS.WA.node_suffix(self.fNode), sButtons));
                     http (sprintf('<div id="channel_subheader"><b>Posts</b>: <span id="feed_count">0 (0)</span> | %s | %s </div>', mt, st));
                   }
                 ?>

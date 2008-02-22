@@ -24,7 +24,10 @@
 create procedure ENEWS.WA.drop_nntp ()
 {
   for (select WAI_ID from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'eNews2') do
+  {
     ENEWS.WA.nntp_update (WAI_ID, null, null, 1, 0);
+    commit work;
+  }
 }
 ;
 ENEWS.WA.drop_nntp ()
