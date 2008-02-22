@@ -157,9 +157,15 @@ tf_set_cbk_names (triple_feed_t *tf, const char **cbk_names)
   for (ctr = 0; ctr < COUNTOF__TRIPLE_FEED; ctr++)
     {
       caddr_t err = NULL;
-      if (('\0' == cbk_names[ctr][0]) || ('!' == cbk_names[ctr][0]))
+      if ('\0' == cbk_names[ctr][0])
         {
           tf->tf_cbk_names[ctr] = NULL;
+          tf->tf_cbk_qrs[ctr] = NULL;
+          continue;
+        }
+      if ('!' == cbk_names[ctr][0])
+        {
+          tf->tf_cbk_names[ctr] = cbk_names[ctr];
           tf->tf_cbk_qrs[ctr] = NULL;
           continue;
         }
@@ -178,17 +184,27 @@ tf_get_iid (triple_feed_t *tf, caddr_t uri)
   dtp_t uri_dtp = DV_TYPE_OF (uri);
   caddr_t res;
   caddr_t err = NULL;
+  query_t *cbk_qr;
   if ((DV_STRING != uri_dtp) && (DV_UNAME != uri_dtp))
     return box_copy_tree (uri);
-  if (NULL == tf->tf_cbk_qrs[TRIPLE_FEED_GET_IID])
-    { /* Now the only meaningful case is name equal to "!iri_to_id" so no check */
-      res = iri_to_id ((caddr_t *)(tf->tf_qi), uri, 1, &err);
+  cbk_qr = tf->tf_cbk_qrs[TRIPLE_FEED_GET_IID];
+  if (NULL == cbk_qr)
+    { /* Now two meaningful cases are "!iri_to_id" and "!cached_iri_to_id" */
+      const char *cbk_name = tf->tf_cbk_names[TRIPLE_FEED_GET_IID];
+      if (NULL == cbk_name)
+        res = box_copy_tree (uri);
+      else if (!strcmp (cbk_name, "!iri_to_id"))
+        res = iri_to_id ((caddr_t *)(tf->tf_qi), uri, IRI_TO_ID_WITH_CREATE, &err);
+      else if (!strcmp (cbk_name, "!cached_iri_to_id"))
+        res = iri_to_id ((caddr_t *)(tf->tf_qi), uri, IRI_TO_ID_IF_CACHED, &err);
+      else
+        sqlr_new_error ("22023", ".....", "Unsupported callback %.100s in RDF parser", cbk_name);
     }
   else
     {
       char params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 4];
       void **params;
-      BOX_AUTO (params, params_buf, sizeof (caddr_t) * 4, DV_ARRAY_OF_POINTER);
+      BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 4, DV_ARRAY_OF_POINTER);
       res = NULL;
       params[0] = &uri;
       params[1] = &(tf->tf_graph_iid);
@@ -1544,8 +1560,33 @@ key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
   return iri_id;
 } 
 
+
 caddr_t
-iri_to_id (caddr_t *qst, caddr_t name, int make_new, caddr_t *err_ret)
+key_name_to_existing_cached_iri_id (lock_trx_t * lt, caddr_t name)
+{
+  boxint pref_id_no, iri_id_no;
+  caddr_t prefix, local;
+  if (DV_IRI_ID == DV_TYPE_OF (name))
+    return box_copy (name);
+  if (!iri_split (name, &prefix, &local))
+    return NULL;
+  pref_id_no = nic_name_id (iri_prefix_cache, prefix);
+  dk_free_box (prefix);
+  if (!pref_id_no)
+    {
+      dk_free_box (local);
+      return NULL;
+    }
+  LONG_SET_NA (local, pref_id_no);
+  iri_id_no = nic_name_id (iri_name_cache, local);
+  dk_free_box (local);
+  if (!iri_id_no)
+    return NULL;
+  return box_iri_id (iri_id_no);
+}
+
+caddr_t
+iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
 {
   query_instance_t * qi = (query_instance_t *) qst;
   caddr_t box_to_delete = NULL;
@@ -1618,7 +1659,15 @@ iri_to_id (caddr_t *qst, caddr_t name, int make_new, caddr_t *err_ret)
         dk_free_box (box_to_delete);
       return box_iri_int64 (acc, DV_IRI_ID);
     }
-  res = key_name_to_iri_id (qi->qi_trx, name, make_new);
+  switch (mode)
+    {
+    case IRI_TO_ID_IF_KNOWN:
+      res = key_name_to_iri_id (qi->qi_trx, name, 0); break;
+    case IRI_TO_ID_WITH_CREATE:
+      res = key_name_to_iri_id (qi->qi_trx, name, 1); break;
+    case IRI_TO_ID_IF_CACHED:
+      res = key_name_to_existing_cached_iri_id (qi->qi_trx, name); break;
+    }
   if (NULL == res)
     {
       if (NULL != box_to_delete)
@@ -1640,7 +1689,7 @@ bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t name = bif_arg (qst, args, 0, "iri_to_id");
   int make_new = (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "iri_to_id") : 1);
   caddr_t err = NULL;
-  caddr_t res = iri_to_id (qst, name, make_new, &err);
+  caddr_t res = iri_to_id (qst, name, make_new ? IRI_TO_ID_WITH_CREATE : IRI_TO_ID_IF_KNOWN, &err);
   if (NULL != err)
   sqlr_resignal (err);
   return res;

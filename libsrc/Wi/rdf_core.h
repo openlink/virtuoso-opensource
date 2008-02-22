@@ -27,7 +27,10 @@
 #include "rdf_mapping_jso.h"
 #include "xmlparser.h" /* for xml_read_func_t and xml_read_abend_func_t */
 
-extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int make_new, caddr_t *err_ret);
+#define IRI_TO_ID_IF_KNOWN 0
+#define IRI_TO_ID_WITH_CREATE 1
+#define IRI_TO_ID_IF_CACHED 2
+extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret);
 extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
 #define BNODE_IID_TO_LABEL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
   box_sprintf (30, "nodeID://b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
