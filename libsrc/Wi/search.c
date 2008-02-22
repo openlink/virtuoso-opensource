@@ -1927,6 +1927,10 @@ long  tc_desc_serial_reset;
 /* control is read committed will show previous committed value Oracle style or wait */
 int min_iso_that_waits = ISO_REPEATABLE;
 
+
+#define IE_IS_LEAF(row, key_id) \
+  (0 == key_id || (KI_LEFT_DUMMY == key_id && LONG_REF ((row) + IE_LEAF)))
+
 int
 itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret,   int skip_first_key_cmp)
 {
@@ -1967,7 +1971,7 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
       if (it->itc_position >= PAGE_SZ)
 	GPF_T;			/* Link over page end */
 
-      if (PS_LOCKS == txn_clear)
+      if (PS_LOCKS == txn_clear && !IE_IS_LEAF (page + it->itc_position, SHORT_REF (page + it->itc_position + IE_KEY_ID)))
 	{
 	  if (it->itc_owns_page != it->itc_page)
 	    {
