@@ -1004,7 +1004,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
             (SPART_VARR_NOT_NULL & member_eq->e_rvr.rvrRestrictions) &&
             (SPART_VARR_IS_REF & member_eq->e_rvr.rvrRestrictions) )
             {
-              quad_map_t *dflt_qm = sparp->sparp_storage->qsDefaultMap;
+              quad_map_t *dflt_qm = sparp->sparp_storage ? sparp->sparp_storage->qsDefaultMap : NULL;
               member_valmode = qm_format_default_iri_ref;
               if ((NULL != dflt_qm) && (NULL != dflt_qm->qmSubjectMap))
                 member_valmode = dflt_qm->qmSubjectMap->qmvFormat;

@@ -260,7 +260,7 @@ spar_internal_error (sparp_t *sparp, const char *msg)
 #else
   sqlr_new_error ("37000", "SP031",
     "%.400s: Internal error: %.1500s",
-    ((NULL != sparp) ? sparp->sparp_err_hdr : "SPARQL"), msg);
+    ((NULL != sparp && sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "SPARQL"), msg);
 #endif
 }
 
