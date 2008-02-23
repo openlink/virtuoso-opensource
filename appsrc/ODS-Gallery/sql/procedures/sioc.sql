@@ -23,178 +23,181 @@ use sioc;
 
 create procedure fill_ods_photos_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
     {
-  declare post_iri, forum_iri, creator_iri,private_tags,tags,user_pwd,cm_iri,title,content,links_to,c_link varchar;
+  declare post_iri, forum_iri, creator_iri,private_tags,tags,user_pwd,cm_iri,title,links_to,c_link varchar;
   declare pos,dir,album,_ind,ts,modf,link, svc_iri any;
 
   for select p.WAI_NAME as WAI_NAME, p.HOME_PATH as HOME_PATH,p.HOME_URL as HOME_URL, WAI_ID
-      from PHOTO..SYS_INFO p, DB.DBA.WA_INSTANCE i
+        from PHOTO..SYS_INFO p,
+             DB.DBA.WA_INSTANCE i
       where p.WAI_NAME = i.WAI_NAME
-      and ((i.WAI_IS_PUBLIC = 1 and _wai_name is null) or p.WAI_NAME = _wai_name)
-	do
+         and ((i.WAI_IS_PUBLIC = 1 and _wai_name is null) or p.WAI_NAME = _wai_name) do
 	  {
       forum_iri   := photo_iri (WAI_NAME);
       svc_iri := sprintf ('http://%s/photos/SOAP', get_cname());
       ods_sioc_service (graph_iri, svc_iri, forum_iri, null, 'text/xml', svc_iri||'/services.wsdl', svc_iri, 'SOAP');
-      for select RES_ID MAIN_RES_ID,RES_FULL_PATH, RES_NAME, RES_TYPE, RES_CR_TIME, RES_MOD_TIME, RES_OWNER,U_NAME,U_PWD
+      for (select RES_ID MAIN_RES_ID,RES_FULL_PATH, RES_NAME, RES_TYPE, RES_CR_TIME, RES_MOD_TIME, RES_OWNER,U_NAME,U_PWD
 	          from WS.WS.SYS_DAV_RES
 	          join WS.WS.SYS_DAV_USER ON RES_OWNER = U_ID
 	         where RES_FULL_PATH like HOME_PATH || '%'
-	           and RES_FULL_PATH not like HOME_PATH || '%/.thumbnails/%'
-	    do{
-        pos := strrchr (RES_FULL_PATH, '/');
-        dir := subseq (RES_FULL_PATH, 0,pos);
-        pos := strrchr (dir, '/');
-        dir := subseq (RES_FULL_PATH, 0, pos+1);
-        album := subseq (RES_FULL_PATH, pos);
-        
-        user_pwd := pwd_magic_calc(U_NAME,U_PWD, 1);
+	            and RES_FULL_PATH not like HOME_PATH || '%/.thumbnails/%') do
+	    {
+        SIOC..photo_insert (MAIN_RES_ID,
+                            RES_NAME,
+                            RES_FULL_PATH,
+                            RES_OWNER,
+                            RES_CR_TIME,
+                            RES_MOD_TIME);
 
-        -- Predicates --
-        post_iri    := post_iri_ex (forum_iri, MAIN_RES_ID);
-	    creator_iri := user_iri (RES_OWNER);
-        title       := RES_NAME;
-        ts          := RES_CR_TIME;
-        modf        := RES_MOD_TIME;
-        link        := gallery_post_url(HOME_URL,album ,RES_NAME);
-        content     := DB.DBA.DAV_PROP_GET(RES_FULL_PATH,'description',U_NAME,user_pwd);
-        tags        := null;
-        links_to    := null;
-	      
-	      ods_sioc_post (graph_iri, post_iri, forum_iri, creator_iri, title, ts, modf, link ,content,tags,links_to);
-
-        for select COMMENT_ID,RES_ID,CREATE_DATE,MODIFY_DATE,USER_ID,TEXT 
+        for (select COMMENT_ID, RES_ID, GALLERY_ID, CREATE_DATE, MODIFY_DATE, USER_ID, TEXT
              from PHOTO.WA.comments
-            where RES_ID = MAIN_RES_ID
-        do{
-	        cm_iri  := gallery_comment_iri(post_iri,COMMENT_ID);
-	        title   := RES_NAME;
-          ts      := CREATE_DATE;
-          modf    := MODIFY_DATE;
-	        c_link  := gallery_comment_url(link,COMMENT_ID);
-	        content := TEXT;
-	        
-	        ods_sioc_post (graph_iri, cm_iri, forum_iri, null, title, ts,modf,c_link, content);
-	        DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
-	        DB.DBA.RDF_QUAD_URI (graph_iri, cm_iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
-	  }
-
-        private_tags := DB.DBA.DAV_PROP_GET(RES_FULL_PATH,':virtprivatetags',U_NAME,user_pwd);
-
-        if(__tag(private_tags) <> 189){
-	  scot_tags_insert (WAI_ID, post_iri, private_tags);
+              where RES_ID = MAIN_RES_ID) do
+        {
+          SIOC..comment_insert (COMMENT_ID,
+                                RES_ID,
+                                GALLERY_ID,
+                                CREATE_DATE,
+                                MODIFY_DATE,
+                                TEXT);
     }
 	    }
     }
   }
 ;
 
-
-create trigger SYS_DAV_RES_PHOTO_SIOC_I after insert on WS.WS.SYS_DAV_RES referencing new as N
+create procedure photo_insert (
+  in res_id integer,
+  in res_name varchar,
+  in res_full_path varchar,
+  in res_owner_id integer,
+  in res_created datetime,
+  in res_updated datetime)
 {
-  declare dir varchar;
-  declare creator_iri, old_iri,album,post_iri,forum_iri,title,ts,modf,link,content,user_pwd,tags,links_to varchar;
-  declare pos int;
-  declare graph_iri varchar;
-  declare exit handler for sqlstate '*' {
+  declare pos integer;
+  declare dir, album, graph_iri, creator_iri, post_iri, forum_iri, link, content, tags varchar;
+
+  declare exit handler for sqlstate '*'
+{
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
-  pos := strrchr (N.RES_FULL_PATH, '/');
+  pos := strrchr (res_full_path, '/');
   if (pos is null)
     return;
 
-  dir := subseq (N.RES_FULL_PATH, 0,pos);
+  dir := subseq (res_full_path, 0,pos);
   pos := strrchr (dir, '/');
-  dir := subseq (N.RES_FULL_PATH, 0, pos+1);
-  album := subseq (N.RES_FULL_PATH, pos);
+  dir := subseq (res_full_path, 0, pos+1);
+  album := subseq (res_full_path, pos);
   graph_iri := get_graph ();
 
-  for select p.WAI_NAME as WAI_NAME,p.HOME_URL as HOME_URL,U_NAME,U_PWD 
-       from PHOTO..SYS_INFO p, 
-            WS.WS.SYS_DAV_USER s,
+  for (select p.GALLERY_ID,
+              p.WAI_NAME,
+              p.HOME_URL
+         from PHOTO.WA.SYS_INFO p,
             DB.DBA.WA_INSTANCE i
       where p.HOME_PATH = dir 
-        and U_ID = N.RES_OWNER
-        and N.RES_OWNER = p.OWNER_ID 
-        and N.RES_OWNER = s.U_ID 
+          and p.OWNER_ID = res_owner_id
         and p.WAI_NAME = i.WAI_NAME 
-        and i.WAI_IS_PUBLIC = 1 
-  do{                                     
-   
-      user_pwd    := pwd_magic_calc(U_NAME,U_PWD, 1);
-      
+          and i.WAI_IS_PUBLIC = 1) do
+  {
       forum_iri   := photo_iri (WAI_NAME);
-      post_iri    :=  post_iri_ex (forum_iri, N.RES_ID);
-      creator_iri := user_iri (N.RES_OWNER);
-      title       := N.RES_NAME;
-      ts          := N.RES_CR_TIME;
-      modf        := N.RES_MOD_TIME;
-      link        := gallery_post_url(HOME_URL,album ,N.RES_NAME);
-      content     := DB.DBA.DAV_PROP_GET(N.RES_FULL_PATH,'description',U_NAME,user_pwd);
-      tags        := null;
-      links_to    := null;
+    post_iri    := post_iri_ex (forum_iri, res_id);
+    creator_iri := user_iri (res_owner_id);
+    link        := gallery_post_url (HOME_URL, album);
+    content     := DB.DBA.DAV_PROP_GET_INT (res_id, 'R', 'description', 0);
+    if (isnull (DB.DBA.DAV_HIDE_ERROR (content)))
+      content := 'null';
 	      
-	    ods_sioc_post (graph_iri, post_iri, forum_iri, creator_iri, title, ts, modf, link ,content,tags,links_to);
+    ods_sioc_post (graph_iri, post_iri, forum_iri, creator_iri, res_name, res_created, res_updated, link, content);
+
+    -- tags
+    tags := DB.DBA.DAV_PROP_GET_INT (res_id, 'R', ':virtprivatetags', 0);
+    if (not (isinteger(tags) and (tags < 0)))
+    {
+      scot_tags_insert (GALLERY_ID, post_iri, tags);
+    }
   }
   return;
 }
 ;
 
-
-create trigger SYS_DAV_RES_PHOTO_SIOC_U after update on WS.WS.SYS_DAV_RES referencing old as O, new as N
+create procedure photo_delete (
+  in res_id integer,
+  in res_name varchar,
+  in res_full_path varchar,
+  in res_owner_id integer)
 {
-  declare dir varchar;
-  declare post_iri, forum_iri, creator_iri, old_post_iri,user_pwd,title,ts,modf,link,links_to,content,tags varchar;
-  declare pos int;
-  declare graph_iri,album varchar;
+  declare pos integer;
+  declare dir, album, graph_iri, post_iri, forum_iri varchar;
+
   declare exit handler for sqlstate '*' {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
-  pos := strrchr (N.RES_FULL_PATH, '/');
+  pos := strrchr (res_full_path, '/');
   if (pos is null)
     return;
 
-  dir := subseq (N.RES_FULL_PATH, 0,pos);
+  dir := subseq (res_full_path, 0,pos);
   pos := strrchr (dir, '/');
-  dir := subseq (N.RES_FULL_PATH, 0, pos+1);
-  album := subseq (N.RES_FULL_PATH, pos);
-  graph_iri := get_graph ();
+  dir := subseq (res_full_path, 0, pos+1);
+  album := subseq (res_full_path, pos);
 
-  for select p.WAI_NAME as WAI_NAME,p.HOME_URL as HOME_URL,U_NAME,U_PWD
+  for (select p.WAI_NAME,
+              p.HOME_URL
      from PHOTO..SYS_INFO p,
-          WS.WS.SYS_DAV_USER s,
           DB.DBA.WA_INSTANCE i
     where p.HOME_PATH = dir
-      and N.RES_OWNER = p.OWNER_ID
-      and N.RES_OWNER = s.U_ID 
+          and p.OWNER_ID = res_owner_id
       and p.WAI_NAME = i.WAI_NAME
-      and i.WAI_IS_PUBLIC = 1 do
+          and i.WAI_IS_PUBLIC = 1) do
     {
-      user_pwd      := pwd_magic_calc(U_NAME,U_PWD, 1);
-      
+    graph_iri := get_graph ();
       forum_iri     := photo_iri (WAI_NAME);
-      old_post_iri  := post_iri_ex (forum_iri, O.RES_ID);
-      post_iri      := post_iri_ex (forum_iri, N.RES_ID);
-      creator_iri := user_iri (N.RES_OWNER);
-      title         := N.RES_NAME;
-      ts            := N.RES_CR_TIME;
-      modf          := N.RES_MOD_TIME;
-      link          := gallery_post_url(HOME_URL,album ,N.RES_NAME);
-      content       := DB.DBA.DAV_PROP_GET(N.RES_FULL_PATH,'description',U_NAME,user_pwd);
-      tags          := null;
-      links_to      := null;
-	      
-	    delete_quad_s_or_o (graph_iri, old_post_iri, old_post_iri);
-	    ods_sioc_post (graph_iri, post_iri, forum_iri, creator_iri, title, ts, modf, link ,content,tags,links_to);
-    }
-
+    post_iri    := post_iri_ex (forum_iri, res_id);
+    delete_quad_s_or_o (graph_iri, post_iri, post_iri);
+  }
   return;
 }
 ;
+	      
+create trigger SYS_DAV_RES_PHOTO_SIOC_I after insert on WS.WS.SYS_DAV_RES referencing new as N
+{
+  SIOC..photo_insert (N.RES_ID,
+                      N.RES_NAME,
+                      N.RES_FULL_PATH,
+                      N.RES_OWNER,
+                      N.RES_CR_TIME,
+                      N.RES_MOD_TIME);
+    }
+;
 
+
+create trigger SYS_DAV_RES_PHOTO_SIOC_U after update on WS.WS.SYS_DAV_RES referencing old as O, new as N
+{
+  SIOC..photo_delete (O.RES_ID,
+                      O.RES_NAME,
+                      O.RES_FULL_PATH,
+                      O.RES_OWNER);
+  SIOC..photo_insert (N.RES_ID,
+                      N.RES_NAME,
+                      N.RES_FULL_PATH,
+                      N.RES_OWNER,
+                      N.RES_CR_TIME,
+                      N.RES_MOD_TIME);
+}
+;
+
+create trigger SYS_DAV_RES_PHOTO_SIOC_D after delete on WS.WS.SYS_DAV_RES referencing old as O
+{
+  SIOC..photo_delete (O.RES_ID,
+                      O.RES_NAME,
+                      O.RES_FULL_PATH,
+                      O.RES_OWNER);
+}
+;
 
 create procedure ods_photo_sioc_tags (in path varchar, in res_id int, in owner int, in owner_name varchar, in tags any, in op varchar)
 {
@@ -207,7 +210,8 @@ create procedure ods_photo_sioc_tags (in path varchar, in res_id int, in owner i
   dir := subseq (path, 0, pos);
   pos := strrchr (dir, '/');
   dir := subseq (path, 0, pos+1);
-  for select p.WAI_NAME as WAI_NAME, i.WAI_ID as WAI_ID from PHOTO..SYS_INFO p, WS.WS.SYS_DAV_USER s, DB.DBA.WA_INSTANCE i
+  for select p.WAI_NAME as WAI_NAME, i.WAI_ID as WAI_ID
+        from PHOTO..SYS_INFO p, WS.WS.SYS_DAV_USER s, DB.DBA.WA_INSTANCE i
     where p.HOME_PATH = dir and p.OWNER_ID = owner and s.U_ID = owner and p.WAI_NAME = i.WAI_NAME and i.WAI_IS_PUBLIC = 1 do
     {
       iri := photo_iri (WAI_NAME);
@@ -220,148 +224,105 @@ create procedure ods_photo_sioc_tags (in path varchar, in res_id int, in owner i
 }
 ;
 
-create trigger SYS_DAV_RES_PHOTO_SIOC_D after delete on WS.WS.SYS_DAV_RES referencing old as O
+create procedure comment_insert (
+  in _comment_id integer,
+  in _res_id integer,
+  in _gallery_id integer,
+  in _create_date datetime,
+  in _modify_date datetime,
+  in _text varchar)
 {
-  declare dir varchar;
-  declare post_iri, forum_iri, creator_iri, old_post_iri,user_pwd,title,ts,modf,link,links_to,content,tags varchar;
-  declare pos int;
-  declare graph_iri,album varchar;
-  declare exit handler for sqlstate '*' {
+  declare album_id integer;
+  declare graph_iri, forum_iri, post_iri, cm_iri, album, link, c_link, _res_name  varchar;
+
+  declare exit handler for sqlstate '*'
+{
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
-  pos := strrchr (O.RES_FULL_PATH, '/');
-  if (pos is null)
-    return;
-
-  dir := subseq (O.RES_FULL_PATH, 0,pos);
-  pos := strrchr (dir, '/');
-  dir := subseq (O.RES_FULL_PATH, 0, pos+1);
-  graph_iri := get_graph ();
-
-  for select p.WAI_NAME as WAI_NAME,p.HOME_URL as HOME_URL
-     from PHOTO..SYS_INFO p,
+  for (select p.WAI_NAME,
+              p.HOME_URL
+         from PHOTO.WA.SYS_INFO p,
           DB.DBA.WA_INSTANCE i
-    where p.HOME_PATH = dir
+        where p.GALLERY_ID = _gallery_id
       and p.WAI_NAME = i.WAI_NAME
-      and i.WAI_IS_PUBLIC = 1 do
+          and i.WAI_IS_PUBLIC = 1) do
     {
-      forum_iri     := photo_iri (WAI_NAME);
-      old_post_iri  := post_iri_ex (forum_iri, O.RES_ID);
-      delete_quad_s_or_o (graph_iri, old_post_iri, old_post_iri);
-    }
-  return;
+    select RES_NAME, RES_COL INTO _res_name, album_id FROM WS.WS.SYS_DAV_RES WHERE RES_ID = _res_id;
+    album     := (SELECT COL_NAME FROM WS.WS.SYS_DAV_COL WHERE COL_ID = album_id);
+  graph_iri := get_graph ();
+      forum_iri := photo_iri (WAI_NAME);
+      link      := gallery_post_url (HOME_URL, album, _res_name);
+    c_link    := gallery_comment_url (link, _comment_id);
+  post_iri  := post_iri_ex (forum_iri, _res_id);
+    cm_iri    := gallery_comment_iri (post_iri, _comment_id);
+
+    ods_sioc_post (graph_iri, cm_iri, forum_iri, null, _res_name , _create_date, _modify_date, c_link, _text);
+  DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
+  DB.DBA.RDF_QUAD_URI (graph_iri, cm_iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
+  }
 }
 ;
 
-
-create trigger PHOTO_COMMENTS_SIOC_I after insert on PHOTO.WA.COMMENTS referencing new as N
+create procedure comment_delete (
+  in _comment_id integer,
+  in _res_id integer,
+  in _gallery_id integer)
 {
-  declare iri, graph_iri, home, post_iri, _wai_name,_home_url varchar;
-  declare cm_iri,_res_full_path,_res_name,album,link,c_link,forum_iri  varchar;
-  declare album_id, _res_id integer;
-  declare exit handler for sqlstate '*' {
+  declare graph_iri, forum_iri, post_iri, cm_iri  varchar;
+
+  declare exit handler for sqlstate '*'
+    {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
-  SELECT RES_FULL_PATH,RES_NAME,RES_COL, RES_ID
-    INTO _res_full_path,_res_name,album_id, _res_id
-    FROM WS.WS.SYS_DAV_RES 
-   WHERE RES_ID = N.RES_ID;
-  
-  SELECT COL_NAME
-    INTO album
-    FROM WS.WS.SYS_DAV_COL 
-   WHERE COL_ID = album_id;
-
   graph_iri := get_graph ();
-  
-  for SELECT OWNER_ID, WAI_NAME, HOME_PATH,HOME_URL FROM PHOTO..SYS_INFO WHERE GALLERY_ID = N.GALLERY_ID 
-  do{
+  for (select WAI_NAME FROM PHOTO..SYS_INFO WHERE GALLERY_ID = _gallery_id) do
+  {
       forum_iri := photo_iri (WAI_NAME);
-      home      := HOME_PATH;
-      _wai_name := WAI_NAME;
-      link      := gallery_post_url (HOME_URL, album, _res_name);
-      c_link    := gallery_comment_url(link,N.COMMENT_ID);
-  }
   post_iri  := post_iri_ex (forum_iri, _res_id);
-  cm_iri    := gallery_comment_iri(post_iri,N.COMMENT_ID);
-  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = _wai_name and WAI_IS_PUBLIC = 1))
-    return;
+    cm_iri   := gallery_comment_iri (post_iri, _comment_id);
+    DELETE_QUAD_S_OR_O (graph_iri, cm_iri, cm_iri);
+  }
+}
+;
 
-  ods_sioc_post (graph_iri, cm_iri, forum_iri, null, _res_name , N.CREATE_DATE, N.CREATE_DATE, c_link, N.TEXT);
-  DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, cm_iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
-  return;
+create trigger PHOTO_COMMENTS_SIOC_I after insert on PHOTO.WA.COMMENTS referencing new as N
+{
+  if (N.PARENT_ID is not null)
+    SIOC..comment_insert (N.COMMENT_ID,
+                          N.RES_ID,
+                          N.GALLERY_ID,
+                          N.CREATE_DATE,
+                          N.MODIFY_DATE,
+                          N.TEXT);
 }
 ;
 
 
 create trigger PHOTO_COMMENTS_SIOC_U after update on PHOTO.WA.COMMENTS referencing old as O, new as N
-    {
-  declare iri, graph_iri, home, post_iri, _wai_name,_home_url varchar;
-  declare cm_iri,_res_full_path,_res_name,album,link,c_link,forum_iri  varchar;
-  declare album_id, _res_id integer;
-  declare exit handler for sqlstate '*' {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-
-  SELECT RES_FULL_PATH,RES_NAME,RES_COL, RES_ID
-    INTO _res_full_path,_res_name,album_id, _res_id
-    FROM WS.WS.SYS_DAV_RES 
-   WHERE RES_ID = N.RES_ID;
-  
-  SELECT COL_NAME
-    INTO album
-    FROM WS.WS.SYS_DAV_COL 
-   WHERE COL_ID = album_id;
-    
-  graph_iri := get_graph ();
-  
-  for SELECT OWNER_ID, WAI_NAME, HOME_PATH,HOME_URL FROM PHOTO..SYS_INFO WHERE GALLERY_ID = N.GALLERY_ID 
-  do{
-      forum_iri := photo_iri (WAI_NAME);
-      home      := HOME_PATH;
-      _wai_name := WAI_NAME;
-      link      := gallery_post_url(HOME_URL, album, _res_name);
-      c_link    := gallery_comment_url(link,N.COMMENT_ID);
-    }
-  if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_NAME = _wai_name and WAI_IS_PUBLIC = 1))
-    return;
-
-  post_iri  := post_iri_ex (forum_iri, _res_id);
-  cm_iri    := gallery_comment_iri(post_iri,N.COMMENT_ID);
-
-  delete_quad_s_or_o (graph_iri, cm_iri, cm_iri);
-  ods_sioc_post (graph_iri, cm_iri, forum_iri, null, _res_name , N.CREATE_DATE, N.CREATE_DATE, c_link, N.TEXT);
-  DB.DBA.RDF_QUAD_URI (graph_iri, post_iri, 'http://rdfs.org/sioc/ns#has_reply', cm_iri);
-  DB.DBA.RDF_QUAD_URI (graph_iri, cm_iri, 'http://rdfs.org/sioc/ns#reply_of', post_iri);
-  return;
+{
+  SIOC..comment_delete (O.COMMENT_ID,
+                        O.RES_ID,
+                        O.GALLERY_ID);
+  if (N.PARENT_ID is not null)
+    SIOC..comment_insert (N.COMMENT_ID,
+                          N.RES_ID,
+                          N.GALLERY_ID,
+                          N.CREATE_DATE,
+                          N.MODIFY_DATE,
+                          N.TEXT);
 }
 ;
 
 
 create trigger PHOTO_COMMENTS_SIOC_D after delete on PHOTO.WA.COMMENTS referencing old as O
-{
-  declare graph_iri, forum_iri, post_iri, cm_iri  varchar;
-
-  declare exit handler for sqlstate '*'
   {
-    sioc_log_message (__SQL_MESSAGE);
-  return;
-};
-
-  graph_iri := get_graph ();
-  for (select WAI_NAME FROM PHOTO..SYS_INFO WHERE GALLERY_ID = O.GALLERY_ID) do
-  {
-      forum_iri := photo_iri (WAI_NAME);
-    post_iri := post_iri_ex (forum_iri, O.RES_ID);
-  cm_iri    := gallery_comment_iri(post_iri,O.COMMENT_ID);
-    DELETE_QUAD_S_OR_O (graph_iri, cm_iri, cm_iri);
-  }
+  SIOC..comment_delete (O.COMMENT_ID,
+                        O.RES_ID,
+                        O.GALLERY_ID);
 }
 ;
 
@@ -386,6 +347,9 @@ create procedure gallery_post_url (
   in album varchar,
   in image varchar := '')
 {
+  if (image = '')
+    return  sprintf ('http://%s%U/#%U', get_cname(), home_path, album);
+  else
   return  sprintf ('http://%s%U/#%U/%U', get_cname(), home_path, album, image);
 }
 ;

@@ -77,7 +77,7 @@
   {
     declare freeze_page varchar;
     freeze_page := PHOTO.WA.frozen_page(current_instance.name);
-    dbg_obj_print (PHOTO.WA.frozen_page(current_instance.name));
+
     if (freeze_page is null or freeze_page = '' or freeze_page = 'default')
     {
       http_rewrite ();
