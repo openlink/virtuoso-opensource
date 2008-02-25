@@ -35,7 +35,7 @@
 		parent.processLink(domNode, href, disabledActions) - attach external handlers to a link
 
 	
-	.rdf_sort .rdf_group .rdf_clear .rdf_data .rtf_tl_port .rdf_tl_slider .rdf_tagcloud
+	.rdf_sort .rdf_group .rdf_clear .rdf_data .rtf_tl_port .rdf_tl_slider .rdf_tagcloud .rdf_tagcloud_title
 */
 if (!OAT.RDFTabs) { OAT.RDFTabs = {}; }
 
@@ -427,7 +427,7 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 
 			/* dereferenced, or relative uri/blank node */
 			if(dereferenced || !value.uri.match(/^http/i)) {
-			self.attach(content,value); 
+				self.attach(content,value);
 			} else {
 				self.dattach(content,value.uri);
 			}
@@ -1253,7 +1253,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 					var value = pred[j];
 					if (typeof(value) == "object") { continue; }
 					if (self.parent.getContentType(value) == 3) { 
-						self.addUriItem(value,item); 
+						self.addUriItem(value,item);
 					} else {
 						var all = value.match(/http:[^'"]+\.(jpeg|png|gif)/gi);
 						if (all) for (var k=0;k<all.length;k++) { self.addUriItem(all[k],item); } /* for all embedded images */
@@ -1295,21 +1295,72 @@ OAT.RDFTabs.tagcloud = function(parent,optObj) {
 	
 	this.parent = parent;
 	this.initialized = false;
-	this.elm.className = "rdf_tagcloud";
 	this.description = "This module displays all links found in filtered data set.";
-	self.tc = new OAT.TagCloud(self.elm,optObj);
-	
-	this.redraw = function() {
-		self.tc.clearItems();
+	this.clouds = [];
 
+	this.addTag = function(item,cloud) {
+		var preds = item.preds;
+		var title = self.parent.getTitle(item);
+		var freq = 1;
+
+		for (var p in preds) {
+			var simple = self.parent.simplify(p);
+			if (simple == "ownAFrequency") {
+				freq = preds[p][0];
+				break;
+			}
+		}
+		
+		cloud.addItem(title,item.uri,freq);
+	}
+
+	this.addCloud = function(item) {
+		var preds = item.preds;
+		var title = self.parent.getTitle(item);
+
+		var div = OAT.Dom.create("div");
+		var cdiv = OAT.Dom.create("div",{},"rdf_tagcloud");
+		var tdiv = OAT.Dom.create("div",{},"rdf_tagcloud_title");
+
+		var a = OAT.Dom.create("a");
+		a.href = item.uri;
+		a.innerHTML = title;
+
+		OAT.Dom.append([self.elm,div],[div,tdiv,cdiv],[tdiv,a]);
+
+		var cloud = new OAT.TagCloud(cdiv);
+		for (var p in preds) {
+			var simple = self.parent.simplify(p);
+			if (simple == "hasTag") {
+				var tags = preds[p];
+				for (var i=0;i<tags.length;i++) {
+					var tag = tags[i];
+					self.addTag(tag,cloud);
+				}
+			}
+		}
+
+		this.clouds.push(cloud);
+	}	
+
+	this.redraw = function() {
 		var data = self.parent.data.structured;
+
+		this.clouds = [];
+		OAT.Dom.clear(self.elm);
+
 		for (var i=0;i<data.length;i++) {
 			var item = data[i];
-			if (self.parent.simplify(item.type) == "Concept") {
-				self.tc.addItem(self.parent.getTitle(item),item.uri);
+			if (self.parent.simplify(item.type) == "Tagcloud") {
+				self.addCloud(item);
 			}
 		} /* for all items */
-		self.tc.draw();
+
+		for (var i=0; i<this.clouds.length;i++) {
+			var cloud = this.clouds[i];
+			cloud.draw();
+		}
+
 		var all = [];
 		var links = self.elm.getElementsByTagName("a");
 		for (var i=0;i<links.length;i++) { all.push(links[i]); }
@@ -1360,24 +1411,24 @@ OAT.RDFTabs.fresnel = function(parent,optObj) {
 		}
 		OAT.AJAX.GET(OAT.Preferences.xsltPath+"fresnel2html.xsl",false,cb,{type:OAT.AJAX.TYPE_XML});
 	} /* redraw */
-	
+
 	if (self.options.autoload && self.options.defaultURL.length) {
 		self.fresnel.addURL(self.options.defaultURL,self.redraw);
 	} else {
-	var inp = OAT.Dom.create("input");
-	inp.size = "60";
-	inp.value = self.options.defaultURL;
-	var btn = OAT.Dom.button("Load Fresnel");
-	var go = function() {
-		if ($v(inp))
-			self.fresnel.addURL($v(inp),self.redraw);
+		var inp = OAT.Dom.create("input");
+		inp.size = "60";
+		inp.value = self.options.defaultURL;
+		var btn = OAT.Dom.button("Load Fresnel");
+		var go = function() {
+			if ($v(inp))
+				self.fresnel.addURL($v(inp),self.redraw);
 
-	}
-	OAT.Event.attach(btn,"click",go);
-	OAT.Event.attach(inp,"keypress",function(event) {
-		if (event.keyCode == 13) { go(); }
-	});
-	OAT.Dom.append([self.inputElm,OAT.Dom.text("Fresnel URI: "),inp,btn]);
+		}
+		OAT.Event.attach(btn,"click",go);
+		OAT.Event.attach(inp,"keypress",function(event) {
+			if (event.keyCode == 13) { go(); }
+		});
+		OAT.Dom.append([self.inputElm,OAT.Dom.text("Fresnel URI: "),inp,btn]);
 	}
 }
 
