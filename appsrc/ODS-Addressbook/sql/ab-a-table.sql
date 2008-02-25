@@ -178,24 +178,8 @@ AB.WA.exec_no_error ('
 AB.WA.exec_no_error ('
   create trigger PERSONS_AD after delete on AB.WA.PERSONS referencing old as O {
     AB.WA.tags_update (O.P_DOMAIN_ID, O.P_TAGS, \'\');
-    delete from AB.WA.GRANTS where G_PERSON_ID = O.P_ID;
   }
 ');
-
--------------------------------------------------------------------------------
---
-create procedure AB.WA.table_update ()
-{
-  if (registry_get ('ab_table_update') = '1')
-    return;
-
-  update AB.WA.PERSONS set P_IRI = P_FOAF;
-  update AB.WA.PERSONS set P_FOAF = null;
-
-  registry_set ('ab_table_update', '1');
-}
-;
-AB.WA.table_update ();
 
 -------------------------------------------------------------------------------
 --
@@ -239,7 +223,7 @@ create procedure AB.WA.PERSONS_P_NAME_int (inout vtb any, inout d_id any, in mod
 
   for (select * from AB.WA.PERSONS where P_ID = d_id) do
   {
-    vt_batch_feed (vtb, sprintf('^R%d', P_DOMAIN_ID), mode);
+    vt_batch_feed (vtb, sprintf('^R%d', coalesce (P_DOMAIN_ID, 0)), mode);
 
     vt_batch_feed (vtb, coalesce(P_NAME, ''), mode);
     vt_batch_feed (vtb, coalesce(P_FIRST_NAME, ''), mode);
@@ -316,7 +300,7 @@ create procedure AB.WA.PERSONS_P_NAME_unindex_hook (inout vtb any, inout d_id an
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.drop_index()
+create procedure AB.WA.tmp_update ()
 {
   if (registry_get ('ab_index_version') = '3')
     return;
@@ -325,7 +309,7 @@ create procedure AB.WA.drop_index()
   registry_set ('ab_index_version', '3');
 }
 ;
-AB.WA.drop_index();
+AB.WA.tmp_update ();
 
 AB.WA.exec_no_error('
   create text index on AB.WA.PERSONS (P_NAME) with key P_ID clustered with (P_DOMAIN_ID, P_UPDATED) using function language \'x-ViDoc\'
@@ -390,19 +374,6 @@ AB.WA.exec_no_error('
   alter table AB.WA.GRANTS add constraint FK_AB_GRANTS_01 FOREIGN KEY (G_PERSON_ID) references AB.WA.PERSONS (P_ID) on delete cascade
 ');
 
-create procedure AB.WA.grants_update ()
-{
-  if (registry_get ('ab_grants_update') = '2')
-    return;
-
-    delete from AB.WA.GRANTS where not exists (select 1 from AB.WA.PERSONS where P_ID = G_PERSON_ID);
-
-  registry_set ('ab_grants_update', '2');
-}
-;
-
-AB.WA.grants_update ();
-
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.tags_procedure (
@@ -413,7 +384,9 @@ create procedure AB.WA.tags_procedure (
   result_names (tag);
   tags := split_and_decode (tags, 0, '\0\0,');
   foreach (any tag in tags) do
+  {
     result (trim (tag));
+}
 }
 ;
 
@@ -421,9 +394,6 @@ AB.WA.exec_no_error ('
   create procedure view AB..TAGS_VIEW as AB.WA.tags_procedure (tags) (TV_TAG varchar)
 ')
 ;
-
--------------------------------------------------------------------------------
---
 
 -------------------------------------------------------------------------------
 --

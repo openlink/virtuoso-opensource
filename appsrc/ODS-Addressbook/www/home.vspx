@@ -116,7 +116,7 @@
            {
              http (left (cast (fValue as varchar), 10));
            } else {
-             http (AB.WA.utf2wide (fValue));
+             http (fValue);
            }
          }
 	  ]]>
@@ -924,6 +924,7 @@
                 http ('<div style="float: right"><span id="navigation"></span></div>');
                 http('</div>');
             ?>
+              <div style="height: 477px; overflow-y: auto; overflow-x: hidden;">
             <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
               <v:before-data-bind>
                 <![CDATA[
@@ -1015,16 +1016,6 @@
 
               <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
 
-                <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-                  <table>
-                    <tr align="center">
-                      <td colspan="2" height="100px">
-                        <v:label value="-- case when (self.abScope = 'MyContacts') then 'No contacts' else 'No shared contacts' end" />
-                      </td>
-                    </tr>
-                  </table>
-                </v:template>
-
                 <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
                   <table>
                     <tr>
@@ -1102,6 +1093,7 @@
                   <vm:ds-navigation data-set="ds" />
                 </span>
             </v:data-set>
+              </div>
             <script type="text/javascript">
               <![CDATA[
                 coloriseTable('contacts');
@@ -2974,14 +2966,15 @@
                       ?>
               		  </td>
               		  <td>
-                      <?V self.i_Items[N][2] ?>
+                        <?V CAL.WA.utf2wide (self.i_Items[N][2]) ?>
               		  </td>
               		  <td>
                       <?V self.i_Items[N][3] ?>
               		  </td>
               		  <td>
                       <?vsp
-                        if (self.i_Items[N][0] = 1) {
+                          if (self.i_Items[N][0] = 1)
+                          {
                           http ('FOAF Owner');
                           http (sprintf ('<input type="hidden" name="cb_item" value="%s" />', self.i_Items[N][1]));
                         }
@@ -3318,7 +3311,7 @@
                       Validation Fields
                     </th>
                     <td>
-                      <div style="height: 380px; overflow: auto;">
+                        <div style="height: 400px; overflow: auto;">
                         <table cellspacing="0" style="background-color: #fff;">
                           <?vsp
                             declare N integer;

@@ -3969,22 +3969,3 @@ create procedure AB.WA.category_update (
   return id;
 }
 ;
-
------------------------------------------------------------------------------------------
---
-create procedure AB.WA.version_update ()
-{
-  for (select WAI_ID, WAM_USER
-         from DB.DBA.WA_MEMBER
-                join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST
-        where WAI_TYPE_NAME = 'AddressBook'
-          and WAM_MEMBER_TYPE = 1) do {
-    AB.WA.domain_update (WAI_ID, WAM_USER);
-  }
-}
-;
-
------------------------------------------------------------------------------------------
---
-AB.WA.version_update ()
-;
