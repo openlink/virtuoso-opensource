@@ -109,10 +109,6 @@
 
   <v:method name="initData" arglist="">
     <![CDATA[
-      self.cWeekStarts := CAL.WA.settings_weekStarts (self.settings);
-      self.cTimeZone := CAL.WA.settings_timeZone (self.settings);
-      self.cTimeFormat := CAL.WA.settings_timeFormat (self.settings);
-      self.cDateFormat := CAL.WA.settings_dateFormat (self.settings);
       self.cShowTasks := CAL.WA.settings_showTasks (self.settings);
       self.cPrivacy := case when CAL.WA.access_is_write (self.access_role) then 0 else 1 end;
       if (isnull (self.cScope))
@@ -286,12 +282,12 @@
     ]]>
   </v:method>
 
-  <v:method name="showEventSubject" arglist="in _id integer, in e_event integer, in e_subject varchar, in e_repeat varchar, in e_reminder varchar">
+  <v:method name="showEventSubject" arglist="in _id integer, in e_event integer, in e_subject varchar, in e_repeat varchar, in e_reminder varchar, in e_attendees integer">
     <![CDATA[
       declare domain_id integer;
       
       domain_id := (select E_DOMAIN_ID from CAL.WA.EVENTS where E_ID = _id);  
-      http (sprintf ('<a id="e_%d" href="javascript: eEdit(\'e_%d\');" class="EVL EVL_subject %s" about="%U" style="text-decoration: none;"> %s%s%V</a> %s', _id, _id, 'app', SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id)));
+      http (sprintf ('<a id="e_%d" href="javascript: eEdit(\'e_%d\');" class="EVL EVL_subject %s" about="%U" style="text-decoration: none;"> %s%s%s%V</a> %s', _id, _id, 'app', SIOC..calendar_event_iri(domain_id, _id), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), CAL.WA.show_subject (e_subject), self.permaLink (domain_id, _id)));
     ]]>
   </v:method>
 
@@ -331,6 +327,14 @@
       if (is_empty_or_null (eReminder))
         return '';
       return '<img border="0" width="11" height="11" title="Has Reminder" alt="Has Reminder" src="image/reminder.gif" /> ';
+    ]]>
+  </v:method>
+
+  <v:method name="attendeesImage" arglist="in eAttendees any">
+    <![CDATA[
+      if (eAttendees <= 0)
+        return '';
+      return '<img border="0" width="11" height="11" title="Has Attendees" alt="Has Attendees" src="image/group_16.png" /> ';
     ]]>
   </v:method>
 
@@ -506,6 +510,8 @@
       self.v_description := '';
       self.v_location := '';
       self.v_privacy := CAL.WA.domain_is_public (self.domain_id);
+      self.v_attendees := '';
+      self.v_attendees_count := 0;
       self.v_tags := '';
       self.v_event := 0;
       if (isnull (self.on_date))
@@ -560,6 +566,7 @@
       self.v_subject := trim (self.e_subject.ufl_value);
       self.v_location := trim (self.e_location.ufl_value);
       self.v_description := trim (self.e_description.ufl_value);
+      self.v_attendees := trim (self.e_attendees.ufl_value);
       if ((self.cAction = 'create') or (CAL.WA.event_permissions (self.v_id, self.domain_id, self.access_role) = 'W'))
       self.v_privacy := cast (self.e_privacy.ufl_value as integer);
       self.v_tags := trim (self.e_tags.ufl_value);
@@ -662,6 +669,7 @@
         self.v_subject,
         self.v_description,
         self.v_location,
+        self.v_attendees,
         self.v_privacy,
         self.v_tags,
         self.v_event,
@@ -676,7 +684,7 @@
         self.v_notes
       );
 
-      if (self.cScope in ('tasks', 'notes'))
+      if (self.cScope = 'tasks')
         self.cScope := 'events';
     ]]>
   </v:method>
@@ -687,6 +695,8 @@
       self.v_subject := '';
       self.v_description := '';
       self.v_privacy := CAL.WA.domain_is_public (self.domain_id);
+      self.v_attendees := '';
+      self.v_attendees_count := 0;
       self.v_tags := '';
       self.v_eventStart := null;
       self.v_eventEnd := self.cDay;
@@ -720,6 +730,7 @@
       self.v_priority := cast (self.t_priority.ufl_value as integer);
       self.v_status := self.t_status.ufl_value;
       self.v_complete := cast (self.t_complete.ufl_value as integer);
+      self.v_attendees := trim (self.t_attendees.ufl_value);
       if ((self.cAction = 'create') or (CAL.WA.event_domain (self.v_id) = self.domain_id))
       self.v_privacy := cast (self.t_privacy.ufl_value as integer);
       self.v_tags := trim (self.t_tags.ufl_value);
@@ -773,6 +784,7 @@
         self.domain_id,
         self.v_subject,
         self.v_description,
+        self.v_attendees,
         self.v_privacy,
         self.v_tags,
         CAL.WA.event_user2gmt (self.v_eventStart, self.cTimezone),
@@ -889,10 +901,6 @@
 
       <v:variable name="cLabels" type="integer" default="1" />
       <v:variable name="cChars" type="integer" default="60" />
-      <v:variable name="cWeekStarts" type="varchar" default="'m'" />
-      <v:variable name="cTimeZone" type="integer" default="0" />
-      <v:variable name="cTimeFormat" type="varchar" default="'e'" />
-      <v:variable name="cDateFormat" type="varchar" default="'dd.MM.yyyy'" />
       <v:variable name="cShowTasks" type="integer" default="1" />
       <v:variable name="cPrivacy" type="integer" default="0" />
 
@@ -911,6 +919,8 @@
       <v:variable name="v_eventEnd" type="datetime" default="null"/>
       <v:variable name="v_completed" type="datetime" default="null" />
       <v:variable name="v_privacy" type="integer" default="0" />
+      <v:variable name="v_attendees" type="varchar" default="''" />
+      <v:variable name="v_attendees_count" type="integer" default="0" />
       <v:variable name="v_tags" type="varchar" default="''"/>
       <v:variable name="v_repeat" type="varchar" default="''"/>
       <v:variable name="v_repeatParam1" type="integer" default="0"/>
@@ -1766,7 +1776,8 @@
                                                    (control as vspx_row_template).te_column_value('E_EVENT'),
                                                    (control as vspx_row_template).te_column_value('E_SUBJECT'),
                                                    (control as vspx_row_template).te_column_value('E_REPEAT'),
-                                                   (control as vspx_row_template).te_column_value('E_REMINDER'));
+                                                         (control as vspx_row_template).te_column_value('E_REMINDER'),
+                                                         (control as vspx_row_template).te_column_value('E_ATTENDEE'));
                           ?>
                         </td>
                         <vm:if test="self.columnEnabled ('event_E_LOCATION', 0)">
@@ -1786,7 +1797,7 @@
                         </vm:if>
                               <vm:if test="self.access_role not in ('public', 'guest')">
                           <td>
-                            <?vsp http (sprintf ('<input type="button" value="Annotate" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('E_ID'), self.domain_id, self.account_id, (control as vspx_row_template).te_column_value('E_SUBJECT'))); ?>
+                                  <?vsp http (sprintf ('<input type="button" value="Annotate" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'calendar_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('E_ID'), self.domain_id, self.account_id, (control as vspx_row_template).te_column_value('E_SUBJECT'))); ?>
                           </td>
                         </vm:if>
                       </tr>
@@ -1825,7 +1836,7 @@
                                                      self.cPrivacy
                                                     );
                     if (self.tv_status <> 'All')
-                            control.ds_sql := control.ds_sql || sprintf (' where E_STATUS = ''%s''', self.tv_status);
+                            control.ds_sql := control.ds_sql || sprintf (' and a.E_STATUS = ''%s''', self.tv_status);
 
 
                     self.sortChange (get_keyword ('t_sortColumn', e.ve_params), 't_order', 't_direction', self.ds1);
@@ -1892,7 +1903,8 @@
                                                    (control as vspx_row_template).te_column_value('E_EVENT'),
                                                    (control as vspx_row_template).te_column_value('E_SUBJECT'),
                                                    (control as vspx_row_template).te_column_value('E_REPEAT'),
-                                                   (control as vspx_row_template).te_column_value('E_REMINDER'));
+                                                         (control as vspx_row_template).te_column_value('E_REMINDER'),
+                                                         (control as vspx_row_template).te_column_value('E_ATTENDEE'));
                           ?>
                         </td>
                         <vm:if test="self.columnEnabled ('task_E_START', 0)">
@@ -1941,7 +1953,7 @@
                         </vm:if>
                               <vm:if test="self.access_role not in ('public', 'guest')">
                           <td>
-                            <?vsp http (sprintf ('<input type="button" value="Annotate" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'addressbook_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('E_ID'), self.domain_id, self.account_id, (control as vspx_row_template).te_column_value('E_SUBJECT'))); ?>
+                                  <?vsp http (sprintf ('<input type="button" value="Annotate" onclick="javascript: window.open (\'annotea.vspx?sid=%s&realm=%s&oid=%d&did=%d&aid=%d\', \'calendar_anotea_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" title="Annotate %s" class="button">', self.sid, self.realm, (control as vspx_row_template).te_column_value('E_ID'), self.domain_id, self.account_id, (control as vspx_row_template).te_column_value('E_SUBJECT'))); ?>
                           </td>
                         </vm:if>
                       </tr>
@@ -2050,7 +2062,8 @@
                                                    (control as vspx_row_template).te_column_value('E_EVENT'),
                                                    (control as vspx_row_template).te_column_value('E_SUBJECT'),
                                                    (control as vspx_row_template).te_column_value('E_REPEAT'),
-                                                   (control as vspx_row_template).te_column_value('E_REMINDER'));
+                                                         (control as vspx_row_template).te_column_value('E_REMINDER'),
+                                                         (control as vspx_row_template).te_column_value('E_ATTENDEE'));
                           ?>
                         </td>
                         <td nowrap="nowrap" style="padding: 0 2px 0 2px;">
@@ -2107,6 +2120,7 @@
                 select E_SUBJECT,
                        E_DESCRIPTION,
                        E_LOCATION,
+                             E_ATTENDEES,
                              E_PRIVACY,
                        E_TAGS,
                        E_EVENT,
@@ -2123,6 +2137,7 @@
                   into self.v_subject,
                        self.v_description,
                        self.v_location,
+                             self.v_attendees_count,
                              self.v_privacy,
                        self.v_tags,
                        self.v_event,
@@ -2139,6 +2154,7 @@
                   from CAL.WA.EVENTS
                  where E_ID = self.v_id;
 
+                       self.v_attendees := CAL.WA.attendees_return (self.v_id);
                  return;
               }
             _end:;
@@ -2314,6 +2330,20 @@
                         </td>
                       </tr>
                       </vm:if>
+                      <tr>
+                        <th valign="top">
+                          <v:label for="e_attendees" value="Attendees" />
+                        </th>
+                        <td valign="top">
+                          <v:textarea name="e_attendees" null-value="--''" value="--CAL.WA.utf2wide (self.v_attendees)" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
+                          <?vsp
+                            if (CAL.WA.instance_check (self.account_id, 'AddressBook'))
+                              http (sprintf ('<input type="button" value="Select" onclick="javascript: window.open (\'contacts.vspx?dst=m&params=e_attendees:s1;&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" class="button">&nbsp;', self.sid, self.realm));
+                            if (self.v_attendees_count)
+                              http (sprintf ('<input type="button" value="Details" onclick="javascript: window.open (\'attendees.vspx?id=%d&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=768, width=1024\'); return false;" class="button">', self.v_id, self.sid, self.realm));
+                          ?>
+                        </td>
+                      </tr>
                       <tr>
                   <script type="text/javascript">
                     function suggestTags ()
@@ -2843,6 +2873,7 @@
             select E_SUBJECT,
                    E_DESCRIPTION,
                    E_LOCATION,
+                         E_ATTENDEES,
                          E_PRIVACY,
                    E_TAGS,
                    E_EVENT,
@@ -2859,6 +2890,7 @@
               into self.v_subject,
                    self.v_description,
                    self.v_location,
+                         self.v_attendees_count,
                          self.v_privacy,
                    self.v_tags,
                    self.v_event,
@@ -2874,6 +2906,8 @@
                    self.v_notes
               from CAL.WA.EVENTS
              where E_ID = self.v_id;
+
+                  self.v_attendees := CAL.WA.attendees_return (self.v_id);
             return;
 
           _end:;
@@ -2899,14 +2933,11 @@
               </th>
               <td>
                 <?vsp
-                  if (self.cAction = 'view')
-                  {
                     if (self.v_event = 0) {
                       self.viewField (sprintf ('%s - %s', CAL.WA.dt_datetimestring (self.v_eventStart, self.cDateFormat, self.cTimeFormat), CAL.WA.dt_datetimestring (self.v_eventEnd, self.cDateFormat, self.cTimeFormat)));
                     } else {
                       self.viewField (sprintf ('%s - %s', CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat), CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)));
                     }
-                  }
                 ?>
               </td>
             </tr>
@@ -3010,6 +3041,7 @@
 
                 select E_SUBJECT,
                        E_DESCRIPTION,
+                             E_ATTENDEES,
                              E_PRIVACY,
                        E_TAGS,
                        CAL.WA.event_gmt2user (E_EVENT_START, self.cTimezone),
@@ -3021,6 +3053,7 @@
                        blob_to_string (E_NOTES)
                   into self.v_subject,
                        self.v_description,
+                             self.v_attendees_count,
                              self.v_privacy,
                        self.v_tags,
                        self.v_eventStart,
@@ -3033,6 +3066,7 @@
                   from CAL.WA.EVENTS
                  where E_ID = self.v_id;
 
+                       self.v_attendees := CAL.WA.attendees_return (self.v_id);
                  return;
               }
             _end:;
@@ -3211,6 +3245,20 @@
             </tr>
                       </vm:if>
             <tr>
+                        <th valign="top">
+                          <v:label for="t_attendees" value="Attendees" />
+                        </th>
+                        <td>
+                          <v:textarea name="t_attendees" null-value="--''" value="--CAL.WA.utf2wide (self.v_attendees)" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
+                          <?vsp
+                            if (CAL.WA.instance_check (self.account_id, 'AddressBook'))
+                              http (sprintf ('<input type="button" value="Select" onclick="javascript: window.open (\'contacts.vspx?dst=m&params=t_attendees:s1;&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=500, width=600\'); return false;" class="button">&nbsp;', self.sid, self.realm));
+                            if (self.v_attendees_count)
+                              http (sprintf ('<input type="button" value="Details" onclick="javascript: window.open (\'attendees.vspx?id=%d&sid=%s&realm=%s\', \'calendar_contacts_window\', \'top=100, left=100, scrollbars=yes, resize=yes, menubar=no, height=768, width=1024\'); return false;" class="button">', self.v_id, self.sid, self.realm));
+                          ?>
+                        </td>
+                      </tr>
+                      <tr>
               <script type="text/javascript">
                 function suggestTags ()
                 {
@@ -3303,8 +3351,6 @@
           <![CDATA[
             declare exit handler for not found goto _end;
 
-            declare tmp any;
-
             select E_SUBJECT,
                    E_DESCRIPTION,
                    E_TAGS,
@@ -3328,6 +3374,7 @@
               from CAL.WA.EVENTS
              where E_ID = self.v_id;
 
+                  self.v_attendees := CAL.WA.attendees_return (self.v_id);
              return;
 
           _end:;

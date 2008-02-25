@@ -787,6 +787,14 @@ create procedure CAL.WA.tag_prepare(
 }
 ;
 
+create procedure CAL.WA.instance_check (
+  in account_id integer,
+  in type_name varchar)
+{
+  return coalesce((select top 1 WAI_ID from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = account_id and WAI_TYPE_NAME = type_name order by WAI_ID), 0);
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.tag_delete(
@@ -1748,6 +1756,8 @@ create procedure CAL.WA.dt_datetimestring (
   in pDateFormat varchar := 'd.m.Y',
   in pTimeFormat varchar := 'e')
 {
+  if (isnull (dt))
+    return '';
   return CAL.WA.dt_datestring (dt, pDateFormat) || ' ' || CAL.WA.dt_timestring (dt, pTimeFormat);
 }
 ;
@@ -2872,12 +2882,28 @@ create procedure CAL.WA.settings_dateFormat (
 }
 ;
 
+create procedure CAL.WA.settings_dateFormat2 (
+  in domain_id integer)
+{
+  return CAL.WA.settings_dateFormat (CAL.WA.settings (CAL.WA.domain_owner_id (domain_id)));
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.settings_timeFormat (
   in settings any)
 {
   return get_keyword ('timeFormat', settings, 'e');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.settings_timeFormat2 (
+  in domain_id integer)
+{
+  return CAL.WA.settings_timeFormat (CAL.WA.settings (CAL.WA.domain_owner_id (domain_id)));
 }
 ;
 
@@ -2920,6 +2946,7 @@ create procedure CAL.WA.event_update (
   in subject varchar,
   in description varchar,
   in location varchar,
+  in attendees varchar,
   in privacy integer,
   in tags varchar,
   in event integer,
@@ -3004,6 +3031,7 @@ create procedure CAL.WA.event_update (
            E_UPDATED = updated
      where E_ID = id;
   }
+  CAL.WA.attendees_update (id, attendees);
   return id;
 }
 ;
@@ -3686,6 +3714,7 @@ create procedure CAL.WA.task_update (
   in domain_id integer,
   in subject varchar,
   in description varchar,
+  in attendees varchar,
   in privacy integer,
   in tags varchar,
   in eEventStart datetime,
@@ -3757,6 +3786,7 @@ create procedure CAL.WA.task_update (
            E_UPDATED = updated
      where E_ID = id;
   }
+  CAL.WA.attendees_update (id, attendees);
   return id;
 }
 ;
@@ -3782,6 +3812,201 @@ create procedure CAL.WA.calendar_tags_update (
            E_UPDATED = now ()
    where E_ID = id;
   }
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.attendees_update (
+  in id integer,
+  in attendees varchar)
+{
+  declare N, attendees_id integer;
+  declare mail varchar;
+  declare V any;
+
+  V := split_and_decode (attendees, 0, '\0\0,');
+  for (N := 0; N < length (V); N := N + 1)
+  {
+    mail := trim (V[N]);
+    if (not is_empty_or_null (mail))
+    {
+      attendees_id := (select AT_ID from CAL.WA.ATTENDEES where AT_EVENT_ID = id and AT_MAIL = mail);
+      if (isnull (attendees_id))
+      {
+        insert into CAL.WA.ATTENDEES (AT_UID, AT_EVENT_ID, AT_MAIL)
+          values (CAL.WA.uid (), id, mail);
+      }
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.attendees_update_status (
+  in uid varchar,
+  in status varchar)
+{
+   update CAL.WA.ATTENDEES set AT_STATUS = status, AT_DATE_RESPOND = now (), AT_LOG = null where AT_UID = uid;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.attendees_return (
+  in id integer)
+{
+  declare attendees varchar;
+
+  attendees := '';
+  for (select AT_MAIL from CAL.WA.ATTENDEES where AT_EVENT_ID = id) do
+  {
+    attendees := attendees || ',' || AT_MAIL;
+  }
+  return trim (attendees, ',');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.attendees_select (
+  in id integer,
+  in status any)
+{
+  declare attendees any;
+
+  attendees := vector ();
+  for (select * from CAL.WA.ATTENDEES where AT_EVENT_ID = id and coalesce (AT_STATUS, '') = status order by AT_MAIL) do
+  {
+    attendees := vector_concat (attendees, vector (vector (AT_MAIL, coalesce (AT_DATE_REQUEST, AT_DATE_RESPOND))));
+  }
+  return attendees;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.attendees_mails ()
+{
+  declare save_id, account_id, domain_id integer;
+  declare T, H varchar;
+  declare dateFormat, timeFormat varchar;
+  declare url, account_mail, subject, period, subject_mail, content_text, content_html varchar;
+
+  H := '<table cellspacing="0" cellpadding="0" border="0" width="100%%"> ' ||
+       '  <tr> ' ||
+       '    <td nowrap="noswap"><b>ODS Calendar</b></td> ' ||
+       '    <td align="right" valign="bottom" nowrap="nowrap"><b>Meeting Request</b></td> ' ||
+       '  </tr> ' ||
+       '  <tr> ' ||
+       '    <td colspan="2" bgcolor="#800000" height="1"></td> ' ||
+       '  </tr> ' ||
+       '  <tr> ' ||
+       '    <td valign="top" width="100%%" colspan="2" style="padding-top:10px;"> ' ||
+       '      <br /><br /> ' ||
+       '      <table width="600" border="0" cellspacing="0" cellpadding="5"> ' ||
+       '        <tr> ' ||
+       '          <td><b>Subject</b></td>  ' ||
+       '          <td>%s</td> ' ||
+       '        </tr> ' ||
+       '        <tr> ' ||
+       '          <td><b>When</b></td> ' ||
+       '          <td>%s</td> ' ||
+       '        </tr> ' ||
+       '        <tr> ' ||
+       '          <td><b>Please RSWP</b></td> ' ||
+       '          <td><a href="%s" target="new"><b>Respond to Meeting Request</b></a></td> ' ||
+       '        </tr> ' ||
+       '      </table> ' ||
+       '      <br /><br /> ' ||
+       '    </td> ' ||
+       '  </tr> ' ||
+       '  <tr> ' ||
+       '    <td colspan="2" width="100%%"><br><font size="1"> ' ||
+       '      If the link appears to be inactive, just cut and paste it into a browser location bar and click Enter ' ||
+       '      <br>----------------------<br> ' ||
+       '      <a href="%s" target="new">%s</a> ' ||
+       '      <br>----------------------<br> ' ||
+       '	  </td> ' ||
+       '  </tr> ' ||
+       '</table> ';
+  T := ' ODS Calendar: Meeteng Request\n\n\n' ||
+       ' Subject: %s\n' ||
+       ' When: %s\n' ||
+       ' Please RSWP: %s\n';
+
+  save_id := -1;
+  for (select AT_ID as id, AT_UID as uid, AT_EVENT_ID as event_id, AT_MAIL as mail from CAL.WA.ATTENDEES where AT_DATE_REQUEST is null order by AT_EVENT_ID) do
+  {
+    if (save_id <> event_id)
+    {
+      save_id := event_id;
+      for (select * from CAL.WA.EVENTS where E_ID = event_id) do
+      {
+        domain_id := E_DOMAIN_ID;
+        dateFormat := CAL.WA.settings_dateFormat2 (domain_id);
+        timeFormat := CAL.WA.settings_timeFormat2 (domain_id);
+        subject := E_SUBJECT;
+        subject_mail := 'Meeting Request: ' || subject;
+        if (E_EVENT = 0)
+        {
+          period := sprintf ('%s - %s', CAL.WA.dt_datetimestring (E_EVENT_START, dateFormat, timeFormat), CAL.WA.dt_datetimestring (E_EVENT_END, dateFormat, timeFormat));
+        } else {
+          period := sprintf ('%s - %s', CAL.WA.dt_datestring (E_EVENT_START, dateFormat), CAL.WA.dt_datestring (E_EVENT_END, dateFormat));
+        }
+      }
+      account_id := CAL.WA.domain_owner_id (domain_id);
+      account_mail := CAL.WA.account_mail (account_id);
+    }
+
+    declare exit handler for sqlstate '*'
+    {
+      update CAL.WA.ATTENDEES set AT_LOG = __SQL_MESSAGE where AT_ID = id;
+      goto _next;
+    };
+
+    url := sprintf ('http://%sattendees.vspx?uid=%U', CAL.WA.calendar_url (domain_id), uid);
+    content_html := sprintf (H, subject, period, url, url, url);
+    content_text := sprintf (T, subject, period, url);
+    CAL.WA.send_mail (account_mail, mail, subject_mail, content_text, content_html);
+    update CAL.WA.ATTENDEES set AT_DATE_REQUEST = now () where AT_ID = id;
+
+  _next:;
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.send_mail (
+  in _from any,
+  in _to any,
+  in _subject any,
+  in _message_text any,
+  in _message_html any)
+{
+  declare _smtp_server, _mail_body, _mail_body_text, _mail_body_html, _encoded, _date any;
+
+  if ((select max(WS_USE_DEFAULT_SMTP) from WA_SETTINGS) = 1)
+  {
+    _smtp_server := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'DefaultMailServer');
+  } else {
+    _smtp_server := (select max(WS_SMTP) from WA_SETTINGS);
+  }
+  _encoded := encode_base64 (_subject);
+  _encoded := replace (_encoded, '\r\n', '');
+  _subject := concat ('Subject: =?UTF-8?B?', _encoded, '?=\r\n');
+  _date := sprintf ('Date: %s\r\n', date_rfc1123 (now ()));
+  _mail_body_text := mime_part ('text/plain; charset=UTF-8', null, null, _message_text);
+  _mail_body_html := mime_part ('text/html; charset=UTF-8', null, null, _message_html);
+  _mail_body := _date || _subject || mime_body (vector (_mail_body_html, _mail_body_text));
+
+  if(not _smtp_server or length(_smtp_server) = 0)
+  {
+    signal('WA002', 'The Mail Server is not defined. Mail can not be sent.');
+  }
+  smtp_send (_smtp_server, _from, _to, _mail_body);
+}
 ;
 
 -------------------------------------------------------------------------------
@@ -4305,6 +4530,7 @@ create procedure CAL.WA.import_vcal (
             subject,
             description,
             location,
+            null,
             privacy,
             eventTags,
             event,
@@ -4353,6 +4579,7 @@ create procedure CAL.WA.import_vcal (
             domain_id,
             subject,
             description,
+            null,
             privacy,
             eventTags,
             eEventStart,
@@ -4672,6 +4899,15 @@ create procedure CAL.WA.upstream_log_save (
   commit work;
 }
 ;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure CAL.WA.uid ()
+{
+  return sprintf ('%s@%s', uuid (), sys_stat ('st_host_name'));
+}
+;
+
 -----------------------------------------------------------------------------------------
 --
 create procedure CAL.WA.atom_uuid ()
@@ -4893,84 +5129,4 @@ _exit:;
 ;
 
 grant execute on CAL.WA.gdata to SOAP_CALENDAR
-;
-
------------------------------------------------------------------------------------------
---
-create procedure CAL.WA.tmp_atom_update ()
-{
-  if (registry_get ('cal_atom_update') = '2')
-    return;
-
-  for (select * from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = 'Calendar') do
-  {
-    VHOST_REMOVE (lpath     => CAL.WA.atom_lpath (WAI_ID));
-  }
-
-  registry_set ('cal_atom_update', '2');
-}
-;
-
------------------------------------------------------------------------------------------
---
-CAL.WA.tmp_atom_update ()
-;
-
------------------------------------------------------------------------------------------
---
-create procedure CAL.WA.version_update ()
-{
-  for (select WAI_ID, WAM_USER
-         from DB.DBA.WA_MEMBER
-                join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST
-        where WAI_TYPE_NAME = 'Calendar'
-          and WAM_MEMBER_TYPE = 1) do {
-    CAL.WA.domain_update (WAI_ID, WAM_USER);
-  }
-}
-;
-
------------------------------------------------------------------------------------------
---
-CAL.WA.version_update ()
-;
-
------------------------------------------------------------------------------------------
---
-create procedure CAL.WA.version_update2 ()
-{
-  declare cTimezone integer;
-
-  if (registry_get ('cal_tasks_version') = '1')
-    return;
-
-  for (select E_ID          _id,
-              E_DOMAIN_ID   _domain_id,
-              E_EVENT_START _start,
-              E_EVENT_END   _end
-         from CAL.WA.EVENTS
-        where E_KIND = 1) do
-  {
-    cTimezone := CAL.WA.settings_timeZone2 (_domain_id);
-    if (not isnull (_start)) {
-      _start := CAL.WA.event_gmt2user (_start, cTimezone);
-      _start := CAL.WA.dt_join (_start, CAL.WA.dt_timeEncode (12, 0));
-    }
-    if (not isnull (_end))
-    {
-      _end := CAL.WA.event_gmt2user (_end, cTimezone);
-      _end := CAL.WA.dt_join (_end, CAL.WA.dt_timeEncode (12, 0));
-    }
-    update CAL.WA.EVENTS
-       set E_EVENT_START = CAL.WA.event_user2gmt (_start, cTimezone),
-           E_EVENT_END = CAL.WA.event_user2gmt (_end, cTimezone)
-     where E_ID = _id;
-  }
-  registry_set ('cal_tasks_version', '1');
-}
-;
-
------------------------------------------------------------------------------------------
---
-CAL.WA.version_update2 ()
 ;

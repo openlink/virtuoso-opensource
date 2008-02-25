@@ -25,6 +25,7 @@ create procedure CAL.WA.uninstall ()
   for select WAI_INST from DB.DBA.WA_INSTANCE WHERE WAI_TYPE_NAME = 'Calendar' do
   {
     (WAI_INST as DB.DBA.wa_Calendar).wa_drop_instance();
+    commit work;
   }
 }
 ;
@@ -34,13 +35,15 @@ CAL.WA.uninstall ()
 -- Scheduler
 CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Alarm Scheduler\'');
 CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Upstream Scheduler\'');
+CAL.WA.exec_no_error('DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT WHERE SE_NAME = \'Calendar Attendees Scheduler\'');
 
 -- Tables
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM_LOG');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM_EVENT');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.UPSTREAM');
-CAL.WA.exec_no_error('DROP TABLE CAL.WA.GRANTS');
+CAL.WA.exec_no_error('DROP TABLE CAL.WA.ATTENDEES');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.SHARED');
+CAL.WA.exec_no_error('DROP TABLE CAL.WA.GRANTS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.ANNOTATIONS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.ALARMS');
 CAL.WA.exec_no_error('DROP TABLE CAL.WA.EVENTS');
@@ -61,8 +64,12 @@ registry_remove ('calendar_version');
 registry_remove ('calendar_build');
 registry_remove ('cal_note_update');
 registry_remove ('cal_class_update');
+registry_remove ('cal_privacy_update');
 registry_remove ('cal_description_update');
 registry_remove ('cal_index_version');
+registry_remove ('cal_uid_version');
+registry_remove ('cal_attendee_update');
+registry_remove ('cal_atom_update');
 
 -- Procedures
 create procedure CAL.WA.drop_procedures()

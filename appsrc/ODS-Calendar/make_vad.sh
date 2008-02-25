@@ -20,7 +20,7 @@
 #
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.2.23"
+VERSION="1.3.24"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -247,6 +247,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/Calendar/sql/calendar-a-wa.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/Calendar/sql/calendar-a-table.sql', 1, 'report',  $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/Calendar/sql/calendar-a-code.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/Calendar/sql/calendar-a-update.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/Calendar/sql/sioc_calendar.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/Calendar/sql/DET_Calendar.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "    ]]>" >> $STICKER

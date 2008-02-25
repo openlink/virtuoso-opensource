@@ -168,6 +168,8 @@ CAL.WA.exec_no_error ('
                                           -- 1 - Task
     E_PRIVACY integer default 0,          -- 0 - PRIVATE
                                           -- 1 - PUBLIC
+    E_ATTENDEES integer default 0,        -- 0 - no attendees
+                                          -- N - number of attendees
     E_SUBJECT varchar,
     E_DESCRIPTION long varchar,
     E_NOTES long varchar,
@@ -237,6 +239,10 @@ CAL.WA.exec_no_error (
 
 CAL.WA.exec_no_error (
   'alter table CAL.WA.EVENTS drop E_CLASS', 'D', 'CAL.WA.EVENTS', 'E_CLASS'
+);
+
+CAL.WA.exec_no_error (
+  'alter table CAL.WA.EVENTS add E_ATTENDEES integer default 0', 'C', 'CAL.WA.EVENTS', 'E_ATTENDEES'
 );
 
 -------------------------------------------------------------------------------
@@ -329,8 +335,7 @@ CAL.WA.exec_no_error ('
     if (isnull (N.E_UID))
     {
       set triggers off;
-      N.E_UID := sprintf (\'%s@%s\', uuid (), sys_stat (\'st_host_name\'));
-      update CAL.WA.EVENTS set E_UID = N.E_UID where E_ID = N.E_ID;
+      update CAL.WA.EVENTS set E_UID = CAL.WA.uid () where E_ID = N.E_ID;
       set triggers on;
     }
     CAL.WA.tags_update (N.E_DOMAIN_ID, \'\', N.E_TAGS);
@@ -366,8 +371,7 @@ CAL.WA.exec_no_error ('
     if (isnull (N.E_UID))
     {
       set triggers off;
-      N.E_UID := sprintf (\'%s@%s\', uuid (), sys_stat (\'st_host_name\'));
-      update CAL.WA.EVENTS set E_UID = N.E_UID where E_ID = N.E_ID;
+      update CAL.WA.EVENTS set E_UID = CAL.WA.uid () where E_ID = N.E_ID;
       set triggers on;
     }
     CAL.WA.tags_update (N.E_DOMAIN_ID, O.E_TAGS, N.E_TAGS);
@@ -420,54 +424,6 @@ CAL.WA.exec_no_error ('
 
 -------------------------------------------------------------------------------
 --
-create procedure CAL.WA.tmp_update ()
-{
-  if (registry_get ('cal_note_update') = '1')
-    return;
-
-  delete from CAL.WA.EVENTS where E_KIND > 1;
-  registry_set ('cal_note_update', '1');
-}
-;
-CAL.WA.tmp_update ();
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.tmp_update ()
-{
-  if (registry_get ('cal_privacy_update') = '1')
-    return;
-
-  set triggers off;
-  update CAL.WA.EVENTS set E_PRIVACY = 1;
-  set triggers on;
-
-  registry_set ('cal_privacy_update', '1');
-}
-;
-CAL.WA.tmp_update ();
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.tmp_update ()
-{
-  if (registry_get ('cal_description_update') = '1')
-    return;
-
-  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS add E_TMP varchar', 'C', 'CAL.WA.EVENTS', 'E_TMP');
-  CAL.WA.exec_no_error ('update CAL.WA.EVENTS set E_TMP = E_DESCRIPTION');
-  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS drop E_DESCRIPTION', 'D', 'CAL.WA.EVENTS', 'E_DESCRIPTION');
-  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS add E_DESCRIPTION long varchar', 'C', 'CAL.WA.EVENTS', 'E_DESCRIPTION');
-  CAL.WA.exec_no_error ('update CAL.WA.EVENTS set E_DESCRIPTION = E_TMP');
-  CAL.WA.exec_no_error ('alter table CAL.WA.EVENTS drop E_TMP', 'D', 'CAL.WA.EVENTS', 'E_TMP');
-
-  registry_set ('cal_description_update', '1');
-}
-;
-CAL.WA.tmp_update();
-
--------------------------------------------------------------------------------
---
 create procedure CAL.WA.tags_update (
   inout domain_id integer,
   in oTags any,
@@ -502,22 +458,6 @@ create procedure CAL.WA.tags_update (
   }
 }
 ;
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.tmp_update ()
-{
-  if (registry_get ('cal_uid_update') = '1')
-    return;
-
-  set triggers off;
-  update CAL.WA.EVENTS set E_UID = sprintf ('%s@%s', uuid (), sys_stat ('st_host_name')) where E_UID is null;
-  set triggers on;
-
-  registry_set ('cal_uid_update', '1');
-}
-;
-CAL.WA.tmp_update ();
 
 -------------------------------------------------------------------------------
 --
@@ -684,6 +624,55 @@ CAL.WA.exec_no_error ('
 CAL.WA.exec_no_error ('
   insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
     values(\'Calendar Upstream Scheduler\', now(), \'CAL.WA.upstream_scheduler ()\', 10)
+')
+;
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  create table CAL.WA.ATTENDEES (
+    AT_ID integer identity,
+    AT_UID varchar,
+    AT_EVENT_ID integer not null,
+    AT_MAIL varchar,
+    AT_DATE_REQUEST datetime,
+    AT_DATE_RESPOND datetime,
+    AT_STATUS varchar,
+    AT_LOG long varchar,
+
+    constraint FK_ATTENDEES_01 FOREIGN KEY (AT_EVENT_ID) references CAL.WA.EVENTS (E_ID) on delete cascade,
+
+    primary key (AT_ID)
+  )
+');
+
+CAL.WA.exec_no_error ('
+  create index SK_ATTENDEES_01 on CAL.WA.ATTENDEES (AT_EVENT_ID)
+');
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  create trigger ATTENDEES_AI after insert on CAL.WA.ATTENDEES referencing new as N
+  {
+    update CAL.WA.EVENTS set E_ATTENDEES = E_ATTENDEES + 1 where E_ID = N.AT_EVENT_ID;
+  }
+');
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  create trigger ATTENDEES_AD after delete on CAL.WA.ATTENDEES referencing old as O
+  {
+    update CAL.WA.EVENTS set E_ATTENDEES = E_ATTENDEES - 1 where E_ID = O.AT_EVENT_ID;
+  }
+');
+
+-------------------------------------------------------------------------------
+--
+CAL.WA.exec_no_error ('
+  insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
+    values(\'Calendar Attendees Scheduler\', now(), \'CAL.WA.attendees_mails ()\', 10)
 ')
 ;
 

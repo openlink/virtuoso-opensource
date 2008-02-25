@@ -43,6 +43,10 @@
         <v:variable persist="0" name="ownerName" type="varchar" default="null" />
         <v:variable persist="0" name="access_role" type="varchar" default="'public'"/>
         <v:variable persist="0" name="settings" type="any" />
+        <v:variable persist="0" name="cWeekStarts" type="varchar" default="'m'" />
+        <v:variable persist="0" name="cTimeZone" type="integer" default="0" />
+        <v:variable persist="0" name="cTimeFormat" type="varchar" default="'e'" />
+        <v:variable persist="0" name="cDateFormat" type="varchar" default="'dd.MM.yyyy'" />
       </vm:variables>
       <v:on-init>
         <![CDATA[
@@ -59,7 +63,13 @@
           self.owner_id := CAL.WA.domain_owner_id (self.domain_id);
           self.ownerName := CAL.WA.domain_owner_name (self.domain_id);
           self.access_role := get_keyword ('user_role', aSessInfo, '');
+
           self.settings := CAL.WA.settings(self.account_id);
+
+          self.cWeekStarts := CAL.WA.settings_weekStarts (self.settings);
+          self.cTimeZone := CAL.WA.settings_timeZone (self.settings);
+          self.cTimeFormat := CAL.WA.settings_timeFormat (self.settings);
+          self.cDateFormat := CAL.WA.settings_dateFormat (self.settings);
         ]]>
       </v:on-init>
 

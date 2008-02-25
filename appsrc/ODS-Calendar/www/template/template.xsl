@@ -108,11 +108,16 @@
       <xsl:copy-of select="."/>
     </xsl:for-each>
     <div style="padding: 0.5em;">
+      <xsl:if test="not @close or @close = 'yes'">
       <div style="padding: 0 0 0.5em 0;">
-        &amp;nbsp;<a href="#" onClick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
+          &amp;nbsp;<a href="javascript: void (0);" onclick="javascript: if (opener != null) opener.focus(); window.close();"><img src="image/close_16.png" border="0" alt="Close" title="Close" />&amp;nbsp;Close</a>
         <hr />
       </div>
+      </xsl:if>
       <v:form name="F1" type="simple" method="POST">
+        <xsl:if test="@ods-bar = 'yes'">
+          <ods:ods-bar app_type='Calendar'/>
+        </xsl:if>
         <xsl:apply-templates select="vm:pagebody" />
       </v:form>
     </div>

@@ -584,7 +584,9 @@ function updateChecked (obj, objName)
       if (obj.checked)
       {
         if (objForm.s1.value.indexOf(obj.value+',') == -1)
+        {
           objForm.s1.value = objForm.s1.value + obj.value+',';
+        }
       } else {
         objForm.s1.value = (objForm.s1.value).replace(obj.value+',', '');
       }
@@ -629,10 +631,8 @@ function addChecked (form, txt, selectionMsq)
         if (window.opener.document.F1.elements[myArray[1]])
         {
           if (myArray[2] == 's1')
-            if (window.opener.document.F1.elements[myArray[1]])
               rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s1], singleMode, submitMode);
           if (myArray[2] == 's2')
-            if (window.opener.document.F1.elements[myArray[1]])
               rowSelectValue(window.opener.document.F1.elements[myArray[1]], window.document.F1.elements[s2], singleMode, submitMode);
         }
     if (myArray.length < 4)

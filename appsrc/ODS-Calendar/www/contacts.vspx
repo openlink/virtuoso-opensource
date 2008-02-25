@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="calendars" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<v:page name="users" decor="template/popup.vspx" style="template/template.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
   <v:method name="sortColumn" arglist="in titleName varchar, in columnName varchar">
     <![CDATA[
@@ -59,15 +59,26 @@
     ]]>
   </v:method>
 
-  <vm:pagetitle>Select Calendar</vm:pagetitle>
+  <v:method name="isMultiple" arglist="in dst any">
+    <![CDATA[
+      declare pos integer;
+
+      pos := strstr(self.v_dst, 'm');
+      if (not isnull(pos))
+        return 1;
+      return 0;
+    ]]>
+  </v:method>
+
+  <vm:pagetitle>Select Contacts</vm:pagetitle>
+
   <vm:popup_page_wrapper>
     <vm:variables>
       <v:variable name="v_params" param-name="params" type="varchar"/>
       <v:variable name="v_value" persist="0" type="varchar" default="''"/>
-      <v:variable name="v_mode" persist="0" param-name="mode" type="varchar" default="'s'"/>
       <v:variable name="v_mask" persist="0" type="varchar" default="''"/>
       <v:variable name="v_how" persist="0" type="varchar" default="'1'"/>
-      <v:variable name="v_order" persist="0" type="varchar" default="'WAI_NAME'" />
+      <v:variable name="v_order" persist="0" type="varchar" default="'P_NAME'" />
       <v:variable name="v_direction" persist="0" type="varchar" default="'asc'" />
       <v:variable name="v_src" persist="0" param-name="src" type="varchar" default="''" />
       <v:variable name="v_dst" persist="0" param-name="dst" type="varchar" default="'sc'" />
@@ -75,12 +86,18 @@
       <v:variable name="v_s2" persist="0" param-name="s2" type="varchar" default="''" />
     </vm:variables>
     <vm:pagebody>
-      <?vsp http(sprintf('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
-      <?vsp http(sprintf('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
-      <?vsp http(sprintf('<input type="hidden" name="src"   id="src"   value="%s"/>', get_keyword('src', self.vc_page.vc_event.ve_params, ''))); ?>
-      <?vsp http(sprintf('<input type="hidden" name="dst"   id="dst"   value="%s"/>', get_keyword('dst', self.vc_page.vc_event.ve_params, 'sc'))); ?>
-      <?vsp http(sprintf('<input type="hidden" name="s1"    id="s1"    value="%s"/>', get_keyword('s1', self.vc_page.vc_event.ve_params, ''))); ?>
-      <?vsp http(sprintf('<input type="hidden" name="s2"    id="s2"    value="%s"/>', get_keyword('s2', self.vc_page.vc_event.ve_params, ''))); ?>
+      <?vsp
+        declare params any;
+
+        params := self.vc_page.vc_event.ve_params;
+
+        http (sprintf ('<input type="hidden" name="sid"   id="sid"   value="%s"/>', get_keyword('sid', params)));
+        http (sprintf ('<input type="hidden" name="realm" id="realm" value="%s"/>', get_keyword('realm', params)));
+        http (sprintf ('<input type="hidden" name="src"   id="src"   value="%s"/>', get_keyword('src', params, '')));
+        http (sprintf ('<input type="hidden" name="dst"   id="dst"   value="%s"/>', get_keyword('dst', params, 'sc')));
+        http (sprintf ('<input type="hidden" name="s1"    id="s1"    value="%s"/>', get_keyword('s1', params, '')));
+        http (sprintf ('<input type="hidden" name="s2"    id="s2"    value="%s"/>', get_keyword('s2', params, '')));
+      ?>
       <v:text name="params" type="hidden" value="--self.v_params"/>
       <div class="boxHeader">
         Show
@@ -94,6 +111,7 @@
         <v:button action="simple" value="Filter" xhtml_class="button">
           <v:on-post>
             <![CDATA[
+              self.v_filter := get_keyword('filter', self.vc_page.vc_event.ve_params, self.v_filter);
               self.v_how := self.how.ufl_value;
               self.v_value := trim(self.value.ufl_value);
               self.vc_data_bind (e);
@@ -119,36 +137,41 @@
                              when '1' then self.v_value || '%'
                              when '2' then '%' || self.v_value || '%'
                              when '3' then '%' || self.v_value
-                             else self.v_value end;
+                             else self.v_value
+                           end;
             if (self.v_mask = '')
               self.v_mask := '%';
             self.v_mask := replace(self.v_mask, '%%', '%');
 
-            if (self.v_mode = 'p')
-            {
-              control.ds_sql := sprintf ('select WAI_NAME, WAI_DESCRIPTION from DB.DBA.WA_INSTANCE where WAI_TYPE_NAME = \'Calendar\' and WAI_IS_PUBLIC = 1 and WAI_ID <> %d', self.domain_id);
-            } else {
-              control.ds_sql := sprintf ('select x.* from (select a.WAI_NAME, a.WAI_DESCRIPTION from DB.DBA.WA_INSTANCE a, CAL.WA.GRANTS b where a.WAI_TYPE_NAME = \'Calendar\' and a.WAI_ID = b.G_DOMAIN_ID and b.G_ACCOUNT_ID = %d) x', self.account_id);
-            }
+            control.ds_sql := sprintf ('select distinct a.P_NAME, a.P_MAIL from AB.WA.PERSONS a, DB.DBA.WA_MEMBER b, DB.DBA.WA_INSTANCE c where a.P_DOMAIN_ID = c.WAI_ID and c.WAI_TYPE_NAME = ''AddressBook'' and c.WAI_NAME = b.WAM_INST and B.WAM_MEMBER_TYPE = 1 and b.WAM_USER = %d and DB.DBA.is_empty_or_null (a.P_MAIL) <> 1 and (upper (a.P_NAME) like upper(''%s''))', self.account_id, self.v_mask);
             self.sortChange (get_keyword('sortColumn', e.ve_params, ''));
-            control.ds_sql := concat(control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
+            control.ds_sql := concat (control.ds_sql, ' order by ', self.v_order, ' ', self.v_direction);
           ]]>
         </v:before-data-bind>
       </v:data-source>
       <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
         <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-          <table id="calendars" class="grid" cellspacing="0">
+          <table id="users" class="grid" cellspacing="0">
             <thead class="sortHeader">
               <tr>
+                <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
+                  <th class="checkbox" width="1%">
+                    <?vsp
+                      http('<input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, ''cb_item''); updateChecked(this, ''cb_item''); "/>');
+                    ?>
+                  </th>
+                </v:template>
                 <th>
-                  <?vsp self.sortColumn('Name', 'WAI_NAME'); ?>
+                  <?vsp self.sortColumn('Name', 'P_NAME'); ?>
                 </th>
                 <th>
-                  <?vsp self.sortColumn('Description', 'WAI_DESCRIPTION'); ?>
+                  <?vsp self.sortColumn('Mail', 'P_MAIL'); ?>
                 </th>
-                <th class="last" width="1%">
-                  <v:label value="Action" format="%s"/>
-                </th>
+                <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
+                  <th class="last" width="1%">
+                    <v:label value="Action" format="%s"/>
+                  </th>
+                </v:template>
               </tr>
             </thead>
           </table>
@@ -156,20 +179,45 @@
 
         <v:template name="ds_repeat" type="repeat" name-to-remove="" set-to-remove="">
 
+          <v:template name="ds_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table>
+              <tr align="center">
+                <td colspan="3">No records</td>
+              </tr>
+            </table>
+          </v:template>
+
           <v:template name="ds_browse" type="browse" name-to-remove="table" set-to-remove="both">
             <table>
               <tr>
+                <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
+                  <td  align="center">
+                    <?vsp
+                      declare pos integer;
+                      declare S, name any;
+
+                      name := (control.vc_parent as vspx_row_template).te_column_value('P_MAIL');
+                      S := '';
+                      pos := strstr (self.v_s1, concat(name, ','));
+                      if (not isnull (pos))
+                        S := 'checked="checked"';
+                      http (sprintf ('<input type="checkbox" name="cb_item" value="%s" %s onclick="javascript: updateChecked(this, ''cb_item''); " />', name, S));
+                    ?>
+                  </td>
+                </v:template>
                 <td nowrap="nowrap">
-                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WAI_NAME')" format="%s"/>
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('P_NAME')" format="%s"/>
                 </td>
                 <td nowrap="nowrap">
-                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('WAI_DESCRIPTION')" format="%s"/>
+                  <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('P_MAIL')" format="%s"/>
                 </td>
+                <v:template type="simple" enabled="--neq(self.isMultiple(self.v_dst), 1)">
                   <td nowrap="nowrap">
-                    <v:text name="s1" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('WAI_NAME')"/>
-                    <v:text name="s2" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('WAI_DESCRIPTION')"/>
+                    <v:text name="s1" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('P_NAME')"/>
+                    <v:text name="s2" type="hidden" value="--((control.vc_parent).vc_parent as vspx_row_template).te_column_value('P_MAIL')"/>
                     <v:button name="b1" action="simple" value="select" xhtml_alt="Select" xhtml_onclick="javascript: rowSelect(this); return false;" xhtml_class="button"/>
                   </td>
+                </v:template>
               </tr>
             </table>
           </v:template>
@@ -182,9 +230,15 @@
         </v:template>
 
       </v:data-set>
+      <v:template type="simple" enabled="--equ(self.isMultiple(self.v_dst), 1)">
+        <div style="padding: 0 0 0.5em 0;">
+          <hr />
+          <a href="#" onclick="javascript: addChecked(document.forms['F1'], 'cb_item', 'No users were selected for addition.');" class="button2">&amp;nbsp;Add selected</a>
+        </div>
+      </v:template>
       <script>
         <![CDATA[
-          coloriseTable('calendars');
+          coloriseTable('users');
         ]]>
       </script>
     </vm:pagebody>

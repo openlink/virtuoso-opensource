@@ -22,21 +22,21 @@
  */
 
 .rteImage {
-	background: #D3D3D3;
-	border: 1px solid #D3D3D3;
+	background: #B0CDE4;
+	border: 1px solid #B0CDE4;
 	cursor: pointer;
 	cursor: hand;
 }
 
 .rteImageRaised, .rteImage:hover {
-	background: #D3D3D3;
+	background: #B0CDE4;
 	border: 1px outset;
 	cursor: pointer;
 	cursor: hand;
 }
 
 .rteImageLowered, .rteImage:active {
-	background: #D3D3D3;
+	background: #B0CDE4;
 	border: 1px inset;
 	cursor: pointer;
 	cursor: hand;
@@ -47,14 +47,14 @@
 }
 
 .rteBack {
-	background: #D3D3D3;
+	background: #B0CDE4;
 	border: 1px outset;
 	letter-spacing: 0;
 	padding: 2px;
 }
 
 .rteBack tbody tr td, .rteBack tr td {
-	background: #D3D3D3;
+	background: #B0CDE4;
 	padding: 0;
 }
 
