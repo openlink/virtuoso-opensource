@@ -1,3 +1,45 @@
+2008-02-25 14:25  source
+
+	* Updated version to 5.0.6-rc1
+
+2008-02-25 14:24  source
+
+	* Fixed delete instance removed application additional urls
+
+2008-02-25 14:24  source
+
+	* Added invitations (attendees)
+	* Fixed rebuild RDF error
+
+2008-02-25 14:23  source
+
+	* Fixed install bug using wrong UTF8 encoding
+
+2008-02-23 00:21  source
+
+	* Fixed triples for images in Gallery
+
+2008-02-22 23:56  source
+
+	* Updated version to 5.0.6-pre4
+
+2008-02-22 23:55  source
+
+	* When having an order by with top, do not flush to disk, but read from the
+	  mem temp instead. Circumvents length limits for sort temp rows.
+
+2008-02-22 14:26  source
+
+	* Fixed indentation
+
+2008-02-22 14:24  source
+
+	* Fixed printing double dt
+
+2008-02-22 14:23  source
+
+	* Fixed proxy URLs
+
 2008-02-22 13:20  source
 
 	* Updated version to 5.0.6-pre3
