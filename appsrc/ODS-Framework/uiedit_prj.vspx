@@ -143,18 +143,33 @@ tmp := uuid ();
     exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
     goto nexts;
   };
-  qrs := vector (0,0);
+  qrs := vector (0,0,0);
   exec (sprintf ('sparql load "%s" into graph <%s>', url, tmp));
 
   qrs[0] := sprintf ('sparql prefix doap: <http://usefulinc.com/ns/doap#>
        select ?P ?N ?D from <%s> where { ?P a doap:Project ; doap:name ?N ; doap:description ?D . }', tmp);
   qrs[1] := sprintf ('sparql prefix foaf: <http://xmlns.com/foaf/0.1/>
        select ?P ?N ?D from <%s> where { ?P a foaf:Organization ; foaf:name ?N . optional { ?P foaf:dummy ?D . } }', tmp);
+  qrs[2] := sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      			     prefix dc: <http://purl.org/dc/elements/1.1/>
+			     prefix foaf: <http://xmlns.com/foaf/0.1/>
+			     select ?P ?N ?D ?TI from <%s> where { ?P a ?TP .
+			     	optional { ?P foaf:name ?N } .
+				optional { ?P rdfs:label ?D . } .
+				optional { ?P dc:title ?TI }
+				filter ( ?P = <%s> ) }', tmp, url);
 
   foreach (any qr in qrs) do
     {
       exec (qr, stat, msg, vector (), 0, mdta, dta);
-  if (length (dta) and length (dta[0]) > 2)
+      if (length (dta) and length (dta[0]) > 3)
+	{
+	  iri := url;
+	  name := coalesce (dta[0][1], dta[0][2], dta[0][3]);
+	  descr := coalesce (name, descr);
+	  goto _found;
+	}
+      else if (length (dta) and length (dta[0]) > 2)
     {
       iri := dta[0][0];
       name := dta[0][1];
