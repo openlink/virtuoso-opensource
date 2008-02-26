@@ -4296,6 +4296,15 @@ users will not indicate specific graphs then should be done: </para>
 SQL> create bitmap index RDF_QUAD_POGS on DB.DBA.RDF_QUAD (P,O,G,S);
 SQL> create bitmap index RDF_QUAD_PSOG on DB.DBA.RDF_QUAD (P,S,O,G);
 ]]></programlisting>
+    <para>You can create other indexes as well. Bitmap indexes are preferable, but
+if O is the last column, then the index can not be bitmap, so it could be, for e.g.:</para>
+<programlisting><![CDATA[
+create index RDF_QUAD_PSGO on DB.DBA.RDF_QUAD (P, S, G, O);
+]]></programlisting>
+    <para>but cannot be:</para>
+<programlisting><![CDATA[
+create bitmap index RDF_QUAD_PSGO on DB.DBA.RDF_QUAD (P, S, G, O);
+]]></programlisting>
     </sect2>
 </sect1>
 </chapter>
