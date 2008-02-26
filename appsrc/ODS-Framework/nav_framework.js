@@ -89,6 +89,8 @@ function buildObjByChildNodes(elm)
 
      }
    }
+   obj.selfTextValue=OAT.Xml.textValue(elm);
+
    return obj;
 };
 
@@ -124,6 +126,7 @@ ODS.Preferences = {
   imagePath:"/ods/images/",
   dataspacePath:"/dataspace/",
   odsHome:"/ods/",
+  root:document.location.protocol+'//'+document.location.host,
   svcEndpoint:"/ods_services/Http/",
   activitiesEndpoint:"/activities/feeds/activities/user/",
   version:"24.01.2008-1.21"
@@ -807,14 +810,19 @@ ODS.Nav = function(navOptions) {
                   if(document.location.href.indexOf('/dataspace/person/')>-1 || document.location.href.indexOf('/dataspace/organization/')>-1)
                   {
                     
+                    
                     var profileId=document.location.href.split('/')[5];
                     profileId=profileId.split('#')[0];
 
                     var profileType=profileId.split('/')[4];
                    
                     self.profile.show=true; 
+                    if(!self.session.sid || 
+                       (self.session.sid && self.session.userName!=profileId))
+                    {
                     self.profile.set('/'+profileId);
                     self.initProfile();
+                    }
 
                     return;
                   }
@@ -842,10 +850,14 @@ ODS.Nav = function(navOptions) {
                         var profileType=profileId.split('/')[1];
                         profileId=profileId.split('/')[2];
                         
-                        
                         self.profile.show=true; 
+
+                        if(!self.session.sid ||
+                           (self.session.sid && self.session.userName!=profileId))
+                        {
                         self.profile.set('/'+profileId);
                         self.initProfile();
+                        }
                         
                     }else if(defaultAction.indexOf('#msg')>-1)
                     {
@@ -1816,23 +1828,22 @@ ODS.Nav = function(navOptions) {
         if($('search_textbox_searchC'))
         {  $('search_textbox_searchC').callback=function(e){
                                                     var t=eTarget(e);
-
-                                                    if(t && t.value && t.value.length<2)
-                                                    {
-                                                     self.dimmerMsg('Invalid keyword string entered.');
-                                                     return;
-                                                    }
-
-                                                    if(t && t.value && t.value.length>0)
+                                                    if(t && t.value && t.value.trim().length>1)
                                                     {
                                                        self.search(self.getSearchOptions(t),self.renderSearchResults);
                                                        self.searchContacts('keywords='+t.value,self.renderSearchResultsMap);
                                                     
                                                     }
-                                                    else if(self.searchObj.tab.selectedIndex==1)
+                                                    else if($('search_focus_sel').value=='on_people')
                                                     {
+                                                     self.searchContacts(self.getSearchOptions(t),self.renderSearchResults);
                                                      self.searchContacts('',self.renderSearchResultsMap);
-                                                    }
+                                                    }else if(t && t.value && t.value.trim().length<2)
+                                                    {
+                                                     self.dimmerMsg('Invalid keyword string entered.');
+                                                     return;
+                                                    };
+                                                    
                                                       
                                                     
                                                 };
@@ -1842,23 +1853,22 @@ ODS.Nav = function(navOptions) {
         
         if($('search_button_searchC'))
         {  $('search_button_searchC').callback=function(){
+
                                                   var t=$('search_textbox_searchC');
 
-                                                  if(t && t.value && t.value.length<2)
-                                                  {
-                                                     self.dimmerMsg('Invalid keyword string entered.');
-                                                     return;
-                                                  }
-
-                                                  if(t && t.value && t.value.length>0)
+                                                  if(t && t.value && t.value.trim().length>1)
                                                   {
                                                      self.search(self.getSearchOptions(t),self.renderSearchResults);
                                                      self.searchContacts('keywords='+t.value,self.renderSearchResultsMap);
-                                                  
                                                   }
-                                                  else if(self.searchObj.tab.selectedIndex==1)
+                                                  else if($('search_focus_sel').value=='on_people')
                                                   {
+                                                     self.searchContacts(self.getSearchOptions(t),self.renderSearchResults);
                                                    self.searchContacts('',self.renderSearchResultsMap);
+                                                  }else if(t && t.value && t.value.trim().length<2)
+                                                  {
+                                                     self.dimmerMsg('Invalid keyword string entered.');
+                                                     return;
                                                   }
                                                 };
         }
@@ -2089,6 +2099,11 @@ ODS.Nav = function(navOptions) {
        $('search_textbox').value='';
     
     var results=OAT.Xml.xpath(xmlDoc, '//search_response/search_result',{});
+    var results_contacts=OAT.Xml.xpath(xmlDoc, '//searchContacts_response/search_result',{});
+
+    if(results_contacts && results_contacts.length>0)
+       results=results.concat(results_contacts);
+
     
     var resultsPagination= new ODS.paginator(results,$('top_pager'),$('bottom_pager'),renderResultsPage);
 
@@ -2114,20 +2129,23 @@ ODS.Nav = function(navOptions) {
          var resultInnerDiv=OAT.Dom.create('div',{},'hit_ctr');
          resultInnerDiv.innerHTML=result.html;
          
+        if(resultInnerDiv.firstChild.className=='map_user_data')
+           resultInnerDiv.firstChild.style.width='98%';
         
-        if(result.html.indexOf('sn_make_inv.vspx?fmail=')>-1)
-        {
+        
+//        if(result.html.indexOf('sn_make_inv.vspx?fmail=')>-1)
+//        {
            
           var aElms=resultInnerDiv.getElementsByTagName('a');
-          for(var i=0;i<aElms.length;i++)
+          for(var k=0;k<aElms.length;k++)
           {
-              if(typeof(aElms[i].rel)!='undefined' && aElms[i].rel.indexOf('invite#')>-1)
+              if(typeof(aElms[k].rel)!='undefined' && aElms[k].rel.indexOf('invite#')>-1)
               {
-                 aElms[i].href="javascript:void(0)";
-                 aElms[i].uid=aElms[i].rel.split('#')[1];
-                 aElms[i].fullName=aElms[i].rel.split('#')[2];
+                 aElms[k].href="javascript:void(0)";
+                 aElms[k].uid=aElms[k].rel.split('#')[1];
+                 aElms[k].fullName=aElms[k].rel.split('#')[2];
   
-                 OAT.Dom.attach(aElms[i],"click",function(e) {var t=eTarget(e);
+                 OAT.Dom.attach(aElms[k],"click",function(e) {var t=eTarget(e);
                                                               if(t.tagName=='IMG')
                                                                  t=t.parentNode;
                                                               self.connectionSet(t.uid,1,function(){  
@@ -2137,10 +2155,14 @@ ODS.Nav = function(navOptions) {
                                                                                          }
                                                                       )
                                                      });
-              }
+              }else
+              {
+              if(aElms[k].href.length>0)
+                 aElms[k].onclick=function(e){var t=eTarget(e);if(t.tagName=='IMG') t=t.parentNode;self.loadVspx(t.href); return false;};
            
           }     
         }
+//        }
 
          
          
@@ -2468,7 +2490,9 @@ ODS.Nav = function(navOptions) {
 
           var elm=div.getElementsByTagName("span")[0];
           elm.uid=conn.uid;
-          OAT.Dom.attach(elm,"click",function(e) {var t=eTarget(e);self.profile.show=true;self.profile.set(t.uid) ;self.initProfile();});
+          OAT.Dom.attach(elm,"dblclick",function(e) {var t=eTarget(e);self.profile.show=true;self.profile.set(t.uid) ;self.initProfile();});
+          self.ui.attachPersonBox(elm,conn);
+
           
           OAT.Dom.append([$('connections_list'),div]);
 
@@ -2491,7 +2515,7 @@ ODS.Nav = function(navOptions) {
                                                    var t=eTarget(e);
                                                    self.connections.show=true;
                                                    self.connections.userId=t.uid;
-                                                   self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                   self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation,dataspace',self.updateConnectionsInterface);
                                                  });  
 
           var elm=$('doConnection_'+conn.uid);
@@ -2671,8 +2695,9 @@ ODS.Nav = function(navOptions) {
     $('userProfilePhotoImg').alt=userDisplayName;
     
     var gems=$('profileUserGems').getElementsByTagName("a");
-    gems[0].href=self.odsLink()+'/dataspace/person/'+self.profile.userName+'/foaf.rdf'; // foaf
-    gems[1].href=self.odsLink()+'/dataspace/'+self.profile.userName+'/sioc.rdf'; //sioc
+    gems[0].href=self.odsLink()+userProfileDataspace.replace('#this','/foaf.rdf'); // foaf
+    gems[1].href=self.odsLink()+userProfileDataspace.replace('#this','/sioc.rdf'); //sioc
+
 //    gems[2].href='http://geourl.org/near?p='+encodeURIComponent('http://'+document.location.host+'/dataspace/'+self.profile.userName); //GEOURL //http://geourl.org/near?p=http%3A//bdimitrov.lukanet.com%3A8890/dataspace/borislavdimitrov
     gems[2].href=self.odsLink()+self.ods+'sn_user_export.vspx?ufid='+self.profile.userId+'&ufname='+self.profile.userName;//vcard
     
@@ -2747,93 +2772,6 @@ ODS.Nav = function(navOptions) {
         OAT.Dom.attach(elm,"dblclick",function() {self.profile.show=true; self.profile.set(connId) ;self.initProfile();});
       };
 
-      function attachApp(elm, connObj)
-      {
-         var connContent=OAT.Dom.create('div');
-         connContent.innerHTML=$('connection_info_bubble').innerHTML;
-        
-         var img=connContent.getElementsByTagName('img')[0];
-         if(typeof(img)!='undefined')
-         {
-            img.src=connObj.photo;
-            img.alt=connObj.fullName;
-         }
-            
-         var links=connContent.getElementsByTagName('a');
-         
-         if(typeof(links[0])!='undefined')         
-           OAT.Dom.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
-
-         if(typeof(links[1])!='undefined')         
-         {
-
-            if(self.session.sid && self.session.userId!=connObj.uid)
-            {
-               links[1].uid=connObj.uid;
-
-               if(self.session.connectionsId && self.session.connectionsId.find(connObj.uid) > -1 && typeof(connObj.invited)=='undefined')
-               {
-                  links[1].innerHTML='Disconnect';
-                  OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);self.connectionSet(t.uid,0,function(){self.session.connectionRemove(t.uid);
-                                                                                                       self.initProfile();
-                                                                                                      }
-                                                                             )
-                                                          });
-               }else if(self.session.connectionsId && self.session.connectionsId.find(connObj.uid) > -1 && typeof(connObj.invited)!='undefined' && connObj.invited==1)
-               {
-                  links[1].innerHTML='Withdraw invitation';
-                  OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);
-                                                               self.connectionSet(t.uid,4,function(){self.session.connectionRemove(t.uid);
-                                                                                                     self.initProfile();
-                                                                                                    }
-                                                                                 )
-                                                          });
-
-               }else if(self.session.userId!=connObj.uid)
-               {
-                  links[1].innerHTML='Connect';
-                  OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);self.connectionSet(t.uid,1,function(){self.initProfile();})
-                                                          });
-               };
-            }else OAT.Dom.hide(links[1].parentNode);
-         }
-
-
-//           OAT.Dom.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
-//          }
-         if(typeof(links[2])!='undefined')         
-         {
-          links[2].uid=connObj.uid;
-          OAT.Event.attach(links[2],"click",function(e){
-                                                        var t=eTarget(e);
-                                                        self.connections.show=true;
-                                                        self.connections.userId=t.uid;
-                                                        self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
-                                                       });  
-
-         }
-         if(typeof(links[3])!='undefined' && self.serverOptions.useRDFB==1)
-         {
-            links[3].href = '/rdfbrowser/index.html?uri='+encodeURIComponent(document.location.protocol+'//'+self.serverOptions.uriqaDefaultHost+connObj.dataspace);
-	          links[3].target = "_blank";
-         }else OAT.Dom.hide(links[3].parentNode);
-         
-         
-         var obj = {
-         	          title:connObj.fullName,
-         	          content:connContent,
-         	          status:"",
-         	          result_control:false,
-         	          activation: "click",
-         	          enabledButtons : "c",
-         	          visibleButtons : "c",
-         	          type:OAT.WinData.TYPE_ROUND
-                   };
-
-			   OAT.Anchor.assign(elm,obj);
-
-//        OAT.Dom.attach(elm,"mouseover",function() {dd(555);});
-      };
 
       var connections = OAT.Xml.xpath(xmlDoc, '//connectionsGet_response/user',{});
 
@@ -2871,7 +2809,7 @@ ODS.Nav = function(navOptions) {
        
         OAT.Dom.append([connTP,_divC],[_divC,tnail,_divCI],[_divCI,cNameA]);
         
-           attachApp(cNameA,connObj);
+           self.ui.attachPersonBox(cNameA,connObj);
 
            var userHome=connections[i].getElementsByTagName('home')[0];
            
@@ -3086,6 +3024,7 @@ ODS.Nav = function(navOptions) {
         $('ciP2state').innerHTML   = organization.state;
         $('ciP2zip').innerHTML     = (organization.state.length+organization.zip.length)>0 ? organization.zip+', ' : ' ';
         $('ciP2country').innerHTML = organization.country;
+        $('ciP2tel').innerHTML= (organization.mobile.length>0)? organization.phone+', '+organization.mobile : organization.phone ;
   
   //      var organizationA=OAT.Dom.create('a');
   //      organizationA.href= (organization.url.indexOf('http://')>=0) ?  organization.url : 'http://'+organization.url;
@@ -3104,6 +3043,7 @@ ODS.Nav = function(navOptions) {
         {
           home[_home[0].childNodes[i].nodeName]=OAT.Xml.textValue(_home[0].childNodes[i]);
         }
+        
         $('ciP1photo').src=photo;
         $('ciP1fn').innerHTML=titledFullname;
         $('ciP1org').innerHTML=organization.title;
@@ -3113,7 +3053,8 @@ ODS.Nav = function(navOptions) {
         $('ciP1state').innerHTML= home.state;
         $('ciP1zip').innerHTML= (home.state.length + home.zip.length)>0 ? home.zip+ ', ': home.zip;
         $('ciP1country').innerHTML=home.country;
-        $('ciP1tel').style.display='none';
+ //       $('ciP1tel').style.display='none';
+        $('ciP1tel').innerHTML= (home.mobile.length>0)? home.phone+', '+home.mobile : home.phone ;
   
         self.profile.ciMap.centerAndZoom(home.latitude,home.longitude,8); /* africa, middle zoom */
         self.profile.ciMap.addTypeControl();
@@ -3157,23 +3098,79 @@ ODS.Nav = function(navOptions) {
 
    }
     
+    function renderSematicMagic()
+    {
+        if($('sm_personal') && $('sm_personal').tagName=='A')
+        {
+           $('sm_personal').href=userProfileDataspace;
+ 
+           if(self.serverOptions.useRDFB)
+             $('sm_personal').onclick = function(e){var t=eTarget(e);self.loadRDFB(t.href); return false;};
+           else
+             $('sm_personal').target='_blank'
+
+
+        }
+        if($('sm_openid') && $('sm_openid').tagName=='A')
+        {
+           $('sm_openid').href=userProfileDataspace;
+           if(self.serverOptions.useRDFB)
+             $('sm_openid').onclick = function(e){var t=eTarget(e);self.loadRDFB(t.href); return false;};
+           else
+             $('sm_openid').target='_blank'
+
+        }
+        if($('sm_dataspace') && $('sm_dataspace').tagName=='A')
+        {
+           $('sm_dataspace').href=userProfileDataspace;
+           if(self.serverOptions.useRDFB)
+             $('sm_dataspace').onclick = function(e){var t=eTarget(e);self.loadRDFB(t.href); return false;};
+           else
+             $('sm_dataspace').target='_blank';
+        }
+        if($('sm_foaf') && $('sm_foaf').tagName=='A')
+        {
+           $('sm_foaf').href=self.odsLink()+userProfileDataspace.replace('#this','/foaf.rdf');
+           if(self.serverOptions.useRDFB)
+             $('sm_foaf').onclick = function(e){var t=eTarget(e);self.loadRDFB(t.href); return false;};
+           else
+             $('sm_foaf').target='_blank';
+        }
+        if($('sm_sioc') && $('sm_sioc').tagName=='A')
+        {
+           $('sm_sioc').href=self.odsLink()+userProfileDataspace.replace('#this','/sioc.rdf');
+           if(self.serverOptions.useRDFB)
+             $('sm_sioc').onclick = function(e){var t=eTarget(e);self.loadRDFB(t.href); return false;};
+           else
+           $('sm_sioc').target='_blank';
+        }
     
+        if($('sm_vcard') && $('sm_vcard').tagName=='A')
+        {
+           $('sm_vcard').href=self.odsLink()+self.ods+'sn_user_export.vspx?ufid='+self.profile.userId+'&ufname='+self.profile.userName;
+           $('sm_vcard').target='_blank';
+        }
+    }
+    renderSematicMagic();
     
     function renderDataspaceUl(xmlDoc)
     {
-      var resXmlNodes = OAT.Xml.xpath(xmlDoc, '//installedPackages_response/application',{});
+
+      var resXmlNodes = OAT.Xml.xpath(xmlDoc, '//applicationsGet_response/application',{});
       var ulDS=$('ds_list');  
       OAT.Dom.clear(ulDS);
       
       for(var i=0;i<resXmlNodes.length;i++)
       {
        
-       var packageObj=buildObjByAttributes(resXmlNodes[i]);
+       var applicationObj=buildObjByAttributes(resXmlNodes[i]);
+
+       applicationObj.selfTextValue=OAT.Xml.textValue(resXmlNodes[i]);
       
         
-       if(packageObj.maxinstances!='0' && packageObj.defaulturl.length>0)
+       if(applicationObj.disable!='0' && applicationObj.url.length>0)
        {
-       var packageName=OAT.Xml.textValue(resXmlNodes[i]);
+         var packageName=applicationObj.type;
        packageName=packageName.replace(' ','');
        
        var appOpt={};
@@ -3185,8 +3182,13 @@ ODS.Nav = function(navOptions) {
        var appDataSpaceItem=OAT.Dom.create('li');
        var appDataSpaceItemA=OAT.Dom.create('a',{cursor:'pointer'});
        appDataSpaceItemA.packageName=packageName;
-       appDataSpaceItemA.href=ODS.Preferences.dataspacePath+appOpt.dsUrl.replace('#UID#',self.profile.userName);
-       appDataSpaceItemA.target="_blank";
+         appDataSpaceItemA.href=ODS.Preferences.root +applicationObj.dataspace;
+         appDataSpaceItemA.onclick=function(){return false;};
+         
+         OAT.Event.attach(appDataSpaceItemA,"click",function(e){var t=eTarget(e);
+                                                                 self.loadVspx(self.expandURL(t.href));
+                                                                return false;
+                                                              });  
 
 //       appDataSpaceItemA.id=packageName+'_dataSpaceItem';
 //       OAT.Event.attach(appDataSpaceItemA,"click",function(){ self.createApplication( this.packageName,self.appCreate);});  
@@ -3196,12 +3198,13 @@ ODS.Nav = function(navOptions) {
        appDataSpaceItemImg.src=appOpt.icon;
       
 //exception - items that should not be show;
-       if(appOpt.menuName!='Community')
-       {
+//         if(appOpt.menuName!='Community')
+//         {
          OAT.Dom.append([ulDS,appDataSpaceItem],
                         [appDataSpaceItem,appDataSpaceItemA],
-                        [appDataSpaceItemA,appDataSpaceItemImg,OAT.Dom.text(' '+appOpt.menuName)]);
-       }
+                          [appDataSpaceItemA,appDataSpaceItemImg,OAT.Dom.text(' '+applicationObj.selfTextValue)]);
+//         }
+
        }
       }
 
@@ -3220,10 +3223,12 @@ ODS.Nav = function(navOptions) {
       {
         discussionGroup=buildObjByChildNodes(resXmlNodes[i]);
 
-        var discussionA=OAT.Dom.create('a');
+        var discussionA=OAT.Dom.create('a',{cursor:'pointer'});
         discussionA.innerHTML=discussionGroup.name;
-        discussionA.href=self.expandURL(discussionGroup.url);
-        discussionA.target='_blank';
+       OAT.Event.attach(discussionA,"click",function(){self.loadVspx(nav.expandURL(discussionGroup.url));});  
+
+//        discussionA.href=self.expandURL(discussionGroup.url);
+//        discussionA.target='_blank';
         
         if(i==0)
            OAT.Dom.append([discussionsDiv,discussionA]);
@@ -3266,7 +3271,12 @@ ODS.Nav = function(navOptions) {
 
     }
 
-    self.installedPackages(renderDataspaceUl);
+    if(self.session.sid && self.session.userId==self.profile.userId)
+       self.applicationsGet(false,false,'own',renderDataspaceUl);
+    else if(self.profile.userId)
+       self.applicationsGet(self.profile.userId,false,'all',renderDataspaceUl);
+
+//    self.installedPackages(renderDataspaceUl);
     
     self.connectionsGet(self.profile.userId,'fullName,photo,homeLocation,dataspace',function(xmlDocRet){renderConnectionsWidget(xmlDocRet);
                                                                                               if(self.session.userId==self.profile.userId)
@@ -3382,6 +3392,14 @@ ODS.Nav = function(navOptions) {
      iframe.src=(url);
      
   }
+  this.loadRDFB= function (url)
+  {
+     if(typeof(url)=='undefined') return;
+     var rdfbUrl='/rdfbrowser/index.html?uri='+encodeURIComponent(document.location.protocol+'//'+self.serverOptions.uriqaDefaultHost+url)
+     self.loadVspx(rdfbUrl);
+     return;
+  }
+
 
   this.expandURL= function (url)
   {
@@ -3472,6 +3490,28 @@ ODS.Nav = function(navOptions) {
                                        };
                                          
     OAT.AJAX.POST(self.session.endpoint+"installedPackages", data, callback, ajaxOptions);
+  }
+
+  this.applicationsGet = function (userIdentity,applicationType,scope,callbackFunction){
+    
+    var data = 'sid='+(self.session.sid ? self.session.sid : '');
+    if(typeof(userIdentity)!='undefined' && userIdentity!=false)
+        data += '&userIdentity='+userIdentity;
+    if(typeof(applicationType)!='undefined' && applicationType!=false)
+        data += '&applicationType='+applicationType;
+    if(typeof(scope)!='undefined')
+        data += '&scope='+scope;
+
+    var callback = function(xmlString) {
+                                           var xmlDoc = OAT.Xml.createXmlDoc(xmlString);
+                                           if(!self.session.isErr(xmlDoc))
+                                           {
+                                             if(typeof(callbackFunction) == "function")
+                                                callbackFunction(xmlDoc);
+                                           }
+                                       };
+                                         
+    OAT.AJAX.POST(self.session.endpoint+"applicationsGet", data, callback, ajaxOptions);
   }
 
 
@@ -3920,7 +3960,95 @@ ODS.Nav = function(navOptions) {
       OAT.Dom.append([container,_span,msgUserSpan,userList,OAT.Dom.create('br'),msgText,OAT.Dom.create('br'),sendBtn,msgSentTxt]);
 
         return container;
+   },
+   
+   attachPersonBox:function (elm, connObj)
+   {
+      var connContent=OAT.Dom.create('div');
+      connContent.innerHTML=$('connection_info_bubble').innerHTML;
+     
+      var img=connContent.getElementsByTagName('img')[0];
+      if(typeof(img)!='undefined')
+      {
+         img.src=connObj.photo;
+         img.alt=connObj.fullName;
    }
+         
+      var links=connContent.getElementsByTagName('a');
+      
+      if(typeof(links[0])!='undefined')         
+        OAT.Dom.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
+
+      if(typeof(links[1])!='undefined')         
+      {
+
+         if(self.session.sid && self.session.userId!=connObj.uid)
+         {
+            links[1].uid=connObj.uid;
+
+            if(self.session.connectionsId && self.session.connectionsId.find(connObj.uid) > -1 && typeof(connObj.invited)=='undefined')
+            {
+               links[1].innerHTML='Disconnect';
+               OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);self.connectionSet(t.uid,0,function(){self.session.connectionRemove(t.uid);
+                                                                                                    self.initProfile();
+                                                                                                   }
+                                                                          )
+                                                       });
+            }else if(self.session.connectionsId && self.session.connectionsId.find(connObj.uid) > -1 && typeof(connObj.invited)!='undefined' && connObj.invited==1)
+            {
+               links[1].innerHTML='Withdraw invitation';
+               OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);
+                                                            self.connectionSet(t.uid,4,function(){self.session.connectionRemove(t.uid);
+                                                                                                  self.initProfile();
+                                                                                                 }
+                                                                              )
+                                                       });
+
+            }else if(self.session.userId!=connObj.uid)
+            {
+               links[1].innerHTML='Connect';
+               OAT.Dom.attach(links[1],"click",function(e) {var t=eTarget(e);self.connectionSet(t.uid,1,function(){self.initProfile();})
+                                                       });
+            };
+         }else OAT.Dom.hide(links[1].parentNode);
+      }
+
+
+//          OAT.Dom.attach(links[0],"click",function() {self.profile.show=true; self.profile.set(connObj.uid) ;self.initProfile();});
+//         }
+      if(typeof(links[2])!='undefined')         
+      {
+       links[2].uid=connObj.uid;
+       OAT.Event.attach(links[2],"click",function(e){
+                                                     var t=eTarget(e);
+                                                     self.connections.show=true;
+                                                     self.connections.userId=t.uid;
+                                                     self.connectionsGet(self.connections.userId,'fullName,photo,homeLocation',self.updateConnectionsInterface);
+                                                    });  
+
+      }
+      if(typeof(links[3])!='undefined' && self.serverOptions.useRDFB==1)
+      {
+         links[3].href = '/rdfbrowser/index.html?uri='+encodeURIComponent(document.location.protocol+'//'+self.serverOptions.uriqaDefaultHost+connObj.dataspace);
+        links[3].target = "_blank";
+      }else OAT.Dom.hide(links[3].parentNode);
+      
+      
+      var obj = {
+      	          title:connObj.fullName,
+      	          content:connContent,
+      	          status:"",
+      	          result_control:false,
+      	          activation: "click",
+      	          enabledButtons : "c",
+      	          visibleButtons : "c",
+      	          type:OAT.WinData.TYPE_ROUND
+                };
+
+   OAT.Anchor.assign(elm,obj);
+
+   }
+
   } //end ui
   
   this.createCookie = function (name, value, hours)

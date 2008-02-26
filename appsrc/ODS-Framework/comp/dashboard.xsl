@@ -52,29 +52,7 @@
 
   <xsl:template match="vm:dash-welcome">
     <div class="widget w_welcome">
-      <h3>Welcome to OpenLink Data Spaces (ODS), a distributed collaborative
-application platform that provides a "Linked Data Junction Box" for Web
-protocols accessible data across a myriad of data sources.
-</h3>
-      <p>ODS provides a cost-effective route for creating and exploit presence on
-the emerging Web of Linked Data. It enables you to transparently mesh
-data across Weblogs, Shared Bookmarking, Feeds Aggregation, Photo
-Gallery, Calendars, Discussions, Content Managers, and Social Networks.
-</p>
-<p>ODS essentially provides distributed data across personal, group, and
-community data spaces that is grounded in Web Architecture. It makes
-extensive use of current and emerging standards across it's core and
-within specific functionality realms.
-</p>
-      <p>ODS Benefits include:</p>
-      <ul>
-        <li>Platform independent solution for Data Portability via support for all major data interchange standards</li>
-        <li>Powerful solution for meshing data from a myriad of data sources across Intranets, Extranets, and the Internet</li>
-        <li>Coherent integration of Blogs, Wikis, and similar systems (native and
-external) that expose structured Linked Data</li>
-        <li>Collaborative content authoring and data generation without any
-exposure to underlying complexities of such activities</li>
-      </ul>
+      <vm:welcome-message />
       <!--a href="ods_tutorial.html">Learn more about OpenLink Data Spaces</a-->
     </div>
   </xsl:template>
@@ -1407,13 +1385,7 @@ exposure to underlying complexities of such activities</li>
     </div>
       </div> <!-- w_title_bar -->
       <div class="w_pane content_pane">
-        <h3>Welcome to OpenLink Data Spaces</h3>
-        <p><i>There are many data spaces in the net, but this is yours</i><br/>
-        OpenLink Data Spaces Applications can help you through your daily tasks.</p>
-        <p>Utilize and manage your contact network. Keep up to date with latest 
-        news on subjects that interest you. Communicate with others using email, discussion lists and weblogs. 
-        Collaborate with authoring information
-        on Wikis, and much more!</p>
+        <vm:welcome-message2 />
       </div> <!-- w_pane content_pane -->
     </div> <!-- widget w_whats_new -->
   </xsl:template>

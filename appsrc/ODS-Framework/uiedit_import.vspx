@@ -59,6 +59,23 @@
 	  ]]>
 	</v:method>
 
+  <v:method name="check_title" arglist="inout title any">
+    <![CDATA[
+      declare M integer;
+      declare V any;
+
+      V := vector ('Mr', 'Mrs', 'Dr', 'Ms');
+      for (M := 0; M < length (V); M := M + 1)
+      {
+        if (lcase (title) like (lcase (V[M])|| '%'))
+        {
+          return V[M];
+        }
+      }
+      return '';
+	  ]]>
+	</v:method>
+
 	<v:variable name="title_" type="varchar" default="null" />
 	<v:variable name="name_" type="varchar" default="null" />
 	<v:variable name="firstName" type="varchar" default="null" />
@@ -136,10 +153,9 @@
 
             if (self.i_source_0.ufl_selected)
             {
-              self.i_source := 0;
-
               declare url any;
 
+              self.i_source := 0;
               url := self.foaf_url.ufl_value;
 
 			    declare exit handler for sqlstate '*'
@@ -197,7 +213,7 @@
                  ) sub
 			     do
 			      {
-      				self.title_ := title;
+                self.title_ := self.check_title (title);
       				self.name_ := name;
 			        self.firstName := coalesce (firstName, givenname);
 				self.family_name := family_name;
@@ -235,8 +251,8 @@
             {
               self.i_source := 1;
 
-              declare N integer;
-              declare tmp, data, i_lHost, i_lPort, i_lBase_dn, i_lBind_dn, i_lPassword, i_lMaps, i_lSearch, i_lData any;
+              declare N, M integer;
+              declare tmp, data, V, i_lHost, i_lPort, i_lBase_dn, i_lBind_dn, i_lPassword, i_lMaps, i_lSearch, i_lData any;
 
               self.i_lName := self.f_lName.ufl_value;
               if (self.i_lName <> '')
@@ -269,7 +285,8 @@
           	      if (i_lData [N] = 'entry')
           	      {
           	        data := i_lData [N+1];
-                    self.title_ := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_TITLE'));
+
+                    self.title_ := self.check_title (self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_TITLE')));
                     self.name_ := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_FULL_NAME'));
                     self.firstName := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_FIRST_NAME'));;
                     self.family_name := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_LAST_NAME'));;
@@ -318,13 +335,13 @@
 		    <v:template type="simple" condition="length (self.firstName)">
 		    <tr>
 			<td>First Name</td>
-			<td><?V self.firstName ?></td>
+            <td><?V wa_utf8_to_wide (self.firstName) ?></td>
 		    </tr>
 		</v:template>
 		    <v:template type="simple" condition="length (self.family_name)">
 		    <tr>
 			<td>Family Name</td>
-			<td><?V self.family_name ?></td>
+            <td><?V wa_utf8_to_wide (self.family_name) ?></td>
 		    </tr>
 		</v:template>
 		    <v:template type="simple" condition="length (self.mbox)">
@@ -354,25 +371,25 @@
 		    <v:template type="simple" condition="length (self.icqChatID)">
 		    <tr>
 			<td>ICQ</td>
-			<td><?V self.icqChatID ?></td>
+            <td><?V wa_utf8_to_wide (self.icqChatID) ?></td>
 		    </tr>
 		</v:template>
 		    <v:template type="simple" condition="length (self.msnChatID)">
 		    <tr>
 			<td>MSN</td>
-			<td><?V self.msnChatID ?></td>
+            <td><?V wa_utf8_to_wide (self.msnChatID) ?></td>
 		    </tr>
 		</v:template>
 		    <v:template type="simple" condition="length (self.aimChatID)">
 		    <tr>
 			<td>AIM</td>
-			<td><?V self.aimChatID ?></td>
+            <td><?V wa_utf8_to_wide (self.aimChatID) ?></td>
 		    </tr>
 		</v:template>
 		    <v:template type="simple" condition="length (self.yahooChatID)">
 		    <tr>
 			<td>Yahoo</td>
-			<td><?V self.yahooChatID ?></td>
+            <td><?V wa_utf8_to_wide (self.yahooChatID) ?></td>
 		    </tr>
 		</v:template>
 		    <v:template type="simple" condition="length (self.workplaceHomepage)">
@@ -395,7 +412,8 @@
 		</v:template>
 	       </table>
 		<v:button action="simple" name="bt_imp2" value="Save">
-		    <v:on-post><![CDATA[
+        <v:on-post>
+          <![CDATA[
 			--WA_USER_EDIT (self.u_name, 'WAUI_BIRTHDAY', dt);
                         WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.title_);
                         WA_USER_EDIT (self.u_name, 'WAUI_FIRST_NAME', self.firstName);
@@ -418,7 +436,8 @@
 
 			commit work;
 			self.vc_redirect ('uiedit.vspx?page=8');
-			]]></v:on-post>
+          ]]>
+        </v:on-post>
 		</v:button>
 		<v:button action="simple" name="bt_imp3" value="Cancel">
 		    <v:on-post><![CDATA[

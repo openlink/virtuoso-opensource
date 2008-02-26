@@ -195,6 +195,7 @@
                       <col/>
                       <col/>
                       <col/>
+                      <col/>
                     </colgroup>
                     <tr class="navtab_row">
                       <td class="<?V case when pg = 1 then 'navtab_sel' else 'navtab' end ?>">
@@ -225,6 +226,13 @@
                                url="--sprintf('uhome.vspx?page=4&ufname=%s#uinavtab',self.fname)" 
                                xhtml_class="tab"/>
                         </td>
+                      <td class="<?V case when pg = 5 then 'navtab_sel' else 'navtab' end ?>" nowrap="1">
+                        <v:url name="b_url15"
+                               value="Linked Data View"
+                               format="%s"
+                               url="--sprintf('uhome.vspx?page=5&ufname=%s#uinavtab',self.fname)"
+                               xhtml_class="tab"/>
+                        </td>
                         <td class="page_tab_empty" align="center" width="100%">
                           <table cellpadding="0" cellspacing="0">
                             <tr>
@@ -241,7 +249,7 @@
                         <v:template name="template1" type="simple" condition="pg = 1">
                           <table>
                             <tr>
-                              <th><v:label name="1user" value="User:"/></th>
+                              <th><v:label name="1user" value="Account:"/></th>
                               <td><v:label name="1user1" value="--coalesce(self.fname,'')"/></td>
                             </tr>
 			    <?vsp if (length (self.arr[37])) { ?>
@@ -660,6 +668,23 @@
                             </tr>
                           </table>
                         </v:template>
+			<v:template name="template4" type="simple" condition="pg = 5">
+			    <![CDATA[<script type="text/javascript" src="rdfm.js"></script>]]>
+			    <script type="text/javascript"><![CDATA[
+				var graphIRI = "<?V wa_link (1, '/dataspace/'|| self.utype ||self.fname) ?>";
+				var fList =
+				   ["rdfmini","dimmer","grid","graphsvg","map","ymaps","timeline","tagcloud","anchor","dock"];
+                                OAT.Loader.loadFeatures(fList, RDFMInit);
+				]]></script>
+			    <table>
+				<tr>
+				    <td>
+					<div id="dock_content">
+					</div>
+				    </td>
+				</tr>
+			    </table>
+			</v:template>
                       </td>
                     </tr>
                   </table>

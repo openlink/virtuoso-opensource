@@ -221,6 +221,12 @@ div.w_title_bar_btns {
 div.w_title_bar_btns img:hover {
   background-image: url(images/skin/default/w_title_bar_btn_h.png);
 }
+div.w_title img.w_title_img {
+	width: 14px;
+    vertical-align: middle;
+    padding-left: 1px;
+    padding-right: 1px;}
+
 div.w_content {
 	width: 100%;
 	margin: 0;
@@ -874,6 +880,7 @@ color:#999;
   font-size: 8pt;
   margin-left: 3px;
   cursor: pointer;
+  text-decoration: underline;
 }  
 
 

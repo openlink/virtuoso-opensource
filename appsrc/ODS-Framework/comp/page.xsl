@@ -47,9 +47,8 @@
 
     set http_charset='UTF-8';
 
-    select top 1 WS_WEB_TITLE, WS_WEB_BANNER, WS_WELCOME_MESSAGE, WS_COPYRIGHT, WS_DISCLAIMER
-       into self.banner, self.web_banner, self.welcome_message, self.copyright, self.disclaimer from WA_SETTINGS;
-
+    select top 1 WS_WEB_TITLE, WS_WEB_BANNER, WS_WELCOME_MESSAGE, WS_WELCOME_MESSAGE2, WS_COPYRIGHT, WS_DISCLAIMER
+      into self.banner, self.web_banner, self.welcome_message, self.welcome_message2, self.copyright, self.disclaimer from WA_SETTINGS;
     
     self.maps_key := WA_MAPS_GET_KEY ();
 
@@ -195,7 +194,11 @@
 </xsl:template>
 
 <xsl:template match="vm:welcome-message">
-    <?V coalesce (wa_utf8_to_wide (self.welcome_message), '') ?>
+  <?vsp http (wa_utf8_to_wide (coalesce (self.welcome_message, ''))); ?>
+</xsl:template>
+
+<xsl:template match="vm:welcome-message2">
+  <?vsp http (wa_utf8_to_wide (coalesce (self.welcome_message2, ''))); ?>
 </xsl:template>
 
 <xsl:template match="vm:copyright">
@@ -204,7 +207,6 @@
                http(coalesce (wa_utf8_to_wide (self.copyright),''));
            ?&gt;
     </xsl:text>
-    
 </xsl:template>
 
 <xsl:template match="vm:disclaimer">
@@ -884,6 +886,7 @@
 
     <v:variable name="web_banner" type="any" default="null" persist="temp" />
     <v:variable name="welcome_message" type="any" default="null" persist="temp" />
+    <v:variable name="welcome_message2" type="any" default="null" persist="temp" />
     <v:variable name="copyright" type="any" default="null" persist="temp" />
     <v:variable name="disclaimer" type="any" default="null" persist="temp" />
     <v:variable name="maps_key" type="any" default="null" persist="temp" />
@@ -1746,9 +1749,9 @@ if (i > 0)
       </td>
     </tr>
     <tr>
-      <th>Welcome Message</th>
+      <th>Welcome Message (Site Front Page)</th>
       <td>
-        <v:text name="t_welcome" error-glyph="*" value="" xhtml_size="110" fmt-function="wa_utf8_to_wide">
+        <v:textarea name="t_welcome" error-glyph="*" value="" xhtml_cols="80" xhtml_rows="5" fmt-function="wa_utf8_to_wide">
           <v:before-render>
             <![CDATA[
               declare banner varchar;
@@ -1756,7 +1759,21 @@ if (i > 0)
               control.ufl_value := banner;
             ]]>
           </v:before-render>
-        </v:text>
+        </v:textarea>
+      </td>
+    </tr>
+    <tr>
+      <th>Welcome Message (User Home Page)</th>
+      <td>
+        <v:textarea name="t_welcome2" error-glyph="*" value="" xhtml_cols="80" xhtml_rows="5" xhtml_size="110" fmt-function="wa_utf8_to_wide">
+          <v:before-render>
+            <![CDATA[
+              declare banner varchar;
+              banner := (select top 1 WS_WELCOME_MESSAGE2 from WA_SETTINGS);
+              control.ufl_value := banner;
+            ]]>
+          </v:before-render>
+        </v:textarea>
       </td>
     </tr>
     <tr>
@@ -1881,18 +1898,18 @@ if (i > 0)
 		      }
 		    }
                 }
-                update WA_SETTINGS set
-                  WS_WEB_BANNER = banner,
+                update WA_SETTINGS
+                   set WS_WEB_BANNER = banner,
                   WS_WEB_TITLE = trim(self.t_title.ufl_value),
                   WS_WEB_DESCRIPTION = trim(self.t_description.ufl_value),
                   WS_WELCOME_MESSAGE = trim(self.t_welcome.ufl_value),
+                       WS_WELCOME_MESSAGE2 = trim(self.t_welcome2.ufl_value),
                   WS_COPYRIGHT = trim(self.t_copy.ufl_value),
                   WS_DISCLAIMER = trim(self.t_disclaimer.ufl_value);
                 if (row_count() = 0)
                 {
-                  insert into WA_SETTINGS
-                  (WS_WEB_BANNER, WS_WEB_TITLE, WS_WEB_DESCRIPTION, WS_WELCOME_MESSAGE, WS_COPYRIGHT, WS_DISCLAIMER)
-                  values (banner, trim(self.t_title.ufl_value), trim(self.t_description.ufl_value), trim(self.t_welcome.ufl_value), trim(self.t_copy.ufl_value), trim(self.t_disclaimer.ufl_value));
+                  insert into WA_SETTINGS (WS_WEB_BANNER, WS_WEB_TITLE, WS_WEB_DESCRIPTION, WS_WELCOME_MESSAGE, WS_WELCOME_MESSAGE2, WS_COPYRIGHT, WS_DISCLAIMER)
+                    values (banner, trim(self.t_title.ufl_value), trim(self.t_description.ufl_value), trim(self.t_welcome.ufl_value), trim(self.t_welcome2.ufl_value), trim(self.t_copy.ufl_value), trim(self.t_disclaimer.ufl_value));
                 }
 		registry_set ('wa_home_title', self.t_link_title.ufl_value);
 		registry_set ('wa_home_link', self.t_link.ufl_value);

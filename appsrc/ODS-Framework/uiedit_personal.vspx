@@ -89,11 +89,10 @@
 	       U_E_MAIL, WAUI_PHOTO_URL,
 	       WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
 	       WAUI_SEARCHABLE,WAUI_SHOWACTIVE, WAUI_INTERESTS, WAUI_IS_ORG, WAUI_APP_ENABLE
-          INTO _utitle, _ftname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum,
-	       _email, self.photo,
-	       self.audio, self.books, self.music, self.movie,
-	       self.issearch,self.showactive, self.interests, self.is_org, self.appEnable
-          FROM WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = self.u_name;
+        INTO _utitle, _ftname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum, _email, self.photo,
+             self.audio, self.books, self.music, self.movie, self.issearch,self.showactive, self.interests, self.is_org, self.appEnable
+        FROM WA_USER_INFO, DB.DBA.SYS_USERS
+       where WAUI_U_ID = U_ID and U_NAME = self.u_name;
 
         self.utitle := _utitle;
         self.email := _email;
@@ -132,7 +131,8 @@
 	}
       ]]>
     </v:before-data-bind>
-    <script type="text/javascript"><![CDATA[
+  <script type="text/javascript">
+    <![CDATA[
 	var edited = <?V case when length (self.fullname) then 'true' else 'false' end ?>;
 	function fillFullName (f, fn, ln, flag)
 	{
@@ -147,7 +147,8 @@
 	      f.value = fn.value + ' ' + ln.value;
 	    }
         }
-    ]]></script>
+     ]]>
+   </script>
 
     <v:form name="usr_personal" type="simple" method="POST" xhtml_enctype="multipart/form-data" action="uiedit.vspx?page=1">
     <v:text type="hidden" name="ppage" value="1"/>
@@ -169,8 +170,7 @@
 		  </v:check-box><![CDATA[&nbsp;]]>
 		  <label for="cb_org">Organization</label>
                 </td>
-		<th>
-		</th>
+        <th />
               </tr>
               <tr id="pers_2" class="initial_hidden">
                 <th><label for="regtitle">Title</label></th>
@@ -182,10 +182,10 @@
                     <v:item name="Dr" value="Dr"/>
                     <v:item name="Ms" value="Ms"/>
                     <v:before-data-bind>
-                      <v:script><![CDATA[
+              <![CDATA[
                           control.ufl_value := self.utitle;
                           control.vc_data_bound := 1;
-                      ]]></v:script>
+              ]]>
                     </v:before-data-bind>
                   </v:select-list>
 		  <vm:u-prop-select name="sel_0" value="self.sav0" />
@@ -197,12 +197,8 @@
 		    <v:text name="f_name" error-glyph="*" value="--self.ftname" xhtml_style="width:216px" xhtml_tabindex="2" fmt-function="wa_utf8_to_wide"
 			xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)"
 			>
-		      <v:validator test="length" min="0" max="50" name="vv_f_name1"
-			  message="First name cannot be longer then 50 chars"
-			  empty-allowed="1"/>
-		      <v:validator test="sql" name="vv_f_name2"
-			  expression="length(trim(self.f_name.ufl_value)) > 50"
-			  message="First name cannot be longer then 50 chars" empty-allowed="1"/>
+            <v:validator test="length" min="0" max="50" name="vv_f_name1" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
+            <v:validator test="sql" name="vv_f_name2" expression="length(trim(self.f_name.ufl_value)) > 50" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
                   </v:text>
                   <div style="display:inline; color:red;"><v:error-summary match="f_name" /></div>
 		  <vm:u-prop-select name="sel_1" value="self.sav1" />
@@ -256,8 +252,8 @@
     {
       $('regmail').focus();
     }
-    ]]></script>
-                  
+                    ]]>
+                  </script>
                   <div style="display:inline; color:red;"><v:error-summary match="regmail" /></div>
 		  <vm:u-prop-select name="sel_4" value="self.sav4" />
                 </td>
@@ -366,8 +362,7 @@
                 <th><label for="w_page" id="lb_1">Personal Webpage</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:text error-glyph="*" name="w_page" value="--self.wpage"  xhtml_size="80" xhtml_tabindex="8">
-		    <v:validator test="regexp" regexp="^http://" message="Please include http://" empty-allowed="1"
-		      name="vv_w_page1" />
+                    <v:validator test="regexp" regexp="^http://" message="Please include http://" empty-allowed="1" name="vv_w_page1" />
                   </v:text>
                   <div style="display:inline; color:red;"><v:error-summary match="w_page" /></div>
 		  <vm:u-prop-select name="sel_7" value="self.sav7" />
@@ -378,7 +373,7 @@
 		      <span class="explain">(one URL per line)</span>
 		  </th>
                 <td class="listing_col" nowrap="1">
-                  <v:textarea name="e_foaf" value="--self.efoaf" xhtml_cols="80" xhtml_rows="5" xhtml_tabindex="9"/>
+                  <v:textarea name="e_foaf" value="--self.efoaf" xhtml_cols="80" xhtml_rows="5" xhtml_tabindex="9" fmt-function="wa_utf8_to_wide" />
 		  <vm:u-prop-select name="sel_8" value="self.sav8" />
                 </td>
               </tr>
@@ -386,14 +381,9 @@
                 <th><label for="m_sign">Mail Signature</label></th>
                 <td class="listing_col" nowrap="1">
                   <v:textarea name="m_sign" value="--self.msign" xhtml_rows="4" xhtml_cols="80" xhtml_tabindex="10" fmt-function="wa_utf8_to_wide" error-glyph="*">
-		      <v:validator test="length" min="0" max="255" name="vv_m_sign1"
-			  message="Mail Signature cannot be longer then 255 chars"
-			  empty-allowed="1"/>
+                    <v:validator test="length" min="0" max="255" name="vv_m_sign1" message="Mail Signature cannot be longer then 255 chars" empty-allowed="1"/>
 		  </v:textarea>
       <v:text type="hidden" name="sel_9" value="3"/>
-<!--
-		  <vm:u-prop-select name="sel_9" value="self.sav9" />
--->
                 </td>
               </tr>
               <tr>
@@ -408,13 +398,8 @@
 		      <span class="explain"> (comma separated list of keywords)</span>
 		  </th>
                 <td class="listing_col" nowrap="1">
-		    <v:textarea name="s_tag" value="--WA_USER_TAG_GET(self.u_name)" xhtml_tabindex="12"
-                                            xhtml_cols="50"
-                                            xhtml_rows="5"
-			/>
-		      <v:button action="browse" name="tagsbt" value="Import Tags..." selector="get_tags_popup.vspx"
-			  child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=800"
-			>
+                 <v:textarea name="s_tag" value="--WA_USER_TAG_GET(self.u_name)" xhtml_tabindex="12" xhtml_cols="50" xhtml_rows="5" />
+                 <v:button action="browse" name="tagsbt" value="Import Tags..." selector="get_tags_popup.vspx" child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=800">
 			  <v:field name="s_tag"/>
 			</v:button>
                 </td>
@@ -471,21 +456,21 @@
 	      <tr id="pers_10" class="initial_hidden">
 		<th><label for="e_fbook" title="Free text">Favorite Books</label></th>
 		<td class="listing_col" nowrap="1">
-		  <v:text name="e_fbook" value="--self.books" xhtml_size="80" xhtml_tabindex="14"/>
+                  <v:text name="e_fbook" value="--self.books" xhtml_size="80" xhtml_tabindex="14" fmt-function="wa_utf8_to_wide" />
 		  <vm:u-prop-select name="sel_44" value="self.sav44" />
 		</td>
 	      </tr>
 	      <tr id="pers_11" class="initial_hidden">
 		<th><label for="e_fmusic" title="Free text">Favorite Music</label></th>
 		<td class="listing_col" nowrap="1">
-		  <v:text name="e_fmusic" value="--self.music" xhtml_size="80" xhtml_tabindex="15"/>
+                  <v:text name="e_fmusic" value="--self.music" xhtml_size="80" xhtml_tabindex="15" fmt-function="wa_utf8_to_wide" />
 		  <vm:u-prop-select name="sel_45" value="self.sav45" />
 		</td>
 	      </tr>
 	      <tr id="pers_12" class="initial_hidden">
 		<th><label for="e_fmovie" title="Free text">Favorite Movies</label></th>
 		<td class="listing_col" nowrap="1">
-		  <v:text name="e_fmovie" value="--self.movie" xhtml_size="80" xhtml_tabindex="16"/>
+                  <v:text name="e_fmovie" value="--self.movie" xhtml_size="80" xhtml_tabindex="16" fmt-function="wa_utf8_to_wide" />
 		  <vm:u-prop-select name="sel_46" value="self.sav46" />
 		</td>
 	      </tr>
@@ -493,9 +478,7 @@
               <tr>
                 <th><label for="up_photo">Upload Photo</label></th>
                 <td class="listing_col" nowrap="1">
-		    <input name="up_photo" type="file" value="" xhtml_size="80" xhtml_tabindex="17"
-			    onchange='getFileName(this.form, this, this.form.s_photo);'/>
-
+                  <input name="up_photo" type="file" value="" xhtml_size="80" xhtml_tabindex="17" onchange='getFileName(this.form, this, this.form.s_photo);' fmt-function="wa_utf8_to_wide" />
          			<v:button name="bt_preview_1" value="Preview" action="simple">
       			  <v:on-post>
               <![CDATA[
@@ -515,16 +498,12 @@
 
     		            if (p_ext is not null and p_ext[length(p_ext)-1] is not null and lcase(p_ext[length(p_ext)-1]) in ('jpg','png','gif'))
 		                {
-                     
           			  declare rc, pwd1 any;
           			  pwd1 := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dav');
           			  rc := 0;
 
 			            rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
-			            rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params),
-			            '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-
-
+                     rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
 
 		            if (rc < 0)
 		            {
@@ -532,9 +511,7 @@
 		                self.vc_error_message := DAV_PERROR (rc);
 		            }else
 		              self.previe_path:=p_path;
-		                 
-		                }else
-                    {
+                    } else {
 		                 self.vc_is_valid := 0;
 		                 self.vc_error_message := ' Invalid image type. Please use jpg,png or gif for browser compatibility.';
      			           self.previe_path:='';
@@ -557,9 +534,7 @@
                   OAT.Loader.loadFeatures(["dimmer"],showPrevieImg);
                 }
                 }
-                
                 ODSInitArray.push(dimmerPreviewInit);
-
 
                 function showPrevieImg()
                 {
@@ -596,21 +571,20 @@
               <tr>
                 <th><label for="s_photo">Photo</label></th>
                 <td class="listing_col" nowrap="1">
-                  <v:text name="s_photo" value="--self.photo" xhtml_size="80" xhtml_tabindex="18"/>
+                  <v:text name="s_photo" value="--self.photo" xhtml_size="80" xhtml_tabindex="18" fmt-function="wa_utf8_to_wide" />
 		  <vm:u-prop-select name="sel_37" value="self.sav37" />
                 </td>
               </tr>
               <tr>
                 <th><label for="up_audio">Upload Audio</label></th>
                 <td class="listing_col" nowrap="1">
-		    <input name="up_audio" type="file" value="" xhtml_size="80" xhtml_tabindex="19"
-			onblur="javascript: getFileName(this.form, this, this.form.s_audio);" />
+                  <input name="up_audio" type="file" value="" xhtml_size="80" xhtml_tabindex="19" onblur="javascript: getFileName(this.form, this, this.form.s_audio);" fmt-function="wa_utf8_to_wide" />
                 </td>
               </tr>
               <tr>
                 <th><label for="s_audio">Audio</label></th>
                 <td class="listing_col" nowrap="1">
-                  <v:text name="s_audio" value="--self.audio" xhtml_size="80" xhtml_tabindex="20"/>
+                  <v:text name="s_audio" value="--self.audio" xhtml_size="80" xhtml_tabindex="20" fmt-function="wa_utf8_to_wide" />
 		  <vm:u-prop-select name="sel_43" value="self.sav43" />
                 </td>
               </tr>
@@ -758,26 +732,20 @@
 			    p_path := case
 			      when self.s_photo.ufl_value not like '/%'
 			        then dir||self.s_photo.ufl_value
-		              else
-	                        self.s_photo.ufl_value
+                        else self.s_photo.ufl_value
 	                      end;
 			    p_path_org := case
 			                    when self.s_photo.ufl_value not like '/%'
 			                    then dir||subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_org'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
-		                      else
-	                           subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_org'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
+                        else subseq(self.s_photo.ufl_value,0,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)||'_org'||subseq(self.s_photo.ufl_value,REGEXP_INSTR(self.s_photo.ufl_value,'\..{3}\$')-1)
 	                        end;
 
 			    rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
 
-
           if(get_keyword ('up_photo', e.ve_params, '') <> '')
           {
-			    rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params),
-			    '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
-
-			    rc_org := DAV_RES_UPLOAD (p_path_org, get_keyword ('up_photo', e.ve_params),
-			    '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+                      rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_photo', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+                      rc_org := DAV_RES_UPLOAD (p_path_org, get_keyword ('up_photo', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
           }else if(self.previe_path<>'' and self.s_photo.ufl_value<>'')
           {
 	         rc:=DB.DBA.DAV_COPY(self.previe_path, dir||self.s_photo.ufl_value,1, '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
@@ -839,8 +807,7 @@
 	                        self.s_audio.ufl_value
 	                      end;
 			    rc := DAV_MAKE_DIR (dir, self.u_id, http_admin_gid (), '110100100N');
-			    rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_audio', e.ve_params),
-			    '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
+          rc := DAV_RES_UPLOAD (p_path, get_keyword ('up_audio', e.ve_params), '', '110100100RR', self.u_id, http_nogroup_gid(), 'dav', pwd1);
 
 			    if (rc < 0)
 			      {

@@ -11,6 +11,28 @@
   <title>ODS Navigation Framework</title>
   <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
   <link rel="stylesheet" href="nav_framework.css" type="text/css"/>
+
+<!--META START -->
+<!--
+<link rel="openid.server" title="OpenID Server" href="http://host:port/openid" />
+<link rel="meta" type="application/rdf+xml" title="SIOC" href="http://host:port/dataspace/person/{username}/sioc.rdf" />
+<link rel="meta" type="application/rdf+xml" title="FOAF" href="http://host:port/dataspace/person/{username}/foaf.rdf" />
+<link rel="meta" type="application/xml+apml" title="APML 0.6" href="http://host:port/dataspace/{username}/apml.xml" />
+<link rel="alternate" type="application/atom+xml" title="OpenSocial Friends" href="http://host:port/feeds/people/{username}/friends" />
+<link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />
+<link rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />
+<meta name="dc.language" content="en" scheme="rfc1766" />
+<meta name="dc.title" content="{username}'s ODS home" />
+<meta name="dc.creator" content="{username}" />
+<meta name="dc.description" content="{username}'s Dataspace" />
+<meta name="geo.position" content="0.000000;0.000000" />
+<meta name="ICBM" content="0.000000, 0.000000" />
+<meta http-equiv="X-XRDS-Location" content="http://host:port/dataspace/{username}/yadis.xrds" />
+<meta http-equiv="X-YADIS-Location" content="http://host:port/dataspace/{username}/yadis.xrds" />
+-->
+<!--META END -->
+
+
   <script type="text/javascript">
 
    
@@ -198,6 +220,20 @@
                 </ul>
               </div> <!-- w_content -->
   	        </div> <!-- .widget -->
+            <!-- Semantic Magic Widget -->
+            <div id="semantic_magic_w" class="widget semantic_magic_w">
+  	          <div class="w_title"><h3><a href="http://www.w3.org/2001/sw/" target="_blank"><img src="images/skin/default/sw-cube.png" alt="W3C Semantic Web Logo" class="w_title_img"/></a> Semantic Magic</h3></div>
+              <div class="w_content">
+                <ul class="uris_ctr" id="sm_list">
+                  <li><a href="/dataspace/person/{uname}#this" id="sm_personal">Personal URI</a></li>
+                  <li><a href="/dataspace/person/{uname}#this" id="sm_openid">OpenID URI</a></li>
+                  <li><a href="/dataspece/person/{uname}/about.rdf" id="sm_foaf">FOAF Profile URI</a></li>
+                  <li><a href="/dataspece/person/{uname}/sioc.rdf" id="sm_sioc">SIOC Data Space URI</a></li>
+                  <li><a href="/dataspace/person/{uname}#this" id="sm_dataspace">Data Space URI</a></li>
+                  <li><a href="sn_user_export.vspx?ufid=124&ufname=tester1" id="sm_vcard">Card URI</a></li>
+                </ul>
+              </div> <!-- w_content -->
+            </div> <!-- semantic_magic_w -->
   	        <div id="ds_w" class="widget ds_w">
   	          <div class="w_title"><h3>Data Space</h3><div class="w_title_bar_btns"><img src="images/skin/default/settings_btn.png" alt="settings" /> <img src="images/skin/default/menu_dd_handle_close.png" alt="Minimize" class="w_toggle" onclick="widgetToggle(this);"/></div></div>
   	          <div class="w_content">
@@ -320,6 +356,7 @@
                              <abbr class="country" id="ciP2country" title=""></abbr>
                         </div>
                       </div> <!-- .adr -->
+                      <div class="tel" id="ciP2tel"></div>
                     </div> <!-- .vcard -->
                   </div> <!-- .tab_page -->
                   <div id="ciP3" class="tab_page">
@@ -379,7 +416,8 @@
                     <tr><td class="image" style="width:150px;"><img src="#connImgSRC#" alt=""  class="" style="width:100px;height:125px;cursor:pointer"/></td>
                         <td class="info">
                          <table border="0" cellpadding="0" cellspacing="0" width="98%"><tr>
-                          <td class="label name" style="width:100px">Name:</td><td class="name" style="text-align:left; padding-left:5px"><span style="cursor:pointer">#connProfileFullName#</span> </td>
+                          <td class="label name" style="width:100px">Name:</td>
+                          <td class="name" style="text-align:left; padding-left:5px"><span style="cursor:pointer">#connProfileFullName#</span> </td>
                          </tr></table>
                         </td>
                         <td class="actions" style="width:120px;text-align:left;">

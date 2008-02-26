@@ -772,6 +772,18 @@ create procedure sioc_user_project (in graph_iri varchar, in iri varchar, in  na
   DB.DBA.RDF_QUAD_URI_L (graph_iri, prj_iri, dc_iri ('description'), descr);
 };
 
+create procedure sioc_user_related (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar)
+{
+  declare rel_iri, pers_iri any;
+
+  rel_iri := url;
+  pers_iri := person_iri (iri);
+  delete_quad_s_or_o (graph_iri, rel_iri, rel_iri);
+
+  DB.DBA.RDF_QUAD_URI (graph_iri, pers_iri, rdfs_iri ('seeAlso'), rel_iri);
+  DB.DBA.RDF_QUAD_URI_L (graph_iri, rel_iri, rdfs_iri ('label'), nam);
+};
+
 
 create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in  nam varchar, in  url varchar)
 {
@@ -1413,6 +1425,10 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    {
 		      sioc_user_account (graph_iri, iri, WUO_NAME, WUO_URL);
 		    }
+		  for select WUR_LABEL, WUR_SEEALSO_IRI from DB.DBA.WA_USER_RELATED_RES where WUR_U_ID = U_ID do
+		    {
+		      sioc_user_related (graph_iri, iri, WUR_LABEL, WUR_SEEALSO_IRI);
+		    }
 		  if (length (WAUI_SKYPE))
 		    sioc_user_account (graph_iri, iri, WAUI_SKYPE, 'skype:'||WAUI_SKYPE||'?chat');
 		}
@@ -2036,6 +2052,51 @@ create trigger WA_USER_OL_ACCOUNTS_SIOC_D after delete on DB.DBA.WA_USER_OL_ACCO
   del_iri := person_ola_iri (iri, O.WUO_NAME);
   delete_quad_s_or_o (graph_iri, del_iri, del_iri);
 };
+
+-- Related
+create trigger WA_USER_RELATED_RES_SIOC_I after insert on DB.DBA.WA_USER_RELATED_RES referencing new as N
+{
+  declare graph_iri, iri any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := user_iri (N.WUR_U_ID);
+  sioc_user_related (graph_iri, iri, N.WUR_LABEL, N.WUR_SEEALSO_IRI);
+};
+
+create trigger WA_USER_RELATED_RES_SIOC_U after update on DB.DBA.WA_USER_RELATED_RES referencing old as O, new as N
+{
+  declare graph_iri, iri, opiri any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := user_iri (N.WUR_U_ID);
+  opiri := O.WUR_SEEALSO_IRI;
+  delete_quad_s_or_o (graph_iri, opiri, opiri);
+  sioc_user_related (graph_iri, iri, N.WUR_LABEL, N.WUR_SEEALSO_IRI);
+};
+
+create trigger WA_USER_RELATED_RES_SIOC_D after delete on DB.DBA.WA_USER_RELATED_RES referencing old as O
+{
+  declare graph_iri, iri, opiri any;
+  declare exit handler for sqlstate '*' {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  graph_iri := get_graph ();
+  iri := user_iri (O.WUR_U_ID);
+  opiri := O.WUR_SEEALSO_IRI;
+  delete_quad_s_or_o (graph_iri, opiri, opiri);
+};
+
+
 
 -- DB.DBA.WA_MEMBER
 create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new as N
@@ -2689,6 +2750,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?person foaf:mbox_sha1sum ?sha1 .
 	    ?person foaf:name ?full_name .
 	    ?person foaf:holdsAccount ?sioc_user .
+	    ?person rdfs:seeAlso ?pers_see_also .
 	    ?sioc_user rdfs:seeAlso ?see_also .
 	    ?sioc_user a sioc:User .
 	    ?person foaf:firstName ?fn .
@@ -2726,7 +2788,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      ?person foaf:holdsAccount <%s/%s#this> ;
 	      rdf:type ?type ;
 	      foaf:nick ?nick ;
-	      foaf:holdsAccount ?sioc_user .
+	      foaf:holdsAccount ?sioc_user ;
+	      rdfs:seeAlso ?pers_see_also .
 	      ?sioc_user rdfs:seeAlso ?see_also .
 	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
 	      optional {

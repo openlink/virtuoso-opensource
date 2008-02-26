@@ -1,0 +1,8 @@
+@import url("oat/styles/timeline.css");
+@import url("oat/styles/grid.css");
+@import url("oat/styles/rdftabs.css");
+
+.dock_content {
+  overflow: auto;
+  max-height: 400px;
+}

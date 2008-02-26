@@ -482,6 +482,137 @@ create procedure installedPackages (in sid varchar:='',in realm varchar :='wa') 
 ;
 grant execute on installedPackages to GDATA_ODS;
 
+create procedure applicationsGet (in sid varchar:='',in realm varchar :='wa', in userIdentity any := null ,in applicationType varchar := null, in scope varchar :='all') __SOAP_HTTP 'text/xml'
+{
+  declare errCode integer;
+  declare errMsg varchar;
+  declare resXml any;
+
+  resXml  := string_output ();
+  errCode := 0;
+  errMsg  := '';
+
+  declare ownerId integer;
+  if(subseq(userIdentity,0,1)='/')
+    ownerId:=username2id(subseq(userIdentity,1));
+  else
+    ownerId:=cast(userIdentity as integer);
+
+  declare logged_user_id integer;
+  declare logged_user_name varchar;
+
+
+  if(length(sid))
+  {
+     if(isSessionValid(sid,'wa',logged_user_name))
+     {
+        logged_user_id:=username2id(logged_user_name);
+     }
+     
+  }
+
+  declare package_name varchar;
+  declare packages any;
+  packages:=constructTypePackageArr();
+  
+  declare i int;
+  declare q_str, rc, dta, h any;
+
+  if(ownerId is not null and ownerId>-1)
+  {
+  q_str:='select distinct top 11  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL, WAM_APP_TYPE as INST_WATYPE'||
+         ' from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE, DB.DBA.SYS_USERS '||
+         ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME and WA_MEMBER.WAM_USER=SYS_USERS.U_ID and U_ID='||sprintf('%d',ownerId)||' and WAI_IS_PUBLIC=1 ';
+  }else
+  {
+  q_str:='select distinct top 11  WAM_INST as INST_NAME,WAM_HOME_PAGE as INST_URL, WAM_APP_TYPE as INST_WATYPE'||
+         ' from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE '||
+         ' where WA_MEMBER.WAM_INST=WA_INSTANCE.WAI_NAME ';
+  }
+
+  if(logged_user_id is not null)
+  {
+    if(scope='own')
+       q_str:=sprintf('%s and WAM_USER=%d ',q_str,logged_user_id);
+    else
+       q_str:=sprintf('%s and (WAI_IS_PUBLIC=1 or WAM_USER=%d) ',q_str,logged_user_id);
+    
+  }else
+    q_str:=sprintf('%s and WAI_IS_PUBLIC=1 ',q_str);
+
+  if(applicationType is not null)
+  {
+    declare watypes_arr any;
+    watypes_arr:=constructTypePackageArr('wa_types');
+
+    declare watype_name varchar;
+    watype_name:=get_keyword(applicationType,watypes_arr,applicationType);
+    
+    q_str:=sprintf('%s and WAM_APP_TYPE = ''%s'' ',q_str,watype_name);
+  }
+
+  q_str:=sprintf('%s order by  WAM_APP_TYPE,WAM_INST ',q_str);
+
+
+--  dbg_obj_print(q_str);
+  declare INST_URL,INST_NAME,INST_OWNER, INST_WATYPE varchar;
+
+  
+  rc := exec (q_str, null, null, vector (), 0, null, null, h);
+  while (0 = exec_next (h, null, null, dta))
+  {
+    exec_result (dta);
+
+    INST_URL:=coalesce(dta[1],'javascript:void(0)');
+    INST_NAME:=coalesce(dta[0],'');
+    INST_OWNER:=DB.DBA.WA_APP_GET_OWNER(dta[0]);
+    INST_WATYPE:=dta[2];
+
+    declare dataspace_url varchar;
+
+    dataspace_url:=sprintf('/dataspace/%U/%s/%s',INST_OWNER,DB.DBA.wa_get_app_dataspace(INST_WATYPE),INST_NAME);
+
+    package_name:=get_keyword(INST_WATYPE,packages,INST_WATYPE);
+
+    declare disabled integer;
+    
+--    disabled:=(select WAT_MAXINST from DB.DBA.WA_TYPES where WAT_NAME=INST_WATYPE);
+    if((select WAT_MAXINST from DB.DBA.WA_TYPES where WAT_NAME=INST_WATYPE)=0)
+        disabled:=1;
+    else
+        disabled:=0;
+        
+    declare owned integer;
+    if(logged_user_name is not null and ownerId is null)
+    {
+      if(logged_user_name=INST_OWNER)
+         owned:=1;
+      else
+         owned:=0;
+    }else if(ownerId=username2id(INST_OWNER))
+       owned:=1;
+    else
+       owned:=0;
+
+     http('<application type="'||package_name||'" '||
+                        'url="'||INST_URL||'" '||
+                        'dataspace="'||dataspace_url||'" '||
+                        'own="'||sprintf('%d',owned)||'" '||
+                        'disabled="'||sprintf('%d',disabled)||'" '||
+                        '><![CDATA['||INST_NAME||']]></application>',resXml);
+  };
+  
+
+  if(errCode<>0)
+     httpErrXml(errCode,errMsg,'applicationsGet');
+  else
+     httpResXml(resXml,'applicationsGet');
+  
+  return '';
+}
+;
+grant execute on applicationsGet to GDATA_ODS;
+
 create procedure createApplication (in sid varchar:='',in realm varchar :='wa', in application varchar) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
@@ -979,7 +1110,7 @@ create procedure userCommunities (in sid varchar:='',in realm varchar :='wa') __
 ;
 grant execute on userCommunities to GDATA_ODS;
 
-create procedure userDiscussionGroups (in sid varchar:='',in realm varchar :='wa', in userId integer := null) __SOAP_HTTP 'text/xml'
+create procedure userDiscussionGroups (in sid varchar:='',in realm varchar :='wa', in userId any := null) __SOAP_HTTP 'text/xml'
 {
   declare errCode integer;
   declare errMsg varchar;
@@ -994,7 +1125,12 @@ create procedure userDiscussionGroups (in sid varchar:='',in realm varchar :='wa
   if(isSessionValid(sid,'wa',logged_user_name))
   {
       if( userId is not null)
-         logged_user_id := userId;
+      {
+        if(subseq(userId,0,1)='/')
+           logged_user_id:=username2id(subseq(userId,1));
+        else
+           logged_user_id:=cast(userId as integer);
+      }
       else
          logged_user_id := username2id(logged_user_name);
 
@@ -2022,6 +2158,8 @@ create procedure xml_nodename(in dbfield_name varchar)
  if(dbfield_name='H_STATE')        return 'home_state';
  if(dbfield_name='H_CITY')         return 'home_city';
  if(dbfield_name='H_ZIPCODE')      return 'home_zip';
+ if(dbfield_name='H_PHONE')        return 'home_phone';
+ if(dbfield_name='H_MOBILE')       return 'home_mobile';
  if(dbfield_name='H_ADDRESS1')     return 'home_address1';
  if(dbfield_name='H_ADDRESS2')     return 'home_address2';
  if(dbfield_name='H_LAT')          return 'home_latitude';
@@ -2034,6 +2172,8 @@ create procedure xml_nodename(in dbfield_name varchar)
  if(dbfield_name='O_ZIPCODE')      return 'organization_zip';
  if(dbfield_name='O_ADDRESS1')     return 'organization_address1';
  if(dbfield_name='O_ADDRESS2')     return 'organization_address2';
+ if(dbfield_name='O_PHONE')        return 'organization_phone';
+ if(dbfield_name='O_MOBILE')       return 'organization_mobile';
  if(dbfield_name='O_LAT')          return 'organization_latitude';
  if(dbfield_name='O_LNG' )         return 'organization_longitude';
  if(dbfield_name='O_JOBPOSITION')  return 'organization_jobposition';
@@ -2068,6 +2208,8 @@ create procedure visibility_posinarr(in dbfield_name varchar)
  if(dbfield_name='H_ZIPCODE')      return 15;
  if(dbfield_name='H_ADDRESS1')     return 15;
  if(dbfield_name='H_ADDRESS2')     return 15;
+ if(dbfield_name='H_PHONE')        return 18;
+ if(dbfield_name='H_MOBILE')       return 18;
  if(dbfield_name='H_LAT')          return 39;
  if(dbfield_name='H_LNG' )         return 39;
  if(dbfield_name='O_NAME')         return 20;
@@ -2078,6 +2220,8 @@ create procedure visibility_posinarr(in dbfield_name varchar)
  if(dbfield_name='O_ZIPCODE')      return 22;
  if(dbfield_name='O_ADDRESS1')     return 22;
  if(dbfield_name='O_ADDRESS2')     return 22;
+ if(dbfield_name='O_PHONE')        return 25;
+ if(dbfield_name='O_MOBILE')       return 25;
  if(dbfield_name='O_LAT')          return 47;
  if(dbfield_name='O_LNG' )         return 47;
  if(dbfield_name='O_JOBPOSITION')  return 21;
@@ -2136,7 +2280,9 @@ create procedure constructFieldsNameStr(in fieldsname_str varchar)
                                 'I.WAUI_HCITY as H_CITY,'||
                                 'I.WAUI_HCODE as H_ZIPCODE,'||
                                 'I.WAUI_HADDRESS1 as H_ADDRESS1,'||
-                                'I.WAUI_HADDRESS2 as H_ADDRESS2';
+                                'I.WAUI_HADDRESS2 as H_ADDRESS2,'||
+                                'I.WAUI_HPHONE as H_PHONE,'||
+                                'I.WAUI_HMOBILE as H_MOBILE';
 
            if(fields_name[i]='homeLocation')
               res_str:=res_str||'I.WAUI_LAT as H_LAT,'||
@@ -2150,7 +2296,9 @@ create procedure constructFieldsNameStr(in fieldsname_str varchar)
                                 'I.WAUI_BCITY as O_CITY,'||
                                 'I.WAUI_BCODE as O_ZIPCODE,'||
                                 'I.WAUI_BADDRESS1 as O_ADDRESS1,'||
-                                'I.WAUI_BADDRESS2 as O_ADDRESS2';
+                                'I.WAUI_BADDRESS2 as O_ADDRESS2,'||
+                                'I.WAUI_BPHONE as O_PHONE,'||
+                                'I.WAUI_BMOBILE as O_MOBILE';
 
            if(fields_name[i]='businessLocation')
               res_str:=res_str||'I.WAUI_BLAT as O_LAT,'||

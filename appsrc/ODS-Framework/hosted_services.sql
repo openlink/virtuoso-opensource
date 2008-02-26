@@ -20,9 +20,10 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-create procedure WA_GET_EMAIL_TEMPLATE(in name varchar) {
-
+create procedure WA_GET_EMAIL_TEMPLATE(in name varchar)
+{
   declare ret any;
+
   if (http_map_get ('is_dav') = 0)
     {
       ret := file_to_string (http_root () || '/wa/tmpl/' || name);
@@ -40,7 +41,8 @@ create procedure WA_GET_EMAIL_TEMPLATE(in name varchar) {
 }
 ;
 
-create procedure WA_SET_EMAIL_TEMPLATE(in name varchar, in value varchar) {
+create procedure WA_SET_EMAIL_TEMPLATE(in name varchar, in value varchar)
+{
   update
     WS.WS.SYS_DAV_RES
   set
@@ -50,8 +52,10 @@ create procedure WA_SET_EMAIL_TEMPLATE(in name varchar, in value varchar) {
 }
 ;
 
-create procedure wa_exec_no_error_log(in expr varchar) {
+create procedure wa_exec_no_error_log(in expr varchar)
+{
   declare state, message, meta, result any;
+
   log_enable (1);
   exec(expr, state, message, vector(), 0, meta, result);
 }
@@ -75,13 +79,15 @@ create procedure wa_exec_ddl (in q varchar)
 }
 ;
 
-create procedure wa_exec_no_error(in expr varchar) {
+create procedure wa_exec_no_error(in expr varchar)
+{
   declare state, message, meta, result any;
   exec(expr, state, message, vector(), 0, meta, result);
 }
 ;
 
-create procedure wa_add_col(in tbl varchar, in col varchar, in coltype varchar,in postexec varchar := '') {
+create procedure wa_add_col(in tbl varchar, in col varchar, in coltype varchar,in postexec varchar := '')
+{
  if(exists(
            select
              top 1 1
@@ -534,6 +540,7 @@ wa_exec_no_error(
   WS_WEB_TITLE varchar,
   WS_WEB_DESCRIPTION varchar,
   WS_WELCOME_MESSAGE varchar,
+   WS_WELCOME_MESSAGE2 varchar,
   WS_COPYRIGHT varchar,
   WS_DISCLAIMER varchar,
   WS_DEFAULT_MAIL_DOMAIN varchar
@@ -565,6 +572,9 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_WEB_DESCRIPTION', 'varchar')
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_WELCOME_MESSAGE', 'varchar')
 ;
 
+wa_add_col('DB.DBA.WA_SETTINGS', 'WS_WELCOME_MESSAGE2', 'varchar')
+;
+
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_COPYRIGHT', 'varchar')
 ;
 
@@ -590,11 +600,6 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_PERIOD', 'varchar default \'ho
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_UPDATE_FREQ', 'integer default 1')
-;
-
-wa_exec_no_error(
-  'alter type web_app drop method wa_notify_member_changed(account int, otype int, ntype int, odata any, ndata any) returns any'
-)
 ;
 
 wa_exec_no_error(
@@ -1757,26 +1762,21 @@ create procedure WA_MAIL_TEMPLATES(in templ varchar,
 
 create procedure INIT_SERVER_SETTINGS ()
 {
-  declare cnt int;
+  declare cnt integer;
+
   cnt := (select count(*) from WA_SETTINGS);
-  if (cnt = 1)
-  {
-    update WA_SETTINGS set WS_COPYRIGHT='Copyright &copy; 1999-2008 OpenLink Software';
-    return;
-  }
-  else if (cnt > 1)
+  if (cnt > 1)
     {
       declare fr int;
-      fr := (select top 1 WS_ID from WA_SETTINGS);
-      delete from WA_SETTINGS where WS_ID > fr;
+    fr := (select top 1 WS_ID from WA_SETTINGS order by WS_ID);
 
-      update WA_SETTINGS set WS_COPYRIGHT='Copyright &copy; 1999-2008 OpenLink Software';
-
+    delete from WA_SETTINGS where WS_ID > fr;
     }
-  else
+  else if (cnt = 0)
     {
       insert soft WA_SETTINGS
-	  (WS_REGISTER,
+  	  (
+  	   WS_REGISTER,
 	   WS_MAIL_VERIFY,
 	   WS_REGISTRATION_EMAIL_EXPIRY,
 	   WS_JOIN_EXPIRY,
@@ -1786,12 +1786,13 @@ create procedure INIT_SERVER_SETTINGS ()
 	   WS_WEB_TITLE,
 	   WS_WEB_DESCRIPTION,
 	   WS_WELCOME_MESSAGE,
+  	   WS_WELCOME_MESSAGE2,
 	   WS_COPYRIGHT,
 	   WS_DISCLAIMER,
 	   WS_DEFAULT_MAIL_DOMAIN
 	  )
-
-	  values (
+	  values
+	    (
 	      1,
 	      0,
 	      24,
@@ -1802,16 +1803,63 @@ create procedure INIT_SERVER_SETTINGS ()
 	      '',
 	      'Enter your Member ID and Password',
 	      '',
+	     '',
 	      'Copyright &copy; 1999-2008 OpenLink Software',
 	      '',
 	      sys_stat ('st_host_name')
 	      );
     }
-};
+  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1999-2008 OpenLink Software';
+
+  update WA_SETTINGS
+     set WS_WELCOME_MESSAGE =
+'<h3>
+Welcome to OpenLink Data Spaces (ODS), a distributed collaborative
+application platform that provides a "Linked Data Junction Box" for Web
+protocols accessible data across a myriad of data sources.
+</h3>
+<p>
+ODS provides a cost-effective route for creating and exploit presence on
+the emerging Web of Linked Data. It enables you to transparently mesh
+data across Weblogs, Shared Bookmarking, Feeds Aggregation, Photo
+Gallery, Calendars, Discussions, Content Managers, and Social Networks.
+</p>
+<p>
+ODS essentially provides distributed data across personal, group, and
+community data spaces that is grounded in Web Architecture. It makes
+extensive use of current and emerging standards across it''s core and
+within specific functionality realms.
+</p>
+<p>ODS Benefits include:</p>
+<ul>
+  <li>Platform independent solution for Data Portability via support for all major data interchange standards</li>
+  <li>Powerful solution for meshing data from a myriad of data sources across Intranets, Extranets, and the Internet</li>
+  <li>Coherent integration of Blogs, Wikis, and similar systems (native and external) that expose structured Linked Data</li>
+  <li>Collaborative content authoring and data generation without any exposure to underlying complexities of such activities</li>
+</ul>
+'
+   where WS_WELCOME_MESSAGE is null or trim (WS_WELCOME_MESSAGE) = '';
+
+  update WA_SETTINGS
+     set WS_WELCOME_MESSAGE2 =
+'<h3>
+Welcome to OpenLink Data Spaces</h3>
+<p>
+<i>There are many data spaces in the net, but this is yours</i>
+<br />
+OpenLink Data Spaces Applications can help you through your daily tasks.</p><p>Utilize and manage your contact network. Keep up to date with latest
+news on subjects that interest you. Communicate with others using email, discussion lists and weblogs.
+Collaborate with authoring information on Wikis, and much more!
+</p>
+'
+   where WS_WELCOME_MESSAGE2 is null or trim (WS_WELCOME_MESSAGE2) = '';
+}
+;
 
 INIT_SERVER_SETTINGS ();
 
-create procedure WA_RETRIEVE_MESSAGE(in str any) {
+create procedure WA_RETRIEVE_MESSAGE (in str any)
+{
   declare pos1, pos2 any;
   pos1 := locate('%%', str, 1);
   if(not pos1) return str;
@@ -1821,20 +1869,26 @@ create procedure WA_RETRIEVE_MESSAGE(in str any) {
 }
 ;
 
-create procedure WA_STATUS_NAME(in status int) {
-  if(status = 1) {
+create procedure WA_STATUS_NAME(in status int)
+{
+  if (status = 1)
+  {
     return 'Application owner';
   }
-  else if(status = 2) {
+  else if (status = 2)
+  {
     return 'Approved';
   }
-  else if(status = 3) {
+  else if (status = 3)
+  {
     return 'Owner approval pending';
   }
-  else if(status = 4) {
+  else if (status = 4)
+  {
     return 'User approval pending';
   }
-  else {
+  else
+  {
     return 'Invalid status';
   }
 }
@@ -3146,6 +3200,20 @@ wa_exec_no_error_log(
       )'
 )
 ;
+
+wa_exec_no_error_log(
+    'CREATE TABLE WA_USER_RELATED_RES (
+      WUR_ID int identity,
+      WUR_U_ID int,
+      WUR_LABEL varchar,
+      WUR_PUBLIC int default 0,
+      WUR_SEEALSO_IRI varchar,
+      primary key (WUR_U_ID, WUR_SEEALSO_IRI)
+      )'
+)
+;
+
+wa_exec_no_error_log('create unique index WA_USER_RELATED_RES_IX1 on DB.DBA.WA_USER_RELATED_RES (WUR_ID)');
 
 create procedure WA_USER_TAG_WAUTG_TAGS_INDEX_HOOK (inout vtb any, inout d_id integer)
 {
@@ -6333,3 +6401,7 @@ create procedure ODS_USER_IDENTIY_URLS (in uname varchar)
 }
 ;
 
+wa_exec_no_error(
+  'alter type web_app drop method wa_notify_member_changed(account int, otype int, ntype int, odata any, ndata any) returns any'
+)
+;
