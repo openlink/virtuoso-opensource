@@ -3350,7 +3350,8 @@ create procedure BMK.WA.validate (
   declare tmp any;
   declare exit handler for SQLSTATE '*' {return 0;};
 
-  if (propertyType = 'boolean') {
+  if (propertyType = 'boolean')
+  {
     if (propertyValue not in ('Yes', 'No'))
       return 0;
   } else if (propertyType = 'integer') {
@@ -3482,23 +3483,4 @@ create procedure BMK.WA.rdfa_value (
     return '';
   return sprintf ('<span property="%s">%s</span>', property, S);
 }
-;
-
------------------------------------------------------------------------------------------
---
-create procedure BMK.WA.version_update()
-{
-  for (select WAI_ID, WAM_USER
-         from DB.DBA.WA_MEMBER
-                join DB.DBA.WA_INSTANCE on WAI_NAME = WAM_INST
-        where WAI_TYPE_NAME = 'Bookmark'
-          and WAM_MEMBER_TYPE = 1) do {
-    BMK.WA.domain_update(WAI_ID, WAM_USER);
-  }
-}
-;
-
------------------------------------------------------------------------------------------
---
-BMK.WA.version_update()
 ;
