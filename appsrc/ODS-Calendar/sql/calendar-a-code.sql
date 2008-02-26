@@ -2785,9 +2785,9 @@ create procedure CAL.WA.dashboard_item (
 {
   http ('<event>', sStream);
   http (sprintf ('<dt>%s</dt>', date_iso8601 (updated)), sStream);
-  http (sprintf ('<title>%V</title>', coalesce (subject, 'No subject')), sStream);
+  http (sprintf ('<title><![CDATA[%s]]></title>', coalesce (subject, 'No subject')), sStream);
   http (sprintf ('<link>%V</link>', uri), sStream);
-  http (sprintf ('<from>%V</from>', CAL.WA.account_fullName (account_id)), sStream);
+  http (sprintf ('<from><![CDATA[%s]]></from>', CAL.WA.account_fullName (account_id)), sStream);
   http (sprintf ('<uid>%s</uid>', CAL.WA.account_name (account_id)), sStream);
   http ('</event>', sStream);
 }

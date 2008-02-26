@@ -21,6 +21,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+  set ISOLATION = 'Committed';
+  set http_charset = 'utf-8';
+
   declare _domain_id, _user_id, _authorized integer;
   declare _gems, _user, _password, _role varchar;
   declare _authorizeVector any;
@@ -60,19 +63,17 @@
           }
         }
       }
+      http_rewrite ();
       if (not _authorized)
       {
-        http_rewrite ();
         http_request_status ('HTTP/1.1 401 Unauthorized');
   		  http_header ('WWW-Authenticate: Basic realm="wa"\r\n');
      	  http('Unauthorized');
-     	  return;
-      }
-      http_rewrite ();
+      } else {
       http_request_status ('HTTP/1.1 200 OK');
-      http_header ('Content-Type: text/plain\r\n');
-      http_header ('Content-Disposition: inline; filename="calendar.ics"\r\n');
+        http_header ('Content-Type: application/x-download\r\nContent-Disposition: inline; filename="calendar.ics"\r\n');
       http (CAL.WA.export_vcal (_domain_id));
+      }
       http_flush ();
     }
   }
