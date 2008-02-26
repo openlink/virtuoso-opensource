@@ -56,10 +56,10 @@
           <xsl:attribute name="content"><xsl:value-of select="/root/user/@lat"/>;<xsl:value-of select="/root/user/@lng"/></xsl:attribute>
         </meta>
         <meta name="dc.title">
-          <xsl:attribute name="content"><xsl:value-of select="/root/instance_description"/></xsl:attribute>
+          <xsl:attribute name="content"><xsl:value-of select="/root/dc_instance_name"/></xsl:attribute>
         </meta>
         <meta name="dc.description">
-          <xsl:attribute name="content"><xsl:value-of select="/root/instance_description"/></xsl:attribute>
+          <xsl:attribute name="content"><xsl:value-of select="/root/dc_instance_description"/></xsl:attribute>
         </meta>
       </xsl:if>
       <link rel="foaf" type="application/rdf+xml" title="FOAF">
@@ -127,7 +127,7 @@
             <img src="/photos/res/i/gallerybanner_sml.jpg" />
             <br />
             <span id="instance_info" >
-              <span property="dc:title"><xsl:value-of select="instance_description"/></span>
+              <span property="dc:title"><xsl:value-of select="/root/instance_name"/></span>
               (<span property="dc:creator"><xsl:value-of select="instance_owner_fullname"/></span>)
             </span>
       <div id="nav">

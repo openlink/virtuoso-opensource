@@ -227,3 +227,33 @@ create procedure PHOTO.WA.http_name ()
     return sys_stat ('st_host_name') ||':'|| server_http_port ();
 
 };
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.string2xml (
+  in content varchar,
+  in mode integer := 0)
+{
+  if (mode = 0)
+  {
+    declare exit handler for sqlstate '*' { goto _html; };
+    return xml_tree_doc (xml_tree (content, 0));
+  }
+_html:;
+  return xml_tree_doc(xml_tree(content, 2, '', 'UTF-8'));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.xml2string(
+  in pXml any)
+{
+  declare sStream any;
+
+  sStream := string_output();
+  http_value(pXml, null, sStream);
+  return string_output_string(sStream);
+}
+;
+

@@ -157,7 +157,8 @@
   http(sprintf('<first_name>%s</first_name>',current_user.first_name),_xml);
   http(sprintf('<last_name>%s</last_name>',current_user.last_name),_xml);
   http(sprintf('<user_name>%s</user_name>',coalesce(current_user.auth_uid,'')),_xml);
-  http('</user>',_xml);     --&lt;?vsp http (replace (sprintf ('http://%s/dataspace/%U/%s/sioc.rdf', self.st_host, self.fname, wa_type_to_app (self.app_type)), '+', '%2B')); ?>
+  http('</user>', _xml);
+
   http(sprintf('<host>%s</host>',host_port),_xml);
   http(sprintf('<base>%s</base>',base_path),_xml);
   http(sprintf('<app_type>photos</app_type>'),_xml);
@@ -169,7 +170,10 @@
   http(sprintf('<gallery_id>%d</gallery_id>',current_instance.gallery_id),_xml);
   http(sprintf('<instance_owner>%s</instance_owner>',current_instance.owner_name),_xml);
   http(sprintf('<instance_owner_fullname>%s</instance_owner_fullname>',owner_fullname),_xml);
-  http(sprintf('<instance_description>%s</instance_description>',replace(current_instance.description,'\'','&#39;')),_xml);
+  http(sprintf('<instance_name>%s</instance_name>', current_instance.name), _xml);
+  http(sprintf('<instance_description>%s</instance_description>', current_instance.description), _xml);
+  http(sprintf('<dc_instance_name>%V</dc_instance_name>', PHOTO.WA.xml2string (current_instance.name)), _xml);
+  http(sprintf('<dc_instance_description>%V</dc_instance_description>', PHOTO.WA.xml2string (current_instance.description)), _xml);
   http(sprintf('<map>%d</map>',PHOTO.WA.gallery_show_map (current_instance.gallery_id)),_xml);
   http(sprintf('<is_discussion>%d</is_discussion>', PHOTO.WA.discussion_check ()),_xml);
 

@@ -58,7 +58,8 @@ create procedure PHOTO.WA.dav_browse(
           LEFT JOIN WS.WS.SYS_DAV_USER ON U_ID = COL_OWNER
    WHERE COL_ID = _col_id;
 
-  if (_col_owner = current_user.user_id){  
+  if (_col_owner = current_user.user_id)
+  {
     is_own := 1;
   }else{
     is_own := 0;
@@ -89,11 +90,14 @@ create procedure PHOTO.WA.dav_browse(
   ctr := 0;
   while (ctr < length(dirlist))
   {
-    if(dirlist[ctr][6] = 0){
+    if (dirlist[ctr][6] = 0)
+    {
       dirlist[ctr][6] := 0;
     }
-    if((dirlist[ctr][7] = current_user.user_id or substring(dirlist[ctr][5],7,1) = '1') and isnull(regexp_match('^\\.',dirlist[ctr][10]))){
-      if(substring(dirlist[ctr][5],7,1) = '1'){
+    if ((dirlist[ctr][7] = current_user.user_id or substring(dirlist[ctr][5],7,1) = '1') and isnull(regexp_match('^\\.',dirlist[ctr][10])))
+    {
+      if (substring(dirlist[ctr][5],7,1) = '1')
+      {
         visibility := 1; -- public
       }else{
         visibility := 0; -- private
@@ -115,7 +119,8 @@ create procedure PHOTO.WA.dav_browse(
 
       album.thumb_id := (select RES_ID from WS.WS.SYS_DAV_RES where RES_COL = dirlist[ctr][4] AND regexp_match('^\\.',RES_NAME) IS NULL );
       default_thumbnail := DAV_PROP_GET(album.fullpath,'default_thumbnail',res_user[0],res_user[1]);
-      if(__tag(default_thumbnail) <> 189){
+      if (__tag(default_thumbnail) <> 189)
+      {
         album.thumb_id := cast(default_thumbnail  as integer);
       }
 
@@ -125,28 +130,34 @@ create procedure PHOTO.WA.dav_browse(
 --      }
 
       start_date := DAV_PROP_GET(album.fullpath,'start_date',res_user[0],res_user[1]);
-      if(__tag(start_date ) <> 189){
+      if(__tag(start_date ) <> 189)
+      {
         album.start_date := cast(start_date  as datetime);
-      }else if(__tag(pub_date ) <> 189)
+      } else if (__tag(pub_date ) <> 189) {
         album.start_date := cast(pub_date  as datetime);
-       else
+      } else {
         album.start_date := cast(now() as datetime);
+      }
         
       end_date := DAV_PROP_GET(album.fullpath,'end_date',res_user[0],res_user[1]);
-      if(__tag(end_date ) <> 189){
+      if(__tag(end_date ) <> 189)
+      {
         album.end_date := cast(end_date  as datetime);
-      }else if(__tag(pub_date ) <> 189)
+      } else if (__tag(pub_date ) <> 189) {
         album.end_date :=  cast(pub_date  as datetime);
-       else
+      } else {
         album.end_date := cast(now() as datetime);
+      }
 
       description := DAV_PROP_GET(album.fullpath,'description',res_user[0],res_user[1]);
-      if(__tag(description) <> 189){
+      if (__tag(description) <> 189)
+      {
         album.description := cast(description  as varchar);
       }
 
       geolocation := DAV_PROP_GET(album.fullpath,'geolocation',res_user[0],res_user[1]);
-      if(__tag(geolocation) <> 189){
+      if(__tag(geolocation) <> 189)
+      {
         album.geolocation := PHOTO.WA.string2vector(geolocation,';');
       }
 
@@ -155,13 +166,16 @@ create procedure PHOTO.WA.dav_browse(
       
 
       obsolete := coalesce( DAV_PROP_GET(album.fullpath,'obsolete',res_user[0],res_user[1]),0);
-      if(__tag(obsolete) <> 189){
+      if (__tag(obsolete) <> 189)
+      {
         album.obsolete := atoi(obsolete);
-      }else
+      } else {
         album.obsolete := 0;
+      }
 
       private_tags := DAV_PROP_GET(album.fullpath,':virtprivatetags',res_user[0],res_user[1]);
-      if(__tag(private_tags) <> 189){
+      if (__tag(private_tags) <> 189)
+      {
         album.private_tags := PHOTO.WA.tags2vector(private_tags);
       }
 
@@ -172,7 +186,8 @@ create procedure PHOTO.WA.dav_browse(
   }
   ret:
   return SOAP_gallery (cast (is_own as integer),
-                       _col_user_name,result,
+                       _col_user_name,
+                       result,
                         vector('show_map',cast(_show_map as varchar),
                                'show_timeline',cast(_show_timeline as varchar),
                                'nntp',cast(_nntp as varchar),

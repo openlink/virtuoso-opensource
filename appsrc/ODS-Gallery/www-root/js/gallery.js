@@ -669,7 +669,7 @@ gallery.showImagesInside = function ()
   $('info_discription').innerHTML = txt;
   $('path_my_albums').innerHTML = 'My Albums > ';
   $('path_pub_date').innerHTML = sdate2obj(ds_albums.current.pub_date).year + ' > ';
-  $('path_album_name').innerHTML = ds_albums.current.name;
+  $('path_album_name').innerHTML = OAT.Xml.escape(ds_albums.current.name);
   $('path_image_name').innerHTML = "";
   $('caption').innerHTML = 'Choose an image to view';
   
@@ -738,10 +738,10 @@ gallery.showImage = function(i)
 
   $('path_my_albums').innerHTML = 'My Albums > ';
   $('path_pub_date').innerHTML = sdate2obj(ds_albums.current.pub_date).year + ' > ';
-  $('path_album_name').innerHTML = ds_albums.current.name + ' > ';
-  $('path_image_name').innerHTML = current_image.name;
+  $('path_album_name').innerHTML = OAT.Xml.escape(ds_albums.current.name) + ' > ';
+  $('path_image_name').innerHTML = OAT.Xml.escape(current_image.name);
   $('caption').innerHTML = '';
-  var rdfa = rdfaValue(current_image.description, 'dc:title', 'property');
+  var rdfa = rdfaValue(OAT.Xml.escape(current_image.description), 'dc:title', 'property');
   if (rdfa)
     $('caption').appendChild(rdfa);
   
@@ -1417,7 +1417,7 @@ function preview_collection(album,i)
   
   var ramka = document.createElement('span')
   div.setAttribute('id','album_preview_'+i);
-  div.setAttribute('path',album.name);
+  div.setAttribute('path', OAT.Xml.escape (album.name));
   //ramka .setAttribute('id','album_preview_r_'+i);
 
   if(album.thumb_id){
@@ -1436,8 +1436,9 @@ function preview_collection(album,i)
   div.appendChild(document.createTextNode('Album:# '+ Number(i+1)))
   div.appendChild(document.createElement('br'))
 
-  if(album.name){
-    var rdfa = rdfaValue(album.name.substring(0,12), 'dc:title', 'property');
+  if (album.name)
+  {
+    var rdfa = rdfaValue(OAT.Xml.escape(album.name.substring(0,12)), 'dc:title', 'property');
     if (rdfa)
       div.appendChild(rdfa);
     //div.appendChild(document.createTextNode(album.name.substring(0,12)));
@@ -1483,7 +1484,7 @@ function preview_collection_4_map(album,i){
   var a = OAT.Dom.create("a");
 
   if(album.name){
-    a.innerHTML = album.name.substring(0,12)+" ("+sdate2obj(album.start_date).year +'/'+sdate2obj(album.start_date).month+")";
+    a.innerHTML = OAT.Xml.escape(album.name.substring(0,12))+" ("+sdate2obj(album.start_date).year +'/'+sdate2obj(album.start_date).month+")";
     a.href = "#/"+album.name+'/';
     OAT.Dom.attach(a,"click",function(){
                                          OAT.Dom.hide('timeline');
@@ -1715,7 +1716,7 @@ gallery.link_images_import_click = function(){
   $('info_discription').innerHTML = "";
   $('path_my_albums').innerHTML = 'My Albums > ';
   $('path_pub_date').innerHTML = sdate2obj(ds_albums.current.pub_date).year + ' > ';
-  $('path_album_name').innerHTML = ds_albums.current.name;
+  $('path_album_name').innerHTML = OAT.Xml.escape(ds_albums.current.name);
   $('path_image_name').innerHTML = "";
   $('caption').innerHTML = 'Import images from Flickr';
   $('preview_left').innerHTML = "";
@@ -1729,7 +1730,7 @@ gallery.link_images_export_click = function(){
   $('info_discription').innerHTML = "";
   $('path_my_albums').innerHTML = 'My Albums > ';
   $('path_pub_date').innerHTML = sdate2obj(ds_albums.current.pub_date).year + ' > ';
-  $('path_album_name').innerHTML = ds_albums.current.name;
+  $('path_album_name').innerHTML = OAT.Xml.escape(ds_albums.current.name);
   $('path_image_name').innerHTML = "";
   $('caption').innerHTML = 'Export images to Flickr';
   $('preview_left').innerHTML = "";
@@ -1999,12 +2000,12 @@ gallery.ajax.load_albums = function(path)
       gallery.albums.appendChild(new_coll);
       album_list = OAT.Dom.create('li');
 
-      var rdfa = rdfaValue(ds_albums.list[r].name.substring(0,12), 'dc:title', 'property');
+      var rdfa = rdfaValue(OAT.Xml.escape(ds_albums.list[r].name.substring(0,12)), 'dc:title', 'property');
       if (rdfa)
         album_list.appendChild(rdfa);
       //album_list.innerHTML = ds_albums.list[r].name.substring(0,12);
       album_list.id = "my_albums_list_"+r;
-      album_list.appendChild(makeDummyHref(ds_albums.list[r].name.substring(0,12)));
+      album_list.appendChild(makeDummyHref(OAT.Xml.escape(ds_albums.list[r].name.substring(0,12))));
 
       $('my_albums_list').appendChild(album_list);
     }
@@ -2073,9 +2074,9 @@ gallery.ajax.new_album = function()
 
     $('myAlbumsTxt').innerHTML='My Albums ('+ds_albums.list.length+')';
     album_list = OAT.Dom.create('li');
-    album_list.innerHTML = ds_albums.list[r].name.substring(0,12);
+    album_list.innerHTML = OAT.Xml.escape(ds_albums.list[r].name.substring(0,12));
     album_list.id = "my_albums_list_"+r;
-    album_list.appendChild(makeDummyHref(ds_albums.list[r].name.substring(0,12)));
+    album_list.appendChild(makeDummyHref(OAT.Xml.escape(ds_albums.list[r].name.substring(0,12))));
     $('my_albums_list').appendChild(album_list);
     gallery.prepare_aplus("my_albums_list_"+r);
 
