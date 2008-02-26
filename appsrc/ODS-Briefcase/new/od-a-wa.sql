@@ -430,7 +430,6 @@ create method wa_dashboard_last_item () for wa_oDrive
       http (sprintf ('<dt>%s</dt>', date_iso8601 (RES_MOD_TIME)), ses);
       http (sprintf ('<title><![CDATA[%s]]></title>', RES_NAME), ses);
       http (sprintf ('<link><![CDATA[%s]]></link>', RES_FULL_PATH), ses);
-      -- http (sprintf ('<link><![CDATA[%s]]></link>', SIOC..post_iri_ex (c_iri, RES_ID)), ses);
       http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
       http (sprintf ('<uid>%s</uid>', uname), ses);
       http ('</resource>', ses);
@@ -482,10 +481,9 @@ create method wa_dashboard_last_item () for wa_oDrive
 
     http ('<resource>', ses);
     http (sprintf ('<dt>%s</dt>', date_iso8601 (RES_MOD_TIME)), ses);
-      http (sprintf ('<title>%V</title>', RES_NAME), ses);
-      http (sprintf ('<link>%V</link>', link), ses);
-      -- http (sprintf ('<link><![CDATA[%s]]></link>', SIOC..post_iri_ex (c_iri, RES_ID)), ses);
-      http (sprintf ('<from>%V</from>', full_name), ses);
+      http (sprintf ('<title><![CDATA[%s]]></title>', RES_NAME), ses);
+      http (sprintf ('<link><![CDATA[%s]]></link>', link), ses);
+      http (sprintf ('<from><![CDATA[%s]]></from>', full_name), ses);
     http (sprintf ('<uid>%s</uid>', uname), ses);
     http ('</resource>', ses);
   }

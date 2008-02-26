@@ -4006,7 +4006,7 @@ create procedure ENEWS.WA.dashboard_get(
         _dt    := xpath_eval ('string(./dt)', xp[j]);
         _from  := xpath_eval ('string(./from)', xp[j]);
         _email := xpath_eval ('string(./email)', xp[j]);
-        http (sprintf ('<post id="%s"><title>%V</title><dt>%s</dt><link>%V?instance=%d</link><from>%V</from><uid>%V</uid><email>%V</email></post>', _id, _title, _dt, SIOC..feed_item_iri (EF_ID, cast (_id as integer)), _domain_id, _from, _user_name, _email), sStream);
+        http (sprintf ('<post id="%s"><title><![CDATA[%s]]></title><dt>%s</dt><link>%V?instance=%d</link><from><![CDATA[%s]]></from><uid>%V</uid><email>%V</email></post>', _id, _title, _dt, SIOC..feed_item_iri (EF_ID, cast (_id as integer)), _domain_id, _from, _user_name, _email), sStream);
       }
       http ('</feed-db>', sStream);
     }
