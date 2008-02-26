@@ -94,7 +94,9 @@
 	    <dc:title><xsl:value-of select="mmd:title"/></dc:title>
 	    <mo:track_number><xsl:value-of select="position()"/></mo:track_number>
 	    <mo:duration rdf:datatype="&xsd;integer"><xsl:value-of select="mmd:duration"/></mo:duration>
+	    <xsl:if test="artist[@id]">
 	    <foaf:maker rdf:resource="{vi:proxyIRI ()}{$base}artist/{artist/@id}.html#this"/>
+	    </xsl:if>
 	    <mo:musicbrainz rdf:resource="{vi:proxyIRI ()}{$base}track/{@id}.html#this"/>
 	</mo:Track>
     </xsl:template>
