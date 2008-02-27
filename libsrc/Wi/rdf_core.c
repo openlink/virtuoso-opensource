@@ -1668,12 +1668,6 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
     case IRI_TO_ID_IF_CACHED:
       res = key_name_to_existing_cached_iri_id (qi->qi_trx, name); break;
     }
-  if (NULL == res)
-    {
-      if (NULL != box_to_delete)
-        dk_free_box (box_to_delete);
-      return NEW_DB_NULL;
-    }
   if (NULL != box_to_delete)
     dk_free_box (box_to_delete);
   return res;
@@ -1692,6 +1686,29 @@ bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t res = iri_to_id (qst, name, make_new ? IRI_TO_ID_WITH_CREATE : IRI_TO_ID_IF_KNOWN, &err);
   if (NULL != err)
   sqlr_resignal (err);
+  if (NULL == res)
+    {
+      if (BOX_ELEMENTS (args) > 2)
+        return box_copy_tree (bif_arg (qst, args, 2, "iri_to_id"));
+      return NEW_DB_NULL;
+    }
+  return res;
+}
+
+caddr_t
+bif_iri_to_id_if_cached (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_arg (qst, args, 0, "iri_to_id_if_cached");
+  caddr_t err = NULL;
+  caddr_t res = iri_to_id (qst, name, IRI_TO_ID_IF_CACHED, &err);
+  if (NULL != err)
+    sqlr_resignal (err);
+  if (NULL == res)
+    {
+      if (BOX_ELEMENTS (args) > 1)
+        return box_copy_tree (bif_arg (qst, args, 1, "iri_to_id_if_cached"));
+      return NEW_DB_NULL;
+    }
   return res;
 }
 
@@ -2112,6 +2129,7 @@ rdf_core_init (void)
   bif_define ("turtle_lex_analyze", bif_turtle_lex_analyze);
   bif_define ("iri_to_id", bif_iri_to_id);
   bif_set_uses_index (bif_iri_to_id);
+  bif_define ("iri_to_id_if_cached", bif_iri_to_id_if_cached);
   bif_define ("id_to_iri", bif_id_to_iri);
   bif_set_uses_index (bif_id_to_iri);
   bif_define ("id_to_iri_nosignal", bif_id_to_iri_nosignal);

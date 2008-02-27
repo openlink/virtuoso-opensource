@@ -27,9 +27,9 @@
 #include "rdf_mapping_jso.h"
 #include "xmlparser.h" /* for xml_read_func_t and xml_read_abend_func_t */
 
-#define IRI_TO_ID_IF_KNOWN 0
-#define IRI_TO_ID_WITH_CREATE 1
-#define IRI_TO_ID_IF_CACHED 2
+#define IRI_TO_ID_IF_KNOWN	0 /*!< Return IRI_ID if known, integer zero (NULL) if not known or error is not NULL */
+#define IRI_TO_ID_WITH_CREATE	1 /*!< Return IRI_ID if known or created on the fly, integer zero (NULL) if error is not NULL */
+#define IRI_TO_ID_IF_CACHED	2 /*!< Return IRI_ID if known and is in cache, integer zero (NULL) if not known or known but not cached or error is not NULL */
 extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret);
 extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
 #define BNODE_IID_TO_LABEL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
