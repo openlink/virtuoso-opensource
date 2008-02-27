@@ -1255,7 +1255,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 					if (self.parent.getContentType(value) == 3) { 
 						self.addUriItem(value,item);
 					} else {
-						var all = value.match(/http:[^'"]+\.(jpeg|png|gif)/gi);
+						var all = value.match(/http:[^ ]+\.(jpe?g|png|gif)/gi);
 						if (all) for (var k=0;k<all.length;k++) { self.addUriItem(all[k],item); } /* for all embedded images */
 					} /* if not image */
 				} /* for all values */

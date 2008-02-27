@@ -21,10 +21,11 @@ OAT.WebDav = {
 	options: { /* defaults */
 		user:false,
 		pass:false,
-		path:'/DAV/', /* where are we now */
+		path:'/DAV/home/', /* where are we now */
 		file:'', /* preselected filename */
 		extension:false, /* preselected extension */
-		pathFallback:'/DAV/', /* what to offer when dirchange fails */
+		silentStart:true, /* don't display our settings dialog on startup */
+		pathFallback:'/DAV/home/', /* what to offer when dirchange fails */
 		width:760,
 		height:450,
 		imagePath:OAT.Preferences.imagePath,
@@ -37,33 +38,20 @@ OAT.WebDav = {
 	},
 	displayMode:0, /* details / icons */
 	mode:0, /* open / save */
-	connected:false,
 	
 /* basic api */
 	
 	openDialog:function(optObj) { /* open in browse file mode */
 		this.dom.ok.value = "Open";
 		this.mode = 0;
-		this.applyOptions(optObj);
-
-		if(!this.connected) {
-			this.connectDialog.show();
-		} else {
-			this.commonDialog();
-		}
+		this.commonDialog(optObj);
 		OAT.Dom.hide("dav_permissions");
 	},
 	
 	saveDialog:function(optObj) { /* open in save file mode */
 		this.dom.ok.value = "Save";
 		this.mode = 1;
-		this.applyOptions(optObj);
-
-		if(!this.connected) {
-			this.connectDialog.show();
-		} else {
-			this.commonDialog();
-		}
+		this.commonDialog(optObj);
 		
 		var state = [1,1,0,1,0,0,1,0,0];
 		this.dom.perms[2].disabled = true;
@@ -402,8 +390,6 @@ OAT.WebDav = {
 				path = "/DAV/home/" + user + "/";
 			}
 			cdialog.hide();
-			OAT.WebDav.connected = true;
-			OAT.WebDav.commonDialog();
 		}
 		
 		cdialog.cancel = function() {
@@ -412,14 +398,6 @@ OAT.WebDav = {
 
 		this.connectDialog = cdialog;
 
-		/* check whether already connected */
-		with(this.options) {
-			if(user !== false && pass !== false) {
-				path = "/DAV/home/" + user + "/";
-				this.connected = true;
-			}
-		}
-		
 		/* permissions */
 		this.initPermissions(bottom);
 		OAT.Dom.append([bottom,line_1,line_2]);
@@ -433,6 +411,12 @@ OAT.WebDav = {
 		this.treeSyncDir(this.options.path);
 
 		this.attachEvents();
+
+		with(this.options) {
+			if(user !== false) { path = "/DAV/home/" + user + "/"; }
+			if(!silentStart || (user === false && pass === false)) { this.connectDialog.show(); }
+		}
+		
 	},
 	
 	initPermissions:function(parentDiv) { /* draw the permissions table */
@@ -729,7 +713,7 @@ OAT.WebDav = {
 			if (!f) { return; }
 			var item = OAT.WebDav.fileExists(f);
 			if (item && item.dir) { /* existing directory */
-				this.openDirectory(p+f);
+				OAT.WebDav.openDirectory(p+f);
 				return;
 			} else if (f.match(/^\*\.(.*)$/)) { /* extension filter */
 				OAT.WebDav.redraw();
@@ -825,7 +809,8 @@ OAT.WebDav = {
 		for (var p in optObj) { this.options[p] = optObj[p]; }
 	},
 	
-	commonDialog:function() { /* common phase for both dialog types */
+	commonDialog:function(optObj) { /* common phase for both dialog types */
+		this.applyOptions(optObj);
 		var allContained = false;
 		for (var i=0;i<this.options.extensionFilters.length;i++) {
 			var filter = this.options.extensionFilters[i];
@@ -882,7 +867,7 @@ OAT.WebDav = {
 		if (this.options.path in this.cache) {
 			delete this.cache[this.options.path];
 		}
-		this.openDirectory(this.options.path,false,this.tree.tree.children[0]);	
+		OAT.WebDav.openDirectory(this.options.path,false,this.tree.tree.children[0]);	
 	},
 
 	imagePathHtml:function(name) { /* get html code for image */
