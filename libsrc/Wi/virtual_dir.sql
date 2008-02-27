@@ -852,8 +852,14 @@ create procedure ext_http_proxy (in url varchar, in header varchar := null, in f
 	    login := concat ('define get:login "', login, '" ');
 	  else
 	    login := '';
+	  -- escape chars which are not allowed
+	  url := replace (url, '''', '%27');
+	  url := replace (url, '<', '%3C');
+	  url := replace (url, '>', '%3E');
+	  url := replace (url, ' ', '%20');
+
 	  set_user_id ('SPARQL');
-          exec (sprintf ('sparql %s %s define get:soft "%s" CONSTRUCT { ?s ?p ?o } FROM <%s> WHERE { ?s ?p ?o }',
+          exec (sprintf ('sparql %s %s define get:soft "%s" CONSTRUCT { ?s ?p ?o } FROM <%S> WHERE { ?s ?p ?o }',
 		defs, login, get, url),
 	    stat, msg, vector (), 0, metas, rset);
 	  if (stat <> '00000')
