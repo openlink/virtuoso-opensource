@@ -438,6 +438,38 @@ bif_aq_request  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
+bif_aq_request_zap_args  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  async_queue_t * aq = bif_aq_arg (qst, args, 0, "aq_request_zap_args");
+  caddr_t f = bif_string_arg (qst, args, 1, "aq_request_zap_args");
+  int aq_argctr, aq_argcount = BOX_ELEMENTS (args) - 2;
+  caddr_t *f_args;
+  caddr_t aq_args;
+  if (0 != server_lock.sl_count)
+    sqlr_new_error ("22023", "SR567", "Function aq_request() can not be used inside atomic section");
+  for (aq_argctr = 0; aq_argctr < aq_argcount; aq_argctr++)
+    {
+      caddr_t unsafe_subtree = box_find_mt_unsafe_subtree (bif_arg (qst, args, aq_argctr+2, "aq_request_zap_args"));
+      if (NULL != unsafe_subtree)
+        {
+          dtp_t dtp = DV_TYPE_OF (unsafe_subtree);
+          sqlr_new_error ("42000", "AQ004",
+             "Argument %d for aq_request_zap_args() contain data of type %s (%d) that can not be sent between server threads",
+            aq_argctr+2, dv_type_title (dtp), dtp );
+        }
+    }
+  f_args = (caddr_t *)dk_alloc_box_zero (aq_argcount * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  for (aq_argctr = 0; aq_argctr < aq_argcount; aq_argctr++)
+    {
+      qst_swap_or_get_copy (qst, args [aq_argctr+2], f_args + aq_argctr);
+      box_make_tree_mt_safe (f_args[aq_argctr]);
+    }
+  aq_args = list (2, box_copy (f), f_args);
+  return box_num (aq_request (aq, (aq_func_t) aq_sql_func, (caddr_t)aq_args));
+}
+
+
+caddr_t
 bif_aq_wait  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   async_queue_t * aq = bif_aq_arg (qst, args, 0, "aq_wait");
@@ -498,6 +530,7 @@ bif_aq_init ()
   PrpcSetWriter (DV_ASYNC_QUEUE, (ses_write_func) aq_serialize);
   bif_define ("async_queue", bif_async_queue);
   bif_define ("aq_request", bif_aq_request);
+  bif_define ("aq_request_zap_args", bif_aq_request_zap_args);
   bif_define ("aq_wait", bif_aq_wait);
   bif_set_uses_index (bif_aq_wait);
   bif_define ("aq_wait_all", bif_aq_wait_all);
