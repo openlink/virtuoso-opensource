@@ -999,7 +999,7 @@ SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *ve
         continue;
       if ((prev->sparpv_verb_lexem_type != verb_lexem_type) ||
         strcmp (prev->sparpv_verb_lexem_text, verb_lexem_text) )
-        spar_error ("Variables ?%.200s %s %s?%.200s%s and ?%.200s %s %s?%.200s%s are written different ways but may mean the same; remove this ambiguity",
+        spar_error (sparp, "Variables ?%.200s %s %s?%.200s%s and ?%.200s %s %s?%.200s%s are written different ways but may mean the same; remove this ambiguity",
         lvar->_.var.vname, optext,
         ((Q_IRI_REF == verb_lexem_type) ? "<" : ""), verb_lexem_text,
         ((Q_IRI_REF == verb_lexem_type) ? ">" : ""),
