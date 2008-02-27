@@ -499,7 +499,7 @@ spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' 'DISTINCT'? ( ( Retcol ( ',
 		sparp_arg->sparp_allow_aggregates_in_expn = 1; }
 	    spar_select_rset spar_dataset_clauses_opt
             spar_where_clause spar_solution_modifier {
-		caddr_t where_gp = spar_gp_finalize (sparp_arg);
+		SPART *where_gp = spar_gp_finalize (sparp_arg);
 		$$ = spar_make_top (sparp_arg, $1, $3, spar_selid_pop (sparp_arg),
 		  where_gp, 
 		  (SPART **)($6[0]), (caddr_t)($6[1]), (caddr_t)($6[2]) );
@@ -525,7 +525,7 @@ spar_construct_query	/* [6]  	ConstructQuery	  ::=  	'CONSTRUCT' ConstructTempla
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
             spar_ctor_template spar_dataset_clauses_opt
 	    spar_where_clause spar_solution_modifier {
-		caddr_t where_gp;
+		SPART *where_gp;
 		where_gp = spar_gp_finalize (sparp_arg);
 		$$ = spar_make_top (sparp_arg, CONSTRUCT_L, NULL,
                   spar_selid_pop (sparp_arg),
@@ -539,7 +539,7 @@ spar_describe_query	/* [7]*	DescribeQuery	 ::=  'DESCRIBE' ( VarOrIRIrefOrBackqu
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
             spar_describe_rset spar_dataset_clauses_opt
 	    spar_where_clause_opt spar_solution_modifier {
-		caddr_t where_gp = spar_gp_finalize (sparp_arg);
+		SPART * where_gp = spar_gp_finalize (sparp_arg);
 		$$ = spar_make_top (sparp_arg, DESCRIBE_L, 
                   $3,
                   spar_selid_pop (sparp_arg),
@@ -559,7 +559,7 @@ spar_ask_query		/* [8]  	AskQuery	  ::=  	'ASK' DatasetClause* WhereClause	*/
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
             spar_dataset_clauses_opt
 	    spar_where_clause {
-		caddr_t where_gp = spar_gp_finalize (sparp_arg);
+		SPART * where_gp = spar_gp_finalize (sparp_arg);
 		$$ = spar_make_top (sparp_arg, ASK_L, (SPART **)t_list(0), spar_selid_pop (sparp_arg),
 		  where_gp, NULL, t_box_num(1), t_box_num(0) ); }
 	;
@@ -679,7 +679,7 @@ spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery
             spar_where_clause spar_solution_modifier
 	    _RBRA {
 		SPART *subselect_top;
-		caddr_t where_gp;
+		SPART *where_gp;
 		where_gp = spar_gp_finalize (sparp_arg);
 		subselect_top = spar_make_top (sparp_arg,
 		  $1, $3, spar_selid_pop (sparp_arg), where_gp, 
@@ -938,7 +938,7 @@ spar_var		/* [41]*	Var	 ::=  VAR1 | VAR2 | GlobalVar | ( Var ( '+>' | '*>' ) IRI
 	: QUEST_VARNAME			{ $$ = spar_make_variable (sparp_arg, $1); }
 	| DOLLAR_VARNAME		{ $$ = spar_make_variable (sparp_arg, $1); }
 	| spar_global_var		{ $$ = $1; }
-	| spar_var spar_arrow_iriref	{ $$ = spar_add_propvariable (sparp_arg, $1, $2[0], $2[1], (ptrlong)($2[2]), (caddr_t)($2[3]) ); }
+	| spar_var spar_arrow_iriref	{ $$ = spar_add_propvariable (sparp_arg, $1, (ptrlong)($2[0]), $2[1], (ptrlong)($2[2]), (caddr_t)($2[3]) ); }
 	;
 
 spar_global_var		/* [Virt]	GlobalVar	 ::=  QUEST_COLON_PARAMNAME | DOLLAR_COLON_PARAMNAME | QUEST_COLON_PARAMNUM | DOLLAR_COLON_PARAMNUM	*/
@@ -956,7 +956,7 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 	| _MINUS spar_numeric_literal	{ $$ = $2; spar_change_sign (&($2->_.lit.val)); }
         | spar_boolean_literal		{ $$ = $1; }
         | spar_blank_node		{ $$ = $1; }
-	| NIL_L				{ $$ = t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"); }
+	| NIL_L				{ $$ = (SPART *)t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"); }
 	| spar_backquoted
 	;
 
@@ -1028,7 +1028,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
 	    spar_where_clause
 	    _RPAR {
 		SPART *subselect_top;
-		caddr_t where_gp;
+		SPART *where_gp;
 		where_gp = spar_gp_finalize (sparp_arg);
 		subselect_top = spar_make_top (sparp_arg, ASK_L, (SPART **)t_list(0), spar_selid_pop (sparp_arg),
 		  where_gp, NULL, t_box_num(1), t_box_num(0) );
@@ -1043,7 +1043,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	*/
             spar_where_clause spar_solution_modifier
 	    _RPAR {
 		SPART *subselect_top;
-		caddr_t where_gp;
+		SPART *where_gp;
 		where_gp = spar_gp_finalize (sparp_arg);
 		subselect_top = spar_make_top (sparp_arg,
 		  $2, $4, spar_selid_pop (sparp_arg), where_gp, 
@@ -1159,15 +1159,15 @@ spar_arrow
 
 spar_arrow_iriref
 	: spar_arrow Q_IRI_REF	{
-		$$ = t_list ( 4, $1,
+		$$ = (SPART **) t_list ( 4, $1,
 		  spartlist (sparp_arg, 2, SPAR_QNAME, sparp_expand_q_iri_ref (sparp_arg, $2)),
 		  Q_IRI_REF, $2); }
 	| spar_arrow QNAME {
-		$$ = t_list ( 4, $1,
+		$$ = (SPART **) t_list ( 4, $1,
 		  spartlist (sparp_arg, 2, SPAR_QNAME, sparp_expand_qname_prefix (sparp_arg, $2)),
 		  QNAME, $2); }
 	| spar_arrow QNAME_NS {
-		$$ = t_list ( 4, $1,
+		$$ = (SPART **) t_list ( 4, $1,
 		  spartlist (sparp_arg, 2, SPAR_QNAME, sparp_expand_qname_prefix (sparp_arg, $2)),
 		  QNAME_NS, $2); }
 	| spar_arrow error { sparyyerror ("IRI reference expected after *> or +> operator"); }
@@ -1269,7 +1269,7 @@ spar_sparul_drop	/* [DML]*	DropAction	 ::=  'DROP' 'SILENT'? ( 'GRAPH' ( 'IDENTI
 spar_action_solution
 	: /* empty */ { $$ = spar_make_fake_action_solution (sparp_arg); }
 	| spar_dataset_clauses_opt spar_where_clause spar_solution_modifier {
-		caddr_t where_gp = spar_gp_finalize (sparp_arg);
+		SPART *where_gp = spar_gp_finalize (sparp_arg);
 		$$ = (SPART **)t_list (4, 
 		  where_gp, (SPART **)($3[0]), (caddr_t)($3[1]), (caddr_t)($3[2]) ); }
 	;
@@ -1451,7 +1451,7 @@ spar_qm_literal_class_option	/* [Virt]	QmLiteralClassOption	 ::=  */
 	| BIJECTION_L		{			/*... | 'BIJECTION'	*/
 		$$ = t_list (2, t_box_dv_uname_string ("BIJECTION"), (ptrlong)1); }
 	| DEREF_L		{			/*... | 'DEREF'	*/
-		$$ = (SPART **)t_list (2, t_box_dv_uname_string ("DEREF"), (ptrlong)1); }
+		$$ = t_list (2, t_box_dv_uname_string ("DEREF"), (ptrlong)1); }
 	| RETURNS_L spar_qm_sprintff_list	{			/*... | 'RETURNS' STRING ('UNION' STRING)*	*/
 		$$ = t_list (2, t_box_dv_uname_string ("RETURNS"),
 		    spar_make_vector_qm_sql (sparp_arg, (SPART **)t_revlist_to_array ($2)) ); }
@@ -1859,8 +1859,8 @@ spar_qm_sqltype		/* [Virt]	QmSqltype	 ::=  QmSqlId ( 'NOT' 'NULL' )?	*/
 	;
 
 spar_qm_sql_in_out_inout	/* ::=  ('IN' | QmSqlId)	*/
-	: IN_L			{ $$ = t_box_dv_uname_string ("in"); }
-	| spar_qm_sql_id	{ $$ = t_box_dv_uname_string ($1); }
+	: IN_L			{ $$ = (SPART *) t_box_dv_uname_string ("in"); }
+	| spar_qm_sql_id	{ $$ = (SPART *) t_box_dv_uname_string ($1); }
 	;
 
 spar_qm_sqlcol		/* [Virt]	QmSqlCol	 ::=  QmSqlId | spar_qm_sql_id	*/

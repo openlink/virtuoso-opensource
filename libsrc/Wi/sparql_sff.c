@@ -765,7 +765,7 @@ sparp_rvr_intersect_sprintffs (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *i
 {
   int old_len = rvr->rvrSprintffCount;
   int max_reslen, old_ctr, isect_ctr, res_ctr, res_count, res_buf_len, oldsize;
-  ccaddr_t *res = sparp->sparp_sprintff_isect_buf;
+  caddr_t *res = sparp->sparp_sprintff_isect_buf;
   max_reslen = old_len * isect_count;
   if (0 == max_reslen)
     {

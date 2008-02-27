@@ -3102,7 +3102,7 @@ int64_serialize_client (caddr_t n1, dk_session_t * session)
     {
       NUMERIC_VAR(tnum);
       numeric_from_int64 ((numeric_t)&tnum, n);
-      numeric_serialize_client ((numeric_t)&tnum, session);
+      numeric_serialize_client ((caddr_t)&tnum, session);
     }
   else
     {

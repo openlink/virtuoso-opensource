@@ -424,6 +424,7 @@ caddr_t buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, lon
 	      cli_stmt_t * err_stmt, int inprocess);
 caddr_t stmt_param_place_ptr ( parm_binding_t * pb, int nth, cli_stmt_t * stmt, SQLULEN length );
 SQLULEN sqlc_sizeof (int sqlc, SQLULEN deflt);
+SQLCHAR * stmt_convert_brace_escapes (SQLCHAR * statement_text, SQLINTEGER * newCB);
 void stmt_free_current_rows (cli_stmt_t * stmt);
 
 SQLLEN col_desc_get_display_size (col_desc_t *cd, int cli_binary_timestamp);

@@ -940,7 +940,7 @@ st_collect_ps_info (dk_set_t * arr)
 	      id_hash_iterator (&it, cli->cli_statements);
 	      while (hit_next (&it, (char **) & text, (char **) & stmt))
 		{
-		  caddr_t * inst = (*stmt)->sst_inst;
+		  caddr_t * inst = (caddr_t *) (*stmt)->sst_inst;
 		  if ((*stmt)->sst_start_msec && inst && (*stmt)->sst_query)
 		    {
 		      dk_set_push (arr, box_string ((*stmt)->sst_query->qr_text));

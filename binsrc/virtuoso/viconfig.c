@@ -1445,7 +1445,7 @@ new_cfg_set_checkpoint_interval (int32 f)
       return;
     }
 
-  sprintf(valbuf, "%ld", f);
+  sprintf(valbuf, "%ld", (long) f);
   cfg_write (pconfig1, "Parameters", "CheckpointInterval", valbuf);
   cfg_commit (pconfig1);
   cfg_done (pconfig1);
@@ -1714,7 +1714,8 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
   c_stripes = NULL;
   if (c_striping)
     {
-      int indx, nsegs;
+      int indx;
+      int nsegs;
       disk_segment_t *seg;
       disk_stripe_t *dst;
       char *segszstr;
@@ -1742,7 +1743,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	      char buf[1024];
 	      c_stripe_growth_ratio_sz[sz_len - 1] = 0;
 	      c_stripe_growth_ratio = atol (c_stripe_growth_ratio_sz);
-	      sprintf (buf, "%ld", c_stripe_growth_ratio);
+	      sprintf (buf, "%ld", (long) c_stripe_growth_ratio);
 	      if (strcmp (c_stripe_growth_ratio_sz, buf))
 		goto growth_ratio_format_err;
 	    }

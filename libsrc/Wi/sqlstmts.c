@@ -318,7 +318,7 @@ sqlc_insert_autoincrements (sql_comp_t * sc, insert_node_t * ins,
 		    col->col_defined_in->tb_name, col->col_name);
 		seq_name = box_dv_short_string (temp);
 		args = (state_slot_t **) sc_list (3, ssl_new_constant (sc->sc_cc, seq_name), old_sl, 
-		    ssl_new_constant (sc->sc_cc, 1));
+		    ssl_new_constant (sc->sc_cc, (caddr_t) (ptrlong) 1));
 		snext = t_sqlp_box_id_upcase ("sequence_set");
 		cv_call (code, NULL, snext, NULL, args);
 		if (inc_by)

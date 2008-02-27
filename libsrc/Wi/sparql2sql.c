@@ -881,7 +881,7 @@ sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
     }
 cannot_optimize:
 /* The very natural default is to say 'cannot optimize' and escape */
-  ctx->bofc_var_sample = (ptrlong)1;
+  ctx->bofc_var_sample = (SPART*)(ptrlong)1;
   return 1;
 }
 

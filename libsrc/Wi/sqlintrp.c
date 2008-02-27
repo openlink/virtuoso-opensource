@@ -1350,11 +1350,11 @@ box_err_print_box (caddr_t param_value, int call_depth)
     case DV_RDF:
       {
         rdf_bigbox_t *rbb = (rdf_bigbox_t *)param_value;
-        caddr_t *printed_rb_box = box_err_print_box (rbb->rbb_base.rb_box, call_depth+1);
+        caddr_t printed_rb_box = box_err_print_box (rbb->rbb_base.rb_box, call_depth+1);
         caddr_t res;
         if (rbb->rbb_base.rb_chksum_tail)
           {
-            caddr_t *printed_rbb_chksum = box_err_print_box (rbb->rbb_chksum, call_depth+1);
+            caddr_t printed_rbb_chksum = box_err_print_box (rbb->rbb_chksum, call_depth+1);
             res = box_sprintf (500, "rdf_box (%.300s, %d, %d, %d, %d, %.50s, %d)",
               printed_rb_box, (int)(rbb->rbb_base.rb_type), (int)(rbb->rbb_base.rb_lang),
               (int)(rbb->rbb_base.rb_ro_id), (int)(rbb->rbb_base.rb_is_complete),

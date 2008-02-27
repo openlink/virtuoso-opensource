@@ -1284,7 +1284,7 @@ boxint
 rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret)
 {
   int rc;
-  caddr_t log_array, old_repl;
+  caddr_t log_array, *old_repl;
   du_thread_t * self = THREAD_CURRENT_THREAD;
   static caddr_t iri_seq[N_IRI_SEQS];
   static caddr_t iri_seq_max[N_IRI_SEQS];
@@ -1590,7 +1590,7 @@ iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret)
 {
   query_instance_t * qi = (query_instance_t *) qst;
   caddr_t box_to_delete = NULL;
-  caddr_t res;
+  caddr_t res = NULL;
   dtp_t dtp = DV_TYPE_OF (name);
   err_ret[0] = NULL;
   switch (dtp)
@@ -1974,7 +1974,7 @@ rdf_obj_ft_get_rule_count_ptr (iri_id_t g_id)
   if (NULL == res)
     {
       ptrlong ctr = 0;
-      res = id_hash_add_new (rdf_obj_ft_graph_rule_counts, (caddr_t)(&g_id_int), (caddr_t)(&ctr));
+      res = (ptrlong *) id_hash_add_new (rdf_obj_ft_graph_rule_counts, (caddr_t)(&g_id_int), (caddr_t)(&ctr));
     }
   return res;
 }

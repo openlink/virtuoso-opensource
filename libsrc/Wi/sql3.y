@@ -2731,9 +2731,9 @@ literal
 	| IRI_LIT
 	| NULLX		{ $$ = (caddr_t) t_NULLCONST; }
 	| __TAG_L OF data_type { $$ = ((caddr_t *)$3)[0]; }
-	| __TAG_L OF XML { $$ = DV_XML_ENTITY; }
-	| __TAG_L OF RDF_BOX_L { $$ = DV_RDF; }
-	| __TAG_L OF VECTOR_L { $$ = DV_ARRAY_OF_POINTER; }
+	| __TAG_L OF XML { $$ = (caddr_t) DV_XML_ENTITY; }
+	| __TAG_L OF RDF_BOX_L { $$ = (caddr_t) DV_RDF; }
+	| __TAG_L OF VECTOR_L { $$ = (caddr_t) DV_ARRAY_OF_POINTER; }
 	;
 
 signed_literal

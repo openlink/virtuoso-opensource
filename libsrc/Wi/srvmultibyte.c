@@ -57,7 +57,7 @@ WCHAR_TO_CHAR (wchar_t wchar, wcharset_t *charset)
   unsigned char value;
   if (charset && charset != CHARSET_UTF8 && wchar)
     {
-      value = (unsigned char) ((ptrlong) gethash ((void *) wchar, charset->chrs_ht));
+      value = (unsigned char) ((ptrlong) gethash ((void *) (ptrlong) wchar, charset->chrs_ht));
       if (!value)
 	value = '?';
     }

@@ -1142,4 +1142,8 @@ int sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t dat
 
 void ri_outer_output (rdf_inf_pre_node_t * ri, state_slot_t * any_flag, caddr_t * inst);
 
+void rdf_core_init (void);
+void sparql_init (void);
+
+
 #endif /* _SQLFN_H */

@@ -1012,7 +1012,7 @@ SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *ve
   END_DO_SET();
   if (NULL == curr_pv)
     {
-      curr_pv = t_alloc (sizeof (spar_propvariable_t));
+      curr_pv = (spar_propvariable_t *) t_alloc (sizeof (spar_propvariable_t));
       curr_pv->sparpv_subj_var = lvar;
       curr_pv->sparpv_op = opcode;
       curr_pv->sparpv_verb_qname = verb_qname;
@@ -1059,7 +1059,7 @@ SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *ve
   END_DO_SET();
 
 not_found_in_local_set:
-  t_set_push (&(sparp->sparp_env->spare_propvar_sets->data), curr_pv);
+  t_set_push (&(sparp->sparp_env->spare_propvar_sets->data), (void *) curr_pv);
 
 in_local_set:
   return spar_make_variable (sparp, curr_pv->sparpv_obj_var_name);

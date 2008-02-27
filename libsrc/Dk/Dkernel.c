@@ -2744,6 +2744,8 @@ server_loop (void *arg)
 	  timeout_round (PASS_G NULL);
 	}
     }
+
+  return 0;  /*NOTREACHED*/
 }
 #endif /* NO_THREAD */
 

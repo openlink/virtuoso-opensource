@@ -766,12 +766,12 @@ boxint
 unbox (ccaddr_t box)
 {
   if (!IS_BOX_POINTER (box))
-    return (boxint) box;
+    return (boxint) (ptrlong) box;
 
   if (box_tag (box) == DV_LONG_INT)
     return *(boxint *) box;
 
-  return (boxint) box;
+  return (boxint) (ptrlong) box;
 }
 
 
@@ -802,7 +802,7 @@ int64
 unbox_int64 (ccaddr_t box)
 {
   if (!IS_BOX_POINTER (box))
-    return (int64) box;
+    return (int64) (ptrlong) box;
 
   if (box_tag (box) == DV_LONG_INT)
     return *(boxint*) box;
@@ -814,10 +814,10 @@ box_t DBG_NAME(box_num) (DBG_PARAMS boxint n)
 {
   box_t *box;
   if (!IS_BOXINT_POINTER (n))
-    return (box_t) n;
+    return (box_t) (ptrlong) n;
   box = (box_t *) DBG_NAME(dk_alloc_box) (DBG_ARGS sizeof (boxint), DV_LONG_INT);
   *(boxint *)box = n;
-  return (box_t) box;
+  return (box_t) (ptrlong) box;
 }
 
 
@@ -825,7 +825,7 @@ box_t DBG_NAME(box_num_nonull) (DBG_PARAMS boxint n)
 {
   box_t *box;
   if (n && !IS_BOXINT_POINTER (n))
-    return (box_t) n;
+    return (box_t) (ptrlong) n;
   box = (box_t *) DBG_NAME(dk_alloc_box) (DBG_ARGS sizeof (boxint), DV_LONG_INT);
   *(boxint *)box = n;
   return (box_t) box;
@@ -1271,7 +1271,7 @@ box_equal (cbox_t b1, cbox_t b2)
   if (!IS_BOX_POINTER (b1))
     {
       b1_tag = DV_LONG_INT;
-      b1_long_val = (boxint) b1;
+      b1_long_val = (boxint) (ptrlong) b1;
     }
   else
     {
@@ -1283,7 +1283,7 @@ box_equal (cbox_t b1, cbox_t b2)
   if (!IS_BOX_POINTER (b2))
     {
       b2_tag = DV_LONG_INT;
-      b2_long_val = (boxint) b2;
+      b2_long_val = (boxint) (ptrlong) b2;
     }
   else
     {

@@ -1070,42 +1070,53 @@ rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, cons
     }
   else if (DV_RDF == val_dtp)
     {
-      rdf_bigbox_t *rbb = (rdf_bigbox_t *)val;
+      rdf_bigbox_t *rbb = (rdf_bigbox_t *) val;
       caddr_t subbox = NULL;
       caddr_t res;
 #define SER_VEC_SZ (5 * sizeof (caddr_t))
-      char buf [6 * sizeof (caddr_t) + BOX_AUTO_OVERHEAD];
+      char buf[6 * sizeof (caddr_t) + BOX_AUTO_OVERHEAD];
       caddr_t *ser_vec;
-      BOX_AUTO (ser_vec, buf, ((rbb->rbb_base.rb_chksum_tail ? 6 : 5) * sizeof (caddr_t)), DV_ARRAY_OF_POINTER);
+      caddr_t ptmp;
+
+      BOX_AUTO (ptmp, buf, ((rbb->rbb_base.rb_chksum_tail ? 6 : 5) * sizeof (caddr_t)), DV_ARRAY_OF_POINTER);
+      ser_vec = (caddr_t *) ptmp;
+
       subbox = rbb->rbb_base.rb_box;
       if ((rbb->rbb_base.rb_is_complete) &&
         (0 != rbb->rbb_base.rb_ro_id) &&
         (DV_STRING == DV_TYPE_OF (rbb->rbb_base.rb_box)) &&
-        (1024 > box_length (rbb->rbb_base.rb_box)) )
+	  (1024 > box_length (rbb->rbb_base.rb_box)))
         {
           subbox = box_dv_short_nchars (rbb->rbb_base.rb_box, 1023);
         }
+
       ser_vec[0] = subbox;
-      ser_vec[1] = rbb->rbb_base.rb_type;
-      ser_vec[2] = rbb->rbb_base.rb_lang;
+      ser_vec[1] = (caddr_t) (ptrlong) rbb->rbb_base.rb_type;
+      ser_vec[2] = (caddr_t) (ptrlong) rbb->rbb_base.rb_lang;
+
       if (subbox == rbb->rbb_base.rb_box)
         {
-          ser_vec[3] = rbb->rbb_base.rb_is_complete;
-          ser_vec[4] = 0;
+	  ser_vec[3] = (caddr_t) (ptrlong) rbb->rbb_base.rb_is_complete;
+	  ser_vec[4] = (caddr_t) (ptrlong) 0;
         }
       else
         {
-          ser_vec[3] = 0;
+	  ser_vec[3] = (caddr_t) (ptrlong) 0;
           ser_vec[4] = box_num (rbb->rbb_base.rb_ro_id);
         }
       if (rbb->rbb_base.rb_chksum_tail)
-        ser_vec[5] = rbb->rbb_chksum;
+	ser_vec[5] = (caddr_t) rbb->rbb_chksum;
+
       res = print_object_to_new_string (ser_vec, fun_name, err_ret);
+
       if (subbox != rbb->rbb_base.rb_box)
         dk_free_box (subbox);
+
       BOX_DONE (ser_vec, buf);
+
       return res;
     }
+
   return print_object_to_new_string (val, fun_name, err_ret);
 }
 

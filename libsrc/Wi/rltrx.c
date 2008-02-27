@@ -1465,7 +1465,7 @@ lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret)
   mutex_leave (&lt->lt_locks_mtx);
   if (max > main_bufs / 4)
     {
-      buf_sort ((buffer_desc_t *)arr, fill, (sort_key_func_t)pl_page_key);
+      buf_sort ((buffer_desc_t **)arr, fill, (sort_key_func_t)pl_page_key);
     }
   *fill_ret = fill;
   return arr;

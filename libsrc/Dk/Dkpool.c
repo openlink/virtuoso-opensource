@@ -314,7 +314,7 @@ caddr_t DBG_NAME(mp_box_dv_uname_string) (DBG_PARAMS mem_pool_t * mp, const char
   if (gethash (box, mp->mp_unames))
     dk_free_box (box); /* free extra copy */
   else
-    sethash (box, mp->mp_unames, (ptrlong)1);
+    sethash (box, mp->mp_unames, (void *) (ptrlong) 1);
 #endif
   return box;
 }
@@ -342,7 +342,7 @@ DBG_NAME(mp_box_dv_uname_nchars) (DBG_PARAMS mem_pool_t * mp, const char *buf, s
   if (gethash (box, mp->mp_unames))
     dk_free_box (box); /* free extra copy */
   else
-    sethash (box, mp->mp_unames, (ptrlong)1);
+    sethash (box, mp->mp_unames, (void *) (ptrlong) 1);
 #endif
   return box;
 }
@@ -367,7 +367,7 @@ caddr_t DBG_NAME(mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
           ptrlong qchk = ((len > 0) ? (box[0] | len) : 1);
           sethash (box_copy (box), mp->mp_unames, qchk);
 #else
-          sethash (box_copy (box), mp->mp_unames, 1);
+	  sethash (box_copy (box), mp->mp_unames, (void *) (ptrlong) 1);
 #endif
         }
       return box;
@@ -416,7 +416,7 @@ caddr_t DBG_NAME(mp_box_copy_tree) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
           ptrlong qchk = ((len > 0) ? (box[0] | len) : 1);
           sethash (box_copy (box), mp->mp_unames, qchk);
 #else
-          sethash (box_copy (box), mp->mp_unames, 1);
+	  sethash (box_copy (box), mp->mp_unames, (void *) (ptrlong) 1);
 #endif
         }
       return box;
@@ -442,7 +442,7 @@ caddr_t DBG_NAME(mp_full_box_copy_tree) (DBG_PARAMS mem_pool_t * mp, caddr_t box
           ptrlong qchk = ((len > 0) ? (box[0] | len) : 1);
           sethash (box_copy (box), mp->mp_unames, qchk);
 #else
-          sethash (box_copy (box), mp->mp_unames, 1);
+	  sethash (box_copy (box), mp->mp_unames, (void *) (ptrlong) 1);
 #endif
         }
       return box;
@@ -496,7 +496,7 @@ caddr_t DBG_NAME(t_box_num) (DBG_PARAMS boxint n)
   box_t *box;
 
   if (!IS_BOXINT_POINTER (n))
-    return (box_t) n;
+    return (box_t) (ptrlong) n;
 
   box = (box_t *) DBG_T_ALLOC_BOX (sizeof (boxint), DV_LONG_INT);
   *(boxint *)box = n;
@@ -509,7 +509,7 @@ caddr_t DBG_NAME(t_box_num_and_zero) (DBG_PARAMS boxint n)
   box_t *box;
 
   if (!IS_BOXINT_POINTER (n) && n != 0)
-    return (box_t) n;
+    return (box_t) (ptrlong) n;
 
   box = (box_t *) DBG_T_ALLOC_BOX (sizeof (boxint), DV_LONG_INT);
   *(boxint *)box =  n;
