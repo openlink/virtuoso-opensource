@@ -904,7 +904,7 @@ void PrpcSetInprocessHooks (void * (*enter) (dk_session_t *ses), void (*leave) (
 #  ifndef NO_THREAD
 typedef struct ssl_ctx_info_s
 {
-  long *ssci_depth_ptr;
+  int32 *ssci_depth_ptr;
   char *ssci_name_ptr;
 } ssl_ctx_info_t;
 int ssl_cert_verify_callback (int ok, void *ctx);

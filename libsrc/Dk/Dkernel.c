@@ -74,8 +74,8 @@ static int ssl_server_accept (dk_session_t *listen, dk_session_t *ses);
 static unsigned int ssl_server_port = 0;
 #endif
 static SSL_CTX *ssl_server_ctx = NULL;
-long ssl_server_verify = 0;
-long ssl_server_verify_depth = 0;
+int32 ssl_server_verify = 0;
+int32 ssl_server_verify_depth = 0;
 char *ssl_server_verify_file = NULL;
 #endif
 

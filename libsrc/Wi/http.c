@@ -7079,7 +7079,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
     {
       int i = 0, session_id_context = 2;
       ssl_ctx_info_t * https_callback_info = (ssl_ctx_info_t *) dk_alloc (sizeof(ssl_ctx_info_t));
-      long * https_cvdepth_ptr =  (long *) dk_alloc (sizeof (long));
+      int32 * https_cvdepth_ptr =  (int32 *) dk_alloc (sizeof (int32));
       STACK_OF(X509_NAME) *skCAList = SSL_load_client_CA_file (https_cvfile);
       SSL_CTX_set_verify (ssl_ctx,
 	  SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE,

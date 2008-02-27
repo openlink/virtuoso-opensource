@@ -114,16 +114,16 @@ extern char *www_maintenance_page;
 extern char *https_port;
 extern char *https_cert;
 extern char *https_key;
-extern long https_client_verify;
-extern long https_client_verify_depth;
+extern int32 https_client_verify;
+extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;
 extern char * https_client_verify_crl_file;
 
 extern char *c_ssl_server_port;
 extern char *c_ssl_server_cert;
 extern char *c_ssl_server_key;
-extern long ssl_server_verify;
-extern long ssl_server_verify_depth;
+extern int32 ssl_server_verify;
+extern int32 ssl_server_verify_depth;
 extern char *ssl_server_verify_file;
 #endif
 extern int spotlight_integration;
