@@ -275,7 +275,7 @@ static void wlex_font_pop()
     }
   STATE(wlex_font)[FONT_STACK_SZ-1] = 0;
 }
-;
+
   
 
 static void wlex_headerlevel(int newlevel)
