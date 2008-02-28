@@ -1359,7 +1359,7 @@ res_complete:
     dk_free_box (buffer);
   return res;
 }
-;
+
 
 /*! URI expander according RFC 1808 recommendations */
 static caddr_t

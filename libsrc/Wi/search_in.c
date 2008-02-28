@@ -167,196 +167,196 @@ db_buf_t page = buf->bd_buffer; \
 }
 
 
-CMPF_HEADER (intn);
-INTK_NN (0, 0, lt, gt); 
-CMPF_END;
+CMPF_HEADER (intn)
+INTK_NN (0, 0, lt, gt)
+CMPF_END
 
-CMPF_HEADER (intn_intn);
-INTK_NN (0, 0, lt, gt); 
-INTK_NN (4, 1, lt, gt); 
-CMPF_END;
-
-
-CMPF_HEADER (intn_intn_intn);
-INTK_NN (0, 0, lt, gt); 
-INTK_NN (4, 1, lt, gt); 
-INTK_NN (8, 2, lt, gt); 
-CMPF_END;
+CMPF_HEADER (intn_intn)
+INTK_NN (0, 0, lt, gt)
+INTK_NN (4, 1, lt, gt)
+CMPF_END
 
 
-CMPF_HEADER (intn_intn_intn_intn);
-INTK_NN (0, 0, lt, gt); 
-INTK_NN (4, 1, lt, gt); 
-INTK_NN (8, 2, lt, gt); 
-INTK_NN (12, 3, lt, gt); 
-CMPF_END;
+CMPF_HEADER (intn_intn_intn)
+INTK_NN (0, 0, lt, gt)
+INTK_NN (4, 1, lt, gt)
+INTK_NN (8, 2, lt, gt)
+CMPF_END
 
 
-
-
-CMPF_HEADER (strn);
-STRK_NN (0, 0, lt, gt); 
-CMPF_END;
-
-
-CMPF_HEADER (strn_intn);
-STRK_NN (0, 0, lt, gt); 
-INTK_NN (0, 1, lt, gt);
-CMPF_END;
+CMPF_HEADER (intn_intn_intn_intn)
+INTK_NN (0, 0, lt, gt)
+INTK_NN (4, 1, lt, gt)
+INTK_NN (8, 2, lt, gt)
+INTK_NN (12, 3, lt, gt)
+CMPF_END
 
 
 
-CMPF_HEADER (strn_intn_lte);
-STRK_NN (0, 0, lt, gt); 
-INTK_NN (0, 1, match, gt);
+
+CMPF_HEADER (strn)
+STRK_NN (0, 0, lt, gt)
+CMPF_END
+
+
+CMPF_HEADER (strn_intn)
+STRK_NN (0, 0, lt, gt)
+INTK_NN (0, 1, lt, gt)
+CMPF_END
+
+
+
+CMPF_HEADER (strn_intn_lte)
+STRK_NN (0, 0, lt, gt)
+INTK_NN (0, 1, match, gt)
 	 match:
-CMPF_END;
+CMPF_END
 
 
 
-CMPF_HEADER (irin_irin_anyn_irin);
-IRIK_NN (0, 0, lt, gt);
-IRIK_NN (4, 1, lt, gt);
-ANYK_NN (0, 2, lt, gt); 
-IRIK_NN (8, 3, lt, gt);
-CMPF_END;
+CMPF_HEADER (irin_irin_anyn_irin)
+IRIK_NN (0, 0, lt, gt)
+IRIK_NN (4, 1, lt, gt)
+ANYK_NN (0, 2, lt, gt)
+IRIK_NN (8, 3, lt, gt)
+CMPF_END
 
 
 
-CMPF_HEADER (irin_irin_anyn_irin_lte);
-IRIK_NN (0, 0, lt, gt);
-IRIK_NN (4, 1, lt, gt);
-ANYK_NN (0, 2, lt, gt); 
-IRIK_NN (8, 3, match, gt);
+CMPF_HEADER (irin_irin_anyn_irin_lte)
+IRIK_NN (0, 0, lt, gt)
+IRIK_NN (4, 1, lt, gt)
+ANYK_NN (0, 2, lt, gt)
+IRIK_NN (8, 3, match, gt)
 match:
-CMPF_END;
+CMPF_END
 
-CMPF_HEADER (irin_irin_anyn);
-IRIK_NN (0, 0, lt, gt);
-IRIK_NN (4, 1, lt, gt);
-ANYK_NN (0, 2, lt, gt); 
-CMPF_END;
-
-
-
-CMPF_HEADER (irin_irin_irin_anyn);
-IRIK_NN (0, 0, lt, gt);
-IRIK_NN (4, 1, lt, gt);
-IRIK_NN (8, 2, lt, gt);
-ANYK_NN (0, 3, lt, gt); 
-CMPF_END;
+CMPF_HEADER (irin_irin_anyn)
+IRIK_NN (0, 0, lt, gt)
+IRIK_NN (4, 1, lt, gt)
+ANYK_NN (0, 2, lt, gt)
+CMPF_END
 
 
-CMPF_HEADER (irin_irin_irin);
-IRIK_NN (0, 0, lt, gt);
-IRIK_NN (4, 1, lt, gt);
-IRIK_NN (8, 2, lt, gt);
-CMPF_END;
 
-CMPF_HEADER (irin_irin);
-IRIK_NN (0, 0, lt, gt);
-IRIK_NN (4, 1, lt, gt);
-CMPF_END;
+CMPF_HEADER (irin_irin_irin_anyn)
+IRIK_NN (0, 0, lt, gt)
+IRIK_NN (4, 1, lt, gt)
+IRIK_NN (8, 2, lt, gt)
+ANYK_NN (0, 3, lt, gt)
+CMPF_END
 
 
-CMPF_HEADER (irin);
-IRIK_NN (0, 0, lt, gt);
-CMPF_END;
+CMPF_HEADER (irin_irin_irin)
+IRIK_NN (0, 0, lt, gt)
+IRIK_NN (4, 1, lt, gt)
+IRIK_NN (8, 2, lt, gt)
+CMPF_END
+
+CMPF_HEADER (irin_irin)
+IRIK_NN (0, 0, lt, gt)
+IRIK_NN (4, 1, lt, gt)
+CMPF_END
+
+
+CMPF_HEADER (irin)
+IRIK_NN (0, 0, lt, gt)
+CMPF_END
 
 
 
 
 /* 64 bit versions of the above */
 
-CMPF_HEADER (int64n);
-INT64K_NN (0, 0, lt, gt); 
-CMPF_END;
+CMPF_HEADER (int64n)
+INT64K_NN (0, 0, lt, gt)
+CMPF_END
 
-CMPF_HEADER (int64n_int64n);
-INT64K_NN (0, 0, lt, gt); 
-INT64K_NN (8, 1, lt, gt); 
-CMPF_END;
-
-
-CMPF_HEADER (int64n_int64n_int64n);
-INT64K_NN (0, 0, lt, gt); 
-INT64K_NN (8, 1, lt, gt); 
-INT64K_NN (16, 2, lt, gt); 
-CMPF_END;
+CMPF_HEADER (int64n_int64n)
+INT64K_NN (0, 0, lt, gt)
+INT64K_NN (8, 1, lt, gt)
+CMPF_END
 
 
-CMPF_HEADER (int64n_int64n_int64n_int64n);
-INT64K_NN (0, 0, lt, gt); 
-INT64K_NN (8, 1, lt, gt); 
-INT64K_NN (16, 2, lt, gt); 
-INT64K_NN (24, 3, lt, gt); 
-CMPF_END;
+CMPF_HEADER (int64n_int64n_int64n)
+INT64K_NN (0, 0, lt, gt)
+INT64K_NN (8, 1, lt, gt)
+INT64K_NN (16, 2, lt, gt)
+CMPF_END
 
 
-
-CMPF_HEADER (strn_int64n);
-STRK_NN (0, 0, lt, gt); 
-INT64K_NN (0, 1, lt, gt);
-CMPF_END;
+CMPF_HEADER (int64n_int64n_int64n_int64n)
+INT64K_NN (0, 0, lt, gt)
+INT64K_NN (8, 1, lt, gt)
+INT64K_NN (16, 2, lt, gt)
+INT64K_NN (24, 3, lt, gt)
+CMPF_END
 
 
 
-CMPF_HEADER (strn_int64n_lte);
-STRK_NN (0, 0, lt, gt); 
-INT64K_NN (0, 1, match, gt);
+CMPF_HEADER (strn_int64n)
+STRK_NN (0, 0, lt, gt)
+INT64K_NN (0, 1, lt, gt)
+CMPF_END
+
+
+
+CMPF_HEADER (strn_int64n_lte)
+STRK_NN (0, 0, lt, gt)
+INT64K_NN (0, 1, match, gt)
 	 match:
-CMPF_END;
+CMPF_END
 
 
 
-CMPF_HEADER (iri64n_iri64n_anyn_iri64n);
-IRI64K_NN (0, 0, lt, gt);
-IRI64K_NN (8, 1, lt, gt);
-ANYK_NN (0, 2, lt, gt); 
-IRI64K_NN (16, 3, lt, gt);
-CMPF_END;
+CMPF_HEADER (iri64n_iri64n_anyn_iri64n)
+IRI64K_NN (0, 0, lt, gt)
+IRI64K_NN (8, 1, lt, gt)
+ANYK_NN (0, 2, lt, gt)
+IRI64K_NN (16, 3, lt, gt)
+CMPF_END
 
 
 
-CMPF_HEADER (iri64n_iri64n_anyn_iri64n_lte);
-IRI64K_NN (0, 0, lt, gt);
-IRI64K_NN (8, 1, lt, gt);
-ANYK_NN (0, 2, lt, gt); 
-IRI64K_NN (16, 3, match, gt);
+CMPF_HEADER (iri64n_iri64n_anyn_iri64n_lte)
+IRI64K_NN (0, 0, lt, gt)
+IRI64K_NN (8, 1, lt, gt)
+ANYK_NN (0, 2, lt, gt)
+IRI64K_NN (16, 3, match, gt)
 match:
-CMPF_END;
+CMPF_END
 
-CMPF_HEADER (iri64n_iri64n_anyn);
-IRI64K_NN (0, 0, lt, gt);
-IRI64K_NN (8, 1, lt, gt);
-ANYK_NN (0, 2, lt, gt); 
-CMPF_END;
-
-
-
-CMPF_HEADER (iri64n_iri64n_iri64n_anyn);
-IRI64K_NN (0, 0, lt, gt);
-IRI64K_NN (8, 1, lt, gt);
-IRI64K_NN (16, 2, lt, gt);
-ANYK_NN (0, 3, lt, gt); 
-CMPF_END;
+CMPF_HEADER (iri64n_iri64n_anyn)
+IRI64K_NN (0, 0, lt, gt)
+IRI64K_NN (8, 1, lt, gt)
+ANYK_NN (0, 2, lt, gt)
+CMPF_END
 
 
-CMPF_HEADER (iri64n_iri64n_iri64n);
-IRI64K_NN (0, 0, lt, gt);
-IRI64K_NN (8, 1, lt, gt);
-IRI64K_NN (16, 2, lt, gt);
-CMPF_END;
 
-CMPF_HEADER (iri64n_iri64n);
-IRI64K_NN (0, 0, lt, gt);
-IRI64K_NN (8, 1, lt, gt);
-CMPF_END;
+CMPF_HEADER (iri64n_iri64n_iri64n_anyn)
+IRI64K_NN (0, 0, lt, gt)
+IRI64K_NN (8, 1, lt, gt)
+IRI64K_NN (16, 2, lt, gt)
+ANYK_NN (0, 3, lt, gt)
+CMPF_END
 
 
-CMPF_HEADER (iri64n);
-IRI64K_NN (0, 0, lt, gt);
-CMPF_END;
+CMPF_HEADER (iri64n_iri64n_iri64n)
+IRI64K_NN (0, 0, lt, gt)
+IRI64K_NN (8, 1, lt, gt)
+IRI64K_NN (16, 2, lt, gt)
+CMPF_END
+
+CMPF_HEADER (iri64n_iri64n)
+IRI64K_NN (0, 0, lt, gt)
+IRI64K_NN (8, 1, lt, gt)
+CMPF_END
+
+
+CMPF_HEADER (iri64n)
+IRI64K_NN (0, 0, lt, gt)
+CMPF_END
 
 
 

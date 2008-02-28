@@ -198,8 +198,7 @@ static int fd_set_or (fd_set * s1, fd_set * s2);
 static int fd_sets_intersect (fd_set * s1, fd_set * s2);
 #endif
 
-SERVICE_0 (s_sql_cancel, "CANCEL", DA_FUTURE_REQUEST,
-	DV_SEND_NO_ANSWER)
+SERVICE_0 (s_sql_cancel, "CANCEL", DA_FUTURE_REQUEST, DV_SEND_NO_ANSWER)
 
 
 long
@@ -1997,7 +1996,7 @@ sf_inprocess_ep ()
 # endif /* NO_THREAD */
 
 /* Inprocess client entry points */
-SERVICE_0 (s_inprocess_ep, "ICEP", DA_FUTURE_REQUEST, DV_ARRAY_OF_POINTER);
+SERVICE_0 (s_inprocess_ep, "ICEP", DA_FUTURE_REQUEST, DV_ARRAY_OF_POINTER)
 
 #endif /* INPROCESS_CLIENT */
 

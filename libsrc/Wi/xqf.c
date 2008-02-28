@@ -3442,7 +3442,7 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   desc->p_proc (&res, arg, desc->p_opcode);
   return res;
 }
-;
+
 
 caddr_t
 bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
