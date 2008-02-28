@@ -24,35 +24,111 @@
 #  
 #  
 
+
+#
+#  Load functions
+#
 . ./test_fn.sh
 
+
+#
+#  Removing files
+#
+rm -f *.bp
+rm -f *.db
+rm -f *.err
+rm -f *.lck
 rm -f *.log
 rm -f *.out
 rm -f *.output
-rm -f *.vad
-rm -f comp.ok comp.tmp
-rm -f ident.txt audit.txt dump backup.stat
-rm -f core core.* debug.txt ftp_test_file test_file new.ini
-rm -f $DELETEMASK
-rm -rf remote1 remote2 t1 t2 t3 nw1 nw2 nw3 nw4 nw5 
-rm -rf http tproxy rep1 rep2 rep3 xslt wcopy oremote1 oremote2 vspx soap12  
-rm -f txslt.diff vvv?.bp
-rm -f tpc-d/tpcd.output tpc-d/tsqlo.output  
-rm -f virt.odbc t1.xml t2.xml t3.xml t4.xml bpel_temp.sql 
-rm -rf plugins msdtc1 msdtc2 msdtc3 tutorial_test fault1_req fault1 "echo" Flow bpel_audit vad 
+rm -f *.pxa
+rm -f *.r?
+rm -f *.result
+rm -f *.sr?
 rm -f *.svr
-rm -f wierr.rep1 wierr.rep2 wierr.rep3
+rm -f *.tdb
+rm -f *.trx
+
+rm -f audit.txt
+rm -f backup.stat
+rm -f bpel4ws_dev.vad
+rm -f bpel4ws.vad
+rm -f bpel_filesystem.vad
+rm -f bpel_temp.sql
+rm -f comp.ok
+rm -f comp.tmp
+rm -f core
+rm -f core.*
+rm -f debug.txt
+rm -f $DELETEMASK
+rm -f dump
+rm -f ftp_test_file
+rm -f ident.txt
+rm -f new.ini
 rm -f noise.txt
+rm -f results.xml
+rm -f srv_errors.txt
 rm -f $SRVMSGLOGFILE
-rm -rf classlib
+rm -f t1.xml
+rm -f t2.xml
+rm -f t3.xml
+rm -f t4.xml
 rm -f tdav_meta_rdf_checks.sql
+rm -f test_file
+rm -f test.xa
+rm -f tpc-d/tpcd.output
+rm -f tpc-d/tsqlo.output
+rm -f t.xsl
+rm -f txslt.diff
+rm -f vg
+rm -f virt.odbc
+rm -f virtuoso.ini
+rm -f wi.cfg
+rm -f wierr.rep1
+rm -f wierr.rep2
+rm -f wierr.rep3
+rm -f witemp.cfg
+rm -f xmemdump.txt
+rm -f xslt.vsp
 
 #
-#  Remove databases
+#  Removing directories
 #
-rm -f new.db new.db.sr2 new.db.sr3 new.log.sr2 new.pxa new.tdb
-rm -f virtuoso.ini virtuoso.lck virtuoso.trx virtuoso.log
-rm -f virtuoso.db.*
-rm -f virtuoso.log.*
-rm -f virtuoso.trx.*
-rm -f virtuoso.db virtuoso.pxa virtuoso.tdb
+rm -rf classlib
+rm -rf bpel_audit
+rm -rf "echo"
+rm -rf fault1
+rm -rf fault1_req
+rm -rf Flow
+rm -rf grail_backup
+rm -rf grail_backup2
+rm -rf http
+rm -rf msdtc1
+rm -rf msdtc2
+rm -rf msdtc3
+rm -rf nw1
+rm -rf nw2
+rm -rf nw3
+rm -rf nw4
+rm -rf nw5
+rm -rf oremote1
+rm -rf oremote2
+rm -rf plugins
+rm -rf remote1
+rm -rf remote2
+rm -rf rep1
+rm -rf rep2
+rm -rf rep3
+rm -rf soap12
+rm -rf t1
+rm -rf t2
+rm -rf t3
+rm -rf tdav_meta
+rm -rf tproxy
+rm -rf tutorial_test
+rm -rf vad
+rm -rf vspx
+rm -rf wcopy
+rm -rf xslt
+
+exit 0
