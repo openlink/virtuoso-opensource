@@ -1626,15 +1626,29 @@ again:
 caddr_t
 bif_aref_set_0 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  caddr_t *arr = bif_array_arg (qst, args, 0, "aref_set_0");
   caddr_t res;
-  caddr_t arr = bif_array_arg (qst, args, 0, "aref_set_0");
-  long inx = (long) bif_long_arg (qst, args, 1, "aref_set_0");
-  if (DV_TYPE_OF (arr) != DV_ARRAY_OF_POINTER)
-  sqlr_new_error ("22023", "SR018", "non-generic vector for aref_set_0");
-  if (BOX_ELEMENTS (arr) <= ((uint32) inx) || inx < 0)
-  sqlr_new_error ("22003", "SR019", "Bad subscript for aref_set_0");
-  res = ((caddr_t*)arr)[inx];
-  ((caddr_t*) arr)[inx] = NULL;
+  int inx, n_elems;
+  dtp_t dtp;
+  int argcount = BOX_ELEMENTS (args);
+  int idxctr = 1;
+  if (argcount <= 1)
+    sqlr_new_error ("22003", "SR020", "aref_set_0() requires 2 or more arguments, but only %d passed.", argcount);
+  dtp = DV_TYPE_OF (arr);
+
+again:
+  inx = (int) bif_long_arg (qst, args, idxctr, "aref_set_0");
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (arr))
+    sqlr_new_error ("22003", "SR020", "aref_set_0() is called with %d index arguments but only %d first indexes can be accessed.", argcount-1, idxctr-1);
+  n_elems = BOX_ELEMENTS (arr);
+  if ((inx >= n_elems) || (inx < 0)) /* Catch negative indexes also! */
+    sqlr_new_error ("22003", "SR017",
+      "aref_set_0: Bad array subscript (zero-based) %d for an arg of type %s (%d) and length %d.",
+      inx, dv_type_title (dtp), dtp, n_elems );
+  if (++idxctr < argcount)
+    goto again; /* see above */
+  res = arr[inx];
+  arr[inx] = NULL;
   return res;
 }
 
@@ -1717,6 +1731,35 @@ bs:
     sqlr_new_error ("22003", "SR020", "Argument %d of aset is a bad array subscript (value %ld exceeds array size).", idxcount+1, (long)inx);
   NO_CADDR_T;
 }
+
+caddr_t
+bif_aset_zap_arg (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *arr = bif_array_arg (qst, args, 0, "aset_zap_arg");
+  caddr_t res;
+  int inx, n_elems;
+  dtp_t dtp;
+  int argcount = BOX_ELEMENTS (args);
+  int idxctr = 1;
+  if (argcount <= 2)
+    sqlr_new_error ("22003", "SR020", "aset_zap_arg() requires 3 or more arguments, but only %d passed.", argcount);
+  dtp = DV_TYPE_OF (arr);
+
+again:
+  inx = (int) bif_long_arg (qst, args, idxctr, "aset_zap_arg");
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (arr))
+    sqlr_new_error ("22003", "SR020", "aset_zap_arg() is called with %d index arguments but only %d first indexes can be accessed.", argcount-2, idxctr-1);
+  n_elems = BOX_ELEMENTS (arr);
+  if ((inx >= n_elems) || (inx < 0)) /* Catch negative indexes also! */
+    sqlr_new_error ("22003", "SR017",
+      "aref_set_0: Bad array subscript (zero-based) %d for an arg of type %s (%d) and length %d.",
+      inx, dv_type_title (dtp), dtp, n_elems );
+  if (++idxctr < argcount-1)
+    goto again; /* see above */
+  return (ptrlong)qst_swap_or_get_copy (qst, args[argcount-1], arr+inx);
+}
+
+
 
 
 /* Now returns back the modified array itself (given as a first argument)
@@ -6781,6 +6824,16 @@ bif_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return ((caddr_t) res);
 }
 
+caddr_t
+bif_vector_zap_args (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int len = BOX_ELEMENTS (args);
+  caddr_t *res = (caddr_t *) dk_alloc_box_zero (len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  int inx;
+  for (inx = 0; inx < len; inx++)
+    qst_swap_or_get_copy (qst, args[inx], res+inx);
+  return ((caddr_t) res);
+}
 
 caddr_t
 bif_lvector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -10810,9 +10863,7 @@ caddr_t
 bif_exec_score (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   /* in text, out sqlstate, out message, * out result_desc */
-  int n_args = BOX_ELEMENTS (args);
   query_instance_t *qi = (query_instance_t *) qst;
-  stmt_compilation_t *comp = NULL, *proc_comp = NULL;
   caddr_t _text = bif_string_or_wide_or_null_arg (qst, args, 0, "exec_metadata");
   caddr_t text = NULL;
   caddr_t err = NULL;
@@ -12524,6 +12575,7 @@ sql_bif_init (void)
   bif_define_typed ("aref", bif_aref, &bt_any);
   bif_define_typed ("aref_set_0", bif_aref_set_0, &bt_any);
   bif_define_typed ("aset", bif_aset, &bt_integer);
+  bif_define_typed ("aset_zap_arg", bif_aset_zap_arg, &bt_integer);
   bif_define ("composite", bif_composite);
   bif_define ("composite_ref", bif_composite_ref);
   bif_define_typed ("ascii", bif_ascii, &bt_integer);
@@ -12687,6 +12739,7 @@ sql_bif_init (void)
   bif_define ("backup", bif_backup);
   bif_define ("db_check", bif_check);
   bif_define_typed ("vector", bif_vector, &bt_any);
+  bif_define_typed ("vector_zap_args", bif_vector_zap_args, &bt_any);
   bif_define_typed ("get_keyword", bif_get_keyword, &bt_any);
   bif_define_typed ("get_keyword_ucase", bif_get_keyword_ucase, &bt_any);
   bif_define_typed ("position", bif_position, &bt_integer);
