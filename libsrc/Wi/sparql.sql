@@ -502,8 +502,8 @@ create function DB.DBA.RDF_MAKE_GRAPH_IIDS_OF_QNAMES (in qnames any) returns any
     {
       declare iid IRI_ID;
       whenever sqlstate '*' goto skip_acc;
-      iid := iri_to_id (qname, 0);
-      if (iid is not null)
+      iid := iri_to_id (qname, 0, 0);
+      if (not isinteger (iid))
         vectorbld_acc (res_acc, iid);
 skip_acc: ;
     }
@@ -2044,6 +2044,162 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
 
 
 -----
+-- Fast rewriting from serialization to serialization without storing
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_XML_IRI_TO_TTL (inout obj any, inout ses any)
+{
+  declare res varchar;
+  if (isiri_id (obj))
+    {
+      if (obj >= min_bnode_iri_id ())
+        {
+          if (obj >= #ib0)
+            http (sprintf ('_:bb%d ', iri_id_num (obj) - iri_id_num (#ib0)), ses);
+          else
+            http (sprintf ('_:b%d ', iri_id_num (obj)), ses);
+        }
+      else
+        {
+          res := coalesce (id_to_iri (obj), sprintf ('_:bad_iid_%d', iri_id_num (obj)));
+--          res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = obj), sprintf ('_:bad_iid_%d', iri_id_num (obj)));
+          http ('<', ses);
+          http_escape (res, 12, ses, 1, 1);
+          http ('> ', ses);
+        }
+    }
+  else if (__tag of varchar = __tag (obj))
+    {
+      if ("LEFT" (obj, 9) = 'nodeID://')
+        {
+          http ('_:', ses);
+          http (subseq (obj, 9), ses);
+          http (' ', ses);
+        }
+      else
+        {
+          http ('<', ses);
+          http_escape (obj, 12, ses, 1, 1);
+          http ('> ', ses);
+        }
+    }
+  else
+    {
+      http ('<', ses);
+      http_escape (cast (obj as varchar), 12, ses, 1, 1);
+      http ('> ', ses);
+    }
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_XML_OBJ_TO_TTL (
+  inout o_val any, inout o_type varchar, inout o_lang varchar,
+  inout ses any)
+{
+  declare res varchar;
+  if (isiri_id (o_val))
+    {
+      if (o_val >= min_bnode_iri_id ())
+        {
+          if (o_val >= #ib0)
+            http (sprintf ('_:bb%d ', iri_id_num (o_val) - iri_id_num (#ib0)), ses);
+          else
+            http (sprintf ('_:b%d ', iri_id_num (o_val)), ses);
+        }
+      else
+        {
+          res := coalesce (id_to_iri (o_val), sprintf ('_:bad_iid_%d', iri_id_num (o_val)));
+          http ('<', ses);
+          http_escape (res, 12, ses, 1, 1);
+          http ('> ', ses);
+        }
+      return;
+    }
+  http ('"', ses);
+  if (__tag of XML = o_val)
+    http_escape (serialize_to_UTF8_xml (o_val), 11, ses, 1, 1);
+  else
+    http_escape (o_val, 11, ses, 1, 1);
+  if (isstring (o_type))
+    {
+      http ('"^^<', ses);
+      http_escape (o_type, 12, ses, 1, 1);
+      http ('> ', ses);
+    }
+  else if (isstring (o_lang))
+    {
+      http ('"@', ses);
+      http (o_lang, ses);
+      http (' ', ses);
+    }
+  else
+    http ('" ', ses);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_CONVERT_RDFXML_TO_TTL_EV_NEW_BLANK (inout g varchar, inout app_env any, inout res IRI_ID)
+{
+  ; -- empty procedure
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_CONVERT_RDFXML_TO_TTL_EV_TRIPLE (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_uri varchar,
+  inout app_env any )
+{
+  DB.DBA.RDF_XML_IRI_TO_TTL (s_uri, app_env);
+  DB.DBA.RDF_XML_IRI_TO_TTL (p_uri, app_env);
+  DB.DBA.RDF_XML_IRI_TO_TTL (o_uri, app_env);
+  http ('.\n', app_env);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_CONVERT_RDFXML_TO_TTL_EV_TRIPLE_L (
+  inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
+  inout o_val any, inout o_type varchar, inout o_lang varchar,
+  inout app_env any )
+{
+  DB.DBA.RDF_XML_IRI_TO_TTL (s_uri, app_env);
+  DB.DBA.RDF_XML_IRI_TO_TTL (p_uri, app_env);
+  DB.DBA.RDF_XML_OBJ_TO_TTL (o_val, o_type, o_lang, app_env);
+  http ('.\n', app_env);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_CONVERT_RDFXML_TO_TTL (in strg varchar, in base varchar, inout ttl_ses any)
+{
+  rdf_load_rdfxml (strg, 0,
+    'http://example.com',
+    vector (
+      'DB.DBA.TTLP_EV_NEW_GRAPH',
+      'DB.DBA.RDF_CONVERT_RDFXML_TO_TTL_EV_NEW_BLANK',
+      'DB.DBA.TTLP_EV_GET_IID',
+      'DB.DBA.RDF_CONVERT_RDFXML_TO_TTL_EV_TRIPLE',
+      'DB.DBA.RDF_CONVERT_RDFXML_TO_TTL_EV_TRIPLE_L',
+      '' ),
+    ttl_ses,
+    base );
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_CONVERT_RDFXML_FILE_TO_TTL_FILE (in rdfxml_source_filename varchar, in base varchar, in ttl_target_filename varchar)
+{
+  declare in_ses, out_ses any;
+  in_ses := file_to_string_output (rdfxml_source_filename);
+  out_ses := string_output ();
+  DB.DBA.RDF_CONVERT_RDFXML_TO_TTL (in_ses, base, out_ses);
+  string_to_file (ttl_target_filename, out_ses, -2);
+}
+;
+
+-----
 -- Export into external serializations
 
 create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
@@ -3260,8 +3416,8 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
             vectorbld_acc (phys_subjects, s);
           else
             {
-              phys_s := iri_to_id (s, 0);
-              if (phys_s is not null)
+              phys_s := iri_to_id (s, 0, 0);
+              if (not isinteger (phys_s))
                 vectorbld_acc (phys_subjects, phys_s);
             }
         }
@@ -3286,8 +3442,8 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in gr
             }
           else
             {
-              phys_s := iri_to_id (s, 0);
-              if (phys_s is not null)
+              phys_s := iri_to_id (s, 0, 0);
+              if (not isinteger (phys_s))
                 vectorbld_acc (phys_subjects, phys_s);
             }
           maps := subseq (maps, 0, maps_len-1);
@@ -4070,7 +4226,7 @@ create function DB.DBA.JSO_FILTERED_PROPLIST (in only_custom integer := 0, in lo
       sys_dict := DB.DBA.RDF_TTL2HASH (sys_txt, '');
       sys_vect := dict_list_keys (sys_dict, 0);
       -- dbg_obj_princ ('Part of sys_dict is', subseq (sys_vect, 0, 10));
-      inh_id := iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#inheritFrom', 0);
+      inh_id := iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#inheritFrom');
       sys_inh := dict_new (127);
       foreach (any triple in sys_vect) do
         {
@@ -4304,14 +4460,14 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
             }
         }
     }
-  for (select * from (sparql define input:storage ""
+  for (select * from (sparql define input:storage "" define output:valmode "LONG"
       select ?lst ?p ?itm where { graph ?:graphiri_id {
               ?lst ?p ?itm .
               optional { ?itm a ?t } .
               filter (! bound (?t) && isiri (?itm) && str(?p) > str(rdf:_) && str(?p) < str(rdf:_A))
                } } ) as sub for update) do
     {
-      result ('00000', 'List <' || "lst" || '> contains IRI <' || "itm" || '> that has no type');
+      result ('00000', 'List <' || id_to_iri("lst") || '> contains IRI <' || id_to_iri("itm") || '> that has no type');
       if (fix_bugs)
         {
           sparql delete from graph ?:graphiri_id { ?:"lst" ?:"p" ?:"itm" };
@@ -6033,7 +6189,7 @@ create procedure DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (in storage varchar, 
   declare iris_and_orders any;
   declare ctr integer;
   -- dbg_obj_princ ('DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (', storage, qmparent, qmid, ')');
-  qmid := iri_to_id (qmid, 0);
+  qmid := iri_to_id (qmid, 0, NULL);
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
   if (qmparent is not null)
     lstiri := (sparql define input:storage ""
@@ -6085,7 +6241,7 @@ create procedure DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (in storage varchar, 
       declare ord integer;
       id := itm[0];
       ord := itm[2];
-      if (iri_to_id (id, 0) <> qmid)
+      if (iri_to_id (id, 0, 0) <> qmid)
         {
           sparql define input:storage ""
           insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -9315,8 +9471,8 @@ create function DB.DBA.RDF_OBJ_PATCH_CONTAINS_BY_GRAPH (in phrase varchar, in gr
 {
   declare graph_keyword any;
   whenever sqlstate '*' goto err;
-  graph_keyword := iri_to_id (graph_iri, 0);
-  if (graph_keyword is null)
+  graph_keyword := iri_to_id (graph_iri, 0, 0);
+  if (isinteger (graph_keyword))
     goto err;
   graph_keyword := WS.WS.STR_SQL_APOS (cast (graph_keyword as varchar));
   return sprintf ('^%s AND (%s)', graph_keyword, phrase);
@@ -9336,8 +9492,8 @@ create function DB.DBA.RDF_OBJ_PATCH_CONTAINS_BY_MANY_GRAPHS (in phrase varchar,
   isfirst := 1;
   for (gctr := 0; gctr < gcount; gctr := gctr + 1)
     {
-      graph_keyword := iri_to_id (graph_iris[gctr], 0);
-      if (graph_keyword is not null)
+      graph_keyword := iri_to_id (graph_iris[gctr], 0, 0);
+      if (not isinteger (graph_keyword))
         {
           if (isfirst)
             {
@@ -10222,7 +10378,9 @@ create procedure rdfs_load_schema (in name varchar, in gn varchar)
 {
   declare gr iri_id;
   declare visited any;
-  gr := iri_to_id (gn, 0);
+  gr := iri_to_id (gn, 0, 0);
+  if (isinteger (gr))
+    return;
   for select o from rdf_quad where g = gr and p = rdfs_pn (1) do
     {
       rdfs_closure_1 (gr, name, o, o, 1, dict_new ());
@@ -10260,7 +10418,7 @@ create procedure rdfs_rule_set (in name varchar, in gn varchar, in remove int :=
 create function DB.DBA.RDF_IID_OF_QNAME (in qname varchar) returns IRI_ID
 {
   whenever sqlstate '*' goto retnull;
-  return iri_to_id (qname, 0);
+  return iri_to_id (qname, 0, null);
   retnull:
   return null;
 }
