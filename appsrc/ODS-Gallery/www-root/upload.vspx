@@ -57,6 +57,7 @@
     <v:variable name="session_id" type="varchar" param-name="sid" default="null"/>
     <v:variable name="album" type="varchar" param-name="album" default="null"/>
     <v:variable name="current_user" type="photo_user" default="null"/>
+    <v:variable name="gallery_id" type="integer" default="0"/>
     <v:variable name="image_cnt" type="integer" default="0"/>
     <v:on-init>
       declare auth_uid varchar;
@@ -126,6 +127,7 @@
           <?vsp http(sprintf('<input type="hidden" name="sid"   value="%s"/>', get_keyword('sid', self.vc_page.vc_event.ve_params))); ?>
           <?vsp http(sprintf('<input type="hidden" name="realm" value="%s"/>', get_keyword('realm', self.vc_page.vc_event.ve_params))); ?>
           <?vsp http(sprintf('<input type="hidden" name="album" value="%s"/>', get_keyword('album', self.vc_page.vc_event.ve_params))); ?>
+          <?vsp http(sprintf('<input type="hidden" name="gallery_id" value="%s"/>', get_keyword('gallery_id', self.vc_page.vc_event.ve_params))); ?>
 
           <v:template name="upload_finish" type="simple" enabled="0">
             <div id="info">

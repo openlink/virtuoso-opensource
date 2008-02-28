@@ -290,6 +290,80 @@ create procedure PHOTO.WA._session_var_get(
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA._session_role (
+  in gallery_id integer,
+  in user_id integer)
+{
+  whenever not found goto _end;
+
+  if (PHOTO.WA._user_is_admin (user_id))
+    return 'admin';
+
+  if (exists (select 1
+                from SYS_USERS A,
+                     WA_MEMBER B,
+                     WA_INSTANCE C
+               where A.U_ID = user_id
+                 and B.WAM_USER = A.U_ID
+                 and B.WAM_MEMBER_TYPE = 1
+                 and B.WAM_INST = C.WAI_NAME
+                 and C.WAI_ID = gallery_id))
+    return 'owner';
+
+  if (exists (select 1
+                from SYS_USERS A,
+                     WA_MEMBER B,
+                     WA_INSTANCE C
+               where A.U_ID = user_id
+                 and B.WAM_USER = A.U_ID
+                 and B.WAM_MEMBER_TYPE = 2
+                 and B.WAM_INST = C.WAI_NAME
+                 and C.WAI_ID = gallery_id))
+    return 'author';
+
+  if (exists (select 1
+                from SYS_USERS A,
+                     WA_MEMBER B,
+                     WA_INSTANCE C
+               where A.U_ID = user_id
+                 and B.WAM_USER = A.U_ID
+                 and B.WAM_INST = C.WAI_NAME
+                 and C.WAI_ID = gallery_id))
+    return 'viewer';
+
+  if (exists (select 1
+                from SYS_USERS A
+               where A.U_ID = user_id))
+    return 'guest';
+
+_end:
+  return 'public';
+}
+;
+
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA._user_is_admin (
+  in user_id integer) returns integer
+{
+  declare group_id integer;
+  group_id := (select U_GROUP from SYS_USERS where U_ID = user_id);
+
+  if (user_id = 0)
+    return 1;
+  if (user_id = http_dav_uid ())
+    return 1;
+  if (group_id = 0)
+    return 1;
+  if (group_id = http_dav_uid ())
+    return 1;
+  if(group_id = http_dav_uid()+1)
+    return 1;
+  return 0;
+}
+;
+
 --------------------------------------------------------------------------------
 create procedure PHOTO.WA._user_pwd(
   in auth_uid varchar)
@@ -302,6 +376,17 @@ create procedure PHOTO.WA._user_pwd(
     auth_pwd := pwd_magic_calc(auth_uid, auth_pwd, 1);
   }
   return auth_pwd;
+}
+;
+
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.get_gallery_owner_id(
+  in _gallery_id integer)
+{
+  declare _owner_id integer;
+
+  _owner_id := (select OWNER_ID from PHOTO.WA.SYS_INFO where GALLERY_ID = _gallery_id);
+  return _owner_id;
 }
 ;
 
@@ -888,3 +973,25 @@ create procedure PHOTO.WA.wide2utf (
   return S;
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.settings (
+  in _gallery_id integer)
+{
+  return coalesce((select deserialize(blob_to_string(SETTINGS))
+                     from PHOTO.WA.SYS_INFO
+                    where GALLERY_ID = _gallery_id), vector());
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure PHOTO.WA.settings_albums_per_page (
+  inout settings any)
+{
+  return cast(get_keyword ('albums_per_page', settings, '0') as integer);
+}
+;
+
+

@@ -79,6 +79,8 @@ update PHOTO.WA.SYS_INFO set SHOW_TIMELINE = 0 where SHOW_TIMELINE is null;
 update PHOTO.WA.SYS_INFO set NNTP = 0 where NNTP is null;
 update PHOTO.WA.SYS_INFO set NNTP_INIT = 0 where NNTP_INIT is null;
 
+wa_add_col('PHOTO.WA.SYS_INFO', 'SETTINGS', 'varchar');
+
 PHOTO.WA._exec_no_error(
 '
 create table PHOTO.WA.EXIF_DATA(

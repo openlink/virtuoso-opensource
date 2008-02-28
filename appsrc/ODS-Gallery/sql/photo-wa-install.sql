@@ -22,7 +22,7 @@
 
 -------------------------------------------------------------------------------
 PHOTO.WA._exec_no_error(
-  'insert soft WA_TYPES(WAT_NAME, WAT_TYPE, WAT_REALM, WAT_DESCRIPTION) values (\'oGallery\', \'db.dba.wa_photo\', \'wa\', \'Gallery\')'
+  'insert replacing WA_TYPES(WAT_NAME, WAT_TYPE, WAT_REALM, WAT_DESCRIPTION) values (\'oGallery\', \'db.dba.wa_photo\', \'wa\', \'Gallery\')'
 )
 ;
 
@@ -34,17 +34,19 @@ PHOTO.WA._exec_no_error(
 
 -------------------------------------------------------------------------------
 PHOTO.WA._exec_no_error(
-  'insert soft WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'oGallery\', \'owner\', 1, 0)'
+  'insert replacing WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'oGallery\', \'owner\', 1, 0)'
 )
 ;
-
 -------------------------------------------------------------------------------
 PHOTO.WA._exec_no_error(
-  'insert soft WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'oGallery\', \'viewer\', 2, 0)'
+  'insert replacing WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'oGallery\', \'author\', 2, 0)'
 )
 ;
-
-
+-------------------------------------------------------------------------------
+PHOTO.WA._exec_no_error(
+  'insert replacing WA_MEMBER_TYPE (WMT_APP, WMT_NAME, WMT_ID, WMT_IS_DEFAULT) values (\'oGallery\', \'viewer\', 3, 0)'
+)
+;
 
 -------------------------------------------------------------------------------
 create procedure PHOTO.WA.photo_install()
@@ -101,6 +103,7 @@ create procedure PHOTO.WA.photo_install()
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.get_comments TO SOAPGallery');
 
   -- dav_api.sql
+  PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.load_settings TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.dav_browse TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.create_new_album TO SOAPGallery');
   PHOTO.WA._exec_no_error('grant execute on PHOTO.WA.edit_album TO SOAPGallery');
@@ -508,4 +511,22 @@ final: registry_set ('gallery_fix_comments', '3');
 }
 ;
 PHOTO.WA.fix_tables ();
+
+-------------------------------------------------------------------------------
+--
+-- fix members
+--
+-------------------------------------------------------------------------------
+create procedure PHOTO.WA.fix_members ()
+{
+  if (registry_get ('gallery_fix_members') = '1')
+    return;
+
+  set triggers off;
+  update DB.DBA.WA_MEMBER set WAM_MEMBER_TYPE = 3 where WAM_APP_TYPE = 'oGallery' and WAM_MEMBER_TYPE = 2;
+  set triggers on;
+  registry_set ('gallery_fix_members', '1');
+}
+;
+PHOTO.WA.fix_members ();
 

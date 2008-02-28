@@ -20,6 +20,8 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+  set ISOLATION = 'Committed';
+  set http_charset = 'utf-8';
 
   declare host_port, base_path varchar;
 
@@ -157,6 +159,7 @@
   http(sprintf('<first_name>%s</first_name>',current_user.first_name),_xml);
   http(sprintf('<last_name>%s</last_name>',current_user.last_name),_xml);
   http(sprintf('<user_name>%s</user_name>',coalesce(current_user.auth_uid,'')),_xml);
+  http (sprintf ('<user_role>%s</user_role>', PHOTO.WA._session_role (current_instance.gallery_id, current_user.user_id)), _xml);
   http('</user>', _xml);
 
   http(sprintf('<host>%s</host>',host_port),_xml);

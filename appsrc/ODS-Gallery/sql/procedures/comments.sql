@@ -35,7 +35,8 @@ create procedure PHOTO.WA.root_comment (
     if (i = 0)
     {
       _comment_id := _cid;
-      update PHOTO.WA.COMMENTS set TEXT = PHOTO.WA.get_image_caption (_resource_id), MODIFY_DATE = now ()
+      update PHOTO.WA.COMMENTS
+         set TEXT = PHOTO.WA.get_image_caption (_resource_id), MODIFY_DATE = now ()
        where COMMENT_ID = _comment_id;
     }
     if (i > 0)
@@ -70,7 +71,7 @@ create procedure PHOTO.WA.add_comment(
   in sid varchar,
   in _gallery_id integer,
   in _resource_id integer,
-  in _text varchar) returns photo_comment
+  in _text nvarchar) returns photo_comment
 {
   declare _parent_id integer;
   declare current_user photo_user;
@@ -92,7 +93,7 @@ create procedure PHOTO.WA.add_comment(
     _parent_id := PHOTO.WA.root_comment (_gallery_id, _resource_id);
   }
   insert into PHOTO.WA.COMMENTS (COMMENT_ID, PARENT_ID, GALLERY_ID, RES_ID, CREATE_DATE, MODIFY_DATE, USER_ID, TEXT)
-    values (comment.comment_id, _parent_id, _gallery_id, comment.res_id, comment.create_date, comment.modify_date, comment.user_id, comment.text);
+    values (comment.comment_id, _parent_id, _gallery_id, comment.res_id, comment.create_date, comment.modify_date, comment.user_id, PHOTO.WA.wide2utf (comment.text));
 
   return comment;
 }
@@ -121,8 +122,7 @@ create procedure PHOTO.WA.remove_comment(
 create procedure PHOTO.WA.update_comment (
   in sid varchar,
   in _comment_id integer,
-  in _text varchar)
-
+  in _text nvarchar)
 {
   declare auth_uid,auth_pwd,current_gallery varchar;
   declare current_user photo_user;
@@ -130,7 +130,7 @@ create procedure PHOTO.WA.update_comment (
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
   if (exists (select 1 from PHOTO.WA.COMMENTS where COMMENT_ID=_comment_id and USER_ID=current_user.user_id))
   {
-    update PHOTO.WA.COMMENTS set TEXT=_text where COMMENT_ID=_comment_id;
+    update PHOTO.WA.COMMENTS set TEXT = PHOTO.WA.wide2utf (_text) where COMMENT_ID=_comment_id;
      return 1;
   }
  return 0;
@@ -152,7 +152,7 @@ create procedure PHOTO.WA.get_comment (
         where COMMENT_ID = _comment_id
           and USER_ID = U_ID) do
   {
-    return photo_comment (_comment_id, RES_ID, CREATE_DATE, USER_ID, TEXT, U_NAME);
+    return photo_comment (_comment_id, RES_ID, CREATE_DATE, USER_ID, PHOTO.WA.utf2wide (TEXT), PHOTO.WA.utf2wide (U_NAME));
   }
   return null;
 }
@@ -182,18 +182,17 @@ create procedure PHOTO.WA.get_comments(
          AND WAUI_U_ID = U_ID
          AND GALLERY_ID = p_gallery_id
           AND SYS_USERS.U_ID = PHOTO.WA.COMMENTS.USER_ID
-          AND ((PARENT_ID is not null) or (TEXT <> PHOTO.WA.get_image_caption (resource_id))))
-  do{
-      if(WAUI_FIRST_NAME is null or WAUI_FIRST_NAME = ''){
+          AND ((PARENT_ID is not null) or (TEXT <> PHOTO.WA.get_image_caption (resource_id)))) do
+  {
+    if(WAUI_FIRST_NAME is null or WAUI_FIRST_NAME = '')
+    {
         user_name := U_NAME;
       }else{
         user_name := WAUI_FIRST_NAME;
       }
-
-      comment := photo_comment(COMMENT_ID,resource_id,CREATE_DATE,USER_ID,TEXT,user_name);
+    comment := photo_comment (COMMENT_ID, resource_id, CREATE_DATE, USER_ID, PHOTO.WA.utf2wide (TEXT), PHOTO.WA.utf2wide (user_name));
       result := vector_concat(result,vector(comment));
   }
-
   return result;
 }
 ;

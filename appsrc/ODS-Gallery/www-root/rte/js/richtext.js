@@ -175,6 +175,7 @@ function writeRichText(rte, html, width, height, buttons, readOnly) {
 function enableDesignMode(rte, html, readOnly) {
 	var frameHtml = "<html id=\"" + rte + "\">\n";
 	frameHtml += "<head>\n";
+	frameHtml += "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">";
 	//to reference your stylesheet, set href property below to your stylesheet path and uncomment
 	if (cssFile.length > 0) {
 		frameHtml += "<link media=\"all\" type=\"text/css\" href=\"" + cssFile + "\" rel=\"stylesheet\">\n";

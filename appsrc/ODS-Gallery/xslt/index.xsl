@@ -23,7 +23,7 @@
  -
 -->
 <xsl:stylesheet version='1.0' xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/weblog/"  xmlns:xsl='http://www.w3.org/1999/XSL/Transform' xmlns:msxsl="urn:schemas-microsoft-com:xslt" xmlns:fmt="urn:p2plusfmt-xsltformats" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" >
-  <xsl:output method="html" indent="yes" encoding="windows-1251" doctype-public="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"/>
+  <xsl:output method="html" indent="yes" encoding="UTF-8" doctype-public="-//W3C//DTD XHTML 1.0 Transitional//EN" doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"/>
 
   <xsl:template match="/">
   <html xmlns:foaf="http://xmlns.com/foaf/0.1/" foaf:dummy="false" xmlns:dc="http://purl.org/dc/elements/1.1/" dc:dummy="false" xmlns:dct="http://purl.org/dc/terms/" dct:dummy="false" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:dummy="false" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdfs:dummy="false" xmlns:sioct="http://rdfs.org/sioc/types#" sioct:dummy="false" xmlns:sioc="http://rdfs.org/sioc/ns#" sioc:dummy="false">
@@ -399,6 +399,7 @@
  <script type="text/javascript">
       var sid = '<xsl:value-of select="@sid"/>';
     var isOwner = <xsl:value-of select="user/@owner"/>;
+      var userRole = '<xsl:value-of select="user/user_role"/>';
       var realm = '<xsl:value-of select="@realm"/>';
       var home_path = '<xsl:value-of select="gallery"/>';
     var home_url = '<xsl:value-of select="home_url"/>';
@@ -846,11 +847,12 @@
     <table id="forma" class="box">
       <caption>Settings</caption>
       <tr>
-        <td colspan="2">
+        <td colspan="3">
           <h4>Preferences</h4>
         </td>
       </tr>
       <tr>
+        <td/>
         <td>
           <input type="hidden" name="edit_album_showmap_old" id="edit_album_showmap_old" value=""/>
           <input type="checkbox" name="edit_album_showmap" id="edit_album_showmap" value=""/>
@@ -858,6 +860,7 @@
         <td><label for="edit_album_showmap">Show map</label></td>
       </tr>
       <tr>
+        <td/>
         <td>
           <input type="hidden" name="edit_album_showtimeline_old" id="edit_album_showtimeline_old" value=""/>
           <input type="checkbox" name="edit_album_showtimeline" id="edit_album_showtimeline" value=""/>
@@ -865,13 +868,26 @@
         <td><label for="edit_album_showtimeline">Show timeline</label></td>
       </tr>
       <tr>
-        <td colspan="2">
+        <td><label for="albums_per_page">Number of albums per page</label></td>
+        <td>
+          <select name="albums_per_page" id="albums_per_page">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </td>
+        <td/>
+      </tr>
+      <tr>
+        <td colspan="3">
           <h4>Discussion</h4>
         </td>
       </tr>
       <xsl:if test="/root/is_discussion = 0">
         <tr>
-          <td class="error_text" colspan="2">
+          <td class="error_text" colspan="3">
             The Discussion feature is disabled.
             <br/>
             You need to install the ODS Discussion package in order to use it.
@@ -880,12 +896,14 @@
       </xsl:if>
       <xsl:if test="/root/is_discussion = 1">
         <tr>
+          <td/>
           <td>
             <input type="checkbox" name="edit_album_nntp" id="edit_album_nntp" value=""/>
           </td>
           <td><label for="edit_album_nntp">Enable discussions on this instance</label></td>
         </tr>
         <tr>
+          <td/>
           <td>
             <input type="checkbox" name="edit_album_nntp_init" id="edit_album_nntp_init" value=""/>
           </td>

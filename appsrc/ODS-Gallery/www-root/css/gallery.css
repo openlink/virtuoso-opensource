@@ -382,12 +382,12 @@ div#mssage
 {
   width:100px;
   float:left;
-  border-left:1px solid #AAAAAA;
 }
+
 #preview_nav #preview_right
 {
   width:100px;
-  float:left;
+  float: right;
 }
 
 #image {

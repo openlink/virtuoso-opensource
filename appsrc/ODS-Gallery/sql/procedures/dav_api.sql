@@ -20,16 +20,53 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+--------------------------------------------------------------------------------
+create procedure PHOTO.WA.load_settings (
+  in sid varchar,
+  in p_gallery_id integer) returns varchar array
+{
+  declare _show_map, _show_timeline, _nntp, _nntp_init integer;
+  declare _settings any;
+  declare auth_uid, auth_pwd varchar;
+  declare current_user photo_user;
+
+  auth_uid := PHOTO.WA._session_user (vector ('realm', 'wa', 'sid', sid), current_user);
+  declare exit handler for not found
+  {
+    _show_map := 0;
+    _show_timeline := 0;
+    _nntp := 0;
+    _nntp_init := 0;
+    _settings := vector ();
+  };
+  select coalesce (SHOW_MAP, 0),
+         coalesce (SHOW_TIMELINE, 0),
+         coalesce (NNTP, 0),
+         coalesce (NNTP_INIT, 0),
+         coalesce (deserialize(blob_to_string(SETTINGS)), vector())
+    into _show_map,
+         _show_timeline,
+         _nntp,
+         _nntp_init,
+         _settings
+    from PHOTO.WA.SYS_INFO
+   where GALLERY_ID = p_gallery_id;
+
+  return vector('show_map', cast (_show_map as varchar),
+                'show_timeline', cast (_show_timeline as varchar),
+                'nntp', cast (_nntp as varchar),
+                'nntp_init', cast (_nntp_init as varchar),
+                'albums_per_page', get_keyword ('albums_per_page', _settings, '10')
+               );
+}
+;
 
 --------------------------------------------------------------------------------
-
 create procedure PHOTO.WA.dav_browse(
   in sid varchar,
   in p_gallery_id integer,
-  in path varchar)
-  returns SOAP_gallery
+  in path varchar) returns SOAP_gallery
 {
-
   declare dirlist any ;
   declare auth_uid,auth_pwd,current_gallery,private_tags varchar;
   declare home_dir,_col_perms,_col_user_name varchar;
@@ -65,22 +102,12 @@ create procedure PHOTO.WA.dav_browse(
     is_own := 0;
   }
 
-  declare _show_map, _show_timeline, _nntp, _nntp_init integer;
-  declare exit handler for not found {_show_map:=0;_show_timeline:=0;_nntp:=0; _nntp_init:=0;};
-  select coalesce (SHOW_MAP, 0),
-         coalesce (SHOW_TIMELINE, 0),
-         coalesce (NNTP, 0),
-         coalesce (NNTP_INIT, 0)
-    into _show_map, _show_timeline, _nntp, _nntp_init
-    from PHOTO.WA.SYS_INFO
-   where HOME_PATH = current_gallery;
-  
   dirlist := DAV_DIR_LIST (current_gallery, 
                            0, 
                            current_user.auth_uid, 
                            current_user.auth_pwd);
-
-  if(__tag(dirlist) = 189){
+  if (__tag(dirlist) = 189)
+  {
     goto ret;
   }
 
@@ -188,11 +215,7 @@ create procedure PHOTO.WA.dav_browse(
   return SOAP_gallery (cast (is_own as integer),
                        _col_user_name,
                        result,
-                        vector('show_map',cast(_show_map as varchar),
-                               'show_timeline',cast(_show_timeline as varchar),
-                               'nntp',cast(_nntp as varchar),
-                               'nntp_init',cast(_nntp_init as varchar)
-                               )
+                       vector ()
                       );
 }
 ;
@@ -214,6 +237,8 @@ create procedure PHOTO.WA.create_new_album(
   )
   returns SOAP_album
   {
+  if ((p_gallery_id is null) or (p_gallery_id = 0))
+    return vector();
 
   declare current_user photo_user;
   declare auth_uid,rights varchar;
@@ -222,6 +247,15 @@ create procedure PHOTO.WA.create_new_album(
   declare current_instance photo_instance;
 
   auth_uid := PHOTO.WA._session_user(vector('realm','wa','sid',sid),current_user);
+
+  declare owner_id integer;
+  owner_id := PHOTO.WA.get_gallery_owner_id (p_gallery_id);
+
+  if (PHOTO.WA._session_role (p_gallery_id, current_user.user_id) not in ('admin', 'owner', 'author'))
+    return vector();
+
+  if (owner_id <> current_user.user_id)
+    current_user := new photo_user (owner_id);
 
   if(auth_uid = ''){
     return vector();
@@ -279,10 +313,9 @@ create procedure PHOTO.WA.edit_album_settings(
   in _show_map integer,
   in _show_timeline integer,
   in _nntp integer,
-  in _nntp_init integer)
-returns varchar
+  in _nntp_init integer,
+  in _settings varchar array) returns varchar
 {
-
   declare current_user photo_user;
   declare auth_uid varchar;
 
@@ -292,7 +325,10 @@ returns varchar
     return vector();
   }
 
-   declare exit handler for sqlstate '*' {goto _err;};
+  declare exit handler for sqlstate '*'
+  {
+    goto _err;
+  };
 
   if (exists (select 1 from PHOTO.WA.SYS_INFO where OWNER_ID=current_user.user_id and HOME_PATH = _home_path))
   {
@@ -309,7 +345,11 @@ returns varchar
       _nntp_init := 0;
 
     update PHOTO.WA.SYS_INFO
-       set SHOW_MAP = _show_map , SHOW_TIMELINE =_show_timeline, NNTP = _nntp , NNTP_INIT = _nntp_init
+       set SHOW_MAP = _show_map,
+           SHOW_TIMELINE =_show_timeline,
+           NNTP = _nntp,
+           NNTP_INIT = _nntp_init,
+           SETTINGS = serialize (_settings)
      where HOME_PATH = _home_path;
 
     PHOTO.WA.nntp_update (_gallery_id, null, null, oNNTP, _nntp);
@@ -318,8 +358,9 @@ returns varchar
     {
       PHOTO.WA.nntp_fill (_gallery_id);
     }
-  } else
+  } else {
     goto _err;
+  }
    
    return 'true';
 
@@ -468,6 +509,21 @@ create procedure PHOTO.WA.dav_upload(
   in current_user photo_user)
   returns integer
 {
+  declare gallery_id integer;
+  gallery_id := cast (get_keyword('gallery_id', params) as integer);
+
+  if ((gallery_id is null) or (gallery_id = 0))
+    return 0;
+
+  declare owner_id integer;
+  owner_id := PHOTO.WA.get_gallery_owner_id (gallery_id);
+
+  if (PHOTO.WA._session_role (gallery_id, current_user.user_id) not in ('admin', 'owner', 'author'))
+    return 0;
+
+  if (owner_id <> current_user.user_id)
+    current_user := new photo_user (owner_id);
+
   declare i,image_cnt integer;
 
   i := 1;
@@ -567,8 +623,7 @@ create procedure PHOTO.WA.dav_delete(
   in sid varchar,
   in p_gallery_id integer,
   in mode varchar,
-  in ids integer array)
-returns  integer array
+  in ids integer array) returns integer array
 {
   declare path varchar;
   declare i,result integer;
