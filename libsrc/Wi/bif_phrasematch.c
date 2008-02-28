@@ -60,15 +60,15 @@ typedef struct ap_class_s {
 
 /*! Description of in-memory bitarrays. */
 typedef struct ap_bitarrays_s {
-  uptrlong *	apb_arrayX;	/*!< First bitarray */
-  uptrlong *	apb_arrayY;	/*!< Second bitarray */
+  uint32 *	apb_arrayX;	/*!< First bitarray */
+  uint32 *	apb_arrayY;	/*!< Second bitarray */
   size_t	apb_bufsize;	/*!< Size of every bitarray in memory, in bytes */
   int		apb_scale;	/*!< Bitarray scale (how many bits in the index of a bit in the array) */
   int		apb_diffbits;	/*!< Number of bits of the checksum that are used only in one of bitarrays */
   int		apb_unusedbits; /*!< Number of bits of the checksum that are not used in any of bitarrays */
-  int		apb_shift;	/*!< Right shift to get full index in arrayX and high biths of index in arrayY from a checksum */
-  int		apb_maskYhi;	/*!< Mask to get high bits of index in arrayY from a checksum */
-  int		apb_maskYlo;	/*!< Mask to get low bits of index in arrayY from a checksum (its shift is equal to apb_unusedbits) */
+  int		apb_shift;	/*!< Right shift to get full index in arrayX and high bits of index in arrayY from a checksum */
+  uint		apb_maskYhi;	/*!< Mask to get high bits of index in arrayY from a checksum */
+  uint		apb_maskYlo;	/*!< Mask to get low bits of index in arrayY from a checksum (its shift is equal to apb_unusedbits) */
   int		apb_arrays_ok;	/*!< Nonzero if arrayX and arrayY are filled by actual data, zero if only initialized by zeroes. */
 } ap_bitarrays_t;
 
@@ -76,6 +76,12 @@ typedef struct ap_bitarrays_s {
 #define AP_CHKSUM_TO_Y(apb,chk) ((((chk) >> (apb).apb_shift) & (apb).apb_maskYhi) | (((chk) >> apb.apb_unusedbits) & (apb).apb_maskYlo))
 #define AP_CHKSUM_TO_MIN_CHKSUM_OF_SAME_X(apb,chk) (((chk) >> (apb).apb_shift) << (apb).apb_shift)
 #define AP_CHKSUM_TO_MAX_CHKSUM_OF_SAME_X(apb,chk) (~(((~(chk)) >> (apb).apb_shift) << (apb).apb_shift))
+
+#define APS_PHRASE_VALID 0
+#define APS_PHRASE_EMPTY -1
+#define APS_PHRASE_LONG -2
+
+#define AP_PHRASE_CHKSUM_MASK 0x7FFFffff
 
 /*! Phrase set (almost) as stored in DB.DBA.SYS_ANN_PHRASE_SET */
 typedef struct ap_set_s {
@@ -89,7 +95,7 @@ typedef struct ap_set_s {
   ptrlong	aps_size;	/*!< Current number of phrases in the set */
   ap_bitarrays_t aps_bitarrays;	/*!< In-memory bitarrays */
   rwlock_t *	aps_rwlock;
-#ifdef DEBUG
+#ifdef AP_CHKSUM_DEBUG
   ptrlong	aps_probes;	/*!< Number of probes */
   ptrlong	aps_bit_hits;	/*!< Number of bitmask hits */
   ptrlong	aps_real_hits;	/*!< Number of table hits */
@@ -176,7 +182,7 @@ typedef struct ap_proc_inst_s {
 /* Temporary data, memory-pooled, used when the source is parsed */
   wchar_t *	appi_source_wide;	/*!< The same source in wide encoding if this is required for word splitting and normalization */
   dk_set_t	appi_places_revlist;	/*!< Temporary revlist of all found places */
-  int		appi_place_idx_last [APPI_MAX_PHRASE_NONNOISE];	/*!< Up to APPI_MAX_PHRASE_NONNOISE last nonnoise words, as indexes in appi_place_count, circular buffer */
+  int		appi_place_idx_last [APPI_MAX_PHRASE_NONNOISE];	/*!< Up to APPI_MAX_PHRASE_NONNOISE last nonnoise words, as indexes in appi_places, circular buffer */
   int		appi_place_last_ffree_idx;			/*!< Circular index of the first unused or outdated item in appi_place_idx_last */
   uint32	appi_chksums [APPI_MAX_PHRASE_NONNOISE];	/*!< Known checksums of phrases that end at current word. Index is (phrase_len - 1) */
   dk_set_t	appi_hits_revlist;				/*!< Temporary revlist of all found checksum hits */
@@ -211,8 +217,8 @@ extern ap_set_t *aps_get_byname (caddr_t name, int lock_mode /* 0 = none, 1 = rd
   } while (0)
 
 #define APB_ALLOC(apb) do { \
-    apb.apb_arrayX = (unsigned long *) dk_alloc (apb.apb_bufsize); \
-    apb.apb_arrayY = (unsigned long *) dk_alloc (apb.apb_bufsize); \
+    apb.apb_arrayX = (uint32 *) dk_alloc (apb.apb_bufsize); \
+    apb.apb_arrayY = (uint32 *) dk_alloc (apb.apb_bufsize); \
     APB_BLANK(apb); \
   } while (0)
 
@@ -226,7 +232,8 @@ extern ap_set_t *aps_get_byname (caddr_t name, int lock_mode /* 0 = none, 1 = rd
       } \
   } while (0)
 
-#define APB_ARRAYY_MULT1 223092871
+/*No more need: memory is cheaper :)
+#define APB_ARRAYY_MULT1 223092871 */
 
 ap_globals_t ap_globals;
 
@@ -383,11 +390,11 @@ void apb_prepare (ap_bitarrays_t *apb, ptrlong scale)
 {
   apb->apb_scale = scale;
   apb->apb_bufsize = (1 << (scale - 3));
-  apb->apb_diffbits = ((scale > 16) ? (32 - scale) : scale);
-  apb->apb_unusedbits = ((scale > 16) ? 0 : (32 - 2 * scale));
+  apb->apb_diffbits = ((scale >= 16) ? (31 - scale) : scale);
+  apb->apb_unusedbits = ((scale >= 16) ? 0 : (31 - 2 * scale));
   apb->apb_shift = apb->apb_diffbits + apb->apb_unusedbits;
-  apb->apb_maskYlo = ((unsigned)0xFFFFFFFF) >> (32 - apb->apb_diffbits);
-  apb->apb_maskYhi = ~apb->apb_maskYlo;
+  apb->apb_maskYlo = ((unsigned)0x7FFFFFFF) >> (31 - apb->apb_diffbits);
+  apb->apb_maskYhi = ((unsigned)0x7FFFFFFF) ^ apb->apb_maskYlo;
   apb->apb_arrayX = NULL;
   apb->apb_arrayY = NULL;
   apb->apb_arrays_ok = 0;
@@ -540,15 +547,16 @@ void aps_load_phrases (query_instance_t *qst, ap_set_t *aps)
     sqlr_resignal (err);
   while (lc_next (lc))
     {
-      unsigned int32 chksum, chk2, idxX, idxY, idxY2;
+      unsigned int32 chksum, idxX, idxY;
+      /*unsigned int32 chk2, idxY2;*/
       chksum = (uptrlong)(unbox (lc_nth_col (lc, 0)));
-      chk2 = chksum * APB_ARRAYY_MULT1;
+      /* chk2 = (chksum * APB_ARRAYY_MULT1) & AP_PHRASE_CHKSUM_MASK; */
       idxX = AP_CHKSUM_TO_X (aps->aps_bitarrays, chksum);
       idxY = AP_CHKSUM_TO_Y (aps->aps_bitarrays, chksum);
-      idxY2 = AP_CHKSUM_TO_Y (aps->aps_bitarrays, chk2);
-      ((uint32 *)(apb->apb_arrayX))[idxX >> 5] |= (1 << (idxX & 0x1F));
-      ((uint32 *)(apb->apb_arrayY))[idxY >> 5] |= (1 << (idxY & 0x1F));
-      ((uint32 *)(apb->apb_arrayY))[idxY2 >> 5] |= (1 << (idxY2 & 0x1F));
+      /* idxY2 = AP_CHKSUM_TO_Y (aps->aps_bitarrays, chk2); */
+      apb->apb_arrayX[idxX >> 5] |= (1 << (idxX & 0x1F));
+      apb->apb_arrayY[idxY >> 5] |= (1 << (idxY & 0x1F));
+      /*apb->apb_arrayY[idxY2 >> 5] |= (1 << (idxY2 & 0x1F));*/
     }
   apb->apb_arrays_ok = 1;
 }
@@ -642,7 +650,7 @@ ap_set_t **aps_tryrdlock_array (caddr_t *set_ids, int load_phrases, query_instan
           ap_set_t *set = sets[set_ctr];
           if (!set->aps_bitarrays.apb_arrays_ok)
             aps_load_phrases (qst, set);
-#ifdef DEBUG
+#ifdef AP_CHKSUM_DEBUG
 	  set->aps_probes = set->aps_bit_hits = set->aps_real_hits = 0;
 #endif
         }
@@ -665,11 +673,11 @@ void aps_unlock_array (ap_set_t **sets, int set_count, int free_array)
   for (set_ctr = 0; set_ctr < set_count; set_ctr++)
     {
       ap_set_t *set = sets[set_ctr];
-#ifdef DEBUG
+#ifdef AP_CHKSUM_DEBUG
       double density;
 #endif
       rwlock_unlock (set->aps_rwlock);
-#ifdef DEBUG
+#ifdef AP_CHKSUM_DEBUG
       dbg_printf (("Phrase set %s (%ld): %ld probes, %ld bit misses, %ld bit hits, %ld tbl misses %ld tbl hits\n",
           set->aps_name, set->aps_id,
           set->aps_probes, set->aps_probes - set->aps_bit_hits, set->aps_bit_hits,
@@ -686,10 +694,6 @@ void aps_unlock_array (ap_set_t **sets, int set_count, int free_array)
 
 
 /* Implementation. Adding and removal of phrases into phrase sets. */
-
-#define APS_PHRASE_VALID 0
-#define APS_PHRASE_EMPTY -1
-#define APS_PHRASE_LONG -2
 
 void ap_phrase_chksum_callback (const utf8char *buf, size_t bufsize, void *appdata)
 {
@@ -720,9 +724,9 @@ uint32 ap_phrase_chksum (caddr_t ptext, encodedlang_handler_t *elh__UTF8, int *e
       return 0;
     }
   errcode_ret[0] = APS_PHRASE_VALID;
-  return chksum_acc[0];
+  return chksum_acc[0] & AP_PHRASE_CHKSUM_MASK;
 }
-;
+
 
 #define AP_DELETE_IT ((void *)((ptrlong)0xDEADC0DE))
 
@@ -826,17 +830,17 @@ void aps_add_phrases (query_instance_t *qst, ap_set_t *aps, caddr_t **descrs)
 	  if ((caddr_t) SQL_SUCCESS != err)
 	    goto errexit;
           if (!lc_next (lc))
-	    ((uint32 *)(aps->aps_bitarrays.apb_arrayX))[idxX >> 5] &= ~(1 << (idxX & 0x1F));
+	    aps->aps_bitarrays.apb_arrayX[idxX >> 5] &= ~(1 << (idxX & 0x1F));
 	  lc_free (lc);
         }
       else
         {
-          uptrlong chk2, idxY2;
-          chk2 = chksum * APB_ARRAYY_MULT1;
-          idxY2 = AP_CHKSUM_TO_Y (aps->aps_bitarrays, chk2);
-	  ((uint32 *)(aps->aps_bitarrays.apb_arrayX))[idxX >> 5] |= (1 << (idxX & 0x1F));
-	  ((uint32 *)(aps->aps_bitarrays.apb_arrayY))[idxY >> 5] |= (1 << (idxY & 0x1F));
-	  ((uint32 *)(aps->aps_bitarrays.apb_arrayY))[idxY2 >> 5] |= (1 << (idxY2 & 0x1F));
+          /*uptrlong chk2, idxY2;*/
+          /* chk2 = (chksum * APB_ARRAYY_MULT1) & AP_PHRASE_CHKSUM_MASK;
+          idxY2 = AP_CHKSUM_TO_Y (aps->aps_bitarrays, chk2); */
+	  aps->aps_bitarrays.apb_arrayX[idxX >> 5] |= (1 << (idxX & 0x1F));
+	  aps->aps_bitarrays.apb_arrayY[idxY >> 5] |= (1 << (idxY & 0x1F));
+	  /*aps->aps_bitarrays.apb_arrayY[idxY2 >> 5] |= (1 << (idxY2 & 0x1F));*/
           err = qr_quick_exec (ap_insert__qr, qst->qi_client, "", NULL, 4,
 			":0", (ptrlong) ap->app_set->aps_id, QRP_INT,
 			":1", (ptrlong) ap->app_chksum, QRP_INT,
@@ -938,26 +942,36 @@ void appi_add_word_arrow (const utf8char *buf, size_t bufsize, unsigned apa_star
   appi->appi_chksums [0] = word_hash;
   for (word_idx = 0; word_idx < max_phrase_len; word_idx++)
     {
-      uint32 chksum = appi->appi_chksums [word_idx];
-      uptrlong chk2;
+      uint32 chksum = (appi->appi_chksums [word_idx]) & AP_PHRASE_CHKSUM_MASK;
+      /*uptrlong chk2;*/
+      dbg_printf (("Probing 0x%08lx\n", (unsigned long)(chksum)));
       for (aps_ctr = appi->appi_set_count; aps_ctr--; /* no step*/)
         {
           ap_set_t *aps = appi->appi_sets [aps_ctr];
           ap_hit_t *aph;
-          uint32 idxX, idxY, idxY2;
-#ifdef DEBUG
+          uint32 idxX, idxY;
+          /*uint32 idxY2;*/
+#ifdef AP_CHKSUM_DEBUG
 	  aps->aps_probes += 1;
 #endif
           idxX = AP_CHKSUM_TO_X(aps->aps_bitarrays, chksum);
-          if (! (((uint32 *)(aps->aps_bitarrays.apb_arrayX))[idxX >> 5] & (1 << (idxX & 0x1F))))
+          if (! (aps->aps_bitarrays.apb_arrayX[idxX >> 5] & (1 << (idxX & 0x1F))))
+            {
+              dbg_printf (("   failed in X that is 0x%08lx, ofs %ld\n", (unsigned long)(aps->aps_bitarrays.apb_arrayX[idxX >> 5]), (long)(idxX >> 5)));
             continue;
+            }
+          dbg_printf (("      PASSED in X that is 0x%08lx, ofs %ld\n", (unsigned long)(aps->aps_bitarrays.apb_arrayX[idxX >> 5]), (long)(idxX >> 5)));
           idxY = AP_CHKSUM_TO_Y(aps->aps_bitarrays, chksum);
-          if (! (((uint32 *)(aps->aps_bitarrays.apb_arrayY))[idxY >> 5] & (1 << (idxY & 0x1F))))
+          if (! (aps->aps_bitarrays.apb_arrayY[idxY >> 5] & (1 << (idxY & 0x1F))))
+            {
+              dbg_printf (("      failed in Y that is 0x%08lx, ofs %ld\n", (unsigned long)(aps->aps_bitarrays.apb_arrayY[idxY >> 5]), (long)(idxY >> 5)));
             continue;
-          chk2 = chksum * APB_ARRAYY_MULT1;
+            }
+          dbg_printf (("         PASSED in Y that is 0x%08lx, ofs %ld\n", (unsigned long)(aps->aps_bitarrays.apb_arrayY[idxY >> 5]), (long)(idxY >> 5)));
+          /*chk2 = (chksum * APB_ARRAYY_MULT1) & AP_PHRASE_CHKSUM_MASK;
           idxY2 = AP_CHKSUM_TO_Y (aps->aps_bitarrays, chk2);
-          if (! (((uint32 *)(aps->aps_bitarrays.apb_arrayY))[idxY2 >> 5] & (1 << (idxY2 & 0x1F))))
-            continue;
+          if (! (aps->aps_bitarrays.apb_arrayY[idxY2 >> 5] & (1 << (idxY2 & 0x1F))))
+            continue;*/
           aph = appi_alloc_type (ap_hit_t);
           aph->aph_htmltm_bits = htmltm_bits;
 	  aph->aph_first_idx = appi->appi_place_idx_last [(appi->appi_place_last_ffree_idx + APPI_MAX_PHRASE_NONNOISE - (word_idx+1)) % APPI_MAX_PHRASE_NONNOISE];
@@ -966,7 +980,18 @@ void appi_add_word_arrow (const utf8char *buf, size_t bufsize, unsigned apa_star
           aph->aph_.aph_candidate.aph_set = aps;
 	  mp_set_push (appi->appi_mp, &(appi->appi_hits_revlist), aph);
 	  appi->appi_hit_count += 1;
-#ifdef DEBUG
+#ifdef AP_CHKSUM_DEBUG
+          do {
+              /*
+              ap_arrow_t *start_word = appi->appi_places[aph->aph_first_idx];
+              ap_arrow_t *end_word = appi->appi_places[aph->aph_last_idx];
+              */
+              ap_arrow_t *start_word = dk_set_nth (appi->appi_places_revlist, appi->appi_place_count - aph->aph_first_idx);
+              ap_arrow_t *end_word = dk_set_nth (appi->appi_places_revlist, appi->appi_place_count - aph->aph_last_idx);
+              caddr_t fragm = box_dv_short_nchars (appi->appi_source_UTF8 + start_word->apa_start, end_word->apa_end - start_word->apa_start);
+              dbg_printf (("         Candidate fragment is [%s]", fragm));
+              dk_free_tree (fragm);
+            } while (0);
 	  aps->aps_bit_hits += 1;
 #endif
        }
@@ -1061,7 +1086,7 @@ void appi_prepare_to_class_callbacks (ap_proc_inst_t *appi)
 	  app->app_link_data = mp_box_copy_tree (appi->appi_mp, lc_nth_col (lc, 1));
           mp_set_push (appi->appi_mp, &(appi->appi_phrases_revlist), app);
           phrase_count ++;
-#ifdef DEBUG
+#ifdef AP_CHKSUM_DEBUG
 	  aps->aps_real_hits += 1;
 #endif
 	  for (;;)
