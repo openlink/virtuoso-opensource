@@ -71,7 +71,25 @@ bif_uuencode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	sqlr_new_error ("22003", "UUE02", "Unsupported type of UU-encoding (%ld)", uuenctype);
     }
   if (DV_STRING_SESSION == input_dtp)
+    {
+      int failed = 0;
+      IO_SECT (qst);
+      CATCH_READ_FAIL ((dk_session_t *)input)
+        {
     uu_encode_string_session (&res, (dk_session_t *)input, uuenctype, maxlinespersection);
+        }
+      FAILED
+	{
+	  failed = 1;
+	}
+      END_READ_FAIL ((dk_session_t *)input)
+      END_IO_SECT (qst);
+      if (failed)
+        {
+          dk_free_tree (res);
+          sqlr_new_error ("22003", "UUE10", "Error reading source data of UU-encoding (%ld)", uuenctype);
+        }
+    }
   else
     uu_encode_string (&res, input, uuenctype, maxlinespersection);
   return res;

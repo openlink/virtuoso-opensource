@@ -161,12 +161,11 @@ uu_initialize_tables(void)
 
 void
 uu_encode_string_session_plaintext (caddr_t * out_sections, dk_session_t * input,
-    int uuenctype, int maxlinespersection)
+    int input_length, int uuenctype, int maxlinespersection)
 {
-  int input_length;
   int max_length_of_section;
-  unsigned char *input_buf;
-  int input_len;
+  unsigned char input_buf[4096];
+  int input_len, remaining_input_length = input_length;
   int input_is_last;
   int input_pos;
   dk_set_t sections_set = NULL;
@@ -176,22 +175,6 @@ uu_encode_string_session_plaintext (caddr_t * out_sections, dk_session_t * input
 
   buffer_elt_t *input_elt;
   int offset_in_elt;
-
-  if (maxlinespersection < 10)
-    maxlinespersection = 10;
-  else if (maxlinespersection > 120000)
-    maxlinespersection = 120000;
-
-  input_length = input->dks_out_fill;
-  for (input_elt = input->dks_buffer_chain; NULL != input_elt;
-      input_elt = input_elt->next)
-    input_length += input_elt->fill;
-
-  if (0 == input_length)
-    {
-      out_sections[0] = dk_alloc_box (0, DV_ARRAY_OF_POINTER);
-      return;
-    }
 
   max_length_of_section = maxlinespersection * (76+2);
   /* if even one section is surely longer than the worst input encoded, decrease input_bytes_per_section */
@@ -204,27 +187,13 @@ uu_encode_string_session_plaintext (caddr_t * out_sections, dk_session_t * input
 
   out_tail = out_section = (unsigned char *) dk_alloc_box (max_length_of_section+1, DV_SHORT_STRING);
   out_section_end = out_section + max_length_of_section;
-  goto start_first_elt;
-
 
 start_next_elt:
-  if (input_is_last)
+  if (0 == remaining_input_length)
     goto input_finished;
-  input_elt = input_elt->next;
-
-start_first_elt:
-  if (NULL == input_elt)
-    {
-      input_buf = (unsigned char *)(input->dks_out_buffer);
-      input_len = input->dks_out_fill;
-      input_is_last = 1;
-    }
-  else
-    {
-      input_buf = (unsigned char *)(input_elt->data);
-      input_len = input_elt->fill;
-    }
-
+  input_len = session_buffered_read (input, input_buf,
+    ((sizeof (input_buf) < remaining_input_length) ? sizeof (input_buf) : remaining_input_length) );
+  remaining_input_length -= input_len;
   for (input_pos = 0; input_pos < input_len; input_pos++)
     {
       unsigned char chr = input_buf[input_pos];
@@ -256,13 +225,11 @@ input_finished:
 
 void
 uu_encode_string_session_mime_qp (caddr_t * out_sections, dk_session_t * input,
-    int uuenctype, int maxlinespersection)
+    int input_length, int uuenctype, int maxlinespersection)
 {
-  int input_length;
   int max_length_of_section;
-  unsigned char *input_buf;
-  int input_len;
-  int input_is_last;
+  unsigned char input_buf[4096];
+  int input_len, remaining_input_length = input_length;
   int input_pos;
   dk_set_t sections_set = NULL;
   unsigned char *out_section;
@@ -270,56 +237,20 @@ uu_encode_string_session_mime_qp (caddr_t * out_sections, dk_session_t * input,
   unsigned char *out_tail;
   int column = 0;
 
-  buffer_elt_t *input_elt;
-  int offset_in_elt;
-
-  if (maxlinespersection < 10)
-    maxlinespersection = 10;
-  else if (maxlinespersection > 120000)
-    maxlinespersection = 120000;
-
-  input_length = input->dks_out_fill;
-  for (input_elt = input->dks_buffer_chain; NULL != input_elt;
-      input_elt = input_elt->next)
-    input_length += input_elt->fill;
-
-  if (0 == input_length)
-    {
-      out_sections[0] = dk_alloc_box (0, DV_ARRAY_OF_POINTER);
-      return;
-    }
-
   max_length_of_section = maxlinespersection * (76+2);
   /* if even one section is surely longer than the worst input encoded, decrease input_bytes_per_section */
   if (max_length_of_section > (10 + 4*input_length))
     max_length_of_section = 10 + 4*input_length;
 
-  offset_in_elt = 0;
-  input_elt = input->dks_buffer_chain;
-  input_is_last = 0;
-
   out_tail = out_section = (unsigned char *) dk_alloc_box (max_length_of_section+1, DV_SHORT_STRING);
   out_section_end = out_section + max_length_of_section;
-  goto start_first_elt;
-
 
 start_next_elt:
-  if (input_is_last)
+  if (0 == remaining_input_length)
     goto input_finished;
-  input_elt = input_elt->next;
-
-start_first_elt:
-  if (NULL == input_elt)
-    {
-      input_buf = (unsigned char *)(input->dks_out_buffer);
-      input_len = input->dks_out_fill;
-      input_is_last = 1;
-    }
-  else
-    {
-      input_buf = (unsigned char *)(input_elt->data);
-      input_len = input_elt->fill;
-    }
+  input_len = session_buffered_read (input, input_buf,
+    ((sizeof (input_buf) < remaining_input_length) ? sizeof (input_buf) : remaining_input_length) );
+  remaining_input_length -= input_len;
 
   for (input_pos = 0; input_pos < input_len; input_pos++)
     {
@@ -419,37 +350,32 @@ uu_encode_string_session (caddr_t * out_sections, dk_session_t * input,
   int padding_char = uu_paddings[uuenctype];
   int input_bytes_per_line = uu_bytesperline[uuenctype];
   int line_has_prefix = ((UUENCTYPE_NATIVE == uuenctype) || (UUENCTYPE_XX == uuenctype));
-  int input_length;
+  int input_length, remaining_input_length;
   int input_bytes_per_section;
   int sections_count;
   int section_idx;
   buffer_elt_t *input_elt;
   int offset_in_elt;
 
-  switch (uuenctype)
-    {
-    case UUENCTYPE_PLAINTEXT:
-      uu_encode_string_session_plaintext (out_sections, input, uuenctype, maxlinespersection);
-      return;
-    case UUENCTYPE_MIME_QP_TXT:
-    case UUENCTYPE_MIME_QP_BIN:
-      uu_encode_string_session_mime_qp (out_sections, input, uuenctype, maxlinespersection);
-      return;
-    }
-
   if (maxlinespersection < 10)
     maxlinespersection = 10;
   else if (maxlinespersection > 120000)
     maxlinespersection = 120000;
-
-  input_length = input->dks_out_fill;
-  for (input_elt = input->dks_buffer_chain; NULL != input_elt;
-      input_elt = input_elt->next)
-    input_length += input_elt->fill;
-
+  remaining_input_length = input_length = strses_length (input);
   if (0 == input_length)
     {
       out_sections[0] = dk_alloc_box (0, DV_ARRAY_OF_POINTER);
+      return;
+    }
+
+  switch (uuenctype)
+    {
+    case UUENCTYPE_PLAINTEXT:
+      uu_encode_string_session_plaintext (out_sections, input, input_length, uuenctype, maxlinespersection);
+      return;
+    case UUENCTYPE_MIME_QP_TXT:
+    case UUENCTYPE_MIME_QP_BIN:
+      uu_encode_string_session_mime_qp (out_sections, input, input_length, uuenctype, maxlinespersection);
       return;
     }
 
@@ -474,11 +400,10 @@ uu_encode_string_session (caddr_t * out_sections, dk_session_t * input,
     {
       int lines_count;
       int line_idx;
-      int input_bytes;
-      int output_bytes;
+      int input_bytes, output_bytes;
       unsigned char *out_section;
       unsigned char *out_tail;
-      input_bytes = input_length - (section_idx * input_bytes_per_section);
+      input_bytes = remaining_input_length;
       if (input_bytes > input_bytes_per_section)
 	input_bytes = input_bytes_per_section;
       lines_count = (input_bytes + input_bytes_per_line - 1) / input_bytes_per_line;
@@ -491,39 +416,12 @@ uu_encode_string_session (caddr_t * out_sections, dk_session_t * input,
       for (line_idx = 0; line_idx < lines_count; line_idx++)
 	{
 	  unsigned char line_buf[60];
-	  unsigned char *line_tail = line_buf;
-	  int bytes_count = 0, rest_to_fill = input_bytes_per_line;
-	  for (;;)
-	    {
-	      if (!input_elt)
-		{
-		  int rest_to_read = input->dks_out_fill - offset_in_elt;
-		  if (rest_to_read > rest_to_fill) rest_to_read = rest_to_fill;
-		  memcpy (line_tail, input->dks_out_buffer + offset_in_elt, rest_to_read);
-		  line_tail += rest_to_read;
-		  bytes_count += rest_to_read;
-		  offset_in_elt += rest_to_read;
-		  break;
-		}
-	      else
-		{
-		  int rest_to_read = input_elt->fill - offset_in_elt;
-		  if (rest_to_read >= rest_to_fill)
-		    {
-		      memcpy (line_tail, input_elt->data + offset_in_elt, rest_to_fill);
-		      line_tail += rest_to_fill;
-		      bytes_count += rest_to_fill;
-		      offset_in_elt += rest_to_fill;
-		      break;
-		    }
-		  memcpy (line_tail, input_elt->data + offset_in_elt, rest_to_read);
-		  line_tail += rest_to_read;
-		  bytes_count += rest_to_read;
-		  rest_to_fill -= rest_to_read;
-		  offset_in_elt = 0;
-		  input_elt = input_elt->next;
-		}
-	    }
+	  unsigned char *line_tail;
+	  int bytes_count;
+          bytes_count = session_buffered_read (input, line_buf,
+            ((input_bytes_per_line < remaining_input_length) ? input_bytes_per_line : remaining_input_length) );
+          remaining_input_length -= bytes_count;
+          line_tail = line_buf + bytes_count;
 
 	  if (line_has_prefix)	/* Prefix byte of the input_line contains the length of input_line */
 	    (out_tail++)[0] = enctable[bytes_count];
@@ -569,11 +467,14 @@ void
 uu_encode_string (caddr_t * out_sections, caddr_t input,
     int uuenctype, int maxlinespersection)
 {
-  dk_session_t ses[1];
-  memset (ses, 0, sizeof (dk_session_t));
-  ses->dks_out_buffer = input;
-  ses->dks_out_fill = box_length(input)-1;
+  dk_session_t *ses = strses_allocate ();
+  CATCH_READ_FAIL (ses)
+    {
+      session_buffered_write (ses, input, box_length (input) - 1);
+    }
+  END_WRITE_FAIL (ses)
   uu_encode_string_session (out_sections, ses, uuenctype, maxlinespersection);
+  strses_free (ses);
 }
 
 
