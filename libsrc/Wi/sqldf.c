@@ -2619,7 +2619,7 @@ sqlo_like_range (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_
     return;
   if (DFE_CONST == pred->_.bin.right->dfe_type
       && DV_STRINGP (pred->_.bin.right->dfe_tree)
-      && strchr ("_?*\%[", ((char*)pred->_.bin.right->dfe_tree)[0])) 
+      && strchr ("_?*%[", ((char*)pred->_.bin.right->dfe_tree)[0])) 
     return;
   DO_SET (dbe_key_t *, key, &tb->tb_keys)
     {
