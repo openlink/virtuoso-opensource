@@ -32,6 +32,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <memory.h>
 #ifdef UNIX
 # include <sys/time.h>

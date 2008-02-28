@@ -859,6 +859,8 @@ void sf_sql_extended_fetch (caddr_t stmt_id, long type, long irow, long n_rows,
 void stmt_set_scroll_co (srv_stmt_t * stmt, long co);
 
 caddr_t srv_client_defaults (void);
+void srv_client_defaults_init (void);
+
 extern int32 cli_not_c_char_escape;
 extern int32 cli_utf8_execs;
 extern int32 cli_no_system_tables;
@@ -1124,6 +1126,7 @@ int itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf);
 void itc_bm_land (it_cursor_t * itc, buffer_desc_t * buf);
 void itc_next_bit (it_cursor_t * itc, buffer_desc_t *buf);
 void itc_invalidate_bm_crs (it_cursor_t * itc, buffer_desc_t * buf, int is_transit, dk_set_t * local_transits);
+int iri_split (char * iri, caddr_t * pref, caddr_t * name);
 int64  unbox_iri_int64 (caddr_t x);
 int itc_bm_land_lock (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void itc_init_bm_search (it_cursor_t * itc);

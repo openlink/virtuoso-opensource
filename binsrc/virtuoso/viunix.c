@@ -166,6 +166,7 @@ extern unsigned long cfg_autocheckpoint;
 
 extern int in_crash_dump;
 
+int db_check_in_use (void);
 void new_cfg_replace_log (char *new_log);
 void new_cfg_set_checkpoint_interval (int32 f);
 void new_db_read_cfg (caddr_t *it, char *mode);

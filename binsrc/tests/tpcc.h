@@ -75,4 +75,5 @@ void Lastname (int num, char *name);
 
 
 void run_test (int argc, char ** argv);
+void run_timed_test (int argc, char **argv);
 

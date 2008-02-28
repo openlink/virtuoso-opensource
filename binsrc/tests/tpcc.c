@@ -35,6 +35,7 @@
 #endif
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <memory.h>
 #ifdef UNIX
 # include <sys/time.h>
@@ -379,7 +380,7 @@ main (int argc, char **argv)
       run_test (argc, argv);
       break;
     case 'R':
-      run_timed_test (argv, argv);
+      run_timed_test (argc, argv);
       break;
     case 'd':
 	{

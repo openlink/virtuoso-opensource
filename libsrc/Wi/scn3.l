@@ -358,6 +358,8 @@ scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_te
     RETURN_CODE (name); \
   } while (0)
 
+void yyfatalerror (const char *s);
+
 #define YY_FATAL_ERROR(msg) yyfatalerror (msg)
 
 %}

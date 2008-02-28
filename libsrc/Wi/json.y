@@ -33,6 +33,7 @@ int jsonyy_string_input (char *buf, int max);
 caddr_t *json_tree; 
 caddr_t json_str;
 int jsonyydebug;
+int jsonyylex (void);
 %}
 
 %union {

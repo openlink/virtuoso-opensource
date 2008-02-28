@@ -29,6 +29,7 @@ extern void jsonyy_reset ();
 extern void jsonyyparse ();
 extern caddr_t *json_tree;
 extern int jsonyydebug;
+extern void jsonyy_string_input_init (char * str);
 dk_mutex_t *json_parse_mtx = NULL;
 
 static

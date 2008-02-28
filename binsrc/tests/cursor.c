@@ -19,11 +19,11 @@
 
 #include "timeacct.h"
 #include <stdio.h>
+#include <string.h>
 #include <memory.h>
 
-
-
 #include "odbcinc.h"
+
 #include "odbcuti.h"
 
 #include <stdlib.h>
