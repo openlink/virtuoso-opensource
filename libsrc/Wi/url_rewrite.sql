@@ -972,6 +972,31 @@ create procedure DB.DBA.HTTP_URLREWRITE_APPLY_PATTERN (in pattern varchar, in st
 }
 ;
 
+
+create procedure DB.DBA.HTTP_LOC_NEW_URL (in url any)
+{
+   declare ret, host any;
+
+   if (url like 'http:%')
+     return url;
+
+   if (url not like '/%')
+     return url;
+
+   host := HTTP_GET_HOST ();
+
+   if (is_https_ctx ())
+      ret := 'https://';
+   else
+      ret := 'http://';
+
+   ret := ret || host || url;
+
+   return ret;
+}
+;
+
+
 create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout path varchar, inout lines any,
     out http_code any, out http_headers any)
 {
@@ -1205,7 +1230,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
       if (http_redir in (301, 302, 303, 307))
 	{
 	  http_status_set (http_redir);
-	  http_header (http_header_get () || 'Location: '||long_url||'\r\n');
+	  http_header (http_header_get () || 'Location: '|| DB.DBA.HTTP_LOC_NEW_URL (long_url) ||'\r\n');
 	  http_body_read ();
 	  return 1;
 	}
