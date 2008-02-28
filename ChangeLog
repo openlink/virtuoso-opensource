@@ -1,3 +1,164 @@
+2008-02-28 21:27  source
+
+	* Added result messages for connectionSet
+	* Added nick in ODS profile for openid
+	* Added googlemaps key to server settings
+	* Added new page for dataspace/person|organization urlrewrite rule
+	* Added new icon for semantic magic block
+	* Added bibo url
+	* Added cookie for interface type identification
+	* Minor UI fixes
+
+2008-02-28 21:24  source
+
+	* Fixed problem with 'delete all' messages
+	* Fixed stack overflow in xslt transformation
+
+2008-02-28 21:23  source
+
+	* Added setting for displaying number of albums displayed
+	* Added support for no membership type
+
+2008-02-28 21:08  source
+
+	* Fixed 64bit compatibility
+
+2008-02-28 21:07  source
+
+	* Adde DB.DBA.RDF_CONVERT_RDFXML_TO_TTL()
+	* Minor fixes inclusing fix in audit
+
+2008-02-28 21:05  source
+
+	* Fixed compiler warnings
+
+2008-02-28 21:04  source
+
+	* Added bif_aset_zap_arg() and bif_vector_zap_args()
+
+2008-02-28 21:03  source
+
+	* Added support for string sessions with non-NULL strsestmpfile_t storage
+
+2008-02-28 21:01  source
+
+	* Fixed compiler warning
+
+2008-02-28 21:01  source
+
+	* Added absolute URL in Location header
+
+2008-02-28 20:59  source
+
+	* Cleaned up script to delete all temp files from test suite
+
+2008-02-28 20:58  source
+
+	* Fixed compiler warnings about missing prototypes
+
+2008-02-28 20:57  source
+
+	* Fixed double escape of % char
+
+2008-02-28 20:56  source
+
+	* Updated documentation
+
+2008-02-27 20:42  source
+
+	* Updated version to 5.0.6-rc3
+
+2008-02-27 20:41  source
+
+	* Fixed compiler warnings for 64bit build
+
+2008-02-27 20:36  source
+
+	* Fixed GPF as sparp argument was missing
+
+2008-02-27 20:33  source
+
+	* Fixed bug with SSL support on 64bit
+
+2008-02-27 20:28  source
+
+	* Fixed escape special chars
+
+2008-02-27 20:27  source
+
+	* Added bif_aq_request_zap_args()
+
+2008-02-27 20:25  source
+
+	* Added bif_iri_to_id_if_cached()
+
+2008-02-27 20:22  source
+
+	* Merged from upstream project
+
+2008-02-26 20:28  source
+
+	* Updated version to 5.0.6-rc2
+
+2008-02-26 20:27  source
+
+	* Added mini rdfb in profile to show linked data
+	* Added new Welcome Message
+	* Added new UI update
+	* Added semantic magic profile block
+	* Added dataspace profile block
+	* Fixed bug in related
+	* Fixed search with empty string for users
+	* Fixed handle any type of resource having name or label
+	* Fixed typo
+
+2008-02-26 20:23  source
+
+	* Fixed albums with special characters in name are not shown in albums path
+	* Fixed html escape for dc.title
+
+2008-02-26 20:21  source
+
+	* Fixed encoding problem
+	* Fixed export problem
+
+2008-02-26 20:21  source
+
+	* Fixed encoding problem
+
+2008-02-26 20:21  source
+
+	* Fixed problem with installation
+	* Fixed encoding problem
+
+2008-02-26 20:20  source
+
+	* Fixed bug with filename in export
+
+2008-02-26 20:06  source
+
+	* Updated vad_version
+
+2008-02-26 20:05  source
+
+	* Merged latest documentation changes
+
+2008-02-26 20:04  source
+
+	* Added check to make sure artist exists
+
+2008-02-26 20:03  source
+
+	* Upgrade existing /proxy path
+
+2008-02-25 21:14  source
+
+	* Added #this to musicbrainz uri
+
+2008-02-25 21:13  source
+
+	* Merged from upstream project
+
 2008-02-25 14:25  source
 
 	* Updated version to 5.0.6-rc1
