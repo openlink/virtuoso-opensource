@@ -836,6 +836,9 @@ if(top.location.href!=window.location.href)
 {
     inFrame=1;
     ODSInitArray.push(function(){OAT.Dom.hide('FT');});
+}else
+{
+   create_cookie ('interface', 'vspx', 1);
 }
 
 function odsbarSafeInit()

@@ -181,7 +181,7 @@ div.widget {
 	float: left;
 	border-top-width: 1px;
 	border-right-width: 1px;
-	border-bottom-width: 2;
+	border-bottom-width: 2px;
 	border-left-width: 1px;
 	border-top-style: solid;
 	border-right-style: solid;
@@ -988,7 +988,7 @@ width:120px;
 /* Invitations Interface */
 
 #invitations_C {background-color: #e8f2f7}
-#invitations_C h1 { font-size: 16px; background-color: #fff; display: block width: 100%; padding: 5px; color: #334; margin-bottom: 0;}
+#invitations_C h1 { font-size: 16px; background-color: #fff; display: block; width: 100%; padding: 5px; color: #334; margin-bottom: 0;}
 #invitations_C h2 { font-size: 14px; color: #334}
 #invitations_C h3 {}
 #invitations_C div.profile { background-color: #f1f8fd; padding: 5px; border: solid 1px #8fbed0; margin-bottom: 5px;overflow:auto;}

@@ -1,0 +1,145 @@
+<?vsp
+--   search_ajax.vsp
+--
+--   $Id$
+--
+--   AJAX Handler for the google map control
+--  
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--  
+--  Copyright (C) 1998-2006 OpenLink Software
+--  
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--  
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--  
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--  
+--  
+  declare sid,realm,server_root,server_dataspace,oldui_url,uname,utype varchar;
+  
+  utype:=get_keyword('utype',params,'');
+  uname:=get_keyword('uname',params,'');
+  
+  oldui_url:=sprintf('/ods/uhome.vspx?page=1&ufname=%U&utype=%U', uname, utype);
+
+  declare cookie_arr any;
+  cookie_arr := vsp_ua_get_cookie_vec(lines);
+  
+  if(cookie_arr is not null and get_keyword('interface',cookie_arr,'js')='vspx')
+  {
+     http_rewrite ();
+     http_request_status ('HTTP/1.1 302 Found');
+     http_header (concat (http_header_get (), 'Location: ',oldui_url,'\r\n'));
+
+     return;
+ }
+
+  sid := get_keyword('sid',params,'');
+  realm := get_keyword('realm',params,'wa');
+   
+  declare resMeta any;
+  resMeta:= string_output ();
+
+  server_root:=sprintf('%s%s',http_s (),DB.DBA.WA_CNAME());
+  server_dataspace:=server_root||'/dataspace/';
+
+  if (length (uname))
+  {
+    declare _visibility,_full_name, _country, _state, _city, _oid_url, _oid_server,_country_code varchar;
+    declare  _lat, _lng real;
+    declare uid integer;
+    
+    _full_name := coalesce((select coalesce(U.U_FULL_NAME,trim(concat(I.WAUI_FIRST_NAME,' ',I.WAUI_LAST_NAME)),U.U_NAME) as U_FULL_NAME from DB.DBA.WA_USER_INFO I, DB.DBA.SYS_USERS U where I.WAUI_U_ID=U.U_ID and U.U_NAME = uname),uname);
+
+    declare exit handler for not found { 
+                                         http_rewrite ();
+                                         http_request_status ('HTTP/1.1 302 Found');
+                                         http_header (concat (http_header_get (), 'Location: ',sprintf('/ods/index.html#msg=%U','The user '||uname||' does not exist.'),'\r\n'));
+                                       };
+    select WAUI_VISIBLE, WAUI_LAT, WAUI_LNG, WAUI_HCOUNTRY, WAUI_HSTATE, WAUI_HCITY, WAUI_OPENID_URL, WAUI_OPENID_SERVER,U_ID
+      into _visibility, _lat, _lng, _country, _state, _city, _oid_url, _oid_server,uid
+      from WA_USER_INFO, DB.DBA.SYS_USERS
+     where WAUI_U_ID = U_ID and U_NAME =  uname;
+     
+    if (length (_visibility) < 16 or _visibility[16] <> ascii ('1'))
+    {
+        _country := null;
+        _state := null;
+        _city := null;
+    }
+    
+    if (_country is not null and length (_country))
+       _country_code := (select WC_CODE from WA_COUNTRY where WC_NAME = _country);
+    else
+      _country_code:=null;
+
+--META openID start  
+    if (length (_oid_url) and length (_oid_server))
+    {
+      http('  <link rel="openid.server" title="OpenID Server" href="'|| _oid_server ||'" />\r\n',resMeta);
+      http('   <link rel="openid.delegate" title="OpenID URL" href="'|| _oid_url ||'" />\r\n',resMeta);
+    }else
+      http('  <link rel="openid.server" title="OpenID Server" href="'||server_root||'/openid" />\r\n',resMeta);
+--META openID end  
+  
+    http('  <link rel="meta" type="application/rdf+xml" title="SIOC" href="'||server_dataspace||uname||'/sioc.rdf" />\r\n',resMeta);
+    http('  <link rel="meta" type="application/rdf+xml" title="FOAF" href="'||server_dataspace||utype||uname||'/foaf.rdf" />\r\n',resMeta);
+    
+    http('  <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />\r\n',resMeta);
+    http('  <meta name="dc.language" content="en" scheme="rfc1766" />\r\n',resMeta);
+    http('  <meta name="dc.title" content="'||_full_name||'''s ODS home" />\r\n',resMeta);
+    http('  <meta name="dc.creator" content="'||_full_name||'" />\r\n',resMeta);
+    http('  <meta name="dc.description" content="'||_full_name||'''s Dataspace" />\r\n',resMeta);
+    
+    http('  <link rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />\r\n',resMeta);
+    if (_lat is not null and _lng is not null)
+    {
+      http('  <meta name="geo.position" content="'||sprintf ('%.06f; %.06f', _lat,_lng)||'" />\r\n',resMeta);
+      http('  <meta name="ICBM" content="'||sprintf ('%.06f, %.06f', _lat,_lng)||'" />\r\n',resMeta);
+    }
+    
+    if (_country is not null)
+      http('  <meta name="geo.placename" content="'||sprintf('%s, %s, %s',coalesce(_country,''),coalesce(_state,''),coalesce(_city,''))||'" />\r\n',resMeta);
+    if (_country_code is not null)
+      http('  <meta name="geo.region" content="'||_country_code||'" scheme="iso-3166-1" />\r\n',resMeta);
+
+    if (utype not in ('person/', 'organization/'))
+      utype := '';
+
+    http('  <meta http-equiv="X-XRDS-Location" content="'||server_dataspace||uname||'/yadis.xrds" />\r\n',resMeta);
+    http('  <meta http-equiv="X-YADIS-Location" content="'||server_dataspace||uname||'/yadis.xrds" />\r\n',resMeta);
+
+    http('  <link rel="meta" type="application/xml+apml" title="APML 0.6" href="'||server_dataspace||uname||'/apml.xml" />\r\n',resMeta);
+    http('  <link rel="alternate" type="application/atom+xml" title="OpenSocial Friends" href="'||server_dataspace||'feeds/people/'||uname||'/friends" />\r\n',resMeta);
+
+    http('  <meta name="dataspaceid" content="'||sprintf('%d',uid)||'" />\r\n',resMeta);
+
+  }
+
+skip_meta:
+
+  declare html_content varchar;
+
+  html_content := (select coalesce(blob_to_string(RES_CONTENT), 'Not found...')
+                     from WS.WS.SYS_DAV_RES
+                    where RES_FULL_PATH = '/DAV/VAD/wa/index.html');
+
+--  html_content := file_to_string('/dev/virtuoso/binsrc/samples/wa/index.html');
+
+  html_content:=replace(html_content,'<!-- #META# -->',string_output_string (resMeta));
+
+  http_rewrite();
+  http_header ('Content-Type: text/html; charset=UTF-8\r\n');
+  http (html_content);
+
+?>   
+   

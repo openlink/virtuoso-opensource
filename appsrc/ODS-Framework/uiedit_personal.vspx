@@ -32,6 +32,7 @@
 
     <v:variable persist="session" name="is_org" type="int" default="0"/>
     <v:variable persist="0" name="utitle" type="varchar" default="''"/>
+  <v:variable persist="0" name="nick" type="varchar" default="''"/>
     <v:variable persist="0" name="ftname" type="varchar" default="''"/>
     <v:variable persist="0" name="lname" type="varchar" default="''"/>
     <v:variable persist="0" name="fullname" type="varchar" default="''"/>
@@ -88,9 +89,10 @@
                WAUI_MSIGNATURE, WAUI_SUMMARY,
 	       U_E_MAIL, WAUI_PHOTO_URL,
 	       WAUI_AUDIO_CLIP, WAUI_FAVORITE_BOOKS, WAUI_FAVORITE_MUSIC, WAUI_FAVORITE_MOVIES,
-	       WAUI_SEARCHABLE,WAUI_SHOWACTIVE, WAUI_INTERESTS, WAUI_IS_ORG, WAUI_APP_ENABLE
+             WAUI_SEARCHABLE,WAUI_SHOWACTIVE, WAUI_INTERESTS, WAUI_IS_ORG, WAUI_APP_ENABLE, WAUI_NICK
         INTO _utitle, _ftname, _lname, _fullname, _gender, _bdate, _wpage, _efoaf, _msign, _sum, _email, self.photo,
-             self.audio, self.books, self.music, self.movie, self.issearch,self.showactive, self.interests, self.is_org, self.appEnable
+	     self.audio, self.books, self.music, self.movie, self.issearch,self.showactive, self.interests, self.is_org,
+	     self.appEnable, self.nick
         FROM WA_USER_INFO, DB.DBA.SYS_USERS
        where WAUI_U_ID = U_ID and U_NAME = self.u_name;
 
@@ -161,6 +163,15 @@
                 </td>
               </tr>
               <tr>
+          <th><label for="labelwwn">Nick name</label></th>
+          <td class="listing_col" nowrap="1">
+	      <v:text name="nickn" value="--self.nick" format="%s">
+		  <v:validator test="length" min="3" max="100" name="vv_nickn"
+		      message="Nick name cannot be shorter than 3 chars or longer than 100 chars"/>
+	      </v:text>
+          </td>
+        </tr>
+        <tr>
                 <td class="listing_col" nowrap="1">
 		  <v:check-box name="cb_org" value="1" xhtml_id="cb_org" xhtml_onclick="javascript:swOrg(this);">
 			<v:after-data-bind>
@@ -659,6 +670,13 @@
                           self.vc_error_message := 'This e-mail address is already registered.';
                           self.vc_is_valid := 0;
                     	  }
+		  if (exists(select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_NICK = self.nickn.ufl_value))
+		  {
+		    self.nick := WA_MAKE_NICK (self.nickn.ufl_value);
+		    self.nickn.vc_data_bind (e);
+                    self.vc_error_message := 'This nick already used please enter another or use suggested';
+                    self.vc_is_valid := 0;
+                  }
 
                         if(self.vc_is_valid = 0) return;
 
@@ -851,6 +869,7 @@
                         WA_USER_EDIT (self.u_name, 'WAUI_SHOWACTIVE', self.show_active.ufl_selected);
                         WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.e_int.ufl_value);
                         WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
+			update WA_USER_INFO set WAUI_NICK = self.nickn.ufl_value where WAUI_U_ID = self.u_id;
 
 
                         -- change user_text data

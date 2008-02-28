@@ -3065,7 +3065,7 @@ wa_exec_no_error_log(
     WAUI_FACEBOOK_ID int,
     WAUI_IS_ORG	int default 0,
     WAUI_APP_ENABLE	int default 0,
-
+    WAUI_NICK		varchar,
     primary key (WAUI_U_ID)
   )'
 )
@@ -3112,13 +3112,34 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_OPENID_SERVER', 'VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_FACEBOOK_ID', 'INT');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_IS_ORG', 'INT default 0');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_APP_ENABLE', 'INT default 0');
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_NICK', 'varchar');
 
 update DB.DBA.WA_USER_INFO set WAUI_IS_ORG = 0 where WAUI_IS_ORG is null;
 alter table DB.DBA.WA_USER_INFO modify column WAUI_APP_ENABLE integer default 0;
 update DB.DBA.WA_USER_INFO set WAUI_APP_ENABLE = 0 where WAUI_APP_ENABLE is null;
 
 wa_exec_no_error('create index WA_USER_INFO_OID on DB.DBA.WA_USER_INFO (WAUI_OPENID_URL)');
+wa_exec_no_error('create index WA_USER_INFO_NICK on DB.DBA.WA_USER_INFO (WAUI_NICK)');
 
+
+create procedure WA_MAKE_NICK (in nick varchar)
+{
+  declare i int;
+  if (strstr (nick, '@') is not null)
+    {
+      nick := replace (nick, '@', '-nick-');
+      nick := replace (nick, '.', '-');
+      i := 0;
+    }
+  while (exists (select 1 from WA_USER_INFO where WAUI_NICK = nick))
+    {
+      nick := rtrim (nick, '1234567890');
+      i := i + 1;
+      nick := nick || cast (i as varchar);
+    }
+  return nick;
+}
+;
 
 create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N {
 
@@ -3129,9 +3150,49 @@ create trigger WA_USER_INFO_I after insert on WA_USER_INFO referencing new as N 
     set triggers on;
   }
 
+  if (N.WAUI_NICK is null)
+    {
+      declare nick varchar;
+      nick := null;
+      if (length (N.WAUI_FIRST_NAME) and length (N.WAUI_LAST_NAME))
+	nick := N.WAUI_FIRST_NAME||'.'||N.WAUI_LAST_NAME;
+      if (exists (select 1 from WA_USER_INFO where WAUI_NICK = nick))
+	nick := null;
+      if (nick is null)
+	{
+	  nick := (select U_NAME from DB.DBA.SYS_USERS where U_ID = N.WAUI_U_ID);
+	  nick := WA_MAKE_NICK (nick);
+	}
+      set triggers off;
+      update WA_USER_INFO set WAUI_NICK = nick where WAUI_U_ID = N.WAUI_U_ID;
+      set triggers on;
+    }
   return;
 }
 ;
+
+create procedure WA_USER_INFO_NICK_UPGRADE ()
+{
+  if (registry_get ('__WA_USER_INFO_NICK_UPGRADE') = 'done')
+  return;
+  for select U_ID, U_NAME, WAUI_FIRST_NAME as fn, WAUI_LAST_NAME as ln
+    from SYS_USERS, WA_USER_INFO where WAUI_U_ID = U_ID and WAUI_NICK is null do
+    {
+      declare nick any;
+      nick := null;
+      if (length(fn) and length (ln))
+        nick := fn||'.'||ln;
+      if (exists (select 1 from WA_USER_INFO where WAUI_NICK = nick))
+	nick := null;
+      if (nick is null)
+	nick := WA_MAKE_NICK (U_NAME);
+      update WA_USER_INFO set WAUI_NICK = nick where WAUI_U_ID = U_ID;
+    }
+  registry_set ('__WA_USER_INFO_NICK_UPGRADE', 'done');
+}
+;
+
+WA_USER_INFO_NICK_UPGRADE ();
 
 wa_exec_no_error_log ('CREATE INDEX WA_GEO ON WA_USER_INFO (WAUI_LNG, WAUI_LAT, WAUI_LATLNG_VISIBLE)');
 wa_exec_no_error_log ('CREATE INDEX WA_IS_ORG ON WA_USER_INFO (WAUI_IS_ORG, WAUI_U_ID)');

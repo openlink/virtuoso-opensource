@@ -381,7 +381,7 @@ create procedure checkid_immediate
 
       algo := null;
       whenever not found goto auth;
-      select U_NAME, U_E_MAIL, U_FULL_NAME, WAUI_BIRTHDAY, WAUI_GENDER, WAUI_HCODE, WAUI_HCOUNTRY, WAUI_HTZONE
+      select WAUI_NICK, U_E_MAIL, U_FULL_NAME, WAUI_BIRTHDAY, WAUI_GENDER, WAUI_HCODE, WAUI_HCOUNTRY, WAUI_HTZONE
 	 into nickname, email, fullname, dob, gender, postcode, country, timezone
 	 from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO, DB.DBA.VSPX_SESSION where
 	 WAUI_U_ID = U_ID and U_NAME = VS_UID and VS_SID = sid and VS_REALM = 'wa';
@@ -594,7 +594,7 @@ create procedure check_authentication
 {
   declare arr, ses, signature any;
   declare key_val, val, ss_key, algo any;
-  declare nickname, email, fullname, dob, gender, postcode, country, lang, timezone, svec, idn, iarr any;
+  declare uname, nickname, email, fullname, dob, gender, postcode, country, lang, timezone, svec, idn, iarr any;
 
   svec := vector ();
 
@@ -602,18 +602,19 @@ create procedure check_authentication
   idn := get_keyword ('openid.identity', params, '');
   iarr := sprintf_inverse (idn, 'http://%s/dataspace/%s', 1);
 
+  uname := null;
   nickname := null;
   if (length (iarr) = 2)
     {
-      nickname := iarr[1];
-      nickname := rtrim(nickname, '/');
+      uname := iarr[1];
+      uname := rtrim(nickname, '/');
     }
 
   whenever not found goto nf;
-  select U_E_MAIL, U_FULL_NAME, WAUI_BIRTHDAY, WAUI_GENDER, WAUI_HCODE, WAUI_HCOUNTRY, WAUI_HTZONE
-     into email, fullname, dob, gender, postcode, country, timezone
+  select U_E_MAIL, U_FULL_NAME, WAUI_BIRTHDAY, WAUI_GENDER, WAUI_HCODE, WAUI_HCOUNTRY, WAUI_HTZONE, WAUI_NICK
+     into email, fullname, dob, gender, postcode, country, timezone, nickname
      from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where
-     WAUI_U_ID = U_ID and U_NAME = nickname;
+     WAUI_U_ID = U_ID and U_NAME = uname;
 
   if (dob is not null)
     dob := substring (datestring (dob), 1, 10);

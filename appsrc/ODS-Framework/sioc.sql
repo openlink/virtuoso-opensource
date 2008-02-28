@@ -143,6 +143,11 @@ create procedure vcal_iri (in s varchar)
   return concat ('http://www.w3.org/2002/12/cal#', s);
 };
 
+create procedure bibo_iri (in s varchar)
+{
+  return concat ('http://purl.org/ontology/bibo/', s);
+};
+
 create procedure owl_iri (in s varchar)
 {
   return concat ('http://www.w3.org/2002/07/owl#', s);

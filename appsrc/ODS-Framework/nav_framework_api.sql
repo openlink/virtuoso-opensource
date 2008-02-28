@@ -910,7 +910,6 @@ create procedure connectionSet (in sid varchar:='',in realm varchar :='wa', in c
   declare logged_user_name varchar;
   if(isSessionValid(sid,'wa',logged_user_name))
   {
-    
       declare exit handler for sqlstate '*' {dbg_obj_print (__SQL_STATE, ' ', __SQL_MESSAGE);
                                              errCode := 10;
                                              errMsg  := 'Can not execute query.';
@@ -921,6 +920,7 @@ create procedure connectionSet (in sid varchar:='',in realm varchar :='wa', in c
       _sneid_user := (select sne_id from DB.DBA.sn_person where sne_name=logged_user_name);
       _sneid_connection:= (select sne_id from DB.DBA.sn_person where sne_org_id=connectionId);
   
+
       declare connection_email,logged_user_email,msg varchar;
       connection_email:=(select U_E_MAIL from DB.DBA.SYS_USERS where U_ID=connectionId);
       logged_user_email:=(select U_E_MAIL from DB.DBA.SYS_USERS where U_NAME=logged_user_name);
@@ -929,12 +929,28 @@ create procedure connectionSet (in sid varchar:='',in realm varchar :='wa', in c
       if(_sneid_connection is not null)
       {
 
-       if(action=1
-           and 
-          (not exists(select 1 from DB.DBA.sn_related where ( (snr_from=_sneid_user and snr_to=_sneid_connection ) or (snr_from=_sneid_connection and snr_to=_sneid_user ) ) and snr_source=1))
-         )
-
+       if(action=1)
        {
+        if(username2id(logged_user_name)=connectionId)
+        {
+          http('<message>Unable to invite yourself.</message>',resXml);
+          goto _err;
+        }
+
+	      if(exists(select 1 from DB.DBA.sn_related where ( (snr_from=_sneid_user and snr_to=_sneid_connection ) or (snr_from=_sneid_connection and snr_to=_sneid_user ) ) and snr_source=1))
+       {
+          http('<message>You are already connected to this user.</message>',resXml);
+          goto _err;
+        }
+	      
+	      if(exists(select 1 from DB.DBA.sn_invitation where sni_from = _sneid_user and sni_to = connection_email and sni_status=0))
+        {
+          http('<message>User already invited.</message>',resXml);
+          goto _err;
+        }
+        
+        http('<message>Invitation sent.</message>',resXml);
+
 	      declare  url, banner,email varchar;
         banner := (select top 1 coalesce(WS_WEB_TITLE,'ODS') from DB.DBA.WA_SETTINGS);
         if (length(banner)=0)
@@ -1552,6 +1568,7 @@ create procedure serverSettings () __SOAP_HTTP 'text/xml'
 
   http(sprintf('<uriqaDefaultHost>%s</uriqaDefaultHost>',DB.DBA.WA_CNAME()),resXml);
   http(sprintf('<useRDFB>%d</useRDFB>', (case when DB.DBA.wa_check_package ('OAT') then 1 else 0 end)),resXml);
+  http(sprintf('<googleMpasKey>%s</googleMpasKey>', coalesce( (select WMH_KEY from DB.DBA.WA_MAP_HOSTS where WMH_HOST=DB.DBA.WA_CNAME() and WMH_SVC='GOOGLE'),'')),resXml);
      
     
 _err:  
