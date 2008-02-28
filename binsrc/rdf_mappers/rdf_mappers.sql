@@ -2245,7 +2245,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_name', fi
 ;
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('xbrl_rule1', 1, '/schemas/xbrl/(.*)', vector('path'), 1,
-'/sparql?query=DESCRIBE%20%3Chttp%3A//demo.openlinksw.com/schemas/xbrl/%U%3E%20FROM%20%3Chttp%3A//demo.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/%3E',
+'/sparql?query=DESCRIBE%%20%%3Chttp%%3A//demo.openlinksw.com/schemas/xbrl/%U%%3E%%20FROM%%20%%3Chttp%%3A//demo.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/%%3E',
 vector('path'), null, '(text/rdf.n3)|(application/rdf.xml)', 0, null);
 
 DB.DBA.URLREWRITE_CREATE_RULELIST ('xbrl_rule_list1', 1, vector('xbrl_rule1'));
